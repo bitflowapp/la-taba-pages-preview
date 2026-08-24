@@ -1,0 +1,1017 @@
+{
+  "conclusion": "Todos los packshots oficiales que corresponderían a una unidad suelta —cada imagen que publica cada candidato, portada y alternativas— traen un sello de cantidad que PISA el envase. No se pueden reutilizar para unidades, y no se pueden limpiar sin repintar producto. Las unidades siguen con el recurso propio de TABA.",
+  "doc": "Medición del sello de cantidad en los packshots de la fuente oficial. Generado por scripts/catalog-images/relevar-sello-de-pack.mjs; es evidencia, no una aprobación. Mide TODAS las imágenes de cada candidato, porque una sola alternativa limpia bastaría para invalidar la conclusión.",
+  "mediciones": [
+    {
+      "alternativas": [],
+      "alto": 1080,
+      "ancho": 1080,
+      "cantidadDelSku": 1,
+      "cantidadQueAnunciaLaFuente": 6,
+      "confianzaDelMatch": "HIGH",
+      "dudasDelMatch": [],
+      "esPortada": true,
+      "formato": "jpeg",
+      "fuenteTitulo": "Aquarius Manzana 1,5L x6",
+      "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156195/101275.jpg?v=638568224355070000",
+      "imagenesPublicadas": 1,
+      "pisaElEnvase": true,
+      "productoUrl": "https://tienda.coca-cola.com.ar/aquarius-manzana-1-5l-6-7790895640483/p",
+      "sello": {
+        "centro": [
+          697,
+          322
+        ],
+        "circularidad": 0.695,
+        "color": "#fc3c24",
+        "diametroPx": 117,
+        "pxRojos": 7470
+      },
+      "selloDetectado": true,
+      "sha256": "3c135b75e63dae06700d6adb890159909a5c2aa592e2d44628c4a41c95b14b5a",
+      "siluetas": {
+        "conSello": {
+          "alto": 723,
+          "ancho": 271,
+          "px": 123416
+        },
+        "partesTrasBorrar": 1,
+        "sinSello": {
+          "alto": 723,
+          "ancho": 271,
+          "px": 114667
+        }
+      },
+      "sku": "aquarius-manzana-1500ml",
+      "solapamiento": {
+        "bordeMedido": 720,
+        "bordeSobreEnvase": 498,
+        "discoSobreBlanco": 8848,
+        "productoTapado": 1893
+      },
+      "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
+    },
+    {
+      "alternativas": [],
+      "alto": 1080,
+      "ancho": 1080,
+      "cantidadDelSku": 1,
+      "cantidadQueAnunciaLaFuente": 6,
+      "confianzaDelMatch": "HIGH",
+      "dudasDelMatch": [],
+      "esPortada": true,
+      "formato": "jpeg",
+      "fuenteTitulo": "Aquarius Pera 1,5L x6",
+      "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156197/101277.jpg?v=638568225573870000",
+      "imagenesPublicadas": 1,
+      "pisaElEnvase": true,
+      "productoUrl": "https://tienda.coca-cola.com.ar/aquarius-pera-1-5l-6-7790895640476/p",
+      "sello": {
+        "centro": [
+          697,
+          322
+        ],
+        "circularidad": 0.692,
+        "color": "#fc3c24",
+        "diametroPx": 117,
+        "pxRojos": 7439
+      },
+      "selloDetectado": true,
+      "sha256": "8fa0e0dad2e118fba6f61654c772a842ed68d78f71ee69343433cda1daf6f0df",
+      "siluetas": {
+        "conSello": {
+          "alto": 712,
+          "ancho": 271,
+          "px": 121731
+        },
+        "partesTrasBorrar": 2,
+        "sinSello": {
+          "alto": 712,
+          "ancho": 271,
+          "px": 113011
+        }
+      },
+      "sku": "aquarius-pera-1500ml",
+      "solapamiento": {
+        "bordeMedido": 720,
+        "bordeSobreEnvase": 490,
+        "discoSobreBlanco": 8820,
+        "productoTapado": 1921
+      },
+      "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
+    },
+    {
+      "alternativas": [],
+      "alto": 1080,
+      "ancho": 1080,
+      "cantidadDelSku": 1,
+      "cantidadQueAnunciaLaFuente": 6,
+      "confianzaDelMatch": "HIGH",
+      "dudasDelMatch": [],
+      "esPortada": true,
+      "formato": "jpeg",
+      "fuenteTitulo": "Aquarius Pomelo 2,25L x6",
+      "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156184/101250.jpg?v=638567559283030000",
+      "imagenesPublicadas": 1,
+      "pisaElEnvase": true,
+      "productoUrl": "https://tienda.coca-cola.com.ar/aquarius-pomelo-2-25l-6-7790895003288/p",
+      "sello": {
+        "centro": [
+          672,
+          321
+        ],
+        "circularidad": 0.708,
+        "color": "#fc3c24",
+        "diametroPx": 116,
+        "pxRojos": 7487
+      },
+      "selloDetectado": true,
+      "sha256": "b76f21f4a06460dccce01428e810c11f059d49b413490ac009d86bc9ca4c9264",
+      "siluetas": {
+        "conSello": {
+          "alto": 720,
+          "ancho": 296,
+          "px": 135294
+        },
+        "partesTrasBorrar": 3,
+        "sinSello": {
+          "alto": 720,
+          "ancho": 296,
+          "px": 126560
+        }
+      },
+      "sku": "aquarius-pomelo-2250ml",
+      "solapamiento": {
+        "bordeMedido": 720,
+        "bordeSobreEnvase": 601,
+        "discoSobreBlanco": 8803,
+        "productoTapado": 1761
+      },
+      "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
+    },
+    {
+      "alternativas": [],
+      "alto": 1080,
+      "ancho": 1080,
+      "cantidadDelSku": 1,
+      "cantidadQueAnunciaLaFuente": 6,
+      "confianzaDelMatch": "HIGH",
+      "dudasDelMatch": [],
+      "esPortada": true,
+      "formato": "jpeg",
+      "fuenteTitulo": "Benedictino sin gas 2,25L x6",
+      "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/155813/102962.jpg?v=638370897968600000",
+      "imagenesPublicadas": 1,
+      "pisaElEnvase": true,
+      "productoUrl": "https://tienda.coca-cola.com.ar/benedictino-sin-gas-2-25l-6-7790895647666/p",
+      "sello": {
+        "centro": [
+          689,
+          272
+        ],
+        "circularidad": 0.694,
+        "color": "#fc3c24",
+        "diametroPx": 116,
+        "pxRojos": 7337
+      },
+      "selloDetectado": true,
+      "sha256": "049c9ee3d5a359414be0355257dfef8cdc20542223411505e5bcd3999ba123cb",
+      "siluetas": {
+        "conSello": {
+          "alto": 724,
+          "ancho": 265,
+          "px": 143135
+        },
+        "partesTrasBorrar": 3,
+        "sinSello": {
+          "alto": 724,
+          "ancho": 265,
+          "px": 134064
+        }
+      },
+      "sku": "benedictino-sin-gas-2250ml",
+      "solapamiento": {
+        "bordeMedido": 720,
+        "bordeSobreEnvase": 532,
+        "discoSobreBlanco": 8557,
+        "productoTapado": 2007
+      },
+      "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
+    },
+    {
+      "alternativas": [],
+      "alto": 1080,
+      "ancho": 1080,
+      "cantidadDelSku": 1,
+      "cantidadQueAnunciaLaFuente": 6,
+      "confianzaDelMatch": "HIGH",
+      "dudasDelMatch": [],
+      "esPortada": true,
+      "formato": "jpeg",
+      "fuenteTitulo": "Coca–Cola Original 2,25L x6",
+      "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156165/100411.jpg?v=638563931056970000",
+      "imagenesPublicadas": 1,
+      "pisaElEnvase": true,
+      "productoUrl": "https://tienda.coca-cola.com.ar/coca-cola-original-2-25l-6-7790895000997/p",
+      "sello": {
+        "centro": [
+          695,
+          300
+        ],
+        "circularidad": 0.693,
+        "color": "#fc3c24",
+        "diametroPx": 116,
+        "pxRojos": 7325
+      },
+      "selloDetectado": true,
+      "sha256": "dce22d9017c1464c4474f7d0dc5ad6aac59261a24a15c9df364413dc160c7188",
+      "siluetas": {
+        "conSello": {
+          "alto": 740,
+          "ancho": 284,
+          "px": 141026
+        },
+        "partesTrasBorrar": 3,
+        "sinSello": {
+          "alto": 740,
+          "ancho": 284,
+          "px": 132274
+        }
+      },
+      "sku": "coca-cola-original-2250ml",
+      "solapamiento": {
+        "bordeMedido": 720,
+        "bordeSobreEnvase": 587,
+        "discoSobreBlanco": 8610,
+        "productoTapado": 1954
+      },
+      "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
+    },
+    {
+      "alternativas": [
+        {
+          "alto": 1095,
+          "ancho": 1095,
+          "esPortada": false,
+          "formato": "png",
+          "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156540/100481_FRA-20260331-133231.png?v=639144749242170000",
+          "pisaElEnvase": true,
+          "sello": {
+            "centro": [
+              631,
+              344
+            ],
+            "circularidad": 0.817,
+            "color": "#fc3c1c",
+            "diametroPx": 106,
+            "pxRojos": 7213
+          },
+          "selloDetectado": true,
+          "sha256": "df9f32d0332eeae5faa6ecfc0e3e400afda5966f0de176eacdb672e84887cd05",
+          "siluetas": {
+            "conSello": {
+              "alto": 552,
+              "ancho": 259,
+              "px": 90332
+            },
+            "partesTrasBorrar": 2,
+            "sinSello": {
+              "alto": 489,
+              "ancho": 218,
+              "px": 82605
+            }
+          },
+          "solapamiento": {
+            "bordeMedido": 720,
+            "bordeSobreEnvase": 103,
+            "discoSobreBlanco": 8351,
+            "productoTapado": 469
+          },
+          "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase"
+        },
+        {
+          "alto": 1095,
+          "ancho": 1095,
+          "esPortada": false,
+          "formato": "png",
+          "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156541/100481_ESP-20260331-133231.png?v=639144749242170000",
+          "pisaElEnvase": true,
+          "sello": {
+            "centro": [
+              631,
+              344
+            ],
+            "circularidad": 0.819,
+            "color": "#fc3c1c",
+            "diametroPx": 106,
+            "pxRojos": 7224
+          },
+          "selloDetectado": true,
+          "sha256": "901869ba360e1135918650fe454310141d76cacb32c62124b6843edd3b9d5f81",
+          "siluetas": {
+            "conSello": {
+              "alto": 552,
+              "ancho": 259,
+              "px": 96398
+            },
+            "partesTrasBorrar": 1,
+            "sinSello": {
+              "alto": 489,
+              "ancho": 218,
+              "px": 88603
+            }
+          },
+          "solapamiento": {
+            "bordeMedido": 720,
+            "bordeSobreEnvase": 137,
+            "discoSobreBlanco": 8314,
+            "productoTapado": 506
+          },
+          "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase"
+        },
+        {
+          "alto": 1095,
+          "ancho": 1095,
+          "esPortada": false,
+          "formato": "png",
+          "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156542/100481_URU-20260331-133232.png?v=639144749242330000",
+          "pisaElEnvase": true,
+          "sello": {
+            "centro": [
+              631,
+              344
+            ],
+            "circularidad": 0.817,
+            "color": "#fc3c1c",
+            "diametroPx": 106,
+            "pxRojos": 7213
+          },
+          "selloDetectado": true,
+          "sha256": "502cea25692f57b115c0d5bc33b8176c9555574bb7fc0cd2435c7d6adc3cb328",
+          "siluetas": {
+            "conSello": {
+              "alto": 552,
+              "ancho": 259,
+              "px": 90589
+            },
+            "partesTrasBorrar": 2,
+            "sinSello": {
+              "alto": 489,
+              "ancho": 218,
+              "px": 82805
+            }
+          },
+          "solapamiento": {
+            "bordeMedido": 720,
+            "bordeSobreEnvase": 133,
+            "discoSobreBlanco": 8314,
+            "productoTapado": 506
+          },
+          "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase"
+        },
+        {
+          "alto": 1095,
+          "ancho": 1095,
+          "esPortada": false,
+          "formato": "png",
+          "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156543/100481_GER-20260331-133231.png?v=639144749242330000",
+          "pisaElEnvase": true,
+          "sello": {
+            "centro": [
+              631,
+              344
+            ],
+            "circularidad": 0.818,
+            "color": "#fc3c1c",
+            "diametroPx": 106,
+            "pxRojos": 7221
+          },
+          "selloDetectado": true,
+          "sha256": "f2455af53dc07ec99d8083f1068b36af02c0b7c2a8e1f6f732929d5d5a6f7b98",
+          "siluetas": {
+            "conSello": {
+              "alto": 552,
+              "ancho": 259,
+              "px": 90628
+            },
+            "partesTrasBorrar": 2,
+            "sinSello": {
+              "alto": 489,
+              "ancho": 218,
+              "px": 82836
+            }
+          },
+          "solapamiento": {
+            "bordeMedido": 720,
+            "bordeSobreEnvase": 135,
+            "discoSobreBlanco": 8314,
+            "productoTapado": 506
+          },
+          "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase"
+        },
+        {
+          "alto": 1095,
+          "ancho": 1095,
+          "esPortada": false,
+          "formato": "png",
+          "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156544/100481_NED-20260331-133231.png?v=639144749242330000",
+          "pisaElEnvase": true,
+          "sello": {
+            "centro": [
+              631,
+              344
+            ],
+            "circularidad": 0.818,
+            "color": "#fc3c1c",
+            "diametroPx": 106,
+            "pxRojos": 7219
+          },
+          "selloDetectado": true,
+          "sha256": "9542a3058f274bfd4a19d83e45718afa60a2956392325efe8583e887e05477fc",
+          "siluetas": {
+            "conSello": {
+              "alto": 552,
+              "ancho": 260,
+              "px": 94564
+            },
+            "partesTrasBorrar": 1,
+            "sinSello": {
+              "alto": 489,
+              "ancho": 219,
+              "px": 86774
+            }
+          },
+          "solapamiento": {
+            "bordeMedido": 720,
+            "bordeSobreEnvase": 135,
+            "discoSobreBlanco": 8314,
+            "productoTapado": 506
+          },
+          "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase"
+        },
+        {
+          "alto": 1095,
+          "ancho": 1095,
+          "esPortada": false,
+          "formato": "png",
+          "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156545/100481_ENG-20260331-133230.png?v=639144749242330000",
+          "pisaElEnvase": true,
+          "sello": {
+            "centro": [
+              631,
+              344
+            ],
+            "circularidad": 0.818,
+            "color": "#fc3c1c",
+            "diametroPx": 106,
+            "pxRojos": 7222
+          },
+          "selloDetectado": true,
+          "sha256": "d0921754bd31cf4ad6f692e7380a4f215d5ea84d710de435ddb65fd8d65e95e0",
+          "siluetas": {
+            "conSello": {
+              "alto": 552,
+              "ancho": 259,
+              "px": 96435
+            },
+            "partesTrasBorrar": 1,
+            "sinSello": {
+              "alto": 489,
+              "ancho": 218,
+              "px": 88642
+            }
+          },
+          "solapamiento": {
+            "bordeMedido": 720,
+            "bordeSobreEnvase": 137,
+            "discoSobreBlanco": 8314,
+            "productoTapado": 506
+          },
+          "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase"
+        }
+      ],
+      "alto": 1095,
+      "ancho": 1095,
+      "cantidadDelSku": 1,
+      "cantidadQueAnunciaLaFuente": 6,
+      "confianzaDelMatch": "MEDIUM",
+      "dudasDelMatch": [
+        "REVISAR variante no idéntica (falta: original · sobra: —)",
+        "REVISAR la línea no es idéntica (el SKU dice «original» y la fuente «paises mundialistas»)"
+      ],
+      "esPortada": true,
+      "formato": "png",
+      "fuenteTitulo": "Coca-Cola Lata 354ml x6 “Edicion Paises Mundialistas”",
+      "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156539/100481_BRA-20260331-133230.png?v=639144749242000000",
+      "imagenesPublicadas": 7,
+      "pisaElEnvase": true,
+      "productoUrl": "https://tienda.coca-cola.com.ar/coca-cola-lata-354ml-x6-edicion-paises-mundialistas-100481/p",
+      "sello": {
+        "centro": [
+          631,
+          344
+        ],
+        "circularidad": 0.818,
+        "color": "#fc3c1c",
+        "diametroPx": 106,
+        "pxRojos": 7222
+      },
+      "selloDetectado": true,
+      "sha256": "391bd75630fd0c4790302cfc592a3ea7d0d1c0507ca18409af945af2c30af83a",
+      "siluetas": {
+        "conSello": {
+          "alto": 552,
+          "ancho": 260,
+          "px": 91110
+        },
+        "partesTrasBorrar": 2,
+        "sinSello": {
+          "alto": 489,
+          "ancho": 219,
+          "px": 83317
+        }
+      },
+      "sku": "coca-cola-original-lata-354ml",
+      "solapamiento": {
+        "bordeMedido": 720,
+        "bordeSobreEnvase": 134,
+        "discoSobreBlanco": 8314,
+        "productoTapado": 506
+      },
+      "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
+    },
+    {
+      "alternativas": [],
+      "alto": 1125,
+      "ancho": 1125,
+      "cantidadDelSku": 1,
+      "cantidadQueAnunciaLaFuente": 6,
+      "confianzaDelMatch": "HIGH",
+      "dudasDelMatch": [],
+      "esPortada": true,
+      "formato": "png",
+      "fuenteTitulo": "Coca–Cola Original 1,5L x6",
+      "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156459/100413.png?v=639063398965800000",
+      "imagenesPublicadas": 1,
+      "pisaElEnvase": true,
+      "productoUrl": "https://tienda.coca-cola.com.ar/coca-cola-original-1-5l-6-100413/p",
+      "sello": {
+        "centro": [
+          644,
+          402
+        ],
+        "circularidad": 0.785,
+        "color": "#fc3c1c",
+        "diametroPx": 102,
+        "pxRojos": 6417
+      },
+      "selloDetectado": true,
+      "sha256": "03ca39878bc428d8933018f5ef3cc6bc7af2842b7ac48b3237b4603f62abccfe",
+      "siluetas": {
+        "conSello": {
+          "alto": 731,
+          "ancho": 240,
+          "px": 123791
+        },
+        "partesTrasBorrar": 1,
+        "sinSello": {
+          "alto": 731,
+          "ancho": 213,
+          "px": 117011
+        }
+      },
+      "sku": "coca-cola-original-pet-1500ml",
+      "solapamiento": {
+        "bordeMedido": 720,
+        "bordeSobreEnvase": 342,
+        "discoSobreBlanco": 7673,
+        "productoTapado": 511
+      },
+      "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
+    },
+    {
+      "alternativas": [],
+      "alto": 1080,
+      "ancho": 1080,
+      "cantidadDelSku": 1,
+      "cantidadQueAnunciaLaFuente": 6,
+      "confianzaDelMatch": "HIGH",
+      "dudasDelMatch": [],
+      "esPortada": true,
+      "formato": "jpeg",
+      "fuenteTitulo": "Coca–Cola Zero 2,25L x6",
+      "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/155634/7790895067570.jpg?v=638173494961200000",
+      "imagenesPublicadas": 1,
+      "pisaElEnvase": true,
+      "productoUrl": "https://tienda.coca-cola.com.ar/coca-cola-zero-2-25l-6-7790895067570/p",
+      "sello": {
+        "centro": [
+          671,
+          264
+        ],
+        "circularidad": 0.693,
+        "color": "#fc3c24",
+        "diametroPx": 124,
+        "pxRojos": 8364
+      },
+      "selloDetectado": true,
+      "sha256": "ef84e3569bd25593cfbeba435757033bfd5a0b520568be0737498914201dc4d7",
+      "siluetas": {
+        "conSello": {
+          "alto": 725,
+          "ancho": 266,
+          "px": 137473
+        },
+        "partesTrasBorrar": 3,
+        "sinSello": {
+          "alto": 725,
+          "ancho": 266,
+          "px": 127693
+        }
+      },
+      "sku": "coca-cola-zero-2250ml",
+      "solapamiento": {
+        "bordeMedido": 720,
+        "bordeSobreEnvase": 400,
+        "discoSobreBlanco": 9834,
+        "productoTapado": 2238
+      },
+      "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
+    },
+    {
+      "alternativas": [],
+      "alto": 1095,
+      "ancho": 1095,
+      "cantidadDelSku": 1,
+      "cantidadQueAnunciaLaFuente": 6,
+      "confianzaDelMatch": "HIGH",
+      "dudasDelMatch": [],
+      "esPortada": true,
+      "formato": "png",
+      "fuenteTitulo": "Coca-Cola Zero Lata 354ml x6",
+      "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156534/101986_ARG.png?v=639135233347270000",
+      "imagenesPublicadas": 1,
+      "pisaElEnvase": true,
+      "productoUrl": "https://tienda.coca-cola.com.ar/coca-cola-zero-lata-354ml-x6-101986/p",
+      "sello": {
+        "centro": [
+          631,
+          344
+        ],
+        "circularidad": 0.817,
+        "color": "#fc3c1c",
+        "diametroPx": 106,
+        "pxRojos": 7214
+      },
+      "selloDetectado": true,
+      "sha256": "d16093e072a36afd8b0d17a7d50dc0e27dc67ba619b930aaa32e76ec0b0b5083",
+      "siluetas": {
+        "conSello": {
+          "alto": 552,
+          "ancho": 260,
+          "px": 102231
+        },
+        "partesTrasBorrar": 1,
+        "sinSello": {
+          "alto": 489,
+          "ancho": 219,
+          "px": 94446
+        }
+      },
+      "sku": "coca-cola-zero-lata-354ml",
+      "solapamiento": {
+        "bordeMedido": 720,
+        "bordeSobreEnvase": 126,
+        "discoSobreBlanco": 8314,
+        "productoTapado": 506
+      },
+      "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
+    },
+    {
+      "alternativas": [],
+      "alto": 1080,
+      "ancho": 1080,
+      "cantidadDelSku": 1,
+      "cantidadQueAnunciaLaFuente": 6,
+      "confianzaDelMatch": "HIGH",
+      "dudasDelMatch": [],
+      "esPortada": true,
+      "formato": "jpeg",
+      "fuenteTitulo": "Fanta Naranja 2,25L x6",
+      "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156348/101114.jpg?v=638857653419300000",
+      "imagenesPublicadas": 1,
+      "pisaElEnvase": true,
+      "productoUrl": "https://tienda.coca-cola.com.ar/fanta-naranja-2-25l-6-7790895001017/p",
+      "sello": {
+        "centro": [
+          629,
+          362
+        ],
+        "circularidad": 0.702,
+        "color": "#fc3c1c",
+        "diametroPx": 119,
+        "pxRojos": 7811
+      },
+      "selloDetectado": true,
+      "sha256": "ddd1d43d680467a43a5fb43263eeb0369284c5002f4ed0b211015fae3ead147f",
+      "siluetas": {
+        "conSello": {
+          "alto": 768,
+          "ancho": 282,
+          "px": 147198
+        },
+        "partesTrasBorrar": 3,
+        "sinSello": {
+          "alto": 768,
+          "ancho": 282,
+          "px": 137872
+        }
+      },
+      "sku": "fanta-naranja-2250ml",
+      "solapamiento": {
+        "bordeMedido": 720,
+        "bordeSobreEnvase": 591,
+        "discoSobreBlanco": 9035,
+        "productoTapado": 2085
+      },
+      "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
+    },
+    {
+      "alternativas": [],
+      "alto": 1060,
+      "ancho": 1080,
+      "cantidadDelSku": 1,
+      "cantidadQueAnunciaLaFuente": 6,
+      "confianzaDelMatch": "HIGH",
+      "dudasDelMatch": [],
+      "esPortada": true,
+      "formato": "jpeg",
+      "fuenteTitulo": "Monster Green Zero 473ml x6",
+      "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156325/100369.jpg.jpg?v=638756837995170000",
+      "imagenesPublicadas": 1,
+      "pisaElEnvase": true,
+      "productoUrl": "https://tienda.coca-cola.com.ar/monster-green-zero-473ml-x6-1/p",
+      "sello": {
+        "centro": [
+          745,
+          250
+        ],
+        "circularidad": 0.701,
+        "color": "#fc3c2c",
+        "diametroPx": 116,
+        "pxRojos": 7413
+      },
+      "selloDetectado": true,
+      "sha256": "fda0820be5993af7ef547d28f339b1d0e8f4bf83ffc79fbed461588490559f95",
+      "siluetas": {
+        "conSello": {
+          "alto": 722,
+          "ancho": 360,
+          "px": 179547
+        },
+        "partesTrasBorrar": 5,
+        "sinSello": {
+          "alto": 720,
+          "ancho": 360,
+          "px": 170406
+        }
+      },
+      "sku": "monster-green-zero-473ml",
+      "solapamiento": {
+        "bordeMedido": 720,
+        "bordeSobreEnvase": 591,
+        "discoSobreBlanco": 8585,
+        "productoTapado": 1979
+      },
+      "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
+    },
+    {
+      "alternativas": [],
+      "alto": 1080,
+      "ancho": 1080,
+      "cantidadDelSku": 1,
+      "cantidadQueAnunciaLaFuente": 6,
+      "confianzaDelMatch": "HIGH",
+      "dudasDelMatch": [],
+      "esPortada": true,
+      "formato": "jpeg",
+      "fuenteTitulo": "Powerade Mountain Blast 500ml x6",
+      "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156491/100989.jpg?v=639087635741400000",
+      "imagenesPublicadas": 1,
+      "pisaElEnvase": true,
+      "productoUrl": "https://tienda.coca-cola.com.ar/powerade-mountain-blast-500ml-6-100989/p",
+      "sello": {
+        "centro": [
+          618,
+          324
+        ],
+        "circularidad": 0.643,
+        "color": "#fc3c1c",
+        "diametroPx": 96,
+        "pxRojos": 4654
+      },
+      "selloDetectado": true,
+      "sha256": "3502e46b00cd63bd93218b7e7695434ec82e52ac61d2d6e573935078ab20b107",
+      "siluetas": {
+        "conSello": {
+          "alto": 563,
+          "ancho": 229,
+          "px": 83714
+        },
+        "partesTrasBorrar": 2,
+        "sinSello": {
+          "alto": 563,
+          "ancho": 229,
+          "px": 78209
+        }
+      },
+      "sku": "powerade-mountain-blast-500ml",
+      "solapamiento": {
+        "bordeMedido": 720,
+        "bordeSobreEnvase": 592,
+        "discoSobreBlanco": 5353,
+        "productoTapado": 1879
+      },
+      "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
+    },
+    {
+      "alternativas": [],
+      "alto": 1080,
+      "ancho": 1080,
+      "cantidadDelSku": 1,
+      "cantidadQueAnunciaLaFuente": 6,
+      "confianzaDelMatch": "MEDIUM",
+      "dudasDelMatch": [
+        "REVISAR variante no idéntica (falta: original · sobra: —)",
+        "REVISAR la línea no es idéntica (el SKU dice «original» y la fuente «—»)"
+      ],
+      "esPortada": true,
+      "formato": "jpeg",
+      "fuenteTitulo": "Sprite 2,25L x6",
+      "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/155758/7790895001000.jpg?v=638290044761130000",
+      "imagenesPublicadas": 1,
+      "pisaElEnvase": true,
+      "productoUrl": "https://tienda.coca-cola.com.ar/sprite-2-25l-6-7790895001000/p",
+      "sello": {
+        "centro": [
+          618,
+          258
+        ],
+        "circularidad": 0.689,
+        "color": "#fc3c24",
+        "diametroPx": 117,
+        "pxRojos": 7407
+      },
+      "selloDetectado": true,
+      "sha256": "01645edb2a803fa486f341ef335e2a923825a2e56f21cad8c2f232338a14f120",
+      "siluetas": {
+        "conSello": {
+          "alto": 721,
+          "ancho": 248,
+          "px": 128736
+        },
+        "partesTrasBorrar": 1,
+        "sinSello": {
+          "alto": 721,
+          "ancho": 248,
+          "px": 120074
+        }
+      },
+      "sku": "sprite-original-2250ml",
+      "solapamiento": {
+        "bordeMedido": 720,
+        "bordeSobreEnvase": 512,
+        "discoSobreBlanco": 8789,
+        "productoTapado": 1952
+      },
+      "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
+    },
+    {
+      "alternativas": [],
+      "alto": 1080,
+      "ancho": 1080,
+      "cantidadDelSku": 1,
+      "cantidadQueAnunciaLaFuente": 6,
+      "confianzaDelMatch": "MEDIUM",
+      "dudasDelMatch": [
+        "REVISAR variante no idéntica (falta: original · sobra: —)",
+        "REVISAR la línea no es idéntica (el SKU dice «original» y la fuente «—»)"
+      ],
+      "esPortada": true,
+      "formato": "jpeg",
+      "fuenteTitulo": "Sprite Lata 354ml x6",
+      "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156274/102078.jpg?v=638659848033530000",
+      "imagenesPublicadas": 1,
+      "pisaElEnvase": true,
+      "productoUrl": "https://tienda.coca-cola.com.ar/sprite-lata-354ml-x6--/p",
+      "sello": {
+        "centro": [
+          760,
+          257
+        ],
+        "circularidad": 0.692,
+        "color": "#fc3c24",
+        "diametroPx": 117,
+        "pxRojos": 7445
+      },
+      "selloDetectado": true,
+      "sha256": "63ed1d0aa700e3bb027cc3fee103cc852942a07ee5c13debf60ba4d7ec941d81",
+      "siluetas": {
+        "conSello": {
+          "alto": 695,
+          "ancho": 454,
+          "px": 246853
+        },
+        "partesTrasBorrar": 2,
+        "sinSello": {
+          "alto": 695,
+          "ancho": 454,
+          "px": 238108
+        }
+      },
+      "sku": "sprite-original-lata-354ml",
+      "solapamiento": {
+        "bordeMedido": 720,
+        "bordeSobreEnvase": 516,
+        "discoSobreBlanco": 8797,
+        "productoTapado": 1944
+      },
+      "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
+    },
+    {
+      "alternativas": [],
+      "alto": 1080,
+      "ancho": 1080,
+      "cantidadDelSku": 1,
+      "cantidadQueAnunciaLaFuente": 6,
+      "confianzaDelMatch": "HIGH",
+      "dudasDelMatch": [],
+      "esPortada": true,
+      "formato": "jpeg",
+      "fuenteTitulo": "Sprite Zero 2,25L x6",
+      "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/155762/7790895064166.jpg?v=638290060088200000",
+      "imagenesPublicadas": 1,
+      "pisaElEnvase": true,
+      "productoUrl": "https://tienda.coca-cola.com.ar/sprite-zero-2-25l-6-7790895064166/p",
+      "sello": {
+        "centro": [
+          618,
+          258
+        ],
+        "circularidad": 0.688,
+        "color": "#fc3c24",
+        "diametroPx": 117,
+        "pxRojos": 7398
+      },
+      "selloDetectado": true,
+      "sha256": "71600f0589e20c3b0a095fe7627de4bbfbcdaccd048c77bc43bdfd2ddaa50426",
+      "siluetas": {
+        "conSello": {
+          "alto": 716,
+          "ancho": 248,
+          "px": 126522
+        },
+        "partesTrasBorrar": 1,
+        "sinSello": {
+          "alto": 716,
+          "ancho": 248,
+          "px": 117857
+        }
+      },
+      "sku": "sprite-zero-2250ml",
+      "solapamiento": {
+        "bordeMedido": 720,
+        "bordeSobreEnvase": 513,
+        "discoSobreBlanco": 8780,
+        "productoTapado": 1961
+      },
+      "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
+    }
+  ],
+  "medidoEl": "2026-08-24",
+  "resumen": {
+    "conSelloDetectado": 15,
+    "elSelloPisaElEnvase": 15,
+    "imagenesConSelloQuePisa": 21,
+    "imagenesMedidas": 21,
+    "medidos": 15,
+    "sinCandidatoOficial": 0
+  },
+  "schemaVersion": 2,
+  "sinCandidatoOficial": []
+}

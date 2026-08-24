@@ -39,6 +39,19 @@
         "sprite-botella-pet-500-ml-pack-x12"
       ],
       "nota": "Al 2026-08-18, cuatro SKU entran en este marco: los cuatro packs, con el packshot oficial del embotellador Coca-Cola Andina, fondo blanco, capacidad y cantidad exactas. Eran justamente los que la tienda oficial sí publica, porque publica packs y no unidades — el mismo hecho que antes dejaba este marco vacío. Las 60 fuentes históricas del manifiesto siguen viniendo de jumboargentina.vtexassets.com, siguen en pending_review y NO entran. Las 52 unidades siguen sin fotografía, que la migración 108 permite, con el recurso propio de TABA en su lugar.",
+      "revisiones": [
+        {
+          "fecha": "2026-08-23",
+          "que_se_revisó": "Si los packshots de la tienda oficial se pueden reutilizar para las unidades sueltas, que son la mayoría de la góndola comprable.",
+          "hallazgo": "No. El packshot del embotellador es la foto de UNA botella —el producto exacto, fondo blanco— pero con un sello de cantidad («x6») estampado encima. Medidos los 15 candidatos oficiales que corresponden a los SKU visibles sin foto, los 15 traen sello y en los 15 el sello PISA el envase: tapa entre 506 y 2.238 píxeles de producto, y entre 126 y 601 de las 720 muestras de su contorno caen sobre la botella. Borrarlo obliga a repintar envase, y eso deja de ser el packshot del fabricante para ser un render sintético.",
+          "consecuencia": "Ningún alta. Las unidades sueltas siguen con el recurso propio de TABA. No se amplía el alcance, no se reetiqueta nada y no se limpia ninguna imagen.",
+          "evidencia": "catalog/sello-de-pack-medicion.json",
+          "lo_que_lo_destrabaría": [
+            "un paquete de packshots sin sello provisto por la marca o su embotellador, que además completaría rights_evidence_file",
+            "fotografía propia del comercio: catalog/photo-capture/PHOTO_CAPTURE_SHOT_LIST.csv ya tiene la lista de tomas y entraría como PROPIO"
+          ]
+        }
+      ],
       "fuera_de_alcance_detectado": [
         {
           "sku": "trapiche-origen-malbec-750ml",

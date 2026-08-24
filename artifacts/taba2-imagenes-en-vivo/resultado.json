@@ -1,0 +1,206 @@
+{
+  "host": "https://la-taba.pages.dev",
+  "iphone": 33,
+  "metaViewport": "width=device-width, initial-scale=1, viewport-fit=cover",
+  "tarjetas": [
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "coca-cola-original-2250ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "coca-cola-zero-2250ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "fanta-naranja-2250ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "sprite-original-2250ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "sprite-zero-2250ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "seven-up-original-2000ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "pepsi-original-2000ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "coca-cola-original-pet-1500ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "pepsi-black-1500ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "coca-cola-original-botella-pet-500-ml-pack-x12-da9d9f1d872c1e49-thumb-2b779c394ec67eb4.webp",
+      "esperado": "REAL",
+      "sku": "coca-cola-original-botella-pet-500-ml-pack-x12",
+      "usaPlaceholder": false
+    },
+    {
+      "archivo": "coca-cola-zero-botella-pet-500-ml-pack-x12-ab4d9e31abe096e0-thumb-390944099fdb5e22.webp",
+      "esperado": "REAL",
+      "sku": "coca-cola-zero-botella-pet-500-ml-pack-x12",
+      "usaPlaceholder": false
+    },
+    {
+      "archivo": "sprite-botella-pet-500-ml-pack-x12-07620ef3d3aa792c-thumb-49fb5075276d3ebb.webp",
+      "esperado": "REAL",
+      "sku": "sprite-botella-pet-500-ml-pack-x12",
+      "usaPlaceholder": false
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "coca-cola-original-lata-354ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "coca-cola-zero-lata-354ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "sprite-original-lata-354ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "soda-manaos-sifon-2000ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "paso-de-los-toros-pomelo-1500ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "paso-de-los-toros-tonica-1500ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "benedictino-sin-gas-2250ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "villavicencio-sin-gas-1500ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "villa-del-sur-sin-gas-600ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "villavicencio-con-gas-500ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "aquarius-pomelo-2250ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "aquarius-manzana-1500ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "aquarius-pera-1500ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "monster-green-zero-473ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "speed-original-473ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "speed-zero-473ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "red-bull-original-250ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "red-bull-sin-azucar-250ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "gatorade-manzana-1250ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "gatorade-cool-blue-500ml",
+      "usaPlaceholder": true
+    },
+    {
+      "archivo": "beverage-placeholder.svg",
+      "esperado": "FALLBACK",
+      "sku": "powerade-mountain-blast-500ml",
+      "usaPlaceholder": true
+    }
+  ],
+  "verificadoEl": "2026-08-24T01:58:17.449Z"
+}

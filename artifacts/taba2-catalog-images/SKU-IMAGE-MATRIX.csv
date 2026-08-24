@@ -16,7 +16,7 @@ cepita-naranja-pet-1500ml,cepita-naranja-pet-1500ml,gondola-retail-final,Cepita,
 coca-cola-original-2250ml,coca-cola-original-2250ml,produccion,Coca-Cola,Coca-Cola,Original,2250,botella-pet,1,false,false,true,5900,SIN_IMAGEN,SIN_CANDIDATO,,,,
 coca-cola-original-botella-pet-500-ml-pack-x12,coca-cola-original-botella-pet-500-ml-pack-x12,produccion,Coca-Cola,Coca-Cola Original,Botella PET · 500 ml · Pack x12,500,botella-pet,12,true,false,true,17100,PUBLICADA,HIGH,HIGH,fabricante,Coca–Cola Original 500ml x12,https://tienda.coca-cola.com.ar/coca-cola-original-500ml-12-100116/p
 coca-cola-original-lata-354ml,coca-cola-original-lata-354ml,produccion,Coca-Cola,Coca-Cola,Original,354,lata,1,false,false,true,1800,SIN_IMAGEN,SIN_CANDIDATO,,,,
-coca-cola-original-pet-1500ml,coca-cola-original-pet-1500ml,gondola-retail-final,Coca-Cola,Coca-Cola Original,Original,1500,botella-pet,1,false,false,false,4990,SIN_IMAGEN,SIN_CANDIDATO,,,,
+coca-cola-original-pet-1500ml,coca-cola-original-pet-1500ml,produccion,Coca-Cola,Coca-Cola Original,Original,1500,botella-pet,1,false,false,true,4990,SIN_IMAGEN,SIN_CANDIDATO,,,,
 coca-cola-original-pet-500ml,coca-cola-original-pet-500ml,retail-unidades,Coca-Cola,Coca-Cola Original,500 ml,500,botella-pet,1,false,false,false,2290,SIN_IMAGEN,SIN_CANDIDATO,,,,
 coca-cola-zero-2250ml,coca-cola-zero-2250ml,produccion,Coca-Cola,Coca-Cola Zero,Sin azúcar,2250,botella-pet,1,false,false,true,5900,SIN_IMAGEN,SIN_CANDIDATO,,,,
 coca-cola-zero-botella-pet-500-ml-pack-x12,coca-cola-zero-botella-pet-500-ml-pack-x12,produccion,Coca-Cola,Coca-Cola Zero,Botella PET · 500 ml · Pack x12,500,botella-pet,12,true,false,true,17100,PUBLICADA,HIGH,HIGH,fabricante,Coca–Cola Zero 500ml x12,https://tienda.coca-cola.com.ar/coca-cola-zero-500ml-12-101816/p
@@ -27,7 +27,7 @@ corona-extra-botella-330ml,corona-extra-botella-330ml,gondola-neuquen,Corona,Cor
 dada-caramel-750ml,dada-caramel-750ml,gondola-neuquen,Dada,Dada Caramel,Caramel,750,botella,1,false,true,false,5900,SIN_IMAGEN,MANUAL_REVIEW,MEDIUM,,,
 dr-lemon-vodka-pomelo-lata-473ml,dr-lemon-vodka-pomelo-lata-473ml,gondola-neuquen,Dr. Lemon,Dr. Lemon Vodka Pomelo,Vodka pomelo,473,lata,1,false,true,false,2200,SIN_IMAGEN,SIN_FUENTE,,,,
 fanta-naranja-2250ml,fanta-naranja-2250ml,produccion,Fanta,Fanta Naranja,Naranja,2250,botella-pet,1,false,false,true,5900,SIN_IMAGEN,SIN_CANDIDATO,,,,
-fanta-naranja-botella-pet-1500-ml-pack-x6,fanta-naranja-botella-pet-1500-ml-pack-x6,produccion,Fanta,Fanta Naranja,Botella PET · 1500 ml · Pack x6,1500,botella-pet,6,true,false,true,19999,PUBLICADA,HIGH,HIGH,fabricante,"Fanta Naranja 1,5L x6",https://tienda.coca-cola.com.ar/fanta-naranja-1-5l-6-7790895000454/p
+fanta-naranja-botella-pet-1500-ml-pack-x6,fanta-naranja-botella-pet-1500-ml-pack-x6,pack-lanzamiento,Fanta,Fanta Naranja,Botella PET · 1500 ml · Pack x6,1500,botella-pet,6,true,false,false,,MASTER_LISTO_SIN_ASOCIAR,HIGH,HIGH,fabricante,"Fanta Naranja 1,5L x6",https://tienda.coca-cola.com.ar/fanta-naranja-1-5l-6-7790895000454/p
 fanta-naranja-pet-1500ml,fanta-naranja-pet-1500ml,retail-unidades,Fanta,Fanta Naranja,"1,5 L",1500,botella-pet,1,false,false,false,4990,SIN_IMAGEN,SIN_CANDIDATO,,,,
 fernet-1882-750ml,fernet-1882-750ml,gondola-neuquen,1882,Fernet 1882,Original,750,botella,1,false,true,false,8950,SIN_IMAGEN,SIN_FUENTE,,,,
 fernet-branca-1000ml,fernet-branca-1000ml,gondola-neuquen,Fernet Branca,Fernet Branca,Original,1000,botella,1,false,true,false,26250,SIN_IMAGEN,SIN_FUENTE,,,,

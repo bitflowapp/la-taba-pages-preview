@@ -1,6 +1,6 @@
 {
   "allowlistActualizadaEl": "2026-08-18",
-  "cosechadoEl": "2026-08-21",
+  "cosechadoEl": "2026-08-23",
   "decisiones": [
     {
       "alcoholic": true,
@@ -354,7 +354,7 @@
       "elegido": null,
       "estado": "SIN_CANDIDATO",
       "externalId": "coca-cola-original-pet-1500ml",
-      "origen": "gondola-retail-final",
+      "origen": "produccion",
       "presentacion": {
         "brand": "coca-cola",
         "capacityMl": 1500,
@@ -796,7 +796,7 @@
       },
       "estado": "HIGH",
       "externalId": "fanta-naranja-botella-pet-1500-ml-pack-x6",
-      "origen": "produccion",
+      "origen": "pack-lanzamiento",
       "presentacion": {
         "brand": "fanta",
         "capacityMl": 1500,
@@ -1760,17 +1760,22 @@
     }
   ],
   "reconciliacion": {
+    "colisiones": 0,
     "esperadoTotal": 72,
-    "esperadoVisible": 33,
     "gondola": 52,
     "gondolaAlcoholica": 23,
     "gondolaFinal": 12,
-    "gondolaFinalAgregadas": 12,
     "gondolaNoAlcoholica": 29,
-    "ocultosAgregados": 23,
-    "packsPrevios": 4,
+    "ocultos": 39,
+    "packsLanzamiento": 4,
+    "porAutoridad": {
+      "gondola-neuquen": 52,
+      "gondola-retail-final": 12,
+      "pack-lanzamiento": 4,
+      "retail-unidades": 4
+    },
     "retailUnidades": 4,
-    "retailUnidadesAgregadas": 4,
+    "sinDeclarar": 0,
     "total": 72,
     "visibles": 33
   },

@@ -104,7 +104,7 @@ const respuestasMalas = [];
 page.on('response', (r) => { if (r.status() >= 400) respuestasMalas.push(`${r.status()} ${r.url()}`); });
 
 /** Lo que cada tarjeta terminó mostrando, leído del DOM ya pintado. */
-const leerTarjetas = () => page.evaluate(() => [...document.querySelectorAll('.thumb')].map((thumb) => {
+const leerTarjetasDe = (hoja) => hoja.evaluate(() => [...document.querySelectorAll('.thumb')].map((thumb) => {
   const img = thumb.querySelector('img');
   const caja = img?.getBoundingClientRect();
   const tarjeta = thumb.closest('.product-card, .home-catalog-card, .recommendation-card, .cart-item, .modal-media, article, li');
@@ -129,6 +129,7 @@ const leerTarjetas = () => page.evaluate(() => [...document.querySelectorAll('.t
     texto: texto.slice(0, 140),
   };
 }));
+const leerTarjetas = () => leerTarjetasDe(page);
 
 console.log(`\nTIENDA PUBLICADA · ${HOST}\n`);
 
@@ -320,6 +321,55 @@ const otrosErrores = respuestasMalas.filter((linea) => !ASSET.test(linea));
 if (otrosErrores.length) {
   console.log(`  aviso  ${otrosErrores.length} respuesta(s) de error ajenas a las imágenes · ${otrosErrores.slice(0, 2).join(' · ')}`);
 }
+
+/*
+ * ------------------------- 8.5 · la búsqueda
+ *
+ * Buscar es la otra puerta a un producto, y es la que usa quien ya sabe lo que
+ * quiere. Dibuja sus propias tarjetas con su propio camino de datos, así que
+ * que la góndola muestre lo correcto no dice nada sobre lo que muestra acá:
+ * una tarjeta de búsqueda que sirviera el packshot del producto de al lado
+ * sería exactamente el defecto que esta misión existe para no cometer.
+ *
+ * Va en una hoja nueva para no ensuciar el estado de las secciones anteriores.
+ */
+const hojaBusqueda = await context.newPage();
+await hojaBusqueda.goto(HOST, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+await hojaBusqueda.waitForFunction(() => document.querySelectorAll('.thumb').length > 0, null, { timeout: 60_000 });
+await hojaBusqueda.waitForTimeout(3000);
+
+/*
+ * «Zero» a propósito: es el término que obliga a distinguir dos productos que
+ * comparten marca, capacidad y envase, y que se diferencian sólo en la variante
+ * —justo el eje donde una imagen equivocada no se nota a simple vista—.
+ */
+const CONSULTA = 'Zero';
+const campo = hojaBusqueda.locator('[data-search-input]').filter({ visible: true }).first();
+if (await campo.count()) {
+  await campo.click();
+  await campo.fill(CONSULTA);
+  await hojaBusqueda.waitForTimeout(4000);
+}
+const resultados = await leerTarjetasDe(hojaBusqueda);
+medir(`la búsqueda «${CONSULTA}» devuelve tarjetas`, resultados.length > 0, `${resultados.length}`);
+medir('ninguna imagen rota en la búsqueda',
+  resultados.every((t) => !t.completa || t.naturalAncho > 0));
+
+let reconocidasEnBusqueda = 0;
+for (const tarjeta of resultados) {
+  const esperado = esperadoParaTarjeta(tarjeta.texto);
+  if (!esperado) continue;
+  reconocidasEnBusqueda += 1;
+  const usaPlaceholder = tarjeta.src.includes(PLACEHOLDER);
+  const archivo = tarjeta.src.split('/').pop()?.split('?')[0] || '';
+  medir(`búsqueda · ${esperado.sku} muestra lo suyo`,
+    esperado.tipo === 'REAL' ? (!usaPlaceholder && archivo.startsWith(esperado.sku)) : usaPlaceholder,
+    archivo);
+}
+medir('la búsqueda devolvió al menos un producto reconocible contra la auditoría',
+  reconocidasEnBusqueda > 0, `${reconocidasEnBusqueda} de ${resultados.length}`);
+await hojaBusqueda.screenshot({ path: path.join(SALIDA, '06-busqueda.png') });
+await hojaBusqueda.close();
 
 /*
  * ------------------------- 9 · la góndola en un iPhone de verdad

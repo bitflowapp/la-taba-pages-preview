@@ -105,12 +105,24 @@
     "medido": {
       "tiendaquilmes.com.ar": "no resuelve",
       "www.pepsi.com.ar": "no resuelve",
-      "www.villadelsur.com.ar": "sitio de marca; responde 200 a cualquier ruta y no expone catálogo programático",
+      "www.villadelsur.com.ar": "202 con desafío sgcaptcha; no hay catálogo programático detrás (remedido 2026-08-24, supera la nota anterior que decía «responde 200 a cualquier ruta»)",
       "www.villavicencio.com.ar": "idem",
       "www.redbull.com": "403 al agente automático",
       "www.monsterenergy.com": "403 al agente automático; la marca entra igual por el distribuidor",
-      "www.speed.com.ar": "404 en la API de catálogo",
+      "www.speed.com.ar": "OJO: NO es la energizante. Es «Speed Anticloro», una tienda Tiendanube de antiparras y gorras de natación, otra empresa con el mismo nombre de marca. Su catálogo descarga bien y sería exactamente la clase de fuente que un matcher por dominio aceptaría sin mirar. Medido 2026-08-24.",
+      "www.ccu.com.ar": "el portafolio publicado son cervezas, sidras y vinos: ninguna energizante, ninguna agua, ninguna gaseosa. No cubre ningún SKU visible de TABA. Medido 2026-08-24.",
+      "manaos.com.ar": "dominio estacionado y en venta («This website is for sale!»). No es del fabricante. Medido 2026-08-24.",
+      "refresnow.com.ar": "Refres Now S.A., fabricante de Manaos: el dominio sirve un login de Outlook Web Access, sin catálogo público. Medido 2026-08-24.",
+      "www.cerveceriaymalteriaquilmes.com": "es la empresa que embotella y distribuye el portafolio PepsiCo en Argentina, y /bebidas-sin-alcohol confirma Pepsi, 7UP, Paso de los Toros, Gatorade, Mirinda, H2OH, Red Bull y Rockstar. Pero lo único que publica de cada marca es un LOGOTIPO de 225x140 px sobre transparencia: no hay packshot, no hay presentación, no hay capacidad, no hay catálogo programático. Medido 2026-08-24.",
+      "www.gatorade.lat": "sitio oficial de Gatorade para Latinoamérica, con sección /ar. Responde 200 pero el cuerpo es un bloqueo de Incapsula, no la página. Medido 2026-08-24.",
       "www.trapiche.com.ar": "404 en la API de catálogo; la marca entra por el distribuidor"
+    },
+    "conclusionDeLaRonda": {
+      "doc": "Segunda ronda sobre la lista de trabajo que dejó la primera. Se buscó fuente oficial para las marcas que hoy están en respaldo y no pertenecen al sistema Coca-Cola: PepsiCo (Pepsi, 7UP, Paso de los Toros, Gatorade), Manaos, las aguas de Danone y las energizantes.",
+      "fecha": "2026-08-24",
+      "resultado": "Ninguna de las seis empresas publica packshots alcanzables por medio programático. La que más cerca está —Cervecería y Maltería Quilmes— publica logotipos, no producto. No se incorpora ninguna fuente y no cambia ninguna imagen.",
+      "loQueLoDestrabaría": "un paquete de packshots provisto por cada marca, o fotografía propia del comercio (catalog/photo-capture/). Ambas cosas son del comercio, no del código.",
+      "trampaEncontrada": "www.speed.com.ar sirve un catálogo perfectamente descargable de otra empresa homónima. Es el recordatorio de por qué una fuente entra por marca revisada a mano y no por coincidencia de dominio."
     }
   }
 }

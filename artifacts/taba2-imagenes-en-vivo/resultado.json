@@ -1,5 +1,7 @@
 {
   "host": "https://la-taba.pages.dev",
+  "iphone": 33,
+  "metaViewport": "width=device-width, initial-scale=1, viewport-fit=cover",
   "tarjetas": [
     {
       "archivo": "beverage-placeholder.svg",
@@ -200,5 +202,5 @@
       "usaPlaceholder": true
     }
   ],
-  "verificadoEl": "2026-08-23T08:38:54.453Z"
+  "verificadoEl": "2026-08-24T01:45:27.313Z"
 }

@@ -6,11 +6,23 @@
 # ya usa, y con algo que ninguna de las otras capas tiene: cuando falla, GitHub
 # le manda un correo a quien es dueño del repositorio.
 #
-# QUÉ HACE FALTA PARA QUE CORRA (una sola vez):
-#   1. que este archivo esté en la rama por defecto del repositorio remoto;
-#   2. un secreto de repositorio `SUPABASE_ANON_KEY` con la clave anónima del
-#      proyecto —la misma que el navegador ya recibe—, y `SUPABASE_URL` como
-#      variable de repositorio.
+# QUÉ HACE FALTA PARA QUE CORRA: nada.
+#
+# Antes hacían falta dos cosas cargadas a mano —la variable `SUPABASE_URL` y el
+# secreto `SUPABASE_ANON_KEY`— y como no estaban, esto llevaba 133 corridas
+# fallando, una cada diez minutos, durante días. Un vigía que no arranca es peor
+# que no tener vigía: ocupa el lugar y nadie busca otro.
+#
+# Ahora la sonda cae al `runtime-config.js` del sitio publicado, que es de donde
+# CUALQUIER navegador saca esos mismos dos datos. La clave es publicable por
+# diseño y la autoridad real es RLS, no la clave. Comprobado contra el servidor:
+# la RPC contesta 200 con ella.
+#
+# Si igual se prefiere la fuente explícita, gana sobre la publicada:
+#   · variable de repositorio `SUPABASE_URL`  (Settings → Variables)
+#   · secreto de repositorio  `SUPABASE_ANON_KEY` (Settings → Secrets)
+# La URL va como VARIABLE, no como secreto: es pública y marcarla secreta sólo
+# esconde información de quien opera.
 #
 # LÍMITES, dichos de frente: GitHub no garantiza el minuto exacto de una tarea
 # programada (puede atrasarse en horas de carga) y desactiva las tareas
@@ -40,37 +52,24 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      # El informe vive en el repositorio, no incrustado en este YAML. Estaba
-      # escrito como `python3 -c '…'` con comillas escapadas dentro de un bloque
-      # de shell: funcionaba, pero era la unica pieza del camino de release que
-      # no corre con el runtime del repositorio y no habia forma de probarla.
-      # Un error de parseo se habria descubierto el dia que el reloj externo
-      # fallara, que es exactamente cuando tiene que andar.
-      - name: Traer el informe
+      # Sonda e informe viven en el repositorio y tienen pruebas. El informe ya
+      # había salido de acá adentro —era un `python3 -c '…'` con comillas
+      # escapadas dentro de un bloque de shell—; la resolución de configuración
+      # y la consulta se quedaron, y eran el único tramo del camino sin forma de
+      # ejercitarlo. Justo el que decide si el vigía existe.
+      - name: Traer la sonda
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
-          sparse-checkout: scripts/scheduler-watchdog-report.mjs
+          sparse-checkout: |
+            scripts/scheduler-watchdog-probe.mjs
+            scripts/scheduler-watchdog-report.mjs
           sparse-checkout-cone-mode: false
 
       - name: Preguntarle al servidor por su propio reloj
         env:
+          # Vacías no rompen nada: la sonda cae al runtime-config publicado y
+          # dice en el log de dónde sacó la configuración.
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-        run: |
-          set -euo pipefail
-          if [ -z "${SUPABASE_URL}" ] || [ -z "${SUPABASE_ANON_KEY}" ]; then
-            echo "Falta configurar SUPABASE_URL (variable) o SUPABASE_ANON_KEY (secreto)." >&2
-            exit 1
-          fi
-
-          # La condición la mide el servidor contra su base: este flujo no puede
-          # inventar una alerta ni silenciarla, sólo pedir que se mire el reloj.
-          respuesta="$(curl --silent --show-error --fail --max-time 20 \
-            -X POST "${SUPABASE_URL}/rest/v1/rpc/check_scheduler_watchdog" \
-            -H "apikey: ${SUPABASE_ANON_KEY}" \
-            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
-            -H 'Content-Type: application/json' \
-            -d '{"p_source":"github_actions"}')"
-
-          echo "${respuesta}" | node scripts/scheduler-watchdog-report.mjs
+        run: node scripts/scheduler-watchdog-probe.mjs

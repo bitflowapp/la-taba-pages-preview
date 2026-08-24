@@ -80,17 +80,38 @@ function sinComentarios(yaml) {
 
 const WORKFLOWS = path.join(import.meta.dirname, '..', '.github', 'workflows');
 
-test('el flujo invoca este informe y ya no depende de python', () => {
+test('el flujo invoca la sonda del repositorio y ya no depende de python', () => {
+  /*
+   * La consulta y la resolución de configuración salieron del YAML hacia
+   * `scheduler-watchdog-probe.mjs`, que sí tiene pruebas. Lo que este caso
+   * protege no cambió: que el flujo corra CÓDIGO DEL REPOSITORIO, que traiga
+   * los archivos que invoca —sin el checkout el paso muere con «no such file»
+   * en cada corrida del cron— y que nadie vuelva a meter un intérprete ajeno.
+   */
   const flujo = fs.readFileSync(path.join(WORKFLOWS, 'scheduler-watchdog.yml'), 'utf8');
   const codigo = sinComentarios(flujo);
-  assert.ok(codigo.includes('node scripts/scheduler-watchdog-report.mjs'));
+  assert.ok(codigo.includes('node scripts/scheduler-watchdog-probe.mjs'));
   assert.ok(!/\bpython3?\b/.test(codigo));
-  // Y que siga trayendo el archivo que invoca: sin el checkout, el paso falla
-  // con "no such file" en cada corrida del cron.
-  assert.ok(codigo.includes('sparse-checkout: scripts/scheduler-watchdog-report.mjs'));
-  // Que el despojado siga viendo el paso: un filtro que se coma el archivo
-  // entero haría pasar la ausencia de arriba para siempre.
-  assert.ok(codigo.includes('check_scheduler_watchdog'));
+
+  // Los dos archivos: la sonda importa al informe, así que traer sólo uno deja
+  // el paso muerto igual.
+  assert.ok(codigo.includes('scripts/scheduler-watchdog-probe.mjs'));
+  assert.ok(codigo.includes('scripts/scheduler-watchdog-report.mjs'));
+
+  // Que el despojado siga viendo el paso: un filtro que se coma el bloque
+  // entero haría pasar las ausencias de arriba para siempre.
+  assert.ok(codigo.includes('SUPABASE_ANON_KEY'));
+});
+
+test('la RPC del reloj sigue siendo la que la sonda consulta', () => {
+  // La comprobación se mudó con el código: antes el nombre de la RPC estaba en
+  // el YAML, ahora está en la sonda. Si desapareciera de las dos, el vigía
+  // estaría preguntando otra cosa y nadie se enteraría.
+  const sonda = fs.readFileSync(
+    path.join(import.meta.dirname, '..', 'scripts', 'scheduler-watchdog-probe.mjs'),
+    'utf8',
+  );
+  assert.ok(sonda.includes('check_scheduler_watchdog'));
 });
 
 test('ningun flujo del repositorio depende ya de python', () => {

@@ -16,8 +16,20 @@
  * 2. Busca en la cosecha oficial el candidato que coincide en TODOS los ejes
  *    salvo la cantidad (mismo scorer del pipeline, con la cantidad neutralizada
  *    a propósito y dicho acá en voz alta).
- * 3. Descarga ese candidato y mide el sello con `medir-sello-de-pack.mjs`.
+ * 3. Descarga TODAS las imágenes que ese candidato publica —la principal y las
+ *    alternativas— y mide el sello en cada una con `medir-sello-de-pack.mjs`.
  * 4. Escribe la evidencia: SHA-256, geometría del sello y cuánto envase tapa.
+ *
+ * POR QUÉ TAMBIÉN LAS ALTERNATIVAS
+ * --------------------------------
+ * La conclusión de este relevamiento es una negación universal: «ningún
+ * packshot oficial sirve para una unidad». Medir sólo la imagen principal la
+ * dejaba apoyada en una muestra de una por SKU, y la tienda publica productos
+ * con hasta siete imágenes. Si una sola alternativa viniera limpia, la negación
+ * sería falsa y nadie se habría enterado. Al 2026-08-24 hay un caso real —la
+ * lata 354ml con seis alternativas de edición mundialista—: las siete traen
+ * sello y las siete lo tienen encima del envase, pero eso ahora está medido en
+ * vez de supuesto.
  *
  * No aprueba, no asocia y no deja los archivos: la descarga es temporal y lo
  * único que queda versionado es la medición.
@@ -115,42 +127,66 @@ try {
     ));
     const [elegida] = coincidencias;
 
-    const respuesta = await fetch(elegida.candidato.imageUrl, {
-      headers: { 'user-agent': USER_AGENT },
-      redirect: 'follow',
-      signal: AbortSignal.timeout(60_000),
-    });
-    if (!respuesta.ok) {
-      sinCandidato.push(`${sku.sku} (la fuente respondió ${respuesta.status})`);
+    /*
+     * Todas las imágenes que publica el candidato, no sólo la portada: la
+     * principal primero y después las alternativas, en el orden de la fuente.
+     */
+    const urls = [elegida.candidato.imageUrl, ...(elegida.candidato.alternateImages || [])];
+    const medidas = [];
+    let fallo = null;
+    for (const [indice, url] of urls.entries()) {
+      const respuesta = await fetch(url, {
+        headers: { 'user-agent': USER_AGENT },
+        redirect: 'follow',
+        signal: AbortSignal.timeout(60_000),
+      });
+      if (!respuesta.ok) {
+        fallo = `${sku.sku} (la fuente respondió ${respuesta.status} en la imagen ${indice + 1} de ${urls.length})`;
+        break;
+      }
+      const destino = path.join(temporal, `${sku.sku}-${indice}.bin`);
+      await fsp.writeFile(destino, Buffer.from(await respuesta.arrayBuffer()));
+      const medida = await medirSello(destino);
+      delete medida.archivo;
+      medidas.push({ ...medida, esPortada: indice === 0, fuenteUrl: url });
+    }
+    if (fallo) {
+      sinCandidato.push(fallo);
       continue;
     }
-    const destino = path.join(temporal, `${sku.sku}.bin`);
-    await fsp.writeFile(destino, Buffer.from(await respuesta.arrayBuffer()));
-    const medicion = await medirSello(destino);
-    delete medicion.archivo;
+
+    const [portada] = medidas;
+    const alternativas = medidas.slice(1);
+    /*
+     * El veredicto mira TODAS las imágenes: alcanza con que una sola venga sin
+     * sello, o con el sello apoyado en blanco limpio, para que la decisión de
+     * dejar este SKU en respaldo haya que rehacerla a mano.
+     */
+    const limpias = medidas.filter((medida) => !medida.selloDetectado || !medida.pisaElEnvase);
 
     mediciones.push({
-      ...medicion,
+      ...portada,
+      alternativas,
       cantidadDelSku: sku.unitsPerPack,
       cantidadQueAnunciaLaFuente: elegida.packCountFuente,
       confianzaDelMatch: elegida.confianza,
       dudasDelMatch: elegida.reasons,
       fuenteTitulo: elegida.candidato.title,
       fuenteUrl: elegida.candidato.imageUrl,
+      imagenesPublicadas: urls.length,
       productoUrl: elegida.candidato.productUrl,
       sku: sku.sku,
-      veredictoParaEsteSku: !medicion.selloDetectado
-        ? 'SIN_SELLO_DETECTADO: mirar a mano antes de concluir nada'
-        : medicion.pisaElEnvase
-          ? 'FALLBACK: el sello anuncia otra cantidad y no se puede borrar sin repintar envase'
-          : 'REVISAR_A_MANO: el sello no toca el envase; una persona tiene que decidir',
+      veredictoParaEsteSku: limpias.length
+        ? 'REVISAR_A_MANO: alguna de las imágenes del candidato no queda descartada por el sello'
+        : 'FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase',
     });
-    console.log(
-      `${sku.sku}: «${elegida.candidato.title}» → `
-      + (medicion.selloDetectado
-        ? `sello x${elegida.packCountFuente} de ${medicion.sello.diametroPx}px, tapa ${medicion.solapamiento.productoTapado}px de envase`
-        : 'sin sello detectado'),
-    );
+    const detallePortada = portada.selloDetectado
+      ? `sello x${elegida.packCountFuente} de ${portada.sello.diametroPx}px, tapa ${portada.solapamiento.productoTapado}px de envase`
+      : 'sin sello detectado';
+    const detalleAlternativas = alternativas.length
+      ? ` · ${alternativas.length} alternativa(s): ${alternativas.filter((m) => m.selloDetectado && m.pisaElEnvase).length} con sello encima del envase`
+      : '';
+    console.log(`${sku.sku}: «${elegida.candidato.title}» → ${detallePortada}${detalleAlternativas}`);
   }
 } finally {
   await fsp.rm(temporal, { force: true, recursive: true });
@@ -158,28 +194,38 @@ try {
 
 const conSello = mediciones.filter((fila) => fila.selloDetectado);
 const pisan = conSello.filter((fila) => fila.pisaElEnvase);
+/* Cada archivo descargado cuenta por separado: la portada y cada alternativa. */
+const todasLasImagenes = mediciones.flatMap((fila) => [fila, ...fila.alternativas]);
+const imagenesConSello = todasLasImagenes.filter((fila) => fila.selloDetectado);
+const imagenesQuePisan = imagenesConSello.filter((fila) => fila.pisaElEnvase);
+const todasDescartadas = imagenesQuePisan.length === todasLasImagenes.length && todasLasImagenes.length > 0;
 
 await fsp.writeFile(SALIDA, stableJson({
-  conclusion: pisan.length === conSello.length && conSello.length > 0
-    ? 'Todos los packshots oficiales que corresponderían a una unidad suelta traen un sello de '
-      + 'cantidad que PISA el envase. No se pueden reutilizar para unidades, y no se pueden limpiar '
-      + 'sin repintar producto. Las unidades siguen con el recurso propio de TABA.'
-    : 'Hay al menos un packshot cuyo sello no toca el envase: requiere decisión humana.',
+  conclusion: todasDescartadas
+    ? 'Todos los packshots oficiales que corresponderían a una unidad suelta —cada imagen que '
+      + 'publica cada candidato, portada y alternativas— traen un sello de cantidad que PISA el '
+      + 'envase. No se pueden reutilizar para unidades, y no se pueden limpiar sin repintar '
+      + 'producto. Las unidades siguen con el recurso propio de TABA.'
+    : 'Hay al menos una imagen oficial que el sello no descarta: requiere decisión humana.',
   doc: 'Medición del sello de cantidad en los packshots de la fuente oficial. Generado por '
-    + 'scripts/catalog-images/relevar-sello-de-pack.mjs; es evidencia, no una aprobación.',
+    + 'scripts/catalog-images/relevar-sello-de-pack.mjs; es evidencia, no una aprobación. Mide '
+    + 'TODAS las imágenes de cada candidato, porque una sola alternativa limpia bastaría para '
+    + 'invalidar la conclusión.',
   medidoEl: new Date().toISOString().slice(0, 10),
   mediciones,
   resumen: {
     conSelloDetectado: conSello.length,
     elSelloPisaElEnvase: pisan.length,
+    imagenesConSelloQuePisa: imagenesQuePisan.length,
+    imagenesMedidas: todasLasImagenes.length,
     medidos: mediciones.length,
     sinCandidatoOficial: sinCandidato.length,
   },
-  schemaVersion: 1,
+  schemaVersion: 2,
   sinCandidatoOficial: sinCandidato.sort(),
 }), 'utf8');
 
 console.log('');
-console.log(`Medidos: ${mediciones.length} · con sello: ${conSello.length} · el sello pisa el envase: ${pisan.length}`);
+console.log(`Medidos: ${mediciones.length} SKU · ${todasLasImagenes.length} imágenes · con sello que pisa el envase: ${imagenesQuePisan.length}`);
 console.log(`Sin candidato oficial (ninguna fuente permitida publica ese producto): ${sinCandidato.length}`);
 console.log(`Evidencia: ${path.relative(ROOT, SALIDA).replaceAll('\\', '/')}`);

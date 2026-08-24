@@ -233,6 +233,96 @@ test('la medición del sello de pack respalda que las unidades sigan en respaldo
   }
 });
 
+test('la medición cubre TODAS las imágenes del candidato, no sólo la portada', () => {
+  /*
+   * La conclusión del relevamiento es una negación universal —«ningún packshot
+   * oficial sirve para una unidad»—, y hasta el 2026-08-24 se apoyaba en una
+   * imagen por SKU. La tienda publica productos con varias: la lata 354ml trae
+   * seis alternativas de edición mundialista que nadie había medido. Si una
+   * sola viniera sin sello, o con el sello apoyado en blanco limpio, la
+   * negación sería falsa. Esta prueba obliga a que la evidencia incluya cada
+   * archivo que la fuente publica.
+   */
+  const todas = medicionDelSello.mediciones.flatMap(
+    (medicion) => [medicion, ...(medicion.alternativas ?? [])],
+  );
+  assert.equal(
+    medicionDelSello.resumen.imagenesMedidas,
+    todas.length,
+    'el resumen no cuenta las mismas imágenes que trae el detalle',
+  );
+  assert.ok(
+    todas.length > medicionDelSello.mediciones.length,
+    'ningún candidato aporta alternativas: o la fuente cambió, o el relevamiento dejó de leerlas',
+  );
+  for (const medicion of medicionDelSello.mediciones) {
+    assert.equal(
+      (medicion.alternativas ?? []).length + 1,
+      medicion.imagenesPublicadas,
+      `${medicion.sku}: se publicaron ${medicion.imagenesPublicadas} imágenes y se midieron otras tantas menos`,
+    );
+  }
+  for (const imagen of todas) {
+    assert.equal(imagen.selloDetectado, true, `${imagen.fuenteUrl}: sin sello detectado, hay que mirarla a mano`);
+    assert.equal(
+      imagen.pisaElEnvase,
+      true,
+      `${imagen.fuenteUrl}: el sello NO pisa el envase, así que esta imagen podría limpiarse y hay que decidirla a mano`,
+    );
+    assert.match(imagen.sha256, /^[a-f0-9]{64}$/);
+  }
+  assert.equal(medicionDelSello.resumen.imagenesConSelloQuePisa, todas.length);
+});
+
+test('una edición limitada no puede quedar como la foto de un SKU estándar', async () => {
+  /*
+   * El único candidato oficial que corresponde a `coca-cola-original-lata-354ml`
+   * es la lata de la «Edición Países Mundialistas»: mismo GTIN, misma capacidad,
+   * mismo envase, y siete diseños de país distintos. Aunque el sello desapareciera
+   * mañana, esa foto no puede ir a la ficha de la lata estándar —el cliente vería
+   * una lata de Brasil y recibiría cualquier otra—. Lo que la frena es que el
+   * scorer no la da por idéntica; esta prueba fija esa conducta, porque el día
+   * que la aflojen la edición limitada entra sola.
+   */
+  const { parseSourceTitle, scoreCandidate, skuPresentation } = await import(
+    '../scripts/catalog-images/presentation.mjs'
+  );
+  const { loadCatalogSkus } = await import('../scripts/catalog-images/catalog-skus.mjs');
+  const { skus } = await loadCatalogSkus(root);
+  const sku = skus.find((fila) => fila.sku === 'coca-cola-original-lata-354ml');
+  assert.ok(sku, 'desapareció el SKU de la lata original');
+
+  const edicion = parseSourceTitle('Coca-Cola Lata 354ml x6 “Edicion Paises Mundialistas”', {
+    packagingConvention: { default: 'lata' },
+  });
+  const veredicto = scoreCandidate(
+    { ...skuPresentation(sku), packCount: edicion.packCount },
+    edicion,
+    { brandDeclared: 'Coca Cola' },
+  );
+  assert.notEqual(
+    veredicto.confidence,
+    'HIGH',
+    'la edición mundialista quedó idéntica a la lata estándar: entraría sola por el pipeline',
+  );
+  assert.ok(
+    veredicto.reasons.some((razon) => /línea no es idéntica/.test(razon)),
+    `se esperaba que la línea delatara la edición limitada, y las razones fueron: ${JSON.stringify(veredicto.reasons)}`,
+  );
+
+  // Y el control positivo: la lata estándar del mismo tamaño sí sería idéntica.
+  const estandar = parseSourceTitle('Coca-Cola Original Lata 354ml x6', {
+    packagingConvention: { default: 'lata' },
+  });
+  assert.equal(
+    scoreCandidate({ ...skuPresentation(sku), packCount: estandar.packCount }, estandar, {
+      brandDeclared: 'Coca Cola',
+    }).confidence,
+    'HIGH',
+    'el control positivo dejó de pasar: el scorer ahora rechaza hasta la lata estándar',
+  );
+});
+
 test('esta misión no tocó precio, stock, disponibilidad ni identidad de ningún producto', async () => {
   /*
    * La compuerta comercial. El pipeline de imágenes lee la fotografía de

@@ -1,17 +1,20 @@
 {
-  "conclusion": "Todos los packshots oficiales que corresponderían a una unidad suelta traen un sello de cantidad que PISA el envase. No se pueden reutilizar para unidades, y no se pueden limpiar sin repintar producto. Las unidades siguen con el recurso propio de TABA.",
-  "doc": "Medición del sello de cantidad en los packshots de la fuente oficial. Generado por scripts/catalog-images/relevar-sello-de-pack.mjs; es evidencia, no una aprobación.",
+  "conclusion": "Todos los packshots oficiales que corresponderían a una unidad suelta —cada imagen que publica cada candidato, portada y alternativas— traen un sello de cantidad que PISA el envase. No se pueden reutilizar para unidades, y no se pueden limpiar sin repintar producto. Las unidades siguen con el recurso propio de TABA.",
+  "doc": "Medición del sello de cantidad en los packshots de la fuente oficial. Generado por scripts/catalog-images/relevar-sello-de-pack.mjs; es evidencia, no una aprobación. Mide TODAS las imágenes de cada candidato, porque una sola alternativa limpia bastaría para invalidar la conclusión.",
   "mediciones": [
     {
+      "alternativas": [],
       "alto": 1080,
       "ancho": 1080,
       "cantidadDelSku": 1,
       "cantidadQueAnunciaLaFuente": 6,
       "confianzaDelMatch": "HIGH",
       "dudasDelMatch": [],
+      "esPortada": true,
       "formato": "jpeg",
       "fuenteTitulo": "Aquarius Manzana 1,5L x6",
       "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156195/101275.jpg?v=638568224355070000",
+      "imagenesPublicadas": 1,
       "pisaElEnvase": true,
       "productoUrl": "https://tienda.coca-cola.com.ar/aquarius-manzana-1-5l-6-7790895640483/p",
       "sello": {
@@ -47,18 +50,21 @@
         "productoTapado": 1893
       },
       "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
-      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad y no se puede borrar sin repintar envase"
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
     },
     {
+      "alternativas": [],
       "alto": 1080,
       "ancho": 1080,
       "cantidadDelSku": 1,
       "cantidadQueAnunciaLaFuente": 6,
       "confianzaDelMatch": "HIGH",
       "dudasDelMatch": [],
+      "esPortada": true,
       "formato": "jpeg",
       "fuenteTitulo": "Aquarius Pera 1,5L x6",
       "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156197/101277.jpg?v=638568225573870000",
+      "imagenesPublicadas": 1,
       "pisaElEnvase": true,
       "productoUrl": "https://tienda.coca-cola.com.ar/aquarius-pera-1-5l-6-7790895640476/p",
       "sello": {
@@ -94,18 +100,21 @@
         "productoTapado": 1921
       },
       "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
-      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad y no se puede borrar sin repintar envase"
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
     },
     {
+      "alternativas": [],
       "alto": 1080,
       "ancho": 1080,
       "cantidadDelSku": 1,
       "cantidadQueAnunciaLaFuente": 6,
       "confianzaDelMatch": "HIGH",
       "dudasDelMatch": [],
+      "esPortada": true,
       "formato": "jpeg",
       "fuenteTitulo": "Aquarius Pomelo 2,25L x6",
       "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156184/101250.jpg?v=638567559283030000",
+      "imagenesPublicadas": 1,
       "pisaElEnvase": true,
       "productoUrl": "https://tienda.coca-cola.com.ar/aquarius-pomelo-2-25l-6-7790895003288/p",
       "sello": {
@@ -141,18 +150,21 @@
         "productoTapado": 1761
       },
       "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
-      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad y no se puede borrar sin repintar envase"
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
     },
     {
+      "alternativas": [],
       "alto": 1080,
       "ancho": 1080,
       "cantidadDelSku": 1,
       "cantidadQueAnunciaLaFuente": 6,
       "confianzaDelMatch": "HIGH",
       "dudasDelMatch": [],
+      "esPortada": true,
       "formato": "jpeg",
       "fuenteTitulo": "Benedictino sin gas 2,25L x6",
       "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/155813/102962.jpg?v=638370897968600000",
+      "imagenesPublicadas": 1,
       "pisaElEnvase": true,
       "productoUrl": "https://tienda.coca-cola.com.ar/benedictino-sin-gas-2-25l-6-7790895647666/p",
       "sello": {
@@ -188,18 +200,21 @@
         "productoTapado": 2007
       },
       "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
-      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad y no se puede borrar sin repintar envase"
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
     },
     {
+      "alternativas": [],
       "alto": 1080,
       "ancho": 1080,
       "cantidadDelSku": 1,
       "cantidadQueAnunciaLaFuente": 6,
       "confianzaDelMatch": "HIGH",
       "dudasDelMatch": [],
+      "esPortada": true,
       "formato": "jpeg",
       "fuenteTitulo": "Coca–Cola Original 2,25L x6",
       "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156165/100411.jpg?v=638563931056970000",
+      "imagenesPublicadas": 1,
       "pisaElEnvase": true,
       "productoUrl": "https://tienda.coca-cola.com.ar/coca-cola-original-2-25l-6-7790895000997/p",
       "sello": {
@@ -235,9 +250,251 @@
         "productoTapado": 1954
       },
       "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
-      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad y no se puede borrar sin repintar envase"
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
     },
     {
+      "alternativas": [
+        {
+          "alto": 1095,
+          "ancho": 1095,
+          "esPortada": false,
+          "formato": "png",
+          "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156540/100481_FRA-20260331-133231.png?v=639144749242170000",
+          "pisaElEnvase": true,
+          "sello": {
+            "centro": [
+              631,
+              344
+            ],
+            "circularidad": 0.817,
+            "color": "#fc3c1c",
+            "diametroPx": 106,
+            "pxRojos": 7213
+          },
+          "selloDetectado": true,
+          "sha256": "df9f32d0332eeae5faa6ecfc0e3e400afda5966f0de176eacdb672e84887cd05",
+          "siluetas": {
+            "conSello": {
+              "alto": 552,
+              "ancho": 259,
+              "px": 90332
+            },
+            "partesTrasBorrar": 2,
+            "sinSello": {
+              "alto": 489,
+              "ancho": 218,
+              "px": 82605
+            }
+          },
+          "solapamiento": {
+            "bordeMedido": 720,
+            "bordeSobreEnvase": 103,
+            "discoSobreBlanco": 8351,
+            "productoTapado": 469
+          },
+          "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase"
+        },
+        {
+          "alto": 1095,
+          "ancho": 1095,
+          "esPortada": false,
+          "formato": "png",
+          "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156541/100481_ESP-20260331-133231.png?v=639144749242170000",
+          "pisaElEnvase": true,
+          "sello": {
+            "centro": [
+              631,
+              344
+            ],
+            "circularidad": 0.819,
+            "color": "#fc3c1c",
+            "diametroPx": 106,
+            "pxRojos": 7224
+          },
+          "selloDetectado": true,
+          "sha256": "901869ba360e1135918650fe454310141d76cacb32c62124b6843edd3b9d5f81",
+          "siluetas": {
+            "conSello": {
+              "alto": 552,
+              "ancho": 259,
+              "px": 96398
+            },
+            "partesTrasBorrar": 1,
+            "sinSello": {
+              "alto": 489,
+              "ancho": 218,
+              "px": 88603
+            }
+          },
+          "solapamiento": {
+            "bordeMedido": 720,
+            "bordeSobreEnvase": 137,
+            "discoSobreBlanco": 8314,
+            "productoTapado": 506
+          },
+          "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase"
+        },
+        {
+          "alto": 1095,
+          "ancho": 1095,
+          "esPortada": false,
+          "formato": "png",
+          "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156542/100481_URU-20260331-133232.png?v=639144749242330000",
+          "pisaElEnvase": true,
+          "sello": {
+            "centro": [
+              631,
+              344
+            ],
+            "circularidad": 0.817,
+            "color": "#fc3c1c",
+            "diametroPx": 106,
+            "pxRojos": 7213
+          },
+          "selloDetectado": true,
+          "sha256": "502cea25692f57b115c0d5bc33b8176c9555574bb7fc0cd2435c7d6adc3cb328",
+          "siluetas": {
+            "conSello": {
+              "alto": 552,
+              "ancho": 259,
+              "px": 90589
+            },
+            "partesTrasBorrar": 2,
+            "sinSello": {
+              "alto": 489,
+              "ancho": 218,
+              "px": 82805
+            }
+          },
+          "solapamiento": {
+            "bordeMedido": 720,
+            "bordeSobreEnvase": 133,
+            "discoSobreBlanco": 8314,
+            "productoTapado": 506
+          },
+          "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase"
+        },
+        {
+          "alto": 1095,
+          "ancho": 1095,
+          "esPortada": false,
+          "formato": "png",
+          "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156543/100481_GER-20260331-133231.png?v=639144749242330000",
+          "pisaElEnvase": true,
+          "sello": {
+            "centro": [
+              631,
+              344
+            ],
+            "circularidad": 0.818,
+            "color": "#fc3c1c",
+            "diametroPx": 106,
+            "pxRojos": 7221
+          },
+          "selloDetectado": true,
+          "sha256": "f2455af53dc07ec99d8083f1068b36af02c0b7c2a8e1f6f732929d5d5a6f7b98",
+          "siluetas": {
+            "conSello": {
+              "alto": 552,
+              "ancho": 259,
+              "px": 90628
+            },
+            "partesTrasBorrar": 2,
+            "sinSello": {
+              "alto": 489,
+              "ancho": 218,
+              "px": 82836
+            }
+          },
+          "solapamiento": {
+            "bordeMedido": 720,
+            "bordeSobreEnvase": 135,
+            "discoSobreBlanco": 8314,
+            "productoTapado": 506
+          },
+          "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase"
+        },
+        {
+          "alto": 1095,
+          "ancho": 1095,
+          "esPortada": false,
+          "formato": "png",
+          "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156544/100481_NED-20260331-133231.png?v=639144749242330000",
+          "pisaElEnvase": true,
+          "sello": {
+            "centro": [
+              631,
+              344
+            ],
+            "circularidad": 0.818,
+            "color": "#fc3c1c",
+            "diametroPx": 106,
+            "pxRojos": 7219
+          },
+          "selloDetectado": true,
+          "sha256": "9542a3058f274bfd4a19d83e45718afa60a2956392325efe8583e887e05477fc",
+          "siluetas": {
+            "conSello": {
+              "alto": 552,
+              "ancho": 260,
+              "px": 94564
+            },
+            "partesTrasBorrar": 1,
+            "sinSello": {
+              "alto": 489,
+              "ancho": 219,
+              "px": 86774
+            }
+          },
+          "solapamiento": {
+            "bordeMedido": 720,
+            "bordeSobreEnvase": 135,
+            "discoSobreBlanco": 8314,
+            "productoTapado": 506
+          },
+          "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase"
+        },
+        {
+          "alto": 1095,
+          "ancho": 1095,
+          "esPortada": false,
+          "formato": "png",
+          "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156545/100481_ENG-20260331-133230.png?v=639144749242330000",
+          "pisaElEnvase": true,
+          "sello": {
+            "centro": [
+              631,
+              344
+            ],
+            "circularidad": 0.818,
+            "color": "#fc3c1c",
+            "diametroPx": 106,
+            "pxRojos": 7222
+          },
+          "selloDetectado": true,
+          "sha256": "d0921754bd31cf4ad6f692e7380a4f215d5ea84d710de435ddb65fd8d65e95e0",
+          "siluetas": {
+            "conSello": {
+              "alto": 552,
+              "ancho": 259,
+              "px": 96435
+            },
+            "partesTrasBorrar": 1,
+            "sinSello": {
+              "alto": 489,
+              "ancho": 218,
+              "px": 88642
+            }
+          },
+          "solapamiento": {
+            "bordeMedido": 720,
+            "bordeSobreEnvase": 137,
+            "discoSobreBlanco": 8314,
+            "productoTapado": 506
+          },
+          "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase"
+        }
+      ],
       "alto": 1095,
       "ancho": 1095,
       "cantidadDelSku": 1,
@@ -247,9 +504,11 @@
         "REVISAR variante no idéntica (falta: original · sobra: —)",
         "REVISAR la línea no es idéntica (el SKU dice «original» y la fuente «paises mundialistas»)"
       ],
+      "esPortada": true,
       "formato": "png",
       "fuenteTitulo": "Coca-Cola Lata 354ml x6 “Edicion Paises Mundialistas”",
       "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156539/100481_BRA-20260331-133230.png?v=639144749242000000",
+      "imagenesPublicadas": 7,
       "pisaElEnvase": true,
       "productoUrl": "https://tienda.coca-cola.com.ar/coca-cola-lata-354ml-x6-edicion-paises-mundialistas-100481/p",
       "sello": {
@@ -285,18 +544,21 @@
         "productoTapado": 506
       },
       "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
-      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad y no se puede borrar sin repintar envase"
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
     },
     {
+      "alternativas": [],
       "alto": 1125,
       "ancho": 1125,
       "cantidadDelSku": 1,
       "cantidadQueAnunciaLaFuente": 6,
       "confianzaDelMatch": "HIGH",
       "dudasDelMatch": [],
+      "esPortada": true,
       "formato": "png",
       "fuenteTitulo": "Coca–Cola Original 1,5L x6",
       "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156459/100413.png?v=639063398965800000",
+      "imagenesPublicadas": 1,
       "pisaElEnvase": true,
       "productoUrl": "https://tienda.coca-cola.com.ar/coca-cola-original-1-5l-6-100413/p",
       "sello": {
@@ -332,18 +594,21 @@
         "productoTapado": 511
       },
       "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
-      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad y no se puede borrar sin repintar envase"
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
     },
     {
+      "alternativas": [],
       "alto": 1080,
       "ancho": 1080,
       "cantidadDelSku": 1,
       "cantidadQueAnunciaLaFuente": 6,
       "confianzaDelMatch": "HIGH",
       "dudasDelMatch": [],
+      "esPortada": true,
       "formato": "jpeg",
       "fuenteTitulo": "Coca–Cola Zero 2,25L x6",
       "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/155634/7790895067570.jpg?v=638173494961200000",
+      "imagenesPublicadas": 1,
       "pisaElEnvase": true,
       "productoUrl": "https://tienda.coca-cola.com.ar/coca-cola-zero-2-25l-6-7790895067570/p",
       "sello": {
@@ -379,18 +644,21 @@
         "productoTapado": 2238
       },
       "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
-      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad y no se puede borrar sin repintar envase"
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
     },
     {
+      "alternativas": [],
       "alto": 1095,
       "ancho": 1095,
       "cantidadDelSku": 1,
       "cantidadQueAnunciaLaFuente": 6,
       "confianzaDelMatch": "HIGH",
       "dudasDelMatch": [],
+      "esPortada": true,
       "formato": "png",
       "fuenteTitulo": "Coca-Cola Zero Lata 354ml x6",
       "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156534/101986_ARG.png?v=639135233347270000",
+      "imagenesPublicadas": 1,
       "pisaElEnvase": true,
       "productoUrl": "https://tienda.coca-cola.com.ar/coca-cola-zero-lata-354ml-x6-101986/p",
       "sello": {
@@ -426,18 +694,21 @@
         "productoTapado": 506
       },
       "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
-      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad y no se puede borrar sin repintar envase"
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
     },
     {
+      "alternativas": [],
       "alto": 1080,
       "ancho": 1080,
       "cantidadDelSku": 1,
       "cantidadQueAnunciaLaFuente": 6,
       "confianzaDelMatch": "HIGH",
       "dudasDelMatch": [],
+      "esPortada": true,
       "formato": "jpeg",
       "fuenteTitulo": "Fanta Naranja 2,25L x6",
       "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156348/101114.jpg?v=638857653419300000",
+      "imagenesPublicadas": 1,
       "pisaElEnvase": true,
       "productoUrl": "https://tienda.coca-cola.com.ar/fanta-naranja-2-25l-6-7790895001017/p",
       "sello": {
@@ -473,18 +744,21 @@
         "productoTapado": 2085
       },
       "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
-      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad y no se puede borrar sin repintar envase"
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
     },
     {
+      "alternativas": [],
       "alto": 1060,
       "ancho": 1080,
       "cantidadDelSku": 1,
       "cantidadQueAnunciaLaFuente": 6,
       "confianzaDelMatch": "HIGH",
       "dudasDelMatch": [],
+      "esPortada": true,
       "formato": "jpeg",
       "fuenteTitulo": "Monster Green Zero 473ml x6",
       "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156325/100369.jpg.jpg?v=638756837995170000",
+      "imagenesPublicadas": 1,
       "pisaElEnvase": true,
       "productoUrl": "https://tienda.coca-cola.com.ar/monster-green-zero-473ml-x6-1/p",
       "sello": {
@@ -520,18 +794,21 @@
         "productoTapado": 1979
       },
       "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
-      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad y no se puede borrar sin repintar envase"
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
     },
     {
+      "alternativas": [],
       "alto": 1080,
       "ancho": 1080,
       "cantidadDelSku": 1,
       "cantidadQueAnunciaLaFuente": 6,
       "confianzaDelMatch": "HIGH",
       "dudasDelMatch": [],
+      "esPortada": true,
       "formato": "jpeg",
       "fuenteTitulo": "Powerade Mountain Blast 500ml x6",
       "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156491/100989.jpg?v=639087635741400000",
+      "imagenesPublicadas": 1,
       "pisaElEnvase": true,
       "productoUrl": "https://tienda.coca-cola.com.ar/powerade-mountain-blast-500ml-6-100989/p",
       "sello": {
@@ -567,9 +844,10 @@
         "productoTapado": 1879
       },
       "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
-      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad y no se puede borrar sin repintar envase"
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
     },
     {
+      "alternativas": [],
       "alto": 1080,
       "ancho": 1080,
       "cantidadDelSku": 1,
@@ -579,9 +857,11 @@
         "REVISAR variante no idéntica (falta: original · sobra: —)",
         "REVISAR la línea no es idéntica (el SKU dice «original» y la fuente «—»)"
       ],
+      "esPortada": true,
       "formato": "jpeg",
       "fuenteTitulo": "Sprite 2,25L x6",
       "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/155758/7790895001000.jpg?v=638290044761130000",
+      "imagenesPublicadas": 1,
       "pisaElEnvase": true,
       "productoUrl": "https://tienda.coca-cola.com.ar/sprite-2-25l-6-7790895001000/p",
       "sello": {
@@ -617,9 +897,10 @@
         "productoTapado": 1952
       },
       "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
-      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad y no se puede borrar sin repintar envase"
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
     },
     {
+      "alternativas": [],
       "alto": 1080,
       "ancho": 1080,
       "cantidadDelSku": 1,
@@ -629,9 +910,11 @@
         "REVISAR variante no idéntica (falta: original · sobra: —)",
         "REVISAR la línea no es idéntica (el SKU dice «original» y la fuente «—»)"
       ],
+      "esPortada": true,
       "formato": "jpeg",
       "fuenteTitulo": "Sprite Lata 354ml x6",
       "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156274/102078.jpg?v=638659848033530000",
+      "imagenesPublicadas": 1,
       "pisaElEnvase": true,
       "productoUrl": "https://tienda.coca-cola.com.ar/sprite-lata-354ml-x6--/p",
       "sello": {
@@ -667,18 +950,21 @@
         "productoTapado": 1944
       },
       "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
-      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad y no se puede borrar sin repintar envase"
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
     },
     {
+      "alternativas": [],
       "alto": 1080,
       "ancho": 1080,
       "cantidadDelSku": 1,
       "cantidadQueAnunciaLaFuente": 6,
       "confianzaDelMatch": "HIGH",
       "dudasDelMatch": [],
+      "esPortada": true,
       "formato": "jpeg",
       "fuenteTitulo": "Sprite Zero 2,25L x6",
       "fuenteUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/155762/7790895064166.jpg?v=638290060088200000",
+      "imagenesPublicadas": 1,
       "pisaElEnvase": true,
       "productoUrl": "https://tienda.coca-cola.com.ar/sprite-zero-2-25l-6-7790895064166/p",
       "sello": {
@@ -714,16 +1000,18 @@
         "productoTapado": 1961
       },
       "veredicto": "SELLO_SOBRE_EL_ENVASE: borrarlo obliga a repintar envase",
-      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad y no se puede borrar sin repintar envase"
+      "veredictoParaEsteSku": "FALLBACK: el sello anuncia otra cantidad, está en todas las imágenes y no se puede borrar sin repintar envase"
     }
   ],
-  "medidoEl": "2026-08-23",
+  "medidoEl": "2026-08-24",
   "resumen": {
     "conSelloDetectado": 15,
     "elSelloPisaElEnvase": 15,
+    "imagenesConSelloQuePisa": 21,
+    "imagenesMedidas": 21,
     "medidos": 15,
     "sinCandidatoOficial": 0
   },
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "sinCandidatoOficial": []
 }

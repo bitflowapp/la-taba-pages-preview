@@ -321,9 +321,112 @@ if (otrosErrores.length) {
   console.log(`  aviso  ${otrosErrores.length} respuesta(s) de error ajenas a las imágenes · ${otrosErrores.slice(0, 2).join(' · ')}`);
 }
 
+/*
+ * ------------------------- 9 · la góndola en un iPhone de verdad
+ *
+ * El recorrido de arriba mide en 412x915, que es el Android del comercio. Un
+ * iPhone no es ese teléfono más angosto: tiene otro ancho, otra densidad y —lo
+ * que importa acá— otra forma de resolver el encuadre si la página no declara
+ * su viewport. Un contexto con `isMobile` NO equivale a un viewport de iPhone,
+ * y esa confusión ya costó dos pruebas que afirmaban geometrías que en el
+ * runner no ocurrían.
+ *
+ * Así que esto hace las dos cosas por separado: comprueba que la página
+ * SERVIDA trae el meta viewport contractual, y después mide las cajas reales
+ * que quedaron pintadas con el viewport de un iPhone 13.
+ */
+const iphone = await browser.newContext({
+  deviceScaleFactor: 3,
+  hasTouch: true,
+  isMobile: true,
+  serviceWorkers: 'allow',
+  /*
+   * Este pase entra como quien YA respondió a la invitación de instalar. En un
+   * iPhone sin decidir la tienda ofrece una hoja MODAL a los pocos segundos, y
+   * esa hoja tapa la góndola: las cajas se miden igual detrás, pero la captura
+   * —que es la evidencia visual— queda mostrando el aviso en vez del catálogo.
+   * `TABA_INSTALL_PROMPT_V1` no es un interruptor de prueba: es el estado que
+   * deja alguien que tocó «Ahora no», que es la mayoría de las visitas. La
+   * primera visita sin decidir sigue cubierta por el recorrido de arriba, que
+   * abre con sesión limpia.
+   */
+  storageState: {
+    cookies: [],
+    origins: [{
+      localStorage: [{
+        name: 'TABA_INSTALL_PROMPT_V1',
+        value: JSON.stringify({
+          at: '2026-01-01T00:00:00.000Z', decision: 'declined', platform: 'ios', v: 1,
+        }),
+      }],
+      origin: HOST,
+    }],
+  },
+  userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15'
+    + ' (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+  viewport: { width: 390, height: 844 },
+});
+const movil = await iphone.newPage();
+await movil.goto(HOST, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+
+const metaViewport = await movil.evaluate(
+  () => document.querySelector('meta[name="viewport"]')?.getAttribute('content') || '',
+);
+medir('la página servida declara el meta viewport contractual',
+  /width=device-width/.test(metaViewport) && /initial-scale=1/.test(metaViewport),
+  metaViewport || '(no hay meta viewport)');
+
+await movil.waitForFunction(() => document.querySelectorAll('.thumb').length > 0, null, { timeout: 60_000 });
+await movil.waitForTimeout(6000);
+
+const enIphone = await movil.evaluate(() => [...document.querySelectorAll('.thumb')].map((thumb) => {
+  const img = thumb.querySelector('img');
+  const caja = img?.getBoundingClientRect();
+  const marco = thumb.getBoundingClientRect();
+  return {
+    alto: caja ? Math.round(caja.height) : 0,
+    ancho: caja ? Math.round(caja.width) : 0,
+    marcoAlto: Math.round(marco.height),
+    marcoAncho: Math.round(marco.width),
+    objectFit: img ? getComputedStyle(img).objectFit : '',
+    sobresale: caja && marco
+      ? Math.round(Math.max(0, marco.left - caja.left, marco.top - caja.top,
+        caja.right - marco.right, caja.bottom - marco.bottom))
+      : 0,
+  };
+}));
+medir('el iPhone dibuja la góndola completa', enIphone.length > 0, `${enIphone.length} miniaturas`);
+medir('cada marco sigue siendo cuadrado en iPhone',
+  enIphone.every((t) => Math.abs(t.marcoAncho - t.marcoAlto) <= 1),
+  enIphone.filter((t) => Math.abs(t.marcoAncho - t.marcoAlto) > 1)
+    .map((t) => `${t.marcoAncho}x${t.marcoAlto}`).slice(0, 3).join(' '));
+medir('ninguna miniatura deforma el envase en iPhone',
+  enIphone.every((t) => t.objectFit === 'contain'),
+  [...new Set(enIphone.map((t) => t.objectFit))].join(','));
+/*
+ * El packshot se agranda un 6% dentro del marco a propósito, así que sobresalir
+ * un par de píxeles es el diseño y no un defecto. Lo que no puede pasar es que
+ * el envase se salga tanto que quede cortado.
+ */
+medir('el envase entra en su marco en iPhone: ninguna botella cortada',
+  enIphone.every((t) => t.sobresale <= Math.ceil(t.marcoAncho * 0.06) + 2),
+  `sobresale máx ${Math.max(0, ...enIphone.map((t) => t.sobresale))}px`);
+/* Nada puede empujar el documento a lo ancho: eso es scroll horizontal. */
+const anchoDoc = await movil.evaluate(() => ({
+  cliente: document.documentElement.clientWidth,
+  scroll: document.documentElement.scrollWidth,
+}));
+medir('la góndola no desborda a lo ancho en iPhone',
+  anchoDoc.scroll <= anchoDoc.cliente + 1,
+  `scroll ${anchoDoc.scroll} vs viewport ${anchoDoc.cliente}`);
+await movil.screenshot({ path: path.join(SALIDA, '05-iphone.png') });
+await iphone.close();
+
 await fs.writeFile(
   path.join(SALIDA, 'resultado.json'),
-  `${JSON.stringify({ host: HOST, tarjetas: vistos, verificadoEl: new Date().toISOString() }, null, 2)}\n`,
+  `${JSON.stringify({
+    host: HOST, iphone: enIphone.length, metaViewport, tarjetas: vistos, verificadoEl: new Date().toISOString(),
+  }, null, 2)}\n`,
   'utf8',
 );
 

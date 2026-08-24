@@ -110,11 +110,31 @@ jobs:
       - name: Locked dependencies still match the lockfile
         run: npm run deps:pinned:check
 
+      # `--trace=on-first-retry` y no `retain-on-failure`: con reintentos, lo que
+      # hay que poder mirar es JUSTO el intento que se recupera —la prueba
+      # inestable— y ese es el que esta opción graba. Una prueba que falla las
+      # dos veces también deja la traza de su reintento.
+      #
+      # Los reporters salen de playwright.config.mjs, que incluye el de pruebas
+      # inestables. Nombrarlos acá los reemplazaba y lo dejaba afuera.
       - name: Full browser E2E
         id: e2e
         env:
           PLAYWRIGHT_HTML_OPEN: never
-        run: npm run test:e2e -- --reporter=line,html --trace=retain-on-failure
+          TABA_E2E_FLAKY_REPORT: artifacts/ci/e2e-flaky.json
+        run: npm run test:e2e -- --reporter=line,html,./tests/e2e-infra/reporter-inestables.mjs --trace=on-first-retry
+
+      # El recuento de inestables viaja como artefacto para poder responder
+      # «¿esta prueba viene flakeando hace varias corridas?» sin montar una base
+      # de datos. Corre siempre: una corrida roja también deja su recuento.
+      - name: Upload flaky-test census
+        if: ${{ always() && steps.e2e.outcome != 'skipped' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: e2e-flaky-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/ci/e2e-flaky.json
+          if-no-files-found: warn
+          retention-days: 30
 
       - name: Generate source SBOM
         run: npm run release:sbom -- --output artifacts/ci/sbom.cdx.json

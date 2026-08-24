@@ -3,7 +3,7 @@
 No se publican imágenes de bebidas parecidas, reconstruidas con IA ni
 descargadas sin comprobar producto y derechos.
 
-## Estado al 2026-08-23
+## Estado al 2026-08-24
 
 De los 33 SKU que hoy se pueden comprar en la tienda pública, **3 muestran
 fotografía real** —los tres packs x12 con packshot oficial del embotellador— y
@@ -17,14 +17,60 @@ Las 30 siguen en fallback por un motivo medido, no por falta de trabajo: la
 única fuente oficial alcanzable —la tienda del embotellador Coca-Cola Andina—
 es mayorista y publica 184 listados, **ninguno de una unidad suelta**. Su
 packshot es la foto de una sola botella, correcta y con fondo blanco, pero con
-un sello de cantidad («x6») estampado encima. Medidos los 15 candidatos que
-corresponderían a los SKU visibles sin foto, los 15 traen sello y en los 15 el
-sello **pisa el envase**, así que tampoco se puede quitar sin repintar
-producto. La medición está en `catalog/sello-de-pack-medicion.json`.
+un sello de cantidad («x6») estampado encima. Medidas **las 21 imágenes** que
+esa tienda publica para los 15 SKU candidatos —la portada de cada producto y
+las seis alternativas de la lata 354 ml—, las 21 traen sello y en las 21 el
+sello **pisa el envase**: tapa entre 469 y 2.238 píxeles de producto, así que
+no se puede quitar sin repintar. La medición está en
+`catalog/sello-de-pack-medicion.json` y se rehace con
+`npm run catalog:images:sello`.
 
 Lo que lo destraba es una de dos cosas, y las dos son del comercio: un paquete
 de packshots sin sello provisto por la marca, o fotografía propia —la lista de
 tomas ya está en `catalog/photo-capture/PHOTO_CAPTURE_SHOT_LIST.csv`—.
+
+### Segunda ronda de fuentes (2026-08-24)
+
+La mitad de la góndola no es del sistema Coca-Cola, así que la primera ronda
+dejó anotada una lista de marcas por investigar. Se investigaron. Ninguna de
+las seis empresas publica packshots alcanzables por medio programático, y cada
+negativa quedó escrita en `catalog/image-source-allowlist.json` (`sinFuente`)
+para que nadie la vuelva a averiguar:
+
+| Empresa | Marcas del catálogo | Qué se encontró |
+| --- | --- | --- |
+| Cervecería y Maltería Quilmes | Pepsi, 7UP, Paso de los Toros, Gatorade | Es quien embotella el portafolio PepsiCo en Argentina y su sitio lo confirma, pero de cada marca publica un **logotipo de 225×140 px**, no un packshot |
+| Gatorade LATAM (`gatorade.lat/ar`) | Gatorade | Responde 200 con un bloqueo de Incapsula en el cuerpo |
+| Refres Now S.A. | Manaos | `manaos.com.ar` es un dominio estacionado en venta; el dominio del fabricante sirve un login de Outlook |
+| Danone Aguas | Villa del Sur, Villavicencio | 202 con desafío `sgcaptcha`; sin catálogo detrás |
+| CCU Argentina | — | Su portafolio son cervezas, sidras y vinos: no toca ningún SKU visible |
+| Red Bull / Monster | Red Bull, Monster | 403 al agente automático, como en la primera ronda |
+
+**La trampa que dejó la ronda.** `www.speed.com.ar` descarga un catálogo
+perfecto… de *Speed Anticloro*, antiparras y gorras de natación: otra empresa
+con el mismo nombre de marca. Es exactamente lo que un matcher por coincidencia
+de dominio habría aceptado sin mirar, y es la razón por la que una fuente entra
+por marca revisada a mano y no por dominio.
+
+### Ediciones limitadas
+
+El único candidato oficial que corresponde a `coca-cola-original-lata-354ml` es
+la lata de la «Edición Países Mundialistas»: **mismo GTIN** (7790895000232),
+misma capacidad, mismo envase, y siete diseños de país distintos. Aunque el
+sello desapareciera, esa foto no puede ir a la ficha de la lata estándar: el
+cliente vería una lata de Brasil y recibiría cualquier otra. Coincidir en GTIN
+no es coincidir en identidad visual. El matcher ya la marca `MEDIUM` —«la línea
+no es idéntica»— y sólo se publica lo que da `HIGH`; hay una regresión que fija
+esa conducta, porque el día que se afloje la edición limitada entra sola.
+
+### Por qué el respaldo se ve como respaldo
+
+El recurso propio de TABA es una silueta genérica de botella con la gota de la
+marca propia: no lleva logotipo de terceros, no imita ningún envase real y no
+puede confundirse con una fotografía. Además cada tarjeta sin foto se anuncia
+por texto accesible. Es una decisión, no un pendiente: mientras el respaldo se
+lea como respaldo, agregarle una leyenda visible es una decisión de copy
+comercial, no una corrección técnica.
 
 ## Placeholder de preview
 
@@ -80,3 +126,47 @@ El catálogo de 22 bebidas de `?demo=1` utiliza exclusivamente los WebP bajo
 El manifiesto vincula cada archivo final con su fuente, referencia de derechos
 y hashes. Los raw no se versionan ni se distribuyen. Una imagen sin esa cadena
 permanece fuera del catálogo productivo.
+
+## Cómo agregar una imagen nueva, en orden
+
+Lo que sigue es el camino completo desde «apareció una foto» hasta «el cliente
+la ve». Los pasos 1 y 2 son los que deciden; el resto es mecánica.
+
+1. **¿De dónde salió?** Sólo entra, en este orden: fabricante, embotellador o
+   importador de la marca; distribuidor oficial; assets propios con procedencia
+   escrita; material que la marca entregó a TABA. Un supermercado, un
+   marketplace, un buscador de imágenes o cualquier foto con marca de agua **no
+   entran**, y que algo esté accesible no significa que se pueda usar. Si el
+   host es nuevo, agregarlo a `catalog/image-source-allowlist.json`: el
+   pipeline falla cerrado y no descarga de un host que no esté ahí.
+
+2. **¿Es exactamente este producto?** Tienen que coincidir marca, línea, sabor,
+   Original/Zero, capacidad, tipo de envase, presentación y unidades por pack.
+   Cualquier duda que no se pueda probar es un `FALLBACK`, y un fallback es un
+   resultado correcto. Tres trampas concretas, las tres ya vistas acá:
+   - un packshot de **pack** no autoriza un SKU de **unidad**: borrar el sello,
+     recortar el «x6» o clonar la botella fabrica un envase que no existe;
+   - una **edición limitada** puede compartir el GTIN con el producto estándar
+     y aun así ser otra cosa a los ojos del cliente;
+   - un **dominio homónimo** puede servir un catálogo impecable de otro rubro.
+
+3. Registrar la fuente y correr la cadena obligatoria de la sección anterior
+   (`catalog:images:fetch` → `normalize` → `verify`).
+
+4. `npm run catalog:images:audit` y revisar que el SKU pasó de `FALLBACK` a
+   `REAL`, y que ningún otro se movió.
+
+5. `npm test` — las regresiones de `tests/gondola-imagenes-por-sku.test.mjs`
+   comprueban identidad, volumen, envase, pack, derechos, faltante, roto y que
+   la capa de imágenes no haya tocado ningún dato comercial.
+
+6. Verificar contra la tienda publicada con
+   `node scripts/verificar-imagenes-en-vivo.mjs`. Desde un entorno cuya salida
+   TLS está interceptada hace falta pasarle los hashes SPKI del interceptor en
+   `TABA_BROWSER_SPKI`; el propio script lo documenta en su encabezado.
+
+**Lo que no hay que hacer nunca:** aflojar el scorer para que entre una foto.
+Si un candidato correcto queda en `MEDIUM`, el arreglo es enseñarle al scorer el
+sinónimo que le falta —como se hizo con «Sin azúcar» / «Zero»—, con prueba de
+que lo que debe seguir rechazando se sigue rechazando. Bajar el umbral hace
+entrar también todo lo que el umbral estaba frenando.

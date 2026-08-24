@@ -12,8 +12,37 @@ export default defineConfig({
   // convirtiendo saturaciÃ³n del host en timeouts no deterministas del gate.
   workers: 1,
   forbidOnly: true,
-  retries: 0,
-  reporter: [['list']],
+  /*
+   * REINTENTAR EN CI, NUNCA EN LOCAL.
+   *
+   * Medido sobre el historial reciente, no supuesto. Tres corridas de `main`
+   * murieron por el gate de navegador; ninguna era una regresión:
+   *
+   *   109d78a  business-windows-operations:144  el formulario pedía la frase de
+   *            confirmación que la prueba ACABABA de escribir: el click llegó
+   *            antes que el `fill`.
+   *   109d78a  launch-ux-checkout-reorder:559   una de las dos muestras de alto
+   *            midió 0: se midió antes de que el navegador maquetara.
+   *   956fa74  catalog-card-glow:68 [webkit]    «WebKit encountered an internal
+   *            error» dentro de `waitForURL`. Falla del motor, no del producto.
+   *
+   * El primer par corrió sobre un ÁRBOL IDÉNTICO —mismo hash de árbol— al de
+   * `d313980`, que había pasado 462/462 minutos antes. Los mismos bytes, dos
+   * veredictos opuestos: eso no es una regresión, es ruido, y costaba 28 a 33
+   * minutos y un `main` en rojo cada vez.
+   *
+   * Por qué global y no sólo WebKit: dos de las tres fueron de Chromium.
+   * Reintentar sólo WebKit habría dejado pasar la mayoría.
+   *
+   * En LOCAL sigue en 0: quien escribe una prueba tiene que ver su carrera la
+   * primera vez, no ganarla por reintento.
+   *
+   * El reintento NO tapa nada: `tests/e2e-infra/reporter-inestables.mjs` nombra
+   * cada prueba que pasó al reintentar y pone la corrida en rojo si son
+   * demasiadas. Ver docs/operacion/ci-inestables.md.
+   */
+  retries: process.env.CI ? 1 : 0,
+  reporter: [['list'], ['./tests/e2e-infra/reporter-inestables.mjs']],
   timeout: 45_000,
   expect: {
     timeout: 5_000,

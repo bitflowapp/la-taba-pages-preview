@@ -25,7 +25,11 @@ test('release candidate CI validates pull requests without deploy permissions', 
   assert.match(ci, /npm run catalog:images:verify/);
   assert.match(ci, /npm audit --omit=dev/);
   assert.match(ci, /npm --prefix services\/arca-fiscal-bridge audit --omit=dev/);
-  assert.match(ci, /id: e2e[\s\S]*npm run test:e2e[\s\S]*--trace=retain-on-failure/);
+  // La traza pasó de `retain-on-failure` a `on-first-retry` al adoptar
+  // `retries: 1` en CI: con reintentos, el intento que hay que poder mirar es
+  // JUSTO el que se recupera —la prueba inestable—, y ese es el que graba esta
+  // opción. Ver docs/operacion/ci-inestables.md.
+  assert.match(ci, /id: e2e[\s\S]*npm run test:e2e[\s\S]*--trace=on-first-retry/);
   assert.match(
     ci,
     /if: \$\{\{ failure\(\) && steps\.e2e\.outcome == 'failure' \}\}[\s\S]*actions\/upload-artifact@[0-9a-f]{40} # v4/,

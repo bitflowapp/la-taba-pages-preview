@@ -90,7 +90,7 @@ test('sin GPS real: el tracking es honesto (mapa sin rider, ruta ni puntos falso
     });
   });
 
-  await expect(tracking.locator('.tracking-brand-row > strong')).toHaveText('La Taba 2');
+  await expect(tracking.locator('.tracking-brand-row > strong')).toHaveText('La Taba');
   await expect(tracking.getByRole('button', { name: 'Abrir menú' })).toBeVisible();
   await expect(tracking.locator('.tracking-hero h1')).toHaveText('Tu pedido está en camino');
   await expect(tracking.locator('.tracking-hero')).not.toContainText(/GPS|mapa|no mostramos/i);

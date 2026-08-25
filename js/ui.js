@@ -308,11 +308,27 @@ function applyHomeBrandHeader(config) {
   const address = publishedBusinessValue(config.address);
   const hours = publishedBusinessValue(config.openingHoursLabel);
 
+  /*
+   * QUÉ HACE ESTE COMERCIO, en el renglón que ya existía.
+   *
+   * La home no decía «delivery» en ninguna parte —cero coincidencias en 2.143 px
+   * de alto, medido el 2026-08-25— y un cliente que llegaba por un enlace no
+   * tenía cómo saber si le llevan la bebida o tiene que ir a buscarla.
+   *
+   * Va acá y no en un renglón propio porque un renglón propio CUESTA: a 360 px
+   * la fila del estado envolvía y empujaba el primer «Agregar» 21 px fuera de la
+   * primera pantalla. El rubro que ocupaba este lugar («Tienda de bebidas») ya
+   * está en la barra superior; el servicio no estaba en ningún lado.
+   *
+   * Fail-closed como el resto del encabezado: sin nada que decir del servicio,
+   * vuelve el rubro.
+   */
   const place = $('[data-home-business-place]');
   if (place) {
-    place.textContent = address && rubro
-      ? `${rubro} · ${address}`
-      : address || rubro;
+    const encabeza = homeServiceLine(config) || rubro;
+    place.textContent = address && encabeza
+      ? `${encabeza} · ${address}`
+      : address || encabeza;
     place.hidden = !place.textContent;
   }
 
@@ -322,11 +338,6 @@ function applyHomeBrandHeader(config) {
     hoursNode.hidden = !hours;
   }
 
-  const service = $('[data-home-service]');
-  if (service) {
-    service.textContent = homeServiceLine(config);
-    service.hidden = !service.textContent;
-  }
 }
 
 /**
@@ -339,12 +350,12 @@ function applyHomeBrandHeader(config) {
  */
 export function homeServiceLine(config = {}) {
   const zona = publishedBusinessValue(config.deliveryZone);
-  const partes = [];
-  if (config.deliveryEnabled !== false) partes.push(zona ? `Delivery en ${zona}` : 'Delivery');
-  if (config.pickupEnabled) partes.push('Retiro en el local');
-  const envio = Number(config.deliveryFee);
-  if (Number.isFinite(envio) && envio > 0) partes.push(`Envío ${money(envio)}`);
-  return partes.join(' · ');
+  const entrega = config.deliveryEnabled !== false;
+  const retiro = Boolean(config.pickupEnabled);
+  if (!entrega && !retiro) return '';
+  if (!entrega) return 'Retiro en el local';
+  const base = zona ? `Delivery en ${zona}` : 'Delivery';
+  return retiro ? `${base} y retiro` : base;
 }
 
 function applyFulfillmentAvailability(availability) {

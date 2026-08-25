@@ -112,6 +112,34 @@ test('la capacidad no se dice dos veces cuando la variante ES la capacidad', () 
   assert.equal(cardPresentationLine({ name: 'Sprite', presentation: '500 ml' }), '500 ml');
 });
 
+test('una UNIDAD tampoco arrastra la ficha técnica cruda de la base', () => {
+  /*
+   * Había regla para el pack y ninguna para la unidad, así que el catálogo
+   * importado imprimía «1,5 L · Botella PET · 1,5 L · Unidad»: el litraje dos
+   * veces, el envase que la góndola no nombra, y la palabra «Unidad», que no
+   * informa nada. Ninguna prueba lo veía porque afirmaban «contiene 1,5 L» y
+   * «contiene Botella PET», y las dos son ciertas sobre la línea rota.
+   */
+  assert.equal(
+    cardPresentationLine({
+      name: 'Coca-Cola Original',
+      variant: 'Botella PET · 1,5 L · Unidad',
+      capacityValue: 1500,
+      capacityUnit: 'ml',
+      unitsPerPack: 1,
+      packageType: 'botella-pet',
+    }),
+    '1,5 L',
+  );
+  // Una variante DE VERDAD es una palabra, no una lista, y esa sí entra.
+  assert.equal(
+    cardPresentationLine({
+      name: 'Villavicencio', variant: 'Con gas', capacityValue: 500, capacityUnit: 'ml', unitsPerPack: 1,
+    }),
+    '500 ml · Con gas',
+  );
+});
+
 test('el pack no arrastra la ficha técnica cruda de la base', () => {
   // Los 4 packs previos traen variant/presentation con todo pegado.
   assert.equal(

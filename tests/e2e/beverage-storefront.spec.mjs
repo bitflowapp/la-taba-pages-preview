@@ -3,14 +3,14 @@ import path from 'node:path';
 import { test, expect } from '@playwright/test';
 import { gotoDemoReset, installBrowserStubs, installPageGuards, measureStableControls, seedCartAboveMinimum } from './helpers.mjs';
 
-test('la home presenta La Taba 2 con marca propia y un storefront comercial limpio', async ({ page }) => {
+test('la home presenta La Taba con marca propia y un storefront comercial limpio', async ({ page }) => {
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
   await gotoDemoReset(page, '/?reset=1&demo=1');
 
   await expect(page.locator('[data-demo-mode-banner]')).toHaveCount(0);
-  await expect(page.locator('.topbar .brand-word')).toHaveText('La Taba 2');
-  await expect(page.getByRole('heading', { name: 'La Taba 2', level: 1 })).toBeVisible();
+  await expect(page.locator('.topbar .brand-word')).toHaveText('La Taba');
+  await expect(page.getByRole('heading', { name: 'La Taba', level: 1 })).toBeVisible();
   await expect(page.locator('[data-view="home"] .taba-home-search')).toBeVisible();
   // La fila la componen las categorías con producto comprable + "Todas". Desde
   // la publicación minorista son Cervezas y Energizantes: gaseosas y mixers
@@ -134,7 +134,7 @@ for (const viewport of [
     // anchos de teléfono, así que el techo deja holgura para el copy y sigue
     // rompiéndose con un tramo de más, que es lo que tiene que detectar.
     expect(geometry.height).toBeLessThan(3700);
-    await expect(page.locator('.topbar .brand-word')).toHaveText('La Taba 2');
+    await expect(page.locator('.topbar .brand-word')).toHaveText('La Taba');
     await expect(page.locator('.topbar .brand-text small')).toBeHidden();
     await expect(page.locator('.topbar-actions .cart-button')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBeTruthy();

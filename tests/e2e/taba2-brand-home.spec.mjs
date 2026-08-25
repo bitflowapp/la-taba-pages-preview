@@ -1,4 +1,4 @@
-// Regresión visual de la home de marca de La Taba 2.
+// Regresión visual de la home de marca de La Taba.
 //
 // Por qué NO son capturas de píxeles: el gate de CI corre en `ubuntu-latest` y
 // el desarrollo ocurre en Windows. Una baseline de píxeles generada en una de
@@ -130,9 +130,14 @@ test('el encabezado presenta la identidad real del comercio, no una escrita a ma
   // primer producto. Lo que se fija sigue siendo lo mismo que fijaba antes —que
   // la identidad SALE de `businessConfig` y no está escrita a mano—, ahora
   // sobre el encabezado compacto.
-  await expect(page.getByRole('heading', { name: 'La Taba 2', level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'La Taba', level: 1 })).toBeVisible();
   // Rubro y dirección salen de `businessConfig`: la vista sólo los concatena.
-  await expect(page.locator('[data-home-business-place]')).toHaveText('Tienda de bebidas · Mendoza 827, Neuquén');
+  // Este renglón dice QUÉ HACE el comercio y DÓNDE. Decía el rubro («Tienda de
+  // bebidas»), que ya está en la barra superior, mientras la palabra «delivery»
+  // no aparecía en 2.143 px de home: un cliente que llegaba por un enlace no
+  // tenía cómo saber si le llevan la bebida. Sale de `businessConfig`, igual
+  // que antes, y sin nada que decir del servicio vuelve el rubro.
+  await expect(page.locator('[data-home-business-place]')).toHaveText('Delivery y retiro · Mendoza 827, Neuquén');
   await expect(page.locator('[data-open-status]')).toBeVisible();
   await expect(page.locator('[data-open-status]')).toHaveText('Pedidos disponibles');
   // Sin horario publicado no se inventa ninguno.
@@ -157,10 +162,17 @@ test('sin historias publicadas el logo no se anuncia como botón', async ({ page
   await expect(logoHome(page)).toBeHidden();
   await expect(page.locator(`${PERFIL_HEAD} .brand-logo-action`)).toBeHidden();
   // La fila de círculos es la entrada nueva: sin historias queda vacía y no
-  // sobrevive ni un círculo prometiendo contenido. El emblema NO se va con
-  // ella: sigue siendo la identidad del comercio, sólo que sin aro ni botón.
+  // sobrevive ni un círculo prometiendo contenido.
   await expect(page.locator('.brand-story-circle')).toHaveCount(0);
-  await expect(logoEstaticoHome(page)).toBeVisible();
+  /*
+   * Y la fila ENTERA desaparece, emblema incluido. Antes el emblema se quedaba
+   * solo, como identidad del comercio: 88 px de la primera pantalla para
+   * repetir la marca por TERCERA vez —ya está en la barra superior y en el h1—
+   * justo encima del primer producto. Medido el 2026-08-25, 383 de los 844 px
+   * del pliegue eran cromo antes de la primera bebida.
+   */
+  await expect(page.locator(`${HERO} .brand-stories-strip`)).toBeHidden();
+  await expect(logoEstaticoHome(page)).toBeHidden();
   // El aro no se pinta: nada promete contenido inexistente.
   const ringPainted = await page.locator(`${HERO} [data-stories-static] .brand-logo-ring`)
     .evaluate((node) => getComputedStyle(node).backgroundImage !== 'none');
@@ -204,17 +216,27 @@ test('el emblema de marca se ve entero, con y sin el aro de historias encendido'
   // lugar donde pintarlo.
   expect(capas.caraDentroDelSlot).toBe(true);
 
-  // Sin historias el emblema sigue siendo visible sobre el shell oscuro, que es
-  // justo cuando el aro no está para separarlo del fondo.
+  /*
+   * Sin historias la fila ENTERA se va, emblema incluido. Antes el emblema se
+   * quedaba solo sobre el shell oscuro; medido el 2026-08-25, esos 88 px eran
+   * la tercera repetición de la marca —ya está en la barra superior y en el
+   * h1— justo encima del primer producto, en una primera pantalla donde 383 de
+   * 844 px eran cromo antes de la primera bebida.
+   *
+   * Lo que sigue valiendo, y es lo que se fija acá: el emblema se dibuja entero
+   * CUANDO se dibuja, con su cara dentro del slot y su sombra propia. Eso se
+   * verifica arriba, con historias publicadas.
+   */
   const limpio = await page.context().browser().newContext({ viewport: PHONE });
   const sinHistorias = await limpio.newPage();
   await installBrowserStubs(sinHistorias);
   await sinHistorias.addInitScript(() => { window.TABA2_STORIES = []; });
   await gotoDemoReset(sinHistorias, '/?reset=1&demo=1');
-  await sinHistorias.waitForSelector('[data-stories-slot][data-stories-state="empty"]');
-  const cara = sinHistorias.locator(`${HERO} [data-stories-static] .brand-logo-face`);
-  await expect(cara.locator('img')).toBeVisible();
-  expect(await cara.evaluate((n) => getComputedStyle(n).boxShadow)).not.toBe('none');
+  // La fila entera queda oculta, así que el slot se espera ATTACHED y no
+  // visible: pedir 'visible' esperaría para siempre justo lo que este cambio
+  // vino a sacar de la primera pantalla.
+  await sinHistorias.waitForSelector('[data-stories-slot][data-stories-state="empty"]', { state: 'attached' });
+  await expect(sinHistorias.locator(`${HERO} .brand-stories-strip`)).toBeHidden();
   await limpio.close();
 });
 
@@ -241,7 +263,7 @@ test('con historias vigentes el logo es botón, el aro se enciende y el acceso d
   await expect(entradaHome(page)).toHaveAttribute('data-stories-state', 'unseen');
   const logo = logoHome(page);
   await expect(logo).toBeVisible();
-  await expect(logo).toHaveAttribute('aria-label', /2 historias nuevas de La Taba 2/);
+  await expect(logo).toHaveAttribute('aria-label', /2 historias nuevas de La Taba/);
   // El estado no viaja sólo en el color del aro: hay un círculo por historia y
   // cada uno declara si ya se vio. Antes esto lo decía un rótulo suelto de una
   // tarjeta ancha que no mostraba ninguna historia.
@@ -297,7 +319,7 @@ test('Perfil ofrece la misma entrada a historias que la home, sincronizada', asy
     .toHaveAttribute('data-stories-state', 'unseen');
   // La etiqueta sale del MISMO estado que la de la home: si divergen, una de las
   // dos le está mintiendo al cliente sobre cuántas historias le faltan.
-  await expect(enPerfil).toHaveAttribute('aria-label', /2 historias nuevas de La Taba 2/);
+  await expect(enPerfil).toHaveAttribute('aria-label', /2 historias nuevas de La Taba/);
 
   await enPerfil.click();
   const modal = page.locator('[data-stories-modal]');
@@ -310,8 +332,8 @@ test('Perfil ofrece la misma entrada a historias que la home, sincronizada', asy
   await expect(page.locator(`${PERFIL_HEAD} [data-stories-slot]`))
     .toHaveAttribute('data-stories-state', 'unseen');
   await expect(entradaHome(page)).toHaveAttribute('data-stories-state', 'unseen');
-  await expect(enPerfil).toHaveAttribute('aria-label', /la historia nueva de La Taba 2/);
-  await expect(logoHome(page)).toHaveAttribute('aria-label', /la historia nueva de La Taba 2/);
+  await expect(enPerfil).toHaveAttribute('aria-label', /la historia nueva de La Taba/);
+  await expect(logoHome(page)).toHaveAttribute('aria-label', /la historia nueva de La Taba/);
 });
 
 test('el buscador ocupa el ancho útil, es táctil y no dispara el zoom de iOS', async ({ page }) => {
@@ -323,7 +345,9 @@ test('el buscador ocupa el ancho útil, es táctil y no dispara el zoom de iOS',
   expect(box.width).toBeGreaterThan(home.width * 0.88);
   expect(box.height).toBeGreaterThanOrEqual(48);
   expect(await input.evaluate((node) => parseFloat(getComputedStyle(node).fontSize))).toBeGreaterThanOrEqual(16);
-  await expect(input).toHaveAttribute('placeholder', 'Buscar bebidas, marcas y ofertas…');
+  // Un solo texto para las tres cajas de búsqueda, y corto: a 320 px los tres
+  // anteriores se cortaban dentro de su propia caja.
+  await expect(input).toHaveAttribute('placeholder', 'Buscar bebidas o marcas');
 
   await input.fill('coca');
   await expect(page.locator('[data-view="catalog"]')).toBeVisible();

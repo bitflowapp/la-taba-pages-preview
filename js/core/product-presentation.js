@@ -167,6 +167,28 @@ export function productAccessibleName(product = {}) {
 }
 
 /**
+ * ¿La «variante» es en realidad la ficha técnica pegada?
+ *
+ * Los catálogos importados traen variantes como «Botella PET · 1,5 L · Unidad»:
+ * no es una variante, es la presentación entera escrita de nuevo. Imprimirla al
+ * lado de la capacidad daba «1,5 L · Botella PET · 1,5 L · Unidad», que dice el
+ * litraje dos veces, filtra el envase que la góndola no nombra y termina con la
+ * palabra «Unidad», que no informa nada.
+ *
+ * Había una regla para el caso del PACK y ninguna para el de la unidad, así que
+ * el defecto vivía en el catálogo de demostración —y en cualquier alta futura
+ * que se cargue con la misma forma— sin que ninguna prueba lo viera: las
+ * afirmaciones eran «contiene 1,5 L» y «contiene Botella PET», y las dos son
+ * ciertas sobre la línea rota.
+ *
+ * El separador es la señal: una variante de verdad es una palabra —«Zero»,
+ * «Pomelo», «Sin gas»—, nunca una lista.
+ */
+function varianteEsFichaTecnica(variante) {
+  return /·|\|/.test(String(variante || ''));
+}
+
+/**
  * La línea de la tarjeta.
  *
  *   unidad:  «1,5 L» · «354 ml · Lata» · «2,25 L · Sin gas»
@@ -195,7 +217,8 @@ export function cardPresentationLine(product = {}) {
     && !varianteEsLaCapacidad(variante, capacidad, product)
     // «Original» no distingue: lo que distingue es que NO diga Zero.
     && normalizar(variante) !== 'original'
-    && !(VARIANTES_SIN_AZUCAR.includes(normalizar(variante)) && tituloDiceSinAzucar(product));
+    && !(VARIANTES_SIN_AZUCAR.includes(normalizar(variante)) && tituloDiceSinAzucar(product))
+    && !varianteEsFichaTecnica(variante);
 
   const envase = String(product.packageType || product.packagingType || product.packaging_type || '').trim().toLowerCase();
   const envaseAporta = ENVASES_QUE_SE_DICEN.has(envase);

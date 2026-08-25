@@ -21,7 +21,7 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await expect(
     page.locator('[data-view="business"] [data-admin-unlocked] .section-head h1'),
   ).toHaveText('Central de pedidos');
-  await expect(page.locator('.topbar .brand-word')).toHaveText('La Taba 2');
+  await expect(page.locator('.topbar .brand-word')).toHaveText('La Taba');
   await expect(page.locator('.inbox-tabs')).toContainText('Nuevos');
   await expect(page.locator('.inbox-tabs')).toContainText('En preparación');
   await expect(page.locator('.inbox-tabs')).toContainText('Listos');

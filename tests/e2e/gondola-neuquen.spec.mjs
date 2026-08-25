@@ -291,9 +291,15 @@ test('ninguna imagen queda rota y toda tarjeta sin foto usa el recurso de TABA',
   expect(rotas).toEqual([]);
 
   const conFoto = await page.locator('.thumb.has-photo').count();
-  const placeholder = await page.locator('.thumb.uses-placeholder').count();
-  expect(placeholder).toBeGreaterThan(0);
+  // Ya no es el mismo envase gris para todos: cada producto sin fotografía
+  // publicable dibuja SU lámina, obra propia del comercio.
+  const laminas = await page.locator('.thumb.uses-lamina').count();
+  expect(laminas).toBeGreaterThan(0);
   expect(conFoto).toBe(0);
+  const distintas = await page.evaluate(() => new Set(
+    [...document.querySelectorAll('.thumb.uses-lamina img')].map((i) => i.getAttribute('src')),
+  ).size);
+  expect(distintas, 'todas las láminas son el mismo archivo: la góndola no distingue productos').toBeGreaterThan(1);
 });
 
 /*

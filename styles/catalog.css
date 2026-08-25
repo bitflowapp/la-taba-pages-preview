@@ -680,6 +680,21 @@
   left: 10px;
 }
 
+/* La pastilla de vidriera va ABAJO A LA DERECHA del plato: arriba a la
+   izquierda vive el estado de stock, arriba a la derecha el favorito, y abajo a
+   la izquierda la marca de alcohol. Es el único canto que queda libre, y es
+   además el más cerca del precio, que es con lo que se lee. */
+.product-offer-tag {
+  position: absolute;
+  z-index: 2;
+  right: 9px;
+  bottom: 9px;
+}
+
+.product-offer-tag:empty {
+  display: none;
+}
+
 /* Marca de alcohol. Abajo a la izquierda: arriba a la izquierda vive el estado
    de stock y arriba a la derecha, favoritos. No recibe eventos —es rótulo, no
    control— así que no le roba el toque a la foto.

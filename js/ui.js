@@ -95,6 +95,7 @@ import {
 import { PREVIEW_STORY_SEED } from './preview-stories-data.js';
 import { LAMINA_GENERICA, laminaDeProducto } from './core/taba-packshot.js';
 import { normalizeSearchText, productMatchesQuery } from './core/catalog-search.js';
+import { merchandisingBadge } from './core/merchandising-tags.js';
 
 export const $ = (selector, root = document) => root.querySelector(selector);
 export const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -681,7 +682,10 @@ function topBadge(product) {
   if (product.combo && off > 0) return `<span class="offer-badge combo">Combo · ${off}% OFF</span>`;
   if (off > 0) return `<span class="offer-badge discount">${off}% OFF</span>`;
   if (product.badge) return `<span class="offer-badge promo">${escapeHtml(product.badge)}</span>`;
-  if (product.popular) return '<span class="offer-badge promo">Más pedido</span>';
+  // «Más pedido» era un ranking que ningún dato respalda: la tienda abrió hace
+  // días. La etiqueta significa que el local lo eligió, y eso es lo que dice.
+  const deVidriera = merchandisingBadge(product);
+  if (deVidriera) return `<span class="offer-badge promo">${escapeHtml(deVidriera)}</span>`;
   if (product.featured) return '<span class="offer-badge promo">Destacado</span>';
   return '';
 }
@@ -2496,6 +2500,12 @@ function renderProducts() {
           <button class="product-media" type="button" data-product-detail="${product.id}" aria-label="${escapeHtml(mediaLabel)}">
             ${productThumb(product, 'grid')}
             <span class="product-stock-tag" aria-hidden="true">${stockPill(product)}</span>
+            <!--
+              La pastilla de vidriera vivía SÓLO en los carruseles de la home y
+              en la ficha: una oferta etiquetada por el comercio no se veía en
+              la grilla del catálogo, que es donde el cliente compara y compra.
+            -->
+            <span class="product-offer-tag" aria-hidden="true">${topBadge(product)}</span>
           </button>
           ${ageTag(product)}
           <button class="product-favorite ${favorite ? 'is-favorite' : ''}" type="button" data-favorite-toggle="${product.id}" aria-label="${favorite ? 'Quitar' : 'Guardar'} ${escapeHtml(productAccessibleName(product))} de favoritos" aria-pressed="${favorite}">

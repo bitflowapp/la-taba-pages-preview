@@ -5,6 +5,7 @@ import {
   normalizeTrackingLocation,
   toDomainOrder,
 } from '../core/domain.js';
+import { isFeaturedByMerchant, merchandisingBadge } from '../core/merchandising-tags.js';
 import { normalizeMoneyValue } from '../core/pricing.js';
 import { normalizeAddressDetails } from '../core/address.js';
 import {
@@ -2331,9 +2332,12 @@ function rowToCatalogProduct(row = {}) {
     alcoholic: Boolean(row.is_alcoholic),
     minimumAge,
     tags,
-    featured: tagSet.has('destacado') || tagSet.has('promo') || tagSet.has('promoción'),
+    // El vocabulario de vidriera vive en core/merchandising-tags.js, con sus
+    // tests: es el único canal de merchandising que llega vivo a producción y
+    // no toca el precio.
+    featured: isFeaturedByMerchant({ tags }),
     popular: tagSet.has('más vendido') || tagSet.has('mas vendido') || tagSet.has('popular'),
-    badge: tagSet.has('promo') || tagSet.has('promoción') ? 'Promo' : '',
+    badge: merchandisingBadge({ tags }),
     unit: packagingType || 'unidad',
     unitLabel: [presentation, capacity, packagingType].filter(Boolean).join(' · ') || 'Unidad',
     marketNote: 'Datos verificados por el comercio.',

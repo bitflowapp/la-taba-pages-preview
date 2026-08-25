@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v85-pildora-del-mapa';
+const CACHE_NAME = 'la-taba-runtime-v86-gondola-premium';
 const ASSETS = [
   './',
   './index.html',
@@ -73,6 +73,8 @@ const ASSETS = [
   './js/core/order-workflow.js',
   './js/core/pricing.js',
   './js/core/product-presentation.js',
+  './js/core/taba-packshot.js',
+  './js/core/taba-packshot-manifest.js',
   // `state.js` la importa de forma estática: sin ella acá, un cliente con la
   // PWA instalada y sin red no puede ni arrancar la tienda.
   './js/core/production-cart-storage.js',
@@ -266,8 +268,39 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
+  if (esArteDeProducto(url)) {
+    event.respondWith(cachePrimero(request));
+    return;
+  }
+
   event.respondWith(networkFirst(request));
 });
+
+/*
+ * El arte de producto es INMUTABLE: el nombre del archivo lleva la huella de su
+ * contenido, así que una ruta dada devuelve siempre los mismos bytes. Cambiar el
+ * dibujo cambia la ruta.
+ *
+ * Por eso no entra al precache —treinta y un archivos más en un `addAll`, que es
+ * todo-o-nada, es riesgo de instalación a cambio de nada— y sí sale de la caché
+ * primero: la góndola vuelve a dibujarse al instante en la segunda visita y no
+ * gasta datos del teléfono repitiendo imágenes que no pueden haber cambiado.
+ */
+function esArteDeProducto(url) {
+  return url.pathname.includes('/assets/products/');
+}
+
+async function cachePrimero(request) {
+  const guardada = await cachedFallback(request);
+  if (guardada) return guardada;
+  try {
+    const response = await fetch(request);
+    if (isUsable(request, response)) guardar(request, response.clone());
+    return response;
+  } catch {
+    return Response.error();
+  }
+}
 
 /*
  * Cuánto se espera a una red que ni contesta ni rechaza.

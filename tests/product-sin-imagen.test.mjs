@@ -44,21 +44,25 @@ test('caso 9 · un producto sin imagen se dibuja completo y digno', () => {
   for (const variante of ['grid', 'list', 'modal']) {
     const html = productThumb(SIN_FOTO, variante);
 
-    // Muestra el recurso propio de TABA, no un hueco ni un ícono roto.
-    assert.match(html, /assets\/products\/beverage-placeholder\.svg/, variante);
-    assert.match(html, /class="thumb uses-placeholder/, variante);
-    assert.match(html, /is-placeholder/, variante);
+    // Muestra la lámina propia de TABA para ESTE producto: no un hueco, no un
+    // ícono roto, y no la misma botella gris que las otras veintinueve tarjetas.
+    assert.match(html, /assets\/products\/taba\//, variante);
+    assert.match(html, /class="thumb uses-lamina/, variante);
+    assert.match(html, /is-lamina/, variante);
 
     // Ocupa exactamente el mismo lugar que una foto: sin salto de maquetación.
-    assert.match(html, /width="400"/, variante);
-    assert.match(html, /height="400"/, variante);
+    assert.match(html, /width="1000"/, variante);
+    assert.match(html, /height="1000"/, variante);
 
     // Se anuncia con palabras, no con un alt vacío que el lector de pantalla
     // saltee: la persona ciega tiene que enterarse de que no hay foto.
     assert.match(html, /role="img"/, variante);
+    // Se anuncia por lo que ES —un dibujo del producto— y no por lo que le
+    // falta. «Producto sin imagen oficial» le contaba al cliente un problema
+    // de la tienda mientras estaba viendo su bebida correctamente dibujada.
     assert.match(
       html,
-      /aria-label="Producto sin imagen oficial: Coca-Cola Original"/,
+      /aria-label="Ilustración de Coca-Cola Original"/,
       variante,
     );
 
@@ -89,7 +93,7 @@ test('una foto sin derechos no se muestra, por completa que venga su metadata', 
 
   assert.equal(productImageRightsCleared(deTercero), false);
   const html = productThumb(deTercero);
-  assert.match(html, /beverage-placeholder\.svg/);
+  assert.match(html, /assets\/products\/taba\//);
   assert.doesNotMatch(html, /sprite-sin-azucar/);
 });
 
@@ -159,7 +163,11 @@ test('caso 10 · toda foto publicable está declarada en el manifiesto, no en el
 
   assert.ok(publicables.length > 0);
   for (const imagen of publicables) {
+    // El respaldo genérico y las láminas propias no citan fuente externa: no
+    // vienen de ninguna, las dibuja el comercio. Su procedencia la prueba el
+    // generador, que `npm run check` corre en modo `--verificar`.
     if (imagen.path === 'assets/products/beverage-placeholder.svg') continue;
+    if (imagen.path.startsWith('assets/products/taba/')) continue;
     const fuente = declarados.get(imagen.path);
     assert.ok(fuente, `${imagen.path} se considera publicable y no está en el manifiesto`);
     assert.ok(String(fuente.rightsReference || '').trim(), `${imagen.path} no cita ninguna autoridad de derechos`);
@@ -276,8 +284,8 @@ test('un combo con un componente sin foto no dibuja una imagen rota', () => {
   });
 
   assert.doesNotMatch(html, /<img[^>]*src=""/, 'volvió el src vacío');
-  assert.match(html, /assets\/products\/beverage-placeholder\.svg/);
-  assert.match(html, /combo-media-item uses-placeholder/);
+  assert.match(html, /assets\/products\/taba\//);
+  assert.match(html, /combo-media-item uses-lamina/);
 });
 
 test('un combo que nadie puede cobrar no se ofrece', () => {
@@ -315,5 +323,5 @@ test('la vidriera publica una foto sólo si el catálogo también la publicaría
 
   // Y la tarjeta obedece la misma respuesta.
   assert.match(productThumb(conDerechos), /assets\/products\/x-thumb\.webp/);
-  assert.match(productThumb(sinDerechos), /beverage-placeholder\.svg/);
+  assert.match(productThumb(sinDerechos), /assets\/products\/taba\//);
 });

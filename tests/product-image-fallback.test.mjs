@@ -9,13 +9,17 @@ import { products } from '../js/approved-beverage-demo-data.js';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
-test('all QA or unofficial products use the same neutral placeholder', () => {
+test('un producto sin foto publicable dibuja la lámina propia de TABA', () => {
   const qa = productThumb({ name: 'Bebida QA', categoryId: 'cervezas', qaFixture: true, image: 'assets/products/other.webp' });
   const unofficial = productThumb({ name: 'Producto sin aprobar', categoryId: 'cervezas', image: 'assets/products/unapproved.webp' });
   for (const html of [qa, unofficial]) {
-    assert.match(html, /assets\/products\/beverage-placeholder\.svg/);
-    assert.match(html, /uses-placeholder/);
-    assert.match(html, /Producto sin imagen oficial/);
+    // Ya no es el mismo dibujo gris para todos: es la lámina de ESE producto,
+    // obra propia del comercio, generada desde una especificación versionada.
+    // Estos dos son inventados y no tienen lámina propia, así que caen a la
+    // genérica, que vive en la misma carpeta y es igual de propia.
+    assert.match(html, /assets\/products\/taba\//);
+    assert.match(html, /uses-lamina/);
+    assert.match(html, /Ilustración de/);
     assert.doesNotMatch(html, /<svg/);
     assert.doesNotMatch(html, /srcset=/);
   }
@@ -43,7 +47,7 @@ test('el par responsive aparece cuando, y sólo cuando, hay derechos para public
       / srcset="/,
       `${product.id} declara ${product.rightsStatus}: no se publica su foto`,
     );
-    assert.match(html, /beverage-placeholder\.svg/);
+    assert.match(html, /assets\/products\/taba\//);
   }
 
   // Y cuando el permiso está, el par responsive vuelve intacto.
@@ -62,7 +66,9 @@ test('broken approved image switches to the neutral accessible fallback', () => 
   const removed = [];
   const image = { classList: imageClasses, dataset: { productName: 'Producto aprobado' }, src: 'assets/products/broken.webp', closest: () => shell, removeAttribute(name) { removed.push(name); } };
   assert.equal(handleProductImageError({ target: image }), true);
-  assert.equal(image.src, 'assets/products/beverage-placeholder.svg');
+  // Sin `data-taba-lamina` en el nodo —el caso de una foto oficial que se rompe—
+  // el respaldo es la lámina genérica: acá no hay producto, hay un <img> que falló.
+  assert.match(image.src, /assets\/products\/taba\/generica-/);
   assert.deepEqual(removed, ['srcset', 'sizes']);
   assert.equal(shellClasses.contains('has-photo'), false);
   assert.equal(shellClasses.contains('uses-placeholder'), true);

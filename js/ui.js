@@ -12,7 +12,13 @@ import {
   getRememberedCheckoutValues,
 } from './core/customer-profile.js';
 import { getFavoriteProductIds, isFavoriteProduct } from './core/customer-preferences.js';
-import { cardPresentationLine, formatCapacity } from './core/product-presentation.js';
+import {
+  cardPresentationLine,
+  cardTitle,
+  formatCapacity,
+  packagingLabel,
+  productAccessibleName,
+} from './core/product-presentation.js';
 import {
   PRICE_PENDING_DETAIL,
   PRICE_PENDING_TITLE,
@@ -87,10 +93,18 @@ import {
   storyEntryState,
 } from './core/stories.js';
 import { PREVIEW_STORY_SEED } from './preview-stories-data.js';
+import { LAMINA_GENERICA, laminaDeProducto } from './core/taba-packshot.js';
+import { normalizeSearchText, productMatchesQuery } from './core/catalog-search.js';
 
 export const $ = (selector, root = document) => root.querySelector(selector);
 export const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
-const PRODUCT_PLACEHOLDER_IMAGE = 'assets/products/beverage-placeholder.svg';
+/*
+ * El respaldo del respaldo. La imagen que ve el cliente cuando no hay
+ * fotografía publicable ya NO es ésta: es la lámina dibujada de SU producto
+ * (`core/taba-packshot.js`). Esta constante queda para el manejador de error,
+ * que sólo tiene el nodo <img> y no el producto que lo originó.
+ */
+const PRODUCT_PLACEHOLDER_IMAGE = LAMINA_GENERICA;
 
 export function handleProductImageError(event) {
   const image = event?.target;
@@ -106,7 +120,11 @@ export function handleProductImageError(event) {
   image.dataset.fallbackApplied = 'true';
   image.removeAttribute?.('srcset');
   image.removeAttribute?.('sizes');
-  image.src = PRODUCT_PLACEHOLDER_IMAGE;
+  // La lámina de ESTE producto viaja en el nodo, porque acá no hay producto:
+  // hay un <img> que falló. Sin eso, una foto rota degradaba a la botella
+  // genérica incluso teniendo su propio dibujo al lado.
+  image.src = image.dataset.tabaLamina || PRODUCT_PLACEHOLDER_IMAGE;
+  image.classList.remove('is-lamina');
   image.classList.add('is-placeholder');
   shell?.classList?.remove('has-photo');
   shell?.classList?.add('uses-placeholder');
@@ -596,18 +614,22 @@ export function productThumb(product, variant = 'grid') {
   const thumbnail = product.imageThumbnail || product.thumbnail || '';
   const official = productPhotoIsOfficial(product);
   const loading = variant === 'modal' ? 'eager' : 'lazy';
-  const source = official ? thumbnail : PRODUCT_PLACEHOLDER_IMAGE;
-  const width = official ? Number(product.thumbnailWidth || 400) : 400;
-  const height = official ? Number(product.thumbnailHeight || 400) : 400;
+  const lamina = laminaDeProducto(product);
+  const source = official ? thumbnail : lamina;
+  const width = official ? Number(product.thumbnailWidth || 400) : 1000;
+  const height = official ? Number(product.thumbnailHeight || 400) : 1000;
   const responsive = official
     ? ` srcset="${escapeHtml(thumbnail)} 400w, ${escapeHtml(image)} 1000w" sizes="${variant === 'modal' ? '(max-width: 700px) 92vw, 560px' : '(max-width: 700px) 45vw, 260px'}"`
     : '';
+  // Lo que se dice en voz alta también cambia: una lámina propia no es «un
+  // producto sin imagen», es el dibujo de ese producto. Decirle al cliente que
+  // le falta algo a la tienda cuando lo que ve es correcto era ruido.
   const label = official
     ? `Imagen oficial de ${product.name || 'producto'}`
-    : `Producto sin imagen oficial: ${product.name || 'bebida'}`;
+    : `Ilustración de ${product.name || 'bebida'}`;
   return `
-    <span class="thumb ${official ? 'has-photo' : 'uses-placeholder'} tone-${tone} category-${category} thumb-${variant}" role="img" aria-label="${escapeHtml(label)}">
-      <img class="thumb-img${official ? '' : ' is-placeholder'}" src="${escapeHtml(source)}"${responsive} width="${width}" height="${height}" alt="" data-product-name="${escapeHtml(product.name || 'bebida')}" loading="${loading}" decoding="async" />
+    <span class="thumb ${official ? 'has-photo' : 'uses-lamina'} tone-${tone} category-${category} thumb-${variant}" role="img" aria-label="${escapeHtml(label)}">
+      <img class="thumb-img${official ? '' : ' is-lamina'}" src="${escapeHtml(source)}"${responsive} width="${width}" height="${height}" alt="" data-product-name="${escapeHtml(product.name || 'bebida')}" data-taba-lamina="${escapeHtml(lamina)}" loading="${loading}" decoding="async" />
     </span>`;
 }
 
@@ -713,14 +735,14 @@ function quantityControl(product, quantity, { className = 'qty-stepper', justAdd
   const safeQuantity = Math.max(0, Math.floor(Number(quantity) || 0));
   const reachedStock = safeQuantity >= Number(product.stock || 0);
   const leftLabel = safeQuantity === 1
-    ? `Quitar ${product.name} del pedido`
-    : `Restar uno de ${product.name}`;
+    ? `Quitar ${productAccessibleName(product)} del pedido`
+    : `Restar uno de ${productAccessibleName(product)}`;
   const leftIcon = safeQuantity === 1 ? removeGlyph() : '<span aria-hidden="true">−</span>';
   return `
-    <div class="${className}${justAdded ? ' is-just-added' : ''}" aria-label="Cantidad de ${escapeHtml(product.name)} en el pedido"${justAdded ? ' data-added-flash' : ''}>
+    <div class="${className}${justAdded ? ' is-just-added' : ''}" aria-label="Cantidad de ${escapeHtml(productAccessibleName(product))} en el pedido"${justAdded ? ' data-added-flash' : ''}>
       <button class="icon-button compact qty-stepper-action qty-stepper-remove" type="button" data-cart-dec="${escapeHtml(product.id)}" aria-label="${escapeHtml(leftLabel)}">${leftIcon}</button>
       <strong aria-live="polite">${safeQuantity}</strong>
-      <button class="icon-button compact qty-stepper-action" type="button" data-cart-inc="${escapeHtml(product.id)}" aria-label="Sumar uno de ${escapeHtml(product.name)}" ${reachedStock ? 'disabled' : ''}><span aria-hidden="true">+</span></button>
+      <button class="icon-button compact qty-stepper-action" type="button" data-cart-inc="${escapeHtml(product.id)}" aria-label="Sumar uno de ${escapeHtml(productAccessibleName(product))}" ${reachedStock ? 'disabled' : ''}><span aria-hidden="true">+</span></button>
     </div>`;
 }
 
@@ -733,8 +755,8 @@ function quickAddControl(product, quantity, { className = 'add-button' } = {}) {
   const outOfStock = !isCommerciallyPurchasable(product);
   if (quantity > 0) return quantityControl(product, quantity, { justAdded: wasJustAdded(product.id) });
   const actionLabel = pricePending
-    ? `${product.name}: ${PRICE_PENDING_TITLE.toLowerCase()}; ${PRICE_PENDING_DETAIL.toLowerCase()}`
-    : `Agregar ${product.name} al pedido`;
+    ? `${productAccessibleName(product)}: ${PRICE_PENDING_TITLE.toLowerCase()}; ${PRICE_PENDING_DETAIL.toLowerCase()}`
+    : `Agregar ${productAccessibleName(product)} al pedido`;
   return `<button class="${className}${pricePending ? ' is-price-pending' : ''}" type="button" data-add-product="${escapeHtml(product.id)}" aria-label="${escapeHtml(actionLabel)}" ${outOfStock ? 'disabled' : ''}>
     ${pricePending ? '' : '<span class="add-plus" aria-hidden="true">+</span>'}<span class="add-text">${pricePending ? 'Precio pendiente' : outOfStock ? 'No disponible' : 'Agregar'}</span>
   </button>`;
@@ -827,15 +849,14 @@ function homeBestSellerProducts() {
  */
 function homeProductImage(product, className) {
   const official = productPhotoIsOfficial(product);
-  const source = official
-    ? (product.imageThumbnail || product.image)
-    : PRODUCT_PLACEHOLDER_IMAGE;
+  const lamina = laminaDeProducto(product);
+  const source = official ? (product.imageThumbnail || product.image) : lamina;
   const responsive = official
     ? ` srcset="${escapeHtml(product.imageThumbnail)} 400w, ${escapeHtml(product.image)} 1000w" sizes="(max-width: 700px) 44vw, 260px"`
     : '';
-  const width = official ? Number(product.thumbnailWidth || 400) : 400;
-  const height = official ? Number(product.thumbnailHeight || 400) : 400;
-  return `<img class="${className} thumb-img${official ? '' : ' is-placeholder'}" src="${escapeHtml(source)}"${responsive} width="${width}" height="${height}" alt="${escapeHtml(product.name)}" data-product-name="${escapeHtml(product.name)}" loading="lazy" decoding="async" />`;
+  const width = official ? Number(product.thumbnailWidth || 400) : 1000;
+  const height = official ? Number(product.thumbnailHeight || 400) : 1000;
+  return `<img class="${className} thumb-img${official ? '' : ' is-lamina'}" src="${escapeHtml(source)}"${responsive} width="${width}" height="${height}" alt="${escapeHtml(product.name)}" data-product-name="${escapeHtml(product.name)}" data-taba-lamina="${escapeHtml(lamina)}" loading="lazy" decoding="async" />`;
 }
 
 function homeCapacityText(product) {
@@ -850,13 +871,18 @@ function homeCapacityText(product) {
 // "500 ml · $17.100" afirma un precio unitario que el negocio no ofrece. La
 // capacidad sola es correcta para la unidad suelta y engañosa para el pack, así
 // que el multiplicador viaja adelante: es lo que cambia el precio.
+/*
+ * La vidriera dice EXACTAMENTE lo mismo que la góndola.
+ *
+ * Tenía su propia versión —capacidad y pack, sin envase y sin variante—, así
+ * que la home mostraba «Villavicencio · 1,5 L» y el catálogo, dos toques
+ * después, «Villavicencio · 1,5 L · Sin gas»; y una lata de 354 ml no se
+ * distinguía de una botella del mismo litraje en ninguna de las dos pantallas.
+ * El mismo producto tiene que decir lo mismo en toda la tienda, y esa regla ya
+ * vivía en un solo lugar.
+ */
 function homeUnitText(product) {
-  const capacity = homeCapacityText(product);
-  const perPack = Number(product.unitsPerPack);
-  if (Number.isFinite(perPack) && perPack > 1) {
-    return capacity ? `Pack x${perPack} · ${capacity}` : `Pack x${perPack}`;
-  }
-  return capacity;
+  return cardPresentationLine(product) || homeCapacityText(product);
 }
 
 function renderHomeShowcase() {
@@ -1370,7 +1396,7 @@ function renderHomePromotions() {
         </button>
         <div class="home-promo-copy">
           ${brandLine(product, 'home-promo-brand')}
-          <strong>${escapeHtml(product.name)}</strong>
+          <strong>${escapeHtml(cardTitle(product))}</strong>
           <span class="home-product-price">${pricingLabel(pricing)}</span>
           ${old}
           <small>${escapeHtml(homeUnitText(product))}</small>
@@ -1550,7 +1576,7 @@ function homeSectionCard(product, cartQuantities) {
     : quickAddControl(product, cartQuantities.get(product.id) || 0, { className: 'home-add-button' });
   return `
     <article class="home-best-card ${outOfStock && !product.pricePending ? 'out-of-stock' : ''}">
-      <button class="home-favorite-button ${favorite ? 'is-favorite' : ''}" type="button" data-favorite-toggle="${product.id}" aria-pressed="${favorite}" aria-label="${favorite ? 'Quitar' : 'Guardar'} ${escapeHtml(product.name)} de favoritos">
+      <button class="home-favorite-button ${favorite ? 'is-favorite' : ''}" type="button" data-favorite-toggle="${product.id}" aria-pressed="${favorite}" aria-label="${favorite ? 'Quitar' : 'Guardar'} ${escapeHtml(productAccessibleName(product))} de favoritos">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M20.8 4.8a5.3 5.3 0 0 0-7.5 0L12 6.1l-1.3-1.3a5.3 5.3 0 0 0-7.5 7.5L12 21l8.8-8.7a5.3 5.3 0 0 0 0-7.5Z" fill="currentColor" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
         </svg>
@@ -1560,7 +1586,7 @@ function homeSectionCard(product, cartQuantities) {
         ${ageTag(product)}
       </button>
       <div class="home-best-copy">
-        <strong>${escapeHtml(product.name)}</strong>
+        <strong>${escapeHtml(cardTitle(product))}</strong>
         <small>${escapeHtml(homeUnitText(product))}</small>
         ${price}
       </div>
@@ -1661,11 +1687,16 @@ export function comboMedia(combo) {
   return `
     <span class="combo-media-plate">
       ${shown.map((component) => {
-    const foto = component.product.imageThumbnail || component.product.image || PRODUCT_PLACEHOLDER_IMAGE;
-    const sinFoto = foto === PRODUCT_PLACEHOLDER_IMAGE;
+    // El combo pregunta lo MISMO que la grilla y la home: `imageThumbnail ||
+    // image` publicaba la foto sin mirar los derechos, y era la última
+    // superficie que todavía lo hacía.
+    const oficial = productPhotoIsOfficial(component.product);
+    const foto = oficial
+      ? (component.product.imageThumbnail || component.product.image)
+      : laminaDeProducto(component.product);
     return `
-        <span class="combo-media-item${sinFoto ? ' uses-placeholder' : ''}">
-          <img${sinFoto ? ' class="is-placeholder"' : ''} src="${escapeHtml(foto)}" alt="" width="120" height="120" loading="lazy" decoding="async" />
+        <span class="combo-media-item${oficial ? '' : ' uses-lamina'}">
+          <img${oficial ? '' : ' class="is-lamina"'} src="${escapeHtml(foto)}" alt="" width="120" height="120" loading="lazy" decoding="async" />
           ${component.quantity > 1 ? `<em>×${component.quantity}</em>` : ''}
         </span>`;
   }).join('')}
@@ -1818,7 +1849,7 @@ function railCard(product) {
         ${ageTag(product)}
       </button>
       <div class="offer-card-body">
-        <strong>${escapeHtml(product.name)}</strong>
+        <strong>${escapeHtml(cardTitle(product))}</strong>
         <small>${escapeHtml(unitText(product))}</small>
         ${stockState ? `<small class="offer-availability">${escapeHtml(stockState)}</small>` : ''}
         <div class="offer-price">
@@ -2003,8 +2034,13 @@ function renderCatalogFilters() {
   const products = unitStorefrontProducts(state);
   const options = {
     brand: uniqueFilterValues(products, (product) => product.brand),
-    capacity: uniqueFilterValues(products, (product) => product.capacity),
-    presentation: uniqueFilterValues(products, (product) => product.packageType),
+    capacity: uniqueFilterValues(products, (product) => product.capacity, {
+      etiqueta: (_crudo, product) => formatCapacity(product.capacityValue, product.capacityUnit) || _crudo,
+      orden: (product) => Number(product.capacityValue) || 0,
+    }),
+    presentation: uniqueFilterValues(products, (product) => product.packageType, {
+      etiqueta: (crudo) => packagingLabel(crudo) || crudo,
+    }),
   };
   const available = products.filter((product) => product.available && Number(product.stock) > 0 && !product.pricePending).length;
   const pending = products.filter((product) => product.pricePending).length;
@@ -2057,21 +2093,38 @@ function renderCatalogFilters() {
   }
 }
 
-function uniqueFilterValues(products, getter) {
+/*
+ * Las opciones de un filtro, con el valor crudo separado de lo que se lee.
+ *
+ * El filtro guarda `normalizeSearchText(crudo)` y con eso compara contra el
+ * producto, así que el valor NO puede cambiar. Lo que sí tenía que cambiar es
+ * la etiqueta: «Presentación» ofrecía `botella-pet`, `lata` y `sifon` —los
+ * slugs de la base, tal cual— y «Capacidad» ofrecía `2250 ml` mientras la
+ * tarjeta de al lado decía `2,25 L`. Dos vocabularios para el mismo dato, y uno
+ * de los dos era de la base de datos.
+ *
+ * `orden` existe porque una lista de capacidades ordenada alfabéticamente pone
+ * «1,25 L» antes que «600 ml» y «2 L» antes que «354 ml»: para elegir tamaño
+ * hay que ordenar por tamaño.
+ */
+function uniqueFilterValues(products, getter, { etiqueta, orden } = {}) {
   const values = new Map();
   for (const product of products) {
-    const label = String(getter(product) || '').trim();
-    const value = normalizeSearchText(label);
-    if (label && value && !values.has(value)) values.set(value, label);
+    const crudo = String(getter(product) || '').trim();
+    const value = normalizeSearchText(crudo);
+    if (!crudo || !value || values.has(value)) continue;
+    values.set(value, { label: etiqueta ? etiqueta(crudo, product) : crudo, peso: orden ? orden(product) : null });
   }
-  return [...values.entries()]
-    .map(([value, label]) => ({ value, label }))
-    .sort((left, right) => left.label.localeCompare(right.label, 'es'));
+  const opciones = [...values.entries()].map(([value, { label, peso }]) => ({ label, peso, value }));
+  return opciones.sort((left, right) => (
+    left.peso != null && right.peso != null
+      ? left.peso - right.peso
+      : left.label.localeCompare(right.label, 'es')
+  ));
 }
 
 // Productos filtrados por categoría + búsqueda, ya ordenados.
 function getFilteredProducts(state) {
-  const query = normalizeSearchText(state.searchQuery);
   const favoriteIds = new Set(getFavoriteProductIds());
   const promoProductIds = activePromotionProductIds(state);
   const filters = { ...defaultCatalogFilters(), ...(state.catalogFilters || {}) };
@@ -2085,20 +2138,11 @@ function getFilteredProducts(state) {
           : state.activeCategory === 'fernet'
             ? isFernetProduct(product)
         : state.activeCategory === 'all' || product.categoryId === state.activeCategory;
-    const searchable = [
-      product.brand,
-      product.name,
-      product.variant,
-      product.presentation,
-      product.unitLabel,
-      product.capacity,
-      product.subcategory,
-      product.categoryName,
-      product.categoryId,
-      ...(Array.isArray(product.tags) ? product.tags : []),
-    ].filter(Boolean).join(' ');
-    const searchableText = normalizeSearchText(searchable);
-    const matchesQuery = !query || query.split(' ').every((term) => searchableText.includes(term));
+    // El índice y la regla de coincidencia viven en `core/catalog-search.js`,
+    // con sus propios tests: acá había un `includes` sobre una cadena pegada,
+    // y por eso «500 ml» devolvía botellas de 1,5 L y «energética» no devolvía
+    // ningún energizante.
+    const matchesQuery = productMatchesQuery(product, state.searchQuery);
     const isAvailable = product.available && Number(product.stock) > 0 && !product.pricePending;
     const matchesFilters = (
       (filters.brand === 'all' || normalizeSearchText(product.brand) === filters.brand)
@@ -2115,18 +2159,6 @@ function getFilteredProducts(state) {
   return sortProducts(filtered, state.sortBy);
 }
 
-function normalizeSearchText(value) {
-  const normalized = String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9.,]+/g, ' ');
-  const millilitres = normalized.replace(/(\d+(?:[.,]\d+)?)\s*l\b/g, (_, value) => (
-    `${Math.round(Number(String(value).replace(',', '.')) * 1000)}ml`
-  ));
-  return millilitres.replace(/(\d+)\s*ml\b/g, '$1ml').replace(/\s+/g, ' ').trim();
-}
 
 // Un producto sin precio publicado no se puede comprar, así que ningún otro
 // atributo puede levantarlo por encima de algo que sí está a la venta. Devolver
@@ -2442,13 +2474,13 @@ function renderProducts() {
             <span class="product-stock-tag" aria-hidden="true">${stockPill(product)}</span>
           </button>
           ${ageTag(product)}
-          <button class="product-favorite ${favorite ? 'is-favorite' : ''}" type="button" data-favorite-toggle="${product.id}" aria-label="${favorite ? 'Quitar' : 'Guardar'} ${escapeHtml(product.name)} de favoritos" aria-pressed="${favorite}">
+          <button class="product-favorite ${favorite ? 'is-favorite' : ''}" type="button" data-favorite-toggle="${product.id}" aria-label="${favorite ? 'Quitar' : 'Guardar'} ${escapeHtml(productAccessibleName(product))} de favoritos" aria-pressed="${favorite}">
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
           </button>
         </div>
         <div class="product-body">
           ${brandLine(product)}
-          <h3>${escapeHtml(product.name)}</h3>
+          <h3>${escapeHtml(cardTitle(product))}</h3>
           <p>${escapeHtml(presentation)}</p>
           <div class="product-foot">
             ${priceBlock(product)}
@@ -2919,11 +2951,11 @@ function renderMinimumOrderProgress() {
 function recommendationCard(product) {
   return `
     <article class="recommendation-card">
-      <button class="recommendation-media" type="button" data-product-detail="${escapeHtml(product.id)}" aria-label="Ver ${escapeHtml(product.name)}">
+      <button class="recommendation-media" type="button" data-product-detail="${escapeHtml(product.id)}" aria-label="Ver ${escapeHtml(productAccessibleName(product))}">
         ${productThumb(product, 'rail')}
       </button>
       <div class="recommendation-copy">
-        <strong>${escapeHtml(product.name)}</strong>
+        <strong>${escapeHtml(cardTitle(product))}</strong>
         <small>${escapeHtml(unitText(product))}</small>
         <span>${productPriceLabel(product)}</span>
       </div>
@@ -4054,7 +4086,7 @@ export function showProductModal(productId, restoreTrigger = null) {
       </div>
       <div class="modal-product-copy">
         <span class="modal-presentation">${escapeHtml(unitText(product))}</span>
-        <h2>${escapeHtml(product.name)}</h2>
+        <h2>${escapeHtml(cardTitle(product))}</h2>
         ${descriptionText(product) ? `<p>${escapeHtml(descriptionText(product))}</p>` : ''}
         <div class="modal-commerce-row">
           <div class="modal-price">

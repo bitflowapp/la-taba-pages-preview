@@ -179,12 +179,12 @@ test('un asset inexistente o sin derechos no llega a la tarjeta: cae al respaldo
   // Sin derechos: la misma ruta deja de publicarse.
   const sinDerechos = comoLoVeLaVitrina({ ...conFoto, derechos: 'pending_review' });
   assert.equal(productPhotoIsOfficial(sinDerechos), false);
-  assert.match(productThumb(sinDerechos), /assets\/products\/taba\//);
+  assert.match(productThumb(sinDerechos), /beverage-placeholder\.svg/);
 
   // Sin cadena de hashes: tampoco.
   const sinHashes = { ...comoLoVeLaVitrina(conFoto), imageSha256: '', imageThumbnailSha256: '' };
   assert.equal(productPhotoIsOfficial(sinHashes), false);
-  assert.match(productThumb(sinHashes), /assets\/products\/taba\//);
+  assert.match(productThumb(sinHashes), /beverage-placeholder\.svg/);
 
   // Y una ruta que no existe en el árbol publicable queda declarada AUSENTE por
   // la auditoría; la tarjeta además cae al respaldo por el manejador de error.
@@ -204,18 +204,9 @@ test('producción no usa ningún fixture ni activo de demostración', () => {
     assert.equal(fila.referenciaDerechos, 'TABA-AUT-2026-08-001', `${fila.sku}: no cita autoridad de derechos`);
   }
 
-  /*
-   * Lo propio sí viaja, y todo lo propio es exactamente dos cosas: el respaldo
-   * genérico y las láminas de góndola. Nada más puede entrar como PROPIO —una
-   * foto de tercero copiada a `assets/products/taba/` la delata el generador,
-   * que reproduce byte a byte lo que la especificación describe—.
-   */
+  // El respaldo propio sí viaja, y es lo único propio que la vitrina publica.
   const propias = auditProductImageRights(root).filter((imagen) => imagen.rights === 'PROPIO');
-  const rutas = propias.map((imagen) => imagen.path);
-  assert.ok(rutas.includes(PLACEHOLDER), 'el respaldo genérico dejó de ser propio');
-  const laminas = rutas.filter((ruta) => ruta.startsWith('assets/products/taba/'));
-  assert.equal(rutas.length, laminas.length + 1, 'hay un asset propio que no es ni el respaldo ni una lámina');
-  assert.ok(laminas.length >= 30, `sólo ${laminas.length} láminas propias: la góndola queda con dibujo genérico`);
+  assert.deepEqual(propias.map((imagen) => imagen.path), [PLACEHOLDER]);
 });
 
 test('la medición del sello de pack respalda que las unidades sigan en respaldo', () => {

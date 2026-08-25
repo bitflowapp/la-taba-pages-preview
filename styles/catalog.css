@@ -646,21 +646,9 @@
   scale: 1.06;
 }
 
-/* La lámina propia de TABA es un packshot, no un marcador: se dibuja con el
-   mismo encuadre que una fotografía. Trae su aire adentro del lienzo (el envase
-   ocupa hasta el 86% del alto), así que no lleva relleno ni plato gris; si lo
-   llevara, la góndola tendría dos plantillas distintas según hubiera foto o no,
-   que es exactamente lo que esta versión vino a terminar. */
-.thumb .thumb-img.is-lamina {
-  height: 96%;
-  margin: 2% auto;
-  padding: 0;
-  background: transparent;
-  scale: 1.02;
-}
-
-/* El respaldo genérico —el que queda cuando ni la lámina carga— sí se anuncia
-   como lo que es: con aire y sobre plato gris. */
+/* El respaldo ya viene con su propio aire: no se escala ni se recorta, y se
+   anuncia como lo que es —un marcador neutro— con plato gris. NO imita al
+   producto: una aproximación dibujada de una Coca-Cola no es una Coca-Cola. */
 .thumb .thumb-img.is-placeholder {
   height: 100%;
   margin: 0;

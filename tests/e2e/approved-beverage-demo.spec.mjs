@@ -53,10 +53,9 @@ test('demo aprobado muestra SKU publicables, unidades minoristas y assets locale
   await expect(page.locator('[data-add-product="coca-cola-original-pet-1500ml-pack-6"]')).toHaveCount(0);
   const unidadImagen = unidad.locator('img');
   await expect(unidadImagen).toHaveAttribute('loading', 'lazy');
-  // La foto del pack muestra seis botellas, así que la unidad no la usa. Lo que
-  // dibuja en su lugar ya no es el mismo envase gris que las otras veintinueve
-  // tarjetas: es SU lámina, obra propia de TABA, con su silueta y su color.
-  await expect(unidadImagen).toHaveAttribute('src', /assets\/products\/taba\/coca-cola-original-pet-1500ml-/);
+  // La foto del pack muestra seis botellas: la unidad usa el marcador neutro
+  // hasta que exista una fotografía de ESTE producto exacto.
+  await expect(unidadImagen).toHaveAttribute('src', /beverage-placeholder\.svg$/);
 
   const pendingMessage = unidad.locator('[data-price-pending-message]');
   await expect(pendingMessage).toHaveCount(1);

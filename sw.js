@@ -3,23 +3,23 @@ const CACHE_NAME = 'la-taba-runtime-v86-gondola-premium';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=53',
-  './styles/tokens.css?v=53',
-  './styles/common.css?v=53',
-  './styles/storefront.css?v=53',
-  './styles/catalog.css?v=53',
-  './styles/checkout.css?v=53',
-  './styles/profile.css?v=53',
-  './styles/showcase.css?v=53',
-  './styles/tracking.css?v=53',
-  './styles/business.css?v=53',
-  './styles/rider.css?v=53',
-  './styles/responsive.css?v=53',
-  './styles/brand-home.css?v=53',
+  './styles.css?v=54',
+  './styles/tokens.css?v=54',
+  './styles/common.css?v=54',
+  './styles/storefront.css?v=54',
+  './styles/catalog.css?v=54',
+  './styles/checkout.css?v=54',
+  './styles/profile.css?v=54',
+  './styles/showcase.css?v=54',
+  './styles/tracking.css?v=54',
+  './styles/business.css?v=54',
+  './styles/rider.css?v=54',
+  './styles/responsive.css?v=54',
+  './styles/brand-home.css?v=54',
   // `styles.css` la importa desde que existe y nunca estuvo acá: sin red, la
   // home se quedaba sin la capa de movimiento. Lo destapó el guard de la
   // cadena de CSS versionado; no lo introdujo esta integración.
-  './styles/motion.css?v=53',
+  './styles/motion.css?v=54',
   './manifest.webmanifest',
   './runtime-config.js',
   './pago/resultado/index.html',
@@ -39,7 +39,7 @@ const ASSETS = [
   './assets/products/beverage-placeholder.svg',
   './js/pwa-update.js?v=4',
   './js/startup-recovery.js?v=2',
-  './js/app.js?v=46',
+  './js/app.js?v=47',
   './js/config.js',
   './js/core/address.js',
   './js/core/app-mode.js',
@@ -75,8 +75,6 @@ const ASSETS = [
   './js/core/merchandising-tags.js',
   './js/core/pricing.js',
   './js/core/product-presentation.js',
-  './js/core/taba-packshot.js',
-  './js/core/taba-packshot-manifest.js',
   // `state.js` la importa de forma estática: sin ella acá, un cliente con la
   // PWA instalada y sin red no puede ni arrancar la tienda.
   './js/core/production-cart-storage.js',
@@ -316,7 +314,7 @@ async function cachePrimero(request) {
  * Cuatro segundos: bien por debajo de los ocho que espera `startup-recovery.js`
  * antes de dar el arranque por perdido, y muy por encima de cualquier respuesta
  * sana. El costo de equivocarse es casi nulo: el precache está versionado
- * (`?v=53`), así que una copia guardada es el MISMO contenido que iba a traer la
+ * (`?v=54`), así que una copia guardada es el MISMO contenido que iba a traer la
  * red, no una versión vieja.
  */
 const PLAZO_DE_RED_MS = 4000;

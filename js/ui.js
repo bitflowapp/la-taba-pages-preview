@@ -93,19 +93,22 @@ import {
   storyEntryState,
 } from './core/stories.js';
 import { PREVIEW_STORY_SEED } from './preview-stories-data.js';
-import { LAMINA_GENERICA, laminaDeProducto } from './core/taba-packshot.js';
 import { normalizeSearchText, productMatchesQuery } from './core/catalog-search.js';
 import { merchandisingBadge } from './core/merchandising-tags.js';
 
 export const $ = (selector, root = document) => root.querySelector(selector);
 export const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 /*
- * El respaldo del respaldo. La imagen que ve el cliente cuando no hay
- * fotografía publicable ya NO es ésta: es la lámina dibujada de SU producto
- * (`core/taba-packshot.js`). Esta constante queda para el manejador de error,
- * que sólo tiene el nodo <img> y no el producto que lo originó.
+ * El respaldo cuando no hay fotografía publicable: el recurso propio de TABA.
+ *
+ * Es DELIBERADAMENTE neutro y no imita ningún producto. Se probó reemplazarlo
+ * por un dibujo por producto —silueta del envase y color de la línea— y se
+ * descartó: una aproximación dibujada de una Coca-Cola no es una Coca-Cola, y
+ * en una tienda que vende marcas reales un sustituto generado se lee peor que
+ * un marcador honesto. Lo que reemplaza a este archivo es una FOTOGRAFÍA del
+ * producto exacto, o nada.
  */
-const PRODUCT_PLACEHOLDER_IMAGE = LAMINA_GENERICA;
+const PRODUCT_PLACEHOLDER_IMAGE = 'assets/products/beverage-placeholder.svg';
 
 export function handleProductImageError(event) {
   const image = event?.target;
@@ -121,11 +124,7 @@ export function handleProductImageError(event) {
   image.dataset.fallbackApplied = 'true';
   image.removeAttribute?.('srcset');
   image.removeAttribute?.('sizes');
-  // La lámina de ESTE producto viaja en el nodo, porque acá no hay producto:
-  // hay un <img> que falló. Sin eso, una foto rota degradaba a la botella
-  // genérica incluso teniendo su propio dibujo al lado.
-  image.src = image.dataset.tabaLamina || PRODUCT_PLACEHOLDER_IMAGE;
-  image.classList.remove('is-lamina');
+  image.src = PRODUCT_PLACEHOLDER_IMAGE;
   image.classList.add('is-placeholder');
   shell?.classList?.remove('has-photo');
   shell?.classList?.add('uses-placeholder');
@@ -650,22 +649,18 @@ export function productThumb(product, variant = 'grid') {
   const thumbnail = product.imageThumbnail || product.thumbnail || '';
   const official = productPhotoIsOfficial(product);
   const loading = variant === 'modal' ? 'eager' : 'lazy';
-  const lamina = laminaDeProducto(product);
-  const source = official ? thumbnail : lamina;
-  const width = official ? Number(product.thumbnailWidth || 400) : 1000;
-  const height = official ? Number(product.thumbnailHeight || 400) : 1000;
+  const source = official ? thumbnail : PRODUCT_PLACEHOLDER_IMAGE;
+  const width = official ? Number(product.thumbnailWidth || 400) : 400;
+  const height = official ? Number(product.thumbnailHeight || 400) : 400;
   const responsive = official
     ? ` srcset="${escapeHtml(thumbnail)} 400w, ${escapeHtml(image)} 1000w" sizes="${variant === 'modal' ? '(max-width: 700px) 92vw, 560px' : '(max-width: 700px) 45vw, 260px'}"`
     : '';
-  // Lo que se dice en voz alta también cambia: una lámina propia no es «un
-  // producto sin imagen», es el dibujo de ese producto. Decirle al cliente que
-  // le falta algo a la tienda cuando lo que ve es correcto era ruido.
   const label = official
     ? `Imagen oficial de ${product.name || 'producto'}`
-    : `Ilustración de ${product.name || 'bebida'}`;
+    : `Producto sin imagen oficial: ${product.name || 'bebida'}`;
   return `
-    <span class="thumb ${official ? 'has-photo' : 'uses-lamina'} tone-${tone} category-${category} thumb-${variant}" role="img" aria-label="${escapeHtml(label)}">
-      <img class="thumb-img${official ? '' : ' is-lamina'}" src="${escapeHtml(source)}"${responsive} width="${width}" height="${height}" alt="" data-product-name="${escapeHtml(product.name || 'bebida')}" data-taba-lamina="${escapeHtml(lamina)}" loading="${loading}" decoding="async" />
+    <span class="thumb ${official ? 'has-photo' : 'uses-placeholder'} tone-${tone} category-${category} thumb-${variant}" role="img" aria-label="${escapeHtml(label)}">
+      <img class="thumb-img${official ? '' : ' is-placeholder'}" src="${escapeHtml(source)}"${responsive} width="${width}" height="${height}" alt="" data-product-name="${escapeHtml(product.name || 'bebida')}" loading="${loading}" decoding="async" />
     </span>`;
 }
 
@@ -888,14 +883,13 @@ function homeBestSellerProducts() {
  */
 function homeProductImage(product, className) {
   const official = productPhotoIsOfficial(product);
-  const lamina = laminaDeProducto(product);
-  const source = official ? (product.imageThumbnail || product.image) : lamina;
+  const source = official ? (product.imageThumbnail || product.image) : PRODUCT_PLACEHOLDER_IMAGE;
   const responsive = official
     ? ` srcset="${escapeHtml(product.imageThumbnail)} 400w, ${escapeHtml(product.image)} 1000w" sizes="(max-width: 700px) 44vw, 260px"`
     : '';
-  const width = official ? Number(product.thumbnailWidth || 400) : 1000;
-  const height = official ? Number(product.thumbnailHeight || 400) : 1000;
-  return `<img class="${className} thumb-img${official ? '' : ' is-lamina'}" src="${escapeHtml(source)}"${responsive} width="${width}" height="${height}" alt="${escapeHtml(product.name)}" data-product-name="${escapeHtml(product.name)}" data-taba-lamina="${escapeHtml(lamina)}" loading="lazy" decoding="async" />`;
+  const width = official ? Number(product.thumbnailWidth || 400) : 400;
+  const height = official ? Number(product.thumbnailHeight || 400) : 400;
+  return `<img class="${className} thumb-img${official ? '' : ' is-placeholder'}" src="${escapeHtml(source)}"${responsive} width="${width}" height="${height}" alt="${escapeHtml(product.name)}" data-product-name="${escapeHtml(product.name)}" loading="lazy" decoding="async" />`;
 }
 
 function homeCapacityText(product) {
@@ -1732,10 +1726,10 @@ export function comboMedia(combo) {
     const oficial = productPhotoIsOfficial(component.product);
     const foto = oficial
       ? (component.product.imageThumbnail || component.product.image)
-      : laminaDeProducto(component.product);
+      : PRODUCT_PLACEHOLDER_IMAGE;
     return `
-        <span class="combo-media-item${oficial ? '' : ' uses-lamina'}">
-          <img${oficial ? '' : ' class="is-lamina"'} src="${escapeHtml(foto)}" alt="" width="120" height="120" loading="lazy" decoding="async" />
+        <span class="combo-media-item${oficial ? '' : ' uses-placeholder'}">
+          <img${oficial ? '' : ' class="is-placeholder"'} src="${escapeHtml(foto)}" alt="" width="120" height="120" loading="lazy" decoding="async" />
           ${component.quantity > 1 ? `<em>×${component.quantity}</em>` : ''}
         </span>`;
   }).join('')}

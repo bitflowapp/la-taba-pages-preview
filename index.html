@@ -25,12 +25,48 @@
       mismo lugar— para que la app no se llame distinto según el teléfono.
     -->
     <meta name="apple-mobile-web-app-title" content="La Taba" />
+    <!--
+      LA HOJA DEL MAPA NO PUEDE DECIDIR CUÁNDO SE VE LA TIENDA.
+
+      Estaba como `<link rel="stylesheet">` a secas: una hoja de un tercero, en
+      el <head>, en el camino crítico de pintado. Medido el 2026-08-25 contra
+      producción, en el navegador, a 390 px:
+
+        unpkg normal ................ primer pintado    624 ms
+        unpkg caído (falla rápido) .. primer pintado    508 ms
+        unpkg COLGADO 15 s .......... primer pintado 15.332 ms
+
+      Un CDN que se cae no hace daño: el navegador falla rápido y sigue. Uno que
+      no contesta deja la tienda EN BLANCO todo el tiempo que tarde, y ese es el
+      modo de falla probable de un servicio gratuito un viernes a la noche.
+
+      Y la home no necesita nada de esto: estas reglas son del mapa, que vive en
+      Seguimiento, a una navegación de distancia. `media="print"` hace que el
+      navegador la baje sin bloquear el pintado; `onload` la pasa a `all` en
+      cuanto llegó. El `integrity` y el `crossorigin` no se tocan: la protección
+      de cadena de suministro sigue igual.
+
+      Si algún día se escribe la CSP que este proyecto todavía no tiene (ver
+      `_headers`), este `onload` es un manejador en línea y hay que resolverlo
+      junto con ella —lo mismo que dice ese archivo: la política se mide contra
+      el sitio corriendo, no se escribe a ciegas—.
+    -->
     <link
       rel="stylesheet"
       href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css"
       integrity="sha384-uTttxo/aOKbdE5RlD/SPzSDoDmNvGlUYPjONi2MN/b7c9HPSvW07OIuyP7uL6jxK"
       crossorigin="anonymous"
+      media="print"
+      onload="this.media='all'"
     />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css"
+        integrity="sha384-uTttxo/aOKbdE5RlD/SPzSDoDmNvGlUYPjONi2MN/b7c9HPSvW07OIuyP7uL6jxK"
+        crossorigin="anonymous"
+      />
+    </noscript>
     <!--
       La fotografía del hero comercial es, desde que la banda subió al primer
       pantallazo, el elemento más grande de esa pantalla: o sea el LCP. La
@@ -46,7 +82,7 @@
       lo verifica tests/home-hero-preload.test.mjs.
     -->
     <link rel="preload" as="image" href="assets/promos/cervezas-heineken-band.webp" media="(max-width: 699px)" fetchpriority="high" />
-    <link rel="stylesheet" href="styles.css?v=54" />
+    <link rel="stylesheet" href="styles.css?v=55" />
   </head>
   <!--
     La vista activa se declara ya en el shell servido. `renderNavigation` la
@@ -1187,6 +1223,6 @@
       defer
     ></script>
     <script src="js/pwa-update.js?v=4"></script>
-    <script type="module" src="js/app.js?v=47"></script>
+    <script type="module" src="js/app.js?v=48"></script>
   </body>
 </html>

@@ -27,8 +27,36 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const PRODUCTION_REF = 'wwcpogltfgzgkrlilbcd';
-const EXPECTED_LEDGER = 103;
-const EXPECTED_LAST_MIGRATION = '20260816122000';
+
+/*
+ * EL LEDGER ESPERADO SALE DE ESTA COPIA DEL REPOSITORIO, NO DE UN NUMERO A MANO.
+ *
+ * Estaban escritos como literales -103 y 20260816122000- y el 2026-08-25
+ * produccion tenia 114 migraciones con la ultima en 20260825160000. O sea que
+ * la sonda de salud reportaba "A MIRAR" y salia con codigo 1 sobre una base
+ * PERFECTAMENTE sana, once migraciones despues del ultimo que se acordo de
+ * subir el numero. Una alarma que suena siempre es una alarma que nadie mira,
+ * y esta es la que hay que poder correr sin pensar el fin de semana que abre
+ * la tienda.
+ *
+ * Lo que la comprobacion quiere decir es "produccion tiene aplicado lo que
+ * este checkout declara". Derivarlo del directorio dice exactamente eso y no
+ * se puede quedar atras: cada migracion nueva viaja con su propia expectativa.
+ */
+function ledgerDelRepositorio() {
+  const dir = path.join(root, 'supabase', 'migrations');
+  const versiones = fs.readdirSync(dir)
+    .filter((archivo) => archivo.endsWith('.sql'))
+    .map((archivo) => archivo.slice(0, 14))
+    .filter((version) => /^\d{14}$/.test(version))
+    .sort();
+  if (!versiones.length) throw new Error('no se encontro ninguna migracion en supabase/migrations');
+  return { total: versiones.length, last: versiones[versiones.length - 1] };
+}
+
+const REPO_LEDGER = ledgerDelRepositorio();
+const EXPECTED_LEDGER = REPO_LEDGER.total;
+const EXPECTED_LAST_MIGRATION = REPO_LEDGER.last;
 const CANONICAL_BUSINESS = '00000000-0000-4000-8000-000000000001';
 const EXPECTED_CRON = [
   'taba-payment-outbox-worker',

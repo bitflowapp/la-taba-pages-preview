@@ -4,6 +4,8 @@ import {
   cardPresentationLine,
   cardTitle,
   formatCapacity,
+  packUnitNoun,
+  packUnitPrice,
   packagingLabel,
   productAccessibleName,
 } from '../js/core/product-presentation.js';
@@ -241,4 +243,47 @@ test('el nombre accesible distingue variantes: dos «Agregar Coca-Cola» no alca
   assert.equal(productAccessibleName(familiar), 'Coca-Cola 2,25 L');
   assert.equal(productAccessibleName(litro), 'Coca-Cola 1,5 L');
   assert.notEqual(productAccessibleName(familiar), productAccessibleName(litro));
+});
+
+test('un pack dice cuánto sale cada envase; un producto suelto no dice nada', () => {
+  // Los tres packs comprables de producción al 2026-08-25: $ 17.100 por doce
+  // botellas de 500 ml. La cuenta que el cliente no puede hacer de un vistazo.
+  const pack = {
+    name: 'Coca-Cola Original', unitsPerPack: 12, price: 17100,
+    capacityValue: 500, capacityUnit: 'ml', packageType: 'botella-pet',
+  };
+  assert.deepEqual(packUnitPrice(pack), { unitsPerPack: 12, unitPrice: 1425, noun: 'botella' });
+
+  // El precio de un producto suelto YA es el de la unidad: repetirlo sería ruido.
+  const suelta = { name: 'Coca-Cola', unitsPerPack: 1, price: 5900, packageType: 'botella-pet' };
+  assert.equal(packUnitPrice(suelta), null);
+  assert.equal(packUnitPrice({ price: 5900 }), null);
+
+  // Sin precio no hay división posible. Fail-closed, como el resto del módulo.
+  assert.equal(packUnitPrice({ unitsPerPack: 6, price: 0 }), null);
+  assert.equal(packUnitPrice({ unitsPerPack: 6 }), null);
+  assert.equal(packUnitPrice({}), null);
+});
+
+test('el sustantivo del envase sale del catálogo, en singular y en castellano', () => {
+  // La base guarda el envase de dos maneras: el slug («lata») y el rótulo ya
+  // formateado («Botella PET»). Las dos existen hoy en producción.
+  assert.equal(packUnitNoun({ packagingType: 'Botella PET' }), 'botella');
+  assert.equal(packUnitNoun({ packaging_type: 'botella-pet' }), 'botella');
+  assert.equal(packUnitNoun({ packageType: 'botella-vidrio' }), 'botella');
+  assert.equal(packUnitNoun({ packageType: 'lata' }), 'lata');
+  assert.equal(packUnitNoun({ packageType: 'sifon' }), 'sifón');
+  // Un envase que el catálogo no nombra no inventa una palabra: dice «unidad».
+  assert.equal(packUnitNoun({ packageType: 'caja-misteriosa' }), 'unidad');
+  assert.equal(packUnitNoun({}), 'unidad');
+});
+
+test('un envase con nombre de propiedad heredada no se convierte en texto raro', () => {
+  // El valor sale de una columna de la base. Un acceso a secas contra el objeto
+  // devolvería una función para «constructor», y esa función terminaría
+  // convertida en texto dentro de la tarjeta.
+  for (const envase of ['constructor', '__proto__', 'toString', 'hasOwnProperty']) {
+    assert.equal(packUnitNoun({ packageType: envase }), 'unidad', envase);
+  }
+  assert.equal(packUnitPrice({ unitsPerPack: 6, price: 6000, packageType: 'constructor' }).noun, 'unidad');
 });

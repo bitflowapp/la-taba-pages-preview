@@ -187,3 +187,57 @@ test('las tareas conocidas tienen nombre de persona y las desconocidas no rompen
   assert.equal(scheduledTaskName('otra-cosa'), 'Una tarea automática del sistema');
   assert.equal(scheduledTaskName(undefined), 'Una tarea automática del sistema');
 });
+
+/*
+ * Un comercio que no cobra online no tiene un sistema roto.
+ *
+ * La Taba vende con efectivo y «a coordinar»: las dos credenciales del
+ * despachador de cobros no le hacen falta. Antes eso pintaba la fila de rojo y
+ * el titular de la sección —que se calcula desde los rojos— decía «El sistema
+ * NO se está cuidando solo» de forma permanente, con la vigilancia corriendo
+ * cada 60 segundos. Medido en el Panel de producción el 2026-08-25.
+ */
+test('sin cobros online esperando, una credencial que falta se mira; no es un incendio', () => {
+  const sinCobrar = conSalud({
+    secrets: [
+      { name: 'taba_payment_worker_hmac_secret', configured: false, detail: 'falta cargarla' },
+      { name: 'taba_payment_worker_url', configured: false, detail: 'falta cargarla' },
+    ],
+  });
+  const described = describeOperationalHealth(sinCobrar);
+  const fila = described.rows.find((row) => row.key === 'secrets');
+  assert.equal(fila.value, '0 de 2 cargadas');
+  assert.equal(fila.tone, 'attention', 'una credencial sin uso no puede ser crítica');
+  assert.notEqual(described.tone, 'critical');
+  assert.equal(described.headline.includes('NO se está cuidando'), false, described.headline);
+  // La vigilancia sigue siendo la que manda en el titular, y sigue viéndose.
+  assert.equal(described.rows.find((row) => row.key === 'watch').tone, 'calm');
+});
+
+test('con cobros esperando, la misma credencial que falta SÍ es crítica', () => {
+  const conCola = conSalud({
+    payments: {
+      ...SANO.payments,
+      outbox: { pending: 3, retry_wait: 0, in_flight: 0, failed: 0, dead_letter: 0, due_now: 3, oldest_due_seconds: 400 },
+    },
+    secrets: [
+      { name: 'taba_payment_worker_hmac_secret', configured: false, detail: 'falta cargarla' },
+      { name: 'taba_payment_worker_url', configured: false, detail: 'falta cargarla' },
+    ],
+  });
+  const described = describeOperationalHealth(conCola);
+  assert.equal(described.rows.find((row) => row.key === 'secrets').tone, 'critical');
+  assert.equal(described.tone, 'critical');
+  assert.match(described.headline, /NO se está cuidando/);
+});
+
+test('dinero cobrado sin pedido también vuelve crítica la credencial que falta', () => {
+  const described = describeOperationalHealth(conSalud({
+    payments: {
+      ...SANO.payments,
+      reconciliation: { ...SANO.payments.reconciliation, paid_without_order: 1 },
+    },
+    secrets: [{ name: 'taba_payment_worker_url', configured: false, detail: 'falta cargarla' }],
+  }));
+  assert.equal(described.rows.find((row) => row.key === 'secrets').tone, 'critical');
+});

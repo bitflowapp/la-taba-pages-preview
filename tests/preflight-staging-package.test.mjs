@@ -109,3 +109,30 @@ test('la identidad firmada y el CACHE_NAME del worker son el mismo nombre', () =
   const firmada = JSON.parse(leer('release-identity.json')).cacheName;
   assert.equal(firmada, enWorker);
 });
+
+/*
+ * EL PREFLIGHT YA ESTABA CLAVADO EN UNA VERSIÓN VIEJA, Y NADIE SE ENTERABA.
+ *
+ * Al preparar el lanzamiento del 2026-08-25 se encontró `ESPERADO.app =
+ * '?v=46'` mientras `index.html` cargaba `js/app.js?v=47` desde el commit
+ * eb1f33d — el que está en producción. O sea que el guion que decide si una
+ * candidata se puede publicar habría rechazado el paquete de la versión VIVA.
+ * El CACHE_NAME tenía su prueba desde hace tiempo; las otras tres agujas del
+ * mismo tablero, no. Ahora las cuatro salen del archivo que las manda.
+ */
+test('las versiones que el preflight exige son las que index.html carga de verdad', () => {
+  const { ESPERADO } = declaracionesDelPreflight();
+  const index = leer('index.html');
+  const pares = [
+    ['app', `js/app.js${ESPERADO.app}`],
+    ['recovery', `js/startup-recovery.js${ESPERADO.recovery}`],
+    ['css', `styles.css${ESPERADO.css}`],
+  ];
+  for (const [nombre, referencia] of pares) {
+    assert.ok(
+      index.includes(referencia),
+      `el preflight exige «${referencia}» y index.html no lo carga: `
+      + `ESPERADO.${nombre} quedó atrás y el gate rechazaría la candidata publicable`,
+    );
+  }
+});

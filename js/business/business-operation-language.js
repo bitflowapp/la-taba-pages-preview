@@ -322,6 +322,10 @@ export function describeOperationalHealth(health) {
   const heldStock = safeCount(reservations.expired_still_held);
   const missingSecrets = secrets.filter((secret) => secret?.configured !== true).length;
   const workerState = String(worker.state || '');
+  // ¿Hay algún cobro online esperando a que el despachador funcione? Es lo que
+  // separa «falta una credencial que nadie usa» de «los cobros están frenados».
+  const hayCobrosEsperando = safeCount(queue.pending) + safeCount(queue.retry_wait)
+    + safeCount(queue.in_flight) + safeCount(queue.failed) + deadLetter + paidWithoutOrder > 0;
 
   const rows = [
     {
@@ -391,7 +395,30 @@ export function describeOperationalHealth(health) {
       detail: missingSecrets
         ? secrets.filter((secret) => secret?.configured !== true).map((secret) => String(secret?.detail || 'falta cargarla')).join(' · ')
         : 'Lo que el cobro automático necesita para funcionar está cargado.',
-      tone: !secrets.length ? 'attention' : missingSecrets ? 'critical' : 'calm',
+      /*
+       * UNA CREDENCIAL QUE NADIE USA NO ESTÁ ROTA.
+       *
+       * Las dos que se miran acá —la URL del despachador de cobros y su clave
+       * de firma— sólo hacen falta si el comercio cobra online. La Taba no:
+       * `business_payment_settings` tiene cero filas y el checkout ofrece
+       * efectivo y «a coordinar». Con la regla anterior eso bastaba para pintar
+       * la fila de rojo, y como el titular de la sección se calcula desde los
+       * rojos, el Panel decía «El sistema NO se está cuidando solo» de forma
+       * PERMANENTE mientras la vigilancia corría cada 60 segundos y decía
+       * «Al día» tres renglones más abajo. Medido en producción el 2026-08-25.
+       *
+       * Es alarma de humo sin humo, y su costo se cobra el día que hay fuego:
+       * un encargado que ve el mismo rojo todos los días deja de leerlo, y ese
+       * es justo el renglón que tiene que gritar si la vigilancia se detiene.
+       *
+       * La distinción no necesita ningún dato nuevo: si hay cobros esperando,
+       * reintentando, en vuelo, fallados o abandonados, la credencial que falta
+       * es lo que los tiene frenados y sigue siendo crítica. Con la cola en
+       * cero es configuración pendiente, y eso se mira, no se apaga un incendio.
+       */
+      tone: !secrets.length ? 'attention'
+        : missingSecrets ? (hayCobrosEsperando ? 'critical' : 'attention')
+          : 'calm',
     },
   ].map((row) => Object.freeze(row));
 

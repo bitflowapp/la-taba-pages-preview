@@ -2,8 +2,8 @@
 
 Auditoría del **2026-08-25** sobre producción viva (`https://la-taba.pages.dev`,
 Supabase `wwcpogltfgzgkrlilbcd`). La pregunta que contesta este documento no es
-si el software funciona —funciona, y lo dicen 2.191 pruebas unitarias y la
-suite E2E completa— sino ésta:
+si el software funciona —funciona, y lo dicen 2.191 pruebas unitarias y 470
+pruebas E2E en Chromium y WebKit— sino ésta:
 
 > ¿Puede entrar tráfico real ahora y convertirse en pedidos reales sin
 > intervención técnica?
@@ -109,8 +109,9 @@ semana es la lista blanca de zonas**.
 
 ## 2 · Lo que se arregló, y qué se midió antes
 
-Siete defectos encontrados **probando producción con un navegador real**, no
-leyendo código. Todos corregidos en esta rama, con pruebas.
+Ocho defectos encontrados **probando producción con un navegador real**, no
+leyendo código. Todos corregidos en esta rama, con pruebas. De uno —el D6—
+queda una mitad sin tocar, declarada y con la medición que la justifica.
 
 ### D1 · El checkout pedía algo que la pantalla no sabe recibir — **el más caro**
 
@@ -236,6 +237,26 @@ Las dos ahora **derivan** su expectativa del repositorio en vez de repetirla a
 mano, y hay una prueba nueva que fija las cuatro agujas del preflight contra
 `index.html`. Después del arreglo, `production:health` da **SANO** y sale 0.
 
+### D8 · Y una tercera compuerta que también estaba clavada
+
+`npm run pwa:verify` daba **dos FALLA permanentes**: «Android: la hoja no se
+abrió» e «iPhone: no apareció la guía». Abría la tienda con un contexto limpio
+—un cliente que llega por primera vez— y exigía que la hoja de instalación
+apareciera.
+
+El producto decidió lo contrario, y lo dice su propia prueba E2E: **«la PRIMERA
+pantalla es la tienda: al estreno no se le pide nada»**. La invitación es para
+quien vuelve, o para quien ya puso algo en el carrito.
+
+**Comprobado antes de tocar nada**: el mismo guion, corrido contra el sitio
+publicado —runtime v86, código anterior a esta rama— daba exactamente las
+mismas dos fallas. No era una regresión: era un gate rojo desde que el producto
+cambió de opinión.
+
+Ahora comprueba el contrato vigente, que es **más exigente** porque son dos
+afirmaciones en vez de una: en el estreno NO aparece, y al volver SÍ. Contra
+producción v86 y contra esta rama: **«Todo en orden»**.
+
 ---
 
 ## 3 · Lo que se midió y está bien
@@ -291,6 +312,36 @@ de ese navegador y no hay forma de elegir otro. Un cliente que pide dos veces ve
 el segundo. No es un bloqueo de lanzamiento —el pedido que importa es el último—
 pero está escrito para que no sorprenda.
 
+### Móvil — 42 mediciones
+
+Dos motores × tres anchos × siete superficies (home, catálogo, carrito,
+seguimiento, perfil, búsqueda y ficha), contra producción:
+
+| medición | resultado |
+|---|---|
+| desborde horizontal | **0 de 42** |
+| objetivos táctiles bajo 44 px | **0 de 42** |
+| errores de consola | 30, y **todos son el mismo**: el 401 de `get_mercadopago_checkout_availability` para el visitante anónimo |
+
+**La herramienta mintió primero, y se arregló la herramienta.** La primera
+corrida reportó seis objetivos de 33 × 44 px: el botón «Limpiar» del panel de
+filtros a 320 px. Medido a mano, el panel estaba **cerrado** —su hoja mide
+117 × 388 y desborda fuera de un `<details>` de 119 × 50— así que ese botón no
+se puede tocar; con el panel abierto, que es la única forma de llegar a él, mide
+**116 × 44**. La guarda de visibilidad ahora descarta lo que vive dentro de un
+`<details>` cerrado. Una medición que miente hacia el rojo cuesta lo mismo que
+una que miente hacia el verde: manda a alguien a arreglar lo que ya está bien.
+
+### PWA
+
+| comprobación | resultado |
+|---|---|
+| manifest | completo: `standalone`, `start_url` relativo, 4 iconos (192/512 · any y maskable) |
+| `apple-touch-icon` | **PNG** de 180 × 180, no un SVG que iOS no rasteriza |
+| cabeceras | `sw.js`, `index.html` y `version.json` con `max-age=0, must-revalidate`: una actualización llega sin borrar nada ni reinstalar |
+| service worker | activo y controlando, precache sin ninguna respuesta de pedidos, sesión ni API |
+| invitación | no molesta en el estreno; aparece al volver o con algo en el carrito |
+
 ### Medios de pago — lo que hay de verdad
 
 - **A coordinar con el local**
@@ -327,6 +378,8 @@ PIN en el teléfono del repartidor, y es exactamente el que no se puede ejecutar
 sin el aparato. Por eso los dos pedidos siguen abiertos y por eso este sprint no
 creó un tercero.
 
+### Panel del negocio
+
 Abierto con la identidad dedicada (`admin`), 1280 px, **0 errores de consola**.
 Tablero con contadores, alertas escritas en castellano llano con su riesgo y su
 acción, y las pestañas de operación completas: Pedidos, Preparación, Recepción,
@@ -340,7 +393,7 @@ Horarios y cobertura, Dispositivos, Abrir/Cerrar.
 | cron activos | 4 de 4, ninguno con fallos |
 | alertas críticas | 0 |
 | alertas abiertas | 2 WARNING — las dos son los pedidos trabados de la §1 |
-| `production:health` | **SANO** (después del arreglo D6) |
+| `production:health` | **SANO** (después del arreglo D7) |
 
 El vigía funciona y dice la verdad: las 5.195 y 2.104 repeticiones de
 `RIDER_SIGNAL_STALE` son exactamente los dos pedidos que nadie cerró.

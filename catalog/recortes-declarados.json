@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "actualizado": "2026-08-25",
+  "queEs": "Recortes declarados sobre una fotografía oficial, aplicados por scripts/catalog-images/normalize.mjs. Un recorte NO fabrica una imagen: los píxeles del producto quedan intactos. Sirve para una sola cosa —sacar una banda de marketing que el embotellador estampa al costado del packshot— y sólo cuando el corte cae sobre blanco puro.",
+  "porQueExiste": "El embotellador Coca-Cola FEMSA publica sus packshots con una banda gráfica lateral que dice el sabor y la capacidad, para su propia vidriera. La fotografía del envase es correcta, de alta resolución y con la etiqueta argentina; lo único que sobra es esa banda, que en una tarjeta de TABA sería un texto promocional ajeno. Sin este mecanismo había dos salidas malas: publicar la banda, o dejar tres productos sin foto teniendo la foto. El segundo caso es distinto y también legítimo: un distribuidor oficial fotografía la botella chica dentro del mismo lienzo que la familiar, así que el producto queda diminuto y descentrado. El recorte no le saca nada al envase: le saca el aire de más, que es lo que la góndola premium no puede permitirse.",
+  "laRegla": "El corte se verifica MECANICAMENTE antes de aplicarse: tiene que pasar por un CANAL de al menos 24 columnas (o filas) de blanco puro, y el producto tiene que quedar entero del lado que se conserva. Si el rectangulo se acercara al envase, el canal desaparece y normalize.mjs se planta sin escribir nada. Es lo que hace que «recortar» no pueda convertirse en «recortar el producto».",
+  "queNoHabilita": "No habilita retocar, repintar, borrar un sello que pisa el envase, ni componer. Un sello de cantidad estampado ENCIMA del producto —como los «x6»/«x12» de Coca-Cola Andina— sigue siendo motivo de rechazo, porque sacarlo exigiría inventar los píxeles que tapa.",
+  "recortes": [
+    {
+      "sku": "aquarius-manzana-1500ml",
+      "left": 0,
+      "top": 0,
+      "width": 700,
+      "height": 1000,
+      "motivo": "Banda de marketing roja al costado derecho con el texto «MANZANA» y «1,5 litros». Medido: el envase ocupa las columnas 244-510 y la banda arranca en la 754. El corte en 700 deja 190 columnas de blanco puro entre el producto y el borde.",
+      "medidoEl": "2026-08-25"
+    },
+    {
+      "sku": "aquarius-pera-1500ml",
+      "left": 0,
+      "top": 0,
+      "width": 700,
+      "height": 1000,
+      "motivo": "Misma banda. Envase en las columnas 243-510, banda desde la 754.",
+      "medidoEl": "2026-08-25"
+    },
+    {
+      "sku": "aquarius-pomelo-2250ml",
+      "left": 0,
+      "top": 0,
+      "width": 700,
+      "height": 1000,
+      "motivo": "Misma banda, en amarillo. Envase en las columnas 235-528, banda desde la 755.",
+      "medidoEl": "2026-08-25"
+    },
+    {
+      "sku": "gatorade-manzana-1250ml",
+      "left": 108,
+      "top": 90,
+      "width": 239,
+      "height": 560,
+      "motivo": "Encuadre del distribuidor: la botella ocupa las columnas 138-316 y las filas 120-631 de un lienzo de 455x650, o sea el 78% del alto pero descentrada. El recorte deja 30 px de margen alrededor del envase y no toca un solo pixel del producto.",
+      "medidoEl": "2026-08-25"
+    },
+    {
+      "sku": "gatorade-cool-blue-500ml",
+      "left": 140,
+      "top": 278,
+      "width": 172,
+      "height": 371,
+      "motivo": "Mismo lienzo, pero la botella de 500 ml queda en el 48% del alto y en el tercio inferior: sin recortar, la tarjeta muestra un producto diminuto en medio de un plato vacio. El recorte deja 30 px de margen y no toca el envase.",
+      "medidoEl": "2026-08-25"
+    }
+  ]
+}

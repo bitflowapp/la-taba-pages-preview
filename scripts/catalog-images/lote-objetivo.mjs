@@ -240,6 +240,82 @@ export const OBJETIVOS = new Map([
       variant: 'Pomelo',
     },
   }],
+
+  /*
+   * ALTA DEL 2026-08-25 (segunda tanda) · cinco más, todas con RECORTE
+   * DECLARADO en catalog/recortes-declarados.json.
+   *
+   * Los tres Aquarius vienen del embotellador FEMSA con una banda de marketing
+   * lateral; los dos Gatorade, de un distribuidor oficial que fotografía la
+   * botella chica dentro del mismo lienzo que la familiar y la deja diminuta y
+   * descentrada. En los cinco el corte pasa por un canal de blanco puro y no
+   * toca un píxel del envase: normalize.mjs lo verifica antes de escribir.
+   */
+  ['aquarius-manzana-1500ml', {
+    nombre: 'Aquarius Manzana · 1,5 L',
+    unitsPerPack: 1,
+    presentacion: {
+      brand: 'Aquarius',
+      capacityUnit: 'ml',
+      capacityValue: 1500,
+      category: 'Aguas saborizadas',
+      name: 'Aquarius Manzana',
+      packagingType: 'botella-pet',
+      variant: 'Manzana',
+    },
+  }],
+  ['aquarius-pera-1500ml', {
+    nombre: 'Aquarius Pera · 1,5 L',
+    unitsPerPack: 1,
+    presentacion: {
+      brand: 'Aquarius',
+      capacityUnit: 'ml',
+      capacityValue: 1500,
+      category: 'Aguas saborizadas',
+      name: 'Aquarius Pera',
+      packagingType: 'botella-pet',
+      variant: 'Pera',
+    },
+  }],
+  ['aquarius-pomelo-2250ml', {
+    nombre: 'Aquarius Pomelo · 2,25 L',
+    unitsPerPack: 1,
+    presentacion: {
+      brand: 'Aquarius',
+      capacityUnit: 'ml',
+      capacityValue: 2250,
+      category: 'Aguas saborizadas',
+      name: 'Aquarius Pomelo',
+      packagingType: 'botella-pet',
+      variant: 'Pomelo',
+    },
+  }],
+  ['gatorade-manzana-1250ml', {
+    nombre: 'Gatorade Manzana · 1,25 L',
+    unitsPerPack: 1,
+    presentacion: {
+      brand: 'Gatorade',
+      capacityUnit: 'ml',
+      capacityValue: 1250,
+      category: 'Isotónicas',
+      name: 'Gatorade Manzana',
+      packagingType: 'botella-pet',
+      variant: 'Manzana',
+    },
+  }],
+  ['gatorade-cool-blue-500ml', {
+    nombre: 'Gatorade Cool Blue · 500 ml',
+    unitsPerPack: 1,
+    presentacion: {
+      brand: 'Gatorade',
+      capacityUnit: 'ml',
+      capacityValue: 500,
+      category: 'Isotónicas',
+      name: 'Gatorade Cool Blue',
+      packagingType: 'botella-pet',
+      variant: 'Cool Blue',
+    },
+  }],
 ]);
 
 export const SKUS_OBJETIVO = Object.freeze([...OBJETIVOS.keys()]);

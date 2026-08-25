@@ -28,6 +28,99 @@ const OUTPUTS = {
 };
 const RAW_MANIFEST = path.join(RAW, 'manifest.json');
 const OUTPUT_MANIFEST = path.join(ROOT, 'docs/catalog/image-manifest.json');
+const RECORTES = path.join(ROOT, 'catalog/recortes-declarados.json');
+
+/*
+ * RECORTES DECLARADOS.
+ *
+ * Un recorte no fabrica una imagen: los píxeles del producto quedan intactos.
+ * Existe para una sola cosa —sacar la banda de marketing que el embotellador
+ * estampa al costado de su packshot— y NO puede convertirse en «recortar el
+ * producto», porque antes de aplicarse se verifica que el corte pase por un
+ * canal de blanco puro. Si tocara un píxel del envase, esto se planta y no
+ * escribe nada.
+ *
+ * Lo que NO habilita: retocar, repintar, ni sacar un sello estampado ENCIMA del
+ * envase. Ése sigue siendo motivo de rechazo, porque quitarlo exigiría inventar
+ * los píxeles que tapa. Ver catalog/recortes-declarados.json.
+ */
+const recortesPorSku = new Map(
+  (JSON.parse(await fs.readFile(RECORTES, 'utf8').catch(() => '{"recortes":[]}')).recortes || [])
+    .map((recorte) => [recorte.sku, recorte]),
+);
+
+/** Cuántas columnas/filas de blanco puro tiene que haber a cada lado del corte. */
+const CANAL_BLANCO = 24;
+
+/**
+ * ¿El corte cae en blanco, sin tocar el producto?
+ *
+ * La primera versión de esta comprobación exigía que todo lo descartado fuera
+ * blanco, y estaba mal: lo que se descarta ES la banda, que por definición no
+ * es blanca. Lo que hay que probar es otra cosa, y es la que importa: que el
+ * corte pase por un CANAL de blanco puro, y que el producto quede entero del
+ * lado que se conserva.
+ *
+ * Con eso, «recortar» no puede convertirse en «recortar el producto»: si el
+ * rectángulo se acercara al envase, el canal desaparece y esto se planta.
+ */
+async function verificarQueElCorteCaeEnBlanco(input, recorte, sku) {
+  const { data, info } = await sharp(input).flatten({ background: '#ffffff' }).raw().toBuffer({ resolveWithObject: true });
+  const { width, height, channels } = info;
+  const { left, top } = recorte;
+  const right = left + recorte.width;
+  const bottom = top + recorte.height;
+  if (right > width || bottom > height || left < 0 || top < 0) {
+    throw new Error(`${sku}: el recorte declarado (${recorte.width}x${recorte.height}+${left}+${top}) no entra en la imagen ${width}x${height}.`);
+  }
+
+  const blanco = (x, y) => {
+    const i = (y * width + x) * channels;
+    return data[i] >= 245 && data[i + 1] >= 245 && data[i + 2] >= 245;
+  };
+  const columnaBlanca = (x) => {
+    for (let y = 0; y < height; y += 1) if (!blanco(x, y)) return false;
+    return true;
+  };
+  const filaBlanca = (y) => {
+    for (let x = left; x < right; x += 1) if (!blanco(x, y)) return false;
+    return true;
+  };
+
+  for (const [borde, x] of [['izquierdo', left - 1], ['derecho', right]]) {
+    if (x < 0 || x >= width) continue;
+    for (let d = 0; d < CANAL_BLANCO; d += 1) {
+      const columna = borde === 'izquierdo' ? x - d : x + d;
+      if (columna < 0 || columna >= width) break;
+      if (!columnaBlanca(columna)) {
+        throw new Error(
+          `${sku}: el corte ${borde} no cae en un canal de blanco: la columna ${columna} tiene contenido. `
+          + 'Un recorte sólo puede pasar por blanco puro: revisar catalog/recortes-declarados.json.',
+        );
+      }
+    }
+  }
+  for (const [borde, y] of [['superior', top - 1], ['inferior', bottom]]) {
+    if (y < 0 || y >= height) continue;
+    for (let d = 0; d < CANAL_BLANCO; d += 1) {
+      const fila = borde === 'superior' ? y - d : y + d;
+      if (fila < 0 || fila >= height) break;
+      if (!filaBlanca(fila)) {
+        throw new Error(`${sku}: el corte ${borde} no cae en un canal de blanco: la fila ${fila} tiene contenido.`);
+      }
+    }
+  }
+
+  // Y el producto tiene que quedar ENTERO adentro, sin tocar los bordes.
+  let hayContenido = false;
+  for (let y = top; y < bottom && !hayContenido; y += 1) {
+    for (let x = left; x < right; x += 1) {
+      if (!blanco(x, y)) { hayContenido = true; break; }
+    }
+  }
+  if (!hayContenido) throw new Error(`${sku}: el recorte declarado deja una imagen vacía.`);
+}
+
 const allowEmpty = process.argv.includes('--allow-empty');
 const rawManifest = JSON.parse(await fs.readFile(RAW_MANIFEST, 'utf8')
   .catch(() => '{"schemaVersion":0,"sources":[]}'));
@@ -64,12 +157,20 @@ for (const source of rawManifest.sources) {
     throw new Error(`${source.sku}: la fuente raw no coincide con el manifiesto.`);
   }
 
+  const recorte = recortesPorSku.get(source.sku);
+  if (recorte) await verificarQueElCorteCaeEnBlanco(input, recorte, source.sku);
+
   const assets = {};
   for (const [kind, size] of [['master', 1000], ['thumbnail', 400]]) {
     const tempPath = path.join(RAW, `.normalize-${process.pid}-${source.safeSku}-${kind}.webp`);
     try {
-      await sharp(input)
-        .rotate()
+      const base = sharp(input).rotate();
+      if (recorte) {
+        base.extract({
+          left: recorte.left, top: recorte.top, width: recorte.width, height: recorte.height,
+        });
+      }
+      await base
         .resize(size, size, { fit: 'contain', background: '#ffffff' })
         .flatten({ background: '#ffffff' })
         .webp({ quality: 84, effort: 6 })

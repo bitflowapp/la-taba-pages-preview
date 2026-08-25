@@ -5,7 +5,7 @@
 --
 -- QUÉ HACE Y QUÉ NO
 -- -----------------
--- Toca EXCLUSIVAMENTE los seis campos de imagen de 14 productos, más su fila
+-- Toca EXCLUSIVAMENTE los seis campos de imagen de 19 productos, más su fila
 -- en catalog_assets. NO toca precios, stock, disponibilidad, alcohol, ordering,
 -- ni ninguna otra columna. No crea ni borra productos.
 --
@@ -21,6 +21,123 @@
 -- Autoridad de derechos: TABA-AUT-2026-08-001 (declarada; evidencia documental pendiente: true)
 
 begin;
+
+-- Aquarius Manzana · 1500 ml · unidad
+--   fuente: https://coca-colaentucasa.com/media/catalog/product/a/q/aqu-manz-nor-pet-1.5l-6pz_1.jpg
+--   derechos: LICENCIA_COMERCIAL · TABA-AUT-2026-08-001
+insert into public.catalog_assets (
+  business_id, external_id, sku, safe_sku, identity_sha256,
+  master_path, master_sha256, master_binding_sha256, master_width, master_height,
+  thumbnail_path, thumbnail_sha256, thumbnail_binding_sha256, thumbnail_width, thumbnail_height,
+  source_sha256, source_url, rights_status, rights_reference, approved_at, approved_by
+) values (
+  '00000000-0000-4000-8000-000000000001', 'aquarius-manzana-1500ml', 'aquarius-manzana-1500ml', 'aquarius-manzana-1500ml', '5a06bd9176e278288330044305fee4171ebf154f116c490b6f584b0873e5d115',
+  'assets/products/aquarius-manzana-1500ml-5a06bd9176e27828-d3c0af1d8c4494d9.webp', 'd3c0af1d8c4494d990f03302c671c1d9778d855a70f023b4def927404a09f865', '0b31f73056bfff6f8e03b7bd23405aa57a8ab1adfe48416d2b58c95cb0a6cbaf', 1000, 1000,
+  'assets/products/aquarius-manzana-1500ml-5a06bd9176e27828-thumb-d5da2606a2f036cf.webp', 'd5da2606a2f036cf4cbdee5d858806ab84d3f2b1d85746b826ae98b034c660b0', '96b5a908f405245a85beb8a6fa5cf8cef00faa682be0a8e1db08a2daff4fea14', 400, 400,
+  'a6c6973835d3839a71e8cc2a23b50164b76629aa77cf24a4df7d1e0e428da958', 'https://coca-colaentucasa.com/media/catalog/product/a/q/aqu-manz-nor-pet-1.5l-6pz_1.jpg', 'LICENCIA_COMERCIAL', 'TABA-AUT-2026-08-001',
+  now(), '61f238ad-fc2b-446a-9f17-257f4622cd86'
+)
+on conflict (business_id, sku) do update set
+  master_path = excluded.master_path,
+  master_sha256 = excluded.master_sha256,
+  master_binding_sha256 = excluded.master_binding_sha256,
+  thumbnail_path = excluded.thumbnail_path,
+  thumbnail_sha256 = excluded.thumbnail_sha256,
+  thumbnail_binding_sha256 = excluded.thumbnail_binding_sha256,
+  source_sha256 = excluded.source_sha256,
+  source_url = excluded.source_url,
+  rights_status = excluded.rights_status,
+  rights_reference = excluded.rights_reference,
+  updated_at = now();
+
+update public.products set
+  catalog_asset_id = (select id from public.catalog_assets
+                      where business_id = '00000000-0000-4000-8000-000000000001' and sku = 'aquarius-manzana-1500ml'),
+  image_url = 'assets/products/aquarius-manzana-1500ml-5a06bd9176e27828-d3c0af1d8c4494d9.webp',
+  image_sha256 = 'd3c0af1d8c4494d990f03302c671c1d9778d855a70f023b4def927404a09f865',
+  image_thumbnail_url = 'assets/products/aquarius-manzana-1500ml-5a06bd9176e27828-thumb-d5da2606a2f036cf.webp',
+  image_thumbnail_sha256 = 'd5da2606a2f036cf4cbdee5d858806ab84d3f2b1d85746b826ae98b034c660b0',
+  source_image_sha256 = 'a6c6973835d3839a71e8cc2a23b50164b76629aa77cf24a4df7d1e0e428da958',
+  updated_at = now()
+where business_id = '00000000-0000-4000-8000-000000000001' and sku = 'aquarius-manzana-1500ml';
+
+-- Aquarius Pera · 1500 ml · unidad
+--   fuente: https://coca-colaentucasa.com/media/catalog/product/a/q/aqu-pera-nor-pet-1.5l-6pz_1.jpg
+--   derechos: LICENCIA_COMERCIAL · TABA-AUT-2026-08-001
+insert into public.catalog_assets (
+  business_id, external_id, sku, safe_sku, identity_sha256,
+  master_path, master_sha256, master_binding_sha256, master_width, master_height,
+  thumbnail_path, thumbnail_sha256, thumbnail_binding_sha256, thumbnail_width, thumbnail_height,
+  source_sha256, source_url, rights_status, rights_reference, approved_at, approved_by
+) values (
+  '00000000-0000-4000-8000-000000000001', 'aquarius-pera-1500ml', 'aquarius-pera-1500ml', 'aquarius-pera-1500ml', 'd8c1230b1227373fb819fa8846cf3d422083a9938b2d97de595c6d6f02b99034',
+  'assets/products/aquarius-pera-1500ml-d8c1230b1227373f-2925d0553fe3f194.webp', '2925d0553fe3f194bbfc6f57d29bdcfc9dbfcb93733e7d3e429ce0b590025322', '236cdea6df8a21fba7c17f1d579f0442c93514af6048ad19bb945a5031ad50b1', 1000, 1000,
+  'assets/products/aquarius-pera-1500ml-d8c1230b1227373f-thumb-0c540b9ca40aec2e.webp', '0c540b9ca40aec2e287ad1a3c0776969c0d0247dea79028b6cfe8c07e88aea82', '350a97f894b6962d8b0216095f5fb47b44b8c0ec682fb345730e2d9bed593f7a', 400, 400,
+  'f69932a6d2998fa8a0fc73428c899c16df07332b55e90fd72b2eb03de8420314', 'https://coca-colaentucasa.com/media/catalog/product/a/q/aqu-pera-nor-pet-1.5l-6pz_1.jpg', 'LICENCIA_COMERCIAL', 'TABA-AUT-2026-08-001',
+  now(), '61f238ad-fc2b-446a-9f17-257f4622cd86'
+)
+on conflict (business_id, sku) do update set
+  master_path = excluded.master_path,
+  master_sha256 = excluded.master_sha256,
+  master_binding_sha256 = excluded.master_binding_sha256,
+  thumbnail_path = excluded.thumbnail_path,
+  thumbnail_sha256 = excluded.thumbnail_sha256,
+  thumbnail_binding_sha256 = excluded.thumbnail_binding_sha256,
+  source_sha256 = excluded.source_sha256,
+  source_url = excluded.source_url,
+  rights_status = excluded.rights_status,
+  rights_reference = excluded.rights_reference,
+  updated_at = now();
+
+update public.products set
+  catalog_asset_id = (select id from public.catalog_assets
+                      where business_id = '00000000-0000-4000-8000-000000000001' and sku = 'aquarius-pera-1500ml'),
+  image_url = 'assets/products/aquarius-pera-1500ml-d8c1230b1227373f-2925d0553fe3f194.webp',
+  image_sha256 = '2925d0553fe3f194bbfc6f57d29bdcfc9dbfcb93733e7d3e429ce0b590025322',
+  image_thumbnail_url = 'assets/products/aquarius-pera-1500ml-d8c1230b1227373f-thumb-0c540b9ca40aec2e.webp',
+  image_thumbnail_sha256 = '0c540b9ca40aec2e287ad1a3c0776969c0d0247dea79028b6cfe8c07e88aea82',
+  source_image_sha256 = 'f69932a6d2998fa8a0fc73428c899c16df07332b55e90fd72b2eb03de8420314',
+  updated_at = now()
+where business_id = '00000000-0000-4000-8000-000000000001' and sku = 'aquarius-pera-1500ml';
+
+-- Aquarius Pomelo · 2250 ml · unidad
+--   fuente: https://coca-colaentucasa.com/media/catalog/product/a/q/aqu-pome-nor-pet-2.25l-6pz_1.jpg
+--   derechos: LICENCIA_COMERCIAL · TABA-AUT-2026-08-001
+insert into public.catalog_assets (
+  business_id, external_id, sku, safe_sku, identity_sha256,
+  master_path, master_sha256, master_binding_sha256, master_width, master_height,
+  thumbnail_path, thumbnail_sha256, thumbnail_binding_sha256, thumbnail_width, thumbnail_height,
+  source_sha256, source_url, rights_status, rights_reference, approved_at, approved_by
+) values (
+  '00000000-0000-4000-8000-000000000001', 'aquarius-pomelo-2250ml', 'aquarius-pomelo-2250ml', 'aquarius-pomelo-2250ml', '8de7c8de5e78002092e38f0aa48804a6ecefa8f3793a6d62df1f2e1bfd5c78e5',
+  'assets/products/aquarius-pomelo-2250ml-8de7c8de5e780020-f788300784447191.webp', 'f788300784447191d85684c2f8f7ac269b5d64400bfef445c9be79cd9e0b7bfb', 'fecd9d203a9918339b3513e4eee566fdda93327afacade91c215820d6da392b1', 1000, 1000,
+  'assets/products/aquarius-pomelo-2250ml-8de7c8de5e780020-thumb-bd47cfae363889a1.webp', 'bd47cfae363889a127f3cb5e11485288238e19cf3e19d422e45bf505310b3dfb', '84805a6f3b660abd9542a8768fb9dbc7ea4155bd8d82c9194302e649ef0f6e07', 400, 400,
+  '6782d2c1124329b6b8e62b33c5dd544901b75c183cc39c4e690c3334e6bb2691', 'https://coca-colaentucasa.com/media/catalog/product/a/q/aqu-pome-nor-pet-2.25l-6pz_1.jpg', 'LICENCIA_COMERCIAL', 'TABA-AUT-2026-08-001',
+  now(), '61f238ad-fc2b-446a-9f17-257f4622cd86'
+)
+on conflict (business_id, sku) do update set
+  master_path = excluded.master_path,
+  master_sha256 = excluded.master_sha256,
+  master_binding_sha256 = excluded.master_binding_sha256,
+  thumbnail_path = excluded.thumbnail_path,
+  thumbnail_sha256 = excluded.thumbnail_sha256,
+  thumbnail_binding_sha256 = excluded.thumbnail_binding_sha256,
+  source_sha256 = excluded.source_sha256,
+  source_url = excluded.source_url,
+  rights_status = excluded.rights_status,
+  rights_reference = excluded.rights_reference,
+  updated_at = now();
+
+update public.products set
+  catalog_asset_id = (select id from public.catalog_assets
+                      where business_id = '00000000-0000-4000-8000-000000000001' and sku = 'aquarius-pomelo-2250ml'),
+  image_url = 'assets/products/aquarius-pomelo-2250ml-8de7c8de5e780020-f788300784447191.webp',
+  image_sha256 = 'f788300784447191d85684c2f8f7ac269b5d64400bfef445c9be79cd9e0b7bfb',
+  image_thumbnail_url = 'assets/products/aquarius-pomelo-2250ml-8de7c8de5e780020-thumb-bd47cfae363889a1.webp',
+  image_thumbnail_sha256 = 'bd47cfae363889a127f3cb5e11485288238e19cf3e19d422e45bf505310b3dfb',
+  source_image_sha256 = '6782d2c1124329b6b8e62b33c5dd544901b75c183cc39c4e690c3334e6bb2691',
+  updated_at = now()
+where business_id = '00000000-0000-4000-8000-000000000001' and sku = 'aquarius-pomelo-2250ml';
 
 -- Benedictino · 2250 ml · unidad
 --   fuente: https://coca-colaentucasa.com/media/catalog/product/3/-/3-render_2.25l_bndsg.png
@@ -255,6 +372,84 @@ update public.products set
   source_image_sha256 = '8a49eddb5f26bdbad98fb14085c221a37432f21a884ce4808358180987f29512',
   updated_at = now()
 where business_id = '00000000-0000-4000-8000-000000000001' and sku = 'fanta-naranja-botella-pet-1500-ml-pack-x6';
+
+-- Gatorade Cool Blue · 500 ml · unidad
+--   fuente: https://boulevard-sa.com.ar/Site/img/products/gatorade/Gatorade-cool-blue-500-L.jpg
+--   derechos: LICENCIA_COMERCIAL · TABA-AUT-2026-08-001
+insert into public.catalog_assets (
+  business_id, external_id, sku, safe_sku, identity_sha256,
+  master_path, master_sha256, master_binding_sha256, master_width, master_height,
+  thumbnail_path, thumbnail_sha256, thumbnail_binding_sha256, thumbnail_width, thumbnail_height,
+  source_sha256, source_url, rights_status, rights_reference, approved_at, approved_by
+) values (
+  '00000000-0000-4000-8000-000000000001', 'gatorade-cool-blue-500ml', 'gatorade-cool-blue-500ml', 'gatorade-cool-blue-500ml', 'e3fcbd3e1e29bb615cf5b2bd460b62eb8d5334b699995fb99d32dd5e298a5f50',
+  'assets/products/gatorade-cool-blue-500ml-e3fcbd3e1e29bb61-f138bb4b00238c71.webp', 'f138bb4b00238c71209ee857c9078994a5f23168e79dd521eba623e222bdae36', '420ad07f2bbdc793e73a1688fe48b3fd31f9e552a81dd04bffc2b771e31e9023', 1000, 1000,
+  'assets/products/gatorade-cool-blue-500ml-e3fcbd3e1e29bb61-thumb-b41adc6e858c3a90.webp', 'b41adc6e858c3a9006a28c01425f483c0cd04f5ce2db4ce0d1744056d9765919', '9efe3d378b3c07842725b44c026d69521b14cf9b832375a4edbd8bdf427eacca', 400, 400,
+  '3931efb4cc0861ba7890beb24e42dde77a126a18bf6aea84aefe6744a939a2a8', 'https://boulevard-sa.com.ar/Site/img/products/gatorade/Gatorade-cool-blue-500-L.jpg', 'LICENCIA_COMERCIAL', 'TABA-AUT-2026-08-001',
+  now(), '61f238ad-fc2b-446a-9f17-257f4622cd86'
+)
+on conflict (business_id, sku) do update set
+  master_path = excluded.master_path,
+  master_sha256 = excluded.master_sha256,
+  master_binding_sha256 = excluded.master_binding_sha256,
+  thumbnail_path = excluded.thumbnail_path,
+  thumbnail_sha256 = excluded.thumbnail_sha256,
+  thumbnail_binding_sha256 = excluded.thumbnail_binding_sha256,
+  source_sha256 = excluded.source_sha256,
+  source_url = excluded.source_url,
+  rights_status = excluded.rights_status,
+  rights_reference = excluded.rights_reference,
+  updated_at = now();
+
+update public.products set
+  catalog_asset_id = (select id from public.catalog_assets
+                      where business_id = '00000000-0000-4000-8000-000000000001' and sku = 'gatorade-cool-blue-500ml'),
+  image_url = 'assets/products/gatorade-cool-blue-500ml-e3fcbd3e1e29bb61-f138bb4b00238c71.webp',
+  image_sha256 = 'f138bb4b00238c71209ee857c9078994a5f23168e79dd521eba623e222bdae36',
+  image_thumbnail_url = 'assets/products/gatorade-cool-blue-500ml-e3fcbd3e1e29bb61-thumb-b41adc6e858c3a90.webp',
+  image_thumbnail_sha256 = 'b41adc6e858c3a9006a28c01425f483c0cd04f5ce2db4ce0d1744056d9765919',
+  source_image_sha256 = '3931efb4cc0861ba7890beb24e42dde77a126a18bf6aea84aefe6744a939a2a8',
+  updated_at = now()
+where business_id = '00000000-0000-4000-8000-000000000001' and sku = 'gatorade-cool-blue-500ml';
+
+-- Gatorade Manzana · 1250 ml · unidad
+--   fuente: https://boulevard-sa.com.ar/Site/img/products/gatorade/Gatorade-manzana-1250-L.jpg
+--   derechos: LICENCIA_COMERCIAL · TABA-AUT-2026-08-001
+insert into public.catalog_assets (
+  business_id, external_id, sku, safe_sku, identity_sha256,
+  master_path, master_sha256, master_binding_sha256, master_width, master_height,
+  thumbnail_path, thumbnail_sha256, thumbnail_binding_sha256, thumbnail_width, thumbnail_height,
+  source_sha256, source_url, rights_status, rights_reference, approved_at, approved_by
+) values (
+  '00000000-0000-4000-8000-000000000001', 'gatorade-manzana-1250ml', 'gatorade-manzana-1250ml', 'gatorade-manzana-1250ml', '64efd055975ef24138909ef8ed42da6ab13389b513def23c908188d48cefbe6d',
+  'assets/products/gatorade-manzana-1250ml-64efd055975ef241-67bbe43a8a884939.webp', '67bbe43a8a8849395f966b3baceb95bd633699154e2a82b7ab81cbd21c16b2ac', '2ae05296acefa494b90874e8d66682b0a0c0e6c335871e905b8092ef002e1a15', 1000, 1000,
+  'assets/products/gatorade-manzana-1250ml-64efd055975ef241-thumb-b33a3ac22178a69a.webp', 'b33a3ac22178a69a8783c9255493bde92baf4805e8245a64ad7434f926e94b92', '7c2f5754ac80489b506dc0a868d0c0d5730476e4e996eaac5cca3fb85d4ade67', 400, 400,
+  '2987ba48b015c06fb382efc34c24e7d8dcdd324246c6fd9eca82437231b05a53', 'https://boulevard-sa.com.ar/Site/img/products/gatorade/Gatorade-manzana-1250-L.jpg', 'LICENCIA_COMERCIAL', 'TABA-AUT-2026-08-001',
+  now(), '61f238ad-fc2b-446a-9f17-257f4622cd86'
+)
+on conflict (business_id, sku) do update set
+  master_path = excluded.master_path,
+  master_sha256 = excluded.master_sha256,
+  master_binding_sha256 = excluded.master_binding_sha256,
+  thumbnail_path = excluded.thumbnail_path,
+  thumbnail_sha256 = excluded.thumbnail_sha256,
+  thumbnail_binding_sha256 = excluded.thumbnail_binding_sha256,
+  source_sha256 = excluded.source_sha256,
+  source_url = excluded.source_url,
+  rights_status = excluded.rights_status,
+  rights_reference = excluded.rights_reference,
+  updated_at = now();
+
+update public.products set
+  catalog_asset_id = (select id from public.catalog_assets
+                      where business_id = '00000000-0000-4000-8000-000000000001' and sku = 'gatorade-manzana-1250ml'),
+  image_url = 'assets/products/gatorade-manzana-1250ml-64efd055975ef241-67bbe43a8a884939.webp',
+  image_sha256 = '67bbe43a8a8849395f966b3baceb95bd633699154e2a82b7ab81cbd21c16b2ac',
+  image_thumbnail_url = 'assets/products/gatorade-manzana-1250ml-64efd055975ef241-thumb-b33a3ac22178a69a.webp',
+  image_thumbnail_sha256 = 'b33a3ac22178a69a8783c9255493bde92baf4805e8245a64ad7434f926e94b92',
+  source_image_sha256 = '2987ba48b015c06fb382efc34c24e7d8dcdd324246c6fd9eca82437231b05a53',
+  updated_at = now()
+where business_id = '00000000-0000-4000-8000-000000000001' and sku = 'gatorade-manzana-1250ml';
 
 -- Monster Green Zero · 473 ml · unidad
 --   fuente: https://web-assests.monsterenergy.com/mnst/9c1506b2-791c-4f0a-9ed9-25cf66549334.png

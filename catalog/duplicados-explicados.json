@@ -46,6 +46,14 @@
       "explicacion": "El mismo falso positivo: dos botellas familiares transparentes con líquido incoloro sobre blanco. La firma de color no puede separarlas porque casi toda su superficie ES el líquido incoloro. Miradas, la etiqueta turquesa de agua mineral y la franja verde de Sprite no se confunden. Verificado el 2026-08-25.",
       "verificadoPor": "TABA_PREMIUM_CATALOG_LAUNCH (Opus 5)",
       "verificadoEl": "2026-08-25"
+    },
+    {
+      "skuA": "aquarius-pera-1500ml",
+      "skuB": "aquarius-pomelo-2250ml",
+      "distanciaMedida": 2.4,
+      "explicacion": "Los dos son Aquarius en botella PET transparente con líquido amarillo pálido, fotografiados por el mismo embotellador con la misma luz y el mismo encuadre: para una firma de color de 8x8 son casi el mismo promedio. Mirados, no se confunden — la etiqueta dice «Pera» sobre verde amarillento en uno y «Pomelo» sobre amarillo en el otro, y la capacidad impresa es «1,5 L» contra «2,25 L»—. Son dos archivos distintos, con SHA-256 distintos, y cada uno viene de la ficha de SU producto. Verificado mirando los dos a tamaño completo el 2026-08-25.",
+      "verificadoPor": "TABA_PREMIUM_CATALOG_LAUNCH (Opus 5)",
+      "verificadoEl": "2026-08-25"
     }
   ]
 }

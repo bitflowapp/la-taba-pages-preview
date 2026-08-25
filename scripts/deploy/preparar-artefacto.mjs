@@ -86,7 +86,17 @@ if (!clave) {
 console.log(`clave publicable: ${origenDeLaClave}`);
 
 console.log('\n· 1/5  bundle del cliente');
-correr('npm', ['run', 'vendor:build']);
+/*
+ * El guion, no el alias. `npm` en Windows es `npm.cmd`, y desde Node 20
+ * `execFileSync` se niega a ejecutar un `.cmd` sin shell (EINVAL): este paso se
+ * plantaba antes del primero. Llamar al script que `npm run vendor:build`
+ * llamaría corre lo mismo en las dos plataformas y sin intermediario.
+ *
+ * Importa porque cuando el despliegue automático está caído —hoy le faltan los
+ * secretos de Cloudflare— la única forma de publicar es armar el artefacto a
+ * mano desde la máquina del comercio, y esa máquina es Windows.
+ */
+correr(process.execPath, ['scripts/build-supabase-vendor.mjs']);
 
 console.log('\n· 2/5  árbol publicable');
 correr(process.execPath, ['scripts/create-release-folder.mjs']);

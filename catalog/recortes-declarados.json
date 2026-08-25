@@ -50,6 +50,33 @@
       "height": 371,
       "motivo": "Mismo lienzo, pero la botella de 500 ml queda en el 48% del alto y en el tercio inferior: sin recortar, la tarjeta muestra un producto diminuto en medio de un plato vacio. El recorte deja 30 px de margen y no toca el envase.",
       "medidoEl": "2026-08-25"
+    },
+    {
+      "sku": "pepsi-original-2000ml",
+      "left": 120,
+      "top": 70,
+      "width": 420,
+      "height": 900,
+      "motivo": "La ficha del retailer coloca una pieza gráfica separada a la derecha. La botella completa queda dentro del rectángulo y el corte atraviesa exclusivamente el canal blanco que la separa de la pieza.",
+      "medidoEl": "2026-08-25"
+    },
+    {
+      "sku": "pepsi-black-1500ml",
+      "left": 120,
+      "top": 70,
+      "width": 420,
+      "height": 900,
+      "motivo": "La ficha del retailer coloca una pieza gráfica separada a la derecha. La botella completa queda dentro del rectángulo y el corte atraviesa exclusivamente el canal blanco que la separa de la pieza.",
+      "medidoEl": "2026-08-25"
+    },
+    {
+      "sku": "villavicencio-sin-gas-1500ml",
+      "left": 0,
+      "top": 0,
+      "width": 620,
+      "height": 1000,
+      "motivo": "La ficha de DIA ubica una placa roja separada a la derecha. La botella completa ocupa aproximadamente las columnas 205-505 y la placa comienza en la 690; el corte conserva 115 px de blanco a la derecha del envase.",
+      "medidoEl": "2026-08-25"
     }
   ]
 }

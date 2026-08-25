@@ -112,11 +112,47 @@ test('el sello del packshot anuncia la cantidad que el SKU trae de verdad', () =
 });
 
 test('ninguna unidad suelta recibe un packshot de pack', () => {
-  for (const fila of auditoria.filas.filter((row) => row.unitsPerPack === 1)) {
+  /*
+   * POR QUÉ ESTA PRUEBA YA NO DICE «tiene que ser FALLBACK».
+   *
+   * Mientras las únicas fotografías reales del catálogo fueron los cuatro
+   * packshots del embotellador, «esta unidad no muestra un pack» y «esta unidad
+   * no muestra ninguna foto» eran la misma frase, y la prueba se escribió con
+   * la segunda. Dejaron de serlo el 2026-08-22, cuando entraron packshots de
+   * botella suelta: desde entonces exigir FALLBACK no prohíbe un pack mal
+   * puesto, prohíbe que una unidad tenga su propia foto, que es exactamente lo
+   * que el catálogo busca. La prueba seguía en verde sólo porque la auditoría
+   * versionada estaba atrasada respecto de producción.
+   *
+   * Lo que se prohíbe es lo que dice el título, y ahora en los dos momentos que
+   * importan: en lo que la góndola YA muestra, y en lo que este lote dejaría
+   * listo para publicar. Lo segundo es lo que atrapa una unidad emparejada con
+   * un packshot ANTES de que llegue a producción, que es cuando todavía sale
+   * barato. `lote-objetivo.mjs` es la lista escrita de cuánto anuncia cada
+   * fotografía.
+   */
+  const unidades = auditoria.filas.filter((row) => row.unitsPerPack === 1);
+  assert.ok(unidades.length > 0, 'si no queda ninguna unidad suelta, esta prueba dejó de mirar algo');
+
+  const preparados = new Set(
+    JSON.parse(fs.readFileSync(path.join(root, 'docs/catalog/image-manifest.json'), 'utf8'))
+      .sources.map((fuente) => fuente.sku),
+  );
+
+  for (const fila of unidades) {
+    const publicada = fila.tipo === 'REAL';
+    const preparada = preparados.has(fila.sku);
+    if (!publicada && !preparada) continue;
+    const declarado = OBJETIVOS.get(fila.sku);
+    assert.ok(
+      declarado,
+      `${fila.sku} tiene fotografía ${publicada ? 'publicada' : 'preparada'} y ningún lote declara qué cantidad anuncia`,
+    );
     assert.equal(
-      fila.tipo,
-      'FALLBACK',
-      `${fila.sku} es una unidad y muestra ${fila.imageUrl}: el packshot disponible anuncia un pack`,
+      declarado.unitsPerPack,
+      1,
+      `${fila.sku} es una unidad y su fotografía ${publicada ? `publicada (${fila.imageUrl})` : 'preparada'} `
+      + `anuncia x${declarado.unitsPerPack}`,
     );
   }
 });

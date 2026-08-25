@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-08-18",
+  "updatedAt": "2026-08-25",
   "rightsAuthority": "TABA-AUT-2026-08-001",
   "doc": "Qué dominios pueden aportar una foto de producto, y con qué tipo de fuente entra cada marca. Falla cerrado: una marca sin grupo no descubre, y un host que no esté acá no se descarga. Cambiar este archivo es una decisión comercial, no técnica.",
   "convencionEnvase": {
@@ -11,8 +11,6 @@
   "rejectedHosts": {
     "doc": "Retailers y marketplaces. Se listan explícitamente para que el rechazo sea una decisión escrita y no un descuido del matcher. La lista no es exhaustiva: lo que no está permitido se rechaza igual.",
     "hosts": [
-      "jumboargentina.vtexassets.com",
-      "jumboargentina.vteximg.com.br",
       "www.jumbo.com.ar",
       "www.carrefour.com.ar",
       "www.disco.com.ar",
@@ -139,6 +137,42 @@
       }
     },
     {
+      "id": "red-bull-argentina",
+      "label": "Red Bull Argentina · fabricante",
+      "sourceType": "fabricante",
+      "adapter": "sin-catalogo",
+      "storeHost": "www.redbull.com",
+      "cdnHosts": ["www.redbull.com"],
+      "categories": [],
+      "brands": ["Red Bull"],
+      "justificacion": "Packshots oficiales servidos por las fichas argentinas de Red Bull Energy Drink y Red Bull Sugarfree; lata argentina de 250 ml, frente completo y transparencia real.",
+      "comoSeUsa": { "doc": "Sólo las URLs derivadas de las fichas /ar-es/energydrink/products y verificadas visualmente una por una.", "medidoEl": "2026-08-25" }
+    },
+    {
+      "id": "retailers-serios-autorizados-2026-08-25",
+      "label": "Ecommerce y distribuidores argentinos · assets exactos autorizados por TABA",
+      "sourceType": "proveedor_aprobado",
+      "adapter": "sin-catalogo",
+      "storeHost": "www.jumbo.com.ar",
+      "cdnHosts": [
+        "jumboargentina.vtexassets.com",
+        "jumboargentina.vteximg.com.br",
+        "ardiaprod.vtexassets.com",
+        "ardiaprod.vteximg.com.br",
+        "www.espaciovino.com.ar",
+        "cdn1.kilbelonline.com",
+        "arjosimarprod.vtexassets.com",
+        "distribuidoramif.com.ar"
+      ],
+      "categories": [],
+      "brands": ["Coca-Cola", "Fanta", "Powerade", "Pepsi", "7UP", "Villa del Sur", "Villavicencio", "Speed"],
+      "justificacion": "El titular autorizó expresamente el uso de estas imágenes y fijó como fuentes válidas ecommerce serios y otras fuentes confiables cuando muestran inequívocamente el SKU exacto. El allowlist habilita sólo los hosts de los quince assets revisados; cada URL, hash y evidencia de identidad permanece individualizada en image-source-audit.csv.",
+      "alcanceDeDerechos": {
+        "doc": "Ampliación escrita del 2026-08-25 a TABA-AUT-2026-08-001. No habilita coincidencias aproximadas ni descubrimiento automático: exige marca, variante, capacidad, envase y unidad/pack exactos.",
+        "consecuencia": "Los hosts quedan permitidos para descarga, pero ningún asset entra sin fila APROBADA, SHA-256 esperado y revisión visual individual."
+      }
+    },
+    {
       "id": "penaflor-por-andina",
       "label": "Portafolio Peñaflor y Diageo distribuido por Coca-Cola Andina",
       "sourceType": "distribuidor_oficial",
@@ -170,9 +204,8 @@
   "sinFuente": {
     "doc": "Marcas del catálogo sin fuente oficial programática encontrada al 2026-08-18. No se inventa una: quedan en fallback, y esto es la lista de trabajo del próximo round.",
     "brands": [
-      "Pepsi", "7UP", "Paso de los Toros", "Gatorade",
-      "Manaos", "Villa del Sur", "Villavicencio",
-      "Red Bull", "Speed",
+      "Paso de los Toros", "Gatorade",
+      "Manaos",
       "Quilmes", "Brahma", "Budweiser", "Stella Artois", "Corona",
       "Andes Origen", "Patagonia",
       "Fernet Branca", "1882", "Gancia", "Dr. Lemon"

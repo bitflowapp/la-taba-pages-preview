@@ -316,6 +316,75 @@ export const OBJETIVOS = new Map([
       variant: 'Cool Blue',
     },
   }],
+
+  /*
+   * ALTA DEL 2026-08-25 (cobertura premium completa) · quince unidades.
+   *
+   * Cada asociación fue verificada contra marca, variante, capacidad, envase y
+   * presentación. La fuente individual y la evidencia quedan en
+   * docs/catalog/image-source-audit.csv; este mapa limita estrictamente qué SKU
+   * puede republicar el aplicador.
+   */
+  ['coca-cola-original-lata-354ml', {
+    nombre: 'Coca-Cola Original · 354 ml', unitsPerPack: 1,
+    presentacion: { brand: 'Coca-Cola', capacityUnit: 'ml', capacityValue: 354, category: 'Gaseosas', name: 'Coca-Cola', packagingType: 'lata', variant: 'Original' },
+  }],
+  ['coca-cola-original-pet-1500ml', {
+    nombre: 'Coca-Cola Original · 1,5 L', unitsPerPack: 1,
+    presentacion: { brand: 'Coca-Cola', capacityUnit: 'ml', capacityValue: 1500, category: 'Gaseosas', name: 'Coca-Cola Original', packagingType: 'botella-pet', variant: 'Original' },
+  }],
+  ['coca-cola-zero-lata-354ml', {
+    nombre: 'Coca-Cola Zero · 354 ml', unitsPerPack: 1,
+    presentacion: { brand: 'Coca-Cola', capacityUnit: 'ml', capacityValue: 354, category: 'Gaseosas', name: 'Coca-Cola Zero', packagingType: 'lata', variant: 'Sin azúcar' },
+  }],
+  ['fanta-naranja-2250ml', {
+    nombre: 'Fanta Naranja · 2,25 L', unitsPerPack: 1,
+    presentacion: { brand: 'Fanta', capacityUnit: 'ml', capacityValue: 2250, category: 'Gaseosas', name: 'Fanta Naranja', packagingType: 'botella-pet', variant: 'Naranja' },
+  }],
+  ['powerade-mountain-blast-500ml', {
+    nombre: 'Powerade Mountain Blast · 500 ml', unitsPerPack: 1,
+    presentacion: { brand: 'Powerade', capacityUnit: 'ml', capacityValue: 500, category: 'Isotónicas', name: 'Powerade Mountain Blast', packagingType: 'botella-pet', variant: 'Mountain Blast' },
+  }],
+  ['red-bull-original-250ml', {
+    nombre: 'Red Bull · 250 ml', unitsPerPack: 1,
+    presentacion: { brand: 'Red Bull', capacityUnit: 'ml', capacityValue: 250, category: 'Energizantes', name: 'Red Bull', packagingType: 'lata', variant: 'Original' },
+  }],
+  ['red-bull-sin-azucar-250ml', {
+    nombre: 'Red Bull Sugarfree · 250 ml', unitsPerPack: 1,
+    presentacion: { brand: 'Red Bull', capacityUnit: 'ml', capacityValue: 250, category: 'Energizantes', name: 'Red Bull Sugarfree', packagingType: 'lata', variant: 'Sin azúcar' },
+  }],
+  ['pepsi-original-2000ml', {
+    nombre: 'Pepsi · 2 L', unitsPerPack: 1,
+    presentacion: { brand: 'Pepsi', capacityUnit: 'ml', capacityValue: 2000, category: 'Gaseosas', name: 'Pepsi', packagingType: 'botella-pet', variant: 'Original' },
+  }],
+  ['pepsi-black-1500ml', {
+    nombre: 'Pepsi Black · 1,5 L', unitsPerPack: 1,
+    presentacion: { brand: 'Pepsi', capacityUnit: 'ml', capacityValue: 1500, category: 'Gaseosas', name: 'Pepsi Black', packagingType: 'botella-pet', variant: 'Sin azúcar' },
+  }],
+  ['seven-up-original-2000ml', {
+    nombre: '7UP · 2 L', unitsPerPack: 1,
+    presentacion: { brand: '7UP', capacityUnit: 'ml', capacityValue: 2000, category: 'Gaseosas', name: '7UP', packagingType: 'botella-pet', variant: 'Original' },
+  }],
+  ['villa-del-sur-sin-gas-600ml', {
+    nombre: 'Villa del Sur · 600 ml', unitsPerPack: 1,
+    presentacion: { brand: 'Villa del Sur', capacityUnit: 'ml', capacityValue: 600, category: 'Aguas', name: 'Villa del Sur', packagingType: 'botella-pet', variant: 'Sin gas' },
+  }],
+  ['villavicencio-con-gas-500ml', {
+    nombre: 'Villavicencio con gas · 500 ml', unitsPerPack: 1,
+    presentacion: { brand: 'Villavicencio', capacityUnit: 'ml', capacityValue: 500, category: 'Aguas', name: 'Villavicencio', packagingType: 'botella-pet', variant: 'Con gas' },
+  }],
+  ['villavicencio-sin-gas-1500ml', {
+    nombre: 'Villavicencio sin gas · 1,5 L', unitsPerPack: 1,
+    presentacion: { brand: 'Villavicencio', capacityUnit: 'ml', capacityValue: 1500, category: 'Aguas', name: 'Villavicencio', packagingType: 'botella-pet', variant: 'Sin gas' },
+  }],
+  ['speed-original-473ml', {
+    nombre: 'Speed · 473 ml', unitsPerPack: 1,
+    presentacion: { brand: 'Speed', capacityUnit: 'ml', capacityValue: 473, category: 'Energizantes', name: 'Speed', packagingType: 'lata', variant: 'Original' },
+  }],
+  ['speed-zero-473ml', {
+    nombre: 'Speed Zero · 473 ml', unitsPerPack: 1,
+    presentacion: { brand: 'Speed', capacityUnit: 'ml', capacityValue: 473, category: 'Energizantes', name: 'Speed Zero', packagingType: 'lata', variant: 'Sin azúcar' },
+  }],
 ]);
 
 export const SKUS_OBJETIVO = Object.freeze([...OBJETIVOS.keys()]);

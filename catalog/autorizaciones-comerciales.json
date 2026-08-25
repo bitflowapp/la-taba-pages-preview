@@ -61,6 +61,28 @@
           "por_qué_importa": "PepsiCo no publica packshots argentinos en ningún canal propio alcanzable, medido host por host. Sin distribuidores oficiales, Pepsi, 7UP, Paso de los Toros y Gatorade se quedaban sin fotografía por una razón que no tiene nada que ver con los derechos.",
           "lo_que_no_amplía": "No habilita retailers ni marketplaces, que siguen rechazados por escrito. Un distribuidor oficial es una empresa que distribuye el portafolio del fabricante bajo acuerdo; una cadena minorista publica un asset propio, y eso no forma parte de ningún acuerdo entre TABA y el proveedor.",
           "pendiente_para_el_titular": "Confirmar por escrito esta ampliación cuando se documente el acuerdo. Hasta entonces las dos fotos que entran por esta vía —Paso de los Toros Tónica y Pomelo 1,5 L— quedan identificadas en el manifiesto con source_type distribuidor_oficial y se pueden retirar con una línea."
+        },
+        {
+          "fecha": "2026-08-25",
+          "quien": "titular del comercio",
+          "canal": "instrucción escrita TABA — COMPLETE PREMIUM CATALOG del 2026-08-25",
+          "que_amplía": "El titular declara que La Taba tiene autorización para utilizar las imágenes de producto y ordena buscar también en mayoristas, distribuidores autorizados, ecommerce serios y otras fuentes confiables. Esta ampliación habilita source_type proveedor_aprobado para assets individualmente comprobados.",
+          "supersede": "Para este lote, reemplaza expresamente la exclusión genérica de fotografías provenientes de cadenas minoristas incluida en no_cubre y la frase lo_que_no_amplía de la ampliación anterior. No reetiqueta ni aprueba en masa assets históricos.",
+          "condiciones": [
+            "marca, variante, capacidad, envase y presentación exactos",
+            "unidad versus pack exactos",
+            "fondo blanco o transparencia normalizada sobre blanco",
+            "sin watermark invasivo, precio, sticker ni promoción externa",
+            "URL, hash, fuente y evidencia de match registrados por asset"
+          ],
+          "lo_que_no_amplía": "No habilita marketplaces, imágenes aproximadas, otra variante o capacidad, packs usados como unidad, unidades usadas como pack, ediciones visualmente incorrectas ni imágenes generadas con IA.",
+          "assets_cubiertos": [
+            "coca-cola-original-lata-354ml", "coca-cola-original-pet-1500ml", "coca-cola-zero-lata-354ml",
+            "fanta-naranja-2250ml", "powerade-mountain-blast-500ml", "pepsi-original-2000ml", "pepsi-black-1500ml",
+            "seven-up-original-2000ml", "villa-del-sur-sin-gas-600ml", "villavicencio-con-gas-500ml",
+            "villavicencio-sin-gas-1500ml", "speed-original-473ml", "speed-zero-473ml"
+          ],
+          "nota": "Red Bull Original y Sugarfree 250 ml también entran en este lanzamiento, pero provienen directamente del fabricante y conservan source_type fabricante."
         }
       ],
       "altas_2026_08_25": {

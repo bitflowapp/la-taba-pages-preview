@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-08-18",
+  "updatedAt": "2026-08-25",
   "doc": "Pares de SKU cuyas fotografías se parecen por debajo del umbral y que aun así son correctas. Cada par necesita una explicación escrita: un parecido sin explicar es indistinguible de una foto asociada al producto equivocado, que es el error que este pipeline existe para evitar. Sin entrada acá, la hoja de contactos falla.",
   "medido": {
     "detector": "firma de color 8x8 RGB, diferencia media por canal sobre 255",
@@ -54,6 +54,61 @@
       "explicacion": "Los dos son Aquarius en botella PET transparente con líquido amarillo pálido, fotografiados por el mismo embotellador con la misma luz y el mismo encuadre: para una firma de color de 8x8 son casi el mismo promedio. Mirados, no se confunden — la etiqueta dice «Pera» sobre verde amarillento en uno y «Pomelo» sobre amarillo en el otro, y la capacidad impresa es «1,5 L» contra «2,25 L»—. Son dos archivos distintos, con SHA-256 distintos, y cada uno viene de la ficha de SU producto. Verificado mirando los dos a tamaño completo el 2026-08-25.",
       "verificadoPor": "TABA_PREMIUM_CATALOG_LAUNCH (Opus 5)",
       "verificadoEl": "2026-08-25"
+    },
+    {
+      "skuA": "coca-cola-original-2250ml", "skuB": "coca-cola-original-pet-1500ml", "distanciaMedida": 3.1,
+      "explicacion": "Mismo producto Original en dos capacidades PET. Son packshots y archivos distintos; 2,25 L y 1,5 L se leen en sus etiquetas y las proporciones de botella difieren. Verificados a tamaño completo.",
+      "verificadoPor": "TABA_PREMIUM_CATALOG_LAUNCH (Codex)", "verificadoEl": "2026-08-25"
+    },
+    {
+      "skuA": "coca-cola-original-pet-1500ml", "skuB": "coca-cola-zero-2250ml", "distanciaMedida": 3.5,
+      "explicacion": "Falso positivo por botella roja y líquido oscuro. La Original 1,5 L lleva tapa roja y octógonos; la Zero 2,25 L lleva tapa negra y leyenda ZERO. Capacidades y archivos distintos, verificados a tamaño completo.",
+      "verificadoPor": "TABA_PREMIUM_CATALOG_LAUNCH (Codex)", "verificadoEl": "2026-08-25"
+    },
+    {
+      "skuA": "benedictino-sin-gas-2250ml", "skuB": "villa-del-sur-sin-gas-600ml", "distanciaMedida": 3.6,
+      "explicacion": "Falso positivo de dos aguas transparentes sobre blanco. Benedictino muestra etiqueta turquesa y botella 2,25 L; Villa del Sur muestra etiqueta azul/roja y botella 600 ml. Verificados visualmente.",
+      "verificadoPor": "TABA_PREMIUM_CATALOG_LAUNCH (Codex)", "verificadoEl": "2026-08-25"
+    },
+    {
+      "skuA": "pepsi-black-1500ml", "skuB": "pepsi-original-2000ml", "distanciaMedida": 3.6,
+      "explicacion": "Comparten silueta y líquido oscuro, pero son archivos distintos: Black tiene etiqueta negra, tapa negra, leyenda sin azúcar y 1,5 L; Original tiene etiqueta azul, tapa azul, octógonos y 2 L. Verificados a tamaño completo.",
+      "verificadoPor": "TABA_PREMIUM_CATALOG_LAUNCH (Codex)", "verificadoEl": "2026-08-25"
+    },
+    {
+      "skuA": "sprite-botella-pet-500-ml-pack-x12", "skuB": "villa-del-sur-sin-gas-600ml", "distanciaMedida": 4.1,
+      "explicacion": "Falso positivo por envases transparentes. Sprite tiene franja verde y sello x12; Villa del Sur es una unidad de agua con etiqueta azul/roja. No existe confusión visual al inspeccionarlas.",
+      "verificadoPor": "TABA_PREMIUM_CATALOG_LAUNCH (Codex)", "verificadoEl": "2026-08-25"
+    },
+    {
+      "skuA": "sprite-original-2250ml", "skuB": "villa-del-sur-sin-gas-600ml", "distanciaMedida": 5.0,
+      "explicacion": "Falso positivo por líquido incoloro. Sprite 2,25 L tiene etiqueta verde y octógonos; Villa del Sur 600 ml tiene etiqueta de agua azul/roja y otra silueta.",
+      "verificadoPor": "TABA_PREMIUM_CATALOG_LAUNCH (Codex)", "verificadoEl": "2026-08-25"
+    },
+    {
+      "skuA": "seven-up-original-2000ml", "skuB": "villa-del-sur-sin-gas-600ml", "distanciaMedida": 5.6,
+      "explicacion": "Falso positivo por botellas transparentes sobre blanco. 7UP 2 L lleva etiqueta verde 7UP y octógonos; Villa del Sur es agua 600 ml con etiqueta azul/roja.",
+      "verificadoPor": "TABA_PREMIUM_CATALOG_LAUNCH (Codex)", "verificadoEl": "2026-08-25"
+    },
+    {
+      "skuA": "seven-up-original-2000ml", "skuB": "sprite-botella-pet-500-ml-pack-x12", "distanciaMedida": 5.7,
+      "explicacion": "Son gaseosas lima-limón de marcas y presentaciones distintas: 7UP unidad 2 L con etiqueta 7UP; Sprite 500 ml pack x12 con franja Sprite y sello x12. Verificadas individualmente.",
+      "verificadoPor": "TABA_PREMIUM_CATALOG_LAUNCH (Codex)", "verificadoEl": "2026-08-25"
+    },
+    {
+      "skuA": "villa-del-sur-sin-gas-600ml", "skuB": "villavicencio-con-gas-500ml", "distanciaMedida": 5.7,
+      "explicacion": "Dos aguas transparentes de marcas y variantes distintas. Villa del Sur dice sin gas, 600 ml y usa etiqueta azul/roja; Villavicencio dice con gas, 500 cc y usa etiqueta blanca/roja. Verificadas a tamaño completo.",
+      "verificadoPor": "TABA_PREMIUM_CATALOG_LAUNCH (Codex)", "verificadoEl": "2026-08-25"
+    },
+    {
+      "skuA": "sprite-zero-2250ml", "skuB": "villa-del-sur-sin-gas-600ml", "distanciaMedida": 5.9,
+      "explicacion": "Falso positivo por líquido incoloro. Sprite Zero 2,25 L lleva franja verde, tapa negra y ZERO; Villa del Sur es agua sin gas 600 ml con etiqueta azul/roja.",
+      "verificadoPor": "TABA_PREMIUM_CATALOG_LAUNCH (Codex)", "verificadoEl": "2026-08-25"
+    },
+    {
+      "skuA": "villavicencio-con-gas-500ml", "skuB": "villavicencio-sin-gas-1500ml", "distanciaMedida": 6.0,
+      "explicacion": "Misma marca de agua y envases transparentes, pero presentaciones exactas distintas: la unidad con gas dice 500 cc y usa otra silueta; la unidad sin gas dice 1,5 L en el frente. Fuentes, hashes y fichas son distintos y fueron verificados a tamaño completo.",
+      "verificadoPor": "TABA_PREMIUM_CATALOG_LAUNCH (Codex)", "verificadoEl": "2026-08-25"
     }
   ]
 }

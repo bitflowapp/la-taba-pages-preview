@@ -48,7 +48,9 @@ import path from 'node:path';
 import process from 'node:process';
 import { stableJson } from './lib.mjs';
 import { autorizaCatalogo, ROLES_CATALOGO } from './owner-authority.mjs';
-import { fueraDelLote, OBJETIVOS, SKUS_OBJETIVO, validarLoteObjetivo } from './lote-objetivo.mjs';
+import {
+  disponibilidadTrasPublicar, fueraDelLote, OBJETIVOS, SKUS_OBJETIVO, validarLoteObjetivo,
+} from './lote-objetivo.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const MANIFIESTO = path.join(ROOT, 'docs/catalog/image-manifest.json');
@@ -308,6 +310,20 @@ ok(`${manifiesto.sources.length} assets, de fuente permitida y citando la autori
  * igual»: `register_catalog_assets` sólo DESACTIVA los productos de un asset
  * cuando el asset existe y CAMBIÓ. Uno idéntico se reescribe sin consecuencias.
  * Distinguirlo es lo que permite volver a correr esto sin miedo.
+ *
+ * POR QUÉ NO SE COMPARAN LOS CONTEOS
+ * ----------------------------------
+ * La versión anterior exigía `previos.length === manifiesto.sources.length` y
+ * llamaba «estado a medias» a cualquier otra cosa. Eso era cierto mientras el
+ * lote no creciera nunca: con los cuatro packs de agosto ya registrados y el
+ * manifiesto en diecinueve, el guion abortaba justamente en el caso para el que
+ * más abajo existe el modo ALTA_PARCIAL. Los dos criterios vivían en el mismo
+ * archivo y decían cosas distintas.
+ *
+ * Lo que de verdad hay que comprobar no es cuántos hay: es que ninguno de los
+ * que YA ESTÁN vaya a cambiar. Un asset que falta es un alta —el caso normal
+ * cuando el lote crece— y no tiene efecto sobre ningún producto existente. Un
+ * asset que está y difiere sí lo tiene, y ése es el que aborta.
  */
 let assetsIdenticos = false;
 if (!seco) {
@@ -320,32 +336,36 @@ if (!seco) {
   if (ajenos.length) {
     abortar(`hay ${ajenos.length} catalog_assets de otros productos. Este guion no sabe qué hacer con ellos.`);
   }
+  const porExternal = new Map(previos.map((a) => [a.external_id, a]));
+  const distintos = manifiesto.sources.filter((f) => {
+    const a = porExternal.get(f.externalId);
+    // Ausente = alta. No se compara con nada porque no hay nada que cambiar.
+    if (!a) return false;
+    return a.master_path !== f.assets.master.path
+      || a.master_sha256 !== f.assets.master.sha256
+      || a.thumbnail_path !== f.assets.thumbnail.path
+      || a.thumbnail_sha256 !== f.assets.thumbnail.sha256
+      || a.source_sha256 !== f.sourceSha256
+      || a.rights_status !== f.rightsStatus
+      || a.rights_reference !== f.rightsReference;
+  });
+  if (distintos.length) {
+    abortar(
+      `los ${distintos.length} asset(s) ya registrados NO coinciden con el manifiesto `
+      + `(${distintos.map((f) => f.sku).join(', ')}). Registrarlos de nuevo sacaría de venta esos productos. `
+      + 'Revisar a mano antes de seguir.',
+    );
+  }
+  const altas = manifiesto.sources.length - previos.length;
   if (previos.length === 0) {
     ok('catalog_assets vacío: primera carga, sin efectos sobre productos existentes');
-  } else if (previos.length === manifiesto.sources.length) {
-    const porExternal = new Map(previos.map((a) => [a.external_id, a]));
-    const distintos = manifiesto.sources.filter((f) => {
-      const a = porExternal.get(f.externalId);
-      return !a
-        || a.master_path !== f.assets.master.path
-        || a.master_sha256 !== f.assets.master.sha256
-        || a.thumbnail_path !== f.assets.thumbnail.path
-        || a.thumbnail_sha256 !== f.assets.thumbnail.sha256
-        || a.source_sha256 !== f.sourceSha256
-        || a.rights_status !== f.rightsStatus
-        || a.rights_reference !== f.rightsReference;
-    });
-    if (distintos.length) {
-      abortar(
-        `los ${distintos.length} asset(s) ya registrados NO coinciden con el manifiesto `
-        + `(${distintos.map((f) => f.sku).join(', ')}). Registrarlos de nuevo sacaría de venta esos productos. `
-        + 'Revisar a mano antes de seguir.',
-      );
-    }
+  } else if (altas === 0) {
+    // Sólo cuando están TODOS registrados el reintento puede saltarse el import:
+    // con altas pendientes hay filas que todavía no existen y hay que crearlas.
     assetsIdenticos = true;
-    ok('los 4 assets ya están registrados y son IDÉNTICOS al manifiesto: reintento seguro');
+    ok(`los ${previos.length} assets ya están registrados y son IDÉNTICOS al manifiesto: reintento seguro`);
   } else {
-    abortar(`hay ${previos.length} catalog_assets y el manifiesto tiene ${manifiesto.sources.length}. Estado a medias: revisar a mano.`);
+    ok(`${previos.length} assets ya registrados e idénticos · ${altas} altas nuevas`);
   }
 }
 
@@ -476,6 +496,29 @@ info(`modo: ${modo}`);
 const estadoPrevio = Object.fromEntries(productos.map((p) => [p.sku, { ...p }]));
 
 /*
+ * LA DISPONIBILIDAD NO LA DECIDE ESTA OPERACIÓN.
+ *
+ * `publish_catalog_product` recibe la disponibilidad como parámetro y esto le
+ * pasaba `true` sin mirar. Mientras el lote fueron cuatro packs que estaban los
+ * cuatro a la venta, forzar `true` y conservar lo que había eran la misma cosa.
+ * Dejaron de serlo el 2026-08-22, cuando la curación de lanzamiento sacó de la
+ * góndola a `fanta-naranja-botella-pet-1500-ml-pack-x6` por una decisión
+ * comercial escrita: precio fuera de escala, primer scroll, nueve litros de un
+ * sabor de nicho. Volver a publicarlo con `true` habría revertido esa decisión
+ * de costado, mientras se cambiaba una fotografía.
+ *
+ * Cambiar una imagen no es decidir qué se vende. Así que la disponibilidad que
+ * se escribe es LA QUE EL PRODUCTO YA TENÍA.
+ *
+ * La regla entera —y por qué la reparación es la única excepción— vive en
+ * `disponibilidadTrasPublicar`, que es pura y está probada sin red ni base.
+ */
+const disponibilidadObjetivo = new Map(productos.map((p) => [p.sku, disponibilidadTrasPublicar(p)]));
+for (const [sku, disponible] of disponibilidadObjetivo) {
+  if (!disponible) info(`${etiqueta(sku)} está fuera de venta por decisión comercial: se lo deja igual.`);
+}
+
+/*
  * Censo del catálogo ENTERO antes de escribir. No se usa para decidir nada: se
  * usa para poder demostrar después que lo que está fuera del lote quedó igual.
  * Sin una foto del antes, «no se movió nada» es una afirmación sin respaldo.
@@ -542,6 +585,7 @@ for (const fila of productosPayload) {
 ok(`${assets.length} assets y ${productosPayload.length} productos, con el eco verificado campo por campo`);
 info('cambian sólo: image_url, image_sha256, image_thumbnail_url, image_thumbnail_sha256,');
 info('              source_image_sha256, catalog_asset_id');
+info('la disponibilidad se restituye a la que cada producto ya tenía: no se decide acá.');
 info('NO viajan en el payload y quedan intactos: sold_as_pack, catalog_origin,');
 info('              price_status, unit_cost, gtin, verified_by');
 
@@ -568,8 +612,8 @@ if (modo === 'REPARACION') {
       p_products: productosPayload,
     });
     importado = true;
-    ok('import_catalog_batch: 4 assets registrados y 4 productos con su imagen');
-    info('los 4 quedaron desverificados y fuera de venta, como manda el disparador');
+    ok(`import_catalog_batch: ${assets.length} assets registrados y ${productosPayload.length} productos con su imagen`);
+    info(`los ${productosPayload.length} quedaron desverificados y fuera de venta, como manda el disparador`);
   } catch (error) {
     fallos.push(`import_catalog_batch: ${error.message}`);
     console.error(`  FALLA ${error.message}`);
@@ -582,7 +626,7 @@ if (importado) {
   for (const { sku } of assets) {
     try {
       const [publicado] = await rpc('publish_catalog_product', {
-        p_available: true,
+        p_available: disponibilidadObjetivo.get(sku) === true,
         p_business_id: BUSINESS_ID,
         p_external_id: sku,
       });
@@ -669,11 +713,13 @@ for (const p of despues) {
   exigir(p.stock === previo.stock, `${p.sku}: el stock no cambió (${p.stock})`);
   exigir(p.sold_as_pack === previo.sold_as_pack, `${p.sku}: sold_as_pack intacto`);
   exigir(p.is_active === previo.is_active, `${p.sku}: is_active intacto`);
-  // La disponibilidad se compara contra el estado que ESTA operación debe dejar,
-  // no contra el de antes: en modo REPARACIÓN el producto venía fuera de venta
-  // justamente porque un intento anterior se cortó, y devolverlo a la venta es
-  // el objetivo, no una desviación.
-  exigir(p.available === true, `${p.sku}: quedó DISPONIBLE`);
+  // Contra la disponibilidad que esta operación DEBÍA dejar —la que el producto
+  // ya tenía, salvo el caso de reparación—, no contra un `true` escrito a mano.
+  const esperada = disponibilidadObjetivo.get(p.sku) === true;
+  exigir(
+    p.available === esperada,
+    `${p.sku}: quedó ${esperada ? 'DISPONIBLE' : 'fuera de venta, como estaba'}`,
+  );
 }
 
 const assetsRegistrados = await pedir(`/rest/v1/catalog_assets?select=sku,rights_status,rights_reference,source_url&business_id=eq.${BUSINESS_ID}&order=sku.asc`);

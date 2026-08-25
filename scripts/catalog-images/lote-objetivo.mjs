@@ -381,6 +381,36 @@ export function validarLoteObjetivo({ productos = [], assets = [] } = {}) {
 }
 
 /**
+ * Qué disponibilidad tiene que quedar cuando este lote republica un producto.
+ *
+ * NO ES UNA DECISIÓN DE ESTE LOTE, Y ESE ES EL PUNTO
+ * --------------------------------------------------
+ * Asociar una fotografía obliga a republicar —el disparador
+ * `products_fail_close_master_change` saca de venta lo que toca— y republicar
+ * exige decir con qué disponibilidad. Durante los cuatro packs de agosto la
+ * respuesta fue `true` escrita a mano, y era correcta por casualidad: los
+ * cuatro estaban a la venta.
+ *
+ * Dejó de serlo el 2026-08-22, cuando la curación de lanzamiento sacó de la
+ * góndola al pack x6 de Fanta por una decisión comercial escrita. Con `true`
+ * fijo, cambiarle la foto lo habría devuelto a la venta de costado. Cambiar una
+ * imagen no es decidir qué se vende.
+ *
+ * LA ÚNICA EXCEPCIÓN, Y CÓMO SE RECONOCE SIN ADIVINAR
+ * ---------------------------------------------------
+ * Una corrida anterior puede haberse cortado entre el import y el republicado,
+ * y ahí el producto quedó fuera de venta por accidente: devolverlo es el
+ * objetivo. Ese estado se distingue porque el disparador hace las dos cosas
+ * JUNTAS —saca de venta Y DESVERIFICA—. Entonces:
+ *
+ *   fuera de venta y SIN verificar  → lo dejó el disparador     → vuelve
+ *   fuera de venta y VERIFICADO     → lo decidió una persona    → se respeta
+ */
+export function disponibilidadTrasPublicar(producto) {
+  return producto?.available === true || producto?.is_verified !== true;
+}
+
+/**
  * Los productos que este lote NO va a tocar. Se listan para poder demostrar
  * después que quedaron igual, no para decidir nada con ellos.
  */

@@ -27,6 +27,7 @@ import {
   catalogImageIdentitySha256,
   DB_PRODUCT_ASSET_PATTERN,
 } from './lib.mjs';
+import { OBJETIVOS, SKUS_OBJETIVO } from './lote-objetivo.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const MANIFIESTO = path.join(ROOT, 'docs/catalog/image-manifest.json');
@@ -96,16 +97,17 @@ if (manifiesto.sources.length !== SKUS_OBJETIVO.length) {
   mal(`se esperaban ${SKUS_OBJETIVO.length} assets en el manifiesto y hay ${manifiesto.sources.length}.`);
 }
 
-const ESPERADOS = new Map([
-  ['coca-cola-original-botella-pet-500-ml-pack-x12', 'Coca-Cola Original Pack x12'],
-  ['coca-cola-zero-botella-pet-500-ml-pack-x12', 'Coca-Cola Zero Pack x12'],
-  ['fanta-naranja-botella-pet-1500-ml-pack-x6', 'Fanta Naranja Pack x6'],
-  ['sprite-botella-pet-500-ml-pack-x12', 'Sprite Pack x12'],
-]);
+/*
+ * La lista de objetivos es la de `lote-objetivo.mjs` y no una copia. Estaba
+ * escrita dos veces, y cuando el lote creció la copia de acá se quedó en los
+ * cuatro packs de agosto: el preflight habría rechazado las quince
+ * fotografías nuevas que el aplicador sí acepta. Una regla duplicada en dos
+ * archivos es una regla que se desincroniza.
+ */
 for (const sku of manifiesto.sources.map((f) => f.sku)) {
-  if (!ESPERADOS.has(sku)) mal(`el manifiesto trae un SKU inesperado: ${sku}`);
+  if (!OBJETIVOS.has(sku)) mal(`el manifiesto trae un SKU inesperado: ${sku}`);
 }
-for (const sku of ESPERADOS.keys()) {
+for (const sku of SKUS_OBJETIVO) {
   if (!manifiesto.sources.some((f) => f.sku === sku)) mal(`falta en el manifiesto: ${sku}`);
 }
 
@@ -172,11 +174,13 @@ for (const fuente of manifiesto.sources) {
     mal(`${fuente.sku}: rights_status ${fuente.rightsStatus} no es el que habilita ${AUTORIDAD}.`);
   }
   if (fuente.rightsReference !== AUTORIDAD) mal(`${fuente.sku}: no cita ${AUTORIDAD}.`);
-  if (!['fabricante', 'marca', 'propio'].includes(fuente.sourceType)) {
+  if (!['fabricante', 'marca', 'propio', 'distribuidor_oficial'].includes(fuente.sourceType)) {
     mal(`${fuente.sku}: sourceType ${fuente.sourceType} está fuera del alcance de la autorización.`);
   }
 }
-if (!fallos.length) ok(`las 4 fuentes son del embotellador, en la allowlist, y citan ${AUTORIDAD}.`);
+if (!fallos.length) {
+  ok(`las ${manifiesto.sources.length} fuentes están en la allowlist y citan ${AUTORIDAD}.`);
+}
 if (autoridad.evidencia_documental.pendiente) {
   ojo(`${AUTORIDAD} sigue con la evidencia documental PENDIENTE. Se publica bajo una autorización declarada, no documentada.`);
 }
@@ -189,32 +193,60 @@ for (const fuente of manifiesto.sources) {
     if (!existe) mal(`falta el archivo ${asset.path}.`);
   }
 }
-if (!fallos.length) ok('los 8 WebP están en el repositorio y van a viajar en el paquete.');
+if (!fallos.length) {
+  ok(`los ${manifiesto.sources.length * 2} WebP están en el repositorio y van a viajar en el paquete.`);
+}
 
 console.log('');
 console.log('ESTADO ACTUAL EN PRODUCCIÓN');
 const productos = await leer(
   `products?select=sku,external_id,is_active,available,is_verified,stock,catalog_asset_id,image_url,sold_as_pack,units_per_pack`
-  + `&business_id=eq.${BUSINESS_ID}&sold_as_pack=eq.true&order=sku.asc`,
+  + `&business_id=eq.${BUSINESS_ID}&sku=in.(${SKUS_OBJETIVO.join(',')})&order=sku.asc`,
 );
-if (productos.length !== 4) {
-  mal(`se esperaban 4 productos con sold_as_pack y hay ${productos.length}.`);
+const porSkuManifiesto = new Map(manifiesto.sources.map((fuente) => [fuente.sku, fuente]));
+/*
+ * Un objetivo que no aparece NO es un objetivo que falte: acá se lee con la
+ * clave publicable, que no devuelve los productos ocultos (available = false).
+ * La sesión de owner sí los ve, y el aplicador lo vuelve a comprobar entonces.
+ * Frenar acá por eso dejaría el lote entero parado por un movimiento de
+ * inventario que no tiene nada que ver con las fotos.
+ */
+const vistos = new Set(productos.map((producto) => producto.sku));
+for (const sku of SKUS_OBJETIVO) {
+  if (!vistos.has(sku)) ojo(`${sku}: la clave publicable no lo ve. Si hoy está fuera de venta, la sesión de owner sí lo verá.`);
 }
+let altas = 0;
+let yaPuestas = 0;
 for (const producto of productos) {
-  if (!ESPERADOS.has(producto.sku)) { mal(`producto inesperado en el lote: ${producto.sku}`); continue; }
+  if (!OBJETIVOS.has(producto.sku)) { mal(`producto inesperado en el lote: ${producto.sku}`); continue; }
+  const fuente = porSkuManifiesto.get(producto.sku);
   const problemas = [];
-  if (producto.catalog_asset_id !== null) problemas.push('ya tiene catalog_asset_id');
-  if (producto.image_url !== null) problemas.push('ya tiene image_url');
   if (!producto.is_active) problemas.push('no está activo');
   if (!(producto.stock > 0)) problemas.push('stock en cero: al republicar quedaría NO disponible');
-  if (!producto.available) problemas.push('hoy NO está disponible: el republicado no lo cambiaría');
+  /*
+   * Dos estados de partida son legítimos por producto, y son los mismos que
+   * distingue el aplicador: sin ninguna imagen, o ya con LA SUYA y su asset.
+   * Cualquier otra combinación —imagen sin asset, o una imagen que no es la
+   * que el manifiesto declara para ese SKU— es lo que hay que ver acá.
+   */
+  const sinImagen = producto.catalog_asset_id === null && producto.image_url === null;
+  const yaLaSuya = Boolean(producto.catalog_asset_id) && producto.image_url === fuente?.assets.master.path;
+  if (sinImagen) {
+    altas += 1;
+    if (!producto.available) problemas.push('hoy NO está disponible: el republicado no lo cambiaría');
+    if (!producto.is_verified) problemas.push('no está verificado');
+  } else if (yaLaSuya) {
+    yaPuestas += 1;
+  } else {
+    problemas.push(`tiene una imagen que no es la de su asset (${producto.image_url || 'sin ruta'})`);
+  }
   if (problemas.length) mal(`${producto.sku}: ${problemas.join(' · ')}`);
-  else ok(`${producto.sku}: disponible, verificado, stock ${producto.stock}, sin imagen. Listo.`);
+  else ok(`${producto.sku}: stock ${producto.stock} · ${sinImagen ? 'sin imagen, listo para el alta' : 'imagen ya puesta'}`);
 }
 
 console.log('');
 console.log('LO QUE VA A PASAR, DICHO ANTES');
-console.log('  1. register_catalog_assets crea 4 filas en catalog_assets.');
+console.log(`  1. register_catalog_assets deja ${manifiesto.sources.length} filas en catalog_assets (${altas} altas, ${yaPuestas} reescritas igual).`);
 console.log('  2. Al escribirle la imagen a un producto VERIFICADO, el disparador');
 console.log('     products_fail_close_master_change lo desverifica y lo saca de venta.');
 console.log('     Es el diseño, no un accidente: cambiar la identidad de un producto');
@@ -222,7 +254,7 @@ console.log('     publicado obliga a volver a publicarlo a mano.');
 console.log('  3. publish_catalog_product lo vuelve a verificar y a poner disponible,');
 console.log('     después de comprobar que los 5 campos de imagen coinciden con el asset.');
 console.log('');
-console.log('  Entre el paso 2 y el 3 esos 4 packs NO se venden. Son segundos, pero si');
+console.log(`  Entre el paso 2 y el 3 esos ${altas + yaPuestas} productos NO se venden. Son segundos, pero si`);
 console.log('  el proceso se corta en el medio quedan fuera de venta hasta republicarlos.');
 console.log('  El guion republica siempre, incluso si algo falla después.');
 

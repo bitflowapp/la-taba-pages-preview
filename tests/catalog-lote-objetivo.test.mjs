@@ -14,6 +14,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  disponibilidadTrasPublicar,
   fueraDelLote,
   OBJETIVOS,
   SKUS_OBJETIVO,
@@ -173,4 +174,36 @@ test('los objetivos y sus cantidades son los del manifiesto de imágenes', async
     [...SKUS_OBJETIVO].sort(),
     'el manifiesto y la lista de objetivos tienen que nombrar los mismos SKU',
   );
+});
+
+/*
+ * LA DISPONIBILIDAD DESPUÉS DE REPUBLICAR.
+ *
+ * Este bloque existe por un fallo que no llegó a producción de milagro: el
+ * aplicador le pasaba `p_available: true` a `publish_catalog_product` para los
+ * diecinueve productos del lote. El pack x6 de Fanta está fuera de la góndola
+ * por una decisión comercial del 2026-08-22, así que asociarle su fotografía
+ * lo habría puesto de nuevo a la venta sin que nadie lo pidiera.
+ */
+test('un producto a la venta sigue a la venta', () => {
+  assert.equal(disponibilidadTrasPublicar({ available: true, is_verified: true }), true);
+});
+
+test('un producto que alguien sacó de la góndola NO vuelve a la venta', () => {
+  // Fuera de venta y VERIFICADO: es una decisión, no un accidente. Es el
+  // estado exacto de fanta-naranja-botella-pet-1500-ml-pack-x6 en producción.
+  assert.equal(disponibilidadTrasPublicar({ available: false, is_verified: true }), false);
+});
+
+test('un producto que una corrida cortada dejó a medias SÍ vuelve a la venta', () => {
+  // Fuera de venta y SIN verificar: las dos cosas juntas las hace el
+  // disparador, y volver a publicarlo es justamente la reparación.
+  assert.equal(disponibilidadTrasPublicar({ available: false, is_verified: false }), true);
+});
+
+test('la regla no inventa disponibilidad cuando el dato no está', () => {
+  // Sin `is_verified` no hay forma de distinguir la decisión del accidente.
+  // Se elige el lado que no deja un producto fuera de venta por omisión.
+  assert.equal(disponibilidadTrasPublicar({ available: false }), true);
+  assert.equal(disponibilidadTrasPublicar({}), true);
 });

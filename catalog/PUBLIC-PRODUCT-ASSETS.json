@@ -9,13 +9,37 @@
     "doc": "Imágenes de sitio, no de producto. Viajan por su propia decisión y no las gobierna este manifiesto."
   },
   "doc": "Las ÚNICAS fotos de producto que el empaquetado puede copiar. Generado por scripts/catalog-images/build-public-asset-manifest.mjs; no editar a mano.",
-  "fotosDeProductoAuditadas": 173,
+  "fotosDeProductoAuditadas": 224,
   "publicables": [
+    {
+      "bytes": 19898,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/benedictino-sin-gas-2250ml-8291602e84de68e9-b3100a865b922f28.webp",
+      "sha256": "b3100a865b922f28e4669b6b65cbb652a5a53bfed7ef3a321d4f36e8d21d14fd"
+    },
+    {
+      "bytes": 6016,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/benedictino-sin-gas-2250ml-8291602e84de68e9-thumb-e6d7c299f80e6e5d.webp",
+      "sha256": "e6d7c299f80e6e5d170f46c818147296496907c6608f84a89d40ae1ccaec1e88"
+    },
     {
       "bytes": 1074,
       "derechos": "PROPIO",
       "ruta": "assets/products/beverage-placeholder.svg",
       "sha256": "7962fa5a02e4acf148c845e876500c6bcb2851f1e6f9c90d76b2b80e3fe8f6c8"
+    },
+    {
+      "bytes": 26694,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/coca-cola-original-2250ml-97dc25e8399a5775-adb8042ea9716cb9.webp",
+      "sha256": "adb8042ea9716cb98846dc1d8764eb9a047adcf34ca33fc50d46fc959c846c6e"
+    },
+    {
+      "bytes": 8074,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/coca-cola-original-2250ml-97dc25e8399a5775-thumb-acbe05a93036a3a4.webp",
+      "sha256": "acbe05a93036a3a451939f75f146b73eb74db5aec2c16ac0b47f04886949b1df"
     },
     {
       "bytes": 20326,
@@ -28,6 +52,18 @@
       "derechos": "LICENCIA_COMERCIAL",
       "ruta": "assets/products/coca-cola-original-botella-pet-500-ml-pack-x12-da9d9f1d872c1e49-thumb-2b779c394ec67eb4.webp",
       "sha256": "2b779c394ec67eb41c4197ac7016f1bf1991fbfcb313b0feaaceafe2022079dc"
+    },
+    {
+      "bytes": 22878,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/coca-cola-zero-2250ml-4ce84243eb65d14a-309bbcc731498df7.webp",
+      "sha256": "309bbcc731498df73d5f2618ca902169e6dca283eb9fc35fa2c8a7807886f2f1"
+    },
+    {
+      "bytes": 7108,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/coca-cola-zero-2250ml-4ce84243eb65d14a-thumb-826e5a5ea976e1e2.webp",
+      "sha256": "826e5a5ea976e1e2dbaa1cb55dafbfa68bfbfa84ad2c1bb2452fb7ac1198ce7f"
     },
     {
       "bytes": 18742,
@@ -54,6 +90,54 @@
       "sha256": "6f5544d252c1151c4b4b8aa477d706fc2f9014c0c801f446e589366f5a66c8a7"
     },
     {
+      "bytes": 41700,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/monster-green-zero-473ml-c238e9bf28582e15-36ea5aaa51d7906e.webp",
+      "sha256": "36ea5aaa51d7906e28a0867e07e7cfe81aa44f929b9a2aebfb31982558bec049"
+    },
+    {
+      "bytes": 13448,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/monster-green-zero-473ml-c238e9bf28582e15-thumb-9ee7f5db50e33ce1.webp",
+      "sha256": "9ee7f5db50e33ce1f71fd6457c98e315eb20e72d69cc2f2b442d742f5f84ca27"
+    },
+    {
+      "bytes": 15656,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/paso-de-los-toros-pomelo-1500ml-07e30d4119649232-5ee73401ead32b21.webp",
+      "sha256": "5ee73401ead32b21b98bae86af35d1b20c5b5c34fe52749be028a0a1b7d6f7bc"
+    },
+    {
+      "bytes": 4734,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/paso-de-los-toros-pomelo-1500ml-07e30d4119649232-thumb-2578710a66ec476a.webp",
+      "sha256": "2578710a66ec476a5b4a0cae9244e5115a51a9cebe3be50fb2ba4cf997f79f80"
+    },
+    {
+      "bytes": 18194,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/paso-de-los-toros-tonica-1500ml-3a05ed21abc4e380-f551a02eb264272c.webp",
+      "sha256": "f551a02eb264272cb86146b87231f4d43196e2be52f142b80f03cdbd6622821a"
+    },
+    {
+      "bytes": 5214,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/paso-de-los-toros-tonica-1500ml-3a05ed21abc4e380-thumb-209929c85be873fa.webp",
+      "sha256": "209929c85be873fa6ee45a627f1767e730b86fec8df07a8d2a543285ca25ec57"
+    },
+    {
+      "bytes": 40172,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/soda-manaos-sifon-2000ml-b92e160958368c0d-3700b6c8cb4ec1b4.webp",
+      "sha256": "3700b6c8cb4ec1b4ab234cd89bb7b3d8061c7529f8c92d6a8c2ee842d08cdc00"
+    },
+    {
+      "bytes": 12906,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/soda-manaos-sifon-2000ml-b92e160958368c0d-thumb-33a5a3998f343f97.webp",
+      "sha256": "33a5a3998f343f97f5385215b03c4d2f7f58b8036ee18d78aa52a9b4aee7f3b5"
+    },
+    {
       "bytes": 14520,
       "derechos": "LICENCIA_COMERCIAL",
       "ruta": "assets/products/sprite-botella-pet-500-ml-pack-x12-07620ef3d3aa792c-09a508b8102bd8a5.webp",
@@ -64,6 +148,228 @@
       "derechos": "LICENCIA_COMERCIAL",
       "ruta": "assets/products/sprite-botella-pet-500-ml-pack-x12-07620ef3d3aa792c-thumb-49fb5075276d3ebb.webp",
       "sha256": "49fb5075276d3ebb3e01c5f36f2a440ea289c88e8d09fca04047681b4d978211"
+    },
+    {
+      "bytes": 17364,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/sprite-original-2250ml-99d83c94dac255ca-3898f9d83fdf293f.webp",
+      "sha256": "3898f9d83fdf293f0d4efb1b1ed1dc914a91fe026a9d0f4b933374e316e3f613"
+    },
+    {
+      "bytes": 4816,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/sprite-original-2250ml-99d83c94dac255ca-thumb-1e02490bc9080f49.webp",
+      "sha256": "1e02490bc9080f4969bf2c4100514bd90facaaed68e44ef52efc1e383235084f"
+    },
+    {
+      "bytes": 46696,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/sprite-original-lata-354ml-0060e518ebfab8e7-8832bfc71a16ffad.webp",
+      "sha256": "8832bfc71a16ffada799d1992258f6c7813f19844beb8414862b05a80f08c4bb"
+    },
+    {
+      "bytes": 14234,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/sprite-original-lata-354ml-0060e518ebfab8e7-thumb-9f34da79cf990fa1.webp",
+      "sha256": "9f34da79cf990fa1127231b78e09dc43f6af91fc5b0544943d7e79d39cd88932"
+    },
+    {
+      "bytes": 16396,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/sprite-zero-2250ml-c43f15fd8eedc2e4-96e92127e95886ab.webp",
+      "sha256": "96e92127e95886abe28220741a08e9f8d839c5247c7ff410efb638fe98a1aa48"
+    },
+    {
+      "bytes": 4478,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/sprite-zero-2250ml-c43f15fd8eedc2e4-thumb-4e04923ee3c2fb00.webp",
+      "sha256": "4e04923ee3c2fb008e57d9b4d16d85f04ab63653db7f2b71763ac312d7c8568b"
+    },
+    {
+      "bytes": 6189,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/aquarius-manzana-1500ml-f925f186e995.svg",
+      "sha256": "524651773bc89bf3eb54faef56061567ce6c89ca168c487c2d87c0f64a522a94"
+    },
+    {
+      "bytes": 6189,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/aquarius-pera-1500ml-6f1da073bc56.svg",
+      "sha256": "3fb82d0bc65d9664cab050a7bae20538c5974a944c3ad7383a9759d3e33814dc"
+    },
+    {
+      "bytes": 6142,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/aquarius-pomelo-2250ml-2a33805c9e0a.svg",
+      "sha256": "30b1d997439251809a6ebaa67c8dfd2c81230f0878b348ff98fbe596335a27f1"
+    },
+    {
+      "bytes": 6142,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/benedictino-sin-gas-2250ml-c6220f5d0bb4.svg",
+      "sha256": "4f5dd97fd4f2f9a03e7fbd4e6308f4ccbab8f842e6ab32b3e0a4dcfba608403d"
+    },
+    {
+      "bytes": 6142,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/coca-cola-original-2250ml-a830d7361b0a.svg",
+      "sha256": "2c8807025417458157b04889afca1072033f5d6b1d284a2934f513cb3302f054"
+    },
+    {
+      "bytes": 3481,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/coca-cola-original-lata-354ml-07f36bac3781.svg",
+      "sha256": "9a4bc57df82fdd216eb9901badb2008eefdf91a453d65ec74fbb19959cf2a713"
+    },
+    {
+      "bytes": 6189,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/coca-cola-original-pet-1500ml-94be68537c2c.svg",
+      "sha256": "6c574782c2b1d6e99a9e3e0970a05c37f43c392808275c2d733b298751d68061"
+    },
+    {
+      "bytes": 6142,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/coca-cola-zero-2250ml-79aa497ea8d0.svg",
+      "sha256": "b9549e73b834eac3e283a95e6bda63b3fd0348307174f473112e917bbe247d86"
+    },
+    {
+      "bytes": 3481,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/coca-cola-zero-lata-354ml-e2c4395e5bcb.svg",
+      "sha256": "3f3dac21d5598ba511572bc7f6b2a1e01e37265561e91759177e3d535d100be9"
+    },
+    {
+      "bytes": 6142,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/fanta-naranja-2250ml-dc829ac6652b.svg",
+      "sha256": "1f578a1e7c48dde623d6573ac52abc837d681c32e72a1f801bd2bf254e197392"
+    },
+    {
+      "bytes": 5866,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/gatorade-cool-blue-500ml-d99abc428b04.svg",
+      "sha256": "43c043709fec9e55d88a98a6ccd47cebd899f8df20515760f4cd93c5f21948f7"
+    },
+    {
+      "bytes": 6177,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/gatorade-manzana-1250ml-034fddef63a6.svg",
+      "sha256": "72829a2e2c719aa2cfa0ebafb294db7c56f93ccb7b230f04130def76d0ddb3a2"
+    },
+    {
+      "bytes": 6142,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/generica-59088a1158de.svg",
+      "sha256": "ae805e90082e3262418c9fa19ef28510b62190cc2a43c82bdf2a0d43bb258b05"
+    },
+    {
+      "bytes": 3591,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/monster-green-zero-473ml-186e9a7b3dd1.svg",
+      "sha256": "966d63ac057d333a29b22de75741aaf088bf9e484ba5c370f817b6100d195b96"
+    },
+    {
+      "bytes": 6189,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/paso-de-los-toros-pomelo-1500ml-2938af4fbff7.svg",
+      "sha256": "9c9108a42a550862bcf724a852462b94fbc8fcbec84145502ecaa4cf7da4fb0d"
+    },
+    {
+      "bytes": 6189,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/paso-de-los-toros-tonica-1500ml-9011bf56b9c1.svg",
+      "sha256": "cdf40bd7d581175920b41c8998557f0f547af825347d39c5e00489686eacf9e5"
+    },
+    {
+      "bytes": 6189,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/pepsi-black-1500ml-31f9f5ace688.svg",
+      "sha256": "56ea9b4c8ee0cfa0e52cd60a09cb94188d35c7e01a2dfc08f26970acfed96e44"
+    },
+    {
+      "bytes": 6166,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/pepsi-original-2000ml-d7c7d31e92cc.svg",
+      "sha256": "e7a69bad6e9dbf9dbbc802bfab5b4dd6c75fb257b855a5493a71709540ce3641"
+    },
+    {
+      "bytes": 5866,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/powerade-mountain-blast-500ml-d28199633f25.svg",
+      "sha256": "735fdd224d5ef07058769da227da1eace8ec56bb403b6dff789983549dde77ad"
+    },
+    {
+      "bytes": 3597,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/red-bull-original-250ml-1217863a7a82.svg",
+      "sha256": "77e20bd0e3c73c8189408710cffe4b8dbe1d541f33a8d67de9fab991555fd1fe"
+    },
+    {
+      "bytes": 3597,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/red-bull-sin-azucar-250ml-9ac127761681.svg",
+      "sha256": "57a8a1770b3a3b0db17987aefa34fdc40e704989e92efe8014558e502b6c47a9"
+    },
+    {
+      "bytes": 6166,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/seven-up-original-2000ml-f8a36df55f1d.svg",
+      "sha256": "d5951cc3ca84ca3a4f0aa9c4bcd553b6b30817ece9c1f3b5621ee06e04a47b35"
+    },
+    {
+      "bytes": 5587,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/soda-manaos-sifon-2000ml-417dc2fa797f.svg",
+      "sha256": "b4dc4c40894b8b3b61c61885ce3e49d62129c33027fbb688a6a94f78bdbe82cd"
+    },
+    {
+      "bytes": 3591,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/speed-original-473ml-a8b7c8a0f622.svg",
+      "sha256": "20c49001cb9e1cad7918df469ea633bcb21b37671da014e4154fa0c227c32959"
+    },
+    {
+      "bytes": 3591,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/speed-zero-473ml-d1522c38d6dc.svg",
+      "sha256": "8e97206271ec569823b573bbf6ef406db8fa16813681ff71ec86f1b84868ccca"
+    },
+    {
+      "bytes": 6142,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/sprite-original-2250ml-cfc9e6b61df7.svg",
+      "sha256": "fb6e872a66750fc7a1651459098d1e66deff4e0db53e1ec72941ca3315c006ab"
+    },
+    {
+      "bytes": 3481,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/sprite-original-lata-354ml-1767a05e6e02.svg",
+      "sha256": "342aed3362b14f45169afd2386cb7a25dd68a49ad3d0d50ae930febb1492feb0"
+    },
+    {
+      "bytes": 6142,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/sprite-zero-2250ml-3fefeeb2e0da.svg",
+      "sha256": "d283aec841c54385fed8e216e18c7f3a4a981895615d69f8a4bf07a38fc93131"
+    },
+    {
+      "bytes": 5866,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/villa-del-sur-sin-gas-600ml-9a2f29035802.svg",
+      "sha256": "2d1b6de6a3ac0b630dda2d00429e5b4d82cdda8f6d33e7a1e30ee0fd3d007e98"
+    },
+    {
+      "bytes": 6125,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/villavicencio-con-gas-500ml-e6d87ac03077.svg",
+      "sha256": "a66489055056f6ea02b884ee5d4118aee4054c286832c56f5e0add084cb5b276"
+    },
+    {
+      "bytes": 6189,
+      "derechos": "PROPIO",
+      "ruta": "assets/products/taba/villavicencio-sin-gas-1500ml-189dc37fc777.svg",
+      "sha256": "456ee22e2b8df3c1a90547b42b5d48a102843ab557b72c1a323f245a2d145ba3"
     }
   ],
   "schemaVersion": 1

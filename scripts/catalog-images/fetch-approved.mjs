@@ -11,6 +11,21 @@ import {
   validateImageSourceAudit,
 } from './lib.mjs';
 
+/**
+ * Qué formato es, leído de la firma del archivo. `null` si no es ninguno de los
+ * cinco raster admitidos —JPEG, PNG, WebP, AVIF, TIFF—.
+ */
+function formatoPorFirma(bytes) {
+  if (bytes.length < 12) return null;
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg';
+  if (bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'image/png';
+  if (bytes.subarray(0, 4).toString('latin1') === 'RIFF' && bytes.subarray(8, 12).toString('latin1') === 'WEBP') return 'image/webp';
+  if (bytes.subarray(4, 8).toString('latin1') === 'ftyp' && /avif|avis/.test(bytes.subarray(8, 12).toString('latin1'))) return 'image/avif';
+  const tiff = bytes.subarray(0, 4);
+  if (tiff.equals(Buffer.from([0x49, 0x49, 0x2a, 0x00])) || tiff.equals(Buffer.from([0x4d, 0x4d, 0x00, 0x2a]))) return 'image/tiff';
+  return null;
+}
+
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const AUDIT = path.join(ROOT, 'docs/catalog/image-source-audit.csv');
 const ALLOWLIST = path.join(ROOT, 'catalog/image-source-allowlist.json');
@@ -55,10 +70,21 @@ for (const source of approved) {
     throw new Error(`${source.sku}: la descarga terminó en ${hostFinal || 'un host ilegible'}, que no está en la allowlist.`);
   }
   const type = (response.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
-  if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/tiff'].includes(type)) {
-    throw new Error(`${source.sku}: formato fuente no permitido (${type || 'sin content-type'}).`);
-  }
   const bytes = Buffer.from(await response.arrayBuffer());
+  /*
+   * El formato lo dicen los BYTES, no la cabecera.
+   *
+   * El CDN de Monster sirve sus PNG como `application/octet-stream` y el
+   * descargador los rechazaba: un packshot legítimo del fabricante quedaba
+   * afuera por cómo su servidor rotula el archivo. Y al revés es peor: un
+   * `Content-Type: image/png` sobre un HTML de error entraba sin chistar,
+   * porque la cabecera es una afirmación del servidor y la firma es un hecho
+   * del archivo. Ahora manda la firma, y la cabecera sólo se anota.
+   */
+  const formato = formatoPorFirma(bytes);
+  if (!formato) {
+    throw new Error(`${source.sku}: los bytes no son una imagen raster admitida (content-type declarado: ${type || 'ninguno'}).`);
+  }
   if (bytes.length > 15_000_000) throw new Error(`${source.sku}: imagen mayor a 15 MB.`);
   const digest = sha256(bytes);
   if (digest.toLowerCase() !== source.expected_sha256.toLowerCase()) {

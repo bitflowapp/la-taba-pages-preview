@@ -14,6 +14,38 @@
       "explicacion": "Son dos archivos distintos (SHA-256 distintos) y dos packshots oficiales distintos del embotellador. Coinciden porque Coca-Cola Zero en Argentina usa la misma etiqueta roja y la misma botella de 500 ml que la Original: sólo cambian la tapa (negra contra roja) y la leyenda ZERO. Verificado mirando las dos a tamaño completo el 2026-08-18.",
       "verificadoPor": "TABA2_CATALOG_IMAGE_PIPELINE (Opus 5)",
       "verificadoEl": "2026-08-18"
+    },
+    {
+      "skuA": "coca-cola-original-2250ml",
+      "skuB": "coca-cola-zero-2250ml",
+      "distanciaMedida": 1.1,
+      "explicacion": "El mismo caso que el par de packs, en la botella familiar: la Zero argentina lleva la MISMA etiqueta roja y el MISMO líquido oscuro que la Original. Lo que las distingue son dos cosas chicas y las dos están: la tapa —roja contra negra, visible a tamaño de tarjeta— y la palabra ZERO impresa sobre el logotipo. La Original además lleva los octógonos EXCESO EN AZÚCARES y EXCESO EN CALORÍAS, que la Zero no tiene. Miradas las dos a tamaño completo el 2026-08-25.",
+      "verificadoPor": "TABA_PREMIUM_CATALOG_LAUNCH (Opus 5)",
+      "verificadoEl": "2026-08-25"
+    },
+    {
+      "skuA": "sprite-original-2250ml",
+      "skuB": "sprite-zero-2250ml",
+      "distanciaMedida": 1.5,
+      "explicacion": "Sprite y Sprite Zero comparten botella transparente, líquido incoloro y franja verde. Se distinguen por la tapa —verde contra negra—, por la palabra ZERO bajo el logotipo, y porque la Original lleva los dos octógonos de azúcares y calorías que la Zero no tiene. Miradas las dos a tamaño completo el 2026-08-25.",
+      "verificadoPor": "TABA_PREMIUM_CATALOG_LAUNCH (Opus 5)",
+      "verificadoEl": "2026-08-25"
+    },
+    {
+      "skuA": "benedictino-sin-gas-2250ml",
+      "skuB": "sprite-botella-pet-500-ml-pack-x12",
+      "distanciaMedida": 4.7,
+      "explicacion": "Falso positivo del detector, no un parecido real. Las dos son botellas transparentes con líquido incoloro sobre fondo blanco, y eso es casi todo lo que una firma de color de 8x8 puede ver: el promedio de una botella de agua y el de una Sprite chica son casi el mismo blanco. Miradas, no se parecen en nada — etiqueta turquesa «benedictino · BAJA EN SODIO · SIN GAS» de 2,25 L contra franja verde «Sprite» de 500 ml con sello x12. Verificado el 2026-08-25.",
+      "verificadoPor": "TABA_PREMIUM_CATALOG_LAUNCH (Opus 5)",
+      "verificadoEl": "2026-08-25"
+    },
+    {
+      "skuA": "benedictino-sin-gas-2250ml",
+      "skuB": "sprite-original-2250ml",
+      "distanciaMedida": 4.9,
+      "explicacion": "El mismo falso positivo: dos botellas familiares transparentes con líquido incoloro sobre blanco. La firma de color no puede separarlas porque casi toda su superficie ES el líquido incoloro. Miradas, la etiqueta turquesa de agua mineral y la franja verde de Sprite no se confunden. Verificado el 2026-08-25.",
+      "verificadoPor": "TABA_PREMIUM_CATALOG_LAUNCH (Opus 5)",
+      "verificadoEl": "2026-08-25"
     }
   ]
 }

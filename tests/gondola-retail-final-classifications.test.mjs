@@ -83,7 +83,15 @@ test('lo que producción muestra no contradice a la góndola que lo declaró', (
 test('la autoridad compuesta reconstruye exactamente los 60 SKU actuales', async () => {
   const gondolaSkus = uniqueSkus(GONDOLA, 'GONDOLA');
   const retailSkus = uniqueSkus(RETAIL_UNIDADES, 'RETAIL_UNIDADES');
-  const packSkus = new Set(OBJETIVOS.keys());
+  /*
+   * `OBJETIVOS` es el lote de FOTOGRAFÍAS, y desde el alta del 2026-08-25 apunta
+   * también a diez unidades sueltas que la góndola ya declaraba. Las que
+   * DECLARAN catálogo —las que no existen en ningún otro archivo— son sólo los
+   * cuatro packs, y son las que reconstruyen la base de 60.
+   */
+  const packSkus = new Set(
+    [...OBJETIVOS.entries()].filter(([, objetivo]) => objetivo.soloLoDeclaraEsteLote === true).map(([sku]) => sku),
+  );
   uniqueSkus(snapshot, 'production-catalog-snapshot');
 
   assert.equal(GONDOLA.length, 52);

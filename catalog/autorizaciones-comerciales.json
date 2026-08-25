@@ -52,6 +52,27 @@
           ]
         }
       ],
+      "ampliaciones": [
+        {
+          "fecha": "2026-08-25",
+          "quien": "titular del comercio",
+          "canal": "instrucción escrita de lanzamiento comercial del 2026-08-25",
+          "que_amplía": "El orden de prioridad de fuentes que fija la instrucción es: 1) fabricante, 2) distribuidor oficial, 3) catálogos oficiales, 4) assets autorizados de TABA, 5) repositorio existente. El punto 2 incorpora al DISTRIBUIDOR OFICIAL, que la redacción original del alcance no cubría —decía «la marca o su embotellador/importador»— y que por eso había dejado afuera al packshot de Trapiche el 2026-08-18.",
+          "por_qué_importa": "PepsiCo no publica packshots argentinos en ningún canal propio alcanzable, medido host por host. Sin distribuidores oficiales, Pepsi, 7UP, Paso de los Toros y Gatorade se quedaban sin fotografía por una razón que no tiene nada que ver con los derechos.",
+          "lo_que_no_amplía": "No habilita retailers ni marketplaces, que siguen rechazados por escrito. Un distribuidor oficial es una empresa que distribuye el portafolio del fabricante bajo acuerdo; una cadena minorista publica un asset propio, y eso no forma parte de ningún acuerdo entre TABA y el proveedor.",
+          "pendiente_para_el_titular": "Confirmar por escrito esta ampliación cuando se documente el acuerdo. Hasta entonces las dos fotos que entran por esta vía —Paso de los Toros Tónica y Pomelo 1,5 L— quedan identificadas en el manifiesto con source_type distribuidor_oficial y se pueden retirar con una línea."
+        }
+      ],
+      "altas_2026_08_25": {
+        "doc": "Diez packshots oficiales de UNIDAD SUELTA, que es lo que el catálogo no había podido conseguir en ninguna ronda anterior. Cada uno fue descargado, mirado y contrastado contra la fila del SKU —marca, variante, capacidad leída en la etiqueta, envase, unidad— y después sometido a una verificación adversarial independiente que intentó refutarlo.",
+        "lo_que_lo_destrabó": "coca-colaentucasa.com, la tienda directa de Coca-Cola FEMSA de Buenos Aires. Todas las rondas anteriores habían mirado la tienda de Andina, que es MAYORISTA y por eso sólo publica packs con sello de cantidad. FEMSA vende al público, así que publica unidades sueltas y con render limpio.",
+        "rechazos_que_importan": {
+          "fanta-naranja-2250ml": "el render vigente es una edición co-marcada Call of Duty × Xbox. La etiqueta trae el wordmark del videojuego: no es el envase que se entrega.",
+          "gatorade-cool-blue-500ml": "la capacidad no es legible en la imagen y es el único campo que el contrato exige exacto.",
+          "gatorade-manzana-1250ml": "misma razón.",
+          "cervezas-quilmes": "las cuatro latas de 473 ml son packshots legítimos del fabricante, pero ninguno de esos SKU existe en el catálogo y la venta de alcohol sigue deshabilitada."
+        }
+      },
       "fuera_de_alcance_detectado": [
         {
           "sku": "trapiche-origen-malbec-750ml",

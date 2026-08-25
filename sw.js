@@ -71,6 +71,7 @@ const ASSETS = [
   './js/core/order-status.js',
   './js/core/order-timeline.js',
   './js/core/order-workflow.js',
+  './js/core/catalog-search.js',
   './js/core/pricing.js',
   './js/core/product-presentation.js',
   './js/core/taba-packshot.js',

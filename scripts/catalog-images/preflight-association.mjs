@@ -92,8 +92,8 @@ ok(`negocio ${BUSINESS_ID}`);
 
 console.log('');
 console.log(`LOTE · ${manifiesto.sources.length} assets`);
-if (manifiesto.sources.length !== 4) {
-  mal(`se esperaban 4 assets en el manifiesto y hay ${manifiesto.sources.length}.`);
+if (manifiesto.sources.length !== SKUS_OBJETIVO.length) {
+  mal(`se esperaban ${SKUS_OBJETIVO.length} assets en el manifiesto y hay ${manifiesto.sources.length}.`);
 }
 
 const ESPERADOS = new Map([

@@ -741,7 +741,7 @@
   flex: 1 1 auto;
   flex-direction: column;
   gap: 2px;
-  padding: 9px var(--card-pad) var(--card-pad);
+  padding: 8px var(--card-pad) 11px;
 }
 
 .product-brand {
@@ -761,32 +761,36 @@
    leía desalineada aunque los precios sí estuvieran a la misma altura. */
 .product-body h3 {
   display: -webkit-box;
-  min-height: 2.5em;
+  min-height: 2.4em;
   margin: 0;
   overflow: hidden;
   color: var(--taba-ink);
   font-size: 15px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  line-height: 1.25;
+  font-weight: 750;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 
 .product-body p {
-  margin: 1px 0 0;
+  margin: 0;
   color: var(--taba-muted);
   font-size: 12px;
+  line-height: 1.35;
 }
 
 /* Pie apilado: a ~171px de ancho un precio de 5 dígitos y un control de 44px
    no conviven en un renglón. `--inline` sólo en tarjetas anchas. */
+/* El pie medía 86px —el 26% de la tarjeta— para decir un precio y ofrecer un
+   botón. Lo que sobraba era aire entre tres cosas que van juntas, no altura de
+   control: el botón sigue midiendo 44px. */
 .product-foot {
   display: grid;
   align-items: center;
-  gap: 9px;
+  gap: 7px;
   margin-top: auto;
-  padding: 10px 0 0;
+  padding: 7px 0 0;
 }
 
 .product-action {
@@ -909,14 +913,17 @@
 /* El precio es tinta, no rojo: el rojo queda para la acción y la marca. Es la
    cifra que decide la compra, así que se jerarquiza por tamaño y ajuste óptico
    —19px con el tracking cerrado— y no por color. */
+/* 21px contra los 15px del nombre: ratio 1,4. A 19/15 —ratio 1,29— el importe
+   y el título pesaban casi lo mismo y la tarjeta no tenía una sola cosa que
+   mirara primero. Es la cifra que decide la compra. */
 .price strong,
 .price-amounts strong {
   color: var(--taba-ink);
-  font-size: 19px;
+  font-size: 21px;
   font-weight: 850;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.025em;
-  line-height: 1.15;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
 }
 
 .price s,

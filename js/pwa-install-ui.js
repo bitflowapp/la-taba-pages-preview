@@ -23,8 +23,10 @@ import {
   installInvitationKind,
   isInvitationMomentClear,
   manualInstallEntryKind,
+  markVisitorSeen,
   readInstallDecision,
   shouldInviteInstall,
+  visitorIsKnown,
   writeInstallDecision,
 } from './core/pwa-install.js';
 
@@ -169,6 +171,16 @@ export function initPwaInstall({ showToast = () => {} } = {}) {
 
   /* ── La invitación automática ─────────────────────────────────────────── */
 
+  let intencionDeCompra = false;
+  /*
+   * Se lee UNA vez, al arrancar, y no en cada intento: `notifyAppReady()` marca
+   * la visita en cuanto la tienda queda lista, así que preguntarle al
+   * almacenamiento cuando la invitación va a abrirse devolvía siempre que sí y
+   * la hoja se seguía abriendo en la primera visita, que es lo que esto vino a
+   * cambiar.
+   */
+  const yaHabiaVenido = visitorIsKnown();
+
   const currentMoment = () => ({
     bootstrapReady: document.documentElement.dataset.appBootstrap === 'ready',
     // Cualquier diálogo abierto —ficha de producto, sugerencias del checkout,
@@ -176,6 +188,9 @@ export function initPwaInstall({ showToast = () => {} } = {}) {
     hasOpenDialog: Boolean(document.querySelector('dialog[open]')),
     activeView: document.body.dataset.activeView || '',
     msSinceInteraction: Date.now() - lastInteractionAt,
+    // A quien llega por primera vez se le muestra la tienda, no un pedido.
+    // `intencionDeCompra()` lo adelanta en cuanto pone algo en el carrito.
+    visitorIsKnown: yaHabiaVenido || intencionDeCompra,
   });
 
   const tryInvite = () => {
@@ -319,8 +334,25 @@ export function initPwaInstall({ showToast = () => {} } = {}) {
     notifyAppReady() {
       if (invited || hasResolvedInstallDecision()) {
         refreshEntry();
+        markVisitorSeen();
         return;
       }
+      window.setTimeout(tryInvite, INVITATION_DELAY_MS);
+      // Se marca DESPUÉS de agendar el intento: quien llega por primera vez ve
+      // la tienda entera, y la invitación lo espera en la visita siguiente.
+      markVisitorSeen();
+    },
+
+    /**
+     * Alguien puso algo en el carrito.
+     *
+     * Es el momento en que la invitación deja de ser un favor y pasa a ser
+     * útil: la persona ya sabe qué es esta tienda y va a querer volver. No
+     * espera a la visita siguiente.
+     */
+    notifyPurchaseIntent() {
+      if (intencionDeCompra || invited || hasResolvedInstallDecision()) return;
+      intencionDeCompra = true;
       window.setTimeout(tryInvite, INVITATION_DELAY_MS);
     },
     /** Para QA y para la comprobación manual: abre la hoja que corresponda. */

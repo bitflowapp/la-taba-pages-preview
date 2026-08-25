@@ -319,9 +319,22 @@ body[data-active-view="rider"] .floating-cart {
     justify-self: start;
   }
 
+  /* Dos columnas es la grilla del TELÉFONO. Este bloque arranca en 820px, así
+     que también gobernaba la tablet y la ventana de escritorio a media
+     pantalla: a 768px la tarjeta medía 490px de ancho y entraban dos productos
+     en toda la pantalla, con el envase flotando en medio de un plato enorme.
+     De 600px para arriba hay lugar para tres, y la tarjeta vuelve a medir lo
+     que mide en un teléfono. */
   .product-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 11px;
+  }
+
+  @media (min-width: 600px) {
+    .product-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
   }
 }
 

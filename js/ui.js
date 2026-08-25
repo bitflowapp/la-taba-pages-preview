@@ -320,6 +320,30 @@ function applyHomeBrandHeader(config) {
     hoursNode.textContent = hours;
     hoursNode.hidden = !hours;
   }
+
+  const service = $('[data-home-service]');
+  if (service) {
+    service.textContent = homeServiceLine(config);
+    service.hidden = !service.textContent;
+  }
+}
+
+/**
+ * Qué hace este comercio, en una línea: delivery, retiro, y dónde.
+ *
+ * Sale de `businessConfig` y no se inventa nada. El costo de envío entra SÓLO
+ * si es mayor a cero y está publicado: el fee de producción lo dejó en $0 un
+ * script de plataforma, no el comercio, así que anunciar «envío sin cargo»
+ * sería convertir un valor por omisión en una promesa comercial.
+ */
+export function homeServiceLine(config = {}) {
+  const zona = publishedBusinessValue(config.deliveryZone);
+  const partes = [];
+  if (config.deliveryEnabled !== false) partes.push(zona ? `Delivery en ${zona}` : 'Delivery');
+  if (config.pickupEnabled) partes.push('Retiro en el local');
+  const envio = Number(config.deliveryFee);
+  if (Number.isFinite(envio) && envio > 0) partes.push(`Envío ${money(envio)}`);
+  return partes.join(' · ');
 }
 
 function applyFulfillmentAvailability(availability) {

@@ -246,11 +246,44 @@ export function isInvitationMomentClear({
   hasOpenDialog = false,
   activeView = '',
   msSinceInteraction = Number.POSITIVE_INFINITY,
+  visitorIsKnown = true,
 } = {}) {
   if (!bootstrapReady) return false;
   if (hasOpenDialog) return false;
   if (msSinceInteraction < INVITATION_QUIET_MS) return false;
+  // Un visitante que llega por primera vez todavía no sabe qué es esta tienda.
+  if (!visitorIsKnown) return false;
   return INVITATION_VIEWS.includes(activeView);
+}
+
+/*
+ * A quién ya vimos antes.
+ *
+ * POR QUÉ EXISTE: medido en producción el 2026-08-25, en un iPhone la primera
+ * pantalla de La Taba no era La Taba: 2,5 s después de cargar se abría sola la
+ * hoja de instalación y cubría el tercio inferior, barra de navegación incluida.
+ * La primera impresión de un comercio que abre el viernes era un modal pidiendo
+ * un favor antes de haber mostrado un solo precio.
+ *
+ * La invitación no se saca, se corre de lugar: se ofrece a quien VUELVE, o a
+ * quien ya puso algo en el carrito. A esa altura la persona sabe qué le estamos
+ * pidiendo que instale, y la conversión de esa pregunta es mejor justamente por
+ * eso. La puerta permanente del Perfil sigue estando desde el primer segundo.
+ */
+export const VISITOR_SEEN_KEY = 'TABA_VISITOR_SEEN_V1';
+
+export function markVisitorSeen(storage = globalThis.localStorage) {
+  try {
+    storage?.setItem?.(VISITOR_SEEN_KEY, '1');
+  } catch { /* almacenamiento bloqueado: se comporta como visitante nuevo */ }
+}
+
+export function visitorIsKnown(storage = globalThis.localStorage) {
+  try {
+    return storage?.getItem?.(VISITOR_SEEN_KEY) === '1';
+  } catch {
+    return false;
+  }
 }
 
 /**

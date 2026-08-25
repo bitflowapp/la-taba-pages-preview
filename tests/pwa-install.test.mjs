@@ -211,6 +211,42 @@ test('El momento: con la tienda lista, sin diálogos y fuera del checkout', () =
   }
 });
 
+test('a quien llega por PRIMERA vez se le muestra la tienda, no un pedido', () => {
+  /*
+   * Medido en producción el 2026-08-25: en un iPhone la primera pantalla de La
+   * Taba no era La Taba. A los 2,5 s se abría sola la hoja de instalación y
+   * cubría el tercio inferior, barra de navegación incluida, antes de que el
+   * cliente hubiera visto un solo precio.
+   */
+  assert.equal(isInvitationMomentClear({ ...CLEAR_MOMENT, visitorIsKnown: false }), false);
+  assert.equal(isInvitationMomentClear({ ...CLEAR_MOMENT, visitorIsKnown: true }), true);
+  // Sin el dato, el momento se comporta como antes: es un campo opcional y
+  // ninguna otra llamada tiene que enterarse de que existe.
+  assert.equal(isInvitationMomentClear(CLEAR_MOMENT), true);
+});
+
+test('la marca de visitante conocido sobrevive a un almacenamiento bloqueado', async () => {
+  const { markVisitorSeen, visitorIsKnown, VISITOR_SEEN_KEY } = await import('../js/core/pwa-install.js');
+  const memoria = new Map();
+  const storage = {
+    getItem: (k) => (memoria.has(k) ? memoria.get(k) : null),
+    setItem: (k, v) => memoria.set(k, v),
+  };
+  assert.equal(visitorIsKnown(storage), false);
+  markVisitorSeen(storage);
+  assert.equal(memoria.get(VISITOR_SEEN_KEY), '1');
+  assert.equal(visitorIsKnown(storage), true);
+
+  // Modo privado, almacenamiento lleno o bloqueado: se comporta como visitante
+  // nuevo y no rompe el arranque de la tienda.
+  const roto = {
+    getItem() { throw new Error('SecurityError'); },
+    setItem() { throw new Error('QuotaExceededError'); },
+  };
+  assert.equal(visitorIsKnown(roto), false);
+  assert.doesNotThrow(() => markVisitorSeen(roto));
+});
+
 test('El momento: no se abre encima de un dedo que está usando la tienda', () => {
   // El caso real: en la góndola, sumando unidades, la hoja se abrió sobre el
   // "+" y se quedó con el toque siguiente. Estar en una vista permitida dice

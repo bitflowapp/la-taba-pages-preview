@@ -235,6 +235,20 @@
                 <p class="brand-hero-place" data-home-business-place>Tu autoservicio de bebidas</p>
                 <p class="brand-hero-state">
                   <span class="brand-state-chip" data-open-status>Pedidos online</span>
+                  <!--
+                    QUÉ HACE ESTE COMERCIO, dicho en la primera pantalla. La home
+                    no decía «delivery» en ningún lado: cero coincidencias en
+                    2.143 px de alto, medido el 2026-08-25. Un cliente que entra
+                    por un enlace no tenía cómo saber si le llevan la bebida o
+                    tiene que ir a buscarla.
+
+                    Sale de `businessConfig` y falla cerrado, como el resto del
+                    encabezado: si el comercio no publicó la zona, dice
+                    «Delivery» a secas; si no publicó un costo de envío mayor a
+                    cero, no se dice nada del envío. Un «envío sin cargo» que
+                    nadie fijó es una promesa comercial inventada.
+                  -->
+                  <span class="brand-hero-service" data-home-service hidden></span>
                   <span class="brand-hero-hours" data-home-business-hours hidden></span>
                 </p>
               </div>
@@ -310,9 +324,13 @@
                   pedidos completados agregados, ventana temporal explícita y
                   volumen mínimo; no existen, así que no se afirman.
                 -->
+                <!--
+                  El subtítulo decía «Selección del local» debajo de un título
+                  que ya dice «Recomendados del local»: dos veces lo mismo, en
+                  el renglón que está justo encima del primer producto.
+                -->
                 <div class="home-section-title">
                   <h2 id="home-best-title">Destacados</h2>
-                  <small>Selección del local</small>
                 </div>
                 <!--
                   P1-1 (auditoría comercial): la CTA sigue a la FUENTE real del

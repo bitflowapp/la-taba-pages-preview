@@ -2242,7 +2242,7 @@ function sortProducts(list, sortBy) {
 function activeCategoryName() {
   const { activeCategory } = getState();
   if (activeCategory === 'favorites') return 'Favoritos';
-  return categoriesForCurrentCatalog().find((category) => category.id === activeCategory)?.name || 'Todos';
+  return categoriesForCurrentCatalog().find((category) => category.id === activeCategory)?.name || 'Todas';
 }
 
 /*
@@ -2304,7 +2304,9 @@ function categoriesForCurrentCatalog() {
       (rank.get(a.id) ?? preferredOrder.length) - (rank.get(b.id) ?? preferredOrder.length)
       || a.name.localeCompare(b.name, 'es')
     ));
-  return [{ id: 'all', name: 'Todos' }, ...dynamic];
+  // «Todas», igual que en la home: son categorías, y el mismo control no puede
+  // llamarse de dos maneras según la pantalla.
+  return [{ id: 'all', name: 'Todas' }, ...dynamic];
 }
 
 function sanitizeCategoryId(value) {

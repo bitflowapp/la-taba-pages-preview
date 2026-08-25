@@ -259,9 +259,11 @@ try {
     await chipTodas.click();
     await pagina.waitForTimeout(700);
   }
-  const ficha = pagina.locator('[data-product-detail]').filter({ hasText: /Coca/i }).first();
-  const fichaAlt = pagina.locator('[data-product-detail]').first();
-  const objetivo = (await ficha.count()) ? ficha : fichaAlt;
+  // Acotado a la GRILLA: `[data-product-detail]` existe también en los rieles
+  // de la home, que están en el DOM y ocultos. Pedir el primero a secas elegía
+  // uno invisible y la espera se agotaba sin abrir ninguna ficha.
+  const enGrilla = pagina.locator('[data-product-grid] [data-product-detail]');
+  const objetivo = enGrilla.first();
   if (await objetivo.count()) {
     await objetivo.click();
     await pagina.waitForTimeout(1100);

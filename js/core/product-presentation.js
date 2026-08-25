@@ -124,12 +124,30 @@ const ENVASES_QUE_SE_DICEN = new Set(['lata', 'sifon', 'sifon-pet', 'botella-vid
 export function cardTitle(product = {}) {
   const nombre = String(product?.name || '').trim();
   if (!nombre) return '';
-  const palabras = nombre.split(/\s+/);
-  if (palabras.length > 1 && normalizar(palabras.at(-1)) === 'original') {
-    return palabras.slice(0, -1).join(' ');
+  const normalizado = normalizar(nombre);
+  for (const atributo of ATRIBUTOS_QUE_NO_SON_NOMBRE) {
+    if (normalizado === atributo || !normalizado.endsWith(` ${atributo}`)) continue;
+    const recortado = nombre.slice(0, nombre.length - atributo.length).trim();
+    if (recortado) return recortado;
   }
   return nombre;
 }
+
+/*
+ * Colas del nombre que NO son parte del nombre: son atributos del envase, y la
+ * línea de presentación ya los dice.
+ *
+ * Es una lista cerrada y corta a propósito. «Sin gas» describe el agua;
+ * «Manzana» ES el producto —Aquarius Manzana no es un Aquarius con un atributo—
+ * y por eso los sabores no están acá. Recortar un sabor del título arruinaría el
+ * reconocimiento, que es justo lo que la tarjeta tiene que dar en un segundo.
+ *
+ * Lo destapó Villavicencio: el catálogo entrega su nombre como «Villavicencio
+ * Sin gas» y el de Benedictino como «Benedictino», los dos con `variant = 'Sin
+ * gas'`. Dos aguas del mismo estante, con el mismo dato, escritas distinto: una
+ * decía el atributo dos veces y la otra una.
+ */
+const ATRIBUTOS_QUE_NO_SON_NOMBRE = Object.freeze(['sin gas', 'con gas', 'original']);
 
 /** ¿El título ya dice que es la versión sin azúcar? */
 function tituloDiceSinAzucar(product) {
@@ -167,7 +185,10 @@ export function cardPresentationLine(product = {}) {
   const esPack = Number.isFinite(porPack) && porPack > 1;
 
   const variante = String(product.presentation || product.variant || '').trim();
-  const nombre = normalizar(product.name);
+  // Contra el TÍTULO que se muestra, no contra el nombre crudo: si el título ya
+  // recortó «Sin gas», la presentación tiene que volver a decirlo o el dato
+  // desaparece de la tarjeta.
+  const nombre = normalizar(cardTitle(product));
   const varianteAporta = variante
     && !nombre.includes(normalizar(variante))
     && normalizar(variante) !== 'unidad'

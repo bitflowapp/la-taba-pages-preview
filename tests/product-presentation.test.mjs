@@ -1,9 +1,11 @@
-import { test } from 'node:test';
+import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   cardPresentationLine,
+  cardTitle,
   formatCapacity,
   packagingLabel,
+  productAccessibleName,
 } from '../js/core/product-presentation.js';
 
 /*
@@ -151,4 +153,64 @@ test('los 12 SKU de la góndola final salen legibles', async () => {
     if (p.soldAsPack) assert.match(linea, /^Pack x6 · 473 ml/);
     else assert.match(linea, /L\b/);
   }
+});
+
+test('el título no repite un atributo del envase que la presentación ya dice', () => {
+  // El catálogo entrega el nombre de Villavicencio como «Villavicencio Sin gas»
+  // y el de Benedictino como «Benedictino», los dos con variant «Sin gas». Dos
+  // aguas del mismo estante, con el mismo dato, escritas distinto.
+  const villavicencio = {
+    name: 'Villavicencio Sin gas', variant: 'Sin gas',
+    capacityValue: 1500, capacityUnit: 'ml', unitsPerPack: 1, packageType: 'botella-pet',
+  };
+  assert.equal(cardTitle(villavicencio), 'Villavicencio');
+  assert.equal(cardPresentationLine(villavicencio), '1,5 L · Sin gas');
+
+  const benedictino = {
+    name: 'Benedictino', variant: 'Sin gas',
+    capacityValue: 2250, capacityUnit: 'ml', unitsPerPack: 1, packageType: 'botella-pet',
+  };
+  assert.equal(cardTitle(benedictino), 'Benedictino');
+  assert.equal(cardPresentationLine(benedictino), '2,25 L · Sin gas');
+});
+
+test('un SABOR es el producto y NO se recorta del título', () => {
+  // «Aquarius Manzana» no es un Aquarius con un atributo: es el producto.
+  // Recortarlo arruinaría el reconocimiento, que es lo que la tarjeta da en un
+  // segundo.
+  const aquarius = {
+    name: 'Aquarius Manzana', variant: 'Manzana',
+    capacityValue: 1500, capacityUnit: 'ml', unitsPerPack: 1, packageType: 'botella-pet',
+  };
+  assert.equal(cardTitle(aquarius), 'Aquarius Manzana');
+  assert.equal(cardPresentationLine(aquarius), '1,5 L');
+});
+
+test('«Original» sale del título: lo que distingue es que NO diga Zero', () => {
+  assert.equal(cardTitle({ name: 'Coca-Cola Original' }), 'Coca-Cola');
+  assert.equal(cardTitle({ name: 'Coca-Cola' }), 'Coca-Cola');
+  assert.equal(cardTitle({ name: 'Coca-Cola Zero' }), 'Coca-Cola Zero');
+  // Un nombre que ES el atributo no se queda vacío.
+  assert.equal(cardTitle({ name: 'Original' }), 'Original');
+  assert.equal(cardTitle({ name: '' }), '');
+  assert.equal(cardTitle({}), '');
+});
+
+test('el envase entra en la presentación sólo cuando cambia lo que llega', () => {
+  const lata = { name: 'Sprite', variant: 'Original', capacityValue: 354, capacityUnit: 'ml', unitsPerPack: 1, packageType: 'lata' };
+  assert.equal(cardPresentationLine(lata), '354 ml · Lata');
+  // La botella PET es la convención de la góndola: decirla en veinte tarjetas
+  // de veintitrés sería gastar el renglón en la constante.
+  const pet = { name: 'Sprite', variant: 'Original', capacityValue: 2250, capacityUnit: 'ml', unitsPerPack: 1, packageType: 'botella-pet' };
+  assert.equal(cardPresentationLine(pet), '2,25 L');
+  const sifon = { name: 'Soda Manaos', variant: 'Soda', capacityValue: 2000, capacityUnit: 'ml', unitsPerPack: 1, packageType: 'sifon' };
+  assert.equal(cardPresentationLine(sifon), '2 L · Sifón');
+});
+
+test('el nombre accesible distingue variantes: dos «Agregar Coca-Cola» no alcanzan', () => {
+  const familiar = { name: 'Coca-Cola', variant: 'Original', capacityValue: 2250, capacityUnit: 'ml', unitsPerPack: 1, packageType: 'botella-pet' };
+  const litro = { name: 'Coca-Cola Original', variant: 'Original', capacityValue: 1500, capacityUnit: 'ml', unitsPerPack: 1, packageType: 'botella-pet' };
+  assert.equal(productAccessibleName(familiar), 'Coca-Cola 2,25 L');
+  assert.equal(productAccessibleName(litro), 'Coca-Cola 1,5 L');
+  assert.notEqual(productAccessibleName(familiar), productAccessibleName(litro));
 });

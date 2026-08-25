@@ -787,8 +787,12 @@ function checkoutModeCopy(mode) {
   if (mode === APP_MODE_PRODUCTION) {
     return {
       submit: 'Confirmar pedido',
-      title: 'Pedido online al local.',
-      copy: 'Al confirmar, el pedido se registra en el sistema del comercio.',
+      // «El pedido se registra en el sistema del comercio» describe una
+      // escritura en una base de datos. Lo que la persona necesita saber antes
+      // de tocar el botón es quién lo recibe y qué puede hacer después, que es
+      // lo mismo que ya dice el modo demo y es igual de cierto en producción.
+      title: 'Tu pedido va directo al local.',
+      copy: 'Al confirmar, el local lo recibe y podés seguirlo desde Seguimiento.',
       note: 'El pago se coordina directamente con el local.',
     };
   }
@@ -1035,23 +1039,50 @@ function clearCheckoutInlineError(form) {
   warning.classList.add('hidden');
 }
 
+/**
+ * Pinta el aviso del checkout y DEVUELVE el texto que quedó en pantalla.
+ *
+ * Devuelve, y no sólo pinta, porque acá adentro el mensaje puede cambiar —ver
+ * el bloque de abajo— y el toast que lo acompaña tiene que decir exactamente lo
+ * mismo. Dos mensajes distintos para el mismo rechazo es peor que uno malo.
+ */
 function showCheckoutInlineError(form, message) {
-  if (!(form instanceof HTMLFormElement)) return;
+  if (!(form instanceof HTMLFormElement)) return String(message || '');
   clearCheckoutInlineError(form);
-  const cleanMessage = String(message || 'Revisá los datos del pedido e intentá nuevamente.');
+  const originalMessage = String(message || 'Revisá los datos del pedido e intentá nuevamente.');
+
+  const fieldName = checkoutErrorFieldName(originalMessage);
+  const field = fieldName ? form.elements.namedItem(fieldName) : null;
+  const visibleField = field instanceof HTMLElement
+    && !field.hidden
+    && !field.closest('[hidden]')
+    && field.getClientRects().length > 0;
+
+  /*
+   * Un mensaje que nombra un campo INVISIBLE no se puede obedecer.
+   *
+   * En el checkout con Perfil, el nombre, el teléfono y la dirección son campos
+   * ocultos que llena el Perfil: la persona no los puede escribir acá. Este
+   * bloque ya sabía que el campo no se ve —lo usaba para decidir a dónde llevar
+   * el foco— y seguía imprimiendo la instrucción imposible. Ahora, cuando además
+   * hay una tarjeta en pantalla que dice qué falta y tiene el botón que lo
+   * resuelve, el aviso dice ESO y el foco va a ese botón.
+   *
+   * La condición es angosta a propósito: sólo cuando el rechazo apunta a un
+   * campo que existe y no se ve. Un rechazo por stock, por sesión vencida o
+   * porque el pedido cambió durante el envío no apunta a ningún campo y llega
+   * intacto — taparlo con «completá tu Perfil» sería cambiar un mensaje
+   * imposible por uno falso.
+   */
+  const bloqueo = fieldName && !visibleField ? bloqueoDePerfilEnCheckout(form) : null;
+  const cleanMessage = bloqueo ? bloqueo.mensaje : originalMessage;
+
   const warning = form.querySelector('[data-checkout-warning]');
   if (warning) {
     warning.textContent = cleanMessage;
     warning.hidden = false;
     warning.classList.remove('hidden');
   }
-
-  const fieldName = checkoutErrorFieldName(cleanMessage);
-  const field = fieldName ? form.elements.namedItem(fieldName) : null;
-  const visibleField = field instanceof HTMLElement
-    && !field.hidden
-    && !field.closest('[hidden]')
-    && field.getClientRects().length > 0;
 
   if (visibleField) {
     field.setAttribute('aria-invalid', 'true');
@@ -1061,11 +1092,65 @@ function showCheckoutInlineError(form, message) {
     ].filter((token, index, values) => values.indexOf(token) === index).join(' '));
     field.focus({ preventScroll: true });
     field.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    return;
+    return cleanMessage;
+  }
+
+  if (bloqueo?.accion instanceof HTMLElement) {
+    bloqueo.bloque.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    bloqueo.accion.focus({ preventScroll: true });
+    return cleanMessage;
   }
 
   warning?.focus({ preventScroll: true });
   warning?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  return cleanMessage;
+}
+
+/*
+ * EL CHECKOUT NO PUEDE PEDIR ALGO QUE ESTA PANTALLA NO SABE RECIBIR.
+ *
+ * Medido en producción el 2026-08-25, con un visitante nuevo: agregar una
+ * bebida, abrir el carrito y tocar «Confirmar pedido» contestaba «Ingresá un
+ * nombre de al menos 2 caracteres». En esa pantalla NO HAY ningún campo de
+ * nombre: el nombre vive en Perfil. La persona lee una instrucción que no puede
+ * obedecer y el pedido se pierde ahí. Es el camino del 100 % de los clientes
+ * nuevos, que es exactamente a quien queremos convertir el fin de semana.
+ *
+ * La pantalla ya dice bien lo que falta —«Completá tu perfil para continuar»,
+ * «Agregá una dirección para recibir el pedido»— en tarjetas con su botón. Esto
+ * devuelve esa tarjeta; quien decide CUÁNDO usarla es `showCheckoutInlineError`,
+ * y sólo lo hace si el rechazo apunta a un campo que la persona no puede ver.
+ *
+ * NO ES UNA COMPUERTA PREVIA, Y LA PRIMERA VERSIÓN SÍ LO ERA. Cortaba antes de
+ * intentar el pedido y rompió el handoff de Mercado Pago: su suite completa el
+ * nombre y el teléfono escribiendo los campos ocultos, así que la tarjeta de
+ * Perfil seguía diciendo «incompleto» mientras el pedido era perfectamente
+ * válido. Una compuerta que mira la TARJETA y un pedido que mira los CAMPOS
+ * pueden discrepar —una hidratación a medio camino alcanza— y el precio de
+ * discrepar es negarle la compra a alguien que sí podía comprar.
+ *
+ * Se lee del DOM y no del estado: quien dibuja esas tarjetas es
+ * `customer-delivery.js`, que sostiene su propio estado de perfil y direcciones;
+ * duplicar acá la regla de «qué falta» es garantizar que algún día las dos
+ * digan cosas distintas. La tarjeta que está en pantalla es la verdad.
+ */
+const BLOQUEOS_DE_PERFIL = Object.freeze({
+  incomplete: 'Completá tu nombre y teléfono en Perfil para confirmar el pedido.',
+  'no-address': 'Agregá una dirección de entrega en Perfil para confirmar el pedido.',
+  'no-confirmed-location': 'Confirmá el punto de entrega de tu dirección en Perfil para confirmar el pedido.',
+  unsupported: 'Esta tienda todavía no toma pedidos por la app.',
+});
+
+function bloqueoDePerfilEnCheckout(form) {
+  if (!(form instanceof HTMLFormElement)) return null;
+  const bloque = form.querySelector('[data-profile-block]');
+  if (!(bloque instanceof HTMLElement)) return null;
+  if (bloque.hidden || bloque.closest('[hidden]') || bloque.getClientRects().length === 0) return null;
+  const clase = String(bloque.dataset.profileBlock || '');
+  const mensaje = BLOQUEOS_DE_PERFIL[clase]
+    || String(bloque.querySelector('strong')?.textContent || '').trim()
+    || 'Completá tus datos de entrega para confirmar el pedido.';
+  return { clase, mensaje, bloque, accion: bloque.querySelector('[data-profile-checkout-action]') };
 }
 
 function bindEvents() {
@@ -1787,8 +1872,7 @@ function bindEvents() {
     clearCheckoutInlineError(form);
     if (isProductionOrderingBlocked()) {
       const message = 'Los pedidos online todavía no están disponibles.';
-      showCheckoutInlineError(form, message);
-      showToast(message);
+      showToast(showCheckoutInlineError(form, message));
       return;
     }
     // P1-3 (auditoría comercial): acá vivía la compuerta del modal de
@@ -1818,8 +1902,7 @@ function bindEvents() {
         const result = await Promise.resolve(getOrderRepository().createMercadoPagoCheckout?.(values));
         if (!result?.ok || !result.initPoint) {
           const message = result?.message || 'No pudimos preparar Mercado Pago. Conservamos tu carrito para que vuelvas a intentar.';
-          showCheckoutInlineError(form, message);
-          showToast(message);
+          showToast(showCheckoutInlineError(form, message));
           return;
         }
         if (button) button.textContent = 'Te llevamos a Mercado Pago…';
@@ -1832,8 +1915,7 @@ function bindEvents() {
       const result = await Promise.resolve(getOrderRepository().createOrder(values));
 
       if (!result.ok) {
-        showCheckoutInlineError(form, result.message);
-        showToast(result.message);
+        showToast(showCheckoutInlineError(form, result.message));
         return;
       }
 
@@ -1851,8 +1933,7 @@ function bindEvents() {
       setActiveView('tracking');
     } catch (_) {
       const message = 'No se pudo crear el pedido. Reintentá.';
-      showCheckoutInlineError(form, message);
-      showToast(message);
+      showToast(showCheckoutInlineError(form, message));
     } finally {
       if (entregadoAMercadoPago) {
         // Entregado: el checkout queda tomado hasta que la persona vuelva.

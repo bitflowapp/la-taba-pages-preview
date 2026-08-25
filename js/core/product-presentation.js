@@ -188,6 +188,65 @@ function varianteEsFichaTecnica(variante) {
   return /·|\|/.test(String(variante || ''));
 }
 
+/*
+ * QUÉ SALE CADA ENVASE DE UN PACK.
+ *
+ * Un pack x12 a $ 17.100 es el único precio del catálogo que el cliente no
+ * puede evaluar de un vistazo: al lado hay una botella de 2,25 L a $ 5.900 y no
+ * hay forma de compararlos sin dividir. Medido en la góndola de producción del
+ * 2026-08-25, los tres packs comprables cuestan $ 1.425 por botella y ninguna
+ * pantalla lo dice.
+ *
+ * NO ES UNA PROMOCIÓN Y NO PUEDE SERLO. Es una división: precio ÷ unidades. No
+ * afirma ahorro, no compara contra nada y no depende de ningún costo —que en
+ * producción, además, no existe: `unit_cost` está en NULL en los 72 productos,
+ * y por eso ninguna oferta con descuento real se puede aprobar todavía—.
+ *
+ * Y ES LO CONTRARIO DE UN RECLAMO INFLADO. El documento comercial del proyecto
+ * afirmaba que el pack x12 «YA es el mejor precio por litro del catálogo»:
+ * $ 17.100 ÷ 6 L = $ 2.850/L contra $ 5.900 ÷ 2,25 L = $ 2.622/L de la
+ * familiar. El pack es 8,7 % MÁS caro por litro. Publicar aquella frase habría
+ * sido una falsedad comercial en el fin de semana de apertura. El número real,
+ * dicho sin adjetivos, deja que el cliente decida y que el pack se venda por lo
+ * que sí ofrece: doce envases individuales.
+ *
+ * Devuelve datos, no texto: el formato de moneda depende del comercio y vive en
+ * `state.js`. Este módulo sigue siendo puro.
+ */
+const SUSTANTIVOS_DE_ENVASE = Object.freeze({
+  'botella-pet': 'botella',
+  'botella-vidrio': 'botella',
+  botella: 'botella',
+  lata: 'lata',
+  sifon: 'sifón',
+  'sifon-pet': 'sifón',
+  tetra: 'envase',
+  'tetra-pak': 'envase',
+  pouch: 'envase',
+});
+
+export function packUnitNoun(product = {}) {
+  const crudo = String(
+    product.packageType || product.packagingType || product.packaging_type || '',
+  ).trim().toLowerCase().replace(/\s+/g, '-');
+  // `hasOwn` y no un acceso a secas: un envase que se llamara «constructor»
+  // devolvería una función, y esa función terminaría convertida en texto dentro
+  // de la tarjeta. El valor viene de una columna de la base; que hoy no pueda
+  // decir eso no es una garantía que valga la pena apoyar.
+  return Object.hasOwn(SUSTANTIVOS_DE_ENVASE, crudo) ? SUSTANTIVOS_DE_ENVASE[crudo] : 'unidad';
+}
+
+export function packUnitPrice(product = {}) {
+  const porPack = Number(product.unitsPerPack ?? product.units_per_pack);
+  if (!Number.isFinite(porPack) || porPack <= 1) return null;
+  const precio = Number(product.price);
+  if (!Number.isFinite(precio) || precio <= 0) return null;
+  const unidades = Math.floor(porPack);
+  const unitario = precio / unidades;
+  if (!Number.isFinite(unitario) || unitario <= 0) return null;
+  return Object.freeze({ unitsPerPack: unidades, unitPrice: unitario, noun: packUnitNoun(product) });
+}
+
 /**
  * La línea de la tarjeta.
  *

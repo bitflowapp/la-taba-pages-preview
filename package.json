@@ -35,6 +35,7 @@
     "production:artifacts": "node scripts/scan-production-artifacts.mjs",
     "production:manifest:release": "node scripts/build-release-manifest.mjs",
     "production:health": "node scripts/production-health-check.mjs",
+    "vender:listo": "node scripts/verificar-listo-para-vender.mjs",
     "production:smoke": "node scripts/production-security-smoke.mjs",
     "production:smoke:identity": "node scripts/production-auth-identity-smoke.mjs",
     "production:target": "node scripts/assert-production-supabase-target.mjs",

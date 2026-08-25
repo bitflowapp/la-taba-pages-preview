@@ -500,6 +500,67 @@ test('checkout bloquea por Perfil incompleto y permite volver desde completar Pe
   await expect(page.locator('[data-profile-block="incomplete"]')).toBeVisible();
 });
 
+/*
+ * EL BOTÓN PRINCIPAL NO PUEDE PEDIR ALGO QUE ESTA PANTALLA NO SABE RECIBIR.
+ *
+ * Medido en producción el 2026-08-25 con un visitante nuevo: agregar una
+ * bebida, abrir el carrito y tocar «Confirmar pedido» contestaba «Ingresá un
+ * nombre de al menos 2 caracteres» — y en el carrito NO hay ningún campo de
+ * nombre, porque el nombre vive en Perfil. Es el camino del 100 % de los
+ * clientes nuevos y terminaba en una instrucción imposible de obedecer.
+ */
+test('confirmar con Perfil incompleto manda a Perfil, no pide un campo que no existe', async ({ page }) => {
+  const namespace = 'e2e-confirm-sin-perfil';
+  await page.goto('/?demo=1#catalog');
+  await expect(page.locator('[data-view="catalog"] [data-add-product]:not([disabled])').first()).toBeVisible();
+  await seedCartAboveMinimum(page);
+  await page.evaluate(() => { window.location.hash = '#cart'; });
+  await expect(page.locator('[data-view="cart"]')).toBeVisible();
+
+  await seedCheckoutProfile(page, { name: '', phone: '', addresses: [], namespace });
+  await expect(page.locator('[data-profile-block="incomplete"]')).toBeVisible();
+
+  // No hay ningún campo de nombre en pantalla: el que existe es oculto y lo
+  // llena el Perfil. Si algún día aparece uno, esta prueba tiene que caerse
+  // para que alguien decida a propósito qué mensaje corresponde.
+  await expect(page.locator('[data-checkout-form] input[name="customerName"]:visible')).toHaveCount(0);
+
+  await page.locator('[data-checkout-submit]').click();
+
+  const aviso = page.locator('[data-checkout-warning]');
+  await expect(aviso).toBeVisible();
+  await expect(aviso).toContainText('Perfil');
+  await expect(aviso).not.toContainText('caracteres');
+  // Y el foco queda sobre el botón que sí resuelve el bloqueo.
+  await expect(page.locator('[data-profile-block="incomplete"] [data-profile-checkout-action="edit-profile"]')).toBeFocused();
+});
+
+test('confirmar sin dirección manda a la dirección, y el pedido sigue intacto', async ({ page }) => {
+  const namespace = 'e2e-confirm-sin-direccion';
+  await page.goto('/?demo=1#catalog');
+  await expect(page.locator('[data-view="catalog"] [data-add-product]:not([disabled])').first()).toBeVisible();
+  await seedCartAboveMinimum(page);
+  await page.evaluate(() => { window.location.hash = '#cart'; });
+  await expect(page.locator('[data-view="cart"]')).toBeVisible();
+
+  await seedCheckoutProfile(page, { name: 'Cliente demo', phone: '2991112233', addresses: [], namespace });
+  await expect(page.locator('[data-profile-block="no-address"]')).toBeVisible();
+
+  await page.locator('[data-checkout-submit]').click();
+  const aviso = page.locator('[data-checkout-warning]');
+  await expect(aviso).toBeVisible();
+  await expect(aviso).toContainText('dirección');
+  await expect(aviso).toContainText('Perfil');
+
+  // El botón vuelve a estar disponible: un paso que todavía no se dio no es un
+  // intento fallido, y dejarlo en «Creando pedido…» sería otra forma de mentir.
+  const boton = page.locator('[data-checkout-submit]');
+  await expect(boton).toBeEnabled();
+  await expect(boton).toHaveText('Confirmar pedido');
+  // Y el carrito no se tocó.
+  await expect(page.locator('[data-view="cart"] [data-cart-inc]').first()).toBeVisible();
+});
+
 test('checkout bloquea sin direcciones y permite volver desde agregar dirección en Perfil', async ({ page }) => {
   const namespace = 'e2e-no-address';
   await page.goto('/?demo=1#catalog');

@@ -16,6 +16,7 @@ import {
   cardPresentationLine,
   cardTitle,
   formatCapacity,
+  packUnitPrice,
   packagingLabel,
   productAccessibleName,
 } from './core/product-presentation.js';
@@ -261,11 +262,20 @@ export function applyBusinessConfig() {
   // heredados de la demo porque todavía no forman parte del contrato remoto.
   const status = $('[data-open-status]');
   if (status) {
+    // «Pedidos online habilitados» / «no habilitados» describe una BANDERA del
+    // sistema, no un hecho del negocio: es la traducción literal de
+    // `ordering_verified`. El cliente que abre la tienda un viernes a la noche
+    // no pregunta si una configuración está verificada; pregunta si le pueden
+    // vender ahora. Se dice eso, que es lo mismo y además es verdad.
+    // NO dice «Abierto»: el comercio no tiene horarios cargados
+    // (`business_service_hours` vacía, `hours_enforced=false`), así que la
+    // aplicación no sabe si el local está abierto — sólo sabe que acepta
+    // pedidos.
     status.textContent = demo
       ? 'Pedidos disponibles'
       : detailsVerified
-        ? 'Pedidos online habilitados'
-        : 'Pedidos online no habilitados';
+        ? 'Estamos tomando pedidos'
+        : 'Ahora no estamos tomando pedidos';
     status.classList.toggle('is-closed', !demo && !detailsVerified);
     status.classList.toggle('is-soon', !demo && !detailsVerified);
   }
@@ -711,11 +721,40 @@ function priceBlock(product) {
   const pricing = productPricePresentation(product);
   const old = pricing.regularPrice && pricing.regularPrice > pricing.price
     ? `<s>${money(pricing.regularPrice)}</s>` : '';
+  /*
+   * El renglón bajo el precio tiene UN inquilino por vez, y hay un orden.
+   *
+   * La condición de una promoción es un compromiso comercial del local
+   * («llevando 2», «hasta el domingo») y manda sobre todo lo demás. Sin
+   * promoción, el lugar queda libre y es donde el pack dice cuánto sale cada
+   * envase: la única cuenta que el cliente no puede hacer de un vistazo en una
+   * góndola de bebidas. Un producto suelto no dice nada acá, porque su precio
+   * YA es el de la unidad.
+   */
+  const porUnidad = packUnitPrice(product);
+  const condicion = pricing.promotion && pricing.condition
+    ? escapeHtml(pricing.condition)
+    : porUnidad
+      ? `${money(porUnidad.unitPrice)} por ${escapeHtml(porUnidad.noun)}`
+      : '';
   return `
     <div class="price">
       <div class="price-amounts"><strong>${money(pricing.price)}</strong>${old}</div>
-      ${pricing.promotion && pricing.condition ? `<small class="price-condition">${escapeHtml(pricing.condition)}</small>` : ''}
+      ${condicion ? `<small class="price-condition">${condicion}</small>` : ''}
     </div>`;
+}
+
+/*
+ * El renglón chico de la ficha, con la misma regla que la tarjeta: primero la
+ * condición de una promoción real, y si no hay, cuánto sale cada envase del
+ * pack. La ficha es donde el cliente decide entre el pack y la botella suelta,
+ * así que es justamente donde la cuenta tiene que estar hecha.
+ */
+function detallePrecioSecundario(product, pricing) {
+  if (pricing.condition) return `<small>${escapeHtml(pricing.condition)}</small>`;
+  const porUnidad = packUnitPrice(product);
+  if (!porUnidad) return '';
+  return `<small>${money(porUnidad.unitPrice)} por ${escapeHtml(porUnidad.noun)}</small>`;
 }
 
 function removeGlyph() {
@@ -4133,7 +4172,7 @@ export function showProductModal(productId, restoreTrigger = null) {
           <div class="modal-price">
             ${isPricePending(product)
               ? `<div data-price-pending-message><strong>${PRICE_PENDING_TITLE}</strong><small>${PRICE_PENDING_DETAIL}</small></div>`
-              : `${pricing.regularPrice && pricing.regularPrice > pricing.price ? `<s>${money(pricing.regularPrice)}</s>` : ''}<strong>${money(pricing.price)}</strong>${pricing.condition ? `<small>${escapeHtml(pricing.condition)}</small>` : ''}`}
+              : `${pricing.regularPrice && pricing.regularPrice > pricing.price ? `<s>${money(pricing.regularPrice)}</s>` : ''}<strong>${money(pricing.price)}</strong>${detallePrecioSecundario(product, pricing)}`}
           </div>
           ${isPricePending(product) ? '' : `<span class="modal-availability ${product.stock <= 0 || !product.available ? 'is-unavailable' : ''}">${escapeHtml(availabilityLabel(product))}</span>`}
         </div>

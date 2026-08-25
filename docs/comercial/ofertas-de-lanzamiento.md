@@ -1,13 +1,19 @@
-# Ofertas de lanzamiento — cómo se activan, y cinco propuestas
+# Ofertas de lanzamiento — qué se puede ofrecer, y qué no
 
 Este documento tiene dos partes. La primera es **el mecanismo**: cómo se destaca
 un producto en la tienda sin tocarle el precio, qué escribe eso en la base y cuál
 es la trampa que hay que conocer antes de escribir la primera etiqueta. La
-segunda son **cinco propuestas comerciales** con los precios reales de
-producción al 2026-08-25, para que el titular decida.
+segunda es **qué se puede ofrecer de verdad** con los precios y las compuertas
+reales de producción, para que el titular decida.
 
-Ninguna de las cinco está aplicada. Ninguna toca un precio. Este trabajo dejó la
-estructura lista; activar una promoción es una decisión del comercio.
+Nada está aplicado y nada toca un precio. Activar una promoción es una decisión
+del comercio.
+
+> **Revisión del 2026-08-25.** La sección 2 se reescribió entera. La versión
+> anterior recomendaba destacar el pack x12 como «el mejor precio por litro del
+> catálogo» —**es 8,7 % más caro por litro que la familiar de 2,25 L**— y
+> proponía dos combos que en producción no se pueden cobrar. Las tres
+> correcciones, con su aritmética, abren la sección 2.
 
 ---
 
@@ -98,91 +104,144 @@ Y el paso 2 otra vez.
 
 ---
 
-## 2 · Cinco propuestas para el fin de semana de apertura
+## 2 · Qué se puede ofrecer este fin de semana, y qué no
 
-Precios **reales de producción al 2026-08-25**. Ninguna está aplicada.
+Revisado contra producción el **2026-08-25**. Esta sección **reemplaza** a la
+anterior, que proponía cinco ofertas: **dos eran combos que en producción no se
+pueden cobrar**, **una afirmaba un ahorro que no existe** y **una dependía de una
+configuración que nadie había hecho**. Las tres correcciones abren la sección,
+con su aritmética, porque el error importa más que las propuestas.
 
-> **Sobre el margen.** El costo de compra de cada SKU no está en el sistema:
-> `products` guarda precio de venta y stock, no costo. Por eso cada propuesta
-> dice **qué costo unitario máximo la hace viable** al margen que el titular
-> quiera sostener, en vez de afirmar un margen que nadie puede calcular desde
-> acá. Con la factura del proveedor a mano, la cuenta es de un minuto.
+### CORRECCIÓN 1 · el pack x12 NO es el mejor precio por litro
 
-### Propuesta 1 · COMBO JUNTADA — dos familiares de 2,25 L
+La propuesta 3 anterior decía, textual, que «el pack YA es el mejor precio por
+litro del catálogo» y era la recomendación número uno del documento. La cuenta
+dice lo contrario:
+
+| producto | precio | litros | **$/L** |
+|---|---:|---:|---:|
+| Coca-Cola Original 2,25 L | $ 5.900 | 2,25 | **$ 2.622** |
+| Coca-Cola Original pack x12 · 500 ml | $ 17.100 | 6,00 | **$ 2.850** |
+| Coca-Cola Original PET 1,5 L | $ 4.990 | 1,50 | **$ 3.327** |
+| Coca-Cola Original lata 354 ml | $ 1.800 | 0,354 | **$ 5.085** |
+
+El pack es **8,7 % más caro por litro** que la botella familiar. Publicar aquella
+frase en la vidriera habría sido una **falsedad comercial en el fin de semana de
+apertura**: el cliente que compara paga más creyendo que ahorra.
+
+El más barato por litro del catálogo entero es la **Soda Manaos de 2 L a $ 875/L**,
+y entre las colas, la **familiar de 2,25 L**, que ya es `recomendado-01`.
+
+Lo que el pack sí ofrece es **formato**: doce envases individuales, que se enfrían
+y se reparten. Se vende por eso, no por precio.
+
+**Aplicado en esta versión, en el código y sin tocar ningún dato:** la tarjeta y
+la ficha de todo producto con `units_per_pack > 1` dicen ahora **«$ 1.425 por
+botella»** bajo el precio. Es una división, no una promoción: no afirma ahorro,
+no compara y no necesita ningún costo. Y deja que el cliente haga la única
+cuenta que la góndola no le hacía.
+
+### CORRECCIÓN 2 · un combo no se puede cobrar en producción
+
+Las propuestas 1 y 2 anteriores eran combos. En producción **ningún combo llega
+al cliente, y si llegara no se podría cobrar**. Son dos compuertas independientes,
+las dos activas hoy:
+
+1. `app.js` arranca los combos APAGADOS en producción y sólo los enciende la
+   respuesta del proveedor de pagos (`setComboCheckoutAvailability({ available:
+   !production })`). Mercado Pago no está configurado —`business_payment_settings`
+   tiene cero filas— así que nunca se encienden.
+2. Aunque se encendieran, `validateCartForCheckout` rechaza cualquier carrito con
+   combos que no pague con Mercado Pago: «Los combos se cobran con Mercado Pago».
+   El precio de un combo lo deriva Checkout Pro; la ruta directa de pedidos sólo
+   acepta líneas de producto.
+
+O sea que un combo no está bloqueado por margen: está bloqueado por **cobro**.
+Habilitarlo exige contratar y configurar Mercado Pago, que es una decisión
+comercial con credenciales, no un ajuste de catálogo.
+
+### CORRECCIÓN 3 · ningún descuento se puede aprobar todavía
+
+`unit_cost` está en **NULL en los 72 productos** de producción. Medido, no
+supuesto:
+
+```sql
+select count(*) filter (where unit_cost is not null) from public.products;  -- 0
+```
+
+Sin costo no hay margen que verificar, así que **este trabajo no baja ni un
+precio**. Cada propuesta de abajo dice exactamente qué dato falta para aprobarla.
+
+---
+
+### Lo que SÍ se puede hacer antes del viernes
+
+#### A · FIJAR EL ENVÍO Y EL MÍNIMO — no es una promoción, es configuración
+
+Hoy la tienda le dice a cada cliente **«Envío a domicilio $ 0»** en el resumen
+del checkout. Ese cero no lo puso el comercio. La auditoría de la propia base lo
+dice, y el Panel lo repite en pantalla:
+
+```
+business_config_audit · scope=delivery_pricing · actor_kind=service · actor_id=null
+  antes:   delivery_fee=null   minimum_delivery_subtotal=null
+  después: delivery_fee=0      minimum_delivery_subtotal=0
+  2026-08-18 01:11:26Z
+```
+
+> Panel → Horarios y cobertura → Qué se cambió:
+> **«El servidor editó envío y mínimo 17/08/2026, 22:11 — envío — → 0 · mínimo — → 0»**
+
+Es el único «descuento» que la tienda está publicando hoy, y nadie lo decidió.
+Si el comercio quiere regalar el envío el fin de semana de apertura, que sea una
+**decisión escrita**; si no, hay que ponerle precio antes de que entre el primer
+pedido.
+
+- **Dónde**: Panel → *Horarios y cobertura* → *Envío y pedido mínimo del comercio*
+- **Riesgo de no hacerlo**: cada entrega del fin de semana sale gratis
+- **Dato que falta**: cuánto cuesta un reparto, que lo sabe el comercio
+
+#### B · MOSTRAR EL PRECIO POR ENVASE EN LOS PACKS — hecho
+
+Ver la corrección 1. Ya está en el código de esta versión, sin tocar la base.
+
+#### C · UNA ETIQUETA DE LANZAMIENTO — barata, con una trampa conocida
+
+El vocabulario de la sección 1 permite destacar sin tocar precios. Candidatos
+naturales, todos con stock alto y foto propia:
+
+| SKU | precio | stock | etiqueta sugerida |
+|---|---:|---:|---|
+| `coca-cola-original-2250ml` | $ 5.900 | 24 | `lanzamiento` |
+| `sprite-original-2250ml` | $ 5.900 | 24 | `lanzamiento` |
+| `speed-original-473ml` | $ 2.850 | 24 | `oferta-finde` (previa del viernes) |
+
+**No está aplicado.** La curación de la vidriera la decidió el titular el
+2026-08-22 por escrito y no se pisa sin su visto bueno. Además cada escritura de
+`tags` dispara `products_fail_close_master_change` y saca el producto de venta
+hasta re-publicarlo: es la operación de DOS pasos de la sección 1, y no se hace
+sin alguien mirando.
+
+#### D · UN PRECIO DE LANZAMIENTO EN UN SOLO SKU — listo salvo el costo
+
+Si el comercio quiere un gancho real, el candidato más limpio es la familiar de
+2,25 L, que ya es la más vista de la góndola:
 
 | | |
 |---|---|
-| Qué | Dos gaseosas de 2,25 L a elección (Coca-Cola, Coca-Cola Zero, Sprite, Sprite Zero, Fanta) |
-| Precio normal | $ 11.800 (2 × $ 5.900) |
-| Precio propuesto | **$ 10.900** |
-| Descuento | $ 900 · 7,6 % |
-| Stock que lo soporta | 24 + 24 + 24 + 12 + 24 = 108 unidades |
-| Viable si | el costo unitario de la 2,25 L es ≤ $ 3.815 (margen 30 % sobre el precio promocional) |
+| Qué | Coca-Cola Original 2,25 L |
+| Precio hoy | $ 5.900 · $ 2.622 por litro |
+| Sugerido | **$ 5.400** · $ 2.400 por litro (−8,5 %) |
+| Stock | 24 unidades |
+| **Dato que falta** | el costo de compra de la botella. Con la factura del proveedor a mano, la cuenta es de un minuto: a $ 5.400 el margen del 30 % exige un costo ≤ $ 3.780 |
 
-Es la promoción más fácil de vender de la lista: cinco SKU la habilitan, todos con
-stock alto, y el 2,25 L es el formato de delivery por excelencia.
-
-### Propuesta 2 · COMBO PREVIA — energizante + gaseosa familiar
-
-| | |
-|---|---|
-| Qué | Una energizante (Speed 473, Red Bull 250, Monster Zero 473) + una gaseosa 2,25 L |
-| Precio normal | $ 8.750 a $ 9.150 según la energizante |
-| Precio propuesto | **$ 8.200** |
-| Descuento | $ 550 a $ 950 · 6 % a 10 % |
-| Stock que lo soporta | 24 + 24 + 12 energizantes |
-| Viable si | el costo del par es ≤ $ 5.740 (margen 30 %) |
-
-Apunta al ticket de viernes a la noche, que es exactamente el turno del
-lanzamiento.
-
-### Propuesta 3 · PACK AHORRO — el pack cerrado x12, ya cargado
-
-| | |
-|---|---|
-| Qué | Pack x12 de 500 ml (Coca-Cola Original, Coca-Cola Zero o Sprite) |
-| Precio normal | $ 17.100 · $ 1.425 por botella |
-| Precio propuesto | **sin cambio de precio: sólo etiqueta `destacado`** |
-| Por qué | El pack YA es el mejor precio por litro del catálogo, y hoy no se ve: cae al puesto 10 de la góndola |
-| Stock | 7 + 8 + 8 = 23 packs |
-| Riesgo | ninguno: no toca precio |
-
-Es la propuesta de mayor retorno por menor riesgo de las cinco. El trabajo no es
-bajar un precio, es **mostrar el que ya existe**.
-
-### Propuesta 4 · PACK FAMILIAR — tres familiares surtidas
-
-| | |
-|---|---|
-| Qué | Tres gaseosas de 2,25 L surtidas |
-| Precio normal | $ 17.700 |
-| Precio propuesto | **$ 15.900** |
-| Descuento | $ 1.800 · 10,2 % |
-| Comparar con | el pack x12 de 500 ml sale $ 17.100 por 6 L; esto son 6,75 L por $ 15.900 |
-| Viable si | el costo unitario es ≤ $ 3.710 (margen 30 %) |
-
-**Atención**: esta propuesta compite con el pack cerrado. Conviene activar la 3
-o la 4, no las dos el mismo fin de semana.
-
-### Propuesta 5 · LANZAMIENTO — envío bonificado el viernes y el sábado
-
-| | |
-|---|---|
-| Qué | Envío sin cargo por compras sobre un mínimo, viernes y sábado |
-| Precio de los productos | **sin cambios** |
-| Costo para el comercio | el del reparto, que hoy es $ 0 configurado (nadie lo fijó) |
-| Requiere antes | que el titular fije el costo de envío y el mínimo en el Panel |
-| Riesgo | el fee y el mínimo están en $ 0/$ 0 puestos por un script de plataforma, no por el comercio. Anunciar «envío sin cargo» sobre un valor que nadie fijó no es una promoción: es no haber configurado el envío |
-
-Es la única de las cinco que **no se puede activar hoy**, y por eso está: hay que
-fijar fee y mínimo en el Panel antes de que la tienda reciba tráfico, con o sin
-promoción.
+Un SKU y no cinco: es el que más se mira, el cambio se revierte con una línea y
+no depende de ningún motor de promociones.
 
 ---
 
 ## 3 · Recomendación, en una línea
 
-Para el fin de semana de apertura: **la 3 y la 1**. La 3 no toca ningún precio y
-pone a la vista el mejor precio por litro que el catálogo ya tiene; la 1 es la
-única que se explica sola en la tarjeta y tiene 108 unidades de stock detrás.
-La 5 no es opcional, pero no es una promoción: es configuración pendiente.
+**Fijar el envío y el mínimo (A) antes de que entre el primer pedido.** Es lo
+único de esta lista que no es opcional, no es una promoción, y hoy está
+regalando plata sin que nadie lo haya decidido. Lo demás puede esperar al lunes.

@@ -411,6 +411,19 @@
   background: var(--taba-subtle);
 }
 
+/*
+ * UN SELECTOR DE UNA SOLA OPCIÓN NO ES UN SELECTOR.
+ *
+ * `applyFulfillmentAvailability` esconde con `hidden` el modo que el comercio
+ * no ofrece. En producción el retiro está apagado, así que la rejilla de dos
+ * columnas quedaba con «Delivery» ocupando 157 px dentro de una caja de 332 px
+ * —medido a 390 px el 2026-08-25— y el hueco de la derecha se lee como un
+ * botón que no cargó. Con una sola opción visible, esa opción ocupa el renglón.
+ */
+.delivery-mode:has(> label[hidden]) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .delivery-mode label {
   position: relative;
   display: grid;

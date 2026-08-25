@@ -261,8 +261,19 @@ test('el catálogo reconcilia por identidad: 52 góndola + 4 packs + 4 unidades 
   /*
    * Las 12 altas siguen siendo 12 SKU aunque el inventario las vaya abriendo:
    * la que producción ya recibió pasa a `origen: produccion` con su precio real,
-   * y las que siguen cerradas conservan el origen del lote. Lo que no cambia
-   * para ninguna es que todavía no tienen packshot.
+   * y las que siguen cerradas conservan el origen del lote.
+   *
+   * Acá decía además que ninguna tenía packshot. Era cierto el día que se
+   * escribió —el propio comentario decía «todavía»— y dejó de serlo el
+   * 2026-08-25, cuando la cobertura premium fotografió las 33 comprables: la
+   * única alta que producción ya había recibido es justamente una de ellas.
+   * Exigir `imageUrl === null` pasó a prohibir que un alta abierta tenga su
+   * fotografía, que es lo contrario de lo que el catálogo busca.
+   *
+   * Lo que sí es invariante, y es lo que se comprueba, son las dos mitades:
+   * un alta que todavía no se recibió sigue cerrada y sin foto —no hay qué
+   * fotografiar en una góndola que no la tiene—, y un alta ya recibida puede
+   * tener foto, pero sólo la suya: archivo nombrado por su SKU y existente.
    */
   const { PRODUCTOS_PROPUESTOS } = await import('../catalog/gondola-retail-final-proposal.mjs');
   const porSku = new Map(skus.map((row) => [row.sku, row]));
@@ -270,10 +281,22 @@ test('el catálogo reconcilia por identidad: 52 góndola + 4 packs + 4 unidades 
   for (const propuesta of PRODUCTOS_PROPUESTOS) {
     const alta = porSku.get(propuesta.sku);
     assert.ok(alta, `${propuesta.sku}: el alta desapareció de la reconciliación`);
-    assert.equal(alta.imageUrl, null, `${propuesta.sku}: sin packshot, fallback TABA`);
     if (alta.origen === 'gondola-retail-final') {
       assert.equal(alta.available, false, `${propuesta.sku}: sin recibir, tiene que seguir cerrada`);
+      assert.equal(alta.imageUrl, null, `${propuesta.sku}: sin recibir, no tiene por qué tener packshot`);
+      continue;
     }
+    if (alta.imageUrl === null) continue;
+    assert.equal(
+      path.basename(alta.imageUrl).startsWith(propuesta.sku),
+      true,
+      `${propuesta.sku} muestra ${path.basename(alta.imageUrl)}: el nombre del archivo no lo nombra`,
+    );
+    assert.equal(
+      fs.existsSync(path.join(ROOT, alta.imageUrl)),
+      true,
+      `${propuesta.sku} declara ${alta.imageUrl} y el archivo no existe`,
+    );
   }
 
   // La base anterior al lote sigue reconstruible: 60 exactos.

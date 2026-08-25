@@ -47,7 +47,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 import path from 'node:path';
 import process from 'node:process';
-import { IDENTIDAD_PANEL } from '../e2e-production-sale/identidades.mjs';
+import { correoDelPanel, IDENTIDAD_PANEL } from '../e2e-production-sale/identidades.mjs';
 import { leerSecreto, objetivoCompleto } from '../e2e-production-sale/secretos-windows.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
@@ -103,13 +103,21 @@ ok(`${BASE} · ref ${REF}`);
 
 // ── 3. La credencial de la máquina ───────────────────────────────────────────
 paso('IDENTIDAD');
-const correo = process.env[IDENTIDAD_PANEL.variableCorreo] || IDENTIDAD_PANEL.correoPorDefecto;
-const secreto = leerSecreto(IDENTIDAD_PANEL.credencial);
-if (!secreto) {
+const correo = correoDelPanel();
+const credencial = leerSecreto(IDENTIDAD_PANEL.credencial);
+if (!credencial?.secreto) {
   abortar(
-    `no hay credencial guardada en ${objetivoCompleto(IDENTIDAD_PANEL.credencial)}.\n`
+    `no hay contraseña guardada en ${objetivoCompleto(IDENTIDAD_PANEL.credencial)}.\n`
     + '        Se aprovisiona con: node scripts/e2e-production-sale/provisionar-identidad-panel.mjs',
   );
+}
+/*
+ * Que la credencial guardada sea de OTRA cuenta no es un detalle: significaría
+ * abrir una sesión que nadie previó con una contraseña que nadie revisó. Es la
+ * misma comprobación que hace sesiones.mjs antes de entrar al Panel.
+ */
+if (credencial.usuario && credencial.usuario.toLowerCase() !== correo.toLowerCase()) {
+  abortar(`la credencial guardada es de ${credencial.usuario} y el contrato dice ${correo}.`);
 }
 ok(`${correo} · credencial leída del Credential Manager (rol esperado: ${IDENTIDAD_PANEL.rol})`);
 
@@ -121,7 +129,7 @@ try {
   const login = await fetch(`${BASE}/auth/v1/token?grant_type=password`, {
     method: 'POST',
     headers: { apikey, 'content-type': 'application/json' },
-    body: JSON.stringify({ email: correo, password: secreto }),
+    body: JSON.stringify({ email: correo, password: credencial.secreto }),
     signal: AbortSignal.timeout(30_000),
   });
   if (!login.ok) {

@@ -156,6 +156,126 @@
     },
     {
       "ok": true,
+      "t": "Coca-Cola Original · 354 ml · master · 200 · 42.9 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Coca-Cola Original · 354 ml · thumbnail · 200 · 13.2 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Coca-Cola Original · 1,5 L · master · 200 · 29.1 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Coca-Cola Original · 1,5 L · thumbnail · 200 · 8.2 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Coca-Cola Zero · 354 ml · master · 200 · 38.7 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Coca-Cola Zero · 354 ml · thumbnail · 200 · 11.2 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Fanta Naranja · 2,25 L · master · 200 · 23.1 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Fanta Naranja · 2,25 L · thumbnail · 200 · 7.2 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Powerade Mountain Blast · 500 ml · master · 200 · 21.4 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Powerade Mountain Blast · 500 ml · thumbnail · 200 · 6.9 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Red Bull · 250 ml · master · 200 · 60.0 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Red Bull · 250 ml · thumbnail · 200 · 15.8 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Red Bull Sugarfree · 250 ml · master · 200 · 67.9 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Red Bull Sugarfree · 250 ml · thumbnail · 200 · 16.3 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Pepsi · 2 L · master · 200 · 28.6 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Pepsi · 2 L · thumbnail · 200 · 6.3 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Pepsi Black · 1,5 L · master · 200 · 29.6 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Pepsi Black · 1,5 L · thumbnail · 200 · 6.2 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "7UP · 2 L · master · 200 · 24.0 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "7UP · 2 L · thumbnail · 200 · 4.8 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Villa del Sur · 600 ml · master · 200 · 19.0 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Villa del Sur · 600 ml · thumbnail · 200 · 5.9 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Villavicencio con gas · 500 ml · master · 200 · 26.0 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Villavicencio con gas · 500 ml · thumbnail · 200 · 6.5 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Villavicencio sin gas · 1,5 L · master · 200 · 30.7 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Villavicencio sin gas · 1,5 L · thumbnail · 200 · 7.5 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Speed · 473 ml · master · 200 · 23.2 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Speed · 473 ml · thumbnail · 200 · 8.5 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Speed Zero · 473 ml · master · 200 · 29.1 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Speed Zero · 473 ml · thumbnail · 200 · 10.7 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
       "t": "el sitio arranca"
     },
     {
@@ -164,11 +284,11 @@
     },
     {
       "ok": true,
-      "t": "18 tarjetas con fotografía propia"
+      "t": "33 tarjetas con fotografía propia"
     },
     {
       "ok": true,
-      "t": "15 tarjetas siguen con el recurso propio de TABA"
+      "t": "0 tarjetas siguen con el recurso propio de TABA"
     },
     {
       "ok": true,
@@ -196,7 +316,7 @@
     },
     {
       "ok": true,
-      "t": "ninguna de las 16 imágenes pedidas viene de un retailer"
+      "t": "ninguna de las 25 imágenes pedidas viene de un retailer"
     },
     {
       "ok": true,
@@ -545,14 +665,284 @@
       "sku": "gatorade-cool-blue-500ml",
       "tipo": "image/webp",
       "url": "https://la-taba.pages.dev/assets/products/gatorade-cool-blue-500ml-e3fcbd3e1e29bb61-thumb-b41adc6e858c3a90.webp"
+    },
+    {
+      "bytes": 43922,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "f2cf7dff4b87047dafb9a540bd472567fbbc239b6b4aefa08f8f36ce064431a8",
+      "sku": "coca-cola-original-lata-354ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/coca-cola-original-lata-354ml-3c2cefd7fe4bd597-f2cf7dff4b87047d.webp"
+    },
+    {
+      "bytes": 13498,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "cd767440cdb0ff405b5aedd3ebd746a694ab303657dc80b012142277825f41fe",
+      "sku": "coca-cola-original-lata-354ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/coca-cola-original-lata-354ml-3c2cefd7fe4bd597-thumb-cd767440cdb0ff40.webp"
+    },
+    {
+      "bytes": 29810,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "43114ca6977868ded4cf6e0648219863b86b2ab85d427bff016edaae2da4b637",
+      "sku": "coca-cola-original-pet-1500ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/coca-cola-original-pet-1500ml-5781315ce9f8f02f-43114ca6977868de.webp"
+    },
+    {
+      "bytes": 8390,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "af5f576fc2f48d8f9feff145a94036694fe39944c87b8817ff1a0454f23dfd9a",
+      "sku": "coca-cola-original-pet-1500ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/coca-cola-original-pet-1500ml-5781315ce9f8f02f-thumb-af5f576fc2f48d8f.webp"
+    },
+    {
+      "bytes": 39670,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "87f477f474494b3394880c7929d52193d37b56d93400ce50e96a017d2ecfc977",
+      "sku": "coca-cola-zero-lata-354ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/coca-cola-zero-lata-354ml-4d1955a80c87ab0e-87f477f474494b33.webp"
+    },
+    {
+      "bytes": 11430,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "7816226aa02505f5cc1e5f40f24b90d054d19cd8a6e5a7b3b449a89cae8b3393",
+      "sku": "coca-cola-zero-lata-354ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/coca-cola-zero-lata-354ml-4d1955a80c87ab0e-thumb-7816226aa02505f5.webp"
+    },
+    {
+      "bytes": 23650,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "9ef1596448794ce74aa676484cc3f9550fc16274e918fc9958b59ad9a6921d80",
+      "sku": "fanta-naranja-2250ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/fanta-naranja-2250ml-797064494952a9a1-9ef1596448794ce7.webp"
+    },
+    {
+      "bytes": 7350,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "3a996fad3a89104c238e6074f86499766ca7a2453335451dde26d5bf6600674a",
+      "sku": "fanta-naranja-2250ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/fanta-naranja-2250ml-797064494952a9a1-thumb-3a996fad3a89104c.webp"
+    },
+    {
+      "bytes": 21896,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "4d73a0a156b31cb624bb3a245c2cde51631f20b87151389fa795f9304b21f881",
+      "sku": "powerade-mountain-blast-500ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/powerade-mountain-blast-500ml-1ea05e4f6f192e2f-4d73a0a156b31cb6.webp"
+    },
+    {
+      "bytes": 7082,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "61387947b7df6f68cd07be6dd5eb974bbadde095f517a0a7fab1292bc1c5e327",
+      "sku": "powerade-mountain-blast-500ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/powerade-mountain-blast-500ml-1ea05e4f6f192e2f-thumb-61387947b7df6f68.webp"
+    },
+    {
+      "bytes": 61452,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "d9018a7780c8e25b8c1bbb82ff0d5c7b4be8d35844987d176f7061ffc080c40a",
+      "sku": "red-bull-original-250ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/red-bull-original-250ml-2d86788f7b853c11-d9018a7780c8e25b.webp"
+    },
+    {
+      "bytes": 16212,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "4f0870826f9f8bcec813b1d872d658105b6f9c776374e72deb4e05368df68afa",
+      "sku": "red-bull-original-250ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/red-bull-original-250ml-2d86788f7b853c11-thumb-4f0870826f9f8bce.webp"
+    },
+    {
+      "bytes": 69530,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "8f27b231957a48bb5f602ac97e6d454c8d43d9466a5a6fa6ad7caa24a352e44f",
+      "sku": "red-bull-sin-azucar-250ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/red-bull-sin-azucar-250ml-f0aeca853a67db50-8f27b231957a48bb.webp"
+    },
+    {
+      "bytes": 16698,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "86cbad78e9e62eb24297f05dd0264348c0520720f112fbdf6112dd103de0ac28",
+      "sku": "red-bull-sin-azucar-250ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/red-bull-sin-azucar-250ml-f0aeca853a67db50-thumb-86cbad78e9e62eb2.webp"
+    },
+    {
+      "bytes": 29318,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "86e8267fb10c961af6294890566b686f0b03f9f72fb5eb0879faf395581d3b88",
+      "sku": "pepsi-original-2000ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/pepsi-original-2000ml-b4298e4382912cf4-86e8267fb10c961a.webp"
+    },
+    {
+      "bytes": 6456,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "815a946c396e0a932e7b2fcc88da1d8fa89db1dd288383d28779316752f416d6",
+      "sku": "pepsi-original-2000ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/pepsi-original-2000ml-b4298e4382912cf4-thumb-815a946c396e0a93.webp"
+    },
+    {
+      "bytes": 30266,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "b09188d077fa3a4fa8d272cd762633d4fb7c876f31fcb12dc73d3088d58482c3",
+      "sku": "pepsi-black-1500ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/pepsi-black-1500ml-52009e2651c40a42-b09188d077fa3a4f.webp"
+    },
+    {
+      "bytes": 6312,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "a562d12e0fb5d26b0d784d432b120e35fc0a34a05290fc5fbef758d2359afa67",
+      "sku": "pepsi-black-1500ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/pepsi-black-1500ml-52009e2651c40a42-thumb-a562d12e0fb5d26b.webp"
+    },
+    {
+      "bytes": 24556,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "f32d43104a61239cac763f834081f74251e23d68cb5a1bce92d1fc25da2f38ef",
+      "sku": "seven-up-original-2000ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/seven-up-original-2000ml-2ed6deb5fa431d4b-f32d43104a61239c.webp"
+    },
+    {
+      "bytes": 4884,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "556d7a39b04331244604ac7ae77fc3278ae0fb94279b5d0f5076e1d6a13a80f2",
+      "sku": "seven-up-original-2000ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/seven-up-original-2000ml-2ed6deb5fa431d4b-thumb-556d7a39b0433124.webp"
+    },
+    {
+      "bytes": 19496,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "d5bf4cdecf9d2d2624802b2ff1515c4f38fc4c551401a3b41e0f107a07a5fcb6",
+      "sku": "villa-del-sur-sin-gas-600ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/villa-del-sur-sin-gas-600ml-81e9d897ac5c7200-d5bf4cdecf9d2d26.webp"
+    },
+    {
+      "bytes": 6036,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "542436e98431ce8a00ffb9ecb92a87e79c1e3348eb795e6b43719d769b84fd18",
+      "sku": "villa-del-sur-sin-gas-600ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/villa-del-sur-sin-gas-600ml-81e9d897ac5c7200-thumb-542436e98431ce8a.webp"
+    },
+    {
+      "bytes": 26626,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "016bbed61ae8c02680c8f10dcb4e4093b71663e11ce58622b3ff0f7799954de7",
+      "sku": "villavicencio-con-gas-500ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/villavicencio-con-gas-500ml-aa4659b148790b42-016bbed61ae8c026.webp"
+    },
+    {
+      "bytes": 6612,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "2b03472d9e7fb7644e3fad908d2380d7965df8b9fac9d847037e8129e5e57492",
+      "sku": "villavicencio-con-gas-500ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/villavicencio-con-gas-500ml-aa4659b148790b42-thumb-2b03472d9e7fb764.webp"
+    },
+    {
+      "bytes": 31418,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "b28075add15596af4d2436e1611fcc57a19c52f9ac3e73757e4fc348c983677d",
+      "sku": "villavicencio-sin-gas-1500ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/villavicencio-sin-gas-1500ml-2fb407c8fa1c2b59-b28075add15596af.webp"
+    },
+    {
+      "bytes": 7664,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "6b0e4ee75373e6331c1f70c8f8441b7b93bdc4a521302ae02205e24ede6b4a81",
+      "sku": "villavicencio-sin-gas-1500ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/villavicencio-sin-gas-1500ml-2fb407c8fa1c2b59-thumb-6b0e4ee75373e633.webp"
+    },
+    {
+      "bytes": 23736,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "6521a9b08adab1f37b012fd125038e24403f7ca08f134a9a2e9470e92434f41a",
+      "sku": "speed-original-473ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/speed-original-473ml-f66e48f651a6ab20-6521a9b08adab1f3.webp"
+    },
+    {
+      "bytes": 8730,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "6451dbece18fd4c581dcddba8ab04360a513f13b4814c442cab3124fdd40f0ca",
+      "sku": "speed-original-473ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/speed-original-473ml-f66e48f651a6ab20-thumb-6451dbece18fd4c5.webp"
+    },
+    {
+      "bytes": 29822,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "b30d764f0575c866afb897cfcfd08dbe0940e1288e6d30f6c82a982e6bb06486",
+      "sku": "speed-zero-473ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/speed-zero-473ml-89bed41bf09b31b4-b30d764f0575c866.webp"
+    },
+    {
+      "bytes": 10976,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "4d5d6597b333f1122b98fdf32f327aecbe9c432fb4cb41ee1062d659908e5067",
+      "sku": "speed-zero-473ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/speed-zero-473ml-89bed41bf09b31b4-thumb-4d5d6597b333f112.webp"
     }
   ],
   "resumen": {
-    "conFoto": 18,
-    "conPlaceholder": 15,
+    "conFoto": 33,
+    "conPlaceholder": 0,
     "tarjetas": 33
   },
   "rotas": 0,
   "schemaVersion": 1,
-  "veredicto": "18 OFFICIAL PACKSHOTS LIVE"
+  "veredicto": "33 OFFICIAL PACKSHOTS LIVE"
 }

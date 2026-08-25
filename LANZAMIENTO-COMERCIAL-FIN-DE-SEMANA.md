@@ -385,6 +385,29 @@ Tablero con contadores, alertas escritas en castellano llano con su riesgo y su
 acción, y las pestañas de operación completas: Pedidos, Preparación, Recepción,
 Horarios y cobertura, Dispositivos, Abrir/Cerrar.
 
+### Cómo se entera el comercio de que entró un pedido
+
+Tres capas, medidas en el código y en la base:
+
+| cuándo | qué | alcance |
+|---|---|---|
+| al instante | un **aviso flotante**: «Nuevo pedido LT-00NN» —el código público, no un identificador interno— | sólo si el Panel está abierto y alguien mira |
+| al instante | el contador **«Pedidos nuevos»** del tablero, que es permanente | sólo si el Panel está abierto |
+| **a los 10 minutos** | la vigilancia levanta `ORDER_NOT_ACCEPTED` (ACTION_REQUIRED): «Entró un pedido y todavía nadie lo aceptó» | queda en *Qué resolver* aunque nadie mire |
+
+**Lo que falta es el sonido.** `createBusinessSoundService` (dos tonos, 880 y
+1175 Hz) y `createBusinessNotificationService` (sonido + notificación del
+sistema) **existen en el repositorio y ningún archivo los instancia** para el
+Panel de producción: `app.js` sólo llama a `showToast`. Es el mismo patrón que
+el contacto del comercio (§1.2) — la pieza está hecha y no está enchufada.
+
+En un mostrador un viernes a la noche, ésa es justamente la señal que sirve. La
+cota real hoy es **10 minutos** de silencio antes de que la vigilancia avise, y
+esa cota sólo se paga si nadie está mirando la pantalla. No se enchufó acá
+porque el audio del navegador depende de una interacción previa y no se puede
+certificar sin una persona escuchando: es una mejora con prueba física, no un
+arreglo de escritorio.
+
 ### Vigilancia
 
 | medición | resultado |
@@ -503,3 +526,41 @@ workflow existe para cerrar.
 Lo único que se escribió en producción es un **cliente de prueba anónimo** con
 su perfil y su dirección, que es el mecanismo previsto del arnés
 (`--aprovisionar`) y no toca ningún dato del comercio.
+
+---
+
+## 7 · Veredicto
+
+### `NO-GO — TODAVÍA NO LANZAR`
+
+No por el software. Por estas cinco cosas, en este orden:
+
+1. **Fijar el envío y el mínimo** desde el Panel. Hoy la tienda regala cada
+   reparto por un valor por omisión que nadie decidió.
+2. **Cerrar LT-0001 y LT-0002**, que ocupan 2 de las 3 entregas del único
+   repartidor. Si entra tráfico real el viernes, sólo puede tomar una.
+3. **Cargar las zonas de entrega y encender la exigencia.** Hoy se acepta un
+   pedido a cualquier dirección.
+4. **Publicar un contacto.** Requiere ejecutar `set_business_whatsapp_contact` o
+   agregarle al Panel el formulario que le falta (§1.2).
+5. **Cargar los horarios**, o asumir que la tienda se abre y se cierra a mano
+   desde *Panel → Abrir / Cerrar*.
+
+Con 1, 2 y 3 hechas —que son minutos en el Panel más una entrega cerrada en el
+teléfono— la tienda puede recibir tráfico real. La 4 y la 5 son de calidad de
+servicio, no de riesgo comercial.
+
+Después de cada una:
+
+```
+npm run vender:listo
+```
+
+hasta que diga **LISTO PARA VENDER**.
+
+### Y una compuerta física, que no depende del comercio
+
+El circuito completo —incluida la entrega con PIN— se certifica con el teléfono
+del repartidor conectado por USB, con el comando de §5. Mientras eso no ocurra,
+`delivered` es un estado que la operación **nunca ejecutó en producción**: los
+dos pedidos reales se detuvieron justo ahí.

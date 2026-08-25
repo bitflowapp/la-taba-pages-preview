@@ -9,17 +9,17 @@ import {
 } from './core/business-location.js';
 
 export const BRAND = Object.freeze({
-  productName: 'TABA2',
+  productName: 'La Taba',
   tagline: 'Bebidas, pedidos y retiro en una experiencia clara.',
   shortTagline: 'Tienda de bebidas',
   // Nombre del COMERCIO (distinto del nombre de producto). Es una semilla
   // editable desde Panel Negocio → Configuración: la superficie nunca escribe
   // el nombre a mano, siempre lee `businessConfig.businessName`.
-  demoBusinessName: 'La Taba 2',
+  demoBusinessName: 'La Taba',
   demoBusinessSubtitle: 'Tienda de bebidas',
   demoBusinessClaim: 'Tus bebidas, ahora a un toque.',
   demoBusinessClaimSecondary: 'Pedí. Seguí. Disfrutá.',
-  contactWhatsappMessage: 'Hola, vi TABA2 y quiero más información.',
+  contactWhatsappMessage: 'Hola, vi La Taba y quiero más información.',
 });
 
 export const BUSINESS_CONFIG = Object.freeze({
@@ -106,8 +106,8 @@ export const BUSINESS_CONFIG = Object.freeze({
     },
     {
       id: 'la-taba-demo',
-      label: 'Local TABA2 demo',
-      addressLabel: 'Local demo · TABA2',
+      label: 'Local La Taba demo',
+      addressLabel: 'Local demo · La Taba',
       city: 'Neuquén',
       lat: BUSINESS_POINT.lat,
       lng: BUSINESS_POINT.lng,

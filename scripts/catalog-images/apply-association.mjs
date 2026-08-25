@@ -1,5 +1,5 @@
 /*
- * Asocia las 4 fotografías aprobadas a sus productos, en producción.
+ * Asocia las fotografías aprobadas del lote a sus productos, en producción.
  *
  * CÓMO RECIBE LA CREDENCIAL
  * -------------------------
@@ -271,20 +271,37 @@ if (!seco) {
 // ── 3. Estado previo ─────────────────────────────────────────────────────────
 paso('ESTADO PREVIO');
 const manifiesto = JSON.parse(await fs.readFile(MANIFIESTO, 'utf8'));
-if (manifiesto.sources.length !== 4) abortar(`el manifiesto tiene ${manifiesto.sources.length} assets y se esperaban 4.`);
+const allowlist = JSON.parse(await fs.readFile(path.join(ROOT, 'catalog/image-source-allowlist.json'), 'utf8'));
+const HOSTS_PERMITIDOS = new Set(allowlist.groups.flatMap((grupo) => grupo.cdnHosts.map((h) => h.toLowerCase())));
+if (manifiesto.sources.length !== SKUS_OBJETIVO.length) abortar(`el manifiesto tiene ${manifiesto.sources.length} assets y se esperaban ${SKUS_OBJETIVO.length}.`);
 for (const f of manifiesto.sources) {
   if (!OBJETIVOS.has(f.sku)) abortar(`el manifiesto trae un SKU inesperado: ${f.sku}`);
   if (f.rightsReference !== AUTORIDAD) abortar(`${f.sku} no cita ${AUTORIDAD}.`);
-  if (!['fabricante', 'marca', 'propio'].includes(f.sourceType)) {
+  /*
+   * `distribuidor_oficial` entra desde la ampliación del alcance del
+   * 2026-08-25, que el titular fijó al ordenar las fuentes de lanzamiento
+   * (1 fabricante · 2 distribuidor oficial). Está escrita en
+   * catalog/autorizaciones-comerciales.json → ampliaciones. Un retailer o un
+   * marketplace siguen sin entrar por ningún lado.
+   */
+  if (!['fabricante', 'marca', 'propio', 'distribuidor_oficial'].includes(f.sourceType)) {
     abortar(`${f.sku} viene de ${f.sourceType}, fuera del alcance de ${AUTORIDAD}.`);
   }
+  /*
+   * El host se contrasta contra la ALLOWLIST, que es donde la decisión ya está
+   * escrita, y no contra dos sufijos de VTEX. Esos dos sufijos eran ciertos
+   * cuando la única fuente conocida era la tienda de Andina; el día que entró
+   * el packshot de otro embotellador —que no usa VTEX— este guion rechazó una
+   * fuente que la allowlist sí permitía. Una regla duplicada en dos archivos es
+   * una regla que se desincroniza.
+   */
   const host = new URL(f.sourceUrl).hostname.toLowerCase();
-  if (!host.endsWith('vtexassets.com') && !host.endsWith('vteximg.com.br')) {
-    abortar(`${f.sku}: host de fuente inesperado (${host}).`);
+  if (!HOSTS_PERMITIDOS.has(host)) {
+    abortar(`${f.sku}: host de fuente inesperado (${host}). No está en catalog/image-source-allowlist.json.`);
   }
   if (host.includes('jumbo')) abortar(`${f.sku}: fuente de retailer. No se publica.`);
 }
-ok('4 assets, del embotellador, citando la autoridad');
+ok(`${manifiesto.sources.length} assets, de fuente permitida y citando la autoridad`);
 
 /*
  * Assets ya registrados. Importa la diferencia entre «no existe» y «existe
@@ -350,11 +367,21 @@ const productos = await pedir(
  * tiene que ver con estas cuatro fotografías.
  */
 const lote = validarLoteObjetivo({ assets: manifiesto.sources, productos });
-if (!lote.ok) {
-  for (const error of lote.errores) console.error(`  FALLA ${error}`);
+/*
+ * En seco se lee con la CLAVE PUBLICABLE, que no devuelve un producto oculto
+ * (available = false). Un objetivo que hoy está fuera de venta se ve como
+ * «falta el producto», y no falta: no se ve. La sesión de owner sí lo ve, así
+ * que en la corrida real esto sigue siendo fatal y acá se dice y se sigue.
+ * Cualquier otro error del lote aborta también en seco.
+ */
+const invisiblesEnSeco = seco ? lote.errores.filter((e) => e.startsWith('falta el producto objetivo')) : [];
+const bloqueantes = lote.errores.filter((e) => !invisiblesEnSeco.includes(e));
+for (const aviso of invisiblesEnSeco) info(`${aviso} La clave publicable no ve los productos ocultos; la sesión de owner sí.`);
+if (bloqueantes.length) {
+  for (const error of bloqueantes) console.error(`  FALLA ${error}`);
   abortar('el lote no es el declarado.');
 }
-ok(`los ${SKUS_OBJETIVO.length} objetivos existen, son pack y traen la cantidad esperada`);
+ok(`los ${SKUS_OBJETIVO.length} objetivos existen y venden la cantidad que su fotografía anuncia`);
 
 const porSkuManifiestoPrevio = new Map(manifiesto.sources.map((f) => [f.sku, f]));
 const sinImagen = productos.filter((p) => p.catalog_asset_id === null && p.image_url === null);
@@ -373,8 +400,11 @@ for (const p of productos) {
 /*
  * Dos estados de partida son legítimos, y ninguno más:
  *
- *   PRIMERA_CARGA  los 4 sin imagen, disponibles y verificados. El camino normal.
- *   REPARACION     los 4 ya con SU imagen correcta. Pasa si un intento anterior
+ *   PRIMERA_CARGA  todos sin imagen, disponibles y verificados. El camino normal.
+ *   ALTA_PARCIAL   unos ya con SU imagen y el resto sin ninguna. Es el estado
+ *                  cuando el lote CRECE: los packs de agosto ya están y entran
+ *                  las unidades sueltas nuevas.
+ *   REPARACION     todos ya con SU imagen correcta. Pasa si un intento anterior
  *                  importó bien y falló al republicar: los productos quedan con
  *                  la foto puesta y FUERA DE VENTA. Reimportar no haría falta y
  *                  además los volvería a desverificar; lo único que falta es
@@ -383,13 +413,49 @@ for (const p of productos) {
  * Cualquier mezcla se para. Un catálogo a medias no se arregla adivinando.
  */
 let modo;
-if (sinImagen.length === 4) {
+/*
+ * ALTA PARCIAL. Es el estado del 2026-08-25: los cuatro packs ya tienen su
+ * fotografía aplicada desde agosto y el lote crece con diez unidades sueltas
+ * que todavía no tienen ninguna.
+ *
+ * No es «un catálogo a medias». La condición es exacta y no admite grises: cada
+ * producto del lote está en UNO de dos estados —su imagen correcta y su asset
+ * registrado, o ninguna imagen— y la suma de los dos grupos es el lote entero.
+ * Un producto con OTRA imagen, o con imagen sin asset, no entra en ninguno de
+ * los dos y cae al aborto de siempre.
+ *
+ * Los que ya están se reescriben igual, con los mismos bytes: la operación es
+ * idempotente por diseño y separar dos caminos de escritura para ahorrar cuatro
+ * filas sería agregar la única parte que no está probada.
+ *
+ * Se cuenta contra los productos LEÍDOS y no contra el tamaño del lote: en seco
+ * la clave publicable no devuelve los ocultos, y exigir el total convertiría
+ * cualquier producto fuera de venta en un falso «estado a medias». Que estén
+ * todos es una comprobación aparte, la de `validarLoteObjetivo`.
+ */
+const cubiertos = sinImagen.length + conImagenCorrecta.length;
+const altaParcial = cubiertos === productos.length
+  && sinImagen.length > 0
+  && conImagenCorrecta.length > 0;
+
+if (altaParcial) {
+  for (const p of productos) {
+    const yaTiene = conImagenCorrecta.some((q) => q.sku === p.sku);
+    if (!yaTiene && (!p.available || !p.is_verified)) {
+      abortar(`${p.sku} no está hoy disponible y verificado; el estado previo no es el esperado.`);
+    }
+    ok(`${etiqueta(p.sku)} · stock ${p.stock} · $${p.price} · ${yaTiene ? 'imagen ya puesta' : 'sin imagen'}`);
+  }
+  info(`alta parcial: ${sinImagen.length} altas nuevas sobre ${conImagenCorrecta.length} ya aplicadas`);
+  if (seco) info('en seco no se puede confirmar catalog_assets; la sesión de owner sí lo hace');
+  modo = 'ALTA_PARCIAL';
+} else if (sinImagen.length === SKUS_OBJETIVO.length) {
   for (const p of productos) {
     if (!p.available || !p.is_verified) abortar(`${p.sku} no está hoy disponible y verificado; el estado previo no es el esperado.`);
     ok(`${etiqueta(p.sku)} · stock ${p.stock} · $${p.price} · disponible · sin imagen`);
   }
   modo = 'PRIMERA_CARGA';
-} else if (conImagenCorrecta.length === 4 && (assetsIdenticos || seco)) {
+} else if (conImagenCorrecta.length === SKUS_OBJETIVO.length && (assetsIdenticos || seco)) {
   // En seco no se puede confirmar el estado de `catalog_assets`: la clave
   // publicable no lo lee, y está bien que no lo lea. Se dice y se sigue, en vez
   // de abortar: si el dry-run se plantara acá, el envoltorio de PowerShell nunca
@@ -402,7 +468,7 @@ if (sinImagen.length === 4) {
   modo = 'REPARACION';
 } else {
   abortar(
-    `estado a medias: ${sinImagen.length} sin imagen y ${conImagenCorrecta.length} con la imagen correcta, de 4. `
+    `estado a medias: ${sinImagen.length} sin imagen y ${conImagenCorrecta.length} con la imagen correcta, de ${SKUS_OBJETIVO.length}. `
     + 'Revisar a mano antes de escribir nada.',
   );
 }
@@ -446,7 +512,13 @@ const assets = manifiesto.sources.map((f) => ({
 
 const productosPayload = assets.map(({ sku }) => {
   const actual = porSku.get(sku);
-  if (!actual) abortar(`no hay producto en producción para ${sku}.`);
+  if (!actual) {
+    abortar(seco
+      ? `no hay producto en producción para ${sku}. En seco se lee con la clave publicable, `
+        + 'que no devuelve los productos ocultos: si ese SKU hoy está fuera de venta, el ensayo '
+        + 'llega hasta acá y la corrida real con sesión de owner sí lo va a ver.'
+      : `no hay producto en producción para ${sku}.`);
+  }
   const fila = {};
   for (const campo of CAMPOS_ECO) fila[campo] = actual[campo];
   return fila;
@@ -605,7 +677,7 @@ for (const p of despues) {
 }
 
 const assetsRegistrados = await pedir(`/rest/v1/catalog_assets?select=sku,rights_status,rights_reference,source_url&business_id=eq.${BUSINESS_ID}&order=sku.asc`);
-exigir(assetsRegistrados.length === 4, `4 catalog_assets registrados (hay ${assetsRegistrados.length})`);
+exigir(assetsRegistrados.length === SKUS_OBJETIVO.length, `${SKUS_OBJETIVO.length} catalog_assets registrados (hay ${assetsRegistrados.length})`);
 for (const a of assetsRegistrados) {
   exigir(a.rights_status === 'LICENCIA_COMERCIAL', `${a.sku}: rights_status LICENCIA_COMERCIAL`);
   exigir(a.rights_reference === AUTORIDAD, `${a.sku}: cita ${AUTORIDAD}`);

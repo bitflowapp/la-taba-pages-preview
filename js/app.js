@@ -196,7 +196,14 @@ function runCartAction(action, productId, callback) {
   if (now - previous < 120) return { ok: false, duplicate: true, message: '' };
   recentCartActions.set(key, now);
   setTimeout(() => recentCartActions.delete(key), 350);
-  return callback();
+  const resultado = callback();
+  /*
+   * Poner algo en el carrito es el momento en que la invitación a instalar deja
+   * de ser un favor y pasa a ser útil: la persona ya sabe qué es esta tienda.
+   * Antes se abría sola 2,5 s después de cargar, o sea antes del primer precio.
+   */
+  if (action === 'add' && resultado?.ok) pwaInstall?.notifyPurchaseIntent();
+  return resultado;
 }
 
 function refreshOpenProductModal(productId) {

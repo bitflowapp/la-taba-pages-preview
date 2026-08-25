@@ -4,10 +4,14 @@ import { BUSINESS_CONFIG } from '../js/config.js';
 import { BUSINESS_LOCATION } from '../js/core/business-location.js';
 
 test('BUSINESS_CONFIG exposes the expected business settings', () => {
-  // Nombre del COMERCIO. Es distinto del nombre de producto (BRAND.productName,
-  // que sigue siendo TABA2 en el título, el manifiesto y la presentación).
-  assert.equal(BUSINESS_CONFIG.businessName, 'La Taba 2');
-  assert.equal(BUSINESS_CONFIG.name, 'La Taba 2');
+  // Nombre del COMERCIO, y desde el lanzamiento comercial también el del
+  // producto: la tienda se llama «La Taba» en la pestaña, en el manifiesto y en
+  // la pantalla. «La Taba 2» era una marca con número de versión, y era lo
+  // único legible durante los primeros segundos de la primera visita.
+  // El nombre de DIRECTORIO PÚBLICO sigue siendo «La Taba 2» y vive aparte, en
+  // el contrato de ubicación: es con lo que Maps encuentra el local.
+  assert.equal(BUSINESS_CONFIG.businessName, 'La Taba');
+  assert.equal(BUSINESS_CONFIG.name, 'La Taba');
   assert.equal(BUSINESS_CONFIG.subtitle, 'Tienda de bebidas');
   assert.equal(BUSINESS_CONFIG.address, 'Mendoza 827, Neuquén');
   // La coordenada ya está contrastada (ficha de Google Maps + numeración

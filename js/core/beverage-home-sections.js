@@ -13,6 +13,10 @@ export const BEVERAGE_HOME_CATEGORY_ORDER = Object.freeze([
   // efectivamente comprable no aparece en la home, como todas.
   'jugos',
   'energizantes',
+  // Las isotónicas tenían chip en la tira de categorías y NINGUNA sección
+  // detrás: tocarlo llevaba a un catálogo filtrado, pero en la home los tres
+  // productos no aparecían en ningún carrusel.
+  'isotonicas',
   'fernet',
   'aperitivos',
   'vinos',
@@ -32,6 +36,7 @@ export const BEVERAGE_HOME_SECTION_DEFINITIONS = Object.freeze([
   Object.freeze({ id: 'aguas', title: 'Aguas', kind: 'category', categoryIds: ['aguas', 'aguas-saborizadas'] }),
   Object.freeze({ id: 'jugos', title: 'Jugos', kind: 'category', categoryIds: ['jugos'] }),
   Object.freeze({ id: 'energizantes', title: 'Energizantes', kind: 'category', categoryIds: ['energizantes'] }),
+  Object.freeze({ id: 'isotonicas', title: 'Isotónicas', kind: 'category', categoryIds: ['isotonicas'] }),
   Object.freeze({
     id: 'fernet-y-aperitivos',
     title: 'Fernet y aperitivos',
@@ -147,19 +152,42 @@ function productPriority(product) {
   return best;
 }
 
+/*
+ * EL ORDEN DE LA GÓNDOLA LO DECIDE EL COMERCIO, NO ESTE ARCHIVO.
+ *
+ * Hasta acá el primer criterio era `productPriority`: una lista de veintiséis
+ * marcas escrita en el cliente. Con eso `sort_order` —que es la curación que el
+ * comercio aplicó a producción, familiar primero— sólo desempataba DENTRO de
+ * una misma marca, y en la práctica no ordenaba nada.
+ *
+ * Lo que costaba, medido el 2026-08-25: la curación de producción abre con
+ * Coca-Cola 2,25 · Coca-Cola Zero 2,25 · Fanta 2,25 · Sprite 2,25, que es
+ * exactamente la primera fila que un ecommerce de bebidas quiere. La lista de
+ * marcas ponía todas las Coca-Cola y todas las Pepsi primero —siete SKU— y
+ * Sprite y Fanta quedaban fuera del tramo visible del rail de Gaseosas.
+ *
+ * Ahora manda `sort_order`, y la lista de marcas queda de desempate para lo que
+ * el comercio todavía no ordenó. La consecuencia práctica es la que importa:
+ * reordenar la vidriera pasa a ser una acción del Panel y no un cambio de
+ * código.
+ *
+ * Lo que NO se puede comprar sigue yendo al final, antes que cualquier otro
+ * criterio: un producto agotado no encabeza una góndola por bien curado que esté.
+ */
 function compareBeverageProducts(left, right) {
-  const leftPriority = productPriority(left);
-  const rightPriority = productPriority(right);
-  if (leftPriority !== rightPriority) return leftPriority - rightPriority;
-
   const leftOrderable = isPurchasableBeverageProduct(left) ? 0 : 1;
   const rightOrderable = isPurchasableBeverageProduct(right) ? 0 : 1;
   if (leftOrderable !== rightOrderable) return leftOrderable - rightOrderable;
 
   const leftSort = Number.isFinite(Number(left?.sortOrder)) ? Number(left.sortOrder) : 0;
   const rightSort = Number.isFinite(Number(right?.sortOrder)) ? Number(right.sortOrder) : 0;
-  return leftSort - rightSort
-    || String(left?.brand || left?.name || '').localeCompare(String(right?.brand || right?.name || ''), 'es')
+  if (leftSort !== rightSort) return leftSort - rightSort;
+
+  const leftPriority = productPriority(left);
+  const rightPriority = productPriority(right);
+  if (leftPriority !== rightPriority) return leftPriority - rightPriority;
+
+  return String(left?.brand || left?.name || '').localeCompare(String(right?.brand || right?.name || ''), 'es')
     || String(left?.sku || left?.id || '').localeCompare(String(right?.sku || right?.id || ''), 'es');
 }
 

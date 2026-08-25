@@ -90,11 +90,108 @@ function varianteEsLaCapacidad(variante, capacidadFormateada, product) {
   return v === normalizar(`${valor} ${unidad}`);
 }
 
+/*
+ * Las palabras con las que una LÍNEA de producto dice «sin azúcar» en su propio
+ * nombre. Si el título ya trae una, repetir la variante debajo es ruido:
+ * «Coca-Cola Zero · Sin azúcar» dice dos veces lo mismo y le roba el renglón a
+ * la capacidad, que es lo que el cliente sí necesita para elegir.
+ */
+const SUBMARCAS_SIN_AZUCAR = ['zero', 'black', 'light', 'sugarfree', 'sin azucar', 'diet'];
+const VARIANTES_SIN_AZUCAR = ['sin azucar', 'zero', 'sugarfree', 'light', 'diet'];
+
+/*
+ * Envases que MERECEN nombrarse en la tarjeta. La botella PET es la convención
+ * de la góndola —lo normal, lo que no hace falta decir—; una lata o un sifón
+ * cambian el producto que llega a la puerta y por eso se dicen. Nombrar «Botella
+ * PET» en veinte tarjetas de veintitrés sería gastar el renglón en la constante.
+ */
+const ENVASES_QUE_SE_DICEN = new Set(['lata', 'sifon', 'sifon-pet', 'botella-vidrio', 'tetra', 'tetra-pak', 'pouch']);
+
+/**
+ * El título del producto tal como lo lee el cliente.
+ *
+ * POR QUÉ NO ES `product.name` A SECAS: en el catálogo productivo la misma
+ * bebida se llama de dos maneras según el formato —«Coca-Cola» la de 2,25 L y
+ * «Coca-Cola Original» la de 1,5 L— porque el nombre es dato maestro y lo
+ * cargaron dos altas distintas. Cambiarlo en la base es una modificación de
+ * dato maestro: el trigger `products_fail_close_master_change` despublicaría el
+ * producto. Así que la coherencia se resuelve donde corresponde, al mostrar.
+ *
+ * «Original» se cae del título porque no distingue nada: la ausencia de una
+ * submarca —Zero, Black, Sugarfree— ya significa original, y así los dos
+ * formatos de Coca-Cola pasan a llamarse igual en toda la tienda.
+ */
+export function cardTitle(product = {}) {
+  const nombre = String(product?.name || '').trim();
+  if (!nombre) return '';
+  const normalizado = normalizar(nombre);
+  for (const atributo of ATRIBUTOS_QUE_NO_SON_NOMBRE) {
+    if (normalizado === atributo || !normalizado.endsWith(` ${atributo}`)) continue;
+    const recortado = nombre.slice(0, nombre.length - atributo.length).trim();
+    if (recortado) return recortado;
+  }
+  return nombre;
+}
+
+/*
+ * Colas del nombre que NO son parte del nombre: son atributos del envase, y la
+ * línea de presentación ya los dice.
+ *
+ * Es una lista cerrada y corta a propósito. «Sin gas» describe el agua;
+ * «Manzana» ES el producto —Aquarius Manzana no es un Aquarius con un atributo—
+ * y por eso los sabores no están acá. Recortar un sabor del título arruinaría el
+ * reconocimiento, que es justo lo que la tarjeta tiene que dar en un segundo.
+ *
+ * Lo destapó Villavicencio: el catálogo entrega su nombre como «Villavicencio
+ * Sin gas» y el de Benedictino como «Benedictino», los dos con `variant = 'Sin
+ * gas'`. Dos aguas del mismo estante, con el mismo dato, escritas distinto: una
+ * decía el atributo dos veces y la otra una.
+ */
+const ATRIBUTOS_QUE_NO_SON_NOMBRE = Object.freeze(['sin gas', 'con gas', 'original']);
+
+/** ¿El título ya dice que es la versión sin azúcar? */
+function tituloDiceSinAzucar(product) {
+  const titulo = normalizar(cardTitle(product));
+  return SUBMARCAS_SIN_AZUCAR.some((marca) => titulo.includes(marca));
+}
+
+/**
+ * El nombre completo para quien no ve la pantalla, y para los `aria-label`.
+ *
+ * Sin esto la góndola ofrecía dos botones «Agregar Coca-Cola al pedido» para
+ * dos productos distintos —la de 2,25 L y la de 1,5 L—, que en un lector de
+ * pantalla es una tienda sin variantes.
+ */
+export function productAccessibleName(product = {}) {
+  return [cardTitle(product), cardPresentationLine(product)].filter(Boolean).join(' ');
+}
+
+/**
+ * ¿La «variante» es en realidad la ficha técnica pegada?
+ *
+ * Los catálogos importados traen variantes como «Botella PET · 1,5 L · Unidad»:
+ * no es una variante, es la presentación entera escrita de nuevo. Imprimirla al
+ * lado de la capacidad daba «1,5 L · Botella PET · 1,5 L · Unidad», que dice el
+ * litraje dos veces, filtra el envase que la góndola no nombra y termina con la
+ * palabra «Unidad», que no informa nada.
+ *
+ * Había una regla para el caso del PACK y ninguna para el de la unidad, así que
+ * el defecto vivía en el catálogo de demostración —y en cualquier alta futura
+ * que se cargue con la misma forma— sin que ninguna prueba lo viera: las
+ * afirmaciones eran «contiene 1,5 L» y «contiene Botella PET», y las dos son
+ * ciertas sobre la línea rota.
+ *
+ * El separador es la señal: una variante de verdad es una palabra —«Zero»,
+ * «Pomelo», «Sin gas»—, nunca una lista.
+ */
+function varianteEsFichaTecnica(variante) {
+  return /·|\|/.test(String(variante || ''));
+}
+
 /**
  * La línea de la tarjeta.
  *
- *   unidad:  «1,5 L» · «2,25 L · Sin azúcar» (la variante entra sólo si el
- *            nombre no la dice ya)
+ *   unidad:  «1,5 L» · «354 ml · Lata» · «2,25 L · Sin gas»
  *   pack:    «Pack x6 · 473 ml» (la capacidad es LA DE CADA ENVASE, que es la
  *            convención vigente del catálogo)
  *
@@ -110,15 +207,26 @@ export function cardPresentationLine(product = {}) {
   const esPack = Number.isFinite(porPack) && porPack > 1;
 
   const variante = String(product.presentation || product.variant || '').trim();
-  const nombre = normalizar(product.name);
+  // Contra el TÍTULO que se muestra, no contra el nombre crudo: si el título ya
+  // recortó «Sin gas», la presentación tiene que volver a decirlo o el dato
+  // desaparece de la tarjeta.
+  const nombre = normalizar(cardTitle(product));
   const varianteAporta = variante
     && !nombre.includes(normalizar(variante))
     && normalizar(variante) !== 'unidad'
-    && !varianteEsLaCapacidad(variante, capacidad, product);
+    && !varianteEsLaCapacidad(variante, capacidad, product)
+    // «Original» no distingue: lo que distingue es que NO diga Zero.
+    && normalizar(variante) !== 'original'
+    && !(VARIANTES_SIN_AZUCAR.includes(normalizar(variante)) && tituloDiceSinAzucar(product))
+    && !varianteEsFichaTecnica(variante);
+
+  const envase = String(product.packageType || product.packagingType || product.packaging_type || '').trim().toLowerCase();
+  const envaseAporta = ENVASES_QUE_SE_DICEN.has(envase);
 
   const partes = [];
   if (esPack) partes.push(`Pack x${porPack}`);
   if (capacidad) partes.push(capacidad);
+  if (envaseAporta) partes.push(packagingLabel(envase));
   if (varianteAporta && !esPack) partes.push(variante);
   if (partes.length) return partes.join(' · ');
   if (varianteAporta) return variante;

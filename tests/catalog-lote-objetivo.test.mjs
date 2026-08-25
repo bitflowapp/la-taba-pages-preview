@@ -30,43 +30,56 @@ function producto(sku, extra = {}) {
     is_active: true,
     is_verified: true,
     sku,
-    sold_as_pack: true,
+    sold_as_pack: esperado ? esperado.unitsPerPack > 1 : true,
     stock: 8,
     units_per_pack: esperado ? esperado.unitsPerPack : 1,
     ...extra,
   };
 }
 
-const LOS_CUATRO = () => SKUS_OBJETIVO.map((sku) => producto(sku));
+const EL_LOTE = () => SKUS_OBJETIVO.map((sku) => producto(sku));
 const ASSETS_DE = (skus) => skus.map((sku) => ({ sku }));
 
-test('los 4 objetivos, tal como están en producción → PASA', () => {
+test('los objetivos del lote, tal como están en producción → PASA', () => {
   const { ok, errores, seleccionados } = validarLoteObjetivo({
     assets: ASSETS_DE(SKUS_OBJETIVO),
-    productos: LOS_CUATRO(),
+    productos: EL_LOTE(),
   });
   assert.deepEqual(errores, []);
   assert.equal(ok, true);
-  assert.equal(seleccionados.length, 4);
+  assert.equal(seleccionados.length, SKUS_OBJETIVO.length);
 });
 
-test('CONTROL NEGATIVO: falta uno de los 4 → FALLA', () => {
-  const productos = LOS_CUATRO().filter((p) => p.sku !== 'sprite-botella-pet-500-ml-pack-x12');
+test('CONTROL NEGATIVO: falta uno del lote → FALLA', () => {
+  const productos = EL_LOTE().filter((p) => p.sku !== 'sprite-botella-pet-500-ml-pack-x12');
   const { ok, errores } = validarLoteObjetivo({ assets: ASSETS_DE(SKUS_OBJETIVO), productos });
   assert.equal(ok, false);
   assert.match(errores.join(' '), /falta el producto objetivo sprite-botella-pet-500-ml-pack-x12/);
 });
 
-test('CONTROL NEGATIVO: uno dejó de ser sold_as_pack → FALLA', () => {
-  const productos = LOS_CUATRO();
-  productos[0].sold_as_pack = false;
+test('CONTROL NEGATIVO: un pack que pasa a venderse por unidad → FALLA', () => {
+  const productos = EL_LOTE();
+  const pack = productos.find((p) => p.units_per_pack > 1);
+  pack.sold_as_pack = false;
   const { ok, errores } = validarLoteObjetivo({ assets: ASSETS_DE(SKUS_OBJETIVO), productos });
   assert.equal(ok, false);
-  assert.match(errores.join(' '), /dejó de venderse como pack/);
+  assert.match(errores.join(' '), /se vende por unidad y su fotografía es de un pack/);
+});
+
+test('CONTROL NEGATIVO: una unidad que pasa a venderse como pack → FALLA', () => {
+  // El eje que importa no es «ser pack»: es que la cantidad que se vende sea la
+  // que la fotografía anuncia. Una botella sola en la foto y un pack en la
+  // góndola le miente al cliente igual que al revés.
+  const productos = EL_LOTE();
+  const unidad = productos.find((p) => p.units_per_pack === 1);
+  unidad.sold_as_pack = true;
+  const { ok, errores } = validarLoteObjetivo({ assets: ASSETS_DE(SKUS_OBJETIVO), productos });
+  assert.equal(ok, false);
+  assert.match(errores.join(' '), /se vende como pack y su fotografía es de una unidad suelta/);
 });
 
 test('CONTROL NEGATIVO: units_per_pack distinto → FALLA, y dice por qué importa', () => {
-  const productos = LOS_CUATRO();
+  const productos = EL_LOTE();
   productos[0].units_per_pack = 6; // el packshot anuncia x12
   const { ok, errores } = validarLoteObjetivo({ assets: ASSETS_DE(SKUS_OBJETIVO), productos });
   assert.equal(ok, false);
@@ -88,14 +101,14 @@ test('un quinto pack legítimo que NO es objetivo → PASA y queda afuera', () =
     stock: 4,
     units_per_pack: 6,
   };
-  const productos = [...LOS_CUATRO(), quinto];
+  const productos = [...EL_LOTE(), quinto];
 
   const { ok, errores, seleccionados } = validarLoteObjetivo({
     assets: ASSETS_DE(SKUS_OBJETIVO),
     productos,
   });
   assert.equal(ok, true, errores.join(' | '));
-  assert.equal(seleccionados.length, 4, 'el quinto no entra al lote');
+  assert.equal(seleccionados.length, SKUS_OBJETIVO.length, 'el ajeno no entra al lote');
   assert.equal(seleccionados.some((p) => p.sku === quinto.sku), false);
 
   const ajenos = fueraDelLote(productos);
@@ -110,16 +123,16 @@ test('doscientos packs ajenos tampoco molestan', () => {
   }));
   const { ok, seleccionados } = validarLoteObjetivo({
     assets: ASSETS_DE(SKUS_OBJETIVO),
-    productos: [...LOS_CUATRO(), ...muchos],
+    productos: [...EL_LOTE(), ...muchos],
   });
   assert.equal(ok, true, 'el conjunto se elige por lista, no por propiedad');
-  assert.equal(seleccionados.length, 4);
+  assert.equal(seleccionados.length, SKUS_OBJETIVO.length);
 });
 
 test('CONTROL NEGATIVO: el lote intenta incluir un SKU extra → FALLA', () => {
   const { ok, errores } = validarLoteObjetivo({
     assets: ASSETS_DE([...SKUS_OBJETIVO, 'quilmes-clasica-lata-473ml-pack-6']),
-    productos: LOS_CUATRO(),
+    productos: EL_LOTE(),
   });
   assert.equal(ok, false);
   assert.match(errores.join(' '), /incluye un SKU que no es objetivo: quilmes-clasica-lata-473ml-pack-6/);
@@ -128,7 +141,7 @@ test('CONTROL NEGATIVO: el lote intenta incluir un SKU extra → FALLA', () => {
 test('CONTROL NEGATIVO: el lote deja afuera un objetivo → FALLA', () => {
   const { ok, errores } = validarLoteObjetivo({
     assets: ASSETS_DE(SKUS_OBJETIVO.slice(0, 3)),
-    productos: LOS_CUATRO(),
+    productos: EL_LOTE(),
   });
   assert.equal(ok, false);
   assert.match(errores.join(' '), /no incluye el objetivo/);
@@ -137,16 +150,16 @@ test('CONTROL NEGATIVO: el lote deja afuera un objetivo → FALLA', () => {
 test('CONTROL NEGATIVO: el lote nombra un objetivo dos veces → FALLA', () => {
   const { ok, errores } = validarLoteObjetivo({
     assets: ASSETS_DE([...SKUS_OBJETIVO, SKUS_OBJETIVO[0]]),
-    productos: LOS_CUATRO(),
+    productos: EL_LOTE(),
   });
   assert.equal(ok, false);
   assert.match(errores.join(' '), /más de una vez/);
 });
 
-test('CONTROL NEGATIVO: catálogo vacío → FALLA con los 4 faltantes', () => {
+test('CONTROL NEGATIVO: catálogo vacío → FALLA con todos los faltantes', () => {
   const { ok, errores } = validarLoteObjetivo({ assets: [], productos: [] });
   assert.equal(ok, false);
-  assert.equal(errores.filter((e) => /falta el producto objetivo/.test(e)).length, 4);
+  assert.equal(errores.filter((e) => /falta el producto objetivo/.test(e)).length, SKUS_OBJETIVO.length);
 });
 
 test('los objetivos y sus cantidades son los del manifiesto de imágenes', async () => {

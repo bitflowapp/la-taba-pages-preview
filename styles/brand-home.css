@@ -239,7 +239,17 @@ body[data-active-view="home"] .topbar-address .address-chip-text small {
 }
 
 /* Fila 2 — HISTORIAS. Emblema + un círculo por historia, en fila. Se desplaza
-   sola si hay más de las que entran; sin historias no existe. */
+   sola si hay más de las que entran; sin historias no existe.
+
+   Y «no existe» tiene que ser literal. Sin historias publicadas la fila seguía
+   ocupando su alto para dibujar UN disco con el logo, que ya está en la barra
+   superior y en el h1: 88px de la primera pantalla gastados en repetir la marca
+   por tercera vez, justo arriba del primer producto. Medido el 2026-08-25: 383
+   de los 844px del pliegue eran cromo antes de la primera bebida. */
+.brand-stories-strip:has([data-stories-state='empty']) {
+  display: none;
+}
+
 .brand-stories-strip {
   display: flex;
   align-items: flex-start;
@@ -742,10 +752,16 @@ body[data-active-view="home"] .home-section-title small {
   font-size: 12px;
 }
 
+/* «Ver todos», en UN renglón. Sin esto la caja del botón se encoge con el
+   título y a 320-390px partía la frase en dos —«Ver / todos»— justo encima de
+   la primera fila de producto: dos palabras cortas apiladas leen como un
+   error de maquetación, y es lo primero que se ve de la vidriera. */
 body[data-active-view="home"] .home-section-head button {
+  flex: 0 0 auto;
   color: var(--brand-red-ink);
   font-size: 13px;
   font-weight: 850;
+  white-space: nowrap;
 }
 
 body[data-active-view="home"] .home-catalog-preview-section {

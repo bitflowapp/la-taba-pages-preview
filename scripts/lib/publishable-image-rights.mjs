@@ -26,6 +26,7 @@ export const PRODUCT_IMAGE_NAMESPACES = ['assets/products/', 'assets/catalog/'];
 // recurso que existe justamente para cuando no hay foto propia.
 export const OWN_ASSETS = new Set(['assets/products/beverage-placeholder.svg']);
 
+
 const IMAGE = /\.(webp|jpe?g|png|avif|svg)$/i;
 const normalize = (value) => String(value || '').replaceAll('\\', '/');
 

@@ -319,9 +319,22 @@ body[data-active-view="rider"] .floating-cart {
     justify-self: start;
   }
 
+  /* Dos columnas es la grilla del TELÉFONO. Este bloque arranca en 820px, así
+     que también gobernaba la tablet y la ventana de escritorio a media
+     pantalla: a 768px la tarjeta medía 490px de ancho y entraban dos productos
+     en toda la pantalla, con el envase flotando en medio de un plato enorme.
+     De 600px para arriba hay lugar para tres, y la tarjeta vuelve a medir lo
+     que mide en un teléfono. */
   .product-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 11px;
+  }
+
+  @media (min-width: 600px) {
+    .product-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
   }
 }
 
@@ -784,17 +797,21 @@ body[data-active-view="rider"] .floating-cart {
     font-size: 14px;
   }
 
+  /* 12,5 y no 11. Este renglón es el LITRAJE, que es el dato con el que se
+     elige entre una Coca-Cola de 2,25 L y una de 1,5 L: a 11px era el texto más
+     chico de la tienda, medido en los dos motores y en los tres anchos, y es lo
+     que el cliente tiene que poder leer sin acercar el teléfono. */
   .product-body p {
-    font-size: 11px;
+    font-size: 12.5px;
   }
 
-  /* 18 y no 17. En teléfono la tarjeta es lo único que se ve, y el precio es
+  /* 20 y no 17. En teléfono la tarjeta es lo único que se ve, y el precio es
      lo que decide: a 17px quedaba a un punto del nombre del producto y las dos
-     líneas competían. Un punto de diferencia no cambia el alto de la caja —la
-     interlínea del pie ya reservaba más— y sí cambia qué se lee primero. */
+     líneas competían. Contra los 14px del nombre en este ancho, 20 da un ratio
+     de 1,43: hay una sola cosa que se mira primero. */
   .price strong,
   .price-amounts strong {
-    font-size: 18px;
+    font-size: 20px;
   }
 
   .add-text {

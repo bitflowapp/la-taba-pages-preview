@@ -33,9 +33,23 @@ test('la góndola no repite una tarjeta comprable idéntica a otra', async ({ pa
   expect(firmas.length).toBeGreaterThan(0);
   expect(new Set(firmas).size, 'dos tarjetas comprables con el mismo texto').toBe(firmas.length);
 
-  // Las dos latas de Speed dejaron de ser indistinguibles.
-  await expect(page.locator('[data-product-grid] .product-card', { hasText: 'Speed Unlimited Original' })).toHaveCount(1);
-  await expect(page.locator('[data-product-grid] .product-card', { hasText: 'Speed Unlimited Zero Sugar' })).toHaveCount(1);
+  /*
+   * Las dos latas de Speed dejaron de ser indistinguibles.
+   *
+   * Se afirmaba con el texto «Speed Unlimited Original», y ese nombre ya no se
+   * escribe: «Original» no distingue nada —lo que distingue es que NO diga
+   * Zero— así que sale del título y la tarjeta dice «Speed Unlimited». Lo que
+   * esta prueba fija es lo mismo de antes, ahora sin depender de esa palabra:
+   * hay exactamente una lata sin azúcar y una con, y sus textos son distintos.
+   */
+  const speed = await page.evaluate(() => [...document.querySelectorAll('[data-product-grid] .product-card')]
+    .map((card) => card.innerText.replace(/\s+/g, ' ').trim())
+    .filter((texto) => texto.startsWith('Speed Unlimited')));
+  expect(speed.filter((texto) => /Zero Sugar/.test(texto))).toHaveLength(1);
+  expect(speed.filter((texto) => !/Zero Sugar/.test(texto))).toHaveLength(1);
+  expect(new Set(speed).size).toBe(speed.length);
+  // Y la tarjeta dice el envase, que es lo que cambia lo que llega a la puerta.
+  for (const texto of speed) expect(texto).toContain('473 ml · Lata');
   await guards.assertClean();
 });
 
@@ -65,9 +79,18 @@ test('el carrito y el checkout muestran la presentación minorista y el precio d
 
   const linea = page.locator('[data-cart-list] li, [data-cart-list] article, [data-cart-list] > *').first();
   await expect(linea).toContainText('Heineken');
-  await expect(linea).toContainText('Unidad');
+  /*
+   * La línea del carrito dice la PRESENTACIÓN, y la presentación es el litraje
+   * y el envase, no la palabra «Unidad». Decía «Unidad» porque así viene la
+   * variante en la base; con cero packs en góndola esa palabra estaba en todas
+   * las líneas y no distinguía ninguna, que es justo lo contrario de lo que un
+   * carrito tiene que hacer cuando el cliente revisa antes de pagar.
+   */
+  await expect(linea).toContainText('473 ml');
+  await expect(linea).toContainText('Lata');
   await expect(linea).toContainText('$ 3.900');
   await expect(linea).not.toContainText('Pack');
+  await expect(linea).not.toContainText('lata-');
 
   // El resumen del checkout habla del mismo producto y del mismo importe.
   await expect(page.locator('[data-order-summary]')).toContainText('$ 3.900');
@@ -99,12 +122,18 @@ test('ningún pack de abastecimiento queda en la góndola ni se puede pedir', as
     has: page.locator('[data-add-product="coca-cola-original-pet-1500ml"]'),
   });
   await expect(unidad).toContainText('1,5 L');
-  // La tarjeta declara el ENVASE, no la coletilla "Unidad". Con cero packs en
-  // góndola esa palabra aparecía en las ochenta tarjetas y no distinguía
-  // ninguna; lo que separa la unidad del pack sigue fijado arriba —el SKU del
-  // pack no tiene tarjeta y ninguna tarjeta comprable dice "pack x N"— y en el
-  // carrito, donde la línea del pedido sí nombra la presentación completa.
-  await expect(unidad).toContainText('Botella PET');
+  /*
+   * La tarjeta NO declara «Unidad», que no distingue nada, ni «Botella PET»,
+   * que es la convención de la góndola: lo normal, y por eso no se nombra
+   * —decirlo en veinte tarjetas de veintitrés sería gastar el renglón en la
+   * constante—. Lo que sí se nombra es lo que cambia lo que llega a la puerta:
+   * una lata, un sifón. Lo que separa la unidad del pack sigue fijado arriba
+   * —el SKU del pack no tiene tarjeta y ninguna tarjeta comprable dice «pack
+   * x N»— y en el carrito, donde la línea nombra la presentación completa.
+   */
+  await expect(unidad).not.toContainText('Botella PET');
+  await expect(unidad).not.toContainText('botella-pet');
+  await expect(unidad).not.toContainText('Unidad');
   await expect(unidad).toContainText('Precio próximamente');
   await expect(unidad.locator('[data-add-product]')).toBeDisabled();
   await guards.assertClean();

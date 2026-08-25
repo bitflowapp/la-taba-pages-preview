@@ -1,0 +1,375 @@
+{
+  "origen": "http://127.0.0.1:18190",
+  "etiqueta": "LOCAL1",
+  "superficies": [
+    {
+      "nombre": "LOCAL1-01-home-iphone-se-pliegue",
+      "archivo": "artifacts/taba-premium-catalog/local1/LOCAL1-01-home-iphone-se-pliegue.png",
+      "completa": false
+    },
+    {
+      "nombre": "LOCAL1-01-home-iphone-14-pliegue",
+      "archivo": "artifacts/taba-premium-catalog/local1/LOCAL1-01-home-iphone-14-pliegue.png",
+      "completa": false
+    },
+    {
+      "nombre": "LOCAL1-01-home-iphone-14-completa",
+      "archivo": "artifacts/taba-premium-catalog/local1/LOCAL1-01-home-iphone-14-completa.png",
+      "completa": true
+    },
+    {
+      "nombre": "LOCAL1-01-home-iphone-plus-pliegue",
+      "archivo": "artifacts/taba-premium-catalog/local1/LOCAL1-01-home-iphone-plus-pliegue.png",
+      "completa": false
+    },
+    {
+      "nombre": "LOCAL1-02-recomendados",
+      "archivo": "artifacts/taba-premium-catalog/local1/LOCAL1-02-recomendados.png",
+      "completa": false
+    },
+    {
+      "nombre": "LOCAL1-03-catalogo-todas",
+      "archivo": "artifacts/taba-premium-catalog/local1/LOCAL1-03-catalogo-todas.png",
+      "completa": false
+    },
+    {
+      "nombre": "LOCAL1-03b-gaseosas",
+      "archivo": "artifacts/taba-premium-catalog/local1/LOCAL1-03b-gaseosas.png",
+      "completa": false
+    },
+    {
+      "nombre": "LOCAL1-04-energizantes",
+      "archivo": "artifacts/taba-premium-catalog/local1/LOCAL1-04-energizantes.png",
+      "completa": false
+    },
+    {
+      "nombre": "LOCAL1-06-busqueda-zero",
+      "archivo": "artifacts/taba-premium-catalog/local1/LOCAL1-06-busqueda-zero.png",
+      "completa": false
+    },
+    {
+      "nombre": "LOCAL1-07-carrito",
+      "archivo": "artifacts/taba-premium-catalog/local1/LOCAL1-07-carrito.png",
+      "completa": false
+    },
+    {
+      "nombre": "LOCAL1-07-carrito-completo",
+      "archivo": "artifacts/taba-premium-catalog/local1/LOCAL1-07-carrito-completo.png",
+      "completa": true
+    }
+  ],
+  "medidas": {
+    "invitacion_instalar_en_primera_visita": true,
+    "pliegue_iphone-se": {
+      "alturaViewport": 568,
+      "tarjetasEnPliegue": 12,
+      "preciosEnPliegue": 12,
+      "imagenesEnPliegue": 13,
+      "desbordeHorizontal": false,
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    "pliegue_iphone-14": {
+      "alturaViewport": 844,
+      "tarjetasEnPliegue": 20,
+      "preciosEnPliegue": 20,
+      "imagenesEnPliegue": 21,
+      "desbordeHorizontal": false,
+      "scrollWidth": 390,
+      "clientWidth": 390
+    },
+    "pliegue_iphone-plus": {
+      "alturaViewport": 932,
+      "tarjetasEnPliegue": 20,
+      "preciosEnPliegue": 20,
+      "imagenesEnPliegue": 21,
+      "desbordeHorizontal": false,
+      "scrollWidth": 430,
+      "clientWidth": 430
+    },
+    "recomendados": {
+      "cantidad": 12,
+      "titulos": [
+        "Coca-Cola 2,25 L $ 5.900 +Agregar",
+        "Coca-Cola Zero 2,25 L $ 5.900 +Agregar",
+        "Sprite 2,25 L $ 5.900 +Agregar",
+        "Fanta Naranja 2,25 L $ 5.900 +Agregar",
+        "Pepsi 2 L $ 3.800 +Agregar",
+        "Benedictino 2,25 L $ 2.250 +Agregar",
+        "Villavicencio Sin gas 1,5 L $ 2.400 +Agregar",
+        "Coca-Cola Original Pack x12 · 500 ml $ 17.100 +Agregar",
+        "Paso de los Toros Tónica 1,5 L $ 3.250 +Agregar",
+        "Aquarius Pomelo 2,25 L $ 2.650 +Agregar",
+        "Red Bull 250 ml $ 2.800 +Agregar",
+        "Speed 473 ml $ 2.850 +Agregar"
+      ]
+    },
+    "tarjetas_catalogo": {
+      "columnas": 2,
+      "anchoGrilla": 366,
+      "muestras": [
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Coca-Cola 2,25 L · Original $ 5.900 +Agregar"
+        },
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Coca-Cola Zero 2,25 L · Sin azúcar $ 5.900 +Agregar"
+        },
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Fanta Naranja 2,25 L $ 5.900 +Agregar"
+        },
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Sprite 2,25 L · Original $ 5.900 +Agregar"
+        },
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Sprite Zero 2,25 L · Sin azúcar $ 5.900 +Agregar"
+        },
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "7UP 2 L · Original $ 3.800 +Agregar"
+        },
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Pepsi 2 L · Original $ 3.800 +Agregar"
+        },
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Coca-Cola Original 1,5 L $ 4.990 +Agregar"
+        },
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Pepsi Black 1,5 L · Sin azúcar $ 2.650 +Agregar"
+        },
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Coca-Cola Original Pack x12 · 500 ml $ 17.100 +Agregar"
+        },
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Coca-Cola Zero Pack x12 · 500 ml $ 17.100 +Agregar"
+        },
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Sprite Pack x12 · 500 ml $ 17.100 +Agregar"
+        }
+      ]
+    },
+    "tarjetas_gaseosas": {
+      "columnas": 2,
+      "anchoGrilla": 366,
+      "muestras": [
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Coca-Cola 2,25 L · Original $ 5.900 +Agregar"
+        },
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Coca-Cola Zero 2,25 L · Sin azúcar $ 5.900 +Agregar"
+        },
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Fanta Naranja 2,25 L $ 5.900 +Agregar"
+        },
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Sprite 2,25 L · Original $ 5.900 +Agregar"
+        },
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Sprite Zero 2,25 L · Sin azúcar $ 5.900 +Agregar"
+        },
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "7UP 2 L · Original $ 3.800 +Agregar"
+        },
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Pepsi 2 L · Original $ 3.800 +Agregar"
+        },
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Coca-Cola Original 1,5 L $ 4.990 +Agregar"
+        },
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Pepsi Black 1,5 L · Sin azúcar $ 2.650 +Agregar"
+        },
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Coca-Cola Original Pack x12 · 500 ml $ 17.100 +Agregar"
+        },
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Coca-Cola Zero Pack x12 · 500 ml $ 17.100 +Agregar"
+        },
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Sprite Pack x12 · 500 ml $ 17.100 +Agregar"
+        }
+      ]
+    },
+    "tarjetas_energizantes": {
+      "columnas": 2,
+      "anchoGrilla": 366,
+      "muestras": [
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Monster Green Zero 473 ml · Sin azúcar $ 3.250 +Agregar"
+        },
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Speed 473 ml · Original $ 2.850 +Agregar"
+        },
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Speed Zero 473 ml · Sin azúcar $ 2.850 +Agregar"
+        },
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Red Bull 250 ml · Original $ 2.800 +Agregar"
+        },
+        {
+          "alto": 332,
+          "ancho": 178,
+          "altoMedia": 170,
+          "fraccionMedia": 0.511,
+          "nombreCortado": false,
+          "texto": "Red Bull Sugarfree 250 ml · Sin azúcar $ 2.800 +Agregar"
+        }
+      ]
+    },
+    "busqueda_zero": {
+      "resultados": 2,
+      "nombres": [
+        "Monster Green Zero 473 ml · Sin azúcar $ 3.250 +Agregar",
+        "Speed Zero 473 ml · Sin azúcar $ 2.850 +Agregar"
+      ]
+    },
+    "carrito": {
+      "lineas": [
+        "Monster Green Zero 473 ml · Sin azúcar 1 + $ 3.250",
+        "Red Bull 250 ml · Original 1 + $ 2.800"
+      ]
+    }
+  },
+  "errores": [
+    "paso «ficha»: TimeoutError: locator.click: Timeout 30000ms exceeded.",
+    "[390] Failed to load resource: the server responded with a status of 401 ()"
+  ]
+}

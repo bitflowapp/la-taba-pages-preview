@@ -199,8 +199,22 @@ export async function loadCatalogSkus(root, { strict = true, gondolaFinal = true
   const autoridades = [
     { origen: ORIGEN_GONDOLA, filas: GONDOLA, mapear: desdeGondola },
     {
+      /*
+       * Sólo los SKU que NACEN con el lote de fotografías, o sea los que ningún
+       * archivo de góndola declara. Los cuatro packs son ese caso.
+       *
+       * Desde el alta del 2026-08-25 el lote también apunta a diez unidades
+       * sueltas, pero ésas ya las declara la góndola de Neuquén: si el lote las
+       * volviera a declarar acá, la reconciliación las vería como diez
+       * colisiones —dos autoridades diciendo lo mismo— y se plantaría. Son dos
+       * preguntas distintas y ahora se responden por separado: qué productos
+       * EXISTEN, que es esta lista, y a cuáles puede tocarles la foto, que es
+       * `SKUS_OBJETIVO`.
+       */
       origen: ORIGEN_PACK_LANZAMIENTO,
-      filas: [...OBJETIVOS.entries()].map(([sku, objetivo]) => ({ sku, objetivo })),
+      filas: [...OBJETIVOS.entries()]
+        .filter(([, objetivo]) => objetivo.soloLoDeclaraEsteLote === true)
+        .map(([sku, objetivo]) => ({ sku, objetivo })),
       mapear: ({ sku, objetivo }) => desdePackLanzamiento(sku, objetivo),
     },
     { origen: ORIGEN_RETAIL_UNIDADES, filas: RETAIL_UNIDADES, mapear: desdeRetailUnidad },
@@ -253,7 +267,7 @@ export async function loadCatalogSkus(root, { strict = true, gondolaFinal = true
     gondolaFinal: GONDOLA_FINAL.length,
     gondolaNoAlcoholica: GONDOLA.filter((fila) => !fila.alcoholic).length,
     ocultos: skus.filter((producto) => !producto.available).length,
-    packsLanzamiento: OBJETIVOS.size,
+    packsLanzamiento: [...OBJETIVOS.values()].filter((objetivo) => objetivo.soloLoDeclaraEsteLote === true).length,
     porAutoridad: aportadosPorAutoridad,
     retailUnidades: RETAIL_UNIDADES.length,
     sinDeclarar: sinDeclarar.length,

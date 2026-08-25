@@ -1,25 +1,25 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v85-pildora-del-mapa';
+const CACHE_NAME = 'la-taba-runtime-v86-gondola-premium';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=53',
-  './styles/tokens.css?v=53',
-  './styles/common.css?v=53',
-  './styles/storefront.css?v=53',
-  './styles/catalog.css?v=53',
-  './styles/checkout.css?v=53',
-  './styles/profile.css?v=53',
-  './styles/showcase.css?v=53',
-  './styles/tracking.css?v=53',
-  './styles/business.css?v=53',
-  './styles/rider.css?v=53',
-  './styles/responsive.css?v=53',
-  './styles/brand-home.css?v=53',
+  './styles.css?v=54',
+  './styles/tokens.css?v=54',
+  './styles/common.css?v=54',
+  './styles/storefront.css?v=54',
+  './styles/catalog.css?v=54',
+  './styles/checkout.css?v=54',
+  './styles/profile.css?v=54',
+  './styles/showcase.css?v=54',
+  './styles/tracking.css?v=54',
+  './styles/business.css?v=54',
+  './styles/rider.css?v=54',
+  './styles/responsive.css?v=54',
+  './styles/brand-home.css?v=54',
   // `styles.css` la importa desde que existe y nunca estuvo acá: sin red, la
   // home se quedaba sin la capa de movimiento. Lo destapó el guard de la
   // cadena de CSS versionado; no lo introdujo esta integración.
-  './styles/motion.css?v=53',
+  './styles/motion.css?v=54',
   './manifest.webmanifest',
   './runtime-config.js',
   './pago/resultado/index.html',
@@ -39,7 +39,7 @@ const ASSETS = [
   './assets/products/beverage-placeholder.svg',
   './js/pwa-update.js?v=4',
   './js/startup-recovery.js?v=2',
-  './js/app.js?v=46',
+  './js/app.js?v=47',
   './js/config.js',
   './js/core/address.js',
   './js/core/app-mode.js',
@@ -71,6 +71,8 @@ const ASSETS = [
   './js/core/order-status.js',
   './js/core/order-timeline.js',
   './js/core/order-workflow.js',
+  './js/core/catalog-search.js',
+  './js/core/merchandising-tags.js',
   './js/core/pricing.js',
   './js/core/product-presentation.js',
   // `state.js` la importa de forma estática: sin ella acá, un cliente con la
@@ -266,8 +268,39 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
+  if (esArteDeProducto(url)) {
+    event.respondWith(cachePrimero(request));
+    return;
+  }
+
   event.respondWith(networkFirst(request));
 });
+
+/*
+ * El arte de producto es INMUTABLE: el nombre del archivo lleva la huella de su
+ * contenido, así que una ruta dada devuelve siempre los mismos bytes. Cambiar el
+ * dibujo cambia la ruta.
+ *
+ * Por eso no entra al precache —treinta y un archivos más en un `addAll`, que es
+ * todo-o-nada, es riesgo de instalación a cambio de nada— y sí sale de la caché
+ * primero: la góndola vuelve a dibujarse al instante en la segunda visita y no
+ * gasta datos del teléfono repitiendo imágenes que no pueden haber cambiado.
+ */
+function esArteDeProducto(url) {
+  return url.pathname.includes('/assets/products/');
+}
+
+async function cachePrimero(request) {
+  const guardada = await cachedFallback(request);
+  if (guardada) return guardada;
+  try {
+    const response = await fetch(request);
+    if (isUsable(request, response)) guardar(request, response.clone());
+    return response;
+  } catch {
+    return Response.error();
+  }
+}
 
 /*
  * Cuánto se espera a una red que ni contesta ni rechaza.
@@ -281,7 +314,7 @@ self.addEventListener('fetch', (event) => {
  * Cuatro segundos: bien por debajo de los ocho que espera `startup-recovery.js`
  * antes de dar el arranque por perdido, y muy por encima de cualquier respuesta
  * sana. El costo de equivocarse es casi nulo: el precache está versionado
- * (`?v=53`), así que una copia guardada es el MISMO contenido que iba a traer la
+ * (`?v=54`), así que una copia guardada es el MISMO contenido que iba a traer la
  * red, no una versión vieja.
  */
 const PLAZO_DE_RED_MS = 4000;

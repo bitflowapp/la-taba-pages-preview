@@ -9,13 +9,73 @@
     "doc": "Imágenes de sitio, no de producto. Viajan por su propia decisión y no las gobierna este manifiesto."
   },
   "doc": "Las ÚNICAS fotos de producto que el empaquetado puede copiar. Generado por scripts/catalog-images/build-public-asset-manifest.mjs; no editar a mano.",
-  "fotosDeProductoAuditadas": 173,
+  "fotosDeProductoAuditadas": 203,
   "publicables": [
+    {
+      "bytes": 22958,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/aquarius-manzana-1500ml-5a06bd9176e27828-d3c0af1d8c4494d9.webp",
+      "sha256": "d3c0af1d8c4494d990f03302c671c1d9778d855a70f023b4def927404a09f865"
+    },
+    {
+      "bytes": 6954,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/aquarius-manzana-1500ml-5a06bd9176e27828-thumb-d5da2606a2f036cf.webp",
+      "sha256": "d5da2606a2f036cf4cbdee5d858806ab84d3f2b1d85746b826ae98b034c660b0"
+    },
+    {
+      "bytes": 17978,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/aquarius-pera-1500ml-d8c1230b1227373f-2925d0553fe3f194.webp",
+      "sha256": "2925d0553fe3f194bbfc6f57d29bdcfc9dbfcb93733e7d3e429ce0b590025322"
+    },
+    {
+      "bytes": 5350,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/aquarius-pera-1500ml-d8c1230b1227373f-thumb-0c540b9ca40aec2e.webp",
+      "sha256": "0c540b9ca40aec2e287ad1a3c0776969c0d0247dea79028b6cfe8c07e88aea82"
+    },
+    {
+      "bytes": 19676,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/aquarius-pomelo-2250ml-8de7c8de5e780020-f788300784447191.webp",
+      "sha256": "f788300784447191d85684c2f8f7ac269b5d64400bfef445c9be79cd9e0b7bfb"
+    },
+    {
+      "bytes": 5462,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/aquarius-pomelo-2250ml-8de7c8de5e780020-thumb-bd47cfae363889a1.webp",
+      "sha256": "bd47cfae363889a127f3cb5e11485288238e19cf3e19d422e45bf505310b3dfb"
+    },
+    {
+      "bytes": 19898,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/benedictino-sin-gas-2250ml-8291602e84de68e9-b3100a865b922f28.webp",
+      "sha256": "b3100a865b922f28e4669b6b65cbb652a5a53bfed7ef3a321d4f36e8d21d14fd"
+    },
+    {
+      "bytes": 6016,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/benedictino-sin-gas-2250ml-8291602e84de68e9-thumb-e6d7c299f80e6e5d.webp",
+      "sha256": "e6d7c299f80e6e5d170f46c818147296496907c6608f84a89d40ae1ccaec1e88"
+    },
     {
       "bytes": 1074,
       "derechos": "PROPIO",
       "ruta": "assets/products/beverage-placeholder.svg",
       "sha256": "7962fa5a02e4acf148c845e876500c6bcb2851f1e6f9c90d76b2b80e3fe8f6c8"
+    },
+    {
+      "bytes": 26694,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/coca-cola-original-2250ml-97dc25e8399a5775-adb8042ea9716cb9.webp",
+      "sha256": "adb8042ea9716cb98846dc1d8764eb9a047adcf34ca33fc50d46fc959c846c6e"
+    },
+    {
+      "bytes": 8074,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/coca-cola-original-2250ml-97dc25e8399a5775-thumb-acbe05a93036a3a4.webp",
+      "sha256": "acbe05a93036a3a451939f75f146b73eb74db5aec2c16ac0b47f04886949b1df"
     },
     {
       "bytes": 20326,
@@ -28,6 +88,18 @@
       "derechos": "LICENCIA_COMERCIAL",
       "ruta": "assets/products/coca-cola-original-botella-pet-500-ml-pack-x12-da9d9f1d872c1e49-thumb-2b779c394ec67eb4.webp",
       "sha256": "2b779c394ec67eb41c4197ac7016f1bf1991fbfcb313b0feaaceafe2022079dc"
+    },
+    {
+      "bytes": 22878,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/coca-cola-zero-2250ml-4ce84243eb65d14a-309bbcc731498df7.webp",
+      "sha256": "309bbcc731498df73d5f2618ca902169e6dca283eb9fc35fa2c8a7807886f2f1"
+    },
+    {
+      "bytes": 7108,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/coca-cola-zero-2250ml-4ce84243eb65d14a-thumb-826e5a5ea976e1e2.webp",
+      "sha256": "826e5a5ea976e1e2dbaa1cb55dafbfa68bfbfa84ad2c1bb2452fb7ac1198ce7f"
     },
     {
       "bytes": 18742,
@@ -54,6 +126,78 @@
       "sha256": "6f5544d252c1151c4b4b8aa477d706fc2f9014c0c801f446e589366f5a66c8a7"
     },
     {
+      "bytes": 20058,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/gatorade-cool-blue-500ml-e3fcbd3e1e29bb61-f138bb4b00238c71.webp",
+      "sha256": "f138bb4b00238c71209ee857c9078994a5f23168e79dd521eba623e222bdae36"
+    },
+    {
+      "bytes": 6288,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/gatorade-cool-blue-500ml-e3fcbd3e1e29bb61-thumb-b41adc6e858c3a90.webp",
+      "sha256": "b41adc6e858c3a9006a28c01425f483c0cd04f5ce2db4ce0d1744056d9765919"
+    },
+    {
+      "bytes": 28106,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/gatorade-manzana-1250ml-64efd055975ef241-67bbe43a8a884939.webp",
+      "sha256": "67bbe43a8a8849395f966b3baceb95bd633699154e2a82b7ab81cbd21c16b2ac"
+    },
+    {
+      "bytes": 8752,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/gatorade-manzana-1250ml-64efd055975ef241-thumb-b33a3ac22178a69a.webp",
+      "sha256": "b33a3ac22178a69a8783c9255493bde92baf4805e8245a64ad7434f926e94b92"
+    },
+    {
+      "bytes": 41700,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/monster-green-zero-473ml-c238e9bf28582e15-36ea5aaa51d7906e.webp",
+      "sha256": "36ea5aaa51d7906e28a0867e07e7cfe81aa44f929b9a2aebfb31982558bec049"
+    },
+    {
+      "bytes": 13448,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/monster-green-zero-473ml-c238e9bf28582e15-thumb-9ee7f5db50e33ce1.webp",
+      "sha256": "9ee7f5db50e33ce1f71fd6457c98e315eb20e72d69cc2f2b442d742f5f84ca27"
+    },
+    {
+      "bytes": 15656,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/paso-de-los-toros-pomelo-1500ml-07e30d4119649232-5ee73401ead32b21.webp",
+      "sha256": "5ee73401ead32b21b98bae86af35d1b20c5b5c34fe52749be028a0a1b7d6f7bc"
+    },
+    {
+      "bytes": 4734,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/paso-de-los-toros-pomelo-1500ml-07e30d4119649232-thumb-2578710a66ec476a.webp",
+      "sha256": "2578710a66ec476a5b4a0cae9244e5115a51a9cebe3be50fb2ba4cf997f79f80"
+    },
+    {
+      "bytes": 18194,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/paso-de-los-toros-tonica-1500ml-3a05ed21abc4e380-f551a02eb264272c.webp",
+      "sha256": "f551a02eb264272cb86146b87231f4d43196e2be52f142b80f03cdbd6622821a"
+    },
+    {
+      "bytes": 5214,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/paso-de-los-toros-tonica-1500ml-3a05ed21abc4e380-thumb-209929c85be873fa.webp",
+      "sha256": "209929c85be873fa6ee45a627f1767e730b86fec8df07a8d2a543285ca25ec57"
+    },
+    {
+      "bytes": 40172,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/soda-manaos-sifon-2000ml-b92e160958368c0d-3700b6c8cb4ec1b4.webp",
+      "sha256": "3700b6c8cb4ec1b4ab234cd89bb7b3d8061c7529f8c92d6a8c2ee842d08cdc00"
+    },
+    {
+      "bytes": 12906,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/soda-manaos-sifon-2000ml-b92e160958368c0d-thumb-33a5a3998f343f97.webp",
+      "sha256": "33a5a3998f343f97f5385215b03c4d2f7f58b8036ee18d78aa52a9b4aee7f3b5"
+    },
+    {
       "bytes": 14520,
       "derechos": "LICENCIA_COMERCIAL",
       "ruta": "assets/products/sprite-botella-pet-500-ml-pack-x12-07620ef3d3aa792c-09a508b8102bd8a5.webp",
@@ -64,6 +208,42 @@
       "derechos": "LICENCIA_COMERCIAL",
       "ruta": "assets/products/sprite-botella-pet-500-ml-pack-x12-07620ef3d3aa792c-thumb-49fb5075276d3ebb.webp",
       "sha256": "49fb5075276d3ebb3e01c5f36f2a440ea289c88e8d09fca04047681b4d978211"
+    },
+    {
+      "bytes": 17364,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/sprite-original-2250ml-99d83c94dac255ca-3898f9d83fdf293f.webp",
+      "sha256": "3898f9d83fdf293f0d4efb1b1ed1dc914a91fe026a9d0f4b933374e316e3f613"
+    },
+    {
+      "bytes": 4816,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/sprite-original-2250ml-99d83c94dac255ca-thumb-1e02490bc9080f49.webp",
+      "sha256": "1e02490bc9080f4969bf2c4100514bd90facaaed68e44ef52efc1e383235084f"
+    },
+    {
+      "bytes": 46696,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/sprite-original-lata-354ml-0060e518ebfab8e7-8832bfc71a16ffad.webp",
+      "sha256": "8832bfc71a16ffada799d1992258f6c7813f19844beb8414862b05a80f08c4bb"
+    },
+    {
+      "bytes": 14234,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/sprite-original-lata-354ml-0060e518ebfab8e7-thumb-9f34da79cf990fa1.webp",
+      "sha256": "9f34da79cf990fa1127231b78e09dc43f6af91fc5b0544943d7e79d39cd88932"
+    },
+    {
+      "bytes": 16396,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/sprite-zero-2250ml-c43f15fd8eedc2e4-96e92127e95886ab.webp",
+      "sha256": "96e92127e95886abe28220741a08e9f8d839c5247c7ff410efb638fe98a1aa48"
+    },
+    {
+      "bytes": 4478,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/sprite-zero-2250ml-c43f15fd8eedc2e4-thumb-4e04923ee3c2fb00.webp",
+      "sha256": "4e04923ee3c2fb008e57d9b4d16d85f04ab63653db7f2b71763ac312d7c8568b"
     }
   ],
   "schemaVersion": 1

@@ -42,6 +42,7 @@
 export const OBJETIVOS = new Map([
   ['coca-cola-original-botella-pet-500-ml-pack-x12', {
     nombre: 'Coca-Cola Original Pack x12',
+    soloLoDeclaraEsteLote: true,
     unitsPerPack: 12,
     presentacion: {
       brand: 'Coca-Cola',
@@ -55,6 +56,7 @@ export const OBJETIVOS = new Map([
   }],
   ['coca-cola-zero-botella-pet-500-ml-pack-x12', {
     nombre: 'Coca-Cola Zero Pack x12',
+    soloLoDeclaraEsteLote: true,
     unitsPerPack: 12,
     presentacion: {
       brand: 'Coca-Cola',
@@ -68,6 +70,7 @@ export const OBJETIVOS = new Map([
   }],
   ['fanta-naranja-botella-pet-1500-ml-pack-x6', {
     nombre: 'Fanta Naranja Pack x6',
+    soloLoDeclaraEsteLote: true,
     unitsPerPack: 6,
     presentacion: {
       brand: 'Fanta',
@@ -81,6 +84,7 @@ export const OBJETIVOS = new Map([
   }],
   ['sprite-botella-pet-500-ml-pack-x12', {
     nombre: 'Sprite Pack x12',
+    soloLoDeclaraEsteLote: true,
     unitsPerPack: 12,
     presentacion: {
       brand: 'Sprite',
@@ -90,6 +94,226 @@ export const OBJETIVOS = new Map([
       name: 'Sprite',
       packagingType: 'Botella PET',
       variant: 'Botella PET · 500 ml · Pack x12',
+    },
+  }],
+
+  /*
+   * ALTA DEL 2026-08-25 · diez UNIDADES SUELTAS.
+   *
+   * Hasta acá el lote eran cuatro packs, porque la única fuente conocida era la
+   * tienda MAYORISTA del embotellador Andina, que no publica unidades sueltas.
+   * La tienda directa al consumidor de Coca-Cola FEMSA sí las publica, y con
+   * render limpio; el resto lo aportaron el CDN del fabricante de Monster, el
+   * sitio de Refres Now y un distribuidor oficial de Cervecería y Maltería
+   * Quilmes.
+   *
+   * Los diez llevan una unidad por envase, y si alguno pasara a venderse de a
+   * varios su fotografía dejaría de decir la verdad y este lote lo rechazaría.
+   */
+  ['coca-cola-original-2250ml', {
+    nombre: 'Coca-Cola · 2,25 L',
+    unitsPerPack: 1,
+    presentacion: {
+      brand: 'Coca-Cola',
+      capacityUnit: 'ml',
+      capacityValue: 2250,
+      category: 'Gaseosas',
+      name: 'Coca-Cola',
+      packagingType: 'botella-pet',
+      variant: 'Original',
+    },
+  }],
+  ['coca-cola-zero-2250ml', {
+    nombre: 'Coca-Cola Zero · 2,25 L',
+    unitsPerPack: 1,
+    presentacion: {
+      brand: 'Coca-Cola',
+      capacityUnit: 'ml',
+      capacityValue: 2250,
+      category: 'Gaseosas',
+      name: 'Coca-Cola Zero',
+      packagingType: 'botella-pet',
+      variant: 'Sin azúcar',
+    },
+  }],
+  ['sprite-original-2250ml', {
+    nombre: 'Sprite · 2,25 L',
+    unitsPerPack: 1,
+    presentacion: {
+      brand: 'Sprite',
+      capacityUnit: 'ml',
+      capacityValue: 2250,
+      category: 'Gaseosas',
+      name: 'Sprite',
+      packagingType: 'botella-pet',
+      variant: 'Original',
+    },
+  }],
+  ['sprite-zero-2250ml', {
+    nombre: 'Sprite Zero · 2,25 L',
+    unitsPerPack: 1,
+    presentacion: {
+      brand: 'Sprite',
+      capacityUnit: 'ml',
+      capacityValue: 2250,
+      category: 'Gaseosas',
+      name: 'Sprite Zero',
+      packagingType: 'botella-pet',
+      variant: 'Sin azúcar',
+    },
+  }],
+  ['sprite-original-lata-354ml', {
+    nombre: 'Sprite · 354 ml',
+    unitsPerPack: 1,
+    presentacion: {
+      brand: 'Sprite',
+      capacityUnit: 'ml',
+      capacityValue: 354,
+      category: 'Gaseosas',
+      name: 'Sprite',
+      packagingType: 'lata',
+      variant: 'Original',
+    },
+  }],
+  ['benedictino-sin-gas-2250ml', {
+    nombre: 'Benedictino · 2,25 L',
+    unitsPerPack: 1,
+    presentacion: {
+      brand: 'Benedictino',
+      capacityUnit: 'ml',
+      capacityValue: 2250,
+      category: 'Aguas',
+      name: 'Benedictino',
+      packagingType: 'botella-pet',
+      variant: 'Sin gas',
+    },
+  }],
+  ['monster-green-zero-473ml', {
+    nombre: 'Monster Green Zero · 473 ml',
+    unitsPerPack: 1,
+    presentacion: {
+      brand: 'Monster',
+      capacityUnit: 'ml',
+      capacityValue: 473,
+      category: 'Energizantes',
+      name: 'Monster Green Zero',
+      packagingType: 'lata',
+      variant: 'Sin azúcar',
+    },
+  }],
+  ['soda-manaos-sifon-2000ml', {
+    nombre: 'Soda Manaos · 2 L',
+    unitsPerPack: 1,
+    presentacion: {
+      brand: 'Manaos',
+      capacityUnit: 'ml',
+      capacityValue: 2000,
+      category: 'Mixers',
+      name: 'Soda Manaos',
+      packagingType: 'sifon',
+      variant: 'Soda',
+    },
+  }],
+  ['paso-de-los-toros-tonica-1500ml', {
+    nombre: 'Paso de los Toros Tónica · 1,5 L',
+    unitsPerPack: 1,
+    presentacion: {
+      brand: 'Paso de los Toros',
+      capacityUnit: 'ml',
+      capacityValue: 1500,
+      category: 'Mixers',
+      name: 'Paso de los Toros Tónica',
+      packagingType: 'botella-pet',
+      variant: 'Tónica',
+    },
+  }],
+  ['paso-de-los-toros-pomelo-1500ml', {
+    nombre: 'Paso de los Toros Pomelo · 1,5 L',
+    unitsPerPack: 1,
+    presentacion: {
+      brand: 'Paso de los Toros',
+      capacityUnit: 'ml',
+      capacityValue: 1500,
+      category: 'Mixers',
+      name: 'Paso de los Toros Pomelo',
+      packagingType: 'botella-pet',
+      variant: 'Pomelo',
+    },
+  }],
+
+  /*
+   * ALTA DEL 2026-08-25 (segunda tanda) · cinco más, todas con RECORTE
+   * DECLARADO en catalog/recortes-declarados.json.
+   *
+   * Los tres Aquarius vienen del embotellador FEMSA con una banda de marketing
+   * lateral; los dos Gatorade, de un distribuidor oficial que fotografía la
+   * botella chica dentro del mismo lienzo que la familiar y la deja diminuta y
+   * descentrada. En los cinco el corte pasa por un canal de blanco puro y no
+   * toca un píxel del envase: normalize.mjs lo verifica antes de escribir.
+   */
+  ['aquarius-manzana-1500ml', {
+    nombre: 'Aquarius Manzana · 1,5 L',
+    unitsPerPack: 1,
+    presentacion: {
+      brand: 'Aquarius',
+      capacityUnit: 'ml',
+      capacityValue: 1500,
+      category: 'Aguas saborizadas',
+      name: 'Aquarius Manzana',
+      packagingType: 'botella-pet',
+      variant: 'Manzana',
+    },
+  }],
+  ['aquarius-pera-1500ml', {
+    nombre: 'Aquarius Pera · 1,5 L',
+    unitsPerPack: 1,
+    presentacion: {
+      brand: 'Aquarius',
+      capacityUnit: 'ml',
+      capacityValue: 1500,
+      category: 'Aguas saborizadas',
+      name: 'Aquarius Pera',
+      packagingType: 'botella-pet',
+      variant: 'Pera',
+    },
+  }],
+  ['aquarius-pomelo-2250ml', {
+    nombre: 'Aquarius Pomelo · 2,25 L',
+    unitsPerPack: 1,
+    presentacion: {
+      brand: 'Aquarius',
+      capacityUnit: 'ml',
+      capacityValue: 2250,
+      category: 'Aguas saborizadas',
+      name: 'Aquarius Pomelo',
+      packagingType: 'botella-pet',
+      variant: 'Pomelo',
+    },
+  }],
+  ['gatorade-manzana-1250ml', {
+    nombre: 'Gatorade Manzana · 1,25 L',
+    unitsPerPack: 1,
+    presentacion: {
+      brand: 'Gatorade',
+      capacityUnit: 'ml',
+      capacityValue: 1250,
+      category: 'Isotónicas',
+      name: 'Gatorade Manzana',
+      packagingType: 'botella-pet',
+      variant: 'Manzana',
+    },
+  }],
+  ['gatorade-cool-blue-500ml', {
+    nombre: 'Gatorade Cool Blue · 500 ml',
+    unitsPerPack: 1,
+    presentacion: {
+      brand: 'Gatorade',
+      capacityUnit: 'ml',
+      capacityValue: 500,
+      category: 'Isotónicas',
+      name: 'Gatorade Cool Blue',
+      packagingType: 'botella-pet',
+      variant: 'Cool Blue',
     },
   }],
 ]);
@@ -115,8 +339,20 @@ export function validarLoteObjetivo({ productos = [], assets = [] } = {}) {
       errores.push(`falta el producto objetivo ${sku}.`);
       continue;
     }
-    if (producto.sold_as_pack !== true) {
-      errores.push(`${sku} dejó de venderse como pack (sold_as_pack = ${producto.sold_as_pack}).`);
+    /*
+     * Lo que hay que comprobar no es «que sea pack»: es que la CANTIDAD que el
+     * producto vende sea la que la fotografía anuncia. Mientras el lote fueron
+     * cuatro packs las dos cosas eran la misma, y esta comprobación se escribió
+     * con la que se veía. Con diez unidades sueltas adentro, exigir
+     * `sold_as_pack` rechazaba justamente los productos cuya foto es una
+     * botella sola.
+     */
+    const esPack = esperado.unitsPerPack > 1;
+    if (Boolean(producto.sold_as_pack) !== esPack) {
+      errores.push(
+        `${sku} se vende ${producto.sold_as_pack ? 'como pack' : 'por unidad'} y su fotografía es `
+        + `${esPack ? `de un pack de ${esperado.unitsPerPack}` : 'de una unidad suelta'}.`,
+      );
     }
     if (producto.units_per_pack !== esperado.unitsPerPack) {
       errores.push(

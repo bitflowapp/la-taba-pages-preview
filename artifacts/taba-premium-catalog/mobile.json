@@ -1,0 +1,622 @@
+{
+  "origen": "http://127.0.0.1:18196",
+  "medidoEl": null,
+  "resultados": [
+    {
+      "motor": "chromium",
+      "ancho": "320",
+      "vista": "home",
+      "desborde": false,
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 11.5,
+          "texto": "Pedidos online habilitados"
+        },
+        {
+          "px": 9.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "chromium",
+      "ancho": "320",
+      "vista": "catalog",
+      "desborde": false,
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 11,
+          "texto": "Manaos"
+        },
+        {
+          "px": 9.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "chromium",
+      "ancho": "320",
+      "vista": "cart",
+      "desborde": false,
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 9.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "chromium",
+      "ancho": "320",
+      "vista": "tracking",
+      "desborde": false,
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 11,
+          "texto": "La Taba · Cobertura no publicada"
+        },
+        {
+          "px": 9.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "chromium",
+      "ancho": "320",
+      "vista": "profile",
+      "desborde": false,
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 9.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "chromium",
+      "ancho": "390",
+      "vista": "home",
+      "desborde": false,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 11.5,
+          "texto": "Pedidos online habilitados"
+        },
+        {
+          "px": 10.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "chromium",
+      "ancho": "390",
+      "vista": "catalog",
+      "desborde": false,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 10,
+          "texto": "ENVIAR A"
+        },
+        {
+          "px": 11,
+          "texto": "Manaos"
+        },
+        {
+          "px": 10.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "chromium",
+      "ancho": "390",
+      "vista": "cart",
+      "desborde": false,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 10,
+          "texto": "ENVIAR A"
+        },
+        {
+          "px": 10.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "chromium",
+      "ancho": "390",
+      "vista": "tracking",
+      "desborde": false,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 10,
+          "texto": "ENVIAR A"
+        },
+        {
+          "px": 11,
+          "texto": "La Taba · Cobertura no publicada"
+        },
+        {
+          "px": 10.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "chromium",
+      "ancho": "390",
+      "vista": "profile",
+      "desborde": false,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 10,
+          "texto": "ENVIAR A"
+        },
+        {
+          "px": 10.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "chromium",
+      "ancho": "430",
+      "vista": "home",
+      "desborde": false,
+      "scrollWidth": 430,
+      "clientWidth": 430,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 11.5,
+          "texto": "Pedidos online habilitados"
+        },
+        {
+          "px": 10.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "chromium",
+      "ancho": "430",
+      "vista": "catalog",
+      "desborde": false,
+      "scrollWidth": 430,
+      "clientWidth": 430,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 10,
+          "texto": "ENVIAR A"
+        },
+        {
+          "px": 11,
+          "texto": "Manaos"
+        },
+        {
+          "px": 10.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "chromium",
+      "ancho": "430",
+      "vista": "cart",
+      "desborde": false,
+      "scrollWidth": 430,
+      "clientWidth": 430,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 10,
+          "texto": "ENVIAR A"
+        },
+        {
+          "px": 10.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "chromium",
+      "ancho": "430",
+      "vista": "tracking",
+      "desborde": false,
+      "scrollWidth": 430,
+      "clientWidth": 430,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 10,
+          "texto": "ENVIAR A"
+        },
+        {
+          "px": 11,
+          "texto": "La Taba · Cobertura no publicada"
+        },
+        {
+          "px": 10.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "chromium",
+      "ancho": "430",
+      "vista": "profile",
+      "desborde": false,
+      "scrollWidth": 430,
+      "clientWidth": 430,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 10,
+          "texto": "ENVIAR A"
+        },
+        {
+          "px": 10.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "webkit",
+      "ancho": "320",
+      "vista": "home",
+      "desborde": false,
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 11.5,
+          "texto": "Pedidos online habilitados"
+        },
+        {
+          "px": 9.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "webkit",
+      "ancho": "320",
+      "vista": "catalog",
+      "desborde": false,
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 11,
+          "texto": "Manaos"
+        },
+        {
+          "px": 9.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "webkit",
+      "ancho": "320",
+      "vista": "cart",
+      "desborde": false,
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 9.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "webkit",
+      "ancho": "320",
+      "vista": "tracking",
+      "desborde": false,
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 11,
+          "texto": "La Taba · Cobertura no publicada"
+        },
+        {
+          "px": 9.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "webkit",
+      "ancho": "320",
+      "vista": "profile",
+      "desborde": false,
+      "scrollWidth": 320,
+      "clientWidth": 320,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 9.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "webkit",
+      "ancho": "390",
+      "vista": "home",
+      "desborde": false,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 11.5,
+          "texto": "Pedidos online habilitados"
+        },
+        {
+          "px": 10.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "webkit",
+      "ancho": "390",
+      "vista": "catalog",
+      "desborde": false,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 10,
+          "texto": "ENVIAR A"
+        },
+        {
+          "px": 11,
+          "texto": "Manaos"
+        },
+        {
+          "px": 10.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "webkit",
+      "ancho": "390",
+      "vista": "cart",
+      "desborde": false,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 10,
+          "texto": "ENVIAR A"
+        },
+        {
+          "px": 10.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "webkit",
+      "ancho": "390",
+      "vista": "tracking",
+      "desborde": false,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 10,
+          "texto": "ENVIAR A"
+        },
+        {
+          "px": 11,
+          "texto": "La Taba · Cobertura no publicada"
+        },
+        {
+          "px": 10.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "webkit",
+      "ancho": "390",
+      "vista": "profile",
+      "desborde": false,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 10,
+          "texto": "ENVIAR A"
+        },
+        {
+          "px": 10.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "webkit",
+      "ancho": "430",
+      "vista": "home",
+      "desborde": false,
+      "scrollWidth": 430,
+      "clientWidth": 430,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 11.5,
+          "texto": "Pedidos online habilitados"
+        },
+        {
+          "px": 10.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "webkit",
+      "ancho": "430",
+      "vista": "catalog",
+      "desborde": false,
+      "scrollWidth": 430,
+      "clientWidth": 430,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 10,
+          "texto": "ENVIAR A"
+        },
+        {
+          "px": 11,
+          "texto": "Manaos"
+        },
+        {
+          "px": 10.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "webkit",
+      "ancho": "430",
+      "vista": "cart",
+      "desborde": false,
+      "scrollWidth": 430,
+      "clientWidth": 430,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 10,
+          "texto": "ENVIAR A"
+        },
+        {
+          "px": 10.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "webkit",
+      "ancho": "430",
+      "vista": "tracking",
+      "desborde": false,
+      "scrollWidth": 430,
+      "clientWidth": 430,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 10,
+          "texto": "ENVIAR A"
+        },
+        {
+          "px": 11,
+          "texto": "La Taba · Cobertura no publicada"
+        },
+        {
+          "px": 10.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    },
+    {
+      "motor": "webkit",
+      "ancho": "430",
+      "vista": "profile",
+      "desborde": false,
+      "scrollWidth": 430,
+      "clientWidth": 430,
+      "controlesChicos": [],
+      "textoChico": [
+        {
+          "px": 10,
+          "texto": "ENVIAR A"
+        },
+        {
+          "px": 10.5,
+          "texto": "La Taba"
+        }
+      ],
+      "viewport": "width=device-width, initial-scale=1, viewport-fit=cover"
+    }
+  ]
+}

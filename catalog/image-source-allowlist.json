@@ -64,6 +64,81 @@
       }
     },
     {
+      "id": "coca-cola-femsa-ar",
+      "label": "Sistema Coca-Cola Argentina · embotellador Coca-Cola FEMSA de Buenos Aires S.A.",
+      "sourceType": "fabricante",
+      "adapter": "sin-catalogo",
+      "storeHost": "coca-colaentucasa.com",
+      "cdnHosts": ["coca-colaentucasa.com"],
+      "categories": [],
+      "brands": ["Coca-Cola", "Sprite", "Fanta", "Benedictino", "Aquarius", "Powerade", "Monster", "Schweppes"],
+      "justificacion": "Tienda directa al consumidor de Coca-Cola FEMSA de Buenos Aires S.A. (CUIT 30-52539008-6, leído en sus Términos y Condiciones): el OTRO embotellador oficial del sistema Coca-Cola en Argentina, además de Andina. No es un retailer. A diferencia de la tienda mayorista de Andina, ésta vende al público y por eso publica UNIDADES SUELTAS, que es exactamente lo que a la góndola de TABA le faltaba.",
+      "comoSeUsa": {
+        "doc": "Magento. El sitio publica tres familias de archivo bajo /media/catalog/product/ y sólo una sirve.",
+        "familias": {
+          "*render*.png": "packshot limpio sobre transparencia: producto entero, centrado, sin banda, sin sello de cantidad, sin texto superpuesto. ES LA QUE SE USA.",
+          "*_ih.jpg": "pieza de marketing con banda lateral y a veces sello «x6». No entra.",
+          "*_in*.jpg": "tabla nutricional. No es producto."
+        },
+        "trampas": [
+          "14 de 17 URLs que declara el sitemap devuelven HTTP 200 con un PLACEHOLDER propio del sitio (silueta gris de botella contour, 13.529 bytes, md5 9799516dbf05cef65975cf44a84169f0). Hay que verificar el contenido, no el status.",
+          "Para Sprite lata 354 ml el archivo base ES el placeholder y el bueno lleva el sufijo `_1`.",
+          "Sin cabecera `Referer` del propio sitio la descarga puede fallar."
+        ],
+        "medidoEl": "2026-08-25"
+      },
+      "rechazadosPorIdentidad": {
+        "fanta-naranja-2250ml": "el render vigente es una edición limitada co-marcada Call of Duty × Xbox: la etiqueta trae el wordmark del videojuego. No es el envase que se entrega.",
+        "coca-cola-*-lata-354ml": "las latas de 354 sólo existen como edición Copa Mundial por país —la Original en versión Brasil, la Zero en versión Argentina— y no dejan distinguir Original de Zero.",
+        "powerade-mountain-blast-500ml": "el render de FEMSA es la edición coleccionable Copa 2022 sin octógonos al frente, y el de coca-cola.com es de 995 mL, no de 500.",
+        "aquarius-*": "su única imagen trae una banda gráfica lateral que ocupa el 24% derecho. Es recortable sin repintar nada —queda blanco puro entre el producto y la banda— pero recortar es una decisión que todavía nadie tomó.",
+        "coca-cola-original-pet-1500ml": "la presentación de 1,5 L no existe en el catálogo de FEMSA Buenos Aires (ahí va 1,75 L). En Andina existe, pero siempre en pack y con sello."
+      }
+    },
+    {
+      "id": "monster-energy-ar",
+      "label": "Monster Energy · fabricante",
+      "sourceType": "fabricante",
+      "adapter": "sin-catalogo",
+      "storeHost": "www.monsterenergy.com",
+      "cdnHosts": ["web-assests.monsterenergy.com"],
+      "categories": [],
+      "brands": ["Monster"],
+      "justificacion": "CDN de assets del propio fabricante. El typo «assests» del subdominio es real de Monster, no un dominio parecido: se verificó que resuelve desde las fichas de producto de www.monsterenergy.com/es-ar/. La medición anterior lo había cerrado como «403 al agente automático» porque probó la raíz; la ruta de país sí responde.",
+      "comoSeUsa": {
+        "doc": "PNG sobre transparencia real, con la etiqueta argentina vigente (octógono EXCESO EN SODIO, CONT. NETO, INDUSTRIA ARGENTINA).",
+        "trampas": ["El encuadre es a sangre: se recortan 3-5 px de la cúpula y de la base sobre 625 de alto (menos del 1%). El normalizado lo apoya sobre lienzo blanco y no agrava el recorte."],
+        "medidoEl": "2026-08-25"
+      }
+    },
+    {
+      "id": "refres-now-manaos",
+      "label": "Manaos · fabricante Refres Now S.A.",
+      "sourceType": "fabricante",
+      "adapter": "sin-catalogo",
+      "storeHost": "www.manaosargentina.com",
+      "cdnHosts": ["www.manaosargentina.com"],
+      "categories": [],
+      "brands": ["Manaos"],
+      "justificacion": "Sitio oficial de la marca: el pie declara «© 2026 Refres Now S.A.» y el JSON-LD Organization declara legalName «Refres Now S.A.» con la planta de Virrey del Pino, La Matanza. Es el fabricante. El dominio manaos.com.ar está estacionado y en venta, y refresnow.com.ar sirve un login de correo: ninguno de los dos es la fuente.",
+      "comoSeUsa": { "doc": "Fichas por producto con la fotografía sobre blanco. Sin catálogo programático.", "medidoEl": "2026-08-25" }
+    },
+    {
+      "id": "cmq-distribuidores-oficiales",
+      "label": "Portafolio PepsiCo embotellado por Cervecería y Maltería Quilmes · distribuidores oficiales",
+      "sourceType": "distribuidor_oficial",
+      "adapter": "sin-catalogo",
+      "storeHost": "boulevard-sa.com.ar",
+      "cdnHosts": ["boulevard-sa.com.ar"],
+      "categories": [],
+      "brands": ["Pepsi", "7UP", "Paso de los Toros", "Gatorade", "Mirinda", "H2OH"],
+      "justificacion": "PepsiCo no publica packshots argentinos en NINGÚN canal propio alcanzable: pepsico.com.ar, 7up.com.ar, pasodelostoros.com.ar y gatorade.com.ar no resuelven; pepsico.com y gatorade.lat devuelven 403; y la única «tienda oficial» de Cervecería y Maltería Quilmes es su storefront de MercadoLibre, que es marketplace y está rechazado. Lo que sí existe es la capa de DISTRIBUIDORES OFICIALES de CMQ. Boulevard (Logística y Distribución, distribuidor oficial para La Plata y Gran La Plata) publica los packshots del proveedor sobre blanco.",
+      "alcanceDeDerechos": {
+        "doc": "Un distribuidor regional NO estaba en la frase original de TABA-AUT-2026-08-001 («la marca o su embotellador/importador»). El titular amplió el alcance a distribuidores oficiales en la instrucción de lanzamiento del 2026-08-25, que los ordena como fuente de prioridad 2 detrás del fabricante. Ver la revisión en catalog/autorizaciones-comerciales.json.",
+        "consecuencia": "La revisión visual sigue siendo obligatoria y por eso cada foto se miró una por una."
+      }
+    },
+    {
       "id": "penaflor-por-andina",
       "label": "Portafolio Peñaflor y Diageo distribuido por Coca-Cola Andina",
       "sourceType": "distribuidor_oficial",

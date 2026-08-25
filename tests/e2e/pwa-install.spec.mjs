@@ -101,7 +101,26 @@ async function seedDecision(page, decision) {
   }, [DECISION_KEY, decision]);
 }
 
+/*
+ * La invitación se le ofrece a quien VUELVE, no a quien llega por primera vez:
+ * en un iPhone la primera pantalla de la tienda no puede ser un modal. Estas
+ * pruebas miden la invitación, así que parten de un visitante conocido — el
+ * caso de la primera visita tiene su propia prueba, abajo.
+ */
+async function seedVisitanteConocido(page) {
+  await page.addInitScript(() => {
+    localStorage.setItem('TABA_VISITOR_SEEN_V1', '1');
+  });
+}
+
 async function abrir(page, target = '/?demo=1') {
+  await seedVisitanteConocido(page);
+  await page.goto(target, { waitUntil: 'domcontentloaded' });
+  await page.locator('html[data-taba-startup="ready"]').waitFor({ state: 'attached' });
+}
+
+/** Igual que `abrir`, pero sin marcar la visita: es el estreno del cliente. */
+async function abrirComoPrimeraVisita(page, target = '/?demo=1') {
   await page.goto(target, { waitUntil: 'domcontentloaded' });
   await page.locator('html[data-taba-startup="ready"]').waitFor({ state: 'attached' });
 }
@@ -314,6 +333,7 @@ test.describe('Android', () => {
 
   test('no interrumpe el checkout: en el carrito no se abre, y sí al volver al inicio', async ({ page }) => {
     await armInstallPrompt(page);
+    await seedVisitanteConocido(page);
     await page.goto('/?demo=1#carrito', { waitUntil: 'domcontentloaded' });
     await page.locator('html[data-taba-startup="ready"]').waitFor({ state: 'attached' });
     await page.evaluate(() => window.__fireBeforeInstallPrompt());
@@ -322,6 +342,36 @@ test.describe('Android', () => {
 
     // Al salir del checkout la ventana se abre sin necesidad de recargar.
     await page.evaluate(() => { window.location.hash = 'inicio'; });
+    await expect(sheet(page)).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('la PRIMERA pantalla es la tienda: al estreno no se le pide nada', async ({ page }) => {
+    /*
+     * Medido en producción el 2026-08-25: en un iPhone la primera pantalla de La
+     * Taba no era La Taba. A los 2,5 s se abría sola esta hoja y cubría el
+     * tercio inferior, barra de navegación incluida, antes de que el cliente
+     * hubiera visto un solo precio. La invitación no se saca: se corre a quien
+     * vuelve, o a quien ya puso algo en el carrito.
+     */
+    await armInstallPrompt(page);
+    await abrirComoPrimeraVisita(page);
+    await page.evaluate(() => window.__fireBeforeInstallPrompt());
+    await page.waitForTimeout(VENTANA_SIN_INVITACION);
+    await expect(sheet(page)).toBeHidden();
+    // Y la puerta permanente del Perfil sigue estando desde el primer segundo.
+    await page.locator('[data-nav-view="profile"]:visible').first().click();
+    await expect(entry(page)).toBeVisible();
+  });
+
+  test('poner algo en el carrito adelanta la invitación: ahí ya sabe qué instala', async ({ page }) => {
+    await armInstallPrompt(page);
+    await abrirComoPrimeraVisita(page, '/?demo=1#catalogo');
+    await page.evaluate(() => window.__fireBeforeInstallPrompt());
+    await page.waitForTimeout(VENTANA_SIN_INVITACION);
+    await expect(sheet(page)).toBeHidden();
+
+    await page.locator('[data-product-grid] [data-add-product]').first().click();
+    await page.locator('[data-nav-view="home"]:visible').first().click();
     await expect(sheet(page)).toBeVisible({ timeout: 10_000 });
   });
 });

@@ -54,8 +54,14 @@ test('versioned catalog evidence and normalized price handoff are present', () =
 test('public storefront shell separates the product name from the business name', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.webmanifest'), 'utf8'));
-  // Producto/plataforma: TABA2. No cambia con el comercio.
-  assert.match(html, /<title>TABA2 · Tienda de bebidas<\/title>/);
+  /*
+   * El título es lo que se lee en la pestaña, en el marcador y en la vista
+   * previa de un enlace compartido por WhatsApp. Decía «TABA2 · Tienda de
+   * bebidas»: el nombre interno de la plataforma, con número de versión, en el
+   * lugar más público del sitio. Ahora dice el comercio y lo que vende.
+   */
+  assert.match(html, /<title>La Taba · Bebidas con delivery en Neuquén<\/title>/);
+  assert.doesNotMatch(html, /TABA2(?!-BOOT)/);
   /*
    * EL MANIFEST ES LA EXCEPCIÓN, Y ES DELIBERADA.
    *
@@ -70,6 +76,6 @@ test('public storefront shell separates the product name from the business name'
   assert.equal(manifest.short_name, 'La Taba');
   // Comercio: el fallback de primer pintado dice el nombre del local y luego
   // `applyBusinessConfig` lo reemplaza con el valor real de la config.
-  assert.match(html, /data-business-name>La Taba 2</);
+  assert.match(html, /data-business-name>La Taba</);
   assert.doesNotMatch(html, /data-business-name>TABA</);
 });

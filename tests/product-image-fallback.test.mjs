@@ -9,10 +9,16 @@ import { products } from '../js/approved-beverage-demo-data.js';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 
-test('all QA or unofficial products use the same neutral placeholder', () => {
+test('todo producto sin foto publicable usa el MISMO marcador neutro de TABA', () => {
   const qa = productThumb({ name: 'Bebida QA', categoryId: 'cervezas', qaFixture: true, image: 'assets/products/other.webp' });
   const unofficial = productThumb({ name: 'Producto sin aprobar', categoryId: 'cervezas', image: 'assets/products/unapproved.webp' });
   for (const html of [qa, unofficial]) {
+    // Un marcador NEUTRO, que no imita al producto. Se probó reemplazarlo por
+    // un dibujo por producto —silueta del envase y color de la línea— y se
+    // descartó: una aproximación dibujada de una Coca-Cola no es una Coca-Cola,
+    // y en una tienda que vende marcas reales un sustituto generado se lee peor
+    // que un marcador honesto. Lo que reemplaza a este archivo es una
+    // FOTOGRAFÍA del producto exacto, o nada.
     assert.match(html, /assets\/products\/beverage-placeholder\.svg/);
     assert.match(html, /uses-placeholder/);
     assert.match(html, /Producto sin imagen oficial/);

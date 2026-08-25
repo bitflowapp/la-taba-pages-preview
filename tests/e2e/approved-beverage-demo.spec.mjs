@@ -38,18 +38,23 @@ test('demo aprobado muestra SKU publicables, unidades minoristas y assets locale
   const unidad = page.locator('[data-product-grid] .product-card').filter({
     has: page.locator('[data-add-product="coca-cola-original-pet-1500ml"]'),
   });
-  await expect(unidad).toContainText('Coca-Cola Original');
+  // El título dice «Coca-Cola»: «Original» no distingue nada —lo que distingue
+  // es que NO diga Zero— y por eso sale del nombre y de la presentación.
+  await expect(unidad).toContainText('Coca-Cola');
   await expect(unidad).toContainText('1,5 L');
-  // La tarjeta declara el envase, no la coletilla "Unidad": con cero packs en
-  // góndola esa palabra estaba en las ochenta tarjetas sin distinguir ninguna.
-  // Que lo publicado sea la UNIDAD y no el pack lo fija `packProducts === 0`
-  // acá arriba y la ausencia de tarjeta para el SKU de abastecimiento.
-  await expect(unidad).toContainText('Botella PET');
+  // La botella PET es la convención de la góndola: lo NORMAL, y por eso no se
+  // nombra —decirlo en veinte tarjetas de veintitrés sería gastar el renglón en
+  // la constante—. Lo que sí se nombra es lo que cambia lo que llega a la
+  // puerta: una lata o un sifón. Que lo publicado sea la UNIDAD y no el pack lo
+  // fija `packProducts === 0` acá arriba y la ausencia de tarjeta para el SKU de
+  // abastecimiento.
+  await expect(unidad).not.toContainText('Botella PET');
+  await expect(unidad).not.toContainText('botella-pet');
   await expect(page.locator('[data-add-product="coca-cola-original-pet-1500ml-pack-6"]')).toHaveCount(0);
   const unidadImagen = unidad.locator('img');
   await expect(unidadImagen).toHaveAttribute('loading', 'lazy');
   // La foto del pack muestra seis botellas: la unidad usa el marcador neutro
-  // hasta que el local entregue la suya.
+  // hasta que exista una fotografía de ESTE producto exacto.
   await expect(unidadImagen).toHaveAttribute('src', /beverage-placeholder\.svg$/);
 
   const pendingMessage = unidad.locator('[data-price-pending-message]');
@@ -86,7 +91,10 @@ test('carrito arma el pedido con unidades y exige edad para cerveza', async ({ p
   await gotoDemoReset(page, '/?reset=1&demo=1#catalog');
   await page.locator('[data-product-grid] [data-add-product="red-bull-original-lata-250ml"]').click();
   await page.locator('[data-open-cart]').first().click();
-  await expect(page.locator('[data-view="cart"]')).toContainText('Unidad');
+  // El carrito dice el LITRAJE, que es con lo que se revisa un pedido. Decía
+  // «Unidad», que es la variante cruda de la base y no informa nada.
+  await expect(page.locator('[data-view="cart"]')).toContainText('250 ml');
+  await expect(page.locator('[data-view="cart"]')).not.toContainText('botella-pet');
   // El pack de abastecimiento ya no existe como control de compra.
   await expect(page.locator('[data-add-product="coca-cola-original-pet-500ml-pack-12"]')).toHaveCount(0);
   await page.locator('[data-nav-view="catalog"]:visible').first().click();
@@ -130,8 +138,11 @@ test('busqueda normaliza marca y capacidad con puntuacion local', async ({ page 
   await page.locator('[data-view="catalog"] [data-search-input]').fill('coca cola 1,5 l');
   // Ahora la búsqueda encuentra las unidades de 1,5 L, no los packs de seis.
   await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(2);
-  await expect(page.locator('[data-product-grid]')).toContainText('Coca-Cola Original');
+  await expect(page.locator('[data-product-grid]')).toContainText('Coca-Cola');
   await expect(page.locator('[data-product-grid]')).toContainText('Coca-Cola Zero');
-  // Lo que devuelve la búsqueda es la presentación minorista, con su envase.
-  await expect(page.locator('[data-product-grid]')).toContainText('Botella PET · 1,5 L');
+  // Lo que devuelve la búsqueda es la presentación minorista: el litraje, que es
+  // el dato con el que se elige. El envase sólo se nombra cuando cambia lo que
+  // llega —lata, sifón—, y una botella PET no lo cambia.
+  await expect(page.locator('[data-product-grid]')).toContainText('1,5 L');
+  await expect(page.locator('[data-product-grid]')).not.toContainText('botella-pet');
 });

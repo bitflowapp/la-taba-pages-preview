@@ -44,7 +44,9 @@ test('caso 9 · un producto sin imagen se dibuja completo y digno', () => {
   for (const variante of ['grid', 'list', 'modal']) {
     const html = productThumb(SIN_FOTO, variante);
 
-    // Muestra el recurso propio de TABA, no un hueco ni un ícono roto.
+    // Muestra el recurso propio de TABA, no un hueco ni un ícono roto. Es
+    // NEUTRO a propósito: no imita al producto, porque una aproximación
+    // dibujada de una Coca-Cola no es una Coca-Cola.
     assert.match(html, /assets\/products\/beverage-placeholder\.svg/, variante);
     assert.match(html, /class="thumb uses-placeholder/, variante);
     assert.match(html, /is-placeholder/, variante);

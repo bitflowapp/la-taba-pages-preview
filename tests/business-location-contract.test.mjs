@@ -146,7 +146,10 @@ test('el enlace «Cómo llegar» sigue al punto configurado, y desaparece sin ve
     applyBusinessConfig();
     assert.equal(item.hidden, false);
     assert.equal(link.href, businessMapsSearchUrl());
-    assert.match(link.attrs['aria-label'], /La Taba 2/);
+    // El enlace nombra al comercio con su nombre COMERCIAL («La Taba»); el de
+    // directorio («La Taba 2», BUSINESS_LOCATION.name) es lo que viaja en la
+    // consulta a Maps, y se verifica arriba.
+    assert.match(link.attrs['aria-label'], /La Taba/);
 
     // 2. sin verificar no se ofrece: mandar al cliente a una coordenada que
     //    nadie contrastó es peor que no ofrecer el enlace.

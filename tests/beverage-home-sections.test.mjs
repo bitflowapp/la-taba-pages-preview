@@ -21,6 +21,9 @@ test('la home ordena categorías por foco de bebidas', () => {
     // el día que haya uno comprable.
     'jugos',
     'energizantes',
+    // Las isotónicas tenían chip en la tira de categorías y ninguna sección
+    // detrás: en la home los tres productos no aparecían en ningún carrusel.
+    'isotonicas',
     'fernet',
     'aperitivos',
     'vinos',
@@ -39,6 +42,7 @@ test('la home ordena categorías por foco de bebidas', () => {
       'aguas',
       'jugos',
       'energizantes',
+      'isotonicas',
       'fernet-y-aperitivos',
       'vinos-y-espumantes',
       'destilados',

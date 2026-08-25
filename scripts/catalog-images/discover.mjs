@@ -57,6 +57,19 @@ if (sinRed) {
   const candidatos = [];
   const grupos = [];
   for (const grupo of allowlist.groups) {
+    /*
+     * `sin-catalogo` es un grupo que aporta HOSTS pero no se puede recorrer: el
+     * fabricante publica el packshot en una ficha suelta o en un CDN por id
+     * opaco, sin índice ni API. La foto entra igual —a mano, mirada y firmada
+     * en la auditoría— y la allowlist sigue siendo la que decide si ese host
+     * puede descargarse. Sin esto había que elegir entre inventar un adaptador
+     * para un catálogo que no existe, o dejar la fuente afuera.
+     */
+    if (grupo.adapter === 'sin-catalogo') {
+      grupos.push({ categorias: [], id: grupo.id, storeHost: grupo.storeHost, traidos: 0 });
+      console.log(`  ${grupo.id}: sin catálogo recorrible; sus fuentes entran a mano por la auditoría`);
+      continue;
+    }
     const adaptador = ADAPTADORES[grupo.adapter];
     if (!adaptador) throw new Error(`Adaptador desconocido: ${grupo.adapter}`);
     const categorias = [];

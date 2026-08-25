@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node scripts/check-syntax.mjs && node scripts/check-supabase-config.mjs && node scripts/check-static-assets.mjs && node scripts/check-precache-graph.mjs && node scripts/check-release-hygiene.mjs && node scripts/check-release-identity.mjs && node scripts/check-location-contract.mjs && node scripts/scan-secrets.mjs",
+    "check": "node scripts/check-syntax.mjs && node scripts/check-supabase-config.mjs && node scripts/check-static-assets.mjs && node scripts/catalog-images/generar-laminas-taba.mjs --verificar && node scripts/check-precache-graph.mjs && node scripts/check-release-hygiene.mjs && node scripts/check-release-identity.mjs && node scripts/check-location-contract.mjs && node scripts/scan-secrets.mjs",
     "location:check": "node scripts/check-location-contract.mjs",
     "supabase:config:check": "node scripts/check-supabase-config.mjs",
     "location:delivery:db": "node scripts/verify-delivery-location-db.mjs",
@@ -110,7 +110,10 @@
     "e2e:production-sale": "node scripts/e2e-production-sale/index.mjs",
     "e2e:production-sale:auto": "node scripts/e2e-production-sale/auto.mjs",
     "e2e:provision:panel": "node scripts/e2e-production-sale/provisionar-identidad-panel.mjs",
-    "deps:pinned:check": "node scripts/check-node-modules-pinned.mjs"
+    "deps:pinned:check": "node scripts/check-node-modules-pinned.mjs",
+    "catalog:laminas": "node scripts/catalog-images/generar-laminas-taba.mjs",
+    "catalog:laminas:check": "node scripts/catalog-images/generar-laminas-taba.mjs --verificar",
+    "catalog:laminas:contacto": "node scripts/catalog-images/lamina-contacto.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.60.0",

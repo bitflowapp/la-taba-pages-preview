@@ -26,6 +26,24 @@ export const PRODUCT_IMAGE_NAMESPACES = ['assets/products/', 'assets/catalog/'];
 // recurso que existe justamente para cuando no hay foto propia.
 export const OWN_ASSETS = new Set(['assets/products/beverage-placeholder.svg']);
 
+/*
+ * Obra propia, y VERIFICABLE.
+ *
+ * `assets/products/taba/` son las láminas de góndola que dibuja TABA: las
+ * genera `scripts/catalog-images/generar-laminas-taba.mjs` desde
+ * `catalog/lamina-taba/especificacion.json`, de forma determinista.
+ *
+ * Declarar una carpeta entera como propia sería exactamente el atajo que este
+ * archivo existe para no tomar —bastaría copiar ahí la foto de un tercero—, así
+ * que la declaración no vale sola: `npm run check` corre el generador en modo
+ * `--verificar` y falla si algún archivo de esta carpeta no es byte por byte lo
+ * que produce el generador, o si sobra uno que la especificación no nombra. La
+ * procedencia queda probada por reproducción, no por promesa.
+ */
+export const OWN_NAMESPACES = ['assets/products/taba/'];
+
+const isOwn = (relative) => OWN_ASSETS.has(relative) || OWN_NAMESPACES.some((ns) => relative.startsWith(ns));
+
 const IMAGE = /\.(webp|jpe?g|png|avif|svg)$/i;
 const normalize = (value) => String(value || '').replaceAll('\\', '/');
 
@@ -88,7 +106,7 @@ export function auditProductImageRights(root) {
   return walk(path.join(root, 'assets'), root, [])
     .filter(isProductImage)
     .map((relative) => {
-      const own = OWN_ASSETS.has(relative);
+      const own = isOwn(relative);
       const rights = own ? 'PROPIO' : (declared.get(relative) || 'sin declarar');
       return {
         path: relative,

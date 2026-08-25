@@ -47,8 +47,16 @@ test('packagingLabel: los slugs de base no se filtran a la pantalla', () => {
 });
 
 test('unidad: capacidad primero, variante sólo si agrega información', () => {
+  // El título ya dice «Zero»: repetir «Sin azúcar» debajo es decir dos veces lo
+  // mismo y gastar el renglón que necesita la capacidad.
   assert.equal(
     cardPresentationLine({ name: 'Coca-Cola Zero', presentation: 'Sin azúcar', capacityValue: 1500, capacityUnit: 'ml', unitsPerPack: 1 }),
+    '1,5 L',
+  );
+  // Pero si el nombre NO lo dice, la variante entra: es lo único que la
+  // distingue de la versión con azúcar.
+  assert.equal(
+    cardPresentationLine({ name: 'Manaos Cola', presentation: 'Sin azúcar', capacityValue: 1500, capacityUnit: 'ml', unitsPerPack: 1 }),
     '1,5 L · Sin azúcar',
   );
   // «Naranja» ya está en el nombre: repetirla sería ruido.

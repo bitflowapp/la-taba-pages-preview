@@ -1,5 +1,5 @@
 /*
- * Las cuatro fotografías, en el sitio PUBLICADO y en un navegador de verdad.
+ * Las fotografías del lote, en el sitio PUBLICADO y en un navegador de verdad.
  *
  * QUÉ MIDE QUE LOS TESTS NO PUEDEN
  * --------------------------------
@@ -68,6 +68,37 @@ for (const sku of SKUS_OBJETIVO) {
   }
 }
 
+/*
+ * CUÁNTAS TARJETAS CON FOTO TIENE QUE HABER, Y POR QUÉ NO SON LAS DEL LOTE.
+ *
+ * Esto comparaba contra `SKUS_OBJETIVO.length`, o sea contra el tamaño del
+ * lote de fotografías. Son dos cosas distintas: una tarjeta la dibuja un
+ * producto que está EN LA GÓNDOLA, y un producto del lote puede estar fuera
+ * de venta por una decisión comercial —hoy lo está el pack x6 de Fanta, desde
+ * la curación de lanzamiento del 2026-08-22—. Con la comparación vieja, tener
+ * la fotografía puesta correctamente daba FALLA por un producto que nadie
+ * quiere ver.
+ *
+ * El número no se escribe a mano: se pregunta a la góndola pública, que es
+ * exactamente la lista que el navegador va a recibir. Si mañana vuelve a la
+ * venta, esta cuenta sube sola.
+ */
+const configPublicada = await (await fetch(`${BASE}/runtime-config.js`)).text();
+const urlSupabase = configPublicada.match(/supabaseUrl:\s*'([^']+)'/)?.[1];
+const clavePublicable = configPublicada.match(/publishableKey:\s*'([^']+)'/)?.[1];
+if (!urlSupabase || !clavePublicable) { mal('no se pudo leer el runtime-config publicado'); }
+const gondola = await (await fetch(
+  `${urlSupabase}/rest/v1/products?select=sku&limit=500`,
+  { headers: { apikey: clavePublicable, authorization: `Bearer ${clavePublicable}` } },
+)).json();
+const enGondola = new Set(gondola.map((p) => p.sku));
+const objetivosVisibles = SKUS_OBJETIVO.filter((sku) => enGondola.has(sku));
+const objetivosOcultos = SKUS_OBJETIVO.filter((sku) => !enGondola.has(sku));
+nota(`góndola pública: ${enGondola.size} productos · ${objetivosVisibles.length} del lote a la venta`);
+for (const sku of objetivosOcultos) {
+  nota(`${OBJETIVOS.get(sku).nombre} está fuera de la góndola: su fotografía existe y no le toca tarjeta.`);
+}
+
 console.log('\n── LA TIENDA, EN UN NAVEGADOR REAL');
 const navegador = await chromium.launch();
 const contexto = await navegador.newContext({
@@ -101,10 +132,16 @@ try {
 
   const conFoto = await pagina.locator('.thumb.has-photo').count();
   const conPlaceholder = await pagina.locator('.thumb.uses-placeholder').count();
-  if (conFoto === SKUS_OBJETIVO.length) ok(`${conFoto} tarjetas con fotografía propia`);
-  else mal(`se esperaban ${SKUS_OBJETIVO.length} tarjetas con foto y hay ${conFoto}`);
-  if (conPlaceholder >= 25) ok(`${conPlaceholder} tarjetas siguen con el recurso propio de TABA`);
-  else mal(`sólo ${conPlaceholder} tarjetas usan el placeholder: el fallback no estaría funcionando`);
+  if (conFoto === objetivosVisibles.length) ok(`${conFoto} tarjetas con fotografía propia`);
+  else mal(`se esperaban ${objetivosVisibles.length} tarjetas con foto y hay ${conFoto}`);
+  // El resto de la góndola tiene que estar con el recurso propio, y la suma
+  // tiene que cerrar: una tarjeta que no está en ninguno de los dos grupos es
+  // una tarjeta que no dibujó nada.
+  const esperadasConPlaceholder = enGondola.size - objetivosVisibles.length;
+  if (conPlaceholder === esperadasConPlaceholder) ok(`${conPlaceholder} tarjetas siguen con el recurso propio de TABA`);
+  else mal(`se esperaban ${esperadasConPlaceholder} tarjetas con el recurso propio y hay ${conPlaceholder}`);
+  if (conFoto + conPlaceholder === tarjetas) ok(`las ${tarjetas} tarjetas dibujan algo: foto propia o recurso de TABA`);
+  else mal(`${tarjetas - conFoto - conPlaceholder} tarjeta(s) no dibujan ni foto ni recurso propio`);
 
   // Qué imagen dibuja cada tarjeta con foto, y de qué producto es.
   const dibujadas = await pagina.evaluate(() => [...document.querySelectorAll('.thumb.has-photo img')]
@@ -112,11 +149,11 @@ try {
   for (const { alt, src } of dibujadas) nota(`dibuja: ${alt} → ${src.split('/').pop()}`);
   const esperadas = new Set(SKUS_OBJETIVO.map((sku) => porSku.get(sku).assets.thumbnail.path.split('/').pop()));
   const dibujadasOk = dibujadas.every(({ src }) => esperadas.has(src.split('/').pop().split('?')[0]));
-  if (dibujadasOk && dibujadas.length === SKUS_OBJETIVO.length) ok('cada tarjeta con foto dibuja el thumbnail de SU producto');
+  if (dibujadasOk && dibujadas.length === objetivosVisibles.length) ok('cada tarjeta con foto dibuja el thumbnail de SU producto');
   else mal('alguna tarjeta dibuja una imagen que no es la de su producto');
 
-  // Ficha y carrito, sobre uno de los cuatro.
-  const objetivo = OBJETIVOS.get(SKUS_OBJETIVO[0]).nombre;
+  // Ficha y carrito, sobre uno del lote que esté a la venta.
+  const objetivo = OBJETIVOS.get(objetivosVisibles[0]).nombre;
   const tarjeta = pagina.locator('.thumb.has-photo').first();
   await tarjeta.click();
   await pagina.waitForTimeout(1800);
@@ -190,11 +227,11 @@ await fs.writeFile(INFORME, stableJson({
   resumen,
   rotas: rotas.length,
   schemaVersion: 1,
-  veredicto: rotas.length === 0 ? '4 OFFICIAL PACKSHOTS LIVE' : 'REVISAR',
+  veredicto: rotas.length === 0 ? `${objetivosVisibles.length} OFFICIAL PACKSHOTS LIVE` : 'REVISAR',
 }), 'utf8');
 
 console.log(`\n  informe: ${path.relative(ROOT, INFORME).replaceAll('\\', '/')}`);
 console.log(rotas.length === 0
-  ? '  4 OFFICIAL PACKSHOTS LIVE'
+  ? `  ${objetivosVisibles.length} OFFICIAL PACKSHOTS LIVE`
   : `  ${rotas.length} comprobación(es) rota(s)`);
 process.exit(rotas.length === 0 ? 0 : 1);

@@ -693,7 +693,13 @@ for (const p of conImagen) {
   exigir(p.image_thumbnail_sha256 === f.assets.thumbnail.sha256, `${p.sku}: SHA-256 del thumbnail`);
   exigir(p.source_image_sha256 === f.sourceSha256, `${p.sku}: SHA-256 de la fuente`);
   exigir(Boolean(p.catalog_asset_id), `${p.sku}: ligado a su catalog_asset`);
-  exigir(p.is_verified === true && p.available === true, `${p.sku}: verificado y de vuelta en venta`);
+  // La misma regla que decidió con qué disponibilidad se republicó: un producto
+  // que estaba fuera de la góndola tiene que seguir afuera, con su foto puesta.
+  const vuelveAVenta = disponibilidadObjetivo.get(p.sku) === true;
+  exigir(
+    p.is_verified === true && p.available === vuelveAVenta,
+    `${p.sku}: verificado y ${vuelveAVenta ? 'de vuelta en venta' : 'fuera de venta, como estaba'}`,
+  );
   exigir(!/jumbo|carrefour|disco|vea|coto|mercadolibre/i.test(p.image_url), `${p.sku}: no es una imagen de retailer`);
 }
 

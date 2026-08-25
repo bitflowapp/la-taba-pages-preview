@@ -1,6 +1,6 @@
 {
   "base": "https://la-taba.pages.dev",
-  "cacheName": "la-taba-runtime-v80-instalacion-temprana",
+  "cacheName": "la-taba-runtime-v86-gondola-premium",
   "comprobaciones": [
     {
       "ok": true,
@@ -36,6 +36,126 @@
     },
     {
       "ok": true,
+      "t": "Coca-Cola · 2,25 L · master · 200 · 26.1 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Coca-Cola · 2,25 L · thumbnail · 200 · 7.9 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Coca-Cola Zero · 2,25 L · master · 200 · 22.3 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Coca-Cola Zero · 2,25 L · thumbnail · 200 · 6.9 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Sprite · 2,25 L · master · 200 · 17.0 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Sprite · 2,25 L · thumbnail · 200 · 4.7 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Sprite Zero · 2,25 L · master · 200 · 16.0 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Sprite Zero · 2,25 L · thumbnail · 200 · 4.4 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Sprite · 354 ml · master · 200 · 45.6 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Sprite · 354 ml · thumbnail · 200 · 13.9 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Benedictino · 2,25 L · master · 200 · 19.4 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Benedictino · 2,25 L · thumbnail · 200 · 5.9 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Monster Green Zero · 473 ml · master · 200 · 40.7 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Monster Green Zero · 473 ml · thumbnail · 200 · 13.1 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Soda Manaos · 2 L · master · 200 · 39.2 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Soda Manaos · 2 L · thumbnail · 200 · 12.6 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Paso de los Toros Tónica · 1,5 L · master · 200 · 17.8 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Paso de los Toros Tónica · 1,5 L · thumbnail · 200 · 5.1 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Paso de los Toros Pomelo · 1,5 L · master · 200 · 15.3 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Paso de los Toros Pomelo · 1,5 L · thumbnail · 200 · 4.6 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Aquarius Manzana · 1,5 L · master · 200 · 22.4 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Aquarius Manzana · 1,5 L · thumbnail · 200 · 6.8 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Aquarius Pera · 1,5 L · master · 200 · 17.6 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Aquarius Pera · 1,5 L · thumbnail · 200 · 5.2 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Aquarius Pomelo · 2,25 L · master · 200 · 19.2 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Aquarius Pomelo · 2,25 L · thumbnail · 200 · 5.3 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Gatorade Manzana · 1,25 L · master · 200 · 27.4 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Gatorade Manzana · 1,25 L · thumbnail · 200 · 8.5 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Gatorade Cool Blue · 500 ml · master · 200 · 19.6 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
+      "t": "Gatorade Cool Blue · 500 ml · thumbnail · 200 · 6.1 KB · SHA-256 exacto"
+    },
+    {
+      "ok": true,
       "t": "el sitio arranca"
     },
     {
@@ -44,11 +164,15 @@
     },
     {
       "ok": true,
-      "t": "4 tarjetas con fotografía propia"
+      "t": "18 tarjetas con fotografía propia"
     },
     {
       "ok": true,
-      "t": "29 tarjetas siguen con el recurso propio de TABA"
+      "t": "15 tarjetas siguen con el recurso propio de TABA"
+    },
+    {
+      "ok": true,
+      "t": "las 33 tarjetas dibujan algo: foto propia o recurso de TABA"
     },
     {
       "ok": true,
@@ -68,11 +192,11 @@
     },
     {
       "ok": true,
-      "t": "service worker intacto · la-taba-runtime-v80-instalacion-temprana"
+      "t": "service worker intacto · la-taba-runtime-v86-gondola-premium"
     },
     {
       "ok": true,
-      "t": "ninguna de las 8 imágenes pedidas viene de un retailer"
+      "t": "ninguna de las 16 imágenes pedidas viene de un retailer"
     },
     {
       "ok": true,
@@ -151,14 +275,284 @@
       "sku": "sprite-botella-pet-500-ml-pack-x12",
       "tipo": "image/webp",
       "url": "https://la-taba.pages.dev/assets/products/sprite-botella-pet-500-ml-pack-x12-07620ef3d3aa792c-thumb-49fb5075276d3ebb.webp"
+    },
+    {
+      "bytes": 26694,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "adb8042ea9716cb98846dc1d8764eb9a047adcf34ca33fc50d46fc959c846c6e",
+      "sku": "coca-cola-original-2250ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/coca-cola-original-2250ml-97dc25e8399a5775-adb8042ea9716cb9.webp"
+    },
+    {
+      "bytes": 8074,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "acbe05a93036a3a451939f75f146b73eb74db5aec2c16ac0b47f04886949b1df",
+      "sku": "coca-cola-original-2250ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/coca-cola-original-2250ml-97dc25e8399a5775-thumb-acbe05a93036a3a4.webp"
+    },
+    {
+      "bytes": 22878,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "309bbcc731498df73d5f2618ca902169e6dca283eb9fc35fa2c8a7807886f2f1",
+      "sku": "coca-cola-zero-2250ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/coca-cola-zero-2250ml-4ce84243eb65d14a-309bbcc731498df7.webp"
+    },
+    {
+      "bytes": 7108,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "826e5a5ea976e1e2dbaa1cb55dafbfa68bfbfa84ad2c1bb2452fb7ac1198ce7f",
+      "sku": "coca-cola-zero-2250ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/coca-cola-zero-2250ml-4ce84243eb65d14a-thumb-826e5a5ea976e1e2.webp"
+    },
+    {
+      "bytes": 17364,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "3898f9d83fdf293f0d4efb1b1ed1dc914a91fe026a9d0f4b933374e316e3f613",
+      "sku": "sprite-original-2250ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/sprite-original-2250ml-99d83c94dac255ca-3898f9d83fdf293f.webp"
+    },
+    {
+      "bytes": 4816,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "1e02490bc9080f4969bf2c4100514bd90facaaed68e44ef52efc1e383235084f",
+      "sku": "sprite-original-2250ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/sprite-original-2250ml-99d83c94dac255ca-thumb-1e02490bc9080f49.webp"
+    },
+    {
+      "bytes": 16396,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "96e92127e95886abe28220741a08e9f8d839c5247c7ff410efb638fe98a1aa48",
+      "sku": "sprite-zero-2250ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/sprite-zero-2250ml-c43f15fd8eedc2e4-96e92127e95886ab.webp"
+    },
+    {
+      "bytes": 4478,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "4e04923ee3c2fb008e57d9b4d16d85f04ab63653db7f2b71763ac312d7c8568b",
+      "sku": "sprite-zero-2250ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/sprite-zero-2250ml-c43f15fd8eedc2e4-thumb-4e04923ee3c2fb00.webp"
+    },
+    {
+      "bytes": 46696,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "8832bfc71a16ffada799d1992258f6c7813f19844beb8414862b05a80f08c4bb",
+      "sku": "sprite-original-lata-354ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/sprite-original-lata-354ml-0060e518ebfab8e7-8832bfc71a16ffad.webp"
+    },
+    {
+      "bytes": 14234,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "9f34da79cf990fa1127231b78e09dc43f6af91fc5b0544943d7e79d39cd88932",
+      "sku": "sprite-original-lata-354ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/sprite-original-lata-354ml-0060e518ebfab8e7-thumb-9f34da79cf990fa1.webp"
+    },
+    {
+      "bytes": 19898,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "b3100a865b922f28e4669b6b65cbb652a5a53bfed7ef3a321d4f36e8d21d14fd",
+      "sku": "benedictino-sin-gas-2250ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/benedictino-sin-gas-2250ml-8291602e84de68e9-b3100a865b922f28.webp"
+    },
+    {
+      "bytes": 6016,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "e6d7c299f80e6e5d170f46c818147296496907c6608f84a89d40ae1ccaec1e88",
+      "sku": "benedictino-sin-gas-2250ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/benedictino-sin-gas-2250ml-8291602e84de68e9-thumb-e6d7c299f80e6e5d.webp"
+    },
+    {
+      "bytes": 41700,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "36ea5aaa51d7906e28a0867e07e7cfe81aa44f929b9a2aebfb31982558bec049",
+      "sku": "monster-green-zero-473ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/monster-green-zero-473ml-c238e9bf28582e15-36ea5aaa51d7906e.webp"
+    },
+    {
+      "bytes": 13448,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "9ee7f5db50e33ce1f71fd6457c98e315eb20e72d69cc2f2b442d742f5f84ca27",
+      "sku": "monster-green-zero-473ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/monster-green-zero-473ml-c238e9bf28582e15-thumb-9ee7f5db50e33ce1.webp"
+    },
+    {
+      "bytes": 40172,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "3700b6c8cb4ec1b4ab234cd89bb7b3d8061c7529f8c92d6a8c2ee842d08cdc00",
+      "sku": "soda-manaos-sifon-2000ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/soda-manaos-sifon-2000ml-b92e160958368c0d-3700b6c8cb4ec1b4.webp"
+    },
+    {
+      "bytes": 12906,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "33a5a3998f343f97f5385215b03c4d2f7f58b8036ee18d78aa52a9b4aee7f3b5",
+      "sku": "soda-manaos-sifon-2000ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/soda-manaos-sifon-2000ml-b92e160958368c0d-thumb-33a5a3998f343f97.webp"
+    },
+    {
+      "bytes": 18194,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "f551a02eb264272cb86146b87231f4d43196e2be52f142b80f03cdbd6622821a",
+      "sku": "paso-de-los-toros-tonica-1500ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/paso-de-los-toros-tonica-1500ml-3a05ed21abc4e380-f551a02eb264272c.webp"
+    },
+    {
+      "bytes": 5214,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "209929c85be873fa6ee45a627f1767e730b86fec8df07a8d2a543285ca25ec57",
+      "sku": "paso-de-los-toros-tonica-1500ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/paso-de-los-toros-tonica-1500ml-3a05ed21abc4e380-thumb-209929c85be873fa.webp"
+    },
+    {
+      "bytes": 15656,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "5ee73401ead32b21b98bae86af35d1b20c5b5c34fe52749be028a0a1b7d6f7bc",
+      "sku": "paso-de-los-toros-pomelo-1500ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/paso-de-los-toros-pomelo-1500ml-07e30d4119649232-5ee73401ead32b21.webp"
+    },
+    {
+      "bytes": 4734,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "2578710a66ec476a5b4a0cae9244e5115a51a9cebe3be50fb2ba4cf997f79f80",
+      "sku": "paso-de-los-toros-pomelo-1500ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/paso-de-los-toros-pomelo-1500ml-07e30d4119649232-thumb-2578710a66ec476a.webp"
+    },
+    {
+      "bytes": 22958,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "d3c0af1d8c4494d990f03302c671c1d9778d855a70f023b4def927404a09f865",
+      "sku": "aquarius-manzana-1500ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/aquarius-manzana-1500ml-5a06bd9176e27828-d3c0af1d8c4494d9.webp"
+    },
+    {
+      "bytes": 6954,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "d5da2606a2f036cf4cbdee5d858806ab84d3f2b1d85746b826ae98b034c660b0",
+      "sku": "aquarius-manzana-1500ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/aquarius-manzana-1500ml-5a06bd9176e27828-thumb-d5da2606a2f036cf.webp"
+    },
+    {
+      "bytes": 17978,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "2925d0553fe3f194bbfc6f57d29bdcfc9dbfcb93733e7d3e429ce0b590025322",
+      "sku": "aquarius-pera-1500ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/aquarius-pera-1500ml-d8c1230b1227373f-2925d0553fe3f194.webp"
+    },
+    {
+      "bytes": 5350,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "0c540b9ca40aec2e287ad1a3c0776969c0d0247dea79028b6cfe8c07e88aea82",
+      "sku": "aquarius-pera-1500ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/aquarius-pera-1500ml-d8c1230b1227373f-thumb-0c540b9ca40aec2e.webp"
+    },
+    {
+      "bytes": 19676,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "f788300784447191d85684c2f8f7ac269b5d64400bfef445c9be79cd9e0b7bfb",
+      "sku": "aquarius-pomelo-2250ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/aquarius-pomelo-2250ml-8de7c8de5e780020-f788300784447191.webp"
+    },
+    {
+      "bytes": 5462,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "bd47cfae363889a127f3cb5e11485288238e19cf3e19d422e45bf505310b3dfb",
+      "sku": "aquarius-pomelo-2250ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/aquarius-pomelo-2250ml-8de7c8de5e780020-thumb-bd47cfae363889a1.webp"
+    },
+    {
+      "bytes": 28106,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "67bbe43a8a8849395f966b3baceb95bd633699154e2a82b7ab81cbd21c16b2ac",
+      "sku": "gatorade-manzana-1250ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/gatorade-manzana-1250ml-64efd055975ef241-67bbe43a8a884939.webp"
+    },
+    {
+      "bytes": 8752,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "b33a3ac22178a69a8783c9255493bde92baf4805e8245a64ad7434f926e94b92",
+      "sku": "gatorade-manzana-1250ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/gatorade-manzana-1250ml-64efd055975ef241-thumb-b33a3ac22178a69a.webp"
+    },
+    {
+      "bytes": 20058,
+      "clase": "master",
+      "estado": 200,
+      "sha256": "f138bb4b00238c71209ee857c9078994a5f23168e79dd521eba623e222bdae36",
+      "sku": "gatorade-cool-blue-500ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/gatorade-cool-blue-500ml-e3fcbd3e1e29bb61-f138bb4b00238c71.webp"
+    },
+    {
+      "bytes": 6288,
+      "clase": "thumbnail",
+      "estado": 200,
+      "sha256": "b41adc6e858c3a9006a28c01425f483c0cd04f5ce2db4ce0d1744056d9765919",
+      "sku": "gatorade-cool-blue-500ml",
+      "tipo": "image/webp",
+      "url": "https://la-taba.pages.dev/assets/products/gatorade-cool-blue-500ml-e3fcbd3e1e29bb61-thumb-b41adc6e858c3a90.webp"
     }
   ],
   "resumen": {
-    "conFoto": 4,
-    "conPlaceholder": 29,
+    "conFoto": 18,
+    "conPlaceholder": 15,
     "tarjetas": 33
   },
   "rotas": 0,
   "schemaVersion": 1,
-  "veredicto": "4 OFFICIAL PACKSHOTS LIVE"
+  "veredicto": "18 OFFICIAL PACKSHOTS LIVE"
 }

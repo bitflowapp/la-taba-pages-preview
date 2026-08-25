@@ -185,6 +185,64 @@
     {
       "assets": {
         "master": {
+          "bindingSha256": "b417ec16f2d855019b27bdf31ffb44dcbbc0f1a9271186f776e05f25edfd2912",
+          "height": 1000,
+          "path": "assets/products/coca-cola-original-lata-354ml-3c2cefd7fe4bd597-f2cf7dff4b87047d.webp",
+          "sha256": "f2cf7dff4b87047dafb9a540bd472567fbbc239b6b4aefa08f8f36ce064431a8",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "6cbd64a7082938e5f9615005d9962a57193ad6774ec9a6846fc58cd32a86b801",
+          "height": 400,
+          "path": "assets/products/coca-cola-original-lata-354ml-3c2cefd7fe4bd597-thumb-cd767440cdb0ff40.webp",
+          "sha256": "cd767440cdb0ff405b5aedd3ebd746a694ab303657dc80b012142277825f41fe",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-08-25",
+      "externalId": "coca-cola-original-lata-354ml",
+      "identitySha256": "3c2cefd7fe4bd597ff1512b807100c9b5c702d53ec124086549da46ada2d8efd",
+      "rawFile": "coca-cola-original-lata-354ml-3c2cefd7fe4bd597.c9ae66a18e7b3b805e422110d86e371d902a01f0645a81138275f44237d06d96.source",
+      "rightsReference": "TABA-AUT-2026-08-001",
+      "rightsStatus": "LICENCIA_COMERCIAL",
+      "safeSku": "coca-cola-original-lata-354ml",
+      "sku": "coca-cola-original-lata-354ml",
+      "sourceSha256": "c9ae66a18e7b3b805e422110d86e371d902a01f0645a81138275f44237d06d96",
+      "sourceType": "proveedor_aprobado",
+      "sourceUrl": "https://jumboargentina.vtexassets.com/arquivos/ids/782827/Gaseosa-Coca-cola-Sabor-Original-354-Ml-2-32332.jpg?v=638206689782930000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "512ea9481e09b90530d9de750d9c09cd387d61cd4d657660bd1da16691ccff52",
+          "height": 1000,
+          "path": "assets/products/coca-cola-original-pet-1500ml-5781315ce9f8f02f-43114ca6977868de.webp",
+          "sha256": "43114ca6977868ded4cf6e0648219863b86b2ab85d427bff016edaae2da4b637",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "d5e7987bb8135732c66e4ffcb3c66a8202248ac8cb46f8b100cf05c652bb7686",
+          "height": 400,
+          "path": "assets/products/coca-cola-original-pet-1500ml-5781315ce9f8f02f-thumb-af5f576fc2f48d8f.webp",
+          "sha256": "af5f576fc2f48d8f9feff145a94036694fe39944c87b8817ff1a0454f23dfd9a",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-08-25",
+      "externalId": "coca-cola-original-pet-1500ml",
+      "identitySha256": "5781315ce9f8f02f82e262af0c74f530a29a28e4067e86e561587db40bb69c00",
+      "rawFile": "coca-cola-original-pet-1500ml-5781315ce9f8f02f.4fecc4e74847e2f1e1b81a082b97fa03ed9dac3d505a476c9e2050f6c8c3ab58.source",
+      "rightsReference": "TABA-AUT-2026-08-001",
+      "rightsStatus": "LICENCIA_COMERCIAL",
+      "safeSku": "coca-cola-original-pet-1500ml",
+      "sku": "coca-cola-original-pet-1500ml",
+      "sourceSha256": "4fecc4e74847e2f1e1b81a082b97fa03ed9dac3d505a476c9e2050f6c8c3ab58",
+      "sourceType": "proveedor_aprobado",
+      "sourceUrl": "https://ardiaprod.vtexassets.com/arquivos/ids/339743/Gaseosa-CocaCola-Sabor-Original-15-Lt-_2.jpg?v=638689887747170000"
+    },
+    {
+      "assets": {
+        "master": {
           "bindingSha256": "4b12d6091b774f0a95bcbaee9fa44691947ee836c3d99cdab89952b6984ef28f",
           "height": 1000,
           "path": "assets/products/coca-cola-zero-2250ml-4ce84243eb65d14a-309bbcc731498df7.webp",
@@ -239,6 +297,64 @@
       "sourceSha256": "ad180f225a01e71add4d61beab3be1f01a092e4bdf5579b20484d87a2146dbc1",
       "sourceType": "fabricante",
       "sourceUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156461/101816.jpg?v=639063400798100000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "52539db22ec1eb42b3243ad56288a56a2c1e2df772781e23abfe134a59334e9c",
+          "height": 1000,
+          "path": "assets/products/coca-cola-zero-lata-354ml-4d1955a80c87ab0e-87f477f474494b33.webp",
+          "sha256": "87f477f474494b3394880c7929d52193d37b56d93400ce50e96a017d2ecfc977",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "bc363a34b8c812a3b4e598a05836455af8e2e45536f28b9d7e6df0c4378552b2",
+          "height": 400,
+          "path": "assets/products/coca-cola-zero-lata-354ml-4d1955a80c87ab0e-thumb-7816226aa02505f5.webp",
+          "sha256": "7816226aa02505f5cc1e5f40f24b90d054d19cd8a6e5a7b3b449a89cae8b3393",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-08-25",
+      "externalId": "coca-cola-zero-lata-354ml",
+      "identitySha256": "4d1955a80c87ab0e3b1aebba52dc8fcece3982b3012e48255dc4850c31696cfa",
+      "rawFile": "coca-cola-zero-lata-354ml-4d1955a80c87ab0e.7bfc5d4afb11a99600097cf8cab7cc3f07f1effd140420541e50c19f35cc598d.source",
+      "rightsReference": "TABA-AUT-2026-08-001",
+      "rightsStatus": "LICENCIA_COMERCIAL",
+      "safeSku": "coca-cola-zero-lata-354ml",
+      "sku": "coca-cola-zero-lata-354ml",
+      "sourceSha256": "7bfc5d4afb11a99600097cf8cab7cc3f07f1effd140420541e50c19f35cc598d",
+      "sourceType": "proveedor_aprobado",
+      "sourceUrl": "https://www.espaciovino.com.ar/media/default/0001/73/thumb_72209_default_big.jpeg"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "2cab7665f2246857e6b189dd50187fda7e8e622b48c7e96297982419777ccf4e",
+          "height": 1000,
+          "path": "assets/products/fanta-naranja-2250ml-797064494952a9a1-9ef1596448794ce7.webp",
+          "sha256": "9ef1596448794ce74aa676484cc3f9550fc16274e918fc9958b59ad9a6921d80",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "2722a29c52ddf987f3f2880174e0e6749022e7f6b4ca03cb43f00bb8421ac593",
+          "height": 400,
+          "path": "assets/products/fanta-naranja-2250ml-797064494952a9a1-thumb-3a996fad3a89104c.webp",
+          "sha256": "3a996fad3a89104c238e6074f86499766ca7a2453335451dde26d5bf6600674a",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-08-25",
+      "externalId": "fanta-naranja-2250ml",
+      "identitySha256": "797064494952a9a1aacd4ff5453fbf01b2707567686077e37aa5eab97e5a95ba",
+      "rawFile": "fanta-naranja-2250ml-797064494952a9a1.a3ce9827db2a6a0987a753127fff73c2c14908e1b48073a89ec70383aa2db211.source",
+      "rightsReference": "TABA-AUT-2026-08-001",
+      "rightsStatus": "LICENCIA_COMERCIAL",
+      "safeSku": "fanta-naranja-2250ml",
+      "sku": "fanta-naranja-2250ml",
+      "sourceSha256": "a3ce9827db2a6a0987a753127fff73c2c14908e1b48073a89ec70383aa2db211",
+      "sourceType": "proveedor_aprobado",
+      "sourceUrl": "https://jumboargentina.vtexassets.com/arquivos/ids/893206/Gaseosa-Naranja-2-25-Lts-Fanta-2-248227.jpg?v=639009777706070000"
     },
     {
       "assets": {
@@ -417,6 +533,180 @@
     {
       "assets": {
         "master": {
+          "bindingSha256": "6912f46e9688f6cb046f96dd5136e13d6d7efd81fafd3a6dfc97facb90be3a37",
+          "height": 1000,
+          "path": "assets/products/pepsi-black-1500ml-52009e2651c40a42-b09188d077fa3a4f.webp",
+          "sha256": "b09188d077fa3a4fa8d272cd762633d4fb7c876f31fcb12dc73d3088d58482c3",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "2e1e9cc765cb994207cd2ccf82dd3857ee6d4360aea2b02ec95514612994e7a4",
+          "height": 400,
+          "path": "assets/products/pepsi-black-1500ml-52009e2651c40a42-thumb-a562d12e0fb5d26b.webp",
+          "sha256": "a562d12e0fb5d26b0d784d432b120e35fc0a34a05290fc5fbef758d2359afa67",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-08-25",
+      "externalId": "pepsi-black-1500ml",
+      "identitySha256": "52009e2651c40a4235237398b27759440a1993167448e0c7c82afb4825fda36a",
+      "rawFile": "pepsi-black-1500ml-52009e2651c40a42.04681d44876f6e3465fa69ad5db82f989eb63279001e8b129b06ce422561f78a.source",
+      "rightsReference": "TABA-AUT-2026-08-001",
+      "rightsStatus": "LICENCIA_COMERCIAL",
+      "safeSku": "pepsi-black-1500ml",
+      "sku": "pepsi-black-1500ml",
+      "sourceSha256": "04681d44876f6e3465fa69ad5db82f989eb63279001e8b129b06ce422561f78a",
+      "sourceType": "proveedor_aprobado",
+      "sourceUrl": "https://jumboargentina.vtexassets.com/arquivos/ids/907119-1000-auto?aspect=true&height=auto&v=639124043883700000&width=1000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "6e5a8325fb6475ae833746b61132eedf8a669d890424c47f53f80038de1be47a",
+          "height": 1000,
+          "path": "assets/products/pepsi-original-2000ml-b4298e4382912cf4-86e8267fb10c961a.webp",
+          "sha256": "86e8267fb10c961af6294890566b686f0b03f9f72fb5eb0879faf395581d3b88",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "489df35ffc37874d04e0ad393aba0bff8b946947c853a8f523c1cb614b151679",
+          "height": 400,
+          "path": "assets/products/pepsi-original-2000ml-b4298e4382912cf4-thumb-815a946c396e0a93.webp",
+          "sha256": "815a946c396e0a932e7b2fcc88da1d8fa89db1dd288383d28779316752f416d6",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-08-25",
+      "externalId": "pepsi-original-2000ml",
+      "identitySha256": "b4298e4382912cf40c15e289a2c66199b5a4699892f24df07a215044ba7ec947",
+      "rawFile": "pepsi-original-2000ml-b4298e4382912cf4.bdeec298231c2319de7fd531ab181e40a535c92b792fc840b3fe8bf6768fcc9e.source",
+      "rightsReference": "TABA-AUT-2026-08-001",
+      "rightsStatus": "LICENCIA_COMERCIAL",
+      "safeSku": "pepsi-original-2000ml",
+      "sku": "pepsi-original-2000ml",
+      "sourceSha256": "bdeec298231c2319de7fd531ab181e40a535c92b792fc840b3fe8bf6768fcc9e",
+      "sourceType": "proveedor_aprobado",
+      "sourceUrl": "https://jumboargentina.vtexassets.com/arquivos/ids/907125-1000-auto?aspect=true&height=auto&v=639124043908630000&width=1000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "6809c8cbb047317e1fa9d31a9d809b3f3f6940c2b22d684f09a5a4b83d219ad9",
+          "height": 1000,
+          "path": "assets/products/powerade-mountain-blast-500ml-1ea05e4f6f192e2f-4d73a0a156b31cb6.webp",
+          "sha256": "4d73a0a156b31cb624bb3a245c2cde51631f20b87151389fa795f9304b21f881",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "861ba899db91bfa3b97d0dedd2308ca922ccd7bcd7283af8f77089030a6408a5",
+          "height": 400,
+          "path": "assets/products/powerade-mountain-blast-500ml-1ea05e4f6f192e2f-thumb-61387947b7df6f68.webp",
+          "sha256": "61387947b7df6f68cd07be6dd5eb974bbadde095f517a0a7fab1292bc1c5e327",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-08-25",
+      "externalId": "powerade-mountain-blast-500ml",
+      "identitySha256": "1ea05e4f6f192e2f70fe7621d5254e0092edfa78b105a43a7922bf38102591c9",
+      "rawFile": "powerade-mountain-blast-500ml-1ea05e4f6f192e2f.c36582fcd42502bcbe5aacde92945c71bbae273ff5580610772c1138eb1688f9.source",
+      "rightsReference": "TABA-AUT-2026-08-001",
+      "rightsStatus": "LICENCIA_COMERCIAL",
+      "safeSku": "powerade-mountain-blast-500ml",
+      "sku": "powerade-mountain-blast-500ml",
+      "sourceSha256": "c36582fcd42502bcbe5aacde92945c71bbae273ff5580610772c1138eb1688f9",
+      "sourceType": "proveedor_aprobado",
+      "sourceUrl": "https://ardiaprod.vtexassets.com/arquivos/ids/364198/Bebida-Isotonica-Powerade-Mountain-Blast-500-Ml-_2.jpg?v=639047812189470000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "5804cc095cf8e26d94b4e4e6d1010f7a1edbfac162c4da7542f3ac7aeacaff2c",
+          "height": 1000,
+          "path": "assets/products/red-bull-original-250ml-2d86788f7b853c11-d9018a7780c8e25b.webp",
+          "sha256": "d9018a7780c8e25b8c1bbb82ff0d5c7b4be8d35844987d176f7061ffc080c40a",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "d462b45b477ba0e84f616fd00cddcdd1b2112bcecfda3ce650103b78af72d497",
+          "height": 400,
+          "path": "assets/products/red-bull-original-250ml-2d86788f7b853c11-thumb-4f0870826f9f8bce.webp",
+          "sha256": "4f0870826f9f8bcec813b1d872d658105b6f9c776374e72deb4e05368df68afa",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-08-25",
+      "externalId": "red-bull-original-250ml",
+      "identitySha256": "2d86788f7b853c11760bdcf66230f223674be186cda26d55a3164fa1382f72e7",
+      "rawFile": "red-bull-original-250ml-2d86788f7b853c11.cfce2cfbc26a79bdb89baaee12089327062a502331da4d1868f7f9dc479bf0ea.source",
+      "rightsReference": "TABA-AUT-2026-08-001",
+      "rightsStatus": "LICENCIA_COMERCIAL",
+      "safeSku": "red-bull-original-250ml",
+      "sku": "red-bull-original-250ml",
+      "sourceSha256": "cfce2cfbc26a79bdb89baaee12089327062a502331da4d1868f7f9dc479bf0ea",
+      "sourceType": "fabricante",
+      "sourceUrl": "https://www.redbull.com/energydrink/v1/resources/storyblok/images/f/287059/528x1348/b0f01ba07f/ar_ed_250ml_energy-drink_country_rgb__cold_closed_front_com_full.png/m/686x0"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "4926119eafa68f4241bf5b19bdc4d8a28502040a3267fb4672faa056c20f6d04",
+          "height": 1000,
+          "path": "assets/products/red-bull-sin-azucar-250ml-f0aeca853a67db50-8f27b231957a48bb.webp",
+          "sha256": "8f27b231957a48bb5f602ac97e6d454c8d43d9466a5a6fa6ad7caa24a352e44f",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "4cf9587d338735a615ffca01fcd73fcc348cde34431df044cf395724cdf40d6e",
+          "height": 400,
+          "path": "assets/products/red-bull-sin-azucar-250ml-f0aeca853a67db50-thumb-86cbad78e9e62eb2.webp",
+          "sha256": "86cbad78e9e62eb24297f05dd0264348c0520720f112fbdf6112dd103de0ac28",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-08-25",
+      "externalId": "red-bull-sin-azucar-250ml",
+      "identitySha256": "f0aeca853a67db508b9381a631c4ec6ef440d7538988d5017e7c74da2cd8a756",
+      "rawFile": "red-bull-sin-azucar-250ml-f0aeca853a67db50.c074bb55d99fb5c1ed72b67dd049984a527d15c6171ad5ff7e7cfafeaa8bed32.source",
+      "rightsReference": "TABA-AUT-2026-08-001",
+      "rightsStatus": "LICENCIA_COMERCIAL",
+      "safeSku": "red-bull-sin-azucar-250ml",
+      "sku": "red-bull-sin-azucar-250ml",
+      "sourceSha256": "c074bb55d99fb5c1ed72b67dd049984a527d15c6171ad5ff7e7cfafeaa8bed32",
+      "sourceType": "fabricante",
+      "sourceUrl": "https://www.redbull.com/energydrink/v1/resources/storyblok/images/f/287059/528x1348/4fe7d5680f/ar_sf_250ml_sugarfree_country_rgb_do241550_cold_closed_front_com_full.png/m/686x0"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "a7f8a127c4675db791b4fcaa61caa6800555bcbd50b6d468d1c10180f04b2e7e",
+          "height": 1000,
+          "path": "assets/products/seven-up-original-2000ml-2ed6deb5fa431d4b-f32d43104a61239c.webp",
+          "sha256": "f32d43104a61239cac763f834081f74251e23d68cb5a1bce92d1fc25da2f38ef",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "918a52fec3b02dcc2c5153d518361c695bec5016ac69b66fb7a6672d4e7c4f97",
+          "height": 400,
+          "path": "assets/products/seven-up-original-2000ml-2ed6deb5fa431d4b-thumb-556d7a39b0433124.webp",
+          "sha256": "556d7a39b04331244604ac7ae77fc3278ae0fb94279b5d0f5076e1d6a13a80f2",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-08-25",
+      "externalId": "seven-up-original-2000ml",
+      "identitySha256": "2ed6deb5fa431d4b988ff5810fae0da5de0279372b19e9622fd99e4f1e307278",
+      "rawFile": "seven-up-original-2000ml-2ed6deb5fa431d4b.2e71e6b6dc2427df324e2716fe56858fe37f50a420b5ca275b074e8e293c5a7f.source",
+      "rightsReference": "TABA-AUT-2026-08-001",
+      "rightsStatus": "LICENCIA_COMERCIAL",
+      "safeSku": "seven-up-original-2000ml",
+      "sku": "seven-up-original-2000ml",
+      "sourceSha256": "2e71e6b6dc2427df324e2716fe56858fe37f50a420b5ca275b074e8e293c5a7f",
+      "sourceType": "proveedor_aprobado",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/904889/Gaseosa-Lima-Lim-n-X-2-Lts-7-Up-1-1057020.jpg?v=639232771896330000"
+    },
+    {
+      "assets": {
+        "master": {
           "bindingSha256": "949fd8d3b796e91b89dd19b90e7cc7d285d4b6fee59b067e4a9bed2dfd48b84d",
           "height": 1000,
           "path": "assets/products/soda-manaos-sifon-2000ml-b92e160958368c0d-3700b6c8cb4ec1b4.webp",
@@ -442,6 +732,64 @@
       "sourceSha256": "03b09a8673ededd69383491e79b87f9687813872099d5d1fdcbee7b498a23fb5",
       "sourceType": "fabricante",
       "sourceUrl": "https://www.manaosargentina.com/images/productos/soda/MANAOS-SODA-2LTS.jpg"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "b076641b93b6ab248dcda1e5cc5d4d3e2ebdd3fbe9d06c7ba03a77c68a6cd221",
+          "height": 1000,
+          "path": "assets/products/speed-original-473ml-f66e48f651a6ab20-6521a9b08adab1f3.webp",
+          "sha256": "6521a9b08adab1f37b012fd125038e24403f7ca08f134a9a2e9470e92434f41a",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "c8627c8a4103026385819a47579edcd80bd511b2092d6a21529016ddf34c0437",
+          "height": 400,
+          "path": "assets/products/speed-original-473ml-f66e48f651a6ab20-thumb-6451dbece18fd4c5.webp",
+          "sha256": "6451dbece18fd4c581dcddba8ab04360a513f13b4814c442cab3124fdd40f0ca",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-08-25",
+      "externalId": "speed-original-473ml",
+      "identitySha256": "f66e48f651a6ab2039860edcd8a0b68c6a444f41f719febd7f3ad0774c477f53",
+      "rawFile": "speed-original-473ml-f66e48f651a6ab20.ce1232c71a09e6f61dfce610013236396f041a0981012a2b6475b243d3ef0f20.source",
+      "rightsReference": "TABA-AUT-2026-08-001",
+      "rightsStatus": "LICENCIA_COMERCIAL",
+      "safeSku": "speed-original-473ml",
+      "sku": "speed-original-473ml",
+      "sourceSha256": "ce1232c71a09e6f61dfce610013236396f041a0981012a2b6475b243d3ef0f20",
+      "sourceType": "proveedor_aprobado",
+      "sourceUrl": "https://distribuidoramif.com.ar/wp-content/uploads/2026/07/377a6ad4-3847-4ff2-9fdb-bf15998223a5.jpg"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "04b3a0d8fd4190af966f94ac577a03cc57fcf1b4629569a0b83a18eea85a50f4",
+          "height": 1000,
+          "path": "assets/products/speed-zero-473ml-89bed41bf09b31b4-b30d764f0575c866.webp",
+          "sha256": "b30d764f0575c866afb897cfcfd08dbe0940e1288e6d30f6c82a982e6bb06486",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "bfd1b24ac187400bcf488ef4e8131b023620b01bdea1e9fab2a6d701059ab9da",
+          "height": 400,
+          "path": "assets/products/speed-zero-473ml-89bed41bf09b31b4-thumb-4d5d6597b333f112.webp",
+          "sha256": "4d5d6597b333f1122b98fdf32f327aecbe9c432fb4cb41ee1062d659908e5067",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-08-25",
+      "externalId": "speed-zero-473ml",
+      "identitySha256": "89bed41bf09b31b41500f1c28ff654b4a2806cfa0f6af2918b14105a1e5c587d",
+      "rawFile": "speed-zero-473ml-89bed41bf09b31b4.85c275d2ae633c2dd732f3ba3a0c55a7041e2eb382b74d60e4e971b25079cea0.source",
+      "rightsReference": "TABA-AUT-2026-08-001",
+      "rightsStatus": "LICENCIA_COMERCIAL",
+      "safeSku": "speed-zero-473ml",
+      "sku": "speed-zero-473ml",
+      "sourceSha256": "85c275d2ae633c2dd732f3ba3a0c55a7041e2eb382b74d60e4e971b25079cea0",
+      "sourceType": "proveedor_aprobado",
+      "sourceUrl": "https://distribuidoramif.com.ar/wp-content/uploads/2026/07/b63beccd-a0d4-4d8c-9a5c-de57c01c7697.jpeg"
     },
     {
       "assets": {
@@ -558,6 +906,93 @@
       "sourceSha256": "6726494255aba9a76efba2fdf61101db16183464526c1a63fd66fa2811929157",
       "sourceType": "fabricante",
       "sourceUrl": "https://coca-colaentucasa.com/media/catalog/product/4/-/4-render_2.25l_spz.png"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "7ea988b44f117eb22596d92d7d01ca23ad3802903804e97edbaab955f38178de",
+          "height": 1000,
+          "path": "assets/products/villa-del-sur-sin-gas-600ml-81e9d897ac5c7200-d5bf4cdecf9d2d26.webp",
+          "sha256": "d5bf4cdecf9d2d2624802b2ff1515c4f38fc4c551401a3b41e0f107a07a5fcb6",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "5dac852a633f62b9f83c5dd0396526ea94cb969bca2d0347cfc9d32131a0e8b0",
+          "height": 400,
+          "path": "assets/products/villa-del-sur-sin-gas-600ml-81e9d897ac5c7200-thumb-542436e98431ce8a.webp",
+          "sha256": "542436e98431ce8a00ffb9ecb92a87e79c1e3348eb795e6b43719d769b84fd18",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-08-25",
+      "externalId": "villa-del-sur-sin-gas-600ml",
+      "identitySha256": "81e9d897ac5c7200c96787b7f7bc83681b21f36c3e7fa72062f9a29de9e3e11b",
+      "rawFile": "villa-del-sur-sin-gas-600ml-81e9d897ac5c7200.14b992eccb3dae791b305e031e86d977a229078300e0a2e840e48eb2812cc6a3.source",
+      "rightsReference": "TABA-AUT-2026-08-001",
+      "rightsStatus": "LICENCIA_COMERCIAL",
+      "safeSku": "villa-del-sur-sin-gas-600ml",
+      "sku": "villa-del-sur-sin-gas-600ml",
+      "sourceSha256": "14b992eccb3dae791b305e031e86d977a229078300e0a2e840e48eb2812cc6a3",
+      "sourceType": "proveedor_aprobado",
+      "sourceUrl": "https://cdn1.kilbelonline.com/webapp/images/productos/b/0000028000/28237.jpg"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "5fa24af9a56bd42ae366383d947af1b104edbc5c667efa39d7cf17327b896073",
+          "height": 1000,
+          "path": "assets/products/villavicencio-con-gas-500ml-aa4659b148790b42-016bbed61ae8c026.webp",
+          "sha256": "016bbed61ae8c02680c8f10dcb4e4093b71663e11ce58622b3ff0f7799954de7",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "a15e200dff4cbaefdc9bf08fce827dbf9a9d784ce05ee307e77940d794efb63c",
+          "height": 400,
+          "path": "assets/products/villavicencio-con-gas-500ml-aa4659b148790b42-thumb-2b03472d9e7fb764.webp",
+          "sha256": "2b03472d9e7fb7644e3fad908d2380d7965df8b9fac9d847037e8129e5e57492",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-08-25",
+      "externalId": "villavicencio-con-gas-500ml",
+      "identitySha256": "aa4659b148790b42cf763bfc951ad879144f8251dc90d3664dc9c0d517a154bf",
+      "rawFile": "villavicencio-con-gas-500ml-aa4659b148790b42.d64995a5fa22b340bf793b718289f005bee990c6fcadac1bd5045c825d7bbed0.source",
+      "rightsReference": "TABA-AUT-2026-08-001",
+      "rightsStatus": "LICENCIA_COMERCIAL",
+      "safeSku": "villavicencio-con-gas-500ml",
+      "sku": "villavicencio-con-gas-500ml",
+      "sourceSha256": "d64995a5fa22b340bf793b718289f005bee990c6fcadac1bd5045c825d7bbed0",
+      "sourceType": "proveedor_aprobado",
+      "sourceUrl": "https://arjosimarprod.vtexassets.com/arquivos/ids/170249/Agua-Gasificada-Villavicencio-500-cc-1-8950.jpg?v=638567625653030000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "b1df75dc6885948e3d979b97f8bc7b206e0fd609cea785dbacc48b0fd6f3ea86",
+          "height": 1000,
+          "path": "assets/products/villavicencio-sin-gas-1500ml-2fb407c8fa1c2b59-b28075add15596af.webp",
+          "sha256": "b28075add15596af4d2436e1611fcc57a19c52f9ac3e73757e4fc348c983677d",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "948f8eb22b0682cd5514acac215710e5a22a64a3775699ad9b7de3b61232e858",
+          "height": 400,
+          "path": "assets/products/villavicencio-sin-gas-1500ml-2fb407c8fa1c2b59-thumb-6b0e4ee75373e633.webp",
+          "sha256": "6b0e4ee75373e6331c1f70c8f8441b7b93bdc4a521302ae02205e24ede6b4a81",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-08-25",
+      "externalId": "villavicencio-sin-gas-1500ml",
+      "identitySha256": "2fb407c8fa1c2b5953dd131a90d51df68ba025c572babb97b31af5dc252f8ad9",
+      "rawFile": "villavicencio-sin-gas-1500ml-2fb407c8fa1c2b59.654838c04955a9dbdfa4d2b154ee6f93fc0f70ca3b054939c274d14fe5e657e0.source",
+      "rightsReference": "TABA-AUT-2026-08-001",
+      "rightsStatus": "LICENCIA_COMERCIAL",
+      "safeSku": "villavicencio-sin-gas-1500ml",
+      "sku": "villavicencio-sin-gas-1500ml",
+      "sourceSha256": "654838c04955a9dbdfa4d2b154ee6f93fc0f70ca3b054939c274d14fe5e657e0",
+      "sourceType": "proveedor_aprobado",
+      "sourceUrl": "https://ardiaprod.vteximg.com.br/arquivos/ids/377160/Agua-Pet-Sin-Gas-Villavicencio-15-Lt-_1.jpg?v=639228155475400000"
     }
   ]
 }

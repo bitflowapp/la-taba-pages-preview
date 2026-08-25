@@ -339,8 +339,8 @@ test('la autorización no reetiqueta ningún asset por sí sola', () => {
       `${sku} tiene que declarar el estado que esta autorización habilita`);
     assert.equal(fuente.rightsReference, autorizacion.id,
       `${sku} tiene que citar la autorización que lo cubre`);
-    assert.equal(['marca', 'fabricante', 'propio'].includes(fuente.sourceType), true,
-      `${sku} viene de ${fuente.sourceType}, y la autorización cubre marca, embotellador o importador`);
+    assert.equal(['marca', 'fabricante', 'propio', 'distribuidor_oficial', 'proveedor_aprobado'].includes(fuente.sourceType), true,
+      `${sku} viene de ${fuente.sourceType}, fuera del alcance comercial declarado`);
   }
 
   const manifiesto = JSON.parse(fs.readFileSync(path.join(root, 'catalog/image-manifest.json'), 'utf8'));

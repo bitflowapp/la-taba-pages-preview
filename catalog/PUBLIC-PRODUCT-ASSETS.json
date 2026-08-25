@@ -9,7 +9,7 @@
     "doc": "Imágenes de sitio, no de producto. Viajan por su propia decisión y no las gobierna este manifiesto."
   },
   "doc": "Las ÚNICAS fotos de producto que el empaquetado puede copiar. Generado por scripts/catalog-images/build-public-asset-manifest.mjs; no editar a mano.",
-  "fotosDeProductoAuditadas": 203,
+  "fotosDeProductoAuditadas": 233,
   "publicables": [
     {
       "bytes": 22958,
@@ -90,6 +90,30 @@
       "sha256": "2b779c394ec67eb41c4197ac7016f1bf1991fbfcb313b0feaaceafe2022079dc"
     },
     {
+      "bytes": 43922,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/coca-cola-original-lata-354ml-3c2cefd7fe4bd597-f2cf7dff4b87047d.webp",
+      "sha256": "f2cf7dff4b87047dafb9a540bd472567fbbc239b6b4aefa08f8f36ce064431a8"
+    },
+    {
+      "bytes": 13498,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/coca-cola-original-lata-354ml-3c2cefd7fe4bd597-thumb-cd767440cdb0ff40.webp",
+      "sha256": "cd767440cdb0ff405b5aedd3ebd746a694ab303657dc80b012142277825f41fe"
+    },
+    {
+      "bytes": 29810,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/coca-cola-original-pet-1500ml-5781315ce9f8f02f-43114ca6977868de.webp",
+      "sha256": "43114ca6977868ded4cf6e0648219863b86b2ab85d427bff016edaae2da4b637"
+    },
+    {
+      "bytes": 8390,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/coca-cola-original-pet-1500ml-5781315ce9f8f02f-thumb-af5f576fc2f48d8f.webp",
+      "sha256": "af5f576fc2f48d8f9feff145a94036694fe39944c87b8817ff1a0454f23dfd9a"
+    },
+    {
       "bytes": 22878,
       "derechos": "LICENCIA_COMERCIAL",
       "ruta": "assets/products/coca-cola-zero-2250ml-4ce84243eb65d14a-309bbcc731498df7.webp",
@@ -112,6 +136,30 @@
       "derechos": "LICENCIA_COMERCIAL",
       "ruta": "assets/products/coca-cola-zero-botella-pet-500-ml-pack-x12-ab4d9e31abe096e0-thumb-390944099fdb5e22.webp",
       "sha256": "390944099fdb5e227be5b9db4a4c6f3549c3e6355a52e7b8290ad421ec741cd9"
+    },
+    {
+      "bytes": 39670,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/coca-cola-zero-lata-354ml-4d1955a80c87ab0e-87f477f474494b33.webp",
+      "sha256": "87f477f474494b3394880c7929d52193d37b56d93400ce50e96a017d2ecfc977"
+    },
+    {
+      "bytes": 11430,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/coca-cola-zero-lata-354ml-4d1955a80c87ab0e-thumb-7816226aa02505f5.webp",
+      "sha256": "7816226aa02505f5cc1e5f40f24b90d054d19cd8a6e5a7b3b449a89cae8b3393"
+    },
+    {
+      "bytes": 23650,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/fanta-naranja-2250ml-797064494952a9a1-9ef1596448794ce7.webp",
+      "sha256": "9ef1596448794ce74aa676484cc3f9550fc16274e918fc9958b59ad9a6921d80"
+    },
+    {
+      "bytes": 7350,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/fanta-naranja-2250ml-797064494952a9a1-thumb-3a996fad3a89104c.webp",
+      "sha256": "3a996fad3a89104c238e6074f86499766ca7a2453335451dde26d5bf6600674a"
     },
     {
       "bytes": 22050,
@@ -186,6 +234,78 @@
       "sha256": "209929c85be873fa6ee45a627f1767e730b86fec8df07a8d2a543285ca25ec57"
     },
     {
+      "bytes": 30266,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/pepsi-black-1500ml-52009e2651c40a42-b09188d077fa3a4f.webp",
+      "sha256": "b09188d077fa3a4fa8d272cd762633d4fb7c876f31fcb12dc73d3088d58482c3"
+    },
+    {
+      "bytes": 6312,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/pepsi-black-1500ml-52009e2651c40a42-thumb-a562d12e0fb5d26b.webp",
+      "sha256": "a562d12e0fb5d26b0d784d432b120e35fc0a34a05290fc5fbef758d2359afa67"
+    },
+    {
+      "bytes": 29318,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/pepsi-original-2000ml-b4298e4382912cf4-86e8267fb10c961a.webp",
+      "sha256": "86e8267fb10c961af6294890566b686f0b03f9f72fb5eb0879faf395581d3b88"
+    },
+    {
+      "bytes": 6456,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/pepsi-original-2000ml-b4298e4382912cf4-thumb-815a946c396e0a93.webp",
+      "sha256": "815a946c396e0a932e7b2fcc88da1d8fa89db1dd288383d28779316752f416d6"
+    },
+    {
+      "bytes": 21896,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/powerade-mountain-blast-500ml-1ea05e4f6f192e2f-4d73a0a156b31cb6.webp",
+      "sha256": "4d73a0a156b31cb624bb3a245c2cde51631f20b87151389fa795f9304b21f881"
+    },
+    {
+      "bytes": 7082,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/powerade-mountain-blast-500ml-1ea05e4f6f192e2f-thumb-61387947b7df6f68.webp",
+      "sha256": "61387947b7df6f68cd07be6dd5eb974bbadde095f517a0a7fab1292bc1c5e327"
+    },
+    {
+      "bytes": 61452,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/red-bull-original-250ml-2d86788f7b853c11-d9018a7780c8e25b.webp",
+      "sha256": "d9018a7780c8e25b8c1bbb82ff0d5c7b4be8d35844987d176f7061ffc080c40a"
+    },
+    {
+      "bytes": 16212,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/red-bull-original-250ml-2d86788f7b853c11-thumb-4f0870826f9f8bce.webp",
+      "sha256": "4f0870826f9f8bcec813b1d872d658105b6f9c776374e72deb4e05368df68afa"
+    },
+    {
+      "bytes": 69530,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/red-bull-sin-azucar-250ml-f0aeca853a67db50-8f27b231957a48bb.webp",
+      "sha256": "8f27b231957a48bb5f602ac97e6d454c8d43d9466a5a6fa6ad7caa24a352e44f"
+    },
+    {
+      "bytes": 16698,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/red-bull-sin-azucar-250ml-f0aeca853a67db50-thumb-86cbad78e9e62eb2.webp",
+      "sha256": "86cbad78e9e62eb24297f05dd0264348c0520720f112fbdf6112dd103de0ac28"
+    },
+    {
+      "bytes": 24556,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/seven-up-original-2000ml-2ed6deb5fa431d4b-f32d43104a61239c.webp",
+      "sha256": "f32d43104a61239cac763f834081f74251e23d68cb5a1bce92d1fc25da2f38ef"
+    },
+    {
+      "bytes": 4884,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/seven-up-original-2000ml-2ed6deb5fa431d4b-thumb-556d7a39b0433124.webp",
+      "sha256": "556d7a39b04331244604ac7ae77fc3278ae0fb94279b5d0f5076e1d6a13a80f2"
+    },
+    {
       "bytes": 40172,
       "derechos": "LICENCIA_COMERCIAL",
       "ruta": "assets/products/soda-manaos-sifon-2000ml-b92e160958368c0d-3700b6c8cb4ec1b4.webp",
@@ -196,6 +316,30 @@
       "derechos": "LICENCIA_COMERCIAL",
       "ruta": "assets/products/soda-manaos-sifon-2000ml-b92e160958368c0d-thumb-33a5a3998f343f97.webp",
       "sha256": "33a5a3998f343f97f5385215b03c4d2f7f58b8036ee18d78aa52a9b4aee7f3b5"
+    },
+    {
+      "bytes": 23736,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/speed-original-473ml-f66e48f651a6ab20-6521a9b08adab1f3.webp",
+      "sha256": "6521a9b08adab1f37b012fd125038e24403f7ca08f134a9a2e9470e92434f41a"
+    },
+    {
+      "bytes": 8730,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/speed-original-473ml-f66e48f651a6ab20-thumb-6451dbece18fd4c5.webp",
+      "sha256": "6451dbece18fd4c581dcddba8ab04360a513f13b4814c442cab3124fdd40f0ca"
+    },
+    {
+      "bytes": 29822,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/speed-zero-473ml-89bed41bf09b31b4-b30d764f0575c866.webp",
+      "sha256": "b30d764f0575c866afb897cfcfd08dbe0940e1288e6d30f6c82a982e6bb06486"
+    },
+    {
+      "bytes": 10976,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/speed-zero-473ml-89bed41bf09b31b4-thumb-4d5d6597b333f112.webp",
+      "sha256": "4d5d6597b333f1122b98fdf32f327aecbe9c432fb4cb41ee1062d659908e5067"
     },
     {
       "bytes": 14520,
@@ -244,6 +388,42 @@
       "derechos": "LICENCIA_COMERCIAL",
       "ruta": "assets/products/sprite-zero-2250ml-c43f15fd8eedc2e4-thumb-4e04923ee3c2fb00.webp",
       "sha256": "4e04923ee3c2fb008e57d9b4d16d85f04ab63653db7f2b71763ac312d7c8568b"
+    },
+    {
+      "bytes": 19496,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/villa-del-sur-sin-gas-600ml-81e9d897ac5c7200-d5bf4cdecf9d2d26.webp",
+      "sha256": "d5bf4cdecf9d2d2624802b2ff1515c4f38fc4c551401a3b41e0f107a07a5fcb6"
+    },
+    {
+      "bytes": 6036,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/villa-del-sur-sin-gas-600ml-81e9d897ac5c7200-thumb-542436e98431ce8a.webp",
+      "sha256": "542436e98431ce8a00ffb9ecb92a87e79c1e3348eb795e6b43719d769b84fd18"
+    },
+    {
+      "bytes": 26626,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/villavicencio-con-gas-500ml-aa4659b148790b42-016bbed61ae8c026.webp",
+      "sha256": "016bbed61ae8c02680c8f10dcb4e4093b71663e11ce58622b3ff0f7799954de7"
+    },
+    {
+      "bytes": 6612,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/villavicencio-con-gas-500ml-aa4659b148790b42-thumb-2b03472d9e7fb764.webp",
+      "sha256": "2b03472d9e7fb7644e3fad908d2380d7965df8b9fac9d847037e8129e5e57492"
+    },
+    {
+      "bytes": 31418,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/villavicencio-sin-gas-1500ml-2fb407c8fa1c2b59-b28075add15596af.webp",
+      "sha256": "b28075add15596af4d2436e1611fcc57a19c52f9ac3e73757e4fc348c983677d"
+    },
+    {
+      "bytes": 7664,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/villavicencio-sin-gas-1500ml-2fb407c8fa1c2b59-thumb-6b0e4ee75373e633.webp",
+      "sha256": "6b0e4ee75373e6331c1f70c8f8441b7b93bdc4a521302ae02205e24ede6b4a81"
     }
   ],
   "schemaVersion": 1

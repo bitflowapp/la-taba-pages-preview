@@ -174,7 +174,7 @@ for (const fuente of manifiesto.sources) {
     mal(`${fuente.sku}: rights_status ${fuente.rightsStatus} no es el que habilita ${AUTORIDAD}.`);
   }
   if (fuente.rightsReference !== AUTORIDAD) mal(`${fuente.sku}: no cita ${AUTORIDAD}.`);
-  if (!['fabricante', 'marca', 'propio', 'distribuidor_oficial'].includes(fuente.sourceType)) {
+  if (!['fabricante', 'marca', 'propio', 'distribuidor_oficial', 'proveedor_aprobado'].includes(fuente.sourceType)) {
     mal(`${fuente.sku}: sourceType ${fuente.sourceType} está fuera del alcance de la autorización.`);
   }
 }

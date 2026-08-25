@@ -1,6 +1,6 @@
 {
   "base": "https://la-taba.pages.dev",
-  "cacheName": "la-taba-runtime-v86-gondola-premium",
+  "cacheName": "la-taba-runtime-v87-lanzamiento-comercial",
   "comprobaciones": [
     {
       "ok": true,
@@ -192,7 +192,7 @@
     },
     {
       "ok": true,
-      "t": "service worker intacto · la-taba-runtime-v86-gondola-premium"
+      "t": "service worker intacto · la-taba-runtime-v87-lanzamiento-comercial"
     },
     {
       "ok": true,

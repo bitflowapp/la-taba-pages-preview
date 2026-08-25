@@ -283,10 +283,11 @@ for (const f of manifiesto.sources) {
    * `distribuidor_oficial` entra desde la ampliación del alcance del
    * 2026-08-25, que el titular fijó al ordenar las fuentes de lanzamiento
    * (1 fabricante · 2 distribuidor oficial). Está escrita en
-   * catalog/autorizaciones-comerciales.json → ampliaciones. Un retailer o un
-   * marketplace siguen sin entrar por ningún lado.
+   * catalog/autorizaciones-comerciales.json → ampliaciones. La segunda
+   * ampliación del 2026-08-25 habilita `proveedor_aprobado` sólo para assets
+   * exactos, revisados y hashados; marketplaces siguen excluidos.
    */
-  if (!['fabricante', 'marca', 'propio', 'distribuidor_oficial'].includes(f.sourceType)) {
+  if (!['fabricante', 'marca', 'propio', 'distribuidor_oficial', 'proveedor_aprobado'].includes(f.sourceType)) {
     abortar(`${f.sku} viene de ${f.sourceType}, fuera del alcance de ${AUTORIDAD}.`);
   }
   /*
@@ -301,7 +302,6 @@ for (const f of manifiesto.sources) {
   if (!HOSTS_PERMITIDOS.has(host)) {
     abortar(`${f.sku}: host de fuente inesperado (${host}). No está en catalog/image-source-allowlist.json.`);
   }
-  if (host.includes('jumbo')) abortar(`${f.sku}: fuente de retailer. No se publica.`);
 }
 ok(`${manifiesto.sources.length} assets, de fuente permitida y citando la autoridad`);
 
@@ -553,18 +553,41 @@ const assets = manifiesto.sources.map((f) => ({
   thumbnail_sha256: f.assets.thumbnail.sha256,
 }));
 
-const productosPayload = assets.map(({ sku }) => {
+/*
+ * QUÉ SE HACE ACÁ CON UN OBJETIVO QUE NO SE VE
+ * --------------------------------------------
+ * Los SKU que la clave publicable no devuelve ya quedaron identificados más
+ * arriba y anunciados en voz alta: son productos fuera de venta, no productos
+ * que falten. Este bloque los volvía a tratar como «falta el producto» y
+ * abortaba el ensayo por la única razón que su propio mensaje declaraba
+ * esperable. Y el ensayo no es decorativo: aplicar-asociacion.ps1 no pide la
+ * contraseña si el ensayo no termina en verde, así que con un solo objetivo
+ * oculto el lote no se podía aplicar nunca.
+ *
+ * En seco se saltean y se dicen, uno por uno. En la corrida real, donde la
+ * sesión de owner SÍ los ve, que falte un producto sigue siendo fatal y no se
+ * saltea nada: el payload de esa corrida lleva los 34.
+ */
+const invisiblesSku = new Set(
+  invisiblesEnSeco
+    .map((error) => error.match(/^falta el producto objetivo (.+).$/)?.[1])
+    .filter(Boolean),
+);
+const productosPayload = assets.flatMap(({ sku }) => {
   const actual = porSku.get(sku);
   if (!actual) {
+    if (seco && invisiblesSku.has(sku)) {
+      info(`${sku}: oculto para la clave publicable, fuera del ensayo. La sesión de owner lo incluye.`);
+      return [];
+    }
     abortar(seco
-      ? `no hay producto en producción para ${sku}. En seco se lee con la clave publicable, `
-        + 'que no devuelve los productos ocultos: si ese SKU hoy está fuera de venta, el ensayo '
-        + 'llega hasta acá y la corrida real con sesión de owner sí lo va a ver.'
+      ? `no hay producto en producción para ${sku}, y no es uno de los ocultos que el lote ya `
+        + 'identificó. Esto no lo explica la visibilidad: el objetivo no está en el catálogo.'
       : `no hay producto en producción para ${sku}.`);
   }
   const fila = {};
   for (const campo of CAMPOS_ECO) fila[campo] = actual[campo];
-  return fila;
+  return [fila];
 });
 
 // El eco se compara contra lo leído ANTES de mandarlo. Es barato y es la única

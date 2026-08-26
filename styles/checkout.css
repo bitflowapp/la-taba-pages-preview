@@ -1331,3 +1331,455 @@ body[data-active-view="cart"] .cart-notice:not([hidden]):empty {
   cursor: not-allowed;
   opacity: 0.72;
 }
+
+/* ==========================================================================
+   CAPTURA DE DIRECCIÓN — el mismo editor, en el checkout y en la hoja
+   --------------------------------------------------------------------------
+   Antes escribir una dirección sólo era posible en `[data-view="profile"]`, y
+   por eso las reglas del paso «Confirmá dónde te entregamos» viven en
+   `profile.css` apoyadas en los alias `--profile-*`, que ESE selector declara.
+   Fuera de esa vista los alias no existen, y una `var()` sin valor no cae a
+   ningún color: la declaración se descarta y el texto hereda lo que haya.
+   Medido: los mismos nudos del paso quedaban ilegibles dentro del carrito.
+
+   Se resuelven acá, apuntando a los MISMOS tokens de `tokens.css` que usa
+   Perfil. No es una segunda paleta: es la misma, alcanzable desde las dos
+   superficies nuevas.
+   ========================================================================== */
+.address-capture,
+.address-sheet {
+  --profile-surface: var(--shelf-raised);
+  --profile-soft: var(--shelf);
+  --profile-line: var(--shelf-line);
+  --profile-ink: var(--shelf-ink);
+  --profile-muted: var(--shelf-muted);
+}
+
+.address-capture {
+  display: grid;
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--shelf-line);
+  border-radius: var(--radius-lg);
+  background: var(--shelf);
+  color: var(--shelf-ink);
+}
+
+.address-capture-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.address-capture-kicker {
+  display: block;
+  color: var(--shelf-muted);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.address-capture-title {
+  margin: 2px 0 0;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.address-capture-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.address-capture-grid .is-wide,
+.address-capture-grid .is-full {
+  grid-column: 1 / -1;
+}
+
+.address-capture-field {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+  color: var(--shelf-ink);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.address-capture-field span em {
+  color: var(--shelf-muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.address-capture input,
+.address-capture select,
+.address-capture textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  /* 48px de alto y 16px de tipo no son estética: por debajo de 16px, Safari en
+     iPhone hace zoom automático al enfocar el campo y el formulario queda
+     desencuadrado en medio de una compra. */
+  min-height: 48px;
+  padding: 11px 13px;
+  border: 1px solid var(--shelf-line-strong);
+  border-radius: 12px;
+  outline: 0;
+  background: var(--shelf-raised);
+  color: var(--shelf-ink);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  transition: border-color var(--ease), box-shadow var(--ease);
+}
+
+.address-capture textarea {
+  min-height: 86px;
+  resize: vertical;
+}
+
+.address-capture input:focus,
+.address-capture select:focus,
+.address-capture textarea:focus {
+  border-color: var(--taba-red);
+  box-shadow: 0 0 0 3px var(--shelf-red-wash);
+}
+
+.address-capture [aria-invalid="true"] {
+  border-color: #ff8b82;
+}
+
+/* Reemplaza a los campos Ciudad y Provincia: informa la localidad que se va a
+   guardar en vez de pedirla. Es texto, no control, así que no toma foco ni
+   entra en el recorrido por teclado. */
+.address-capture-area {
+  margin: 0;
+  color: var(--shelf-muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.address-capture-area strong {
+  color: var(--shelf-ink);
+  font-weight: 800;
+}
+
+.address-capture-identity {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--shelf-line);
+}
+
+.address-capture-default {
+  display: flex;
+  min-height: var(--tap);
+  align-items: center;
+  gap: 9px;
+  color: var(--shelf-ink);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.address-capture-default input {
+  width: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  padding: 0;
+  accent-color: var(--taba-red);
+}
+
+.address-capture-status {
+  min-height: 18px;
+  margin: 0;
+  color: var(--shelf-muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.address-capture-status.is-error,
+.address-capture-status.is-warning {
+  color: #ff8b82;
+}
+
+.address-capture-status.is-success {
+  color: #7dc563;
+}
+
+.address-capture-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.address-capture-actions .primary-button,
+.address-capture-actions .secondary-button,
+.address-capture-actions .ghost-button {
+  min-height: var(--tap);
+}
+
+.address-capture-duplicate {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid #d6b26a;
+  border-radius: var(--radius-md);
+  background: var(--shelf-gold-wash);
+  font-size: 13px;
+}
+
+.address-capture-duplicate p {
+  margin: 0;
+  color: var(--shelf-muted);
+}
+
+/* Una sola columna cuando dos no entran. A 320px el par Piso/Departamento deja
+   118px de ancho útil por campo y el placeholder del número desborda la caja. */
+@media (max-width: 380px) {
+  .address-capture-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .address-capture {
+    padding: 14px;
+  }
+}
+
+.profile-checkout-block-actions,
+.profile-checkout-addresses-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.profile-checkout-block-actions .primary-button,
+.profile-checkout-addresses-foot .ghost-button {
+  min-height: var(--tap);
+}
+
+/* ==========================================================================
+   HOJA DE DIRECCIONES DEL ENCABEZADO
+   --------------------------------------------------------------------------
+   Anclada abajo porque ahí está el pulgar, y separada del borde con
+   `env(safe-area-inset-bottom)`: en un iPhone con indicador de inicio, 12px
+   pelados dejan la acción principal debajo de la franja del gesto. Es el mismo
+   contrato geométrico que `.install-sheet`, para que el teléfono se comporte
+   igual en las dos hojas del producto.
+   ========================================================================== */
+.address-sheet {
+  width: min(calc(100vw - 20px), 520px);
+  max-width: min(calc(100vw - 20px), 520px);
+  max-height: min(760px, calc(100dvh - 28px));
+  margin: auto auto calc(10px + env(safe-area-inset-bottom, 0px));
+  padding: 0;
+  border: 0;
+  border-radius: 24px;
+  background: var(--shelf);
+  box-shadow: var(--shadow-shelf), inset 0 0 0 1px var(--shelf-line);
+  color: var(--shelf-ink);
+  overflow: hidden;
+}
+
+.address-sheet::backdrop {
+  background: rgb(10 12 15 / 62%);
+}
+
+.address-sheet-card {
+  display: grid;
+  box-sizing: border-box;
+  max-height: min(760px, calc(100dvh - 28px));
+  gap: 12px;
+  padding: 20px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  /* Que el gesto muera en la hoja: sin esto, al llegar al final de la lista el
+     desplazamiento sigue en la góndola de atrás y la tienda se mueve sola bajo
+     el dedo. */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.address-sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.address-sheet-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+/* La ✕ conserva el objetivo táctil completo: es la salida, y una salida chica
+   en una hoja modal es una trampa. */
+.address-sheet-close {
+  display: grid;
+  width: var(--tap);
+  min-width: var(--tap);
+  height: var(--tap);
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--shelf-line-strong);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--shelf-muted);
+  font-size: 15px;
+  line-height: 1;
+}
+
+.address-sheet-close:hover {
+  border-color: var(--taba-white);
+  background: var(--shelf-raised);
+  color: var(--shelf-ink);
+}
+
+.address-sheet-status {
+  min-height: 18px;
+  margin: 0;
+  color: var(--shelf-muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.address-sheet-status.is-error,
+.address-sheet-status.is-warning {
+  color: #ff8b82;
+}
+
+.address-sheet-status.is-success {
+  color: #7dc563;
+}
+
+.address-sheet-list {
+  display: grid;
+  gap: 8px;
+}
+
+.address-sheet-option {
+  display: flex;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 56px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--shelf-line);
+  border-radius: var(--radius-md);
+  background: var(--shelf-raised);
+  color: var(--shelf-ink);
+  text-align: left;
+}
+
+.address-sheet-option.is-selected {
+  border-color: var(--taba-red);
+  background: var(--shelf-red-wash);
+}
+
+/* El estado se dice con texto y con forma, no sólo con color: el borde
+   discontinuo lo distingue también para quien no separa el rojo del verde. */
+.address-sheet-option.needs-location {
+  border-style: dashed;
+  border-color: #d6b26a;
+}
+
+.address-sheet-option-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.address-sheet-option-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14.5px;
+  font-weight: 800;
+}
+
+.address-sheet-badge {
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--shelf-red-wash);
+  color: var(--shelf-red-ink);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.address-sheet-option-line {
+  color: var(--shelf-muted);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  /* Sin esto, una dirección larga con piso y departamento empuja el chevron
+     fuera de la hoja a 320px. */
+  overflow-wrap: anywhere;
+}
+
+.address-sheet-option-missing {
+  color: #e8c268;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.address-sheet-option-mark {
+  color: var(--shelf-muted);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.address-sheet-option.is-selected .address-sheet-option-mark {
+  color: var(--shelf-red-ink);
+}
+
+.address-sheet-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.address-sheet-actions .primary-button,
+.address-sheet-actions .secondary-button {
+  width: 100%;
+  min-height: 50px;
+  border-radius: var(--radius-pill);
+  font-size: 15.5px;
+  font-weight: 800;
+}
+
+.address-sheet-hint {
+  margin: 0;
+  color: var(--shelf-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* Objetivo táctil de TODO control del editor, sin depender del tipo de puntero.
+   El bloque `@media (hover: none), (pointer: coarse)` de `styles.css` ya da 44px
+   en un teléfono real, pero este formulario también se usa con el pulgar en
+   navegadores que no declaran puntero grueso —un iPad con teclado, un Chrome de
+   escritorio angosto, un emulador— y ahí quedaba en 30px: «Cerrar», «Usar mi
+   ubicación», «Elegir en el mapa», «Guardar dirección» y «Cancelar», medidos.
+   Un control de 30px sobre un mapa significa mover el pin al lugar equivocado. */
+.address-capture button,
+.address-sheet button {
+  min-height: var(--tap);
+}
+
+.address-capture .location-step-nudge button,
+.address-sheet .location-step-nudge button {
+  min-width: 56px;
+}

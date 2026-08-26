@@ -145,8 +145,10 @@ test('checkout del preview valida contrato de Perfil y mantiene copy comercial',
     deliveryMode: 'delivery',
   });
   await expect(page.locator('[data-profile-block="no-address"]')).toBeVisible();
+  // `add-address` mandaba a Perfil; ahora la dirección se completa en el propio
+  // checkout. El bloqueo es el mismo: lo que cambió es dónde se resuelve.
   await expect(
-    page.locator('[data-profile-block="no-address"] [data-profile-checkout-action="add-address"]'),
+    page.locator('[data-profile-block="no-address"] [data-profile-checkout-action="new-address"]'),
   ).toBeVisible();
 
   await fillCheckout(page, {

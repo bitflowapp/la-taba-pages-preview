@@ -82,7 +82,7 @@
       lo verifica tests/home-hero-preload.test.mjs.
     -->
     <link rel="preload" as="image" href="assets/promos/cervezas-heineken-band.webp" media="(max-width: 699px)" fetchpriority="high" />
-    <link rel="stylesheet" href="styles.css?v=55" />
+    <link rel="stylesheet" href="styles.css?v=56" />
   </head>
   <!--
     La vista activa se declara ya en el shell servido. `renderNavigation` la
@@ -152,7 +152,15 @@
             Sin `aria-label`: el nombre accesible es el texto visible, que es
             exactamente lo que se lee en pantalla (WCAG 2.5.3).
           -->
-          <button class="topbar-address" type="button" data-home-address data-nav-view="profile" data-nav-passive>
+          <!--
+            SIN `data-nav-view`: tocar «ENVIAR A» abre la hoja de direcciones
+            sobre esta misma vista. Antes navegaba a Perfil y sacaba de la
+            góndola a quien sólo quería declarar dónde recibe —perdiendo el
+            filtro, la búsqueda y el scroll—, y encima `data-nav-view` a Perfil
+            LIMPIA la marca de retorno, así que no había vuelta contextual.
+            `aria-haspopup="dialog"` porque eso es lo que hace.
+          -->
+          <button class="topbar-address" type="button" data-home-address data-address-sheet-open="home" data-nav-passive aria-haspopup="dialog">
             <span class="address-chip-ico" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
                 <path d="M12 21.3s-6.6-6.3-6.6-11.1a6.6 6.6 0 0 1 13.2 0c0 4.8-6.6 11.1-6.6 11.1Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
@@ -1008,6 +1016,31 @@
           <button class="primary-button" type="button" data-clear-cart-confirm>Vaciar carrito</button>
         </div>
       </div>
+    </dialog>
+
+    <!--
+      HOJA DE DIRECCIONES DEL ENCABEZADO
+
+      Se abre desde «ENVIAR A» y desde cualquier control con
+      `data-address-sheet-open`. Vive al final del documento, fuera de las vistas,
+      porque no pertenece a ninguna: es una respuesta a una pregunta que se puede
+      hacer desde el inicio, desde el catálogo o desde el carrito, y cerrarla
+      devuelve la vista exactamente como estaba.
+
+      El contenido lo escribe `js/customer-address-sheet.js`, y con él el
+      `<h2 id="address-sheet-title">` que le da nombre. La hoja se dibuja SIEMPRE
+      antes de `showModal()`, así que nunca se muestra sin ese título.
+
+      SIN `aria-label` de respaldo, y no por descuido: un `aria-label="Dirección
+      de entrega"` acá le daba nombre accesible a un `<dialog>` cerrado —o sea a
+      algo que nadie puede ver— y ese nombre CHOCA por subcadena con el campo
+      «Dirección» del alta del comercio. Medido: `getByLabel('Dirección')`
+      resolvía a dos elementos y el asistente del Panel dejaba de poder
+      completarse. Un elemento invisible no debe aportar un nombre al árbol de
+      accesibilidad.
+    -->
+    <dialog class="address-sheet" data-address-sheet aria-labelledby="address-sheet-title">
+      <div class="address-sheet-card" data-address-sheet-body tabindex="-1"></div>
     </dialog>
 
     <!--

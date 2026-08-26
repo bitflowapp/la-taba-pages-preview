@@ -127,6 +127,10 @@ import {
   consumeProfileReturnTarget,
 } from './customer-delivery.js';
 import { initializeCustomerProfileView } from './customer-profile-view.js';
+import {
+  initializeCustomerAddressSheet,
+  openCustomerAddressSheet,
+} from './customer-address-sheet.js';
 import { isStandaloneDisplay } from './core/pwa-install.js';
 import { initPwaInstall } from './pwa-install-ui.js';
 import { initMotion } from './motion.js';
@@ -594,6 +598,9 @@ async function bootstrap() {
     // Ahora se pregunta al entrar al carrito, que es cuando la respuesta se usa.
     await initializeCustomerDeliveryCheckout();
     await initializeCustomerProfileView();
+    // La hoja de direcciones se engancha después del checkout: lee de él, y sin
+    // el checkout inicializado abriría vacía.
+    initializeCustomerAddressSheet();
     initializeShowcase();
     // Si la pestaña se abrió DIRECTO en el carrito, `setActiveView` no llegó a
     // correr y la pregunta no se hizo. Es el único caso donde el arranque sí
@@ -1134,10 +1141,14 @@ function showCheckoutInlineError(form, message) {
  * duplicar acá la regla de «qué falta» es garantizar que algún día las dos
  * digan cosas distintas. La tarjeta que está en pantalla es la verdad.
  */
+// Los tres primeros decían «en Perfil» porque ése era el único lugar donde se
+// podía resolver. Desde que el checkout tiene el editor adentro, el mensaje
+// nombra lo que el botón de al lado realmente hace: mandar a otra pantalla a
+// quien ya tiene el formulario delante sería una instrucción falsa.
 const BLOQUEOS_DE_PERFIL = Object.freeze({
   incomplete: 'Completá tu nombre y teléfono en Perfil para confirmar el pedido.',
-  'no-address': 'Agregá una dirección de entrega en Perfil para confirmar el pedido.',
-  'no-confirmed-location': 'Confirmá el punto de entrega de tu dirección en Perfil para confirmar el pedido.',
+  'no-address': 'Agregá tu dirección de entrega acá para confirmar el pedido.',
+  'no-confirmed-location': 'Confirmá el punto de entrega de tu dirección para confirmar el pedido.',
   unsupported: 'Esta tienda todavía no toma pedidos por la app.',
 });
 
@@ -1344,6 +1355,22 @@ function bindEvents() {
         showToast(result.message);
         renderAll();
       }
+      return;
+    }
+
+    /*
+     * «ENVIAR A» abre la hoja, no una vista.
+     *
+     * Va ANTES de `data-nav-view` a propósito: si mañana alguien vuelve a poner
+     * las dos marcas en el mismo control, gana la que no saca a la persona de la
+     * góndola. La hoja se abre sobre la vista actual y cerrarla la devuelve
+     * intacta —filtro, búsqueda y scroll incluidos—, que es justamente lo que la
+     * navegación a Perfil no podía hacer.
+     */
+    const sheetReason = target.closest('[data-address-sheet-open]')?.dataset.addressSheetOpen;
+    if (sheetReason) {
+      event.preventDefault();
+      openCustomerAddressSheet({ reason: sheetReason });
       return;
     }
 

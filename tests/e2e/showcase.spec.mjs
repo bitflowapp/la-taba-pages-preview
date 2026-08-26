@@ -419,13 +419,20 @@ test('showcase covers profile variants, delivery/pickup and preserves cart on pr
   await expect(checkout.locator('[data-checkout-warning]')).toBeVisible();
   await expect(checkout.locator('[data-checkout-warning]')).toContainText(/direcci[oó]n|calle|n[uú]mero/i);
   await expectActiveView(page, 'cart');
-  const noAddressAction = page.locator('[data-profile-block="no-address"] [data-profile-checkout-action="add-address"]');
+  /*
+   * Antes, el bloqueo mandaba a Perfil y lo que había que demostrar era que el
+   * carrito sobrevivía a esa ida y vuelta. Ahora la dirección se completa en el
+   * carrito, así que la afirmación es más fuerte y más simple: el carrito no se
+   * va de pantalla en ningún momento.
+   */
+  const noAddressAction = page.locator('[data-profile-block="no-address"] [data-profile-checkout-action="new-address"]');
   await expect(noAddressAction).toBeVisible();
   await noAddressAction.click();
-  await expect(page.locator('[data-customer-profile]')).toBeVisible();
-  await page.locator('[data-profile-action="return-to-checkout"]').click();
+  const editorEnLinea = page.locator('[data-address-capture="checkout"]');
+  await expect(editorEnLinea).toBeVisible();
   await expectActiveView(page, 'cart');
   await expect(cartItems).toHaveCount(1);
+  await editorEnLinea.locator('[data-address-capture-close]').click();
   await expect(page.locator('[data-profile-block="no-address"]')).toBeVisible();
 
   await seedCheckoutProfile(page, {

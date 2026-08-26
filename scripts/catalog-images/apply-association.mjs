@@ -397,6 +397,12 @@ const lote = validarLoteObjetivo({ assets: manifiesto.sources, productos });
 const invisiblesEnSeco = seco ? lote.errores.filter((e) => e.startsWith('falta el producto objetivo')) : [];
 const bloqueantes = lote.errores.filter((e) => !invisiblesEnSeco.includes(e));
 for (const aviso of invisiblesEnSeco) info(`${aviso} La clave publicable no ve los productos ocultos; la sesión de owner sí.`);
+/* Los SKU concretos que quedaron ocultos, para poder nombrarlos más abajo. */
+const invisiblesSku = new Set(
+  invisiblesEnSeco
+    .map((error) => error.match(/^falta el producto objetivo (.+).$/)?.[1])
+    .filter(Boolean),
+);
 if (bloqueantes.length) {
   for (const error of bloqueantes) console.error(`  FALLA ${error}`);
   abortar('el lote no es el declarado.');
@@ -414,7 +420,21 @@ for (const p of productos) {
   if (!OBJETIVOS.has(p.sku)) abortar(`producto inesperado: ${p.sku}`);
   if (p.catalog_origin !== 'commercial') abortar(`${p.sku} no es comercial (${p.catalog_origin}).`);
   if (!p.is_active) abortar(`${p.sku} no está activo.`);
-  if (!(p.stock > 0)) abortar(`${p.sku} tiene stock 0: al republicar quedaría NO disponible.`);
+  /*
+   * Stock 0 sólo es un problema si el producto HOY está a la venta: al
+   * republicarlo quedaría afuera, y eso sería una regresión comercial de la que
+   * nadie se enteraría. Pero un producto que YA está fuera de venta no cambia de
+   * estado por tener stock 0.
+   *
+   * La distinción apareció con el catálogo alcohólico: sus veintisiete productos
+   * están fuera de venta a propósito —la compuerta del comercio está cerrada— y
+   * cuatro packs tienen stock 0. Con la condición anterior, tener la despensa
+   * vacía impedía FOTOGRAFIARLOS, que es una operación que no toca la venta.
+   */
+  if (!(p.stock > 0)) {
+    if (p.available) abortar(`${p.sku} está a la venta con stock 0: al republicar quedaría NO disponible.`);
+    info(`${p.sku}: stock 0, y ya está fuera de venta. Republicar no le cambia el estado.`);
+  }
 }
 
 /*
@@ -461,21 +481,47 @@ const altaParcial = cubiertos === productos.length
 if (altaParcial) {
   for (const p of productos) {
     const yaTiene = conImagenCorrecta.some((q) => q.sku === p.sku);
-    if (!yaTiene && (!p.available || !p.is_verified)) {
-      abortar(`${p.sku} no está hoy disponible y verificado; el estado previo no es el esperado.`);
+    /*
+     * Lo que tiene que estar sano antes de tocar un producto es su VERIFICACIÓN,
+     * no su disponibilidad. Un producto sin verificar es el resto de una corrida
+     * anterior a medias y hay que mirarlo a mano; uno verificado y fuera de venta
+     * es una decisión comercial perfectamente normal —todo el catálogo alcohólico
+     * está así mientras la compuerta del comercio siga cerrada—.
+     *
+     * Exigir `available` acá impedía fotografiar cualquier producto que no
+     * estuviera a la venta, que es justamente el caso que esta operación tiene
+     * que poder resolver: la foto se prepara ANTES de habilitar la venta.
+     */
+    if (!yaTiene && !p.is_verified) {
+      abortar(`${p.sku} no está verificado; el estado previo no es el esperado.`);
     }
-    ok(`${etiqueta(p.sku)} · stock ${p.stock} · $${p.price} · ${yaTiene ? 'imagen ya puesta' : 'sin imagen'}`);
+    ok(`${etiqueta(p.sku)} · stock ${p.stock} · $${p.price} · ${p.available ? 'a la venta' : 'fuera de venta'} · ${yaTiene ? 'imagen ya puesta' : 'sin imagen'}`);
   }
   info(`alta parcial: ${sinImagen.length} altas nuevas sobre ${conImagenCorrecta.length} ya aplicadas`);
   if (seco) info('en seco no se puede confirmar catalog_assets; la sesión de owner sí lo hace');
   modo = 'ALTA_PARCIAL';
-} else if (sinImagen.length === SKUS_OBJETIVO.length) {
+} else if (sinImagen.length === productos.length) {
   for (const p of productos) {
     if (!p.available || !p.is_verified) abortar(`${p.sku} no está hoy disponible y verificado; el estado previo no es el esperado.`);
     ok(`${etiqueta(p.sku)} · stock ${p.stock} · $${p.price} · disponible · sin imagen`);
   }
   modo = 'PRIMERA_CARGA';
-} else if (conImagenCorrecta.length === SKUS_OBJETIVO.length && (assetsIdenticos || seco)) {
+/*
+ * Estas dos ramas comparaban contra el TAMAÑO DEL LOTE, y la de `cubiertos` de
+ * arriba ya explica por qué eso está mal: en seco la clave publicable no
+ * devuelve los productos ocultos, así que exigir el total convierte cualquier
+ * producto fuera de venta en un falso «estado a medias».
+ *
+ * Se rompió al entrar el catálogo alcohólico: sus doce objetivos están todos
+ * fuera de venta, el ensayo leía 33 productos —los 33 comprables, todos ya con
+ * su fotografía— y ninguna rama daba con 46, así que el ensayo abortaba y el
+ * lote no se podía aplicar. Es el mismo defecto que el del payload, en otro
+ * lugar.
+ *
+ * Contra `productos.length` la corrida real no cambia en nada: la sesión de
+ * owner lee los 46 y las dos cifras vuelven a coincidir.
+ */
+} else if (conImagenCorrecta.length === productos.length && (assetsIdenticos || seco)) {
   // En seco no se puede confirmar el estado de `catalog_assets`: la clave
   // publicable no lo lee, y está bien que no lo lea. Se dice y se sigue, en vez
   // de abortar: si el dry-run se plantara acá, el envoltorio de PowerShell nunca
@@ -486,6 +532,10 @@ if (altaParcial) {
   }
   if (seco) info('en seco no se puede confirmar catalog_assets; la sesión de owner sí lo hace');
   modo = 'REPARACION';
+  if (seco && invisiblesSku.size > 0) {
+    info(`el modo es el del subconjunto VISIBLE (${productos.length} de ${SKUS_OBJETIVO.length}).`);
+    info(`los ${invisiblesSku.size} objetivos ocultos no se pueden clasificar en seco; la corrida real los ve y recalcula.`);
+  }
 } else {
   abortar(
     `estado a medias: ${sinImagen.length} sin imagen y ${conImagenCorrecta.length} con la imagen correcta, de ${SKUS_OBJETIVO.length}. `
@@ -568,11 +618,6 @@ const assets = manifiesto.sources.map((f) => ({
  * sesión de owner SÍ los ve, que falte un producto sigue siendo fatal y no se
  * saltea nada: el payload de esa corrida lleva los 34.
  */
-const invisiblesSku = new Set(
-  invisiblesEnSeco
-    .map((error) => error.match(/^falta el producto objetivo (.+).$/)?.[1])
-    .filter(Boolean),
-);
 const productosPayload = assets.flatMap(({ sku }) => {
   const actual = porSku.get(sku);
   if (!actual) {

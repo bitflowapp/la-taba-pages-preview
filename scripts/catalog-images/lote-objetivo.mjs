@@ -385,6 +385,67 @@ export const OBJETIVOS = new Map([
     nombre: 'Speed Zero · 473 ml', unitsPerPack: 1,
     presentacion: { brand: 'Speed', capacityUnit: 'ml', capacityValue: 473, category: 'Energizantes', name: 'Speed Zero', packagingType: 'lata', variant: 'Sin azúcar' },
   }],
+
+  /*
+   * ALTA DEL 2026-08-26 (catálogo alcohólico) · doce fotografías.
+   *
+   * Son productos que YA existen en producción con precio confirmado y
+   * available = false. Asociarles la fotografía NO los pone en venta: la
+   * compuerta de alcohol del comercio sigue cerrada y el aplicador restituye la
+   * disponibilidad que cada uno ya tenía.
+   *
+   * Once vienen de retail con la placa del propio comercio en un bloque lateral
+   * o superior, que se retira con recorte declarado; la de Fernet Branca viene
+   * de la tienda oficial de Fratelli Branca, que es el fabricante.
+   */
+  ['andes-origen-rubia-lata-473ml', {
+    nombre: 'Andes Origen Rubia · 473 ml', unitsPerPack: 1,
+    presentacion: { brand: 'Andes Origen', capacityUnit: 'ml', capacityValue: 473, category: 'Cervezas', name: 'Andes Origen Rubia', packagingType: 'lata', variant: 'Rubia' },
+  }],
+  ['andes-origen-rubia-lata-473ml-pack-6', {
+    nombre: 'Andes Origen Rubia Pack x6 · 473 ml', unitsPerPack: 6,
+    presentacion: { brand: 'Andes Origen', capacityUnit: 'ml', capacityValue: 473, category: 'Cervezas', name: 'Andes Origen Rubia', packagingType: 'lata', variant: 'Rubia' },
+  }],
+  ['brahma-chopp-lata-473ml-pack-6', {
+    nombre: 'Brahma Chopp Pack x6 · 473 ml', unitsPerPack: 6,
+    presentacion: { brand: 'Brahma', capacityUnit: 'ml', capacityValue: 473, category: 'Cervezas', name: 'Brahma Chopp', packagingType: 'lata', variant: 'Rubia' },
+  }],
+  ['budweiser-lata-473ml', {
+    nombre: 'Budweiser · 473 ml', unitsPerPack: 1,
+    presentacion: { brand: 'Budweiser', capacityUnit: 'ml', capacityValue: 473, category: 'Cervezas', name: 'Budweiser', packagingType: 'lata', variant: 'Lager' },
+  }],
+  ['budweiser-lata-473ml-pack-6', {
+    nombre: 'Budweiser Pack x6 · 473 ml', unitsPerPack: 6,
+    presentacion: { brand: 'Budweiser', capacityUnit: 'ml', capacityValue: 473, category: 'Cervezas', name: 'Budweiser', packagingType: 'lata', variant: 'Lager' },
+  }],
+  ['stella-artois-lata-473ml', {
+    nombre: 'Stella Artois · 473 ml', unitsPerPack: 1,
+    presentacion: { brand: 'Stella Artois', capacityUnit: 'ml', capacityValue: 473, category: 'Cervezas', name: 'Stella Artois', packagingType: 'lata', variant: 'Lager' },
+  }],
+  ['stella-artois-lata-473ml-pack-6', {
+    nombre: 'Stella Artois Pack x6 · 473 ml', unitsPerPack: 6,
+    presentacion: { brand: 'Stella Artois', capacityUnit: 'ml', capacityValue: 473, category: 'Cervezas', name: 'Stella Artois', packagingType: 'lata', variant: 'Lager' },
+  }],
+  ['patagonia-amber-lager-botella-730ml', {
+    nombre: 'Patagonia Amber Lager · 730 ml', unitsPerPack: 1,
+    presentacion: { brand: 'Patagonia', capacityUnit: 'ml', capacityValue: 730, category: 'Cervezas', name: 'Patagonia Amber Lager', packagingType: 'botella', variant: 'Amber Lager' },
+  }],
+  ['quilmes-stout-lata-473ml', {
+    nombre: 'Quilmes Stout · 473 ml', unitsPerPack: 1,
+    presentacion: { brand: 'Quilmes', capacityUnit: 'ml', capacityValue: 473, category: 'Cervezas', name: 'Quilmes Stout', packagingType: 'lata', variant: 'Stout' },
+  }],
+  ['gancia-lima-limon-lata-473ml', {
+    nombre: 'Gancia Lima Limón · 473 ml', unitsPerPack: 1,
+    presentacion: { brand: 'Gancia', capacityUnit: 'ml', capacityValue: 473, category: 'Aperitivos', name: 'Gancia Lima Limón', packagingType: 'lata', variant: 'Lima limón' },
+  }],
+  ['corona-extra-botella-330ml', {
+    nombre: 'Corona Extra · 330 ml', unitsPerPack: 1,
+    presentacion: { brand: 'Corona', capacityUnit: 'ml', capacityValue: 330, category: 'Cervezas', name: 'Corona Extra', packagingType: 'botella', variant: 'Lager' },
+  }],
+  ['fernet-branca-1000ml', {
+    nombre: 'Fernet Branca · 1 L', unitsPerPack: 1,
+    presentacion: { brand: 'Fernet Branca', capacityUnit: 'ml', capacityValue: 1000, category: 'Fernet', name: 'Fernet Branca', packagingType: 'botella', variant: 'Original' },
+  }],
 ]);
 
 export const SKUS_OBJETIVO = Object.freeze([...OBJETIVOS.keys()]);

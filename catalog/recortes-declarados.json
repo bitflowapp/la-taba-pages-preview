@@ -77,6 +77,114 @@
       "height": 1000,
       "motivo": "La ficha de DIA ubica una placa roja separada a la derecha. La botella completa ocupa aproximadamente las columnas 205-505 y la placa comienza en la 690; el corte conserva 115 px de blanco a la derecha del envase.",
       "medidoEl": "2026-08-25"
+    },
+    {
+      "sku": "andes-origen-rubia-lata-473ml",
+      "left": 0,
+      "top": 0,
+      "width": 536,
+      "height": 1000,
+      "motivo": "La ficha del retailer pone su propia placa («473cc RUBIA») en una columna aparte. La lata entera queda en las columnas 211-529 y la placa arranca en la 566: el corte pasa por las 36 px de blanco que las separan y no toca el envase.",
+      "medidoEl": "2026-08-26"
+    },
+    {
+      "sku": "budweiser-lata-473ml",
+      "left": 0,
+      "top": 0,
+      "width": 520,
+      "height": 1000,
+      "motivo": "Misma placa lateral del retailer. La lata ocupa las columnas 173-501 y la placa empieza en la 568; el corte atraviesa 66 px de blanco.",
+      "medidoEl": "2026-08-26"
+    },
+    {
+      "sku": "stella-artois-lata-473ml",
+      "left": 0,
+      "top": 0,
+      "width": 520,
+      "height": 1000,
+      "motivo": "Placa lateral del retailer. La lata ocupa las columnas 195-503 y la placa empieza en la 559; el corte atraviesa 56 px de blanco.",
+      "medidoEl": "2026-08-26"
+    },
+    {
+      "sku": "patagonia-amber-lager-botella-730ml",
+      "left": 0,
+      "top": 0,
+      "width": 480,
+      "height": 1000,
+      "motivo": "Placa lateral del retailer. La botella ocupa las columnas 232-439 y la placa empieza en la 560; el corte atraviesa 120 px de blanco.",
+      "medidoEl": "2026-08-26"
+    },
+    {
+      "sku": "quilmes-stout-lata-473ml",
+      "left": 0,
+      "top": 0,
+      "width": 500,
+      "height": 1000,
+      "motivo": "Placa lateral del retailer. La lata ocupa las columnas 159-464 y la placa empieza en la 568; el corte atraviesa 103 px de blanco.",
+      "medidoEl": "2026-08-26"
+    },
+    {
+      "sku": "gancia-lima-limon-lata-473ml",
+      "left": 0,
+      "top": 0,
+      "width": 660,
+      "height": 1000,
+      "motivo": "Placa lateral verde y negra del retailer. La lata ocupa las columnas 143-604 y la placa empieza en la 761; el corte atraviesa 153 px de blanco.",
+      "medidoEl": "2026-08-26"
+    },
+    {
+      "sku": "corona-extra-botella-330ml",
+      "left": 0,
+      "top": 0,
+      "width": 500,
+      "height": 1000,
+      "motivo": "Placa lateral del retailer. La botella ocupa las columnas 216-455 y la placa empieza en la 609; el corte atraviesa 153 px de blanco.",
+      "medidoEl": "2026-08-26"
+    },
+    {
+      "sku": "fernet-branca-1000ml",
+      "left": 0,
+      "top": 0,
+      "width": 700,
+      "height": 1024,
+      "motivo": "La tienda oficial de Fratelli Branca pone su propio cartel vertical a la derecha. La botella ocupa las columnas 385-653 y el cartel empieza en la 813; el corte atraviesa 159 px de blanco.",
+      "medidoEl": "2026-08-26"
+    },
+    {
+      "sku": "andes-origen-rubia-lata-473ml-pack-6",
+      "left": 0,
+      "top": 280,
+      "width": 999,
+      "height": 720,
+      "motivo": "Acá la placa del retailer («6 LATAS 473CC.») está ARRIBA, no al costado: ocupa las filas 0-189 y el producto empieza en la 308. El corte quita la franja superior pasando por las 114 px de blanco intermedias.",
+      "medidoEl": "2026-08-26"
+    },
+    {
+      "sku": "brahma-chopp-lata-473ml-pack-6",
+      "left": 0,
+      "top": 280,
+      "width": 1000,
+      "height": 720,
+      "motivo": "Placa superior del retailer en las filas 0-191; el producto empieza en la 312. El corte pasa por las 120 px de blanco.",
+      "medidoEl": "2026-08-26"
+    },
+    {
+      "sku": "budweiser-lata-473ml-pack-6",
+      "left": 0,
+      "top": 220,
+      "width": 1000,
+      "height": 780,
+      "motivo": "Placa superior del retailer en las filas 0-191; el producto empieza en la 224. El corte pasa por las 32 px de blanco.",
+      "medidoEl": "2026-08-26"
+    },
+    {
+      "sku": "stella-artois-lata-473ml-pack-6",
+      "left": 0,
+      "top": 240,
+      "width": 999,
+      "height": 760,
+      "motivo": "Placa superior del retailer en las filas 0-191; el producto empieza en la 258. El corte pasa por las 66 px de blanco.",
+      "medidoEl": "2026-08-26"
     }
   ]
 }

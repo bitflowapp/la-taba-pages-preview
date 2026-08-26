@@ -321,13 +321,33 @@ Y dos hallazgos de surtido que aparecieron al buscar, que valen por sí mismos:
   London Dry clásico que es el SKU cargado. Usar esa foto sería publicar otra
   variante.
 
-**Lo que hay que hacer, y no cabe en esta misión:** un barrido de sourcing
-propio para alcohol, con prioridad en el fabricante —Cervecería y Maltería
-Quilmes para el portafolio de cerveza, Fratelli Branca para Fernet— y
-ampliando la allowlist a esos hosts. Los sitios de marca cargan las imágenes por
-JavaScript, así que hay que resolverlas una por una, igual que se hizo con el
-lote premium. Es una misión del mismo tamaño que aquélla, no un apéndice de
-ésta.
+### CORRECCIÓN, medida después de escribir lo de arriba
+
+Lo anterior es correcto sobre lo que se observó —las 18 candidatas **no son
+publicables tal como vienen**— pero la conclusión que seguía era demasiado
+tajante, y conviene decirlo antes de que alguien la tome como definitiva.
+
+Midiendo la estructura de esas imágenes en vez de sólo mirarlas: el cartel
+**no está encima del envase**. Es un bloque lateral separado, con un canal de
+blanco puro entre medio. Medido sobre el packshot oficial de Fratelli Branca
+750 ml (1024×1024): la botella ocupa las columnas 385–643, el cartel las
+813–1023, y entre los dos hay **169 px de blanco**.
+
+Ese es exactamente el caso que `catalog/recortes-declarados.json` existe para
+resolver, y el lote premium ya lo hizo tres veces —Pepsi 2 L, Pepsi Black y
+Villavicencio sin gas— con la misma frase: «el corte atraviesa exclusivamente
+el canal blanco que la separa de la pieza».
+
+O sea: **la mayoría de estas candidatas se recuperan con un recorte declarado**,
+y el sourcing de alcohol no necesita una arquitectura nueva, sino el mecanismo
+que el repositorio ya tiene. Lo que sí se mantiene rechazado sin apelación es lo
+que está roto de verdad: el asset muerto de Corona, la caja de regalo en vez de
+la botella de Fernet, el fondo azul de Skyy y la variante equivocada de
+Gordon's.
+
+El barrido en sí —resolver marca por marca, priorizando fabricante, y ampliar
+la allowlist— sigue siendo trabajo de su propia misión, del tamaño del lote
+premium. Pero es trabajo mecánico con una técnica conocida, no un bloqueo.
 
 **Los 27 productos siguen exactamente como estaban.** No se asoció ni una
 fotografía, y eso es deliberado: una foto equivocada es peor que la ausencia de

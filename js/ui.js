@@ -826,12 +826,23 @@ function quickAddControl(product, quantity, { className = 'add-button' } = {}) {
   // incoherente, y es justo el que no puede terminar en un carrito.
   const pricePending = isPricePending(product);
   const outOfStock = !isCommerciallyPurchasable(product);
+  // Una bebida alcohólica en vidriera no está agotada: le falta la habilitación
+  // de expendio. El botón queda inhabilitado igual —la compuerta es
+  // `isCommerciallyPurchasable`, no este texto— pero dice lo que pasa de verdad.
+  const vidrieraAlcohol = !pricePending && outOfStock && esVidrieraDeAlcohol(product);
   if (quantity > 0) return quantityControl(product, quantity, { justAdded: wasJustAdded(product.id) });
   const actionLabel = pricePending
     ? `${productAccessibleName(product)}: ${PRICE_PENDING_TITLE.toLowerCase()}; ${PRICE_PENDING_DETAIL.toLowerCase()}`
-    : `Agregar ${productAccessibleName(product)} al pedido`;
+    : vidrieraAlcohol
+      ? `${productAccessibleName(product)}: todavía no está a la venta`
+      : `Agregar ${productAccessibleName(product)} al pedido`;
+  const texto = pricePending
+    ? 'Precio pendiente'
+    : vidrieraAlcohol
+      ? 'Próximamente'
+      : outOfStock ? 'No disponible' : 'Agregar';
   return `<button class="${className}${pricePending ? ' is-price-pending' : ''}" type="button" data-add-product="${escapeHtml(product.id)}" aria-label="${escapeHtml(actionLabel)}" ${outOfStock ? 'disabled' : ''}>
-    ${pricePending ? '' : '<span class="add-plus" aria-hidden="true">+</span>'}<span class="add-text">${pricePending ? 'Precio pendiente' : outOfStock ? 'No disponible' : 'Agregar'}</span>
+    ${pricePending || vidrieraAlcohol ? '' : '<span class="add-plus" aria-hidden="true">+</span>'}<span class="add-text">${texto}</span>
   </button>`;
 }
 
@@ -2594,11 +2605,28 @@ function ageTag(product) {
     + `<span class="sr-only">Venta exclusiva a mayores de ${age} años</span></span>`;
 }
 
+/*
+ * LA VIDRIERA DEL ALCOHOL.
+ *
+ * Una bebida alcohólica que está en la góndola sin estar a la venta no está
+ * «agotada» ni «no disponible» en el sentido corriente: el comercio la tiene, y
+ * lo que falta es la habilitación de expendio. Decirle «No disponible» a eso
+ * suena a que se acabó, que es información equivocada.
+ *
+ * El texto largo NO promete una fecha. La habilitación no la decide el comercio
+ * y no hay ninguna que se pueda citar, así que el detalle dice el hecho —todavía
+ * no está a la venta— y la pill se queda con la convención corta de góndola.
+ */
+function esVidrieraDeAlcohol(product) {
+  return Boolean(product?.alcoholic) && product?.archived !== true && product?.available !== true;
+}
+
 // Pill de disponibilidad: sólo aparece cuando hay algo que avisar (agotado,
 // pausado, últimas unidades). Lo normal —estar disponible— no se etiqueta.
 export function stockPill(product) {
   if (product.pricePending) return '';
   if (product.archived) return '<span class="stock-pill empty">Archivado</span>';
+  if (esVidrieraDeAlcohol(product)) return '<span class="stock-pill empty">Próximamente</span>';
   if (!product.available) return '<span class="stock-pill empty">No disponible</span>';
   if (product.stock <= 0) return '<span class="stock-pill empty">Agotado</span>';
   if (product.stock <= 4) return `<span class="stock-pill low">Últimas ${product.stock}</span>`;
@@ -2608,6 +2636,7 @@ export function stockPill(product) {
 // Texto plano de disponibilidad para el detalle del producto.
 export function availabilityLabel(product) {
   if (product.pricePending) return `${PRICE_PENDING_TITLE}; ${PRICE_PENDING_DETAIL.toLowerCase()}`;
+  if (esVidrieraDeAlcohol(product)) return 'Todavía no está a la venta';
   if (product.archived || !product.available) return 'No disponible por ahora';
   if (product.stock <= 0) return 'Agotado';
   if (product.stock <= 4) return `Últimas ${product.stock}`;

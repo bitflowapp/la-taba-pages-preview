@@ -2358,6 +2358,7 @@ function clienteConCatalogoControlado(mock) {
       const stub = {
         select: () => stub,
         eq: () => stub,
+        or: () => stub,
         order: () => stub,
         limit: () => stub,
         then(resolve, reject) {
@@ -2471,7 +2472,7 @@ test('una consulta vieja de catálogo no revive stock después de una nueva', as
     from(table) {
       if (table !== 'products') return originalFrom(table);
       const stub = {
-        select: () => stub, eq: () => stub, order: () => stub, limit: () => stub,
+        select: () => stub, eq: () => stub, or: () => stub, order: () => stub, limit: () => stub,
         then(resolve, reject) {
           return new Promise((release) => pending.push(release)).then(resolve, reject);
         },
@@ -3166,6 +3167,25 @@ function createQuery({ table, db, calls }) {
     },
     in(field, values) {
       operation.inFilters.push([field, Array.isArray(values) ? values : []]);
+      return this;
+    },
+    /*
+     * `or()` se registra y NO se evalúa, a propósito.
+     *
+     * Lo usa la consulta del catálogo para traer, además de lo que está a la
+     * venta, la vidriera del alcohol: verificado, con foto y sin habilitar.
+     * Reimplementar acá el dialecto de filtros de PostgREST sería escribir un
+     * segundo motor de consultas y creerle: las pruebas pasarían contra MI
+     * intérprete, no contra el de la base.
+     *
+     * Lo que sí se puede afirmar sin inventar un motor es que la consulta pide
+     * lo que tiene que pedir, y de eso se ocupa
+     * `tests/alcohol-vidriera-visible.test.mjs`, que fija la cadena exacta. Acá
+     * las filas las decide el fixture, que es lo que estas pruebas quieren
+     * medir.
+     */
+    or(expression) {
+      operation.orFilters = [...(operation.orFilters || []), String(expression)];
       return this;
     },
     order() {

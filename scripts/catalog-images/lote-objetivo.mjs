@@ -446,6 +446,53 @@ export const OBJETIVOS = new Map([
     nombre: 'Fernet Branca · 1 L', unitsPerPack: 1,
     presentacion: { brand: 'Fernet Branca', capacityUnit: 'ml', capacityValue: 1000, category: 'Fernet', name: 'Fernet Branca', packagingType: 'botella', variant: 'Original' },
   }],
+
+  /*
+   * ALTA DEL 2026-08-26, SEGUNDA VUELTA (ALCOHOL COMMERCIAL READY) · cinco más.
+   *
+   * Mismo régimen que las doce de arriba: productos que ya existen con precio
+   * confirmado y `available = false`. La foto no los pone en venta.
+   *
+   * Lo que las destrabó fue mirar dónde no se había mirado, no bajar el listón:
+   *
+   *   · Trapiche Origen Malbec y Gordon's London Dry los publica el
+   *     DISTRIBUIDOR OFICIAL del portafolio Peñaflor. El packshot de Trapiche
+   *     estaba descargado desde el 2026-08-18 y sin publicar porque el marco
+   *     comercial de entonces no cubría «distribuidor»; el titular amplió el
+   *     alcance el 2026-08-25 nombrando ese caso exacto, y el guion de staging
+   *     seguía con la lista vieja escrita a mano. Ninguna de las dos necesita
+   *     recorte: el distribuidor publica el envase solo sobre blanco.
+   *   · Brahma Chopp 710, Dr. Lemon Vodka Pomelo 473 y Dadá Caramel aparecen en
+   *     Disco y Vea, sobre el mismo CDN de retail ya autorizado, y no en Jumbo,
+   *     que fue la única cadena que barrió la vuelta anterior. Por eso tres de
+   *     ellas figuraban como «SIN CANDIDATA».
+   *
+   * Y lo que se sostuvo rechazado, para que no se vuelva a intentar: la botella
+   * de Quilmes Clásica 710 que ofrece el retailer es una LATA y además la
+   * edición limitada del Mundial; Cafayate Torrontés, Gancia Americano y Skyy
+   * son fotos de close-up con el envase CORTADO fuera del cuadro —el producto
+   * toca el borde superior e inferior—, y media botella no es un packshot.
+   */
+  ['trapiche-origen-malbec-750ml', {
+    nombre: 'Trapiche Origen Malbec · 750 ml', unitsPerPack: 1,
+    presentacion: { brand: 'Trapiche', capacityUnit: 'ml', capacityValue: 750, category: 'Vinos', name: 'Trapiche Origen Malbec', packagingType: 'botella', variant: 'Malbec' },
+  }],
+  ['gin-gordons-700ml', {
+    nombre: "Gordon's London Dry · 700 ml", unitsPerPack: 1,
+    presentacion: { brand: "Gordon's", capacityUnit: 'ml', capacityValue: 700, category: 'Destilados', name: "Gordon's London Dry", packagingType: 'botella', variant: 'London Dry' },
+  }],
+  ['brahma-chopp-lata-710ml', {
+    nombre: 'Brahma Chopp · 710 ml', unitsPerPack: 1,
+    presentacion: { brand: 'Brahma', capacityUnit: 'ml', capacityValue: 710, category: 'Cervezas', name: 'Brahma Chopp', packagingType: 'lata', variant: 'Rubia' },
+  }],
+  ['dr-lemon-vodka-pomelo-lata-473ml', {
+    nombre: 'Dr. Lemon Vodka Pomelo · 473 ml', unitsPerPack: 1,
+    presentacion: { brand: 'Dr. Lemon', capacityUnit: 'ml', capacityValue: 473, category: 'Aperitivos', name: 'Dr. Lemon Vodka Pomelo', packagingType: 'lata', variant: 'Vodka pomelo' },
+  }],
+  ['dada-caramel-750ml', {
+    nombre: 'Dadá Caramel · 750 ml', unitsPerPack: 1,
+    presentacion: { brand: 'Dada', capacityUnit: 'ml', capacityValue: 750, category: 'Vinos', name: 'Dada Caramel', packagingType: 'botella', variant: 'Caramel' },
+  }],
 ]);
 
 export const SKUS_OBJETIVO = Object.freeze([...OBJETIVOS.keys()]);

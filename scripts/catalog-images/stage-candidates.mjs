@@ -43,15 +43,55 @@ const autoridad = autorizaciones.autorizaciones.find((a) => a.id === allowlist.r
 if (!autoridad) throw new Error(`La allowlist cita ${allowlist.rightsAuthority} y ese id no está registrado.`);
 
 /*
- * El alcance, leído del registro y no de la memoria de nadie: la autorización
- * cubre packshots «provistos por la marca o su embotellador/importador». En el
- * vocabulario de fuentes del pipeline eso es `marca` y `fabricante`.
- * `distribuidor_oficial` NO está en esa frase, y el registro es explícito en que
- * una autorización declarada no reetiqueta nada.
+ * El alcance, leído del registro y no de la memoria de nadie.
+ *
+ * ESTO ANTES ERA UNA COPIA A MANO, Y LA COPIA SE ATRASÓ. La lista decía
+ * `['marca','fabricante','propio']` —el alcance BASE, correcto el 2026-08-18—
+ * y el 2026-08-25 el titular amplió el marco a `distribuidor_oficial` nombrando
+ * justamente el packshot de Trapiche como el caso que la redacción anterior
+ * había dejado afuera. El guion no se enteró: siguió estampando FUERA DE
+ * ALCANCE sobre la única fuente que ya tenía permiso, ocho días. Por eso ahora
+ * el alcance se DERIVA del registro —base más la unión de las ampliaciones— y
+ * ampliar el marco es editar un archivo, no dos.
+ *
+ * Lo que no cambia: una autorización declara un MARCO y no reetiqueta nada. Que
+ * un tipo de fuente esté en alcance sólo habilita a ANOTARLO con derechos; la
+ * foto sigue necesitando que alguien la mire y la firme.
  */
-const TIPOS_CUBIERTOS = new Set(['marca', 'fabricante', 'propio']);
+const TIPOS_CUBIERTOS = new Set([
+  ...(autoridad.habilita_source_types || []),
+  ...(autoridad.ampliaciones || []).flatMap((a) => a.habilita_source_types || []),
+]);
+if (!TIPOS_CUBIERTOS.size) {
+  throw new Error(
+    `${autoridad.id} no declara ningún habilita_source_types. Sin alcance legible no se anota nada con derechos.`,
+  );
+}
 
 await fs.mkdir(REVISION, { recursive: true });
+
+/*
+ * LA AUDITORÍA QUE YA EXISTE, LEÍDA ANTES DE ESCRIBIR NADA.
+ *
+ * Sin esto, correr el descubrimiento de nuevo DESAPROBABA trabajo firmado. El
+ * pie de este archivo dice —y decía— que «el trabajo de revisión de otro no se
+ * pisa por correr el descubrimiento de nuevo», y era falso para todo SKU que el
+ * descubrimiento volviera a proponer: la fila nueva reemplazaba a la vieja con
+ * `status: REVISAR_IMAGEN`, con los mismos bytes y la misma fuente. Medido el
+ * 2026-08-26: una corrida rutinaria bajó a REVISAR_IMAGEN los cuatro packs
+ * oficiales aprobados el 2026-08-18, y el efecto sólo se vio dos pasos después,
+ * cuando `verify` encontró ocho WebP publicados sin entrada en el manifiesto.
+ *
+ * La regla correcta es la de siempre en este pipeline: lo que hace falta mirar
+ * de nuevo es la IMAGEN, y la imagen es sus bytes. Si el SHA-256 no se movió, la
+ * revisión firmada sigue valiendo. Si se movió, la aprobación cae, que es
+ * exactamente lo que tiene que pasar.
+ */
+const auditoriaPrevia = new Map(
+  recordsFromCsvRows(parseCsv(await fs.readFile(AUDIT, 'utf8')))
+    .records.filter((fila) => fila.sku)
+    .map((fila) => [fila.sku, fila]),
+);
 
 const altas = manifiesto.decisiones.filter((decision) => decision.estado === 'HIGH');
 if (!altas.length) {
@@ -92,6 +132,22 @@ for (const decision of altas) {
   await fs.writeFile(path.join(REVISION, `${decision.sku}.${extension}`), bytes);
 
   const cubierta = TIPOS_CUBIERTOS.has(elegido.sourceType);
+
+  /*
+   * Una revisión firmada sobre ESTOS MISMOS bytes se respeta entera. No se
+   * reescribe el `checked_at` ni la nota: quien la firmó dijo qué miró y
+   * cuándo, y esta corrida no miró nada.
+   */
+  const previa = auditoriaPrevia.get(decision.sku);
+  if (cubierta && previa?.status === 'APROBADA' && previa.expected_sha256 === digest) {
+    filas.push({ ...previa, source_url: elegido.imageUrl });
+    console.log(`${decision.sku}: sin cambios (sha256 idéntico) · se conserva la aprobación del ${previa.checked_at}`);
+    continue;
+  }
+  if (previa?.status === 'APROBADA' && previa.expected_sha256 !== digest) {
+    console.log(`${decision.sku}: LA FUENTE CAMBIÓ DE BYTES · cae la aprobación del ${previa.checked_at} y vuelve a revisión`);
+  }
+
   filas.push({
     capacity_verified: 'true',
     checked_at: HOY,
@@ -99,7 +155,7 @@ for (const decision of altas) {
     expected_sha256: digest,
     notes: cubierta
       ? `${elegido.title} · ${elegido.productUrl || ''} · descubierto por allowlist ${elegido.grupo}`
-      : `${elegido.title} · FUERA DEL ALCANCE de ${autoridad.id}: la fuente es ${elegido.sourceType} y la autorización cubre marca/embotellador/importador. Ampliar el marco antes de publicar.`,
+      : `${elegido.title} · FUERA DEL ALCANCE de ${autoridad.id}: la fuente es ${elegido.sourceType} y la autorización cubre ${[...TIPOS_CUBIERTOS].join(', ')}. Ampliar el marco antes de publicar.`,
     package_verified: 'true',
     pack_verified: 'true',
     rights_reference: cubierta ? autoridad.id : '',

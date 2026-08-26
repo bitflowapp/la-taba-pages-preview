@@ -20,6 +20,12 @@
         "canal_de_uso": "tienda online propia de TABA"
       },
       "habilita_rights_status": "LICENCIA_COMERCIAL",
+      "habilita_source_types": [
+        "marca",
+        "fabricante",
+        "propio"
+      ],
+      "doc_habilita_source_types": "El alcance BASE traducido al vocabulario de `source_type` del pipeline: «la marca o su embotellador/importador». Cada ampliación agrega los suyos en su propio `habilita_source_types`, y el alcance efectivo es la unión. Existe para que `stage-candidates.mjs` LEA el alcance de acá en vez de llevar una copia congelada: hasta el 2026-08-26 el guion tenía la lista base escrita a mano y por eso seguía marcando FUERA DE ALCANCE al distribuidor oficial que la ampliación del 2026-08-25 ya había incorporado.",
       "cubre": [
         "packshots provistos por la marca o su embotellador/importador, con fondo blanco",
         "uso del nombre y el logotipo de esas marcas en la ficha del producto"
@@ -61,6 +67,9 @@
           "quien": "titular del comercio",
           "canal": "instrucción escrita de lanzamiento comercial del 2026-08-25",
           "que_amplía": "El orden de prioridad de fuentes que fija la instrucción es: 1) fabricante, 2) distribuidor oficial, 3) catálogos oficiales, 4) assets autorizados de TABA, 5) repositorio existente. El punto 2 incorpora al DISTRIBUIDOR OFICIAL, que la redacción original del alcance no cubría —decía «la marca o su embotellador/importador»— y que por eso había dejado afuera al packshot de Trapiche el 2026-08-18.",
+          "habilita_source_types": [
+            "distribuidor_oficial"
+          ],
           "por_qué_importa": "PepsiCo no publica packshots argentinos en ningún canal propio alcanzable, medido host por host. Sin distribuidores oficiales, Pepsi, 7UP, Paso de los Toros y Gatorade se quedaban sin fotografía por una razón que no tiene nada que ver con los derechos.",
           "lo_que_no_amplía": "No habilita retailers ni marketplaces, que siguen rechazados por escrito. Un distribuidor oficial es una empresa que distribuye el portafolio del fabricante bajo acuerdo; una cadena minorista publica un asset propio, y eso no forma parte de ningún acuerdo entre TABA y el proveedor.",
           "pendiente_para_el_titular": "Confirmar por escrito esta ampliación cuando se documente el acuerdo. Hasta entonces las dos fotos que entran por esta vía —Paso de los Toros Tónica y Pomelo 1,5 L— quedan identificadas en el manifiesto con source_type distribuidor_oficial y se pueden retirar con una línea."
@@ -70,6 +79,9 @@
           "quien": "titular del comercio",
           "canal": "instrucción escrita TABA — COMPLETE PREMIUM CATALOG del 2026-08-25",
           "que_amplía": "El titular declara que La Taba tiene autorización para utilizar las imágenes de producto y ordena buscar también en mayoristas, distribuidores autorizados, ecommerce serios y otras fuentes confiables. Esta ampliación habilita source_type proveedor_aprobado para assets individualmente comprobados.",
+          "habilita_source_types": [
+            "proveedor_aprobado"
+          ],
           "supersede": "Para este lote, reemplaza expresamente la exclusión genérica de fotografías provenientes de cadenas minoristas incluida en no_cubre y la frase lo_que_no_amplía de la ampliación anterior. No reetiqueta ni aprueba en masa assets históricos.",
           "condiciones": [
             "marca, variante, capacidad, envase y presentación exactos",
@@ -101,6 +113,10 @@
           "quien": "titular del comercio",
           "canal": "instrucción escrita TABA — ALCOHOL PREMIUM IMAGE SOURCING del 2026-08-26",
           "que_amplía": "El titular ordena resolver el catálogo VISUAL alcohólico dentro del mismo marco comercial ya documentado, priorizando fabricante y marca oficial. Habilita dos fuentes de fabricante nuevas —Fratelli Branca Destilerías y CCU Argentina— y extiende el alcance de proveedor_aprobado a las marcas de cerveza y aperitivos del catálogo alcohólico ya cargado.",
+          "habilita_source_types": [
+            "fabricante",
+            "proveedor_aprobado"
+          ],
           "condiciones": [
             "marca, variante, capacidad, envase y presentación exactos",
             "unidad versus pack exactos",
@@ -124,6 +140,28 @@
             "fernet-branca-1000ml"
           ],
           "nota": "Fernet Branca 1 L viene de la tienda oficial de Fratelli Branca, con source_type fabricante. Las otras once entran por proveedor_aprobado. Se rechazó expresamente la lata de Quilmes Clásica 473 que ofrecía el retailer por ser una EDICIÓN LIMITADA del Mundial y no la lata estándar."
+        },
+        {
+          "fecha": "2026-08-26",
+          "quien": "titular del comercio",
+          "canal": "instrucción escrita TABA — ALCOHOL COMMERCIAL READY del 2026-08-26",
+          "que_amplía": "El titular ordena buscar la máxima cobertura fotográfica posible del catálogo alcohólico con «prioridad fabricante/distribuidor oficial». Sobre el frente alcohólico eso reafirma la ampliación del 2026-08-25 que ya había incorporado al DISTRIBUIDOR OFICIAL, y bajo la que entran los dos packshots que el portafolio Peñaflor publica a través de su distribuidor Coca-Cola Andina.",
+          "habilita_source_types": [
+            "distribuidor_oficial"
+          ],
+          "condiciones": [
+            "marca, variante, capacidad, envase y presentación exactos",
+            "unidad versus pack exactos",
+            "fondo blanco o transparencia normalizada sobre blanco",
+            "sin watermark invasivo, precio, sticker ni promoción externa",
+            "URL, hash, fuente y evidencia de match registrados por asset"
+          ],
+          "lo_que_no_amplía": "No habilita marketplaces, coincidencias aproximadas, otra variante o capacidad, packs usados como unidad, unidades usadas como pack, ediciones limitadas en lugar del SKU estándar, ni imágenes generadas con IA. Y NO habilita la venta de alcohol: alcohol_sales_enabled sigue en false y los 27 productos siguen con available = false.",
+          "assets_cubiertos": [
+            "trapiche-origen-malbec-750ml",
+            "gin-gordons-700ml"
+          ],
+          "nota": "Trapiche Origen Malbec es exactamente el caso que la ampliación del 2026-08-25 nombra como el que su redacción anterior había dejado afuera; queda cerrado acá con el asset que lo resuelve, y por eso `fuera_de_alcance_detectado` deja de tener sentido para ese SKU. Gordon's London Dry entra por la misma fuente: el catálogo del distribuidor lo publica como «GORDON´S GIN 1X700ml» sin nombrar la línea, y sí nombra explícitamente las variantes cuando las hay (Tanqueray Royale, Tanqueray Sevilla, Smirnoff Raspberry). Se resuelve mirando la etiqueta, no el título."
         }
       ],
       "altas_2026_08_25": {
@@ -140,7 +178,8 @@
         {
           "sku": "trapiche-origen-malbec-750ml",
           "motivo": "El packshot es correcto y exacto, pero lo publica Coca-Cola Andina como DISTRIBUIDOR del portafolio Peñaflor, y este marco cubre «la marca o su embotellador/importador». Un distribuidor no está en esa frase. Queda descargado y sin publicar hasta que el titular amplíe el alcance.",
-          "medidoEl": "2026-08-18"
+          "medidoEl": "2026-08-18",
+          "resuelto": "2026-08-26 — el titular amplió el alcance a distribuidor oficial el 2026-08-25 y lo reafirmó el 2026-08-26. El SKU sale de esta lista por la puerta prevista: la del permiso, no la del olvido. Se deja escrito el hallazgo porque explica por qué el packshot existía desde el 2026-08-18 y estuvo ocho días sin publicar."
         }
       ]
     }

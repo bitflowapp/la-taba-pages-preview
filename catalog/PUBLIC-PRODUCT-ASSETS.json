@@ -9,7 +9,7 @@
     "doc": "Imágenes de sitio, no de producto. Viajan por su propia decisión y no las gobierna este manifiesto."
   },
   "doc": "Las ÚNICAS fotos de producto que el empaquetado puede copiar. Generado por scripts/catalog-images/build-public-asset-manifest.mjs; no editar a mano.",
-  "fotosDeProductoAuditadas": 257,
+  "fotosDeProductoAuditadas": 267,
   "publicables": [
     {
       "bytes": 22554,
@@ -100,6 +100,18 @@
       "derechos": "LICENCIA_COMERCIAL",
       "ruta": "assets/products/brahma-chopp-lata-473ml-pack-6-a5d1d3f1effa3ac9-thumb-00a5a1d276739802.webp",
       "sha256": "00a5a1d276739802170ca3ff47d4b150cfef3d2b784b25da51a1a5dfc63746fd"
+    },
+    {
+      "bytes": 35748,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/brahma-chopp-lata-710ml-7b3111225f3821da-bd35f5833b47f78a.webp",
+      "sha256": "bd35f5833b47f78ad77de6b33876ba163f8813bf85811324fc4af1cd35110c31"
+    },
+    {
+      "bytes": 7738,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/brahma-chopp-lata-710ml-7b3111225f3821da-thumb-51a63d115ad3aed5.webp",
+      "sha256": "51a63d115ad3aed587de7bf528f4d5ceddc4806f522f6bf1b659db5686eb85c1"
     },
     {
       "bytes": 34574,
@@ -222,6 +234,30 @@
       "sha256": "4b872d222ff2f90ad835998a56e7bb26fffbf8e1f789d63fddce2edcc0008d76"
     },
     {
+      "bytes": 11998,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/dada-caramel-750ml-4171839cfea453e3-64fa3b5b38959304.webp",
+      "sha256": "64fa3b5b38959304f4605d60068bff2940c2bfd68980fa7d73fd5934fdf162d2"
+    },
+    {
+      "bytes": 4124,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/dada-caramel-750ml-4171839cfea453e3-thumb-98439035a1cccd9b.webp",
+      "sha256": "98439035a1cccd9b6c1820e2fd9443bb7c97270a7e9c6c1e2b9421f8add57606"
+    },
+    {
+      "bytes": 25482,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/dr-lemon-vodka-pomelo-lata-473ml-6875ceb7e0ff6926-e0eeb8cb2e97e288.webp",
+      "sha256": "e0eeb8cb2e97e2889087bf963a1acb68b253f12798aaeee6cc2da9ff0abca87c"
+    },
+    {
+      "bytes": 8074,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/dr-lemon-vodka-pomelo-lata-473ml-6875ceb7e0ff6926-thumb-ebd3cbb7049c8b57.webp",
+      "sha256": "ebd3cbb7049c8b571a7f3094fb4d2daf8d04ebe45c382e9015db475cff9626c7"
+    },
+    {
       "bytes": 23650,
       "derechos": "LICENCIA_COMERCIAL",
       "ruta": "assets/products/fanta-naranja-2250ml-797064494952a9a1-9ef1596448794ce7.webp",
@@ -292,6 +328,18 @@
       "derechos": "LICENCIA_COMERCIAL",
       "ruta": "assets/products/gatorade-manzana-1250ml-64efd055975ef241-thumb-b33a3ac22178a69a.webp",
       "sha256": "b33a3ac22178a69a8783c9255493bde92baf4805e8245a64ad7434f926e94b92"
+    },
+    {
+      "bytes": 34164,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/gin-gordons-700ml-0a539dda4bb5cbd5-6de283aef107c2ac.webp",
+      "sha256": "6de283aef107c2ac4e944a7ac8ca72b004a19443ed913cb3cbadb99bc128bcba"
+    },
+    {
+      "bytes": 8318,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/gin-gordons-700ml-0a539dda4bb5cbd5-thumb-e37bca6137875ca0.webp",
+      "sha256": "e37bca6137875ca0070aa0329f9e95fb0e1352b61ccd6b26b16059e05709a9a9"
     },
     {
       "bytes": 41700,
@@ -532,6 +580,18 @@
       "derechos": "LICENCIA_COMERCIAL",
       "ruta": "assets/products/stella-artois-lata-473ml-pack-6-fa4bfc744feba77f-thumb-90bb8cde0f1d72e3.webp",
       "sha256": "90bb8cde0f1d72e3f9f586f3384867f660009b7d99ce057c8d6608bd64796c07"
+    },
+    {
+      "bytes": 23810,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/trapiche-origen-malbec-750ml-5166a6bd98ad5d10-3ef96fe8a2aa34c5.webp",
+      "sha256": "3ef96fe8a2aa34c5b5102c9048927a00468fabd5a7f181ad3b37a7c88a40adb3"
+    },
+    {
+      "bytes": 6046,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/trapiche-origen-malbec-750ml-5166a6bd98ad5d10-thumb-19f9ca07fee4c4d8.webp",
+      "sha256": "19f9ca07fee4c4d8162c64168ee9b167c0c8dd5cfde954b66740733df87193a6"
     },
     {
       "bytes": 19496,

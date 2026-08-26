@@ -10,7 +10,10 @@
       "declarada_el": "2026-08-18",
       "canal": "instrucción escrita del titular en la sesión de trabajo del 2026-08-18",
       "alcance": {
-        "uso": ["marca", "imagen de producto"],
+        "uso": [
+          "marca",
+          "imagen de producto"
+        ],
         "contrapartes": "múltiples empresas proveedoras de las marcas que TABA comercializa",
         "formato_acordado": "imágenes de producto con fondo blanco (packshot)",
         "territorio": "Neuquén Capital, Argentina",
@@ -77,12 +80,50 @@
           ],
           "lo_que_no_amplía": "No habilita marketplaces, imágenes aproximadas, otra variante o capacidad, packs usados como unidad, unidades usadas como pack, ediciones visualmente incorrectas ni imágenes generadas con IA.",
           "assets_cubiertos": [
-            "coca-cola-original-lata-354ml", "coca-cola-original-pet-1500ml", "coca-cola-zero-lata-354ml",
-            "fanta-naranja-2250ml", "powerade-mountain-blast-500ml", "pepsi-original-2000ml", "pepsi-black-1500ml",
-            "seven-up-original-2000ml", "villa-del-sur-sin-gas-600ml", "villavicencio-con-gas-500ml",
-            "villavicencio-sin-gas-1500ml", "speed-original-473ml", "speed-zero-473ml"
+            "coca-cola-original-lata-354ml",
+            "coca-cola-original-pet-1500ml",
+            "coca-cola-zero-lata-354ml",
+            "fanta-naranja-2250ml",
+            "powerade-mountain-blast-500ml",
+            "pepsi-original-2000ml",
+            "pepsi-black-1500ml",
+            "seven-up-original-2000ml",
+            "villa-del-sur-sin-gas-600ml",
+            "villavicencio-con-gas-500ml",
+            "villavicencio-sin-gas-1500ml",
+            "speed-original-473ml",
+            "speed-zero-473ml"
           ],
           "nota": "Red Bull Original y Sugarfree 250 ml también entran en este lanzamiento, pero provienen directamente del fabricante y conservan source_type fabricante."
+        },
+        {
+          "fecha": "2026-08-26",
+          "quien": "titular del comercio",
+          "canal": "instrucción escrita TABA — ALCOHOL PREMIUM IMAGE SOURCING del 2026-08-26",
+          "que_amplía": "El titular ordena resolver el catálogo VISUAL alcohólico dentro del mismo marco comercial ya documentado, priorizando fabricante y marca oficial. Habilita dos fuentes de fabricante nuevas —Fratelli Branca Destilerías y CCU Argentina— y extiende el alcance de proveedor_aprobado a las marcas de cerveza y aperitivos del catálogo alcohólico ya cargado.",
+          "condiciones": [
+            "marca, variante, capacidad, envase y presentación exactos",
+            "unidad versus pack exactos",
+            "fondo blanco, con recorte declarado cuando el comercio superpone su propia placa",
+            "el recorte sólo retira la placa lateral o superior y jamás toca el envase: se mide el canal de blanco y se verifica que el corte caiga en blanco",
+            "URL, hash, fuente y evidencia de identidad —GTIN cuando existe— registrados por asset"
+          ],
+          "lo_que_no_amplía": "No habilita marketplaces, coincidencias aproximadas, otra variante o capacidad, packs usados como unidad, unidades usadas como pack, ediciones limitadas en lugar del SKU estándar, ni imágenes generadas con IA. Y NO habilita la venta de alcohol: alcohol_sales_enabled sigue en false y los productos siguen con available = false.",
+          "assets_cubiertos": [
+            "andes-origen-rubia-lata-473ml",
+            "andes-origen-rubia-lata-473ml-pack-6",
+            "brahma-chopp-lata-473ml-pack-6",
+            "budweiser-lata-473ml",
+            "budweiser-lata-473ml-pack-6",
+            "stella-artois-lata-473ml",
+            "stella-artois-lata-473ml-pack-6",
+            "patagonia-amber-lager-botella-730ml",
+            "quilmes-stout-lata-473ml",
+            "gancia-lima-limon-lata-473ml",
+            "corona-extra-botella-330ml",
+            "fernet-branca-1000ml"
+          ],
+          "nota": "Fernet Branca 1 L viene de la tienda oficial de Fratelli Branca, con source_type fabricante. Las otras once entran por proveedor_aprobado. Se rechazó expresamente la lata de Quilmes Clásica 473 que ofrecía el retailer por ser una EDICIÓN LIMITADA del Mundial y no la lata estándar."
         }
       ],
       "altas_2026_08_25": {

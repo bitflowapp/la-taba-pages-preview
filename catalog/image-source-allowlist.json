@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-08-25",
+  "updatedAt": "2026-08-26",
   "rightsAuthority": "TABA-AUT-2026-08-001",
   "doc": "Qué dominios pueden aportar una foto de producto, y con qué tipo de fuente entra cada marca. Falla cerrado: una marca sin grupo no descubre, y un host que no esté acá no se descarga. Cambiar este archivo es una decisión comercial, no técnica.",
   "convencionEnvase": {
@@ -28,15 +28,39 @@
       "sourceType": "fabricante",
       "adapter": "vtex",
       "storeHost": "tienda.coca-cola.com.ar",
-      "cdnHosts": ["andinacocacolaar.vtexassets.com", "andinacocacolaar.vteximg.com.br"],
+      "cdnHosts": [
+        "andinacocacolaar.vtexassets.com",
+        "andinacocacolaar.vteximg.com.br"
+      ],
       "categories": [
-        { "path": "producto/gaseosas", "envasePorDefecto": "botella-pet" },
-        { "path": "producto/agua", "envasePorDefecto": "botella-pet" },
-        { "path": "producto/aguas-saborizadas", "envasePorDefecto": "botella-pet" },
-        { "path": "producto/energizantes", "envasePorDefecto": "lata" },
-        { "path": "producto/isotonicos", "envasePorDefecto": "botella-pet" },
-        { "path": "producto/jugos", "envasePorDefecto": null },
-        { "path": "producto/bebidas-con-alcohol/cerveza", "envasePorDefecto": null }
+        {
+          "path": "producto/gaseosas",
+          "envasePorDefecto": "botella-pet"
+        },
+        {
+          "path": "producto/agua",
+          "envasePorDefecto": "botella-pet"
+        },
+        {
+          "path": "producto/aguas-saborizadas",
+          "envasePorDefecto": "botella-pet"
+        },
+        {
+          "path": "producto/energizantes",
+          "envasePorDefecto": "lata"
+        },
+        {
+          "path": "producto/isotonicos",
+          "envasePorDefecto": "botella-pet"
+        },
+        {
+          "path": "producto/jugos",
+          "envasePorDefecto": null
+        },
+        {
+          "path": "producto/bebidas-con-alcohol/cerveza",
+          "envasePorDefecto": null
+        }
       ],
       "brands": [
         "Coca-Cola",
@@ -47,7 +71,9 @@
         "Schweppes",
         "Benedictino",
         "Bonaqua",
-        "Monster", "Cepita"],
+        "Monster",
+        "Cepita"
+      ],
       "justificacion": "Coca-Cola Andina embotella y comercializa estas marcas en Argentina, y distribuye Monster. Es la tienda oficial del embotellador, no un retailer.",
       "soloPacks": {
         "doc": "Esta tienda es mayorista: no publica NINGUNA unidad suelta, y su packshot es la foto de una sola botella con un sello de cantidad («x6», «x12») estampado encima. Para un SKU que se vende de a doce el sello dice la verdad y la foto sirve: los cuatro packs publicados salen justamente de ahí. Para una unidad suelta el mismo archivo promete seis botellas por el precio de una, así que no entra. Y no se puede limpiar: el sello PISA el envase.",
@@ -67,9 +93,20 @@
       "sourceType": "fabricante",
       "adapter": "sin-catalogo",
       "storeHost": "coca-colaentucasa.com",
-      "cdnHosts": ["coca-colaentucasa.com"],
+      "cdnHosts": [
+        "coca-colaentucasa.com"
+      ],
       "categories": [],
-      "brands": ["Coca-Cola", "Sprite", "Fanta", "Benedictino", "Aquarius", "Powerade", "Monster", "Schweppes"],
+      "brands": [
+        "Coca-Cola",
+        "Sprite",
+        "Fanta",
+        "Benedictino",
+        "Aquarius",
+        "Powerade",
+        "Monster",
+        "Schweppes"
+      ],
       "justificacion": "Tienda directa al consumidor de Coca-Cola FEMSA de Buenos Aires S.A. (CUIT 30-52539008-6, leído en sus Términos y Condiciones): el OTRO embotellador oficial del sistema Coca-Cola en Argentina, además de Andina. No es un retailer. A diferencia de la tienda mayorista de Andina, ésta vende al público y por eso publica UNIDADES SUELTAS, que es exactamente lo que a la góndola de TABA le faltaba.",
       "comoSeUsa": {
         "doc": "Magento. El sitio publica tres familias de archivo bajo /media/catalog/product/ y sólo una sirve.",
@@ -99,13 +136,19 @@
       "sourceType": "fabricante",
       "adapter": "sin-catalogo",
       "storeHost": "www.monsterenergy.com",
-      "cdnHosts": ["web-assests.monsterenergy.com"],
+      "cdnHosts": [
+        "web-assests.monsterenergy.com"
+      ],
       "categories": [],
-      "brands": ["Monster"],
+      "brands": [
+        "Monster"
+      ],
       "justificacion": "CDN de assets del propio fabricante. El typo «assests» del subdominio es real de Monster, no un dominio parecido: se verificó que resuelve desde las fichas de producto de www.monsterenergy.com/es-ar/. La medición anterior lo había cerrado como «403 al agente automático» porque probó la raíz; la ruta de país sí responde.",
       "comoSeUsa": {
         "doc": "PNG sobre transparencia real, con la etiqueta argentina vigente (octógono EXCESO EN SODIO, CONT. NETO, INDUSTRIA ARGENTINA).",
-        "trampas": ["El encuadre es a sangre: se recortan 3-5 px de la cúpula y de la base sobre 625 de alto (menos del 1%). El normalizado lo apoya sobre lienzo blanco y no agrava el recorte."],
+        "trampas": [
+          "El encuadre es a sangre: se recortan 3-5 px de la cúpula y de la base sobre 625 de alto (menos del 1%). El normalizado lo apoya sobre lienzo blanco y no agrava el recorte."
+        ],
         "medidoEl": "2026-08-25"
       }
     },
@@ -115,11 +158,18 @@
       "sourceType": "fabricante",
       "adapter": "sin-catalogo",
       "storeHost": "www.manaosargentina.com",
-      "cdnHosts": ["www.manaosargentina.com"],
+      "cdnHosts": [
+        "www.manaosargentina.com"
+      ],
       "categories": [],
-      "brands": ["Manaos"],
+      "brands": [
+        "Manaos"
+      ],
       "justificacion": "Sitio oficial de la marca: el pie declara «© 2026 Refres Now S.A.» y el JSON-LD Organization declara legalName «Refres Now S.A.» con la planta de Virrey del Pino, La Matanza. Es el fabricante. El dominio manaos.com.ar está estacionado y en venta, y refresnow.com.ar sirve un login de correo: ninguno de los dos es la fuente.",
-      "comoSeUsa": { "doc": "Fichas por producto con la fotografía sobre blanco. Sin catálogo programático.", "medidoEl": "2026-08-25" }
+      "comoSeUsa": {
+        "doc": "Fichas por producto con la fotografía sobre blanco. Sin catálogo programático.",
+        "medidoEl": "2026-08-25"
+      }
     },
     {
       "id": "cmq-distribuidores-oficiales",
@@ -127,9 +177,18 @@
       "sourceType": "distribuidor_oficial",
       "adapter": "sin-catalogo",
       "storeHost": "boulevard-sa.com.ar",
-      "cdnHosts": ["boulevard-sa.com.ar"],
+      "cdnHosts": [
+        "boulevard-sa.com.ar"
+      ],
       "categories": [],
-      "brands": ["Pepsi", "7UP", "Paso de los Toros", "Gatorade", "Mirinda", "H2OH"],
+      "brands": [
+        "Pepsi",
+        "7UP",
+        "Paso de los Toros",
+        "Gatorade",
+        "Mirinda",
+        "H2OH"
+      ],
       "justificacion": "PepsiCo no publica packshots argentinos en NINGÚN canal propio alcanzable: pepsico.com.ar, 7up.com.ar, pasodelostoros.com.ar y gatorade.com.ar no resuelven; pepsico.com y gatorade.lat devuelven 403; y la única «tienda oficial» de Cervecería y Maltería Quilmes es su storefront de MercadoLibre, que es marketplace y está rechazado. Lo que sí existe es la capa de DISTRIBUIDORES OFICIALES de CMQ. Boulevard (Logística y Distribución, distribuidor oficial para La Plata y Gran La Plata) publica los packshots del proveedor sobre blanco.",
       "alcanceDeDerechos": {
         "doc": "Un distribuidor regional NO estaba en la frase original de TABA-AUT-2026-08-001 («la marca o su embotellador/importador»). El titular amplió el alcance a distribuidores oficiales en la instrucción de lanzamiento del 2026-08-25, que los ordena como fuente de prioridad 2 detrás del fabricante. Ver la revisión en catalog/autorizaciones-comerciales.json.",
@@ -142,11 +201,18 @@
       "sourceType": "fabricante",
       "adapter": "sin-catalogo",
       "storeHost": "www.redbull.com",
-      "cdnHosts": ["www.redbull.com"],
+      "cdnHosts": [
+        "www.redbull.com"
+      ],
       "categories": [],
-      "brands": ["Red Bull"],
+      "brands": [
+        "Red Bull"
+      ],
       "justificacion": "Packshots oficiales servidos por las fichas argentinas de Red Bull Energy Drink y Red Bull Sugarfree; lata argentina de 250 ml, frente completo y transparencia real.",
-      "comoSeUsa": { "doc": "Sólo las URLs derivadas de las fichas /ar-es/energydrink/products y verificadas visualmente una por una.", "medidoEl": "2026-08-25" }
+      "comoSeUsa": {
+        "doc": "Sólo las URLs derivadas de las fichas /ar-es/energydrink/products y verificadas visualmente una por una.",
+        "medidoEl": "2026-08-25"
+      }
     },
     {
       "id": "retailers-serios-autorizados-2026-08-25",
@@ -162,14 +228,32 @@
         "www.espaciovino.com.ar",
         "cdn1.kilbelonline.com",
         "arjosimarprod.vtexassets.com",
-        "distribuidoramif.com.ar"
+        "distribuidoramif.com.ar",
+        "carrefourar.vteximg.com.br"
       ],
       "categories": [],
-      "brands": ["Coca-Cola", "Fanta", "Powerade", "Pepsi", "7UP", "Villa del Sur", "Villavicencio", "Speed"],
+      "brands": [
+        "Coca-Cola",
+        "Fanta",
+        "Powerade",
+        "Pepsi",
+        "7UP",
+        "Villa del Sur",
+        "Villavicencio",
+        "Speed",
+        "Andes Origen",
+        "Budweiser",
+        "Stella Artois",
+        "Patagonia",
+        "Quilmes",
+        "Brahma",
+        "Corona",
+        "Gancia"
+      ],
       "justificacion": "El titular autorizó expresamente el uso de estas imágenes y fijó como fuentes válidas ecommerce serios y otras fuentes confiables cuando muestran inequívocamente el SKU exacto. El allowlist habilita sólo los hosts de los quince assets revisados; cada URL, hash y evidencia de identidad permanece individualizada en image-source-audit.csv.",
       "alcanceDeDerechos": {
         "doc": "Ampliación escrita del 2026-08-25 a TABA-AUT-2026-08-001. No habilita coincidencias aproximadas ni descubrimiento automático: exige marca, variante, capacidad, envase y unidad/pack exactos.",
-        "consecuencia": "Los hosts quedan permitidos para descarga, pero ningún asset entra sin fila APROBADA, SHA-256 esperado y revisión visual individual."
+        "consecuencia": "Los hosts quedan permitidos para descarga, pero ningún asset entra sin fila APROBADA, SHA-256 esperado y revisión visual individual. Ampliado el 2026-08-26 a las marcas de cerveza y aperitivos del catálogo alcohólico ya cargado, con la misma exigencia: fila APROBADA, SHA-256 esperado y revisión visual individual, más recorte declarado cuando el retailer superpone su propia placa."
       }
     },
     {
@@ -178,16 +262,43 @@
       "sourceType": "distribuidor_oficial",
       "adapter": "vtex",
       "storeHost": "tienda.coca-cola.com.ar",
-      "cdnHosts": ["andinacocacolaar.vtexassets.com", "andinacocacolaar.vteximg.com.br"],
+      "cdnHosts": [
+        "andinacocacolaar.vtexassets.com",
+        "andinacocacolaar.vteximg.com.br"
+      ],
       "categories": [
-        { "path": "penaflor/vinos", "envasePorDefecto": "botella" },
-        { "path": "penaflor/espumantes", "envasePorDefecto": "botella" },
-        { "path": "penaflor/vodka", "envasePorDefecto": "botella" },
-        { "path": "penaflor/gin", "envasePorDefecto": "botella" },
-        { "path": "penaflor/whisky", "envasePorDefecto": "botella" },
-        { "path": "penaflor/licores", "envasePorDefecto": "botella" },
-        { "path": "penaflor/sidra", "envasePorDefecto": "botella" },
-        { "path": "penaflor/cerveza", "envasePorDefecto": null }
+        {
+          "path": "penaflor/vinos",
+          "envasePorDefecto": "botella"
+        },
+        {
+          "path": "penaflor/espumantes",
+          "envasePorDefecto": "botella"
+        },
+        {
+          "path": "penaflor/vodka",
+          "envasePorDefecto": "botella"
+        },
+        {
+          "path": "penaflor/gin",
+          "envasePorDefecto": "botella"
+        },
+        {
+          "path": "penaflor/whisky",
+          "envasePorDefecto": "botella"
+        },
+        {
+          "path": "penaflor/licores",
+          "envasePorDefecto": "botella"
+        },
+        {
+          "path": "penaflor/sidra",
+          "envasePorDefecto": "botella"
+        },
+        {
+          "path": "penaflor/cerveza",
+          "envasePorDefecto": null
+        }
       ],
       "brands": [
         "Trapiche",
@@ -199,16 +310,61 @@
         "Skyy"
       ],
       "justificacion": "Andina distribuye el portafolio Peñaflor en Argentina y lo publica bajo su propio árbol de categorías. Es distribuidor autorizado, un escalón por debajo del embotellador: alcanza para descubrir, y la revisión visual sigue siendo obligatoria."
+    },
+    {
+      "id": "fratelli-branca-ar",
+      "label": "Fratelli Branca Destilerías · fabricante",
+      "sourceType": "fabricante",
+      "adapter": "sin-catalogo",
+      "storeHost": "www.brancastore.com.ar",
+      "cdnHosts": [
+        "acdn-us.mitiendanube.com"
+      ],
+      "categories": [],
+      "brands": [
+        "Fernet Branca"
+      ],
+      "justificacion": "Packshots de la tienda oficial de Fratelli Branca Destilerías, que produce Fernet Branca en Argentina. Es la fuente de fabricante para la marca y reemplaza a las fotos de retailer, una de las cuales mostraba una caja de regalo en vez de la botella.",
+      "comoSeUsa": {
+        "doc": "Sólo las URLs derivadas del catálogo de brancastore.com.ar, verificadas una por una. El cartel lateral de la propia tienda se retira con recorte declarado.",
+        "medidoEl": "2026-08-26"
+      }
+    },
+    {
+      "id": "ccu-argentina",
+      "label": "Compañía de Cervecerías Unidas Argentina · fabricante",
+      "sourceType": "fabricante",
+      "adapter": "sin-catalogo",
+      "storeHost": "www.ccu.com.ar",
+      "cdnHosts": [
+        "www.ccu.com.ar"
+      ],
+      "categories": [],
+      "brands": [
+        "Schneider",
+        "Imperial",
+        "Heineken",
+        "Amstel",
+        "Isenbeck",
+        "Salta",
+        "Santa Fe",
+        "Bieckert"
+      ],
+      "justificacion": "Packshots publicados por CCU Argentina en las fichas de sus propias marcas. CCU tiene distribuidor propio en el Alto Valle (La Barra, Cipolletti) y sus marcas están en la góndola de La Anónima Neuquén. Los packshots vienen limpios, sin cartel del retailer.",
+      "comoSeUsa": {
+        "doc": "Sólo las URLs de las fichas de marca de ccu.com.ar.",
+        "medidoEl": "2026-08-26"
+      }
     }
   ],
   "sinFuente": {
-    "doc": "Marcas del catálogo sin fuente oficial programática encontrada al 2026-08-18. No se inventa una: quedan en fallback, y esto es la lista de trabajo del próximo round.",
+    "doc": "Marcas del catálogo sin fuente oficial programática encontrada. No se inventa una: quedan en fallback, y esto es la lista de trabajo del próximo round. Actualizada el 2026-08-26 tras el barrido de alcohol.",
     "brands": [
-      "Paso de los Toros", "Gatorade",
+      "Paso de los Toros",
+      "Gatorade",
       "Manaos",
-      "Quilmes", "Brahma", "Budweiser", "Stella Artois", "Corona",
-      "Andes Origen", "Patagonia",
-      "Fernet Branca", "1882", "Gancia", "Dr. Lemon"
+      "1882",
+      "Dr. Lemon"
     ],
     "medido": {
       "tiendaquilmes.com.ar": "no resuelve",

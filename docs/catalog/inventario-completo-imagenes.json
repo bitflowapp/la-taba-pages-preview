@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generadoEl": "2026-08-25T22:36:55.558Z",
+  "generadoEl": "2026-08-26T04:06:12.008Z",
   "autoridad": "72 SKU reconciliados por scripts/catalog-images/catalog-skus.mjs; producción pública para disponible/imagen actual",
   "nota": "Para SKU no visibles por RLS, tipoActual=FALLBACK significa que la fotografía actual no es comprobable públicamente; tipoPreparado refleja los assets exactos listos en este lote.",
   "total": 72,
@@ -12,8 +12,8 @@
     "MISSING": 0
   },
   "prepared": {
-    "REAL": 34,
-    "FALLBACK": 38,
+    "REAL": 46,
+    "FALLBACK": 26,
     "INCORRECT": 0,
     "MISSING": 0
   },
@@ -49,10 +49,10 @@
       "disponible": false,
       "imageUrlActual": "",
       "tipoActual": "FALLBACK",
-      "imageUrlPreparada": "",
-      "tipoPreparado": "FALLBACK",
-      "fuente": "",
-      "sourceType": ""
+      "imageUrlPreparada": "assets/products/andes-origen-rubia-lata-473ml-3d8a469028220903-ebb8366205b970ca.webp",
+      "tipoPreparado": "REAL",
+      "fuente": "https://jumboargentina.vteximg.com.br/arquivos/ids/890518/Cerveza-Andes-Origen-Rubia-473cc-1-276781.jpg?v=638987206116200000",
+      "sourceType": "proveedor_aprobado"
     },
     {
       "sku": "andes-origen-rubia-lata-473ml-pack-6",
@@ -67,10 +67,10 @@
       "disponible": false,
       "imageUrlActual": "",
       "tipoActual": "FALLBACK",
-      "imageUrlPreparada": "",
-      "tipoPreparado": "FALLBACK",
-      "fuente": "",
-      "sourceType": ""
+      "imageUrlPreparada": "assets/products/andes-origen-rubia-lata-473ml-pack-6-a3a2c031baea449b-0db23ccf72cf1c66.webp",
+      "tipoPreparado": "REAL",
+      "fuente": "https://jumboargentina.vteximg.com.br/arquivos/ids/890517/Cerveza-Andes-Origen-Rubia-473cc-6un-1-276612.jpg?v=638987206112600000",
+      "sourceType": "proveedor_aprobado"
     },
     {
       "sku": "aquarius-manzana-1500ml",
@@ -157,10 +157,10 @@
       "disponible": false,
       "imageUrlActual": "",
       "tipoActual": "FALLBACK",
-      "imageUrlPreparada": "",
-      "tipoPreparado": "FALLBACK",
-      "fuente": "",
-      "sourceType": ""
+      "imageUrlPreparada": "assets/products/brahma-chopp-lata-473ml-pack-6-a5d1d3f1effa3ac9-7b6e39ea51881c03.webp",
+      "tipoPreparado": "REAL",
+      "fuente": "https://jumboargentina.vteximg.com.br/arquivos/ids/890496/Cerveza-Brahma-Chopp-Lata-473mlx6-1-12428.jpg?v=639140703671670000",
+      "sourceType": "proveedor_aprobado"
     },
     {
       "sku": "brahma-chopp-lata-710ml",
@@ -193,10 +193,10 @@
       "disponible": false,
       "imageUrlActual": "",
       "tipoActual": "FALLBACK",
-      "imageUrlPreparada": "",
-      "tipoPreparado": "FALLBACK",
-      "fuente": "",
-      "sourceType": ""
+      "imageUrlPreparada": "assets/products/budweiser-lata-473ml-0144902daa7180f4-bcffb8575cad9ed1.webp",
+      "tipoPreparado": "REAL",
+      "fuente": "https://jumboargentina.vteximg.com.br/arquivos/ids/890497/Cerveza-Budweiser-Lata-473-Ml-1-17952.jpg?v=638987206039670000",
+      "sourceType": "proveedor_aprobado"
     },
     {
       "sku": "budweiser-lata-473ml-pack-6",
@@ -211,10 +211,10 @@
       "disponible": false,
       "imageUrlActual": "",
       "tipoActual": "FALLBACK",
-      "imageUrlPreparada": "",
-      "tipoPreparado": "FALLBACK",
-      "fuente": "",
-      "sourceType": ""
+      "imageUrlPreparada": "assets/products/budweiser-lata-473ml-pack-6-d4302164bca107fd-13c77365927c308a.webp",
+      "tipoPreparado": "REAL",
+      "fuente": "https://jumboargentina.vteximg.com.br/arquivos/ids/890508/Cerveza-Budweiser-473-Ml-X-6-Un-1-44476.jpg?v=639140701148100000",
+      "sourceType": "proveedor_aprobado"
     },
     {
       "sku": "cafayate-torrontes-750ml",
@@ -463,10 +463,10 @@
       "disponible": false,
       "imageUrlActual": "",
       "tipoActual": "FALLBACK",
-      "imageUrlPreparada": "",
-      "tipoPreparado": "FALLBACK",
-      "fuente": "",
-      "sourceType": ""
+      "imageUrlPreparada": "assets/products/corona-extra-botella-330ml-2d424290c3ea844f-c4cbad6dbef6e094.webp",
+      "tipoPreparado": "REAL",
+      "fuente": "https://carrefourar.vteximg.com.br/arquivos/ids/794008/7792798003709_01.jpg?v=639046411603700000",
+      "sourceType": "proveedor_aprobado"
     },
     {
       "sku": "dada-caramel-750ml",
@@ -589,10 +589,10 @@
       "disponible": false,
       "imageUrlActual": "",
       "tipoActual": "FALLBACK",
-      "imageUrlPreparada": "",
-      "tipoPreparado": "FALLBACK",
-      "fuente": "",
-      "sourceType": ""
+      "imageUrlPreparada": "assets/products/fernet-branca-1000ml-0c51f3c2c52ad488-c64a1ebaa0000237.webp",
+      "tipoPreparado": "REAL",
+      "fuente": "https://acdn-us.mitiendanube.com/stores/006/757/969/products/31-6637cf8d3cf6b8487617750533556878-1024-1024.webp",
+      "sourceType": "fabricante"
     },
     {
       "sku": "gancia-americano-450ml",
@@ -625,10 +625,10 @@
       "disponible": false,
       "imageUrlActual": "",
       "tipoActual": "FALLBACK",
-      "imageUrlPreparada": "",
-      "tipoPreparado": "FALLBACK",
-      "fuente": "",
-      "sourceType": ""
+      "imageUrlPreparada": "assets/products/gancia-lima-limon-lata-473ml-5cfdab179b9102a3-3b02e792389c7544.webp",
+      "tipoPreparado": "REAL",
+      "fuente": "https://jumboargentina.vteximg.com.br/arquivos/ids/788231/Gancia-Lima-Lim-n-3-5-473ml-1-882803.jpg?v=638249457828330000",
+      "sourceType": "proveedor_aprobado"
     },
     {
       "sku": "gatorade-cool-blue-500ml",
@@ -751,10 +751,10 @@
       "disponible": false,
       "imageUrlActual": "",
       "tipoActual": "FALLBACK",
-      "imageUrlPreparada": "",
-      "tipoPreparado": "FALLBACK",
-      "fuente": "",
-      "sourceType": ""
+      "imageUrlPreparada": "assets/products/patagonia-amber-lager-botella-730ml-a5c26f21d7f42cfe-94d698343b3e7cc7.webp",
+      "tipoPreparado": "REAL",
+      "fuente": "https://jumboargentina.vteximg.com.br/arquivos/ids/890494/Cerveza-Patagonia-Amber-Lager-730cc-1-11622.jpg?v=639140687017870000",
+      "sourceType": "proveedor_aprobado"
     },
     {
       "sku": "pepsi-black-1500ml",
@@ -877,10 +877,10 @@
       "disponible": false,
       "imageUrlActual": "",
       "tipoActual": "FALLBACK",
-      "imageUrlPreparada": "",
-      "tipoPreparado": "FALLBACK",
-      "fuente": "",
-      "sourceType": ""
+      "imageUrlPreparada": "assets/products/quilmes-stout-lata-473ml-43e8c2ca1b9a2d88-ea37359d57b3e5bf.webp",
+      "tipoPreparado": "REAL",
+      "fuente": "https://jumboargentina.vteximg.com.br/arquivos/ids/890491/Cerveza-Quilmes-Stout-473cc-1-5591.jpg?v=638987206018100000",
+      "sourceType": "proveedor_aprobado"
     },
     {
       "sku": "red-bull-original-250ml",
@@ -1129,10 +1129,10 @@
       "disponible": false,
       "imageUrlActual": "",
       "tipoActual": "FALLBACK",
-      "imageUrlPreparada": "",
-      "tipoPreparado": "FALLBACK",
-      "fuente": "",
-      "sourceType": ""
+      "imageUrlPreparada": "assets/products/stella-artois-lata-473ml-9178af863653c84c-f104133a2207c430.webp",
+      "tipoPreparado": "REAL",
+      "fuente": "https://jumboargentina.vteximg.com.br/arquivos/ids/890507/Cerveza-Stella-Artois-Rubia-473-Ml-1-38031.jpg?v=638987206078500000",
+      "sourceType": "proveedor_aprobado"
     },
     {
       "sku": "stella-artois-lata-473ml-pack-6",
@@ -1147,10 +1147,10 @@
       "disponible": false,
       "imageUrlActual": "",
       "tipoActual": "FALLBACK",
-      "imageUrlPreparada": "",
-      "tipoPreparado": "FALLBACK",
-      "fuente": "",
-      "sourceType": ""
+      "imageUrlPreparada": "assets/products/stella-artois-lata-473ml-pack-6-fa4bfc744feba77f-e74088b74eb2a498.webp",
+      "tipoPreparado": "REAL",
+      "fuente": "https://jumboargentina.vteximg.com.br/arquivos/ids/890519/Cerveza-Rubia-X-6-Un-Stella-Artois-1-305956.jpg?v=638987206120670000",
+      "sourceType": "proveedor_aprobado"
     },
     {
       "sku": "toro-tinto-1000ml",

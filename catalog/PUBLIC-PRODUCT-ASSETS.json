@@ -9,8 +9,32 @@
     "doc": "Imágenes de sitio, no de producto. Viajan por su propia decisión y no las gobierna este manifiesto."
   },
   "doc": "Las ÚNICAS fotos de producto que el empaquetado puede copiar. Generado por scripts/catalog-images/build-public-asset-manifest.mjs; no editar a mano.",
-  "fotosDeProductoAuditadas": 233,
+  "fotosDeProductoAuditadas": 257,
   "publicables": [
+    {
+      "bytes": 22554,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/andes-origen-rubia-lata-473ml-3d8a469028220903-ebb8366205b970ca.webp",
+      "sha256": "ebb8366205b970ca3add85c5a72096ce01ea3bebdc878247c8e037f2d9894eef"
+    },
+    {
+      "bytes": 6274,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/andes-origen-rubia-lata-473ml-3d8a469028220903-thumb-6de9adb117eea8b8.webp",
+      "sha256": "6de9adb117eea8b83e6f27ab3c395c1227523e04e9171bcff69c9005a8e40670"
+    },
+    {
+      "bytes": 32184,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/andes-origen-rubia-lata-473ml-pack-6-a3a2c031baea449b-0db23ccf72cf1c66.webp",
+      "sha256": "0db23ccf72cf1c668562adf2ddbda1ddfb6717b444aeb532010681437ab06fc9"
+    },
+    {
+      "bytes": 9276,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/andes-origen-rubia-lata-473ml-pack-6-a3a2c031baea449b-thumb-2ea91d03c7e970fc.webp",
+      "sha256": "2ea91d03c7e970fcd4493541917fdc56c58f70d651cc0e5d299736f3b86c7905"
+    },
     {
       "bytes": 22958,
       "derechos": "LICENCIA_COMERCIAL",
@@ -64,6 +88,42 @@
       "derechos": "PROPIO",
       "ruta": "assets/products/beverage-placeholder.svg",
       "sha256": "7962fa5a02e4acf148c845e876500c6bcb2851f1e6f9c90d76b2b80e3fe8f6c8"
+    },
+    {
+      "bytes": 78364,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/brahma-chopp-lata-473ml-pack-6-a5d1d3f1effa3ac9-7b6e39ea51881c03.webp",
+      "sha256": "7b6e39ea51881c03b05661e7a173cac75114ce26fdc41205094921bad65db49f"
+    },
+    {
+      "bytes": 18688,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/brahma-chopp-lata-473ml-pack-6-a5d1d3f1effa3ac9-thumb-00a5a1d276739802.webp",
+      "sha256": "00a5a1d276739802170ca3ff47d4b150cfef3d2b784b25da51a1a5dfc63746fd"
+    },
+    {
+      "bytes": 34574,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/budweiser-lata-473ml-0144902daa7180f4-bcffb8575cad9ed1.webp",
+      "sha256": "bcffb8575cad9ed17faec9b7ac8e91cc276c0d5af4ce903826c283aa289d2469"
+    },
+    {
+      "bytes": 10368,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/budweiser-lata-473ml-0144902daa7180f4-thumb-4752e9d24ab35ed2.webp",
+      "sha256": "4752e9d24ab35ed27cf24a8b2ffc6c6b7c231d7a6e17b913f38195bed9aa7481"
+    },
+    {
+      "bytes": 59436,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/budweiser-lata-473ml-pack-6-d4302164bca107fd-13c77365927c308a.webp",
+      "sha256": "13c77365927c308ac53478f70537f6a05717f297216ae07246a3470dc3616848"
+    },
+    {
+      "bytes": 16996,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/budweiser-lata-473ml-pack-6-d4302164bca107fd-thumb-78b0a2f8c89750d9.webp",
+      "sha256": "78b0a2f8c89750d9e07d19cf58a14c74cc6cea68ce4c8239e5c98351789f42ef"
     },
     {
       "bytes": 26694,
@@ -150,6 +210,18 @@
       "sha256": "7816226aa02505f5cc1e5f40f24b90d054d19cd8a6e5a7b3b449a89cae8b3393"
     },
     {
+      "bytes": 46560,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/corona-extra-botella-330ml-2d424290c3ea844f-c4cbad6dbef6e094.webp",
+      "sha256": "c4cbad6dbef6e0947191293fb8a241376666f2bfe036cb24a19a09c614201c15"
+    },
+    {
+      "bytes": 9052,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/corona-extra-botella-330ml-2d424290c3ea844f-thumb-4b872d222ff2f90a.webp",
+      "sha256": "4b872d222ff2f90ad835998a56e7bb26fffbf8e1f789d63fddce2edcc0008d76"
+    },
+    {
       "bytes": 23650,
       "derechos": "LICENCIA_COMERCIAL",
       "ruta": "assets/products/fanta-naranja-2250ml-797064494952a9a1-9ef1596448794ce7.webp",
@@ -172,6 +244,30 @@
       "derechos": "LICENCIA_COMERCIAL",
       "ruta": "assets/products/fanta-naranja-botella-pet-1500-ml-pack-x6-ddcfc29d89d6d01d-thumb-6f5544d252c1151c.webp",
       "sha256": "6f5544d252c1151c4b4b8aa477d706fc2f9014c0c801f446e589366f5a66c8a7"
+    },
+    {
+      "bytes": 33942,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/fernet-branca-1000ml-0c51f3c2c52ad488-c64a1ebaa0000237.webp",
+      "sha256": "c64a1ebaa0000237a5942e998a013cff34e5fd9518e95a2bad61742b41b6cd1e"
+    },
+    {
+      "bytes": 8732,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/fernet-branca-1000ml-0c51f3c2c52ad488-thumb-aa6308cf7b9a94cb.webp",
+      "sha256": "aa6308cf7b9a94cbcfe7687ff0106907994878e7c1bbdc54512e34715a279c6c"
+    },
+    {
+      "bytes": 55312,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/gancia-lima-limon-lata-473ml-5cfdab179b9102a3-3b02e792389c7544.webp",
+      "sha256": "3b02e792389c754407c39141a8c073342973f45e71f0dc98ed3c72c69d8ec2c5"
+    },
+    {
+      "bytes": 15688,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/gancia-lima-limon-lata-473ml-5cfdab179b9102a3-thumb-bcd7381e8cb9df7e.webp",
+      "sha256": "bcd7381e8cb9df7edb37baef5b22e9ef752869ac011e3a429ad19d9f337b570a"
     },
     {
       "bytes": 20058,
@@ -234,6 +330,18 @@
       "sha256": "209929c85be873fa6ee45a627f1767e730b86fec8df07a8d2a543285ca25ec57"
     },
     {
+      "bytes": 26460,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/patagonia-amber-lager-botella-730ml-a5c26f21d7f42cfe-94d698343b3e7cc7.webp",
+      "sha256": "94d698343b3e7cc79bfe0d41616955c008192bbdb34a08e41fd552079b7f9f82"
+    },
+    {
+      "bytes": 6632,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/patagonia-amber-lager-botella-730ml-a5c26f21d7f42cfe-thumb-a9fc32107672d884.webp",
+      "sha256": "a9fc32107672d884bd22aee69caf908b6472f30a4fd5bd4c24c8d1d0e7c14e76"
+    },
+    {
       "bytes": 30266,
       "derechos": "LICENCIA_COMERCIAL",
       "ruta": "assets/products/pepsi-black-1500ml-52009e2651c40a42-b09188d077fa3a4f.webp",
@@ -268,6 +376,18 @@
       "derechos": "LICENCIA_COMERCIAL",
       "ruta": "assets/products/powerade-mountain-blast-500ml-1ea05e4f6f192e2f-thumb-61387947b7df6f68.webp",
       "sha256": "61387947b7df6f68cd07be6dd5eb974bbadde095f517a0a7fab1292bc1c5e327"
+    },
+    {
+      "bytes": 38866,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/quilmes-stout-lata-473ml-43e8c2ca1b9a2d88-ea37359d57b3e5bf.webp",
+      "sha256": "ea37359d57b3e5bfa3dc6d758476f89570638d009c4d3df81ebc1f854e3787db"
+    },
+    {
+      "bytes": 8530,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/quilmes-stout-lata-473ml-43e8c2ca1b9a2d88-thumb-e5622de0edb2dccb.webp",
+      "sha256": "e5622de0edb2dccb7a7dd52af1604248fb79e8dd67005b12f78425e6d46f6323"
     },
     {
       "bytes": 61452,
@@ -388,6 +508,30 @@
       "derechos": "LICENCIA_COMERCIAL",
       "ruta": "assets/products/sprite-zero-2250ml-c43f15fd8eedc2e4-thumb-4e04923ee3c2fb00.webp",
       "sha256": "4e04923ee3c2fb008e57d9b4d16d85f04ab63653db7f2b71763ac312d7c8568b"
+    },
+    {
+      "bytes": 29086,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/stella-artois-lata-473ml-9178af863653c84c-f104133a2207c430.webp",
+      "sha256": "f104133a2207c430839b939cf2f54db9d50e5570eac2aebdf1a149d730b8b6e2"
+    },
+    {
+      "bytes": 8442,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/stella-artois-lata-473ml-9178af863653c84c-thumb-b0c03f876068f811.webp",
+      "sha256": "b0c03f876068f811dc64790918492563aaf32633f593ca83c62325c57e5d02aa"
+    },
+    {
+      "bytes": 58158,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/stella-artois-lata-473ml-pack-6-fa4bfc744feba77f-e74088b74eb2a498.webp",
+      "sha256": "e74088b74eb2a498900891bb94d56a6c1b6957a12f5b952889022f751c4eb658"
+    },
+    {
+      "bytes": 16642,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/stella-artois-lata-473ml-pack-6-fa4bfc744feba77f-thumb-90bb8cde0f1d72e3.webp",
+      "sha256": "90bb8cde0f1d72e3f9f586f3384867f660009b7d99ce057c8d6608bd64796c07"
     },
     {
       "bytes": 19496,

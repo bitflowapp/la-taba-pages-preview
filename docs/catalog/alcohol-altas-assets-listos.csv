@@ -1,0 +1,9 @@
+sku_planificado,descripcion,host,autoridad,asset_listo,sha256_origen,recorte,coincidencia_exacta,esperando
+fernet-branca-750ml,Fernet Branca · 750 ml · botella · unidad,brancastore.com.ar,fabricante,SI,18ad9e99d6004d382dbc107220d50a22c5129388852fb56355b20477bfd5f402,"lateral, width 700",SI,PRECIO_DE_WALTER
+fernet-branca-450ml,Fernet Branca · 450 ml · botella · unidad,brancastore.com.ar,fabricante,SI,ebd073634446891778a39a977b9cf2b82473cd1021d7bb06c3d9652b3e668aff,"lateral, width 700",SI,PRECIO_DE_WALTER
+schneider-lager-lata-473ml,Schneider Lager · 473 ml · lata · unidad,ccu.com.ar,fabricante,SI,cda4c21191ce5e96248dd82a07f74b241fdf61c8795594a9a9f64d25d8eb2cd5,ninguno,SI,PRECIO_DE_WALTER
+campari-750ml,Campari Bitter · 750 ml · botella · unidad,jumbo,proveedor_aprobado,SI,726b2353d3b0b9f0c55ed132f8aa314bb6a519ab7c1cac382af39eed821f2101,ninguno,SI,PRECIO_DE_WALTER
+trivento-reserva-malbec-750ml,Trivento Reserva Malbec · 750 ml · botella · unidad,jumbo,proveedor_aprobado,SI,6ac899153c7c4ff92745e248a10776f25a3459e179cf65c61eed89b2453fec9a,ninguno · VERIFICAR que la etiqueta diga Reserva,SI,PRECIO_DE_WALTER
+chandon-extra-brut-750ml,Chandon Extra Brut · 750 ml · botella · unidad,jumbo,proveedor_aprobado,SI,9d1b035de1fb96ea57832767ac0ee8eb4d4f579c7d5639c8791154f3da11fad9,"lateral, width ~500",SI,PRECIO_DE_WALTER
+johnnie-walker-red-750ml,Johnnie Walker Red Label · 750 ml · botella · unidad,jumbo,proveedor_aprobado,SI,80cbb5989af66ccc82487894d21f21fd9e29739ad11b9a1dcfb8f9da42dadd34,"lateral, width ~600",SI,PRECIO_DE_WALTER
+smirnoff-700ml,Smirnoff Vodka · 700 ml · botella · unidad,carrefour,proveedor_aprobado,SI,ce5e4fb0d68c90b316dbf0b80bb10b128a03e505544a7b5d90caa0871af4d5f8,"lateral · el cartel dice 700 ML, consistente con el EAN",SI,PRECIO_DE_WALTER

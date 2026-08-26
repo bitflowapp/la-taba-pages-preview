@@ -214,6 +214,35 @@
     {
       "assets": {
         "master": {
+          "bindingSha256": "bff25acaa6a79c40b7194a41286a22dac42825828390d38d398b43d414a8507e",
+          "height": 1000,
+          "path": "assets/products/brahma-chopp-lata-710ml-7b3111225f3821da-bd35f5833b47f78a.webp",
+          "sha256": "bd35f5833b47f78ad77de6b33876ba163f8813bf85811324fc4af1cd35110c31",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "2d808e15382e4705e8d0bc33879559390e0739e48fcc44d95e4cfd8fc371fa67",
+          "height": 400,
+          "path": "assets/products/brahma-chopp-lata-710ml-7b3111225f3821da-thumb-51a63d115ad3aed5.webp",
+          "sha256": "51a63d115ad3aed587de7bf528f4d5ceddc4806f522f6bf1b659db5686eb85c1",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-08-26",
+      "externalId": "brahma-chopp-lata-710ml",
+      "identitySha256": "7b3111225f3821da942cddaa277f89daeb1596fa38d1175630f57f512fa7c557",
+      "rawFile": "brahma-chopp-lata-710ml-7b3111225f3821da.635846bb5caa78f7400fddedf9eebecd5acc6d29fc244fb3396210ba0c06a24d.source",
+      "rightsReference": "TABA-AUT-2026-08-001",
+      "rightsStatus": "LICENCIA_COMERCIAL",
+      "safeSku": "brahma-chopp-lata-710ml",
+      "sku": "brahma-chopp-lata-710ml",
+      "sourceSha256": "635846bb5caa78f7400fddedf9eebecd5acc6d29fc244fb3396210ba0c06a24d",
+      "sourceType": "proveedor_aprobado",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/890575/Cerveza-Rubia-X-710-Cc-Brahma-1-1046613.jpg?v=638987206380170000"
+    },
+    {
+      "assets": {
+        "master": {
           "bindingSha256": "8716ae1c9d239f0b48e6bbbc4bf5a30a1a44e3741057d5352ce645bc09b3e9df",
           "height": 1000,
           "path": "assets/products/budweiser-lata-473ml-0144902daa7180f4-bcffb8575cad9ed1.webp",
@@ -504,6 +533,64 @@
     {
       "assets": {
         "master": {
+          "bindingSha256": "86f6864128c00ddf4266ebfc187f07691228a343120f52ca810f9ea6fe25eb14",
+          "height": 1000,
+          "path": "assets/products/dada-caramel-750ml-4171839cfea453e3-64fa3b5b38959304.webp",
+          "sha256": "64fa3b5b38959304f4605d60068bff2940c2bfd68980fa7d73fd5934fdf162d2",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "33cdc759c3686d3f8c03c92559dc1c620e14ac30c6cfe7dca28c02aab0805914",
+          "height": 400,
+          "path": "assets/products/dada-caramel-750ml-4171839cfea453e3-thumb-98439035a1cccd9b.webp",
+          "sha256": "98439035a1cccd9b6c1820e2fd9443bb7c97270a7e9c6c1e2b9421f8add57606",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-08-26",
+      "externalId": "dada-caramel-750ml",
+      "identitySha256": "4171839cfea453e3a87ef26eb1291c7057653b16b607da1997deb1d1733ce423",
+      "rawFile": "dada-caramel-750ml-4171839cfea453e3.c46c8bfe9c3a849156a00abecd1873b7e497e551f246e1a561b3efddf78c5504.source",
+      "rightsReference": "TABA-AUT-2026-08-001",
+      "rightsStatus": "LICENCIA_COMERCIAL",
+      "safeSku": "dada-caramel-750ml",
+      "sku": "dada-caramel-750ml",
+      "sourceSha256": "c46c8bfe9c3a849156a00abecd1873b7e497e551f246e1a561b3efddf78c5504",
+      "sourceType": "proveedor_aprobado",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/925234/Vino-Dada-Art-9-Caramel-750cc-1-1061032.jpg?v=639229226634470000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "44e4e77828e16b2aea9c1b27218527ee31e9e952a6945efd64ab575f605a7be0",
+          "height": 1000,
+          "path": "assets/products/dr-lemon-vodka-pomelo-lata-473ml-6875ceb7e0ff6926-e0eeb8cb2e97e288.webp",
+          "sha256": "e0eeb8cb2e97e2889087bf963a1acb68b253f12798aaeee6cc2da9ff0abca87c",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "4b03d02f60e45c93635fee990595e55512308a0fe0777b4ee8487b3001b5bc13",
+          "height": 400,
+          "path": "assets/products/dr-lemon-vodka-pomelo-lata-473ml-6875ceb7e0ff6926-thumb-ebd3cbb7049c8b57.webp",
+          "sha256": "ebd3cbb7049c8b571a7f3094fb4d2daf8d04ebe45c382e9015db475cff9626c7",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-08-26",
+      "externalId": "dr-lemon-vodka-pomelo-lata-473ml",
+      "identitySha256": "6875ceb7e0ff692678394d4633f3e0a3c121488bff93fad32f543f964026f0b9",
+      "rawFile": "dr-lemon-vodka-pomelo-lata-473ml-6875ceb7e0ff6926.03ad4a062f80c49dff80891d83d3f2e74e3853b8f5dd32a3ff80bfb918a58206.source",
+      "rightsReference": "TABA-AUT-2026-08-001",
+      "rightsStatus": "LICENCIA_COMERCIAL",
+      "safeSku": "dr-lemon-vodka-pomelo-lata-473ml",
+      "sku": "dr-lemon-vodka-pomelo-lata-473ml",
+      "sourceSha256": "03ad4a062f80c49dff80891d83d3f2e74e3853b8f5dd32a3ff80bfb918a58206",
+      "sourceType": "proveedor_aprobado",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/788225/Dr-Lemon-Vodka-Pomelo-5-1-859371.jpg?v=638249457804900000"
+    },
+    {
+      "assets": {
+        "master": {
           "bindingSha256": "2cab7665f2246857e6b189dd50187fda7e8e622b48c7e96297982419777ccf4e",
           "height": 1000,
           "path": "assets/products/fanta-naranja-2250ml-797064494952a9a1-9ef1596448794ce7.webp",
@@ -674,6 +761,35 @@
       "sourceSha256": "2987ba48b015c06fb382efc34c24e7d8dcdd324246c6fd9eca82437231b05a53",
       "sourceType": "distribuidor_oficial",
       "sourceUrl": "https://boulevard-sa.com.ar/Site/img/products/gatorade/Gatorade-manzana-1250-L.jpg"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "6a260198a8fa06c17be1cf2d12c7bf3321c533f112bab6846f26e7e56a54246d",
+          "height": 1000,
+          "path": "assets/products/gin-gordons-700ml-0a539dda4bb5cbd5-6de283aef107c2ac.webp",
+          "sha256": "6de283aef107c2ac4e944a7ac8ca72b004a19443ed913cb3cbadb99bc128bcba",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "9f06ad82ad65f6d0fde0e585dc407cb160816d04af94d3b26dd9b66a55acee10",
+          "height": 400,
+          "path": "assets/products/gin-gordons-700ml-0a539dda4bb5cbd5-thumb-e37bca6137875ca0.webp",
+          "sha256": "e37bca6137875ca0070aa0329f9e95fb0e1352b61ccd6b26b16059e05709a9a9",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-08-26",
+      "externalId": "gin-gordons-700ml",
+      "identitySha256": "0a539dda4bb5cbd5b30686b2a7d037d22a8475948a6080e3d089525e88abf27c",
+      "rawFile": "gin-gordons-700ml-0a539dda4bb5cbd5.568bd5b6bd864696a36ebd20238228ae0a46831278f27c46a44c2731cc469710.source",
+      "rightsReference": "TABA-AUT-2026-08-001",
+      "rightsStatus": "LICENCIA_COMERCIAL",
+      "safeSku": "gin-gordons-700ml",
+      "sku": "gin-gordons-700ml",
+      "sourceSha256": "568bd5b6bd864696a36ebd20238228ae0a46831278f27c46a44c2731cc469710",
+      "sourceType": "distribuidor_oficial",
+      "sourceUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/155887/106400.png?v=638451820323500000"
     },
     {
       "assets": {
@@ -1254,6 +1370,35 @@
       "sourceSha256": "593247f3985a717a6ca2197a1225291a8649cffc284ae35a1fd453712c780d91",
       "sourceType": "proveedor_aprobado",
       "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/890519/Cerveza-Rubia-X-6-Un-Stella-Artois-1-305956.jpg?v=638987206120670000"
+    },
+    {
+      "assets": {
+        "master": {
+          "bindingSha256": "7ba2cd45fdeee1e908f85bc3756ac79627b4ef29fa1c9616075b2ef0f7feb829",
+          "height": 1000,
+          "path": "assets/products/trapiche-origen-malbec-750ml-5166a6bd98ad5d10-3ef96fe8a2aa34c5.webp",
+          "sha256": "3ef96fe8a2aa34c5b5102c9048927a00468fabd5a7f181ad3b37a7c88a40adb3",
+          "width": 1000
+        },
+        "thumbnail": {
+          "bindingSha256": "149cf14c399aa53e25532ad77528f4ff9d68d2dc360efc2e39d273cec9918a61",
+          "height": 400,
+          "path": "assets/products/trapiche-origen-malbec-750ml-5166a6bd98ad5d10-thumb-19f9ca07fee4c4d8.webp",
+          "sha256": "19f9ca07fee4c4d8162c64168ee9b167c0c8dd5cfde954b66740733df87193a6",
+          "width": 400
+        }
+      },
+      "checkedAt": "2026-08-26",
+      "externalId": "trapiche-origen-malbec-750ml",
+      "identitySha256": "5166a6bd98ad5d10fb3eebb85f37a218f80b71a2f22bdada6b9b26d947ec7e9d",
+      "rawFile": "trapiche-origen-malbec-750ml-5166a6bd98ad5d10.76f2deb57de12ab10998a574080b170256d5c65cc7184cbca876f01b8aad214b.source",
+      "rightsReference": "TABA-AUT-2026-08-001",
+      "rightsStatus": "LICENCIA_COMERCIAL",
+      "safeSku": "trapiche-origen-malbec-750ml",
+      "sku": "trapiche-origen-malbec-750ml",
+      "sourceSha256": "76f2deb57de12ab10998a574080b170256d5c65cc7184cbca876f01b8aad214b",
+      "sourceType": "distribuidor_oficial",
+      "sourceUrl": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156062/106117.png?v=638463931481900000"
     },
     {
       "assets": {

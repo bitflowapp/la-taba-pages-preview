@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generadoEl": "2026-08-26T04:06:12.008Z",
+  "generadoEl": "2026-08-26T06:48:50.395Z",
   "autoridad": "72 SKU reconciliados por scripts/catalog-images/catalog-skus.mjs; producción pública para disponible/imagen actual",
   "nota": "Para SKU no visibles por RLS, tipoActual=FALLBACK significa que la fotografía actual no es comprobable públicamente; tipoPreparado refleja los assets exactos listos en este lote.",
   "total": 72,
@@ -12,8 +12,8 @@
     "MISSING": 0
   },
   "prepared": {
-    "REAL": 46,
-    "FALLBACK": 26,
+    "REAL": 51,
+    "FALLBACK": 21,
     "INCORRECT": 0,
     "MISSING": 0
   },
@@ -175,10 +175,10 @@
       "disponible": false,
       "imageUrlActual": "",
       "tipoActual": "FALLBACK",
-      "imageUrlPreparada": "",
-      "tipoPreparado": "FALLBACK",
-      "fuente": "",
-      "sourceType": ""
+      "imageUrlPreparada": "assets/products/brahma-chopp-lata-710ml-7b3111225f3821da-bd35f5833b47f78a.webp",
+      "tipoPreparado": "REAL",
+      "fuente": "https://jumboargentina.vteximg.com.br/arquivos/ids/890575/Cerveza-Rubia-X-710-Cc-Brahma-1-1046613.jpg?v=638987206380170000",
+      "sourceType": "proveedor_aprobado"
     },
     {
       "sku": "budweiser-lata-473ml",
@@ -481,10 +481,10 @@
       "disponible": false,
       "imageUrlActual": "",
       "tipoActual": "FALLBACK",
-      "imageUrlPreparada": "",
-      "tipoPreparado": "FALLBACK",
-      "fuente": "",
-      "sourceType": ""
+      "imageUrlPreparada": "assets/products/dada-caramel-750ml-4171839cfea453e3-64fa3b5b38959304.webp",
+      "tipoPreparado": "REAL",
+      "fuente": "https://jumboargentina.vteximg.com.br/arquivos/ids/925234/Vino-Dada-Art-9-Caramel-750cc-1-1061032.jpg?v=639229226634470000",
+      "sourceType": "proveedor_aprobado"
     },
     {
       "sku": "dr-lemon-vodka-pomelo-lata-473ml",
@@ -499,10 +499,10 @@
       "disponible": false,
       "imageUrlActual": "",
       "tipoActual": "FALLBACK",
-      "imageUrlPreparada": "",
-      "tipoPreparado": "FALLBACK",
-      "fuente": "",
-      "sourceType": ""
+      "imageUrlPreparada": "assets/products/dr-lemon-vodka-pomelo-lata-473ml-6875ceb7e0ff6926-e0eeb8cb2e97e288.webp",
+      "tipoPreparado": "REAL",
+      "fuente": "https://jumboargentina.vteximg.com.br/arquivos/ids/788225/Dr-Lemon-Vodka-Pomelo-5-1-859371.jpg?v=638249457804900000",
+      "sourceType": "proveedor_aprobado"
     },
     {
       "sku": "fanta-naranja-2250ml",
@@ -679,10 +679,10 @@
       "disponible": false,
       "imageUrlActual": "",
       "tipoActual": "FALLBACK",
-      "imageUrlPreparada": "",
-      "tipoPreparado": "FALLBACK",
-      "fuente": "",
-      "sourceType": ""
+      "imageUrlPreparada": "assets/products/gin-gordons-700ml-0a539dda4bb5cbd5-6de283aef107c2ac.webp",
+      "tipoPreparado": "REAL",
+      "fuente": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/155887/106400.png?v=638451820323500000",
+      "sourceType": "distribuidor_oficial"
     },
     {
       "sku": "monster-green-zero-473ml",
@@ -1201,10 +1201,10 @@
       "disponible": false,
       "imageUrlActual": "",
       "tipoActual": "FALLBACK",
-      "imageUrlPreparada": "",
-      "tipoPreparado": "FALLBACK",
-      "fuente": "",
-      "sourceType": ""
+      "imageUrlPreparada": "assets/products/trapiche-origen-malbec-750ml-5166a6bd98ad5d10-3ef96fe8a2aa34c5.webp",
+      "tipoPreparado": "REAL",
+      "fuente": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156062/106117.png?v=638463931481900000",
+      "sourceType": "distribuidor_oficial"
     },
     {
       "sku": "villa-del-sur-sin-gas-600ml",

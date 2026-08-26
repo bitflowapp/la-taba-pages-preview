@@ -1,13 +1,13 @@
 {
-  "allowlistActualizadaEl": "2026-08-18",
-  "cosechadoEl": "2026-08-23",
+  "allowlistActualizadaEl": "2026-08-26",
+  "cosechadoEl": "2026-08-26",
   "decisiones": [
     {
       "alcoholic": true,
       "brand": "Andes Origen",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "andes-origen-roja-lata-473ml",
       "origen": "gondola-neuquen",
       "presentacion": {
@@ -26,7 +26,7 @@
       "brand": "Andes Origen",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "andes-origen-rubia-lata-473ml",
       "origen": "gondola-neuquen",
       "presentacion": {
@@ -45,7 +45,7 @@
       "brand": "Andes Origen",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "andes-origen-rubia-lata-473ml-pack-6",
       "origen": "gondola-retail-final",
       "presentacion": {
@@ -140,7 +140,7 @@
       "brand": "Brahma",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "brahma-chopp-lata-473ml-pack-6",
       "origen": "gondola-retail-final",
       "presentacion": {
@@ -159,7 +159,7 @@
       "brand": "Brahma",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "brahma-chopp-lata-710ml",
       "origen": "gondola-neuquen",
       "presentacion": {
@@ -178,7 +178,7 @@
       "brand": "Budweiser",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "budweiser-lata-473ml",
       "origen": "gondola-neuquen",
       "presentacion": {
@@ -197,7 +197,7 @@
       "brand": "Budweiser",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "budweiser-lata-473ml-pack-6",
       "origen": "gondola-retail-final",
       "presentacion": {
@@ -507,7 +507,7 @@
       "brand": "Corona",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "corona-extra-botella-330ml",
       "origen": "gondola-neuquen",
       "presentacion": {
@@ -851,7 +851,7 @@
       "brand": "Fernet Branca",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "fernet-branca-1000ml",
       "origen": "gondola-neuquen",
       "presentacion": {
@@ -870,7 +870,7 @@
       "brand": "Gancia",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "gancia-americano-450ml",
       "origen": "gondola-neuquen",
       "presentacion": {
@@ -889,7 +889,7 @@
       "brand": "Gancia",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "gancia-lima-limon-lata-473ml",
       "origen": "gondola-neuquen",
       "presentacion": {
@@ -908,7 +908,7 @@
       "brand": "Gatorade",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "gatorade-cool-blue-500ml",
       "origen": "produccion",
       "presentacion": {
@@ -927,7 +927,7 @@
       "brand": "Gatorade",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "gatorade-manzana-1250ml",
       "origen": "produccion",
       "presentacion": {
@@ -1002,7 +1002,7 @@
       "brand": "Paso de los Toros",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "paso-de-los-toros-pomelo-1500ml",
       "origen": "produccion",
       "presentacion": {
@@ -1021,7 +1021,7 @@
       "brand": "Paso de los Toros",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "paso-de-los-toros-tonica-1500ml",
       "origen": "produccion",
       "presentacion": {
@@ -1040,7 +1040,7 @@
       "brand": "Patagonia",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "patagonia-amber-lager-botella-730ml",
       "origen": "gondola-neuquen",
       "presentacion": {
@@ -1059,7 +1059,7 @@
       "brand": "Pepsi",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "pepsi-black-1500ml",
       "origen": "produccion",
       "presentacion": {
@@ -1078,7 +1078,7 @@
       "brand": "Pepsi",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "pepsi-original-2000ml",
       "origen": "produccion",
       "presentacion": {
@@ -1136,7 +1136,7 @@
       "brand": "Quilmes",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "quilmes-clasica-botella-710ml",
       "origen": "gondola-neuquen",
       "presentacion": {
@@ -1155,7 +1155,7 @@
       "brand": "Quilmes",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "quilmes-clasica-lata-473ml",
       "origen": "gondola-neuquen",
       "presentacion": {
@@ -1174,7 +1174,7 @@
       "brand": "Quilmes",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "quilmes-clasica-lata-473ml-pack-6",
       "origen": "gondola-neuquen",
       "presentacion": {
@@ -1193,7 +1193,7 @@
       "brand": "Quilmes",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "quilmes-stout-lata-473ml",
       "origen": "gondola-neuquen",
       "presentacion": {
@@ -1212,7 +1212,7 @@
       "brand": "Red Bull",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "red-bull-original-250ml",
       "origen": "produccion",
       "presentacion": {
@@ -1231,7 +1231,7 @@
       "brand": "Red Bull",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "red-bull-sin-azucar-250ml",
       "origen": "produccion",
       "presentacion": {
@@ -1250,7 +1250,7 @@
       "brand": "7UP",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "seven-up-original-2000ml",
       "origen": "produccion",
       "presentacion": {
@@ -1269,7 +1269,7 @@
       "brand": "Manaos",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "soda-manaos-sifon-2000ml",
       "origen": "produccion",
       "presentacion": {
@@ -1288,7 +1288,7 @@
       "brand": "Speed",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "speed-original-473ml",
       "origen": "produccion",
       "presentacion": {
@@ -1307,7 +1307,7 @@
       "brand": "Speed",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "speed-zero-473ml",
       "origen": "produccion",
       "presentacion": {
@@ -1481,7 +1481,7 @@
       "brand": "Stella Artois",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "stella-artois-lata-473ml",
       "origen": "gondola-neuquen",
       "presentacion": {
@@ -1500,7 +1500,7 @@
       "brand": "Stella Artois",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "stella-artois-lata-473ml-pack-6",
       "origen": "gondola-retail-final",
       "presentacion": {
@@ -1649,7 +1649,7 @@
       "brand": "Villa del Sur",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "villa-del-sur-sin-gas-600ml",
       "origen": "produccion",
       "presentacion": {
@@ -1668,7 +1668,7 @@
       "brand": "Villa del Sur",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "villa-del-sur-sin-gas-pet-2250ml",
       "origen": "gondola-retail-final",
       "presentacion": {
@@ -1687,7 +1687,7 @@
       "brand": "Villavicencio",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "villavicencio-con-gas-500ml",
       "origen": "produccion",
       "presentacion": {
@@ -1706,7 +1706,7 @@
       "brand": "Villavicencio",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "villavicencio-con-gas-pet-1500ml",
       "origen": "gondola-retail-final",
       "presentacion": {
@@ -1725,7 +1725,7 @@
       "brand": "Villavicencio",
       "candidatos": [],
       "elegido": null,
-      "estado": "SIN_FUENTE",
+      "estado": "SIN_CANDIDATO",
       "externalId": "villavicencio-sin-gas-1500ml",
       "origen": "produccion",
       "presentacion": {
@@ -1782,8 +1782,8 @@
   "resumen": {
     "HIGH": 5,
     "MANUAL_REVIEW": 3,
-    "SIN_CANDIDATO": 27,
-    "SIN_FUENTE": 37
+    "SIN_CANDIDATO": 62,
+    "SIN_FUENTE": 2
   },
   "schemaVersion": 1,
   "totalSku": 72

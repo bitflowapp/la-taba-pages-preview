@@ -1,0 +1,270 @@
+{
+  "schemaVersion": 1,
+  "generadoEl": "2026-08-26T06:35:31.241Z",
+  "fuentePrecio": "catalog/gondola-neuquen.mjs · precio derivado del costo mayorista medido el 2026-08-18",
+  "fuenteRedondeo": "js/core/combos.js · roundPromotionalPrice, centena inferior",
+  "pisoMargen": 1.35,
+  "nota": "Los seis nacen INACTIVOS (PENDIENTE_APROBACION_COMERCIAL). Ningún combo con alcohol se puede cobrar mientras alcohol_sales_enabled sea false y los componentes estén con available = false.",
+  "promos": [
+    {
+      "comboId": "combo-fernet-y-coca",
+      "nombre": "Fernet y Coca",
+      "ocasion": "previa",
+      "categoryId": "fernet",
+      "componentes": [
+        {
+          "sku": "fernet-branca-1000ml",
+          "nombre": "Fernet Branca",
+          "cantidad": 1,
+          "precioUnitario": 26250,
+          "precioLinea": 26250,
+          "costoUnitario": 18099.09,
+          "alcoholic": true,
+          "sustituciones": []
+        },
+        {
+          "sku": "coca-cola-original-2250ml",
+          "nombre": "Coca-Cola",
+          "cantidad": 1,
+          "precioUnitario": 5900,
+          "precioLinea": 5900,
+          "costoUnitario": 4049.5,
+          "alcoholic": false,
+          "sustituciones": [
+            "coca-cola-zero-2250ml"
+          ]
+        }
+      ],
+      "precioLista": 32150,
+      "descuentoDeclarado": 6,
+      "descuentoTecho": 6,
+      "precioPromocional": 30200,
+      "ahorro": 1950,
+      "ahorroPorcentaje": 6.1,
+      "costoMedido": 22148.59,
+      "margenResultante": 1.364,
+      "pisoMargen": 1.35,
+      "alcoholico": true,
+      "estado": "PREPARADA",
+      "problemas": []
+    },
+    {
+      "comboId": "combo-gin-tonic",
+      "nombre": "Gin Tonic en casa",
+      "ocasion": "juntada",
+      "categoryId": "destilados",
+      "componentes": [
+        {
+          "sku": "gin-gordons-700ml",
+          "nombre": "Gordon's London Dry",
+          "cantidad": 1,
+          "precioUnitario": 16800,
+          "precioLinea": 16800,
+          "costoUnitario": 11570.15,
+          "alcoholic": true,
+          "sustituciones": []
+        },
+        {
+          "sku": "paso-de-los-toros-tonica-1500ml",
+          "nombre": "Paso de los Toros Tónica",
+          "cantidad": 1,
+          "precioUnitario": 3250,
+          "precioLinea": 3250,
+          "costoUnitario": 2231.32,
+          "alcoholic": false,
+          "sustituciones": [
+            "paso-de-los-toros-pomelo-1500ml"
+          ]
+        }
+      ],
+      "precioLista": 20050,
+      "descuentoDeclarado": 6,
+      "descuentoTecho": 6,
+      "precioPromocional": 18800,
+      "ahorro": 1250,
+      "ahorroPorcentaje": 6.2,
+      "costoMedido": 13801.47,
+      "margenResultante": 1.362,
+      "pisoMargen": 1.35,
+      "alcoholico": true,
+      "estado": "PREPARADA",
+      "problemas": []
+    },
+    {
+      "comboId": "combo-vodka-y-energia",
+      "nombre": "Vodka y energía",
+      "ocasion": "previa",
+      "categoryId": "destilados",
+      "componentes": [
+        {
+          "sku": "vodka-skyy-700ml",
+          "nombre": "Skyy Vodka",
+          "cantidad": 1,
+          "precioUnitario": 9500,
+          "precioLinea": 9500,
+          "costoUnitario": 6528.85,
+          "alcoholic": true,
+          "sustituciones": []
+        },
+        {
+          "sku": "speed-original-473ml",
+          "nombre": "Speed",
+          "cantidad": 2,
+          "precioUnitario": 2850,
+          "precioLinea": 5700,
+          "costoUnitario": 1942.06,
+          "alcoholic": false,
+          "sustituciones": [
+            "speed-zero-473ml"
+          ]
+        }
+      ],
+      "precioLista": 15200,
+      "descuentoDeclarado": 7,
+      "descuentoTecho": 7,
+      "precioPromocional": 14100,
+      "ahorro": 1100,
+      "ahorroPorcentaje": 7.2,
+      "costoMedido": 10412.970000000001,
+      "margenResultante": 1.354,
+      "pisoMargen": 1.35,
+      "alcoholico": true,
+      "estado": "PREPARADA",
+      "problemas": []
+    },
+    {
+      "comboId": "combo-previa-rubia-x6",
+      "nombre": "Previa surtida x6",
+      "ocasion": "previa",
+      "categoryId": "cervezas",
+      "componentes": [
+        {
+          "sku": "quilmes-clasica-lata-473ml",
+          "nombre": "Quilmes Clásica",
+          "cantidad": 2,
+          "precioUnitario": 2050,
+          "precioLinea": 4100,
+          "costoUnitario": 1404.88,
+          "alcoholic": true,
+          "sustituciones": [
+            "quilmes-stout-lata-473ml"
+          ]
+        },
+        {
+          "sku": "andes-origen-rubia-lata-473ml",
+          "nombre": "Andes Origen Rubia",
+          "cantidad": 2,
+          "precioUnitario": 2650,
+          "precioLinea": 5300,
+          "costoUnitario": 1818.1,
+          "alcoholic": true,
+          "sustituciones": [
+            "andes-origen-roja-lata-473ml"
+          ]
+        },
+        {
+          "sku": "budweiser-lata-473ml",
+          "nombre": "Budweiser",
+          "cantidad": 2,
+          "precioUnitario": 2350,
+          "precioLinea": 4700,
+          "costoUnitario": 1611.49,
+          "alcoholic": true,
+          "sustituciones": []
+        }
+      ],
+      "precioLista": 14100,
+      "descuentoDeclarado": 7,
+      "descuentoTecho": 7,
+      "precioPromocional": 13100,
+      "ahorro": 1000,
+      "ahorroPorcentaje": 7.1,
+      "costoMedido": 9668.94,
+      "margenResultante": 1.355,
+      "pisoMargen": 1.35,
+      "alcoholico": true,
+      "estado": "PREPARADA",
+      "problemas": []
+    },
+    {
+      "comboId": "combo-asado-tinto",
+      "nombre": "Asado con tinto",
+      "ocasion": "asado",
+      "categoryId": "vinos",
+      "componentes": [
+        {
+          "sku": "toro-viejo-clasico-tinto-750ml",
+          "nombre": "Toro Viejo Clásico",
+          "cantidad": 2,
+          "precioUnitario": 2550,
+          "precioLinea": 5100,
+          "costoUnitario": 1735.45,
+          "alcoholic": true,
+          "sustituciones": []
+        },
+        {
+          "sku": "soda-manaos-sifon-2000ml",
+          "nombre": "Soda Manaos",
+          "cantidad": 1,
+          "precioUnitario": 1750,
+          "precioLinea": 1750,
+          "costoUnitario": 1198.26,
+          "alcoholic": false,
+          "sustituciones": []
+        }
+      ],
+      "precioLista": 6850,
+      "descuentoDeclarado": 6,
+      "descuentoTecho": 6,
+      "precioPromocional": 6400,
+      "ahorro": 450,
+      "ahorroPorcentaje": 6.6,
+      "costoMedido": 4669.16,
+      "margenResultante": 1.371,
+      "pisoMargen": 1.35,
+      "alcoholico": true,
+      "estado": "PREPARADA",
+      "problemas": []
+    },
+    {
+      "comboId": "combo-tinto-y-blanco",
+      "nombre": "Tinto y blanco",
+      "ocasion": "juntada",
+      "categoryId": "vinos",
+      "componentes": [
+        {
+          "sku": "trapiche-origen-malbec-750ml",
+          "nombre": "Trapiche Origen Malbec",
+          "cantidad": 1,
+          "precioUnitario": 6150,
+          "precioLinea": 6150,
+          "costoUnitario": 4214.79,
+          "alcoholic": true,
+          "sustituciones": []
+        },
+        {
+          "sku": "cafayate-torrontes-750ml",
+          "nombre": "Cafayate Torrontés",
+          "cantidad": 1,
+          "precioUnitario": 5400,
+          "precioLinea": 5400,
+          "costoUnitario": 3718.92,
+          "alcoholic": true,
+          "sustituciones": []
+        }
+      ],
+      "precioLista": 11550,
+      "descuentoDeclarado": 6,
+      "descuentoTecho": 6,
+      "precioPromocional": 10800,
+      "ahorro": 750,
+      "ahorroPorcentaje": 6.5,
+      "costoMedido": 7933.71,
+      "margenResultante": 1.361,
+      "pisoMargen": 1.35,
+      "alcoholico": true,
+      "estado": "PREPARADA",
+      "problemas": []
+    }
+  ]
+}

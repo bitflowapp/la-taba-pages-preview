@@ -185,6 +185,24 @@
       "height": 760,
       "motivo": "Placa superior del retailer en las filas 0-191; el producto empieza en la 258. El corte pasa por las 66 px de blanco.",
       "medidoEl": "2026-08-26"
+    },
+    {
+      "sku": "brahma-chopp-lata-710ml",
+      "left": 0,
+      "top": 0,
+      "width": 520,
+      "height": 1000,
+      "motivo": "Placa lateral amarilla «710cc · RUBIA». Medido: la lata ocupa las columnas 192-480 y la placa arranca en la 560, con 81 px de blanco puro entre las dos. El corte en 520 deja 40 columnas de blanco después de la lata y no toca un píxel del envase.",
+      "medidoEl": "2026-08-26"
+    },
+    {
+      "sku": "dr-lemon-vodka-pomelo-lata-473ml",
+      "left": 0,
+      "top": 0,
+      "width": 660,
+      "height": 1000,
+      "motivo": "Placa lateral rosa «Bebida con Pomelo + Vodka» y bloque negro «473 ml». Medido: la lata ocupa las columnas 192-576 y la placa arranca en la 760, con 185 px de blanco puro entre las dos. El corte en 660 deja 84 columnas de blanco después de la lata.",
+      "medidoEl": "2026-08-26"
     }
   ]
 }

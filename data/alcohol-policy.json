@@ -1,8 +1,18 @@
 {
   "schema_version": 1,
   "que_es": "Contrato central de la política de alcohol de TABA. Es la fuente de verdad de lo que hay que escribir en `businesses` cuando la habilitación comercial esté acreditada. Vive acá y no en un informe para que nadie tenga que reconstruirla de memoria: son cinco campos que el CHECK `businesses_alcohol_policy_complete` exige juntos.",
-  "estado": "DECLARADA, NO APLICADA",
+  "estado": "APLICADA EN LOS CUATRO CAMPOS DE POLÍTICA · VENTA CERRADA",
+  "aplicada_el": "2026-08-26",
+  "aplicada_como": "`npm run alcohol:compuerta -- --aplicar`, con la identidad admin de la automatización, para que `business_config_audit` registre actor_kind='user' y no 'service'. Escribe edad mínima, inicio, fin y huso; `alcohol_sales_enabled` NO se toca y sigue en false. El guion no tiene bandera para encenderlo.",
+  "por_que_se_pudo_aplicar_con_la_venta_cerrada": "El CHECK `businesses_alcohol_policy_complete` es `not alcohol_sales_enabled or (...)`: con la venta apagada los cuatro campos se pueden dejar cargados. Eso separa en dos lo que antes era un solo salto — la CONFIGURACIÓN, que es dato ya declarado por el titular, y la HABILITACIÓN, que es una decisión con consecuencias legales — y deja una sola compuerta técnica en lugar de cinco.",
   "bloqueante": "LICENSE GATE — la habilitación comercial del local para venta/expendio de bebidas alcohólicas no está acreditada. Ver artifacts/taba2-gondola-neuquen/LICENSE-GATE.md.",
+  "defecto_encontrado_2026-08-26": {
+    "que_es": "La política de alcohol era ESCRIBIBLE y no LEGIBLE.",
+    "medido": "Las cinco columnas están en el grant de UPDATE de `businesses` (20260725120000_business_contact_authority.sql) y ninguna está en el de SELECT. `get_business_operations_config` —lo único que lee el Panel— devuelve `alcohol_hours_enforced` y ninguna de las cinco. Un select desde la sesión del Panel responde 42501 permission denied for table businesses.",
+    "consecuencia": "Un comercio podía fijar la edad mínima, la ventana y el huso de su venta de alcohol y no tenía ninguna superficie donde verlos. La única forma de descubrir que la configuración estaba incompleta era que un cliente real no pudiera comprar, porque `create_order` valida los cinco al momento de la venta.",
+    "arreglo": "supabase/migrations/20260826120000_alcohol_policy_readable.sql — agrega los cinco campos y la conclusión `alcohol_policy_complete` a lo que devuelve `get_business_operations_config`, sin tocar ningún grant. PREPARADA, no aplicada: el DDL productivo de este repositorio pide autorización humana explícita.",
+    "lo_que_no_cierra": "El cliente anónimo sigue sin poder leer la ventana horaria, así que la tienda sólo puede explicar el rechazo DESPUÉS de intentar el pedido, y no impedir que se agregue al carrito fuera de horario como pide la regla declarada. Qué parte de la política de un comercio es pública es una decisión aparte."
+  },
   "declarada_por": "titular del comercio",
   "declarada_el": "2026-08-18",
   "politica": {
@@ -32,6 +42,18 @@
     "edad_en_el_pedido": "`orders_age_confirmation_complete` exige que `age_confirmed_at` y `age_confirmation_policy` viajen juntos, con la edad entre 18 y 99",
     "no_verificado_todavia": "la verificación de edad en la entrega y el rechazo del Rider viven en la app del Rider, en otro repositorio, y no se midieron en esta misión"
   },
+  "estado_real_leido_el_2026-08-26": {
+    "como_se_leyo": "Por la Management API, porque la sesión del Panel no puede leer estas columnas. Ver `defecto_encontrado_2026-08-26`.",
+    "alcohol_sales_enabled": false,
+    "alcohol_minimum_age": 18,
+    "alcohol_sales_start": "09:00:00",
+    "alcohol_sales_end": "23:00:00",
+    "alcohol_timezone": "America/Argentina/Buenos_Aires"
+  },
+  "compuertas_que_quedan": [
+    "HABILITACION_COMERCIAL — `alcohol_sales_enabled = true`. La cierra una persona, con la habilitación de expendio acreditada. Ningún guion de este repositorio la escribe.",
+    "DISPONIBILIDAD — los 27 productos con alcohol siguen con `available = false`. Se abren DESPUÉS de la habilitación: publicarlos antes deja al cliente agregar al carrito algo que `create_order` va a rechazar."
+  ],
   "verificaciones_pendientes_antes_de_activar": [
     "Que no exista una modificación municipal posterior del horario 09:00–23:00 para Neuquén Capital. No se pudo confirmar contra fuente oficial: el digesto municipal publica PDF escaneados sin texto y cdnqn.gov.ar no responde por HTTPS.",
     "Que la habilitación comercial concreta de La Taba incluya venta/expendio de bebidas alcohólicas. No hay ningún registro de habilitación ni en el esquema de la base ni en el repositorio."

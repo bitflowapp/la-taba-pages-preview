@@ -59,3 +59,7 @@ artifacts/catalog-glow/abc/
 # de revisión, no del producto: el repositorio versiona los WebP normalizados y
 # sus hashes, no los originales del CDN de la marca.
 artifacts/taba2-catalog-images/revision/
+# Mismo criterio para el barrido de alcohol: las candidatas incluyen las que se
+# RECHAZARON, y una foto equivocada versionada es una foto equivocada a mano.
+# El motivo de cada rechazo sí queda escrito, en la auditoría de fuentes.
+artifacts/taba2-alcohol-commercial/candidatas/

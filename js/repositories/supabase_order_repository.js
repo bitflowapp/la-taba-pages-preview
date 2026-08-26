@@ -609,8 +609,34 @@ export function createSupabaseOrderRepository({
       ].join(','))
       .eq('business_id', businessId)
       .eq('is_active', true)
-      .eq('available', true)
       .eq('is_verified', true)
+      /*
+       * DOS CAMINOS, Y EL SEGUNDO NO SE PUEDE COMPRAR.
+       *
+       * El primero es el de siempre: lo que está a la venta.
+       *
+       * El segundo es la vidriera del alcohol. El comercio tiene veintisiete
+       * bebidas alcohólicas cargadas con precio confirmado y `available = false`
+       * esperando la habilitación de expendio, y las que ya tienen packshot real
+       * no se podían mirar: la política pública de RLS acoplaba «se puede ver» a
+       * «se puede comprar». La migración
+       * `20260826140000_alcohol_con_foto_visible_sin_venta` abrió el permiso de
+       * lectura para ese caso exacto y esta condición es su contraparte en la
+       * consulta.
+       *
+       * Se escribe acá y no se delega en RLS a propósito: una sesión de
+       * owner/admin/staff entra además por «production team reads products», que
+       * devuelve el negocio ENTERO. Sin esta condición, el dueño mirando su
+       * propia tienda desde el teléfono vería los quince alcohólicos sin foto y
+       * los once productos guardados que ningún cliente ve. La consulta define
+       * la góndola; RLS define el permiso.
+       *
+       * Comprarlos sigue siendo imposible: `isPurchasableBeverageProduct` exige
+       * `available === true`, la tarjeta dibuja el botón inhabilitado, y
+       * `create_order` rechaza cualquier pedido con alcohol mientras la política
+       * del comercio esté incompleta.
+       */
+      .or('available.eq.true,and(is_alcoholic.is.true,available.is.false,image_url.not.is.null)')
       .order('sort_order', { ascending: true })
       .order('name', { ascending: true });
 
@@ -2206,8 +2232,11 @@ function replaceProductionCatalog(products, { hydrating = false } = {}) {
     // Acá moría la línea del carrito en PRODUCCIÓN, antes todavía que en
     // `sanitizeCart`.
     //
-    // `loadCatalog()` consulta con `.eq('available', true)`, y `available` en la
-    // base es `stock > 0`: un producto que se agota no vuelve en la respuesta.
+    // `loadCatalog()` trae lo que está a la venta —la primera rama de su `.or()`
+    // es `available.eq.true`—, y `available` en la base es `stock > 0`: un
+    // producto que se agota no vuelve en la respuesta. La segunda rama, la
+    // vidriera del alcohol, no cambia nada de esto: entra por no estar a la
+    // venta, así que nunca estuvo en un carrito del que pueda caerse.
     // Con `draft.cart = filter(ids.has(...))` la línea desaparecía del carrito
     // de alguien que estaba mirando la pantalla y el total bajaba solo. En una
     // tienda con movimiento eso ocurre cada vez que otra persona compra la

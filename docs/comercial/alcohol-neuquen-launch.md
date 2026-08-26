@@ -278,6 +278,63 @@ asociar fotografía sin tocar un solo dato comercial.
 
 ---
 
+## 5.4 Las fotografías de alcohol NO se pudieron conseguir limpias, y por qué
+
+Se intentó, se midió, y el resultado es un no con causa. Queda escrito para que
+la próxima misión no repita el barrido.
+
+**Se buscaron y descargaron 18 candidatas** para los SKU alcohólicos existentes,
+usando las APIs de catálogo de los hosts que **ya están en la allowlist**
+(`jumboargentina.vtexassets.com`, `ardiaprod.vtexassets.com`), con el EAN como
+prueba de identidad. Las 18 se descargaron, se hashearon, se midió el blanco del
+borde y se revisaron visualmente en grilla.
+
+**Se rechazaron las 18.** El motivo dominante es el mismo y es sistemático:
+
+> Jumbo y DIA **superponen hoy un cartel de merchandising** a las imágenes de
+> la categoría bebidas: una placa de color al costado del envase con la
+> capacidad y la variante («473cc RUBIA», «6 LATAS 473CC.», «FERNET BRANCA /
+> 750 ml»). No es el packshot del fabricante: es la pieza gráfica del retailer.
+
+Publicar eso sería meter el cartel de otra cadena adentro de la góndola de La
+Taba. La regla escrita del pipeline lo prohíbe —«sin watermark invasivo, precio,
+sticker ni promoción externa»— y con razón.
+
+Rechazos individuales, además del cartel:
+
+| Candidata | Motivo del rechazo |
+|---|---|
+| `corona-extra-botella-330ml` (Jumbo) | La imagen devuelve el marcador **«Imagen no disponible»**. El asset está muerto desde 2020 |
+| `fernet-branca-1000ml` (Jumbo) | La foto es una **caja de regalo de cartón con dos vasos impresos**, no la botella |
+| `fernet-branca-1000ml` (espaciovino) | Marca de agua «espaciovino» sobre el borde inferior |
+| `vodka-skyy-700ml` (Jumbo) | Fondo **azul**, no blanco, más el cartel |
+| `gancia-lima-limon-lata-473ml` (Jumbo) | 44,9 % del borde no es blanco: la placa verde ocupa media imagen |
+
+Y dos hallazgos de surtido que aparecieron al buscar, que valen por sí mismos:
+
+- **`andes-origen-roja-lata-473ml` y `quilmes-clasica-lata-473ml-pack-6` no
+  existen en el catálogo actual de Jumbo.** Andes Origen Roja sólo aparece en
+  340 cc, 269 ml y 1 L retornable; Quilmes Clásica en lata 473 aparece suelta y
+  en pack de 12, pero no en pack de 6. Puede ser que esos dos formatos estén
+  discontinuados. **Conviene confirmarlo con Walter antes de exhibirlos.**
+- **Gordon's sólo aparece en Jumbo en la variante «Tropical Fruits»**, no en el
+  London Dry clásico que es el SKU cargado. Usar esa foto sería publicar otra
+  variante.
+
+**Lo que hay que hacer, y no cabe en esta misión:** un barrido de sourcing
+propio para alcohol, con prioridad en el fabricante —Cervecería y Maltería
+Quilmes para el portafolio de cerveza, Fratelli Branca para Fernet— y
+ampliando la allowlist a esos hosts. Los sitios de marca cargan las imágenes por
+JavaScript, así que hay que resolverlas una por una, igual que se hizo con el
+lote premium. Es una misión del mismo tamaño que aquélla, no un apéndice de
+ésta.
+
+**Los 27 productos siguen exactamente como estaban.** No se asoció ni una
+fotografía, y eso es deliberado: una foto equivocada es peor que la ausencia de
+foto, y ese principio ya está escrito en las pruebas de este repositorio.
+
+---
+
 ## 6. La compuerta de activación de alcohol
 
 Hoy la venta de alcohol está cerrada, y **no por una sola razón**. El servidor

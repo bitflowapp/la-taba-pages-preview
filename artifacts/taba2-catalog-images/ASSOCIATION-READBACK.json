@@ -45,6 +45,12 @@
     {
       "rights_reference": "TABA-AUT-2026-08-001",
       "rights_status": "LICENCIA_COMERCIAL",
+      "sku": "brahma-chopp-lata-710ml",
+      "source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/890575/Cerveza-Rubia-X-710-Cc-Brahma-1-1046613.jpg?v=638987206380170000"
+    },
+    {
+      "rights_reference": "TABA-AUT-2026-08-001",
+      "rights_status": "LICENCIA_COMERCIAL",
       "sku": "budweiser-lata-473ml",
       "source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/890497/Cerveza-Budweiser-Lata-473-Ml-1-17952.jpg?v=638987206039670000"
     },
@@ -105,6 +111,18 @@
     {
       "rights_reference": "TABA-AUT-2026-08-001",
       "rights_status": "LICENCIA_COMERCIAL",
+      "sku": "dada-caramel-750ml",
+      "source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/925234/Vino-Dada-Art-9-Caramel-750cc-1-1061032.jpg?v=639229226634470000"
+    },
+    {
+      "rights_reference": "TABA-AUT-2026-08-001",
+      "rights_status": "LICENCIA_COMERCIAL",
+      "sku": "dr-lemon-vodka-pomelo-lata-473ml",
+      "source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/788225/Dr-Lemon-Vodka-Pomelo-5-1-859371.jpg?v=638249457804900000"
+    },
+    {
+      "rights_reference": "TABA-AUT-2026-08-001",
+      "rights_status": "LICENCIA_COMERCIAL",
       "sku": "fanta-naranja-2250ml",
       "source_url": "https://jumboargentina.vtexassets.com/arquivos/ids/893206/Gaseosa-Naranja-2-25-Lts-Fanta-2-248227.jpg?v=639009777706070000"
     },
@@ -137,6 +155,12 @@
       "rights_status": "LICENCIA_COMERCIAL",
       "sku": "gatorade-manzana-1250ml",
       "source_url": "https://boulevard-sa.com.ar/Site/img/products/gatorade/Gatorade-manzana-1250-L.jpg"
+    },
+    {
+      "rights_reference": "TABA-AUT-2026-08-001",
+      "rights_status": "LICENCIA_COMERCIAL",
+      "sku": "gin-gordons-700ml",
+      "source_url": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/155887/106400.png?v=638451820323500000"
     },
     {
       "rights_reference": "TABA-AUT-2026-08-001",
@@ -261,6 +285,12 @@
     {
       "rights_reference": "TABA-AUT-2026-08-001",
       "rights_status": "LICENCIA_COMERCIAL",
+      "sku": "trapiche-origen-malbec-750ml",
+      "source_url": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156062/106117.png?v=638463931481900000"
+    },
+    {
+      "rights_reference": "TABA-AUT-2026-08-001",
+      "rights_status": "LICENCIA_COMERCIAL",
       "sku": "villa-del-sur-sin-gas-600ml",
       "source_url": "https://cdn1.kilbelonline.com/webapp/images/productos/b/0000028000/28237.jpg"
     },
@@ -283,15 +313,15 @@
       "ok": true
     },
     {
-      "mensaje": "46 objetivos con imagen productiva (hay 46)",
+      "mensaje": "51 objetivos con imagen productiva (hay 51)",
       "ok": true
     },
     {
-      "mensaje": "26 productos con el recurso propio de TABA",
+      "mensaje": "21 productos con el recurso propio de TABA",
       "ok": true
     },
     {
-      "mensaje": "los 26 productos fuera del lote quedaron intactos",
+      "mensaje": "los 21 productos fuera del lote quedaron intactos",
       "ok": true
     },
     {
@@ -544,6 +574,42 @@
     },
     {
       "mensaje": "brahma-chopp-lata-473ml-pack-6: no es una imagen de retailer",
+      "ok": true
+    },
+    {
+      "mensaje": "brahma-chopp-lata-710ml: la imagen corresponde a un asset del manifiesto",
+      "ok": true
+    },
+    {
+      "mensaje": "brahma-chopp-lata-710ml: master ligado al SKU exacto",
+      "ok": true
+    },
+    {
+      "mensaje": "brahma-chopp-lata-710ml: thumbnail ligado al SKU exacto",
+      "ok": true
+    },
+    {
+      "mensaje": "brahma-chopp-lata-710ml: SHA-256 del master",
+      "ok": true
+    },
+    {
+      "mensaje": "brahma-chopp-lata-710ml: SHA-256 del thumbnail",
+      "ok": true
+    },
+    {
+      "mensaje": "brahma-chopp-lata-710ml: SHA-256 de la fuente",
+      "ok": true
+    },
+    {
+      "mensaje": "brahma-chopp-lata-710ml: ligado a su catalog_asset",
+      "ok": true
+    },
+    {
+      "mensaje": "brahma-chopp-lata-710ml: verificado y fuera de venta, como estaba",
+      "ok": true
+    },
+    {
+      "mensaje": "brahma-chopp-lata-710ml: no es una imagen de retailer",
       "ok": true
     },
     {
@@ -907,6 +973,78 @@
       "ok": true
     },
     {
+      "mensaje": "dada-caramel-750ml: la imagen corresponde a un asset del manifiesto",
+      "ok": true
+    },
+    {
+      "mensaje": "dada-caramel-750ml: master ligado al SKU exacto",
+      "ok": true
+    },
+    {
+      "mensaje": "dada-caramel-750ml: thumbnail ligado al SKU exacto",
+      "ok": true
+    },
+    {
+      "mensaje": "dada-caramel-750ml: SHA-256 del master",
+      "ok": true
+    },
+    {
+      "mensaje": "dada-caramel-750ml: SHA-256 del thumbnail",
+      "ok": true
+    },
+    {
+      "mensaje": "dada-caramel-750ml: SHA-256 de la fuente",
+      "ok": true
+    },
+    {
+      "mensaje": "dada-caramel-750ml: ligado a su catalog_asset",
+      "ok": true
+    },
+    {
+      "mensaje": "dada-caramel-750ml: verificado y fuera de venta, como estaba",
+      "ok": true
+    },
+    {
+      "mensaje": "dada-caramel-750ml: no es una imagen de retailer",
+      "ok": true
+    },
+    {
+      "mensaje": "dr-lemon-vodka-pomelo-lata-473ml: la imagen corresponde a un asset del manifiesto",
+      "ok": true
+    },
+    {
+      "mensaje": "dr-lemon-vodka-pomelo-lata-473ml: master ligado al SKU exacto",
+      "ok": true
+    },
+    {
+      "mensaje": "dr-lemon-vodka-pomelo-lata-473ml: thumbnail ligado al SKU exacto",
+      "ok": true
+    },
+    {
+      "mensaje": "dr-lemon-vodka-pomelo-lata-473ml: SHA-256 del master",
+      "ok": true
+    },
+    {
+      "mensaje": "dr-lemon-vodka-pomelo-lata-473ml: SHA-256 del thumbnail",
+      "ok": true
+    },
+    {
+      "mensaje": "dr-lemon-vodka-pomelo-lata-473ml: SHA-256 de la fuente",
+      "ok": true
+    },
+    {
+      "mensaje": "dr-lemon-vodka-pomelo-lata-473ml: ligado a su catalog_asset",
+      "ok": true
+    },
+    {
+      "mensaje": "dr-lemon-vodka-pomelo-lata-473ml: verificado y fuera de venta, como estaba",
+      "ok": true
+    },
+    {
+      "mensaje": "dr-lemon-vodka-pomelo-lata-473ml: no es una imagen de retailer",
+      "ok": true
+    },
+    {
       "mensaje": "fanta-naranja-2250ml: la imagen corresponde a un asset del manifiesto",
       "ok": true
     },
@@ -1120,6 +1258,42 @@
     },
     {
       "mensaje": "gatorade-manzana-1250ml: no es una imagen de retailer",
+      "ok": true
+    },
+    {
+      "mensaje": "gin-gordons-700ml: la imagen corresponde a un asset del manifiesto",
+      "ok": true
+    },
+    {
+      "mensaje": "gin-gordons-700ml: master ligado al SKU exacto",
+      "ok": true
+    },
+    {
+      "mensaje": "gin-gordons-700ml: thumbnail ligado al SKU exacto",
+      "ok": true
+    },
+    {
+      "mensaje": "gin-gordons-700ml: SHA-256 del master",
+      "ok": true
+    },
+    {
+      "mensaje": "gin-gordons-700ml: SHA-256 del thumbnail",
+      "ok": true
+    },
+    {
+      "mensaje": "gin-gordons-700ml: SHA-256 de la fuente",
+      "ok": true
+    },
+    {
+      "mensaje": "gin-gordons-700ml: ligado a su catalog_asset",
+      "ok": true
+    },
+    {
+      "mensaje": "gin-gordons-700ml: verificado y fuera de venta, como estaba",
+      "ok": true
+    },
+    {
+      "mensaje": "gin-gordons-700ml: no es una imagen de retailer",
       "ok": true
     },
     {
@@ -1843,6 +2017,42 @@
       "ok": true
     },
     {
+      "mensaje": "trapiche-origen-malbec-750ml: la imagen corresponde a un asset del manifiesto",
+      "ok": true
+    },
+    {
+      "mensaje": "trapiche-origen-malbec-750ml: master ligado al SKU exacto",
+      "ok": true
+    },
+    {
+      "mensaje": "trapiche-origen-malbec-750ml: thumbnail ligado al SKU exacto",
+      "ok": true
+    },
+    {
+      "mensaje": "trapiche-origen-malbec-750ml: SHA-256 del master",
+      "ok": true
+    },
+    {
+      "mensaje": "trapiche-origen-malbec-750ml: SHA-256 del thumbnail",
+      "ok": true
+    },
+    {
+      "mensaje": "trapiche-origen-malbec-750ml: SHA-256 de la fuente",
+      "ok": true
+    },
+    {
+      "mensaje": "trapiche-origen-malbec-750ml: ligado a su catalog_asset",
+      "ok": true
+    },
+    {
+      "mensaje": "trapiche-origen-malbec-750ml: verificado y fuera de venta, como estaba",
+      "ok": true
+    },
+    {
+      "mensaje": "trapiche-origen-malbec-750ml: no es una imagen de retailer",
+      "ok": true
+    },
+    {
       "mensaje": "villa-del-sur-sin-gas-600ml: la imagen corresponde a un asset del manifiesto",
       "ok": true
     },
@@ -2095,6 +2305,26 @@
       "ok": true
     },
     {
+      "mensaje": "brahma-chopp-lata-710ml: el precio no cambió ($3000)",
+      "ok": true
+    },
+    {
+      "mensaje": "brahma-chopp-lata-710ml: el stock no cambió (24)",
+      "ok": true
+    },
+    {
+      "mensaje": "brahma-chopp-lata-710ml: sold_as_pack intacto",
+      "ok": true
+    },
+    {
+      "mensaje": "brahma-chopp-lata-710ml: is_active intacto",
+      "ok": true
+    },
+    {
+      "mensaje": "brahma-chopp-lata-710ml: quedó fuera de venta, como estaba",
+      "ok": true
+    },
+    {
       "mensaje": "budweiser-lata-473ml: el precio no cambió ($2350)",
       "ok": true
     },
@@ -2295,6 +2525,46 @@
       "ok": true
     },
     {
+      "mensaje": "dada-caramel-750ml: el precio no cambió ($5900)",
+      "ok": true
+    },
+    {
+      "mensaje": "dada-caramel-750ml: el stock no cambió (12)",
+      "ok": true
+    },
+    {
+      "mensaje": "dada-caramel-750ml: sold_as_pack intacto",
+      "ok": true
+    },
+    {
+      "mensaje": "dada-caramel-750ml: is_active intacto",
+      "ok": true
+    },
+    {
+      "mensaje": "dada-caramel-750ml: quedó fuera de venta, como estaba",
+      "ok": true
+    },
+    {
+      "mensaje": "dr-lemon-vodka-pomelo-lata-473ml: el precio no cambió ($2200)",
+      "ok": true
+    },
+    {
+      "mensaje": "dr-lemon-vodka-pomelo-lata-473ml: el stock no cambió (12)",
+      "ok": true
+    },
+    {
+      "mensaje": "dr-lemon-vodka-pomelo-lata-473ml: sold_as_pack intacto",
+      "ok": true
+    },
+    {
+      "mensaje": "dr-lemon-vodka-pomelo-lata-473ml: is_active intacto",
+      "ok": true
+    },
+    {
+      "mensaje": "dr-lemon-vodka-pomelo-lata-473ml: quedó fuera de venta, como estaba",
+      "ok": true
+    },
+    {
       "mensaje": "fanta-naranja-2250ml: el precio no cambió ($5900)",
       "ok": true
     },
@@ -2412,6 +2682,26 @@
     },
     {
       "mensaje": "gatorade-manzana-1250ml: quedó DISPONIBLE",
+      "ok": true
+    },
+    {
+      "mensaje": "gin-gordons-700ml: el precio no cambió ($16800)",
+      "ok": true
+    },
+    {
+      "mensaje": "gin-gordons-700ml: el stock no cambió (6)",
+      "ok": true
+    },
+    {
+      "mensaje": "gin-gordons-700ml: sold_as_pack intacto",
+      "ok": true
+    },
+    {
+      "mensaje": "gin-gordons-700ml: is_active intacto",
+      "ok": true
+    },
+    {
+      "mensaje": "gin-gordons-700ml: quedó fuera de venta, como estaba",
       "ok": true
     },
     {
@@ -2815,6 +3105,26 @@
       "ok": true
     },
     {
+      "mensaje": "trapiche-origen-malbec-750ml: el precio no cambió ($6150)",
+      "ok": true
+    },
+    {
+      "mensaje": "trapiche-origen-malbec-750ml: el stock no cambió (12)",
+      "ok": true
+    },
+    {
+      "mensaje": "trapiche-origen-malbec-750ml: sold_as_pack intacto",
+      "ok": true
+    },
+    {
+      "mensaje": "trapiche-origen-malbec-750ml: is_active intacto",
+      "ok": true
+    },
+    {
+      "mensaje": "trapiche-origen-malbec-750ml: quedó fuera de venta, como estaba",
+      "ok": true
+    },
+    {
       "mensaje": "villa-del-sur-sin-gas-600ml: el precio no cambió ($1700)",
       "ok": true
     },
@@ -2875,7 +3185,7 @@
       "ok": true
     },
     {
-      "mensaje": "46 catalog_assets registrados (hay 46)",
+      "mensaje": "51 catalog_assets registrados (hay 51)",
       "ok": true
     },
     {
@@ -2932,6 +3242,14 @@
     },
     {
       "mensaje": "brahma-chopp-lata-473ml-pack-6: cita TABA-AUT-2026-08-001",
+      "ok": true
+    },
+    {
+      "mensaje": "brahma-chopp-lata-710ml: rights_status LICENCIA_COMERCIAL",
+      "ok": true
+    },
+    {
+      "mensaje": "brahma-chopp-lata-710ml: cita TABA-AUT-2026-08-001",
       "ok": true
     },
     {
@@ -3015,6 +3333,22 @@
       "ok": true
     },
     {
+      "mensaje": "dada-caramel-750ml: rights_status LICENCIA_COMERCIAL",
+      "ok": true
+    },
+    {
+      "mensaje": "dada-caramel-750ml: cita TABA-AUT-2026-08-001",
+      "ok": true
+    },
+    {
+      "mensaje": "dr-lemon-vodka-pomelo-lata-473ml: rights_status LICENCIA_COMERCIAL",
+      "ok": true
+    },
+    {
+      "mensaje": "dr-lemon-vodka-pomelo-lata-473ml: cita TABA-AUT-2026-08-001",
+      "ok": true
+    },
+    {
       "mensaje": "fanta-naranja-2250ml: rights_status LICENCIA_COMERCIAL",
       "ok": true
     },
@@ -3060,6 +3394,14 @@
     },
     {
       "mensaje": "gatorade-manzana-1250ml: cita TABA-AUT-2026-08-001",
+      "ok": true
+    },
+    {
+      "mensaje": "gin-gordons-700ml: rights_status LICENCIA_COMERCIAL",
+      "ok": true
+    },
+    {
+      "mensaje": "gin-gordons-700ml: cita TABA-AUT-2026-08-001",
       "ok": true
     },
     {
@@ -3223,6 +3565,14 @@
       "ok": true
     },
     {
+      "mensaje": "trapiche-origen-malbec-750ml: rights_status LICENCIA_COMERCIAL",
+      "ok": true
+    },
+    {
+      "mensaje": "trapiche-origen-malbec-750ml: cita TABA-AUT-2026-08-001",
+      "ok": true
+    },
+    {
       "mensaje": "villa-del-sur-sin-gas-600ml: rights_status LICENCIA_COMERCIAL",
       "ok": true
     },
@@ -3247,7 +3597,7 @@
       "ok": true
     }
   ],
-  "conImagen": 46,
+  "conImagen": 51,
   "fallos": [],
   "productos": [
     {
@@ -3308,8 +3658,8 @@
     },
     {
       "available": false,
-      "catalogAssetId": null,
-      "imageUrl": null,
+      "catalogAssetId": "presente",
+      "imageUrl": "assets/products/brahma-chopp-lata-710ml-7b3111225f3821da-bd35f5833b47f78a.webp",
       "isVerified": true,
       "sku": "brahma-chopp-lata-710ml"
     },
@@ -3427,15 +3777,15 @@
     },
     {
       "available": false,
-      "catalogAssetId": null,
-      "imageUrl": null,
+      "catalogAssetId": "presente",
+      "imageUrl": "assets/products/dada-caramel-750ml-4171839cfea453e3-64fa3b5b38959304.webp",
       "isVerified": true,
       "sku": "dada-caramel-750ml"
     },
     {
       "available": false,
-      "catalogAssetId": null,
-      "imageUrl": null,
+      "catalogAssetId": "presente",
+      "imageUrl": "assets/products/dr-lemon-vodka-pomelo-lata-473ml-6875ceb7e0ff6926-e0eeb8cb2e97e288.webp",
       "isVerified": true,
       "sku": "dr-lemon-vodka-pomelo-lata-473ml"
     },
@@ -3504,8 +3854,8 @@
     },
     {
       "available": false,
-      "catalogAssetId": null,
-      "imageUrl": null,
+      "catalogAssetId": "presente",
+      "imageUrl": "assets/products/gin-gordons-700ml-0a539dda4bb5cbd5-6de283aef107c2ac.webp",
       "isVerified": true,
       "sku": "gin-gordons-700ml"
     },
@@ -3707,8 +4057,8 @@
     },
     {
       "available": false,
-      "catalogAssetId": null,
-      "imageUrl": null,
+      "catalogAssetId": "presente",
+      "imageUrl": "assets/products/trapiche-origen-malbec-750ml-5166a6bd98ad5d10-3ef96fe8a2aa34c5.webp",
       "isVerified": true,
       "sku": "trapiche-origen-malbec-750ml"
     },
@@ -3758,7 +4108,7 @@
   "republicados": [
     {
       "product_id": "98bfb0ab-c356-4e2e-b860-149dded7969e",
-      "published_at": "2026-08-26T04:05:15.932314+00:00",
+      "published_at": "2026-08-26T18:21:35.248627+00:00",
       "published_available": false,
       "published_external_id": "andes-origen-rubia-lata-473ml",
       "published_is_verified": true,
@@ -3766,7 +4116,7 @@
     },
     {
       "product_id": "c9e36328-ef51-4fd1-a856-1b0997ecdfcd",
-      "published_at": "2026-08-26T04:05:16.061168+00:00",
+      "published_at": "2026-08-26T18:21:35.392532+00:00",
       "published_available": false,
       "published_external_id": "andes-origen-rubia-lata-473ml-pack-6",
       "published_is_verified": true,
@@ -3774,7 +4124,7 @@
     },
     {
       "product_id": "a665d30a-7592-42ba-8c7e-783b2c815f0b",
-      "published_at": "2026-08-26T04:05:16.190983+00:00",
+      "published_at": "2026-08-26T18:21:35.538996+00:00",
       "published_available": true,
       "published_external_id": "aquarius-manzana-1500ml",
       "published_is_verified": true,
@@ -3782,7 +4132,7 @@
     },
     {
       "product_id": "508622ce-2062-4564-ae68-7f8ecf517e40",
-      "published_at": "2026-08-26T04:05:16.323639+00:00",
+      "published_at": "2026-08-26T18:21:35.686553+00:00",
       "published_available": true,
       "published_external_id": "aquarius-pera-1500ml",
       "published_is_verified": true,
@@ -3790,7 +4140,7 @@
     },
     {
       "product_id": "175a902c-a7d8-4735-95a3-069d5270586f",
-      "published_at": "2026-08-26T04:05:16.449942+00:00",
+      "published_at": "2026-08-26T18:21:35.834502+00:00",
       "published_available": true,
       "published_external_id": "aquarius-pomelo-2250ml",
       "published_is_verified": true,
@@ -3798,7 +4148,7 @@
     },
     {
       "product_id": "b64ad1d2-475f-4612-92be-1be1e37dcf23",
-      "published_at": "2026-08-26T04:05:16.576659+00:00",
+      "published_at": "2026-08-26T18:21:35.989856+00:00",
       "published_available": true,
       "published_external_id": "benedictino-sin-gas-2250ml",
       "published_is_verified": true,
@@ -3806,15 +4156,23 @@
     },
     {
       "product_id": "6093d86c-cb02-4fb4-beff-0caffabb0d5c",
-      "published_at": "2026-08-26T04:05:16.703515+00:00",
+      "published_at": "2026-08-26T18:21:36.140007+00:00",
       "published_available": false,
       "published_external_id": "brahma-chopp-lata-473ml-pack-6",
       "published_is_verified": true,
       "published_sku": "brahma-chopp-lata-473ml-pack-6"
     },
     {
+      "product_id": "c291f6a6-83e0-4495-8a01-18718eebb2c3",
+      "published_at": "2026-08-26T18:21:36.296382+00:00",
+      "published_available": false,
+      "published_external_id": "brahma-chopp-lata-710ml",
+      "published_is_verified": true,
+      "published_sku": "brahma-chopp-lata-710ml"
+    },
+    {
       "product_id": "72138996-e31f-4a3a-be79-93ee79f02e8d",
-      "published_at": "2026-08-26T04:05:16.831885+00:00",
+      "published_at": "2026-08-26T18:21:36.486812+00:00",
       "published_available": false,
       "published_external_id": "budweiser-lata-473ml",
       "published_is_verified": true,
@@ -3822,7 +4180,7 @@
     },
     {
       "product_id": "6eb7bd09-ce2e-40bf-adba-dd710ae10c44",
-      "published_at": "2026-08-26T04:05:16.962527+00:00",
+      "published_at": "2026-08-26T18:21:36.641602+00:00",
       "published_available": false,
       "published_external_id": "budweiser-lata-473ml-pack-6",
       "published_is_verified": true,
@@ -3830,7 +4188,7 @@
     },
     {
       "product_id": "44210832-ec41-463b-b07a-4622dddf4fd9",
-      "published_at": "2026-08-26T04:05:17.089295+00:00",
+      "published_at": "2026-08-26T18:21:36.795865+00:00",
       "published_available": true,
       "published_external_id": "coca-cola-original-2250ml",
       "published_is_verified": true,
@@ -3838,7 +4196,7 @@
     },
     {
       "product_id": "e3a974c3-9e4e-42a2-a1c4-a047cd93bf6a",
-      "published_at": "2026-08-26T04:05:17.216915+00:00",
+      "published_at": "2026-08-26T18:21:36.984551+00:00",
       "published_available": true,
       "published_external_id": "coca-cola-original-botella-pet-500-ml-pack-x12",
       "published_is_verified": true,
@@ -3846,7 +4204,7 @@
     },
     {
       "product_id": "75e1e29f-62f4-4215-9c3a-80afd2c69704",
-      "published_at": "2026-08-26T04:05:17.34693+00:00",
+      "published_at": "2026-08-26T18:21:37.140588+00:00",
       "published_available": true,
       "published_external_id": "coca-cola-original-lata-354ml",
       "published_is_verified": true,
@@ -3854,7 +4212,7 @@
     },
     {
       "product_id": "db17b799-385e-4603-912e-45ef8bc229a1",
-      "published_at": "2026-08-26T04:05:17.474125+00:00",
+      "published_at": "2026-08-26T18:21:37.291209+00:00",
       "published_available": true,
       "published_external_id": "coca-cola-original-pet-1500ml",
       "published_is_verified": true,
@@ -3862,7 +4220,7 @@
     },
     {
       "product_id": "4c186857-4e51-4891-b287-7fc00c21c82c",
-      "published_at": "2026-08-26T04:05:17.600643+00:00",
+      "published_at": "2026-08-26T18:21:37.441425+00:00",
       "published_available": true,
       "published_external_id": "coca-cola-zero-2250ml",
       "published_is_verified": true,
@@ -3870,7 +4228,7 @@
     },
     {
       "product_id": "5cd082fa-35db-413e-983e-10b12255fdb9",
-      "published_at": "2026-08-26T04:05:17.726898+00:00",
+      "published_at": "2026-08-26T18:21:37.584428+00:00",
       "published_available": true,
       "published_external_id": "coca-cola-zero-botella-pet-500-ml-pack-x12",
       "published_is_verified": true,
@@ -3878,7 +4236,7 @@
     },
     {
       "product_id": "51e252c0-fd75-4028-b73a-3ba332c8f505",
-      "published_at": "2026-08-26T04:05:17.853147+00:00",
+      "published_at": "2026-08-26T18:21:37.728867+00:00",
       "published_available": true,
       "published_external_id": "coca-cola-zero-lata-354ml",
       "published_is_verified": true,
@@ -3886,15 +4244,31 @@
     },
     {
       "product_id": "b0c88135-3993-445d-9754-ffa90efaa301",
-      "published_at": "2026-08-26T04:05:17.980939+00:00",
+      "published_at": "2026-08-26T18:21:37.872737+00:00",
       "published_available": false,
       "published_external_id": "corona-extra-botella-330ml",
       "published_is_verified": true,
       "published_sku": "corona-extra-botella-330ml"
     },
     {
+      "product_id": "3d375e3b-c362-4130-94e9-cf425c83d166",
+      "published_at": "2026-08-26T18:21:38.015756+00:00",
+      "published_available": false,
+      "published_external_id": "dada-caramel-750ml",
+      "published_is_verified": true,
+      "published_sku": "dada-caramel-750ml"
+    },
+    {
+      "product_id": "796a71d4-dadc-402d-9b74-cd99d748722c",
+      "published_at": "2026-08-26T18:21:38.164785+00:00",
+      "published_available": false,
+      "published_external_id": "dr-lemon-vodka-pomelo-lata-473ml",
+      "published_is_verified": true,
+      "published_sku": "dr-lemon-vodka-pomelo-lata-473ml"
+    },
+    {
       "product_id": "b0741a3f-1e8e-4a14-aba3-b9a12a3b5f2d",
-      "published_at": "2026-08-26T04:05:18.11003+00:00",
+      "published_at": "2026-08-26T18:21:38.315863+00:00",
       "published_available": true,
       "published_external_id": "fanta-naranja-2250ml",
       "published_is_verified": true,
@@ -3902,7 +4276,7 @@
     },
     {
       "product_id": "69298b9a-1359-470a-b496-77986880cb9e",
-      "published_at": "2026-08-26T04:05:18.236637+00:00",
+      "published_at": "2026-08-26T18:21:38.520198+00:00",
       "published_available": false,
       "published_external_id": "fanta-naranja-botella-pet-1500-ml-pack-x6",
       "published_is_verified": true,
@@ -3910,7 +4284,7 @@
     },
     {
       "product_id": "ee3357e4-3254-48cd-a8e6-54559cd302ed",
-      "published_at": "2026-08-26T04:05:18.366702+00:00",
+      "published_at": "2026-08-26T18:21:38.681528+00:00",
       "published_available": false,
       "published_external_id": "fernet-branca-1000ml",
       "published_is_verified": true,
@@ -3918,7 +4292,7 @@
     },
     {
       "product_id": "c9aa6d1d-a184-414f-8a1b-ac21f6b3dced",
-      "published_at": "2026-08-26T04:05:18.492164+00:00",
+      "published_at": "2026-08-26T18:21:38.825917+00:00",
       "published_available": false,
       "published_external_id": "gancia-lima-limon-lata-473ml",
       "published_is_verified": true,
@@ -3926,7 +4300,7 @@
     },
     {
       "product_id": "a28d194d-622d-4ddc-bcd0-b0340832dab1",
-      "published_at": "2026-08-26T04:05:18.620152+00:00",
+      "published_at": "2026-08-26T18:21:38.983736+00:00",
       "published_available": true,
       "published_external_id": "gatorade-cool-blue-500ml",
       "published_is_verified": true,
@@ -3934,15 +4308,23 @@
     },
     {
       "product_id": "5a6310e3-5c9c-436a-9860-c54cfe5a54aa",
-      "published_at": "2026-08-26T04:05:18.746802+00:00",
+      "published_at": "2026-08-26T18:21:39.136385+00:00",
       "published_available": true,
       "published_external_id": "gatorade-manzana-1250ml",
       "published_is_verified": true,
       "published_sku": "gatorade-manzana-1250ml"
     },
     {
+      "product_id": "a5fbb2bf-5a74-4895-a8e1-0b7b2826a47f",
+      "published_at": "2026-08-26T18:21:39.283881+00:00",
+      "published_available": false,
+      "published_external_id": "gin-gordons-700ml",
+      "published_is_verified": true,
+      "published_sku": "gin-gordons-700ml"
+    },
+    {
       "product_id": "ca00b783-d171-44f3-acf5-b44ddbe1ac44",
-      "published_at": "2026-08-26T04:05:18.873223+00:00",
+      "published_at": "2026-08-26T18:21:39.427753+00:00",
       "published_available": true,
       "published_external_id": "monster-green-zero-473ml",
       "published_is_verified": true,
@@ -3950,7 +4332,7 @@
     },
     {
       "product_id": "addc2086-c416-4e50-91b7-2108c0bd22ce",
-      "published_at": "2026-08-26T04:05:19.000347+00:00",
+      "published_at": "2026-08-26T18:21:39.575113+00:00",
       "published_available": true,
       "published_external_id": "paso-de-los-toros-pomelo-1500ml",
       "published_is_verified": true,
@@ -3958,7 +4340,7 @@
     },
     {
       "product_id": "a50ab161-1d91-445d-979b-9f5f1cf6abb8",
-      "published_at": "2026-08-26T04:05:19.126921+00:00",
+      "published_at": "2026-08-26T18:21:39.718915+00:00",
       "published_available": true,
       "published_external_id": "paso-de-los-toros-tonica-1500ml",
       "published_is_verified": true,
@@ -3966,7 +4348,7 @@
     },
     {
       "product_id": "075eae85-2ac4-4a2d-8951-52e2387cebe9",
-      "published_at": "2026-08-26T04:05:19.253274+00:00",
+      "published_at": "2026-08-26T18:21:39.867754+00:00",
       "published_available": false,
       "published_external_id": "patagonia-amber-lager-botella-730ml",
       "published_is_verified": true,
@@ -3974,7 +4356,7 @@
     },
     {
       "product_id": "1488f4bd-cfab-4b0f-a7ba-c088703488f3",
-      "published_at": "2026-08-26T04:05:19.379749+00:00",
+      "published_at": "2026-08-26T18:21:40.015679+00:00",
       "published_available": true,
       "published_external_id": "pepsi-black-1500ml",
       "published_is_verified": true,
@@ -3982,7 +4364,7 @@
     },
     {
       "product_id": "89ece53a-0c01-4a71-8891-0043d38bbcb9",
-      "published_at": "2026-08-26T04:05:19.511642+00:00",
+      "published_at": "2026-08-26T18:21:40.16142+00:00",
       "published_available": true,
       "published_external_id": "pepsi-original-2000ml",
       "published_is_verified": true,
@@ -3990,7 +4372,7 @@
     },
     {
       "product_id": "5b7a2ffb-e0a7-4368-b4dd-64fcae58162a",
-      "published_at": "2026-08-26T04:05:19.645028+00:00",
+      "published_at": "2026-08-26T18:21:40.329634+00:00",
       "published_available": true,
       "published_external_id": "powerade-mountain-blast-500ml",
       "published_is_verified": true,
@@ -3998,7 +4380,7 @@
     },
     {
       "product_id": "838fff2f-d161-42b6-8af4-3e2d25aa5d75",
-      "published_at": "2026-08-26T04:05:19.774459+00:00",
+      "published_at": "2026-08-26T18:21:40.47841+00:00",
       "published_available": false,
       "published_external_id": "quilmes-stout-lata-473ml",
       "published_is_verified": true,
@@ -4006,7 +4388,7 @@
     },
     {
       "product_id": "1a2055e6-b2a8-44d9-81a2-2e0925a8b55d",
-      "published_at": "2026-08-26T04:05:19.902186+00:00",
+      "published_at": "2026-08-26T18:21:40.745599+00:00",
       "published_available": true,
       "published_external_id": "red-bull-original-250ml",
       "published_is_verified": true,
@@ -4014,7 +4396,7 @@
     },
     {
       "product_id": "23b8b828-1a23-4b50-9a84-1c5e3758812c",
-      "published_at": "2026-08-26T04:05:20.030795+00:00",
+      "published_at": "2026-08-26T18:21:40.889628+00:00",
       "published_available": true,
       "published_external_id": "red-bull-sin-azucar-250ml",
       "published_is_verified": true,
@@ -4022,7 +4404,7 @@
     },
     {
       "product_id": "86aa13d2-cc44-42d4-84e6-3c206d544431",
-      "published_at": "2026-08-26T04:05:20.158468+00:00",
+      "published_at": "2026-08-26T18:21:41.035946+00:00",
       "published_available": true,
       "published_external_id": "seven-up-original-2000ml",
       "published_is_verified": true,
@@ -4030,7 +4412,7 @@
     },
     {
       "product_id": "279e5663-8332-4436-94f3-7fffce042f88",
-      "published_at": "2026-08-26T04:05:20.283526+00:00",
+      "published_at": "2026-08-26T18:21:41.18335+00:00",
       "published_available": true,
       "published_external_id": "soda-manaos-sifon-2000ml",
       "published_is_verified": true,
@@ -4038,7 +4420,7 @@
     },
     {
       "product_id": "1e4ca7ba-e10c-457f-962e-b5b604ce9463",
-      "published_at": "2026-08-26T04:05:20.41169+00:00",
+      "published_at": "2026-08-26T18:21:41.330579+00:00",
       "published_available": true,
       "published_external_id": "speed-original-473ml",
       "published_is_verified": true,
@@ -4046,7 +4428,7 @@
     },
     {
       "product_id": "0330332c-5df8-49ec-9b2d-d6e89f5ce0d5",
-      "published_at": "2026-08-26T04:05:20.540488+00:00",
+      "published_at": "2026-08-26T18:21:41.47419+00:00",
       "published_available": true,
       "published_external_id": "speed-zero-473ml",
       "published_is_verified": true,
@@ -4054,7 +4436,7 @@
     },
     {
       "product_id": "e2a28c6b-3db8-4eed-9ac9-e85c42b1bd3e",
-      "published_at": "2026-08-26T04:05:20.670127+00:00",
+      "published_at": "2026-08-26T18:21:41.626948+00:00",
       "published_available": true,
       "published_external_id": "sprite-botella-pet-500-ml-pack-x12",
       "published_is_verified": true,
@@ -4062,7 +4444,7 @@
     },
     {
       "product_id": "b08d76df-75de-4501-8342-72ee198a43e4",
-      "published_at": "2026-08-26T04:05:20.795938+00:00",
+      "published_at": "2026-08-26T18:21:41.772422+00:00",
       "published_available": true,
       "published_external_id": "sprite-original-2250ml",
       "published_is_verified": true,
@@ -4070,7 +4452,7 @@
     },
     {
       "product_id": "09c0ccdd-2859-4649-8e6f-b5ad808d22fa",
-      "published_at": "2026-08-26T04:05:20.926551+00:00",
+      "published_at": "2026-08-26T18:21:41.925715+00:00",
       "published_available": true,
       "published_external_id": "sprite-original-lata-354ml",
       "published_is_verified": true,
@@ -4078,7 +4460,7 @@
     },
     {
       "product_id": "a3fdf301-9ed6-48cc-95ff-6edb5c2205a8",
-      "published_at": "2026-08-26T04:05:21.052596+00:00",
+      "published_at": "2026-08-26T18:21:42.07152+00:00",
       "published_available": true,
       "published_external_id": "sprite-zero-2250ml",
       "published_is_verified": true,
@@ -4086,7 +4468,7 @@
     },
     {
       "product_id": "dcedf88b-559e-4114-9be3-39a7f861dcd0",
-      "published_at": "2026-08-26T04:05:21.181311+00:00",
+      "published_at": "2026-08-26T18:21:42.220395+00:00",
       "published_available": false,
       "published_external_id": "stella-artois-lata-473ml",
       "published_is_verified": true,
@@ -4094,15 +4476,23 @@
     },
     {
       "product_id": "e491edd7-e914-4a36-b278-e9da34440951",
-      "published_at": "2026-08-26T04:05:21.308748+00:00",
+      "published_at": "2026-08-26T18:21:42.381396+00:00",
       "published_available": false,
       "published_external_id": "stella-artois-lata-473ml-pack-6",
       "published_is_verified": true,
       "published_sku": "stella-artois-lata-473ml-pack-6"
     },
     {
+      "product_id": "5f220266-3954-49fd-bd6a-c8759f2bfd0d",
+      "published_at": "2026-08-26T18:21:42.530182+00:00",
+      "published_available": false,
+      "published_external_id": "trapiche-origen-malbec-750ml",
+      "published_is_verified": true,
+      "published_sku": "trapiche-origen-malbec-750ml"
+    },
+    {
       "product_id": "212fba27-b227-4ea2-b9dd-22f2b443437a",
-      "published_at": "2026-08-26T04:05:21.443552+00:00",
+      "published_at": "2026-08-26T18:21:42.678003+00:00",
       "published_available": true,
       "published_external_id": "villa-del-sur-sin-gas-600ml",
       "published_is_verified": true,
@@ -4110,7 +4500,7 @@
     },
     {
       "product_id": "efc214b3-e4d0-446f-b77d-e8ed9befc4f4",
-      "published_at": "2026-08-26T04:05:21.587255+00:00",
+      "published_at": "2026-08-26T18:21:42.842342+00:00",
       "published_available": true,
       "published_external_id": "villavicencio-con-gas-500ml",
       "published_is_verified": true,
@@ -4118,7 +4508,7 @@
     },
     {
       "product_id": "cb140766-e183-4b87-bc5d-8c93d9f4b55f",
-      "published_at": "2026-08-26T04:05:21.714793+00:00",
+      "published_at": "2026-08-26T18:21:43.009393+00:00",
       "published_available": true,
       "published_external_id": "villavicencio-sin-gas-1500ml",
       "published_is_verified": true,

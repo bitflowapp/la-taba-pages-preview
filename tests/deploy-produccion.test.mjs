@@ -5,7 +5,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { runtimeDeclarado, sello } from '../scripts/deploy/sellar-version.mjs';
-import { revisarRuntimeConfig, revisarServiceWorker, verificar } from '../scripts/deploy/verificar-publicado.mjs';
+import { esperarConvergencia, revisarRuntimeConfig, revisarServiceWorker, verificar } from '../scripts/deploy/verificar-publicado.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const workflow = fs.readFileSync(path.join(root, '.github/workflows/deploy-production.yml'), 'utf8');
@@ -172,4 +172,160 @@ test('un version.json ausente llega como HTML por el fallback de Pages, y no es 
   const { sano, revisiones } = await verificar({ host: 'https://x', buscar });
   assert.equal(sano, true, JSON.stringify(revisiones.filter((r) => !r.pasa)));
   assert.ok(revisiones.some((r) => r.pasa && /anterior al sello/.test(r.detalle)));
+});
+
+/*
+ * LA PROPAGACIÓN DE CLOUDFLARE NO ES UN DEFECTO, Y VENCER EL PLAZO SÍ.
+ *
+ * El 2026-08-27 `Deploy production` publicó bien `820ad4e`/v91 y quedó ROJO: el
+ * smoke corrió un segundo después de publicar y leyó el alias todavía en
+ * `31c900b`/v90. Correr el mismo guion a mano, minutos más tarde y sin cambiar
+ * nada, daba verde. Un despliegue sano no puede depender de con cuánta suerte
+ * cae la consulta.
+ */
+const respuestasDe = (version) => async (url) => {
+  const texto = {
+    '/': '<html><main data-app-main></main></html>',
+    '/version.json': JSON.stringify(version),
+    '/runtime-config.js': `supabaseUrl: 'https://wwcpogltfgzgkrlilbcd.supabase.co',
+      publishableKey: 'sb_publishable_x', businessId: '00000000-0000-4000-8000-000000000001',`,
+    '/sw.js': `const CACHE_NAME = '${version.runtime}';`,
+  }[new URL(url, 'https://x').pathname] ?? '[{"sku":"x"}]';
+  return { ok: true, status: 200, text: async () => texto };
+};
+
+const VIEJO = { commit: '3'.repeat(40), runtime: 'la-taba-runtime-v90', builtAt: 'x' };
+const NUEVO = { commit: '8'.repeat(40), runtime: 'la-taba-runtime-v91', builtAt: 'x' };
+
+/** Reloj y espera falsos: el test mide la lógica, no aguanta el reloj real. */
+function relojFalso() {
+  let t = 0;
+  return { ahora: () => t, dormir: async (ms) => { t += ms; } };
+}
+
+test('el smoke espera la propagación: dos veces el SHA viejo, a la tercera el bueno', async () => {
+  const { ahora, dormir } = relojFalso();
+  /*
+   * El alias cambia ENTRE consultas, nunca en el medio de una: el borde sirve
+   * un despliegue entero y coherente consigo mismo. Por eso la vuelta se decide
+   * al empezar el intento —en `/`, la primera peticion— y queda fija para el
+   * sello, el runtime-config y el worker de ESE intento.
+   */
+  let vuelta = 0;
+  let actual = VIEJO;
+  const buscar = async (url, opciones) => {
+    if (new URL(url, 'https://x').pathname === '/') {
+      vuelta += 1;
+      actual = vuelta >= 3 ? NUEVO : VIEJO;
+    }
+    return respuestasDe(actual)(url, opciones);
+  };
+
+  const registro = [];
+  const resultado = await esperarConvergencia({
+    host: 'https://x',
+    esperarCommit: NUEVO.commit,
+    esperarRuntime: NUEVO.runtime,
+    intervaloMs: 5_000,
+    timeoutMs: 180_000,
+    buscar,
+    ahora,
+    dormir,
+    registrar: (linea) => registro.push(linea),
+  });
+
+  assert.equal(resultado.sano, true, JSON.stringify(resultado.revisiones.filter((r) => !r.pasa)));
+  assert.equal(resultado.agotado, false);
+  assert.equal(resultado.intentos, 3, 'tenía que converger recién en el tercer intento');
+  // Y el registro tiene que dejar por escrito qué se vio y cuándo, que es lo
+  // único que permite distinguir después una propagación de una regresión.
+  assert.equal(registro.length, 3);
+  assert.equal(registro[0].commitObservado, VIEJO.commit);
+  assert.equal(registro[0].commitEsperado, NUEVO.commit);
+  assert.equal(registro[0].transcurridoMs, 0);
+  assert.equal(registro[2].commitObservado, NUEVO.commit);
+  assert.equal(registro[2].transcurridoMs, 10_000);
+  assert.ok(registro[0].fallidas.includes('el commit publicado es el esperado'));
+  assert.deepEqual(registro[2].fallidas, []);
+});
+
+test('si producción sigue vieja al vencer el plazo, es un FALLO real y no un verde por cansancio', async () => {
+  const { ahora, dormir } = relojFalso();
+  const resultado = await esperarConvergencia({
+    host: 'https://x',
+    esperarCommit: NUEVO.commit,
+    esperarRuntime: NUEVO.runtime,
+    intervaloMs: 5_000,
+    timeoutMs: 60_000,
+    buscar: respuestasDe(VIEJO),
+    ahora,
+    dormir,
+  });
+
+  assert.equal(resultado.sano, false, 'vencer el timeout NO puede dar verde');
+  assert.equal(resultado.agotado, true);
+  assert.equal(resultado.intentos, 12, '60s con intervalo de 5s son 12 vueltas, y ni una más');
+  assert.ok(resultado.revisiones.some((r) => !r.pasa && /commit publicado/.test(r.nombre)));
+  assert.equal(resultado.version.commit, VIEJO.commit);
+});
+
+test('un defecto que esperar no arregla no gasta el plazo: falla en el primer intento', async () => {
+  /*
+   * Reintentar por propagación no puede volverse reintentar por cualquier cosa.
+   * Un artefacto que apunta a staging va a apuntar a staging para siempre:
+   * esperarlo tres minutos sólo retrasa el rojo y esconde el motivo.
+   */
+  const { ahora, dormir } = relojFalso();
+  const buscar = async (url, opciones) => {
+    if (new URL(url, 'https://x').pathname === '/runtime-config.js') {
+      return {
+        ok: true,
+        status: 200,
+        text: async () => `supabaseUrl: 'https://ukxqbgswjlibmnjemrzd.supabase.co',
+          publishableKey: 'sb_publishable_x', businessId: '00000000-0000-4000-8000-000000000001',`,
+      };
+    }
+    return respuestasDe(NUEVO)(url, opciones);
+  };
+
+  const resultado = await esperarConvergencia({
+    host: 'https://x',
+    esperarCommit: NUEVO.commit,
+    intervaloMs: 5_000,
+    timeoutMs: 180_000,
+    buscar,
+    ahora,
+    dormir,
+  });
+
+  assert.equal(resultado.sano, false);
+  assert.equal(resultado.agotado, false, 'no llegó al techo: cortó por defecto duro');
+  assert.equal(resultado.intentos, 1, 'un defecto duro no se reintenta');
+  assert.equal(resultado.transcurridoMs, 0);
+  assert.ok(resultado.revisiones.some((r) => !r.pasa && /apunta a staging/.test(r.nombre)));
+});
+
+test('el runtime esperado se comprueba aparte del commit', async () => {
+  // Un artefacto con el commit correcto y la caché vieja se publica sin que
+  // nadie lo note: al visitante le sigue llegando lo que ya tenía guardado.
+  const { sano, revisiones } = await verificar({
+    host: 'https://x',
+    esperarCommit: NUEVO.commit,
+    esperarRuntime: 'la-taba-runtime-v91',
+    buscar: respuestasDe({ ...NUEVO, runtime: 'la-taba-runtime-v90' }),
+  });
+  assert.equal(sano, false);
+  assert.ok(revisiones.some((r) => !r.pasa && /runtime publicado es el esperado/.test(r.nombre)));
+});
+
+test('el paso de smoke espera la propagación en vez de mirar una sola vez', () => {
+  // El contrato del pipeline, fijado acá para que no se caiga sin que nadie lo
+  // note: el paso tiene que pedir commit Y runtime, y tiene que traer techo.
+  assert.match(workflow, /--esperar-commit/);
+  assert.match(workflow, /--esperar-runtime/);
+  assert.match(workflow, /--intervalo-ms/);
+  assert.match(workflow, /--timeout-ms/);
+  // Un `sleep` fijo paga el peor caso en CADA release y no garantiza nada: si
+  // la propagación tarda un segundo más que el número elegido, vuelve el rojo.
+  assert.doesNotMatch(workflow, /^\s*sleep\s+\d/m);
 });

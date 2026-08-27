@@ -56,6 +56,69 @@ test('panel Windows recorre las nueve herramientas, detecta GTIN y conserva la v
   await expect(workspace.locator('.business-ops-feedback')).toContainText('Venta confirmada; la solicitud fiscal requiere revisión.');
 });
 
+test('el pedido de comprobante fiscal sobrevive a que el mostrador se repinte', async ({ page }) => {
+  /*
+   * EL REPINTADO NO PUEDE DESHACER UNA DECISIÓN DE LA PERSONA.
+   *
+   * El mostrador se redibuja entero con cada cambio: al escanear, al quitar un
+   * renglón, y también cuando termina un refresco fiscal que arrancó solo. El
+   * carrito sobrevivía —vive en el estado del módulo— pero el tilde de
+   * «Solicitar comprobante fiscal» vivía sólo en el marcado, así que cualquiera
+   * de esos repintados lo borraba EN SILENCIO y la venta se confirmaba sin el
+   * comprobante que la persona había pedido.
+   *
+   * En CI aparecía como una prueba inestable —el refresco fiscal caía a veces
+   * antes y a veces después del clic—. Acá el repintado se provoca a propósito,
+   * escaneando un segundo producto, que es además lo que hace cualquiera que
+   * carga dos artículos: es el mismo defecto, sin depender de la suerte.
+   */
+  const session = staffSession();
+  await installRuntime(page, session, {
+    profile: { environment: 'homologation', accountant_review_status: 'approved', production_gate_status: 'blocked', is_enabled: true },
+  });
+
+  // La ruta se registra DESPUÉS para que gane a la de `installRuntime`, y así
+  // se puede mirar qué viajó de verdad en vez de deducirlo del cartel.
+  const ventas = [];
+  await page.route(`${SUPABASE_URL}/rest/v1/rpc/checkout_pos_sale*`, async (route) => {
+    ventas.push(route.request().postDataJSON());
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ sale_id: '77777777-7777-4777-8777-777777777777', state: 'completed', total: 600 }),
+    });
+  });
+
+  await page.goto('/#business');
+  const workspace = page.locator('[data-production-workspace="business"]');
+  await workspace.locator('[data-business-ops-view="pos"]').first().click();
+  await expect(workspace.locator('[data-business-ops-center="pos"]')).toBeVisible();
+
+  await workspace.locator('[data-barcode-input]').fill('7894900011517');
+  await workspace.locator('[data-business-scan-test]').click();
+  await expect(workspace.locator('.business-ops-cart')).toContainText('Producto E2E');
+
+  const pedirComprobante = workspace.locator('[name="requestFiscal"]');
+  await pedirComprobante.check();
+  await expect(pedirComprobante).toBeChecked();
+
+  // El repintado: un segundo escaneo sobre el mismo borrador. El carrito pasa
+  // de 6 a 12 unidades, que es la prueba de que el mostrador se volvió a dibujar.
+  await expect(workspace.locator('.business-ops-cart')).toContainText('6 × Producto E2E');
+  await workspace.locator('[data-barcode-input]').fill('4006381333931');
+  await workspace.locator('[data-business-scan-test]').click();
+  await expect(workspace.locator('.business-ops-cart')).toContainText('12 × Producto E2E');
+
+  // Lo que se ve: el tilde sigue puesto.
+  await expect(workspace.locator('[name="requestFiscal"]')).toBeChecked();
+
+  // Y lo que viaja: el pedido de comprobante llegó al servidor.
+  await workspace.locator('[data-pos-checkout]').click();
+  await expect(workspace.locator('.business-ops-feedback')).toContainText('Venta confirmada; la solicitud fiscal requiere revisión.');
+  expect(ventas).toHaveLength(1);
+  expect(ventas[0].p_request_fiscal).toBe(true);
+});
+
 test('con la facturación deshabilitada el mostrador no ofrece un comprobante que el backend rechaza', async ({ page }) => {
   const session = staffSession();
   // Runtime por defecto: fiscal_profiles responde environment=disabled,

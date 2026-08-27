@@ -284,13 +284,41 @@ test('el foco se ve y recorre la navegación con teclado', async ({ browser }) =
   const { context, page } = await abrirPanel(browser, { width: 1440, height: 900 });
   try {
     const primero = page.locator('.production-operations-shortcuts .business-ops-nav-button').first();
+
+    /*
+     * DOS COSAS QUE HACÍAN INTERMITENTE ESTA MEDICIÓN.
+     *
+     * 1 · El anillo lo pinta `:focus-visible` (`styles/business.css`), que
+     *     aparece sólo cuando el navegador cree que la persona vino por teclado.
+     *     Un `focus()` a secas depende de esa heurística. Una pulsación real la
+     *     fija, y además es lo que el título de esta prueba dice que se prueba.
+     *
+     * 2 · El workspace se repinta SOLO —lleva la marca de la última
+     *     sincronización— y puede desconectar el botón entre que se resuelve el
+     *     localizador y se lo mide. `getComputedStyle` sobre un nodo
+     *     desconectado no falla: devuelve cadenas VACÍAS. `outlineWidth` sale ''
+     *     y `parseFloat('')` es NaN —el rojo que aparecía en CI—, pero
+     *     `outlineStyle` también sale '' y '' NO es 'none', así que la
+     *     comprobación del estilo pasaba sin haber mirado nada. Por eso se
+     *     informa la desconexión y se vuelve a medir sobre el nodo nuevo, en vez
+     *     de aceptar una medición que miente en las dos direcciones.
+     */
+    await page.keyboard.press('Tab');
     await primero.focus();
-    const contorno = await primero.evaluate((n) => {
-      const e = getComputedStyle(n);
-      return { ancho: e.outlineWidth, estilo: e.outlineStyle };
-    });
+    await expect(primero).toBeFocused();
+
+    let contorno = null;
+    await expect.poll(async () => {
+      contorno = await primero.evaluate((n) => {
+        if (!n.isConnected) return null;
+        const e = getComputedStyle(n);
+        return { ancho: Number.parseFloat(e.outlineWidth), estilo: e.outlineStyle };
+      });
+      return contorno !== null;
+    }, { message: 'el botón nunca quedó conectado el tiempo suficiente para medir el anillo de foco' }).toBe(true);
+
     expect(contorno.estilo).not.toBe('none');
-    expect(Number.parseFloat(contorno.ancho)).toBeGreaterThan(0);
+    expect(contorno.ancho).toBeGreaterThan(0);
 
     // Tab avanza dentro de la misma navegación, no salta afuera.
     await page.keyboard.press('Tab');

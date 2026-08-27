@@ -69,7 +69,33 @@ const ORDER_ACCESS_STORAGE_VERSION = 'taba-order-access-v1';
 // rider publishes through its dedicated RPC. This keeps raw rider_locations
 // outside browser reads even when an order is otherwise visible to the user.
 const ORDER_SELECT = '*,order_items(*)';
-const BUSINESS_ORDER_SELECT = '*,order_items(*),order_events(*),order_combos(*)';
+/*
+ * LA BANDEJA NO NECESITA LA AUDITORÍA PARA DIBUJARSE.
+ *
+ * Esto traía `order_events(*)`: la bitácora COMPLETA de cada pedido —una fila
+ * por cada cambio de estado— multiplicada por hasta 500 pedidos, en cada
+ * snapshot, para pintar una bandeja que no muestra ni un evento.
+ *
+ * Se puede sacar porque `statusHistoryFromRow()` ya tiene un respaldo entero:
+ * si no hay eventos, reconstruye el historial desde las columnas de fecha del
+ * propio pedido (`accepted_at`, `preparing_at`, `ready_at`, `dispatched_at`,
+ * `arrived_at`, `delivered_at`, `cancelled_at`). No es una degradación
+ * inventada acá: ese camino ya existía y ya se usaba para los pedidos sin
+ * bitácora. `business-ops.js`, que ordena la cola por antigüedad de actividad,
+ * sigue recibiendo el mismo `statusHistory` que antes.
+ *
+ * La bitácora exacta —la que sí distingue dos transiciones al mismo estado— se
+ * carga BAJO DEMANDA con `fetchOrderEvents(orderId)` cuando alguien abre la
+ * auditoría de UN pedido, que es el único lugar donde se lee.
+ */
+const BUSINESS_ORDER_SELECT = '*,order_items(*),order_combos(*)';
+/*
+ * Exactamente lo que `statusHistoryFromSequencedEvents()` lee, y nada más:
+ * `sequence` para ordenar, `event_type`/`type` para reconocer la transición,
+ * `metadata`/`payload` para el estado destino, y `created_at` para la marca.
+ * `message`, `actor_*` y el resto de la fila no los mira nadie.
+ */
+const ORDER_EVENTS_SELECT = 'order_id,sequence,event_type,type,metadata,payload,created_at';
 const PUBLIC_TRACKING_GPS_MAX_AGE_MS = 3 * 60 * 1000;
 const PUBLIC_TRACKING_GPS_FUTURE_TOLERANCE_MS = 30 * 1000;
 const PUBLIC_TRACKING_GPS_MAX_ACCURACY_METERS = 250;
@@ -280,13 +306,32 @@ export function createSupabaseOrderRepository({
     if (error) {
       return failedQuery(error, status, businessSnapshotErrorMessage(error, status));
     }
-    const rows = Array.isArray(data) ? data : [];
-    if (rows.length > MAX_BUSINESS_INBOX_ORDERS) {
-      return repositoryResult(false, {
-        code: 'BUSINESS_INBOX_LIMIT_EXCEEDED',
-        message: 'La bandeja supera 500 pedidos activos; no se aplicó un snapshot truncado.',
-      });
-    }
+    const todas = Array.isArray(data) ? data : [];
+    /*
+     * DEGRADACIÓN, NO CAÍDA.
+     *
+     * Acá se devolvía `ok: false` y el panel se quedaba SIN NADA: con más de
+     * 500 pedidos activos, Walter no podía ni aceptar el que acababa de entrar.
+     * Un estado anómalo del historial no puede apagar la herramienta con la que
+     * se trabaja.
+     *
+     * Se conservan los 500 MÁS ANTIGUOS porque la consulta ya viene ordenada
+     * por antigüedad y en una bandeja operativa el que espera hace más tiempo
+     * es el más urgente. Lo que NO se hace es callarlo: el resultado viaja con
+     * `truncation`, y el panel lo dice arriba de la bandeja. Esconder pedidos
+     * activos en silencio sería peor que el error que esto reemplaza.
+     */
+    const excedida = todas.length > MAX_BUSINESS_INBOX_ORDERS;
+    const rows = excedida ? todas.slice(0, MAX_BUSINESS_INBOX_ORDERS) : todas;
+    const truncation = excedida
+      ? {
+        truncated: true,
+        shown: MAX_BUSINESS_INBOX_ORDERS,
+        atLeast: MAX_BUSINESS_INBOX_ORDERS + 1,
+        message: `La bandeja tiene más de ${MAX_BUSINESS_INBOX_ORDERS} pedidos activos. `
+          + `Se muestran los ${MAX_BUSINESS_INBOX_ORDERS} que esperan hace más tiempo.`,
+      }
+      : null;
 
     for (const row of rows) {
       const validationError = validateBusinessOrderRow(row, businessId);
@@ -309,6 +354,31 @@ export function createSupabaseOrderRepository({
       rows,
       orders,
       syncedAt: new Date().toISOString(),
+      truncation,
+    });
+  }
+
+  /*
+   * La bitácora de UN pedido, cuando alguien la pide.
+   *
+   * Es la otra mitad de haber sacado `order_events` del snapshot: la auditoría
+   * sigue disponible entera, sólo que se paga cuando se abre y no 500 veces por
+   * cada refresco de la bandeja. Devuelve el historial ya normalizado con la
+   * MISMA función que usaba el snapshot, así que lo que se ve no cambia.
+   */
+  async function fetchOrderEvents(orderId) {
+    const id = String(orderId || '').trim();
+    if (!id) return repositoryResult(false, { message: 'Falta el pedido.' });
+    const { data, error, status } = await client
+      .from('order_events')
+      .select(ORDER_EVENTS_SELECT)
+      .eq('order_id', id)
+      .order('sequence', { ascending: true });
+    if (error) return failedQuery(error, status, 'No pudimos leer el historial de este pedido.');
+    const events = Array.isArray(data) ? data : [];
+    return repositoryResult(true, {
+      events,
+      statusHistory: statusHistoryFromSequencedEvents(events, new Date().toISOString()),
     });
   }
 
@@ -1491,6 +1561,9 @@ export function createSupabaseOrderRepository({
     },
     async fetchBusinessOrderSnapshot() {
       return fetchBusinessOrderSnapshot();
+    },
+    async fetchOrderEvents(orderId) {
+      return fetchOrderEvents(orderId);
     },
     watchBusinessOrderInvalidations({ onInvalidate, onStatus } = {}) {
       const channel = client.channel(`taba-business-intake-${businessId}-${++channelSequence}`);
@@ -3145,8 +3218,17 @@ function validateBusinessOrderRow(row, expectedBusinessId) {
     || !Number.isFinite(Number(item.quantity))
     || Number(item.quantity) <= 0
   ))) return 'item incompleto';
-  if (!Array.isArray(row.order_events)) return 'eventos ausentes';
-  if (row.order_events.some((event) => (
+  /*
+   * La bitácora ya no viaja en el snapshot de la bandeja: se carga bajo demanda
+   * al abrir la auditoría de un pedido. Que falte NO es un pedido incompleto —el
+   * historial se reconstruye de las columnas de fecha del propio pedido—, así
+   * que exigirla acá dejaría la bandeja entera en «pedido incompleto».
+   *
+   * Lo que sí se sigue exigiendo, sin aflojar nada: si LLEGAN eventos, tienen
+   * que venir bien formados. Esa es la guarda que importaba.
+   */
+  if (row.order_events !== undefined && !Array.isArray(row.order_events)) return 'eventos ausentes';
+  if (Array.isArray(row.order_events) && row.order_events.some((event) => (
     !event
     || !Number.isSafeInteger(Number(event.sequence))
     || Number(event.sequence) < 1

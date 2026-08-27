@@ -1,0 +1,100 @@
+{
+  "etiqueta": "antes",
+  "base": "http://127.0.0.1:8123",
+  "repeticiones": 3,
+  "resultados": [
+    {
+      "pedidos": 50,
+      "renderInicialMs": 78.9,
+      "pedidoNuevoMs": 82.4,
+      "cambioEstadoMs": 78.8,
+      "filtroMs": null,
+      "dom": {
+        "total": 6367,
+        "bandeja": 40,
+        "panel": 2863,
+        "htmlBytes": 170155
+      },
+      "memoriaMB": 26,
+      "preservacion": {
+        "antes": {
+          "id": "BENCH-0002",
+          "scroll": 8313,
+          "detalleAbierto": true,
+          "foco": "Marcar como entregado"
+        },
+        "despues": {
+          "scroll": 8313,
+          "detalleAbierto": false,
+          "focoEnBody": true,
+          "focoTexto": null
+        },
+        "scrollPreservado": true,
+        "detallePreservado": false,
+        "focoPreservado": false
+      }
+    },
+    {
+      "pedidos": 100,
+      "renderInicialMs": 286.9,
+      "pedidoNuevoMs": 298.4,
+      "cambioEstadoMs": 289,
+      "filtroMs": null,
+      "dom": {
+        "total": 9117,
+        "bandeja": 80,
+        "panel": 5613,
+        "htmlBytes": 333122
+      },
+      "memoriaMB": 26,
+      "preservacion": {
+        "antes": {
+          "id": "BENCH-0002",
+          "scroll": 16050,
+          "detalleAbierto": true,
+          "foco": "Marcar como entregado"
+        },
+        "despues": {
+          "scroll": 16050,
+          "detalleAbierto": false,
+          "focoEnBody": true,
+          "focoTexto": null
+        },
+        "scrollPreservado": true,
+        "detallePreservado": false,
+        "focoPreservado": false
+      }
+    },
+    {
+      "pedidos": 500,
+      "renderInicialMs": 4925.9,
+      "pedidoNuevoMs": 4881.4,
+      "cambioEstadoMs": 4823.7,
+      "filtroMs": null,
+      "dom": {
+        "total": 31117,
+        "bandeja": 400,
+        "panel": 27613,
+        "htmlBytes": 1637611
+      },
+      "memoriaMB": 26,
+      "preservacion": {
+        "antes": {
+          "id": "BENCH-0002",
+          "scroll": 77949,
+          "detalleAbierto": true,
+          "foco": "Marcar como entregado"
+        },
+        "despues": {
+          "scroll": 77949,
+          "detalleAbierto": false,
+          "focoEnBody": true,
+          "focoTexto": null
+        },
+        "scrollPreservado": true,
+        "detallePreservado": false,
+        "focoPreservado": false
+      }
+    }
+  ]
+}

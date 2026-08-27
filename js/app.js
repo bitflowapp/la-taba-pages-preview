@@ -1153,7 +1153,11 @@ function showCheckoutInlineError(form, message) {
 // nombra lo que el botón de al lado realmente hace: mandar a otra pantalla a
 // quien ya tiene el formulario delante sería una instrucción falsa.
 const BLOQUEOS_DE_PERFIL = Object.freeze({
-  incomplete: 'Completá tu nombre y teléfono en Perfil para confirmar el pedido.',
+  // «en Perfil» dejó de ser cierto: el nombre y el WhatsApp se completan ACÁ,
+  // en el checkout, desde que existe el editor en línea. Mandar a otra pantalla
+  // a quien ya tiene el campo delante sería la misma instrucción imposible que
+  // este mensaje vino a reemplazar.
+  incomplete: 'Completá tu nombre y WhatsApp acá para confirmar el pedido.',
   'no-address': 'Agregá tu dirección de entrega acá para confirmar el pedido.',
   'no-confirmed-location': 'Confirmá el punto de entrega de tu dirección para confirmar el pedido.',
   unsupported: 'Esta tienda todavía no toma pedidos por la app.',

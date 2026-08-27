@@ -14,7 +14,12 @@ import {
 import { APP_MODE_PRODUCTION, getAppMode } from './core/app-mode.js';
 import { supportsProfileCheckout } from './core/profile-checkout.js';
 import { getCustomerOrderHistory } from './core/customer-history.js';
-import { formatArgentinePhone } from './core/validators.js';
+import {
+  formatArgentinePhone,
+  isValidArgentinePhone,
+  normalizeArgentinePhone,
+  validateCustomerName,
+} from './core/validators.js';
 import { createAddressCaptureController } from './address-capture-controller.js';
 import { getOrderRepository } from './repositories/repository_factory.js';
 
@@ -36,6 +41,14 @@ const state = {
   // si la persona toca "Cambiar": desplegarlo por su cuenta anularía el ahorro
   // de pasos que es toda la razón de que exista.
   checkoutSummaryExpanded: false,
+  // Identidad capturada EN el checkout (nombre y WhatsApp), para que la primera
+  // compra no tenga que pasar por la pantalla de Perfil.
+  savingIdentity: false,
+  identityError: '',
+  // Lo tipeado vive sólo en el DOM y cada render lo reconstruye. Sin esta copia,
+  // el propio mensaje de error borraba el nombre que la persona acababa de
+  // escribir: se le pedía todo de nuevo justo cuando ya estaba por comprar.
+  identityDraft: null,
   // La preferencia de pago se copia del último pedido UNA sola vez por sesión de
   // checkout. Repetirlo en cada render pisaría la elección que la persona acaba
   // de hacer, que es la forma más rápida de convertir una comodidad en un error
@@ -195,6 +208,11 @@ export function resetCustomerDeliveryForTests() {
     paymentPreferenceApplied: false,
     pendingStatus: '',
     sheetIntentAddressId: '',
+    // Mismo motivo que los cuatro de arriba: arrastrar un error de identidad de
+    // la corrida anterior haría que una prueba midiera un checkout ya en falla.
+    savingIdentity: false,
+    identityError: '',
+    identityDraft: null,
   });
   capture.reset();
   notifiedDeliveryAddressKey = null;
@@ -950,23 +968,51 @@ function renderProfileSummary() {
   const missing = !String(profile.name || '').trim() || !String(profile.phone || '').trim();
   if (missing) {
     /*
-     * Este bloque NO se toca, y no es una omisión.
+     * ACÁ, NO EN PERFIL.
      *
-     * Es lo que sostiene un defecto medido en producción el 2026-08-25: con el
-     * Perfil vacío, «Confirmar pedido» contestaba «Ingresá un nombre de al menos
-     * 2 caracteres» sobre un carrito que no tiene ningún campo de nombre.
-     * `bloqueoDePerfilEnCheckout` reemplaza ese mensaje imposible por el de esta
-     * tarjeta y le lleva el foco a SU botón, así que quitarla —aunque el editor
-     * de abajo también pida nombre y teléfono— reabriría el pozo.
+     * Esto era una tarjeta con un botón que mandaba a `#profile`: quien compraba
+     * por primera vez tenía que SALIR del pedido, completar otra pantalla y
+     * volver. Con retiro en local ése era todo el trámite —no hace falta ninguna
+     * dirección— y aun así costaba dos navegaciones y perder el hilo.
      *
-     * El editor en línea es un SEGUNDO camino, no un reemplazo: quien empieza
-     * por «Agregar dirección» completa todo ahí; quien toca «Confirmar» primero
-     * recibe esta tarjeta. Los dos terminan en la misma RPC.
+     * El cliente no está creando un perfil: está haciendo un pedido. Los dos
+     * datos que el local necesita se piden acá, en línea, y se guardan por la
+     * MISMA capa que ya usa el editor de direcciones (`repo.saveProfile`). No
+     * hay una segunda lógica de perfil.
+     *
+     * `data-profile-block="incomplete"` se conserva A PROPÓSITO: es lo que lee
+     * `bloqueoDePerfilEnCheckout` para reemplazar un rechazo del servidor por un
+     * mensaje accionable, y sostiene el defecto medido el 2026-08-25 —«Ingresá
+     * un nombre de al menos 2 caracteres» sobre una pantalla sin ningún campo de
+     * nombre—. Lo que cambia es que ahora el campo SÍ está, a un dedo de ahí.
      */
-    return `<div class="profile-checkout-block" data-profile-block="incomplete" role="status">
-      <strong>Completá tu perfil para continuar</strong>
-      <span>Necesitamos tu nombre y teléfono para que el local pueda entregarte el pedido.</span>
-      <button class="primary-button compact" type="button" data-profile-checkout-action="edit-profile">Completar Perfil</button>
+    const identityError = state.identityError
+      ? `<p class="profile-checkout-identity-error" role="alert">${escapeHtml(state.identityError)}</p>`
+      : '';
+    // El borrador gana sobre el perfil: es lo último que escribió la persona.
+    const borrador = {
+      name: String(state.identityDraft?.name ?? profile.name ?? ''),
+      phone: String(state.identityDraft?.phone ?? profile.phone ?? ''),
+    };
+    return `<div class="profile-checkout-block profile-checkout-identity-form" data-profile-block="incomplete" data-profile-identity-form>
+      <strong>${currentDeliveryModeIsPickup() ? '¿A nombre de quién retiramos?' : '¿A nombre de quién?'}</strong>
+      <span>${currentDeliveryModeIsPickup()
+        ? 'Con esto el local sabe quién pasa a buscarlo y cómo avisarte.'
+        : 'Para que el local pueda entregarte el pedido y avisarte.'}</span>
+      <label class="profile-checkout-identity-field">
+        <span>Nombre y apellido</span>
+        <input name="checkoutIdentityName" autocomplete="name" maxlength="80" enterkeyhint="next"
+               placeholder="Tu nombre y apellido" value="${escapeHtml(borrador.name)}" />
+      </label>
+      <label class="profile-checkout-identity-field">
+        <span>WhatsApp</span>
+        <input name="checkoutIdentityPhone" autocomplete="tel" inputmode="tel" maxlength="24" enterkeyhint="done"
+               placeholder="Ej. 299 620 9136" value="${escapeHtml(borrador.phone)}" />
+      </label>
+      ${identityError}
+      <button class="primary-button compact" type="button" data-profile-checkout-action="save-identity" ${state.savingIdentity ? 'disabled' : ''}>
+        ${state.savingIdentity ? 'Guardando…' : 'Guardar y continuar'}
+      </button>
     </div>`;
   }
   return `<div class="profile-checkout-summary" data-profile-summary>
@@ -1041,6 +1087,10 @@ function currentDeliveryModeIsPickup() {
 // Con el editor en línea, esa navegación dejó de ser el camino para comprar y
 // pasó a ser lo que dice el botón: administrar.
 function handleProfileCheckoutAction(action, addressId = '') {
+  if (action === 'save-identity') {
+    guardarIdentidadEnLinea();
+    return;
+  }
   if (action === 'new-address') {
     capture.open({ addressId: '' });
     return;
@@ -1070,6 +1120,74 @@ function handleProfileCheckoutAction(action, addressId = '') {
       detail: { reason: action, returnTo: 'cart' },
     }));
   }
+}
+
+/*
+ * Guarda nombre y teléfono sin salir del pedido.
+ *
+ * Usa las MISMAS validaciones que el editor de direcciones —`validateCustomerName`
+ * y el teléfono argentino normalizado— y la misma RPC (`repo.saveProfile`). Si
+ * acá se escribiera otra regla, un dato aceptado por un camino sería rechazado
+ * por el otro y la persona no tendría forma de saber cuál vale.
+ */
+async function guardarIdentidadEnLinea() {
+  if (state.savingIdentity) return;
+  const form = checkoutForm();
+  const nombreCrudo = String(form?.querySelector('[name="checkoutIdentityName"]')?.value || '');
+  const telefonoCrudo = String(form?.querySelector('[name="checkoutIdentityPhone"]')?.value || '');
+  // Se guarda ANTES de validar: cualquier salida de acá vuelve a dibujar el
+  // bloque, y sin esto el render lo repinta desde el perfil vacío.
+  state.identityDraft = { name: nombreCrudo, phone: telefonoCrudo };
+
+  const nombre = validateCustomerName(nombreCrudo);
+  if (!nombre.ok) {
+    state.identityError = nombre.message;
+    render();
+    enfocarCampoDeIdentidad('checkoutIdentityName');
+    return;
+  }
+  const telefono = normalizeArgentinePhone(telefonoCrudo);
+  if (!isValidArgentinePhone(telefono)) {
+    state.identityError = 'Ingresá un teléfono argentino válido, con código de área.';
+    render();
+    enfocarCampoDeIdentidad('checkoutIdentityPhone');
+    return;
+  }
+
+  state.savingIdentity = true;
+  state.identityError = '';
+  render();
+  try {
+    // El MISMO repositorio que usa el editor de direcciones: `customerProfiles`,
+    // no el de pedidos. Guardar por otra puerta sería la segunda lógica de
+    // perfil que este cambio viene justamente a no crear.
+    const repo = getOrderRepository()?.customerProfiles;
+    if (!repo?.saveProfile) {
+      state.identityError = 'Esta tienda todavía no puede guardar tus datos.';
+      return;
+    }
+    const resultado = await repo.saveProfile({ name: nombre.name, phone: telefono });
+    if (!resultado?.ok) {
+      // El texto lo escribió la persona y no se pierde: `render()` lo vuelve a
+      // pintar desde el perfil, y si el guardado falló los valores siguen en el
+      // DOM hasta que se resuelva.
+      state.identityError = resultado?.message || 'No pudimos guardar tus datos. Probá de nuevo.';
+      return;
+    }
+    state.profile = resultado.profile || { ...(state.profile || {}), name: nombre.name, phone: telefono };
+    state.identityError = '';
+    state.identityDraft = null;
+  } catch (_) {
+    state.identityError = 'No pudimos guardar tus datos. Probá de nuevo.';
+  } finally {
+    state.savingIdentity = false;
+    render();
+  }
+}
+
+function enfocarCampoDeIdentidad(nombreCampo) {
+  const campo = checkoutForm()?.querySelector(`[name="${nombreCampo}"]`);
+  if (campo instanceof HTMLElement) campo.focus({ preventScroll: false });
 }
 
 export function consumeProfileReturnTarget() {

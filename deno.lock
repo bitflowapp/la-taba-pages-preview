@@ -1,7 +1,6 @@
 {
   "version": "5",
   "specifiers": {
-    "npm:@playwright/test@^1.60.0": "1.62.1",
     "npm:@supabase/supabase-js@2.110.8": "2.110.8",
     "npm:@tauri-apps/cli@2.11.4": "2.11.4",
     "npm:esbuild@0.28.1": "0.28.1",
@@ -313,13 +312,6 @@
       "os": ["win32"],
       "cpu": ["x64"]
     },
-    "@playwright/test@1.62.1": {
-      "integrity": "sha512-DTcUc8qii+cpHvtOwggMtBRMjKZHXYWdw8syRYu2vtzuq4Wxphqq4NfCs5Zt44L6mA8rfDfj+PHnxFc/FeK6mQ==",
-      "dependencies": [
-        "playwright"
-      ],
-      "bin": true
-    },
     "@supabase/auth-js@2.110.8": {
       "integrity": "sha512-TQ5neTUDX2C2WmyYa03yGhLMkhdE/SkHXtK8/qxO/APUy3rsymsJCBP48p4jcN6iO2G0ow6RRexQd2mX+dSyJg==",
       "dependencies": [
@@ -473,30 +465,11 @@
       "scripts": true,
       "bin": true
     },
-    "fsevents@2.3.2": {
-      "integrity": "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==",
-      "os": ["darwin"],
-      "scripts": true
-    },
     "iceberg-js@0.8.1": {
       "integrity": "sha512-1dhVQZXhcHje7798IVM+xoo/1ZdVfzOMIc8/rgVSijRK38EDqOJoGula9N/8ZI5RD8QTxNQtK/Gozpr+qUqRRA=="
     },
     "mercadopago@3.2.1": {
       "integrity": "sha512-CFKq5H4XCL8xiLcsFbW84uGZPYnIpE2IRWlDGSHLQf3rszSiHRleWrrg7KG486B46GpJ0gzhvGMdWVwsNKTvFg=="
-    },
-    "playwright-core@1.62.1": {
-      "integrity": "sha512-wPYSwEBJY9GHraISXqyqtx0na0LpO3XEX7jNDhntbex7tzUS7kLnZsOlFruFJB4Hi/rhDMjXGqHewDZ68nYZVw==",
-      "bin": true
-    },
-    "playwright@1.62.1": {
-      "integrity": "sha512-0M+L3LAD8/nm554LOla9Ayx0j0tmFZ0FBcoQ7F1VuVHpM/XpiC8RcDzBQB8W5+hA8L22THxELzeF+2WcUzvcLg==",
-      "dependencies": [
-        "playwright-core"
-      ],
-      "optionalDependencies": [
-        "fsevents"
-      ],
-      "bin": true
     },
     "semver@7.8.5": {
       "integrity": "sha512-Y7/KDsb8LjooZpwaqGyulO6DQlksgCncchHGk+sZIY4SBvUocMBEFH5Ur1fI4dV+Jvl0w6cjvucaIi40puRioA==",
@@ -544,7 +517,7 @@
   "workspace": {
     "packageJson": {
       "dependencies": [
-        "npm:@playwright/test@^1.60.0",
+        "npm:@playwright/test@1.60.0",
         "npm:@supabase/supabase-js@2.110.8",
         "npm:@tauri-apps/cli@2.11.4",
         "npm:esbuild@0.28.1",

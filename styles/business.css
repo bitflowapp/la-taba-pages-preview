@@ -926,6 +926,50 @@ body[data-active-view="business"] .topbar-ops-sound-count {
   overflow-wrap: anywhere;
 }
 
+/*
+ * El contacto, en la tarjeta y no adentro del detalle. Los dos destinos son
+ * enlaces reales —`tel:` y `wa.me`—, así que el sistema operativo hace lo suyo
+ * sin que el panel intermedie. El área táctil llega a 44 px: es la acción que se
+ * toca apurado, de pie y con una mano.
+ */
+.inbox-contact-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 4px 0 0;
+}
+
+.inbox-contact-row a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.inbox-contact-phone {
+  color: var(--taba-text);
+  letter-spacing: 0.01em;
+}
+
+.inbox-contact-wa {
+  color: #25d366;
+}
+
+.inbox-contact-row a:focus-visible {
+  outline: 2px solid #25d366;
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.inbox-contact-row[data-inbox-contact='disabled'] span {
+  color: var(--taba-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .inbox-actions,
 .order-actions {
   display: flex;

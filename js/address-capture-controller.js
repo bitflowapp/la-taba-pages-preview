@@ -598,18 +598,7 @@ export function createAddressCaptureController({
     return `<div class="address-capture"${showHead ? ` role="group" aria-labelledby="address-capture-title-${escapeAttr(scope)}"` : ''} data-address-capture="${escapeAttr(scope)}" data-address-capture-form="${escapeAttr(scope)}">
     ${encabezado}
     ${renderIdentityFields(value)}
-    <div class="address-capture-grid">
-      <label class="address-capture-field"><span>Etiqueta</span><select name="${FIELD.label}">${['Casa', 'Trabajo', 'Otra']
-    .map((option) => `<option value="${option}" ${(value('label') || 'Casa') === option ? 'selected' : ''}>${option}</option>`)
-    .join('')}</select></label>
-      <label class="address-capture-field is-wide"><span>Calle</span><input name="${FIELD.street}" maxlength="120" autocomplete="address-line1" enterkeyhint="next" value="${escapeAttr(value('street'))}" placeholder="Antártida Argentina" ${invalidAttr(FIELD.street)} /></label>
-      <label class="address-capture-field"><span>Número</span><input name="${FIELD.streetNumber}" maxlength="24" inputmode="text" enterkeyhint="next" value="${escapeAttr(value('streetNumber'))}" placeholder="1234, 1234 A o S/N" ${invalidAttr(FIELD.streetNumber)} /></label>
-      <label class="address-capture-field"><span>Piso <em>opcional</em></span><input name="${FIELD.floor}" maxlength="24" autocomplete="address-line2" enterkeyhint="next" value="${escapeAttr(value('floor'))}" /></label>
-      <label class="address-capture-field"><span>Departamento <em>opcional</em></span><input name="${FIELD.apartment}" maxlength="24" autocomplete="address-line2" enterkeyhint="next" value="${escapeAttr(value('apartment'))}" /></label>
-      ${renderNeighborhoodField(String(value('neighborhood') || ''))}
-      <label class="address-capture-field is-full"><span>Referencias <em>opcional</em></span><textarea name="${FIELD.reference}" maxlength="180" rows="3" placeholder="Ej. Portón negro, tocar timbre 2">${escapeHtml(value('reference'))}</textarea></label>
-      <p class="address-capture-area is-full">Guardamos la localidad como <strong>${escapeHtml(area)}</strong>. Lo que usa quien reparte es el punto que confirmás acá abajo.</p>
-    </div>
+    ${renderAddressFields(value, area)}
     ${renderDeliveryLocationStep(state.draft, {
     saving: state.saving,
     mapAvailable: !state.mapUnavailable && mapLibraryAvailable(),
@@ -623,6 +612,50 @@ export function createAddressCaptureController({
       <button class="ghost-button compact" type="button" data-profile-action="capture-close">Cancelar</button>
     </div>
   </div>`;
+  }
+
+  /*
+   * «¿Dónde te lo llevamos?» es UNA pregunta, no un alta de cliente.
+   *
+   * Arriba queda lo que define la dirección y sin lo cual no se puede guardar
+   * —calle y número, que son exactamente lo que exige
+   * `validateAddressCandidate`—. Todo lo demás baja a un pliegue: la etiqueta
+   * (que ya tiene un default seguro, «Casa»), piso, departamento, barrio y
+   * referencias. Ninguno bloquea el guardado.
+   *
+   * EXCEPCIÓN DELIBERADA, y por eso no es una lista fija: si el comercio EXIGE
+   * cobertura y todavía no hay barrio elegido, el pliegue arranca ABIERTO. El
+   * barrio es una de las dos entradas con las que el backend resuelve si puede
+   * entregar; esconderlo ahí devolvería un rechazo cuyo motivo no está a la
+   * vista, que es el mismo pozo que este trabajo vino a tapar.
+   *
+   * El punto del mapa NO baja acá: sigue afuera y sigue siendo obligatorio.
+   */
+  function renderAddressFields(value, area) {
+    const { areas, coverageEnforced } = getCommerceAvailability();
+    const barrioActual = String(value('neighborhood') || '');
+    const barrioPendiente = coverageEnforced && areas.length > 0 && !barrioActual;
+    const detalleAbierto = barrioPendiente
+      || Boolean(value('floor') || value('apartment') || value('reference') || barrioActual);
+
+    return `
+    <div class="address-capture-grid">
+      <label class="address-capture-field is-wide"><span>Calle</span><input name="${FIELD.street}" maxlength="120" autocomplete="address-line1" enterkeyhint="next" value="${escapeAttr(value('street'))}" placeholder="Antártida Argentina" ${invalidAttr(FIELD.street)} /></label>
+      <label class="address-capture-field"><span>Número</span><input name="${FIELD.streetNumber}" maxlength="24" inputmode="text" enterkeyhint="next" value="${escapeAttr(value('streetNumber'))}" placeholder="1234, 1234 A o S/N" ${invalidAttr(FIELD.streetNumber)} /></label>
+      <p class="address-capture-area is-full">Guardamos la localidad como <strong>${escapeHtml(area)}</strong>. Lo que usa quien reparte es el punto que confirmás acá abajo.</p>
+    </div>
+    <details class="address-capture-optional" data-address-capture-optional ${detalleAbierto ? 'open' : ''}>
+      <summary>Agregar detalles de entrega${barrioPendiente ? ' (elegí tu barrio)' : ''}</summary>
+      <div class="address-capture-grid">
+        <label class="address-capture-field"><span>Etiqueta</span><select name="${FIELD.label}">${['Casa', 'Trabajo', 'Otra']
+      .map((option) => `<option value="${option}" ${(value('label') || 'Casa') === option ? 'selected' : ''}>${option}</option>`)
+      .join('')}</select></label>
+        <label class="address-capture-field"><span>Piso <em>opcional</em></span><input name="${FIELD.floor}" maxlength="24" autocomplete="address-line2" enterkeyhint="next" value="${escapeAttr(value('floor'))}" /></label>
+        <label class="address-capture-field"><span>Departamento <em>opcional</em></span><input name="${FIELD.apartment}" maxlength="24" autocomplete="address-line2" enterkeyhint="next" value="${escapeAttr(value('apartment'))}" /></label>
+        ${renderNeighborhoodField(barrioActual)}
+        <label class="address-capture-field is-full"><span>Referencias <em>opcional</em></span><textarea name="${FIELD.reference}" maxlength="180" rows="3" placeholder="Ej. Portón negro, tocar timbre 2">${escapeHtml(value('reference'))}</textarea></label>
+      </div>
+    </details>`;
   }
 
   function renderIdentityFields(value) {
@@ -691,7 +724,17 @@ export function createAddressCaptureController({
       state.focusSelector = '';
       setTimeout(() => {
         const target = root?.querySelector(selector);
-        if (target instanceof HTMLElement) target.focus({ preventScroll: false });
+        if (!(target instanceof HTMLElement)) return;
+        /*
+         * Desde que los detalles de entrega viven plegados, un campo con error
+         * puede estar dentro del `<details>` cerrado. Enfocarlo sin abrirlo
+         * dejaría el mensaje señalando algo que no se ve —y el foco en un
+         * control invisible—: exactamente la instrucción imposible que este
+         * trabajo vino a eliminar. Se abre el pliegue antes de enfocar.
+         */
+        const pliegue = target.closest('details');
+        if (pliegue && !pliegue.open) pliegue.open = true;
+        target.focus({ preventScroll: false });
       }, 0);
     }
   }

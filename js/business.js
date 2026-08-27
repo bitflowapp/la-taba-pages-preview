@@ -21,7 +21,7 @@ import {
   getBusinessMetrics,
   getLowStockProducts as selectLowStockProducts,
 } from './core/business-metrics.js';
-import { buildCustomerSignals } from './core/customer-profile.js';
+import { buildCustomerSignals, createCustomerSignalsIndex } from './core/customer-profile.js';
 import { renderOrderTimeline } from './core/order-timeline.js';
 import {
   BUSINESS_CANCEL_REASONS,
@@ -166,12 +166,28 @@ export function lockAdmin() {
   setState({ adminUnlocked: false });
 }
 
+/*
+ * El índice de señales del render en curso. Vive acá, y no como argumento
+ * enhebrado por seis firmas, porque lo consume UNA función —la tarjeta— y lo
+ * produce UNA —el render—. Se limpia al terminar para que una tarjeta dibujada
+ * fuera de un render no lea un índice viejo.
+ */
+let currentSignalsIndex = null;
+let currentSignalsOrders = null;
+
+function signalsSourceOrders() {
+  if (currentSignalsOrders) return currentSignalsOrders;
+  return getState().orders.filter((candidate) => !candidate.internalSeed);
+}
+
 export function renderBusinessDashboard() {
   const container = document.querySelector('[data-business-dashboard]');
   if (!container) return;
 
   const state = getState();
   const operationalOrders = state.orders.filter((order) => !order.internalSeed);
+  currentSignalsOrders = operationalOrders;
+  currentSignalsIndex = createCustomerSignalsIndex(operationalOrders);
   const operationalState = { ...state, orders: operationalOrders };
   const metrics = getBusinessMetrics(operationalOrders, state.products);
   const report = buildBusinessReport(operationalOrders, { period: businessReportPeriod });
@@ -189,6 +205,8 @@ export function renderBusinessDashboard() {
   const todayLabel = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'long' }).format(new Date());
 
   syncBusinessTopbar({ todayLabel, receivedCount: receivedOrders.length });
+
+  const contexto = capturarContextoDeLaBandeja(container);
 
   container.innerHTML = `
     <div class="business-main business-inbox-main">
@@ -220,6 +238,88 @@ export function renderBusinessDashboard() {
     </div>
     ${isBusinessDesktop() ? '' : renderBusinessBottomNav()}
   `;
+  restaurarContextoDeLaBandeja(container, contexto);
+  currentSignalsIndex = null;
+  currentSignalsOrders = null;
+}
+
+/*
+ * LO QUE EL OPERADOR ESTABA HACIENDO.
+ *
+ * El panel se vuelve a dibujar entero con CADA evento de tiempo real, y en un
+ * turno movido eso es cada pocos segundos. Medido con el banco: en 50, 100 y
+ * 500 pedidos, al entrar un pedido nuevo se perdía SIEMPRE el `<details>`
+ * abierto y el foco. Traducido: Walter abre un pedido para leer la dirección,
+ * entra otro pedido, y el detalle se le cierra en la cara.
+ *
+ * No es un problema de velocidad y no se arregla yendo más rápido. Se arregla
+ * acordándose: qué detalles estaban abiertos, dónde estaba el foco y dónde
+ * estaba el scroll, y reponiéndolo después de dibujar. Es la mitad del valor de
+ * un render granular, sin motor de diff ni framework nuevo.
+ */
+function capturarContextoDeLaBandeja(container) {
+  try {
+    const abiertos = [...container.querySelectorAll('[data-inbox-order] details[open]')]
+      .map((detalle) => detalle.closest('[data-inbox-order]')?.getAttribute('data-inbox-order'))
+      .filter(Boolean);
+    const activo = document.activeElement;
+    const dentro = activo && activo !== document.body && container.contains(activo);
+    const scroller = container.querySelector('[data-order-inbox]');
+    return {
+      abiertos,
+      // El foco se repone por el `data-*` que identifica al control, no por su
+      // posición: después del render el nodo es otro, pero su contrato es el mismo.
+      foco: dentro ? selectorEstableDeFoco(activo) : '',
+      scrollBandeja: scroller ? scroller.scrollTop : 0,
+      scrollDocumento: document.scrollingElement ? document.scrollingElement.scrollTop : 0,
+    };
+  } catch (_) {
+    return null;
+  }
+}
+
+/*
+ * `data-order-advance` va PRIMERO porque es la acción primaria de la tarjeta
+ * —«Aceptar», «Marcar listo»— y es la que un operador tiene enfocada cuando
+ * está por tocarla. Es exactamente el foco que no se puede perder.
+ */
+const ATRIBUTOS_DE_FOCO = [
+  'data-order-advance', 'data-order-select', 'data-order-track', 'data-order-ticket',
+  'data-order-cancel', 'data-open-admin-view', 'data-business-view', 'data-inbox-tab',
+];
+
+function selectorEstableDeFoco(nodo) {
+  for (const atributo of ATRIBUTOS_DE_FOCO) {
+    const valor = nodo.getAttribute?.(atributo);
+    if (valor !== null && valor !== undefined) {
+      return `[${atributo}="${CSS.escape(valor)}"]`;
+    }
+  }
+  const nombre = nodo.getAttribute?.('name');
+  return nombre ? `[name="${CSS.escape(nombre)}"]` : '';
+}
+
+function restaurarContextoDeLaBandeja(container, contexto) {
+  if (!contexto) return;
+  try {
+    for (const id of contexto.abiertos) {
+      const detalle = container.querySelector(`[data-inbox-order="${CSS.escape(id)}"] details`);
+      if (detalle) detalle.open = true;
+    }
+    const scroller = container.querySelector('[data-order-inbox]');
+    if (scroller && contexto.scrollBandeja) scroller.scrollTop = contexto.scrollBandeja;
+    if (document.scrollingElement && contexto.scrollDocumento) {
+      document.scrollingElement.scrollTop = contexto.scrollDocumento;
+    }
+    if (contexto.foco) {
+      const objetivo = container.querySelector(contexto.foco);
+      // `preventScroll`: reponer el foco no puede volver a mover la bandeja que
+      // se acaba de dejar donde estaba.
+      if (objetivo && typeof objetivo.focus === 'function') objetivo.focus({ preventScroll: true });
+    }
+  } catch (_) {
+    // Reponer el contexto es una mejora, nunca una condición para dibujar.
+  }
 }
 
 // Navegación del panel: cuatro destinos fijos en móvil (Pedidos · Métricas ·
@@ -669,9 +769,18 @@ function inboxOrderCard(order, options = {}) {
   // decisión vive una sola vez, en el detalle.
   const compact = options.compact === true;
   const prepMinutes = normalizePreparationMinutes(order.delivery?.estimatedPreparationMinutes, 0);
+  /*
+   * Esto llamaba a `getState()` y filtraba la lista ENTERA de pedidos una vez
+   * POR TARJETA, y `buildCustomerSignals` volvía a normalizarla y ordenarla
+   * adentro. Con N pedidos eran N×N normalizaciones: 284 ms con 100 y 7 435 ms
+   * con 500, medidos en el panel. El índice se arma una sola vez por render
+   * (`beginCustomerSignalsRender`) y se comparte; las señales son idénticas.
+   */
   const customerSignals = buildCustomerSignals(
-    getState().orders.filter((candidate) => !candidate.internalSeed),
+    signalsSourceOrders(),
     order,
+    new Date(),
+    { index: currentSignalsIndex },
   );
   const addressLabel = address.savedLabel
     ? `${address.savedLabel} · ${address.label || order.address}`
@@ -721,6 +830,7 @@ function inboxOrderCard(order, options = {}) {
             <strong>${escapeHtml(order.customerName)}</strong>
             <span class="inbox-type ${isPickup ? 'pickup' : 'delivery'}">${isPickup ? 'Retiro en local' : 'Delivery'}</span>
           </div>
+          ${renderInboxContactRow(order, phone)}
           <p class="inbox-status-copy">${itemCount} ${itemCount === 1 ? 'unidad' : 'unidades'} · ${money(order.total)}</p>
           ${isPickup ? '' : `<p class="inbox-address-summary">${escapeHtml(addressLabel)}</p>`}
           ${prepMinutes > 0 && !isTerminalOrderStatus(order.status) ? `<p class="inbox-prep-summary">Preparación estimada: <strong>${prepMinutes} min</strong></p>` : ''}
@@ -778,6 +888,33 @@ function inboxOrderCard(order, options = {}) {
         </details>
       </div>
     </article>`;
+}
+
+/*
+ * EL TELÉFONO, EN LA TARJETA.
+ *
+ * Estaba dentro de `<details> Ver datos y productos`, así que llamar a quien
+ * hizo el pedido —lo primero que hace un local cuando algo no cierra: falta una
+ * aclaración, el timbre no anda, el producto se acabó— costaba abrir el detalle
+ * primero. En un teléfono, con la bandeja llena, eso es un toque de más sobre
+ * la acción más urgente que tiene el mostrador.
+ *
+ * No se inventa nada: el número es `order.customerPhone` y el enlace de
+ * WhatsApp usa `wa.me` con los dígitos normalizados, que es exactamente la
+ * convención que este panel ya usaba adentro del detalle. Sin teléfono no se
+ * dibuja la fila —no hay un número que mostrar— y en modo vitrina el contacto
+ * sigue desactivado, como en el resto del panel.
+ */
+function renderInboxContactRow(order, phone) {
+  const visible = String(order.customerPhone || '').trim();
+  if (!visible) return '';
+  if (isShowcaseMode()) {
+    return `<p class="inbox-contact-row" data-inbox-contact="disabled"><span>${escapeHtml(visible)}</span></p>`;
+  }
+  return `<p class="inbox-contact-row" data-inbox-contact="${escapeHtml(order.id)}">
+            <a class="inbox-contact-phone" href="tel:${encodeURIComponent(visible)}" aria-label="Llamar a ${escapeHtml(order.customerName)}">${escapeHtml(visible)}</a>
+            ${phone ? `<a class="inbox-contact-wa" href="https://wa.me/${phone}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp con ${escapeHtml(order.customerName)}">WhatsApp</a>` : ''}
+          </p>`;
 }
 
 // Detalle del master-detail de escritorio. Usa exactamente las mismas piezas

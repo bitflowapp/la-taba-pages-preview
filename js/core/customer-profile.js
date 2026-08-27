@@ -157,19 +157,69 @@ export function normalizeProfileOrder(order) {
   };
 }
 
-export function buildCustomerSignals(orders = [], order = null, now = new Date()) {
+/*
+ * EL ÍNDICE QUE CONVIERTE UNA BANDEJA CUADRÁTICA EN UNA LINEAL.
+ *
+ * `buildCustomerSignals` normaliza y ordena la lista ENTERA de pedidos para
+ * calcular las señales de UNO. La bandeja del negocio la llama una vez por
+ * tarjeta, así que con N pedidos hacía N×N normalizaciones más N ordenamientos.
+ *
+ * Medido en el panel, antes de esto: 284 ms con 100 pedidos y 7 435 ms con 500
+ * —26× el costo por 5× los pedidos—. De esos 7,5 segundos, 7,44 eran construir
+ * el HTML y sólo 75 ms parsearlo: el cuello no estaba en el DOM, estaba acá.
+ *
+ * El índice hace ese trabajo UNA vez por render y lo comparte entre todas las
+ * tarjetas. No cambia ninguna señal: es exactamente la misma agrupación, sólo
+ * que calculada una vez.
+ */
+export function createCustomerSignalsIndex(orders = []) {
+  const porIdentidad = new Map();
+  for (const raw of Array.isArray(orders) ? orders : []) {
+    const entry = normalizeProfileOrder(raw);
+    if (!entry || !entry.identityKey || entry.status === 'cancelled') continue;
+    const grupo = porIdentidad.get(entry.identityKey);
+    if (grupo) grupo.orders.push(entry);
+    // `resumen` se llena la primera vez que alguien lo pide y se reusa. Un
+    // cliente con 500 pedidos activos hacía que CADA tarjeta recorriera sus 500
+    // para totalizar lo mismo: ése era el cuadrático que quedaba después de
+    // agrupar. Depende sólo de la identidad, así que se calcula una vez.
+    else porIdentidad.set(entry.identityKey, { orders: [entry], resumen: null });
+  }
+  for (const grupo of porIdentidad.values()) {
+    grupo.orders.sort((a, b) => orderTime(a) - orderTime(b) || a.id.localeCompare(b.id));
+  }
+  return porIdentidad;
+}
+
+export function buildCustomerSignals(orders = [], order = null, now = new Date(), { index = null } = {}) {
   const normalizedOrder = normalizeProfileOrder(order);
   if (!normalizedOrder) return emptyCustomerSignals();
   const identityKey = normalizedOrder.identityKey;
   if (!identityKey) return emptyCustomerSignals();
 
-  const matching = (Array.isArray(orders) ? orders : [])
-    .map(normalizeProfileOrder)
-    .filter((entry) => entry && entry.identityKey === identityKey && entry.status !== 'cancelled');
-  if (!matching.some((entry) => entry.id === normalizedOrder.id) && normalizedOrder.status !== 'cancelled') {
+  // Con índice se toma el grupo ya normalizado y ordenado; sin él se conserva
+  // el camino de siempre, que es el que usan el perfil del cliente y los tests.
+  const desdeIndice = index instanceof Map;
+  const entrada = desdeIndice ? (index.get(identityKey) || { orders: [], resumen: null }) : null;
+  const grupo = desdeIndice ? entrada.orders : null;
+  const yaEsta = desdeIndice
+    ? grupo.some((entry) => entry.id === normalizedOrder.id)
+    : false;
+  const matching = desdeIndice
+    ? (yaEsta || normalizedOrder.status === 'cancelled' ? grupo : [...grupo, normalizedOrder])
+    : (Array.isArray(orders) ? orders : [])
+      .map(normalizeProfileOrder)
+      .filter((entry) => entry && entry.identityKey === identityKey && entry.status !== 'cancelled');
+  if (!desdeIndice
+    && !matching.some((entry) => entry.id === normalizedOrder.id)
+    && normalizedOrder.status !== 'cancelled') {
     matching.push(normalizedOrder);
   }
-  matching.sort((a, b) => orderTime(a) - orderTime(b) || a.id.localeCompare(b.id));
+  // El grupo del índice YA viene ordenado. Reordenarlo por tarjeta es un
+  // n·log n por tarjeta que no cambia nada; sólo se ordena si se agregó algo.
+  if (!desdeIndice || !yaEsta) {
+    matching.sort((a, b) => orderTime(a) - orderTime(b) || a.id.localeCompare(b.id));
+  }
 
   const currentIndex = matching.findIndex((entry) => entry.id === normalizedOrder.id);
   const previousOrders = currentIndex >= 0
@@ -178,6 +228,19 @@ export function buildCustomerSignals(orders = [], order = null, now = new Date()
   const orderCount = normalizedOrder.status === 'cancelled' ? previousOrders.length : previousOrders.length + 1;
   const lastPreviousOrder = previousOrders[previousOrders.length - 1] || null;
   const loyalty = calculateLoyaltyProgress(orderCount);
+  /*
+   * El resumen sólo depende del conjunto `matching`. Cuando ese conjunto es el
+   * grupo del índice tal cual —el caso de casi todas las tarjetas—, se calcula
+   * una vez por identidad y se reusa. Si esta tarjeta agregó su propio pedido al
+   * grupo, el conjunto es otro y se calcula aparte, sin ensuciar la caché.
+   */
+  let resumen;
+  if (desdeIndice && matching === grupo) {
+    if (!entrada.resumen) entrada.resumen = summarizeCustomerOrders(matching, { yaNormalizados: true });
+    resumen = entrada.resumen;
+  } else {
+    resumen = summarizeCustomerOrders(matching, { yaNormalizados: desdeIndice });
+  }
 
   return {
     identityKey,
@@ -187,10 +250,12 @@ export function buildCustomerSignals(orders = [], order = null, now = new Date()
     isRecurringCustomer: previousOrders.length > 0,
     previousOrderCount: previousOrders.length,
     orderCount,
-    totalSpent: summarizeCustomerOrders(matching).totalSpent,
+    // Se llamaba DOS veces con la misma lista, y cada llamada la vuelve a
+    // normalizar entera. Una sola pasada da lo mismo.
+    totalSpent: resumen.totalSpent,
     lastPreviousOrderAt: lastPreviousOrder?.createdAt || '',
     lastPreviousOrderLabel: formatDaysAgo(lastPreviousOrder?.createdAt, now),
-    topProducts: summarizeCustomerOrders(matching).topProducts,
+    topProducts: resumen.topProducts,
     loyalty,
     loyaltyCopy: loyaltyProgressCopy(loyalty),
     benefitAvailable: loyalty.benefitAvailable,
@@ -203,10 +268,21 @@ export function clearCustomerProfileForTests() {
   persistProfile(null);
 }
 
-function summarizeCustomerOrders(orders = []) {
-  const validOrders = (Array.isArray(orders) ? orders : [])
-    .map(normalizeProfileOrder)
-    .filter((order) => order && order.status !== 'cancelled');
+/*
+ * `orders` puede venir YA normalizado —es lo que entrega el índice de señales—.
+ * Volver a normalizarlo cuesta una pasada completa por cada tarjeta de la
+ * bandeja, y con un cliente que hizo muchos pedidos eso vuelve a ser cuadrático:
+ * es lo que quedaba después de arreglar el primer cuadrático, y se ve en el
+ * perfil de CPU como `normalizeProfileOrder` en el 41% de las muestras.
+ *
+ * `yaNormalizados` no afloja nada: cuando es falso —el perfil del cliente, los
+ * tests— se normaliza igual que siempre.
+ */
+function summarizeCustomerOrders(orders = [], { yaNormalizados = false } = {}) {
+  const lista = Array.isArray(orders) ? orders : [];
+  const validOrders = yaNormalizados
+    ? lista.filter((order) => order && order.status !== 'cancelled')
+    : lista.map(normalizeProfileOrder).filter((order) => order && order.status !== 'cancelled');
   const productTally = new Map();
   let totalSpent = 0;
   let lastOrderAt = '';

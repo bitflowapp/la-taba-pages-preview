@@ -382,7 +382,9 @@
     width: 42px;
     height: 4px;
     margin: 10px auto 2px;
-    border-radius: 999px;
+    /* Es el mismo valor que `--radius-pill`. Escrito a mano, el día que la
+       píldora del sistema cambie este tirador se queda atrás en silencio. */
+    border-radius: var(--radius-pill);
     background: var(--shelf-line-strong);
     content: '';
   }
@@ -973,7 +975,8 @@
   gap: 10px;
   padding: 16px;
   border: 1px solid rgb(201 149 62 / 32%);
-  border-radius: 18px;
+  /* Mismo valor que `--radius-lg`, por el mismo motivo que arriba. */
+  border-radius: var(--radius-lg);
   background: var(--shelf);
   box-shadow: var(--shadow-shelf-flat);
   color: var(--shelf-ink);

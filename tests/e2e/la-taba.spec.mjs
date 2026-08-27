@@ -215,12 +215,12 @@ test('flujo cliente con delivery', async ({ page }) => {
   await page.getByLabel('Delivery').check();
 
   // Contrato nuevo: el checkout no valida datos de cliente al confirmar, porque
-  // ya no los pide. Un Perfil incompleto o sin dirección se bloquea antes, con
-  // un camino explícito hacia Perfil.
+  // ya no los pide sueltos. Un Perfil incompleto o sin dirección se bloquea
+  // antes, y los dos se resuelven EN esta pantalla.
   await seedCheckoutProfile(page, { name: '', phone: '', addresses: [] });
   await expect(page.locator('[data-profile-block="incomplete"]')).toBeVisible();
   await expect(
-    page.locator('[data-profile-block="incomplete"] [data-profile-checkout-action="edit-profile"]'),
+    page.locator('[data-profile-identity-form] [name="checkoutIdentityName"]'),
   ).toBeVisible();
 
   await seedCheckoutProfile(page, { name: 'Walter QA', phone: '2995550000', addresses: [] });

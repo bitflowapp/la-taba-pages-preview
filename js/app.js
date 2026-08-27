@@ -1153,7 +1153,11 @@ function showCheckoutInlineError(form, message) {
 // nombra lo que el botón de al lado realmente hace: mandar a otra pantalla a
 // quien ya tiene el formulario delante sería una instrucción falsa.
 const BLOQUEOS_DE_PERFIL = Object.freeze({
-  incomplete: 'Completá tu nombre y teléfono en Perfil para confirmar el pedido.',
+  // «en Perfil» dejó de ser cierto: el nombre y el WhatsApp se completan ACÁ,
+  // en el checkout, desde que existe el editor en línea. Mandar a otra pantalla
+  // a quien ya tiene el campo delante sería la misma instrucción imposible que
+  // este mensaje vino a reemplazar.
+  incomplete: 'Completá tu nombre y WhatsApp acá para confirmar el pedido.',
   'no-address': 'Agregá tu dirección de entrega acá para confirmar el pedido.',
   'no-confirmed-location': 'Confirmá el punto de entrega de tu dirección para confirmar el pedido.',
   unsupported: 'Esta tienda todavía no toma pedidos por la app.',
@@ -1168,7 +1172,22 @@ function bloqueoDePerfilEnCheckout(form) {
   const mensaje = BLOQUEOS_DE_PERFIL[clase]
     || String(bloque.querySelector('strong')?.textContent || '').trim()
     || 'Completá tus datos de entrega para confirmar el pedido.';
-  return { clase, mensaje, bloque, accion: bloque.querySelector('[data-profile-checkout-action]') };
+  /*
+   * El foco va a lo que RESUELVE el bloqueo, y desde que el nombre y el
+   * WhatsApp se completan en línea eso ya no es siempre un botón: con los campos
+   * vacíos, lo que resuelve es escribir. Mandar el foco al botón «Guardar y
+   * continuar» sería ofrecerle a la persona una acción que todavía no puede
+   * ejecutar. Si el bloque no tiene campos —«agregá una dirección»— sigue
+   * ganando su botón, que ahí sí es el siguiente paso.
+   */
+  const campoVacio = [...bloque.querySelectorAll('input, select, textarea')]
+    .find((campo) => !String(campo.value || '').trim());
+  return {
+    clase,
+    mensaje,
+    bloque,
+    accion: campoVacio || bloque.querySelector('[data-profile-checkout-action]'),
+  };
 }
 
 function bindEvents() {

@@ -471,6 +471,10 @@ test.describe('Dirección · red y navegación', () => {
     const editor = page.locator('[data-address-capture="sheet"]');
     await editor.locator('[name="captureAddressStreet"]').fill('Río Limay');
     await editor.locator('[name="captureAddressNumber"]').fill('64');
+    // Las referencias viven bajo «Agregar detalles de entrega»: no son una
+    // decisión de la primera compra y no ocupan el espacio principal. Se abre
+    // igual que lo haría una persona que sí quiere dejar una indicación.
+    await editor.locator('[data-address-capture-optional] > summary').click();
     await editor.locator('[name="captureAddressReference"]').fill('Portón de madera');
     const paso = editor.locator('[data-location-step]');
     await paso.locator('[data-profile-action="open-location-map"]').click();

@@ -16,7 +16,11 @@ export function createSupabaseBusinessRepository({ client, businessId }) {
     async snapshot() {
       const { data, error, status } = await client
         .from('orders')
-        .select('*,order_items(*),order_events(*),order_combos(*)')
+        // Sin `order_events(*)`, igual que el snapshot autoritativo: la bandeja
+        // no dibuja eventos y el historial se reconstruye de las columnas de
+        // fecha del pedido. La bitácora exacta se pide por pedido, al abrir la
+        // auditoría. Las dos consultas tienen que pedir lo mismo o divergen.
+        .select('*,order_items(*),order_combos(*)')
         .eq('business_id', businessId)
         .eq('origin', 'production')
         .order('created_at', { ascending: true })

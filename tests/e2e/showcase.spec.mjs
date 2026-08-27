@@ -449,13 +449,17 @@ test('showcase covers profile variants, delivery/pickup and preserves cart on pr
   await expect(checkout.locator('[data-checkout-warning]')).toBeVisible();
   await expect(checkout.locator('[data-checkout-warning]')).toContainText(/perfil|nombre|tel[eé]fono/i);
   await expectActiveView(page, 'cart');
-  const incompleteEdit = page.locator('[data-profile-block="incomplete"] [data-profile-checkout-action="edit-profile"]');
-  await expect(incompleteEdit).toBeVisible();
-  await incompleteEdit.click();
-  await expect(page.locator('[data-customer-profile]')).toBeVisible();
-  await page.locator('[data-profile-action="return-to-checkout"]').click();
+  /*
+   * El bloqueo por datos incompletos se resuelve EN el checkout: ya no hay un
+   * botón que mande a Perfil. Lo que se sigue midiendo es lo mismo —que el
+   * recorrido guiado no se quede sin salida y el carrito sobreviva—, sobre el
+   * camino nuevo.
+   */
+  const identidad = page.locator('[data-profile-identity-form]');
+  await expect(identidad).toBeVisible();
+  await expect(identidad.locator('[name="checkoutIdentityName"]')).toBeVisible();
+  await expect(identidad.locator('[data-profile-checkout-action="edit-profile"]')).toHaveCount(0);
   await expectActiveView(page, 'cart');
-  await expect(page.locator('[data-profile-block="incomplete"]')).toBeVisible();
   await expect(cartItems).toHaveCount(1);
 
   const completeAddresses = buildCheckoutAddresses(4, 'showcase-complete');

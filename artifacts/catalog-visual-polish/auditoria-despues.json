@@ -1,0 +1,61 @@
+{
+  "etiqueta": "despues",
+  "viewports": [
+    {
+      "viewport": "320",
+      "hallazgos": [],
+      "contexto": {
+        "fondoPagina": "rgb(16, 19, 23)",
+        "fondoTarjeta": "rgb(29, 34, 42)",
+        "tarjetas": 80,
+        "radioTarjeta": "20px",
+        "bordeTarjeta": "1px solid rgba(0, 0, 0, 0)",
+        "sombraTarjeta": "rgba(0, 0, 0, 0.38) 0px 6px 18px 0px, rgba(255, 255, 255, 0.11) 0px 0px 0px 1px inset, rgba(208, 0, 13, 0.055) 0px 2px 5px -3px, rgba(208, 0, 13, 0.12) 0px 8px 18px -8px",
+        "gapGrilla": "8px",
+        "columnas": "300px"
+      }
+    },
+    {
+      "viewport": "390",
+      "hallazgos": [],
+      "contexto": {
+        "fondoPagina": "rgb(16, 19, 23)",
+        "fondoTarjeta": "rgb(29, 34, 42)",
+        "tarjetas": 80,
+        "radioTarjeta": "20px",
+        "bordeTarjeta": "1px solid rgba(0, 0, 0, 0)",
+        "sombraTarjeta": "rgba(0, 0, 0, 0.38) 0px 6px 18px 0px, rgba(255, 255, 255, 0.11) 0px 0px 0px 1px inset, rgba(208, 0, 13, 0.055) 0px 2px 5px -3px, rgba(208, 0, 13, 0.12) 0px 8px 18px -8px",
+        "gapGrilla": "11px",
+        "columnas": "177.5px 177.5px"
+      }
+    },
+    {
+      "viewport": "430",
+      "hallazgos": [],
+      "contexto": {
+        "fondoPagina": "rgb(16, 19, 23)",
+        "fondoTarjeta": "rgb(29, 34, 42)",
+        "tarjetas": 80,
+        "radioTarjeta": "20px",
+        "bordeTarjeta": "1px solid rgba(0, 0, 0, 0)",
+        "sombraTarjeta": "rgba(0, 0, 0, 0.38) 0px 6px 18px 0px, rgba(255, 255, 255, 0.11) 0px 0px 0px 1px inset, rgba(208, 0, 13, 0.055) 0px 2px 5px -3px, rgba(208, 0, 13, 0.12) 0px 8px 18px -8px",
+        "gapGrilla": "11px",
+        "columnas": "197.5px 197.5px"
+      }
+    },
+    {
+      "viewport": "desktop",
+      "hallazgos": [],
+      "contexto": {
+        "fondoPagina": "rgb(16, 19, 23)",
+        "fondoTarjeta": "rgb(29, 34, 42)",
+        "tarjetas": 80,
+        "radioTarjeta": "20px",
+        "bordeTarjeta": "1px solid rgba(0, 0, 0, 0)",
+        "sombraTarjeta": "rgba(0, 0, 0, 0.38) 0px 6px 18px 0px, rgba(255, 255, 255, 0.11) 0px 0px 0px 1px inset, rgba(208, 0, 13, 0.055) 0px 2px 5px -3px, rgba(208, 0, 13, 0.12) 0px 8px 18px -8px",
+        "gapGrilla": "18px",
+        "columnas": "271.5px 271.5px 271.5px 271.5px"
+      }
+    }
+  ]
+}

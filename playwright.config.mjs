@@ -137,7 +137,12 @@ export default defineConfig({
       // navegador donde ese camino no existe. Sus tres bloques declaran su
       // propio user agent, así que "Android" y "Escritorio" siguen siendo eso
       // aunque el proyecto traiga un iPhone por defecto.
-      testMatch: /(delivery-location-confirmation|panel-order-recovery|arranque-sin-jerga|production-cart-persistence|mp-back-navigation-ui|checkout-payment-handoff|service-worker-degraded-recovery|storefront-stress-responsive|launch-ux-checkout-reorder|catalog-card-glow|pwa-install)\.spec\.mjs/,
+      // `address-flow` se suma por dos cosas que decide el MOTOR y no el
+      // producto: el zoom automático al enfocar un campo por debajo de 16px es
+      // un comportamiento de Safari en iPhone —y esa suite lo mide en 320, 390 y
+      // 430—, y la hoja de direcciones es un `<dialog>` modal, cuyo atrapado de
+      // foco, cierre con Escape y bloqueo del fondo WebKit implementa aparte.
+      testMatch: /(delivery-location-confirmation|address-flow|panel-order-recovery|arranque-sin-jerga|production-cart-persistence|mp-back-navigation-ui|checkout-payment-handoff|service-worker-degraded-recovery|storefront-stress-responsive|launch-ux-checkout-reorder|catalog-card-glow|pwa-install)\.spec\.mjs/,
       use: { ...devices['iPhone 13'] },
     },
   ],

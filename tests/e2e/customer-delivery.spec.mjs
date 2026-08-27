@@ -550,7 +550,13 @@ test('confirmar sin dirección manda a la dirección, y el pedido sigue intacto'
   const aviso = page.locator('[data-checkout-warning]');
   await expect(aviso).toBeVisible();
   await expect(aviso).toContainText('dirección');
-  await expect(aviso).toContainText('Perfil');
+  // Ya NO dice «en Perfil»: la dirección se completa en esta misma pantalla, y
+  // mandar a otra a quien tiene el formulario delante sería una instrucción
+  // falsa. El foco va al botón que abre ese formulario, que es el que resuelve.
+  await expect(aviso).not.toContainText('Perfil');
+  await expect(
+    page.locator('[data-profile-block="no-address"] [data-profile-checkout-action="new-address"]'),
+  ).toBeFocused();
 
   // El botón vuelve a estar disponible: un paso que todavía no se dio no es un
   // intento fallido, y dejarlo en «Creando pedido…» sería otra forma de mentir.
@@ -561,7 +567,18 @@ test('confirmar sin dirección manda a la dirección, y el pedido sigue intacto'
   await expect(page.locator('[data-view="cart"] [data-cart-inc]').first()).toBeVisible();
 });
 
-test('checkout bloquea sin direcciones y permite volver desde agregar dirección en Perfil', async ({ page }) => {
+/*
+ * ANTES: «checkout bloquea sin direcciones y permite volver desde agregar
+ * dirección en Perfil». El bloqueo sigue existiendo; lo que cambió es dónde se
+ * resuelve.
+ *
+ * Mandar a Perfil con el carrito cargado costaba una vista entera de ida y otra
+ * de vuelta, y la vuelta dependía de una marca en `sessionStorage` que sólo se
+ * escribe cuando el que mandó fue el checkout. Ahora la dirección se completa
+ * acá mismo. Perfil sigue enlazado —«Administrar en Perfil»— para lo que sí es
+ * administración: editar, borrar, cambiar la predeterminada.
+ */
+test('checkout bloquea sin direcciones y la dirección se completa sin salir del pedido', async ({ page }) => {
   const namespace = 'e2e-no-address';
   await page.goto('/?demo=1#catalog');
   await expect(page.locator('[data-view="catalog"] [data-add-product]:not([disabled])').first()).toBeVisible();
@@ -579,15 +596,21 @@ test('checkout bloquea sin direcciones y permite volver desde agregar dirección
   });
 
   await expect(page.locator('[data-profile-block="no-address"]')).toBeVisible();
-  const addAddressAction = page.locator('[data-profile-block="no-address"] [data-profile-checkout-action="add-address"]');
+  const addAddressAction = page.locator('[data-profile-block="no-address"] [data-profile-checkout-action="new-address"]');
   await expect(addAddressAction).toBeVisible();
   await addAddressAction.click();
 
-  const profile = page.locator('[data-customer-profile]');
-  await expect(profile).toBeVisible();
-  await profile.locator('[data-profile-action="return-to-checkout"]').click();
+  // El editor aparece EN EL CARRITO. No hay navegación, así que no hay nada que
+  // recuperar al volver: el carrito nunca se fue de pantalla.
+  const editor = page.locator('[data-address-capture="checkout"]');
+  await expect(editor).toBeVisible();
   await expect(page.locator('body')).toHaveAttribute('data-active-view', 'cart');
+  await expect(page.locator('[data-view="cart"] [data-cart-inc]').first()).toBeVisible();
+
+  // Y cerrarlo devuelve el bloqueo tal como estaba.
+  await editor.locator('[data-address-capture-close]').click();
   await expect(page.locator('[data-profile-block="no-address"]')).toBeVisible();
+  await expect(page.locator('body')).toHaveAttribute('data-active-view', 'cart');
 });
 
 test('checkout permite retiro en local sin direcciones', async ({ page }) => {

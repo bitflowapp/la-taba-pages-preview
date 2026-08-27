@@ -184,8 +184,30 @@ Corre en el gate (`npm run test:webhook`), en su propio paso con `--allow-env`.
 | `npm run secrets:scan` | verde |
 | `npm run mp:gate:produccion-sin-cobro` | **DISABLED**, como corresponde |
 
-El E2E de handoff (10 pruebas, Chromium) pasa completo, incluidas las dos
-nuevas.
+El E2E completo: **508 de 509**. El de handoff (10 pruebas) pasa entero,
+incluidas las dos nuevas.
+
+### La que falla, y por qué no es de esta rama
+
+`service-worker-degraded-recovery.spec.mjs:224` — «el carrito sobrevive intacto a
+una recarga con el borde caído» — pierde una unidad (`:2` → `:1`) al recargar en
+WebKit. Se midió, no se supuso:
+
+| Corrida | CACHE_NAME | Resultado |
+|---|---|---|
+| la prueba sola, `--repeat-each=3` | v90 (esta rama) | 3/3 verde |
+| el archivo entero, `--repeat-each=3` | v90 (esta rama) | falla en `repeat2` |
+| el archivo entero, `--repeat-each=3` | **v89 (main)** | **falla en `repeat2`** |
+
+Con el CACHE_NAME de `main` falla **la misma prueba en la misma repetición**, así
+que el bump de esta rama no la causa. El mecanismo lo confirma: Playwright le da
+a cada prueba un contexto limpio, así que no hay caché vieja de la que migrar —el
+nombre es sólo una clave sobre un almacén vacío—. Es una flake preexistente de
+durabilidad de `localStorage` en WebKit, que aparece bajo la carga del archivo
+completo. CI corre con `retries: 1`.
+
+No se arregla acá a propósito: es un defecto real pero de otro dominio (el
+carrito), y meterlo en una rama de pagos lo escondería.
 
 **El alcohol no se tocó.** Cero migraciones modificadas, cero archivos de
 alcohol en el diff: `alcohol_sales_enabled=false` y sus compuertas siguen
@@ -242,6 +264,29 @@ npm run mp:config:produccion        # tiene que decir PRODUCTION, no DISABLED
 Y recién después: encender `business_payment_settings`, y una compra real de
 monto chico hasta `approved`, verificando que el webhook llegue firmado y que el
 pedido se finalice solo.
+
+**Cómo verificar el webhook sin gastar plata.** El panel de Mercado Pago trae un
+*Simulador de notificaciones* en *Webhooks*, y firma con el mismo secreto de la
+aplicación. Es la única forma oficial de probar la recepción de punta a punta, y
+sólo existe una vez que la aplicación de Walter esté creada. Lo que hay que ver:
+
+```sql
+select event_type, resource_id, signature_valid, processing_status, attempt_count
+  from public.payment_webhook_receipts
+ order by created_at desc limit 5;
+```
+
+`signature_valid = true` prueba el HMAC contra el secreto real. Repetir la misma
+notificación tiene que dejar `processing_status = 'duplicate'` y **no** un
+segundo pedido: eso es la idempotencia, medida contra el proveedor de verdad en
+vez de contra la suite.
+
+> Contexto que ahorra una tarde: con credenciales de PRUEBA, Mercado Pago firma
+> las notificaciones de Checkout Pro con la clave de la aplicación de prueba que
+> auto-provisiona, y el panel no la expone. Por eso en staging la reconciliación
+> se hace leyendo el pago con el access token —más fuerte que el HMAC, porque no
+> toma nada de quien llama— y no por la firma. Con la aplicación productiva de
+> Walter el camino de la firma sí queda comprobable.
 
 > `mercadopago-cancel-payment` **no está desplegada en ningún proyecto**, ni
 > siquiera en staging. Existe en el repositorio y el Panel la va a necesitar la

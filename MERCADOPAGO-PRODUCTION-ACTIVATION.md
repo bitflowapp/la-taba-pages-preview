@@ -3,8 +3,9 @@
 De **«Walter ya creó la aplicación»** a **«primera compra real aprobada»**, sin
 adivinar nada.
 
-Auditado contra producción el **2026-08-27**. Nada de lo que sigue está tomado
-de documentación anterior: cada estado se midió.
+Auditado contra producción el **2026-08-27**. Nada de lo que sigue está tomado de
+documentación anterior: cada estado se midió, y lo que no se pudo verificar no
+está escrito.
 
 ---
 
@@ -13,17 +14,22 @@ de documentación anterior: cada estado se midió.
 | | medido |
 |---|---|
 | Veredicto de Mercado Pago | **DISABLED** |
-| Funciones Edge en el repositorio | 7 |
-| Funciones Edge desplegadas en producción | **0** |
+| Funciones Edge desplegadas en producción | **7 de 7**, todas `ACTIVE` |
+| Secretos productivos cargados | **0 de 7** |
 | Filas en `business_payment_settings` | **0** |
-| Secretos productivos de Mercado Pago cargados | **0 de 7** |
-| `alcohol_sales_enabled` | `false` |
+| `alcohol_sales_enabled` | `false`, con 0 alcohólicos comprables |
 | Productos comprables | 33 de 72 |
 | `commercial:gate` | **TECHNICALLY READY** |
 
-El software está entero. Lo que falta no se programa.
+Las funciones ya están desplegadas y **eso no habilita cobrar nada**: fallan
+cerrado sin secretos. Comprobado contra el endpoint público:
 
-Para volver a medirlo en cualquier momento:
+```
+POST /functions/v1/mercadopago-webhook  →  HTTP 503
+{"ok":false,"code":"PAYMENT_UNAVAILABLE", ...}
+```
+
+Para volver a medirlo:
 
 ```bash
 npm run commercial:gate
@@ -34,83 +40,128 @@ npm run mp:config:produccion
 
 ## 1 · Lo que tiene que aportar Walter
 
-Sin esto no se puede avanzar, y **nada de esto se puede inventar ni deducir**.
+### Credenciales
 
-### Credenciales (de su cuenta de Mercado Pago, aplicación ya creada)
+| dato | dónde lo saca |
+|---|---|
+| **Access Token productivo** | Sus integraciones → la aplicación → Credenciales de producción |
+| **Webhook secret** | Sus integraciones → la aplicación → Webhooks → Firma secreta |
+| **`collector_id`** | Su cuenta → número de usuario (`user_id`) |
+| **`application_id`** | Sus integraciones → la aplicación → número de aplicación |
 
-| dato | dónde lo saca | qué es |
-|---|---|---|
-| **Access Token productivo** | Sus integraciones → la aplicación → Credenciales de producción | La llave que cobra. Es el secreto más sensible del sistema. |
-| **Public Key productiva** | mismo lugar | Identifica la aplicación ante el navegador. No es secreta, pero se trata igual. |
-| **Webhook secret** | Sus integraciones → la aplicación → Webhooks → Firma secreta | Con esto se valida que una notificación es auténtica. |
-| **`collector_id`** | Su cuenta → número de usuario (`user_id`) | Quién cobra. Se guarda en `business_payment_settings`. |
-| **`application_id`** | Sus integraciones → la aplicación → número de aplicación | Qué aplicación cobra. Se guarda en la misma fila. |
+**La Public Key NO hace falta.** Se auditó el código y no aparece en ningún lado.
+Esta integración es Checkout Pro por **redirección a `init_point`**: el navegador
+nunca carga el SDK de Mercado Pago, así que no hay dónde configurarla. Pedirla
+sería inventar un requisito.
 
 ### Decisiones comerciales
 
 Ninguna la puede tomar el software:
 
 1. **Cuotas.** ¿Se aceptan? ¿Hasta cuántas? Sin decisión, se cobra sin cuotas.
-2. **Pago en efectivo por cupón** (`ticket`: Rapipago, Pago Fácil). Se cobra
-   días después y el pedido queda pendiente mientras tanto. Por defecto está
-   **excluido**.
-3. **Política de devoluciones.** ¿Una devolución la aprueba el dueño
-   (`owner_approval`) o alcanza con revisión (`manual_review`)?
-4. **Autorización explícita de la primera compra real**, con plata de verdad.
+2. **Pago en efectivo por cupón** (`ticket`: Rapipago, Pago Fácil). Se cobra días
+   después y el pedido queda pendiente mientras tanto. Por defecto, **excluido**.
+3. **Política de devoluciones**: ¿la aprueba el dueño (`owner_approval`) o alcanza
+   con revisión (`manual_review`)?
+4. **Autorización explícita** para encender el cobro y para la primera compra real.
 
 ---
 
-## 2 · Reglas que no se negocian
+## 2 · Los cuatro estados, y por qué son cuatro
 
-- **El Access Token no se escribe en ningún archivo del repositorio**, ni en un
-  `.env`, ni se pega en un chat, ni se pasa como argumento visible de shell. Va
-  directo al gestor de secretos de Supabase y no sale nunca de ahí.
+`commercial:gate` no contesta «listo / no listo», porque eso escondía un abrazo
+mortal: encender el proveedor exigía haber probado, probar exigía el proveedor
+encendido, y la compuerta pedía el proveedor encendido para dar verde.
+
+| estado | qué significa | quién lo destraba |
+|---|---|---|
+| `COMMERCIAL NOT READY` | algo roto, o falta infraestructura desplegable hoy | este equipo, programando |
+| `TECHNICALLY READY` | código e infraestructura listos; faltan datos de una persona | Walter |
+| `READY TO ENABLE PAYMENT` | **todo** cargado y verificado, interruptor apagado a propósito | una autorización |
+| `READY FOR REAL PAYMENT` | proveedor encendido y todas las compuertas satisfechas | — |
+
+El tercero es el que rompe el círculo: el sistema puede declararse enteramente
+listo **sin haber creado ninguna forma de cobrar**.
+
+### La secuencia
+
+```
+inputs de Walter
+  → secretos y configuración
+  → funciones Edge desplegadas            ← YA HECHO (7 de 7)
+  → business_payment_settings con enabled = FALSE
+  → webhook registrado
+  → gate dice READY TO ENABLE PAYMENT
+  → AUTORIZACIÓN EXPLÍCITA de Walter
+  → enabled = true
+  → primera compra real
+  → confirmar que la pagó el webhook y no la vuelta del navegador
+  → gate dice READY FOR REAL PAYMENT
+```
+
+Hasta que `enabled` pase a `true`, el checkout del cliente no ofrece Mercado
+Pago: no hay forma de cobrar antes de la autorización explícita.
+
+---
+
+## 3 · Reglas que no se negocian
+
+- **El Access Token y el webhook secret no se escriben en ningún archivo del
+  repositorio**, ni se pegan en un chat, ni se pasan como argumento de shell.
 - **No se imprime ningún valor de secreto en ningún log.** Todo lo que verifica
   este procedimiento se contesta por presencia o por huella SHA-256.
-- **No se pide la contraseña de Walter de nada.** Las credenciales las genera él
-  en su panel y las carga él, o las dicta por un canal fuera de banda para que
-  se carguen sin quedar escritas.
-- **Fail-closed.** Falta una pieza, no se cobra. Es el comportamiento actual y no
-  se cambia para acelerar la activación.
+- **No se pide la contraseña de Walter de nada.**
+- **Fail-closed.** Falta una pieza, no se cobra.
 - **Alcohol sigue en `false`.** Activar cobros no habilita alcohol: son dos
-  compuertas distintas y la de alcohol necesita la habilitación de expendio
+  compuertas distintas, y la de alcohol necesita la habilitación de expendio
   acreditada del local.
 
 ---
 
-## 3 · El procedimiento, en orden
+## 4 · El procedimiento
 
-### Paso 1 · Cargar los secretos en Supabase producción
+### Paso 1 · Cargar los secretos
 
-Seis de los siete obligatorios. Se cargan de a uno, de forma interactiva, para
-que el valor no quede en el historial del shell:
+Son siete, y **se cargan de dos maneras distintas**. La diferencia importa.
+
+`supabase secrets set` toma pares `NAME=VALUE` en la línea de comandos —o un
+`--env-file`—. **No pregunta el valor de forma interactiva**; verificado con
+`supabase secrets set --help` en la CLI 2.113.0. Usarla con un Access Token deja
+el token en el historial del shell, que es exactamente lo que hay que evitar.
+
+**Los cuatro sensibles van por el Dashboard**, pegándolos en el navegador:
+
+> Supabase → el proyecto → Edge Functions → **Secrets** → Add new secret
+
+| secreto | de dónde sale |
+|---|---|
+| `MERCADOPAGO_ACCESS_TOKEN` | Walter |
+| `MERCADOPAGO_WEBHOOK_SECRET` | Walter |
+| `PAYMENT_LOG_HASH_SALT` | lo genera este proyecto: cadena aleatoria larga |
+| `PAYMENT_WORKER_SECRET` | ídem |
+
+Los dos últimos no son de Walter. Generarlos con un generador de contraseñas y no
+volver a mirarlos es lo correcto.
+
+**Los tres fijos y no sensibles sí pueden ir por línea de comandos**, porque su
+valor es público y enumerable — está escrito en este mismo documento:
 
 ```bash
-supabase secrets set MERCADOPAGO_ACCESS_TOKEN   --project-ref wwcpogltfgzgkrlilbcd
-supabase secrets set MERCADOPAGO_ENVIRONMENT    --project-ref wwcpogltfgzgkrlilbcd   # valor: production
-supabase secrets set MERCADOPAGO_WEBHOOK_SECRET --project-ref wwcpogltfgzgkrlilbcd
-supabase secrets set PAYMENT_LOG_HASH_SALT      --project-ref wwcpogltfgzgkrlilbcd
-supabase secrets set PAYMENT_WORKER_SECRET      --project-ref wwcpogltfgzgkrlilbcd
-supabase secrets set TABA_CHECKOUT_BASE_URL     --project-ref wwcpogltfgzgkrlilbcd   # valor: https://la-taba.pages.dev
+supabase secrets set MERCADOPAGO_ENVIRONMENT=production \
+  --project-ref wwcpogltfgzgkrlilbcd
+supabase secrets set TABA_CHECKOUT_BASE_URL=https://la-taba.pages.dev \
+  --project-ref wwcpogltfgzgkrlilbcd
+supabase secrets set MERCADOPAGO_PRODUCTION_REVIEW_STATUS=approved \
+  --project-ref wwcpogltfgzgkrlilbcd
 ```
 
-Y uno más, que **también es obligatorio** aunque no sea una credencial:
+`MERCADOPAGO_PRODUCTION_REVIEW_STATUS` **es obligatorio**. Con el entorno en
+`production` y este valor en cualquier otra cosa —`not_requested`, `pending`,
+`rejected`— el veredicto **vuelve a DISABLED** y no se cobra. Está puesto a
+propósito: pasar a producción tiene que ser un acto declarado, no la consecuencia
+de haber cargado un token.
 
-```bash
-supabase secrets set MERCADOPAGO_PRODUCTION_REVIEW_STATUS --project-ref wwcpogltfgzgkrlilbcd   # valor: approved
-```
-
-Es la constancia de que alguien revisó y aprobó pasar a producción. Con el
-entorno en `production` y este valor en cualquier otra cosa —`not_requested`,
-`pending`, `rejected`— el veredicto **vuelve a DISABLED** y no se cobra. Está
-puesto a propósito: pasar a producción tiene que ser un acto declarado, no la
-consecuencia de haber cargado un token.
-
-`PAYMENT_LOG_HASH_SALT` y `PAYMENT_WORKER_SECRET` **no** son de Walter: son
-secretos que genera este proyecto. Cualquier cadena aleatoria larga sirve;
-generarla y no volver a mirarla es lo correcto.
-
-**Verificar sin leer nada:**
+**Verificar sin leer ningún valor:**
 
 ```bash
 npm run mp:config:produccion
@@ -120,29 +171,25 @@ Tiene que listar los siete como presentes y decir `entorno del proveedor …
 production`. El entorno se identifica comparando huellas contra los dos únicos
 valores posibles; el token queda opaco porque su huella no se puede revertir.
 
-### Paso 2 · Desplegar las cinco funciones Edge obligatorias
+### Paso 2 · Funciones Edge — ya está hecho
+
+Las siete están desplegadas y `ACTIVE`. Si alguna vez hay que rehacerlo:
 
 ```bash
-supabase functions deploy mercadopago-create-checkout-session --project-ref wwcpogltfgzgkrlilbcd
-supabase functions deploy mercadopago-create-preference       --project-ref wwcpogltfgzgkrlilbcd
-supabase functions deploy mercadopago-checkout-status         --project-ref wwcpogltfgzgkrlilbcd
-supabase functions deploy mercadopago-webhook                 --project-ref wwcpogltfgzgkrlilbcd
-supabase functions deploy mercadopago-payment-worker          --project-ref wwcpogltfgzgkrlilbcd
+for f in mercadopago-create-checkout-session mercadopago-create-preference \
+         mercadopago-checkout-status mercadopago-webhook \
+         mercadopago-payment-worker mercadopago-refund mercadopago-cancel-payment; do
+  supabase functions deploy "$f" --project-ref wwcpogltfgzgkrlilbcd
+done
 ```
 
-Y las dos de devoluciones, que cierran el circuito:
+Desplegarlas sin secretos es seguro y está verificado: fallan cerrado, el
+proveedor sigue deshabilitado, y el worker programado cada 30 s no las invoca
+porque `payment_outbox` está vacío y la función sale por `return null`.
 
-```bash
-supabase functions deploy mercadopago-refund          --project-ref wwcpogltfgzgkrlilbcd
-supabase functions deploy mercadopago-cancel-payment  --project-ref wwcpogltfgzgkrlilbcd
-```
+### Paso 3 · Registrar el webhook
 
-Sin estas dos últimas se puede cobrar pero no devolver, que es un lugar
-incómodo donde estar con plata real.
-
-### Paso 3 · Registrar el webhook en Mercado Pago
-
-En la aplicación de Walter, configurar la URL de notificaciones:
+En la aplicación de Walter:
 
 ```
 https://wwcpogltfgzgkrlilbcd.supabase.co/functions/v1/mercadopago-webhook
@@ -150,13 +197,10 @@ https://wwcpogltfgzgkrlilbcd.supabase.co/functions/v1/mercadopago-webhook
 
 Eventos: **pagos** (`payment`).
 
-La firma que Mercado Pago envíe en `x-signature` se valida contra
-`MERCADOPAGO_WEBHOOK_SECRET`. Una notificación sin firma válida se rechaza; una
-repetida no cobra dos veces.
+La firma `x-signature` se valida contra `MERCADOPAGO_WEBHOOK_SECRET`. Una
+notificación sin firma válida se rechaza; una repetida no cobra dos veces.
 
-### Paso 4 · Crear la fila del comercio
-
-Con los datos de Walter, en `business_payment_settings`:
+### Paso 4 · La fila del comercio, con el interruptor APAGADO
 
 | columna | valor |
 |---|---|
@@ -164,49 +208,57 @@ Con los datos de Walter, en `business_payment_settings`:
 | `provider` | `mercadopago` |
 | `collector_id` | el de Walter |
 | `application_id` | el de Walter |
-| `enabled` | `true` **sólo al final**, después de la prueba controlada |
+| `enabled` | **`false`** |
 | `installments_limit` | según la decisión 1 |
 | `allow_offline_payment_methods` | según la decisión 2 |
 
-`enabled` es el interruptor que hace aparecer Mercado Pago en el checkout del
-cliente. Se enciende último, a propósito.
-
-### Paso 5 · Comprobar antes de encender
+### Paso 5 · La compuerta tiene que decir READY TO ENABLE PAYMENT
 
 ```bash
-npm run mp:config:produccion   # tiene que decir VEREDICTO: PRODUCTION
-npm run commercial:gate        # tiene que decir READY FOR REAL PAYMENT
+npm run mp:config:produccion   # VEREDICTO: PRODUCTION
+npm run commercial:gate        # READY TO ENABLE PAYMENT
 ```
 
-Si la compuerta no dice `READY FOR REAL PAYMENT`, **no se enciende**. Lo que
-falte está listado con nombre y con quién lo cierra.
+Si dice otra cosa, **no se enciende**. Lo que falte está listado con nombre y con
+quién lo cierra.
 
-### Paso 6 · Primera compra real, controlada
+### Paso 6 · Encender, con autorización explícita
 
-La prueba con plata real exige, además, declararla:
+Recién acá, y sólo con el sí de Walter:
 
-```bash
-supabase secrets set MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION --project-ref wwcpogltfgzgkrlilbcd
-# valor exacto: I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE
+```sql
+update public.business_payment_settings
+   set enabled = true
+ where business_id = '00000000-0000-4000-8000-000000000001';
 ```
 
-Con autorización explícita de Walter, y por el monto más chico posible:
+### Paso 7 · Primera compra real, controlada
+
+La prueba con plata real exige además declararla. Por el Dashboard, igual que los
+otros sensibles —aunque el valor sea fijo, escribirlo a mano en una consola es
+parte del acto—:
+
+```
+MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION = I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE
+```
+
+Por el monto más chico posible:
 
 1. Comprar un producto real desde `https://la-taba.pages.dev`.
 2. Pagar con un medio real.
-3. Verificar en el Panel que el pedido llegó **pagado**, y que el estado lo
-   escribió el webhook y no la vuelta del navegador.
-4. Verificar en la cuenta de Mercado Pago de Walter que el dinero entró.
-5. Devolver el pago con `mercadopago-refund` y verificar que la devolución
-   también llega.
+3. Verificar en el Panel que el pedido llegó **pagado**, y que ese estado lo
+   escribió el webhook y **no** la vuelta del navegador.
+4. Verificar en la cuenta de Walter que el dinero entró.
+5. Devolver el pago con `mercadopago-refund` y verificar que la devolución llega.
+6. `npm run commercial:gate` → **READY FOR REAL PAYMENT**.
 
-El punto 3 es el que importa: **la vuelta del navegador nunca marca un pedido
-como pagado**. Ese comportamiento ya está implementado y probado; el paso existe
-para confirmarlo con plata real.
+El punto 3 es el que importa: la vuelta del navegador nunca marca un pedido como
+pagado. Ese comportamiento ya está implementado y probado; el paso existe para
+confirmarlo con plata real.
 
 ---
 
-## 4 · Lo que ya está resuelto y no hay que rehacer
+## 5 · Lo que ya está resuelto y no hay que rehacer
 
 Verificado con las suites del repositorio el 2026-08-27 (23 casos, 0 fallos):
 
@@ -222,14 +274,12 @@ Verificado con las suites del repositorio el 2026-08-27 (23 casos, 0 fallos):
 
 ---
 
-## 5 · Cómo volver atrás
-
-Si algo sale mal después de encender:
+## 6 · Cómo volver atrás
 
 1. `update business_payment_settings set enabled = false` — el checkout deja de
    ofrecer Mercado Pago de inmediato. Los pedidos en curso siguen su camino.
-2. Si hace falta cortar de raíz: borrar `MERCADOPAGO_ACCESS_TOKEN` de los
-   secretos. Las funciones fallan cerrado y no cobran.
+2. Para cortar de raíz: borrar `MERCADOPAGO_ACCESS_TOKEN` de los secretos. Las
+   funciones vuelven a fallar cerrado y no cobran.
 3. Las devoluciones se hacen con `mercadopago-refund`, nunca a mano en la base:
    un pago devuelto sin registrar deja el pedido y la cuenta contando cosas
    distintas.

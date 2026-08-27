@@ -2,16 +2,22 @@
  * ¿POR QUÉ TODAVÍA NO SE PUEDE COBRAR? UNA SOLA RESPUESTA, Y FALLA CERRADO.
  *
  * El estado comercial vivía repartido en seis comandos que hay que acordarse de
- * correr y saber leer. Esto los junta y contesta una sola cosa, con tres
+ * correr y saber leer. Esto los junta y contesta una sola cosa, con CUATRO
  * estados que NO son lo mismo:
  *
+ *   COMMERCIAL NOT READY ..... hay algo roto, o falta infraestructura que se
+ *                              puede desplegar hoy
+ *   TECHNICALLY READY ........ el software y la infraestructura están; faltan
+ *                              datos que sólo puede aportar una persona
+ *   READY TO ENABLE PAYMENT .. está TODO cargado y verificado, y el interruptor
+ *                              sigue apagado A PROPÓSITO, esperando autorización
  *   READY FOR REAL PAYMENT ... se puede cobrar de verdad, hoy
- *   TECHNICALLY READY ........ el software está listo; faltan datos que sólo
- *                              puede aportar una persona (credenciales, precios)
- *   COMMERCIAL NOT READY ..... hay algo roto o desconocido del lado técnico
  *
- * La distinción existe porque «no está listo» esconde dos situaciones muy
- * distintas: una se arregla programando y la otra se arregla llamando a alguien.
+ * El tercero existe para deshacer un abrazo mortal: encender el proveedor exige
+ * haber probado, probar exigía el proveedor encendido, y la compuerta pedía el
+ * proveedor encendido para dar verde. Separar «listo para encender» de «ya
+ * encendido» rompe el círculo sin crear ninguna forma de cobrar antes de la
+ * autorización explícita.
  *
  * FALLA CERRADO. Un chequeo que no se puede establecer cuenta como bloqueo,
  * nunca como aprobado: si no se pudo leer producción, la respuesta es NOT READY.
@@ -37,20 +43,41 @@ const HOST = process.env.TABA_PUBLIC_ORIGIN || 'https://la-taba.pages.dev';
 const REF_PRODUCCION = 'wwcpogltfgzgkrlilbcd';
 const REF_STAGING = 'ukxqbgswjlibmnjemrzd';
 
-/** Los tres desenlaces de un chequeo. El del medio es el que separa los estados. */
+/**
+ * Los desenlaces de un chequeo. La diferencia entre ellos es QUIÉN lo cierra, y
+ * por eso son cuatro y no dos.
+ *
+ *   BLOQUEADO ............ algo roto, o infraestructura que falta y se puede
+ *                          desplegar hoy. Lo cierra este equipo, programando.
+ *   FALTA_DATO_HUMANO .... falta un dato que sólo una persona puede aportar.
+ *   ESPERA_AUTORIZACION .. está TODO listo y el interruptor sigue apagado a
+ *                          propósito. Lo cierra una decisión, no un trabajo.
+ *   INFO ................. vale saberlo y no impide cobrar.
+ */
 export const OK = 'ok';
+export const INFO = 'info';
 export const FALTA_DATO_HUMANO = 'falta_dato_humano';
+export const ESPERA_AUTORIZACION = 'espera_autorizacion';
 export const BLOQUEADO = 'bloqueado';
 
 const chequeo = (id, estado, detalle, quien = '') => ({ id, estado, detalle, quien });
 
 /**
- * Decide el estado global a partir de los chequeos. Pura, para poder probar los
- * tres desenlaces sin tocar producción.
+ * Decide el estado global. Pura, para poder probar los cuatro desenlaces sin
+ * tocar producción.
+ *
+ * EL ORDEN NO ES ARBITRARIO. Va de lo que impide todo a lo que sólo espera una
+ * firma: un bloqueo no se resuelve esperando una credencial, y una credencial
+ * que falta no se resuelve autorizando nada.
+ *
+ * `INFO` no participa: si participara, doce productos a medio cargar impedirían
+ * cobrar los treinta y tres que están completos, que es exactamente al revés de
+ * lo que le conviene al negocio.
  */
 export function veredicto(chequeos) {
   if (chequeos.some((c) => c.estado === BLOQUEADO)) return 'COMMERCIAL NOT READY';
   if (chequeos.some((c) => c.estado === FALTA_DATO_HUMANO)) return 'TECHNICALLY READY';
+  if (chequeos.some((c) => c.estado === ESPERA_AUTORIZACION)) return 'READY TO ENABLE PAYMENT';
   return 'READY FOR REAL PAYMENT';
 }
 
@@ -132,10 +159,12 @@ export async function correrCompuerta() {
       ? chequeo('catalogo', OK, `${comprables.length} producto(s) comprable(s) de ${censo.productos.length}`)
       : chequeo('catalogo', FALTA_DATO_HUMANO, 'no hay ningún producto comprable', 'el comercio: precio, stock y publicación'));
 
+    // Un comprable sin foto es un hueco que el cliente VE. No frena el cobro
+    // —se vende igual— pero se informa fuerte.
     const sinFoto = comprables.filter((p) => !p.conImagen);
     chequeos.push(sinFoto.length === 0
       ? chequeo('imagenes', OK, 'todos los comprables tienen foto')
-      : chequeo('imagenes', FALTA_DATO_HUMANO, `${sinFoto.length} comprable(s) sin foto`, 'quien cargue las fotos'));
+      : chequeo('imagenes', INFO, `${sinFoto.length} comprable(s) sin foto`, 'quien cargue las fotos'));
 
     const precioRaro = comprables.filter((p) => !(Number(p.price) > 0) || p.price_status === 'pending');
     chequeos.push(precioRaro.length === 0
@@ -147,11 +176,29 @@ export async function correrCompuerta() {
       ? chequeo('stock', OK, 'ningún comprable quedó sin unidades')
       : chequeo('stock', BLOQUEADO, `${sinStock.length} comprable(s) publicado(s) con stock 0`));
 
+    /*
+     * UN PRODUCTO A MEDIO CARGAR NO IMPIDE VENDER LOS QUE ESTÁN COMPLETOS.
+     *
+     * Mientras siga sin ser comprable no le hace daño a nadie: no está en la
+     * góndola y nadie puede ponerlo en el carrito. Exigir el catálogo entero
+     * para empezar a cobrar sería atarle las manos al negocio por doce
+     * productos que hoy no vende igual. Se informa, y no bloquea.
+     *
+     * Lo que SÍ bloquea es lo de más arriba: un producto COMPRABLE con precio,
+     * stock o foto inválidos, porque ése el cliente lo ve y lo toca.
+     */
     const incompletos = censo.productos.filter((p) => p.bucket === 'incompletos');
-    chequeos.push(incompletos.length === 0
-      ? chequeo('catalogo_incompleto', OK, 'no quedan productos a medio cargar')
-      : chequeo('catalogo_incompleto', FALTA_DATO_HUMANO,
-        `${incompletos.length} producto(s) esperan un dato del comercio`, 'Walter: precio, stock o publicación'));
+    const incompletoComprable = incompletos.filter((p) => p.comprable);
+    if (incompletoComprable.length > 0) {
+      chequeos.push(chequeo('catalogo_incompleto', BLOQUEADO,
+        `${incompletoComprable.length} producto(s) incompleto(s) están comprables`));
+    } else if (incompletos.length > 0) {
+      chequeos.push(chequeo('catalogo_incompleto', INFO,
+        `${incompletos.length} producto(s) esperan un dato del comercio, y ninguno es comprable`,
+        'Walter, cuando quiera sumarlos: precio, stock o publicación'));
+    } else {
+      chequeos.push(chequeo('catalogo_incompleto', OK, 'no quedan productos a medio cargar'));
+    }
 
     /*
      * EL ALCOHOL NO ES UN PENDIENTE: ES UNA COMPUERTA QUE TIENE QUE SEGUIR CERRADA.
@@ -171,7 +218,9 @@ export async function correrCompuerta() {
     const promosPendientes = censo.combos.filter((c) => c.approval_status !== 'approved');
     chequeos.push(promosPendientes.length === 0
       ? chequeo('promociones', OK, `${promosVivas.length} promoción(es) aprobada(s), ninguna pendiente`)
-      : chequeo('promociones', FALTA_DATO_HUMANO,
+      // Una promoción sin aprobar no está vigente: no cambia ningún precio ni
+      // impide cobrar los productos sueltos.
+      : chequeo('promociones', INFO,
         `${promosPendientes.length} promoción(es) esperan aprobación`, 'el comercio'));
   }
 
@@ -193,8 +242,12 @@ export async function correrCompuerta() {
     chequeos.push(chequeo('mercadopago', OK, 'configurado en modo PRODUCTION'));
   } else if (mp.veredicto === 'DISABLED') {
     chequeos.push(chequeo('mercadopago', FALTA_DATO_HUMANO,
-      'DISABLED: faltan los secretos productivos y las funciones desplegadas',
-      'Walter: Access Token, Public Key, webhook secret, collector_id y application_id'));
+      'DISABLED: faltan los secretos productivos',
+      // La Public Key NO está en esta lista: se auditó el código y no se usa en
+      // ningún lado. La integración es Checkout Pro por redirección a
+      // `init_point`, así que el navegador nunca habla con el SDK de Mercado
+      // Pago. Pedirla sería inventar un requisito.
+      'Walter: Access Token, webhook secret, collector_id y application_id'));
   } else if (mp.veredicto === 'TEST') {
     chequeos.push(chequeo('mercadopago', FALTA_DATO_HUMANO,
       'en modo TEST: sirve para probar, no para cobrar', 'Walter: credenciales productivas'));
@@ -202,25 +255,52 @@ export async function correrCompuerta() {
     chequeos.push(chequeo('mercadopago', BLOQUEADO,
       `no se pudo establecer el estado de Mercado Pago${mp.error ? `: ${mp.error}` : ''}`));
   }
+  /*
+   * LAS FUNCIONES EDGE NO SON UN DATO HUMANO: SON INFRAESTRUCTURA NUESTRA.
+   *
+   * Se pueden desplegar SIN secretos y sin habilitar cobros, porque fallan
+   * cerrado por contrato: `requireEnv` lanza «Missing required server
+   * configuration» ante cualquier secreto ausente. Verificado el 2026-08-27
+   * contra producción con las siete ya desplegadas: el webhook contesta
+   * HTTP 503 `PAYMENT_UNAVAILABLE` y el veredicto sigue siendo DISABLED.
+   *
+   * Por eso que falten es un BLOQUEO técnico y no una espera: llamar
+   * «technically ready» a un sistema al que le falta la infraestructura
+   * productiva sería mentir sobre de quién es el trabajo pendiente.
+   */
   chequeos.push(mp.desplegadas >= 5
     ? chequeo('mp_functions', OK, `${mp.desplegadas} función(es) Edge de Mercado Pago desplegada(s)`)
-    : chequeo('mp_functions', FALTA_DATO_HUMANO,
-      `${mp.desplegadas} de 5 funciones Edge obligatorias desplegadas`,
-      'se despliegan recién con los secretos productivos cargados'));
+    : chequeo('mp_functions', BLOQUEADO,
+      `${mp.desplegadas} de 5 funciones Edge obligatorias desplegadas: es infraestructura nuestra, `
+      + 'y se despliega sin secretos porque falla cerrado'));
 
   // ── 6 · el comercio habilitado para cobrar ─────────────────────────────────
   try {
     const [pagos] = await consultar(`
       select count(*) total,
              count(*) filter (where enabled) habilitados,
-             count(*) filter (where collector_id is not null) con_collector
+             count(*) filter (where collector_id is not null and application_id is not null) completos
         from public.business_payment_settings where business_id = ${lit(NEGOCIO)}`);
     const habilitados = Number(pagos?.habilitados || 0);
-    chequeos.push(habilitados > 0
-      ? chequeo('proveedor_pago', OK, `${habilitados} proveedor(es) de pago en línea habilitado(s)`)
-      : chequeo('proveedor_pago', FALTA_DATO_HUMANO,
-        `sin proveedor de pago en línea (${Number(pagos?.total || 0)} fila(s) cargada(s))`,
+    const completos = Number(pagos?.completos || 0);
+    const total = Number(pagos?.total || 0);
+    if (habilitados > 0) {
+      chequeos.push(chequeo('proveedor_pago', OK, `${habilitados} proveedor(es) de pago en línea habilitado(s)`));
+    } else if (completos > 0) {
+      /*
+       * Acá está todo cargado y el interruptor sigue apagado. NO es un
+       * problema: es el paso donde el sistema espera una decisión humana. Que
+       * tenga su propio estado es lo que permite decir «listo para encender»
+       * sin haber encendido nada.
+       */
+      chequeos.push(chequeo('proveedor_pago', ESPERA_AUTORIZACION,
+        `la configuración del comercio está completa y enabled = false`,
+        'Walter: autorización explícita para empezar a cobrar'));
+    } else {
+      chequeos.push(chequeo('proveedor_pago', FALTA_DATO_HUMANO,
+        `sin proveedor de pago en línea (${total} fila(s) cargada(s))`,
         'Walter: collector_id y application_id de su cuenta'));
+    }
   } catch (error) {
     chequeos.push(chequeo('proveedor_pago', BLOQUEADO, `no se pudo leer business_payment_settings: ${error.message}`));
   }
@@ -242,7 +322,10 @@ if (process.argv[1]?.endsWith('compuerta-comercial.mjs')) {
   if (process.argv.includes('--json')) {
     console.log(JSON.stringify({ veredicto: resultado.veredicto, chequeos: resultado.chequeos }, null, 2));
   } else {
-    const icono = { [OK]: 'OK    ', [FALTA_DATO_HUMANO]: 'FALTA ', [BLOQUEADO]: 'BLOQUE' };
+    const icono = {
+      [OK]: 'OK    ', [INFO]: 'INFO  ', [FALTA_DATO_HUMANO]: 'FALTA ',
+      [ESPERA_AUTORIZACION]: 'ESPERA', [BLOQUEADO]: 'BLOQUE',
+    };
     console.log(`COMPUERTA COMERCIAL · ${HOST}\n`);
     for (const c of resultado.chequeos) {
       console.log(`  ${icono[c.estado]} ${c.id.padEnd(20)} ${c.detalle}`);
@@ -254,9 +337,15 @@ if (process.argv[1]?.endsWith('compuerta-comercial.mjs')) {
       console.log('  El software está listo. Lo que falta no se programa: son datos');
       console.log('  que tiene que aportar una persona. Están listados arriba.');
     }
+    if (resultado.veredicto === 'READY TO ENABLE PAYMENT') {
+      console.log('  Todo cargado y verificado. El interruptor sigue apagado a propósito:');
+      console.log('  encenderlo es una decisión, no una tarea. Ver la línea ESPERA.');
+    }
     if (resultado.veredicto === 'COMMERCIAL NOT READY') {
       console.log('  Hay algo roto o que no se pudo establecer. Ver las líneas BLOQUE.');
     }
+    const informativas = resultado.chequeos.filter((c) => c.estado === INFO).length;
+    if (informativas) console.log(`  (${informativas} línea(s) INFO: se saben, y no impiden cobrar.)`);
   }
 
   process.exit(resultado.veredicto === 'READY FOR REAL PAYMENT' ? 0 : 1);

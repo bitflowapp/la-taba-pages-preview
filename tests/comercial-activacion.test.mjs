@@ -4,7 +4,9 @@ import path from 'node:path';
 import test from 'node:test';
 
 import { clasificar, csvDe, MOTIVOS } from '../scripts/comercial/censo-produccion.mjs';
-import { BLOQUEADO, FALTA_DATO_HUMANO, OK, veredicto } from '../scripts/comercial/compuerta-comercial.mjs';
+import {
+  BLOQUEADO, ESPERA_AUTORIZACION, FALTA_DATO_HUMANO, INFO, OK, veredicto,
+} from '../scripts/comercial/compuerta-comercial.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 
@@ -16,24 +18,88 @@ const root = path.resolve(import.meta.dirname, '..');
  * Mezclarlas hace que un equipo busque un bug donde falta un dato, o que espere
  * a un proveedor mientras algo está efectivamente roto.
  */
-test('la compuerta separa los tres estados, y falla cerrado', () => {
-  assert.equal(veredicto([
-    { estado: OK }, { estado: OK },
-  ]), 'READY FOR REAL PAYMENT');
+test('la compuerta separa los cuatro estados, y falla cerrado', () => {
+  assert.equal(veredicto([{ estado: OK }, { estado: OK }]), 'READY FOR REAL PAYMENT');
+  assert.equal(veredicto([{ estado: OK }, { estado: FALTA_DATO_HUMANO }]), 'TECHNICALLY READY');
+  assert.equal(veredicto([{ estado: OK }, { estado: ESPERA_AUTORIZACION }]), 'READY TO ENABLE PAYMENT');
+  assert.equal(veredicto([{ estado: OK }, { estado: BLOQUEADO }]), 'COMMERCIAL NOT READY');
 
+  // El orden manda: un bloqueo gana sobre un dato que falta, y un dato que falta
+  // gana sobre una autorización pendiente. No se resuelve un bloqueo esperando
+  // una credencial, ni se autoriza lo que todavía no está cargado.
   assert.equal(veredicto([
-    { estado: OK }, { estado: FALTA_DATO_HUMANO },
+    { estado: FALTA_DATO_HUMANO }, { estado: BLOQUEADO }, { estado: ESPERA_AUTORIZACION },
+  ]), 'COMMERCIAL NOT READY');
+  assert.equal(veredicto([
+    { estado: FALTA_DATO_HUMANO }, { estado: ESPERA_AUTORIZACION },
   ]), 'TECHNICALLY READY');
+});
 
-  assert.equal(veredicto([
-    { estado: OK }, { estado: BLOQUEADO },
-  ]), 'COMMERCIAL NOT READY');
+/*
+ * EL ABRAZO MORTAL QUE ESTE ESTADO DESHACE.
+ *
+ * Encender el proveedor exigía haber probado; probar exigía el proveedor
+ * encendido; y la compuerta pedía el proveedor encendido para dar verde. Con
+ * `READY TO ENABLE PAYMENT` el sistema puede declararse enteramente listo SIN
+ * haber creado ninguna forma de cobrar.
+ */
+test('todo cargado y el interruptor apagado es un estado propio, no un problema', () => {
+  const todoMenosElInterruptor = [
+    { estado: OK, id: 'release' },
+    { estado: OK, id: 'mp_functions' },
+    { estado: OK, id: 'mercadopago' },
+    { estado: INFO, id: 'catalogo_incompleto' },
+    { estado: ESPERA_AUTORIZACION, id: 'proveedor_pago' },
+  ];
+  assert.equal(veredicto(todoMenosElInterruptor), 'READY TO ENABLE PAYMENT');
+  // Y NO es verde: nadie puede cobrar todavía.
+  assert.notEqual(veredicto(todoMenosElInterruptor), 'READY FOR REAL PAYMENT');
+});
 
-  // Un bloqueo GANA sobre cualquier cantidad de datos faltantes: algo roto no se
-  // resuelve esperando a que llegue una credencial.
+/*
+ * DOCE PRODUCTOS A MEDIO CARGAR NO PUEDEN IMPEDIR COBRAR LOS TREINTA Y TRES
+ * QUE ESTÁN COMPLETOS.
+ *
+ * Es la situación real de producción. Mientras los incompletos sigan sin ser
+ * comprables no le hacen daño a nadie: no están en la góndola y nadie los puede
+ * poner en el carrito. Exigir el catálogo entero para empezar a vender le ataría
+ * las manos al negocio por productos que hoy no vende igual.
+ */
+test('33 comprables válidos + 12 incompletos ocultos llegan a poder cobrar', () => {
+  const produccionDeHoy = [
+    { estado: OK, id: 'catalogo' },       // 33 comprables
+    { estado: OK, id: 'precios' },
+    { estado: OK, id: 'stock' },
+    { estado: OK, id: 'imagenes' },
+    { estado: INFO, id: 'catalogo_incompleto' },  // los 12, ninguno comprable
+    { estado: INFO, id: 'promociones' },
+    { estado: OK, id: 'alcohol' },
+    { estado: OK, id: 'mp_functions' },
+    { estado: OK, id: 'mercadopago' },
+  ];
+
+  // Con el interruptor apagado: listo para encender.
+  assert.equal(
+    veredicto([...produccionDeHoy, { estado: ESPERA_AUTORIZACION, id: 'proveedor_pago' }]),
+    'READY TO ENABLE PAYMENT',
+  );
+  // Y con el interruptor puesto por una persona: cobrando.
+  assert.equal(
+    veredicto([...produccionDeHoy, { estado: OK, id: 'proveedor_pago' }]),
+    'READY FOR REAL PAYMENT',
+  );
+});
+
+test('un incompleto que SÍ quedó comprable es un bloqueo, porque el cliente lo toca', () => {
+  // La contracara de la regla anterior: lo que no bloquea es que esté oculto.
+  // Publicado y roto, bloquea.
   assert.equal(veredicto([
-    { estado: FALTA_DATO_HUMANO }, { estado: BLOQUEADO }, { estado: FALTA_DATO_HUMANO },
+    { estado: OK, id: 'catalogo' }, { estado: BLOQUEADO, id: 'catalogo_incompleto' },
   ]), 'COMMERCIAL NOT READY');
+});
+
+test('INFO nunca cambia el veredicto', () => {
+  assert.equal(veredicto([{ estado: OK }, { estado: INFO }, { estado: INFO }]), 'READY FOR REAL PAYMENT');
 });
 
 test('sin credenciales ni precios reales, la compuerta NO puede dar verde', () => {
@@ -42,6 +108,7 @@ test('sin credenciales ni precios reales, la compuerta NO puede dar verde', () =
   const hoy = [
     { estado: OK, id: 'release' },
     { estado: OK, id: 'catalogo' },
+    { estado: OK, id: 'mp_functions' },
     { estado: FALTA_DATO_HUMANO, id: 'mercadopago' },
     { estado: FALTA_DATO_HUMANO, id: 'proveedor_pago' },
   ];
@@ -125,4 +192,30 @@ test('el censo sólo puede leer: la puerta que usa rechaza todo lo que no sea SE
   const fuente = fs.readFileSync(path.join(root, 'scripts/comercial/censo-produccion.mjs'), 'utf8');
   assert.match(fuente, /from '\.\.\/e2e-production-sale\/db-solo-lectura\.mjs'/);
   assert.doesNotMatch(fuente, /\b(insert|update|delete)\s+into|\bupdate\s+public\./i);
+});
+
+test('las funciones Edge que faltan son un BLOQUEO técnico, no una espera humana', () => {
+  /*
+   * Se pueden desplegar sin secretos y sin habilitar cobros: fallan cerrado por
+   * contrato (`requireEnv` lanza ante cualquier secreto ausente). Verificado en
+   * producción el 2026-08-27 con las siete desplegadas: el webhook contesta
+   * HTTP 503 PAYMENT_UNAVAILABLE y el veredicto de Mercado Pago sigue DISABLED.
+   *
+   * Por eso llamarlas «falta un dato humano» mentiría sobre de quién es el
+   * trabajo: es infraestructura nuestra y se despliega hoy.
+   */
+  const fuente = fs.readFileSync(path.join(root, 'scripts/comercial/compuerta-comercial.mjs'), 'utf8');
+  assert.match(fuente, /chequeo\('mp_functions', BLOQUEADO/);
+  assert.doesNotMatch(fuente, /chequeo\('mp_functions', FALTA_DATO_HUMANO/);
+});
+
+test('la compuerta no le pide a Walter una Public Key que el código no usa', () => {
+  // Checkout Pro acá es redirección a `init_point`: el navegador nunca habla con
+  // el SDK de Mercado Pago, así que no hay dónde configurar una Public Key.
+  const fuente = fs.readFileSync(path.join(root, 'scripts/comercial/compuerta-comercial.mjs'), 'utf8');
+  const pedido = fuente.match(/'Walter: [^']+'/g) || [];
+  for (const linea of pedido) assert.doesNotMatch(linea, /Public Key/);
+
+  const runbook = fs.readFileSync(path.join(root, 'MERCADOPAGO-PRODUCTION-ACTIVATION.md'), 'utf8');
+  assert.doesNotMatch(runbook, /\|\s*\*\*Public Key productiva\*\*/, 'no puede estar en la tabla de datos obligatorios');
 });

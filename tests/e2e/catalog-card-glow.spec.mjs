@@ -36,6 +36,80 @@ async function irAlCatalogo(page) {
 }
 
 /*
+ * MEDIR RECIÉN CUANDO EL ESTANTE DEJÓ DE MOVERSE.
+ *
+ * La góndola se sigue acomodando después de que la primera tarjeta ya es
+ * visible: WebKit decodifica las fotos de a poco y cada una que entra corre el
+ * estante unos píxeles. Y el brillo es una FUNCIÓN de la geometría del estante.
+ *
+ * Medir mientras esa geometría todavía se mueve compara dos situaciones
+ * distintas y llama «el brillo no volvió igual» a lo que en realidad es «cuando
+ * lo miré la primera vez, la página todavía no había terminado de armarse». En
+ * CI, más lento, pasaba cada tanto.
+ *
+ * Acá no se afloja nada: los alfas siguen teniendo que ser EXACTAMENTE los
+ * mismos. Lo único que se agrega es esperar a que haya algo estable que
+ * comparar, y comprobar que se comparó sobre la misma geometría —si el estante
+ * quedó en otro lado, eso es lo que se informa, en vez de acusar al brillo—.
+ */
+async function medirEstanteQuieto(page, selector, etiqueta) {
+  // Las tipografías corren la caja de cada tarjeta cuando terminan de
+  // resolverse. Es una condición observable que resuelve sola: se la espera, no
+  // se la cronometra.
+  await page.evaluate(() => document.fonts?.ready ?? null);
+
+  /*
+   * Cada lectura se toma después de dos cuadros de animación, y el muestreo es
+   * POR CUADRO, no por reloj: bajo carga los cuadros se espacian solos, así que
+   * la espera se adapta a lo lenta que vaya la máquina en vez de apostar a un
+   * número de milisegundos que en CI sería otro. Dos cuadros porque el módulo
+   * escribe `--card-glow` dentro de un `requestAnimationFrame`.
+   */
+  const leer = () => page.locator(selector).first().evaluate(async (tarjeta) => {
+    await new Promise((listo) => { requestAnimationFrame(() => requestAnimationFrame(listo)); });
+    const estante = tarjeta.closest('[data-glow-shelf]');
+    const rect = estante.getBoundingClientRect();
+    const alfas = (getComputedStyle(tarjeta).boxShadow.match(/rgba\(208,\s*0,\s*13,\s*([0-9.]+)\)/g) || [])
+      .map((capa) => Number(/([0-9.]+)\)$/.exec(capa)[1]));
+    return { arriba: Math.round(rect.top), alto: Math.round(rect.height), alfas };
+  });
+
+  /*
+   * Se espera a que quede quieto TODO lo que después se compara: la geometría
+   * del estante y los alfas que salen de ella. Cubrir sólo la geometría dejaba
+   * afuera la otra mitad —el token `--card-glow` lo escribe el módulo en un
+   * cuadro posterior al scroll—, y la comparación final mira las dos.
+   *
+   * Esto NO congela ningún valor ni vuelve circular la comprobación: que cada
+   * lado se haya quedado quieto no obliga a que los dos coincidan. Si el brillo
+   * volviera con otro valor, sigue fallando.
+   */
+  const misma = (a, b) => (
+    a.arriba === b.arriba
+    && a.alto === b.alto
+    && a.alfas.length === b.alfas.length
+    && a.alfas.every((alfa, i) => alfa === b.alfas[i])
+  );
+
+  /*
+   * TRES lecturas seguidas iguales, no dos: entre dos corrimientos sucesivos dos
+   * lecturas pueden coincidir por casualidad, y esa casualidad es justo el flake
+   * que se está sacando.
+   */
+  let anterior = await leer();
+  let seguidas = 1;
+  for (let intento = 0; intento < 200 && seguidas < 3; intento += 1) {
+    const actual = await leer();
+    seguidas = misma(anterior, actual) ? seguidas + 1 : 1;
+    anterior = actual;
+  }
+  if (seguidas < 3) {
+    throw new Error(`${etiqueta}: el estante nunca dejó de moverse (última lectura: ${JSON.stringify(anterior)})`);
+  }
+  return anterior;
+}
+
+/*
  * BAJAR HASTA QUE EL ESTANTE QUEDE UNA PANTALLA ENTERA POR ENCIMA — Y COMPROBARLO.
  *
  * `readShelfGlow` lleva el brillo a 0 cuando el borde superior del ESTANTE está
@@ -87,7 +161,8 @@ async function bajarHastaApagar(page, selector, etiqueta) {
  * el estante; se calcula desde su propia posición en vez de fijar un número.
  */
 async function contratoDelEstante(page, selector, etiqueta) {
-  const alLlegar = await alfasRojos(page, selector);
+  const llegada = await medirEstanteQuieto(page, selector, etiqueta);
+  const alLlegar = llegada.alfas;
   expect(alLlegar, `${etiqueta}: faltan las dos capas rojas`).toHaveLength(2);
   alLlegar.forEach((alfa) => expect(alfa, `${etiqueta}: el brillo no está encendido al llegar`).toBeGreaterThan(0));
   // Muy suave: es un acento, no un neón.
@@ -98,9 +173,15 @@ async function contratoDelEstante(page, selector, etiqueta) {
   expect(Math.max(...abajo), `${etiqueta}: el brillo no se apagó al bajar`).toBe(0);
 
   await scrollear(page, 0);
-  const devuelta = await alfasRojos(page, selector);
-  devuelta.forEach((alfa) => expect(alfa, `${etiqueta}: el brillo no volvió al subir`).toBeGreaterThan(0));
-  expect(devuelta).toEqual(alLlegar);
+  const vuelta = await medirEstanteQuieto(page, selector, etiqueta);
+  vuelta.alfas.forEach((alfa) => expect(alfa, `${etiqueta}: el brillo no volvió al subir`).toBeGreaterThan(0));
+  // La igualdad sólo significa algo si los dos lados se midieron sobre la misma
+  // geometría: si el estante quedó en otro lado, lo que cambió es la página.
+  expect(
+    { arriba: vuelta.arriba, alto: vuelta.alto },
+    `${etiqueta}: el estante no volvió a la misma posición, así que el brillo no es comparable`,
+  ).toEqual({ arriba: llegada.arriba, alto: llegada.alto });
+  expect(vuelta.alfas, `${etiqueta}: el brillo volvió con otro valor`).toEqual(alLlegar);
 }
 
 test('HOME · el rail Destacados llega con brillo, se apaga al bajar y vuelve', async ({ page }) => {

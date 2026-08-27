@@ -137,6 +137,46 @@ llegó a tardar 42 s contra un timeout de 45.
 
 ---
 
+## El segundo pase sobre `catalog-card-glow`
+
+La primera corrida de CI de este PR bajó el censo de **4 inestables a 1**, y esa
+1 volvía a ser `catalog-card-glow`. Pero el error **había cambiado**: ya no era
+«el brillo no se apagó al bajar» sino `toEqual`, la comparación final entre los
+alfas de la llegada y los del regreso. El arreglo del umbral sacó un fallo y dejó
+al descubierto otra fragilidad que estaba debajo.
+
+**No se pudo reproducir localmente.** Se intentó de tres maneras y las tres
+fallaron en reproducirlo:
+
+| intento | resultado |
+|---|---|
+| ida y vuelta ×4 midiendo geometría y alfas | 4/4 idénticos (`[0.1, 0.22]`, `top=286`) |
+| fotos servidas con 700 ms de retardo, para correr la geometría | 8/8 pasaron; el test viejo **no** falló |
+| 12 cuadros seguidos tras volver arriba, sin colchón | 12/12 idénticos |
+
+La primera hipótesis —que las fotos al decodificar corrían el estante— quedó
+**descartada por su propia prueba**. No se sostiene.
+
+Lo que sí se puede afirmar es más chico y más útil: la comparación final mira
+**geometría y alfas**, y la condición de estabilidad sólo cubría la geometría. El
+token `--card-glow` lo escribe el módulo en un cuadro POSTERIOR al scroll, así
+que era posible medir con la geometría ya quieta y el brillo todavía en tránsito.
+
+**Ahora se espera a que quede quieto todo lo que después se compara** —tres
+lecturas seguidas idénticas, muestreadas por cuadro de animación y no por reloj,
+con `document.fonts.ready` antes—, y la igualdad exacta se exige sólo después de
+comprobar que los dos lados se midieron sobre la misma geometría. Si el estante
+no volvió a su posición, falla eso y lo dice, en vez de acusar al brillo.
+
+Esperar a que cada lado se quede quieto **no vuelve circular la comprobación**:
+que A y B estén estables no obliga a que coincidan. Si el brillo volviera con
+otro valor, sigue fallando.
+
+El veredicto real lo da el censo de CI, no la máquina de desarrollo. Esto queda
+anotado como *no reproducido localmente*, no como cerrado.
+
+---
+
 ## Causalidad con PR #86
 
 `business-windows-operations` no había fallado en 13 corridas previas y empezó

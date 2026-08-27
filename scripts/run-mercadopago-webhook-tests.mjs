@@ -37,6 +37,15 @@ const steps = [
     'supabase/functions/_shared/payment-worker-signature.deno.ts',
     'supabase/functions/_shared/request-protocol.deno.ts',
     'supabase/functions/_shared/webhook-notification.deno.ts']],
+  /*
+   * El importe va en su PROPIO paso porque es el único que necesita
+   * `--allow-env`: `preferenceRequest()` lee el entorno del proveedor y la base
+   * de las URLs de retorno, y estas pruebas los fijan para medir los dos modos.
+   * Sumar esa capacidad al paso de arriba se la regalaría a cuatro suites que
+   * no la necesitan.
+   */
+  ['npx', ['--yes', 'deno@2.6.1', 'test', '--node-modules-dir=none', '--allow-env',
+    'supabase/functions/_shared/mercadopago-preference.deno.ts']],
   ['node', ['--import', './tests/test-bootstrap.mjs', '--test', '--test-concurrency=1',
     'tests/mercadopago-webhook.test.mjs',
     'tests/mercadopago-scheduler.test.mjs']],

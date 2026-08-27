@@ -3303,16 +3303,52 @@ export function setMercadoPagoCheckoutAvailability({ available = false } = {}) {
     option.textContent = 'Mercado Pago — Tarjeta, débito o dinero en cuenta';
     field.append(option);
   }
+  let volvioAOtroMedio = false;
   if (!enabled && option) {
+    // Retirar Mercado Pago mientras estaba elegido cambia el medio por debajo.
+    // Sin re-render, el botón seguía diciendo «Pagar con Mercado Pago» sobre un
+    // selector que ya decía «A coordinar con el local».
+    if (field.value === 'mercadopago') volvioAOtroMedio = true;
     if (field.value === 'mercadopago') field.value = 'coordinate';
     option.remove();
   }
   field.dataset.mercadopagoAvailable = String(enabled);
+  if (volvioAOtroMedio) renderCheckoutPaymentFields();
 }
 
 function currentCouponCode() {
   const field = $('[name="couponCode"]');
   return field?.value || '';
+}
+
+/*
+ * La copia base del checkout —la etiqueta del botón y la nota de abajo— la
+ * escribe el modo de la app. Se recuerda la PRIMERA vez que se la ve: a partir
+ * del segundo render el texto puesto puede ser ya el de Mercado Pago, y
+ * restaurar desde ahí dejaría la pantalla trabada prometiendo un redirect
+ * después de haber vuelto a «A coordinar con el local».
+ */
+function checkoutCopySurfaces() {
+  const submit = $('[data-checkout-submit]');
+  const modeNote = $('[data-checkout-mode-note]');
+  if (submit && submit.dataset.baseLabel === undefined) {
+    submit.dataset.baseLabel = (submit.textContent || '').trim();
+  }
+  if (modeNote && modeNote.dataset.baseNote === undefined) {
+    modeNote.dataset.baseNote = (modeNote.textContent || '').trim();
+  }
+  return { submit, modeNote };
+}
+
+/** El modo de la app declara acá su copia; es la que se restaura al salir de Mercado Pago. */
+export function rememberCheckoutBaseCopy({ submitLabel = '', note = '' } = {}) {
+  const { submit, modeNote } = checkoutCopySurfaces();
+  if (submit && submitLabel) submit.dataset.baseLabel = submitLabel;
+  if (modeNote && note) modeNote.dataset.baseNote = note;
+}
+
+export function refreshCheckoutPaymentCopy() {
+  renderCheckoutPaymentFields();
 }
 
 function renderCheckoutPaymentFields() {
@@ -3328,20 +3364,24 @@ function renderCheckoutPaymentFields() {
     }
   }
 
-  const note = $('[data-payment-note]');
-  if (!note) return;
-  note.classList.remove('hidden');
-  note.textContent = isMercadoPago
-    ? 'Vas a pagar en el entorno seguro de Mercado Pago. No guardamos datos de tu tarjeta.'
-    : 'El pago se coordina con el local antes de preparar el pedido.';
-
-  const submit = $('[data-checkout-submit]');
+  // Todo esto colgaba de `[data-payment-note]`, un nodo que el checkout actual
+  // NO tiene: la función salía por ese `return` en TODOS los renders. Elegir
+  // Mercado Pago dejaba el botón diciendo «Confirmar pedido» y la nota diciendo
+  // «El medio de pago se coordina con el local»; la pantalla afirmaba que el
+  // pago se arreglaba con el negocio y acto seguido redirigía a Mercado Pago.
+  // La copia vive ahora en los dos nodos que sí existen.
+  const { submit, modeNote } = checkoutCopySurfaces();
   if (submit && !submit.disabled) {
-    submit.textContent = isMercadoPago ? 'Pagar con Mercado Pago' : 'Confirmar pedido';
+    submit.textContent = isMercadoPago
+      ? 'Pagar con Mercado Pago'
+      : (submit.dataset.baseLabel || 'Confirmar pedido');
   }
-  const modeNote = $('[data-checkout-mode-note]');
-  if (modeNote && isMercadoPago) {
-    modeNote.textContent = 'Serás redirigido a Mercado Pago y confirmaremos el pedido sólo después de verificar el pago.';
+  // Simétrico a propósito: volver de Mercado Pago a otro medio tiene que
+  // devolver la nota del modo, no dejar puesta la del redirect.
+  if (modeNote) {
+    modeNote.textContent = isMercadoPago
+      ? 'Vas a pagar en el entorno seguro de Mercado Pago. Confirmamos el pedido sólo después de verificar el pago.'
+      : (modeNote.dataset.baseNote || 'El medio de pago se coordina con el local.');
   }
 }
 

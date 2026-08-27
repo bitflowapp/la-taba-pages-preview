@@ -95,6 +95,17 @@ let pendingCommercialHide = false;
 let feedback = '';
 let busy = false;
 let posItems = [];
+/*
+ * SI EL OPERADOR PIDIÓ COMPROBANTE, ESO ES UNA DECISIÓN SUYA, NO UN ESTADO DEL DIBUJO.
+ *
+ * `refreshFiscal()` termina cuando termina y, si el mostrador está a la vista,
+ * repinta. El carrito sobrevivía porque vive acá; el tilde de «Solicitar
+ * comprobante fiscal» vivía SÓLO en el DOM, así que el repintado lo borraba y
+ * la venta se confirmaba sin el comprobante que la persona había pedido —sin un
+ * aviso, y con el checkbox mostrándose destildado como si nunca lo hubiera
+ * tocado—. Es el mismo cuidado que ya tenía la frase de autorización de ARCA.
+ */
+let posRequestFiscal = false;
 let fiscalProfile = null;
 let fiscalDocuments = [];
 let fiscalArtifacts = [];
@@ -420,6 +431,7 @@ export async function handleBusinessOperationsAction(target) {
   }
   if (target.closest('[data-pos-clear]')) {
     posItems = [];
+    posRequestFiscal = false;
     context.onChange();
     return result(true, 'Borrador de venta vacío.');
   }
@@ -506,6 +518,12 @@ export function handleBusinessOperationsInput(target) {
     arcaAuthorizationDraft = String(target.value || '').slice(0, 40);
     return { handled: true };
   }
+  // Y el pedido de comprobante, por lo mismo: un refresco fiscal que cae
+  // después no puede deshacer lo que la persona ya eligió.
+  if (target?.matches?.('[name="requestFiscal"]')) {
+    posRequestFiscal = target.checked === true;
+    return { handled: true };
+  }
   if (!target?.matches?.('[name="creditReason"], [name="creditKind"], [name="creditQuantity"], [name="creditNet"], [name="creditTax"]')) {
     return { handled: false };
   }
@@ -532,6 +550,7 @@ export function resetBusinessOperationsForTests() {
   feedback = '';
   busy = false;
   posItems = [];
+  posRequestFiscal = false;
   fiscalProfile = null;
   fiscalDocuments = [];
   fiscalArtifacts = [];
@@ -842,7 +861,8 @@ async function confirmPos(target) {
   const response = await context.checkoutPos({
     items: posItems.map(({ productId, quantity }) => ({ productId, quantity })),
     paymentMethod: root?.querySelector('[name="paymentMethod"]')?.value || 'cash',
-    requestFiscal: root?.querySelector('[name="requestFiscal"]')?.checked === true,
+    // Del estado, no del marcado: el marcado se rehace, la decisión no.
+    requestFiscal: posRequestFiscal === true && fiscalProfile?.is_enabled === true,
     idempotencyKey: createKey('pos-sale'),
   });
   feedback = response?.ok
@@ -850,7 +870,10 @@ async function confirmPos(target) {
       ? 'Venta confirmada; la solicitud fiscal requiere revisión.'
       : response.data?.fiscal_document_id ? 'Venta confirmada; comprobante fiscal pendiente.' : 'Venta confirmada por el servidor.')
     : response?.message || 'La venta no fue confirmada.';
-  if (response?.ok) posItems = [];
+  if (response?.ok) {
+    posItems = [];
+    posRequestFiscal = false;
+  }
   context.onChange();
   return result(Boolean(response?.ok), feedback);
 }
@@ -1456,7 +1479,7 @@ function renderPos() {
   // ofrecerlo antes era prometer un comprobante que el backend rechaza siempre.
   const fiscalReady = fiscalProfile?.is_enabled === true;
   const fiscalControl = fiscalReady
-    ? '<label class="business-ops-check"><input name="requestFiscal" type="checkbox"> Solicitar comprobante fiscal</label>'
+    ? `<label class="business-ops-check"><input name="requestFiscal" type="checkbox"${posRequestFiscal ? ' checked' : ''}> Solicitar comprobante fiscal</label>`
     : '<p class="form-hint">Comprobante fiscal no disponible: la facturación todavía no está habilitada (ver Facturación).</p><input name="requestFiscal" type="hidden" value="">';
   return panel('Venta de mostrador', 'El servidor revalora precios y stock; el cliente envía sólo IDs y cantidades.', `${scannerInput()}${renderScanResult()}<ul class="business-ops-cart">${items}</ul><div class="business-ops-form"><label>Medio de pago<select name="paymentMethod"><option value="cash">Efectivo</option><option value="debit_card">Débito</option><option value="credit_card">Crédito</option><option value="transfer">Transferencia</option><option value="qr">QR</option></select></label>${fiscalControl}<div class="button-row"><button class="primary-button" type="button" data-pos-checkout>Confirmar venta</button><button class="ghost-button" type="button" data-pos-clear>Vaciar borrador</button></div></div>`);
 }

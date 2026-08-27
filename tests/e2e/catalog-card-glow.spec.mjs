@@ -36,6 +36,52 @@ async function irAlCatalogo(page) {
 }
 
 /*
+ * BAJAR HASTA QUE EL ESTANTE QUEDE UNA PANTALLA ENTERA POR ENCIMA — Y COMPROBARLO.
+ *
+ * `readShelfGlow` lleva el brillo a 0 cuando el borde superior del ESTANTE está
+ * una pantalla completa por encima del viewport. Antes se bajaba a «tope de la
+ * primera TARJETA + una pantalla + 24 px», que son dos discrepancias juntas: se
+ * medía desde la tarjeta y no desde el estante que decide, y el colchón contra
+ * el umbral era de 24 px exactos. Cualquier imagen que terminara de decodificar
+ * después de calcular el destino —en WebKit bajo carga de CI, cada tanto— corría
+ * el estante más que eso, y entonces el brillo TODAVÍA NO ERA 0 porque no tenía
+ * que serlo. La prueba acusaba al brillo de una medición hecha en el filo.
+ *
+ * Se sigue bajando lo mínimo necesario: media pantalla de más, no hasta el final.
+ * Scrollear de más en la home obliga a WebKit a decodificar las imágenes de todos
+ * los rails intermedios, y esta prueba llegó a tardar 42 s contra un timeout de 45.
+ *
+ * Y la geometría se verifica ANTES de mirar el color: si la página no pudo bajar
+ * lo suficiente, lo que falla es eso y lo dice, en vez de culpar al brillo.
+ */
+async function bajarHastaApagar(page, selector, etiqueta) {
+  const geometria = () => page.locator(selector).first().evaluate((tarjeta) => {
+    const estante = tarjeta.closest('[data-glow-shelf]');
+    const rect = estante.getBoundingClientRect();
+    return {
+      arriba: Math.round(rect.top),
+      vh: window.innerHeight,
+      destino: Math.round(rect.top + window.scrollY + window.innerHeight * 1.5),
+      tope: Math.round(document.documentElement.scrollHeight - window.innerHeight),
+    };
+  });
+
+  let donde = await geometria();
+  // Cuatro vueltas: si el layout se corre por una imagen tardía, se recalcula
+  // desde donde quedó en vez de dar por buena la primera cuenta.
+  for (let intento = 0; intento < 4 && donde.arriba > -donde.vh; intento += 1) {
+    await scrollear(page, Math.min(donde.destino, donde.tope));
+    donde = await geometria();
+  }
+
+  expect(
+    donde.arriba,
+    `${etiqueta}: la página no pudo bajar lo suficiente para que el brillo se apague `
+    + `(estante en ${donde.arriba}, hace falta ${-donde.vh} o menos; tope de scroll ${donde.tope})`,
+  ).toBeLessThanOrEqual(-donde.vh);
+}
+
+/*
  * El contrato completo sobre un estante: encendido al llegar, apagado abajo,
  * encendido de nuevo al volver. `hastaApagar` depende de qué tan abajo empieza
  * el estante; se calcula desde su propia posición en vez de fijar un número.
@@ -47,15 +93,7 @@ async function contratoDelEstante(page, selector, etiqueta) {
   // Muy suave: es un acento, no un neón.
   expect(Math.max(...alLlegar), `${etiqueta}: el brillo se fue de escala`).toBeLessThanOrEqual(0.3);
 
-  // Lo JUSTO para cruzar el umbral, no un número redondo grande: el brillo
-  // llega a 0 cuando el borde superior del estante queda una pantalla por
-  // encima del viewport. Scrollear de más en la home obliga a WebKit a decodificar
-  // las imágenes de todos los rails intermedios, y esta prueba pasaba de 42 s
-  // contra un timeout de 45.
-  const bajar = await page.locator(selector).first().evaluate((nodo) => (
-    Math.round(nodo.getBoundingClientRect().top + window.scrollY + window.innerHeight + 24)
-  ));
-  await scrollear(page, bajar);
+  await bajarHastaApagar(page, selector, etiqueta);
   const abajo = await alfasRojos(page, selector);
   expect(Math.max(...abajo), `${etiqueta}: el brillo no se apagó al bajar`).toBe(0);
 

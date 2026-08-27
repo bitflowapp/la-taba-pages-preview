@@ -170,14 +170,28 @@ jobs:
           url="$(grep -oE 'https://[a-z0-9-]+\.la-taba\.pages\.dev' /tmp/deploy.log | tail -1 || true)"
           echo "deployment_url=${url}" >> "$GITHUB_OUTPUT"
 
-      # El sitio recién publicado, mirado de afuera: HTTP, shell, el commit que
-      # esperábamos, el Supabase de producción, el catálogo, y que no se haya
-      # colado staging ni el runtime-config vacío.
+      # El sitio recién publicado, mirado de afuera: HTTP, shell, el commit y el
+      # runtime que esperábamos, el Supabase de producción, el catálogo, y que
+      # no se haya colado staging ni el runtime-config vacío.
+      #
+      # ESPERA A QUE EL ALIAS CAMBIE. `wrangler pages deploy` vuelve cuando el
+      # deployment terminó de subir, NO cuando `la-taba.pages.dev` lo apunta: en
+      # el medio el alias sigue sirviendo el despliegue anterior, entero y
+      # coherente consigo mismo. El 2026-08-27 este paso corrió un segundo
+      # después de publicar, leyó el SHA viejo y dejó en rojo un despliegue que
+      # estaba bien. Ahora consulta hasta que converja, con techo: vencer el
+      # techo es un fallo de verdad y baja rojo.
       - name: Smoke en vivo
         run: |
+          set -euo pipefail
+          runtime="$(node -p "require('./dist_release/version.json').runtime")"
+          echo "runtime recién construido: ${runtime}"
           node scripts/deploy/verificar-publicado.mjs \
             --host "${PRODUCTION_HOST}" \
-            --esperar-commit "${{ steps.destino.outputs.sha }}"
+            --esperar-commit "${{ steps.destino.outputs.sha }}" \
+            --esperar-runtime "${runtime}" \
+            --intervalo-ms 5000 \
+            --timeout-ms 180000
 
       - name: Resumen
         if: always()

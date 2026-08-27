@@ -279,7 +279,32 @@ test.describe('el aviso de actualización sigue el ciclo de vida real del worker
 
     await page.locator('[data-app-update-now]').click();
     await expect(await banner(page)).toBeHidden({ timeout: 15_000 });
-    const loads = await page.evaluate(() => Number(sessionStorage.getItem('harness:loads') || '0'));
-    expect(loads, 'seis revisiones no pueden multiplicar las recargas').toBe(2);
+
+    /*
+     * ACÁ ADENTRO LA PÁGINA SE ESTÁ RECARGANDO.
+     *
+     * El clic dispara `skipWaiting()`, y el `controllerchange` que sigue recarga
+     * la pestaña. Preguntar por `sessionStorage` justo después corría contra esa
+     * navegación: si la pregunta caía en el medio, el contexto de ejecución ya
+     * no existía y Playwright cortaba con «Execution context was destroyed».
+     * No era un defecto del producto ni de la cuenta —era preguntar mientras se
+     * cambiaba el mundo debajo—.
+     *
+     * `sessionStorage` sobrevive a la recarga, así que se vuelve a preguntar
+     * hasta que la página esté de nuevo en pie. Tolerar la excepción NO afloja
+     * la comprobación: el número sigue teniendo que ser exactamente 2, y si el
+     * aviso multiplicara las recargas esto se queda en 3 y falla igual.
+     */
+    const recargas = async () => {
+      try {
+        return await page.evaluate(() => Number(sessionStorage.getItem('harness:loads') || '0'));
+      } catch (error) {
+        if (/Execution context was destroyed|Target closed|frame was detached/i.test(String(error?.message))) return null;
+        throw error;
+      }
+    };
+    await expect
+      .poll(recargas, { message: 'seis revisiones no pueden multiplicar las recargas', timeout: 15_000 })
+      .toBe(2);
   });
 });

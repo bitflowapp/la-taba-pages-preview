@@ -313,9 +313,22 @@ function restaurarContextoDeLaBandeja(container, contexto) {
     }
     if (contexto.foco) {
       const objetivo = container.querySelector(contexto.foco);
-      // `preventScroll`: reponer el foco no puede volver a mover la bandeja que
-      // se acaba de dejar donde estaba.
-      if (objetivo && typeof objetivo.focus === 'function') objetivo.focus({ preventScroll: true });
+      /*
+       * `focusVisible: true` no es un adorno.
+       *
+       * Reemplazar el `innerHTML` destruye el nodo enfocado, así que reponer el
+       * foco es siempre programático — y un foco programático NO activa
+       * `:focus-visible`. Sin esto, quien navega con teclado recuperaba el foco
+       * pero PERDÍA EL ANILLO que lo hace visible: el foco quedaba en un lugar
+       * que la persona ya no puede ver. Lo destapó `panel-responsive`, midiendo
+       * el ancho del contorno.
+       *
+       * `preventScroll`: reponer el foco no puede volver a mover la bandeja que
+       * se acaba de dejar donde estaba.
+       */
+      if (objetivo && typeof objetivo.focus === 'function') {
+        objetivo.focus({ preventScroll: true, focusVisible: true });
+      }
     }
   } catch (_) {
     // Reponer el contexto es una mejora, nunca una condición para dibujar.

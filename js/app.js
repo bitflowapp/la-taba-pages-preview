@@ -1172,7 +1172,22 @@ function bloqueoDePerfilEnCheckout(form) {
   const mensaje = BLOQUEOS_DE_PERFIL[clase]
     || String(bloque.querySelector('strong')?.textContent || '').trim()
     || 'Completá tus datos de entrega para confirmar el pedido.';
-  return { clase, mensaje, bloque, accion: bloque.querySelector('[data-profile-checkout-action]') };
+  /*
+   * El foco va a lo que RESUELVE el bloqueo, y desde que el nombre y el
+   * WhatsApp se completan en línea eso ya no es siempre un botón: con los campos
+   * vacíos, lo que resuelve es escribir. Mandar el foco al botón «Guardar y
+   * continuar» sería ofrecerle a la persona una acción que todavía no puede
+   * ejecutar. Si el bloque no tiene campos —«agregá una dirección»— sigue
+   * ganando su botón, que ahí sí es el siguiente paso.
+   */
+  const campoVacio = [...bloque.querySelectorAll('input, select, textarea')]
+    .find((campo) => !String(campo.value || '').trim());
+  return {
+    clase,
+    mensaje,
+    bloque,
+    accion: campoVacio || bloque.querySelector('[data-profile-checkout-action]'),
+  };
 }
 
 function bindEvents() {

@@ -471,7 +471,7 @@ test('checkout con 10 direcciones inicia compactado y puede seleccionar una dire
   await expect(page.locator('.profile-address-card[data-customer-address-id="' + addresses[9].id + '"]')).toBeVisible();
 });
 
-test('checkout bloquea por Perfil incompleto y permite volver desde completar Perfil', async ({ page }) => {
+test('el checkout pide nombre y WhatsApp en línea, y el carrito llega intacto', async ({ page }) => {
   const namespace = 'e2e-profile-incomplete';
   await page.goto('/?demo=1#catalog');
   await expect(page.locator('[data-view="catalog"] [data-add-product]:not([disabled])').first()).toBeVisible();
@@ -488,16 +488,32 @@ test('checkout bloquea por Perfil incompleto y permite volver desde completar Pe
     namespace,
   });
 
+  /*
+   * El bloqueo ya NO manda a Perfil: el nombre y el WhatsApp se completan acá
+   * mismo. Lo que esta prueba sigue protegiendo —y por eso no se borra— es que
+   * el bloque sea coherente: aparece cuando faltan los datos, se resuelve SIN
+   * salir del pedido, y el carrito llega intacto al otro lado.
+   */
   await expect(page.locator('[data-profile-block="incomplete"]')).toBeVisible();
-  const completeAction = page.locator('[data-profile-block="incomplete"] [data-profile-checkout-action="edit-profile"]');
-  await expect(completeAction).toBeVisible();
-  await completeAction.click();
+  const formulario = page.locator('[data-profile-identity-form]');
+  await expect(formulario).toBeVisible();
+  await expect(formulario.locator('[data-profile-checkout-action="edit-profile"]')).toHaveCount(0);
 
-  const profile = page.locator('[data-customer-profile]');
-  await expect(profile).toBeVisible();
-  await profile.locator('[data-profile-action="return-to-checkout"]').click();
+  const carritoAntes = await page.evaluate(async () => {
+    const { getState } = await import('/js/state.js');
+    return getState().cart.map((i) => `${i.productId}:${i.quantity}`).sort();
+  });
+
+  await formulario.locator('[name="checkoutIdentityName"]').fill('Cliente Demo');
+  await formulario.locator('[name="checkoutIdentityPhone"]').fill('299 620 9136');
+  await formulario.locator('[data-profile-checkout-action="save-identity"]').click();
+
+  await expect(page.locator('[data-profile-block="incomplete"]')).toHaveCount(0, { timeout: 15_000 });
   await expect(page.locator('body')).toHaveAttribute('data-active-view', 'cart');
-  await expect(page.locator('[data-profile-block="incomplete"]')).toBeVisible();
+  expect(await page.evaluate(async () => {
+    const { getState } = await import('/js/state.js');
+    return getState().cart.map((i) => `${i.productId}:${i.quantity}`).sort();
+  })).toEqual(carritoAntes);
 });
 
 /*
@@ -509,7 +525,7 @@ test('checkout bloquea por Perfil incompleto y permite volver desde completar Pe
  * nombre, porque el nombre vive en Perfil. Es el camino del 100 % de los
  * clientes nuevos y terminaba en una instrucción imposible de obedecer.
  */
-test('confirmar con Perfil incompleto manda a Perfil, no pide un campo que no existe', async ({ page }) => {
+test('confirmar sin nombre lleva al campo que lo resuelve, no pide uno que no existe', async ({ page }) => {
   const namespace = 'e2e-confirm-sin-perfil';
   await page.goto('/?demo=1#catalog');
   await expect(page.locator('[data-view="catalog"] [data-add-product]:not([disabled])').first()).toBeVisible();
@@ -520,19 +536,26 @@ test('confirmar con Perfil incompleto manda a Perfil, no pide un campo que no ex
   await seedCheckoutProfile(page, { name: '', phone: '', addresses: [], namespace });
   await expect(page.locator('[data-profile-block="incomplete"]')).toBeVisible();
 
-  // No hay ningún campo de nombre en pantalla: el que existe es oculto y lo
-  // llena el Perfil. Si algún día aparece uno, esta prueba tiene que caerse
-  // para que alguien decida a propósito qué mensaje corresponde.
+  // El `customerName` del formulario sigue oculto —lo llena el Perfil—; el que
+  // la persona escribe es el del bloque en línea. Que el oculto no se vea es lo
+  // que hace imposible el mensaje del servidor, y por eso se sigue midiendo.
   await expect(page.locator('[data-checkout-form] input[name="customerName"]:visible')).toHaveCount(0);
 
   await page.locator('[data-checkout-submit]').click();
 
   const aviso = page.locator('[data-checkout-warning]');
   await expect(aviso).toBeVisible();
-  await expect(aviso).toContainText('Perfil');
   await expect(aviso).not.toContainText('caracteres');
-  // Y el foco queda sobre el botón que sí resuelve el bloqueo.
-  await expect(page.locator('[data-profile-block="incomplete"] [data-profile-checkout-action="edit-profile"]')).toBeFocused();
+  /*
+   * Ya NO dice «en Perfil»: el nombre y el WhatsApp se completan en esta misma
+   * pantalla, y mandar a otra a quien tiene el campo delante sería la misma
+   * instrucción imposible que este aviso vino a reemplazar.
+   */
+  await expect(aviso).not.toContainText('Perfil');
+  await expect(aviso).toContainText('acá');
+  // Y el foco va a lo que RESUELVE: con los campos vacíos, escribir. No al
+  // botón de guardar, que todavía no se puede usar.
+  await expect(page.locator('[data-profile-identity-form] [name="checkoutIdentityName"]')).toBeFocused();
 });
 
 test('confirmar sin dirección manda a la dirección, y el pedido sigue intacto', async ({ page }) => {

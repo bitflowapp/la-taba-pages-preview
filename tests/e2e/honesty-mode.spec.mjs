@@ -133,8 +133,10 @@ test('checkout del preview valida contrato de Perfil y mantiene copy comercial',
     deliveryMode: 'delivery',
   });
   await expect(page.locator('[data-profile-block="incomplete"]')).toBeVisible();
+  // El bloqueo se resuelve ACÁ: el nombre y el WhatsApp son campos del propio
+  // checkout, no un botón que manda a Perfil.
   await expect(
-    page.locator('[data-profile-block="incomplete"] [data-profile-checkout-action="edit-profile"]'),
+    page.locator('[data-profile-identity-form] [name="checkoutIdentityName"]'),
   ).toBeVisible();
 
   await fillCheckout(page, {

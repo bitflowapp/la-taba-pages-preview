@@ -5,7 +5,8 @@ import test from 'node:test';
 
 import { clasificar, csvDe, MOTIVOS } from '../scripts/comercial/censo-produccion.mjs';
 import {
-  BLOQUEADO, ESPERA_AUTORIZACION, FALTA_DATO_HUMANO, INFO, OK, veredicto,
+  BLOQUEADO, ESPERA_AUTORIZACION, FALTA_DATO_HUMANO, FUNCIONES_OBLIGATORIAS,
+  funcionesActivas, INFO, OK, veredicto,
 } from '../scripts/comercial/compuerta-comercial.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
@@ -218,4 +219,95 @@ test('la compuerta no le pide a Walter una Public Key que el código no usa', ()
 
   const runbook = fs.readFileSync(path.join(root, 'MERCADOPAGO-PRODUCTION-ACTIVATION.md'), 'utf8');
   assert.doesNotMatch(runbook, /\|\s*\*\*Public Key productiva\*\*/, 'no puede estar en la tabla de datos obligatorios');
+});
+
+// ─── LA FOTO: DEPENDE DE SI ALGUIEN LO VE ────────────────────────────────────
+/*
+ * Un producto PUBLICADO sin imagen es un hueco en la góndola que el cliente mira
+ * y toca; arrancar a cobrar así es una decisión que nadie tomó. Uno que no es
+ * comprable puede esperar su foto todo lo que haga falta, porque nadie lo está
+ * mirando. La misma ausencia, dos consecuencias distintas.
+ */
+test('33 válidos + 1 comprable sin foto => COMMERCIAL NOT READY', () => {
+  assert.equal(veredicto([
+    { estado: OK, id: 'catalogo' },
+    { estado: OK, id: 'precios' },
+    { estado: OK, id: 'stock' },
+    { estado: BLOQUEADO, id: 'imagenes' },   // el comprable sin image_url
+    { estado: OK, id: 'mp_functions' },
+    { estado: OK, id: 'mercadopago' },
+    { estado: ESPERA_AUTORIZACION, id: 'proveedor_pago' },
+  ]), 'COMMERCIAL NOT READY');
+});
+
+test('33 válidos + incompletos ocultos sin foto => no bloquea', () => {
+  assert.equal(veredicto([
+    { estado: OK, id: 'catalogo' },
+    { estado: OK, id: 'precios' },
+    { estado: OK, id: 'stock' },
+    { estado: OK, id: 'imagenes' },            // los comprables sí tienen foto
+    { estado: INFO, id: 'catalogo_incompleto' }, // los ocultos, sin foto, no importan
+    { estado: OK, id: 'mp_functions' },
+    { estado: OK, id: 'mercadopago' },
+    { estado: ESPERA_AUTORIZACION, id: 'proveedor_pago' },
+  ]), 'READY TO ENABLE PAYMENT');
+});
+
+test('la regla de la foto vive en la compuerta, no en la comprabilidad del catálogo', () => {
+  // El frontend sigue vendiendo un producto sin foto: cambiar eso tocaría el
+  // catálogo entero para resolver una pregunta de arranque comercial.
+  const r = clasificar(fila({ image_url: '' }));
+  assert.equal(r.comprable, true);
+  // Y la compuerta igual lo frena, con su propia regla.
+  const fuente = fs.readFileSync(path.join(root, 'scripts/comercial/compuerta-comercial.mjs'), 'utf8');
+  assert.match(fuente, /chequeo\('imagenes', BLOQUEADO/);
+});
+
+// ─── LAS SIETE FUNCIONES, POR NOMBRE ─────────────────────────────────────────
+/*
+ * `refund` y `cancel-payment` son obligatorias, y no por precaución: el Panel
+ * DIBUJA el control de devolución (`data-payment-refund-confirm`) y
+ * `supabase_order_repository` invoca las dos funciones. Cobrar sin poder
+ * devolver deja al dueño tocando un botón que falla.
+ */
+test('la lista obligatoria son las siete, con las de devolución adentro', () => {
+  assert.equal(FUNCIONES_OBLIGATORIAS.length, 7);
+  assert.ok(FUNCIONES_OBLIGATORIAS.includes('mercadopago-refund'));
+  assert.ok(FUNCIONES_OBLIGATORIAS.includes('mercadopago-cancel-payment'));
+
+  // Y el circuito que las justifica sigue existiendo: si el Panel dejara de
+  // ofrecer devoluciones, esta exigencia habría que revisarla.
+  const repo = fs.readFileSync(path.join(root, 'js/repositories/supabase_order_repository.js'), 'utf8');
+  assert.match(repo, /invokePaymentFunction\('mercadopago-refund'/);
+  assert.match(repo, /invokePaymentFunction\('mercadopago-cancel-payment'/);
+});
+
+test('se verifican por NOMBRE y estado, no contando cuántas hay', () => {
+  const salidaReal = [
+    '  ✓ mercadopago-create-checkout-session          v1    ACTIVE verify_jwt=true',
+    '  ✓ mercadopago-create-preference                v1    ACTIVE verify_jwt=true',
+    '  ✓ mercadopago-checkout-status                  v1    ACTIVE verify_jwt=true',
+    '  ✓ mercadopago-webhook                          v1    ACTIVE verify_jwt=false',
+    '  ✓ mercadopago-payment-worker                   v1    ACTIVE verify_jwt=false',
+    '  · mercadopago-refund                           v1    ACTIVE verify_jwt=true',
+    '  · mercadopago-cancel-payment                   v1    ACTIVE verify_jwt=true',
+  ].join('\n');
+  assert.deepEqual(funcionesActivas(salidaReal), [...FUNCIONES_OBLIGATORIAS]);
+
+  // Cinco correctas y dos ausentes dan «cinco», igual que cinco correctas más
+  // dos de otra cosa. Contar no distingue esos dos mundos; nombrar, sí.
+  const sinDevoluciones = salidaReal.split('\n').slice(0, 5).join('\n')
+    + '\n  ✓ mercadopago-otra-cosa                     v1    ACTIVE verify_jwt=true'
+    + '\n  ✓ mercadopago-otra-mas                      v1    ACTIVE verify_jwt=true';
+  const activas = funcionesActivas(sinDevoluciones);
+  assert.equal(activas.length, 5, 'las dos de relleno no cuentan');
+  assert.ok(!activas.includes('mercadopago-refund'));
+
+  // Desplegada pero NO activa no alcanza.
+  const inactiva = '  ✗ mercadopago-webhook                          v1    INACTIVE';
+  assert.deepEqual(funcionesActivas(inactiva, ['mercadopago-webhook']), []);
+
+  // Y un nombre que empieza igual no puede hacerse pasar por otro.
+  const parecida = '  ✓ mercadopago-refund-v2                        v1    ACTIVE';
+  assert.deepEqual(funcionesActivas(parecida, ['mercadopago-refund']), []);
 });

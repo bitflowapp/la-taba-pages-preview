@@ -109,9 +109,55 @@ function veredictoMercadoPago() {
   }
   const linea = salida.split('\n').find((l) => l.startsWith('VEREDICTO:')) || '';
   const dictamen = linea.replace('VEREDICTO:', '').trim();
-  const desplegadas = (salida.match(/✓ mercadopago-/g) || []).length;
-  if (!dictamen) return { veredicto: 'DESCONOCIDO', desplegadas: 0, error: fallo?.message || 'sin veredicto en la salida' };
-  return { veredicto: dictamen, desplegadas };
+  const activas = funcionesActivas(salida);
+  if (!dictamen) {
+    return { veredicto: 'DESCONOCIDO', activas: [], error: fallo?.message || 'sin veredicto en la salida' };
+  }
+  return { veredicto: dictamen, activas };
+}
+
+/*
+ * LAS SIETE FUNCIONES, POR NOMBRE. NO «SIETE CUALESQUIERA».
+ *
+ * Contar no alcanza: cinco correctas y dos faltantes dan el mismo número que
+ * cinco correctas más dos de otra cosa, y la que falte va a fallar recién cuando
+ * alguien la necesite, con plata real de por medio.
+ *
+ * Las siete son obligatorias para declarar READY FOR REAL PAYMENT, incluidas
+ * `refund` y `cancel-payment`. No es una precaución: el Panel del comercio
+ * DIBUJA el control de devolución (`data-payment-refund-confirm`) y
+ * `supabase_order_repository` invoca las dos funciones. Cobrar sin poder
+ * devolver deja al dueño tocando un botón que falla, que es peor que no
+ * ofrecerlo.
+ *
+ * `verificar-configuracion.mjs` las llama «opcionales» porque su veredicto
+ * responde otra pregunta —si el proyecto PUEDE cobrar—. Para poder OPERAR hacen
+ * falta las siete, y esa diferencia se decide acá.
+ */
+export const FUNCIONES_OBLIGATORIAS = Object.freeze([
+  'mercadopago-create-checkout-session',
+  'mercadopago-create-preference',
+  'mercadopago-checkout-status',
+  'mercadopago-webhook',
+  'mercadopago-payment-worker',
+  'mercadopago-refund',
+  'mercadopago-cancel-payment',
+]);
+
+/**
+ * Cuáles de la lista aparecen ACTIVE en la salida del verificador.
+ *
+ * Se compara por TOKEN exacto y no con una expresión regular armada por
+ * interpolación: `mercadopago-refund` no puede contar por una línea de
+ * `mercadopago-refund-v2` ni al revés, y partir la línea en palabras deja eso
+ * fuera de discusión sin depender de cómo se escapó una barra invertida.
+ */
+export function funcionesActivas(salida, esperadas = FUNCIONES_OBLIGATORIAS) {
+  const lineas = String(salida).split('\n');
+  return esperadas.filter((nombre) => lineas.some((linea) => {
+    const palabras = linea.trim().split(/\s+/);
+    return palabras.includes(nombre) && palabras.includes('ACTIVE');
+  }));
 }
 
 export async function correrCompuerta() {
@@ -159,12 +205,23 @@ export async function correrCompuerta() {
       ? chequeo('catalogo', OK, `${comprables.length} producto(s) comprable(s) de ${censo.productos.length}`)
       : chequeo('catalogo', FALTA_DATO_HUMANO, 'no hay ningún producto comprable', 'el comercio: precio, stock y publicación'));
 
-    // Un comprable sin foto es un hueco que el cliente VE. No frena el cobro
-    // —se vende igual— pero se informa fuerte.
+    /*
+     * UN COMPRABLE SIN FOTO BLOQUEA; UNO OCULTO SIN FOTO, NO.
+     *
+     * La diferencia es si alguien lo ve. Un producto publicado sin imagen es un
+     * hueco en la góndola que el cliente mira y toca, y arrancar a cobrar así es
+     * una decisión que nadie tomó. Uno que no es comprable puede esperar su foto
+     * todo lo que haga falta: nadie lo está mirando.
+     *
+     * Es una regla de ESTA compuerta y no de la comprabilidad del frontend: allá
+     * la foto no impide vender, y cambiarlo tocaría el catálogo entero para
+     * resolver una pregunta de arranque comercial.
+     */
     const sinFoto = comprables.filter((p) => !p.conImagen);
     chequeos.push(sinFoto.length === 0
       ? chequeo('imagenes', OK, 'todos los comprables tienen foto')
-      : chequeo('imagenes', INFO, `${sinFoto.length} comprable(s) sin foto`, 'quien cargue las fotos'));
+      : chequeo('imagenes', BLOQUEADO,
+        `${sinFoto.length} producto(s) COMPRABLE(S) sin image_url: el cliente los ve vacíos`));
 
     const precioRaro = comprables.filter((p) => !(Number(p.price) > 0) || p.price_status === 'pending');
     chequeos.push(precioRaro.length === 0
@@ -268,11 +325,12 @@ export async function correrCompuerta() {
    * «technically ready» a un sistema al que le falta la infraestructura
    * productiva sería mentir sobre de quién es el trabajo pendiente.
    */
-  chequeos.push(mp.desplegadas >= 5
-    ? chequeo('mp_functions', OK, `${mp.desplegadas} función(es) Edge de Mercado Pago desplegada(s)`)
+  const faltantes = FUNCIONES_OBLIGATORIAS.filter((nombre) => !mp.activas.includes(nombre));
+  chequeos.push(faltantes.length === 0
+    ? chequeo('mp_functions', OK, `las ${FUNCIONES_OBLIGATORIAS.length} funciones Edge obligatorias, ACTIVE`)
     : chequeo('mp_functions', BLOQUEADO,
-      `${mp.desplegadas} de 5 funciones Edge obligatorias desplegadas: es infraestructura nuestra, `
-      + 'y se despliega sin secretos porque falla cerrado'));
+      `faltan ${faltantes.length} función(es) Edge: ${faltantes.join(', ')}. `
+      + 'Es infraestructura nuestra y se despliega sin secretos, porque falla cerrado'));
 
   // ── 6 · el comercio habilitado para cobrar ─────────────────────────────────
   try {

@@ -118,6 +118,7 @@ export function readCatalogIndex(productsCsv) {
 export function buildCommercialPlan(sheetCsv, {
   catalog,
   imageExists = () => true,
+  alcoholHabilitado = false,
 } = {}) {
   const errors = [];
   const rows = parseCsv(String(sheetCsv ?? ''));
@@ -178,7 +179,13 @@ export function buildCommercialPlan(sheetCsv, {
 
     const before = {
       price: normalizeStoredPrice(product.price),
-      stock: null, // el catálogo técnico no guarda stock; ver la auditoría
+      /*
+       * El catálogo del REPOSITORIO no guarda unidades, así que acá vale null y
+       * la planilla tiene que traer el stock para poder publicar. El catálogo de
+       * PRODUCCIÓN sí las tiene, y entonces el «antes» es el de verdad y el diff
+       * puede decir «stock 12 → 24» en vez de «— → 24».
+       */
+      stock: normalizeStoredStock(product.stock),
       published: String(product.publication_status || '').trim() === 'published',
     };
     const after = {
@@ -197,6 +204,21 @@ export function buildCommercialPlan(sheetCsv, {
     // stock», porque el stock no vive en el catálogo técnico. Lo encontró el
     // propio test de esta regla.
     if (publish.value === true) {
+      /*
+       * EL ALCOHOL NO SE PUBLICA POR PLANILLA.
+       *
+       * Publicar una bebida alcohólica no es cargar un dato: es afirmar que el
+       * local tiene la habilitación de expendio acreditada. Esa decisión vive en
+       * `businesses.alcohol_sales_enabled`, la toma una persona, y este camino
+       * no puede tomarla por ella ni siquiera si la planilla lo pide. Con la
+       * compuerta cerrada, una fila que intente publicar alcohol frena la
+       * importación ENTERA —como cualquier otro error— en vez de colarse.
+       */
+      if (product.is_alcoholic === true && !alcoholHabilitado) {
+        errors.push(`Línea ${line} (${sku}): es una bebida alcohólica y la venta de alcohol está cerrada `
+          + '(alcohol_sales_enabled = false). Publicarla es una habilitación comercial, no un dato de planilla.');
+        continue;
+      }
       const faltan = [];
       if (after.price === null) faltan.push('precio');
       if (after.stock === null) faltan.push('stock');
@@ -219,6 +241,10 @@ export function buildCommercialPlan(sheetCsv, {
       before,
       after,
       changes: describeChanges(before, after),
+      // Lo que de verdad le importa al negocio: si después de esto se puede
+      // comprar o no. Un cambio de precio que deja el producto igual de
+      // invendible no es una mejora, y así se ve.
+      comprabilidad: { antes: esComprable(before), despues: esComprable(after) },
       notes: values.notas || '',
     });
   }
@@ -237,6 +263,9 @@ export function buildCommercialPlan(sheetCsv, {
       stockChanges: touched.filter((row) => row.changes.includes('stock')).length,
       publishChanges: touched.filter((row) => row.changes.includes('publicacion')).length,
       // Los que NO están en la planilla no se tocan: no entran al payload.
+      seVuelvenComprables: planned.filter((r) => !r.comprabilidad.antes && r.comprabilidad.despues).length,
+      dejanDeSerComprables: planned.filter((r) => r.comprabilidad.antes && !r.comprabilidad.despues).length,
+      siguenSinPoderVenderse: planned.filter((r) => !r.comprabilidad.antes && !r.comprabilidad.despues).length,
       untouchedCatalogSkus: catalog.size - planned.length,
       sheetSha256: sha256(String(sheetCsv ?? '')),
     },
@@ -251,9 +280,22 @@ function emptySummary() {
     priceChanges: 0,
     stockChanges: 0,
     publishChanges: 0,
+    seVuelvenComprables: 0,
+    dejanDeSerComprables: 0,
+    siguenSinPoderVenderse: 0,
     untouchedCatalogSkus: 0,
     sheetSha256: '',
   };
+}
+
+/**
+ * ¿Con estos tres valores se puede comprar? Es la misma regla que
+ * `core/beverage-home-sections.isPurchasableBeverageProduct` aplica en la
+ * tienda, reducida a lo que una planilla puede cambiar.
+ */
+export function esComprable(estado) {
+  return Boolean(estado.published && estado.price !== null && estado.price > 0
+    && estado.stock !== null && estado.stock > 0);
 }
 
 function describeChanges(before, after) {
@@ -273,6 +315,17 @@ export function normalizeStoredPrice(raw) {
   if (!/^\d+(?:\.\d{1,2})?$/.test(text)) return null;
   const value = Number(text);
   return Number.isFinite(value) && value > 0 ? value : null;
+}
+
+/**
+ * Stock guardado. Ausente es `null` —«no lo sé»—, nunca 0: confundir los dos
+ * haría que un producto sin dato pareciera «ya estaba en cero» y que la planilla
+ * no cambia nada. Es la misma distinción que hace `normalizeStoredPrice`.
+ */
+export function normalizeStoredStock(raw) {
+  if (raw === null || raw === undefined || String(raw).trim() === '') return null;
+  const value = Number(raw);
+  return Number.isInteger(value) && value >= 0 ? value : null;
 }
 
 export function renderChangeReport(plan) {
@@ -337,8 +390,10 @@ export async function applyCommercialImport(client, plan, businessId) {
   return { applied: applied.length, rows: applied };
 }
 
+export const CATALOGOS = Object.freeze(['repo', 'produccion']);
+
 export function parseCommercialImportArgs(args = []) {
-  const known = ['--dry-run', '--apply', '--json', '--target'];
+  const known = ['--dry-run', '--apply', '--json', '--target', '--catalogo'];
   const unknown = args.filter((argument) => argument.startsWith('--') && !known.includes(argument));
   if (unknown.length) throw new Error(`Flag desconocido: ${unknown[0]}.`);
   const apply = args.includes('--apply');
@@ -350,11 +405,25 @@ export function parseCommercialImportArgs(args = []) {
   if (apply && !target) {
     throw new Error('--apply exige --target: aplicar sin decir a dónde es exactamente lo que este importador evita.');
   }
+  /*
+   * CONTRA QUÉ CATÁLOGO SE VALIDA.
+   *
+   * `repo` es el histórico y sigue siendo el valor por defecto para no cambiarle
+   * el significado a ninguna invocación que ya exista. `produccion` es el que
+   * sirve para una planilla real: medido el 2026-08-27, el CSV del repositorio y
+   * la tienda publicada comparten 7 SKU de 72, así que validar contra el repo
+   * rechaza casi todo lo que está vendiendo.
+   */
+  const catalogoIndex = args.indexOf('--catalogo');
+  const catalogo = catalogoIndex >= 0 ? args[catalogoIndex + 1] : 'repo';
+  if (!CATALOGOS.includes(catalogo)) {
+    throw new Error(`--catalogo tiene que ser ${CATALOGOS.join(' o ')}, y llegó «${catalogo || '(vacío)'}».`);
+  }
   const positionals = args.filter((argument, index) => (
-    !argument.startsWith('--') && args[index - 1] !== '--target'
+    !argument.startsWith('--') && args[index - 1] !== '--target' && args[index - 1] !== '--catalogo'
   ));
   if (positionals.length !== 1) throw new Error('Indicá exactamente un archivo CSV.');
-  return { file: positionals[0], mode: apply ? 'apply' : 'dry-run', target };
+  return { file: positionals[0], mode: apply ? 'apply' : 'dry-run', target, catalogo };
 }
 
 async function main(args) {
@@ -377,14 +446,25 @@ async function main(args) {
     return;
   }
 
-  const catalog = readCatalogIndex(fs.readFileSync(PRODUCTS_CSV, 'utf8'));
-  const plan = buildCommercialPlan(sheetCsv, {
-    catalog,
-    imageExists: (product) => {
+  let catalog;
+  let alcoholHabilitado = false;
+  let imageExists;
+  if (options.catalogo === 'produccion') {
+    const modulo = await import('./comercial/catalogo-de-produccion.mjs');
+    catalog = await modulo.leerCatalogoDeProduccion();
+    alcoholHabilitado = await modulo.leerAlcoholHabilitado();
+    imageExists = modulo.tieneImagen;
+    console.log(`Catálogo: PRODUCCIÓN · ${catalog.size} SKU · alcohol_sales_enabled=${alcoholHabilitado}`);
+  } else {
+    catalog = readCatalogIndex(fs.readFileSync(PRODUCTS_CSV, 'utf8'));
+    imageExists = (product) => {
       const master = String(product.image_master || '').trim();
       return Boolean(master) && fs.existsSync(path.join(ROOT, master));
-    },
-  });
+    };
+    console.log(`Catálogo: repositorio · ${catalog.size} SKU`);
+  }
+
+  const plan = buildCommercialPlan(sheetCsv, { catalog, imageExists, alcoholHabilitado });
 
   if (options.mode === 'dry-run' && args.includes('--json')) {
     console.log(JSON.stringify(plan, null, 2));
@@ -393,7 +473,10 @@ async function main(args) {
   }
 
   if (plan.errors.length) {
-    console.error(`La planilla tiene ${plan.errors.length} problema(s). No se importó nada.`);
+    console.error('');
+    console.error('INVALID');
+    console.error(`  ${plan.errors.length} fila(s) rechazada(s). NO SE ESCRIBIÓ NADA.`);
+    console.error('');
     for (const error of plan.errors) console.error(`  ERROR ${error}`);
     console.error('');
     console.error('Falla cerrado a propósito: una importación a medias deja precios mal en la góndola.');
@@ -401,7 +484,21 @@ async function main(args) {
     return;
   }
 
-  console.log(`Planilla válida: ${plan.summary.sheetRows} fila(s), sha256=${plan.summary.sheetSha256.slice(0, 16)}…`);
+  console.log('');
+  console.log('VALID');
+  console.log(`  productos encontrados ....... ${plan.summary.sheetRows}`);
+  console.log(`  filas rechazadas ............ 0`);
+  console.log(`  productos NO mencionados .... ${plan.summary.untouchedCatalogSkus} (quedan intactos)`);
+  console.log(`  precios que cambian ......... ${plan.summary.priceChanges}`);
+  console.log(`  stock que cambia ............ ${plan.summary.stockChanges}`);
+  console.log(`  publicación que cambia ...... ${plan.summary.publishChanges}`);
+  console.log('');
+  console.log('  IMPACTO SOBRE COMPRABILIDAD');
+  console.log(`    se vuelven comprables ..... ${plan.summary.seVuelvenComprables}`);
+  console.log(`    dejan de ser comprables ... ${plan.summary.dejanDeSerComprables}`);
+  console.log(`    siguen sin poder venderse . ${plan.summary.siguenSinPoderVenderse}`);
+  console.log('');
+  console.log(`  sha256 de la planilla ....... ${plan.summary.sheetSha256.slice(0, 16)}…`);
   console.log('');
   const report = renderChangeReport(plan);
   if (report.length) {

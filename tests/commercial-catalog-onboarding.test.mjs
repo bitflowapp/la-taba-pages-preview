@@ -281,13 +281,16 @@ test('una planilla sin las columnas obligatorias no llega a evaluarse', () => {
 
 test('aplicar exige decir a dónde', () => {
   assert.throws(() => parseCommercialImportArgs(['planilla.csv', '--apply']), /--apply exige --target/);
+  // `catalogo` se sumó cuando el importador aprendió a validar contra
+  // producción; el default sigue siendo el histórico para no cambiarle el
+  // significado a ninguna invocación que ya existiera.
   assert.deepEqual(
     parseCommercialImportArgs(['planilla.csv']),
-    { file: 'planilla.csv', mode: 'dry-run', target: '' },
+    { file: 'planilla.csv', mode: 'dry-run', target: '', catalogo: 'repo' },
   );
   assert.deepEqual(
     parseCommercialImportArgs(['planilla.csv', '--apply', '--target', 'local']),
-    { file: 'planilla.csv', mode: 'apply', target: 'local' },
+    { file: 'planilla.csv', mode: 'apply', target: 'local', catalogo: 'repo' },
   );
 });
 
@@ -343,4 +346,130 @@ test('el reporte de readiness committeado está al día', () => {
     assert.ok(entry.stock !== null, `${entry.sku} listo sin stock`);
     assert.ok(entry.hasImageFile, `${entry.sku} listo sin foto`);
   }
+});
+
+// ─── PELIGRO · validar contra un catálogo que NO es el que está vendiendo ────
+/*
+ * Medido el 2026-08-27 contra la tienda publicada: 72 SKU en producción, 92 en
+ * `catalog/products.csv`, SIETE en común, y de esos siete los siete precios
+ * difieren. Con el CSV como fuente, una planilla con SKU reales se rechaza
+ * entera: se probó con ocho productos vivos y salieron los ocho como «el SKU no
+ * existe en el catálogo».
+ *
+ * Fallar cerrado estaba bien; medir contra la fuente equivocada, no.
+ */
+test('el catálogo de producción entra al planificador con la forma que ya esperaba', async () => {
+  const { filaAEntradaDeCatalogo, tieneImagen } = await import('../scripts/comercial/catalogo-de-produccion.mjs');
+
+  const publicado = filaAEntradaDeCatalogo({
+    sku: 'coca-cola-pet-1500ml', name: 'Coca-Cola', category: 'gaseosas',
+    price: '4990.00', price_status: 'confirmed', stock: 12, available: true,
+    is_alcoholic: false, image_url: 'https://x/foto.webp',
+  });
+  assert.equal(publicado.publication_status, 'published');
+  assert.equal(publicado.price, '4990.00');
+  assert.equal(publicado.stock, 12);
+  assert.equal(tieneImagen(publicado), true);
+
+  // Un precio PENDIENTE no llega como número: si llegara, el diff diría que ya
+  // valía algo y el aumento parecería más chico de lo que es.
+  const pendiente = filaAEntradaDeCatalogo({
+    sku: 'x', name: 'X', price: '0.00', price_status: 'pending', stock: 0, available: false,
+  });
+  assert.equal(pendiente.price, '');
+  assert.equal(pendiente.publication_status, 'hidden');
+  assert.equal(tieneImagen(pendiente), false);
+});
+
+test('el stock guardado distingue «no lo sé» de «cero»', async () => {
+  const { normalizeStoredStock } = await import('../scripts/import-commercial-catalog.mjs');
+  assert.equal(normalizeStoredStock(undefined), null, 'ausente es no sé, nunca cero');
+  assert.equal(normalizeStoredStock(''), null);
+  assert.equal(normalizeStoredStock(null), null);
+  assert.equal(normalizeStoredStock(0), 0, 'cero cargado a mano SÍ es cero');
+  assert.equal(normalizeStoredStock(12), 12);
+  assert.equal(normalizeStoredStock(-3), null, 'un negativo no es un stock');
+  assert.equal(normalizeStoredStock('2.5'), null, 'las unidades son enteras');
+});
+
+test('con el catálogo de producción el diff de stock deja de ser siempre «— → N»', () => {
+  const catalogoVivo = new Map([['coca-cola-pet-1500ml', {
+    sku: 'coca-cola-pet-1500ml', name: 'Coca-Cola', category_id: 'gaseosas',
+    price: '4990.00', stock: 12, publication_status: 'published', is_alcoholic: false,
+  }]]);
+  const resultado = buildCommercialPlan(sheet(['coca-cola-pet-1500ml,4990.00,18,si']), {
+    catalog: catalogoVivo, imageExists: () => true,
+  });
+  assert.deepEqual(resultado.errors, []);
+  assert.equal(resultado.rows[0].before.stock, 12, 'el antes sale de producción, no es null');
+  assert.equal(resultado.rows[0].after.stock, 18);
+  assert.deepEqual(resultado.rows[0].changes, ['stock']);
+});
+
+// ─── PELIGRO · publicar alcohol desde una planilla ───────────────────────────
+/*
+ * Publicar una bebida alcohólica no es cargar un dato: es afirmar que el local
+ * tiene la habilitación de expendio acreditada. El importador no tenía ninguna
+ * regla al respecto, así que una planilla con `publicar=si` en un SKU alcohólico
+ * lo habría publicado.
+ */
+test('una planilla NO puede habilitar alcohol, y el intento frena el lote entero', () => {
+  const conAlcohol = new Map([
+    ['gin-lata-473ml', {
+      sku: 'gin-lata-473ml', name: 'Gin tonic', category_id: 'listos',
+      price: '2200.00', stock: 10, publication_status: 'hidden', is_alcoholic: true,
+    }],
+    ['agua-500ml', {
+      sku: 'agua-500ml', name: 'Agua', category_id: 'aguas',
+      price: '1500.00', stock: 10, publication_status: 'hidden', is_alcoholic: false,
+    }],
+  ]);
+  const cerrado = buildCommercialPlan(
+    sheet(['agua-500ml,1500.00,10,si', 'gin-lata-473ml,2200.00,10,si']),
+    { catalog: conAlcohol, imageExists: () => true, alcoholHabilitado: false },
+  );
+  assert.equal(cerrado.errors.length, 1);
+  assert.match(cerrado.errors[0], /bebida alcohólica y la venta de alcohol está cerrada/);
+  // Y no se aplica NADA: el agua, que estaba perfecta, tampoco entra.
+  assert.deepEqual(cerrado.rows, [], 'un lote con alcohol rechazado no se aplica a medias');
+
+  // Con la habilitación puesta por una persona, la misma planilla pasa.
+  const abierto = buildCommercialPlan(
+    sheet(['gin-lata-473ml,2200.00,10,si']),
+    { catalog: conAlcohol, imageExists: () => true, alcoholHabilitado: true },
+  );
+  assert.deepEqual(abierto.errors, []);
+
+  // Y el alcohol que NO se pide publicar no molesta: cambiarle el precio a algo
+  // que sigue oculto es una corrección de datos, no una habilitación.
+  const soloPrecio = buildCommercialPlan(
+    sheet(['gin-lata-473ml,2500.00,10,no']),
+    { catalog: conAlcohol, imageExists: () => true, alcoholHabilitado: false },
+  );
+  assert.deepEqual(soloPrecio.errors, []);
+  assert.equal(soloPrecio.rows[0].after.published, false);
+});
+
+test('el plan dice si un producto se vuelve comprable, que es lo que le importa al negocio', () => {
+  const catalogoVivo = new Map([['pack-x6', {
+    sku: 'pack-x6', name: 'Pack x6', category_id: 'gaseosas',
+    price: '19999.00', stock: 8, publication_status: 'hidden', is_alcoholic: false,
+  }]]);
+  const resultado = buildCommercialPlan(sheet(['pack-x6,19999.00,8,si']), {
+    catalog: catalogoVivo, imageExists: () => true,
+  });
+  assert.deepEqual(resultado.errors, []);
+  assert.equal(resultado.rows[0].comprabilidad.antes, false);
+  assert.equal(resultado.rows[0].comprabilidad.despues, true);
+  assert.equal(resultado.summary.seVuelvenComprables, 1);
+  assert.equal(resultado.summary.dejanDeSerComprables, 0);
+});
+
+test('--catalogo elige la fuente, y sólo acepta las dos que existen', () => {
+  assert.equal(parseCommercialImportArgs(['x.csv']).catalogo, 'repo', 'el default no cambia');
+  assert.equal(parseCommercialImportArgs(['--catalogo', 'produccion', 'x.csv']).catalogo, 'produccion');
+  // El archivo se sigue reconociendo aunque venga después del flag y su valor.
+  assert.equal(parseCommercialImportArgs(['--catalogo', 'produccion', 'x.csv']).file, 'x.csv');
+  assert.throws(() => parseCommercialImportArgs(['--catalogo', 'staging', 'x.csv']), /tiene que ser repo o produccion/);
+  assert.throws(() => parseCommercialImportArgs(['--catalogo', 'x.csv']), /Indicá exactamente un archivo CSV|tiene que ser/);
 });

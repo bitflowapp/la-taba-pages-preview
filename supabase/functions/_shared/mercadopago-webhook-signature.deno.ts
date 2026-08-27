@@ -62,3 +62,32 @@ Deno.test('Mercado Pago webhook: timestamp vencido', async () => {
   const expired = await signature({ timestamp: Math.floor(NOW_MS / 1000) - 301 });
   if (validate({ signature: expired })) throw new Error('expired timestamp accepted');
 });
+
+/*
+ * La ventana de frescura es NUESTRA, no de Mercado Pago, y su documentación
+ * llama al mismo campo «segundos» en el ejemplo (`ts=1704908010`) y
+ * «milisegundos» en la prosa. Si el proveedor firmara en milisegundos y esto
+ * sólo entendiera segundos, rechazaríamos TODOS los webhooks legítimos y ningún
+ * pago aprobado se finalizaría por esa vía. Las dos unidades tienen que pasar
+ * —y la unidad nueva no puede volverse una puerta para revivir una firma vieja.
+ */
+Deno.test('Mercado Pago webhook: acepta ts en segundos y en milisegundos', async () => {
+  const enSegundos = await signature({ timestamp: Math.floor(NOW_MS / 1000) });
+  if (!validate({ signature: enSegundos })) throw new Error('seconds timestamp rejected');
+  const enMilisegundos = await signature({ timestamp: NOW_MS });
+  if (!validate({ signature: enMilisegundos })) throw new Error('millisecond timestamp rejected');
+});
+
+Deno.test('Mercado Pago webhook: un ts en milisegundos vencido sigue vencido', async () => {
+  const vencido = await signature({ timestamp: NOW_MS - 301_000 });
+  if (validate({ signature: vencido })) throw new Error('expired millisecond timestamp accepted');
+  const futuro = await signature({ timestamp: NOW_MS + 120_000 });
+  if (validate({ signature: futuro })) throw new Error('future millisecond timestamp accepted');
+});
+
+Deno.test('Mercado Pago webhook: ts no numérico o implausible se rechaza', async () => {
+  const valido = await signature();
+  if (validate({ signature: valido.replace(/ts=\d+/, 'ts=abc') })) throw new Error('non numeric ts accepted');
+  if (validate({ signature: valido.replace(/ts=\d+/, 'ts=0') })) throw new Error('zero ts accepted');
+  if (validate({ signature: valido.replace(/ts=\d+/, 'ts=1000000') })) throw new Error('implausible ts accepted');
+});

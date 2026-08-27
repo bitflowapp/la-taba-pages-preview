@@ -233,6 +233,70 @@ test.describe('handoff a Mercado Pago', () => {
   // prueba del archivo se queda sin tiempo en el setup y no llega a medir.
   test.describe.configure({ timeout: 120_000 });
 
+  /*
+   * ANTES de tocar nada: la pantalla tiene que decir a qué se está por entrar.
+   *
+   * `renderCheckoutPaymentFields()` colgaba de `[data-payment-note]`, un nodo
+   * que el checkout actual NO tiene, así que salía por un `return` temprano en
+   * TODOS los renders. El resultado medible era éste: con Mercado Pago elegido
+   * el botón decía «Confirmar pedido» y la nota decía «El medio de pago se
+   * coordina con el local» —la pantalla afirmaba que el pago se arreglaba con
+   * el negocio y a continuación redirigía a Mercado Pago—.
+   *
+   * Es exactamente lo que la misión prohíbe: que «A coordinar» se haga pasar
+   * por Mercado Pago. Y la vuelta también se mide: cambiar de medio tiene que
+   * DEVOLVER la copia, no dejar puesta la promesa de un redirect.
+   */
+  test('elegir Mercado Pago cambia lo que la pantalla promete, y volver lo devuelve', async ({ page }) => {
+    await instalarBackend(page);
+    await abrirCheckoutConCarrito(page);
+    await page.getByLabel('Retiro en local').check();
+
+    const formaDePago = page.getByLabel('Forma de pago');
+    const boton = page.locator('[data-checkout-form] [type="submit"]');
+    const nota = page.locator('[data-checkout-mode-note]');
+
+    await expect(formaDePago.locator('option[value="mercadopago"]')).toHaveCount(1);
+    const notaBase = (await nota.textContent()).trim();
+    expect(notaBase, 'la nota base tiene que existir para poder restaurarla').not.toBe('');
+
+    await formaDePago.selectOption('mercadopago');
+    await expect(boton).toHaveText(/Pagar con Mercado Pago/);
+    await expect(nota).toHaveText(/Mercado Pago/);
+    await expect(nota).not.toHaveText(/se coordina con el local/);
+
+    await formaDePago.selectOption('coordinate');
+    await expect(boton).toHaveText(/Confirmar pedido/);
+    await expect(nota).not.toHaveText(/Mercado Pago/);
+    expect((await nota.textContent()).trim()).toBe(notaBase);
+  });
+
+  /*
+   * La misma mentira, por el otro lado: si Mercado Pago deja de estar
+   * disponible mientras estaba elegido, el selector cae a «A coordinar» solo.
+   * El botón no puede quedarse ofreciendo un pago que ya no existe.
+   */
+  test('si Mercado Pago deja de estar disponible, el botón deja de ofrecerlo', async ({ page }) => {
+    await instalarBackend(page);
+    await abrirCheckoutConCarrito(page);
+    await page.getByLabel('Retiro en local').check();
+
+    const formaDePago = page.getByLabel('Forma de pago');
+    const boton = page.locator('[data-checkout-form] [type="submit"]');
+    await formaDePago.selectOption('mercadopago');
+    await expect(boton).toHaveText(/Pagar con Mercado Pago/);
+
+    await page.evaluate(async () => {
+      const { setMercadoPagoCheckoutAvailability } = await import('/js/ui.js');
+      setMercadoPagoCheckoutAvailability({ available: false });
+    });
+
+    await expect(formaDePago).toHaveValue('coordinate');
+    await expect(formaDePago.locator('option[value="mercadopago"]')).toHaveCount(0);
+    await expect(boton).toHaveText(/Confirmar pedido/);
+    await expect(page.locator('[data-checkout-mode-note]')).not.toHaveText(/Mercado Pago/);
+  });
+
   test('el segundo toque durante la navegación NO crea una segunda sesión de pago', async ({ page }) => {
     const llamadas = await instalarBackend(page);
     await elDestinoExternoNoLlega(page);
@@ -297,11 +361,22 @@ test.describe('handoff a Mercado Pago', () => {
     });
 
     await expect(boton).toBeEnabled({ timeout: 10_000 });
-    await expect(boton).toHaveText(/Confirmar pedido/);
+    /*
+     * El botón vuelve diciendo lo que VA A HACER, no lo que dice el modo.
+     * El selector sigue en Mercado Pago, así que tocarlo redirige otra vez:
+     * decir «Confirmar pedido» —que es lo que decía— era ofrecer una cosa y
+     * hacer otra.
+     */
+    await expect(boton).toHaveText(/Pagar con Mercado Pago/);
 
     const formaDePago = page.getByLabel('Forma de pago');
     await formaDePago.selectOption('cash');
     await expect(formaDePago).toHaveValue('cash');
+    // Y al cambiar de medio la copia vuelve: botón y nota dejan de hablar de
+    // Mercado Pago. Sin esto la nota quedaba prometiendo un redirect que ya no
+    // va a pasar.
+    await expect(boton).toHaveText(/Confirmar pedido/);
+    await expect(page.locator('[data-checkout-mode-note]')).not.toHaveText(/Mercado Pago/);
 
     // Y el carrito llegó intacto hasta acá.
     expect(await page.evaluate(async () => {
@@ -392,7 +467,8 @@ test.describe('handoff a Mercado Pago', () => {
     await page.waitForTimeout(600);
 
     await expect(boton).toBeEnabled({ timeout: 10_000 });
-    await expect(boton).toHaveText(/Confirmar pedido/);
+    // Sigue elegido Mercado Pago, así que el botón sigue ofreciendo Mercado Pago.
+    await expect(boton).toHaveText(/Pagar con Mercado Pago/);
     expect(llamadas.sesiones, 'moverse por la tienda no puede crear otra sesión').toBe(1);
   });
 

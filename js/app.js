@@ -29,6 +29,8 @@ import {
   renderNavigation,
   renderOrderSummary,
   renderTracking,
+  refreshCheckoutPaymentCopy,
+  rememberCheckoutBaseCopy,
   setMercadoPagoCheckoutAvailability,
   setComboCheckoutAvailability,
   setCategory,
@@ -769,6 +771,11 @@ function applyAppMode() {
   if (trustCopy) trustCopy.textContent = checkoutCopy.copy;
   const modeNote = document.querySelector('[data-checkout-mode-note]');
   if (modeNote) modeNote.textContent = checkoutCopy.note;
+  // El selector de pago sobrescribe estas dos superficies cuando alguien elige
+  // Mercado Pago. Declararlas acá es lo que le permite RESTAURARLAS al volver a
+  // otro medio, en vez de dejar puesta la promesa de un redirect que ya no va a
+  // pasar.
+  rememberCheckoutBaseCopy({ submitLabel: checkoutCopy.submit, note: checkoutCopy.note });
 
   applyProductionCatalogGate(mode);
   if (!production) setMercadoPagoCheckoutAvailability({ available: false });
@@ -1885,7 +1892,11 @@ function bindEvents() {
     const button = form?.querySelector('[type="submit"]');
     if (button) {
       button.disabled = isProductionOrderingBlocked();
-      button.textContent = checkoutModeCopy(getAppMode()).submit;
+      // La etiqueta la decide el medio de pago SELECCIONADO, no el modo.
+      // Escribir «Confirmar pedido» acá dejaba el botón mintiendo: la persona
+      // vuelve de Mercado Pago, el selector sigue en Mercado Pago, y el botón
+      // ofrece confirmar un pedido que en realidad va a redirigir de nuevo.
+      refreshCheckoutPaymentCopy();
     }
   };
   window.addEventListener('pageshow', rearmarCheckoutAlVolver);

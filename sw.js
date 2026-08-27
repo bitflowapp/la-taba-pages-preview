@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v89-direccion-sin-salir';
+const CACHE_NAME = 'la-taba-runtime-v90-el-boton-dice-lo-que-hace';
 const ASSETS = [
   './',
   './index.html',

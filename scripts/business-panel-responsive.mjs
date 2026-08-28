@@ -42,6 +42,10 @@ const ONLY = arg('only', '');
 // Los anchos donde el Panel se usa de verdad. Los seis primeros son los que
 // pidio la mision; el resto cubre tablet y los tres escritorios habituales.
 const VIEWPORTS = [
+  // 320px es el ancho mas angosto que todavia se usa (iPhone SE de 1.a
+  // generacion, y cualquier telefono con el zoom del sistema al maximo). No
+  // estaba en la lista, asi que el Panel nunca se habia medido ahi.
+  { name: '320x568', width: 320, height: 568, clase: 'movil' },
   { name: '360x740', width: 360, height: 740, clase: 'movil' },
   { name: '375x812', width: 375, height: 812, clase: 'movil' },
   { name: '390x844', width: 390, height: 844, clase: 'movil' },
@@ -191,13 +195,15 @@ const lineas = [
 const densidad = reporte.summary.density;
 if (densidad.length) {
   lineas.push('## Densidad del tablero de pedidos', '',
-    '| ancho | chrome antes del 1er pedido | alto de tarjeta | pedidos enteros a la vista |',
-    '|---|---|---|---|');
+    '| ancho | chrome antes del 1er pedido | 1.a tarjeta | tarjeta mediana | tarjeta mas baja | pedidos enteros a la vista |',
+    '|---|---|---|---|---|---|');
   for (const d of densidad) {
     lineas.push([
       '| `' + d.viewport + '` ',
       '| ' + d.chromeBeforeFirstOrder + 'px ',
       '| ' + d.orderCardHeight + 'px ',
+      '| ' + (d.orderCardHeightMedian ?? '-') + 'px ',
+      '| ' + (d.orderCardHeightMin ?? '-') + 'px ',
       '| ' + d.ordersFullyVisible + ' |',
     ].join(''));
   }
@@ -380,9 +386,24 @@ async function medir(page) {
         ? barra.getBoundingClientRect().height
         : 0;
       const utiles = alto - estorbo;
+      // El alto de la PRIMERA tarjeta dejo de ser comparable en cuanto la
+      // bandeja se ordena por urgencia: antes la primera era la mas vieja y
+      // ahora es la que esta trabada, que casi siempre es la mas alta -lleva
+      // ademas el aviso de atencion y el selector de repartidor-. Comparar
+      // «primera contra primera» entre dos disenios distintos mide que pedido
+      // quedo arriba, no cuanto mide una tarjeta.
+      //
+      // Por eso van las tres: la primera (lo que se ve al entrar), la MEDIANA
+      // (cuanto mide una tarjeta tipica) y la MAS BAJA (el piso del disenio).
+      const altos = tarjetas.map((t) => Math.round(t.getBoundingClientRect().height))
+        .sort((a, b) => a - b);
+      const mediana = altos[Math.floor(altos.length / 2)];
       densidad = {
         chromeBeforeFirstOrder: Math.round(primera.top + window.scrollY),
         orderCardHeight: Math.round(primera.height),
+        orderCardHeightMedian: mediana,
+        orderCardHeightMin: altos[0],
+        orderCards: altos.length,
         ordersFullyVisible: tarjetas.filter((t) => {
           const r = t.getBoundingClientRect();
           return r.top >= 0 && r.bottom <= utiles;

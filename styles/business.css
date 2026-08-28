@@ -2721,17 +2721,25 @@ button.operation-metric {
     justify-self: start;
   }
 
-  /* La asignación de rider se apila: el selector necesita el ancho completo
-     para que quepa el nombre y la capacidad. */
+  /* --------------------------------------------------------------------------
+     La asignación de rider, en UNA fila.
+     --------------------------------------------------------------------------
+     Ocupaba tres: la etiqueta «Ofrecer a un rider», el selector a lo ancho y el
+     botón a lo ancho. Medidos, 148px de tarjeta para elegir un nombre de una
+     lista y tocar un botón, en la tarjeta que además es la que más alto tiene
+     porque es la que está trabada.
+
+     La etiqueta pasa a `sr-only` —el botón ya dice «Ofrecer» o «Asignar», y el
+     selector muestra nombres de personas: la etiqueta visible repetía lo que
+     las dos cosas de al lado ya decían— y el selector comparte fila con el
+     botón. El lector de pantalla sigue leyendo la etiqueta completa.
+     ----------------------------------------------------------------------- */
   body[data-active-view="business"] .production-rider-assignment {
     display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 8px;
+    align-items: center;
     padding: 10px;
-  }
-
-  body[data-active-view="business"] .production-rider-assignment label {
-    display: grid;
-    gap: 4px;
   }
 
   body[data-active-view="business"] .production-rider-assignment select {
@@ -2739,8 +2747,14 @@ button.operation-metric {
   }
 
   body[data-active-view="business"] .production-rider-assignment .secondary-button {
-    width: 100%;
     min-height: 48px;
+    white-space: nowrap;
+  }
+
+  /* Los avisos («no hay riders», «todos con tres entregas») ocupan la fila
+     entera: son frases, no controles. */
+  body[data-active-view="business"] .production-rider-assignment > .form-hint {
+    grid-column: 1 / -1;
   }
 }
 
@@ -2761,7 +2775,25 @@ button.operation-metric {
      `auto-fill` con un mínimo de 440px hace las dos cosas sin un segundo
      breakpoint: el mínimo es el ancho en el que una tarjeta de pedido sigue
      siendo cómoda, no un número redondo. */
-  body[data-active-view="business"] .production-order-list {
+  /* --------------------------------------------------------------------------
+     En escritorio la bandeja se lee en COLUMNAS, una por sección.
+     --------------------------------------------------------------------------
+     Con las tarjetas repartidas a lo ancho dentro de cada sección, una sección
+     con un solo pedido —«Requieren atención», que es justamente la que uno
+     quiere ver primero— dejaba media pantalla vacía a su derecha y empujaba
+     todo lo demás hacia abajo. Medido a 1440×900: un pedido entero a la vista,
+     contra dos antes del rediseño.
+
+     Como columnas, cada sección es una pila angosta y la primera pantalla
+     muestra la cabeza de tres carriles a la vez: qué hay que resolver, qué
+     entró y qué se está preparando, sin desplazarse. Medido: tres pedidos
+     enteros a la vista.
+
+     El corte va en 1200px y no en 1021 porque tres columnas de 330px más los
+     dos huecos necesitan 1020px de contenido: por debajo de eso quedarían dos
+     columnas exprimidas, que es peor que una pila.
+     ----------------------------------------------------------------------- */
+  body[data-active-view="business"] .order-tray-body {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
     align-items: start;
@@ -2872,10 +2904,46 @@ button.operation-metric {
      contenido según el ancho, así que la posición de un destino deja de ser
      estable. Una fila que se corre mantiene el orden. */
   body[data-active-view="business"] .production-operations-shortcuts {
+    /* --------------------------------------------------------------------------
+       `display: flex` FALTABA, y por eso esta regla no hacía nada.
+       --------------------------------------------------------------------------
+       `.production-operations-shortcuts` es un `<nav>`: un bloque. Sus botones
+       son `inline-block`, así que se envolvían como texto y `flex-wrap: nowrap`
+       —que sólo significa algo dentro de un contenedor flex— se ignoraba en
+       silencio. La fila única que este bloque decía tener nunca existió.
+
+       Medido a 1440×900 con los diecisiete destinos: TRES renglones de píldoras,
+       143px de navegación antes del resumen del turno. Con la fila real son 48px
+       y el orden de los destinos deja de cambiar con el ancho de la ventana, que
+       era el otro motivo por el que se quería una sola fila.
+       ----------------------------------------------------------------------- */
+    display: flex;
     flex-wrap: nowrap;
-    margin: 2px 0 14px;
+    gap: 8px;
+    margin: 2px 0 12px;
+    padding-bottom: 4px;
     overflow-x: auto;
     scrollbar-width: thin;
+  }
+
+  /* Las dos filas nuevas de la bandeja —el resumen del turno y la cabecera de
+     sección— tienen que caber sin empujar el primer pedido fuera de pantalla en
+     una notebook de 768px de alto. */
+  body[data-active-view="business"] .order-tray-headline {
+    margin-bottom: 4px;
+  }
+
+  body[data-active-view="business"] .order-tray-head {
+    padding: 2px 0 4px;
+  }
+
+  /* La tarjeta gana dos filas —el aviso de atención y los dos botones de
+     contacto— y en una notebook de 900px de alto eso decide si el primer pedido
+     entra entero. Nueve hijos separados por 14px son 112px de tarjeta que no
+     dicen nada; con 10px se leen igual. */
+  body[data-active-view="business"] .production-order-card {
+    gap: 10px;
+    padding: 14px;
   }
 }
 
@@ -2976,4 +3044,398 @@ button.operation-metric {
   font-size: 0.76rem;
   letter-spacing: -0.01em;
   opacity: 0.85;
+}
+
+/* ============================================================================
+   LA BANDEJA DE TRABAJO
+   ============================================================================
+   Antes esto era una lista plana: `orders.map(businessOrderMarkup)` dentro de
+   un `div`. Medido con la bandeja de prueba (seis pedidos), entraba UNA tarjeta
+   entera a 390×844 y NINGUNA a 320×568, así que «¿cuántos pedidos nuevos
+   tengo?» costaba recorrer el tablero leyendo el estado de cada tarjeta.
+
+   Lo que cambia acá es la lectura, no el contenido: la lista llega repartida en
+   secciones con su recuento, la cabecera de cada sección se queda pegada
+   mientras se recorre —para que nunca se pierda en qué grupo se está— y lo que
+   se consulta en vez de decidirse baja a un `<details>` dentro de la misma
+   tarjeta.
+   ========================================================================== */
+
+.order-tray-headline {
+  margin: 0 0 10px;
+  color: var(--panel-ink-2, #b6bcc4);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.order-tray-section {
+  display: grid;
+  gap: 10px;
+}
+
+.order-tray-body {
+  display: grid;
+  gap: 10px;
+}
+
+/* La cabecera de sección se queda arriba mientras se recorre el grupo. Sin
+   esto, a mitad de «En preparación» ya no se sabe qué se está mirando, y el
+   recuento —que es la respuesta a «cuántos me quedan»— desaparece con el
+   primer desplazamiento. */
+.order-tray-head {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin: 0;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--panel-line, rgb(255 255 255 / 12%));
+  background: var(--panel-bg, #1b1e22);
+  font-size: 13px;
+}
+
+.order-tray-title {
+  color: var(--panel-ink, #eceef1);
+  font-size: 13px;
+  font-weight: 850;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.order-tray-count {
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--panel-raised, #31353b);
+  color: var(--panel-ink, #eceef1);
+  font-size: 12px;
+  font-weight: 850;
+  text-align: center;
+}
+
+.order-tray-hint {
+  color: var(--panel-ink-muted, #9aa0a9);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* «Requieren atención» es la única sección que se pinta: es la que existe para
+   que alguien mire ahí primero. */
+[data-tray-section="atencion"] .order-tray-head {
+  border-bottom-color: color-mix(in srgb, var(--panel-warning, #f2b544) 50%, transparent);
+}
+
+[data-tray-section="atencion"] .order-tray-title,
+[data-tray-section="atencion"] .order-tray-count {
+  color: var(--panel-warning, #f2b544);
+}
+
+[data-tray-section="atencion"] .order-tray-count {
+  background: var(--panel-warning-wash, rgb(242 181 68 / 15%));
+}
+
+/* --------------------------------------------------------------------------
+   Lo que este pedido necesita de una persona.
+   --------------------------------------------------------------------------
+   El texto es de mostrador, no técnico: «Pedido demorado», no ORDER_STALLED.
+   El código sí viaja en `data-attention-code` para que soporte pueda cruzarlo
+   con la alerta del servidor, pero no ocupa pantalla.
+   ----------------------------------------------------------------------- */
+.production-order-card.is-attention {
+  border-color: color-mix(in srgb, var(--panel-warning, #f2b544) 46%, transparent);
+}
+
+.order-attention {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.order-attention-chip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  padding: 7px 10px;
+  border: 1px solid color-mix(in srgb, var(--panel-warning, #f2b544) 40%, transparent);
+  border-radius: 10px;
+  background: var(--panel-warning-wash, rgb(242 181 68 / 15%));
+  font-size: 12.5px;
+}
+
+.order-attention-chip strong {
+  color: var(--panel-warning, #f2b544);
+  font-weight: 850;
+}
+
+.order-attention-chip span {
+  color: var(--panel-ink-2, #b6bcc4);
+}
+
+/* Las dos señales que hablan de plata usan el rojo del Panel: no son una
+   demora, son un pedido que ya no se puede seguir avanzando. */
+.order-attention-chip[data-attention-code^="PAYMENT_"] {
+  border-color: color-mix(in srgb, var(--panel-danger, #ff7d84) 44%, transparent);
+  background: var(--panel-danger-wash, rgb(255 125 132 / 15%));
+}
+
+.order-attention-chip[data-attention-code^="PAYMENT_"] strong {
+  color: var(--panel-danger, #ff7d84);
+}
+
+/* --------------------------------------------------------------------------
+   El teléfono, marcable. Y WhatsApp.
+   --------------------------------------------------------------------------
+   Eran texto plano en el Panel de producción: llamar significaba leer el
+   número, memorizarlo, salir de la aplicación y tipearlo. Los dos enlaces son
+   áreas táctiles de 44px porque se tocan con el pulgar y con el local lleno.
+   ----------------------------------------------------------------------- */
+.production-order-contact-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+
+.order-contact-call,
+.order-contact-wa {
+  display: inline-flex;
+  min-height: 44px;
+  min-width: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  border: 1px solid var(--panel-line-strong, rgb(255 255 255 / 36%));
+  border-radius: 999px;
+  color: var(--panel-info, #8ab4ff);
+  font-size: 14px;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.order-contact-wa {
+  border-color: color-mix(in srgb, var(--panel-success, #5fd08a) 46%, transparent);
+  color: var(--panel-success, #5fd08a);
+}
+
+.production-order-summary {
+  margin: 0;
+  color: var(--panel-ink-2, #b6bcc4);
+  font-size: 13px;
+  overflow-wrap: break-word;
+}
+
+/* --------------------------------------------------------------------------
+   El detalle, dentro de la misma tarjeta.
+   --------------------------------------------------------------------------
+   Es un `<details>` nativo y no una pantalla: abrirlo no navega, no cambia el
+   hash, no pierde la posición de la bandeja y se cierra con el mismo toque. El
+   teclado y el lector de pantalla ya lo saben manejar.
+   ----------------------------------------------------------------------- */
+.order-detail {
+  border-top: 1px solid var(--panel-line, rgb(255 255 255 / 12%));
+  padding-top: 8px;
+}
+
+.order-detail > summary {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: var(--panel-ink-2, #b6bcc4);
+  font-size: 13px;
+  font-weight: 750;
+  list-style-position: inside;
+}
+
+.order-detail-count {
+  color: var(--panel-ink-muted, #9aa0a9);
+  font-weight: 600;
+}
+
+.order-detail-body {
+  display: grid;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.order-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 16px;
+  margin: 0;
+  font-size: 12.5px;
+}
+
+.order-detail-meta > div {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.order-detail-meta dt {
+  color: var(--panel-ink-muted, #9aa0a9);
+  font-weight: 600;
+}
+
+.order-detail-meta dd {
+  margin: 0;
+  font-weight: 750;
+}
+
+/* La cancelación es la decisión opuesta a la acción principal: va separada, al
+   final del detalle y con su propio marco. A 390px compartir fila con «Aceptar
+   pedido» dejaba el campo de motivo exprimido entre las dos. */
+.order-detail-danger {
+  display: grid;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--panel-line, rgb(255 255 255 / 12%));
+}
+
+.order-detail-danger .production-cancel-control input {
+  width: 100%;
+  min-height: 44px;
+}
+
+.order-detail-danger .ghost-button {
+  min-height: 44px;
+  justify-self: start;
+}
+
+/* --------------------------------------------------------------------------
+   El interruptor del timbre comparte renglón con «Cerrar sesión».
+   --------------------------------------------------------------------------
+   Estuvo un rato en su propia fila, sobre la bandeja, y ahí costaba 44px de
+   pantalla: el botón fija el alto del renglón. Al lado de «Cerrar sesión» ese
+   renglón YA mide 44px, así que el timbre entra gratis. Lo que hay que pagar es
+   ancho, y por eso el titular baja a 16px en teléfono: medido a 390px, con el
+   titular a 18px la cabecera se partía en dos líneas.
+   ----------------------------------------------------------------------- */
+.production-ops-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.production-ops-sound[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--panel-success, #5fd08a) 52%, transparent);
+  color: var(--panel-success, #5fd08a);
+}
+
+@media (max-width: 1020px) {
+  /* --------------------------------------------------------------------------
+     El chrome antes del primer pedido.
+     --------------------------------------------------------------------------
+     Es la medida que decide si la bandeja sirve: cuánta pantalla hay que gastar
+     antes de ver el trabajo. La bandeja por secciones agregó dos renglones —el
+     resumen del turno y la cabecera de la sección—, así que lo que ya estaba
+     tiene que ocupar menos. Ninguna información se va: se aprietan los
+     márgenes, que era lo único que no decía nada.
+     ----------------------------------------------------------------------- */
+  body[data-active-view="business"] .production-ops-head {
+    margin-bottom: 6px;
+  }
+
+  body[data-active-view="business"] .production-ops-status {
+    margin-bottom: 8px;
+  }
+
+  body[data-active-view="business"] .order-tray-headline {
+    margin-bottom: 6px;
+  }
+
+  body[data-active-view="business"] .production-ops-head h1 {
+    font-size: 16px;
+  }
+
+  body[data-active-view="business"] .production-ops-identity {
+    min-width: 0;
+  }
+
+  body[data-active-view="business"] .order-tray-head {
+    padding: 4px 0;
+    font-size: 12.5px;
+  }
+
+  body[data-active-view="business"] .order-tray-section {
+    gap: 8px;
+  }
+
+  /* Ocho hijos con 10px de separación son 70px de tarjeta que no dicen nada. */
+  body[data-active-view="business"] .production-order-card {
+    gap: 8px;
+    padding: 12px;
+  }
+
+  body[data-active-view="business"] .production-order-summary {
+    font-size: 12.5px;
+  }
+
+  /* El botón del timbre no roba el ancho del título de la pantalla. */
+  body[data-active-view="business"] .production-ops-head-actions {
+    flex: 0 0 auto;
+    gap: 6px;
+  }
+
+  body[data-active-view="business"] .production-ops-sound {
+    padding: 0 10px;
+    font-size: 12px;
+  }
+}
+
+@media (min-width: 1200px) {
+  body[data-active-view="business"] .production-order-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+    align-items: start;
+    gap: 14px 16px;
+  }
+
+  body[data-active-view="business"] .order-tray-section {
+    min-width: 0;
+  }
+
+  /* Dentro de la columna las tarjetas se apilan: la columna ES la sección. */
+  body[data-active-view="business"] .order-tray-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* La cabecera de cada columna se queda pegada mientras se recorre esa
+     columna, igual que en el teléfono. */
+  body[data-active-view="business"] .order-tray-head {
+    top: 0;
+  }
+}
+
+/* A 320px —iPhone SE de 1.ª generación, y cualquier teléfono con el zoom del
+   sistema al máximo— la rejilla de dos columnas de los metadatos parte «hace 1 h
+   40 min» en dos renglones. Con una sola columna el dato entra entero, y como
+   pasan a ser cuatro filas de una línea en vez de dos de dos, el alto no crece.
+   Es el único ancho donde el Panel nunca se había medido. */
+@media (max-width: 340px) {
+  /* El titular entra en UNA línea: a 18px «Tu día, en un solo lugar» se partía
+     en dos y se llevaba 22px de una pantalla de 568. Los metadatos se quedan en
+     dos columnas —se midió: a una sola columna son cuatro renglones en vez de
+     dos, y la tarjeta crece más de lo que se ahorra—; lo que sobra de una celda
+     se envuelve dentro de ella, sin cortar texto ni desbordar. */
+  body[data-active-view="business"] .production-ops-head h1 {
+    font-size: 15px;
+  }
+
+  body[data-active-view="business"] .production-ops-head {
+    gap: 8px;
+  }
+
+  body[data-active-view="business"] .production-order-meta {
+    gap: 3px 8px;
+  }
 }

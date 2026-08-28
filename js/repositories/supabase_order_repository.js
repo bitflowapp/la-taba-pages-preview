@@ -2860,6 +2860,21 @@ function rowToDemoOrder(row = {}) {
     notes: sanitizeNotes(row.customer_notes || row.notes),
     createdAt,
     updatedAt: normalizeIso(row.updated_at || row.created_at),
+    /*
+     * Las tres marcas con las que el SERVIDOR decide que un pedido está
+     * demorado. Estaban en la fila —la consulta trae `*`— y el mapeo las
+     * descartaba, así que el Panel no podía leer la misma regla que la tarea
+     * automática y tenía que conformarse con «hace cuánto entró».
+     *
+     * De acá salen ORDER_NOT_ACCEPTED, ORDER_STALLED y ORDER_READY_WITHOUT_RIDER
+     * en `business/business-order-tray.js`. Ver
+     * `20260810140000_scheduler_stalled_needs_history.sql`.
+     */
+    acknowledgedAt: normalizeOptionalIso(row.acknowledged_at),
+    readyAt: normalizeOptionalIso(row.ready_at),
+    preparationEstimateMinutes: Number.isFinite(Number(row.preparation_estimate_minutes))
+      ? Number(row.preparation_estimate_minutes)
+      : null,
     // Versión monótona del servidor. Es el criterio autoritativo para descartar
     // mensajes Realtime atrasados: created_at/updated_at empatan entre escrituras
     // de una misma transacción y no pueden desempatarlas.

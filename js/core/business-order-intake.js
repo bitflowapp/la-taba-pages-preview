@@ -277,7 +277,26 @@ export function createBusinessOrderIntakeCoordinator({
       let lastResult = { ok: false };
       do {
         syncQueued = false;
-        setStatus({ phase: 'recovering', reason, error: '' });
+        /*
+         * «Recuperando» sólo cuando de verdad hay algo que recuperar.
+         *
+         * Esto anunciaba `recovering` en CADA sincronización, también en la del
+         * sondeo de seguridad, que corre cada cinco segundos y no es una
+         * recuperación: es el latido normal. En pantalla eso son doce
+         * parpadeos por minuto de «Recuperando pedidos» sobre una bandeja que
+         * está perfectamente al día, y en el DOM es un cambio de marcado que
+         * REEMPLAZA el tablero entero dos veces por vuelta.
+         *
+         * Medido con 300 pedidos a 390px: 29 reemplazos del workspace en
+         * treinta segundos sin que el servidor cambiara nada, cada uno de
+         * 864 KB de marcado y 15.298 nodos.
+         *
+         * Estando ya conectado, un refresco en curso no cambia la respuesta a
+         * «¿la bandeja está al día?»: se anuncia el resultado, no el intento.
+         * Cuando el estado NO es conectado —arranque, error, vuelta de sin
+         * conexión— «Recuperando» sí dice algo y se sigue anunciando.
+         */
+        if (status.phase !== 'connected') setStatus({ phase: 'recovering', reason, error: '' });
         try {
           const result = await fetchSnapshot({ reason });
           if (!running) return { ok: false, stopped: true };

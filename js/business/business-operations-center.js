@@ -243,7 +243,15 @@ export function renderBusinessOperations(view) {
   })[currentView]();
   queueMicrotask(() => activateBusinessOperations(currentView));
   // La navegación la dibuja el contenedor: una sola fila para todo el panel, también en Pedidos.
-  return `<section class="business-ops-center" data-business-ops-center="${escapeHtml(currentView)}">
+  //
+  // `data-panel-region="operations"` es cómo el render incremental del Panel
+  // encuentra este bloque. Sin la marca, el parche por regiones no puede
+  // localizarlo y se cae al render completo: cada latido del coordinador
+  // —que reescribe la marca de la última sincronización— reemplazaba esta
+  // superficie ENTERA, con el formulario que la persona estuviera llenando
+  // adentro. Es un atributo, no una envoltura: no agrega un nivel al DOM ni
+  // cambia un selector de CSS.
+  return `<section class="business-ops-center" data-panel-region="operations" data-business-ops-center="${escapeHtml(currentView)}">
     ${feedback ? `<p class="business-ops-feedback" role="status">${escapeHtml(feedback)}</p>` : ''}
     ${content}
   </section>`;

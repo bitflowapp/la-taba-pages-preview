@@ -282,13 +282,27 @@ async function prepararContinuidad(page, codigoQueVaACambiar) {
     if (!conEntrada) return null;
 
     conEntrada.scrollIntoView({ block: 'center' });
+    /*
+     * EL DETALLE SE ABRE ANTES DE ESCRIBIR, Y EL ORDEN NO ES UN CAPRICHO.
+     *
+     * El motivo de cancelación vive DENTRO de `<details class="order-detail">`,
+     * que nace cerrado. Un `<input>` adentro de un `<details>` cerrado NO es
+     * enfocable: `entrada.focus()` no hace nada y `document.activeElement` se
+     * queda donde estaba.
+     *
+     * Enfocando primero y abriendo después, el banco reportaba
+     * `focoConservado: false` en el primer escenario de cada corrida y `true` en
+     * los siguientes —porque el detalle quedaba abierto del escenario
+     * anterior—. O sea que medía el orden de los escenarios, no la
+     * conservación del foco.
+     */
+    const detalle = conEntrada.querySelector('details');
+    if (detalle) detalle.open = true;
     const entrada = conEntrada.querySelector('[data-production-cancel-reason]');
     if (entrada) {
       entrada.value = 'el cliente pidio esperar';
       entrada.focus();
     }
-    const detalle = conEntrada.querySelector('details');
-    if (detalle) detalle.open = true;
     const seleccion = entrada ? [entrada.selectionStart, entrada.selectionEnd] : null;
     return {
       codigo: codigoDe(conEntrada),

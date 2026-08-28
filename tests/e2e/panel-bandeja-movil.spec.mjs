@@ -857,6 +857,64 @@ test('sin novedades del servidor, el tablero NO se reemplaza', async ({ browser 
   }
 });
 
+/*
+ * Y FUERA DE LA BANDEJA TAMPOCO SE REARMA NADA.
+ * ===========================================================================
+ * La franja de estado cambia en cada latido del coordinador, y eso no puede
+ * costar el reemplazo de la superficie que la persona está mirando. En la
+ * bandeja quedó demostrado arriba; acá se exige lo mismo en «Qué pasa», que es
+ * la otra pantalla donde alguien se queda un rato.
+ *
+ * Vale la pena decir por qué esta prueba existe: la marca `data-panel-region`
+ * del bloque de operaciones se agregó DESPUÉS de escribir que el parche cubría
+ * todas las vistas. Sin ella, el parche no encontraba el bloque, se caía al
+ * render completo y cada latido reemplazaba la superficie entera con el
+ * formulario que hubiera adentro. La afirmación era falsa y no había nada que
+ * la contradijera. Ahora sí.
+ */
+test('fuera de la bandeja, un latido tampoco reemplaza la superficie', async ({ browser }) => {
+  const { context, page } = await abrirBandeja(browser, TELEFONO, { pollMs: 1000 });
+  try {
+    await page.locator('[data-business-ops-view="operation-center"]:visible').first().click();
+    await page.locator('[data-business-ops-center="operation-center"]').waitFor({ state: 'visible', timeout: 20_000 });
+    // Que la superficie se haya asentado antes de empezar a contar.
+    await page.waitForTimeout(1500);
+
+    const reemplazos = await page.evaluate(async () => {
+      const raiz = document.querySelector('[data-production-workspace="business"]');
+      const superficie = raiz.querySelector('[data-panel-region="operations"]');
+      let superficiesReemplazadas = 0;
+      let hijosNuevosDelWorkspace = 0;
+      const observador = new MutationObserver((mutaciones) => {
+        for (const m of mutaciones) {
+          if (m.type !== 'childList' || !m.addedNodes.length) continue;
+          if (m.target === raiz) hijosNuevosDelWorkspace += 1;
+          for (const nodo of m.removedNodes) {
+            if (nodo === superficie) superficiesReemplazadas += 1;
+          }
+        }
+      });
+      observador.observe(raiz, { childList: true, subtree: true });
+      // Ocho vueltas de sondeo sin una sola novedad del servidor.
+      await new Promise((listo) => globalThis.setTimeout(listo, 8000));
+      observador.disconnect();
+      return {
+        superficiesReemplazadas,
+        hijosNuevosDelWorkspace,
+        // El nodo tiene que ser EL MISMO: si murió y nació otro, el parche por
+        // región no lo estaba encontrando.
+        elMismoNodo: raiz.querySelector('[data-panel-region="operations"]') === superficie,
+      };
+    });
+
+    expect(reemplazos.elMismoNodo, 'la superficie de «Qué pasa» se reemplazó sola con el latido').toBe(true);
+    expect(reemplazos.superficiesReemplazadas, 'la superficie no puede morir y renacer por un latido').toBe(0);
+    expect(reemplazos.hijosNuevosDelWorkspace, 'el workspace no puede recibir hijos nuevos sin novedades').toBe(0);
+  } finally {
+    await context.close();
+  }
+});
+
 test('el reloj de la bandeja dice cuánto hace que entró el pedido, no una hora que hay que restar', async ({ browser }) => {
   const { context, page } = await abrirBandeja(browser);
   try {

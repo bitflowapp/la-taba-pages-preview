@@ -475,6 +475,16 @@ El contrato del backend no representa ese dato por pedido, y agregarlo pediría
 una consulta por tarjeta —un N+1 con la bandeja llena—. Queda fuera, y queda
 dicho.
 
+**Sin N+1, y sin contrato nuevo.** El único cambio en el repositorio de pedidos
+—que viene de #90— expone tres columnas que la consulta **ya traía** (`select *`)
+y que el mapeo descartaba: `acknowledged_at`, `ready_at` y
+`preparation_estimate_minutes`. De ahí salen los tres umbrales de atención, que
+son los mismos que usa la tarea automática del servidor. Ninguna consulta nueva,
+ninguna por tarjeta, ninguna migración.
+
+Los `?v=` de `pago/*/index.html` e `index.html` son el token del CSS, que subió
+porque `styles/business.css` cambió. No hay una línea de Mercado Pago tocada.
+
 ---
 
 ## 10 · Verificación

@@ -26,6 +26,7 @@ import {
   validateCustomerName,
 } from '../core/validators.js';
 import { setProductionCatalogReady } from '../core/runtime-config.js';
+import { categoryDefaults } from '../core/store-taxonomy.js';
 import {
   clearCommerceAvailability,
   setCommerceAvailability,
@@ -589,7 +590,7 @@ export function createSupabaseOrderRepository({
     updateBusinessConfig({
       businessName: sanitizeText(data.name, { fallback: 'TABA', maxLength: 80 }),
       name: sanitizeText(data.name, { fallback: 'TABA', maxLength: 80 }),
-      subtitle: 'Tienda de bebidas',
+      subtitle: 'Tienda 24/7',
       address: sanitizeText(data.address, { fallback: 'Dirección no publicada', maxLength: 180 }),
       whatsappNumber,
       whatsappVerified: !publicContactError
@@ -2415,7 +2416,10 @@ function rowToCatalogProduct(row = {}) {
     // vende es una decisión del comercio, y viaja en su propio campo.
     soldAsPack: row.sold_as_pack === true && unitsPerPack > 1,
     chilled: Boolean(row.chilled),
-    tone: row.is_alcoholic ? 'alcoholic' : 'drink',
+    // El tono sale de la taxonomía de la tienda, no de una constante. Escrito
+    // «drink» a secas, un detergente publicado por el comercio llegaba a la
+    // vidriera etiquetado como bebida.
+    tone: row.is_alcoholic ? 'alcoholic' : categoryDefaults(slugifyCategory(categoryName)).tone,
     image,
     imageThumbnail,
     imageSha256: imagenCompleta ? hash(row.image_sha256) : '',

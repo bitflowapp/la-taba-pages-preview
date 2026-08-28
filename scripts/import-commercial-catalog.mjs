@@ -27,11 +27,120 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { parseCsv, PRODUCT_PRICE_MAX, POSTGRES_INTEGER_MAX } from './validate-product-catalog.mjs';
 import { rowsToObjects, PROCUREMENT_SUFFIX } from './catalog-readiness.mjs';
+import { STORE_CATEGORIES, findCategory, slugifyCategoryName } from '../js/core/store-taxonomy.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PRODUCTS_CSV = path.join(ROOT, 'catalog/products.csv');
 
 export const SHEET_REQUIRED_COLUMNS = Object.freeze(['sku', 'precio', 'stock', 'publicar']);
+
+/*
+ * ALTA PROPUESTA: LAS COLUMNAS QUE HACEN FALTA PARA CREAR UN PRODUCTO.
+ *
+ * Hasta acá, una fila con un SKU desconocido frenaba la importación entera con
+ * «un SKU desconocido no se da de alta por acá», y estaba bien: la planilla de
+ * cuatro columnas —sku, precio, stock, publicar— no alcanza para crear nada. No
+ * dice qué es el producto, en qué góndola va, ni si lleva alcohol.
+ *
+ * Con la tienda 24/7 eso pasó a ser un cuello real: incorporar un rubro nuevo
+ * son decenas de artículos que todavía no existen, y el único camino era el
+ * pipeline de catálogo, que es de investigación y no de operación.
+ *
+ * La regla que se conserva es la que importaba: UNA FILA NUEVA NO SE INSERTA
+ * SÓLO PORQUE TIENE UN NOMBRE. Para proponer un alta la planilla tiene que
+ * traer TODAS estas columnas —presentes en el encabezado, aunque alguna celda
+ * quede vacía— y cada fila nueva tiene que completar las obligatorias. Sin el
+ * encabezado completo, el comportamiento es el de siempre: un SKU desconocido
+ * es un error, no un alta silenciosa.
+ */
+export const ALTA_COLUMNS = Object.freeze(['nombre', 'categoria', 'subcategoria', 'alcohol', 'imagen']);
+
+/** Un SKU estable: minúsculas, dígitos y guiones. Es el identificador para siempre. */
+export const STABLE_SKU_PATTERN = /^[a-z0-9][a-z0-9-]{2,79}$/;
+
+/**
+ * Nombre de un producto nuevo. No hay valor por defecto: un producto sin nombre
+ * no es un producto incompleto, es una fila.
+ */
+export function parseSheetName(raw) {
+  const text = String(raw ?? '').replace(/\s+/g, ' ').trim();
+  if (text === '') return { empty: true };
+  if (text.length < 2 || text.length > 120) {
+    return { error: `nombre «${text}»: tiene que tener entre 2 y 120 caracteres.` };
+  }
+  return { value: text };
+}
+
+/**
+ * Categoría de un producto nuevo, contra la taxonomía de la tienda.
+ *
+ * Acepta el nombre visible («Limpieza») o el id («limpieza»), porque quien llena
+ * la planilla ve el nombre y quien exporta del sistema ve el id. Devuelve las
+ * dos formas: el id lo usa la vitrina y el NOMBRE es lo que se guarda en
+ * `products.category`.
+ *
+ * Una categoría que la taxonomía no declara se rechaza. Es la compuerta que
+ * impide publicar en una góndola que no existe: el producto se guardaría igual
+ * y después no aparecería en ninguna sección, que es el defecto que la
+ * migración 20260818040000 documentó y costó ocho categorías huérfanas.
+ */
+export function parseSheetCategory(raw) {
+  const text = String(raw ?? '').replace(/\s+/g, ' ').trim();
+  if (text === '') return { empty: true };
+  const categoria = findCategory(text.toLowerCase()) || findCategory(slugifyCategoryName(text));
+  if (!categoria || categoria.legacy) {
+    const validas = STORE_CATEGORIES.map((entry) => entry.name).join(', ');
+    return { error: `categoria «${text}»: no es una categoría de la tienda. Las válidas son: ${validas}.` };
+  }
+  return { value: { id: categoria.id, name: categoria.name, alcoholic: categoria.alcoholic } };
+}
+
+/** Subcategoría: opcional, y es lo que hace encontrable al producto por su tipo. */
+export function parseSheetSubcategory(raw) {
+  const text = String(raw ?? '').replace(/\s+/g, ' ').trim();
+  if (text === '') return { empty: true };
+  if (text.length > 80) return { error: `subcategoria «${text}»: hasta 80 caracteres.` };
+  return { value: text };
+}
+
+/**
+ * Clasificación alcohólica. SIEMPRE EXPLÍCITA, nunca inferida.
+ *
+ * Es la única columna del alta que no admite quedar vacía ni siquiera para un
+ * producto que no se va a publicar. Un vacío que se lee como «no» convierte
+ * cualquier descuido en una botella sin +18; un vacío que se lee como «sí»
+ * bloquea una lavandina. Las dos lecturas son inventar, así que no se inventa.
+ */
+export function parseSheetAlcohol(raw) {
+  const text = String(raw ?? '').trim().toLowerCase();
+  if (text === '') return { empty: true };
+  if (['si', 'sí', 'yes', 'true', '1', 'x'].includes(text)) return { value: true };
+  if (['no', 'false', '0'].includes(text)) return { value: false };
+  return { error: `alcohol «${raw}»: escribí «si» o «no». No se infiere de la categoría ni del nombre.` };
+}
+
+/**
+ * Estado de la imagen. «no» es una respuesta válida: un producto sin foto puede
+ * existir y no puede publicarse, que es exactamente la política vigente.
+ * `commercial:gate` sigue siendo quien detecta un comprable sin imagen.
+ */
+export function parseSheetImage(raw) {
+  const text = String(raw ?? '').trim().toLowerCase();
+  if (text === '') return { empty: true };
+  if (['si', 'sí', 'yes', 'true', '1', 'x'].includes(text)) return { value: true };
+  if (['no', 'false', '0'].includes(text)) return { value: false };
+  return { error: `imagen «${raw}»: escribí «si» o «no» según si el producto ya tiene su foto verificada.` };
+}
+
+/** El nombre plegado, para detectar que dos filas nombran lo mismo. */
+export function foldedProductName(value) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
 
 // Un SKU de QA nunca puede entrar por acá. El 8 de agosto dos fixtures de
 // staging llegaron a la góndola publicada y una persona real compró «QA TEST
@@ -130,6 +239,22 @@ export function buildCommercialPlan(sheetCsv, {
   for (const column of SHEET_REQUIRED_COLUMNS) {
     if (!header.includes(column)) errors.push(`Falta la columna obligatoria «${column}».`);
   }
+  /*
+   * El MODO ALTA se enciende con el encabezado, no con una fila.
+   *
+   * O están las cinco columnas de alta, o no está ninguna. Media planilla —con
+   * «nombre» y sin «alcohol», por ejemplo— es la forma más fácil de crear un
+   * producto con una clasificación que nadie escribió, así que se rechaza el
+   * encabezado antes de mirar una sola fila.
+   */
+  const columnasDeAlta = ALTA_COLUMNS.filter((column) => header.includes(column));
+  const permiteAltas = columnasDeAlta.length === ALTA_COLUMNS.length;
+  if (columnasDeAlta.length && !permiteAltas) {
+    const faltan = ALTA_COLUMNS.filter((column) => !header.includes(column));
+    errors.push(
+      `Para proponer altas hacen falta las cinco columnas ${ALTA_COLUMNS.join(', ')}; faltan: ${faltan.join(', ')}.`,
+    );
+  }
   const duplicatedColumns = header.filter((column, index) => header.indexOf(column) !== index);
   for (const column of new Set(duplicatedColumns)) {
     errors.push(`La columna «${column}» está repetida.`);
@@ -141,8 +266,23 @@ export function buildCommercialPlan(sheetCsv, {
     values: Object.fromEntries(header.map((column, columnIndex) => [column, (values[columnIndex] ?? '').trim()])),
   }));
 
+  /*
+   * NUNCA SE TOCA UN PRODUCTO POR SU NOMBRE. El apareo es por SKU y sólo por
+   * SKU. Este índice existe para lo contrario: para RECHAZAR un alta que
+   * duplicaría un producto que ya está en góndola con otro identificador, que es
+   * cómo nacen los catálogos con la misma lavandina cargada tres veces.
+   */
+  const nombresDelCatalogo = new Map();
+  for (const [sku, product] of catalog) {
+    const clave = `${foldedProductName(product.name)}|${String(product.category_id || '').trim().toLowerCase()}`;
+    if (clave.startsWith('|')) continue;
+    if (!nombresDelCatalogo.has(clave)) nombresDelCatalogo.set(clave, sku);
+  }
+
   const seen = new Map();
+  const nombresPropuestos = new Map();
   const planned = [];
+  const altas = [];
   for (const { line, values } of entries) {
     const sku = String(values.sku || '').trim();
     if (!sku) {
@@ -160,14 +300,25 @@ export function buildCommercialPlan(sheetCsv, {
       errors.push(`Línea ${line}: «${sku}» parece un producto de prueba. No entra al catálogo comercial.`);
       continue;
     }
-    if (!product) {
-      errors.push(`Línea ${line}: el SKU «${sku}» no existe en el catálogo. Un SKU desconocido no se da de alta por acá.`);
-      continue;
-    }
     if (PROCUREMENT_SUFFIX.test(sku)) {
       errors.push(`Línea ${line}: «${sku}» es un pack de abastecimiento, no un producto de góndola.`);
       continue;
     }
+    if (!product) {
+      if (!permiteAltas) {
+        errors.push(`Línea ${line}: el SKU «${sku}» no existe en el catálogo. Un SKU desconocido no se da de alta por acá.`);
+        continue;
+      }
+      const alta = buildAltaPropuesta({
+        line, sku, values, nombresDelCatalogo, nombresPropuestos, errors,
+      });
+      if (alta) altas.push(alta);
+      continue;
+    }
+    // Un SKU que YA existe se modifica; las columnas de alta se ignoran a
+    // propósito. Cambiar la categoría o la clasificación alcohólica de un
+    // producto vivo es otra decisión y no viaja por esta planilla: el importador
+    // no puede convertir una gaseosa en un fernet ni al revés.
 
     const price = parseSheetPrice(values.precio);
     const stock = parseSheetStock(values.stock);
@@ -249,14 +400,18 @@ export function buildCommercialPlan(sheetCsv, {
     });
   }
 
-  if (errors.length) return { errors, rows: [], summary: emptySummary() };
+  if (errors.length) return { errors, rows: [], altas: [], summary: emptySummary() };
 
   const touched = planned.filter((row) => row.changes.length);
   return {
     errors: [],
     rows: planned,
+    altas,
     summary: {
       sheetRows: planned.length,
+      altas: altas.length,
+      altasConPrecio: altas.filter((alta) => alta.precio !== null).length,
+      altasConAlcohol: altas.filter((alta) => alta.alcohol).length,
       changed: touched.length,
       unchanged: planned.length - touched.length,
       priceChanges: touched.filter((row) => row.changes.includes('precio')).length,
@@ -272,9 +427,150 @@ export function buildCommercialPlan(sheetCsv, {
   };
 }
 
+/*
+ * EL CONTRATO DE UN ALTA PROPUESTA.
+ *
+ * Una fila nueva NO se inserta sólo porque tiene un nombre. Para que exista un
+ * producto hace falta poder contestar, con datos que alguien escribió a
+ * propósito, estas siete preguntas:
+ *
+ *   1. ¿Con qué identificador se lo va a reconocer para siempre?  (sku estable)
+ *   2. ¿Qué es?                                                    (nombre)
+ *   3. ¿En qué góndola va?                                         (categoría)
+ *   4. ¿Qué tipo de producto es dentro de esa góndola?             (subcategoría)
+ *   5. ¿Lleva alcohol?                                             (explícito)
+ *   6. ¿Cuánto cuesta y cuánto hay?                                (precio, stock)
+ *   7. ¿Se publica, y tiene con qué?                               (publicar, imagen)
+ *
+ * Las cinco primeras son obligatorias. Precio y stock pueden quedar vacíos: un
+ * producto puede existir sin estar a la venta, y de hecho es el estado en el que
+ * nace —oculto, no comprable— salvo que la planilla pida publicarlo y traiga
+ * todo lo que hace falta.
+ *
+ * LO QUE ESTA FUNCIÓN TIENE PROHIBIDO, y cada prohibición tiene su ensayo:
+ *
+ *   · publicar alcohol. Un alta con alcohol se propone SIEMPRE oculta, aunque
+ *     `alcohol_sales_enabled` esté en true: dar de alta y publicar una botella
+ *     en el mismo renglón de una planilla no es cargar un dato, es afirmar una
+ *     habilitación de expendio sobre un producto que nadie vio todavía;
+ *   · contradecir la góndola. Si la categoría lleva alcohol y la fila dice que
+ *     no —o al revés— la fila se rechaza en vez de elegir una de las dos;
+ *   · crear un SKU que ya existe, o dos veces el mismo en la misma planilla;
+ *   · duplicar por nombre un producto que ya está en la misma categoría;
+ *   · inventar un identificador. El SKU lo escribe una persona y tiene que ser
+ *     estable: minúsculas, dígitos y guiones.
+ */
+export function buildAltaPropuesta({ line, sku, values, nombresDelCatalogo, nombresPropuestos, errors }) {
+  const rechazar = (motivo) => {
+    errors.push(`Línea ${line} (${sku}): ${motivo}`);
+    return null;
+  };
+
+  if (!STABLE_SKU_PATTERN.test(sku)) {
+    return rechazar(
+      `«${sku}» no es un SKU estable. Usá minúsculas, números y guiones, de 3 a 80 caracteres. `
+      + 'Es el identificador del producto para siempre: no se corrige después sin romper el historial.',
+    );
+  }
+
+  const nombre = parseSheetName(values.nombre);
+  const categoria = parseSheetCategory(values.categoria);
+  const subcategoria = parseSheetSubcategory(values.subcategoria);
+  const alcohol = parseSheetAlcohol(values.alcohol);
+  const imagen = parseSheetImage(values.imagen);
+  const price = parseSheetPrice(values.precio);
+  const stock = parseSheetStock(values.stock);
+  const publish = parseSheetPublish(values.publicar);
+
+  let malformada = false;
+  for (const parsed of [nombre, categoria, subcategoria, alcohol, imagen, price, stock, publish]) {
+    if (parsed.error) { rechazar(parsed.error); malformada = true; }
+  }
+  if (malformada) return null;
+
+  const faltantes = [];
+  if (nombre.empty) faltantes.push('nombre');
+  if (categoria.empty) faltantes.push('categoria');
+  if (alcohol.empty) faltantes.push('alcohol');
+  if (faltantes.length) {
+    return rechazar(
+      `es un producto nuevo y le faltan ${faltantes.join(', ')}. Una fila nueva no se da de alta sin eso.`,
+    );
+  }
+
+  // La góndola y la clasificación tienen que decir lo mismo. Es la misma
+  // partición que exige `products_verified_alcohol_coherence` en la base, así
+  // que discrepar acá sería proponer una fila que la base va a rechazar.
+  if (categoria.value.alcoholic !== alcohol.value) {
+    return rechazar(
+      `la categoría «${categoria.value.name}» ${categoria.value.alcoholic ? 'lleva' : 'no lleva'} alcohol `
+      + `y la fila dice «${alcohol.value ? 'si' : 'no'}». Corregí la categoría o la clasificación: no se elige por vos.`,
+    );
+  }
+
+  const claveDeNombre = `${foldedProductName(nombre.value)}|${categoria.value.id}`;
+  const existente = nombresDelCatalogo.get(claveDeNombre);
+  if (existente) {
+    return rechazar(
+      `ya hay un producto llamado «${nombre.value}» en ${categoria.value.name}, con SKU «${existente}». `
+      + 'Si es el mismo, usá su SKU para modificarlo; si es otro, diferenciá el nombre.',
+    );
+  }
+  const repetido = nombresPropuestos.get(claveDeNombre);
+  if (repetido) {
+    return rechazar(`repite el nombre «${nombre.value}» de la línea ${repetido} en la misma categoría.`);
+  }
+  nombresPropuestos.set(claveDeNombre, line);
+
+  /*
+   * UN ALTA NACE OCULTA. SIEMPRE.
+   *
+   * Publicar no es cargar un dato: es afirmar que la ficha está completa, que la
+   * foto es la del envase, que el precio es el que se cobra y —si lleva
+   * alcohol— que el local tiene la habilitación de expendio acreditada. La base
+   * lo dice con la misma dureza: publicar exige `is_verified`, y un producto
+   * verificado tiene que cumplir el contrato de identidad comercial completo,
+   * que una planilla de nueve columnas no puede acreditar.
+   *
+   * Así que crear y publicar son dos pasadas, y el importador lo dice en vez de
+   * ignorar la celda: primero se cargan los productos, después se los revisa, y
+   * recién entonces la misma planilla —con el SKU ya existente— los publica por
+   * el camino de siempre, con sus compuertas de precio, stock, foto y alcohol.
+   */
+  if (publish.value === true) {
+    return rechazar(
+      'un producto nuevo no se publica en el mismo renglón en el que se crea. Poné «publicar=no» para '
+      + 'darlo de alta oculto, revisá la ficha, y publicalo en una segunda pasada con el SKU ya cargado.',
+    );
+  }
+
+  return {
+    line,
+    sku,
+    nombre: nombre.value,
+    categoriaId: categoria.value.id,
+    categoria: categoria.value.name,
+    subcategoria: subcategoria.empty ? '' : subcategoria.value,
+    alcohol: alcohol.value,
+    // El +18 no es una preferencia: si lleva alcohol, la edad mínima es 18 y la
+    // fija el contrato, no la planilla.
+    edadMinima: alcohol.value ? 18 : null,
+    precio: price.empty ? null : price.value,
+    stock: stock.empty ? null : stock.value,
+    tieneImagen: imagen.value === true,
+    // Un alta nunca nace publicada: ver arriba. El campo se conserva explícito
+    // para que el informe y el payload digan la verdad en vez de omitirla.
+    publicar: false,
+    notas: values.notas || '',
+  };
+}
+
 function emptySummary() {
   return {
     sheetRows: 0,
+    altas: 0,
+    altasConPrecio: 0,
+    altasConAlcohol: 0,
     changed: 0,
     unchanged: 0,
     priceChanges: 0,
@@ -345,6 +641,31 @@ export function renderChangeReport(plan) {
   return lines;
 }
 
+/**
+ * QUÉ SE CREARÍA, EXACTAMENTE.
+ *
+ * El dry-run de una modificación puede mostrar un diff porque el «antes» existe.
+ * El de un alta no: lo único honesto es escribir la ficha completa del producto
+ * que se va a insertar, campo por campo, para que quien aprueba lea lo mismo que
+ * la base va a guardar.
+ */
+export function renderAltaReport(plan) {
+  const lines = [];
+  for (const alta of plan.altas || []) {
+    lines.push(`  ${alta.sku}`);
+    lines.push(`      nombre ....... ${alta.nombre}`);
+    lines.push(`      categoria .... ${alta.categoria} (${alta.categoriaId})`);
+    lines.push(`      subcategoria . ${alta.subcategoria || '—'}`);
+    lines.push(`      alcohol ...... ${alta.alcohol ? `SI · edad minima ${alta.edadMinima}` : 'no'}`);
+    lines.push(`      precio ....... ${alta.precio === null ? '— (pendiente)' : `$ ${alta.precio}`}`);
+    lines.push(`      stock ........ ${alta.stock === null ? '— (sin cargar)' : String(alta.stock)}`);
+    lines.push(`      imagen ....... ${alta.tieneImagen ? 'si' : 'no'}`);
+    lines.push(`      publicacion .. ${alta.publicar ? 'PUBLICADO' : 'oculto'}`);
+    if (alta.notas) lines.push(`      notas ........ ${alta.notas}`);
+  }
+  return lines;
+}
+
 function sha256(value) {
   return crypto.createHash('sha256').update(value).digest('hex');
 }
@@ -367,27 +688,62 @@ export function planToRpcRows(plan) {
     });
 }
 
+/**
+ * Las altas, en la forma que espera la RPC. Viaja la ficha entera —no hay
+ * «celda que no viaja» como en una modificación— porque un producto que no
+ * existe no tiene un valor anterior que conservar.
+ */
+export function planToAltaRows(plan) {
+  return (plan.altas || []).map((alta) => ({
+    sku: alta.sku,
+    name: alta.nombre,
+    category: alta.categoria,
+    subcategory: alta.subcategoria || null,
+    is_alcoholic: alta.alcohol,
+    minimum_age: alta.edadMinima,
+    price: alta.precio === null ? null : String(alta.precio),
+    stock: alta.stock,
+    publish: alta.publicar,
+  }));
+}
+
 export async function applyCommercialImport(client, plan, businessId) {
   if (!Array.isArray(plan?.errors) || plan.errors.length) {
     throw new Error('No se aplica un plan con errores.');
   }
   const rows = planToRpcRows(plan);
-  if (!rows.length) throw new Error('El plan no cambia nada: no hay nada que aplicar.');
+  const altas = planToAltaRows(plan);
+  if (!rows.length && !altas.length) throw new Error('El plan no cambia nada: no hay nada que aplicar.');
   if (!client?.rpc) throw new Error('Cliente Supabase inválido.');
 
-  // Una llamada es una transacción. El servidor aplica las N filas o ninguna.
-  const result = await client.rpc('apply_commercial_catalog_batch', {
+  /*
+   * UNA LLAMADA ES UNA TRANSACCIÓN, y por eso las altas y las modificaciones
+   * viajan juntas.
+   *
+   * Partirlas en dos llamadas dejaría una ventana con los productos nuevos ya
+   * creados y los precios sin actualizar, o al revés. Con planillas de decenas
+   * de filas eso es una góndola a medias que alguien tiene que reconstruir a
+   * mano. `apply_commercial_catalog_plan` hace las dos cosas en la misma
+   * transacción: aplica todo o no aplica nada.
+   */
+  const result = await client.rpc('apply_commercial_catalog_plan', {
     p_business_id: businessId,
-    p_rows: rows,
+    p_creates: altas,
+    p_updates: rows,
   });
   if (result?.error) {
     throw new Error(`El servidor rechazó el lote y lo deshizo entero: ${result.error.message || 'error desconocido'}`);
   }
-  const applied = Array.isArray(result?.data) ? result.data : [];
-  if (applied.length !== rows.length) {
-    throw new Error(`El servidor devolvió ${applied.length} de ${rows.length} filas esperadas.`);
+  const applied = result?.data && typeof result.data === 'object' ? result.data : {};
+  const creadas = Number(applied.created ?? 0);
+  const actualizadas = Number(applied.updated ?? 0);
+  if (creadas !== altas.length || actualizadas !== rows.length) {
+    throw new Error(
+      `El servidor aplicó ${creadas} altas y ${actualizadas} modificaciones; `
+      + `se esperaban ${altas.length} y ${rows.length}.`,
+    );
   }
-  return { applied: applied.length, rows: applied };
+  return { applied: creadas + actualizadas, created: creadas, updated: actualizadas, rows: applied.rows || [] };
 }
 
 export const CATALOGOS = Object.freeze(['repo', 'produccion']);
@@ -487,6 +843,7 @@ async function main(args) {
   console.log('');
   console.log('VALID');
   console.log(`  productos encontrados ....... ${plan.summary.sheetRows}`);
+  console.log(`  altas propuestas ............ ${plan.summary.altas}`);
   console.log(`  filas rechazadas ............ 0`);
   console.log(`  productos NO mencionados .... ${plan.summary.untouchedCatalogSkus} (quedan intactos)`);
   console.log(`  precios que cambian ......... ${plan.summary.priceChanges}`);
@@ -502,10 +859,25 @@ async function main(args) {
   console.log('');
   const report = renderChangeReport(plan);
   if (report.length) {
-    console.log(`CAMBIOS (${plan.summary.changed}):`);
+    console.log(`MODIFICACIONES (${plan.summary.changed}):`);
     for (const line of report) console.log(line);
   } else {
-    console.log('CAMBIOS: ninguno. La planilla no mueve nada.');
+    console.log('MODIFICACIONES: ninguna. La planilla no mueve ningún producto existente.');
+  }
+  const sinCambio = plan.rows.filter((row) => !row.changes.length);
+  if (sinCambio.length) {
+    console.log('');
+    console.log(`SIN CAMBIO (${sinCambio.length}): ${sinCambio.map((row) => row.sku).slice(0, 12).join(', ')}${sinCambio.length > 12 ? '…' : ''}`);
+  }
+  const altaReport = renderAltaReport(plan);
+  if (altaReport.length) {
+    console.log('');
+    console.log(`ALTAS PROPUESTAS (${plan.summary.altas}) — esto es exactamente lo que se crearía:`);
+    for (const line of altaReport) console.log(line);
+    console.log('');
+    console.log(`  Las ${plan.summary.altas} nacen OCULTAS y no comprables. ${plan.summary.altasConPrecio} traen precio`
+      + `${plan.summary.altasConAlcohol ? ` y ${plan.summary.altasConAlcohol} llevan alcohol` : ''}.`);
+    console.log('  Publicar es una segunda pasada, con el SKU ya cargado y la ficha revisada.');
   }
   console.log('');
   console.log(`  precio ....... ${plan.summary.priceChanges}`);
@@ -529,14 +901,15 @@ async function main(args) {
   }
 
   const rows = planToRpcRows(plan);
-  if (!rows.length) {
+  const altas = planToAltaRows(plan);
+  if (!rows.length && !altas.length) {
     console.log('');
-    console.log('No hay nada que aplicar: la planilla no cambia ningún valor.');
+    console.log('No hay nada que aplicar: la planilla no cambia ningún valor y no propone ningún alta.');
     return;
   }
 
   console.log('');
-  console.log(`Aplicando ${rows.length} fila(s) en UNA transacción. Si una falla, no se aplica ninguna.`);
+  console.log(`Aplicando ${altas.length} alta(s) y ${rows.length} modificación(es) en UNA transacción. Si una falla, no se aplica ninguna.`);
   try {
     const { createClient } = await import('@supabase/supabase-js');
     const { url, publishableKey, accessToken, businessId } = readCommercialCredentials(process.env);
@@ -545,7 +918,7 @@ async function main(args) {
       global: { headers: { Authorization: `Bearer ${accessToken}` } },
     });
     const result = await applyCommercialImport(client, plan, businessId);
-    console.log(`Aplicado: ${result.applied} fila(s).`);
+    console.log(`Aplicado: ${result.created} alta(s) y ${result.updated} modificación(es).`);
     console.log('El resto del catálogo quedó intacto: sólo viajaron los SKU de la planilla.');
   } catch (error) {
     console.error(`ERROR ${error.message}`);

@@ -1479,3 +1479,29 @@
 .modal-actions.is-price-pending .modal-pending-note {
   order: -1;
 }
+
+/* Fin de tramo de la grilla.
+   La góndola se dibuja de a sesenta productos porque construir mil tarjetas de
+   una vez bloquea el hilo principal (medición en js/ui.js → renderProducts).
+   Este bloque cierra el tramo: dice cuánto se está viendo del total y ofrece el
+   siguiente. Ocupa la fila entera de la grilla para que el botón quede
+   centrado y no colgando de la última columna. */
+[data-view="catalog"] .catalog-more {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 12px 6px;
+  text-align: center;
+}
+
+[data-view="catalog"] .catalog-more-count {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--muted, #8b8b8b);
+}
+
+[data-view="catalog"] .catalog-more .secondary-button {
+  min-height: 44px;
+}

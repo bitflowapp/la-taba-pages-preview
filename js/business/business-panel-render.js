@@ -21,6 +21,7 @@ import {
 import {
   auditLines, enforcementBlockers, MAX_SLOTS_PER_DAY, weeklyGrid,
 } from './business-operations-config.js';
+import { describeSlot, describeWeeklyGrid } from '../core/service-hours.js';
 
 export function renderOperationCenterSurface({ snapshot, status, role, busy, support } = {}) {
   if (status?.phase === 'loading' && !snapshot) {
@@ -505,12 +506,13 @@ export function renderOperationsConfigSurface({ config, status, busy, draft } = 
     <section class="business-config-block" data-operations-hours>
       <h3>Horario de atención</h3>
       <p class="form-hint">Hasta ${MAX_SLOTS_PER_DAY} tramos por día. Un tramo que termina antes de empezar cruza la medianoche.</p>
+      <p class="form-hint" data-operations-hours-summary role="status">${escapeHtml(describeWeeklyGrid(grid.flatMap((day) => day.slots.map((slot) => ({ ...slot, weekday: day.value })))))}</p>
       <table class="business-hours-grid">
         <tbody>
           ${grid.map((day) => `<tr data-weekday="${day.value}">
             <th scope="row">${escapeHtml(day.label)}</th>
             <td>${day.slots.length
-              ? day.slots.map((slot) => `<span class="business-hours-slot">${escapeHtml(slot.opensAt)}–${escapeHtml(slot.closesAt)}</span>`).join('')
+              ? day.slots.map((slot) => `<span class="business-hours-slot">${escapeHtml(describeSlot(slot))}</span>`).join('')
               : '<span class="business-hours-slot is-empty">cerrado</span>'}</td>
             <td class="business-hours-edit">
               <input type="time" name="opensAt-${day.value}" aria-label="Apertura ${escapeHtml(day.label)}" ${readOnly ? 'disabled' : ''} />
@@ -524,7 +526,17 @@ export function renderOperationsConfigSurface({ config, status, busy, draft } = 
       ${draft?.hoursErrors?.length
         ? `<ul class="production-intake-error" role="alert">${draft.hoursErrors.map((error) => `<li>${escapeHtml(error)}</li>`).join('')}</ul>`
         : ''}
-      <button class="primary-button compact" type="button" data-operations-hours-save ${readOnly ? 'disabled' : ''}>Guardar horarios</button>
+      <div class="business-hours-actions">
+        <button class="primary-button compact" type="button" data-operations-hours-save ${readOnly ? 'disabled' : ''}>Guardar horarios</button>
+        <!--
+          «00:00 – 24:00» no se puede tipear en un <input type="time">: el
+          control del navegador tope en 23:59. Sin este botón, dejar el comercio
+          abierto toda la noche con la exigencia de horario encendida pedía
+          editar la base a mano. Carga los siete días y no guarda: la tabla de
+          arriba muestra lo que va a quedar y el operador confirma.
+        -->
+        <button class="secondary-button compact" type="button" data-operations-hours-24x7 ${readOnly ? 'disabled' : ''}>Abrir las 24 horas</button>
+      </div>
     </section>
 
     <section class="business-config-block" data-operations-zones>

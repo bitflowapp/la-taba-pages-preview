@@ -1,0 +1,54 @@
+{
+  "generado": "2026-08-28T03:58:22.904Z",
+  "navegador": "141.0.7390.37",
+  "medidas": [
+    {
+      "size": 100,
+      "ms": {
+        "arranque": 12884,
+        "catalogo": 153,
+        "busqueda": 131,
+        "categoria": 3
+      },
+      "nodos": {
+        "home": 3263,
+        "catalogo": 3263
+      },
+      "tarjetas": 60,
+      "resultadosBusqueda": 0,
+      "heapKb": 12288
+    },
+    {
+      "size": 500,
+      "ms": {
+        "arranque": 13066,
+        "catalogo": 324,
+        "busqueda": 179,
+        "categoria": 256
+      },
+      "nodos": {
+        "home": 3649,
+        "catalogo": 3649
+      },
+      "tarjetas": 60,
+      "resultadosBusqueda": 0,
+      "heapKb": 18680
+    },
+    {
+      "size": 1000,
+      "ms": {
+        "arranque": 13393,
+        "catalogo": 423,
+        "busqueda": 242,
+        "categoria": 349
+      },
+      "nodos": {
+        "home": 3700,
+        "catalogo": 3700
+      },
+      "tarjetas": 60,
+      "resultadosBusqueda": 0,
+      "heapKb": 25136
+    }
+  ]
+}

@@ -181,6 +181,25 @@ export function applyRetailNaming(products = []) {
     groups.get(key).push(product);
   }
 
+  /*
+   * ESTA PASADA SE MIDIÓ Y SE DEJÓ COMO ESTABA.
+   *
+   * Comparar cada producto contra sus vecinos es cuadrático en el tamaño del
+   * GRUPO, y la primera lectura del banco de pruebas la señaló como el segundo
+   * costo del armado del catálogo. Se reescribió contando por variante y por
+   * subcategoría en vez de comparar de a pares, y con un catálogo de la forma
+   * que tiene una góndola de verdad —donde una marca comparte nombre con dos o
+   * tres artículos, no con doscientos— la versión «rápida» resultó ser TRES
+   * VECES MÁS LENTA: 7,1 ms contra 1,1 ms con 2000 SKU. Tres mapas y tres
+   * concatenaciones por producto cuestan más que las dos comparaciones que se
+   * ahorran cuando el grupo tiene dos miembros.
+   *
+   * El primer banco de pruebas decía lo contrario porque su catálogo sintético
+   * formaba grupos enormes por accidente. El cuello estaba en el vínculo
+   * pack↔unidad, que sí barría el catálogo entero por cada pack, y ese sí se
+   * arregló. Éste queda como está: es la versión simple y es la más rápida con
+   * los datos reales.
+   */
   const disambiguate = new Set();
   for (const group of groups.values()) {
     if (group.length < 2) continue;
@@ -220,22 +239,49 @@ export function linkProcurementPacks(products = []) {
   const list = Array.isArray(products) ? products : [];
   const packaging = new Map(list.map((product) => [product?.id, detectPurchasePackaging(product || {})]));
 
-  const unitCandidates = (pack) => list.filter((candidate) => (
-    candidate
-      && candidate.id !== pack.id
-      && normalizeText(candidate.brand) === normalizeText(pack.brand)
-      && normalizeText(candidate.categoryId) === normalizeText(pack.categoryId)
-      && Number(candidate.capacityValue) === Number(pack.capacityValue)
-      && normalizeText(candidate.capacityUnit) === normalizeText(pack.capacityUnit)
-      && packaging.get(candidate.id)?.isPack === false
-  ));
+  /*
+   * La regla no cambia: misma marca, misma categoría, misma capacidad, y
+   * EXACTAMENTE una unidad candidata. Con cero o más de una no hay vínculo.
+   *
+   * Lo que cambia es cómo se buscan esas candidatas. Antes cada pack recorría el
+   * catálogo entero, así que el trabajo crecía con packs × productos. Medido con
+   * el catálogo sintético del banco de pruebas —un sexto de packs, que es una
+   * proporción realista de góndola— esta función tardaba 22 ms con 500 SKU,
+   * 74 ms con 1000 y 273 ms con 2000: el 80 % del costo de armar el catálogo, y
+   * creciendo con el cuadrado. Con decenas de SKU no se veía; con una tienda
+   * multi-rubro es el bloqueo del hilo principal justo al recibir la góndola.
+   *
+   * Ahora las unidades se indexan una vez por la clave de vinculación y cada
+   * pack hace una consulta. El resultado es el mismo objeto: la clave incluye
+   * los cuatro campos que la regla compara, y el desempate por «exactamente una»
+   * se conserva contando cuántas cayeron en la clave.
+   */
+  const claveDeVinculo = (product) => [
+    normalizeText(product.brand),
+    normalizeText(product.categoryId),
+    Number(product.capacityValue),
+    normalizeText(product.capacityUnit),
+  ].join('|');
+
+  const unidadesPorClave = new Map();
+  for (const candidate of list) {
+    if (!candidate || packaging.get(candidate.id)?.isPack !== false) continue;
+    const clave = claveDeVinculo(candidate);
+    if (!unidadesPorClave.has(clave)) unidadesPorClave.set(clave, []);
+    unidadesPorClave.get(clave).push(candidate);
+  }
 
   const links = new Map();
   for (const product of list) {
     if (!product) continue;
     const info = packaging.get(product.id);
     if (!info || info.isPack !== true) continue;
-    const candidates = unitCandidates(product);
+    // El propio pack nunca está en el índice —sólo entran las no-pack— así que
+    // no hace falta descartarlo, pero un producto que fuera pack y unidad a la
+    // vez sería un dato incoherente: se excluye igual para que la regla se lea
+    // entera acá.
+    const candidates = (unidadesPorClave.get(claveDeVinculo(product)) || [])
+      .filter((candidate) => candidate.id !== product.id);
     if (candidates.length !== 1) continue;
     links.set(product.id, candidates[0].id);
   }

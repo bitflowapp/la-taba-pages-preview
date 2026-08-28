@@ -18,6 +18,13 @@
 //  · traduce la auditoría a frases que una persona entiende;
 //  · dice qué controles van deshabilitados cuando el usuario no puede editar.
 
+import {
+  MINUTES_IN_DAY,
+  isValidCloseTime,
+  isValidOpenTime,
+  minutesOfDay,
+} from '../core/service-hours.js';
+
 export const WEEKDAYS = Object.freeze([
   { value: 0, label: 'Domingo', short: 'Dom' },
   { value: 1, label: 'Lunes', short: 'Lun' },
@@ -29,7 +36,16 @@ export const WEEKDAYS = Object.freeze([
 ]);
 
 export const MAX_SLOTS_PER_DAY = 4;
-const TIME_PATTERN = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
+/*
+ * El formato de las horas vive en `core/service-hours.js`, con el resto del
+ * contrato de horarios. Acá se usa y no se reescribe: cuando la regla vivía en
+ * dos archivos, uno de los dos se quedaba viejo.
+ *
+ * La apertura va en reloj de 24 —`00:00` a `23:59`—; el cierre admite además
+ * `24:00`, que es como se escribe «hasta que termine el día». Siete de esas
+ * filas son un canal abierto las 24 horas, y hasta esta versión no había forma
+ * de expresarlo con la exigencia de horario encendida.
+ */
 
 function text(value, maxLength = 200) {
   if (typeof value !== 'string') return '';
@@ -43,11 +59,7 @@ function money(value) {
   return Math.round(numeric);
 }
 
-function minutes(value) {
-  if (!TIME_PATTERN.test(value)) return null;
-  const [hours, mins] = value.split(':').map(Number);
-  return hours * 60 + mins;
-}
+const minutes = minutesOfDay;
 
 export function normalizeOperationsConfig(payload = {}) {
   const source = payload && typeof payload === 'object' ? payload : {};
@@ -153,8 +165,8 @@ export function validateWeeklyHours(slots = []) {
       continue;
     }
     const dayLabel = WEEKDAYS[weekday].label;
-    if (!TIME_PATTERN.test(opensAt) || !TIME_PATTERN.test(closesAt)) {
-      errors.push(`${dayLabel}: las horas se escriben como HH:MM.`);
+    if (!isValidOpenTime(opensAt) || !isValidCloseTime(closesAt)) {
+      errors.push(`${dayLabel}: las horas se escriben como HH:MM (el cierre admite 24:00 para el día completo).`);
       continue;
     }
     if (opensAt === closesAt) {
@@ -175,7 +187,7 @@ export function validateWeeklyHours(slots = []) {
       const to = minutes(slot.closesAt);
       if (from < to) spans.push([from, to]);
       else {
-        spans.push([from, 1440]);
+        spans.push([from, MINUTES_IN_DAY]);
         if (to > 0) spans.push([0, to]);
       }
     }

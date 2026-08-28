@@ -286,16 +286,34 @@ SKU existente, un fixture de QA, un SKU inestable, una categoría inventada, una
 clasificación alcohólica ausente y un plan que no decide nada. **Y es todo o
 nada**: con dos altas donde la segunda es inválida, la primera tampoco se creó.
 
-Además, el gate `Migrations, pgTAP and isolated restore` de CI aplicó las 118
-migraciones sobre un Supabase real, corrió las 162 aserciones pgTAP y el
-simulacro de restauración: **verde**.
+**Y el gate de CI lo confirmó sobre un Supabase real.** `Migrations, pgTAP and
+isolated restore` aplicó las 118 migraciones, corrió las aserciones pgTAP —ahora
+incluida `supabase/tests/horario_24x7_test.sql`, que se registró en
+`scripts/run-mercadopago-local-db.mjs`— y el simulacro de restauración:
+
+```
+1..14
+ok 1 - 23:59 con 00:00-24:00 esta abierto
+ok 2 - 00:00 con 00:00-24:00 esta abierto
+ok 3 - 02:00 con 00:00-24:00 esta abierto
+ok 4 - 05:00 con 00:00-24:00 esta abierto
+ok 5 - 12:00 con 00:00-24:00 esta abierto
+ok 6 - los siete dias estan abiertos a las 03:33
+ok 7 - el canal de alcohol sigue cerrado a las 03:00 aunque el comercio este abierto
+ok 8 - el canal de alcohol sigue cerrado a las 23:00
+ok 9 - el canal de alcohol abre dentro de SU ventana
+ok 10 - apagar alcohol_hours_enforced afecta al canal alcohol y a ningun otro
+ok 11 - 02:00 con 09:00-21:00 esta cerrado
+ok 12 - 12:00 con 09:00-21:00 esta abierto
+ok 13 - 21:00 en punto ya cerro: el intervalo es semiabierto
+ok 14 - una franja de ancho cero sigue rechazada
+```
+
+Las líneas 7 a 10 son la prueba de la separación del alcohol contra la función
+que decide de verdad, no contra el texto del SQL.
 
 ## 10. LO QUE QUEDÓ PENDIENTE
 
-- **`supabase/tests/horario_24x7_test.sql`** (14 aserciones pgTAP) no pudo
-  correrse acá: pgTAP no está instalado en el Postgres del entorno. Se registró
-  en `scripts/run-mercadopago-local-db.mjs`, así que **lo corre el gate de CI**
-  junto a los otros seis, y también a mano con `npm run test:db:24x7`.
 - **Cargar los rubros nuevos.** Este trabajo abre el camino; no da de alta un solo
   producto. Snacks, golosinas, almacén, limpieza, higiene, hogar y mascotas
   siguen vacíos hasta que el comercio cargue su góndola.

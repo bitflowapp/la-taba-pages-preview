@@ -46,24 +46,50 @@ tocados está en el PR.
 No alcanza con explicar por qué fallan. Se corrieron los mismos archivos contra
 `main` —`88f40a2`, sin una línea de esta integración— en un worktree aparte y
 con los puertos separados que `playwright.config.mjs` ofrece justamente para
-esto (`TABA_E2E_HTTP_PORT`, `TABA_E2E_RELAY_PORT`).
+esto (`TABA_E2E_HTTP_PORT`, `TABA_E2E_RELAY_PORT`), en serie para que ninguna
+corrida le robe el host a la otra.
 
-### `address-flow.spec.mjs` · chromium
+| archivo | `main` | integración | pruebas que fallan, en las dos |
+| --- | --- | --- | --- |
+| `address-flow` | 5 fallan · 11 pasan | 5 fallan | `151:3` `191:3` `231:3` `324:3` `465:3` |
+| `beverage-storefront` | 3 fallan · 9 pasan | 3 fallan | `6:1` `239:1` `401:1` |
+| `customer-profile` | 1 falla · 2 pasan | 1 falla | `8:1` |
+| `delivery-proof` | 1 falla · 8 pasan* | 1 falla | `9:1` |
+| `demo-realtime-profile` | 1 falla | 1 falla | `18:1` |
+| `demo-realtime-reliability` | 5 fallan · 3 pasan | 5 fallan | `22:1` `92:1` `137:1` `167:1` `211:1` |
 
-| | `main` | integración |
-| --- | --- | --- |
-| Resultado | 5 fallan, 11 pasan | 5 fallan |
-| Pruebas que fallan | `151:3` `191:3` `231:3` `324:3` `465:3` | `151:3` `191:3` `231:3` `324:3` `465:3` |
+\* La corrida de `delivery-proof` incluyó además `delivery-location-confirmation`
+entero, que **pasó**. Vale la pena decirlo: no es que «todo lo que toca el mapa
+falla». Fallan las pruebas que esperan a que el mapa ABRA o que exigen una
+consola limpia. Las demás pasan, también acá.
 
-### `beverage-storefront.spec.mjs` · chromium
+**Las mismas pruebas, en las mismas líneas, en las dos ramas: 16 de 16.** No son
+una regresión de esta integración.
 
-| | `main` | integración |
-| --- | --- | --- |
-| Resultado | 3 fallan, 9 pasan | 3 fallan |
-| Pruebas que fallan | `6:1` `239:1` `401:1` | `6:1` `239:1` `401:1` |
+## Las dos formas que toma la misma causa
 
-**Las mismas pruebas, en las mismas líneas, en las dos ramas.** No son una
-regresión de esta integración: `main` las falla igual en este entorno.
+1. **Tiempo agotado (45 s).** La prueba espera a poder tocar «Confirmar
+   ubicación», y el botón está deshabilitado porque el mapa no abrió.
+2. **Consola sucia.** Pruebas como `customer-profile:8:1` —«sin overflow ni PII
+   en consola»— y las de `demo-realtime-reliability` afirman que la consola no
+   tiene errores, y encuentran `Failed to load resource: net::ERR_CONNECTION_RESET`.
+
+Las dos salen del mismo lugar: el `<script>` de MapLibre que `index.html` carga
+desde `unpkg.com`.
+
+## Qué se intentó antes de dar por cerrado que es del entorno
+
+* `curl` a través del mismo proxy: **5 de 5**, 1 MB en 0,2-0,45 s. El host es
+  alcanzable.
+* Chromium al mismo URL: `net::ERR_CONNECTION_RESET`, siempre.
+* Con el proxy declarado explícitamente en `chromium.launch({ proxy })`: igual.
+* Con `--disable-features=EncryptedClientHello`, por si era ECH: igual.
+
+El proxy registra del lado suyo `1751 B sent, 39 B received` y cierra: el
+`ClientHello` de Chromium —más grande que el de curl— no sobrevive al relevo de
+salida. **No se desactivó la verificación TLS ni se tocó `HTTPS_PROXY`**, que es
+lo que el entorno pide explícitamente que no se haga, y **no se subió ningún
+timeout** para tapar el síntoma.
 
 ## Cómo verificarlo en un entorno con red estable
 

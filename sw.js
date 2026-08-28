@@ -1,25 +1,25 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v92-taba-abre-24-horas-y-deja-de-ser-solo-bebida';
+const CACHE_NAME = 'la-taba-runtime-v93-la-bandeja-por-secciones-que-no-se-rearma';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=57',
-  './styles/tokens.css?v=57',
-  './styles/common.css?v=57',
-  './styles/storefront.css?v=57',
-  './styles/catalog.css?v=57',
-  './styles/checkout.css?v=57',
-  './styles/profile.css?v=57',
-  './styles/showcase.css?v=57',
-  './styles/tracking.css?v=57',
-  './styles/business.css?v=57',
-  './styles/rider.css?v=57',
-  './styles/responsive.css?v=57',
-  './styles/brand-home.css?v=57',
+  './styles.css?v=58',
+  './styles/tokens.css?v=58',
+  './styles/common.css?v=58',
+  './styles/storefront.css?v=58',
+  './styles/catalog.css?v=58',
+  './styles/checkout.css?v=58',
+  './styles/profile.css?v=58',
+  './styles/showcase.css?v=58',
+  './styles/tracking.css?v=58',
+  './styles/business.css?v=58',
+  './styles/rider.css?v=58',
+  './styles/responsive.css?v=58',
+  './styles/brand-home.css?v=58',
   // `styles.css` la importa desde que existe y nunca estuvo acá: sin red, la
   // home se quedaba sin la capa de movimiento. Lo destapó el guard de la
   // cadena de CSS versionado; no lo introdujo esta integración.
-  './styles/motion.css?v=57',
+  './styles/motion.css?v=58',
   './manifest.webmanifest',
   './runtime-config.js',
   './pago/resultado/index.html',
@@ -217,16 +217,28 @@ const ASSETS = [
   './js/business/business-operation-language.js',
   './js/business/business-operations-center.js',
   './js/business/business-operations-config.js',
+  './js/business/business-order-alerts.js',
+  './js/business/business-order-tray.js',
   './js/business/business-packing-verification.js',
   './js/business/business-panel-controller.js',
   './js/business/business-panel-render.js',
   './js/business/business-payments-console.js',
   './js/business/business-product-onboarding.js',
+  './js/business/business-sound-service.js',
   './js/business/business-tray-patch.js',
   './js/business/business-view-model.js',
   './js/catalog/barcode-normalizer.js',
   './js/catalog/barcode-scanner-service.js',
   './js/core/fiscal-domain.js',
+  /*
+   * `service-hours.js` NO viene de la bandeja: entró con el trabajo de 24/7
+   * multi-rubro, que hizo que `business-operations-config.js` lo importe, y
+   * nadie lo agregó acá. Estaba faltando en main desde entonces y no se veía
+   * porque el guard del grafo todavía no cortaba. Sin red, ese import estático
+   * sin resolver rompe el grafo y el Panel no abre: es el mismo agujero que la
+   * bandeja abrió con sus dos módulos, más viejo.
+   */
+  './js/core/service-hours.js',
   './js/payments/payment-recovery.js',
   './js/platform/browser-business-platform.js',
   './js/platform/business-platform-adapter.js',
@@ -396,7 +408,7 @@ async function cachePrimero(request) {
  * Cuatro segundos: bien por debajo de los ocho que espera `startup-recovery.js`
  * antes de dar el arranque por perdido, y muy por encima de cualquier respuesta
  * sana. El costo de equivocarse es casi nulo: el precache está versionado
- * (`?v=57`), así que una copia guardada es el MISMO contenido que iba a traer la
+ * (`?v=58`), así que una copia guardada es el MISMO contenido que iba a traer la
  * red, no una versión vieja.
  */
 const PLAZO_DE_RED_MS = 4000;

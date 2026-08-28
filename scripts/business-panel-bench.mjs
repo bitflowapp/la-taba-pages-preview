@@ -32,7 +32,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
-import { BUSINESS_ID, SUPABASE_URL, instalarDatosDePrueba, pedidos } from './lib/business-panel-fixtures.mjs';
+import { BUSINESS_ID, SUPABASE_URL, instalarDatosDePrueba, pedidosSinteticos } from './lib/business-panel-fixtures.mjs';
 
 function arg(name, fallback) {
   const i = process.argv.indexOf(`--${name}`);
@@ -47,22 +47,22 @@ const OUT = path.resolve(arg('out', 'artifacts/taba2-panel-operativo-movil'));
 const VENTANA_MS = Number.parseInt(arg('ventana', '30000'), 10);
 const VIEWPORT = { width: 390, height: 844 };
 
-/** N pedidos derivados de los seis de la biblioteca, con identidad propia. */
+/*
+ * N pedidos derivados de los seis de la biblioteca, con identidad propia.
+ *
+ * El molde vive en `business-panel-fixtures.mjs` y NO acá. Estaba acá, con un
+ * UUID de 35 caracteres —último grupo de once dígitos en vez de doce—, y eso no
+ * es cosmético: el adaptador descarta un `backendId` inválido, el pedido pierde
+ * la identidad con la que el coordinador compara revisiones, y la bandeja se
+ * dibuja bien pero NUNCA se actualiza. Un banco de prueba así no falla: da cero
+ * movimiento y una conclusión falsa hacia el lado bueno.
+ *
+ * Los números ya publicados de este banco se midieron con el molde roto y no se
+ * tocan: son lo que se midió, con la nota de qué medían. Ver
+ * `artifacts/taba2-panel-operativo-movil/LEEME.md`.
+ */
 function muchosPedidos(cuantos) {
-  const base = pedidos();
-  const salida = [];
-  for (let i = 0; i < cuantos; i += 1) {
-    const molde = base[i % base.length];
-    const n = String(i + 1).padStart(4, '0');
-    salida.push({
-      ...molde,
-      id: `00000000-0000-4000-8000-0000000${n}`,
-      public_code: `LT-9${n}`,
-      revision: (i % 7) + 1,
-      order_items: molde.order_items.map((item, j) => ({ ...item, id: `${n}-${j}` })),
-    });
-  }
-  return salida;
+  return pedidosSinteticos(cuantos, { prefijo: 'LT-9' });
 }
 
 fs.mkdirSync(OUT, { recursive: true });

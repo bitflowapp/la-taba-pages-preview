@@ -35,5 +35,29 @@ node scripts/business-panel-responsive.mjs --label despues \
   --out artifacts/taba2-panel-operativo-movil/capturas
 ```
 
+## Nota de la integración 90+91 — qué miden exactamente los `BENCH-*.json`
+
+Los dos `BENCH-*.json` de esta carpeta se midieron con un molde de pedidos
+sintéticos cuyo UUID tenía **35 caracteres** en vez de 36: el último grupo salía
+de once dígitos. El adaptador descarta un `backendId` que no es un UUID, así que
+esos 300 pedidos entraron a la bandeja **sin la identidad** con la que el
+coordinador compara revisiones.
+
+Qué significa para estos números, con precisión:
+
+* `msHastaLaBandeja`, `nodosDelWorkspace`, `bytesDeMarcado` y `tarjetasEnElDom`
+  **siguen valiendo**: son el costo de dibujar 300 tarjetas, y dibujarlas no
+  depende de la identidad.
+* `repintadosSinNovedades: 0` y `msPorRepintado` valen **para el escenario que
+  midieron**, que es una bandeja quieta. No se pueden leer como «un cambio de
+  pedido cuesta esto»: con la identidad rota, un cambio no llegaba a la bandeja.
+
+**Estos archivos no se tocaron.** Son lo que se midió, y reescribirlos sería
+inventar una medición que nadie hizo. El molde se arregló —vive una sola vez, en
+`scripts/lib/business-panel-fixtures.mjs`, con una prueba que lo mira
+(`tests/business-panel-bench-fixture.test.mjs`)— y las mediciones de la
+integración, con el molde sano y el mismo arnés para 50, 100, 300 y 500 pedidos,
+están en `artifacts/taba2-panel-integracion-90-91/`.
+
 El informe que interpreta estos números está en `PANEL-BANDEJA-OPERATIVA.md`, en
 la raíz del repositorio.

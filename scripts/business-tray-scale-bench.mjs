@@ -38,7 +38,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
-import { BUSINESS_ID, SUPABASE_URL, instalarDatosDePrueba, pedidos } from './lib/business-panel-fixtures.mjs';
+import { BUSINESS_ID, SUPABASE_URL, instalarDatosDePrueba, pedidosSinteticos } from './lib/business-panel-fixtures.mjs';
 
 function arg(name, fallback) {
   const i = process.argv.indexOf(`--${name}`);
@@ -76,26 +76,11 @@ const siguienteEstado = (actual) => CICLO_DE_ESTADO[
 
 /** N pedidos derivados de los seis de la biblioteca, con identidad propia. */
 function muchosPedidos(cuantos) {
-  const base = pedidos();
-  const salida = [];
-  for (let i = 0; i < cuantos; i += 1) {
-    const molde = base[i % base.length];
-    const n = String(i + 1).padStart(4, '0');
-    salida.push({
-      ...molde,
-      // El UUID tiene que ser VÁLIDO, y no es un detalle cosmético: con un
-      // último grupo de once dígitos en vez de doce, el adaptador descarta el
-      // `backendId` y el pedido pierde la identidad con la que el coordinador
-      // compara revisiones. El resultado es una bandeja que se dibuja bien y
-      // NUNCA se actualiza: medir un cambio sobre eso da cero movimiento y una
-      // conclusión falsa. Costó una tarde encontrarlo.
-      id: `00000000-0000-4000-8000-${n.padStart(12, '0')}`,
-      public_code: `LT-8${n}`,
-      revision: (i % 7) + 1,
-      order_items: molde.order_items.map((item, j) => ({ ...item, id: `${n}-${j}` })),
-    });
-  }
-  return salida;
+  // El molde vive en `business-panel-fixtures.mjs`: es el mismo que usa el banco
+  // de la bandeja operativa. Estaba duplicado, y la copia de allá tenía el UUID
+  // de 35 caracteres que este comentario describía. Una sola función y una
+  // prueba que la mira es lo que impide que vuelvan a separarse.
+  return pedidosSinteticos(cuantos, { prefijo: 'LT-8' });
 }
 
 fs.mkdirSync(OUT, { recursive: true });

@@ -660,7 +660,20 @@ borrador, cursor y foco, toca a lo sumo 12 tarjetas y **no deja nodos sueltos**.
 | --- | --- |
 | `npm run check` | **verde** · 102 módulos del grafo del cliente y 48 del diferido, todos en `sw.js` · 173 archivos precacheados · sin secretos |
 | `npm test` | **2.284 / 2.284** |
-| Playwright chromium | ver abajo |
+| Playwright chromium · superficies del Panel productivo | **31 / 31** |
+
+Las 31 son todas las pruebas de navegador que tocan el workspace del Panel
+productivo: `business-intake-reliability`, `business-windows-operations`,
+`honesty-mode`, `panel-responsive` y las dos nuevas. Entre ellas, las tres que
+más podían romperse con este cambio:
+
+- «el Panel no le borra al operador lo que está escribiendo»,
+- «la hoja de “Más” sobrevive a que entre un pedido» —que es exactamente el
+  parche por región—,
+- «el foco se ve y recorre la navegación con teclado».
+
+Y el Panel sigue sin desbordar a 360/390/412/430 px, con el texto al 150 % y al
+200 %.
 
 Las dos pruebas que fallaron en la primera corrida completa —`github-pages` y
 `preflight-staging-package`— eran el literal del `CACHE_NAME` en dos archivos

@@ -253,15 +253,49 @@ Lo que resuelve es el camino de todos los días —encontrar, tocar, guardar—.
 
 ---
 
-## 9. LO QUE QUEDÓ PENDIENTE
+## 9. VERIFICADO CONTRA UN POSTGRES DE VERDAD
 
-- **Aplicar las migraciones.** Las tres pasan la revisión estática
-  (`npm run migrations:validate`) y no se aplicaron a ninguna base: el entorno
-  cloud no tiene Supabase local ni credenciales de staging. Van por el pipeline
-  normal del repositorio.
+El entorno cloud no tiene Supabase ni docker, pero sí PostgreSQL 16. Con eso se
+verificó lo que no se puede afirmar leyendo SQL:
+
+**El núcleo del diseño 24/7.** `time` admite `24:00:00`, la hora local de un
+instante siempre es menor, y la comparación **exacta** de `business_is_open`
+sobre `00:00 – 24:00` da verdadero a las 00:00, 02:00, 05:00, 12:00 y 23:59.
+Contraprueba: un horario 09:00–21:00 sigue cerrado en los cuatro primeros, y
+22:00–02:00 abre a las 23:59 y no a las 02:00 del mismo día.
+
+**La regla de formato de la RPC.** Acepta `24:00` y `24:00:00` sólo como cierre;
+rechaza `24:01`, `25:00`, `23:60`, `9:00` y el vacío. `extract(epoch from time
+'24:00')/60` da 1440, así que el día completo choca con cualquier otro tramo del
+mismo día, y `to_char` lo devuelve como `24:00`.
+
+**Las tres migraciones aplican.** Sobre el esquema real de `products`:
+
+| Caso | Resultado |
+| --- | --- |
+| `Limpieza` verificado, sin alcohol | **entra** (antes moría con `23514`) |
+| `Limpieza` + `is_alcoholic = true` | rechazado |
+| `Ferretería` | rechazado |
+| `Fernet` sin alcohol | rechazado |
+
+**`apply_commercial_catalog_plan`, ejercitada entera.** Un alta nace
+`available=false`, `is_verified=false` y con `price_status='pending'` si no trae
+precio; con alcohol coherente entra y recibe `minimum_age=18`. Rechaza: alcohol
+que no coincide con la góndola (en las dos direcciones), publicar en el alta, un
+SKU existente, un fixture de QA, un SKU inestable, una categoría inventada, una
+clasificación alcohólica ausente y un plan que no decide nada. **Y es todo o
+nada**: con dos altas donde la segunda es inválida, la primera tampoco se creó.
+
+Además, el gate `Migrations, pgTAP and isolated restore` de CI aplicó las 118
+migraciones sobre un Supabase real, corrió las 162 aserciones pgTAP y el
+simulacro de restauración: **verde**.
+
+## 10. LO QUE QUEDÓ PENDIENTE
+
 - **`supabase/tests/horario_24x7_test.sql`** (14 aserciones pgTAP) no pudo
-  correrse: necesita `supabase test db --local`. Está registrado como
-  `npm run test:db:24x7`.
+  correrse acá: pgTAP no está instalado en el Postgres del entorno. Se registró
+  en `scripts/run-mercadopago-local-db.mjs`, así que **lo corre el gate de CI**
+  junto a los otros seis, y también a mano con `npm run test:db:24x7`.
 - **Cargar los rubros nuevos.** Este trabajo abre el camino; no da de alta un solo
   producto. Snacks, golosinas, almacén, limpieza, higiene, hogar y mascotas
   siguen vacíos hasta que el comercio cargue su góndola.

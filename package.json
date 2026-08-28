@@ -24,6 +24,7 @@
     "fiscal:test": "npm --prefix services/arca-fiscal-bridge test",
     "test:db:local": "supabase test db --local supabase/tests/business_windows_scanner_fiscal_test.sql",
     "test:db:24x7": "supabase test db --local supabase/tests/horario_24x7_test.sql",
+    "test:db:altas": "supabase test db --local supabase/tests/alta_propuesta_comercial_test.sql",
     "verify:technical": "npm run check && npm test && npm run fiscal:test && npm run test:e2e",
     "verify": "npm run migrations:validate && npm run catalog:release:validate && npm run verify:technical",
     "release:folder": "npm run vendor:build && npm run verify && node scripts/create-release-folder.mjs",

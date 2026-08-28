@@ -278,13 +278,31 @@ mismo día, y `to_char` lo devuelve como `24:00`.
 | `Ferretería` | rechazado |
 | `Fernet` sin alcohol | rechazado |
 
-**`apply_commercial_catalog_plan`, ejercitada entera.** Un alta nace
-`available=false`, `is_verified=false` y con `price_status='pending'` si no trae
-precio; con alcohol coherente entra y recibe `minimum_age=18`. Rechaza: alcohol
-que no coincide con la góndola (en las dos direcciones), publicar en el alta, un
-SKU existente, un fixture de QA, un SKU inestable, una categoría inventada, una
-clasificación alcohólica ausente y un plan que no decide nada. **Y es todo o
-nada**: con dos altas donde la segunda es inválida, la primera tampoco se creó.
+### `apply_commercial_catalog_plan`: la puerta que CREA filas
+
+Es la superficie más delicada de este trabajo —`SECURITY DEFINER` con `INSERT`—
+así que no se conforma con una revisión estática. `supabase/tests/alta_propuesta_comercial_test.sql`
+la ejercita con **identidades reales** sobre el stack aislado y corre en el gate,
+registrada en `scripts/run-mercadopago-local-db.mjs`. Veintisiete aserciones:
+
+| Pregunta | Qué se prueba |
+| --- | --- |
+| ¿anon puede? | No tiene `EXECUTE` (`function_privs_are`) **y** el intento real rebota con `42501` |
+| ¿un autenticado sin membresía? | La compuerta de adentro lo rechaza |
+| ¿el owner de otro comercio? | Rechazado, **y no queda ninguna fila** en el comercio ajeno |
+| ¿el owner autorizado? | Crea, y `created = 1` |
+| ¿cómo queda la fila? | `available=false`, `is_verified=false`, `business_id` = el autorizado, `catalog_origin='commercial'`, precio `pending` |
+| ¿alcohol incoherente? | Rechazado **en las dos direcciones**; el coherente entra oculto y con `minimum_age=18` |
+| ¿SKU que ya existe? | `23505`, y el producto anterior conserva su nombre |
+| ¿un plan que falla a la mitad? | **Todo o nada**, probado en los dos sentidos |
+| ¿reaplicar el mismo plan? | Rebota y sigue habiendo **un** producto con ese SKU |
+
+El caso del rollback es el que más importa y por eso se prueba en el orden que
+duele: el alta **ya se insertó** cuando la modificación revienta. Si no fueran
+una sola transacción, la fila nueva quedaría y el precio no se habría movido —
+media góndola aplicada, que es peor que ninguna—. También se fija que la
+unicidad del SKU es **por comercio**: si fuera global, un comercio podría
+bloquearle un identificador a otro con sólo nombrarlo.
 
 **Y el gate de CI lo confirmó sobre un Supabase real.** `Migrations, pgTAP and
 isolated restore` aplicó las 118 migraciones, corrió las aserciones pgTAP —ahora
@@ -319,5 +337,17 @@ que decide de verdad, no contra el texto del SQL.
   siguen vacíos hasta que el comercio cargue su góndola.
 - **La segunda pasada de publicación.** Un alta nace oculta por diseño; publicarla
   exige `is_verified`, que a su vez exige la ficha de identidad comercial
-  completa. El camino existe (la misma planilla con el SKU ya cargado) y no se
-  ejercitó contra una base real.
+  completa. El camino existe —la misma planilla con el SKU ya cargado, por
+  `apply_commercial_catalog_batch` y sus compuertas— y este trabajo no lo
+  ejercitó de punta a punta: lo que sí quedó probado es que el alta **no** puede
+  saltárselo.
+
+Nada de lo que el gate verifica figura acá. `horario_24x7_test.sql` y
+`alta_propuesta_comercial_test.sql` corren en `Migrations, pgTAP and isolated
+restore` sobre un Supabase con las 118 migraciones aplicadas, y el E2E completo
+—Chromium, WebKit y móvil— corre en `Web, backend, fiscal and security gates`.
+Los fallos que aparecen al correr el E2E dentro del entorno de desarrollo cloud
+son de ese entorno, no del producto: bloquea `unpkg.com` (maplibre), cada
+arranque se cuelga unos 13 s esperando el `ERR_CONNECTION_RESET` y los tests que
+reinician la demo varias veces agotan su presupuesto de 45 s. Se verificó
+reproduciéndolos idénticos sobre `origin/main` sin modificar.

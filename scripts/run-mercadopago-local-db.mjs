@@ -159,6 +159,11 @@ try {
   // de horario se ejercitan contra un Postgres de verdad, con las 118
   // migraciones aplicadas y el huso del comercio decidiendo.
   runPgTap(path.join('supabase', 'tests', 'horario_24x7_test.sql'));
+  // La puerta que CREA productos. Es SECURITY DEFINER y hace INSERT: leer su
+  // texto no alcanza, hay que ejercitarla con identidades reales —anon, un
+  // autenticado sin membresia, el owner de otro comercio— y comprobar la forma
+  // exacta de la fila que deja.
+  runPgTap(path.join('supabase', 'tests', 'alta_propuesta_comercial_test.sql'));
   psql(`
     create schema restore_drill;
     create table restore_drill.evidence(id integer primary key, marker text not null);

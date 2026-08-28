@@ -2264,11 +2264,21 @@ function uniqueFilterValues(products, getter, { etiqueta, orden } = {}) {
  * contador de arriba sigue diciendo cuántos hay en total, así que la persona
  * nunca cree que el catálogo es más chico de lo que es.
  *
- * SESENTA y no veinte: veinte deja la primera pantalla con el botón a la vista y
- * se lee como un catálogo que se quedó sin productos. Sesenta son diez
- * pantallas de scroll en teléfono y cuestan alrededor de 1.400 nodos.
+ * CIENTO VEINTE, Y EL NÚMERO ESTÁ MEDIDO.
+ *
+ * El catálogo que el comercio publica hoy tiene 80 productos visibles, así que
+ * con este tramo la góndola de TABA **no se pagina**: el cambio es inerte para
+ * la tienda de hoy y empieza a trabajar recién cuando el catálogo pasa de 120.
+ * Es a propósito. Un tramo de sesenta cortaba el catálogo actual por la mitad y
+ * dejaba veinte productos —los que todavía esperan precio— detrás de un botón
+ * que nadie pidió; lo encontró `tests/e2e/taba2-unit-catalog.spec.mjs`, que
+ * busca la unidad de 1,5 L en la grilla y dejó de encontrarla.
+ *
+ * Y el tramo sigue haciendo su trabajo donde importa. Medido en Chromium con
+ * 1000 SKU: 5.035 nodos contra 22.519, y 437 ms para abrir «Todas» contra
+ * 1.640. El documento deja de crecer con el catálogo, que era el punto.
  */
-const CATALOG_PAGE_SIZE = 60;
+const CATALOG_PAGE_SIZE = 120;
 let catalogVisibleCount = CATALOG_PAGE_SIZE;
 let catalogPageSignature = '';
 

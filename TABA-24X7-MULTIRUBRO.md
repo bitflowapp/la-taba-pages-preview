@@ -170,12 +170,19 @@ contra 1,1 ms con 2000 SKU. Se revirtió y el motivo quedó escrito en el códig
 
 | SKU | abrir catálogo (antes → después) | nodos del documento (antes → después) |
 | ---: | ---: | ---: |
-| 100 | 216 ms → **153 ms** | 4.056 → **3.170** |
-| 500 | 684 ms → **257 ms** | 13.232 → **3.592** |
-| 1000 | 1.640 ms → **367 ms** | 22.519 → **3.589** |
+| 100 | 216 ms → **168 ms** | 4.056 → **3.902** |
+| 500 | 684 ms → **299 ms** | 13.232 → **4.963** |
+| 1000 | 1.640 ms → **437 ms** | 22.519 → **5.035** |
 
-El documento dejó de crecer con el catálogo. La grilla se dibuja de a 60
+El documento dejó de crecer con el catálogo. La grilla se dibuja de a 120
 productos con «Ver N productos más».
+
+**El tramo es inerte para la tienda de hoy**: el catálogo publicado tiene 80
+productos visibles, así que no corta nada y empieza a trabajar recién cuando el
+catálogo pasa de 120. El primer intento usó 60 y cortaba el catálogo actual por
+la mitad, dejando los veinte productos que esperan precio detrás de un botón que
+nadie pidió; lo encontró `tests/e2e/taba2-unit-catalog.spec.mjs`, que busca la
+unidad de 1,5 L en la grilla y dejó de encontrarla.
 
 **No es virtualización**: no hay ventana deslizante, ni altura calculada, ni
 posicionamiento absoluto. Se eligió así porque la virtualización rompe el Ctrl+F

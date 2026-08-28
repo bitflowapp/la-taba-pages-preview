@@ -1,54 +1,54 @@
 {
-  "generado": "2026-08-28T03:58:22.904Z",
+  "generado": "2026-08-28T04:52:27.336Z",
   "navegador": "141.0.7390.37",
   "medidas": [
     {
       "size": 100,
       "ms": {
-        "arranque": 12884,
-        "catalogo": 153,
-        "busqueda": 131,
-        "categoria": 3
+        "arranque": 12740,
+        "catalogo": 168,
+        "busqueda": 123,
+        "categoria": 5
       },
       "nodos": {
-        "home": 3263,
-        "catalogo": 3263
+        "home": 3902,
+        "catalogo": 3902
       },
-      "tarjetas": 60,
+      "tarjetas": 88,
       "resultadosBusqueda": 0,
-      "heapKb": 12288
+      "heapKb": 9766
     },
     {
       "size": 500,
       "ms": {
-        "arranque": 13066,
-        "catalogo": 324,
-        "busqueda": 179,
-        "categoria": 256
+        "arranque": 13012,
+        "catalogo": 299,
+        "busqueda": 172,
+        "categoria": 239
       },
       "nodos": {
-        "home": 3649,
-        "catalogo": 3649
+        "home": 4963,
+        "catalogo": 4963
       },
-      "tarjetas": 60,
+      "tarjetas": 120,
       "resultadosBusqueda": 0,
-      "heapKb": 18680
+      "heapKb": 12402
     },
     {
       "size": 1000,
       "ms": {
-        "arranque": 13393,
-        "catalogo": 423,
-        "busqueda": 242,
-        "categoria": 349
+        "arranque": 13469,
+        "catalogo": 437,
+        "busqueda": 252,
+        "categoria": 291
       },
       "nodos": {
-        "home": 3700,
-        "catalogo": 3700
+        "home": 5035,
+        "catalogo": 5035
       },
-      "tarjetas": 60,
+      "tarjetas": 120,
       "resultadosBusqueda": 0,
-      "heapKb": 25136
+      "heapKb": 25391
     }
   ]
 }

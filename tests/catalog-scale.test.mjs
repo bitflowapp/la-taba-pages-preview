@@ -165,9 +165,13 @@ test('la grilla del catálogo se dibuja de a tramos y el filtro no se pagina', (
    *
    *              abrir catálogo        nodos del documento
    *              antes    después      antes     después
-   *      100 SKU   216 ms   153 ms      4.056      3.170
-   *      500 SKU   684 ms   257 ms     13.232      3.592
-   *     1000 SKU 1.640 ms   367 ms     22.519      3.589
+   *      100 SKU   216 ms   168 ms      4.056      3.902
+   *      500 SKU   684 ms   299 ms     13.232      4.963
+   *     1000 SKU 1.640 ms   437 ms     22.519      5.035
+   *
+   * El tramo es de 120 y el catálogo que TABA publica hoy tiene 80 productos
+   * visibles: para la tienda de hoy esto es inerte, y empieza a trabajar recién
+   * cuando el catálogo crece. Con 60 cortaba el catálogo actual por la mitad.
    *
    * El documento dejó de crecer con el catálogo. Lo que se fija acá es que la
    * grilla siga cortando y que el FILTRO no: la búsqueda y la categoría corren

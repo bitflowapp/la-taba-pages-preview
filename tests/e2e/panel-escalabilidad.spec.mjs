@@ -157,23 +157,53 @@ test.describe('la bandeja no se lleva puesto el trabajo del operador', () => {
     await page.locator('[data-production-orders-view]:visible').first().click();
     await page.locator('.production-order-card').nth(CUANTOS - 1).waitFor({ state: 'attached', timeout: 120_000 });
 
-    // Alguien está trabajando: scrolleado, escribiendo un motivo, con el cursor
-    // donde lo dejó.
+    // Alguien está trabajando: scrolleado, con el detalle de una tarjeta ABIERTO
+    // y escribiendo un motivo, con el cursor donde lo dejó.
+    //
+    // El detalle se abre de verdad, con un clic en su `<summary>`, y no es un
+    // rodeo del arnés: desde que la bandeja tiene secciones, el motivo de
+    // cancelación vive DENTRO de `<details class="order-detail">`, que nace
+    // cerrado. Un `<input>` adentro de un `<details>` cerrado no es enfocable,
+    // así que `entrada.focus()` no hacía nada y la prueba medía la conservación
+    // de un foco que nunca existió —pasaba igual, porque el foco tampoco se
+    // perdía—. Abrirlo primero es lo que hace el operador y es lo único que
+    // pone el campo en condiciones de probar lo que esta prueba dice probar.
+    //
+    // De paso queda cubierto el contrato de la bandeja por secciones: el
+    // `<details>` que el operador dejó abierto sigue abierto después del cambio.
     const objetivo = 'LT-70003';
-    const hijosAntes = await page.evaluate(() => (
-      document.querySelector('[data-production-workspace="business"]').childNodes.length
-    ));
-    const trabajo = await page.evaluate((excluido) => {
+    const codigoDelTrabajo = await page.evaluate((excluido) => {
       const codigo = (tarjeta) => tarjeta.querySelector('.production-order-code')?.textContent?.trim() || '';
       const tarjeta = [...document.querySelectorAll('.production-order-card')]
         .find((item) => codigo(item) !== excluido && item.querySelector('[data-production-cancel-reason]'));
       tarjeta.scrollIntoView({ block: 'center' });
+      return codigo(tarjeta);
+    }, objetivo);
+    const tarjetaDelTrabajo = page.locator('.production-order-card')
+      .filter({ has: page.locator('.production-order-code', { hasText: codigoDelTrabajo }) })
+      .first();
+    await tarjetaDelTrabajo.locator('[data-order-detail-toggle]').click();
+    await expect(tarjetaDelTrabajo.locator('[data-production-cancel-reason]')).toBeVisible();
+
+    // Los hijos del workspace se cuentan DESPUÉS de abrir el detalle: abrirlo es
+    // parte del estado que tiene que sobrevivir, no del cambio que se mide.
+    const hijosAntes = await page.evaluate(() => (
+      document.querySelector('[data-production-workspace="business"]').childNodes.length
+    ));
+    const trabajo = await page.evaluate((codigoBuscado) => {
+      const codigo = (tarjeta) => tarjeta.querySelector('.production-order-code')?.textContent?.trim() || '';
+      const tarjeta = [...document.querySelectorAll('.production-order-card')]
+        .find((item) => codigo(item) === codigoBuscado);
       const entrada = tarjeta.querySelector('[data-production-cancel-reason]');
       entrada.value = 'el cliente pidio esperar';
       entrada.focus();
       entrada.setSelectionRange(entrada.value.length, entrada.value.length);
+      if (document.activeElement !== entrada) {
+        // Sin esto la prueba vuelve a poder pasar sin haber enfocado nada.
+        throw new Error('el campo de motivo no quedó enfocado: ¿el detalle está cerrado?');
+      }
       return { codigo: codigo(tarjeta), scroll: globalThis.scrollY, texto: entrada.value };
-    }, objetivo);
+    }, codigoDelTrabajo);
 
     // Se cuentan las tarjetas que entran y salen del DOM, no las mutaciones:
     // reemplazar el tablero es UNA mutación y trescientas tarjetas.
@@ -219,6 +249,8 @@ test.describe('la bandeja no se lleva puesto el trabajo del operador', () => {
         texto: entrada?.value ?? null,
         cursor: entrada?.selectionStart ?? null,
         tieneFoco: document.activeElement === entrada,
+        detalleAbierto: Boolean(tarjeta?.querySelector('.order-detail')?.open),
+        seccion: tarjeta?.closest('[data-tray-section]')?.getAttribute('data-tray-section') || null,
         tarjetas: document.querySelectorAll('.production-order-card').length,
         // Los hijos DIRECTOS del workspace, contando nodos de texto. Un parche
         // por región que no recorta el marcado deja un nodo de texto suelto
@@ -232,6 +264,7 @@ test.describe('la bandeja no se lleva puesto el trabajo del operador', () => {
     expect(despues.cursor, 'el cursor queda donde estaba').toBe(trabajo.texto.length);
     expect(Math.abs(despues.scroll - trabajo.scroll), 'el scroll no salta').toBeLessThanOrEqual(8);
     expect(despues.tarjetas, 'la bandeja sigue completa').toBe(CUANTOS);
+    expect(despues.detalleAbierto, 'el detalle que el operador dejó abierto sigue abierto').toBe(true);
     /*
      * El número que este trabajo existe para bajar. Antes de reconciliar por
      * tarjeta eran 1.800 con 300 pedidos —el tablero se rearmaba entero, varias

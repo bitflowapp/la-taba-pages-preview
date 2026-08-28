@@ -1834,14 +1834,7 @@ function parchearWorkspaceDelNegocio(workspace) {
       lastWorkspaceMarkup.delete('business');
       return false;
     }
-    // `.trim()` NO es cosmético. `outerHTML` parsea la cadena entera y
-    // reemplaza el nodo por TODO lo que produjo, espacios incluidos: como el
-    // marcado de cada región empieza con un salto de línea y su sangría, cada
-    // parche dejaba un nodo de texto suelto de regalo. La región `status` se
-    // reescribe una vez por latido, así que en una jornada eso son miles de
-    // nodos huérfanos que ningún `querySelectorAll('*')` muestra —cuenta
-    // elementos, no texto— y que sólo se ven en el heap.
-    nodo.outerHTML = region.markup.trim();
+    parchearRegion(nodo, region.markup);
     regionesPintadas.set(region.clave, huella);
     toco = true;
   }
@@ -1871,6 +1864,54 @@ function parchearWorkspaceDelNegocio(workspace) {
   // cuando nadie lo perdió sería moverlo por nuestra cuenta.
   if (document.activeElement !== activoAntes) restaurarFoco(workspace, foco);
   return true;
+}
+
+/*
+ * UNA REGIÓN SE ACTUALIZA SIN MORIRSE.
+ * ===========================================================================
+ * Esto era `nodo.outerHTML = markup.trim()`, y el `.trim()` estaba ahí por una
+ * razón real: `outerHTML` parsea la cadena entera y reemplaza el nodo por TODO
+ * lo que produjo, espacios incluidos, así que el salto de línea y la sangría con
+ * los que empieza el marcado de cada región dejaban un nodo de texto suelto de
+ * regalo. La región `status` se reescribe una vez por latido: en una jornada son
+ * miles de nodos huérfanos que ningún `querySelectorAll('*')` muestra —cuenta
+ * elementos, no texto— y que sólo se ven en el heap.
+ *
+ * El `.trim()` tapaba la basura pero no el hecho de fondo: el NODO de la región
+ * moría y nacía otro en cada latido. Y eso rompía una propiedad que la otra
+ * mitad de este trabajo había medido y dejado por escrito: «mientras el servidor
+ * no cambie nada, el contenedor del workspace no puede recibir hijos nuevos».
+ * Con `outerHTML`, tres latidos en ocho segundos son tres hijos nuevos.
+ *
+ * Las dos cosas se arreglan igual: el nodo se queda, y se le actualiza lo que
+ * cambió. Los atributos se sincronizan —hace falta: `hidden` de la hoja «Más» y
+ * del velo viven ahí— y el interior se reemplaza sólo si de verdad es otro. Una
+ * región que sólo cambió un atributo no pierde sus hijos, y por lo tanto no
+ * pierde el foco que hubiera adentro.
+ *
+ * `outerHTML` queda como salida de emergencia para el caso que no puede pasar:
+ * que el marcado de la región venga con otra etiqueta que la que hay en el DOM.
+ */
+function parchearRegion(nodo, markup) {
+  const documento = nodo.ownerDocument || globalThis.document;
+  const plantilla = documento.createElement('template');
+  plantilla.innerHTML = String(markup || '').trim();
+  const nuevo = plantilla.content?.firstElementChild;
+  if (!nuevo || nuevo.tagName !== nodo.tagName) {
+    nodo.outerHTML = String(markup || '').trim();
+    return;
+  }
+  for (const atributo of Array.from(nuevo.attributes)) {
+    if (nodo.getAttribute(atributo.name) !== atributo.value) {
+      nodo.setAttribute(atributo.name, atributo.value);
+    }
+  }
+  for (const atributo of Array.from(nodo.attributes)) {
+    if (!nuevo.hasAttribute(atributo.name)) nodo.removeAttribute(atributo.name);
+  }
+  // Comparar antes de reemplazar no es una microoptimización: es lo que hace
+  // que abrir la hoja «Más» —que sólo saca un `hidden`— no destruya sus botones.
+  if (nodo.innerHTML !== nuevo.innerHTML) nodo.replaceChildren(...nuevo.childNodes);
 }
 
 /**
@@ -1960,10 +2001,10 @@ function parchearBandeja(bandeja, partes) {
     if (huellasDeSeccion.get(seccion.clave) !== huellaCabecera) {
       const cabecera = nodo.querySelector('.order-tray-head');
       if (cabecera) {
-        // `.trim()` por la misma razón que en las regiones: `outerHTML` deja el
-        // salto de línea y la sangría como nodo de texto suelto, y esto se
-        // reescribe una vez por cambio de sección durante toda la jornada.
-        cabecera.outerHTML = seccion.cabecera.trim();
+        // Mismo criterio que las regiones: el nodo del encabezado se queda y se
+        // le actualiza el recuento. Con `outerHTML` moría y nacía otro en cada
+        // pedido que cruza de sección, que en una jornada son miles.
+        parchearRegion(cabecera, seccion.cabecera);
         huellasDeSeccion.set(seccion.clave, huellaCabecera);
         toco = true;
       }

@@ -486,42 +486,80 @@ test('sin novedades del servidor, el tablero NO se reemplaza', async ({ browser 
    * 29 reemplazos en treinta segundos, de 864 KB y 15.298 nodos cada uno, sin
    * que un solo pedido hubiera cambiado.
    *
-   * Acá se cuenta lo mismo en chico: mientras el servidor no cambie nada, el
-   * contenedor del workspace no puede recibir hijos nuevos.
+   * Acá se cuenta lo mismo en chico, y se cuenta DOS cosas, porque desde que la
+   * bandeja se reconcilia por región, sección y tarjeta hacen falta las dos:
+   *
+   *   · `hijosNuevos` — hijos DIRECTOS que recibe el contenedor del workspace.
+   *     Es la medición original. Sigue teniendo que ser cero: la franja de
+   *     estado cambia en cada latido, y actualizarla no puede costar un hijo
+   *     nuevo del tablero.
+   *   · `tarjetasTocadas` — tarjetas que entran o salen en TODO el subárbol. Es
+   *     lo que la medición original no podía ver, porque cuando el tablero se
+   *     reemplazaba entero las trescientas viajaban dentro de un solo hijo
+   *     nuevo. Ahora una tarjeta que cambia se reemplaza en su lugar, adentro
+   *     del cuerpo de su sección, sin tocar ningún hijo directo.
+   *
+   * Y por eso la comprobación de «no es un tablero congelado» mira las tarjetas
+   * y no los hijos directos: un pedido que avanza de sección YA NO reemplaza
+   * ningún hijo directo del workspace, que es justamente la mejora. Medirlo ahí
+   * daría cero y estaría midiendo lo contrario de lo que quiere decir.
    */
   const { context, page } = await abrirBandeja(browser, TELEFONO, { pollMs: 1000 });
   try {
     await page.evaluate(() => {
       const raiz = document.querySelector('[data-production-workspace="business"]');
-      globalThis.__reemplazos = 0;
+      const contarTarjetas = (nodo) => (nodo.nodeType !== 1
+        ? 0
+        : (nodo.classList?.contains('production-order-card')
+          ? 1
+          : (nodo.querySelectorAll?.('.production-order-card').length || 0)));
+      globalThis.__reiniciarConteo = () => {
+        globalThis.__hijosNuevos = 0;
+        globalThis.__tarjetasTocadas = 0;
+      };
+      globalThis.__reiniciarConteo();
       globalThis.__observador = new MutationObserver((mutaciones) => {
         for (const m of mutaciones) {
-          if (m.type === 'childList' && m.target === raiz && m.addedNodes.length) {
-            globalThis.__reemplazos += 1;
+          if (m.type !== 'childList') continue;
+          if (m.target === raiz && m.addedNodes.length) globalThis.__hijosNuevos += 1;
+          for (const nodo of [...m.addedNodes, ...m.removedNodes]) {
+            globalThis.__tarjetasTocadas += contarTarjetas(nodo);
           }
         }
       });
-      globalThis.__observador.observe(raiz, { childList: true });
+      globalThis.__observador.observe(raiz, { childList: true, subtree: true });
     });
 
     // Ocho vueltas de sondeo sin una sola novedad.
     await page.waitForTimeout(8_000);
 
-    const reemplazos = await page.evaluate(() => {
-      globalThis.__observador.disconnect();
-      return globalThis.__reemplazos;
-    });
-    expect(reemplazos, `el tablero se reemplazó ${reemplazos} veces sin novedades`).toBe(0);
+    const quieto = await page.evaluate(() => ({
+      hijosNuevos: globalThis.__hijosNuevos,
+      tarjetasTocadas: globalThis.__tarjetasTocadas,
+    }));
+    expect(quieto.hijosNuevos, `el tablero recibió ${quieto.hijosNuevos} hijos nuevos sin novedades`).toBe(0);
+    expect(
+      quieto.tarjetasTocadas,
+      `se tocaron ${quieto.tarjetasTocadas} tarjetas sin que el servidor cambiara nada`,
+    ).toBe(0);
 
-    // Y cuando SÍ hay novedad, se repinta: la guarda no puede ser un tablero
-    // congelado.
-    await page.evaluate(() => { globalThis.__reemplazos = 0; globalThis.__observador.observe(
-      document.querySelector('[data-production-workspace="business"]'), { childList: true },
-    ); });
+    // Y cuando SÍ hay novedad, la bandeja se mueve: la guarda no puede ser un
+    // tablero congelado.
+    await page.evaluate(() => globalThis.__reiniciarConteo());
     await page.locator('[data-order-card="LT-2042"] [data-production-business-next]').click();
     await expect(page.locator('[data-tray-section="preparando"] [data-order-card="LT-2042"]'))
       .toBeVisible({ timeout: 20_000 });
-    expect(await page.evaluate(() => globalThis.__reemplazos)).toBeGreaterThan(0);
+    const conNovedad = await page.evaluate(() => {
+      globalThis.__observador.disconnect();
+      return { hijosNuevos: globalThis.__hijosNuevos, tarjetasTocadas: globalThis.__tarjetasTocadas };
+    });
+    expect(conNovedad.tarjetasTocadas, 'el pedido que avanzó tiene que llegar al DOM').toBeGreaterThan(0);
+    // Y llega SIN rearmar el tablero: el pedido cambia de sección tocando su
+    // tarjeta y los encabezados, nunca reemplazando un hijo del workspace.
+    expect(
+      conNovedad.hijosNuevos,
+      'un pedido que avanza no puede reemplazar un bloque entero del tablero',
+    ).toBe(0);
   } finally {
     await context.close();
   }

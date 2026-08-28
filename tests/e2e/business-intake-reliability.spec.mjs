@@ -448,6 +448,12 @@ test('el Panel no le borra al operador lo que está escribiendo', async ({ page 
     await workspace.locator('[data-production-orders-view]:visible').first().click();
   await expect(workspace.locator('.production-order-card')).toHaveCount(1);
 
+  // La cancelación vive dentro del detalle del pedido, separada de la acción
+  // principal: es la decisión opuesta y a 390px las dos terminaban pegadas, con
+  // el campo de motivo exprimido entre ellas. Abrirlo es el primer paso del
+  // recorrido real, así que la prueba lo hace igual que una persona.
+  await workspace.locator('[data-order-detail-toggle]').first().click();
+
   // El operador empieza a escribir el motivo de cancelación.
   const motivo = workspace.locator('[data-production-cancel-reason]').first();
   await motivo.click();

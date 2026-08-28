@@ -649,6 +649,18 @@ function formatTimestamp(value) {
   }
 }
 
+/*
+ * La misma hora, para la tarjeta de pedido.
+ *
+ * `businessOrderMarkup()` usaba `dateTime()` de `state.js`, que no declara zona
+ * ni `hourCycle`: mostraba la hora del aparato del operador en formato de 12
+ * horas. Es exactamente el defecto que este archivo ya había corregido para el
+ * resto del Panel (F33) y que en la tarjeta seguía vivo. Se exporta el
+ * formateador que ya existe en vez de escribir un segundo: dos formateadores es
+ * como se vuelve a separar lo que se acaba de juntar.
+ */
+export { formatTimestamp as formatPanelTimestamp };
+
 function formatMoney(value, currency = 'ARS') {
   const amount = Number(value);
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: currency || 'ARS' })

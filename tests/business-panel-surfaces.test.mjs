@@ -523,3 +523,49 @@ test('ninguna pantalla del panel filtra el vocabulario interno', async () => {
   }
   resetBusinessOperationsForTests();
 });
+
+/*
+ * UN COMENTARIO HTML DENTRO DE UNA PLANTILLA NO ES UN COMENTARIO PARA EL MOTOR.
+ * ---------------------------------------------------------------------------
+ * Todas las superficies del Panel se arman con template literals. Un `<!-- … -->`
+ * escrito adentro de uno viaja como TEXTO, y si ese texto lleva un acento grave
+ * —por ejemplo para citar `<h2>`— el acento CIERRA la plantilla. Lo peligroso es
+ * que el archivo sigue parseando: lo que queda se lee como una cadena de
+ * comparaciones entre plantillas (`«…» < h2 > «…»`), así que `node --check`
+ * pasa, `npm run check` pasa, y el Panel se dibuja VACÍO en el navegador.
+ *
+ * Pasó exactamente así mientras se escribía la bandeja: 32 pruebas de navegador
+ * en rojo con el workspace sin un solo hijo, y ningún gate de sintaxis lo vio.
+ * La regla es simple y verificable: ningún comentario HTML del código fuente
+ * lleva acentos graves. Si hay algo que explicar, se explica en un comentario
+ * de JavaScript, arriba de la plantilla, donde el motor sí lo ignora.
+ */
+test('ningún comentario HTML del Panel lleva acentos graves', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const raiz = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'js');
+
+  const archivos = [];
+  const recorrer = (directorio) => {
+    for (const entrada of fs.readdirSync(directorio, { withFileTypes: true })) {
+      const ruta = path.join(directorio, entrada.name);
+      if (entrada.isDirectory()) recorrer(ruta);
+      else if (entrada.isFile() && ruta.endsWith('.js')) archivos.push(ruta);
+    }
+  };
+  recorrer(raiz);
+
+  const culpables = [];
+  for (const archivo of archivos) {
+    const fuente = fs.readFileSync(archivo, 'utf8');
+    for (const comentario of fuente.matchAll(/<!--[\s\S]*?-->/g)) {
+      if (comentario[0].includes('`')) {
+        const linea = fuente.slice(0, comentario.index).split('\n').length;
+        culpables.push(`${path.relative(raiz, archivo)}:${linea}`);
+      }
+    }
+  }
+
+  assert.deepEqual(culpables, [], `comentarios HTML con acento grave: ${culpables.join(', ')}`);
+});

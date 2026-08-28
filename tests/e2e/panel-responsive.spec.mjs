@@ -27,6 +27,10 @@ import { expect, test } from '@playwright/test';
 import { instalarDatosDePrueba } from '../../scripts/lib/business-panel-fixtures.mjs';
 
 const TELEFONOS = [
+  // 320px es el ancho más angosto que todavía se usa: un iPhone SE de primera
+  // generación, y cualquier teléfono con el zoom del sistema al máximo. No
+  // estaba en esta lista, así que el Panel nunca se había probado ahí.
+  { nombre: '320x568', width: 320, height: 568 },
   { nombre: '360x740', width: 360, height: 740 },
   { nombre: '390x844', width: 390, height: 844 },
   { nombre: '412x915', width: 412, height: 915 },

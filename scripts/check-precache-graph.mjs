@@ -71,6 +71,35 @@ const faltantesCliente = new Map(faltantes);
 for (const listado of listados) {
   if (listado.endsWith('.js') && fs.existsSync(path.join(ROOT, listado))) recorrer(listado, ['precache']);
 }
+
+/*
+ * LOS CUATRO DEL BACK OFFICE ENTRAN JUNTOS O NO ENTRA NINGUNO.
+ *
+ * `cargarBackOffice()` los pide con UN `Promise.all`. Si uno falla, la promesa
+ * entera se rechaza y el back office no entra: el Panel del negocio no abre.
+ *
+ * Eso convierte a los cuatro en una unidad, aunque se pidan por import
+ * dinámico. Y como el recorrido de arriba parte de lo que YA está en la lista,
+ * un módulo de ese grupo que falte es invisible: no está listado, así que nadie
+ * lo recorre.
+ *
+ * Fue exactamente lo que pasó. Con los 35 módulos del Panel precacheados, el
+ * Panel seguía sin abrir sin red por UN archivo: `js/sandbox-tools.js`, una
+ * herramienta de demostración de 9 KB que no tiene nada que ver con vender.
+ * Se vio con el worker encendido y el borde tirando los módulos; no se ve
+ * leyendo el código.
+ */
+const BACK_OFFICE = 'js/back-office.js';
+const IMPORT_DINAMICO = /\bimport\(\s*['"]([^'"]+)['"]\s*\)/g;
+const fuenteBackOffice = fs.readFileSync(path.join(ROOT, BACK_OFFICE), 'utf8');
+for (const match of fuenteBackOffice.matchAll(IMPORT_DINAMICO)) {
+  if (!match[1].startsWith('.')) continue;
+  const rel = path
+    .relative(ROOT, path.resolve(path.dirname(path.join(ROOT, BACK_OFFICE)), match[1]))
+    .replace(/\\/g, '/');
+  if (!listados.has(rel) && !faltantes.has(rel)) faltantes.set(rel, [BACK_OFFICE]);
+  recorrer(rel, [BACK_OFFICE]);
+}
 const faltantesDiferidos = [...faltantes.keys()].filter((rel) => !faltantesCliente.has(rel));
 
 // Espejo del control anterior: una entrada de la lista que ya no existe rompe

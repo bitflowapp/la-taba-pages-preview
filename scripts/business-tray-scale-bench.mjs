@@ -104,13 +104,7 @@ const server = spawn(process.execPath, ['scripts/realtime-relay.mjs', String(POR
 // `--enable-precise-memory-info` es lo que hace que `performance.memory` deje de
 // redondear a 5 MB. Sin eso, medir el crecimiento de una sesión larga es medir
 // el redondeo.
-// `TABA_CHROMIUM_PATH` es para entornos donde el navegador ya está instalado
-// fuera de la carpeta que espera esta versión de Playwright. Sin la variable,
-// se usa el de siempre.
-const browser = await chromium.launch({
-  args: ['--enable-precise-memory-info', '--js-flags=--expose-gc'],
-  ...(process.env.TABA_CHROMIUM_PATH ? { executablePath: process.env.TABA_CHROMIUM_PATH } : {}),
-});
+const browser = await chromium.launch({ args: ['--enable-precise-memory-info', '--js-flags=--expose-gc'] });
 const medidas = [];
 
 try {

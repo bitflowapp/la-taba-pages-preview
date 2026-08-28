@@ -51,23 +51,40 @@ test.describe('el Panel arranca con los módulos caídos', () => {
     await request.get('/__edge-fault?mode=off').catch(() => undefined);
   });
 
-  test('con la caché caliente y el borde tirando los módulos, el Panel entra igual', async ({ page, request }) => {
+  /*
+   * EL ESCENARIO ES EL DE DESPUÉS DE UNA PUBLICACIÓN, Y ESO IMPORTA.
+   *
+   * El worker cachea al pasar: cualquier módulo que se pida CON red queda
+   * guardado. Así que un teléfono que ya abrió el Panel con señal lo tiene en
+   * la caché aunque no esté precacheado, y una prueba que abra el Panel primero
+   * pasa aunque el precache esté incompleto. No prueba nada.
+   *
+   * El caso real es el otro, y es rutina: `precargar()` hace
+   * `caches.delete(CACHE_NAME)` y vuelve a llenar la caché en cada publicación.
+   * Después de cada versión nueva, lo único que hay guardado es lo que está en
+   * la lista. Si el comercio abre el Panel por primera vez tras la
+   * actualización y justo ahí la señal está mal, sin precache no abre.
+   *
+   * Por eso acá se visita la TIENDA —que no carga el Panel—, se espera a que el
+   * worker termine de instalar, recién entonces se tira el borde, y sólo
+   * después se va al Panel.
+   */
+  test('recién publicada la versión y sin red, el Panel entra igual', async ({ page, request }) => {
     // Sin sesión: lo que se prueba es que el MÓDULO entra, no que alguien opere.
     // La configuración productiva es lo que hace que `#business` sea el Panel
     // del comercio y no el panel de demostración.
     await instalarDatosDePrueba(page, { conSesion: false });
-    await page.goto('/#business', { waitUntil: 'load' });
+    await page.goto('/', { waitUntil: 'load' });
     await page.locator('html[data-taba-startup="ready"]').waitFor({ state: 'attached', timeout: 45_000 });
     await page.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 30_000 });
-    // El precache termina en su propio tiempo: hay que esperarlo, no suponerlo.
-    await page.waitForFunction(async () => {
-      const claves = await caches.keys();
-      if (!claves.length) return false;
-      const cache = await caches.open(claves[0]);
-      return (await cache.keys()).length > 150;
-    }, null, { timeout: 60_000 });
+    // La instalación terminó cuando el precache tiene lo del arranque del
+    // cliente. Recién ahí tiene sentido preguntar por lo del Panel.
+    await page.waitForFunction(async () => (
+      Boolean(await caches.match(new URL('js/state.js', location.href).href))
+    ), null, { timeout: 60_000 });
 
-    // El grafo del Panel tiene que estar guardado, no sólo su punto de entrada.
+    // El grafo del Panel tiene que estar guardado SIN haberlo visitado: eso es
+    // lo que significa estar en el precache.
     const guardados = await page.evaluate(async (rutas) => {
       const resultado = {};
       for (const ruta of rutas) {
@@ -82,25 +99,36 @@ test.describe('el Panel arranca con los módulos caídos', () => {
       'js/business/business-command-outbox.js',
       'js/platform/indexeddb-command-storage.js',
     ]);
-    expect(guardados, 'todo el grafo estático del Panel tiene que estar en la caché').toEqual({
-      'js/production-operations.js': true,
-      'js/business/business-operations-center.js': true,
-      'js/business/business-panel-render.js': true,
-      'js/business/business-tray-patch.js': true,
-      'js/business/business-command-outbox.js': true,
-      'js/platform/indexeddb-command-storage.js': true,
-    });
+    expect(
+      Object.entries(guardados).filter(([, presente]) => !presente).map(([ruta]) => ruta),
+      'el grafo estático del Panel tiene que estar precacheado, no cacheado al pasar',
+    ).toEqual([]);
 
-    // Ahora el borde tira TODOS los módulos.
+    // Ahora el borde tira TODOS los módulos, y recién ahí se va al Panel.
     const respuesta = await request.get('/__edge-fault?mode=js-503');
     expect(respuesta.ok()).toBe(true);
-    await page.reload({ waitUntil: 'commit' });
+    await page.goto('/#business', { waitUntil: 'commit' });
 
-    // La tarjeta de acceso del Panel arranca `hidden` en el documento: sólo se
-    // muestra cuando `renderAccessSurface` corre, y esa función vive dentro del
-    // módulo que se carga por import dinámico. Que se vea ES la prueba de que
-    // el grafo entero resolvió desde la caché.
-    await expect(page.locator('[data-production-auth-card="business"]'))
+    /*
+     * QUÉ SE MIRA, Y POR QUÉ NO ALCANZA CON QUE SE VEA LA TARJETA DE ACCESO.
+     *
+     * `app.js` muestra y esconde todo lo que lleva `data-production-only`
+     * -la tarjeta de acceso incluida- por MODO DE APLICACIÓN, y `app.js` es
+     * parte del arranque del cliente: está precacheado desde siempre y entra
+     * aunque el Panel no. O sea que la tarjeta se ve igual con el grafo del
+     * Panel caído, y una prueba que mire eso pasa siempre. (Se comprobó: pasa
+     * en `cf793a6`, donde el Panel NO está precacheado.)
+     *
+     * La región de alta autogestionada, en cambio, la escribe
+     * `renderAccessRegistrationRegion()`, que vive DENTRO de
+     * `production-operations.js` y arma su marcado con
+     * `business-access-registration.js`. En el documento arranca vacía y
+     * `hidden`. Que tenga contenido sólo puede querer decir una cosa: el grafo
+     * entero del Panel resolvió desde la caché.
+     */
+    const alta = page.locator('[data-panel-access-registration]');
+    await expect(alta).toBeVisible({ timeout: 60_000 });
+    await expect(alta.locator('button, a, input').first())
       .toBeVisible({ timeout: 60_000 });
   });
 });

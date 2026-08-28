@@ -12,7 +12,7 @@ que #90 dejó anotados y abiertos —el 1, el 3 y el 4— y los cierra con medic
 
 | Riesgo abierto de #90 | Qué era en realidad | Cómo quedó |
 | --- | --- | --- |
-| **1 · el Panel no arranca sin red** (34 imports estáticos fuera del precache) | Real, y peor de lo anotado: eran **35** módulos y **393 KB** | Cerrado. Entran al precache; el guard pasó de aviso a **compuerta** |
+| **1 · el Panel no arranca sin red** (34 imports estáticos fuera del precache) | Real, y peor de lo anotado: eran **35** módulos, **y un 36.º que ninguna lectura del código muestra** | Cerrado y **verificado con el navegador**, no por inspección. El guard pasó de aviso a **compuerta** y ahora sigue los imports dinámicos del back office |
 | **3 · un pedido que cambia rearma el tablero** (258 ms con 300) | Real, y **mucho** peor de lo anotado: no era UN rearme por cambio, eran **3 a 6** | Cerrado. El costo de un cambio pasó a ser **constante**: 130 elementos, no crezca lo que crezca la bandeja |
 | **4 · «comprobante fiscal solicitado» sería un N+1** | **NO era un problema de rendimiento.** El dato no existe: el servidor rechaza facturar un pedido online | Cerrado **no construyéndolo**, con la línea de SQL como prueba |
 | — (no estaba anotado) | **Dos pestañas encolaban la misma acción y la segunda moría** contra el índice único | Arreglado: la perdedora relee y devuelve el comando ganador |
@@ -257,14 +257,57 @@ en offline-first. Lo que se puede sostener con lo que hoy existe:
 
 ### Qué se cambió
 
-- Los 35 módulos entraron a `ASSETS` en `sw.js` (137 → 172 archivos
-  precacheados). La instalación sigue siendo atómica y validada: si el borde
-  está incompleto, el worker anterior sigue activo con su caché intacta.
+- Los 35 módulos entraron a `ASSETS` en `sw.js`. La instalación sigue siendo
+  atómica y validada: si el borde está incompleto, el worker anterior sigue
+  activo con su caché intacta.
 - `scripts/check-precache-graph.mjs` pasó de **aviso a compuerta**. El aviso
   existía desde antes de #90 y no lo leyó nadie durante meses; dejarlo como
   aviso era garantizar que se rompiera de nuevo con el próximo módulo.
-  Verificado a mano: sacando una entrada, `npm run check` corta con el nombre
-  del módulo y quién lo importa.
+
+### Y con los 35 adentro, el Panel SEGUÍA sin abrir
+
+Acá está la parte que importa del método, porque leyendo el código la deuda
+estaba saldada. Con el worker encendido, la caché caliente y el borde
+contestando 503 a todos los módulos, el Panel **no abría igual**, y el
+navegador dijo por qué en una línea:
+
+```
+503 /js/sandbox-tools.js
+```
+
+`cargarBackOffice()` pide cuatro módulos con **un solo `Promise.all`**:
+`business.js`, `delivery.js`, `production-operations.js` y `sandbox-tools.js`.
+Si uno falla, la promesa entera se rechaza y el back office no entra. O sea que
+el Panel del comercio no abría por **9 KB de una herramienta de demostración**
+que no tiene nada que ver con vender.
+
+Es invisible para el guard por construcción: el recorrido parte de lo que ya
+está en la lista, y `sandbox-tools.js` no estaba, así que nadie lo recorría. Y
+es invisible leyendo, porque `import()` dinámico parece diferido y opcional —y
+dentro de un `Promise.all` no es ninguna de las dos cosas—.
+
+Dos cambios, los dos chicos:
+
+- `js/sandbox-tools.js` entró al precache (137 → **173** archivos).
+- El guard ahora **sigue los imports dinámicos de `back-office.js`** y exige que
+  los cuatro estén en la lista. Un quinto módulo en ese grupo ya no puede pasar
+  desapercibido.
+
+### La verificación
+
+Verificado a mano en los dos sentidos, y automatizado en los dos:
+
+| | resultado |
+| --- | --- |
+| Sacando una entrada del precache | `npm run check` corta y nombra el módulo y quién lo importa |
+| El guard contra el árbol base `cf793a6` | corta, y nombra `js/sandbox-tools.js` |
+| Con el borde en `js-503`, en esta rama | el Panel entra completo: **cero pedidos fallidos**, la región de alta se dibuja |
+| La misma prueba contra `cf793a6` | falla: 4 de 5 módulos del Panel ausentes del precache |
+
+La prueba de navegador **no mira si se ve la tarjeta de acceso**, y eso importa:
+`app.js` la muestra por modo de aplicación y `app.js` siempre entra, así que esa
+aserción pasa aunque el Panel esté caído. Se comprobó. Lo que mira es la región
+de alta autogestionada, que sólo puede escribirla el módulo del Panel.
 
 ---
 
@@ -389,6 +432,13 @@ también.
 | `js/production-operations.js` | reescribe el render y la tarjeta | reescribe el render y la tarjeta | **sustantivo**, ver abajo |
 | `sw.js` | una línea: `CACHE_NAME` | esa línea **y** el bloque de `ASSETS` | trivial: se queda un nombre |
 | `release-identity.json` | regenerado | regenerado | trivial: `node scripts/check-release-identity.mjs --write` |
+| `scripts/preflight-staging-package.mjs` | literal del `CACHE_NAME` | el mismo literal | trivial: viaja con `sw.js` por diseño |
+| `tests/github-pages.test.mjs` | literal del `CACHE_NAME` | el mismo literal | trivial: ídem |
+
+Los últimos cuatro son el mismo cruce contado cuatro veces: el `CACHE_NAME` está
+escrito en cuatro lugares a propósito —dos pruebas lo exigen— así que cualquier
+cambio del grafo de precache los toca todos. Se resuelve eligiendo un nombre y
+corriendo `--write`.
 
 Archivos que toca este trabajo y **no** toca ningún otro PR:
 `js/business/business-command-outbox.js`, `scripts/check-precache-graph.mjs`, y
@@ -423,6 +473,93 @@ Nada de esto se resolvió acá: la rama queda lista para rebase, no mezclada.
 
 ---
 
+## 9. Prueba prolongada y memoria
+
+**500 pedidos · 300 cambios de estado seguidos · 12 idas y vueltas a «Qué
+pasa» y de vuelta · recolección de basura forzada en cada muestra.** Es el
+peor caso: la bandeja en el tope que sirve el repositorio, realtime caído todo
+el tiempo y el sondeo de respaldo trabajando.
+
+| ciclo | heap (MB) | elementos del documento | hijos del workspace (con texto) | tarjetas |
+| ---: | ---: | ---: | ---: | ---: |
+| 0 | 10,71 | 21.165 | 13 | 500 |
+| 50 | 15,05 | 21.165 | 13 | 500 |
+| 100 | 13,49 | 21.165 | 13 | 500 |
+| 150 | 19,11 | 21.165 | 13 | 500 |
+| 200 | 19,06 | 21.165 | 13 | 500 |
+| 250 | 19,14 | 21.165 | 13 | 500 |
+| 300 | 19,09 | 21.165 | 13 | 500 |
+
+**Elementos del documento: 21.165 al principio y 21.165 al final. Cero
+crecimiento en 300 cambios.** Lo mismo los hijos directos del workspace
+contando nodos de TEXTO —13 y 13—, que es la medida que destapa el defecto de
+`outerHTML` sin recortar. Y 500 tarjetas al final: ni una duplicada, ni una
+perdida.
+
+El heap sube de 10,7 a 19,1 MB **y ahí se queda**: entre el ciclo 150 y el 300
+la diferencia es de −0,02 MB. No es una fuga, es el calentamiento del proceso
+llegando a su meseta. Promediar los 300 ciclos daría «29 KB por ciclo» y sería
+un número falso: todo el aumento pasa en la primera mitad y después la curva es
+plana.
+
+### Qué se auditó buscando fugas
+
+Temporizadores, escuchas, suscripciones, `BroadcastChannel` y observadores del
+Panel, uno por uno:
+
+| Qué | Se apaga en | Estado |
+| --- | --- | --- |
+| Sondeo del coordinador de pedidos | `stop()` del coordinador | limpio |
+| Escuchas de ciclo de vida (`online`, `offline`, `pageshow`, `visibilitychange`) | `lifecycleStops` en `stop()` | limpio |
+| `BroadcastChannel` entre pestañas | `stop()` | limpio |
+| Refresco de pagos (15 s) | `stopPaymentRefresh`, y en `clearProductionOrders` al cerrar sesión | limpio |
+| Refresco del centro de operación (30 s) | `stopOperationCenterRefresh` al cambiar de vista y al reconfigurar; sólo se re-arma si la vista sigue siendo esa | limpio |
+| Suscripción del escáner | `unsubscribeScanner` | limpio |
+| Controlador de GPS | `destroy()` | limpio |
+| Escuchas del DOM en las tarjetas | no existen: el Panel usa delegación de eventos | **por eso reemplazar tarjetas no filtra escuchas** |
+
+No se encontró ninguna fuga preexistente. La única que apareció la introdujo
+este trabajo (§3, nodos de texto) y se cerró antes de salir.
+
+---
+
+## 10. Mobile: verificado contra el estado anterior, no de memoria
+
+`scripts/business-panel-responsive.mjs` corrido dos veces —una en `cf793a6`, en
+un worktree aparte, y otra en esta rama— sobre «Pedidos» y «Qué pasa», en los
+once anchos del guion.
+
+| | base `cf793a6` | esta rama |
+| --- | ---: | ---: |
+| desborde horizontal | 0 | **0** |
+| áreas táctiles < 44 px | 0 | **0** |
+| pares de contraste < 4,5:1 | 0 | **0** |
+| errores | 0 | **0** |
+
+Y la densidad de información, que es lo que se puede empeorar sin que nadie
+avise:
+
+| ancho | alto del encabezado | alto de la tarjeta | pedidos enteros a la vista |
+| --- | ---: | ---: | ---: |
+| 360×740 | 271 → 271 | 413 → 413 | 1 → 1 |
+| 375×812 | 271 → 271 | 413 → 413 | 1 → 1 |
+| 390×844 | 271 → 271 | 395 → 395 | 1 → 1 |
+| 393×851 | 271 → 271 | 395 → 395 | 1 → 1 |
+| 412×915 | 249 → 249 | 395 → 395 | 1 → 1 |
+| 430×932 | 249 → 249 | 395 → 395 | 1 → 1 |
+| 768×1024 | 218 → 218 | 372 → 372 | 1 → 1 |
+| 1440×900 | 408 → 408 | 426 → 426 | 1 → 1 |
+
+**Once anchos, cero diferencias.** Era lo esperable —este trabajo no toca una
+sola regla de CSS ni una sola clase— pero «esperable» no es «medido».
+
+Sobre **320 px**: el guion de este repositorio empieza en 360. El ancho de 320
+lo agrega #90 a su prueba de navegador, y duplicarlo acá sería rehacer su
+trabajo. Como esta rama no cambia CSS ni clases, el resultado a 320 es el mismo
+que el de la base; la cobertura permanente de ese ancho queda en #90.
+
+---
+
 ## 11. Riesgos que quedan abiertos
 
 1. **La bandeja sigue sin sobrevivir a una recarga sin red.** El Panel ahora
@@ -451,15 +588,22 @@ Nada de esto se resolvió acá: la rama queda lista para rebase, no mezclada.
    absorbe la clave de idempotencia del servidor, que es la garantía real, pero
    el gasto de red doble existe. `Web Locks` está disponible y sería el próximo
    paso si molesta.
-6. **`businessPaymentsMarkup()` se sigue calculando y descartando** en cada
+6. **El Panel sigue dependiendo de que cargue una herramienta de sandbox.** Se
+   resolvió precacheando los 9 KB, que es el arreglo chico y verificable. El
+   arreglo bueno es que `cargarBackOffice()` no ate la disponibilidad del Panel
+   del comercio a `sandbox-tools.js`: hoy un `Promise.all` de cuatro hace que
+   cualquiera de los cuatro pueda voltear los otros tres. Toca `back-office.js`,
+   que es compartido con el cliente, y merece su propio cambio. Mientras tanto,
+   el guard impide que la lista se desincronice.
+7. **`businessPaymentsMarkup()` se sigue calculando y descartando** en cada
    render del workspace. Es O(pagos), no O(pedidos), así que no afecta la
    escalabilidad medida acá; #90 ya lo tenía anotado como limpieza aparte y se
    respetó esa decisión para no cruzar el mismo archivo dos veces.
-7. **El banco corre contra un servidor simulado sin WebSocket**, así que realtime
+8. **El banco corre contra un servidor simulado sin WebSocket**, así que realtime
    está caído durante toda la medición y el sondeo de respaldo es el que manda.
    Es el peor caso a propósito —un local con mala señal— y no el típico. Es la
    misma limitación que anotó #90 para su banco.
-8. **Los 24 pares de contraste bajo 4,5:1** que anotó #90 en `login` y
+9. **Los 24 pares de contraste bajo 4,5:1** que anotó #90 en `login` y
    `team-access` siguen ahí. No se tocaron esas superficies.
 
 ---
@@ -472,9 +616,10 @@ Nada de esto se resolvió acá: la rama queda lista para rebase, no mezclada.
 | --- | --- |
 | `js/production-operations.js` | El workspace pasa a siete regiones con `data-panel-region`; la tarjeta lleva `data-order-card`; render incremental (`parchearWorkspaceDelNegocio`) con reemplazo por región y reconciliación por tarjeta; el render completo de siempre queda como camino de respaldo y para las otras vistas |
 | `js/business/business-command-outbox.js` | La carrera entre dos pestañas devuelve el comando ganador en vez de una excepción; el doble en memoria respeta el índice único de `idempotencyKey` |
-| `sw.js` | Los 35 módulos del grafo del Panel entran al precache (137 → 172 archivos); `CACHE_NAME` nuevo |
-| `scripts/check-precache-graph.mjs` | El grafo diferido pasó de aviso a **compuerta** |
+| `sw.js` | Los 35 módulos del grafo del Panel **más `sandbox-tools.js`** entran al precache (137 → **173** archivos); `CACHE_NAME` nuevo |
+| `scripts/check-precache-graph.mjs` | El grafo diferido pasó de aviso a **compuerta**, y ahora sigue los imports dinámicos de `back-office.js` |
 | `release-identity.json` | Regenerado (`--write`) por el `CACHE_NAME` nuevo |
+| `scripts/preflight-staging-package.mjs` · `tests/github-pages.test.mjs` | El literal del `CACHE_NAME`, que viaja con `sw.js` por diseño |
 
 ### Nuevos
 
@@ -504,3 +649,67 @@ mitad del toque · recarga con envío en vuelo · respuesta ambigua · backend l
 tirando todos los módulos (worker real, caché caliente, `js-503`), verificando
 además que el grafo esté guardado · con 300 pedidos, un cambio conserva scroll,
 borrador, cursor y foco, toca a lo sumo 12 tarjetas y **no deja nodos sueltos**.
+
+---
+
+## 13. Resultados completos
+
+### Compuertas
+
+| | resultado |
+| --- | --- |
+| `npm run check` | **verde** · 102 módulos del grafo del cliente y 48 del diferido, todos en `sw.js` · 173 archivos precacheados · sin secretos |
+| `npm test` | **2.284 / 2.284** |
+| Playwright chromium | ver abajo |
+
+Las dos pruebas que fallaron en la primera corrida completa —`github-pages` y
+`preflight-staging-package`— eran el literal del `CACHE_NAME` en dos archivos
+que tienen que viajar con `sw.js` por diseño. Se actualizaron y quedaron en
+verde. No eran regresiones: son la compuerta funcionando.
+
+### Los números, uno al lado del otro
+
+| | 50 | 100 | 300 | 500 |
+| --- | ---: | ---: | ---: | ---: |
+| elementos del workspace | 2.084 | 4.108 | 12.171 | 20.234 |
+| marcado | 99 KB | 191 KB | 558 KB | 924 KB |
+| **elementos destruidos por un cambio · antes** | 12.523 | 24.667 | 36.519 | 60.708 |
+| **elementos destruidos por un cambio · después** | **130** | **130** | **130** | **108** |
+| **tarjetas tocadas · antes** | 600 | 1.200 | 1.800 | 3.000 |
+| **tarjetas tocadas · después** | **4** | **4** | **4** | **4** |
+| ms hasta la bandeja · antes | 294 | 378 | 1.552 | 3.115 |
+| ms hasta la bandeja · después | **237** | **317** | **483** | **875** |
+| ms hasta ver el cambio · antes | 1.121 | 1.283 | 2.276 | 2.433 |
+| ms hasta ver el cambio · después | **1.029** | **1.010** | **1.107** | **962** |
+
+Jornada larga (500 pedidos, 300 cambios, 12 cambios de vista): **elementos del
+documento 21.165 → 21.165**, hijos del workspace **13 → 13**, tarjetas **500**,
+heap con meseta en 19,1 MB desde el ciclo 150.
+
+Los datos crudos están en `artifacts/taba2-panel-escalabilidad/`:
+`BANDEJA-antes.json`, `BANDEJA-despues.json`, `BANDEJA-jornada.json`.
+
+### Cómo reproducir
+
+```
+npm ci && npx playwright install chromium
+node scripts/business-tray-scale-bench.mjs --label lo-que-sea
+node scripts/business-tray-scale-bench.mjs --label jornada --pedidos 500 --jornada 300
+npm run check && npm test
+npx playwright test tests/e2e/panel-escalabilidad.spec.mjs
+```
+
+Para el «antes», el mismo guion sobre un worktree en `cf793a6`.
+
+---
+
+## 14. Lo que este trabajo NO tocó
+
+Mercado Pago · secretos · `business_payment_settings` · alcohol · precios ·
+stock comercial · catálogo · Rider · checkout del cliente · contratos fiscales ·
+migraciones. Cero migraciones nuevas: no apareció ninguna necesidad
+arquitectónica que las pidiera, y la investigación fiscal terminó **leyendo**
+una migración existente para concluir que no había nada que construir.
+
+No se automatizó ninguna decisión irreversible. No se desplegó nada. No se tocó
+producción. El PR queda abierto y sin mergear.

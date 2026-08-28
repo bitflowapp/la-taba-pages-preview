@@ -239,6 +239,23 @@ const ASSETS = [
   './js/repositories/supabase-packing-repository.js',
   './js/repositories/supabase-payments-repository.js',
   './js/repositories/supabase-pos-repository.js',
+  /*
+   * Sí: una herramienta de DEMOSTRACIÓN, en la lista que hace que el comercio
+   * pueda trabajar. No es un error.
+   *
+   * `cargarBackOffice()` pide cuatro módulos con un solo `Promise.all`, y este
+   * es uno. Si falla, la promesa entera se rechaza y el Panel del negocio NO
+   * ABRE. Se descubrió con el worker encendido y el borde tirando los módulos:
+   * con los 35 del Panel ya precacheados, el Panel seguía sin abrir por estos
+   * 9 KB.
+   *
+   * La alternativa —que el Panel no dependa de una herramienta de sandbox—
+   * es mejor arquitectura y está anotada como deuda. Precacheado cuesta 9 KB;
+   * desacoplarlo toca un módulo compartido con el cliente y merece su propio
+   * cambio. El guard ahora sigue los imports dinámicos de `back-office.js`,
+   * así que un quinto módulo en ese grupo no vuelve a pasar desapercibido.
+   */
+  './js/sandbox-tools.js',
   './js/tracking/production_rider_gps.js',
 ];
 

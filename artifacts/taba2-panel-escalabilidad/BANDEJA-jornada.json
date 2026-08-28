@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "label": "jornada",
+  "generatedAtUtc": "2026-08-28T17:29:20.949Z",
+  "businessId": "11111111-1111-4111-8111-111111111111",
+  "viewport": "390x844",
+  "pollMs": 1200,
+  "ciclosDeMemoria": 5,
+  "medidas": [
+    {
+      "pedidos": 500,
+      "msHastaLaBandeja": 593,
+      "tarjetas": 500,
+      "nodos": 20234,
+      "bytes": 924320,
+      "unPedido": {
+        "elementosQuitados": 130,
+        "elementosAgregados": 136,
+        "lotesDeMutacion": 8,
+        "reemplazosDelTablero": 5,
+        "tarjetasTocadas": 4,
+        "msHastaElCambio": 1534
+      },
+      "continuidad": {
+        "medible": true,
+        "scrollConservado": true,
+        "scrollAntes": 34167,
+        "scrollDespues": 34167,
+        "textoConservado": true,
+        "detalleAbierto": true,
+        "focoConservado": true,
+        "cursorConservado": true
+      },
+      "memoria": {
+        "vueltas": 5,
+        "heapAntes": 11053451,
+        "heapDespues": 13742301,
+        "heapDeltaBytes": 2688850,
+        "heapPorVuelta": 537770,
+        "nodosAntes": 21164,
+        "nodosDespues": 21165,
+        "nodosDelta": 1
+      },
+      "jornada": {
+        "ciclos": 300,
+        "muestras": [
+          {
+            "ciclo": 0,
+            "heapBytes": 11229237,
+            "elementosDelDocumento": 21165,
+            "hijosDelWorkspace": 13,
+            "tarjetas": 500
+          },
+          {
+            "ciclo": 50,
+            "heapBytes": 15785675,
+            "elementosDelDocumento": 21165,
+            "hijosDelWorkspace": 13,
+            "tarjetas": 500
+          },
+          {
+            "ciclo": 100,
+            "heapBytes": 14147006,
+            "elementosDelDocumento": 21165,
+            "hijosDelWorkspace": 13,
+            "tarjetas": 500
+          },
+          {
+            "ciclo": 150,
+            "heapBytes": 20040664,
+            "elementosDelDocumento": 21165,
+            "hijosDelWorkspace": 13,
+            "tarjetas": 500
+          },
+          {
+            "ciclo": 200,
+            "heapBytes": 19980846,
+            "elementosDelDocumento": 21165,
+            "hijosDelWorkspace": 13,
+            "tarjetas": 500
+          },
+          {
+            "ciclo": 250,
+            "heapBytes": 20069628,
+            "elementosDelDocumento": 21165,
+            "hijosDelWorkspace": 13,
+            "tarjetas": 500
+          },
+          {
+            "ciclo": 300,
+            "heapBytes": 20018464,
+            "elementosDelDocumento": 21165,
+            "hijosDelWorkspace": 13,
+            "tarjetas": 500
+          }
+        ],
+        "heapDeltaBytes": 8789227,
+        "heapPorCiclo": 29297,
+        "elementosDelta": 0,
+        "hijosDelWorkspaceDelta": 0,
+        "tarjetasAlFinal": 500
+      }
+    }
+  ]
+}

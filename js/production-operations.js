@@ -33,6 +33,9 @@ import {
 } from './business/business-order-tray.js';
 import { createBusinessOrderAlertChannel } from './business/business-order-alerts.js';
 import {
+  aplicarReconciliacion, huellaDeMarcado, leerTarjetasDelDom, planTrayReconciliation,
+} from './business/business-tray-patch.js';
+import {
   allowedBusinessOperationViews,
   businessOperationViewLabel,
   BUSINESS_OPERATION_VIEWS,
@@ -76,6 +79,20 @@ let authStop = null;
 // El último markup pintado por vista, para no reemplazar el DOM cuando el
 // contenido es idéntico. Se limpia en `resetProductionOperationsForTests`.
 const lastWorkspaceMarkup = new Map();
+// La huella de lo que quedó pintado en el workspace del negocio: una por región
+// de primer nivel y una por tarjeta de la bandeja. Es lo que permite reemplazar
+// sólo lo que cambió en vez del tablero entero. Mientras están vacías, el
+// próximo render es completo.
+const regionesPintadas = new Map();
+/**
+ * La huella del CASCARÓN de cada sección de la bandeja: su encabezado y su
+ * recuento, sin el cuerpo. Separada de `huellasDeTarjeta` a propósito: si el
+ * recuento y las tarjetas compartieran huella, mover un pedido de «Nuevos» a
+ * «En preparación» —que cambia los dos recuentos— reconstruiría las dos
+ * secciones completas.
+ */
+const huellasDeSeccion = new Map();
+const huellasDeTarjeta = new Map();
 let notify = () => {};
 let notifyOrderAlert = () => {};
 let refreshSequence = 0;
@@ -1090,6 +1107,9 @@ export function resetProductionOperationsForTests() {
   authStop = null;
   accessRefreshChain = Promise.resolve();
   lastWorkspaceMarkup.clear();
+  regionesPintadas.clear();
+  huellasDeSeccion.clear();
+  huellasDeTarjeta.clear();
   initialized = false;
   repository = null;
   auth = null;
@@ -1675,9 +1695,22 @@ function renderAccessSurface(view) {
 
   if (!authorized) {
     workspace.replaceChildren();
+    olvidarPintadoDelNegocio(view);
     return;
   }
-  const markup = view === 'business' ? businessWorkspaceMarkup() : riderWorkspaceMarkup();
+
+  // El Panel del negocio tiene su propio camino: es donde vive la bandeja, la
+  // única superficie que crece con la cantidad de pedidos, y reemplazarla entera
+  // por un cambio de uno es lo que este trabajo vino a sacar. El parche cubre
+  // TODAS sus vistas, no sólo la bandeja: el latido que reescribe la franja de
+  // estado tampoco tiene por qué rearmar «Pagos» ni «Alta de producto».
+  // Ver `parchearWorkspaceDelNegocio`.
+  if (view === 'business' && parchearWorkspaceDelNegocio(workspace)) return;
+
+  // Las partes se arman UNA vez: componer el marcado y sembrar las huellas del
+  // próximo render incremental salen de la misma construcción.
+  const partes = view === 'business' ? businessWorkspaceParts() : null;
+  const markup = partes ? componerWorkspace(partes) : riderWorkspaceMarkup();
   // Si no cambió nada, no se toca el DOM. El ciclo de sondeo repinta el Panel
   // varias veces por vuelta y muchas de esas veces el contenido es idéntico.
   //
@@ -1685,12 +1718,12 @@ function renderAccessSurface(view) {
   // el minuto que pasa sería suficiente para reemplazar el tablero entero una
   // vez por minuto sin que hubiera cambiado un solo pedido. Ese texto lo
   // mantiene al día `paintElapsedTimes()`, que escribe sólo en su nodo.
-  const huella = markupFingerprint(markup);
+  const huella = sinRelojVivo(markup);
   if (lastWorkspaceMarkup.get(view) === huella) {
-    // Nada del tablero cambió. Lo que sí puede haber cambiado son las dos
-    // regiones que se escriben aparte: la franja de estado y el reloj de
-    // espera. Se actualizan en su nodo y el tablero no se toca.
-    patchWorkspaceStatus(workspace);
+    // Nada del tablero cambió salvo, quizá, el reloj de espera: se actualiza en
+    // su propio nodo y el tablero no se toca. La franja de estado ya NO se
+    // parchea acá —es la región `status` y entra en la comparación de arriba—,
+    // que es lo que deja una sola autoridad de render incremental.
     paintElapsedTimes(workspace);
     return;
   }
@@ -1712,38 +1745,292 @@ function renderAccessSurface(view) {
 
   restaurarBorradoresDelOperador(workspace, borradores);
   restaurarFoco(workspace, foco);
-  patchWorkspaceStatus(workspace);
+  if (partes) sembrarPintadoDelNegocio(partes);
   startElapsedClock(workspace);
-  orderAlerts?.setPendingCount?.(view === 'business' ? pendingOrdersForAlerts() : 0);
+  orderAlerts?.setPendingCount?.(
+    view === 'business' ? (partes?.pendientes ?? pendingOrdersForAlerts()) : 0,
+  );
 }
 
 /*
- * EL ESTADO DE LA CONEXIÓN SE ESCRIBE SOLO, Y NO REEMPLAZA EL TABLERO.
+ * UNA SOLA AUTORIDAD DE RENDER INCREMENTAL.
  * ===========================================================================
- * La franja de arriba —«Conectado · Última sincronización…», «Sin comandos
- * pendientes»— cambia mucho más seguido que los pedidos: en cada latido del
- * coordinador, y en cada reintento cuando realtime está caído. Mientras formaba
- * parte del marcado del workspace, cada uno de esos cambios reemplazaba el DOM
- * ENTERO.
+ * Acá se juntan dos trabajos que llegaron por separado y que, cada uno por su
+ * lado, habían llegado a la MISMA conclusión: el tablero no se puede rearmar
+ * entero por un cambio chico.
  *
- * Medido con 300 pedidos a 390px y realtime caído: 29 reemplazos en treinta
- * segundos, cada uno de 864 KB de marcado y 15.298 nodos, sin que un solo
- * pedido hubiera cambiado. Y es justo el escenario donde peor cae: un local con
- * mala señal es el que menos puede pagar que el tablero se le rearme bajo el
- * dedo mientras intenta aceptar un pedido.
+ *   · Uno lo resolvió sacando del marcado la franja de estado —la que lleva la
+ *     marca de la última sincronización y cambia en cada latido— y escribiéndola
+ *     en su nodo con un parche propio (`patchWorkspaceStatus`).
+ *   · El otro lo resolvió partiendo el workspace en REGIONES con
+ *     `data-panel-region`, comparando región por región y reemplazando sólo la
+ *     que cambió.
  *
- * Ahora el workspace emite el contenedor VACÍO y este parche lo llena. Como el
- * texto del estado nunca entra al marcado, tampoco entra a la huella: la
- * comparación de arriba corta, el tablero se queda quieto, y la franja se
- * actualiza igual. Es la misma separación que el reloj de espera.
+ * Sostener los dos sería tener dos mecanismos haciendo lo mismo sobre el mismo
+ * nodo, y el día que discrepen gana el que corra último. Queda uno: el de
+ * regiones. La franja de estado es una región más —`status`— y por eso este
+ * archivo ya no tiene `patchWorkspaceStatus` ni el contenedor vacío
+ * `data-ops-status` que lo alimentaba. Lo que ese trabajo demostró no se
+ * pierde: sigue siendo cierto que el latido no puede rearmar el tablero, y
+ * ahora eso lo garantiza la comparación por región, que además cubre las otras
+ * seis y no sólo la franja.
+ *
+ * El parche por regiones corre para TODA vista del Panel, no sólo la bandeja.
+ * Ese es el ensanche que hizo falta al unir los dos: gateado en `orders`, un
+ * latido en «Pagos» o en «Alta de producto» seguía reemplazando esa superficie
+ * entera, que es justamente lo que el parche de la franja evitaba en todas.
+ *
+ * Devuelve `true` cuando resolvió el repintado por su cuenta, y `false` cuando
+ * hay que hacer el render completo de siempre —un DOM que no es el que este
+ * render dejó, o la primera pintada—.
+ *
+ * TRES NIVELES, porque la bandeja ahora tiene secciones:
+ *
+ *   1. POR REGIÓN. Los bloques de primer nivel se comparan por huella y sólo se
+ *      reemplaza el que cambió.
+ *   2. POR SECCIÓN. «Requieren atención», «Nuevos», «En preparación», «Listos»,
+ *      «En entrega». Se reconcilian con clave —aparecen y desaparecen según
+ *      tengan pedidos— y el encabezado de cada una, que es donde vive el
+ *      recuento, se parchea aparte de su cuerpo.
+ *   3. POR TARJETA, dentro del cuerpo de cada sección. La tarjeta que no cambió
+ *      no se toca, así que conserva su scroll, su `<details>` abierto, su texto
+ *      a medio escribir y el foco SIN necesidad de rescatarlos.
+ *
+ * Por qué el recuento va aparte del cuerpo: mover UN pedido de «Nuevos» a «En
+ * preparación» cambia el recuento de las dos secciones. Si el encabezado
+ * viajara con el cuerpo, ese movimiento reconstruiría las dos secciones
+ * COMPLETAS —que con 500 pedidos son casi todas las tarjetas—. Separados, ese
+ * movimiento cuesta: una tarjeta que sale, una que entra, y dos encabezados.
+ *
+ * Lo que NO hace: virtualizar. Ver `business-tray-patch.js`.
  */
-function patchWorkspaceStatus(workspace) {
-  const region = workspace?.querySelector?.('[data-ops-status]');
-  if (!region) return false;
-  const markup = `${businessIntakeStatusMarkup()}${businessCommandStatusMarkup()}`;
-  if (region.innerHTML === markup) return false;
-  region.innerHTML = markup;
+function parchearWorkspaceDelNegocio(workspace) {
+  if (!regionesPintadas.size) return false;
+
+  const partes = businessWorkspaceParts();
+  // Si el DOM no tiene exactamente las regiones que este render espera, no se
+  // parchea a medias: se devuelve el control al render completo. Es lo que pasa
+  // al cambiar de vista, porque la bandeja aporta regiones que las otras
+  // superficies no tienen.
+  for (const region of partes.regiones) {
+    if (!workspace.querySelector(`[data-panel-region="${region.clave}"]`)) return false;
+  }
+  const bandeja = partes.secciones ? workspace.querySelector('[data-order-tray]') : null;
+  if (partes.secciones && !bandeja) return false;
+
+  const activoAntes = document.activeElement;
+  const foco = describirFoco(workspace);
+  let toco = false;
+
+  for (const region of partes.regiones) {
+    // La bandeja no se reemplaza por región: sus secciones se reconcilian abajo.
+    if (region.conInterior) continue;
+    const huella = huellaDeMarcado(sinRelojVivo(region.markup));
+    if (regionesPintadas.get(region.clave) === huella) continue;
+    const nodo = workspace.querySelector(`[data-panel-region="${region.clave}"]`);
+    if (!nodo) {
+      // El DOM dejó de ser el que este render describe: hay que rearmarlo, y
+      // la huella del marcado completo ya no vale como «no cambió nada».
+      lastWorkspaceMarkup.delete('business');
+      return false;
+    }
+    // `.trim()` NO es cosmético. `outerHTML` parsea la cadena entera y
+    // reemplaza el nodo por TODO lo que produjo, espacios incluidos: como el
+    // marcado de cada región empieza con un salto de línea y su sangría, cada
+    // parche dejaba un nodo de texto suelto de regalo. La región `status` se
+    // reescribe una vez por latido, así que en una jornada eso son miles de
+    // nodos huérfanos que ningún `querySelectorAll('*')` muestra —cuenta
+    // elementos, no texto— y que sólo se ven en el heap.
+    nodo.outerHTML = region.markup.trim();
+    regionesPintadas.set(region.clave, huella);
+    toco = true;
+  }
+
+  if (partes.secciones && parchearBandeja(bandeja, partes)) toco = true;
+
+  // Fuera de la bandeja no hay secciones ni tarjetas que recordar. Sin esto,
+  // volver a «Pedidos» encontraría huellas de la bandeja anterior y creería que
+  // el DOM ya tiene tarjetas que no están.
+  if (!partes.secciones && (huellasDeSeccion.size || huellasDeTarjeta.size)) {
+    huellasDeSeccion.clear();
+    huellasDeTarjeta.clear();
+  }
+
+  // El reloj vivo se reescribe siempre: es texto en su propio nodo y no depende
+  // de que algo del tablero haya cambiado.
+  paintElapsedTimes(workspace);
+  // Fuera de la bandeja hay que contar aparte; adentro el recuento viene con
+  // las partes y no se paga dos veces.
+  orderAlerts?.setPendingCount?.(partes.pendientes ?? pendingOrdersForAlerts());
+
+  if (!toco) return true;
+  // El marcado completo ya no describe el DOM: el próximo render completo tiene
+  // que volver a escribirlo aunque su cadena coincida con la anterior.
+  lastWorkspaceMarkup.delete('business');
+  // Sólo si el nodo que tenía el foco se fue con un reemplazo. Devolver el foco
+  // cuando nadie lo perdió sería moverlo por nuestra cuenta.
+  if (document.activeElement !== activoAntes) restaurarFoco(workspace, foco);
   return true;
+}
+
+/**
+ * Las secciones de la bandeja y, dentro de cada una, sus tarjetas.
+ *
+ * Devuelve `true` si tocó el DOM.
+ */
+function parchearBandeja(bandeja, partes) {
+  let toco = false;
+
+  if (!partes.secciones.length) {
+    // La bandeja se vació: el estado vacío es marcado, no una sección.
+    if (huellasDeSeccion.size || bandeja.querySelector('[data-tray-section]')) {
+      bandeja.innerHTML = partes.bandejaVacia;
+      huellasDeSeccion.clear();
+      huellasDeTarjeta.clear();
+      return true;
+    }
+    return false;
+  }
+
+  // Saliendo del estado vacío, lo que hay en la bandeja NO es una sección: es el
+  // cartel de «todavía no hay pedidos». Sin sacarlo, el reconciliador inserta
+  // las secciones alrededor y el cartel se queda arriba de la bandeja llena.
+  // Huellas vacías con regiones pintadas son exactamente esa situación.
+  if (!huellasDeSeccion.size) {
+    bandeja.replaceChildren();
+    huellasDeTarjeta.clear();
+    toco = true;
+  }
+
+  /*
+   * NIVEL 2 — LAS SECCIONES: PRESENCIA Y ORDEN, NUNCA REEMPLAZO.
+   * -------------------------------------------------------------------------
+   * Las dos listas van con huella `null` a propósito, y no es un descuido: con
+   * huellas iguales el planificador no emite un solo «reemplazar», que es
+   * exactamente lo que se busca. Una sección que se reemplaza arrastra TODAS
+   * sus tarjetas, y como el recuento vive en su encabezado, aceptar un pedido
+   * —que cambia el recuento de «Nuevos» y el de «En preparación»— habría
+   * reconstruido las dos secciones enteras. Con 500 pedidos eso es casi toda la
+   * bandeja: O(N) otra vez, por el camino largo.
+   *
+   * Así, este paso sólo da de alta, de baja y ordena secciones —que es cuando
+   * una sección se queda sin pedidos o vuelve a tener— y el encabezado se
+   * parchea abajo, en su propio nodo.
+   */
+  const enElDom = leerTarjetasDelDom(bandeja, null, 'data-tray-section');
+  const teniaSeccion = new Set(enElDom.map((entrada) => entrada.clave));
+  const deseadas = partes.secciones.map((seccion) => ({ clave: seccion.clave, huella: null }));
+  const { operaciones } = planTrayReconciliation(enElDom, deseadas);
+  if (operaciones.length) {
+    const porClave = new Map(partes.secciones.map((seccion) => [seccion.clave, seccion.markup]));
+    aplicarReconciliacion(bandeja, operaciones, {
+      atributoDeClave: 'data-tray-section',
+      marcadoPorClave: (clave) => porClave.get(clave) || '',
+    });
+    toco = true;
+  }
+  for (const clave of Array.from(huellasDeSeccion.keys())) {
+    if (!deseadas.some((deseada) => deseada.clave === clave)) huellasDeSeccion.delete(clave);
+  }
+
+  // Las tarjetas que se fueron con una sección dada de baja dejan de existir.
+  const vivas = new Set(partes.secciones.flatMap((seccion) => seccion.tarjetas.map((t) => t.clave)));
+  for (const clave of Array.from(huellasDeTarjeta.keys())) {
+    if (!vivas.has(clave)) huellasDeTarjeta.delete(clave);
+  }
+
+  for (const seccion of partes.secciones) {
+    const nodo = bandeja.querySelector(`[data-tray-section="${seccion.clave}"]`);
+    if (!nodo) continue;
+
+    // Una sección recién insertada llegó con su marcado completo: sus tarjetas
+    // YA son las deseadas. Sembrar sus huellas y no volver a mirarla evita
+    // reemplazar tarjeta por tarjeta lo que se acaba de escribir.
+    if (!teniaSeccion.has(seccion.clave)) {
+      huellasDeSeccion.set(seccion.clave, huellaDeMarcado(seccion.cabecera));
+      for (const tarjeta of seccion.tarjetas) {
+        huellasDeTarjeta.set(tarjeta.clave, huellaDeMarcado(sinRelojVivo(tarjeta.markup)));
+      }
+      continue;
+    }
+
+    // NIVEL 2b — EL RECUENTO. El encabezado es el único nodo que cambia cuando
+    // un pedido entra o sale de la sección, y se reescribe solo.
+    const huellaCabecera = huellaDeMarcado(seccion.cabecera);
+    if (huellasDeSeccion.get(seccion.clave) !== huellaCabecera) {
+      const cabecera = nodo.querySelector('.order-tray-head');
+      if (cabecera) {
+        // `.trim()` por la misma razón que en las regiones: `outerHTML` deja el
+        // salto de línea y la sangría como nodo de texto suelto, y esto se
+        // reescribe una vez por cambio de sección durante toda la jornada.
+        cabecera.outerHTML = seccion.cabecera.trim();
+        huellasDeSeccion.set(seccion.clave, huellaCabecera);
+        toco = true;
+      }
+    }
+
+    // NIVEL 3 — LAS TARJETAS de esta sección.
+    const cuerpo = nodo.querySelector('[data-order-list]');
+    if (!cuerpo) continue;
+    const deseados = seccion.tarjetas.map((tarjeta) => ({
+      clave: tarjeta.clave,
+      huella: huellaDeMarcado(sinRelojVivo(tarjeta.markup)),
+    }));
+    const plan = planTrayReconciliation(leerTarjetasDelDom(cuerpo, huellasDeTarjeta), deseados);
+    if (plan.operaciones.length) {
+      const porClave = new Map(seccion.tarjetas.map((tarjeta) => [tarjeta.clave, tarjeta.markup]));
+      aplicarReconciliacion(cuerpo, plan.operaciones, {
+        marcadoPorClave: (clave) => porClave.get(clave) || '',
+        alReemplazar: trasplantarBorradorDeTarjeta,
+      });
+      toco = true;
+    }
+    for (const deseado of deseados) huellasDeTarjeta.set(deseado.clave, deseado.huella);
+  }
+
+  return toco;
+}
+
+/** Lo que el operador estaba escribiendo en la tarjeta que SÍ cambió. */
+function trasplantarBorradorDeTarjeta(viejo, nuevo) {
+  const motivo = viejo.querySelector('[data-production-cancel-reason]')?.value || '';
+  if (motivo) {
+    const campo = nuevo.querySelector('[data-production-cancel-reason]');
+    if (campo) campo.value = motivo;
+  }
+  const rider = viejo.querySelector('[data-production-rider-select]')?.value || '';
+  if (!rider) return;
+  const selector = nuevo.querySelector('[data-production-rider-select]');
+  // Sólo si la opción sigue existiendo: un rider que salió de turno no puede
+  // quedar seleccionado de forma fantasma.
+  if (selector && Array.from(selector.options || []).some((option) => option.value === rider)) {
+    selector.value = rider;
+  }
+}
+
+/** Después de un render completo, las huellas describen lo que quedó pintado. */
+function sembrarPintadoDelNegocio(partes) {
+  regionesPintadas.clear();
+  huellasDeSeccion.clear();
+  huellasDeTarjeta.clear();
+  if (!partes) return;
+  for (const region of partes.regiones) {
+    if (region.conInterior) continue;
+    regionesPintadas.set(region.clave, huellaDeMarcado(sinRelojVivo(region.markup)));
+  }
+  for (const seccion of partes.secciones || []) {
+    huellasDeSeccion.set(seccion.clave, huellaDeMarcado(seccion.cabecera));
+    for (const tarjeta of seccion.tarjetas) {
+      huellasDeTarjeta.set(tarjeta.clave, huellaDeMarcado(sinRelojVivo(tarjeta.markup)));
+    }
+  }
+}
+
+function olvidarPintadoDelNegocio(view) {
+  if (view !== 'business') return;
+  regionesPintadas.clear();
+  huellasDeSeccion.clear();
+  huellasDeTarjeta.clear();
 }
 
 /*
@@ -1753,7 +2040,7 @@ function patchWorkspaceStatus(workspace) {
  * Panel no puede repintarse por eso: repintar mueve el DOM debajo del dedo de
  * alguien que está por tocar «Aceptar pedido».
  *
- * Estas dos funciones son la separación que lo permite. El marcado emite
+ * Estas funciones son la separación que lo permite. El marcado emite
  * `<time data-elapsed-from="…">` con el texto ya calculado —así la prueba lo ve
  * y el lector de pantalla lo lee sin esperar a ningún temporizador—, la huella
  * del repintado ignora ese texto, y este reloj lo reescribe en su propio nodo
@@ -1761,9 +2048,18 @@ function patchWorkspaceStatus(workspace) {
  *
  * Treinta y no sesenta: con sesenta, un pedido puede mostrar «recién» durante
  * casi dos minutos.
+ *
+ * `sinRelojVivo` es la pieza que ata este reloj con la reconciliación por
+ * tarjeta, y es la razón por la que hay UNA función y no dos: la huella de la
+ * tarjeta, la de la región y la del marcado completo se calculan todas sobre el
+ * marcado con el texto del reloj borrado. Sin eso, el minuto que pasa cambiaría
+ * la huella de las 500 tarjetas a la vez y la reconciliación —que existe para
+ * no tocar lo que no cambió— reemplazaría la bandeja entera una vez por minuto:
+ * exactamente el costo O(N) que este trabajo vino a sacar, disfrazado de
+ * «cambió el marcado».
  */
-function markupFingerprint(markup) {
-  return markup.replace(/(<time[^>]*data-elapsed-from[^>]*>)[^<]*/g, '$1');
+function sinRelojVivo(markup) {
+  return String(markup ?? '').replace(/(<time[^>]*data-elapsed-from[^>]*>)[^<]*/g, '$1');
 }
 
 function paintElapsedTimes(root = document) {
@@ -2037,6 +2333,23 @@ function businessViewTrigger(view) {
 }
 
 /*
+ * EL WORKSPACE, EN REGIONES, Y LA BANDEJA EN SECCIONES.
+ * ===========================================================================
+ * Antes esto devolvía una sola cadena y el render la escribía entera en
+ * `innerHTML`. Con quinientos pedidos eso son 910 KB de marcado y 20.234
+ * elementos que se tiran y se vuelven a construir cada vez que UN pedido cambia
+ * de estado —medido: tres a seis veces por cambio, porque cada `notify()` del
+ * ciclo dispara su propio repintado—.
+ *
+ * Ahora cada bloque de primer nivel lleva `data-panel-region` y viaja por
+ * separado. El render compara región por región y sólo reemplaza las que
+ * cambiaron; la bandeja, que es la única que crece con la cantidad de pedidos,
+ * va aparte y se reconcilia por sección y por tarjeta.
+ *
+ * La región `status` es la que justifica todo esto: lleva la marca de la última
+ * sincronización, así que cambia SOLA en cada latido. Mientras formaba parte de
+ * una única cadena, ese reloj bastaba para rearmar el tablero entero.
+ *
  * EL TITULAR NOMBRA LA HERRAMIENTA, EN UNA LÍNEA, Y UNA SOLA VEZ.
  * ---------------------------------------------------------------------------
  * Decía «Tu día, en un solo lugar»: una frase de bienvenida en algo que se abre
@@ -2053,14 +2366,32 @@ function businessViewTrigger(view) {
  *
  * Queda el nombre de la herramienta, que es lo que un encabezado de nivel 1
  * nombra. El rótulo que estaba encima se va con él: decía exactamente eso.
+ *
+ * CÓMO SE PARTE LA BANDEJA
+ * ---------------------------------------------------------------------------
+ * `secciones` es `null` fuera de «Pedidos»: ahí la región `operations` la dibuja
+ * el centro de operaciones y no crece con la cantidad de pedidos. En la bandeja,
+ * cada sección viaja partida en dos:
+ *
+ *   · `cabecera` — el encabezado con el título, el RECUENTO y la pista. Tiene su
+ *     propia huella porque es lo que cambia cuando un pedido cruza de sección.
+ *   · `tarjetas` — cada una con su clave y su marcado.
+ *
+ * y `markup` es la sección completa, que es lo que se usa cuando la sección
+ * ENTERA nace o se reemplaza. Componer y parchear salen de la misma
+ * construcción: no hay dos marcados de la bandeja que puedan separarse.
  */
-function businessWorkspaceMarkup() {
+function businessWorkspaceParts() {
   const role = access.membership?.role;
   const allowedList = allowedBusinessOperationViews(role);
   const allowed = new Set(allowedList);
-  const operations = businessOperationsView === 'orders'
-    ? businessOrderTrayMarkup()
-    : renderBusinessOperations(businessOperationsView);
+  const esBandeja = businessOperationsView === 'orders';
+  const bandeja = esBandeja ? construirBandeja() : null;
+  const secciones = bandeja?.secciones || null;
+  const bandejaVacia = emptyMarkup('Todavía no hay pedidos visibles para este comercio.');
+  const contenedorDeBandeja = (interior) => (
+    `<div class="production-order-list" data-panel-region="operations" data-order-tray>${interior}</div>`
+  );
   // Una sola navegación para todo el panel: dos filas con los mismos destinos confunden.
   const shortcuts = BUSINESS_VIEW_ORDER
     .filter((view) => allowed.has(view))
@@ -2084,8 +2415,11 @@ function businessWorkspaceMarkup() {
         aria-pressed="${businessOperationsView === view}"
         ${businessViewTrigger(view)}>${escapeHtml(businessViewLabel(view))}</button>`).join('');
 
-  return `
-    <div class="production-ops-head">
+  const regiones = [
+    {
+      clave: 'head',
+      markup: `
+    <div class="production-ops-head" data-panel-region="head">
       <div class="production-ops-identity">
         <h1>Panel del negocio</h1>
         <p class="production-ops-role">${escapeHtml(roleLabel(role))} · sesión verificada</p>
@@ -2094,29 +2428,93 @@ function businessWorkspaceMarkup() {
         ${businessSoundToggleMarkup()}
         <button class="ghost-button compact production-ops-signout" type="button" data-production-sign-out>Cerrar sesión</button>
       </div>
-    </div>
-    <div class="production-ops-status" data-ops-status></div>
-    <nav class="production-operations-shortcuts" aria-label="Atajos del día">${shortcuts}</nav>
-    ${operations}
-    <nav class="panel-bottom-nav" aria-label="Secciones del panel" data-panel-bottom-nav>
+    </div>`,
+    },
+    {
+      clave: 'status',
+      markup: `
+    <div class="production-ops-status" data-panel-region="status">
+      ${businessIntakeStatusMarkup()}
+      ${businessCommandStatusMarkup()}
+    </div>`,
+    },
+    {
+      clave: 'shortcuts',
+      markup: `
+    <nav class="production-operations-shortcuts" data-panel-region="shortcuts" aria-label="Atajos del día">${shortcuts}</nav>`,
+    },
+    ...(esBandeja ? [{
+      /*
+       * El anuncio para lector de pantalla es ESTA línea y no la lista.
+       *
+       * `aria-live="polite"` estaba en el contenedor de las tarjetas, así que
+       * cada repintado —y hay uno cada vez que llega un pedido, o cada cinco
+       * segundos si cambió algo— le dictaba el tablero COMPLETO a quien usa
+       * lector de pantalla. Lo que hay que anunciar cuando entra trabajo es
+       * cuánto trabajo hay.
+       *
+       * Va como región propia y NO adentro de la bandeja: su texto cambia con
+       * cada recuento, y adentro obligaría a reemplazar la bandeja entera para
+       * actualizar una línea.
+       */
+      clave: 'tray-headline',
+      markup: `
+    <p class="order-tray-headline" data-panel-region="tray-headline" role="status" aria-live="polite" data-order-tray-headline>
+      ${escapeHtml(bandeja.headline)}
+    </p>`,
+    }] : []),
+    {
+      clave: 'operations',
+      // Vacío a propósito: el interior lo pone quien compone (render completo) o
+      // el reconciliador (render incremental).
+      markup: esBandeja ? contenedorDeBandeja('') : renderBusinessOperations(businessOperationsView),
+      conInterior: esBandeja ? contenedorDeBandeja : null,
+    },
+    {
+      clave: 'bottom-nav',
+      markup: `
+    <nav class="panel-bottom-nav" data-panel-region="bottom-nav" aria-label="Secciones del panel" data-panel-bottom-nav>
       ${bottomNav}
       <button type="button" class="panel-nav-item panel-nav-more ${enLaHoja ? 'is-active' : ''}"
         aria-expanded="${panelMoreSheetOpen}" aria-controls="panel-more-sheet" data-panel-more-toggle>
         <span class="panel-nav-ico" aria-hidden="true">${BUSINESS_VIEW_ICONS.more}</span>
         <span class="panel-nav-label">Más</span>
       </button>
-    </nav>
-    <div class="panel-more-backdrop" data-panel-more-close ${panelMoreSheetOpen ? '' : 'hidden'}></div>
-    <section class="panel-more-sheet" id="panel-more-sheet" data-panel-more-sheet
+    </nav>`,
+    },
+    {
+      clave: 'more-backdrop',
+      markup: `
+    <div class="panel-more-backdrop" data-panel-region="more-backdrop" data-panel-more-close ${panelMoreSheetOpen ? '' : 'hidden'}></div>`,
+    },
+    {
+      clave: 'more-sheet',
+      markup: `
+    <section class="panel-more-sheet" id="panel-more-sheet" data-panel-region="more-sheet" data-panel-more-sheet
       role="dialog" aria-label="Más secciones del panel" ${panelMoreSheetOpen ? '' : 'hidden'}>
       <div class="panel-more-head">
         <strong>Más secciones</strong>
         <button class="ghost-button compact" type="button" data-panel-more-close>Cerrar</button>
       </div>
       <div class="panel-more-grid">${restLinks}</div>
-    </section>
-  `;
+    </section>`,
+    },
+  ];
+
+  return { regiones, secciones, bandejaVacia, pendientes: bandeja?.pendientes ?? null };
 }
+
+/** El workspace entero como una sola cadena. Es el render completo de siempre. */
+function componerWorkspace(partes) {
+  return partes.regiones.map((region) => (
+    region.conInterior
+      ? region.conInterior(partes.secciones.length
+        ? partes.secciones.map((seccion) => seccion.markup).join('')
+        : partes.bandejaVacia)
+      : region.markup
+  )).join('');
+}
+
 
 /**
  * Un glifo por destino. Son caracteres, no un set de iconos: el proyecto no
@@ -2463,50 +2861,57 @@ function hasCustomerNotes(order) {
  * hace `business-order-tray.js` con los umbrales del servidor; acá sólo se
  * dibuja.
  */
-function businessOrderTrayMarkup() {
+function construirBandeja() {
   const orders = getState().orders;
-  if (!orders.length) {
-    return `<div class="production-order-list" data-order-tray>
-      ${emptyMarkup('Todavía no hay pedidos visibles para este comercio.')}
-    </div>`;
-  }
-
   const offers = new Map();
   for (const order of orders) {
     const offer = riderOfferForOrder(order);
     if (offer) offers.set(orderKey(order), offer);
   }
   const tray = buildOrderTray(orders, { now: Date.now(), payments: businessPayments, offers });
-  const secciones = tray.sections.map((section) => `
-    <section class="order-tray-section" data-tray-section="${escapeAttribute(section.id)}">
+
+  const secciones = tray.sections.map((section) => {
+    /*
+     * La cabecera y el cuerpo se arman por separado y se guardan por separado.
+     *
+     * La cabecera es lo que lleva el RECUENTO, y el recuento cambia cada vez que
+     * un pedido cruza de sección. Si viajara pegada a las tarjetas, aceptar un
+     * pedido —que cambia el recuento de «Nuevos» y el de «En preparación»—
+     * reemplazaría las dos secciones enteras. Con 500 pedidos eso es casi toda
+     * la bandeja, o sea volver a O(N) por el camino largo.
+     *
+     * `data-order-list` va en el CUERPO: es el contenedor con el que el
+     * reconciliador por tarjeta trabaja, y hay uno por sección.
+     */
+    const cabecera = `
       <h2 class="order-tray-head">
         <span class="order-tray-title">${escapeHtml(section.title)}</span>
         <span class="order-tray-count">${section.count}</span>
         <span class="order-tray-hint">${escapeHtml(section.hint)}</span>
-      </h2>
-      <div class="order-tray-body">
-        ${section.orders.map((order) => businessOrderMarkup(
-          order,
-          tray.attentionByOrder.get(orderKey(order)) || [],
-        )).join('')}
-      </div>
-    </section>
-  `).join('');
+      </h2>`;
+    const tarjetas = section.orders.map((order) => ({
+      // La clave es `order.id`, la misma que escribe `data-order-card`: una
+      // tarjeta y su botón no pueden hablar de pedidos distintos.
+      clave: String(order.id),
+      markup: businessOrderMarkup(order, tray.attentionByOrder.get(orderKey(order)) || []),
+    }));
+    const cuerpo = `<div class="order-tray-body" data-order-list>${tarjetas.map((t) => t.markup).join('')}</div>`;
+    return {
+      clave: String(section.id),
+      cabecera,
+      tarjetas,
+      markup: `<section class="order-tray-section" data-tray-section="${escapeAttribute(section.id)}">${cabecera}${cuerpo}</section>`,
+    };
+  });
 
-  /*
-   * El anuncio para lector de pantalla es ESTA línea y no la lista.
-   *
-   * `aria-live="polite"` estaba en el contenedor de las tarjetas, así que cada
-   * repintado —y hay uno cada vez que llega un pedido, o cada cinco segundos si
-   * cambió algo— le dictaba el tablero COMPLETO a quien usa lector de pantalla.
-   * Lo que hay que anunciar cuando entra trabajo es cuánto trabajo hay.
-   */
-  return `
-    <p class="order-tray-headline" role="status" aria-live="polite" data-order-tray-headline>
-      ${escapeHtml(trayHeadline(tray))}
-    </p>
-    <div class="production-order-list" data-order-tray>${secciones}</div>
-  `;
+  return {
+    secciones,
+    headline: trayHeadline(tray),
+    // Lo que espera una decisión del mostrador. Sale de la bandeja YA
+    // construida: `pendingOrdersForAlerts()` la reconstruiría entera sólo para
+    // contar, y en la bandeja el conteo se paga una vez por render, no dos.
+    pendientes: (tray.counts.atencion || 0) + (tray.counts.nuevos || 0),
+  };
 }
 
 /**

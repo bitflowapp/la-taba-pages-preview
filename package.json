@@ -120,7 +120,11 @@
     "e2e:production-sale": "node scripts/e2e-production-sale/index.mjs",
     "e2e:production-sale:auto": "node scripts/e2e-production-sale/auto.mjs",
     "e2e:provision:panel": "node scripts/e2e-production-sale/provisionar-identidad-panel.mjs",
-    "deps:pinned:check": "node scripts/check-node-modules-pinned.mjs"
+    "deps:pinned:check": "node scripts/check-node-modules-pinned.mjs",
+    "catalog:commercial:dry-run": "node scripts/import-commercial-catalog.mjs --catalogo produccion",
+    "catalog:commercial:apply": "node scripts/import-commercial-catalog.mjs --catalogo produccion --apply --target supabase",
+    "comercial:censo": "node scripts/comercial/censo-produccion.mjs",
+    "commercial:gate": "node scripts/comercial/compuerta-comercial.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.60.0",

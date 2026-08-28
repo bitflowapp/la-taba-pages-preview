@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v91-menos-preguntas-y-una-bandeja-que-no-se-traba';
+const CACHE_NAME = 'la-taba-runtime-v92-el-panel-abre-sin-red-y-la-bandeja-no-se-rearma';
 const ASSETS = [
   './',
   './index.html',
@@ -179,6 +179,67 @@ const ASSETS = [
   './js/repositories/sandbox_customer_profile_repository.js',
   './js/repositories/sandbox_order_repository.js',
   './js/tracking/customer_tracking_poll.js',
+  /*
+   * EL PANEL DEL NEGOCIO TAMBIÉN TIENE QUE PODER ABRIR SIN RED.
+   * =========================================================================
+   * `production-operations.js` estaba en esta lista desde hace tiempo, pero
+   * llega por import DINÁMICO y sus imports ESTÁTICOS no estaban. Sin red eso
+   * no degrada: un import estático que no está en la caché rompe el grafo
+   * entero y el Panel NO ABRE. El comercio se queda sin la herramienta con la
+   * que trabaja justo en el momento en que peor está la señal.
+   *
+   * Son 35 módulos y 393 KB. El guard del grafo lo venía avisando sin cortar;
+   * ahora corta (`scripts/check-precache-graph.mjs`), así que un módulo nuevo
+   * del Panel sin su entrada acá no llega a publicarse.
+   *
+   * QUÉ SIGNIFICA «SIRVE SIN RED» ACÁ, Y QUÉ NO
+   * -------------------------------------------
+   * Esto hace que el Panel ABRA y muestre lo que ya sabía: el estado de la
+   * conexión, la cola de comandos pendientes —que es durable, vive en
+   * IndexedDB— y los pedidos que la pestaña ya tenía en memoria. NO convierte
+   * la aplicación en offline-first: recargando sin red la bandeja arranca
+   * vacía porque los pedidos nunca se guardaron localmente, y eso está bien
+   * —inventar una copia local de la bandeja es inventar autoridad—.
+   *
+   * Todo lo que necesita que el servidor decida sigue siendo fail-close: se
+   * encola con su clave de idempotencia y su revisión esperada, y no se da por
+   * hecho hasta que el servidor lo confirma.
+   */
+  './js/business/business-access-inbox.js',
+  './js/business/business-access-registration.js',
+  './js/business/business-capabilities.js',
+  './js/business/business-command-outbox.js',
+  './js/business/business-connectivity.js',
+  './js/business/business-day-control.js',
+  './js/business/business-device-check.js',
+  './js/business/business-fiscal-assistant.js',
+  './js/business/business-operation-language.js',
+  './js/business/business-operations-center.js',
+  './js/business/business-operations-config.js',
+  './js/business/business-packing-verification.js',
+  './js/business/business-panel-controller.js',
+  './js/business/business-panel-render.js',
+  './js/business/business-payments-console.js',
+  './js/business/business-product-onboarding.js',
+  './js/business/business-tray-patch.js',
+  './js/business/business-view-model.js',
+  './js/catalog/barcode-normalizer.js',
+  './js/catalog/barcode-scanner-service.js',
+  './js/core/fiscal-domain.js',
+  './js/payments/payment-recovery.js',
+  './js/platform/browser-business-platform.js',
+  './js/platform/business-platform-adapter.js',
+  './js/platform/indexeddb-command-storage.js',
+  './js/platform/tauri-business-platform.js',
+  './js/pos/fiscal-status-presenter.js',
+  './js/repositories/supabase-business-repository.js',
+  './js/repositories/supabase-fiscal-repository.js',
+  './js/repositories/supabase-inventory-repository.js',
+  './js/repositories/supabase-operations-repository.js',
+  './js/repositories/supabase-packing-repository.js',
+  './js/repositories/supabase-payments-repository.js',
+  './js/repositories/supabase-pos-repository.js',
+  './js/tracking/production_rider_gps.js',
 ];
 
 self.addEventListener('install', (event) => {

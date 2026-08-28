@@ -22,6 +22,9 @@ import { resolveRuntimeConfig } from './core/runtime-config.js';
 import { createBusinessPlatform } from './platform/tauri-business-platform.js';
 import { createBusinessPanelController } from './business/business-panel-controller.js';
 import {
+  aplicarReconciliacion, huellaDeMarcado, leerTarjetasDelDom, planTrayReconciliation,
+} from './business/business-tray-patch.js';
+import {
   allowedBusinessOperationViews,
   businessOperationViewLabel,
   BUSINESS_OPERATION_VIEWS,
@@ -64,6 +67,12 @@ let authStop = null;
 // El último markup pintado por vista, para no reemplazar el DOM cuando el
 // contenido es idéntico. Se limpia en `resetProductionOperationsForTests`.
 const lastWorkspaceMarkup = new Map();
+// La huella de lo que quedó pintado en el workspace del negocio: una por región
+// de primer nivel y una por tarjeta de la bandeja. Es lo que permite reemplazar
+// sólo lo que cambió en vez del tablero entero. Mientras están vacías, el
+// próximo render es completo.
+const regionesPintadas = new Map();
+const huellasDeTarjeta = new Map();
 let notify = () => {};
 let notifyOrderAlert = () => {};
 let refreshSequence = 0;
@@ -1024,6 +1033,8 @@ export function resetProductionOperationsForTests() {
   authStop = null;
   accessRefreshChain = Promise.resolve();
   lastWorkspaceMarkup.clear();
+  regionesPintadas.clear();
+  huellasDeTarjeta.clear();
   initialized = false;
   repository = null;
   auth = null;
@@ -1600,9 +1611,19 @@ function renderAccessSurface(view) {
 
   if (!authorized) {
     workspace.replaceChildren();
+    olvidarPintadoDelNegocio(view);
     return;
   }
-  const markup = view === 'business' ? businessWorkspaceMarkup() : riderWorkspaceMarkup();
+
+  // La bandeja del negocio tiene su propio camino: es la única superficie que
+  // crece con la cantidad de pedidos, y reemplazarla entera por un cambio de uno
+  // es lo que este trabajo vino a sacar. Ver `parchearWorkspaceDelNegocio`.
+  if (view === 'business' && parchearWorkspaceDelNegocio(workspace)) return;
+
+  // Las partes se arman UNA vez: componer el marcado y sembrar las huellas del
+  // próximo render incremental salen de la misma construcción.
+  const partes = view === 'business' ? businessWorkspaceParts() : null;
+  const markup = partes ? componerWorkspace(partes) : riderWorkspaceMarkup();
   // Si no cambió nada, no se toca el DOM. El ciclo de sondeo repinta el Panel
   // varias veces por vuelta y muchas de esas veces el contenido es idéntico.
   if (lastWorkspaceMarkup.get(view) === markup) return;
@@ -1624,6 +1645,150 @@ function renderAccessSurface(view) {
 
   restaurarBorradoresDelOperador(workspace, borradores);
   restaurarFoco(workspace, foco);
+  if (partes) sembrarPintadoDelNegocio(partes);
+}
+
+/*
+ * EL RENDER QUE NO REARMA EL TABLERO.
+ * ===========================================================================
+ * Devuelve `true` cuando resolvió el repintado por su cuenta, y `false` cuando
+ * hay que hacer el render completo de siempre —otra vista, un DOM que no es el
+ * que este render dejó, o la primera pintada—.
+ *
+ * Dos niveles, y ninguno inventa nada que no se pueda medir:
+ *
+ *   1. POR REGIÓN. Los siete bloques de primer nivel se comparan por huella y
+ *      sólo se reemplaza el que cambió. En la práctica el que cambia solo es
+ *      `status`, que lleva la marca de la última sincronización.
+ *   2. POR TARJETA. La bandeja se reconcilia con clave: la tarjeta que no
+ *      cambió no se toca, así que conserva su scroll, su `<details>` abierto, su
+ *      texto a medio escribir y el foco SIN necesidad de rescatarlos.
+ *
+ * Lo que NO hace: virtualizar. Ver `business-tray-patch.js`.
+ */
+function parchearWorkspaceDelNegocio(workspace) {
+  if (businessOperationsView !== 'orders') return false;
+  if (!regionesPintadas.size) return false;
+  const lista = workspace.querySelector('[data-order-list]');
+  if (!lista) return false;
+
+  const partes = businessWorkspaceParts();
+  if (!partes.tarjetas) return false;
+  // Si el DOM no tiene exactamente las regiones que este render espera, no se
+  // parchea a medias: se devuelve el control al render completo.
+  for (const region of partes.regiones) {
+    if (!workspace.querySelector(`[data-panel-region="${region.clave}"]`)) return false;
+  }
+
+  const activoAntes = document.activeElement;
+  const foco = describirFoco(workspace);
+  let toco = false;
+
+  for (const region of partes.regiones) {
+    // La bandeja no se reemplaza por región: sus tarjetas se reconcilian abajo.
+    if (region.conInterior) continue;
+    const huella = huellaDeMarcado(region.markup);
+    if (regionesPintadas.get(region.clave) === huella) continue;
+    const nodo = workspace.querySelector(`[data-panel-region="${region.clave}"]`);
+    if (!nodo) {
+      // El DOM dejó de ser el que este render describe: hay que rearmarlo, y
+      // la huella del marcado completo ya no vale como «no cambió nada».
+      lastWorkspaceMarkup.delete('business');
+      return false;
+    }
+    // `.trim()` NO es cosmético. `outerHTML` parsea la cadena entera y
+    // reemplaza el nodo por TODO lo que produjo, espacios incluidos: como el
+    // marcado de cada región empieza con un salto de línea y su sangría, cada
+    // parche dejaba un nodo de texto suelto de regalo. La región `status` se
+    // reescribe una vez por latido, así que en una jornada eso son miles de
+    // nodos huérfanos que ningún `querySelectorAll('*')` muestra —cuenta
+    // elementos, no texto— y que sólo se ven en el heap.
+    nodo.outerHTML = region.markup.trim();
+    regionesPintadas.set(region.clave, huella);
+    toco = true;
+  }
+
+  if (partes.tarjetas.length) {
+    // Saliendo del estado vacío, lo que hay en la lista NO es una tarjeta: es el
+    // cartel de «todavía no hay pedidos». Sin sacarlo, el reconciliador inserta
+    // las tarjetas alrededor y el cartel se queda arriba de la bandeja llena.
+    // Las huellas vacías con regiones pintadas son exactamente esa situación.
+    if (!huellasDeTarjeta.size) {
+      lista.replaceChildren();
+      toco = true;
+    }
+    const deseados = partes.tarjetas.map((tarjeta) => ({
+      clave: tarjeta.clave,
+      huella: huellaDeMarcado(tarjeta.markup),
+    }));
+    const { operaciones } = planTrayReconciliation(
+      leerTarjetasDelDom(lista, huellasDeTarjeta),
+      deseados,
+    );
+    if (operaciones.length) {
+      const porClave = new Map(partes.tarjetas.map((tarjeta) => [tarjeta.clave, tarjeta.markup]));
+      aplicarReconciliacion(lista, operaciones, {
+        marcadoPorClave: (clave) => porClave.get(clave) || '',
+        alReemplazar: trasplantarBorradorDeTarjeta,
+      });
+      toco = true;
+    }
+    huellasDeTarjeta.clear();
+    for (const deseado of deseados) huellasDeTarjeta.set(deseado.clave, deseado.huella);
+  } else if (huellasDeTarjeta.size || lista.querySelector('[data-order-card]')) {
+    // La bandeja se vació: el estado vacío es marcado, no una tarjeta.
+    lista.innerHTML = partes.bandejaVacia;
+    huellasDeTarjeta.clear();
+    toco = true;
+  }
+
+  if (!toco) return true;
+  // El marcado completo ya no describe el DOM: el próximo render completo tiene
+  // que volver a escribirlo aunque su cadena coincida con la anterior.
+  lastWorkspaceMarkup.delete('business');
+  // Sólo si el nodo que tenía el foco se fue con un reemplazo. Devolver el foco
+  // cuando nadie lo perdió sería moverlo por nuestra cuenta.
+  if (document.activeElement !== activoAntes) restaurarFoco(workspace, foco);
+  return true;
+}
+
+/** Lo que el operador estaba escribiendo en la tarjeta que SÍ cambió. */
+function trasplantarBorradorDeTarjeta(viejo, nuevo) {
+  const motivo = viejo.querySelector('[data-production-cancel-reason]')?.value || '';
+  if (motivo) {
+    const campo = nuevo.querySelector('[data-production-cancel-reason]');
+    if (campo) campo.value = motivo;
+  }
+  const rider = viejo.querySelector('[data-production-rider-select]')?.value || '';
+  if (!rider) return;
+  const selector = nuevo.querySelector('[data-production-rider-select]');
+  // Sólo si la opción sigue existiendo: un rider que salió de turno no puede
+  // quedar seleccionado de forma fantasma.
+  if (selector && Array.from(selector.options || []).some((option) => option.value === rider)) {
+    selector.value = rider;
+  }
+}
+
+/** Después de un render completo, las huellas describen lo que quedó pintado. */
+function sembrarPintadoDelNegocio(partes) {
+  regionesPintadas.clear();
+  huellasDeTarjeta.clear();
+  // Fuera de la bandeja no hay nada que parchear: la región `operations` la
+  // dibuja el centro de operaciones y no crece con la cantidad de pedidos.
+  if (!partes?.tarjetas) return;
+  for (const region of partes.regiones) {
+    if (region.conInterior) continue;
+    regionesPintadas.set(region.clave, huellaDeMarcado(region.markup));
+  }
+  for (const tarjeta of partes.tarjetas) {
+    huellasDeTarjeta.set(tarjeta.clave, huellaDeMarcado(tarjeta.markup));
+  }
+}
+
+function olvidarPintadoDelNegocio(view) {
+  if (view !== 'business') return;
+  regionesPintadas.clear();
+  huellasDeTarjeta.clear();
 }
 
 // El alta autogestionada sólo existe en el Panel del negocio. La vista Rider de
@@ -1868,20 +2033,43 @@ function businessViewTrigger(view) {
     : `data-business-ops-view="${escapeAttribute(view)}"`;
 }
 
-function businessWorkspaceMarkup() {
+/*
+ * EL WORKSPACE, EN REGIONES.
+ * ===========================================================================
+ * Antes esto devolvía una sola cadena y el render la escribía entera en
+ * `innerHTML`. Con quinientos pedidos eso son 910 KB de marcado y 20.234
+ * elementos que se tiran y se vuelven a construir cada vez que UN pedido cambia
+ * de estado —medido: tres a seis veces por cambio, porque cada `notify()` del
+ * ciclo dispara su propio repintado—.
+ *
+ * Ahora cada bloque de primer nivel lleva `data-panel-region` y viaja por
+ * separado. El render compara región por región y sólo reemplaza las que
+ * cambiaron; la bandeja, que es la única que crece con la cantidad de pedidos,
+ * va aparte y se reconcilia por tarjeta.
+ *
+ * La región `status` es la que justifica todo esto: lleva la marca de la última
+ * sincronización, así que cambia SOLA en cada latido. Mientras formaba parte de
+ * una única cadena, ese reloj bastaba para rearmar el tablero entero.
+ */
+function businessWorkspaceParts() {
   const role = access.membership?.role;
   const allowedList = allowedBusinessOperationViews(role);
   const allowed = new Set(allowedList);
   const paymentMonitor = BUSINESS_ROLES.has(access.membership?.role)
     ? businessPaymentsMarkup()
     : '';
-  const orders = getState().orders;
-  const rows = orders.length
-    ? orders.map(businessOrderMarkup).join('')
-    : emptyMarkup('Todavía no hay pedidos visibles para este comercio.');
-  const operations = businessOperationsView === 'orders'
-    ? `<div class="production-order-list" aria-live="polite">${rows}</div>`
-    : renderBusinessOperations(businessOperationsView);
+  const esBandeja = businessOperationsView === 'orders';
+  const orders = esBandeja ? getState().orders : [];
+  // El marcado de cada tarjeta con su clave. La clave es la identidad que ya usa
+  // el resto del Panel para sus acciones, así que una tarjeta y su botón no
+  // pueden hablar de pedidos distintos.
+  const tarjetas = esBandeja
+    ? orders.map((order) => ({ clave: String(order.id), markup: businessOrderMarkup(order) }))
+    : null;
+  const bandejaVacia = emptyMarkup('Todavía no hay pedidos visibles para este comercio.');
+  const contenedorDeBandeja = (interior) => (
+    `<div class="production-order-list" data-panel-region="operations" data-order-list aria-live="polite">${interior}</div>`
+  );
   // Una sola navegación para todo el panel: dos filas con los mismos destinos confunden.
   const shortcuts = BUSINESS_VIEW_ORDER
     .filter((view) => allowed.has(view))
@@ -1905,40 +2093,84 @@ function businessWorkspaceMarkup() {
         aria-pressed="${businessOperationsView === view}"
         ${businessViewTrigger(view)}>${escapeHtml(businessViewLabel(view))}</button>`).join('');
 
-  return `
-    <div class="production-ops-head">
+  const regiones = [
+    {
+      clave: 'head',
+      markup: `
+    <div class="production-ops-head" data-panel-region="head">
       <div class="production-ops-identity">
         <p class="eyebrow">Panel del negocio</p>
         <h1>Tu día, en un solo lugar</h1>
         <p class="production-ops-role">${escapeHtml(roleLabel(role))} · sesión verificada</p>
       </div>
       <button class="ghost-button compact production-ops-signout" type="button" data-production-sign-out>Cerrar sesión</button>
-    </div>
-    <div class="production-ops-status">
+    </div>`,
+    },
+    {
+      clave: 'status',
+      markup: `
+    <div class="production-ops-status" data-panel-region="status">
       ${businessIntakeStatusMarkup()}
       ${businessCommandStatusMarkup()}
-    </div>
-    <nav class="production-operations-shortcuts" aria-label="Atajos del día">${shortcuts}</nav>
-    ${operations}
-    <nav class="panel-bottom-nav" aria-label="Secciones del panel" data-panel-bottom-nav>
+    </div>`,
+    },
+    {
+      clave: 'shortcuts',
+      markup: `
+    <nav class="production-operations-shortcuts" data-panel-region="shortcuts" aria-label="Atajos del día">${shortcuts}</nav>`,
+    },
+    {
+      clave: 'operations',
+      // Vacío a propósito: el interior lo pone quien compone (render completo) o
+      // el reconciliador (render incremental).
+      markup: esBandeja ? contenedorDeBandeja('') : renderBusinessOperations(businessOperationsView),
+      conInterior: esBandeja ? contenedorDeBandeja : null,
+    },
+    {
+      clave: 'bottom-nav',
+      markup: `
+    <nav class="panel-bottom-nav" data-panel-region="bottom-nav" aria-label="Secciones del panel" data-panel-bottom-nav>
       ${bottomNav}
       <button type="button" class="panel-nav-item panel-nav-more ${enLaHoja ? 'is-active' : ''}"
         aria-expanded="${panelMoreSheetOpen}" aria-controls="panel-more-sheet" data-panel-more-toggle>
         <span class="panel-nav-ico" aria-hidden="true">${BUSINESS_VIEW_ICONS.more}</span>
         <span class="panel-nav-label">Más</span>
       </button>
-    </nav>
-    <div class="panel-more-backdrop" data-panel-more-close ${panelMoreSheetOpen ? '' : 'hidden'}></div>
-    <section class="panel-more-sheet" id="panel-more-sheet" data-panel-more-sheet
+    </nav>`,
+    },
+    {
+      clave: 'more-backdrop',
+      markup: `
+    <div class="panel-more-backdrop" data-panel-region="more-backdrop" data-panel-more-close ${panelMoreSheetOpen ? '' : 'hidden'}></div>`,
+    },
+    {
+      clave: 'more-sheet',
+      markup: `
+    <section class="panel-more-sheet" id="panel-more-sheet" data-panel-region="more-sheet" data-panel-more-sheet
       role="dialog" aria-label="Más secciones del panel" ${panelMoreSheetOpen ? '' : 'hidden'}>
       <div class="panel-more-head">
         <strong>Más secciones</strong>
         <button class="ghost-button compact" type="button" data-panel-more-close>Cerrar</button>
       </div>
       <div class="panel-more-grid">${restLinks}</div>
-    </section>
-  `;
+    </section>`,
+    },
+  ];
+
+  return { regiones, tarjetas, bandejaVacia, paymentMonitor };
 }
+
+/** El workspace entero como una sola cadena. Es el render completo de siempre. */
+function componerWorkspace(partes) {
+  return partes.regiones.map((region) => (
+    region.conInterior
+      ? region.conInterior(partes.tarjetas.length
+        ? partes.tarjetas.map((tarjeta) => tarjeta.markup).join('')
+        : partes.bandejaVacia)
+      : region.markup
+  )).join('');
+}
+
 
 /**
  * Un glifo por destino. Son caracteres, no un set de iconos: el proyecto no
@@ -2247,7 +2479,7 @@ function businessOrderMarkup(order) {
     >${escapeHtml(riderOptionLabel(rider))}</option>
   `).join('');
   return `
-    <article class="production-order-card">
+    <article class="production-order-card" data-order-card="${escapeAttribute(order.id)}">
       <div class="production-order-head">
         <div>
           <span class="production-order-code">${escapeHtml(order.id)}</span>

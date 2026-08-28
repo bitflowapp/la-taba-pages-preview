@@ -51,14 +51,20 @@ const inexistentes = [];
 for (const entrada of ENTRADAS) recorrer(entrada, []);
 
 /*
- * Segundo recorrido, y este NO corta el gate: los módulos que están en el
- * precache pero sólo se alcanzan por import dinámico.
+ * Segundo recorrido, y ESTE TAMBIÉN CORTA: los módulos que están en el precache
+ * pero sólo se alcanzan por import dinámico.
  *
  * Precachear un módulo sin precachear lo que importa no sirve de nada: sin red
- * no evalúa igual. Hoy pasa con el panel del negocio —`production-operations.js`
- * está en la lista y sus 31 imports estáticos no—, y eso no es un camino del
- * cliente: se avisa para que quede a la vista y se decida, en vez de bloquear un
- * gate del storefront por deuda de otra superficie.
+ * no evalúa igual. Durante un tiempo esto fue sólo un aviso porque el caso era
+ * el panel del negocio —`production-operations.js` en la lista y sus 34 imports
+ * estáticos afuera— y no se quiso bloquear un gate del storefront por deuda de
+ * otra superficie.
+ *
+ * Ya no es deuda: esos 34 módulos entraron a la lista, y el Panel abre sin red.
+ * Dejarlo como aviso sería garantizar que vuelva a romperse con el próximo
+ * módulo nuevo —el aviso no lo leyó nadie durante meses—. La superficie
+ * operativa de un comercio no es menos importante que la del cliente: es la que
+ * se usa cuando hay que aceptar un pedido con mala señal.
  */
 const visitadosCliente = new Set(visitados);
 const faltantesCliente = new Map(faltantes);
@@ -78,6 +84,16 @@ if (faltantesCliente.size) {
   problemas.push(`${faltantesCliente.size} módulo(s) del grafo estático del CLIENTE fuera del precache de sw.js:`);
   for (const [rel, cadena] of faltantesCliente) problemas.push(`  · ${rel}   importado desde ${cadena[cadena.length - 1]}`);
 }
+if (faltantesDiferidos.length) {
+  problemas.push(
+    `${faltantesDiferidos.length} módulo(s) del grafo diferido (panel del negocio) fuera del precache de sw.js.`
+    + ' Sin red el import estático no resuelve y el Panel no abre:',
+  );
+  for (const rel of faltantesDiferidos) {
+    const cadena = faltantes.get(rel);
+    problemas.push(`  · ${rel}   importado desde ${cadena[cadena.length - 1]}`);
+  }
+}
 if (rotas.length) {
   problemas.push(`${rotas.length} entrada(s) del precache apuntan a archivos que no existen:`);
   rotas.forEach((rel) => problemas.push(`  · ${rel}`));
@@ -92,16 +108,10 @@ if (problemas.length) {
   process.exit(1);
 }
 
-if (faltantesDiferidos.length) {
-  console.warn(
-    `aviso: ${faltantesDiferidos.length} import(s) estáticos de módulos que están en el precache pero`
-    + ' sólo se cargan por import dinámico (panel del negocio) no están precacheados.'
-    + ' Sin red esos módulos no evalúan igual. No es un camino del cliente:'
-    + ` ${faltantesDiferidos.slice(0, 3).join(', ')}…`,
-  );
-}
-
-console.log(`precache completo: ${visitadosCliente.size} módulos del grafo estático del cliente, todos en sw.js.`);
+console.log(
+  `precache completo: ${visitadosCliente.size} módulos del grafo estático del cliente`
+  + ` y ${visitados.size - visitadosCliente.size} del grafo diferido (panel del negocio), todos en sw.js.`,
+);
 
 function recorrer(relativo, cadena) {
   if (visitados.has(relativo)) return;

@@ -1,0 +1,19 @@
+{
+  "que": "Tiempo de tarea larga del hilo principal en una ventana de 32 s con el servidor QUIETO",
+  "guion": "scripts/business-panel-cpu-quieto.mjs",
+  "pollMs": 1200,
+  "notaSobreElPoll": "En produccion el intervalo por defecto es 5000 ms; el costo real es del orden de una cuarta parte del que se lee aca.",
+  "viewport": "390x844",
+  "navegador": "chromium (playwright 1.60.0)",
+  "medidas": [
+    { "pedidos": 50,  "main": { "cpuMs": 0,     "tareaMaxMs": 0,   "porcentajeDeUnNucleo": 0.0 },  "integracion": { "cpuMs": 0,    "tareaMaxMs": 0,   "porcentajeDeUnNucleo": 0.0 } },
+    { "pedidos": 100, "main": { "cpuMs": 4514,  "tareaMaxMs": 114, "porcentajeDeUnNucleo": 14.1 }, "integracion": { "cpuMs": 1509, "tareaMaxMs": 98,  "porcentajeDeUnNucleo": 4.7 } },
+    { "pedidos": 300, "main": { "cpuMs": 12428, "tareaMaxMs": 202, "porcentajeDeUnNucleo": 38.8 }, "integracion": { "cpuMs": 5198, "tareaMaxMs": 162, "porcentajeDeUnNucleo": 16.2 } },
+    { "pedidos": 500, "main": { "cpuMs": 18876, "tareaMaxMs": 571, "porcentajeDeUnNucleo": 59.0 }, "integracion": { "cpuMs": 8176, "tareaMaxMs": 285, "porcentajeDeUnNucleo": 25.6 } }
+  ],
+  "lectura": [
+    "La integracion baja el CPU en reposo a menos de la mitad en 300 y 500 pedidos, y parte al medio la tarea mas larga (571 ms -> 285 ms). Esa tarea maxima es la que hace esperar al dedo que toca 'Aceptar pedido'.",
+    "Lo que queda NO es constante: sigue creciendo con la cantidad de pedidos. No lo introduce esta integracion y ningun de los dos PR decia resolverlo. Es la pasada de marcado: cada render regenera el marcado de las N tarjetas para calcular su huella, aunque despues no toque ni una. El DOM ya no escala; el string todavia si.",
+    "Es el proximo cuello y esta nombrado, no tapado: memoizar el marcado por (identidad, revision, generacion de pagos/riders/atencion) lo sacaria, y merece su propio cambio con su propia evidencia."
+  ]
+}

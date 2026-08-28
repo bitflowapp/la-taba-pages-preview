@@ -20,28 +20,22 @@
  */
 import { expect, test } from '@playwright/test';
 
-import { SUPABASE_URL, instalarDatosDePrueba, pedidos } from '../../scripts/lib/business-panel-fixtures.mjs';
+import { SUPABASE_URL, instalarDatosDePrueba, pedidosSinteticos } from '../../scripts/lib/business-panel-fixtures.mjs';
 
 test.describe.configure({ timeout: 180_000 });
 
 const CUANTOS = 300;
 
-/** N pedidos derivados de los seis de la biblioteca, con identidad propia. */
+/*
+ * N pedidos derivados de los seis de la biblioteca, con identidad propia.
+ *
+ * El molde vive en `business-panel-fixtures.mjs`, que es el mismo que usan los
+ * dos bancos de prueba. Estaba copiado acá, y una de las otras copias tenía el
+ * UUID de 35 caracteres: con el último grupo corto, el adaptador descarta el
+ * `backendId` y el pedido no vuelve a actualizarse nunca.
+ */
 function muchosPedidos(cuantos) {
-  const base = pedidos();
-  return Array.from({ length: cuantos }, (_, i) => {
-    const molde = base[i % base.length];
-    const n = String(i + 1).padStart(4, '0');
-    return {
-      ...molde,
-      // UUID válido: con el último grupo corto, el adaptador descarta el
-      // `backendId` y el pedido nunca vuelve a actualizarse.
-      id: `00000000-0000-4000-8000-${n.padStart(12, '0')}`,
-      public_code: `LT-7${n}`,
-      revision: (i % 7) + 1,
-      order_items: molde.order_items.map((item, j) => ({ ...item, id: `${n}-${j}` })),
-    };
-  });
+  return pedidosSinteticos(cuantos, { prefijo: 'LT-7' });
 }
 
 test.describe('el Panel arranca con los módulos caídos', () => {
@@ -98,6 +92,19 @@ test.describe('el Panel arranca con los módulos caídos', () => {
       'js/business/business-tray-patch.js',
       'js/business/business-command-outbox.js',
       'js/platform/indexeddb-command-storage.js',
+      // Los que trajo la bandeja por secciones. Su PR cambió una sola línea de
+      // `sw.js` —el nombre de la caché— así que sin esta lista se publicaban
+      // fuera del precache y el Panel no abría sin red.
+      'js/business/business-order-tray.js',
+      'js/business/business-order-alerts.js',
+      'js/business/business-sound-service.js',
+      // Éste no es de la bandeja: entró con 24/7 multi-rubro y faltaba desde
+      // entonces.
+      'js/core/service-hours.js',
+      // Una herramienta de demostración, sí, y en la lista que hace que el
+      // comercio pueda trabajar: `cargarBackOffice()` la pide en el mismo
+      // `Promise.all` que el resto, y si falla el Panel no abre.
+      'js/sandbox-tools.js',
     ]);
     expect(
       Object.entries(guardados).filter(([, presente]) => !presente).map(([ruta]) => ruta),
@@ -107,6 +114,10 @@ test.describe('el Panel arranca con los módulos caídos', () => {
     // Ahora el borde tira TODOS los módulos, y recién ahí se va al Panel.
     const respuesta = await request.get('/__edge-fault?mode=js-503');
     expect(respuesta.ok()).toBe(true);
+    const fallidos = [];
+    page.on('response', (r) => {
+      if (r.status() === 503 && new URL(r.url()).pathname.endsWith('.js')) fallidos.push(new URL(r.url()).pathname);
+    });
     await page.goto('/#business', { waitUntil: 'commit' });
 
     /*
@@ -130,6 +141,48 @@ test.describe('el Panel arranca con los módulos caídos', () => {
     await expect(alta).toBeVisible({ timeout: 60_000 });
     await expect(alta.locator('button, a, input').first())
       .toBeVisible({ timeout: 60_000 });
+
+    // Y NINGÚN módulo llegó a la red. Que el Panel abra no alcanza: podría
+    // estar abriendo porque algún pedido esquivó el 503. Si un solo `.js`
+    // recibió 503, ese módulo NO estaba en el precache y la próxima
+    // publicación lo va a extrañar.
+    expect(fallidos, 'ningún módulo del Panel puede salir a la red sin estar cacheado').toEqual([]);
+  });
+
+  /*
+   * Y CON SESIÓN, LA BANDEJA DIBUJA.
+   * -------------------------------------------------------------------------
+   * La prueba de arriba mira la región de alta, que es lo que se puede exigir
+   * sin sesión. Pero el grafo del Panel es más grande que eso: la bandeja por
+   * secciones agrega su clasificador, su canal de avisos y su servicio de
+   * sonido, y ninguno de los tres se toca hasta que hay alguien adentro.
+   *
+   * Lo que se exige es que la BANDEJA se dibuje, no que traiga pedidos: sin red
+   * no hay pedidos y está bien que no los haya —una copia local de la bandeja
+   * sería inventar autoridad—. Que el contenedor exista con su estado vacío ya
+   * dice lo único que hace falta: el grafo entero resolvió desde la caché.
+   */
+  test('con sesión y sin red, la bandeja se dibuja desde la caché', async ({ page, request }) => {
+    await instalarDatosDePrueba(page, { conSesion: true });
+    await page.goto('/', { waitUntil: 'load' });
+    await page.locator('html[data-taba-startup="ready"]').waitFor({ state: 'attached', timeout: 45_000 });
+    await page.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 30_000 });
+    await page.waitForFunction(async () => (
+      Boolean(await caches.match(new URL('js/business/business-order-tray.js', location.href).href))
+    ), null, { timeout: 60_000 });
+
+    const respuesta = await request.get('/__edge-fault?mode=js-503');
+    expect(respuesta.ok()).toBe(true);
+    const fallidos = [];
+    page.on('response', (r) => {
+      if (r.status() === 503 && new URL(r.url()).pathname.endsWith('.js')) fallidos.push(new URL(r.url()).pathname);
+    });
+    await page.goto('/#business', { waitUntil: 'commit' });
+
+    await page.locator('[data-production-workspace="business"]').waitFor({ state: 'visible', timeout: 90_000 });
+    await page.locator('[data-production-orders-view]:visible').first().click();
+    await expect(page.locator('[data-order-tray]')).toBeAttached({ timeout: 60_000 });
+    expect(fallidos, 'ningún módulo del Panel puede salir a la red sin estar cacheado').toEqual([]);
   });
 });
 

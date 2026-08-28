@@ -43,6 +43,12 @@ async function servidorDePedidos(page, { pollMs = 1500 } = {}) {
   const estado = {
     ordenes: pedidos(),
     transiciones: [],
+    /** Las que de verdad cambiaron la fila. Una acción repetida no suma acá. */
+    aplicadas: [],
+    /** Los recibos guardados por clave de idempotencia. */
+    recibos: new Map(),
+    /** Las veces que el servidor contestó con un recibo en vez de aplicar. */
+    replays: [],
     /** Cuando está puesto, `transition_order` contesta con ese error. */
     fallaTransicion: null,
   };
@@ -94,6 +100,20 @@ async function servidorDePedidos(page, { pollMs = 1500 } = {}) {
     if (path.includes('/rpc/transition_order')) {
       const cuerpo = JSON.parse(route.request().postData() || '{}');
       estado.transiciones.push(cuerpo);
+      /*
+       * EL RECIBO IDEMPOTENTE, QUE ES LO QUE HACE DURABLE A UNA SOLA OPERACIÓN.
+       *
+       * El servidor real guarda la clave y, si vuelve la misma, devuelve la
+       * fila TAL COMO QUEDÓ la primera vez en lugar de volver a aplicar el
+       * cambio. Sin modelarlo acá, dos envíos de la misma acción subirían la
+       * revisión dos veces y la prueba de la carrera entre pestañas estaría
+       * midiendo un servidor que no existe.
+       */
+      const clave = String(cuerpo.p_idempotency_key || '');
+      if (clave && estado.recibos.has(clave)) {
+        estado.replays.push(clave);
+        return json(estado.recibos.get(clave));
+      }
       if (estado.fallaTransicion) {
         return route.fulfill({
           status: 400,
@@ -112,6 +132,8 @@ async function servidorDePedidos(page, { pollMs = 1500 } = {}) {
       fila.revision += 1;
       fila.updated_at = new Date().toISOString();
       if (cuerpo.p_new_status === 'accepted') fila.acknowledged_at = new Date().toISOString();
+      estado.aplicadas.push({ clave, orden: fila.id, estado: fila.status, revision: fila.revision });
+      if (clave) estado.recibos.set(clave, { ...fila });
       return json(fila);
     }
 
@@ -412,6 +434,276 @@ test('dos pestañas del mismo comercio terminan mostrando lo mismo', async ({ br
 
     await expect(cocina.locator('[data-tray-section="preparando"] [data-order-card="LT-2042"]'))
       .toBeVisible({ timeout: 25_000 });
+  } finally {
+    await context.close();
+  }
+});
+
+/*
+ * LA CARRERA DE VERDAD: LAS DOS PESTAÑAS TOCAN EL MISMO BOTÓN A LA VEZ.
+ * ===========================================================================
+ * «Dos pestañas terminan mostrando lo mismo» prueba la PROPAGACIÓN: una hace,
+ * la otra se entera. No prueba la carrera, que es otra cosa y es la que pasa en
+ * un mostrador con dos aparatos: el de adelante y el de la cocina aceptan el
+ * mismo pedido con un segundo de diferencia, o menos.
+ *
+ * Las dos pestañas comparten origen, así que comparten IndexedDB y comparten la
+ * cola de comandos. Cada una tiene su propia cadena de encolado, así que las dos
+ * pueden pasar el `findByIdempotencyKey` antes de que cualquiera escriba, y la
+ * segunda choca contra el índice único.
+ *
+ * Antes ese choque viajaba como excepción hasta la acción del operador: la
+ * pantalla decía que falló algo que YA estaba encolado y en camino. Un error
+ * falso sobre una operación que salió bien es peor que no decir nada, porque la
+ * respuesta natural es volver a tocar.
+ *
+ * Lo que se exige acá son las cuatro cosas, y ninguna se puede sacar de las
+ * otras tres:
+ *
+ *   1. UNA sola operación durable: la fila cambia una vez.
+ *   2. Ninguna duplicación: la revisión sube UNA vez, no dos.
+ *   3. El perdedor reconoce la operación ganadora: las dos pestañas terminan
+ *      mostrando el pedido en su sección nueva.
+ *   4. Ningún error falso: ninguna de las dos pantallas pide intervención.
+ */
+test('dos pestañas aceptan el MISMO pedido a la vez: una sola operación, sin error falso', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: TELEFONO, hasTouch: true, isMobile: true });
+  try {
+    const mostrador = await context.newPage();
+    await instalarDatosDePrueba(mostrador, { conSesion: true });
+    const estado = await servidorDePedidos(mostrador, { pollMs: 1500 });
+
+    // La cocina comparte el MISMO modelo de servidor y el mismo origen: es el
+    // mismo comercio, y por lo tanto la misma cola de comandos en IndexedDB.
+    const cocina = await context.newPage();
+    await instalarDatosDePrueba(cocina, { conSesion: true });
+    await cocina.route(`${SUPABASE_URL}/**`, async (route) => {
+      const url = new URL(route.request().url());
+      const path = url.pathname;
+      const json = (body) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+      if (path.includes('/rest/v1/orders')) {
+        const query = url.searchParams;
+        const porCodigo = String(query.get('public_code') || '').replace(/^eq\./, '');
+        const porId = String(query.get('id') || '').replace(/^eq\./, '');
+        if (porCodigo || porId) {
+          return json(estado.ordenes.find((o) => o.public_code === porCodigo || o.id === porId) || null);
+        }
+        return json(estado.ordenes);
+      }
+      if (path.includes('/rpc/transition_order')) {
+        const cuerpo = JSON.parse(route.request().postData() || '{}');
+        estado.transiciones.push(cuerpo);
+        const clave = String(cuerpo.p_idempotency_key || '');
+        if (clave && estado.recibos.has(clave)) {
+          estado.replays.push(clave);
+          return json(estado.recibos.get(clave));
+        }
+        const fila = estado.ordenes.find((o) => o.id === cuerpo.p_order_id);
+        if (!fila) return json(null);
+        fila.status = cuerpo.p_new_status;
+        fila.revision += 1;
+        fila.updated_at = new Date().toISOString();
+        if (cuerpo.p_new_status === 'accepted') fila.acknowledged_at = new Date().toISOString();
+        estado.aplicadas.push({ clave, orden: fila.id, estado: fila.status, revision: fila.revision });
+        if (clave) estado.recibos.set(clave, { ...fila });
+        return json(fila);
+      }
+      return route.fallback();
+    });
+    await cocina.addInitScript(() => {
+      const config = globalThis.__LA_TABA_RUNTIME_CONFIG__;
+      if (config?.repository) config.repository.pollMs = 1500;
+      try { delete globalThis.__TAURI__; } catch (_) { globalThis.__TAURI__ = undefined; }
+
+      /*
+       * LA VENTANA DE LA CARRERA, ABIERTA A PROPÓSITO.
+       * ---------------------------------------------------------------------
+       * Sin esto la carrera no ocurre, y hay que decirlo con todas las letras
+       * porque es la diferencia entre una prueba y un adorno.
+       *
+       * Medido: dos clics disparados desde un instante acordado caen a 14 ms
+       * uno del otro, y en 14 ms la primera pestaña ya escribió en IndexedDB.
+       * La segunda entonces ENCUENTRA el comando en su búsqueda por clave y se
+       * va por el camino de siempre —«ya estaba encolado, devolvelo»—, que está
+       * bien y es el que más se da, pero NO es el caso que rompía.
+       *
+       * El que rompía es el otro: que las dos búsquedas fallen antes de que
+       * cualquiera escriba. Ahí la segunda choca contra el índice único de
+       * `idempotencyKey`, y ese choque viajaba como excepción hasta la pantalla
+       * del operador. La ventana natural para eso es de milisegundos, así que
+       * esperar a que salga sola es esperar a que falle en producción.
+       *
+       * Acá se abre a mano: la PRIMERA búsqueda por clave de esta pestaña
+       * resuelve 600 ms tarde. Lee lo que había —nada— y actúa sobre eso
+       * cuando la otra pestaña ya escribió. Es exactamente el entrelazado real,
+       * en un instante elegido. No se toca nada más: el `put` sale sin demora y
+       * choca de verdad contra el índice.
+       */
+      const getOriginal = IDBIndex.prototype.get;
+      // La ventana se ARMA desde la prueba, justo antes de la carrera, y no se
+      // queda esperando a la primera búsqueda que pase: el Panel busca por clave
+      // en otros momentos, y demorar una de ésas abre la ventana donde no hay
+      // nadie compitiendo. La prueba se mira a sí misma y falla si no compitió.
+      globalThis.__armarVentana = false;
+      globalThis.__carreraForzada = false;
+      globalThis.__choqueDeIndice = false;
+      IDBIndex.prototype.get = function (clave, ...resto) {
+        const peticion = getOriginal.call(this, clave, ...resto);
+        if (this.name !== 'idempotencyKey' || !globalThis.__armarVentana) return peticion;
+        globalThis.__armarVentana = false;
+        globalThis.__carreraForzada = true;
+        let manejador = null;
+        Object.defineProperty(peticion, 'onsuccess', {
+          configurable: true,
+          get: () => manejador,
+          set: (fn) => {
+            manejador = fn;
+            peticion.addEventListener('success', (evento) => {
+              globalThis.setTimeout(() => fn.call(peticion, evento), 600);
+            });
+          },
+        });
+        return peticion;
+      };
+
+      // Y que el choque contra el índice único haya ocurrido de verdad.
+      const putOriginal = IDBObjectStore.prototype.put;
+      IDBObjectStore.prototype.put = function (valor, ...resto) {
+        const peticion = putOriginal.call(this, valor, ...resto);
+        if (valor && typeof valor === 'object' && valor.idempotencyKey) {
+          peticion.addEventListener?.('error', () => { globalThis.__choqueDeIndice = true; });
+        }
+        return peticion;
+      };
+    });
+
+    for (const pagina of [mostrador, cocina]) {
+      await pagina.goto('/#business');
+      await pagina.locator('[data-production-workspace="business"]').waitFor({ state: 'visible', timeout: 30_000 });
+      await irAPedidos(pagina);
+    }
+    // Las dos tienen que estar viendo la MISMA revisión: la clave de
+    // idempotencia se arma con ella, y con revisiones distintas no habría
+    // carrera, habría dos acciones diferentes.
+    const revisionInicial = estado.ordenes.find((o) => o.public_code === 'LT-2042').revision;
+    await expect(mostrador.locator('[data-tray-section="nuevos"] [data-order-card="LT-2042"]')).toBeVisible();
+    await expect(cocina.locator('[data-tray-section="nuevos"] [data-order-card="LT-2042"]')).toBeVisible();
+
+    /*
+     * A LA VEZ DE VERDAD, Y ESTO NO ES PEDantería.
+     *
+     * La primera versión usaba `Promise.all` sobre dos `locator.click()`.
+     * Parece simultáneo y no lo es: cada `click()` de Playwright hace su ida y
+     * vuelta al navegador —comprobar visibilidad, estabilidad, posición— y esas
+     * idas y vueltas se serializan lo suficiente como para que la primera
+     * pestaña termine de escribir en IndexedDB antes de que la segunda lea. Sin
+     * carrera, la prueba pasaba IGUAL con el arreglo puesto y sin él, que es la
+     * definición de una prueba que no prueba nada. (Se comprobó: pasa con el
+     * `try/catch` del outbox quitado.)
+     *
+     * Acá se acuerda un instante y las dos pestañas disparan solas cuando
+     * llega. El click sale del temporizador de cada página, sin protocolo de
+     * por medio, y los dos caen dentro del mismo milisegundo.
+     */
+    // Recién ahora se arma la ventana: la próxima búsqueda por clave de la
+    // cocina es la del clic, y es la que se demora.
+    await cocina.evaluate(() => { globalThis.__armarVentana = true; });
+
+    const cuando = Date.now() + 900;
+    await Promise.all([mostrador, cocina].map((pagina) => pagina.evaluate((instante) => {
+      const boton = document.querySelector('[data-order-card="LT-2042"] [data-production-business-next]');
+      if (!boton) throw new Error('no está el botón de avanzar el pedido');
+      return new Promise((resolver) => {
+        const disparar = () => { boton.click(); resolver(globalThis.performance.now()); };
+        const falta = instante - Date.now();
+        if (falta <= 0) disparar();
+        else globalThis.setTimeout(disparar, falta);
+      });
+    }, cuando)));
+
+    // 3 · las dos pantallas terminan mostrando el pedido donde corresponde.
+    await expect(mostrador.locator('[data-tray-section="preparando"] [data-order-card="LT-2042"]'))
+      .toBeVisible({ timeout: 25_000 });
+    await expect(cocina.locator('[data-tray-section="preparando"] [data-order-card="LT-2042"]'))
+      .toBeVisible({ timeout: 25_000 });
+
+    /*
+     * ¿HUBO CARRERA? SE PREGUNTA, NO SE SUPONE.
+     *
+     * Sin esto, el día que las dos pestañas dejen de solaparse —porque cambió
+     * un temporizador, porque el arranque se hizo más lento— la prueba seguiría
+     * en verde midiendo dos acciones consecutivas. Una prueba de concurrencia
+     * que dejó de competir es peor que no tenerla: dice que sí.
+     *
+     * `forzada` afirma que la búsqueda por clave del clic de la cocina se
+     * demoró, o sea que los dos encolados estuvieron abiertos a la vez.
+     *
+     * HASTA DÓNDE LLEGA ESTA PRUEBA, dicho con precisión: el entrelazado que
+     * queda es el de las dos búsquedas fallando antes de que cualquiera
+     * escriba, y ése NO se puede fijar desde afuera. IndexedDB serializa las
+     * transacciones entre pestañas por su cuenta; demorar el `onsuccess` demora
+     * el MANEJADOR, no la transacción, así que quién lee primero lo decide el
+     * navegador. Forzarlo pediría parchear la aplicación desde la prueba, y
+     * entonces la prueba probaría el parche.
+     *
+     * Ese caso —el choque contra el índice único, que es lo que el arreglo del
+     * outbox atiende— está cubierto de forma determinista en
+     * `tests/business-outbox-continuidad.test.mjs`, donde el almacenamiento en
+     * memoria modela el índice único y el entrelazado se escribe a mano. Acá se
+     * prueba el contrato de punta a punta con dos pestañas de verdad; allá, la
+     * rama angosta. Ninguna de las dos sobra.
+     */
+    const carrera = await cocina.evaluate(() => ({
+      forzada: globalThis.__carreraForzada === true,
+      choque: globalThis.__choqueDeIndice === true,
+    }));
+    expect(
+      carrera.forzada,
+      'la ventana de la carrera no se abrió: las dos pestañas no se solaparon y la prueba no probó nada',
+    ).toBe(true);
+
+    const fila = estado.ordenes.find((o) => o.public_code === 'LT-2042');
+    const aplicadasAlPedido = estado.aplicadas.filter((a) => a.orden === fila.id);
+
+    // 1 y 2 · una sola operación durable, y la revisión sube UNA vez.
+    expect(
+      aplicadasAlPedido.length,
+      `el servidor aplicó ${aplicadasAlPedido.length} transiciones al mismo pedido: ${JSON.stringify(aplicadasAlPedido)}`,
+    ).toBe(1);
+    expect(fila.revision, 'la revisión subió más de una vez: hubo duplicación').toBe(revisionInicial + 1);
+    expect(fila.status).toBe('accepted');
+
+    // Y todas las claves que llegaron al servidor son la MISMA: si fueran dos
+    // distintas, el recibo idempotente no habría podido protegernos y lo que
+    // salvó la prueba sería la suerte del temporizador.
+    const claves = new Set(estado.transiciones
+      .filter((t) => t.p_order_id === fila.id)
+      .map((t) => String(t.p_idempotency_key || '')));
+    expect([...claves], 'las dos pestañas tienen que pedir lo mismo con la misma clave').toHaveLength(1);
+
+    /*
+     * 4 · NINGUNA DE LAS DOS PANTALLAS LE MIENTE AL OPERADOR.
+     *
+     * Se mira el TOAST y no la franja de estado, porque es ahí donde termina el
+     * error: `app.js` envuelve la acción en un `try/catch` y convierte cualquier
+     * excepción en un aviso. Si el choque contra el índice único escapa de la
+     * cola, el operador de la segunda pantalla lee que su acción falló —cuando
+     * en realidad ya está encolada y en camino— y lo natural es que vuelva a
+     * tocar. Esa es la mentira que este arreglo saca.
+     *
+     * Se mira la franja también, por si el error llegara por el otro camino.
+     */
+    for (const [nombre, pagina] of [['mostrador', mostrador], ['cocina', cocina]]) {
+      const aviso = (await pagina.locator('[data-toast]').textContent())?.trim() || '';
+      expect(
+        aviso,
+        `${nombre} avisa «${aviso}» sobre una operación que salió bien`,
+      ).not.toMatch(/no se pudo|error|constraint|fall/i);
+      await expect(
+        pagina.locator('[data-business-command-status] .production-intake-error'),
+        `${nombre} muestra un error sobre una operación que salió bien`,
+      ).toHaveCount(0);
+    }
   } finally {
     await context.close();
   }

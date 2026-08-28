@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "label": "jornada",
-  "generatedAtUtc": "2026-08-28T20:28:37.798Z",
+  "generatedAtUtc": "2026-08-28T21:37:17.970Z",
   "businessId": "11111111-1111-4111-8111-111111111111",
   "viewport": "390x844",
   "pollMs": 1200,
@@ -10,7 +10,7 @@
   "medidas": [
     {
       "pedidos": 500,
-      "msHastaLaBandeja": 779,
+      "msHastaLaBandeja": 677,
       "tarjetas": 500,
       "nodos": 25425,
       "bytes": 1434149,
@@ -20,24 +20,24 @@
         "lotesDeMutacion": 6,
         "reemplazosDelTablero": 0,
         "tarjetasTocadas": 2,
-        "msHastaElCambio": 1255
+        "msHastaElCambio": 872
       },
       "continuidad": {
         "medible": true,
         "scrollConservado": true,
-        "scrollAntes": 128,
-        "scrollDespues": 128,
+        "scrollAntes": 516,
+        "scrollDespues": 516,
         "textoConservado": true,
         "detalleAbierto": true,
-        "focoConservado": false,
+        "focoConservado": true,
         "cursorConservado": true
       },
       "memoria": {
         "vueltas": 10,
-        "heapAntes": 9151410,
-        "heapDespues": 16311071,
-        "heapDeltaBytes": 7159661,
-        "heapPorVuelta": 715966,
+        "heapAntes": 13691256,
+        "heapDespues": 16245014,
+        "heapDeltaBytes": 2553758,
+        "heapPorVuelta": 255376,
         "nodosAntes": 26360,
         "nodosDespues": 26365,
         "nodosDelta": 5
@@ -52,7 +52,7 @@
               "nodes": 75170,
               "jsEventListeners": 136
             },
-            "heapBytes": 9533094,
+            "heapBytes": 9480377,
             "elementosDelDocumento": 26365,
             "hijosDelWorkspace": 15,
             "tarjetas": 500,
@@ -73,34 +73,10 @@
             "ciclo": 53,
             "contadoresDelNavegador": {
               "documents": 3,
-              "nodes": 76837,
-              "jsEventListeners": 138
+              "nodes": 76165,
+              "jsEventListeners": 136
             },
-            "heapBytes": 16342114,
-            "elementosDelDocumento": 26697,
-            "hijosDelWorkspace": 15,
-            "tarjetas": 500,
-            "tarjetasEnAtencion": 167,
-            "avisosDeAtencion": 167,
-            "secciones": 5,
-            "vivos": {
-              "intervalos": 4,
-              "temporizadores": 42,
-              "observadoresDom": 2,
-              "observadoresDeTamano": 1,
-              "observadoresDeRendimiento": 0,
-              "canales": 2,
-              "escuchas": 358
-            }
-          },
-          {
-            "ciclo": 106,
-            "contadoresDelNavegador": {
-              "documents": 3,
-              "nodes": 76837,
-              "jsEventListeners": 139
-            },
-            "heapBytes": 16663614,
+            "heapBytes": 9610430,
             "elementosDelDocumento": 26697,
             "hijosDelWorkspace": 15,
             "tarjetas": 500,
@@ -114,7 +90,31 @@
               "observadoresDeTamano": 1,
               "observadoresDeRendimiento": 0,
               "canales": 2,
-              "escuchas": 530
+              "escuchas": 361
+            }
+          },
+          {
+            "ciclo": 106,
+            "contadoresDelNavegador": {
+              "documents": 3,
+              "nodes": 76837,
+              "jsEventListeners": 138
+            },
+            "heapBytes": 16718491,
+            "elementosDelDocumento": 26697,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 500,
+            "tarjetasEnAtencion": 167,
+            "avisosDeAtencion": 167,
+            "secciones": 5,
+            "vivos": {
+              "intervalos": 4,
+              "temporizadores": 46,
+              "observadoresDom": 2,
+              "observadoresDeTamano": 1,
+              "observadoresDeRendimiento": 0,
+              "canales": 2,
+              "escuchas": 533
             }
           },
           {
@@ -124,7 +124,7 @@
               "nodes": 76849,
               "jsEventListeners": 138
             },
-            "heapBytes": 17211562,
+            "heapBytes": 17280611,
             "elementosDelDocumento": 26701,
             "hijosDelWorkspace": 15,
             "tarjetas": 500,
@@ -133,7 +133,7 @@
             "secciones": 5,
             "vivos": {
               "intervalos": 4,
-              "temporizadores": 46,
+              "temporizadores": 48,
               "observadoresDom": 2,
               "observadoresDeTamano": 1,
               "observadoresDeRendimiento": 0,
@@ -145,10 +145,10 @@
             "ciclo": 212,
             "contadoresDelNavegador": {
               "documents": 3,
-              "nodes": 76837,
-              "jsEventListeners": 138
+              "nodes": 76165,
+              "jsEventListeners": 136
             },
-            "heapBytes": 17255942,
+            "heapBytes": 10435334,
             "elementosDelDocumento": 26697,
             "hijosDelWorkspace": 15,
             "tarjetas": 500,
@@ -157,7 +157,7 @@
             "secciones": 5,
             "vivos": {
               "intervalos": 4,
-              "temporizadores": 48,
+              "temporizadores": 50,
               "observadoresDom": 2,
               "observadoresDeTamano": 1,
               "observadoresDeRendimiento": 0,
@@ -169,10 +169,10 @@
             "ciclo": 265,
             "contadoresDelNavegador": {
               "documents": 3,
-              "nodes": 77748,
+              "nodes": 77746,
               "jsEventListeners": 138
             },
-            "heapBytes": 17557197,
+            "heapBytes": 17490882,
             "elementosDelDocumento": 27027,
             "hijosDelWorkspace": 15,
             "tarjetas": 500,
@@ -181,7 +181,7 @@
             "secciones": 4,
             "vivos": {
               "intervalos": 4,
-              "temporizadores": 50,
+              "temporizadores": 52,
               "observadoresDom": 2,
               "observadoresDeTamano": 1,
               "observadoresDeRendimiento": 0,
@@ -193,10 +193,10 @@
             "ciclo": 318,
             "contadoresDelNavegador": {
               "documents": 3,
-              "nodes": 78514,
-              "jsEventListeners": 140
+              "nodes": 77844,
+              "jsEventListeners": 136
             },
-            "heapBytes": 15432728,
+            "heapBytes": 10535738,
             "elementosDelDocumento": 27031,
             "hijosDelWorkspace": 15,
             "tarjetas": 500,
@@ -205,7 +205,7 @@
             "secciones": 4,
             "vivos": {
               "intervalos": 4,
-              "temporizadores": 52,
+              "temporizadores": 54,
               "observadoresDom": 2,
               "observadoresDeTamano": 1,
               "observadoresDeRendimiento": 0,
@@ -214,14 +214,14 @@
             }
           }
         ],
-        "heapDeltaBytes": 5899634,
-        "heapPorCiclo": 18436,
+        "heapDeltaBytes": 1055361,
+        "heapPorCiclo": 3298,
         "heapSegundaMitad": {
           "desdeCiclo": 159,
           "hastaCiclo": 318,
-          "deltaBytes": -1778834,
-          "porCiclo": -11188,
-          "oscilacionMaximaBytes": 6809020
+          "deltaBytes": -6744873,
+          "porCiclo": -42421,
+          "oscilacionMaximaBytes": 7108061
         },
         "elementosDelta": 666,
         "hijosDelWorkspaceDelta": 0,
@@ -229,11 +229,11 @@
         "avisosDeAtencionDelta": 168,
         "tarjetasEnAtencionDelta": 168,
         "seccionesDelta": -1,
-        "nodosDelNavegadorDelta": 3344,
-        "escuchasDelNavegadorDelta": 4,
+        "nodosDelNavegadorDelta": 2674,
+        "escuchasDelNavegadorDelta": 0,
         "documentosDelta": 0,
         "intervalosDelta": 0,
-        "temporizadoresDelta": 16,
+        "temporizadoresDelta": 18,
         "observadoresDomDelta": -1,
         "observadoresDeTamanoDelta": 0,
         "observadoresDeRendimientoDelta": 0,

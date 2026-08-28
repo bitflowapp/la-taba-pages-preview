@@ -217,42 +217,65 @@ Mismo arnés (`scripts/business-tray-scale-bench.mjs`) para los cuatro tamaños,
 
 | pedidos | elementos | marcado | ms hasta la bandeja |
 | ---: | ---: | ---: | ---: |
-| 50 | 2.625 | 148 KB | 208 |
-| 100 | 5.168 | 288 KB | 215 |
-| 300 | 15.297 | 844 KB | 388 |
-| 500 | 25.425 | 1,4 MB | 810 |
+| 50 | 2.625 | 148 KB | 179 |
+| 100 | 5.168 | 288 KB | 219 |
+| 300 | 15.297 | 844 KB | 473 |
+| 500 | 25.425 | 1,4 MB | 875 |
 
 ### Costo de UN cambio — los cinco escenarios
 
 Se cuenta **por columnas**: para cada escenario, los cuatro tamaños tienen que
 decir aproximadamente lo mismo.
 
-| escenario | pedidos | destruidos | creados | movidos | tarjetas | rearmes |
+Los cuatro tamaños en el orden 50 / 100 / 300 / 500.
+
+| escenario | destruidos | creados | movidos | tarjetas tocadas | rearmes | CPU (ms) |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| A · sin cambio de sección | 50 / 100 / 300 / 500 | 59 / 59 / 59 / 59 | 59 / 59 / 59 / 59 | 0 | 2 / 2 / 2 / 2 | 0 |
-| B · cambio de sección | 50 / 100 / 300 / 500 | 65 / 65 / 65 / 71 | 60 / 60 / 60 / 66 | 0 | 2 / 2 / 2 / 2 | 0 |
-| C · alta | 50 / 100 / 300 / 500 | 3 / 3 / 3 / 43 | 57 / 54 / 56 / 54 | 0 | 1 / 1 / 1 / 2 | 0 |
-| D · baja | 50 / 100 / 300 / 500 | 50 / 50 / 50 / 50 | 3 / 3 / 3 / 3 | 0 | 1 / 1 / 1 / 1 | 0 |
-| E · sólo el reloj | 50 / 100 / 300 / 500 | 6 / 6 / 0 / 0 | 6 / 6 / 0 / 0 | 0 | **0 / 0 / 0 / 0** | 0 |
+| A · sin cambio de sección | 59 / 59 / 59 / 59 | 59 / 59 / 59 / 59 | 0 | **2 / 2 / 2 / 2** | 0 | 0 / 55 / 297 / 389 |
+| B · cambio de sección | 65 / 65 / 65 / 65 | 60 / 60 / 60 / 60 | 0 | **2 / 2 / 2 / 2** | 0 | 0 / 55 / 231 / 388 |
+| C · alta | 9 / 3 / 3 / 43 | 63 / 54 / 56 / 54 | 0 | **1 / 1 / 1 / 2** | 0 | 0 / 60 / 234 / 406 |
+| D · baja | 50 / 50 / 50 / 50 | 3 / 3 / 3 / 3 | 0 | **1 / 1 / 1 / 1** | 0 | 0 / 60 / 257 / 678 |
+| E · sólo el reloj | 0 / 0 / 6 / 6 | 0 / 0 / 6 / 6 | 0 | **0 / 0 / 0 / 0** | 0 | 0 / 1489 / 5516 / 8989 |
 
 **El criterio se cumple.** Un cambio de un pedido no vuelve a O(N): las tarjetas
 reconstruidas son 1 o 2 con 50 pedidos y 1 o 2 con 500. `rearmes` —hijos
-directos del workspace reemplazados— es **cero en los veinte casos**.
+directos del workspace reemplazados— es **cero en los veinte casos**. Y la
+continuidad —scroll, texto a medio escribir, `<details>` abierto, foco y
+cursor— se conserva **en los veinte**.
 
-Las dos variaciones, explicadas:
+La única variación digna de mención, explicada:
 
 * **C con 500 destruye 43 y toca 2 tarjetas** en vez de 1. No es un defecto: la
   bandeja está en el tope que sirve el repositorio
-  (`MAX_BUSINESS_INBOX_ORDERS = 500`), así que un alta **desaloja** al último. Se
-  registra en el reporte como `desalojoPorTope`.
-* **B con 500 destruye 71 y no 65.** Un encabezado de sección más: con la bandeja
-  llena, el pedido que cruza cambia el recuento de una sección que en los
-  tamaños chicos no existía.
+  (`MAX_BUSINESS_INBOX_ORDERS = 500`), así que un alta **desaloja** al último —una
+  entra, una sale—. Queda registrado en el reporte como `desalojoPorTope: true`,
+  y con 50, 100 y 300 es `false`.
+
+Las diferencias chicas en `destruidos` y `creados` (3 vs. 9, 54 vs. 63) son
+encabezados de sección que se reescriben o no según cuántas secciones tenga la
+bandeja en ese momento. Son elementos sueltos, no tarjetas: la columna que
+importa —tarjetas tocadas— no se mueve.
+
+`movidos` es cero en los veinte casos porque ninguno de los cinco escenarios
+reordena tarjetas DENTRO de una sección: una tarjeta que cruza de sección cambia
+además su contenido, así que se reconstruye —que es lo correcto— en vez de
+mudarse. El camino de la subsecuencia creciente más larga, que es el que evita
+mover N tarjetas cuando sólo se movió una, está cubierto por
+`tests/business-tray-patch.test.mjs`.
 
 **El reloj (E) es el resultado que decide el punto B.** El escenario lleva a
 propósito los N pedidos a 3 minutos 45 segundos de antigüedad para que **todos**
-crucen el minuto dentro de la ventana de 32 s. Con 500 pedidos: **500 etiquetas
-de reloj reescritas, cero tarjetas tocadas, cero elementos destruidos.**
+crucen el minuto dentro de la ventana de 32 s. El resultado, por tamaño:
+
+| pedidos | etiquetas de reloj reescritas | tarjetas tocadas | elementos destruidos |
+| ---: | ---: | ---: | ---: |
+| 50 | 50 | **0** | 0 |
+| 100 | 100 | **0** | 0 |
+| 300 | 303 | **0** | 6 |
+| 500 | 503 | **0** | 6 |
+
+Los seis elementos de 300 y 500 son la franja de estado, que cambió una vez
+dentro de la ventana. Ninguna tarjeta.
 
 > Ese escenario, mal medido, decía lo contrario. Sin esperar a que la bandeja se
 > aquietara antes de abrir la ventana, E se atribuía el repintado de su propia
@@ -305,14 +328,17 @@ pasa» cada 25 vueltas.
 | Tarjetas | 500 | 500 | **0** |
 | Hijos del workspace *(contando nodos de texto)* | 15 | 15 | **0** |
 | Elementos del documento | 26.365 | 27.031 | +666 |
-| Nodos del navegador *(CDP, incluye desprendidos)* | — | — | +3.344 |
-| Escuchas JS *(CDP, la cuenta autoritativa)* | 136 | 140 | **+4** |
+| Nodos del navegador *(CDP, incluye desprendidos)* | — | — | +2.674 |
+| Escuchas JS *(CDP, la cuenta autoritativa)* | — | — | **0** |
 | Documentos | — | — | **0** |
 | Intervalos vivos | 4 | 4 | **0** |
 | Observadores DOM | — | — | **−1** |
 | `ResizeObserver` / `PerformanceObserver` | — | — | **0** |
 | Canales entre pestañas | 2 | 2 | **0** |
-| Heap (con recolección forzada) | 9,1 MB | 14,7 MB | +5,6 MB |
+| Heap (con recolección forzada) | — | — | **+1,0 MB** |
+
+Y la continuidad, después de los 320 cambios: scroll, texto a medio escribir,
+`<details>` abierto, foco y cursor, **los cinco conservados**.
 
 **Los +666 elementos no son una fuga, y no se declara «sin fuga» porque
 `querySelectorAll('*')` no creciera** —de hecho creció—. Se explican enteros:
@@ -321,12 +347,12 @@ envejecen y cruzan los umbrales de 10 y 15 minutos, así que ganan su aviso de
 atención, que es interfaz real para estado real. La cuenta de secciones bajó de 5
 a 4 por la misma razón: una sección se vació y la reconciliación la dio de baja.
 
-**El heap no gotea: da un escalón y se planta.** Sube de 9,1 MB a ~16 MB en las
-primeras 53 vueltas —el escalón de los avisos de atención— y ahí se queda.
-Leído sobre la corrida entera, `(último − primero) / ciclos` reparte esa subida
-inicial entre las 320 vueltas y la hace parecer un goteo. La pendiente de la
-**segunda mitad** es de **−11 KB por ciclo** (negativa), contra una oscilación
-entre muestras consecutivas de hasta 6,5 MB. Plana dentro del ruido.
+**El heap no gotea: da un escalón y se planta.** Sube en las primeras vueltas
+—el escalón de los avisos de atención— y ahí se queda. Leído sobre la corrida
+entera, `(último − primero) / ciclos` reparte esa subida inicial entre las 320
+vueltas y la hace parecer un goteo. La pendiente de la **segunda mitad** es de
+**−42 KB por ciclo** (negativa: baja), contra una oscilación entre muestras
+consecutivas de hasta 6,8 MB. Plana dentro del ruido del recolector.
 
 **Cero nodos de texto acumulados** es el número que valida `parchearRegion()`:
 los hijos directos del workspace, contando nodos de texto, terminan en 15 igual
@@ -337,7 +363,10 @@ estado.
 > `addEventListener` / `removeEventListener`) reporta +1.045, y **está mal**. Una
 > escucha colgada de un nodo que se descarta se recolecta con el nodo y nunca
 > llama a `removeEventListener`. La cuenta autoritativa es la del navegador
-> (`Memory.getDOMCounters`): **+4 sobre 320 ciclos**.
+> (`Memory.getDOMCounters`): **cero sobre 320 ciclos**. Se dejan las dos en el
+> reporte, con el nombre de cada una, porque la diferencia entre ellas es
+> justamente el motivo por el que una cuenta ingenua no sirve para declarar que
+> no hay fuga.
 
 ---
 
@@ -456,7 +485,7 @@ dicho.
 | `npm test` | **2377 / 2377** |
 | Pruebas nuevas de #90 | verdes |
 | Pruebas nuevas de #91 | verdes |
-| Playwright focal del Panel (chromium) | **31 / 31** |
+| Playwright focal del Panel (chromium) | **34 / 34** |
 | Suite completa de navegador | *ver el PR* |
 
 Identidad de publicación: `la-taba-runtime-v93-la-bandeja-por-secciones-que-no-se-rearma`,

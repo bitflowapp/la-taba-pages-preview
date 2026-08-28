@@ -860,56 +860,71 @@ test('sin novedades del servidor, el tablero NO se reemplaza', async ({ browser 
 /*
  * Y FUERA DE LA BANDEJA TAMPOCO SE REARMA NADA.
  * ===========================================================================
- * La franja de estado cambia en cada latido del coordinador, y eso no puede
- * costar el reemplazo de la superficie que la persona está mirando. En la
- * bandeja quedó demostrado arriba; acá se exige lo mismo en «Qué pasa», que es
- * la otra pantalla donde alguien se queda un rato.
+ * La franja de estado no puede costar el reemplazo de la superficie que la
+ * persona está mirando. En la bandeja quedó demostrado arriba; acá se exige lo
+ * mismo en «Qué pasa», que es la otra pantalla donde alguien se queda un rato,
+ * y donde además puede haber un formulario a medio llenar.
  *
- * Vale la pena decir por qué esta prueba existe: la marca `data-panel-region`
- * del bloque de operaciones se agregó DESPUÉS de escribir que el parche cubría
- * todas las vistas. Sin ella, el parche no encontraba el bloque, se caía al
- * render completo y cada latido reemplazaba la superficie entera con el
- * formulario que hubiera adentro. La afirmación era falsa y no había nada que
- * la contradijera. Ahora sí.
+ * EL CAMBIO DE ESTADO SE PROVOCA, NO SE ESPERA. La franja lleva la marca de la
+ * última sincronización con precisión de minuto, así que en una ventana de ocho
+ * segundos lo más probable es que no cambie NADA y la prueba pase por no haber
+ * pasado nada. Se comprobó: así pasaba con la marca de región puesta y sacada.
+ *
+ * Cortar y devolver la red cambia la franja de «Conectado» a «Sin conexión» y
+ * de vuelta, que es un cambio real de esa región y de los que ocurren todo el
+ * tiempo en un local con mala señal. Ahí sí la pregunta tiene sentido: ¿la
+ * superficie de al lado sobrevive?
+ *
+ * Sin `data-panel-region` en el bloque de operaciones, el parche no lo
+ * encuentra, se cae al render completo y este nodo muere. La prueba falla.
  */
-test('fuera de la bandeja, un latido tampoco reemplaza la superficie', async ({ browser }) => {
+test('fuera de la bandeja, un cambio de estado no reemplaza la superficie', async ({ browser }) => {
   const { context, page } = await abrirBandeja(browser, TELEFONO, { pollMs: 1000 });
   try {
     await page.locator('[data-business-ops-view="operation-center"]:visible').first().click();
     await page.locator('[data-business-ops-center="operation-center"]').waitFor({ state: 'visible', timeout: 20_000 });
-    // Que la superficie se haya asentado antes de empezar a contar.
     await page.waitForTimeout(1500);
 
-    const reemplazos = await page.evaluate(async () => {
+    await page.evaluate(() => {
       const raiz = document.querySelector('[data-production-workspace="business"]');
-      const superficie = raiz.querySelector('[data-panel-region="operations"]');
-      let superficiesReemplazadas = 0;
-      let hijosNuevosDelWorkspace = 0;
-      const observador = new MutationObserver((mutaciones) => {
+      globalThis.__superficie = raiz.querySelector('[data-panel-region="operations"]')
+        || raiz.querySelector('[data-business-ops-center]');
+      globalThis.__cuenta = { superficiesReemplazadas: 0, hijosNuevosDelWorkspace: 0 };
+      globalThis.__obs = new MutationObserver((mutaciones) => {
         for (const m of mutaciones) {
           if (m.type !== 'childList' || !m.addedNodes.length) continue;
-          if (m.target === raiz) hijosNuevosDelWorkspace += 1;
+          if (m.target === raiz) globalThis.__cuenta.hijosNuevosDelWorkspace += 1;
           for (const nodo of m.removedNodes) {
-            if (nodo === superficie) superficiesReemplazadas += 1;
+            if (nodo === globalThis.__superficie) globalThis.__cuenta.superficiesReemplazadas += 1;
           }
         }
       });
-      observador.observe(raiz, { childList: true, subtree: true });
-      // Ocho vueltas de sondeo sin una sola novedad del servidor.
-      await new Promise((listo) => globalThis.setTimeout(listo, 8000));
-      observador.disconnect();
+      globalThis.__obs.observe(raiz, { childList: true, subtree: true });
+    });
+
+    // El cambio de estado, provocado: se corta la red y se devuelve.
+    await context.setOffline(true);
+    await expect(page.locator('[data-business-intake-status]')).toContainText(/Sin conexión|Error recuperable|Recuperando/, { timeout: 25_000 });
+    await context.setOffline(false);
+    await expect(page.locator('[data-business-intake-status]')).toContainText('Conectado', { timeout: 25_000 });
+
+    const visto = await page.evaluate(() => {
+      globalThis.__obs.disconnect();
+      const raiz = document.querySelector('[data-production-workspace="business"]');
       return {
-        superficiesReemplazadas,
-        hijosNuevosDelWorkspace,
-        // El nodo tiene que ser EL MISMO: si murió y nació otro, el parche por
-        // región no lo estaba encontrando.
-        elMismoNodo: raiz.querySelector('[data-panel-region="operations"]') === superficie,
+        ...globalThis.__cuenta,
+        // El nodo tiene que ser EL MISMO. Comparar su contenido no alcanza: un
+        // render completo lo reemplaza por otro idéntico y no se notaría.
+        elMismoNodo: raiz.querySelector('[data-business-ops-center]') === globalThis.__superficie,
+        // Y la superficie sigue en pie, no es que desapareció.
+        sigueVisible: Boolean(raiz.querySelector('[data-business-ops-center="operation-center"]')),
       };
     });
 
-    expect(reemplazos.elMismoNodo, 'la superficie de «Qué pasa» se reemplazó sola con el latido').toBe(true);
-    expect(reemplazos.superficiesReemplazadas, 'la superficie no puede morir y renacer por un latido').toBe(0);
-    expect(reemplazos.hijosNuevosDelWorkspace, 'el workspace no puede recibir hijos nuevos sin novedades').toBe(0);
+    expect(visto.sigueVisible, 'la superficie de «Qué pasa» desapareció').toBe(true);
+    expect(visto.elMismoNodo, 'la superficie murió y nació otra por un cambio de la franja de estado').toBe(true);
+    expect(visto.superficiesReemplazadas, 'la superficie no puede reemplazarse por un cambio de conexión').toBe(0);
+    expect(visto.hijosNuevosDelWorkspace, 'el workspace no puede recibir hijos nuevos por un cambio de conexión').toBe(0);
   } finally {
     await context.close();
   }

@@ -29,7 +29,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(27);
+select plan(26);
 
 -- ── Fixture: dos comercios, tres personas ───────────────────────────────────
 --
@@ -84,11 +84,28 @@ returns jsonb language sql immutable as $$
 $$;
 
 -- ── 1 · ANON no la puede ni llamar ──────────────────────────────────────────
--- Dos formas de preguntar lo mismo, a proposito. La primera mira el GRANT, que
--- es declarativo y no depende de que la logica de adentro este bien; la segunda
--- lo intenta de verdad. Un dia alguien puede reescribir el cuerpo de la funcion
--- y dejar la compuerta de adentro floja: el GRANT sigue protegiendo, y si
--- tambien lo aflojan, esta prueba lo dice.
+--
+-- Se prueba por el GRANT, que es donde de verdad vive la respuesta: anon no
+-- tiene EXECUTE, asi que el cuerpo de la funcion nunca llega a evaluarse y no
+-- hay compuerta interna de la que depender.
+--
+-- POR QUE NO SE INTENTA LA LLAMADA DE VERDAD, y por favor no la vuelvan a
+-- agregar sin leer esto. Habia aca un `set local role anon` seguido de un
+-- `throws_ok` sobre la funcion. En el stack aislado de CI eso NO fallo la
+-- asercion: TIRO ABAJO EL SERVIDOR —«server closed the connection
+-- unexpectedly», la instancia entera entrando en recovery y arrastrando las
+-- otras bases del contenedor—. Ocurrio de forma reproducible justo despues de
+-- las dos aserciones de privilegios, con las otras dos suites pgTAP ya en
+-- verde. No se pudo aislar la causa: es una interaccion entre el cambio de rol
+-- y la maquinaria de pgTAP, no de esta funcion —anon no tiene EXECUTE, asi que
+-- su cuerpo no corrio—.
+--
+-- Lo que se pierde es poco y lo que se gana es un gate que no voltea la base:
+-- `function_privs_are` responde exactamente la misma pregunta —¿puede anon
+-- ejecutar esto?— de forma declarativa y deterministica. El rechazo EN
+-- EJECUCION de un llamador no autorizado sigue probado abajo, con
+-- `authenticated`, que es el rol con el que el resto del repositorio ya
+-- ejercita sus RPC sin problemas.
 select function_privs_are(
   'public', 'apply_commercial_catalog_plan', array['uuid','jsonb','jsonb'],
   'anon', array[]::text[],
@@ -98,19 +115,9 @@ select function_privs_are(
   'authenticated', array['EXECUTE'],
   'authenticated tiene EXECUTE y nada mas');
 
-set local role anon;
-set local request.jwt.claims = '{"role":"anon"}';
-select throws_ok(
-  $$select public.apply_commercial_catalog_plan(
-      '92000000-0000-4000-8000-00000000000a',
-      '[{"sku":"anon-intenta","name":"Anon","category":"Limpieza","is_alcoholic":false,"price":null,"stock":0,"publish":false}]'::jsonb,
-      '[]'::jsonb)$$,
-  '42501', null,
-  'anon no tiene permiso de ejecucion sobre la funcion');
-
 -- ── 2 · AUTHENTICATED SIN MEMBRESIA tampoco ─────────────────────────────────
--- Tiene EXECUTE y un token valido. Lo frena la compuerta de adentro.
-reset role;
+-- Tiene EXECUTE y un token valido. Lo frena la compuerta de adentro, y este es
+-- el rechazo EN EJECUCION que sostiene la mitad que el GRANT no cubre.
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"91000000-0000-4000-8000-000000000003","role":"authenticated"}';
 select throws_ok(

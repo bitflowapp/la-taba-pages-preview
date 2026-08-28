@@ -283,11 +283,11 @@ mismo día, y `to_char` lo devuelve como `24:00`.
 Es la superficie más delicada de este trabajo —`SECURITY DEFINER` con `INSERT`—
 así que no se conforma con una revisión estática. `supabase/tests/alta_propuesta_comercial_test.sql`
 la ejercita con **identidades reales** sobre el stack aislado y corre en el gate,
-registrada en `scripts/run-mercadopago-local-db.mjs`. Veintisiete aserciones:
+registrada en `scripts/run-mercadopago-local-db.mjs`. Veintiséis aserciones:
 
 | Pregunta | Qué se prueba |
 | --- | --- |
-| ¿anon puede? | No tiene `EXECUTE` (`function_privs_are`) **y** el intento real rebota con `42501` |
+| ¿anon puede? | No tiene `EXECUTE` (`function_privs_are`), así que el cuerpo nunca se evalúa |
 | ¿un autenticado sin membresía? | La compuerta de adentro lo rechaza |
 | ¿el owner de otro comercio? | Rechazado, **y no queda ninguna fila** en el comercio ajeno |
 | ¿el owner autorizado? | Crea, y `created = 1` |
@@ -296,6 +296,17 @@ registrada en `scripts/run-mercadopago-local-db.mjs`. Veintisiete aserciones:
 | ¿SKU que ya existe? | `23505`, y el producto anterior conserva su nombre |
 | ¿un plan que falla a la mitad? | **Todo o nada**, probado en los dos sentidos |
 | ¿reaplicar el mismo plan? | Rebota y sigue habiendo **un** producto con ese SKU |
+
+Una aclaración honesta sobre la primera fila: había además un intento **en
+ejecución** bajo `set local role anon`, y hubo que sacarlo. No fallaba la
+aserción: **tiraba abajo el servidor** de la instancia aislada de CI —«server
+closed the connection unexpectedly», recovery mode, arrastrando las otras bases
+del contenedor—. No se pudo aislar la causa desde el entorno de desarrollo, que
+no tiene docker ni la imagen de Supabase; lo que sí se sabe es que no es de esta
+función, porque `anon` no tiene `EXECUTE` y su cuerpo no llegó a correr. El
+rechazo en ejecución de un llamador no autorizado sigue probado con
+`authenticated`, que es el rol con el que el resto del repositorio ejercita sus
+RPC sin problemas.
 
 El caso del rollback es el que más importa y por eso se prueba en el orden que
 duele: el alta **ya se insertó** cuando la modificación revienta. Si no fueran

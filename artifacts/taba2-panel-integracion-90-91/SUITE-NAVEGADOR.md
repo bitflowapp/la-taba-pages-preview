@@ -41,6 +41,30 @@ la hoja de direcciones, ni el checkout del cliente, ni `maplibre`, ni
 `index.html` fuera del token `?v=` del CSS. La lista completa de archivos
 tocados está en el PR.
 
+## La prueba de que son del entorno: la misma corrida contra `main`
+
+No alcanza con explicar por qué fallan. Se corrieron los mismos archivos contra
+`main` —`88f40a2`, sin una línea de esta integración— en un worktree aparte y
+con los puertos separados que `playwright.config.mjs` ofrece justamente para
+esto (`TABA_E2E_HTTP_PORT`, `TABA_E2E_RELAY_PORT`).
+
+### `address-flow.spec.mjs` · chromium
+
+| | `main` | integración |
+| --- | --- | --- |
+| Resultado | 5 fallan, 11 pasan | 5 fallan |
+| Pruebas que fallan | `151:3` `191:3` `231:3` `324:3` `465:3` | `151:3` `191:3` `231:3` `324:3` `465:3` |
+
+### `beverage-storefront.spec.mjs` · chromium
+
+| | `main` | integración |
+| --- | --- | --- |
+| Resultado | 3 fallan, 9 pasan | 3 fallan |
+| Pruebas que fallan | `6:1` `239:1` `401:1` | `6:1` `239:1` `401:1` |
+
+**Las mismas pruebas, en las mismas líneas, en las dos ramas.** No son una
+regresión de esta integración: `main` las falla igual en este entorno.
+
 ## Cómo verificarlo en un entorno con red estable
 
 ```bash

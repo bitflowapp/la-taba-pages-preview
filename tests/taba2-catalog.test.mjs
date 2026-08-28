@@ -59,8 +59,13 @@ test('public storefront shell separates the product name from the business name'
    * previa de un enlace compartido por WhatsApp. Decía «TABA2 · Tienda de
    * bebidas»: el nombre interno de la plataforma, con número de versión, en el
    * lugar más público del sitio. Ahora dice el comercio y lo que vende.
+   *
+   * «Bebidas con delivery» era verdad cuando la tienda vendía sólo bebida y
+   * dejó de serlo: el título es lo primero que se lee de un enlace compartido, y
+   * anunciar un rubro más chico que la góndola es perder el pedido de alguien
+   * que buscaba lavandina un domingo a las tres de la mañana.
    */
-  assert.match(html, /<title>La Taba · Bebidas con delivery en Neuquén<\/title>/);
+  assert.match(html, /<title>La Taba · Tienda 24\/7 con delivery en Neuquén<\/title>/);
   assert.doesNotMatch(html, /TABA2(?!-BOOT)/);
   /*
    * EL MANIFEST ES LA EXCEPCIÓN, Y ES DELIBERADA.

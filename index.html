@@ -4,8 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#11151b" />
-    <meta name="description" content="La Taba — bebidas frías con delivery en Neuquén Capital. Gaseosas, aguas, energizantes y packs, con precio y stock a la vista." />
-    <title>La Taba · Bebidas con delivery en Neuquén</title>
+    <meta name="description" content="La Taba — tienda 24/7 con delivery en Neuquén Capital. Bebidas, snacks, almacén, limpieza e higiene, con precio y stock a la vista." />
+    <title>La Taba · Tienda 24/7 con delivery en Neuquén</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
     <!--
@@ -82,7 +82,7 @@
       lo verifica tests/home-hero-preload.test.mjs.
     -->
     <link rel="preload" as="image" href="assets/promos/cervezas-heineken-band.webp" media="(max-width: 699px)" fetchpriority="high" />
-    <link rel="stylesheet" href="styles.css?v=56" />
+    <link rel="stylesheet" href="styles.css?v=57" />
   </head>
   <!--
     La vista activa se declara ya en el shell servido. `renderNavigation` la
@@ -96,7 +96,7 @@
         <button class="brand nav-button" type="button" data-nav-view="home" aria-label="Ir al inicio del comercio">
           <span class="brand-text">
             <strong class="brand-word" data-business-name>La Taba</strong>
-            <small data-business-subtitle>Tienda de bebidas</small>
+            <small data-business-subtitle>Tienda 24/7</small>
           </span>
         </button>
 
@@ -175,12 +175,12 @@
           </button>
         </div>
 
-        <label class="topbar-search" aria-label="Buscar bebidas en La Taba">
+        <label class="topbar-search" aria-label="Buscar productos en La Taba">
           <svg viewBox="0 0 24 24" width="19" height="19" fill="none" aria-hidden="true">
             <circle cx="10.8" cy="10.8" r="6.3" stroke="currentColor" stroke-width="1.8" />
             <path d="m16 16 4.2 4.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
           </svg>
-          <input data-search-input data-search-jump type="search" placeholder="Buscar bebidas o marcas" />
+          <input data-search-input data-search-jump type="search" placeholder="Buscar productos o marcas" />
         </label>
 
         <div class="topbar-actions">
@@ -276,7 +276,7 @@
               -->
               <div class="brand-hero-id">
                 <h1 id="home-title"><span data-business-name>La Taba</span></h1>
-                <p class="brand-hero-place" data-home-business-place>Tu autoservicio de bebidas</p>
+                <p class="brand-hero-place" data-home-business-place>Encontrá lo que necesitás, cuando lo necesitás</p>
                 <p class="brand-hero-state">
                   <span class="brand-state-chip" data-open-status>Pedidos online</span>
                   <span class="brand-hero-hours" data-home-business-hours hidden></span>
@@ -329,10 +329,10 @@
                 <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8"/>
                 <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
               </svg>
-              <input data-search-input data-search-jump type="search" placeholder="Buscar bebidas o marcas" aria-label="Buscar bebidas o marcas" />
+              <input data-search-input data-search-jump type="search" placeholder="Buscar productos o marcas" aria-label="Buscar productos o marcas" />
             </label>
 
-            <div class="category-strip home-category-strip" data-category-strip="home" data-home-category-strip aria-label="Categorías de bebidas"></div>
+            <div class="category-strip home-category-strip" data-category-strip="home" data-home-category-strip aria-label="Categorías de la tienda"></div>
 
             <!--
               DESTACADOS abre la vidriera: es el primer tramo COMPRABLE y tiene
@@ -432,13 +432,13 @@
               categoría que EXISTE y tiene productos comprables. Si ninguna
               califica, el contenedor queda vacío y no ocupa espacio.
               Va DESPUÉS del primer tramo de producto: el presupuesto de altura
-              del primer pantallazo es para bebidas, no para vidriera.
+              del primer pantallazo es para la góndola, no para vidriera.
             -->
             <div class="home-brand-banners" data-home-banners></div>
 
             <!--
-              Carruseles por sección de bebidas. El orden y el contenido salen
-              de core/beverage-home-sections.js; una sección sin productos no se
+              Carruseles por sección de la tienda. El orden y el contenido
+              salen de core/store-taxonomy.js; una sección sin productos no se
               renderiza, así que no quedan huecos.
             -->
             <div class="home-sections" data-home-sections></div>
@@ -494,7 +494,7 @@
                 <path d="m16 16 4.2 4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
               </svg>
             </span>
-            <input data-search-input type="search" placeholder="Buscar bebidas o marcas" aria-label="Buscar bebidas o marcas" />
+            <input data-search-input type="search" placeholder="Buscar productos o marcas" aria-label="Buscar productos o marcas" />
             <button class="search-clear" type="button" data-clear-search aria-label="Limpiar búsqueda" hidden>
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
                 <path d="m7 7 10 10M17 7 7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -1256,6 +1256,6 @@
       defer
     ></script>
     <script src="js/pwa-update.js?v=4"></script>
-    <script type="module" src="js/app.js?v=48"></script>
+    <script type="module" src="js/app.js?v=49"></script>
   </body>
 </html>

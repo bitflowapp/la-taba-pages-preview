@@ -113,6 +113,67 @@ let catalogFormVisible = false;
 // productos, la versión expandida convertía el panel en un scroll interminable.
 let catalogListExpanded = false;
 const CATALOG_LIST_PREVIEW_COUNT = 8;
+/*
+ * BUSCAR ANTES DE DESPLEGAR.
+ *
+ * La lista del Panel era «los primeros ocho» y un botón «Ver los 38». Con 38
+ * productos eso alcanza; con la tienda 24/7 multi-rubro, no: la operación
+ * diaria es BUSCAR un producto —cambiarle el precio o el stock, y guardar— y con
+ * cientos de artículos desplegar la lista entera y usar el Ctrl+F del navegador
+ * no es una interfaz, es una rendición.
+ *
+ * Estos tres filtros son la mesa de trabajo mínima: texto, góndola y estado.
+ * NO es un ERP: no hay columnas configurables, ni exportación, ni edición
+ * masiva. Lo que resuelve es el camino de todos los días —encontrar, tocar,
+ * guardar— sin sacar de la pantalla los botones de stock que ya estaban.
+ */
+let catalogPanelQuery = '';
+let catalogPanelCategory = 'all';
+let catalogPanelState = 'all';
+
+/** Los estados por los que un comercio necesita filtrar su góndola. */
+export const CATALOG_PANEL_STATES = Object.freeze([
+  { value: 'all', label: 'Todos los estados' },
+  { value: 'published', label: 'Visibles para el cliente' },
+  { value: 'paused', label: 'Pausados' },
+  { value: 'low', label: 'Stock bajo (1 a 5)' },
+  { value: 'out', label: 'Sin stock' },
+]);
+
+/**
+ * La mesa de trabajo del Panel: qué productos quedan a la vista.
+ *
+ * Función pura y exportada para poder probarla sin DOM. El texto busca por
+ * nombre, marca, SKU y categoría —el SKU incluido porque es lo que el comercio
+ * tiene en la etiqueta de góndola y en la planilla—, sin acentos y sin importar
+ * la caja.
+ */
+export function filterBusinessCatalog(products = [], { query = '', categoryId = 'all', estado = 'all' } = {}) {
+  const texto = String(query || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+  const plegar = (value) => String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+  return (Array.isArray(products) ? products : []).filter((product) => {
+    if (!product) return false;
+    if (categoryId !== 'all' && product.categoryId !== categoryId) return false;
+
+    const stock = Number(product.stock) || 0;
+    if (estado === 'published' && !(product.available && stock > 0)) return false;
+    if (estado === 'paused' && product.available !== false) return false;
+    if (estado === 'low' && !(stock > 0 && stock <= 5)) return false;
+    if (estado === 'out' && stock > 0) return false;
+
+    if (!texto) return true;
+    const campos = [product.name, product.brand, product.sku, product.externalId, product.categoryName, product.subcategory];
+    return campos.some((campo) => plegar(campo).includes(texto));
+  });
+}
 // Último producto creado/editado: se muestra primero en la lista para que el
 // comercio vea de inmediato lo que acaba de tocar (aunque la lista esté plegada).
 let lastTouchedCatalogProductId = null;
@@ -1329,8 +1390,16 @@ export function getLowStockProducts(products = getState().products) {
 
 function renderCatalogManager(state) {
   const allProducts = Array.isArray(state.products) ? state.products : [];
-  const activeProducts = allProducts.filter((product) => !product.archived);
+  const enGondola = allProducts.filter((product) => !product.archived);
+  const activeProducts = filterBusinessCatalog(enGondola, {
+    query: catalogPanelQuery,
+    categoryId: catalogPanelCategory,
+    estado: catalogPanelState,
+  });
   const archivedProducts = allProducts.filter((product) => product.archived);
+  const filtrando = Boolean(catalogPanelQuery.trim())
+    || catalogPanelCategory !== 'all'
+    || catalogPanelState !== 'all';
   let editingProduct = editingCatalogProductId
     ? allProducts.find((product) => product.id === editingCatalogProductId && !product.archived)
     : null;
@@ -1355,7 +1424,8 @@ function renderCatalogManager(state) {
       </header>
 
       ${showForm ? renderCatalogForm(editingProduct) : ''}
-      ${renderCatalogRows(activeProducts)}
+      ${renderCatalogWorkbench(enGondola, activeProducts.length)}
+      ${renderCatalogRows(activeProducts, { filtrando, total: enGondola.length })}
       ${renderArchivedCatalogRows(archivedProducts)}
     </section>`;
 }
@@ -1659,6 +1729,49 @@ function renderBusinessSetupPreview(config) {
     </aside>`;
 }
 
+/*
+ * La barra de trabajo del catálogo: buscar, acotar por góndola y por estado.
+ *
+ * Las categorías del selector salen de los productos que el comercio TIENE, no
+ * de la taxonomía completa: ofrecer «Mascotas» a quien no vende nada de mascotas
+ * es un filtro que sólo puede devolver cero.
+ */
+function renderCatalogWorkbench(products, visibles) {
+  const categorias = new Map();
+  for (const product of products) {
+    if (!product?.categoryId || categorias.has(product.categoryId)) continue;
+    categorias.set(product.categoryId, categoryName(product.categoryId));
+  }
+  const opcionesCategoria = [...categorias.entries()]
+    .sort((left, right) => left[1].localeCompare(right[1], 'es'))
+    .map(([id, name]) => `<option value="${escapeHtml(id)}" ${catalogPanelCategory === id ? 'selected' : ''}>${escapeHtml(name)}</option>`)
+    .join('');
+  const opcionesEstado = CATALOG_PANEL_STATES
+    .map((estado) => `<option value="${estado.value}" ${catalogPanelState === estado.value ? 'selected' : ''}>${escapeHtml(estado.label)}</option>`)
+    .join('');
+
+  return `
+    <div class="catalog-admin-workbench" data-catalog-workbench>
+      <label class="catalog-admin-search">
+        <span class="sr-only">Buscar en el catálogo</span>
+        <input type="search" data-catalog-panel-search value="${escapeHtml(catalogPanelQuery)}"
+          placeholder="Buscar por nombre, marca o SKU" autocomplete="off" />
+      </label>
+      <label class="catalog-admin-filter">
+        <span class="sr-only">Filtrar por categoría</span>
+        <select data-catalog-panel-category>
+          <option value="all" ${catalogPanelCategory === 'all' ? 'selected' : ''}>Todas las categorías</option>
+          ${opcionesCategoria}
+        </select>
+      </label>
+      <label class="catalog-admin-filter">
+        <span class="sr-only">Filtrar por estado</span>
+        <select data-catalog-panel-state>${opcionesEstado}</select>
+      </label>
+      <p class="catalog-admin-count" role="status">${visibles} de ${products.length} productos</p>
+    </div>`;
+}
+
 function renderCatalogForm(product = null) {
   const isEditing = Boolean(product);
   const categoryId = product?.categoryId || 'gaseosas';
@@ -1712,8 +1825,19 @@ function renderCatalogForm(product = null) {
     </form>`;
 }
 
-function renderCatalogRows(products) {
+function renderCatalogRows(products, { filtrando = false, total = 0 } = {}) {
   if (!products.length) {
+    // Un catálogo vacío y un filtro sin resultados son dos cosas distintas, y
+    // ofrecer «Crear producto» a quien buscó «lavandina» entre 400 artículos es
+    // mandarlo a duplicar el que no encontró.
+    if (filtrando) {
+      return `
+        <div class="catalog-admin-empty">
+          <strong>Ningún producto coincide con este filtro.</strong>
+          <p>Hay ${total} ${total === 1 ? 'producto' : 'productos'} en el catálogo.</p>
+          <button class="secondary-button compact" type="button" data-catalog-panel-clear>Limpiar filtros</button>
+        </div>`;
+    }
     return `
       <div class="catalog-admin-empty">
         <strong>No hay productos visibles.</strong>
@@ -1764,6 +1888,10 @@ function catalogProductRow(product) {
           <p>${escapeHtml(product.description || 'Sin descripción')}</p>
           <div class="catalog-admin-tags">
             <span>${escapeHtml(categoryName(product.categoryId))}</span>
+            <!-- El SKU es lo que une la góndola con la planilla y con la
+                 etiqueta del estante. Sin verlo, el operador no puede decir de
+                 qué producto está hablando cuando pide ayuda. -->
+            ${product.sku ? `<span class="catalog-admin-sku" title="Código del producto">${escapeHtml(product.sku)}</span>` : ''}
             ${badgeChipForRow(product)}
             ${product.available ? stockPill(product) : ''}
           </div>
@@ -2050,6 +2178,14 @@ export function handleBusinessAction(target) {
     return { handled: true, ok: true, message: '' };
   }
 
+  if (target.closest('[data-catalog-panel-clear]')) {
+    catalogPanelQuery = '';
+    catalogPanelCategory = 'all';
+    catalogPanelState = 'all';
+    if (typeof document !== 'undefined') renderBusinessDashboard();
+    return { handled: true, ok: true, message: 'Filtros del catálogo limpiados.' };
+  }
+
   if (target.closest('[data-catalog-expand]')) {
     catalogListExpanded = true;
     if (typeof document !== 'undefined') renderBusinessDashboard();
@@ -2161,6 +2297,31 @@ export function handleBusinessInput(target) {
     return { handled: true, ok: true, message: '' };
   }
 
+  /*
+   * La mesa de trabajo del catálogo. Se redibuja el panel entero —es el patrón
+   * de este archivo— y se devuelve el foco y el cursor al campo, porque un
+   * buscador que pierde el cursor en cada tecla no se puede usar.
+   */
+  const catalogSearch = target.closest?.('[data-catalog-panel-search]');
+  if (catalogSearch) {
+    catalogPanelQuery = sanitizeText(catalogSearch.value, { maxLength: 100 });
+    redrawCatalogPanel('[data-catalog-panel-search]');
+    return { handled: true, ok: true, message: '' };
+  }
+  const catalogCategory = target.closest?.('[data-catalog-panel-category]');
+  if (catalogCategory) {
+    catalogPanelCategory = sanitizeText(catalogCategory.value, { maxLength: 40 }) || 'all';
+    redrawCatalogPanel('[data-catalog-panel-category]');
+    return { handled: true, ok: true, message: '' };
+  }
+  const catalogState = target.closest?.('[data-catalog-panel-state]');
+  if (catalogState) {
+    const valor = sanitizeText(catalogState.value, { maxLength: 20 });
+    catalogPanelState = CATALOG_PANEL_STATES.some((estado) => estado.value === valor) ? valor : 'all';
+    redrawCatalogPanel('[data-catalog-panel-state]');
+    return { handled: true, ok: true, message: '' };
+  }
+
   const searchInput = target.closest?.('[data-business-order-search]');
   if (!searchInput) return { handled: false };
   businessOrderQuery = sanitizeText(searchInput.value, { maxLength: 100 });
@@ -2174,6 +2335,22 @@ export function handleBusinessInput(target) {
     }
   }
   return { handled: true, ok: true, message: '' };
+}
+
+/**
+ * Redibuja el panel y devuelve el foco al control que lo disparó, con el cursor
+ * al final. Sin esto, escribir en el buscador del catálogo pierde el foco en la
+ * primera tecla y hay que volver a tocar el campo por cada letra.
+ */
+function redrawCatalogPanel(selector) {
+  if (typeof document === 'undefined') return;
+  renderBusinessDashboard();
+  const restored = document.querySelector(selector);
+  if (!restored) return;
+  restored.focus();
+  if (typeof restored.setSelectionRange !== 'function') return;
+  const end = String(restored.value || '').length;
+  try { restored.setSelectionRange(end, end); } catch (_) { /* ignore */ }
 }
 
 export function submitBusinessSetupForm() {

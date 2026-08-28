@@ -12,7 +12,7 @@ test('BUSINESS_CONFIG exposes the expected business settings', () => {
   // el contrato de ubicación: es con lo que Maps encuentra el local.
   assert.equal(BUSINESS_CONFIG.businessName, 'La Taba');
   assert.equal(BUSINESS_CONFIG.name, 'La Taba');
-  assert.equal(BUSINESS_CONFIG.subtitle, 'Tienda de bebidas');
+  assert.equal(BUSINESS_CONFIG.subtitle, 'Tienda 24/7');
   assert.equal(BUSINESS_CONFIG.address, 'Mendoza 827, Neuquén');
   // La coordenada ya está contrastada (ficha de Google Maps + numeración
   // catastral de OSM + Plus Code), así que el mapa del cliente SÍ plotea el

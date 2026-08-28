@@ -37,6 +37,7 @@ import {
   setCatalogFilter,
   setSearchQuery,
   setSortBy,
+  showMoreCatalogProducts,
   resetCatalogFilters,
   showComboModal,
   showProductModal,
@@ -1305,6 +1306,15 @@ function bindEvents() {
 
     if (target.closest('[data-reset-catalog-filters]')) {
       resetCatalogFilters();
+      return;
+    }
+
+    // «Ver N productos más»: la grilla se dibuja de a tramos porque construir
+    // mil tarjetas de una vez bloquea el hilo principal un segundo y medio (ver
+    // la medición en `renderProducts`). El filtro no se pagina: sigue corriendo
+    // sobre el catálogo entero y el contador de arriba dice el total.
+    if (target.closest('[data-catalog-show-more]')) {
+      showMoreCatalogProducts();
       return;
     }
 

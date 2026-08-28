@@ -82,6 +82,7 @@ import {
   isPurchasableBeverageProduct,
   isVisibleBeverageProduct,
 } from './core/beverage-home-sections.js';
+import { CATEGORY_GLYPH_KEYS, STORE_CATEGORY_ORDER } from './core/store-taxonomy.js';
 import { hasPurchasableDestination, storyCtaDestination } from './core/purchasable-destination.js';
 import { resolveRetailProductId } from './core/retail-packaging.js';
 import { sandboxTrackingPresentation } from './core/sandbox-tracking-presentation.js';
@@ -232,10 +233,10 @@ export function applyBusinessConfig() {
   const detailsVerified = Boolean(config.orderingDetailsVerified);
   setText('[data-business-name]', config.businessName);
   setText('[data-business-subtitle]', config.subtitle);
-  setText('.app-home .eyebrow', config.subtitle || 'Tienda de bebidas');
+  setText('.app-home .eyebrow', config.subtitle || 'Tienda 24/7');
   setText('.app-home .home-lead', demo
-    ? `${BRAND.demoBusinessClaim || 'Tus bebidas, ahora a un toque.'} ${BRAND.demoBusinessClaimSecondary || 'Pedí. Seguí. Disfrutá.'}`
-    : 'Bebidas con catálogo y disponibilidad publicados por el comercio.');
+    ? `${BRAND.demoBusinessClaim || 'Lo que necesitás, a un toque.'} ${BRAND.demoBusinessClaimSecondary || 'Pedí. Seguí. Disfrutá.'}`
+    : 'Catálogo y disponibilidad publicados por el comercio.');
   setText('[data-min-order]', demo || detailsVerified ? money(config.minDeliveryOrder) : 'A confirmar');
   setText('[data-delivery-fee]', demo || detailsVerified ? money(config.deliveryFee) : 'A confirmar');
   setText('[data-business-profile-name]', config.businessName);
@@ -326,7 +327,7 @@ function applyHomeBrandHeader(config) {
    *
    * Va acá y no en un renglón propio porque un renglón propio CUESTA: a 360 px
    * la fila del estado envolvía y empujaba el primer «Agregar» 21 px fuera de la
-   * primera pantalla. El rubro que ocupaba este lugar («Tienda de bebidas») ya
+   * primera pantalla. El rubro que ocupaba este lugar («Tienda 24/7») ya
    * está en la barra superior; el servicio no estaba en ningún lado.
    *
    * Fail-closed como el resto del encabezado: sin nada que decir del servicio,
@@ -2019,27 +2020,53 @@ const CATEGORY_GLYPHS = Object.freeze({
     <path d="M8.5 3h7v3.2l1.4 2.2V20a1 1 0 0 1-1 1H8.1a1 1 0 0 1-1-1V8.4L8.5 6.2V3Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
     <path d="M7.4 13.2h9.2" stroke="currentColor" stroke-width="1.6"/>
   </svg>`,
+  // Los cinco rubros que no son bebida. Mismo trazo de 1,6 y misma caja de 24
+  // que el resto de la fila: un icono con otro peso se lee como un chip roto.
+  // Almacén: una bolsa de compra.
+  almacen: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <path d="M5.4 8h13.2l-1.1 11.1a1 1 0 0 1-1 .9H7.5a1 1 0 0 1-1-.9L5.4 8Z" fill="currentColor" fill-opacity="0.12" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M9 10V6.6a3 3 0 0 1 6 0V10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+  </svg>`,
+  // Limpieza: un pulverizador.
+  limpieza: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <path d="M9 8.5h5.4a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V9.5a1 1 0 0 1 1-1Z" fill="currentColor" fill-opacity="0.12" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M10 8.5V5.4h3.4M13.4 5.4h4M17.4 3.6v3.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+  </svg>`,
+  // Higiene personal: un frasco con dosificador.
+  higiene: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <path d="M8.6 9.6h6.8a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1H8.6a1 1 0 0 1-1-1v-9.4a1 1 0 0 1 1-1Z" fill="currentColor" fill-opacity="0.12" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M10.6 9.6V7.2h2.8v2.4M13.4 5.2h3.2v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`,
+  // Hogar: la casa.
+  hogar: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <path d="M4.6 10.6 12 4.4l7.4 6.2V20a1 1 0 0 1-1 1H5.6a1 1 0 0 1-1-1v-9.4Z" fill="currentColor" fill-opacity="0.12" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M9.8 21v-6.2h4.4V21" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+  </svg>`,
+  // Mascotas: la huella.
+  mascotas: `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+    <path d="M12 13.2c2.4 0 4.4 1.9 4.4 4.2 0 1.6-1.2 2.6-2.8 2.6h-3.2c-1.6 0-2.8-1-2.8-2.6 0-2.3 2-4.2 4.4-4.2Z" fill="currentColor" fill-opacity="0.12" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    <ellipse cx="7.6" cy="9.4" rx="1.7" ry="2.1" stroke="currentColor" stroke-width="1.5"/>
+    <ellipse cx="16.4" cy="9.4" rx="1.7" ry="2.1" stroke="currentColor" stroke-width="1.5"/>
+    <ellipse cx="11.9" cy="6.6" rx="1.7" ry="2.1" stroke="currentColor" stroke-width="1.5"/>
+  </svg>`,
 });
 
 // Los ids reales del catálogo no siempre coinciden con la clave del glifo
 // (heredada de una taxonomía anterior). El alias evita que media docena de
 // categorías caiga en el icono genérico de grilla, que era la principal fuente
 // de iconografía inconsistente en la fila.
+//
+// La tabla ya no se escribe acá: cada categoría declara su glifo en
+// `core/store-taxonomy.js`, junto a su nombre y su rubro, así que una categoría
+// nueva llega con icono en lugar de caer al genérico. Lo único que queda escrito
+// son los tres ids de una taxonomía anterior que nunca fueron categorías
+// propias —`whisky`, `gin` y `vodka`, hoy subcategorías de DESTILADOS— y que
+// siguen vivos en favoritos y enlaces guardados.
 const CATEGORY_GLYPH_ALIASES = Object.freeze({
-  energizantes: 'energeticas',
-  vinos: 'vinos-y-espumantes',
-  espumantes: 'vinos-y-espumantes',
-  destilados: 'whisky-y-destilados',
-  hielo: 'hielo-y-extras',
-  snacks: 'picadas-y-deli',
-  golosinas: 'picadas-y-deli',
-  // Ids heredados: un favorito o un enlace guardado antes de agrupar la
-  // góndola sigue encontrando su glifo en vez de caer al genérico.
+  ...CATEGORY_GLYPH_KEYS,
   whisky: 'whisky-y-destilados',
   gin: 'gins-y-vodkas',
   vodka: 'gins-y-vodkas',
-  complementos: 'hielo-y-extras',
-  'aguas-saborizadas': 'aguas',
   'jugos-y-saborizadas': 'jugos',
 });
 
@@ -2206,6 +2233,95 @@ function uniqueFilterValues(products, getter, { etiqueta, orden } = {}) {
   ));
 }
 
+/*
+ * LA GRILLA SE DIBUJA DE A TRAMOS.
+ *
+ * `renderProducts` escribía TODAS las tarjetas filtradas de una vez. Con
+ * treinta y tres bebidas eso era gratis; con la tienda 24/7 no.
+ *
+ * MEDIDO EN CHROMIUM el 2026-08-28, con el catálogo sintético de
+ * `scripts/benchmark-catalog-browser.mjs` y un viewport de 390×844:
+ *
+ *      SKU   abrir catálogo   nodos del documento
+ *      100        216 ms                4.056
+ *      500        684 ms               13.232
+ *     1000      1.640 ms               22.519
+ *
+ * Un segundo y medio de hilo principal bloqueado para abrir la góndola, y
+ * veintidós mil nodos en un teléfono. Y no los pide nadie: en 390 px de ancho
+ * entran seis tarjetas por pantalla, así que de las mil que se construyen se
+ * ven seis.
+ *
+ * ESTO NO ES VIRTUALIZACIÓN. No hay ventana deslizante, ni altura calculada, ni
+ * posicionamiento absoluto: es un tramo que crece cuando la persona pide más.
+ * Se eligió así a propósito —la virtualización rompe el Ctrl+F del navegador,
+ * el enlace a un producto y el scroll restaurado al volver— y porque lo que la
+ * medición señala es el costo de construir mil tarjetas, que un tramo ya
+ * elimina.
+ *
+ * EL FILTRO NO SE PAGINA. La búsqueda, la categoría y los filtros siguen
+ * corriendo sobre el catálogo ENTERO: lo que se pagina es el dibujo. El
+ * contador de arriba sigue diciendo cuántos hay en total, así que la persona
+ * nunca cree que el catálogo es más chico de lo que es.
+ *
+ * CIENTO VEINTE, Y EL NÚMERO ESTÁ MEDIDO.
+ *
+ * El catálogo que el comercio publica hoy tiene 80 productos visibles, así que
+ * con este tramo la góndola de TABA **no se pagina**: el cambio es inerte para
+ * la tienda de hoy y empieza a trabajar recién cuando el catálogo pasa de 120.
+ * Es a propósito. Un tramo de sesenta cortaba el catálogo actual por la mitad y
+ * dejaba veinte productos —los que todavía esperan precio— detrás de un botón
+ * que nadie pidió; lo encontró `tests/e2e/taba2-unit-catalog.spec.mjs`, que
+ * busca la unidad de 1,5 L en la grilla y dejó de encontrarla.
+ *
+ * Y el tramo sigue haciendo su trabajo donde importa. Medido en Chromium con
+ * 1000 SKU: 5.035 nodos contra 22.519, y 437 ms para abrir «Todas» contra
+ * 1.640. El documento deja de crecer con el catálogo, que era el punto.
+ */
+const CATALOG_PAGE_SIZE = 120;
+let catalogVisibleCount = CATALOG_PAGE_SIZE;
+let catalogPageSignature = '';
+
+/*
+ * Qué está mirando la persona ahora mismo. Cuando esto cambia —otra categoría,
+ * otra búsqueda, otro orden, otro filtro— el tramo vuelve a empezar: seguir en
+ * la página cuatro de una lista que ya no existe no es conservar el lugar.
+ *
+ * Se deriva del estado en vez de resetearse en cada setter porque los setters
+ * son cinco y el día que alguien agregue el sexto, esto sigue andando.
+ */
+function catalogPageKey(state) {
+  return JSON.stringify([
+    state.activeCategory,
+    String(state.searchQuery || '').trim(),
+    state.sortBy,
+    { ...defaultCatalogFilters(), ...(state.catalogFilters || {}) },
+  ]);
+}
+
+function syncCatalogPage(state) {
+  const key = catalogPageKey(state);
+  if (key !== catalogPageSignature) {
+    catalogPageSignature = key;
+    catalogVisibleCount = CATALOG_PAGE_SIZE;
+  }
+  return catalogVisibleCount;
+}
+
+/** «Ver más productos»: agrega un tramo y redibuja. */
+export function showMoreCatalogProducts() {
+  catalogVisibleCount += CATALOG_PAGE_SIZE;
+  renderCatalog();
+}
+
+/** Para los ensayos: devuelve la grilla al primer tramo. */
+export function resetCatalogPagination() {
+  catalogVisibleCount = CATALOG_PAGE_SIZE;
+  catalogPageSignature = '';
+}
+
+export { CATALOG_PAGE_SIZE };
+
 // Productos filtrados por categoría + búsqueda, ya ordenados.
 function getFilteredProducts(state) {
   const favoriteIds = new Set(getFavoriteProductIds());
@@ -2337,15 +2453,24 @@ function categoriesForCurrentCatalog() {
   if (promotionalProducts().length) remote.set('promos', 'Promociones');
   if (popularProducts().length) remote.set('popular', 'Destacados');
 
+  /*
+   * El orden de la tira de chips del catálogo.
+   *
+   * Era una lista escrita a mano con el vocabulario de DOS taxonomías atrás
+   * —`energeticas`, `gins-y-vodkas`, `picadas-y-deli`—, así que las categorías
+   * que el catálogo usa de verdad caían todas al final, desempatadas por
+   * alfabeto. Ahora sale de `core/store-taxonomy.js`, que es la misma fuente
+   * que ordena la home: las dos tiras no pueden discrepar.
+   *
+   * `promos` y `popular` van adelante porque no son categorías del catálogo
+   * sino dos vistas del comercio, y el vocabulario anterior queda detrás de la
+   * taxonomía viva para que un dato guardado no empuje a un rubro publicado.
+   */
   const preferredOrder = [
     'promos',
     'popular',
-    'gaseosas',
-    'aguas',
-    'jugos',
+    ...STORE_CATEGORY_ORDER,
     'energeticas',
-    'isotonicas',
-    'cervezas',
     'vinos-y-espumantes',
     'gins-y-vodkas',
     'whisky-y-destilados',
@@ -2532,7 +2657,19 @@ function renderProducts() {
       </div>`
     : '';
 
-  container.innerHTML = avisoSinComprables + filteredProducts.map((product) => {
+  const visibles = syncCatalogPage(state);
+  const enPantalla = filteredProducts.slice(0, visibles);
+  const restantes = filteredProducts.length - enPantalla.length;
+  // El botón dice cuántos faltan: «Ver más» a secas no deja calcular si vale la
+  // pena tocarlo, y con una góndola grande esa es justo la pregunta.
+  const verMas = restantes > 0
+    ? `<div class="catalog-more">
+        <p class="catalog-more-count" role="status">Mostrando ${enPantalla.length} de ${filteredProducts.length}.</p>
+        <button class="secondary-button" type="button" data-catalog-show-more>Ver ${Math.min(restantes, CATALOG_PAGE_SIZE)} productos más</button>
+      </div>`
+    : '';
+
+  container.innerHTML = avisoSinComprables + enPantalla.map((product) => {
     const outOfStock = !isCommerciallyPurchasable(product);
     const offer = discountPercent(product) > 0;
     const inCart = cartQuantities.get(product.id) || 0;
@@ -2580,7 +2717,7 @@ function renderProducts() {
         </div>
       </article>
     `;
-  }).join('');
+  }).join('') + verMas;
 }
 
 /**

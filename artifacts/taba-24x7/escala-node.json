@@ -1,0 +1,59 @@
+{
+  "generado": "2026-08-28T03:57:31.976Z",
+  "node": "v22.22.2",
+  "nodosPorTarjeta": 20,
+  "medidas": [
+    {
+      "size": 100,
+      "productos": 100,
+      "comprables": 78,
+      "seccionesVisibles": 12,
+      "nodosGrillaCompleta": 2000,
+      "ms": {
+        "catalogo": 2.881,
+        "home": 0.198,
+        "busqueda": 1.453,
+        "categoria": 0.003
+      }
+    },
+    {
+      "size": 500,
+      "productos": 501,
+      "comprables": 394,
+      "seccionesVisibles": 21,
+      "nodosGrillaCompleta": 10020,
+      "ms": {
+        "catalogo": 10.31,
+        "home": 2.06,
+        "busqueda": 6.922,
+        "categoria": 0.015
+      }
+    },
+    {
+      "size": 1000,
+      "productos": 1001,
+      "comprables": 790,
+      "seccionesVisibles": 21,
+      "nodosGrillaCompleta": 20020,
+      "ms": {
+        "catalogo": 13.809,
+        "home": 2.97,
+        "busqueda": 11.071,
+        "categoria": 0.023
+      }
+    },
+    {
+      "size": 2000,
+      "productos": 2003,
+      "comprables": 1580,
+      "seccionesVisibles": 21,
+      "nodosGrillaCompleta": 40060,
+      "ms": {
+        "catalogo": 26.558,
+        "home": 6.547,
+        "busqueda": 21.244,
+        "categoria": 0.057
+      }
+    }
+  ]
+}

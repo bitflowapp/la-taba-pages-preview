@@ -1,59 +1,64 @@
 import { getActivePromotions } from './promotions.js';
 import { recommendedRank } from './storefront-filters.js';
+import { STORE_CATEGORY_ORDER, STORE_CATEGORY_SECTIONS } from './store-taxonomy.js';
+
+/*
+ * LA HOME DE UNA TIENDA 24/7, NO LA DE UNA BEBIDERÍA.
+ *
+ * Este módulo tenía dos listas escritas a mano —el orden de categorías y las
+ * catorce secciones— y las dos nombraban únicamente bebida. Sumar «Limpieza»
+ * pedía editar las dos, acordarse de las dos, y no equivocarse en ninguna: es el
+ * mismo acople que dejó a `fernet` sin sección durante meses.
+ *
+ * Ahora las dos se DERIVAN de `core/store-taxonomy.js`. Una categoría declara
+ * ahí a qué carrusel pertenece y en qué orden va; acá se arma la home con eso.
+ * Agregar un rubro dejó de tocar este archivo.
+ *
+ * El nombre del archivo y de sus exportaciones se conserva a propósito: son
+ * cuarenta y pico de importaciones, el grafo de precache del service worker y la
+ * identidad firmada del release. Renombrar no agregaba una sola garantía y sí
+ * mucho ruido en el diff. Las exportaciones nuevas —`buildStoreHomeSections` y
+ * compañía— son el vocabulario que corresponde de acá en adelante; las viejas
+ * quedan como alias del mismo objeto.
+ *
+ * LO QUE NO CAMBIA: una sección sin nada detrás no se dibuja. La tienda no
+ * promete un rubro que el comercio todavía no publicó, así que declarar
+ * «Mascotas» en la taxonomía no pone un carrusel vacío en la primera pantalla.
+ */
 
 // Orden de negocio para la home. Las categorías del catálogo siguen siendo la
 // fuente de verdad de cada SKU; este orden sólo decide qué se prioriza en la
-// superficie de bebidas.
-export const BEVERAGE_HOME_CATEGORY_ORDER = Object.freeze([
-  'gaseosas',
-  'cervezas',
-  'aguas',
-  // La góndola final trae jugos (Cepita 1,5 L): la sección existe desde ya y
-  // se dibuja sola el día que haya uno comprable — una categoría sin nada
-  // efectivamente comprable no aparece en la home, como todas.
-  'jugos',
-  'energizantes',
-  // Las isotónicas tenían chip en la tira de categorías y NINGUNA sección
-  // detrás: tocarlo llevaba a un catálogo filtrado, pero en la home los tres
-  // productos no aparecían en ningún carrusel.
-  'isotonicas',
-  'fernet',
-  'aperitivos',
-  'vinos',
-  'espumantes',
-  'destilados',
-  'mixers',
-  'hielo',
-]);
+// superficie. La bebida va primero porque es de lo que este comercio es
+// especialista, y el resto de la tienda va detrás.
+export const STORE_HOME_CATEGORY_ORDER = STORE_CATEGORY_ORDER;
 
-export const BEVERAGE_HOME_SECTION_DEFINITIONS = Object.freeze([
+/** @deprecated Usar `STORE_HOME_CATEGORY_ORDER`: la home ya no es sólo bebida. */
+export const BEVERAGE_HOME_CATEGORY_ORDER = STORE_HOME_CATEGORY_ORDER;
+
+/*
+ * Las secciones, en orden: las dos editoriales de arriba, un carrusel por
+ * sección declarada en la taxonomía, y los combos al final.
+ *
+ * `offers` y `popular` abren porque son las dos únicas que no salen de una
+ * categoría: una es la promoción vigente y la otra la vidriera que curó el
+ * comercio. `combos` cierra por la razón simétrica.
+ */
+export const STORE_HOME_SECTION_DEFINITIONS = Object.freeze([
   Object.freeze({ id: 'offers', title: 'Ofertas del día', kind: 'offers' }),
   // «Recomendados del local», no «Lo más pedido»: es una selección del
   // comercio, y el comercio no tiene métrica de ventas que respalde un ranking.
   Object.freeze({ id: 'popular', title: 'Recomendados del local', kind: 'popular' }),
-  Object.freeze({ id: 'gaseosas', title: 'Gaseosas', kind: 'category', categoryIds: ['gaseosas'] }),
-  Object.freeze({ id: 'cervezas', title: 'Cervezas', kind: 'category', categoryIds: ['cervezas'] }),
-  Object.freeze({ id: 'aguas', title: 'Aguas', kind: 'category', categoryIds: ['aguas', 'aguas-saborizadas'] }),
-  Object.freeze({ id: 'jugos', title: 'Jugos', kind: 'category', categoryIds: ['jugos'] }),
-  Object.freeze({ id: 'energizantes', title: 'Energizantes', kind: 'category', categoryIds: ['energizantes'] }),
-  Object.freeze({ id: 'isotonicas', title: 'Isotónicas', kind: 'category', categoryIds: ['isotonicas'] }),
-  Object.freeze({
-    id: 'fernet-y-aperitivos',
-    title: 'Fernet y aperitivos',
+  ...STORE_CATEGORY_SECTIONS.map((section) => Object.freeze({
+    id: section.id,
+    title: section.title,
     kind: 'category',
-    categoryIds: ['fernet', 'aperitivos'],
-  }),
-  Object.freeze({
-    id: 'vinos-y-espumantes',
-    title: 'Vinos y espumantes',
-    kind: 'category',
-    categoryIds: ['vinos', 'espumantes'],
-  }),
-  Object.freeze({ id: 'destilados', title: 'Destilados', kind: 'category', categoryIds: ['destilados'] }),
-  Object.freeze({ id: 'mixers', title: 'Mixers', kind: 'category', categoryIds: ['mixers'] }),
-  Object.freeze({ id: 'hielo', title: 'Hielo', kind: 'category', categoryIds: ['hielo'] }),
+    categoryIds: section.categoryIds,
+  })),
   Object.freeze({ id: 'combos', title: 'Combos', kind: 'combos' }),
 ]);
+
+/** @deprecated Usar `STORE_HOME_SECTION_DEFINITIONS`. */
+export const BEVERAGE_HOME_SECTION_DEFINITIONS = STORE_HOME_SECTION_DEFINITIONS;
 
 const REQUESTED_PRODUCT_PRIORITY = Object.freeze([
   'coca-cola',
@@ -256,7 +261,7 @@ export function buildBeverageHomeSections(
     ? Math.max(1, Math.floor(Number(limit)))
     : Number.MAX_SAFE_INTEGER;
 
-  return BEVERAGE_HOME_SECTION_DEFINITIONS.map((definition) => {
+  return STORE_HOME_SECTION_DEFINITIONS.map((definition) => {
     // La vidriera curada respeta el orden que eligió el comercio; todo lo demás
     // sigue ordenándose por prioridad comercial.
     const comparador = definition.kind === 'popular' ? compareRecommended : compareBeverageProducts;
@@ -322,3 +327,19 @@ export function getBeverageHomeSection(sectionId, products = [], promotions = []
   return buildBeverageHomeSections(products, promotions, options)
     .find((section) => section.id === sectionId) || null;
 }
+
+/*
+ * VOCABULARIO GENÉRICO.
+ *
+ * Los nombres de arriba dicen «beverage» porque nacieron en una tienda que sólo
+ * vendía bebida, y hoy los usan cuarenta y pico de archivos y el grafo de
+ * precache. Estos alias son el mismo objeto con el nombre que corresponde a una
+ * tienda multi-rubro: lo nuevo se escribe con éstos y lo viejo no se rompe.
+ */
+export const isVisibleStoreProduct = isVisibleBeverageProduct;
+export const isPurchasableStoreProduct = isPurchasableBeverageProduct;
+export const uniqueStoreProducts = uniqueBeverageProducts;
+export const buildStoreHomeSections = buildBeverageHomeSections;
+export const visibleStoreHomeSections = visibleBeverageHomeSections;
+export const featuredStoreProducts = featuredBeverageProducts;
+export const getStoreHomeSection = getBeverageHomeSection;

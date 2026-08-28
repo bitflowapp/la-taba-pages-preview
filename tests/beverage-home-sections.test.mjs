@@ -12,11 +12,26 @@ import {
 
 const section = (sections, id) => sections.find((candidate) => candidate.id === id);
 
-test('la home ordena categorías por foco de bebidas', () => {
-  assert.deepEqual(BEVERAGE_HOME_CATEGORY_ORDER, [
+test('la home abre con la bebida y sigue con el resto de la tienda', () => {
+  /*
+   * LAS CATORCE PRIMERAS SON LAS DE SIEMPRE, EN EL MISMO ORDEN.
+   *
+   * TABA pasó de vender sólo bebida a vender lo que se compra a cualquier hora,
+   * y el riesgo de esa mudanza es que la góndola por la que el comercio es
+   * conocido pierda el lugar que tenía. Por eso el orden de bebida se afirma
+   * ENTERO y COMO PREFIJO: cualquier reordenamiento accidental del rubro
+   * histórico rompe acá antes de llegar a la primera pantalla de un cliente.
+   *
+   * `aguas-saborizadas` es la única incorporación al tramo de bebida: tenía
+   * productos y chip pero no figuraba en la prioridad, así que caía al final por
+   * la puerta de «lo que no está en la lista se suma igual». Ahora va donde
+   * corresponde, al lado de las aguas, y comparte carrusel con ellas.
+   */
+  const BEBIDA = [
     'gaseosas',
     'cervezas',
     'aguas',
+    'aguas-saborizadas',
     // La góndola final trae jugos (Cepita 1,5 L); la sección se dibuja sola
     // el día que haya uno comprable.
     'jugos',
@@ -31,7 +46,23 @@ test('la home ordena categorías por foco de bebidas', () => {
     'destilados',
     'mixers',
     'hielo',
-  ]);
+  ];
+  // Los ocho rubros del resto de la tienda 24/7. Van DETRÁS de la bebida: una
+  // categoría sin productos comprables no se dibuja, así que declararlas no
+  // pone un carrusel vacío en la home.
+  const RESTO = [
+    'snacks',
+    'golosinas',
+    'almacen',
+    'limpieza',
+    'higiene-personal',
+    'hogar',
+    'mascotas',
+    'otros',
+  ];
+  assert.deepEqual(BEVERAGE_HOME_CATEGORY_ORDER.slice(0, BEBIDA.length), BEBIDA);
+  assert.deepEqual(BEVERAGE_HOME_CATEGORY_ORDER, [...BEBIDA, ...RESTO]);
+
   assert.deepEqual(
     BEVERAGE_HOME_SECTION_DEFINITIONS.map((definition) => definition.id),
     [
@@ -48,9 +79,18 @@ test('la home ordena categorías por foco de bebidas', () => {
       'destilados',
       'mixers',
       'hielo',
+      ...RESTO,
       'combos',
     ],
   );
+
+  // Las secciones que fusionan dos categorías lo siguen haciendo. Se deriva de
+  // la taxonomía —dos categorías que declaran la misma sección comparten rail—
+  // así que esto verifica la derivación, no una lista copiada.
+  const porId = new Map(BEVERAGE_HOME_SECTION_DEFINITIONS.map((definition) => [definition.id, definition]));
+  assert.deepEqual([...porId.get('aguas').categoryIds], ['aguas', 'aguas-saborizadas']);
+  assert.deepEqual([...porId.get('fernet-y-aperitivos').categoryIds], ['fernet', 'aperitivos']);
+  assert.deepEqual([...porId.get('vinos-y-espumantes').categoryIds], ['vinos', 'espumantes']);
 });
 
 test('productos comprables requieren precio confirmado, disponibilidad y stock', () => {

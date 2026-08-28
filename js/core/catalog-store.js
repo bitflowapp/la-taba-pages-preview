@@ -2,11 +2,28 @@ import { categories, products as demoProducts } from '../data.js';
 import { isCommerciallyPurchasable, normalizeMoneyValue, normalizeStock } from './pricing.js';
 import { sanitizeText } from './validators.js';
 import { applyRetailNaming, linkProcurementPacks, publishRetailUnits } from './retail-packaging.js';
+import {
+  ALCOHOLIC_CATEGORY_IDS as TAXONOMY_ALCOHOLIC_CATEGORY_IDS,
+  categoryDefaults,
+  storeCategoryOptions,
+} from './store-taxonomy.js';
 
 export const DEFAULT_NEW_PRODUCT_STOCK = 99;
 export const CATALOG_BADGE_OPTIONS = Object.freeze(['', 'Promo', 'Nuevo', 'Más vendido']);
 
-const CATEGORY_IDS = new Set(categories.map((category) => category.id).filter((id) => id !== 'all'));
+/*
+ * QUÉ CATEGORÍAS PUEDE ELEGIR EL PANEL.
+ *
+ * Antes eran sólo las del catálogo cargado —que en una tienda de bebidas eran
+ * catorce de bebida—, así que el Panel no tenía dónde poner una lavandina: la
+ * validación rechazaba cualquier id que el catálogo no trajera. Ahora la unión
+ * de las dos cosas: lo que el catálogo ya usa MÁS la taxonomía completa de la
+ * tienda. La taxonomía no crea productos; abre el destino.
+ */
+const CATEGORY_IDS = new Set([
+  ...categories.map((category) => category.id),
+  ...storeCategoryOptions().map((category) => category.id),
+].filter((id) => id !== 'all'));
 const DEMO_PRODUCT_IDS = new Set(demoProducts.map((product) => product.id));
 const DEFAULT_CATEGORY_ID = 'gaseosas';
 const DEFAULT_MARKET_NOTE = 'El local confirma disponibilidad antes de preparar tu pedido.';
@@ -21,74 +38,48 @@ const CATEGORY_ID_ALIASES = Object.freeze({
  * QUÉ CATEGORÍAS LLEVAN ALCOHOL.
  *
  * Esta lista es la ÚNICA fuente de verdad cuando la fila del catálogo no trae
- * bandera `alcoholic`, y estaba desfasada del vocabulario real: decía
- * `vinos-y-espumantes`, `gins-y-vodkas` y `whisky-y-destilados`, tres ids que NO
- * EXISTEN en la autoridad del catálogo. De las categorías con alcohol que el
- * comercio usa de verdad —cervezas, fernet, aperitivos, vinos, espumantes,
- * destilados— la lista sólo acertaba `cervezas`.
+ * bandera `alcoholic`. Ya no se escribe acá: se deriva de
+ * `core/store-taxonomy.js`, donde cada categoría declara si implica alcohol
+ * junto a su nombre, su rubro y su sección.
  *
- * Consecuencia: un fernet, un vino o un aperitivo sin bandera explícita se
- * inferían SIN alcohol, y con eso perdían el +18 y la edad mínima. La compuerta
- * existía y no se aplicaba a la mayor parte de la góndola con alcohol.
+ * El motivo es el defecto que arreglaba la versión anterior de este bloque. La
+ * lista estaba escrita a mano y decía `vinos-y-espumantes`, `gins-y-vodkas` y
+ * `whisky-y-destilados`, tres ids que NO EXISTEN en la autoridad del catálogo.
+ * De las categorías con alcohol que el comercio usa de verdad —cervezas,
+ * fernet, aperitivos, vinos, espumantes, destilados— sólo acertaba `cervezas`,
+ * así que un fernet sin bandera explícita se infería SIN alcohol y perdía el
+ * +18. Se corrigió la lista, pero quedó siendo una lista: la próxima categoría
+ * podía volver a desfasarse igual.
  *
- * Los cuatro ids viejos se conservan a propósito: hay datos guardados y
- * catálogos importados que todavía los usan, y clasificarlos de más nunca
- * quita una restricción, sólo la agrega.
+ * Con la taxonomía como origen, una categoría nueva NO PUEDE existir sin
+ * declarar su clasificación, porque el mismo objeto que la declara es el que
+ * dibuja su chip. El vocabulario anterior se conserva en la taxonomía por la
+ * misma razón de siempre: hay datos guardados que todavía lo usan, y clasificar
+ * de más nunca quita una restricción, sólo la agrega.
  *
- * `tests/alcohol-category-inference.test.mjs` cruza esta lista contra
+ * `tests/alcohol-category-inference.test.mjs` cruza la clasificación contra
  * `authorityCategories`: si mañana aparece una categoría nueva y nadie la
  * clasifica, el test falla en vez de dejarla pasar como sin alcohol.
  */
-const ALCOHOLIC_CATEGORY_IDS = new Set([
-  // Vocabulario vigente de la autoridad del catálogo.
-  'cervezas',
-  'fernet',
-  'aperitivos',
-  'vinos',
-  'espumantes',
-  'destilados',
-  // Vocabulario anterior, conservado para datos ya guardados.
-  'vinos-y-espumantes',
-  'gins-y-vodkas',
-  'whisky-y-destilados',
-]);
+const ALCOHOLIC_CATEGORY_IDS = new Set(TAXONOMY_ALCOHOLIC_CATEGORY_IDS);
 
-const TONE_BY_CATEGORY = Object.freeze({
-  gaseosas: 'drink',
-  mixers: 'drink',
-  energizantes: 'drink',
-  aguas: 'drink',
-  jugos: 'drink',
-  energeticas: 'drink',
-  isotonicas: 'drink',
-  cervezas: 'alcoholic',
-  'vinos-y-espumantes': 'alcoholic',
-  'gins-y-vodkas': 'alcoholic',
-  'whisky-y-destilados': 'alcoholic',
-  'picadas-y-deli': 'food',
-  'hielo-y-extras': 'ice',
-  promos: 'promo',
-});
-
-const UNIT_BY_CATEGORY = Object.freeze({
-  gaseosas: { unit: 'unidad', unitLabel: 'Unidad' },
-  mixers: { unit: 'unidad', unitLabel: 'Unidad' },
-  energizantes: { unit: 'unidad', unitLabel: 'Unidad' },
-  aguas: { unit: 'unidad', unitLabel: 'Unidad' },
-  jugos: { unit: 'unidad', unitLabel: 'Unidad' },
-  energeticas: { unit: 'unidad', unitLabel: 'Unidad' },
-  isotonicas: { unit: 'unidad', unitLabel: 'Unidad' },
-  cervezas: { unit: 'unidad', unitLabel: 'Unidad' },
-  'vinos-y-espumantes': { unit: 'unidad', unitLabel: 'Unidad' },
-  'gins-y-vodkas': { unit: 'unidad', unitLabel: 'Unidad' },
-  'whisky-y-destilados': { unit: 'unidad', unitLabel: 'Unidad' },
-  'picadas-y-deli': { unit: 'unidad', unitLabel: 'Unidad' },
-  'hielo-y-extras': { unit: 'unidad', unitLabel: 'Unidad' },
-  promos: { unit: 'promo', unitLabel: 'Promo' },
-});
-
+/**
+ * Las categorías que ofrece el formulario de alta del Panel: primero las que el
+ * catálogo cargado ya usa —con el nombre que el comercio les puso— y después el
+ * resto de la taxonomía de la tienda, para que dar de alta un rubro nuevo no
+ * exija desplegar código.
+ */
 export function getEditableCategories() {
-  return categories.filter((category) => category.id !== 'all');
+  const seen = new Map();
+  for (const category of categories) {
+    if (category.id === 'all' || seen.has(category.id)) continue;
+    seen.set(category.id, { id: category.id, name: category.name });
+  }
+  for (const category of storeCategoryOptions()) {
+    if (seen.has(category.id)) continue;
+    seen.set(category.id, category);
+  }
+  return [...seen.values()];
 }
 
 /**
@@ -439,12 +430,19 @@ function updateProductById(products, productId, updater, successMessage) {
   return { ok: true, product: changedProduct, products: nextProducts, message: successMessage };
 }
 
+/*
+ * Tono y unidad por defecto de una categoría.
+ *
+ * Los dos mapas que vivían acá —uno con el tono, otro con la unidad, ambos con
+ * una entrada por categoría de bebida— se fueron a `core/store-taxonomy.js`,
+ * donde cada categoría los declara junto a su nombre y su rubro. Una categoría
+ * que la taxonomía no conoce ya NO cae en los valores de `gaseosas`: cae en el
+ * neutro de la tienda. Heredar el tono de una gaseosa era inofensivo mientras
+ * todo era bebida; con limpieza e higiene en góndola sería etiquetar un
+ * detergente como bebida.
+ */
 function defaultsForCategory(categoryId) {
-  const unitDefaults = UNIT_BY_CATEGORY[categoryId] || UNIT_BY_CATEGORY[DEFAULT_CATEGORY_ID];
-  return {
-    tone: TONE_BY_CATEGORY[categoryId] || TONE_BY_CATEGORY[DEFAULT_CATEGORY_ID],
-    ...unitDefaults,
-  };
+  return categoryDefaults(categoryId);
 }
 
 function normalizeCategoryId(value) {
@@ -452,6 +450,9 @@ function normalizeCategoryId(value) {
   const categoryId = canonicalCategoryId(submittedCategoryId);
   // La edición de la demo sigue restringida por validateCatalogProductInput(),
   // pero el catálogo productivo puede traer categorías verificadas del comercio.
+  // Un id con forma válida se acepta aunque la taxonomía todavía no lo declare:
+  // el comercio puede abrir un rubro antes de que este repositorio lo nombre, y
+  // rechazarlo escondería el producto en vez de mostrarlo donde el comercio dijo.
   return /^[a-z0-9][a-z0-9-]{0,39}$/.test(categoryId) ? categoryId : DEFAULT_CATEGORY_ID;
 }
 

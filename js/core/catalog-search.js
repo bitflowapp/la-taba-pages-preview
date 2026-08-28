@@ -21,6 +21,7 @@
  * Módulo puro: recibe productos y texto, devuelve booleanos. Sin DOM, sin estado.
  */
 import { formatCapacity, packagingLabel } from './product-presentation.js';
+import { CATEGORY_SEARCH_SYNONYMS } from './store-taxonomy.js';
 
 /**
  * El texto comparable. Saca acentos, baja a minúsculas, y unifica el litraje:
@@ -40,30 +41,27 @@ export function normalizeSearchText(value) {
 }
 
 /*
- * Cómo pide la gente cada familia de bebida.
+ * Cómo pide la gente cada familia de producto.
  *
  * No son etiquetas del catálogo: son las palabras que alguien escribe con el
  * pulgar mientras decide. La categoría dice «Energizantes» y el cliente escribe
- * «energética»; dice «Isotónicas» y el cliente escribe «bebida deportiva».
+ * «energética»; dice «Limpieza» y escribe «artículos de limpieza».
  *
  * Se agregan al ÍNDICE del producto, no a la consulta: así la regla de que
  * todos los términos tienen que coincidir sigue valiendo igual, y una palabra
  * de más nunca ensancha una búsqueda de dos palabras.
  *
- * Deliberadamente NO están «cola» ni «tónica»: harían que media góndola
- * respondiera a una búsqueda de marca. Un sinónimo que trae de más es peor que
- * uno que falta, porque el que falta se nota y el que sobra no.
+ * La tabla vive en `core/store-taxonomy.js`, junto al nombre y al rubro de cada
+ * categoría, para que sumar «Limpieza» no obligue a acordarse de este archivo.
+ *
+ * Deliberadamente NO están «cola» ni «tónica», ni los nombres de producto
+ * —«lavandina», «shampoo», «papel higiénico»—. Los primeros harían que media
+ * góndola respondiera a una búsqueda de marca; los segundos son SUBCATEGORÍA
+ * del SKU y ya entran al índice por ese campo, con la ventaja de que devuelven
+ * el producto pedido y no el rubro entero. Un sinónimo que trae de más es peor
+ * que uno que falta, porque el que falta se nota y el que sobra no.
  */
-const SINONIMOS_POR_CATEGORIA = Object.freeze({
-  gaseosas: ['gaseosa', 'gaseosas', 'refresco'],
-  aguas: ['agua', 'aguas', 'agua mineral', 'mineral'],
-  'aguas-saborizadas': ['agua saborizada', 'saborizada', 'saborizadas'],
-  energizantes: ['energizante', 'energizantes', 'energetica', 'energeticas', 'energetico', 'energeticos', 'energia'],
-  isotonicas: ['isotonica', 'isotonicas', 'bebida deportiva', 'deportiva', 'hidratante'],
-  mixers: ['mixer', 'mixers', 'trago', 'tragos'],
-  jugos: ['jugo', 'jugos'],
-  cervezas: ['cerveza', 'cervezas', 'birra'],
-});
+const SINONIMOS_POR_CATEGORIA = CATEGORY_SEARCH_SYNONYMS;
 
 /** Las palabras con las que se pide una versión sin azúcar. */
 const SINONIMOS_SIN_AZUCAR = ['zero', 'sin azucar', 'light', 'dietetica', 'diet'];
@@ -119,6 +117,30 @@ export function searchHaystack(product = {}) {
 /** Un término de capacidad: «500ml», «2250ml». */
 const TERMINO_DE_CAPACIDAD = /^\d+ml$/;
 
+/*
+ * EL CÓDIGO DEL PRODUCTO, COMO BÚSQUEDA EXACTA Y NADA MÁS.
+ *
+ * Con un catálogo de decenas de bebidas nadie escribe un SKU. Con cientos de
+ * artículos sí: quien atiende el mostrador tiene el código en la planilla, en la
+ * etiqueta de góndola o en el código de barras, y lo pega en el buscador.
+ *
+ * Es una comparación EXACTA contra `sku`, `externalId` y `gtin`, no un término
+ * más del índice. Meter el SKU en el haystack parece más generoso y lo que hace
+ * es ensuciar: `coca-cola-original-pet-500ml-pack-12` aporta las palabras
+ * «pet», «pack» y «12», así que buscar «12» empezaría a devolver productos por
+ * un pedazo de su identificador. Un código se sabe entero o no se sabe.
+ */
+function normalizeCode(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+export function productMatchesCode(product, query) {
+  const code = normalizeCode(query);
+  if (!code) return false;
+  return [product?.sku, product?.externalId, product?.external_id, product?.gtin, product?.id]
+    .some((candidate) => candidate && normalizeCode(candidate) === code);
+}
+
 /**
  * ¿Este producto responde a lo que se escribió?
  *
@@ -130,10 +152,14 @@ const TERMINO_DE_CAPACIDAD = /^\d+ml$/;
  * Los términos de CAPACIDAD son más estrictos todavía: coinciden como palabra
  * entera. «500ml» adentro de «1500ml» es una coincidencia de dígitos, no de
  * tamaño, y era la que le vendía el familiar a quien pedía el chico.
+ *
+ * Un código exacto es la única puerta de atrás, y sólo abre con el código
+ * completo.
  */
 export function productMatchesQuery(product, query) {
   const consulta = normalizeSearchText(query);
   if (!consulta) return true;
+  if (productMatchesCode(product, query)) return true;
   const conBordes = ` ${searchHaystack(product)} `;
   return consulta.split(' ').filter(Boolean).every((termino) => (
     TERMINO_DE_CAPACIDAD.test(termino)

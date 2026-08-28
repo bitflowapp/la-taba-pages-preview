@@ -26,6 +26,7 @@ import {
 import {
   normalizeOperationsConfig, validateWeeklyHours, validateZoneDraft,
 } from './business-operations-config.js';
+import { buildAlwaysOpenGrid } from '../core/service-hours.js';
 
 export const BUSINESS_OPERATION_VIEWS = Object.freeze([
   'operation-center', 'day-open', 'orders', 'operations-config', 'payments', 'payments-setup', 'scanner', 'product-create',
@@ -486,6 +487,7 @@ export async function handleBusinessOperationsAction(target) {
   if (addSlot) return addOperationsHoursSlot(addSlot);
   const clearDay = target.closest('[data-operations-hours-clear]');
   if (clearDay) return clearOperationsHoursDay(clearDay);
+  if (target.closest('[data-operations-hours-24x7]')) return setOperationsHoursAlwaysOpen();
   if (target.closest('[data-operations-hours-save]')) return saveOperationsHours();
   const toggleZone = target.closest('[data-operations-zone-toggle]');
   if (toggleZone) return toggleOperationsZone(toggleZone);
@@ -1750,6 +1752,33 @@ function addOperationsHoursSlot(button) {
   operationsConfigDraft = { ...operationsConfigDraft, slots, hoursErrors: validation.errors };
   context.onChange();
   return result(validation.ok, validation.ok ? 'Tramo agregado. Falta guardar.' : validation.errors[0]);
+}
+
+/*
+ * ABRIR LAS 24 HORAS, DESDE EL PANEL.
+ *
+ * El día completo se escribe `00:00 – 24:00` y un `<input type="time">` no puede
+ * escribir `24:00`: el control del navegador tope en 23:59. Sin este botón, la
+ * única forma de dejar el comercio abierto toda la noche con la exigencia de
+ * horario encendida sería editar filas a mano en la base.
+ *
+ * Carga la grilla en el borrador y NO guarda: el operador ve los siete días
+ * completos en la tabla y decide. Es el mismo contrato que «Agregar tramo».
+ *
+ * Esto abre el canal de PEDIDOS. No habilita alcohol —ese canal tiene su propia
+ * grilla y su propia compuerta— y no dice que haya reparto disponible.
+ */
+function setOperationsHoursAlwaysOpen() {
+  const slots = buildAlwaysOpenGrid();
+  const validation = validateWeeklyHours(slots);
+  operationsConfigDraft = { ...operationsConfigDraft, slots, hoursErrors: validation.errors };
+  context.onChange();
+  return result(
+    validation.ok,
+    validation.ok
+      ? 'Los siete dias quedan abiertos las 24 horas. Falta guardar.'
+      : validation.errors[0],
+  );
 }
 
 function clearOperationsHoursDay(button) {

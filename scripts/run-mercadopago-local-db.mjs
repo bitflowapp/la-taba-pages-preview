@@ -154,6 +154,16 @@ try {
   runPgTap(path.join('supabase', 'tests', 'durable_offline_packing_test.sql'));
   runPgTap(path.join('supabase', 'tests', 'public_tracking_gps_quality_test.sql'));
   runPgTap(path.join('supabase', 'tests', 'business_timezone_windows_test.sql'));
+  // El día completo se escribe 00:00-24:00 y el canal de alcohol NO se abre por
+  // eso. Corre acá porque es el único lugar del repositorio donde las funciones
+  // de horario se ejercitan contra un Postgres de verdad, con las 118
+  // migraciones aplicadas y el huso del comercio decidiendo.
+  runPgTap(path.join('supabase', 'tests', 'horario_24x7_test.sql'));
+  // La puerta que CREA productos. Es SECURITY DEFINER y hace INSERT: leer su
+  // texto no alcanza, hay que ejercitarla con identidades reales —anon, un
+  // autenticado sin membresia, el owner de otro comercio— y comprobar la forma
+  // exacta de la fila que deja.
+  runPgTap(path.join('supabase', 'tests', 'alta_propuesta_comercial_test.sql'));
   psql(`
     create schema restore_drill;
     create table restore_drill.evidence(id integer primary key, marker text not null);

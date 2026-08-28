@@ -347,7 +347,7 @@ test('el buscador ocupa el ancho útil, es táctil y no dispara el zoom de iOS',
   expect(await input.evaluate((node) => parseFloat(getComputedStyle(node).fontSize))).toBeGreaterThanOrEqual(16);
   // Un solo texto para las tres cajas de búsqueda, y corto: a 320 px los tres
   // anteriores se cortaban dentro de su propia caja.
-  await expect(input).toHaveAttribute('placeholder', 'Buscar bebidas o marcas');
+  await expect(input).toHaveAttribute('placeholder', 'Buscar productos o marcas');
 
   await input.fill('coca');
   await expect(page.locator('[data-view="catalog"]')).toBeVisible();

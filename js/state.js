@@ -775,7 +775,7 @@ function buildBaseBusinessConfig() {
   return mergeBusinessConfig(base, {
     businessName: 'La Taba 2',
     name: 'La Taba 2',
-    subtitle: 'Tienda de bebidas',
+    subtitle: 'Tienda 24/7',
     address: 'Dirección no publicada',
     deliveryZone: 'Cobertura no publicada',
     openingHoursLabel: 'Horarios no publicados',

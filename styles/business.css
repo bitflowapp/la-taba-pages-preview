@@ -2934,3 +2934,46 @@ button.operation-metric {
     padding-top: 16px;
   }
 }
+
+/* Mesa de trabajo del catálogo del Panel.
+   La operación diaria es buscar un producto, cambiarle precio o stock y
+   guardar. Con cientos de artículos, esa fila de tres controles es la
+   diferencia entre trabajar y desplegar la lista entera para usar el Ctrl+F
+   del navegador. En teléfono se apila; en escritorio el buscador manda y los
+   dos filtros lo acompañan. */
+.catalog-admin-workbench {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin: 12px 0 14px;
+}
+
+@media (min-width: 720px) {
+  .catalog-admin-workbench {
+    grid-template-columns: minmax(200px, 2fr) minmax(150px, 1fr) minmax(150px, 1fr) auto;
+    align-items: center;
+  }
+}
+
+.catalog-admin-workbench input[type="search"],
+.catalog-admin-workbench select {
+  width: 100%;
+  min-height: 44px;
+}
+
+.catalog-admin-count {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--panel-muted, #6f6f6f);
+  white-space: nowrap;
+}
+
+/* El código del producto, en la fila. Es lo que une la góndola con la planilla
+   y con la etiqueta del estante, así que se lee monoespaciado y se distingue
+   de la categoría, que es una palabra y no un identificador. */
+.catalog-admin-sku {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.76rem;
+  letter-spacing: -0.01em;
+  opacity: 0.85;
+}

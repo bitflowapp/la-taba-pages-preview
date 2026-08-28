@@ -10,14 +10,14 @@ import {
 
 export const BRAND = Object.freeze({
   productName: 'La Taba',
-  tagline: 'Bebidas, pedidos y retiro en una experiencia clara.',
-  shortTagline: 'Tienda de bebidas',
+  tagline: 'Pedí lo que necesitás, cuando lo necesitás.',
+  shortTagline: 'Tienda 24/7',
   // Nombre del COMERCIO (distinto del nombre de producto). Es una semilla
   // editable desde Panel Negocio → Configuración: la superficie nunca escribe
   // el nombre a mano, siempre lee `businessConfig.businessName`.
   demoBusinessName: 'La Taba',
-  demoBusinessSubtitle: 'Tienda de bebidas',
-  demoBusinessClaim: 'Tus bebidas, ahora a un toque.',
+  demoBusinessSubtitle: 'Tienda 24/7',
+  demoBusinessClaim: 'Lo que necesitás, a un toque.',
   demoBusinessClaimSecondary: 'Pedí. Seguí. Disfrutá.',
   contactWhatsappMessage: 'Hola, vi La Taba y quiero más información.',
 });

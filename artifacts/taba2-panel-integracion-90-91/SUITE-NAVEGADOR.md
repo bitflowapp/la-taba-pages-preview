@@ -1,5 +1,13 @@
 # La suite completa de navegador, en este entorno
 
+## El resultado, en una línea
+
+**498 pasan · 44 fallan · 2,8 h.** Las 44 fallan IGUAL en `main`: mismas
+pruebas, mismas líneas, cero regresiones de esta integración.
+
+Y las tres suites que este trabajo sí toca —`panel-bandeja-movil`,
+`panel-escalabilidad`, `panel-responsive`— pasan **34 de 34**.
+
 ## Lo que se corrió
 
 `npx playwright test` sin filtro de proyecto: **541 pruebas en 65 archivos**,
@@ -57,6 +65,42 @@ corrida le robe el host a la otra.
 | `delivery-proof` | 1 falla · 8 pasan* | 1 falla | `9:1` |
 | `demo-realtime-profile` | 1 falla | 1 falla | `18:1` |
 | `demo-realtime-reliability` | 5 fallan · 3 pasan | 5 fallan | `22:1` `92:1` `137:1` `167:1` `211:1` |
+| los otros 16 archivos | 28 fallan · 73 pasan | 28 fallan | conjunto **idéntico**, comparado con `comm` |
+
+### El conjunto completo, comparado elemento por elemento
+
+```
+integración (resto): 28   main (resto): 28
+sólo en la integración:  (vacío)
+sólo en main:            (vacío)
+en ambas:                28
+```
+
+Sumando los seis archivos de arriba: **44 de 44**. Ninguna prueba falla en esta
+rama que no falle también en `main`.
+
+### El que había que mirar con lupa: `panel-order-recovery`
+
+Es la única suite del Panel entre las que fallan, así que merece decirse
+aparte. Falla lo mismo en las dos ramas:
+
+| | `main` | integración |
+| --- | --- | --- |
+| `125:1` (4 anchos) | ✘ 45,0 s | ✘ 45,0 s |
+| `154:1` (1 ancho) | ✓ 25,7 s | ✓ |
+| `177:1` (4 anchos) | ✘ 45,0 s | ✘ 45,0 s |
+| `204:1` (1 ancho) | ✓ 25,6 s | ✓ |
+
+El corte es limpio y explica solo: las dos que fallan recorren **cuatro anchos**
+(320, 360, 390, 432) con una carga de página completa en cada uno, contra un
+tope de 45 s. En este contenedor una carga cuesta unos 12 s, así que cuatro no
+entran. Las dos que usan un ancho pasan con 25 s de sobra.
+
+Se verificó además que el atributo `data-panel-region="operations"` que esta
+integración agrega a `business-operations-center.js` no puede ser la causa:
+ninguna prueba compara el marcado de esa sección —todas la buscan por
+`[data-business-ops-center]`, y un atributo de más no cambia ese selector— y las
+2.377 pruebas unitarias, que cubren ese archivo, pasan.
 
 \* La corrida de `delivery-proof` incluyó además `delivery-location-confirmation`
 entero, que **pasó**. Vale la pena decirlo: no es que «todo lo que toca el mapa

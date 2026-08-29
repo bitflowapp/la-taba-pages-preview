@@ -496,7 +496,18 @@ porque `styles/business.css` cambió. No hay una línea de Mercado Pago tocada.
 | Pruebas nuevas de #90 | verdes |
 | Pruebas nuevas de #91 | verdes |
 | Playwright focal del Panel (chromium) | **34 / 34** |
-| Suite completa de navegador | *ver el PR* |
+| Suite completa de navegador | **498 pasan · 44 fallan**, y las 44 fallan igual en `main` |
+
+Sobre esas 44: se corrieron los mismos archivos contra `main` (`88f40a2`) en un
+worktree aparte, y el conjunto de fallas es **idéntico elemento por elemento**
+—`comm` no devuelve una sola prueba que falle acá y no allá—. Salen todas de que
+Chromium no puede completar el handshake TLS con `unpkg.com` en este contenedor,
+de donde `index.html` carga MapLibre. El detalle, con lo que se intentó antes de
+darlo por ambiental, está en
+`artifacts/taba2-panel-integracion-90-91/SUITE-NAVEGADOR.md`.
+
+Las tres suites que este trabajo toca —bandeja móvil, escalabilidad y
+responsive— pasan **34 de 34**.
 
 Identidad de publicación: `la-taba-runtime-v93-la-bandeja-por-secciones-que-no-se-rearma`,
 178 archivos precacheados, CSS a `?v=58` porque `styles/business.css` cambió.

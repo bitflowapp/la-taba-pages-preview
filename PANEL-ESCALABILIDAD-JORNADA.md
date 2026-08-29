@@ -603,7 +603,15 @@ que el de la base; la cobertura permanente de ese ancho queda en #90.
    está caído durante toda la medición y el sondeo de respaldo es el que manda.
    Es el peor caso a propósito —un local con mala señal— y no el típico. Es la
    misma limitación que anotó #90 para su banco.
-9. **Los 24 pares de contraste bajo 4,5:1** que anotó #90 en `login` y
+9. **25 de las 31 fallas de la suite completa no se bisecaron una por una** (ver
+   §13). Las 6 que sí se investigaron resultaron preexistentes —fallan igual en
+   `cf793a6`—, pero el resto queda pendiente de una corrida en una máquina con
+   el navegador que el repositorio fija.
+10. **Correr la suite de navegador ensucia el árbol de trabajo.** Dos pruebas
+   —`gondola-neuquen` y `panel-access-registration`— reescriben capturas PNG
+   versionadas dentro de `artifacts/`. No es de esta rama y no se tocó, pero es
+   una forma fácil de meter binarios sin querer en un commit.
+11. **Los 24 pares de contraste bajo 4,5:1** que anotó #90 en `login` y
    `team-access` siguen ahí. No se tocaron esas superficies.
 
 ---
@@ -674,6 +682,34 @@ más podían romperse con este cambio:
 
 Y el Panel sigue sin desbordar a 360/390/412/430 px, con el texto al 150 % y al
 200 %.
+
+### La corrida completa de chromium, y qué se pudo demostrar de ella
+
+Se intentó además la suite entera. Alcanzó a correr **314 de 400** antes de que
+la cortara el límite de tiempo de esta máquina, con **31 fallas**. Conviene
+decir exactamente qué se verificó de esas 31 y qué no:
+
+| | |
+| --- | --- |
+| Todas fallaron a los **45,2 s** exactos | es el `timeout` del proyecto, no una aserción rota |
+| Las 6 más cercanas a este cambio, reejecutadas solas | vuelven a fallar: **no eran ruido de una corrida saturada** |
+| **Esas mismas 6, contra `cf793a6`** | fallan **igual**: mismas 6, mismos 14 pases, misma línea (`gotoDemoReset`, `helpers.mjs:93`) |
+
+O sea: **preexistentes, no de esta rama.** Todas comparten una forma —sembrar
+`localStorage` y después navegar con `?reset=1&demo=1`— y el navegador de esta
+máquina no es el que el repositorio fija (1194 contra 1223), que es la
+explicación más probable.
+
+Las otras 25 **no se bisecaron una por una**. Son de superficies que este
+cambio no toca —tienda, perfil, promociones, mapas— y `renderProductionOperations()`
+ni siquiera se ejecuta fuera del modo producción, así que el render nuevo no
+corre en un `?demo=1`. Es un argumento, no una medición: **queda anotado como
+pendiente de confirmar en una máquina con el navegador que el repositorio
+fija.**
+
+Lo que sí está medido es lo que importa para este cambio: las 31 pruebas que
+ejercen el workspace del Panel productivo pasan, y las dos nuevas fallan contra
+la base.
 
 Las dos pruebas que fallaron en la primera corrida completa —`github-pages` y
 `preflight-staging-package`— eran el literal del `CACHE_NAME` en dos archivos

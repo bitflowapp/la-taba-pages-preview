@@ -39,7 +39,32 @@ export function createCommandOutbox({
       const command = createBusinessCommand(input, { now });
       const existing = await storage.findByIdempotencyKey(command.idempotencyKey);
       if (existing) return existing;
-      await storage.put(command);
+      try {
+        await storage.put(command);
+      } catch (error) {
+        /*
+         * OTRA PESTAÑA GANÓ LA CARRERA, Y ESO NO ES UN ERROR.
+         *
+         * La cadena de arriba serializa el encolado DE ESTA pestaña. El
+         * almacenamiento, en cambio, es de todo el origen: dos pestañas
+         * abiertas en el mostrador tienen cada una su propia cadena y las dos
+         * pueden pasar el `findByIdempotencyKey` antes de que cualquiera
+         * escriba. La segunda choca contra el índice único de IndexedDB.
+         *
+         * Antes, ese choque viajaba como excepción hasta la acción del
+         * operador: la pantalla decía que falló algo que en realidad ya estaba
+         * encolado y en camino. La clave de idempotencia es determinista
+         * -tipo, pedido, revisión y estado destino-, así que las dos pestañas
+         * estaban pidiendo EXACTAMENTE lo mismo.
+         *
+         * Se relee y se devuelve el comando ganador: es el mismo replay que
+         * devuelve el camino de arriba. Si no hay ganador, el error era otro y
+         * viaja.
+         */
+        const ganador = await storage.findByIdempotencyKey(command.idempotencyKey);
+        if (!ganador) throw error;
+        return ganador;
+      }
       return command;
     });
     enqueueChain = run.catch(() => {});
@@ -168,7 +193,20 @@ export function createCommandOutbox({
 export function createMemoryCommandStorage(seed = []) {
   const records = new Map(seed.map((item) => [item.commandId, structuredCloneSafe(item)]));
   return Object.freeze({
-    async put(command) { records.set(command.commandId, structuredCloneSafe(command)); return command; },
+    // El índice único de `idempotencyKey` no es un detalle de IndexedDB: es la
+    // garantía de que la misma acción no se encola dos veces. Este doble lo
+    // respeta para que una prueba con almacenamiento en memoria signifique lo
+    // mismo que el camino real; sin esto, la carrera entre dos pestañas pasaba
+    // desapercibida acá y rompía en producción.
+    async put(command) {
+      for (const existente of records.values()) {
+        if (existente.idempotencyKey !== command.idempotencyKey) continue;
+        if (existente.commandId === command.commandId) continue;
+        throw Object.assign(new Error('ConstraintError: idempotencyKey duplicada.'), { name: 'ConstraintError' });
+      }
+      records.set(command.commandId, structuredCloneSafe(command));
+      return command;
+    },
     async get(commandId) { return structuredCloneSafe(records.get(commandId) || null); },
     async list() { return [...records.values()].map(structuredCloneSafe); },
     async findByIdempotencyKey(key) { return structuredCloneSafe([...records.values()].find((command) => command.idempotencyKey === key) || null); },

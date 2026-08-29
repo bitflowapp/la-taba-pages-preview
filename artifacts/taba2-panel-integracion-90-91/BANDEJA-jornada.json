@@ -1,0 +1,245 @@
+{
+  "schemaVersion": 1,
+  "label": "jornada",
+  "generatedAtUtc": "2026-08-28T21:37:17.970Z",
+  "businessId": "11111111-1111-4111-8111-111111111111",
+  "viewport": "390x844",
+  "pollMs": 1200,
+  "ciclosDeMemoria": 10,
+  "escenarios": null,
+  "medidas": [
+    {
+      "pedidos": 500,
+      "msHastaLaBandeja": 677,
+      "tarjetas": 500,
+      "nodos": 25425,
+      "bytes": 1434149,
+      "unPedido": {
+        "elementosQuitados": 76,
+        "elementosAgregados": 87,
+        "lotesDeMutacion": 6,
+        "reemplazosDelTablero": 0,
+        "tarjetasTocadas": 2,
+        "msHastaElCambio": 872
+      },
+      "continuidad": {
+        "medible": true,
+        "scrollConservado": true,
+        "scrollAntes": 516,
+        "scrollDespues": 516,
+        "textoConservado": true,
+        "detalleAbierto": true,
+        "focoConservado": true,
+        "cursorConservado": true
+      },
+      "memoria": {
+        "vueltas": 10,
+        "heapAntes": 13691256,
+        "heapDespues": 16245014,
+        "heapDeltaBytes": 2553758,
+        "heapPorVuelta": 255376,
+        "nodosAntes": 26360,
+        "nodosDespues": 26365,
+        "nodosDelta": 5
+      },
+      "jornada": {
+        "ciclos": 320,
+        "muestras": [
+          {
+            "ciclo": 0,
+            "contadoresDelNavegador": {
+              "documents": 3,
+              "nodes": 75170,
+              "jsEventListeners": 136
+            },
+            "heapBytes": 9480377,
+            "elementosDelDocumento": 26365,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 500,
+            "tarjetasEnAtencion": 84,
+            "avisosDeAtencion": 84,
+            "secciones": 5,
+            "vivos": {
+              "intervalos": 4,
+              "temporizadores": 36,
+              "observadoresDom": 3,
+              "observadoresDeTamano": 1,
+              "observadoresDeRendimiento": 0,
+              "canales": 2,
+              "escuchas": 184
+            }
+          },
+          {
+            "ciclo": 53,
+            "contadoresDelNavegador": {
+              "documents": 3,
+              "nodes": 76165,
+              "jsEventListeners": 136
+            },
+            "heapBytes": 9610430,
+            "elementosDelDocumento": 26697,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 500,
+            "tarjetasEnAtencion": 167,
+            "avisosDeAtencion": 167,
+            "secciones": 5,
+            "vivos": {
+              "intervalos": 4,
+              "temporizadores": 44,
+              "observadoresDom": 2,
+              "observadoresDeTamano": 1,
+              "observadoresDeRendimiento": 0,
+              "canales": 2,
+              "escuchas": 361
+            }
+          },
+          {
+            "ciclo": 106,
+            "contadoresDelNavegador": {
+              "documents": 3,
+              "nodes": 76837,
+              "jsEventListeners": 138
+            },
+            "heapBytes": 16718491,
+            "elementosDelDocumento": 26697,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 500,
+            "tarjetasEnAtencion": 167,
+            "avisosDeAtencion": 167,
+            "secciones": 5,
+            "vivos": {
+              "intervalos": 4,
+              "temporizadores": 46,
+              "observadoresDom": 2,
+              "observadoresDeTamano": 1,
+              "observadoresDeRendimiento": 0,
+              "canales": 2,
+              "escuchas": 533
+            }
+          },
+          {
+            "ciclo": 159,
+            "contadoresDelNavegador": {
+              "documents": 3,
+              "nodes": 76849,
+              "jsEventListeners": 138
+            },
+            "heapBytes": 17280611,
+            "elementosDelDocumento": 26701,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 500,
+            "tarjetasEnAtencion": 168,
+            "avisosDeAtencion": 168,
+            "secciones": 5,
+            "vivos": {
+              "intervalos": 4,
+              "temporizadores": 48,
+              "observadoresDom": 2,
+              "observadoresDeTamano": 1,
+              "observadoresDeRendimiento": 0,
+              "canales": 2,
+              "escuchas": 708
+            }
+          },
+          {
+            "ciclo": 212,
+            "contadoresDelNavegador": {
+              "documents": 3,
+              "nodes": 76165,
+              "jsEventListeners": 136
+            },
+            "heapBytes": 10435334,
+            "elementosDelDocumento": 26697,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 500,
+            "tarjetasEnAtencion": 167,
+            "avisosDeAtencion": 167,
+            "secciones": 5,
+            "vivos": {
+              "intervalos": 4,
+              "temporizadores": 50,
+              "observadoresDom": 2,
+              "observadoresDeTamano": 1,
+              "observadoresDeRendimiento": 0,
+              "canales": 2,
+              "escuchas": 882
+            }
+          },
+          {
+            "ciclo": 265,
+            "contadoresDelNavegador": {
+              "documents": 3,
+              "nodes": 77746,
+              "jsEventListeners": 138
+            },
+            "heapBytes": 17490882,
+            "elementosDelDocumento": 27027,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 500,
+            "tarjetasEnAtencion": 251,
+            "avisosDeAtencion": 251,
+            "secciones": 4,
+            "vivos": {
+              "intervalos": 4,
+              "temporizadores": 52,
+              "observadoresDom": 2,
+              "observadoresDeTamano": 1,
+              "observadoresDeRendimiento": 0,
+              "canales": 2,
+              "escuchas": 1054
+            }
+          },
+          {
+            "ciclo": 318,
+            "contadoresDelNavegador": {
+              "documents": 3,
+              "nodes": 77844,
+              "jsEventListeners": 136
+            },
+            "heapBytes": 10535738,
+            "elementosDelDocumento": 27031,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 500,
+            "tarjetasEnAtencion": 252,
+            "avisosDeAtencion": 252,
+            "secciones": 4,
+            "vivos": {
+              "intervalos": 4,
+              "temporizadores": 54,
+              "observadoresDom": 2,
+              "observadoresDeTamano": 1,
+              "observadoresDeRendimiento": 0,
+              "canales": 2,
+              "escuchas": 1229
+            }
+          }
+        ],
+        "heapDeltaBytes": 1055361,
+        "heapPorCiclo": 3298,
+        "heapSegundaMitad": {
+          "desdeCiclo": 159,
+          "hastaCiclo": 318,
+          "deltaBytes": -6744873,
+          "porCiclo": -42421,
+          "oscilacionMaximaBytes": 7108061
+        },
+        "elementosDelta": 666,
+        "hijosDelWorkspaceDelta": 0,
+        "tarjetasAlFinal": 500,
+        "avisosDeAtencionDelta": 168,
+        "tarjetasEnAtencionDelta": 168,
+        "seccionesDelta": -1,
+        "nodosDelNavegadorDelta": 2674,
+        "escuchasDelNavegadorDelta": 0,
+        "documentosDelta": 0,
+        "intervalosDelta": 0,
+        "temporizadoresDelta": 18,
+        "observadoresDomDelta": -1,
+        "observadoresDeTamanoDelta": 0,
+        "observadoresDeRendimientoDelta": 0,
+        "canalesDelta": 0,
+        "escuchasDelta": 1045
+      }
+    }
+  ]
+}

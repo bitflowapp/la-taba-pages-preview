@@ -1,0 +1,151 @@
+{
+  "schemaVersion": 1,
+  "label": "antes",
+  "generatedAtUtc": "2026-08-28T16:59:42.557Z",
+  "businessId": "11111111-1111-4111-8111-111111111111",
+  "viewport": "390x844",
+  "pollMs": 1200,
+  "ciclosDeMemoria": 30,
+  "medidas": [
+    {
+      "pedidos": 50,
+      "msHastaLaBandeja": 294,
+      "tarjetas": 50,
+      "nodos": 2084,
+      "bytes": 97675,
+      "unPedido": {
+        "elementosQuitados": 12523,
+        "elementosAgregados": 12529,
+        "lotesDeMutacion": 6,
+        "reemplazosDelTablero": 6,
+        "tarjetasTocadas": 600,
+        "msHastaElCambio": 1121
+      },
+      "continuidad": {
+        "medible": true,
+        "scrollConservado": true,
+        "scrollAntes": 3779,
+        "scrollDespues": 3779,
+        "textoConservado": true,
+        "detalleAbierto": true,
+        "focoConservado": true,
+        "cursorConservado": true
+      },
+      "memoria": {
+        "vueltas": 30,
+        "heapAntes": 10341737,
+        "heapDespues": 11647829,
+        "heapDeltaBytes": 1306092,
+        "heapPorVuelta": 43536,
+        "nodosAntes": 3014,
+        "nodosDespues": 3021,
+        "nodosDelta": 7
+      }
+    },
+    {
+      "pedidos": 100,
+      "msHastaLaBandeja": 378,
+      "tarjetas": 100,
+      "nodos": 4108,
+      "bytes": 188526,
+      "unPedido": {
+        "elementosQuitados": 24667,
+        "elementosAgregados": 24673,
+        "lotesDeMutacion": 6,
+        "reemplazosDelTablero": 6,
+        "tarjetasTocadas": 1200,
+        "msHastaElCambio": 1283
+      },
+      "continuidad": {
+        "medible": true,
+        "scrollConservado": true,
+        "scrollAntes": 7020,
+        "scrollDespues": 7020,
+        "textoConservado": true,
+        "detalleAbierto": true,
+        "focoConservado": true,
+        "cursorConservado": true
+      },
+      "memoria": {
+        "vueltas": 30,
+        "heapAntes": 10760258,
+        "heapDespues": 12072979,
+        "heapDeltaBytes": 1312721,
+        "heapPorVuelta": 43757,
+        "nodosAntes": 5038,
+        "nodosDespues": 5045,
+        "nodosDelta": 7
+      }
+    },
+    {
+      "pedidos": 300,
+      "msHastaLaBandeja": 1552,
+      "tarjetas": 300,
+      "nodos": 12171,
+      "bytes": 549503,
+      "unPedido": {
+        "elementosQuitados": 36519,
+        "elementosAgregados": 36525,
+        "lotesDeMutacion": 3,
+        "reemplazosDelTablero": 3,
+        "tarjetasTocadas": 1800,
+        "msHastaElCambio": 2276
+      },
+      "continuidad": {
+        "medible": true,
+        "scrollConservado": true,
+        "scrollAntes": 20413,
+        "scrollDespues": 20414,
+        "textoConservado": true,
+        "detalleAbierto": true,
+        "focoConservado": true,
+        "cursorConservado": true
+      },
+      "memoria": {
+        "vueltas": 30,
+        "heapAntes": 11729494,
+        "heapDespues": 12925459,
+        "heapDeltaBytes": 1195965,
+        "heapPorVuelta": 39866,
+        "nodosAntes": 13101,
+        "nodosDespues": 13108,
+        "nodosDelta": 7
+      }
+    },
+    {
+      "pedidos": 500,
+      "msHastaLaBandeja": 3115,
+      "tarjetas": 500,
+      "nodos": 20234,
+      "bytes": 910600,
+      "unPedido": {
+        "elementosQuitados": 60708,
+        "elementosAgregados": 60714,
+        "lotesDeMutacion": 3,
+        "reemplazosDelTablero": 3,
+        "tarjetasTocadas": 3000,
+        "msHastaElCambio": 2433
+      },
+      "continuidad": {
+        "medible": true,
+        "scrollConservado": true,
+        "scrollAntes": 34167,
+        "scrollDespues": 34167,
+        "textoConservado": true,
+        "detalleAbierto": true,
+        "focoConservado": true,
+        "cursorConservado": true
+      },
+      "memoria": {
+        "vueltas": 30,
+        "heapAntes": 12756574,
+        "heapDespues": 19931283,
+        "heapDeltaBytes": 7174709,
+        "heapPorVuelta": 239157,
+        "nodosAntes": 21164,
+        "nodosDespues": 21171,
+        "nodosDelta": 7
+      }
+    }
+  ]
+}

@@ -320,3 +320,66 @@ export function solicitudesDeAcceso() {
     roles_grantable: ['rider'],
   }];
 }
+
+/*
+ * LA BANDEJA SINTÉTICA DE LOS BANCOS DE PRUEBA.
+ * ============================================================================
+ * Los dos bancos de prueba del Panel —el de la bandeja operativa y el de
+ * escala— necesitan lo mismo: N pedidos derivados de los seis de arriba, cada
+ * uno con identidad propia. Cada uno se lo escribió por su lado y uno de los
+ * dos se equivocó en el UUID.
+ *
+ * EL ERROR, Y POR QUÉ IMPORTA MÁS DE LO QUE PARECE
+ * ------------------------------------------------
+ * `00000000-0000-4000-8000-0000000${n}` con `n` de cuatro dígitos da un último
+ * grupo de ONCE caracteres, no doce: 35 en total. No es cosmético. Con un UUID
+ * inválido el adaptador descarta el `backendId`, y sin `backendId` el pedido
+ * pierde la identidad con la que el coordinador compara revisiones. La bandeja
+ * se dibuja perfecta y NUNCA se actualiza: medir un cambio sobre eso da cero
+ * movimiento y la conclusión de que todo anda bárbaro.
+ *
+ * O sea que el fixture roto no rompe la medición: la falsifica hacia el lado
+ * bueno. Por eso ahora hay una sola función y una prueba que la mira
+ * (`tests/business-panel-bench-fixture.test.mjs`).
+ *
+ * Los números YA PUBLICADOS del banco de la bandeja se midieron con el molde
+ * roto y no se tocan: son lo que se midió. Lo que cambia es de acá en adelante.
+ */
+const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
+/** El UUID del pedido sintético número `i` (base cero). Siempre válido. */
+export function idDePedidoSintetico(i) {
+  const id = `00000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`;
+  // Un banco de prueba que miente es peor que uno que no corre: si alguna vez
+  // este molde deja de dar un UUID válido, corta acá y no en la conclusión.
+  if (!UUID_V4.test(id)) throw new Error(`UUID sintético inválido: ${id} (${id.length} caracteres)`);
+  return id;
+}
+
+/** ¿Es un UUID v4 con la forma que el adaptador acepta? */
+export function esUuidValido(valor) {
+  return UUID_V4.test(String(valor || ''));
+}
+
+/**
+ * N pedidos derivados de los seis de `pedidos()`, con identidad propia.
+ *
+ * `prefijo` separa las bandejas de los dos bancos en los códigos públicos, que
+ * es lo único que los distinguía antes de compartir esta función.
+ */
+export function pedidosSinteticos(cuantos, { prefijo = 'LT-9' } = {}) {
+  const base = pedidos();
+  const salida = [];
+  for (let i = 0; i < cuantos; i += 1) {
+    const molde = base[i % base.length];
+    const n = String(i + 1).padStart(4, '0');
+    salida.push({
+      ...molde,
+      id: idDePedidoSintetico(i),
+      public_code: `${prefijo}${n}`,
+      revision: (i % 7) + 1,
+      order_items: molde.order_items.map((item, j) => ({ ...item, id: `${n}-${j}` })),
+    });
+  }
+  return salida;
+}

@@ -1,0 +1,994 @@
+{
+  "schemaVersion": 1,
+  "label": "integracion",
+  "generatedAtUtc": "2026-08-28T21:28:23.857Z",
+  "businessId": "11111111-1111-4111-8111-111111111111",
+  "viewport": "390x844",
+  "pollMs": 1200,
+  "ciclosDeMemoria": 30,
+  "escenarios": [
+    "A-sin-cambio-de-seccion",
+    "B-cambio-de-seccion",
+    "C-alta",
+    "D-baja",
+    "E-solo-reloj"
+  ],
+  "medidas": [
+    {
+      "pedidos": 50,
+      "msHastaLaBandeja": 179,
+      "tarjetas": 50,
+      "nodos": 2625,
+      "bytes": 151642,
+      "unPedido": {
+        "elementosQuitados": 76,
+        "elementosAgregados": 87,
+        "lotesDeMutacion": 6,
+        "reemplazosDelTablero": 0,
+        "tarjetasTocadas": 2,
+        "msHastaElCambio": 994
+      },
+      "continuidad": {
+        "medible": true,
+        "scrollConservado": true,
+        "scrollAntes": 497,
+        "scrollDespues": 497,
+        "textoConservado": true,
+        "detalleAbierto": true,
+        "focoConservado": true,
+        "cursorConservado": true
+      },
+      "escenarios": [
+        {
+          "escenario": "E-solo-reloj",
+          "msHastaElCambio": null,
+          "ventanaMs": 32000,
+          "elementosDestruidos": 0,
+          "elementosCreados": 0,
+          "elementosMovidos": 0,
+          "tarjetasTocadas": 0,
+          "reemplazosDelTablero": 0,
+          "lotesDeMutacion": 0,
+          "nodosDeTextoReescritos": 50,
+          "msDeTrabajoDeDom": 0,
+          "msDeTareasLargas": 0,
+          "tareaMasLargaMs": 0,
+          "domAntes": {
+            "elementosDelDocumento": 3522,
+            "elementosDelWorkspace": 2598,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 50,
+            "secciones": 4,
+            "heapBytes": 12186513
+          },
+          "domDespues": {
+            "elementosDelDocumento": 3522,
+            "elementosDelWorkspace": 2598,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 50,
+            "secciones": 4,
+            "heapBytes": 11881158
+          },
+          "continuidad": {
+            "medible": true,
+            "scrollConservado": true,
+            "scrollAntes": 554,
+            "scrollDespues": 554,
+            "textoConservado": true,
+            "detalleAbierto": true,
+            "focoConservado": true,
+            "cursorConservado": true
+          },
+          "relojesQueCruzaronDeMinuto": 50
+        },
+        {
+          "escenario": "A-sin-cambio-de-seccion",
+          "msHastaElCambio": 125,
+          "ventanaMs": null,
+          "elementosDestruidos": 59,
+          "elementosCreados": 59,
+          "elementosMovidos": 0,
+          "tarjetasTocadas": 2,
+          "reemplazosDelTablero": 0,
+          "lotesDeMutacion": 1,
+          "nodosDeTextoReescritos": 0,
+          "msDeTrabajoDeDom": 0,
+          "msDeTareasLargas": 0,
+          "tareaMasLargaMs": 0,
+          "domAntes": {
+            "elementosDelDocumento": 3522,
+            "elementosDelWorkspace": 2598,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 50,
+            "secciones": 4,
+            "heapBytes": 14325637
+          },
+          "domDespues": {
+            "elementosDelDocumento": 3522,
+            "elementosDelWorkspace": 2598,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 50,
+            "secciones": 4,
+            "heapBytes": 9215506
+          },
+          "continuidad": {
+            "medible": true,
+            "scrollConservado": true,
+            "scrollAntes": 274,
+            "scrollDespues": 274,
+            "textoConservado": true,
+            "detalleAbierto": true,
+            "focoConservado": true,
+            "cursorConservado": true
+          }
+        },
+        {
+          "escenario": "B-cambio-de-seccion",
+          "msHastaElCambio": 755,
+          "ventanaMs": null,
+          "elementosDestruidos": 65,
+          "elementosCreados": 60,
+          "elementosMovidos": 0,
+          "tarjetasTocadas": 2,
+          "reemplazosDelTablero": 0,
+          "lotesDeMutacion": 4,
+          "nodosDeTextoReescritos": 9,
+          "msDeTrabajoDeDom": 0,
+          "msDeTareasLargas": 0,
+          "tareaMasLargaMs": 0,
+          "domAntes": {
+            "elementosDelDocumento": 3522,
+            "elementosDelWorkspace": 2598,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 50,
+            "secciones": 4,
+            "heapBytes": 11924550
+          },
+          "domDespues": {
+            "elementosDelDocumento": 3517,
+            "elementosDelWorkspace": 2593,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 50,
+            "secciones": 4,
+            "heapBytes": 9723512
+          },
+          "continuidad": {
+            "medible": true,
+            "scrollConservado": true,
+            "scrollAntes": 274,
+            "scrollDespues": 274,
+            "textoConservado": true,
+            "detalleAbierto": true,
+            "focoConservado": true,
+            "cursorConservado": true
+          }
+        },
+        {
+          "escenario": "C-alta",
+          "msHastaElCambio": 753,
+          "ventanaMs": null,
+          "elementosDestruidos": 9,
+          "elementosCreados": 63,
+          "elementosMovidos": 0,
+          "tarjetasTocadas": 1,
+          "reemplazosDelTablero": 0,
+          "lotesDeMutacion": 3,
+          "nodosDeTextoReescritos": 8,
+          "msDeTrabajoDeDom": 0,
+          "msDeTareasLargas": 0,
+          "tareaMasLargaMs": 0,
+          "domAntes": {
+            "elementosDelDocumento": 3517,
+            "elementosDelWorkspace": 2593,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 50,
+            "secciones": 4,
+            "heapBytes": 9268478
+          },
+          "domDespues": {
+            "elementosDelDocumento": 3571,
+            "elementosDelWorkspace": 2647,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 51,
+            "secciones": 4,
+            "heapBytes": 14310985
+          },
+          "continuidad": {
+            "medible": true,
+            "scrollConservado": true,
+            "scrollAntes": 274,
+            "scrollDespues": 274,
+            "textoConservado": true,
+            "detalleAbierto": true,
+            "focoConservado": true,
+            "cursorConservado": true
+          },
+          "desalojoPorTope": false
+        },
+        {
+          "escenario": "D-baja",
+          "msHastaElCambio": 756,
+          "ventanaMs": null,
+          "elementosDestruidos": 50,
+          "elementosCreados": 3,
+          "elementosMovidos": 0,
+          "tarjetasTocadas": 1,
+          "reemplazosDelTablero": 0,
+          "lotesDeMutacion": 2,
+          "nodosDeTextoReescritos": 5,
+          "msDeTrabajoDeDom": 0,
+          "msDeTareasLargas": 0,
+          "tareaMasLargaMs": 0,
+          "domAntes": {
+            "elementosDelDocumento": 3571,
+            "elementosDelWorkspace": 2647,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 51,
+            "secciones": 4,
+            "heapBytes": 15775022
+          },
+          "domDespues": {
+            "elementosDelDocumento": 3524,
+            "elementosDelWorkspace": 2600,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 50,
+            "secciones": 4,
+            "heapBytes": 12986780
+          },
+          "continuidad": {
+            "medible": true,
+            "scrollConservado": true,
+            "scrollAntes": 274,
+            "scrollDespues": 274,
+            "textoConservado": true,
+            "detalleAbierto": true,
+            "focoConservado": true,
+            "cursorConservado": true
+          }
+        }
+      ],
+      "memoria": {
+        "vueltas": 30,
+        "heapAntes": 8941208,
+        "heapDespues": 9483231,
+        "heapDeltaBytes": 542023,
+        "heapPorVuelta": 18067,
+        "nodosAntes": 3524,
+        "nodosDespues": 3524,
+        "nodosDelta": 0
+      }
+    },
+    {
+      "pedidos": 100,
+      "msHastaLaBandeja": 219,
+      "tarjetas": 100,
+      "nodos": 5168,
+      "bytes": 294930,
+      "unPedido": {
+        "elementosQuitados": 76,
+        "elementosAgregados": 87,
+        "lotesDeMutacion": 6,
+        "reemplazosDelTablero": 0,
+        "tarjetasTocadas": 2,
+        "msHastaElCambio": 1057
+      },
+      "continuidad": {
+        "medible": true,
+        "scrollConservado": true,
+        "scrollAntes": 497,
+        "scrollDespues": 497,
+        "textoConservado": true,
+        "detalleAbierto": true,
+        "focoConservado": true,
+        "cursorConservado": true
+      },
+      "escenarios": [
+        {
+          "escenario": "E-solo-reloj",
+          "msHastaElCambio": null,
+          "ventanaMs": 32000,
+          "elementosDestruidos": 0,
+          "elementosCreados": 0,
+          "elementosMovidos": 0,
+          "tarjetasTocadas": 0,
+          "reemplazosDelTablero": 0,
+          "lotesDeMutacion": 0,
+          "nodosDeTextoReescritos": 100,
+          "msDeTrabajoDeDom": 0,
+          "msDeTareasLargas": 1489,
+          "tareaMasLargaMs": 71,
+          "domAntes": {
+            "elementosDelDocumento": 6029,
+            "elementosDelWorkspace": 5105,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 100,
+            "secciones": 4,
+            "heapBytes": 17253080
+          },
+          "domDespues": {
+            "elementosDelDocumento": 6029,
+            "elementosDelWorkspace": 5105,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 100,
+            "secciones": 4,
+            "heapBytes": 12701575
+          },
+          "continuidad": {
+            "medible": true,
+            "scrollConservado": true,
+            "scrollAntes": 554,
+            "scrollDespues": 554,
+            "textoConservado": true,
+            "detalleAbierto": true,
+            "focoConservado": true,
+            "cursorConservado": true
+          },
+          "relojesQueCruzaronDeMinuto": 100
+        },
+        {
+          "escenario": "A-sin-cambio-de-seccion",
+          "msHastaElCambio": 898,
+          "ventanaMs": null,
+          "elementosDestruidos": 59,
+          "elementosCreados": 59,
+          "elementosMovidos": 0,
+          "tarjetasTocadas": 2,
+          "reemplazosDelTablero": 0,
+          "lotesDeMutacion": 1,
+          "nodosDeTextoReescritos": 0,
+          "msDeTrabajoDeDom": 0,
+          "msDeTareasLargas": 55,
+          "tareaMasLargaMs": 55,
+          "domAntes": {
+            "elementosDelDocumento": 6029,
+            "elementosDelWorkspace": 5105,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 100,
+            "secciones": 4,
+            "heapBytes": 18045369
+          },
+          "domDespues": {
+            "elementosDelDocumento": 6029,
+            "elementosDelWorkspace": 5105,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 100,
+            "secciones": 4,
+            "heapBytes": 13728901
+          },
+          "continuidad": {
+            "medible": true,
+            "scrollConservado": true,
+            "scrollAntes": 274,
+            "scrollDespues": 274,
+            "textoConservado": true,
+            "detalleAbierto": true,
+            "focoConservado": true,
+            "cursorConservado": true
+          }
+        },
+        {
+          "escenario": "B-cambio-de-seccion",
+          "msHastaElCambio": 843,
+          "ventanaMs": null,
+          "elementosDestruidos": 65,
+          "elementosCreados": 60,
+          "elementosMovidos": 0,
+          "tarjetasTocadas": 2,
+          "reemplazosDelTablero": 0,
+          "lotesDeMutacion": 4,
+          "nodosDeTextoReescritos": 9,
+          "msDeTrabajoDeDom": 0,
+          "msDeTareasLargas": 55,
+          "tareaMasLargaMs": 55,
+          "domAntes": {
+            "elementosDelDocumento": 6029,
+            "elementosDelWorkspace": 5105,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 100,
+            "secciones": 4,
+            "heapBytes": 9018087
+          },
+          "domDespues": {
+            "elementosDelDocumento": 6024,
+            "elementosDelWorkspace": 5100,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 100,
+            "secciones": 4,
+            "heapBytes": 18307955
+          },
+          "continuidad": {
+            "medible": true,
+            "scrollConservado": true,
+            "scrollAntes": 274,
+            "scrollDespues": 274,
+            "textoConservado": true,
+            "detalleAbierto": true,
+            "focoConservado": true,
+            "cursorConservado": true
+          }
+        },
+        {
+          "escenario": "C-alta",
+          "msHastaElCambio": 842,
+          "ventanaMs": null,
+          "elementosDestruidos": 3,
+          "elementosCreados": 54,
+          "elementosMovidos": 0,
+          "tarjetasTocadas": 1,
+          "reemplazosDelTablero": 0,
+          "lotesDeMutacion": 2,
+          "nodosDeTextoReescritos": 5,
+          "msDeTrabajoDeDom": 0,
+          "msDeTareasLargas": 60,
+          "tareaMasLargaMs": 60,
+          "domAntes": {
+            "elementosDelDocumento": 6024,
+            "elementosDelWorkspace": 5100,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 100,
+            "secciones": 4,
+            "heapBytes": 20278883
+          },
+          "domDespues": {
+            "elementosDelDocumento": 6075,
+            "elementosDelWorkspace": 5151,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 101,
+            "secciones": 4,
+            "heapBytes": 9065336
+          },
+          "continuidad": {
+            "medible": true,
+            "scrollConservado": true,
+            "scrollAntes": 274,
+            "scrollDespues": 274,
+            "textoConservado": true,
+            "detalleAbierto": true,
+            "focoConservado": true,
+            "cursorConservado": true
+          },
+          "desalojoPorTope": false
+        },
+        {
+          "escenario": "D-baja",
+          "msHastaElCambio": 816,
+          "ventanaMs": null,
+          "elementosDestruidos": 50,
+          "elementosCreados": 3,
+          "elementosMovidos": 0,
+          "tarjetasTocadas": 1,
+          "reemplazosDelTablero": 0,
+          "lotesDeMutacion": 2,
+          "nodosDeTextoReescritos": 5,
+          "msDeTrabajoDeDom": 0,
+          "msDeTareasLargas": 60,
+          "tareaMasLargaMs": 60,
+          "domAntes": {
+            "elementosDelDocumento": 6075,
+            "elementosDelWorkspace": 5151,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 101,
+            "secciones": 4,
+            "heapBytes": 11114427
+          },
+          "domDespues": {
+            "elementosDelDocumento": 6028,
+            "elementosDelWorkspace": 5104,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 100,
+            "secciones": 4,
+            "heapBytes": 20178235
+          },
+          "continuidad": {
+            "medible": true,
+            "scrollConservado": true,
+            "scrollAntes": 274,
+            "scrollDespues": 274,
+            "textoConservado": true,
+            "detalleAbierto": true,
+            "focoConservado": true,
+            "cursorConservado": true
+          }
+        }
+      ],
+      "memoria": {
+        "vueltas": 30,
+        "heapAntes": 8853040,
+        "heapDespues": 10821369,
+        "heapDeltaBytes": 1968329,
+        "heapPorVuelta": 65611,
+        "nodosAntes": 6028,
+        "nodosDespues": 6028,
+        "nodosDelta": 0
+      }
+    },
+    {
+      "pedidos": 300,
+      "msHastaLaBandeja": 473,
+      "tarjetas": 300,
+      "nodos": 15297,
+      "bytes": 864515,
+      "unPedido": {
+        "elementosQuitados": 76,
+        "elementosAgregados": 87,
+        "lotesDeMutacion": 6,
+        "reemplazosDelTablero": 0,
+        "tarjetasTocadas": 2,
+        "msHastaElCambio": 966
+      },
+      "continuidad": {
+        "medible": true,
+        "scrollConservado": true,
+        "scrollAntes": 516,
+        "scrollDespues": 516,
+        "textoConservado": true,
+        "detalleAbierto": true,
+        "focoConservado": true,
+        "cursorConservado": true
+      },
+      "escenarios": [
+        {
+          "escenario": "E-solo-reloj",
+          "msHastaElCambio": null,
+          "ventanaMs": 32000,
+          "elementosDestruidos": 6,
+          "elementosCreados": 6,
+          "elementosMovidos": 0,
+          "tarjetasTocadas": 0,
+          "reemplazosDelTablero": 0,
+          "lotesDeMutacion": 1,
+          "nodosDeTextoReescritos": 303,
+          "msDeTrabajoDeDom": 0,
+          "msDeTareasLargas": 5516,
+          "tareaMasLargaMs": 174,
+          "domAntes": {
+            "elementosDelDocumento": 16026,
+            "elementosDelWorkspace": 15102,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 300,
+            "secciones": 4,
+            "heapBytes": 14456369
+          },
+          "domDespues": {
+            "elementosDelDocumento": 16026,
+            "elementosDelWorkspace": 15102,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 300,
+            "secciones": 4,
+            "heapBytes": 24801429
+          },
+          "continuidad": {
+            "medible": true,
+            "scrollConservado": true,
+            "scrollAntes": 554,
+            "scrollDespues": 554,
+            "textoConservado": true,
+            "detalleAbierto": true,
+            "focoConservado": true,
+            "cursorConservado": true
+          },
+          "relojesQueCruzaronDeMinuto": 300
+        },
+        {
+          "escenario": "A-sin-cambio-de-seccion",
+          "msHastaElCambio": 505,
+          "ventanaMs": null,
+          "elementosDestruidos": 59,
+          "elementosCreados": 59,
+          "elementosMovidos": 0,
+          "tarjetasTocadas": 2,
+          "reemplazosDelTablero": 0,
+          "lotesDeMutacion": 1,
+          "nodosDeTextoReescritos": 0,
+          "msDeTrabajoDeDom": 0,
+          "msDeTareasLargas": 297,
+          "tareaMasLargaMs": 154,
+          "domAntes": {
+            "elementosDelDocumento": 16026,
+            "elementosDelWorkspace": 15102,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 300,
+            "secciones": 4,
+            "heapBytes": 37950327
+          },
+          "domDespues": {
+            "elementosDelDocumento": 16026,
+            "elementosDelWorkspace": 15102,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 300,
+            "secciones": 4,
+            "heapBytes": 38875506
+          },
+          "continuidad": {
+            "medible": true,
+            "scrollConservado": true,
+            "scrollAntes": 274,
+            "scrollDespues": 274,
+            "textoConservado": true,
+            "detalleAbierto": true,
+            "focoConservado": true,
+            "cursorConservado": true
+          }
+        },
+        {
+          "escenario": "B-cambio-de-seccion",
+          "msHastaElCambio": 1167,
+          "ventanaMs": null,
+          "elementosDestruidos": 65,
+          "elementosCreados": 60,
+          "elementosMovidos": 0,
+          "tarjetasTocadas": 2,
+          "reemplazosDelTablero": 0,
+          "lotesDeMutacion": 4,
+          "nodosDeTextoReescritos": 9,
+          "msDeTrabajoDeDom": 0,
+          "msDeTareasLargas": 231,
+          "tareaMasLargaMs": 159,
+          "domAntes": {
+            "elementosDelDocumento": 16026,
+            "elementosDelWorkspace": 15102,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 300,
+            "secciones": 4,
+            "heapBytes": 16908390
+          },
+          "domDespues": {
+            "elementosDelDocumento": 16021,
+            "elementosDelWorkspace": 15097,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 300,
+            "secciones": 4,
+            "heapBytes": 41740791
+          },
+          "continuidad": {
+            "medible": true,
+            "scrollConservado": true,
+            "scrollAntes": 274,
+            "scrollDespues": 274,
+            "textoConservado": true,
+            "detalleAbierto": true,
+            "focoConservado": true,
+            "cursorConservado": true
+          }
+        },
+        {
+          "escenario": "C-alta",
+          "msHastaElCambio": 1155,
+          "ventanaMs": null,
+          "elementosDestruidos": 3,
+          "elementosCreados": 56,
+          "elementosMovidos": 0,
+          "tarjetasTocadas": 1,
+          "reemplazosDelTablero": 0,
+          "lotesDeMutacion": 2,
+          "nodosDeTextoReescritos": 5,
+          "msDeTrabajoDeDom": 0,
+          "msDeTareasLargas": 234,
+          "tareaMasLargaMs": 159,
+          "domAntes": {
+            "elementosDelDocumento": 16021,
+            "elementosDelWorkspace": 15097,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 300,
+            "secciones": 4,
+            "heapBytes": 19083319
+          },
+          "domDespues": {
+            "elementosDelDocumento": 16074,
+            "elementosDelWorkspace": 15150,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 301,
+            "secciones": 4,
+            "heapBytes": 44542847
+          },
+          "continuidad": {
+            "medible": true,
+            "scrollConservado": true,
+            "scrollAntes": 274,
+            "scrollDespues": 274,
+            "textoConservado": true,
+            "detalleAbierto": true,
+            "focoConservado": true,
+            "cursorConservado": true
+          },
+          "desalojoPorTope": false
+        },
+        {
+          "escenario": "D-baja",
+          "msHastaElCambio": 1169,
+          "ventanaMs": null,
+          "elementosDestruidos": 50,
+          "elementosCreados": 3,
+          "elementosMovidos": 0,
+          "tarjetasTocadas": 1,
+          "reemplazosDelTablero": 0,
+          "lotesDeMutacion": 2,
+          "nodosDeTextoReescritos": 5,
+          "msDeTrabajoDeDom": 0,
+          "msDeTareasLargas": 257,
+          "tareaMasLargaMs": 182,
+          "domAntes": {
+            "elementosDelDocumento": 16074,
+            "elementosDelWorkspace": 15150,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 301,
+            "secciones": 4,
+            "heapBytes": 9564961
+          },
+          "domDespues": {
+            "elementosDelDocumento": 16027,
+            "elementosDelWorkspace": 15103,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 300,
+            "secciones": 4,
+            "heapBytes": 35054351
+          },
+          "continuidad": {
+            "medible": true,
+            "scrollConservado": true,
+            "scrollAntes": 274,
+            "scrollDespues": 274,
+            "textoConservado": true,
+            "detalleAbierto": true,
+            "focoConservado": true,
+            "cursorConservado": true
+          }
+        }
+      ],
+      "memoria": {
+        "vueltas": 30,
+        "heapAntes": 9280060,
+        "heapDespues": 12499362,
+        "heapDeltaBytes": 3219302,
+        "heapPorVuelta": 107310,
+        "nodosAntes": 16027,
+        "nodosDespues": 16027,
+        "nodosDelta": 0
+      }
+    },
+    {
+      "pedidos": 500,
+      "msHastaLaBandeja": 875,
+      "tarjetas": 500,
+      "nodos": 25425,
+      "bytes": 1434149,
+      "unPedido": {
+        "elementosQuitados": 76,
+        "elementosAgregados": 87,
+        "lotesDeMutacion": 6,
+        "reemplazosDelTablero": 0,
+        "tarjetasTocadas": 2,
+        "msHastaElCambio": 795
+      },
+      "continuidad": {
+        "medible": true,
+        "scrollConservado": true,
+        "scrollAntes": 516,
+        "scrollDespues": 516,
+        "textoConservado": true,
+        "detalleAbierto": true,
+        "focoConservado": true,
+        "cursorConservado": true
+      },
+      "escenarios": [
+        {
+          "escenario": "E-solo-reloj",
+          "msHastaElCambio": null,
+          "ventanaMs": 32000,
+          "elementosDestruidos": 6,
+          "elementosCreados": 6,
+          "elementosMovidos": 0,
+          "tarjetasTocadas": 0,
+          "reemplazosDelTablero": 0,
+          "lotesDeMutacion": 1,
+          "nodosDeTextoReescritos": 503,
+          "msDeTrabajoDeDom": 0,
+          "msDeTareasLargas": 8989,
+          "tareaMasLargaMs": 295,
+          "domAntes": {
+            "elementosDelDocumento": 26022,
+            "elementosDelWorkspace": 25098,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 500,
+            "secciones": 4,
+            "heapBytes": 20695882
+          },
+          "domDespues": {
+            "elementosDelDocumento": 26022,
+            "elementosDelWorkspace": 25098,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 500,
+            "secciones": 4,
+            "heapBytes": 32625225
+          },
+          "continuidad": {
+            "medible": true,
+            "scrollConservado": true,
+            "scrollAntes": 554,
+            "scrollDespues": 554,
+            "textoConservado": true,
+            "detalleAbierto": true,
+            "focoConservado": true,
+            "cursorConservado": true
+          },
+          "relojesQueCruzaronDeMinuto": 500
+        },
+        {
+          "escenario": "A-sin-cambio-de-seccion",
+          "msHastaElCambio": 787,
+          "ventanaMs": null,
+          "elementosDestruidos": 59,
+          "elementosCreados": 59,
+          "elementosMovidos": 0,
+          "tarjetasTocadas": 2,
+          "reemplazosDelTablero": 0,
+          "lotesDeMutacion": 1,
+          "nodosDeTextoReescritos": 0,
+          "msDeTrabajoDeDom": 0,
+          "msDeTareasLargas": 389,
+          "tareaMasLargaMs": 262,
+          "domAntes": {
+            "elementosDelDocumento": 26022,
+            "elementosDelWorkspace": 25098,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 500,
+            "secciones": 4,
+            "heapBytes": 21518500
+          },
+          "domDespues": {
+            "elementosDelDocumento": 26022,
+            "elementosDelWorkspace": 25098,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 500,
+            "secciones": 4,
+            "heapBytes": 27707853
+          },
+          "continuidad": {
+            "medible": true,
+            "scrollConservado": true,
+            "scrollAntes": 274,
+            "scrollDespues": 274,
+            "textoConservado": true,
+            "detalleAbierto": true,
+            "focoConservado": true,
+            "cursorConservado": true
+          }
+        },
+        {
+          "escenario": "B-cambio-de-seccion",
+          "msHastaElCambio": 1314,
+          "ventanaMs": null,
+          "elementosDestruidos": 65,
+          "elementosCreados": 60,
+          "elementosMovidos": 0,
+          "tarjetasTocadas": 2,
+          "reemplazosDelTablero": 0,
+          "lotesDeMutacion": 4,
+          "nodosDeTextoReescritos": 9,
+          "msDeTrabajoDeDom": 0,
+          "msDeTareasLargas": 388,
+          "tareaMasLargaMs": 267,
+          "domAntes": {
+            "elementosDelDocumento": 26022,
+            "elementosDelWorkspace": 25098,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 500,
+            "secciones": 4,
+            "heapBytes": 20151236
+          },
+          "domDespues": {
+            "elementosDelDocumento": 26017,
+            "elementosDelWorkspace": 25093,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 500,
+            "secciones": 4,
+            "heapBytes": 25710352
+          },
+          "continuidad": {
+            "medible": true,
+            "scrollConservado": true,
+            "scrollAntes": 274,
+            "scrollDespues": 274,
+            "textoConservado": true,
+            "detalleAbierto": true,
+            "focoConservado": true,
+            "cursorConservado": true
+          }
+        },
+        {
+          "escenario": "C-alta",
+          "msHastaElCambio": 1324,
+          "ventanaMs": null,
+          "elementosDestruidos": 43,
+          "elementosCreados": 54,
+          "elementosMovidos": 0,
+          "tarjetasTocadas": 2,
+          "reemplazosDelTablero": 0,
+          "lotesDeMutacion": 2,
+          "nodosDeTextoReescritos": 0,
+          "msDeTrabajoDeDom": 0,
+          "msDeTareasLargas": 406,
+          "tareaMasLargaMs": 282,
+          "domAntes": {
+            "elementosDelDocumento": 26017,
+            "elementosDelWorkspace": 25093,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 500,
+            "secciones": 4,
+            "heapBytes": 37630668
+          },
+          "domDespues": {
+            "elementosDelDocumento": 26028,
+            "elementosDelWorkspace": 25104,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 500,
+            "secciones": 4,
+            "heapBytes": 47816789
+          },
+          "continuidad": {
+            "medible": true,
+            "scrollConservado": true,
+            "scrollAntes": 274,
+            "scrollDespues": 274,
+            "textoConservado": true,
+            "detalleAbierto": true,
+            "focoConservado": true,
+            "cursorConservado": true
+          },
+          "desalojoPorTope": true
+        },
+        {
+          "escenario": "D-baja",
+          "msHastaElCambio": 1581,
+          "ventanaMs": null,
+          "elementosDestruidos": 50,
+          "elementosCreados": 3,
+          "elementosMovidos": 0,
+          "tarjetasTocadas": 1,
+          "reemplazosDelTablero": 0,
+          "lotesDeMutacion": 2,
+          "nodosDeTextoReescritos": 5,
+          "msDeTrabajoDeDom": 0,
+          "msDeTareasLargas": 678,
+          "tareaMasLargaMs": 291,
+          "domAntes": {
+            "elementosDelDocumento": 26028,
+            "elementosDelWorkspace": 25104,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 500,
+            "secciones": 4,
+            "heapBytes": 27380138
+          },
+          "domDespues": {
+            "elementosDelDocumento": 25981,
+            "elementosDelWorkspace": 25057,
+            "hijosDelWorkspace": 15,
+            "tarjetas": 499,
+            "secciones": 4,
+            "heapBytes": 56991512
+          },
+          "continuidad": {
+            "medible": true,
+            "scrollConservado": true,
+            "scrollAntes": 274,
+            "scrollDespues": 274,
+            "textoConservado": true,
+            "detalleAbierto": true,
+            "focoConservado": true,
+            "cursorConservado": true
+          }
+        }
+      ],
+      "memoria": {
+        "vueltas": 30,
+        "heapAntes": 9435963,
+        "heapDespues": 13785899,
+        "heapDeltaBytes": 4349936,
+        "heapPorVuelta": 144998,
+        "nodosAntes": 25981,
+        "nodosDespues": 25981,
+        "nodosDelta": 0
+      }
+    }
+  ]
+}

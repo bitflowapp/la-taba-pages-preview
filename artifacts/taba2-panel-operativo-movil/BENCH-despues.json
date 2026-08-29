@@ -1,0 +1,14 @@
+{
+  "label": "despues",
+  "generatedAtUtc": "2026-08-28T07:20:01.527Z",
+  "businessId": "11111111-1111-4111-8111-111111111111",
+  "viewport": "390x844",
+  "pedidosServidos": 300,
+  "tarjetasEnElDom": 300,
+  "msHastaLaBandeja": 334,
+  "repintadosSinNovedades": 0,
+  "ventanaMs": 30000,
+  "nodosDelWorkspace": 15298,
+  "bytesDeMarcado": 864454,
+  "msPorRepintado": 258
+}

@@ -45,7 +45,8 @@ const steps = [
    * no la necesitan.
    */
   ['npx', ['--yes', 'deno@2.6.1', 'test', '--node-modules-dir=none', '--allow-env',
-    'supabase/functions/_shared/mercadopago-preference.deno.ts']],
+    'supabase/functions/_shared/mercadopago-preference.deno.ts',
+    'supabase/functions/_shared/seller-oauth-runtime.deno.ts']],
   ['node', ['--import', './tests/test-bootstrap.mjs', '--test', '--test-concurrency=1',
     'tests/mercadopago-webhook.test.mjs',
     'tests/mercadopago-scheduler.test.mjs']],

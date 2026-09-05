@@ -1,3 +1,4 @@
+import { businessForIntent } from '../_shared/seller-oauth.ts';
 import {
   assertAllowedOrigin,
   createServiceClient,
@@ -47,6 +48,7 @@ Deno.serve(async (request) => {
     });
     if (prepareError || !prepared) return unavailable(request);
     if (prepared.reconciliation_required === true) return reconciling(request);
+    const businessId = await businessForIntent(paymentIntentId);
     const providerIdempotencyKey = requireUuid(prepared.idempotency_key, 'prepared.idempotency_key');
 
     // Total vs. parcial lo decide la BASE (prepared.full_refund), no el dato
@@ -62,6 +64,7 @@ Deno.serve(async (request) => {
           method: 'POST',
           body: fullRefund ? undefined : JSON.stringify({ amount: Number(prepared.amount) }),
           idempotencyKey: providerIdempotencyKey,
+          businessId,
         },
       );
       const responseHash = await sha256Hex(result.rawText);

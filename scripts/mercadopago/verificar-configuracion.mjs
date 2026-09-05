@@ -54,6 +54,8 @@ const REFS = {
 
 /** Las funciones sin las cuales Checkout Pro no es un circuito completo. */
 const FUNCIONES_REQUERIDAS = [
+  'mercadopago-connect',
+  'mercadopago-oauth-callback',
   'mercadopago-create-checkout-session',
   'mercadopago-create-preference',
   'mercadopago-checkout-status',
@@ -72,6 +74,13 @@ const FUNCIONES_OPCIONALES = ['mercadopago-refund', 'mercadopago-cancel-payment'
 
 /** Secretos sin los cuales las funciones lanzan al primer pedido. */
 const SECRETOS_REQUERIDOS = [
+  'TABA_DEPLOYMENT_ENV',
+  'MERCADOPAGO_OAUTH_PROJECT_REF',
+  'MERCADOPAGO_OAUTH_PANEL_URL',
+  'MERCADOPAGO_CLIENT_ID',
+  'MERCADOPAGO_CLIENT_SECRET',
+  'MERCADOPAGO_TOKEN_ENCRYPTION_KEY',
+  'MERCADOPAGO_OAUTH_WEBHOOK_SECRET',
   'MERCADOPAGO_ACCESS_TOKEN',
   'MERCADOPAGO_ENVIRONMENT',
   'MERCADOPAGO_WEBHOOK_SECRET',
@@ -94,6 +103,7 @@ const SECRETOS_DE_MODO = [
  * es lo que esta herramienta hace ni tiene que poder hacer.
  */
 const CANDIDATOS = {
+  MERCADOPAGO_CREDENTIAL_MODE: ['oauth', 'legacy'],
   MERCADOPAGO_ENVIRONMENT: ['test', 'production'],
   MERCADOPAGO_PRODUCTION_REVIEW_STATUS: ['not_requested', 'pending', 'approved', 'rejected'],
   MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION: ['I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE'],
@@ -167,6 +177,8 @@ console.log('');
 
 console.log('SECRETOS  (se listan nombre y huella; ningún valor sale de acá)');
 for (const nombre of SECRETOS_REQUERIDOS) {
+  if (identificar('MERCADOPAGO_CREDENTIAL_MODE', secretos.get('MERCADOPAGO_CREDENTIAL_MODE')) === 'oauth'
+    && ['MERCADOPAGO_ACCESS_TOKEN', 'MERCADOPAGO_WEBHOOK_SECRET'].includes(nombre)) continue;
   const digest = secretos.get(nombre);
   if (!digest) {
     problemas.push(`falta el secreto ${nombre}`);

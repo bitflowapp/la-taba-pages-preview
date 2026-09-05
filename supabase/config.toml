@@ -4,6 +4,12 @@
 # working directory name when running `supabase init`.
 project_id = "la-taba-real-orders-staging"
 
+[functions.mercadopago-connect]
+verify_jwt = false
+
+[functions.mercadopago-oauth-callback]
+verify_jwt = false
+
 [api]
 enabled = true
 # Port to use for the API URL.

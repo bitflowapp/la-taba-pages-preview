@@ -69,7 +69,7 @@ async function reconcile(
 ): Promise<boolean> {
   const { data: intents } = await service
     .from('payment_intents')
-    .select('id, external_reference, internal_status')
+    .select('id, external_reference, internal_status, business_id')
     .eq('checkout_session_id', checkoutSessionId)
     .limit(1);
   const intent = Array.isArray(intents) ? intents[0] : null;
@@ -81,7 +81,7 @@ async function reconcile(
 
   let payment: Record<string, unknown> | null = null;
   try {
-    payment = await findPaymentByExternalReference(String(intent.external_reference));
+    payment = await findPaymentByExternalReference(String(intent.external_reference), intent.business_id);
   } catch (_) {
     // A provider outage must never break the status screen: the shopper keeps
     // seeing the last known state and the next poll retries.
@@ -91,7 +91,7 @@ async function reconcile(
 
   const { data: recorded, error: recordError } = await service.rpc('record_mercadopago_payment_snapshot', {
     p_payment_intent_id: intent.id,
-    p_snapshot: await paymentSnapshot(payment),
+    p_snapshot: await paymentSnapshot(payment, intent.business_id),
     p_source: 'reconciliation',
     p_webhook_receipt_id: null,
   });

@@ -1,3 +1,4 @@
+import { businessForIntent, oauthMode, oauthConfig, sellerAccessToken } from '../_shared/seller-oauth.ts';
 import {
   createServiceClient,
   enforceRateLimit,
@@ -17,6 +18,7 @@ import {
 
 type OutboxJob = {
   id: string;
+  business_id?: string;
   topic: 'payment' | 'chargeback' | 'claim' | 'payment_reconcile' | 'refund_reconcile' | 'cancellation_reconcile';
   resource_id: string | null;
   webhook_receipt_id: string | null;
@@ -31,6 +33,10 @@ Deno.serve(async (request) => {
     requirePost(request);
     await requireWorkerAuthorization(request);
     const service = createServiceClient();
+    if (oauthMode()) {
+      const due = await service.from('mp_seller_connections').select('business_id').eq('environment',oauthConfig().environment).eq('status','connected').lt('expires_at',new Date(Date.now()+86400000).toISOString()).limit(10);
+      for (const row of due.data || []) { try { await sellerAccessToken(row.business_id); } catch (_) { /* Safe refresh failure is persisted for the panel. */ } }
+    }
     await enforceRateLimit(service, request, 'worker', 30, 60, 'payment-worker');
     const owner = `edge:${crypto.randomUUID()}`;
     const { data, error } = await service.rpc('claim_payment_outbox', {
@@ -50,6 +56,7 @@ Deno.serve(async (request) => {
       });
       if (started.error || started.data !== true) continue;
       try {
+        job.business_id = await jobBusiness(service, job);
         await processJob(service, job);
         const done = await service.rpc('complete_payment_outbox_job', {
           p_job_id: job.id,
@@ -92,7 +99,7 @@ async function processJob(service: ReturnType<typeof createServiceClient>, job: 
     const intent = await findIntent(service, String(payment.external_reference || ''));
     const { data, error } = await service.rpc('record_mercadopago_payment_snapshot', {
       p_payment_intent_id: intent.payment_intent_id,
-      p_snapshot: await paymentSnapshot(payment),
+      p_snapshot: await paymentSnapshot(payment, job.business_id),
       p_source: job.topic === 'payment' ? 'webhook' : 'reconciliation',
       p_webhook_receipt_id: job.webhook_receipt_id,
     });
@@ -109,15 +116,15 @@ async function processJob(service: ReturnType<typeof createServiceClient>, job: 
   if (job.topic === 'chargeback' || job.topic === 'claim') {
     if (!job.resource_id) throw new Error('Missing dispute resource ID');
     const dispute = job.topic === 'chargeback'
-      ? await fetchChargeback(job.resource_id)
-      : await fetchClaim(job.resource_id);
+      ? await fetchChargeback(job.resource_id, job.business_id)
+      : await fetchClaim(job.resource_id, job.business_id);
     const paymentId = disputePaymentId(dispute);
     if (!paymentId) throw new Error('Dispute has no payment ID');
-    const payment = await fetchPayment(paymentId);
+    const payment = await fetchPayment(paymentId, job.business_id);
     const intent = await findIntent(service, String(payment.external_reference || ''));
     const persistedPayment = await service.rpc('record_mercadopago_payment_snapshot', {
       p_payment_intent_id: intent.payment_intent_id,
-      p_snapshot: await paymentSnapshot(payment),
+      p_snapshot: await paymentSnapshot(payment, job.business_id),
       p_source: 'webhook',
       p_webhook_receipt_id: job.webhook_receipt_id,
     });
@@ -167,7 +174,7 @@ async function paymentForJob(
   service: ReturnType<typeof createServiceClient>,
   job: OutboxJob,
 ): Promise<Record<string, unknown> | null> {
-  if (job.resource_id) return await fetchPayment(job.resource_id);
+  if (job.resource_id) return await fetchPayment(job.resource_id, job.business_id);
   if (!job.payment_intent_id) throw new Error('Missing payment intent reference');
   const { data, error } = await service
     .from('payment_intents')
@@ -175,10 +182,10 @@ async function paymentForJob(
     .eq('id', job.payment_intent_id)
     .maybeSingle();
   if (error || !data) throw new Error('Payment intent not found');
-  if (data.provider_payment_id) return await fetchPayment(String(data.provider_payment_id));
+  if (data.provider_payment_id) return await fetchPayment(String(data.provider_payment_id), job.business_id);
   const externalReference = String(data.external_reference || '').trim();
   if (!externalReference) throw new Error('Payment is not reconcilable yet');
-  return await findPaymentByExternalReference(externalReference);
+  return await findPaymentByExternalReference(externalReference, job.business_id);
 }
 
 async function findIntent(
@@ -207,7 +214,7 @@ async function reconcileRefund(service: ReturnType<typeof createServiceClient>, 
     .eq('id', job.payment_intent_id)
     .maybeSingle();
   if (error || !data?.provider_payment_id) throw new Error('Refund payment not found');
-  const payment = await fetchPayment(String(data.provider_payment_id));
+  const payment = await fetchPayment(String(data.provider_payment_id), job.business_id);
   const refunds = Array.isArray(payment.refunds) ? payment.refunds : [];
   const { data: refund, error: refundError } = await service
     .from('payment_refunds')
@@ -234,9 +241,9 @@ async function reconcileRefund(service: ReturnType<typeof createServiceClient>, 
 async function reconcileCancellation(service: ReturnType<typeof createServiceClient>, job: OutboxJob): Promise<void> {
   if (!job.cancellation_id || !job.payment_intent_id) throw new Error('Missing cancellation reconciliation reference');
   const paymentId = await paymentIdForJob(service, job);
-  const payment = await fetchPayment(paymentId);
+  const payment = await fetchPayment(paymentId, job.business_id);
   const intent = await findIntent(service, String(payment.external_reference || ''));
-  const snapshot = await paymentSnapshot(payment);
+  const snapshot = await paymentSnapshot(payment, job.business_id);
   const persistedPayment = await service.rpc('record_mercadopago_payment_snapshot', {
     p_payment_intent_id: intent.payment_intent_id,
     p_snapshot: snapshot,
@@ -281,4 +288,14 @@ function safeFailureCode(error: unknown): string {
     return error.message.replace(/[^a-z0-9_.-]/gi, '_').slice(0, 120);
   }
   return 'payment_worker_failed';
+}
+
+async function jobBusiness(service: ReturnType<typeof createServiceClient>, job: OutboxJob): Promise<string | undefined> {
+  if (!oauthMode()) return undefined;
+  if (job.payment_intent_id) return await businessForIntent(job.payment_intent_id);
+  if (job.webhook_receipt_id) {
+    const {data,error}=await service.from('payment_webhook_receipts').select('seller_business_id,environment').eq('id',job.webhook_receipt_id).single();
+    if (!error && data?.seller_business_id && data.environment===oauthConfig().environment) return data.seller_business_id;
+  }
+  throw new Error('Missing seller routing context');
 }

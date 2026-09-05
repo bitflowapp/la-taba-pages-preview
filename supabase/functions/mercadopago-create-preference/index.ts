@@ -1,3 +1,4 @@
+import { businessForIntent } from '../_shared/seller-oauth.ts';
 import {
   assertAllowedOrigin,
   createServiceClient,
@@ -38,6 +39,7 @@ Deno.serve(async (request) => {
     });
     if (error || !data) return checkoutUnavailable(request);
     const preparation = data as PreferencePreparation;
+    const businessId = await businessForIntent(preparation.payment_intent_id);
     const storedPoint = selectedInitPoint(preparation);
     if (preparation.attempt_status === 'created' && storedPoint) {
       return preferenceResponse(request, preparation, storedPoint);
@@ -47,7 +49,7 @@ Deno.serve(async (request) => {
     // search endpoint is queried by stable external_reference before another
     // POST is attempted, and a recovered preference is persisted under the
     // original idempotency key.
-    const existing = await findPreferenceByExternalReference(preparation.external_reference);
+    const existing = await findPreferenceByExternalReference(preparation.external_reference, businessId);
     if (existing) {
       const preferenceId = String(existing.id || '').trim();
       const initPoint = String(existing.init_point || '').trim();
@@ -80,7 +82,7 @@ Deno.serve(async (request) => {
     }
 
     try {
-      const created = await createPreference(preparation);
+      const created = await createPreference(preparation, businessId);
       const { error: persistError } = await service.rpc('record_mercadopago_preference_created', {
         p_payment_attempt_id: preparation.payment_attempt_id,
         p_preference_id: created.preferenceId,

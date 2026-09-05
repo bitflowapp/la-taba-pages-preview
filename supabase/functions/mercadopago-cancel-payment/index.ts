@@ -1,3 +1,4 @@
+import { businessForIntent } from '../_shared/seller-oauth.ts';
 import {
   assertAllowedOrigin,
   createServiceClient,
@@ -40,6 +41,7 @@ Deno.serve(async (request) => {
     });
     if (prepareError || !prepared) return unavailable(request);
     if (prepared.reconciliation_required === true) return reconciling(request);
+    const businessId = await businessForIntent(paymentIntentId);
     const providerIdempotencyKey = requireUuid(prepared.idempotency_key, 'prepared.idempotency_key');
 
     try {
@@ -49,6 +51,7 @@ Deno.serve(async (request) => {
           method: 'PUT',
           body: JSON.stringify({ status: 'cancelled' }),
           idempotencyKey: providerIdempotencyKey,
+          businessId,
         },
       );
       const responseHash = await sha256Hex(result.rawText);

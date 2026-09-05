@@ -1,3 +1,4 @@
+import { oauthMode } from '../_shared/seller-oauth.ts';
 import {
   createServiceClient,
   enforceRateLimit,
@@ -8,6 +9,7 @@ import {
   readJsonObject,
   requirePost,
   sha256Hex,
+  requireUuid,
 } from '../_shared/payment-runtime.ts';
 import { validateMercadoPagoWebhookSignature } from '../_shared/mercadopago-webhook-signature.ts';
 import { requestIsHttps } from '../_shared/request-protocol.ts';
@@ -31,6 +33,7 @@ Deno.serve(async (request) => {
     await enforceRateLimit(service, request, 'webhook', 240, 60, 'mercadopago-webhook');
 
     const url = new URL(request.url);
+    const businessId = oauthMode() ? requireUuid(url.searchParams.get('business_id'), 'business_id') : undefined;
     // Mercado Pago's current official SDK recipe signs the `data.id` query
     // parameter, not a reconstructed event object. Do not substitute a
     // body-derived identifier in the validator.
@@ -47,7 +50,7 @@ Deno.serve(async (request) => {
       requestId,
       dataId,
       bodyDataId,
-      secret: getRequiredEnv('MERCADOPAGO_WEBHOOK_SECRET'),
+      secret: oauthMode() ? getRequiredEnv('MERCADOPAGO_OAUTH_WEBHOOK_SECRET') : getRequiredEnv('MERCADOPAGO_WEBHOOK_SECRET'),
     });
 
     if (!eventType || !dataId) {
@@ -56,6 +59,7 @@ Deno.serve(async (request) => {
       const safeEventType = eventType || 'invalid';
       const safeResource = dataId || payloadHash.slice(0, 64);
       await persistReceipt(service, {
+        businessId,
         environment: providerEnvironment(),
         webhookEventId,
         eventType: safeEventType,
@@ -68,7 +72,8 @@ Deno.serve(async (request) => {
     }
 
     const receipt = await persistReceipt(service, {
-      environment: providerEnvironment(),
+      businessId,
+        environment: providerEnvironment(),
       webhookEventId,
       eventType,
       resourceId: dataId,
@@ -95,6 +100,7 @@ Deno.serve(async (request) => {
 async function persistReceipt(
   service: ReturnType<typeof createServiceClient>,
   input: {
+    businessId?: string;
     environment: 'test' | 'production';
     webhookEventId: string;
     eventType: string;
@@ -104,7 +110,8 @@ async function persistReceipt(
     payloadHash: string;
   },
 ): Promise<Record<string, unknown>> {
-  const { data, error } = await service.rpc('record_mercadopago_webhook_receipt', {
+  const { data, error } = await service.rpc(input.businessId ? 'mp_record_seller_webhook' : 'record_mercadopago_webhook_receipt', {
+    ...(input.businessId ? {p_business_id:input.businessId} : {}),
     p_environment: input.environment,
     p_webhook_event_id: input.webhookEventId,
     p_event_type: input.eventType,

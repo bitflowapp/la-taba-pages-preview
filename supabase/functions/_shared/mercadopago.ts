@@ -1,3 +1,4 @@
+import { audit, invalidateRejectedToken, oauthMode, sellerAccessToken } from './seller-oauth.ts';
 import type { PaymentEnvironment } from './payment-runtime.ts';
 import {
   checkoutReturnUrl,
@@ -56,7 +57,7 @@ export function assertPreparationEnvironment(preparation: PreferencePreparation)
   }
 }
 
-export function preferenceRequest(preparation: PreferencePreparation): Record<string, unknown> {
+export function preferenceRequest(preparation: PreferencePreparation, businessId?: string): Record<string, unknown> {
   assertPreparationEnvironment(preparation);
   const expiresAt = new Date(preparation.expires_at);
   if (Number.isNaN(expiresAt.valueOf()) || expiresAt.valueOf() <= Date.now()) {
@@ -98,7 +99,7 @@ export function preferenceRequest(preparation: PreferencePreparation): Record<st
   return {
     items,
     external_reference: preparation.external_reference,
-    notification_url: webhookUrl(),
+    notification_url: businessId && oauthMode() ? `${webhookUrl()}?business_id=${encodeURIComponent(businessId)}` : webhookUrl(),
     back_urls: {
       success: checkoutReturnUrl('/pago/resultado'),
       pending: checkoutReturnUrl('/pago/pendiente'),
@@ -118,12 +119,13 @@ export function preferenceRequest(preparation: PreferencePreparation): Record<st
 
 export async function mercadoPagoRequest(
   path: string,
-  init: RequestInit & { idempotencyKey?: string } = {},
+  init: RequestInit & { idempotencyKey?: string; businessId?: string } = {},
 ): Promise<MercadoPagoApiResult> {
   // Every provider call, including webhook reconciliation and refunds, checks
   // the environment review before the backend-only access token is read.
   providerEnvironment();
-  const accessToken = getRequiredEnv('MERCADOPAGO_ACCESS_TOKEN');
+  if (oauthMode() && !init.businessId) throw new Error('Seller context required');
+  const accessToken = oauthMode() ? await sellerAccessToken(init.businessId!) : getRequiredEnv('MERCADOPAGO_ACCESS_TOKEN');
   const headers = new Headers(init.headers || {});
   headers.set('Authorization', `Bearer ${accessToken}`);
   headers.set('Accept', 'application/json');
@@ -139,6 +141,9 @@ export async function mercadoPagoRequest(
       signal: controller.signal,
     });
     const rawText = await response.text();
+    if (response.status === 401 && oauthMode() && init.businessId) {
+      await invalidateRejectedToken(init.businessId, accessToken);
+    }
     let body: Record<string, unknown> | null = null;
     try {
       const parsed = JSON.parse(rawText);
@@ -158,15 +163,16 @@ export async function mercadoPagoRequest(
   }
 }
 
-export async function createPreference(preparation: PreferencePreparation): Promise<{
+export async function createPreference(preparation: PreferencePreparation, businessId?: string): Promise<{
   preferenceId: string;
   initPoint: string;
   sandboxInitPoint: string;
   responseHash: string;
   requestId: string;
 }> {
-  const request = preferenceRequest(preparation);
+  const request = preferenceRequest(preparation, businessId);
   const result = await mercadoPagoRequest('/checkout/preferences', {
+    businessId,
     method: 'POST',
     body: JSON.stringify(request),
     idempotencyKey: preparation.idempotency_key,
@@ -181,11 +187,12 @@ export async function createPreference(preparation: PreferencePreparation): Prom
   if (!preferenceId || !initPoint) {
     throw new MercadoPagoApiError(result.response.status || 502, responseHash, result.requestId);
   }
+  if (businessId) audit('preference_created', businessId, result.requestId || crypto.randomUUID());
   return { preferenceId, initPoint, sandboxInitPoint, responseHash, requestId: result.requestId };
 }
 
-export async function fetchPayment(paymentId: string): Promise<Record<string, unknown>> {
-  const result = await mercadoPagoRequest(`/v1/payments/${encodeURIComponent(paymentId)}`);
+export async function fetchPayment(paymentId: string, businessId?: string): Promise<Record<string, unknown>> {
+  const result = await mercadoPagoRequest(`/v1/payments/${encodeURIComponent(paymentId)}`, { businessId });
   if (!result.response.ok || !result.body) throw new MercadoPagoApiError(result.response.status, await sha256Hex(result.rawText), result.requestId);
   return result.body;
 }
@@ -196,14 +203,14 @@ export async function fetchPayment(paymentId: string): Promise<Record<string, un
 // those notifications can be received but never validated. Reading the payment
 // back from the provider with the backend-only access token is a stronger
 // check than the HMAC: nothing here is taken from the caller.
-export async function findPaymentByExternalReference(externalReference: string): Promise<Record<string, unknown> | null> {
+export async function findPaymentByExternalReference(externalReference: string, businessId?: string): Promise<Record<string, unknown> | null> {
   const query = new URLSearchParams({
     external_reference: externalReference,
     sort: 'date_created',
     criteria: 'desc',
     limit: '10',
   });
-  const result = await mercadoPagoRequest(`/v1/payments/search?${query.toString()}`);
+  const result = await mercadoPagoRequest(`/v1/payments/search?${query.toString()}`, { businessId });
   if (!result.response.ok || !result.body) {
     throw new MercadoPagoApiError(result.response.status, await sha256Hex(result.rawText), result.requestId);
   }
@@ -214,15 +221,15 @@ export async function findPaymentByExternalReference(externalReference: string):
   if (!paymentId) return null;
   // The search payload is a summary; the durable snapshot always comes from the
   // full payment resource, exactly like the webhook worker builds it.
-  return await fetchPayment(paymentId);
+  return await fetchPayment(paymentId, businessId);
 }
 
-export async function findPreferenceByExternalReference(externalReference: string): Promise<Record<string, unknown> | null> {
+export async function findPreferenceByExternalReference(externalReference: string, businessId?: string): Promise<Record<string, unknown> | null> {
   const query = new URLSearchParams({
     external_reference: externalReference,
     limit: '10',
   });
-  const result = await mercadoPagoRequest(`/checkout/preferences/search?${query.toString()}`);
+  const result = await mercadoPagoRequest(`/checkout/preferences/search?${query.toString()}`, { businessId });
   if (!result.response.ok || !result.body) {
     throw new MercadoPagoApiError(result.response.status, await sha256Hex(result.rawText), result.requestId);
   }
@@ -231,7 +238,7 @@ export async function findPreferenceByExternalReference(externalReference: strin
   if (!candidate) return null;
   const preferenceId = text(object(candidate).id);
   if (!preferenceId) return null;
-  const preference = await mercadoPagoRequest(`/checkout/preferences/${encodeURIComponent(preferenceId)}`);
+  const preference = await mercadoPagoRequest(`/checkout/preferences/${encodeURIComponent(preferenceId)}`, { businessId });
   if (!preference.response.ok || !preference.body) {
     throw new MercadoPagoApiError(preference.response.status, await sha256Hex(preference.rawText), preference.requestId);
   }
@@ -241,25 +248,25 @@ export async function findPreferenceByExternalReference(externalReference: strin
 // A Checkout Pro payment does not carry `preference_id`: it is only reachable
 // through its merchant order. Without this hop the stored snapshot has an empty
 // preference and the intent assertion can never match.
-export async function fetchMerchantOrder(merchantOrderId: string): Promise<Record<string, unknown> | null> {
-  const result = await mercadoPagoRequest(`/merchant_orders/${encodeURIComponent(merchantOrderId)}`);
+export async function fetchMerchantOrder(merchantOrderId: string, businessId?: string): Promise<Record<string, unknown> | null> {
+  const result = await mercadoPagoRequest(`/merchant_orders/${encodeURIComponent(merchantOrderId)}`, { businessId });
   if (!result.response.ok || !result.body) return null;
   return result.body;
 }
 
-export async function fetchChargeback(chargebackId: string): Promise<Record<string, unknown>> {
-  const result = await mercadoPagoRequest(`/v1/chargebacks/${encodeURIComponent(chargebackId)}`);
+export async function fetchChargeback(chargebackId: string, businessId?: string): Promise<Record<string, unknown>> {
+  const result = await mercadoPagoRequest(`/v1/chargebacks/${encodeURIComponent(chargebackId)}`, { businessId });
   if (!result.response.ok || !result.body) throw new MercadoPagoApiError(result.response.status, await sha256Hex(result.rawText), result.requestId);
   return result.body;
 }
 
-export async function fetchClaim(claimId: string): Promise<Record<string, unknown>> {
-  const result = await mercadoPagoRequest(`/post-purchase/v1/claims/${encodeURIComponent(claimId)}`);
+export async function fetchClaim(claimId: string, businessId?: string): Promise<Record<string, unknown>> {
+  const result = await mercadoPagoRequest(`/post-purchase/v1/claims/${encodeURIComponent(claimId)}`, { businessId });
   if (!result.response.ok || !result.body) throw new MercadoPagoApiError(result.response.status, await sha256Hex(result.rawText), result.requestId);
   return result.body;
 }
 
-export async function paymentSnapshot(payment: Record<string, unknown>): Promise<Record<string, unknown>> {
+export async function paymentSnapshot(payment: Record<string, unknown>, businessId?: string): Promise<Record<string, unknown>> {
   const payer = object(payment.payer);
   const refunds = Array.isArray(payment.refunds) ? payment.refunds : [];
   const refundedAmount = refunds.reduce((total, refund) => total + number(object(refund).amount), 0);
@@ -268,7 +275,7 @@ export async function paymentSnapshot(payment: Record<string, unknown>): Promise
   const merchantOrderId = text(object(payment.order).id);
   let preferenceId = text(payment.preference_id);
   if (!preferenceId && merchantOrderId) {
-    const merchantOrder = await fetchMerchantOrder(merchantOrderId);
+    const merchantOrder = await fetchMerchantOrder(merchantOrderId, businessId);
     preferenceId = text(object(merchantOrder).preference_id);
   }
   return {

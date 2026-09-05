@@ -1,5 +1,7 @@
 # Seller cutover: auditoría de clasificación, 2026-09-05
 
+Este documento conserva la auditoría histórica. La decisión posterior es preservar este negocio y autorizar Walter sobre un negocio nuevo: [estado del onboarding limpio](MERCADOPAGO_WALTER_CLEAN_BUSINESS.md). No se reinterpreta ninguna clasificación de esta auditoría.
+
 **Cutover detenido por la regla explícita de la fase 1: hay registros UNKNOWN.** No se cambiaron conexiones, configuración remota, funciones, negocio ni historial. No se ejecutó una migración ni se preparó otro negocio para eludir esta condición.
 
 ## Universo y evidencia
@@ -52,11 +54,11 @@ Una segunda lectura de las mismas columnas de los 94 intents fue idéntica al sn
 
 Detalle completo por intent — clasificación, motivo, campos originales, importes, timestamps, collector verificado cuando corresponde y resultados del proveedor — en los archivos locales fuera de Git:
 
-- `C:\1212\la-taba-mp-cutover-classification.csv`
-- `C:\1212\la-taba-mp-cutover-classification.json`
-- `C:\1212\la-taba-mp-cutover-audit.json`
-- `C:\1212\la-taba-mp-cutover-provider.json`
-- `C:\1212\la-taba-mp-cutover-orders.json`
+- `la-taba-mp-cutover-classification.csv`
+- `la-taba-mp-cutover-classification.json`
+- `la-taba-mp-cutover-audit.json`
+- `la-taba-mp-cutover-provider.json`
+- `la-taba-mp-cutover-orders.json`
 
 Las pruebas anteriores siguen siendo 67 pagos + 53 webhook + 2 UI OAuth = **122/122 PASS**; no se presentan como pruebas de un cutover implementado. Las migraciones, nuevos casos de cutover, redeploy y simulación de seller B no se ejecutaron porque la fase 1 los bloquea. Staging permanece en https://taba2-staging.pages.dev.
 

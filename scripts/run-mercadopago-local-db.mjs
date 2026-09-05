@@ -150,6 +150,7 @@ try {
   psql(fs.readFileSync(path.join(root, 'supabase', 'tests', 'mercadopago_checkout_pro.local.sql')));
   runPgTap(path.join('supabase', 'tests', 'business_windows_scanner_fiscal_test.sql'));
   runPgTap(path.join('supabase', 'tests', 'mercadopago_seller_oauth.local.sql'));
+  runPgTap(path.join('supabase', 'tests', 'mercadopago_clean_business.local.sql'));
   runPgTap(path.join('supabase', 'tests', 'fiscal_document_closure_test.sql'));
   runPgTap(path.join('supabase', 'tests', 'production_operations_control_plane_test.sql'));
   runPgTap(path.join('supabase', 'tests', 'durable_offline_packing_test.sql'));

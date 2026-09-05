@@ -28,6 +28,9 @@
   Content-Type: application/manifest+json; charset=utf-8
   Cache-Control: no-cache
 
+/runtime-config.js
+  Cache-Control: no-store
+
 # La URL de esta pantalla lleva el hash del enlace del correo. Ningún pedido que
 # salga de acá debe llevarlo en el Referer, ni siquiera al mismo origen.
 /cuenta/*

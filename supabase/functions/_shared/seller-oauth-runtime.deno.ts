@@ -1,15 +1,20 @@
 import { assertEquals, assertRejects } from "jsr:@std/assert@1.0.19";
 import {
   connection,
+  assertOAuthBusiness,
+  assertOAuthPaymentEnvironment,
   oauthConfig,
   protect,
   sellerAccessToken,
   tokenGrant,
+  sellerIdentity,
 } from "./seller-oauth.ts";
 import { randomSecret } from "./seller-oauth-crypto.ts";
 
 const business = "92000000-0000-4000-8000-000000000001";
 function configure() {
+  Deno.env.delete("MERCADOPAGO_OAUTH_ENVIRONMENT");
+  Deno.env.delete("MERCADOPAGO_OAUTH_ONBOARDING_BUSINESS_ID");
   for (
     const [name, value] of Object.entries({
       SUPABASE_URL: "https://oauth-fixture.supabase.co",
@@ -24,6 +29,34 @@ function configure() {
     })
   ) Deno.env.set(name, value);
 }
+Deno.test("staging real-account consent is scoped to one clean business and cannot execute payments", async () => {
+  configure();
+  Deno.env.set("MERCADOPAGO_OAUTH_ENVIRONMENT", "production");
+  await assertRejects(async () => oauthConfig());
+  Deno.env.set("MERCADOPAGO_OAUTH_ONBOARDING_BUSINESS_ID", business);
+  assertEquals(oauthConfig().environment, "production");
+  assertOAuthBusiness(business);
+  await assertRejects(async () => assertOAuthBusiness("another-business"));
+  await assertRejects(async () => assertOAuthPaymentEnvironment());
+  configure();
+  assertOAuthPaymentEnvironment();
+});
+Deno.test("seller identity uses provider tags to prevent test/production crossover", async () => {
+  configure();
+  const original = globalThis.fetch;
+  try {
+    globalThis.fetch = () => Promise.resolve(Response.json({id: 123, site_id: "MLA", tags: ["test_user"]}));
+    assertEquals((await sellerIdentity("fixture", "123")).seller_id, "123");
+    Deno.env.set("MERCADOPAGO_OAUTH_ENVIRONMENT", "production");
+    Deno.env.set("MERCADOPAGO_OAUTH_ONBOARDING_BUSINESS_ID", business);
+    await assertRejects(() => sellerIdentity("fixture", "123"));
+    globalThis.fetch = () => Promise.resolve(Response.json({id: 123, site_id: "MLA", tags: ["normal"]}));
+    assertEquals((await sellerIdentity("fixture", "123")).seller_id, "123");
+    await assertRejects(() => sellerIdentity("fixture", "456"));
+    configure();
+    await assertRejects(() => sellerIdentity("fixture", "123"));
+  } finally { globalThis.fetch = original; configure(); }
+});
 const tokens = {
   access_token: "fixture-access",
   refresh_token: "fixture-refresh",

@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v95-mercadopago-oauth-argentina';
+const CACHE_NAME = 'la-taba-runtime-v96-clean-business-onboarding';
 const ASSETS = [
   './',
   './index.html',
@@ -21,7 +21,7 @@ const ASSETS = [
   // cadena de CSS versionado; no lo introdujo esta integración.
   './styles/motion.css?v=58',
   './manifest.webmanifest',
-  './runtime-config.js',
+  './runtime-config.js?tenant=walter-staging',
   './pago/resultado/index.html',
   './pago/pendiente/index.html',
   './pago/error/index.html',

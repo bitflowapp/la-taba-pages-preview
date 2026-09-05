@@ -1,5 +1,7 @@
 # Verificación posterior al ingreso del Webhook Secret — 2026-09-05
 
+Evidencia de la fase anterior. El onboarding actual usa un negocio nuevo y conserva íntegro el histórico: [estado del negocio limpio de Walter](MERCADOPAGO_WALTER_CLEAN_BUSINESS.md).
+
 El secret **MERCADOPAGO_OAUTH_WEBHOOK_SECRET existe** en Supabase staging `ukxqbgswjlibmnjemrzd`. Es exactamente la variable que consume `mercadopago-webhook` en modo OAuth. Se comprobó su nombre mediante Management API; no se recuperó ni mostró su valor. No hace falta volver a ingresarlo.
 
 ## Evidencia actual
@@ -16,7 +18,7 @@ El secret **MERCADOPAGO_OAUTH_WEBHOOK_SECRET existe** en Supabase staging `ukxqb
 - El script PowerShell ahora captura la confirmación del proceso Node, exige éxito y muestra únicamente `CONFIGURED` al finalizar. Rechazo HTTP y confirmación incorrecta producen error explícito sin imprimir el valor. Pruebas incluyen ejecución real del wrapper PowerShell con transporte simulado.
 - Se eliminó una intermitencia del test de cifrado: su alteración ahora siempre cambia el carácter original, en lugar de poder reemplazar `x` por el mismo `x`.
 
-La evidencia local `la-taba-mp-secret-*.log`, `la-taba-mp-hmac-live-evidence.json`, `la-taba-mp-oauth-server-evidence.json` y `la-taba-mp-final-state.json` está fuera de Git en `C:\1212`. No contiene valores de secrets. Producción no se modificó.
+La evidencia local `la-taba-mp-secret-*.log`, `la-taba-mp-hmac-live-evidence.json`, `la-taba-mp-oauth-server-evidence.json` y `la-taba-mp-final-state.json` está fuera de Git en el directorio local de validación. No contiene valores de secrets. Producción no se modificó.
 
 ## Condición para Walter
 

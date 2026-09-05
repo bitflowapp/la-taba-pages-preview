@@ -9,13 +9,18 @@ import { seal, unseal } from "./seller-oauth-crypto.ts";
 export const oauthMode = () =>
   Deno.env.get("MERCADOPAGO_CREDENTIAL_MODE") === "oauth";
 export function oauthConfig() {
-  const environment = providerEnvironment();
+  const paymentEnvironment = providerEnvironment();
+  const environment = Deno.env.get("MERCADOPAGO_OAUTH_ENVIRONMENT") || paymentEnvironment;
   const deployment = getRequiredEnv("TABA_DEPLOYMENT_ENV");
+  const onboardingBusinessId = Deno.env.get("MERCADOPAGO_OAUTH_ONBOARDING_BUSINESS_ID") || "";
+  const isolatedConsent = deployment === "staging" && paymentEnvironment === "test" &&
+    environment === "production" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(onboardingBusinessId);
   const project = new URL(getRequiredEnv("SUPABASE_URL"));
   const expected = getRequiredEnv("MERCADOPAGO_OAUTH_PROJECT_REF");
   if (
     project.hostname !== `${expected}.supabase.co` ||
-    (environment === "production") !== (deployment === "production") ||
+    !["test", "production"].includes(environment) ||
+    (!isolatedConsent && ((environment === "production") !== (deployment === "production") || environment !== paymentEnvironment)) ||
     !["staging", "production"].includes(deployment)
   ) throw new Error("OAuth environment mismatch");
   const callback = `${project.origin}/functions/v1/mercadopago-oauth-callback`;
@@ -26,12 +31,24 @@ export function oauthConfig() {
   ) throw new Error("Invalid panel URL");
   const clientId = getRequiredEnv("MERCADOPAGO_CLIENT_ID");
   if (!/^\d+$/.test(clientId)) throw new Error("Invalid application ID");
-  return { environment, callback, panel: panel.toString(), clientId };
+  return { environment: environment as "test" | "production", callback, panel: panel.toString(), clientId, onboardingBusinessId: isolatedConsent ? onboardingBusinessId : "" };
+}
+export function assertOAuthBusiness(businessId: string) {
+  const config = oauthConfig();
+  if (config.onboardingBusinessId && businessId !== config.onboardingBusinessId) {
+    throw new Error("Business is outside the isolated onboarding scope");
+  }
+}
+export function assertOAuthPaymentEnvironment() {
+  if (oauthConfig().environment !== providerEnvironment()) {
+    throw new Error("Seller consent is isolated from payment execution");
+  }
 }
 export function protectionContext(
   businessId: string,
   purpose = "tokens",
 ): string {
+  assertOAuthBusiness(businessId);
   const c = oauthConfig();
   return `${
     getRequiredEnv("MERCADOPAGO_OAUTH_PROJECT_REF")
@@ -112,9 +129,13 @@ export async function sellerIdentity(accessToken: string, sellerId: string) {
   if (String(body.id) !== sellerId || body.site_id !== "MLA") {
     throw new Error("Seller identity mismatch");
   }
+  if (!Array.isArray(body.tags) || body.tags.includes("test_user") !== (oauthConfig().environment === "test")) {
+    throw new Error("Seller account environment mismatch");
+  }
   return { seller_id: sellerId };
 }
 export async function connection(businessId: string) {
+  assertOAuthBusiness(businessId);
   const { data, error } = await createServiceClient().from(
     "mp_seller_connections",
   ).select("*").eq("business_id", businessId).eq(

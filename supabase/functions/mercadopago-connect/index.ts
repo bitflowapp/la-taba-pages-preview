@@ -17,6 +17,7 @@ import {
 } from "../_shared/seller-oauth-crypto.ts";
 import {
   audit,
+  assertOAuthBusiness,
   connection,
   invalidateRejectedToken,
   oauthConfig,
@@ -35,6 +36,7 @@ Deno.serve(async (request) => {
     const { user, client } = await requireAuthenticatedUser(request);
     const body = await readJsonObject(request);
     const businessId = requireUuid(body.business_id, "business_id");
+    assertOAuthBusiness(businessId);
     const permission = await client.rpc("mp_connection_authorized", {
       p_business_id: businessId,
     });

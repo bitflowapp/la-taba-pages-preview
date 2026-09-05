@@ -1,4 +1,4 @@
-import { audit, invalidateRejectedToken, oauthMode, sellerAccessToken } from './seller-oauth.ts';
+import { assertOAuthPaymentEnvironment, audit, invalidateRejectedToken, oauthMode, sellerAccessToken } from './seller-oauth.ts';
 import type { PaymentEnvironment } from './payment-runtime.ts';
 import {
   checkoutReturnUrl,
@@ -124,6 +124,7 @@ export async function mercadoPagoRequest(
   // Every provider call, including webhook reconciliation and refunds, checks
   // the environment review before the backend-only access token is read.
   providerEnvironment();
+  if (oauthMode()) assertOAuthPaymentEnvironment();
   if (oauthMode() && !init.businessId) throw new Error('Seller context required');
   const accessToken = oauthMode() ? await sellerAccessToken(init.businessId!) : getRequiredEnv('MERCADOPAGO_ACCESS_TOKEN');
   const headers = new Headers(init.headers || {});

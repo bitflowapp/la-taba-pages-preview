@@ -1,0 +1,25 @@
+import {createHash} from 'node:crypto';
+import {conToken} from '../lib/supabase-cli-token.mjs';
+const ref='ukxqbgswjlibmnjemrzd';
+const hash=value=>createHash('sha256').update(value).digest('hex');
+await conToken(async token=>{
+  const headers={Authorization:`Bearer ${token}`,'content-type':'application/json'};
+  const project=await fetch(`https://api.supabase.com/v1/projects/${ref}`,{headers});
+  if(!project.ok||(await project.json()).id!==ref)throw Error('Wrong staging project');
+  const response=await fetch(`https://api.supabase.com/v1/projects/${ref}/database/query`,{method:'POST',headers,body:JSON.stringify({query:"select b.id,(select count(*) from public.payment_intents where business_id=b.id) intents,(select count(*) from public.mp_seller_connections where business_id=b.id) connections,(select count(*) from public.mp_oauth_states where business_id=b.id) states from public.businesses b where b.slug='taba-walter-staging'"})});
+  if(!response.ok)throw Error('Unable to verify clean business');
+  const rows=await response.json();
+  if(rows.length!==1||Number(rows[0].intents)!==0||Number(rows[0].connections)!==0||Number(rows[0].states)!==0)throw Error('Walter business is not clean');
+  const endpoint=`https://api.supabase.com/v1/projects/${ref}/secrets`;
+  const before=await fetch(endpoint,{headers});if(!before.ok)throw Error('Unable to verify staging settings');
+  const secrets=await before.json();
+  const matches=(name,value)=>secrets.some(s=>s.name===name&&s.value===hash(value));
+  if(!matches('MERCADOPAGO_ENVIRONMENT','test')||!matches('TABA_DEPLOYMENT_ENV','staging')||!matches('MERCADOPAGO_OAUTH_PROJECT_REF',ref)||!matches('MERCADOPAGO_CREDENTIAL_MODE','oauth'))throw Error('Staging isolation not verified');
+  const values=[{name:'MERCADOPAGO_OAUTH_ENVIRONMENT',value:'production'},{name:'MERCADOPAGO_OAUTH_ONBOARDING_BUSINESS_ID',value:rows[0].id}];
+  const updated=await fetch(endpoint,{method:'POST',headers,body:JSON.stringify(values)});
+  if(!updated.ok)throw Error('Unable to prepare isolated consent');
+  const after=await fetch(endpoint,{headers});if(!after.ok)throw Error('Unable to verify isolated consent');
+  const configured=await after.json();
+  if(!values.every(v=>configured.some(s=>s.name===v.name&&s.value===hash(v.value))))throw Error('Isolated consent not confirmed');
+  console.log(JSON.stringify({project_ref:ref,business_id:rows[0].id,oauth_environment:'production',payment_environment:'test',real_charges_enabled:false,configured:true}));
+});

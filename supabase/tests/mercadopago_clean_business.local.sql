@@ -1,0 +1,31 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select plan(15);
+create temp table fixture(label text primary key,id uuid default gen_random_uuid());
+insert into fixture(label) values('clean'),('legacy'),('owner');
+insert into auth.users(id,email) select id,'clean-oauth@example.invalid' from fixture where label='owner';
+insert into public.businesses(id,name,slug) select id,label,'mp-clean-test-'||label from fixture where label in ('clean','legacy');
+insert into public.checkout_sessions(business_id,customer_id,client_request_id,normalized_intent_hash,fulfillment_type,subtotal,total,expires_at)
+select (select id from fixture where label='legacy'),(select id from fixture where label='owner'),'clean_test_'||n,repeat('a',64),'pickup',10,10,now()+interval '1 day' from generate_series(1,94) n;
+insert into public.payment_intents(business_id,checkout_session_id,environment,external_reference,expected_amount,preference_id,live_mode)
+select business_id,id,'test','taba2:checkout:'||id,10,'old-test-preference:'||id,false from public.checkout_sessions where business_id=(select id from fixture where label='legacy');
+create temp table old_snapshot as select md5(jsonb_agg(to_jsonb(i) order by i.id)::text) hash from public.payment_intents i where business_id=(select id from fixture where label='legacy');
+select is((select count(*)::int from public.mp_seller_connections where business_id=(select id from fixture where label='clean')),0,'clean business has no previous seller');
+select is((select count(*)::int from public.payment_intents where business_id=(select id from fixture where label='clean')),0,'clean business inherits no intents or UNKNOWN history');
+select public.mp_begin_oauth((select id from fixture where label='clean'),(select id from fixture where label='owner'),'production','clean-state','fixture-encrypted-state');
+select is((select business_id from public.mp_oauth_states where state_hash='clean-state'),(select id from fixture where label='clean'),'OAuth state binds the clean business');
+select is((select count(*)::int from public.mp_consume_oauth('clean-state','production')),1,'callback consumes state');
+select is((select count(*)::int from public.mp_consume_oauth('clean-state','production')),0,'callback replay blocked');
+select ok(public.mp_finish_oauth((select id from fixture where label='clean'),'production',(select generation from public.mp_seller_connections where business_id=(select id from fixture where label='clean')),'123456','999999','read write offline_access','fixture-encrypted-tokens',now()+interval '1 day'),'first seller accepted on clean business');
+select is((select seller_id from public.mp_seller_connections where business_id=(select id from fixture where label='clean')),'123456','correct seller stored');
+select ok(public.mp_finish_oauth((select id from fixture where label='clean'),'production',(select generation from public.mp_seller_connections where business_id=(select id from fixture where label='clean')),'123456','999999','read write offline_access','fixture-encrypted-tokens',now()+interval '1 day'),'same seller repeated is allowed');
+select throws_ok($q$ select public.mp_finish_oauth((select id from fixture where label='clean'),'production',(select generation from public.mp_seller_connections where business_id=(select id from fixture where label='clean')),'654321','999999','read write offline_access','fixture-encrypted-tokens',now()+interval '1 day') $q$,'P0001','seller_change_requires_migration','different seller blocked even before first payment');
+select is((select count(*)::int from public.payment_intents where business_id=(select id from fixture where label='legacy')),94,'legacy keeps exactly 94 intents');
+select is((select md5(jsonb_agg(to_jsonb(i) order by i.id)::text) from public.payment_intents i where business_id=(select id from fixture where label='legacy')),(select hash from old_snapshot),'all legacy payment columns unchanged');
+select is((select count(*)::int from public.payment_intents where business_id=(select id from fixture where label='clean')),0,'authorization does not create a payment');
+select is((select enabled from public.business_payment_settings where business_id=(select id from fixture where label='clean')),false,'real authorization does not enable real charges');
+select public.mp_disconnect((select id from fixture where label='clean'),'production');
+select throws_ok($q$ select public.mp_finish_oauth((select id from fixture where label='clean'),'production',(select generation from public.mp_seller_connections where business_id=(select id from fixture where label='clean')),'654321','999999','read write offline_access','fixture-encrypted-tokens',now()+interval '1 day') $q$,'P0001','seller_change_requires_migration','disconnect cannot bypass binding');
+select ok(public.mp_finish_oauth((select id from fixture where label='clean'),'production',(select generation from public.mp_seller_connections where business_id=(select id from fixture where label='clean')),'123456','999999','read write offline_access','fixture-encrypted-tokens',now()+interval '1 day'),'same seller can reconnect after disconnect');
+select * from finish();
+rollback;

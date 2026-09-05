@@ -10,6 +10,12 @@ verify_jwt = false
 [functions.mercadopago-oauth-callback]
 verify_jwt = false
 
+[functions.mercadopago-refund]
+verify_jwt = true
+
+[functions.mercadopago-cancel-payment]
+verify_jwt = true
+
 [api]
 enabled = true
 # Port to use for the API URL.

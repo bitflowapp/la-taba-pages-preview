@@ -219,7 +219,7 @@ function renderMercadoPagoConnection(connection, busy, elevated) {
   const status = connection?.status;
   const connected = status === 'connected';
   const reauthorize = status === 'requires_reauthorization';
-  const message = busy ? 'Conectando Mercado Pago...' : connected ? '✓ Mercado Pago conectado' : reauthorize ? 'Necesitamos volver a conectar Mercado Pago.' : status === 'unavailable' ? 'No pudimos verificar la conexión. Intentá nuevamente.' : 'Conectá tu cuenta para recibir pagos online.';
+  const message = busy ? 'Conectando Mercado Pago...' : connected ? '✓ Mercado Pago conectado correctamente' : reauthorize ? 'Necesitamos volver a conectar Mercado Pago.' : status === 'unavailable' ? 'No pudimos verificar la conexión. Intentá nuevamente.' : 'Conectá tu cuenta para recibir pagos online.';
   const button = (action, label) => '<button class="primary-button compact" type="button" data-mp-connection-action="' + action + '" ' + (busy ? 'disabled' : '') + '>' + label + '</button>';
   return '<section aria-label="Mercado Pago" class="operation-summary" aria-busy="' + Boolean(busy) + '"><h3>Mercado Pago</h3><p role="status" aria-live="polite">' + message + '</p>'
     + (connected && connection.seller_id ? '<p>Cuenta: ' + escapeHtml(connection.seller_id) + '</p>' : '')

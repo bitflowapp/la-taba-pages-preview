@@ -60,10 +60,6 @@ import {
   BUSINESS_INBOX_STATUSES,
 } from '../core/business-order-intake.js';
 
-// Se conserva sólo para detectar configuraciones históricas. Producción exige un
-// businessId explícito y verificado en el runtime config.
-export const DEFAULT_SUPABASE_BUSINESS_ID = '00000000-0000-4000-8000-000000000001';
-
 const ORDER_ACCESS_STORAGE_VERSION = 'taba-order-access-v1';
 // GPS is intentionally never selected from the client-facing order query.
 // Customers obtain the minimized, token-authorized tracking DTO via RPC; the

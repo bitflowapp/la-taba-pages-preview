@@ -400,10 +400,15 @@ for (const width of [320, 1280]) {
     test.setTimeout(90_000);
     await page.setViewportSize({width,height:900});
     await installRuntime(page, staffSession('owner'));
+    await page.addInitScript(() => {
+      localStorage.setItem('activeBusinessId', '00000000-0000-4000-8000-000000000001');
+      localStorage.setItem('businessId', '00000000-0000-4000-8000-000000000001');
+    });
     let status='disconnected';
     const actions=[];
     await page.route(SUPABASE_URL + '/functions/v1/mercadopago-connect', async route => {
       const body=route.request().postDataJSON();
+      expect(body.business_id).toBe(BUSINESS_ID);
       actions.push(body.action);
       if(body.action==='disconnect') {
         expect(body.confirmation).toBe('DISCONNECT_MERCADOPAGO');
@@ -420,6 +425,8 @@ for (const width of [320, 1280]) {
     await expect(panel.getByRole('button',{name:'Conectar Mercado Pago',exact:true})).toBeVisible();
     await expect(panel.locator('input')).toHaveCount(0);
     await expect(panel).toContainText('TABA nunca recibe tu contraseña');
+    await expect(panel).not.toContainText('seller_change_requires_migration');
+    await expect(panel).not.toContainText('00000000-0000-4000-8000-000000000001');
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await panel.getByRole('button',{name:'Conectar Mercado Pago',exact:true}).click();
     await expect(page).toHaveURL(/auth\.mercadopago\.com/, {timeout:30000});

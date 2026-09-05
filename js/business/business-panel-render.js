@@ -145,9 +145,8 @@ function renderAlertCard(alert, { busy } = {}) {
   </article>`;
 }
 
-export function renderPaymentsSurface({ payments, status, role, activation, busy, refundTarget } = {}) {
+export function renderPaymentsSurface({ payments, status, role, activation, connection, busy, refundTarget } = {}) {
   if (!can(role, 'payments.view')) return deniedPanel('Pagos', 'Tu rol no incluye la consulta de pagos.');
-  const setup = evaluateMercadoPagoSetup(activation || {});
   const elevated = isElevated(role);
   const rows = Array.isArray(payments) ? payments : [];
   const body = rows.length
@@ -159,12 +158,7 @@ export function renderPaymentsSurface({ payments, status, role, activation, busy
         : '<p class="form-hint">Todavía no hay pagos para mostrar hoy.</p>';
 
   return panel('Pagos', 'Lo que entró hoy y qué hacer con cada caso.', `
-    <div class="operation-summary tone-${setup.ready ? 'calm' : 'attention'}" role="status">
-      <strong>${escapeHtml(setup.headline)}</strong>
-      <span>Modo ${escapeHtml(setup.environment)}.</span>
-      ${setup.ready ? '' : '<button class="primary-button compact" type="button" data-business-ops-view="payments-setup">Terminar de conectar</button>'}
-    </div>
-    ${setup.warnings.map((warning) => `<p class="production-intake-error">${escapeHtml(warning)}</p>`).join('')}
+    ${renderMercadoPagoConnection(connection, busy, elevated)}
     <div class="operation-center-toolbar">
       <span class="form-hint">${rows.length} pago(s) listados</span>
       <button class="ghost-button compact" type="button" data-payments-refresh ${busy ? 'disabled' : ''}>Actualizar</button>
@@ -216,29 +210,21 @@ function renderPaymentCard(payment, { elevated, busy, refundTarget } = {}) {
   </article>`;
 }
 
-export function renderPaymentsSetupSurface({ activation, role, busy } = {}) {
-  if (!can(role, 'payments.reconcile')) {
-    return deniedPanel('Conectar Mercado Pago', 'La conexión de cobros la hace el dueño o el encargado.');
-  }
-  const setup = evaluateMercadoPagoSetup(activation || {});
-  const steps = setup.steps.map((step) => renderWizardStep(step)).join('');
-  return panel('Conectar Mercado Pago', 'Siete pasos. Cada uno se marca solo cuando se comprueba de verdad.', `
-    <div class="operation-summary tone-${setup.ready ? 'calm' : 'attention'}" role="status">
-      <strong>${escapeHtml(setup.headline)}</strong>
-      <span>Modo ${escapeHtml(setup.environment)}. Las pruebas no mueven dinero real.</span>
-    </div>
-    ${setup.warnings.map((warning) => `<p class="production-intake-error">${escapeHtml(warning)}</p>`).join('')}
-    <ol class="business-wizard">${steps}</ol>
-    <section class="business-ops-form" aria-label="Datos de la cuenta">
-      <p class="form-hint">El Access Token nunca se guarda ni se muestra en el panel: vive sólo en el servidor de cobros.</p>
-      <label>Número de vendedor<input name="collectorId" inputmode="numeric" maxlength="32" placeholder="Sólo números"></label>
-      <label>Número de aplicación<input name="applicationId" inputmode="numeric" maxlength="32" placeholder="Sólo números"></label>
-      <button class="primary-button" type="button" data-mercadopago-settings-save ${busy ? 'disabled' : ''}>Guardar datos de la cuenta</button>
-    </section>
-    <div class="button-row">
-      <button class="secondary-button compact" type="button" data-mercadopago-status-refresh ${busy ? 'disabled' : ''}>Volver a verificar</button>
-      ${setup.ready ? '' : `<button class="ghost-button compact" type="button" data-mercadopago-enable ${busy ? 'disabled' : ''}>Activar cobros de prueba</button>`}
-    </div>`);
+export function renderPaymentsSetupSurface({ connection, role, busy } = {}) {
+  if (!can(role, 'payments.reconcile')) return deniedPanel('Mercado Pago', 'La conexión de cobros la hace el dueño o el encargado.');
+  return panel('Mercado Pago', 'Recibí los pagos online en tu cuenta.', renderMercadoPagoConnection(connection, busy, true));
+}
+
+function renderMercadoPagoConnection(connection, busy, elevated) {
+  const status = connection?.status;
+  const connected = status === 'connected';
+  const reauthorize = status === 'requires_reauthorization';
+  const message = busy ? 'Conectando Mercado Pago...' : connected ? '✓ Mercado Pago conectado' : reauthorize ? 'Necesitamos volver a conectar Mercado Pago.' : status === 'unavailable' ? 'No pudimos verificar la conexión. Intentá nuevamente.' : 'Conectá tu cuenta para recibir pagos online.';
+  const button = (action, label) => '<button class="primary-button compact" type="button" data-mp-connection-action="' + action + '" ' + (busy ? 'disabled' : '') + '>' + label + '</button>';
+  return '<section aria-label="Mercado Pago" class="operation-summary" aria-busy="' + Boolean(busy) + '"><h3>Mercado Pago</h3><p role="status" aria-live="polite">' + message + '</p>'
+    + (connected && connection.seller_id ? '<p>Cuenta: ' + escapeHtml(connection.seller_id) + '</p>' : '')
+    + (elevated ? '<div class="button-row">' + (connected ? button('verify','Verificar conexión') + button('disconnect','Desconectar') : button('connect',reauthorize ? 'Reconectar' : 'Conectar Mercado Pago')) + '</div>' : '')
+    + (!connected ? '<p>Vas a continuar en Mercado Pago para autorizar la conexión. TABA nunca recibe tu contraseña.</p>' : '') + '</section>';
 }
 
 export function renderFiscalSetupSurface({ activation, role, busy, authorizationDraft } = {}) {

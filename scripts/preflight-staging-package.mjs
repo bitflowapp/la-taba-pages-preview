@@ -22,7 +22,7 @@ import crypto from 'node:crypto';
 const [dir = 'dist_release', vivo = 'artifacts/ci/staging-v61/preserva/runtime-config.live.js'] = process.argv.slice(2);
 const RAIZ = path.resolve(dir);
 const PROHIBIDAS = ['catalog', 'data', 'docs', 'tests', 'scripts', 'supabase', 'package.json', 'package-lock.json', 'README.md', '.env', 'node_modules'];
-const ESPERADO = { app: '?v=49', css: '?v=58', recovery: '?v=2', cache: 'la-taba-runtime-v93-la-bandeja-por-secciones-que-no-se-rearma' };
+const ESPERADO = { app: '?v=49', css: '?v=58', recovery: '?v=2', cache: 'la-taba-runtime-v94-mercadopago-seller-oauth' };
 
 const fallas = [];
 const ok = [];
@@ -105,7 +105,7 @@ for (const page of paymentPages) {
  * algo que hay que acordarse de no cometer y pasa a ser imposible de escribir.
  * `tests/preflight-staging-package.test.mjs` lo fija.
  */
-const VERSIONES_EXTRA = ['3']; // pwa-update.js: no tiene comprobación propia arriba, así que se nombra acá.
+const VERSIONES_EXTRA = ['3', '4']; // Versiones independientes del arranque/PWA declaradas por el candidato.
 const permitidas = new Set([
   ...Object.values(ESPERADO).flatMap((valor) => [...String(valor).matchAll(/\?v=(\d+)/g)].map((m) => m[1])),
   ...VERSIONES_EXTRA,

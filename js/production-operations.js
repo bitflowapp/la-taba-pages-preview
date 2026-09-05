@@ -177,6 +177,13 @@ export function initProductionOperations({
   // preferencia del timbre y la lista de lo ya anunciado viven adentro.
   orderAlerts ||= createBusinessOrderAlertChannel();
   initialized = true;
+  const returnUrl = new URL(globalThis.location.href);
+  if (returnUrl.searchParams.has('mp_connection')) {
+    businessOperationsView = 'payments-setup';
+    // The query only chooses the screen. Connection truth is read from the server.
+    returnUrl.searchParams.delete('mp_connection');
+    globalThis.history.replaceState(null, '', returnUrl.toString());
+  }
   repository = getOrderRepository();
   auth = repository?.auth || null;
   configureGpsController();
@@ -1426,6 +1433,7 @@ async function configureBusinessRuntime(result) {
         ? { ok: true, data: response.payments || [] }
         : { ok: false, message: response?.message || '' };
     },
+    mercadoPagoConnectionAction: (action, confirmation) => paymentsRepository.connectionAction(action, confirmation),
     getPaymentsActivation: () => paymentsRepository.getActivationStatus(),
     configurePaymentSettings: (settings) => paymentsRepository.configureSettings(settings),
     reconcilePayment: (paymentIntentId) => repository.reconcileMercadoPagoPayment(paymentIntentId),

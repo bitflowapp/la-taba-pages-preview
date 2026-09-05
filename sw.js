@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v93-la-bandeja-por-secciones-que-no-se-rearma';
+const CACHE_NAME = 'la-taba-runtime-v94-mercadopago-seller-oauth';
 const ASSETS = [
   './',
   './index.html',

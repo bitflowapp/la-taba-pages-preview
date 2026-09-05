@@ -16,7 +16,16 @@ export function createSupabasePaymentsRepository({ client, businessId }) {
     return error ? classifyRpcError(error, status) : { ok: true, data };
   }
 
+  async function connectionAction(action, confirmation) {
+    try {
+      const { data, error } = await client.functions.invoke('mercadopago-connect', { body: { business_id: businessId, action, confirmation } });
+      if (error || !data?.ok) return { ok: false, message: 'No pudimos conectar con Mercado Pago. Intentá nuevamente.' };
+      return { ok: true, data };
+    } catch (_) { return { ok: false, message: 'No pudimos verificar la conexión. Intentá nuevamente.' }; }
+  }
+
   return Object.freeze({
+    connectionAction,
     getActivationStatus: () => rpc('get_mercadopago_activation_status', { p_business_id: businessId }),
     configureSettings(settings = {}) {
       const payload = {};

@@ -59,6 +59,7 @@ test('el panel sólo ofrece las pantallas que el rol puede usar', () => {
 test('la pantalla de pagos muestra los estados del día y frena la entrega cuando corresponde', async () => {
   configureBusinessOperations({
     role: 'owner',
+    mercadoPagoConnectionAction: async () => ({ ok: true, data: { connection: { status: 'connected', seller_id: '998877' } } }),
     listPayments: async () => ({
       ok: true,
       data: [
@@ -74,7 +75,7 @@ test('la pantalla de pagos muestra los estados del día y frena la entrega cuand
   const markup = renderBusinessOperations('payments');
   assert.match(markup, /Aprobado sin pedido/);
   assert.match(markup, /No entregues hasta resolver este pago/);
-  assert.match(markup, /Mercado Pago está listo para cobrar/);
+  assert.match(markup, /Mercado Pago conectado/);
   assert.match(markup, /Devolver el dinero/);
   assert.deepEqual(containsForbiddenVocabulary(markup.replace(/<[^>]+>/g, ' ')), []);
   resetBusinessOperationsForTests();
@@ -152,7 +153,9 @@ test('el asistente de Mercado Pago no acepta datos que no sean de la cuenta', as
   renderBusinessOperations('payments-setup');
   await settle();
   const markup = renderBusinessOperations('payments-setup');
-  assert.match(markup, /El Access Token nunca se guarda ni se muestra en el panel/);
+  assert.match(markup, /TABA nunca recibe tu contraseña/);
+  assert.match(markup, /Conectar Mercado Pago/);
+  assert.doesNotMatch(markup, /name="collectorId"|name="applicationId"|Cargar las claves/);
 
   const badRoot = fieldRoot({ collectorId: { value: 'APP_USR-123' }, applicationId: { value: '112233' } });
   const rejected = await handleBusinessOperationsAction(target('[data-mercadopago-settings-save]', {}, badRoot));

@@ -124,6 +124,7 @@ let operationCenterRefreshStarted = false;
 let operationCenterRefreshTimer = null;
 let signedUpdateStatus = null;
 let paymentsActivation = null;
+let sellerConnection = null;
 let payments = [];
 let paymentsStatus = { phase: 'idle', message: '' };
 let paymentsLoadStarted = false;
@@ -167,6 +168,7 @@ export function configureBusinessOperations(next = {}) {
   operationCenterRefreshStarted = false;
   signedUpdateStatus = null;
   paymentsActivation = null;
+  sellerConnection = null;
   payments = [];
   paymentsStatus = { phase: 'idle', message: '' };
   paymentsLoadStarted = false;
@@ -206,9 +208,9 @@ export function renderBusinessOperations(view) {
       config: operationsConfig, status: operationsConfigStatus, busy, draft: operationsConfigDraft,
     }),
     payments: () => renderPaymentsSurface({
-      payments, status: paymentsStatus, role: context.role, activation: paymentsActivation, busy, refundTarget,
+      payments, status: paymentsStatus, role: context.role, activation: paymentsActivation, connection: sellerConnection, busy, refundTarget,
     }),
-    'payments-setup': () => renderPaymentsSetupSurface({ activation: paymentsActivation, role: context.role, busy }),
+    'payments-setup': () => renderPaymentsSetupSurface({ activation: paymentsActivation, connection: sellerConnection, role: context.role, busy }),
     'fiscal-setup': () => renderFiscalSetupSurface({
       activation: arcaActivation, role: context.role, busy, authorizationDraft: arcaAuthorizationDraft,
     }),
@@ -387,6 +389,8 @@ export async function handleBusinessOperationsAction(target) {
   if (target.closest('[data-product-publish]')) return refreshProductReadiness();
 
   if (target.closest('[data-payments-refresh]')) return refreshPaymentsAction();
+  const mpAction = target.closest('[data-mp-connection-action]');
+  if (mpAction) return runMercadoPagoConnection(mpAction.dataset.mpConnectionAction);
   if (target.closest('[data-mercadopago-status-refresh]')) return refreshPaymentsAction();
   if (target.closest('[data-mercadopago-settings-save]')) return saveMercadoPagoSettings(target);
   if (target.closest('[data-mercadopago-enable]')) return enableMercadoPagoTestCharges();
@@ -2009,7 +2013,8 @@ function bytesToBase64(bytes) {
 async function refreshPayments() {
   paymentsStatus = { phase: 'loading', message: '' };
   context.onChange();
-  const [list, activation] = await Promise.all([context.listPayments(), context.getPaymentsActivation()]);
+  const [list, activation, connectionResult] = await Promise.all([context.listPayments(), context.getPaymentsActivation(), context.mercadoPagoConnectionAction('status')]);
+  sellerConnection = connectionResult?.ok ? connectionResult.data.connection : { status: 'unavailable' };
   payments = list?.ok && Array.isArray(list.data) ? list.data : [];
   paymentsActivation = activation?.ok && activation.data && typeof activation.data === 'object' ? activation.data : null;
   paymentsStatus = list?.ok
@@ -2027,6 +2032,34 @@ async function refreshPaymentsAction() {
   feedback = response?.ok ? 'Pagos actualizados.' : paymentsStatus.message;
   context.onChange();
   return result(Boolean(response?.ok), feedback);
+}
+
+async function runMercadoPagoConnection(action) {
+  const guard = requireCapability('payments.reconcile');
+  if (!guard.ok) return guard.result;
+  if (busy) return result(false, 'Ya hay algo en curso.');
+  if (action === 'disconnect' && !globalThis.confirm('¿Desconectar Mercado Pago? Se pausarán los pagos online. El historial se conserva.')) return result(false, 'Sin cambios.');
+  busy = true;
+  let redirecting = false;
+  feedback = action === 'connect' ? 'Conectando Mercado Pago...' : 'Verificando conexión...';
+  context.onChange();
+  try {
+    const response = await context.mercadoPagoConnectionAction(action, action === 'disconnect' ? 'DISCONNECT_MERCADOPAGO' : undefined);
+    if (!response?.ok) throw new Error('connection_failed');
+    if (action === 'connect') {
+      const url = new URL(response.data.authorization_url);
+      if (url.origin !== 'https://auth.mercadopago.com' || url.pathname !== '/authorization') throw new Error('invalid_redirect');
+      globalThis.location.assign(url.toString());
+      redirecting = true;
+      return result(true, 'Conectando Mercado Pago...');
+    }
+    sellerConnection = response.data.connection;
+    feedback = action === 'disconnect' ? 'Mercado Pago desconectado.' : 'Conexión verificada.';
+    return result(true, feedback);
+  } catch (_) {
+    feedback = 'No pudimos completar la conexión. Intentá nuevamente.';
+    return result(false, feedback);
+  } finally { if (!redirecting) busy = false; context.onChange(); }
 }
 
 async function saveMercadoPagoSettings(target) {
@@ -2485,6 +2518,7 @@ function defaultContext() {
     setDeliveryPricing: async () => ({ ok: false, message: 'La configuración operativa no está disponible.' }),
     setServiceEnforcement: async () => ({ ok: false, message: 'La configuración operativa no está disponible.' }),
     listPayments: async () => ({ ok: false, message: 'Los pagos no están disponibles.' }),
+    mercadoPagoConnectionAction: async () => ({ ok: false }),
     getPaymentsActivation: async () => ({ ok: false, message: 'El estado de cobros no está disponible.' }),
     configurePaymentSettings: async () => ({ ok: false, message: 'La configuración de cobros no está disponible.' }),
     reconcilePayment: async () => ({ ok: false, message: 'La consulta de pagos no está disponible.' }),

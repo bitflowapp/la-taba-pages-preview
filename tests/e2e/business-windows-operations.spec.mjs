@@ -393,3 +393,46 @@ function operationCenterFixture({ empty = false } = {}) {
 async function json(route, body) {
   await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
 }
+
+for (const width of [320, 1280]) {
+  test('Mercado Pago OAuth: autorización simple y desconexión confirmada a ' + width, async ({ page }) => {
+    await page.setViewportSize({width,height:900});
+    await installRuntime(page, staffSession('owner'));
+    let status='disconnected';
+    const actions=[];
+    await page.route(SUPABASE_URL + '/functions/v1/mercadopago-connect', async route => {
+      const body=route.request().postDataJSON();
+      actions.push(body.action);
+      if(body.action==='disconnect') {
+        expect(body.confirmation).toBe('DISCONNECT_MERCADOPAGO');
+        status='disconnected';
+      }
+      if(body.action==='connect') return json(route,{ok:true,authorization_url:'https://auth.mercadopago.com/authorization?client_id=123&state=fixture'});
+      return json(route,{ok:true,connection:{status,seller_id:status==='connected'?'123456':null}});
+    });
+    await page.route('https://auth.mercadopago.com/authorization?**', route=>route.fulfill({contentType:'text/html',body:'<h1>Autorización simulada</h1>'}));
+    await page.goto('/?mp_connection=error#business', {waitUntil:'domcontentloaded'});
+    await expect(page.locator('[data-production-workspace="business"]')).toBeVisible({timeout:30000});
+    const panel=page.locator('[data-business-ops-center="payments-setup"]');
+    await expect(panel).toBeVisible();
+    await expect(panel.getByRole('button',{name:'Conectar Mercado Pago',exact:true})).toBeVisible();
+    await expect(panel.locator('input')).toHaveCount(0);
+    await expect(panel).toContainText('TABA nunca recibe tu contraseña');
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    await panel.getByRole('button',{name:'Conectar Mercado Pago',exact:true}).click();
+    await expect(page).toHaveURL(/auth\.mercadopago\.com/, {timeout:30000});
+    status='connected';
+    await page.goto('/?mp_connection=connected#business', {waitUntil:'domcontentloaded'});
+    await expect(page.locator('[data-production-workspace="business"]')).toBeVisible({timeout:30000});
+    await expect(panel).toContainText('Mercado Pago conectado');
+    await panel.getByRole('button',{name:'Verificar conexión'}).click();
+    await expect.poll(()=>actions.includes('verify')).toBe(true);
+    page.once('dialog',dialog=>dialog.dismiss());
+    await panel.getByRole('button',{name:'Desconectar',exact:true}).click();
+    expect(actions.filter(a=>a==='disconnect')).toHaveLength(0);
+    page.once('dialog',dialog=>dialog.accept());
+    await panel.getByRole('button',{name:'Desconectar',exact:true}).click();
+    await expect(panel.getByRole('button',{name:'Conectar Mercado Pago',exact:true})).toBeVisible();
+    expect(actions.filter(a=>a==='disconnect')).toHaveLength(1);
+  });
+}

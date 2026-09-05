@@ -415,7 +415,7 @@ for (const width of [320, 1280]) {
         status='disconnected';
       }
       if(body.action==='connect') return json(route,{ok:true,authorization_url:'https://auth.mercadopago.com.ar/authorization?client_id=123&state=fixture'});
-      return json(route,{ok:true,connection:{status,seller_id:status==='connected'?'123456':null}});
+      return json(route,{ok:true,connection:{status,seller_id:status==='connected'?'123456':null},platform_owner_name:'Marco/LUNA',application_name:'TABA2 Staging'});
     });
     await page.route('https://auth.mercadopago.com.ar/authorization?**', route=>route.fulfill({contentType:'text/html',body:'<h1>Autorización simulada</h1>'}));
     await page.goto('/?mp_connection=error#business', {waitUntil:'domcontentloaded'});
@@ -423,6 +423,9 @@ for (const width of [320, 1280]) {
     const panel=page.locator('[data-business-ops-center="payments-setup"]');
     await expect(panel).toBeVisible();
     await expect(panel.getByRole('button',{name:'Conectar Mercado Pago',exact:true})).toBeVisible();
+    await expect(panel).toContainText('No conectado');
+    await expect(panel).not.toContainText('Marco/LUNA');
+    await expect(panel).not.toContainText('TABA2 Staging');
     await expect(panel.locator('input')).toHaveCount(0);
     await expect(panel).toContainText('TABA nunca recibe tu contraseña');
     await expect(panel).not.toContainText('seller_change_requires_migration');

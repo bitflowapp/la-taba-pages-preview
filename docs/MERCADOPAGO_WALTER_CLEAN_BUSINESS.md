@@ -1,5 +1,7 @@
 # Walter: negocio limpio para autorización — 2026-09-05
 
+El gate posterior, la interfaz con estado explícito y los pasos presenciales están en [PRE-WALTER GATE](MERCADOPAGO_PRE_WALTER_GATE.md).
+
 **READY FOR WALTER AUTHORIZATION.** Staging apunta al negocio `3537d949-d76b-410d-be89-e4f447546e29`, slug `taba-walter-staging`, nombre interno `TABA Walter Staging`. El ID fue generado por PostgreSQL al insertar el negocio; no procede de un fixture. El consentimiento de Walter todavía no ocurrió: READY significa que puede iniciar y completar su autorización. No certifica cobros productivos.
 
 ## Estado comprobado en staging

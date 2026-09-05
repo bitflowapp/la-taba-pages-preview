@@ -219,9 +219,10 @@ function renderMercadoPagoConnection(connection, busy, elevated) {
   const status = connection?.status;
   const connected = status === 'connected';
   const reauthorize = status === 'requires_reauthorization';
-  const message = busy ? 'Conectando Mercado Pago...' : connected ? '✓ Mercado Pago conectado correctamente' : reauthorize ? 'Necesitamos volver a conectar Mercado Pago.' : status === 'unavailable' ? 'No pudimos verificar la conexión. Intentá nuevamente.' : 'Conectá tu cuenta para recibir pagos online.';
+  const message = busy ? 'Conectando Mercado Pago...' : connected ? '✓ Mercado Pago conectado correctamente' : reauthorize ? 'Necesitamos volver a conectar Mercado Pago.' : status === 'unavailable' ? 'No pudimos verificar la conexión. Intentá nuevamente.' : 'No conectado';
   const button = (action, label) => '<button class="primary-button compact" type="button" data-mp-connection-action="' + action + '" ' + (busy ? 'disabled' : '') + '>' + label + '</button>';
   return '<section aria-label="Mercado Pago" class="operation-summary" aria-busy="' + Boolean(busy) + '"><h3>Mercado Pago</h3><p role="status" aria-live="polite">' + message + '</p>'
+    + (!connected ? '<p>Conectá tu cuenta para recibir pagos online.</p>' : '')
     + (connected && connection.seller_id ? '<p>Cuenta: ' + escapeHtml(connection.seller_id) + '</p>' : '')
     + (elevated ? '<div class="button-row">' + (connected ? button('verify','Verificar conexión') + button('disconnect','Desconectar') : button('connect',reauthorize ? 'Reconectar' : 'Conectar Mercado Pago')) + '</div>' : '')
     + (!connected ? '<p>Vas a continuar en Mercado Pago para autorizar la conexión. TABA nunca recibe tu contraseña.</p>' : '') + '</section>';

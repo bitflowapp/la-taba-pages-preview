@@ -1,6 +1,6 @@
 # Validación — 5 de septiembre de 2026
 
-Estado: **BLOCKED antes de READY FOR WALTER**. Implementación y staging desplegados. Marco autorizó el MCP oficial y activó su aplicación TABA2 Staging. Client ID y Client Secret están configurados y verificados en Supabase staging. Faltan el registro del callback con PKCE, la firma completa del webhook y la prueba OAuth real con vendedor de prueba. No se autorizó una cuenta seller mediante TABA ni se ejecutó un pago real. La continuación está documentada en [MERCADOPAGO_MCP_ACTIVATION.md](MERCADOPAGO_MCP_ACTIVATION.md).
+Estado actualizado: secret configurado, HMAC remoto verificado y OAuth activo en staging. Ver [verificación actual](MERCADOPAGO_WEBHOOK_SECRET_VERIFICATION.md) para resultados y el bloqueo de identidad/historial antes de Walter. El resto de este documento conserva la evidencia histórica anterior. Estado histórico: **BLOCKED antes de READY FOR WALTER**. Implementación y staging desplegados. Marco autorizó el MCP oficial y activó su aplicación TABA2 Staging. Client ID y Client Secret están configurados y verificados en Supabase staging. Faltan el registro del callback con PKCE, la firma completa del webhook y la prueba OAuth real con vendedor de prueba. No se autorizó una cuenta seller mediante TABA ni se ejecutó un pago real. La continuación está documentada en [MERCADOPAGO_MCP_ACTIVATION.md](MERCADOPAGO_MCP_ACTIVATION.md).
 
 ## Base y aislamiento
 

@@ -409,10 +409,10 @@ for (const width of [320, 1280]) {
         expect(body.confirmation).toBe('DISCONNECT_MERCADOPAGO');
         status='disconnected';
       }
-      if(body.action==='connect') return json(route,{ok:true,authorization_url:'https://auth.mercadopago.com/authorization?client_id=123&state=fixture'});
+      if(body.action==='connect') return json(route,{ok:true,authorization_url:'https://auth.mercadopago.com.ar/authorization?client_id=123&state=fixture'});
       return json(route,{ok:true,connection:{status,seller_id:status==='connected'?'123456':null}});
     });
-    await page.route('https://auth.mercadopago.com/authorization?**', route=>route.fulfill({contentType:'text/html',body:'<h1>Autorización simulada</h1>'}));
+    await page.route('https://auth.mercadopago.com.ar/authorization?**', route=>route.fulfill({contentType:'text/html',body:'<h1>Autorización simulada</h1>'}));
     await page.goto('/?mp_connection=error#business', {waitUntil:'domcontentloaded'});
     await expect(page.locator('[data-production-workspace="business"]')).toBeVisible({timeout:30000});
     const panel=page.locator('[data-business-ops-center="payments-setup"]');

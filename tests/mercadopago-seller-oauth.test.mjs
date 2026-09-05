@@ -5,7 +5,7 @@ import { authorizationUrl, digest, randomSecret, seal, unseal, parseCallback } f
 test('OAuth uses the official endpoint and PKCE S256 with opaque random state', async()=>{
   const state=randomSecret(), verifier=randomSecret();
   const url=new URL(authorizationUrl('123456','https://example.com/callback',state,await digest(verifier)));
-  assert.equal(url.origin,'https://auth.mercadopago.com');
+  assert.equal(url.origin,'https://auth.mercadopago.com.ar');
   assert.equal(url.searchParams.get('code_challenge_method'),'S256');
   assert.equal(url.searchParams.get('state'),state);
   assert.equal(url.searchParams.get('scope'),'read write offline_access');
@@ -32,7 +32,8 @@ test('ciphertext rejects wrong tenant, environment, key and tampering',async()=>
   await assert.rejects(()=>unseal(encrypted,key,'staging:b'));
   await assert.rejects(()=>unseal(encrypted,key,'production:a'));
   await assert.rejects(()=>unseal(encrypted,randomSecret(),'staging:a'));
-  await assert.rejects(()=>unseal(encrypted.slice(0,20)+'x'+encrypted.slice(21),key,'staging:a'));
+  const altered = encrypted.slice(0,20)+(encrypted[20] === 'x' ? 'y' : 'x')+encrypted.slice(21);
+  await assert.rejects(()=>unseal(altered,key,'staging:a'));
   await assert.rejects(()=>seal({},'short','staging:a'));
 });
 test('callback accepts success/denial and rejects ambiguous or missing parameters',()=>{

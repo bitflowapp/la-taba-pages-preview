@@ -8,11 +8,20 @@ try {
   $taskStart.UseShellExecute = $false
   $taskStart.CreateNoWindow = $true
   $taskStart.RedirectStandardInput = $true
+  $taskStart.RedirectStandardOutput = $true
+  $taskStart.RedirectStandardError = $true
   $taskProcess = [System.Diagnostics.Process]::Start($taskStart)
+  $taskOutput = $taskProcess.StandardOutput.ReadToEndAsync()
+  $taskError = $taskProcess.StandardError.ReadToEndAsync()
   $taskProcess.StandardInput.Write([System.Net.NetworkCredential]::new('', $taskSecret).Password)
   $taskProcess.StandardInput.Close()
   $taskProcess.WaitForExit()
-  if ($taskProcess.ExitCode -ne 0) { throw 'La configuracion no termino; no se mostro el secreto.' }
+  $taskConfirmation = $taskOutput.GetAwaiter().GetResult().Trim()
+  $null = $taskError.GetAwaiter().GetResult()
+  if ($taskProcess.ExitCode -ne 0 -or $taskConfirmation -ne 'CONFIGURED') {
+    throw 'No se pudo confirmar el Webhook Secret en Supabase staging. No se mostro el secreto.'
+  }
+  Write-Output 'CONFIGURED'
 } finally {
   $taskSecret.Dispose()
   if ($null -ne $taskProcess) { $taskProcess.Dispose() }

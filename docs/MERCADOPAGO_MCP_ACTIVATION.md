@@ -1,5 +1,7 @@
 # Continuación por MCP — 5 de septiembre de 2026
 
+Actualización posterior: callback/PKCE y Webhook Secret ya configurados; HMAC remoto verificado. Ver [estado actual](MERCADOPAGO_WEBHOOK_SECRET_VERIFICATION.md). Las secciones siguientes son el registro histórico previo a esa configuración.
+
 El plugin oficial mercadopago 4.3.2 se instaló desde el repositorio de Mercado Pago. Marco autorizó OAuth. El servidor oficial respondió correctamente a initialize, tools/list, application_list y las operaciones siguientes. El transporte OAuth nativo de Codex rechazó los metadatos de autorización; se configuró el cliente mcp-remote 0.8.3 documentado por Mercado Pago, sin desactivar las validaciones de Codex ni modificar el proveedor. La sesión local tiene permisos restringidos al usuario y SYSTEM.
 
 ## Aplicación y credenciales

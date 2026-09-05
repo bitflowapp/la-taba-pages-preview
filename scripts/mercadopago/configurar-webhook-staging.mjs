@@ -39,7 +39,7 @@ export async function configureWebhookSecret(secret, { request = fetch, withToke
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     await configureWebhookSecret(readFileSync(0, 'utf8').trim());
-    console.log('Webhook Secret: CONFIGURED y verificado en staging.');
+    console.log('CONFIGURED');
   } catch {
     console.error('No se completo la configuracion del webhook. El secreto no se muestra.');
     process.exitCode = 1;

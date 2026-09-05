@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v94-mercadopago-seller-oauth';
+const CACHE_NAME = 'la-taba-runtime-v95-mercadopago-oauth-argentina';
 const ASSETS = [
   './',
   './index.html',

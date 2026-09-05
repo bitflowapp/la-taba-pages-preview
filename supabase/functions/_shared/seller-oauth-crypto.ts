@@ -32,7 +32,7 @@ export function authorizationUrl(
     !/^\d+$/.test(clientId) || new URL(redirect).protocol !== "https:" ||
     !/^[\w-]{43}$/.test(state)
   ) throw new Error("Invalid OAuth configuration");
-  const url = new URL("https://auth.mercadopago.com/authorization");
+  const url = new URL("https://auth.mercadopago.com.ar/authorization");
   url.search = new URLSearchParams({
     client_id: clientId,
     response_type: "code",

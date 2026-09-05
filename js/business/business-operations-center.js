@@ -2048,7 +2048,7 @@ async function runMercadoPagoConnection(action) {
     if (!response?.ok) throw new Error('connection_failed');
     if (action === 'connect') {
       const url = new URL(response.data.authorization_url);
-      if (url.origin !== 'https://auth.mercadopago.com' || url.pathname !== '/authorization') throw new Error('invalid_redirect');
+      if (!['https://auth.mercadopago.com.ar', 'https://auth.mercadopago.com'].includes(url.origin) || url.pathname !== '/authorization') throw new Error('invalid_redirect');
       globalThis.location.assign(url.toString());
       redirecting = true;
       return result(true, 'Conectando Mercado Pago...');

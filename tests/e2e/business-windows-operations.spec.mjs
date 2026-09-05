@@ -396,6 +396,8 @@ async function json(route, body) {
 
 for (const width of [320, 1280]) {
   test('Mercado Pago OAuth: autorización simple y desconexión confirmada a ' + width, async ({ page }) => {
+    // Two complete navigations each have a 30-second startup budget.
+    test.setTimeout(90_000);
     await page.setViewportSize({width,height:900});
     await installRuntime(page, staffSession('owner'));
     let status='disconnected';

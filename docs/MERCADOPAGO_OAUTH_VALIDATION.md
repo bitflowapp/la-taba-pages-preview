@@ -17,6 +17,7 @@ El directorio sugerido C:/1212/la-taba-pages no era un repositorio Git. Se audit
 | Base local completa | 120 migraciones; ciclo de pagos y 235 aserciones pgTAP PASS; dump/restore PASS |
 | OAuth pgTAP incluido | 15 aserciones: grants/RLS, estado, expiración/replay, entorno, refresh y desconexión |
 | Playwright OAuth | 2/2 PASS, 320 y 1280 px, proveedor y sesión simulados |
+| Checkout habitual Chromium | 10/10 PASS: doble toque, regreso, cambio de medio y errores recuperables |
 | npm run check | PASS: sintaxis, configuración, activos, precache, higiene, identidad, ubicación y secretos |
 | Typecheck Deno | 8 funciones de producción PASS |
 | Lint Deno | 4 archivos nuevos de producción PASS |
@@ -25,6 +26,8 @@ El directorio sugerido C:/1212/la-taba-pages no era un repositorio Git. Se audit
 | Verificación de archivos servidos | 178/178 archivos precache idénticos al paquete, sin 404 |
 
 Los logs locales están en C:/1212/la-taba-mp-*.log. Se corrigieron tres expectativas antiguas de pruebas y los tiempos de espera del navegador; los resultados de la tabla son las ejecuciones posteriores a esas correcciones. No se presenta el navegador simulado como integración real con Mercado Pago.
+
+La revisión ampliada de navegador terminó inicialmente con 15/17: fallaron un caso fiscal por carga de datos y OAuth de 320 px por agotar los 45 segundos totales. Se ajustó únicamente el presupuesto del caso OAuth a 90 segundos para cubrir sus dos navegaciones con 30 segundos de arranque cada una. La comprobación posterior pasó 4/4: caso fiscal actual, ambos tamaños OAuth y el mismo caso fiscal sirviendo los cuatro módulos originales de main como control. No se modificó lógica fiscal ni se activaron reintentos automáticos. Hubo además corridas diagnósticas interrumpidas por timeouts de carga; no se afirma una ejecución completa 17/17 ni una suite de navegador libre de intermitencia. Evidencia: la-taba-mp-e2e-expanded-final.log y la-taba-mp-e2e-comparison.log.
 
 ## Despliegue y verificación remota
 

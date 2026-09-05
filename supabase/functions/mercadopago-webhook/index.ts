@@ -1,4 +1,6 @@
-import { oauthMode } from '../_shared/seller-oauth.ts';
+import { oauthConfig, oauthMode } from '../_shared/seller-oauth.ts';
+import { fetchPayment } from '../_shared/mercadopago.ts';
+import { resolveSellerWebhookBusiness } from '../_shared/seller-webhook-routing.ts';
 import {
   createServiceClient,
   enforceRateLimit,
@@ -9,7 +11,6 @@ import {
   readJsonObject,
   requirePost,
   sha256Hex,
-  requireUuid,
 } from '../_shared/payment-runtime.ts';
 import { validateMercadoPagoWebhookSignature } from '../_shared/mercadopago-webhook-signature.ts';
 import { requestIsHttps } from '../_shared/request-protocol.ts';
@@ -33,7 +34,7 @@ Deno.serve(async (request) => {
     await enforceRateLimit(service, request, 'webhook', 240, 60, 'mercadopago-webhook');
 
     const url = new URL(request.url);
-    const businessId = oauthMode() ? requireUuid(url.searchParams.get('business_id'), 'business_id') : undefined;
+    let businessId: string | undefined;
     // Mercado Pago's current official SDK recipe signs the `data.id` query
     // parameter, not a reconstructed event object. Do not substitute a
     // body-derived identifier in the validator.
@@ -71,6 +72,40 @@ Deno.serve(async (request) => {
       return jsonResponse(request, { ok: false, code: 'INVALID_WEBHOOK' }, 401);
     }
 
+    if (!signatureValid) {
+      await persistReceipt(service, {
+        environment: providerEnvironment(), webhookEventId, eventType, resourceId: dataId,
+        signatureValid: false, requestId, payloadHash,
+      });
+      return jsonResponse(request, { ok: false, code: 'INVALID_WEBHOOK' }, 401);
+    }
+    if (oauthMode()) {
+      // Only Payments is subscribed for seller OAuth. Historical topics remain
+      // handled by legacy mode; they cannot enter OAuth routing as payment IDs.
+      if (eventType !== 'payment') return jsonResponse(request, { ok: true, ignored: true });
+      const config = oauthConfig();
+      businessId = await resolveSellerWebhookBusiness({
+        signatureValid, eventType, resourceId: dataId, sellerId: body.user_id,
+        applicationId: config.clientId, environment: config.environment,
+      }, {
+        connectionForSeller: async sellerId => {
+          const { data, error } = await service.from('mp_seller_connections')
+            .select('business_id,seller_id,application_id,environment,status')
+            .eq('seller_id', sellerId).eq('environment', config.environment)
+            .eq('application_id', config.clientId).eq('status', 'connected').maybeSingle();
+          if (error) throw new Error('Seller routing lookup unavailable');
+          return data;
+        },
+        paymentForBusiness: fetchPayment,
+        intentForReference: async reference => {
+          const { data, error } = await service.from('payment_intents')
+            .select('business_id,environment').eq('provider', 'mercadopago')
+            .eq('environment', config.environment).eq('external_reference', reference).maybeSingle();
+          if (error) throw new Error('Payment routing lookup unavailable');
+          return data;
+        },
+      });
+    }
     const receipt = await persistReceipt(service, {
       businessId,
         environment: providerEnvironment(),
@@ -81,11 +116,8 @@ Deno.serve(async (request) => {
       requestId,
       payloadHash,
     });
-    if (!signatureValid) {
-      return jsonResponse(request, { ok: false, code: 'INVALID_WEBHOOK' }, 401);
-    }
-    // The durable outbox does the provider API read and order finalization.
-    // 201 tells Mercado Pago that the receipt has been persisted in under 22s.
+    // Acknowledge only after durable persistence. The outbox reads the provider
+    // again before financial validation and order finalization.
     return jsonResponse(request, {
       ok: true,
       receipt_id: receipt.receipt_id,

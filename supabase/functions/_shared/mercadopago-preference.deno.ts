@@ -163,6 +163,18 @@ Deno.test('una sesión vencida no puede generar una preferencia', () => {
   );
 });
 
+Deno.test('OAuth usa un webhook compartido sin business_id fijo para todos los comercios', () => {
+  prepararEntorno('test');
+  Deno.env.set('MERCADOPAGO_CREDENTIAL_MODE', 'oauth');
+  try {
+    for (const business of ['business-a', 'business-b']) {
+      assert(preferenceRequest(preparacion(), business).notification_url === `${SUPABASE}/functions/v1/mercadopago-webhook`, 'la URL depende del comercio');
+    }
+  } finally {
+    Deno.env.delete('MERCADOPAGO_CREDENTIAL_MODE');
+  }
+});
+
 Deno.test('la preferencia lleva la referencia externa, el webhook y las tres vueltas', () => {
   prepararEntorno('test');
   const cuerpo = preferenceRequest(preparacion());

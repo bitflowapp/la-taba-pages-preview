@@ -57,7 +57,7 @@ export function assertPreparationEnvironment(preparation: PreferencePreparation)
   }
 }
 
-export function preferenceRequest(preparation: PreferencePreparation, businessId?: string): Record<string, unknown> {
+export function preferenceRequest(preparation: PreferencePreparation, _businessId?: string): Record<string, unknown> {
   assertPreparationEnvironment(preparation);
   const expiresAt = new Date(preparation.expires_at);
   if (Number.isNaN(expiresAt.valueOf()) || expiresAt.valueOf() <= Date.now()) {
@@ -99,7 +99,7 @@ export function preferenceRequest(preparation: PreferencePreparation, businessId
   return {
     items,
     external_reference: preparation.external_reference,
-    notification_url: businessId && oauthMode() ? `${webhookUrl()}?business_id=${encodeURIComponent(businessId)}` : webhookUrl(),
+    notification_url: webhookUrl(),
     back_urls: {
       success: checkoutReturnUrl('/pago/resultado'),
       pending: checkoutReturnUrl('/pago/pendiente'),

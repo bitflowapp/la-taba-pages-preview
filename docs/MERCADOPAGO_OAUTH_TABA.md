@@ -26,7 +26,7 @@ Cambiar a otro vendedor con historial existente se rechaza para no atribuir pago
 
 ## Checkout y webhook
 
-Con `MERCADOPAGO_CREDENTIAL_MODE=oauth`, todas las llamadas del proveedor requieren business_id resuelto por servidor. No hay fallback a la credencial del integrador. La preference usa importes de la preparación SQL y agrega el business_id como dato de ruteo en notification_url. Ese dato no acredita pagos: el worker consulta con el token del vendedor y PostgreSQL valida todos los campos financieros.
+Con `MERCADOPAGO_CREDENTIAL_MODE=oauth`, todas las llamadas del proveedor requieren business_id resuelto por servidor. No hay fallback a la credencial del integrador. La preference usa importes de la preparación SQL y una notification_url compartida, sin identificador de comercio. El webhook verifica HMAC antes de usar user_id como pista para buscar una conexión OAuth de la aplicación y entorno actuales. Consulta el pago con el token de ese seller y verifica ID, collector y live_mode; su external_reference debe corresponder a un payment_intent del mismo comercio y entorno. Sólo entonces persiste el recibo con seller_business_id. El worker vuelve a consultar y PostgreSQL valida todos los campos financieros.
 
 El webhook conserva la validación HMAC oficial y persiste recibo más comercio en una transacción antes de responder. El worker mantiene idempotencia, leases, reintentos y finalización única. Reembolsos y cancelaciones usan el mismo contexto de vendedor. El modo histórico permanece disponible hasta activar explícitamente OAuth; no se rotó ni eliminó la credencial anterior.
 
@@ -35,14 +35,16 @@ El webhook conserva la validación HMAC oficial y persiste recibo más comercio 
 Usar una aplicación controlada por Marco/LUNA, sin borrar ni rotar la aplicación anterior. Habilitar Authorization Code con PKCE S256; permisos read, write, offline_access. Registrar exactamente:
 
 - Callback staging: `https://ukxqbgswjlibmnjemrzd.supabase.co/functions/v1/mercadopago-oauth-callback`
-- Webhook staging: `https://ukxqbgswjlibmnjemrzd.supabase.co/functions/v1/mercadopago-webhook` (cada preference agrega el comercio).
+- Webhook staging: `https://ukxqbgswjlibmnjemrzd.supabase.co/functions/v1/mercadopago-webhook` (compartido por los comercios).
 - Panel staging: `https://taba2-staging.pages.dev/`
 
 Ejecutar `scripts/mercadopago/configurar-oauth-staging.ps1` en PowerShell. Los secretos se ingresan ocultos y van a Supabase por HTTPS; no se escriben a archivos ni se imprimen. El script mantiene una clave de cifrado existente y genera una nueva sólo si falta. Cambia explícitamente staging al modo OAuth; no toca producción. Después debe verificarse una conexión con vendedor de prueba de la aplicación antes de declarar READY.
 
 Si Client ID y Client Secret ya están configurados, ejecutar únicamente `scripts/mercadopago/configurar-webhook-staging.ps1`. Pide sólo la firma con entrada oculta, la envía por stdin a un proceso local y guarda exclusivamente MERCADOPAGO_OAUTH_WEBHOOK_SECRET. Comprueba las huellas de entorno y proyecto antes de escribir y verifica la huella del secreto guardado. No reemplaza las credenciales existentes ni activa OAuth; esa activación sigue a la verificación del callback y PKCE del proveedor.
 
-Para la configuración manual de Webhooks de este comercio de staging, registrar `https://ukxqbgswjlibmnjemrzd.supabase.co/functions/v1/mercadopago-webhook?business_id=00000000-0000-4000-8000-000000000001`, modo productivo en el panel de Mercado Pago, evento Pagos (`payment`). El modo del panel del proveedor no cambia MERCADOPAGO_ENVIRONMENT=test. El parámetro permite resolver el comercio que requiere el receptor OAuth; cada preference continúa usando el business_id validado del pedido. Se verificaron públicamente callback (303 sin estado) y receptor (401 sin firma) antes de entregar estas URLs.
+Para la configuración manual de Webhooks registrar `https://ukxqbgswjlibmnjemrzd.supabase.co/functions/v1/mercadopago-webhook`, modo productivo en el panel de Mercado Pago, evento Pagos (`payment`). El modo del panel del proveedor no cambia MERCADOPAGO_ENVIRONMENT=test. No agregar business_id: el receptor lo ignora incluso en preferences históricas que conservan ese parámetro. Los tópicos distintos de payment se descartan en modo OAuth; el modo histórico conserva su procesamiento previo.
+
+Auditoría del identificador anterior: el UUID terminado en 0001 existe como La Taba, con 124 pedidos y 94 intentos de pago en la consulta de staging. Su origen es el seed de la migración 20260531030000; el runtime de staging lo usa como negocio predeterminado. No es un UUID nuevo inventado para el webhook, pero tampoco demuestra una vinculación de Walter: no hay conexión OAuth registrada aún. La URL definitiva no queda ligada a ese seed. La unicidad (environment, seller_id) permite resolver conexiones de múltiples sellers sin asignar un pago a otro comercio; actualmente se admite un comercio por seller en cada entorno.
 
 Variables nuevas: MERCADOPAGO_CLIENT_ID, MERCADOPAGO_CLIENT_SECRET, MERCADOPAGO_TOKEN_ENCRYPTION_KEY, MERCADOPAGO_CREDENTIAL_MODE, MERCADOPAGO_OAUTH_PROJECT_REF, MERCADOPAGO_OAUTH_PANEL_URL, MERCADOPAGO_OAUTH_WEBHOOK_SECRET y TABA_DEPLOYMENT_ENV. Se conservan MERCADOPAGO_ENVIRONMENT, MERCADOPAGO_WEBHOOK_SECRET, PAYMENT_LOG_HASH_SALT, PAYMENT_WORKER_SECRET, TABA_CHECKOUT_BASE_URL y TABA_ALLOWED_ORIGINS. En modo OAuth se usa exclusivamente la firma nueva; la firma histórica se conserva para rollback.
 

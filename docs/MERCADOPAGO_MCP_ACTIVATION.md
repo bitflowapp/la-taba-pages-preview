@@ -39,6 +39,12 @@ La prueba de preference confirma la credencial del vendedor de prueba. **No demu
 
 ## Validación de esta continuación
 
+La revisión posterior del ruteo eliminó business_id de la URL de notificación y de las preferences nuevas. La URL definitiva compartida es https://ukxqbgswjlibmnjemrzd.supabase.co/functions/v1/mercadopago-webhook. Después de HMAC, el receptor busca la conexión por seller, aplicación y entorno, consulta el pago usando OAuth y cruza collector, live_mode y external_reference con el intento del mismo comercio. Un user_id alterado no basta para seleccionar otro comercio ni acreditar pagos. Las URL históricas con business_id siguen siendo aceptadas, pero ese parámetro se ignora.
+
+La base confirmó que el UUID terminado en 0001 es La Taba, con 124 pedidos y 94 intentos, y el runtime público lo usa como negocio predeterminado. Proviene del seed de mayo; no corresponde afirmar que es un UUID no sembrado ni una cuenta de Walter ya autorizada. No tiene conexión OAuth todavía. La configuración de la URL queda desacoplada de ese registro.
+
+Pruebas de ruteo: pagos Node 64/64 PASS; webhook Deno 25/25 y 16/16, Node 12/12 PASS. Incluyen el receptor completo con HMAC, token OAuth cifrado, consulta del pago, rechazo de referencias de otro comercio y falta de firma; la API y las conexiones de esas pruebas son simuladas. La autorización real y la entrega del proveedor continúan pendientes de la configuración manual.
+
 - test:payments: 44/44 PASS, incluidos cuatro rechazos de entradas MCP incompletas sin exponer los valores recibidos.
 - test:webhook: Deno 25/25 y 12/12, Node 12/12 PASS.
 - npm run check: PASS, incluido secret scan. Se retiraron rutas absolutas de máquina de la documentación anterior para cumplir la higiene de publicación.

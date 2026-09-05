@@ -1,12 +1,23 @@
 import { randomBytes } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { conToken } from '../lib/supabase-cli-token.mjs';
 
-// Input is inherited only from the local secure prompt, never command arguments or files.
+// MCP callers pipe JSON directly through stdin; the secure PowerShell prompt uses env.
+// Never put credential values in command arguments, logs, or repository files.
 const ref='ukxqbgswjlibmnjemrzd';
-const clientId=process.env.TABA_SETUP_CLIENT_ID;
-const clientSecret=process.env.TABA_SETUP_CLIENT_SECRET;
-const webhookSecret=process.env.TABA_SETUP_WEBHOOK_SECRET;
-if(!/^\d+$/.test(clientId||'') || !clientSecret || !webhookSecret) throw Error('Usá configurar-oauth-staging.ps1 desde esta PC.');
+let input={};
+const stdinMode=process.argv.includes('--stdin');
+if(stdinMode) {
+  try { input=JSON.parse(readFileSync(0,'utf8')); }
+  catch { throw Error('Entrada de configuración inválida. No se modificó staging.'); }
+}
+const clientId=stdinMode ? input?.clientId : process.env.TABA_SETUP_CLIENT_ID;
+const clientSecret=stdinMode ? input?.clientSecret : process.env.TABA_SETUP_CLIENT_SECRET;
+const webhookSecret=stdinMode ? input?.webhookSecret : process.env.TABA_SETUP_WEBHOOK_SECRET;
+const completeSecret=value=>typeof value==='string' && /^[A-Za-z0-9_+/=-]{16,}$/.test(value) && !/^(?:undefined|null|not_available)/i.test(value);
+if(typeof clientId!=='string' || !/^\d+$/.test(clientId) || !completeSecret(clientSecret) || !completeSecret(webhookSecret)) {
+  throw Error('Faltan credenciales completas de la aplicación. No se modificó staging.');
+}
 await conToken(async token=>{
   const headers={Authorization:`Bearer ${token}`,'content-type':'application/json'};
   const endpoint=`https://api.supabase.com/v1/projects/${ref}/secrets`;

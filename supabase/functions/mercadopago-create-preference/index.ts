@@ -139,7 +139,7 @@ function selectedInitPoint(preparation: PreferencePreparation): string {
   // pago", while `init_point` completes it against the same sandbox collector
   // and the same test card. The test environment is already determined by the
   // credentials, not by the host, so `init_point` is the one to send.
-  return String(preparation.init_point || preparation.sandbox_init_point || '').trim();
+  return String(preparation.init_point || '').trim();
 }
 
 function preferenceResponse(request: Request, preparation: PreferencePreparation, initPoint: string): Response {

@@ -7,9 +7,10 @@ El plugin oficial mercadopago 4.3.2 se instaló desde el repositorio de Mercado 
 Se reutilizó **TABA2 Staging**, la única aplicación devuelta para el propietario OAuth. No se crearon aplicaciones duplicadas.
 
 - Credenciales de prueba: disponibles vía get_credentials; utilizadas únicamente en memoria.
-- Client Secret: **NO DISPONIBLE**. get_credentials informa que las credenciales de producción aún no están activadas. No se interpretó el marcador «—» como una credencial.
+- Activación: **COMPLETADA** por Marco. Una nueva consulta get_credentials confirmó Client Secret y credenciales de producción disponibles; ya no informa activación pendiente.
+- Client ID y Client Secret: **CONFIGURED** en Supabase staging. Se enviaron directamente a Management API en memoria y se verificaron contra las huellas SHA-256 devueltas por el servidor. El token productivo del integrador no se importó al backend.
 - Firma de webhook: save_webhook devuelve únicamente los primeros siete caracteres. No sirve para configurar el verificador; el valor completo sigue pendiente.
-- La activación de la aplicación requiere completar su configuración y aceptar los términos; la documentación oficial también indica reCAPTCHA. No se aceptaron condiciones legales en nombre de Marco.
+- La activación requiere términos y reCAPTCHA según la documentación oficial. Marco realizó ese paso; no se aceptaron condiciones legales en su nombre.
 - Ninguna credencial real se incluyó en esta documentación, Git, frontend, argumentos CLI ni logs.
 
 El script configurar-oauth-staging.mjs admite ahora JSON por stdin (`clientId`, `clientSecret`, `webhookSecret`), además del prompt PowerShell existente. Un proceso MCP puede enviar esos datos por pipe sin guardarlos en archivos. Rechaza secretos ausentes/truncados e IDs numéricos susceptibles de perder precisión antes de cualquier escritura. No se ejecutó la activación OAuth con valores incompletos.
@@ -24,7 +25,17 @@ El script configurar-oauth-staging.mjs admite ahora JSON por stdin (`clientId`, 
 - La API oficial creó una preference de prueba con HTTP 201 y la consulta posterior respondió 200. Se verificaron collector, external_reference y un init_point de mercadopago.com.ar. No se creó ni pagó una transacción.
 - Se eliminó el fallback al host obsoleto sandbox_init_point al devolver una preferencia existente. Los campos históricos permanecen en almacenamiento por compatibilidad.
 
-La prueba de preference confirma la credencial del vendedor de prueba. **No demuestra todavía una autorización seller OAuth de TABA ni un pago Checkout Pro completo.** Esas pruebas siguen pendientes del Client Secret, callback registrado y firma completa.
+La prueba de preference confirma la credencial del vendedor de prueba. **No demuestra todavía una autorización seller OAuth de TABA ni un pago Checkout Pro completo.** Esas pruebas siguen pendientes del callback registrado y firma completa.
+
+## Verificación posterior a la activación
+
+- La API de aplicaciones confirmó sitio MLA y aplicación activa, sin bloqueo. El callback de TABA no figura registrado, PKCE está deshabilitado y allow_flow está vacío.
+- Se intentó actualizar únicamente callbacks, PKCE y flujos de autorización, conservando los valores anteriores. La operación no se aplicó; la API de Mercado Libre respondió HTTP 403 y la consulta posterior de Mercado Pago confirmó que la configuración seguía igual.
+- save_webhook volvió a confirmar las URLs de staging y los tópicos. Su respuesta contiene sólo texto y sigue mostrando únicamente siete caracteres de la clave; no entrega un valor completo en contenido estructurado.
+- El verificador remoto ahora encuentra Client ID y Client Secret. Su único secreto pendiente es MERCADOPAGO_OAUTH_WEBHOOK_SECRET y su veredicto permanece DISABLED. No se activó MERCADOPAGO_CREDENTIAL_MODE=oauth.
+- Smoke posterior: connect sin sesión 401, webhook sin firma 401, callback sin estado 303 de regreso al panel de staging. Este último resultado verifica la carga de configuración y el rechazo del estado ausente, no una autorización exitosa.
+- El navegador controlable disponible es el integrado de Codex; sus pestañas de Mercado Pago siguen en login. La sesión de Chrome usada por Marco no está accesible mediante ese navegador. No se extrajeron cookies ni se intentó acceder a contraseñas.
+- Queda pendiente acceso autorizado al panel para registrar el callback exacto con PKCE y obtener la firma completa. No hace falta volver a activar credenciales ni pedir a Marco que copie Client ID o Client Secret.
 
 ## Validación de esta continuación
 
@@ -32,7 +43,7 @@ La prueba de preference confirma la credencial del vendedor de prueba. **No demu
 - test:webhook: Deno 25/25 y 12/12, Node 12/12 PASS.
 - npm run check: PASS, incluido secret scan. Se retiraron rutas absolutas de máquina de la documentación anterior para cumplir la higiene de publicación.
 - mercadopago-create-preference se desplegó nuevamente sólo en staging tras retirar el fallback de redirección.
-- Smoke remoto: sitio 200, connect sin sesión 401, callback sin configuración completa 503, webhook sin firma 401. El verificador de configuración sale con código 1 y DISABLED por los tres secretos OAuth pendientes; no se presenta ese bloqueo como PASS.
+- Smoke anterior a la activación: sitio 200, connect sin sesión 401, callback sin configuración completa 503, webhook sin firma 401. El verificador salía con código 1 y DISABLED por tres secretos OAuth pendientes. Los resultados posteriores están arriba; no se presenta ningún bloqueo como PASS.
 - codex mcp get confirmó el servidor habilitado con transporte stdio y el cliente oficial recomendado. La autenticación fue comprobada mediante llamadas al servidor, no inferida de la configuración local.
 - El frontend no cambió en esta continuación; la evidencia del paquete, responsive y archivos servidos permanece en MERCADOPAGO_OAUTH_VALIDATION.md.
 

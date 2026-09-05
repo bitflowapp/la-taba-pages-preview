@@ -1,6 +1,6 @@
 # Validación — 5 de septiembre de 2026
 
-Estado: **BLOCKED antes de READY FOR WALTER**. Implementación y staging desplegados. Marco autorizó el MCP oficial y se reutilizó su aplicación TABA2 Staging; faltan su activación, Client Secret, firma completa del webhook y la prueba OAuth real con vendedor de prueba. No se autorizó una cuenta seller mediante TABA ni se ejecutó un pago real. La continuación está documentada en [MERCADOPAGO_MCP_ACTIVATION.md](MERCADOPAGO_MCP_ACTIVATION.md).
+Estado: **BLOCKED antes de READY FOR WALTER**. Implementación y staging desplegados. Marco autorizó el MCP oficial y activó su aplicación TABA2 Staging. Client ID y Client Secret están configurados y verificados en Supabase staging. Faltan el registro del callback con PKCE, la firma completa del webhook y la prueba OAuth real con vendedor de prueba. No se autorizó una cuenta seller mediante TABA ni se ejecutó un pago real. La continuación está documentada en [MERCADOPAGO_MCP_ACTIVATION.md](MERCADOPAGO_MCP_ACTIVATION.md).
 
 ## Base y aislamiento
 
@@ -41,7 +41,7 @@ La revisión ampliada de navegador terminó inicialmente con 15/17: fallaron un 
 
 ## Pendientes reales
 
-1. Completar la activación de TABA2 Staging, que incluye términos y CAPTCHA del proveedor. El agente podrá recuperar las credenciales disponibles mediante MCP y configurar staging por pipe seguro; no se solicita a Marco copiar credenciales ni ejecutar comandos. Sigue pendiente registrar el callback exacto y obtener la firma completa del webhook, operaciones sin herramienta suficiente en el MCP descubierto.
+1. Acceder al panel autorizado para registrar el callback exacto con PKCE y obtener la firma completa del webhook, operaciones sin herramienta suficiente en el MCP descubierto. La activación y la importación segura de Client ID y Client Secret ya se completaron; no deben repetirse.
 2. Verificar sesión owner/admin en staging: el login de prueba local existente respondió HTTP 400; no se cambiaron contraseñas ni se suplantaron usuarios.
 3. Autorizar un vendedor de prueba y verificar callback, reconexión y un pago sandbox completo con webhook. Después validar el entorno de uso de Walter antes de declarar READY.
 

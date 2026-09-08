@@ -39,6 +39,11 @@ catalog/photo-intake/review.json
 catalog/photo-intake/ingest-report.json
 artifacts/taba2-commercial-audit/
 
+# Local handoff/evidence generated during Mercado Pago onboarding audits.
+# These snapshots can become stale and are not release authority.
+artifacts/preserva/
+artifacts/walter/
+
 # Evidencia de las corridas del piloto: capturas, sesiones y medidas.
 # Es local y puede contener datos de una entrega real; nunca se versiona.
 .taba-evidencia/

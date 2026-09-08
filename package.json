@@ -17,6 +17,8 @@
     "mp:config:staging": "node scripts/mercadopago/verificar-configuracion.mjs --ref=staging",
     "mp:config:produccion": "node scripts/mercadopago/verificar-configuracion.mjs --ref=produccion",
     "mp:gate:produccion-sin-cobro": "node scripts/mercadopago/verificar-configuracion.mjs --ref=produccion --esperado=disabled",
+    "mp:worker:check:staging": "node scripts/mercadopago/sincronizar-worker-hmac.mjs --target=staging",
+    "mp:worker:check:produccion": "node scripts/mercadopago/sincronizar-worker-hmac.mjs --target=production",
     "secrets:scan": "node scripts/scan-secrets.mjs",
     "test:e2e": "playwright test",
     "fiscal:install": "npm --prefix services/arca-fiscal-bridge ci",

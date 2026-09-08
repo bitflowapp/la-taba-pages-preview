@@ -6,8 +6,34 @@ import {
 } from "./payment-runtime.ts";
 import { seal, unseal } from "./seller-oauth-crypto.ts";
 
-export const oauthMode = () =>
-  Deno.env.get("MERCADOPAGO_CREDENTIAL_MODE") === "oauth";
+const DEPLOYMENT_BINDINGS: Record<string, {
+  deployment: "staging" | "production";
+  clientId: string;
+}> = {
+  ukxqbgswjlibmnjemrzd: {
+    deployment: "staging",
+    clientId: "2691240967769590",
+  },
+  wwcpogltfgzgkrlilbcd: {
+    deployment: "production",
+    clientId: "7677852968049976",
+  },
+};
+
+export function oauthMode(): boolean {
+  const mode = Deno.env.get("MERCADOPAGO_CREDENTIAL_MODE")?.trim() || "";
+  let projectRef = "";
+  try {
+    projectRef = new URL(Deno.env.get("SUPABASE_URL") || "").hostname
+      .replace(/\.supabase\.co$/i, "");
+  } catch (_) {
+    // Unknown/local fixtures retain the explicit legacy compatibility path.
+  }
+  if (DEPLOYMENT_BINDINGS[projectRef] && mode !== "oauth") {
+    throw new Error("Hosted Mercado Pago payments require seller OAuth mode");
+  }
+  return mode === "oauth";
+}
 export function oauthConfig() {
   const paymentEnvironment = providerEnvironment();
   const environment = Deno.env.get("MERCADOPAGO_OAUTH_ENVIRONMENT") || paymentEnvironment;
@@ -17,8 +43,16 @@ export function oauthConfig() {
     environment === "production" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(onboardingBusinessId);
   const project = new URL(getRequiredEnv("SUPABASE_URL"));
   const expected = getRequiredEnv("MERCADOPAGO_OAUTH_PROJECT_REF");
+  const clientId = getRequiredEnv("MERCADOPAGO_CLIENT_ID");
+  const binding = DEPLOYMENT_BINDINGS[expected];
+  // A hosted callback is also a configuration health probe. Requiring OAuth
+  // here makes an unset/invalid credential mode fail before state consumption,
+  // not only when the first provider request tries to charge.
+  if (binding) oauthMode();
   if (
     project.hostname !== `${expected}.supabase.co` ||
+    (binding &&
+      (deployment !== binding.deployment || clientId !== binding.clientId)) ||
     !["test", "production"].includes(environment) ||
     (!isolatedConsent && ((environment === "production") !== (deployment === "production") || environment !== paymentEnvironment)) ||
     !["staging", "production"].includes(deployment)
@@ -29,7 +63,6 @@ export function oauthConfig() {
     panel.protocol !== "https:" || panel.username || panel.password ||
     panel.search || panel.hash
   ) throw new Error("Invalid panel URL");
-  const clientId = getRequiredEnv("MERCADOPAGO_CLIENT_ID");
   if (!/^\d+$/.test(clientId)) throw new Error("Invalid application ID");
   return { environment: environment as "test" | "production", callback, panel: panel.toString(), clientId, onboardingBusinessId: isolatedConsent ? onboardingBusinessId : "" };
 }

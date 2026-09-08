@@ -4,15 +4,18 @@ import {
   assertOAuthBusiness,
   assertOAuthPaymentEnvironment,
   oauthConfig,
+  oauthMode,
   protect,
   sellerAccessToken,
   tokenGrant,
   sellerIdentity,
 } from "./seller-oauth.ts";
 import { randomSecret } from "./seller-oauth-crypto.ts";
+import { mercadoPagoRequest } from "./mercadopago.ts";
 
 const business = "92000000-0000-4000-8000-000000000001";
 function configure() {
+  Deno.env.delete("MERCADOPAGO_CREDENTIAL_MODE");
   Deno.env.delete("MERCADOPAGO_OAUTH_ENVIRONMENT");
   Deno.env.delete("MERCADOPAGO_OAUTH_ONBOARDING_BUSINESS_ID");
   for (
@@ -78,6 +81,80 @@ Deno.test("OAuth configuration rejects project and deployment crossover", () => 
   }
   assertEquals(failed, true);
 });
+Deno.test("known deployments reject the other Mercado Pago application", async () => {
+  configure();
+  Deno.env.set("MERCADOPAGO_CREDENTIAL_MODE", "oauth");
+  Deno.env.set("SUPABASE_URL", "https://wwcpogltfgzgkrlilbcd.supabase.co");
+  Deno.env.set("MERCADOPAGO_OAUTH_PROJECT_REF", "wwcpogltfgzgkrlilbcd");
+  Deno.env.set("TABA_DEPLOYMENT_ENV", "production");
+  Deno.env.set("MERCADOPAGO_ENVIRONMENT", "production");
+  Deno.env.set("MERCADOPAGO_PRODUCTION_REVIEW_STATUS", "approved");
+  Deno.env.set("MERCADOPAGO_CLIENT_ID", "2691240967769590");
+  await assertRejects(async () => oauthConfig());
+  Deno.env.set("MERCADOPAGO_CLIENT_ID", "7677852968049976");
+  assertEquals(oauthConfig().clientId, "7677852968049976");
+
+  Deno.env.set("SUPABASE_URL", "https://ukxqbgswjlibmnjemrzd.supabase.co");
+  Deno.env.set("MERCADOPAGO_OAUTH_PROJECT_REF", "ukxqbgswjlibmnjemrzd");
+  Deno.env.set("TABA_DEPLOYMENT_ENV", "staging");
+  Deno.env.set("MERCADOPAGO_ENVIRONMENT", "test");
+  Deno.env.delete("MERCADOPAGO_PRODUCTION_REVIEW_STATUS");
+  Deno.env.set("MERCADOPAGO_CLIENT_ID", "7677852968049976");
+  await assertRejects(async () => oauthConfig());
+  Deno.env.set("MERCADOPAGO_CLIENT_ID", "2691240967769590");
+  assertEquals(oauthConfig().clientId, "2691240967769590");
+  configure();
+});
+Deno.test("known hosted projects cannot fall back to a global credential", async () => {
+  configure();
+  Deno.env.set("SUPABASE_URL", "https://wwcpogltfgzgkrlilbcd.supabase.co");
+  // Even a globally present token cannot become payment authority in either
+  // hosted project. Only the exact seller-OAuth mode may proceed.
+  Deno.env.set("MERCADOPAGO_ACCESS_TOKEN", "fixture-global-token-must-stay-unused");
+  for (const mode of [undefined, "legacy", "oath"]) {
+    if (mode === undefined) Deno.env.delete("MERCADOPAGO_CREDENTIAL_MODE");
+    else Deno.env.set("MERCADOPAGO_CREDENTIAL_MODE", mode);
+    await assertRejects(async () => oauthMode());
+  }
+  Deno.env.set("MERCADOPAGO_CREDENTIAL_MODE", "oauth");
+  assertEquals(oauthMode(), true);
+  Deno.env.set("SUPABASE_URL", "https://ukxqbgswjlibmnjemrzd.supabase.co");
+  Deno.env.set("MERCADOPAGO_CREDENTIAL_MODE", "legacy");
+  await assertRejects(async () => oauthMode());
+  Deno.env.set("MERCADOPAGO_CREDENTIAL_MODE", "oauth");
+  assertEquals(oauthMode(), true);
+  configure();
+  Deno.env.delete("MERCADOPAGO_ACCESS_TOKEN");
+});
+Deno.test("a global token cannot reach the provider when hosted OAuth mode is invalid", async () => {
+  configure();
+  Deno.env.set("SUPABASE_URL", "https://wwcpogltfgzgkrlilbcd.supabase.co");
+  Deno.env.set("MERCADOPAGO_ENVIRONMENT", "production");
+  Deno.env.set("MERCADOPAGO_PRODUCTION_REVIEW_STATUS", "approved");
+  Deno.env.set("MERCADOPAGO_ACCESS_TOKEN", "fixture-global-token-must-stay-unused");
+  let providerCalls = 0;
+  const original = globalThis.fetch;
+  globalThis.fetch = () => {
+    providerCalls++;
+    return Promise.resolve(Response.json({ id: 1 }));
+  };
+  try {
+    for (const mode of [undefined, "legacy", "invalid"]) {
+      if (mode === undefined) Deno.env.delete("MERCADOPAGO_CREDENTIAL_MODE");
+      else Deno.env.set("MERCADOPAGO_CREDENTIAL_MODE", mode);
+      await assertRejects(() =>
+        mercadoPagoRequest("/v1/payments/1", {
+          businessId: business,
+        })
+      );
+    }
+    assertEquals(providerCalls, 0);
+  } finally {
+    globalThis.fetch = original;
+    Deno.env.delete("MERCADOPAGO_ACCESS_TOKEN");
+    configure();
+  }
+});
 Deno.test("refresh rotates once and subsequent readers use the persisted token", async () => {
   configure();
   let row = {
@@ -85,7 +162,7 @@ Deno.test("refresh rotates once and subsequent readers use the persisted token",
     environment: "test",
     seller_id: "123",
     status: "connected",
-    protected_tokens: await protect(tokens, business),
+    protected_tokens: await protect(tokens, business) as string | null,
     expires_at: new Date(Date.now() + 1000).toISOString(),
     generation: "fixture-generation",
     refresh_owner: null as string | null,
@@ -138,6 +215,14 @@ Deno.test("refresh rotates once and subsequent readers use the persisted token",
     await assertRejects(() => sellerAccessToken(business));
     assertEquals(calls, 1);
     assertEquals((await connection(business)).status, "disconnected");
+    row = {
+      ...row,
+      status: "connected",
+      protected_tokens: null,
+      expires_at: new Date(Date.now() + 86400000 * 2).toISOString(),
+    };
+    await assertRejects(() => sellerAccessToken(business));
+    assertEquals(calls, 1);
   } finally {
     globalThis.fetch = original;
   }

@@ -12,13 +12,14 @@ const FIXTURE_SECRET = 'A'.repeat(64);
 const FIXTURE_TIME = 1_788_844_800_000;
 const FIXTURE_NONCE = '91000000-0000-4000-8000-000000000001';
 
-function productionSecrets(extra = []) {
+function hostedSecrets(target = 'production', extra = []) {
+  const staging = target === 'staging';
   return [
-    ['MERCADOPAGO_CLIENT_ID', '7677852968049976'],
+    ['MERCADOPAGO_CLIENT_ID', staging ? '2691240967769590' : '7677852968049976'],
     ['MERCADOPAGO_CREDENTIAL_MODE', 'oauth'],
-    ['MERCADOPAGO_ENVIRONMENT', 'production'],
-    ['TABA_DEPLOYMENT_ENV', 'production'],
-    ['MERCADOPAGO_OAUTH_PROJECT_REF', 'wwcpogltfgzgkrlilbcd'],
+    ['MERCADOPAGO_ENVIRONMENT', staging ? 'test' : 'production'],
+    ['TABA_DEPLOYMENT_ENV', target],
+    ['MERCADOPAGO_OAUTH_PROJECT_REF', staging ? 'ukxqbgswjlibmnjemrzd' : 'wwcpogltfgzgkrlilbcd'],
     ['MERCADOPAGO_CLIENT_SECRET', 'fixture-client-secret'],
     ['MERCADOPAGO_OAUTH_WEBHOOK_SECRET', 'fixture-webhook-secret'],
     ['MERCADOPAGO_TOKEN_ENCRYPTION_KEY', 'fixture-encryption-key'],
@@ -28,8 +29,9 @@ function productionSecrets(extra = []) {
   ].map(([name, value]) => ({ name, value: hash(value) }));
 }
 
-function harness({ active = false, globalToken = false } = {}) {
-  let secrets = productionSecrets(globalToken ? [['MERCADOPAGO_ACCESS_TOKEN', 'fixture-global']] : []);
+function harness({ active = false, globalToken = false, target = 'production' } = {}) {
+  const ref = target === 'staging' ? 'ukxqbgswjlibmnjemrzd' : 'wwcpogltfgzgkrlilbcd';
+  let secrets = hostedSecrets(target, globalToken ? [['MERCADOPAGO_ACCESS_TOKEN', 'fixture-global']] : []);
   let vaultDigest = '';
   let vaultUrlAligned = false;
   let mutationCalls = 0;
@@ -50,7 +52,7 @@ function harness({ active = false, globalToken = false } = {}) {
         mutationCalls++;
         assert.match(query, new RegExp(FIXTURE_SECRET));
         vaultDigest = hash(FIXTURE_SECRET);
-        vaultUrlAligned = query.includes('wwcpogltfgzgkrlilbcd.supabase.co/functions/v1/mercadopago-payment-worker');
+        vaultUrlAligned = query.includes(`${ref}.supabase.co/functions/v1/mercadopago-payment-worker`);
         return Response.json([]);
       }
       const edgeDigest = secrets.find(item => item.name === 'PAYMENT_WORKER_SECRET')?.value || '';
@@ -114,6 +116,10 @@ test('worker HMAC remediation refuses active production payment state and global
     createSecret: () => FIXTURE_SECRET,
   }), /forbidden global Mercado Pago access token/);
   assert.equal(global.state().mutationCalls, 0);
+
+  const stagingGlobal = harness({ target: 'staging', globalToken: true });
+  await assert.rejects(() => checkWorkerHmac('staging', stagingGlobal), /global Mercado Pago access token/);
+  assert.equal(stagingGlobal.state().mutationCalls, 0);
 });
 
 test('worker HMAC remediation aligns Edge and Vault then performs a zero-work signed probe', async () => {

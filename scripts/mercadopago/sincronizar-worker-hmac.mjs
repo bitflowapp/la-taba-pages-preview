@@ -71,10 +71,10 @@ function assertEnvironmentSecrets(target, secrets) {
   ]) {
     if (!secrets.has(name)) throw new Error(`Missing server secret: ${name}`);
   }
+  if (secrets.has('MERCADOPAGO_ACCESS_TOKEN')) {
+    throw new Error('Hosted environment still contains a forbidden global Mercado Pago access token');
+  }
   if (target.deployment === 'production') {
-    if (secrets.has('MERCADOPAGO_ACCESS_TOKEN')) {
-      throw new Error('Production still contains a forbidden global Mercado Pago access token');
-    }
     if (secrets.has('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION')) {
       throw new Error('Production real-payment authorization must remain absent');
     }

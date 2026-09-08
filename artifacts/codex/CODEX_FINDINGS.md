@@ -137,7 +137,7 @@ VERIFICATION: Offline/update test confirms the intended config and no staging re
 ID: CDEX-012  
 SEVERITY: INFO  
 AREA: Test environment  
-EVIDENCE: `npm test` initially produced 2407/2410 because `E:\DevCache\Temp` was full. Final rerun with a healthy external TEMP passed 2410/2410. The local Docker stack was then started ephemerally and the integrated PostgreSQL/migration/pgTAP/dump-restore drill passed. No production mutation occurred.  
+EVIDENCE: `npm test` initially produced 2407/2410 because the configured external TEMP was full. Final rerun with a healthy external TEMP passed 2410/2410. The local Docker stack was then started ephemerally and the integrated PostgreSQL/migration/pgTAP/dump-restore drill passed. No production mutation occurred.  
 ATTACK/FAILURE PATH: Environmental, not a product attack path.  
 IMPACT: Environmental only. Full E2E was 543/544 under concurrent load and its only failed scroll assertion passed 1/1 in isolation.  
 MITIGATION: Keep CI temp/storage capacity monitored and treat the scroll test as flaky until its timing/threshold is stabilized.  

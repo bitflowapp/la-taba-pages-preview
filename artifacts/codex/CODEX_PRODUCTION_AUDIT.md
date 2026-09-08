@@ -28,7 +28,7 @@ La situación actual sí es segura contra movimiento de dinero: no hay fila prod
 | upstream | `origin/feature/taba-mercadopago-oauth` en `11aa86e` |
 | ahead/behind | `+2/-0`; commits locales `34f055f`, `899caaf` |
 | remote contiene `899caaf` | no |
-| worktree RC | `C:/1212/la-taba-mercadopago-oauth` |
+| worktree RC | `<workspace>/la-taba-mercadopago-oauth` |
 | dirty inicial | `artifacts/preserva/`, `artifacts/walter/`, dos scripts OAuth producción; todos untracked y no ignorados |
 
 Comandos: `git status --porcelain=v2 --branch`, `git branch --show-current`, `git rev-parse HEAD`, `git remote -v`, `git worktree list --porcelain`, `git log --oneline --decorate -20`, `git branch -a --contains 899caaf`.
@@ -277,7 +277,7 @@ Huecos previos importantes: no había test para App ID staging en production ni 
 
 ## 18. Rider
 
-- worktree histórico `D:\1212\worktrees\taba2-rider-map` está limpio, branch `codex/rider-map-staging`, SHA exacto `95294d9d36a6429a21a562ea6a48b8c9ecbf8523`;
+- worktree histórico `<rider-worktree>/taba2-rider-map` está limpio, branch `codex/rider-map-staging`, SHA exacto `95294d9d36a6429a21a562ea6a48b8c9ecbf8523`;
 - repositorio Rider actual está en otro branch más nuevo `fix/rider-android-runtime-hardening` SHA `434c4d5`, sin cambios;
 - flavor staging fija `ukxqbgswjlibmnjemrzd`; production mantiene project ref `null`, por lo que no puede caer accidentalmente a staging;
 - DTO/RPC aceptan estados `assigned`, `picked_up`, `on_the_way`, `arrived`, `delivered` coherentes con producción y transportan `payment_method` sólo como dato operativo.

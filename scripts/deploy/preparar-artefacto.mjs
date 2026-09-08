@@ -126,5 +126,5 @@ correr(process.execPath, [
   '--business-id', NEGOCIO_CANONICO,
 ]);
 
-const archivos = execFileSync('find', [DESTINO, '-type', 'f'], { encoding: 'utf8' }).trim().split('\n').length;
+const archivos = fs.readdirSync(DESTINO, { recursive: true }).filter((rel) => fs.statSync(path.join(DESTINO, rel)).isFile()).length;
 console.log(`\nArtefacto listo: ${archivos} archivos en dist_release, sellados con ${commit.slice(0, 7)}.`);

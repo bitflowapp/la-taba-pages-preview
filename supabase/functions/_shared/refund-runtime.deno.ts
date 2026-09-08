@@ -52,9 +52,9 @@ async function run(scenario: string, creation = false) {
       if (url.searchParams.has('payment_intent_id')) return Response.json(scenario === 'known-owned' ? [{ id: 'other-local-refund', provider_refund_id: '10001' }] : []);
       return Response.json(local);
     }
-    if (url.pathname.endsWith('/prepare_payment_refund')) return Response.json({ refund_id: rid, idempotency_key: key,
+    if (url.pathname.endsWith('/prepare_payment_refund_v2')) return Response.json({ refund_id: rid, idempotency_key: key,
       provider_payment_id: '90001', amount: 100, full_refund: false, idempotent: false });
-    if (url.pathname.endsWith('/claim_payment_outbox')) return Response.json([{ id: key, payment_intent_id: iid, refund_id: rid, topic: 'refund_reconcile', attempts: 1 }]);
+    if (url.pathname.endsWith('/claim_payment_outbox_v2')) return Response.json([{ id: key, payment_intent_id: iid, refund_id: rid, topic: 'refund_reconcile', attempts: 1 }]);
     if (url.pathname.endsWith('/start_payment_outbox_job') || url.pathname.endsWith('/complete_payment_outbox_job')) return Response.json(true);
     if (url.pathname.endsWith('/fail_payment_outbox_job')) { failedJobs++; return Response.json(true); }
     if (url.pathname.endsWith('/record_payment_refund_identity')) {
@@ -63,7 +63,7 @@ async function run(scenario: string, creation = false) {
       local.provider_refund_id = body.p_provider_refund_id; return Response.json(true);
     }
     if (url.pathname.endsWith('/mark_payment_refund_ambiguous')) { events.push('ambiguous'); return Response.json(true); }
-    if (url.pathname.endsWith('/record_payment_refund_response')) {
+    if (url.pathname.endsWith('/record_payment_refund_response_v2')) {
       events.push('record'); recordings.push(body);
       if (body.p_status === 'approved') {
         assertEquals(local.provider_refund_id, body.p_provider_refund_id, 'ID must be persisted before approval');

@@ -41,7 +41,7 @@ Deno.serve(async (request) => {
     const service = createServiceClient();
     await enforceRateLimit(service, request, 'refund', 6, 600, user.id);
 
-    const { data: prepared, error: prepareError } = await client.rpc('prepare_payment_refund', {
+    const { data: prepared, error: prepareError } = await client.rpc('prepare_payment_refund_v2', {
       p_payment_intent_id: paymentIntentId,
       p_amount: amount,
       p_idempotency_key: idempotencyKey,
@@ -87,7 +87,7 @@ Deno.serve(async (request) => {
       const responseHash = await sha256Hex(result.rawText);
       if (!result.response.ok || !result.body) {
         if (result.response.status >= 400 && result.response.status < 500) {
-          await service.rpc('record_payment_refund_response', {
+          await service.rpc('record_payment_refund_response_v2', {
             p_refund_id: prepared.refund_id,
             p_provider_refund_id: '',
             p_status: 'rejected',
@@ -132,7 +132,7 @@ Deno.serve(async (request) => {
         return reconciling(request);
       }
       const providerStatus = String(verified.outcome.status);
-      const { error: recordError } = await service.rpc('record_payment_refund_response', {
+      const { error: recordError } = await service.rpc('record_payment_refund_response_v2', {
         p_refund_id: prepared.refund_id,
         p_provider_refund_id: providerId,
         p_status: providerStatus,

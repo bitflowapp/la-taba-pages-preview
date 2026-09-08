@@ -1,0 +1,20 @@
+e3b16ad (HEAD -> fix/a1-a4-production-blockers) fix(mp): revalidate payment snapshots and bind refund identity
+a56a9c5 (origin/audit/codex-production-hardening, audit/codex-production-hardening) fix(mp): close Astra P2 payment authority gaps
+090382d chore(mp): forbid global tokens in hosted projects
+93e27df docs(audit): redact local workstation paths
+bf7d5d3 fix(mp): require seller OAuth in hosted environments
+899caaf (feature/taba-mercadopago-oauth) fix(deploy): use cross-platform fs.readdirSync instead of find in preparar-artefacto
+34f055f docs(mp): replace local drive path with repository placeholder in pre-Walter gate
+11aa86e (origin/feature/taba-mercadopago-oauth) Make disconnected seller status explicit and document pre-Walter gate
+9d0d93b Prepare clean Walter staging business and enforce first seller binding
+2c386bf Audit seller cutover history and retain block for unverified records
+933415d Verify staging webhook secret and fix setup confirmation and Argentina OAuth
+45ecd6d fix(mp): resolve webhook tenant from verified seller payment
+4c965e9 feat(mp): configure only webhook secret through a hidden staging prompt
+f3d747c docs(mp): verify activated credentials and remaining provider configuration
+44ba0d5 fix(mp): accept secure MCP setup input and record activation evidence
+44dc552 test(mp): cover OAuth navigation timing and record checkout regression checks
+823c5ad docs(mp): add secure staging setup and validation evidence
+2142602 feat(business): connect Mercado Pago from the payments panel
+a883684 feat(mp): add encrypted seller OAuth and tenant payment routing
+869a684 (origin/main, origin/HEAD) Merge pull request #92 from bitflowapp/integration/taba-business-panel-90-91

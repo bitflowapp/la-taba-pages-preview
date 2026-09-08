@@ -50,11 +50,21 @@ async function run(route: string, mutation: string, initiallyInvalid = '') {
   if (initiallyInvalid === 'payments_disabled') settings.enabled = false;
   if (initiallyInvalid === 'missing_smoke') Deno.env.delete('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION');
   const preparation = { checkout_session_id: sid, payment_intent_id: iid, payment_attempt_id: iid,
-    attempt_status: route === 'stored' ? 'created' : 'prepared', init_point: route === 'stored' ? providerUrl : null,
+    attempt_number: 1, preference_id: route.startsWith('stored') ? 'fixture' : null,
+    attempt_status: route.startsWith('stored') ? 'created' : 'prepared', init_point: route.startsWith('stored') ? providerUrl : null,
     sandbox_init_point: 'https://sandbox.mercadopago.com/forbidden', environment: 'production', currency: 'ARS',
     total: 100, external_reference: 'fixture-reference', idempotency_key: iid, expires_at: checkout.expires_at,
     items: [{ id: 'fixture-product', title: 'Fixture', quantity: 1, unit_price: 100, currency_id: 'ARS' }],
     allow_offline_payment_methods: false };
+  const attempt = { id: iid, payment_intent_id: iid, attempt_type: 'preference', attempt_number: 1,
+    idempotency_key: iid, status: preparation.attempt_status, preference_id: preparation.preference_id,
+    init_point: preparation.init_point, authority_revision: 1, seller_generation: seller.generation, seller_id: seller.seller_id };
+  const intent = { id: iid, business_id: bid, checkout_session_id: sid, current_payment_attempt_id: iid, internal_status: 'preference_created', preference_id: preparation.preference_id };
+  if (route === 'stored_legacy') { Object.assign(attempt, { seller_generation: null, seller_id: null }); Object.assign(intent, { current_payment_attempt_id: null }); }
+  const snapshot = async () => {
+    const data = structuredClone({ business, settings, seller: initiallyInvalid === 'no_seller' ? null : seller, checkout, attempt, intent });
+    return { ...data, authority_version: await sha256Hex(JSON.stringify(data)) };
+  };
   let reachProvider!: () => void, releaseProvider!: () => void;
   const reached = new Promise<void>(resolve => { reachProvider = resolve; });
   const release = new Promise<void>(resolve => { releaseProvider = resolve; });
@@ -67,14 +77,13 @@ async function run(route: string, mutation: string, initiallyInvalid = '') {
     const body = init?.body ? JSON.parse(String(init.body)) : {};
     if (url.pathname === '/auth/v1/user') return Response.json({ id: uid });
     if (url.pathname.endsWith('/consume_payment_rate_limit')) return Response.json({ allowed: true });
-    if (url.pathname.endsWith('/prepare_mercadopago_preference')) {
+    if (url.pathname.endsWith('/prepare_mercadopago_preference_v2')) {
       assertEquals(body.p_customer_id, uid); return Response.json(preparation);
     }
-    if (url.pathname.endsWith('/get_mercadopago_payment_authority')) {
+    if (url.pathname.endsWith('/get_mercadopago_payment_authority_v2')) {
       snapshotReads++;
-      assertEquals(body, { p_business_id: bid, p_environment: 'production', p_checkout_session_id: sid, p_customer_id: uid });
-      const data = structuredClone({ business, settings, seller: initiallyInvalid === 'no_seller' ? null : seller, checkout });
-      return Response.json({ ...data, authority_version: await sha256Hex(JSON.stringify(data)) });
+      assertEquals(body, { p_business_id: bid, p_environment: 'production', p_checkout_session_id: sid, p_customer_id: uid, p_payment_attempt_id: iid });
+      return Response.json(await snapshot());
     }
     // Former transport shape is intentional: the audit races run against the
     // old handler first. Every response captures its own immutable read view.
@@ -82,6 +91,13 @@ async function run(route: string, mutation: string, initiallyInvalid = '') {
     if (url.pathname.endsWith('/business_payment_settings')) return Response.json(settings);
     if (url.pathname.endsWith('/mp_seller_connections')) return Response.json(initiallyInvalid === 'no_seller' ? null : seller);
     if (url.pathname.endsWith('/payment_intents')) return Response.json({ business_id: bid, environment: 'production' });
+    if (url.pathname.endsWith('/record_mercadopago_preference_created_v2')) {
+      assertEquals(body.p_expected_authority, (await snapshot()).authority_version);
+      attempt.status = 'created'; attempt.preference_id = body.p_preference_id; attempt.init_point = body.p_init_point;
+      attempt.authority_revision++; intent.preference_id = body.p_preference_id;
+      attempt.seller_generation = seller.generation; attempt.seller_id = seller.seller_id; intent.current_payment_attempt_id = iid;
+      return Response.json(await snapshot());
+    }
     if (url.pathname.includes('/rpc/record_mercadopago_preference')) { records.push(url.pathname); return Response.json(true); }
     if (url.origin !== 'https://api.mercadopago.com') throw new Error('Unexpected test request: ' + url.pathname);
     if (url.pathname === '/users/me') {
@@ -93,7 +109,7 @@ async function run(route: string, mutation: string, initiallyInvalid = '') {
     if (url.pathname === '/checkout/preferences/search') return Response.json({ elements:
       route === 'recovered' ? [{ id: 'fixture', external_reference: 'fixture-reference' }] : [] });
     if (url.pathname === '/checkout/preferences/fixture' || url.pathname === '/checkout/preferences') {
-      return Response.json({ id: 'fixture', init_point: providerUrl, sandbox_init_point: preparation.sandbox_init_point });
+      return Response.json({ id: 'fixture', external_reference: 'fixture-reference', collector_id: seller.seller_id, metadata: { payment_attempt_id: iid, checkout_session_id: sid }, init_point: providerUrl, sandbox_init_point: preparation.sandbox_init_point });
     }
     throw new Error('Unexpected provider request: ' + url.pathname);
   };
@@ -104,6 +120,12 @@ async function run(route: string, mutation: string, initiallyInvalid = '') {
     }));
     if (!initiallyInvalid) {
       assertEquals(await Promise.race([reached.then(() => 'provider'), response.then(() => 'response')]), 'provider');
+      if (mutation === 'cancelled') attempt.status = 'cancelled';
+      if (mutation === 'superseded' || mutation === 'attempt_id' || mutation === 'same_seller_other_attempt') attempt.id = uid;
+      if (mutation === 'preference') attempt.preference_id = 'other';
+      if (mutation === 'url') attempt.init_point = providerUrl + '-other';
+      if (mutation === 'aba') attempt.authority_revision += 2;
+      if (mutation === 'intent_cancelled') intent.internal_status = 'cancelled';
       if (mutation === 'payments_disabled') settings.enabled = false;
       if (mutation === 'business_closed') { business.status = 'closed'; business.ordering_enabled = false; }
       if (mutation === 'generation') seller.generation = 'rotated-generation';
@@ -128,9 +150,10 @@ async function run(route: string, mutation: string, initiallyInvalid = '') {
   } finally { releaseProvider(); globalThis.fetch = original; }
 }
 
-for (const route of ['stored', 'recovered', 'new']) {
+for (const route of ['stored', 'stored_legacy', 'recovered', 'new']) {
   for (const mutation of ['payments_disabled', 'business_closed', 'generation', 'credential', 'disconnected',
-    'settings_version', 'review', 'smoke', 'reservation', 'expired', 'none']) {
+    'settings_version', 'review', 'smoke', 'reservation', 'expired', 'none',
+    'cancelled', 'superseded', 'attempt_id', 'same_seller_other_attempt', 'preference', 'url', 'aba', 'intent_cancelled']) {
     Deno.test('A1 real handler ' + route + ': ' + mutation + ' during /users/me', () => run(route, mutation));
   }
 }

@@ -5,6 +5,7 @@ import {
   getRequiredEnv,
   hashSensitive,
   providerEnvironment,
+  PublicPaymentError,
   requireRealPaymentSmokeAuthorization,
   sha256Hex,
   webhookUrl,
@@ -112,6 +113,7 @@ export function preferenceRequest(preparation: PreferencePreparation, _businessI
     payment_methods: Object.keys(paymentMethods).length ? paymentMethods : undefined,
     metadata: {
       checkout_session_id: preparation.checkout_session_id,
+      payment_attempt_id: preparation.payment_attempt_id,
       provider: 'mercadopago',
     },
   };
@@ -119,14 +121,14 @@ export function preferenceRequest(preparation: PreferencePreparation, _businessI
 
 export async function mercadoPagoRequest(
   path: string,
-  init: RequestInit & { idempotencyKey?: string; businessId?: string } = {},
+  init: RequestInit & { idempotencyKey?: string; businessId?: string; authorityAccessToken?: string } = {},
 ): Promise<MercadoPagoApiResult> {
   // Every provider call, including webhook reconciliation and refunds, checks
   // the environment review before the backend-only access token is read.
   providerEnvironment();
   if (oauthMode()) assertOAuthPaymentEnvironment();
   if (oauthMode() && !init.businessId) throw new Error('Seller context required');
-  const accessToken = oauthMode() ? await sellerAccessToken(init.businessId!) : getRequiredEnv('MERCADOPAGO_ACCESS_TOKEN');
+  const accessToken = oauthMode() ? (init.authorityAccessToken ?? await sellerAccessToken(init.businessId!)) : getRequiredEnv('MERCADOPAGO_ACCESS_TOKEN');
   const headers = new Headers(init.headers || {});
   headers.set('Authorization', `Bearer ${accessToken}`);
   headers.set('Accept', 'application/json');
@@ -164,7 +166,7 @@ export async function mercadoPagoRequest(
   }
 }
 
-export async function createPreference(preparation: PreferencePreparation, businessId?: string): Promise<{
+export async function createPreference(preparation: PreferencePreparation, businessId?: string, authorityAccessToken?: string): Promise<{
   preferenceId: string;
   initPoint: string;
   sandboxInitPoint: string;
@@ -174,6 +176,7 @@ export async function createPreference(preparation: PreferencePreparation, busin
   const request = preferenceRequest(preparation, businessId);
   const result = await mercadoPagoRequest('/checkout/preferences', {
     businessId,
+    authorityAccessToken,
     method: 'POST',
     body: JSON.stringify(request),
     idempotencyKey: preparation.idempotency_key,
@@ -233,25 +236,56 @@ export async function findPaymentByExternalReference(externalReference: string, 
   return await fetchPayment(paymentId, businessId);
 }
 
-export async function findPreferenceByExternalReference(externalReference: string, businessId?: string): Promise<Record<string, unknown> | null> {
+export async function findPreferenceByExternalReference(externalReference: string, businessId?: string, authorityAccessToken?: string, paymentAttemptId?: string, sellerId?: string): Promise<Record<string, unknown> | null> {
   const query = new URLSearchParams({
     external_reference: externalReference,
     limit: '10',
   });
-  const result = await mercadoPagoRequest(`/checkout/preferences/search?${query.toString()}`, { businessId });
+  const result = await mercadoPagoRequest(`/checkout/preferences/search?${query.toString()}`, { businessId, authorityAccessToken });
   if (!result.response.ok || !result.body) {
     throw new MercadoPagoApiError(result.response.status, await sha256Hex(result.rawText), result.requestId);
   }
   const elements = Array.isArray(result.body.elements) ? result.body.elements : [];
-  const candidate = elements.find((item) => object(item).external_reference === externalReference);
-  if (!candidate) return null;
-  const preferenceId = text(object(candidate).id);
-  if (!preferenceId) return null;
-  const preference = await mercadoPagoRequest(`/checkout/preferences/${encodeURIComponent(preferenceId)}`, { businessId });
-  if (!preference.response.ok || !preference.body) {
-    throw new MercadoPagoApiError(preference.response.status, await sha256Hex(preference.rawText), preference.requestId);
+  const ambiguous = () => new PublicPaymentError(409, 'PREFERENCE_RECONCILING', 'La preferencia requiere conciliación antes de otro intento.');
+  if (Number(object(result.body.paging).total ?? result.body.total ?? elements.length) > elements.length) throw ambiguous();
+  let matched: Record<string, unknown> | null = null;
+  for (const candidate of elements.filter((item) => object(item).external_reference === externalReference)) {
+    const preferenceId = text(object(candidate).id);
+    if (!preferenceId) throw ambiguous();
+    const preference = await mercadoPagoRequest(`/checkout/preferences/${encodeURIComponent(preferenceId)}`, { businessId, authorityAccessToken });
+    if (!preference.response.ok || !preference.body) {
+      throw new MercadoPagoApiError(preference.response.status, await sha256Hex(preference.rawText), preference.requestId);
+    }
+    if (String(preference.body.id) !== preferenceId || preference.body.external_reference !== externalReference ||
+      (sellerId && String(preference.body.collector_id) !== sellerId)) throw ambiguous();
+    if (paymentAttemptId) {
+      const associatedAttempt = object(preference.body.metadata).payment_attempt_id;
+      if (!associatedAttempt) throw ambiguous();
+      if (associatedAttempt !== paymentAttemptId) continue;
+    }
+    if (matched) throw ambiguous();
+    matched = preference.body;
   }
-  return preference.body;
+  return matched;
+}
+
+// Adopt an already-persisted legacy URL only from its specific provider resource.
+// Never stamp today's seller onto an old URL based solely on local association.
+export async function verifyStoredPreference(
+  preparation: PreferencePreparation, businessId: string, authorityAccessToken: string, sellerId: string,
+): Promise<Record<string, unknown> | null> {
+  if (!preparation.preference_id || !preparation.init_point) return null;
+  const result = await mercadoPagoRequest(`/checkout/preferences/${encodeURIComponent(preparation.preference_id)}`, {
+    businessId, authorityAccessToken,
+  });
+  const body = result.body;
+  if (!result.response.ok || !body || String(body.id) !== preparation.preference_id ||
+    String(body.collector_id) !== sellerId || body.init_point !== preparation.init_point ||
+    body.external_reference !== preparation.external_reference ||
+    object(body.metadata).checkout_session_id !== preparation.checkout_session_id ||
+    (object(body.metadata).payment_attempt_id !== undefined &&
+      object(body.metadata).payment_attempt_id !== preparation.payment_attempt_id)) return null;
+  return body;
 }
 
 // A Checkout Pro payment does not carry `preference_id`: it is only reachable

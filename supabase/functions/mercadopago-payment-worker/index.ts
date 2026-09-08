@@ -40,8 +40,8 @@ Deno.serve(async (request) => {
       for (const row of due.data || []) { try { await sellerAccessToken(row.business_id); } catch (_) { /* Safe refresh failure is persisted for the panel. */ } }
     }
     await enforceRateLimit(service, request, 'worker', 30, 60, 'payment-worker');
-    const owner = `edge:${crypto.randomUUID()}`;
-    const { data, error } = await service.rpc('claim_payment_outbox', {
+    const owner = `edge:v2:${crypto.randomUUID()}`;
+    const { data, error } = await service.rpc('claim_payment_outbox_v2', {
       p_owner: owner,
       p_limit: 20,
       p_lease_seconds: 90,
@@ -247,7 +247,7 @@ async function reconcileRefund(service: ReturnType<typeof createServiceClient>, 
   if (correlation.kind === 'unavailable') throw new Error('Refund outcome still unavailable');
   if (correlation.kind === 'rejected') throw new Error('Refund identity mismatch');
   const outcome = correlation.outcome;
-  const recorded = await service.rpc('record_payment_refund_response', {
+  const recorded = await service.rpc('record_payment_refund_response_v2', {
     p_refund_id: job.refund_id,
     p_provider_refund_id: String(outcome.id || ''),
     p_status: String(outcome.status),

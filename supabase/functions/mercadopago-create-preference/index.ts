@@ -1,4 +1,4 @@
-import { assertCurrentSellerPaymentAuthority, businessForIntent } from '../_shared/seller-oauth.ts';
+import { assertCurrentSellerPaymentAuthority, beginSellerPaymentAuthority, businessForIntent, type PaymentAuthoritySnapshot } from '../_shared/seller-oauth.ts';
 import {
   assertAllowedOrigin,
   createServiceClient,
@@ -16,6 +16,7 @@ import {
 import {
   createPreference,
   findPreferenceByExternalReference,
+  verifyStoredPreference,
   MercadoPagoApiError,
   type PreferencePreparation,
 } from '../_shared/mercadopago.ts';
@@ -33,7 +34,7 @@ Deno.serve(async (request) => {
     const service = createServiceClient();
     await enforceRateLimit(service, request, 'preference', 12, 600, user.id);
 
-    const { data, error } = await service.rpc('prepare_mercadopago_preference', {
+    const { data, error } = await service.rpc('prepare_mercadopago_preference_v2', {
       p_checkout_session_id: checkoutSessionId,
       p_customer_id: user.id,
       p_new_attempt: newAttempt,
@@ -41,22 +42,37 @@ Deno.serve(async (request) => {
     if (error || !data) return checkoutUnavailable(request);
     const preparation = data as PreferencePreparation;
     const businessId = await businessForIntent(preparation.payment_intent_id);
+    const authority = await beginSellerPaymentAuthority(businessId, authorityContext(preparation, user.id));
     const storedPoint = selectedInitPoint(preparation);
     if (preparation.attempt_status === 'created' && storedPoint) {
-      return await authorizedPreferenceResponse(request, preparation, storedPoint, businessId, user.id);
+      let snapshot = authority.snapshot;
+      if (!snapshot.attempt.seller_generation || !snapshot.intent.current_payment_attempt_id) {
+        const verified = await verifyStoredPreference(preparation, businessId, authority.accessToken, snapshot.seller!.seller_id);
+        if (!verified) return checkoutUnavailable(request);
+        const { data: persisted, error: persistError } = await service.rpc('record_mercadopago_preference_created_v2', {
+          ...persistenceContext(preparation, businessId, user.id, snapshot),
+          p_payment_attempt_id: preparation.payment_attempt_id, p_preference_id: preparation.preference_id,
+          p_init_point: storedPoint, p_sandbox_init_point: preparation.sandbox_init_point,
+          p_response_hash: await sha256Hex(JSON.stringify(verified)), p_provider_request_id: null,
+        });
+        if (persistError || !persisted) return checkoutUnavailable(request);
+        snapshot = persisted;
+      }
+      return await authorizedPreferenceResponse(request, preparation, storedPoint, businessId, user.id, snapshot);
     }
 
     // A network timeout is never retried blindly. The official preference
     // search endpoint is queried by stable external_reference before another
     // POST is attempted, and a recovered preference is persisted under the
     // original idempotency key.
-    const existing = await findPreferenceByExternalReference(preparation.external_reference, businessId);
+    const existing = await findPreferenceByExternalReference(preparation.external_reference, businessId, authority.accessToken, preparation.payment_attempt_id, authority.snapshot.seller!.seller_id);
     if (existing) {
       const preferenceId = String(existing.id || '').trim();
       const initPoint = String(existing.init_point || '').trim();
       const sandboxInitPoint = String(existing.sandbox_init_point || '').trim();
       if (preferenceId && initPoint) {
-        const { error: persistError } = await service.rpc('record_mercadopago_preference_created', {
+        const { data: persisted, error: persistError } = await service.rpc('record_mercadopago_preference_created_v2', {
+          ...persistenceContext(preparation, businessId, user.id, authority.snapshot),
           p_payment_attempt_id: preparation.payment_attempt_id,
           p_preference_id: preferenceId,
           p_init_point: initPoint,
@@ -64,12 +80,14 @@ Deno.serve(async (request) => {
           p_response_hash: await sha256Hex(JSON.stringify(existing)),
           p_provider_request_id: null,
         });
-        if (persistError) return checkoutUnavailable(request);
-        return await authorizedPreferenceResponse(request, preparation, selectedInitPoint({
+        if (persistError || !persisted) return checkoutUnavailable(request);
+        const ready = {
           ...preparation,
+          preference_id: preferenceId,
           init_point: initPoint,
           sandbox_init_point: sandboxInitPoint,
-        }), businessId, user.id);
+        };
+        return await authorizedPreferenceResponse(request, ready, selectedInitPoint(ready), businessId, user.id, persisted);
       }
     }
 
@@ -83,8 +101,9 @@ Deno.serve(async (request) => {
     }
 
     try {
-      const created = await createPreference(preparation, businessId);
-      const { error: persistError } = await service.rpc('record_mercadopago_preference_created', {
+      const created = await createPreference(preparation, businessId, authority.accessToken);
+      const { data: persisted, error: persistError } = await service.rpc('record_mercadopago_preference_created_v2', {
+        ...persistenceContext(preparation, businessId, user.id, authority.snapshot),
         p_payment_attempt_id: preparation.payment_attempt_id,
         p_preference_id: created.preferenceId,
         p_init_point: created.initPoint,
@@ -92,12 +111,14 @@ Deno.serve(async (request) => {
         p_response_hash: created.responseHash,
         p_provider_request_id: created.requestId || null,
       });
-      if (persistError) return checkoutUnavailable(request);
-      return await authorizedPreferenceResponse(request, preparation, selectedInitPoint({
+      if (persistError || !persisted) return checkoutUnavailable(request);
+      const ready = {
         ...preparation,
+        preference_id: created.preferenceId,
         init_point: created.initPoint,
         sandbox_init_point: created.sandboxInitPoint,
-      }), businessId, user.id);
+      };
+      return await authorizedPreferenceResponse(request, ready, selectedInitPoint(ready), businessId, user.id, persisted);
     } catch (error) {
       // A final authority rejection is not an uncertain provider POST.
       if (error instanceof PublicPaymentError) throw error;
@@ -142,7 +163,7 @@ function selectedInitPoint(preparation: PreferencePreparation): string {
   // pago", while `init_point` completes it against the same sandbox collector
   // and the same test card. The test environment is already determined by the
   // credentials, not by the host, so `init_point` is the one to send.
-  return String(preparation.init_point || '').trim();
+  return String(preparation.init_point || '');
 }
 
 function preferenceResponse(request: Request, preparation: PreferencePreparation, initPoint: string): Response {
@@ -162,14 +183,25 @@ async function authorizedPreferenceResponse(
   initPoint: string,
   businessId: string,
   customerId: string,
+  snapshot: PaymentAuthoritySnapshot,
 ): Promise<Response> {
   if (!initPoint) return checkoutUnavailable(request);
-  await assertCurrentSellerPaymentAuthority(businessId, {
-    checkoutSessionId: preparation.checkout_session_id,
-    paymentIntentId: preparation.payment_intent_id,
-    customerId,
-  });
+  await assertCurrentSellerPaymentAuthority(businessId, authorityContext(preparation, customerId), snapshot);
   return preferenceResponse(request, preparation, initPoint);
+}
+
+function authorityContext(preparation: PreferencePreparation, customerId: string) {
+  return {
+    checkoutSessionId: preparation.checkout_session_id, paymentIntentId: preparation.payment_intent_id, customerId,
+    paymentAttemptId: preparation.payment_attempt_id, attemptNumber: preparation.attempt_number,
+    idempotencyKey: preparation.idempotency_key, preferenceId: preparation.preference_id, initPoint: preparation.init_point,
+  };
+}
+
+function persistenceContext(preparation: PreferencePreparation, businessId: string, customerId: string, snapshot: PaymentAuthoritySnapshot) {
+  return { p_business_id: businessId, p_environment: preparation.environment,
+    p_checkout_session_id: preparation.checkout_session_id, p_customer_id: customerId,
+    p_expected_authority: snapshot.authority_version };
 }
 
 function checkoutUnavailable(request: Request): Response {

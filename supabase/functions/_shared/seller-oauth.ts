@@ -294,26 +294,34 @@ export type PaymentAuthorityContext = {
   checkoutSessionId: string;
   customerId: string;
   paymentIntentId: string;
+  paymentAttemptId: string;
+  attemptNumber: number;
+  idempotencyKey: string;
+  preferenceId: string | null;
+  initPoint: string | null;
 };
 type AuthoritySeller = {
   business_id: string; environment: string; status: string; seller_id: string;
   application_id: string; protected_tokens: string | null; expires_at: string;
   generation: string; refresh_owner: string | null;
 };
-type PaymentAuthoritySnapshot = {
+export type PaymentAuthoritySnapshot = {
   authority_version: string;
   business: Record<string, unknown> | null;
   settings: Record<string, unknown> | null;
   seller: AuthoritySeller | null;
   checkout: Record<string, unknown> | null;
+  attempt: Record<string, unknown>;
+  intent: Record<string, unknown>;
 };
 
 async function paymentAuthoritySnapshot(
   businessId: string, environment: string, context: PaymentAuthorityContext,
 ): Promise<PaymentAuthoritySnapshot> {
-  const { data, error } = await createServiceClient().rpc("get_mercadopago_payment_authority", {
+  const { data, error } = await createServiceClient().rpc("get_mercadopago_payment_authority_v2", {
     p_business_id: businessId, p_environment: environment,
     p_checkout_session_id: context.checkoutSessionId, p_customer_id: context.customerId,
+    p_payment_attempt_id: context.paymentAttemptId,
   });
   if (error || !data) {
     throw new PublicPaymentError(409, "PAYMENT_AUTHORITY_UNAVAILABLE", "No pudimos verificar la autorización del pago. Intentá nuevamente.");
@@ -324,6 +332,7 @@ async function paymentAuthoritySnapshot(
 function validatePaymentAuthority(
   snapshot: PaymentAuthoritySnapshot, businessId: string, environment: string,
   applicationId: string, context: PaymentAuthorityContext,
+  ready = true,
 ): AuthoritySeller {
   const { business, settings, seller, checkout } = snapshot;
   if (!business || business.id !== businessId || business.is_active !== true ||
@@ -355,11 +364,43 @@ function validatePaymentAuthority(
   if (!/^[a-f0-9]{64}$/.test(snapshot.authority_version || "")) {
     throw new PublicPaymentError(409, "PAYMENT_AUTHORITY_UNAVAILABLE", "No pudimos verificar la autorización del pago.");
   }
+  const { attempt, intent } = snapshot;
+  if (!attempt || !intent || attempt.id !== context.paymentAttemptId ||
+    attempt.payment_intent_id !== context.paymentIntentId || attempt.attempt_type !== "preference" ||
+    attempt.attempt_number !== context.attemptNumber || attempt.idempotency_key !== context.idempotencyKey ||
+    !(Number(attempt.authority_revision) >= 1) || intent.id !== context.paymentIntentId ||
+    intent.business_id !== businessId || intent.checkout_session_id !== context.checkoutSessionId ||
+    (intent.current_payment_attempt_id !== context.paymentAttemptId &&
+      (ready || intent.current_payment_attempt_id != null)) ||
+    !["created", "preference_creating", "preference_created", "redirected", "ambiguous"].includes(String(intent.internal_status)) ||
+    !["prepared", "request_sent", "ambiguous", "created"].includes(String(attempt.status)) ||
+    attempt.preference_id !== context.preferenceId || attempt.init_point !== context.initPoint ||
+    (ready && (attempt.status !== "created" || !context.preferenceId || !context.initPoint ||
+      intent.preference_id !== context.preferenceId || attempt.seller_id !== seller.seller_id ||
+      attempt.seller_generation !== seller.generation))) {
+    throw new PublicPaymentError(409, "PAYMENT_ATTEMPT_CHANGED", "El intento de pago cambió. Revisá el carrito.");
+  }
   return seller;
+}
+
+export async function beginSellerPaymentAuthority(businessId: string, context: PaymentAuthorityContext) {
+  const environment = providerEnvironment();
+  if (!oauthMode()) throw new Error("Seller OAuth mode required");
+  const config = oauthConfig();
+  requireRealPaymentSmokeAuthorization(environment);
+  await sellerAccessToken(businessId);
+  const snapshot = await paymentAuthoritySnapshot(businessId, environment, context);
+  const seller = validatePaymentAuthority(snapshot, businessId, environment, config.clientId, context, false);
+  const material = await reveal(seller.protected_tokens!, businessId);
+  if (typeof material.access_token !== "string" || !material.access_token.trim()) {
+    throw new PublicPaymentError(409, "SELLER_REAUTHORIZATION_REQUIRED", "Necesitamos volver a conectar Mercado Pago.");
+  }
+  return { snapshot, accessToken: material.access_token };
 }
 
 export async function assertCurrentSellerPaymentAuthority(
   businessId: string, context: PaymentAuthorityContext,
+  before: PaymentAuthoritySnapshot,
 ): Promise<void> {
   const environment = providerEnvironment();
   if (!oauthMode()) throw new Error("Seller OAuth mode required");
@@ -367,8 +408,6 @@ export async function assertCurrentSellerPaymentAuthority(
   requireRealPaymentSmokeAuthorization(environment);
   // Refresh first if necessary. The snapshot, not this return value, supplies
   // the exact ciphertext/generation/expiry whose credential is verified.
-  await sellerAccessToken(businessId);
-  const before = await paymentAuthoritySnapshot(businessId, environment, context);
   const seller = validatePaymentAuthority(before, businessId, environment, config.clientId, context);
   const material = await reveal(seller.protected_tokens!, businessId);
   const accessToken = material.access_token;

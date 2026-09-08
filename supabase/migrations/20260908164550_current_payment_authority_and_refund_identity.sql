@@ -74,7 +74,7 @@ grant execute on function public.record_payment_refund_identity(uuid,uuid,text,u
 -- An association chosen from amount/time must not become financial authority.
 -- Only the previously bound provider ID can be approved. Terminal outcomes and
 -- financial events remain unchanged on repeat, including changed response hashes.
-create or replace function public.record_payment_refund_response(
+create or replace function public.record_payment_refund_response_v2(
   p_refund_id uuid, p_provider_refund_id text, p_status text, p_amount numeric, p_response_hash text
 )
 returns jsonb language plpgsql security definer
@@ -134,8 +134,8 @@ begin
   return jsonb_build_object('ok',true,'payment_intent_id',v_intent_id,'idempotent',false);
 end;
 $$;
-revoke all on function public.record_payment_refund_response(uuid,text,text,numeric,text) from public, anon, authenticated;
-grant execute on function public.record_payment_refund_response(uuid,text,text,numeric,text) to service_role;
+revoke all on function public.record_payment_refund_response_v2(uuid,text,text,numeric,text) from public, anon, authenticated;
+grant execute on function public.record_payment_refund_response_v2(uuid,text,text,numeric,text) to service_role;
 
 -- A late network failure must not downgrade an already recorded outcome. Keep
 -- one outstanding reconciliation job while preserving a known refund identity.
@@ -169,3 +169,23 @@ end;
 $$;
 revoke all on function public.mark_payment_refund_ambiguous(uuid,text,text) from public, anon, authenticated;
 grant execute on function public.mark_payment_refund_ambiguous(uuid,text,text) to service_role;
+
+-- EXPAND compatibility adapter: preserves the legacy signature and errors.
+-- Legacy callers cannot prove timestamp/specific-resource validation, even
+-- with a bound ID. Only an already-settled approval may be replayed. Otherwise
+-- old handlers follow their existing reconciliation/retry error path. New Edge
+-- uses V2. Keeping the signature must never preserve unsafe settlement success.
+create or replace function public.record_payment_refund_response(
+ p_refund_id uuid, p_provider_refund_id text, p_status text, p_amount numeric, p_response_hash text
+) returns jsonb language plpgsql security invoker
+set search_path=pg_catalog,public,pg_temp as $$
+begin
+ if p_status='approved' and not exists(select 1 from public.payment_refunds
+   where id=p_refund_id and status='approved') then
+   raise exception 'legacy refund requires V2 reconciliation' using errcode='55000';
+ end if;
+ return public.record_payment_refund_response_v2(p_refund_id,p_provider_refund_id,p_status,p_amount,p_response_hash);
+end;
+$$;
+revoke all on function public.record_payment_refund_response(uuid,text,text,numeric,text) from public,anon,authenticated;
+grant execute on function public.record_payment_refund_response(uuid,text,text,numeric,text) to service_role;

@@ -1,0 +1,324 @@
+Independent matrix
+(node:5304) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:5304) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+{"phase":"old","revision":"a56a9c5","route":"stored","mutation":"none","stage":"identity","urlReleased":true,"status":200}
+{"phase":"old","revision":"a56a9c5","route":"recovered","mutation":"none","stage":"identity","urlReleased":true,"status":200}
+{"phase":"old","revision":"a56a9c5","route":"new","mutation":"none","stage":"identity","urlReleased":true,"status":200}
+OLD_EDGE_OLD_DB: PASS
+OLD_EDGE_OLD_DB_FINANCIAL_LIFECYCLE: PASS
+{"phase":"old","revision":"a56a9c5","route":"stored","mutation":"none","stage":"identity","urlReleased":false,"status":409}
+NEW_EDGE_OLD_DB: FAIL_CLOSED
+mercadopago_checkout_pro.local.sql
+
+mercadopago_seller_oauth.local.sql
+1..15
+ok 1 - token table has RLS
+ok 2 - browser cannot read tokens
+ok 3 - anonymous cannot read states
+ok 4 - browser cannot consume states
+562897c4-9507-4d5e-ae6e-a635aae01924
+ok 5 - wrong environment rejected
+ok 6 - valid state consumed
+ok 7 - replay rejected
+fa77a962-d914-4f48-8ec8-43c62c41e70f
+ok 8 - expired state rejected
+ok 9 - connection saved
+ok 10 - first refresh owns grant
+ok 11 - concurrent refresh rejected
+ok 12 - non-owner cannot rotate
+t
+ok 13 - disconnect destroys token material
+ok 14 - disconnect persists
+ok 15 - stale callback cannot reconnect
+
+mercadopago_clean_business.local.sql
+1..15
+ok 1 - clean business has no previous seller
+ok 2 - clean business inherits no intents or UNKNOWN history
+3db26cc7-d703-4db9-8240-0088e7b47ae4
+ok 3 - OAuth state binds the clean business
+ok 4 - callback consumes state
+ok 5 - callback replay blocked
+ok 6 - first seller accepted on clean business
+ok 7 - correct seller stored
+ok 8 - same seller repeated is allowed
+ok 9 - different seller blocked even before first payment
+ok 10 - legacy keeps exactly 94 intents
+ok 11 - all legacy payment columns unchanged
+ok 12 - authorization does not create a payment
+ok 13 - real authorization does not enable real charges
+t
+ok 14 - disconnect cannot bypass binding
+ok 15 - same seller can reconnect after disconnect
+
+production_least_privilege_test.sql
+1..44
+ok 1 - import_qa_fixture_catalog no existe en produccion
+ok 2 - publish_qa_fixture_product no existe en produccion
+ok 3 - no queda ninguna funcion marcada STAGING ONLY en public
+ok 4 - product_is_qa_fixture sigue viva: aisla pedidos QA del reparto real
+ok 5 - product_is_qa_fixture sigue ejecutable por authenticated
+ok 6 - anon no puede escribir catalog_assets
+ok 7 - authenticated no puede escribir catalog_assets
+ok 8 - anon no puede escribir products
+ok 9 - authenticated no puede insertar products
+ok 10 - authenticated no puede cambiar products.catalog_origin
+ok 11 - authenticated no puede cambiar products.is_verified
+ok 12 - authenticated no puede cambiar catalog_assets.rights_status
+ok 13 - el Panel conserva stock/available/is_active/sort_order sobre products
+ok 14 - la vidriera publica sigue leyendo products
+ok 15 - anon no puede TRUNCATE fiscal_profile_events (RLS no lo cubriria)
+ok 16 - authenticated no puede TRUNCATE fiscal_profile_events
+ok 17 - anon no puede leer fiscal_profile_events
+ok 18 - anon no puede insertar en fiscal_profile_events
+ok 19 - anon no puede actualizar fiscal_profile_events
+ok 20 - anon no puede borrar fiscal_profile_events
+ok 21 - anon no conserva REFERENCES sobre fiscal_profile_events
+ok 22 - authenticated no puede insertar en fiscal_profile_events
+ok 23 - authenticated no puede actualizar fiscal_profile_events
+ok 24 - authenticated no puede borrar fiscal_profile_events
+ok 25 - authenticated conserva SELECT sobre fiscal_profile_events
+ok 26 - fiscal_profile_events conserva su policy de lectura
+ok 27 - ninguna tabla de public da INSERT/UPDATE/DELETE/TRUNCATE a anon o authenticated
+ok 28 - quedan exactamente 8 SECURITY DEFINER ejecutables por anon
+ok 29 - y son exactamente las 8 del contrato publico escrito
+ok 30 - anon no ejecuta authorize_fiscal_artifact_access
+ok 31 - anon no ejecuta list_fiscal_document_artifacts
+ok 32 - anon no ejecuta request_fiscal_artifact_regeneration
+ok 33 - anon no ejecuta request_fiscal_print_job
+ok 34 - anon no ejecuta update_fiscal_print_job
+ok 35 - el Panel autenticado conserva las 5 RPC fiscales
+ok 36 - ninguna funcion de trigger es ejecutable por anon o authenticated
+ok 37 - las 5 siguen atadas a su trigger: revocar EXECUTE no las desconecta
+ok 38 - anon conserva can_access_order: lo evaluan las policies del seguimiento publico
+ok 39 - anon conserva get_public_order_tracking
+ok 40 - anon conserva scheduler_heartbeat: es la sonda externa sin credenciales
+ok 41 - cero SECURITY DEFINER sin search_path fijado
+ok 42 - CREATE sobre schema public sigue negado a anon y authenticated
+ok 43 - vault sigue inaccesible para anon y authenticated
+ok 44 - cero tablas de public sin RLS
+
+V2_RPC_PRIVILEGES: PASS (anon/authenticated denied; service_role granted)
+
+{"phase":"expand","revision":"e3b16ad","route":"stored","mutation":"none","stage":"identity","urlReleased":true,"status":200}
+{"phase":"expand","revision":"e3b16ad","route":"stored","mutation":"cancel","stage":"identity","urlReleased":true,"status":200}
+{"phase":"expand","revision":"e3b16ad","route":"stored","mutation":"preference","stage":"identity","urlReleased":true,"status":200}
+{"phase":"expand","revision":"e3b16ad","route":"stored","mutation":"url","stage":"identity","urlReleased":true,"status":200}
+{"phase":"expand","revision":"e3b16ad","route":"stored","mutation":"id","stage":"identity","urlReleased":true,"status":200}
+{"phase":"expand","revision":"e3b16ad","route":"recovered","mutation":"none","stage":"identity","urlReleased":true,"status":200}
+{"phase":"expand","revision":"e3b16ad","route":"recovered","mutation":"cancel","stage":"identity","urlReleased":true,"status":200}
+{"phase":"expand","revision":"e3b16ad","route":"recovered","mutation":"preference","stage":"identity","urlReleased":true,"status":200}
+{"phase":"expand","revision":"e3b16ad","route":"recovered","mutation":"url","stage":"identity","urlReleased":true,"status":200}
+{"phase":"expand","revision":"e3b16ad","route":"recovered","mutation":"id","stage":"identity","urlReleased":true,"status":200}
+{"phase":"expand","revision":"e3b16ad","route":"new","mutation":"none","stage":"identity","urlReleased":true,"status":200}
+{"phase":"expand","revision":"e3b16ad","route":"new","mutation":"cancel","stage":"identity","urlReleased":true,"status":200}
+{"phase":"expand","revision":"e3b16ad","route":"new","mutation":"preference","stage":"identity","urlReleased":true,"status":200}
+{"phase":"expand","revision":"e3b16ad","route":"new","mutation":"url","stage":"identity","urlReleased":true,"status":200}
+{"phase":"expand","revision":"e3b16ad","route":"new","mutation":"id","stage":"identity","urlReleased":true,"status":200}
+PREVIOUS_PATCH_RESIDUAL: REPRODUCED
+{"phase":"expand","revision":"a56a9c5","route":"stored","mutation":"none","stage":"identity","urlReleased":true,"status":200}
+{"phase":"expand","revision":"a56a9c5","route":"recovered","mutation":"none","stage":"identity","urlReleased":true,"status":200}
+{"phase":"expand","revision":"a56a9c5","route":"new","mutation":"none","stage":"identity","urlReleased":true,"status":200}
+OLD_EDGE_EXPAND_DB_CHECKOUT: PASS
+{"phase":"expand","revision":"working-tree","route":"stored","mutation":"none","stage":"identity","urlReleased":true,"status":200}
+{"phase":"expand","revision":"working-tree","route":"stored","mutation":"cancel","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"stored","mutation":"supersede","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"stored","mutation":"preference","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"stored","mutation":"url","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"stored","mutation":"id","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"stored","mutation":"same-seller-other-attempt","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"stored","mutation":"aba","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"stored","mutation":"disable","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"stored","mutation":"close","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"stored","mutation":"credential","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"stored_legacy","mutation":"none","stage":"identity","urlReleased":true,"status":200}
+{"phase":"expand","revision":"working-tree","route":"stored_legacy","mutation":"cancel","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"stored_legacy","mutation":"supersede","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"stored_legacy","mutation":"preference","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"stored_legacy","mutation":"url","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"stored_legacy","mutation":"id","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"stored_legacy","mutation":"same-seller-other-attempt","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"stored_legacy","mutation":"aba","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"stored_legacy","mutation":"disable","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"stored_legacy","mutation":"close","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"stored_legacy","mutation":"credential","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"recovered","mutation":"none","stage":"identity","urlReleased":true,"status":200}
+{"phase":"expand","revision":"working-tree","route":"recovered","mutation":"cancel","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"recovered","mutation":"supersede","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"recovered","mutation":"preference","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"recovered","mutation":"url","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"recovered","mutation":"id","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"recovered","mutation":"same-seller-other-attempt","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"recovered","mutation":"aba","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"recovered","mutation":"disable","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"recovered","mutation":"close","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"recovered","mutation":"credential","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"new","mutation":"none","stage":"identity","urlReleased":true,"status":200}
+{"phase":"expand","revision":"working-tree","route":"new","mutation":"cancel","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"new","mutation":"supersede","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"new","mutation":"preference","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"new","mutation":"url","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"new","mutation":"id","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"new","mutation":"same-seller-other-attempt","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"new","mutation":"aba","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"new","mutation":"disable","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"new","mutation":"close","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"new","mutation":"credential","stage":"identity","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"recovered","mutation":"cancel","stage":"persist","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"recovered","mutation":"supersede","stage":"persist","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"recovered","mutation":"preference","stage":"persist","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"recovered","mutation":"url","stage":"persist","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"recovered","mutation":"credential","stage":"persist","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"recovered","mutation":"disable","stage":"persist","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"recovered","mutation":"close","stage":"persist","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"new","mutation":"cancel","stage":"persist","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"new","mutation":"supersede","stage":"persist","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"new","mutation":"preference","stage":"persist","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"new","mutation":"url","stage":"persist","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"new","mutation":"credential","stage":"persist","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"new","mutation":"disable","stage":"persist","urlReleased":false,"status":409}
+{"phase":"expand","revision":"working-tree","route":"new","mutation":"close","stage":"persist","urlReleased":false,"status":409}
+expand: CONCURRENT_A_REJECTED_B_RELEASED
+NEW_EDGE_EXPAND_DB: PASS
+A4_LEGACY_UNBOUND_AND_BOUND_UNSETTLED_FAIL_CLOSED; TERMINAL_REPLAY_COMPATIBLE; CONCURRENT_EXACTLY_ONCE: PASS
+A4_INDEPENDENT_MISSING_PRE_REQUEST_FUTURE_UNKNOWN_AND_KNOWN: PASS
+{"phase":"contract","revision":"working-tree","route":"stored","mutation":"none","stage":"identity","urlReleased":true,"status":200}
+{"phase":"contract","revision":"working-tree","route":"stored","mutation":"cancel","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored","mutation":"supersede","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored","mutation":"preference","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored","mutation":"url","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored","mutation":"id","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored","mutation":"same-seller-other-attempt","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored","mutation":"aba","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored","mutation":"disable","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored","mutation":"close","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored","mutation":"credential","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored_legacy","mutation":"none","stage":"identity","urlReleased":true,"status":200}
+{"phase":"contract","revision":"working-tree","route":"stored_legacy","mutation":"cancel","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored_legacy","mutation":"supersede","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored_legacy","mutation":"preference","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored_legacy","mutation":"url","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored_legacy","mutation":"id","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored_legacy","mutation":"same-seller-other-attempt","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored_legacy","mutation":"aba","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored_legacy","mutation":"disable","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored_legacy","mutation":"close","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored_legacy","mutation":"credential","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"none","stage":"identity","urlReleased":true,"status":200}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"cancel","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"supersede","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"preference","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"url","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"id","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"same-seller-other-attempt","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"aba","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"disable","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"close","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"credential","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"none","stage":"identity","urlReleased":true,"status":200}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"cancel","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"supersede","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"preference","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"url","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"id","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"same-seller-other-attempt","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"aba","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"disable","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"close","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"credential","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"cancel","stage":"persist","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"supersede","stage":"persist","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"preference","stage":"persist","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"url","stage":"persist","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"credential","stage":"persist","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"disable","stage":"persist","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"close","stage":"persist","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"cancel","stage":"persist","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"supersede","stage":"persist","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"preference","stage":"persist","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"url","stage":"persist","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"credential","stage":"persist","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"disable","stage":"persist","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"close","stage":"persist","urlReleased":false,"status":409}
+contract: CONCURRENT_A_REJECTED_B_RELEASED
+NEW_EDGE_CONTRACT_DB: PASS
+{"phase":"contract","revision":"a56a9c5","route":"stored","mutation":"none","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"e3b16ad","route":"stored","mutation":"none","stage":"identity","urlReleased":false,"status":409}
+OLD_EDGE_CONTRACT_DB: FAIL_CLOSED
+INDEPENDENT_V2_REPRODUCTIONS: PASS
+
+CAS lock proof
+CAS_TRANSITION_BUSINESS_SETTINGS_CREDENTIAL_LOCKS: PASS (3 independent writers blocked)
+
+Current contract replay
+(node:24644) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:24644) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+{"phase":"contract","revision":"working-tree","route":"stored","mutation":"none","stage":"identity","urlReleased":true,"status":200}
+{"phase":"contract","revision":"working-tree","route":"stored","mutation":"cancel","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored","mutation":"supersede","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored","mutation":"preference","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored","mutation":"url","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored","mutation":"id","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored","mutation":"same-seller-other-attempt","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored","mutation":"aba","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored","mutation":"disable","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored","mutation":"close","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored","mutation":"credential","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored_legacy","mutation":"none","stage":"identity","urlReleased":true,"status":200}
+{"phase":"contract","revision":"working-tree","route":"stored_legacy","mutation":"cancel","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored_legacy","mutation":"supersede","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored_legacy","mutation":"preference","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored_legacy","mutation":"url","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored_legacy","mutation":"id","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored_legacy","mutation":"same-seller-other-attempt","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored_legacy","mutation":"aba","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored_legacy","mutation":"disable","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored_legacy","mutation":"close","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"stored_legacy","mutation":"credential","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"none","stage":"identity","urlReleased":true,"status":200}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"cancel","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"supersede","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"preference","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"url","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"id","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"same-seller-other-attempt","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"aba","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"disable","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"close","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"credential","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"none","stage":"identity","urlReleased":true,"status":200}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"cancel","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"supersede","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"preference","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"url","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"id","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"same-seller-other-attempt","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"aba","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"disable","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"close","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"credential","stage":"identity","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"cancel","stage":"persist","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"supersede","stage":"persist","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"preference","stage":"persist","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"url","stage":"persist","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"credential","stage":"persist","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"disable","stage":"persist","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"recovered","mutation":"close","stage":"persist","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"cancel","stage":"persist","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"supersede","stage":"persist","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"preference","stage":"persist","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"url","stage":"persist","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"credential","stage":"persist","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"disable","stage":"persist","urlReleased":false,"status":409}
+{"phase":"contract","revision":"working-tree","route":"new","mutation":"close","stage":"persist","urlReleased":false,"status":409}
+contract: CONCURRENT_A_REJECTED_B_RELEASED
+CURRENT_CONTRACT_REPLAY: PASS
+
+Contract and old refund handlers
+(node:25204) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:25204) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+OLD_REFUND_HANDLERS_CONTRACT: NO_PROVIDER_POST
+TRANSACTIONAL_CONTRACT_AND_DRAIN_GUARDS: PASS

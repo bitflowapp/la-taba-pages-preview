@@ -229,13 +229,13 @@ begin
   insert into public.payment_refunds(payment_intent_id, order_id, amount, status, requested_by)
   values (v_intent, v_order, 100, 'ambiguous', v_user) returning id into v_refund_two;
   begin
-    perform public.record_payment_refund_response(v_refund_one,'98000001','approved',100,repeat('8',64));
+    perform public.record_payment_refund_response_v2(v_refund_one,'98000001','approved',100,repeat('8',64));
     raise exception 'refund without a bound provider ID was approved';
   exception when unique_violation then null;
   end;
   perform public.record_payment_refund_identity(v_refund_one,v_intent,'90000000001',
     (select idempotency_key from public.payment_refunds where id=v_refund_one),'98000001');
-  perform public.record_payment_refund_response(v_refund_one, '98000001', 'approved', 100, repeat('8', 64));
+  perform public.record_payment_refund_response_v2(v_refund_one, '98000001', 'approved', 100, repeat('8', 64));
   begin
     perform public.record_payment_refund_identity(v_refund_two,v_intent,'90000000001',
       (select idempotency_key from public.payment_refunds where id=v_refund_two),'98000001');
@@ -244,8 +244,8 @@ begin
   end;
   perform public.record_payment_refund_identity(v_refund_two,v_intent,'90000000001',
     (select idempotency_key from public.payment_refunds where id=v_refund_two),'98000002');
-  perform public.record_payment_refund_response(v_refund_two, '98000002', 'approved', 100, repeat('a', 64));
-  if (public.record_payment_refund_response(v_refund_two, '98000002', 'approved', 100, repeat('b', 64)) ->> 'idempotent') <> 'true' then
+  perform public.record_payment_refund_response_v2(v_refund_two, '98000002', 'approved', 100, repeat('a', 64));
+  if (public.record_payment_refund_response_v2(v_refund_two, '98000002', 'approved', 100, repeat('b', 64)) ->> 'idempotent') <> 'true' then
     raise exception 'refund response retry was not idempotent';
   end if;
   if (select count(*) from public.payment_events where event_type='payment.refund_approved' and details->>'refund_id'=v_refund_two::text) <> 1 then

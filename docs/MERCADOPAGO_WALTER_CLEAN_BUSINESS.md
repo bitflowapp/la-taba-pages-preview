@@ -31,10 +31,14 @@ El catálogo inactivo o no verificado de pruebas no se publicó en el negocio nu
 
 ## OAuth y protección del seller
 
-El consentimiento real se habilitó exclusivamente para este negocio de staging mediante `scripts/mercadopago/preparar-onboarding-walter-staging.mjs`. El script exige negocio sin conexiones, intents ni estados, comprueba los digests de configuración y escribe únicamente dos valores no sensibles:
+El consentimiento OAuth de staging está limitado a usuarios de prueba y a la
+aplicación de staging. La excepción histórica que permitía consentimiento real
+en staging fue retirada. `scripts/mercadopago/preparar-onboarding-walter-staging.mjs`
+ahora aborta siempre para impedir que vuelva a introducirse esa configuración.
 
-- `MERCADOPAGO_OAUTH_ENVIRONMENT=production`.
-- `MERCADOPAGO_OAUTH_ONBOARDING_BUSINESS_ID=3537d949-d76b-410d-be89-e4f447546e29`.
+El consentimiento productivo de Walter sólo podrá iniciarse en el proyecto de
+producción después de la aprobación independiente. Esta remediación no conecta
+al vendedor ni habilita pagos.
 
 `MERCADOPAGO_ENVIRONMENT=test` se conserva. El consentimiento real no habilita cobros reales: las llamadas financieras fallan antes de recuperar un token si los entornos de consentimiento y pagos difieren, y `mp_finish_oauth` deja deshabilitados los pagos productivos. No se modificó el proyecto de producción. La transición futura a cobros necesita su proceso de revisión existente.
 

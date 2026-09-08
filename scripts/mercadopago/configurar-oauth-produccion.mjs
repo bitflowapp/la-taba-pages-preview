@@ -44,6 +44,7 @@ await conToken(async (token) => {
     MERCADOPAGO_OAUTH_WEBHOOK_SECRET: webhookSecret,
     MERCADOPAGO_CREDENTIAL_MODE: 'oauth',
     MERCADOPAGO_ENVIRONMENT: 'production',
+    MERCADOPAGO_OAUTH_ENVIRONMENT: 'production',
     TABA_DEPLOYMENT_ENV: 'production',
     MERCADOPAGO_OAUTH_PROJECT_REF: ref,
     MERCADOPAGO_OAUTH_PANEL_URL: 'https://la-taba.pages.dev/',

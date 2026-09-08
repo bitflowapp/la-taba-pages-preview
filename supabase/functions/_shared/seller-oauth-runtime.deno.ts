@@ -16,31 +16,31 @@ import { mercadoPagoRequest } from "./mercadopago.ts";
 const business = "92000000-0000-4000-8000-000000000001";
 function configure() {
   Deno.env.delete("MERCADOPAGO_CREDENTIAL_MODE");
-  Deno.env.delete("MERCADOPAGO_OAUTH_ENVIRONMENT");
   Deno.env.delete("MERCADOPAGO_OAUTH_ONBOARDING_BUSINESS_ID");
   for (
     const [name, value] of Object.entries({
-      SUPABASE_URL: "https://oauth-fixture.supabase.co",
+      SUPABASE_URL: "https://ukxqbgswjlibmnjemrzd.supabase.co",
       SUPABASE_SERVICE_ROLE_KEY: "fixture-server-key",
       MERCADOPAGO_ENVIRONMENT: "test",
+      MERCADOPAGO_OAUTH_ENVIRONMENT: "test",
+      MERCADOPAGO_CREDENTIAL_MODE: "oauth",
       TABA_DEPLOYMENT_ENV: "staging",
-      MERCADOPAGO_OAUTH_PROJECT_REF: "oauth-fixture",
-      MERCADOPAGO_OAUTH_PANEL_URL: "https://staging.example.invalid/",
-      MERCADOPAGO_CLIENT_ID: "123456",
+      MERCADOPAGO_OAUTH_PROJECT_REF: "ukxqbgswjlibmnjemrzd",
+      MERCADOPAGO_OAUTH_PANEL_URL: "https://taba2-staging.pages.dev/",
+      TABA_CHECKOUT_BASE_URL: "https://taba2-staging.pages.dev",
+      TABA_ALLOWED_ORIGINS: "https://taba2-staging.pages.dev",
+      MERCADOPAGO_CLIENT_ID: "2691240967769590",
       MERCADOPAGO_CLIENT_SECRET: "fixture-client-secret",
       MERCADOPAGO_TOKEN_ENCRYPTION_KEY: randomSecret(),
     })
   ) Deno.env.set(name, value);
 }
-Deno.test("staging real-account consent is scoped to one clean business and cannot execute payments", async () => {
+Deno.test("staging rejects every production-consent exception", async () => {
   configure();
   Deno.env.set("MERCADOPAGO_OAUTH_ENVIRONMENT", "production");
   await assertRejects(async () => oauthConfig());
   Deno.env.set("MERCADOPAGO_OAUTH_ONBOARDING_BUSINESS_ID", business);
-  assertEquals(oauthConfig().environment, "production");
-  assertOAuthBusiness(business);
-  await assertRejects(async () => assertOAuthBusiness("another-business"));
-  await assertRejects(async () => assertOAuthPaymentEnvironment());
+  await assertRejects(async () => oauthConfig());
   configure();
   assertOAuthPaymentEnvironment();
 });
@@ -50,11 +50,8 @@ Deno.test("seller identity uses provider tags to prevent test/production crossov
   try {
     globalThis.fetch = () => Promise.resolve(Response.json({id: 123, site_id: "MLA", tags: ["test_user"]}));
     assertEquals((await sellerIdentity("fixture", "123")).seller_id, "123");
-    Deno.env.set("MERCADOPAGO_OAUTH_ENVIRONMENT", "production");
-    Deno.env.set("MERCADOPAGO_OAUTH_ONBOARDING_BUSINESS_ID", business);
-    await assertRejects(() => sellerIdentity("fixture", "123"));
     globalThis.fetch = () => Promise.resolve(Response.json({id: 123, site_id: "MLA", tags: ["normal"]}));
-    assertEquals((await sellerIdentity("fixture", "123")).seller_id, "123");
+    await assertRejects(() => sellerIdentity("fixture", "123"));
     await assertRejects(() => sellerIdentity("fixture", "456"));
     configure();
     await assertRejects(() => sellerIdentity("fixture", "123"));
@@ -81,6 +78,25 @@ Deno.test("OAuth configuration rejects project and deployment crossover", () => 
   }
   assertEquals(failed, true);
 });
+Deno.test("OAuth contract rejects cross-origin, unknown-project and normalized bypasses", async () => {
+  configure();
+  for (const panel of [
+    "https://la-taba.pages.dev/",
+    "https://attacker.invalid/",
+    "https://TABA2-STAGING.pages.dev/",
+    "https://taba2-staging.pages.dev/path",
+  ]) {
+    Deno.env.set("MERCADOPAGO_OAUTH_PANEL_URL", panel);
+    await assertRejects(async () => oauthConfig());
+  }
+  configure();
+  Deno.env.set("SUPABASE_URL", "https://unknown-project.supabase.co");
+  Deno.env.set("MERCADOPAGO_OAUTH_PROJECT_REF", "unknown-project");
+  await assertRejects(async () => oauthConfig());
+  configure();
+  Deno.env.set("MERCADOPAGO_OAUTH_PROJECT_REF", "UKXQBGSwjlibmnjemrzd");
+  await assertRejects(async () => oauthConfig());
+});
 Deno.test("known deployments reject the other Mercado Pago application", async () => {
   configure();
   Deno.env.set("MERCADOPAGO_CREDENTIAL_MODE", "oauth");
@@ -88,7 +104,11 @@ Deno.test("known deployments reject the other Mercado Pago application", async (
   Deno.env.set("MERCADOPAGO_OAUTH_PROJECT_REF", "wwcpogltfgzgkrlilbcd");
   Deno.env.set("TABA_DEPLOYMENT_ENV", "production");
   Deno.env.set("MERCADOPAGO_ENVIRONMENT", "production");
+  Deno.env.set("MERCADOPAGO_OAUTH_ENVIRONMENT", "production");
   Deno.env.set("MERCADOPAGO_PRODUCTION_REVIEW_STATUS", "approved");
+  Deno.env.set("MERCADOPAGO_OAUTH_PANEL_URL", "https://la-taba.pages.dev/");
+  Deno.env.set("TABA_CHECKOUT_BASE_URL", "https://la-taba.pages.dev");
+  Deno.env.set("TABA_ALLOWED_ORIGINS", "https://la-taba.pages.dev");
   Deno.env.set("MERCADOPAGO_CLIENT_ID", "2691240967769590");
   await assertRejects(async () => oauthConfig());
   Deno.env.set("MERCADOPAGO_CLIENT_ID", "7677852968049976");
@@ -98,7 +118,11 @@ Deno.test("known deployments reject the other Mercado Pago application", async (
   Deno.env.set("MERCADOPAGO_OAUTH_PROJECT_REF", "ukxqbgswjlibmnjemrzd");
   Deno.env.set("TABA_DEPLOYMENT_ENV", "staging");
   Deno.env.set("MERCADOPAGO_ENVIRONMENT", "test");
+  Deno.env.set("MERCADOPAGO_OAUTH_ENVIRONMENT", "test");
   Deno.env.delete("MERCADOPAGO_PRODUCTION_REVIEW_STATUS");
+  Deno.env.set("MERCADOPAGO_OAUTH_PANEL_URL", "https://taba2-staging.pages.dev/");
+  Deno.env.set("TABA_CHECKOUT_BASE_URL", "https://taba2-staging.pages.dev");
+  Deno.env.set("TABA_ALLOWED_ORIGINS", "https://taba2-staging.pages.dev");
   Deno.env.set("MERCADOPAGO_CLIENT_ID", "7677852968049976");
   await assertRejects(async () => oauthConfig());
   Deno.env.set("MERCADOPAGO_CLIENT_ID", "2691240967769590");
@@ -130,7 +154,14 @@ Deno.test("a global token cannot reach the provider when hosted OAuth mode is in
   configure();
   Deno.env.set("SUPABASE_URL", "https://wwcpogltfgzgkrlilbcd.supabase.co");
   Deno.env.set("MERCADOPAGO_ENVIRONMENT", "production");
+  Deno.env.set("MERCADOPAGO_OAUTH_ENVIRONMENT", "production");
   Deno.env.set("MERCADOPAGO_PRODUCTION_REVIEW_STATUS", "approved");
+  Deno.env.set("MERCADOPAGO_OAUTH_PROJECT_REF", "wwcpogltfgzgkrlilbcd");
+  Deno.env.set("TABA_DEPLOYMENT_ENV", "production");
+  Deno.env.set("MERCADOPAGO_CLIENT_ID", "7677852968049976");
+  Deno.env.set("MERCADOPAGO_OAUTH_PANEL_URL", "https://la-taba.pages.dev/");
+  Deno.env.set("TABA_CHECKOUT_BASE_URL", "https://la-taba.pages.dev");
+  Deno.env.set("TABA_ALLOWED_ORIGINS", "https://la-taba.pages.dev");
   Deno.env.set("MERCADOPAGO_ACCESS_TOKEN", "fixture-global-token-must-stay-unused");
   let providerCalls = 0;
   const original = globalThis.fetch;

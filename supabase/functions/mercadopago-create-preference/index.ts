@@ -1,4 +1,4 @@
-import { businessForIntent } from '../_shared/seller-oauth.ts';
+import { assertCurrentSellerPaymentAuthority, businessForIntent } from '../_shared/seller-oauth.ts';
 import {
   assertAllowedOrigin,
   createServiceClient,
@@ -42,7 +42,7 @@ Deno.serve(async (request) => {
     const businessId = await businessForIntent(preparation.payment_intent_id);
     const storedPoint = selectedInitPoint(preparation);
     if (preparation.attempt_status === 'created' && storedPoint) {
-      return preferenceResponse(request, preparation, storedPoint);
+      return await authorizedPreferenceResponse(request, preparation, storedPoint, businessId);
     }
 
     // A network timeout is never retried blindly. The official preference
@@ -64,11 +64,11 @@ Deno.serve(async (request) => {
           p_provider_request_id: null,
         });
         if (persistError) return checkoutUnavailable(request);
-        return preferenceResponse(request, preparation, selectedInitPoint({
+        return await authorizedPreferenceResponse(request, preparation, selectedInitPoint({
           ...preparation,
           init_point: initPoint,
           sandbox_init_point: sandboxInitPoint,
-        }));
+        }), businessId);
       }
     }
 
@@ -92,11 +92,11 @@ Deno.serve(async (request) => {
         p_provider_request_id: created.requestId || null,
       });
       if (persistError) return checkoutUnavailable(request);
-      return preferenceResponse(request, preparation, selectedInitPoint({
+      return await authorizedPreferenceResponse(request, preparation, selectedInitPoint({
         ...preparation,
         init_point: created.initPoint,
         sandbox_init_point: created.sandboxInitPoint,
-      }));
+      }), businessId);
     } catch (error) {
       const requestHash = await sha256Hex(JSON.stringify({
         checkoutSessionId,
@@ -151,6 +151,17 @@ function preferenceResponse(request: Request, preparation: PreferencePreparation
     expires_at: preparation.expires_at,
     status: 'redirect_ready',
   });
+}
+
+async function authorizedPreferenceResponse(
+  request: Request,
+  preparation: PreferencePreparation,
+  initPoint: string,
+  businessId: string,
+): Promise<Response> {
+  if (!initPoint) return checkoutUnavailable(request);
+  await assertCurrentSellerPaymentAuthority(businessId);
+  return preferenceResponse(request, preparation, initPoint);
 }
 
 function checkoutUnavailable(request: Request): Response {

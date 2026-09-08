@@ -18,15 +18,16 @@ const business = '92000000-0000-4000-8000-000000000001';
 const secret = 'fixture-webhook-signing-key';
 async function run(valid: boolean, wrongReference = false) {
   for (const [name, value] of Object.entries({
-    SUPABASE_URL: 'https://routing-fixture.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'fixture-server-key',
-    MERCADOPAGO_ENVIRONMENT: 'test', MERCADOPAGO_CREDENTIAL_MODE: 'oauth',
-    TABA_DEPLOYMENT_ENV: 'staging', MERCADOPAGO_OAUTH_PROJECT_REF: 'routing-fixture',
-    MERCADOPAGO_OAUTH_PANEL_URL: 'https://staging.example.invalid/', MERCADOPAGO_CLIENT_ID: '456',
+    SUPABASE_URL: 'https://ukxqbgswjlibmnjemrzd.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'fixture-server-key',
+    MERCADOPAGO_ENVIRONMENT: 'test', MERCADOPAGO_OAUTH_ENVIRONMENT: 'test', MERCADOPAGO_CREDENTIAL_MODE: 'oauth',
+    TABA_DEPLOYMENT_ENV: 'staging', MERCADOPAGO_OAUTH_PROJECT_REF: 'ukxqbgswjlibmnjemrzd',
+    MERCADOPAGO_OAUTH_PANEL_URL: 'https://taba2-staging.pages.dev/', MERCADOPAGO_CLIENT_ID: '2691240967769590',
+    TABA_CHECKOUT_BASE_URL: 'https://taba2-staging.pages.dev', TABA_ALLOWED_ORIGINS: 'https://taba2-staging.pages.dev',
     MERCADOPAGO_TOKEN_ENCRYPTION_KEY: randomSecret(), MERCADOPAGO_OAUTH_WEBHOOK_SECRET: secret,
     PAYMENT_LOG_HASH_SALT: 'fixture-log-salt',
   })) Deno.env.set(name, value);
   const row = {
-    business_id: business, seller_id: '123', application_id: '456', environment: 'test', status: 'connected',
+    business_id: business, seller_id: '123', application_id: '2691240967769590', environment: 'test', status: 'connected',
     protected_tokens: await protect({access_token: 'fixture-seller-token'}, business),
     expires_at: new Date(Date.now() + 3 * 86400000).toISOString(), refresh_owner: null,
   };
@@ -44,7 +45,7 @@ async function run(valid: boolean, wrongReference = false) {
     if (url.pathname.endsWith('/mp_seller_connections')) {
       connectionCalls++;
       if (url.searchParams.has('seller_id')) {
-        assertEquals(url.searchParams.get('application_id'), 'eq.456');
+        assertEquals(url.searchParams.get('application_id'), 'eq.2691240967769590');
         assertEquals(url.searchParams.get('environment'), 'eq.test');
       }
       return Response.json(row);
@@ -66,7 +67,7 @@ async function run(valid: boolean, wrongReference = false) {
     throw new Error('Unexpected test request');
   };
   try {
-    const response = await handle(new Request('https://routing-fixture.supabase.co/functions/v1/mercadopago-webhook?data.id=987&business_id=ignored-attacker-value', {
+    const response = await handle(new Request('https://ukxqbgswjlibmnjemrzd.supabase.co/functions/v1/mercadopago-webhook?data.id=987&business_id=ignored-attacker-value', {
       method: 'POST', headers: {'content-type': 'application/json', 'x-request-id': 'fixture-request', 'x-signature': `ts=${timestamp},v1=${valid ? hex : '0'.repeat(64)}`},
       body: JSON.stringify({id: 'fixture-event', type: 'payment', data: {id: '987'}, user_id: 123}),
     }));

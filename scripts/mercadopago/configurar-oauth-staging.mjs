@@ -27,7 +27,7 @@ await conToken(async token=>{
   const values={
     MERCADOPAGO_CLIENT_ID:clientId,MERCADOPAGO_CLIENT_SECRET:clientSecret,
     MERCADOPAGO_OAUTH_WEBHOOK_SECRET:webhookSecret,MERCADOPAGO_CREDENTIAL_MODE:'oauth',
-    MERCADOPAGO_ENVIRONMENT:'test',TABA_DEPLOYMENT_ENV:'staging',
+    MERCADOPAGO_ENVIRONMENT:'test',MERCADOPAGO_OAUTH_ENVIRONMENT:'test',TABA_DEPLOYMENT_ENV:'staging',
     MERCADOPAGO_OAUTH_PROJECT_REF:ref,MERCADOPAGO_OAUTH_PANEL_URL:'https://taba2-staging.pages.dev/',
     TABA_CHECKOUT_BASE_URL:'https://taba2-staging.pages.dev',TABA_ALLOWED_ORIGINS:'https://taba2-staging.pages.dev',
   };

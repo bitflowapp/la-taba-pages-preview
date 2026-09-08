@@ -3,74 +3,88 @@ import {
   getRequiredEnv,
   providerEnvironment,
   PublicPaymentError,
+  requireRealPaymentSmokeAuthorization,
 } from "./payment-runtime.ts";
 import { seal, unseal } from "./seller-oauth-crypto.ts";
 
 const DEPLOYMENT_BINDINGS: Record<string, {
   deployment: "staging" | "production";
+  paymentEnvironment: "test" | "production";
+  oauthEnvironment: "test" | "production";
   clientId: string;
+  supabaseUrl: string;
+  panelUrl: string;
+  checkoutBaseUrl: string;
+  allowedOrigins: string;
 }> = {
   ukxqbgswjlibmnjemrzd: {
     deployment: "staging",
+    paymentEnvironment: "test",
+    oauthEnvironment: "test",
     clientId: "2691240967769590",
+    supabaseUrl: "https://ukxqbgswjlibmnjemrzd.supabase.co",
+    panelUrl: "https://taba2-staging.pages.dev/",
+    checkoutBaseUrl: "https://taba2-staging.pages.dev",
+    allowedOrigins: "https://taba2-staging.pages.dev",
   },
   wwcpogltfgzgkrlilbcd: {
     deployment: "production",
+    paymentEnvironment: "production",
+    oauthEnvironment: "production",
     clientId: "7677852968049976",
+    supabaseUrl: "https://wwcpogltfgzgkrlilbcd.supabase.co",
+    panelUrl: "https://la-taba.pages.dev/",
+    checkoutBaseUrl: "https://la-taba.pages.dev",
+    allowedOrigins: "https://la-taba.pages.dev",
   },
 };
 
 export function oauthMode(): boolean {
   const mode = Deno.env.get("MERCADOPAGO_CREDENTIAL_MODE")?.trim() || "";
-  let projectRef = "";
+  let projectRef: string;
   try {
     projectRef = new URL(Deno.env.get("SUPABASE_URL") || "").hostname
       .replace(/\.supabase\.co$/i, "");
   } catch (_) {
-    // Unknown/local fixtures retain the explicit legacy compatibility path.
+    throw new Error("Unknown Mercado Pago deployment");
   }
-  if (DEPLOYMENT_BINDINGS[projectRef] && mode !== "oauth") {
+  if (!DEPLOYMENT_BINDINGS[projectRef]) {
+    throw new Error("Unknown Mercado Pago deployment");
+  }
+  if (mode !== "oauth") {
     throw new Error("Hosted Mercado Pago payments require seller OAuth mode");
   }
-  return mode === "oauth";
+  return true;
 }
 export function oauthConfig() {
   const paymentEnvironment = providerEnvironment();
-  const environment = Deno.env.get("MERCADOPAGO_OAUTH_ENVIRONMENT") || paymentEnvironment;
+  const environment = getRequiredEnv("MERCADOPAGO_OAUTH_ENVIRONMENT");
   const deployment = getRequiredEnv("TABA_DEPLOYMENT_ENV");
-  const onboardingBusinessId = Deno.env.get("MERCADOPAGO_OAUTH_ONBOARDING_BUSINESS_ID") || "";
-  const isolatedConsent = deployment === "staging" && paymentEnvironment === "test" &&
-    environment === "production" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(onboardingBusinessId);
-  const project = new URL(getRequiredEnv("SUPABASE_URL"));
+  const supabaseUrl = getRequiredEnv("SUPABASE_URL");
   const expected = getRequiredEnv("MERCADOPAGO_OAUTH_PROJECT_REF");
   const clientId = getRequiredEnv("MERCADOPAGO_CLIENT_ID");
   const binding = DEPLOYMENT_BINDINGS[expected];
-  // A hosted callback is also a configuration health probe. Requiring OAuth
-  // here makes an unset/invalid credential mode fail before state consumption,
-  // not only when the first provider request tries to charge.
-  if (binding) oauthMode();
+  const panelUrl = getRequiredEnv("MERCADOPAGO_OAUTH_PANEL_URL");
+  const checkoutBaseUrl = getRequiredEnv("TABA_CHECKOUT_BASE_URL");
+  const allowedOrigins = getRequiredEnv("TABA_ALLOWED_ORIGINS");
+  if (!binding) throw new Error("Unknown Mercado Pago deployment");
+  oauthMode();
   if (
-    project.hostname !== `${expected}.supabase.co` ||
-    (binding &&
-      (deployment !== binding.deployment || clientId !== binding.clientId)) ||
-    !["test", "production"].includes(environment) ||
-    (!isolatedConsent && ((environment === "production") !== (deployment === "production") || environment !== paymentEnvironment)) ||
-    !["staging", "production"].includes(deployment)
+    supabaseUrl !== binding.supabaseUrl ||
+    deployment !== binding.deployment ||
+    paymentEnvironment !== binding.paymentEnvironment ||
+    environment !== binding.oauthEnvironment ||
+    clientId !== binding.clientId ||
+    panelUrl !== binding.panelUrl ||
+    checkoutBaseUrl !== binding.checkoutBaseUrl ||
+    allowedOrigins !== binding.allowedOrigins
   ) throw new Error("OAuth environment mismatch");
-  const callback = `${project.origin}/functions/v1/mercadopago-oauth-callback`;
-  const panel = new URL(getRequiredEnv("MERCADOPAGO_OAUTH_PANEL_URL"));
-  if (
-    panel.protocol !== "https:" || panel.username || panel.password ||
-    panel.search || panel.hash
-  ) throw new Error("Invalid panel URL");
-  if (!/^\d+$/.test(clientId)) throw new Error("Invalid application ID");
-  return { environment: environment as "test" | "production", callback, panel: panel.toString(), clientId, onboardingBusinessId: isolatedConsent ? onboardingBusinessId : "" };
+  const callback = `${binding.supabaseUrl}/functions/v1/mercadopago-oauth-callback`;
+  const webhook = `${binding.supabaseUrl}/functions/v1/mercadopago-webhook`;
+  return { environment: binding.oauthEnvironment, callback, webhook, panel: binding.panelUrl, clientId };
 }
-export function assertOAuthBusiness(businessId: string) {
-  const config = oauthConfig();
-  if (config.onboardingBusinessId && businessId !== config.onboardingBusinessId) {
-    throw new Error("Business is outside the isolated onboarding scope");
-  }
+export function assertOAuthBusiness(_businessId: string) {
+  oauthConfig();
 }
 export function assertOAuthPaymentEnvironment() {
   if (oauthConfig().environment !== providerEnvironment()) {
@@ -274,6 +288,74 @@ export async function businessForIntent(intentId: string): Promise<string> {
     throw new Error("Invalid payment tenant");
   }
   return String(data.business_id);
+}
+
+export async function assertCurrentSellerPaymentAuthority(
+  businessId: string,
+): Promise<void> {
+  const environment = providerEnvironment();
+  if (!oauthMode()) throw new Error("Seller OAuth mode required");
+  const config = oauthConfig();
+  if (config.environment !== environment) throw new Error("Payment environment mismatch");
+
+  // The production smoke authorization is checked before any provider call.
+  requireRealPaymentSmokeAuthorization(environment);
+  const accessToken = await sellerAccessToken(businessId);
+  const service = createServiceClient();
+  const [businessResult, settingsResult, connectionResult] = await Promise.all([
+    service.from("businesses")
+      .select("id,is_active,status,ordering_enabled,ordering_verified")
+      .eq("id", businessId).maybeSingle(),
+    service.from("business_payment_settings")
+      .select("business_id,provider,enabled,environment,checkout_mode,currency,reserve_stock,production_review_status,collector_id,application_id")
+      .eq("business_id", businessId).eq("provider", "mercadopago")
+      .maybeSingle(),
+    service.from("mp_seller_connections")
+      .select("business_id,environment,status,seller_id,application_id,protected_tokens,generation")
+      .eq("business_id", businessId).eq("environment", environment)
+      .maybeSingle(),
+  ]);
+  const business = businessResult.data;
+  const settings = settingsResult.data;
+  const seller = connectionResult.data;
+  if (businessResult.error || settingsResult.error || connectionResult.error) {
+    throw new Error("Payment authority unavailable");
+  }
+  if (!business || business.id !== businessId || business.is_active !== true ||
+    business.status !== "open" || business.ordering_enabled !== true ||
+    business.ordering_verified !== true) {
+    throw new PublicPaymentError(409, "BUSINESS_NOT_OPERATIONAL", "El comercio no está disponible para cobrar.");
+  }
+  if (!settings || settings.business_id !== businessId || settings.provider !== "mercadopago" ||
+    settings.enabled !== true || settings.environment !== environment ||
+    settings.checkout_mode !== "checkout_pro" || settings.currency !== "ARS" ||
+    settings.reserve_stock !== true ||
+    (environment === "production" && settings.production_review_status !== "approved")) {
+    throw new PublicPaymentError(409, "PAYMENTS_NOT_ENABLED", "Mercado Pago no está habilitado.");
+  }
+  if (!seller || seller.business_id !== businessId || seller.environment !== environment ||
+    seller.status !== "connected" || !seller.protected_tokens || !seller.seller_id ||
+    seller.seller_id !== settings.collector_id ||
+    seller.application_id !== config.clientId || settings.application_id !== config.clientId) {
+    throw new PublicPaymentError(409, "SELLER_REAUTHORIZATION_REQUIRED", "Necesitamos volver a conectar Mercado Pago.");
+  }
+  try {
+    await sellerIdentity(accessToken, String(seller.seller_id));
+  } catch (error) {
+    if (error instanceof OAuthProviderError && error.status === 401) {
+      await invalidateRejectedToken(businessId, accessToken);
+    }
+    throw new PublicPaymentError(409, "SELLER_REAUTHORIZATION_REQUIRED", "Necesitamos volver a conectar Mercado Pago.");
+  }
+
+  // Close disconnect/refresh races: the same generation must still be usable
+  // after the provider verified the token and immediately before URL release.
+  const current = await connection(businessId);
+  if (!current || current.status !== "connected" ||
+    current.generation !== seller.generation || !current.protected_tokens ||
+    current.seller_id !== seller.seller_id || current.application_id !== config.clientId) {
+    throw new PublicPaymentError(409, "SELLER_REAUTHORIZATION_REQUIRED", "Necesitamos volver a conectar Mercado Pago.");
+  }
 }
 
 export async function invalidateRejectedToken(

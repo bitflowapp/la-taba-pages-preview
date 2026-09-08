@@ -16,6 +16,8 @@ declare
   v_order uuid;
   v_stock integer;
   v_count integer;
+  v_refund_one uuid;
+  v_refund_two uuid;
   v_hash text := repeat('a', 64);
   v_master_hash text := repeat('b', 64);
   v_thumbnail_hash text := repeat('c', 64);
@@ -157,6 +159,52 @@ begin
   if v_result ->> 'queued' <> 'true' then raise exception 'valid signed receipt was not queued'; end if;
   if (public.record_mercadopago_webhook_receipt('test', 'evt-fixture-valid', 'payment', '90000000001', true, 'request-fixture', repeat('2', 64)) ->> 'duplicate') <> 'true' then raise exception 'duplicate webhook was not deduplicated'; end if;
   if (public.record_mercadopago_webhook_receipt('test', 'evt-fixture-invalid', 'payment', '90000000001', false, 'request-invalid', repeat('3', 64)) ->> 'queued') <> 'false' then raise exception 'invalid webhook entered worker queue'; end if;
+
+  v_result := public.record_mercadopago_webhook_receipt(
+    'test', 'evt-fixture-promote', 'payment', '90000000002', false,
+    'request-invalid-first', repeat('4', 64)
+  );
+  if v_result ->> 'queued' <> 'false' then raise exception 'rejected webhook entered the outbox'; end if;
+  v_result := public.record_mercadopago_webhook_receipt(
+    'test', 'evt-fixture-promote', 'payment', '90000000002', true,
+    'request-valid-second', repeat('5', 64)
+  );
+  if v_result ->> 'queued' <> 'true' or v_result ->> 'promoted' <> 'true' then
+    raise exception 'valid retry did not promote and queue rejected receipt: %', v_result;
+  end if;
+  if (select count(*) from public.payment_outbox o join public.payment_webhook_receipts r on r.id=o.webhook_receipt_id where r.webhook_event_id='evt-fixture-promote') <> 1 then
+    raise exception 'promoted webhook was not queued exactly once';
+  end if;
+  if (public.record_mercadopago_webhook_receipt(
+    'test', 'evt-fixture-promote', 'payment', '90000000002', true,
+    'request-valid-third', repeat('6', 64)
+  ) ->> 'queued') <> 'false' then raise exception 'valid duplicate queued twice'; end if;
+  perform public.record_mercadopago_webhook_receipt(
+    'test', 'evt-fixture-promote', 'payment', '90000000002', false,
+    'request-invalid-last', repeat('7', 64)
+  );
+  if not (select signature_valid from public.payment_webhook_receipts where webhook_event_id='evt-fixture-promote')
+    or (select payload_hash from public.payment_webhook_receipts where webhook_event_id='evt-fixture-promote') <> repeat('5', 64) then
+    raise exception 'invalid-after-valid altered authoritative receipt';
+  end if;
+
+  insert into public.payment_refunds(payment_intent_id, order_id, amount, status, requested_by)
+  values (v_intent, v_order, 100, 'ambiguous', v_user) returning id into v_refund_one;
+  insert into public.payment_refunds(payment_intent_id, order_id, amount, status, requested_by)
+  values (v_intent, v_order, 100, 'ambiguous', v_user) returning id into v_refund_two;
+  perform public.record_payment_refund_response(v_refund_one, 'provider-refund-old', 'approved', 100, repeat('8', 64));
+  begin
+    perform public.record_payment_refund_response(v_refund_two, 'provider-refund-old', 'approved', 100, repeat('9', 64));
+    raise exception 'provider refund identity was reused across local refunds';
+  exception when unique_violation then null;
+  end;
+  perform public.record_payment_refund_response(v_refund_two, 'provider-refund-new', 'approved', 100, repeat('a', 64));
+  if (public.record_payment_refund_response(v_refund_two, 'provider-refund-new', 'approved', 100, repeat('a', 64)) ->> 'idempotent') <> 'true' then
+    raise exception 'refund response retry was not idempotent';
+  end if;
+  if (select count(*) from public.payment_events where event_type='payment.refund_approved' and details->>'refund_id'=v_refund_two::text) <> 1 then
+    raise exception 'refund response retry emitted duplicate financial event';
+  end if;
 end;
 $$;
 

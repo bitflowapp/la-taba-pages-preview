@@ -15,6 +15,7 @@ import {
   findPaymentByExternalReference,
   paymentSnapshot,
 } from '../_shared/mercadopago.ts';
+import { correlateProviderRefund } from '../_shared/refund-correlation.ts';
 
 type OutboxJob = {
   id: string;
@@ -215,19 +216,33 @@ async function reconcileRefund(service: ReturnType<typeof createServiceClient>, 
     .maybeSingle();
   if (error || !data?.provider_payment_id) throw new Error('Refund payment not found');
   const payment = await fetchPayment(String(data.provider_payment_id), job.business_id);
+  if (String(payment.id || '') !== String(data.provider_payment_id)) {
+    throw new Error('Refund payment identity mismatch');
+  }
   const refunds = Array.isArray(payment.refunds) ? payment.refunds : [];
   const { data: refund, error: refundError } = await service
     .from('payment_refunds')
-    .select('amount,provider_refund_id')
+    .select('amount,provider_refund_id,requested_at')
     .eq('id', job.refund_id)
     .maybeSingle();
   if (refundError || !refund) throw new Error('Refund audit row not found');
-  const match = refunds.find((candidate) => {
-    const value = object(candidate);
-    return value.id && (!refund.provider_refund_id || String(value.id) === String(refund.provider_refund_id));
-  });
-  if (!match) throw new Error('Refund outcome still unavailable');
-  const outcome = object(match);
+  const associated = await service.from('payment_refunds')
+    .select('id,provider_refund_id')
+    .eq('payment_intent_id', job.payment_intent_id)
+    .not('provider_refund_id', 'is', null);
+  if (associated.error) throw new Error('Refund identity inventory unavailable');
+  const ownedByOthers = new Set((associated.data || [])
+    .filter((candidate) => candidate.id !== job.refund_id)
+    .map((candidate) => String(candidate.provider_refund_id || '').trim())
+    .filter(Boolean));
+  const correlation = correlateProviderRefund(refunds, {
+    amount: Number(refund.amount),
+    providerRefundId: refund.provider_refund_id,
+    requestedAt: String(refund.requested_at || ''),
+  }, ownedByOthers);
+  if (correlation.kind === 'ambiguous') throw new Error('Refund outcome remains ambiguous');
+  if (correlation.kind === 'unavailable') throw new Error('Refund outcome still unavailable');
+  const outcome = correlation.outcome;
   const recorded = await service.rpc('record_payment_refund_response', {
     p_refund_id: job.refund_id,
     p_provider_refund_id: String(outcome.id || ''),

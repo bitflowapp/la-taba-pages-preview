@@ -1,111 +1,140 @@
-import { assertEquals, assertRejects } from 'jsr:@std/assert@1.0.19';
-import { assertCurrentSellerPaymentAuthority, protect } from './seller-oauth.ts';
+import { assertEquals } from 'jsr:@std/assert@1.0.19';
+import { protect } from './seller-oauth.ts';
+import { sha256Hex } from './payment-runtime.ts';
 
-const businessId = '94000000-0000-4000-8000-000000000001';
-const sellerId = '123456789';
+let handle: (request: Request) => Promise<Response>;
+const serve = Deno.serve;
+Deno.serve = ((fn: typeof handle) => { handle = fn; return {}; }) as typeof Deno.serve;
+try { await import('../mercadopago-create-preference/index.ts'); }
+finally { Deno.serve = serve; }
+const bid = '94000000-0000-4000-8000-000000000001';
+const uid = '94000000-0000-4000-8000-000000000002';
+const sid = '94000000-0000-4000-8000-000000000003';
+const iid = '94000000-0000-4000-8000-000000000004';
+const providerUrl = 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=fixture';
 
-function configure(environment: 'test' | 'production' = 'test') {
-  const production = environment === 'production';
-  const ref = production ? 'wwcpogltfgzgkrlilbcd' : 'ukxqbgswjlibmnjemrzd';
-  const origin = production ? 'https://la-taba.pages.dev' : 'https://taba2-staging.pages.dev';
+function configure() {
   for (const [name, value] of Object.entries({
-    SUPABASE_URL: `https://${ref}.supabase.co`,
-    SUPABASE_SERVICE_ROLE_KEY: 'fixture-service-key',
-    MERCADOPAGO_ENVIRONMENT: environment,
-    MERCADOPAGO_OAUTH_ENVIRONMENT: environment,
-    MERCADOPAGO_CREDENTIAL_MODE: 'oauth',
-    MERCADOPAGO_PRODUCTION_REVIEW_STATUS: 'approved',
-    TABA_DEPLOYMENT_ENV: production ? 'production' : 'staging',
-    MERCADOPAGO_OAUTH_PROJECT_REF: ref,
-    MERCADOPAGO_OAUTH_PANEL_URL: `${origin}/`,
-    TABA_CHECKOUT_BASE_URL: origin,
-    TABA_ALLOWED_ORIGINS: origin,
-    MERCADOPAGO_CLIENT_ID: production ? '7677852968049976' : '2691240967769590',
-    MERCADOPAGO_CLIENT_SECRET: 'fixture-client-secret',
+    SUPABASE_URL: 'https://wwcpogltfgzgkrlilbcd.supabase.co',
+    SUPABASE_SERVICE_ROLE_KEY: 'fixture-service', SUPABASE_ANON_KEY: 'fixture-anon',
+    MERCADOPAGO_ENVIRONMENT: 'production', MERCADOPAGO_OAUTH_ENVIRONMENT: 'production',
+    MERCADOPAGO_CREDENTIAL_MODE: 'oauth', MERCADOPAGO_PRODUCTION_REVIEW_STATUS: 'approved',
+    MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION: 'I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE',
+    TABA_DEPLOYMENT_ENV: 'production', MERCADOPAGO_OAUTH_PROJECT_REF: 'wwcpogltfgzgkrlilbcd',
+    MERCADOPAGO_OAUTH_PANEL_URL: 'https://la-taba.pages.dev/',
+    TABA_CHECKOUT_BASE_URL: 'https://la-taba.pages.dev', TABA_ALLOWED_ORIGINS: 'https://la-taba.pages.dev',
+    MERCADOPAGO_CLIENT_ID: '7677852968049976', MERCADOPAGO_CLIENT_SECRET: 'fixture-client-secret',
     MERCADOPAGO_TOKEN_ENCRYPTION_KEY: 'AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE',
+    PAYMENT_LOG_HASH_SALT: 'fixture-log-salt',
   })) Deno.env.set(name, value);
-  Deno.env.delete('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION');
 }
 
-type Scenario = {
-  status?: string;
-  tokenPresent?: boolean;
-  sellerBusinessId?: string;
-  sellerEnvironment?: string;
-  settingsEnabled?: boolean;
-};
-
-async function runScenario(input: Scenario, valid = false) {
+async function run(route: string, mutation: string, initiallyInvalid = '') {
   configure();
-  const token = await protect({ access_token: 'fixture-seller-token' }, businessId);
-  const seller = {
-    business_id: input.sellerBusinessId ?? businessId,
-    environment: input.sellerEnvironment ?? 'test',
-    status: input.status ?? 'connected',
-    seller_id: sellerId,
-    application_id: '2691240967769590',
-    protected_tokens: input.tokenPresent === false ? null : token,
-    expires_at: new Date(Date.now() + 2 * 86400000).toISOString(),
-    generation: '95000000-0000-4000-8000-000000000001',
-    refresh_owner: null,
-  };
-  let providerCalls = 0;
+  const encrypted = await protect({ access_token: 'fixture-verified-token' }, bid);
+  const rotated = await protect({ access_token: 'fixture-rotated-token' }, bid);
+  const business = { id: bid, is_active: true, status: 'open', ordering_enabled: true, ordering_verified: true };
+  const settings = { business_id: bid, provider: 'mercadopago', enabled: true, environment: 'production',
+    checkout_mode: 'checkout_pro', currency: 'ARS', reserve_stock: true, production_review_status: 'approved',
+    collector_id: '123456789', application_id: '7677852968049976', updated_at: '2026-09-08T00:00:00Z' };
+  const seller = { business_id: bid, environment: 'production', status: 'connected', seller_id: '123456789',
+    application_id: '7677852968049976', protected_tokens: encrypted as string | null,
+    expires_at: new Date(Date.now() + 172800000).toISOString(), generation: 'fixture-generation', refresh_owner: null };
+  const checkout = { id: sid, customer_id: uid, business_id: bid, payment_intent_id: iid, environment: 'production',
+    status: 'ready_for_payment', expires_at: new Date(Date.now() + 600000).toISOString(),
+    reservation_valid: true, business_open: true };
+  if (['disconnected', 'requires_reauthorization'].includes(initiallyInvalid)) seller.status = initiallyInvalid;
+  if (initiallyInvalid === 'cleared_tokens') seller.protected_tokens = null;
+  if (initiallyInvalid === 'wrong_business') seller.business_id = uid;
+  if (initiallyInvalid === 'wrong_environment') seller.environment = 'test';
+  if (initiallyInvalid === 'payments_disabled') settings.enabled = false;
+  if (initiallyInvalid === 'missing_smoke') Deno.env.delete('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION');
+  const preparation = { checkout_session_id: sid, payment_intent_id: iid, payment_attempt_id: iid,
+    attempt_status: route === 'stored' ? 'created' : 'prepared', init_point: route === 'stored' ? providerUrl : null,
+    sandbox_init_point: 'https://sandbox.mercadopago.com/forbidden', environment: 'production', currency: 'ARS',
+    total: 100, external_reference: 'fixture-reference', idempotency_key: iid, expires_at: checkout.expires_at,
+    items: [{ id: 'fixture-product', title: 'Fixture', quantity: 1, unit_price: 100, currency_id: 'ARS' }],
+    allow_offline_payment_methods: false };
+  let reachProvider!: () => void, releaseProvider!: () => void;
+  const reached = new Promise<void>(resolve => { reachProvider = resolve; });
+  const release = new Promise<void>(resolve => { releaseProvider = resolve; });
+  let providerChecks = 0, snapshotReads = 0;
+  const records: string[] = [];
   const original = globalThis.fetch;
-  globalThis.fetch = async (request) => {
-    const url = new URL(String(request));
-    if (url.origin === 'https://api.mercadopago.com') {
-      providerCalls += 1;
-      return Response.json({ id: Number(sellerId), site_id: 'MLA', tags: ['test_user'] });
+  globalThis.fetch = async (input, options) => {
+    const url = new URL(String(input));
+    const init = options as RequestInit | undefined;
+    const body = init?.body ? JSON.parse(String(init.body)) : {};
+    if (url.pathname === '/auth/v1/user') return Response.json({ id: uid });
+    if (url.pathname.endsWith('/consume_payment_rate_limit')) return Response.json({ allowed: true });
+    if (url.pathname.endsWith('/prepare_mercadopago_preference')) {
+      assertEquals(body.p_customer_id, uid); return Response.json(preparation);
     }
-    if (url.pathname.endsWith('/mp_seller_connections')) return Response.json(seller);
-    if (url.pathname.endsWith('/businesses')) {
-      return Response.json({ id: businessId, is_active: true, status: 'open', ordering_enabled: true, ordering_verified: true });
+    if (url.pathname.endsWith('/get_mercadopago_payment_authority')) {
+      snapshotReads++;
+      assertEquals(body, { p_business_id: bid, p_environment: 'production', p_checkout_session_id: sid, p_customer_id: uid });
+      const data = structuredClone({ business, settings, seller: initiallyInvalid === 'no_seller' ? null : seller, checkout });
+      return Response.json({ ...data, authority_version: await sha256Hex(JSON.stringify(data)) });
     }
-    if (url.pathname.endsWith('/business_payment_settings')) {
-      return Response.json({
-        business_id: businessId,
-        provider: 'mercadopago',
-        enabled: input.settingsEnabled !== false,
-        environment: 'test',
-        checkout_mode: 'checkout_pro',
-        currency: 'ARS',
-        reserve_stock: true,
-        production_review_status: 'not_requested',
-        collector_id: sellerId,
-        application_id: '2691240967769590',
-      });
+    // Former transport shape is intentional: the audit races run against the
+    // old handler first. Every response captures its own immutable read view.
+    if (url.pathname.endsWith('/businesses')) return Response.json(business);
+    if (url.pathname.endsWith('/business_payment_settings')) return Response.json(settings);
+    if (url.pathname.endsWith('/mp_seller_connections')) return Response.json(initiallyInvalid === 'no_seller' ? null : seller);
+    if (url.pathname.endsWith('/payment_intents')) return Response.json({ business_id: bid, environment: 'production' });
+    if (url.pathname.includes('/rpc/record_mercadopago_preference')) { records.push(url.pathname); return Response.json(true); }
+    if (url.origin !== 'https://api.mercadopago.com') throw new Error('Unexpected test request: ' + url.pathname);
+    if (url.pathname === '/users/me') {
+      providerChecks++;
+      assertEquals(new Headers(init?.headers).get('authorization'), 'Bearer fixture-verified-token');
+      reachProvider(); await release;
+      return Response.json({ id: 123456789, site_id: 'MLA', tags: ['normal'] });
     }
-    throw new Error(`Unexpected authority request: ${url}`);
+    if (url.pathname === '/checkout/preferences/search') return Response.json({ elements:
+      route === 'recovered' ? [{ id: 'fixture', external_reference: 'fixture-reference' }] : [] });
+    if (url.pathname === '/checkout/preferences/fixture' || url.pathname === '/checkout/preferences') {
+      return Response.json({ id: 'fixture', init_point: providerUrl, sandbox_init_point: preparation.sandbox_init_point });
+    }
+    throw new Error('Unexpected provider request: ' + url.pathname);
   };
   try {
-    if (valid) await assertCurrentSellerPaymentAuthority(businessId);
-    else await assertRejects(() => assertCurrentSellerPaymentAuthority(businessId));
-    assertEquals(providerCalls, valid ? 1 : 0);
-  } finally {
-    globalThis.fetch = original;
-  }
+    const response = handle(new Request('https://wwcpogltfgzgkrlilbcd.supabase.co/functions/v1/mercadopago-create-preference', {
+      method: 'POST', headers: { authorization: 'Bearer fixture-customer', 'content-type': 'application/json' },
+      body: JSON.stringify({ checkout_session_id: sid }),
+    }));
+    if (!initiallyInvalid) {
+      assertEquals(await Promise.race([reached.then(() => 'provider'), response.then(() => 'response')]), 'provider');
+      if (mutation === 'payments_disabled') settings.enabled = false;
+      if (mutation === 'business_closed') { business.status = 'closed'; business.ordering_enabled = false; }
+      if (mutation === 'generation') seller.generation = 'rotated-generation';
+      if (mutation === 'credential') seller.protected_tokens = rotated;
+      if (mutation === 'disconnected') { seller.status = 'disconnected'; seller.protected_tokens = null; }
+      if (mutation === 'settings_version') settings.updated_at = '2026-09-08T00:01:00Z';
+      if (mutation === 'review') settings.production_review_status = 'pending';
+      if (mutation === 'smoke') Deno.env.delete('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION');
+      if (mutation === 'reservation') checkout.reservation_valid = false;
+      if (mutation === 'expired') checkout.expires_at = new Date(Date.now() - 1000).toISOString();
+    }
+    releaseProvider();
+    const result = await response, body = await result.json();
+    const allowed = mutation === 'none' && !initiallyInvalid;
+    assertEquals(Boolean(body.init_point), allowed, route + '/' + mutation + '/' + initiallyInvalid + ': ' + JSON.stringify(body));
+    if (allowed) { assertEquals(result.status, 200); assertEquals(body.init_point, providerUrl); }
+    else {
+      assertEquals(result.status >= 400, true, 'authority rejection must not be disguised as provider ambiguity');
+      assertEquals(records.some(name => name.endsWith('_uncertain')), false);
+    }
+    if (!initiallyInvalid) { assertEquals(providerChecks, 1); if (allowed && snapshotReads > 0) assertEquals(snapshotReads, 2); }
+  } finally { releaseProvider(); globalThis.fetch = original; }
 }
 
-Deno.test('stored init_point rejects a disconnected seller', () => runScenario({ status: 'disconnected' }));
-Deno.test('stored init_point rejects a seller requiring reauthorization', () => runScenario({ status: 'requires_reauthorization' }));
-Deno.test('stored init_point rejects cleared seller tokens', () => runScenario({ tokenPresent: false }));
-Deno.test('stored init_point rejects a seller row from another business', () => runScenario({ sellerBusinessId: '94000000-0000-4000-8000-000000000002' }));
-Deno.test('stored init_point rejects a seller row from another environment', () => runScenario({ sellerEnvironment: 'production' }));
-Deno.test('stored init_point rejects disabled payment settings', () => runScenario({ settingsEnabled: false }));
-Deno.test('stored init_point accepts all-current seller authority', () => runScenario({}, true));
-
-Deno.test('stored production init_point rejects absent real-payment authorization before provider access', async () => {
-  configure('production');
-  let providerCalls = 0;
-  const original = globalThis.fetch;
-  globalThis.fetch = () => {
-    providerCalls += 1;
-    return Promise.reject(new Error('provider must not be called'));
-  };
-  try {
-    await assertRejects(() => assertCurrentSellerPaymentAuthority(businessId));
-    assertEquals(providerCalls, 0);
-  } finally {
-    globalThis.fetch = original;
+for (const route of ['stored', 'recovered', 'new']) {
+  for (const mutation of ['payments_disabled', 'business_closed', 'generation', 'credential', 'disconnected',
+    'settings_version', 'review', 'smoke', 'reservation', 'expired', 'none']) {
+    Deno.test('A1 real handler ' + route + ': ' + mutation + ' during /users/me', () => run(route, mutation));
   }
-});
+}
+for (const state of ['no_seller', 'disconnected', 'requires_reauthorization', 'cleared_tokens',
+  'wrong_business', 'wrong_environment', 'payments_disabled', 'missing_smoke']) {
+  Deno.test('A1 stored URL initially rejects ' + state, () => run('stored', 'none', state));
+}

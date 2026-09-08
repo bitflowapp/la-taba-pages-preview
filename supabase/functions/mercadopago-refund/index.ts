@@ -13,6 +13,7 @@ import {
   sha256Hex,
 } from '../_shared/payment-runtime.ts';
 import { mercadoPagoRequest } from '../_shared/mercadopago.ts';
+import { correlateProviderRefund, providerResourceId } from '../_shared/refund-correlation.ts';
 
 const REFUND_CONFIRMATION = 'I_UNDERSTAND_THIS_REQUESTS_A_MERCADO_PAGO_REFUND';
 
@@ -50,6 +51,22 @@ Deno.serve(async (request) => {
     if (prepared.reconciliation_required === true) return reconciling(request);
     const businessId = await businessForIntent(paymentIntentId);
     const providerIdempotencyKey = requireUuid(prepared.idempotency_key, 'prepared.idempotency_key');
+    const { data: refundRow, error: refundReadError } = await service.from('payment_refunds')
+      .select('payment_intent_id,idempotency_key,provider_refund_id,status,requested_at')
+      .eq('id', prepared.refund_id).maybeSingle();
+    if (refundReadError || !refundRow || refundRow.payment_intent_id !== paymentIntentId ||
+      refundRow.idempotency_key !== providerIdempotencyKey) return unavailable(request);
+    if (refundRow.status === 'approved' || refundRow.status === 'rejected') {
+      return refundResponse(request, refundRow.status);
+    }
+    if (refundRow.provider_refund_id || prepared.idempotent === true) {
+      // An existing/uncertain request is reconciled by its stored identity. A
+      // lost response never authorizes a new POST or a guessed provider ID.
+      await markAmbiguous(service, prepared.refund_id,
+        await sha256Hex(JSON.stringify({ paymentIntentId, idempotencyKey: providerIdempotencyKey })),
+        'existing_refund_requires_reconciliation');
+      return reconciling(request);
+    }
 
     // Total vs. parcial lo decide la BASE (prepared.full_refund), no el dato
     // que mandó el navegador: con un reembolso parcial previo, "importe vacío"
@@ -86,26 +103,47 @@ Deno.serve(async (request) => {
         await markAmbiguous(service, prepared.refund_id, responseHash, `http_${result.response.status}`);
         return reconciling(request);
       }
-      const providerStatus = String(result.body.status || '').toLowerCase();
-      if (providerStatus !== 'approved' && providerStatus !== 'rejected') {
-        await markAmbiguous(service, prepared.refund_id, responseHash, providerStatus || 'unknown_status');
+      const providerId = providerResourceId(result.body.id);
+      if (!providerId || (result.body.payment_id !== undefined &&
+        providerResourceId(result.body.payment_id) !== String(prepared.provider_payment_id))) {
+        await markAmbiguous(service, prepared.refund_id, responseHash, 'refund_identity_missing_or_invalid');
         return reconciling(request);
       }
+      // Identity comes from the authenticated response to this exact POST and
+      // persisted idempotency key. Save it even if the rest of the response is
+      // partial/pending, before any financial state is recorded.
+      const captured = await service.rpc('record_payment_refund_identity', {
+        p_refund_id: prepared.refund_id,
+        p_payment_intent_id: paymentIntentId,
+        p_provider_payment_id: String(prepared.provider_payment_id),
+        p_idempotency_key: providerIdempotencyKey,
+        p_provider_refund_id: providerId,
+      });
+      if (captured.error || captured.data !== true) {
+        await markAmbiguous(service, prepared.refund_id, responseHash, 'refund_identity_not_persisted');
+        return reconciling(request);
+      }
+      const verified = correlateProviderRefund([result.body], {
+        amount: Number(prepared.amount), providerRefundId: providerId,
+        paymentId: String(prepared.provider_payment_id), requestedAt: String(refundRow.requested_at),
+      }, new Set());
+      if (verified.kind !== 'matched') {
+        await markAmbiguous(service, prepared.refund_id, responseHash, 'refund_response_requires_specific_lookup');
+        return reconciling(request);
+      }
+      const providerStatus = String(verified.outcome.status);
       const { error: recordError } = await service.rpc('record_payment_refund_response', {
         p_refund_id: prepared.refund_id,
-        p_provider_refund_id: String(result.body.id || ''),
+        p_provider_refund_id: providerId,
         p_status: providerStatus,
-        p_amount: Number(prepared.amount),
+        p_amount: Number(verified.outcome.amount),
         p_response_hash: responseHash,
       });
-      if (recordError) return unavailable(request);
-      return jsonResponse(request, {
-        ok: providerStatus === 'approved',
-        status: providerStatus,
-        message: providerStatus === 'approved'
-          ? 'El reembolso fue registrado. Verificá su acreditación en Mercado Pago.'
-          : 'Mercado Pago rechazó el reembolso solicitado.',
-      }, providerStatus === 'approved' ? 200 : 409);
+      if (recordError) {
+        await markAmbiguous(service, prepared.refund_id, responseHash, 'refund_response_not_persisted');
+        return reconciling(request);
+      }
+      return refundResponse(request, providerStatus);
     } catch (_) {
       const requestHash = await sha256Hex(JSON.stringify({ paymentIntentId, idempotencyKey: providerIdempotencyKey, amount: prepared.amount }));
       await markAmbiguous(service, prepared.refund_id, requestHash, 'network_or_timeout');
@@ -115,6 +153,15 @@ Deno.serve(async (request) => {
     return publicErrorResponse(request, error);
   }
 });
+
+function refundResponse(request: Request, status: string): Response {
+  return jsonResponse(request, {
+    ok: status === 'approved', status,
+    message: status === 'approved'
+      ? 'El reembolso fue registrado. Verificá su acreditación en Mercado Pago.'
+      : 'Mercado Pago rechazó el reembolso solicitado.',
+  }, status === 'approved' ? 200 : 409);
+}
 
 function normalizedAmount(value: unknown): number {
   const amount = Number(value);

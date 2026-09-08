@@ -18,6 +18,8 @@ declare
   v_count integer;
   v_refund_one uuid;
   v_refund_two uuid;
+  v_authority_before jsonb;
+  v_authority_after jsonb;
   v_hash text := repeat('a', 64);
   v_master_hash text := repeat('b', 64);
   v_thumbnail_hash text := repeat('c', 64);
@@ -116,6 +118,40 @@ begin
 
   v_prepare := public.prepare_mercadopago_preference(v_session, v_user, false);
   if coalesce(jsonb_array_length(v_prepare -> 'items'), 0) <> 1 or v_prepare ->> 'currency' <> 'ARS' then raise exception 'preference snapshot invalid'; end if;
+  -- A1 exercises the actual consistent read, including absent seller material,
+  -- wrong tenant/customer, kill switches and rotation without a new generation.
+  if has_function_privilege('anon','public.get_mercadopago_payment_authority(uuid,text,uuid,uuid)','execute')
+    or has_function_privilege('authenticated','public.get_mercadopago_payment_authority(uuid,text,uuid,uuid)','execute') then
+    raise exception 'browser can read private payment authority';
+  end if;
+  v_authority_before := public.get_mercadopago_payment_authority(v_business,'test',v_session,v_user);
+  if v_authority_before->'seller' <> 'null'::jsonb then raise exception 'missing seller was fabricated'; end if;
+  if public.get_mercadopago_payment_authority(v_business,'production',v_session,v_user) is not null
+    or public.get_mercadopago_payment_authority(v_business,'test',v_session,gen_random_uuid()) is not null
+    or public.get_mercadopago_payment_authority(gen_random_uuid(),'test',v_session,v_user) is not null then
+    raise exception 'authority snapshot crossed tenant, customer or environment';
+  end if;
+  insert into public.mp_seller_connections(business_id,environment,seller_id,application_id,status,protected_tokens,expires_at)
+    values(v_business,'test','collector-fixture','application-fixture','connected','ciphertext-only-local-fixture',now()+interval '2 days');
+  v_authority_before := public.get_mercadopago_payment_authority(v_business,'test',v_session,v_user);
+  if v_authority_before#>>'{checkout,reservation_valid}' <> 'true'
+    or v_authority_before#>>'{checkout,business_open}' <> 'true' then raise exception 'valid checkout authority missing'; end if;
+  update public.business_payment_settings set enabled=false where business_id=v_business;
+  v_authority_after := public.get_mercadopago_payment_authority(v_business,'test',v_session,v_user);
+  if v_authority_after#>>'{settings,enabled}' <> 'false'
+    or v_authority_after->>'authority_version'=v_authority_before->>'authority_version' then raise exception 'payment kill switch not reflected'; end if;
+  update public.business_payment_settings set enabled=true where business_id=v_business;
+  v_authority_before := public.get_mercadopago_payment_authority(v_business,'test',v_session,v_user);
+  update public.businesses set status='closed',ordering_enabled=false where id=v_business;
+  v_authority_after := public.get_mercadopago_payment_authority(v_business,'test',v_session,v_user);
+  if v_authority_after#>>'{business,status}' <> 'closed'
+    or v_authority_after->>'authority_version'=v_authority_before->>'authority_version' then raise exception 'business kill switch not reflected'; end if;
+  update public.businesses set status='open',ordering_enabled=true where id=v_business;
+  v_authority_before := public.get_mercadopago_payment_authority(v_business,'test',v_session,v_user);
+  update public.mp_seller_connections set protected_tokens='different-ciphertext-only-local-fixture' where business_id=v_business;
+  v_authority_after := public.get_mercadopago_payment_authority(v_business,'test',v_session,v_user);
+  if v_authority_before#>>'{seller,generation}' <> v_authority_after#>>'{seller,generation}'
+    or v_authority_after->>'authority_version'=v_authority_before->>'authority_version' then raise exception 'credential-only rotation escaped authority version'; end if;
   perform public.record_mercadopago_preference_created(
     (v_prepare ->> 'payment_attempt_id')::uuid, 'PREF-FIXTURE-1', 'https://www.mercadopago.com/checkout/v1/redirect?pref_id=PREF-FIXTURE-1',
     'https://sandbox.mercadopago.com/checkout/v1/redirect?pref_id=PREF-FIXTURE-1', repeat('e', 64), 'request-fixture'
@@ -192,18 +228,32 @@ begin
   values (v_intent, v_order, 100, 'ambiguous', v_user) returning id into v_refund_one;
   insert into public.payment_refunds(payment_intent_id, order_id, amount, status, requested_by)
   values (v_intent, v_order, 100, 'ambiguous', v_user) returning id into v_refund_two;
-  perform public.record_payment_refund_response(v_refund_one, 'provider-refund-old', 'approved', 100, repeat('8', 64));
   begin
-    perform public.record_payment_refund_response(v_refund_two, 'provider-refund-old', 'approved', 100, repeat('9', 64));
+    perform public.record_payment_refund_response(v_refund_one,'98000001','approved',100,repeat('8',64));
+    raise exception 'refund without a bound provider ID was approved';
+  exception when unique_violation then null;
+  end;
+  perform public.record_payment_refund_identity(v_refund_one,v_intent,'90000000001',
+    (select idempotency_key from public.payment_refunds where id=v_refund_one),'98000001');
+  perform public.record_payment_refund_response(v_refund_one, '98000001', 'approved', 100, repeat('8', 64));
+  begin
+    perform public.record_payment_refund_identity(v_refund_two,v_intent,'90000000001',
+      (select idempotency_key from public.payment_refunds where id=v_refund_two),'98000001');
     raise exception 'provider refund identity was reused across local refunds';
   exception when unique_violation then null;
   end;
-  perform public.record_payment_refund_response(v_refund_two, 'provider-refund-new', 'approved', 100, repeat('a', 64));
-  if (public.record_payment_refund_response(v_refund_two, 'provider-refund-new', 'approved', 100, repeat('a', 64)) ->> 'idempotent') <> 'true' then
+  perform public.record_payment_refund_identity(v_refund_two,v_intent,'90000000001',
+    (select idempotency_key from public.payment_refunds where id=v_refund_two),'98000002');
+  perform public.record_payment_refund_response(v_refund_two, '98000002', 'approved', 100, repeat('a', 64));
+  if (public.record_payment_refund_response(v_refund_two, '98000002', 'approved', 100, repeat('b', 64)) ->> 'idempotent') <> 'true' then
     raise exception 'refund response retry was not idempotent';
   end if;
   if (select count(*) from public.payment_events where event_type='payment.refund_approved' and details->>'refund_id'=v_refund_two::text) <> 1 then
     raise exception 'refund response retry emitted duplicate financial event';
+  end if;
+  perform public.mark_payment_refund_ambiguous(v_refund_two,repeat('c',64),'late_response');
+  if (select status from public.payment_refunds where id=v_refund_two) <> 'approved' then
+    raise exception 'late response downgraded approved refund';
   end if;
 end;
 $$;

@@ -11,10 +11,10 @@ const runner = fs.readFileSync('scripts/run-mercadopago-webhook-tests.mjs', 'utf
 test('stored, recovered and newly-created preference URLs all use current seller authority', () => {
   assert.match(preference, /attempt_status === 'created'[\s\S]*authorizedPreferenceResponse/);
   assert.equal((preference.match(/authorizedPreferenceResponse\(/g) || []).length, 4);
-  assert.match(preference, /await assertCurrentSellerPaymentAuthority\(businessId\)[\s\S]*preferenceResponse/);
+  assert.match(preference, /await assertCurrentSellerPaymentAuthority\(businessId,[\s\S]*preferenceResponse/);
   assert.match(oauth, /requireRealPaymentSmokeAuthorization\(environment\)[\s\S]*sellerAccessToken\(businessId\)/);
   for (const field of ['business.status !== "open"', 'settings.enabled !== true', 'seller.status !== "connected"',
-    'seller.seller_id !== settings.collector_id', 'seller.application_id !== config.clientId']) {
+    'seller.seller_id !== settings.collector_id', 'seller.application_id !== applicationId']) {
     assert.ok(oauth.includes(field), `missing current authority assertion: ${field}`);
   }
 });

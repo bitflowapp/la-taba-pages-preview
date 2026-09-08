@@ -6,6 +6,7 @@ import {
   handleOptions,
   jsonResponse,
   publicErrorResponse,
+  PublicPaymentError,
   readJsonObject,
   requireAuthenticatedUser,
   requirePost,
@@ -42,7 +43,7 @@ Deno.serve(async (request) => {
     const businessId = await businessForIntent(preparation.payment_intent_id);
     const storedPoint = selectedInitPoint(preparation);
     if (preparation.attempt_status === 'created' && storedPoint) {
-      return await authorizedPreferenceResponse(request, preparation, storedPoint, businessId);
+      return await authorizedPreferenceResponse(request, preparation, storedPoint, businessId, user.id);
     }
 
     // A network timeout is never retried blindly. The official preference
@@ -68,7 +69,7 @@ Deno.serve(async (request) => {
           ...preparation,
           init_point: initPoint,
           sandbox_init_point: sandboxInitPoint,
-        }), businessId);
+        }), businessId, user.id);
       }
     }
 
@@ -96,8 +97,10 @@ Deno.serve(async (request) => {
         ...preparation,
         init_point: created.initPoint,
         sandbox_init_point: created.sandboxInitPoint,
-      }), businessId);
+      }), businessId, user.id);
     } catch (error) {
+      // A final authority rejection is not an uncertain provider POST.
+      if (error instanceof PublicPaymentError) throw error;
       const requestHash = await sha256Hex(JSON.stringify({
         checkoutSessionId,
         paymentAttemptId: preparation.payment_attempt_id,
@@ -158,9 +161,14 @@ async function authorizedPreferenceResponse(
   preparation: PreferencePreparation,
   initPoint: string,
   businessId: string,
+  customerId: string,
 ): Promise<Response> {
   if (!initPoint) return checkoutUnavailable(request);
-  await assertCurrentSellerPaymentAuthority(businessId);
+  await assertCurrentSellerPaymentAuthority(businessId, {
+    checkoutSessionId: preparation.checkout_session_id,
+    paymentIntentId: preparation.payment_intent_id,
+    customerId,
+  });
   return preferenceResponse(request, preparation, initPoint);
 }
 

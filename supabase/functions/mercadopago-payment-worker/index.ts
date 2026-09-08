@@ -12,10 +12,11 @@ import {
   fetchChargeback,
   fetchClaim,
   fetchPayment,
+  fetchRefund,
   findPaymentByExternalReference,
   paymentSnapshot,
 } from '../_shared/mercadopago.ts';
-import { correlateProviderRefund } from '../_shared/refund-correlation.ts';
+import { correlateProviderRefund, providerResourceId } from '../_shared/refund-correlation.ts';
 
 type OutboxJob = {
   id: string;
@@ -215,17 +216,16 @@ async function reconcileRefund(service: ReturnType<typeof createServiceClient>, 
     .eq('id', job.payment_intent_id)
     .maybeSingle();
   if (error || !data?.provider_payment_id) throw new Error('Refund payment not found');
-  const payment = await fetchPayment(String(data.provider_payment_id), job.business_id);
-  if (String(payment.id || '') !== String(data.provider_payment_id)) {
-    throw new Error('Refund payment identity mismatch');
-  }
-  const refunds = Array.isArray(payment.refunds) ? payment.refunds : [];
   const { data: refund, error: refundError } = await service
     .from('payment_refunds')
-    .select('amount,provider_refund_id,requested_at')
+    .select('amount,provider_refund_id,requested_at,payment_intent_id,status')
     .eq('id', job.refund_id)
     .maybeSingle();
   if (refundError || !refund) throw new Error('Refund audit row not found');
+  if (refund.payment_intent_id !== job.payment_intent_id) throw new Error('Refund payment identity mismatch');
+  const providerId = providerResourceId(refund.provider_refund_id);
+  if (!providerId) throw new Error('Refund identity unknown; reconciliation required');
+  if (!job.business_id) throw new Error('Refund seller context required');
   const associated = await service.from('payment_refunds')
     .select('id,provider_refund_id')
     .eq('payment_intent_id', job.payment_intent_id)
@@ -235,18 +235,22 @@ async function reconcileRefund(service: ReturnType<typeof createServiceClient>, 
     .filter((candidate) => candidate.id !== job.refund_id)
     .map((candidate) => String(candidate.provider_refund_id || '').trim())
     .filter(Boolean));
-  const correlation = correlateProviderRefund(refunds, {
+  if (ownedByOthers.has(providerId)) throw new Error('Refund provider identity already associated');
+  const resource = await fetchRefund(String(data.provider_payment_id), providerId, job.business_id);
+  const correlation = correlateProviderRefund([resource], {
     amount: Number(refund.amount),
     providerRefundId: refund.provider_refund_id,
+    paymentId: String(data.provider_payment_id),
     requestedAt: String(refund.requested_at || ''),
   }, ownedByOthers);
   if (correlation.kind === 'ambiguous') throw new Error('Refund outcome remains ambiguous');
   if (correlation.kind === 'unavailable') throw new Error('Refund outcome still unavailable');
+  if (correlation.kind === 'rejected') throw new Error('Refund identity mismatch');
   const outcome = correlation.outcome;
   const recorded = await service.rpc('record_payment_refund_response', {
     p_refund_id: job.refund_id,
     p_provider_refund_id: String(outcome.id || ''),
-    p_status: String(outcome.status || '').toLowerCase() === 'approved' ? 'approved' : 'ambiguous',
+    p_status: String(outcome.status),
     p_amount: Number(outcome.amount),
     p_response_hash: await cryptoHash(outcome),
   });

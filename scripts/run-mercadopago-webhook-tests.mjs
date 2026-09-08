@@ -32,7 +32,7 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 
 const steps = [
-  ['npx', ['--yes', 'deno@2.6.1', 'test', '--node-modules-dir=none',
+  ['npx', ['--yes', 'deno@2.6.1', 'test', '--node-modules-dir=none', '--deny-net',
     'supabase/functions/_shared/mercadopago-webhook-signature.deno.ts',
     'supabase/functions/_shared/payment-worker-signature.deno.ts',
     'supabase/functions/_shared/request-protocol.deno.ts',
@@ -44,13 +44,15 @@ const steps = [
    * Sumar esa capacidad al paso de arriba se la regalaría a cuatro suites que
    * no la necesitan.
    */
-  ['npx', ['--yes', 'deno@2.6.1', 'test', '--node-modules-dir=none', '--allow-env',
+  ['npx', ['--yes', 'deno@2.6.1', 'test', '--node-modules-dir=none', '--allow-env', '--deny-net',
     'supabase/functions/_shared/mercadopago-preference.deno.ts',
     'supabase/functions/_shared/seller-oauth-runtime.deno.ts',
     'supabase/functions/_shared/clean-business-oauth.deno.ts',
     'supabase/functions/_shared/seller-webhook-runtime.deno.ts',
     'supabase/functions/_shared/current-payment-authority.deno.ts',
-    'supabase/functions/_shared/refund-correlation.deno.ts']],
+    'supabase/functions/_shared/refund-correlation.deno.ts',
+    'supabase/functions/_shared/refund-no-guess.deno.ts',
+    'supabase/functions/_shared/refund-runtime.deno.ts']],
   ['node', ['--import', './tests/test-bootstrap.mjs', '--test', '--test-concurrency=1',
     'tests/mercadopago-webhook.test.mjs',
     'tests/mercadopago-scheduler.test.mjs']],

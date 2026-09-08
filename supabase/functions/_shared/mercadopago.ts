@@ -198,6 +198,14 @@ export async function fetchPayment(paymentId: string, businessId?: string): Prom
   return result.body;
 }
 
+// A known refund is read by its own resource identity, never rediscovered in a
+// payment's partial/reordered refunds summary.
+export async function fetchRefund(paymentId: string, refundId: string, businessId: string): Promise<Record<string, unknown>> {
+  const result = await mercadoPagoRequest(`/v1/payments/${encodeURIComponent(paymentId)}/refunds/${encodeURIComponent(refundId)}`, { businessId });
+  if (!result.response.ok || !result.body) throw new MercadoPagoApiError(result.response.status, await sha256Hex(result.rawText), result.requestId);
+  return result.body;
+}
+
 // Reconciliation entry point. Mercado Pago only delivers Checkout Pro test
 // notifications through the preference's notification_url, signed with the
 // auto-provisioned test application's key, which the panel never exposes — so

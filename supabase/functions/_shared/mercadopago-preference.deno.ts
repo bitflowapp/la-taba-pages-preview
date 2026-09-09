@@ -19,7 +19,7 @@
  * sea EXACTAMENTE el que el servidor calculó, y que un carrito cuyas líneas
  * superen ese total no se pueda cobrar en vez de cobrarse de más.
  */
-import { preferenceRequest, type PreferencePreparation } from './mercadopago.ts';
+import { completePreferenceSearchElements, preferenceRequest, type PreferencePreparation } from './mercadopago.ts';
 
 const BASE = 'https://la-taba.pages.dev';
 const SUPABASE = 'https://proyecto.supabase.co';
@@ -213,4 +213,18 @@ Deno.test('toda línea se cobra en pesos, sin excepción', () => {
   for (const item of cuerpo.items as Array<{ currency_id: string }>) {
     assert(item.currency_id === 'ARS', `una línea se cobra en ${item.currency_id}`);
   }
+});
+
+Deno.test('recovery exige paginación completa y falla cerrado si falta o está truncada', () => {
+  const candidate = { id: 'PREF-1', external_reference: 'fixture' };
+  assertLanza(
+    () => completePreferenceSearchElements({ elements: [candidate] }),
+    'recovery aceptó una respuesta sin paging.total',
+  );
+  assertLanza(
+    () => completePreferenceSearchElements({ elements: [candidate], paging: { total: 2, limit: 1, offset: 0 } }),
+    'recovery aceptó una primera página truncada',
+  );
+  const complete = completePreferenceSearchElements({ elements: [candidate], paging: { total: 1, limit: 10, offset: 0 } });
+  assert(complete.length === 1 && complete[0] === candidate, 'recovery rechazó un inventario completo');
 });

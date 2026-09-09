@@ -84,7 +84,10 @@ async function provider(input) {
     if (mutation === 'generation') sql(`update mp_seller_connections set generation=gen_random_uuid() where business_id=${quote(bid)}`);
     return Response.json({ id: 123456789, site_id: 'MLA', tags: ['normal'] });
   }
-  if (url.pathname === '/checkout/preferences/search') return Response.json({ elements: route === 'recovered' ? [{ id: 'fixture', external_reference: 'fixture-reference' }] : [] });
+  if (url.pathname === '/checkout/preferences/search') {
+    const elements = route === 'recovered' ? [{ id: 'fixture', external_reference: 'fixture-reference' }] : [];
+    return Response.json({ elements, paging: { total: elements.length, limit: 10, offset: 0 } });
+  }
   if (url.pathname.startsWith('/checkout/preferences')) return Response.json({ id: 'fixture', init_point: 'https://www.mercadopago.com.ar/fixture' });
   throw new Error('Unmocked provider I/O is forbidden');
 }

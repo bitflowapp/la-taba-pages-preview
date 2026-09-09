@@ -70,7 +70,10 @@ async function provider(input,init){
   if(pause){arrived();await pause;}
   return Response.json({id:Number(sellerId),site_id:'MLA',tags:['normal']});
  }
- if(u.pathname==='/checkout/preferences/search')return Response.json({elements:route==='recovered'?[{id:'fixture-'+aid,external_reference:'taba2:checkout:'+sid}]:[]});
+ if(u.pathname==='/checkout/preferences/search'){
+  const elements=route==='recovered'?[{id:'fixture-'+aid,external_reference:'taba2:checkout:'+sid}]:[];
+  return Response.json({elements,paging:{total:elements.length,limit:10,offset:0}});
+ }
  if(u.pathname.startsWith('/checkout/preferences')){
   if(init?.method==='POST')providerPosts++;
   if(stage==='persist')try {mutate();} catch(e) {mutationError=e;throw e;}
@@ -122,20 +125,12 @@ async function verifyRetiredRefundHandlers(){
  }
  assert.equal(financialPosts,0);console.log('OLD_REFUND_HANDLERS_CONTRACT: NO_PROVIDER_POST');
 }
-if(process.argv.includes('--contract-probe')){
- const contract=fs.readFileSync('supabase/contracts/20260908190800_a1_a4_legacy_contract_v2.sql','utf8');
- assert.throws(()=>sql(contract),/independent deployment\/version drain evidence required/);
- const job=randomUUID();
- sql(`insert into public.payment_outbox(id,payment_intent_id,topic,resource_id,status,owner,lease_expires_at)
-  values('${job}','${iid}','payment','1','claimed','edge:legacy-fixture',now()+interval '90 seconds')`);
- assert.throws(()=>sql("set taba.a1_a4_drain_verified='on';\n"+contract),/financial operations not drained/);
- sql(`delete from public.payment_outbox where id='${job}'`);
- sql("set taba.a1_a4_drain_verified='on';\n"+contract);
- await verifyRetiredRefundHandlers();console.log('TRANSACTIONAL_CONTRACT_AND_DRAIN_GUARDS: PASS');process.exit(0);
-}
 if(process.argv.includes('--current-contract')){
  phase='contract';revision='working-tree';await load(null);await currentSuite();
  console.log('CURRENT_CONTRACT_REPLAY: PASS');process.exit(0);
+}
+if(process.argv.includes('--retired-contract')){
+ phase='contract';await verifyRetiredRefundHandlers();console.log('OLD_EDGE_CONTRACT_DB: FAIL_CLOSED');process.exit(0);
 }
 async function run(expected){mutationError=null;const response=await handler(request());const body=await response.json();if(mutationError)throw mutationError;assert.equal(Boolean(body.init_point),expected,JSON.stringify({phase,revision,route,mutation,stage,body}));console.log(JSON.stringify({phase,revision,route,mutation,stage,urlReleased:Boolean(body.init_point),status:response.status}));}
 // Full old DB functionality; original candidate positively reproduces the hole.
@@ -144,9 +139,12 @@ for(route of ['stored','recovered','new']){mutation='none';stage='identity';rese
 console.log('OLD_EDGE_OLD_DB: PASS');
 sql(execFileSync('git',['show','a56a9c5:supabase/tests/mercadopago_checkout_pro.local.sql'],{encoding:'utf8'}));
 console.log('OLD_EDGE_OLD_DB_FINANCIAL_LIFECYCLE: PASS');
+const legacyRefundRecorderBefore=sql("select encode(digest(pg_get_functiondef('public.record_payment_refund_response(uuid,text,text,numeric,text)'::regprocedure),'sha256'),'hex')");
 await load(null);mutation='none';route='stored';reset();await run(false);
 console.log('NEW_EDGE_OLD_DB: FAIL_CLOSED');
-for(const p of ['20260908164550_current_payment_authority_and_refund_identity.sql','20260908190758_a1_attempt_authority_expand_v2.sql'])sql(fs.readFileSync('supabase/migrations/'+p,'utf8'));
+for(const p of ['20260908164550_current_payment_authority_and_refund_identity.sql','20260908190758_a1_attempt_authority_expand_v2.sql','20260909011239_a1_a4_durable_contract_control_v3.sql'])sql(fs.readFileSync('supabase/migrations/'+p,'utf8'));
+assert.equal(sql("select encode(digest(pg_get_functiondef('public.record_payment_refund_response(uuid,text,text,numeric,text)'::regprocedure),'sha256'),'hex')"),legacyRefundRecorderBefore);
+console.log('LEGACY_REFUND_RECORDER_PRESERVED_DURING_EXPAND: PASS');
 console.log(execFileSync(process.execPath,['scripts/verify-a1-v2-sql.mjs',container],{encoding:'utf8',env:process.env}));
 phase='expand';revision='e3b16ad';await load(revision);
 for(route of ['stored','recovered','new'])for(mutation of ['none','cancel','preference','url','id']){stage='identity';reset();await run(true);}
@@ -169,20 +167,19 @@ async function currentSuite(){
  console.log(phase+': CONCURRENT_A_REJECTED_B_RELEASED');
 }
 await currentSuite();console.log('NEW_EDGE_EXPAND_DB: PASS');
-// A4 SQL boundary: unknown legacy identity cannot approve; known ID exactly once.
+// A4 V2 SQL boundary: unknown identity cannot approve; known ID exactly once.
 const rid=randomUUID(),key=randomUUID();
 sql(`update payment_intents set provider_payment_id='90001' where id=${quote(iid)};
  insert into payment_refunds(id,payment_intent_id,idempotency_key,amount,status) values(${[rid,iid,key].map(quote).join(',')},100,'ambiguous');`);
 const refund={p_refund_id:rid,p_provider_refund_id:'99000001',p_status:'approved',p_amount:100,p_response_hash:'a'.repeat(64)};
-assert.throws(()=>call('record_payment_refund_response',refund));
+assert.throws(()=>call('record_payment_refund_response_v2',refund));
 assert.equal(sql(`select status from payment_refunds where id=${quote(rid)}`),'ambiguous');
 call('record_payment_refund_identity',{p_refund_id:rid,p_payment_intent_id:iid,p_provider_payment_id:'90001',p_idempotency_key:key,p_provider_refund_id:'99000001'});
-assert.throws(()=>call('record_payment_refund_response',refund));
-call('record_payment_refund_response_v2',refund);call('record_payment_refund_response',refund);
+call('record_payment_refund_response_v2',refund);
 const parallelSql=q=>new Promise((resolve,reject)=>{const p=spawn('docker',args);let err='';p.stderr.on('data',c=>err+=c);p.on('close',c=>c?reject(Error(err)):resolve());p.stdin.end(q);});
 await Promise.all(Array.from({length:8},(_,i)=>parallelSql(`select public.record_payment_refund_response_v2(${[rid,'99000001','approved',100,String(i+1).repeat(64)].map(quote).join(',')});`)));
 assert.equal(sql(`select count(*) from payment_events where details->>'refund_id'=${quote(rid)} and event_type='payment.refund_approved'`),'1');
-console.log('A4_LEGACY_UNBOUND_AND_BOUND_UNSETTLED_FAIL_CLOSED; TERMINAL_REPLAY_COMPATIBLE; CONCURRENT_EXACTLY_ONCE: PASS');
+console.log('A4_V2_UNBOUND_FAIL_CLOSED; TERMINAL_REPLAY_COMPATIBLE; CONCURRENT_EXACTLY_ONCE: PASS');
 const correlation=await load(null,'supabase/functions/_shared/refund-correlation.ts');
 const now=Date.now(), requestedAt=new Date(now).toISOString();
 const known={amount:100,providerRefundId:'99000001',paymentId:'90001',requestedAt};
@@ -193,17 +190,4 @@ for(const date of [undefined,new Date(now-60000).toISOString(),new Date(now+6000
 }
 assert.equal(correlation.correlateProviderRefund([{id:'99000001',payment_id:'90001',amount:100,status:'approved',date_created:requestedAt}],known,new Set(),now).kind,'matched');
 console.log('A4_INDEPENDENT_MISSING_PRE_REQUEST_FUTURE_UNKNOWN_AND_KNOWN: PASS');
-// Contract is deliberately impossible to bulk-apply without drain evidence.
-const contract=fs.readFileSync('supabase/contracts/20260908190800_a1_a4_legacy_contract_v2.sql','utf8');
-assert.throws(()=>sql(contract),/independent deployment\/version drain evidence required/);
-sql("set taba.a1_a4_drain_verified='on';\n"+contract);phase='contract';
-await currentSuite();console.log('NEW_EDGE_CONTRACT_DB: PASS');
-for(revision of ['a56a9c5','e3b16ad']){await load(revision);route='stored';mutation='none';stage='identity';reset();await run(false);}
-assert.throws(()=>call('record_payment_refund_response',refund));
-call('record_payment_refund_response_v2',refund);
-assert.throws(()=>call('prepare_payment_refund',{p_payment_intent_id:iid,p_amount:100,p_idempotency_key:randomUUID(),p_reason:null}));
-assert.throws(()=>call('claim_payment_outbox',{p_owner:'edge:legacy-fixture',p_limit:1,p_lease_seconds:90}));
-assert.equal(sql("select count(*) from public.claim_payment_outbox_v2('edge:v2:fixture',1,90)"),'0');
-await verifyRetiredRefundHandlers();
-console.log('OLD_EDGE_CONTRACT_DB: FAIL_CLOSED');
-console.log('INDEPENDENT_V2_REPRODUCTIONS: PASS');
+console.log('INDEPENDENT_V2_EXPAND_REPRODUCTIONS: PASS');

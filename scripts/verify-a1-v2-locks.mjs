@@ -44,3 +44,26 @@ await Promise.all([
 ]);
 await finished;
 console.log('CAS_TRANSITION_BUSINESS_SETTINGS_CREDENTIAL_LOCKS: PASS (3 independent writers blocked)');
+
+// P3 regression: OAuth/disconnect acquires seller then settings. The recorder
+// must use that same order. Holding seller first while the recorder starts must
+// let the holder acquire settings and commit; the old inverted order deadlocks.
+const authority=sql(`select (${snapshot})->>'authority_version'`);
+let sellerAnnounce;const sellerReady=new Promise(r=>{sellerAnnounce=r;});
+const oauthHolder=spawn('docker',args);let oauthError='';oauthHolder.stderr.on('data',c=>oauthError+=c);
+oauthHolder.stdout.on('data',c=>{if(String(c).includes('SELLER_HELD'))sellerAnnounce();});
+const oauthFinished=new Promise((resolve,reject)=>oauthHolder.on('close',code=>code?reject(Error(oauthError)):resolve()));
+oauthHolder.stdin.end(`begin;
+ select 1 from public.mp_seller_connections where business_id='${bid}' and environment='production' for update;
+ select 'SELLER_HELD'; select pg_sleep(1);
+ select 1 from public.business_payment_settings where business_id='${bid}' and provider='mercadopago' for update;
+ commit;`);
+await Promise.race([sellerReady,oauthFinished.then(()=>{throw Error('OAuth-order holder ended early');})]);
+const recorder=spawn('docker',args);let recorderError='';recorder.stderr.on('data',c=>recorderError+=c);recorder.stdout.resume();
+const recorderFinished=new Promise((resolve,reject)=>recorder.on('close',code=>code?reject(Error(recorderError)):resolve()));
+recorder.stdin.end(`set lock_timeout='4s';
+ select public.record_mercadopago_preference_created_v2('${bid}','production','${sid}','${uid}','${aid}',
+ '${authority}',a.preference_id,a.init_point,a.sandbox_init_point,a.response_hash,a.provider_request_id)
+ from public.payment_attempts a where id='${aid}';`);
+await Promise.all([oauthFinished,recorderFinished]);
+console.log('SELLER_SETTINGS_LOCK_ORDER: PASS (seller -> settings, no deadlock)');

@@ -245,9 +245,8 @@ export async function findPreferenceByExternalReference(externalReference: strin
   if (!result.response.ok || !result.body) {
     throw new MercadoPagoApiError(result.response.status, await sha256Hex(result.rawText), result.requestId);
   }
-  const elements = Array.isArray(result.body.elements) ? result.body.elements : [];
-  const ambiguous = () => new PublicPaymentError(409, 'PREFERENCE_RECONCILING', 'La preferencia requiere conciliación antes de otro intento.');
-  if (Number(object(result.body.paging).total ?? result.body.total ?? elements.length) > elements.length) throw ambiguous();
+  const elements = completePreferenceSearchElements(result.body);
+  const ambiguous = () => preferenceReconciliationRequired();
   let matched: Record<string, unknown> | null = null;
   for (const candidate of elements.filter((item) => object(item).external_reference === externalReference)) {
     const preferenceId = text(object(candidate).id);
@@ -267,6 +266,23 @@ export async function findPreferenceByExternalReference(externalReference: strin
     matched = preference.body;
   }
   return matched;
+}
+
+export function completePreferenceSearchElements(body: Record<string, unknown>): unknown[] {
+  const elements = Array.isArray(body.elements) ? body.elements : [];
+  // Search recovery is allowed only from a demonstrably complete result set.
+  // Missing/malformed pagination used to fall back to elements.length, which
+  // could turn a truncated response into a blind second POST.
+  const paging = object(body.paging);
+  const total = typeof paging.total === 'number' ? paging.total : Number.NaN;
+  if (!Number.isSafeInteger(total) || total < 0 || total !== elements.length) {
+    throw preferenceReconciliationRequired();
+  }
+  return elements;
+}
+
+function preferenceReconciliationRequired(): PublicPaymentError {
+  return new PublicPaymentError(409, 'PREFERENCE_RECONCILING', 'La preferencia requiere conciliación antes de otro intento.');
 }
 
 // Adopt an already-persisted legacy URL only from its specific provider resource.

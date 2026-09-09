@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "expand_version": "20260909011239",
+  "expand_sha256": "31c0b6452338263ec15957270588cc85556dee96896758934922765e9cf30a31",
+  "expand_files": [
+    {
+      "path": "supabase/migrations/20260908164550_current_payment_authority_and_refund_identity.sql",
+      "sha256": "83752fdf5fbee0c63b5cae512be20fcdcf13a5fc805872453208daaf21f27853"
+    },
+    {
+      "path": "supabase/migrations/20260908190758_a1_attempt_authority_expand_v2.sql",
+      "sha256": "8775a22ff1a5391721b58f33b8984e8581dd137e64ab407f9a48b6c085b37cc9"
+    },
+    {
+      "path": "supabase/migrations/20260909011239_a1_a4_durable_contract_control_v3.sql",
+      "sha256": "0ba5ca5eea027e191821f8d43d321cc4566f4be2060d61c183d28c755583670b"
+    }
+  ],
+  "contract": {
+    "path": "supabase/contracts/20260909012000_a1_a4_legacy_contract_v3.sql",
+    "sha256": "4f7f9771bd3e5b71ca956a5e00397007e11378056530fb965b0b12a6dc4b044b"
+  }
+}

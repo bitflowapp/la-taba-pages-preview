@@ -106,8 +106,10 @@ async function run(route: string, mutation: string, initiallyInvalid = '') {
       reachProvider(); await release;
       return Response.json({ id: 123456789, site_id: 'MLA', tags: ['normal'] });
     }
-    if (url.pathname === '/checkout/preferences/search') return Response.json({ elements:
-      route === 'recovered' ? [{ id: 'fixture', external_reference: 'fixture-reference' }] : [] });
+    if (url.pathname === '/checkout/preferences/search') {
+      const elements = route === 'recovered' ? [{ id: 'fixture', external_reference: 'fixture-reference' }] : [];
+      return Response.json({ elements, paging: { total: elements.length, limit: 10, offset: 0 } });
+    }
     if (url.pathname === '/checkout/preferences/fixture' || url.pathname === '/checkout/preferences') {
       return Response.json({ id: 'fixture', external_reference: 'fixture-reference', collector_id: seller.seller_id, metadata: { payment_attempt_id: iid, checkout_session_id: sid }, init_point: providerUrl, sandbox_init_point: preparation.sandbox_init_point });
     }

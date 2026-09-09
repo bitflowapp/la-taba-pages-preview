@@ -99,11 +99,11 @@ begin
  select * into v_intent from public.payment_intents where checkout_session_id=p_checkout_session_id for update;
  select * into v_attempt from public.payment_attempts where id=p_payment_attempt_id for update;
  -- Freeze the non-written authority rows while crossing the intentional
- -- persistence transition. Otherwise a token rotation between CAS and the
- -- returned snapshot could silently become the new accepted credential.
+ -- persistence transition. Keep seller before settings: mp_finish_oauth and
+ -- mp_disconnect acquire those rows in that order too, avoiding inversion.
  perform 1 from public.businesses where id=p_business_id for share;
- perform 1 from public.business_payment_settings where business_id=p_business_id and provider='mercadopago' for share;
  perform 1 from public.mp_seller_connections where business_id=p_business_id and environment=p_environment for share;
+ perform 1 from public.business_payment_settings where business_id=p_business_id and provider='mercadopago' for share;
  v_snapshot := public.get_mercadopago_payment_authority_v2(
    p_business_id,p_environment,p_checkout_session_id,p_customer_id,p_payment_attempt_id);
  if v_snapshot is null or v_snapshot->>'authority_version' is distinct from p_expected_authority
@@ -358,7 +358,11 @@ begin
       'amount', v_refund.amount,
       'idempotency_key', v_refund.idempotency_key,
       'idempotent', true,
-      'reconciliation_required', v_refund.status = 'ambiguous'
+      -- A caller that sees an existing outbound request must never POST it
+      -- again. This is what keeps the deployed legacy handler safe if the
+      -- provider answered but its recorder call failed.
+      'reconciliation_required', v_refund.status not in ('approved', 'rejected')
+        or v_refund.provider_refund_id is not null
     );
   end if;
   -- Never replace an ambiguous outbound financial request with a new UUID.
@@ -402,6 +406,27 @@ end;
 $$;
 revoke all on function public.prepare_payment_refund_v2(uuid,numeric,uuid,text) from public,anon;
 grant execute on function public.prepare_payment_refund_v2(uuid,numeric,uuid,text) to authenticated;
+
+-- Rolling compatibility: keep the deployed Edge signature and its successful
+-- first-request behavior. Only a repeated durable request becomes
+-- reconciliation_required, so the old handler stops before a second POST.
+-- The legacy result recorder itself remains byte-for-byte the definition from
+-- 20260908070341 throughout EXPAND.
+create or replace function public.prepare_payment_refund(
+  p_payment_intent_id uuid, p_amount numeric, p_idempotency_key uuid, p_reason text
+)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp
+as $$
+begin
+  return public.prepare_payment_refund_v2(
+    p_payment_intent_id, p_amount, p_idempotency_key, p_reason
+  );
+end;
+$$;
+revoke all on function public.prepare_payment_refund(uuid,numeric,uuid,text) from public,anon;
+grant execute on function public.prepare_payment_refund(uuid,numeric,uuid,text) to authenticated;
+
 create or replace function public.claim_payment_outbox_v2(
   p_owner text, p_limit integer default 20, p_lease_seconds integer default 90
 )

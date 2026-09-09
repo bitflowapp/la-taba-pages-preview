@@ -132,6 +132,13 @@ if(process.argv.includes('--current-contract')){
 if(process.argv.includes('--retired-contract')){
  phase='contract';await verifyRetiredRefundHandlers();console.log('OLD_EDGE_CONTRACT_DB: FAIL_CLOSED');process.exit(0);
 }
+if(process.argv.includes('--expanded-v5')){
+ phase='old';await load('a56a9c5');
+ for(route of ['stored','recovered','new']){mutation='none';stage='identity';reset();await run(true);}
+ console.log('OLD_EDGE_PRE_RELEASE_V5_DB: PASS');
+ phase='expand';await load(null);await currentSuite();
+ console.log('NEW_EDGE_PRE_RELEASE_V5_DB: PASS');process.exit(0);
+}
 async function run(expected){mutationError=null;const response=await handler(request());const body=await response.json();if(mutationError)throw mutationError;assert.equal(Boolean(body.init_point),expected,JSON.stringify({phase,revision,route,mutation,stage,body}));console.log(JSON.stringify({phase,revision,route,mutation,stage,urlReleased:Boolean(body.init_point),status:response.status}));}
 // Full old DB functionality; original candidate positively reproduces the hole.
 await load('a56a9c5');

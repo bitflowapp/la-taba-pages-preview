@@ -132,12 +132,16 @@
     "comercial:censo": "node scripts/comercial/censo-produccion.mjs",
     "commercial:gate": "node scripts/comercial/compuerta-comercial.mjs",
     "release:edge:production": "node scripts/release-edge-production.mjs --project-ref wwcpogltfgzgkrlilbcd",
-    "release:edge:dry-run": "node scripts/release-edge-production.mjs --project-ref wwcpogltfgzgkrlilbcd --dry-run"
+    "release:edge:dry-run": "node scripts/release-edge-production.mjs --project-ref wwcpogltfgzgkrlilbcd --dry-run",
+    "test:release": "node --test tests/mercadopago-edge-release-protocol.test.mjs",
+    "test:release:platform": "node scripts/verify-release-v5-platform.mjs",
+    "test:release:db": "node scripts/run-release-v5-db.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.60.0",
     "@tauri-apps/cli": "2.11.4",
     "esbuild": "0.28.1",
+    "pg": "8.23.0",
     "sharp": "0.35.3"
   },
   "dependencies": {

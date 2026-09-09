@@ -13,6 +13,11 @@ verify_jwt = false
 [functions.mercadopago-refund]
 verify_jwt = true
 
+# Preserve the deployed gateway policy. This handler validates the customer's
+# JWT with Auth getUser before preparing/releasing a checkout preference.
+[functions.mercadopago-create-preference]
+verify_jwt = false
+
 [functions.mercadopago-cancel-payment]
 verify_jwt = true
 

@@ -1,77 +1,52 @@
-# main → Coordinated Supabase Edge V2 release & Cloudflare Pages.
-#
-# EL PROBLEMA QUE CIERRA
-# ----------------------
-# Históricamente el despliegue de Cloudflare Pages y las Edge Functions de
-# Supabase estaban desacoplados: el workflow de GitHub publicaba Pages pero no
-# era dueño del release coordinado de Edge Functions V2, asumiendo una ejecución
-# manual o externa.
-#
-# LA RUTA DE PRODUCCIÓN, ENTERA Y REPRODUCIBLE
-# --------------------------------------------
-#   merge a main → CI obligatorio → (verde) → Release coordinado Edge V2 →
-#   verificación remota Edge → Publicación Cloudflare Pages → Smoke en vivo
-#
-# CONCURRENCIA Y ATOMICIDAD
-# -------------------------
-# Concurrency con cancel-in-progress: false garantiza que dos despliegues
-# productivos no se solapan ni se interrumpen a mitad de camino.
-# Si el release de Edge V2 falla o queda parcial, Cloudflare Pages NUNCA se publica.
-
 name: Deploy production
+# Cloudflare Pages only. Financial releases use release-edge-production.yml.
 
 on:
-  workflow_run:
-    workflows: ['Validate release candidate']
-    types: [completed]
-    branches: [main]
   workflow_dispatch:
     inputs:
       commit:
         description: 'SHA a desplegar. Tiene que tener CI verde.'
         required: true
-      dry_run:
-        description: 'Simulacro de despliegue (dry-run): valida sin mutaciones'
-        type: boolean
-        default: false
+        type: string
+      project_confirmation:
+        description: 'Type la-taba to publish Cloudflare production'
+        required: true
+        type: string
 
 permissions:
   contents: read
+  actions: read
 
+# Explicit production actions queue; they do not cancel an active publication.
 concurrency:
   group: deploy-production
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   NODE_VERSION: '22'
-  SUPABASE_CLI_VERSION: '2.101.0'
-  PRODUCTION_PROJECT_REF: wwcpogltfgzgkrlilbcd
   PAGES_PROJECT: la-taba
   PAGES_BRANCH: main
   PRODUCTION_HOST: https://la-taba.pages.dev
 
 jobs:
-  deploy_edge:
-    name: Release coordinado Supabase Edge V2
+  deploy:
+    name: Publicar en Cloudflare Pages
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment: production
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
-    outputs:
-      sha: ${{ steps.destino.outputs.sha }}
-      origen: ${{ steps.destino.outputs.origen }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.repository == 'bitflowapp/la-taba-pages-preview' && github.ref == 'refs/heads/main' && github.run_attempt == 1 }}
     steps:
       - name: Resolver qué SHA se despliega
         id: destino
+        env:
+          INPUT_COMMIT: ${{ inputs.commit }}
+          PROJECT_CONFIRMATION: ${{ inputs.project_confirmation }}
         run: |
           set -euo pipefail
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "sha=${{ inputs.commit }}" >> "$GITHUB_OUTPUT"
-            echo "origen=workflow_dispatch" >> "$GITHUB_OUTPUT"
-          else
-            echo "sha=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
-            echo "origen=CI verde (${{ github.event.workflow_run.id }})" >> "$GITHUB_OUTPUT"
-          fi
+          [[ "$PROJECT_CONFIRMATION" == 'la-taba' ]]
+          selected="$INPUT_COMMIT"
+          echo "origen=workflow_dispatch" >> "$GITHUB_OUTPUT"
+          [[ "$selected" =~ ^[a-f0-9]{40}$ ]]
+          echo "sha=$selected" >> "$GITHUB_OUTPUT"
 
       - name: Check out exactamente ese SHA
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -80,6 +55,10 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
+      # La defensa contra que producción retroceda. Si entre el disparo y este
+      # momento entró otro merge, el SHA de esta corrida ya no es la punta:
+      # publicarlo dejaría producción vieja. Se sale sin desplegar y gana la
+      # corrida del SHA nuevo.
       - name: No retroceder
         run: |
           set -euo pipefail
@@ -97,97 +76,18 @@ jobs:
             exit 1
           fi
 
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      # No se despliega un SHA sin certificar.
       - name: Comprobar que ese SHA tiene CI verde
-        if: ${{ github.event_name == 'workflow_dispatch' }}
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          estado="$(curl --silent --show-error --fail \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H 'Accept: application/vnd.github+json' \
-            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${{ steps.destino.outputs.sha }}&status=success" \
-            | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{const j=JSON.parse(d);process.stdout.write(String((j.workflow_runs||[]).some(r=>r.name==="Validate release candidate")))})')"
-          if [ "${estado}" != "true" ]; then
-            echo "::error::Ese SHA no tiene una corrida verde de «Validate release candidate». No se despliega un SHA sin certificar." >&2
-            exit 1
-          fi
-
-      - name: Set up Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
-      - name: Set up pinned Supabase CLI
-        uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
-        with:
-          version: ${{ env.SUPABASE_CLI_VERSION }}
-
-      - name: Install locked dependencies
-        run: npm ci --no-audit --no-fund
-
-      - name: Guardia de destino de producción
-        run: node scripts/assert-production-supabase-target.mjs --ref "${{ env.PRODUCTION_PROJECT_REF }}" --category "edge release"
-
-      - name: Ejecutar protocolo de release de Edge V2
-        id: release_edge
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          TABA_A1_A4_DATABASE_URL: ${{ secrets.TABA_A1_A4_DATABASE_URL }}
-        run: |
-          set -euo pipefail
-          dry_flag=""
-          if [ "${{ inputs.dry_run || 'false' }}" = "true" ]; then
-            dry_flag="--dry-run"
-          fi
-          node scripts/release-edge-production.mjs \
-            --project-ref "${{ env.PRODUCTION_PROJECT_REF }}" \
-            --evidence-file artifacts/codex/A1_A4_EDGE_RELEASE_EVIDENCE.json \
-            ${dry_flag}
-
-      - name: Subir evidencia de release Edge
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: edge-release-evidence-${{ steps.destino.outputs.sha }}
-          path: artifacts/codex/A1_A4_EDGE_RELEASE_EVIDENCE.json
-          if-no-files-found: warn
-          retention-days: 30
-
-      - name: Resumen de release Edge
-        if: always()
-        run: |
-          {
-            echo "### Release Supabase Edge V2"
-            echo ""
-            echo "| Parámetro | Valor |"
-            echo "|---|---|"
-            echo "| commit | \`${{ steps.destino.outputs.sha }}\` |"
-            echo "| proyecto | \`${{ env.PRODUCTION_PROJECT_REF }}\` |"
-            echo "| resultado | ${{ steps.release_edge.outcome }} |"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-  deploy_pages:
-    name: Publicar en Cloudflare Pages
-    needs: [deploy_edge]
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    environment: production
-    if: ${{ (!inputs.dry_run) && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success') }}
-    steps:
-      - name: Check out exactamente ese SHA
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          ref: ${{ needs.deploy_edge.outputs.sha }}
-          persist-credentials: false
-          fetch-depth: 0
-
-      - name: Set up Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
+          RELEASE_COMMIT: ${{ steps.destino.outputs.sha }}
+        run: node scripts/release-v5/check-ci.mjs
 
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
@@ -196,7 +96,7 @@ jobs:
         env:
           SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
           TABA_PUBLIC_ORIGIN: ${{ env.PRODUCTION_HOST }}
-        run: node scripts/deploy/preparar-artefacto.mjs --commit "${{ needs.deploy_edge.outputs.sha }}"
+        run: node scripts/deploy/preparar-artefacto.mjs --commit "${{ steps.destino.outputs.sha }}"
 
       - name: Publicar en Cloudflare Pages
         id: publicar
@@ -222,7 +122,7 @@ jobs:
           npx --yes wrangler@4 pages deploy dist_release \
             --project-name "${PAGES_PROJECT}" \
             --branch "${PAGES_BRANCH}" \
-            --commit-hash "${{ needs.deploy_edge.outputs.sha }}" \
+            --commit-hash "${{ steps.destino.outputs.sha }}" \
             | tee /tmp/deploy.log
 
           url="$(grep -oE 'https://[a-z0-9-]+\.la-taba\.pages\.dev' /tmp/deploy.log | tail -1 || true)"
@@ -246,7 +146,7 @@ jobs:
           echo "runtime recién construido: ${runtime}"
           node scripts/deploy/verificar-publicado.mjs \
             --host "${PRODUCTION_HOST}" \
-            --esperar-commit "${{ needs.deploy_edge.outputs.sha }}" \
+            --esperar-commit "${{ steps.destino.outputs.sha }}" \
             --esperar-runtime "${runtime}" \
             --intervalo-ms 5000 \
             --timeout-ms 180000
@@ -255,12 +155,12 @@ jobs:
         if: always()
         run: |
           {
-            echo "### Despliegue de producción (Cloudflare Pages)"
+            echo "### Despliegue de producción"
             echo ""
             echo "| | |"
             echo "|---|---|"
-            echo "| commit | \`${{ needs.deploy_edge.outputs.sha }}\` |"
-            echo "| autorizado por | ${{ needs.deploy_edge.outputs.origen }} |"
+            echo "| commit | \`${{ steps.destino.outputs.sha }}\` |"
+            echo "| autorizado por | ${{ steps.destino.outputs.origen }} |"
             echo "| proyecto | \`${PAGES_PROJECT}\` rama \`${PAGES_BRANCH}\` |"
             echo "| deployment | ${{ steps.publicar.outputs.deployment_url || '—' }} |"
             echo "| producción | ${PRODUCTION_HOST} |"

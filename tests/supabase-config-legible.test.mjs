@@ -114,6 +114,6 @@ test('si alguien mueve el CLI fijado sin rederivar el vocabulario, la guardia lo
 
 test('el paso de CI que fija el CLI es el mismo que este guion lee', () => {
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/ci.yml'), 'utf8');
-  assert.match(workflow, /supabase start/, 'si CI dejó de correr `supabase start`, esta guardia sobra');
+  assert.match(workflow, /npm run test:release:platform/, 'CI ejercita además el protocolo del CLI real');
   assert.match(workflow, /npm run check/, 'la guardia vive en `npm run check`: CI tiene que correrlo');
 });

@@ -1,0 +1,10 @@
+import { localClient, localSession } from './release-v5-database.mjs';
+import { platformFixture } from './release-v5-platform.mjs';
+const container=process.argv[2];
+const observer=await localClient(container);
+const {platform}=platformFixture(async(sql,args)=>(await observer.query(sql,args)).rows);
+const session=await localSession(container,platform);
+await session.acquire(0);
+console.log(JSON.stringify({held:true,pid:session.pid}));
+process.stdin.resume();
+process.once('SIGTERM',async()=>{await session.close();await observer.end();process.exit(0);});

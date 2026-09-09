@@ -1,0 +1,88 @@
+name: Explicit TABA production financial release
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: 'Independently audited full SHA; current main with passing CI'
+        required: true
+        type: string
+      project_confirmation:
+        description: 'Type wwcpogltfgzgkrlilbcd'
+        required: true
+        type: string
+      mode:
+        description: 'One explicit lifecycle stage; see the V5 runbook'
+        required: true
+        type: choice
+        options: [preflight, expand, verify-expand, quiesce, drain, release, recover, verify, attest, contract, verify-contract, resume, abort, status, health]
+      release_id:
+        description: 'DB-generated release UUID, required after quiesce'
+        type: string
+      dry_run:
+        description: 'Local validation only: zero external operations'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: taba-production-financial-lifecycle
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.repository == 'bitflowapp/la-taba-pages-preview' &&
+      github.ref == 'refs/heads/main' && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # Environment approval is defense in depth. Explicit action and the DB
+    # interlock do not depend on externally configured environment rules.
+    environment: production-financial-release
+    env:
+      RELEASE_COMMIT: ${{ inputs.commit }}
+      PROJECT_CONFIRMATION: ${{ inputs.project_confirmation }}
+      RELEASE_MODE: ${{ inputs.mode }}
+      RELEASE_ID: ${{ inputs.release_id }}
+    steps:
+      - name: Validate intentional target before checkout or credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$PROJECT_CONFIRMATION" == 'wwcpogltfgzgkrlilbcd' ]]
+          [[ "$RELEASE_COMMIT" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$RELEASE_COMMIT" == "$GITHUB_SHA" ]]
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.commit }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Verify CI for the exact immutable commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/release-v5/check-ci.mjs
+
+      - name: Zero mutation local rehearsal
+        if: ${{ inputs.dry_run }}
+        run: npm run release:edge:dry-run
+
+      - name: Execute the explicitly selected production stage
+        if: ${{ !inputs.dry_run }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          TABA_A1_A4_DATABASE_URL: ${{ secrets.TABA_A1_A4_DATABASE_URL }}
+          TABA_DATABASE_CA_PEM: ${{ secrets.TABA_DATABASE_CA_PEM }}
+        run: node scripts/release-v5/ci-entry.mjs

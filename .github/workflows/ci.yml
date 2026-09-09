@@ -167,6 +167,8 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
+          # The rolling matrix executes the actual historical Edge handlers.
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -182,19 +184,14 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Start isolated Supabase stack
-        run: supabase start
+      - name: Validate actual pinned release platform protocol offline
+        run: npm run test:release:platform
 
-      - name: Apply every migration, run 162 pgTAP assertions and restore drill
+      - name: Pristine OLD, EXPAND, V5 lifecycle, CONTRACT, pgTAP and restore
         env:
           TABA_LOCAL_PAYMENT_DB: '1'
-          TABA_SUPABASE_DB_CONTAINER: supabase_db_la-taba-real-orders-staging
           TABA_RESTORE_DRILL_REPORT: artifacts/ci/restore-drill.json
         run: npm run test:db:isolated
-
-      - name: Stop disposable Supabase stack
-        if: always()
-        run: supabase stop --no-backup
 
       - name: Upload restore drill evidence
         if: always()

@@ -49,7 +49,7 @@ function secretMap(rows) {
   return new Map(rows.map(row => [String(row.name), String(row.value || '')]));
 }
 
-function assertEnvironmentSecrets(target, secrets) {
+export function assertEnvironmentSecrets(target, secrets) {
   const expected = {
     MERCADOPAGO_CLIENT_ID: target.clientId,
     MERCADOPAGO_CREDENTIAL_MODE: 'oauth',
@@ -69,7 +69,7 @@ function assertEnvironmentSecrets(target, secrets) {
     'PAYMENT_LOG_HASH_SALT',
     'PAYMENT_WORKER_SECRET',
   ]) {
-    if (!secrets.has(name)) throw new Error(`Missing server secret: ${name}`);
+    if (!secrets.has(name) || secrets.get(name) === digest('')) throw new Error(`Missing server secret: ${name}`);
   }
   if (secrets.has('MERCADOPAGO_ACCESS_TOKEN')) {
     throw new Error('Hosted environment still contains a forbidden global Mercado Pago access token');

@@ -50,7 +50,7 @@ test('CONTRACT has no raw retirement DDL and the executor refuses unreviewed inv
   assert.doesNotMatch(contract, /create or replace function public\./i);
   assert.doesNotMatch(contract, /a1_a4_drain_verified/);
   assert.match(contract, /private\.execute_a1_a4_legacy_contract_v3/);
-  assert.match(executor, /I_AUTHORIZE_A1_A4_V3_CONTRACT_CONTROL/);
-  assert.match(executor, /ALREADY_APPLIED/);
-  assert.match(executor, /deployment_drain_attestations/);
+  assert.match(executor, /V3 operational entrypoint retired/);
+  assert.match(executor, /Local JSON cannot authorize CONTRACT/);
+  assert.doesNotMatch(executor, /fetch\(|spawnSync\(/);
 });

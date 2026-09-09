@@ -28,11 +28,10 @@ test('el proyecto y la rama son los de PRODUCCIÓN, no los de staging', () => {
 });
 
 test('nunca se despliega un SHA sin certificar', () => {
-  // Se dispara por el gate obligatorio y toma SU head_sha, no la punta de la
-  // rama en el momento del build.
-  assert.match(workflow, /workflows:\s*\['Validate release candidate'\]/);
-  assert.match(workflow, /github\.event\.workflow_run\.conclusion == 'success'/);
-  assert.match(workflow, /github\.event\.workflow_run\.head_sha/);
+  // Sólo una publicación explícita puede seleccionar el SHA certificado.
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.doesNotMatch(workflow, /workflow_run:|^\s+push:|^\s+pull_request:/m);
+  assert.match(workflow, /PROJECT_CONFIRMATION.*la-taba/);
   // Y el disparo manual comprueba el verde por su cuenta.
   assert.match(workflow, /Comprobar que ese SHA tiene CI verde/);
   assert.match(workflow, /No se despliega un SHA sin certificar/);
@@ -42,11 +41,11 @@ test('producción no puede retroceder', () => {
   /*
    * El escenario: entra el merge A, entra el merge B, y el despliegue de A
    * termina después del de B. Producción quedaría en A —vieja— sin que nadie lo
-   * note. Dos defensas: la concurrencia cancela la corrida vieja, y el paso
+   * note. Dos defensas: la concurrencia serializa las publicaciones, y el paso
    * comprueba que el SHA siga siendo la punta antes de publicar.
    */
   assert.match(workflow, /group: deploy-production/);
-  assert.match(workflow, /cancel-in-progress: true/);
+  assert.match(workflow, /cancel-in-progress: false/);
   assert.match(workflow, /No retroceder/);
   assert.match(workflow, /git rev-parse origin\/main/);
   assert.match(workflow, /merge-base --is-ancestor/);

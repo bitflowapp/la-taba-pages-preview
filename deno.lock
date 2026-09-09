@@ -561,6 +561,7 @@
         "npm:@supabase/supabase-js@2.110.8",
         "npm:@tauri-apps/cli@2.11.4",
         "npm:esbuild@0.28.1",
+        "npm:pg@8.23.0",
         "npm:sharp@0.35.3"
       ]
     }

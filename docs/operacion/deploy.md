@@ -1,10 +1,10 @@
-# Cómo llega `main` a producción
+# Publicación explícita de Cloudflare Pages
 
 Una sola ruta, reproducible y auditable. Para operar esto no hace falta conocer
 ninguna conversación previa.
 
 ```
-merge a main  →  CI obligatorio  →  (verde)  →  build  →  Cloudflare Pages  →  smoke en vivo
+CI verde del SHA exacto → workflow_dispatch + confirmación la-taba → build → Pages → smoke
 ```
 
 ## Qué es producción
@@ -35,9 +35,11 @@ desacoplaban con sólo no ejecutarlos, y nada avisaba.
 
 ## El disparo
 
-`.github/workflows/deploy-production.yml` se dispara por `workflow_run` del gate
-obligatorio *Validate release candidate*, sobre `main`, **sólo si terminó en
-verde**, y despliega **exactamente el SHA que ese gate aprobó**.
+`.github/workflows/deploy-production.yml` sólo admite `workflow_dispatch` explícito,
+el SHA exacto de `main` con CI verde y la confirmación de proyecto `la-taba`.
+Un push, PR o fin de CI nunca publica producción. Las operaciones financieras
+usan exclusivamente [el runbook V5](../A1_A4_PRODUCTION_RUNBOOK_V5.md); Pages no
+despliega Edge ni ejecuta CONTRACT.
 
 - **Nunca se despliega un SHA sin certificar.** El disparo manual
   (`workflow_dispatch`) consulta la API y se planta si ese SHA no tiene una
@@ -51,8 +53,8 @@ El escenario a evitar: entra el merge A, entra el merge B, y el despliegue de A
 termina después del de B — producción quedaría en A, vieja, sin que nadie lo
 note. Dos defensas:
 
-1. `concurrency: deploy-production` con `cancel-in-progress: true` — la corrida
-   vieja se cancela.
+1. `concurrency: deploy-production` con `cancel-in-progress: false`: una publicación
+   nueva espera, sin interrumpir una publicación en curso.
 2. El paso **«No retroceder»** compara el SHA que está por publicar contra la
    punta real de `origin/main`. Si ya no es la punta, sale sin desplegar y deja
    que gane la corrida del SHA nuevo.
@@ -150,9 +152,9 @@ npx wrangler@4 pages deployment list --project-name la-taba
 
 ## Desplegar a mano
 
-Sólo si hace falta saltear el disparo automático:
+La publicación siempre requiere una decisión explícita:
 
-Actions → *Deploy production* → *Run workflow* → el SHA. Se planta si ese SHA no
+Actions → *Deploy production* → *Run workflow* → el SHA y `project_confirmation=la-taba`. Se planta si ese SHA no
 tiene CI verde o si ya no es la punta de `main`.
 
 Enteramente a mano, como se hacía antes:

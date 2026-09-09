@@ -66,26 +66,86 @@ rechecks the complete drain, replaces legacy RPCs with fail-closed stubs,
 inserts `private.deployment_contract_executions`, and consumes the attestation
 in the same transaction. A second invocation raises `ALREADY_APPLIED`.
 
-Exact future command shape, after a separately authorized atomic Edge V2
-deployment and with credentials supplied through the environment:
+## Repository-owned release and CONTRACT lifecycle
 
-```powershell
-npx --yes supabase@2.101.0 db push --linked --dry-run
-npx --yes supabase@2.101.0 db push --linked
-$env:TABA_A1_A4_CONTRACT_CONFIRMATION='I_AUTHORIZE_A1_A4_V3_CONTRACT_CONTROL'
-node scripts/a1-a4-contract-v3.mjs --mode pause --project-ref wwcpogltfgzgkrlilbcd
-# Wait until the deterministic 430-second bound is satisfied; the next command verifies it.
-node scripts/a1-a4-contract-v3.mjs --mode attest --project-ref wwcpogltfgzgkrlilbcd --previous-edge-version <captured-release-id> --previous-deployed-at <ISO-8601>
-node scripts/a1-a4-contract-v3.mjs --mode execute --project-ref wwcpogltfgzgkrlilbcd --attestation-id <uuid>
-node scripts/a1-a4-contract-v3.mjs --mode resume --project-ref wwcpogltfgzgkrlilbcd
-```
+The production release sequence is repository-owned and executed through canonical repository entrypoints. The Edge V2 switch does not happen externally. CONTRACT is explicitly separate from the Edge release protocol.
 
-The executor additionally requires `SUPABASE_ACCESS_TOKEN` and
-`TABA_A1_A4_DATABASE_URL`. It parses the database URL into libpq environment
-variables instead of placing credentials in command arguments. Do not invoke
-the CONTRACT file directly and do not copy it into `supabase/migrations`.
+### 1. EXPAND
+- **Entry condition**: Base database at production migration `20260908070341`. Production is financially inert (`business_payment_settings.enabled=false`, no seller connected).
+- **Command**:
+  ```powershell
+  npx --yes supabase@2.101.0 db push --linked --dry-run
+  npx --yes supabase@2.101.0 db push --linked
+  ```
+- **Verification**:
+  ```powershell
+  node scripts/a1-a4-contract-v3.mjs --mode status --project-ref wwcpogltfgzgkrlilbcd
+  ```
+- **Abort condition**: DB push fails or returns non-zero.
+- **Rollback behavior**: Database schema retains full backward compatibility with old Edge handlers.
 
-## Rollback
+### 2. Coordinated Edge V2 release protocol
+- **Entry condition**: EXPAND sequence (`164550`, `190758`, `011239`) verified in migration ledger. Production remains financially inert.
+- **Command**:
+  Dry-run validation:
+  ```powershell
+  npm run release:edge:dry-run
+  # or: node scripts/release-edge-production.mjs --project-ref wwcpogltfgzgkrlilbcd --dry-run
+  ```
+  Live deployment:
+  ```powershell
+  npm run release:edge:production
+  # or: node scripts/release-edge-production.mjs --project-ref wwcpogltfgzgkrlilbcd --evidence-file artifacts/codex/A1_A4_EDGE_RELEASE_EVIDENCE.json
+  ```
+  Alternatively, run GitHub Actions workflow `Deploy production` (`.github/workflows/deploy-production.yml`), which executes job `deploy_edge` followed by `deploy_pages`.
+- **Verification**: The release protocol enforces target project guard (`wwcpogltfgzgkrlilbcd`), verifies local source fingerprints, checks EXPAND compatibility, evaluates 11 production financial inertness criteria, deploys the exact three Edge functions (`mercadopago-create-preference`, `mercadopago-payment-worker`, `mercadopago-refund`), verifies remote active status and bundle hashes, enforces the <= 10,000 ms single switch window, and generates `artifacts/codex/A1_A4_EDGE_RELEASE_EVIDENCE.json`.
+- **Abort condition**: Any target mismatch, financial non-inertness, query failure, deploy error, partial release, or remote verification mismatch exits with deterministic non-zero code.
+- **Rollback behavior**: If Edge deployment fails or is partial, the protocol fails closed and records `partial_release: true`. CONTRACT cannot proceed. Production remains financially inert and backward compatible on EXPAND DB.
+
+### 3. Remote Edge and release identity verification
+- **Entry condition**: Step 2 completed with exit code 0.
+- **Command**:
+  ```powershell
+  node scripts/a1-a4-contract-v3.mjs --mode status --project-ref wwcpogltfgzgkrlilbcd
+  ```
+- **Verification**: Output shows `release.identity` matching expected SHA-256 and all three functions ACTIVE.
+
+### 4. Dispatcher pause and drain
+- **Entry condition**: Edge V2 deployed and verified.
+- **Command**:
+  ```powershell
+  $env:TABA_A1_A4_CONTRACT_CONFIRMATION='I_AUTHORIZE_A1_A4_V3_CONTRACT_CONTROL'
+  node scripts/a1-a4-contract-v3.mjs --mode pause --project-ref wwcpogltfgzgkrlilbcd
+  ```
+- **Verification**: Output confirms paused control row; worker cron and kick trigger disabled.
+- **Drain wait**: Wait at least 430 seconds (hosted worker 400-second bound + 30 seconds safety margin) from target deployment timestamp.
+
+### 5. Durable drain attestation
+- **Entry condition**: 430 seconds elapsed since deployment, dispatcher pause, and last audited dispatch. Zero in-flight outbox jobs, zero active leases, zero in-flight refunds, zero pending pg_net requests.
+- **Command**:
+  ```powershell
+  node scripts/a1-a4-contract-v3.mjs --mode attest --project-ref wwcpogltfgzgkrlilbcd --previous-edge-version <captured-release-id> --previous-deployed-at <ISO-8601> --release-evidence artifacts/codex/A1_A4_EDGE_RELEASE_EVIDENCE.json
+  ```
+- **Verification**: Command outputs `attestation_id` (UUID), `expires_at` (10-minute window), and `edge_version`.
+
+### 6. CONTRACT gate verification and execution
+- **Entry condition**: Unexpired pending attestation matching exact release identity, actor, contract SHA, and EXPAND SHA.
+- **Command**:
+  ```powershell
+  node scripts/a1-a4-contract-v3.mjs --mode execute --project-ref wwcpogltfgzgkrlilbcd --attestation-id <uuid>
+  ```
+- **Verification**: Command executes `20260909012000_a1_a4_legacy_contract_v3.sql`, writes `private.deployment_contract_executions`, consumes attestation, and replaces legacy RPCs with fail-closed stubs. Replay returns `ALREADY_APPLIED`.
+- **Roll-forward boundary**: **ROLL-FORWARD-ONLY BEGINS HERE**. Once CONTRACT is applied, legacy RPCs (`prepare_payment_refund`, `claim_payment_outbox`) are permanently retired. Any subsequent fix must be rolled forward via a corrected V2+ handler.
+
+### 7. Post-CONTRACT dispatch resume
+- **Entry condition**: CONTRACT executed and verified in ledger.
+- **Command**:
+  ```powershell
+  node scripts/a1-a4-contract-v3.mjs --mode resume --project-ref wwcpogltfgzgkrlilbcd
+  ```
+- **Verification**: Control row `paused=false`, worker cron reactivated, kick trigger enabled.
+
+## Rollback summary
 
 - After EXPAND, old Edge remains supported: legacy first settlement and safe
   retry behavior are present.

@@ -130,7 +130,9 @@
     "catalog:commercial:dry-run": "node scripts/import-commercial-catalog.mjs --catalogo produccion",
     "catalog:commercial:apply": "node scripts/import-commercial-catalog.mjs --catalogo produccion --apply --target supabase",
     "comercial:censo": "node scripts/comercial/censo-produccion.mjs",
-    "commercial:gate": "node scripts/comercial/compuerta-comercial.mjs"
+    "commercial:gate": "node scripts/comercial/compuerta-comercial.mjs",
+    "release:edge:production": "node scripts/release-edge-production.mjs --project-ref wwcpogltfgzgkrlilbcd",
+    "release:edge:dry-run": "node scripts/release-edge-production.mjs --project-ref wwcpogltfgzgkrlilbcd --dry-run"
   },
   "devDependencies": {
     "@playwright/test": "1.60.0",

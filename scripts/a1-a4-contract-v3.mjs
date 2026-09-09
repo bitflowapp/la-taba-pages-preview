@@ -77,6 +77,32 @@ export function validateManifest(manifest, readFile = (relative) => fs.readFileS
   return manifest;
 }
 
+export function validateReleaseEvidence(evidence, expectedProjectRef = PROJECT_REF, expectedReleaseIdentity = null) {
+  if (!evidence || typeof evidence !== 'object') {
+    throw new Error('Release evidence is missing or invalid');
+  }
+  if (evidence.result !== 'SUCCESS') {
+    throw new Error(`Release evidence result is not SUCCESS (got "${evidence.result}")`);
+  }
+  if (evidence.partial_release === true) {
+    throw new Error('Release evidence indicates a PARTIAL Edge rollout; CONTRACT cannot proceed');
+  }
+  if (evidence.dry_run === true) {
+    throw new Error('Release evidence is from a DRY-RUN and cannot authorize CONTRACT');
+  }
+  if (evidence.project_ref !== expectedProjectRef) {
+    throw new Error(`Release evidence project ref "${evidence.project_ref}" does not match "${expectedProjectRef}"`);
+  }
+  if (!Array.isArray(evidence.edge_functions) || evidence.edge_functions.length !== EDGE_FUNCTIONS.length ||
+      !EDGE_FUNCTIONS.every((fn) => evidence.edge_functions.includes(fn))) {
+    throw new Error('Release evidence does not contain the exact expected Edge functions');
+  }
+  if (expectedReleaseIdentity && evidence.release_identity !== expectedReleaseIdentity) {
+    throw new Error(`Release evidence identity "${evidence.release_identity}" does not match active platform identity "${expectedReleaseIdentity}"`);
+  }
+  return true;
+}
+
 function arg(name) {
   const index = process.argv.indexOf(`--${name}`);
   return index < 0 ? undefined : process.argv[index + 1];
@@ -192,6 +218,12 @@ async function main() {
     const previousEdge = arg('previous-edge-version');
     const previousDeployedAt = arg('previous-deployed-at');
     if (!previousEdge || !previousDeployedAt) throw new Error('previous Edge identity and timestamp are required');
+    const evidencePath = arg('release-evidence');
+    if (evidencePath) {
+      if (!fs.existsSync(evidencePath)) throw new Error(`release evidence file not found: ${evidencePath}`);
+      const releaseEvidence = JSON.parse(fs.readFileSync(evidencePath, 'utf8'));
+      validateReleaseEvidence(releaseEvidence, PROJECT_REF, platform.release.identity);
+    }
     const evidence = {
       platform_project_ref: PROJECT_REF,
       platform_snapshot_sha: sha256(canonicalJson(platform.release.payload)),

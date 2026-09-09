@@ -57,7 +57,31 @@ jobs:
       # —defectos que aparecieron en un iPhone real—. Declararlos cerrados con
       # Chromium sería declararlos sobre el navegador donde no ocurrieron.
       - name: Install Playwright browsers (chromium + webkit)
-        run: npx playwright install --with-deps chromium webkit
+        run: |
+          set -eo pipefail
+          MAX_ATTEMPTS=3
+          for attempt in $(seq 1 $MAX_ATTEMPTS); do
+            echo "==> Installing Playwright browsers and dependencies (attempt $attempt of $MAX_ATTEMPTS)..."
+            if npx playwright install --with-deps chromium webkit 2>&1 | tee /tmp/playwright-install.log; then
+              echo "Playwright browsers and dependencies installed successfully."
+              break
+            fi
+
+            if [ "$attempt" -lt "$MAX_ATTEMPTS" ]; then
+              if grep -Eq "Hash Sum mismatch|Failed to fetch.*(Packages|InRelease|Release)" /tmp/playwright-install.log; then
+                echo "::warning::TRANSIENT APT METADATA FAILURE detected on attempt $attempt. Purging apt lists cache and retrying in 5s..."
+                sudo rm -rf /var/lib/apt/lists/*
+                sudo apt-get clean
+                sleep 5
+              else
+                echo "::error::REAL PLAYWRIGHT INSTALL FAILURE on attempt $attempt (not an apt metadata mismatch)."
+                exit 1
+              fi
+            else
+              echo "::error::Playwright installation failed after $MAX_ATTEMPTS attempts."
+              exit 1
+            fi
+          done
 
       - name: Build browser vendor bundle
         run: npm run vendor:build

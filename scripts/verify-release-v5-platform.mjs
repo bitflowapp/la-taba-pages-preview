@@ -80,10 +80,11 @@ if(missing.status!==400)throw new Error('unbounded nonce');
 console.log('REAL_DENO_NON_MUTATING_RUNTIME_PROBE: PASS');\n`);
   const image='public.ecr.aws/supabase/edge-runtime:v1.74.3';
   const mount=`type=bind,source=${tmp},target=/work`;
+  const userArgs=typeof process.getuid==='function'&&typeof process.getgid==='function'?['--user',`${process.getuid()}:${process.getgid()}`]:[];
   for(const slug of FUNCTIONS){
     const source=markedSource(built,slug,'00000000-0000-4000-8000-000000000123');
     const dir=path.join(tmp,'runtime',slug);fs.mkdirSync(dir,{recursive:true});fs.writeFileSync(path.join(dir,'index.js'),source);
-    const dockerArgs=['run','--rm','--network','none','--mount',mount,image];
+    const dockerArgs=['run','--rm','--network','none',...userArgs,'--mount',mount,image];
     execFileSync('docker',[...dockerArgs,'bundle','--entrypoint',`/work/runtime/${slug}/index.js`,'--output',`/work/${slug}.eszip`],{stdio:'pipe',windowsHide:true});
     execFileSync('docker',[...dockerArgs,'unbundle','--eszip',`/work/${slug}.eszip`,'--output',`/work/unbundled-${slug}`],{stdio:'pipe',windowsHide:true});
     const files=fs.readdirSync(path.join(tmp,`unbundled-${slug}`),{recursive:true}).filter(v=>v.endsWith('index.js'));

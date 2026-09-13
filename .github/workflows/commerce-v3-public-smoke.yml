@@ -2,6 +2,9 @@ name: Verify Commerce V3 public staging
 
 on:
   workflow_dispatch:
+  push:
+    branches: [feat/taba-commerce-v3]
+    paths: [.github/workflows/commerce-v3-public-smoke.yml]
 
 permissions:
   contents: read
@@ -12,6 +15,8 @@ concurrency:
 
 jobs:
   public_staging:
+    # Register this branch workflow without running a live smoke on push.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

@@ -156,8 +156,11 @@ export function handleProductionOperationsAction(...args) {
 export function handleProductionOperationsInput(...args) {
   return modulos ? modulos.produccion.handleProductionOperationsInput(...args) : NO_LO_ATENDIO;
 }
-export function handleProductionAuthSubmit(...args) {
-  return modulos ? modulos.produccion.handleProductionAuthSubmit(...args) : NO_LO_ATENDIO;
+export async function handleProductionAuthSubmit(...args) {
+  let loaded;
+  try { loaded = await cargarBackOffice(); }
+  catch (_) { return { handled: true, ok: false, message: 'No pudimos cargar el acceso. Revisá tu conexión y volvé a intentar.' }; }
+  return loaded.produccion.handleProductionAuthSubmit(...args);
 }
 export function handleProductionOperationsPageHide(...a) { return modulos ? modulos.produccion.handleProductionOperationsPageHide(...a) : undefined; }
 export function handleProductionOperationsViewChange(...a) { return modulos ? modulos.produccion.handleProductionOperationsViewChange(...a) : undefined; }

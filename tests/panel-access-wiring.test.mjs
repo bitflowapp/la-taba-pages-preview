@@ -382,3 +382,14 @@ function createPanelClient({
     removeChannel: async () => {},
   };
 }
+
+test('cold back office preserves an auth submission until its module is ready', async () => {
+  await withPanel({ accessRequest: { ok: true, code: 'none', status: null, is_member: false } }, async () => {
+    const lazy = await import('../js/back-office.js');
+    assert.equal(lazy.backOfficePresente(), false);
+    const result = await lazy.handleProductionAuthSubmit(signUpForm('cold@lataba.test', 'contrasena-larga'));
+    assert.equal(result.handled, true);
+    assert.equal(result.ok, true);
+    assert.equal(getAccessRegistrationStateForTests().step, 'request');
+  });
+});

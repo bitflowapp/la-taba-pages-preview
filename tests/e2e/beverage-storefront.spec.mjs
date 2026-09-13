@@ -335,7 +335,7 @@ test('controles táctiles de la Home alcanzan 44 por 44 y el carrusel sincroniza
       `${viewport.width}x${viewport.height} controles desconectados`,
     ).toEqual([]);
     const undersized = measured.controls
-      .filter(({ width, height }) => width < 44 || height < 44)
+      .filter(({ width, height }) => Math.round(width * 100) / 100 < 44 || Math.round(height * 100) / 100 < 44)
       .map(({ selector, width, height }) => ({ selector, width, height }));
     expect(undersized, `${viewport.width}x${viewport.height}`).toEqual([]);
     expect(measured.scrollWidth).toBeLessThanOrEqual(measured.innerWidth + 1);

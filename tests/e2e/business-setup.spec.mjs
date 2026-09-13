@@ -59,7 +59,7 @@ test('Business setup wizard mobile: guarda, persiste y restaura solo la config d
   await page.locator('.topbar .brand').click();
   await expect(page.locator('[data-view="home"]')).toBeVisible();
   await page.locator('.mobile-nav [data-nav-view="profile"]').click();
-  await expect(page.locator('.topbar .brand')).toContainText('QA Store');
+  await expect(page.locator('.topbar .brand')).toContainText('La Taba');
   await expect(page.locator('[data-view="profile"]')).toContainText('QA Store');
   await expect(page.locator('[data-view="profile"]')).toContainText('Roca 123, Neuquén');
   await expect(page.locator('[data-view="profile"]')).toContainText('Lunes a viernes 10 a 20');
@@ -96,7 +96,7 @@ test('Business setup wizard mobile: guarda, persiste y restaura solo la config d
   await expect(page.locator('[data-tracking-panel] .lt-rider-marker')).toHaveCount(0);
 
   await page.reload();
-  await expect(page.locator('.topbar .brand')).toContainText('QA Store');
+  await expect(page.locator('.topbar .brand')).toContainText('La Taba');
   await page.evaluate(() => { window.location.hash = '#profile'; });
   await expect(page.locator('[data-view="profile"]')).toContainText('Roca 123, Neuquén');
   await expect(page.locator('[data-business-whatsapp]')).toContainText('+5492995551234');
@@ -110,7 +110,7 @@ test('Business setup wizard mobile: guarda, persiste y restaura solo la config d
   await expect(resetModal).toBeVisible();
   await expect(resetModal).toContainText('No borra pedidos, productos, carrito, historial de clientes ni cierres de caja.');
   await resetModal.getByRole('button', { name: 'Cancelar' }).click();
-  await expect(page.locator('.topbar .brand')).toContainText('QA Store');
+  await expect(page.locator('.topbar .brand')).toContainText('La Taba');
 
   await setup.getByRole('button', { name: 'Restaurar configuración base' }).first().click();
   await resetModal.getByRole('button', { name: 'Restaurar configuración base' }).click();

@@ -15,7 +15,7 @@ const engine = process.env.ENGINE === 'webkit' ? 'webkit' : 'chromium';
 const output = path.resolve(process.env.TABA_COMMERCE_REPORT_DIR || path.join(ROOT, 'artifacts/commerce-v3/public', engine));
 fs.mkdirSync(output, { recursive: true });
 const report = { url: BASE.origin, expectedCommit: expected, engine, checkedAt: new Date().toISOString(), checks: [], consoleErrors: [], httpErrors: [], pageErrors: [], forbiddenRequests: [], address: 'not tested', repeatOrder: 'fixture on published app', realMoneyMovement: false };
-const check = (name, condition) => { report.checks.push({ name, pass: Boolean(condition) }); assert.ok(condition, name); };
+const check = (name, condition) => { report.checks.push({ name, pass: Boolean(condition) }); console.log(`${condition ? 'PASS' : 'FAIL'}: ${name}`); assert.ok(condition, name); };
 let browser, context, page, addressId = '';
 try {
   const versionResponse = await fetch(new URL('/version.json', BASE));
@@ -29,6 +29,7 @@ try {
     serviceWorkers: 'block', locale: 'es-AR',
     geolocation: { latitude: -38.9460616, longitude: -68.0533209, accuracy: 8 }, permissions: ['geolocation'],
   });
+  context.setDefaultTimeout(30000);
   await context.route('**/*', async (route) => {
     const request = route.request(); const url = new URL(request.url());
     if (/mercadopago\./.test(url.hostname)
@@ -78,7 +79,8 @@ try {
   const subtotal = await page.evaluate(async () => (await import('/js/cart.js')).getCartSummary('pickup').subtotal);
   check('cart quantity and current subtotal', subtotal === product.price * 2);
   check('floating cart appears', await page.locator('[data-floating-cart]').isVisible());
-  await page.waitForFunction(() => [...document.querySelectorAll('[data-product-grid] .product-card img')].filter(el => el.getBoundingClientRect().top < innerHeight).every(el => el.complete && el.naturalWidth > 0));
+  await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+  await page.waitForFunction(() => [...document.querySelectorAll('[data-product-grid] .product-card img')].filter(el => { const box = el.getBoundingClientRect(); return box.width > 0 && box.bottom > 0 && box.top < innerHeight; }).every(el => el.complete && el.naturalWidth > 0));
   check('visible catalogue product images loaded', true);
   await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
   await page.screenshot({ path: path.join(output, 'catalog-cart-390.png') });

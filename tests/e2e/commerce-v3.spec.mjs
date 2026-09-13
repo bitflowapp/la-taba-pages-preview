@@ -54,7 +54,7 @@ test('Commerce V3: dirección principal y edición dentro de la hoja conservan e
   await seedCheckoutProfile(page, { addresses: DEFAULT_CHECKOUT_ADDRESSES });
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
   await page.locator('[data-floating-cart]').click();
-  await page.locator('[data-home-address]').click();
+  await page.locator('[data-address-sheet-open="checkout"]').click();
   const sheet = page.locator('[data-address-sheet]');
   await sheet.getByRole('button', { name: 'Usar Trabajo como principal' }).click();
   await expect(sheet).toContainText('Dirección principal guardada');

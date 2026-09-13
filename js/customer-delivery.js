@@ -1084,7 +1084,7 @@ function renderDeliveryAddressBlock() {
   return `<div class="profile-checkout-addresses">
     <div class="profile-checkout-addresses-head">
       <span class="field-label" id="profile-addresses-title">¿Dónde lo llevamos?</span>
-      <button class="text-button" type="button" data-profile-checkout-action="manage-addresses">Administrar en Perfil</button>
+      <button class="text-button" type="button" data-address-sheet-open="checkout">Editar direcciones</button>
     </div>
     ${renderAddressList()}
     <div class="profile-checkout-addresses-foot">

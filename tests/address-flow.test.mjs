@@ -107,7 +107,7 @@ test('la hoja cerrada no aporta ningún nombre al árbol de accesibilidad', () =
   );
 });
 
-test('el checkout resuelve la dirección adentro y deja Perfil como administración', () => {
+test('el checkout abre la hoja para editar direcciones sin navegar a Perfil', () => {
   const bloque = checkout.slice(
     checkout.indexOf('function renderDeliveryAddressBlock()'),
     checkout.indexOf('function currentDeliveryModeIsPickup()'),
@@ -119,9 +119,9 @@ test('el checkout resuelve la dirección adentro y deja Perfil como administraci
   assert.doesNotMatch(bloque, /Confirmar ubicación en Perfil/);
   assert.match(bloque, /data-profile-checkout-action="new-address"/);
   assert.match(bloque, /capture\.html\(\)/);
-  // Y Perfil sigue enlazado como lo que es.
-  assert.match(bloque, /data-profile-checkout-action="manage-addresses"/);
-  assert.match(bloque, /Administrar en Perfil/);
+  // La edición tampoco abandona la compra.
+  assert.match(bloque, /data-address-sheet-open="checkout"/);
+  assert.doesNotMatch(bloque, /Administrar en Perfil/);
 });
 
 test('lo que elige la hoja vale para UNA compra, y después vuelve a regir la predeterminada', () => {

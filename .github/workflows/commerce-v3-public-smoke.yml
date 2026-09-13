@@ -36,6 +36,10 @@ jobs:
         run: |
           ENGINE=chromium node scripts/smoke-commerce-v3-public.mjs
           ENGINE=webkit node scripts/smoke-commerce-v3-public.mjs
+      - name: Published UI regression fixtures, no production orders
+        run: >-
+          npx playwright test --config playwright.commerce-public.config.mjs
+          --grep 'Commerce V3:|editar el texto de un pin|con direcciones guardadas el selector|borrar la dirección seleccionada|Business setup wizard'
       - name: Public smoke evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

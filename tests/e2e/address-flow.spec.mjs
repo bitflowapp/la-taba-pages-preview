@@ -280,7 +280,7 @@ test.describe('Dirección · el editor dentro del checkout', () => {
       .toHaveAttribute('data-customer-address-id', sembradas[1].id);
     // Y «Administrar en Perfil» sigue existiendo: Perfil no desapareció, dejó de
     // ser un requisito.
-    await expect(page.locator('[data-profile-checkout-action="manage-addresses"]')).toHaveCount(1);
+    await expect(page.locator('[data-address-sheet-open="checkout"]')).toHaveCount(1);
 
     await page.locator('[data-checkout-new-address]').click();
     const editor = page.locator('[data-address-capture="checkout"]');
@@ -353,20 +353,14 @@ test.describe('Dirección · el editor dentro del checkout', () => {
     await seedCartAboveMinimum(page);
     await page.locator('[data-open-cart] >> visible=true').first().click();
 
-    // La reutilización de una confirmación guardada sólo ocurre al EDITAR una
-    // dirección existente, y editar direcciones es administración: vive en
-    // Perfil, al que el checkout sigue enlazando. La ida ya no es obligatoria
-    // para comprar, y la vuelta sigue estando.
-    await page.locator('[data-profile-checkout-action="manage-addresses"]').click();
-    await expect(page.locator('body')).toHaveAttribute('data-active-view', 'profile');
-    const perfil = page.locator('[data-customer-profile]');
-    await expect(perfil.locator('[data-profile-action="return-to-checkout"]').first()).toBeVisible();
-
-    await perfil.locator('[data-profile-address-id] [data-profile-action="edit-address"]').first().click();
-    const paso = perfil.locator('[data-location-step]');
+    await page.locator('[data-address-sheet-open="checkout"]').click();
+    await expect(page.locator('body')).toHaveAttribute('data-active-view', 'cart');
+    const hoja = page.locator('[data-address-sheet]');
+    await hoja.getByRole('button', { name: /^Editar / }).first().click();
+    const editor = hoja.locator('[data-address-capture="sheet"]');
+    const paso = editor.locator('[data-location-step]');
     await expect(paso).toHaveAttribute('data-location-status', 'confirmed');
-
-    const calle = perfil.locator('[name="profileAddressStreet"]');
+    const calle = editor.locator('[name="captureAddressStreet"]');
     await calle.fill('Rivadavia');
     // `change` se dispara al salir del campo, no al teclear: revisar la
     // confirmación no puede pelearle el foco a quien está escribiendo.

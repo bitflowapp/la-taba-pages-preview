@@ -14,7 +14,7 @@ const expected = process.env.TABA_EXPECTED_COMMIT || execFileSync('git', ['rev-p
 const engine = process.env.ENGINE === 'webkit' ? 'webkit' : 'chromium';
 const output = path.resolve(process.env.TABA_COMMERCE_REPORT_DIR || path.join(ROOT, 'artifacts/commerce-v3/public', engine));
 fs.mkdirSync(output, { recursive: true });
-const report = { url: BASE.origin, expectedCommit: expected, engine, checkedAt: new Date().toISOString(), checks: [], consoleErrors: [], pageErrors: [], forbiddenRequests: [], address: 'not tested', repeatOrder: 'fixture on published app', realMoneyMovement: false };
+const report = { url: BASE.origin, expectedCommit: expected, engine, checkedAt: new Date().toISOString(), checks: [], consoleErrors: [], httpErrors: [], pageErrors: [], forbiddenRequests: [], address: 'not tested', repeatOrder: 'fixture on published app', realMoneyMovement: false };
 const check = (name, condition) => { report.checks.push({ name, pass: Boolean(condition) }); assert.ok(condition, name); };
 let browser, context, page, addressId = '';
 try {
@@ -40,6 +40,7 @@ try {
     return route.continue();
   });
   page = await context.newPage();
+  page.on('response', response => { if (response.status() >= 400) report.httpErrors.push({ status: response.status(), path: new URL(response.url()).pathname }); });
   page.on('pageerror', (error) => report.pageErrors.push(error.message));
   page.on('console', (message) => { if (message.type() === 'error') report.consoleErrors.push(message.text().slice(0, 240)); });
   await page.addInitScript(() => localStorage.setItem('TABA_INSTALL_PROMPT_V1', JSON.stringify({ v: 1, decision: 'declined', at: new Date().toISOString() })));
@@ -48,6 +49,8 @@ try {
   check('home loads over HTTPS', response.ok() && new URL(page.url()).protocol === 'https:');
   const runtime = await page.evaluate(() => ({ mode: document.body.dataset.appMode, host: new URL(globalThis.__LA_TABA_RUNTIME_CONFIG__.repository.supabaseUrl).hostname }));
   check('real staging repository, not demo or production DB', runtime.mode === 'production' && runtime.host === 'ukxqbgswjlibmnjemrzd.supabase.co');
+  await page.locator('[data-view="home"] .product-card').first().waitFor({ timeout: 45000 });
+  check('home displays real products after catalogue loads', await page.locator('[data-view="home"] .product-card').count() > 0);
   for (const width of [390, 430]) {
     await page.setViewportSize({ width, height: 844 });
     check(`home no horizontal overflow ${width}`, await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
@@ -75,6 +78,8 @@ try {
   const subtotal = await page.evaluate(async () => (await import('/js/cart.js')).getCartSummary('pickup').subtotal);
   check('cart quantity and current subtotal', subtotal === product.price * 2);
   check('floating cart appears', await page.locator('[data-floating-cart]').isVisible());
+  await page.waitForFunction(() => [...document.querySelectorAll('[data-product-grid] .product-card img')].filter(el => el.getBoundingClientRect().top < innerHeight).every(el => el.complete && el.naturalWidth > 0));
+  check('visible catalogue product images loaded', true);
   await page.screenshot({ path: path.join(output, 'catalog-cart-390.png') });
   await page.locator('[data-floating-cart]').click();
   check('checkout reached without submitting', await page.locator('[data-checkout-submit]').isVisible());
@@ -125,7 +130,7 @@ try {
     return { price: product.price, orders: getState().orders.length };
   });
   await page.locator('.mobile-nav [data-nav-view="orders"]').click();
-  await page.locator('[data-repeat-order="LT-PUBLIC-FIXTURE"]').click();
+  await page.locator('[data-customer-history] [data-repeat-order="LT-PUBLIC-FIXTURE"]').click();
   const repeated = await page.evaluate(async () => ({ subtotal: (await import('/js/cart.js')).getCartSummary('pickup').subtotal, orders: (await import('/js/state.js')).getState().orders.length }));
   check('repeat uses current price on published app (fixture)', repeated.subtotal === fixture.price);
   check('repeat requires final confirmation, no automatic order (fixture)', repeated.orders === fixture.orders);

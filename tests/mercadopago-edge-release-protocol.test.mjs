@@ -151,3 +151,14 @@ test('financial CI is explicit, rejects fork/retry and never cancels an active r
     assert.doesNotMatch(body,/release-edge-production\.mjs|functions deploy|a1-a4-contract-v3\.mjs|ci-entry\.mjs/);
   }
 });
+
+test('later unapplied application migrations do not shift reviewed financial stages', async () => {
+  const { EXPAND, reviewedMigrationStage } = await import('../scripts/release-v5/model.mjs');
+  const old = ['20260101000000'];
+  const expand = EXPAND.map(name => name.slice(0, 14));
+  const local = [...old, ...expand, '20260913011340'];
+  for (let stage = 0; stage <= 4; stage++) assert.equal(reviewedMigrationStage(local, [...old, ...expand.slice(0, stage)]), stage);
+  assert.throws(() => reviewedMigrationStage(local, local), /reviewed V5/);
+  assert.throws(() => reviewedMigrationStage(local, [old[0], expand[1]]), /history/);
+  assert.throws(() => reviewedMigrationStage([old[0], expand[1], expand[0], ...expand.slice(2)], old), /order/);
+});

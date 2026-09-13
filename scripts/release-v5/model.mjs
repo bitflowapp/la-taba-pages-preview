@@ -28,6 +28,18 @@ export const EXPAND = Object.freeze([
   '20260909050330_a1_a4_release_interlock_v5.sql',
 ]);
 export const CONTRACT = 'supabase/contracts/a1_a4_contract_v5.sql';
+// Later application migrations must not shift the reviewed V5 schema stages.
+// An already-applied later migration is still rejected: it has no V5 oracle.
+export function reviewedMigrationStage(local, applied) {
+  const versions = EXPAND.map(name => name.slice(0, 14));
+  const base = local.indexOf(versions[0]);
+  assert.ok(base >= 0, 'reviewed EXPAND migrations missing');
+  assert.deepEqual(local.slice(base, base + versions.length), versions, 'reviewed EXPAND order changed');
+  assert.ok(Array.isArray(applied) && applied.length >= base && applied.length <= base + versions.length,
+    'pristine OLD or reviewed V5 migration ledger required');
+  assert.deepEqual(applied, local.slice(0, applied.length), 'wrong/unknown database migration history');
+  return applied.length - base;
+}
 export const EMPTY_TABLES = Object.freeze([
   'checkout_sessions', 'checkout_session_items', 'inventory_reservations',
   'payment_intents', 'payment_attempts', 'payment_webhook_receipts', 'payment_events',

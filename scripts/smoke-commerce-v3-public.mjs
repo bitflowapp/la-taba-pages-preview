@@ -49,8 +49,8 @@ try {
   check('home loads over HTTPS', response.ok() && new URL(page.url()).protocol === 'https:');
   const runtime = await page.evaluate(() => ({ mode: document.body.dataset.appMode, host: new URL(globalThis.__LA_TABA_RUNTIME_CONFIG__.repository.supabaseUrl).hostname }));
   check('real staging repository, not demo or production DB', runtime.mode === 'production' && runtime.host === 'ukxqbgswjlibmnjemrzd.supabase.co');
-  await page.locator('[data-view="home"] .product-card').first().waitFor({ timeout: 45000 });
-  check('home displays real products after catalogue loads', await page.locator('[data-view="home"] .product-card').count() > 0);
+  await page.locator('[data-home-best-sellers] .home-best-card').first().waitFor({ timeout: 45000 });
+  check('home displays real products after catalogue loads', await page.locator('[data-home-best-sellers] .home-best-card').count() > 0);
   for (const width of [390, 430]) {
     await page.setViewportSize({ width, height: 844 });
     check(`home no horizontal overflow ${width}`, await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
@@ -80,6 +80,7 @@ try {
   check('floating cart appears', await page.locator('[data-floating-cart]').isVisible());
   await page.waitForFunction(() => [...document.querySelectorAll('[data-product-grid] .product-card img')].filter(el => el.getBoundingClientRect().top < innerHeight).every(el => el.complete && el.naturalWidth > 0));
   check('visible catalogue product images loaded', true);
+  await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
   await page.screenshot({ path: path.join(output, 'catalog-cart-390.png') });
   await page.locator('[data-floating-cart]').click();
   check('checkout reached without submitting', await page.locator('[data-checkout-submit]').isVisible());
@@ -138,6 +139,8 @@ try {
   await page.screenshot({ path: path.join(output, 'repeat-fixture-390.png') });
   check('no financial/order creation request attempted', report.forbiddenRequests.length === 0);
   check('no uncaught browser error', report.pageErrors.length === 0);
+  check('no unexpected HTTP failure', report.httpErrors.every(error => error.status === 401 && error.path === '/rest/v1/rpc/get_mercadopago_checkout_availability'));
+  report.expectedAuthorizationRejections = report.httpErrors.filter(error => error.status === 401).length;
   report.pass = true;
 } catch (error) {
   report.pass = false;

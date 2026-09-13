@@ -1,0 +1,40 @@
+name: Verify Commerce V3 public staging
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: commerce-v3-public-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  public_staging:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium webkit
+      - name: Real staging catalogue, cart and address; fixture-only repeat
+        env:
+          TABA_PUBLIC_TEST_URL: https://taba2-staging.pages.dev
+          TABA_EXPECTED_COMMIT: ${{ github.sha }}
+        run: |
+          ENGINE=chromium node scripts/smoke-commerce-v3-public.mjs
+          ENGINE=webkit node scripts/smoke-commerce-v3-public.mjs
+      - name: Public smoke evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: commerce-v3-public-${{ github.sha }}
+          path: artifacts/commerce-v3/public
+          retention-days: 7

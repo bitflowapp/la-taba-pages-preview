@@ -1361,6 +1361,10 @@ async function configureBusinessRuntime(result) {
     getOrders: () => getState().orders,
     lookupBarcode: (gtin) => inventoryRepository.lookupBarcode(gtin),
     createProductDraft: (input) => inventoryRepository.createProductDraft(input),
+    saveProductDraft: (input) => inventoryRepository.saveProductDraft(input),
+    createManualProductDraft: (input) => inventoryRepository.createManualProductDraft(input),
+    listProductDrafts: () => inventoryRepository.listProductDrafts(),
+    bindProductDraftCode: (input) => inventoryRepository.bindProductDraftCode(input),
     publishProductDraft: (input) => inventoryRepository.publishProductDraft(input),
     applyInventoryMovement: (input) => inventoryRepository.applyMovement(input),
     setCommercialPublication: (input) => inventoryRepository.setCommercialPublication(input),
@@ -2288,7 +2292,7 @@ function restaurarFoco(workspace, foco) {
     : '[data-production-rider-select]';
   const destino = card?.querySelector(selector);
   if (!destino) return;
-  destino.focus();
+  destino.focus({ preventScroll: true });
   if (foco.campo === 'motivo' && foco.inicio != null && typeof destino.setSelectionRange === 'function') {
     try {
       destino.setSelectionRange(foco.inicio, foco.fin ?? foco.inicio);

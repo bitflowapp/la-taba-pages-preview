@@ -12,7 +12,6 @@ import {
 } from './cart.js';
 import {
   applyBusinessConfig,
-  closeCheckoutSuggestions,
   closeComboModal,
   closeProductModal,
   clearAddedFlash,
@@ -110,6 +109,7 @@ import {
   isDemoMode,
   isOperationalView,
   isShowcaseMode,
+  isProductionMode,
 } from './core/app-mode.js';
 import { isProductionCatalogReady } from './core/runtime-config.js';
 import {
@@ -138,7 +138,7 @@ import { isStandaloneDisplay } from './core/pwa-install.js';
 import { initPwaInstall } from './pwa-install-ui.js';
 import { initMotion } from './motion.js';
 
-const VIEWS = ['home', 'catalog', 'cart', 'tracking', 'business', 'rider', 'profile'];
+const VIEWS = ['home', 'catalog', 'cart', 'orders', 'tracking', 'business', 'rider', 'profile'];
 const RELAY_ROOM_STORAGE_KEY = 'la_taba_rt_room';
 const RESET_RELAY_TIMEOUT_MS = 1200;
 const PROFILE_RETURN_STORAGE_KEY = 'taba:profile-return';
@@ -146,6 +146,8 @@ const PROFILE_RETURN_STORAGE_KEY = 'taba:profile-return';
 // debajo del umbral de "stale" (30 s) para volver a un fallback honesto a tiempo.
 const FRESHNESS_TICK_MS = 5000;
 const VIEW_ALIASES = {
+  pedidos: 'orders',
+  orders: 'orders',
   catalogo: 'catalog',
   catalog: 'catalog',
   inicio: 'home',
@@ -181,28 +183,13 @@ let freshnessTimer = null;
 let pwaInstall = null;
 // Pedido pendiente de confirmación al repetir con carrito no vacío.
 let pendingRepeatOrderId = null;
-const CHECKOUT_SUGGESTIONS_DISMISSED_KEY = 'la_taba_checkout_suggestions_dismissed';
 const SHOWCASE_RECOVERY_KEY = 'taba-showcase-recovery-v1';
-const recentCartActions = new Map();
 
-function dismissCheckoutSuggestions() {
-  try {
-    sessionStorage.setItem(CHECKOUT_SUGGESTIONS_DISMISSED_KEY, 'true');
-  } catch (_) {
-    // Si el navegador bloquea storage, la sugerencia sigue siendo descartable
-    // en esta interacción y nunca bloquea la confirmación del pedido.
-  }
-}
 
 function runCartAction(action, productId, callback) {
-  const key = `${action}:${productId}`;
-  const now = Date.now();
-  const previous = recentCartActions.get(key) || 0;
-  // Bloquea la duplicación accidental del mismo evento sin impedir que el
-  // cliente vuelva a tocar el control para cambiar la cantidad a propósito.
-  if (now - previous < 120) return { ok: false, duplicate: true, message: '' };
-  recentCartActions.set(key, now);
-  setTimeout(() => recentCartActions.delete(key), 350);
+  // Hay un único delegado de click. Cada activación modifica una unidad;
+  // agrupar taps por tiempo descartaba restas y sumas intencionales rápidas.
+  // La creación/cobro del pedido conserva su guardia independiente.
   const resultado = callback();
   /*
    * Poner algo en el carrito es el momento en que la invitación a instalar deja
@@ -219,6 +206,33 @@ function refreshOpenProductModal(productId) {
   const selectedVariant = modal.querySelector('[data-product-variant]:checked')?.value;
   const displayedProductId = modal.querySelector('[data-modal-product-id]')?.dataset.modalProductId;
   if (selectedVariant === productId || displayedProductId === productId) showProductModal(productId);
+}
+
+let refreshingRepeat = false;
+
+async function repeatWithCurrentCatalog(orderId, options = {}) {
+  if (refreshingRepeat) return { ok: false, message: 'Estamos revisando los productos.' };
+  refreshingRepeat = true;
+  let deadline;
+  try {
+    if (isProductionMode()) {
+      showToast('Revisando precio y disponibilidad…');
+      const repository = getOrderRepository();
+      const refreshed = await Promise.race([
+        repository?.loadCatalog?.(),
+        new Promise((resolve) => { deadline = setTimeout(() => resolve(null), 10000); }),
+      ]);
+      if (!refreshed?.ok || refreshed.stale) {
+        return { ok: false, message: 'No pudimos actualizar los productos. Tu carrito sigue igual. Reintentá.' };
+      }
+    }
+    return repeatCustomerOrder(orderId, options);
+  } catch (_) {
+    return { ok: false, message: 'No pudimos revisar el pedido. Tu carrito sigue igual. Reintentá.' };
+  } finally {
+    clearTimeout(deadline);
+    refreshingRepeat = false;
+  }
 }
 
 function openRepeatModal(orderId) {
@@ -623,6 +637,11 @@ async function bootstrap() {
       setTimeout(() => showToast(message), 600);
     }
     setAppBootstrapState('ready');
+    if (isProductionMode() && !['business', 'rider'].includes(activeView)) {
+      void getOrderRepository().loadCustomerHistory?.().finally(() => {
+        if (!['business', 'rider'].includes(activeView)) renderAll();
+      });
+    }
     // Recién ahora: la tienda está armada y usable. Si el arranque hubiera
     // fallado, esta línea no se alcanza y nadie recibe una invitación encima de
     // una pantalla rota.
@@ -1192,6 +1211,9 @@ function bloqueoDePerfilEnCheckout(form) {
 }
 
 function bindEvents() {
+  window.addEventListener('taba:customer-history-cleared', () => {
+    if (!['business', 'rider'].includes(activeView)) renderCustomerHome();
+  });
   window.addEventListener('popstate', syncViewFromLocation);
   window.addEventListener('hashchange', syncViewFromLocation);
   window.addEventListener('taba:navigate-profile', (event) => {
@@ -1478,7 +1500,7 @@ function bindEvents() {
 
     const repeatId = target.closest('[data-repeat-order]')?.dataset.repeatOrder;
     if (repeatId) {
-      const result = repeatCustomerOrder(repeatId);
+      const result = await repeatWithCurrentCatalog(repeatId);
       // Carrito no vacío: abrimos confirmación en vez de reemplazar en silencio.
       if (result.needsConfirmation) {
         openRepeatModal(result.orderId);
@@ -1494,7 +1516,7 @@ function bindEvents() {
       const confirmId = pendingRepeatOrderId;
       closeRepeatModal();
       if (!confirmId) return;
-      const result = repeatCustomerOrder(confirmId, { force: true });
+      const result = await repeatWithCurrentCatalog(confirmId, { force: true });
       showToast(result.message);
       if (result.ok) setActiveView('cart');
       else renderAll();
@@ -1508,13 +1530,6 @@ function bindEvents() {
 
     if (target.closest('[data-apply-coupon]')) {
       renderOrderSummary();
-      return;
-    }
-
-    if (target.closest('[data-checkout-suggestions-dismiss]')) {
-      dismissCheckoutSuggestions();
-      closeCheckoutSuggestions();
-      $('[data-checkout-form]')?.requestSubmit();
       return;
     }
 
@@ -2119,16 +2134,6 @@ function bindEvents() {
     if (event.target === event.currentTarget) closeProductModal();
   });
 
-  $('[data-checkout-suggestions-modal]')?.addEventListener('click', (event) => {
-    if (event.target !== event.currentTarget) return;
-    dismissCheckoutSuggestions();
-    closeCheckoutSuggestions();
-  });
-
-  $('[data-checkout-suggestions-modal]')?.addEventListener('cancel', () => {
-    dismissCheckoutSuggestions();
-  });
-
   $('[data-pin-modal]')?.addEventListener('click', (event) => {
     if (event.target === event.currentTarget) closePinModal();
   });
@@ -2267,6 +2272,11 @@ function setActiveView(view, options = {}) {
   // el arranque no se pregunta: preguntarlo creaba una identidad anónima por
   // cada visita, robots incluidos.
   if (nextView === 'cart') refreshMercadoPagoCheckoutAvailability();
+  if (nextView === 'orders' && isProductionMode()) {
+    void getOrderRepository().loadCustomerHistory?.().finally(() => {
+      if (!['business', 'rider'].includes(activeView)) renderAll();
+    });
+  }
   renderAll();
   window.dispatchEvent(new CustomEvent('taba:realtime-view-enter', { detail: { view: nextView } }));
   if (changed) playViewEnter(nextView);

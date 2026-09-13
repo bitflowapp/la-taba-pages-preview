@@ -15,7 +15,7 @@ test('carga inicial, home sin lista infinita y catálogo por categorías', async
   await expect(page.locator('[data-cart-total-small]')).toHaveText(/\$\s*0/);
   await expect(page.locator('[data-view="home"]')).toBeVisible();
   await expect(page.locator('[data-view="cart"]')).toBeHidden();
-  await expect(page.locator('[data-view]')).toHaveCount(7);
+  await expect(page.locator('[data-view]')).toHaveCount(8);
 
   // El home no muestra el grid de productos completo (sin lista infinita).
   await expect(page.locator('[data-view="home"] [data-product-grid]')).toHaveCount(0);
@@ -536,7 +536,8 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
   await expect(page.locator('[data-view="cart"]')).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 
-  await page.locator('.mobile-nav [data-nav-view="tracking"]').click();
+  await page.locator('.mobile-nav [data-nav-view="orders"]').click();
+  await page.locator('[data-view="orders"] [data-nav-view="tracking"]').click();
   await expect(page.locator('[data-view="tracking"]')).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
   /*
@@ -591,10 +592,9 @@ test('bottom nav respeta safe-area y no cubre contenido', async ({ browser }) =>
     const safe34 = await measureNav();
 
     await expect(page.locator('.mobile-nav')).toBeVisible();
-    // Cinco rutas reales, una por control y sin destino repetido: el ancla de
-    // marca del centro ES el inicio.
-    await expect(page.locator('.mobile-nav button')).toHaveCount(5);
-    for (const view of ['home', 'catalog', 'cart', 'tracking', 'profile']) {
+    // Cuatro destinos de compra; el carrito conserva su acceso propio.
+    await expect(page.locator('.mobile-nav button')).toHaveCount(4);
+    for (const view of ['home', 'catalog', 'orders', 'profile']) {
       await expect(page.locator(`.mobile-nav [data-nav-view="${view}"]`)).toHaveCount(1);
     }
     const navHeight = Number.parseFloat(safe0.navHeightToken);
@@ -683,7 +683,8 @@ test('bottom nav respeta safe-area y no cubre contenido', async ({ browser }) =>
     expect(catalogGeometry.horizontalFilterScrollable).toBeTruthy();
     expect(catalogGeometry.horizontalOverflow).toBeFalsy();
 
-    await page.locator('.mobile-nav [data-nav-view="tracking"]').click();
+    await page.locator('.mobile-nav [data-nav-view="orders"]').click();
+  await page.locator('[data-view="orders"] [data-nav-view="tracking"]').click();
     await expect(page.locator('.tracking-premium')).toBeVisible();
     /*
      * La barra se queda también acá. La reserva no la pone `main` —que sigue

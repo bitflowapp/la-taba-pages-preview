@@ -69,7 +69,7 @@
        · elevada #262c35 · borde: hairline sobre cualquiera de ellos.
      Toda la tinta se remidió contra la superficie donde se usa (ver cada
      comentario); ninguna baja de 4,5:1. ----------------------------------- */
-  --brand-bg: #101317;              /* 17,0:1 con --brand-ink */
+  --brand-bg: #090a0c;              /* 17,0:1 con --brand-ink */
   --brand-bg-raised: #161a1f;
   --brand-surface: #1d222a;
   --brand-surface-hover: #262c35;
@@ -120,7 +120,7 @@
      ruido con nombre propio. */
   --shelf: #1d222a;                 /* superficie base (tarjeta, formulario) */
   --shelf-raised: #262c35;          /* sub-superficie: campo, fila, chip */
-  --shelf-sunken: #0a0d10;          /* hueco: barra de progreso, separador */
+  --shelf-sunken: #050609;          /* hueco: barra de progreso, separador */
   --shelf-line: rgb(255 255 255 / 11%);        /* hairline de 1px */
   /* Borde que PORTA información (campo, radio, selector activo): 3,7:1 sobre
      `--shelf`, por encima del mínimo de WCAG 1.4.11 para componentes. */

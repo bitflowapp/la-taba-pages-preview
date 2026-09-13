@@ -217,6 +217,11 @@ jobs:
           TABA_RESTORE_DRILL_REPORT: artifacts/ci/restore-drill.json
         run: npm run test:db:isolated
 
+      - name: Commerce V3 draft migration and ownership (isolated, no network)
+        env:
+          TABA_LOCAL_COMMERCE_DB: '1'
+        run: npm run test:commerce:db
+
       - name: Upload restore drill evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

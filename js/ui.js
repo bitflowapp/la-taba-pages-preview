@@ -66,7 +66,7 @@ import { renderPublicOrderTimeline } from './core/order-timeline.js';
 import { isDemoMode, isProductionMode, isShowcaseMode } from './core/app-mode.js';
 import { getOrderRepository, isSandboxOrderRepository } from './repositories/repository_factory.js';
 import { formatPromotionCondition, getActivePromotions, getProductPromotion } from './core/promotions.js';
-import { cartNeedsComplementPrompt, getCartRecommendations } from './core/cart-recommendations.js';
+import { getCartRecommendations } from './core/cart-recommendations.js';
 import {
   isFernetProduct,
   isPopularProduct,
@@ -1566,7 +1566,7 @@ const HOME_SECTION_PRODUCT_LIMIT = 8;
 // La home es una vidriera, no el catálogo. El tope de secciones existe para que
 // agregar rubros al catálogo no alargue la home indefinidamente: lo que no entra
 // acá sigue estando a un toque en "Ver catálogo completo".
-const HOME_MAX_SECTIONS = 6;
+const HOME_MAX_SECTIONS = 3;
 
 function renderHomeSections() {
   const container = $('[data-home-sections]');
@@ -2946,7 +2946,7 @@ function renderDirectOrderingCustomerActions() {
     && !['delivered', 'cancelled'].includes(activeOrder.status)
     ? activeOrder.id
     : '';
-  const latestFromHistory = getCustomerOrderHistory().find((order) => (
+  const latestFromHistory = customerHistoryWithLiveState().find((order) => (
     order.status === 'delivered' && order.id !== activeNonTerminalId
   )) || null;
   const latest = latestFromHistory || (
@@ -3034,8 +3034,17 @@ function renderCustomerHistory() {
   const container = $('[data-customer-history]');
   if (!container) return;
   const history = customerHistoryWithLiveState();
+  const status = isProductionMode() ? getOrderRepository()?.getCustomerHistorySnapshot?.().status : 'ready';
+  if (status === 'loading') {
+    container.innerHTML = '<p class="card" role="status">Buscando tus pedidos…</p>';
+    return;
+  }
+  if (status === 'error') {
+    container.innerHTML = '<div class="card empty-state" role="status"><strong>No pudimos cargar tus pedidos</strong><button type="button" class="secondary-button" data-nav-view="orders">Reintentar</button></div>';
+    return;
+  }
   if (!history.length) {
-    container.innerHTML = '';
+    container.innerHTML = '<div class="card empty-state"><strong>Todavía no tenés pedidos para mostrar</strong><p>Después de comprar, vas a poder revisarlos y repetirlos desde acá.</p><button class="primary-button" type="button" data-nav-view="catalog">Buscar productos</button></div>';
     return;
   }
 
@@ -3045,12 +3054,13 @@ function renderCustomerHistory() {
         <h2>Mis últimos pedidos</h2>
       </div>
       <div class="customer-history-list">
-        ${history.slice(0, 4).map(customerHistoryRow).join('')}
+        ${history.slice(0, 30).map(customerHistoryRow).join('')}
       </div>
     </section>`;
 }
 
 function customerHistoryWithLiveState() {
+  if (isProductionMode()) return getOrderRepository()?.getCustomerHistorySnapshot?.().orders || [];
   const liveById = new Map(getState().orders.map((order) => [order.id, order]));
   return getCustomerOrderHistory().map((entry) => {
     const live = liveById.get(entry.id);
@@ -3065,16 +3075,30 @@ function customerHistoryRow(order) {
       <div>
         <strong>${escapeHtml(order.id)}</strong>
         <span>${escapeHtml(dateTime(order.createdAt))} · ${escapeHtml(statusLabel(order.status))}${coupon}</span>
-        <small>${escapeHtml(order.paymentMethod || 'Efectivo')}</small>
+        <small>${escapeHtml((order.items || []).slice(0, 2).map((item) => `${item.quantity}× ${item.name}`).join(' · '))}</small>
+        <details class="history-details"><summary>Ver detalle</summary>
+          <ul>${(order.items || []).map((item) => `<li>${escapeHtml(`${item.quantity}× ${item.name}`)} · ${money(item.unitPrice * item.quantity)}</li>`).join('')}</ul>
+          <p>${escapeHtml(order.address || 'Retiro en el local')}</p>
+          <p>${escapeHtml(order.paymentMethod || '')}</p>
+        </details>
       </div>
       <div class="customer-history-side">
         <strong>${money(order.total)}</strong>
-        <button class="secondary-button compact" type="button" data-repeat-order="${escapeHtml(order.id)}">Repetir</button>
+        ${order.status === 'delivered' ? `<button class="secondary-button compact" type="button" data-repeat-order="${escapeHtml(order.id)}">Repetir pedido</button>` : ''}
       </div>
     </article>`;
 }
 
 export function renderCart() {
+  const reorderNotice = $('[data-cart-reorder-notice]');
+  if (reorderNotice) {
+    const pending = getState().pendingReorder;
+    const notices = pending ? reorderNotices({ ...pending, skipped: pending.skipped || [] }) : [];
+    reorderNotice.hidden = !notices.length;
+    reorderNotice.innerHTML = notices.length
+      ? `<strong>Revisá los cambios de tu pedido</strong><ul>${notices.map((notice) => `<li>${escapeHtml(notice)}</li>`).join('')}</ul>`
+      : '';
+  }
   renderCartTotals();
   renderCartList();
   renderMinimumOrderProgress();
@@ -3136,7 +3160,7 @@ function renderCheckoutVisibility() {
 export function renderCartTotals() {
   const summary = getCartSummary(currentDeliveryMode());
   const subtotalSummary = getCartSummary('pickup');
-  const floatingAllowed = ['home', 'catalog'].includes(
+  const floatingAllowed = ['home', 'catalog', 'orders'].includes(
     document.body.dataset.activeView || 'home',
   );
   const floatingText = `Ver carrito · ${money(subtotalSummary.total)}`;
@@ -3229,37 +3253,6 @@ function renderCartRecommendations() {
     </div>` : '';
 }
 
-export function shouldShowCheckoutSuggestions() {
-  const state = getState();
-  return cartNeedsComplementPrompt({ products: state.products, cart: state.cart });
-}
-
-export function showCheckoutSuggestions() {
-  const modal = $('[data-checkout-suggestions-modal]');
-  const content = $('[data-checkout-suggestions-content]');
-  const state = getState();
-  const recommendation = getCartRecommendations({ products: state.products, cart: state.cart, maxItems: 4 });
-  if (!modal || !content || !recommendation.products.length) return false;
-  content.innerHTML = `
-    <div class="checkout-suggestions-card" role="document">
-      <button class="modal-close" type="button" data-checkout-suggestions-dismiss aria-label="Cerrar sugerencias">×</button>
-      <p class="eyebrow">ANTES DE PAGAR</p>
-      <h2 id="checkout-suggestions-title">${escapeHtml(recommendation.title)}</h2>
-      <p>${escapeHtml(recommendation.copy)}</p>
-      <div class="checkout-suggestions-list">
-        ${recommendation.products.map(recommendationCard).join('')}
-      </div>
-      <button class="secondary-button checkout-suggestions-continue" type="button" data-checkout-suggestions-dismiss>Continuar sin agregar</button>
-    </div>`;
-  if (!modal.open) modal.showModal();
-  return true;
-}
-
-export function closeCheckoutSuggestions() {
-  const modal = $('[data-checkout-suggestions-modal]');
-  if (modal?.open) modal.close();
-}
-
 function renderCartList() {
   const container = $('[data-cart-list]');
   if (!container) return;
@@ -3270,7 +3263,7 @@ function renderCartList() {
     const activeOrder = getActiveOrder();
     const hasActiveOrder = activeOrder && !['delivered', 'cancelled'].includes(activeOrder.status);
     const activeNonTerminalId = hasActiveOrder ? activeOrder.id : '';
-    const latestOrder = getCustomerOrderHistory().find((order) => (
+    const latestOrder = customerHistoryWithLiveState().find((order) => (
       order.status === 'delivered' && order.id !== activeNonTerminalId
     )) || null;
     container.innerHTML = `
@@ -3509,9 +3502,11 @@ function renderCheckoutPaymentFields() {
   // La copia vive ahora en los dos nodos que sí existen.
   const { submit, modeNote } = checkoutCopySurfaces();
   if (submit && !submit.disabled) {
-    submit.textContent = isMercadoPago
+    const label = isMercadoPago
       ? 'Pagar con Mercado Pago'
       : (submit.dataset.baseLabel || 'Confirmar pedido');
+    const summary = getCartSummary(currentDeliveryMode(), { couponCode: $('[name="couponCode"]')?.value || '' });
+    submit.textContent = summary.count > 0 ? `${label} · ${money(summary.total)}` : label;
   }
   // Simétrico a propósito: volver de Mercado Pago a otro medio tiene que
   // devolver la nota del modo, no dejar puesta la del redirect.

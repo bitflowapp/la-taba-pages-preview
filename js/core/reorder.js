@@ -13,8 +13,22 @@ export function buildReorderPreview(order, products = [], options = {}) {
   const items = [];
   const skipped = [];
   let priceChanged = false;
+  const grouped = new Map();
 
+  // Un SKU puede venir en más de una línea histórica (por ejemplo, un combo).
+  // Se valida el total contra stock, no cada fragmento por separado.
   for (const item of Array.isArray(order?.items) ? order.items : []) {
+    const productId = sanitizeText(item?.productId, { fallback: '', maxLength: 80 });
+    const quantity = Number(item?.quantity);
+    if (!Number.isSafeInteger(quantity) || quantity <= 0) {
+      skipped.push({ productId, name: sanitizeText(item?.name, { fallback: 'Producto', maxLength: 100 }), reason: 'cantidad inválida; revisá el producto' });
+      continue;
+    }
+    const previous = grouped.get(productId);
+    grouped.set(productId, { ...item, quantity: quantity + (previous?.quantity || 0) });
+  }
+
+  for (const item of grouped.values()) {
     const productId = sanitizeText(item?.productId, { fallback: '', maxLength: 80 });
     const quantity = normalizeQuantity(item?.quantity, 1);
     const product = productMap.get(productId);
@@ -84,6 +98,10 @@ export function buildPendingReorder(order, preview = buildReorderPreview(order),
     repeatedAt: normalizeIso(now),
     priceChanged: Boolean(normalizedPreview.priceChanged),
     skippedCount: normalizedPreview.skipped.length,
+    skipped: normalizedPreview.skipped.map((item) => ({
+      name: sanitizeText(item.name, { fallback: 'Producto', maxLength: 100 }),
+      reason: sanitizeText(item.reason, { fallback: 'no disponible', maxLength: 120 }),
+    })),
     items: normalizedPreview.items.map((item) => ({
       productId: item.productId,
       quantity: item.quantity,
@@ -109,6 +127,10 @@ export function normalizePendingReorder(raw) {
     repeatedAt: normalizeIso(raw.repeatedAt),
     priceChanged: Boolean(raw.priceChanged),
     skippedCount: Math.max(0, Math.floor(Number(raw.skippedCount) || 0)),
+    skipped: (Array.isArray(raw.skipped) ? raw.skipped : []).slice(0, 30).map((item) => ({
+      name: sanitizeText(item?.name, { fallback: 'Producto', maxLength: 100 }),
+      reason: sanitizeText(item?.reason, { fallback: 'no disponible', maxLength: 120 }),
+    })),
     items,
   };
 }

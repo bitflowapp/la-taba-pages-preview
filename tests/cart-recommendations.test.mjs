@@ -14,6 +14,21 @@ const products = [
   { id: 'sold-out-snack', name: 'Snack agotado', categoryId: 'picadas-y-deli', tags: ['snack'], available: true, stock: 0, price: 300 },
 ];
 
+test('commerce v3: energizantes y snacks usan categorías actuales sin tags artificiales', () => {
+  const catalog = [
+    { id: 'energy', categoryId: 'energizantes', available: true, stock: 1, price: 2000 },
+    { id: 'snack', categoryId: 'snacks', available: true, stock: 1, price: 1000 },
+  ];
+  assert.deepEqual(getCartRecommendations({ products: catalog, cart: [{ productId: 'energy' }] }).products.map((p) => p.id), ['snack']);
+});
+
+test('commerce v3: recomendaciones exigen disponibilidad y precio confirmados', () => {
+  for (const patch of [{ available: undefined }, { price_status: 'pending' }, { priceStatus: 'pending' }]) {
+    const catalog = [products[0], { ...products[1], ...patch }];
+    assert.equal(getCartRecommendations({ products: catalog, cart: [{ productId: 'beer' }] }).products.length, 0);
+  }
+});
+
 test('cerveza prioriza hielo y acompañamientos disponibles, sin sugerir más alcohol', () => {
   const result = getCartRecommendations({ products, cart: [{ productId: 'beer', quantity: 1 }] });
   assert.equal(result.title, 'Completá tu pedido');

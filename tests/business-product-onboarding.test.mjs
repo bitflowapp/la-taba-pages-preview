@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   buildStorefrontPreview,
   describeDraft,
+  duplicateProductFields,
   describePublishReadiness,
   ONBOARDING_STEPS,
   planScanOutcome,
@@ -24,6 +25,27 @@ const VALID_FIELDS = Object.freeze({
   price: 2500,
   cost: 1600,
   pricePending: false,
+});
+
+test('commerce v3: duplicar conserva identidad pero exige revisar código, precio y stock', () => {
+  const copy = duplicateProductFields({ name: 'Producto', brand: 'Marca', category: 'Gaseosas', sku: 'real-sku', gtin: '7790895000997', price: 1000, stock: 25 });
+  assert.equal(copy.name, 'Producto');
+  assert.equal(copy.brand, 'Marca');
+  assert.equal(copy.price, ''); assert.equal(copy.stock, '');
+  assert.equal(copy.sku, undefined); assert.equal(copy.gtin, undefined);
+  assert.equal(validateProductDraft(copy).ok, false);
+});
+
+test('commerce v3: stock vacío es desconocido, no cero contado', () => {
+  assert.equal(validateProductDraft({ ...VALID_FIELDS, stock: '' }).ok, false);
+  assert.equal(validateProductDraft({ ...VALID_FIELDS, stock: 0 }).ok, true);
+});
+
+test('commerce v3: carnes y peso variable permanecen como borrador', () => {
+  assert.equal(validateProductDraft({ ...VALID_FIELDS, pricingMode: 'variable_weight' }).ok, false);
+  assert.equal(validateProductDraft({ ...VALID_FIELDS, category: 'Carnes' }).ok, false);
+  const values = { category: 'Carnes', pricingMode: 'variable_weight', pricePerKg: '', unitQuantity: '0.25' };
+  assert.deepEqual(describeDraft({ commercial_details: values }).values, values);
 });
 
 test('un código desconocido abre un borrador y nunca publica solo', () => {

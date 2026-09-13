@@ -585,7 +585,7 @@ test('confirmar sin dirección manda a la dirección, y el pedido sigue intacto'
   // intento fallido, y dejarlo en «Creando pedido…» sería otra forma de mentir.
   const boton = page.locator('[data-checkout-submit]');
   await expect(boton).toBeEnabled();
-  await expect(boton).toHaveText('Confirmar pedido');
+  await expect(boton).toHaveText(/Confirmar pedido · \$/);
   // Y el carrito no se tocó.
   await expect(page.locator('[data-view="cart"] [data-cart-inc]').first()).toBeVisible();
 });

@@ -183,7 +183,7 @@ test('la escala de grafito tiene seis escalones distintos y ordenados', () => {
   // El fondo dejó de ser un pozo: por debajo tiene que quedar lugar para un
   // hueco real, que es lo que hace que la escala no arranque contra el piso.
   assert.ok(escalones[1].y > luminancia('#000000'), 'el fondo tocó el negro absoluto');
-  assert.ok(escalones[1].y >= luminancia('#0e1114'), 'el fondo volvió a ser negro plano');
+  assert.equal(readDesignToken('--brand-bg'), '#090a0c', 'Commerce V3 conserva la base negra cálida aprobada');
 });
 
 test('la tinta sobre grafito conserva el contraste que declara', () => {

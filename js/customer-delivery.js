@@ -23,6 +23,12 @@ import {
 import { createAddressCaptureController } from './address-capture-controller.js';
 import { getOrderRepository } from './repositories/repository_factory.js';
 
+function checkoutHistory() {
+  return getAppMode() === APP_MODE_PRODUCTION
+    ? getOrderRepository()?.getCustomerHistorySnapshot?.().orders || []
+    : getCustomerOrderHistory();
+}
+
 const state = {
   initialized: false,
   loading: false,
@@ -245,6 +251,16 @@ function upsertLocalAddress(address) {
    ========================================================================== */
 export function getDeliveryAddresses() {
   return state.addresses.map((address) => normalizeCustomerAddress(address));
+}
+
+export async function setDefaultDeliveryAddress(addressId) {
+  if (!state.addresses.some((address) => address.id === addressId)) return { ok: false };
+  const result = await profileRepository()?.setDefault(addressId);
+  if (!result?.ok) return { ok: false };
+  state.addresses = state.addresses.map((address) => ({ ...address, isDefault: address.id === addressId }));
+  render();
+  notifyProfileUpdated();
+  return { ok: true };
 }
 
 export function getSelectedDeliveryAddressId() {
@@ -765,7 +781,7 @@ function renderCheckoutPhase(fase, compact) {
  * fase `compact` cuando llega—, prueba que vale la pena esperarlo.
  */
 function hasLocalOrderHistory() {
-  return getCustomerOrderHistory().length > 0;
+  return checkoutHistory().length > 0;
 }
 
 /*
@@ -833,7 +849,7 @@ function compactCheckoutSummary() {
   const phone = String(profile.phone || '').trim();
   if (!name || !phone) return null;
   // Sin un pedido anterior no hay nada que "recordar": es la primera compra.
-  if (!getCustomerOrderHistory().length) return null;
+  if (!checkoutHistory().length) return null;
 
   const pickup = currentDeliveryModeIsPickup();
   let address = null;
@@ -917,7 +933,7 @@ function applyRememberedPaymentPreference() {
   const select = checkoutForm()?.elements?.paymentMethod;
   if (!select) return;
   state.paymentPreferenceApplied = true;
-  const remembered = String(getCustomerOrderHistory()[0]?.paymentMethodCode || '');
+  const remembered = String(checkoutHistory()[0]?.paymentMethodCode || '');
   if (!remembered || remembered === select.value) return;
   const offered = [...select.options].some((option) => option.value === remembered);
   if (!offered) return;

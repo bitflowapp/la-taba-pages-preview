@@ -89,7 +89,7 @@ test('botones y acciones críticas de checkout respetan touch-action: manipulati
       { name: 'minus', selector: '[data-cart-dec]' },
       { name: 'floatingCart', selector: '[data-floating-cart]' },
       { name: 'openCart', selector: '[data-open-cart]' },
-      { name: 'mobileNav', selector: '.mobile-nav [data-nav-view="tracking"]' },
+      { name: 'mobileNav', selector: '.mobile-nav [data-nav-view="orders"]' },
       { name: 'productCard', selector: '.product-card' },
     ];
     return candidates.map(({ name, selector }) => {

@@ -78,10 +78,10 @@ test.describe('Dirección · la hoja del encabezado', () => {
     await expect(hoja).toBeVisible();
 
     // La predeterminada se declara como la vigente.
-    const principal = hoja.locator(`[data-address-id="${sembradas[0].id}"]`);
+    const principal = hoja.locator(`.address-sheet-option[data-address-id="${sembradas[0].id}"]`);
     await expect(principal).toHaveAttribute('aria-current', 'true');
 
-    await hoja.locator(`[data-address-id="${sembradas[1].id}"]`).click();
+    await hoja.locator(`.address-sheet-option[data-address-id="${sembradas[1].id}"]`).click();
     await expect(hoja).toBeHidden();
 
     // El chip del encabezado nombra la nueva, y el checkout la tiene elegida.
@@ -122,7 +122,7 @@ test.describe('Dirección · la hoja del encabezado', () => {
     await expect(page.locator('[data-home-address-label]'))
       .toContainText(DEFAULT_CHECKOUT_ADDRESSES[1].street);
     await page.locator('[data-home-address]').click();
-    await expect(hoja.locator(`[data-address-id="${sembradas[1].id}"]`)).toHaveAttribute('aria-current', 'true');
+    await expect(hoja.locator(`.address-sheet-option[data-address-id="${sembradas[1].id}"]`)).toHaveAttribute('aria-current', 'true');
   });
 
   test('sin una dirección guardada en ese punto, la medición pasa al editor SIN confirmar', async ({ page, context }) => {

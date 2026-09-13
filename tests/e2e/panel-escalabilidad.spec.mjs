@@ -229,7 +229,7 @@ test.describe('la bandeja no se lleva puesto el trabajo del operador', () => {
       const codigo = (tarjeta) => tarjeta.querySelector('.production-order-code')?.textContent?.trim() || '';
       const tarjeta = [...document.querySelectorAll('.production-order-card')]
         .find((item) => codigo(item) !== excluido && item.querySelector('[data-production-cancel-reason]'));
-      tarjeta.scrollIntoView({ block: 'center' });
+      tarjeta.scrollIntoView({ block: 'center', behavior: 'instant' });
       return codigo(tarjeta);
     }, objetivo);
     const tarjetaDelTrabajo = page.locator('.production-order-card')
@@ -243,19 +243,31 @@ test.describe('la bandeja no se lleva puesto el trabajo del operador', () => {
     const hijosAntes = await page.evaluate(() => (
       document.querySelector('[data-production-workspace="business"]').childNodes.length
     ));
-    const trabajo = await page.evaluate((codigoBuscado) => {
+    const trabajo = await page.evaluate(async (codigoBuscado) => {
       const codigo = (tarjeta) => tarjeta.querySelector('.production-order-code')?.textContent?.trim() || '';
       const tarjeta = [...document.querySelectorAll('.production-order-card')]
         .find((item) => codigo(item) === codigoBuscado);
       const entrada = tarjeta.querySelector('[data-production-cancel-reason]');
       entrada.value = 'el cliente pidio esperar';
-      entrada.focus();
+      entrada.scrollIntoView({ block: 'center', behavior: 'instant' });
+      entrada.focus({ preventScroll: true });
       entrada.setSelectionRange(entrada.value.length, entrada.value.length);
       if (document.activeElement !== entrada) {
         // Sin esto la prueba vuelve a poder pasar sin haber enfocado nada.
         throw new Error('el campo de motivo no quedó enfocado: ¿el detalle está cerrado?');
       }
-      return { codigo: codigo(tarjeta), scroll: globalThis.scrollY, texto: entrada.value };
+      // El foco puede desplazar el viewport en el siguiente cuadro. Esa acción
+      // pertenece al setup, no a la actualización de otro pedido que medimos.
+      await document.fonts.ready;
+      let previous = '', stable = 0;
+      for (let frame = 0; frame < 120 && stable < 4; frame++) {
+        await new Promise(requestAnimationFrame);
+        const signature = `${globalThis.scrollY}:${entrada.getBoundingClientRect().top.toFixed(2)}`;
+        stable = signature === previous ? stable + 1 : 0;
+        previous = signature;
+      }
+      if (stable < 4) throw new Error('El foco y el encabezado no estabilizaron antes de actualizar otro pedido.');
+      return { codigo: codigo(tarjeta), scroll: globalThis.scrollY, texto: entrada.value, inputTop: entrada.getBoundingClientRect().top };
     }, codigoDelTrabajo);
 
     // Se cuentan las tarjetas que entran y salen del DOM, no las mutaciones:
@@ -299,6 +311,7 @@ test.describe('la bandeja no se lleva puesto el trabajo del operador', () => {
       return {
         tocadas: globalThis.__tocadas,
         scroll: globalThis.scrollY,
+        inputTop: entrada?.getBoundingClientRect().top ?? null,
         texto: entrada?.value ?? null,
         cursor: entrada?.selectionStart ?? null,
         tieneFoco: document.activeElement === entrada,
@@ -315,6 +328,7 @@ test.describe('la bandeja no se lleva puesto el trabajo del operador', () => {
     expect(despues.texto, 'el motivo a medio escribir sobrevive').toBe(trabajo.texto);
     expect(despues.tieneFoco, 'el foco no se va al body').toBe(true);
     expect(despues.cursor, 'el cursor queda donde estaba').toBe(trabajo.texto.length);
+    expect(Math.abs(despues.inputTop - trabajo.inputTop), 'el campo no salta dentro del viewport').toBeLessThanOrEqual(8);
     expect(Math.abs(despues.scroll - trabajo.scroll), 'el scroll no salta').toBeLessThanOrEqual(8);
     expect(despues.tarjetas, 'la bandeja sigue completa').toBe(CUANTOS);
     expect(despues.detalleAbierto, 'el detalle que el operador dejó abierto sigue abierto').toBe(true);

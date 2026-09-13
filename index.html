@@ -82,7 +82,7 @@
       lo verifica tests/home-hero-preload.test.mjs.
     -->
     <link rel="preload" as="image" href="assets/promos/cervezas-heineken-band.webp" media="(max-width: 699px)" fetchpriority="high" />
-    <link rel="stylesheet" href="styles.css?v=58" />
+    <link rel="stylesheet" href="styles.css?v=59" />
   </head>
   <!--
     La vista activa se declara ya en el shell servido. `renderNavigation` la
@@ -184,7 +184,7 @@
         </label>
 
         <div class="topbar-actions">
-          <button class="primary-button compact cart-button" type="button" data-open-cart aria-label="Ver mi pedido">
+          <button class="primary-button compact cart-button" type="button" data-open-cart data-nav-view="cart" aria-label="Ver mi pedido">
             <span class="cart-button-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none">
                 <path d="M3 4h2l2.1 10.15a2 2 0 0 0 1.96 1.6h7.94a2 2 0 0 0 1.93-1.47L20.5 9H7.25" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
@@ -294,35 +294,9 @@
                 publicadas; sin ellas es una imagen decorativa que no se anuncia
                 como control, y la fila entera queda vacía (fail-closed).
               -->
-              <div class="brand-stories-strip" data-stories-strip>
-                <span class="brand-logo-slot" data-stories-slot data-stories-state="empty">
-                  <span class="brand-logo brand-logo-static" data-stories-static>
-                    <span class="brand-logo-ring" aria-hidden="true"></span>
-                    <span class="brand-logo-face" aria-hidden="true">
-                      <img class="brand-logo-img" src="assets/brand/taba2-emblem.svg" width="100" height="100" alt="" decoding="async" />
-                    </span>
-                  </span>
-                  <button class="brand-logo brand-logo-action" type="button" data-stories-open hidden>
-                    <span class="brand-logo-ring" aria-hidden="true"></span>
-                    <span class="brand-logo-face" aria-hidden="true">
-                      <img class="brand-logo-img" src="assets/brand/taba2-emblem.svg" width="100" height="100" alt="" decoding="async" />
-                    </span>
-                  </button>
-                </span>
-                <span class="brand-stories-items" data-stories-items></span>
-              </div>
             </section>
 
             <div data-home-active-order hidden></div>
-
-            <!--
-              HERO COMERCIAL. Sube al lugar que le corresponde: es lo primero
-              que tiene que generar ganas después de saber dónde estoy. Antes
-              vivía 1.900px más abajo, o sea después de tres carruseles, y en la
-              práctica no lo veía nadie. Fail-closed como siempre: sin categoría
-              con producto comprable, el hueco no ocupa un píxel.
-            -->
-            <div class="home-hero-promo-slot" data-home-hero-promo></div>
 
             <label class="search-box home-search taba-home-search">
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
@@ -333,6 +307,8 @@
             </label>
 
             <div class="category-strip home-category-strip" data-category-strip="home" data-home-category-strip aria-label="Categorías de la tienda"></div>
+
+            <div class="home-hero-promo-slot" data-home-hero-promo></div>
 
             <!--
               DESTACADOS abre la vidriera: es el primer tramo COMPRABLE y tiene
@@ -397,6 +373,24 @@
               el contenedor queda vacío y no ocupa lugar.
             -->
             <div class="home-reorder-slot" data-customer-actions></div>
+              <div class="brand-stories-strip" data-stories-strip>
+                <span class="brand-logo-slot" data-stories-slot data-stories-state="empty">
+                  <span class="brand-logo brand-logo-static" data-stories-static>
+                    <span class="brand-logo-ring" aria-hidden="true"></span>
+                    <span class="brand-logo-face" aria-hidden="true">
+                      <img class="brand-logo-img" src="assets/brand/taba2-emblem.svg" width="100" height="100" alt="" decoding="async" />
+                    </span>
+                  </span>
+                  <button class="brand-logo brand-logo-action" type="button" data-stories-open hidden>
+                    <span class="brand-logo-ring" aria-hidden="true"></span>
+                    <span class="brand-logo-face" aria-hidden="true">
+                      <img class="brand-logo-img" src="assets/brand/taba2-emblem.svg" width="100" height="100" alt="" decoding="async" />
+                    </span>
+                  </button>
+                </span>
+                <span class="brand-stories-items" data-stories-items></span>
+              </div>
+
 
             <section class="home-merch-section home-combos-section" data-home-combos-section aria-labelledby="home-combos-title" hidden>
               <div class="home-section-head">
@@ -474,6 +468,13 @@
               <span aria-hidden="true">›</span>
             </button>
           </div>
+        </section>
+
+        <section class="section app-view" data-view="orders" hidden aria-hidden="true">
+          <div class="section-head"><h1>Mis pedidos</h1>
+            <button class="secondary-button compact" type="button" data-nav-view="tracking">Seguir pedido actual</button>
+          </div>
+          <div data-customer-history></div>
         </section>
 
         <section class="section app-view" data-view="catalog" hidden aria-hidden="true">
@@ -602,6 +603,7 @@
             aviso flotante queda fuera del árbol y éste es el único que anuncia.
           -->
           <div class="cart-notice" data-cart-notice role="status" aria-live="polite"></div>
+          <div class="card reorder-review-notice" data-cart-reorder-notice hidden role="status"></div>
 
           <div class="checkout-layout">
             <div class="card cart-card">
@@ -919,27 +921,10 @@
         <strong data-floating-cart-summary>$0</strong>
       </button>
 
-      <!--
-        Cinco rutas REALES, una por control y sin repetir destino: el ancla de
-        marca del centro ES el inicio, así que `data-nav-view="home"` sigue
-        siendo único en la barra y `aria-current="page"` apunta a un solo
-        control. El quinto lugar lo ocupa el carrito, que hasta ahora sólo era
-        alcanzable desde la barra flotante o el app bar.
-      -->
       <nav class="mobile-nav" aria-label="Navegación móvil">
+        <button type="button" data-nav-view="home"><span class="mn-ico icon-home" aria-hidden="true">⌂</span><span class="mn-label">Inicio</span></button>
         <button type="button" data-nav-view="catalog"><span class="mn-ico icon-catalog" aria-hidden="true"></span><span class="mn-label">Catálogo</span></button>
-        <button type="button" data-nav-view="tracking"><span class="mn-ico icon-track" aria-hidden="true"></span><span class="mn-label">Seguir</span></button>
-        <button class="mn-brand" type="button" data-nav-view="home">
-          <span class="mn-brand-disc" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" focusable="false">
-              <path d="M4 9.5 5.6 5h12.8L20 9.5" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
-              <path d="M5.4 9.5h13.2V19a1 1 0 0 1-1 1H6.4a1 1 0 0 1-1-1V9.5Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
-              <path d="M10 20v-4.6h4V20" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
-            </svg>
-          </span>
-          <span class="mn-label" data-business-name>La Taba</span>
-        </button>
-        <button type="button" data-nav-view="cart"><span class="mn-ico icon-cart" aria-hidden="true"></span><span class="mn-label">Carrito</span><span class="mn-badge" data-cart-count>0</span></button>
+        <button type="button" data-nav-view="orders"><span class="mn-ico icon-track" aria-hidden="true"></span><span class="mn-label">Mis pedidos</span></button>
         <button type="button" data-nav-view="profile"><span class="mn-ico icon-profile" aria-hidden="true"></span><span class="mn-label">Perfil</span></button>
       </nav>
     </div>
@@ -958,9 +943,7 @@
       <div data-combo-modal-content></div>
     </dialog>
 
-    <dialog class="checkout-suggestions-modal" data-checkout-suggestions-modal aria-labelledby="checkout-suggestions-title">
-      <div data-checkout-suggestions-content></div>
-    </dialog>
+
 
     <!--
       Historias comerciales. El diálogo existe siempre en el shell pero sólo se

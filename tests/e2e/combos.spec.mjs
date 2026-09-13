@@ -92,7 +92,7 @@ test('agregar un combo lo cobra a precio de combo, no a la suma de sus partes', 
   await page.locator('[data-add-combo="combo-heineken-x6"]').click();
   await expect(page.locator('[data-combo-modal]')).toBeHidden();
 
-  await page.locator('[data-nav-view="cart"] >> visible=true').first().click();
+  await page.locator('[data-open-cart] >> visible=true').first().click();
   const linea = page.locator('[data-cart-combo="combo-heineken-x6"]');
   await expect(linea).toBeVisible();
   await expect(linea.locator('.cart-title')).toContainText('Heineken x6');
@@ -109,7 +109,7 @@ test('sumar y quitar el combo mueve el carrito y no deja líneas fantasma', asyn
 
   await page.locator('[data-combo-card="combo-heineken-x6"] [data-combo-detail]').first().click();
   await page.locator('[data-add-combo="combo-heineken-x6"]').click();
-  await page.locator('[data-nav-view="cart"] >> visible=true').first().click();
+  await page.locator('[data-open-cart] >> visible=true').first().click();
 
   const linea = page.locator('[data-cart-combo="combo-heineken-x6"]');
   await linea.locator('[data-combo-increment]').click();

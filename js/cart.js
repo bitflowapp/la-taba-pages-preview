@@ -14,7 +14,8 @@ import {
 } from './core/customer-history.js';
 import { evaluatePromotions, previewCouponDiscount } from './core/promotions.js';
 import { buildPendingReorder, buildReorderPreview } from './core/reorder.js';
-import { isDemoMode } from './core/app-mode.js';
+import { isDemoMode, isProductionMode } from './core/app-mode.js';
+import { getOrderRepository } from './repositories/repository_factory.js';
 import {
   commerceCheckoutBlock,
   hasResolvedDelivery,
@@ -410,7 +411,7 @@ export function repeatCustomerOrder(orderId = '', { force = false } = {}) {
 
   // Si el carrito tiene productos, no lo reemplazamos en silencio: pedimos
   // confirmación explícita (force) para no perder lo que el cliente ya cargó.
-  if (!force && getState().cart.length > 0) {
+  if (!force && (getState().cart.length > 0 || getState().comboSelections?.length > 0)) {
     return {
       ok: false,
       needsConfirmation: true,
@@ -434,6 +435,7 @@ export function repeatCustomerOrder(orderId = '', { force = false } = {}) {
 
   setState({
     cart: cartItems,
+    comboSelections: [],
     pendingReorder: buildPendingReorder(order, preview),
   });
   const skippedMessage = repeatSkippedMessage(skipped);
@@ -454,6 +456,10 @@ export function repeatCustomerOrder(orderId = '', { force = false } = {}) {
 // permitimos rearmar sólo sus productos aun cuando el cliente haya elegido no
 // recordar sus datos. Fuera de ?demo=1 no existe este fallback.
 export function getRepeatableCustomerOrder(orderId = '') {
+  if (isProductionMode()) {
+    const history = getOrderRepository()?.getCustomerHistorySnapshot?.().orders || [];
+    return history.find((order) => (!orderId || order.id === orderId) && order.status === 'delivered') || null;
+  }
   const knownOrder = orderId ? findCustomerOrder(orderId) : getLatestCustomerOrder();
   if (knownOrder) return knownOrder;
   if (!isDemoMode()) return null;

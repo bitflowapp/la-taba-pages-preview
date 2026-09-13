@@ -16,7 +16,7 @@ import {
 } from './business-device-check.js';
 import { evaluateDailyClosure, validateClosureOverride } from './business-day-control.js';
 import { normalizeAccessFilter, renderAccessInboxSurface } from './business-access-inbox.js';
-import { buildStorefrontPreview, describeDraft, planScanOutcome, validateProductDraft } from './business-product-onboarding.js';
+import { buildStorefrontPreview, describeDraft, duplicateProductFields, planScanOutcome, validateProductDraft } from './business-product-onboarding.js';
 import {
   PANEL_TIMEZONE,
   renderDayCloseSurface, renderDayOpenSurface, renderDevicesSurface, renderFiscalSetupSurface,
@@ -118,6 +118,10 @@ let packingSession = null;
 let packingRestoreStarted = false;
 let packingCacheStatus = '';
 let productDraft = null;
+let productDrafts = [];
+let draftListLoading = false;
+let draftListStarted = false;
+let productDraftGeneration = 0;
 let operationCenterSnapshot = null;
 let operationCenterStatus = { phase: 'idle', message: '' };
 let operationCenterRefreshStarted = false;
@@ -158,6 +162,10 @@ let accessRequestsLoadStarted = false;
 export function configureBusinessOperations(next = {}) {
   stopOperationCenterRefresh();
   context = { ...defaultContext(), ...next };
+  productDrafts = [];
+  draftListLoading = false;
+  draftListStarted = false;
+  productDraftGeneration += 1;
   pendingCommercialHide = false;
   resetOperationsConfigState();
   packingSession = null;
@@ -231,6 +239,7 @@ export function renderBusinessOperations(view) {
     }),
     scanner: renderScanner,
     'product-create': () => renderProductOnboardingSurface({
+      drafts: productDrafts, draftListLoading,
       plan: productPlan, draft: productDraftView, readiness: productReadiness,
       preview: productPreview, errors: productErrors, role: context.role, busy,
     }),
@@ -265,6 +274,10 @@ export function allowedBusinessOperationViews(role) {
 }
 
 export function activateBusinessOperations(view = currentView) {
+  if (view === 'product-create' && !draftListStarted) {
+    draftListStarted = true;
+    void refreshProductDrafts();
+  }
   const mode = VIEW_META[view]?.[1];
   if (view !== 'operation-center') stopOperationCenterRefresh();
   if (view !== 'devices' && view !== 'product-create') productPreview = null;
@@ -362,6 +375,49 @@ export async function handleBusinessOperationsAction(target) {
     return { handled: true, ok: event.isValid, message: event.isValid ? '' : 'Código inválido.' };
   }
 
+  if (target.closest('[data-product-drafts-refresh]')) { await refreshProductDrafts(); return result(true, 'Borradores actualizados.'); }
+  const openDraftId = target.closest('[data-product-draft-open]')?.dataset.productDraftOpen;
+  if (openDraftId) {
+    const draft = productDrafts.find((entry) => entry.id === openDraftId);
+    if (!draft) return result(false, 'No encontramos ese borrador. Actualizá la lista.');
+    productDraft = draft; productDraftView = describeDraft(draft, { operatorName: context.operatorName });
+    productErrors = []; productPreview = null; productReadiness = null;
+    context.onChange(); return result(true, 'Borrador abierto.');
+  }
+  if (target.closest('[data-product-bind-code]')) {
+    const root = target.closest('[data-product-draft]');
+    const gtin = String(root?.querySelector('[name="productGtin"]')?.value || '').trim();
+    if (busy || !productDraft?.id) return result(false, 'Esperá a que termine el guardado.');
+    productDraftView = { ...productDraftView, values: readProductFields(target) };
+    busy = true;
+    try {
+      const bound = await context.bindProductDraftCode({ draftId: productDraft.id, gtin });
+      if (!bound?.ok) return result(false, 'No pudimos asignar el código. Revisá que sea válido y no esté cargado.');
+      productDraft = bound.data;
+      productDraftView = { ...describeDraft(productDraft, { operatorName: context.operatorName }), values: productDraftView.values };
+      return result(true, 'Código asignado. Revisá los datos antes de publicar.');
+    } finally { busy = false; context.onChange(); }
+  }
+  if (target.closest('[data-create-manual-draft], [data-product-duplicate]')) {
+    const guard = requireCapability('products.draft');
+    if (!guard.ok) return guard.result;
+    if (busy) return result(false, 'Ya hay un borrador en curso.');
+    const duplicate = Boolean(target.closest('[data-product-duplicate]'));
+    const source = Array.isArray(lookup?.data?.products) ? lookup.data.products[0] : lookup?.data?.products;
+    busy = true;
+    try {
+      const response = await context.createManualProductDraft({ idempotencyKey: createKey('manual-draft') });
+      if (!response?.ok) return result(false, 'No pudimos abrir el borrador. Reintentá.');
+      productDraft = response.data;
+      productDraftView = describeDraft(productDraft, { operatorName: context.operatorName });
+      if (duplicate) productDraftView = { ...productDraftView, values: duplicateProductFields(source) };
+      productErrors = []; productPreview = null; productReadiness = null;
+      currentView = 'product-create';
+      feedback = duplicate ? 'Revisá nombre y presentación. Completá precio, stock y el código real antes de publicar.' : 'Borrador abierto. Completá sólo los datos que conocés.';
+      return result(true, feedback);
+    } finally { busy = false; context.onChange(); }
+  }
+
   if (target.closest('[data-create-product-draft]')) {
     if (!lastScan?.isValid) return result(false, 'Escaneá un código válido antes de abrir el borrador.');
     busy = true;
@@ -384,6 +440,7 @@ export async function handleBusinessOperationsAction(target) {
     return result(Boolean(response?.ok), feedback);
   }
 
+  if (target.closest('[data-product-save-draft]')) return saveProductDraft(target);
   if (target.closest('[data-product-preview]')) return previewProductDraft(target);
   if (target.closest('[data-product-complete]')) return completeProductDraft(target);
   if (target.closest('[data-product-publish]')) return refreshProductReadiness();
@@ -523,6 +580,10 @@ export async function handleBusinessOperationsAction(target) {
 }
 
 export function handleBusinessOperationsInput(target) {
+  if (productDraftView && target?.closest?.('[data-product-draft]')) {
+    productDraftView = { ...productDraftView, values: readProductFields(target) };
+    return { handled: true };
+  }
   if (target?.matches?.('[data-barcode-input]')) {
     scannerDraftValue = String(target.value || '').slice(0, 64);
     return { handled: true };
@@ -1540,7 +1601,7 @@ function scannerInput() { return `<div class="business-scanner-input"><label>Có
 function renderScanResult() {
   if (!lastScan) return '<div class="business-scan-result is-idle"><strong>Esperando lectura</strong><span>EAN-8, UPC-A, EAN-13 o GTIN-14.</span></div>';
   const product = lookup?.data ? normalizedProduct(lookup.data) : null;
-  return `<div class="business-scan-result ${lastScan.isValid ? 'is-valid' : 'is-invalid'}"><dl><div><dt>Código</dt><dd>${escapeHtml(lastScan.normalizedValue || lastScan.rawValue || '—')}</dd></div><div><dt>Formato</dt><dd>${escapeHtml(lastScan.format || 'Inválido')}</dd></div><div><dt>Producto</dt><dd>${escapeHtml(product?.name || (busy ? 'Buscando…' : 'Desconocido'))}</dd></div><div><dt>Presentación</dt><dd>${escapeHtml(product?.presentation || '—')}</dd></div><div><dt>Factor</dt><dd>${escapeHtml(lookup?.data?.unit_factor || 1)}</dd></div><div><dt>Stock actual</dt><dd>${product ? `${product.stock} (último conocido)` : '—'}</dd></div></dl></div>`;
+  return `<div class="business-scan-result ${lastScan.isValid ? 'is-valid' : 'is-invalid'}"><dl><div><dt>Código</dt><dd>${escapeHtml(lastScan.normalizedValue || lastScan.rawValue || '—')}</dd></div><div><dt>Formato</dt><dd>${escapeHtml(lastScan.format || 'Inválido')}</dd></div><div><dt>Producto</dt><dd>${escapeHtml(product?.name || (busy ? 'Buscando…' : 'Desconocido'))}</dd></div><div><dt>Presentación</dt><dd>${escapeHtml(product?.presentation || '—')}</dd></div><div><dt>Factor</dt><dd>${escapeHtml(lookup?.data?.unit_factor || 1)}</dd></div><div><dt>Stock actual</dt><dd>${product ? `${product.stock} (último conocido)` : '—'}</dd></div></dl>${product && can(context.role, 'products.draft') && ['scanner', 'product-create', 'inventory-receive'].includes(currentView) ? '<button class="secondary-button compact" type="button" data-product-duplicate>Duplicar como borrador</button>' : ''}</div>`;
 }
 function normalizedProduct(binding) {
   const product = Array.isArray(binding.products) ? binding.products[0] : binding.products || {};
@@ -2402,9 +2463,15 @@ function buildDeviceTestTicket(device) {
 
 function readProductFields(target) {
   const form = target.closest('[data-product-draft]') || target.closest('[data-business-ops-center]');
-  const value = (name) => String(form?.querySelector(`[name="${name}"]`)?.value || '');
+  const value = (name, savedKey = '') => {
+    const input = form?.querySelector(`[name="${name}"]`);
+    return input ? String(input.value || '') : String(productDraftView?.values?.[savedKey] ?? '');
+  };
   return {
     name: value('productName'),
+    pricingMode: value('productPricingMode') || 'unit',
+    unitQuantity: value('productUnitQuantity'),
+    pricePerKg: value('productPricePerKg'),
     brand: value('productBrand'),
     category: value('productCategory'),
     variant: value('productVariant'),
@@ -2413,15 +2480,57 @@ function readProductFields(target) {
     packageType: value('productPackageType'),
     unitsPerPack: value('productUnitsPerPack'),
     stock: value('productStock'),
-    price: value('productPrice'),
-    cost: value('productCost'),
+    price: value('productPrice', 'price'),
+    cost: value('productCost', 'cost'),
     pricePending: Boolean(form?.querySelector('[name="productPricePending"]')?.checked),
   };
 }
 
+async function refreshProductDrafts() {
+  if (draftListLoading || !can(context.role, 'products.draft')) return;
+  const generation = productDraftGeneration;
+  draftListLoading = true;
+  try {
+    const response = await context.listProductDrafts();
+    if (generation !== productDraftGeneration) return;
+    if (response?.ok) productDrafts = response.data || [];
+    else feedback = 'No pudimos cargar los borradores. Podés reintentar.';
+  } catch (_) { feedback = 'No pudimos cargar los borradores. Podés reintentar.'; }
+  finally {
+    if (generation === productDraftGeneration) { draftListLoading = false; context.onChange(); }
+  }
+}
+
+async function saveProductDraft(target) {
+  const guard = requireCapability('products.draft');
+  if (!guard.ok) return guard.result;
+  if (busy || !productDraft?.id) return result(false, 'Abrí un borrador antes de guardar.');
+  const fields = readProductFields(target);
+  productDraftView = { ...productDraftView, values: fields };
+  busy = true;
+  context.onChange();
+  try {
+    const saved = await context.saveProductDraft({ draftId: productDraft.id, details: fields });
+    feedback = saved?.ok ? 'Borrador guardado. Todavía no está publicado.' : 'No pudimos guardar el borrador. Conservamos lo escrito para que reintentes.';
+    if (saved?.ok) {
+      productDraft = saved.data;
+      productErrors = [];
+      productDraftView = describeDraft(productDraft, { operatorName: context.operatorName });
+      productDrafts = [productDraft, ...productDrafts.filter((draft) => draft.id !== productDraft.id)];
+    }
+    return result(Boolean(saved?.ok), feedback);
+  } finally {
+    busy = false;
+    context.onChange();
+  }
+}
+
 function previewProductDraft(target) {
-  const validation = validateProductDraft(readProductFields(target));
+  const fields = readProductFields(target);
+  if (productDraftView) productDraftView = { ...productDraftView, values: fields };
+  const validation = validateProductDraft(fields);
   productErrors = validation.ok ? [] : [...validation.errors];
+  if (productDraftView) productDraftView = { ...productDraftView, errors: productErrors };
   productPreview = validation.ok ? buildStorefrontPreview(validation.value, { imageReady: false }) : null;
   feedback = validation.ok ? 'Así lo va a ver el cliente.' : 'Revisá los datos marcados antes de seguir.';
   context.onChange();
@@ -2431,8 +2540,11 @@ function previewProductDraft(target) {
 async function completeProductDraft(target) {
   const guard = requireCapability('products.publish');
   if (!guard.ok) return guard.result;
-  const validation = validateProductDraft(readProductFields(target));
+  const fields = readProductFields(target);
+  if (productDraftView) productDraftView = { ...productDraftView, values: fields };
+  const validation = validateProductDraft(fields);
   productErrors = validation.ok ? [] : [...validation.errors];
+  if (productDraftView) productDraftView = { ...productDraftView, errors: productErrors };
   if (!validation.ok) {
     context.onChange();
     return result(false, 'Revisá los datos marcados antes de publicar.');
@@ -2535,6 +2647,10 @@ function defaultContext() {
     getScannedProductReadiness: async () => ({ ok: false, message: 'El estado de publicación no está disponible.' }),
     businessId: '', operatorId: '', getOrders: () => [], lookupBarcode: async () => ({ ok: true, data: null }),
     createProductDraft: async () => ({ ok: false, message: 'Repositorio no disponible.' }), publishProductDraft: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
+    saveProductDraft: async () => ({ ok: false, message: 'Guardado de borradores no disponible.' }),
+    createManualProductDraft: async () => ({ ok: false, message: 'Alta manual no disponible.' }),
+    listProductDrafts: async () => ({ ok: true, data: [] }),
+    bindProductDraftCode: async () => ({ ok: false, message: 'Asignación de código no disponible.' }),
     applyInventoryMovement: async () => ({ ok: false, message: 'Repositorio no disponible.' }), checkoutPos: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     setCommercialPublication: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     startPacking: async () => ({ ok: false, message: 'Repositorio no disponible.' }), getPackingManifest: async () => ({ ok: false, message: 'Repositorio no disponible.' }),

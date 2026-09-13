@@ -135,7 +135,8 @@
     "release:edge:dry-run": "node scripts/release-edge-production.mjs --project-ref wwcpogltfgzgkrlilbcd --dry-run",
     "test:release": "node --test tests/mercadopago-edge-release-protocol.test.mjs",
     "test:release:platform": "node scripts/verify-release-v5-platform.mjs",
-    "test:release:db": "node scripts/run-release-v5-db.mjs"
+    "test:release:db": "node scripts/run-release-v5-db.mjs",
+    "test:commerce:db": "node scripts/test-commerce-v3-db.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.60.0",

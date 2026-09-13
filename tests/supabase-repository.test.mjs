@@ -48,6 +48,51 @@ beforeEach(() => {
   });
 });
 
+test('commerce v3: historial filtra dueño y negocio, incluso en sesiones con más permisos', async () => {
+  const mock = createSupabaseClientMock();
+  mock.db.orders.push(buildOrderRow({}, 1, CUSTOMER_ID), buildOrderRow({}, 2, RIDER_ID), { ...buildOrderRow({}, 3, CUSTOMER_ID), business_id: RIDER_ID });
+  const repository = makeRepository(mock);
+  const result = await repository.loadCustomerHistory();
+  assert.equal(result.ok, true);
+  assert.equal(result.orders.length, 1);
+  assert.equal(result.orders[0].id, 'LT-1001');
+  assert.equal(mock.calls.rpc.length, 0, 'leer historial no crea pedido, tracking token ni pago');
+});
+
+test('commerce v3: cerrar sesión borra el historial en memoria', async () => {
+  const mock = createSupabaseClientMock();
+  let authChanged;
+  mock.client.auth.onAuthStateChange = (callback) => { authChanged = callback; };
+  mock.db.orders.push(buildOrderRow({}, 1, CUSTOMER_ID));
+  const repository = makeRepository(mock);
+  await repository.loadCustomerHistory();
+  assert.equal(repository.getCustomerHistorySnapshot().orders.length, 1);
+  authChanged('SIGNED_OUT', null);
+  assert.deepEqual(repository.getCustomerHistorySnapshot().orders, []);
+});
+
+test('commerce v3: una respuesta tardía del usuario anterior no repuebla el historial', async () => {
+  const mock = createSupabaseClientMock();
+  let authChanged, resolveUser;
+  mock.client.auth.onAuthStateChange = (callback) => { authChanged = callback; };
+  mock.client.auth.getUser = () => new Promise((resolve) => { resolveUser = resolve; });
+  const repository = makeRepository(mock);
+  const pending = repository.loadCustomerHistory();
+  authChanged('SIGNED_IN', { user: { id: RIDER_ID } });
+  resolveUser({ data: { user: { id: CUSTOMER_ID } }, error: null });
+  assert.equal((await pending).stale, true);
+  assert.deepEqual(repository.getCustomerHistorySnapshot().orders, []);
+});
+
+test('commerce v3: un error de identidad no filtra historial local ni consulta pedidos', async () => {
+  const mock = createSupabaseClientMock();
+  mock.client.auth.getUser = async () => ({ data: { user: null }, error: new Error('expired') });
+  const repository = makeRepository(mock);
+  await repository.loadCustomerHistory();
+  assert.deepEqual(repository.getCustomerHistorySnapshot().orders, []);
+  assert.equal(mock.calls.from.length, 0);
+});
+
 test('bloquea catálogo y checkout cuando el comercio no habilitó ordering', async () => {
   const mock = createSupabaseClientMock({
     businessOverrides: { ordering_enabled: false },

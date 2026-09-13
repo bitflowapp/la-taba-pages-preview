@@ -19,6 +19,18 @@ export function createSupabaseInventoryRepository({ client, businessId }) {
     createProductDraft: ({ gtin, suggestion, idempotencyKey }) => rpc('create_catalog_product_draft', {
       p_business_id: businessId, p_gtin: gtin, p_suggestion: suggestion, p_idempotency_key: idempotencyKey,
     }),
+    saveProductDraft: ({ draftId, details }) => rpc('save_catalog_product_draft_details', {
+      p_draft_id: draftId, p_details: details,
+    }),
+    createManualProductDraft: ({ idempotencyKey }) => rpc('create_manual_catalog_product_draft', {
+      p_business_id: businessId, p_idempotency_key: idempotencyKey,
+    }),
+    async listProductDrafts() {
+      const { data, error, status } = await client.from('catalog_product_drafts').select('*')
+        .eq('business_id', businessId).eq('status', 'pending_review').order('created_at', { ascending: false }).limit(50);
+      return error ? classifyRpcError(error, status) : { ok: true, data: data || [] };
+    },
+    bindProductDraftCode: ({ draftId, gtin }) => rpc('bind_catalog_product_draft_code', { p_draft_id: draftId, p_gtin: gtin }),
     publishProductDraft: ({ draftId, name, category, price, packageType, unitFactor }) => rpc('publish_catalog_product_draft', {
       p_draft_id: draftId, p_name: name, p_category: category, p_price: price, p_package_type: packageType, p_unit_factor: unitFactor,
     }),

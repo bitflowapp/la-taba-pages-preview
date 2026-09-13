@@ -1,14 +1,5 @@
-/*
- * El brillo de la góndola, medido en un navegador de verdad.
- *
- * El contrato es el mismo en los dos estantes y en los dos tamaños: al llegar,
- * las primeras tarjetas de producto tienen capas rojas con alfa > 0; bajando lo
- * suficiente el alfa llega a 0; volviendo arriba reaparece.
- *
- * Se mide el `box-shadow` COMPUTADO y no el valor del token: si
- * `calc(var(--card-glow) * N%)` no estuviera soportado, el token seguiría
- * teniendo el número correcto y la tarjeta no tendría brillo ninguno.
- */
+/* Commerce V3 reserva el rojo para selección y acciones. Las tarjetas claras
+ * conservan contraste y no agregan blur ni brillo rojo al desplazarse. */
 import { expect, test } from '@playwright/test';
 import { gotoDemoReset, installBrowserStubs, installPageGuards } from './helpers.mjs';
 
@@ -162,29 +153,17 @@ async function bajarHastaApagar(page, selector, etiqueta) {
  */
 async function contratoDelEstante(page, selector, etiqueta) {
   const llegada = await medirEstanteQuieto(page, selector, etiqueta);
-  const alLlegar = llegada.alfas;
-  expect(alLlegar, `${etiqueta}: faltan las dos capas rojas`).toHaveLength(2);
-  alLlegar.forEach((alfa) => expect(alfa, `${etiqueta}: el brillo no está encendido al llegar`).toBeGreaterThan(0));
-  // Muy suave: es un acento, no un neón.
-  expect(Math.max(...alLlegar), `${etiqueta}: el brillo se fue de escala`).toBeLessThanOrEqual(0.3);
-
+  expect(llegada.alfas, `${etiqueta}: el rojo se reserva para acciones, no para todas las tarjetas`).toEqual([]);
+  await expect(page.locator(selector).first()).toHaveCSS('backdrop-filter', 'none');
   await bajarHastaApagar(page, selector, etiqueta);
-  const abajo = await alfasRojos(page, selector);
-  expect(Math.max(...abajo), `${etiqueta}: el brillo no se apagó al bajar`).toBe(0);
-
+  expect(await alfasRojos(page, selector)).toEqual([]);
   await scrollear(page, 0);
   const vuelta = await medirEstanteQuieto(page, selector, etiqueta);
-  vuelta.alfas.forEach((alfa) => expect(alfa, `${etiqueta}: el brillo no volvió al subir`).toBeGreaterThan(0));
-  // La igualdad sólo significa algo si los dos lados se midieron sobre la misma
-  // geometría: si el estante quedó en otro lado, lo que cambió es la página.
-  expect(
-    { arriba: vuelta.arriba, alto: vuelta.alto },
-    `${etiqueta}: el estante no volvió a la misma posición, así que el brillo no es comparable`,
-  ).toEqual({ arriba: llegada.arriba, alto: llegada.alto });
-  expect(vuelta.alfas, `${etiqueta}: el brillo volvió con otro valor`).toEqual(alLlegar);
+  expect(vuelta.alfas).toEqual([]);
+  await expect(page.locator(selector).first()).toHaveCSS('background-color', 'rgb(248, 246, 241)');
 }
 
-test('HOME · el rail Destacados llega con brillo, se apaga al bajar y vuelve', async ({ page }) => {
+test('HOME · tarjetas cálidas sin brillo rojo al llegar, bajar y volver', async ({ page }) => {
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
   await gotoDemoReset(page, '/?reset=1&demo=1');
@@ -197,7 +176,7 @@ test('HOME · el rail Destacados llega con brillo, se apaga al bajar y vuelve', 
   await guards.assertClean();
 });
 
-test('CATÁLOGO · la grilla llega con brillo, se apaga al bajar y vuelve', async ({ page }) => {
+test('CATÁLOGO · tarjetas cálidas sin brillo rojo al llegar, bajar y volver', async ({ page }) => {
   const guards = installPageGuards(page);
   await installBrowserStubs(page);
   await gotoDemoReset(page, '/?reset=1&demo=1');

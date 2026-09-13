@@ -1,6 +1,10 @@
 // Reglas de venta complementaria locales, legibles y deterministas. No usan
 // perfiles personales ni servicios remotos: sólo catálogo, carrito y stock.
+import { isCommerciallyPurchasable } from './pricing.js';
+import { ALCOHOLIC_CATEGORY_IDS, STORE_CATEGORIES } from './store-taxonomy.js';
+
 const DRINK_CATEGORIES = new Set([
+  ...STORE_CATEGORIES.filter((category) => category.department === 'bebidas').map((category) => category.id),
   'gaseosas',
   'aguas',
   'jugos',
@@ -13,6 +17,7 @@ const DRINK_CATEGORIES = new Set([
 ]);
 
 const ALCOHOL_CATEGORIES = new Set([
+  ...ALCOHOLIC_CATEGORY_IDS,
   'cervezas',
   'vinos-y-espumantes',
   'gins-y-vodkas',
@@ -25,7 +30,7 @@ export const CART_RECOMMENDATION_RULES = Object.freeze([
   Object.freeze({
     id: 'alcohol-accompaniments',
     when: 'alcohol',
-    targetCategories: ['hielo-y-extras', 'picadas-y-deli', 'gaseosas'],
+    targetCategories: ['hielo', 'hielo-y-extras', 'snacks', 'picadas-y-deli', 'gaseosas'],
     targetTags: ['hielo', 'ice', 'snack', 'snacks', 'golosina', 'golosinas', 'candy', 'mixer'],
     priority: 100,
     title: 'Completá tu pedido',
@@ -34,7 +39,7 @@ export const CART_RECOMMENDATION_RULES = Object.freeze([
   Object.freeze({
     id: 'soft-drink-accompaniments',
     when: 'soft-drinks',
-    targetCategories: ['hielo-y-extras', 'picadas-y-deli'],
+    targetCategories: ['hielo', 'hielo-y-extras', 'snacks', 'picadas-y-deli'],
     targetTags: ['hielo', 'ice', 'snack', 'snacks', 'golosina', 'golosinas', 'candy'],
     priority: 80,
     title: 'Podés sumar',
@@ -43,7 +48,7 @@ export const CART_RECOMMENDATION_RULES = Object.freeze([
   Object.freeze({
     id: 'energy-snacks',
     when: 'energy',
-    targetCategories: ['picadas-y-deli'],
+    targetCategories: ['snacks', 'picadas-y-deli'],
     targetTags: ['snack', 'snacks', 'golosina', 'golosinas', 'candy'],
     priority: 70,
     title: 'Para acompañar',
@@ -64,13 +69,7 @@ function normalizedTags(product = {}) {
 // puede aparecer como sugerencia en el paso de pagar.
 function isOrderable(product) {
   return Boolean(
-    product
-      && product.available !== false
-      && !product.archived
-      && product.procurementOnly !== true
-      && Number(product.stock) > 0
-      && product.pricePending !== true
-      && Number(product.price) > 0,
+    isCommerciallyPurchasable(product) && product.procurementOnly !== true,
   );
 }
 
@@ -84,7 +83,7 @@ function matchesRule(rule, cartProducts) {
     return cartProducts.some((product) => product.categoryId === 'gaseosas');
   }
   if (rule.when === 'energy') {
-    return cartProducts.some((product) => product.categoryId === 'energeticas');
+    return cartProducts.some((product) => ['energeticas', 'energizantes'].includes(product.categoryId));
   }
   return false;
 }
@@ -147,7 +146,9 @@ export function cartContainsComplementaryProducts({ products = [], cart = [] } =
     .map((line) => productById.get(line?.productId))
     .filter(Boolean)
     .some((product) => (
-      product.categoryId === 'hielo-y-extras'
+      product.categoryId === 'hielo'
+      || product.categoryId === 'snacks'
+      || product.categoryId === 'hielo-y-extras'
       || product.categoryId === 'picadas-y-deli'
       || normalizedTags(product).has('hielo')
       || normalizedTags(product).has('ice')

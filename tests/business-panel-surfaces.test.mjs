@@ -44,6 +44,15 @@ async function settle() {
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+test('commerce v3: redibujar el alta no repite la consulta ni entra en un ciclo', async () => {
+  let calls = 0;
+  configureBusinessOperations({ role: 'owner', listProductDrafts: async () => { calls++; return { ok: true, data: [] }; }, onChange() { renderBusinessOperations('product-create'); } });
+  renderBusinessOperations('product-create');
+  await settle(); await settle();
+  assert.equal(calls, 1);
+  resetBusinessOperationsForTests();
+});
+
 test('el panel sólo ofrece las pantallas que el rol puede usar', () => {
   const staff = allowedBusinessOperationViews('staff');
   assert.ok(staff.includes('packing'));

@@ -103,7 +103,17 @@ async function contrast(page, selector) {
 // La entrada a historias existe en DOS lugares —el encabezado de la home y el
 // de Perfil— y comparte marcado, así que cada aserción tiene que decir de cuál
 // habla. Estos helpers evitan que un selector suelto vuelva a apuntar a las dos.
-const HERO = '.brand-hero';
+const HERO = '[data-view="home"]';
+const PRODUCT_SURFACE = 'rgb(248, 246, 241)';
+async function goToCustomerView(page, view) {
+  if (view === 'cart') return page.locator('[data-open-cart] >> visible=true').first().click();
+  if (view === 'tracking') {
+    await page.locator('.mobile-nav [data-nav-view="orders"]').click();
+    return page.locator('[data-view="orders"] [data-nav-view="tracking"]').click();
+  }
+  return page.locator(`.mobile-nav [data-nav-view="${view}"]`).click();
+}
+
 const PERFIL_HEAD = '.profile-page-head';
 const entradaHome = (page) => page.locator(`${HERO} [data-stories-slot]`);
 const logoHome = (page) => page.locator(`${HERO} .brand-logo-action`);
@@ -413,11 +423,11 @@ test('el shell de marca es continuo entre las vistas del cliente', async ({ page
   // este test la fija en su valor resuelto, no en un token.
   expect(home.body).toBe(brandSurfaceRgb());
   expect(await page.locator('.home-best-card').first().evaluate((n) => getComputedStyle(n).backgroundColor))
-    .toBe(GONDOLA);
+    .toBe(PRODUCT_SURFACE);
 
   // Navegar NO puede producir un salto negro → blanco: el shell se conserva.
   for (const vista of ['catalog', 'cart', 'profile', 'tracking']) {
-    await page.locator(`.mobile-nav [data-nav-view="${vista}"]`).click();
+    await goToCustomerView(page, vista);
     await expect(page.locator(`[data-view="${vista}"]`)).toBeVisible();
     const actual = await leer();
     expect(actual.vista, `vista ${vista}`).toBe(vista);
@@ -432,19 +442,19 @@ test('el shell de marca es continuo entre las vistas del cliente', async ({ page
 // vidriera y el carrito un formulario blanco puro, con otra sombra y otro radio.
 // Esto fija que la tarjeta de producto, la del carrito y la del perfil sean
 // exactamente la misma superficie.
-test('la superficie de contenido es la misma en toda la app del cliente', async ({ page }) => {
+test('productos claros y formularios oscuros conservan una identidad coherente', async ({ page }) => {
   await openHome(page);
   const superficie = async (selector) => page.locator(selector).first()
     .evaluate((node) => getComputedStyle(node).backgroundColor);
 
-  expect(await superficie('.home-best-card'), 'tarjeta de la home').toBe(GONDOLA);
+  expect(await superficie('.home-best-card'), 'tarjeta de la home').toBe(PRODUCT_SURFACE);
 
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
   await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
-  expect(await superficie('[data-product-grid] .product-card'), 'tarjeta del catálogo').toBe(GONDOLA);
+  expect(await superficie('[data-product-grid] .product-card'), 'tarjeta del catálogo').toBe(PRODUCT_SURFACE);
 
   await page.locator('[data-product-grid] [data-add-product]:not([disabled])').first().click();
-  await page.locator('.mobile-nav [data-nav-view="cart"]').click();
+  await goToCustomerView(page, 'cart');
   await expect(page.locator('[data-view="cart"] .cart-card')).toBeVisible();
   expect(await superficie('[data-view="cart"] .cart-card'), 'tarjeta del carrito').toBe(GONDOLA);
   expect(await superficie('[data-view="cart"] .checkout-form'), 'formulario del checkout').toBe(GONDOLA);
@@ -468,7 +478,7 @@ test('ningún texto de las vistas del cliente queda por debajo de 3:1', async ({
   await page.locator('[data-home-sections] [data-add-product]:not([disabled])').first().click();
 
   for (const vista of ['home', 'catalog', 'cart', 'profile', 'tracking']) {
-    await page.locator(`.mobile-nav [data-nav-view="${vista}"]`).click();
+    await goToCustomerView(page, vista);
     await expect(page.locator(`[data-view="${vista}"]`)).toBeVisible();
     await page.waitForTimeout(250);
     const malos = await page.evaluate(() => {
@@ -559,7 +569,7 @@ test('el seguimiento con pedido activo se lee sobre el shell oscuro', async ({ p
   await openHome(page);
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
   await seedCartAboveMinimum(page);
-  await page.locator('.mobile-nav [data-nav-view="cart"]').click();
+  await goToCustomerView(page, 'cart');
 
   const direccion = page.locator('[data-profile-checkout] input[type="radio"]').first();
   if (await direccion.count()) await direccion.check();
@@ -668,9 +678,9 @@ test('la barra de carrito aparece con productos, respeta la nav y no la tapa', a
 test('la navegación inferior conserva rutas, contador y estado accesible', async ({ page }) => {
   await openHome(page);
   const nav = page.locator('.mobile-nav');
-  await expect(nav.locator('button')).toHaveCount(5);
+  await expect(nav.locator('button')).toHaveCount(4);
   // Cinco destinos distintos: ninguno repetido, así `aria-current` apunta a uno.
-  for (const vista of ['home', 'catalog', 'cart', 'tracking', 'profile']) {
+  for (const vista of ['home', 'catalog', 'orders', 'profile']) {
     await expect(nav.locator(`[data-nav-view="${vista}"]`)).toHaveCount(1);
   }
   await expect(nav.locator('[data-nav-view="home"]')).toHaveAttribute('aria-current', 'page');

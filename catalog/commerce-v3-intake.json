@@ -1,0 +1,38 @@
+{
+  "status": "needs_review",
+  "source": "Requerimiento del negocio para Commerce V3; no acredita productos ni datos comerciales",
+  "publicCatalogAudit": {
+    "date": "2026-09-12",
+    "source": "https://la-taba.pages.dev",
+    "visibleProducts": 50,
+    "purchasableProducts": 33,
+    "verifiedDepartments": ["Bebidas"]
+  },
+  "departments": [
+    {
+      "name": "Bebidas",
+      "status": "existing_catalog",
+      "source": "Supabase público; catalog/production-catalog-snapshot.json y planilla-negocio.csv",
+      "action": "Conservar productos y disponibilidad actuales; altas adicionales requieren relevamiento"
+    },
+    {
+      "name": "Limpieza",
+      "status": "needs_review",
+      "familiesToSurvey": ["Detergentes", "Lavandina", "Limpiadores", "Desinfectantes", "Esponjas", "Bolsas", "Papel"],
+      "verifiedProducts": [],
+      "missing": ["Productos que realmente vende el negocio", "Marcas", "Presentaciones", "SKU o código real", "Precio", "Stock contado", "Fotografía y derecho de publicación"],
+      "action": "Crear borradores desde Alta de producto y completar únicamente datos verificados"
+    },
+    {
+      "name": "Carnes",
+      "status": "needs_review",
+      "verifiedProducts": [],
+      "missing": ["Cortes reales", "Envase fijo o peso variable", "Peso o paso de venta", "Precio por kg o envase", "Stock", "Código real", "Fotografía", "Política de pesaje, diferencia de importe y devolución"],
+      "draftFields": { "pricingMode": ["unit", "fixed_weight", "variable_weight"], "unitQuantityUnit": "kg", "pricePerKgCurrency": "ARS" },
+      "checkoutEnabledForVariableWeight": false,
+      "action": "Guardar borradores; no publicar peso variable ni convertirlo a unidades ficticias"
+    }
+  ],
+  "productionProductsInserted": 0,
+  "productionPricesOrStockChanged": false
+}

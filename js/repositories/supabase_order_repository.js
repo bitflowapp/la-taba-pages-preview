@@ -1356,12 +1356,73 @@ export function createSupabaseOrderRepository({
     }
   }
 
+  let customerHistory = [];
+  let customerHistoryStatus = 'idle';
+  let customerHistoryGeneration = 0;
+  let customerHistoryUserId = '';
+  client.auth.onAuthStateChange?.((_event, session) => {
+    if ((session?.user?.id || '') === customerHistoryUserId) return;
+    customerHistoryGeneration += 1;
+    customerHistoryUserId = session?.user?.id || '';
+    customerHistory = [];
+    customerHistoryStatus = 'idle';
+    if (typeof window !== 'undefined') {
+      queueMicrotask(() => window.dispatchEvent?.(new Event('taba:customer-history-cleared')));
+    }
+  });
+
+  async function loadCustomerHistory() {
+    const generation = ++customerHistoryGeneration;
+    customerHistoryStatus = 'loading';
+    try {
+      const { data: userData, error: userError } = await historyDeadline(client.auth.getUser());
+      if (generation !== customerHistoryGeneration) return repositoryResult(false, { stale: true });
+      if (userError && userError.name !== 'AuthSessionMissingError' && userError.status !== 401) throw userError;
+      const userId = userError ? '' : String(userData?.user?.id || '');
+      customerHistory = [];
+      if (!isUuid(userId)) {
+        customerHistoryStatus = 'empty';
+        return repositoryResult(true, { orders: [] });
+      }
+      customerHistoryUserId = userId;
+      const { data, error } = await historyDeadline(client.from('orders').select(ORDER_SELECT)
+        .eq('business_id', businessId).eq('customer_user_id', userId)
+        .order('created_at', { ascending: false }).limit(30));
+      if (generation !== customerHistoryGeneration) return repositoryResult(false, { stale: true });
+      if (error) throw error;
+      // Una sesión del negocio puede tener RLS más amplio. Acá sólo se muestran
+      // los pedidos que esa persona hizo como cliente, nunca la bandeja.
+      customerHistory = (Array.isArray(data) ? data : [])
+        .filter((row) => row.business_id === businessId && row.customer_user_id === userId)
+        .map(rowToDemoOrder).filter(Boolean);
+      customerHistoryStatus = customerHistory.length ? 'ready' : 'empty';
+      return repositoryResult(true, { orders: customerHistory });
+    } catch (_) {
+      if (generation === customerHistoryGeneration) {
+        customerHistory = [];
+        customerHistoryStatus = 'error';
+      }
+      return repositoryResult(false, { message: 'No pudimos cargar tus pedidos. Reintentá.' });
+    }
+  }
+
+  async function historyDeadline(operation) {
+    let timer;
+    try {
+      return await Promise.race([operation, new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error('History request timed out')), 10000);
+      })]);
+    } finally { clearTimeout(timer); }
+  }
+
   const repository = {
     mode: 'supabase',
     businessId,
     pollMs: pollingInterval,
     auth,
     customerProfiles,
+    loadCustomerHistory,
+    getCustomerHistorySnapshot() { return { status: customerHistoryStatus, orders: customerHistory.slice() }; },
     async loadCatalog() {
       return loadCatalog();
     },

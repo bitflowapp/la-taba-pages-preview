@@ -544,7 +544,7 @@ export async function medirExperienciaComercial(page) {
       });
     } catch (_) { /* la hoja no está disponible: queda en -1 y la prueba lo dice */ }
 
-    const icono = el('.mobile-nav svg');
+    const icono = el('.mobile-nav .mn-ico');
     return {
       fondo: getComputedStyle(document.body).backgroundColor,
       navPosicion: el('.mobile-nav') ? getComputedStyle(el('.mobile-nav')).position : 'SIN-NODO',

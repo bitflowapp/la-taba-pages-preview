@@ -1,25 +1,26 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v97-explicit-seller-status';
+const CACHE_NAME = 'la-taba-runtime-v98-commerce-v3';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=58',
-  './styles/tokens.css?v=58',
-  './styles/common.css?v=58',
-  './styles/storefront.css?v=58',
-  './styles/catalog.css?v=58',
-  './styles/checkout.css?v=58',
-  './styles/profile.css?v=58',
-  './styles/showcase.css?v=58',
-  './styles/tracking.css?v=58',
-  './styles/business.css?v=58',
-  './styles/rider.css?v=58',
-  './styles/responsive.css?v=58',
-  './styles/brand-home.css?v=58',
+  './styles.css?v=59',
+  './styles/tokens.css?v=59',
+  './styles/common.css?v=59',
+  './styles/storefront.css?v=59',
+  './styles/catalog.css?v=59',
+  './styles/checkout.css?v=59',
+  './styles/profile.css?v=59',
+  './styles/showcase.css?v=59',
+  './styles/tracking.css?v=59',
+  './styles/business.css?v=59',
+  './styles/rider.css?v=59',
+  './styles/responsive.css?v=59',
+  './styles/brand-home.css?v=59',
+  './styles/commerce.css?v=59',
   // `styles.css` la importa desde que existe y nunca estuvo acá: sin red, la
   // home se quedaba sin la capa de movimiento. Lo destapó el guard de la
   // cadena de CSS versionado; no lo introdujo esta integración.
-  './styles/motion.css?v=58',
+  './styles/motion.css?v=59',
   './manifest.webmanifest',
   './runtime-config.js?tenant=walter-staging',
   './pago/resultado/index.html',

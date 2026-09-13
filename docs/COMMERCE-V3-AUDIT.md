@@ -4,9 +4,9 @@
 
 - Repositorio: https://github.com/bitflowapp/la-taba-pages-preview.git.
 - `origin/main` verificado: `a4d54dea45c8822a2c50956fad86ac90c1610292`.
-- La copia principal local estaba en `main`, `31c900b`, con cinco archivos modificados. Se preservaron estado, hashes, remotos, diff binario e imágenes originales en `C:/1212/backups/taba-commerce-v3-20260912-214546`.
-- Trabajo aislado: `D:/1212/la-taba-commerce-v3`, rama `feat/taba-commerce-v3`. Copia inmutable del baseline: `C:/1212/la-taba-commerce-v3`, detached en `a4d54de`. Ningún cambio de otras ramas se incorpora ni descarta.
-- Evidencia de comandos, pruebas y capturas: `C:/1212/artifacts/taba-commerce-v3/`. No se publica ni se versiona información privada.
+- La copia principal local estaba en `main`, `31c900b`, con cinco archivos modificados. Se preservaron estado, hashes, remotos, diff binario e imágenes originales en el respaldo local `taba-commerce-v3-20260912-214546`.
+- Trabajo aislado: worktree aislado de implementación, rama `feat/taba-commerce-v3`. Copia inmutable del baseline: worktree aislado de baseline, detached en `a4d54de`. Ningún cambio de otras ramas se incorpora ni descarta.
+- Evidencia de comandos, pruebas y capturas: carpeta local de evidencia `taba-commerce-v3`. No se publica ni se versiona información privada.
 
 ## Mapa técnico
 
@@ -35,8 +35,8 @@ Hosting vigente: Cloudflare Pages. `la-taba.pages.dev` es producción; `taba2-st
 - Check sintaxis/config/assets/precache/higiene/identidad/secretos: PASS.
 - Validación estática de migraciones: PASS, con advertencias del analizador no equivalentes a ejecución SQL.
 - PREEXISTING FAILURE: `catalog:release:validate` exige TABA_CATALOG_FILE aprobado; no se suplanta con fixtures.
-- BASELINE_E2E: suite canónica 544 pruebas en ejecución. Primer fallo: timeout de creación de contexto Chromium antes de cargar TABA; conservar y revalidar por separado.
-- BASELINE_PAYMENT_SAFETY: ejecución local de DB/webhooks pendiente; el runner crea su propio cluster sin red.
+- BASELINE_E2E: 544 casos; ejecución local interrumpida por bloqueo nativo de browser tras 422. CI del baseline exacto pasó sus gates. Se investigaron timeouts de contexto y un salto de scroll del panel.
+- BASELINE_PAYMENT_SAFETY: PASS: matriz histórica aislada V5, 294 aserciones pgTAP, compatibilidad, concurrencia y restauración; webhooks locales y mocks sin provider I/O.
 - Frontend no tiene formatter/lint/typecheck independientes: `check` es el gate canónico. El puente fiscal sí usa TypeScript.
 
 ## Recorridos y fricción
@@ -51,7 +51,7 @@ Conteos aproximados: decisiones/taps, excluyen letras escritas y permisos del si
 | D recurrente con pedido | Repetir desde home/historial; carrito y revisión | Historial directo y refresco real del catálogo antes de reconstruir |
 | E varios productos | Agregar y steppers compartidos; botones anchos | Precio y + compactos; dos columnas cómodas |
 | F cantidades | Un tap por suma/resta; stock limita | Mantener un tap y sincronización de todas las vistas |
-| G checkout | Carrito y entrega/pago en la misma vista; modal de sugerencias puede interrumpir confirmación | Sugerencias inline, confirmación explícita única |
+| G checkout | Carrito y entrega/pago en la misma vista; modal de sugerencias antiguo ya inactivo | Sugerencias inline, confirmación explícita única |
 | H editar dirección | Hoja permite seleccionar; editar dirección confirmada no tiene acceso visible en esa hoja | Editar y principal en la misma hoja |
 | I repetir | Precio del catálogo en memoria; confirmación de reemplazo sólo detecta líneas normales | Actualizar catálogo, incluir combos en detección y limpiar sólo con autorización |
 
@@ -63,6 +63,16 @@ Conteos aproximados: decisiones/taps, excluyen letras escritas y permisos del si
 4. Hoja de direcciones tiene handler de editar pero no acción visible para direcciones confirmadas.
 5. Formulario de alta escaneada mezcla datos y pide categorías como texto libre; preview/error redibuja campos sin preservar todos sus valores.
 6. Venta por peso no soportada en contratos operativos existentes. Mantener carnes por peso como borrador explícito hasta tener política comercial y flujo compatibles.
-7. Historial está enterrado en home y navegación “Seguir” no comunica pedidos anteriores.
+7. El historial local/demo existe, pero falta un host accesible y consulta del historial real autenticado. “Seguir” no comunica pedidos anteriores.
 
 La implementación y resultados finales se documentan junto a esta evidencia; un pendiente nunca cuenta como PASS.
+
+## Resultado de implementación y validación local
+
+Identidad oscura, superficies cálidas, rojo denso en acciones, cards compactas y navegación de cuatro destinos. Búsqueda/categorías preceden las historias. Cantidades inmediatas; no se descartan taps rápidos. Direcciones editables y predeterminadas en la hoja del checkout. Historial real acotado por negocio y cliente, invalidado al cambiar sesión; repetir refresca catálogo y requiere revisión, sin crear pedidos ni pagos.
+
+Panel con secciones, validación, borradores manuales y duplicación sin copiar datos comerciales sensibles. Migración aditiva `20260913011340` sólo para metadatos de borradores; peso variable y carnes no se publican sin contrato comercial completo. Importación existente reutilizada; el script de staging comprueba hashes y autoridad mediante sesión real, rollback por defecto, sin cambios financieros.
+
+Validación: check canónico PASS; 2528 unitarias cubiertas (una identidad stale durante firma, revalidada en 81/81 PASS); seguridad MP 172/172; nuevos drafts DB 16/16. E2E completo 554: 552 PASS y dos fallos investigados, corregidos y repetidos tres veces cada uno (6/6 PASS). Un fallo era expectativa antigua de CTA y el otro foco que desplazaba el panel; se corrigió con preventScroll. Sin retries para ocultar fallos. Los tests publicados se registran después del deploy.
+
+Métricas reproducidas en navegador mobile contra baseline y candidato, mismo producto y dos unidades, sin enviar pedido: nuevo 12 → 12 taps; recurrente con búsqueda 5 → 5; repetir desde acceso de home demo 2 → 2. Incluyen foco de campos y confirmación final; excluyen escritura, permisos del sistema y scroll. La mejora comprobada es visibilidad, acceso al historial real, frescura de precios y edición contextual, no una reducción inventada del recorrido mínimo ya existente. Producto visible y dirección guardada conserva el mínimo de 3 taps.

@@ -2073,7 +2073,7 @@ body[data-active-view="home"] .home-sections {
     height: 45px;
   }
 
-  .brand-hero .brand-logo-slot {
+  .brand-stories-strip .brand-logo-slot {
     --logo-size: 52px;
     --logo-face: 44px;
   }
@@ -2641,7 +2641,7 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
 
   /* En escritorio el emblema puede crecer, pero NO puede desalinearse del
      resto de la fila: los círculos de historia crecen con él. */
-  .brand-hero .brand-logo-slot {
+  .brand-stories-strip .brand-logo-slot {
     --logo-size: 72px;
     --logo-face: 61px;
   }
@@ -2714,7 +2714,7 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
   /* A 320px la fila de historias entra igual: el disco baja a 50px y el rótulo
      a 10px. Es el ancho donde cada píxel del encabezado se lo saca al primer
      precio, así que acá la fila se aprieta antes de empezar a desplazarse. */
-  .brand-hero .brand-logo-slot {
+  .brand-stories-strip .brand-logo-slot {
     --logo-size: 50px;
     --logo-face: 42px;
   }

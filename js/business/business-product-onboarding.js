@@ -19,6 +19,17 @@ export const PACKAGE_TYPES = Object.freeze([
 
 export const CAPACITY_UNITS = Object.freeze(['ml', 'l', 'g', 'kg', 'unidad']);
 
+// Una copia es una propuesta de identidad, nunca disponibilidad para vender.
+export function duplicateProductFields(product = {}) {
+  return {
+    name: String(product.name || ''), brand: String(product.brand || ''),
+    category: String(product.category || ''), variant: String(product.variant || product.presentation || ''),
+    capacityValue: product.capacity_value ?? '', capacityUnit: product.capacity_unit || 'unidad',
+    packageType: 'unit', unitsPerPack: 1, price: '', stock: '', cost: '',
+    pricePending: true, pricingMode: 'unit', unitQuantity: '', pricePerKg: '',
+  };
+}
+
 // Un código que no conocemos abre un borrador. Nunca un producto publicado.
 export function planScanOutcome({ scan, lookup } = {}) {
   if (!scan || !scan.isValid) {
@@ -61,6 +72,7 @@ export function describeDraft(draft = {}, { operatorName = '' } = {}) {
     createdAt: String(draft.created_at || ''),
     createdBy: String(operatorName || ''),
     status: 'Falta completar',
+    values: draft.commercial_details || {},
     // Lo detectado se ofrece como sugerencia editable; nunca se da por cierto.
     suggestions: Object.freeze({
       name: String(draft.suggested_name || ''),
@@ -74,6 +86,12 @@ export function describeDraft(draft = {}, { operatorName = '' } = {}) {
 
 export function validateProductDraft(fields = {}, { existingGtinOwner = null } = {}) {
   const errors = [];
+  if (fields.pricingMode === 'variable_weight') {
+    errors.push({ field: 'pricingMode', message: 'Guardá este producto como borrador. La venta por peso variable necesita un circuito de pesaje y cobro antes de publicarse.' });
+  }
+  if (String(fields.category || '').toLowerCase() === 'carnes') {
+    errors.push({ field: 'category', message: 'Carnes está preparado para relevamiento. Guardá el borrador hasta verificar la modalidad y el catálogo del negocio.' });
+  }
   const name = trim(fields.name, 160);
   const brand = trim(fields.brand, 80);
   const category = trim(fields.category, 80);
@@ -86,6 +104,16 @@ export function validateProductDraft(fields = {}, { existingGtinOwner = null } =
   const pricePending = fields.pricePending === true;
   const price = Number(fields.price);
   const cost = fields.cost === '' || fields.cost === null || fields.cost === undefined ? null : Number(fields.cost);
+
+  if (fields.pricingMode === 'fixed_weight') {
+    const weightKg = capacityUnit === 'kg' ? capacityValue : capacityUnit === 'g' ? capacityValue / 1000 : 0;
+    if (!(weightKg > 0) || Number(fields.unitQuantity) !== weightKg) {
+      errors.push({ field: 'unitQuantity', message: 'Indicá el peso exacto del envase en kg y el mismo contenido en g o kg.' });
+    }
+    if (fields.pricePerKg !== '' && fields.pricePerKg != null && !pricePending && Math.round(Number(fields.pricePerKg) * weightKg * 100) !== Math.round(price * 100)) {
+      errors.push({ field: 'pricePerKg', message: 'El precio por kg y el peso del envase deben coincidir con su precio de venta.' });
+    }
+  }
 
   if (name.length < 2) errors.push({ field: 'name', message: 'Escribí el nombre tal como figura en el envase.' });
   if (brand.length < 2) errors.push({ field: 'brand', message: 'Escribí la marca. No la adivinamos por vos.' });
@@ -103,7 +131,7 @@ export function validateProductDraft(fields = {}, { existingGtinOwner = null } =
   } else if (packageType !== 'unit' && unitsPerPack === 1) {
     errors.push({ field: 'unitsPerPack', message: 'Un pack o caja tiene más de 1 unidad. Revisá el número.' });
   }
-  if (!Number.isSafeInteger(stock) || stock < 0) {
+  if (fields.stock === '' || fields.stock === null || fields.stock === undefined || !Number.isSafeInteger(stock) || stock < 0) {
     errors.push({ field: 'stock', message: 'Cargá cuántas unidades tenés hoy. Puede ser 0.' });
   }
   if (pricePending) {

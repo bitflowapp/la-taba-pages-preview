@@ -48,6 +48,7 @@ import {
   getDeliveryProfile,
   getSelectedDeliveryAddressId,
   selectDeliveryAddressById,
+  setDefaultDeliveryAddress,
 } from './customer-delivery.js';
 import { createCustomerGeolocationService } from './services/customer-geolocation.js';
 
@@ -58,6 +59,7 @@ const state = {
   status: '',
   statusTone: '',
   locating: false,
+  savingDefault: false,
   scrollLocked: false,
 };
 
@@ -193,6 +195,24 @@ function closeSheet() {
 }
 
 async function handleSheetAction(action, addressId) {
+  if (state.savingDefault) return;
+  if (action === 'default') {
+    state.savingDefault = true;
+    state.status = 'Guardando dirección principal…';
+    render();
+    try {
+      const result = await setDefaultDeliveryAddress(addressId);
+      state.status = result.ok ? 'Dirección principal guardada.' : 'No pudimos guardar la dirección principal. Reintentá.';
+      state.statusTone = result.ok ? 'success' : 'warning';
+    } catch (_) {
+      state.status = 'No pudimos guardar la dirección principal. Reintentá.';
+      state.statusTone = 'warning';
+    } finally {
+      state.savingDefault = false;
+      render();
+    }
+    return;
+  }
   if (action === 'close') {
     closeSheet();
     return;
@@ -312,7 +332,7 @@ function renderOption(rawAddress, selected) {
   const action = confirmed
     ? `data-address-sheet-action="select" data-address-id="${escapeAttr(address.id)}"`
     : `data-address-sheet-action="edit" data-address-id="${escapeAttr(address.id)}"`;
-  return `<button class="address-sheet-option ${selected ? 'is-selected' : ''} ${confirmed ? '' : 'needs-location'}" type="button" role="listitem" ${action} data-address-location="${confirmed ? 'confirmed' : 'missing'}" ${selected ? 'aria-current="true"' : ''}>
+  return `<div class="address-sheet-row" role="listitem"><button class="address-sheet-option ${selected ? 'is-selected' : ''} ${confirmed ? '' : 'needs-location'}" type="button" ${action} data-address-location="${confirmed ? 'confirmed' : 'missing'}" ${selected ? 'aria-current="true"' : ''} ${state.savingDefault ? 'disabled' : ''}>
     <span class="address-sheet-option-copy">
       <span class="address-sheet-option-head"><strong>${escapeHtml(address.label)}</strong>${address.isDefault ? '<span class="address-sheet-badge">Principal</span>' : ''}</span>
       <span class="address-sheet-option-line">${escapeHtml(addressSummary(address))}</span>
@@ -321,7 +341,10 @@ function renderOption(rawAddress, selected) {
     : '<span class="address-sheet-option-missing">Falta confirmar dónde te entregamos</span>'}
     </span>
     <span class="address-sheet-option-mark" aria-hidden="true">${confirmed ? (selected ? '✓' : '›') : '›'}</span>
-  </button>`;
+  </button><div class="address-sheet-row-actions">
+    <button type="button" data-address-sheet-action="edit" data-address-id="${escapeAttr(address.id)}" aria-label="Editar ${escapeAttr(address.label)}" ${state.savingDefault ? 'disabled' : ''}>Editar</button>
+    ${address.isDefault ? '' : `<button type="button" data-address-sheet-action="default" data-address-id="${escapeAttr(address.id)}" aria-label="Usar ${escapeAttr(address.label)} como principal" ${state.savingDefault ? 'disabled' : ''}>Usar como principal</button>`}
+  </div></div>`;
 }
 
 function sheetElement() {

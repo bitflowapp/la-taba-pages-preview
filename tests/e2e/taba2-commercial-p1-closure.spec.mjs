@@ -91,7 +91,7 @@ test('P1-2: en demo la historia de whisky (sin comprables) se apaga y ninguna pr
   // y la botella suelta todavía espera precio. El contrato es el mismo —una
   // historia no promete lo que no se puede comprar— y sigue al catálogo.
   const historiasEsperadas = 2;
-  await page.locator('.brand-hero .brand-logo-action').click();
+  await page.locator('.brand-stories-strip .brand-logo-action').click();
   const modal = page.locator('[data-stories-modal]');
   await expect(modal).toBeVisible();
   await expect(modal.locator('.stories-progress span')).toHaveCount(historiasEsperadas);
@@ -126,14 +126,14 @@ test('P1-2: el contrato aplica a cualquier origen — historia con destino no co
   });
 
   // Sólo sobrevive la editorial sin CTA: promete mirar, no comprar.
-  const entrada = page.locator('.brand-hero [data-stories-slot]');
+  const entrada = page.locator('.brand-stories-strip [data-stories-slot]');
   await expect(entrada).toHaveAttribute('data-stories-state', 'unseen');
   // Un solo círculo en la fila: la que apunta a un whisky sin precio no se
   // publica, y la fila no puede mostrar más historias que las que existen.
-  await expect(page.locator('.brand-hero .brand-story-circle')).toHaveCount(1);
-  await expect(page.locator('.brand-hero .brand-story-circle[data-story-seen="false"]')).toHaveCount(1);
+  await expect(page.locator('.brand-stories-strip .brand-story-circle')).toHaveCount(1);
+  await expect(page.locator('.brand-stories-strip .brand-story-circle[data-story-seen="false"]')).toHaveCount(1);
 
-  await page.locator('.brand-hero .brand-logo-action').click();
+  await page.locator('.brand-stories-strip .brand-logo-action').click();
   const modal = page.locator('[data-stories-modal]');
   await expect(modal).toBeVisible();
   await expect(modal.locator('.stories-progress span')).toHaveCount(1);
@@ -169,7 +169,7 @@ test('P1-3: bajo el mínimo, Confirmar muestra el error real y nunca un upsell',
 
   // El pedido NO se envió y el carrito conserva sus datos.
   expect(await ordersInState(page)).toBe(1); // sólo la semilla LT-0001
-  await expect(page.locator('.mobile-nav [data-cart-count]')).toHaveText('1');
+  await expect(page.locator('[data-floating-cart-count]')).toHaveText('1 producto');
   await guards.assertClean();
 });
 

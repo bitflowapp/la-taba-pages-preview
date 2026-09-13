@@ -2,6 +2,7 @@
 // El controlador (business-operations-center.js) mantiene el estado y despacha las acciones.
 
 import { escapeHtml } from '../ui.js';
+import { getEditableCategories } from '../core/catalog-store.js';
 import { can, describeRoleScope, isElevated, roleLabel } from './business-capabilities.js';
 import {
   describeMetrics, describeOperationalAlert, describeOperationalHealth,
@@ -369,7 +370,7 @@ function renderClosureActions(closure, { run, elevated, busy }) {
       data-daily-reconciliation-revision="${escapeHtml(String(run.revision || 0))}" ${busy ? 'disabled' : ''}>Cerrar el día</button>`;
 }
 
-export function renderProductOnboardingSurface({ plan, draft, readiness, preview, errors, role, busy } = {}) {
+export function renderProductOnboardingSurface({ plan, draft, readiness, preview, errors, role, busy, drafts = [], draftListLoading = false } = {}) {
   const currentStep = plan?.step || 'scan';
   const steps = stepsForDraft(draft ? (readiness ? 'publish' : 'complete') : currentStep).map((step) => `
     <li class="business-wizard-step is-${escapeHtml(step.state)}">
@@ -382,10 +383,15 @@ export function renderProductOnboardingSurface({ plan, draft, readiness, preview
 
   return panel('Alta de producto', 'Escaneás, completás y recién ahí se publica. No inventamos ningún dato.', `
     <ol class="business-wizard">${steps}</ol>
-    <div class="business-scanner-input">
+    <details class="product-draft-queue"><summary>Borradores guardados (${drafts.length})</summary>
+      <button class="secondary-button compact" type="button" data-product-drafts-refresh ${draftListLoading ? 'disabled' : ''}>${draftListLoading ? 'Buscando…' : 'Actualizar'}</button>
+      ${drafts.map((entry) => `<button class="secondary-button" type="button" data-product-draft-open="${escapeHtml(entry.id)}">${escapeHtml(entry.suggested_name || 'Sin nombre')} · ${escapeHtml(entry.suggested_category || 'Sin categoría')}</button>`).join('')}
+    </details>
+    ${!draft ? `<div class="business-scanner-input">
       <label>Código<input data-barcode-input inputmode="numeric" autocomplete="off" maxlength="64" placeholder="Escaneá el producto"></label>
       <button class="primary-button" type="button" data-business-scan-test ${busy ? 'disabled' : ''}>Procesar</button>
-    </div>
+    </div>` : ''}
+    ${!draft ? `<button class="secondary-button" type="button" data-create-manual-draft ${busy ? 'disabled' : ''}>Nuevo borrador sin código</button>` : ''}
     ${plan ? `
       <div class="operation-summary tone-${plan.outcome === 'unknown' ? 'attention' : plan.outcome === 'existing' ? 'calm' : 'critical'}">
         <strong>${escapeHtml(plan.headline)}</strong>
@@ -399,33 +405,46 @@ export function renderProductOnboardingSurface({ plan, draft, readiness, preview
 
 function renderDraftForm(draft, { role, busy, errorList }) {
   const canPrice = can(role, 'products.price');
+  const values = draft.values || {};
+  const value = (key, fallback = '') => escapeHtml(String(values[key] ?? fallback));
+  const categories = [...getEditableCategories(), { id: 'carnes', name: 'Carnes' }];
+  const selectedCategory = String(values.category ?? draft.suggestions.category);
+  const fieldError = (field) => {
+    const error = (draft.errors || []).find((item) => item.field === field);
+    return error ? `<small class="product-field-error" role="status">${escapeHtml(error.message)}</small>` : '';
+  };
   return `<section class="business-ops-form product-draft-form" data-product-draft="${escapeHtml(draft.id)}">
-    <header>
-      <strong>Borrador ${escapeHtml(draft.gtin)}</strong>
-      <span class="status-pill warning">${escapeHtml(draft.status)}</span>
-      <small>${escapeHtml(draft.format)} · abierto ${escapeHtml(formatTimestamp(draft.createdAt))}${draft.createdBy ? ` por ${escapeHtml(draft.createdBy)}` : ''}</small>
-    </header>
-    ${draft.hasSuggestions ? '<p class="form-hint">Lo detectado es una sugerencia: confirmalo contra el envase antes de guardar.</p>' : ''}
+    <header><strong>Nuevo producto</strong><span class="status-pill warning">${escapeHtml(draft.status)}</span><small>${draft.gtin ? `Código ${escapeHtml(draft.gtin)}` : 'Código pendiente · no se puede publicar todavía'}${draft.createdBy ? ` · por ${escapeHtml(draft.createdBy)}` : ''}</small></header>
+    ${!draft.gtin ? '<div class="product-code-binding"><label>Código real del producto<input name="productGtin" inputmode="numeric" maxlength="14" autocomplete="off" placeholder="Escaneá o escribí el código de barras"></label><button class="secondary-button" type="button" data-product-bind-code>Guardar código</button></div>' : ''}
+    ${draft.hasSuggestions ? '<p class="form-hint">Revisá los datos sugeridos contra el producto.</p>' : ''}
     ${errorList}
-    <label>Nombre<input name="productName" maxlength="160" value="${escapeHtml(draft.suggestions.name)}" placeholder="Como figura en el envase"></label>
-    <label>Marca<input name="productBrand" maxlength="80" value="${escapeHtml(draft.suggestions.brand)}"></label>
-    <label>Categoría<input name="productCategory" maxlength="80" value="${escapeHtml(draft.suggestions.category)}"></label>
-    <label>Presentación<input name="productVariant" maxlength="80" value="${escapeHtml(draft.suggestions.presentation)}" placeholder="Ej: Botella 1,5 L"></label>
-    <label>Contenido<input name="productCapacityValue" type="number" min="0" step="0.001" inputmode="decimal" placeholder="1.5"></label>
-    <label>Unidad<select name="productCapacityUnit">${CAPACITY_UNITS.map((unit) => `<option value="${escapeHtml(unit)}">${escapeHtml(unit)}</option>`).join('')}</select></label>
-    <label>Se vende como<select name="productPackageType">${PACKAGE_TYPES.map((type) => `<option value="${escapeHtml(type.value)}">${escapeHtml(type.label)}</option>`).join('')}</select></label>
-    <label>Unidades por pack<input name="productUnitsPerPack" type="number" min="1" step="1" value="1"></label>
-    <label>Stock de hoy<input name="productStock" type="number" min="0" step="1" value="0"></label>
-    ${canPrice ? `
-      <label>Precio de venta<input name="productPrice" type="number" min="0" step="0.01" inputmode="decimal"></label>
-      <label>Costo <small>(opcional)</small><input name="productCost" type="number" min="0" step="0.01" inputmode="decimal"></label>
-      <label class="business-ops-check"><input name="productPricePending" type="checkbox"> Precio pendiente: se ve en la web pero no se puede comprar</label>`
-    : '<p class="form-hint">El precio lo carga el dueño o el encargado.</p>'}
-    <div class="button-row">
-      <button class="secondary-button" type="button" data-product-preview ${busy ? 'disabled' : ''}>Ver cómo queda</button>
-      ${can(role, 'products.publish')
-        ? `<button class="primary-button" type="button" data-product-complete ${busy ? 'disabled' : ''}>Guardar y publicar</button>`
-        : '<p class="form-hint">Publicar lo confirma el dueño o el encargado.</p>'}
+    <fieldset class="product-form-section"><legend>1. Producto</legend>
+      <label>Nombre<input name="productName" maxlength="160" value="${value('name', draft.suggestions.name)}" placeholder="Como figura en el envase" autocomplete="off">${fieldError('name')}</label>
+      <label>Marca<input name="productBrand" maxlength="80" value="${value('brand', draft.suggestions.brand)}">${fieldError('brand')}</label>
+      <label>Categoría<select name="productCategory"><option value="">Elegí una categoría</option>${categories.map((category) => `<option value="${escapeHtml(category.name)}" ${[category.id, category.name].includes(selectedCategory) ? 'selected' : ''}>${escapeHtml(category.name)}</option>`).join('')}</select>${fieldError('category')}</label>
+      <label>Presentación<input name="productVariant" maxlength="80" value="${value('variant', draft.suggestions.presentation)}" placeholder="Ej.: Botella 1,5 L">${fieldError('variant')}</label>
+    </fieldset>
+    <fieldset class="product-form-section"><legend>2. Contenido y unidad de venta</legend>
+      <label>Modalidad de venta<select name="productPricingMode">${[['unit', 'Por unidad'], ['fixed_weight', 'Envase de peso fijo'], ['variable_weight', 'Por kg · borrador']].map(([id, label]) => `<option value="${id}" ${id === (values.pricingMode || 'unit') ? 'selected' : ''}>${label}</option>`).join('')}</select>${fieldError('pricingMode')}</label>
+      <label>Contenido<input name="productCapacityValue" type="number" min="0" step="0.001" inputmode="decimal" value="${value('capacityValue')}" placeholder="Ej.: 1,5">${fieldError('capacityValue')}</label>
+      <label>Unidad de contenido<select name="productCapacityUnit">${CAPACITY_UNITS.map((unit) => `<option value="${escapeHtml(unit)}" ${unit === (values.capacityUnit || 'ml') ? 'selected' : ''}>${escapeHtml(unit)}</option>`).join('')}</select></label>
+      <label>Se vende como<select name="productPackageType">${PACKAGE_TYPES.map((type) => `<option value="${escapeHtml(type.value)}" ${type.value === (values.packageType || 'unit') ? 'selected' : ''}>${escapeHtml(type.label)}</option>`).join('')}</select></label>
+      <label>Unidades por pack<input name="productUnitsPerPack" type="number" min="1" step="1" inputmode="numeric" value="${value('unitsPerPack', 1)}">${fieldError('unitsPerPack')}</label>
+      <p class="form-hint">El contenido en kg describe un envase de peso fijo. Los cortes de peso variable requieren una modalidad de pesaje antes de ponerse a la venta.</p>
+      <details class="product-weight-fields"><summary>Datos de peso para revisión</summary>
+        <label>Peso por envase o paso de venta (kg)<input name="productUnitQuantity" type="number" min="0.001" step="0.001" inputmode="decimal" value="${value('unitQuantity')}" placeholder="Sin definir"></label>
+        <label>Precio por kg (ARS)<input name="productPricePerKg" type="number" min="0.01" step="0.01" inputmode="decimal" value="${value('pricePerKg')}" placeholder="Sin confirmar"></label>
+        <p class="form-hint">Estos datos se guardan para revisión. No calculan ni autorizan un cobro.</p>
+      </details>
+    </fieldset>
+    <fieldset class="product-form-section"><legend>3. Precio y existencias</legend>
+      <label>Stock contado<input name="productStock" type="number" min="0" step="1" inputmode="numeric" value="${value('stock')}" placeholder="0 si está agotado">${fieldError('stock')}</label>
+      ${canPrice ? `<label>Precio por unidad de venta<input name="productPrice" type="number" min="0" step="0.01" inputmode="decimal" value="${value('price')}">${fieldError('price')}</label>
+      <label>Costo <small>(opcional)</small><input name="productCost" type="number" min="0" step="0.01" inputmode="decimal" value="${value('cost')}">${fieldError('cost')}</label>
+      <label class="business-ops-check"><input name="productPricePending" type="checkbox" ${values.pricePending ? 'checked' : ''}> Precio pendiente: todavía no se puede comprar</label>` : '<p class="form-hint">El precio lo carga el dueño o el encargado.</p>'}
+    </fieldset>
+    <div class="button-row"><button class="secondary-button" type="button" data-product-save-draft ${busy ? 'disabled' : ''}>Guardar borrador</button><button class="secondary-button" type="button" data-product-preview ${busy ? 'disabled' : ''}>Ver cómo queda</button>
+      ${can(role, 'products.publish') ? `<button class="primary-button" type="button" data-product-complete ${busy ? 'disabled' : ''}>Guardar y revisar publicación</button>` : '<p class="form-hint">Publicar lo confirma el dueño o el encargado.</p>'}
     </div>
   </section>`;
 }

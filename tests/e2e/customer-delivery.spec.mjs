@@ -343,7 +343,7 @@ test('checkout permite editar Perfil y volver al pedido conservando selecciÃ³n
 
   await expect(page.locator('[data-profile-name]')).toHaveText('Cliente checkout editado');
   await expect(page.locator('[data-profile-phone]')).toHaveText('299 555 1111');
-  await page.locator('[data-open-cart] >> visible=true').first().click();
+  await profile.locator('[data-profile-action="return-to-checkout"]').click();
 
   await expect(page.locator('body')).toHaveAttribute('data-active-view', 'cart');
   await expect(page.locator('[data-checkout-form]')).toHaveAttribute('data-address-source', /profile_default|saved_address_selected/);
@@ -784,7 +784,7 @@ test('borrar la dirección seleccionada no rompe el checkout', async ({ page }) 
   page.on('dialog', (dialog) => dialog.accept());
   await profileSelectedCard.locator('[data-profile-action="delete-address"]').click();
   await expect(profileSelectedCard).toHaveCount(0);
-  await profile.locator('[data-profile-action="return-to-checkout"]').click();
+  await page.locator('[data-nav-view="cart"] >> visible=true').first().click();
   await expect(page.locator('body')).toHaveAttribute('data-active-view', 'cart');
   await expect(selectedCard).toHaveCount(0);
 

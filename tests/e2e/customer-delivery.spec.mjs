@@ -775,7 +775,9 @@ test('borrar la dirección seleccionada no rompe el checkout', async ({ page }) 
   const selectedCard = checkout.locator(`.profile-address-list .profile-address-card[data-customer-address-id="${secondAddressId}"]`);
   await expect(selectedCard).toHaveClass(/is-selected/);
 
-  await page.locator('.mobile-nav [data-nav-view="profile"]').click();
+  // Fixture data was seeded directly in storage after Profile's initial load.
+  await page.evaluate(async () => (await import('/js/customer-profile-view.js')).loadCustomerProfileView());
+  await page.locator('[data-nav-view="profile"] >> visible=true').first().click();
   const profile = page.locator('[data-customer-profile]');
   const profileSelectedCard = profile.locator(`[data-profile-address-id="${secondAddressId}"]`);
   await expect(profileSelectedCard).toBeVisible();

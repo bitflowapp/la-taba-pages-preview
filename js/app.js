@@ -58,6 +58,7 @@ import { relayStatusLabel } from './core/realtime-sync.js';
 import {
   alEntrarBackOffice,
   backOfficePresente,
+  cargarBackOffice,
   handleBusinessAction,
   handleBusinessInput,
   handleDeliveryAction,
@@ -2104,7 +2105,7 @@ function bindEvents() {
     }
   });
 
-  $('[data-pin-form]')?.addEventListener('submit', (event) => {
+  $('[data-pin-form]')?.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!isDemoMode()) {
       closePinModal();
@@ -2113,6 +2114,11 @@ function bindEvents() {
     const form = event.currentTarget;
     const formData = new FormData(form);
     const pin = String(formData.get('pin') || '').trim();
+    try { await cargarBackOffice(); }
+    catch (_) {
+      showToast('No pudimos cargar el panel. Revisá tu conexión y volvé a intentar.');
+      return;
+    }
     const ok = unlockAdmin(pin);
     const error = $('[data-pin-error]');
 

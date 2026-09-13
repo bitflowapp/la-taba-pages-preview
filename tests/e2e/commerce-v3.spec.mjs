@@ -126,3 +126,21 @@ test('Commerce V3: alta real conserva campos, guarda un borrador incompleto y bl
   expect(await page.evaluate(() => window.__savedDraft.pricingMode)).toBe('variable_weight');
   await page.screenshot({ path: info.outputPath('admin-product-390.png'), fullPage: true });
 });
+
+test('Commerce V3: el PIN demo espera al panel sin rechazar el primer envío', async ({ page }) => {
+  let release;
+  const delayed = new Promise(resolve => { release = resolve; });
+  await page.route('**/js/business.js', async route => { await delayed; await route.continue(); });
+  await installBrowserStubs(page);
+  try {
+    await page.goto('/?demo=1#business', { waitUntil: 'domcontentloaded' });
+    await page.locator('html[data-taba-startup="ready"]').waitFor({ state: 'attached' });
+    await page.getByRole('button', { name: /Ingresar c[óo]digo/i }).click();
+    await page.locator('[data-pin-form] input[name="pin"]').fill('1234');
+    await page.locator('[data-pin-form]').press('Enter');
+    await expect(page.locator('[data-pin-error]')).toBeHidden();
+    release();
+    await expect(page.locator('[data-pin-modal]')).not.toBeVisible();
+    await expect(page.locator('[data-view="business"] [data-admin-unlocked]')).toBeVisible();
+  } finally { release(); }
+});

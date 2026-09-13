@@ -3,7 +3,7 @@ import original from './playwright.config.mjs';
 
 const base = new URL(process.env.TABA_PUBLIC_TEST_URL || 'https://taba2-staging.pages.dev');
 assert.equal(base.origin, 'https://taba2-staging.pages.dev');
-const selected = /(?:commerce-v3|address-flow|customer-delivery|business-setup)\.spec\.mjs$/;
+const selected = /(?:commerce-v3|iphone-commerce-fixes|address-flow|customer-delivery|business-setup)\.spec\.mjs$/;
 
 // These specs explicitly select demo fixtures on the published application.
 // Live catalogue/address checks remain in smoke-commerce-v3-public.mjs.

@@ -145,7 +145,8 @@ test.describe('Dirección · la hoja del encabezado', () => {
     // llega PENDIENTE y confirmarlo sigue siendo un acto explícito.
     const paso = editor.locator('[data-location-step]');
     await expect(paso).toHaveAttribute('data-location-status', 'pending');
-    await expect(paso.locator('[data-location-coords]').first()).toContainText('-38.980000, -68.090000');
+    await expect(paso.locator('[data-location-coords]')).toHaveCount(0);
+    await expect(paso.locator('[data-profile-action="confirm-location"]')).toBeVisible();
   });
 
   test('sin ninguna dirección la hoja abre directo en el editor, y guardar deja la dirección elegida', async ({ page }) => {

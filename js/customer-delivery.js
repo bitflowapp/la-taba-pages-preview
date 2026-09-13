@@ -97,7 +97,7 @@ const capture = createAddressCaptureController({
   requestRender: () => render(),
   getAddresses: () => state.addresses,
   getProfile: () => state.profile,
-  onProfileSaved: (profile) => { state.profile = profile; },
+  onProfileSaved: (profile) => applyLocallySavedProfile(profile),
   onSaved: (address, { reused = false } = {}) => {
     upsertLocalAddress(address);
     // La dirección recién guardada queda ELEGIDA. Guardarla y después tener que
@@ -129,7 +129,7 @@ export async function initializeCustomerDeliveryCheckout() {
     notifyDeliveryAddressChanged();
     return;
   }
-  await loadCustomerDeliveryProfile();
+  return loadCustomerDeliveryProfile();
 }
 
 /*
@@ -147,6 +147,10 @@ export function deliveryAddressesKnown() {
 
 export async function refreshCustomerDeliveryCheckout() {
   if (!supportsProfileCheckout()) return { ok: true, skipped: true };
+  // A profile refresh may arrive before the checkout bootstrap has attached
+  // its input listeners (especially on slower WebKit startup). Bind first so
+  // a customer typing immediately after hydration cannot lose the draft.
+  if (!state.initialized) return initializeCustomerDeliveryCheckout();
   return loadCustomerDeliveryProfile();
 }
 
@@ -296,8 +300,18 @@ export function selectDeliveryAddressById(addressId) {
  */
 export function applyProfileFromSheet(profile) {
   if (!profile) return;
-  state.profile = profile;
+  applyLocallySavedProfile(profile);
   render();
+}
+
+function applyLocallySavedProfile(profile) {
+  if (!profile) return;
+  // An earlier profile read must not overwrite a write the customer just saw
+  // succeed. Keep the order payload's hidden inputs on the same snapshot.
+  state.profileHydrationVersion += 1;
+  state.loading = false;
+  state.profile = profile;
+  applyProfileToEmptyFields(profile);
 }
 
 export function applySavedAddressFromSheet(address) {
@@ -381,6 +395,12 @@ function bindCheckoutEvents() {
   const form = checkoutForm();
   form?.addEventListener('input', (event) => {
     if (!(event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement)) return;
+    if (['checkoutIdentityName', 'checkoutIdentityPhone'].includes(event.target.name)) {
+      state.identityDraft = {
+        name: String(form.querySelector('[name="checkoutIdentityName"]')?.value ?? state.profile?.name ?? state.identityDraft?.name ?? ''),
+        phone: String(form.querySelector('[name="checkoutIdentityPhone"]')?.value ?? state.profile?.phone ?? state.identityDraft?.phone ?? ''),
+      };
+    }
     if (['customerStreetAddress', 'customerNeighborhood', 'customerReference'].includes(event.target.name)) {
       markAddressFormEditedByUser();
     }
@@ -701,6 +721,16 @@ function clearVisibleAddressFields() {
 // guardadas y, si falta algo, bloquea con un camino claro hacia Perfil. Nunca
 // crea, edita ni elimina datos del cliente.
 function render(message = '') {
+  // A profile/address response can arrive while Safari is editing an input.
+  // Preserve the live DOM before replacing the identity subtree.
+  const liveIdentity = checkoutForm()?.querySelector('[data-profile-identity-form]');
+  if (liveIdentity && !state.savingIdentity) {
+    state.identityDraft = {
+      name: String(liveIdentity.querySelector('[name="checkoutIdentityName"]')?.value ?? state.profile?.name ?? state.identityDraft?.name ?? ''),
+      phone: String(liveIdentity.querySelector('[name="checkoutIdentityPhone"]')?.value ?? state.profile?.phone ?? state.identityDraft?.phone ?? ''),
+    };
+  }
+  applyProfileToEmptyFields(state.profile);
   syncAddressContractToForm();
   // Antes del contenedor: el destino cambió aunque esta vista no esté montada,
   // y el encabezado sí lo está.
@@ -981,7 +1011,9 @@ function renderProfileSummary() {
     </div>`;
   }
   const profile = state.profile || {};
-  const missing = !String(profile.name || '').trim() || !String(profile.phone || '').trim();
+  const missingName = !validateCustomerName(profile.name).ok;
+  const missingPhone = !isValidArgentinePhone(normalizeArgentinePhone(profile.phone));
+  const missing = missingName || missingPhone;
   if (missing) {
     /*
      * ACÁ, NO EN PERFIL.
@@ -1007,24 +1039,24 @@ function renderProfileSummary() {
       : '';
     // El borrador gana sobre el perfil: es lo último que escribió la persona.
     const borrador = {
-      name: String(state.identityDraft?.name ?? profile.name ?? ''),
-      phone: String(state.identityDraft?.phone ?? profile.phone ?? ''),
+      name: String(missingName ? (state.identityDraft?.name ?? profile.name ?? '') : profile.name),
+      phone: String(missingPhone ? (state.identityDraft?.phone ?? profile.phone ?? '') : profile.phone),
     };
     return `<div class="profile-checkout-block profile-checkout-identity-form" data-profile-block="incomplete" data-profile-identity-form>
       <strong>${currentDeliveryModeIsPickup() ? '¿A nombre de quién retiramos?' : '¿A nombre de quién?'}</strong>
-      <span>${currentDeliveryModeIsPickup()
-        ? 'Con esto el local sabe quién pasa a buscarlo y cómo avisarte.'
-        : 'Para que el local pueda entregarte el pedido y avisarte.'}</span>
+      <span>Para entregarte el pedido y avisarte.</span>
+      ${missingName ? `
       <label class="profile-checkout-identity-field">
         <span>Nombre y apellido</span>
         <input name="checkoutIdentityName" autocomplete="name" maxlength="80" enterkeyhint="next"
                placeholder="Tu nombre y apellido" value="${escapeHtml(borrador.name)}" />
-      </label>
+      </label>` : ''}
+      ${missingPhone ? `
       <label class="profile-checkout-identity-field">
         <span>WhatsApp</span>
         <input name="checkoutIdentityPhone" autocomplete="tel" inputmode="tel" maxlength="24" enterkeyhint="done"
                placeholder="Ej. 299 620 9136" value="${escapeHtml(borrador.phone)}" />
-      </label>
+      </label>` : ''}
       ${identityError}
       <button class="primary-button compact" type="button" data-profile-checkout-action="save-identity" ${state.savingIdentity ? 'disabled' : ''}>
         ${state.savingIdentity ? 'Guardando…' : 'Guardar y continuar'}
@@ -1036,7 +1068,7 @@ function renderProfileSummary() {
       <strong data-profile-name>${escapeHtml(profile.name)}</strong>
       <span data-profile-phone>${escapeHtml(formatArgentinePhone(profile.phone))}</span>
     </div>
-    <button class="text-button" type="button" data-profile-checkout-action="edit-profile">Editar en Perfil</button>
+    <button class="text-button" type="button" data-profile-checkout-action="edit-profile">Editar</button>
   </div>`;
 }
 
@@ -1149,8 +1181,8 @@ function handleProfileCheckoutAction(action, addressId = '') {
 async function guardarIdentidadEnLinea() {
   if (state.savingIdentity) return;
   const form = checkoutForm();
-  const nombreCrudo = String(form?.querySelector('[name="checkoutIdentityName"]')?.value || '');
-  const telefonoCrudo = String(form?.querySelector('[name="checkoutIdentityPhone"]')?.value || '');
+  const nombreCrudo = String(form?.querySelector('[name="checkoutIdentityName"]')?.value ?? state.profile?.name ?? state.identityDraft?.name ?? '');
+  const telefonoCrudo = String(form?.querySelector('[name="checkoutIdentityPhone"]')?.value ?? state.profile?.phone ?? state.identityDraft?.phone ?? '');
   // Se guarda ANTES de validar: cualquier salida de acá vuelve a dibujar el
   // bloque, y sin esto el render lo repinta desde el perfil vacío.
   state.identityDraft = { name: nombreCrudo, phone: telefonoCrudo };
@@ -1190,7 +1222,7 @@ async function guardarIdentidadEnLinea() {
       state.identityError = resultado?.message || 'No pudimos guardar tus datos. Probá de nuevo.';
       return;
     }
-    state.profile = resultado.profile || { ...(state.profile || {}), name: nombre.name, phone: telefono };
+    applyLocallySavedProfile(resultado.profile || { ...(state.profile || {}), name: nombre.name, phone: telefono });
     state.identityError = '';
     state.identityDraft = null;
   } catch (_) {

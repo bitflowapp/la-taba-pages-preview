@@ -444,7 +444,7 @@ body[data-active-view="rider"] .floating-cart {
   }
 
   .recommendations-rail {
-    grid-auto-columns: minmax(152px, 48%);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .track-layout,

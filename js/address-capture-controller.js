@@ -387,6 +387,12 @@ export function createAddressCaptureController({
     }
     captureValues();
     const written = state.values || {};
+    // In checkout, saving is the explicit confirmation of a point the customer
+    // just chose. A separate confirmation button added a redundant step.
+    if (scope === 'checkout' && state.pointChosen && state.draft.point
+      && !isDeliveryLocationDraftConfirmed(state.draft)) {
+      state.draft = confirmDeliveryLocationDraft(state.draft, { address: currentAddressText() });
+    }
 
     // El nombre y el teléfono van PRIMERO porque la base los exige antes de
     // aceptar una dirección. Si faltan y esta pantalla no los pide, el guardado
@@ -603,6 +609,8 @@ export function createAddressCaptureController({
     saving: state.saving,
     mapAvailable: !state.mapUnavailable && mapLibraryAvailable(),
     confirmationBlocked: (state.mapUnavailable || !mapLibraryAvailable()) && !state.pointChosen,
+    addressText: [value('street'), value('streetNumber')].filter(Boolean).join(' '),
+    confirmOnSave: scope === 'checkout',
   })}
     <label class="address-capture-default"><input name="${FIELD.isDefault}" type="checkbox" ${isDefaultChecked ? 'checked' : ''} /><span>Usar como dirección predeterminada</span></label>
     ${renderStatus()}
@@ -642,7 +650,7 @@ export function createAddressCaptureController({
     <div class="address-capture-grid">
       <label class="address-capture-field is-wide"><span>Calle</span><input name="${FIELD.street}" maxlength="120" autocomplete="address-line1" enterkeyhint="next" value="${escapeAttr(value('street'))}" placeholder="Antártida Argentina" ${invalidAttr(FIELD.street)} /></label>
       <label class="address-capture-field"><span>Número</span><input name="${FIELD.streetNumber}" maxlength="24" inputmode="text" enterkeyhint="next" value="${escapeAttr(value('streetNumber'))}" placeholder="1234, 1234 A o S/N" ${invalidAttr(FIELD.streetNumber)} /></label>
-      <p class="address-capture-area is-full">Guardamos la localidad como <strong>${escapeHtml(area)}</strong>. Lo que usa quien reparte es el punto que confirmás acá abajo.</p>
+      <p class="address-capture-area is-full">Localidad: <strong>${escapeHtml(area)}</strong>.</p>
     </div>
     <details class="address-capture-optional" data-address-capture-optional ${detalleAbierto ? 'open' : ''}>
       <summary>Agregar detalles de entrega${barrioPendiente ? ' (elegí tu barrio)' : ''}</summary>

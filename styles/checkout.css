@@ -167,7 +167,14 @@
   line-height: 1.35;
 }
 
-.recommendations-rail,
+.recommendations-rail {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  min-width: 0;
+  width: 100%;
+}
+
 .recommendation-card {
   position: relative;
   display: grid;
@@ -421,6 +428,15 @@
 
 .checkout-payment-field small {
   font-weight: 500;
+}
+
+.checkout-payment-field select {
+  width: 100%;
+  min-height: 52px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 16px;
+  touch-action: manipulation;
 }
 
 .checkout-instructions {

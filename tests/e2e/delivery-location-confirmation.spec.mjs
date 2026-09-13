@@ -32,12 +32,15 @@ const PUNTO_GPS = { latitude: -38.9539, longitude: -68.0596 };
 test.describe('Perfil · confirmación del punto de entrega', () => {
   test('con permiso concedido: el GPS propone, la persona confirma y recién ahí se guarda', async ({ page, context }) => {
     const remote = createRemoteProfile();
+    // GPS confirmation does not depend on the optional map CDN. Avoid a slow
+    // third-party stylesheet consuming the test's entire timeout.
+    await page.route('https://unpkg.com/maplibre-gl@5.24.0/**', (route) => route.abort());
     await installRuntime(page);
     await routeSupabase(page, remote);
     await context.grantPermissions(['geolocation']);
     await context.setGeolocation({ ...PUNTO_GPS, accuracy: 12 });
 
-    await page.goto('/#profile');
+    await page.goto('/#profile', { waitUntil: 'domcontentloaded' });
     const profile = page.locator('[data-customer-profile]');
     await expect(profile).toHaveAttribute('data-customer-profile-state', 'ready');
 
@@ -57,7 +60,7 @@ test.describe('Perfil · confirmación del punto de entrega', () => {
     // El permiso se pide recién ahora, después de la acción explícita.
     await paso.locator('[data-profile-action="use-location"]').click();
     await expect(paso).toHaveAttribute('data-location-status', 'pending');
-    await expect(paso.locator('[data-location-coords]').first()).toContainText('-38.953900, -68.059600');
+    await expect(paso.locator('[data-location-coords]')).toHaveCount(0);
 
     // Recibir la ubicación no la confirma: hace falta el acto explícito.
     expect(remote.calls.filter((call) => call.rpc === 'upsert_current_customer_address')).toHaveLength(0);
@@ -90,7 +93,7 @@ test.describe('Perfil · confirmación del punto de entrega', () => {
     // quiere compartir su ubicación.
     await context.clearPermissions();
 
-    await page.goto('/#profile');
+    await page.goto('/#profile', { waitUntil: 'domcontentloaded' });
     const profile = page.locator('[data-customer-profile]');
     await expect(profile).toHaveAttribute('data-customer-profile-state', 'ready');
     await profile.locator('[data-profile-action="add-address"]').click();
@@ -103,11 +106,11 @@ test.describe('Perfil · confirmación del punto de entrega', () => {
     // El camino del mapa sigue abierto y no pide permisos.
     await paso.locator('[data-profile-action="open-location-map"]').click();
     await expect(paso).toHaveAttribute('data-location-status', 'pending');
-    const antes = await paso.locator('[data-location-coords]').first().innerText();
+    await expect(paso.locator('[data-location-coords]')).toHaveCount(0);
 
     // Y el pin se puede mover a mano.
     await paso.locator('[data-location-nudge="norte"]').click();
-    await expect(paso.locator('[data-location-coords]').first()).not.toHaveText(antes);
+    await expect(paso.locator('[data-location-nudge="norte"]')).toBeVisible();
 
     await paso.locator('[data-profile-action="confirm-location"]').click();
     await expect(paso).toHaveAttribute('data-location-status', 'confirmed');
@@ -116,6 +119,7 @@ test.describe('Perfil · confirmación del punto de entrega', () => {
 
     const guardado = remote.calls.find((call) => call.rpc === 'upsert_current_customer_address');
     expect(guardado.payload.p_address.locationSource).toBe('map_pin');
+    expect(guardado.payload.p_address.latitude).toBeGreaterThan(-38.9460616);
     // Un pin marcado a mano no puede declarar la precisión de una medición GPS.
     expect(guardado.payload.p_address.geolocationAccuracy ?? null).toBeNull();
   });
@@ -126,7 +130,7 @@ test.describe('Perfil · confirmación del punto de entrega', () => {
     await installRuntime(page);
     await routeSupabase(page, remote);
 
-    await page.goto('/#profile');
+    await page.goto('/#profile', { waitUntil: 'domcontentloaded' });
     const profile = page.locator('[data-customer-profile]');
     await expect(profile).toHaveAttribute('data-customer-profile-state', 'ready');
     await profile.locator('[data-profile-action="add-address"]').click();
@@ -155,7 +159,7 @@ test.describe('Perfil · confirmación del punto de entrega', () => {
     await context.grantPermissions(['geolocation']);
     await context.setGeolocation({ ...PUNTO_GPS, accuracy: 12 });
 
-    await page.goto('/#profile');
+    await page.goto('/#profile', { waitUntil: 'domcontentloaded' });
     const profile = page.locator('[data-customer-profile]');
     await expect(profile).toHaveAttribute('data-customer-profile-state', 'ready');
     await profile.locator('[data-profile-action="add-address"]').click();
@@ -211,7 +215,7 @@ test.describe('Perfil · confirmación del punto de entrega', () => {
     await routeSupabase(page, remote);
     await context.clearPermissions();
 
-    await page.goto('/#profile');
+    await page.goto('/#profile', { waitUntil: 'domcontentloaded' });
     const profile = page.locator('[data-customer-profile]');
     await expect(profile).toHaveAttribute('data-customer-profile-state', 'ready');
     await expect(profile.locator('[data-address-location="confirmed"]').first()).toBeVisible();

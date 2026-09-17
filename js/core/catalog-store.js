@@ -98,7 +98,20 @@ export function applyRetailCatalogModel(list) {
 
 export function buildDemoCatalog() {
   return applyRetailCatalogModel(
-    demoProducts.map((product) => normalizeCatalogProduct(product)).filter(Boolean),
+    demoProducts.map((product) => {
+      const isApprovedAsset = Boolean(
+        product.image
+        && product.imageThumbnail
+        && product.imageShowsMultipack !== true
+        && [product.imageSha256, product.imageThumbnailSha256, product.sourceImageSha256].every(
+          (hash) => /^[a-f0-9]{64}$/i.test(String(hash || '')),
+        ),
+      );
+      return normalizeCatalogProduct({
+        ...product,
+        ...(isApprovedAsset ? { previewCatalogApproved: true } : {}),
+      });
+    }).filter(Boolean),
   );
 }
 

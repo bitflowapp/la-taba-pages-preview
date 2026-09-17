@@ -618,6 +618,7 @@ function productImage(product) {
 const PUBLISHABLE_IMAGE_RIGHTS = new Set(['PROPIO', 'LICENCIA_COMERCIAL', 'PERMISO_DOCUMENTADO']);
 
 export function productImageRightsCleared(product) {
+  if (product?.previewCatalogApproved === true) return true;
   return PUBLISHABLE_IMAGE_RIGHTS.has(String(product?.rightsStatus || '').toUpperCase());
 }
 
@@ -911,7 +912,8 @@ function homePopularSection() {
 
 function homeBestSellerProducts() {
   const popular = homePopularSection()?.products || [];
-  if (popular.length) return popular.filter((product) => !product.pricePending);
+  const purchasablePopular = popular.filter(isPurchasableBeverageProduct);
+  if (purchasablePopular.length) return purchasablePopular;
   // La selección heredada se mantiene como "Destacados" cuando todavía no
   // existe una marca popular real. Nunca se presenta como "Lo más pedido".
   // Sale del mismo orden comercial que las secciones de abajo —y con una marca
@@ -2364,7 +2366,7 @@ function getFilteredProducts(state) {
 // un puntaje negativo lo manda al final de cualquier orden, sin sacarlo del
 // catálogo: sigue visible y buscable, que es la decisión de siempre.
 function recommendedScore(product) {
-  if (product.pricePending) return -1;
+  if (!isCommerciallyPurchasable(product)) return -10;
   let score = 0;
   if (product.available && product.stock > 0) score += 4;
   if (product.featured) score += 2;
@@ -2374,7 +2376,7 @@ function recommendedScore(product) {
 }
 
 function popularScore(product) {
-  if (product.pricePending) return -1;
+  if (!isCommerciallyPurchasable(product)) return -10;
   let score = 0;
   if (product.popular) score += 3;
   if (product.available && product.stock > 0) score += 2;
@@ -2647,7 +2649,22 @@ function renderProducts() {
    * local los va a vender— sólo agrega la puerta a lo que hoy SÍ se puede
    * pedir. Cuando el negocio publique esos precios, el aviso desaparece solo.
    */
+  const query = state.searchQuery.trim();
+  const isSearch = Boolean(query);
   const nadaComprable = filteredProducts.every((product) => !isCommerciallyPurchasable(product));
+
+  if (isSearch && nadaComprable) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <strong>No hay «${escapeHtml(query)}» disponible por ahora</strong>
+        <p class="empty-state-copy">Por el momento no tenemos productos disponibles para esta búsqueda.</p>
+        <div class="empty-actions">
+          <button class="primary-button compact" type="button" data-clear-catalog-filters>Ver lo que sí se puede pedir</button>
+        </div>
+      </div>`;
+    return;
+  }
+
   const avisoSinComprables = nadaComprable
     ? `<div class="catalog-none-buyable" role="status">
         <strong>${filteredProducts.length === 1
@@ -4470,7 +4487,7 @@ export function showToast(message) {
     // Vaciarla la deja `:empty`, que es lo que apaga su superficie sin devolver
     // el alto: la banda sigue reservada y no hay salto al apagarse.
     if (cartNotice) cartNotice.textContent = '';
-  }, 2200);
+  }, 1200);
 }
 
 export function escapeHtml(value) {

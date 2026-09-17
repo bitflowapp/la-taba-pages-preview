@@ -642,7 +642,8 @@ body[data-active-view="home"] .home-category-card {
 
 body[data-active-view="home"] .home-category-card {
   display: flex;
-  min-width: 0;
+  min-width: max-content;
+  max-width: max-content;
   min-height: 46px;
   flex: 0 0 auto;
   align-items: center;

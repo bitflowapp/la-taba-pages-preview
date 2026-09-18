@@ -4,7 +4,7 @@ import { conToken } from '../lib/supabase-cli-token.mjs';
 
 // MCP callers pipe JSON directly through stdin; the secure PowerShell prompt uses env.
 // Never put credential values in command arguments, logs, or repository files.
-const ref='ukxqbgswjlibmnjemrzd';
+const ref='ucbtjcurawxjwjdvvcvj';
 let input={};
 const stdinMode=process.argv.includes('--stdin');
 if(stdinMode) {

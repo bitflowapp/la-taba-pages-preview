@@ -17,6 +17,16 @@ const DEPLOYMENT_BINDINGS: Record<string, {
   checkoutBaseUrl: string;
   allowedOrigins: string;
 }> = {
+  ucbtjcurawxjwjdvvcvj: {
+    deployment: "staging",
+    paymentEnvironment: "test",
+    oauthEnvironment: "test",
+    clientId: "2691240967769590",
+    supabaseUrl: "https://ucbtjcurawxjwjdvvcvj.supabase.co",
+    panelUrl: "https://taba2-staging.pages.dev/",
+    checkoutBaseUrl: "https://taba2-staging.pages.dev",
+    allowedOrigins: "https://taba2-staging.pages.dev",
+  },
   ukxqbgswjlibmnjemrzd: {
     deployment: "staging",
     paymentEnvironment: "test",

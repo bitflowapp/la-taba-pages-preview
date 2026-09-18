@@ -48,7 +48,7 @@ import { execFileSync } from 'node:child_process';
 import process from 'node:process';
 
 const REFS = {
-  staging: { ref: 'ukxqbgswjlibmnjemrzd', nombre: 'la-taba-staging' },
+  staging: { ref: 'ucbtjcurawxjwjdvvcvj', nombre: 'la-taba-staging' },
   produccion: { ref: 'wwcpogltfgzgkrlilbcd', nombre: 'la-taba-production' },
 };
 
@@ -110,6 +110,8 @@ const CANDIDATOS = {
   MERCADOPAGO_PRODUCTION_REVIEW_STATUS: ['not_requested', 'pending', 'approved', 'rejected'],
   MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION: ['I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE'],
   TABA_CHECKOUT_BASE_URL: [
+    'https://taba2-staging.pages.dev',
+    'https://taba2-staging.pages.dev/',
     'https://la-taba.pages.dev',
     'https://la-taba.pages.dev/',
     'https://bitflowapp.github.io/la-taba-pages-preview',

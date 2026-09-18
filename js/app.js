@@ -4,12 +4,19 @@ import {
   clearCart,
   decrementCartItem,
   decrementComboItem,
+  getCartSummary,
   incrementCartItem,
   removeCartItem,
   removeComboItem,
   repeatCustomerOrder,
   setCartItemQuantity,
 } from './cart.js';
+import {
+  FUNNEL_EVENTS,
+  clearFunnelEvents,
+  getFunnelSummary,
+  recordFunnelEvent,
+} from './core/funnel-analytics.js';
 import {
   applyBusinessConfig,
   closeComboModal,
@@ -178,6 +185,41 @@ const initialRoute = resolveRoute(window.location.hash.slice(1));
 let activeView = initialRoute.view;
 let lastLivenessSignature = '';
 let freshnessTimer = null;
+/*
+ * Guardas del embudo. Sin esto, CHECKOUT_STARTED se registraba en CADA
+ * pulsación de tecla del formulario —un `JSON.stringify` y un
+ * `localStorage.setItem` SÍNCRONOS por carácter, en la pantalla que decide la
+ * venta y en el teléfono más lento— e inflaba el evento unas cien veces, con
+ * lo que la razón CART_OPENED→ORDER_SUBMIT_ATTEMPT del runbook no significaba
+ * nada. La vista se registra una sola vez por entrada: `setActiveView` y
+ * `syncViewFromLocation` pueden ambos correr para una misma navegación.
+ */
+let funnelCheckoutStartedForThisCart = false;
+let funnelLastViewRecorded = null;
+
+/*
+ * Un único punto de registro de entrada de vista. Antes esto estaba copiado en
+ * `bootstrap`, `setActiveView` y `syncViewFromLocation`, y las dos últimas
+ * corren para una misma navegación: HOME_VIEW se contaba dos veces y el
+ * denominador de HOME_VIEW→PRODUCT_ADDED quedaba inflado.
+ */
+function recordFunnelViewEntry(view) {
+  // Se recuerda CUALQUIER vista, no sólo las del embudo: si sólo se recordaran
+  // home y cart, volver al home desde el catálogo no contaría como entrada.
+  if (funnelLastViewRecorded === view) return;
+  funnelLastViewRecorded = view;
+  if (view !== 'home' && view !== 'cart') return;
+  if (view === 'home') {
+    recordFunnelEvent(FUNNEL_EVENTS.HOME_VIEW);
+    return;
+  }
+  const summary = getCartSummary();
+  recordFunnelEvent(FUNNEL_EVENTS.CART_OPENED, { itemCount: summary.itemCount, total: summary.total });
+  if (summary.itemCount > 0 && !funnelCheckoutStartedForThisCart) {
+    funnelCheckoutStartedForThisCart = true;
+    recordFunnelEvent(FUNNEL_EVENTS.CHECKOUT_STARTED, { itemCount: summary.itemCount, total: summary.total });
+  }
+}
 // El controlador de la invitación a instalar. Vive fuera de `bootstrap()`
 // porque se cablea temprano —para no perderse `beforeinstallprompt`— y recién
 // se le avisa que puede invitar cuando la tienda terminó de armarse.
@@ -192,6 +234,9 @@ function runCartAction(action, productId, callback) {
   // agrupar taps por tiempo descartaba restas y sumas intencionales rápidas.
   // La creación/cobro del pedido conserva su guardia independiente.
   const resultado = callback();
+  if (resultado?.ok && (action === 'add' || action === 'add-combo' || action === 'inc' || action === 'inc-combo')) {
+    recordFunnelEvent(FUNNEL_EVENTS.PRODUCT_ADDED, { productId });
+  }
   /*
    * Poner algo en el carrito es el momento en que la invitación a instalar deja
    * de ser un favor y pasa a ser útil: la persona ya sabe qué es esta tienda.
@@ -227,7 +272,11 @@ async function repeatWithCurrentCatalog(orderId, options = {}) {
         return { ok: false, message: 'No pudimos actualizar los productos. Tu carrito sigue igual. Reintentá.' };
       }
     }
-    return repeatCustomerOrder(orderId, options);
+    const result = repeatCustomerOrder(orderId, options);
+    if (result.ok) {
+      recordFunnelEvent(FUNNEL_EVENTS.REPEAT_ORDER_USED, { orderId });
+    }
+    return result;
   } catch (_) {
     return { ok: false, message: 'No pudimos revisar el pedido. Tu carrito sigue igual. Reintentá.' };
   } finally {
@@ -573,6 +622,7 @@ async function bootstrap() {
     // Diagnóstico local para QA, igual que `TABA2_MOTION`: no forma parte de
     // ningún contrato ni cambia el estado de la tienda.
     window.TABA_PWA_INSTALL = pwaInstall;
+    window.TABA_FUNNEL = { getSummary: getFunnelSummary, clear: clearFunnelEvents, record: recordFunnelEvent };
     if (resetRequested) {
       if (await maybeResetDemoSession()) return;
     }
@@ -623,6 +673,7 @@ async function bootstrap() {
     // Si la pestaña se abrió DIRECTO en el carrito, `setActiveView` no llegó a
     // correr y la pregunta no se hizo. Es el único caso donde el arranque sí
     // tiene que hacerla: ahí ya hay alguien mirando su pedido.
+    recordFunnelViewEntry(activeView);
     if (activeView === 'cart') await refreshMercadoPagoCheckoutAvailability();
     renderAll();
     playViewEnter(activeView);
@@ -1236,6 +1287,7 @@ function bindEvents() {
   // «Enviar a» del encabezado se entera acá, para no quedar diciendo «Elegí tu
   // dirección» sobre una dirección que el checkout ya eligió.
   window.addEventListener('taba:delivery-address-changed', (event) => {
+    recordFunnelEvent(FUNNEL_EVENTS.ADDRESS_COMPLETED);
     renderCustomerHome();
     // Y con el destino nuevo se vuelve a preguntar al backend si llegamos ahí y
     // con qué envío. No se calcula acá: se pregunta. Si la consulta falla, el
@@ -1791,6 +1843,11 @@ function bindEvents() {
   document.addEventListener('input', (event) => {
     const checkoutField = event.target?.closest?.('[data-checkout-form] [name]');
     if (checkoutField) {
+      // Una vez por carrito, no una vez por tecla. Ver la guarda arriba.
+      if (!funnelCheckoutStartedForThisCart) {
+        funnelCheckoutStartedForThisCart = true;
+        recordFunnelEvent(FUNNEL_EVENTS.CHECKOUT_STARTED, { trigger: 'form_input' });
+      }
       clearCheckoutFieldError(checkoutField);
       const warning = checkoutField.closest('[data-checkout-form]')?.querySelector('[data-checkout-warning]');
       if (warning) {
@@ -1810,7 +1867,11 @@ function bindEvents() {
 
     const input = event.target.closest?.('[data-search-input]');
     if (!input) return;
-    setSearchQuery(input.value || '');
+    const query = input.value || '';
+    setSearchQuery(query);
+    if (query.trim().length >= 2) {
+      recordFunnelEvent(FUNNEL_EVENTS.SEARCH_USED, { queryLength: query.trim().length });
+    }
     // El buscador del Home lleva al Catálogo para mostrar resultados.
     if (input.hasAttribute('data-search-jump') && activeView !== 'catalog') {
       setActiveView('catalog', { scroll: false, focus: false });
@@ -1980,14 +2041,34 @@ function bindEvents() {
         ...getCheckoutFormValues(),
         previewOnly: getAppMode() === APP_MODE_PUBLIC,
       };
+      recordFunnelEvent(FUNNEL_EVENTS.ORDER_SUBMIT_ATTEMPT, {
+        paymentMethod: values.paymentMethod,
+        deliveryType: values.deliveryMode,
+      });
       if (values.paymentMethod === 'mercadopago') {
         if (button) button.textContent = 'Preparando pago…';
         const result = await Promise.resolve(getOrderRepository().createMercadoPagoCheckout?.(values));
         if (!result?.ok || !result.initPoint) {
           const message = result?.message || 'No pudimos preparar Mercado Pago. Conservamos tu carrito para que vuelvas a intentar.';
+          recordFunnelEvent(FUNNEL_EVENTS.ORDER_FAILED, { reason: 'mercadopago_init_failed' });
+          if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+            console.warn('[TABA_DIAGNOSTIC]', { scope: 'checkout', error: 'mercadopago_init_failed', message });
+          }
           showToast(showCheckoutInlineError(form, message));
           return;
         }
+        /*
+         * Entrega al proveedor, NO pedido creado. Acá la persona todavía no
+         * pagó: puede abandonar el checkout de Mercado Pago, o el proveedor
+         * puede estar caído del otro lado. Registrar ORDER_CREATED en este
+         * punto hacía que el embudo informara ~100 % de conversión aunque
+         * NADIE completara el pago. El pedido pagado lo confirma el webhook
+         * contra el proveedor, no el navegador.
+         */
+        recordFunnelEvent(FUNNEL_EVENTS.PAYMENT_HANDOFF, {
+          paymentMethod: 'mercadopago',
+          orderId: result.orderId || null,
+        });
         if (button) button.textContent = 'Te llevamos a Mercado Pago…';
         showToast('Te llevamos a Mercado Pago para completar el pago de forma segura.');
         entregadoAMercadoPago = true;
@@ -1998,9 +2079,20 @@ function bindEvents() {
       const result = await Promise.resolve(getOrderRepository().createOrder(values));
 
       if (!result.ok) {
+        recordFunnelEvent(FUNNEL_EVENTS.ORDER_FAILED, { reason: 'create_order_rejected' });
+        if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+          console.warn('[TABA_DIAGNOSTIC]', { scope: 'checkout', error: 'create_order_rejected', message: result.message });
+        }
         showToast(showCheckoutInlineError(form, result.message));
         return;
       }
+
+      recordFunnelEvent(FUNNEL_EVENTS.ORDER_CREATED, {
+        paymentMethod: values.paymentMethod,
+        orderId: result.order?.id || result.orderId || null,
+      });
+      // El carrito siguiente es un checkout nuevo y vuelve a poder contarse.
+      funnelCheckoutStartedForThisCart = false;
 
       let profilePersistence = { ok: true };
       try {
@@ -2014,7 +2106,11 @@ function bindEvents() {
         ? 'Pedido confirmado. Seguilo en Seguimiento.'
         : 'Pedido confirmado. No pudimos guardar tus datos para próximos pedidos.');
       setActiveView('tracking');
-    } catch (_) {
+    } catch (error) {
+      recordFunnelEvent(FUNNEL_EVENTS.ORDER_FAILED, { reason: 'unexpected_exception' });
+      if (typeof console !== 'undefined' && typeof console.error === 'function') {
+        console.error('[TABA_DIAGNOSTIC]', { scope: 'checkout', error: 'unexpected_exception', message: error?.message });
+      }
       const message = 'No se pudo crear el pedido. Reintentá.';
       showToast(showCheckoutInlineError(form, message));
     } finally {
@@ -2273,6 +2369,7 @@ function setActiveView(view, options = {}) {
   }
 
   syncGpsSharingWithView(nextView);
+  recordFunnelViewEntry(nextView);
   // Entrar al carrito es el primer momento en que importa si Mercado Pago está
   // disponible, y también el primero en que hay una persona decidiendo algo. En
   // el arranque no se pregunta: preguntarlo creaba una identidad anónima por
@@ -2303,6 +2400,7 @@ function syncViewFromLocation() {
   if (nextView === activeView) return;
   activeView = nextView;
   syncGpsSharingWithView(nextView);
+  recordFunnelViewEntry(nextView);
   // Entrar al carrito es el primer momento en que importa si Mercado Pago está
   // disponible, y también el primero en que hay una persona decidiendo algo. En
   // el arranque no se pregunta: preguntarlo creaba una identidad anónima por

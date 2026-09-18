@@ -3331,10 +3331,23 @@ function businessSnapshotErrorMessage(error, status) {
 }
 
 function failedQuery(error, status, fallback) {
+  const code = sanitizeText(error?.code, { maxLength: 40 });
+  const httpStatus = Number(status || error?.status || 0) || undefined;
+  const message = fallback || readableSupabaseError(error);
+  if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+    try {
+      console.warn('[TABA_DIAGNOSTIC]', {
+        scope: 'supabase_query',
+        errorCode: code || undefined,
+        status: httpStatus,
+        message,
+      });
+    } catch (_) {}
+  }
   return repositoryResult(false, {
-    message: fallback || readableSupabaseError(error),
-    errorCode: sanitizeText(error?.code, { maxLength: 40 }),
-    status: Number(status || error?.status || 0) || undefined,
+    message,
+    errorCode: code,
+    status: httpStatus,
   });
 }
 
@@ -3343,11 +3356,22 @@ function failedQuery(error, status, fallback) {
 // el código y la revisión fresca para que el caller distinga conflicto de fallo.
 function riderContractRefusal(data, messages, fallback) {
   const code = sanitizeText(data?.code, { maxLength: 60 });
+  const message = messages[code] || fallback;
+  if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+    try {
+      console.warn('[TABA_DIAGNOSTIC]', {
+        scope: 'rider_contract_refusal',
+        code: code || undefined,
+        conflict: code === 'stale_revision' || code === 'taken_by_other',
+        message,
+      });
+    } catch (_) {}
+  }
   return repositoryResult(false, {
     code: code || 'RIDER_CONTRACT_REFUSED',
     conflict: code === 'stale_revision' || code === 'taken_by_other',
     revision: normalizeOrderRevision(data?.revision) ?? undefined,
-    message: messages[code] || fallback,
+    message,
   });
 }
 

@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v99-commerce-v3';
+const CACHE_NAME = 'la-taba-runtime-v100-commerce-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -40,7 +40,7 @@ const ASSETS = [
   './assets/products/beverage-placeholder.svg',
   './js/pwa-update.js?v=4',
   './js/startup-recovery.js?v=2',
-  './js/app.js?v=49',
+  './js/app.js?v=50',
   './js/config.js',
   './js/core/address.js',
   './js/core/app-mode.js',
@@ -66,6 +66,7 @@ const ASSETS = [
   './js/core/delivery-location-draft.js',
   './js/core/delivery-proof.js',
   './js/core/domain.js',
+  './js/core/funnel-analytics.js',
   './js/core/geo-point.js',
   // El contrato de la clave de idempotencia: import estático de
   // `production-operations.js`, que sí está en esta lista.

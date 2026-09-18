@@ -22,7 +22,8 @@ Cada afirmación lleva su grado:
 
 | Campo | Valor | Grado |
 |---|---|---|
-| `RELEASE_HEAD` | `cecbb9cb5a7dca02753003b073741645daaabcb4` | `PROBADO` |
+| `RELEASE_HEAD` | punta de `release/taba-production-rc` (`git rev-parse release/taba-production-rc`) | `PROBADO` |
+| Último commit con cambio de CÓDIGO | `c4ca0980f7d7f22da0fa775e537512013c6d4876` | `PROBADO` |
 | Rama | `release/taba-production-rc` | `PROBADO` |
 | Rama de origen | `feat/taba-commerce-v3` | `PROBADO` |
 | Remoto | `github.com/bitflowapp/la-taba-pages-preview` | `PROBADO` |
@@ -37,10 +38,17 @@ SHA-256 del contenido en `RELEASE_HEAD`. El token `?v=NN` **no** es un hash de
 contenido: se comprobó que `app.js?v=49` devolvía bytes distintos en producción
 y en staging. Estos digests son la identidad; el token no.
 
-Los digests se calcularon en `c4ca098` y siguen idénticos en `df06c28`: entre
-esos dos commits sólo cambió documentación. El agregado del precache
-(`assetsDigest`) es el que verifica `npm run check` en cada corrida, y es el que
-obliga a rotar `CACHE_NAME` si cambia un byte.
+Los digests corresponden a `c4ca098`, el último commit que tocó código, y valen
+para la punta de la rama: todo lo que vino después es documentación, este
+archivo incluido. Un manifiesto no puede contener su propio hash, así que
+`RELEASE_HEAD` se resuelve con `git rev-parse` y lo que queda fijado acá es el
+commit de código y los digests, que es lo que hay que poder comparar contra un
+despliegue.
+
+El agregado del precache (`assetsDigest`) es el que verifica `npm run check` en
+cada corrida, y el que obliga a rotar `CACHE_NAME` si cambia un byte: el gate
+rechaza «contenido distinto bajo la misma identidad» porque eso deja el rollback
+sin ancla.
 
 | Archivo | SHA-256 |
 |---|---|
@@ -69,7 +77,7 @@ esperado esperando a que el alias de Cloudflare converja.
 
 | Entorno | Commit | Runtime | Sellado |
 |---|---|---|---|
-| `RELEASE_HEAD` (esta candidata) | `c4ca098` | `v100-commerce-v3` | sin desplegar |
+| Esta candidata (código en `c4ca098`) | `c4ca098` | `v100-commerce-v3` | **sin desplegar** |
 | `la-taba.pages.dev` (producción) | `a56a9c5` | `v97-explicit-seller-status` | 2026-09-08T07:35Z |
 | Edge Functions de producción | — | versión 8–9 | 2026-09-08T07:29Z |
 

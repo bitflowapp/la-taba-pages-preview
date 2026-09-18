@@ -7,7 +7,7 @@
 | Campo | Valor |
 |---|---|
 | `RIDER_RELEASE_HEAD` | `5231a87fc8df9d0b37b263938304935b9213a2d4` |
-| Repositorio | `D:\1212\la-taba-rider-production-rc1` |
+| Repositorio | worktree del Rider RC1 (la ruta, en `ACCESO-Y-DATOS-VIVOS.md`) |
 | Rama | `release/taba2-rider-production-rc1` |
 | Remoto | **ninguno** — el repositorio del Rider no tiene remoto configurado |
 | Árbol de trabajo | limpio |
@@ -75,9 +75,9 @@ la firma si están las cuatro variables de entorno
 `signingConfig = null`. No hay `android/key.properties` y **no existe ningún
 keystore de TABA**.
 
-El único keystore presente en esta máquina es
-`D:\secure\bitflow-signing\bitflow-production.jks`, que pertenece a **Bit Flow /
-APEX, otro producto**. Firmar el Rider de TABA con esa clave ataría la identidad
+El único keystore presente en esta máquina es el de producción de **Bit Flow /
+APEX, otro producto** (vive en el directorio de firma de ese proyecto, fuera de
+este repositorio). Firmar el Rider de TABA con esa clave ataría la identidad
 de la aplicación de TABA a la clave de otro producto: es una decisión de
 identidad difícil de revertir —Android no deja cambiar la clave de firma de un
 `applicationId` ya distribuido— y no se tomó. No se inventaron credenciales.
@@ -90,10 +90,31 @@ decisiones externas:
 2. construir en modo debug, que se firma con la clave de depuración — sirve para
    probar en un teléfono, no para distribuir.
 
-## Pruebas
+## Pruebas — 433 pasan, 1 falla
 
-Ver el informe de la reconciliación para el resultado de `flutter test` sobre
-`5231a87`.
+`flutter test` sobre `5231a87`: **`+433 -1`, exit 1**. La suite **no está en
+verde**, y no se la dejó en verde tocándola.
+
+La única que falla es una comparación de imagen:
+
+```
+test/golden/commercial_ux_golden_test.dart
+  «la home, en los tres estados con los que empieza el día
+   golden oferta con barra de tiempo»
+Golden "../goldens/comercial/home_oferta.png":
+  Pixel test failed, 0.00%, 8px diff detected.
+```
+
+Ocho píxeles sobre una pantalla entera, redondeado a 0,00 %. Tiene la forma de
+una diferencia de rasterizado de fuentes entre la máquina que generó la imagen
+de referencia y ésta, no la de una regresión de comportamiento: ninguna de las
+433 pruebas de lógica, contratos, DTO, mapa o privacidad falla.
+
+**No se regeneró la imagen de referencia.** Regenerar un golden para que el
+tablero quede verde es exactamente cómo un golden deja de servir para algo: la
+próxima diferencia real tampoco se vería. Queda como P2 abierto, y lo que hay
+que hacer es decidir primero si esta plataforma es la de referencia; recién
+entonces, y con esa decisión escrita, actualizar la imagen.
 
 ## Contratos con la candidata de comercio
 
@@ -103,7 +124,7 @@ verifica la coordenada del comercio en las dos superficies a la vez:
 ```
 contrato de ubicación: La Taba 2 — Mendoza 827, Neuquén
   -38.9460616, -68.0533209  source=public_directory_cross_checked
-  Rider verificado en D:/1212/la-taba-rider-production-rc1
+  Rider verificado en &lt;worktree del Rider&gt;
 las superficies coinciden con el contrato.
 ```
 

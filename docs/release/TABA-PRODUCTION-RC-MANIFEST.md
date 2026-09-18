@@ -22,7 +22,7 @@ Cada afirmación lleva su grado:
 
 | Campo | Valor | Grado |
 |---|---|---|
-| `RELEASE_HEAD` | `c4ca0980f7d7f22da0fa775e537512013c6d4876` | `PROBADO` |
+| `RELEASE_HEAD` | `cecbb9cb5a7dca02753003b073741645daaabcb4` | `PROBADO` |
 | Rama | `release/taba-production-rc` | `PROBADO` |
 | Rama de origen | `feat/taba-commerce-v3` | `PROBADO` |
 | Remoto | `github.com/bitflowapp/la-taba-pages-preview` | `PROBADO` |
@@ -36,6 +36,11 @@ Cada afirmación lleva su grado:
 SHA-256 del contenido en `RELEASE_HEAD`. El token `?v=NN` **no** es un hash de
 contenido: se comprobó que `app.js?v=49` devolvía bytes distintos en producción
 y en staging. Estos digests son la identidad; el token no.
+
+Los digests se calcularon en `c4ca098` y siguen idénticos en `df06c28`: entre
+esos dos commits sólo cambió documentación. El agregado del precache
+(`assetsDigest`) es el que verifica `npm run check` en cada corrida, y es el que
+obliga a rotar `CACHE_NAME` si cambia un byte.
 
 | Archivo | SHA-256 |
 |---|---|

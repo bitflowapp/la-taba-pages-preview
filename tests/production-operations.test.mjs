@@ -12,6 +12,7 @@ import {
   initProductionOperations,
   isProductionOrderPaymentReversed,
   isRoleAuthorizedForView,
+  needsBusinessDeliveryCode,
   nextBusinessStatus,
   nextRiderStatus,
   resetProductionOperationsForTests,
@@ -52,9 +53,12 @@ test('el negocio reparte lo suyo, y se aparta cuando el pedido lo lleva un rider
   assert.equal(nextBusinessStatus({ workflowStatus: 'submitted', deliveryMode: 'delivery' }), 'accepted');
   assert.equal(nextBusinessStatus({ workflowStatus: 'accepted', deliveryMode: 'delivery' }), 'preparing');
   assert.equal(nextBusinessStatus({ workflowStatus: 'preparing', deliveryMode: 'delivery' }), 'ready');
-  // Reparto propio: el comercio despacha y cierra.
+  // Reparto propio: el comercio despacha (ready -> on_the_way).
+  // El cierre (on_the_way -> delivered) exige el código del cliente y no pasa
+  // por nextBusinessStatus genérico.
   assert.equal(nextBusinessStatus({ workflowStatus: 'ready', deliveryMode: 'delivery' }), 'on_the_way');
-  assert.equal(nextBusinessStatus({ workflowStatus: 'on_the_way', deliveryMode: 'delivery' }), 'delivered');
+  assert.equal(nextBusinessStatus({ workflowStatus: 'on_the_way', deliveryMode: 'delivery' }), null);
+  assert.equal(needsBusinessDeliveryCode({ workflowStatus: 'on_the_way', deliveryMode: 'delivery' }), true);
   // Con repartidor asignado, ninguna de las dos.
   assert.equal(nextBusinessStatus({ workflowStatus: 'ready', deliveryMode: 'delivery', assignedRiderId: 'r-1' }), null);
   assert.equal(nextBusinessStatus({ workflowStatus: 'on_the_way', deliveryMode: 'delivery', assignedRiderId: 'r-1' }), null);

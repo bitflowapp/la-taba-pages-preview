@@ -262,9 +262,10 @@ select is(
 select is(
   public.get_business_finished_today('b5000000-0000-4000-8000-0000000000e1', null) ->> 'timezone',
   'America/Argentina/Buenos_Aires', 'y declara con que huso conto, que es el del negocio');
-select is(
-  (public.get_business_finished_today('b5000000-0000-4000-8000-0000000000e2', null) ->> 'delivered')::integer,
-  0, 'el comercio vecino no ve el pedido del otro, ni al reves');
+select throws_ok(
+  $$select public.get_business_finished_today('b5000000-0000-4000-8000-0000000000e2', null)$$,
+  '42501', 'operador no autorizado',
+  'el comercio vecino no ve el pedido del otro, ni al reves');
 
 -- El cliente NO decide el dia comercial. Pedir otra zona no lo corre: se
 -- rechaza, porque devolverle el dia del comercio como si fuera el suyo seria

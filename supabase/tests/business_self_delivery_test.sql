@@ -15,7 +15,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(40);
+select plan(48);
 
 -- ── Fixture ────────────────────────────────────────────────────────────────
 insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
@@ -51,8 +51,9 @@ values
   ('c5000000-0000-4000-8000-0000000000e3','a5000000-0000-4000-8000-0000000000e1','b5000000-0000-4000-8000-0000000000e3','owner','panel_web'),
   ('c5000000-0000-4000-8000-0000000000e4','a5000000-0000-4000-8000-0000000000e4','b5000000-0000-4000-8000-0000000000e2','owner','panel_web');
 
--- Cuatro pedidos de delivery listos. El 1 lo despacha el comercio; el 2 lo
--- lleva un repartidor; el 3 y el 4 son para los casos de error.
+-- Cinco pedidos listos. Los primeros cuatro son delivery: el 1 lo despacha el
+-- comercio; el 2 lo lleva un repartidor; el 3 y el 4 son para los casos de
+-- error. El 5 es retiro y conserva el camino de la web anterior.
 insert into public.orders(
   id,business_id,code,public_code,status,fulfillment_type,delivery_mode,
   client_request_id,customer_name,customer_neighborhood,customer_street_address,
@@ -64,7 +65,11 @@ select
   'SELF-' || n, 'SELF-' || n, 'ready', 'delivery', 'delivery',
   'self-request-' || n, 'CLIENTE_SINTETICO_NO_CACHEAR', 'Centro', 'Mendoza ' || n,
   '+540000000000', 'cash', 1000, 0, 1000
-from generate_series(1, 4) as n;
+from generate_series(1, 5) as n;
+
+update public.orders
+   set fulfillment_type = 'pickup', delivery_mode = 'pickup'
+ where id = 'd5000000-0000-4000-8000-000000000005';
 
 create or replace function pg_temp.as_user(p_user uuid, p_session uuid) returns void language sql as $$
   select set_config('request.jwt.claims',
@@ -102,8 +107,15 @@ select is(pg_temp.revision('d5000000-0000-4000-8000-000000000001'), 2::bigint,
 -- probar que llego.
 select throws_ok(
   $$select public.transition_order('d5000000-0000-4000-8000-000000000001', 2, 'delivered', 'self-sincod-0001')$$,
+  '23514', null,
+  'la transicion generica ni siquiera contiene on_the_way -> delivered para el comercio');
+
+select throws_ok(
+  $$update public.orders set status='delivered' where id='d5000000-0000-4000-8000-000000000001'$$,
   '55000', 'codigo de entrega no confirmado',
-  'sin el codigo del cliente, el comercio tampoco cierra la entrega');
+  'el guard tambien corta un UPDATE que intente saltear la RPC del codigo');
+select is(pg_temp.estado('d5000000-0000-4000-8000-000000000001'), 'on_the_way',
+  'ninguna transicion directa pudo saltear el codigo');
 
 -- El codigo que el cliente recibio al confirmar el pedido.
 insert into public.order_delivery_handoffs(order_id, code_hash, code_ciphertext, expires_at)
@@ -160,6 +172,33 @@ select throws_ok(
 select is(pg_temp.estado('d5000000-0000-4000-8000-000000000003'), 'ready',
   'y el pedido quedo donde estaba');
 
+select is(
+  public.transition_order(
+    'd5000000-0000-4000-8000-000000000005',
+    pg_temp.revision('d5000000-0000-4000-8000-000000000005'),
+    'delivered',
+    'old-web-pickup1'
+  ) ->> 'status',
+  'delivered',
+  'la web anterior conserva su RPC ready -> delivered para retiro sobre la DB nueva');
+
+-- El mismo CAS es obligatorio en la puerta que valida el codigo. NULL no es
+-- "cualquier revision": SQL lo compararia como UNKNOWN si la funcion usara <>.
+select throws_ok(
+  $$select public.confirm_business_delivery_code('d5000000-0000-4000-8000-000000000003', 99, '4417', 'self-code-stale-01')$$,
+  '40001', null,
+  'confirmar con una revision incorrecta falla cerrado');
+select throws_ok(
+  $$select public.confirm_business_delivery_code('d5000000-0000-4000-8000-000000000003', null, '4417', 'self-code-null-001')$$,
+  '40001', null,
+  'confirmar con revision NULL tambien falla cerrado');
+select throws_ok(
+  $$select public.confirm_business_delivery_code(
+      p_order_id => 'd5000000-0000-4000-8000-000000000003',
+      p_delivery_code => '4417', p_idempotency_key => 'self-code-missing1')$$,
+  '42883', null,
+  'la revision no se puede omitir de la firma');
+
 -- ══ 2 · LO QUE LLEVA UN REPARTIDOR SIGUE SIENDO SUYO ════════════════════════
 -- El comercio asigna el pedido 2. Desde ese momento no puede cerrarlo el.
 select public.assign_order_rider('d5000000-0000-4000-8000-000000000002','ready',null,
@@ -173,12 +212,12 @@ select throws_ok(
   '23514', null,
   'con repartidor asignado, el comercio NO puede declararlo entregado');
 
--- El guard simetrico, probado por el camino que no pasa por la matriz: un
--- UPDATE crudo. Es la defensa que sobrevive a que alguien edite el `or`.
+-- El guard tambien cubre el pedido de un rider si un operador intenta escribir
+-- la fila directamente.
 select set_config('taba.delivery_code_confirmed', '', true);
 select throws_ok(
   $$update public.orders set status='delivered' where id='d5000000-0000-4000-8000-000000000002'$$,
-  '42501', 'la entrega la confirma el repartidor asignado con el codigo del cliente',
+  '55000', 'codigo de entrega no confirmado',
   'ni escribiendo la fila directamente: el guard corta igual');
 select is(pg_temp.estado('d5000000-0000-4000-8000-000000000002'), 'assigned',
   'el pedido del repartidor quedo intacto');
@@ -217,7 +256,7 @@ select throws_ok(
 -- MINIMO PRIVILEGIO / ANON RECHAZADO
 select ok(not has_function_privilege('anon', 'public.confirm_business_delivery_code(uuid,bigint,text,text)', 'EXECUTE'),
   'anon no ejecuta confirm_business_delivery_code');
-select ok(not has_function_privilege('anon', 'public.get_business_finished_today(uuid,text,date)', 'EXECUTE'),
+select ok(not has_function_privilege('anon', 'public.get_business_finished_today(uuid,text)', 'EXECUTE'),
   'anon no ejecuta get_business_finished_today');
 select ok(not has_function_privilege('anon', 'public.change_order_status(uuid,text,text)', 'EXECUTE'),
   'anon no ejecuta change_order_status');
@@ -237,33 +276,46 @@ select throws_ok(
   'anon no puede contar finalizados del negocio');
 
 -- ══ 4 · FINALIZADOS HOY, CONTADO POR EL SERVIDOR ════════════════════════════
--- Un pedido cancelado hoy y uno entregado AYER, insertados con su `updated_at`
--- (el trigger solo lo pisa en UPDATE, no en INSERT).
+-- Un pedido cancelado hoy, uno entregado AYER y otro que termino hoy pero fue
+-- modificado despues. La fuente del dia son los timestamps terminales estables;
+-- `updated_at` puede pertenecer a otro dia y no debe mover el cierre.
 insert into public.orders(
   id,business_id,code,public_code,status,fulfillment_type,delivery_mode,
   client_request_id,customer_name,customer_neighborhood,customer_street_address,
-  customer_phone,payment_method,subtotal,delivery_fee,total,updated_at
+  customer_phone,payment_method,subtotal,delivery_fee,total,updated_at,delivered_at,cancelled_at
 ) values
   ('d5000000-0000-4000-8000-000000000011','b5000000-0000-4000-8000-0000000000e1','SELF-11','SELF-11','cancelled','delivery','delivery',
-   'self-request-11','CLIENTE_SINTETICO_NO_CACHEAR','Centro','Mendoza 11','+540000000000','cash',1000,0,1000, now()),
+   'self-request-11','CLIENTE_SINTETICO_NO_CACHEAR','Centro','Mendoza 11','+540000000000','cash',1000,0,1000, now(),null,now()),
   ('d5000000-0000-4000-8000-000000000012','b5000000-0000-4000-8000-0000000000e1','SELF-12','SELF-12','delivered','delivery','delivery',
-   'self-request-12','CLIENTE_SINTETICO_NO_CACHEAR','Centro','Mendoza 12','+540000000000','cash',1000,0,1000, now() - interval '3 days'),
+   'self-request-12','CLIENTE_SINTETICO_NO_CACHEAR','Centro','Mendoza 12','+540000000000','cash',1000,0,1000, now() - interval '3 days',now() - interval '3 days',null),
   -- De otro comercio, entregado hoy: no puede sumar.
   ('d5000000-0000-4000-8000-000000000013','b5000000-0000-4000-8000-0000000000e2','SELF-13','SELF-13','delivered','delivery','delivery',
-   'self-request-13','CLIENTE_SINTETICO_NO_CACHEAR','Centro','Roca 13','+540000000000','cash',1000,0,1000, now());
+   'self-request-13','CLIENTE_SINTETICO_NO_CACHEAR','Centro','Roca 13','+540000000000','cash',1000,0,1000, now(),now(),null),
+  -- Termino hoy. Una modificacion posterior llevo updated_at a otro dia.
+  ('d5000000-0000-4000-8000-000000000014','b5000000-0000-4000-8000-0000000000e1','SELF-14','SELF-14','delivered','delivery','delivery',
+   'self-request-14','CLIENTE_SINTETICO_NO_CACHEAR','Centro','Mendoza 14','+540000000000','cash',1000,0,1000, now() + interval '3 days',now(),null),
+  ('d5000000-0000-4000-8000-000000000015','b5000000-0000-4000-8000-0000000000e1','SELF-15','SELF-15','rejected','delivery','delivery',
+   'self-request-15','CLIENTE_SINTETICO_NO_CACHEAR','Centro','Mendoza 15','+540000000000','cash',1000,0,1000, now() + interval '2 days',null,null);
+
+update public.orders set updated_at=now() + interval '2 days'
+ where id='d5000000-0000-4000-8000-000000000015';
 
 select pg_temp.as_user('a5000000-0000-4000-8000-0000000000e1','c5000000-0000-4000-8000-0000000000e1');
 
 -- FINISHED_TODAY_SERVER_COUNT
 select is(
   (public.get_business_finished_today('b5000000-0000-4000-8000-0000000000e1', null) ->> 'delivered')::integer,
-  1, 'cuenta el entregado de hoy y no el de anteayer');
+  2, 'cuenta los entregados por delivered_at y no mueve el cierre por updated_at');
 select is(
   (public.get_business_finished_today('b5000000-0000-4000-8000-0000000000e1', null) ->> 'cancelled')::integer,
-  1, 'y separa los cancelados en vez de sumarlos como si fueran lo mismo');
+  2, 'y usa cancelled_at/rejected_at estables para los cierres sin entrega');
 select is(
   public.get_business_finished_today('b5000000-0000-4000-8000-0000000000e1', null) ->> 'timezone',
   'America/Argentina/Buenos_Aires', 'y declara con que huso conto, que es el del negocio');
+select ok(
+  (select updated_at::date > delivered_at::date from public.orders
+    where id='d5000000-0000-4000-8000-000000000014'),
+  'el pedido modificado despues conserva el dia terminal original');
 select throws_ok(
   $$select public.get_business_finished_today('b5000000-0000-4000-8000-0000000000e2', null)$$,
   '42501', 'operador no autorizado',
@@ -276,6 +328,11 @@ select throws_ok(
   $$select public.get_business_finished_today('b5000000-0000-4000-8000-0000000000e1','UTC')$$,
   '22023', 'la zona pedida no es la del negocio',
   'el dia comercial no se negocia con el cliente, ni siquiera con una zona real');
+select throws_ok(
+  $$select public.get_business_finished_today(
+      'b5000000-0000-4000-8000-0000000000e1', null, date '2000-01-01')$$,
+  '42883', null,
+  'el cliente no puede elegir otra fecha porque la RPC de hoy no la acepta');
 -- Y sin huso configurado falla cerrado en vez de suponer uno.
 select pg_temp.as_user('a5000000-0000-4000-8000-0000000000e1','c5000000-0000-4000-8000-0000000000e3');
 select throws_ok(

@@ -142,6 +142,8 @@ let openingStatusRaw = null;
 let openingLoadStarted = false;
 /** Lo último que contestó el servidor sobre los pedidos cerrados de hoy. */
 let finishedToday = null;
+/** Una sola consulta aunque coincidan el comando local y el snapshot remoto. */
+let finishedTodayRequest = null;
 let deviceResults = {};
 let deviceCheckPrinters = [];
 let devicePrintersLoadStarted = false;
@@ -182,6 +184,7 @@ export function configureBusinessOperations(next = {}) {
   openingStatusRaw = null;
   openingLoadStarted = false;
   finishedToday = null;
+  finishedTodayRequest = null;
   deviceResults = {};
   deviceCheckPrinters = [];
   devicePrintersLoadStarted = false;
@@ -315,19 +318,27 @@ export function businessOpeningStatus() {
  */
 export async function refreshBusinessFinishedToday() {
   if (typeof context?.getFinishedToday !== 'function') return null;
-  const respuesta = await context.getFinishedToday();
-  // Una lectura fallida NO pisa el último número bueno con un cero: entre «no
-  // pude preguntar» y «cerraste cero pedidos» hay toda la diferencia, y en la
-  // tira los dos se leerían igual.
-  const dato = respuesta?.data;
-  if (!respuesta?.ok || !dato || typeof dato !== 'object' || Array.isArray(dato)) return finishedToday;
-  finishedToday = {
-    delivered: Number(dato.delivered || 0),
-    cancelled: Number(dato.cancelled || 0),
-    businessDate: String(dato.business_date || ''),
-  };
-  context.onChange?.();
-  return finishedToday;
+  if (finishedTodayRequest) return finishedTodayRequest;
+  finishedTodayRequest = (async () => {
+    const respuesta = await context.getFinishedToday();
+    // Una lectura fallida NO pisa el último número bueno con un cero: entre «no
+    // pude preguntar» y «cerraste cero pedidos» hay toda la diferencia, y en la
+    // tira los dos se leerían igual.
+    const dato = respuesta?.data;
+    if (!respuesta?.ok || !dato || typeof dato !== 'object' || Array.isArray(dato)) return finishedToday;
+    finishedToday = {
+      delivered: Number(dato.delivered || 0),
+      cancelled: Number(dato.cancelled || 0),
+      businessDate: String(dato.business_date || ''),
+    };
+    context.onChange?.();
+    return finishedToday;
+  })();
+  try {
+    return await finishedTodayRequest;
+  } finally {
+    finishedTodayRequest = null;
+  }
 }
 
 /** `null` mientras el servidor no contestó. Nunca se inventa un cero. */
@@ -668,6 +679,7 @@ export function resetBusinessOperationsForTests() {
   openingStatusRaw = null;
   openingLoadStarted = false;
   finishedToday = null;
+  finishedTodayRequest = null;
   deviceResults = {};
   deviceCheckPrinters = [];
   devicePrintersLoadStarted = false;

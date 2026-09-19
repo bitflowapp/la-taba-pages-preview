@@ -80,8 +80,14 @@ test('los husos se validan contra el catálogo de PostgreSQL, no contra una list
 test('la cuenta de finalizados hoy sale del negocio y no del parámetro del cliente', () => {
   const cuerpo = cuerpoDeLaUltimaDefinicion('get_business_finished_today');
   assert.match(cuerpo, /b\.operating_timezone/);
+  assert.doesNotMatch(cuerpo, /p_business_date/);
+  assert.match(cuerpo, /\(now\(\) at time zone v_timezone\)::date/);
   assert.match(cuerpo, /v_start := v_date::timestamp at time zone v_timezone/);
   assert.match(cuerpo, /v_end := \(v_date \+ 1\)::timestamp at time zone v_timezone/);
+  assert.match(cuerpo, /o\.delivered_at/);
+  assert.match(cuerpo, /o\.rejected_at/);
+  assert.match(cuerpo, /coalesce\(o\.cancelled_at, o\.canceled_at\)/);
+  assert.doesNotMatch(cuerpo, /o\.updated_at\s*[<>]=?/);
   assert.match(cuerpo, /la zona pedida no es la del negocio/);
   assert.match(cuerpo, /el negocio no tiene huso horario configurado/);
 });

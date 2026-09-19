@@ -19,7 +19,7 @@
 -- QUE HABILITA ESTA MIGRACION
 -- ---------------------------
 --   ready       -> on_the_way   (negocio, delivery, SIN rider asignado)
---   on_the_way  -> delivered    (negocio, delivery, SIN rider asignado)
+--   on_the_way  -> delivered    UNICAMENTE por confirm_business_delivery_code
 --
 -- `assigned_rider_user_id is null` no es una comodidad: es la linea que separa
 -- los dos mundos. Con un repartidor asignado, el pedido es suyo y se cierra
@@ -28,22 +28,12 @@
 --
 -- POR QUE ESTO NO DEBILITA EL CODIGO DE ENTREGA
 -- ---------------------------------------------
--- `prevent_rider_unverified_delivery` exige el codigo cuando
---
---     new.assigned_rider_user_id = auth.uid()
---     AND has_business_role(business_id, array['rider'])
---
--- es decir: cuando quien entrega es EL REPARTIDOR ASIGNADO. Ese control existe
--- para que un repartidor no pueda declarar entregado algo que no entrego; es su
--- prueba de haber llegado hasta el cliente. No es -y nunca fue- un control
--- sobre el comercio, que responde con su propia plata y su propio nombre.
---
--- Las dos clausulas nuevas exigen `assigned_rider_user_id is null`, asi que
--- jamas coinciden con la condicion del guard: el codigo sigue siendo
--- obligatorio exactamente donde ya lo era. Y para que eso no dependa de que
--- nadie toque la matriz mas adelante, se agrega el guard SIMETRICO
--- `prevent_business_delivery_over_rider`, que corta por si mismo cualquier
--- cierre de negocio sobre un pedido con repartidor asignado.
+-- La matriz NO habilita `on_the_way -> delivered` para el negocio. Ese cambio
+-- pertenece exclusivamente a `confirm_business_delivery_code`, que valida el
+-- codigo contra el handoff, registra el intento y recien entonces actualiza la
+-- fila. Un trigger adicional exige la marca transaccional privada de esa RPC:
+-- ni `transition_order`, ni `change_order_status`, ni un UPDATE directo pueden
+-- cerrar la entrega del comercio por otra puerta.
 --
 -- UNA VEZ DESPACHADO, EL PEDIDO ES DEL COMERCIO
 -- ---------------------------------------------
@@ -172,26 +162,14 @@ begin
         and v_new_status = 'delivered'
       )
       -- ===== Reparto propio del comercio (20260919) ==========================
-      -- El negocio despacha y cierra su propia entrega, y SOLO mientras no haya
-      -- un repartidor con el pedido en la mano. `assigned_rider_user_id is null`
-      -- es la condicion entera: con rider asignado estas dos clausulas no
-      -- existen y la entrega sigue siendo suya, con su codigo.
-      --
-      -- No se agrega 'arrived': para quien lleva el pedido en su propia moto,
-      -- "llegue" y "entregue" ocurren con dos segundos de diferencia y serian
-      -- dos toques para el mismo hecho. La cadena completa sigue disponible
-      -- para el rider, que si necesita distinguirlas.
+      -- El negocio solo despacha su propia entrega. El cierre no es una arista
+      -- de esta matriz: lo hace confirm_business_delivery_code despues de
+      -- validar el codigo del cliente.
       or (
         v_current_status = 'ready'
         and v_order.delivery_mode = 'delivery'
         and v_order.assigned_rider_user_id is null
         and v_new_status = 'on_the_way'
-      )
-      or (
-        v_current_status = 'on_the_way'
-        and v_order.delivery_mode = 'delivery'
-        and v_order.assigned_rider_user_id is null
-        and v_new_status = 'delivered'
       )
       or (
         v_current_status not in ('delivered', 'cancelled', 'rejected')
@@ -314,22 +292,17 @@ end;
 $$;
 
 comment on function public.change_order_status(uuid, text, text) is
-  'Authenticated, role-aware order transition with expected-status concurrency control. El negocio puede despachar y entregar su propio delivery mientras no haya repartidor asignado.';
+  'Authenticated, role-aware order transition with expected-status concurrency control. El negocio puede despachar su propio delivery; solo confirm_business_delivery_code puede entregarlo.';
 
 revoke all on function public.change_order_status(uuid, text, text)
 from public, anon, authenticated;
 
--- ── El guard simetrico: el negocio no cierra la entrega de un repartidor ─────
+-- ── El guard: el negocio solo cierra una entrega por la RPC del codigo ───────
 --
--- La matriz de `change_order_status` ya lo impide. Este trigger lo impide OTRA
--- VEZ, y a proposito: la matriz es una expresion booleana de veinte lineas que
--- alguien va a volver a editar, y el dia que una clausula pierda su
--- `assigned_rider_user_id is null` el sistema dejaria de exigir el codigo sin
--- que nada avise. Un invariante que sostiene la prueba de entrega de un
--- repartidor no puede depender de que nadie se equivoque al leer un `or`.
---
--- Es el espejo exacto de `prevent_rider_unverified_delivery`: aquel cubre al
--- repartidor asignado, este cubre a todos los demas.
+-- La matriz ya lo impide. Este trigger sostiene el mismo invariante aunque una
+-- funcion SECURITY DEFINER futura escriba la fila directamente. La marca local
+-- `taba.delivery_code_confirmed` solo se establece dentro de
+-- `confirm_business_delivery_code`, despues de validar el handoff.
 create or replace function public.prevent_business_delivery_over_rider()
 returns trigger
 language plpgsql
@@ -340,11 +313,10 @@ begin
   if public.normalize_order_status_vocabulary(new.status) = 'delivered'
     and public.normalize_order_status_vocabulary(old.status) is distinct from 'delivered'
     and new.delivery_mode = 'delivery'
-    and new.assigned_rider_user_id is not null
-    and new.assigned_rider_user_id is distinct from auth.uid()
+    and auth.uid() is not null
+    and public.has_business_role(new.business_id, array['owner', 'admin', 'staff'])
     and coalesce(current_setting('taba.delivery_code_confirmed', true), '') <> 'true' then
-    raise exception 'la entrega la confirma el repartidor asignado con el codigo del cliente'
-      using errcode = '42501';
+    raise exception 'codigo de entrega no confirmado' using errcode = '55000';
   end if;
   return new;
 end;
@@ -364,16 +336,15 @@ revoke all on function public.prevent_business_delivery_over_rider()
 from public, anon, authenticated;
 
 comment on function public.prevent_business_delivery_over_rider() is
-  'Un pedido con repartidor asignado solo se entrega con el codigo del cliente. Espejo de prevent_rider_unverified_delivery para el resto de los actores.';
+  'El comercio solo puede cerrar un delivery desde confirm_business_delivery_code, despues de validar el codigo del cliente.';
 
 -- ── La huella de auditoria: quien entrego, y con que prueba ─────────────────
 --
 -- El trigger de `order.status_changed` ya registra actor y rol en cada cambio,
 -- asi que la entrega del comercio NO queda sin rastro sin esto. Lo que agrega
 -- este evento es la distincion que un cambio de estado generico no puede hacer:
--- «lo entrego el comercio, sin repartidor y sin codigo» y «lo entrego el
--- repartidor probando el codigo del cliente» son dos hechos con consecuencias
--- distintas -uno tiene prueba de haber llegado al cliente y el otro no- y en un
+-- «lo entrego el comercio, sin repartidor, validando el codigo» y «lo entrego
+-- el repartidor validando el codigo» son dos hechos operativos distintos. En un
 -- reclamo hay que poder separarlos sin reconstruirlo desde la ausencia de otra
 -- fila.
 create or replace function public.record_business_self_delivery()
@@ -427,7 +398,7 @@ revoke all on function public.record_business_self_delivery()
 from public, anon, authenticated;
 
 comment on function public.record_business_self_delivery() is
-  'Deja explicito en order_events que una entrega la cerro el comercio sin repartidor y sin codigo del cliente.';
+  'Deja explicito en order_events que una entrega la cerro el comercio sin repartidor e indica si valido el codigo del cliente.';
 
 -- ============================================================================
 -- EL COMERCIO CIERRA SU ENTREGA CON EL CÓDIGO DEL CLIENTE
@@ -540,7 +511,8 @@ begin
     return v_result || jsonb_build_object('ok', true, 'outcome', 'already_delivered', 'idempotent_replay', false);
   end if;
 
-  if v_order.revision <> p_expected_revision then
+  if p_expected_revision is null
+    or v_order.revision is distinct from p_expected_revision then
     raise exception 'revision desactualizada: esperada %, actual %',
       p_expected_revision, v_order.revision using errcode = '40001';
   end if;
@@ -672,8 +644,7 @@ comment on function public.confirm_business_delivery_code(uuid, bigint, text, te
 -- disponible sin costo para quien lo necesite.
 create or replace function public.get_business_finished_today(
   p_business_id uuid,
-  p_timezone text,
-  p_business_date date default null
+  p_timezone text
 )
 returns jsonb
 language plpgsql
@@ -719,16 +690,17 @@ begin
     raise exception 'la zona pedida no es la del negocio' using errcode = '22023';
   end if;
 
-  v_date := coalesce(p_business_date, (now() at time zone v_timezone)::date);
+  -- "Hoy" no recibe una fecha del cliente. Se calcula siempre con el reloj de
+  -- PostgreSQL y el huso persistido por el negocio. Una consulta historica, si
+  -- alguna vez se necesita, debe ser otra RPC con otro nombre y otro contrato.
+  v_date := (now() at time zone v_timezone)::date;
   v_start := v_date::timestamp at time zone v_timezone;
   v_end := (v_date + 1)::timestamp at time zone v_timezone;
 
-  -- Se cuenta por `updated_at` y no por `created_at`: la pregunta es «cuanto
-  -- cerre hoy», y un pedido que entro a las 23:50 y se entrego a las 00:10
-  -- pertenece al trabajo de la madrugada, no al del dia anterior. `delivered_at`
-  -- seria mas preciso para los entregados pero no existe para los cancelados,
-  -- y dos ventanas distintas en el mismo contador se explican peor de lo que
-  -- valen.
+  -- Los timestamps terminales son estables. `updated_at` no lo es: una nota o
+  -- una reparacion posterior no puede mover un cierre a otro dia. El trigger
+  -- historico `set_order_status_timestamps` mantiene delivered_at y los dos
+  -- nombres legacy de cancelacion.
   select
     count(*) filter (where public.normalize_order_status_vocabulary(o.status) = 'delivered'),
     count(*) filter (where public.normalize_order_status_vocabulary(o.status) in ('cancelled', 'rejected'))
@@ -736,8 +708,16 @@ begin
     from public.orders o
    where o.business_id = p_business_id
      and o.origin = 'production'
-     and o.updated_at >= v_start
-     and o.updated_at < v_end
+     and case public.normalize_order_status_vocabulary(o.status)
+           when 'delivered' then o.delivered_at
+           when 'rejected' then o.rejected_at
+           else coalesce(o.cancelled_at, o.canceled_at)
+         end >= v_start
+     and case public.normalize_order_status_vocabulary(o.status)
+           when 'delivered' then o.delivered_at
+           when 'rejected' then o.rejected_at
+           else coalesce(o.cancelled_at, o.canceled_at)
+         end < v_end
      and public.normalize_order_status_vocabulary(o.status) in ('delivered', 'cancelled', 'rejected');
 
   return jsonb_build_object(
@@ -754,15 +734,10 @@ begin
 end;
 $finished_today$;
 
-revoke all on function public.get_business_finished_today(uuid, text, date)
+revoke all on function public.get_business_finished_today(uuid, text)
 from public, anon;
-grant execute on function public.get_business_finished_today(uuid, text, date)
+grant execute on function public.get_business_finished_today(uuid, text)
 to authenticated;
 
-comment on function public.get_business_finished_today(uuid, text, date) is
+comment on function public.get_business_finished_today(uuid, text) is
   'Cuenta en el servidor los pedidos cerrados del dia comercial de un negocio. Exige rol de negocio y una zona horaria valida; nunca devuelve filas de pedidos.';
-
--- El indice que sostiene el contador. Sin el, contar una noche pico recorre
--- todos los pedidos del comercio.
-create index if not exists orders_business_updated_status_idx
-  on public.orders (business_id, updated_at desc, status);

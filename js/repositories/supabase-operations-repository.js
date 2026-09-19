@@ -50,7 +50,6 @@ export function createSupabaseOperationsRepository({ client, businessId }) {
     getFinishedToday: () => rpc('get_business_finished_today', {
       p_business_id: businessId,
       p_timezone: null,
-      p_business_date: null,
     }),
     setOpenState: (status) => rpc('set_business_open_state', { p_business_id: businessId, p_status: status }),
   });

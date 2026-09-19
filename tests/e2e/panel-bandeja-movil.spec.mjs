@@ -99,7 +99,11 @@ async function servidorDePedidos(page, { pollMs = 1500, compartido = null } = {}
         // `maybeSingle()` pide un objeto, no una lista.
         return json(fila);
       }
-      return json(estado.ordenes);
+      const filtroEstados = String(query.get('status') || '');
+      const estados = filtroEstados.startsWith('in.(')
+        ? new Set(filtroEstados.slice(4, -1).split(',').map((value) => value.trim()))
+        : null;
+      return json(estados ? estado.ordenes.filter((order) => estados.has(order.status)) : estado.ordenes);
     }
 
     if (path.includes('/rpc/transition_order')) {
@@ -156,6 +160,7 @@ async function servidorDePedidos(page, { pollMs = 1500, compartido = null } = {}
       fila.revision += 1;
       fila.updated_at = new Date().toISOString();
       fila.delivered_at = new Date().toISOString();
+      if (Number.isInteger(estado.finalizadosHoy)) estado.finalizadosHoy += 1;
       estado.aplicadas.push({ clave, orden: fila.id, estado: fila.status, revision: fila.revision });
       const res = { ...fila, ok: true, outcome: 'confirmed', code_verified: true, idempotent_replay: false };
       if (clave) estado.recibos.set(clave, res);
@@ -1300,10 +1305,32 @@ test('un comercio cerrado o pausado lo dice en la cabecera; uno abierto no gasta
  * demostrar.
  * ======================================================================== */
 
-async function abrirPanelDe(context, estado, { comoEmpleado }) {
+async function abrirPanelDe(context, estado, {
+  comoEmpleado, observarFinalizados = false, sinRepartidores = false,
+}) {
   const page = await context.newPage();
   await instalarDatosDePrueba(page, { conSesion: true, comoEmpleado });
   await servidorDePedidos(page, { pollMs: 1200, compartido: estado });
+  if (observarFinalizados) {
+    await page.route(`${SUPABASE_URL}/rest/v1/rpc/get_business_finished_today`, (route) => {
+      estado.consultasFinalizados = Number(estado.consultasFinalizados || 0) + 1;
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ok: true,
+          delivered: estado.finalizadosHoy,
+          cancelled: 0,
+          business_date: '2026-09-19',
+        }),
+      });
+    });
+  }
+  if (sinRepartidores) {
+    await page.route(`${SUPABASE_URL}/rest/v1/rpc/list_active_business_riders`, (route) => route.fulfill({
+      status: 200, contentType: 'application/json', body: '[]',
+    }));
+  }
   await page.goto('/#business');
   await page.locator('[data-order-tray]').waitFor({ state: 'visible', timeout: 30_000 });
   return page;
@@ -1348,6 +1375,49 @@ test('lo que hace una persona del comercio aparece en la pantalla de la otra, si
     estado.ordenes.push(pedidoNuevo('LT-2097'));
     await expect(caja.locator('[data-order-card="LT-2097"]')).toBeVisible({ timeout: 25_000 });
     await expect(cocina.locator('[data-order-card="LT-2097"]')).toBeVisible({ timeout: 25_000 });
+  } finally {
+    await contextoCaja.close();
+    await contextoCocina.close();
+  }
+});
+
+test('si otra persona finaliza, el contador del primer operador se actualiza sin polling extra', async ({ browser }) => {
+  const contextoCaja = await browser.newContext({ viewport: TELEFONO, isMobile: true });
+  const contextoCocina = await browser.newContext({ viewport: TELEFONO, isMobile: true });
+  const estado = {
+    ordenes: pedidos(), transiciones: [], aplicadas: [],
+    recibos: new Map(), replays: [], fallaTransicion: null,
+    finalizadosHoy: 14, consultasFinalizados: 0,
+  };
+  try {
+    const caja = await abrirPanelDe(contextoCaja, estado, {
+      comoEmpleado: false, observarFinalizados: true, sinRepartidores: true,
+    });
+    const cocina = await abrirPanelDe(contextoCocina, estado, {
+      comoEmpleado: true, observarFinalizados: true, sinRepartidores: true,
+    });
+    const contadorCaja = caja.locator('[data-tray-finished] .tray-pulse-n');
+    await expect(contadorCaja).toHaveText('14', { timeout: 20_000 });
+    await expect(cocina.locator('[data-tray-finished] .tray-pulse-n')).toHaveText('14');
+    const consultasIniciales = estado.consultasFinalizados;
+
+    const tarjeta = cocina.locator('[data-order-card="LT-2044"]');
+    await tarjeta.locator('[data-production-business-next]').click();
+    const entrega = cocina.locator('[data-tray-section="entrega"] [data-order-card="LT-2044"]');
+    await expect(entrega).toBeVisible({ timeout: 20_000 });
+    await entrega.locator('[data-production-delivery-code]').fill('4417');
+    await entrega.locator('[data-production-business-confirm-delivery]').click();
+
+    await expect.poll(
+      () => estado.ordenes.find((order) => order.public_code === 'LT-2044')?.status,
+      { timeout: 20_000 },
+    ).toBe('delivered');
+    // Caja sólo consulta pedidos activos: al ver que LT-2044 desapareció del
+    // snapshot invalida una vez el agregado. No existe un segundo polling del
+    // contador; la misma señal que actualiza la bandeja dispara esta lectura.
+    await expect(caja.locator('[data-order-card="LT-2044"]')).toHaveCount(0, { timeout: 25_000 });
+    await expect(contadorCaja).toHaveText('15', { timeout: 10_000 });
+    expect(estado.consultasFinalizados).toBeGreaterThan(consultasIniciales);
   } finally {
     await contextoCaja.close();
     await contextoCocina.close();

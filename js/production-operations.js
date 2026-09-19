@@ -1389,12 +1389,17 @@ async function startBusinessIntake(businessId) {
     fetchSnapshot: () => repository.fetchBusinessOrderSnapshot(),
     subscribeRealtime: (handlers) => repository.watchBusinessOrderInvalidations(handlers),
     getCurrentOrders: () => getState().orders,
-    applyOrders: (orders) => {
+    applyOrders: (orders, { removedOrderIds = [] } = {}) => {
       updateState((draft) => {
         draft.orders = orders;
         draft.lastOrderId = null;
         draft.simulation = null;
       });
+      // La bandeja consulta sólo estados activos. Si un pedido desaparece de
+      // un snapshot autoritativo, otra persona pudo haberlo cerrado. Refrescar
+      // el agregado en ese cambio evita un segundo polling permanente y deja
+      // el contador alineado con la misma foto que ya actualizó la bandeja.
+      if (removedOrderIds.length > 0) void refreshBusinessFinishedToday();
       // La respuesta del rider llega por fuera del Panel, así que el estado de
       // la oferta y la capacidad se releen con cada foto de pedidos. Sin esto,
       // «Esperando respuesta» se quedaba puesto hasta el próximo click.

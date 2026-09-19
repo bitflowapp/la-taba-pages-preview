@@ -352,6 +352,14 @@ create trigger orders_prevent_business_delivery_over_rider
 before update of status on public.orders
 for each row execute function public.prevent_business_delivery_over_rider();
 
+-- Una funcion de trigger no necesita que NADIE pueda ejecutarla: la corre el
+-- trigger, con el dueno de la tabla. Sin este revoke queda con EXECUTE para
+-- PUBLIC -el valor por defecto de PostgreSQL- y entra en el recuento de
+-- `production_least_privilege_test`, que cuenta cuantas SECURITY DEFINER puede
+-- ejecutar `anon`. Es la misma linea que lleva `prevent_rider_unverified_delivery`.
+revoke all on function public.prevent_business_delivery_over_rider()
+from public, anon, authenticated;
+
 comment on function public.prevent_business_delivery_over_rider() is
   'Un pedido con repartidor asignado solo se entrega con el codigo del cliente. Espejo de prevent_rider_unverified_delivery para el resto de los actores.';
 
@@ -397,6 +405,9 @@ drop trigger if exists orders_record_business_self_delivery on public.orders;
 create trigger orders_record_business_self_delivery
 after update of status on public.orders
 for each row execute function public.record_business_self_delivery();
+
+revoke all on function public.record_business_self_delivery()
+from public, anon, authenticated;
 
 comment on function public.record_business_self_delivery() is
   'Deja explicito en order_events que una entrega la cerro el comercio sin repartidor y sin codigo del cliente.';

@@ -305,7 +305,7 @@ select pg_temp.as_user('a5000000-0000-4000-8000-0000000000e1','c5000000-0000-400
 -- FINISHED_TODAY_SERVER_COUNT
 select is(
   (public.get_business_finished_today('b5000000-0000-4000-8000-0000000000e1', null) ->> 'delivered')::integer,
-  2, 'cuenta los entregados por delivered_at y no mueve el cierre por updated_at');
+  3, 'cuenta los dos cierres previos y el entregado por delivered_at sin moverlo por updated_at');
 select is(
   (public.get_business_finished_today('b5000000-0000-4000-8000-0000000000e1', null) ->> 'cancelled')::integer,
   2, 'y usa cancelled_at/rejected_at estables para los cierres sin entrega');

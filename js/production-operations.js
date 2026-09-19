@@ -36,11 +36,13 @@ import {
 } from './business/business-tray-patch.js';
 import {
   allowedBusinessOperationViews,
+  businessFinishedToday,
   businessOpeningStatus,
   businessOperationViewLabel,
   BUSINESS_OPERATION_VIEWS,
   configureBusinessOperations,
   primeBusinessOpeningStatus,
+  refreshBusinessFinishedToday,
   handleBusinessOperationsAction,
   handleBusinessOperationsInput,
   renderBusinessOperations,
@@ -1067,12 +1069,32 @@ function requirePaymentConsultationAccess() {
   return { ok: false, message: 'Tu sesión no tiene permiso para consultar pagos.' };
 }
 
+/*
+ * LA ACCION SIGUIENTE DEL NEGOCIO, INCLUIDO EL REPARTO PROPIO.
+ * ---------------------------------------------------------------------------
+ * Las dos ultimas ramas son el reparto que hace el comercio con su propia gente
+ * y espejan EXACTAMENTE lo que habilito la migracion 20260919120000 en la rama
+ * `v_is_business` de `change_order_status`:
+ *
+ *     ready      -> on_the_way   delivery, SIN repartidor asignado
+ *     on_the_way -> delivered    delivery, SIN repartidor asignado
+ *
+ * `assignedRiderId` decide, y decide igual de los dos lados. Con un repartidor
+ * en la calle el pedido es suyo: el Panel no ofrece la accion porque el
+ * servidor no la acepta, y no la acepta porque la entrega la cierra quien
+ * llego hasta el cliente, con su codigo. Un boton de mas aca seria un 23514 y
+ * un pedido que no se mueve -el defecto H1 otra vez-.
+ */
 export function nextBusinessStatus(order = {}) {
   const current = workflowStatus(order);
   if (current === 'submitted') return 'accepted';
   if (current === 'accepted') return 'preparing';
   if (current === 'preparing') return 'ready';
   if (current === 'ready' && order.deliveryMode === 'pickup') return 'delivered';
+  if (order.deliveryMode === 'delivery' && !order.assignedRiderId) {
+    if (current === 'ready') return 'on_the_way';
+    if (current === 'on_the_way') return 'delivered';
+  }
   return null;
 }
 
@@ -1459,6 +1481,7 @@ async function configureBusinessRuntime(result) {
     prepareDailyReconciliation: (input) => operationsRepository.prepareDailyReconciliation(input),
     closeDailyReconciliation: (input) => operationsRepository.closeDailyReconciliation(input),
     getOpeningStatus: () => operationsRepository.getOpeningStatus(),
+    getFinishedToday: () => operationsRepository.getFinishedToday(),
     setBusinessOpenState: (status) => operationsRepository.setOpenState(status),
     listAccessRequests: (status) => businessConfigRepository.listAccessRequests(status),
     reviewAccessRequest: (input) => businessConfigRepository.reviewAccessRequest(input),
@@ -1493,6 +1516,9 @@ async function configureBusinessRuntime(result) {
    * que un servidor lento retrasa la bandeja entera para decorar una línea.
    */
   void primeBusinessOpeningStatus();
+  // El recuento de cerrados del dia arranca con el Panel, por el mismo motivo y
+  // con el mismo cuidado: sin `await`, para no colgar la bandeja de una RPC mas.
+  void refreshBusinessFinishedToday();
 
   businessCommandController = createBusinessPanelController({
     platform: desktopPlatform,
@@ -3086,8 +3112,37 @@ function trayPulseMarkup(bandeja) {
   return `
     <div class="tray-pulse" data-panel-region="tray-headline" data-tray-pulse>
       <p class="sr-only" role="status" aria-live="polite" data-order-tray-headline>${escapeHtml(bandeja?.headline || '')}</p>
-      <div class="tray-pulse-row">${items}</div>
+      <div class="tray-pulse-row">${items}${trayFinishedMarkup()}</div>
     </div>`;
+}
+
+/*
+ * «FINALIZADOS», EL SEXTO CASILLERO, QUE NO SALE DE LA BANDEJA.
+ * ---------------------------------------------------------------------------
+ * Los otros cinco cuentan lo que está EN la bandeja. Este cuenta lo que ya
+ * salió de ella, y por eso no se puede contar acá: el repositorio sirve sólo
+ * estados activos —`delivered` no entra— así que en memoria el número sería
+ * cero al abrir, cero después de recargar y distinto en cada pestaña.
+ *
+ * Lo cuenta el servidor, con el día comercial del negocio y su zona declarada
+ * (`get_business_finished_today`). No lleva a ninguna sección porque no hay
+ * ninguna a la que ir: es un cierre de jornada, no trabajo pendiente. Va como
+ * `<span>` y no como botón apagado justamente para eso —un botón deshabilitado
+ * promete algo que en otro momento se podrá tocar—.
+ *
+ * Mientras el servidor no contestó dice «—», no «0». Entre «no pude preguntar»
+ * y «no cerraste ninguno» hay toda la diferencia del mundo a las once de la
+ * noche, y un cero inventado es el que manda a alguien a revisar qué pasó.
+ */
+function trayFinishedMarkup() {
+  const hoy = businessFinishedToday();
+  const valor = hoy ? String(hoy.delivered) : '—';
+  return `
+        <span class="tray-pulse-item is-closed${hoy ? '' : ' is-unknown'}" data-tray-finished
+          title="${escapeAttribute(hoy ? 'Pedidos entregados en el día del comercio' : 'Todavía sin respuesta del servidor')}">
+          <span class="tray-pulse-n">${escapeHtml(valor)}</span>
+          <span class="tray-pulse-k">Finalizados</span>
+        </span>`;
 }
 
 /**
@@ -3291,12 +3346,10 @@ function businessOrderMarkup(order, attention = []) {
             data-production-business-next="${escapeAttribute(order.id)}"
             data-next-status="${escapeAttribute(next)}"
             ${orderActionsInFlight.has(order.id) ? 'disabled aria-disabled="true"' : ''}
-          >${orderActionsInFlight.has(order.id) ? 'Confirmando…' : escapeHtml(actionLabel(next, 'business'))}</button>
+          >${orderActionsInFlight.has(order.id) ? 'Confirmando…' : escapeHtml(actionLabel(next, 'business', order))}</button>
         ` : ''}
       </div>
-      ${despachoBloqueadoMarkup(order, {
-        current, canAssignRider, offerPending, hayRiders: activeBusinessRiders.length > 0,
-      })}
+      ${riderCustodyMarkup(order, { current })}
       ${riderOfferMarkup(offer)}
       ${canAssignRider && !offerPending && riderOptions ? `
         <div class="production-rider-assignment">
@@ -3332,36 +3385,39 @@ function businessOrderMarkup(order, attention = []) {
 }
 
 /*
- * EL PEDIDO QUE ESTÁ LISTO Y NO TIENE CÓMO SALIR.
+ * ¿QUIEN TIENE ESTE PEDIDO?
  * ===========================================================================
- * Un pedido de DELIVERY en `ready` no tiene acción de negocio, y no es un
- * descuido del Panel: el servidor sólo habilita `ready -> delivered` cuando el
- * pedido es de RETIRO (`transition_order`, rama `v_is_business` de
- * `20260725030000_taba_production_orders.sql`), y la cadena
- * assigned/picked_up/on_the_way/arrived pertenece al rol `rider`. Para cerrar
- * una entrega hace falta una cuenta de repartidor del comercio, y
- * `business_members` tiene `unique (business_id, user_id)`: el dueño NO puede
- * ser además rider de su propio negocio.
+ * Un delivery despues de «Listo» puede estar en dos manos distintas, y hasta
+ * ahora la tarjeta no decia en cual:
  *
- * Hasta acá eso se manifestaba como una tarjeta MUDA —sin botón, sin
- * explicación, con un desplegable vacío cuando no había ningún rider activo— y
- * el pedido se quedaba en «Listos» sin que nadie supiera por qué.
+ *   · EL COMERCIO. Nadie lo asigno: lo lleva alguien del local. El negocio
+ *     tiene la accion («Sale a reparto», y despues «Marcar entregado») porque
+ *     la migracion 20260919120000 se la habilita en el servidor.
+ *   · UN REPARTIDOR. Esta asignado. El pedido es suyo hasta que lo entregue con
+ *     el codigo del cliente, y el negocio NO tiene accion: no por una decision
+ *     de pantalla, sino porque `change_order_status` la rechaza.
  *
- * Esto NO inventa una transición que el servidor rechazaría: ese sería el
- * defecto H1 otra vez, un botón que contesta 42501 y un pedido que no se mueve
- * nunca. Dice qué está pasando y dónde se resuelve. Habilitar el despacho desde
- * el mostrador es un cambio de SERVIDOR y queda anotado como tal.
+ * El segundo caso era el que se veia como una tarjeta muda -sin boton y sin
+ * explicacion-. Ahora dice quien lo tiene y en que anda. No es un aviso ni una
+ * alarma: es el estado de custodia, y por eso se dibuja quieto.
  */
-function despachoBloqueadoMarkup(order, { current, canAssignRider, offerPending, hayRiders }) {
-  const esDeliveryListo = current === 'ready' && order.deliveryMode === 'delivery';
-  if (!esDeliveryListo || offerPending) return '';
-  if (canAssignRider && hayRiders) return '';
+function riderCustodyMarkup(order, { current }) {
+  if (order.deliveryMode !== 'delivery') return '';
+  if (!order.assignedRiderId) return '';
+  if (!['assigned', 'picked_up', 'on_the_way', 'arrived'].includes(current)) return '';
+  const rider = activeBusinessRiders.find((candidate) => candidate.id === order.assignedRiderId);
+  const nombre = rider?.displayName || 'Repartidor asignado';
+  const paso = ({
+    assigned: 'todavía no lo retiró del local',
+    picked_up: 'lo retiró del local',
+    on_the_way: 'está en camino',
+    arrived: 'llegó al domicilio',
+  })[current] || 'tiene el pedido';
   return `
-      <p class="production-order-blocked" data-order-blocked="sin-repartidor">
-        <strong>Listo, esperando repartidor.</strong>
-        Para que salga hace falta una cuenta de repartidor activa del comercio:
-        dala de alta o activala en «Solicitudes». Si lo lleva alguien del local,
-        la entrega se confirma desde la cuenta de ese repartidor.
+      <p class="production-order-custody" data-order-custody="${escapeAttribute(order.assignedRiderId)}">
+        <span class="production-order-custody-who">${escapeHtml(nombre)}</span>
+        <span class="production-order-custody-step">${escapeHtml(paso)}</span>
+        <span class="production-order-custody-note">La entrega la cierra el repartidor con el código del cliente.</span>
       </p>`;
 }
 
@@ -3664,6 +3720,15 @@ async function updateOrderFromAction(orderId, nextStatus, { commandType = 'trans
     if (result.ok) {
       if (isRider) await refreshRiderOrders();
       else await businessIntake?.invalidate?.('status-transition');
+      /*
+       * El recuento de cerrados del día sólo se vuelve a pedir cuando el pedido
+       * terminó. Aceptar o empezar a preparar no lo mueve, y una RPC por cada
+       * toque del mostrador sería pagar una consulta para confirmar que nada
+       * cambió. `cancel_order` entra por acá con `commandType` propio.
+       */
+      const cerroElPedido = TERMINAL_STATUSES.has(normalizeWorkflowStatus(nextStatus, ''))
+        || commandType === 'cancel_order';
+      if (cerroElPedido) void refreshBusinessFinishedToday();
     }
     return {
       handled: true,
@@ -3781,14 +3846,27 @@ function renderDeliveryPoint(addressDetails) {
   </p>`;
 }
 
-function actionLabel(status, actor) {
+/*
+ * El boton dice lo que va a PASAR, no el nombre del estado destino.
+ *
+ * «En camino» describia un estado; la pregunta del mostrador es «¿que hago con
+ * esto?». Para el negocio que reparte con su propia gente los dos pasos son
+ * «Sale a reparto» y «Marcar entregado». Para el rider siguen siendo los suyos.
+ *
+ * `order` llega para distinguir los dos finales que comparten estado destino:
+ * cerrar un RETIRO es confirmar que el cliente se lo llevo del mostrador;
+ * cerrar un DELIVERY propio es declarar que se entrego en la puerta.
+ */
+function actionLabel(status, actor, order = null) {
   if (status === 'accepted') return 'Aceptar pedido';
   if (status === 'preparing') return 'Iniciar preparación';
   if (status === 'ready') return 'Marcar listo';
   if (status === 'picked_up') return 'Registrar retiro';
-  if (status === 'on_the_way') return actor === 'rider' ? 'Salir en camino' : 'En camino';
+  if (status === 'on_the_way') return actor === 'rider' ? 'Salir en camino' : 'Sale a reparto';
   if (status === 'arrived') return 'Marcar llegada';
-  if (status === 'delivered') return 'Confirmar entrega';
+  if (status === 'delivered') {
+    return order?.deliveryMode === 'delivery' ? 'Marcar entregado' : 'Confirmar entrega';
+  }
   return 'Actualizar';
 }
 

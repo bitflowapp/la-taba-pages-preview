@@ -3181,11 +3181,26 @@ export function nextRepositoryStatusForOrder(order) {
   return getNextWorkflowStatus(domainOrder.status, domainOrder.fulfillmentType);
 }
 
+/*
+ * LO QUE VE EL CLIENTE NO PUEDE NOMBRAR A ALGUIEN QUE NO EXISTE.
+ * ---------------------------------------------------------------------------
+ * Decía «El repartidor salió del local». Desde que el comercio puede despachar
+ * su propio reparto (migración 20260919120000), un pedido en `on_the_way`
+ * puede no tener ningún repartidor: lo lleva el dueño en su moto. El cliente
+ * leía sobre una persona que no existe, y si llamaba a preguntar «¿quién me lo
+ * trae?» nadie tenía una respuesta que coincidiera con la pantalla.
+ *
+ * «Tu pedido salió del local» es verdad en los dos casos y además no revela
+ * cómo se organiza el comercio adentro, que es la misma razón por la que el
+ * seguimiento público nunca expuso la identidad del repartidor
+ * (20260725050000_tracking_rider_privacy.sql). No se puede decidir acá con un
+ * `if`: el DTO público de seguimiento no trae -a propósito- si hay rider.
+ */
 function locationLabel(status, deliveryMode) {
   if (deliveryMode === 'pickup') return 'Pedido para retirar en local';
   if (status === 'ready') return 'Pedido listo en el local';
-  if (status === 'on_the_way') return 'El repartidor salió del local';
-  if (status === 'arriving') return 'El repartidor está llegando';
+  if (status === 'on_the_way') return 'Tu pedido salió del local';
+  if (status === 'arriving') return 'Tu pedido está llegando';
   if (status === 'delivered') return 'Pedido entregado';
   if (status === 'cancelled') return 'Pedido cancelado por el negocio';
   return 'Pedido recibido por el local';

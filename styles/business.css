@@ -1132,27 +1132,36 @@ body[data-active-view="business"] .topbar-ops-sound-count {
 }
 
 /* --------------------------------------------------------------------------
-   EL PEDIDO LISTO QUE NO TIENE CÓMO SALIR.
+   QUIÉN TIENE EL PEDIDO.
    --------------------------------------------------------------------------
-   No es un error ni una alarma: es un paso que falta y que se resuelve en otra
-   pantalla. Por eso lleva el lavado de aviso y no el de peligro, y por eso
-   dice dónde se resuelve en vez de describir el problema.
+   No es un aviso ni una alarma: es el estado de custodia de un pedido que está
+   avanzando bien, en manos de otra persona. Por eso va sin color de estado —el
+   lavado de aviso diría «pasa algo» y no pasa nada— y con el borde izquierdo
+   como única marca: separa el bloque sin pedir atención.
    ----------------------------------------------------------------------- */
-.production-order-blocked {
+.production-order-custody {
+  display: grid;
+  gap: 1px;
   margin: 0;
-  padding: 10px 12px;
-  border: 1px solid color-mix(in srgb, var(--panel-warning, #f2b544) 40%, transparent);
-  border-radius: var(--radius-xs, 8px);
-  background: var(--panel-warning-wash, rgb(242 181 68 / 15%));
-  color: var(--panel-ink-2, #b6bcc4);
-  font-size: 12.5px;
-  line-height: 1.45;
+  padding: 8px 0 8px 10px;
+  border-left: 2px solid var(--panel-line-strong, rgb(255 255 255 / 36%));
 }
 
-.production-order-blocked strong {
-  display: block;
-  color: var(--panel-warning, #f2b544);
-  font-size: 13px;
+.production-order-custody-who {
+  color: var(--panel-ink, #eceef1);
+  font-size: 13.5px;
+  font-weight: 800;
+}
+
+.production-order-custody-step {
+  color: var(--panel-ink-2, #b6bcc4);
+  font-size: 12.5px;
+  font-weight: 650;
+}
+
+.production-order-custody-note {
+  color: var(--panel-ink-muted, #9aa0a9);
+  font-size: 11.5px;
 }
 
 /* --------------------------------------------------------------------------
@@ -3466,6 +3475,19 @@ button.operation-metric {
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  /* Con seis casilleros la tira ya no entra en un telefono angosto. El
+     degradado del borde derecho es la senal de que hay mas de ese lado; sin el,
+     «Finalizados» se ve cortado al ras y se lee como un defecto de maquetado.
+     Sólo se aplica cuando hace falta desplazarse. */
+  mask-image: linear-gradient(to right, #000 calc(100% - 22px), transparent 100%);
+}
+
+@media (min-width: 560px) {
+  /* A partir de acá los seis entran enteros: el degradado taparía el último
+     casillero sin ningún motivo. */
+  .tray-pulse-row {
+    mask-image: none;
+  }
 }
 
 .tray-pulse-row::-webkit-scrollbar {
@@ -3506,6 +3528,30 @@ button.operation-metric {
 .tray-pulse-item:focus-visible {
   border-color: var(--panel-line-strong, rgb(255 255 255 / 36%));
   background: var(--panel-raised, #31353b);
+}
+
+/* «Finalizados» cierra la tira y no lleva a ningún lado: es lo que ya salió de
+   la bandeja. Se separa con un hueco en vez de con una línea —una línea ahí
+   parece un borde roto— y queda apagado como el resto de lo que no espera una
+   decisión. */
+.tray-pulse-item.is-closed {
+  margin-left: 4px;
+  background: transparent;
+  border-style: dashed;
+  color: var(--panel-ink-muted, #9aa0a9);
+  cursor: default;
+}
+
+.tray-pulse-item.is-closed .tray-pulse-n {
+  color: var(--panel-ink-2, #b6bcc4);
+  font-weight: 800;
+}
+
+/* Sin respuesta del servidor el número es «—», y el casillero además se apaga:
+   un guion solo se lee como un cero raro. */
+.tray-pulse-item.is-unknown .tray-pulse-n {
+  color: var(--panel-ink-muted, #9aa0a9);
+  opacity: 0.7;
 }
 
 /* Un cero no es un error ni una alarma: es «nada por acá». Se apaga, no se

@@ -140,6 +140,8 @@ let arcaAuthorizationDraft = '';
 let openingSignals = null;
 let openingStatusRaw = null;
 let openingLoadStarted = false;
+/** Lo último que contestó el servidor sobre los pedidos cerrados de hoy. */
+let finishedToday = null;
 let deviceResults = {};
 let deviceCheckPrinters = [];
 let devicePrintersLoadStarted = false;
@@ -179,6 +181,7 @@ export function configureBusinessOperations(next = {}) {
   openingSignals = null;
   openingStatusRaw = null;
   openingLoadStarted = false;
+  finishedToday = null;
   deviceResults = {};
   deviceCheckPrinters = [];
   devicePrintersLoadStarted = false;
@@ -290,6 +293,46 @@ export function primeBusinessOpeningStatus() {
 export function businessOpeningStatus() {
   const estado = String(openingStatusRaw?.business_status || '').toLowerCase();
   return ['open', 'paused', 'closed'].includes(estado) ? estado : null;
+}
+
+/*
+ * LOS PEDIDOS CERRADOS DE HOY, CONTADOS DONDE ESTÁN.
+ * ---------------------------------------------------------------------------
+ * La bandeja del Panel trae SÓLO estados activos: `fetchBusinessOrderSnapshot`
+ * filtra por `BUSINESS_INBOX_STATUSES` y `delivered` no está entre ellos. Un
+ * «finalizados hoy» contado con lo que hay en memoria daría cero al abrir, cero
+ * después de recargar, y un número distinto en cada pestaña abierta. Es
+ * exactamente el tipo de dato que hace desconfiar de todos los demás de la
+ * pantalla.
+ *
+ * Traer los pedidos del día para contarlos tampoco sirve: en una noche buena
+ * son cientos de filas con sus ítems para mostrar un número de dos dígitos. El
+ * servidor cuenta y devuelve el número.
+ *
+ * Se refresca al arrancar y después de cada cierre —no por latido—: el número
+ * sólo cambia cuando alguien entrega o cancela, y eso siempre pasa por una
+ * acción que el Panel ya ve.
+ */
+export async function refreshBusinessFinishedToday() {
+  if (typeof context?.getFinishedToday !== 'function') return null;
+  const respuesta = await context.getFinishedToday();
+  // Una lectura fallida NO pisa el último número bueno con un cero: entre «no
+  // pude preguntar» y «cerraste cero pedidos» hay toda la diferencia, y en la
+  // tira los dos se leerían igual.
+  const dato = respuesta?.data;
+  if (!respuesta?.ok || !dato || typeof dato !== 'object' || Array.isArray(dato)) return finishedToday;
+  finishedToday = {
+    delivered: Number(dato.delivered || 0),
+    cancelled: Number(dato.cancelled || 0),
+    businessDate: String(dato.business_date || ''),
+  };
+  context.onChange?.();
+  return finishedToday;
+}
+
+/** `null` mientras el servidor no contestó. Nunca se inventa un cero. */
+export function businessFinishedToday() {
+  return finishedToday ? { ...finishedToday } : null;
 }
 
 export function allowedBusinessOperationViews(role) {
@@ -624,6 +667,7 @@ export function resetBusinessOperationsForTests() {
   openingSignals = null;
   openingStatusRaw = null;
   openingLoadStarted = false;
+  finishedToday = null;
   deviceResults = {};
   deviceCheckPrinters = [];
   devicePrintersLoadStarted = false;

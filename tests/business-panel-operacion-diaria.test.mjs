@@ -19,6 +19,7 @@
  */
 
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import {
@@ -116,4 +117,72 @@ test('los importes del Panel muestran centavos sólo cuando existen, y no redond
   assert.ok(!conDecimales(9600, 0).includes(',00'));
   // Un total con centavos los muestra enteros: no se redondea el dato.
   assert.ok(conDecimales(9600.4, 2).includes('40'));
+});
+
+/* ===========================================================================
+ * EL REPARTO PROPIO DEL COMERCIO
+ * ===========================================================================
+ * La máquina de estados del Panel tiene que ser el ESPEJO EXACTO de la rama
+ * `v_is_business` de `change_order_status` después de la migración
+ * 20260919120000. Un botón de más acá es un 23514 y un pedido que no se mueve
+ * —el defecto H1 de BUSINESS-PANEL-HARDENING, otra vez—; uno de menos es el
+ * bloqueo que esta ronda vino a cerrar.
+ * ======================================================================== */
+
+test('el comercio despacha y cierra su propio delivery, y sólo mientras no haya repartidor', async () => {
+  const { nextBusinessStatus } = await import('../js/production-operations.js');
+
+  // Sin repartidor, la cadena completa es del comercio.
+  assert.equal(nextBusinessStatus({ status: 'ready', deliveryMode: 'delivery' }), 'on_the_way');
+  assert.equal(nextBusinessStatus({ status: 'on_the_way', deliveryMode: 'delivery' }), 'delivered');
+
+  // Con repartidor asignado no hay acción: el pedido es suyo y lo cierra con el
+  // código del cliente. Ofrecer el botón sería prometer lo que el servidor
+  // rechaza.
+  for (const status of ['ready', 'assigned', 'picked_up', 'on_the_way', 'arrived']) {
+    assert.equal(
+      nextBusinessStatus({ status, deliveryMode: 'delivery', assignedRiderId: 'r-1' }),
+      null,
+      `con repartidor asignado no puede haber acción de negocio en ${status}`,
+    );
+  }
+
+  // El retiro no cambió, y sigue sin pasar por `on_the_way`.
+  assert.equal(nextBusinessStatus({ status: 'ready', deliveryMode: 'pickup' }), 'delivered');
+  assert.equal(nextBusinessStatus({ status: 'delivered', deliveryMode: 'delivery' }), null);
+});
+
+test('el orden de la cadena del comercio es el mismo que ve el cliente en su seguimiento', async () => {
+  const { DELIVERY_STATUS_FLOW } = await import('../js/core/order-status.js');
+  // El seguimiento del cliente NO tiene un paso de repartidor entre «listo» y
+  // «en camino»: la cadena que el comercio recorre por su cuenta es exactamente
+  // la que el cliente ya venía viendo dibujada. Si alguien agregara `assigned`
+  // acá, un pedido despachado por el local se vería trabado un paso antes.
+  assert.deepEqual(
+    [...DELIVERY_STATUS_FLOW],
+    ['received', 'preparing', 'ready', 'on_the_way', 'delivered'],
+  );
+});
+
+test('el botón dice lo que va a pasar, no el nombre del estado', async () => {
+  const origen = await readFile(new URL('../js/production-operations.js', import.meta.url), 'utf8');
+  // `actionLabel` no se exporta —es de presentación— así que se fija sobre el
+  // texto: lo que no puede volver es «En camino», que describía un estado en
+  // vez de una acción.
+  assert.match(origen, /actor === 'rider' \? 'Salir en camino' : 'Sale a reparto'/);
+  assert.match(origen, /'Marcar entregado' : 'Confirmar entrega'/);
+});
+
+test('al cliente no se le nombra un repartidor que puede no existir', async () => {
+  for (const archivo of ['../js/repositories/supabase_order_repository.js', '../js/state.js']) {
+    const origen = await readFile(new URL(archivo, import.meta.url), 'utf8');
+    const codigo = origen.split('\n')
+      .filter((linea) => !linea.trim().startsWith('*') && !linea.trim().startsWith('//'))
+      .join('\n');
+    // Desde que el comercio reparte con su propia gente, un pedido `on_the_way`
+    // puede no tener repartidor. Prometerle uno al cliente es una respuesta que
+    // nadie puede sostener si llama a preguntar quién se lo trae.
+    assert.doesNotMatch(codigo, /El repartidor salió del local/, archivo);
+    assert.match(codigo, /Tu pedido salió del local/, archivo);
+  }
 });

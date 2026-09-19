@@ -76,3 +76,26 @@ test('los husos se validan contra el catálogo de PostgreSQL, no contra una list
   assert.match(cuerpo, /operating_timezone invalida/);
   assert.match(cuerpo, /alcohol_timezone invalida/);
 });
+
+test('la cuenta de finalizados hoy sale del negocio y no del parámetro del cliente', () => {
+  const migracion = leer('supabase', 'migrations', '20260919120000_business_self_delivery_and_finished_today.sql');
+  const firmaCanonica = 'create or replace function public.get_business_finished_today(\n  p_business_id uuid,\n  p_timezone text\n)';
+  const inicio = migracion.indexOf(firmaCanonica);
+  assert.notEqual(inicio, -1, 'falta la firma canonica sin fecha del cliente');
+  const fin = migracion.indexOf('$finished_today$;', inicio);
+  assert.notEqual(fin, -1, 'falta el cierre de la funcion canonica');
+  const cuerpo = migracion.slice(inicio, fin);
+  assert.match(cuerpo, /b\.operating_timezone/);
+  assert.doesNotMatch(cuerpo, /p_business_date/);
+  assert.match(cuerpo, /\(now\(\) at time zone v_timezone\)::date/);
+  assert.match(cuerpo, /v_start := v_date::timestamp at time zone v_timezone/);
+  assert.match(cuerpo, /v_end := \(v_date \+ 1\)::timestamp at time zone v_timezone/);
+  assert.match(cuerpo, /o\.delivered_at/);
+  assert.match(cuerpo, /o\.rejected_at/);
+  assert.match(cuerpo, /coalesce\(o\.cancelled_at, o\.canceled_at\)/);
+  assert.doesNotMatch(cuerpo, /o\.updated_at\s*[<>]=?/);
+  assert.match(cuerpo, /la zona pedida no es la del negocio/);
+  assert.match(cuerpo, /el negocio no tiene huso horario configurado/);
+  assert.match(migracion, /if p_business_date is not null then[\s\S]*?la fecha de finalizados hoy la determina el servidor/);
+  assert.match(migracion, /return public\.get_business_finished_today\(p_business_id, p_timezone\)/);
+});

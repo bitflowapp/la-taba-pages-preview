@@ -279,7 +279,31 @@ body[data-active-view="business"] .topbar-ops-sound-count {
    tinta: sobre grafito el rojo no se lee, pero como fondo con texto blanco da
    5,69:1 y además es la única cosa roja de la barra, que es lo que hace que se
    encuentre de un vistazo. */
-.business-ops-nav-button.active { border-color: var(--taba-red); background: var(--taba-red); color: var(--taba-white); }
+/* El destino activo se marca con la tinta y un subrayado, NO con un relleno
+   rojo. Es la misma decision que ya estaba tomada y escrita para la barra
+   inferior del telefono -«cinco botones y uno rojo permanente convertiria el
+   rojo en decoracion, y el rojo de esta pantalla tiene que seguir queriendo
+   decir accion» (B4)- y que en la fila de escritorio habia quedado sin
+   aplicar: ahi el destino activo se pintaba del MISMO rojo que «Aceptar
+   pedido», con las dos cosas a la vista al mismo tiempo. */
+.business-ops-nav-button.active {
+  position: relative;
+  border-color: var(--panel-line-strong);
+  background: var(--panel-raised);
+  color: var(--panel-ink);
+}
+
+.business-ops-nav-button.active::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 50%;
+  width: 22px;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--taba-red);
+  transform: translateX(-50%);
+}
 .business-ops-feedback { margin: 0; border-left: 4px solid var(--taba-red); border-radius: 10px; background: var(--panel-red-wash); padding: 12px 14px; color: var(--panel-red-ink); font-weight: 700; }
 .business-ops-panel { display: grid; gap: 18px; border: 1px solid var(--panel-line); border-radius: 18px; background: var(--panel-card); padding: clamp(16px, 2.5vw, 28px); box-shadow: var(--panel-shadow); }
 .business-ops-panel > header h2 { margin: 3px 0 6px; color: var(--panel-ink); }
@@ -835,6 +859,357 @@ body[data-active-view="business"] .topbar-ops-sound-count {
   border: 1px solid var(--taba-border);
   border-radius: var(--radius-xs);
   background: var(--taba-subtle);
+}
+
+/* El estado de apertura va pegado al titulo y no al rol: habla del COMERCIO,
+   no de quien entro. En el renglon del rol se pasaba de largo a 390px y se caia
+   a una linea propia, que son 20px de cabecera para una palabra.
+
+   Verde no: «abierto» es lo normal y lo normal no merece color. Lo que tiene
+   que saltar es que NO lo este. */
+.production-ops-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.production-ops-open {
+  display: inline-block;
+  padding: 1px 7px;
+  border: 1px solid var(--panel-line-strong, rgb(255 255 255 / 36%));
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  vertical-align: 1px;
+}
+
+.production-ops-open[data-business-open="paused"] {
+  border-color: color-mix(in srgb, var(--panel-warning, #f2b544) 50%, transparent);
+  background: var(--panel-warning-wash, rgb(242 181 68 / 15%));
+  color: var(--panel-warning, #f2b544);
+}
+
+.production-ops-open[data-business-open="closed"] {
+  border-color: color-mix(in srgb, var(--panel-danger, #ff7d84) 52%, transparent);
+  background: var(--panel-danger-wash, rgb(255 125 132 / 15%));
+  color: var(--panel-danger, #ff7d84);
+}
+
+/* ==========================================================================
+   LA TARJETA DE PEDIDO
+   ==========================================================================
+   El orden visual es el de `businessOrderMarkup()`: identidad y espera,
+   atención, qué y de quién, los productos, la plata, el destino, lo que pidió
+   especial, la acción, y recién después el contacto y el detalle.
+
+   El criterio de peso tipográfico es uno solo y se repite: lo que se DECIDE va
+   en 15-17px con peso alto; lo que se CONSULTA va en 12-13px apagado. Antes
+   todo estaba entre 12 y 13px y en negrita, que es la forma tipográfica de no
+   decir nada.
+   ----------------------------------------------------------------------- */
+
+.production-order-head {
+  align-items: start;
+}
+
+.production-order-ident {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+/* «hace 3 min» es lo que decide; «20:47» es lo que se dice por teléfono y lo
+   que se compara contra el ticket. Van juntos y en ese orden de peso. */
+.production-order-when {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 7px;
+  font-size: 12.5px;
+}
+
+.production-order-when .order-elapsed {
+  color: var(--panel-ink-2, #b6bcc4);
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+.production-order-when .order-clock {
+  color: var(--panel-ink-muted, #9aa0a9);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------------------------
+   EL ESTADO, POR FIN CON COLOR.
+   --------------------------------------------------------------------------
+   `.status-pill` no tenía una sola declaración en todo el proyecto: la clase
+   viajaba en el marcado y el navegador dibujaba texto gris. El resultado es el
+   que se ve en cualquier captura anterior: «Recibido», «Preparando» y «En
+   camino» con exactamente el mismo aspecto que la palabra «Pago».
+
+   El color es el lavado del estado, nunca sólido: un chip de estado no puede
+   competir con el botón de acción, que es la regla que ya fija el bloque de
+   tokens de este archivo.
+   ----------------------------------------------------------------------- */
+.production-order-card .status-pill {
+  flex: 0 0 auto;
+  padding: 3px 9px;
+  border: 1px solid var(--panel-line, rgb(255 255 255 / 12%));
+  border-radius: 999px;
+  background: var(--panel-raised, #31353b);
+  color: var(--panel-ink-2, #b6bcc4);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.production-order-card .status-pill[data-order-state="submitted"] {
+  border-color: color-mix(in srgb, var(--panel-info, #8ab4ff) 48%, transparent);
+  background: var(--panel-info-wash, rgb(138 180 255 / 14%));
+  color: var(--panel-info, #8ab4ff);
+}
+
+.production-order-card .status-pill[data-order-state="accepted"],
+.production-order-card .status-pill[data-order-state="preparing"] {
+  border-color: color-mix(in srgb, var(--panel-warning, #f2b544) 44%, transparent);
+  background: var(--panel-warning-wash, rgb(242 181 68 / 15%));
+  color: var(--panel-warning, #f2b544);
+}
+
+.production-order-card .status-pill[data-order-state="ready"] {
+  border-color: color-mix(in srgb, var(--panel-success, #5fd08a) 48%, transparent);
+  background: var(--panel-success-wash, rgb(95 208 138 / 14%));
+  color: var(--panel-success, #5fd08a);
+}
+
+.production-order-card .status-pill[data-order-state="assigned"],
+.production-order-card .status-pill[data-order-state="picked_up"],
+.production-order-card .status-pill[data-order-state="on_the_way"],
+.production-order-card .status-pill[data-order-state="arrived"] {
+  border-color: var(--panel-line-strong, rgb(255 255 255 / 36%));
+  background: var(--panel-raised, #31353b);
+  color: var(--panel-ink, #eceef1);
+}
+
+/* --------------------------------------------------------------------------
+   QUÉ ES Y DE QUIÉN.
+   --------------------------------------------------------------------------
+   Delivery y Retiro son dos trabajos distintos —uno hay que mandarlo, el otro
+   hay que guardarlo hasta que lo pasen a buscar— y se decidían leyendo una
+   celda de 10px dentro de una rejilla de cuatro. Acá es lo primero que se ve
+   después del estado, y se distinguen por FORMA además de por color: el retiro
+   va con contorno punteado. Quien no distingue los dos colores igual los
+   separa.
+   ----------------------------------------------------------------------- */
+.production-order-who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.production-order-who strong {
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 800;
+  overflow-wrap: break-word;
+}
+
+.order-mode-chip {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border: 1px solid var(--panel-line-strong, rgb(255 255 255 / 36%));
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.order-mode-chip[data-mode="delivery"] {
+  border-color: color-mix(in srgb, var(--panel-info, #8ab4ff) 46%, transparent);
+  color: var(--panel-info, #8ab4ff);
+}
+
+.order-mode-chip[data-mode="pickup"] {
+  border-style: dashed;
+  color: var(--panel-ink-2, #b6bcc4);
+}
+
+/* --------------------------------------------------------------------------
+   LOS PRODUCTOS.
+   --------------------------------------------------------------------------
+   Es lo que hay que preparar, así que es el bloque con más tinta de la tarjeta
+   después del total. La cantidad va en una columna de ancho fijo y con cifras
+   de ancho igual: con los números alineados, «4×» y «12×» empiezan en el mismo
+   sitio y la lista se lee en vertical sin leer los nombres.
+   ----------------------------------------------------------------------- */
+.production-order-lines {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-xs, 8px);
+  background: var(--panel-surface, #222529);
+  list-style: none;
+}
+
+.production-order-lines > li {
+  display: grid;
+  grid-template-columns: 2.6em minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+  font-size: 13.5px;
+}
+
+.order-line-qty {
+  color: var(--panel-ink, #eceef1);
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.order-line-name {
+  color: var(--panel-ink, #eceef1);
+  font-weight: 600;
+  overflow-wrap: break-word;
+}
+
+.order-line-more {
+  display: block !important;
+  color: var(--panel-ink-muted, #9aa0a9);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* --------------------------------------------------------------------------
+   LA PLATA.
+   --------------------------------------------------------------------------
+   El total era una celda más de la rejilla, con el mismo cuerpo que «Entró» y
+   «Entrega». Es el número que se dice en voz alta y el que se cobra: va solo,
+   en 19px, con el medio de pago al lado y no encima.
+   ----------------------------------------------------------------------- */
+.production-order-money {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 0;
+}
+
+.production-order-total {
+  color: var(--panel-ink, #eceef1);
+  font-size: 19px;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.production-order-pay {
+  color: var(--panel-ink-2, #b6bcc4);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.production-order-discount {
+  color: var(--panel-success, #5fd08a);
+  font-size: 12.5px;
+  font-weight: 750;
+}
+
+/* El destino. En un retiro no hay nada que llevar, así que la línea se apaga:
+   es contexto, no una dirección a la que ir. */
+.production-order-address[data-mode="pickup"] {
+  color: var(--panel-ink-muted, #9aa0a9);
+  font-style: italic;
+}
+
+/* --------------------------------------------------------------------------
+   QUIÉN TIENE EL PEDIDO.
+   --------------------------------------------------------------------------
+   No es un aviso ni una alarma: es el estado de custodia de un pedido que está
+   avanzando bien, en manos de otra persona. Por eso va sin color de estado —el
+   lavado de aviso diría «pasa algo» y no pasa nada— y con el borde izquierdo
+   como única marca: separa el bloque sin pedir atención.
+   ----------------------------------------------------------------------- */
+.production-order-custody {
+  display: grid;
+  gap: 1px;
+  margin: 0;
+  padding: 8px 0 8px 10px;
+  border-left: 2px solid var(--panel-line-strong, rgb(255 255 255 / 36%));
+}
+
+.production-order-custody-who {
+  color: var(--panel-ink, #eceef1);
+  font-size: 13.5px;
+  font-weight: 800;
+}
+
+.production-order-custody-step {
+  color: var(--panel-ink-2, #b6bcc4);
+  font-size: 12.5px;
+  font-weight: 650;
+}
+
+.production-order-custody-note {
+  color: var(--panel-ink-muted, #9aa0a9);
+  font-size: 11.5px;
+}
+
+/* --------------------------------------------------------------------------
+   EL PIE: LO QUE SE CONSULTA.
+   --------------------------------------------------------------------------
+   Contacto y detalle se separan del cuerpo con una línea de 1px y bajan de
+   peso. Antes «Ver pedido completo» era una caja con borde y fondo propios del
+   mismo tamaño que un botón de acción: una tarjeta con un recuadro vacío
+   ocupando 50px para ofrecer un desplegable.
+   ----------------------------------------------------------------------- */
+.production-order-foot {
+  display: grid;
+  gap: 8px;
+  margin-top: 2px;
+  padding-top: 10px;
+  border-top: 1px solid var(--panel-line, rgb(255 255 255 / 12%));
+}
+
+.production-order-foot .order-detail {
+  border: 0;
+  background: none;
+  padding: 0;
+}
+
+.production-order-foot .order-detail > summary {
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--panel-ink-2, #b6bcc4);
+  font-size: 12.5px;
+  font-weight: 750;
+}
+
+/* --------------------------------------------------------------------------
+   LA ACCIÓN.
+   --------------------------------------------------------------------------
+   Una por tarjeta, a la izquierda y del ancho de su texto en pantallas donde
+   hay lugar. El ancho completo se reserva para el teléfono, que es donde el
+   pulgar necesita blanco alrededor; en escritorio un botón de 330px de ancho
+   para decir «Aceptar pedido» es un cartel, no un control.
+   ----------------------------------------------------------------------- */
+.production-order-card .button-row:empty {
+  display: none;
+}
+
+.production-order-card .button-row > .primary-button {
+  font-size: 14.5px;
+  letter-spacing: 0.01em;
 }
 
 /* El paso que antes no existía: entre ofrecer y salir a la calle hay una
@@ -2924,13 +3299,19 @@ button.operation-metric {
     padding-bottom: 4px;
     overflow-x: auto;
     scrollbar-width: thin;
+    /* La fila se corre, y hay que poder VERLO. Sin esto el ultimo destino queda
+       cortado al ras del borde derecho -medido a 1280px: «Recepcion» partido en
+       «Recep»- y se lee como un defecto de maquetado, no como «hay mas de este
+       lado». El degradado apaga los ultimos 28px, que es la senal que usa
+       cualquier fila desplazable. */
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent 100%);
   }
 
   /* Las dos filas nuevas de la bandeja —el resumen del turno y la cabecera de
      sección— tienen que caber sin empujar el primer pedido fuera de pantalla en
      una notebook de 768px de alto. */
-  body[data-active-view="business"] .order-tray-headline {
-    margin-bottom: 4px;
+  body[data-active-view="business"] .tray-pulse {
+    margin-bottom: 8px;
   }
 
   body[data-active-view="business"] .order-tray-head {
@@ -3061,16 +3442,150 @@ button.operation-metric {
    tarjeta.
    ========================================================================== */
 
-.order-tray-headline {
+/* --------------------------------------------------------------------------
+   LA TIRA DEL TURNO.
+   --------------------------------------------------------------------------
+   Cinco casilleros de ancho igual: el numero grande y la palabra chica debajo.
+   Ancho igual y no `auto` a proposito -«Preparando» es el doble de largo que
+   «Nuevos»- para que cada recuento quede SIEMPRE en el mismo lugar de la
+   pantalla. Es lo que permite mirar el tercer casillero sin leerlo.
+
+   A 320px cinco casilleros de 44px no entran con holgura, asi que la fila se
+   desplaza en horizontal en vez de envolverse: dos renglones de recuentos
+   moverian «Nuevos» de sitio segun el turno. `scroll-snap` deja cada casillero
+   alineado cuando se arrastra.
+   ----------------------------------------------------------------------- */
+.tray-pulse {
+  /* `min-width: 0` en los dos: sin el, la anchura MINIMA de la rejilla -cinco
+     casilleros de 58px mas sus separaciones, 314px- se propaga hacia arriba y
+     empuja el ancho del tablero. Medido a 320px: 4px de desborde horizontal en
+     TODA la pantalla, no solo en la tira. Con esto la rejilla se desplaza, que
+     es lo que su `overflow-x` promete. */
+  min-width: 0;
   margin: 0 0 10px;
-  color: var(--panel-ink-2, #b6bcc4);
-  font-size: 13px;
+}
+
+.tray-pulse-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(58px, 1fr);
+  min-width: 0;
+  gap: 6px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  /* Con seis casilleros la tira ya no entra en un telefono angosto. El
+     degradado del borde derecho es la senal de que hay mas de ese lado; sin el,
+     «Finalizados» se ve cortado al ras y se lee como un defecto de maquetado.
+     Sólo se aplica cuando hace falta desplazarse. */
+  mask-image: linear-gradient(to right, #000 calc(100% - 22px), transparent 100%);
+}
+
+@media (min-width: 560px) {
+  /* A partir de acá los seis entran enteros: el degradado taparía el último
+     casillero sin ningún motivo. */
+  .tray-pulse-row {
+    mask-image: none;
+  }
+}
+
+.tray-pulse-row::-webkit-scrollbar {
+  display: none;
+}
+
+.tray-pulse-item {
+  display: grid;
+  gap: 1px;
+  justify-items: center;
+  min-height: 46px;
+  padding: 5px 4px 6px;
+  border: 1px solid var(--panel-line, rgb(255 255 255 / 12%));
+  border-radius: var(--radius-xs, 8px);
+  background: var(--panel-card, #282c31);
+  color: var(--panel-ink, #eceef1);
+  scroll-snap-align: start;
+  cursor: pointer;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.tray-pulse-n {
+  font-size: 18px;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+}
+
+.tray-pulse-k {
+  color: var(--panel-ink-muted, #9aa0a9);
+  font-size: 10.5px;
   font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.tray-pulse-item:hover:not(:disabled),
+.tray-pulse-item:focus-visible {
+  border-color: var(--panel-line-strong, rgb(255 255 255 / 36%));
+  background: var(--panel-raised, #31353b);
+}
+
+/* «Finalizados» cierra la tira y no lleva a ningún lado: es lo que ya salió de
+   la bandeja. Se separa con un hueco en vez de con una línea —una línea ahí
+   parece un borde roto— y queda apagado como el resto de lo que no espera una
+   decisión. */
+.tray-pulse-item.is-closed {
+  margin-left: 4px;
+  background: transparent;
+  border-style: dashed;
+  color: var(--panel-ink-muted, #9aa0a9);
+  cursor: default;
+}
+
+.tray-pulse-item.is-closed .tray-pulse-n {
+  color: var(--panel-ink-2, #b6bcc4);
+  font-weight: 800;
+}
+
+/* Sin respuesta del servidor el número es «—», y el casillero además se apaga:
+   un guion solo se lee como un cero raro. */
+.tray-pulse-item.is-unknown .tray-pulse-n {
+  color: var(--panel-ink-muted, #9aa0a9);
+  opacity: 0.7;
+}
+
+/* Un cero no es un error ni una alarma: es «nada por acá». Se apaga, no se
+   esconde, y deja de recibir foco porque no hay adonde llevar a nadie. */
+.tray-pulse-item:disabled {
+  background: transparent;
+  color: var(--panel-ink-muted, #9aa0a9);
+  cursor: default;
+}
+
+.tray-pulse-item:disabled .tray-pulse-n {
+  font-weight: 700;
+  opacity: 0.55;
+}
+
+/* «Requieren atencion» es lo unico de la tira que se pinta, por el mismo
+   criterio que la cabecera de su seccion: es la casilla que existe para que
+   alguien mire ahi primero. En cero se apaga como todas. */
+.tray-pulse-item[data-tray-jump="atencion"]:not(:disabled) {
+  border-color: color-mix(in srgb, var(--panel-warning, #f2b544) 46%, transparent);
+  background: var(--panel-warning-wash, rgb(242 181 68 / 15%));
+}
+
+.tray-pulse-item[data-tray-jump="atencion"]:not(:disabled) :is(.tray-pulse-n, .tray-pulse-k) {
+  color: var(--panel-warning, #f2b544);
 }
 
 .order-tray-section {
   display: grid;
   gap: 10px;
+  /* El salto desde la tira aterriza DEBAJO de la barra superior fija, no
+     tapado por ella. Sin esto el encabezado de la seccion -que lleva el
+     recuento- queda justo bajo el borde y el salto parece no haber pasado. */
+  scroll-margin-top: 64px;
 }
 
 .order-tray-body {
@@ -3223,13 +3738,6 @@ button.operation-metric {
   color: var(--panel-success, #5fd08a);
 }
 
-.production-order-summary {
-  margin: 0;
-  color: var(--panel-ink-2, #b6bcc4);
-  font-size: 13px;
-  overflow-wrap: break-word;
-}
-
 /* --------------------------------------------------------------------------
    El detalle, dentro de la misma tarjeta.
    --------------------------------------------------------------------------
@@ -3349,7 +3857,7 @@ button.operation-metric {
     margin-bottom: 8px;
   }
 
-  body[data-active-view="business"] .order-tray-headline {
+  body[data-active-view="business"] .tray-pulse {
     margin-bottom: 6px;
   }
 
@@ -3376,10 +3884,6 @@ button.operation-metric {
     padding: 12px;
   }
 
-  body[data-active-view="business"] .production-order-summary {
-    font-size: 12.5px;
-  }
-
   /* El botón del timbre no roba el ancho del título de la pantalla. */
   body[data-active-view="business"] .production-ops-head-actions {
     flex: 0 0 auto;
@@ -3392,27 +3896,59 @@ button.operation-metric {
   }
 }
 
+/* --------------------------------------------------------------------------
+   LA BANDEJA EN ESCRITORIO: SECCIONES APILADAS, TARJETAS EN REJILLA.
+   --------------------------------------------------------------------------
+   Antes cada SECCIoN era una columna de una rejilla de `auto-fill`. Con cuatro
+   secciones y tres columnas la cuarta se iba a una fila nueva y dejaba dos
+   columnas vacias: medido a 1280px con la bandeja de prueba, «En entrega»
+   arrancaba debajo de «Requieren atencion» con 900px de hueco a su derecha. El
+   orden de lectura tampoco era estable: que seccion caia al lado de cual
+   dependia del alto de la anterior, o sea de cuantos pedidos hubiera.
+
+   Ahora la seccion ocupa el ancho y son las TARJETAS las que se reparten en
+   columnas. Tres consecuencias, y las tres son las que se querian:
+
+     · el orden de lectura vuelve a ser el de la bandeja -atencion, nuevos,
+       preparando, listos, entrega- y no cambia con la cantidad de pedidos;
+     · no queda hueco: una seccion con un solo pedido ocupa una fila de una
+       tarjeta, no una columna entera;
+     · lo que escala es lo que crece. Con veinte pedidos nuevos, «Nuevos» es
+       una rejilla de tres de ancho bajo UNA cabecera pegajosa con su recuento,
+       en vez de una columna de veinte tarjetas que empuja todo lo demas.
+
+   La cabecera pegajosa sigue funcionando porque la seccion sigue siendo un
+   elemento de bloque normal: no se usa multicolumna, donde `position: sticky`
+   no esta definido de forma fiable.
+   ----------------------------------------------------------------------- */
 @media (min-width: 1200px) {
   body[data-active-view="business"] .production-order-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
-    align-items: start;
-    gap: 14px 16px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
   }
 
   body[data-active-view="business"] .order-tray-section {
     min-width: 0;
   }
 
-  /* Dentro de la columna las tarjetas se apilan: la columna ES la sección. */
   body[data-active-view="business"] .order-tray-body {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    align-items: start;
+    gap: 14px 16px;
   }
 
-  /* La cabecera de cada columna se queda pegada mientras se recorre esa
-     columna, igual que en el teléfono. */
+  /* La cabecera de la seccion se queda arriba mientras se recorre la rejilla de
+     esa seccion, igual que en el telefono. */
   body[data-active-view="business"] .order-tray-head {
     top: 0;
+  }
+
+  /* La tira del turno no se estira a lo ancho de la pantalla: cinco recuentos
+     repartidos en 1.400px dejan de ser una tira y pasan a ser cinco carteles
+     separados que hay que recorrer con la vista. */
+  body[data-active-view="business"] .tray-pulse-row {
+    max-width: 620px;
   }
 }
 

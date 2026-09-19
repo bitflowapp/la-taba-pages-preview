@@ -39,8 +39,13 @@ const ANCHOS = [320, 390, 430];
  * Playwright resuelve la ruta registrada MÁS TARDE primero, así que esto tiene
  * prioridad sobre `instalarDatosDePrueba` y delega el resto con `fallback()`.
  */
-async function servidorDePedidos(page, { pollMs = 1500 } = {}) {
-  const estado = {
+async function servidorDePedidos(page, { pollMs = 1500, compartido = null } = {}) {
+  // `compartido` conecta OTRA pantalla al mismo modelo de servidor. Es lo que
+  // permite probar dos personas distintas del mismo comercio: entre ellas no
+  // hay `BroadcastChannel` ni `storage` -son dos sesiones y dos navegadores-,
+  // así que lo único que las sincroniza es esta lista de pedidos, igual que en
+  // producción lo único que las sincroniza es PostgreSQL.
+  const estado = compartido || {
     ordenes: pedidos(),
     transiciones: [],
     /** Las que de verdad cambiaron la fila. Una acción repetida no suma acá. */
@@ -94,7 +99,11 @@ async function servidorDePedidos(page, { pollMs = 1500 } = {}) {
         // `maybeSingle()` pide un objeto, no una lista.
         return json(fila);
       }
-      return json(estado.ordenes);
+      const filtroEstados = String(query.get('status') || '');
+      const estados = filtroEstados.startsWith('in.(')
+        ? new Set(filtroEstados.slice(4, -1).split(',').map((value) => value.trim()))
+        : null;
+      return json(estados ? estado.ordenes.filter((order) => estados.has(order.status)) : estado.ordenes);
     }
 
     if (path.includes('/rpc/transition_order')) {
@@ -135,6 +144,27 @@ async function servidorDePedidos(page, { pollMs = 1500 } = {}) {
       estado.aplicadas.push({ clave, orden: fila.id, estado: fila.status, revision: fila.revision });
       if (clave) estado.recibos.set(clave, { ...fila });
       return json(fila);
+    }
+
+    if (path.includes('/rpc/confirm_business_delivery_code')) {
+      const cuerpo = JSON.parse(route.request().postData() || '{}');
+      estado.transiciones.push({ ...cuerpo, p_new_status: 'delivered' });
+      const clave = String(cuerpo.p_idempotency_key || '');
+      if (clave && estado.recibos.has(clave)) {
+        estado.replays.push(clave);
+        return json(estado.recibos.get(clave));
+      }
+      const fila = estado.ordenes.find((o) => o.id === cuerpo.p_order_id);
+      if (!fila) return json(null);
+      fila.status = 'delivered';
+      fila.revision += 1;
+      fila.updated_at = new Date().toISOString();
+      fila.delivered_at = new Date().toISOString();
+      if (Number.isInteger(estado.finalizadosHoy)) estado.finalizadosHoy += 1;
+      estado.aplicadas.push({ clave, orden: fila.id, estado: fila.status, revision: fila.revision });
+      const res = { ...fila, ok: true, outcome: 'confirmed', code_verified: true, idempotent_replay: false };
+      if (clave) estado.recibos.set(clave, res);
+      return json(res);
     }
 
     return route.fallback();
@@ -751,7 +781,7 @@ for (const width of ANCHOS) {
       const atencion = page.locator('[data-tray-section="atencion"]');
       await expect(atencion).toBeVisible();
       await expect(atencion.locator('.order-attention-chip').first())
-        .toContainText('Listo sin repartidor');
+        .toContainText('Listo sin salir');
       // El código técnico viaja para soporte, pero no ocupa pantalla.
       await expect(atencion.locator('.order-attention-chip').first())
         .toHaveAttribute('data-attention-code', 'ORDER_READY_WITHOUT_RIDER');
@@ -942,5 +972,508 @@ test('el reloj de la bandeja dice cuánto hace que entró el pedido, no una hora
       .toContainText(/\d{2}\/\d{2}\/\d{4}/);
   } finally {
     await context.close();
+  }
+});
+
+/* ===========================================================================
+ * LO QUE HACE QUE EL PANEL SE PUEDA ABRIR Y ENTENDER EN CINCO SEGUNDOS.
+ * ===========================================================================
+ * Tres contratos distintos, y los tres se rompen en silencio si nadie los
+ * mira: el Panel puede volver a aterrizar en el tablero de métricas, la tira
+ * del turno puede empezar a contar distinto que las secciones, y la tarjeta
+ * puede volver a esconder los productos detrás del detalle.
+ * ======================================================================== */
+
+test('el Panel abre en la bandeja de pedidos, no en el tablero de métricas', async ({ browser }) => {
+  // Deliberadamente SIN `irAPedidos()`: lo que se prueba es el aterrizaje.
+  const context = await browser.newContext({ viewport: TELEFONO, isMobile: true });
+  const page = await context.newPage();
+  try {
+    await instalarDatosDePrueba(page, { conSesion: true });
+    await servidorDePedidos(page, { pollMs: 5_000 });
+    await page.goto('/#business');
+
+    const workspace = page.locator('[data-production-workspace="business"]');
+    await workspace.waitFor({ state: 'visible', timeout: 30_000 });
+    // La bandeja está, sin tocar nada.
+    await expect(page.locator('[data-order-tray]')).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('[data-order-card="LT-2041"]')).toBeVisible();
+    // Y el tablero de métricas NO: son entre cuatro y cinco pantallas de
+    // contadores antes del primer pedido, y se consulta, no se vigila.
+    await expect(workspace.locator('[data-business-ops-center="operation-center"]')).toHaveCount(0);
+  } finally {
+    await context.close();
+  }
+});
+
+test('la tira del turno cuenta lo mismo que las secciones y lleva a la que se toca', async ({ browser }) => {
+  const { context, page, estado } = await abrirBandeja(browser);
+  try {
+    // Cada casillero dice lo que dice su sección. No es una redundancia: son
+    // dos lecturas del MISMO conteo, y esta prueba es la que impide que se
+    // separen.
+    for (const seccion of ['atencion', 'nuevos', 'preparando', 'entrega']) {
+      const enLaSeccion = await page.locator(`[data-tray-section="${seccion}"] [data-order-card]`).count();
+      await expect(page.locator(`[data-tray-jump="${seccion}"] .tray-pulse-n`)).toHaveText(String(enLaSeccion));
+    }
+
+    // Una sección vacía se dibuja igual, apagada y sin foco: si los casilleros
+    // aparecieran y desaparecieran, «Nuevos» cambiaría de lugar durante el
+    // turno y el dedo dejaría de saber dónde tocar.
+    await expect(page.locator('[data-tray-jump="listos"] .tray-pulse-n')).toHaveText('0');
+    await expect(page.locator('[data-tray-jump="listos"]')).toBeDisabled();
+
+    // Y el casillero lleva a su sección, que es lo que reemplaza a desplazar.
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    await page.locator('[data-tray-jump="entrega"]').click();
+    await page.waitForTimeout(900);
+    const llegada = await page.evaluate(() => {
+      const cabecera = document.querySelector('[data-tray-section="entrega"] .order-tray-head');
+      return { y: window.scrollY, cabecera: cabecera.getBoundingClientRect().top };
+    });
+    expect(llegada.y, 'el salto no movió la pantalla').toBeGreaterThan(0);
+    // La cabecera —que es la que lleva el recuento— queda VISIBLE, no debajo
+    // de la barra superior fija.
+    expect(llegada.cabecera).toBeGreaterThanOrEqual(0);
+
+    // Cuando entra trabajo, la tira lo dice sola.
+    estado.ordenes.push(pedidoNuevo('LT-2098'));
+    await expect(page.locator('[data-tray-jump="nuevos"] .tray-pulse-n')).toHaveText('3', { timeout: 20_000 });
+  } finally {
+    await context.close();
+  }
+});
+
+test('la tarjeta muestra los productos sin abrir nada, y el total no se lee como una etiqueta', async ({ browser }) => {
+  const { context, page } = await abrirBandeja(browser);
+  try {
+    const tarjeta = page.locator('[data-order-card="LT-2041"]');
+    // Decidir si se acepta un pedido —y después armarlo— es leer QUÉ PIDIÓ.
+    // Con el resumen de una línea eso costaba un toque por pedido.
+    const lineas = tarjeta.locator('.production-order-lines > li:not(.order-line-more)');
+    await expect(lineas).toHaveCount(2);
+    await expect(lineas.nth(0)).toContainText('Cerveza Patagonia Amber Lager 730 ml');
+    await expect(lineas.nth(0).locator('.order-line-qty')).toHaveText('4×');
+    await expect(lineas.nth(1)).toContainText('Papas fritas clásicas 150 g');
+    // Y sin que el detalle esté abierto.
+    await expect(tarjeta.locator('.order-detail')).not.toHaveAttribute('open', /.*/);
+
+    // El total es el número que se dice en voz alta: va solo y más grande que
+    // el medio de pago que lo acompaña.
+    const tamanios = await tarjeta.evaluate((nodo) => ({
+      total: parseFloat(getComputedStyle(nodo.querySelector('.production-order-total')).fontSize),
+      pago: parseFloat(getComputedStyle(nodo.querySelector('.production-order-pay')).fontSize),
+    }));
+    expect(tamanios.total).toBeGreaterThan(tamanios.pago + 4);
+
+    // La hora exacta sube a la tarjeta, al lado de la espera: «hace 3 min»
+    // decide, «20:47» es lo que se dice por teléfono.
+    await expect(tarjeta.locator('.order-clock')).toHaveText(/^\d{2}:\d{2}$/);
+
+    // El estado deja de ser texto gris: la píldora declara su estado del flujo
+    // para que la hoja de estilo tenga un alfabeto cerrado.
+    await expect(tarjeta.locator('.status-pill')).toHaveAttribute('data-order-state', 'submitted');
+  } finally {
+    await context.close();
+  }
+});
+
+test('sin repartidores, el comercio despacha y cierra su propio delivery', async ({ browser }) => {
+  /*
+   * Este era el bloqueo del Panel: `change_order_status` sólo habilitaba
+   * `ready -> delivered` para RETIRO, la cadena de entrega era del rol `rider`,
+   * y `business_members` tiene `unique (business_id, user_id)` —el dueño no
+   * puede ser además repartidor de su propio negocio—. Un comercio que atiende
+   * su dueño solo no podía cerrar NINGUNA entrega: la tarjeta se quedaba muda y
+   * el pedido moría en «Listos».
+   *
+   * La migración 20260919120000 habilita las dos transiciones en el SERVIDOR.
+   * Esto verifica el camino completo desde la pantalla: que el botón exista,
+   * que despache, y que lo que se manda sea lo que el servidor espera.
+   */
+  const context = await browser.newContext({ viewport: TELEFONO, isMobile: true });
+  const page = await context.newPage();
+  try {
+    await instalarDatosDePrueba(page, { conSesion: true });
+    const estado = await servidorDePedidos(page, { pollMs: 1_500 });
+    // Sin un solo repartidor activo: el comercio que atiende el dueño solo.
+    await page.route(`${SUPABASE_URL}/rest/v1/rpc/list_active_business_riders`, (route) => route.fulfill({
+      status: 200, contentType: 'application/json', body: '[]',
+    }));
+    await page.goto('/#business');
+    await page.locator('[data-order-tray]').waitFor({ state: 'visible', timeout: 30_000 });
+
+    // LT-2044 es el pedido `ready` de delivery de la bandeja de prueba.
+    const tarjeta = page.locator('[data-order-card="LT-2044"]');
+    const accion = tarjeta.locator('[data-production-business-next]');
+    await expect(accion).toHaveText('Sale a reparto', { timeout: 20_000 });
+    await expect(accion).toHaveAttribute('data-next-status', 'on_the_way');
+    // Y NO se ofrece un desplegable de repartidores vacío: un control que no
+    // puede elegir nada es peor que ningún control.
+    await expect(tarjeta.locator('[data-production-rider-select]')).toHaveCount(0);
+
+    await accion.click();
+    // El pedido no se mueve por el toque: se mueve cuando el servidor contesta.
+    await expect(page.locator('[data-tray-section="entrega"] [data-order-card="LT-2044"]'))
+      .toBeVisible({ timeout: 20_000 });
+
+    // Lo que viajó es exactamente lo que el servidor habilitó.
+    const despacho = estado.transiciones.at(-1);
+    expect(despacho.p_new_status).toBe('on_the_way');
+    expect(despacho.p_expected_revision).toBe(4);
+    expect(String(despacho.p_idempotency_key)).toMatch(/^[A-Za-z0-9:_-]{8,128}$/);
+
+    // Y el segundo paso cierra la entrega con el código del cliente.
+    const tarjetaEntrega = page.locator('[data-tray-section="entrega"] [data-order-card="LT-2044"]');
+    const inputCodigo = tarjetaEntrega.locator('[data-production-delivery-code]');
+    await expect(inputCodigo).toBeVisible({ timeout: 10_000 });
+    await inputCodigo.fill('4417');
+    const botonConfirmar = tarjetaEntrega.locator('[data-production-business-confirm-delivery]');
+    await expect(botonConfirmar).toHaveText('Confirmar entrega');
+    await botonConfirmar.click();
+    /*
+     * Lo que se verifica es el SERVIDOR, no que la tarjeta desaparezca.
+     *
+     * Un pedido entregado sale de la bandeja porque el repositorio real filtra
+     * por `BUSINESS_INBOX_STATUSES` del lado de PostgREST; el servidor de este
+     * archivo devuelve su lista entera e ignora los filtros de la consulta, así
+     * que esperar que desaparezca sería medir el modelo de prueba y no el
+     * producto. Lo que sí prueba el producto es que la entrega quedó aplicada
+     * en el servidor, que es donde vive el estado.
+     */
+    await expect.poll(
+      () => estado.ordenes.find((o) => o.public_code === 'LT-2044')?.status,
+      { timeout: 20_000 },
+    ).toBe('delivered');
+    expect(estado.transiciones.at(-1).p_new_status).toBe('delivered');
+    // Y la entrega se aplicó UNA vez, no dos.
+    expect(estado.aplicadas.filter((t) => t.estado === 'delivered')).toHaveLength(1);
+  } finally {
+    await context.close();
+  }
+});
+
+test('con repartidor asignado la tarjeta dice quién lo tiene, y no ofrece cerrarlo', async ({ browser }) => {
+  /*
+   * El espejo del caso anterior, y la mitad que protege al repartidor: un
+   * pedido que alguien está llevando se cierra con el código del cliente, y el
+   * servidor rechaza cualquier otro cierre. Ofrecer el botón acá sería prometer
+   * un 23514.
+   */
+  const { context, page } = await abrirBandeja(browser);
+  try {
+    // LT-2045 está `on_the_way` con RIDER_A asignado en la bandeja de prueba.
+    const tarjeta = page.locator('[data-order-card="LT-2045"]');
+    const custodia = tarjeta.locator('[data-order-custody]');
+    await expect(custodia).toBeVisible();
+    await expect(custodia).toContainText('Nahuel Cárdenas');
+    await expect(custodia).toContainText('está en camino');
+    await expect(custodia).toContainText('código del cliente');
+    // Ninguna acción de avance: ni «Marcar entregado» ni nada que el servidor
+    // vaya a rechazar.
+    await expect(tarjeta.locator('[data-production-business-next]')).toHaveCount(0);
+  } finally {
+    await context.close();
+  }
+});
+
+test('«Finalizados» lo cuenta el servidor, y sobrevive a recargar', async ({ browser }) => {
+  /*
+   * La bandeja trae sólo estados activos, así que este número no se puede sacar
+   * de lo que hay en memoria: daría cero al abrir y cero después de recargar.
+   * Lo cuenta `get_business_finished_today` con el día comercial del negocio.
+   */
+  const context = await browser.newContext({ viewport: TELEFONO, isMobile: true });
+  const page = await context.newPage();
+  const pedidosAlServidor = [];
+  try {
+    await instalarDatosDePrueba(page, { conSesion: true });
+    await servidorDePedidos(page, { pollMs: 5_000 });
+    await page.route(`${SUPABASE_URL}/rest/v1/rpc/get_business_finished_today`, (route) => {
+      pedidosAlServidor.push(JSON.parse(route.request().postData() || '{}'));
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true, delivered: 14, cancelled: 2, business_date: '2026-09-19' }),
+      });
+    });
+    await page.goto('/#business');
+    await page.locator('[data-order-tray]').waitFor({ state: 'visible', timeout: 30_000 });
+
+    const finalizados = page.locator('[data-tray-finished] .tray-pulse-n');
+    await expect(finalizados).toHaveText('14', { timeout: 20_000 });
+    // No es un contador de la bandeja: no lleva a ninguna sección.
+    await expect(page.locator('[data-tray-finished][data-tray-jump]')).toHaveCount(0);
+
+    /*
+     * El Panel NO manda zona horaria, y eso es el contrato, no un olvido.
+     *
+     * El día comercial sale de `businesses.operating_timezone` —lo mismo que
+     * sostiene el cierre de caja desde 20260814020000 (F32)—. Mandar la
+     * constante del Panel funcionaría hoy, porque coincide, y rompería el día
+     * que un comercio opere en otro huso: justo el caso para el que existe esa
+     * columna. El servidor rechaza una zona que no sea la suya.
+     */
+    expect(pedidosAlServidor[0].p_timezone).toBeNull();
+    expect(pedidosAlServidor[0].p_business_id).toBeTruthy();
+
+    // Y sigue ahí después de recargar, que es lo que un conteo en memoria no
+    // podía hacer.
+    await page.reload();
+    await page.locator('[data-order-tray]').waitFor({ state: 'visible', timeout: 30_000 });
+    await expect(page.locator('[data-tray-finished] .tray-pulse-n')).toHaveText('14', { timeout: 20_000 });
+  } finally {
+    await context.close();
+  }
+});
+
+test('si el servidor no contesta el recuento, la tira dice «—» y no inventa un cero', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: TELEFONO, isMobile: true });
+  const page = await context.newPage();
+  try {
+    await instalarDatosDePrueba(page, { conSesion: true });
+    await servidorDePedidos(page, { pollMs: 5_000 });
+    await page.route(`${SUPABASE_URL}/rest/v1/rpc/get_business_finished_today`, (route) => route.fulfill({
+      status: 500, contentType: 'application/json', body: JSON.stringify({ message: 'boom' }),
+    }));
+    await page.goto('/#business');
+    await page.locator('[data-order-tray]').waitFor({ state: 'visible', timeout: 30_000 });
+    await page.waitForTimeout(2_500);
+    // «0» sería una respuesta; «—» es la verdad. A las once de la noche esa
+    // diferencia decide si alguien sale a revisar qué pasó.
+    await expect(page.locator('[data-tray-finished] .tray-pulse-n')).toHaveText('—');
+    await expect(page.locator('[data-tray-finished]')).toHaveClass(/is-unknown/);
+  } finally {
+    await context.close();
+  }
+});
+
+test('un comercio cerrado o pausado lo dice en la cabecera; uno abierto no gasta una fila en decirlo', async ({ browser }) => {
+  /*
+   * Una bandeja tranquila y un comercio marcado como CERRADO se ven igual:
+   * cero pedidos nuevos. La diferencia es que en el segundo caso no va a entrar
+   * ninguno en toda la noche.
+   *
+   * Lo que se dibuja es la EXCEPCIÓN. «Abierto» es lo que pasa casi siempre: a
+   * 390px la insignia se caía a una línea propia de la cabecera —27px medidos—
+   * para decir «todo normal».
+   */
+  for (const [estado, esperado] of [
+    ['closed', 'Cerrado'],
+    ['paused', 'Pedidos pausados'],
+    ['open', null],
+  ]) {
+    const context = await browser.newContext({ viewport: TELEFONO, isMobile: true });
+    const page = await context.newPage();
+    try {
+      await instalarDatosDePrueba(page, { conSesion: true });
+      await servidorDePedidos(page, { pollMs: 5_000 });
+      await page.route(`${SUPABASE_URL}/rest/v1/rpc/get_business_opening_status`, (route) => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ business_status: estado, open_orders: 4 }),
+      }));
+      await page.goto('/#business');
+      await page.locator('[data-order-tray]').waitFor({ state: 'visible', timeout: 30_000 });
+
+      const chip = page.locator('[data-business-open]');
+      if (esperado === null) {
+        // Y se espera de verdad: sin esto la prueba pasaría por llegar antes
+        // que la respuesta del servidor, no porque no se dibuje.
+        await page.waitForTimeout(2_000);
+        await expect(chip).toHaveCount(0);
+      } else {
+        await expect(chip).toHaveText(new RegExp(esperado, 'i'), { timeout: 20_000 });
+        await expect(chip).toHaveAttribute('data-business-open', estado);
+      }
+    } finally {
+      await context.close();
+    }
+  }
+});
+
+/* ===========================================================================
+ * DOS PERSONAS DEL MISMO COMERCIO, AL MISMO TIEMPO.
+ * ===========================================================================
+ * `dos pestañas del mismo comercio` ya prueba dos pantallas del MISMO usuario,
+ * y entre ellas hay `BroadcastChannel` y respaldo por `storage`: una le avisa a
+ * la otra sin pasar por la red. Eso no es lo que pasa un viernes a la noche.
+ *
+ * Acá son dos CUENTAS distintas, en dos contextos de navegador separados —dos
+ * almacenamientos, dos sesiones, ningún canal local entre ellas—. Lo único que
+ * las sincroniza es el servidor, que es exactamente la propiedad que hay que
+ * demostrar.
+ * ======================================================================== */
+
+async function abrirPanelDe(context, estado, {
+  comoEmpleado, observarFinalizados = false, sinRepartidores = false,
+}) {
+  const page = await context.newPage();
+  await instalarDatosDePrueba(page, { conSesion: true, comoEmpleado });
+  await servidorDePedidos(page, { pollMs: 1200, compartido: estado });
+  if (observarFinalizados) {
+    await page.route(`${SUPABASE_URL}/rest/v1/rpc/get_business_finished_today`, (route) => {
+      estado.consultasFinalizados = Number(estado.consultasFinalizados || 0) + 1;
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ok: true,
+          delivered: estado.finalizadosHoy,
+          cancelled: 0,
+          business_date: '2026-09-19',
+        }),
+      });
+    });
+  }
+  if (sinRepartidores) {
+    await page.route(`${SUPABASE_URL}/rest/v1/rpc/list_active_business_riders`, (route) => route.fulfill({
+      status: 200, contentType: 'application/json', body: '[]',
+    }));
+  }
+  await page.goto('/#business');
+  await page.locator('[data-order-tray]').waitFor({ state: 'visible', timeout: 30_000 });
+  return page;
+}
+
+test('lo que hace una persona del comercio aparece en la pantalla de la otra, sin recargar', async ({ browser }) => {
+  const contextoCaja = await browser.newContext({ viewport: TELEFONO, isMobile: true });
+  const contextoCocina = await browser.newContext({ viewport: TELEFONO, isMobile: true });
+  const estado = {
+    ordenes: pedidos(), transiciones: [], aplicadas: [],
+    recibos: new Map(), replays: [], fallaTransicion: null,
+  };
+  try {
+    const caja = await abrirPanelDe(contextoCaja, estado, { comoEmpleado: false });
+    const cocina = await abrirPanelDe(contextoCocina, estado, { comoEmpleado: true });
+
+    // Las dos arrancan viendo lo mismo.
+    await expect(caja.locator('[data-tray-section="nuevos"] .order-tray-count')).toHaveText('2');
+    await expect(cocina.locator('[data-tray-section="nuevos"] .order-tray-count')).toHaveText('2');
+    // Y son dos personas distintas, no la misma en dos pestañas.
+    await expect(caja.locator('.production-ops-role')).toContainText('Dueño');
+    await expect(cocina.locator('.production-ops-role')).not.toContainText('Dueño');
+
+    // La caja acepta un pedido. Nadie toca la pantalla de la cocina.
+    await caja.locator('[data-order-card="LT-2042"] [data-production-business-next]').click();
+    await expect(caja.locator('[data-tray-section="preparando"] [data-order-card="LT-2042"]'))
+      .toBeVisible({ timeout: 20_000 });
+
+    // La cocina se entera sola.
+    await expect(cocina.locator('[data-tray-section="preparando"] [data-order-card="LT-2042"]'))
+      .toBeVisible({ timeout: 25_000 });
+    await expect(cocina.locator('[data-tray-section="nuevos"] .order-tray-count')).toHaveText('1');
+    // Y la tira del turno de la cocina cuenta lo mismo que la de la caja.
+    await expect(cocina.locator('[data-tray-jump="nuevos"] .tray-pulse-n')).toHaveText('1');
+
+    // Ahora al revés: la cocina avanza y la caja lo ve.
+    await cocina.locator('[data-order-card="LT-2042"] [data-production-business-next]').click();
+    await expect(caja.locator('[data-order-card="LT-2042"] [data-production-business-next]'))
+      .toHaveText('Marcar listo', { timeout: 25_000 });
+
+    // Un pedido nuevo del cliente llega a las dos sin que ninguna recargue.
+    estado.ordenes.push(pedidoNuevo('LT-2097'));
+    await expect(caja.locator('[data-order-card="LT-2097"]')).toBeVisible({ timeout: 25_000 });
+    await expect(cocina.locator('[data-order-card="LT-2097"]')).toBeVisible({ timeout: 25_000 });
+  } finally {
+    await contextoCaja.close();
+    await contextoCocina.close();
+  }
+});
+
+test('si otra persona finaliza, el contador del primer operador se actualiza sin polling extra', async ({ browser }) => {
+  const contextoCaja = await browser.newContext({ viewport: TELEFONO, isMobile: true });
+  const contextoCocina = await browser.newContext({ viewport: TELEFONO, isMobile: true });
+  const estado = {
+    ordenes: pedidos(), transiciones: [], aplicadas: [],
+    recibos: new Map(), replays: [], fallaTransicion: null,
+    finalizadosHoy: 14, consultasFinalizados: 0,
+  };
+  try {
+    const caja = await abrirPanelDe(contextoCaja, estado, {
+      comoEmpleado: false, observarFinalizados: true, sinRepartidores: true,
+    });
+    const cocina = await abrirPanelDe(contextoCocina, estado, {
+      comoEmpleado: true, observarFinalizados: true, sinRepartidores: true,
+    });
+    const contadorCaja = caja.locator('[data-tray-finished] .tray-pulse-n');
+    await expect(contadorCaja).toHaveText('14', { timeout: 20_000 });
+    await expect(cocina.locator('[data-tray-finished] .tray-pulse-n')).toHaveText('14');
+    const consultasIniciales = estado.consultasFinalizados;
+
+    const tarjeta = cocina.locator('[data-order-card="LT-2044"]');
+    await tarjeta.locator('[data-production-business-next]').click();
+    const entrega = cocina.locator('[data-tray-section="entrega"] [data-order-card="LT-2044"]');
+    await expect(entrega).toBeVisible({ timeout: 20_000 });
+    await entrega.locator('[data-production-delivery-code]').fill('4417');
+    await entrega.locator('[data-production-business-confirm-delivery]').click();
+
+    await expect.poll(
+      () => estado.ordenes.find((order) => order.public_code === 'LT-2044')?.status,
+      { timeout: 20_000 },
+    ).toBe('delivered');
+    // Caja sólo consulta pedidos activos: al ver que LT-2044 desapareció del
+    // snapshot invalida una vez el agregado. No existe un segundo polling del
+    // contador; la misma señal que actualiza la bandeja dispara esta lectura.
+    await expect(caja.locator('[data-order-card="LT-2044"]')).toHaveCount(0, { timeout: 25_000 });
+    await expect(contadorCaja).toHaveText('15', { timeout: 10_000 });
+    expect(estado.consultasFinalizados).toBeGreaterThan(consultasIniciales);
+  } finally {
+    await contextoCaja.close();
+    await contextoCocina.close();
+  }
+});
+
+test('dos personas tocan el MISMO pedido a la vez: una sola operación y ningún estado fantasma', async ({ browser }) => {
+  /*
+   * El caso que rompe los paneles: dos personas mirando la misma tarjeta y
+   * tocando el mismo botón con un segundo de diferencia.
+   *
+   * La segunda llega con la revisión que tenía en pantalla, que ya es vieja. El
+   * servidor la rechaza con 40001 y el Panel NO puede mostrar eso como éxito ni
+   * dejar el pedido en un estado inventado: tiene que releer y mostrar lo que
+   * de verdad pasó.
+   */
+  const contextoCaja = await browser.newContext({ viewport: TELEFONO, isMobile: true });
+  const contextoCocina = await browser.newContext({ viewport: TELEFONO, isMobile: true });
+  const estado = {
+    ordenes: pedidos(), transiciones: [], aplicadas: [],
+    recibos: new Map(), replays: [], fallaTransicion: null,
+  };
+  try {
+    const caja = await abrirPanelDe(contextoCaja, estado, { comoEmpleado: false });
+    const cocina = await abrirPanelDe(contextoCocina, estado, { comoEmpleado: true });
+
+    const enCaja = caja.locator('[data-order-card="LT-2041"] [data-production-business-next]');
+    const enCocina = cocina.locator('[data-order-card="LT-2041"] [data-production-business-next]');
+    await expect(enCaja).toHaveText('Aceptar pedido');
+    await expect(enCocina).toHaveText('Aceptar pedido');
+
+    // Las dos tocan, casi a la vez, sobre la MISMA revisión.
+    await Promise.all([enCaja.click(), enCocina.click()]);
+
+    // El pedido avanzó UNA sola vez. La revisión es la prueba: dos aplicaciones
+    // la habrían subido dos veces.
+    await expect.poll(
+      () => estado.ordenes.find((o) => o.public_code === 'LT-2041')?.status,
+      { timeout: 20_000 },
+    ).toBe('accepted');
+    expect(estado.aplicadas.filter((t) => t.estado === 'accepted')).toHaveLength(1);
+    expect(estado.ordenes.find((o) => o.public_code === 'LT-2041').revision).toBe(2);
+
+    // Y las dos pantallas terminan mostrando lo mismo: el estado real, no el
+    // que cada una creyó haber producido.
+    for (const pantalla of [caja, cocina]) {
+      await expect(pantalla.locator('[data-tray-section="preparando"] [data-order-card="LT-2041"]'))
+        .toBeVisible({ timeout: 25_000 });
+      await expect(pantalla.locator('[data-order-card="LT-2041"] [data-production-business-next]'))
+        .toHaveText('Iniciar preparación', { timeout: 25_000 });
+      // Ninguna quedó con el botón trabado en «Confirmando…».
+      await expect(pantalla.locator('[data-order-card="LT-2041"] [data-production-business-next]'))
+        .toBeEnabled();
+    }
+  } finally {
+    await contextoCaja.close();
+    await contextoCocina.close();
   }
 });

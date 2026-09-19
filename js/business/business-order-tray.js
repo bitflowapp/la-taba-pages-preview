@@ -86,10 +86,18 @@ export const TRAY_ATTENTION = Object.freeze({
     detail: 'Pasó bastante del tiempo prometido.',
     weight: 1,
   }),
+  /*
+   * «Nadie lo lleva» dejó de ser cierto con la migración 20260919120000: desde
+   * que el comercio puede despachar su propio reparto, el pedido no está
+   * esperando a que aparezca un repartidor, está esperando que alguien decida.
+   * El código y el umbral no se tocan —siguen atados a la alerta del servidor,
+   * y hay una prueba que los compara contra la migración—; lo que cambia es lo
+   * que se le dice a quien atiende, porque cambió lo que puede hacer.
+   */
   ORDER_READY_WITHOUT_RIDER: Object.freeze({
     code: 'ORDER_READY_WITHOUT_RIDER',
-    label: 'Listo sin repartidor',
-    detail: 'Está listo hace rato y nadie lo lleva.',
+    label: 'Listo sin salir',
+    detail: 'Está listo hace rato y todavía no salió.',
     weight: 2,
   }),
   RIDER_OFFER_REJECTED: Object.freeze({

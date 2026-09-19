@@ -260,6 +260,38 @@ export function renderBusinessOperations(view) {
 }
 
 // El panel no ofrece pantallas que el rol no puede usar; el servidor igual revalida.
+/*
+ * ¿ESTÁ ABIERTO EL NEGOCIO? LA CABECERA DE LA BANDEJA TIENE QUE PODER DECIRLO.
+ * ---------------------------------------------------------------------------
+ * `openingStatusRaw` ya existía, pero sólo se llenaba al entrar a «Abrir»: en
+ * la bandeja valía `null` siempre. Y es el dato que separa dos situaciones que
+ * en pantalla se ven IDÉNTICAS —una bandeja tranquila y un comercio marcado
+ * como cerrado, que no recibe ni un pedido—. La segunda es una noche perdida y
+ * hasta ahora sólo se descubría entrando a otra pantalla.
+ *
+ * `primeBusinessOpeningStatus()` lo pide UNA vez por sesión del Panel, no por
+ * repintado ni por latido: el estado de apertura lo cambia una persona desde
+ * «Abrir» o «Cerrar», y esas dos acciones ya vuelven a pedirlo. Es una llamada
+ * por sesión, y devuelve la promesa para que quien la dispare pueda esperarla
+ * en una prueba.
+ */
+export function primeBusinessOpeningStatus() {
+  if (openingLoadStarted) return Promise.resolve(openingStatusRaw);
+  if (typeof context?.getOpeningStatus !== 'function') return Promise.resolve(null);
+  openingLoadStarted = true;
+  return refreshOpeningStatus().then(() => openingStatusRaw).catch(() => null);
+}
+
+/**
+ * El estado de apertura que confirmó el servidor, o `null` si todavía no
+ * contestó. `null` NO es «cerrado»: es «no sabemos», y la cabecera lo calla en
+ * vez de inventar una respuesta.
+ */
+export function businessOpeningStatus() {
+  const estado = String(openingStatusRaw?.business_status || '').toLowerCase();
+  return ['open', 'paused', 'closed'].includes(estado) ? estado : null;
+}
+
 export function allowedBusinessOperationViews(role) {
   return BUSINESS_OPERATION_VIEWS.filter((view) => can(role, VIEW_CAPABILITY[view]));
 }

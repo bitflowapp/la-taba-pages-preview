@@ -944,3 +944,187 @@ test('el reloj de la bandeja dice cuánto hace que entró el pedido, no una hora
     await context.close();
   }
 });
+
+/* ===========================================================================
+ * LO QUE HACE QUE EL PANEL SE PUEDA ABRIR Y ENTENDER EN CINCO SEGUNDOS.
+ * ===========================================================================
+ * Tres contratos distintos, y los tres se rompen en silencio si nadie los
+ * mira: el Panel puede volver a aterrizar en el tablero de métricas, la tira
+ * del turno puede empezar a contar distinto que las secciones, y la tarjeta
+ * puede volver a esconder los productos detrás del detalle.
+ * ======================================================================== */
+
+test('el Panel abre en la bandeja de pedidos, no en el tablero de métricas', async ({ browser }) => {
+  // Deliberadamente SIN `irAPedidos()`: lo que se prueba es el aterrizaje.
+  const context = await browser.newContext({ viewport: TELEFONO, isMobile: true });
+  const page = await context.newPage();
+  try {
+    await instalarDatosDePrueba(page, { conSesion: true });
+    await servidorDePedidos(page, { pollMs: 5_000 });
+    await page.goto('/#business');
+
+    const workspace = page.locator('[data-production-workspace="business"]');
+    await workspace.waitFor({ state: 'visible', timeout: 30_000 });
+    // La bandeja está, sin tocar nada.
+    await expect(page.locator('[data-order-tray]')).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('[data-order-card="LT-2041"]')).toBeVisible();
+    // Y el tablero de métricas NO: son entre cuatro y cinco pantallas de
+    // contadores antes del primer pedido, y se consulta, no se vigila.
+    await expect(workspace.locator('[data-business-ops-center="operation-center"]')).toHaveCount(0);
+  } finally {
+    await context.close();
+  }
+});
+
+test('la tira del turno cuenta lo mismo que las secciones y lleva a la que se toca', async ({ browser }) => {
+  const { context, page, estado } = await abrirBandeja(browser);
+  try {
+    // Cada casillero dice lo que dice su sección. No es una redundancia: son
+    // dos lecturas del MISMO conteo, y esta prueba es la que impide que se
+    // separen.
+    for (const seccion of ['atencion', 'nuevos', 'preparando', 'entrega']) {
+      const enLaSeccion = await page.locator(`[data-tray-section="${seccion}"] [data-order-card]`).count();
+      await expect(page.locator(`[data-tray-jump="${seccion}"] .tray-pulse-n`)).toHaveText(String(enLaSeccion));
+    }
+
+    // Una sección vacía se dibuja igual, apagada y sin foco: si los casilleros
+    // aparecieran y desaparecieran, «Nuevos» cambiaría de lugar durante el
+    // turno y el dedo dejaría de saber dónde tocar.
+    await expect(page.locator('[data-tray-jump="listos"] .tray-pulse-n')).toHaveText('0');
+    await expect(page.locator('[data-tray-jump="listos"]')).toBeDisabled();
+
+    // Y el casillero lleva a su sección, que es lo que reemplaza a desplazar.
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    await page.locator('[data-tray-jump="entrega"]').click();
+    await page.waitForTimeout(900);
+    const llegada = await page.evaluate(() => {
+      const cabecera = document.querySelector('[data-tray-section="entrega"] .order-tray-head');
+      return { y: window.scrollY, cabecera: cabecera.getBoundingClientRect().top };
+    });
+    expect(llegada.y, 'el salto no movió la pantalla').toBeGreaterThan(0);
+    // La cabecera —que es la que lleva el recuento— queda VISIBLE, no debajo
+    // de la barra superior fija.
+    expect(llegada.cabecera).toBeGreaterThanOrEqual(0);
+
+    // Cuando entra trabajo, la tira lo dice sola.
+    estado.ordenes.push(pedidoNuevo('LT-2098'));
+    await expect(page.locator('[data-tray-jump="nuevos"] .tray-pulse-n')).toHaveText('3', { timeout: 20_000 });
+  } finally {
+    await context.close();
+  }
+});
+
+test('la tarjeta muestra los productos sin abrir nada, y el total no se lee como una etiqueta', async ({ browser }) => {
+  const { context, page } = await abrirBandeja(browser);
+  try {
+    const tarjeta = page.locator('[data-order-card="LT-2041"]');
+    // Decidir si se acepta un pedido —y después armarlo— es leer QUÉ PIDIÓ.
+    // Con el resumen de una línea eso costaba un toque por pedido.
+    const lineas = tarjeta.locator('.production-order-lines > li:not(.order-line-more)');
+    await expect(lineas).toHaveCount(2);
+    await expect(lineas.nth(0)).toContainText('Cerveza Patagonia Amber Lager 730 ml');
+    await expect(lineas.nth(0).locator('.order-line-qty')).toHaveText('4×');
+    await expect(lineas.nth(1)).toContainText('Papas fritas clásicas 150 g');
+    // Y sin que el detalle esté abierto.
+    await expect(tarjeta.locator('.order-detail')).not.toHaveAttribute('open', /.*/);
+
+    // El total es el número que se dice en voz alta: va solo y más grande que
+    // el medio de pago que lo acompaña.
+    const tamanios = await tarjeta.evaluate((nodo) => ({
+      total: parseFloat(getComputedStyle(nodo.querySelector('.production-order-total')).fontSize),
+      pago: parseFloat(getComputedStyle(nodo.querySelector('.production-order-pay')).fontSize),
+    }));
+    expect(tamanios.total).toBeGreaterThan(tamanios.pago + 4);
+
+    // La hora exacta sube a la tarjeta, al lado de la espera: «hace 3 min»
+    // decide, «20:47» es lo que se dice por teléfono.
+    await expect(tarjeta.locator('.order-clock')).toHaveText(/^\d{2}:\d{2}$/);
+
+    // El estado deja de ser texto gris: la píldora declara su estado del flujo
+    // para que la hoja de estilo tenga un alfabeto cerrado.
+    await expect(tarjeta.locator('.status-pill')).toHaveAttribute('data-order-state', 'submitted');
+  } finally {
+    await context.close();
+  }
+});
+
+test('un pedido listo de delivery sin repartidor dice por qué no avanza y dónde se resuelve', async ({ browser }) => {
+  /*
+   * El servidor sólo habilita `ready -> delivered` para RETIRO; la cadena de
+   * entrega es del rol `rider`, y `business_members` tiene
+   * `unique (business_id, user_id)`, así que el dueño no puede ser además
+   * repartidor de su propio negocio. Sin ningún rider activo, el pedido se
+   * queda en «Listos» para siempre.
+   *
+   * Lo que esta prueba fija NO es que el Panel lo resuelva —no puede, sin un
+   * cambio de servidor— sino que lo DIGA. Antes la tarjeta se quedaba muda.
+   */
+  const context = await browser.newContext({ viewport: TELEFONO, isMobile: true });
+  const page = await context.newPage();
+  try {
+    await instalarDatosDePrueba(page, { conSesion: true });
+    await servidorDePedidos(page, { pollMs: 5_000 });
+    // Sin un solo repartidor activo: el comercio que atiende el dueño solo.
+    await page.route(`${SUPABASE_URL}/rest/v1/rpc/list_active_business_riders`, (route) => route.fulfill({
+      status: 200, contentType: 'application/json', body: '[]',
+    }));
+    await page.goto('/#business');
+    await page.locator('[data-order-tray]').waitFor({ state: 'visible', timeout: 30_000 });
+
+    // LT-2044 es el pedido `ready` de delivery de la bandeja de prueba.
+    const tarjeta = page.locator('[data-order-card="LT-2044"]');
+    const aviso = tarjeta.locator('[data-order-blocked="sin-repartidor"]');
+    await expect(aviso).toBeVisible({ timeout: 20_000 });
+    await expect(aviso).toContainText('Listo, esperando repartidor');
+    await expect(aviso).toContainText('Solicitudes');
+    // Y no se ofrece un desplegable de repartidores vacío, que era lo que
+    // había antes: un control que no puede elegir nada.
+    await expect(tarjeta.locator('[data-production-rider-select]')).toHaveCount(0);
+  } finally {
+    await context.close();
+  }
+});
+
+test('un comercio cerrado o pausado lo dice en la cabecera; uno abierto no gasta una fila en decirlo', async ({ browser }) => {
+  /*
+   * Una bandeja tranquila y un comercio marcado como CERRADO se ven igual:
+   * cero pedidos nuevos. La diferencia es que en el segundo caso no va a entrar
+   * ninguno en toda la noche.
+   *
+   * Lo que se dibuja es la EXCEPCIÓN. «Abierto» es lo que pasa casi siempre: a
+   * 390px la insignia se caía a una línea propia de la cabecera —27px medidos—
+   * para decir «todo normal».
+   */
+  for (const [estado, esperado] of [
+    ['closed', 'Cerrado'],
+    ['paused', 'Pedidos pausados'],
+    ['open', null],
+  ]) {
+    const context = await browser.newContext({ viewport: TELEFONO, isMobile: true });
+    const page = await context.newPage();
+    try {
+      await instalarDatosDePrueba(page, { conSesion: true });
+      await servidorDePedidos(page, { pollMs: 5_000 });
+      await page.route(`${SUPABASE_URL}/rest/v1/rpc/get_business_opening_status`, (route) => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ business_status: estado, open_orders: 4 }),
+      }));
+      await page.goto('/#business');
+      await page.locator('[data-order-tray]').waitFor({ state: 'visible', timeout: 30_000 });
+
+      const chip = page.locator('[data-business-open]');
+      if (esperado === null) {
+        // Y se espera de verdad: sin esto la prueba pasaría por llegar antes
+        // que la respuesta del servidor, no porque no se dibuje.
+        await page.waitForTimeout(2_000);
+        await expect(chip).toHaveCount(0);
+      } else {
+        await expect(chip).toHaveText(new RegExp(esperado, 'i'), { timeout: 20_000 });
+        await expect(chip).toHaveAttribute('data-business-open', estado);
+      }
+    } finally {
+      await context.close();
+    }
+  }
+});

@@ -660,6 +660,35 @@ function formatTimestamp(value) {
  */
 export { formatTimestamp as formatPanelTimestamp };
 
+/*
+ * LA HORA SOLA, PARA LA CABECERA DE LA TARJETA.
+ * ---------------------------------------------------------------------------
+ * «hace 3 min» contesta cuanto espera el cliente; «20:47» contesta a que hora
+ * entro, que es lo que se dice por telefono y lo que se compara contra el
+ * ticket. Las dos se necesitan y ninguna reemplaza a la otra, asi que la hora
+ * exacta sube a la tarjeta en vez de quedarse solo en el detalle.
+ *
+ * Misma zona y mismo reloj de 24 horas que `formatPanelTimestamp`: sale del
+ * MISMO objeto de formato, sin la fecha. La fecha no va en la cabecera porque
+ * un pedido de la bandeja activa es de hoy; la completa sigue en el detalle.
+ */
+const PANEL_CLOCK_FORMAT = Object.freeze({
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+  timeZone: PANEL_TIMEZONE,
+});
+
+export function formatPanelClock(value) {
+  const date = new Date(value || 0);
+  if (Number.isNaN(date.getTime()) || !value) return '';
+  try {
+    return date.toLocaleTimeString('es-AR', PANEL_CLOCK_FORMAT);
+  } catch (_) {
+    return date.toLocaleTimeString('es-AR', { hourCycle: 'h23' });
+  }
+}
+
 function formatMoney(value, currency = 'ARS') {
   const amount = Number(value);
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: currency || 'ARS' })

@@ -27,7 +27,6 @@ import {
   isProductionOrderPaymentReversed as computeOrderPaymentReversed,
   orderContactLinks,
   orderItemCount,
-  orderItemsSummary,
   orderKey,
   trayHeadline,
 } from './business/business-order-tray.js';
@@ -37,15 +36,17 @@ import {
 } from './business/business-tray-patch.js';
 import {
   allowedBusinessOperationViews,
+  businessOpeningStatus,
   businessOperationViewLabel,
   BUSINESS_OPERATION_VIEWS,
   configureBusinessOperations,
+  primeBusinessOpeningStatus,
   handleBusinessOperationsAction,
   handleBusinessOperationsInput,
   renderBusinessOperations,
   resetBusinessOperationsForTests,
 } from './business/business-operations-center.js';
-import { formatPanelTimestamp } from './business/business-panel-render.js';
+import { formatPanelClock, formatPanelTimestamp } from './business/business-panel-render.js';
 import {
   ACCESS_STEP,
   accessRegistrationView,
@@ -106,7 +107,22 @@ let businessIntake = null;
 let businessIntakeStatus = emptyBusinessIntakeStatus();
 let businessCommandController = null;
 let businessCommandStatus = null;
-let businessOperationsView = 'operation-center';
+/*
+ * LA PANTALLA CON LA QUE ABRE EL PANEL ES LA BANDEJA DE PEDIDOS.
+ * ---------------------------------------------------------------------------
+ * Abria en «Que pasa», el centro de operacion. Medido con la bandeja de prueba
+ * -seis pedidos, sesion de dueno- esa pantalla es de 3.501px a 390x844 y de
+ * 4.305px a 320x568: entre cuatro y cinco pantallas de trece contadores y texto
+ * explicativo ANTES de que exista un pedido en el tablero. Para ver que entro
+ * trabajo habia que saber que «Pedidos» es otra pestana y tocarla.
+ *
+ * El centro de operacion no se toca y no se degrada: sigue completo, sigue a un
+ * toque en la barra, y sigue siendo donde se mira lo que hay que frenar. Lo que
+ * cambia es cual de las dos pantallas se paga sin pedirla. Quien abre el Panel
+ * veinte veces por turno lo abre para ver pedidos; el tablero de metricas se
+ * consulta, no se vigila.
+ */
+let businessOperationsView = 'orders';
 /**
  * ¿Está abierta la hoja de «Más»?
  *
@@ -478,6 +494,26 @@ export async function handleProductionOperationsAction(target) {
 
   if (target.closest('[data-panel-access-refresh]')) {
     return refreshPanelAccessState();
+  }
+
+  /*
+   * La tira del turno lleva a su seccion. No repinta, no pide red y no toca el
+   * servidor: mueve el desplazamiento y devuelve el control.
+   *
+   * El destino se valida contra la lista de secciones y NO se interpola crudo
+   * en el selector: el valor viene del DOM, y un selector armado con lo que
+   * haya en un atributo es la puerta por la que entra cualquier cosa.
+   */
+  const saltoDeBandeja = target.closest('[data-tray-jump]')?.dataset?.trayJump;
+  if (saltoDeBandeja) {
+    const valido = TRAY_PULSE_ITEMS.some((item) => item.id === saltoDeBandeja);
+    const seccion = valido
+      ? document.querySelector(`[data-tray-section="${saltoDeBandeja}"]`)
+      : null;
+    // Quien pidio menos movimiento no recibe un desplazamiento animado.
+    const sinMovimiento = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    seccion?.scrollIntoView?.({ behavior: sinMovimiento ? 'auto' : 'smooth', block: 'start' });
+    return { handled: true, ok: true, message: '' };
   }
 
   if (target.closest('[data-panel-access-signout]') || target.closest('[data-production-sign-out]')) {
@@ -1125,7 +1161,7 @@ export function resetProductionOperationsForTests() {
   refreshSequence = 0;
   availableRiderOrders = [];
   activeBusinessRiders = [];
-  businessOperationsView = 'operation-center';
+  businessOperationsView = 'orders';
   panelMoreSheetOpen = false;
   inventoryRepository = null;
   posRepository = null;
@@ -1446,6 +1482,17 @@ async function configureBusinessRuntime(result) {
     getScannedProductReadiness: (productId) => inventoryRepository.getScannedProductReadiness(productId),
     onChange: () => notify(),
   });
+
+  /*
+   * El estado de apertura se pide UNA vez, acá, y no se espera: la bandeja se
+   * dibuja con lo que ya hay y la cabecera se completa sola cuando el servidor
+   * contesta (`onChange` -> `notify()` -> repintado de la región `head`).
+   *
+   * Sin `await` a propósito. Este es el camino por el que el Panel se vuelve
+   * usable después de verificar la sesión, y colgarlo de una RPC más significa
+   * que un servidor lento retrasa la bandeja entera para decorar una línea.
+   */
+  void primeBusinessOpeningStatus();
 
   businessCommandController = createBusinessPanelController({
     platform: desktopPlatform,
@@ -2470,7 +2517,7 @@ function businessWorkspaceParts() {
       markup: `
     <div class="production-ops-head" data-panel-region="head">
       <div class="production-ops-identity">
-        <h1>Panel del negocio</h1>
+        <div class="production-ops-title-row"><h1>Panel del negocio</h1>${businessOpeningChipMarkup()}</div>
         <p class="production-ops-role">${escapeHtml(roleLabel(role))} · sesión verificada</p>
       </div>
       <div class="production-ops-head-actions">
@@ -2507,10 +2554,7 @@ function businessWorkspaceParts() {
        * actualizar una línea.
        */
       clave: 'tray-headline',
-      markup: `
-    <p class="order-tray-headline" data-panel-region="tray-headline" role="status" aria-live="polite" data-order-tray-headline>
-      ${escapeHtml(bandeja.headline)}
-    </p>`,
+      markup: trayPulseMarkup(bandeja),
     }] : []),
     {
       clave: 'operations',
@@ -2593,6 +2637,36 @@ const BUSINESS_VIEW_ICONS = Object.freeze({
  * alguien que apoya el teléfono en el mostrador al empezar el turno. La
  * preferencia se guarda y sobrevive a la recarga.
  */
+/*
+ * «Pedidos pausados» / «Cerrado», en la cabecera. ABIERTO NO SE DIBUJA.
+ * ---------------------------------------------------------------------------
+ * Una bandeja tranquila y un comercio marcado como CERRADO se ven exactamente
+ * igual: cero pedidos nuevos. La diferencia es que en el segundo caso no va a
+ * entrar ninguno en toda la noche, y hasta ahora eso sólo se descubría entrando
+ * a otra pantalla.
+ *
+ * Lo que se dibuja es la EXCEPCIÓN, no el estado. «Abierto» es lo que pasa el
+ * 95% del tiempo: como insignia permanente no informa, y medido a 390px se
+ * llevaba un renglón entero de la cabecera —la fila del título ya comparte
+ * espacio con el timbre y «Cerrar sesión», así que la insignia se caía sola a
+ * una línea propia—. Veinte píxeles por turno para decir «todo normal».
+ *
+ * Es la misma regla que el bloque de tokens de `business.css` ya fija para el
+ * color, llevada al espacio: lo normal no merece color, y tampoco merece una
+ * fila. Lo que tiene que saltar es que NO esté abierto, y eso ahora salta solo
+ * porque es lo único que aparece.
+ *
+ * Mientras el servidor no contestó tampoco se dibuja nada. Un «cerrado» por
+ * defecto sería peor que el silencio: mandaría a revisar por qué no entran
+ * pedidos una noche en que sí están entrando.
+ */
+function businessOpeningChipMarkup() {
+  const estado = businessOpeningStatus();
+  if (estado !== 'paused' && estado !== 'closed') return '';
+  const etiqueta = estado === 'paused' ? 'Pedidos pausados' : 'Cerrado';
+  return `<span class="production-ops-open" data-business-open="${escapeAttribute(estado)}">${escapeHtml(etiqueta)}</span>`;
+}
+
 function businessSoundToggleMarkup() {
   const encendido = Boolean(orderAlerts?.soundEnabled);
   return `
@@ -2956,11 +3030,64 @@ function construirBandeja() {
   return {
     secciones,
     headline: trayHeadline(tray),
+    // Los recuentos por seccion, tal como los conto la bandeja. La tira de
+    // arriba los dibuja; no los vuelve a calcular. Dos conteos de la misma
+    // bandeja serian dos autoridades sobre el mismo numero.
+    counts: tray.counts,
     // Lo que espera una decisión del mostrador. Sale de la bandeja YA
     // construida: `pendingOrdersForAlerts()` la reconstruiría entera sólo para
     // contar, y en la bandeja el conteo se paga una vez por render, no dos.
     pendientes: (tray.counts.atencion || 0) + (tray.counts.nuevos || 0),
   };
+}
+
+/*
+ * LA TIRA DEL TURNO: CINCO NUMEROS QUE CONTESTAN «¿COMO VENGO?».
+ * ---------------------------------------------------------------------------
+ * Acá había una línea de texto de 13px en gris apagado: «1 requiere atención ·
+ * 2 nuevos · 3 en curso». Dice lo correcto y se pierde. Es la única respuesta
+ * de la pantalla a la pregunta que alguien se hace cada dos minutos durante un
+ * turno, y estaba escrita como un pie de foto.
+ *
+ * La tira dice los mismos números —salen del MISMO conteo, el que ya hizo
+ * `buildOrderTray`, no de un segundo recorrido— y agrega lo que la línea no
+ * podía dar: cada número lleva a su sección. Con la bandeja larga, «tengo 3
+ * listos» y «llevame a los listos» son la misma pregunta, y hasta ahora la
+ * segunda se contestaba desplazando.
+ *
+ * Un recuento en cero se dibuja igual, apagado y sin foco: una tira que cambia
+ * de cantidad de casilleros según el turno mueve de lugar «Nuevos» cada vez que
+ * se vacía «Listos», y entonces el dedo deja de saber dónde tocar. El ANUNCIO
+ * para lector de pantalla sigue siendo UNA línea —la de siempre, con su
+ * `data-order-tray-headline`— y no los cinco números: cinco recuentos en un
+ * `aria-live` dictarían la tira entera cada vez que entra un pedido.
+ */
+const TRAY_PULSE_ITEMS = Object.freeze([
+  Object.freeze({ id: 'atencion', label: 'Atención' }),
+  Object.freeze({ id: 'nuevos', label: 'Nuevos' }),
+  Object.freeze({ id: 'preparando', label: 'Preparando' }),
+  Object.freeze({ id: 'listos', label: 'Listos' }),
+  Object.freeze({ id: 'entrega', label: 'En entrega' }),
+]);
+
+function trayPulseMarkup(bandeja) {
+  const counts = bandeja?.counts || {};
+  const items = TRAY_PULSE_ITEMS.map(({ id, label }) => {
+    const total = Number(counts[id] || 0);
+    return `
+        <button type="button" class="tray-pulse-item${total ? '' : ' is-empty'}"
+          data-tray-jump="${escapeAttribute(id)}"
+          ${total ? '' : 'disabled aria-disabled="true"'}
+          aria-label="${escapeAttribute(`${total} ${label.toLowerCase()}`)}">
+          <span class="tray-pulse-n">${total}</span>
+          <span class="tray-pulse-k">${escapeHtml(label)}</span>
+        </button>`;
+  }).join('');
+  return `
+    <div class="tray-pulse" data-panel-region="tray-headline" data-tray-pulse>
+      <p class="sr-only" role="status" aria-live="polite" data-order-tray-headline>${escapeHtml(bandeja?.headline || '')}</p>
+      <div class="tray-pulse-row">${items}</div>
+    </div>`;
 }
 
 /**
@@ -3001,6 +3128,65 @@ function isOrderDetailOpen(order) {
   return expandedOrderCards.has(orderKey(order));
 }
 
+/*
+ * LA TARJETA DE PEDIDO, ORDENADA POR LO QUE SE DECIDE CON ELLA.
+ * ===========================================================================
+ * Antes la tarjeta abría con una rejilla de cuatro casilleros con recuadro
+ * —Entró / Entrega / Pago / Total— todos del mismo tamaño y del mismo peso, y
+ * debajo UNA línea con el primer producto y «+2 más». O sea: cuatro etiquetas
+ * de 10px compitiendo entre sí, y lo único que hay que preparar resumido a una
+ * línea y medio escondido.
+ *
+ * El orden de ahora es el de las preguntas que se hacen con la tarjeta en la
+ * mano, y cada una ocupa lo que vale:
+ *
+ *   1. ¿cuál es y hace cuánto espera?   código, «hace 3 min», la hora, estado
+ *   2. ¿hay algo raro?                  las señales de atención
+ *   3. ¿qué es y de quién?              Delivery/Retiro + nombre
+ *   4. ¿qué tengo que preparar?         LOS PRODUCTOS, en renglones
+ *   5. ¿cuánto y cómo paga?             el total grande, el medio al lado
+ *   6. ¿adónde va?                      la dirección, o «retira en el local»
+ *   7. ¿pidió algo especial?            las observaciones, destacadas
+ *   8. ¿qué hago AHORA?                 UNA acción
+ *   9. lo demás                         contacto, detalle, cancelar
+ *
+ * LOS PRODUCTOS SE VEN. Es el cambio que más cambia el turno: decidir si se
+ * acepta un pedido, y después armarlo, es leer QUÉ PIDIÓ. Con el resumen de una
+ * línea había que abrir el detalle de cada tarjeta para eso —un toque por
+ * pedido, veinte toques en una hora pico— y el detalle abierto empuja al
+ * siguiente pedido fuera de la pantalla. Se muestran hasta
+ * `MAX_LINEAS_VISIBLES` renglones y el resto se cuenta: una tarjeta no puede
+ * crecer sin límite, pero tampoco puede esconder lo único que hay que hacer.
+ */
+
+/** Cuántos renglones de producto entran en la tarjeta antes de contar el resto. */
+const MAX_LINEAS_VISIBLES = 4;
+
+/*
+ * El estado, como píldora con color.
+ *
+ * `.status-pill` no tenía UNA regla de CSS en todo el proyecto: la clase estaba
+ * puesta en el marcado desde siempre y el estado se dibujaba como texto gris,
+ * del mismo tamaño y del mismo color que «Entrega» o «Pago». El dato que dice
+ * en qué parte del circuito está el pedido se leía igual que una etiqueta de
+ * formulario. `data-order-state` lleva el estado NORMALIZADO —el del flujo, no
+ * el crudo de la fila— para que la hoja de estilo tenga un alfabeto cerrado.
+ */
+function orderStatePill(order) {
+  const estado = workflowStatus(order);
+  return `<span class="status-pill ${escapeAttribute(order.status)}" data-order-state="${escapeAttribute(estado)}">`
+    + `${escapeHtml(statusLabel(order.status))}</span>`;
+}
+
+/** Los renglones de producto que entran, y cuántos quedaron afuera. */
+function orderVisibleLines(order) {
+  const items = (Array.isArray(order.items) ? order.items : []).filter(Boolean);
+  return {
+    visibles: items.slice(0, MAX_LINEAS_VISIBLES),
+    resto: Math.max(0, items.length - MAX_LINEAS_VISIBLES),
+  };
+}
+
 function businessOrderMarkup(order, attention = []) {
   const next = canAdvanceProductionBusinessOrder(order, businessPayments)
     ? nextBusinessStatus(order)
@@ -3027,7 +3213,6 @@ function businessOrderMarkup(order, attention = []) {
     >${escapeHtml(riderOptionLabel(rider))}</option>
   `).join('');
   const contacto = orderContactLinks(order);
-  const resumen = orderItemsSummary(order);
   const esRetiro = order.deliveryMode === 'pickup';
   /*
    * «Dirección no publicada» en un pedido de RETIRO era una respuesta a una
@@ -3042,16 +3227,33 @@ function businessOrderMarkup(order, attention = []) {
   const domicilio = esRetiro
     ? 'Retira en el local'
     : (order.address || 'Sin dirección publicada');
+  const { visibles, resto } = orderVisibleLines(order);
+  const lineas = visibles.map((item) => `
+          <li>
+            <span class="order-line-qty">${escapeHtml(String(Number(item.quantity || 0)))}×</span>
+            <span class="order-line-name">${escapeHtml(item.name || 'Producto')}</span>
+          </li>`).join('');
+  const reloj = formatPanelClock(order.createdAt);
+  const descuento = Number(order.discountTotal || 0) > 0
+    ? `<span class="production-order-discount">−${escapeHtml(formatOrderMoney(order.discountTotal, order.currencyCode))} combo</span>`
+    : '';
 
   return `
     <article class="production-order-card${attention.length ? ' is-attention' : ''}"
       data-order-card="${escapeAttribute(order.id)}">
       <div class="production-order-head">
-        <div>
+        <div class="production-order-ident">
           <span class="production-order-code">${escapeHtml(order.id)}</span>
-          <strong>${escapeHtml(order.customerName)}</strong>
+          <span class="production-order-when">
+            <time
+              class="order-elapsed"
+              data-elapsed-from="${escapeAttribute(order.createdAt || '')}"
+              datetime="${escapeAttribute(order.createdAt || '')}"
+            >${escapeHtml(elapsedLabel(order.createdAt))}</time>
+            ${reloj ? `<span class="order-clock">${escapeHtml(reloj)}</span>` : ''}
+          </span>
         </div>
-        <span class="status-pill ${escapeHtml(order.status)}">${escapeHtml(statusLabel(order.status))}</span>
+        ${orderStatePill(order)}
       </div>
       ${attention.length ? `
       <ul class="order-attention" aria-label="Requiere atención">
@@ -3063,32 +3265,21 @@ function businessOrderMarkup(order, attention = []) {
         `).join('')}
       </ul>
       ` : ''}
-      <dl class="production-order-meta">
-        <div><dt>Entró</dt><dd><time
-          class="order-elapsed"
-          data-elapsed-from="${escapeAttribute(order.createdAt || '')}"
-          datetime="${escapeAttribute(order.createdAt || '')}"
-        >${escapeHtml(elapsedLabel(order.createdAt))}</time></dd></div>
-        <div><dt>Entrega</dt><dd>${esRetiro ? 'Retiro' : 'Delivery'}</dd></div>
-        <div><dt>Pago</dt><dd>${escapeHtml(order.paymentMethod || 'No informado')}</dd></div>
-        ${Number(order.discountTotal || 0) > 0 ? `
-        <div><dt>Combo del local</dt><dd>−${escapeHtml(formatOrderMoney(order.discountTotal, order.currencyCode))}</dd></div>
-        ` : ''}
-        <div><dt>Total</dt><dd>${escapeHtml(formatOrderMoney(order.total, order.currencyCode))}</dd></div>
-      </dl>
-      ${resumen ? `<p class="production-order-summary">${escapeHtml(`${itemCount} u. · ${resumen}`)}</p>` : ''}
-      ${contacto.display ? `
-      <p class="production-order-contact-row" data-order-contact="${escapeAttribute(order.id)}">
-        <a class="order-contact-call" href="${escapeAttribute(contacto.tel)}"
-          aria-label="Llamar a ${escapeHtml(order.customerName)}">${escapeHtml(contacto.display)}</a>
-        ${contacto.whatsapp ? `
-        <a class="order-contact-wa" href="${escapeAttribute(contacto.whatsapp)}"
-          target="_blank" rel="noopener noreferrer"
-          aria-label="WhatsApp con ${escapeHtml(order.customerName)}">WhatsApp</a>
-        ` : ''}
+      <p class="production-order-who">
+        <span class="order-mode-chip" data-mode="${esRetiro ? 'pickup' : 'delivery'}">${esRetiro ? 'Retiro' : 'Delivery'}</span>
+        <strong>${escapeHtml(order.customerName)}</strong>
       </p>
+      ${lineas ? `
+      <ul class="production-order-lines" aria-label="Productos del pedido">${lineas}
+        ${resto ? `<li class="order-line-more">+${resto} producto${resto === 1 ? '' : 's'} más</li>` : ''}
+      </ul>
       ` : ''}
-      <p class="production-order-address">${escapeHtml(domicilio)}</p>
+      <p class="production-order-money">
+        <span class="production-order-total">${escapeHtml(formatOrderMoney(order.total, order.currencyCode))}</span>
+        <span class="production-order-pay">${escapeHtml(order.paymentMethod || 'Pago no informado')}</span>
+        ${descuento}
+      </p>
+      <p class="production-order-address" data-mode="${esRetiro ? 'pickup' : 'delivery'}">${escapeHtml(domicilio)}</p>
       ${hasCustomerNotes(order)
         ? `<p class="production-order-notes"><strong>Observaciones:</strong> ${escapeHtml(order.notes)}</p>`
         : ''}
@@ -3103,30 +3294,75 @@ function businessOrderMarkup(order, attention = []) {
           >${orderActionsInFlight.has(order.id) ? 'Confirmando…' : escapeHtml(actionLabel(next, 'business'))}</button>
         ` : ''}
       </div>
+      ${despachoBloqueadoMarkup(order, {
+        current, canAssignRider, offerPending, hayRiders: activeBusinessRiders.length > 0,
+      })}
       ${riderOfferMarkup(offer)}
-      ${canAssignRider && !offerPending ? `
+      ${canAssignRider && !offerPending && riderOptions ? `
         <div class="production-rider-assignment">
-          ${riderOptions ? `
-            <label class="sr-only" for="rider-${escapeAttribute(order.id)}">${riderAssignmentLabel(current)}</label>
-            <select id="rider-${escapeAttribute(order.id)}" data-production-rider-select>
-              ${riderOptions}
-            </select>
-            <button
-              class="secondary-button compact"
-              type="button"
-              data-production-business-assign="${escapeAttribute(order.id)}"
-            >${riderAssignmentAction(current)}</button>
-          ` : '<p class="form-hint">No hay riders activos habilitados para asignar.</p>'}
-          ${activeBusinessRiders.length && activeBusinessRiders.every((rider) => rider.atCapacity)
-            ? '<p class="form-hint">Todos los riders están con 3 entregas activas. Esperá a que liberen una.</p>'
-            : ''}
+          <label class="sr-only" for="rider-${escapeAttribute(order.id)}">${riderAssignmentLabel(current)}</label>
+          <select id="rider-${escapeAttribute(order.id)}" data-production-rider-select>
+            ${riderOptions}
+          </select>
+          <button
+            class="secondary-button compact"
+            type="button"
+            data-production-business-assign="${escapeAttribute(order.id)}"
+          >${riderAssignmentAction(current)}</button>
         </div>
       ` : ''}
-      ${businessOrderDetailMarkup(order, {
-        items, itemCount, canCancel, terminal, current,
-      })}
+      <div class="production-order-foot">
+        ${contacto.display ? `
+        <p class="production-order-contact-row" data-order-contact="${escapeAttribute(order.id)}">
+          <a class="order-contact-call" href="${escapeAttribute(contacto.tel)}"
+            aria-label="Llamar a ${escapeHtml(order.customerName)}">${escapeHtml(contacto.display)}</a>
+          ${contacto.whatsapp ? `
+          <a class="order-contact-wa" href="${escapeAttribute(contacto.whatsapp)}"
+            target="_blank" rel="noopener noreferrer"
+            aria-label="WhatsApp con ${escapeHtml(order.customerName)}">WhatsApp</a>
+          ` : ''}
+        </p>
+        ` : ''}
+        ${businessOrderDetailMarkup(order, {
+          items, itemCount, canCancel, terminal, current,
+        })}
+      </div>
     </article>
   `;
+}
+
+/*
+ * EL PEDIDO QUE ESTÁ LISTO Y NO TIENE CÓMO SALIR.
+ * ===========================================================================
+ * Un pedido de DELIVERY en `ready` no tiene acción de negocio, y no es un
+ * descuido del Panel: el servidor sólo habilita `ready -> delivered` cuando el
+ * pedido es de RETIRO (`transition_order`, rama `v_is_business` de
+ * `20260725030000_taba_production_orders.sql`), y la cadena
+ * assigned/picked_up/on_the_way/arrived pertenece al rol `rider`. Para cerrar
+ * una entrega hace falta una cuenta de repartidor del comercio, y
+ * `business_members` tiene `unique (business_id, user_id)`: el dueño NO puede
+ * ser además rider de su propio negocio.
+ *
+ * Hasta acá eso se manifestaba como una tarjeta MUDA —sin botón, sin
+ * explicación, con un desplegable vacío cuando no había ningún rider activo— y
+ * el pedido se quedaba en «Listos» sin que nadie supiera por qué.
+ *
+ * Esto NO inventa una transición que el servidor rechazaría: ese sería el
+ * defecto H1 otra vez, un botón que contesta 42501 y un pedido que no se mueve
+ * nunca. Dice qué está pasando y dónde se resuelve. Habilitar el despacho desde
+ * el mostrador es un cambio de SERVIDOR y queda anotado como tal.
+ */
+function despachoBloqueadoMarkup(order, { current, canAssignRider, offerPending, hayRiders }) {
+  const esDeliveryListo = current === 'ready' && order.deliveryMode === 'delivery';
+  if (!esDeliveryListo || offerPending) return '';
+  if (canAssignRider && hayRiders) return '';
+  return `
+      <p class="production-order-blocked" data-order-blocked="sin-repartidor">
+        <strong>Listo, esperando repartidor.</strong>
+        Para que salga hace falta una cuenta de repartidor activa del comercio:
+        dala de alta o activala en «Solicitudes». Si lo lleva alguien del local,
+        la entrega se confirma desde la cuenta de ese repartidor.
+      </p>`;
 }
 
 /*
@@ -3556,17 +3792,33 @@ function actionLabel(status, actor) {
   return 'Actualizar';
 }
 
+/*
+ * Los centavos se muestran SOLO cuando existen.
+ *
+ * «$ 9.600,00» son tres caracteres que no dicen nada en un mostrador donde
+ * todos los precios son pesos enteros, y en la tarjeta ese total compite en
+ * ancho con el resto de la fila. Cuando el importe sí tiene centavos —un
+ * prorrateo, un redondeo de combo— se muestran, porque ahí son el dato.
+ *
+ * El valor NO se redondea: se elige cuántos decimales imprimir. Un total de
+ * 9.600,40 sigue diciendo 9.600,40.
+ */
 function formatOrderMoney(value, currencyCode = '') {
   const currency = /^[A-Z]{3}$/.test(String(currencyCode || '')) ? currencyCode : '';
   if (!currency) return 'Moneda no informada';
+  const amount = Number(value || 0);
+  // Tolerancia de medio centavo: un flotante que vale 9600 puede llegar como
+  // 9599.9999999 y no por eso tiene centavos que mostrar.
+  const conCentavos = Math.abs(amount - Math.round(amount)) > 0.005;
   try {
     return new Intl.NumberFormat('es-AR', {
       style: 'currency',
       currency,
+      minimumFractionDigits: conCentavos ? 2 : 0,
       maximumFractionDigits: 2,
-    }).format(Number(value || 0));
+    }).format(amount);
   } catch (_) {
-    return `${currency} ${Number(value || 0).toFixed(2)}`;
+    return `${currency} ${conCentavos ? amount.toFixed(2) : String(Math.round(amount))}`;
   }
 }
 

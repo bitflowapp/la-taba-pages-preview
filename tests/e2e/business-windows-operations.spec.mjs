@@ -209,6 +209,9 @@ test('Centro de operación prioriza alertas y finaliza un cierre diario auditabl
   await installRuntime(page, session, { desktop: true, operationCenter: operationCenterFixture() });
   await page.goto('/#business');
   const workspace = page.locator('[data-production-workspace="business"]');
+  // El aterrizaje del Panel es la bandeja; el centro de operacion esta a un
+  // toque en la barra de destinos.
+  await workspace.locator('[data-business-ops-view="operation-center"]').first().click();
   const center = workspace.locator('[data-business-ops-center="operation-center"]');
   await expect(center).toBeVisible();
   await expect(center.getByRole('heading', { name: 'Centro de operación' })).toBeVisible();

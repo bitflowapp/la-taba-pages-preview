@@ -160,7 +160,7 @@ try {
     ),'utf8');
     await query('begin');
     await query(`insert into public.businesses(id,name,status,slug,is_active,operating_timezone)
-      values('e6000000-0000-4000-8000-000000000001','ROLLBACK DRILL','active','rollback-drill',true,'America/Argentina/Buenos_Aires');
+      values('e6000000-0000-4000-8000-000000000001','ROLLBACK DRILL','open','rollback-drill',true,'America/Argentina/Buenos_Aires');
       insert into public.orders(
         id,business_id,code,public_code,status,fulfillment_type,delivery_mode,
         client_request_id,customer_name,customer_neighborhood,customer_street_address,

@@ -942,6 +942,24 @@ export async function handleProductionOperationsAction(target) {
     );
   }
 
+  const businessConfirmDelivery = target.closest('[data-production-business-confirm-delivery]');
+  if (businessConfirmDelivery) {
+    const guard = requireViewAccess('business');
+    if (!guard.ok) return { handled: true, ...guard };
+    const orderId = businessConfirmDelivery.dataset.productionBusinessConfirmDelivery;
+    const card = businessConfirmDelivery.closest('.production-order-card');
+    const rawCode = card?.querySelector('[data-production-delivery-code]')?.value || '';
+    const deliveryCode = String(rawCode).replace(/\D/g, '').slice(0, 4);
+    if (!deliveryCode || deliveryCode.length !== 4) {
+      return { handled: true, ok: false, message: 'Ingresá los 4 números del código de entrega del cliente.' };
+    }
+    return updateOrderFromAction(
+      orderId,
+      'delivered',
+      { commandType: 'confirm_business_delivery_code', deliveryCode },
+    );
+  }
+
   const riderNext = target.closest('[data-production-rider-next]');
   if (riderNext) {
     const guard = requireViewAccess('rider');
@@ -1650,7 +1668,9 @@ async function sendBusinessCommand(command) {
   };
   const response = command.commandType === 'cancel_order'
     ? await repository.cancelBusinessOrder(command.orderId, { ...options, reason: command.payload.reason })
-    : await repository.updateOrderStatus(command.orderId, command.payload.newStatus, options);
+    : command.commandType === 'confirm_business_delivery_code'
+      ? await repository.confirmBusinessDeliveryCode(command.orderId, { ...options, deliveryCode: command.payload.deliveryCode })
+      : await repository.updateOrderStatus(command.orderId, command.payload.newStatus, options);
   return response?.ok
     ? { ok: true, revision: response.order?.revision }
     : {
@@ -3763,7 +3783,7 @@ function orderCommandKey(commandType, backendId, revision, nextStatus) {
   return operationKey(commandType, backendId, revision, nextStatus);
 }
 
-async function updateOrderFromAction(orderId, nextStatus, { commandType = 'transition_order', reason = '' } = {}) {
+async function updateOrderFromAction(orderId, nextStatus, { commandType = 'transition_order', reason = '', deliveryCode = '' } = {}) {
   if (!orderId || !nextStatus) {
     return { handled: true, ok: false, message: 'Acción de pedido inválida.' };
   }
@@ -3784,17 +3804,27 @@ async function updateOrderFromAction(orderId, nextStatus, { commandType = 'trans
         commandType,
         expectedRevision: currentOrder?.revision,
         idempotencyKey: orderCommandKey(commandType, currentOrder?.backendId || orderId, currentOrder?.revision, nextStatus),
-        payload: { newStatus: nextStatus, ...(reason ? { reason } : {}) },
+        payload: {
+          newStatus: nextStatus,
+          ...(reason ? { reason } : {}),
+          ...(deliveryCode ? { deliveryCode } : {}),
+        },
       })
       : isRider
         ? await repository.advanceRiderDelivery(orderId, nextStatus, {
           expectedRevision: currentOrder?.revision,
           idempotencyKey: orderCommandKey('rider', currentOrder?.backendId || orderId, currentOrder?.revision, nextStatus),
         })
-        : await repository.updateOrderStatus(orderId, nextStatus, {
-          expectedRevision: currentOrder?.revision,
-          idempotencyKey: orderCommandKey('direct', currentOrder?.backendId || orderId, currentOrder?.revision, nextStatus),
-        });
+        : commandType === 'confirm_business_delivery_code'
+          ? await repository.confirmBusinessDeliveryCode(orderId, {
+            expectedRevision: currentOrder?.revision,
+            idempotencyKey: orderCommandKey('direct_confirm_code', currentOrder?.backendId || orderId, currentOrder?.revision, nextStatus),
+            deliveryCode,
+          })
+          : await repository.updateOrderStatus(orderId, nextStatus, {
+            expectedRevision: currentOrder?.revision,
+            idempotencyKey: orderCommandKey('direct', currentOrder?.backendId || orderId, currentOrder?.revision, nextStatus),
+          });
     if (result.ok) {
       if (isRider) await refreshRiderOrders();
       else await businessIntake?.invalidate?.('status-transition');
@@ -3805,13 +3835,18 @@ async function updateOrderFromAction(orderId, nextStatus, { commandType = 'trans
        * cambió. `cancel_order` entra por acá con `commandType` propio.
        */
       const cerroElPedido = TERMINAL_STATUSES.has(normalizeWorkflowStatus(nextStatus, ''))
-        || commandType === 'cancel_order';
+        || commandType === 'cancel_order'
+        || commandType === 'confirm_business_delivery_code';
       if (cerroElPedido) void refreshBusinessFinishedToday();
     }
     return {
       handled: true,
       ok: result.ok,
-      message: result.ok ? 'Estado confirmado por el servidor.' : result.message,
+      message: result.ok
+        ? (commandType === 'confirm_business_delivery_code'
+          ? 'Entrega confirmada con el código del cliente.'
+          : 'Estado confirmado por el servidor.')
+        : result.message,
     };
   } finally {
     orderActionsInFlight.delete(orderId);

@@ -142,6 +142,26 @@ async function servidorDePedidos(page, { pollMs = 1500, compartido = null } = {}
       return json(fila);
     }
 
+    if (path.includes('/rpc/confirm_business_delivery_code')) {
+      const cuerpo = JSON.parse(route.request().postData() || '{}');
+      estado.transiciones.push({ ...cuerpo, p_new_status: 'delivered' });
+      const clave = String(cuerpo.p_idempotency_key || '');
+      if (clave && estado.recibos.has(clave)) {
+        estado.replays.push(clave);
+        return json(estado.recibos.get(clave));
+      }
+      const fila = estado.ordenes.find((o) => o.id === cuerpo.p_order_id);
+      if (!fila) return json(null);
+      fila.status = 'delivered';
+      fila.revision += 1;
+      fila.updated_at = new Date().toISOString();
+      fila.delivered_at = new Date().toISOString();
+      estado.aplicadas.push({ clave, orden: fila.id, estado: fila.status, revision: fila.revision });
+      const res = { ...fila, ok: true, outcome: 'confirmed', code_verified: true, idempotent_replay: false };
+      if (clave) estado.recibos.set(clave, res);
+      return json(res);
+    }
+
     return route.fallback();
   });
 
@@ -1098,11 +1118,14 @@ test('sin repartidores, el comercio despacha y cierra su propio delivery', async
     expect(despacho.p_expected_revision).toBe(4);
     expect(String(despacho.p_idempotency_key)).toMatch(/^[A-Za-z0-9:_-]{8,128}$/);
 
-    // Y el segundo paso cierra la entrega.
-    const cierre = page.locator('[data-order-card="LT-2044"] [data-production-business-next]');
-    await expect(cierre).toHaveText('Marcar entregado');
-    await expect(cierre).toHaveAttribute('data-next-status', 'delivered');
-    await cierre.click();
+    // Y el segundo paso cierra la entrega con el código del cliente.
+    const tarjetaEntrega = page.locator('[data-tray-section="entrega"] [data-order-card="LT-2044"]');
+    const inputCodigo = tarjetaEntrega.locator('[data-production-delivery-code]');
+    await expect(inputCodigo).toBeVisible({ timeout: 10_000 });
+    await inputCodigo.fill('4417');
+    const botonConfirmar = tarjetaEntrega.locator('[data-production-business-confirm-delivery]');
+    await expect(botonConfirmar).toHaveText('Confirmar entrega');
+    await botonConfirmar.click();
     /*
      * Lo que se verifica es el SERVIDOR, no que la tarjeta desaparezca.
      *

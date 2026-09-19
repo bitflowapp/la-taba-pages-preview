@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v98-panel-operacion-diaria';
+const CACHE_NAME = 'la-taba-runtime-v99-panel-operacion-diaria';
 const ASSETS = [
   './',
   './index.html',

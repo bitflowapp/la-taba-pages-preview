@@ -97,7 +97,7 @@ try {
     assert.doesNotMatch(output,/^not ok\b/m,name);assert.match(output,/^1\.\.[0-9]+$/m,name);
     assertions+=Number(/^1\.\.([0-9]+)$/m.exec(output)[1]);
   }
-  if(!focused){assert.equal(assertions,327);console.log('CANONICAL_PGTAP: 250 + 44 least-privilege + 33 reparto-propio assertions PASS');}
+  if(!focused){assert.equal(assertions,334);console.log('CANONICAL_PGTAP: 250 + 44 least-privilege + 40 reparto-propio assertions PASS');}
   else console.log('FOCUSED_RELEASE_RUN: historical matrix and canonical pgTAP NOT RUN');
   const clear=async()=>query(`begin; set local session_replication_role=replica;
     truncate public.checkout_sessions,public.payment_intents,public.payment_outbox,public.payment_refunds,

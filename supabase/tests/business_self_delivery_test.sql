@@ -15,7 +15,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(33);
+select plan(40);
 
 -- ── Fixture ────────────────────────────────────────────────────────────────
 insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
@@ -211,6 +211,28 @@ select throws_ok(
   $$select public.confirm_business_delivery_code('d5000000-0000-4000-8000-000000000004', 1, '4417', 'self-nadie-00002')$$,
   '42501', 'operador no autorizado',
   'ni cierra una entrega ajena con un codigo adivinado');
+
+-- MINIMO PRIVILEGIO / ANON RECHAZADO
+select ok(not has_function_privilege('anon', 'public.confirm_business_delivery_code(uuid,bigint,text,text)', 'EXECUTE'),
+  'anon no ejecuta confirm_business_delivery_code');
+select ok(not has_function_privilege('anon', 'public.get_business_finished_today(uuid,text,date)', 'EXECUTE'),
+  'anon no ejecuta get_business_finished_today');
+select ok(not has_function_privilege('anon', 'public.change_order_status(uuid,text,text)', 'EXECUTE'),
+  'anon no ejecuta change_order_status');
+select ok(not has_function_privilege('anon', 'public.prevent_business_delivery_over_rider()', 'EXECUTE'),
+  'anon no ejecuta prevent_business_delivery_over_rider');
+select ok(not has_function_privilege('anon', 'public.record_business_self_delivery()', 'EXECUTE'),
+  'anon no ejecuta record_business_self_delivery');
+
+select pg_temp.sin_sesion();
+select throws_ok(
+  $$select public.confirm_business_delivery_code('d5000000-0000-4000-8000-000000000004', 1, '4417', 'self-anon-00001')$$,
+  '42501', null,
+  'anon no puede confirmar entrega');
+select throws_ok(
+  $$select public.get_business_finished_today('b5000000-0000-4000-8000-0000000000e1', null)$$,
+  '42501', null,
+  'anon no puede contar finalizados del negocio');
 
 -- ══ 4 · FINALIZADOS HOY, CONTADO POR EL SERVIDOR ════════════════════════════
 -- Un pedido cancelado hoy y uno entregado AYER, insertados con su `updated_at`

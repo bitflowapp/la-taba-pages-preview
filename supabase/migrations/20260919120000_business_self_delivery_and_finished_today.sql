@@ -316,6 +316,9 @@ $$;
 comment on function public.change_order_status(uuid, text, text) is
   'Authenticated, role-aware order transition with expected-status concurrency control. El negocio puede despachar y entregar su propio delivery mientras no haya repartidor asignado.';
 
+revoke all on function public.change_order_status(uuid, text, text)
+from public, anon, authenticated;
+
 -- ── El guard simetrico: el negocio no cierra la entrega de un repartidor ─────
 --
 -- La matriz de `change_order_status` ya lo impide. Este trigger lo impide OTRA

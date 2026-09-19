@@ -130,11 +130,18 @@ test('los importes del Panel muestran centavos sólo cuando existen, y no redond
  * ======================================================================== */
 
 test('el comercio despacha y cierra su propio delivery, y sólo mientras no haya repartidor', async () => {
-  const { nextBusinessStatus } = await import('../js/production-operations.js');
+  const { nextBusinessStatus, needsBusinessDeliveryCode } = await import('../js/production-operations.js');
 
-  // Sin repartidor, la cadena completa es del comercio.
+  // Sin repartidor, el despacho es del comercio.
   assert.equal(nextBusinessStatus({ status: 'ready', deliveryMode: 'delivery' }), 'on_the_way');
-  assert.equal(nextBusinessStatus({ status: 'on_the_way', deliveryMode: 'delivery' }), 'delivered');
+
+  // El cierre de delivery no pasa por nextBusinessStatus: exige el código del
+  // cliente (confirm_business_delivery_code) y lo maneja needsBusinessDeliveryCode.
+  // Ofrecer un botón genérico sería prometer lo que prevent_unverified_delivery rechaza con 55000.
+  assert.equal(nextBusinessStatus({ status: 'on_the_way', deliveryMode: 'delivery' }), null);
+  assert.equal(needsBusinessDeliveryCode({ status: 'on_the_way', deliveryMode: 'delivery' }), true);
+  assert.equal(needsBusinessDeliveryCode({ status: 'ready', deliveryMode: 'delivery' }), false);
+  assert.equal(needsBusinessDeliveryCode({ status: 'on_the_way', deliveryMode: 'delivery', assignedRiderId: 'r-1' }), false);
 
   // Con repartidor asignado no hay acción: el pedido es suyo y lo cierra con el
   // código del cliente. Ofrecer el botón sería prometer lo que el servidor

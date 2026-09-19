@@ -27,7 +27,6 @@ import {
   isProductionOrderPaymentReversed as computeOrderPaymentReversed,
   orderContactLinks,
   orderItemCount,
-  orderItemsSummary,
   orderKey,
   trayHeadline,
 } from './business/business-order-tray.js';
@@ -37,15 +36,19 @@ import {
 } from './business/business-tray-patch.js';
 import {
   allowedBusinessOperationViews,
+  businessFinishedToday,
+  businessOpeningStatus,
   businessOperationViewLabel,
   BUSINESS_OPERATION_VIEWS,
   configureBusinessOperations,
+  primeBusinessOpeningStatus,
+  refreshBusinessFinishedToday,
   handleBusinessOperationsAction,
   handleBusinessOperationsInput,
   renderBusinessOperations,
   resetBusinessOperationsForTests,
 } from './business/business-operations-center.js';
-import { formatPanelTimestamp } from './business/business-panel-render.js';
+import { formatPanelClock, formatPanelTimestamp } from './business/business-panel-render.js';
 import {
   ACCESS_STEP,
   accessRegistrationView,
@@ -106,7 +109,22 @@ let businessIntake = null;
 let businessIntakeStatus = emptyBusinessIntakeStatus();
 let businessCommandController = null;
 let businessCommandStatus = null;
-let businessOperationsView = 'operation-center';
+/*
+ * LA PANTALLA CON LA QUE ABRE EL PANEL ES LA BANDEJA DE PEDIDOS.
+ * ---------------------------------------------------------------------------
+ * Abria en «Que pasa», el centro de operacion. Medido con la bandeja de prueba
+ * -seis pedidos, sesion de dueno- esa pantalla es de 3.501px a 390x844 y de
+ * 4.305px a 320x568: entre cuatro y cinco pantallas de trece contadores y texto
+ * explicativo ANTES de que exista un pedido en el tablero. Para ver que entro
+ * trabajo habia que saber que «Pedidos» es otra pestana y tocarla.
+ *
+ * El centro de operacion no se toca y no se degrada: sigue completo, sigue a un
+ * toque en la barra, y sigue siendo donde se mira lo que hay que frenar. Lo que
+ * cambia es cual de las dos pantallas se paga sin pedirla. Quien abre el Panel
+ * veinte veces por turno lo abre para ver pedidos; el tablero de metricas se
+ * consulta, no se vigila.
+ */
+let businessOperationsView = 'orders';
 /**
  * ¿Está abierta la hoja de «Más»?
  *
@@ -478,6 +496,26 @@ export async function handleProductionOperationsAction(target) {
 
   if (target.closest('[data-panel-access-refresh]')) {
     return refreshPanelAccessState();
+  }
+
+  /*
+   * La tira del turno lleva a su seccion. No repinta, no pide red y no toca el
+   * servidor: mueve el desplazamiento y devuelve el control.
+   *
+   * El destino se valida contra la lista de secciones y NO se interpola crudo
+   * en el selector: el valor viene del DOM, y un selector armado con lo que
+   * haya en un atributo es la puerta por la que entra cualquier cosa.
+   */
+  const saltoDeBandeja = target.closest('[data-tray-jump]')?.dataset?.trayJump;
+  if (saltoDeBandeja) {
+    const valido = TRAY_PULSE_ITEMS.some((item) => item.id === saltoDeBandeja);
+    const seccion = valido
+      ? document.querySelector(`[data-tray-section="${saltoDeBandeja}"]`)
+      : null;
+    // Quien pidio menos movimiento no recibe un desplazamiento animado.
+    const sinMovimiento = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    seccion?.scrollIntoView?.({ behavior: sinMovimiento ? 'auto' : 'smooth', block: 'start' });
+    return { handled: true, ok: true, message: '' };
   }
 
   if (target.closest('[data-panel-access-signout]') || target.closest('[data-production-sign-out]')) {
@@ -1031,13 +1069,49 @@ function requirePaymentConsultationAccess() {
   return { ok: false, message: 'Tu sesión no tiene permiso para consultar pagos.' };
 }
 
+/*
+ * LA ACCION SIGUIENTE DEL NEGOCIO, INCLUIDO EL REPARTO PROPIO.
+ * ---------------------------------------------------------------------------
+ * La ultima rama es el despacho que hace el comercio con su propia gente, y
+ * espeja lo que habilito la migracion 20260919120000 en la rama `v_is_business`
+ * de `change_order_status`:
+ *
+ *     ready -> on_the_way   delivery, SIN repartidor asignado
+ *
+ * `assignedRiderId` decide, y decide igual de los dos lados. Con un repartidor
+ * en la calle el pedido es suyo: el Panel no ofrece la accion porque el
+ * servidor no la acepta, y no la acepta porque la entrega la cierra quien llego
+ * hasta el cliente, con su codigo.
+ *
+ * `on_the_way -> delivered` NO esta aca, y no es un olvido: esa transicion
+ * existe en el servidor pero `prevent_unverified_delivery` la corta mientras no
+ * haya un handoff confirmado, y `orders.delivery_code_required` es NOT NULL con
+ * default true. Un boton que llamara a `transition_order` para cerrar una
+ * entrega moriria con 55000 en el primer pedido real -el defecto H1 otra vez-.
+ * El cierre del comercio pide el codigo del cliente y va por
+ * `confirm_business_delivery_code`; lo dibuja `cierreDeEntregaMarkup()`.
+ */
 export function nextBusinessStatus(order = {}) {
   const current = workflowStatus(order);
   if (current === 'submitted') return 'accepted';
   if (current === 'accepted') return 'preparing';
   if (current === 'preparing') return 'ready';
   if (current === 'ready' && order.deliveryMode === 'pickup') return 'delivered';
+  if (current === 'ready' && order.deliveryMode === 'delivery' && !order.assignedRiderId) {
+    return 'on_the_way';
+  }
   return null;
+}
+
+/**
+ * ¿Este pedido lo cierra el comercio pidiendo el código del cliente?
+ *
+ * Es el reparto propio ya despachado: en la calle, sin repartidor asignado.
+ */
+export function needsBusinessDeliveryCode(order = {}) {
+  return workflowStatus(order) === 'on_the_way'
+    && order.deliveryMode === 'delivery'
+    && !order.assignedRiderId;
 }
 
 // La cadena canónica del servidor: assigned → picked_up → on_the_way → arrived,
@@ -1125,7 +1199,7 @@ export function resetProductionOperationsForTests() {
   refreshSequence = 0;
   availableRiderOrders = [];
   activeBusinessRiders = [];
-  businessOperationsView = 'operation-center';
+  businessOperationsView = 'orders';
   panelMoreSheetOpen = false;
   inventoryRepository = null;
   posRepository = null;
@@ -1423,6 +1497,7 @@ async function configureBusinessRuntime(result) {
     prepareDailyReconciliation: (input) => operationsRepository.prepareDailyReconciliation(input),
     closeDailyReconciliation: (input) => operationsRepository.closeDailyReconciliation(input),
     getOpeningStatus: () => operationsRepository.getOpeningStatus(),
+    getFinishedToday: () => operationsRepository.getFinishedToday(),
     setBusinessOpenState: (status) => operationsRepository.setOpenState(status),
     listAccessRequests: (status) => businessConfigRepository.listAccessRequests(status),
     reviewAccessRequest: (input) => businessConfigRepository.reviewAccessRequest(input),
@@ -1446,6 +1521,20 @@ async function configureBusinessRuntime(result) {
     getScannedProductReadiness: (productId) => inventoryRepository.getScannedProductReadiness(productId),
     onChange: () => notify(),
   });
+
+  /*
+   * El estado de apertura se pide UNA vez, acá, y no se espera: la bandeja se
+   * dibuja con lo que ya hay y la cabecera se completa sola cuando el servidor
+   * contesta (`onChange` -> `notify()` -> repintado de la región `head`).
+   *
+   * Sin `await` a propósito. Este es el camino por el que el Panel se vuelve
+   * usable después de verificar la sesión, y colgarlo de una RPC más significa
+   * que un servidor lento retrasa la bandeja entera para decorar una línea.
+   */
+  void primeBusinessOpeningStatus();
+  // El recuento de cerrados del dia arranca con el Panel, por el mismo motivo y
+  // con el mismo cuidado: sin `await`, para no colgar la bandeja de una RPC mas.
+  void refreshBusinessFinishedToday();
 
   businessCommandController = createBusinessPanelController({
     platform: desktopPlatform,
@@ -2047,6 +2136,11 @@ function trasplantarBorradorDeTarjeta(viejo, nuevo) {
     const campo = nuevo.querySelector('[data-production-cancel-reason]');
     if (campo) campo.value = motivo;
   }
+  const codigo = viejo.querySelector('[data-production-delivery-code]')?.value || '';
+  if (codigo) {
+    const campo = nuevo.querySelector('[data-production-delivery-code]');
+    if (campo) campo.value = codigo;
+  }
   const rider = viejo.querySelector('[data-production-rider-select]')?.value || '';
   if (!rider) return;
   const selector = nuevo.querySelector('[data-production-rider-select]');
@@ -2190,7 +2284,11 @@ function capturarBorradoresDelOperador(workspace) {
     if (!id) return;
     const motivo = card.querySelector('[data-production-cancel-reason]')?.value || '';
     const rider = card.querySelector('[data-production-rider-select]')?.value || '';
-    if (motivo || rider) borradores.set(id, { motivo, rider });
+    // El código de entrega entra acá por el mismo motivo que los otros dos: se
+    // tipea con el cliente enfrente, y un pedido que entra por realtime repinta
+    // la bandeja. Perderlo obliga a pedírselo de nuevo.
+    const codigo = card.querySelector('[data-production-delivery-code]')?.value || '';
+    if (motivo || rider || codigo) borradores.set(id, { motivo, rider, codigo });
   });
   return borradores;
 }
@@ -2202,6 +2300,8 @@ function restaurarBorradoresDelOperador(workspace, borradores) {
     if (!guardado) return;
     const motivo = card.querySelector('[data-production-cancel-reason]');
     if (motivo && guardado.motivo) motivo.value = guardado.motivo;
+    const codigo = card.querySelector('[data-production-delivery-code]');
+    if (codigo && guardado.codigo) codigo.value = guardado.codigo;
     const rider = card.querySelector('[data-production-rider-select]');
     // Sólo si la opción sigue existiendo: un rider que salió de turno no puede
     // quedar seleccionado de forma fantasma.
@@ -2470,7 +2570,7 @@ function businessWorkspaceParts() {
       markup: `
     <div class="production-ops-head" data-panel-region="head">
       <div class="production-ops-identity">
-        <h1>Panel del negocio</h1>
+        <div class="production-ops-title-row"><h1>Panel del negocio</h1>${businessOpeningChipMarkup()}</div>
         <p class="production-ops-role">${escapeHtml(roleLabel(role))} · sesión verificada</p>
       </div>
       <div class="production-ops-head-actions">
@@ -2507,10 +2607,7 @@ function businessWorkspaceParts() {
        * actualizar una línea.
        */
       clave: 'tray-headline',
-      markup: `
-    <p class="order-tray-headline" data-panel-region="tray-headline" role="status" aria-live="polite" data-order-tray-headline>
-      ${escapeHtml(bandeja.headline)}
-    </p>`,
+      markup: trayPulseMarkup(bandeja),
     }] : []),
     {
       clave: 'operations',
@@ -2593,6 +2690,36 @@ const BUSINESS_VIEW_ICONS = Object.freeze({
  * alguien que apoya el teléfono en el mostrador al empezar el turno. La
  * preferencia se guarda y sobrevive a la recarga.
  */
+/*
+ * «Pedidos pausados» / «Cerrado», en la cabecera. ABIERTO NO SE DIBUJA.
+ * ---------------------------------------------------------------------------
+ * Una bandeja tranquila y un comercio marcado como CERRADO se ven exactamente
+ * igual: cero pedidos nuevos. La diferencia es que en el segundo caso no va a
+ * entrar ninguno en toda la noche, y hasta ahora eso sólo se descubría entrando
+ * a otra pantalla.
+ *
+ * Lo que se dibuja es la EXCEPCIÓN, no el estado. «Abierto» es lo que pasa el
+ * 95% del tiempo: como insignia permanente no informa, y medido a 390px se
+ * llevaba un renglón entero de la cabecera —la fila del título ya comparte
+ * espacio con el timbre y «Cerrar sesión», así que la insignia se caía sola a
+ * una línea propia—. Veinte píxeles por turno para decir «todo normal».
+ *
+ * Es la misma regla que el bloque de tokens de `business.css` ya fija para el
+ * color, llevada al espacio: lo normal no merece color, y tampoco merece una
+ * fila. Lo que tiene que saltar es que NO esté abierto, y eso ahora salta solo
+ * porque es lo único que aparece.
+ *
+ * Mientras el servidor no contestó tampoco se dibuja nada. Un «cerrado» por
+ * defecto sería peor que el silencio: mandaría a revisar por qué no entran
+ * pedidos una noche en que sí están entrando.
+ */
+function businessOpeningChipMarkup() {
+  const estado = businessOpeningStatus();
+  if (estado !== 'paused' && estado !== 'closed') return '';
+  const etiqueta = estado === 'paused' ? 'Pedidos pausados' : 'Cerrado';
+  return `<span class="production-ops-open" data-business-open="${escapeAttribute(estado)}">${escapeHtml(etiqueta)}</span>`;
+}
+
 function businessSoundToggleMarkup() {
   const encendido = Boolean(orderAlerts?.soundEnabled);
   return `
@@ -2956,11 +3083,93 @@ function construirBandeja() {
   return {
     secciones,
     headline: trayHeadline(tray),
+    // Los recuentos por seccion, tal como los conto la bandeja. La tira de
+    // arriba los dibuja; no los vuelve a calcular. Dos conteos de la misma
+    // bandeja serian dos autoridades sobre el mismo numero.
+    counts: tray.counts,
     // Lo que espera una decisión del mostrador. Sale de la bandeja YA
     // construida: `pendingOrdersForAlerts()` la reconstruiría entera sólo para
     // contar, y en la bandeja el conteo se paga una vez por render, no dos.
     pendientes: (tray.counts.atencion || 0) + (tray.counts.nuevos || 0),
   };
+}
+
+/*
+ * LA TIRA DEL TURNO: CINCO NUMEROS QUE CONTESTAN «¿COMO VENGO?».
+ * ---------------------------------------------------------------------------
+ * Acá había una línea de texto de 13px en gris apagado: «1 requiere atención ·
+ * 2 nuevos · 3 en curso». Dice lo correcto y se pierde. Es la única respuesta
+ * de la pantalla a la pregunta que alguien se hace cada dos minutos durante un
+ * turno, y estaba escrita como un pie de foto.
+ *
+ * La tira dice los mismos números —salen del MISMO conteo, el que ya hizo
+ * `buildOrderTray`, no de un segundo recorrido— y agrega lo que la línea no
+ * podía dar: cada número lleva a su sección. Con la bandeja larga, «tengo 3
+ * listos» y «llevame a los listos» son la misma pregunta, y hasta ahora la
+ * segunda se contestaba desplazando.
+ *
+ * Un recuento en cero se dibuja igual, apagado y sin foco: una tira que cambia
+ * de cantidad de casilleros según el turno mueve de lugar «Nuevos» cada vez que
+ * se vacía «Listos», y entonces el dedo deja de saber dónde tocar. El ANUNCIO
+ * para lector de pantalla sigue siendo UNA línea —la de siempre, con su
+ * `data-order-tray-headline`— y no los cinco números: cinco recuentos en un
+ * `aria-live` dictarían la tira entera cada vez que entra un pedido.
+ */
+const TRAY_PULSE_ITEMS = Object.freeze([
+  Object.freeze({ id: 'atencion', label: 'Atención' }),
+  Object.freeze({ id: 'nuevos', label: 'Nuevos' }),
+  Object.freeze({ id: 'preparando', label: 'Preparando' }),
+  Object.freeze({ id: 'listos', label: 'Listos' }),
+  Object.freeze({ id: 'entrega', label: 'En entrega' }),
+]);
+
+function trayPulseMarkup(bandeja) {
+  const counts = bandeja?.counts || {};
+  const items = TRAY_PULSE_ITEMS.map(({ id, label }) => {
+    const total = Number(counts[id] || 0);
+    return `
+        <button type="button" class="tray-pulse-item${total ? '' : ' is-empty'}"
+          data-tray-jump="${escapeAttribute(id)}"
+          ${total ? '' : 'disabled aria-disabled="true"'}
+          aria-label="${escapeAttribute(`${total} ${label.toLowerCase()}`)}">
+          <span class="tray-pulse-n">${total}</span>
+          <span class="tray-pulse-k">${escapeHtml(label)}</span>
+        </button>`;
+  }).join('');
+  return `
+    <div class="tray-pulse" data-panel-region="tray-headline" data-tray-pulse>
+      <p class="sr-only" role="status" aria-live="polite" data-order-tray-headline>${escapeHtml(bandeja?.headline || '')}</p>
+      <div class="tray-pulse-row">${items}${trayFinishedMarkup()}</div>
+    </div>`;
+}
+
+/*
+ * «FINALIZADOS», EL SEXTO CASILLERO, QUE NO SALE DE LA BANDEJA.
+ * ---------------------------------------------------------------------------
+ * Los otros cinco cuentan lo que está EN la bandeja. Este cuenta lo que ya
+ * salió de ella, y por eso no se puede contar acá: el repositorio sirve sólo
+ * estados activos —`delivered` no entra— así que en memoria el número sería
+ * cero al abrir, cero después de recargar y distinto en cada pestaña.
+ *
+ * Lo cuenta el servidor, con el día comercial del negocio y su zona declarada
+ * (`get_business_finished_today`). No lleva a ninguna sección porque no hay
+ * ninguna a la que ir: es un cierre de jornada, no trabajo pendiente. Va como
+ * `<span>` y no como botón apagado justamente para eso —un botón deshabilitado
+ * promete algo que en otro momento se podrá tocar—.
+ *
+ * Mientras el servidor no contestó dice «—», no «0». Entre «no pude preguntar»
+ * y «no cerraste ninguno» hay toda la diferencia del mundo a las once de la
+ * noche, y un cero inventado es el que manda a alguien a revisar qué pasó.
+ */
+function trayFinishedMarkup() {
+  const hoy = businessFinishedToday();
+  const valor = hoy ? String(hoy.delivered) : '—';
+  return `
+        <span class="tray-pulse-item is-closed${hoy ? '' : ' is-unknown'}" data-tray-finished
+          title="${escapeAttribute(hoy ? 'Pedidos entregados en el día del comercio' : 'Todavía sin respuesta del servidor')}">
+          <span class="tray-pulse-n">${escapeHtml(valor)}</span>
+          <span class="tray-pulse-k">Finalizados</span>
+        </span>`;
 }
 
 /**
@@ -3001,6 +3210,65 @@ function isOrderDetailOpen(order) {
   return expandedOrderCards.has(orderKey(order));
 }
 
+/*
+ * LA TARJETA DE PEDIDO, ORDENADA POR LO QUE SE DECIDE CON ELLA.
+ * ===========================================================================
+ * Antes la tarjeta abría con una rejilla de cuatro casilleros con recuadro
+ * —Entró / Entrega / Pago / Total— todos del mismo tamaño y del mismo peso, y
+ * debajo UNA línea con el primer producto y «+2 más». O sea: cuatro etiquetas
+ * de 10px compitiendo entre sí, y lo único que hay que preparar resumido a una
+ * línea y medio escondido.
+ *
+ * El orden de ahora es el de las preguntas que se hacen con la tarjeta en la
+ * mano, y cada una ocupa lo que vale:
+ *
+ *   1. ¿cuál es y hace cuánto espera?   código, «hace 3 min», la hora, estado
+ *   2. ¿hay algo raro?                  las señales de atención
+ *   3. ¿qué es y de quién?              Delivery/Retiro + nombre
+ *   4. ¿qué tengo que preparar?         LOS PRODUCTOS, en renglones
+ *   5. ¿cuánto y cómo paga?             el total grande, el medio al lado
+ *   6. ¿adónde va?                      la dirección, o «retira en el local»
+ *   7. ¿pidió algo especial?            las observaciones, destacadas
+ *   8. ¿qué hago AHORA?                 UNA acción
+ *   9. lo demás                         contacto, detalle, cancelar
+ *
+ * LOS PRODUCTOS SE VEN. Es el cambio que más cambia el turno: decidir si se
+ * acepta un pedido, y después armarlo, es leer QUÉ PIDIÓ. Con el resumen de una
+ * línea había que abrir el detalle de cada tarjeta para eso —un toque por
+ * pedido, veinte toques en una hora pico— y el detalle abierto empuja al
+ * siguiente pedido fuera de la pantalla. Se muestran hasta
+ * `MAX_LINEAS_VISIBLES` renglones y el resto se cuenta: una tarjeta no puede
+ * crecer sin límite, pero tampoco puede esconder lo único que hay que hacer.
+ */
+
+/** Cuántos renglones de producto entran en la tarjeta antes de contar el resto. */
+const MAX_LINEAS_VISIBLES = 4;
+
+/*
+ * El estado, como píldora con color.
+ *
+ * `.status-pill` no tenía UNA regla de CSS en todo el proyecto: la clase estaba
+ * puesta en el marcado desde siempre y el estado se dibujaba como texto gris,
+ * del mismo tamaño y del mismo color que «Entrega» o «Pago». El dato que dice
+ * en qué parte del circuito está el pedido se leía igual que una etiqueta de
+ * formulario. `data-order-state` lleva el estado NORMALIZADO —el del flujo, no
+ * el crudo de la fila— para que la hoja de estilo tenga un alfabeto cerrado.
+ */
+function orderStatePill(order) {
+  const estado = workflowStatus(order);
+  return `<span class="status-pill ${escapeAttribute(order.status)}" data-order-state="${escapeAttribute(estado)}">`
+    + `${escapeHtml(statusLabel(order.status))}</span>`;
+}
+
+/** Los renglones de producto que entran, y cuántos quedaron afuera. */
+function orderVisibleLines(order) {
+  const items = (Array.isArray(order.items) ? order.items : []).filter(Boolean);
+  return {
+    visibles: items.slice(0, MAX_LINEAS_VISIBLES),
+    resto: Math.max(0, items.length - MAX_LINEAS_VISIBLES),
+  };
+}
+
 function businessOrderMarkup(order, attention = []) {
   const next = canAdvanceProductionBusinessOrder(order, businessPayments)
     ? nextBusinessStatus(order)
@@ -3027,7 +3295,6 @@ function businessOrderMarkup(order, attention = []) {
     >${escapeHtml(riderOptionLabel(rider))}</option>
   `).join('');
   const contacto = orderContactLinks(order);
-  const resumen = orderItemsSummary(order);
   const esRetiro = order.deliveryMode === 'pickup';
   /*
    * «Dirección no publicada» en un pedido de RETIRO era una respuesta a una
@@ -3042,16 +3309,33 @@ function businessOrderMarkup(order, attention = []) {
   const domicilio = esRetiro
     ? 'Retira en el local'
     : (order.address || 'Sin dirección publicada');
+  const { visibles, resto } = orderVisibleLines(order);
+  const lineas = visibles.map((item) => `
+          <li>
+            <span class="order-line-qty">${escapeHtml(String(Number(item.quantity || 0)))}×</span>
+            <span class="order-line-name">${escapeHtml(item.name || 'Producto')}</span>
+          </li>`).join('');
+  const reloj = formatPanelClock(order.createdAt);
+  const descuento = Number(order.discountTotal || 0) > 0
+    ? `<span class="production-order-discount">−${escapeHtml(formatOrderMoney(order.discountTotal, order.currencyCode))} combo</span>`
+    : '';
 
   return `
     <article class="production-order-card${attention.length ? ' is-attention' : ''}"
       data-order-card="${escapeAttribute(order.id)}">
       <div class="production-order-head">
-        <div>
+        <div class="production-order-ident">
           <span class="production-order-code">${escapeHtml(order.id)}</span>
-          <strong>${escapeHtml(order.customerName)}</strong>
+          <span class="production-order-when">
+            <time
+              class="order-elapsed"
+              data-elapsed-from="${escapeAttribute(order.createdAt || '')}"
+              datetime="${escapeAttribute(order.createdAt || '')}"
+            >${escapeHtml(elapsedLabel(order.createdAt))}</time>
+            ${reloj ? `<span class="order-clock">${escapeHtml(reloj)}</span>` : ''}
+          </span>
         </div>
-        <span class="status-pill ${escapeHtml(order.status)}">${escapeHtml(statusLabel(order.status))}</span>
+        ${orderStatePill(order)}
       </div>
       ${attention.length ? `
       <ul class="order-attention" aria-label="Requiere atención">
@@ -3063,32 +3347,21 @@ function businessOrderMarkup(order, attention = []) {
         `).join('')}
       </ul>
       ` : ''}
-      <dl class="production-order-meta">
-        <div><dt>Entró</dt><dd><time
-          class="order-elapsed"
-          data-elapsed-from="${escapeAttribute(order.createdAt || '')}"
-          datetime="${escapeAttribute(order.createdAt || '')}"
-        >${escapeHtml(elapsedLabel(order.createdAt))}</time></dd></div>
-        <div><dt>Entrega</dt><dd>${esRetiro ? 'Retiro' : 'Delivery'}</dd></div>
-        <div><dt>Pago</dt><dd>${escapeHtml(order.paymentMethod || 'No informado')}</dd></div>
-        ${Number(order.discountTotal || 0) > 0 ? `
-        <div><dt>Combo del local</dt><dd>−${escapeHtml(formatOrderMoney(order.discountTotal, order.currencyCode))}</dd></div>
-        ` : ''}
-        <div><dt>Total</dt><dd>${escapeHtml(formatOrderMoney(order.total, order.currencyCode))}</dd></div>
-      </dl>
-      ${resumen ? `<p class="production-order-summary">${escapeHtml(`${itemCount} u. · ${resumen}`)}</p>` : ''}
-      ${contacto.display ? `
-      <p class="production-order-contact-row" data-order-contact="${escapeAttribute(order.id)}">
-        <a class="order-contact-call" href="${escapeAttribute(contacto.tel)}"
-          aria-label="Llamar a ${escapeHtml(order.customerName)}">${escapeHtml(contacto.display)}</a>
-        ${contacto.whatsapp ? `
-        <a class="order-contact-wa" href="${escapeAttribute(contacto.whatsapp)}"
-          target="_blank" rel="noopener noreferrer"
-          aria-label="WhatsApp con ${escapeHtml(order.customerName)}">WhatsApp</a>
-        ` : ''}
+      <p class="production-order-who">
+        <span class="order-mode-chip" data-mode="${esRetiro ? 'pickup' : 'delivery'}">${esRetiro ? 'Retiro' : 'Delivery'}</span>
+        <strong>${escapeHtml(order.customerName)}</strong>
       </p>
+      ${lineas ? `
+      <ul class="production-order-lines" aria-label="Productos del pedido">${lineas}
+        ${resto ? `<li class="order-line-more">+${resto} producto${resto === 1 ? '' : 's'} más</li>` : ''}
+      </ul>
       ` : ''}
-      <p class="production-order-address">${escapeHtml(domicilio)}</p>
+      <p class="production-order-money">
+        <span class="production-order-total">${escapeHtml(formatOrderMoney(order.total, order.currencyCode))}</span>
+        <span class="production-order-pay">${escapeHtml(order.paymentMethod || 'Pago no informado')}</span>
+        ${descuento}
+      </p>
+      <p class="production-order-address" data-mode="${esRetiro ? 'pickup' : 'delivery'}">${escapeHtml(domicilio)}</p>
       ${hasCustomerNotes(order)
         ? `<p class="production-order-notes"><strong>Observaciones:</strong> ${escapeHtml(order.notes)}</p>`
         : ''}
@@ -3100,33 +3373,130 @@ function businessOrderMarkup(order, attention = []) {
             data-production-business-next="${escapeAttribute(order.id)}"
             data-next-status="${escapeAttribute(next)}"
             ${orderActionsInFlight.has(order.id) ? 'disabled aria-disabled="true"' : ''}
-          >${orderActionsInFlight.has(order.id) ? 'Confirmando…' : escapeHtml(actionLabel(next, 'business'))}</button>
+          >${orderActionsInFlight.has(order.id) ? 'Confirmando…' : escapeHtml(actionLabel(next, 'business', order))}</button>
         ` : ''}
       </div>
+      ${cierreDeEntregaMarkup(order)}
+      ${riderCustodyMarkup(order, { current })}
       ${riderOfferMarkup(offer)}
-      ${canAssignRider && !offerPending ? `
+      ${canAssignRider && !offerPending && riderOptions ? `
         <div class="production-rider-assignment">
-          ${riderOptions ? `
-            <label class="sr-only" for="rider-${escapeAttribute(order.id)}">${riderAssignmentLabel(current)}</label>
-            <select id="rider-${escapeAttribute(order.id)}" data-production-rider-select>
-              ${riderOptions}
-            </select>
-            <button
-              class="secondary-button compact"
-              type="button"
-              data-production-business-assign="${escapeAttribute(order.id)}"
-            >${riderAssignmentAction(current)}</button>
-          ` : '<p class="form-hint">No hay riders activos habilitados para asignar.</p>'}
-          ${activeBusinessRiders.length && activeBusinessRiders.every((rider) => rider.atCapacity)
-            ? '<p class="form-hint">Todos los riders están con 3 entregas activas. Esperá a que liberen una.</p>'
-            : ''}
+          <label class="sr-only" for="rider-${escapeAttribute(order.id)}">${riderAssignmentLabel(current)}</label>
+          <select id="rider-${escapeAttribute(order.id)}" data-production-rider-select>
+            ${riderOptions}
+          </select>
+          <button
+            class="secondary-button compact"
+            type="button"
+            data-production-business-assign="${escapeAttribute(order.id)}"
+          >${riderAssignmentAction(current)}</button>
         </div>
       ` : ''}
-      ${businessOrderDetailMarkup(order, {
-        items, itemCount, canCancel, terminal, current,
-      })}
+      <div class="production-order-foot">
+        ${contacto.display ? `
+        <p class="production-order-contact-row" data-order-contact="${escapeAttribute(order.id)}">
+          <a class="order-contact-call" href="${escapeAttribute(contacto.tel)}"
+            aria-label="Llamar a ${escapeHtml(order.customerName)}">${escapeHtml(contacto.display)}</a>
+          ${contacto.whatsapp ? `
+          <a class="order-contact-wa" href="${escapeAttribute(contacto.whatsapp)}"
+            target="_blank" rel="noopener noreferrer"
+            aria-label="WhatsApp con ${escapeHtml(order.customerName)}">WhatsApp</a>
+          ` : ''}
+        </p>
+        ` : ''}
+        ${businessOrderDetailMarkup(order, {
+          items, itemCount, canCancel, terminal, current,
+        })}
+      </div>
     </article>
   `;
+}
+
+/*
+ * EL CIERRE DE UNA ENTREGA PROPIA: EL CÓDIGO DEL CLIENTE.
+ * ===========================================================================
+ * Acá NO hay un botón «Marcar entregado», y la ausencia es la parte pensada.
+ *
+ * `prevent_unverified_delivery` (20260725090000) corta toda entrega de delivery
+ * mientras no exista un handoff confirmado, y `orders.delivery_code_required`
+ * es NOT NULL con default true: TODO pedido de delivery nace exigiendo el
+ * código. Un botón que llamara a `transition_order('delivered')` moriría con
+ * 55000 en el primer pedido real, el outbox lo marcaría como fallo permanente y
+ * el pedido no se movería nunca. Es exactamente el defecto H1 de
+ * BUSINESS-PANEL-HARDENING, y no se vuelve a cometer.
+ *
+ * Y está bien que el servidor lo exija. El código no protege al repartidor de
+ * su patrón: protege al CLIENTE, y prueba que la mercadería llegó hasta él.
+ * Quién la lleve no cambia que haya que probarlo.
+ *
+ * Cuatro dígitos, teclado numérico, y la frase que dice de dónde salen —el
+ * cliente los tiene en su seguimiento—. Sin esa frase, quien atiende no sabe
+ * qué pedir y termina inventando un número.
+ */
+function cierreDeEntregaMarkup(order) {
+  if (!needsBusinessDeliveryCode(order)) return '';
+  const id = escapeAttribute(order.id);
+  const enVuelo = orderActionsInFlight.has(order.id);
+  return `
+      <div class="production-order-handoff" data-order-handoff="${id}">
+        <p class="production-order-handoff-lead">Pedile al cliente los 4 números de su seguimiento.</p>
+        <div class="production-order-handoff-row">
+          <label class="sr-only" for="entrega-${id}">Código de entrega del cliente</label>
+          <input
+            class="order-handoff-code"
+            id="entrega-${id}"
+            type="text"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            maxlength="4"
+            placeholder="0000"
+            ${enVuelo ? 'disabled' : ''}
+            data-production-delivery-code>
+          <button
+            class="primary-button compact"
+            type="button"
+            data-production-business-confirm-delivery="${id}"
+            ${enVuelo ? 'disabled aria-disabled="true"' : ''}
+          >${enVuelo ? 'Confirmando…' : 'Confirmar entrega'}</button>
+        </div>
+      </div>`;
+}
+
+/*
+ * ¿QUIEN TIENE ESTE PEDIDO?
+ * ===========================================================================
+ * Un delivery despues de «Listo» puede estar en dos manos distintas, y hasta
+ * ahora la tarjeta no decia en cual:
+ *
+ *   · EL COMERCIO. Nadie lo asigno: lo lleva alguien del local. El negocio
+ *     tiene la accion («Sale a reparto», y despues «Marcar entregado») porque
+ *     la migracion 20260919120000 se la habilita en el servidor.
+ *   · UN REPARTIDOR. Esta asignado. El pedido es suyo hasta que lo entregue con
+ *     el codigo del cliente, y el negocio NO tiene accion: no por una decision
+ *     de pantalla, sino porque `change_order_status` la rechaza.
+ *
+ * El segundo caso era el que se veia como una tarjeta muda -sin boton y sin
+ * explicacion-. Ahora dice quien lo tiene y en que anda. No es un aviso ni una
+ * alarma: es el estado de custodia, y por eso se dibuja quieto.
+ */
+function riderCustodyMarkup(order, { current }) {
+  if (order.deliveryMode !== 'delivery') return '';
+  if (!order.assignedRiderId) return '';
+  if (!['assigned', 'picked_up', 'on_the_way', 'arrived'].includes(current)) return '';
+  const rider = activeBusinessRiders.find((candidate) => candidate.id === order.assignedRiderId);
+  const nombre = rider?.displayName || 'Repartidor asignado';
+  const paso = ({
+    assigned: 'todavía no lo retiró del local',
+    picked_up: 'lo retiró del local',
+    on_the_way: 'está en camino',
+    arrived: 'llegó al domicilio',
+  })[current] || 'tiene el pedido';
+  return `
+      <p class="production-order-custody" data-order-custody="${escapeAttribute(order.assignedRiderId)}">
+        <span class="production-order-custody-who">${escapeHtml(nombre)}</span>
+        <span class="production-order-custody-step">${escapeHtml(paso)}</span>
+        <span class="production-order-custody-note">La entrega la cierra el repartidor con el código del cliente.</span>
+      </p>`;
 }
 
 /*
@@ -3428,6 +3798,15 @@ async function updateOrderFromAction(orderId, nextStatus, { commandType = 'trans
     if (result.ok) {
       if (isRider) await refreshRiderOrders();
       else await businessIntake?.invalidate?.('status-transition');
+      /*
+       * El recuento de cerrados del día sólo se vuelve a pedir cuando el pedido
+       * terminó. Aceptar o empezar a preparar no lo mueve, y una RPC por cada
+       * toque del mostrador sería pagar una consulta para confirmar que nada
+       * cambió. `cancel_order` entra por acá con `commandType` propio.
+       */
+      const cerroElPedido = TERMINAL_STATUSES.has(normalizeWorkflowStatus(nextStatus, ''))
+        || commandType === 'cancel_order';
+      if (cerroElPedido) void refreshBusinessFinishedToday();
     }
     return {
       handled: true,
@@ -3545,28 +3924,57 @@ function renderDeliveryPoint(addressDetails) {
   </p>`;
 }
 
-function actionLabel(status, actor) {
+/*
+ * El boton dice lo que va a PASAR, no el nombre del estado destino.
+ *
+ * «En camino» describia un estado; la pregunta del mostrador es «¿que hago con
+ * esto?». Para el negocio que reparte con su propia gente los dos pasos son
+ * «Sale a reparto» y «Marcar entregado». Para el rider siguen siendo los suyos.
+ *
+ * `order` llega para distinguir los dos finales que comparten estado destino:
+ * cerrar un RETIRO es confirmar que el cliente se lo llevo del mostrador;
+ * cerrar un DELIVERY propio es declarar que se entrego en la puerta.
+ */
+function actionLabel(status, actor, order = null) {
   if (status === 'accepted') return 'Aceptar pedido';
   if (status === 'preparing') return 'Iniciar preparación';
   if (status === 'ready') return 'Marcar listo';
   if (status === 'picked_up') return 'Registrar retiro';
-  if (status === 'on_the_way') return actor === 'rider' ? 'Salir en camino' : 'En camino';
+  if (status === 'on_the_way') return actor === 'rider' ? 'Salir en camino' : 'Sale a reparto';
   if (status === 'arrived') return 'Marcar llegada';
-  if (status === 'delivered') return 'Confirmar entrega';
+  if (status === 'delivered') {
+    return order?.deliveryMode === 'delivery' ? 'Marcar entregado' : 'Confirmar entrega';
+  }
   return 'Actualizar';
 }
 
+/*
+ * Los centavos se muestran SOLO cuando existen.
+ *
+ * «$ 9.600,00» son tres caracteres que no dicen nada en un mostrador donde
+ * todos los precios son pesos enteros, y en la tarjeta ese total compite en
+ * ancho con el resto de la fila. Cuando el importe sí tiene centavos —un
+ * prorrateo, un redondeo de combo— se muestran, porque ahí son el dato.
+ *
+ * El valor NO se redondea: se elige cuántos decimales imprimir. Un total de
+ * 9.600,40 sigue diciendo 9.600,40.
+ */
 function formatOrderMoney(value, currencyCode = '') {
   const currency = /^[A-Z]{3}$/.test(String(currencyCode || '')) ? currencyCode : '';
   if (!currency) return 'Moneda no informada';
+  const amount = Number(value || 0);
+  // Tolerancia de medio centavo: un flotante que vale 9600 puede llegar como
+  // 9599.9999999 y no por eso tiene centavos que mostrar.
+  const conCentavos = Math.abs(amount - Math.round(amount)) > 0.005;
   try {
     return new Intl.NumberFormat('es-AR', {
       style: 'currency',
       currency,
+      minimumFractionDigits: conCentavos ? 2 : 0,
       maximumFractionDigits: 2,
-    }).format(Number(value || 0));
+    }).format(amount);
   } catch (_) {
-    return `${currency} ${Number(value || 0).toFixed(2)}`;
+    return `${currency} ${conCentavos ? amount.toFixed(2) : String(Math.round(amount))}`;
   }
 }
 

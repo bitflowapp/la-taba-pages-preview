@@ -36,6 +36,22 @@ export function createSupabaseOperationsRepository({ client, businessId }) {
       p_idempotency_key: idempotencyKey,
     }),
     getOpeningStatus: () => rpc('get_business_opening_status', { p_business_id: businessId }),
+    /*
+     * Los pedidos CERRADOS del día comercial, contados en el servidor.
+     *
+     * NO se manda zona horaria. El día comercial sale de
+     * `businesses.operating_timezone`, que es el mismo contrato que sostiene el
+     * cierre de caja desde 20260814020000 y por el mismo motivo (F32): lo
+     * define el negocio, no el aparato que abre el Panel. Mandar la constante
+     * del Panel funcionaría hoy —coincide— y rompería el día que un comercio
+     * opere en otro huso, que es exactamente el caso para el que existe esa
+     * columna.
+     */
+    getFinishedToday: () => rpc('get_business_finished_today', {
+      p_business_id: businessId,
+      p_timezone: null,
+      p_business_date: null,
+    }),
     setOpenState: (status) => rpc('set_business_open_state', { p_business_id: businessId, p_status: status }),
   });
 }

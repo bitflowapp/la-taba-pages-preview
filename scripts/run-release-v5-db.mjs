@@ -58,47 +58,6 @@ try {
     await query(fs.readFileSync(path.join(ROOT,'supabase/migrations',name),'utf8'));
     if(generateOutput)stages.push(await compatibilitySnapshot(snapshotSession));
   }
-  /*
-   * LAS MIGRACIONES POSTERIORES AL INTERLOCK DE RELEASE.
-   * -------------------------------------------------------------------------
-   * `bootstrap-a1-v2-local.mjs` corta en 20260908164550 y EXPAND llega hasta
-   * 20260909050330. Hasta hoy esos dos numeros cubrian el arbol entero, asi que
-   * nadie tuvo que preguntarse que pasa con lo que venga DESPUES.
-   *
-   * Lo que pasa es que no se aplica. Una migracion nueva no entraba al esquema
-   * de este contenedor, y su pgTAP corria contra una base que no la tiene: el
-   * fallo seria «la funcion no existe», que se lee como un error de la prueba y
-   * no como lo que es -la migracion nunca se ejecuto-.
-   *
-   * Se aplican aca y no antes a proposito: DESPUES de que el ciclo de vida de
-   * EXPAND verifico su propio ledger y su huella contra el CONTRACT, para no
-   * mover ninguna de esas comparaciones, y ANTES del pgTAP canonico, que es
-   * quien tiene que ver el esquema completo.
-   *
-   * En la corrida enfocada no se aplican: ahi EXPAND llega hasta el tercer
-   * archivo a proposito y el esquema es deliberadamente parcial.
-   */
-  if(!focused){
-    const posteriores=fs.readdirSync(path.join(ROOT,'supabase/migrations'))
-      .filter(v=>v.endsWith('.sql')&&v.slice(0,14)>'20260909050330').sort();
-    for(const name of posteriores)
-      await query(fs.readFileSync(path.join(ROOT,'supabase/migrations',name),'utf8'));
-    console.log('POST_INTERLOCK_MIGRATIONS='+posteriores.length);
-  }
-  let assertions=0;
-  const canonicalTests=['business_windows_scanner_fiscal_test.sql','mercadopago_seller_oauth.local.sql',
-    'mercadopago_clean_business.local.sql','fiscal_document_closure_test.sql','production_operations_control_plane_test.sql',
-    'durable_offline_packing_test.sql','public_tracking_gps_quality_test.sql','business_timezone_windows_test.sql',
-    'horario_24x7_test.sql','alta_propuesta_comercial_test.sql','production_least_privilege_test.sql',
-    'business_self_delivery_test.sql'];
-  for(const name of focused?[]:canonicalTests){
-    const output=docker(['exec','-i',container,'psql','-h','/tmp','-U','postgres','-d','postgres','-X','-qAt','-v','ON_ERROR_STOP=1'],
-      Buffer.from('set search_path=public,extensions;\n'+fs.readFileSync(path.join(ROOT,'supabase/tests',name),'utf8'))).toString();
-    assert.doesNotMatch(output,/^not ok\b/m,name);assert.match(output,/^1\.\.[0-9]+$/m,name);
-    assertions+=Number(/^1\.\.([0-9]+)$/m.exec(output)[1]);
-  }
-  if(!focused){assert.equal(assertions,334);console.log('CANONICAL_PGTAP: 250 + 44 least-privilege + 40 reparto-propio assertions PASS');}
-  else console.log('FOCUSED_RELEASE_RUN: historical matrix and canonical pgTAP NOT RUN');
   const clear=async()=>query(`begin; set local session_replication_role=replica;
     truncate public.checkout_sessions,public.payment_intents,public.payment_outbox,public.payment_refunds,
       public.payment_cancellations,public.payment_disputes,public.payment_webhook_receipts,public.payment_events cascade;
@@ -150,6 +109,29 @@ try {
   if(!focused){
     run('scripts/verify-a1-v2-independent.mjs','--current-contract');
     run('scripts/verify-a1-v2-independent.mjs','--retired-contract');
+  }
+  let assertions=0;
+  if(!focused){
+    const posteriores=fs.readdirSync(path.join(ROOT,'supabase/migrations'))
+      .filter(v=>v.endsWith('.sql')&&v.slice(0,14)>'20260909050330').sort();
+    for(const name of posteriores)
+      await query(fs.readFileSync(path.join(ROOT,'supabase/migrations',name),'utf8'));
+    console.log('POST_INTERLOCK_MIGRATIONS='+posteriores.length);
+    const canonicalTests=['business_windows_scanner_fiscal_test.sql','mercadopago_seller_oauth.local.sql',
+      'mercadopago_clean_business.local.sql','fiscal_document_closure_test.sql','production_operations_control_plane_test.sql',
+      'durable_offline_packing_test.sql','public_tracking_gps_quality_test.sql','business_timezone_windows_test.sql',
+      'horario_24x7_test.sql','alta_propuesta_comercial_test.sql','production_least_privilege_test.sql',
+      'business_self_delivery_test.sql'];
+    for(const name of canonicalTests){
+      const output=docker(['exec','-i',container,'psql','-h','/tmp','-U','postgres','-d','postgres','-X','-qAt','-v','ON_ERROR_STOP=1'],
+        Buffer.from('set search_path=public,extensions;\n'+fs.readFileSync(path.join(ROOT,'supabase/tests',name),'utf8'))).toString();
+      assert.doesNotMatch(output,/^not ok\b/m,name);assert.match(output,/^1\.\.[0-9]+$/m,name);
+      assertions+=Number(/^1\.\.([0-9]+)$/m.exec(output)[1]);
+    }
+    assert.equal(assertions,334);
+    console.log('CANONICAL_PGTAP: 250 + 44 least-privilege + 40 reparto-propio assertions PASS');
+  } else {
+    console.log('FOCUSED_RELEASE_RUN: historical matrix and canonical pgTAP NOT RUN');
   }
   // Restore schema + synthetic state, including durable consumed evidence.
   // Platform extensions are deliberately excluded, as in the original drill.

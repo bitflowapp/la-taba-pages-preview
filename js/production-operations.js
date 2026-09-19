@@ -1072,18 +1072,24 @@ function requirePaymentConsultationAccess() {
 /*
  * LA ACCION SIGUIENTE DEL NEGOCIO, INCLUIDO EL REPARTO PROPIO.
  * ---------------------------------------------------------------------------
- * Las dos ultimas ramas son el reparto que hace el comercio con su propia gente
- * y espejan EXACTAMENTE lo que habilito la migracion 20260919120000 en la rama
- * `v_is_business` de `change_order_status`:
+ * La ultima rama es el despacho que hace el comercio con su propia gente, y
+ * espeja lo que habilito la migracion 20260919120000 en la rama `v_is_business`
+ * de `change_order_status`:
  *
- *     ready      -> on_the_way   delivery, SIN repartidor asignado
- *     on_the_way -> delivered    delivery, SIN repartidor asignado
+ *     ready -> on_the_way   delivery, SIN repartidor asignado
  *
  * `assignedRiderId` decide, y decide igual de los dos lados. Con un repartidor
  * en la calle el pedido es suyo: el Panel no ofrece la accion porque el
- * servidor no la acepta, y no la acepta porque la entrega la cierra quien
- * llego hasta el cliente, con su codigo. Un boton de mas aca seria un 23514 y
- * un pedido que no se mueve -el defecto H1 otra vez-.
+ * servidor no la acepta, y no la acepta porque la entrega la cierra quien llego
+ * hasta el cliente, con su codigo.
+ *
+ * `on_the_way -> delivered` NO esta aca, y no es un olvido: esa transicion
+ * existe en el servidor pero `prevent_unverified_delivery` la corta mientras no
+ * haya un handoff confirmado, y `orders.delivery_code_required` es NOT NULL con
+ * default true. Un boton que llamara a `transition_order` para cerrar una
+ * entrega moriria con 55000 en el primer pedido real -el defecto H1 otra vez-.
+ * El cierre del comercio pide el codigo del cliente y va por
+ * `confirm_business_delivery_code`; lo dibuja `cierreDeEntregaMarkup()`.
  */
 export function nextBusinessStatus(order = {}) {
   const current = workflowStatus(order);
@@ -1091,11 +1097,21 @@ export function nextBusinessStatus(order = {}) {
   if (current === 'accepted') return 'preparing';
   if (current === 'preparing') return 'ready';
   if (current === 'ready' && order.deliveryMode === 'pickup') return 'delivered';
-  if (order.deliveryMode === 'delivery' && !order.assignedRiderId) {
-    if (current === 'ready') return 'on_the_way';
-    if (current === 'on_the_way') return 'delivered';
+  if (current === 'ready' && order.deliveryMode === 'delivery' && !order.assignedRiderId) {
+    return 'on_the_way';
   }
   return null;
+}
+
+/**
+ * ¿Este pedido lo cierra el comercio pidiendo el código del cliente?
+ *
+ * Es el reparto propio ya despachado: en la calle, sin repartidor asignado.
+ */
+export function needsBusinessDeliveryCode(order = {}) {
+  return workflowStatus(order) === 'on_the_way'
+    && order.deliveryMode === 'delivery'
+    && !order.assignedRiderId;
 }
 
 // La cadena canónica del servidor: assigned → picked_up → on_the_way → arrived,
@@ -2120,6 +2136,11 @@ function trasplantarBorradorDeTarjeta(viejo, nuevo) {
     const campo = nuevo.querySelector('[data-production-cancel-reason]');
     if (campo) campo.value = motivo;
   }
+  const codigo = viejo.querySelector('[data-production-delivery-code]')?.value || '';
+  if (codigo) {
+    const campo = nuevo.querySelector('[data-production-delivery-code]');
+    if (campo) campo.value = codigo;
+  }
   const rider = viejo.querySelector('[data-production-rider-select]')?.value || '';
   if (!rider) return;
   const selector = nuevo.querySelector('[data-production-rider-select]');
@@ -2263,7 +2284,11 @@ function capturarBorradoresDelOperador(workspace) {
     if (!id) return;
     const motivo = card.querySelector('[data-production-cancel-reason]')?.value || '';
     const rider = card.querySelector('[data-production-rider-select]')?.value || '';
-    if (motivo || rider) borradores.set(id, { motivo, rider });
+    // El código de entrega entra acá por el mismo motivo que los otros dos: se
+    // tipea con el cliente enfrente, y un pedido que entra por realtime repinta
+    // la bandeja. Perderlo obliga a pedírselo de nuevo.
+    const codigo = card.querySelector('[data-production-delivery-code]')?.value || '';
+    if (motivo || rider || codigo) borradores.set(id, { motivo, rider, codigo });
   });
   return borradores;
 }
@@ -2275,6 +2300,8 @@ function restaurarBorradoresDelOperador(workspace, borradores) {
     if (!guardado) return;
     const motivo = card.querySelector('[data-production-cancel-reason]');
     if (motivo && guardado.motivo) motivo.value = guardado.motivo;
+    const codigo = card.querySelector('[data-production-delivery-code]');
+    if (codigo && guardado.codigo) codigo.value = guardado.codigo;
     const rider = card.querySelector('[data-production-rider-select]');
     // Sólo si la opción sigue existiendo: un rider que salió de turno no puede
     // quedar seleccionado de forma fantasma.
@@ -3349,6 +3376,7 @@ function businessOrderMarkup(order, attention = []) {
           >${orderActionsInFlight.has(order.id) ? 'Confirmando…' : escapeHtml(actionLabel(next, 'business', order))}</button>
         ` : ''}
       </div>
+      ${cierreDeEntregaMarkup(order)}
       ${riderCustodyMarkup(order, { current })}
       ${riderOfferMarkup(offer)}
       ${canAssignRider && !offerPending && riderOptions ? `
@@ -3382,6 +3410,56 @@ function businessOrderMarkup(order, attention = []) {
       </div>
     </article>
   `;
+}
+
+/*
+ * EL CIERRE DE UNA ENTREGA PROPIA: EL CÓDIGO DEL CLIENTE.
+ * ===========================================================================
+ * Acá NO hay un botón «Marcar entregado», y la ausencia es la parte pensada.
+ *
+ * `prevent_unverified_delivery` (20260725090000) corta toda entrega de delivery
+ * mientras no exista un handoff confirmado, y `orders.delivery_code_required`
+ * es NOT NULL con default true: TODO pedido de delivery nace exigiendo el
+ * código. Un botón que llamara a `transition_order('delivered')` moriría con
+ * 55000 en el primer pedido real, el outbox lo marcaría como fallo permanente y
+ * el pedido no se movería nunca. Es exactamente el defecto H1 de
+ * BUSINESS-PANEL-HARDENING, y no se vuelve a cometer.
+ *
+ * Y está bien que el servidor lo exija. El código no protege al repartidor de
+ * su patrón: protege al CLIENTE, y prueba que la mercadería llegó hasta él.
+ * Quién la lleve no cambia que haya que probarlo.
+ *
+ * Cuatro dígitos, teclado numérico, y la frase que dice de dónde salen —el
+ * cliente los tiene en su seguimiento—. Sin esa frase, quien atiende no sabe
+ * qué pedir y termina inventando un número.
+ */
+function cierreDeEntregaMarkup(order) {
+  if (!needsBusinessDeliveryCode(order)) return '';
+  const id = escapeAttribute(order.id);
+  const enVuelo = orderActionsInFlight.has(order.id);
+  return `
+      <div class="production-order-handoff" data-order-handoff="${id}">
+        <p class="production-order-handoff-lead">Pedile al cliente los 4 números de su seguimiento.</p>
+        <div class="production-order-handoff-row">
+          <label class="sr-only" for="entrega-${id}">Código de entrega del cliente</label>
+          <input
+            class="order-handoff-code"
+            id="entrega-${id}"
+            type="text"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            maxlength="4"
+            placeholder="0000"
+            ${enVuelo ? 'disabled' : ''}
+            data-production-delivery-code>
+          <button
+            class="primary-button compact"
+            type="button"
+            data-production-business-confirm-delivery="${id}"
+            ${enVuelo ? 'disabled aria-disabled="true"' : ''}
+          >${enVuelo ? 'Confirmando…' : 'Confirmar entrega'}</button>
+        </div>
+      </div>`;
 }
 
 /*

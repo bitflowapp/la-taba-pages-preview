@@ -609,6 +609,7 @@ begin
 
   perform set_config('taba.delivery_code_confirmed', 'true', true);
   update public.orders set status = 'delivered' where id = v_order.id and status = v_order.status;
+  perform set_config('taba.delivery_code_confirmed', '', true);
 
   select to_jsonb(o) into v_result from public.orders o where o.id = v_order.id;
   v_result := v_result || jsonb_build_object(

@@ -48,6 +48,7 @@ insert into public.identity_sessions(session_id,user_id,business_id,role_at_logi
 values
   ('c5000000-0000-4000-8000-0000000000e1','a5000000-0000-4000-8000-0000000000e1','b5000000-0000-4000-8000-0000000000e1','owner','panel_web'),
   ('c5000000-0000-4000-8000-0000000000e2','a5000000-0000-4000-8000-0000000000e2','b5000000-0000-4000-8000-0000000000e1','rider','rider_android'),
+  ('c5000000-0000-4000-8000-0000000000e3','a5000000-0000-4000-8000-0000000000e1','b5000000-0000-4000-8000-0000000000e3','owner','panel_web'),
   ('c5000000-0000-4000-8000-0000000000e4','a5000000-0000-4000-8000-0000000000e4','b5000000-0000-4000-8000-0000000000e2','owner','panel_web');
 
 -- Cuatro pedidos de delivery listos. El 1 lo despacha el comercio; el 2 lo
@@ -174,6 +175,7 @@ select throws_ok(
 
 -- El guard simetrico, probado por el camino que no pasa por la matriz: un
 -- UPDATE crudo. Es la defensa que sobrevive a que alguien edite el `or`.
+select set_config('taba.delivery_code_confirmed', '', true);
 select throws_ok(
   $$update public.orders set status='delivered' where id='d5000000-0000-4000-8000-000000000002'$$,
   '42501', 'la entrega la confirma el repartidor asignado con el codigo del cliente',
@@ -275,6 +277,7 @@ select throws_ok(
   '22023', 'la zona pedida no es la del negocio',
   'el dia comercial no se negocia con el cliente, ni siquiera con una zona real');
 -- Y sin huso configurado falla cerrado en vez de suponer uno.
+select pg_temp.as_user('a5000000-0000-4000-8000-0000000000e1','c5000000-0000-4000-8000-0000000000e3');
 select throws_ok(
   $$select public.get_business_finished_today('b5000000-0000-4000-8000-0000000000e3', null)$$,
   '55000', null,

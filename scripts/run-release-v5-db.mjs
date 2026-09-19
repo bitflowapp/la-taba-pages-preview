@@ -96,6 +96,7 @@ try {
     alter table net.http_request_queue owner to supabase_admin;
     alter table net._http_response owner to supabase_admin;
     grant set on parameter session_replication_role to postgres;
+    grant anon, authenticated, service_role to postgres with admin option;
     alter role postgres nosuperuser bypassrls createdb createrole;`);
   if(generateOutput){
     const output=path.resolve(generateOutput),relative=path.relative(ROOT,output);
@@ -170,7 +171,7 @@ try {
   assert.deepEqual(restoredSummary,sourceSummary);
   const failClosed=spawnSync('docker',['exec',container,'psql','-h','/tmp','-U','supabase_admin','-d',restoreDatabase,'-X','-qAt','-v','ON_ERROR_STOP=1','-c','select private.a1_a4_inert_snapshot_v5()'],{encoding:'utf8',windowsHide:true});
   assert.notEqual(failClosed.status,0,'platform-incomplete restore must not authorize release');
-  const report={productionDataUsed:false,focused,migrationsApplied:126,canonicalPgTap:assertions,dumpSha256,restoreDurationMs:Date.now()-start,passed:true,sourceSummary,restoredSummary};
+  const report={productionDataUsed:false,focused,migrationsApplied:fs.readdirSync(path.join(ROOT,'supabase/migrations')).filter(v=>v.endsWith('.sql')).length,canonicalPgTap:assertions,dumpSha256,restoreDurationMs:Date.now()-start,passed:true,sourceSummary,restoredSummary};
   if(process.env.TABA_RESTORE_DRILL_REPORT){
     const output=path.resolve(process.env.TABA_RESTORE_DRILL_REPORT);fs.mkdirSync(path.dirname(output),{recursive:true});
     fs.writeFileSync(output,JSON.stringify(report,null,2)+'\n',{flag:'wx'});

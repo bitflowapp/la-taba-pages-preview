@@ -32,7 +32,7 @@ migraciones.
    nueva para retiro, pero no conoce la RPC de reparto propio.
 2. Ejecutar en una única transacción
    `docs/migrations/rollback/20260919120000_business_self_delivery_and_finished_today.rollback.sql`.
-3. Confirmar la transacción sólo si desaparecieron las cuatro firmas nuevas,
+3. Confirmar la transacción sólo si desaparecieron las cinco firmas nuevas,
    los dos triggers nuevos y `change_order_status(uuid,text,text)` coincide con
    la definición previa cuyo SHA-256 es
    `16547d986eebd2a056da6ab4f5de6918c52ba4a262d0014b107eaa7448f8894a`.

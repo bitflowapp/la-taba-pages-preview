@@ -15,7 +15,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(48);
+select plan(50);
 
 -- ── Fixture ────────────────────────────────────────────────────────────────
 insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
@@ -258,6 +258,8 @@ select ok(not has_function_privilege('anon', 'public.confirm_business_delivery_c
   'anon no ejecuta confirm_business_delivery_code');
 select ok(not has_function_privilege('anon', 'public.get_business_finished_today(uuid,text)', 'EXECUTE'),
   'anon no ejecuta get_business_finished_today');
+select ok(not has_function_privilege('anon', 'public.get_business_finished_today(uuid,text,date)', 'EXECUTE'),
+  'anon tampoco ejecuta el overload compatible de get_business_finished_today');
 select ok(not has_function_privilege('anon', 'public.change_order_status(uuid,text,text)', 'EXECUTE'),
   'anon no ejecuta change_order_status');
 select ok(not has_function_privilege('anon', 'public.prevent_business_delivery_over_rider()', 'EXECUTE'),
@@ -331,8 +333,12 @@ select throws_ok(
 select throws_ok(
   $$select public.get_business_finished_today(
       'b5000000-0000-4000-8000-0000000000e1', null, date '2000-01-01')$$,
-  '42883', null,
-  'el cliente no puede elegir otra fecha porque la RPC de hoy no la acepta');
+  '22023', 'la fecha de finalizados hoy la determina el servidor',
+  'el overload compatible rechaza cualquier fecha elegida por el cliente');
+select is(
+  (public.get_business_finished_today(
+      'b5000000-0000-4000-8000-0000000000e1', null, null::date) ->> 'delivered')::integer,
+  3, 'la web candidata anterior conserva su llamada con fecha NULL sobre la DB nueva');
 -- Y sin huso configurado falla cerrado en vez de suponer uno.
 select pg_temp.as_user('a5000000-0000-4000-8000-0000000000e1','c5000000-0000-4000-8000-0000000000e3');
 select throws_ok(

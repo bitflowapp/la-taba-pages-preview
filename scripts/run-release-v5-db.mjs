@@ -145,8 +145,8 @@ try {
       assert.doesNotMatch(output,/^not ok\b/m,name);assert.match(output,/^1\.\.[0-9]+$/m,name);
       assertions+=Number(/^1\.\.([0-9]+)$/m.exec(output)[1]);
     }
-    assert.equal(assertions,342);
-    console.log('CANONICAL_PGTAP: 250 + 44 least-privilege + 48 reparto-propio assertions PASS');
+    assert.equal(assertions,344);
+    console.log('CANONICAL_PGTAP: 250 + 44 least-privilege + 50 reparto-propio assertions PASS');
 
     // Drill the exact compensating rollback in the same isolated schema where
     // the forward migration and its pgTAP contract just passed. The first run
@@ -189,6 +189,7 @@ try {
       'public.prevent_business_delivery_over_rider()',
       'public.confirm_business_delivery_code(uuid,bigint,text,text)',
       'public.get_business_finished_today(uuid,text)',
+      'public.get_business_finished_today(uuid,text,date)',
     ]) assert.equal((await query('select to_regprocedure($1) as oid',[signature])).rows[0].oid,null,signature);
     const previousDefinition=(await query(
       "select pg_get_functiondef('public.change_order_status(uuid,text,text)'::regprocedure) as definition"

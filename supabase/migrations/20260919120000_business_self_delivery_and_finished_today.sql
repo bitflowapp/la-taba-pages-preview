@@ -741,3 +741,34 @@ to authenticated;
 
 comment on function public.get_business_finished_today(uuid, text) is
   'Cuenta en el servidor los pedidos cerrados del dia comercial de un negocio. Exige rol de negocio y una zona horaria valida; nunca devuelve filas de pedidos.';
+
+-- Compatibilidad de rollout para la candidata anterior: esa web enviaba un
+-- tercer argumento NULL. Se conserva el overload durante esta publicacion,
+-- pero una fecha real se rechaza; nunca participa del calculo de "hoy".
+create or replace function public.get_business_finished_today(
+  p_business_id uuid,
+  p_timezone text,
+  p_business_date date
+)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = pg_catalog, public, extensions, pg_temp
+as $finished_today_compat$
+begin
+  if p_business_date is not null then
+    raise exception 'la fecha de finalizados hoy la determina el servidor'
+      using errcode = '22023';
+  end if;
+  return public.get_business_finished_today(p_business_id, p_timezone);
+end;
+$finished_today_compat$;
+
+revoke all on function public.get_business_finished_today(uuid, text, date)
+from public, anon;
+grant execute on function public.get_business_finished_today(uuid, text, date)
+to authenticated;
+
+comment on function public.get_business_finished_today(uuid, text, date) is
+  'Overload transitorio para clientes que enviaban una fecha NULL. Rechaza toda fecha elegida por el cliente y delega al reloj del servidor.';

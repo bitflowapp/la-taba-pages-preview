@@ -34,6 +34,7 @@ drop trigger if exists orders_prevent_business_delivery_over_rider on public.ord
 drop function if exists public.record_business_self_delivery();
 drop function if exists public.prevent_business_delivery_over_rider();
 drop function if exists public.confirm_business_delivery_code(uuid, bigint, text, text);
+drop function if exists public.get_business_finished_today(uuid, text, date);
 drop function if exists public.get_business_finished_today(uuid, text);
 
 CREATE OR REPLACE FUNCTION public.change_order_status(p_order_id uuid, p_expected_status text, p_new_status text)

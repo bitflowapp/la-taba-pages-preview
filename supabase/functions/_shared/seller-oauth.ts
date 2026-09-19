@@ -17,6 +17,16 @@ const DEPLOYMENT_BINDINGS: Record<string, {
   checkoutBaseUrl: string;
   allowedOrigins: string;
 }> = {
+  ucbtjcurawxjwjdvvcvj: {
+    deployment: "staging",
+    paymentEnvironment: "test",
+    oauthEnvironment: "test",
+    clientId: "2691240967769590",
+    supabaseUrl: "https://ucbtjcurawxjwjdvvcvj.supabase.co",
+    panelUrl: "https://taba2-staging.pages.dev/",
+    checkoutBaseUrl: "https://taba2-staging.pages.dev",
+    allowedOrigins: "https://taba2-staging.pages.dev",
+  },
   ukxqbgswjlibmnjemrzd: {
     deployment: "staging",
     paymentEnvironment: "test",
@@ -162,7 +172,7 @@ export async function tokenGrant(
     !body.access_token || !body.refresh_token || !body.user_id ||
     !Number.isFinite(body.expires_in) || body.expires_in <= 0 ||
     !String(body.scope).split(" ").includes("offline_access") ||
-    body.live_mode !== (c.environment === "production")
+    (body.live_mode === true) !== (c.environment === "production")
   ) throw new Error("Invalid OAuth token response");
   return body;
 }

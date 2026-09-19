@@ -164,6 +164,32 @@ test('el orden de la cadena del comercio es el mismo que ve el cliente en su seg
   );
 });
 
+test('el seguimiento del cliente avanza igual lo lleve un repartidor o el comercio', async () => {
+  const { orderTimelineIndex, publicOrderTimelineIndex } = await import('../js/core/order-timeline.js');
+
+  /*
+   * Lo que el cliente ve avanzar no puede depender de QUIÉN lleva el pedido.
+   *
+   * El reparto del comercio recorre ready -> on_the_way -> delivered; el del
+   * repartidor pasa además por assigned y picked_up. Los dos tienen que caer en
+   * el mismo paso del seguimiento, porque para quien espera en la puerta son el
+   * mismo hecho: salió del local. Si `on_the_way` sin repartidor cayera un paso
+   * antes, un pedido despachado por el local se vería trabado en «Listo» hasta
+   * que llegara.
+   */
+  assert.equal(orderTimelineIndex('ready'), 2);
+  assert.equal(orderTimelineIndex('on_the_way'), 3, 'salió del local, lo lleve quien lo lleve');
+  assert.equal(orderTimelineIndex('delivered'), 4);
+
+  // Y en el seguimiento público —el del enlace que recibe el cliente— los
+  // estados del repartidor y el del comercio comparten paso.
+  assert.equal(publicOrderTimelineIndex('ready'), 1);
+  for (const status of ['picked_up', 'on_the_way', 'arrived']) {
+    assert.equal(publicOrderTimelineIndex(status), 2, status);
+  }
+  assert.equal(publicOrderTimelineIndex('delivered'), 3);
+});
+
 test('el botón dice lo que va a pasar, no el nombre del estado', async () => {
   const origen = await readFile(new URL('../js/production-operations.js', import.meta.url), 'utf8');
   // `actionLabel` no se exporta —es de presentación— así que se fija sobre el

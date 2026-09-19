@@ -28,6 +28,22 @@ const run=(script,...args)=>{
 let client,releaseSession;
 let started=false;
 try {
+  try {
+    docker(['image','inspect',image]);
+  } catch {
+    for (let attempt = 1; attempt <= 6; attempt++) {
+      try {
+        console.log(`Pulling ${image} (attempt ${attempt}/6)...`);
+        docker(['pull', image]);
+        break;
+      } catch (err) {
+        if (attempt === 6) throw err;
+        const delay = attempt * 5000;
+        console.warn(`Docker pull failed. Retrying in ${delay}ms...`);
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+  }
   docker(['run','-d','--name',container,'--network','none','--user','postgres',
     '--tmpfs','/var/lib/postgresql/data:rw,size=1024m,uid=100,gid=101','--tmpfs','/tmp:rw,size=128m',
     '--tmpfs','/etc/postgresql-custom:rw,size=1m,uid=100,gid=101',

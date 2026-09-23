@@ -40,7 +40,9 @@ class RiderLocationService: Service(), LocationListener {
             .addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT), PendingIntent.FLAG_IMMUTABLE)
         val stop = PendingIntent.getService(this, 1, Intent(this, javaClass).setAction("STOP"), PendingIntent.FLAG_IMMUTABLE)
         startForeground(10, NotificationCompat.Builder(this, "rider_gps").setSmallIcon(android.R.drawable.ic_menu_mylocation)
-            .setContentTitle("La Taba Rider QA · GPS activo").setContentText("Sólo entregas activas de Staging")
+            .setContentTitle(if (BuildConfig.APPLICATION_ID.endsWith(".pilot"))
+                "La Taba Rider Piloto · GPS activo" else "La Taba Rider QA · GPS activo")
+            .setContentText("Sólo entregas activas de Staging")
             .setContentIntent(open).addAction(0, "Detener GPS", stop).setOngoing(true).build())
         locations = getSystemService(LocationManager::class.java)
         try {

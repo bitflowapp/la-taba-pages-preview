@@ -16,7 +16,8 @@ data class Offer(val id: String, val code: String, val version: Long, val zone: 
     companion object { fun from(j: JSONObject) = Offer(j.getString("offer_id"), j.optString("public_code"),
         j.getLong("version"), j.optString("delivery_summary"), j.optString("pickup_summary")) }
 }
-data class Board(val orders: List<Delivery>, val offers: List<Offer>, val capacity: Int) {
+data class Board(val orders: List<Delivery>, val offers: List<Offer>, val capacity: Int,
+    val available: Boolean = false, val availabilityVersion: Long = 0) {
     val atCapacity get() = orders.size >= capacity
     companion object {
         fun from(j: JSONObject): Board {
@@ -25,7 +26,8 @@ data class Board(val orders: List<Delivery>, val offers: List<Offer>, val capaci
             val orders = j.getJSONArray("orders")
             val offers = j.getJSONArray("offers")
             return Board(List(orders.length()) { Delivery.from(orders.getJSONObject(it)) },
-                List(offers.length()) { Offer.from(offers.getJSONObject(it)) }, capacity)
+                List(offers.length()) { Offer.from(offers.getJSONObject(it)) }, capacity,
+                j.optBoolean("available", false), j.optLong("availability_version", 0))
         }
     }
 }

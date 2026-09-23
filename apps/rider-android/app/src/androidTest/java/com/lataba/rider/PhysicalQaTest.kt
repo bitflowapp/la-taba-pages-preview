@@ -26,6 +26,9 @@ class PhysicalQaTest {
         assumeTrue("Requires explicit QA input placed in app-private storage", file.exists())
         val input = JSONObject(file.readText()); file.delete()
         try {
+            runBlocking { repo.refresh() }
+            until(90000) { !repo.state.value.signedIn ||
+                (repo.state.value.online && repo.state.value.board != null) }
             if (!repo.state.value.signedIn) {
                 compose.onNodeWithTag("email").performTextInput(input.getString("email"))
                 compose.onNodeWithTag("password").performTextInput(input.getString("password"))

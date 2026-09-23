@@ -6,6 +6,8 @@ Desde la raíz web, JDK 17 + SDK 35:
 
 ```powershell
 node scripts/e2e-staging/build-rider-android.mjs
+node scripts/e2e-staging/create-rider-pilot-signing-key.mjs
+node scripts/e2e-staging/build-rider-pilot.mjs
 node scripts/e2e-staging/build-rider-android.mjs lintDebug
 node scripts/e2e-staging/scan-rider-apk.mjs
 node scripts/scan-secrets.mjs
@@ -22,8 +24,10 @@ adb -s ZY32LHS6PS install -r apps/rider-android/app/build/outputs/apk/debug/app-
 adb -s ZY32LHS6PS install -r apps/rider-android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 ```
 
-Los paquetes son `com.lataba.rider.qa` y `com.lataba.rider.qa.test`.
-No ejecutar `install` sobre la release unsigned ni desinstalar `com.lataba.rider`.
+Los paquetes son `com.lataba.rider.qa`, `com.lataba.rider.qa.test` y
+`com.lataba.rider.pilot`. La release firmada queda en
+`apps/rider-android/app/build/outputs/apk/release/app-release.apk`.
+No instalar una release unsigned ni desinstalar `com.lataba.rider`.
 
 ## Pedido / Android físico
 

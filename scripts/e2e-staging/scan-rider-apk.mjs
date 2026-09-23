@@ -1,10 +1,10 @@
-import {readFileSync,writeFileSync} from 'node:fs';
+import {existsSync,readFileSync,writeFileSync} from 'node:fs';
 import {inflateRawSync} from 'node:zlib';
 import {createHash} from 'node:crypto';
 import {leerSecreto} from '../e2e-production-sale/secretos-windows.mjs';
 // Inspect our newly built APK's ZIP entries in memory. Never inspect/decompile the historical APK.
 const publicKey=leerSecreto('STAGING SUPABASE PUBLISHABLE KEY')?.secreto;
-const secrets=['STAGING SUPABASE SECRET KEY','STAGING RIDER QA 20260920','STAGING CUSTOMER QA 20260920','STAGING BUSINESS QA 20260920','STAGING RIDER B CANONICAL QA 20260922'].map(n=>leerSecreto(n)?.secreto).filter(Boolean);
+const secrets=['STAGING SUPABASE SECRET KEY','STAGING RIDER QA 20260920','STAGING CUSTOMER QA 20260920','STAGING BUSINESS QA 20260920','STAGING RIDER B CANONICAL QA 20260922','RIDER PILOT SIGNING PASSWORD','RIDER PILOT KEYSTORE BACKUP'].map(n=>leerSecreto(n)?.secreto).filter(Boolean);
 if(!publicKey||secrets.length<4)throw Error('SCAN_INPUT_MISSING');
 function* entries(zip){
  let end=zip.length-22;
@@ -21,7 +21,9 @@ function* entries(zip){
  }
 }
 const report={timestamp:new Date().toISOString(),historicalApkInspected:false,artifacts:[]};
-for(const file of ['apps/rider-android/app/build/outputs/apk/debug/app-debug.apk','apps/rider-android/app/build/outputs/apk/release/app-release-unsigned.apk']){
+const releaseBase='apps/rider-android/app/build/outputs/apk/release/';
+const release=existsSync(`${releaseBase}app-release.apk`)?`${releaseBase}app-release.apk`:`${releaseBase}app-release-unsigned.apk`;
+for(const file of ['apps/rider-android/app/build/outputs/apk/debug/app-debug.apk',release]){
  const bytes=readFileSync(file);let containsPublic=false,leaks=0;
  for(const value of entries(bytes)){
   containsPublic ||= value.includes(Buffer.from(publicKey));

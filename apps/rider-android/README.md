@@ -5,16 +5,19 @@ Compose/Material 3, ViewModel, Flow, Coroutines y Navigation Compose. Ningún c�
 fue descompilado ni copiado desde la APK. Ver `SOURCE-PROVENANCE.md`.
 
 Resultado ejecutado: [verificación del 22/09/2026](VERIFICATION-2026-09-22.md).
+Estado del piloto: [verificación del 23/09/2026](VERIFICATION-2026-09-23.md).
 Reproducción segura: [QA runbook](QA-RUNBOOK.md).
 
 ## Alcance seguro
 
-- Sólo Supabase Staging `ucbtjcurawxjwjdvvcvj`; ID instalable `com.lataba.rider.qa`.
+- Sólo Supabase Staging `ucbtjcurawxjwjdvvcvj`; ID QA `com.lataba.rider.qa`,
+  identidad firmada de piloto `com.lataba.rider.pilot`.
 - La APK estable `com.lataba.rider` no se reemplaza.
 - Sólo publishable key, aportada al build por entorno. No keys administrativas.
 - Tokens cifrados con Android Keystore; sin backup, sin logs HTTP ni passwords persistidas.
 - Sin pantalla Rider de producción web, sin Flutter, sin WebView.
-- Release es **unsigned QA**, no un release productivo. No se inventó firma histórica.
+- La release del piloto usa una clave nueva fuera del repo con copia cifrada en
+  Credential Manager. No se inventó firma histórica ni se reemplazó v146.
 
 ## Compilar / probar
 
@@ -27,12 +30,14 @@ Desde el repo web en esta PC (public key en Credential Manager):
 
 ```powershell
 node scripts/e2e-staging/build-rider-android.mjs
+node scripts/e2e-staging/create-rider-pilot-signing-key.mjs
+node scripts/e2e-staging/build-rider-pilot.mjs
 ```
 
 En otra máquina, definir `ANDROID_HOME` y `RIDER_STAGING_PUBLIC_KEY` (pública), luego:
 
 ```powershell
-.\gradlew.bat :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease
+.\gradlew.bat :app:testDebugUnitTest :app:assembleDebug
 ```
 
 No instalar un build sin configuración pública. Los tests instrumentados de QA
@@ -64,8 +69,12 @@ Foreground location service con notificación y acción Detener; requiere permis
 preciso y entrega en reparto. Sin servicio de arranque automático al iniciar el SO.
 Después de force-stop el usuario debe reabrir y activar GPS: no se finge tracking.
 
-**Disponibilidad local**, explícita en UI: detiene aceptación en este dispositivo.
-No hay RPC de presencia en el contrato auditado; no inventa estado compartido.
+La disponibilidad viene del board del servidor. El cambio pasa por
+`set_rider_availability` con versión esperada y la presencia se renueva con
+`heartbeat_rider_availability`. El panel consulta el mismo estado; se marca
+no disponible tras 90 segundos sin renovación. Un comercio debe activar
+explícitamente la política; los que aún usan la APK histórica mantienen el
+contrato anterior hasta su migración.
 Una futura presencia server-side necesita una decisión de producto separada.
 
 ## Referencias primarias

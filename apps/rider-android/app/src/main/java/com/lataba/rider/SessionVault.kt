@@ -14,7 +14,7 @@ import javax.crypto.spec.GCMParameterSpec
 /** Tokens only; never passwords. Backup disabled; ciphertext bound to Android Keystore. */
 class SessionVault(context: Context) {
     private val preferences = context.getSharedPreferences("rider_secure_session", Context.MODE_PRIVATE)
-    private val alias = "lataba.rider.qa.session.v1"
+    private val alias = "lataba.rider.${BuildConfig.APPLICATION_ID}.session.v1"
     private fun key(): SecretKey {
         val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
         (store.getKey(alias, null) as? SecretKey)?.let { return it }

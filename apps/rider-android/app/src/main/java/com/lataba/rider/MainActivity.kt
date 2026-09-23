@@ -40,8 +40,9 @@ class MainActivity: ComponentActivity() {
             context.startForegroundService(Intent(context, RiderLocationService::class.java))
     }
     Column(Modifier.fillMaxSize().safeDrawingPadding().padding(20.dp).verticalScroll(rememberScrollState())) {
-        Text("La Taba · Rider QA", style = MaterialTheme.typography.headlineSmall)
-        Text("STAGING · Nueva implementación nativa", style = MaterialTheme.typography.labelSmall)
+        Text(if (BuildConfig.APPLICATION_ID.endsWith(".pilot")) "La Taba · Rider Piloto" else "La Taba · Rider QA",
+            style = MaterialTheme.typography.headlineSmall)
+        Text("STAGING · App nativa", style = MaterialTheme.typography.labelSmall)
         Spacer(Modifier.height(16.dp))
         if (!state.signedIn) {
             OutlinedTextField(email, { email = it }, label = { Text("Email Rider") }, modifier = Modifier.fillMaxWidth().testTag("email"), singleLine = true)
@@ -49,8 +50,8 @@ class MainActivity: ComponentActivity() {
             Button(onClick = { vm.login(email.trim(), password); password = "" }, enabled = !state.busy && email.isNotBlank() && password.isNotBlank(), modifier = Modifier.testTag("login")) { Text("Ingresar") }
         } else {
             Row { Text(if (state.online) "Conectado" else "Sin conexión · datos anteriores", Modifier.weight(1f)); TextButton(onClick = { context.stopService(Intent(context, RiderLocationService::class.java)); vm.logout() }) { Text("Salir") } }
-            Row { Text(if (state.available) "Disponible" else "No disponible", Modifier.weight(1f)); Switch(state.available, { vm.available(it) }, modifier = Modifier.testTag("available")) }
-            Text("Disponibilidad local: pausa la aceptación; no cambia presencia del servidor.", style = MaterialTheme.typography.labelSmall)
+            Row { Text(if (state.available) "Disponible" else "No disponible", Modifier.weight(1f)); Switch(state.available, { vm.available(it) }, enabled = state.online && !state.busy, modifier = Modifier.testTag("available")) }
+            Text("Disponibilidad compartida con el negocio; caduca sin conexión.", style = MaterialTheme.typography.labelSmall)
             TextButton(onClick = vm::refresh, modifier = Modifier.testTag("refresh")) { Text("Actualizar") }
             Text(state.gps, modifier = Modifier.testTag("gps-status"))
             if (state.board?.orders?.any { it.publishable } == true) {

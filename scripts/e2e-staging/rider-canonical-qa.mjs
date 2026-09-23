@@ -2,13 +2,30 @@ import {createClient} from '@supabase/supabase-js';
 import {randomBytes,randomUUID} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 import {writeFileSync} from 'node:fs';
-import {loadStagingKeys} from './staging-keys.mjs';
+import {loadStagingKeys} from './qa-staging-keys.mjs';
 import {leerSecreto,guardarSecreto,generarContrasena} from '../e2e-production-sale/secretos-windows.mjs';
 const URL='https://ucbtjcurawxjwjdvvcvj.supabase.co';
 const BUSINESS='a57b1c20-0f4e-4a6b-9d31-7c2e5f8a41d0';
 const RUN='RIDER CANONICAL QA RUN 20260922';
 const mode=process.argv[2]||'inspect';
 if(!['inspect','prepare','prepare-next','resume','input','login-input','observe','browser-input','security','capacity','capacity-resume','cleanup','cleanup-aux','seal'].includes(mode))throw Error('UNKNOWN_QA_MODE');
+// Feeding app-private QA input needs local Credential Manager only. A temporary
+// Auth/network outage must not block a physical test that will authenticate on Moto.
+if(mode==='input'||mode==='login-input'){
+ const credential=leerSecreto('STAGING RIDER QA 20260920');
+ if(!credential?.usuario||!credential?.secreto)throw Error('QA_CREDENTIAL_UNAVAILABLE');
+ const state=mode==='input'?JSON.parse(leerSecreto(RUN)?.secreto||'{}'):{};
+ if(mode==='input'&&(!state.publicCode||!state.deliveryCode))throw Error('QA_ORDER_INPUT_MISSING');
+ const input={email:credential.usuario,password:credential.secreto,
+  waitForObservers:process.argv.includes('--observers'),
+  ...(state.publicCode?{publicCode:state.publicCode,deliveryCode:state.deliveryCode}:{})};
+ const result=spawnSync('adb',['-s','ZY32LHS6PS','shell','run-as','com.lataba.rider.qa','sh','-c',
+  "'mkdir -p files && cat > files/qa-input.json'"],{input:JSON.stringify(input),encoding:'utf8',windowsHide:true});
+ if(result.status!==0)throw Error('DEVICE_PRIVATE_INPUT_FAILED');
+ const report={timestamp:new Date().toISOString(),mode,stagingOnly:true,privateDeviceInput:'READY',networkAuth:'NOT_REQUIRED'};
+ writeFileSync(`artifacts/rider-canonical-${mode}.json`,JSON.stringify(report,null,2));
+ console.log(JSON.stringify(report));process.exit(0);
+}
 const options={auth:{persistSession:false,autoRefreshToken:false}};
 const {secret,publishable}=await loadStagingKeys();
 const admin=createClient(URL,secret,options);
@@ -29,6 +46,20 @@ const board=await rpc(rider.client,'get_rider_delivery_board');
 report.activeDeliveryPolicy=board.max_active_orders;report.activeOrders=board.orders.length;report.offers=board.offers.length;
 if(board.max_active_orders!==3)throw Error('POLICY_MISMATCH');
 const read=async q=>{const r=await q;if(r.error)throw Error(`READ:${r.error.code}`);return r.data};
+async function ensureAvailable(actor){
+ const current=await rpc(actor.client,'get_rider_delivery_board');
+ if(current.available)return;
+ const changed=await rpc(actor.client,'set_rider_availability',{p_business_id:BUSINESS,p_available:true,
+  p_expected_version:current.availability_version,p_idempotency_key:`qa_availability_${randomUUID().replaceAll('-','')}`});
+ if(!changed.ok || !(await rpc(actor.client,'get_rider_delivery_board')).available)throw Error('RIDER_AVAILABILITY_NOT_CONFIRMED');
+}
+async function clearAvailability(actor){
+ const current=await rpc(actor.client,'get_rider_delivery_board');
+ if(!current.available)return;
+ const changed=await rpc(actor.client,'set_rider_availability',{p_business_id:BUSINESS,p_available:false,
+  p_expected_version:current.availability_version,p_idempotency_key:`qa_availability_${randomUUID().replaceAll('-','')}`});
+ if(!changed.ok)throw Error('RIDER_AVAILABILITY_CLEAR_FAILED');
+}
 if(mode==='inspect'){
  const addresses=await read(customer.client.from('customer_addresses').select('id,latitude,longitude,location_confirmed_at').is('deleted_at',null));
  const products=await read(staff.client.from('products').select('id,name,stock,is_active').eq('business_id',BUSINESS).eq('is_active',true).gt('stock',0).limit(4));
@@ -38,7 +69,7 @@ if(mode==='prepare'||mode==='prepare-next'){
  if(leerSecreto(RUN)){
   if(mode!=='prepare-next')throw Error('QA_RUN_ALREADY_EXISTS_INSPECT_DO_NOT_DUPLICATE');
   const previous=JSON.parse(leerSecreto(RUN).secreto);
-  const terminal=await read(staff.client.from('orders').select('status').eq('id',previous.orderId).single());
+  const terminal=await read(admin.from('orders').select('status').eq('id',previous.orderId).single());
   if(terminal.status!=='delivered')throw Error('PREVIOUS_RUN_NOT_DELIVERED');
   guardarSecreto(`${RUN} PREVIOUS`,'staging',JSON.stringify(previous));
  }
@@ -67,7 +98,9 @@ if(mode==='prepare'||mode==='prepare-next'||mode==='resume'){
   await rpc(staff.client,'transition_order',{p_order_id:order.id,p_expected_revision:current.revision,p_new_status:status,p_idempotency_key:randomUUID()});
   current=await read(staff.client.from('orders').select('id,status,revision').eq('id',order.id).single());
  }
+ await ensureAvailable(rider);
  const offer=await rpc(staff.client,'offer_order_to_rider',{p_order_id:order.id,p_expected_status:'ready',p_expected_rider_user_id:null,p_new_rider_user_id:rider.user.id});
+ if(!offer.ok)throw Error(`QA_OFFER_NOT_CONFIRMED:${offer.code}`);
  const code=await rpc(customer.client,'issue_order_delivery_code',{p_order_id:order.id,p_tracking_token:state.tracking});
  state.deliveryCode=code.delivery_code; state.offer=offer;guardarSecreto(RUN,'staging',JSON.stringify(state));
  report.orderCreated=true;report.offerCreated=true;
@@ -79,6 +112,7 @@ if(mode==='cleanup'){
  await rpc(admin,'classify_order_as_qa',{p_order_id:state.orderId,p_reason:'rider_android_canonical_physical_qa'});
  await rpc(staff.client,'apply_inventory_movement',{p_business_id:BUSINESS,p_product_id:state.productId,p_barcode_id:null,p_movement_type:'manual_adjustment',p_package_quantity:state.quantity,p_direction:1,p_reference_type:'qa_integrated_delivery',p_reference_id:state.orderId,p_reason:'Reposición posterior al E2E Rider Android QA',p_idempotency_key:`qa_restore_${state.orderId.replaceAll('-','')}`});
  report.qaClassified=true;report.stockRestored=true;
+ await clearAvailability(rider);
 }
 if(mode==='security'){
  const state=JSON.parse(leerSecreto(RUN)?.secreto||'{}');if(!state.orderId)throw Error('NO_RUN');
@@ -146,7 +180,9 @@ if(mode==='capacity'||mode==='capacity-resume'||mode==='cleanup-aux'){
     await rpc(staff.client,'transition_order',{p_order_id:order.id,p_expected_revision:current.revision,p_new_status:status,p_idempotency_key:randomUUID()});
     current=await read(staff.client.from('orders').select('revision,status').eq('id',order.id).single());
    }
-   await rpc(staff.client,'offer_order_to_rider',{p_order_id:order.id,p_expected_status:'ready',p_expected_rider_user_id:null,p_new_rider_user_id:rider.user.id});
+   await ensureAvailable(rider);
+   const offered=await rpc(staff.client,'offer_order_to_rider',{p_order_id:order.id,p_expected_status:'ready',p_expected_rider_user_id:null,p_new_rider_user_id:rider.user.id});
+   if(!offered.ok)throw Error(`QA_CAPACITY_OFFER_NOT_CONFIRMED:${offered.code}`);
   }
   const offered=await rpc(rider.client,'get_rider_delivery_board');
   const offers=ledger.orders.map(o=>offered.offers.find(f=>f.order_id===o.id||f.public_code===o.publicCode));
@@ -171,7 +207,9 @@ if(mode==='capacity'||mode==='capacity-resume'||mode==='cleanup-aux'){
   check('foreignOfferDenied',foreign.error?.code==='P0002');
   const rejected=await rpc(rider.client,'reject_rider_order_offer',{p_offer_id:pending.offer_id,p_expected_version:pending.version,p_reason_code:null,p_idempotency_key:randomUUID()});check('reject',rejected.ok===true);
   const pendingOrder=ledger.orders.find(o=>o.publicCode===pending.public_code);
-  await rpc(staff.client,'offer_order_to_rider',{p_order_id:pendingOrder.id,p_expected_status:'ready',p_expected_rider_user_id:null,p_new_rider_user_id:other.user.id});
+  await ensureAvailable(other);
+  const bOffered=await rpc(staff.client,'offer_order_to_rider',{p_order_id:pendingOrder.id,p_expected_status:'ready',p_expected_rider_user_id:null,p_new_rider_user_id:other.user.id});
+  if(!bOffered.ok)throw Error(`QA_RIDER_B_OFFER_NOT_CONFIRMED:${bOffered.code}`);
   const bBoard=await rpc(other.client,'get_rider_delivery_board');const bOffer=bBoard.offers.find(o=>o.public_code===pendingOrder.publicCode);
   const bAccepted=await rpc(other.client,'accept_rider_order_offer',{p_offer_id:bOffer.offer_id,p_expected_version:bOffer.version,p_idempotency_key:randomUUID()});check('secondRiderAccepted',bAccepted.ok===true);
   check('riderACannotReadB',(await read(rider.client.from('orders').select('id').eq('id',pendingOrder.id))).length===0);
@@ -190,14 +228,8 @@ if(mode==='capacity'||mode==='capacity-resume'||mode==='cleanup-aux'){
   check('riderBoardTerminalRemoved',(await rpc(rider.client,'get_rider_delivery_board')).orders.length===0);
   check('secondRiderBoardTerminalRemoved',(await rpc(other.client,'get_rider_delivery_board')).orders.length===0);
   ledger.cleaned=true;save();
+  await clearAvailability(rider);await clearAvailability(other);
  }
-}
-if(mode==='input'||mode==='login-input'){
- const state=mode==='input'?JSON.parse(leerSecreto(RUN)?.secreto||'{}'):{};
- const input={email:rider.credential.usuario,password:rider.credential.secreto,waitForObservers:process.argv.includes('--observers'),...(state.publicCode?{publicCode:state.publicCode,deliveryCode:state.deliveryCode}:{})};
- const result=spawnSync('adb',['-s','ZY32LHS6PS','shell','run-as','com.lataba.rider.qa','sh','-c',"'mkdir -p files && cat > files/qa-input.json'"],{input:JSON.stringify(input),encoding:'utf8',windowsHide:true});
- if(result.status!==0)throw Error('DEVICE_PRIVATE_INPUT_FAILED');
- report.privateDeviceInput='READY';
 }
 if(mode==='observe'){
  const state=JSON.parse(leerSecreto(RUN)?.secreto||'{}');if(!state.orderId)throw Error('NO_RUN');

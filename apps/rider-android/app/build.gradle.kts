@@ -2,20 +2,45 @@ plugins { id("com.android.application"); kotlin("android"); id("org.jetbrains.ko
 
 val publicKey = providers.environmentVariable("RIDER_STAGING_PUBLIC_KEY").orElse("").get()
 require(publicKey.isEmpty() || publicKey.startsWith("sb_publishable_")) { "Only a staging publishable key is accepted" }
+val pilotStore = providers.environmentVariable("RIDER_PILOT_KEYSTORE_PATH").orNull
+val pilotPassword = providers.environmentVariable("RIDER_PILOT_SIGNING_PASS").orNull
+require((pilotStore == null) == (pilotPassword == null)) { "Pilot signer needs both path and password" }
 android {
     namespace = "com.lataba.rider"
     compileSdk = 35
     defaultConfig {
-        applicationId = "com.lataba.rider.qa"
+        applicationId = "com.lataba.rider"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
-        versionName = "0.1.0-canonical-qa"
+        versionName = "0.1.0-canonical"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "SUPABASE_URL", "\"https://ucbtjcurawxjwjdvvcvj.supabase.co\"")
         buildConfigField("String", "PUBLIC_KEY", "\"$publicKey\"")
     }
-    buildTypes { release { isMinifyEnabled = false } }
+    if (pilotStore != null && pilotPassword != null) signingConfigs {
+        create("pilot") {
+            storeFile = file(pilotStore)
+            storePassword = pilotPassword
+            keyAlias = "lataba-pilot-v1"
+            keyPassword = pilotPassword
+            storeType = "pkcs12"
+        }
+    }
+    buildTypes {
+        getByName("debug") {
+            applicationIdSuffix = ".qa"
+            versionNameSuffix = "-qa"
+            manifestPlaceholders["appLabel"] = "La Taba Rider QA"
+        }
+        getByName("release") {
+            applicationIdSuffix = ".pilot"
+            versionNameSuffix = "-pilot"
+            manifestPlaceholders["appLabel"] = "La Taba Rider Piloto"
+            isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("pilot")
+        }
+    }
     buildFeatures { compose = true; buildConfig = true }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = "17" }

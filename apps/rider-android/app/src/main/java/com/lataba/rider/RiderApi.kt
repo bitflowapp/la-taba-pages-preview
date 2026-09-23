@@ -18,10 +18,8 @@ class RiderApi(private val vault: SessionVault): RiderBackend {
     private val refreshLock = Mutex()
     @Volatile private var session: JSONObject? = vault.read()?.let { runCatching { JSONObject(it) }.getOrNull() }
     override val hasSession get() = session != null
-    val businessId get() = session?.optString("business_id")?.takeIf { it.isNotEmpty() }
-    override val available get() = session?.optBoolean("available", false) == true
+    override val businessId get() = session?.optString("business_id")?.takeIf { it.isNotEmpty() }
     private fun save() { session?.let { vault.save(it.toString()) } }
-    override fun available(value: Boolean) { session?.put("available", value); save() }
 
     private suspend fun request(path: String, body: JSONObject?, token: String? = null): String = withContext(Dispatchers.IO) {
         check(BuildConfig.SUPABASE_URL == "https://ucbtjcurawxjwjdvvcvj.supabase.co")
@@ -41,7 +39,7 @@ class RiderApi(private val vault: SessionVault): RiderBackend {
     }
     private fun acceptSession(auth: JSONObject, previous: JSONObject? = session) {
         auth.put("expires_at", System.currentTimeMillis() / 1000 + auth.getLong("expires_in"))
-        previous?.let { auth.put("business_id", it.optString("business_id")); auth.put("available", it.optBoolean("available")) }
+        previous?.let { auth.put("business_id", it.optString("business_id")) }
         session = auth
         save()
     }

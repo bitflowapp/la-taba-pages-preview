@@ -12,14 +12,13 @@ class RepositoryTest {
     private val order = Delivery("order", "QA", 1, "assigned", "address", "shop", "10", null)
     private class Backend: RiderBackend {
         override var hasSession = true
-        override var available = true
+        override val businessId: String? = "qa-business"
         var snapshot = Board(emptyList(), emptyList(), 3)
         var offline = false
         var rejectLogin = false
         var calls = 0
         var gate: CompletableDeferred<Unit>? = null
         var response = JSONObject().put("ok", true)
-        override fun available(value: Boolean) { available = value }
         override suspend fun login(email: String, password: String) {
             if (rejectLogin) { hasSession = false; throw ApiFailure(400, "invalid_credentials") }
             hasSession = true
@@ -27,7 +26,14 @@ class RepositoryTest {
         override suspend fun refresh(force: Boolean) { if (offline) throw IOException() }
         override suspend fun board(): Board { if (offline) throw IOException(); return snapshot }
         override suspend fun rpc(name: String, params: JSONObject): JSONObject {
-            calls++; gate?.await(); if (offline) throw IOException(); return response
+            if (name == "heartbeat_rider_availability") return JSONObject().put("ok", true)
+            calls++; gate?.await(); if (offline) throw IOException()
+            if (name == "set_rider_availability") {
+                val value = params.getBoolean("p_available")
+                snapshot = snapshot.copy(available = value, availabilityVersion = snapshot.availabilityVersion + 1)
+                return JSONObject().put("ok", true)
+            }
+            return response
         }
         override suspend fun logout() { hasSession = false }
     }
@@ -43,12 +49,12 @@ class RepositoryTest {
         repo.offer(offer, true); assertEquals(0, api.calls)
     }
     @Test fun fullCapacityCannotAccept() = runTest {
-        val api = Backend().apply { snapshot = Board(List(3) { order }, listOf(offer), 3) }
+        val api = Backend().apply { snapshot = Board(List(3) { order }, listOf(offer), 3, true, 1) }
         val repo = RiderRepository(api); repo.refresh(); repo.offer(offer, true)
         assertEquals(0, api.calls)
     }
     @Test fun duplicateTapsProduceOneInFlightCommand() = runTest {
-        val api = Backend().apply { gate = CompletableDeferred() }
+        val api = Backend().apply { gate = CompletableDeferred(); snapshot = Board(emptyList(), listOf(offer), 3, true, 1) }
         val repo = RiderRepository(api); repo.refresh()
         val first = launch(start = CoroutineStart.UNDISPATCHED) { repo.offer(offer, true) }
         repo.offer(offer, true); assertEquals(1, api.calls); assertTrue(repo.state.value.busy)
@@ -80,5 +86,13 @@ class RepositoryTest {
     @Test fun terminalStateCannotBeAdvanced() = runTest {
         val api = Backend(); val repo = RiderRepository(api); repo.refresh()
         repo.advance(order.copy(status = "delivered")); assertEquals(0, api.calls)
+    }
+    @Test fun availabilityComesFromSharedBoardAndPersistsAcrossRepositories() = runTest {
+        val api = Backend();val first = RiderRepository(api);val second = RiderRepository(api)
+        first.refresh();second.refresh();assertFalse(second.state.value.available)
+        first.availability(true);second.refresh()
+        assertTrue(first.state.value.available);assertTrue(second.state.value.available)
+        second.availability(false);first.refresh()
+        assertFalse(first.state.value.available);assertFalse(second.state.value.available)
     }
 }

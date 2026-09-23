@@ -127,6 +127,8 @@ let paymentsActivation = null;
 let sellerConnection = null;
 let payments = [];
 let paymentsStatus = { phase: 'idle', message: '' };
+let manualPayments = [];
+let manualPaymentsStatus = { phase: 'idle', message: '' };
 let paymentsLoadStarted = false;
 let refundTarget = '';
 let operationsConfig = null;
@@ -175,6 +177,8 @@ export function configureBusinessOperations(next = {}) {
   sellerConnection = null;
   payments = [];
   paymentsStatus = { phase: 'idle', message: '' };
+  manualPayments = [];
+  manualPaymentsStatus = { phase: 'idle', message: '' };
   paymentsLoadStarted = false;
   refundTarget = '';
   arcaActivation = null;
@@ -214,7 +218,8 @@ export function renderBusinessOperations(view) {
       config: operationsConfig, status: operationsConfigStatus, busy, draft: operationsConfigDraft,
     }),
     payments: () => renderPaymentsSurface({
-      payments, status: paymentsStatus, role: context.role, activation: paymentsActivation, connection: sellerConnection, busy, refundTarget,
+      payments, status: paymentsStatus, manualPayments, manualStatus: manualPaymentsStatus,
+      role: context.role, activation: paymentsActivation, connection: sellerConnection, busy, refundTarget,
     }),
     'payments-setup': () => renderPaymentsSetupSurface({ activation: paymentsActivation, connection: sellerConnection, role: context.role, busy }),
     'fiscal-setup': () => renderFiscalSetupSurface({
@@ -475,6 +480,10 @@ export async function handleBusinessOperationsAction(target) {
   if (target.closest('[data-product-publish]')) return refreshProductReadiness();
 
   if (target.closest('[data-payments-refresh]')) return refreshPaymentsAction();
+  const manualConfirm = target.closest('[data-manual-payment-confirm]');
+  if (manualConfirm) return confirmManualPayment(manualConfirm);
+  const manualReverse = target.closest('[data-manual-payment-reverse]');
+  if (manualReverse) return reverseManualPayment(manualReverse);
   const mpAction = target.closest('[data-mp-connection-action]');
   if (mpAction) return runMercadoPagoConnection(mpAction.dataset.mpConnectionAction);
   if (target.closest('[data-mercadopago-status-refresh]')) return refreshPaymentsAction();
@@ -669,6 +678,8 @@ export function resetBusinessOperationsForTests() {
   paymentsActivation = null;
   payments = [];
   paymentsStatus = { phase: 'idle', message: '' };
+  manualPayments = [];
+  manualPaymentsStatus = { phase: 'idle', message: '' };
   paymentsLoadStarted = false;
   refundTarget = '';
   resetOperationsConfigState();
@@ -2100,6 +2111,7 @@ function bytesToBase64(bytes) {
 
 async function refreshPayments() {
   paymentsStatus = { phase: 'loading', message: '' };
+  void refreshManualPayments();
   context.onChange();
   const [list, activation, connectionResult] = await Promise.all([context.listPayments(), context.getPaymentsActivation(), context.mercadoPagoConnectionAction('status')]);
   sellerConnection = connectionResult?.ok ? connectionResult.data.connection : { status: 'unavailable' };
@@ -2110,6 +2122,76 @@ async function refreshPayments() {
     : { phase: 'error', message: humanizeFailure(list?.message, 'No pudimos leer los pagos ahora.') };
   context.onChange();
   return list;
+}
+
+async function refreshManualPayments() {
+  manualPaymentsStatus = { phase: 'loading', message: '' };
+  context.onChange();
+  const listed = await context.listManualPayments();
+  manualPayments = listed?.ok && Array.isArray(listed.data) ? listed.data : [];
+  manualPaymentsStatus = listed?.ok
+    ? { phase: 'ready', message: '' }
+    : { phase: 'error', message: listed?.message || 'No pudimos leer los cobros manuales.' };
+  context.onChange();
+  return listed;
+}
+
+async function confirmManualPayment(button) {
+  const guard = requireCapability('payments.view');
+  if (!guard.ok) return guard.result;
+  if (busy) return result(false, 'Ya hay una operación en curso.');
+  const order = manualPayments.find((item) => item.id === button.dataset.manualPaymentConfirm);
+  const method = button.dataset.manualPaymentMethod;
+  if (!order || order.manual_payment_status !== 'pending'
+      || !['cash', 'transfer'].includes(method)
+      || (order.payment_method === 'cash' && method !== 'cash')) {
+    return result(false, 'Actualizá el pedido antes de registrar el cobro.');
+  }
+  const prompt = `¿Recibiste ${order.total} ${order.currency_code || 'ARS'} del pedido ${order.public_code}? Registrarás ${method === 'cash' ? 'efectivo' : 'transferencia'} como pagado.`;
+  if (globalThis.confirm?.(prompt) !== true) return result(false, 'Sin cambios.');
+  busy = true;
+  context.onChange();
+  try {
+    const response = await context.confirmManualPayment({
+      orderId: order.id, expectedRevision: order.revision, actualMethod: method,
+      idempotencyKey: operationKey('manual-confirm', order.id, order.revision, method),
+    });
+    await refreshManualPayments();
+    feedback = response?.ok ? 'Cobro manual registrado por el servidor.'
+      : humanizeFailure(response?.message, 'El cobro no fue confirmado.');
+    return result(Boolean(response?.ok), feedback);
+  } finally {
+    busy = false;
+    context.onChange();
+  }
+}
+
+async function reverseManualPayment(button) {
+  const guard = requireCapability('payments.refund');
+  if (!guard.ok) return guard.result;
+  if (busy) return result(false, 'Ya hay una operación en curso.');
+  const order = manualPayments.find((item) => item.id === button.dataset.manualPaymentReverse);
+  if (!order || order.manual_payment_status !== 'confirmed')
+    return result(false, 'Actualizá el pedido antes de registrar una devolución.');
+  const reason = String(globalThis.prompt?.('Motivo de la devolución manual ya realizada:', '') || '').trim();
+  if (reason.length < 8 || reason.length > 200) return result(false, 'Ingresá un motivo de 8 a 200 caracteres.');
+  if (globalThis.confirm?.(`¿Ya devolviste ${order.total} ${order.currency_code || 'ARS'} del pedido ${order.public_code}?`) !== true)
+    return result(false, 'Sin cambios.');
+  busy = true;
+  context.onChange();
+  try {
+    const response = await context.reverseManualPayment({
+      orderId: order.id, expectedRevision: order.revision, reason,
+      idempotencyKey: operationKey('manual-reverse', order.id, order.revision, reason),
+    });
+    await refreshManualPayments();
+    feedback = response?.ok ? 'Devolución manual registrada por el servidor.'
+      : humanizeFailure(response?.message, 'La devolución no fue confirmada.');
+    return result(Boolean(response?.ok), feedback);
+  } finally {
+    busy = false;
+    context.onChange();
+  }
 }
 
 async function refreshPaymentsAction() {
@@ -2606,6 +2688,9 @@ function defaultContext() {
     setDeliveryPricing: async () => ({ ok: false, message: 'La configuración operativa no está disponible.' }),
     setServiceEnforcement: async () => ({ ok: false, message: 'La configuración operativa no está disponible.' }),
     listPayments: async () => ({ ok: false, message: 'Los pagos no están disponibles.' }),
+    listManualPayments: async () => ({ ok: false, message: 'Los cobros manuales no están disponibles.' }),
+    confirmManualPayment: async () => ({ ok: false }),
+    reverseManualPayment: async () => ({ ok: false }),
     mercadoPagoConnectionAction: async () => ({ ok: false }),
     getPaymentsActivation: async () => ({ ok: false, message: 'El estado de cobros no está disponible.' }),
     configurePaymentSettings: async () => ({ ok: false, message: 'La configuración de cobros no está disponible.' }),

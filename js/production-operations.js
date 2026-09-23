@@ -12,6 +12,7 @@ import { createSupabasePackingRepository } from './repositories/supabase-packing
 import { createSupabaseOperationsRepository } from './repositories/supabase-operations-repository.js';
 import { createSupabaseBusinessRepository } from './repositories/supabase-business-repository.js';
 import { createSupabasePaymentsRepository } from './repositories/supabase-payments-repository.js';
+import { createSupabaseManualPaymentsRepository } from './repositories/supabase-manual-payments-repository.js';
 import { getSupabaseClient } from './services/supabase-client.js';
 import {
   deliveryDestinationSearchUrl,
@@ -160,6 +161,7 @@ let packingRepository = null;
 let operationsRepository = null;
 let businessConfigRepository = null;
 let paymentsRepository = null;
+let manualPaymentsRepository = null;
 let businessPayments = [];
 let businessPaymentsStatus = { phase: 'idle', message: '' };
 let paymentRefreshTimer = null;
@@ -929,6 +931,8 @@ export async function handleProductionOperationsAction(target) {
         ok: false,
         message: isMercadoPagoOrder(order)
           ? 'Este pedido ya fue cobrado por Mercado Pago. Abrí Pagos y gestioná el reembolso antes de cancelar.'
+          : order?.manualPaymentStatus === 'confirmed'
+            ? 'Este pedido tiene un cobro manual confirmado. Registrá primero la devolución realizada en Pagos.'
           : 'Este pedido ya no admite cancelación.',
       };
     }
@@ -1163,6 +1167,7 @@ export function canCancelProductionBusinessOrder(order, payments = []) {
   return Boolean(
     order
     && !TERMINAL_STATUSES.has(workflowStatus(order))
+    && order.manualPaymentStatus !== 'confirmed'
     && (!isMercadoPagoOrder(order) || isProductionOrderPaymentReversed(order, payments))
   );
 }
@@ -1446,6 +1451,7 @@ async function configureBusinessRuntime(result) {
   const client = getSupabaseClient(runtime.repository);
   inventoryRepository = createSupabaseInventoryRepository({ client, businessId });
   paymentsRepository = createSupabasePaymentsRepository({ client, businessId });
+  manualPaymentsRepository = createSupabaseManualPaymentsRepository({ client, businessId });
   posRepository = createSupabasePosRepository({ client, businessId });
   fiscalRepository = createSupabaseFiscalRepository({ client, businessId });
   packingRepository = createSupabasePackingRepository({ client });
@@ -1531,6 +1537,9 @@ async function configureBusinessRuntime(result) {
         ? { ok: true, data: response.payments || [] }
         : { ok: false, message: response?.message || '' };
     },
+    listManualPayments: () => manualPaymentsRepository.list(),
+    confirmManualPayment: (input) => manualPaymentsRepository.confirm(input),
+    reverseManualPayment: (input) => manualPaymentsRepository.reverse(input),
     mercadoPagoConnectionAction: (action, confirmation) => paymentsRepository.connectionAction(action, confirmation),
     getPaymentsActivation: () => paymentsRepository.getActivationStatus(),
     configurePaymentSettings: (settings) => paymentsRepository.configureSettings(settings),
@@ -1725,7 +1734,8 @@ async function refreshBusinessPayments() {
 function startPaymentRefresh() {
   stopPaymentRefresh();
   paymentRefreshTimer = globalThis.setInterval?.(() => {
-    refreshBusinessPayments().then(notify).catch(() => {});
+    Promise.all([refreshBusinessPayments(), refreshActiveBusinessRiders()])
+      .then(notify).catch(() => {});
   }, 15_000) || null;
 }
 
@@ -2618,6 +2628,19 @@ function businessWorkspaceParts() {
     <nav class="production-operations-shortcuts" data-panel-region="shortcuts" aria-label="Atajos del día">${shortcuts}</nav>`,
     },
     ...(esBandeja ? [{
+      clave: 'rider-presence',
+      markup: `<details class="production-rider-presence" data-panel-region="rider-presence"
+        ${globalThis.document?.querySelector?.('[data-panel-region="rider-presence"]')?.open ? 'open' : ''}>
+        <summary>Repartidores · ${activeBusinessRiders.filter(rider => rider.available === true).length} disponibles</summary>
+        <ul>${activeBusinessRiders.map(rider => `<li data-rider-presence="${escapeAttribute(rider.id)}">
+          ${escapeHtml(rider.displayName)} · ${escapeHtml(rider.available === true ? 'Disponible'
+    : rider.available === false ? 'No disponible' : 'Sin verificar')}
+          ${Number.isFinite(rider.activeOrders) && Number.isFinite(rider.maxActiveOrders)
+    ? ` · ${rider.activeOrders}/${rider.maxActiveOrders} entregas` : ''}
+        </li>`).join('') || '<li>No hay riders activos.</li>'}</ul>
+      </details>`,
+    }] : []),
+    ...(esBandeja ? [{
       /*
        * El anuncio para lector de pantalla es ESTA línea y no la lista.
        *
@@ -2958,13 +2981,15 @@ function businessIntakeStatusMarkup() {
 
 /** «Marco · 2/3». La capacidad se dice al lado del nombre, donde se elige. */
 function riderOptionLabel(rider) {
+  const state = rider?.available === false ? ' (no disponible)'
+    : rider?.availabilityKnown === false ? ' (disponibilidad sin verificar)' : '';
   if (!Number.isFinite(rider?.activeOrders) || !Number.isFinite(rider?.maxActiveOrders)) {
-    return rider?.displayName || 'Rider';
+    return `${rider?.displayName || 'Rider'}${state}`;
   }
   const capacity = `${rider.activeOrders}/${rider.maxActiveOrders}`;
   return rider.atCapacity
-    ? `${rider.displayName} · ${capacity} (sin cupo)`
-    : `${rider.displayName} · ${capacity}`;
+    ? `${rider.displayName} · ${capacity} (sin cupo)${state}`
+    : `${rider.displayName} · ${capacity}${state}`;
 }
 
 function riderAssignmentLabel(current) {
@@ -3316,7 +3341,7 @@ function businessOrderMarkup(order, attention = []) {
     <option
       value="${escapeAttribute(rider.id)}"
       ${rider.id === order.assignedRiderId ? 'selected' : ''}
-      ${rider.atCapacity ? 'disabled' : ''}
+      ${rider.atCapacity || rider.available !== true ? 'disabled' : ''}
     >${escapeHtml(riderOptionLabel(rider))}</option>
   `).join('');
   const contacto = orderContactLinks(order);
@@ -3386,6 +3411,14 @@ function businessOrderMarkup(order, attention = []) {
         <span class="production-order-pay">${escapeHtml(order.paymentMethod || 'Pago no informado')}</span>
         ${descuento}
       </p>
+      ${['cash', 'coordinate'].includes(order.paymentMethodCode) ? `
+      <div class="production-order-manual-payment" data-manual-payment-status="${escapeAttribute(order.manualPaymentStatus || 'unverified')}">
+        <strong>${escapeHtml(({
+          pending: 'Cobro pendiente', confirmed: 'Cobro registrado', reversed: 'Devolución registrada',
+          unverified: 'Cobro histórico sin conciliar',
+        })[order.manualPaymentStatus] || 'Cobro sin verificar')}</strong>
+        <button class="ghost-button compact" type="button" data-business-ops-view="payments">Ver cobros</button>
+      </div>` : ''}
       <p class="production-order-address" data-mode="${esRetiro ? 'pickup' : 'delivery'}">${escapeHtml(domicilio)}</p>
       ${hasCustomerNotes(order)
         ? `<p class="production-order-notes"><strong>Observaciones:</strong> ${escapeHtml(order.notes)}</p>`

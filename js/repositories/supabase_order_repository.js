@@ -1716,9 +1716,15 @@ export function createSupabaseOrderRepository({
           'No pudimos cargar los riders activos del negocio.',
         );
       }
+      const presence = await client.rpc('list_business_rider_availability', { p_business_id: businessId });
+      const known = !presence.error && Array.isArray(presence.data?.riders);
+      const byId = new Map((known ? presence.data.riders : [])
+        .map(row => [String(row.rider_user_id || ''), row.available === true]));
       const riders = (Array.isArray(data) ? data : [])
         .map(normalizeActiveRider)
-        .filter(Boolean);
+        .filter(Boolean)
+        .map(rider => ({ ...rider, available: known ? byId.get(rider.id) === true : null,
+          availabilityKnown: known }));
       return repositoryResult(true, { riders });
     },
     // Contrato canónico del rider: claim_delivery_order (idempotente, con
@@ -2904,7 +2910,14 @@ function rowToDemoOrder(row = {}) {
     addressDetails,
     deliveryMode,
     paymentMethodCode: sanitizeText(row.payment_method, { fallback: 'coordinate', maxLength: 40 }),
-    paymentMethod: paymentLabel(row.payment_method || 'coordinate'),
+    paymentMethod: row.payment_method === 'cash'
+      ? (deliveryMode === 'pickup' ? 'Efectivo al retirar' : 'Efectivo al recibir')
+      : paymentLabel(row.payment_method || 'coordinate'),
+    manualPaymentStatus: ['cash', 'coordinate'].includes(row.payment_method)
+      ? sanitizeText(row.manual_payment_status, { fallback: 'unverified', maxLength: 24 })
+      : 'not_applicable',
+    manualPaymentMethod: sanitizeText(row.manual_payment_method, { maxLength: 24 }),
+    authoritativeTotal: normalizeMoneyValue(row.total, 0),
     notes: sanitizeNotes(row.customer_notes || row.notes),
     createdAt,
     updatedAt: normalizeIso(row.updated_at || row.created_at),

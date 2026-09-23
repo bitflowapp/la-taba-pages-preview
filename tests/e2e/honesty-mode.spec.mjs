@@ -166,7 +166,7 @@ test('checkout del preview valida contrato de Perfil y mantiene copy comercial',
   const paymentMethod = page.getByLabel('Forma de pago');
   await expect(paymentMethod).toBeVisible();
   await expect(paymentMethod.locator('option')).toHaveCount(2);
-  await expect(paymentMethod.locator('option[value="coordinate"]')).toHaveText('A coordinar con el local');
+  await expect(paymentMethod.locator('option[value="coordinate"]')).toHaveText('A coordinar con el local antes de preparar');
   await paymentMethod.selectOption('cash');
   await expect(paymentMethod).toHaveValue('cash');
   await page.locator('[data-checkout-submit]').click();

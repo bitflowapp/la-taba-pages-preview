@@ -624,6 +624,8 @@ test('lista un directorio minimo de riders activos para asignacion de negocio', 
       maxActiveOrders: null,
       pendingOffers: 0,
       atCapacity: false,
+      available: true,
+      availabilityKnown: true,
     },
     {
       id: SECOND_RIDER_ID,
@@ -632,6 +634,8 @@ test('lista un directorio minimo de riders activos para asignacion de negocio', 
       maxActiveOrders: null,
       pendingOffers: 0,
       atCapacity: false,
+      available: false,
+      availabilityKnown: true,
     },
   ]);
   assert.deepEqual(
@@ -2805,6 +2809,12 @@ function createSupabaseClientMock({
           error: null,
           status: 200,
         };
+      }
+      if (name === 'list_business_rider_availability') {
+        return { data: { required: true, riders: [
+          { rider_user_id: RIDER_ID, available: true },
+          { rider_user_id: SECOND_RIDER_ID, available: false },
+        ] }, error: null, status: 200 };
       }
       // ── Contrato de oferta multi-pedido ──────────────────────────────────
       // Réplica del servidor en lo que el Panel puede observar: una oferta viva

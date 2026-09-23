@@ -145,7 +145,7 @@ function renderAlertCard(alert, { busy } = {}) {
   </article>`;
 }
 
-export function renderPaymentsSurface({ payments, status, role, activation, connection, busy, refundTarget } = {}) {
+export function renderPaymentsSurface({ payments, status, manualPayments, manualStatus, role, activation, connection, busy, refundTarget } = {}) {
   if (!can(role, 'payments.view')) return deniedPanel('Pagos', 'Tu rol no incluye la consulta de pagos.');
   const elevated = isElevated(role);
   const rows = Array.isArray(payments) ? payments : [];
@@ -158,12 +158,43 @@ export function renderPaymentsSurface({ payments, status, role, activation, conn
         : '<p class="form-hint">Todavía no hay pagos para mostrar hoy.</p>';
 
   return panel('Pagos', 'Lo que entró hoy y qué hacer con cada caso.', `
+    ${renderManualPaymentsSurface(manualPayments, manualStatus, { elevated, busy })}
     ${renderMercadoPagoConnection(connection, busy, elevated)}
     <div class="operation-center-toolbar">
       <span class="form-hint">${rows.length} pago(s) listados</span>
       <button class="ghost-button compact" type="button" data-payments-refresh ${busy ? 'disabled' : ''}>Actualizar</button>
     </div>
     <div class="production-payment-list" aria-live="polite">${body}</div>`);
+}
+
+function renderManualPaymentsSurface(payments, status, { elevated, busy }) {
+  const rows = Array.isArray(payments) ? payments : [];
+  const body = status?.phase === 'error'
+    ? `<p class="production-intake-error">${escapeHtml(status.message || 'No se pudo leer el estado de cobros manuales.')}</p>`
+    : rows.length ? rows.map((order) => {
+      const id = escapeHtml(String(order.id || ''));
+      const payment = String(order.manual_payment_status || 'unverified');
+      const method = String(order.payment_method || '');
+      const label = ({ pending: 'Pendiente', confirmed: 'Pagado', reversed: 'Devuelto',
+        unverified: 'Histórico sin conciliar' })[payment] || 'Sin verificar';
+      const actions = payment === 'pending' ? `<div class="button-row">
+        <button class="secondary-button compact" type="button" data-manual-payment-confirm="${id}" data-manual-payment-method="cash" ${busy ? 'disabled' : ''}>Registrar efectivo recibido</button>
+        ${method === 'coordinate' ? `<button class="ghost-button compact" type="button" data-manual-payment-confirm="${id}" data-manual-payment-method="transfer" ${busy ? 'disabled' : ''}>Registrar transferencia recibida</button>` : ''}
+      </div>` : payment === 'confirmed' && elevated
+        ? `<button class="ghost-button compact" type="button" data-manual-payment-reverse="${id}" ${busy ? 'disabled' : ''}>Registrar devolución realizada</button>`
+        : '';
+      return `<article class="production-payment-card" data-manual-payment-card="${id}">
+        <div class="production-order-head"><strong>${escapeHtml(String(order.public_code || 'Pedido'))}</strong>
+          <span class="status-pill" data-manual-payment-status="${escapeHtml(payment)}">${label}</span></div>
+        <p>${escapeHtml(formatMoney(order.total, order.currency_code))} · ${payment === 'confirmed' || payment === 'reversed'
+          ? `Registrado como ${order.manual_payment_method === 'transfer' ? 'transferencia' : 'efectivo'}`
+          : method === 'cash' ? 'Efectivo al retirar/recibir' : 'Pago acordado con el local'}</p>
+        <p class="form-hint">Pedido: ${escapeHtml(String(order.status || ''))}</p>${actions}
+      </article>`;
+    }).join('') : '<p class="form-hint">Todavía no hay pedidos con cobro manual para mostrar.</p>';
+  return `<section class="production-payments-section" aria-label="Cobros manuales">
+    <h3>Cobros manuales</h3><p class="form-hint">Confirmá sólo dinero recibido. Las devoluciones se registran después de entregar el dinero.</p>
+    <div class="production-payment-list">${body}</div></section>`;
 }
 
 function renderPaymentCard(payment, { elevated, busy, refundTarget } = {}) {
@@ -219,9 +250,10 @@ function renderMercadoPagoConnection(connection, busy, elevated) {
   const status = connection?.status;
   const connected = status === 'connected';
   const reauthorize = status === 'requires_reauthorization';
+  const tone = busy ? 'attention' : connected ? 'calm' : status === 'unavailable' ? 'critical' : 'attention';
   const message = busy ? 'Conectando Mercado Pago...' : connected ? '✓ Mercado Pago conectado correctamente' : reauthorize ? 'Necesitamos volver a conectar Mercado Pago.' : status === 'unavailable' ? 'No pudimos verificar la conexión. Intentá nuevamente.' : 'No conectado';
   const button = (action, label) => '<button class="primary-button compact" type="button" data-mp-connection-action="' + action + '" ' + (busy ? 'disabled' : '') + '>' + label + '</button>';
-  return '<section aria-label="Mercado Pago" class="operation-summary" aria-busy="' + Boolean(busy) + '"><h3>Mercado Pago</h3><p role="status" aria-live="polite">' + message + '</p>'
+  return '<section aria-label="Mercado Pago" class="operation-summary operation-summary--mercadopago tone-' + tone + '" aria-busy="' + Boolean(busy) + '"><h3>Mercado Pago</h3><p role="status" aria-live="polite">' + message + '</p>'
     + (!connected ? '<p>Conectá tu cuenta para recibir pagos online.</p>' : '')
     + (connected && connection.seller_id ? '<p>Cuenta: ' + escapeHtml(connection.seller_id) + '</p>' : '')
     + (elevated ? '<div class="button-row">' + (connected ? button('verify','Verificar conexión') + button('disconnect','Desconectar') : button('connect',reauthorize ? 'Reconectar' : 'Conectar Mercado Pago')) + '</div>' : '')

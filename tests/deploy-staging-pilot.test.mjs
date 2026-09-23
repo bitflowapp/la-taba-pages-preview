@@ -4,6 +4,7 @@ import test from 'node:test';
 
 const workflow = readFileSync(new URL('../.github/workflows/deploy-staging-pilot.yml', import.meta.url), 'utf8');
 const riderCi = readFileSync(new URL('../.github/workflows/rider-android-ci.yml', import.meta.url), 'utf8');
+const webCi = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
 
 test('Staging deploy stays disarmed without exact SHA and project variables', () => {
   assert.match(workflow, /vars\.STAGING_DEPLOY_SHA == github\.sha/);
@@ -27,4 +28,10 @@ test('Rider CI runs for every release push so exact-SHA deployment gate can pass
   const pushTrigger = riderCi.split('  pull_request:')[0];
   assert.match(pushTrigger, /- 'release\/\*\*'/);
   assert.doesNotMatch(pushTrigger, /\bpaths:/);
+});
+
+test('Staging setup-node pin resolves to the same verified SHA as canonical CI', () => {
+  const pin = webCi.match(/actions\/setup-node@([a-f0-9]{40})/)?.[1];
+  assert.ok(pin);
+  assert.ok(workflow.includes(`actions/setup-node@${pin}`));
 });

@@ -15,8 +15,20 @@ const argIndex = process.argv.indexOf('--commit');
 const commit = argIndex < 0 ? process.env.GITHUB_SHA : process.argv[argIndex + 1];
 if (!/^[0-9a-f]{40}$/.test(commit || '')) throw new Error('EXACT_COMMIT_REQUIRED');
 
-const published = await fetch(`${STAGING_ORIGIN}/runtime-config.js`, { cache: 'no-store' });
-if (!published.ok) throw new Error(`STAGING_RUNTIME_UNAVAILABLE:${published.status}`);
+let published;
+for (let attempt = 1; attempt <= 3; attempt += 1) {
+  try {
+    const response = await fetch(`${STAGING_ORIGIN}/runtime-config.js`, {
+      cache: 'no-store', signal: AbortSignal.timeout(15_000),
+    });
+    if (!response.ok) throw new Error(`HTTP_${response.status}`);
+    published = response;
+    break;
+  } catch {
+    if (attempt === 3) throw new Error('STAGING_RUNTIME_UNAVAILABLE_AFTER_THREE_ATTEMPTS');
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
+}
 const sandbox = { globalThis: {} };
 vm.runInNewContext(await published.text(), sandbox, { timeout: 1000 });
 const repository = sandbox.globalThis.__LA_TABA_RUNTIME_CONFIG__?.repository;

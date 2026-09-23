@@ -4,12 +4,22 @@ import org.json.JSONObject
 import java.security.MessageDigest
 
 data class Delivery(val id: String, val code: String, val revision: Long, val status: String,
-    val address: String, val pickup: String, val total: String, val location: JSONObject?) {
+    val address: String, val pickup: String, val total: String, val location: JSONObject?,
+    val pickupLocation: JSONObject? = null) {
     val publishable get() = status in setOf("on_the_way", "arrived")
+    fun navigationTarget(): String? {
+        val point = if (status == "assigned") pickupLocation else location
+        val latitude = point?.optDouble("latitude", Double.NaN) ?: Double.NaN
+        val longitude = point?.optDouble("longitude", Double.NaN) ?: Double.NaN
+        if (latitude.isFinite() && latitude in -90.0..90.0 && longitude.isFinite() && longitude in -180.0..180.0)
+            return "$latitude,$longitude"
+        return (if (status == "assigned") pickup else address).takeIf { it.isNotBlank() }
+    }
     companion object {
         fun from(j: JSONObject) = Delivery(j.getString("id"), j.optString("public_code"), j.getLong("revision"),
             j.getString("status"), j.optString("customer_street_address", j.optString("address_label")),
-            j.optString("pickup_summary"), j.optString("total"), j.optJSONObject("customer_location"))
+            j.optString("pickup_summary"), j.optString("total"), j.optJSONObject("customer_location"),
+            j.optJSONObject("business_location"))
     }
 }
 data class Offer(val id: String, val code: String, val version: Long, val zone: String, val pickup: String) {

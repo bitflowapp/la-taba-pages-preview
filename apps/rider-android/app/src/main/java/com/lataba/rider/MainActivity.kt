@@ -94,10 +94,12 @@ class MainActivity: ComponentActivity() {
                         else {
                             Text(order.code, style = MaterialTheme.typography.titleLarge)
                             Text("Estado: ${order.status}"); Text("Retiro: ${order.pickup}"); Text("Destino: ${order.address}"); Text("Total: ${order.total}")
+                            val navigationTarget = order.navigationTarget()
                             TextButton(onClick = {
-                                val target = if (order.status == "assigned") order.pickup else order.address
-                                runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=${Uri.encode(target)}"))) }
-                            }) { Text("Abrir navegación") }
+                                navigationTarget?.let { target ->
+                                    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=${Uri.encode(target)}"))) }
+                                }
+                            }, enabled = navigationTarget != null) { Text("Abrir navegación") }
                             if (order.status == "arrived") OutlinedTextField(code, { code = it.filter(Char::isDigit).take(RiderCommands.CODE_LENGTH) }, label = { Text("Código del cliente") }, modifier = Modifier.testTag("delivery-code"), singleLine = true)
                             val action = RiderCommands.next(order.status)
                             if (action != null) Button(onClick = { vm.advance(order, code); code = "" }, enabled = !state.busy && state.online && (order.status != "arrived" || RiderCommands.validCode(code)), modifier = Modifier.testTag("advance")) {

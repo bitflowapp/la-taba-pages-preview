@@ -46,6 +46,22 @@ class ContractTest {
         val offer = Offer.from(JSONObject("""{"offer_id":"o","public_code":"QA","version":2,"delivery_summary":"zona"}"""))
         assertEquals("zona", offer.zone); assertEquals(2L, offer.version)
     }
+    @Test fun navigationUsesConfirmedCoordinatesBeforeAddressSearch() {
+        val assigned = order().put("pickup_summary", "Local")
+            .put("business_location", JSONObject().put("latitude", -38.9460616).put("longitude", -68.0533209))
+            .put("customer_street_address", "Calle destino")
+            .put("customer_location", JSONObject().put("latitude", -38.945584).put("longitude", -68.040579))
+        assertEquals("-38.9460616,-68.0533209", Delivery.from(assigned).navigationTarget())
+        assigned.put("status", "on_the_way")
+        assertEquals("-38.945584,-68.040579", Delivery.from(assigned).navigationTarget())
+    }
+    @Test fun navigationFallsBackOnlyWhenCoordinateIsAbsentOrInvalid() {
+        val delivery = order("on_the_way").put("customer_street_address", "Destino validado")
+            .put("customer_location", JSONObject().put("latitude", 900).put("longitude", -68.0))
+        assertEquals("Destino validado", Delivery.from(delivery).navigationTarget())
+        delivery.put("customer_street_address", "")
+        assertNull(Delivery.from(delivery).navigationTarget())
+    }
     @Test fun transitionContract() {
         assertEquals("mark_delivery_picked_up", RiderCommands.next("assigned"))
         assertEquals("start_rider_delivery", RiderCommands.next("picked_up"))

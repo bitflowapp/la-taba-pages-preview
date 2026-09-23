@@ -11,8 +11,9 @@ una venta real ni acredita efectivo.
   <https://taba2-staging.pages.dev/#business>.
 - Backend Staging: `ucbtjcurawxjwjdvvcvj`; Producción: `wwcpogltfgzgkrlilbcd`.
 - APK QA coexistente: `com.lataba.rider.qa`. APK piloto independiente:
-  `com.lataba.rider.pilot`, salida de `build-rider-pilot.mjs` firmada con clave
-  exclusiva del piloto. No actualiza la v146 histórica.
+  `com.lataba.rider.pilot` vCode 2 / `0.1.1-canonical-pilot`, salida de
+  `build-rider-pilot.mjs` firmada con clave exclusiva del piloto. La vCode 1
+  está conservada para rollback. No actualiza la v146 histórica.
 - Mercado Pago WCS-51579: pendiente de soporte. No sustituir Checkout Pro por
   `/v1/card_tokens` o `/v1/payments`.
 - Cobro alternativo: `cash` o `coordinate` en pedido, estado manual `pending` →
@@ -107,3 +108,19 @@ backend pertenecen al mismo entorno. No copiar secretos entre proyectos.
 
 Un README no es el ensayo: registrar deployment restaurado, consulta de pedido
 QA después de volver, estado de presencia, APK instalada y hash de runtime.
+
+### Ensayos parciales del 2026-09-23
+
+- La configuración de disponibilidad Rider del negocio QA se desactivó y
+  restauró por RPC, sin afectar otros negocios; el estado volvió a `true`.
+- La base pasó el restore aislado de CI y la devolución manual de inventario QA
+  dejó el stock exactamente en su valor anterior tras un pedido cancelado.
+- En Moto G15 se instaló `com.lataba.rider.pilot` vCode 2 con la misma firma,
+  se desinstaló **sólo esa variante** y se reinstaló el APK firmado vCode 1
+  desde la copia local verificada. La aplicación arrancó y la v146 histórica
+  `com.lataba.rider` conservó su versión. La desinstalación borra la sesión
+  local de la variante piloto; el pedido y la disponibilidad viven en Staging.
+- El rollback web de Cloudflare **no está ensayado**: el candidato aún no se
+  publicó en el proyecto Staging. No declarar `ROLLBACK_DRILL=PASS` ni lanzar el
+  piloto hasta instalar dos deployments compatibles en ese proyecto, restaurar
+  el anterior y verificar `version.json`, pedido QA y panel en el dominio.

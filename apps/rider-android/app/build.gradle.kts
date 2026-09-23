@@ -5,6 +5,15 @@ require(publicKey.isEmpty() || publicKey.startsWith("sb_publishable_")) { "Only 
 val pilotStore = providers.environmentVariable("RIDER_PILOT_KEYSTORE_PATH").orNull
 val pilotPassword = providers.environmentVariable("RIDER_PILOT_SIGNING_PASS").orNull
 require((pilotStore == null) == (pilotPassword == null)) { "Pilot signer needs both path and password" }
+val versionCodeOverride = providers.gradleProperty("riderPilotVersionCode").orNull
+val pilotVersionCode = versionCodeOverride?.toIntOrNull() ?: 1
+require(versionCodeOverride == null || (versionCodeOverride.toIntOrNull() != null && pilotVersionCode in 1..99999)) {
+    "riderPilotVersionCode must be an integer between 1 and 99999"
+}
+val pilotVersionName = providers.gradleProperty("riderPilotVersionName").orNull ?: "0.1.0-canonical"
+require(pilotVersionName.matches(Regex("[0-9]+\\.[0-9]+\\.[0-9]+-canonical"))) {
+    "riderPilotVersionName must be a numeric canonical version"
+}
 android {
     namespace = "com.lataba.rider"
     compileSdk = 35
@@ -12,8 +21,8 @@ android {
         applicationId = "com.lataba.rider"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0-canonical"
+        versionCode = pilotVersionCode
+        versionName = pilotVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "SUPABASE_URL", "\"https://ucbtjcurawxjwjdvvcvj.supabase.co\"")
         buildConfigField("String", "PUBLIC_KEY", "\"$publicKey\"")

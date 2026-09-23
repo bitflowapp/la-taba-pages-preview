@@ -11,8 +11,10 @@ const admin=createClient('https://ucbtjcurawxjwjdvvcvj.supabase.co',secret,
  {auth:{persistSession:false,autoRefreshToken:false}});
 const adb=(args)=>spawnSync('adb',['-s','ZY32LHS6PS',...args],{encoding:'utf8',windowsHide:true,timeout:20000});
 const setting=name=>adb(['shell','settings','get','global',name]).stdout.trim();
+const hasInternet=()=>adb(['shell','ping','-c','1','-W','3','1.1.1.1']).status===0;
 const wifi=setting('wifi_on'),data=setting('mobile_data');
 if(!['0','1'].includes(wifi)||!['0','1'].includes(data))throw Error('DEVICE_NETWORK_BASELINE_UNKNOWN');
+if(!hasInternet())throw Error('DEVICE_INTERNET_BASELINE_REQUIRED');
 const battery=()=>Number((adb(['shell','dumpsys','battery']).stdout.match(/\blevel:\s*(\d+)/)||[])[1]);
 const batteryStart=battery();
 const exitInfo=()=>adb(['shell','dumpsys','activity','exit-info','com.lataba.rider.qa']).stdout;
@@ -23,7 +25,7 @@ const pidBefore=adb(['shell','pidof','com.lataba.rider.qa']).stdout.trim();
 const report={startedAt:new Date().toISOString(),project:'ucbtjcurawxjwjdvvcvj',device:'ZY32LHS6PS',
  stagingOnly:true,realGpsOnly:true,gpsUpdates:0,failedQueries:0,maxGpsGapSeconds:0,
  maxGpsSilenceSeconds:0,gpsLiveSamples:0,
- batteryStart,networkCut:false,networkRestored:false,screenOff:false,screenWake:false,
+ batteryStart,networkCut:false,networkRestoreRequested:false,networkRestored:false,screenOff:false,screenWake:false,
  deviceProgress:null,orderFinal:null};
 const seen=new Set();let lastGpsAt=null,start=null,cutAt=null,screenAt=null;
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -64,10 +66,11 @@ try{
    adb(['shell','svc','wifi','disable']);adb(['shell','svc','data','disable']);
    cutAt=Date.now();report.networkCut=true;
   }
-  if(cutAt&&!report.networkRestored&&Date.now()-cutAt>=90000){
+  if(cutAt&&!report.networkRestoreRequested&&Date.now()-cutAt>=90000){
    adb(['shell','svc','wifi',wifi==='1'?'enable':'disable']);
-   adb(['shell','svc','data',data==='1'?'enable':'disable']);report.networkRestored=true;
+   adb(['shell','svc','data',data==='1'?'enable':'disable']);report.networkRestoreRequested=true;
   }
+  if(report.networkRestoreRequested&&!report.networkRestored)report.networkRestored=hasInternet();
   if(elapsed>=25*60000&&!screenAt){adb(['shell','input','keyevent','26']);screenAt=Date.now();report.screenOff=true}
   if(screenAt&&!report.screenWake&&Date.now()-screenAt>=10*60000){adb(['shell','input','keyevent','224']);report.screenWake=true}
   writeFileSync('artifacts/rider-pilot-soak.json',JSON.stringify(report,null,2));
@@ -84,7 +87,8 @@ try{
  report.anr=Math.max(0,countAnr(exitsAfter)-countAnr(exitsBefore));
  report.processChanged=Boolean(pidBefore&&adb(['shell','pidof','com.lataba.rider.qa']).stdout.trim()!==pidBefore);
  report.endedAt=new Date().toISOString();
- report.networkRestored=setting('wifi_on')===wifi&&setting('mobile_data')===data;
+ report.networkSwitchesRestored=setting('wifi_on')===wifi&&setting('mobile_data')===data;
+ report.networkRestored=report.networkSwitchesRestored&&hasInternet();
  writeFileSync('artifacts/rider-pilot-soak.json',JSON.stringify(report,null,2));
 }
 const completed=report.deviceProgress?.completed===true&&report.deviceProgress.elapsed_minutes>=60;

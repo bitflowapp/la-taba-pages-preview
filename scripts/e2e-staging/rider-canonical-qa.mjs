@@ -1,7 +1,7 @@
 import {createClient} from '@supabase/supabase-js';
 import {randomBytes,randomUUID} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
-import {writeFileSync} from 'node:fs';
+import {readFileSync,writeFileSync} from 'node:fs';
 import {loadStagingKeys} from './qa-staging-keys.mjs';
 import {leerSecreto,guardarSecreto,generarContrasena} from '../e2e-production-sale/secretos-windows.mjs';
 const URL='https://ucbtjcurawxjwjdvvcvj.supabase.co';
@@ -69,9 +69,18 @@ if(mode==='prepare'||mode==='prepare-next'){
  if(leerSecreto(RUN)){
   if(mode!=='prepare-next')throw Error('QA_RUN_ALREADY_EXISTS_INSPECT_DO_NOT_DUPLICATE');
   const previous=JSON.parse(leerSecreto(RUN).secreto);
-  const terminal=await read(admin.from('orders').select('status').eq('id',previous.orderId).single());
-  if(terminal.status!=='delivered')throw Error('PREVIOUS_RUN_NOT_DELIVERED');
-  guardarSecreto(`${RUN} PREVIOUS`,'staging',JSON.stringify(previous));
+  const terminal=await read(admin.from('orders').select('status,origin,origin_reason,business_id,payment_method').eq('id',previous.orderId).single());
+  if(terminal.status!=='delivered'){
+   if(!['canceled','cancelled'].includes(terminal.status)||terminal.origin!=='qa'
+    ||terminal.origin_reason!=='rider_soak_network_failure_qa'||terminal.business_id!==BUSINESS
+    ||terminal.payment_method!=='coordinate')throw Error('PREVIOUS_RUN_NOT_SAFE_TERMINAL');
+   const returned=JSON.parse(readFileSync('artifacts/rider-pilot-soak-stock-return.json','utf8'));
+   const stock=await read(admin.from('products').select('stock').eq('id',previous.productId).single());
+   if(returned.project!=='ucbtjcurawxjwjdvvcvj'||returned.orderTerminal!=='CANCELLED'
+    ||returned.exactOnceReturn!==true||Number(stock.stock)!==Number(returned.stockBaseline))
+    throw Error('PREVIOUS_QA_STOCK_NOT_RECONCILED');
+  }
+  guardarSecreto(`${RUN} PREVIOUS ${previous.orderId}`,'staging',JSON.stringify(previous));
  }
  const address=(await read(customer.client.from('customer_addresses').select('*').is('deleted_at',null))).find(a=>a.location_confirmed_at&&a.latitude&&a.longitude);
  if(!address)throw Error('CONFIRMED_QA_ADDRESS_REQUIRED');

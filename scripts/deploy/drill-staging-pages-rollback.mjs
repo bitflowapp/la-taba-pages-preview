@@ -49,7 +49,9 @@ async function previousTarget() {
   const project = await cloudflare('');
   assert.equal(project?.name, PROJECT);
   assert.equal(project?.production_branch, 'staging');
-  const deployments = await cloudflare('/deployments?env=production&per_page=100');
+  // Cloudflare's unfiltered endpoint includes the latest production deployment.
+  // Avoid optional pagination parameters: this account rejects them with HTTP 400.
+  const deployments = await cloudflare('/deployments');
   assert.ok(Array.isArray(deployments), 'Production deployment list unavailable');
   const target = deployments.find((deployment) => (
     deployment?.environment === 'production'

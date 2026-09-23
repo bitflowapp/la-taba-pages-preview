@@ -23,7 +23,9 @@ const admin=createClient('https://ucbtjcurawxjwjdvvcvj.supabase.co',secret,
  {auth:{persistSession:false,autoRefreshToken:false}});
 const adb=(args)=>spawnSync('adb',['-s','ZY32LHS6PS',...args],{encoding:'utf8',windowsHide:true,timeout:20000});
 const setting=name=>adb(['shell','settings','get','global',name]).stdout.trim();
-const hasInternet=()=>adb(['shell','ping','-c','1','-W','3','1.1.1.1']).status===0;
+// ICMP may be filtered by the Wi-Fi network even when the app's HTTPS backend
+// is reachable. Test the actual Staging transport instead of a public ping.
+const hasInternet=()=>adb(['shell','toybox','nc','-z','-w','5','ucbtjcurawxjwjdvvcvj.supabase.co','443']).status===0;
 const wifi=setting('wifi_on'),data=setting('mobile_data');
 if(!['0','1'].includes(wifi)||!['0','1'].includes(data))throw Error('DEVICE_NETWORK_BASELINE_UNKNOWN');
 if(!hasInternet())throw Error('DEVICE_INTERNET_BASELINE_REQUIRED');

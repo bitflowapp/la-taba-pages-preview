@@ -3,8 +3,7 @@
 La fuente histórica v146 sigue sin recuperarse. La APK estable instalada es
 `com.lataba.rider` 1.0.0 (146). La implementación nueva conserva su identidad
 QA y añade `com.lataba.rider.pilot` como paquete separado. La candidata v3
-(`0.1.2-canonical-pilot`) está firmada y compilada, pero aún no certificada
-físicamente para el tramo de pantalla apagada.
+(`0.1.2-canonical-pilot`) está firmada y fue verificada en Moto G15.
 
 ## Lo que pasó
 
@@ -24,9 +23,9 @@ físicamente para el tramo de pantalla apagada.
 - Un pedido QA fue aceptado e iniciado desde Android con GPS real. Panel y
   cliente web lo vieron asignado, en camino y con marcador de Rider.
 - Soak de 60 minutos: **FAIL**. Hubo 53 recibos GPS al comienzo y luego el Moto
-  perdió la ruta de Internet. La prueba del dispositivo registró 52 minutos
-  offline; la medición de consola confirmó ausencia de ruta IPv4/IPv6 incluso
-  para una IP pública. La reconexión Wi-Fi/datos por ADB restauró los
+  perdió salida IP útil. La prueba del dispositivo registró 52 minutos
+  offline; la medición de consola devolvió `Network is unreachable` para
+  una IP pública. La reconexión Wi-Fi/datos por ADB restauró los
   interruptores originales, pero no un enlace de red. Crashes: 0; ANR: 0;
   batería 100→100 mientras cargaba, por lo que el delta no certifica consumo.
   Las órdenes del backend no se forzaron por SQL.
@@ -45,7 +44,8 @@ físicamente para el tramo de pantalla apagada.
   acumuló 6 minutos offline; el mayor intervalo entre recibos GPS fue 280 s.
   Esto **no** pasa el objetivo de 180 s. Android documenta que un foreground
   service no mantiene por sí solo la CPU despierta; la v3 incorpora un wake
-  lock parcial limitado a entregas activas. Su eficacia física sigue pendiente.
+  lock parcial limitado a entregas activas. El ensayo posterior de v3 se
+  documenta por separado; el resultado fallido de esta corrida no se reetiqueta.
 - El backend registró `mark_rider_arrived` desde la app a las 15:33:52 UTC,
   antes de que el test lo solicitara, e `identity_close_own_session` a las
   16:16:31 UTC. La prueba instrumentada no llama a logout; no atribuir esos
@@ -59,6 +59,33 @@ físicamente para el tramo de pantalla apagada.
   mediante `apply_inventory_movement` auditado; el replay dejó 36 exactamente
   una vez. El cobro manual nunca fue confirmado.
 
+## Corrección y ensayo de la variante piloto v3
+
+- `LT-0033` corrió 25 minutos en Moto G15 con GPS real, 20 de ellos con
+  pantalla apagada. Resultado **PASS**: 149 recibos GPS, intervalo máximo 60 s,
+  cero minutos offline, cero fallos de consulta, cero crash/ANR y reconexión de
+  UI sin perder la entrega. El servicio foreground sostuvo el wake lock sólo
+  durante la entrega y ambos se liberaron al terminar. Android ingresó el
+  código por UI; backend, panel y cliente mostraron el estado final. El pedido
+  se clasificó QA y se repuso el SKU a su baseline 22, sin cobro real.
+- El APK firmado **no depurable** `com.lataba.rider.pilot` vCode 3 se instaló
+  junto a la v146. Una instrumentación release con credenciales QA entregadas
+  una sola vez por ADB reverse en loopback verificó login, membresía Rider y
+  capacidad 3. El puente se cerró y no dejó archivo ni contraseña en argumentos.
+- Sobre ese mismo APK firmado, `LT-0034` pasó aceptación, retiro, inicio,
+  publicación GPS real, rechazo de código incorrecto y entrega con código
+  correcto por UI Android. El test duró 56 s y completó antes de que los
+  observadores de tarjeta activa terminaran de autenticarse: **no se acredita
+  sincronización live para este pedido**. Una comprobación UI posterior sí
+  mostró ese pedido exacto como `delivered` en el panel y “Pedido entregado”
+  para el cliente; backend confirmó rider y `delivered_at`. Se clasificó QA,
+  se repuso el stock del SKU a 22 y se sellaron código/token temporales.
+- Rollback físico: Android rechazó el downgrade directo v3→v2; se desinstaló
+  únicamente `.pilot`, se restauró la v2 firmada y arrancó, luego se actualizó
+  a v3. La v146 permaneció en versionCode 146. Al desinstalar `.pilot` se
+  borró su sesión local, no los pedidos del servidor. El APK de instrumentación
+  test-only se desinstaló al finalizar.
+
 ## Estado de salida
 
 ```text
@@ -68,13 +95,17 @@ ANDROID_PILOT_BUILD: PASS_SIGNED_STAGING_ONLY
 RIDER_AVAILABILITY_SHARED: PASS_STAGING
 RIDER_CAPACITY: 3
 ANDROID_SHORT_E2E: PASS
-GPS_60_MIN_SOAK: FAIL_FIRST_NETWORK_LOSS_SECOND_SCREEN_OFF_GAP_AND_LOGOUT
-PILOT_RIDER_READY: NO
+GPS_60_MIN_ACCUMULATED: PASS_AT_LEAST_70_ONLINE_MINUTES_ACROSS_THREE_RUNS
+GPS_SCREEN_OFF_20_MIN: PASS_V3_QA
+SIGNED_PILOT_AUTH_AND_DELIVERY: PASS_STAGING_QA
+PILOT_RIDER_READY: STAGING_QA_ONLY
 PRODUCTION_UNCHANGED: YES
 WALTER_ACCOUNT_UNCHANGED: YES
 ```
 
-El siguiente ensayo físico necesita que el Moto vuelva a tener Internet de
-forma estable; repetirlo con la misma red caída no aportaría evidencia nueva.
-La fuente, la firma y el identificador de paquete de v146 nunca se usaron para
-construir ni firmar `.pilot`.
+La medición de 60 minutos es **acumulada**, no un trayecto continuo de una hora:
+los dos ensayos anteriores siguen documentados como FAIL. El tercer tramo
+reprodujo específicamente pantalla apagada y pasó. Falta publicar el candidato
+web en Staging, ensayar rollback web y aprobar el comercio/catálogo real antes
+de un piloto comercial. La fuente, firma e identificador de v146 nunca se
+usaron para construir ni firmar `.pilot`.

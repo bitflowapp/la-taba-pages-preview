@@ -13,8 +13,8 @@ una venta real ni acredita efectivo.
 - APK QA coexistente: `com.lataba.rider.qa`. APK piloto independiente:
   `com.lataba.rider.pilot` vCode 3 / `0.1.2-canonical-pilot`, salida de
   `build-rider-pilot.mjs` firmada con clave exclusiva del piloto. Las vCode 1 y
-  2 están conservadas para rollback. La v3 espera certificación física del
-  tramo con pantalla apagada; no actualiza la v146 histórica.
+  2 están conservadas para rollback. La v3 pasó el tramo QA de 20 minutos con
+  pantalla apagada y un E2E firmado; no actualiza la v146 histórica.
 - Mercado Pago WCS-51579: pendiente de soporte. No sustituir Checkout Pro por
   `/v1/card_tokens` o `/v1/payments`.
 - Catálogo publicado actual, sólo lectura: 34 productos activos comprables y
@@ -125,6 +125,13 @@ QA después de volver, estado de presencia, APK instalada y hash de runtime.
   desde la copia local verificada. La aplicación arrancó y la v146 histórica
   `com.lataba.rider` conservó su versión. La desinstalación borra la sesión
   local de la variante piloto; el pedido y la disponibilidad viven en Staging.
+- Se repitió el ensayo con v3→v2→v3, todas firmadas con el certificado piloto.
+  El downgrade directo fue rechazado por Android; la reinstalación controlada
+  de `.pilot` restauró v2 y luego v3, sin tocar la v146. El E2E físico v3 QA
+  entregó `LT-0033` y el E2E del APK firmado entregó `LT-0034` por código;
+  ambos pedidos se clasificaron QA y repusieron stock. El segundo se completó
+  antes de que el observador live entrara al panel, pero la lectura UI posterior
+  verificó estado final exacto en panel y cliente.
 - El rollback web de Cloudflare **no está ensayado**: el candidato aún no se
   publicó en el proyecto Staging. `main` tampoco es una vuelta segura para un
   piloto de cobro manual: no contiene `confirm_manual_order_payment` en la web.

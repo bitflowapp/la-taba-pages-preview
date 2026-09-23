@@ -80,7 +80,9 @@ if(mode==='prepare'||mode==='prepare-next'){
     ||returned.exactOnceReturn!==true||Number(stock.stock)!==Number(returned.stockBaseline))
     throw Error('PREVIOUS_QA_STOCK_NOT_RECONCILED');
   }
-  guardarSecreto(`${RUN} PREVIOUS ${previous.orderId}`,'staging',JSON.stringify(previous));
+  const archived={...previous,sealedAt:report.timestamp};
+  delete archived.tracking;delete archived.deliveryCode;delete archived.offer;
+  guardarSecreto(`${RUN} PREVIOUS ${previous.orderId}`,'staging',JSON.stringify(archived));
  }
  const address=(await read(customer.client.from('customer_addresses').select('*').is('deleted_at',null))).find(a=>a.location_confirmed_at&&a.latitude&&a.longitude);
  if(!address)throw Error('CONFIRMED_QA_ADDRESS_REQUIRED');

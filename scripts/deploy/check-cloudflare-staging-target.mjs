@@ -11,5 +11,5 @@ assert.equal(response.status, 200, 'Cloudflare Staging project unavailable');
 const payload = await response.json();
 assert.equal(payload.success, true);
 assert.equal(payload.result?.name, 'taba2-staging');
-assert.equal(payload.result?.production_branch, 'main', 'Unexpected Staging Pages production branch');
-console.log('Cloudflare target verified: taba2-staging / main.');
+assert.equal(payload.result?.production_branch, 'staging', 'Unexpected Staging Pages production branch');
+console.log('Cloudflare target verified: taba2-staging / staging.');

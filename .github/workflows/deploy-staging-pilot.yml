@@ -68,7 +68,7 @@ jobs:
         run: |
           set -euo pipefail
           npx --yes wrangler@4 pages deploy dist_staging_pilot \
-            --project-name taba2-staging --branch main \
+            --project-name taba2-staging --branch staging \
             --commit-hash "$GITHUB_SHA"
 
       - name: Public smoke and immutable asset comparison

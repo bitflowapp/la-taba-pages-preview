@@ -55,6 +55,14 @@ jobs:
       - name: Build and scan Staging-only artifact
         run: node scripts/deploy/preparar-staging-pilot.mjs --commit "$GITHUB_SHA"
 
+      - name: Verify compatible rollback target before a drill deployment
+        if: ${{ vars.STAGING_ROLLBACK_DRILL_SHA == github.sha }}
+        id: rollback_preflight
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: node scripts/deploy/drill-staging-pages-rollback.mjs preflight
+
       - name: Verify exact Cloudflare target before writing
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -62,6 +70,7 @@ jobs:
         run: node scripts/deploy/check-cloudflare-staging-target.mjs
 
       - name: Deploy only taba2-staging
+        id: deploy
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -77,3 +86,15 @@ jobs:
           runtime="$(node -p "require('./dist_staging_pilot/version.json').runtime")"
           node scripts/deploy/verificar-staging-pilot.mjs --commit "$GITHUB_SHA" --runtime "$runtime"
           node scripts/verify-staging-served.mjs https://taba2-staging.pages.dev dist_staging_pilot
+
+      - name: Restore previous compatible Staging deployment for rollback drill
+        if: ${{ always() && vars.STAGING_ROLLBACK_DRILL_SHA == github.sha && steps.rollback_preflight.outcome == 'success' && steps.deploy.outcome != 'skipped' }}
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ROLLBACK_DEPLOYMENT_ID: ${{ steps.rollback_preflight.outputs.rollback_id }}
+        run: |
+          node scripts/deploy/drill-staging-pages-rollback.mjs rollback
+          node scripts/deploy/verificar-staging-pilot.mjs \
+            --commit bcea25fd8d3ffe088dbf6ea6f3bfa2dbc3b79852 \
+            --runtime la-taba-runtime-v114-commercial-pilot

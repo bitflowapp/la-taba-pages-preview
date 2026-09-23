@@ -2143,6 +2143,7 @@ async function confirmManualPayment(button) {
   const order = manualPayments.find((item) => item.id === button.dataset.manualPaymentConfirm);
   const method = button.dataset.manualPaymentMethod;
   if (!order || order.manual_payment_status !== 'pending'
+      || ['canceled', 'cancelled', 'rejected'].includes(order.status)
       || !['cash', 'transfer'].includes(method)
       || (order.payment_method === 'cash' && method !== 'cash')) {
     return result(false, 'Actualizá el pedido antes de registrar el cobro.');

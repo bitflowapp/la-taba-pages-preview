@@ -175,9 +175,11 @@ function renderManualPaymentsSurface(payments, status, { elevated, busy }) {
       const id = escapeHtml(String(order.id || ''));
       const payment = String(order.manual_payment_status || 'unverified');
       const method = String(order.payment_method || '');
-      const label = ({ pending: 'Pendiente', confirmed: 'Pagado', reversed: 'Devuelto',
+      const closedWithoutCharge = payment === 'pending'
+        && ['canceled', 'cancelled', 'rejected'].includes(String(order.status || ''));
+      const label = closedWithoutCharge ? 'Cerrado sin cobrar' : ({ pending: 'Pendiente', confirmed: 'Pagado', reversed: 'Devuelto',
         unverified: 'Histórico sin conciliar' })[payment] || 'Sin verificar';
-      const actions = payment === 'pending' ? `<div class="button-row">
+      const actions = payment === 'pending' && !closedWithoutCharge ? `<div class="button-row">
         <button class="secondary-button compact" type="button" data-manual-payment-confirm="${id}" data-manual-payment-method="cash" ${busy ? 'disabled' : ''}>Registrar efectivo recibido</button>
         ${method === 'coordinate' ? `<button class="ghost-button compact" type="button" data-manual-payment-confirm="${id}" data-manual-payment-method="transfer" ${busy ? 'disabled' : ''}>Registrar transferencia recibida</button>` : ''}
       </div>` : payment === 'confirmed' && elevated

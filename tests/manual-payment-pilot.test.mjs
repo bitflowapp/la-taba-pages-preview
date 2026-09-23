@@ -36,6 +36,11 @@ test('panel distinguishes pending, paid and reversed without offering a staff re
   assert.doesNotMatch(render('confirmed','staff'),/data-manual-payment-reverse/);
   assert.match(render('reversed'),/data-manual-payment-status="reversed"/);
   assert.doesNotMatch(render('reversed'),/data-manual-payment-confirm/);
+  const cancelled = renderPaymentsSurface({payments:[],status:{phase:'ready'},
+    manualPayments:[{...base,status:'cancelled',manual_payment_status:'pending'}],
+    manualStatus:{phase:'ready'},role:'admin',connection:{status:'unavailable'},busy:false});
+  assert.match(cancelled,/Cerrado sin cobrar/);
+  assert.doesNotMatch(cancelled,/data-manual-payment-confirm/);
 });
 
 test('migration keeps manual payments separate from MP and grants no anon execution', () => {

@@ -45,16 +45,17 @@ async function assertStagingConfig(origin) {
   assert.equal(config?.repository?.supabaseUrl, `https://${BACKEND}.supabase.co`);
 }
 
-async function previousTarget() {
+async function previousTarget(exactId = null) {
   const project = await cloudflare('');
   assert.equal(project?.name, PROJECT);
   assert.equal(project?.production_branch, 'staging');
-  // Project details may include the active production deployment directly.
-  // Otherwise use the unfiltered list. This account rejects optional list
-  // pagination parameters with HTTP 400, so neither path sends them.
+  // After the second deployment, the project's current deployment changes.
+  // Re-read the exact prior ID captured by preflight instead of inspecting
+  // the new current deployment. No ambiguous search may choose a target.
   const current = project.production_deployment;
-  const deployments = current?.id && current?.short_id && current?.url
-    ? [current] : await cloudflare('/deployments');
+  const deployments = exactId ? [await cloudflare(`/deployments/${exactId}`)]
+    : current?.id && current?.short_id === 'fdb5a1ec' && current?.url
+      ? [current] : await cloudflare('/deployments');
   assert.ok(Array.isArray(deployments), 'Production deployment metadata unavailable');
   const target = deployments.find((deployment) => (
     (deployment === current || deployment?.environment === 'production')
@@ -88,7 +89,7 @@ if (phase === 'preflight') {
 } else {
   const id = process.env.ROLLBACK_DEPLOYMENT_ID;
   assert.match(id || '', /^[a-f0-9-]{32,40}$/, 'Exact rollback deployment ID required');
-  const { target } = await previousTarget();
+  const { target } = await previousTarget(id);
   assert.equal(id, target.id, 'Rollback target changed');
   await cloudflare(`/deployments/${id}/rollback`, { method: 'POST' });
   const deadline = Date.now() + 180_000;

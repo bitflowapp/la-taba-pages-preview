@@ -16,6 +16,8 @@ test('rollback drill requires a second exact-SHA arm and stays in Staging', () =
   assert.match(runner, /production_branch, 'staging'/);
   assert.match(runner, /cloudflare\('\/deployments'\)/);
   assert.doesNotMatch(runner, /cloudflare\('\/deployments\?/);
+  assert.match(runner, /previousTarget\(id\)/);
+  assert.match(runner, /cloudflare\(`\/deployments\/\$\{exactId\}`\)/);
   assert.match(runner, /taba2-staging\.pages\.dev/);
   assert.doesNotMatch(runner, /wwcpogltfgzgkrlilbcd/);
 });

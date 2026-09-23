@@ -7,7 +7,7 @@ Desde la raíz web, JDK 17 + SDK 35:
 ```powershell
 node scripts/e2e-staging/build-rider-android.mjs
 node scripts/e2e-staging/create-rider-pilot-signing-key.mjs
-node scripts/e2e-staging/build-rider-pilot.mjs
+node scripts/e2e-staging/build-rider-pilot.mjs --version-code 2 --version-name 0.1.1-canonical
 node scripts/e2e-staging/build-rider-android.mjs lintDebug
 node scripts/e2e-staging/scan-rider-apk.mjs
 node scripts/scan-secrets.mjs
@@ -26,7 +26,10 @@ adb -s ZY32LHS6PS install -r apps/rider-android/app/build/outputs/apk/androidTes
 
 Los paquetes son `com.lataba.rider.qa`, `com.lataba.rider.qa.test` y
 `com.lataba.rider.pilot`. La release firmada queda en
-`apps/rider-android/app/build/outputs/apk/release/app-release.apk`.
+`apps/rider-android/app/build/outputs/apk/release/app-release.apk`. El build
+debe declarar explícitamente el código y nombre de la versión piloto; omitir
+ambos reproduce la vCode 1 histórica del propio piloto, no la v146 original.
+Conservar el APK vCode 1 firmado antes de generar una nueva versión.
 No instalar una release unsigned ni desinstalar `com.lataba.rider`.
 
 ## Pedido / Android físico
@@ -48,8 +51,9 @@ node scripts/e2e-staging/rider-canonical-qa.mjs cleanup
 ```
 
 El guard impide duplicar un pedido existente. `resume` reanuda preparación;
-`prepare-next` sólo admite un pedido previo ya entregado. Ejecutar `cleanup`
-antes de comenzar otro. Los runners que modifican el registro QA se ejecutan
+`prepare-next` admite un pedido previo entregado o el pedido del soak fallido
+que esté cancelado, clasificado QA y con el stock exactamente reconciliado.
+Ejecutar `cleanup` para un entregado antes de comenzar otro. Los runners que modifican el registro QA se ejecutan
 **secuencialmente**, nunca en paralelo.
 
 El código de entrega llega por el contrato del cliente al input privado del test;

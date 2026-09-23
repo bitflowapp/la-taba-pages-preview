@@ -10,7 +10,8 @@ const target=path.join(dir,'pilot-v1.p12');
 const repo=path.resolve(fileURLToPath(new URL('../..',import.meta.url)));
 if(dir.toLowerCase().startsWith(repo.toLowerCase()+path.sep))throw Error('KEYSTORE_MUST_BE_OUTSIDE_REPO');
 const passwordName='RIDER PILOT SIGNING PASSWORD',backupName='RIDER PILOT KEYSTORE BACKUP';
-const keytool=path.join(process.env.JAVA_HOME||'C:/dev/tools/jdk-17','bin','keytool.exe');
+if(!process.env.JAVA_HOME)throw Error('JAVA_HOME_REQUIRED');
+const keytool=path.join(process.env.JAVA_HOME,'bin','keytool.exe');
 if(!existsSync(keytool))throw Error('JDK17_KEYTOOL_REQUIRED');
 const owner=`${process.env.USERDOMAIN}\\${process.env.USERNAME}`;
 const acl=(name)=>{

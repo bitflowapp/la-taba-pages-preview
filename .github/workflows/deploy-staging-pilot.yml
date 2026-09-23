@@ -1,0 +1,79 @@
+name: Deploy isolated Staging pilot
+
+on:
+  push:
+    branches:
+      - 'release/taba-commercial-pilot'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: deploy-staging-pilot
+  cancel-in-progress: false
+
+jobs:
+  deploy-staging:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    if: ${{ github.repository == 'bitflowapp/la-taba-pages-preview' && vars.STAGING_DEPLOY_SHA == github.sha && vars.STAGING_DEPLOY_PROJECT == 'taba2-staging' }}
+    steps:
+      - name: Check out exact armed SHA
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Reject stale branch before waiting
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin release/taba-commercial-pilot
+          [[ "$(git rev-parse origin/release/taba-commercial-pilot)" == "$GITHUB_SHA" ]]
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288ca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Wait for exact web and Android CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: node scripts/deploy/check-staging-pilot-ci.mjs
+
+      - name: Reject stale branch after CI
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin release/taba-commercial-pilot
+          [[ "$(git rev-parse origin/release/taba-commercial-pilot)" == "$GITHUB_SHA" ]]
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build and scan Staging-only artifact
+        run: node scripts/deploy/preparar-staging-pilot.mjs --commit "$GITHUB_SHA"
+
+      - name: Verify exact Cloudflare target before writing
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: node scripts/deploy/check-cloudflare-staging-target.mjs
+
+      - name: Deploy only taba2-staging
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 pages deploy dist_staging_pilot \
+            --project-name taba2-staging --branch main \
+            --commit-hash "$GITHUB_SHA"
+
+      - name: Public smoke and immutable asset comparison
+        run: |
+          set -euo pipefail
+          runtime="$(node -p "require('./dist_staging_pilot/version.json').runtime")"
+          node scripts/deploy/verificar-staging-pilot.mjs --commit "$GITHUB_SHA" --runtime "$runtime"
+          node scripts/verify-staging-served.mjs https://taba2-staging.pages.dev dist_staging_pilot

@@ -131,3 +131,17 @@ QA después de volver, estado de presencia, APK instalada y hash de runtime.
   El builder exige el runtime público del proyecto `ucbtjcurawxjwjdvvcvj`,
   verifica su identidad, sella el SHA y escanea todo `dist_staging_pilot/`.
   Prepararlo no despliega ni cambia el dominio; la URL Staging aún sirve v100.
+
+Cuando el E2E físico y los demás gates estén cerrados, el workflow
+`deploy-staging-pilot.yml` se arma **sólo** para el SHA exacto de un commit aún
+local. Antes de hacer push, registrar las variables de repositorio
+`STAGING_DEPLOY_SHA=<SHA>` y `STAGING_DEPLOY_PROJECT=taba2-staging`; el push a
+`release/taba-commercial-pilot` dispara ese workflow. Si las variables no
+coinciden exactamente, el job queda omitido. Espera la CI web y Android del
+mismo SHA, comprueba que la rama no avanzó, verifica el proyecto Cloudflare,
+prepara el artefacto y revisa el dominio/archivos después de publicar. Borrar
+las dos variables al terminar; no contienen secretos. El workflow de Producción
+permanece separado, sin cambios y restringido a `main`.
+
+Tras el despliegue Staging, hacer el ensayo de rollback a un deployment
+compatible de ese **mismo proyecto** antes de publicar un piloto real.

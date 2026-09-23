@@ -83,16 +83,21 @@ class PhysicalSoakTest {
             context.startActivity(Intent(context,MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
             until(45000){repo.state.value.online&&repo.state.value.board!!.orders.any{it.code==code}}
+            val arrivedBeforeSoakEnd=repo.state.value.board!!.orders.any{it.code==code&&it.status=="arrived"}
             val uiVisible=compose.activityRule.scenario.state==Lifecycle.State.RESUMED
             if(uiVisible){
-                compose.onNodeWithTag("advance").performScrollTo().performClick()
-                until{repo.state.value.board!!.orders.any{it.code==code&&it.status=="arrived"}}
+                if(!arrivedBeforeSoakEnd){
+                    compose.onNodeWithTag("advance").performScrollTo().performClick()
+                    until{repo.state.value.board!!.orders.any{it.code==code&&it.status=="arrived"}}
+                }
                 compose.onNodeWithTag("delivery-code").performScrollTo().performTextInput(input.getString("deliveryCode"))
                 compose.onNodeWithTag("advance").performScrollTo().performClick()
             }else{
                 val active=repo.state.value.board!!.orders.first{it.code==code}
-                runBlocking{repo.advance(active)}
-                until{repo.state.value.board!!.orders.any{it.code==code&&it.status=="arrived"}}
+                if(active.status=="on_the_way"){
+                    runBlocking{repo.advance(active)}
+                    until{repo.state.value.board!!.orders.any{it.code==code&&it.status=="arrived"}}
+                }else assertEquals("arrived",active.status)
                 val arrived=repo.state.value.board!!.orders.first{it.code==code}
                 runBlocking{repo.advance(arrived,input.getString("deliveryCode"))}
             }
@@ -100,6 +105,7 @@ class PhysicalSoakTest {
             assertTrue(SystemClock.elapsedRealtime()-start>=3_600_000)
             progress.writeText(JSONObject().put("elapsed_minutes",60).put("completed",true)
                 .put("completion_via_ui",uiVisible)
+                .put("arrived_before_soak_end",arrivedBeforeSoakEnd)
                 .put("gps_failure_minutes",failedMinutes).put("offline_minutes",offlineMinutes)
                 .put("recovered_minutes",recoveredMinutes).put("staging_only",true).toString())
         }finally{input.remove("password");input.remove("deliveryCode");inputFile.delete()}

@@ -49,12 +49,15 @@ async function previousTarget() {
   const project = await cloudflare('');
   assert.equal(project?.name, PROJECT);
   assert.equal(project?.production_branch, 'staging');
-  // Cloudflare's unfiltered endpoint includes the latest production deployment.
-  // Avoid optional pagination parameters: this account rejects them with HTTP 400.
-  const deployments = await cloudflare('/deployments');
-  assert.ok(Array.isArray(deployments), 'Production deployment list unavailable');
+  // Project details may include the active production deployment directly.
+  // Otherwise use the unfiltered list. This account rejects optional list
+  // pagination parameters with HTTP 400, so neither path sends them.
+  const current = project.production_deployment;
+  const deployments = current?.id && current?.short_id && current?.url
+    ? [current] : await cloudflare('/deployments');
+  assert.ok(Array.isArray(deployments), 'Production deployment metadata unavailable');
   const target = deployments.find((deployment) => (
-    deployment?.environment === 'production'
+    (deployment === current || deployment?.environment === 'production')
     && deployment?.short_id === 'fdb5a1ec'
     && typeof deployment.url === 'string'
     && new URL(deployment.url).hostname === PREVIOUS_DEPLOYMENT_HOST

@@ -336,21 +336,35 @@ test('ADD · un toque suma uno y una tanda rapida suma exactamente lo que se toc
 
   expect(await cantidad()).toBe(1);
 
+  // Una ráfaga no debe depender de la heurística de "elemento estable" de
+  // Playwright. Cada toque repinta la tarjeta y reemplaza el botón; WebKit puede
+  // consumir casi todo el timeout esperando estabilidad entre esos handles aun
+  // cuando el control vigente está visible y habilitado. El primer toque y el
+  // hit-test del control se prueban por la UI en este mismo bloque y en el caso
+  // siguiente; acá emitimos los clicks atómicamente sobre el nodo vigente para
+  // verificar el contrato que importa: ningún evento deliberado se coalesce.
+  const tocarRafaga = (accion, veces) => page.evaluate(async ({ id, action, count }) => {
+    const atributo = action === 'sumar' ? 'cartInc' : 'cartDec';
+    for (let i = 0; i < count; i += 1) {
+      const control = [...document.querySelectorAll(action === 'sumar' ? '[data-cart-inc]' : '[data-cart-dec]')]
+        .find((node) => node.dataset[atributo] === id
+          && node.isConnected
+          && !node.disabled
+          && node.getBoundingClientRect().width > 0
+          && node.getBoundingClientRect().height > 0);
+      if (!control) throw new Error(`No hay control visible para ${action} ${id} en el toque ${i + 1}.`);
+      control.click();
+      await new Promise((resolve) => setTimeout(resolve, 60));
+    }
+  }, { id: productId, action: accion, count: veces });
+
   // Seis toques deliberados y rápidos: seis unidades. La guarda contra el doble
   // despacho accidental no puede comerse toques que una persona sí dio.
-  const mas = page.locator(`[data-cart-inc="${productId}"] >> visible=true`).first();
-  for (let i = 0; i < 6; i += 1) {
-    await mas.click();
-    await page.waitForTimeout(60);
-  }
+  await tocarRafaga('sumar', 6);
   expect(await cantidad()).toBe(7);
 
   // Bajar hasta cero deja el control en su estado inicial, sin línea fantasma.
-  const menos = page.locator(`[data-cart-dec="${productId}"] >> visible=true`).first();
-  for (let i = 0; i < 7; i += 1) {
-    await menos.click();
-    await page.waitForTimeout(60);
-  }
+  await tocarRafaga('restar', 7);
   expect(await cantidad()).toBe(0);
   await expect(page.locator(`[data-add-product="${productId}"] >> visible=true`).first()).toBeVisible();
 
@@ -550,11 +564,25 @@ const faseActual = (page) => page.evaluate(() => (
   document.querySelector('[data-profile-checkout]')?.dataset.checkoutPhase || 'sin-seccion'
 ));
 
-const geometriaCheckout = (page) => page.locator('[data-profile-checkout]').evaluate((nodo) => ({
-  alto: Math.round(nodo.getBoundingClientRect().height),
-  campos: [...document.querySelectorAll('[data-checkout-form] input, [data-checkout-form] select, [data-checkout-form] textarea')]
-    .filter((n) => n.type !== 'hidden' && n.getBoundingClientRect().height > 0).length,
-}));
+// La fase y la geometría se leen en el mismo turno de JS. Resolver primero un
+// locator y consultar la fase en otro viaje deja una ventana donde el render
+// puede reemplazar el subárbol: un handle ya desconectado mide 0x0 aunque la UI
+// visible nunca se haya plegado. `null` no oculta una regresión: sólo representa
+// ese frame sin nodo maquetado y abajo exigimos suficientes muestras reales.
+const muestraCheckout = (page) => page.evaluate(() => {
+  const nodo = document.querySelector('[data-profile-checkout]');
+  if (!nodo?.isConnected) return null;
+
+  const caja = nodo.getBoundingClientRect();
+  if (caja.width <= 0 || caja.height <= 0) return null;
+
+  return {
+    fase: nodo.dataset.checkoutPhase || 'sin-seccion',
+    alto: Math.round(caja.height),
+    campos: [...document.querySelectorAll('[data-checkout-form] input, [data-checkout-form] select, [data-checkout-form] textarea')]
+      .filter((n) => n.isConnected && n.type !== 'hidden' && n.getBoundingClientRect().height > 0).length,
+  };
+});
 
 test('PROFILE SLOW · nunca se pinta el formulario completo para despues plegarlo', async ({ page }) => {
   const guards = installPageGuards(page);
@@ -572,10 +600,12 @@ test('PROFILE SLOW · nunca se pinta el formulario completo para despues plegarl
   // entero. Un assert al final no lo habría visto nunca.
   const muestras = [];
   for (let i = 0; i < 12; i += 1) {
-    muestras.push({ fase: await faseActual(page), ...(await geometriaCheckout(page)) });
+    const muestra = await muestraCheckout(page);
+    if (muestra) muestras.push(muestra);
     await page.waitForTimeout(160);
   }
 
+  expect(muestras.length, 'el checkout no produjo suficientes frames realmente maquetados').toBeGreaterThanOrEqual(10);
   const fases = [...new Set(muestras.map((m) => m.fase))];
   expect(fases[0]).toBe('unresolved');
   expect(fases.at(-1)).toBe('compact');

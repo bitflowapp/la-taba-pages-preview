@@ -172,6 +172,7 @@ export function initPwaInstall({ showToast = () => {} } = {}) {
   /* ── La invitación automática ─────────────────────────────────────────── */
 
   let intencionDeCompra = false;
+  let vistaAlMostrarIntencionDeCompra = '';
   /*
    * Se lee UNA vez, al arrancar, y no en cada intento: `notifyAppReady()` marca
    * la visita en cuanto la tienda queda lista, así que preguntarle al
@@ -181,17 +182,37 @@ export function initPwaInstall({ showToast = () => {} } = {}) {
    */
   const yaHabiaVenido = visitorIsKnown();
 
-  const currentMoment = () => ({
-    bootstrapReady: document.documentElement.dataset.appBootstrap === 'ready',
-    // Cualquier diálogo abierto —ficha de producto, sugerencias del checkout,
-    // historias, confirmación de cancelar— es trabajo en curso de otra persona.
-    hasOpenDialog: Boolean(document.querySelector('dialog[open]')),
-    activeView: document.body.dataset.activeView || '',
-    msSinceInteraction: Date.now() - lastInteractionAt,
-    // A quien llega por primera vez se le muestra la tienda, no un pedido.
-    // `intencionDeCompra()` lo adelanta en cuanto pone algo en el carrito.
-    visitorIsKnown: yaHabiaVenido || intencionDeCompra,
-  });
+  const currentMoment = () => {
+    const activeView = document.body.dataset.activeView || '';
+    /*
+     * Para una primera visita, agregar al carrito habilita la invitación pero no
+     * la abre sobre la misma góndola. El siguiente destino tranquilo (Inicio o
+     * Perfil; Carrito sigue bloqueado por el contrato central) es el primer
+     * momento inequívoco en que el gesto terminó. Esto también evita que un
+     * timer vencido le robe a WebKit el toque de navegación siguiente.
+     */
+    const intencionDeCompraAsentada = intencionDeCompra
+      && activeView !== vistaAlMostrarIntencionDeCompra;
+    return {
+      bootstrapReady: document.documentElement.dataset.appBootstrap === 'ready',
+      // Cualquier diálogo abierto —ficha de producto, sugerencias del checkout,
+      // historias, confirmación de cancelar— es trabajo en curso de otra persona.
+      hasOpenDialog: Boolean(document.querySelector('dialog[open]')),
+      activeView,
+      msSinceInteraction: Date.now() - lastInteractionAt,
+      // A quien llega por primera vez se le muestra la tienda, no un pedido.
+      // La compra lo adelanta sólo después de salir de la vista del gesto.
+      visitorIsKnown: yaHabiaVenido || intencionDeCompraAsentada,
+    };
+  };
+
+  const scheduleInvite = (delay) => {
+    window.clearTimeout(retryTimer);
+    retryTimer = window.setTimeout(() => {
+      retryTimer = 0;
+      tryInvite();
+    }, delay);
+  };
 
   const tryInvite = () => {
     if (invited || !sheet) return;
@@ -205,8 +226,7 @@ export function initPwaInstall({ showToast = () => {} } = {}) {
     if (!kind) {
       if (Date.now() >= giveUpAt) { stopWatching(); return; }
       watchForClearMoment();
-      window.clearTimeout(retryTimer);
-      retryTimer = window.setTimeout(tryInvite, INVITATION_RETRY_MS);
+      scheduleInvite(INVITATION_RETRY_MS);
       return;
     }
     if (openSheet(kind)) {
@@ -220,8 +240,7 @@ export function initPwaInstall({ showToast = () => {} } = {}) {
     viewObserver = new MutationObserver(() => {
       // Un cambio de vista puede llegar con la pantalla todavía moviéndose:
       // el mismo respiro que la primera vez.
-      window.clearTimeout(retryTimer);
-      retryTimer = window.setTimeout(tryInvite, 600);
+      scheduleInvite(600);
     });
     viewObserver.observe(document.body, { attributes: true, attributeFilter: ['data-active-view'] });
   };
@@ -337,7 +356,7 @@ export function initPwaInstall({ showToast = () => {} } = {}) {
         markVisitorSeen();
         return;
       }
-      window.setTimeout(tryInvite, INVITATION_DELAY_MS);
+      scheduleInvite(INVITATION_DELAY_MS);
       // Se marca DESPUÉS de agendar el intento: quien llega por primera vez ve
       // la tienda entera, y la invitación lo espera en la visita siguiente.
       markVisitorSeen();
@@ -352,8 +371,16 @@ export function initPwaInstall({ showToast = () => {} } = {}) {
      */
     notifyPurchaseIntent() {
       if (intencionDeCompra || invited || hasResolvedInstallDecision()) return;
+      // Esta señal nace dentro del gesto que agrega al carrito. Puede haber un
+      // reintento anterior ya encolado por `notifyAppReady()` y, bajo carga, ese
+      // timer puede vencer entre el ADD y la navegación siguiente. Reiniciar la
+      // quietud acá evita que la hoja se abra debajo del mismo dedo aunque el
+      // motor no haya emitido pointerdown/touchstart (WebKit automatizado y
+      // activaciones por teclado son dos casos reales).
+      lastInteractionAt = Date.now();
       intencionDeCompra = true;
-      window.setTimeout(tryInvite, INVITATION_DELAY_MS);
+      vistaAlMostrarIntencionDeCompra = document.body.dataset.activeView || '';
+      scheduleInvite(INVITATION_DELAY_MS);
     },
     /** Para QA y para la comprobación manual: abre la hoja que corresponda. */
     open() {

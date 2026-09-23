@@ -316,6 +316,7 @@ async function unlockAdmin(page, view) {
     await page.locator('[data-pin-form]').press('Enter');
   }
   await expect(page.locator('body')).toHaveAttribute('data-active-view', view);
+  await expect(page.locator(`[data-view="${view}"] [data-admin-unlocked]`)).toBeVisible();
 }
 
 function syntheticOrder(id, status, timestamp) {

@@ -3408,6 +3408,10 @@ button.operation-metric {
 .catalog-admin-workbench select {
   width: 100%;
   min-height: 44px;
+  /* Safari amplía toda la página cuando un control editable baja de 16 px.
+     Estos filtros se usan desde el Panel móvil, así que heredar los 13 px de
+     la tipografía auxiliar volvía inestable la edición del catálogo. */
+  font-size: 16px;
 }
 
 .catalog-admin-count {
@@ -3973,5 +3977,3382 @@ button.operation-metric {
 
   body[data-active-view="business"] .production-order-meta {
     gap: 3px 8px;
+  }
+}
+
+/* ============================================================================
+   PASE PREMIUM — PANEL OPERATIVO
+   ============================================================================
+   Esta capa no cambia el contrato del Panel: sólo reordena peso, aire y
+   contraste sobre las mismas superficies y controles. La operación se lee
+   primero; configuración y datos secundarios quedan atrás de una navegación
+   silenciosa. El rojo es decisión, alerta o foco, no decoración.
+   ========================================================================== */
+
+body[data-active-view="business"] {
+  --premium-bg: #101316;
+  --premium-surface: #171b1f;
+  --premium-surface-2: #1d2328;
+  --premium-raised: #252d33;
+  --premium-line: rgb(255 255 255 / 9%);
+  --premium-line-strong: rgb(255 255 255 / 18%);
+  --premium-ink: #f1f3f4;
+  --premium-ink-2: #c0c8ce;
+  --premium-muted: #8f9aa3;
+  --premium-red: #de1725;
+  --premium-red-soft: rgb(222 23 37 / 14%);
+  --premium-success: #69d394;
+  --premium-warning: #e8b85c;
+  --premium-info: #9bbcff;
+  --premium-shadow: 0 18px 42px rgb(0 0 0 / 18%);
+  --premium-radius: 18px;
+  background: var(--premium-bg);
+  color: var(--premium-ink);
+}
+
+body[data-active-view="business"] .app-shell,
+body[data-active-view="business"] main {
+  background: var(--premium-bg);
+}
+
+body[data-active-view="business"] .topbar {
+  min-height: 68px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 24px;
+  padding-inline: clamp(18px, 4vw, 56px);
+  border-bottom-color: var(--premium-line);
+  background: rgb(16 19 22 / 94%);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 2%);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+}
+
+body[data-active-view="business"] .topbar .brand {
+  display: inline-flex;
+  min-width: 94px;
+}
+
+body[data-active-view="business"] .topbar .brand-word {
+  color: var(--premium-ink);
+  font-size: 21px;
+}
+
+body[data-active-view="business"] .topbar .brand-text::after {
+  width: 28px;
+  height: 2px;
+  background: var(--premium-red);
+}
+
+body[data-active-view="business"] .topbar-mid {
+  justify-content: flex-start;
+}
+
+body[data-active-view="business"] .topbar-ops {
+  gap: 12px;
+}
+
+body[data-active-view="business"] .topbar-ops-copy small {
+  color: var(--premium-muted);
+  font-size: 10px;
+  letter-spacing: .12em;
+}
+
+body[data-active-view="business"] .topbar-ops-copy strong {
+  color: var(--premium-ink);
+  font-size: 13px;
+  font-weight: 760;
+}
+
+body[data-active-view="business"] .topbar-ops-sync {
+  min-height: 34px;
+  border-color: var(--premium-line-strong);
+  background: transparent;
+  color: var(--premium-ink-2);
+}
+
+body[data-active-view="business"] .topbar-ops-sync:hover,
+body[data-active-view="business"] .topbar-ops-sound:hover {
+  border-color: rgb(255 255 255 / 30%);
+  background: var(--premium-surface-2);
+}
+
+body[data-active-view="business"] .topbar-ops-sound {
+  width: 42px;
+  height: 42px;
+  flex-basis: 42px;
+  border-color: var(--premium-line-strong);
+  border-radius: 12px;
+  background: var(--premium-surface);
+  color: var(--premium-ink-2);
+}
+
+body[data-active-view="business"] .topbar-ops-sound.on {
+  border-color: color-mix(in srgb, var(--premium-success) 58%, transparent);
+  background: rgb(105 211 148 / 10%);
+  color: var(--premium-success);
+}
+
+body[data-active-view="business"] .topbar-ops-sound-count {
+  border-color: var(--premium-bg);
+  background: var(--premium-red);
+}
+
+body[data-active-view="business"] .topbar-search,
+body[data-active-view="business"] .topbar-address,
+body[data-active-view="business"] .desktop-nav,
+body[data-active-view="business"] .topbar-actions {
+  display: none;
+}
+
+body[data-active-view="business"] .admin-section,
+body[data-active-view="business"] .section[data-view="business"] {
+  width: min(100%, 1480px);
+  max-width: 1480px;
+  padding-inline: clamp(16px, 4vw, 56px);
+}
+
+body[data-active-view="business"] .section[data-view="business"] {
+  padding-top: clamp(20px, 3vw, 34px);
+  padding-bottom: 72px;
+}
+
+body[data-active-view="business"] [data-admin-unlocked] > .section-head {
+  min-height: auto;
+  margin: 0 0 22px;
+  padding: 0;
+  border-bottom: 0;
+}
+
+body[data-active-view="business"] [data-admin-unlocked] > .section-head h1 {
+  color: var(--premium-ink);
+  font-size: clamp(23px, 2.2vw, 31px);
+  font-weight: 780;
+  letter-spacing: -.035em;
+}
+
+body[data-active-view="business"] [data-admin-unlocked] > .section-head .view-actions {
+  gap: 8px;
+}
+
+body[data-active-view="business"] [data-admin-unlocked] > .section-head .view-actions .secondary-button,
+body[data-active-view="business"] [data-admin-unlocked] > .section-head .view-actions .ghost-button {
+  min-height: 42px;
+  border-color: var(--premium-line-strong);
+  border-radius: 11px;
+  background: transparent;
+  color: var(--premium-ink-2);
+}
+
+body[data-active-view="business"] [data-admin-unlocked] > .section-head .view-actions .secondary-button:hover,
+body[data-active-view="business"] [data-admin-unlocked] > .section-head .view-actions .ghost-button:hover {
+  background: var(--premium-surface-2);
+  color: var(--premium-ink);
+}
+
+body[data-active-view="business"] .business-main,
+body[data-active-view="business"] .production-workspace {
+  gap: 18px;
+}
+
+/* Navegación de escritorio: una línea de producto, no una caja de tabs. */
+body[data-active-view="business"] .business-jump-nav,
+body[data-active-view="business"] .production-operations-shortcuts {
+  display: flex;
+  min-width: 0;
+  gap: clamp(18px, 2vw, 30px);
+  overflow-x: auto;
+  padding: 0 2px;
+  border-bottom: 1px solid var(--premium-line);
+  border-radius: 0;
+  background: transparent;
+  scrollbar-width: none;
+}
+
+body[data-active-view="business"] .business-jump-nav::-webkit-scrollbar,
+body[data-active-view="business"] .production-operations-shortcuts::-webkit-scrollbar {
+  display: none;
+}
+
+body[data-active-view="business"] .business-nav-button,
+body[data-active-view="business"] .business-ops-nav-button {
+  position: relative;
+  min-height: 50px;
+  padding: 0 2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--premium-muted);
+  font-size: 13px;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+body[data-active-view="business"] .business-nav-button:hover,
+body[data-active-view="business"] .business-ops-nav-button:hover {
+  color: var(--premium-ink);
+}
+
+body[data-active-view="business"] .business-nav-button.active,
+body[data-active-view="business"] .business-ops-nav-button.active {
+  border-color: transparent;
+  background: transparent;
+  color: var(--premium-ink);
+  box-shadow: none;
+}
+
+body[data-active-view="business"] .business-nav-button.active::after,
+body[data-active-view="business"] .business-ops-nav-button.active::after {
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  width: auto;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--premium-red);
+  transform: none;
+}
+
+/* La bande de pedidos es un resumen accionable, no siete botones flotando. */
+body[data-active-view="business"] .inbox-ops-head {
+  min-height: 52px;
+  padding: 15px 0 7px;
+}
+
+body[data-active-view="business"] .inbox-ops-head [data-business-order-search] {
+  width: min(100%, 360px);
+  min-height: 46px;
+  border-color: var(--premium-line-strong);
+  border-radius: 12px;
+  background: var(--premium-surface-2);
+  color: var(--premium-ink);
+  box-shadow: none;
+}
+
+body[data-active-view="business"] .inbox-ops-head [data-business-order-search]:focus {
+  border-color: color-mix(in srgb, var(--premium-info) 62%, transparent);
+  box-shadow: 0 0 0 3px rgb(155 188 255 / 12%);
+}
+
+body[data-active-view="business"] .inbox-tabs {
+  gap: 8px;
+  padding: 7px 0 17px;
+  border-bottom: 1px solid var(--premium-line);
+}
+
+body[data-active-view="business"] .inbox-tab {
+  min-width: 96px;
+  min-height: 68px;
+  flex: 0 0 auto;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 10px 14px;
+  border: 1px solid var(--premium-line);
+  border-radius: 14px;
+  background: var(--premium-surface);
+  color: var(--premium-muted);
+  text-align: left;
+}
+
+body[data-active-view="business"] .inbox-tab > strong {
+  color: var(--premium-ink);
+  font-size: 21px;
+  font-weight: 780;
+}
+
+body[data-active-view="business"] .inbox-tab > span {
+  color: inherit;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+body[data-active-view="business"] .inbox-tab.active {
+  border-color: color-mix(in srgb, var(--premium-red) 54%, var(--premium-line-strong));
+  background: var(--premium-surface-2);
+  color: var(--premium-ink);
+  box-shadow: inset 3px 0 0 var(--premium-red);
+}
+
+body[data-active-view="business"] .inbox-tab.active::after {
+  display: none;
+}
+
+body[data-active-view="business"] .inbox-tab.received:not(.active) > strong,
+body[data-active-view="business"] .inbox-tab.received.has-count > span {
+  color: var(--premium-red);
+}
+
+/* Master-detail: cada columna es una superficie de trabajo, el hueco hace la
+   separación. El borde sólo aparece donde ayuda a orientarse. */
+body[data-active-view="business"] .d-panels {
+  gap: 18px;
+}
+
+body[data-active-view="business"] .d-workbench {
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+body[data-active-view="business"] .d-queue,
+body[data-active-view="business"] .d-detail,
+body[data-active-view="business"] .d-rail {
+  border: 1px solid var(--premium-line);
+  border-radius: var(--premium-radius);
+  background: var(--premium-surface);
+  box-shadow: var(--premium-shadow);
+}
+
+body[data-active-view="business"] .d-queue {
+  gap: 10px;
+  padding: 10px;
+}
+
+body[data-active-view="business"] .inbox-order.is-compact {
+  border: 1px solid var(--premium-line);
+  border-left: 3px solid var(--premium-line-strong);
+  border-radius: 14px;
+  background: var(--premium-surface-2);
+  box-shadow: none;
+}
+
+body[data-active-view="business"] .inbox-order.is-compact.accent-received { border-left-color: var(--premium-red); }
+body[data-active-view="business"] .inbox-order.is-compact.accent-preparing { border-left-color: var(--premium-warning); }
+body[data-active-view="business"] .inbox-order.is-compact.accent-ready { border-left-color: var(--premium-success); }
+body[data-active-view="business"] .inbox-order.is-compact.accent-way { border-left-color: var(--premium-info); }
+
+body[data-active-view="business"] .inbox-order.is-compact.is-selected {
+  border-color: color-mix(in srgb, var(--premium-info) 60%, var(--premium-line));
+  box-shadow: 0 0 0 1px rgb(155 188 255 / 18%);
+  background: #232a30;
+}
+
+body[data-active-view="business"] .o-card-select {
+  gap: 7px;
+  padding: 15px 14px;
+}
+
+body[data-active-view="business"] .o-card-select:hover {
+  background: rgb(255 255 255 / 3%);
+}
+
+body[data-active-view="business"] .o-card-line {
+  color: var(--premium-ink);
+  font-size: 13px;
+}
+
+body[data-active-view="business"] .o-card-address,
+body[data-active-view="business"] .o-card-foot,
+body[data-active-view="business"] .o-card-select .inbox-time {
+  color: var(--premium-muted);
+}
+
+body[data-active-view="business"] .o-card-foot strong {
+  color: var(--premium-ink);
+  font-size: 16px;
+}
+
+body[data-active-view="business"] .d-detail {
+  background: var(--premium-surface);
+}
+
+body[data-active-view="business"] .d-detail-head {
+  padding: 18px 20px;
+  border-bottom-color: var(--premium-line);
+  background: var(--premium-surface);
+}
+
+body[data-active-view="business"] .d-detail-body {
+  max-width: none;
+  gap: 18px;
+  padding: 22px clamp(18px, 2.5vw, 30px);
+}
+
+body[data-active-view="business"] .d-detail-body .inbox-status-copy {
+  margin: 0;
+  padding: 13px 15px;
+  border-left: 3px solid var(--premium-red);
+  border-radius: 10px;
+  background: var(--premium-red-soft);
+  color: var(--premium-ink-2);
+  font-size: 14px;
+}
+
+body[data-active-view="business"] .d-detail-body .inbox-detail-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+body[data-active-view="business"] .d-detail-body .inbox-detail-list p {
+  min-height: 40px;
+  margin: 0;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--premium-line);
+  color: var(--premium-ink-2);
+  font-size: 13px;
+}
+
+body[data-active-view="business"] .d-detail-body .inbox-detail-list p:last-child {
+  padding-top: 14px;
+  border-bottom: 0;
+}
+
+body[data-active-view="business"] .d-detail-body .inbox-detail-list p:last-child strong {
+  color: var(--premium-ink);
+  font-size: 17px;
+}
+
+body[data-active-view="business"] .d-detail-body .inbox-products-block {
+  padding: 15px 16px;
+  border: 1px solid var(--premium-line);
+  border-radius: 13px;
+  background: var(--premium-surface-2);
+}
+
+body[data-active-view="business"] .d-detail-body .inbox-notes {
+  margin: 0;
+  color: var(--premium-muted);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+body[data-active-view="business"] .d-rail {
+  align-content: start;
+  gap: 14px;
+  padding: 20px;
+  background: #15191d;
+}
+
+body[data-active-view="business"] .d-rail .prep-time-field {
+  gap: 8px;
+  color: var(--premium-ink-2);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+body[data-active-view="business"] .d-rail .prep-time-field select,
+body[data-active-view="business"] .d-rail select {
+  min-height: 50px;
+  border-color: var(--premium-line-strong);
+  border-radius: 12px;
+  background: var(--premium-raised);
+  color: var(--premium-ink);
+}
+
+body[data-active-view="business"] .d-rail .main-order-action,
+body[data-active-view="business"] .inbox-feed .main-order-action {
+  min-height: 52px;
+  border-color: var(--premium-red);
+  border-radius: 12px;
+  background: var(--premium-red);
+  color: #fff;
+  box-shadow: 0 8px 20px rgb(222 23 37 / 16%);
+}
+
+body[data-active-view="business"] .d-rail .main-order-action:hover,
+body[data-active-view="business"] .inbox-feed .main-order-action:hover {
+  border-color: #f02a38;
+  background: #f02a38;
+}
+
+body[data-active-view="business"] .d-rail .primary-action-block > small,
+body[data-active-view="business"] .d-rail .d-detail-secondary .ghost-button {
+  color: var(--premium-muted);
+}
+
+body[data-active-view="business"] .d-detail-secondary {
+  gap: 6px;
+  padding-top: 2px;
+}
+
+body[data-active-view="business"] .d-detail-secondary .ghost-button {
+  min-height: 42px;
+  border-color: var(--premium-line);
+  border-radius: 10px;
+}
+
+/* El vacío también es un estado operativo: no ocupa una pantalla en blanco. */
+body[data-active-view="business"] .d-panels:has(.inbox-empty) {
+  min-height: 220px;
+}
+
+body[data-active-view="business"] .d-panels:has(.inbox-empty) .inbox-empty {
+  align-self: center;
+  justify-self: center;
+  max-width: 420px;
+  padding: 28px;
+  border: 1px dashed var(--premium-line-strong);
+  border-radius: 16px;
+  background: rgb(255 255 255 / 2%);
+  text-align: center;
+}
+
+/* Producción: la misma gramática visual, sin tocar acciones ni payloads. */
+body[data-active-view="business"] .production-ops-head {
+  align-items: end;
+  margin-bottom: 2px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--premium-line);
+}
+
+body[data-active-view="business"] .production-ops-head h1 {
+  color: var(--premium-ink);
+  font-size: clamp(23px, 2.2vw, 31px);
+  font-weight: 780;
+  letter-spacing: -.035em;
+}
+
+body[data-active-view="business"] .production-ops-role,
+body[data-active-view="business"] .production-command-status,
+body[data-active-view="business"] .production-intake-status {
+  color: var(--premium-muted);
+}
+
+body[data-active-view="business"] .production-ops-signout,
+body[data-active-view="business"] .production-ops-sound {
+  min-height: 42px;
+  border-color: var(--premium-line-strong);
+  border-radius: 11px;
+  background: transparent;
+  color: var(--premium-ink-2);
+}
+
+body[data-active-view="business"] .production-ops-status {
+  min-height: 0;
+  margin: 0;
+  padding: 9px 13px;
+  border: 1px solid var(--premium-line);
+  border-radius: 12px;
+  background: var(--premium-surface);
+}
+
+body[data-active-view="business"] .production-ops-status:has(.is-quiet) {
+  padding-block: 7px;
+  border-color: transparent;
+  background: transparent;
+}
+
+body[data-active-view="business"] .production-order-list {
+  gap: 20px;
+}
+
+body[data-active-view="business"] .order-tray-head {
+  padding: 8px 0 10px;
+  border-bottom-color: var(--premium-line);
+  background: var(--premium-bg);
+}
+
+body[data-active-view="business"] .order-tray-title {
+  color: var(--premium-ink);
+  font-size: 12px;
+  letter-spacing: .08em;
+}
+
+body[data-active-view="business"] .order-tray-count {
+  background: var(--premium-raised);
+  color: var(--premium-ink);
+}
+
+body[data-active-view="business"] .order-tray-hint {
+  color: var(--premium-muted);
+}
+
+body[data-active-view="business"] .production-order-card,
+body[data-active-view="business"] .production-payment-card {
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--premium-line);
+  border-radius: var(--premium-radius);
+  background: var(--premium-surface-2);
+  box-shadow: var(--premium-shadow);
+}
+
+body[data-active-view="business"] .production-order-card.is-attention {
+  border-color: color-mix(in srgb, var(--premium-warning) 48%, var(--premium-line));
+  box-shadow: 0 14px 32px rgb(232 184 92 / 8%);
+}
+
+body[data-active-view="business"] .production-order-lines,
+body[data-active-view="business"] .production-order-meta > div,
+body[data-active-view="business"] .production-rider-assignment,
+body[data-active-view="business"] .production-rider-offer {
+  border-color: var(--premium-line);
+  background: var(--premium-surface);
+}
+
+body[data-active-view="business"] .production-order-foot {
+  border-top-color: var(--premium-line);
+}
+
+body[data-active-view="business"] .order-contact-call,
+body[data-active-view="business"] .order-contact-wa {
+  border-color: var(--premium-line-strong);
+  border-radius: 11px;
+}
+
+/* Centro operativo y pagos: menos casilleros, más superficie de lectura. */
+body[data-active-view="business"] .business-ops-panel,
+body[data-active-view="business"] .business-report-card,
+body[data-active-view="business"] .business-overview-card,
+body[data-active-view="business"] .business-catalog-card,
+body[data-active-view="business"] .business-setup-card {
+  border: 1px solid var(--premium-line);
+  border-radius: var(--premium-radius);
+  background: var(--premium-surface);
+  box-shadow: var(--premium-shadow);
+}
+
+body[data-active-view="business"] .business-ops-panel {
+  padding: clamp(20px, 3vw, 32px);
+}
+
+body[data-active-view="business"] .operation-metric,
+body[data-active-view="business"] .operation-alert,
+body[data-active-view="business"] .operation-health-row,
+body[data-active-view="business"] .daily-reconciliation-row,
+body[data-active-view="business"] .report-panel {
+  border-color: var(--premium-line);
+  border-radius: 14px;
+  background: var(--premium-surface-2);
+  box-shadow: none;
+}
+
+body[data-active-view="business"] .operation-metric strong,
+body[data-active-view="business"] .day-metric strong,
+body[data-active-view="business"] .growth-metric strong {
+  color: var(--premium-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+body[data-active-view="business"] .operation-summary,
+body[data-active-view="business"] .operation-health-headline {
+  border-color: var(--premium-line);
+  border-left-color: var(--premium-success);
+  border-radius: 13px;
+  background: var(--premium-surface-2);
+}
+
+body[data-active-view="business"] .operation-summary span,
+body[data-active-view="business"] .operation-health-headline span,
+body[data-active-view="business"] .operation-alert-status {
+  color: var(--premium-muted);
+}
+
+body[data-active-view="business"] .operation-alert.severity-critical {
+  border-left-color: var(--premium-red);
+}
+
+body[data-active-view="business"] .operation-alert.severity-action_required,
+body[data-active-view="business"] .operation-alert.severity-warning {
+  border-left-color: var(--premium-warning);
+}
+
+body[data-active-view="business"] .business-report-card,
+body[data-active-view="business"] .business-overview-card,
+body[data-active-view="business"] .business-catalog-card,
+body[data-active-view="business"] .business-setup-card {
+  padding: clamp(20px, 3vw, 32px);
+}
+
+body[data-active-view="business"] .business-day-strip,
+body[data-active-view="business"] .business-growth-strip,
+body[data-active-view="business"] .report-strip {
+  gap: 10px;
+  padding: 14px 0 20px;
+  border-bottom-color: var(--premium-line);
+  background: transparent;
+}
+
+body[data-active-view="business"] .day-metric,
+body[data-active-view="business"] .growth-metric,
+body[data-active-view="business"] .stat-tile,
+body[data-active-view="business"] .board-chip {
+  min-height: 76px;
+  padding: 13px 14px;
+  border-color: var(--premium-line);
+  border-radius: 13px;
+  background: var(--premium-surface-2);
+}
+
+body[data-active-view="business"] .day-metric.accent,
+body[data-active-view="business"] .growth-metric.accent {
+  border-color: color-mix(in srgb, var(--premium-red) 46%, var(--premium-line));
+  background: var(--premium-red-soft);
+}
+
+body[data-active-view="business"] .catalog-admin-row,
+body[data-active-view="business"] .cashbox-history-row,
+body[data-active-view="business"] .stock-row {
+  border-bottom-color: var(--premium-line);
+}
+
+body[data-active-view="business"] :is(input, select, textarea) {
+  border-color: var(--premium-line-strong);
+  border-radius: 11px;
+  background: var(--premium-raised);
+  color: var(--premium-ink);
+}
+
+body[data-active-view="business"] :is(.primary-button, .secondary-button, .ghost-button, .danger-button) {
+  border-radius: 11px;
+}
+
+body[data-active-view="business"] :focus-visible {
+  outline: 2px solid var(--premium-info);
+  outline-offset: 3px;
+}
+
+/* El tono comunica estado: una conexión que no se pudo verificar no puede
+   compartir la misma barra verde que un tablero sano. */
+body[data-active-view="business"] .operation-summary.tone-critical {
+  border-left-color: var(--premium-red);
+  background: color-mix(in srgb, var(--premium-red) 9%, var(--premium-surface-2));
+}
+
+body[data-active-view="business"] .operation-summary.tone-attention {
+  border-left-color: var(--premium-warning);
+  background: color-mix(in srgb, var(--premium-warning) 8%, var(--premium-surface-2));
+}
+
+body[data-active-view="business"] .operation-summary.tone-calm {
+  border-left-color: var(--premium-success);
+}
+
+/* En escritorio, cuatro decisiones por fila se escanean mejor que siete
+   casilleros angostos. La tira superior conserva el resumen rápido; acá queda
+   la explicación de cada número. */
+@media (min-width: 1024px) {
+  body[data-active-view="business"] .operation-metrics-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin-block: 18px 24px;
+  }
+}
+
+/* La bandeja productiva se organiza por estado, no como una columna infinita:
+   cada carril mantiene su encabezado y los carriles visibles comparten la
+   primera pantalla. */
+@media (min-width: 1200px) {
+  body[data-active-view="business"] .production-order-list {
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    align-items: start;
+    gap: 22px;
+  }
+
+  body[data-active-view="business"] .order-tray-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Objetivos táctiles: la navegación sin borde sigue siendo visualmente liviana,
+   pero conserva el mínimo cómodo incluso en una notebook táctil o un teléfono. */
+body[data-active-view="business"] .business-ops-nav-button,
+body[data-active-view="business"] .business-nav-button {
+  min-width: 44px;
+  padding-inline: 5px;
+}
+
+body[data-active-view="business"] .production-ops-signout,
+body[data-active-view="business"] .production-ops-sound,
+body[data-active-view="business"] [data-admin-unlocked] > .section-head .view-actions :is(.secondary-button, .ghost-button) {
+  min-height: 44px;
+}
+
+@media (max-width: 1020px) {
+  body[data-active-view="business"] .panel-nav-item {
+    min-width: 44px;
+    min-height: 48px;
+  }
+}
+
+@media (max-width: 1023px) {
+  body[data-active-view="business"] .topbar {
+    min-height: 62px;
+    gap: 10px;
+    padding-inline: 14px;
+  }
+
+  body[data-active-view="business"] .topbar .brand {
+    min-width: auto;
+  }
+
+  body[data-active-view="business"] .topbar .brand-word {
+    font-size: 18px;
+  }
+
+  body[data-active-view="business"] .topbar-mid {
+    overflow: hidden;
+  }
+
+  body[data-active-view="business"] .topbar-ops {
+    min-width: 0;
+  }
+
+  body[data-active-view="business"] .topbar-ops-sync {
+    max-width: 98px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  body[data-active-view="business"] .section[data-view="business"] {
+    padding: 16px 14px 84px;
+  }
+
+  body[data-active-view="business"] [data-admin-unlocked] > .section-head {
+    margin-bottom: 16px;
+  }
+
+  body[data-active-view="business"] [data-admin-unlocked] > .section-head h1 {
+    font-size: 22px;
+  }
+
+  body[data-active-view="business"] .business-jump-nav {
+    gap: 22px;
+  }
+
+  body[data-active-view="business"] .inbox-tabs {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 13px;
+  }
+
+  body[data-active-view="business"] .inbox-tab {
+    min-width: 92px;
+    min-height: 64px;
+  }
+
+  body[data-active-view="business"] .inbox-priority .inbox-section-head strong {
+    display: none;
+  }
+
+  body[data-active-view="business"] .inbox-priority .inbox-section-head {
+    align-items: baseline;
+    gap: 6px;
+    padding-bottom: 8px;
+  }
+
+  body[data-active-view="business"] .inbox-order:not(.is-compact),
+  body[data-active-view="business"] .production-order-card {
+    border-color: var(--premium-line);
+    border-radius: 16px;
+    background: var(--premium-surface-2);
+    box-shadow: var(--premium-shadow);
+  }
+
+  body[data-active-view="business"] .inbox-order:not(.is-compact) {
+    padding: 17px;
+  }
+
+  body[data-active-view="business"] .inbox-order:not(.is-compact) .main-order-action {
+    min-height: 52px;
+    border-color: var(--premium-red);
+    background: var(--premium-red);
+    color: #fff;
+  }
+
+  body[data-active-view="business"] .business-ops-panel,
+  body[data-active-view="business"] .business-report-card,
+  body[data-active-view="business"] .business-overview-card,
+  body[data-active-view="business"] .business-catalog-card,
+  body[data-active-view="business"] .business-setup-card {
+    padding: 18px;
+  }
+
+  body[data-active-view="business"] .business-report-grid,
+  body[data-active-view="business"] .business-overview-grid,
+  body[data-active-view="business"] .business-setup-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  body[data-active-view="business"] .topbar-ops-copy strong {
+    font-size: 12px;
+  }
+
+  body[data-active-view="business"] .topbar-ops-sync {
+    display: none;
+  }
+
+  body[data-active-view="business"] .topbar-ops-sound {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+  }
+
+  body[data-active-view="business"] .inbox-ops-head {
+    padding-top: 11px;
+  }
+
+  body[data-active-view="business"] .inbox-ops-head [data-business-order-search] {
+    width: 100%;
+  }
+
+  body[data-active-view="business"] .inbox-tab {
+    min-width: 86px;
+    padding-inline: 12px;
+  }
+
+  body[data-active-view="business"] .inbox-tab > strong {
+    font-size: 19px;
+  }
+
+  body[data-active-view="business"] .inbox-order:not(.is-compact) {
+    padding: 15px;
+  }
+
+  body[data-active-view="business"] .production-order-card,
+  body[data-active-view="business"] .production-payment-card {
+    padding: 15px;
+  }
+}
+
+/* ===========================================================================
+   Vistas de lectura — el alto de la ventana pertenece a la cola, no a cada
+   pantalla del panel. Métricas, caja, reportes y catálogo deben terminar
+   donde termina su contenido: el espacio extra se siente como dato ausente.
+   ========================================================================== */
+body[data-active-view="business"] .business-workspace[data-business-workspace="metrics"],
+body[data-active-view="business"] .business-workspace[data-business-workspace="reports"],
+body[data-active-view="business"] .business-workspace[data-business-workspace="cashbox"],
+body[data-active-view="business"] .business-workspace[data-business-workspace="catalog"],
+body[data-active-view="business"] .business-workspace[data-business-workspace="promotions"],
+body[data-active-view="business"] .business-workspace[data-business-workspace="setup"],
+body[data-active-view="business"] .business-workspace[data-business-workspace="guide"],
+body[data-active-view="business"] .business-workspace[data-business-workspace="local"] {
+  align-content: start;
+}
+
+body[data-active-view="business"] .business-growth-strip {
+  align-items: start;
+}
+
+body[data-active-view="business"] .business-growth-strip.is-empty {
+  min-height: 0;
+  padding-block: 18px;
+}
+
+body[data-active-view="business"] .growth-metric {
+  min-height: 110px;
+  align-content: start;
+}
+
+body[data-active-view="business"] .business-overview-grid {
+  align-items: start;
+}
+
+body[data-active-view="business"] .business-overview-card {
+  min-height: 182px;
+}
+
+@media (min-width: 1024px) {
+  body[data-active-view="business"] .business-inbox-main:has(> .business-workspace[data-business-workspace]:not([data-business-workspace="orders"])) {
+    height: auto;
+    min-height: 0;
+  }
+
+  body[data-active-view="business"] .business-inbox-main:has(> .business-workspace[data-business-workspace]:not([data-business-workspace="orders"])) > .business-workspace {
+    display: block;
+    min-height: 0;
+  }
+
+  body[data-active-view="business"] .business-workspace[data-business-workspace="metrics"] {
+    display: grid;
+    grid-template-rows: auto auto;
+    gap: 18px;
+  }
+
+  body[data-active-view="business"] .business-workspace[data-business-workspace="metrics"] .business-growth-strip {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    padding-block: 0 18px;
+  }
+
+  body[data-active-view="business"] .business-workspace[data-business-workspace="metrics"] .business-overview-card {
+    min-height: 182px;
+  }
+}
+
+@media (max-width: 1023px) {
+  body[data-active-view="business"] .business-workspace[data-business-workspace="metrics"] .business-growth-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body[data-active-view="business"] .business-workspace[data-business-workspace="metrics"] .business-overview-card {
+    min-height: 156px;
+  }
+}
+
+/* El Centro de operación es una pantalla de decisión, no un informe vertical.
+   En escritorio deja las excepciones a la vista mientras las métricas siguen
+   agrupadas y accionables. En móvil conserva el orden lineal y el scroll natural. */
+@media (min-width: 1024px) {
+  body[data-active-view="business"] .business-ops-panel:has(.operation-metrics-grid) {
+    grid-template-columns: minmax(0, 1.65fr) minmax(320px, .85fr);
+    column-gap: 24px;
+    align-items: start;
+  }
+
+  body[data-active-view="business"] .business-ops-panel:has(.operation-metrics-grid) > header,
+  body[data-active-view="business"] .business-ops-panel:has(.operation-metrics-grid) > .operation-summary,
+  body[data-active-view="business"] .business-ops-panel:has(.operation-metrics-grid) > .operation-center-toolbar {
+    grid-column: 1 / -1;
+  }
+
+  body[data-active-view="business"] .business-ops-panel:has(.operation-metrics-grid) .operation-metrics-grid {
+    grid-column: 1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-block: 18px 0;
+  }
+
+  body[data-active-view="business"] .business-ops-panel:has(.operation-metrics-grid) .operation-alerts {
+    grid-column: 2;
+    margin-top: 18px;
+  }
+
+  body[data-active-view="business"] .business-ops-panel:has(.operation-metrics-grid) .operation-alerts > h3 {
+    margin-top: 0;
+  }
+
+  body[data-active-view="business"] .business-ops-panel:has(.operation-metrics-grid) .operation-health,
+  body[data-active-view="business"] .business-ops-panel:has(.operation-metrics-grid) .operation-support,
+  body[data-active-view="business"] .business-ops-panel:has(.operation-metrics-grid) > footer {
+    grid-column: 1 / -1;
+  }
+}
+
+/* En los teléfonos angostos las acciones no le pueden robar ancho al nombre
+   de la pantalla: una cabecera que parte «negocio» letra por letra parece rota
+   y obliga a leer antes de poder operar. */
+@media (max-width: 560px) {
+  body[data-active-view="business"] [data-admin-unlocked] > .section-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+    margin-bottom: 16px;
+  }
+
+  body[data-active-view="business"] [data-admin-unlocked] > .section-head h1 {
+    max-width: none;
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+
+  body[data-active-view="business"] [data-admin-unlocked] > .section-head .view-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* ============================================================================
+   PASE PREMIUM · ITERACIÓN 1 — ESTRUCTURA, NAVEGACIÓN Y AIRE
+   ============================================================================
+   Tres cosas hacían que el Panel siguiera pareciendo un prototipo antes de
+   mirar un solo pedido: la navegación de escritorio reaparecida en el
+   teléfono, una cabecera que ocupaba media pantalla y una fila de contadores
+   que se cortaba al ras. Esta capa no toca ningún contrato: reordena peso,
+   devuelve aire y deja que la primera tarjeta empiece arriba.
+   ========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   1.1 · La fila de destinos vuelve a ser SÓLO de escritorio.
+   ---------------------------------------------------------------------------
+   `.production-operations-shortcuts` ya se ocultaba por debajo de 1020px: los
+   diecinueve destinos viven abajo, en la barra fija y en la hoja de «Más».
+   La capa premium la redeclaró sin media query y, al ir más abajo en el
+   archivo, resucitó la fila en el teléfono. Resultado medido a 390px: la
+   navegación aparecía DOS veces —arriba desplazándose y abajo fija— y la
+   primera tarjeta empezaba en y≈440 de 844. Se restituye la regla original.
+   ------------------------------------------------------------------------ */
+@media (max-width: 1020px) {
+  body[data-active-view="business"] .production-operations-shortcuts {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   1.2 · Escritorio: la navegación es un riel, y el riel tiene dos mitades.
+   ---------------------------------------------------------------------------
+   Diecinueve destinos en una sola fila plana le dan a «Conteo físico» —que se
+   hace una vez por mes— el mismo peso que a «Pedidos», que se toca todo el
+   turno. No se pueden mover de lugar sin tocar la navegación, así que se
+   separan con aire y con tinta: la operación del día queda en primer plano y
+   la configuración queda detrás, del otro lado de una línea.
+   ------------------------------------------------------------------------ */
+@media (min-width: 1021px) {
+  body[data-active-view="business"] .production-operations-shortcuts,
+  body[data-active-view="business"] .business-jump-nav {
+    position: sticky;
+    z-index: 4;
+    top: 68px;
+    margin-bottom: 4px;
+    padding-block: 6px 0;
+    padding-inline-end: 40px;
+    background: var(--premium-bg);
+    scroll-padding-inline: 40px;
+  }
+
+  body[data-active-view="business"] .business-ops-nav-button,
+  body[data-active-view="business"] .business-nav-button {
+    scroll-margin-inline: 40px;
+  }
+
+  /* El corte. `product-create` es el primer destino que ya no es «lo que pasa
+     ahora» sino «lo que dejo configurado», y arrastra a todo lo que viene
+     detrás. La línea no es decorativa: es dónde termina el turno. */
+  body[data-active-view="business"] .production-operations-shortcuts
+    [data-business-ops-view="product-create"] {
+    margin-inline-start: 10px;
+    padding-inline-start: 24px;
+    border-inline-start: 1px solid var(--premium-line);
+  }
+
+  body[data-active-view="business"] .production-operations-shortcuts
+    :is([data-business-ops-view="product-create"], [data-business-ops-view="product-create"] ~ button):not(.active) {
+    color: var(--premium-muted);
+    font-weight: 620;
+  }
+
+  body[data-active-view="business"] .production-operations-shortcuts
+    :is([data-business-ops-view="product-create"], [data-business-ops-view="product-create"] ~ button):not(.active):hover {
+    color: var(--premium-ink-2);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   1.3 · La cabecera dice quién sos una sola vez.
+   ---------------------------------------------------------------------------
+   «Panel del negocio» estaba tres veces en la misma pantalla: el h1, el
+   rótulo de cada tarjeta y el título del documento. El rótulo se va —el h1
+   sigue arriba y el lector de pantalla lo lee igual— y el título de la
+   pantalla pasa a ser lo primero que se lee dentro de la tarjeta.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .business-ops-panel > header .eyebrow {
+  display: none;
+}
+
+body[data-active-view="business"] .business-ops-panel > header h2 {
+  margin-block: 0 6px;
+  color: var(--premium-ink);
+  font-size: clamp(19px, 1.5vw, 23px);
+  font-weight: 760;
+  letter-spacing: -.02em;
+}
+
+body[data-active-view="business"] .business-ops-panel > header > div > p:not(.eyebrow) {
+  max-width: 62ch;
+  margin: 0;
+  color: var(--premium-muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+/* La identidad y las acciones de sesión comparten una sola línea tranquila.
+   «Timbre» y «Cerrar sesión» no compiten con el nombre de la pantalla. */
+body[data-active-view="business"] .production-ops-head {
+  align-items: center;
+  gap: 16px 20px;
+  margin-bottom: 4px;
+}
+
+body[data-active-view="business"] .production-ops-head-actions {
+  gap: 8px;
+}
+
+body[data-active-view="business"] .production-ops-head-actions
+  :is(.ghost-button, .secondary-button, .production-ops-sound) {
+  border-color: var(--premium-line);
+  background: transparent;
+  color: var(--premium-muted);
+  font-size: 12.5px;
+  font-weight: 680;
+}
+
+body[data-active-view="business"] .production-ops-head-actions
+  :is(.ghost-button, .secondary-button, .production-ops-sound):hover {
+  border-color: var(--premium-line-strong);
+  background: var(--premium-surface-2);
+  color: var(--premium-ink);
+}
+
+/* ---------------------------------------------------------------------------
+   1.4 · La tira de estado es una línea, no un párrafo.
+   ---------------------------------------------------------------------------
+   «Conectado · Última sincronización … · Sin comandos pendientes · Última
+   reconciliación: sin reconciliación confirmada» es una sola frase corrida de
+   11px que nadie lee cuando todo está bien y que tapa el titular cuando algo
+   está mal. Queda tenue y con jerarquía: lo excepcional se lee, lo rutinario
+   se apaga.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .production-ops-status {
+  gap: 8px 18px;
+  margin-bottom: 18px;
+  padding-block: 2px;
+  color: var(--premium-muted);
+  font-size: 12px;
+}
+
+body[data-active-view="business"] .production-ops-status strong {
+  color: var(--premium-ink-2);
+  font-weight: 660;
+}
+
+/* ---------------------------------------------------------------------------
+   1.5 · Los contadores son un control, no seis casilleros.
+   ---------------------------------------------------------------------------
+   El número es el dato; la etiqueta lo nombra. Antes medían casi lo mismo.
+   Ahora el número manda, el casillero pierde el borde permanente y el estado
+   seleccionado se marca con superficie en vez de con un marco más.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .tray-pulse {
+  margin-block: 2px 22px;
+}
+
+body[data-active-view="business"] .tray-pulse-row {
+  grid-auto-columns: minmax(96px, max-content);
+  gap: 8px;
+}
+
+body[data-active-view="business"] .tray-pulse-item {
+  min-height: 62px;
+  align-content: center;
+  gap: 3px;
+  padding: 10px 16px;
+  border-color: transparent;
+  border-radius: 13px;
+  background: var(--premium-surface-2);
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+body[data-active-view="business"] .tray-pulse-item:hover:not(:disabled) {
+  border-color: transparent;
+  background: var(--premium-raised);
+}
+
+body[data-active-view="business"] .tray-pulse-n {
+  font-size: 23px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+
+body[data-active-view="business"] .tray-pulse-k {
+  color: var(--premium-muted);
+  font-size: 11.5px;
+  font-weight: 640;
+  letter-spacing: .01em;
+}
+
+/* Un casillero vacío no es un error: es una buena noticia. Se apaga, no se
+   enmarca. */
+body[data-active-view="business"] .tray-pulse-item:disabled {
+  border-color: transparent;
+  background: transparent;
+  opacity: 1;
+}
+
+body[data-active-view="business"] .tray-pulse-item:disabled :is(.tray-pulse-n, .tray-pulse-k) {
+  color: rgb(143 154 163 / 62%);
+}
+
+/* «Atención» es el único casillero que puede pedir algo. Mantiene el ámbar
+   del sistema, sin marco extra. */
+body[data-active-view="business"] .tray-pulse-item[data-tray-jump="atencion"]:not(:disabled) {
+  border-color: transparent;
+  background: rgb(232 184 92 / 12%);
+}
+
+body[data-active-view="business"] .tray-pulse-item[data-tray-jump="atencion"]:not(:disabled)
+  :is(.tray-pulse-n, .tray-pulse-k) {
+  color: var(--premium-warning);
+}
+
+/* ---------------------------------------------------------------------------
+   1.6 · En el teléfono la tira se desplaza sin cortar la última etiqueta.
+   ------------------------------------------------------------------------ */
+@media (max-width: 1020px) {
+  body[data-active-view="business"] .tray-pulse-row {
+    grid-auto-columns: minmax(88px, max-content);
+    padding-inline-end: 16px;
+  }
+
+  body[data-active-view="business"] .tray-pulse-item {
+    min-height: 58px;
+    padding: 9px 14px;
+  }
+
+  body[data-active-view="business"] .tray-pulse-n {
+    font-size: 21px;
+  }
+}
+
+/* ============================================================================
+   PASE PREMIUM · ITERACIÓN 2 — LA TARJETA DE PEDIDO Y LA ACCIÓN DOMINANTE
+   ============================================================================
+   La tarjeta era una caja con tres cajas adentro: el aviso, la lista de
+   productos y el bloque de plata, cada uno con su borde y su fondo. Eso es lo
+   que le daba aire de formulario administrativo. Acá la tarjeta pasa a
+   separar por espacio y por peso tipográfico —una sola superficie— y una sola
+   cosa queda grande: lo que hay que tocar.
+   ========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   2.1 · Adentro de una tarjeta no hay más tarjetas.
+   ---------------------------------------------------------------------------
+   La lista de productos y los bloques de datos perdían su fondo propio: lo
+   que los separa es el espacio y una línea de un píxel, no un rectángulo con
+   esquinas redondeadas dentro de otro con esquinas redondeadas.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .production-order-lines,
+body[data-active-view="business"] .production-order-meta > div {
+  padding-inline: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+body[data-active-view="business"] .production-order-lines {
+  margin-block: 10px;
+  padding-block: 10px;
+  border-block: 1px solid var(--premium-line);
+}
+
+body[data-active-view="business"] .production-order-lines > li {
+  padding-block: 3px;
+  color: var(--premium-ink-2);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+body[data-active-view="business"] .production-order-lines > li strong {
+  color: var(--premium-ink);
+}
+
+/* El aviso deja de ser un cartel relleno y pasa a ser una línea marcada: el
+   ámbar sigue estando, pero como acento y no como superficie. */
+body[data-active-view="business"] .order-attention-chip {
+  padding: 2px 0 2px 12px;
+  border: 0;
+  border-inline-start: 2px solid var(--premium-warning);
+  border-radius: 0;
+  background: transparent;
+  font-size: 13px;
+}
+
+body[data-active-view="business"] .order-attention-chip > strong {
+  color: var(--premium-warning);
+  font-weight: 720;
+}
+
+body[data-active-view="business"] .order-attention-chip > span {
+  color: var(--premium-muted);
+}
+
+body[data-active-view="business"] .production-order-notes {
+  padding: 2px 0 2px 12px;
+  border: 0;
+  border-inline-start: 2px solid var(--premium-line-strong);
+  border-radius: 0;
+  background: transparent;
+  color: var(--premium-ink-2);
+  font-size: 13px;
+}
+
+/* ---------------------------------------------------------------------------
+   2.2 · Una acción grande, el resto en voz baja.
+   ---------------------------------------------------------------------------
+   «Aceptar pedido», el teléfono y WhatsApp tenían el mismo tamaño de caja.
+   Sólo una de las tres se toca en cada pedido; las otras dos son un rescate.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .production-order-card .primary-button,
+body[data-active-view="business"] .production-order-card .main-order-action {
+  min-height: 48px;
+  padding-inline: 22px;
+  border-color: var(--premium-red);
+  background: var(--premium-red);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 740;
+  letter-spacing: -.005em;
+}
+
+body[data-active-view="business"] .production-order-contact-row {
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--premium-line);
+}
+
+body[data-active-view="business"] .order-contact-call,
+body[data-active-view="business"] .order-contact-wa {
+  min-height: 44px;
+  padding-inline: 14px;
+  border-color: var(--premium-line);
+  background: transparent;
+  color: var(--premium-muted);
+  font-size: 13px;
+  font-weight: 640;
+}
+
+body[data-active-view="business"] .order-contact-call:hover,
+body[data-active-view="business"] .order-contact-wa:hover {
+  border-color: var(--premium-line-strong);
+  background: var(--premium-surface-2);
+  color: var(--premium-ink);
+}
+
+/* «Ver pedido completo» es una salida, no un botón. Se lee como enlace. */
+body[data-active-view="business"] .production-order-foot {
+  margin-top: 10px;
+  padding-top: 10px;
+  color: var(--premium-muted);
+  font-size: 12.5px;
+}
+
+/* ---------------------------------------------------------------------------
+   2.3 · La tarjeta respira y el estado se escanea de un vistazo.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .production-order-card {
+  padding: 18px 20px;
+  border-radius: 16px;
+}
+
+body[data-active-view="business"] .production-order-code {
+  color: var(--premium-ink);
+  font-size: 17px;
+  font-weight: 780;
+  letter-spacing: -.01em;
+}
+
+body[data-active-view="business"] .production-order-when {
+  color: var(--premium-muted);
+  font-size: 12.5px;
+}
+
+body[data-active-view="business"] .production-order-money,
+body[data-active-view="business"] .production-order-total {
+  color: var(--premium-ink);
+  font-size: 19px;
+  font-weight: 780;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.02em;
+}
+
+body[data-active-view="business"] .production-order-pay,
+body[data-active-view="business"] .production-order-address {
+  color: var(--premium-muted);
+  font-size: 13px;
+}
+
+/* Lo urgente sobresale por el borde izquierdo, que es lo único que se ve sin
+   leer. El fondo de la tarjeta no cambia: un turno entero con tarjetas
+   teñidas cansa y deja de significar nada. */
+body[data-active-view="business"] .production-order-card.is-attention {
+  border-inline-start: 3px solid var(--premium-warning);
+}
+
+/* ---------------------------------------------------------------------------
+   2.4 · El encabezado de cada carril es un rótulo, no un título.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .order-tray-head {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--premium-line);
+}
+
+body[data-active-view="business"] .order-tray-title {
+  color: var(--premium-ink-2);
+  font-size: 11.5px;
+  font-weight: 760;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+body[data-active-view="business"] .order-tray-hint {
+  color: var(--premium-muted);
+  font-size: 12.5px;
+}
+
+/* ---------------------------------------------------------------------------
+   2.5 · El teléfono: la cabecera cabe en una línea y el trabajo empieza antes.
+   ---------------------------------------------------------------------------
+   Medido a 390px antes de esta capa: 430px de cromo —título partido en dos
+   renglones, rol, tira de estado y contadores— antes de la primera tarjeta.
+   El título entra entero, las acciones de sesión bajan de tamaño y la fila de
+   contadores deja de ser la protagonista.
+   ------------------------------------------------------------------------ */
+@media (max-width: 1020px) {
+  body[data-active-view="business"] .production-ops-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 10px 12px;
+    margin-bottom: 2px;
+  }
+
+  body[data-active-view="business"] .production-ops-head h1 {
+    font-size: 21px;
+    letter-spacing: -.03em;
+  }
+
+  body[data-active-view="business"] .production-ops-role {
+    font-size: 12px;
+  }
+
+  body[data-active-view="business"] .production-ops-head-actions
+    :is(.ghost-button, .secondary-button) {
+    min-height: 44px;
+    padding-inline: 12px;
+    font-size: 12px;
+  }
+
+  body[data-active-view="business"] .production-ops-status {
+    margin-bottom: 12px;
+    font-size: 11.5px;
+  }
+
+  body[data-active-view="business"] .tray-pulse {
+    margin-block: 0 16px;
+  }
+
+  body[data-active-view="business"] .production-order-card {
+    padding: 16px;
+  }
+
+  /* Una columna de verdad: la acción ocupa el ancho del pulgar. */
+  body[data-active-view="business"] .production-order-card .primary-button,
+  body[data-active-view="business"] .production-order-card .main-order-action {
+    width: 100%;
+    min-height: 52px;
+  }
+
+  body[data-active-view="business"] .production-order-contact-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   2.6 · Central de pedidos (demostración): la misma jerarquía.
+   ---------------------------------------------------------------------------
+   El buscador ocupaba una banda entera arriba de todo, la tira de estados se
+   cortaba al ras del borde derecho y la plata aparecía dos veces con el mismo
+   tamaño. Se ordena: primero cuánto hay, después el detalle.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .inbox-ops-head {
+  gap: 12px;
+}
+
+body[data-active-view="business"] .inbox-tabs {
+  padding-inline-end: 18px;
+  scroll-padding-inline: 4px;
+}
+
+/* La plata manda una sola vez. El recuento de unidades queda como meta. */
+body[data-active-view="business"] .inbox-order .inbox-status-copy {
+  color: var(--premium-muted);
+  font-size: 12.5px;
+}
+
+body[data-active-view="business"] .inbox-payment-panel {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+body[data-active-view="business"] .inbox-payment-panel > span {
+  color: var(--premium-muted);
+  font-size: 11px;
+  font-weight: 680;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+body[data-active-view="business"] .inbox-payment-panel > strong {
+  color: var(--premium-ink);
+  font-size: 23px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.025em;
+}
+
+body[data-active-view="business"] .inbox-payment-panel > small {
+  color: var(--premium-muted);
+  font-size: 12.5px;
+}
+
+/* El contacto es un rescate, no el primer dato del pedido. */
+body[data-active-view="business"] .inbox-contact-row {
+  gap: 8px;
+}
+
+body[data-active-view="business"] .inbox-contact-row :is(a, button) {
+  min-height: 44px;
+  color: var(--premium-muted);
+  font-size: 12.5px;
+  font-weight: 640;
+}
+
+/* «Ver datos y productos» es la divulgación progresiva que ya existía: se ve
+   como lo que es, una fila que se abre, y no como un botón más. */
+body[data-active-view="business"] .inbox-card-details > summary {
+  min-height: 44px;
+  align-content: center;
+  padding-block: 10px;
+  border-top: 1px solid var(--premium-line);
+  color: var(--premium-ink-2);
+  font-size: 13.5px;
+  font-weight: 660;
+}
+
+body[data-active-view="business"] .inbox-card-details[open] > summary {
+  color: var(--premium-ink);
+}
+
+/* El detalle abierto tampoco es una tabla con marco. */
+body[data-active-view="business"] .inbox-detail-list,
+body[data-active-view="business"] .inbox-products-block {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+body[data-active-view="business"] .inbox-detail-list p {
+  padding-block: 7px;
+  border-bottom: 1px solid var(--premium-line);
+}
+
+body[data-active-view="business"] .inbox-detail-list p:last-child {
+  border-bottom: 0;
+}
+
+body[data-active-view="business"] .inbox-detail-list p > span {
+  color: var(--premium-muted);
+  font-size: 13px;
+}
+
+body[data-active-view="business"] .inbox-detail-list p > strong {
+  color: var(--premium-ink-2);
+  font-size: 13.5px;
+  font-weight: 660;
+}
+
+/* ---------------------------------------------------------------------------
+   2.7 · Las dos barras inferiores tienen el mismo tamaño de dedo.
+   ------------------------------------------------------------------------ */
+@media (max-width: 1020px) {
+  body[data-active-view="business"] .b-bottomnav,
+  body[data-active-view="business"] .panel-bottom-nav {
+    border-top-color: var(--premium-line);
+    background: rgb(16 19 22 / 96%);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+  }
+
+  body[data-active-view="business"] .b-bottomnav-button,
+  body[data-active-view="business"] .panel-nav-item {
+    min-height: 52px;
+    color: var(--premium-muted);
+    font-size: 12px;
+    font-weight: 680;
+  }
+
+  body[data-active-view="business"] .b-bottomnav-button.active,
+  body[data-active-view="business"] .panel-nav-item.is-active {
+    color: var(--premium-ink);
+  }
+
+  body[data-active-view="business"] .b-bottomnav-button.active::before,
+  body[data-active-view="business"] .panel-nav-item.is-active::before {
+    right: auto;
+    left: 50%;
+    width: 22px;
+    height: 3px;
+    transform: translateX(-50%);
+    background: var(--premium-red);
+  }
+
+  body[data-active-view="business"] .panel-nav-ico {
+    color: inherit;
+    font-size: 16px;
+  }
+
+  body[data-active-view="business"] .inbox-order {
+    padding: 16px;
+  }
+
+  body[data-active-view="business"] .inbox-order .main-order-action {
+    width: 100%;
+    min-height: 52px;
+    font-size: 15px;
+    font-weight: 740;
+  }
+
+  body[data-active-view="business"] .prep-time-field select {
+    min-height: 48px;
+  }
+}
+
+/* ============================================================================
+   PASE PREMIUM · ITERACIÓN 3 — TONO, MERCADO PAGO Y CABECERA EN EL TELÉFONO
+   ============================================================================
+   Nada de acá toca el flujo de Mercado Pago. `data-mp-connection-action`, el
+   texto del estado, el `aria-live`, el `aria-busy` y el orden de los botones
+   quedan exactamente como estaban: lo único que cambia es cómo se ve la
+   tarjeta que los contiene.
+
+   El problema visual era doble. Primero, el rojo estaba en dos lugares a la
+   vez —el fondo de la tarjeta crítica y el botón de acción—, y cuando todo es
+   rojo nada es urgente. Segundo, la tarjeta se leía como una sola frase
+   corrida: «Mercado Pago  No pudimos verificar la conexión.  Conectá tu
+   cuenta…» seguido del botón, todo en el mismo renglón.
+   ========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   3.1 · El tono es un acento, no un baño de color.
+   ---------------------------------------------------------------------------
+   La superficie queda siempre igual y el estado se dice con la barra de la
+   izquierda y con la tinta del titular. Así el único rojo saturado de la
+   pantalla sigue siendo el botón que hay que apretar.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .operation-summary {
+  border-inline-start-width: 3px;
+  border-radius: 12px;
+  background: var(--premium-surface-2);
+}
+
+body[data-active-view="business"] .operation-summary.tone-critical {
+  border-inline-start-color: var(--premium-red);
+  background: var(--premium-surface-2);
+}
+
+body[data-active-view="business"] .operation-summary.tone-attention {
+  border-inline-start-color: var(--premium-warning);
+  background: var(--premium-surface-2);
+}
+
+body[data-active-view="business"] .operation-summary.tone-calm {
+  border-inline-start-color: var(--premium-success);
+  background: var(--premium-surface-2);
+}
+
+/* ---------------------------------------------------------------------------
+   3.2 · La tarjeta de Mercado Pago se lee de arriba hacia abajo.
+   ---------------------------------------------------------------------------
+   `.operation-summary` es `flex-wrap` —correcto para un resumen de una línea,
+   equivocado para una tarjeta con rótulo, estado, explicación y acción—. Acá
+   pasa a rejilla de una columna: cada cosa en su renglón y la acción al final,
+   que es el orden en que se la lee y en que se la usa.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .operation-summary--mercadopago {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  padding: 18px 20px;
+}
+
+/* El rótulo no compite con el título de la pantalla, que dice lo mismo dos
+   renglones más arriba: pasa a ser la etiqueta del bloque. */
+body[data-active-view="business"] .operation-summary--mercadopago > h3 {
+  margin: 0;
+  color: var(--premium-muted);
+  font-size: 11px;
+  font-weight: 720;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+/* El estado es lo que se viene a mirar. */
+body[data-active-view="business"] .operation-summary--mercadopago > p[role="status"] {
+  margin: 0;
+  color: var(--premium-ink);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -.015em;
+}
+
+body[data-active-view="business"] .operation-summary--mercadopago.tone-calm > p[role="status"] {
+  color: var(--premium-success);
+}
+
+body[data-active-view="business"] .operation-summary--mercadopago.tone-critical > p[role="status"] {
+  color: var(--premium-ink);
+}
+
+/* La explicación y el aviso de que se sigue en Mercado Pago son contexto:
+   se leen una vez, la primera. */
+body[data-active-view="business"] .operation-summary--mercadopago > p:not([role="status"]) {
+  max-width: 58ch;
+  margin: 0;
+  color: var(--premium-muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+body[data-active-view="business"] .operation-summary--mercadopago > .button-row {
+  margin-top: 6px;
+  gap: 10px;
+}
+
+/* La acción de conectar es la única cosa grande de esta pantalla. */
+body[data-active-view="business"] .operation-summary--mercadopago .primary-button {
+  min-height: 48px;
+  padding-inline: 24px;
+  border-color: var(--premium-red);
+  background: var(--premium-red);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 740;
+}
+
+body[data-active-view="business"] .operation-summary--mercadopago .primary-button:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--premium-red) 82%, #fff);
+  background: color-mix(in srgb, var(--premium-red) 88%, #fff);
+}
+
+/* Conectado, «Verificar» y «Desconectar» dejan de ser dos botones rojos: la
+   cuenta ya está funcionando y nada pide una decisión. */
+body[data-active-view="business"] .operation-summary--mercadopago.tone-calm .primary-button {
+  border-color: var(--premium-line-strong);
+  background: transparent;
+  color: var(--premium-ink-2);
+  font-weight: 680;
+}
+
+body[data-active-view="business"] .operation-summary--mercadopago.tone-calm .primary-button:hover:not(:disabled) {
+  border-color: rgb(255 255 255 / 30%);
+  background: var(--premium-raised);
+  color: var(--premium-ink);
+}
+
+body[data-active-view="business"] .operation-summary--mercadopago[aria-busy="true"] {
+  opacity: .72;
+}
+
+/* ---------------------------------------------------------------------------
+   3.3 · «Qué resolver»: las alertas se distinguen por severidad, no por marco.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .operation-alerts > h3 {
+  margin-bottom: 12px;
+  color: var(--premium-ink-2);
+  font-size: 11.5px;
+  font-weight: 760;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+body[data-active-view="business"] .operation-alert {
+  padding: 14px 16px;
+  border: 0;
+  border-inline-start: 3px solid var(--premium-line-strong);
+  border-radius: 0 12px 12px 0;
+  background: var(--premium-surface-2);
+}
+
+body[data-active-view="business"] .operation-alert + .operation-alert {
+  margin-top: 8px;
+}
+
+body[data-active-view="business"] .operation-alert strong {
+  color: var(--premium-ink);
+  font-size: 14px;
+  font-weight: 720;
+}
+
+body[data-active-view="business"] .operation-alert-status {
+  color: var(--premium-muted);
+  font-size: 12px;
+}
+
+/* ---------------------------------------------------------------------------
+   3.4 · El Centro de operación: primero el número, después la explicación.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .operation-metric {
+  padding: 16px 18px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--premium-surface-2);
+  text-align: start;
+}
+
+body[data-active-view="business"] .operation-metric strong {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -.03em;
+  line-height: 1.05;
+}
+
+body[data-active-view="business"] .operation-metric > span:not(:last-child),
+body[data-active-view="business"] .operation-metric b {
+  color: var(--premium-ink-2);
+  font-size: 14px;
+  font-weight: 680;
+}
+
+body[data-active-view="business"] .operation-metric small {
+  color: var(--premium-muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+body[data-active-view="business"] button.operation-metric:hover {
+  background: var(--premium-raised);
+}
+
+/* La línea de «Actualizado … / Actualizar» es servicio, no contenido. */
+body[data-active-view="business"] .operation-center-toolbar {
+  margin-block: 14px 4px;
+  color: var(--premium-muted);
+  font-size: 12.5px;
+}
+
+body[data-active-view="business"] .operation-center-toolbar .ghost-button,
+body[data-active-view="business"] .operation-center-toolbar button {
+  color: var(--premium-ink-2);
+  font-size: 12.5px;
+  font-weight: 660;
+}
+
+/* ---------------------------------------------------------------------------
+   3.5 · Escritorio: el trabajo empieza más arriba.
+   ---------------------------------------------------------------------------
+   Antes de esta capa había 470px de cromo a 1440×900 antes de la primera
+   tarjeta: de novecientos píxeles de alto, la mitad era encabezado. El título
+   baja un punto, la tira de estado se pega al título y la fila de contadores
+   deja de tener un colchón arriba y abajo.
+   ------------------------------------------------------------------------ */
+@media (min-width: 1021px) {
+  body[data-active-view="business"] .section[data-view="business"] {
+    padding-top: clamp(16px, 2vw, 24px);
+  }
+
+  body[data-active-view="business"] .production-ops-head h1,
+  body[data-active-view="business"] [data-admin-unlocked] > .section-head h1 {
+    font-size: clamp(22px, 1.9vw, 27px);
+  }
+
+  body[data-active-view="business"] .production-ops-status {
+    margin-bottom: 10px;
+  }
+
+  body[data-active-view="business"] .production-operations-shortcuts,
+  body[data-active-view="business"] .business-jump-nav {
+    margin-top: 6px;
+  }
+
+  body[data-active-view="business"] .tray-pulse {
+    margin-block: 14px 18px;
+  }
+
+  body[data-active-view="business"] .business-ops-panel {
+    padding: clamp(20px, 2.4vw, 28px);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   3.6 · Teléfono: el nombre de la pantalla no se parte al medio.
+   ---------------------------------------------------------------------------
+   «Panel del negocio» a 21px no entra al lado de «Timbre: no» y «Cerrar
+   sesión» en 390px: quedaba partido en dos renglones, que es lo que hace que
+   una herramienta parezca rota antes de leerla. Las acciones de sesión bajan
+   a su propio renglón, alineadas a la izquierda, con el tamaño de una acción
+   secundaria de verdad.
+   ------------------------------------------------------------------------ */
+@media (max-width: 620px) {
+  body[data-active-view="business"] .production-ops-head {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  body[data-active-view="business"] .production-ops-head h1 {
+    font-size: 22px;
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+
+  body[data-active-view="business"] .production-ops-head-actions {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  body[data-active-view="business"] .production-ops-head-actions
+    :is(.ghost-button, .secondary-button) {
+    min-height: 44px;
+    padding-inline: 14px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   3.7 · Lo urgente se marca una sola vez.
+   ---------------------------------------------------------------------------
+   La tarjeta con atención tenía el marco entero ámbar y además la barra
+   izquierda ámbar. Dos señales para lo mismo terminan siendo ninguna: queda
+   la barra, que es la que se ve de reojo en una columna de tarjetas.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .production-order-card.is-attention {
+  border-color: var(--premium-line);
+  border-inline-start-color: var(--premium-warning);
+  box-shadow: var(--premium-shadow);
+}
+
+/* ============================================================================
+   PASE PREMIUM · ITERACIÓN 4 — CONSISTENCIA, DENSIDAD Y TERMINACIÓN
+   ============================================================================
+   Las dos superficies del Panel —«Panel del negocio» en producción y
+   «Central de pedidos» en la demostración— venían con dos vocabularios
+   visuales distintos: una navegación se subrayaba y la otra no, los
+   contadores eran píldoras en una y casilleros con marco en la otra, el aviso
+   del detalle seguía siendo un baño rojo. Acá quedan hablando el mismo
+   idioma, y el teléfono recupera los píxeles que le faltaban arriba.
+   ========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   4.1 · Las dos navegaciones se marcan igual.
+   ---------------------------------------------------------------------------
+   El subrayado del destino activo estaba declarado pero nunca se dibujaba:
+   la regla fijaba posición y color sin `content`, así que el pseudo-elemento
+   no se generaba y en la demostración el destino activo sólo cambiaba de
+   tinta. Se completa la regla y las dos barras marcan el lugar del mismo
+   modo.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .business-nav-button,
+body[data-active-view="business"] .business-ops-nav-button {
+  position: relative;
+}
+
+body[data-active-view="business"] .business-nav-button.active::after,
+body[data-active-view="business"] .business-ops-nav-button.active::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  width: auto;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--premium-red);
+  content: "";
+  transform: none;
+}
+
+/* Las acciones de sesión son salidas, no decisiones: nunca en rojo. */
+body[data-active-view="business"] [data-admin-unlocked] > .section-head .view-actions > button {
+  border-color: var(--premium-line);
+  background: transparent;
+  color: var(--premium-muted);
+  font-size: 12.5px;
+  font-weight: 680;
+}
+
+body[data-active-view="business"] [data-admin-unlocked] > .section-head .view-actions > button:hover {
+  border-color: var(--premium-line-strong);
+  background: var(--premium-surface-2);
+  color: var(--premium-ink);
+}
+
+/* ---------------------------------------------------------------------------
+   4.2 · Un solo diseño de contador para todo el Panel.
+   ---------------------------------------------------------------------------
+   `.tray-pulse-item` (producción) y `.inbox-tab` (demostración) cuentan lo
+   mismo: cuánto trabajo hay en cada estado. Comparten superficie, radio y
+   escala tipográfica. La diferencia que queda es real: la tira de la
+   demostración además FILTRA, así que tiene estado seleccionado.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .inbox-tabs {
+  gap: 8px;
+  border-bottom: 0;
+}
+
+body[data-active-view="business"] .inbox-tab {
+  min-width: 92px;
+  min-height: 62px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 13px;
+  background: var(--premium-surface-2);
+}
+
+body[data-active-view="business"] .inbox-tab > strong {
+  font-size: 23px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+
+body[data-active-view="business"] .inbox-tab > span {
+  font-size: 11.5px;
+  font-weight: 640;
+}
+
+body[data-active-view="business"] .inbox-tab:hover:not(.active) {
+  background: var(--premium-raised);
+}
+
+body[data-active-view="business"] .inbox-tab.active {
+  border: 0;
+  background: var(--premium-raised);
+  box-shadow: none;
+  color: var(--premium-ink);
+}
+
+body[data-active-view="business"] .inbox-tab.active::after {
+  position: absolute;
+  right: 14px;
+  bottom: 0;
+  left: 14px;
+  display: block;
+  width: auto;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--premium-red);
+  content: "";
+  transform: none;
+}
+
+/* ---------------------------------------------------------------------------
+   4.3 · El detalle del pedido: ni baño rojo ni caja dentro de caja.
+   ---------------------------------------------------------------------------
+   «Revisar datos, stock y forma de entrega antes de aceptar» es una
+   instrucción permanente, no una alarma: aparece en TODOS los pedidos nuevos.
+   Con fondo rojo competía con el botón de aceptar, que es lo único que
+   debería estar pidiendo atención en esa columna.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .d-detail-body .inbox-status-copy {
+  padding: 0 0 0 13px;
+  border-left: 2px solid var(--premium-line-strong);
+  border-radius: 0;
+  background: transparent;
+  color: var(--premium-muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+body[data-active-view="business"] .d-detail-body .inbox-products-block {
+  padding: 14px 0 0;
+  border: 0;
+  border-top: 1px solid var(--premium-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+body[data-active-view="business"] .d-detail-body .inbox-products-block > span {
+  color: var(--premium-muted);
+  font-size: 11px;
+  font-weight: 720;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+/* ---------------------------------------------------------------------------
+   4.4 · La banda del buscador deja de ser una franja vacía.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .inbox-ops-head {
+  min-height: 0;
+  padding: 10px 0 8px;
+}
+
+body[data-active-view="business"] .inbox-ops-head [data-business-order-search] {
+  min-height: 44px;
+  border-color: var(--premium-line);
+  background: var(--premium-surface-2);
+  /* iOS amplía la página al enfocar controles por debajo de 16 px. */
+  font-size: 16px;
+}
+
+body[data-active-view="business"] .inbox-ops-head [data-business-order-search]::placeholder {
+  color: var(--premium-muted);
+  font-weight: 560;
+}
+
+/* ---------------------------------------------------------------------------
+   4.5 · Teléfono: el cromo se achica hasta donde deja de ser útil achicarlo.
+   ---------------------------------------------------------------------------
+   Medido a 390×844 con la iteración 3: la primera tarjeta empezaba en y≈437,
+   o sea 52% de la pantalla gastado en encabezado. Acá se recuperan unos 60px
+   cerrando los huecos entre bloques que no cambian durante el turno.
+   ------------------------------------------------------------------------ */
+@media (max-width: 1020px) {
+  body[data-active-view="business"] .section[data-view="business"] {
+    padding-top: 12px;
+  }
+
+  body[data-active-view="business"] .production-ops-head {
+    gap: 8px;
+  }
+
+  body[data-active-view="business"] .production-ops-role {
+    margin: 0;
+  }
+
+  body[data-active-view="business"] .production-ops-status {
+    margin-bottom: 10px;
+    padding-block: 0;
+  }
+
+  body[data-active-view="business"] .tray-pulse {
+    margin-block: 0 14px;
+  }
+
+  body[data-active-view="business"] .order-tray-head {
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+  }
+
+  body[data-active-view="business"] [data-admin-unlocked] > .section-head {
+    margin-bottom: 10px;
+  }
+
+  body[data-active-view="business"] .inbox-ops-head {
+    padding: 6px 0;
+  }
+
+  /* La tira de estados se desplaza, pero la última etiqueta no queda cortada
+     al ras del borde: el degradado avisa que hay más y el relleno deja que se
+     termine de leer. */
+  body[data-active-view="business"] .inbox-tabs {
+    padding-inline-end: 22px;
+    mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent 100%);
+  }
+
+  body[data-active-view="business"] .inbox-tab {
+    min-width: 88px;
+    min-height: 58px;
+    padding: 9px 14px;
+  }
+
+  body[data-active-view="business"] .inbox-tab > strong {
+    font-size: 21px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   4.6 · Legibilidad: los textos de servicio dejan de estar por debajo de 12px.
+   ---------------------------------------------------------------------------
+   Un turno son horas mirando esta pantalla, muchas veces de costado y con el
+   teléfono a medio metro. Nada que haya que leer baja de 12px, y lo que no
+   hay que leer nunca —los rótulos en versalita— se compensa con tracking.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] :is(small, .form-hint, .field-hint) {
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+body[data-active-view="business"] .status-pill,
+body[data-active-view="business"] .status-chip,
+body[data-active-view="business"] .order-mode-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
+/* ---------------------------------------------------------------------------
+   4.7 · Estados vacíos: una frase, centrada, sin marco punteado.
+   ---------------------------------------------------------------------------
+   El borde punteado es el gesto más característico de un prototipo. Cuando no
+   hay pedidos la pantalla tiene que verse tranquila, no incompleta.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] :is(.inbox-empty, .production-empty, .empty-state) {
+  padding: 40px 24px;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  color: var(--premium-muted);
+}
+
+body[data-active-view="business"] :is(.inbox-empty, .production-empty, .empty-state) strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--premium-ink-2);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+body[data-active-view="business"] :is(.inbox-empty, .production-empty, .empty-state) p {
+  max-width: 44ch;
+  margin-inline: auto;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+/* ---------------------------------------------------------------------------
+   4.8 · Foco visible: se ve dónde está el teclado sin que parezca un error.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] :focus-visible {
+  outline: 2px solid var(--premium-info);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+body[data-active-view="business"] .panel-nav-item:focus-visible,
+body[data-active-view="business"] .b-bottomnav-button:focus-visible {
+  outline-offset: -3px;
+}
+
+/* ---------------------------------------------------------------------------
+   4.9 · Tablet: dos columnas de trabajo antes que una columna muy ancha.
+   ---------------------------------------------------------------------------
+   Entre 700px y 1020px la cola se leía como una lista de tarjetas de 700px de
+   ancho con cuarenta caracteres de texto adentro. Dos columnas usan el ancho
+   y mantienen la tarjeta en una medida legible.
+   ------------------------------------------------------------------------ */
+@media (min-width: 700px) and (max-width: 1020px) {
+  body[data-active-view="business"] .production-order-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 16px;
+  }
+
+  body[data-active-view="business"] .order-tray-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   4.10 · La sombra es una sola, y es suave.
+   ---------------------------------------------------------------------------
+   Convivían tres profundidades distintas —la de la tarjeta, la del panel y la
+   heredada de la vidriera del cliente, que tiene un lavado rojo—. En una
+   herramienta de trabajo el rojo no puede estar en la sombra.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] :is(.business-ops-panel, .production-order-card,
+  .production-payment-card, .business-report-card, .business-overview-card,
+  .business-catalog-card, .business-setup-card) {
+  box-shadow: 0 1px 2px rgb(0 0 0 / 22%), 0 14px 34px rgb(0 0 0 / 16%);
+}
+
+body[data-active-view="business"] :is(.operation-metric, .operation-alert,
+  .tray-pulse-item, .inbox-tab, .day-metric, .growth-metric, .stat-tile) {
+  box-shadow: none;
+}
+
+/* ============================================================================
+   PASE PREMIUM · ITERACIÓN 5 — LO QUE APARECIÓ EN EL TELÉFONO DE VERDAD
+   ============================================================================
+   Medido en un Moto G15 (432×815 CSS, dpr 2.5) con el panel servido en local.
+   Tres cosas que ninguna captura de escritorio mostraba: la barra superior se
+   volvía BLANCA al desplazarse, los puntos del progreso venían con el halo de
+   la vidriera del cliente, y las señales del cliente se leían como una sola
+   frase corrida sin separaciones.
+   ========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   5.1 · La barra superior no se vuelve blanca al bajar.  [DEFECTO]
+   ---------------------------------------------------------------------------
+   `styles/motion.css` pinta `body[data-motion-scrolled="true"] .topbar` de
+   `rgb(255 253 251 / 96%)` —el blanco cálido de la tienda— y se carga DESPUÉS
+   de esta hoja con la misma especificidad, así que ganaba. En la vidriera eso
+   es correcto; en el Panel deja la barra en blanco con la marca blanca encima:
+   en el teléfono el nombre del comercio desaparecía apenas se empezaba a
+   desplazar la cola.
+
+   Se gana por especificidad y no por orden de archivo —el atributo del modo se
+   suma al de la vista— para que la corrección no dependa de dónde quede esta
+   hoja en la próxima reorganización de `styles.css`. Y el fondo pasa a ser
+   opaco: con `backdrop-filter` activo, un fondo traslúcido sobre contenido en
+   movimiento deja una veladura clara en Android.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"][data-motion-scrolled="true"] .topbar,
+body[data-active-view="business"] .topbar {
+  border-bottom-color: var(--premium-line);
+  background: #101316;
+  box-shadow: 0 1px 0 rgb(255 255 255 / 4%);
+  color: var(--premium-ink);
+}
+
+body[data-active-view="business"][data-motion-scrolled="true"] .topbar {
+  box-shadow: 0 1px 0 rgb(255 255 255 / 4%), 0 10px 24px rgb(0 0 0 / 28%);
+}
+
+/* La misma trampa en la barra de abajo: su reserva de color es el blanco
+   cálido de la tienda y sólo se veía si el token del panel faltaba. */
+@media (max-width: 1020px) {
+  body[data-active-view="business"] .b-bottomnav,
+  body[data-active-view="business"] .panel-bottom-nav {
+    background: #14181c;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   5.2 · El progreso del pedido es una línea de estado, no una constelación.
+   ---------------------------------------------------------------------------
+   Los puntos venían de la vidriera del cliente: 22px, blancos, con un halo
+   rojo de 5px en el paso actual. En una tarjeta de trabajo eso es lo más
+   brillante de la pantalla y no dice nada que el rótulo no diga.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .track-dot {
+  width: 12px;
+  height: 12px;
+  border-width: 2px;
+  border-color: var(--premium-line-strong);
+  background: var(--premium-surface);
+}
+
+body[data-active-view="business"] .track-step.done .track-dot,
+body[data-active-view="business"] .track-step.current .track-dot {
+  border-color: var(--premium-red);
+  background: var(--premium-red);
+}
+
+body[data-active-view="business"] .track-step.done .track-dot::after {
+  content: none;
+}
+
+body[data-active-view="business"] .track-step.current .track-dot {
+  box-shadow: 0 0 0 3px rgb(222 23 37 / 22%);
+}
+
+body[data-active-view="business"] .track-step::before {
+  background: var(--premium-line);
+}
+
+body[data-active-view="business"] .track-step.done::before,
+body[data-active-view="business"] .track-step.current::before {
+  background: color-mix(in srgb, var(--premium-red) 62%, transparent);
+}
+
+body[data-active-view="business"] .track-step small {
+  color: var(--premium-muted);
+  font-size: 11.5px;
+  font-weight: 640;
+}
+
+body[data-active-view="business"] .track-step.current small {
+  color: var(--premium-ink-2);
+  font-weight: 720;
+}
+
+/* ---------------------------------------------------------------------------
+   5.3 · Las señales del cliente se leen como datos, no como un párrafo.
+   ---------------------------------------------------------------------------
+   «Cliente recurrente 4 pedidos previos 5 pedidos locales Último pedido hoy
+   Cliente frecuente: revisar beneficio» era todo el mismo renglón, sin
+   separación: en el teléfono parecía texto roto.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .customer-signal-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  padding: 10px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--premium-muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+body[data-active-view="business"] .customer-signal-panel > span:not(.signal-chip) {
+  position: relative;
+  padding-inline-start: 14px;
+}
+
+body[data-active-view="business"] .customer-signal-panel > span:not(.signal-chip)::before {
+  position: absolute;
+  inset-inline-start: 0;
+  color: rgb(143 154 163 / 55%);
+  content: "·";
+}
+
+body[data-active-view="business"] .signal-chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--premium-raised);
+  color: var(--premium-ink-2);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+body[data-active-view="business"] .signal-benefit {
+  color: var(--premium-warning);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+/* ---------------------------------------------------------------------------
+   5.4 · La plata se dice una vez, fuerte, y una vez, al pasar.
+   ---------------------------------------------------------------------------
+   «2 unidades · $ 39.089» y «TOTAL A COBRAR $ 39.089» estaban a dos renglones
+   de distancia con casi el mismo peso, y en el teléfono se leía como un error
+   de la aplicación. El recuento queda como lo que es: cuántas cosas hay que
+   juntar.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .inbox-order .inbox-card-main > .inbox-status-copy {
+  margin-block: 2px;
+  color: rgb(143 154 163 / 82%);
+  font-size: 12px;
+  font-weight: 560;
+}
+
+/* ---------------------------------------------------------------------------
+   5.5 · Central de pedidos en el teléfono: menos cromo antes del trabajo.
+   ---------------------------------------------------------------------------
+   Medido en el Moto G15 con la iteración 4: la primera tarjeta empezaba en
+   y≈380 de 815, o sea 47% de pantalla gastado en título, dos acciones de
+   sesión, buscador y contadores. Las acciones de sesión y el buscador son de
+   uso ocasional: bajan de tamaño sin dejar de ser tocables (40px).
+   ------------------------------------------------------------------------ */
+@media (max-width: 1020px) {
+  body[data-active-view="business"] [data-admin-unlocked] > .section-head {
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  body[data-active-view="business"] [data-admin-unlocked] > .section-head h1 {
+    font-size: 22px;
+  }
+
+  body[data-active-view="business"] [data-admin-unlocked] > .section-head .view-actions > button {
+    min-height: 44px;
+    padding-inline: 14px;
+    font-size: 12.5px;
+  }
+
+  body[data-active-view="business"] .inbox-ops-head {
+    padding: 4px 0 8px;
+  }
+
+  body[data-active-view="business"] .inbox-ops-head [data-business-order-search] {
+    min-height: 44px;
+  }
+
+  /* El rótulo del grupo de pedidos ya no necesita su propio colchón: la tira
+     de contadores que tiene arriba ya separa. */
+  body[data-active-view="business"] .inbox-section-head,
+  body[data-active-view="business"] .inbox-priority .inbox-section-head {
+    margin-block: 12px 8px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   5.6 · Nada de la vidriera del cliente se cuela en la herramienta.
+   ---------------------------------------------------------------------------
+   El Panel comparte hoja con la tienda y hereda sus sombras con lavado rojo y
+   sus destellos. Acá se apagan de una vez, en un solo lugar.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] :is(.card, .panel, .surface, .shelf-card) {
+  --card-glow: 0;
+}
+
+body[data-active-view="business"] .status-chip.received,
+body[data-active-view="business"] .inbox-state-dot {
+  box-shadow: none;
+}
+
+/* ============================================================================
+   PASE PREMIUM · ITERACIÓN 6 — LAS PANTALLAS QUE NO SON LA COLA
+   ============================================================================
+   Pedidos ya se ve como producto terminado; Métricas y Abrir el negocio
+   todavía no. Acá se corrigen dos cosas que directamente no se dibujaban y se
+   termina de ordenar el resto.
+   ========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   6.1 · Las barras de «Más vendidos» vuelven a ser barras.  [DEFECTO]
+   ---------------------------------------------------------------------------
+   `.top-product-bar` estaba agrupada en la misma regla que
+   `.catalog-admin-row`, `.cashbox-history-row` y `.stock-row`, o sea con
+   `display: grid`, `padding: 13px`, borde y fondo de FILA. El marcado sí trae
+   el relleno —`<i style="--w:NN%">`— pero no había ninguna regla que lo
+   dibujara: en pantalla quedaban tres rectángulos grises vacíos con un número
+   suelto abajo, que es exactamente el aspecto de una pantalla a medio hacer.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .top-products-list {
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+body[data-active-view="business"] .top-products-list > li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+body[data-active-view="business"] .top-product-rank {
+  color: var(--premium-muted);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+body[data-active-view="business"] .top-product-name {
+  overflow: hidden;
+  color: var(--premium-ink-2);
+  font-size: 14px;
+  font-weight: 640;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body[data-active-view="business"] .top-product-qty {
+  color: var(--premium-ink);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 760;
+}
+
+body[data-active-view="business"] .top-product-bar {
+  display: block;
+  overflow: hidden;
+  grid-column: 2 / -1;
+  width: 100%;
+  height: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--premium-raised);
+}
+
+body[data-active-view="business"] .top-product-bar > i {
+  display: block;
+  width: var(--w, 0%);
+  height: 100%;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--premium-red) 76%, var(--premium-ink-2));
+}
+
+/* La primera fila es la que manda: se distingue sin necesitar una leyenda. */
+body[data-active-view="business"] .top-products-list > li:first-child .top-product-bar > i {
+  background: var(--premium-red);
+}
+
+/* ---------------------------------------------------------------------------
+   6.2 · Un número neutro no se pinta de rojo.
+   ---------------------------------------------------------------------------
+   «Pedidos creados: 5» venía con el lavado rojo de acento. Cinco pedidos no
+   son una alarma: son el turno yendo bien. El rojo queda reservado para lo
+   que pide una decisión.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .growth-metric,
+body[data-active-view="business"] .day-metric,
+body[data-active-view="business"] .growth-metric.accent,
+body[data-active-view="business"] .day-metric.accent {
+  min-height: 0;
+  padding: 16px 18px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--premium-surface-2);
+}
+
+body[data-active-view="business"] :is(.growth-metric, .day-metric) > span,
+body[data-active-view="business"] :is(.growth-metric, .day-metric) > small {
+  color: var(--premium-muted);
+  font-size: 12.5px;
+  font-weight: 640;
+}
+
+body[data-active-view="business"] :is(.growth-metric, .day-metric) > strong {
+  color: var(--premium-ink);
+  font-size: 26px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.03em;
+  line-height: 1.1;
+}
+
+/* ---------------------------------------------------------------------------
+   6.3 · Una tarjeta termina donde termina su contenido.
+   ---------------------------------------------------------------------------
+   «Ventas del turno» reservaba 182px de alto para tres líneas de texto: el
+   hueco vacío se lee como un dato que no cargó.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .business-overview-card,
+body[data-active-view="business"] .business-overview-card.sales-today-card {
+  min-height: 0;
+  align-content: start;
+  padding: 22px 24px;
+}
+
+body[data-active-view="business"] .overview-kicker {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--premium-muted);
+  font-size: 11px;
+  font-weight: 720;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+body[data-active-view="business"] .sales-today-amount {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--premium-ink);
+  font-size: 32px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.03em;
+  line-height: 1.05;
+}
+
+/* ---------------------------------------------------------------------------
+   6.4 · Abrir el negocio: seis revisiones que se leen, no seis columnas.
+   ---------------------------------------------------------------------------
+   A 1440px entraban seis tarjetas de 170px y el texto se partía cada dos
+   palabras. Tres por fila dan una medida legible y dejan el estado siempre en
+   el mismo lugar.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .opening-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+body[data-active-view="business"] .opening-check {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 18px 20px;
+  border: 0;
+  border-inline-start: 3px solid var(--premium-line-strong);
+  border-radius: 0 14px 14px 0;
+  background: var(--premium-surface-2);
+}
+
+body[data-active-view="business"] .opening-check.tone-calm {
+  border-inline-start-color: var(--premium-success);
+}
+
+body[data-active-view="business"] .opening-check.tone-attention {
+  border-inline-start-color: var(--premium-warning);
+}
+
+body[data-active-view="business"] .opening-check.tone-critical {
+  border-inline-start-color: var(--premium-red);
+}
+
+body[data-active-view="business"] .opening-check header {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+body[data-active-view="business"] .opening-check header strong {
+  color: var(--premium-ink);
+  font-size: 15px;
+  font-weight: 720;
+}
+
+body[data-active-view="business"] .opening-check header .status-pill {
+  flex: 0 0 auto;
+}
+
+body[data-active-view="business"] .opening-check > p {
+  margin: 0;
+  color: var(--premium-ink-2);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+body[data-active-view="business"] .opening-check > small {
+  color: var(--premium-muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+/* ---------------------------------------------------------------------------
+   6.5 · Teléfono: el detalle bajo demanda no vive en otra caja.
+   ---------------------------------------------------------------------------
+   `<details>` ya era divulgación progresiva; lo que sobraba era su marco. Al
+   abrirse dentro de la tarjeta se veía una tarjeta adentro de otra.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .inbox-card-details {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+body[data-active-view="business"] .inbox-card-details > .order-detail-body {
+  padding: 4px 0 0;
+  border: 0;
+  background: transparent;
+}
+
+/* ---------------------------------------------------------------------------
+   6.6 · Lo último del presupuesto vertical del teléfono.
+   ---------------------------------------------------------------------------
+   Medido en el Moto G15 tras la iteración 5: primera tarjeta en y≈388 de 815.
+   Se cierran los huecos que quedaban entre bloques de servicio.
+   ------------------------------------------------------------------------ */
+@media (max-width: 1020px) {
+  body[data-active-view="business"] .business-inbox-hero-stack {
+    gap: 8px;
+  }
+
+  body[data-active-view="business"] .inbox-section-head,
+  body[data-active-view="business"] .inbox-priority .inbox-section-head {
+    margin-block: 10px 6px;
+    font-size: 13px;
+  }
+
+  body[data-active-view="business"] .tray-pulse-row,
+  body[data-active-view="business"] .inbox-tabs {
+    scroll-snap-type: x proximity;
+  }
+
+  /* La última tarjeta de la cola termina de leerse por encima de la barra. */
+  body[data-active-view="business"] .production-order-list,
+  body[data-active-view="business"] .inbox-feed {
+    padding-bottom: 12px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   6.7 · Las listas de trabajo comparten una sola fila.
+   ---------------------------------------------------------------------------
+   Catálogo, caja y stock usaban tres variantes de la misma fila con bordes
+   distintos. Una sola: separación por línea, no por rectángulo.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] :is(.catalog-admin-row, .cashbox-history-row, .stock-row) {
+  padding: 14px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--premium-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+body[data-active-view="business"] :is(.catalog-admin-row, .cashbox-history-row, .stock-row):last-child {
+  border-bottom: 0;
+}
+
+body[data-active-view="business"] :is(.catalog-admin-row, .cashbox-history-row, .stock-row):hover {
+  background: rgb(255 255 255 / 2%);
+}
+
+/* ---------------------------------------------------------------------------
+   6.8 · La barra va debajo del nombre y la cantidad queda a la derecha.
+   ---------------------------------------------------------------------------
+   Con la colocación automática la barra se metía en el primer renglón y
+   empujaba la cantidad a un renglón propio, alineada a la izquierda: el
+   número quedaba flotando lejos de su producto. El orden del marcado no se
+   toca; se coloca cada parte en su celda.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .top-products-list > li {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  row-gap: 7px;
+}
+
+body[data-active-view="business"] .top-product-rank {
+  grid-area: 1 / 1 / 2 / 2;
+}
+
+body[data-active-view="business"] .top-product-name {
+  grid-area: 1 / 2 / 2 / 3;
+}
+
+body[data-active-view="business"] .top-product-qty {
+  grid-area: 1 / 3 / 2 / 4;
+}
+
+body[data-active-view="business"] .top-product-bar {
+  grid-area: 2 / 2 / 3 / 4;
+}
+
+/* Sin ventas todavía: una línea, sin rejilla ni barra. */
+body[data-active-view="business"] .top-products-list > li.muted {
+  display: block;
+  color: var(--premium-muted);
+  font-size: 13.5px;
+}
+
+/* Las dos tarjetas del resumen empiezan arriba y terminan en su contenido. */
+body[data-active-view="business"] .business-overview-grid {
+  align-items: start;
+}
+
+/* ---------------------------------------------------------------------------
+   6.9 · Bajar el peso visual de un control NO es achicarlo.  [CORRECCIÓN]
+   ---------------------------------------------------------------------------
+   Las iteraciones 2, 3 y 5 apagaron el teléfono, WhatsApp y las acciones de
+   sesión llevándolos a 38–42px de alto. Se ve mejor y está mal: el gate
+   responsive del Panel exige 44px de área táctil en TODO lo que se toca, y
+   `tests/e2e/panel-responsive.spec.mjs` junto con
+   `tests/e2e/business-inbox-contacto.spec.mjs` lo fallaron con «160×40» en la
+   fila de contacto. Quien usa esto lo usa parado, con una mano y a veces con
+   guantes de cámara: el rescate de un pedido no puede pedir puntería.
+
+   Lo secundario se dice con tinta, borde y tipografía —que es lo que hace el
+   resto de esta capa—, nunca con un objetivo más chico. Esta regla es el piso
+   y va última para que ninguna iteración futura lo baje sin querer.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] :is(
+  .order-contact-call,
+  .order-contact-wa,
+  .inbox-contact-phone,
+  .inbox-contact-wa,
+  .production-ops-signout,
+  .production-ops-sound
+),
+body[data-active-view="business"] .inbox-contact-row :is(a, button),
+body[data-active-view="business"] .production-ops-head-actions :is(.ghost-button, .secondary-button),
+body[data-active-view="business"] [data-admin-unlocked] > .section-head .view-actions > button,
+body[data-active-view="business"] .inbox-ops-head [data-business-order-search] {
+  min-height: 44px;
+}
+
+/* ---------------------------------------------------------------------------
+   6.10 · El aviso de actualización también es el Panel.
+   ---------------------------------------------------------------------------
+   Apareció en el Moto G15 apenas subió CACHE_NAME: una hoja BLANCA de la
+   vidriera del cliente encima de la cola oscura, con «Hay una actualización
+   disponible» en gris claro sobre blanco, prácticamente ilegible. Pasa porque
+   `brand-home.css` le da su tratamiento a todo MENOS a negocio y rider, así
+   que acá caía el `.pwa-banner` crudo de `common.css`.
+
+   La posición, el orden y los controles no se tocan: es el mismo aviso, con
+   la superficie de la herramienta. Y sube por encima de la barra inferior
+   para no tapar la acción de la última tarjeta.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .pwa-banner {
+  border-color: var(--premium-line-strong);
+  background: var(--premium-surface-2);
+  box-shadow: 0 2px 4px rgb(0 0 0 / 28%), 0 22px 48px rgb(0 0 0 / 34%);
+  color: var(--premium-ink);
+}
+
+body[data-active-view="business"] .pwa-banner :is(strong, .pwa-banner-copy strong) {
+  color: var(--premium-ink);
+}
+
+body[data-active-view="business"] .pwa-banner :is(small, .pwa-banner-copy small) {
+  color: var(--premium-muted);
+}
+
+body[data-active-view="business"] .pwa-banner-dismiss {
+  min-width: 44px;
+  min-height: 44px;
+  border-color: var(--premium-line);
+  background: transparent;
+  color: var(--premium-muted);
+}
+
+body[data-active-view="business"] .pwa-banner-dismiss:hover {
+  border-color: var(--premium-line-strong);
+  background: var(--premium-raised);
+  color: var(--premium-ink);
+}
+
+body[data-active-view="business"] .pwa-banner .primary-button {
+  min-height: 48px;
+  border-color: var(--premium-red);
+  background: var(--premium-red);
+  color: #fff;
+  font-weight: 740;
+}
+
+@media (max-width: 1020px) {
+  body[data-active-view="business"] .pwa-banner {
+    bottom: calc(var(--nav-h, 56px) + env(safe-area-inset-bottom, 0px) + 12px);
+  }
+}
+
+/* ============================================================================
+   PASE FINAL · ITERACIÓN 7 — CATÁLOGO DE TRABAJO Y CONTEXTO DE PANTALLA
+   ----------------------------------------------------------------------------
+   El catálogo todavía se comportaba como una tabla técnica estirada: en
+   desktop el nombre quedaba a un extremo y el precio a otro; en el Moto G15
+   una fila ocupaba casi media pantalla y los controles «− 99 +» parecían texto
+   suelto. Esta capa compone una fila operativa única: identidad, precio/estado
+   y acciones. No cambia ningún handler ni atributo funcional.
+   ========================================================================== */
+
+/* El buscador de pedidos ocupa la fila que ya se le había reservado. El input
+   tenía width:100%, pero su <label> conservaba ancho intrínseco y en 432px
+   dejaba media pantalla vacía. */
+body[data-active-view="business"] .business-search-field {
+  display: block;
+  width: min(100%, 420px);
+}
+
+/* Cabecera y herramientas del inventario. */
+body[data-active-view="business"] .business-catalog-head {
+  align-items: flex-end;
+  gap: 20px;
+}
+
+body[data-active-view="business"] .business-catalog-head > div:first-child {
+  min-width: 0;
+}
+
+body[data-active-view="business"] .catalog-admin-kicker {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--premium-muted);
+  font-size: 11px;
+  font-weight: 720;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+body[data-active-view="business"] .business-catalog-head h3 {
+  margin: 0;
+  color: var(--premium-ink);
+  font-size: 22px;
+  font-weight: 780;
+  letter-spacing: -.02em;
+}
+
+body[data-active-view="business"] .business-catalog-head p {
+  max-width: 56ch;
+  margin: 6px 0 0;
+  color: var(--premium-muted);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+body[data-active-view="business"] .catalog-admin-top-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+body[data-active-view="business"] .catalog-admin-top-actions > button {
+  min-height: 44px;
+}
+
+body[data-active-view="business"] .catalog-admin-workbench {
+  grid-template-columns: minmax(280px, 1.6fr) minmax(190px, .8fr) minmax(190px, .8fr) auto;
+  gap: 10px;
+  margin: 20px 0 4px;
+  padding: 12px;
+  border: 1px solid var(--premium-line);
+  border-radius: 14px;
+  background: var(--premium-surface-2);
+}
+
+body[data-active-view="business"] :is(.catalog-admin-search, .catalog-admin-filter) {
+  min-width: 0;
+}
+
+body[data-active-view="business"] .catalog-admin-count {
+  align-self: center;
+  color: var(--premium-muted);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Una fila de producto, no una cuadrícula sin encabezados. */
+body[data-active-view="business"] .catalog-admin-list {
+  gap: 0;
+}
+
+body[data-active-view="business"] .catalog-admin-row[data-catalog-admin-row] {
+  grid-template-columns: minmax(330px, 1fr) 170px minmax(390px, auto);
+  gap: 24px;
+  align-items: center;
+  padding: 16px 4px;
+}
+
+body[data-active-view="business"] .catalog-admin-main {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  min-width: 0;
+}
+
+body[data-active-view="business"] .catalog-admin-main > div {
+  min-width: 0;
+}
+
+body[data-active-view="business"] .stock-thumb {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid var(--premium-line);
+  border-radius: 12px;
+  background: var(--premium-raised);
+  color: var(--premium-ink-2);
+  font-size: 12px;
+  font-weight: 780;
+  letter-spacing: .04em;
+}
+
+body[data-active-view="business"] .catalog-admin-main strong {
+  display: block;
+  color: var(--premium-ink);
+  font-size: 15.5px;
+  font-weight: 740;
+  line-height: 1.3;
+}
+
+body[data-active-view="business"] .catalog-admin-main p {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 3px 0 7px;
+  color: var(--premium-muted);
+  font-size: 13px;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+body[data-active-view="business"] .catalog-admin-tags {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 10px;
+}
+
+body[data-active-view="business"] .catalog-admin-tags > span {
+  min-width: 0;
+  color: var(--premium-muted);
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+
+body[data-active-view="business"] .catalog-admin-sku {
+  overflow: hidden;
+  max-width: min(32vw, 340px);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body[data-active-view="business"] .catalog-admin-sku::before {
+  color: var(--premium-muted);
+  content: "SKU · ";
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 720;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+body[data-active-view="business"] .catalog-admin-price {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  min-width: 0;
+}
+
+body[data-active-view="business"] .catalog-admin-price > strong {
+  color: var(--premium-ink);
+  font-size: 18px;
+  font-weight: 790;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.02em;
+}
+
+body[data-active-view="business"] .catalog-admin-price > small {
+  color: var(--premium-success);
+  font-size: 11.5px;
+  font-weight: 680;
+}
+
+body[data-active-view="business"] .catalog-admin-row.is-disabled .catalog-admin-price > small {
+  color: var(--premium-warning);
+}
+
+body[data-active-view="business"] .catalog-admin-row[data-catalog-admin-row] > .catalog-admin-actions {
+  display: grid;
+  grid-template-columns: auto repeat(3, auto);
+  align-items: center;
+  justify-content: end;
+  gap: 6px;
+}
+
+body[data-active-view="business"] .catalog-stock-actions {
+  display: grid;
+  grid-template-columns: auto 44px minmax(3ch, auto) 44px;
+  align-items: center;
+  gap: 4px;
+  margin-inline-end: 6px;
+  padding: 3px;
+  border: 1px solid var(--premium-line);
+  border-radius: 12px;
+  background: var(--premium-surface-2);
+}
+
+body[data-active-view="business"] .catalog-stock-label {
+  padding-inline: 7px 4px;
+  color: var(--premium-muted);
+  font-size: 11px;
+  font-weight: 720;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+body[data-active-view="business"] .catalog-stock-actions > strong {
+  color: var(--premium-ink);
+  font-size: 14px;
+  font-weight: 780;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+body[data-active-view="business"] .catalog-stock-actions > .icon-button,
+body[data-active-view="business"] .catalog-admin-row[data-catalog-admin-row] > .catalog-admin-actions > button {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+body[data-active-view="business"] .catalog-stock-actions > .icon-button {
+  border-radius: 9px;
+  background: var(--premium-raised);
+  color: var(--premium-ink);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+body[data-active-view="business"] .catalog-admin-row[data-catalog-admin-row] > .catalog-admin-actions > button {
+  padding-inline: 10px;
+  color: var(--premium-ink-2);
+  font-size: 12px;
+  font-weight: 680;
+}
+
+body[data-active-view="business"] .catalog-admin-row.is-archived[data-catalog-admin-row] {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+body[data-active-view="business"] .catalog-admin-row.is-archived[data-catalog-admin-row] > .catalog-admin-actions {
+  display: flex;
+}
+
+/* En teléfono la misma fila se apila con una sangría común: precio, stock y
+   acciones empiezan donde empieza el nombre, no debajo de las iniciales. */
+@media (max-width: 700px) {
+  body[data-active-view="business"] .business-inbox-main {
+    gap: 8px;
+  }
+
+  body[data-active-view="business"] :is(.inbox-section-head, .inbox-priority .inbox-section-head) {
+    margin-block: 8px 6px;
+  }
+
+  body[data-active-view="business"] .business-search-field {
+    width: 100%;
+  }
+
+  body[data-active-view="business"] .topbar-ops-sound {
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
+  }
+
+  body[data-active-view="business"] .business-catalog-head {
+    display: grid;
+    align-items: start;
+    gap: 14px;
+  }
+
+  body[data-active-view="business"] .business-catalog-head h3 {
+    font-size: 20px;
+  }
+
+  body[data-active-view="business"] .catalog-admin-top-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  body[data-active-view="business"] .catalog-admin-top-actions > .secondary-button {
+    flex: 1 1 150px;
+  }
+
+  body[data-active-view="business"] .catalog-admin-top-actions > .ghost-button {
+    flex: 1 1 auto;
+  }
+
+  body[data-active-view="business"] .catalog-admin-workbench {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 14px;
+    padding: 10px;
+  }
+
+  body[data-active-view="business"] .catalog-admin-search,
+  body[data-active-view="business"] .catalog-admin-count {
+    grid-column: 1 / -1;
+  }
+
+  body[data-active-view="business"] .catalog-admin-count {
+    margin: 2px 2px 0;
+  }
+
+  body[data-active-view="business"] .catalog-admin-workbench select {
+    padding-inline: 11px 30px;
+    /* Piso táctil de Safari/iOS: menos de 16 px dispara autozoom. */
+    font-size: 16px;
+    text-overflow: ellipsis;
+  }
+
+  body[data-active-view="business"] .catalog-admin-row[data-catalog-admin-row] {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding: 16px 0;
+  }
+
+  body[data-active-view="business"] .catalog-admin-main {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  body[data-active-view="business"] .catalog-admin-main p {
+    margin-bottom: 6px;
+  }
+
+  body[data-active-view="business"] .catalog-admin-sku {
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+
+  body[data-active-view="business"] .catalog-admin-price {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-inline-start: 56px;
+  }
+
+  body[data-active-view="business"] .catalog-admin-row[data-catalog-admin-row] > .catalog-admin-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    justify-content: stretch;
+    margin-inline-start: 56px;
+  }
+
+  body[data-active-view="business"] .catalog-stock-actions {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) 44px minmax(3ch, auto) 44px;
+    margin: 0;
+  }
+
+  body[data-active-view="business"] .catalog-admin-row[data-catalog-admin-row] > .catalog-admin-actions > button {
+    width: 100%;
+    padding-inline: 6px;
+  }
+
+  body[data-active-view="business"] .catalog-admin-row.is-archived[data-catalog-admin-row] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  body[data-active-view="business"] .catalog-admin-row.is-archived[data-catalog-admin-row] > .catalog-admin-actions {
+    margin-inline-start: 56px;
+  }
+
+  /* Android conserva el foco después del toque. El anillo sigue visible para
+     teclado, pero usa la misma línea del panel en vez del azul de formulario
+     genérico que duplicaba el indicador rojo del destino activo. */
+  body[data-active-view="business"] :is(.b-bottomnav-button, .panel-nav-item):focus-visible {
+    outline-color: var(--premium-line-strong);
+  }
+}
+
+@media (max-width: 359px) {
+  body[data-active-view="business"] .catalog-admin-filter {
+    grid-column: 1 / -1;
+  }
+
+  body[data-active-view="business"] .catalog-admin-price,
+  body[data-active-view="business"] .catalog-admin-row[data-catalog-admin-row] > .catalog-admin-actions,
+  body[data-active-view="business"] .catalog-admin-row.is-archived[data-catalog-admin-row] > .catalog-admin-actions {
+    margin-inline-start: 0;
   }
 }

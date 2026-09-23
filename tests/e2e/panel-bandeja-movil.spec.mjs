@@ -182,7 +182,7 @@ async function abrirBandeja(browser, viewport = TELEFONO, { pollMs } = {}) {
   const page = await context.newPage();
   await instalarDatosDePrueba(page, { conSesion: true });
   const estado = await servidorDePedidos(page, { pollMs });
-  await page.goto('/#business');
+  await page.goto('/#business', { waitUntil: 'domcontentloaded' });
   await page.locator('[data-production-workspace="business"]').waitFor({ state: 'visible', timeout: 30_000 });
   await irAPedidos(page);
   return { context, page, estado };

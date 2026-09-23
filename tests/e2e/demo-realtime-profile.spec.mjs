@@ -34,6 +34,7 @@ test('demo-realtime toma Perfil local al confirmar y sincroniza solo el pedido p
     await business.locator('[data-open-pin][data-admin-target="business"]').click();
     await business.getByLabel(/modo negocio/i).fill('1234');
     await business.locator('[data-pin-form]').press('Enter');
+    await expect(business.locator('[data-view="business"] [data-admin-unlocked]')).toBeVisible();
 
     await waitForRelay(client);
     await waitForRelay(business);

@@ -59,6 +59,7 @@ import { relayStatusLabel } from './core/realtime-sync.js';
 import {
   alEntrarBackOffice,
   backOfficePresente,
+  cargarBackOffice,
   handleBusinessAction,
   handleBusinessInput,
   handleDeliveryAction,
@@ -765,7 +766,7 @@ function applyAppMode() {
 
   const checkoutCopy = checkoutModeCopy(mode);
   const submit = document.querySelector('[data-checkout-submit]');
-  if (submit && !hayHandoffDePagoEnCurso()) submit.textContent = checkoutCopy.submit;
+  if (submit && !hayConfirmacionDeCheckoutEnCurso()) submit.textContent = checkoutCopy.submit;
   const trustTitle = document.querySelector('[data-checkout-trust-title]');
   if (trustTitle) trustTitle.textContent = checkoutCopy.title;
   const trustCopy = document.querySelector('[data-checkout-trust-copy]');
@@ -847,12 +848,13 @@ function applyProductionCatalogGate(mode = getAppMode()) {
   });
 
   const submit = document.querySelector('[data-checkout-submit]');
-  if (submit && !hayHandoffDePagoEnCurso()) submit.disabled = blocked;
+  if (submit && !hayConfirmacionDeCheckoutEnCurso()) submit.disabled = blocked;
 }
 
 /*
- * Mientras el checkout está entregado a Mercado Pago, NINGÚN re-render puede
- * devolver el botón a «Confirmar pedido» habilitado.
+ * Desde que empieza la confirmación y mientras el checkout está entregado a
+ * Mercado Pago, NINGÚN re-render puede devolver el botón a «Confirmar
+ * pedido» habilitado.
  *
  * Se descubrió en WebKit: el guardián de la closure aguantaba —no se creaba una
  * segunda sesión de pago— pero a los ~3,3 s un re-render de modo pasaba por acá
@@ -861,11 +863,16 @@ function applyProductionCatalogGate(mode = getAppMode()) {
  * no pasa nada. Es la peor de las dos, porque invita al toque que el guardián
  * después ignora en silencio.
  *
- * El estado vive en el DOM justamente para que lo vea cualquier camino de
- * dibujado, no sólo el que lo puso.
+ * `motionBusy` se marca antes del primer `await`; `checkoutHandoff`, recién
+ * cuando existe un destino válido de Mercado Pago. Mirar sólo el segundo deja
+ * una ventana durante la creación de sesión/preferencia en la que un render
+ * vuelve a habilitar el CTA. Ambos estados viven en el DOM justamente para que
+ * los vea cualquier camino de dibujado, no sólo el que los puso.
  */
-function hayHandoffDePagoEnCurso() {
-  return document.querySelector('[data-checkout-form]')?.dataset.checkoutHandoff === 'mercadopago';
+function hayConfirmacionDeCheckoutEnCurso() {
+  const form = document.querySelector('[data-checkout-form]');
+  return form?.dataset.motionBusy === 'true'
+    || form?.dataset.checkoutHandoff === 'mercadopago';
 }
 
 function isProductionOrderingBlocked(mode = getAppMode()) {
@@ -2089,7 +2096,7 @@ function bindEvents() {
     }
   });
 
-  $('[data-pin-form]')?.addEventListener('submit', (event) => {
+  $('[data-pin-form]')?.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!isDemoMode()) {
       closePinModal();
@@ -2098,10 +2105,44 @@ function bindEvents() {
     const form = event.currentTarget;
     const formData = new FormData(form);
     const pin = String(formData.get('pin') || '').trim();
-    const ok = unlockAdmin(pin);
     const error = $('[data-pin-error]');
+    const submit = form.querySelector('[type="submit"]');
+
+    // El panel entra por import dinámico para no cargarle ~759 KB de back office
+    // a cada cliente. El botón de acceso, en cambio, vive en el shell y puede
+    // tocarse antes de que ese import termine. `unlockAdmin()` falla cerrado en
+    // ese intervalo; presentarlo como "código incorrecto" convierte una carga
+    // lenta en un falso rechazo. Esperamos el módulo y mantenemos el formulario
+    // bloqueado para que Enter repetido no lance dos intentos concurrentes.
+    if (form.dataset.pinBusy === 'true') return;
+    form.dataset.pinBusy = 'true';
+    if (submit) {
+      submit.disabled = true;
+      submit.setAttribute('aria-busy', 'true');
+    }
+
+    try {
+      await cargarBackOffice();
+    } catch (_) {
+      if (error) {
+        error.textContent = 'No pudimos cargar el acceso del equipo. Probá nuevamente.';
+        error.classList.remove('hidden');
+      }
+      return;
+    } finally {
+      delete form.dataset.pinBusy;
+      if (submit) {
+        submit.disabled = false;
+        submit.removeAttribute('aria-busy');
+      }
+    }
+
+    // La persona pudo cancelar mientras el módulo terminaba de cargar.
+    if (!$('[data-pin-modal]')?.open) return;
+    const ok = unlockAdmin(pin);
 
     if (!ok) {
+      if (error) error.textContent = 'Código incorrecto. Revisá el acceso del comercio.';
       error?.classList.remove('hidden');
       return;
     }
@@ -2416,7 +2457,14 @@ function openPinModal() {
   if (!isDemoMode()) return;
   const modal = $('[data-pin-modal]');
   if (!modal) return;
-  $('[data-pin-error]')?.classList.add('hidden');
+  const error = $('[data-pin-error]');
+  if (error) {
+    error.textContent = 'Código incorrecto. Revisá el acceso del comercio.';
+    error.classList.add('hidden');
+  }
+  // Calentar el import reduce la espera normal; el submit vuelve a esperarlo y
+  // conserva el fail-closed si esta precarga no pudiera completarse.
+  cargarBackOffice().catch(() => {});
   modal.showModal();
   setTimeout(() => modal.querySelector('input')?.focus(), 80);
 }

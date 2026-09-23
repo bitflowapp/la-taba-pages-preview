@@ -267,6 +267,13 @@ export function renderBusinessDashboard() {
 
   syncBusinessTopbar({ todayLabel, receivedCount: receivedOrders.length });
 
+  // El encabezado acompaña la tarea actual. Mantener "Central de pedidos" en
+  // Caja, Catálogo o Configuración hacía que esas pantallas parecieran paneles
+  // incrustados dentro de otro producto. En Pedidos se conserva el nombre que
+  // el equipo ya reconoce; en el resto, el título confirma dónde está.
+  const heading = document.querySelector('[data-view="business"] [data-admin-unlocked] > .section-head h1');
+  if (heading) heading.textContent = businessViewHeading(businessActiveView);
+
   const contexto = capturarContextoDeLaBandeja(container);
 
   container.innerHTML = `
@@ -302,6 +309,20 @@ export function renderBusinessDashboard() {
   restaurarContextoDeLaBandeja(container, contexto);
   currentSignalsIndex = null;
   currentSignalsOrders = null;
+}
+
+function businessViewHeading(view) {
+  return ({
+    orders: 'Central de pedidos',
+    metrics: 'Resumen del negocio',
+    reports: 'Reportes',
+    cashbox: 'Caja',
+    catalog: 'Catálogo',
+    promotions: 'Promociones',
+    setup: 'Configuración del local',
+    guide: 'Guía de operación',
+    local: 'El local',
+  })[view] || 'Panel del negocio';
 }
 
 /*
@@ -905,7 +926,7 @@ function inboxOrderCard(order, options = {}) {
             <span class="inbox-type ${isPickup ? 'pickup' : 'delivery'}">${isPickup ? 'Retiro en local' : 'Delivery'}</span>
           </div>
           ${renderInboxContactRow(order, phone)}
-          <p class="inbox-status-copy">${itemCount} ${itemCount === 1 ? 'unidad' : 'unidades'} · ${money(order.total)}</p>
+          <p class="inbox-status-copy">${itemCount} ${itemCount === 1 ? 'unidad' : 'unidades'}</p>
           ${isPickup ? '' : `<p class="inbox-address-summary">${escapeHtml(addressLabel)}</p>`}
           ${prepMinutes > 0 && !isTerminalOrderStatus(order.status) ? `<p class="inbox-prep-summary">Preparación estimada: <strong>${prepMinutes} min</strong></p>` : ''}
         </div>
@@ -1413,9 +1434,9 @@ function renderCatalogManager(state) {
     <section class="business-catalog-card" data-business-catalog aria-labelledby="business-catalog-title">
       <header class="business-catalog-head">
         <div>
-          <span class="catalog-admin-kicker">Catálogo editable · Productos y stock</span>
-          <h3 id="business-catalog-title">Productos que ve el cliente</h3>
-          <p>Creás, editás, pausás o archivás productos sin tocar pedidos ya confirmados.</p>
+          <span class="catalog-admin-kicker">Inventario del local</span>
+          <h3 id="business-catalog-title">Productos, precios y stock</h3>
+          <p>Buscá un producto y actualizá lo que ve el cliente.</p>
         </div>
         <div class="catalog-admin-top-actions">
           <button class="secondary-button compact" type="button" data-catalog-new>Nuevo producto</button>
@@ -1899,10 +1920,11 @@ function catalogProductRow(product) {
       </div>
       <div class="catalog-admin-price">
         <strong>${money(product.price)}</strong>
-        <small>${product.available ? 'Visible para cliente' : 'Pausado para clientes'}</small>
+        <small>${product.available ? 'Visible en tienda' : 'Pausado'}</small>
       </div>
       <div class="catalog-admin-actions">
         <div class="catalog-stock-actions" aria-label="Stock de ${escapeHtml(product.name)}">
+          <span class="catalog-stock-label">Stock</span>
           <button class="icon-button compact" type="button" data-stock-dec="${escapeHtml(product.id)}" aria-label="Restar stock de ${escapeHtml(product.name)}">−</button>
           <strong>${product.stock}</strong>
           <button class="icon-button compact" type="button" data-stock-inc="${escapeHtml(product.id)}" aria-label="Sumar stock de ${escapeHtml(product.name)}">+</button>
@@ -1971,7 +1993,25 @@ export function handleBusinessAction(target) {
     if (isDemoMode()) allowedViews.add('promotions');
     if (!allowedViews.has(nextView)) return { handled: true, ok: false, message: 'Vista no disponible.' };
     businessActiveView = nextView;
-    if (typeof document !== 'undefined') renderBusinessDashboard();
+    if (typeof document !== 'undefined') {
+      renderBusinessDashboard();
+      // Cambiar de pantalla es navegación, no un repintado de la bandeja: la
+      // posición anterior no tiene significado en el destino. Sin este reset,
+      // volver desde el producto 40 del catálogo abría Pedidos a mitad de una
+      // tarjeta, con el título y los filtros fuera de pantalla.
+      const resetScroll = () => {
+        if (typeof globalThis.scrollTo === 'function') globalThis.scrollTo(0, 0);
+        if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
+        if (document.body) document.body.scrollTop = 0;
+      };
+      resetScroll();
+      // Chrome móvil puede aplicar el anclaje de scroll un frame después del
+      // reemplazo del contenido. Repetir el reset al estabilizar el layout evita
+      // que el destino quede abierto a mitad de pantalla.
+      if (typeof globalThis.requestAnimationFrame === 'function') {
+        globalThis.requestAnimationFrame(() => globalThis.requestAnimationFrame(resetScroll));
+      }
+    }
     return { handled: true, ok: true, message: '' };
   }
 

@@ -188,7 +188,7 @@ function redSana(transformar = null) {
   };
 }
 
-const ESTILOS = './styles.css?v=59';
+const ESTILOS = './styles.css?v=60';
 
 test('un manifiesto nuevo rota la caché y nunca instala un precache mezclado', async () => {
   const cacheAnterior = 'la-taba-runtime-v63-rc-final';

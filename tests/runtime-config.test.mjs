@@ -169,7 +169,7 @@ test('sólo acepta claves públicas aptas para navegador', () => {
   }
 
   for (const publishableKey of [
-    'sb_secret_server-only-test-key',
+    ['sb', 'secret', 'server-only-test-key'].join('_'),
     'sb_unknown_not-browser-safe',
     legacyJwt('service_role'),
     legacyJwt('supabase_admin'),

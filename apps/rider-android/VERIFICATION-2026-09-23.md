@@ -2,7 +2,9 @@
 
 La fuente histórica v146 sigue sin recuperarse. La APK estable instalada es
 `com.lataba.rider` 1.0.0 (146). La implementación nueva conserva su identidad
-QA y añade `com.lataba.rider.pilot` 0.1.0-canonical-pilot como paquete separado.
+QA y añade `com.lataba.rider.pilot` como paquete separado. La candidata v3
+(`0.1.2-canonical-pilot`) está firmada y compilada, pero aún no certificada
+físicamente para el tramo de pantalla apagada.
 
 ## Lo que pasó
 
@@ -34,6 +36,29 @@ QA y añade `com.lataba.rider.pilot` 0.1.0-canonical-pilot como paquete separado
   un movimiento de inventario auditado con la misma llave en un reintento
   devolvió **38→42 unidades exactamente una vez**. El servicio GPS QA se detuvo.
 
+## Segundo ensayo con red restablecida
+
+- Pedido QA nuevo `LT-0032`: Rider Android aceptó, retiró e inició reparto por
+  UI; panel y cliente vieron asignación, estado y marcador GPS real. La
+  desconexión controlada de red duró 2 minutos y se recuperó.
+- Al apagar la pantalla, el servicio foreground seguía registrado pero la app
+  acumuló 6 minutos offline; el mayor intervalo entre recibos GPS fue 280 s.
+  Esto **no** pasa el objetivo de 180 s. Android documenta que un foreground
+  service no mantiene por sí solo la CPU despierta; la v3 incorpora un wake
+  lock parcial limitado a entregas activas. Su eficacia física sigue pendiente.
+- El backend registró `mark_rider_arrived` desde la app a las 15:33:52 UTC,
+  antes de que el test lo solicitara, e `identity_close_own_session` a las
+  16:16:31 UTC. La prueba instrumentada no llama a logout; no atribuir esos
+  toques a una persona sin confirmación. El pedido quedó en `arrived`, no
+  entregado. ADB dejó de listar el Moto y el test terminó con
+  `Delivery lost while soaking` tras 44 minutos, sin evidencia de fallo de
+  autorización del backend. No hubo SQL de estados.
+- Con el Moto todavía ausente de ADB, el negocio canceló `LT-0032` mediante
+  `cancel_order` y se clasificó QA. No se movió mercadería física: el stock
+  quedó en 32 tras cancelar la entrega ya retirada y volvió a su baseline 36
+  mediante `apply_inventory_movement` auditado; el replay dejó 36 exactamente
+  una vez. El cobro manual nunca fue confirmado.
+
 ## Estado de salida
 
 ```text
@@ -43,7 +68,7 @@ ANDROID_PILOT_BUILD: PASS_SIGNED_STAGING_ONLY
 RIDER_AVAILABILITY_SHARED: PASS_STAGING
 RIDER_CAPACITY: 3
 ANDROID_SHORT_E2E: PASS
-GPS_60_MIN_SOAK: FAIL_DEVICE_NO_NETWORK_ROUTE
+GPS_60_MIN_SOAK: FAIL_FIRST_NETWORK_LOSS_SECOND_SCREEN_OFF_GAP_AND_LOGOUT
 PILOT_RIDER_READY: NO
 PRODUCTION_UNCHANGED: YES
 WALTER_ACCOUNT_UNCHANGED: YES

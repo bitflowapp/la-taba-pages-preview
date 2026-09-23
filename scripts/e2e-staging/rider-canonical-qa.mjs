@@ -72,7 +72,7 @@ if(mode==='prepare'||mode==='prepare-next'){
   const terminal=await read(admin.from('orders').select('status,origin,origin_reason,business_id,payment_method').eq('id',previous.orderId).single());
   if(terminal.status!=='delivered'){
    if(!['canceled','cancelled'].includes(terminal.status)||terminal.origin!=='qa'
-    ||terminal.origin_reason!=='rider_soak_network_failure_qa'||terminal.business_id!==BUSINESS
+    ||!['rider_soak_network_failure_qa','rider_soak_interrupted_qa'].includes(terminal.origin_reason)||terminal.business_id!==BUSINESS
     ||terminal.payment_method!=='coordinate')throw Error('PREVIOUS_RUN_NOT_SAFE_TERMINAL');
    const returned=JSON.parse(readFileSync('artifacts/rider-pilot-soak-stock-return.json','utf8'));
    const stock=await read(admin.from('products').select('stock').eq('id',previous.productId).single());

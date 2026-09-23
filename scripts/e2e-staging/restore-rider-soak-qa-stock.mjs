@@ -35,7 +35,7 @@ if(before!==Number(baseline)){
  const args={p_business_id:business,p_product_id:state.productId,p_barcode_id:null,
   p_movement_type:'manual_adjustment',p_package_quantity:state.quantity,p_direction:1,
   p_reference_type:'qa_soak_return',p_reference_id:state.orderId,
-  p_reason:'QA: mercadería no salió físicamente; devolución tras soak sin red',
+  p_reason:'QA: mercadería no salió físicamente; devolución tras ensayo interrumpido',
   p_idempotency_key:`qa_soak_restore_${state.orderId.replaceAll('-','')}`};
  const first=await staff.rpc('apply_inventory_movement',args);
  if(first.error||first.data?.ok===false)throw Error(`QA_STOCK_RETURN_FAILED:${first.error?.code||first.data?.code}`);

@@ -22,13 +22,13 @@ let order=await getOrder();
 if(order.business_id!==business||order.payment_method!=='coordinate')throw Error('QA_ORDER_SCOPE_MISMATCH');
 if(!['canceled','cancelled'].includes(order.status)){
  const done=await rpc(staff,'cancel_order',{p_order_id:state.orderId,p_expected_revision:order.revision,
-  p_reason:'QA: Moto sin red durante soak físico',p_idempotency_key:`qa_soak_cancel_${state.orderId.replaceAll('-','')}`});
+  p_reason:'QA: ensayo Rider interrumpido sin movimiento físico de mercadería',p_idempotency_key:`qa_soak_cancel_${state.orderId.replaceAll('-','')}`});
  if(!done)throw Error('QA_CANCEL_NOT_CONFIRMED');
  order=await getOrder();
 }
 if(!['canceled','cancelled'].includes(order.status))throw Error('QA_ORDER_NOT_TERMINAL');
 if(order.manual_payment_status==='confirmed')throw Error('QA_MANUAL_PAYMENT_MUST_BE_REVERSED_FIRST');
-const classification=await rpc(admin,'classify_order_as_qa',{p_order_id:state.orderId,p_reason:'rider_soak_network_failure_qa'});
+const classification=await rpc(admin,'classify_order_as_qa',{p_order_id:state.orderId,p_reason:'rider_soak_interrupted_qa'});
 order=await getOrder();if(order.origin!=='qa')throw Error('QA_CLASSIFICATION_NOT_CONFIRMED');
 const {data:product,error:productError}=await admin.from('products').select('stock').eq('id',state.productId).single();
 if(productError)throw Error(`PRODUCT_READ:${productError.code}`);
@@ -39,7 +39,7 @@ const report={timestamp:new Date().toISOString(),project:'ucbtjcurawxjwjdvvcvj',
  orderTerminal:'CANCELLED',qaClassified:true,manualPaymentNotConfirmed:true,
  stockAfter:Number(product.stock),stockBeforeKnown:expected!==null,
  stockRestored:expected===null?null:Number(product.stock)===Number(expected),
- soakStatus:'FAIL_NETWORK_UNAVAILABLE',noSqlStateChanges:true};
+ soakStatus:'FAIL_INTERRUPTED_DEVICE_UNAVAILABLE',noSqlStateChanges:true};
 writeFileSync('artifacts/rider-pilot-soak-cancel.json',JSON.stringify(report,null,2));
 delete state.tracking;delete state.deliveryCode;delete state.offer;state.sealedAt=report.timestamp;
 guardarSecreto(name,'staging',JSON.stringify(state));

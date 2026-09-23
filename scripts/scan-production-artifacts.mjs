@@ -93,7 +93,7 @@ const HOST_RE = /[a-z0-9]{20}\.supabase\.co/g;
 // los que viven dentro de PNG y fuentes leídos como texto, y ensucia el informe
 // con identidades que no son identidades.
 const BUSINESS_UUID_RE = /00000000-0000-4000-8000-[0-9a-f]{12}/gi;
-const ASSIGNED_BUSINESS_RE = /businessId\s*[:=]\s*['"]([0-9a-f-]{36})['"]/gi;
+const ASSIGNED_BUSINESS_RE = /["']?businessId["']?\s*[:=]\s*['"]([0-9a-f-]{36})['"]/gi;
 
 /** Texto sin comentarios de línea ni de bloque, conservando el largo por líneas. */
 export function stripComments(text) {

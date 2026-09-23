@@ -121,6 +121,13 @@ QA después de volver, estado de presencia, APK instalada y hash de runtime.
   `com.lataba.rider` conservó su versión. La desinstalación borra la sesión
   local de la variante piloto; el pedido y la disponibilidad viven en Staging.
 - El rollback web de Cloudflare **no está ensayado**: el candidato aún no se
-  publicó en el proyecto Staging. No declarar `ROLLBACK_DRILL=PASS` ni lanzar el
-  piloto hasta instalar dos deployments compatibles en ese proyecto, restaurar
-  el anterior y verificar `version.json`, pedido QA y panel en el dominio.
+  publicó en el proyecto Staging. `main` tampoco es una vuelta segura para un
+  piloto de cobro manual: no contiene `confirm_manual_order_payment` en la web.
+  No declarar `ROLLBACK_DRILL=PASS` ni lanzar el piloto hasta instalar dos
+  deployments compatibles en ese proyecto, restaurar el anterior y verificar
+  `version.json`, pedido QA y panel en el dominio.
+- El paquete Staging se puede preparar sin secretos privados mediante
+  `node scripts/deploy/preparar-staging-pilot.mjs --commit <SHA completo>`.
+  El builder exige el runtime público del proyecto `ucbtjcurawxjwjdvvcvj`,
+  verifica su identidad, sella el SHA y escanea todo `dist_staging_pilot/`.
+  Prepararlo no despliega ni cambia el dominio; la URL Staging aún sirve v100.

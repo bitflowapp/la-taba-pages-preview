@@ -11,6 +11,7 @@ test-results/
 test-results-certification/
 playwright-report/
 dist_release/
+dist_staging_pilot/
 dist-desktop/
 src-tauri/target/
 scripts/catalog-images/.raw/

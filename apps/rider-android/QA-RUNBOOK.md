@@ -102,6 +102,20 @@ node scripts/e2e-staging/serve-rider-qa.mjs
 ```
 
 Servidor sólo en `127.0.0.1:39092`, runtime público dirigido a Staging y negocio QA.
+Antes de cualquier prueba visual, comprobar que `http://127.0.0.1:39092/styles/tracking.css?v=60`
+responda 200 y que `[data-map-canvas]` mida más de 0 px. El 23/09 se
+detectó que el servidor QA bloqueaba `/styles/`: el marcador GPS existía en el
+DOM pero el mapa medía 0 px. Se corrigió la whitelist; esas observaciones
+anteriores no certifican visibilidad real del mapa.
+
+`run-pilot-full-ui-signed.mjs` deja el pedido creado por la UI cliente y
+preparado desde el panel; al imprimir `PILOT_FULL_UI_ORDER_READY_FOR_SIGNED_RIDER`,
+iniciar `pilot-release-auth-bridge.mjs --full-ui` y pasar el puerto de un solo
+uso a `PilotReleasePhysicalTest`. Ejecutar los dos procesos en paralelo. El
+runner cancela/clasifica sólo pedidos QA no entregados y restaura inventario
+mediante RPC; borra el código y token temporales del Credential Manager al
+cerrar. No aceptar como PASS un marcador que sólo existe en DOM pero no es
+visible, ni un pedido cuyo observador se cerró antes de la respuesta Android.
 Abrir dos contextos limpios agent-browser, sesiones `rider-panel` y `rider-customer`,
 en esa URL. `browser-input` inyecta por stdin las sesiones QA recién autenticadas,
 sin logs ni exportar storageState. Abrir `/#business` y `/#tracking` tras recargar.

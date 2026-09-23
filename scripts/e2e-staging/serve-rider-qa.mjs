@@ -3,6 +3,7 @@ import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {leerSecreto} from '../e2e-production-sale/secretos-windows.mjs';
+import {riderQaStaticPath} from './rider-qa-static-path.mjs';
 const key=leerSecreto('STAGING SUPABASE PUBLISHABLE KEY');
 if(key?.usuario!=='ucbtjcurawxjwjdvvcvj'||!key?.secreto?.startsWith('sb_publishable_'))throw Error('STAGING_PUBLIC_KEY_REQUIRED');
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
@@ -14,8 +15,8 @@ http.createServer(async(req,res)=>{
   const pathname=decodeURIComponent(new URL(req.url,'http://127.0.0.1').pathname);
   res.setHeader('Cache-Control','no-store');
   if(pathname==='/runtime-config.js'){res.setHeader('Content-Type','text/javascript');res.end(`globalThis.__LA_TABA_RUNTIME_CONFIG__=${JSON.stringify(config)};`);return}
-  const relative=pathname==='/'?'index.html':pathname.slice(1);
-  if(!/^(index\.html|(?:js|css|assets|images|icons|fonts)\/[^?]+|[^/]+\.(?:js|css|svg|ico|webmanifest))$/.test(relative))throw Error();
+  const relative=riderQaStaticPath(pathname);
+  if(!relative)throw Error();
   const target=path.resolve(root,relative);if(!target.startsWith(root+path.sep))throw Error();
   res.setHeader('Content-Type',mime[path.extname(target)]||'application/octet-stream');res.end(await readFile(target));
  }catch{res.writeHead(404);res.end('Not found')}

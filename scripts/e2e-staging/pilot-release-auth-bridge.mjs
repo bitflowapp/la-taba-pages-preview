@@ -6,8 +6,10 @@ import { leerSecreto } from '../e2e-production-sale/secretos-windows.mjs';
 const serial = 'ZY32LHS6PS';
 let credentials = leerSecreto('STAGING RIDER QA 20260920');
 if (!credentials?.usuario || !credentials?.secreto) throw Error('QA_RIDER_CREDENTIAL_UNAVAILABLE');
-const delivery = process.argv.includes('--delivery');
-const run = delivery ? JSON.parse(leerSecreto('RIDER CANONICAL QA RUN 20260922')?.secreto || '{}') : null;
+const fullUi = process.argv.includes('--full-ui');
+const delivery = fullUi || process.argv.includes('--delivery');
+const runName = fullUi ? 'RIDER PILOT FULL UI QA ACTIVE' : 'RIDER CANONICAL QA RUN 20260922';
+const run = delivery ? JSON.parse(leerSecreto(runName)?.secreto || '{}') : null;
 if (delivery && (!run?.orderId || !run.publicCode || !/^\d{4}$/.test(run.deliveryCode || '')))
   throw Error('QA_DELIVERY_RUN_REQUIRED');
 const adb = (args) => spawnSync('adb', ['-s', serial, ...args], {
@@ -67,5 +69,5 @@ const expiry = setTimeout(() => {
 server.on('close', () => clearTimeout(expiry));
 process.on('SIGINT', () => { cleanup(); process.exitCode = 1; });
 console.log(JSON.stringify({ bridgePort: port, lifetimeSeconds: 120,
-  boundToLoopback: true, oneTime: true, stagingOnly: true, delivery,
+  boundToLoopback: true, oneTime: true, stagingOnly: true, delivery, fullUi,
   credentialsUnprinted: true }));

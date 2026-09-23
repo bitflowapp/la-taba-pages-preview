@@ -53,7 +53,7 @@ class PilotReleasePhysicalTest {
                 until(90_000) { repo.state.value.available && repo.state.value.online && !repo.state.value.busy }
             }
             val code = input.getString("publicCode")
-            until(60_000) { repo.state.value.board!!.offers.any { it.code == code } ||
+            until(180_000) { repo.state.value.board!!.offers.any { it.code == code } ||
                 repo.state.value.board!!.orders.any { it.code == code } }
             if (repo.state.value.board!!.orders.none { it.code == code }) {
                 compose.onNodeWithTag("accept-$code").performScrollTo().performClick()

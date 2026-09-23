@@ -145,7 +145,7 @@ test('Persona B · con un pedido anterior el checkout resume lo conocido y deja 
   await expect(page.locator('[data-checkout-summary-row="contact"]')).toContainText('•••123');
   await expect(page.locator('[data-checkout-summary-row="contact"]')).not.toContainText('2990000123');
   // La preferencia de pago del pedido anterior queda propuesta y A LA VISTA.
-  await expect(page.locator('[data-checkout-summary-row="payment"]')).toContainText('Efectivo al recibir');
+  await expect(page.locator('[data-checkout-summary-row="payment"]')).toContainText('Efectivo al retirar o recibir');
   await expect(page.getByLabel('Forma de pago')).toHaveValue('cash');
 
   // Menos formulario, mismo destino: el botón de confirmar sigue estando.

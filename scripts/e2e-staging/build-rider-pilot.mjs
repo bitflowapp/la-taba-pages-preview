@@ -15,12 +15,14 @@ const versionNameFlag=process.argv.indexOf('--version-name');
 const versionName=versionNameFlag<0?'0.1.0-canonical':process.argv[versionNameFlag+1];
 if(!/^[0-9]+\.[0-9]+\.[0-9]+-canonical$/.test(versionName))
  throw Error('INVALID_PILOT_VERSION_NAME');
+const androidTest=process.argv.includes('--android-test');
 if(!existsSync(keystore)||!password||!backup||!readFileSync(keystore).equals(Buffer.from(backup,'base64')))
  throw Error('PILOT_SIGNING_MATERIAL_OR_BACKUP_MISSING');
 if(key?.usuario!=='ucbtjcurawxjwjdvvcvj'||!key.secreto.startsWith('sb_publishable_'))
  throw Error('STAGING_PUBLIC_KEY_REQUIRED');
 const project=path.resolve('apps/rider-android');
-const built=spawnSync('cmd.exe',['/d','/c','gradlew.bat',':app:assembleRelease',`-PriderPilotVersionCode=${versionCode}`,`-PriderPilotVersionName=${versionName}`,'--console=plain'],{
+const built=spawnSync('cmd.exe',['/d','/c','gradlew.bat',androidTest?':app:assembleReleaseAndroidTest':':app:assembleRelease',`-PriderPilotVersionCode=${versionCode}`,`-PriderPilotVersionName=${versionName}`,
+ ...(androidTest?['-PriderPilotInstrumentation=true']:[]),'--console=plain'],{
  cwd:project,stdio:'inherit',windowsHide:true,env:{...process.env,
   ANDROID_HOME:path.join(process.env.LOCALAPPDATA,'Android','Sdk'),
   RIDER_STAGING_PUBLIC_KEY:key.secreto,RIDER_PILOT_KEYSTORE_PATH:keystore,
@@ -40,5 +42,12 @@ const actualVersionCode=Number(aapt.stdout.match(/versionCode='(\d+)'/)?.[1]);
 const actualVersionName=aapt.stdout.match(/versionName='([^']+)'/)?.[1];
 if(aapt.status!==0||packageId!=='com.lataba.rider.pilot'||actualVersionCode!==versionCode||actualVersionName!==`${versionName}-pilot`)
  throw Error('PILOT_PACKAGE_IDENTITY_MISMATCH');
+if(androidTest){
+ const testApk=path.join(project,'app','build','outputs','apk','androidTest','release','app-release-androidTest.apk');
+ if(!existsSync(testApk))throw Error('PILOT_ANDROID_TEST_APK_MISSING');
+ const testBadging=spawnSync(path.join(toolsDir,'aapt.exe'),['dump','badging',testApk],{encoding:'utf8',windowsHide:true});
+ if(testBadging.status!==0||testBadging.stdout.match(/package: name='([^']+)'/)?.[1]!=='com.lataba.rider.pilot.test')
+  throw Error('PILOT_ANDROID_TEST_IDENTITY_MISMATCH');
+}
 console.log(JSON.stringify({signed:true,packageId,versionCode,versionName:actualVersionName,certificateSha256:signer,
- backend:'ucbtjcurawxjwjdvvcvj',historicalV146Unaffected:true}));
+ backend:'ucbtjcurawxjwjdvvcvj',historicalV146Unaffected:true,androidTestBuilt:androidTest}));

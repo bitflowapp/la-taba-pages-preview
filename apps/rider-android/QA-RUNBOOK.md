@@ -30,6 +30,25 @@ Los paquetes son `com.lataba.rider.qa`, `com.lataba.rider.qa.test` y
 debe declarar explícitamente el código y nombre de la versión piloto; omitir
 ambos reproduce la vCode 1 histórica del propio piloto, no la v146 original.
 Conservar los APK vCode 1 y 2 firmados antes de generar una nueva versión.
+
+Para instrumentar el **APK firmado exacto** sin hacerlo depurable, generar
+aparte el test APK release con `--android-test` y verificar que
+`com.lataba.rider.pilot` siga `debuggable=false`:
+
+```powershell
+node scripts/e2e-staging/build-rider-pilot.mjs --version-code 3 --version-name 0.1.2-canonical --android-test
+adb -s ZY32LHS6PS install -r apps/rider-android/app/build/outputs/apk/androidTest/release/app-release-androidTest.apk
+```
+
+`pilot-release-auth-bridge.mjs` lee la cuenta Rider QA desde Credential
+Manager, abre una sola conexión ADB reverse en `127.0.0.1` por 120 segundos y
+publica únicamente el número de puerto. Pasar ese puerto como `qaPort` al
+`PilotReleaseAuthSmokeTest` o `PilotReleasePhysicalTest` con `qaStaging=true`.
+El password/código se entregan sólo en memoria, nunca como argumentos de
+instrumentación, archivo del APK ni log. El bridge se retira al primer uso; al
+terminar, desinstalar **sólo** `com.lataba.rider.pilot.test`. Los ensayos del
+23/09/2026 verificaron login, capacidad 3, aceptación, GPS real, código
+incorrecto rechazado y entrega final sobre la variante firmada.
 No instalar una release unsigned ni desinstalar `com.lataba.rider`.
 
 ## Pedido / Android físico

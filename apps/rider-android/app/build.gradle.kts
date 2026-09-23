@@ -14,9 +14,14 @@ val pilotVersionName = providers.gradleProperty("riderPilotVersionName").orNull 
 require(pilotVersionName.matches(Regex("[0-9]+\\.[0-9]+\\.[0-9]+-canonical"))) {
     "riderPilotVersionName must be a numeric canonical version"
 }
+val pilotInstrumentation = providers.gradleProperty("riderPilotInstrumentation").orNull == "true"
+require(!pilotInstrumentation || (pilotStore != null && pilotPassword != null)) {
+    "Instrumenting the signed pilot requires the pilot signer"
+}
 android {
     namespace = "com.lataba.rider"
     compileSdk = 35
+    testBuildType = if (pilotInstrumentation) "release" else "debug"
     defaultConfig {
         applicationId = "com.lataba.rider"
         minSdk = 26

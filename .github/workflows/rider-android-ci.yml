@@ -33,8 +33,8 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Build isolated QA APK and run unit contracts
-        run: bash ./gradlew :app:testDebugUnitTest :app:assembleDebug --console=plain --no-daemon
+      - name: Build isolated QA APK and instrumentation, run unit contracts
+        run: bash ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest --console=plain --no-daemon
       - name: Verify QA package cannot collide with historical Rider
         run: |
           apk='app/build/outputs/apk/debug/app-debug.apk'
@@ -44,5 +44,12 @@ jobs:
           identity="$("$aapt" dump badging "$apk" | head -1)"
           if [[ "$identity" != "package: name='com.lataba.rider.qa' "* ]]; then
             echo 'QA APK package identity mismatch' >&2
+            exit 1
+          fi
+          test_apk='app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk'
+          test -f "$test_apk"
+          test_identity="$("$aapt" dump badging "$test_apk" | head -1)"
+          if [[ "$test_identity" != "package: name='com.lataba.rider.qa.test' "* ]]; then
+            echo 'QA instrumentation package identity mismatch' >&2
             exit 1
           fi

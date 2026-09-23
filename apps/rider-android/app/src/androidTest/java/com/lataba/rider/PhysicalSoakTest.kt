@@ -29,6 +29,7 @@ class PhysicalSoakTest {
         val arguments=InstrumentationRegistry.getArguments()
         assumeTrue(arguments.getString("qaStaging") == "true")
         val targetMinutes=arguments.getString("qaMinutes")?.toIntOrNull()?.takeIf{it in 1..60} ?: 60
+        val loginTimeout=arguments.getString("qaLoginTimeout")?.toLongOrNull()?.takeIf{it in 10_000..90_000} ?: 90_000L
         val inputFile = File(context.filesDir, "qa-input.json")
         assumeTrue("Explicit private QA input required", inputFile.exists())
         val input = JSONObject(inputFile.readText()); inputFile.delete()
@@ -43,7 +44,13 @@ class PhysicalSoakTest {
                 compose.onNodeWithTag("password").performTextInput(input.getString("password"))
                 compose.onNodeWithTag("login").performClick()
             }
-            until(90000){repo.state.value.signedIn&&repo.state.value.online&&repo.state.value.board!=null}
+            try {
+                until(loginTimeout){repo.state.value.signedIn&&repo.state.value.online&&repo.state.value.board!=null}
+            } catch (error: Exception) {
+                val state=repo.state.value
+                throw AssertionError("RIDER_LOGIN_NOT_READY signed=${state.signedIn} online=${state.online} " +
+                    "board=${state.board!=null} message=${state.message.take(80)}",error)
+            }
             val code=input.getString("publicCode")
             if(!repo.state.value.available){
                 compose.onNodeWithTag("available").performClick()

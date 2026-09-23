@@ -5,9 +5,6 @@ on:
     branches:
       - 'release/**'
       - 'feat/rider-android-canonical'
-    paths:
-      - 'apps/rider-android/**'
-      - '.github/workflows/rider-android-ci.yml'
   pull_request:
     paths:
       - 'apps/rider-android/**'

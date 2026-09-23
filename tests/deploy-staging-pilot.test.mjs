@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const workflow = readFileSync(new URL('../.github/workflows/deploy-staging-pilot.yml', import.meta.url), 'utf8');
+const riderCi = readFileSync(new URL('../.github/workflows/rider-android-ci.yml', import.meta.url), 'utf8');
 
 test('Staging deploy stays disarmed without exact SHA and project variables', () => {
   assert.match(workflow, /vars\.STAGING_DEPLOY_SHA == github\.sha/);
@@ -20,4 +21,10 @@ test('Staging deploy checks CI and Cloudflare target before writing', () => {
   assert.doesNotMatch(workflow, /--project-name la-taba\b/);
   assert.match(workflow, /verificar-staging-pilot\.mjs/);
   assert.match(workflow, /verify-staging-served\.mjs/);
+});
+
+test('Rider CI runs for every release push so exact-SHA deployment gate can pass', () => {
+  const pushTrigger = riderCi.split('  pull_request:')[0];
+  assert.match(pushTrigger, /- 'release\/\*\*'/);
+  assert.doesNotMatch(pushTrigger, /\bpaths:/);
 });

@@ -7,7 +7,7 @@ Desde la raíz web, JDK 17 + SDK 35:
 ```powershell
 node scripts/e2e-staging/build-rider-android.mjs
 node scripts/e2e-staging/create-rider-pilot-signing-key.mjs
-node scripts/e2e-staging/build-rider-pilot.mjs --version-code 2 --version-name 0.1.1-canonical
+node scripts/e2e-staging/build-rider-pilot.mjs --version-code 3 --version-name 0.1.2-canonical
 node scripts/e2e-staging/build-rider-android.mjs lintDebug
 node scripts/e2e-staging/scan-rider-apk.mjs
 node scripts/scan-secrets.mjs
@@ -29,7 +29,7 @@ Los paquetes son `com.lataba.rider.qa`, `com.lataba.rider.qa.test` y
 `apps/rider-android/app/build/outputs/apk/release/app-release.apk`. El build
 debe declarar explícitamente el código y nombre de la versión piloto; omitir
 ambos reproduce la vCode 1 histórica del propio piloto, no la v146 original.
-Conservar el APK vCode 1 firmado antes de generar una nueva versión.
+Conservar los APK vCode 1 y 2 firmados antes de generar una nueva versión.
 No instalar una release unsigned ni desinstalar `com.lataba.rider`.
 
 ## Pedido / Android físico
@@ -60,6 +60,21 @@ El código de entrega llega por el contrato del cliente al input privado del tes
 el test lo escribe en la UI Android, prueba primero un código erróneo y luego el
 correcto. El input se borra inmediatamente al leerlo. Nunca viaja como argumento,
 password de Gradle o archivo del repositorio.
+
+## Recuperación de GPS con pantalla apagada
+
+La prueba física de 60 minutos reveló una pausa de red/GPS con pantalla apagada
+en el Moto G15. La vCode 3 agrega un wake lock parcial acotado a entregas
+activas, con notificación foreground y liberación al detener el servicio.
+No darlo por resuelto sólo por compilar: ejecutar un pedido QA nuevo, instalar
+la app QA nueva **después** de cerrar cualquier test en curso y pasar
+`qaMinutes=25` al `PhysicalSoakTest`. El monitor de host se inicia con
+`--target-minutes 25 --network-cut-at-minutes 0 --screen-off-at-minutes 1
+--screen-off-duration-minutes 20`. Exige recibos GPS reales, máximo 180 s sin
+recibo, a lo sumo un minuto offline y entrega completada por código. El
+resultado se suma a los tramos físicos anteriores sólo si sus tiempos y
+recibos están documentados por separado; no se convierte un fallo previo en
+PASS por cambiarle la etiqueta.
 
 ## Observar panel y cliente reales
 

@@ -12,6 +12,7 @@ import android.location.LocationListener
 import android.location.LocationManager
 import android.os.IBinder
 import android.os.Looper
+import android.os.PowerManager
 import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
@@ -26,6 +27,7 @@ class RiderLocationService: Service(), LocationListener {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val repository get() = (application as RiderApplication).repository
     private lateinit var locations: LocationManager
+    private var wakeLock: PowerManager.WakeLock? = null
     private var lastSend = 0L
     private var publishing = false
     override fun onBind(intent: Intent?): IBinder? = null
@@ -44,6 +46,9 @@ class RiderLocationService: Service(), LocationListener {
                 "La Taba Rider Piloto · GPS activo" else "La Taba Rider QA · GPS activo")
             .setContentText("Sólo entregas activas de Staging")
             .setContentIntent(open).addAction(0, "Detener GPS", stop).setOngoing(true).build())
+        // Foreground service alone does not keep the CPU awake with the screen off.
+        // Hold only during an active delivery, in bounded chunks, and release on stop.
+        holdCpuForActiveTrip()
         locations = getSystemService(LocationManager::class.java)
         try {
             locations.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 0f, this, Looper.getMainLooper())
@@ -60,6 +65,7 @@ class RiderLocationService: Service(), LocationListener {
                 repository.refresh()
                 val state = repository.state.value
                 if (!state.signedIn || (state.online && state.board?.orders?.none { it.publishable } == true)) { stopSelf(); break }
+                if (state.board?.orders?.any { it.publishable } == true) holdCpuForActiveTrip()
                 delay(5000)
             }
         }
@@ -86,6 +92,13 @@ class RiderLocationService: Service(), LocationListener {
     }
     override fun onDestroy() {
         if (::locations.isInitialized) locations.removeUpdates(this)
+        wakeLock?.takeIf { it.isHeld }?.release()
         scope.cancel(); repository.gps("GPS detenido"); super.onDestroy()
+    }
+    private fun holdCpuForActiveTrip() {
+        val lock = wakeLock ?: (getSystemService(POWER_SERVICE) as PowerManager)
+            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "$packageName:RiderLocationService")
+            .apply { setReferenceCounted(false) }.also { wakeLock = it }
+        if (!lock.isHeld) lock.acquire(30 * 60_000L)
     }
 }

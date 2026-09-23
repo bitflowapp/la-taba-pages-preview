@@ -6,6 +6,18 @@ import { loadStagingKeys } from './qa-staging-keys.mjs';
 
 const state=JSON.parse(leerSecreto('RIDER CANONICAL QA RUN 20260922')?.secreto||'{}');
 if(!state.orderId||!state.publicCode)throw Error('QA_ORDER_REQUIRED');
+const argument=(name,fallback)=>{
+ const i=process.argv.indexOf(name);return i<0?fallback:Number(process.argv[i+1]);
+};
+const targetMinutes=argument('--target-minutes',60);
+const networkCutAt=argument('--network-cut-at-minutes',15);
+const screenOffAt=argument('--screen-off-at-minutes',25);
+const screenOffDuration=argument('--screen-off-duration-minutes',10);
+if(!Number.isInteger(targetMinutes)||targetMinutes<1||targetMinutes>60
+ ||!Number.isInteger(networkCutAt)||networkCutAt<0||networkCutAt>=targetMinutes-2
+ ||!Number.isInteger(screenOffAt)||screenOffAt<0||screenOffAt>=targetMinutes
+ ||!Number.isInteger(screenOffDuration)||screenOffDuration<1||screenOffAt+screenOffDuration>=targetMinutes)
+ throw Error('INVALID_SOAK_SCHEDULE');
 const {secret}=await loadStagingKeys();
 const admin=createClient('https://ucbtjcurawxjwjdvvcvj.supabase.co',secret,
  {auth:{persistSession:false,autoRefreshToken:false}});
@@ -23,7 +35,7 @@ const countAnr=(text)=>(text.match(/reason=\d+ \(ANR\)/g)||[]).length;
 const exitsBefore=exitInfo();
 const pidBefore=adb(['shell','pidof','com.lataba.rider.qa']).stdout.trim();
 const report={startedAt:new Date().toISOString(),project:'ucbtjcurawxjwjdvvcvj',device:'ZY32LHS6PS',
- stagingOnly:true,realGpsOnly:true,gpsUpdates:0,failedQueries:0,maxGpsGapSeconds:0,
+ stagingOnly:true,realGpsOnly:true,targetMinutes,gpsUpdates:0,failedQueries:0,maxGpsGapSeconds:0,
  maxGpsSilenceSeconds:0,gpsLiveSamples:0,
  batteryStart,networkCut:false,networkRestoreRequested:false,networkRestored:false,screenOff:false,screenWake:false,
  deviceProgress:null,orderFinal:null};
@@ -36,11 +48,11 @@ const safeProgress=()=>{
 try{
  const gate=Date.now()+180000;
  while(Date.now()<gate){
-  const progress=safeProgress();if(progress?.started){start=Date.now();report.deviceProgress=progress;break}
+  const progress=safeProgress();if(progress?.started&&Number(progress.target_minutes||60)===targetMinutes){start=Date.now();report.deviceProgress=progress;break}
   await pause(5000);
  }
  if(!start)throw Error('PHYSICAL_SOAK_DID_NOT_START');
- while(Date.now()-start<3900000){
+ while(Date.now()-start<(targetMinutes+5)*60_000){
   const elapsed=Date.now()-start;
   const progress=safeProgress();if(progress)report.deviceProgress=progress;
   const updatesBefore=seen.size;
@@ -62,7 +74,7 @@ try{
    if(order.error)throw order.error;
    report.orderFinal=order.data.status;
   }catch{report.failedQueries++}
-  if(elapsed>=15*60000&&!cutAt){
+  if(networkCutAt>0&&elapsed>=networkCutAt*60000&&!cutAt){
    adb(['shell','svc','wifi','disable']);adb(['shell','svc','data','disable']);
    cutAt=Date.now();report.networkCut=true;
   }
@@ -71,8 +83,8 @@ try{
    adb(['shell','svc','data',data==='1'?'enable':'disable']);report.networkRestoreRequested=true;
   }
   if(report.networkRestoreRequested&&!report.networkRestored)report.networkRestored=hasInternet();
-  if(elapsed>=25*60000&&!screenAt){adb(['shell','input','keyevent','26']);screenAt=Date.now();report.screenOff=true}
-  if(screenAt&&!report.screenWake&&Date.now()-screenAt>=10*60000){adb(['shell','input','keyevent','224']);report.screenWake=true}
+  if(elapsed>=screenOffAt*60000&&!screenAt){adb(['shell','input','keyevent','26']);screenAt=Date.now();report.screenOff=true}
+  if(screenAt&&!report.screenWake&&Date.now()-screenAt>=screenOffDuration*60000){adb(['shell','input','keyevent','224']);report.screenWake=true}
   writeFileSync('artifacts/rider-pilot-soak.json',JSON.stringify(report,null,2));
   if(progress?.completed)break;
   if(Math.floor(elapsed/60000)%5===0)console.log(JSON.stringify({elapsedMinutes:Math.floor(elapsed/60000),gpsUpdates:report.gpsUpdates,failedQueries:report.failedQueries,networkRestored:report.networkRestored,screenWake:report.screenWake}));
@@ -91,10 +103,12 @@ try{
  report.networkRestored=report.networkSwitchesRestored&&hasInternet();
  writeFileSync('artifacts/rider-pilot-soak.json',JSON.stringify(report,null,2));
 }
-const completed=report.deviceProgress?.completed===true&&report.deviceProgress.elapsed_minutes>=60;
-const passed=completed&&report.networkRestored&&report.gpsUpdates>=60
-  &&report.maxGpsSilenceSeconds<=180&&report.gpsLiveSamples>=50
-  &&report.deviceProgress.offline_minutes<=3&&report.crashes===0&&report.anr===0;
+const completed=report.deviceProgress?.completed===true&&report.deviceProgress.elapsed_minutes>=targetMinutes;
+const passed=completed&&report.networkRestored&&report.gpsUpdates>=targetMinutes
+  &&report.maxGpsSilenceSeconds<=180&&report.gpsLiveSamples>=Math.floor(targetMinutes*0.8)
+  &&report.deviceProgress.offline_minutes<=(networkCutAt>0?3:1)
+  &&report.screenOff&&report.screenWake
+  &&(networkCutAt===0||report.networkCut)&&report.crashes===0&&report.anr===0;
 console.log(JSON.stringify({soak:passed?'PASS':'FAIL',gpsUpdates:report.gpsUpdates,
  failedQueries:report.failedQueries,maxGpsGapSeconds:report.maxGpsGapSeconds,
  maxGpsSilenceSeconds:report.maxGpsSilenceSeconds,gpsLiveSamples:report.gpsLiveSamples,

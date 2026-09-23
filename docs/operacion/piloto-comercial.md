@@ -11,9 +11,10 @@ una venta real ni acredita efectivo.
   <https://taba2-staging.pages.dev/#business>.
 - Backend Staging: `ucbtjcurawxjwjdvvcvj`; Producción: `wwcpogltfgzgkrlilbcd`.
 - APK QA coexistente: `com.lataba.rider.qa`. APK piloto independiente:
-  `com.lataba.rider.pilot` vCode 2 / `0.1.1-canonical-pilot`, salida de
-  `build-rider-pilot.mjs` firmada con clave exclusiva del piloto. La vCode 1
-  está conservada para rollback. No actualiza la v146 histórica.
+  `com.lataba.rider.pilot` vCode 3 / `0.1.2-canonical-pilot`, salida de
+  `build-rider-pilot.mjs` firmada con clave exclusiva del piloto. Las vCode 1 y
+  2 están conservadas para rollback. La v3 espera certificación física del
+  tramo con pantalla apagada; no actualiza la v146 histórica.
 - Mercado Pago WCS-51579: pendiente de soporte. No sustituir Checkout Pro por
   `/v1/card_tokens` o `/v1/payments`.
 - Cobro alternativo: `cash` o `coordinate` en pedido, estado manual `pending` →

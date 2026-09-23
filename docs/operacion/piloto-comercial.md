@@ -17,6 +17,10 @@ una venta real ni acredita efectivo.
   tramo con pantalla apagada; no actualiza la v146 histórica.
 - Mercado Pago WCS-51579: pendiente de soporte. No sustituir Checkout Pro por
   `/v1/card_tokens` o `/v1/payments`.
+- Catálogo publicado actual, sólo lectura: 34 productos activos comprables y
+  68 imágenes decodificadas en Chromium y WebKit. El catálogo del comercio QA
+  Staging sigue siendo fixture y no sustituye la carga/aprobación del comercio
+  real para un lanzamiento.
 - Cobro alternativo: `cash` o `coordinate` en pedido, estado manual `pending` →
   `confirmed` → `reversed`. Lo confirma personal del negocio después de recibir
   el dinero; la devolución exige dueño/admin y dinero ya devuelto. Ninguno de

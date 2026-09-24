@@ -8,6 +8,7 @@ import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileS
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { leerSecreto } from '../e2e-production-sale/secretos-windows.mjs';
+import { passwordFromRecovery } from './escrow-rider-signing-password.mjs';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const original = path.join(process.env.USERPROFILE || '', '.codex', 'secrets', 'la-taba-rider-pilot', 'pilot-v1.p12');
@@ -50,7 +51,17 @@ exit 4
   assert.equal(proof.status, 0, 'OneDrive cloud-only provenance unavailable');
   assert.equal(proof.stdout.trim(), 'PASS', 'OneDrive cloud-only provenance unavailable');
 }
-const password = leerSecreto('RIDER PILOT SIGNING PASSWORD')?.secreto;
+// --password-file proves full disaster recovery: the password comes from the
+// escrowed Personal Vault file instead of this PC's Credential Manager.
+const passwordFileAt = process.argv.indexOf('--password-file');
+const passwordFile = passwordFileAt < 0 ? null : path.resolve(process.argv[passwordFileAt + 1] || '');
+if (passwordFile) {
+  assert.ok(backupFile && oneDriveCloudOnly, 'Password escrow proof requires the cloud-only keystore');
+  assert.notEqual(path.dirname(passwordFile).toLowerCase(), path.dirname(backupFile).toLowerCase(),
+    'Password and keystore cannot share a folder');
+}
+const password = passwordFile ? passwordFromRecovery(readFileSync(passwordFile, 'utf8'))
+  : leerSecreto('RIDER PILOT SIGNING PASSWORD')?.secreto;
 const localBackup = leerSecreto('RIDER PILOT KEYSTORE BACKUP')?.secreto;
 assert.ok(password && localBackup && existsSync(original), 'Local pilot signing material unavailable');
 const originalBytes = readFileSync(original);
@@ -93,7 +104,8 @@ try {
   console.log(JSON.stringify({ restoreTest: 'PASS', certificateMatch: true,
     source: selfTest ? 'LOCAL_CREDENTIAL_MANAGER_ONLY'
       : oneDriveCloudOnly ? 'ONEDRIVE_CLOUD_ONLY_REHYDRATED' : 'EXTERNAL_FILE_ORIGIN_NOT_PROVEN',
-    externalBackupVerified: oneDriveCloudOnly, passwordUnprinted: true }));
+    externalBackupVerified: oneDriveCloudOnly, passwordSource: passwordFile ? 'PERSONAL_VAULT_ESCROW' : 'CREDENTIAL_MANAGER',
+    fullSigningRecovery: Boolean(passwordFile && oneDriveCloudOnly), passwordUnprinted: true }));
 } finally {
   const target = path.resolve(temp);
   assert.ok(target.startsWith(scope + path.sep)

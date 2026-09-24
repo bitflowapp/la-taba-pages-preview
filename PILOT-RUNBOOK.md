@@ -1,5 +1,7 @@
 # La Taba · operación del piloto
 
+**STATUS: WAITING_CATALOG_APPROVAL**
+
 **Estado: NO ABRIR TODAVÍA.** Falta aprobar catálogo comercial y desplegar un
 backend/dominio PILOTO aislado. El backup externo de la firma Rider fue
 restaurado y probado el 2026-09-24. Las URL
@@ -35,9 +37,11 @@ propone 10 para confirmación comercial. No importar la hoja directamente.
    compartido. La contraseña sigue en Windows Credential Manager, fuera del
    código; para recuperación tras pérdida total de esta PC también hará falta
    recuperar esa contraseña por un canal seguro separado.
-2. El comercio aprueba por escrito el catálogo, precios vigentes, stock,
-   descripción, fotos y qué productos se publican. Validar y ensayar el
-   importador; no copiar fixtures QA ni precios históricos sin aprobación.
+2. El comercio aprueba por escrito 5–10 productos del subconjunto propuesto,
+   precios vigentes, stock, descripción, fotos y publicación. Completar una
+   copia privada de `catalog/pilot-approved-template.json` y validar con
+   `scripts/import-pilot-catalog.mjs --dry-run`; el template en Git debe fallar.
+   No copiar fixtures QA ni precios históricos sin aprobación.
 3. Crear proyecto Supabase y proyecto Cloudflare Pages **PILOTO** nuevos,
    separados de DEMO, Staging QA y Producción. Instalar migraciones y comprobar
    roles/RLS. No configurar seller ni secretos de Mercado Pago.
@@ -136,3 +140,35 @@ identidad firmante actual se compara contra la APK v3. Conservar la contraseña
 fuera del repositorio y no compartir el archivo por vínculo público.
 El drill ya ejecutado en **Staging** no sustituye el rollback del proyecto
 PILOTO. No tocar Producción ni conectar una cuenta de Mercado Pago real.
+
+## Cuando Walter responde
+
+La automatización revisa el único hilo comercial existente. No enviar otro
+mensaje salvo el seguimiento ya programado y no inferir aprobación por silencio.
+La secuencia técnica completa está en `docs/PILOT-INFRA-PLAN.md`:
+
+A. Interpretar la respuesta: SKU y decisión inequívocos, precio vigente,
+   stock inicial, descripción y confirmación de presentación/foto. El parser
+   propone correspondencias, pero **no** aprueba por sí solo.
+B. Rellenar una **copia fuera del repo** del template con sólo 5–10 productos
+   explícitamente aprobados y la referencia privada a esa respuesta. Los
+   demás quedan `publish=false` o pendientes, nunca con precios históricos.
+C. Ejecutar dry-run del importador y `PILOT_PREFLIGHT`. Si ambos pasan, crear
+   el backend PILOTO nuevo, aplicar migraciones sin seed QA, aprovisionar owner,
+   riders y clientes controlados, y entonces importar mediante RPC. Verificar
+   que sólo la allowlist queda visible.
+D. Completar el manifiesto PILOTO aislado: URLs, ref, negocio y secrets fuera
+   de Git. Construir Rider v4 con `--target pilot`; comprobar receipt y firma.
+E. Preparar `dist_pilot` con el preflight obligatorio y desplegar únicamente
+   `la-taba-commercial-pilot`. Registrar SHA, runtime y deployment ID.
+F. Correr smoke público con la misma allowlist y sesiones Chromium/WebKit.
+G. Cuando el Moto G15 vuelva, ejecutar primero
+   `node scripts/deploy/check-moto-g15.mjs`; sólo un PASS permite instalar la
+   APK v4 y ejecutar el E2E físico de cliente → negocio → Rider → GPS → código
+   → entregado → limpieza QA/stock.
+H. Conservar deployment/APK PILOTO previos compatibles y ejecutar el preflight
+   read-only de `drill-commercial-pilot-rollback.mjs`.
+I. Ejecutar rollback web+config al deployment anterior, verificar versión,
+   backend y hash de migraciones; no revertir la DB por SQL destructivo.
+J. Restaurar el candidate actual, repetir smoke y cerrar la ficha de
+   lanzamiento. No abrir el grupo comercial hasta que todos esos gates pasen.

@@ -51,8 +51,11 @@ propone 10 para confirmación comercial. No importar la hoja directamente.
    sirven para certificar el entorno PILOTO.
 5. Publicar de forma explícita desde la rama release, smoke público, pedido QA
    terminal y limpieza. Conservar dos deployments compatibles del proyecto
-   PILOTO y ensayar rollback allí. Sólo entonces rellenar las URL de la ficha y
-   abrir el grupo pequeño.
+   PILOTO y ensayar rollback allí. El smoke de sólo lectura
+   `scripts/deploy/smoke-commercial-pilot.mjs` exige URL/ref/negocio PILOTO y
+   compara exactamente los SKU públicos con la lista aprobada; corre Chromium
+   y WebKit. Sólo entonces rellenar las URL de la ficha y abrir el grupo
+   pequeño.
 
 ## Alta controlada
 

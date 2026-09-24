@@ -1692,9 +1692,9 @@ async function sendBusinessCommand(command) {
     ? { ok: true, revision: response.order?.revision }
     : {
       ok: false,
-      // El conflicto real llega como SQLSTATE 40001 en errorCode; el texto en
-      // español queda sólo como red de seguridad si el código no viaja.
-      conflict: response?.errorCode === '40001'
+      // El conflicto real llega como SQLSTATE PT409 (HTTP 409; antes 40001)
+      // en errorCode; el texto en español queda sólo como red de seguridad.
+      conflict: ['40001', 'PT409'].includes(response?.errorCode)
         || response?.code === 'ORDER_REVISION_CONFLICT'
         || response?.conflict === true
         || /cambi|revision|revisi/i.test(response?.message || ''),

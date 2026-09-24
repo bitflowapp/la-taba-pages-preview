@@ -167,7 +167,7 @@ select is(
 -- REVISION_CONFLICT
 select throws_ok(
   $$select public.transition_order('d5000000-0000-4000-8000-000000000003', 99, 'on_the_way', 'self-stale-0001')$$,
-  '40001', null,
+  'PT409', null,
   'una revision vieja se rechaza sin aplicar nada');
 select is(pg_temp.estado('d5000000-0000-4000-8000-000000000003'), 'ready',
   'y el pedido quedo donde estaba');
@@ -186,11 +186,11 @@ select is(
 -- "cualquier revision": SQL lo compararia como UNKNOWN si la funcion usara <>.
 select throws_ok(
   $$select public.confirm_business_delivery_code('d5000000-0000-4000-8000-000000000003', 99, '4417', 'self-code-stale-01')$$,
-  '40001', null,
+  'PT409', null,
   'confirmar con una revision incorrecta falla cerrado');
 select throws_ok(
   $$select public.confirm_business_delivery_code('d5000000-0000-4000-8000-000000000003', null, '4417', 'self-code-null-001')$$,
-  '40001', null,
+  'PT409', null,
   'confirmar con revision NULL tambien falla cerrado');
 select throws_ok(
   $$select public.confirm_business_delivery_code(

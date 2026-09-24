@@ -3457,10 +3457,16 @@ export function readableOrderCreationError(error) {
   return 'No pudimos confirmar el pedido. Conservamos el intento para reintentar sin duplicarlo.';
 }
 
+// Conflicto de revisión: PT409 (HTTP 409) desde 20260924200000; 40001 en
+// bases anteriores. 40001 hacía que PostgREST reintentara hasta el timeout.
+function isRevisionConflictCode(code) {
+  return code === 'PT409' || code === '40001';
+}
+
 function readableStatusError(error) {
   const text = `${error?.message || ''} ${error?.details || ''}`.toLowerCase();
   if (
-    error?.code === '40001'
+    isRevisionConflictCode(error?.code)
     || text.includes('expected')
     || text.includes('stale')
     || text.includes('estado actual')
@@ -3480,7 +3486,7 @@ function readableStatusError(error) {
 function readableRiderAssignmentError(error) {
   const text = `${error?.message || ''} ${error?.details || ''}`.toLowerCase();
   if (
-    error?.code === '40001'
+    isRevisionConflictCode(error?.code)
     || text.includes('conflicto de asignacion')
     || text.includes('conflicto de asignación')
   ) {

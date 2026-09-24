@@ -27,6 +27,7 @@ import {
   normalizeOperationsConfig, validateWeeklyHours, validateZoneDraft,
 } from './business-operations-config.js';
 import { buildAlwaysOpenGrid } from '../core/service-hours.js';
+import { onlinePaymentsEnabled } from '../core/runtime-config.js';
 
 export const BUSINESS_OPERATION_VIEWS = Object.freeze([
   'operation-center', 'day-open', 'orders', 'operations-config', 'payments', 'payments-setup', 'scanner', 'product-create',
@@ -220,8 +221,9 @@ export function renderBusinessOperations(view) {
     payments: () => renderPaymentsSurface({
       payments, status: paymentsStatus, manualPayments, manualStatus: manualPaymentsStatus,
       role: context.role, activation: paymentsActivation, connection: sellerConnection, busy, refundTarget,
+      onlinePayments: onlinePaymentsEnabled(),
     }),
-    'payments-setup': () => renderPaymentsSetupSurface({ activation: paymentsActivation, connection: sellerConnection, role: context.role, busy }),
+    'payments-setup': () => renderPaymentsSetupSurface({ activation: paymentsActivation, connection: sellerConnection, role: context.role, busy, onlinePayments: onlinePaymentsEnabled() }),
     'fiscal-setup': () => renderFiscalSetupSurface({
       activation: arcaActivation, role: context.role, busy, authorizationDraft: arcaAuthorizationDraft,
     }),
@@ -1564,6 +1566,7 @@ async function installSignedUpdate(button) {
 }
 
 export function businessOperationViewLabel(view) {
+  if (view === 'payments-setup' && !onlinePaymentsEnabled()) return 'Cobros online';
   return VIEW_META[view]?.[0] || '';
 }
 
@@ -2208,6 +2211,7 @@ async function refreshPaymentsAction() {
 async function runMercadoPagoConnection(action) {
   const guard = requireCapability('payments.reconcile');
   if (!guard.ok) return guard.result;
+  if (!onlinePaymentsEnabled()) return result(false, 'Cobros online no habilitados en esta etapa.');
   if (busy) return result(false, 'Ya hay algo en curso.');
   if (action === 'disconnect' && !globalThis.confirm('¿Desconectar Mercado Pago? Se pausarán los pagos online. El historial se conserva.')) return result(false, 'Sin cambios.');
   busy = true;

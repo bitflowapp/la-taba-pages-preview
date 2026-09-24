@@ -145,7 +145,7 @@ function renderAlertCard(alert, { busy } = {}) {
   </article>`;
 }
 
-export function renderPaymentsSurface({ payments, status, manualPayments, manualStatus, role, activation, connection, busy, refundTarget } = {}) {
+export function renderPaymentsSurface({ payments, status, manualPayments, manualStatus, role, activation, connection, busy, refundTarget, onlinePayments = true } = {}) {
   if (!can(role, 'payments.view')) return deniedPanel('Pagos', 'Tu rol no incluye la consulta de pagos.');
   const elevated = isElevated(role);
   const rows = Array.isArray(payments) ? payments : [];
@@ -159,7 +159,7 @@ export function renderPaymentsSurface({ payments, status, manualPayments, manual
 
   return panel('Pagos', 'Lo que entró hoy y qué hacer con cada caso.', `
     ${renderManualPaymentsSurface(manualPayments, manualStatus, { elevated, busy })}
-    ${renderMercadoPagoConnection(connection, busy, elevated)}
+    ${onlinePayments ? renderMercadoPagoConnection(connection, busy, elevated) : renderOnlinePaymentsDisabled()}
     <div class="operation-center-toolbar">
       <span class="form-hint">${rows.length} pago(s) listados</span>
       <button class="ghost-button compact" type="button" data-payments-refresh ${busy ? 'disabled' : ''}>Actualizar</button>
@@ -243,9 +243,18 @@ function renderPaymentCard(payment, { elevated, busy, refundTarget } = {}) {
   </article>`;
 }
 
-export function renderPaymentsSetupSurface({ connection, role, busy } = {}) {
+export function renderPaymentsSetupSurface({ connection, role, busy, onlinePayments = true } = {}) {
   if (!can(role, 'payments.reconcile')) return deniedPanel('Mercado Pago', 'La conexión de cobros la hace el dueño o el encargado.');
+  if (!onlinePayments) return panel('Cobros online', 'No habilitados en esta etapa.', renderOnlinePaymentsDisabled());
   return panel('Mercado Pago', 'Recibí los pagos online en tu cuenta.', renderMercadoPagoConnection(connection, busy, true));
+}
+
+// Producción controlada: sólo cobro manual. Se dice sin rodeos y sin botón,
+// para que nadie crea que puede conectar una cuenta que este entorno no usa.
+function renderOnlinePaymentsDisabled() {
+  return '<section aria-label="Cobros online" class="operation-summary tone-calm" data-online-payments="disabled">'
+    + '<h3>Cobros online</h3><p role="status">No habilitados en esta etapa.</p>'
+    + '<p>Se cobra en efectivo o por transferencia al entregar o retirar. Registrá cada cobro recién cuando el dinero esté recibido.</p></section>';
 }
 
 function renderMercadoPagoConnection(connection, busy, elevated) {

@@ -121,6 +121,16 @@ export function isProductionDeployment(source = readRuntimeConfigSource()) {
   return true;
 }
 
+/**
+ * Cobros online. La producción controlada (`pilot`) opera sólo con cobro
+ * manual mientras Mercado Pago no esté certificado: ahí no se ofrece conectar
+ * una cuenta, porque el backend de ese entorno no tiene el conector
+ * desplegado y el botón prometería algo que no ocurre.
+ */
+export function onlinePaymentsEnabled(source = readRuntimeConfigSource()) {
+  return declaredDeploymentEnvironment(source) !== 'pilot';
+}
+
 function declaredDeploymentEnvironment(source) {
   try {
     if (!isRecord(source) || !isRecord(source.repository)) return '';

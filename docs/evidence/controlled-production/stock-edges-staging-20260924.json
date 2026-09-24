@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-09-24T20:05:34.789Z",
+  "target": "staging",
+  "project": "ucbtjcurawxjwjdvvcvj",
+  "checks": {
+    "MORE_THAN_STOCK_REFUSED": "PASS",
+    "MORE_THAN_STOCK_CODE": "23514",
+    "UNPUBLISHED_PRODUCT_REFUSED": "PASS",
+    "UNPUBLISHED_PRODUCT_CODE": "55000",
+    "PARTIAL_CART_ALL_OR_NOTHING": "PASS",
+    "NO_ORDER_CREATED": "PASS"
+  },
+  "verdict": "PASS"
+}

@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "environment": "pilot",
+  "notice": "Names, categories and images below are historical references, not current merchant approval. Never apply this template as-is.",
+  "approval": {
+    "source": null,
+    "receivedAt": null,
+    "evidenceRef": null
+  },
+  "products": [
+    {
+      "sku": "benedictino-sin-gas-2250ml",
+      "name": "Benedictino",
+      "category": "Aguas",
+      "image": "assets/products/benedictino-sin-gas-2250ml-8291602e84de68e9-b3100a865b922f28.webp",
+      "description": null,
+      "price": null,
+      "stock": null,
+      "publish": null,
+      "identityAndImageApproved": null
+    },
+    {
+      "sku": "villa-del-sur-sin-gas-600ml",
+      "name": "Villa del Sur",
+      "category": "Aguas",
+      "image": "assets/products/villa-del-sur-sin-gas-600ml-81e9d897ac5c7200-d5bf4cdecf9d2d26.webp",
+      "description": null,
+      "price": null,
+      "stock": null,
+      "publish": null,
+      "identityAndImageApproved": null
+    },
+    {
+      "sku": "aquarius-manzana-1500ml",
+      "name": "Aquarius Manzana",
+      "category": "Aguas saborizadas",
+      "image": "assets/products/aquarius-manzana-1500ml-5a06bd9176e27828-d3c0af1d8c4494d9.webp",
+      "description": null,
+      "price": null,
+      "stock": null,
+      "publish": null,
+      "identityAndImageApproved": null
+    },
+    {
+      "sku": "coca-cola-original-2250ml",
+      "name": "Coca-Cola",
+      "category": "Gaseosas",
+      "image": "assets/products/coca-cola-original-2250ml-97dc25e8399a5775-adb8042ea9716cb9.webp",
+      "description": null,
+      "price": null,
+      "stock": null,
+      "publish": null,
+      "identityAndImageApproved": null
+    },
+    {
+      "sku": "coca-cola-zero-2250ml",
+      "name": "Coca-Cola Zero",
+      "category": "Gaseosas",
+      "image": "assets/products/coca-cola-zero-2250ml-4ce84243eb65d14a-309bbcc731498df7.webp",
+      "description": null,
+      "price": null,
+      "stock": null,
+      "publish": null,
+      "identityAndImageApproved": null
+    },
+    {
+      "sku": "fanta-naranja-2250ml",
+      "name": "Fanta Naranja",
+      "category": "Gaseosas",
+      "image": "assets/products/fanta-naranja-2250ml-797064494952a9a1-9ef1596448794ce7.webp",
+      "description": null,
+      "price": null,
+      "stock": null,
+      "publish": null,
+      "identityAndImageApproved": null
+    },
+    {
+      "sku": "sprite-original-2250ml",
+      "name": "Sprite",
+      "category": "Gaseosas",
+      "image": "assets/products/sprite-original-2250ml-99d83c94dac255ca-3898f9d83fdf293f.webp",
+      "description": null,
+      "price": null,
+      "stock": null,
+      "publish": null,
+      "identityAndImageApproved": null
+    },
+    {
+      "sku": "pepsi-original-2000ml",
+      "name": "Pepsi",
+      "category": "Gaseosas",
+      "image": "assets/products/pepsi-original-2000ml-b4298e4382912cf4-86e8267fb10c961a.webp",
+      "description": null,
+      "price": null,
+      "stock": null,
+      "publish": null,
+      "identityAndImageApproved": null
+    },
+    {
+      "sku": "seven-up-original-2000ml",
+      "name": "7UP",
+      "category": "Gaseosas",
+      "image": "assets/products/seven-up-original-2000ml-2ed6deb5fa431d4b-f32d43104a61239c.webp",
+      "description": null,
+      "price": null,
+      "stock": null,
+      "publish": null,
+      "identityAndImageApproved": null
+    },
+    {
+      "sku": "red-bull-original-250ml",
+      "name": "Red Bull",
+      "category": "Energizantes",
+      "image": "assets/products/red-bull-original-250ml-2d86788f7b853c11-d9018a7780c8e25b.webp",
+      "description": null,
+      "price": null,
+      "stock": null,
+      "publish": null,
+      "identityAndImageApproved": null
+    }
+  ]
+}

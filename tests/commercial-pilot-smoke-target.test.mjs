@@ -6,7 +6,7 @@ import { validatePilotTarget } from '../scripts/deploy/smoke-commercial-pilot.mj
 const ref = 'abcdefghijklmnopqrst';
 const businessId = '116d8f37-29f5-40f1-a692-81b86b69a72c';
 const valid = {
-  origin: 'https://la-taba-pilot.pages.dev', ref, businessId,
+  origin: 'https://la-taba-commercial-pilot.pages.dev', ref, businessId,
   runtime: { mode: 'production', repository: { provider: 'supabase',
     deploymentEnvironment: 'pilot', supabaseUrl: `https://${ref}.supabase.co`,
     publishableKey: 'sb_publishable_test_public_key_for_unit_test', businessId } },
@@ -31,7 +31,7 @@ test('pilot smoke target accepts only isolated pilot runtime', () => {
   assert.throws(() => validatePilotTarget({ ...valid, runtime: {
     ...valid.runtime, repository: { ...valid.runtime.repository, deploymentEnvironment: 'staging' },
   } }), /NOT_PILOT_RUNTIME/);
-  assert.throws(() => validatePilotTarget({ ...valid, origin: 'http://la-taba-pilot.pages.dev' }),
+  assert.throws(() => validatePilotTarget({ ...valid, origin: 'http://la-taba-commercial-pilot.pages.dev' }),
     /PILOT_HTTPS_REQUIRED/);
 });
 

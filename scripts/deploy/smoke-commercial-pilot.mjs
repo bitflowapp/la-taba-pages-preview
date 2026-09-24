@@ -21,6 +21,8 @@ export function validatePilotTarget({ origin, ref, businessId, runtime }) {
   assert.equal(url.pathname, '/', 'PILOT_ORIGIN_ONLY');
   assert.ok(!url.search && !url.hash && !url.username && !url.password, 'PILOT_ORIGIN_ONLY');
   assert.ok(!KNOWN_HOSTS.has(url.hostname), 'PILOT_HOST_MUST_BE_ISOLATED');
+  assert.equal(url.hostname, 'la-taba-commercial-pilot.pages.dev',
+    'PILOT_HOST_MUST_BE_DEDICATED_PROJECT');
   assert.match(ref, /^[a-z0-9]{20}$/, 'PILOT_REF_REQUIRED');
   assert.ok(!KNOWN_REFS.has(ref), 'PILOT_REF_MUST_BE_ISOLATED');
   assert.match(businessId, UUID, 'PILOT_BUSINESS_ID_REQUIRED');
@@ -45,10 +47,18 @@ async function main() {
   assert.ok(origin && ref && businessId && approvedPath,
     'Usage: --origin <pilot-url> --project-ref <ref> --business-id <uuid> --approved-skus-file <json>');
   const approval = JSON.parse(readFileSync(path.resolve(approvedPath), 'utf8'));
-  assert.equal(approval.approvalSource, 'BUSINESS_OWNER', 'CATALOG_OWNER_APPROVAL_REQUIRED');
-  assert.ok(approval.approvedAt && Array.isArray(approval.skus), 'CATALOG_APPROVAL_INCOMPLETE');
-  const expected = new Set(approval.skus);
-  assert.ok(expected.size >= 8 && expected.size <= 12 && expected.size === approval.skus.length,
+  assert.equal(approval.schemaVersion, 1, 'CATALOG_APPROVAL_SCHEMA_INVALID');
+  assert.equal(approval.environment, 'pilot', 'CATALOG_APPROVAL_ENVIRONMENT_INVALID');
+  assert.equal(approval.approval?.source, 'BUSINESS_OWNER', 'CATALOG_OWNER_APPROVAL_REQUIRED');
+  assert.ok(approval.approval?.receivedAt && approval.approval?.evidenceRef
+    && Array.isArray(approval.products), 'CATALOG_APPROVAL_INCOMPLETE');
+  assert.ok(approval.products.every((item) => item.publish !== true
+    || item.identityAndImageApproved === true), 'CATALOG_IMAGE_APPROVAL_INCOMPLETE');
+  const published = approval.products.filter((item) => item.publish === true
+    && item.identityAndImageApproved === true).map((item) => item.sku);
+  const approvedBySku = new Map(approval.products.map((item) => [item.sku, item]));
+  const expected = new Set(published);
+  assert.ok(expected.size >= 5 && expected.size <= 10 && expected.size === published.length,
     'PILOT_APPROVED_SKU_COUNT_INVALID');
   assert.ok([...expected].every((sku) => /^[a-z0-9][a-z0-9-]{2,100}$/.test(sku)),
     'PILOT_APPROVED_SKU_INVALID');
@@ -65,13 +75,17 @@ async function main() {
   const client = createClient(`https://${ref}.supabase.co`, runtime.repository.publishableKey,
     { auth: { persistSession: false, autoRefreshToken: false } });
   const listed = await client.from('products')
-    .select('sku,image_url,image_thumbnail_url,price')
+    .select('sku,image_url,image_thumbnail_url,price,stock')
     .eq('business_id', businessId).eq('is_active', true).eq('available', true).eq('is_verified', true);
   assert.ifError(listed.error);
   const products = listed.data || [];
   assert.deepEqual(products.map((row) => row.sku).sort(), [...expected].sort(),
     'PUBLIC_CATALOG_DIFFERS_FROM_OWNER_APPROVAL');
-  assert.ok(products.every((row) => Number(row.price) > 0), 'PUBLIC_PRICE_INVALID');
+  assert.ok(products.every((row) => Number(row.price) > 0
+    && Number(row.price) === Number(approvedBySku.get(row.sku)?.price)
+    && Number(row.stock) > 0
+    && row.image_url === approvedBySku.get(row.sku)?.image),
+  'PUBLIC_PRICE_STOCK_OR_IMAGE_DIFFERS_FROM_APPROVAL');
   const images = [...new Set(products.flatMap((row) => [row.image_url, row.image_thumbnail_url]))];
   assert.ok(images.every((image) => typeof image === 'string'
     && /^assets\/[A-Za-z0-9._/-]+$/.test(image) && !image.split('/').includes('..')),

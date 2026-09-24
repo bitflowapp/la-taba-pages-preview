@@ -31,10 +31,12 @@ async function main() {
   const head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim();
   const branch = execFileSync('git', ['branch', '--show-current'], { cwd: ROOT, encoding: 'utf8' }).trim();
   assert.equal(commit, head, 'PILOT_COMMIT_NOT_HEAD');
-  assert.equal(branch, 'release/taba-commercial-pilot', 'PILOT_RELEASE_BRANCH_REQUIRED');
+  assert.ok(['release/taba-commercial-pilot', 'release/taba-controlled-production'].includes(branch),
+    'PILOT_RELEASE_BRANCH_REQUIRED');
   assert.equal(execFileSync('git', ['status', '--porcelain'], { cwd: ROOT, encoding: 'utf8' }).trim(), '',
     'PILOT_PACKAGE_REQUIRES_CLEAN_CHECKOUT');
-  const { report, plan, ownerCredentials } = loadPilotPreflight({ configFile, approvalFile, phase: 'deploy' });
+  const { report, plan, ownerCredentials } = loadPilotPreflight({ configFile,
+    approvalFile: approvalFile || undefined, phase: 'deploy' });
   assert.equal(report.status, 'PASS', 'PILOT_PREFLIGHT_REQUIRED');
   run('scripts/build-supabase-vendor.mjs');
   run('scripts/create-release-folder.mjs', ['--out', 'dist_pilot']);
@@ -52,10 +54,10 @@ async function main() {
     && checked.supabaseHost === `${plan.projectRef}.supabase.co`
     && checked.businessId === plan.businessId, 'PILOT_ARTIFACT_RUNTIME_REJECTED');
   run('scripts/deploy/sellar-version.mjs', [OUT, '--commit', commit]);
-  const rider = JSON.parse(readFileSync(path.resolve(config.rider.buildReceiptFile), 'utf8'));
+  const rider = JSON.parse(readFileSync(path.resolve(ROOT, config.rider.buildReceiptFile), 'utf8'));
   writeFileSync(path.join(OUT, 'pilot-deploy-metadata.json'), JSON.stringify({
-    environment: 'pilot', commit, backendRef: plan.projectRef, businessId: plan.businessId,
-    approvedSkus: plan.approvedSkus, migrationGraphSha256: migrationGraphSha256(),
+    environment: 'pilot', catalogMode: report.catalogMode, commit, backendRef: plan.projectRef,
+    businessId: plan.businessId, approvedSkus: plan.approvedSkus, migrationGraphSha256: migrationGraphSha256(),
     riderApkSha256: rider.apkSha256, riderVersion: rider.versionName,
   }, null, 2) + '\n');
   run('scripts/scan-production-artifacts.mjs', [OUT,

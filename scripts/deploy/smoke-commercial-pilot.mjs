@@ -44,22 +44,29 @@ async function main() {
   const ref = value('--project-ref');
   const businessId = value('--business-id');
   const approvedPath = value('--approved-skus-file');
-  assert.ok(origin && ref && businessId && approvedPath,
-    'Usage: --origin <pilot-url> --project-ref <ref> --business-id <uuid> --approved-skus-file <json>');
-  const approval = JSON.parse(readFileSync(path.resolve(approvedPath), 'utf8'));
-  assert.equal(approval.schemaVersion, 1, 'CATALOG_APPROVAL_SCHEMA_INVALID');
-  assert.equal(approval.environment, 'pilot', 'CATALOG_APPROVAL_ENVIRONMENT_INVALID');
-  assert.equal(approval.approval?.source, 'BUSINESS_OWNER', 'CATALOG_OWNER_APPROVAL_REQUIRED');
-  assert.ok(approval.approval?.receivedAt && approval.approval?.evidenceRef
-    && Array.isArray(approval.products), 'CATALOG_APPROVAL_INCOMPLETE');
-  assert.ok(approval.products.every((item) => item.publish !== true
-    || item.identityAndImageApproved === true), 'CATALOG_IMAGE_APPROVAL_INCOMPLETE');
+  // Technical deployment before catalog approval: the exact allowlist is empty,
+  // so ANY visible product fails the smoke.
+  const techReady = value('--catalog-mode') === 'none';
+  assert.ok(origin && ref && businessId && (techReady ? !approvedPath : approvedPath),
+    'Usage: --origin <pilot-url> --project-ref <ref> --business-id <uuid> (--approved-skus-file <json> | --catalog-mode none)');
+  let approval = { products: [] };
+  if (!techReady) {
+    approval = JSON.parse(readFileSync(path.resolve(approvedPath), 'utf8'));
+    assert.equal(approval.schemaVersion, 1, 'CATALOG_APPROVAL_SCHEMA_INVALID');
+    assert.equal(approval.environment, 'pilot', 'CATALOG_APPROVAL_ENVIRONMENT_INVALID');
+    assert.equal(approval.approval?.source, 'BUSINESS_OWNER', 'CATALOG_OWNER_APPROVAL_REQUIRED');
+    assert.ok(approval.approval?.receivedAt && approval.approval?.evidenceRef
+      && Array.isArray(approval.products), 'CATALOG_APPROVAL_INCOMPLETE');
+    assert.ok(approval.products.every((item) => item.publish !== true
+      || item.identityAndImageApproved === true), 'CATALOG_IMAGE_APPROVAL_INCOMPLETE');
+  }
   const published = approval.products.filter((item) => item.publish === true
     && item.identityAndImageApproved === true).map((item) => item.sku);
   const approvedBySku = new Map(approval.products.map((item) => [item.sku, item]));
   const expected = new Set(published);
-  assert.ok(expected.size >= 5 && expected.size <= 10 && expected.size === published.length,
-    'PILOT_APPROVED_SKU_COUNT_INVALID');
+  assert.ok(techReady ? expected.size === 0
+    : expected.size >= 5 && expected.size <= 10 && expected.size === published.length,
+  'PILOT_APPROVED_SKU_COUNT_INVALID');
   assert.ok([...expected].every((sku) => /^[a-z0-9][a-z0-9-]{2,100}$/.test(sku)),
     'PILOT_APPROVED_SKU_INVALID');
 
@@ -124,7 +131,7 @@ async function main() {
       await browser.close();
     }
   }
-  console.log(JSON.stringify({ pilotPublicSmoke: 'PASS', origin: safeOrigin, ref,
+  console.log(JSON.stringify({ pilotPublicSmoke: 'PASS', catalogMode: techReady ? 'none' : 'approved', origin: safeOrigin, ref,
     businessId, approvedProducts: products.length, images: images.length, browsers: browserResults }));
 }
 

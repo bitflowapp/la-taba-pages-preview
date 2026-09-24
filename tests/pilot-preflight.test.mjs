@@ -61,3 +61,30 @@ test('committed template cannot satisfy live preflight', () => {
     approvalFile: 'catalog/pilot-approved-template.json',
   }), /APPROVAL_FILE_MUST_BE_OUTSIDE_REPO/);
 });
+
+test('tech-ready mode deploys with an EMPTY public allowlist and never imports', () => {
+  const technical = { ...config, catalogMode: 'none', catalogApprovalFile: null };
+  const empty = { projectRef: ref, businessId, approvedSkus: [] };
+  const cloudflare = { accountId: 'a'.repeat(32), apiToken: 'TEST_ONLY_TOKEN_AT_LEAST_20_CHARS' };
+  const publicOnly = { publishableKey: ownerCredentials.publishableKey };
+  const report = validatePilotPreflight(technical, empty,
+    { phase: 'deploy', ownerCredentials: publicOnly, cloudflare, buildReceipt: receipt });
+  assert.equal(report.status, 'PASS');
+  assert.equal(report.catalogMode, 'none');
+  assert.deepEqual(report.approvedSkus, []);
+  assert.throws(() => validatePilotPreflight(technical, empty, { phase: 'catalog', ownerCredentials }),
+    /PILOT_CATALOG_IMPORT_REQUIRES_OWNER_APPROVAL/);
+  assert.throws(() => validatePilotPreflight(technical, plan,
+    { phase: 'deploy', ownerCredentials: publicOnly, cloudflare, buildReceipt: receipt }),
+  /TECH_READY_MODE_MUST_PUBLISH_NOTHING/);
+  assert.throws(() => validatePilotPreflight({ ...technical, catalogApprovalFile: 'x.json' }, empty,
+    { phase: 'deploy', ownerCredentials: publicOnly, cloudflare, buildReceipt: receipt }),
+  /TECH_READY_MODE_HAS_NO_APPROVAL_FILE/);
+  assert.throws(() => validatePilotPreflight({ ...technical, catalogMode: 'historical' }, empty,
+    { phase: 'deploy', ownerCredentials: publicOnly, cloudflare, buildReceipt: receipt }),
+  /PILOT_CATALOG_MODE_INVALID/);
+  assert.throws(() => validatePilotPreflight({ ...technical, supabaseProjectRef: 'wwcpogltfgzgkrlilbcd' },
+    { ...empty, projectRef: 'wwcpogltfgzgkrlilbcd' },
+    { phase: 'deploy', ownerCredentials: publicOnly, cloudflare, buildReceipt: receipt }),
+  /PILOT_BACKEND_MUST_BE_NEW_AND_ISOLATED/);
+});

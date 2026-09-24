@@ -11,18 +11,33 @@ const ROOT = path.resolve(import.meta.dirname, '../..');
 const BLOCKED_HOSTS = new Set(['la-taba.pages.dev', 'taba2-staging.pages.dev']);
 const CERT_SHA256 = '2dcc9b0a0cf022ebf59c500331103ee31cec9e9142d5431553131877948ec1aa';
 
+// catalogMode "none" is the CONTROLLED_PRODUCTION technical deployment before
+// the merchant approves a catalog: the exact public allowlist is EMPTY, so the
+// smoke fails if any product is visible. It never enables an import; catalog
+// import still requires the approved 5-10 SKU allowlist.
+export const CATALOG_MODES = Object.freeze(['approved', 'none']);
+
 export function validatePilotPreflight(config, plan, { phase = 'catalog',
   ownerCredentials, cloudflare = {}, buildReceipt } = {}) {
   assert.ok(['catalog', 'deploy', 'e2e'].includes(phase), 'PILOT_PREFLIGHT_PHASE_INVALID');
   assert.equal(config?.schemaVersion, 1, 'PILOT_CONFIG_SCHEMA_INVALID');
   assert.equal(config.deploymentEnvironment, 'pilot', 'PILOT_ENVIRONMENT_REQUIRED');
   assert.equal(config.manualPaymentOnly, true, 'PILOT_MUST_USE_MANUAL_PAYMENT_ONLY');
+  const catalogMode = config.catalogMode ?? 'approved';
+  assert.ok(CATALOG_MODES.includes(catalogMode), 'PILOT_CATALOG_MODE_INVALID');
   assertPilotIdentity(config.supabaseProjectRef, config.businessId);
   assert.equal(config.supabaseProjectRef, plan?.projectRef, 'PILOT_BACKEND_REF_MISMATCH');
   assert.equal(config.businessId, plan?.businessId, 'PILOT_BUSINESS_ID_MISMATCH');
-  assert.ok(Array.isArray(plan?.approvedSkus)
-    && plan.approvedSkus.length >= 5 && plan.approvedSkus.length <= 10,
-  'PILOT_APPROVED_SKU_ALLOWLIST_REQUIRED');
+  if (catalogMode === 'none') {
+    assert.notEqual(phase, 'catalog', 'PILOT_CATALOG_IMPORT_REQUIRES_OWNER_APPROVAL');
+    assert.ok(config.catalogApprovalFile == null, 'TECH_READY_MODE_HAS_NO_APPROVAL_FILE');
+    assert.ok(Array.isArray(plan?.approvedSkus) && plan.approvedSkus.length === 0,
+      'TECH_READY_MODE_MUST_PUBLISH_NOTHING');
+  } else {
+    assert.ok(Array.isArray(plan?.approvedSkus)
+      && plan.approvedSkus.length >= 5 && plan.approvedSkus.length <= 10,
+    'PILOT_APPROVED_SKU_ALLOWLIST_REQUIRED');
+  }
   assert.ok(config.cloudflareProject === 'la-taba-commercial-pilot',
     'PILOT_CLOUDFLARE_PROJECT_MUST_BE_DEDICATED');
   const customer = new URL(config.customerUrl);
@@ -64,15 +79,55 @@ export function validatePilotPreflight(config, plan, { phase = 'catalog',
     'RIDER_APK_PATH_MISMATCH');
     assert.match(buildReceipt?.apkSha256 || '', /^[a-f0-9]{64}$/i, 'RIDER_APK_HASH_REQUIRED');
   }
-  return { status: 'PASS', phase, projectRef: plan.projectRef,
+  return { status: 'PASS', phase, catalogMode, projectRef: plan.projectRef,
     businessId: plan.businessId, approvedSkus: [...plan.approvedSkus],
     cloudflareProject: config.cloudflareProject, customerUrl: customer.origin,
     businessPanelUrl: panel.href, secretsPrinted: false };
 }
 
+// Public key source: Credential Manager locally; in CI the PILOT_PUBLISHABLE_KEY
+// variable (it is served to every browser anyway). Catalog import stays local.
+function publishableCredentials(config, phase, environment) {
+  if (environment.PILOT_PUBLISHABLE_KEY) {
+    assert.notEqual(phase, 'catalog', 'PILOT_CATALOG_IMPORT_IS_LOCAL_ONLY');
+    return { publishableKey: environment.PILOT_PUBLISHABLE_KEY, accessToken: null };
+  }
+  return readPilotOwnerCredentials(config.supabaseProjectRef, { requireOwnerToken: phase === 'catalog' });
+}
+
+function loadRiderReceipt(config, phase, environment) {
+  const receiptFile = config.rider?.buildReceiptFile;
+  if (phase === 'catalog' || !receiptFile || !existsSync(path.resolve(ROOT, receiptFile))) return null;
+  const buildReceipt = JSON.parse(readFileSync(path.resolve(ROOT, receiptFile), 'utf8'));
+  // On the machine that built and signed the APK its bytes must match the
+  // receipt. CI deploys only the web and carries the committed receipt.
+  if (environment.CI !== 'true') {
+    const apkFile = path.join(ROOT, 'apps', 'rider-android', 'app', 'build', 'outputs',
+      'apk', 'release', 'app-release.apk');
+    assert.ok(existsSync(apkFile), 'RIDER_V4_APK_MISSING');
+    assert.equal(createHash('sha256').update(readFileSync(apkFile)).digest('hex'),
+      buildReceipt.apkSha256, 'RIDER_V4_APK_HASH_MISMATCH');
+  }
+  return buildReceipt;
+}
+
 export function loadPilotPreflight({ configFile, approvalFile, phase = 'catalog',
   environment = process.env } = {}) {
-  assert.ok(configFile && approvalFile, 'PILOT_CONFIG_AND_APPROVAL_FILES_REQUIRED');
+  assert.ok(configFile, 'PILOT_CONFIG_FILE_REQUIRED');
+  const cloudflare = { accountId: environment.CLOUDFLARE_ACCOUNT_ID,
+    apiToken: environment.CLOUDFLARE_API_TOKEN };
+  const technical = JSON.parse(readFileSync(path.resolve(configFile), 'utf8'));
+  if (technical.catalogMode === 'none') {
+    assert.ok(!approvalFile, 'TECH_READY_MODE_TAKES_NO_APPROVAL_FILE');
+    assertPilotIdentity(technical.supabaseProjectRef, technical.businessId);
+    const plan = { projectRef: technical.supabaseProjectRef, businessId: technical.businessId,
+      approvedSkus: [], entries: [] };
+    const ownerCredentials = publishableCredentials(technical, phase, environment);
+    const buildReceipt = loadRiderReceipt(technical, phase, environment);
+    return { report: validatePilotPreflight(technical, plan, { phase, ownerCredentials,
+      cloudflare, buildReceipt }), plan, ownerCredentials };
+  }
+  assert.ok(approvalFile, 'PILOT_CONFIG_AND_APPROVAL_FILES_REQUIRED');
   const configPath = path.resolve(configFile);
   const approvedPath = realpathSync(path.resolve(approvalFile));
   // Commercial decisions belong in a restricted local store, never Git.
@@ -88,29 +143,17 @@ export function loadPilotPreflight({ configFile, approvalFile, phase = 'catalog'
     projectRef: config.supabaseProjectRef, businessId: config.businessId,
     snapshot, imageManifest,
   });
-  const ownerCredentials = readPilotOwnerCredentials(config.supabaseProjectRef,
-    { requireOwnerToken: phase === 'catalog' });
-  const buildReceipt = phase !== 'catalog' && config.rider.buildReceiptFile
-    && existsSync(path.resolve(config.rider.buildReceiptFile))
-    ? JSON.parse(readFileSync(path.resolve(config.rider.buildReceiptFile), 'utf8')) : null;
-  if (phase !== 'catalog' && buildReceipt) {
-    const apkFile = path.join(ROOT, 'apps', 'rider-android', 'app', 'build', 'outputs',
-      'apk', 'release', 'app-release.apk');
-    assert.ok(existsSync(apkFile), 'RIDER_V4_APK_MISSING');
-    assert.equal(createHash('sha256').update(readFileSync(apkFile)).digest('hex'),
-      buildReceipt.apkSha256, 'RIDER_V4_APK_HASH_MISMATCH');
-  }
+  const ownerCredentials = publishableCredentials(config, phase, environment);
+  const buildReceipt = loadRiderReceipt(config, phase, environment);
   return { report: validatePilotPreflight(config, plan, { phase, ownerCredentials,
-    cloudflare: { accountId: environment.CLOUDFLARE_ACCOUNT_ID,
-      apiToken: environment.CLOUDFLARE_API_TOKEN }, buildReceipt }),
-  plan, ownerCredentials };
+    cloudflare, buildReceipt }), plan, ownerCredentials };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   try {
     const at = (flag) => { const i = process.argv.indexOf(flag); return i < 0 ? '' : process.argv[i + 1]; };
     const { report } = loadPilotPreflight({ configFile: at('--config'),
-      approvalFile: at('--approval'), phase: at('--phase') || 'catalog' });
+      approvalFile: at('--approval') || undefined, phase: at('--phase') || 'catalog' });
     console.log(JSON.stringify({ pilotPreflight: report.status, ...report }));
   } catch (error) {
     console.error(`PILOT_PREFLIGHT_BLOCKED:${error.message}`);

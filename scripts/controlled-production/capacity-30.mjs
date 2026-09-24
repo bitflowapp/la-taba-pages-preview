@@ -61,7 +61,11 @@ const log = (msg) => process.stderr.write(`[${((Date.now() - T0) / 1000).toFixed
 const samples = new Map();
 const unexpected = [];
 const findings = [];
+const hangs = [];
 function record(name, ms, ok, detail = '') {
+  // A request that needs more than 30 s is a hang for a person at the counter,
+  // whatever it finally answers (the 40001 retry storm answered 504 at 125 s).
+  if (ms > 30_000) hangs.push({ name, ms: Math.round(ms) });
   const bucket = samples.get(name) || { ms: [], errors: 0 };
   bucket.ms.push(ms);
   if (!ok) { bucket.errors += 1; unexpected.push({ name, detail: String(detail).slice(0, 160) }); }
@@ -357,7 +361,7 @@ try {
     const cur = await read(staff.c, deliverable[0].id);
     const [a, b] = await Promise.all([owner, staff].map((op) => rpc(op.c, 'transition_order', {
       p_order_id: deliverable[0].id, p_expected_revision: cur.revision, p_new_status: 'accepted',
-      p_idempotency_key: key(`accept_${op.label}`, deliverable[0].id, cur.revision) }, { allow: ['40001'] })));
+      p_idempotency_key: key(`accept_${op.label}`, deliverable[0].id, cur.revision) }, { allow: ['PT409', '40001'] })));
     const after = await read(staff.c, deliverable[0].id);
     report.twoTabs = { codes: [codeOf(a), codeOf(b)], finalStatus: after.status, revisionDelta: after.revision - cur.revision };
     const wins = [a, b].filter((r) => !r.error && r.data?.ok !== false).length;
@@ -379,7 +383,7 @@ try {
     const k = key('pay', o.id, cur.revision);
     const pay = () => rpc(staff.c, 'confirm_manual_order_payment', { p_order_id: o.id, p_expected_revision: cur.revision, p_actual_method: 'cash', p_idempotency_key: k });
     const [a, b] = await Promise.all([pay(), pay()]);
-    const third = await rpc(owner.c, 'confirm_manual_order_payment', { p_order_id: o.id, p_expected_revision: cur.revision, p_actual_method: 'cash', p_idempotency_key: key('pay2', o.id, cur.revision) }, { allow: ['40001', '55000', 'P0001'] });
+    const third = await rpc(owner.c, 'confirm_manual_order_payment', { p_order_id: o.id, p_expected_revision: cur.revision, p_actual_method: 'cash', p_idempotency_key: key('pay2', o.id, cur.revision) }, { allow: ['PT409', '40001', '55000', 'P0001'] });
     const events = await admin.from('order_events').select('id').eq('order_id', o.id).eq('event_type', 'order.manual_payment_confirmed');
     const state = await read(staff.c, o.id);
     const entry = { label: o.label, codes: [codeOf(a), codeOf(b), codeOf(third)], replays: [a, b].filter((r) => r.data?.idempotent_replay).length, events: events.data?.length, status: state.manual_payment_status };
@@ -394,7 +398,7 @@ try {
     const cur = await read(staff.c, raceOrder.id);
     const argsCancel = { p_order_id: raceOrder.id, p_expected_revision: cur.revision, p_reason: 'QA capacidad: cancelación doble', p_idempotency_key: key('cancel', raceOrder.id, cur.revision) };
     const [a, b] = await Promise.all([rpc(staff.c, 'cancel_order', argsCancel), rpc(staff.c, 'cancel_order', argsCancel)]);
-    const other = await rpc(owner.c, 'cancel_order', { ...argsCancel, p_idempotency_key: key('cancel2', raceOrder.id, cur.revision) }, { allow: ['40001', 'P0001', '55000'] });
+    const other = await rpc(owner.c, 'cancel_order', { ...argsCancel, p_idempotency_key: key('cancel2', raceOrder.id, cur.revision) }, { allow: ['PT409', '40001', 'P0001', '55000'] });
     const after = await stockOf();
     report.doubleCancel = { restored: after - before, expected: raceOrder.qty, codes: [codeOf(a), codeOf(b), codeOf(other)],
       replays: [a, b].filter((r) => r.data?.idempotent_replay).length };
@@ -422,7 +426,7 @@ try {
         rpc(a.c, 'accept_rider_order_offer', { p_offer_id: offerA.offer_id, p_expected_version: offerA.version, p_idempotency_key: `cap-${offerA.offer_id}-${offerA.version}` }),
         (async () => {
           const w = await rpc(staff.c, 'withdraw_rider_order_offer', { p_offer_id: offerA.offer_id });
-          const re = await rpc(staff.c, 'offer_order_to_rider', { p_order_id: o.id, p_expected_status: 'ready', p_expected_rider_user_id: null, p_new_rider_user_id: b.id }, { allow: ['40001', '42501', 'P0001'] });
+          const re = await rpc(staff.c, 'offer_order_to_rider', { p_order_id: o.id, p_expected_status: 'ready', p_expected_rider_user_id: null, p_new_rider_user_id: b.id }, { allow: ['PT409', '40001', '42501', 'P0001'] });
           const boardB = (await rpc(b.c, 'get_rider_delivery_board', {})).data;
           const offerB = (boardB?.offers || []).find((x) => x.order_id === o.id);
           if (offerB) b.handled.add(offerB.offer_id);
@@ -457,11 +461,12 @@ try {
         if (step) {
           const r = await rpc(rider.c, step, { p_order_id: o.id, p_expected_revision: o.revision, p_idempotency_key: `cap-${step}-${o.id}-${o.revision}` });
           if (r.error || r.data?.ok === false) finding('P1', 'RIDER_STEP_FAILED', `${order.label}:${step}:${codeOf(r)}`);
-          if (step !== 'mark_rider_arrived') {
-            for (let s = 0; s < 2; s += 1) {
-              const g = await rpc(rider.c, 'publish_rider_location_fanout', { p_lat: P.address.lat + s * 0.0005, p_lng: P.address.lng, p_accuracy: 8, p_heading: null, p_speed: 4, p_captured_at: new Date().toISOString(), p_idempotency_key: randomUUID(), p_is_mock: false });
-              if (g.error || g.data?.ok === false) finding('P1', 'GPS_PUBLISH_REFUSED', `${order.label}:${codeOf(g)}`);
-            }
+          // Like the app: GPS only while on_the_way/arrived, one sample per >= 6 s.
+          if (step === 'start_rider_delivery' || step === 'mark_rider_arrived') {
+            if (step === 'mark_rider_arrived') await sleep(6_000);
+            const g = await rpc(rider.c, 'publish_rider_location_fanout', { p_lat: P.address.lat + 0.0005, p_lng: P.address.lng, p_accuracy: 8, p_heading: null, p_speed: 4, p_captured_at: new Date().toISOString(), p_idempotency_key: randomUUID(), p_is_mock: false });
+            if (g.error || g.data?.ok === false) finding('P1', 'GPS_PUBLISH_REFUSED', `${order.label}:${step}:${g.data?.receipts?.[0]?.code || codeOf(g)}`);
+            else order.gpsSamples = (order.gpsSamples || 0) + 1;
           }
         } else if (o.status === 'arrived') {
           const wrong = String((Number(order.code) + 1) % 10000).padStart(4, '0');
@@ -546,6 +551,7 @@ try {
   delete report.requestIds;
 
   // ---------- verdict ----------
+  for (const hang of hangs) finding('P1', 'RPC_HANG_OVER_30S', `${hang.name}:${hang.ms}ms`);
   report.metrics = summary();
   report.unexpectedErrors = unexpected.slice(0, 40);
   report.findings = findings;

@@ -412,17 +412,20 @@ async function submitPanelAccessRequest(form) {
   }
   const fullName = String(form.elements?.fullName?.value || '').trim();
   const phone = String(form.elements?.phone?.value || '').trim();
+  // Panel por defecto; un repartidor lo elige explícitamente. El rol final lo
+  // decide el comercio al aprobar, nunca este formulario.
+  const access = form.elements?.access?.value === 'rider' ? 'rider' : 'panel';
 
   accessRegistration = { ...accessRegistration, busy: true, message: '' };
   notify();
 
-  const result = await auth.requestTeamAccess({ access: 'panel', fullName, phone });
+  const result = await auth.requestTeamAccess({ access, fullName, phone });
   if (!result.ok) {
     accessRegistration = {
       ...accessRegistration,
       busy: false,
       message: result.message,
-      request: { ...(accessRegistration.request || {}), fullName, contactPhone: phone },
+      request: { ...(accessRegistration.request || {}), fullName, contactPhone: phone, requestedAccess: access },
     };
     notify();
     return { handled: true, ok: false, message: '' };

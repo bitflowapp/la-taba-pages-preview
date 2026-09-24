@@ -117,3 +117,15 @@ test('mientras se envía, el botón no se puede volver a apretar', () => {
   const markup = renderAccessRegistration({ step: ACCESS_STEP.REQUEST, busy: true });
   assert.match(markup, /type="submit" disabled/);
 });
+
+test('un repartidor puede pedir acceso como rider; el panel sigue siendo el default', () => {
+  const markup = renderAccessRegistration({ step: ACCESS_STEP.REQUEST });
+  assert.match(markup, /<select name="access"/);
+  assert.match(markup, /<option value="panel" selected>/);
+  assert.match(markup, /<option value="rider">Repartir pedidos/);
+  const retry = renderAccessRegistration({ step: ACCESS_STEP.REQUEST, request: { requestedAccess: 'rider' } });
+  assert.match(retry, /<option value="rider" selected>/);
+  const pending = renderAccessRegistration({ step: ACCESS_STEP.PENDING, request: { requestedAccess: 'rider' } });
+  assert.match(pending, /app La Taba Rider/);
+  assert.doesNotMatch(renderAccessRegistration({ step: ACCESS_STEP.PENDING, request: { requestedAccess: 'panel' } }), /app La Taba Rider/);
+});

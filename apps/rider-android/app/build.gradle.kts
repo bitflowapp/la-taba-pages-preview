@@ -1,7 +1,23 @@
 plugins { id("com.android.application"); kotlin("android"); id("org.jetbrains.kotlin.plugin.compose") }
 
-val publicKey = providers.environmentVariable("RIDER_STAGING_PUBLIC_KEY").orElse("").get()
-require(publicKey.isEmpty() || publicKey.startsWith("sb_publishable_")) { "Only a staging publishable key is accepted" }
+val stagingRef = "ucbtjcurawxjwjdvvcvj"
+val productionRef = "wwcpogltfgzgkrlilbcd"
+val targetMode = providers.environmentVariable("RIDER_TARGET_MODE").orElse("staging").get()
+val backendRef = providers.environmentVariable("RIDER_BACKEND_REF").orElse(stagingRef).get()
+require(targetMode in setOf("staging", "pilot")) { "Unknown Rider target mode" }
+require(backendRef.matches(Regex("[a-z0-9]{20}")) && backendRef != productionRef) {
+    "Rider backend must be a non-Production Supabase project"
+}
+require((targetMode == "staging") == (backendRef == stagingRef)) {
+    "Staging and PILOT Rider builds require distinct backends"
+}
+val publicKey = if (targetMode == "pilot") providers.environmentVariable("RIDER_PUBLIC_KEY").orElse("").get()
+    else providers.environmentVariable("RIDER_PUBLIC_KEY").orNull
+        ?: providers.environmentVariable("RIDER_STAGING_PUBLIC_KEY").orElse("").get()
+require(publicKey.isEmpty() || publicKey.startsWith("sb_publishable_")) { "Only a publishable key is accepted" }
+require(targetMode != "pilot" || publicKey.startsWith("sb_publishable_")) {
+    "PILOT Rider requires an explicit publishable key"
+}
 val pilotStore = providers.environmentVariable("RIDER_PILOT_KEYSTORE_PATH").orNull
 val pilotPassword = providers.environmentVariable("RIDER_PILOT_SIGNING_PASS").orNull
 require((pilotStore == null) == (pilotPassword == null)) { "Pilot signer needs both path and password" }
@@ -29,7 +45,9 @@ android {
         versionCode = pilotVersionCode
         versionName = pilotVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "SUPABASE_URL", "\"https://ucbtjcurawxjwjdvvcvj.supabase.co\"")
+        buildConfigField("String", "SUPABASE_URL", "\"https://$backendRef.supabase.co\"")
+        buildConfigField("String", "BACKEND_REF", "\"$backendRef\"")
+        buildConfigField("String", "TARGET_MODE", "\"$targetMode\"")
         buildConfigField("String", "PUBLIC_KEY", "\"$publicKey\"")
     }
     if (pilotStore != null && pilotPassword != null) signingConfigs {

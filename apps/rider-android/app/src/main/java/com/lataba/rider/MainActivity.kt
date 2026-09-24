@@ -42,7 +42,7 @@ class MainActivity: ComponentActivity() {
     Column(Modifier.fillMaxSize().safeDrawingPadding().padding(20.dp).verticalScroll(rememberScrollState())) {
         Text(if (BuildConfig.APPLICATION_ID.endsWith(".pilot")) "La Taba · Rider Piloto" else "La Taba · Rider QA",
             style = MaterialTheme.typography.headlineSmall)
-        Text("STAGING · App nativa", style = MaterialTheme.typography.labelSmall)
+        Text("${BuildConfig.TARGET_MODE.uppercase()} · App nativa", style = MaterialTheme.typography.labelSmall)
         Spacer(Modifier.height(16.dp))
         if (!state.signedIn) {
             OutlinedTextField(email, { email = it }, label = { Text("Email Rider") }, modifier = Modifier.fillMaxWidth().testTag("email"), singleLine = true)

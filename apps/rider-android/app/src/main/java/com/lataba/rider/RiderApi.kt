@@ -22,8 +22,11 @@ class RiderApi(private val vault: SessionVault): RiderBackend {
     private fun save() { session?.let { vault.save(it.toString()) } }
 
     private suspend fun request(path: String, body: JSONObject?, token: String? = null): String = withContext(Dispatchers.IO) {
-        check(BuildConfig.SUPABASE_URL == "https://ucbtjcurawxjwjdvvcvj.supabase.co")
-        check(BuildConfig.PUBLIC_KEY.startsWith("sb_publishable_")) { "Falta configuración pública Staging" }
+        check(BuildConfig.BACKEND_REF != "wwcpogltfgzgkrlilbcd")
+        check(BuildConfig.SUPABASE_URL == "https://${BuildConfig.BACKEND_REF}.supabase.co")
+        check((BuildConfig.TARGET_MODE == "staging") ==
+            (BuildConfig.BACKEND_REF == "ucbtjcurawxjwjdvvcvj"))
+        check(BuildConfig.PUBLIC_KEY.startsWith("sb_publishable_")) { "Falta configuración pública Rider" }
         val req = Request.Builder().url(BuildConfig.SUPABASE_URL + path).header("apikey", BuildConfig.PUBLIC_KEY)
             .header("X-Client-Info", "lataba-rider-android-canonical/" + BuildConfig.VERSION_NAME)
         if (token != null) req.header("Authorization", "Bearer $token")
@@ -52,7 +55,8 @@ class RiderApi(private val vault: SessionVault): RiderBackend {
             session!!.put("business_id", memberships.getJSONObject(0).getString("business_id"))
             save()
             val registration = rpc("identity_register_session", JSONObject().put("p_business_id", businessId)
-                .put("p_client", "rider_android").put("p_device_label", "Android Rider QA")
+                .put("p_client", "rider_android").put("p_device_label",
+                    if (BuildConfig.TARGET_MODE == "pilot") "Android Rider Piloto" else "Android Rider QA")
                 .put("p_device_key_hash", JSONObject.NULL).put("p_app_version", BuildConfig.VERSION_NAME))
             check(registration.optBoolean("ok") && registration.optString("role") == "rider") { "Rol Rider requerido" }
         } catch (e: Exception) { clear(); throw e }

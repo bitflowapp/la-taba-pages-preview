@@ -42,9 +42,10 @@ class RiderLocationService: Service(), LocationListener {
             .addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT), PendingIntent.FLAG_IMMUTABLE)
         val stop = PendingIntent.getService(this, 1, Intent(this, javaClass).setAction("STOP"), PendingIntent.FLAG_IMMUTABLE)
         startForeground(10, NotificationCompat.Builder(this, "rider_gps").setSmallIcon(android.R.drawable.ic_menu_mylocation)
-            .setContentTitle(if (BuildConfig.APPLICATION_ID.endsWith(".pilot"))
+            .setContentTitle(if (BuildConfig.TARGET_MODE == "pilot")
                 "La Taba Rider Piloto · GPS activo" else "La Taba Rider QA · GPS activo")
-            .setContentText("Sólo entregas activas de Staging")
+            .setContentText(if (BuildConfig.TARGET_MODE == "pilot")
+                "Sólo entregas activas de PILOTO" else "Sólo entregas activas de Staging")
             .setContentIntent(open).addAction(0, "Detener GPS", stop).setOngoing(true).build())
         // Foreground service alone does not keep the CPU awake with the screen off.
         // Hold only during an active delivery, in bounded chunks, and release on stop.

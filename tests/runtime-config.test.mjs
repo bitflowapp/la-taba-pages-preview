@@ -63,6 +63,41 @@ test('runtime config productiva normaliza Supabase y prefiere publishableKey', (
   assert.equal(readRuntimeConfigSource(), globalThis[RUNTIME_CONFIG_GLOBAL_KEY]);
 });
 
+test('PILOTO usa sólo un backend aislado de QA, DEMO y Producción', () => {
+  const base = {
+    mode: 'production',
+    repository: {
+      provider: 'supabase',
+      deploymentEnvironment: 'pilot',
+      publishableKey: 'sb_publishable_9c2f4a1e7d3b5a8e2f',
+      businessId: '11111111-1111-4111-8111-111111111111',
+    },
+  };
+  const valid = resolveRuntimeConfig({
+    ...base, repository: { ...base.repository, supabaseUrl: 'https://abcdefghijklmnopqrst.supabase.co' },
+  });
+  assert.equal(valid.isProductionReady, true);
+  assert.equal(valid.repository.deploymentEnvironment, 'pilot');
+  for (const ref of ['ucbtjcurawxjwjdvvcvj', 'wwcpogltfgzgkrlilbcd', 'yakhtrkukqlgzvxuvhzs']) {
+    const invalid = resolveRuntimeConfig({
+      ...base, repository: { ...base.repository, supabaseUrl: `https://${ref}.supabase.co` },
+    });
+    assert.equal(invalid.isProductionReady, false, ref);
+    assert.match(invalid.errors.join(' '), /proyecto Supabase aislado/);
+  }
+  const wrongHost = resolveRuntimeConfig({
+    ...base, repository: { ...base.repository, supabaseUrl: 'https://outside.example.com' },
+  });
+  assert.equal(wrongHost.isProductionReady, false);
+  const qaBusiness = resolveRuntimeConfig({
+    ...base, repository: { ...base.repository,
+      supabaseUrl: 'https://abcdefghijklmnopqrst.supabase.co',
+      businessId: 'a57b1c20-0f4e-4a6b-9d31-7c2e5f8a41d0' },
+  });
+  assert.equal(qaBusiness.isProductionReady, false);
+  assert.match(qaBusiness.errors.join(' '), /negocio propio/);
+});
+
 test('anonKey queda como alias compatible pero la salida siempre es publishableKey', () => {
   const runtime = resolveRuntimeConfig({
     mode: 'production',

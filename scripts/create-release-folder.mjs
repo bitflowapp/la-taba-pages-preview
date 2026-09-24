@@ -11,8 +11,8 @@ import {
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outputIndex = process.argv.indexOf('--out');
 const outputName = outputIndex < 0 ? 'dist_release' : process.argv[outputIndex + 1];
-if (!['dist_release', 'dist_staging_pilot'].includes(outputName)) {
-  throw new Error('Release output must be dist_release or dist_staging_pilot');
+if (!['dist_release', 'dist_staging_pilot', 'dist_pilot'].includes(outputName)) {
+  throw new Error('Release output must be dist_release, dist_staging_pilot or dist_pilot');
 }
 const releaseDir = path.join(root, outputName);
 

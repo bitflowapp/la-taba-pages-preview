@@ -40,6 +40,7 @@ const repositoryFor = (deploymentEnvironment) => ({
 
 const PRODUCTION = { mode: 'production', repository: repositoryFor('production') };
 const STAGING = { mode: 'production', repository: repositoryFor('staging') };
+const PILOT = { mode: 'production', repository: repositoryFor('pilot') };
 const LOCAL = { mode: 'local-staging', repository: repositoryFor('local') };
 // Sin `deploymentEnvironment` declarado y contra un host remoto: el normalizador
 // lo deduce como producción.
@@ -70,6 +71,14 @@ test('producción + ?showcase=1 tampoco entra en presentación', () => {
   assert.equal(isShowcaseMode('?showcase=1'), false);
   assert.equal(isDemoMode('?showcase=1'), false);
   assert.equal(getAppMode('?showcase=1'), APP_MODE_PRODUCTION);
+});
+
+test('PILOTO ignora demo y showcase igual que producción', () => {
+  deploy(PILOT);
+  assert.equal(isProductionDeployment(), true);
+  assert.equal(isDemoMode('?demo=1'), false);
+  assert.equal(isShowcaseMode('?showcase=1'), false);
+  assert.equal(getAppMode('?demo=1'), APP_MODE_PRODUCTION);
 });
 
 test('producción DEDUCIDA —sin deploymentEnvironment declarado— también rechaza la demo', () => {

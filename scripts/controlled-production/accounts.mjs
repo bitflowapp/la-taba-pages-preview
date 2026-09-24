@@ -135,11 +135,31 @@ export async function bootstrapFirstOwner(admin, { businessId, userId, fullName 
   return { status: 'owner_created' };
 }
 
+// Without reviewerClient this is the operator emergency path (the Panel has no
+// member deactivation UI and the operator never holds the owner's password):
+// membership off by service role, every Auth session deleted, login banned.
 export async function disableAccount({ admin, reviewerClient, businessId, userId, reason }) {
   const result = { membership: 'none', sessions: 'none', auth: 'none' };
   const member = await admin.from('business_members').select('role,is_active')
     .eq('business_id', businessId).eq('user_id', userId).maybeSingle();
   if (member.error) throw Error(`MEMBER_READ:${member.error.code}`);
+  if (!reviewerClient) {
+    assert.notEqual(member.data?.role, 'owner', 'OPERATOR_PATH_NEVER_DISABLES_AN_OWNER');
+    if (member.data?.is_active) {
+      const off = await admin.from('business_members').update({ is_active: false })
+        .eq('business_id', businessId).eq('user_id', userId);
+      if (off.error) throw Error(`MEMBER_DISABLE:${off.error.code}`);
+      result.membership = 'inactive';
+    }
+    const killed = await admin.rpc('identity_kill_auth_sessions_for_user', { p_user_id: userId });
+    if (killed.error) throw Error(`SESSIONS_KILL:${killed.error.code}`);
+    result.sessions = 'deleted';
+    const banned = await admin.auth.admin.updateUserById(userId, { ban_duration: BAN_FOREVER });
+    if (banned.error) throw Error(`AUTH_BAN_FAILED:${banned.error.code || banned.error.status}`);
+    result.auth = 'banned';
+    result.reason = String(reason || '').slice(0, 120);
+    return result;
+  }
   if (member.data?.is_active) {
     const off = await rpc(reviewerClient, 'identity_set_member_active', {
       p_business_id: businessId, p_user_id: userId, p_is_active: false, p_reason: reason,
@@ -163,7 +183,11 @@ export async function enableAccount({ admin, reviewerClient, businessId, userId,
   const member = await admin.from('business_members').select('is_active')
     .eq('business_id', businessId).eq('user_id', userId).maybeSingle();
   if (member.error) throw Error(`MEMBER_READ:${member.error.code}`);
-  if (member.data && !member.data.is_active) {
+  if (member.data && !member.data.is_active && !reviewerClient) {
+    const on = await admin.from('business_members').update({ is_active: true })
+      .eq('business_id', businessId).eq('user_id', userId);
+    if (on.error) throw Error(`MEMBER_ENABLE:${on.error.code}`);
+  } else if (member.data && !member.data.is_active) {
     const on = await rpc(reviewerClient, 'identity_set_member_active', {
       p_business_id: businessId, p_user_id: userId, p_is_active: true, p_reason: reason,
     });
@@ -253,7 +277,9 @@ async function main(args) {
     case 'enable': {
       const user = await findUserByEmail(admin, email);
       assert.ok(user, 'ACCOUNT_NOT_FOUND');
-      const reviewerClient = await reviewer(keys, option(args, '--reviewer-credential'));
+      const operator = args.includes('--operator');
+      assert.ok(operator !== Boolean(option(args, '--reviewer-credential')), 'CHOOSE_--operator_OR_--reviewer-credential');
+      const reviewerClient = operator ? null : await reviewer(keys, option(args, '--reviewer-credential'));
       const run = command === 'disable' ? disableAccount : enableAccount;
       return say(await run({ admin, reviewerClient, businessId, userId: user.id,
         reason: option(args, '--reason') || 'Operación controlada' }));

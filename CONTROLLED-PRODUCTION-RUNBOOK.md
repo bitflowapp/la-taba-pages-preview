@@ -16,11 +16,13 @@ Rider es un comando de esta página, ejecutado por el operador técnico en su PC
 | Estado | Ver §12 (compuertas). **No invitar clientes** mientras diga `COMMERCIAL_OPEN_READY: NO` |
 | CUSTOMER_URL | `https://la-taba-commercial-pilot.pages.dev/` (se habilita al primer deploy) |
 | BUSINESS_PANEL_URL | `https://la-taba-commercial-pilot.pages.dev/#business` |
-| Backend Supabase | proyecto nuevo en `sa-east-1`, ref en `deploy/controlled-production.json` |
+| Backend Supabase | `tkanbadcglszlcyfjvpv` (`la-taba-controlled-production`, sa-east-1, org Luna Systems, plan Pro) — `deploy/controlled-production.json` |
+| Negocio real | `e7850ad2-a447-402c-8375-3fd74e9466ba` “La Taba” — cerrado, 0 productos, sin miembros hasta el alta del dueño |
+| Negocios QA (nunca públicos) | control `e1d2c342-da14-421e-884f-ff38bb55f642` (8 productos QA), aislamiento `dd515bdd-33bc-4a72-9e70-72d2ab8ae1f0` |
 | Nunca | Staging `ucbtjcurawxjwjdvvcvj`, Producción vieja `wwcpogltfgzgkrlilbcd`, DEMO `yakhtrkukqlgzvxuvhzs` (los gates los rechazan) |
-| Rider APK | `com.lataba.rider.pilot` `0.1.3-canonical-pilot` (versionCode 4); SHA-256 y certificado en el receipt de `deploy/` |
+| Rider APK | `com.lataba.rider.pilot` `0.1.3-canonical-pilot` (versionCode 4), SHA-256 `2fcc64f9c8cac31fcc65449b25d604e9dc04dae87e5947a4f5554b9875b187d4`, copia en OneDrive `La-Taba/Releases/Rider/` |
 | Certificado de firma Rider | SHA-256 `2dcc9b0a0cf022ebf59c500331103ee31cec9e9142d5431553131877948ec1aa` |
-| APK anterior (rollback) | v3 `0.1.2-canonical-pilot` conservada fuera del repo |
+| APK anterior (rollback) | Primera versión para este backend; la v3 (`0.1.2`) apunta a Staging y **no** sirve para CP. Para futuras versiones, reinstalar la v4 archivada |
 | Web | versión en `https://la-taba-commercial-pilot.pages.dev/version.json` (commit, runtime) |
 | Service worker | `CACHE_NAME` en `sw.js` (hoy `la-taba-runtime-v117-controlled-production`) |
 | Cobro | Manual: `cash` (efectivo al retirar o recibir) o `coordinate` (a coordinar). Mercado Pago **no** habilitado (WCS-51579) |
@@ -42,6 +44,7 @@ por registrarse: el primer usuario **no** se vuelve dueño.
 ## 2. Altas, bajas y recuperación
 
 Todos los comandos: `node scripts/controlled-production/accounts.mjs <comando> --target controlled-production ...`.
+El negocio real es `--business-id e7850ad2-a447-402c-8375-3fd74e9466ba`.
 Leen las claves del Credential Manager (`CONTROLLED PROD SUPABASE ...`) y
 verifican que pertenezcan al proyecto antes de actuar. El enlace de acceso se
 copia al portapapeles; **no se imprime**. Pegalo en un mensaje privado a esa
@@ -78,17 +81,22 @@ lo rechaza desde el Panel y se evalúa pausar (§8).
 
 ### 2.5 RESET_ACCESS / RECOVER_ACCOUNT
 `reset-access --email <correo> --origin https://la-taba-commercial-pilot.pages.dev/`
-cierra sus sesiones y copia un enlace nuevo. Si la cuenta estaba deshabilitada,
-primero `enable` (2.7).
+copia un enlace nuevo de un solo uso a `/cuenta/` (probado: canje, contraseña
+nueva y login OK; reusar el mismo enlace se rechaza). Si la cuenta estaba
+deshabilitada, primero `enable` (2.7).
 
 ### 2.6 DISABLE_USER / DEACTIVATE_USER
-`disable --business-id <negocio> --email <correo> --reviewer-credential "CP OWNER" --reason "<motivo>"`
-desactiva la membresía (con auditoría), revoca sesiones y bloquea el login.
-No borra nada: sus pedidos y cobros quedan con su historia. El último dueño no
-se puede desactivar. Borrado definitivo: no se hace durante el piloto.
+El Panel todavía no tiene botón para desactivar miembros; lo hace el operador:
+`disable --business-id <negocio> --email <correo> --operator --reason "<motivo>"`
+desactiva la membresía, borra todas sus sesiones y bloquea el login (probado:
+el login responde `user_banned`). Nunca desactiva a un dueño. No borra nada:
+pedidos y cobros quedan con su historia. Borrado definitivo: no durante el piloto.
+Con una sesión de dueño/admin se puede usar `--reviewer-credential "<nombre>"`
+en lugar de `--operator` y queda auditado por la RPC de identidad.
 
 ### 2.7 Rehabilitar
-`enable --business-id <negocio> --email <correo> --reviewer-credential "CP OWNER" --reason "<motivo>"`.
+`enable --business-id <negocio> --email <correo> --operator --reason "<motivo>"`
+(desbloquea el login y reactiva la membresía; probado).
 
 ### 2.8 Ver quién tiene acceso
 `list --business-id <negocio>` (correos enmascarados).

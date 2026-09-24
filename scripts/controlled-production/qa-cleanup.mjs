@@ -16,7 +16,7 @@ const compact = (id) => id.replaceAll('-', '');
 
 export async function cleanupQaOrder({ admin, owner, staff, businessId, orderId, reason }) {
   const read = async () => {
-    const { data, error } = await staff.from('orders').select('id,status,revision,manual_payment_status,origin')
+    const { data, error } = await staff.from('orders').select('id,status,revision,manual_payment_status,origin,picked_up_at')
       .eq('id', orderId).single();
     if (error) throw Error(`READ:${error.code}`);
     return data;
@@ -35,7 +35,10 @@ export async function cleanupQaOrder({ admin, owner, staff, businessId, orderId,
     if (r.error) throw Error(`CANCEL:${r.error.code}`);
     done.cancelled = true; cur = await read();
   }
-  if (cur.status === 'delivered') {
+  // Stock only returns by itself when an order is cancelled before it left the
+  // store. A delivered QA order, or one cancelled after pickup, gets its units
+  // back through an audited movement (idempotent per order and product).
+  if (cur.status === 'delivered' || (['canceled', 'cancelled'].includes(cur.status) && cur.picked_up_at)) {
     const items = await admin.from('order_items').select('product_id,quantity').eq('order_id', orderId);
     if (items.error) throw Error(`ITEMS:${items.error.code}`);
     for (const item of items.data) {

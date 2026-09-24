@@ -1,0 +1,22 @@
+{
+  "at": "2026-09-24T21:45:51.009Z",
+  "mode": "controlled-production",
+  "ref": "tkanbadcglszlcyfjvpv",
+  "backup": {
+    "directory": "~\\.taba-backups\\controlled-production\\2026-09-24T21-45-38-663Z",
+    "tables": 92,
+    "rows": 260
+  },
+  "restore": {
+    "tables": 92,
+    "identical": 92,
+    "mismatches": []
+  },
+  "DB_RESTORE_TEST": "PASS",
+  "platformBackup": {
+    "walg": true,
+    "pitr": false,
+    "firstCompletedAt": "2026-09-24T21:15:30.493Z",
+    "retention": "daily (Pro, 7 days)"
+  }
+}

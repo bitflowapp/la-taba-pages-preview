@@ -33,7 +33,9 @@ if(!existsSync(keystore)||!password||!backup||!readFileSync(keystore).equals(Buf
 if(key?.usuario!==backendRef||!key.secreto.startsWith('sb_publishable_'))
  throw Error('TARGET_PUBLIC_KEY_MUST_MATCH_PROJECT');
 const project=path.resolve('apps/rider-android');
-const built=spawnSync('cmd.exe',['/d','/c','gradlew.bat',androidTest?':app:assembleReleaseAndroidTest':':app:assembleRelease',`-PriderPilotVersionCode=${versionCode}`,`-PriderPilotVersionName=${versionName}`,
+// Explicit .\ path: cmd may be told not to search the current directory
+// (NoDefaultCurrentDirectoryInExePath), and then a bare gradlew.bat fails.
+const built=spawnSync('cmd.exe',['/d','/c','.\\gradlew.bat',androidTest?':app:assembleReleaseAndroidTest':':app:assembleRelease',`-PriderPilotVersionCode=${versionCode}`,`-PriderPilotVersionName=${versionName}`,
  ...(androidTest?['-PriderPilotInstrumentation=true']:[]),'--console=plain'],{
  cwd:project,stdio:'inherit',windowsHide:true,env:{...process.env,
   ANDROID_HOME:path.join(process.env.LOCALAPPDATA,'Android','Sdk'),

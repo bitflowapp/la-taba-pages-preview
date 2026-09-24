@@ -51,7 +51,9 @@ export async function seedBusinesses({ verifiedBy }) {
     ordering_verified_at: new Date().toISOString(), ordering_verified_by: verifiedBy,
     delivery_enabled: true, pickup_enabled: true, delivery_fee: template.delivery_fee,
     minimum_delivery_subtotal: template.minimum_delivery_subtotal,
-    delivery_max_radius_meters: template.delivery_max_radius_meters, stock_reservation_minutes: template.stock_reservation_minutes,
+    // No max radius: it needs a business_verified point, which only the
+    // merchant can give. Declared-area zones are still enforced.
+    delivery_max_radius_meters: null, stock_reservation_minutes: template.stock_reservation_minutes,
     abandoned_order_minutes: template.abandoned_order_minutes });
   await upsertBusiness(db, { ...COMMON, id: CP_BUSINESSES.qaIsolation, name: 'QA Aislamiento · no público',
     slug: 'qa-aislamiento-cp', address: 'QA — no público', status: 'closed', ordering_enabled: false,
@@ -67,6 +69,21 @@ export async function seedBusinesses({ verifiedBy }) {
       const ins = await db.from(table).insert(copy);
       if (ins.error) throw Error(`${table}_COPY:${ins.error.code}:${ins.error.message}`);
     }
+  }
+  // Pickup point for the Rider map of the QA business only: a public-directory
+  // coordinate, honestly marked qa_fixture / not human verified (private schema,
+  // no RPC; same mechanism as scripts/set-pickup-point.mjs).
+  if (process.env.SUPABASE_ACCESS_TOKEN) {
+    const sql = `insert into private.rider_map_business_locations (business_id, latitude, longitude, source, accuracy_m, confidence, human_verified, source_note)
+      values ('${CP_BUSINESSES.qaControl}', -38.946062, -68.053321, 'qa_fixture', 20, 'medium', false,
+        'QA control: coordenada de directorio público (Mendoza 827), no verificada por el comercio')
+      on conflict (business_id) do update set latitude = excluded.latitude, longitude = excluded.longitude, source = excluded.source,
+        accuracy_m = excluded.accuracy_m, confidence = excluded.confidence, human_verified = false, source_note = excluded.source_note,
+        updated_at = statement_timestamp()`;
+    const response = await fetch(`https://api.supabase.com/v1/projects/${cp.ref}/database/query`, { method: 'POST',
+      headers: { Authorization: `Bearer ${process.env.SUPABASE_ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: sql }) });
+    if (!response.ok) throw Error(`QA_PICKUP_POINT:${response.status}`);
   }
   const summary = {};
   for (const [label, id] of Object.entries(CP_BUSINESSES)) {

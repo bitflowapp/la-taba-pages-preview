@@ -1,5 +1,9 @@
 # La Taba · operación del piloto
 
+> **Reemplazado por `CONTROLLED-PRODUCTION-RUNBOOK.md`** (producción controlada:
+> 1 comercio, ≤ 3 riders, ~30 clientes). Estado y evidencia actuales en
+> `docs/CONTROLLED-PRODUCTION-STATUS.md`. Este documento queda como historia.
+
 **STATUS: WAITING_CATALOG_APPROVAL**
 
 **Estado: NO ABRIR TODAVÍA.** Falta aprobar catálogo comercial y desplegar un

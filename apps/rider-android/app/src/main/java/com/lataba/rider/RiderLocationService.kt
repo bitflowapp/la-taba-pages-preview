@@ -45,7 +45,7 @@ class RiderLocationService: Service(), LocationListener {
             .setContentTitle(if (BuildConfig.TARGET_MODE == "pilot")
                 "La Taba Rider Piloto · GPS activo" else "La Taba Rider QA · GPS activo")
             .setContentText(if (BuildConfig.TARGET_MODE == "pilot")
-                "Sólo entregas activas de PILOTO" else "Sólo entregas activas de Staging")
+                "Sólo entregas activas asignadas" else "Sólo entregas activas de Staging")
             .setContentIntent(open).addAction(0, "Detener GPS", stop).setOngoing(true).build())
         // Foreground service alone does not keep the CPU awake with the screen off.
         // Hold only during an active delivery, in bounded chunks, and release on stop.

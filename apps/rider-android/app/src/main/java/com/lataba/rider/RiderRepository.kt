@@ -31,7 +31,7 @@ class RiderRepository(val api: RiderBackend) {
             if (!api.hasSession) return
             _state.update { it.copy(board = board, signedIn = true, available = board.available,
                 online = true, refreshedAt = now, message = if (!it.online || it.refreshedAt == null)
-                    "Sincronizado con Staging" else it.message) }
+                    "Sincronizado con ${RiderTarget.label}" else it.message) }
         }
         catch (e: Exception) { failed(e) } finally { readLock.unlock() }
     }

@@ -41,6 +41,12 @@ data class Board(val orders: List<Delivery>, val offers: List<Offer>, val capaci
         }
     }
 }
+// Human name of the backend this build talks to. PILOT builds serve the
+// controlled production rollout; only QA builds may say Staging.
+object RiderTarget {
+    val label: String get() = if (BuildConfig.TARGET_MODE == "pilot") "La Taba" else "Staging"
+}
+
 object RiderCommands {
     fun key(operation: String, id: String, revision: Long, code: String = ""): String =
         "android-" + MessageDigest.getInstance("SHA-256").digest("$operation:$id:$revision:$code".toByteArray())
@@ -57,5 +63,5 @@ object RiderCommands {
 }
 
 data class RiderState(val signedIn: Boolean = false, val available: Boolean = false, val board: Board? = null,
-    val busy: Boolean = false, val online: Boolean = false, val message: String = "Iniciá sesión en Staging",
+    val busy: Boolean = false, val online: Boolean = false, val message: String = "Iniciá sesión en ${RiderTarget.label}",
     val gps: String = "GPS detenido", val refreshedAt: Long? = null)

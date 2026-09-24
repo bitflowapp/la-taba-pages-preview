@@ -1,0 +1,185 @@
+{
+  "ref": "tkanbadcglszlcyfjvpv",
+  "at": "2026-09-24T21:27:01.225Z",
+  "seededData": [
+    {
+      "businesses": 1,
+      "products": 0,
+      "orders": 0,
+      "users": 0,
+      "members": 0,
+      "customers": 0
+    }
+  ],
+  "tablesWithoutRls": [],
+  "definerWithoutSearchPath": [],
+  "definerCount": [
+    {
+      "count": 249
+    }
+  ],
+  "anonExecutableDefiner": [
+    {
+      "oid": "can_access_order(uuid)"
+    },
+    {
+      "oid": "check_scheduler_watchdog(text)"
+    },
+    {
+      "oid": "commerce_availability(uuid,text,jsonb)"
+    },
+    {
+      "oid": "get_public_business_contact(uuid)"
+    },
+    {
+      "oid": "get_public_order_tracking(text)"
+    },
+    {
+      "oid": "list_business_combos(uuid)"
+    },
+    {
+      "oid": "resolve_business_combo(uuid,text,integer)"
+    },
+    {
+      "oid": "scheduler_heartbeat()"
+    }
+  ],
+  "anonReadableTables": [
+    {
+      "relname": "order_items"
+    },
+    {
+      "relname": "orders"
+    },
+    {
+      "relname": "product_combo_components"
+    },
+    {
+      "relname": "product_combo_substitutions"
+    },
+    {
+      "relname": "product_combos"
+    },
+    {
+      "relname": "products"
+    }
+  ],
+  "anonWritableTables": [],
+  "anonPolicies": [
+    {
+      "tablename": "businesses",
+      "policyname": "production active businesses are public",
+      "cmd": "SELECT"
+    },
+    {
+      "tablename": "order_items",
+      "policyname": "production order items readable with order",
+      "cmd": "SELECT"
+    },
+    {
+      "tablename": "orders",
+      "policyname": "production orders readable by owner",
+      "cmd": "SELECT"
+    },
+    {
+      "tablename": "product_combo_components",
+      "policyname": "combo components follow combo access",
+      "cmd": "SELECT"
+    },
+    {
+      "tablename": "product_combo_substitutions",
+      "policyname": "combo substitutions follow component access",
+      "cmd": "SELECT"
+    },
+    {
+      "tablename": "product_combos",
+      "policyname": "approved combos are public",
+      "cmd": "SELECT"
+    },
+    {
+      "tablename": "products",
+      "policyname": "alcohol verificado con foto se puede mirar",
+      "cmd": "SELECT"
+    },
+    {
+      "tablename": "products",
+      "policyname": "production verified products are public",
+      "cmd": "SELECT"
+    }
+  ],
+  "publicBuckets": [
+    {
+      "id": "fiscal-documents",
+      "public": false
+    }
+  ],
+  "conflictCode40001": [
+    {
+      "count": 0
+    }
+  ],
+  "conflictCodePT409": [
+    {
+      "count": 4
+    }
+  ],
+  "policiesCount": [
+    {
+      "count": 67
+    }
+  ],
+  "realtimePublication": [
+    {
+      "tablename": "businesses"
+    },
+    {
+      "tablename": "fiscal_documents"
+    },
+    {
+      "tablename": "inventory_movements"
+    },
+    {
+      "tablename": "notification_outbox"
+    },
+    {
+      "tablename": "order_events"
+    },
+    {
+      "tablename": "orders"
+    },
+    {
+      "tablename": "pos_sales"
+    },
+    {
+      "tablename": "product_barcodes"
+    },
+    {
+      "tablename": "products"
+    },
+    {
+      "tablename": "rider_locations"
+    }
+  ],
+  "cronJobs": [
+    {
+      "jobname": "taba-checkout-expiry-sweep",
+      "schedule": "* * * * *",
+      "active": true
+    },
+    {
+      "jobname": "taba-checkout-provider-truth-sweep",
+      "schedule": "* * * * *",
+      "active": true
+    },
+    {
+      "jobname": "taba-operational-alerts-sweep",
+      "schedule": "* * * * *",
+      "active": true
+    },
+    {
+      "jobname": "taba-payment-outbox-worker",
+      "schedule": "30 seconds",
+      "active": true
+    }
+  ]
+}

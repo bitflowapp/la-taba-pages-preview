@@ -54,6 +54,11 @@ async function main(args) {
     const detail = await api(token, 'GET', `/organizations/${org.id}`).catch(() => ({}));
     const projects = await api(token, 'GET', '/projects');
     const inOrg = projects.filter((p) => p.organization_id === org.id);
+    // The organization must be the one that already bills La Taba: it holds
+    // the Staging and the old Production projects.
+    for (const known of ['ucbtjcurawxjwjdvvcvj', 'wwcpogltfgzgkrlilbcd']) {
+      assert.ok(inOrg.some((p) => p.id === known), 'ORGANIZATION_IS_NOT_LA_TABA');
+    }
     let project = projects.find((p) => p.name === CP_PROJECT_NAME);
     const summary = { organization: org.name, plan: detail.plan || 'unknown',
       projectsInOrganization: inOrg.map((p) => ({ name: p.name, region: p.region, status: p.status })),

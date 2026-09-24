@@ -46,6 +46,9 @@ propone 10 para confirmación comercial. No importar la hoja directamente.
    Producción y bloquea enlaces `?demo=1` y Rider web. Compilar Android
    `--target pilot` con el mismo ref y su propia clave publicable; versionCode
    ≥ 4. Revisar la ficha antes de instalar.
+   Los scripts históricos `pilot-catalog-browser-smoke.mjs` y
+   `pilot-catalog-image-smoke.mjs` leen **Producción** pese a su nombre; no
+   sirven para certificar el entorno PILOTO.
 5. Publicar de forma explícita desde la rama release, smoke público, pedido QA
    terminal y limpieza. Conservar dos deployments compatibles del proyecto
    PILOTO y ensayar rollback allí. Sólo entonces rellenar las URL de la ficha y

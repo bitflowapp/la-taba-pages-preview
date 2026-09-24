@@ -7,7 +7,7 @@ Operación: `CONTROLLED-PRODUCTION-RUNBOOK.md`. Evidencia en `docs/evidence/cont
 
 | | Estado |
 |---|---|
-| PRODUCTION_TECH_READY | **YES** si el ensayo de rollback del deploy B pasa (ver §Rollback) |
+| PRODUCTION_TECH_READY | **YES** |
 | COMMERCIAL_OPEN_READY | **NO** — sin aprobación de catálogo (Walter no respondió; verificado en Gmail, incluido spam) y sin alta/configuración del dueño |
 | ONLINE_PAYMENTS_READY | NO — Mercado Pago WCS-51579 esperando soporte; cobro manual |
 
@@ -51,10 +51,12 @@ Operación: `CONTROLLED-PRODUCTION-RUNBOOK.md`. Evidencia en `docs/evidence/cont
 
 ## Rollback
 
-Deploy A `70dde12` publicado y verificado. Deploy B `4378ed2` con ensayo armado:
-rollback B→A, smoke, restaurar A→B, smoke. Resultado: ver el último run de
-*Deploy CONTROLLED_PRODUCTION* en la rama. APK anterior para rollback del teléfono:
-v3 archivada (apunta a Staging; sólo sirve como rollback de la app, no del backend).
+PASS (run 36068822992): con A `70dde12` vivo se publicó B `4378ed2`; smoke
+Chromium/Chrome Android/WebKit; rollback B→A (backend y hash de migraciones sin
+cambios, config verificada); smoke; restore A→B; smoke. Hoy se sirve `4378ed2`.
+Evidencia: `docs/evidence/controlled-production/rollback-cp-20260924.json`.
+Rider: v3 archivada (apunta a Staging, sólo rollback de app) y v4 archivada
+como base para futuras versiones.
 
 ## Bloqueos restantes
 

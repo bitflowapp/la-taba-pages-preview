@@ -126,10 +126,16 @@ QA después de volver, estado de presencia, APK instalada y hash de runtime.
   `LT-0041`; el backend dejó estado terminal y las cuentas/pedidos de ensayo
   se clasificaron QA con stock restaurado. `LT-0035`, `LT-0039` y `LT-0040`
   terminaron cancelados por el limpiador de QA. No se falsificaron estados por
-  SQL. El test integral de tracking visible no cerró: primero el servidor QA
-  omitía `/styles/` y dejaba el mapa en 0 px; corregido eso, un nuevo intento
-  no observó el marcador antes de cerrar la entrega. Se requiere una prueba
-  visual controlada con CSS 200 y un pedido activo antes de declararlo PASS.
+  SQL. El ensayo integral final `LT-0042` pasó sobre el APK piloto firmado:
+  pedido por UI cliente, transiciones y oferta por panel, aceptación Android,
+  GPS real publicado y visible como marcador en cliente, estado en reparto en
+  panel, código incorrecto rechazado, código correcto aceptado y terminal en
+  cliente/panel/backend. El observador público vio `location_quality` pasar de
+  `unavailable` a `low_accuracy` con punto publicable, sin guardar coordenadas
+  ni token; Android terminó `OK (1 test)`. Pedido QA clasificado, stock repuesto
+  exactamente y credencial efímera eliminada. Antes de ese éxito, el servidor
+  QA omitía `/styles/` y la red produjo `initial-style-timeout` de OpenFreeMap;
+  ambos casos se distinguieron del contrato GPS y no se declararon PASS.
 - En Moto G15 se instaló `com.lataba.rider.pilot` vCode 2 con la misma firma,
   se desinstaló **sólo esa variante** y se reinstaló el APK firmado vCode 1
   desde la copia local verificada. La aplicación arrancó y la v146 histórica
@@ -145,12 +151,18 @@ QA después de volver, estado de presencia, APK instalada y hash de runtime.
 - El candidato `bcea25fd8d3ffe088dbf6ea6f3bfa2dbc3b79852` se publicó
   **sólo en Staging** el 2026-09-23: workflow de GitHub y smoke público PASS,
   runtime `la-taba-runtime-v114-commercial-pilot`, destino Cloudflare
-  `taba2-staging / staging`, backend `ucbtjcurawxjwjdvvcvj`. El rollback web
-  de Cloudflare **no está ensayado**. `main` tampoco es una vuelta segura para un
-  piloto de cobro manual: no contiene `confirm_manual_order_payment` en la web.
-  No declarar `ROLLBACK_DRILL=PASS` ni lanzar el piloto hasta instalar dos
-  deployments compatibles en ese proyecto, restaurar el anterior y verificar
-  `version.json`, pedido QA y panel en el dominio.
+  `taba2-staging / staging`, backend `ucbtjcurawxjwjdvvcvj`. El 2026-09-24
+  el workflow [35934832771](https://github.com/bitflowapp/la-taba-pages-preview/actions/runs/35934832771)
+  publicó la segunda candidata compatible `81335a3` sólo en ese proyecto:
+  smoke público PASS. Luego Cloudflare hizo rollback real al deployment
+  `fdb5a1ec` y el dominio volvió a `bcea25f`/v114: smoke público PASS. El
+  post-rollback confirmó login/bandeja del panel QA, lectura del pedido QA
+  entregado `LT-0041` y catálogo cliente. `ROLLBACK_DRILL=PASS` en entorno
+  Staging; las tres variables temporales del workflow se eliminaron. Es un
+  ensayo entre SHAs distintos pero web/backend compatibles; no demuestra un
+  rollback de un cambio de esquema incompatible. `main` tampoco es una vuelta
+  segura para un piloto de cobro manual: no contiene
+  `confirm_manual_order_payment` en la web.
 - El paquete Staging se puede preparar sin secretos privados mediante
   `node scripts/deploy/preparar-staging-pilot.mjs --commit <SHA completo>`.
   El builder exige el runtime público del proyecto `ucbtjcurawxjwjdvvcvj`,
@@ -165,9 +177,13 @@ local. Antes de hacer push, registrar las variables de repositorio
 `release/taba-commercial-pilot` dispara ese workflow. Si las variables no
 coinciden exactamente, el job queda omitido. Espera la CI web y Android del
 mismo SHA, comprueba que la rama no avanzó, verifica el proyecto Cloudflare,
-prepara el artefacto y revisa el dominio/archivos después de publicar. Borrar
-las dos variables al terminar; no contienen secretos. El workflow de Producción
+prepara el artefacto y revisa el dominio/archivos después de publicar. Para
+un drill de rollback se arma además `STAGING_ROLLBACK_DRILL_SHA=<SHA>`; el
+workflow captura el ID anterior antes del deploy y lo restaura después del
+smoke del candidato. Borrar las variables al terminar; no contienen secretos.
+El workflow de Producción
 permanece separado, sin cambios y restringido a `main`.
 
-Tras el despliegue Staging, hacer el ensayo de rollback a un deployment
-compatible de ese **mismo proyecto** antes de publicar un piloto real.
+Antes de publicar un piloto real, comprobar de nuevo que el deployment previo
+del proyecto **piloto** es compatible con la base efectiva; no promover por
+inercia el `main` histórico.

@@ -10,6 +10,11 @@ const url = `https://${ref}.supabase.co`;
 const business = 'a57b1c20-0f4e-4a6b-9d31-7c2e5f8a41d0';
 const runName = 'RIDER PILOT FULL UI QA ACTIVE';
 if (leerSecreto(runName)) throw Error('QA_RUN_EXISTS_REVIEW_BEFORE_RETRY');
+const stylesheet = await fetch('http://127.0.0.1:39092/styles/tracking.css?v=60',
+  { signal: AbortSignal.timeout(8000) });
+if (stylesheet.status !== 200 || !(await stylesheet.text()).includes('.tracking-premium')) {
+  throw Error('QA_TRACKING_STYLES_UNAVAILABLE');
+}
 const { secret, publishable } = await loadStagingKeys();
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
 const admin = createClient(url, secret, options);
@@ -69,6 +74,7 @@ let run;
 const report = { timestamp: startedAt, project: ref, stagingOnly: true,
   customerUiOrder: false, panelUiReady: false, panelUiOffer: false,
   signedRiderAssigned: false, gpsAndCustomerTracking: false, customerGpsMarkerVisible: false,
+  panelOnWay: false,
   panelFinal: false, customerDelivered: false, backendDelivered: false,
   qaClassified: false, stockRestored: false };
 try {
@@ -148,34 +154,48 @@ try {
   await expect.poll(async () => (await read(staff.client.from('orders').select('assigned_rider_user_id')
     .eq('id', order.id).single())).assigned_rider_user_id, { timeout: 90_000 }).toBe(previous.riderId);
   report.signedRiderAssigned = true;
-  await storefront.locator('[data-tracking-status="on_the_way"]').waitFor({ timeout: 90_000 });
-  const marker = storefront.locator('[data-tracking-panel] .lt-rider-marker.source-gps').first();
-  await marker.waitFor({ state: 'attached', timeout: 45_000 });
-  const markerEvidence = await marker.evaluate((element) => {
-    const describe = (node) => {
-      const style = getComputedStyle(node);
-      const rect = node.getBoundingClientRect();
-      return { className: String(node.className || '').slice(0, 160),
-        display: style.display, visibility: style.visibility, opacity: style.opacity,
-        width: Math.round(rect.width), height: Math.round(rect.height) };
-    };
-    const shell = element.closest('[data-real-map]');
-    const canvas = element.closest('[data-map-canvas]');
-    return { marker: describe(element), canvas: canvas ? describe(canvas) : null,
-      shell: shell ? describe(shell) : null, mapStatus: shell?.dataset.mapStatus || null,
-      freshness: shell?.dataset.mapFreshness || null,
-      activeView: document.body.dataset.activeView || null };
+  const trackingReader = createClient(url, publishable, {
+    ...options, global: { headers: { 'x-order-token': access.trackingToken } },
   });
-  writeFileSync('artifacts/rider-pilot-map-visibility.json', JSON.stringify(markerEvidence, null, 2));
-  try {
-    await expect.poll(() => marker.isVisible(), { timeout: 8_000 }).toBe(true);
-    report.customerGpsMarkerVisible = true;
-  } catch {
-    report.customerGpsMarkerVisible = false;
+  const samples = [];
+  const trackingDeadline = Date.now() + 105_000;
+  while (Date.now() < trackingDeadline) {
+    const { data, error } = await trackingReader.rpc('get_public_order_tracking',
+      { p_public_id: order.public_code });
+    const dom = await storefront.evaluate(() => {
+      const stage = document.querySelector('[data-tracking-status]');
+      const canvas = document.querySelector('[data-tracking-panel] [data-map-canvas]');
+      const marker = document.querySelector('[data-tracking-panel] .lt-rider-marker.source-gps');
+      return { status: stage?.getAttribute('data-tracking-status') || null,
+        mapHeight: Math.round(canvas?.getBoundingClientRect().height || 0),
+        markerAttached: Boolean(marker),
+        markerVisible: Boolean(marker && marker.getBoundingClientRect().width > 0
+          && marker.getBoundingClientRect().height > 0
+          && getComputedStyle(marker).visibility === 'visible') };
+    });
+    const panelText = await card.innerText().catch(() => '');
+    report.panelOnWay ||= /en reparto|en camino/i.test(panelText);
+    const sample = { elapsedSeconds: Math.round((Date.now() - Date.parse(startedAt)) / 1000),
+      backendStatus: data?.status || null,
+      locationQuality: data?.location_quality || null,
+      publicPointPresent: Boolean(data?.rider_location),
+      rpcErrorCode: error?.code || null,
+      uiStatus: dom.status, mapHeight: dom.mapHeight,
+      markerAttached: dom.markerAttached, markerVisible: dom.markerVisible };
+    samples.push(sample);
+    report.customerGpsMarkerVisible ||= dom.markerVisible;
+    report.gpsAndCustomerTracking ||= sample.backendStatus === 'on_the_way'
+      && sample.publicPointPresent && sample.uiStatus === 'on_the_way'
+      && sample.mapHeight > 0;
+    if (report.customerGpsMarkerVisible && report.gpsAndCustomerTracking && report.panelOnWay) break;
+    if (sample.backendStatus === 'delivered') break;
+    await new Promise((resolve) => setTimeout(resolve, 2500));
   }
-  await expect(card).toContainText(/en reparto|en camino/i, { timeout: 45_000 });
-  report.gpsAndCustomerTracking = true;
-  console.log('PILOT_FULL_UI_GPS_VISIBLE');
+  writeFileSync('artifacts/rider-pilot-tracking-observation.json', JSON.stringify({
+    project: ref, orderCode: order.public_code, samples,
+  }, null, 2));
+  console.log(report.customerGpsMarkerVisible ? 'PILOT_FULL_UI_GPS_VISIBLE'
+    : 'PILOT_FULL_UI_GPS_NOT_VISIBLE');
   await storefront.locator('[data-tracking-status="delivered"]').waitFor({ timeout: 180_000 });
   await expect(storefront.locator('[data-tracking-title]')).toHaveText('Pedido entregado');
   report.customerDelivered = true;

@@ -70,8 +70,9 @@ class PilotReleasePhysicalTest {
             }
             compose.onNodeWithTag("gps-start").performScrollTo().performClick()
             until(120_000) { repo.state.value.gps.contains("recibo recibido") }
-            // The observers open Panel and Customer while real GPS is active.
-            Thread.sleep(45_000)
+            // Keep the real GPS receipt observable while the independent web
+            // contexts poll both public tracking and the business panel.
+            Thread.sleep(90_000)
             assertTrue(repo.state.value.board!!.orders.any { it.code == code })
             if (repo.state.value.board!!.orders.any { it.code == code && it.status == "on_the_way" }) {
                 compose.onNodeWithTag("advance").performScrollTo().performClick()

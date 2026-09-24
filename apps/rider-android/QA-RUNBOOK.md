@@ -107,6 +107,10 @@ responda 200 y que `[data-map-canvas]` mida más de 0 px. El 23/09 se
 detectó que el servidor QA bloqueaba `/styles/`: el marcador GPS existía en el
 DOM pero el mapa medía 0 px. Se corrigió la whitelist; esas observaciones
 anteriores no certifican visibilidad real del mapa.
+Verificar además `data-map-status="ready"`. La red del host produjo
+`initial-style-timeout` para el estilo público de OpenFreeMap aun con CSS 200;
+el fallback mostró “Mapa no disponible por ahora” y no podía certificar un
+marcador. No confundir ese caso con ausencia de publicación GPS.
 
 `run-pilot-full-ui-signed.mjs` deja el pedido creado por la UI cliente y
 preparado desde el panel; al imprimir `PILOT_FULL_UI_ORDER_READY_FOR_SIGNED_RIDER`,
@@ -116,6 +120,10 @@ runner cancela/clasifica sólo pedidos QA no entregados y restaura inventario
 mediante RPC; borra el código y token temporales del Credential Manager al
 cerrar. No aceptar como PASS un marcador que sólo existe en DOM pero no es
 visible, ni un pedido cuyo observador se cerró antes de la respuesta Android.
+El observador nuevo registra únicamente estado, `location_quality`, presencia
+de punto público, altura del mapa y visibilidad del marcador; nunca coordenadas
+ni token. El test Android sostiene GPS real 90 segundos para dar tiempo a la
+lectura concurrente del cliente y panel.
 Abrir dos contextos limpios agent-browser, sesiones `rider-panel` y `rider-customer`,
 en esa URL. `browser-input` inyecta por stdin las sesiones QA recién autenticadas,
 sin logs ni exportar storageState. Abrir `/#business` y `/#tracking` tras recargar.

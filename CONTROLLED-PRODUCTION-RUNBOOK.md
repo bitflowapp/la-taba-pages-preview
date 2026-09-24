@@ -114,6 +114,13 @@ en lugar de `--operator` y queda auditado por la RPC de identidad.
   stock inicial, descripción, foto). Import inicial: `docs/PILOT-INFRA-PLAN.md`
   §“Comandos del operador técnico” (dry-run → preflight → apply). El importador
   rechaza precios/stock históricos, SKU fuera de la lista y alcohol.
+- Secuencia cuando llega la aprobación: (1) alta del dueño (§2.1); (2) el
+  operador técnico pide acceso al Panel del negocio real y el dueño lo aprueba
+  como **Encargado**; (3) con esa sesión se guarda el token corto
+  `PILOT OWNER ACCESS TOKEN` (usuario = ref) y se corre dry-run → preflight
+  `--phase catalog` → `--apply`; (4) se cambia `catalogMode` a `approved` en
+  `deploy/controlled-production.json`, se despliega y el smoke exige exactamente
+  la lista aprobada.
 - Altas posteriores: Panel → **Nuevo producto** (borrador) → dueño revisa y publica.
 - Stock: Panel → **Recepción**, **Ajuste** o **Conteo físico**, siempre con motivo.
   Nunca editar stock por SQL.

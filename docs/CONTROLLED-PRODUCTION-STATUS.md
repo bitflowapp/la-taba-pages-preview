@@ -1,59 +1,66 @@
 # CONTROLLED_PRODUCTION · estado y evidencia
 
-Rama: `release/taba-controlled-production` (desde `release/taba-commercial-pilot` @ `b7cf997`).
-Operación: `CONTROLLED-PRODUCTION-RUNBOOK.md`. Plan técnico previo: `docs/PILOT-INFRA-PLAN.md`.
+Rama `release/taba-controlled-production` (desde `release/taba-commercial-pilot` @ `b7cf997`).
+Operación: `CONTROLLED-PRODUCTION-RUNBOOK.md`. Evidencia en `docs/evidence/controlled-production/`.
 
-## Veredicto actual (2026-09-24)
+## Veredicto (2026-09-24)
 
 | | Estado |
 |---|---|
-| PRODUCTION_TECH_READY | **NO** — falta crear el backend CONTROLLED_PRODUCTION (requiere `supabase login` del dueño) |
-| COMMERCIAL_OPEN_READY | **NO** — falta aprobación de catálogo (Walter) y el backend |
-| ONLINE_PAYMENTS_READY | NO — Mercado Pago WCS-51579 esperando soporte; pago manual |
+| PRODUCTION_TECH_READY | **YES** si el ensayo de rollback del deploy B pasa (ver §Rollback) |
+| COMMERCIAL_OPEN_READY | **NO** — sin aprobación de catálogo (Walter no respondió; verificado en Gmail, incluido spam) y sin alta/configuración del dueño |
+| ONLINE_PAYMENTS_READY | NO — Mercado Pago WCS-51579 esperando soporte; cobro manual |
 
-## Hallazgos de esta etapa
+## Entorno
 
-| Severidad | Hallazgo | Estado |
+| | |
+|---|---|
+| Backend | Supabase `tkanbadcglszlcyfjvpv` (`la-taba-controlled-production`, sa-east-1, org Luna Systems, Pro) |
+| Web | `https://la-taba-commercial-pilot.pages.dev/` (Pages dedicado, `catalogMode: none`) |
+| Negocio real | `e7850ad2-a447-402c-8375-3fd74e9466ba` — cerrado, 0 productos, sin miembros, sin MP |
+| QA (nunca públicos) | control `e1d2c342-…` (8 productos QA), aislamiento `dd515bdd-…` |
+| Rider | `com.lataba.rider.pilot` 0.1.3-canonical-pilot (vc 4), APK `2fcc64f9…`, certificado `2dcc9b0a…` |
+
+## Hallazgos corregidos en esta etapa
+
+| Sev. | Hallazgo | Corrección |
 |---|---|---|
-| P1 | Conflictos de revisión (`SQLSTATE 40001`) quedaban reintentándose en PostgREST hasta un 504 a los ~125 s: dos operadores sobre el mismo pedido, o cualquier acción con revisión vieja, colgaban el panel 2 minutos y retenían una conexión. Reproducido aislado en Staging (125 821 ms) | **Corregido** en `20260924200000_revision_conflicts_answer_409.sql` (responde `PT409`/HTTP 409 al instante) + cliente. CI: 134 migraciones + pgTAP PASS. No aplicado a Staging (sin token) |
-| P1 | No existía forma de que un rider pidiera acceso: la web sólo pedía acceso `panel`, la app Rider sólo tiene login y el backend no convierte una solicitud de panel en rider | **Corregido**: el formulario “Pedir acceso” ofrece *Repartir pedidos* (el comercio sigue decidiendo al aprobar) |
-| P2 | El Panel ofrecía “Conectar Mercado Pago” en producción controlada, donde MP no está habilitado | **Corregido**: “Cobros online · No habilitados en esta etapa” sin botón |
-| P2 | La app Rider decía “Iniciá sesión en Staging” / “Sincronizado con Staging” también en la build de producción controlada | **Corregido**: etiquetas según el target |
+| P1 | Conflictos de revisión (`40001`) reintentados por PostgREST hasta 504 a ~125 s | `20260924200000_revision_conflicts_answer_409.sql` → `PT409` (HTTP 409). En CP: 167 ms |
+| P1 (latente) | El importador del catálogo mandaba `subcategory: ''` y la base lo rechaza: el `--apply` tras la aprobación de Walter habría fallado | Subcategoría desde la taxonomía de góndola del repo; verificado de punta a punta con el catálogo QA en CP |
+| P1 | Ningún camino de UI para que un rider pida acceso | Formulario “Pedir acceso” con *Repartir pedidos* |
+| P2 | “Conectar Mercado Pago” visible en producción controlada | “Cobros online · No habilitados en esta etapa”, sin botón |
+| P2 | Rider decía “Staging” en build de producción | Etiquetas según el target (“Iniciá sesión en La Taba”) |
+| Ops | Sin forma de dar de baja miembros desde el Panel | `accounts.mjs disable/enable --operator` (probado) |
 
-## Evidencia reproducible
+## Evidencia en CONTROLLED_PRODUCTION
 
-| Frente | Resultado | Evidencia |
-|---|---|---|
-| Catálogo fail-closed | PASS: el template sin aprobación falla (`EXPLICIT_OWNER_APPROVAL_REQUIRED`); 49 tests de gates | `scripts/import-pilot-catalog.mjs`, `tests/pilot-*.test.mjs` |
-| Deploy técnico sin catálogo | Implementado: `catalogMode: none` exige 0 productos públicos; importar sigue exigiendo 5–10 SKU aprobados | `scripts/deploy/pilot-preflight.mjs`, test `tech-ready mode` |
-| Capacidad 30 usuarios (Staging, runner CI) | 30/30 realtime, 1 222 requests, error 0,16 % (los 2 errores = bug 40001), p95 587 ms, 7 pedidos de 8 checkouts simultáneos (1 perdedor de carrera esperado), 6/6 entregas por 3 riders, integridad y limpieza PASS | `docs/evidence/controlled-production/capacity-staging-ci-20260924.json` |
-| Concurrencia / idempotencia | Doble click → 1 pedido; retry tras pérdida → mismo pedido; carrera última unidad → 1 ganador (23514); dos pestañas → 1 transición; doble cobro manual → 1 evento; doble cancelación → stock devuelto 1 vez; oferta disputada → 1 rider; código incorrecto rechazado; doble confirmación de entrega → 1 entrega | ídem |
-| Stock | Más que el stock → 23514; producto no publicado → 55000; carrito mixto todo-o-nada; sin pedido ni cambio de stock | `docs/evidence/controlled-production/stock-edges-staging-20260924.json` |
-| Autorización (Staging) | 54/54: anon sin filas privadas ni RPC; cliente no cambia precio/total/estado ni ve pedidos ajenos; staff no se promueve; rider B no acepta/actúa/lee la entrega de A; tracking exige token | `docs/evidence/controlled-production/rls-staging-20260924.json` |
-| Alta de rider por dominio | PASS en Staging: cuenta → solicitud → aprobación del dueño → sesión Android | `scripts/controlled-production/accounts.mjs` |
-| Backup/restore | Drill implementado (export lógico + restauración en PG17 aislado, conteos y hashes); autotest PASS. Falta correrlo contra el backend nuevo | `scripts/controlled-production/backup-drill.mjs` |
-| Service worker | `network-first` para HTML/JS/CSS, `cache-first` sólo para imágenes con hash, limpieza de caches viejas, aviso de actualización sin recargar otras pestañas; `CACHE_NAME` obligatorio por gate | `sw.js`, `js/pwa-update.js`, `scripts/check-release-identity.mjs` |
-| CI | Rider Android PASS; migraciones + pgTAP + restore aislado PASS; suite unitaria local 2575/2575 | GitHub Actions de la rama |
+| Frente | Resultado |
+|---|---|
+| Migraciones | 134/134 local = remoto; base nueva: 0 tablas sin RLS, 249 `SECURITY DEFINER` todas con `search_path`, `anon` sin escritura, bucket fiscal privado |
+| Auth | Host propio, anónimos para clientes, 12+ caracteres con HIBP, plantillas `token_hash`. Alta por solicitud/aprobación, baja/reactivación (login `user_banned`) y enlace de recuperación de un solo uso: PASS |
+| Autorización | 57/57 con sesiones reales, incluido aislamiento A↔B |
+| Carga 30 usuarios (runner CI) | 817 requests, 0 errores, p95 449 ms (crear pedido p95 679 ms), 30/30 realtime, integridad y limpieza PASS |
+| Concurrencia | doble click, retry, carrera última unidad, dos pestañas (PT409 inmediato), doble cobro, doble cancelación (stock 1 vez), oferta disputada, código incorrecto, doble confirmación: PASS |
+| Stock | sobre-stock 23514, no publicado 55000, carrito todo-o-nada: PASS |
+| E2E UI | Chrome Android y WebKit iPhone: catálogo → carrito → pago manual → Panel (cobro, aceptar, preparar, listo, ofrecer) → rider → mapa → código → entregado: PASS |
+| Rider físico v4 | Moto G15, APK firmada: login, disponible, aceptar, retirar, GPS real (mediana 5,7 m), pantalla apagada 30 s, corte WiFi 12 s (recupera en 9 s), código incorrecto/correcto, entregado; rastro GPS purgado al terminar: PASS |
+| Backup/restore | backup físico diario de la plataforma (WAL-G) + export lógico restaurado en PG17 aislado: 92/92 tablas idénticas |
+| Deploy | CI exacto verde → Pages dedicado → alias con el commit → smoke Chromium/Chrome Android/WebKit con 0 productos |
+| Health | `ops-pulse` HEALTHY en negocio real y QA |
+| Secretos | repo, historia de la rama, evidencias y APK: PASS |
 
-## Bloqueos
+## Rollback
 
-1. **Backend CONTROLLED_PRODUCTION**: el CLI de Supabase está deslogueado en esta PC
-   (logout 2026-09-24 03:19 ART) y no hay token en GitHub. Crear el proyecto
-   agrega ~USD 10/mes al plan Pro de la organización.
-2. **Catálogo**: sin respuesta verificable de Walter (el último chequeo con
-   resultado fue 12:53 ART; los siguientes fallaron por el navegador).
-3. **Moto G15**: no conectado por USB (hay un iPhone conectado); Rider v4 y GPS
-   físico pendientes de ese equipo.
-4. **Firma Rider**: backup del keystore en OneDrive (restaurado y verificado);
-   la contraseña sigue sólo en Credential Manager. El script de custodia al
-   Almacén personal de OneDrive está listo y requiere desbloquearlo (2FA).
-5. **Red de esta PC**: tethering USB con ~75 % de pérdida; las mediciones de
-   carga se hacen desde el runner de CI.
+Deploy A `70dde12` publicado y verificado. Deploy B `4378ed2` con ensayo armado:
+rollback B→A, smoke, restaurar A→B, smoke. Resultado: ver el último run de
+*Deploy CONTROLLED_PRODUCTION* en la rama. APK anterior para rollback del teléfono:
+v3 archivada (apunta a Staging; sólo sirve como rollback de la app, no del backend).
 
-## Siguiente secuencia (automatizada, sin intervención)
+## Bloqueos restantes
 
-`create-backend.mjs --apply` → `supabase db push` de las 134 migraciones →
-postura de Auth → negocio real (cerrado, 0 productos) + negocios QA de control →
-cuentas QA por dominio → Rider v4 firmado → `deploy/controlled-production.json`
-→ deploy armado + smoke → carga 30 usuarios, RLS A↔B, stock y backup/restore
-sobre el backend nuevo → segundo deploy + rollback drill.
+1. **Catálogo (Walter)**: sin respuesta; no se publica nada sin su aprobación explícita.
+2. **Alta y configuración del dueño**: cuenta, horarios, zonas, costo de envío,
+   punto de retiro verificado (`set-pickup-point.mjs --origen=business_verified`).
+3. **Firma Rider — recuperación total**: la contraseña sigue sólo en Credential
+   Manager; falta desbloquear el Almacén personal de OneDrive (2FA) y correr
+   `node scripts/e2e-staging/escrow-rider-signing-password.mjs`.

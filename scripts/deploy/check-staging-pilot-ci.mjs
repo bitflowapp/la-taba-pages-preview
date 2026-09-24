@@ -3,7 +3,8 @@ import path from 'node:path';
 import process from 'node:process';
 
 const REPO = 'bitflowapp/la-taba-pages-preview';
-const BRANCH = 'release/taba-commercial-pilot';
+const RELEASE_BRANCHES = ['release/taba-commercial-pilot', 'release/taba-controlled-production'];
+const BRANCH = RELEASE_BRANCHES.includes(process.env.RELEASE_BRANCH) ? process.env.RELEASE_BRANCH : RELEASE_BRANCHES[0];
 const WORKFLOWS = ['ci.yml', 'rider-android-ci.yml'];
 
 export function hasPassingRun(runs, { sha, workflow }) {

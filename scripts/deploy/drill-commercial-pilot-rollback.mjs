@@ -132,12 +132,21 @@ async function waitAlias(config, expected) {
 
 async function main() {
   const phase = option('--phase');
-  assert.ok(['preflight', 'rollback', 'restore'].includes(phase), 'PILOT_ROLLBACK_PHASE_REQUIRED');
+  assert.ok(['apk', 'preflight', 'rollback', 'restore'].includes(phase), 'PILOT_ROLLBACK_PHASE_REQUIRED');
   assert.ok(option('--config'), 'PILOT_ROLLBACK_CONFIG_REQUIRED');
   const config = JSON.parse(readFileSync(path.resolve(option('--config')), 'utf8'));
   assert.equal(config.cloudflareProject, PROJECT, 'ROLLBACK_PROJECT_MUST_BE_PILOT');
   assertPilotIdentity(config.supabaseProjectRef, config.businessId);
-  verifyPreviousApk(config);
+  // The previous signed APK lives only on the operator machine: it is checked
+  // there (--phase apk). CI runs the web/config phases with the Cloudflare
+  // token, which never reaches this PC.
+  if (phase === 'apk' || process.env.CI !== 'true') {
+    const apkSha256 = verifyPreviousApk(config);
+    if (phase === 'apk') {
+      console.log(JSON.stringify({ pilotPreviousApk: 'PASS', apkSha256 }));
+      return;
+    }
+  }
   const cloudflare = cloudflareClient();
   const project = await cloudflare('');
   assert.equal(project?.name, PROJECT, 'CLOUDFLARE_PROJECT_MISMATCH');
@@ -145,7 +154,10 @@ async function main() {
   const receipt = phase === 'preflight' ? null
     : JSON.parse(readFileSync(path.resolve(option('--receipt')), 'utf8'));
   const previousId = option('--previous-id') || receipt?.previousId || config.previousDeploymentId;
-  const candidateId = option('--candidate-id') || receipt?.candidateId || project.production_deployment?.id;
+  // Cloudflare documents canonical_deployment as the live production one;
+  // production_deployment is read too for older API shapes.
+  const live = project.canonical_deployment || project.production_deployment;
+  const candidateId = option('--candidate-id') || receipt?.candidateId || live?.id;
   assert.match(previousId || '', ID, 'PREVIOUS_DEPLOYMENT_ID_REQUIRED');
   assert.match(candidateId || '', ID, 'CANDIDATE_DEPLOYMENT_ID_REQUIRED');
   assert.notEqual(previousId, candidateId, 'ROLLBACK_REQUIRES_TWO_DEPLOYMENTS');
@@ -153,7 +165,7 @@ async function main() {
   const candidate = await deployment(cloudflare, candidateId, config);
   validateRollbackPair(previous, candidate, config);
   if (phase === 'preflight') {
-    assert.equal(project.production_deployment?.id, candidateId, 'CANDIDATE_NOT_CURRENT');
+    assert.equal(live?.id, candidateId, 'CANDIDATE_NOT_CURRENT');
     await aliasMatches(config, candidate);
     assert.ok(option('--out'), 'ROLLBACK_RECEIPT_PATH_REQUIRED');
     const output = path.resolve(option('--out'));

@@ -1,0 +1,144 @@
+name: Deploy CONTROLLED_PRODUCTION
+
+# Publishes only the dedicated Cloudflare Pages project la-taba-commercial-pilot
+# (CONTROLLED_PRODUCTION). Armed per SHA: runs when the repo variable
+# CP_DEPLOY_SHA equals the pushed commit and the exact web + Android CI passed.
+# The runtime carries only the public (publishable) key; no Supabase secret
+# travels here. The rollback drill runs only when CP_ROLLBACK_DRILL_SHA equals
+# the commit and CP_ROLLBACK_PREVIOUS_ID names a compatible earlier deployment.
+on:
+  push:
+    branches:
+      - 'release/taba-controlled-production'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: deploy-controlled-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 80
+    if: ${{ github.repository == 'bitflowapp/la-taba-pages-preview' && vars.CP_DEPLOY_SHA == github.sha }}
+    env:
+      CONFIG: deploy/controlled-production.json
+      ORIGIN: https://la-taba-commercial-pilot.pages.dev/
+    steps:
+      - name: Check out exact armed SHA
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Reject stale branch before waiting
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin release/taba-controlled-production
+          [[ "$(git rev-parse origin/release/taba-controlled-production)" == "$GITHUB_SHA" ]]
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Wait for exact web and Android CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_COMMIT: ${{ github.sha }}
+          RELEASE_BRANCH: release/taba-controlled-production
+        run: node scripts/deploy/check-staging-pilot-ci.mjs
+
+      - name: Install locked dependencies and smoke browsers
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium webkit
+
+      - name: CONTROLLED_PRODUCTION preflight and package (no publish)
+        env:
+          PILOT_PUBLISHABLE_KEY: ${{ vars.CP_PUBLISHABLE_KEY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          node scripts/deploy/pilot-preflight.mjs --phase deploy --config "$CONFIG"
+          node scripts/deploy/prepare-commercial-pilot.mjs --config "$CONFIG" --commit "$GITHUB_SHA"
+
+      - name: Ensure the dedicated Pages project exists
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/la-taba-commercial-pilot")
+          if [[ "$code" == "404" ]]; then
+            npx --yes wrangler@4 pages project create la-taba-commercial-pilot --production-branch pilot
+          else
+            [[ "$code" == "200" ]]
+          fi
+
+      - name: Rollback drill preflight (previous compatible deployment)
+        if: ${{ vars.CP_ROLLBACK_DRILL_SHA == github.sha }}
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          current=$(curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/la-taba-commercial-pilot" \
+            | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s).result.canonical_deployment?.id||""))')
+          [[ "$current" == "${{ vars.CP_ROLLBACK_PREVIOUS_ID }}" ]]
+
+      - name: Deploy only la-taba-commercial-pilot
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 pages deploy dist_pilot --project-name la-taba-commercial-pilot \
+            --branch pilot --commit-hash "$GITHUB_SHA"
+
+      - name: Wait for the alias to serve this commit
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 60); do
+            served=$(curl -sS --max-time 15 "${ORIGIN}version.json?t=$(date +%s)" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write(JSON.parse(s).commit||"")}catch{}})' || true)
+            [[ "$served" == "$GITHUB_SHA" ]] && exit 0
+            sleep 5
+          done
+          echo "alias never served $GITHUB_SHA" >&2; exit 1
+
+      - name: Public smoke (Chromium, Chrome Android, WebKit)
+        run: |
+          set -euo pipefail
+          ref=$(node -p "require('./$CONFIG').supabaseProjectRef")
+          business=$(node -p "require('./$CONFIG').businessId")
+          mode=$(node -p "require('./$CONFIG').catalogMode || 'approved'")
+          if [[ "$mode" == "none" ]]; then
+            node scripts/deploy/smoke-commercial-pilot.mjs --origin "$ORIGIN" --project-ref "$ref" --business-id "$business" --catalog-mode none
+          else
+            echo "Approved-catalog smoke runs on the operator machine with the private approval file." >&2; exit 1
+          fi
+
+      - name: Rollback drill to the previous deployment and back
+        if: ${{ vars.CP_ROLLBACK_DRILL_SHA == github.sha }}
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          receipt="$RUNNER_TEMP/cp-rollback-receipt.json"
+          node scripts/deploy/drill-commercial-pilot-rollback.mjs --phase preflight --config "$CONFIG" \
+            --previous-id "${{ vars.CP_ROLLBACK_PREVIOUS_ID }}" --out "$receipt"
+          node scripts/deploy/drill-commercial-pilot-rollback.mjs --phase rollback --config "$CONFIG" --receipt "$receipt"
+          ref=$(node -p "require('./$CONFIG').supabaseProjectRef")
+          business=$(node -p "require('./$CONFIG').businessId")
+          node scripts/deploy/smoke-commercial-pilot.mjs --origin "$ORIGIN" --project-ref "$ref" --business-id "$business" --catalog-mode none
+          node scripts/deploy/drill-commercial-pilot-rollback.mjs --phase restore --config "$CONFIG" --receipt "$receipt"
+          node scripts/deploy/smoke-commercial-pilot.mjs --origin "$ORIGIN" --project-ref "$ref" --business-id "$business" --catalog-mode none

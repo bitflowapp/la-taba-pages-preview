@@ -5,7 +5,7 @@ name: Deploy CONTROLLED_PRODUCTION
 # CP_DEPLOY_SHA equals the pushed commit and the exact web + Android CI passed.
 # The runtime carries only the public (publishable) key; no Supabase secret
 # travels here. The rollback drill runs only when CP_ROLLBACK_DRILL_SHA equals
-# the commit and CP_ROLLBACK_PREVIOUS_ID names a compatible earlier deployment.
+# the commit; it rolls back to the deployment that was live before this one.
 on:
   push:
     branches:
@@ -83,17 +83,19 @@ jobs:
             [[ "$code" == "200" ]]
           fi
 
-      - name: Rollback drill preflight (previous compatible deployment)
+      - name: Capture the live deployment before publishing (rollback target)
         if: ${{ vars.CP_ROLLBACK_DRILL_SHA == github.sha }}
+        id: previous
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           set -euo pipefail
-          current=$(curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/la-taba-commercial-pilot" \
-            | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s).result.canonical_deployment?.id||""))')
-          [[ "$current" == "${{ vars.CP_ROLLBACK_PREVIOUS_ID }}" ]]
+          previous=$(curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/la-taba-commercial-pilot"             | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const r=JSON.parse(s).result;process.stdout.write((r.canonical_deployment||r.production_deployment||{}).id||"")})')
+          [[ "$previous" =~ ^[a-f0-9-]{32,40}$ ]]
+          served=$(curl -sS --max-time 15 "${ORIGIN}version.json?t=$(date +%s)" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s).commit||""))')
+          [[ "$served" != "$GITHUB_SHA" ]]
+          echo "previous_id=$previous" >> "$GITHUB_OUTPUT"
 
       - name: Deploy only la-taba-commercial-pilot
         env:
@@ -135,7 +137,7 @@ jobs:
           set -euo pipefail
           receipt="$RUNNER_TEMP/cp-rollback-receipt.json"
           node scripts/deploy/drill-commercial-pilot-rollback.mjs --phase preflight --config "$CONFIG" \
-            --previous-id "${{ vars.CP_ROLLBACK_PREVIOUS_ID }}" --out "$receipt"
+            --previous-id "${{ steps.previous.outputs.previous_id }}" --out "$receipt"
           node scripts/deploy/drill-commercial-pilot-rollback.mjs --phase rollback --config "$CONFIG" --receipt "$receipt"
           ref=$(node -p "require('./$CONFIG').supabaseProjectRef")
           business=$(node -p "require('./$CONFIG').businessId")

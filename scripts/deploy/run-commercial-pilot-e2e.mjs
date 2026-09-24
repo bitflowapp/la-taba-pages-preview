@@ -126,6 +126,8 @@ async function main() {
   const packageDump = adb(['shell', 'dumpsys', 'package', 'com.lataba.rider.pilot']).stdout;
   assert.match(packageDump, /versionCode=4\b/, 'PILOT_V4_NOT_INSTALLED');
   assert.match(packageDump, /versionName=0\.1\.3-canonical-pilot/, 'PILOT_V4_VERSION_MISMATCH');
+  assert.ok(adb(['shell', 'pm', 'path', 'com.lataba.rider.pilot.test']).stdout.includes('package:'),
+    'PILOT_V4_INSTRUMENTATION_NOT_INSTALLED');
 
   const ref = plan.projectRef;
   const business = plan.businessId;

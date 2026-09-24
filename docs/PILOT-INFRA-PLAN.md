@@ -74,9 +74,11 @@ mensaje comercial completo ni credenciales en Git o artifacts.
    SQL. Comprobar que los SKU públicos son exactamente los aprobados.
 9. Construir y firmar Rider v4 con `build-rider-pilot.mjs --target pilot
    --project-ref <nuevo-ref> --version-code 4 --version-name
-   0.1.3-canonical`. El build sólo lee firma/contraseña de fuera del repo y
-   genera un receipt sin secretos; preflight compara ref, versión, package,
-   hash de APK y certificado. Conservar la APK v3 y la primera v4.
+   0.1.3-canonical`, y repetir con `--android-test` para el test físico
+   firmado. El build sólo lee firma/contraseña de fuera del repo y genera un
+   receipt sin secretos; preflight compara ref, versión, package, hash de APK
+   y certificado. Instalar en Moto sólo la v4 PILOTO y su test package tras
+   un ADB PASS. Conservar la APK v3 y la primera v4.
 10. Con checkout limpio, ejecutar `prepare-commercial-pilot.mjs` para generar
     `dist_pilot` con runtime y metadata (ref, negocio, allowlist y hash de
     migraciones). Ese script no despliega. El deploy Pages posterior debe usar
@@ -104,6 +106,7 @@ node scripts/import-pilot-catalog.mjs --target pilot --project-ref <nuevo-ref> -
 node scripts/deploy/pilot-preflight.mjs --phase catalog --config <manifiesto-pilot-privado> --approval <archivo-aprobado-privado>
 node scripts/import-pilot-catalog.mjs --target pilot --project-ref <nuevo-ref> --business-id <nuevo-negocio> --approval <archivo-aprobado-privado> --config <manifiesto-pilot-privado> --apply
 node scripts/e2e-staging/build-rider-pilot.mjs --target pilot --project-ref <nuevo-ref> --version-code 4 --version-name 0.1.3-canonical
+node scripts/e2e-staging/build-rider-pilot.mjs --target pilot --project-ref <nuevo-ref> --version-code 4 --version-name 0.1.3-canonical --android-test
 node scripts/deploy/pilot-preflight.mjs --phase deploy --config <manifiesto-pilot-privado> --approval <archivo-aprobado-privado>
 node scripts/deploy/prepare-commercial-pilot.mjs --config <manifiesto-pilot-privado> --approval <archivo-aprobado-privado> --commit <SHA-release-exacto>
 node scripts/deploy/smoke-commercial-pilot.mjs --origin https://la-taba-commercial-pilot.pages.dev/ --project-ref <nuevo-ref> --business-id <nuevo-negocio> --approved-skus-file <archivo-aprobado-privado>

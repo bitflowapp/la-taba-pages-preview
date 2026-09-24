@@ -164,7 +164,8 @@ E. Preparar `dist_pilot` con el preflight obligatorio y desplegar únicamente
 F. Correr smoke público con la misma allowlist y sesiones Chromium/WebKit.
 G. Cuando el Moto G15 vuelva, ejecutar primero
    `node scripts/deploy/check-moto-g15.mjs`; sólo un PASS permite instalar la
-   APK v4 y ejecutar el E2E físico de cliente → negocio → Rider → GPS → código
+   APK v4 y su test APK firmada, y ejecutar el E2E físico de cliente → negocio
+   → Rider → GPS → código
    → entregado → limpieza QA/stock.
 H. Conservar deployment/APK PILOTO previos compatibles y ejecutar el preflight
    read-only de `drill-commercial-pilot-rollback.mjs`.

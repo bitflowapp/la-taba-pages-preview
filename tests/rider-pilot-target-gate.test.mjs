@@ -33,6 +33,7 @@ test('signed PILOT requires a version above the Staging QA v3', () => {
 
 test('compiled Rider checks its backend ref and displays its target mode', () => {
   const gradle = readFileSync('apps/rider-android/app/build.gradle.kts', 'utf8');
+  const builderSource = readFileSync(builder, 'utf8');
   const api = readFileSync('apps/rider-android/app/src/main/java/com/lataba/rider/RiderApi.kt', 'utf8');
   const activity = readFileSync('apps/rider-android/app/src/main/java/com/lataba/rider/MainActivity.kt', 'utf8');
   assert.match(gradle, /backendRef != productionRef/);
@@ -40,4 +41,5 @@ test('compiled Rider checks its backend ref and displays its target mode', () =>
   assert.match(gradle, /PILOT Rider requires an explicit publishable key/);
   assert.match(api, /BuildConfig\.BACKEND_REF != "wwcpogltfgzgkrlilbcd"/);
   assert.match(activity, /BuildConfig\.TARGET_MODE\.uppercase\(\)/);
+  assert.match(builderSource, /PILOT_ANDROID_TEST_SIGNER_MISMATCH/);
 });

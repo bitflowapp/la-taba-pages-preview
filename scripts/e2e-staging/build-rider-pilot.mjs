@@ -61,6 +61,10 @@ if(androidTest){
  const testBadging=spawnSync(path.join(toolsDir,'aapt.exe'),['dump','badging',testApk],{encoding:'utf8',windowsHide:true});
  if(testBadging.status!==0||testBadging.stdout.match(/package: name='([^']+)'/)?.[1]!=='com.lataba.rider.pilot.test')
   throw Error('PILOT_ANDROID_TEST_IDENTITY_MISMATCH');
+ const testSignature=spawnSync('cmd.exe',['/d','/c',path.join(toolsDir,'apksigner.bat'),
+  'verify','--print-certs',testApk],{encoding:'utf8',windowsHide:true});
+ if(testSignature.status!==0||testSignature.stdout.match(/Signer #1 certificate SHA-256 digest:\s*([a-f0-9]{64})/i)?.[1]!==signer)
+  throw Error('PILOT_ANDROID_TEST_SIGNER_MISMATCH');
 }
 if(target==='pilot'){
  const receipt={target,backend:backendRef,packageId,versionCode,

@@ -9,6 +9,7 @@ import { parseSheetPrice, parseSheetStock } from './import-commercial-catalog.mj
 import { applyCatalogImport, mapCatalogProduct } from './import-product-catalog.mjs';
 import { findManifestSource } from './catalog-images/lib.mjs';
 import { leerSecreto } from './e2e-production-sale/secretos-windows.mjs';
+import { GONDOLA } from '../catalog/gondola-neuquen.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const REF_PATTERN = /^[a-z0-9]{20}$/;
@@ -23,6 +24,11 @@ export const PROPOSED_PILOT_SKUS = Object.freeze([
   'sprite-original-2250ml', 'pepsi-original-2000ml',
   'seven-up-original-2000ml', 'red-bull-original-250ml',
 ]);
+
+// stage_catalog_products requires a non-empty subcategory. The historical
+// snapshot has none; the repo's gondola taxonomy is the technical source.
+const SUBCATEGORY_BY_SKU = new Map(GONDOLA.filter((item) => item?.sku && item.subcategory)
+  .map((item) => [item.sku, item.subcategory]));
 
 export function assertPilotIdentity(projectRef, businessId) {
   assert.ok(REF_PATTERN.test(projectRef) && !BLOCKED_REFS.has(projectRef),
@@ -126,10 +132,12 @@ export function buildPilotCatalogPlan(approval, { projectRef, businessId, snapsh
       assert.equal(createHash('sha256').update(readAsset(absolute)).digest('hex'), part.sha256,
         `IMAGE_HASH_MISMATCH:${sku}`);
     }
+    const subcategory = SUBCATEGORY_BY_SKU.get(sku);
+    assert.ok(subcategory, `TAXONOMY_SUBCATEGORY_REQUIRED:${sku}`);
     const mapped = mapCatalogProduct({
       external_id: historical.externalId, sku, brand: historical.brand,
       name: historical.name, variant: historical.variant, category: historical.category,
-      subcategory: '', capacity_value: historical.capacityValue,
+      subcategory, capacity_value: historical.capacityValue,
       capacity_unit: historical.capacityUnit, package_type: historical.packagingType,
       units_per_pack: historical.unitsPerPack, price: price.value, stock: stock.value,
       chilled: false, alcoholic: false, minimum_age: '', featured: false,

@@ -138,3 +138,14 @@ test('informal owner text yields suggestions only, not inferred approval', () =>
   });
   assert.deepEqual(result.unresolved, [{ line: 2, reason: 'MULTIPLE_PRODUCTS' }]);
 });
+
+test('every staged pilot product carries the taxonomy subcategory the DB requires', () => {
+  // stage_catalog_products rejects an empty subcategory ("Missing catalog
+  // master data"); the plan must never send one.
+  const plan = buildPilotCatalogPlan(syntheticApproval(), opts);
+  assert.ok(plan.entries.length >= 5);
+  for (const entry of plan.entries) {
+    assert.ok(typeof entry.row.subcategory === 'string' && entry.row.subcategory.trim().length > 0,
+      `empty subcategory for ${entry.row.sku}`);
+  }
+});

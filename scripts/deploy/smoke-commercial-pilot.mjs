@@ -98,12 +98,15 @@ async function main() {
     && /^assets\/[A-Za-z0-9._/-]+$/.test(image) && !image.split('/').includes('..')),
   'PUBLIC_IMAGE_PATH_INVALID');
 
-  const { chromium, webkit } = await import('@playwright/test');
+  const { chromium, webkit, devices } = await import('@playwright/test');
   const browserResults = {};
-  for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
+  // Desktop panel, Chrome on Android and Safari on iPhone: the three surfaces
+  // customers and the business actually use.
+  for (const [name, engine, device] of [['chromium', chromium, {}],
+    ['chrome_android', chromium, devices['Pixel 7']], ['webkit', webkit, devices['iPhone 13']]]) {
     const browser = await engine.launch({ headless: true });
     try {
-      const context = await browser.newContext({ serviceWorkers: 'block' });
+      const context = await browser.newContext({ ...device, serviceWorkers: 'block' });
       const page = await context.newPage();
       const errors = [];
       page.on('pageerror', (error) => errors.push(error.message));

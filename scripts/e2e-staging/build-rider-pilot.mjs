@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync,readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync,readFileSync,writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { leerSecreto } from '../e2e-production-sale/secretos-windows.mjs';
 const dir=path.join(process.env.USERPROFILE||'','.codex','secrets','la-taba-rider-pilot');
@@ -12,7 +13,7 @@ const explicitRef=refFlag<0?'':process.argv[refFlag+1]||'';
 if(target==='staging'&&explicitRef)throw Error('STAGING_REF_IS_FIXED');
 const backendRef=target==='staging'?'ucbtjcurawxjwjdvvcvj':explicitRef;
 if(!/^[a-z0-9]{20}$/.test(backendRef)||backendRef==='wwcpogltfgzgkrlilbcd'
-  ||(target==='pilot'&&backendRef==='ucbtjcurawxjwjdvvcvj'))
+  ||(target==='pilot'&&['ucbtjcurawxjwjdvvcvj','yakhtrkukqlgzvxuvhzs'].includes(backendRef)))
  throw Error('PILOT_BACKEND_REF_REQUIRED_AND_MUST_BE_ISOLATED');
 const versionCodeFlag=process.argv.indexOf('--version-code');
 const versionCode=versionCodeFlag<0?1:Number(process.argv[versionCodeFlag+1]);
@@ -60,6 +61,15 @@ if(androidTest){
  const testBadging=spawnSync(path.join(toolsDir,'aapt.exe'),['dump','badging',testApk],{encoding:'utf8',windowsHide:true});
  if(testBadging.status!==0||testBadging.stdout.match(/package: name='([^']+)'/)?.[1]!=='com.lataba.rider.pilot.test')
   throw Error('PILOT_ANDROID_TEST_IDENTITY_MISMATCH');
+}
+if(target==='pilot'){
+ const receipt={target,backend:backendRef,packageId,versionCode,
+  versionName:actualVersionName,certificateSha256:signer,
+  apkFile:'apps/rider-android/app/build/outputs/apk/release/app-release.apk',
+  apkSha256:createHash('sha256').update(readFileSync(apk)).digest('hex'),
+  builtAt:new Date().toISOString()};
+ writeFileSync(path.join(project,'app','build','outputs','pilot-build-receipt.json'),
+  JSON.stringify(receipt,null,2)+'\n','utf8');
 }
 console.log(JSON.stringify({signed:true,packageId,versionCode,versionName:actualVersionName,certificateSha256:signer,
  backend:backendRef,target,historicalV146Unaffected:true,androidTestBuilt:androidTest}));

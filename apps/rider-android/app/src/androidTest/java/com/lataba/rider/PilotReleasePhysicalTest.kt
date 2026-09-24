@@ -26,9 +26,12 @@ class PilotReleasePhysicalTest {
     private fun until(timeout: Long = 45_000, predicate: () -> Boolean) = compose.waitUntil(timeout) { predicate() }
 
     @Test fun signedPilotAcceptsTracksAndCompletesQaOrder() {
-        assumeTrue(InstrumentationRegistry.getArguments().getString("qaStaging") == "true")
+        val arguments = InstrumentationRegistry.getArguments()
+        val qaStaging = arguments.getString("qaStaging") == "true"
+        val qaPilot = arguments.getString("qaPilot") == "true"
+        assumeTrue(qaStaging != qaPilot)
         assumeTrue(context.packageName == "com.lataba.rider.pilot")
-        val port = InstrumentationRegistry.getArguments().getString("qaPort")?.toIntOrNull()
+        val port = arguments.getString("qaPort")?.toIntOrNull()
         assertTrue("One-time QA bridge port required", port != null && port in 40_000..60_000)
         val input = Socket().use { socket ->
             socket.connect(InetSocketAddress("127.0.0.1", port!!), 5_000)
@@ -46,7 +49,9 @@ class PilotReleasePhysicalTest {
             }
             until(90_000) { repo.state.value.signedIn && repo.state.value.online && repo.state.value.board != null }
             input.remove("password")
-            assertEquals("a57b1c20-0f4e-4a6b-9d31-7c2e5f8a41d0", repo.api.businessId)
+            val expectedBusiness = if (qaPilot) input.getString("businessId")
+                else "a57b1c20-0f4e-4a6b-9d31-7c2e5f8a41d0"
+            assertEquals(expectedBusiness, repo.api.businessId)
             assertEquals(3, repo.state.value.board!!.capacity)
             if (!repo.state.value.available) {
                 compose.onNodeWithTag("available").performClick()

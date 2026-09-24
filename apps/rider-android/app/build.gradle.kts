@@ -2,10 +2,12 @@ plugins { id("com.android.application"); kotlin("android"); id("org.jetbrains.ko
 
 val stagingRef = "ucbtjcurawxjwjdvvcvj"
 val productionRef = "wwcpogltfgzgkrlilbcd"
+val demoRef = "yakhtrkukqlgzvxuvhzs"
 val targetMode = providers.environmentVariable("RIDER_TARGET_MODE").orElse("staging").get()
 val backendRef = providers.environmentVariable("RIDER_BACKEND_REF").orElse(stagingRef).get()
 require(targetMode in setOf("staging", "pilot")) { "Unknown Rider target mode" }
-require(backendRef.matches(Regex("[a-z0-9]{20}")) && backendRef != productionRef) {
+require(backendRef.matches(Regex("[a-z0-9]{20}")) && backendRef != productionRef
+    && (targetMode != "pilot" || backendRef != demoRef)) {
     "Rider backend must be a non-Production Supabase project"
 }
 require((targetMode == "staging") == (backendRef == stagingRef)) {

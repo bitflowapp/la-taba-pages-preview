@@ -8,8 +8,9 @@ const run = (...args) => spawnSync(process.execPath, [builder, ...args], {
   encoding: 'utf8', windowsHide: true, timeout: 10_000,
 });
 
-test('PILOT Rider refuses Production and Staging project refs before secrets or Gradle', () => {
-  for (const ref of ['wwcpogltfgzgkrlilbcd', 'ucbtjcurawxjwjdvvcvj']) {
+test('PILOT Rider refuses Production, Staging and DEMO refs before secrets or Gradle', () => {
+  for (const ref of ['wwcpogltfgzgkrlilbcd', 'ucbtjcurawxjwjdvvcvj',
+    'yakhtrkukqlgzvxuvhzs']) {
     const result = run('--target', 'pilot', '--project-ref', ref,
       '--version-code', '4', '--version-name', '0.1.3-canonical');
     assert.notEqual(result.status, 0);

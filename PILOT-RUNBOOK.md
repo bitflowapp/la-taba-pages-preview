@@ -1,7 +1,8 @@
 # La Taba · operación del piloto
 
-**Estado: NO ABRIR TODAVÍA.** Falta aprobar catálogo comercial, verificar backup
-externo de la firma Rider y desplegar un backend/dominio PILOTO aislado. Las URL
+**Estado: NO ABRIR TODAVÍA.** Falta aprobar catálogo comercial y desplegar un
+backend/dominio PILOTO aislado. El backup externo de la firma Rider fue
+restaurado y probado el 2026-09-24. Las URL
 de Staging son sólo QA; la APK `com.lataba.rider.pilot` v3 todavía apunta a
 Staging. No darla a repartidores comerciales.
 
@@ -15,6 +16,7 @@ Staging. No darla a repartidores comerciales.
 | APK Rider PILOTO | Pendiente de build firmado vCode ≥ 4 para ese proyecto |
 | Deployment anterior recuperable | Pendiente de primera publicación PILOTO |
 | Medio de pago | Manual solamente; Mercado Pago deshabilitado |
+| Firma Rider | OneDrive Personal privado: `La-Taba/Recovery/Rider-Signing/pilot-v1-20260924.p12`; restauración desde archivo cloud-only y certificado coincidente |
 
 Completar esta ficha con URL, SHA, runtime, deployment ID, versión APK y
 fingerprint público antes de invitar a alguien. Alcance: un comercio, hasta tres
@@ -22,13 +24,17 @@ riders y unos 10–20 clientes conocidos. No anunciar ni abrir autorregistro
 masivo. Las cuentas QA y productos demo nunca son el catálogo comercial.
 La hoja `catalogo-para-aprobar.xlsx` reúne 33 productos históricos con foto
 verificada; **cero** tienen precio vigente, stock, descripción y publicación
-aprobados para PILOTO. No importar esa hoja directamente.
+aprobados para PILOTO. `catalog/PILOT-CATALOG-REVIEW.md` clasifica los 33 y
+propone 10 para confirmación comercial. No importar la hoja directamente.
 
 ## Compuertas antes del deploy
 
-1. Restaurar la firma desde un backup **externo** a la PC, firmar una APK de
-   prueba y comprobar que coincide el certificado. La copia local de
-   Credential Manager ya pasó esa prueba, pero no sustituye el backup externo.
+1. **PASS 2026-09-24:** la firma se restauró desde un archivo OneDrive
+   cloud-only con identificador remoto; se firmó una APK temporal y coincidió
+   el certificado. El archivo no está en Git ni se creó vínculo de uso
+   compartido. La contraseña sigue en Windows Credential Manager, fuera del
+   código; para recuperación tras pérdida total de esta PC también hará falta
+   recuperar esa contraseña por un canal seguro separado.
 2. El comercio aprueba por escrito el catálogo, precios vigentes, stock,
    descripción, fotos y qué productos se publican. Validar y ensayar el
    importador; no copiar fixtures QA ni precios históricos sin aprobación.
@@ -117,7 +123,10 @@ puede exigir desinstalar sólo `com.lataba.rider.pilot` para bajar versión, lo
 que borra su sesión local pero no pedidos del servidor. Nunca desinstalar la
 APK histórica `com.lataba.rider` v146.
 
-El backup externo de la firma debe poder descargarse, restaurarse y firmar un
-APK de prueba con el mismo certificado antes del primer despliegue comercial.
+El backup externo de la firma se verificó con
+`node scripts/e2e-staging/verify-rider-pilot-backup.mjs --backup-file <archivo-OneDrive-cloud-only> --onedrive-cloud-only`.
+El verificador no imprime la contraseña ni conserva la APK de prueba. La
+identidad firmante actual se compara contra la APK v3. Conservar la contraseña
+fuera del repositorio y no compartir el archivo por vínculo público.
 El drill ya ejecutado en **Staging** no sustituye el rollback del proyecto
 PILOTO. No tocar Producción ni conectar una cuenta de Mercado Pago real.

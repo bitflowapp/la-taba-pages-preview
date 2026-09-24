@@ -72,3 +72,10 @@ sanitizada (fecha, canal, SKU, decisión y dato confirmado), sin copiar la
 conversación privada completa al repo. Silencio o fuentes públicas de negocios
 homónimos no equivalen a aprobación. Hasta obtenerla, `CATALOG_APPROVED=NO`
 y no se crea ni despliega el entorno PILOTO.
+
+**Solicitud enviada 2026-09-24 10:23 ART.** Se usó el correo comercial de
+“La Taba 2” publicado en la [ficha del comercio, Mendoza 827](https://www.guiacores.com.ar/index.php?id=17302&r=search%2Fdetail),
+que coincide con la ubicación del proyecto. Asunto: “La Taba 2 — confirmación
+de catálogo para piloto”. Gmail mostró el mensaje en **Enviados**. Se pidió
+confirmación por SKU, precio vigente, stock inicial y presentación/foto; no se
+enviaron precios históricos ni credenciales. **Respuesta/aprobación: pendiente.**

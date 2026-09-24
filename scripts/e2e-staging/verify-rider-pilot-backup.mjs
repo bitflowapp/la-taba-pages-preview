@@ -13,12 +13,42 @@ const root = path.resolve(import.meta.dirname, '../..');
 const original = path.join(process.env.USERPROFILE || '', '.codex', 'secrets', 'la-taba-rider-pilot', 'pilot-v1.p12');
 const index = process.argv.indexOf('--backup-file');
 const selfTest = process.argv.includes('--self-test');
+const oneDriveCloudOnly = process.argv.includes('--onedrive-cloud-only');
 assert.ok(selfTest !== (index >= 0), 'Use exactly --self-test or --backup-file <path>');
+assert.ok(!oneDriveCloudOnly || !selfTest, 'Cloud-only proof requires --backup-file');
 const backupFile = index < 0 ? null : path.resolve(process.argv[index + 1] || '');
 if (backupFile) {
   assert.notEqual(backupFile.toLowerCase(), path.resolve(original).toLowerCase(), 'Original is not a backup');
   assert.ok(!backupFile.toLowerCase().startsWith(root.toLowerCase() + path.sep), 'Backup cannot be in Git repo');
   assert.ok(existsSync(backupFile), 'Backup file unavailable');
+}
+// A normal path under a sync folder does not prove an off-device backup. This
+// explicit mode requires OneDrive's cloud-only placeholder and provider ID
+// *before* copyFileSync hydrates it. No account ID or secret is printed.
+if (oneDriveCloudOnly) {
+  const proof = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `
+$ErrorActionPreference='Stop'
+$p=[IO.Path]::GetFullPath($env:RIDER_BACKUP_CANDIDATE)
+$account=Get-ItemProperty 'HKCU:\\Software\\Microsoft\\OneDrive\\Accounts\\Personal'
+$root=[IO.Path]::GetFullPath($account.UserFolder).TrimEnd('\\')
+$expected=Join-Path $root 'La-Taba\\Recovery\\Rider-Signing'
+if (-not $p.StartsWith($expected+'\\',[StringComparison]::OrdinalIgnoreCase)) { exit 2 }
+$shell=New-Object -ComObject Shell.Application
+$folder=$shell.Namespace((Split-Path -Parent $p))
+$item=$folder.ParseName((Split-Path -Leaf $p))
+if (-not $item) { exit 3 }
+$status=$item.ExtendedProperty('System.FilePlaceholderStatus')
+$remoteId=$item.ExtendedProperty('System.StorageProviderFileIdentifier')
+$shared=$item.ExtendedProperty('System.SharingStatus')
+$sync=$item.ExtendedProperty('System.SyncTransferStatusFlags')
+if ($status -eq 8 -and $remoteId -and $shared -eq 0 -and ($null -eq $sync -or $sync -eq 0)) { 'PASS'; exit 0 }
+exit 4
+`], {
+    encoding: 'utf8', windowsHide: true, timeout: 30_000,
+    env: { ...process.env, RIDER_BACKUP_CANDIDATE: backupFile },
+  });
+  assert.equal(proof.status, 0, 'OneDrive cloud-only provenance unavailable');
+  assert.equal(proof.stdout.trim(), 'PASS', 'OneDrive cloud-only provenance unavailable');
 }
 const password = leerSecreto('RIDER PILOT SIGNING PASSWORD')?.secreto;
 const localBackup = leerSecreto('RIDER PILOT KEYSTORE BACKUP')?.secreto;
@@ -61,8 +91,9 @@ try {
   assert.equal(signed.status, 0, `APK test signing failed (${signed.status})`);
   assert.equal(certificate(signedApk), certificate(currentRelease), 'Certificate mismatch');
   console.log(JSON.stringify({ restoreTest: 'PASS', certificateMatch: true,
-    source: selfTest ? 'LOCAL_CREDENTIAL_MANAGER_ONLY' : 'EXTERNAL_FILE_ORIGIN_NOT_PROVEN',
-    externalBackupVerified: false, passwordUnprinted: true }));
+    source: selfTest ? 'LOCAL_CREDENTIAL_MANAGER_ONLY'
+      : oneDriveCloudOnly ? 'ONEDRIVE_CLOUD_ONLY_REHYDRATED' : 'EXTERNAL_FILE_ORIGIN_NOT_PROVEN',
+    externalBackupVerified: oneDriveCloudOnly, passwordUnprinted: true }));
 } finally {
   const target = path.resolve(temp);
   assert.ok(target.startsWith(scope + path.sep)

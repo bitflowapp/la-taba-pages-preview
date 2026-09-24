@@ -18,6 +18,16 @@ test('backup verifier never passes the signing password in command arguments', (
   assert.match(source, /--ks-pass', 'env:RIDER_PILOT_SIGNING_PASS'/);
   assert.match(source, /--key-pass', 'env:RIDER_PILOT_SIGNING_PASS'/);
   assert.doesNotMatch(source, /--ks-pass', 'pass:/);
-  assert.match(source, /externalBackupVerified: false/);
+  assert.match(source, /externalBackupVerified: oneDriveCloudOnly/);
+  assert.match(source, /FilePlaceholderStatus/);
+  assert.match(source, /StorageProviderFileIdentifier/);
   assert.match(source, /rmSync\(target, \{ recursive: true, force: true \}\)/);
+});
+
+test('cloud provenance cannot be claimed by local self-test', () => {
+  const result = spawnSync(process.execPath, [path, '--self-test', '--onedrive-cloud-only'], {
+    encoding: 'utf8', windowsHide: true, timeout: 10_000,
+  });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Cloud-only proof requires --backup-file/);
 });

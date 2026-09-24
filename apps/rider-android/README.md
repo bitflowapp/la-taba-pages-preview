@@ -10,8 +10,11 @@ Reproducción segura: [QA runbook](QA-RUNBOOK.md).
 
 ## Alcance seguro
 
-- Sólo Supabase Staging `ucbtjcurawxjwjdvvcvj`; ID QA `com.lataba.rider.qa`,
-  identidad firmada de piloto `com.lataba.rider.pilot`.
+- La build QA usa sólo Supabase Staging `ucbtjcurawxjwjdvvcvj`; ID QA
+  `com.lataba.rider.qa`. La v3 firmada de `com.lataba.rider.pilot` sigue siendo
+  una build de ensayo Staging, no la APK comercial del futuro entorno PILOTO.
+  Una build PILOTO exige ref nuevo, publishable key del mismo proyecto y
+  versionCode ≥ 4; Staging, DEMO y Producción se rechazan.
 - La APK estable `com.lataba.rider` no se reemplaza.
 - Sólo publishable key, aportada al build por entorno. No keys administrativas.
 - Tokens cifrados con Android Keystore; sin backup, sin logs HTTP ni passwords persistidas.
@@ -31,7 +34,7 @@ Desde el repo web en esta PC (public key en Credential Manager):
 ```powershell
 node scripts/e2e-staging/build-rider-android.mjs
 node scripts/e2e-staging/create-rider-pilot-signing-key.mjs
-node scripts/e2e-staging/build-rider-pilot.mjs
+node scripts/e2e-staging/build-rider-pilot.mjs --target staging --version-code 3 --version-name 0.1.2-canonical
 ```
 
 En otra máquina, definir `ANDROID_HOME` y `RIDER_STAGING_PUBLIC_KEY` (pública), luego:
@@ -43,6 +46,14 @@ En otra máquina, definir `ANDROID_HOME` y `RIDER_STAGING_PUBLIC_KEY` (pública)
 No instalar un build sin configuración pública. Los tests instrumentados de QA
 requieren input explícito en almacenamiento privado del paquete y no llevan
 credenciales compiladas. Los inputs se eliminan al leerlos y al finalizar.
+
+Cuando exista el proyecto aislado, el operador técnico guarda su clave
+**publicable** en Credential Manager bajo `PILOT SUPABASE PUBLISHABLE KEY`, con
+el ref del proyecto como usuario; no guarda `service_role` en la APK. Luego
+compila con `--target pilot --project-ref <ref-aprobado> --version-code 4
+--version-name 0.1.3-canonical`. El build se niega si el ref es Staging, DEMO
+o Producción. No ejecutar ni distribuir esa variante antes de aprobar catálogo
+y restaurar el backup externo de la firma.
 
 ## Contrato, sin backend paralelo
 

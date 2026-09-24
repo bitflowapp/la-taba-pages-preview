@@ -7,7 +7,7 @@ Desde la raíz web, JDK 17 + SDK 35:
 ```powershell
 node scripts/e2e-staging/build-rider-android.mjs
 node scripts/e2e-staging/create-rider-pilot-signing-key.mjs
-node scripts/e2e-staging/build-rider-pilot.mjs --version-code 3 --version-name 0.1.2-canonical
+node scripts/e2e-staging/build-rider-pilot.mjs --target staging --version-code 3 --version-name 0.1.2-canonical
 node scripts/e2e-staging/build-rider-android.mjs lintDebug
 node scripts/e2e-staging/scan-rider-apk.mjs
 node scripts/scan-secrets.mjs
@@ -36,7 +36,7 @@ aparte el test APK release con `--android-test` y verificar que
 `com.lataba.rider.pilot` siga `debuggable=false`:
 
 ```powershell
-node scripts/e2e-staging/build-rider-pilot.mjs --version-code 3 --version-name 0.1.2-canonical --android-test
+node scripts/e2e-staging/build-rider-pilot.mjs --target staging --version-code 3 --version-name 0.1.2-canonical --android-test
 adb -s ZY32LHS6PS install -r apps/rider-android/app/build/outputs/apk/androidTest/release/app-release-androidTest.apk
 ```
 

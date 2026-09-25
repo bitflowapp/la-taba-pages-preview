@@ -3,13 +3,27 @@
 Rama `release/taba-controlled-production` (desde `release/taba-commercial-pilot` @ `b7cf997`).
 Operación: `CONTROLLED-PRODUCTION-RUNBOOK.md`. Evidencia en `docs/evidence/controlled-production/`.
 
-## Veredicto (2026-09-24)
+## Veredicto (2026-09-25, PR #98)
 
 | | Estado |
 |---|---|
-| PRODUCTION_TECH_READY | **YES** |
-| COMMERCIAL_OPEN_READY | **NO** — sin aprobación de catálogo (Walter no respondió; verificado en Gmail, incluido spam) y sin alta/configuración del dueño |
+| PRODUCTION_TECH_READY | **CODE_READY, pendiente de aplicar en CP.** El código de #98 está verde. Hay dos P1 latentes corregidos por migración que todavía no están aplicados en la base de CP. Pasa a YES cuando se completen los 4 pasos del operador de abajo |
+| COMMERCIAL_OPEN_READY | **NO** — WAITING_CATALOG_APPROVAL (Walter) y alta/configuración del dueño |
 | ONLINE_PAYMENTS_READY | NO — Mercado Pago WCS-51579 esperando soporte; cobro manual |
+
+Veredicto anterior (2026-09-24): PRODUCTION_TECH_READY YES. Se revisó a la baja por los hallazgos del 25.
+
+### Pasos del operador para cerrar PRODUCTION_TECH_READY (necesitan credenciales)
+1. Mergear #98 (o traer sus commits a `release/taba-controlled-production`).
+2. Dump de la base de CP y `supabase db push --project-ref tkanbadcglszlcyfjvpv`:
+   aplica `20260925085000` (pausar/cerrar con pedidos habilitados) y
+   `20260925090000` (ventana QA con vencimiento y columnas privadas; cierra el
+   tenant QA al aplicarse).
+3. `ops-pulse --public` (§7 del runbook) → `HEALTHY`: sin `FOREIGN_TENANT_PUBLIC` ni `OTHER_TENANT_OPEN`.
+4. Armar `CAPACITY_RUN_SHA`, `CP_DEPLOY_SHA` y `CP_ROLLBACK_DRILL_SHA` al SHA
+   de la rama `release`: capacidad 30, deploy, smoke de 3 motores y ensayo de
+   rollback B→A→B. Desde la PC: `rls-final`, `stock-edges --owner-credential
+   "CP QA OWNER"`, `backup-drill` y el E2E de UI de CP.
 
 ## Entorno
 
@@ -70,14 +84,17 @@ pública y el repositorio. Rama `claude/taba-controlled-production-84ldg9` (PR #
 
 | Sev. | Hallazgo | Corrección |
 |---|---|---|
-| P2 | El negocio **QA Control** quedó abierto de forma permanente en la base de CP: la RLS pública exponía sus 8 productos QA a cualquiera con la clave publicable y los RPC aceptaban pedidos anónimos para él. La web no lo mostraba | `qa-window.mjs`: los harness abren el negocio QA sólo durante la corrida y lo cierran en `finally`. El smoke público (`PUBLIC_CATALOG_OF_ANOTHER_TENANT_VISIBLE`) y `ops-pulse` (`FOREIGN_TENANT_PUBLIC`) lo detectan. Verificado: el smoke nuevo falla hoy contra CP, como corresponde |
-| P1 (latente) | Todo build Rider firmado comparte paquete y certificado con el Rider de CP. Staging era el target por defecto y un build firmado de Staging con versionCode ≥ 5 se instalaba como actualización y pasaba al rider a Staging | Gradle y `build-rider-pilot`: PILOT firmado sólo contra el ref de CP del manifiesto; un Staging firmado queda en versionCode ≤ 3 (Android rechaza el downgrade) |
+| P1 (latente) | Con pedidos online habilitados, **Pausar/Cerrar** desde el Panel chocaba con el CHECK `businesses_ordering_enabled_requires_verification` (23514): PAUSE ALL SYSTEM fallaba en el paso 1. Hoy no se ve porque el negocio real tiene los pedidos deshabilitados | `20260925085000`. pgTAP: pausa, cierre y reapertura con pedidos habilitados; pausado no está `ordering_ready` |
+| P1 (latente) | Todo build Rider firmado comparte paquete y certificado con el Rider de CP. Staging era el target por defecto y un build firmado de Staging con versionCode ≥ 5 se instalaba como actualización y pasaba al rider a Staging | Gradle y `build-rider-pilot`: PILOT firmado sólo contra el ref de CP del manifiesto, Staging firmado en versionCode ≤ 3, target y ref obligatorios. Matriz completa en `tests/rider-pilot-target-gate.test.mjs` |
+| P2 | El negocio **QA Control** quedó abierto de forma permanente en la base de CP: la RLS pública exponía sus 8 productos QA y los RPC aceptaban pedidos anónimos para él (la web no lo mostraba) | `20260925090000`: `open_qa_window` (máx. 60 min, sólo tenants QA, sólo owner/admin); fuera de la ventana el catálogo no es público aunque siga `open`; cron `taba-qa-window-expiry` cierra cada minuto; la migración cierra el tenant al aplicarse; la marca y la ventana no se editan por la API. Los harness abren y cierran la ventana en `finally`. Lo detectan el smoke (`PUBLIC_CATALOG_OF_ANOTHER_TENANT_VISIBLE`) y `ops-pulse` (`FOREIGN_TENANT_PUBLIC`, `OTHER_TENANT_OPEN`) |
+| P2 | `anon` y cualquier cliente leían `unit_cost` (el costo del comercio) y `verified_by` de los productos publicados. Hoy `unit_cost` es NULL, pero el Panel permite cargarlo | `20260925090000`: SELECT por columna, todo menos esas dos. pgTAP positivo (precio, stock, imagen) y negativo (42501) |
 | Falso PASS posible | `stock-edges` en CP podía contar como “rechazado por stock” un rechazo por negocio cerrado | Corre con la ventana QA abierta |
+| Observabilidad | Sin chequeo sin secretos de scheduler, Realtime ni exposición | `ops-pulse --public`, probado en vivo: scheduler sano, Realtime `SUBSCRIBED` en 610 ms, y detecta hoy `FOREIGN_TENANT_PUBLIC:1` y `OTHER_TENANT_OPEN:1` |
 
-**Acción del operador (una vez, PC con credenciales QA):**
-`node scripts/controlled-production/qa-window.mjs close --target controlled-production`
-y después `... status` tiene que dar `PASS`. Hasta entonces el próximo deploy
-de CP falla en el smoke, a propósito.
+Limitación conocida: un pedido que falla **al crearse** no deja rastro en el
+servidor (no hay telemetría de errores del cliente). Lo ve el cliente en
+pantalla. Con 30 clientes conocidos se cubre con contacto directo; agregar
+telemetría sería una feature nueva, con una escritura anónima que abrir.
 
 ## Rollback
 

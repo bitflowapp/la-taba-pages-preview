@@ -44,7 +44,11 @@ if(key?.usuario!==backendRef||!key.secreto.startsWith('sb_publishable_'))
 const project=path.resolve('apps/rider-android');
 // Explicit .\ path: cmd may be told not to search the current directory
 // (NoDefaultCurrentDirectoryInExePath), and then a bare gradlew.bat fails.
-const built=spawnSync('cmd.exe',['/d','/c','.\\gradlew.bat',androidTest?':app:assembleReleaseAndroidTest':':app:assembleRelease',`-PriderPilotVersionCode=${versionCode}`,`-PriderPilotVersionName=${versionName}`,
+// Kotlin compiled non-incrementally: incremental compilation may keep another
+// target's inlined BuildConfig constants when only BuildConfig changed. (`clean`
+// and `--rerun-tasks` are not options on Windows: the Gradle and Kotlin daemons
+// keep files under app/build open.) The dex check below is the final guarantee.
+const built=spawnSync('cmd.exe',['/d','/c','.\\gradlew.bat','-Pkotlin.incremental=false',androidTest?':app:assembleReleaseAndroidTest':':app:assembleRelease',`-PriderPilotVersionCode=${versionCode}`,`-PriderPilotVersionName=${versionName}`,
  ...(androidTest?['-PriderPilotInstrumentation=true']:[]),'--console=plain'],{
  cwd:project,stdio:'inherit',windowsHide:true,env:{...process.env,
   ANDROID_HOME:path.join(process.env.LOCALAPPDATA,'Android','Sdk'),
@@ -66,6 +70,18 @@ const actualVersionCode=Number(aapt.stdout.match(/versionCode='(\d+)'/)?.[1]);
 const actualVersionName=aapt.stdout.match(/versionName='([^']+)'/)?.[1];
 if(aapt.status!==0||packageId!=='com.lataba.rider.pilot'||actualVersionCode!==versionCode||actualVersionName!==`${versionName}-pilot`)
  throw Error('PILOT_PACKAGE_IDENTITY_MISMATCH');
+// The backend a rider talks to lives in the dex, not in the manifest: an APK with
+// the right package and versionCode can still carry another environment's URL.
+// It must contain its own backend URL and no other known environment's.
+const knownRefs=['ucbtjcurawxjwjdvvcvj',cpManifest.rider?.backendRef,'wwcpogltfgzgkrlilbcd','yakhtrkukqlgzvxuvhzs'].filter(Boolean);
+// Windows bsdtar reads zip (an APK); a GNU tar earlier in PATH (Git Bash) does not.
+const bsdtar=path.join(process.env.SystemRoot||process.env.windir||'','System32','tar.exe');
+const dexNames=(spawnSync(bsdtar,['-tf',apk],{encoding:'utf8',windowsHide:true}).stdout||'').split(/\r?\n/).filter((n)=>/^classes\d*\.dex$/.test(n));
+if(!dexNames.length)throw Error('PILOT_APK_DEX_UNREADABLE');
+const dex=Buffer.concat(dexNames.map((n)=>spawnSync(bsdtar,['-xOf',apk,n],{windowsHide:true,maxBuffer:256*1024*1024}).stdout||Buffer.alloc(0)));
+const embedsUrl=(ref)=>dex.includes(Buffer.from(`https://${ref}.supabase.co`));
+if(!embedsUrl(backendRef)||knownRefs.some((ref)=>ref!==backendRef&&embedsUrl(ref)))
+ throw Error('PILOT_APK_BACKEND_MISMATCH');
 if(androidTest){
  const testApk=path.join(project,'app','build','outputs','apk','androidTest','release','app-release-androidTest.apk');
  if(!existsSync(testApk))throw Error('PILOT_ANDROID_TEST_APK_MISSING');
@@ -81,10 +97,11 @@ if(target==='pilot'){
  const receipt={target,backend:backendRef,packageId,versionCode,
   versionName:actualVersionName,certificateSha256:signer,
   apkFile:'apps/rider-android/app/build/outputs/apk/release/app-release.apk',
+  embeddedBackendUrl:`https://${backendRef}.supabase.co`,
   apkSha256:createHash('sha256').update(readFileSync(apk)).digest('hex'),
   builtAt:new Date().toISOString()};
  writeFileSync(path.join(project,'app','build','outputs','pilot-build-receipt.json'),
   JSON.stringify(receipt,null,2)+'\n','utf8');
 }
 console.log(JSON.stringify({signed:true,packageId,versionCode,versionName:actualVersionName,certificateSha256:signer,
- backend:backendRef,target,historicalV146Unaffected:true,androidTestBuilt:androidTest}));
+ backend:backendRef,embeddedBackendVerified:true,target,historicalV146Unaffected:true,androidTestBuilt:androidTest}));

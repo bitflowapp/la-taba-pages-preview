@@ -1,11 +1,19 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 
 const builder = 'scripts/e2e-staging/build-rider-pilot.mjs';
+// The builder finds the keystore under USERPROFILE. On the operator machine it is
+// there, and an "allowed" case would start a real signed Gradle build that
+// outlives the timeout and races the next one: point it at an empty profile so
+// every case stops before Gradle (allowed ones at the signing material).
+const emptyProfile = mkdtempSync(path.join(tmpdir(), 'rider-gate-profile-'));
 const run = (...args) => spawnSync(process.execPath, [builder, ...args], {
   encoding: 'utf8', windowsHide: true, timeout: 10_000,
+  env: { ...process.env, USERPROFILE: emptyProfile },
 });
 
 test('PILOT Rider refuses Production, Staging and DEMO refs before secrets or Gradle', () => {
@@ -89,4 +97,26 @@ test('signed Rider environment matrix', () => {
   }
   const gradle = readFileSync('apps/rider-android/app/build.gradle.kts', 'utf8');
   assert.match(gradle, /Signed Rider needs an explicit RIDER_TARGET_MODE and RIDER_BACKEND_REF/);
+});
+
+// An APK with the right package, versionCode and certificate can still carry
+// another environment's backend in its dex (stale or concurrent build in the same
+// project, observed on the operator machine). The builder compiles Kotlin
+// non-incrementally and refuses to hand over an APK whose dex does not carry
+// exactly its own backend URL.
+test('signed Rider compiles Kotlin non-incrementally and must embed exactly its own backend', () => {
+  const source = readFileSync(builder, 'utf8');
+  assert.match(source, /'-Pkotlin\.incremental=false',androidTest\?':app:assembleReleaseAndroidTest':':app:assembleRelease'/);
+  assert.match(source, /embedsUrl\(backendRef\)/);
+  assert.match(source, /knownRefs\.some\(\(ref\)=>ref!==backendRef&&embedsUrl\(ref\)\)/);
+  assert.match(source, /PILOT_APK_BACKEND_MISMATCH/);
+  for (const ref of ['ucbtjcurawxjwjdvvcvj', 'wwcpogltfgzgkrlilbcd', 'yakhtrkukqlgzvxuvhzs']) assert.ok(source.includes(`'${ref}'`), ref);
+  assert.match(source, /cpManifest\.rider\?\.backendRef/);
+});
+
+test('gate test never reaches Gradle on a machine with the signing material', () => {
+  const result = run('--target', 'pilot', '--project-ref', JSON.parse(readFileSync('deploy/controlled-production.json', 'utf8')).rider.backendRef,
+    '--version-code', '4', '--version-name', '0.1.3-canonical');
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /PILOT_SIGNING_MATERIAL_OR_BACKUP_MISSING/);
 });

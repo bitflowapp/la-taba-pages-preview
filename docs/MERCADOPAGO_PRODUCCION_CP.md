@@ -156,6 +156,22 @@ Si aparece un P0 financiero, Mercado Pago del negocio se apaga en el acto
 - token expuesto;
 - binding incorrecto.
 
+## 4.1 Rollout de cobros online
+
+Mercado Pago se enciende para **un** negocio (`cobro-negocio.mjs encender`) y
+el cobro manual sigue disponible. Las etapas se miden en clientes que pagaron
+online, no en tiempo. Ningún número vive en el código: el interruptor es por
+negocio y el corte lo decide quien opera, con el pulso.
+
+| Etapa | Clientes | Para pasar a la siguiente |
+|---|---|---|
+| 1 | 5 | ningún P0 ni P1 financiero; el pulso `mercadopago` sin avisos; cada pago con webhook firmado, un pedido y un movimiento de stock |
+| 2 | 15 | lo mismo, y los reembolsos que hayan ocurrido conciliados |
+| 3 | 30 | lo mismo; la capacidad de 30 ya está certificada para CP (`controlled-capacity.yml`) |
+
+Ante cualquier P0 (§4): `apagar` en el acto, conciliar cada pago afectado con
+Mercado Pago y no volver a encender sin la causa corregida.
+
 ## 5. Observabilidad
 
 - `node scripts/controlled-production/ops-pulse.mjs --target controlled-production --business-id <uuid>`: la sección `mercadopago` levanta estas señales:

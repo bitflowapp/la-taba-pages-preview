@@ -15,6 +15,7 @@ import { createClient } from '@supabase/supabase-js';
 import { loadTargetKeys } from './target-keys.mjs';
 import { readQaCredential } from './qa-credentials.mjs';
 import { cleanupQaOrder, operatorClient } from './qa-cleanup.mjs';
+import { openQaWindow } from './qa-window.mjs';
 
 const SERIAL = 'ZY32LHS6PS';
 const BUSINESS = 'e1d2c342-da14-421e-884f-ff38bb55f642';
@@ -49,10 +50,18 @@ const product = (await staff.from('products').select('id,price,stock').eq('busin
   .gt('stock', 5).order('price', { ascending: false }).limit(1)).data[0];
 const quantity = Math.ceil(6001 / Number(product.price));
 const tracking = randomBytes(32).toString('base64url');
-const created = await customer.rpc('create_order_with_items', { payload: { business_id: BUSINESS, client_request_id: randomUUID(),
-  tracking_token: tracking, items: [{ product_id: product.id, quantity }], customer_name: 'QA Físico', customer_phone: '2995550800',
-  delivery_mode: 'delivery', payment_method: 'coordinate', age_confirmed: true, customer_address_id: saved.data.address.id,
-  customer_street_address: 'Calle Física 800', customer_neighborhood: ADDRESS.neighborhood, customer_notes: 'QA físico — no despachar' } });
+// The QA business is closed outside QA runs: open it only to take this order.
+// Orders already taken keep operating with the business closed.
+const qaWindow = await openQaWindow(owner, BUSINESS, { log });
+let created;
+try {
+  created = await customer.rpc('create_order_with_items', { payload: { business_id: BUSINESS, client_request_id: randomUUID(),
+    tracking_token: tracking, items: [{ product_id: product.id, quantity }], customer_name: 'QA Físico', customer_phone: '2995550800',
+    delivery_mode: 'delivery', payment_method: 'coordinate', age_confirmed: true, customer_address_id: saved.data.address.id,
+    customer_street_address: 'Calle Física 800', customer_neighborhood: ADDRESS.neighborhood, customer_notes: 'QA físico — no despachar' } });
+} finally {
+  await qaWindow.close();
+}
 assert.ifError(created.error);
 const order = Array.isArray(created.data) ? created.data[0] : created.data;
 const code = String(order.delivery_code || (await customer.rpc('issue_order_delivery_code', { p_order_id: order.id, p_tracking_token: tracking })).data.delivery_code);

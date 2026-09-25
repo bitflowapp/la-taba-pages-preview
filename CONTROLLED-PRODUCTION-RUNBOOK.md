@@ -160,6 +160,7 @@ en lugar de `--operator` y queda auditado por la RPC de identidad.
 | **Cliente no ve el estado** | Recargar la web (el service worker trae la versión nueva sola). El seguimiento se consulta cada 5 s |
 | **Acceso comprometido** | `disable` (§2.6) y luego `reset-access` |
 | **Pedido de alguien no invitado** | Rechazarlo desde el Panel; si se repite, pausar pedidos (§8) |
+| **Negocio QA abierto** (`ops-pulse` marca `FOREIGN_TENANT_PUBLIC`, o el smoke falla con `PUBLIC_CATALOG_OF_ANOTHER_TENANT_VISIBLE`) | `node scripts/controlled-production/qa-window.mjs close --target controlled-production` y confirmar con `... qa-window.mjs status --target controlled-production` (`PASS`). El negocio QA sólo se abre durante una corrida QA y la corrida lo cierra al terminar, aunque falle |
 
 Severidad y reglas de ola:
 - **P0** (pérdida o duplicado de pedido, cobro mal registrado, stock corrupto,
@@ -218,7 +219,8 @@ Invitaciones sólo por mensaje privado. No publicar la URL.
 `PRODUCTION_TECH_READY` y `COMMERCIAL_OPEN_READY` se informan por separado.
 Sin catálogo aprobado el entorno puede estar desplegado con **0 productos
 publicados** (smoke `--catalog-mode none` exige que no se vea ninguno) y no se
-invita a nadie. Detalle de evidencias y estado actual: `docs/CONTROLLED-PRODUCTION-STATUS.md`.
+invita a nadie. Antes de cada ola: `qa-window.mjs status` en `PASS` (ningún
+negocio QA con catálogo público). Detalle de evidencias y estado actual: `docs/CONTROLLED-PRODUCTION-STATUS.md`.
 
 ## 13. Versiones actuales
 

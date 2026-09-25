@@ -6,6 +6,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { resolveRuntimeConfig } from '../../js/core/runtime-config.js';
+import { foreignPublicTenants, publicCatalogTenants } from '../controlled-production/qa-window.mjs';
 
 const KNOWN_REFS = new Set([
   'ucbtjcurawxjwjdvvcvj', // Staging QA
@@ -93,6 +94,10 @@ async function main() {
     && Number(row.stock) > 0
     && row.image_url === approvedBySku.get(row.sku)?.image),
   'PUBLIC_PRICE_STOCK_OR_IMAGE_DIFFERS_FROM_APPROVAL');
+  // Only the real business may have a public catalog: an open QA tenant in the
+  // same database exposes its QA products and takes anonymous orders.
+  const foreign = foreignPublicTenants(await publicCatalogTenants(client), businessId);
+  assert.deepEqual(foreign, [], 'PUBLIC_CATALOG_OF_ANOTHER_TENANT_VISIBLE');
   const images = [...new Set(products.flatMap((row) => [row.image_url, row.image_thumbnail_url]))];
   assert.ok(images.every((image) => typeof image === 'string'
     && /^assets\/[A-Za-z0-9._/-]+$/.test(image) && !image.split('/').includes('..')),

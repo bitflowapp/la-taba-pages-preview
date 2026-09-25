@@ -12,6 +12,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { loadTargetKeys } from './target-keys.mjs';
+import { openQaWindow } from './qa-window.mjs';
 import { readQaCredential } from './qa-credentials.mjs';
 import { signIn } from './accounts.mjs';
 import { cleanupQaOrder } from './qa-cleanup.mjs';
@@ -69,6 +70,9 @@ const staff = await member(PROFILE.staff, 'panel_web', 'staff');
 const riderA = await member(`${PROFILE.rider} 1`, 'rider_android', 'riderA');
 const riderB = await member(`${PROFILE.rider} 2`, 'rider_android', 'riderB');
 const createdOrders = [];
+// CP: the QA tenant is closed outside QA runs; open it here, close it below
+// and prove that, closed, its catalog is invisible to the public again.
+const qaWindow = TARGET === 'controlled-production' ? await openQaWindow(owner.c, A) : null;
 try {
   // ---------- anon ----------
   const anon = client();
@@ -179,6 +183,10 @@ try {
   for (const r of [riderA, riderB]) {
     const board = (await r.c.rpc('get_rider_delivery_board')).data;
     if (board?.available) await r.c.rpc('set_rider_availability', { p_business_id: A, p_available: false, p_expected_version: board.availability_version || 0, p_idempotency_key: `rls-off-${randomUUID()}` });
+  }
+  if (qaWindow) {
+    try { await qaWindow.close(); } catch (error) { failures.push(`QA_WINDOW:${error.message}`); }
+    check('ANON_NO_PRODUCTS_OF_CLOSED_QA_TENANT', noRows(await client().from('products').select('id').eq('business_id', A).limit(1)));
   }
 }
 const report = { timestamp: new Date().toISOString(), target: TARGET, project: keys.ref, crossTenant: Boolean(B),

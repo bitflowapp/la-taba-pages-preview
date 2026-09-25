@@ -12,6 +12,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
 import { loadTargetKeys } from './target-keys.mjs';
+import { foreignPublicTenants, publicCatalogTenants } from './qa-window.mjs';
 
 const TERMINAL = ['delivered', 'canceled', 'cancelled', 'rejected'];
 // Minutes after which a non-terminal order counts as stuck, per stored status.
@@ -108,6 +109,14 @@ async function main(args) {
     if (negative) warn.push(`NEGATIVE_STOCK:${negative}`);
     return { products: rows.length, published: rows.filter((row) => row.available && row.is_verified && row.is_active).length,
       negative, publishedOutOfStock: publishedOut };
+  });
+  // Anonymous view (publishable key): no tenant other than this business may
+  // have a public catalog; an open QA tenant is noise orders waiting to happen.
+  await check('publicExposure', async () => {
+    const anon = createClient(keys.url, keys.publishable, { auth: { persistSession: false, autoRefreshToken: false } });
+    const foreign = foreignPublicTenants(await publicCatalogTenants(anon), businessId);
+    if (foreign.length) warn.push(`FOREIGN_TENANT_PUBLIC:${foreign.length}`);
+    return { foreignPublicTenants: foreign.length };
   });
   report.status = warn.length ? 'LOOK' : 'HEALTHY';
   report.attention = warn;

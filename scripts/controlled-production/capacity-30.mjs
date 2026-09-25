@@ -20,6 +20,7 @@ import { readQaCredential } from './qa-credentials.mjs';
 import { loadTargetKeys } from './target-keys.mjs';
 import { ensureQaMember, signIn } from './accounts.mjs';
 import { cleanupQaOrder } from './qa-cleanup.mjs';
+import { openQaWindow } from './qa-window.mjs';
 
 const args = process.argv.slice(2);
 const opt = (name, fallback = '') => { const i = args.indexOf(name); return i < 0 ? fallback : args[i + 1]; };
@@ -133,54 +134,67 @@ const staff = await operator(P.staff, 'staff');
 assert.ok(['owner', 'admin'].includes(owner.role), 'OWNER_ROLE_REQUIRED');
 admin ||= owner.c;
 
-const availability = (await rpc(staff.c, 'commerce_availability',
-  { p_business_id: business, p_channel: 'delivery', p_context: {} })).data;
-assert.ok(availability?.is_open && availability.ordering_ready, 'BUSINESS_NOT_OPEN_FOR_QA');
-const area = availability.areas?.find((a) => a.name === P.address.neighborhood);
-assert.ok(area, 'QA_NEIGHBORHOOD_NOT_IN_COVERAGE');
-const minimum = Number(area.minimum_subtotal || 0);
-
-const productsRead = await staff.c.from('products').select('id,name,price,stock')
-  .eq('business_id', business).eq('available', true).eq('is_active', true)
-  .eq('is_verified', true).eq('is_alcoholic', false).gt('stock', 0).gt('price', 0)
-  .order('stock', { ascending: false });
-assert.ifError(productsRead.error);
-const products = productsRead.data;
-const initialStock = new Map(products.map((p) => [p.id, Number(p.stock)]));
-const qtyFor = (p) => Math.max(1, Math.ceil((minimum + 1) / Number(p.price)));
-const race = products[0];
-const raceQty = Math.floor(Number(race.stock) / 2) + 1;
-assert.ok(raceQty * Number(race.price) > minimum && raceQty <= Number(race.stock), 'RACE_PRODUCT_UNSUITABLE');
-const others = products.slice(1).filter((p) => Number(p.stock) >= qtyFor(p));
-assert.ok(others.length >= 3, 'NEED_3_MORE_PRODUCTS_WITH_ENOUGH_STOCK');
-report.stock = { products: products.length, raceProductStockBefore: Number(race.stock), raceQty };
-
-// Riders: QA identities through request/approve, sessions as Android, available.
+// The QA business is closed outside QA runs (public RLS exposes an open
+// tenant's products): open it for this run, close it in `finally`. Staging
+// keeps its own shared pilot business as it is.
+const qaWindow = TARGET === 'controlled-production'
+  ? await openQaWindow(owner.c, business, { log })
+  : { previous: 'unmanaged', close: async () => 'unmanaged' };
+report.qaWindow = { previous: qaWindow.previous };
+let availability, area, minimum, productsRead, products, initialStock, qtyFor, race, raceQty, others;
 const riders = [];
-for (let n = 1; n <= RIDERS; n += 1) {
-  const member = NO_SECRET ? await (async () => {
-    const stored = readQaCredential(`${P.riderPrefix} ${n}`);
-    assert.ok(stored?.secreto, `QA_RIDER_CREDENTIAL_REQUIRED:${n}`);
-    const c = client();
-    const user = await signIn(c, stored.usuario, stored.secreto);
-    return { client: c, userId: user.id };
-  })() : await ensureQaMember({ keys, businessId: business, reviewerClient: owner.c,
-    credentialName: `${P.riderPrefix} ${n}`, email: P.riderEmail(n), fullName: `QA Rider capacidad ${n}`,
-    access: 'rider', role: 'rider', phone: `29955501${String(n).padStart(2, '0')}` });
-  const reg = await rpc(member.client, 'identity_register_session', { p_business_id: business,
-    p_client: 'rider_android', p_device_label: `Capacity rider ${n}`, p_device_key_hash: null,
-    p_app_version: 'cp-capacity' });
-  assert.ok(reg.data?.ok && reg.data.role === 'rider', `RIDER_SESSION_REFUSED:${n}:${codeOf(reg)}:${reg.error?.message || ''}`);
-  const board = (await rpc(member.client, 'get_rider_delivery_board', {})).data;
-  assert.ok(board, `RIDER_BOARD_UNAVAILABLE:${n}`);
-  assert.equal((board.orders || []).length, 0, `RIDER_HAS_ACTIVE_ORDERS:${n}`);
-  const set = await rpc(member.client, 'set_rider_availability', { p_business_id: business, p_available: true,
-    p_expected_version: board.availability_version || 0, p_idempotency_key: `cap-on-${randomUUID()}` });
-  assert.ok(set.data?.ok, `RIDER_AVAILABILITY_REFUSED:${n}:${codeOf(set)}`);
-  await rpc(member.client, 'heartbeat_rider_availability', { p_business_id: business });
-  riders.push({ n, c: member.client, id: member.userId, handled: new Set(), accepted: 0 });
+try {
+  availability = (await rpc(staff.c, 'commerce_availability',
+    { p_business_id: business, p_channel: 'delivery', p_context: {} })).data;
+  assert.ok(availability?.is_open && availability.ordering_ready, 'BUSINESS_NOT_OPEN_FOR_QA');
+  area = availability.areas?.find((a) => a.name === P.address.neighborhood);
+  assert.ok(area, 'QA_NEIGHBORHOOD_NOT_IN_COVERAGE');
+  minimum = Number(area.minimum_subtotal || 0);
+
+  productsRead = await staff.c.from('products').select('id,name,price,stock')
+    .eq('business_id', business).eq('available', true).eq('is_active', true)
+    .eq('is_verified', true).eq('is_alcoholic', false).gt('stock', 0).gt('price', 0)
+    .order('stock', { ascending: false });
+  assert.ifError(productsRead.error);
+  products = productsRead.data;
+  initialStock = new Map(products.map((p) => [p.id, Number(p.stock)]));
+  qtyFor = (p) => Math.max(1, Math.ceil((minimum + 1) / Number(p.price)));
+  race = products[0];
+  raceQty = Math.floor(Number(race.stock) / 2) + 1;
+  assert.ok(raceQty * Number(race.price) > minimum && raceQty <= Number(race.stock), 'RACE_PRODUCT_UNSUITABLE');
+  others = products.slice(1).filter((p) => Number(p.stock) >= qtyFor(p));
+  assert.ok(others.length >= 3, 'NEED_3_MORE_PRODUCTS_WITH_ENOUGH_STOCK');
+  report.stock = { products: products.length, raceProductStockBefore: Number(race.stock), raceQty };
+
+  // Riders: QA identities through request/approve, sessions as Android, available.
+  for (let n = 1; n <= RIDERS; n += 1) {
+    const member = NO_SECRET ? await (async () => {
+      const stored = readQaCredential(`${P.riderPrefix} ${n}`);
+      assert.ok(stored?.secreto, `QA_RIDER_CREDENTIAL_REQUIRED:${n}`);
+      const c = client();
+      const user = await signIn(c, stored.usuario, stored.secreto);
+      return { client: c, userId: user.id };
+    })() : await ensureQaMember({ keys, businessId: business, reviewerClient: owner.c,
+      credentialName: `${P.riderPrefix} ${n}`, email: P.riderEmail(n), fullName: `QA Rider capacidad ${n}`,
+      access: 'rider', role: 'rider', phone: `29955501${String(n).padStart(2, '0')}` });
+    const reg = await rpc(member.client, 'identity_register_session', { p_business_id: business,
+      p_client: 'rider_android', p_device_label: `Capacity rider ${n}`, p_device_key_hash: null,
+      p_app_version: 'cp-capacity' });
+    assert.ok(reg.data?.ok && reg.data.role === 'rider', `RIDER_SESSION_REFUSED:${n}:${codeOf(reg)}:${reg.error?.message || ''}`);
+    const board = (await rpc(member.client, 'get_rider_delivery_board', {})).data;
+    assert.ok(board, `RIDER_BOARD_UNAVAILABLE:${n}`);
+    assert.equal((board.orders || []).length, 0, `RIDER_HAS_ACTIVE_ORDERS:${n}`);
+    const set = await rpc(member.client, 'set_rider_availability', { p_business_id: business, p_available: true,
+      p_expected_version: board.availability_version || 0, p_idempotency_key: `cap-on-${randomUUID()}` });
+    assert.ok(set.data?.ok, `RIDER_AVAILABILITY_REFUSED:${n}:${codeOf(set)}`);
+    await rpc(member.client, 'heartbeat_rider_availability', { p_business_id: business });
+    riders.push({ n, c: member.client, id: member.userId, handled: new Set(), accepted: 0 });
+  }
+  log(`setup ok: ${products.length} products, ${riders.length} riders, minimum ${minimum}`);
+} catch (error) {
+  await qaWindow.close().catch(() => {});
+  throw error;
 }
-log(`setup ok: ${products.length} products, ${riders.length} riders, minimum ${minimum}`);
 // Presence expires without heartbeats (90 s): keep riders available like the app.
 const heartbeat = setInterval(() => {
   for (const r of riders) void rpc(r.c, 'heartbeat_rider_availability', { p_business_id: business });
@@ -549,6 +563,7 @@ try {
   if (cleanup.failures.length) finding('P1', 'QA_CLEANUP_FAILED', cleanup.failures.join(';'));
   report.cleanup = cleanup;
   delete report.requestIds;
+  try { report.qaWindow.after = await qaWindow.close(); } catch (error) { finding('P1', 'QA_WINDOW_NOT_CLOSED', error.message); }
 
   // ---------- verdict ----------
   for (const hang of hangs) finding('P1', 'RPC_HANG_OVER_30S', `${hang.name}:${hang.ms}ms`);

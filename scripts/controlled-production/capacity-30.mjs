@@ -555,7 +555,9 @@ try {
   }
   for (const r of riders) {
     const board = (await r.c.rpc('get_rider_delivery_board')).data;
-    if (board?.available) await r.c.rpc('set_rider_availability', { p_business_id: business, p_available: false, p_expected_version: board.availability_version || 0, p_idempotency_key: `cap-off-${randomUUID()}` });
+    // Switched off even when the board already shows it unavailable: presence
+    // expires after 90 s without heartbeat, but the stored flag stays true.
+    if (board) await r.c.rpc('set_rider_availability', { p_business_id: business, p_available: false, p_expected_version: board.availability_version || 0, p_idempotency_key: `cap-off-${randomUUID()}` });
   }
   const finalStock = await admin.from('products').select('id,stock').in('id', products.map((p) => p.id));
   cleanup.stockRestored = (finalStock.data || []).every((p) => Number(p.stock) === initialStock.get(p.id));

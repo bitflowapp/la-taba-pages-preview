@@ -196,7 +196,7 @@ test('CP: cliente → pago manual → panel → rider → GPS → código → en
         if (!failure && stockAfter !== stockBefore) failure = Error(`QA_STOCK_NOT_RESTORED:${stockAfter}!=${stockBefore}`);
       }
       const board = (await rider.c.rpc('get_rider_delivery_board')).data;
-      if (board?.available) await rider.c.rpc('set_rider_availability', { p_business_id: BUSINESS, p_available: false,
+      if (board) await rider.c.rpc('set_rider_availability', { p_business_id: BUSINESS, p_available: false,
         p_expected_version: board.availability_version || 0, p_idempotency_key: `e2e-off-${randomUUID()}` });
       if (failure) throw failure;
     }

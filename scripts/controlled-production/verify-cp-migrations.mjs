@@ -291,7 +291,7 @@ try {
   if (hiddenSku) await owner.c.rpc('set_commercial_product_publication', { p_business_id: QA_CONTROL_BUSINESS, p_sku: hiddenSku, p_publish: true });
   if (rider) {
     const board = (await rider.c.rpc('get_rider_delivery_board', {})).data;
-    if (board?.available) await rider.c.rpc('set_rider_availability', { p_business_id: QA_CONTROL_BUSINESS, p_available: false,
+    if (board) await rider.c.rpc('set_rider_availability', { p_business_id: QA_CONTROL_BUSINESS, p_available: false,
       p_expected_version: board.availability_version || 0, p_idempotency_key: `verify-final-off-${randomUUID()}` });
   }
   // Cancelling needs the tenant reachable by the Panel; close_qa_window below leaves it closed.

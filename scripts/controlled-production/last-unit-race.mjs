@@ -112,10 +112,18 @@ try {
     const now = await stockOf(product.id);
     if (now < initial) { const up = await move(product.id, initial - now, 1, 'restaurar'); cleanup.restore = codeOf(up); }
     cleanup.stockRestored = await stockOf(product.id) === initial;
+    // Selling the last unit unpublishes the product and restoring stock does not
+    // publish it again: the owner does it, as in the Panel.
+    const published = (await staff.from('products').select('available').eq('id', product.id).single()).data?.available;
+    if (!published) {
+      const on = await owner.rpc('set_commercial_product_publication', { p_business_id: QA_CONTROL_BUSINESS, p_sku: product.sku, p_publish: true });
+      cleanup.republished = codeOf(on);
+    }
+    cleanup.publicationRestored = (await staff.from('products').select('available').eq('id', product.id).single()).data?.available === true;
   }
   try { await window.close(); cleanup.window = 'closed'; } catch (error) { cleanup.failures.push(`window:${error.message}`); }
   report.cleanup = cleanup;
-  report.checks.CLEANUP = cleanup.failures.length === 0 && cleanup.stockRestored ? 'PASS' : 'FAIL';
+  report.checks.CLEANUP = cleanup.failures.length === 0 && cleanup.stockRestored && cleanup.publicationRestored ? 'PASS' : 'FAIL';
   report.verdict = !report.error && Object.values(report.checks).every((v) => v === 'PASS') ? 'PASS' : 'FAIL';
   mkdirSync(path.dirname(OUT), { recursive: true });
   writeFileSync(OUT, JSON.stringify(report, null, 2));

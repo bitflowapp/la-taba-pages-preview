@@ -182,7 +182,7 @@ try {
   }
   for (const r of [riderA, riderB]) {
     const board = (await r.c.rpc('get_rider_delivery_board')).data;
-    if (board?.available) await r.c.rpc('set_rider_availability', { p_business_id: A, p_available: false, p_expected_version: board.availability_version || 0, p_idempotency_key: `rls-off-${randomUUID()}` });
+    if (board) await r.c.rpc('set_rider_availability', { p_business_id: A, p_available: false, p_expected_version: board.availability_version || 0, p_idempotency_key: `rls-off-${randomUUID()}` });
   }
   if (qaWindow) {
     try { await qaWindow.close(); } catch (error) { failures.push(`QA_WINDOW:${error.message}`); }

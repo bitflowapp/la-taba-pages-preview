@@ -1,41 +1,80 @@
 # CONTROLLED_PRODUCTION · estado y evidencia
 
-Rama `release/taba-controlled-production` (desde `release/taba-commercial-pilot` @ `b7cf997`).
-Operación: `CONTROLLED-PRODUCTION-RUNBOOK.md`. Evidencia en `docs/evidence/controlled-production/`.
+Rama de despliegue `release/taba-controlled-production`; PR **#98** (reemplaza a
+#97, que queda abierto sólo por trazabilidad). Operación:
+`CONTROLLED-PRODUCTION-RUNBOOK.md`. Evidencia en `docs/evidence/controlled-production/`
+(archivos `*-20260925.json` para este cierre).
 
-## Veredicto (2026-09-25, PR #98)
+## Veredicto (2026-09-25, cierre local de #98 sobre CP)
 
 | | Estado |
 |---|---|
-| PRODUCTION_TECH_READY | **CODE_READY, pendiente de aplicar en CP.** El código de #98 está verde. Hay dos P1 latentes corregidos por migración que todavía no están aplicados en la base de CP. Pasa a YES cuando se completen los 4 pasos del operador de abajo |
-| COMMERCIAL_OPEN_READY | **NO** — WAITING_CATALOG_APPROVAL (Walter) y alta/configuración del dueño |
-| ONLINE_PAYMENTS_READY | NO — Mercado Pago WCS-51579 esperando soporte; cobro manual |
+| PRODUCTION_TECH_READY | **YES** — las dos migraciones de #98 están aplicadas y certificadas en CP, CI exacto verde, carga 30, integridad, RLS, backup + restauración real, E2E técnico y rollback (ver tablero). Única compuerta física pendiente: Rider en el Moto (no conectado hoy) |
+| COMMERCIAL_OPEN_READY | **NO** — `CATALOG_APPROVAL` (Walter), alta/configuración del dueño, y el gate físico del Rider (`PENDING_DEVICE`) |
+| ONLINE_PAYMENTS_READY | **NO** — Mercado Pago `WAITING_SUPPORT` (ticket WCS-51579). Cobro inicial: **MANUAL** |
 
-Veredicto anterior (2026-09-24): PRODUCTION_TECH_READY YES. Se revisó a la baja por los hallazgos del 25.
+Historia: el 24 se declaró YES; el 25 la verificación desde la nube lo bajó a
+CODE_READY por dos P1 latentes; el 25 se aplicaron y certificaron en CP.
 
-### Pasos del operador para cerrar PRODUCTION_TECH_READY (necesitan credenciales)
-1. Mergear #98 (o traer sus commits a `release/taba-controlled-production`).
-2. Dump de la base de CP y `supabase db push --project-ref tkanbadcglszlcyfjvpv`:
-   aplica `20260925085000` (pausar/cerrar con pedidos habilitados) y
-   `20260925090000` (ventana QA con vencimiento y columnas privadas; cierra el
-   tenant QA al aplicarse).
-3. `ops-pulse --public` (§7 del runbook) → `HEALTHY`: sin `FOREIGN_TENANT_PUBLIC` ni `OTHER_TENANT_OPEN`.
-4. Armar `CAPACITY_RUN_SHA`, `CP_DEPLOY_SHA` y `CP_ROLLBACK_DRILL_SHA` al SHA
-   de la rama `release`: capacidad 30, deploy, smoke de 3 motores y ensayo de
-   rollback B→A→B. Desde la PC: `rls-final`, `stock-edges --owner-credential
-   "CP QA OWNER"`, `backup-drill` y el E2E de UI de CP.
+## Tablero del cierre (2026-09-25)
+
+| Frente | Resultado | Evidencia |
+|---|---|---|
+| CI del HEAD de #98 (`921a6e2`; luego `033946b` en `release`) | web + E2E 559/559 (Chromium 438, WebKit 122), migraciones/pgTAP/restore, Windows, Rider Android, secret scan: PASS | runs 36097016562, 36102296257 |
+| Preflight CP | ref `tkanbadcglszlcyfjvpv` (no Staging `ucbt…`, no Producción `wwcp…`, no DEMO `yakh…`); 134 remoto / 136 local; pendientes exactamente `085000` y `090000`; pre-estado de cada objeto tocado = el esperado | `migrations-cp-20260925.json` |
+| Backup previo | export lógico 92 tablas / 1591 filas con restauración idéntica 92/92; huella de esquema; backup físico de la plataforma listado | idem |
+| Migraciones | `supabase db push --linked` (2.101.0): `085000` PASS, `090000` PASS; ledger 136 = 136; delta de esquema = sólo los objetos de esas dos migraciones; `anon` sin escritura (tabla ni columna) | idem |
+| Pausar/Cerrar con pedidos habilitados | pausa (staff) y cierre (owner) sin 23514; pedidos rechazados pausado/cerrado (55000); staff no puede cerrar (42501); **PAUSE ALL SYSTEM** (pausa + riders No disponible + pedido nuevo rechazado + pedido activo cancelado, stock devuelto una vez) | `verify-cp-migrations-20260925.json` |
+| Privacidad de productos | columnas del storefront legibles; `unit_cost` y `verified_by` 42501 para anon, sesión de cliente y embed; `select *` 42501; producto despublicado invisible | idem |
+| Ventana QA | cerrado por defecto; abrir/cerrar; runner matado con ventana de 1 min → oculto a los 62 s y cerrado por el cron; abierto desde el Panel sin ventana → no público, cerrado por el cron en 60 s; guardas (API, negocio real, > 60 min, anon, staff) | idem |
+| ops-pulse | antes: `FOREIGN_TENANT_PUBLIC:1`, `OTHER_TENANT_OPEN:1`; después: **HEALTHY** (scheduler sano, Realtime SUBSCRIBED, 0 tenants ajenos públicos, 0 abiertos); servicios de la plataforma ACTIVE_HEALTHY | `ops-pulse-cp-20260925.json` |
+| RLS | 58/58 con sesiones reales, incluido aislamiento A↔B | `rls-cp-20260925.json` |
+| Aislamiento de entornos Rider | 8/8 real (gate del builder + gate de Gradle + builds firmados): Staging v3 y CP v4 permitidos con APK que embebe sólo su backend; Staging > v3, ref ajeno, Producción, Staging como PILOT, DEMO y sin target bloqueados | `rider-env-matrix-20260925.json` |
+| Carga 30 usuarios (runner CI, post-migración) | 861 requests, 0 errores, p95 417 ms, 30/30 Realtime, 7 pedidos de 8 simultáneos (1 perdedor de carrera esperado), integridad y limpieza PASS | `capacity-cp-ci-20260925.json` |
+| Concurrencia / idempotencia | doble click y retry → mismo pedido; dos pestañas → PT409; cobro manual ×2 con la misma clave + otra clave → 1 evento; cancelación doble → stock 1 vez; oferta disputada → 1 rider; confirmación de entrega ×2 → 1 transición (auditado por evento) | idem |
+| Última unidad literal | stock 1, dos clientes a la vez → 1 gana, stock 0, tercero rechazado, doble cancelación → stock 1 una vez | `last-unit-race-cp-20260925.json` |
+| Stock | sobre-stock 23514, despublicado 55000, carrito todo-o-nada | `stock-edges-cp-20260925.json` |
+| Backup + restauración real | `pg_dump` bajo un snapshot → PostgreSQL 17.6 aislado: 0 errores, 102/102 tablas idénticas (2152 filas), esquema idéntico (99 tablas, 1335 columnas, 797 constraints, 275 índices, 356 funciones, 67 políticas, 94 triggers, grants), 136 migraciones, RLS funcional como anon | `restore-drill-cp-20260925.json` |
+| Storage | bucket `fiscal-documents` con 0 objetos; 16 archivos de catálogo en git con el sha256 de la base y servidos idénticos | `storage-inventory-cp-20260925.json` |
+| Deploy B + smoke | `033946b` publicado en el Pages de CP; smoke Chromium/Chrome Android/WebKit PASS | run 36102296295 |
+| Service worker / caché | cliente con caché de la versión anterior (`4378ed2`) → sirve la nueva, SW en control, sesión conservada, recarga/update/recarga sin caché OK; visitante nuevo OK; 0 errores JS | `sw-live-cp-20260925.json` |
+| E2E técnico (UI) | Chrome Android y WebKit iPhone, tenant QA con ventana: catálogo → carrito → pago manual → Panel → rider → GPS → código → entregado; limpieza | `cp-e2e-ui-20260925.json` |
+| Rollback real | EN CURSO: ensayo B→A→B con A = `033946b` (vivo, 136 migraciones) y B = el commit de este cierre | se completa en el commit de evidencia siguiente |
+| Rider físico | `PENDING_DEVICE`: el Moto G15 (`ZY32LHS6PS`) no aparece por USB (`adb kill-server`/`start-server`: sin dispositivos) | — |
+| Residuo QA | 0 (tenant cerrado, 8/8 publicados con stock 60, 0 pedidos abiertos o sin clasificar, 0 riders disponibles) | — |
+
+### Hallazgos de este cierre (todos corregidos)
+
+| Sev. | Hallazgo | Corrección |
+|---|---|---|
+| P2 (ops) | `qa-window.mjs close`, el comando de emergencia del runbook para cerrar un tenant QA expuesto, respondía 42501 en CP: `has_business_role` exige una sesión registrada y el CLI no la registraba | `bfcf534`: el CLI registra la sesión como el Panel; tests del comando |
+| P2 (build Rider) | Un APK firmado "Staging v3" con paquete, versionCode y certificado correctos llevaba en el dex la URL de **CP**: builds Gradle concurrentes del mismo proyecto (el test del gate lanzaba builds firmados reales en la PC con la firma y su timeout los dejaba corriendo). El builder sólo miraba el manifiesto | `7d3bf84`: Kotlin no incremental, verificación del backend dentro del dex (`PILOT_APK_BACKEND_MISMATCH`) y el test del gate nunca llega a Gradle |
+| Ops | El ensayo de rollback se niega a volver a una web construida con otro grafo de migraciones (`ROLLBACK_DB_GRAPH_INCOMPATIBLE`). Es la salvaguarda correcta: después de migrar, el destino válido es el primer deployment con las migraciones nuevas | Runbook §9; el ensayo B→A→B se hace con A = `033946b` |
+| Higiene QA | Vender la última unidad despublica el producto y reponer stock no lo vuelve a publicar; la limpieza de riders no apagaba una disponibilidad ya vencida | `last-unit-race` re-publica como el Panel; las limpiezas apagan la disponibilidad siempre |
+| Backup | El export lógico (`backup-drill`) no incluía el esquema `private` (9 tablas) | `restore-drill` (`pg_dump` de `public`, `private`, `supabase_migrations`, `auth.users/identities`) |
+
+### Limitaciones conocidas
+- Un pedido que falla **al crearse** no deja rastro en el servidor (no hay
+  telemetría de errores del cliente); lo ve el cliente en pantalla. Con ~30
+  clientes conocidos se cubre con contacto directo. No se agrega monitoreo nuevo.
+- El dump de esquema no trae los objetos de plataforma (5 jobs de `cron`, 10
+  tablas de `supabase_realtime`, bucket `fiscal-documents` y su política); en un
+  proyecto nuevo se recrean con las migraciones (runbook §10).
+- RPO de la plataforma ≤ 24 h (PITR apagado); por eso `restore-drill` antes de
+  cada cambio.
 
 ## Entorno
 
 | | |
 |---|---|
 | Backend | Supabase `tkanbadcglszlcyfjvpv` (`la-taba-controlled-production`, sa-east-1, org Luna Systems, Pro) |
-| Web | `https://la-taba-commercial-pilot.pages.dev/` (Pages dedicado, `catalogMode: none`) |
+| Web | `https://la-taba-commercial-pilot.pages.dev/` (Pages dedicado, `catalogMode: none`); Panel `https://la-taba-commercial-pilot.pages.dev/#business`; versión servida en `version.json` (ver Rollback) |
+| Base | 136 migraciones, última `20260925090000`; PostgreSQL 17.6; backups diarios de la plataforma (PITR apagado) + `restore-drill` antes de cada cambio |
 | Negocio real | `e7850ad2-a447-402c-8375-3fd74e9466ba` — cerrado, 0 productos, sin miembros, sin MP |
-| QA (nunca públicos) | control `e1d2c342-…` (8 productos QA), aislamiento `dd515bdd-…` |
+| QA (nunca públicos) | control `e1d2c342-…` (8 productos QA), aislamiento `dd515bdd-…`; marcados `qa_fixture`, cerrados fuera de ventana (cron `taba-qa-window-expiry`) |
 | Rider | `com.lataba.rider.pilot` 0.1.3-canonical-pilot (vc 4), APK `2fcc64f9…`, certificado `2dcc9b0a…` |
 
-## Hallazgos corregidos en esta etapa
+## Hallazgos corregidos el 24
 
 | Sev. | Hallazgo | Corrección |
 |---|---|---|
@@ -46,7 +85,7 @@ Veredicto anterior (2026-09-24): PRODUCTION_TECH_READY YES. Se revisó a la baja
 | P2 | Rider decía “Staging” en build de producción | Etiquetas según el target (“Iniciá sesión en La Taba”) |
 | Ops | Sin forma de dar de baja miembros desde el Panel | `accounts.mjs disable/enable --operator` (probado) |
 
-## Evidencia en CONTROLLED_PRODUCTION
+## Evidencia en CONTROLLED_PRODUCTION (2026-09-24, antes de #98)
 
 | Frente | Resultado |
 |---|---|
@@ -98,18 +137,27 @@ telemetría sería una feature nueva, con una escritura anónima que abrir.
 
 ## Rollback
 
-PASS (run 36068822992): con A `70dde12` vivo se publicó B `4378ed2`; smoke
-Chromium/Chrome Android/WebKit; rollback B→A (backend y hash de migraciones sin
-cambios, config verificada); smoke; restore A→B; smoke. Hoy se sirve `4378ed2`.
-Evidencia: `docs/evidence/controlled-production/rollback-cp-20260924.json`.
-Rider: v3 archivada (apunta a Staging, sólo rollback de app) y v4 archivada
-como base para futuras versiones.
+- **2026-09-25 (#98):** en curso — A = `033946b` (primer deployment con las 136 migraciones), B = el commit de este cierre.
+- 2026-09-25, primer intento (run 36102296295): se publicó B `033946b` con smoke
+  PASS, pero el ensayo se negó a volver a `4378ed2`
+  (`ROLLBACK_DB_GRAPH_INCOMPATIBLE`): esa web se construyó con 134 migraciones y
+  la base ya tenía 136. Salvaguarda correcta; no se tocó nada.
+- 2026-09-24 (run 36068822992): A `70dde12` → B `4378ed2` → A → B, smoke de 3
+  motores en cada paso. Evidencia: `rollback-cp-20260924.json`.
+- Rider: v3 archivada (apunta a Staging, sólo rollback de app) y v4 archivada
+  como base para futuras versiones.
 
 ## Bloqueos restantes
 
-1. **Catálogo (Walter)**: sin respuesta; no se publica nada sin su aprobación explícita.
+1. **Catálogo (Walter)** — `CATALOG_APPROVAL`: sin respuesta; no se publica
+   nada sin su aprobación explícita (precios y stock no se inventan).
 2. **Alta y configuración del dueño**: cuenta, horarios, zonas, costo de envío,
    punto de retiro verificado (`set-pickup-point.mjs --origen=business_verified`).
-3. **Firma Rider — recuperación total**: la contraseña sigue sólo en Credential
+3. **Rider físico** — `PENDING_DEVICE`: conectar el Moto G15 (`ZY32LHS6PS`) por
+   USB con depuración activada; ya tiene la v4 instalada, no hace falta
+   reinstalar. Repetir `physical-rider-e2e.mjs` (login, disponible, cola,
+   aceptar, GPS, código, entregado, reconexión).
+4. **Firma Rider — recuperación total**: la contraseña sigue sólo en Credential
    Manager; falta desbloquear el Almacén personal de OneDrive (2FA) y correr
    `node scripts/e2e-staging/escrow-rider-signing-password.mjs`.
+5. **Mercado Pago** — `WAITING_SUPPORT` (WCS-51579): no se toca; cobro manual.

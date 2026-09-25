@@ -1,0 +1,575 @@
+{
+  "workflowRun": 36102296286,
+  "commit": "033946b2397648d51345967d2942890a4d61d225",
+  "report": {
+    "timestamp": "2026-09-25T06:19:00.740Z",
+    "target": "controlled-production",
+    "project": "tkanbadcglszlcyfjvpv",
+    "businessType": "QA",
+    "config": {
+      "VISITORS": 30,
+      "CARTS": 10,
+      "ORDERS": 8,
+      "RIDERS": 3,
+      "BROWSE_SECONDS": 150
+    },
+    "qaWindow": {
+      "previous": "closed",
+      "after": "closed"
+    },
+    "stock": {
+      "products": 8,
+      "raceProductStockBefore": 60,
+      "raceQty": 31
+    },
+    "carts": {
+      "built": 10,
+      "checkout": 8,
+      "abandoned": 2
+    },
+    "plannedRequestIds": 8,
+    "doubleClick": {
+      "codes": [
+        "LT-0028",
+        "LT-0028"
+      ],
+      "distinctIds": 1
+    },
+    "retryAfterLoss": {
+      "sameOrder": true,
+      "code": "LT-0030"
+    },
+    "stockRace": {
+      "attempts": 2,
+      "accepted": 1,
+      "rejectionCodes": [
+        "23514"
+      ]
+    },
+    "orders": {
+      "attempted": 8,
+      "created": 7
+    },
+    "twoTabs": {
+      "codes": [
+        "LT-0028",
+        "PT409"
+      ],
+      "finalStatus": "accepted",
+      "revisionDelta": 1
+    },
+    "manualPayment": [
+      {
+        "label": "double_click",
+        "codes": [
+          "confirmed",
+          "confirmed",
+          "already_confirmed"
+        ],
+        "replays": 1,
+        "events": 1,
+        "status": "confirmed"
+      },
+      {
+        "label": "retry_after_loss",
+        "codes": [
+          "confirmed",
+          "confirmed",
+          "already_confirmed"
+        ],
+        "replays": 1,
+        "events": 1,
+        "status": "confirmed"
+      }
+    ],
+    "doubleCancel": {
+      "restored": 31,
+      "expected": 31,
+      "codes": [
+        "LT-0032",
+        "LT-0032",
+        "PT409"
+      ],
+      "replays": 1
+    },
+    "offerRace": {
+      "secondOfferWhilePending": "offer_in_flight",
+      "acceptA": "offer_not_available",
+      "withdraw": "withdrawn",
+      "reoffer": "offered",
+      "acceptB": "accepted",
+      "winners": 1,
+      "assignedTo": "B"
+    },
+    "delivery": {
+      "deliverable": 6,
+      "delivered": 6,
+      "wrongCodeAnswers": [
+        "incorrect_code"
+      ],
+      "doubleConfirm": [
+        "ok/ok",
+        "ok/ok",
+        "ok/ok",
+        "ok/ok",
+        "ok/ok",
+        "ok/ok"
+      ],
+      "riders": [
+        {
+          "n": 1,
+          "accepted": 1
+        },
+        {
+          "n": 2,
+          "accepted": 2
+        },
+        {
+          "n": 3,
+          "accepted": 2
+        }
+      ]
+    },
+    "tracking": [
+      {
+        "label": "double_click",
+        "lastPublicStatus": "delivered"
+      },
+      {
+        "label": "retry_after_loss",
+        "lastPublicStatus": "delivered"
+      },
+      {
+        "label": "race_a",
+        "lastPublicStatus": "cancelled"
+      },
+      {
+        "label": "normal_4",
+        "lastPublicStatus": "delivered"
+      },
+      {
+        "label": "normal_5",
+        "lastPublicStatus": "delivered"
+      },
+      {
+        "label": "normal_6",
+        "lastPublicStatus": "delivered"
+      },
+      {
+        "label": "normal_7",
+        "lastPublicStatus": "delivered"
+      }
+    ],
+    "realtime": {
+      "attempted": 30,
+      "subscribed": 30,
+      "errors": 0,
+      "closed": 30,
+      "events": 240,
+      "operatorEvents": 158
+    },
+    "anonExposure": {
+      "requests": 30,
+      "rowsVisible": 0
+    },
+    "integrity": {
+      "orderRows": 7,
+      "duplicates": 0,
+      "negativeStock": 0,
+      "stockMismatch": []
+    },
+    "cleanup": {
+      "orders": 7,
+      "results": [
+        {
+          "label": "double_click",
+          "reversed": true,
+          "cancelled": false,
+          "restoredUnits": 3,
+          "classified": true
+        },
+        {
+          "label": "retry_after_loss",
+          "reversed": true,
+          "cancelled": false,
+          "restoredUnits": 2,
+          "classified": true
+        },
+        {
+          "label": "race_a",
+          "reversed": false,
+          "cancelled": false,
+          "restoredUnits": 0,
+          "classified": true
+        },
+        {
+          "label": "normal_4",
+          "reversed": false,
+          "cancelled": false,
+          "restoredUnits": 3,
+          "classified": true
+        },
+        {
+          "label": "normal_5",
+          "reversed": false,
+          "cancelled": false,
+          "restoredUnits": 2,
+          "classified": true
+        },
+        {
+          "label": "normal_6",
+          "reversed": false,
+          "cancelled": false,
+          "restoredUnits": 3,
+          "classified": true
+        },
+        {
+          "label": "normal_7",
+          "reversed": false,
+          "cancelled": false,
+          "restoredUnits": 3,
+          "classified": true
+        }
+      ],
+      "failures": [],
+      "stockRestored": true
+    },
+    "metrics": {
+      "perOperation": {
+        "identity_register_session": {
+          "n": 5,
+          "errors": 0,
+          "avg": 261,
+          "p50": 159,
+          "p95": 423,
+          "max": 423
+        },
+        "commerce_availability": {
+          "n": 225,
+          "errors": 0,
+          "avg": 176,
+          "p50": 148,
+          "p95": 405,
+          "max": 454
+        },
+        "get_rider_delivery_board": {
+          "n": 26,
+          "errors": 0,
+          "avg": 180,
+          "p50": 152,
+          "p95": 405,
+          "max": 406
+        },
+        "set_rider_availability": {
+          "n": 3,
+          "errors": 0,
+          "avg": 146,
+          "p50": 148,
+          "p95": 148,
+          "max": 148
+        },
+        "heartbeat_rider_availability": {
+          "n": 12,
+          "errors": 0,
+          "avg": 187,
+          "p50": 168,
+          "p95": 375,
+          "max": 375
+        },
+        "browse.businesses": {
+          "n": 30,
+          "errors": 0,
+          "avg": 247,
+          "p50": 170,
+          "p95": 439,
+          "max": 445
+        },
+        "browse.orders_anon": {
+          "n": 30,
+          "errors": 0,
+          "avg": 263,
+          "p50": 156,
+          "p95": 438,
+          "max": 439
+        },
+        "get_public_business_contact": {
+          "n": 30,
+          "errors": 0,
+          "avg": 218,
+          "p50": 149,
+          "p95": 417,
+          "max": 440
+        },
+        "browse.products": {
+          "n": 214,
+          "errors": 0,
+          "avg": 188,
+          "p50": 147,
+          "p95": 398,
+          "max": 1142
+        },
+        "realtime.subscribe": {
+          "n": 30,
+          "errors": 0,
+          "avg": 59,
+          "p50": 58,
+          "p95": 80,
+          "max": 91
+        },
+        "cart.products_recheck": {
+          "n": 10,
+          "errors": 0,
+          "avg": 213,
+          "p50": 150,
+          "p95": 375,
+          "max": 375
+        },
+        "customer.sign_in_anonymous": {
+          "n": 8,
+          "errors": 0,
+          "avg": 263,
+          "p50": 176,
+          "p95": 426,
+          "max": 426
+        },
+        "upsert_current_customer_profile": {
+          "n": 8,
+          "errors": 0,
+          "avg": 236,
+          "p50": 224,
+          "p95": 410,
+          "max": 410
+        },
+        "upsert_current_customer_address": {
+          "n": 8,
+          "errors": 0,
+          "avg": 280,
+          "p50": 408,
+          "p95": 419,
+          "max": 419
+        },
+        "order.create": {
+          "n": 6,
+          "errors": 0,
+          "avg": 610,
+          "p50": 603,
+          "p95": 702,
+          "max": 702
+        },
+        "order.create_double_click": {
+          "n": 1,
+          "errors": 0,
+          "avg": 591,
+          "p50": 591,
+          "p95": 591,
+          "max": 591
+        },
+        "order.create_race": {
+          "n": 2,
+          "errors": 0,
+          "avg": 640,
+          "p50": 640,
+          "p95": 640,
+          "max": 640
+        },
+        "order.create_retry": {
+          "n": 1,
+          "errors": 0,
+          "avg": 150,
+          "p50": 150,
+          "p95": 150,
+          "max": 150
+        },
+        "get_public_order_tracking": {
+          "n": 74,
+          "errors": 0,
+          "avg": 171,
+          "p50": 148,
+          "p95": 380,
+          "max": 437
+        },
+        "transition_order": {
+          "n": 19,
+          "errors": 0,
+          "avg": 233,
+          "p50": 196,
+          "p95": 417,
+          "max": 417
+        },
+        "panel.list_orders": {
+          "n": 46,
+          "errors": 0,
+          "avg": 330,
+          "p50": 299,
+          "p95": 539,
+          "max": 566
+        },
+        "confirm_manual_order_payment": {
+          "n": 6,
+          "errors": 0,
+          "avg": 152,
+          "p50": 150,
+          "p95": 167,
+          "max": 167
+        },
+        "cancel_order": {
+          "n": 3,
+          "errors": 0,
+          "avg": 156,
+          "p50": 160,
+          "p95": 163,
+          "max": 163
+        },
+        "offer_order_to_rider": {
+          "n": 8,
+          "errors": 0,
+          "avg": 149,
+          "p50": 149,
+          "p95": 161,
+          "max": 161
+        },
+        "withdraw_rider_order_offer": {
+          "n": 1,
+          "errors": 0,
+          "avg": 143,
+          "p50": 143,
+          "p95": 143,
+          "max": 143
+        },
+        "accept_rider_order_offer": {
+          "n": 7,
+          "errors": 0,
+          "avg": 244,
+          "p50": 159,
+          "p95": 510,
+          "max": 510
+        },
+        "mark_delivery_picked_up": {
+          "n": 6,
+          "errors": 0,
+          "avg": 155,
+          "p50": 157,
+          "p95": 159,
+          "max": 159
+        },
+        "start_rider_delivery": {
+          "n": 6,
+          "errors": 0,
+          "avg": 153,
+          "p50": 153,
+          "p95": 158,
+          "max": 158
+        },
+        "publish_rider_location_fanout": {
+          "n": 12,
+          "errors": 0,
+          "avg": 172,
+          "p50": 153,
+          "p95": 410,
+          "max": 410
+        },
+        "mark_rider_arrived": {
+          "n": 6,
+          "errors": 0,
+          "avg": 154,
+          "p50": 152,
+          "p95": 167,
+          "max": 167
+        },
+        "confirm_delivery_code": {
+          "n": 18,
+          "errors": 0,
+          "avg": 215,
+          "p50": 216,
+          "p95": 223,
+          "max": 223
+        }
+      },
+      "totalRequests": 861,
+      "errors": 0,
+      "errorRate": 0,
+      "avgMs": 199,
+      "p95Ms": 417
+    },
+    "unexpectedErrors": [],
+    "findings": [],
+    "verdict": {
+      "LOAD_30_USERS": "PASS",
+      "CONCURRENT_CARTS": "10 carts (8 checkout, 2 abandoned)",
+      "CONCURRENT_ORDERS": "7 created from 8 simultaneous checkouts (1 race loser expected)",
+      "ERROR_RATE": 0,
+      "P95_APPROX_MS": 417,
+      "DATA_INTEGRITY": "PASS",
+      "P0": 0,
+      "P1": 0
+    }
+  },
+  "eventAudit": {
+    "source": "order_events per order (read only, Management API)",
+    "orders": [
+      {
+        "public_code": "LT-0028",
+        "status": "delivered",
+        "to_delivered": 1,
+        "to_cancelled": 0,
+        "to_accepted": 1,
+        "rider_accepts": 1,
+        "pay_confirmed": 1
+      },
+      {
+        "public_code": "LT-0029",
+        "status": "delivered",
+        "to_delivered": 1,
+        "to_cancelled": 0,
+        "to_accepted": 1,
+        "rider_accepts": 1,
+        "pay_confirmed": 0
+      },
+      {
+        "public_code": "LT-0030",
+        "status": "delivered",
+        "to_delivered": 1,
+        "to_cancelled": 0,
+        "to_accepted": 1,
+        "rider_accepts": 1,
+        "pay_confirmed": 1
+      },
+      {
+        "public_code": "LT-0031",
+        "status": "delivered",
+        "to_delivered": 1,
+        "to_cancelled": 0,
+        "to_accepted": 1,
+        "rider_accepts": 1,
+        "pay_confirmed": 0
+      },
+      {
+        "public_code": "LT-0032",
+        "status": "cancelled",
+        "to_delivered": 0,
+        "to_cancelled": 1,
+        "to_accepted": 0,
+        "rider_accepts": 0,
+        "pay_confirmed": 0
+      },
+      {
+        "public_code": "LT-0033",
+        "status": "delivered",
+        "to_delivered": 1,
+        "to_cancelled": 0,
+        "to_accepted": 1,
+        "rider_accepts": 1,
+        "pay_confirmed": 0
+      },
+      {
+        "public_code": "LT-0034",
+        "status": "delivered",
+        "to_delivered": 1,
+        "to_cancelled": 0,
+        "to_accepted": 1,
+        "rider_accepts": 1,
+        "pay_confirmed": 0
+      }
+    ]
+  }
+}

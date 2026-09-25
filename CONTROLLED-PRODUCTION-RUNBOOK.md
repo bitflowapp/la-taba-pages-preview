@@ -23,7 +23,8 @@ Rider es un comando de esta página, ejecutado por el operador técnico en su PC
 | Rider APK | `com.lataba.rider.pilot` `0.1.3-canonical-pilot` (versionCode 4), SHA-256 `2fcc64f9c8cac31fcc65449b25d604e9dc04dae87e5947a4f5554b9875b187d4`, copia en OneDrive `La-Taba/Releases/Rider/` |
 | Certificado de firma Rider | SHA-256 `2dcc9b0a0cf022ebf59c500331103ee31cec9e9142d5431553131877948ec1aa` |
 | APK anterior (rollback) | Primera versión para este backend; la v3 (`0.1.2`) apunta a Staging y **no** sirve para CP. Para futuras versiones, reinstalar la v4 archivada |
-| Web | versión en `https://la-taba-commercial-pilot.pages.dev/version.json` (commit, runtime) |
+| Web | versión en `https://la-taba-commercial-pilot.pages.dev/version.json` (commit, runtime). Se publica sólo desde `release/taba-controlled-production` con `CP_DEPLOY_SHA` = ese commit y el CI exacto en verde |
+| Base de datos | 136 migraciones, última `20260925090000` (`supabase migration list --linked`, credenciales por entorno) |
 | Service worker | `CACHE_NAME` en `sw.js` (hoy `la-taba-runtime-v117-controlled-production`) |
 | Cobro | Manual: `cash` (efectivo al retirar o recibir) o `coordinate` (a coordinar). Mercado Pago **no** habilitado (WCS-51579) |
 
@@ -161,7 +162,8 @@ en lugar de `--operator` y queda auditado por la RPC de identidad.
 | **Cliente no ve el estado** | Recargar la web (el service worker trae la versión nueva sola). El seguimiento se consulta cada 5 s |
 | **Acceso comprometido** | `disable` (§2.6) y luego `reset-access` |
 | **Pedido de alguien no invitado** | Rechazarlo desde el Panel; si se repite, pausar pedidos (§8) |
-| **Negocio QA abierto** (`ops-pulse` marca `FOREIGN_TENANT_PUBLIC` u `OTHER_TENANT_OPEN`, o el smoke falla con `PUBLIC_CATALOG_OF_ANOTHER_TENANT_VISIBLE`) | Con la migración `20260925090000` aplicada el servidor lo cierra solo al minuto de vencer la ventana (máx. 60 min) y, vencida, su catálogo ya no es público aunque siga abierto. Para cerrarlo ya: `node scripts/controlled-production/qa-window.mjs close --target controlled-production` y confirmar con `... qa-window.mjs status --target controlled-production` (`PASS`) |
+| **Negocio QA abierto** (`ops-pulse` marca `FOREIGN_TENANT_PUBLIC` u `OTHER_TENANT_OPEN`, o el smoke falla con `PUBLIC_CATALOG_OF_ANOTHER_TENANT_VISIBLE`) | `20260925090000` está aplicada en CP (2026-09-25): el servidor cierra el tenant QA al minuto de vencer la ventana (máx. 60 min) y, vencida, su catálogo ya no es público aunque siga abierto; abierto desde el Panel sin ventana tampoco es público y el cron lo cierra en ≤ 1 min (probado en vivo, runner matado incluido). Para cerrarlo ya: `node scripts/controlled-production/qa-window.mjs close --target controlled-production` (registra la sesión del dueño QA como el Panel) y confirmar con `... qa-window.mjs status --target controlled-production` (`PASS`) |
+| **Verificar la base después de una migración** | `node scripts/controlled-production/verify-cp-migrations.mjs --target controlled-production`: pausar/cerrar con pedidos habilitados, PAUSE ALL, columnas privadas de productos, borradores, ventana QA y su vencimiento del lado del servidor. Sólo sesiones QA reales; limpia todo |
 | **Scheduler / Realtime** (`SCHEDULER_STALE`, `REALTIME_UNAVAILABLE`) | Scheduler: los barridos (alertas, reservas vencidas, ventana QA) no corren; pausar pedidos (§8) si pasa de 10 min y revisar `cron.job` en Supabase. Realtime: el Panel igual refresca cada 5 s; si persiste, avisar a riders y revisar el estado de Supabase |
 
 Severidad y reglas de ola:
@@ -180,6 +182,11 @@ Severidad y reglas de ola:
 5. Si el problema es la web: rollback (§9). Si es la base: §10.
 Nunca borrar filas para “vaciar”: pedidos, cobros y eventos son la evidencia.
 
+Probado en CP el 2026-09-25 con los pedidos online habilitados (antes de
+`20260925085000` el paso 1 fallaba con 23514): pausa desde el Panel, riders en
+No disponible, pedido nuevo rechazado (55000), pedido activo cancelado con
+motivo y stock devuelto una sola vez.
+
 ## 9. Rollback
 
 - **Web + config:** en Cloudflare Pages, proyecto **`la-taba-commercial-pilot`**
@@ -187,8 +194,18 @@ Nunca borrar filas para “vaciar”: pedidos, cobros y eventos son la evidencia
   verificar `version.json`, que el runtime siga apuntando al mismo ref,
   login de Panel y un pedido de control. Ensayado con
   `scripts/deploy/drill-commercial-pilot-rollback.mjs` (preflight → rollback → restore).
+- **Sólo entre versiones con el mismo grafo de migraciones.** Cada deployment
+  publica `pilot-deploy-metadata.json` con el hash de las migraciones con las que
+  se construyó; el ensayo (y el operador) rechaza volver a un deployment con otro
+  grafo (`ROLLBACK_DB_GRAPH_INCOMPATIBLE`). Después de migrar la base, el destino
+  válido de rollback es el primer deployment publicado con esas migraciones
+  (hoy `033946b`), no uno anterior: la web vieja no conoce el esquema nuevo.
+- **Ensayo automático:** armar `CP_DEPLOY_SHA` y `CP_ROLLBACK_DRILL_SHA` al mismo
+  commit de `release/taba-controlled-production`: captura el deployment vivo (A),
+  publica B, smoke de 3 motores, rollback B→A, smoke, restore A→B, smoke.
 - **Base de datos:** un rollback web **no** revierte migraciones. Se corrige
-  hacia adelante (migración compensatoria probada), nunca `reset`.
+  hacia adelante (migración compensatoria probada; cada migración trae su bloque
+  REVERSIÓN), nunca `reset`.
 - **Rider:** reinstalar la APK anterior de la ficha. Android puede pedir
   desinstalar sólo `com.lataba.rider.pilot` para bajar de versión: se pierde la
   sesión local, no los pedidos. Nunca desinstalar la histórica `com.lataba.rider`.
@@ -196,15 +213,33 @@ Nunca borrar filas para “vaciar”: pedidos, cobros y eventos son la evidencia
 ## 10. Backups y restauración
 
 - **Base:** backups diarios automáticos de Supabase (plan Pro, retención 7 días,
-  PITR apagado; RPO ≤ 24 h). Además, antes de cada cambio de versión:
-  `supabase db dump` del esquema y datos al directorio privado de backups
-  (fuera del repo). Restauración probada en una base aislada (ver evidencia).
+  PITR apagado; RPO ≤ 24 h). Además, **antes de cada migración o cambio de
+  versión**, backup con ensayo de restauración:
+  `node scripts/controlled-production/restore-drill.mjs --target controlled-production --pg-bin <bin de PostgreSQL 17> --pooler-host aws-0-sa-east-1.pooler.supabase.com`.
+  Hace `pg_dump` (formato custom) de `public`, `private`, `supabase_migrations`
+  y `auth.users/identities` bajo un único snapshot, lo guarda con su manifiesto
+  (tamaños, sha256, migraciones) en `~/.taba-backups/controlled-production/`
+  (fuera del repo: contiene datos personales), lo restaura en un PostgreSQL local
+  descartable y compara esquema, RLS, grants, funciones, migraciones y cada fila.
+  Sólo lee CP; la clave de la base sale del Credential Manager por entorno.
+  Probado el 2026-09-25: 102/102 tablas idénticas, esquema idéntico, 0 errores.
 - **Restaurar:** en Supabase → Database → Backups → restaurar el punto elegido
-  (reemplaza la base completa: pausar todo antes, §8) o restaurar el dump en un
-  proyecto nuevo y cambiar el runtime (deploy con el nuevo ref).
+  (reemplaza la base completa: pausar todo antes, §8), o en un proyecto nuevo:
+  `pg_restore --no-owner` en este orden: `auth-users.dump` (pre-data + data),
+  `app.dump` (pre-data + data), `auth-users.dump` (post-data), `app.dump`
+  (post-data). Lo que un dump de esquema no trae y hay que recrear en ese
+  proyecto: los 5 jobs de `cron` (los programan las migraciones), las 10 tablas
+  de la publicación `supabase_realtime`, el bucket `fiscal-documents` y su
+  política. Después, deploy con el nuevo ref (runtime) y `ops-pulse`.
 - **Storage:** este entorno no guarda archivos de clientes. Las fotos del
-  catálogo viven versionadas en el repositorio y se publican con la web; el
-  bucket privado `fiscal-documents` no se usa en el piloto.
+  catálogo son archivos con hash en el nombre, versionados en el repositorio
+  (`assets/products/`), listados en `catalog/PUBLIC-PRODUCT-ASSETS.json`,
+  referenciados con su sha256 por `products` y `catalog_assets`, y se publican con
+  la web. Inventario y verificación: `node scripts/controlled-production/storage-inventory.mjs --target controlled-production`
+  (hoy: 16 archivos presentes en git con el hash de la base y servidos idénticos;
+  bucket privado `fiscal-documents` con 0 objetos). Recuperar = redeploy de la
+  web desde git + restaurar filas (o reimportar el catálogo: el importador es
+  idempotente).
 
 ## 11. Rollout por olas
 
@@ -228,5 +263,20 @@ negocio QA con catálogo público). Detalle de evidencias y estado actual: `docs
 
 `version.json` publicado (commit y runtime web), `CACHE_NAME` en `sw.js`,
 APK Rider de la ficha y ledger de migraciones del proyecto
-(`supabase migration list --project-ref <ref>`). Registrarlos antes y después
-de cada cambio.
+(`supabase migration list --linked`). Registrarlos antes y después
+de cada cambio. Estado vigente y evidencia: `docs/CONTROLLED-PRODUCTION-STATUS.md`.
+
+## 14. Chequeos del operador
+
+| Qué | Comando (`node scripts/controlled-production/...`, `--target controlled-production`) |
+|---|---|
+| Salud sin secretos (scheduler, Realtime, exposición, otros tenants) | `ops-pulse.mjs --business-id <negocio> --public` |
+| Salud completa (pedidos trabados, cobros, riders, GPS, alertas, stock) | `ops-pulse.mjs --business-id <negocio>` |
+| Tenant QA cerrado | `qa-window.mjs status` |
+| Base después de migrar | `verify-cp-migrations.mjs` |
+| Carrera de la última unidad | `last-unit-race.mjs` |
+| Backup + restauración | `restore-drill.mjs --pg-bin <dir> --pooler-host <host>` |
+| Storage | `storage-inventory.mjs` |
+| Web en vivo y service worker (antes/después de un deploy) | `sw-live-check.mjs --phase seed\|upgrade\|fresh --profile <dir>` |
+| Aislamiento de entornos del Rider (en la PC con la firma) | `rider-env-matrix.mjs --build-allowed` |
+| Capacidad 30 usuarios | desde GitHub Actions: `CAPACITY_RUN_SHA` = commit de la rama `release` |

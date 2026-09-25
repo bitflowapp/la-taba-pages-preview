@@ -1,0 +1,130 @@
+{
+  "at": "2026-09-25T06:44:49.162Z",
+  "refs": {
+    "staging": "ucbtjcurawxjwjdvvcvj",
+    "cp": "tkanbadcglszlcyfjvpv",
+    "production": "wwcpogltfgzgkrlilbcd",
+    "demo": "yakhtrkukqlgzvxuvhzs",
+    "wrong": "abcdefghijklmnopqrst"
+  },
+  "cases": {
+    "STAGING_V3": {
+      "target": "staging",
+      "versionCode": 3,
+      "expected": "ALLOWED",
+      "builder": "n/a",
+      "builderVerdict": "NOT_RUN_ALLOWED",
+      "gradleVerdict": "ALLOWED",
+      "gradleReason": null,
+      "build": {
+        "status": 0,
+        "gate": null
+      },
+      "apk": {
+        "packageId": "com.lataba.rider.pilot",
+        "versionCode": 3,
+        "versionName": "0.1.2-canonical-pilot",
+        "certificate": "2dcc9b0a0cf022ebf59c500331103ee31cec9e9142d5431553131877948ec1aa",
+        "backendUrls": {
+          "staging": true,
+          "cp": false,
+          "production": false,
+          "demo": false,
+          "wrong": false
+        }
+      },
+      "apkVerdict": "PASS",
+      "verdict": "ALLOWED"
+    },
+    "STAGING_GT_V3": {
+      "target": "staging",
+      "versionCode": 4,
+      "expected": "BLOCKED",
+      "builder": "SIGNED_STAGING_MUST_STAY_BELOW_CONTROLLED_PRODUCTION",
+      "builderVerdict": "BLOCKED",
+      "gradleVerdict": "BLOCKED",
+      "gradleReason": "Signed Staging Rider must stay below every CONTROLLED_PRODUCTION versionCode",
+      "verdict": "BLOCKED"
+    },
+    "PILOT_CP_V4_CORRECT_REF": {
+      "target": "pilot",
+      "versionCode": 4,
+      "expected": "ALLOWED",
+      "builder": "n/a",
+      "builderVerdict": "NOT_RUN_ALLOWED",
+      "gradleVerdict": "ALLOWED",
+      "gradleReason": null,
+      "build": {
+        "status": 0,
+        "gate": null
+      },
+      "apk": {
+        "packageId": "com.lataba.rider.pilot",
+        "versionCode": 4,
+        "versionName": "0.1.3-canonical-pilot",
+        "certificate": "2dcc9b0a0cf022ebf59c500331103ee31cec9e9142d5431553131877948ec1aa",
+        "backendUrls": {
+          "staging": false,
+          "cp": true,
+          "production": false,
+          "demo": false,
+          "wrong": false
+        }
+      },
+      "apkVerdict": "PASS",
+      "verdict": "ALLOWED"
+    },
+    "PILOT_WRONG_REF": {
+      "target": "pilot",
+      "versionCode": 4,
+      "expected": "BLOCKED",
+      "builder": "PILOT_REF_MUST_BE_CONTROLLED_PRODUCTION",
+      "builderVerdict": "BLOCKED",
+      "gradleVerdict": "BLOCKED",
+      "gradleReason": "Signed PILOT Rider must target CONTROLLED_PRODUCTION",
+      "verdict": "BLOCKED"
+    },
+    "GENERAL_PRODUCTION_REF": {
+      "target": "pilot",
+      "versionCode": 4,
+      "expected": "BLOCKED",
+      "builder": "PILOT_BACKEND_REF_REQUIRED_AND_MUST_BE_ISOLATED",
+      "builderVerdict": "BLOCKED",
+      "gradleVerdict": "BLOCKED",
+      "gradleReason": "Rider backend must be a non-Production Supabase project",
+      "verdict": "BLOCKED"
+    },
+    "STAGING_REF_AS_PILOT": {
+      "target": "pilot",
+      "versionCode": 4,
+      "expected": "BLOCKED",
+      "builder": "PILOT_BACKEND_REF_REQUIRED_AND_MUST_BE_ISOLATED",
+      "builderVerdict": "BLOCKED",
+      "gradleVerdict": "BLOCKED",
+      "gradleReason": "Staging and PILOT Rider builds require distinct backends",
+      "verdict": "BLOCKED"
+    },
+    "DEMO_REF": {
+      "target": "pilot",
+      "versionCode": 4,
+      "expected": "BLOCKED",
+      "builder": "PILOT_BACKEND_REF_REQUIRED_AND_MUST_BE_ISOLATED",
+      "builderVerdict": "BLOCKED",
+      "gradleVerdict": "BLOCKED",
+      "gradleReason": "Rider backend must be a non-Production Supabase project",
+      "verdict": "BLOCKED"
+    },
+    "MISSING_TARGET": {
+      "target": null,
+      "versionCode": 4,
+      "expected": "BLOCKED",
+      "builder": "RIDER_TARGET_REQUIRED",
+      "builderVerdict": "BLOCKED",
+      "gradleVerdict": "BLOCKED",
+      "gradleReason": "Signed Rider needs an explicit RIDER_TARGET_MODE and RIDER_BACKEND_REF",
+      "verdict": "BLOCKED"
+    }
+  },
+  "RIDER_ENVIRONMENT_ISOLATION": "PASS",
+  "earlierRuns": "runs 1-4 failed for harness reasons (builder launched real builds for allowed cases; Windows file locks with clean/--rerun-tasks); run 1 exposed an APK with the wrong backend URL, fixed in 7d3bf84"
+}

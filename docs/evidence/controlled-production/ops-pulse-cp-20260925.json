@@ -1,0 +1,96 @@
+{
+  "afterMigration": {
+    "public": {
+      "at": "2026-09-25T05:47:14.112Z",
+      "target": "controlled-production",
+      "ref": "tkanbadcglszlcyfjvpv",
+      "mode": "public",
+      "windowHours": 24,
+      "checks": {
+        "scheduler": {
+          "healthy": true,
+          "ageSeconds": 14
+        },
+        "publicExposure": {
+          "foreignPublicTenants": 0
+        },
+        "tenants": {
+          "businessStatus": "closed",
+          "otherTenantsOpen": 0
+        },
+        "realtime": {
+          "status": "SUBSCRIBED",
+          "ms": 558
+        }
+      },
+      "status": "HEALTHY",
+      "attention": []
+    },
+    "full": {
+      "at": "2026-09-25T05:47:28.027Z",
+      "target": "controlled-production",
+      "ref": "tkanbadcglszlcyfjvpv",
+      "mode": "full",
+      "windowHours": 24,
+      "checks": {
+        "scheduler": {
+          "healthy": true,
+          "ageSeconds": 28
+        },
+        "publicExposure": {
+          "foreignPublicTenants": 0
+        },
+        "tenants": {
+          "businessStatus": "closed",
+          "otherTenantsOpen": 0
+        },
+        "realtime": {
+          "status": "SUBSCRIBED",
+          "ms": 297
+        },
+        "business": {
+          "status": "closed",
+          "ordering_enabled": false,
+          "is_active": true
+        },
+        "orders": {
+          "createdInWindow": 0,
+          "byStatus": {},
+          "stuck": [],
+          "unpaidDelivered": []
+        },
+        "manualPayments": {
+          "confirmed": 0,
+          "reversed": 0,
+          "cancellations": 0
+        },
+        "riders": {
+          "availableNow": 0,
+          "members": 0,
+          "activeDeliveries": 0,
+          "staleGps": []
+        },
+        "alerts": {
+          "open": 0,
+          "codes": []
+        },
+        "stock": {
+          "products": 0,
+          "published": 0,
+          "negative": 0,
+          "publishedOutOfStock": 0
+        }
+      },
+      "status": "HEALTHY",
+      "attention": []
+    }
+  },
+  "beforeMigration": {
+    "status": "LOOK",
+    "attention": [
+      "FOREIGN_TENANT_PUBLIC:1",
+      "OTHER_TENANT_OPEN:1"
+    ],
+    "at": "2026-09-25T05:22:46Z"
+  }
+}

@@ -1,0 +1,229 @@
+{
+  "at": "2026-09-25T06:22:36.786Z",
+  "ref": "tkanbadcglszlcyfjvpv",
+  "origin": "https://la-taba-commercial-pilot.pages.dev/",
+  "storage": [
+    {
+      "bucket": "fiscal-documents",
+      "public": false,
+      "objects": 0,
+      "bytes": 0,
+      "sample": []
+    }
+  ],
+  "catalog": {
+    "products": 8,
+    "catalogAssets": 8,
+    "referencedFiles": 16,
+    "rights": [
+      "LICENCIA_COMERCIAL"
+    ],
+    "withSourceUrl": 8,
+    "missingInRepo": [],
+    "repoHashMismatch": [],
+    "notInPublicManifest": [],
+    "notServedOrMismatch": []
+  },
+  "checks": {
+    "STORAGE_BUCKETS_INVENTORIED": "PASS",
+    "STORAGE_OBJECTS_WITHOUT_SOURCE": 0,
+    "CATALOG_FILES_IN_GIT_WITH_DB_HASH": "PASS",
+    "CATALOG_FILES_IN_PUBLIC_MANIFEST": "PASS",
+    "CATALOG_FILES_SERVED_IDENTICAL": "PASS"
+  },
+  "files": [
+    {
+      "file": "assets/products/paso-de-los-toros-pomelo-1500ml-07e30d4119649232-5ee73401ead32b21.webp",
+      "from": [
+        "products.image_url",
+        "catalog_assets.master_path"
+      ],
+      "inRepo": true,
+      "repoMatchesDb": true,
+      "inPublicManifest": true,
+      "served": 200,
+      "servedMatchesDb": true
+    },
+    {
+      "file": "assets/products/paso-de-los-toros-pomelo-1500ml-07e30d4119649232-thumb-2578710a66ec476a.webp",
+      "from": [
+        "products.image_thumbnail_url",
+        "catalog_assets.thumbnail_path"
+      ],
+      "inRepo": true,
+      "repoMatchesDb": true,
+      "inPublicManifest": true,
+      "served": 200,
+      "servedMatchesDb": true
+    },
+    {
+      "file": "assets/products/coca-cola-zero-lata-354ml-4d1955a80c87ab0e-87f477f474494b33.webp",
+      "from": [
+        "products.image_url",
+        "catalog_assets.master_path"
+      ],
+      "inRepo": true,
+      "repoMatchesDb": true,
+      "inPublicManifest": true,
+      "served": 200,
+      "servedMatchesDb": true
+    },
+    {
+      "file": "assets/products/coca-cola-zero-lata-354ml-4d1955a80c87ab0e-thumb-7816226aa02505f5.webp",
+      "from": [
+        "products.image_thumbnail_url",
+        "catalog_assets.thumbnail_path"
+      ],
+      "inRepo": true,
+      "repoMatchesDb": true,
+      "inPublicManifest": true,
+      "served": 200,
+      "servedMatchesDb": true
+    },
+    {
+      "file": "assets/products/aquarius-pera-1500ml-d8c1230b1227373f-2925d0553fe3f194.webp",
+      "from": [
+        "products.image_url",
+        "catalog_assets.master_path"
+      ],
+      "inRepo": true,
+      "repoMatchesDb": true,
+      "inPublicManifest": true,
+      "served": 200,
+      "servedMatchesDb": true
+    },
+    {
+      "file": "assets/products/aquarius-pera-1500ml-d8c1230b1227373f-thumb-0c540b9ca40aec2e.webp",
+      "from": [
+        "products.image_thumbnail_url",
+        "catalog_assets.thumbnail_path"
+      ],
+      "inRepo": true,
+      "repoMatchesDb": true,
+      "inPublicManifest": true,
+      "served": 200,
+      "servedMatchesDb": true
+    },
+    {
+      "file": "assets/products/gatorade-cool-blue-500ml-e3fcbd3e1e29bb61-f138bb4b00238c71.webp",
+      "from": [
+        "products.image_url",
+        "catalog_assets.master_path"
+      ],
+      "inRepo": true,
+      "repoMatchesDb": true,
+      "inPublicManifest": true,
+      "served": 200,
+      "servedMatchesDb": true
+    },
+    {
+      "file": "assets/products/gatorade-cool-blue-500ml-e3fcbd3e1e29bb61-thumb-b41adc6e858c3a90.webp",
+      "from": [
+        "products.image_thumbnail_url",
+        "catalog_assets.thumbnail_path"
+      ],
+      "inRepo": true,
+      "repoMatchesDb": true,
+      "inPublicManifest": true,
+      "served": 200,
+      "servedMatchesDb": true
+    },
+    {
+      "file": "assets/products/gatorade-manzana-1250ml-64efd055975ef241-67bbe43a8a884939.webp",
+      "from": [
+        "products.image_url",
+        "catalog_assets.master_path"
+      ],
+      "inRepo": true,
+      "repoMatchesDb": true,
+      "inPublicManifest": true,
+      "served": 200,
+      "servedMatchesDb": true
+    },
+    {
+      "file": "assets/products/gatorade-manzana-1250ml-64efd055975ef241-thumb-b33a3ac22178a69a.webp",
+      "from": [
+        "products.image_thumbnail_url",
+        "catalog_assets.thumbnail_path"
+      ],
+      "inRepo": true,
+      "repoMatchesDb": true,
+      "inPublicManifest": true,
+      "served": 200,
+      "servedMatchesDb": true
+    },
+    {
+      "file": "assets/products/aquarius-pomelo-2250ml-8de7c8de5e780020-f788300784447191.webp",
+      "from": [
+        "products.image_url",
+        "catalog_assets.master_path"
+      ],
+      "inRepo": true,
+      "repoMatchesDb": true,
+      "inPublicManifest": true,
+      "served": 200,
+      "servedMatchesDb": true
+    },
+    {
+      "file": "assets/products/aquarius-pomelo-2250ml-8de7c8de5e780020-thumb-bd47cfae363889a1.webp",
+      "from": [
+        "products.image_thumbnail_url",
+        "catalog_assets.thumbnail_path"
+      ],
+      "inRepo": true,
+      "repoMatchesDb": true,
+      "inPublicManifest": true,
+      "served": 200,
+      "servedMatchesDb": true
+    },
+    {
+      "file": "assets/products/monster-green-zero-473ml-c238e9bf28582e15-36ea5aaa51d7906e.webp",
+      "from": [
+        "products.image_url",
+        "catalog_assets.master_path"
+      ],
+      "inRepo": true,
+      "repoMatchesDb": true,
+      "inPublicManifest": true,
+      "served": 200,
+      "servedMatchesDb": true
+    },
+    {
+      "file": "assets/products/monster-green-zero-473ml-c238e9bf28582e15-thumb-9ee7f5db50e33ce1.webp",
+      "from": [
+        "products.image_thumbnail_url",
+        "catalog_assets.thumbnail_path"
+      ],
+      "inRepo": true,
+      "repoMatchesDb": true,
+      "inPublicManifest": true,
+      "served": 200,
+      "servedMatchesDb": true
+    },
+    {
+      "file": "assets/products/coca-cola-original-lata-354ml-3c2cefd7fe4bd597-f2cf7dff4b87047d.webp",
+      "from": [
+        "products.image_url",
+        "catalog_assets.master_path"
+      ],
+      "inRepo": true,
+      "repoMatchesDb": true,
+      "inPublicManifest": true,
+      "served": 200,
+      "servedMatchesDb": true
+    },
+    {
+      "file": "assets/products/coca-cola-original-lata-354ml-3c2cefd7fe4bd597-thumb-cd767440cdb0ff40.webp",
+      "from": [
+        "products.image_thumbnail_url",
+        "catalog_assets.thumbnail_path"
+      ],
+      "inRepo": true,
+      "repoMatchesDb": true,
+      "inPublicManifest": true,
+      "served": 200,
+      "servedMatchesDb": true
+    }
+  ],
+  "STORAGE_BACKUP_STRATEGY": "PASS"
+}

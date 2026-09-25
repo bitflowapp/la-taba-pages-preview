@@ -5,6 +5,8 @@
 // is stock sane. No PII, tokens or delivery codes are printed.
 //
 //   node scripts/controlled-production/ops-pulse.mjs --target controlled-production --business-id <uuid> [--hours 24]
+//   ... --public   only the publishable key (scheduler, realtime, public exposure,
+//                  other tenants open): runs from CI or the cloud without secrets.
 //
 // Exit 0 = healthy, 1 = something to look at, 2 = could not ask.
 import assert from 'node:assert/strict';
@@ -40,24 +42,69 @@ export function classifyOrders(rows, now = Date.now()) {
   return { byStatus, stuck, unpaidDelivered };
 }
 
+// Checks that need only the publishable key: runnable from any machine, CI or
+// the cloud without secrets. Nothing private is read or printed.
+export async function publicChecks({ anon, businessId, check, warn, realtimeTimeoutMs = 10_000 }) {
+  await check('scheduler', async () => {
+    const { data, error } = await anon.rpc('scheduler_heartbeat');
+    if (error) throw Error(error.code || error.message);
+    if (!data?.healthy) warn.push(`SCHEDULER_STALE:${data?.age_seconds ?? 'never'}`);
+    return { healthy: Boolean(data?.healthy), ageSeconds: data?.age_seconds ?? null };
+  });
+  // Only the real business may have a public catalog; an open QA tenant takes
+  // anonymous orders and exposes QA products.
+  await check('publicExposure', async () => {
+    const foreign = foreignPublicTenants(await publicCatalogTenants(anon), businessId);
+    if (foreign.length) warn.push(`FOREIGN_TENANT_PUBLIC:${foreign.length}`);
+    return { foreignPublicTenants: foreign.length };
+  });
+  await check('tenants', async () => {
+    const { data, error } = await anon.from('businesses').select('id,status').limit(100);
+    if (error) throw Error(error.code || error.message);
+    const otherOpen = (data || []).filter((row) => row.id !== businessId && row.status !== 'closed').length;
+    if (otherOpen) warn.push(`OTHER_TENANT_OPEN:${otherOpen}`);
+    const own = (data || []).find((row) => row.id === businessId);
+    return { businessStatus: own?.status ?? 'not_visible', otherTenantsOpen: otherOpen };
+  });
+  await check('realtime', async () => {
+    const started = Date.now();
+    const channel = anon.channel(`ops-pulse-${Math.random().toString(36).slice(2, 10)}`);
+    const status = await new Promise((resolve) => {
+      const timer = setTimeout(() => resolve('TIMED_OUT'), realtimeTimeoutMs);
+      channel.subscribe((value) => {
+        if (['SUBSCRIBED', 'CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(value)) { clearTimeout(timer); resolve(value); }
+      });
+    });
+    await anon.removeChannel(channel).catch(() => {});
+    anon.realtime?.disconnect?.();
+    if (status !== 'SUBSCRIBED') warn.push(`REALTIME_UNAVAILABLE:${status}`);
+    return { status, ms: Date.now() - started };
+  });
+}
+
 async function main(args) {
   const opt = (name, fallback = '') => { const i = args.indexOf(name); return i < 0 ? fallback : args[i + 1]; };
   const target = opt('--target');
   const businessId = opt('--business-id');
   const hours = Number(opt('--hours', '24'));
   assert.match(businessId, /^[0-9a-f-]{36}$/, 'BUSINESS_ID_REQUIRED');
+  const publicOnly = args.includes('--public');
   let keys;
-  try { keys = await loadTargetKeys(target); } catch (error) {
+  try { keys = await loadTargetKeys(target, { requireSecret: !publicOnly }); } catch (error) {
     console.error(`OPS_PULSE_UNREACHABLE:${error.message}`); process.exit(2);
   }
-  const db = createClient(keys.url, keys.secret, { auth: { persistSession: false, autoRefreshToken: false } });
+  const options = { auth: { persistSession: false, autoRefreshToken: false } };
+  const anon = createClient(keys.url, keys.publishable, options);
+  const db = publicOnly ? null : createClient(keys.url, keys.secret, options);
   const since = new Date(Date.now() - hours * 3600_000).toISOString();
-  const report = { at: new Date().toISOString(), target, ref: keys.ref, windowHours: hours, checks: {} };
+  const report = { at: new Date().toISOString(), target, ref: keys.ref, mode: publicOnly ? 'public' : 'full', windowHours: hours, checks: {} };
   const warn = [];
   const check = async (name, fn) => {
     try { report.checks[name] = await fn(); } catch (error) { report.checks[name] = { error: error.message }; warn.push(`${name}:UNKNOWN`); }
   };
   const q = async (promise) => { const { data, error } = await promise; if (error) throw Error(error.code || error.message); return data; };
+  await publicChecks({ anon, businessId, check, warn });
+  if (publicOnly) return finish(report, warn);
 
   await check('business', async () => {
     const row = await q(db.from('businesses').select('status,ordering_enabled,is_active').eq('id', businessId).single());
@@ -110,14 +157,10 @@ async function main(args) {
     return { products: rows.length, published: rows.filter((row) => row.available && row.is_verified && row.is_active).length,
       negative, publishedOutOfStock: publishedOut };
   });
-  // Anonymous view (publishable key): no tenant other than this business may
-  // have a public catalog; an open QA tenant is noise orders waiting to happen.
-  await check('publicExposure', async () => {
-    const anon = createClient(keys.url, keys.publishable, { auth: { persistSession: false, autoRefreshToken: false } });
-    const foreign = foreignPublicTenants(await publicCatalogTenants(anon), businessId);
-    if (foreign.length) warn.push(`FOREIGN_TENANT_PUBLIC:${foreign.length}`);
-    return { foreignPublicTenants: foreign.length };
-  });
+  finish(report, warn);
+}
+
+function finish(report, warn) {
   report.status = warn.length ? 'LOOK' : 'HEALTHY';
   report.attention = warn;
   console.log(JSON.stringify(report, null, 2));

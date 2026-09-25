@@ -153,6 +153,7 @@ en lugar de `--operator` y queda auditado por la RPC de identidad.
 
 | Situación | Qué hacer |
 |---|---|
+| **Chequeo rápido sin secretos** | `TABA_QA_PROJECT_REF=<ref> TABA_QA_PUBLISHABLE_KEY=<clave publicable> node scripts/controlled-production/ops-pulse.mjs --target controlled-production --business-id <negocio> --public` (scheduler, Realtime, catálogo público de otro tenant, otro tenant abierto). Exit 0 sano, 1 mirar, 2 backend inaccesible o incorrecto |
 | **Pedido trabado** | `node scripts/controlled-production/ops-pulse.mjs --target controlled-production --business-id <negocio>` lista los trabados por estado y minutos. Panel → **Actualizar** antes de repetir una acción. Si sigue en el local: cancelar desde la tarjeta con motivo (el stock vuelve una sola vez). Si ya salió: coordinar con rider y cliente; nunca poner `delivered` por SQL |
 | **Cancelación** | Desde la tarjeta, con motivo. Si hay cobro registrado: primero **Registrar devolución realizada** |
 | **Rider offline** | Rider sin red no transmite. Que vuelva a abrir la app y marque Disponible. La disponibilidad vence a los 90 s sin señal; reofrecer a otro rider si no vuelve |
@@ -160,7 +161,8 @@ en lugar de `--operator` y queda auditado por la RPC de identidad.
 | **Cliente no ve el estado** | Recargar la web (el service worker trae la versión nueva sola). El seguimiento se consulta cada 5 s |
 | **Acceso comprometido** | `disable` (§2.6) y luego `reset-access` |
 | **Pedido de alguien no invitado** | Rechazarlo desde el Panel; si se repite, pausar pedidos (§8) |
-| **Negocio QA abierto** (`ops-pulse` marca `FOREIGN_TENANT_PUBLIC`, o el smoke falla con `PUBLIC_CATALOG_OF_ANOTHER_TENANT_VISIBLE`) | `node scripts/controlled-production/qa-window.mjs close --target controlled-production` y confirmar con `... qa-window.mjs status --target controlled-production` (`PASS`). El negocio QA sólo se abre durante una corrida QA y la corrida lo cierra al terminar, aunque falle |
+| **Negocio QA abierto** (`ops-pulse` marca `FOREIGN_TENANT_PUBLIC` u `OTHER_TENANT_OPEN`, o el smoke falla con `PUBLIC_CATALOG_OF_ANOTHER_TENANT_VISIBLE`) | Con la migración `20260925090000` aplicada el servidor lo cierra solo al minuto de vencer la ventana (máx. 60 min) y, vencida, su catálogo ya no es público aunque siga abierto. Para cerrarlo ya: `node scripts/controlled-production/qa-window.mjs close --target controlled-production` y confirmar con `... qa-window.mjs status --target controlled-production` (`PASS`) |
+| **Scheduler / Realtime** (`SCHEDULER_STALE`, `REALTIME_UNAVAILABLE`) | Scheduler: los barridos (alertas, reservas vencidas, ventana QA) no corren; pausar pedidos (§8) si pasa de 10 min y revisar `cron.job` en Supabase. Realtime: el Panel igual refresca cada 5 s; si persiste, avisar a riders y revisar el estado de Supabase |
 
 Severidad y reglas de ola:
 - **P0** (pérdida o duplicado de pedido, cobro mal registrado, stock corrupto,

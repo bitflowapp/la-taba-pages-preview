@@ -49,6 +49,36 @@ Operación: `CONTROLLED-PRODUCTION-RUNBOOK.md`. Evidencia en `docs/evidence/cont
 | Health | `ops-pulse` HEALTHY en negocio real y QA |
 | Secretos | repo, historia de la rama, evidencias y APK: PASS |
 
+## Verificación independiente desde la nube (2026-09-25)
+
+Sin credenciales de Supabase ni de QA: sólo la clave publicable, la web
+pública y el repositorio. Rama `claude/taba-controlled-production-84ldg9` (PR #98).
+
+| Frente | Resultado |
+|---|---|
+| Tests locales en `73070e2` | `npm run check` PASS; `npm test` 2580 pass, 0 fail, 1 skip |
+| Anon sobre 91 tablas | 84 denegadas (401/42501), 5 con 0 filas (`orders`, `order_items`, combos), `products` **con filas** → hallazgo 1 |
+| Negocio real (`commerce_availability`) | cerrado, sin envíos, `ordering_ready=false` |
+| Scheduler (`scheduler_heartbeat`) | `healthy`, última corrida a 13 s |
+| Auth | registro anónimo para clientes, confirmación de email obligatoria, sin teléfono |
+| Web pública (Chromium desktop y Pixel 7) | SW activo y controlando, cache `v117-controlled-production`, 0 productos con aviso honesto, sin Mercado Pago, login del Panel, 0 errores JS |
+| Headers | `runtime-config.js` `no-store`; HTML/JS/SW `max-age=0, must-revalidate`; `X-Frame-Options: DENY` |
+| Actualización de SW (`pwa-update-lifecycle`, Chromium) | 20/20 |
+| Secret scan (árbol, historia de la rama, frontend) | PASS |
+
+### Hallazgos y correcciones
+
+| Sev. | Hallazgo | Corrección |
+|---|---|---|
+| P2 | El negocio **QA Control** quedó abierto de forma permanente en la base de CP: la RLS pública exponía sus 8 productos QA a cualquiera con la clave publicable y los RPC aceptaban pedidos anónimos para él. La web no lo mostraba | `qa-window.mjs`: los harness abren el negocio QA sólo durante la corrida y lo cierran en `finally`. El smoke público (`PUBLIC_CATALOG_OF_ANOTHER_TENANT_VISIBLE`) y `ops-pulse` (`FOREIGN_TENANT_PUBLIC`) lo detectan. Verificado: el smoke nuevo falla hoy contra CP, como corresponde |
+| P1 (latente) | Todo build Rider firmado comparte paquete y certificado con el Rider de CP. Staging era el target por defecto y un build firmado de Staging con versionCode ≥ 5 se instalaba como actualización y pasaba al rider a Staging | Gradle y `build-rider-pilot`: PILOT firmado sólo contra el ref de CP del manifiesto; un Staging firmado queda en versionCode ≤ 3 (Android rechaza el downgrade) |
+| Falso PASS posible | `stock-edges` en CP podía contar como “rechazado por stock” un rechazo por negocio cerrado | Corre con la ventana QA abierta |
+
+**Acción del operador (una vez, PC con credenciales QA):**
+`node scripts/controlled-production/qa-window.mjs close --target controlled-production`
+y después `... status` tiene que dar `PASS`. Hasta entonces el próximo deploy
+de CP falla en el smoke, a propósito.
+
 ## Rollback
 
 PASS (run 36068822992): con A `70dde12` vivo se publicó B `4378ed2`; smoke

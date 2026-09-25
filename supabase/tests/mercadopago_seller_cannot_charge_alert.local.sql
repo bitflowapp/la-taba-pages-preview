@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(8);
+select plan(9);
 insert into auth.users(id,email) values('91000000-0000-4000-8000-0000000000b1','seller-alert-fixture@example.invalid');
 insert into public.businesses(id,name,slug,status,is_active,currency_code,pickup_enabled,delivery_enabled,
   ordering_verified,ordering_verified_at,ordering_verified_by,ordering_enabled)
@@ -36,9 +36,16 @@ select is((select severity from seller_alert),'ACTION_REQUIRED','it asks the bus
 select ok((select not (evidence ? 'seller_id') and not (evidence ? 'collector_id') and evidence::text !~* 'token|encrypted' from seller_alert),
   'the evidence carries no account id and no credential');
 
+-- Disconnecting from the Panel also turns Mercado Pago off (mp_disconnect):
+-- nothing is left to warn about.
 select public.mp_disconnect('92000000-0000-4000-8000-0000000000b1','test');
 select public.reconcile_operational_alerts_for_business('92000000-0000-4000-8000-0000000000b1');
-select is((select connection_status from seller_alert),'disconnected','a disconnected seller keeps it open');
+select is((select count(*)::integer from seller_alert),0,'disconnecting from the Panel turns Mercado Pago off and clears it');
+
+-- Someone turns it back on without reconnecting the account.
+update public.business_payment_settings set enabled=true where business_id='92000000-0000-4000-8000-0000000000b1';
+select public.reconcile_operational_alerts_for_business('92000000-0000-4000-8000-0000000000b1');
+select is((select connection_status from seller_alert),'disconnected','turned back on with a disconnected seller raises it');
 
 update public.business_payment_settings set enabled=false where business_id='92000000-0000-4000-8000-0000000000b1';
 select public.reconcile_operational_alerts_for_business('92000000-0000-4000-8000-0000000000b1');

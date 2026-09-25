@@ -24,6 +24,15 @@ const versionNameFlag=process.argv.indexOf('--version-name');
 const versionName=versionNameFlag<0?'0.1.0-canonical':process.argv[versionNameFlag+1];
 if(!/^[0-9]+\.[0-9]+\.[0-9]+-canonical$/.test(versionName))
  throw Error('INVALID_PILOT_VERSION_NAME');
+// Every signed build shares the package and certificate of the CONTROLLED_PRODUCTION
+// Rider, so a signed build is an update candidate for riders in production:
+// PILOT is pinned to the manifest's backend, and a signed Staging QA build must
+// stay below every CP versionCode (Android refuses the downgrade).
+const cpManifest=JSON.parse(readFileSync(path.resolve('deploy/controlled-production.json'),'utf8'));
+if(target==='pilot'&&backendRef!==cpManifest.rider?.backendRef)
+ throw Error('PILOT_REF_MUST_BE_CONTROLLED_PRODUCTION');
+if(target==='staging'&&versionCode>3)
+ throw Error('SIGNED_STAGING_MUST_STAY_BELOW_CONTROLLED_PRODUCTION');
 const androidTest=process.argv.includes('--android-test');
 const password=leerSecreto('RIDER PILOT SIGNING PASSWORD')?.secreto;
 const backup=leerSecreto('RIDER PILOT KEYSTORE BACKUP')?.secreto;

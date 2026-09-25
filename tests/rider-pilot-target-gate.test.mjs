@@ -43,3 +43,22 @@ test('compiled Rider checks its backend ref and displays its target mode', () =>
   assert.match(activity, /BuildConfig\.TARGET_MODE\.uppercase\(\)/);
   assert.match(builderSource, /PILOT_ANDROID_TEST_SIGNER_MISMATCH/);
 });
+
+test('signed PILOT is pinned to the CONTROLLED_PRODUCTION backend of the manifest', () => {
+  const result = run('--target', 'pilot', '--project-ref', 'abcdefghijklmnopqrst',
+    '--version-code', '5', '--version-name', '0.1.4-canonical');
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /PILOT_REF_MUST_BE_CONTROLLED_PRODUCTION/);
+  const manifest = JSON.parse(readFileSync('deploy/controlled-production.json', 'utf8'));
+  const gradle = readFileSync('apps/rider-android/app/build.gradle.kts', 'utf8');
+  assert.match(gradle, new RegExp(`val controlledProductionRef = "${manifest.rider.backendRef}"`));
+  assert.match(gradle, /Signed PILOT Rider must target CONTROLLED_PRODUCTION/);
+});
+
+test('a signed Staging build can never update a CONTROLLED_PRODUCTION install', () => {
+  const result = run('--target', 'staging', '--version-code', '5', '--version-name', '0.1.4-canonical');
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /SIGNED_STAGING_MUST_STAY_BELOW_CONTROLLED_PRODUCTION/);
+  const gradle = readFileSync('apps/rider-android/app/build.gradle.kts', 'utf8');
+  assert.match(gradle, /targetMode != "staging" \|\| pilotVersionCode <= 3/);
+});

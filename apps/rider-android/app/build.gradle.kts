@@ -28,6 +28,16 @@ val pilotVersionCode = versionCodeOverride?.toIntOrNull() ?: 1
 require(versionCodeOverride == null || (versionCodeOverride.toIntOrNull() != null && pilotVersionCode in 1..99999)) {
     "riderPilotVersionCode must be an integer between 1 and 99999"
 }
+// Signed builds share package and certificate with the CONTROLLED_PRODUCTION
+// Rider: PILOT is pinned to that backend and a signed Staging build must stay
+// below every CP versionCode, so it can never update a production install.
+val controlledProductionRef = "tkanbadcglszlcyfjvpv"
+require(pilotStore == null || targetMode != "pilot" || backendRef == controlledProductionRef) {
+    "Signed PILOT Rider must target CONTROLLED_PRODUCTION"
+}
+require(pilotStore == null || targetMode != "staging" || pilotVersionCode <= 3) {
+    "Signed Staging Rider must stay below every CONTROLLED_PRODUCTION versionCode"
+}
 val pilotVersionName = providers.gradleProperty("riderPilotVersionName").orNull ?: "0.1.0-canonical"
 require(pilotVersionName.matches(Regex("[0-9]+\\.[0-9]+\\.[0-9]+-canonical"))) {
     "riderPilotVersionName must be a numeric canonical version"

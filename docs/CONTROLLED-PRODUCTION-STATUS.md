@@ -11,7 +11,7 @@ Rama de despliegue `release/taba-controlled-production`; PR **#98** (reemplaza a
 |---|---|
 | PRODUCTION_TECH_READY | **YES** — las dos migraciones de #98 están aplicadas y certificadas en CP, CI exacto verde, carga 30, integridad, RLS, backup + restauración real, E2E técnico y rollback (ver tablero). Única compuerta física pendiente: Rider en el Moto (no conectado hoy) |
 | COMMERCIAL_OPEN_READY | **NO** — `CATALOG_APPROVAL` (Walter), alta/configuración del dueño, y el gate físico del Rider (`PENDING_DEVICE`) |
-| ONLINE_PAYMENTS_READY | **NO** — Mercado Pago `WAITING_SUPPORT` (ticket WCS-51579). Cobro inicial: **MANUAL** |
+| ONLINE_PAYMENTS_READY | **NO** — Mercado Pago `WAITING_SUPPORT` (ticket WCS-51579). Cobro inicial: **MANUAL**. Cierre técnico del 2026-09-25 (APP_USR directo aprobado; arquitectura OAuth bloqueada en el proveedor; CP sin Mercado Pago configurado): [MERCADOPAGO_FINALIZATION_2026-09-25](MERCADOPAGO_FINALIZATION_2026-09-25.md) |
 
 Historia: el 24 se declaró YES; el 25 la verificación desde la nube lo bajó a
 CODE_READY por dos P1 latentes; el 25 se aplicaron y certificaron en CP.

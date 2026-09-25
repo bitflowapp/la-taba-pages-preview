@@ -31,7 +31,7 @@
  *   node scripts/mercadopago/certificacion-app-usr-directo/certificar.mjs reembolsar
  */
 import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -140,6 +140,19 @@ async function edge(nombre, jwt, publicable, cuerpo) {
     body: JSON.stringify(cuerpo), signal: AbortSignal.timeout(45_000),
   });
   return { status: r.status, cuerpo: await r.json().catch(() => null) };
+}
+
+/**
+ * Prueba manual de control: el init_point se abre en una ventana de incógnito
+ * de Chrome NORMAL, sin automatización ni sesión previa. La persona entra con el
+ * comprador de prueba (usuario y contraseña de «Cuentas de prueba») y paga con la
+ * tarjeta APRO. El script no toca esa ventana.
+ */
+function abrirIncognito(initPoint) {
+  const url = new URL(initPoint);
+  if (url.protocol !== 'https:' || url.hostname !== 'www.mercadopago.com.ar') falla('INIT_POINT_INVALIDO_PARA_ABRIR');
+  if (process.platform !== 'win32') falla('SOLO_WINDOWS');
+  spawn('cmd.exe', ['/d', '/c', 'start', '""', 'chrome', '--incognito', '--new-window', url.toString()], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
 }
 
 function construirPreferencia(preparation) {
@@ -286,6 +299,11 @@ async function preparar({ nuevo }) {
     estado_local: ESTADO,
   };
   console.log(JSON.stringify(resumen, null, 2));
+  if (process.argv.includes('--abrir-incognito')) {
+    abrirIncognito(pref.init_point);
+    estado.control_manual = { abierto: ahora(), modo: 'manual' };
+    guardarEstado(estado);
+  }
 }
 
 /**
@@ -349,6 +367,11 @@ async function prepararOAuth({ nuevo }) {
     payment_intent_id: intent.id, expires_at: estado.expires_at, creada_utc: estado.preferencia.creada.utc,
     creada_argentina: estado.preferencia.creada.argentina, estado_local: ESTADO,
   }, null, 2));
+  if (process.argv.includes('--abrir-incognito')) {
+    abrirIncognito(estado.preferencia.init_point);
+    estado.control_manual = { abierto: ahora(), modo: 'manual' };
+    guardarEstado(estado);
+  }
 }
 
 async function verificar() {
@@ -470,7 +493,7 @@ async function reembolsar() {
 const [accion, ...resto] = process.argv.slice(2);
 const acciones = { preparar: () => preparar({ nuevo: resto.includes('--nuevo') }), 'preparar-oauth': () => prepararOAuth({ nuevo: resto.includes('--nuevo') }), verificar, volver, reembolsar };
 if (!acciones[accion]) {
-  console.error('uso: certificar.mjs preparar [--nuevo] | preparar-oauth --flujo=oauth [--nuevo] | verificar | volver | reembolsar   (+ --flujo=oauth)');
+  console.error('uso: certificar.mjs preparar [--nuevo] [--abrir-incognito] | preparar-oauth --flujo=oauth [--nuevo] [--abrir-incognito] | verificar | volver | reembolsar   (+ --flujo=oauth)');
   process.exit(2);
 }
 acciones[accion]().catch((error) => {

@@ -2,33 +2,44 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
-  QA_CONTROL_BUSINESS, REAL_BUSINESS, foreignPublicTenants, openQaWindow, publicCatalogTenants,
+  QA_CONTROL_BUSINESS, QA_WINDOW_MINUTES, REAL_BUSINESS, foreignPublicTenants, openQaWindow, publicCatalogTenants,
 } from '../scripts/controlled-production/qa-window.mjs';
 
-function fakeOwner(status) {
+// Fake owner session. `deployed: false` answers PGRST202 for the windowed RPCs
+// like a CP database without 20260925090000.
+function fakeOwner(status, { deployed = true } = {}) {
   const calls = [];
-  const state = { status };
+  const state = { status, until: null };
   return {
     calls,
     state,
     from: () => ({ select: () => ({ eq: () => ({ single: async () => ({ data: { status: state.status }, error: null }) }) }) }),
     rpc: async (name, args) => {
-      calls.push([name, args.p_status]);
+      calls.push([name, args.p_status ?? args.p_minutes ?? null]);
+      if (!deployed && name !== 'set_business_open_state') return { data: null, error: { code: 'PGRST202' } };
+      if (name === 'open_qa_window') {
+        state.status = 'open'; state.until = `+${args.p_minutes}m`;
+        return { data: { ok: true, status: 'open', qa_window_until: state.until }, error: null };
+      }
+      if (name === 'close_qa_window') { state.status = 'closed'; state.until = null; return { data: { ok: true, status: 'closed' }, error: null }; }
       state.status = args.p_status;
       return { data: { ok: true, status: args.p_status }, error: null };
     },
   };
 }
 
-test('QA window opens a closed QA tenant and always leaves it closed', async () => {
+test('QA window opens with a server-enforced expiry and always leaves the tenant closed', async () => {
   const owner = fakeOwner('closed');
   const window = await openQaWindow(owner, QA_CONTROL_BUSINESS);
   assert.equal(window.previous, 'closed');
+  assert.equal(window.enforced, true);
   assert.equal(owner.state.status, 'open');
+  assert.equal(owner.state.until, `+${QA_WINDOW_MINUTES}m`);
+  assert.ok(QA_WINDOW_MINUTES <= 60, 'the server caps the window at 60 minutes');
   await window.close();
   await window.close();
   assert.equal(owner.state.status, 'closed');
-  assert.deepEqual(owner.calls, [['set_business_open_state', 'open'], ['set_business_open_state', 'closed']]);
+  assert.deepEqual(owner.calls, [['open_qa_window', QA_WINDOW_MINUTES], ['close_qa_window', null]]);
 });
 
 test('QA window closes a QA tenant that a crashed run left open', async () => {
@@ -37,7 +48,17 @@ test('QA window closes a QA tenant that a crashed run left open', async () => {
   assert.equal(window.previous, 'open');
   await window.close();
   assert.equal(owner.state.status, 'closed');
-  assert.deepEqual(owner.calls, [['set_business_open_state', 'closed']]);
+});
+
+test('QA window still opens and closes on a database without the windowed RPCs', async () => {
+  const owner = fakeOwner('closed', { deployed: false });
+  const window = await openQaWindow(owner, QA_CONTROL_BUSINESS);
+  assert.equal(window.enforced, false);
+  assert.equal(owner.state.status, 'open');
+  await window.close();
+  assert.equal(owner.state.status, 'closed');
+  assert.deepEqual(owner.calls.map(([name, arg]) => `${name}:${arg}`), [
+    `open_qa_window:${QA_WINDOW_MINUTES}`, 'set_business_open_state:open', 'close_qa_window:null', 'set_business_open_state:closed']);
 });
 
 test('QA window never touches the real business', async () => {

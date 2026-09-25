@@ -138,15 +138,15 @@ try {
       'mercadopago_clean_business.local.sql','fiscal_document_closure_test.sql','production_operations_control_plane_test.sql',
       'durable_offline_packing_test.sql','public_tracking_gps_quality_test.sql','business_timezone_windows_test.sql',
       'horario_24x7_test.sql','alta_propuesta_comercial_test.sql','production_least_privilege_test.sql',
-      'business_self_delivery_test.sql'];
+      'business_self_delivery_test.sql','controlled_production_qa_window_test.sql'];
     for(const name of canonicalTests){
       const output=docker(['exec','-i',container,'psql','-h','/tmp','-U','postgres','-d','postgres','-X','-qAt','-v','ON_ERROR_STOP=1'],
         Buffer.from('set search_path=public,extensions;\n'+fs.readFileSync(path.join(ROOT,'supabase/tests',name),'utf8'))).toString();
       assert.doesNotMatch(output,/^not ok\b/m,name);assert.match(output,/^1\.\.[0-9]+$/m,name);
       assertions+=Number(/^1\.\.([0-9]+)$/m.exec(output)[1]);
     }
-    assert.equal(assertions,344);
-    console.log('CANONICAL_PGTAP: 250 + 44 least-privilege + 50 reparto-propio assertions PASS');
+    assert.equal(assertions,376);
+    console.log('CANONICAL_PGTAP: 250 + 44 least-privilege + 50 reparto-propio + 32 ventana QA/columnas privadas assertions PASS');
 
     // Drill the exact compensating rollback in the same isolated schema where
     // the forward migration and its pgTAP contract just passed. The first run

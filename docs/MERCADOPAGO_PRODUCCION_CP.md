@@ -9,7 +9,7 @@ El reporte técnico de Staging está en `docs/MERCADOPAGO_FINALIZATION_2026-09-2
 
 | | |
 |---|---|
-| `ONLINE_PAYMENTS_PRODUCTION_READY` | **NO**: faltan H1–H3 (§3), que son de personas |
+| `ONLINE_PAYMENTS_PRODUCTION_READY` | **NO**: faltan H1–H3 (§3), que son de personas. El backend de CP ya tiene las migraciones y las nueve funciones desplegadas (release `0bc9318`); cerradas hasta H2 |
 | `REAL_PAYMENT_E2E` | **NO EJECUTADO**: requiere H1–H5 y el negocio real no tiene productos |
 | Código y pruebas sin dinero | listos (§6) |
 | Arquitectura | marketplace: cada negocio conecta **su** cuenta por OAuth y la preferencia la firma el token de **ese** vendedor |
@@ -83,6 +83,26 @@ Después, el worker:
 node scripts/mercadopago/sincronizar-worker-hmac.mjs --target=controlled-production --apply
 ```
 
+**H2b. Cobros online en la web de CP.** La web de CP se construye sólo con
+cobro manual (`deploy/controlled-production.json`: `"manualPaymentOnly": true`).
+En ese modo el Panel no ofrece conectar Mercado Pago. Para habilitarlo, en ese
+mismo archivo:
+
+```json
+"manualPaymentOnly": false,
+"onlinePayments": { "provider": "mercadopago-oauth", "runbook": "docs/MERCADOPAGO_PRODUCCION_CP.md",
+  "approvedBy": "<quién decide>", "approvedAt": "AAAA-MM-DD" }
+```
+
+Después va por el camino de siempre: PR a `release/taba-controlled-production`,
+`CP_DEPLOY_SHA` y deploy.
+
+El empaquetado sondea el backend sin credenciales. Se niega
+(`PILOT_ONLINE_PAYMENTS_BACKEND_NOT_CONFIGURED`) mientras el webhook no rechace
+lo que no está firmado (401) o el checkout no acepte el origen de CP (204). Así,
+la web nunca ofrece conectar contra funciones cerradas. Medido el 2026-09-25:
+CP respondía 503/403 (no listo) y Staging 401/204 (listo).
+
 **H3. Walter conecta su cuenta.** Desde el Panel de CP: Mercado Pago →
 Conectar. El consentimiento, la 2FA o la biometría ocurren en Mercado Pago; no
 hay forma ni intención de saltearlos. Queda exactamente una conexión
@@ -136,6 +156,22 @@ Si aparece un P0 financiero, Mercado Pago del negocio se apaga en el acto
 - token expuesto;
 - binding incorrecto.
 
+## 4.1 Rollout de cobros online
+
+Mercado Pago se enciende para **un** negocio (`cobro-negocio.mjs encender`) y
+el cobro manual sigue disponible. Las etapas se miden en clientes que pagaron
+online, no en tiempo. Ningún número vive en el código: el interruptor es por
+negocio y el corte lo decide quien opera, con el pulso.
+
+| Etapa | Clientes | Para pasar a la siguiente |
+|---|---|---|
+| 1 | 5 | ningún P0 ni P1 financiero; el pulso `mercadopago` sin avisos; cada pago con webhook firmado, un pedido y un movimiento de stock |
+| 2 | 15 | lo mismo, y los reembolsos que hayan ocurrido conciliados |
+| 3 | 30 | lo mismo; la capacidad de 30 ya está certificada para CP (`controlled-capacity.yml`) |
+
+Ante cualquier P0 (§4): `apagar` en el acto, conciliar cada pago afectado con
+Mercado Pago y no volver a encender sin la causa corregida.
+
 ## 5. Observabilidad
 
 - `node scripts/controlled-production/ops-pulse.mjs --target controlled-production --business-id <uuid>`: la sección `mercadopago` levanta estas señales:
@@ -175,3 +211,26 @@ Si aparece un P0 financiero, Mercado Pago del negocio se apaga en el acto
 - **Seguridad OAuth y reconexión** (Staging): 34/34 y 16/16.
 - **Aislamiento cobro manual / Mercado Pago**: pgTAP 5.
 - **Stock**: cada sesión de prueba del 2026-09-25 liberó su reserva una sola vez al vencer (la última a las 21:03:00Z) y el producto volvió a 42.
+
+## 7. Desplegado en CP (2026-09-25, release `0bc9318`)
+
+1. **Respaldo previo.** `backup-drill.mjs --target controlled-production`:
+   - 92 tablas y 3093 filas, restauradas y comparadas: 92/92 idénticas.
+   - Foto de configuración: 0 funciones, 0 secretos, 0 Vault, 136 migraciones.
+   - Guardado fuera del repositorio, en `~/.taba-backups/controlled-production/2026-09-25T22-13-41-117Z/`.
+2. **Migraciones.** `20260925170000`, `20260925220000` y `20260925223000`, con
+   `db push` (139 en total). Verificado:
+   - disponibilidad ligada al vendedor;
+   - alerta activa;
+   - interruptor sólo para `service_role`;
+   - alcance `payments` en la auditoría;
+   - el barrido de alertas sigue en `succeeded` cada minuto.
+3. **Funciones.** Las nueve de Mercado Pago, v1 `ACTIVE`, con `verify_jwt` según
+   `config.toml`. Se descargaron y se compararon con el release: 55 archivos,
+   0 diferencias.
+4. **Smoke cerrado.** 12 casos sin autenticación ni firma, **0 aceptados**:
+   - webhook y worker: 503 `PAYMENT_UNAVAILABLE`;
+   - checkout, preferencia, estado y conexión: 403 `ORIGIN_NOT_ALLOWED`;
+   - reembolso y cancelación: 401.
+5. **Secretos.** Ninguno cargado todavía (H2). **Worker.** Sin provisionar
+   (después de H2). **Web.** Sigue en sólo cobro manual (H2b).

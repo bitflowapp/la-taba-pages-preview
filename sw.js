@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v117-controlled-production';
+const CACHE_NAME = 'la-taba-runtime-v118-online-payments-gate';
 const ASSETS = [
   './',
   './index.html',

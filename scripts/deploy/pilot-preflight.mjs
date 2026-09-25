@@ -17,12 +17,53 @@ const CERT_SHA256 = '2dcc9b0a0cf022ebf59c500331103ee31cec9e9142d5431553131877948
 // import still requires the approved 5-10 SKU allowlist.
 export const CATALOG_MODES = Object.freeze(['approved', 'none']);
 
+export const ONLINE_PAYMENTS_RUNBOOK = 'docs/MERCADOPAGO_PRODUCCION_CP.md';
+
+// La aprobación de cobros online que viaja en la configuración del piloto:
+// quién, cuándo y con qué procedimiento. Sin las cuatro cosas, sólo manual.
+export function assertOnlinePaymentsApproval(approval) {
+  assert.equal(approval?.provider, 'mercadopago-oauth', 'PILOT_ONLINE_PAYMENTS_PROVIDER_REQUIRED');
+  assert.equal(approval?.runbook, ONLINE_PAYMENTS_RUNBOOK, 'PILOT_ONLINE_PAYMENTS_RUNBOOK_REQUIRED');
+  assert.match(String(approval?.approvedBy ?? ''), /^\S.{1,78}\S$/, 'PILOT_ONLINE_PAYMENTS_APPROVER_REQUIRED');
+  assert.match(String(approval?.approvedAt ?? ''), /^\d{4}-\d{2}-\d{2}$/, 'PILOT_ONLINE_PAYMENTS_DATE_REQUIRED');
+}
+
+// Sondas públicas, sin credenciales. Con el conector configurado, el webhook
+// rechaza lo que no viene firmado (401) en vez de declararse no disponible
+// (503), y el checkout acepta el origen exacto del piloto. Medido contra
+// Staging (configurado: 401 y 204 con ese origen) y contra CONTROLLED_PRODUCTION
+// sin configurar (503 y 403).
+export async function probeOnlinePaymentsBackend({ projectRef, customerOrigin, request = fetch }) {
+  assert.match(projectRef || '', /^[a-z0-9]{20}$/, 'PILOT_ONLINE_PAYMENTS_PROBE_REF_REQUIRED');
+  const base = `https://${projectRef}.supabase.co/functions/v1`;
+  const webhook = await request(`${base}/mercadopago-webhook?data.id=0&type=payment`, {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ type: 'payment', data: { id: '0' } }), signal: AbortSignal.timeout(20_000),
+  });
+  await webhook.arrayBuffer().catch(() => {});
+  const preflight = await request(`${base}/mercadopago-create-checkout-session`, {
+    method: 'OPTIONS', headers: { Origin: customerOrigin, 'Access-Control-Request-Method': 'POST' },
+    signal: AbortSignal.timeout(20_000),
+  });
+  await preflight.arrayBuffer().catch(() => {});
+  const webhookRejectsUnsigned = webhook.status === 401;
+  const originAllowed = preflight.status === 204
+    && preflight.headers.get('access-control-allow-origin') === customerOrigin;
+  return { webhookStatus: webhook.status, preflightStatus: preflight.status,
+    webhookRejectsUnsigned, originAllowed, ready: webhookRejectsUnsigned && originAllowed };
+}
+
 export function validatePilotPreflight(config, plan, { phase = 'catalog',
   ownerCredentials, cloudflare = {}, buildReceipt } = {}) {
   assert.ok(['catalog', 'deploy', 'e2e'].includes(phase), 'PILOT_PREFLIGHT_PHASE_INVALID');
   assert.equal(config?.schemaVersion, 1, 'PILOT_CONFIG_SCHEMA_INVALID');
   assert.equal(config.deploymentEnvironment, 'pilot', 'PILOT_ENVIRONMENT_REQUIRED');
-  assert.equal(config.manualPaymentOnly, true, 'PILOT_MUST_USE_MANUAL_PAYMENT_ONLY');
+  // Cobro manual por defecto. Mercado Pago en línea es una decisión explícita y
+  // nominal; que el backend tenga el conector configurado lo comprueban las
+  // sondas públicas de prepare-commercial-pilot antes de empaquetar.
+  assert.equal(typeof config.manualPaymentOnly, 'boolean', 'PILOT_PAYMENT_MODE_REQUIRED');
+  if (!config.manualPaymentOnly) assertOnlinePaymentsApproval(config.onlinePayments);
+  else assert.ok(config.onlinePayments == null, 'PILOT_ONLINE_PAYMENTS_APPROVAL_WITHOUT_ONLINE_PAYMENTS');
   const catalogMode = config.catalogMode ?? 'approved';
   assert.ok(CATALOG_MODES.includes(catalogMode), 'PILOT_CATALOG_MODE_INVALID');
   assertPilotIdentity(config.supabaseProjectRef, config.businessId);
@@ -79,7 +120,7 @@ export function validatePilotPreflight(config, plan, { phase = 'catalog',
     'RIDER_APK_PATH_MISMATCH');
     assert.match(buildReceipt?.apkSha256 || '', /^[a-f0-9]{64}$/i, 'RIDER_APK_HASH_REQUIRED');
   }
-  return { status: 'PASS', phase, catalogMode, projectRef: plan.projectRef,
+  return { status: 'PASS', phase, catalogMode, onlinePayments: config.manualPaymentOnly === false, projectRef: plan.projectRef,
     businessId: plan.businessId, approvedSkus: [...plan.approvedSkus],
     cloudflareProject: config.cloudflareProject, customerUrl: customer.origin,
     businessPanelUrl: panel.href, secretsPrinted: false };

@@ -92,8 +92,13 @@ select ok(
   and has_column_privilege('authenticated', 'public.products', 'sort_order', 'UPDATE'),
   'el Panel conserva stock/available/is_active/sort_order sobre products');
 
+-- Desde 20260925090000 la lectura pública es por columna (todo menos
+-- unit_cost y verified_by; lo certifica controlled_production_qa_window_test).
+-- Este archivo corre también antes de esa migración: vale para ambos.
 select ok(
-  has_table_privilege('anon', 'public.products', 'SELECT'),
+  has_any_column_privilege('anon', 'public.products', 'SELECT')
+  and has_column_privilege('anon', 'public.products', 'price', 'SELECT')
+  and has_column_privilege('anon', 'public.products', 'stock', 'SELECT'),
   'la vidriera publica sigue leyendo products');
 
 -- ══════════════════════════════════════════════════════════════════════════

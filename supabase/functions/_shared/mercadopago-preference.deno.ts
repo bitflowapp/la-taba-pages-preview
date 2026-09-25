@@ -219,12 +219,33 @@ Deno.test('recovery exige paginación completa y falla cerrado si falta o está 
   const candidate = { id: 'PREF-1', external_reference: 'fixture' };
   assertLanza(
     () => completePreferenceSearchElements({ elements: [candidate] }),
-    'recovery aceptó una respuesta sin paging.total',
+    'recovery aceptó una respuesta sin total',
+  );
+  assertLanza(
+    () => completePreferenceSearchElements({ elements: [candidate], next_offset: 1, total: 2 }),
+    'recovery aceptó una primera página truncada',
   );
   assertLanza(
     () => completePreferenceSearchElements({ elements: [candidate], paging: { total: 2, limit: 1, offset: 0 } }),
-    'recovery aceptó una primera página truncada',
+    'recovery aceptó una primera página truncada con la forma vieja',
+  );
+  assertLanza(
+    () => completePreferenceSearchElements({ elements: [candidate], total: '1' }),
+    'recovery aceptó un total que no es número',
   );
   const complete = completePreferenceSearchElements({ elements: [candidate], paging: { total: 1, limit: 10, offset: 0 } });
   assert(complete.length === 1 && complete[0] === candidate, 'recovery rechazó un inventario completo');
+});
+
+// La forma que devuelve Mercado Pago hoy: `total` arriba, sin `paging`. Medido
+// el 2026-09-25 contra GET /checkout/preferences/search (x-request-id
+// e3af2b6c-b2db-45ea-a647-c5c7241b9c67 y 5e50b75d-cd02-4ec8-8822-e4aeea86628d).
+// Con la lectura vieja estas dos respuestas reales se declaraban truncadas y el
+// checkout no podía crear ninguna preferencia.
+Deno.test('recovery acepta la respuesta real del buscador: total arriba y next_offset', () => {
+  const candidate = { id: 'PREF-1', external_reference: 'fixture' };
+  const encontrada = completePreferenceSearchElements({ elements: [candidate], next_offset: 1, total: 1 });
+  assert(encontrada.length === 1 && encontrada[0] === candidate, 'recovery rechazó la respuesta real con un resultado');
+  const vacia = completePreferenceSearchElements({ elements: [], next_offset: 0, total: 0 });
+  assert(vacia.length === 0, 'recovery rechazó la respuesta real sin resultados');
 });

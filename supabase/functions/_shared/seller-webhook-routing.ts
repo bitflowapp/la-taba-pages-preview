@@ -36,8 +36,16 @@ export async function resolveSellerWebhookBusiness(input: Input, dependencies: D
     throw new Error('Seller connection unavailable');
   }
   const payment = await dependencies.paymentForBusiness(input.resourceId, connection.business_id);
+  // Same live_mode contract as record_mercadopago_payment_snapshot: production
+  // demands live_mode === true. In test, Checkout Pro payments collected by a
+  // test user report live_mode = true, so demanding false there dropped every
+  // such notification; the collector check still pins them to the connected
+  // seller, and a test connection only accepts a test_user seller.
+  const liveModeValid = input.environment === 'production'
+    ? payment.live_mode === true
+    : payment.live_mode === undefined || typeof payment.live_mode === 'boolean';
   if (String(payment.id) !== input.resourceId || String(payment.collector_id) !== connection.seller_id ||
-      payment.live_mode !== (input.environment === 'production') ||
+      !liveModeValid ||
       typeof payment.external_reference !== 'string' || !payment.external_reference) {
     throw new Error('Provider payment routing mismatch');
   }

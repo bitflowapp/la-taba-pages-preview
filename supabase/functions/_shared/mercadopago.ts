@@ -273,8 +273,16 @@ export function completePreferenceSearchElements(body: Record<string, unknown>):
   // Search recovery is allowed only from a demonstrably complete result set.
   // Missing/malformed pagination used to fall back to elements.length, which
   // could turn a truncated response into a blind second POST.
+  //
+  // GET /checkout/preferences/search answers `{ elements, next_offset, total }`
+  // with `total` at the top level (measured 2026-09-25, x-request-id
+  // e3af2b6c-b2db-45ea-a647-c5c7241b9c67). Reading only `paging.total` made
+  // every real answer look truncated, so no preference could ever be created.
+  // `paging.total` stays accepted for the older fixtures' shape.
   const paging = object(body.paging);
-  const total = typeof paging.total === 'number' ? paging.total : Number.NaN;
+  const total = typeof body.total === 'number'
+    ? body.total
+    : typeof paging.total === 'number' ? paging.total : Number.NaN;
   if (!Number.isSafeInteger(total) || total < 0 || total !== elements.length) {
     throw preferenceReconciliationRequired();
   }

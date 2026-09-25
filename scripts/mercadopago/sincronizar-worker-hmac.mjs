@@ -57,7 +57,7 @@ function secretMap(rows) {
   return new Map(rows.map(row => [String(row.name), String(row.value || '')]));
 }
 
-export function assertEnvironmentSecrets(target, secrets) {
+export function assertEnvironmentSecrets(target, secrets, { workerSecretMayBeMissing = false } = {}) {
   const expected = {
     MERCADOPAGO_CLIENT_ID: target.clientId,
     MERCADOPAGO_CREDENTIAL_MODE: 'oauth',
@@ -77,6 +77,11 @@ export function assertEnvironmentSecrets(target, secrets) {
     'PAYMENT_LOG_HASH_SALT',
     'PAYMENT_WORKER_SECRET',
   ]) {
+    // A project that never had a worker (a new CONTROLLED_PRODUCTION) has no
+    // worker secret yet: it is exactly what the synchronization writes. Every
+    // other server secret must already be there, and the check after writing
+    // is strict again.
+    if (name === 'PAYMENT_WORKER_SECRET' && workerSecretMayBeMissing && !secrets.has(name)) continue;
     if (!secrets.has(name) || secrets.get(name) === digest('')) throw new Error(`Missing server secret: ${name}`);
   }
   if (secrets.has('MERCADOPAGO_ACCESS_TOKEN')) {
@@ -146,7 +151,7 @@ export async function synchronizeWorkerHmac(targetName, {
   if (!target) throw new Error('Target must be staging, controlled-production or production');
   return await withToken(async token => {
     const before = await readSecretInventory(request, token, target);
-    assertEnvironmentSecrets(target, before);
+    assertEnvironmentSecrets(target, before, { workerSecretMayBeMissing: true });
     const current = await readAlignment(request, token, target, before.get('PAYMENT_WORKER_SECRET'));
     // Rotar con trabajo en vuelo puede dejar una llamada firmada con la clave
     // vieja. Si el Vault de Staging nunca tuvo la clave, el dispatcher nunca

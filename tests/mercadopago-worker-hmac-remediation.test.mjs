@@ -31,9 +31,12 @@ function hostedSecrets(target = 'production', extra = [], refOverride = null) {
   ].map(([name, value]) => ({ name, value: hash(value) }));
 }
 
-function harness({ active = false, globalToken = false, target = 'production', vaultProvisioned = false, pendingWork = 0, inventoryOf = null } = {}) {
+function harness({ active = false, globalToken = false, target = 'production', vaultProvisioned = false, pendingWork = 0, inventoryOf = null,
+  withoutWorkerSecret = false, withoutClientSecret = false } = {}) {
   const ref = REFS[target];
-  let secrets = hostedSecrets(target, globalToken ? [['MERCADOPAGO_ACCESS_TOKEN', 'fixture-global']] : [], inventoryOf ? REFS[inventoryOf] : null);
+  let secrets = hostedSecrets(target, globalToken ? [['MERCADOPAGO_ACCESS_TOKEN', 'fixture-global']] : [], inventoryOf ? REFS[inventoryOf] : null)
+    .filter(item => !(withoutWorkerSecret && item.name === 'PAYMENT_WORKER_SECRET'))
+    .filter(item => !(withoutClientSecret && item.name === 'MERCADOPAGO_CLIENT_SECRET'));
   let vaultDigest = '';
   let vaultUrlAligned = false;
   let mutationCalls = 0;
@@ -181,6 +184,24 @@ test('controlled production is checked as its own project with the La Taba Deliv
 test('controlled production keeps the strict production guard: no first-provisioning exception', async () => {
   const h = harness({ target: 'controlled-production', active: true, pendingWork: 1 });
   await assert.rejects(() => synchronizeWorkerHmac('controlled-production', { ...h, createSecret: () => FIXTURE_SECRET }), /active payment state/);
+  assert.equal(h.state().mutationCalls, 0);
+});
+
+test('a new controlled production gets its first worker secret, Vault authority and a zero-work signed probe', async () => {
+  const h = harness({ target: 'controlled-production', withoutWorkerSecret: true });
+  await assert.rejects(() => checkWorkerHmac('controlled-production', h), /Missing server secret: PAYMENT_WORKER_SECRET/,
+    'checking still says the worker is not provisioned');
+  const result = await synchronizeWorkerHmac('controlled-production',
+    { ...h, createSecret: () => FIXTURE_SECRET, createNonce: () => FIXTURE_NONCE, now: () => FIXTURE_TIME });
+  assert.deepEqual(result, { ok: true, target: 'controlled-production', aligned: true, signedProbe: true });
+  assert.deepEqual(h.state(), { mutationCalls: 2, signedProbe: true });
+  assert.equal((await checkWorkerHmac('controlled-production', h)).ok, true);
+});
+
+test('the first worker secret is never provisioned for an environment without its application secrets', async () => {
+  const h = harness({ target: 'controlled-production', withoutWorkerSecret: true, withoutClientSecret: true });
+  await assert.rejects(() => synchronizeWorkerHmac('controlled-production', { ...h, createSecret: () => FIXTURE_SECRET }),
+    /Missing server secret: MERCADOPAGO_CLIENT_SECRET/);
   assert.equal(h.state().mutationCalls, 0);
 });
 

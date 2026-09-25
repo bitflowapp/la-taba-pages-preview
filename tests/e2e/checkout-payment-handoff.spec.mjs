@@ -321,20 +321,27 @@ test.describe('handoff a Mercado Pago', () => {
   });
 
   test('mientras se prepara el pago el botón nunca vuelve a estar disponible', async ({ page }) => {
-    const llamadas = await instalarBackend(page, { demoraDeLaFuncion: 1_500 });
+    const llamadas = await instalarBackend(page, { demoraDeLaFuncion: 6_000 });
     await elDestinoExternoNoLlega(page);
     await abrirCheckoutConCarrito(page);
     const boton = await prepararPagoConMercadoPago(page);
 
-    await boton.click();
+    await boton.click({ noWaitAfter: true });
+    await expect.poll(() => llamadas.sesiones, { timeout: 15_000 }).toBe(1);
 
-    // Durante toda la preparación y todo el handoff: deshabilitado y diciendo
-    // qué está pasando. Un botón que vuelve a decir «Confirmar pedido» es una
-    // invitación a tocar de nuevo.
+    // La carrera real nace de cualquier cambio de estado que dispare
+    // `renderAll()` mientras la sesión todavía se está creando. La provocamos
+    // de forma determinística muchas veces, en lugar de esperar que un timer del
+    // navegador caiga justo dentro de esa ventana.
     const estados = [];
-    for (let i = 0; i < 12; i += 1) {
+    for (let i = 0; i < 20; i += 1) {
+      await page.evaluate(async () => {
+        const { setState } = await import('/js/state.js');
+        setState({});
+      });
       estados.push(await boton.evaluate((n) => `${n.disabled ? 'off' : 'ON'}:${n.textContent.trim()}`));
-      await page.waitForTimeout(300);
+      await boton.click({ force: true, noWaitAfter: true, timeout: 1_000 }).catch(() => undefined);
+      await page.waitForTimeout(75);
     }
 
     expect(estados.filter((estado) => estado.startsWith('ON')), `el botón volvió a estar disponible: ${estados.join(' | ')}`).toEqual([]);

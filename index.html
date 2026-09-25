@@ -82,7 +82,7 @@
       lo verifica tests/home-hero-preload.test.mjs.
     -->
     <link rel="preload" as="image" href="assets/promos/cervezas-heineken-band.webp" media="(max-width: 699px)" fetchpriority="high" />
-    <link rel="stylesheet" href="styles.css?v=58" />
+    <link rel="stylesheet" href="styles.css?v=60" />
   </head>
   <!--
     La vista activa se declara ya en el shell servido. `renderNavigation` la
@@ -675,10 +675,10 @@
                        confirma) y su migración; agregar la opción sola
                        reabre el mismo pozo.
                        El test `payment-methods-contract` sostiene esta lista. -->
-                  <option value="coordinate">A coordinar con el local</option>
-                  <option value="cash">Efectivo al recibir</option>
+                  <option value="cash">Efectivo al retirar o recibir</option>
+                  <option value="coordinate">A coordinar con el local antes de preparar</option>
                 </select>
-                <small>El medio se confirma antes de preparar el pedido.</small>
+                <small>El cobro queda pendiente hasta que el negocio registre el dinero recibido. No se paga en esta pantalla.</small>
               </label>
 
               <details class="checkout-instructions">
@@ -849,7 +849,7 @@
                 <h1>Central de pedidos</h1>
               </div>
               <div class="view-actions">
-                <button class="secondary-button compact" type="button" data-open-admin-view="rider">Vista rider</button>
+                <button class="secondary-button compact" type="button" data-demo-only data-open-admin-view="rider">Vista rider</button>
                 <button class="ghost-button compact" type="button" data-lock-admin>Salir</button>
               </div>
             </div>
@@ -857,7 +857,7 @@
           </div>
         </section>
 
-        <section class="section app-view admin-section" data-view="rider" data-operational-only hidden aria-hidden="true">
+        <section class="section app-view admin-section" data-view="rider" data-demo-only hidden aria-hidden="true">
           <div class="card admin-lock-card" data-admin-locked data-demo-auth-only>
             <div>
               <p class="eyebrow">Repartidor</p>
@@ -869,31 +869,6 @@
               <button class="secondary-button" type="button" data-nav-view="profile">Volver al perfil</button>
             </div>
           </div>
-
-          <div class="card admin-lock-card production-auth-card" data-production-only data-production-auth-card="rider" hidden>
-            <div>
-              <p class="eyebrow">Repartidor</p>
-              <h1>Acceso seguro requerido</h1>
-              <p>Ingresá con una cuenta rider activa de este comercio.</p>
-            </div>
-            <form class="production-auth-form" data-production-auth-form="rider">
-              <label>
-                Email
-                <input name="email" type="email" autocomplete="username" required />
-              </label>
-              <label>
-                Contraseña
-                <input name="password" type="password" autocomplete="current-password" required />
-              </label>
-              <p class="form-hint" data-production-auth-message role="status" hidden></p>
-              <div class="button-row">
-                <button class="primary-button" type="submit">Ingresar</button>
-                <button class="secondary-button" type="button" data-nav-view="profile">Volver al perfil</button>
-              </div>
-            </form>
-          </div>
-
-          <div class="production-workspace" data-production-only data-production-workspace="rider" hidden aria-hidden="true"></div>
 
           <div data-admin-unlocked hidden>
             <div class="section-head rider-section-head">
@@ -1256,6 +1231,6 @@
       defer
     ></script>
     <script src="js/pwa-update.js?v=4"></script>
-    <script type="module" src="js/app.js?v=49"></script>
+    <script type="module" src="js/app.js?v=50"></script>
   </body>
 </html>

@@ -172,10 +172,12 @@ test.describe('Android', () => {
    * llegar en la SEGUNDA visita, con el worker ya activo y todo caliente.
    *
    * Acá esa ventana se abre a propósito: se demora el módulo de la interfaz
-   * tres segundos y el evento se dispara a los 300 ms. Los scripts CLÁSICOS del
-   * shell —entre ellos `js/pwa-update.js`, que es quien lo captura— ya
-   * corrieron; el módulo todavía no. Si alguien vuelve a cablear la captura
-   * dentro del módulo, este test se pone rojo.
+   * tres segundos y el evento se dispara en cuanto el script CLÁSICO del shell
+   * (`js/pwa-update.js`) confirma que ya instaló su escucha. No se usa un número
+   * fijo desde el inicio del documento: bajo un motor frío, 300 ms podían vencer
+   * antes de que el parser llegara al script y el propio test emitía el evento
+   * fuera de la precondición que decía medir. El módulo todavía no existe; si
+   * alguien vuelve a cablear la captura dentro de él, este test se pone rojo.
    */
   test('el evento que llega mientras la tienda se arma no se pierde', async ({ page }) => {
     await page.route('**/js/pwa-install-ui.js*', async (route) => {
@@ -184,21 +186,30 @@ test.describe('Android', () => {
     });
     await page.addInitScript(() => {
       window.__install = { prompts: 0, outcome: 'accepted' };
-      setTimeout(() => {
+      const fireWhenShellIsBound = () => {
+        if (!window.__tabaInstallPromptBound) {
+          setTimeout(fireWhenShellIsBound, 10);
+          return;
+        }
         const event = new Event('beforeinstallprompt');
         event.prompt = async () => {
           window.__install.prompts += 1;
           return { outcome: window.__install.outcome, platform: 'web' };
         };
         event.userChoice = Promise.resolve({ outcome: window.__install.outcome });
+        window.__moduloDeInstalacionYaExistia = Boolean(window.TABA_PWA_INSTALL);
         window.dispatchEvent(event);
         window.__disparado = true;
-      }, 300);
+        window.__capturadoPorShell = window.__TABA_DEFERRED_INSTALL_PROMPT__ === event;
+      };
+      fireWhenShellIsBound();
     });
     await abrir(page);
 
-    // El evento salió antes de que existiera el módulo que antes lo escuchaba.
+    // El evento salió con el shell enlazado, pero antes del módulo que antes lo escuchaba.
     expect(await page.evaluate(() => window.__disparado)).toBe(true);
+    expect(await page.evaluate(() => window.__moduloDeInstalacionYaExistia)).toBe(false);
+    expect(await page.evaluate(() => window.__capturadoPorShell)).toBe(true);
     /*
      * Presupuesto ancho a propósito: este test le suma 3 s de demora al módulo
      * ENCIMA del arranque, y si le toca ser la primera navegación de la corrida

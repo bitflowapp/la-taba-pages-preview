@@ -86,17 +86,22 @@ export function isRuntimeConfigurationUnavailable(
   return getAppMode(search, runtimeSource) === APP_MODE_UNAVAILABLE;
 }
 
-// Conserva el contrato histórico: devuelve true cuando una ruta operativa debe
-// bloquearse para el modo actual. Demo y producción pueden resolver el hash;
-// preview y una configuración inválida vuelven siempre al inicio.
+// Devuelve true cuando una ruta operativa debe bloquearse para el modo actual.
+// El Panel del negocio existe en demo y producción. Rider, en cambio, es una
+// superficie de QA/showcase: en producción el cliente canónico es Android y un
+// hash viejo nunca debe volver a exponer login ni workspace web de repartidor.
 export function isOperationalView(
   view,
   search = currentSearch(),
   runtimeSource = readRuntimeConfigSource(),
 ) {
-  const operational = ['business', 'rider'].includes(String(view || ''));
-  if (!operational) return false;
-  return ![APP_MODE_DEMO, APP_MODE_PRODUCTION].includes(getAppMode(search, runtimeSource));
+  const operationalView = String(view || '');
+  const mode = getAppMode(search, runtimeSource);
+  if (operationalView === 'rider') return mode !== APP_MODE_DEMO;
+  if (operationalView === 'business') {
+    return ![APP_MODE_DEMO, APP_MODE_PRODUCTION].includes(mode);
+  }
+  return false;
 }
 
 function currentSearch() {

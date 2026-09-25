@@ -12,17 +12,29 @@
 export const SUPABASE_URL = 'https://taba-panel-responsive.supabase.co';
 export const BUSINESS_ID = '11111111-1111-4111-8111-111111111111';
 export const OWNER_ID = '22222222-2222-4222-8222-222222222222';
+/*
+ * La SEGUNDA cuenta del mismo comercio. Existe para probar lo que dos pestañas
+ * del mismo usuario no pueden probar: entre dos pestañas hay `BroadcastChannel`
+ * y respaldo por `storage`, así que una le avisa a la otra sin pasar por la
+ * red. Entre dos PERSONAS -el dueño en la caja y un empleado en la cocina- no
+ * hay ningún canal local: lo único que las sincroniza es el servidor.
+ */
+export const STAFF_ID = '66666666-6666-4666-8666-666666666666';
+export const STAFF_SESSION_ID = '77777777-7777-4777-8777-777777777777';
 export const RIDER_A = '33333333-3333-4333-8333-333333333333';
 export const RIDER_B = '44444444-4444-4444-8444-444444444444';
 /** La clave la deriva supabase-js del primer segmento del host. */
 export const STORAGE_KEY = 'sb-taba-panel-responsive-auth-token';
 
-export async function instalarDatosDePrueba(page, { conSesion = true } = {}) {
+export async function instalarDatosDePrueba(page, { conSesion = true, comoEmpleado = false } = {}) {
+  const actor = comoEmpleado
+    ? { id: STAFF_ID, sessionId: STAFF_SESSION_ID, role: 'staff', email: 'empleado@la-taba.test' }
+    : { id: OWNER_ID, sessionId: '55555555-5555-4555-8555-555555555555', role: 'owner', email: 'duenio@la-taba.test' };
   await page.route(`${SUPABASE_URL}/**`, async (route) => {
     const url = new URL(route.request().url());
     const p = url.pathname;
-    if (p.endsWith('/auth/v1/user')) return json(route, sesionDuenio().user);
-    if (p.includes('/auth/v1/token')) return json(route, sesionDuenio());
+    if (p.endsWith('/auth/v1/user')) return json(route, sesionDe(actor).user);
+    if (p.includes('/auth/v1/token')) return json(route, sesionDe(actor));
     if (p.includes('/auth/v1/logout')) return route.fulfill({ status: 204, body: '' });
     // La autoridad del rol es la compuerta del backend, no la tabla: el Panel
     // pregunta por `identity_current_context` y sin `session_id` se queda en la
@@ -30,16 +42,16 @@ export async function instalarDatosDePrueba(page, { conSesion = true } = {}) {
     // cuenta SI tiene membresia.
     if (p.includes('/rpc/identity_current_context')) {
       return json(route, {
-        user_id: OWNER_ID, business_id: BUSINESS_ID, role: 'owner',
-        session_id: '55555555-5555-4555-8555-555555555555',
+        user_id: actor.id, business_id: BUSINESS_ID, role: actor.role,
+        session_id: actor.sessionId,
         permissions: ['orders.read', 'orders.write', 'payments.read', 'catalog.write'],
       });
     }
     if (p.includes('/rpc/register_identity_session') || p.includes('/rpc/identity_register_session')) {
-      return json(route, { ok: true, session_id: '55555555-5555-4555-8555-555555555555', role: 'owner' });
+      return json(route, { ok: true, session_id: actor.sessionId, role: actor.role });
     }
     if (p.includes('/rest/v1/business_members')) {
-      return json(route, { business_id: BUSINESS_ID, user_id: OWNER_ID, role: 'owner', is_active: true });
+      return json(route, { business_id: BUSINESS_ID, user_id: actor.id, role: actor.role, is_active: true });
     }
     if (p.includes('/rest/v1/businesses')) return json(route, negocio());
     if (p.includes('/rest/v1/orders')) return json(route, pedidos());
@@ -62,6 +74,7 @@ export async function instalarDatosDePrueba(page, { conSesion = true } = {}) {
     if (p.includes('/rpc/list_business_payments')) return json(route, pagos());
     if (p.includes('/rpc/get_arca_activation_status')) return json(route, arca());
     if (p.includes('/rpc/get_business_opening_status')) return json(route, apertura());
+    if (p.includes('/rpc/get_business_finished_today')) return json(route, cerradosDeHoy());
     if (p.includes('/rest/v1/fiscal_profiles')) return json(route, perfilFiscal());
     if (p.includes('/rest/v1/products')) return json(route, []);
     return json(route, []);
@@ -87,7 +100,7 @@ export async function instalarDatosDePrueba(page, { conSesion = true } = {}) {
       if (comando === 'check_for_signed_update') return { configured: false, available: false, currentVersion: '0.1.0', version: null };
       return true;
     } } };
-  }, { businessId: BUSINESS_ID, supabaseUrl: SUPABASE_URL, storageKey: STORAGE_KEY, sesion: conSesion ? sesionDuenio() : null });
+  }, { businessId: BUSINESS_ID, supabaseUrl: SUPABASE_URL, storageKey: STORAGE_KEY, sesion: conSesion ? sesionDe(actor) : null });
 }
 
 function json(route, body) {
@@ -95,15 +108,19 @@ function json(route, body) {
 }
 
 export function sesionDuenio() {
+  return sesionDe({ id: OWNER_ID, role: 'owner', email: 'duenio@la-taba.test' });
+}
+
+export function sesionDe(actor) {
   const expira = Math.floor(Date.parse('2099-01-01T00:00:00Z') / 1000);
   const enc = (v) => Buffer.from(JSON.stringify(v)).toString('base64url');
-  const access = `${enc({ alg: 'none', typ: 'JWT' })}.${enc({ sub: OWNER_ID, exp: expira, role: 'authenticated' })}.firma`;
+  const access = `${enc({ alg: 'none', typ: 'JWT' })}.${enc({ sub: actor.id, exp: expira, role: 'authenticated' })}.firma`;
   return {
     access_token: access, token_type: 'bearer', expires_in: 3600, expires_at: expira,
-    refresh_token: 'panel-responsive-refresh',
+    refresh_token: `panel-responsive-refresh-${actor.role}`,
     user: {
-      id: OWNER_ID, aud: 'authenticated', role: 'authenticated',
-      email: 'duenio@la-taba.test', is_anonymous: false, user_metadata: { taba_actor: 'owner' },
+      id: actor.id, aud: 'authenticated', role: 'authenticated',
+      email: actor.email, is_anonymous: false, user_metadata: { taba_actor: actor.role },
     },
   };
 }
@@ -111,6 +128,7 @@ export function sesionDuenio() {
 function negocio() {
   return {
     id: BUSINESS_ID, name: 'La Taba', slug: 'la-taba', status: 'open', is_active: true,
+    operating_timezone: 'America/Argentina/Buenos_Aires',
     ordering_enabled: true, ordering_verified: true, whatsapp_phone: '+5492995550000',
   };
 }
@@ -285,6 +303,20 @@ function apertura() {
     riders: { status: 'ok', detail: '2 repartidor(es) disponible(s).' },
     queues: { status: 'ok', detail: 'No quedó nada trabado de antes.' },
     open_orders: 4,
+  };
+}
+
+// Los pedidos que ya salieron de la bandeja. El servidor los cuenta; acá se
+// contesta con un numero fijo para que la captura y las pruebas vean lo mismo.
+function cerradosDeHoy() {
+  return {
+    ok: true,
+    business_id: BUSINESS_ID,
+    business_date: new Date().toISOString().slice(0, 10),
+    timezone: 'America/Argentina/Buenos_Aires',
+    delivered: 14,
+    cancelled: 2,
+    generated_at: new Date().toISOString(),
   };
 }
 

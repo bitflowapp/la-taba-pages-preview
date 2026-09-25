@@ -52,7 +52,7 @@ function setMotionPreference(documentRef, windowRef) {
   return { reduced, lite };
 }
 
-function markRevealTargets(documentRef, observer, reduced) {
+function markRevealTargets(documentRef, observer, reduced, revealImmediately = false) {
   if (!documentRef?.body) return [];
   const targets = new Set();
   REVEAL_SELECTORS.forEach((selector) => {
@@ -82,7 +82,12 @@ function markRevealTargets(documentRef, observer, reduced) {
 
   targets.forEach((node) => {
     if (!node.dataset.motionReveal) node.dataset.motionReveal = 'section';
-    if (reduced || !observer) {
+    // Los repintados de catálogo reemplazan las tarjetas al cambiar una
+    // cantidad. Esas tarjetas ya estaban en pantalla: volver a observarlas
+    // reanima el contenedor debajo del dedo y WebKit lo considera inestable
+    // para el siguiente toque. La primera colecta conserva el reveal; las
+    // mutaciones posteriores entran visibles y dejan el feedback en el número.
+    if (reduced || revealImmediately || !observer) {
       node.classList.add('is-motion-visible');
       return;
     }
@@ -181,8 +186,8 @@ export function initMotion(documentRef = globalThis.document, windowRef = global
     }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 })
     : null;
 
-  const collect = () => {
-    targets = markRevealTargets(documentRef, observer, preference.reduced);
+  const collect = ({ revealImmediately = false } = {}) => {
+    targets = markRevealTargets(documentRef, observer, preference.reduced, revealImmediately);
     observedCount = observer ? targets.filter((node) => !node.classList.contains('is-motion-visible')).length : 0;
     // La góndola se repinta al entrar a la vista, al filtrar y al buscar. Ese
     // es también el momento en que su geometría cambia, así que el brillo se
@@ -255,7 +260,9 @@ export function initMotion(documentRef = globalThis.document, windowRef = global
 
   const mutationObserver = 'MutationObserver' in (windowRef || {})
     ? new windowRef.MutationObserver((records) => {
-      if (records.some((record) => [...record.addedNodes].some((node) => node.nodeType === 1))) collect();
+      if (records.some((record) => [...record.addedNodes].some((node) => node.nodeType === 1))) {
+        collect({ revealImmediately: true });
+      }
     })
     : null;
 

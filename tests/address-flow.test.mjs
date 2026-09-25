@@ -36,8 +36,11 @@ const indexHtml = read('index.html');
 const controller = read('js/address-capture-controller.js');
 const sheet = read('js/customer-address-sheet.js');
 const checkout = read('js/customer-delivery.js');
+const profileView = read('js/customer-profile-view.js');
 const captureCore = read('js/core/address-capture.js');
 const migration = read('supabase/migrations/20260812240000_customer_address_declared_neighborhood.sql');
+const neighborhoodProjectionMigration = read('supabase/migrations/20260920120000_customer_address_json_declared_neighborhood.sql');
+const savedAddressOrderMigration = read('supabase/migrations/20260920130000_saved_address_neighborhood_order_contract.sql');
 const locationMigration = read('supabase/migrations/20260808190000_delivery_location_confirmation.sql');
 
 const AHORA = new Date('2026-08-26T18:00:00.000Z');
@@ -477,6 +480,27 @@ test('la cobertura la resuelve el backend; el editor sólo ofrece la lista que e
   assert.match(controller, /if \(!areas\.length\) return '';/);
 
   setCommerceAvailability(null);
+});
+
+test('el editor del perfil persiste la zona publicada y exige una opción cubierta', () => {
+  // Perfil y checkout no pueden producir contratos de dirección distintos: una
+  // dirección confirmada sin barrio queda visualmente lista, pero el backend la
+  // rechaza cuando el comercio exige cobertura por área declarada.
+  assert.match(profileView, /import \{ getCommerceAvailability \} from '.\/core\/commerce-availability-store\.js';/);
+  assert.match(profileView, /name="profileAddressNeighborhood"/);
+  assert.match(profileView, /neighborhood: resolveNeighborhood\(form\)/);
+  assert.match(profileView, /areas\.some\(\(area\) => area\.name === candidate\.neighborhood\)/);
+  assert.match(profileView, /Elegí un barrio con cobertura\./);
+  assert.match(profileView, /\(fuera de cobertura\)/);
+  // Guardar no alcanza: `get_current_customer_profile` y la respuesta del
+  // upsert pasan por esta proyección. Si no devuelve el campo, el checkout lo
+  // vuelve a perder aunque la columna esté correctamente escrita.
+  assert.match(neighborhoodProjectionMigration, /'neighborhood', p_address\.neighborhood/);
+  assert.match(savedAddressOrderMigration, /v_neighborhood := v_address\.neighborhood/);
+  assert.match(savedAddressOrderMigration, /v_neighborhood := v_existing\.customer_neighborhood/);
+  assert.match(savedAddressOrderMigration, /'customer_neighborhood', v_neighborhood/);
+  assert.match(savedAddressOrderMigration, /set customer_address_id = v_address_id/);
+  assert.match(savedAddressOrderMigration, /create_order_with_items_profile_v1_city_legacy/);
 });
 
 // ─── Teléfono ────────────────────────────────────────────────────────────────

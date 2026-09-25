@@ -29,7 +29,7 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   const paymentMethod = page.getByLabel('Forma de pago');
   await expect(paymentMethod).toBeVisible();
   await expect(paymentMethod).toHaveValue('cash');
-  await expect(paymentMethod.locator('option[value="coordinate"]')).toHaveText('A coordinar con el local');
+  await expect(paymentMethod.locator('option[value="coordinate"]')).toHaveText('A coordinar con el local antes de preparar');
   await expect(page.locator('[data-profile-summary]')).toBeVisible();
   await expect(page.locator('[data-profile-name]')).toHaveText('Cliente Growth');
   await expect(page.locator('[data-profile-phone]')).toHaveText('299 555 7777');

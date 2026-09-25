@@ -1,0 +1,282 @@
+# La Taba · Producción controlada (CONTROLLED_PRODUCTION)
+
+Operación de La Taba con **1 comercio, hasta 3 riders y ~30 clientes conocidos**,
+cobro **manual** (efectivo o transferencia al entregar/retirar). Este documento
+permite operar sin tocar código: todo lo que no se hace desde el Panel o la app
+Rider es un comando de esta página, ejecutado por el operador técnico en su PC.
+
+> Nombres técnicos: el entorno se llama `pilot` en el código, el proyecto web
+> `la-taba-commercial-pilot` y el paquete Android `com.lataba.rider.pilot`.
+> Son el mismo entorno que acá se llama CONTROLLED_PRODUCTION.
+
+## 0. Ficha de lanzamiento
+
+| Dato | Valor |
+|---|---|
+| Estado | Ver §12 (compuertas). **No invitar clientes** mientras diga `COMMERCIAL_OPEN_READY: NO` |
+| CUSTOMER_URL | `https://la-taba-commercial-pilot.pages.dev/` (se habilita al primer deploy) |
+| BUSINESS_PANEL_URL | `https://la-taba-commercial-pilot.pages.dev/#business` |
+| Backend Supabase | `tkanbadcglszlcyfjvpv` (`la-taba-controlled-production`, sa-east-1, org Luna Systems, plan Pro) — `deploy/controlled-production.json` |
+| Negocio real | `e7850ad2-a447-402c-8375-3fd74e9466ba` “La Taba” — cerrado, 0 productos, sin miembros hasta el alta del dueño |
+| Negocios QA (nunca públicos) | control `e1d2c342-da14-421e-884f-ff38bb55f642` (8 productos QA), aislamiento `dd515bdd-33bc-4a72-9e70-72d2ab8ae1f0` |
+| Nunca | Staging `ucbtjcurawxjwjdvvcvj`, Producción vieja `wwcpogltfgzgkrlilbcd`, DEMO `yakhtrkukqlgzvxuvhzs` (los gates los rechazan) |
+| Rider APK | `com.lataba.rider.pilot` `0.1.3-canonical-pilot` (versionCode 4), SHA-256 `2fcc64f9c8cac31fcc65449b25d604e9dc04dae87e5947a4f5554b9875b187d4`, copia en OneDrive `La-Taba/Releases/Rider/` |
+| Certificado de firma Rider | SHA-256 `2dcc9b0a0cf022ebf59c500331103ee31cec9e9142d5431553131877948ec1aa` |
+| APK anterior (rollback) | Primera versión para este backend; la v3 (`0.1.2`) apunta a Staging y **no** sirve para CP. Para futuras versiones, reinstalar la v4 archivada |
+| Web | versión en `https://la-taba-commercial-pilot.pages.dev/version.json` (commit, runtime). Se publica sólo desde `release/taba-controlled-production` con `CP_DEPLOY_SHA` = ese commit y el CI exacto en verde |
+| Base de datos | 136 migraciones, última `20260925090000` (`supabase migration list --linked`, credenciales por entorno) |
+| Service worker | `CACHE_NAME` en `sw.js` (hoy `la-taba-runtime-v117-controlled-production`) |
+| Cobro | Manual: `cash` (efectivo al retirar o recibir) o `coordinate` (a coordinar). Mercado Pago **no** habilitado (WCS-51579) |
+
+## 1. Roles
+
+| Rol | Qué hace | Cómo se da |
+|---|---|---|
+| Operador técnico | Crea el backend, cuentas, despliega, rollback | Acceso a GitHub `bitflowapp`, Supabase y esta PC |
+| Dueño (owner) | Aprueba equipo y riders, abre/cierra, catálogo, devoluciones | §2.1 (única alta por clave de servicio) |
+| Encargado (admin) / Personal (staff) | Operan pedidos y registran cobros | Solicitud en el Panel + aprobación del dueño |
+| Rider | Acepta ofertas, retira, entrega con código | Solicitud desde la app + aprobación del dueño |
+| Cliente | Compra en la web | No necesita alta: la sesión se crea al guardar sus datos |
+
+Nadie recibe una contraseña del operador. Cada persona define la suya con un
+enlace individual de un solo uso. No hay autorregistro de comercios ni roles
+por registrarse: el primer usuario **no** se vuelve dueño.
+
+## 2. Altas, bajas y recuperación
+
+Todos los comandos: `node scripts/controlled-production/accounts.mjs <comando> --target controlled-production ...`.
+El negocio real es `--business-id e7850ad2-a447-402c-8375-3fd74e9466ba`.
+Leen las claves del Credential Manager (`CONTROLLED PROD SUPABASE ...`) y
+verifican que pertenezcan al proyecto antes de actuar. El enlace de acceso se
+copia al portapapeles; **no se imprime**. Pegalo en un mensaje privado a esa
+persona y a nadie más. Vence en 1 hora.
+
+### 2.1 CREATE_OWNER (una sola vez)
+1. `create-account --email <correo> --name "<Nombre>"`
+2. `bootstrap-owner --business-id <negocio> --email <correo> --name "<Nombre>"`
+3. `access-link --email <correo> --origin https://la-taba-commercial-pilot.pages.dev/`
+4. La persona abre el enlace, elige contraseña y entra al Panel.
+
+### 2.2 CREATE_STAFF (encargado o personal)
+1. `create-account --email <correo> --name "<Nombre>"` y `access-link ...` como arriba.
+2. La persona abre `BUSINESS_PANEL_URL`, ingresa y en **Pedir acceso** elige
+   *Atender el local (Panel)*.
+3. El dueño: Panel → **Solicitudes** → elige **Personal** o **Encargado** → **Aprobar**.
+
+### 2.3 CREATE_RIDER (máximo 3)
+1. `create-account` + `access-link` como arriba.
+2. El rider abre `BUSINESS_PANEL_URL` en su teléfono, ingresa y en **Pedir
+   acceso** elige *Repartir pedidos (app Rider)* con su teléfono (obligatorio).
+3. El dueño: Panel → **Solicitudes** → **Aprobar** (el rol queda Repartidor;
+   una solicitud de repartidor no puede convertirse en personal ni al revés).
+4. Instalar sólo la APK de la ficha (§0) e ingresar con el mismo correo.
+   Verificar: título “La Taba · Rider Piloto”, `PILOT · App nativa`,
+   “Sincronizado con La Taba”, **Disponible** visible también en el Panel.
+
+### 2.4 CREATE_CUSTOMER
+No hace falta alta. Enviar la URL del cliente **en privado** a cada persona
+invitada de la ola (§11). Pedirle que confirme dirección en el mapa y guarde
+nombre y teléfono antes de su primer pedido. Limitación conocida: quien tenga
+la URL puede comprar; si aparece un pedido de alguien no invitado, el negocio
+lo rechaza desde el Panel y se evalúa pausar (§8).
+
+### 2.5 RESET_ACCESS / RECOVER_ACCOUNT
+`reset-access --email <correo> --origin https://la-taba-commercial-pilot.pages.dev/`
+copia un enlace nuevo de un solo uso a `/cuenta/` (probado: canje, contraseña
+nueva y login OK; reusar el mismo enlace se rechaza). Si la cuenta estaba
+deshabilitada, primero `enable` (2.7).
+
+### 2.6 DISABLE_USER / DEACTIVATE_USER
+El Panel todavía no tiene botón para desactivar miembros; lo hace el operador:
+`disable --business-id <negocio> --email <correo> --operator --reason "<motivo>"`
+desactiva la membresía, borra todas sus sesiones y bloquea el login (probado:
+el login responde `user_banned`). Nunca desactiva a un dueño. No borra nada:
+pedidos y cobros quedan con su historia. Borrado definitivo: no durante el piloto.
+Con una sesión de dueño/admin se puede usar `--reviewer-credential "<nombre>"`
+en lugar de `--operator` y queda auditado por la RPC de identidad.
+
+### 2.7 Rehabilitar
+`enable --business-id <negocio> --email <correo> --operator --reason "<motivo>"`
+(desbloquea el login y reactiva la membresía; probado).
+
+### 2.8 Ver quién tiene acceso
+`list --business-id <negocio>` (correos enmascarados).
+
+## 3. Turno del negocio
+
+- **Abrir:** Panel → **Abrir** → **Volver a revisar** → resolver bloqueos
+  (cobertura, stock, riders, caja) → **Abrir el negocio**.
+- **Pausar pedidos (no cierra caja):** Panel → **Abrir** → **Pausar pedidos**.
+- **Cerrar el día:** Panel → **Cerrar el día** (cierre diario, separado de pausar).
+
+## 4. Catálogo y stock
+
+- Sólo se publica lo que el comercio aprobó por escrito (SKU, precio vigente,
+  stock inicial, descripción, foto). Import inicial: `docs/PILOT-INFRA-PLAN.md`
+  §“Comandos del operador técnico” (dry-run → preflight → apply). El importador
+  rechaza precios/stock históricos, SKU fuera de la lista y alcohol.
+- Secuencia cuando llega la aprobación: (1) alta del dueño (§2.1); (2) el
+  operador técnico pide acceso al Panel del negocio real y el dueño lo aprueba
+  como **Encargado**; (3) con esa sesión se guarda el token corto
+  `PILOT OWNER ACCESS TOKEN` (usuario = ref) y se corre dry-run → preflight
+  `--phase catalog` → `--apply`; (4) se cambia `catalogMode` a `approved` en
+  `deploy/controlled-production.json`, se despliega y el smoke exige exactamente
+  la lista aprobada.
+- Altas posteriores: Panel → **Nuevo producto** (borrador) → dueño revisa y publica.
+- Stock: Panel → **Recepción**, **Ajuste** o **Conteo físico**, siempre con motivo.
+  Nunca editar stock por SQL.
+- Despublicar: desde la ficha del producto en el Panel (quitarlo de la tienda).
+  No borrar productos con pedidos.
+
+## 5. Pedido de punta a punta
+
+1. Panel → **Pedidos**: llega en *Recibido* → **Aceptar** → **Preparar** → **Listo**.
+2. En la tarjeta: elegir rider **Disponible** → **Ofrecer**. El rider acepta en Android.
+3. Rider: **Retiré** → **En camino** (GPS activo) → **Llegué** → pide el código
+   de 4 dígitos al cliente → **Confirmar entrega**. Sólo Android confirma la entrega.
+4. Cliente: ve estado y mapa en la web; da el código al recibir.
+
+## 6. Cobro manual
+
+- En checkout el cliente elige *Efectivo al retirar o recibir* o *A coordinar*.
+  La pantalla dice que no paga ahí.
+- Panel → **Pagos**: *Cobro pendiente* **no** es pagado. Recién con el dinero
+  en mano: **Registrar efectivo recibido** / **Registrar transferencia recibida**.
+  Queda registrado quién, cuándo, pedido y estado anterior/nuevo; repetir el
+  botón no duplica el cobro.
+- Devolución: sólo dueño/encargado, **Registrar devolución realizada** y sólo
+  después de devolver el dinero. Un pedido con cobro registrado no se cancela
+  sin registrar antes la devolución.
+- No usar Mercado Pago: en este entorno el Panel muestra “Cobros online · No
+  habilitados en esta etapa”.
+
+## 7. Incidentes
+
+| Situación | Qué hacer |
+|---|---|
+| **Chequeo rápido sin secretos** | `TABA_QA_PROJECT_REF=<ref> TABA_QA_PUBLISHABLE_KEY=<clave publicable> node scripts/controlled-production/ops-pulse.mjs --target controlled-production --business-id <negocio> --public` (scheduler, Realtime, catálogo público de otro tenant, otro tenant abierto). Exit 0 sano, 1 mirar, 2 backend inaccesible o incorrecto |
+| **Pedido trabado** | `node scripts/controlled-production/ops-pulse.mjs --target controlled-production --business-id <negocio>` lista los trabados por estado y minutos. Panel → **Actualizar** antes de repetir una acción. Si sigue en el local: cancelar desde la tarjeta con motivo (el stock vuelve una sola vez). Si ya salió: coordinar con rider y cliente; nunca poner `delivered` por SQL |
+| **Cancelación** | Desde la tarjeta, con motivo. Si hay cobro registrado: primero **Registrar devolución realizada** |
+| **Rider offline** | Rider sin red no transmite. Que vuelva a abrir la app y marque Disponible. La disponibilidad vence a los 90 s sin señal; reofrecer a otro rider si no vuelve |
+| **GPS fallando** | Revisar ubicación precisa, notificación “GPS activo”, batería sin restricción para la app. `ops-pulse` marca `GPS_STALE`. Avisar al cliente que el mapa no está actualizado; el estado del pedido sigue visible |
+| **Cliente no ve el estado** | Recargar la web (el service worker trae la versión nueva sola). El seguimiento se consulta cada 5 s |
+| **Acceso comprometido** | `disable` (§2.6) y luego `reset-access` |
+| **Pedido de alguien no invitado** | Rechazarlo desde el Panel; si se repite, pausar pedidos (§8) |
+| **Negocio QA abierto** (`ops-pulse` marca `FOREIGN_TENANT_PUBLIC` u `OTHER_TENANT_OPEN`, o el smoke falla con `PUBLIC_CATALOG_OF_ANOTHER_TENANT_VISIBLE`) | `20260925090000` está aplicada en CP (2026-09-25): el servidor cierra el tenant QA al minuto de vencer la ventana (máx. 60 min) y, vencida, su catálogo ya no es público aunque siga abierto; abierto desde el Panel sin ventana tampoco es público y el cron lo cierra en ≤ 1 min (probado en vivo, runner matado incluido). Para cerrarlo ya: `node scripts/controlled-production/qa-window.mjs close --target controlled-production` (registra la sesión del dueño QA como el Panel) y confirmar con `... qa-window.mjs status --target controlled-production` (`PASS`) |
+| **Verificar la base después de una migración** | `node scripts/controlled-production/verify-cp-migrations.mjs --target controlled-production`: pausar/cerrar con pedidos habilitados, PAUSE ALL, columnas privadas de productos, borradores, ventana QA y su vencimiento del lado del servidor. Sólo sesiones QA reales; limpia todo |
+| **Scheduler / Realtime** (`SCHEDULER_STALE`, `REALTIME_UNAVAILABLE`) | Scheduler: los barridos (alertas, reservas vencidas, ventana QA) no corren; pausar pedidos (§8) si pasa de 10 min y revisar `cron.job` en Supabase. Realtime: el Panel igual refresca cada 5 s; si persiste, avisar a riders y revisar el estado de Supabase |
+
+Severidad y reglas de ola:
+- **P0** (pérdida o duplicado de pedido, cobro mal registrado, stock corrupto,
+  acceso cruzado, secreto expuesto, rider/entrega incorrecta, pérdida de datos):
+  **PAUSAR TODO** (§8) y abrir incidente.
+- **P1** (pedido no aparece, Panel no opera, Rider no completa, GPS inutilizable,
+  cliente sin estado, auth rota, rollback roto): no avanzar de ola.
+
+## 8. PAUSE ALL SYSTEM
+
+1. Panel → **Abrir** → **Pausar pedidos** (la tienda deja de aceptar pedidos).
+2. Riders → **No disponible** en la app.
+3. No enviar más invitaciones; avisar a clientes con pedidos activos.
+4. Terminar o cancelar (con motivo) los pedidos activos; registrar cobros reales.
+5. Si el problema es la web: rollback (§9). Si es la base: §10.
+Nunca borrar filas para “vaciar”: pedidos, cobros y eventos son la evidencia.
+
+Probado en CP el 2026-09-25 con los pedidos online habilitados (antes de
+`20260925085000` el paso 1 fallaba con 23514): pausa desde el Panel, riders en
+No disponible, pedido nuevo rechazado (55000), pedido activo cancelado con
+motivo y stock devuelto una sola vez.
+
+## 9. Rollback
+
+- **Web + config:** en Cloudflare Pages, proyecto **`la-taba-commercial-pilot`**
+  (nunca otro), elegir el deployment anterior exitoso → *Rollback*. Luego
+  verificar `version.json`, que el runtime siga apuntando al mismo ref,
+  login de Panel y un pedido de control. Ensayado con
+  `scripts/deploy/drill-commercial-pilot-rollback.mjs` (preflight → rollback → restore).
+- **Sólo entre versiones con el mismo grafo de migraciones.** Cada deployment
+  publica `pilot-deploy-metadata.json` con el hash de las migraciones con las que
+  se construyó; el ensayo (y el operador) rechaza volver a un deployment con otro
+  grafo (`ROLLBACK_DB_GRAPH_INCOMPATIBLE`). Después de migrar la base, el destino
+  válido de rollback es el primer deployment publicado con esas migraciones
+  (hoy `033946b`), no uno anterior: la web vieja no conoce el esquema nuevo.
+- **Ensayo automático:** armar `CP_DEPLOY_SHA` y `CP_ROLLBACK_DRILL_SHA` al mismo
+  commit de `release/taba-controlled-production`: captura el deployment vivo (A),
+  publica B, smoke de 3 motores, rollback B→A, smoke, restore A→B, smoke.
+- **Base de datos:** un rollback web **no** revierte migraciones. Se corrige
+  hacia adelante (migración compensatoria probada; cada migración trae su bloque
+  REVERSIÓN), nunca `reset`.
+- **Rider:** reinstalar la APK anterior de la ficha. Android puede pedir
+  desinstalar sólo `com.lataba.rider.pilot` para bajar de versión: se pierde la
+  sesión local, no los pedidos. Nunca desinstalar la histórica `com.lataba.rider`.
+
+## 10. Backups y restauración
+
+- **Base:** backups diarios automáticos de Supabase (plan Pro, retención 7 días,
+  PITR apagado; RPO ≤ 24 h). Además, **antes de cada migración o cambio de
+  versión**, backup con ensayo de restauración:
+  `node scripts/controlled-production/restore-drill.mjs --target controlled-production --pg-bin <bin de PostgreSQL 17> --pooler-host aws-0-sa-east-1.pooler.supabase.com`.
+  Hace `pg_dump` (formato custom) de `public`, `private`, `supabase_migrations`
+  y `auth.users/identities` bajo un único snapshot, lo guarda con su manifiesto
+  (tamaños, sha256, migraciones) en `~/.taba-backups/controlled-production/`
+  (fuera del repo: contiene datos personales), lo restaura en un PostgreSQL local
+  descartable y compara esquema, RLS, grants, funciones, migraciones y cada fila.
+  Sólo lee CP; la clave de la base sale del Credential Manager por entorno.
+  Probado el 2026-09-25: 102/102 tablas idénticas, esquema idéntico, 0 errores.
+- **Restaurar:** en Supabase → Database → Backups → restaurar el punto elegido
+  (reemplaza la base completa: pausar todo antes, §8), o en un proyecto nuevo:
+  `pg_restore --no-owner` en este orden: `auth-users.dump` (pre-data + data),
+  `app.dump` (pre-data + data), `auth-users.dump` (post-data), `app.dump`
+  (post-data). Lo que un dump de esquema no trae y hay que recrear en ese
+  proyecto: los 5 jobs de `cron` (los programan las migraciones), las 10 tablas
+  de la publicación `supabase_realtime`, el bucket `fiscal-documents` y su
+  política. Después, deploy con el nuevo ref (runtime) y `ops-pulse`.
+- **Storage:** este entorno no guarda archivos de clientes. Las fotos del
+  catálogo son archivos con hash en el nombre, versionados en el repositorio
+  (`assets/products/`), listados en `catalog/PUBLIC-PRODUCT-ASSETS.json`,
+  referenciados con su sha256 por `products` y `catalog_assets`, y se publican con
+  la web. Inventario y verificación: `node scripts/controlled-production/storage-inventory.mjs --target controlled-production`
+  (hoy: 16 archivos presentes en git con el hash de la base y servidos idénticos;
+  bucket privado `fiscal-documents` con 0 objetos). Recuperar = redeploy de la
+  web desde git + restaurar filas (o reimportar el catálogo: el importador es
+  idempotente).
+
+## 11. Rollout por olas
+
+| Ola | Clientes | Para avanzar |
+|---|---|---|
+| 1 | 5 conocidos | 0 P0, 0 P1, todos los pedidos terminales y cobros registrados, `ops-pulse` sano |
+| 2 | 15 | ídem durante al menos 3 días de operación de la ola 1 |
+| 3 | 30 | ídem durante la ola 2 |
+
+Invitaciones sólo por mensaje privado. No publicar la URL.
+
+## 12. Compuertas antes de invitar
+
+`PRODUCTION_TECH_READY` y `COMMERCIAL_OPEN_READY` se informan por separado.
+Sin catálogo aprobado el entorno puede estar desplegado con **0 productos
+publicados** (smoke `--catalog-mode none` exige que no se vea ninguno) y no se
+invita a nadie. Antes de cada ola: `qa-window.mjs status` en `PASS` (ningún
+negocio QA con catálogo público). Detalle de evidencias y estado actual: `docs/CONTROLLED-PRODUCTION-STATUS.md`.
+
+## 13. Versiones actuales
+
+`version.json` publicado (commit y runtime web), `CACHE_NAME` en `sw.js`,
+APK Rider de la ficha y ledger de migraciones del proyecto
+(`supabase migration list --linked`). Registrarlos antes y después
+de cada cambio. Estado vigente y evidencia: `docs/CONTROLLED-PRODUCTION-STATUS.md`.
+
+## 14. Chequeos del operador
+
+| Qué | Comando (`node scripts/controlled-production/...`, `--target controlled-production`) |
+|---|---|
+| Salud sin secretos (scheduler, Realtime, exposición, otros tenants) | `ops-pulse.mjs --business-id <negocio> --public` |
+| Salud completa (pedidos trabados, cobros, riders, GPS, alertas, stock) | `ops-pulse.mjs --business-id <negocio>` |
+| Tenant QA cerrado | `qa-window.mjs status` |
+| Base después de migrar | `verify-cp-migrations.mjs` |
+| Carrera de la última unidad | `last-unit-race.mjs` |
+| Backup + restauración | `restore-drill.mjs --pg-bin <dir> --pooler-host <host>` |
+| Storage | `storage-inventory.mjs` |
+| Web en vivo y service worker (antes/después de un deploy) | `sw-live-check.mjs --phase seed\|upgrade\|fresh --profile <dir>` |
+| Aislamiento de entornos del Rider (en la PC con la firma) | `rider-env-matrix.mjs --build-allowed` |
+| Capacidad 30 usuarios | desde GitHub Actions: `CAPACITY_RUN_SHA` = commit de la rama `release` |

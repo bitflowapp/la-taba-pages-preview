@@ -27,6 +27,7 @@ import {
   normalizeOperationsConfig, validateWeeklyHours, validateZoneDraft,
 } from './business-operations-config.js';
 import { buildAlwaysOpenGrid } from '../core/service-hours.js';
+import { onlinePaymentsEnabled } from '../core/runtime-config.js';
 
 export const BUSINESS_OPERATION_VIEWS = Object.freeze([
   'operation-center', 'day-open', 'orders', 'operations-config', 'payments', 'payments-setup', 'scanner', 'product-create',
@@ -127,6 +128,8 @@ let paymentsActivation = null;
 let sellerConnection = null;
 let payments = [];
 let paymentsStatus = { phase: 'idle', message: '' };
+let manualPayments = [];
+let manualPaymentsStatus = { phase: 'idle', message: '' };
 let paymentsLoadStarted = false;
 let refundTarget = '';
 let operationsConfig = null;
@@ -140,6 +143,10 @@ let arcaAuthorizationDraft = '';
 let openingSignals = null;
 let openingStatusRaw = null;
 let openingLoadStarted = false;
+/** Lo último que contestó el servidor sobre los pedidos cerrados de hoy. */
+let finishedToday = null;
+/** Una sola consulta aunque coincidan el comando local y el snapshot remoto. */
+let finishedTodayRequest = null;
 let deviceResults = {};
 let deviceCheckPrinters = [];
 let devicePrintersLoadStarted = false;
@@ -171,6 +178,8 @@ export function configureBusinessOperations(next = {}) {
   sellerConnection = null;
   payments = [];
   paymentsStatus = { phase: 'idle', message: '' };
+  manualPayments = [];
+  manualPaymentsStatus = { phase: 'idle', message: '' };
   paymentsLoadStarted = false;
   refundTarget = '';
   arcaActivation = null;
@@ -179,6 +188,8 @@ export function configureBusinessOperations(next = {}) {
   openingSignals = null;
   openingStatusRaw = null;
   openingLoadStarted = false;
+  finishedToday = null;
+  finishedTodayRequest = null;
   deviceResults = {};
   deviceCheckPrinters = [];
   devicePrintersLoadStarted = false;
@@ -208,9 +219,11 @@ export function renderBusinessOperations(view) {
       config: operationsConfig, status: operationsConfigStatus, busy, draft: operationsConfigDraft,
     }),
     payments: () => renderPaymentsSurface({
-      payments, status: paymentsStatus, role: context.role, activation: paymentsActivation, connection: sellerConnection, busy, refundTarget,
+      payments, status: paymentsStatus, manualPayments, manualStatus: manualPaymentsStatus,
+      role: context.role, activation: paymentsActivation, connection: sellerConnection, busy, refundTarget,
+      onlinePayments: onlinePaymentsEnabled(),
     }),
-    'payments-setup': () => renderPaymentsSetupSurface({ activation: paymentsActivation, connection: sellerConnection, role: context.role, busy }),
+    'payments-setup': () => renderPaymentsSetupSurface({ activation: paymentsActivation, connection: sellerConnection, role: context.role, busy, onlinePayments: onlinePaymentsEnabled() }),
     'fiscal-setup': () => renderFiscalSetupSurface({
       activation: arcaActivation, role: context.role, busy, authorizationDraft: arcaAuthorizationDraft,
     }),
@@ -260,6 +273,86 @@ export function renderBusinessOperations(view) {
 }
 
 // El panel no ofrece pantallas que el rol no puede usar; el servidor igual revalida.
+/*
+ * ¿ESTÁ ABIERTO EL NEGOCIO? LA CABECERA DE LA BANDEJA TIENE QUE PODER DECIRLO.
+ * ---------------------------------------------------------------------------
+ * `openingStatusRaw` ya existía, pero sólo se llenaba al entrar a «Abrir»: en
+ * la bandeja valía `null` siempre. Y es el dato que separa dos situaciones que
+ * en pantalla se ven IDÉNTICAS —una bandeja tranquila y un comercio marcado
+ * como cerrado, que no recibe ni un pedido—. La segunda es una noche perdida y
+ * hasta ahora sólo se descubría entrando a otra pantalla.
+ *
+ * `primeBusinessOpeningStatus()` lo pide UNA vez por sesión del Panel, no por
+ * repintado ni por latido: el estado de apertura lo cambia una persona desde
+ * «Abrir» o «Cerrar», y esas dos acciones ya vuelven a pedirlo. Es una llamada
+ * por sesión, y devuelve la promesa para que quien la dispare pueda esperarla
+ * en una prueba.
+ */
+export function primeBusinessOpeningStatus() {
+  if (openingLoadStarted) return Promise.resolve(openingStatusRaw);
+  if (typeof context?.getOpeningStatus !== 'function') return Promise.resolve(null);
+  openingLoadStarted = true;
+  return refreshOpeningStatus().then(() => openingStatusRaw).catch(() => null);
+}
+
+/**
+ * El estado de apertura que confirmó el servidor, o `null` si todavía no
+ * contestó. `null` NO es «cerrado»: es «no sabemos», y la cabecera lo calla en
+ * vez de inventar una respuesta.
+ */
+export function businessOpeningStatus() {
+  const estado = String(openingStatusRaw?.business_status || '').toLowerCase();
+  return ['open', 'paused', 'closed'].includes(estado) ? estado : null;
+}
+
+/*
+ * LOS PEDIDOS CERRADOS DE HOY, CONTADOS DONDE ESTÁN.
+ * ---------------------------------------------------------------------------
+ * La bandeja del Panel trae SÓLO estados activos: `fetchBusinessOrderSnapshot`
+ * filtra por `BUSINESS_INBOX_STATUSES` y `delivered` no está entre ellos. Un
+ * «finalizados hoy» contado con lo que hay en memoria daría cero al abrir, cero
+ * después de recargar, y un número distinto en cada pestaña abierta. Es
+ * exactamente el tipo de dato que hace desconfiar de todos los demás de la
+ * pantalla.
+ *
+ * Traer los pedidos del día para contarlos tampoco sirve: en una noche buena
+ * son cientos de filas con sus ítems para mostrar un número de dos dígitos. El
+ * servidor cuenta y devuelve el número.
+ *
+ * Se refresca al arrancar y después de cada cierre —no por latido—: el número
+ * sólo cambia cuando alguien entrega o cancela, y eso siempre pasa por una
+ * acción que el Panel ya ve.
+ */
+export async function refreshBusinessFinishedToday() {
+  if (typeof context?.getFinishedToday !== 'function') return null;
+  if (finishedTodayRequest) return finishedTodayRequest;
+  finishedTodayRequest = (async () => {
+    const respuesta = await context.getFinishedToday();
+    // Una lectura fallida NO pisa el último número bueno con un cero: entre «no
+    // pude preguntar» y «cerraste cero pedidos» hay toda la diferencia, y en la
+    // tira los dos se leerían igual.
+    const dato = respuesta?.data;
+    if (!respuesta?.ok || !dato || typeof dato !== 'object' || Array.isArray(dato)) return finishedToday;
+    finishedToday = {
+      delivered: Number(dato.delivered || 0),
+      cancelled: Number(dato.cancelled || 0),
+      businessDate: String(dato.business_date || ''),
+    };
+    context.onChange?.();
+    return finishedToday;
+  })();
+  try {
+    return await finishedTodayRequest;
+  } finally {
+    finishedTodayRequest = null;
+  }
+}
+
+/** `null` mientras el servidor no contestó. Nunca se inventa un cero. */
+export function businessFinishedToday() {
+  return finishedToday ? { ...finishedToday } : null;
+}
+
 export function allowedBusinessOperationViews(role) {
   return BUSINESS_OPERATION_VIEWS.filter((view) => can(role, VIEW_CAPABILITY[view]));
 }
@@ -389,6 +482,10 @@ export async function handleBusinessOperationsAction(target) {
   if (target.closest('[data-product-publish]')) return refreshProductReadiness();
 
   if (target.closest('[data-payments-refresh]')) return refreshPaymentsAction();
+  const manualConfirm = target.closest('[data-manual-payment-confirm]');
+  if (manualConfirm) return confirmManualPayment(manualConfirm);
+  const manualReverse = target.closest('[data-manual-payment-reverse]');
+  if (manualReverse) return reverseManualPayment(manualReverse);
   const mpAction = target.closest('[data-mp-connection-action]');
   if (mpAction) return runMercadoPagoConnection(mpAction.dataset.mpConnectionAction);
   if (target.closest('[data-mercadopago-status-refresh]')) return refreshPaymentsAction();
@@ -583,6 +680,8 @@ export function resetBusinessOperationsForTests() {
   paymentsActivation = null;
   payments = [];
   paymentsStatus = { phase: 'idle', message: '' };
+  manualPayments = [];
+  manualPaymentsStatus = { phase: 'idle', message: '' };
   paymentsLoadStarted = false;
   refundTarget = '';
   resetOperationsConfigState();
@@ -592,6 +691,8 @@ export function resetBusinessOperationsForTests() {
   openingSignals = null;
   openingStatusRaw = null;
   openingLoadStarted = false;
+  finishedToday = null;
+  finishedTodayRequest = null;
   deviceResults = {};
   deviceCheckPrinters = [];
   devicePrintersLoadStarted = false;
@@ -1465,6 +1566,7 @@ async function installSignedUpdate(button) {
 }
 
 export function businessOperationViewLabel(view) {
+  if (view === 'payments-setup' && !onlinePaymentsEnabled()) return 'Cobros online';
   return VIEW_META[view]?.[0] || '';
 }
 
@@ -2012,6 +2114,7 @@ function bytesToBase64(bytes) {
 
 async function refreshPayments() {
   paymentsStatus = { phase: 'loading', message: '' };
+  void refreshManualPayments();
   context.onChange();
   const [list, activation, connectionResult] = await Promise.all([context.listPayments(), context.getPaymentsActivation(), context.mercadoPagoConnectionAction('status')]);
   sellerConnection = connectionResult?.ok ? connectionResult.data.connection : { status: 'unavailable' };
@@ -2022,6 +2125,77 @@ async function refreshPayments() {
     : { phase: 'error', message: humanizeFailure(list?.message, 'No pudimos leer los pagos ahora.') };
   context.onChange();
   return list;
+}
+
+async function refreshManualPayments() {
+  manualPaymentsStatus = { phase: 'loading', message: '' };
+  context.onChange();
+  const listed = await context.listManualPayments();
+  manualPayments = listed?.ok && Array.isArray(listed.data) ? listed.data : [];
+  manualPaymentsStatus = listed?.ok
+    ? { phase: 'ready', message: '' }
+    : { phase: 'error', message: listed?.message || 'No pudimos leer los cobros manuales.' };
+  context.onChange();
+  return listed;
+}
+
+async function confirmManualPayment(button) {
+  const guard = requireCapability('payments.view');
+  if (!guard.ok) return guard.result;
+  if (busy) return result(false, 'Ya hay una operación en curso.');
+  const order = manualPayments.find((item) => item.id === button.dataset.manualPaymentConfirm);
+  const method = button.dataset.manualPaymentMethod;
+  if (!order || order.manual_payment_status !== 'pending'
+      || ['canceled', 'cancelled', 'rejected'].includes(order.status)
+      || !['cash', 'transfer'].includes(method)
+      || (order.payment_method === 'cash' && method !== 'cash')) {
+    return result(false, 'Actualizá el pedido antes de registrar el cobro.');
+  }
+  const prompt = `¿Recibiste ${order.total} ${order.currency_code || 'ARS'} del pedido ${order.public_code}? Registrarás ${method === 'cash' ? 'efectivo' : 'transferencia'} como pagado.`;
+  if (globalThis.confirm?.(prompt) !== true) return result(false, 'Sin cambios.');
+  busy = true;
+  context.onChange();
+  try {
+    const response = await context.confirmManualPayment({
+      orderId: order.id, expectedRevision: order.revision, actualMethod: method,
+      idempotencyKey: operationKey('manual-confirm', order.id, order.revision, method),
+    });
+    await refreshManualPayments();
+    feedback = response?.ok ? 'Cobro manual registrado por el servidor.'
+      : humanizeFailure(response?.message, 'El cobro no fue confirmado.');
+    return result(Boolean(response?.ok), feedback);
+  } finally {
+    busy = false;
+    context.onChange();
+  }
+}
+
+async function reverseManualPayment(button) {
+  const guard = requireCapability('payments.refund');
+  if (!guard.ok) return guard.result;
+  if (busy) return result(false, 'Ya hay una operación en curso.');
+  const order = manualPayments.find((item) => item.id === button.dataset.manualPaymentReverse);
+  if (!order || order.manual_payment_status !== 'confirmed')
+    return result(false, 'Actualizá el pedido antes de registrar una devolución.');
+  const reason = String(globalThis.prompt?.('Motivo de la devolución manual ya realizada:', '') || '').trim();
+  if (reason.length < 8 || reason.length > 200) return result(false, 'Ingresá un motivo de 8 a 200 caracteres.');
+  if (globalThis.confirm?.(`¿Ya devolviste ${order.total} ${order.currency_code || 'ARS'} del pedido ${order.public_code}?`) !== true)
+    return result(false, 'Sin cambios.');
+  busy = true;
+  context.onChange();
+  try {
+    const response = await context.reverseManualPayment({
+      orderId: order.id, expectedRevision: order.revision, reason,
+      idempotencyKey: operationKey('manual-reverse', order.id, order.revision, reason),
+    });
+    await refreshManualPayments();
+    feedback = response?.ok ? 'Devolución manual registrada por el servidor.'
+      : humanizeFailure(response?.message, 'La devolución no fue confirmada.');
+    return result(Boolean(response?.ok), feedback);
+  } finally {
+    busy = false;
+    context.onChange();
+  }
 }
 
 async function refreshPaymentsAction() {
@@ -2037,6 +2211,7 @@ async function refreshPaymentsAction() {
 async function runMercadoPagoConnection(action) {
   const guard = requireCapability('payments.reconcile');
   if (!guard.ok) return guard.result;
+  if (!onlinePaymentsEnabled()) return result(false, 'Cobros online no habilitados en esta etapa.');
   if (busy) return result(false, 'Ya hay algo en curso.');
   if (action === 'disconnect' && !globalThis.confirm('¿Desconectar Mercado Pago? Se pausarán los pagos online. El historial se conserva.')) return result(false, 'Sin cambios.');
   busy = true;
@@ -2518,6 +2693,9 @@ function defaultContext() {
     setDeliveryPricing: async () => ({ ok: false, message: 'La configuración operativa no está disponible.' }),
     setServiceEnforcement: async () => ({ ok: false, message: 'La configuración operativa no está disponible.' }),
     listPayments: async () => ({ ok: false, message: 'Los pagos no están disponibles.' }),
+    listManualPayments: async () => ({ ok: false, message: 'Los cobros manuales no están disponibles.' }),
+    confirmManualPayment: async () => ({ ok: false }),
+    reverseManualPayment: async () => ({ ok: false }),
     mercadoPagoConnectionAction: async () => ({ ok: false }),
     getPaymentsActivation: async () => ({ ok: false, message: 'El estado de cobros no está disponible.' }),
     configurePaymentSettings: async () => ({ ok: false, message: 'La configuración de cobros no está disponible.' }),

@@ -7,7 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { normalizeBrowserSupabaseKey } from '../js/core/runtime-config.js';
 
-export const EXPECTED_STAGING_REF = 'ukxqbgswjlibmnjemrzd';
+export const EXPECTED_STAGING_REF = 'ucbtjcurawxjwjdvvcvj';
 export const REQUIRED_CONFIRMATION = 'I_UNDERSTAND_THIS_CREATES_SYNTHETIC_ORDERS_IN_STAGING';
 const DEFAULT_PUBLIC_RUNTIME_PATH = fileURLToPath(
   new URL('../../la-taba-real-pilot-staging/runtime-config.js', import.meta.url),

@@ -157,6 +157,11 @@ test('business-identity exige el declarado y niega el de plantilla', () => {
   const ok = scan({ 'cfg.js': `const businessId = '${canonico}';\n` }, ['--business-id', canonico]);
   assert.equal(ok.code, 0, JSON.stringify(ok.report.findings));
 
+  const stagingBusiness = 'a57b1c20-0f4e-4a6b-9d31-7c2e5f8a41d0';
+  const jsonConfig = scan({ 'cfg.js': `globalThis.config = {"businessId":"${stagingBusiness}"};\n` },
+    ['--business-id', stagingBusiness]);
+  assert.equal(jsonConfig.code, 0, JSON.stringify(jsonConfig.report.findings));
+
   const falta = scan({ 'cfg.js': 'export const x = 1;\n' }, ['--business-id', canonico]);
   assert.equal(falta.code, 1);
   assert.ok(falta.report.findings.some((f) => /falta el businessId esperado/.test(f.detail || '')));

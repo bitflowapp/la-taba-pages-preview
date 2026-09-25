@@ -7,6 +7,7 @@ import { getMotionDiagnostics, initMotion, isMotionReduced } from '../js/motion.
 const ROOT = path.resolve(import.meta.dirname, '..');
 const tokens = fs.readFileSync(path.join(ROOT, 'styles/tokens.css'), 'utf8');
 const motion = fs.readFileSync(path.join(ROOT, 'styles/motion.css'), 'utf8');
+const motionController = fs.readFileSync(path.join(ROOT, 'js/motion.js'), 'utf8');
 
 test('motion tokens are centralized and stay within commercial timing budgets', () => {
   for (const token of [
@@ -39,10 +40,15 @@ test('motion controller is safe without a browser DOM and exposes diagnostics', 
 });
 
 test('one shared observer and cleanup API are present for dynamic renders', () => {
-  assert.match(fs.readFileSync(path.join(ROOT, 'js/motion.js'), 'utf8'), /new windowRef\.IntersectionObserver/);
-  assert.match(fs.readFileSync(path.join(ROOT, 'js/motion.js'), 'utf8'), /new windowRef\.MutationObserver/);
-  assert.match(fs.readFileSync(path.join(ROOT, 'js/motion.js'), 'utf8'), /observer\?\.disconnect/);
-  assert.match(fs.readFileSync(path.join(ROOT, 'js/motion.js'), 'utf8'), /mutationObserver\?\.disconnect/);
+  assert.match(motionController, /new windowRef\.IntersectionObserver/);
+  assert.match(motionController, /new windowRef\.MutationObserver/);
+  assert.match(motionController, /observer\?\.disconnect/);
+  assert.match(motionController, /mutationObserver\?\.disconnect/);
+});
+
+test('dynamic cart renders stay visible instead of replaying the card entrance', () => {
+  assert.match(motionController, /collect\(\{ revealImmediately: true \}\)/);
+  assert.match(motionController, /reduced \|\| revealImmediately \|\| !observer/);
 });
 
 test('only the loading skeleton is allowed an infinite visual loop', () => {

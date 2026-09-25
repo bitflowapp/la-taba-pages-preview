@@ -1,0 +1,81 @@
+{
+  "workflowRun": 36068822992,
+  "deploymentA": "70dde1245baf89b8f0fb166121a1f7af726ddd62",
+  "deploymentB": "4378ed2e19702b6de091c4fac050569534f12019",
+  "steps": [
+    {
+      "pilotPackage": "PASS",
+      "deployed": false,
+      "commit": "4378ed2e19702b6de091c4fac050569534f12019",
+      "projectRef": "tkanbadcglszlcyfjvpv",
+      "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+      "approvedSkus": [],
+      "artifact": "dist_pilot",
+      "secretsPrinted": false
+    },
+    {
+      "pilotPublicSmoke": "PASS",
+      "catalogMode": "none",
+      "origin": "https://la-taba-commercial-pilot.pages.dev",
+      "ref": "tkanbadcglszlcyfjvpv",
+      "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+      "approvedProducts": 0,
+      "images": 0,
+      "browsers": {
+        "chromium": "PASS",
+        "chrome_android": "PASS",
+        "webkit": "PASS"
+      }
+    },
+    {
+      "pilotRollbackPreflight": "PASS",
+      "cloudWrites": false,
+      "localReceiptCreated": true,
+      "previousCommit": "70dde1245baf89b8f0fb166121a1f7af726ddd62",
+      "candidateCommit": "4378ed2e19702b6de091c4fac050569534f12019"
+    },
+    {
+      "pilotRollbackDrill": "PASS",
+      "phase": "rollback",
+      "restoredCommit": "70dde1245baf89b8f0fb166121a1f7af726ddd62",
+      "backendUnchanged": true,
+      "configVerified": true
+    },
+    {
+      "pilotPublicSmoke": "PASS",
+      "catalogMode": "none",
+      "origin": "https://la-taba-commercial-pilot.pages.dev",
+      "ref": "tkanbadcglszlcyfjvpv",
+      "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+      "approvedProducts": 0,
+      "images": 0,
+      "browsers": {
+        "chromium": "PASS",
+        "chrome_android": "PASS",
+        "webkit": "PASS"
+      }
+    },
+    {
+      "pilotRollbackDrill": "PASS",
+      "phase": "restore",
+      "restoredCommit": "4378ed2e19702b6de091c4fac050569534f12019",
+      "backendUnchanged": true,
+      "configVerified": true
+    },
+    {
+      "pilotPublicSmoke": "PASS",
+      "catalogMode": "none",
+      "origin": "https://la-taba-commercial-pilot.pages.dev",
+      "ref": "tkanbadcglszlcyfjvpv",
+      "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+      "approvedProducts": 0,
+      "images": 0,
+      "browsers": {
+        "chromium": "PASS",
+        "chrome_android": "PASS",
+        "webkit": "PASS"
+      }
+    }
+  ],
+  "servedAfterDrill": "4378ed2e19702b6de091c4fac050569534f12019"
+}

@@ -13,7 +13,11 @@ import {
 import { getState, setState } from '../js/state.js';
 import { CONFIRMED_DELIVERY_POINT, resetState } from './helpers.mjs';
 
-beforeEach(() => resetState());
+beforeEach(() => resetState({
+  // The delivery-code contract must not depend on a removed catalog seed ID.
+  products: [{ id: 'qa-gaseosa-cola', name: 'Bebida QA', categoryId: 'gaseosas',
+    price: 11200, stock: 20, available: true, alcoholic: false, unit: 'unidad' }],
+}));
 
 test('delivery code: normaliza, formatea y valida 4 digitos', () => {
   const code = normalizeDeliveryCode({ code: '12 34' });

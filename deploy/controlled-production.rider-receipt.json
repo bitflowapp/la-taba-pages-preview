@@ -1,0 +1,11 @@
+{
+  "target": "pilot",
+  "backend": "tkanbadcglszlcyfjvpv",
+  "packageId": "com.lataba.rider.pilot",
+  "versionCode": 4,
+  "versionName": "0.1.3-canonical-pilot",
+  "certificateSha256": "2dcc9b0a0cf022ebf59c500331103ee31cec9e9142d5431553131877948ec1aa",
+  "apkFile": "apps/rider-android/app/build/outputs/apk/release/app-release.apk",
+  "apkSha256": "2fcc64f9c8cac31fcc65449b25d604e9dc04dae87e5947a4f5554b9875b187d4",
+  "builtAt": "2026-09-24T21:47:29.563Z"
+}

@@ -746,11 +746,13 @@ function normalizeDelivery(delivery, deliveryMode, status) {
   };
 }
 
+// Ver `locationLabel` en supabase_order_repository.js: un pedido en camino
+// puede no tener repartidor desde que el comercio reparte con su propia gente.
 function defaultLocationLabel(status, deliveryMode) {
   if (deliveryMode === 'pickup') return 'Pedido para retirar en local';
   if (status === 'ready') return 'Pedido listo en el local';
-  if (status === 'on_the_way') return 'El repartidor salió del local';
-  if (status === 'arriving') return 'El repartidor está llegando';
+  if (status === 'on_the_way') return 'Tu pedido salió del local';
+  if (status === 'arriving') return 'Tu pedido está llegando';
   if (status === 'delivered') return 'Pedido entregado';
   if (status === 'cancelled') return 'Pedido cancelado por el negocio';
   return 'Pedido recibido por el local';

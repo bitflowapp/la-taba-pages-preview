@@ -1,0 +1,264 @@
+{
+  "seed": {
+    "at": "2026-09-25T06:17:52.350Z",
+    "phase": "seed",
+    "origin": "https://la-taba-commercial-pilot.pages.dev/",
+    "checks": {
+      "PAGE_LOADS": "PASS",
+      "BACKEND_IS_CP": "PASS",
+      "SW_CONTROLLING": "PASS",
+      "RUNTIME_CACHE_PRESENT": "PASS",
+      "SERVES_EXPECTED_COMMIT": "PASS",
+      "PANEL_SESSION_RECOGNISED": "PASS",
+      "NO_JS_ERRORS": "PASS"
+    },
+    "observed": {
+      "first": {
+        "status": 200,
+        "controller": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+        "active": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+        "waiting": false,
+        "caches": [
+          "la-taba-runtime-v117-controlled-production"
+        ],
+        "version": {
+          "commit": "4378ed2e19702b6de091c4fac050569534f12019",
+          "runtime": "la-taba-runtime-v117-controlled-production",
+          "builtAt": "2026-09-24T23:16:53.670Z"
+        },
+        "supabaseUrl": "https://tkanbadcglszlcyfjvpv.supabase.co",
+        "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+        "environment": "pilot",
+        "authKeys": 0
+      },
+      "PAGE_LOADS": 200,
+      "SW_CONTROLLING": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+      "RUNTIME_CACHE_PRESENT": [
+        "la-taba-runtime-v117-controlled-production"
+      ],
+      "SERVES_EXPECTED_COMMIT": "4378ed2e19702b6de091c4fac050569534f12019",
+      "PANEL_SESSION_RECOGNISED": "request",
+      "seedCommit": "4378ed2e19702b6de091c4fac050569534f12019",
+      "NO_JS_ERRORS": []
+    },
+    "verdict": "PASS"
+  },
+  "upgrade": {
+    "at": "2026-09-25T06:57:27.197Z",
+    "phase": "upgrade",
+    "origin": "https://la-taba-commercial-pilot.pages.dev/",
+    "checks": {
+      "PAGE_LOADS": "PASS",
+      "BACKEND_IS_CP": "PASS",
+      "SW_CONTROLLING": "PASS",
+      "RUNTIME_CACHE_PRESENT": "PASS",
+      "SERVES_EXPECTED_COMMIT": "PASS",
+      "EXISTING_SESSION_KEPT": "PASS",
+      "RELOAD_KEEPS_SW_AND_VERSION": "PASS",
+      "UPDATE_CHECK_OK": "PASS",
+      "HARD_RELOAD_OK": "PASS",
+      "NO_JS_ERRORS": "PASS"
+    },
+    "observed": {
+      "first": {
+        "status": 200,
+        "controller": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+        "active": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+        "waiting": false,
+        "caches": [
+          "la-taba-runtime-v117-controlled-production"
+        ],
+        "version": {
+          "commit": "033946b2397648d51345967d2942890a4d61d225",
+          "runtime": "la-taba-runtime-v117-controlled-production",
+          "builtAt": "2026-09-25T06:55:22.556Z"
+        },
+        "supabaseUrl": "https://tkanbadcglszlcyfjvpv.supabase.co",
+        "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+        "environment": "pilot",
+        "authKeys": 1
+      },
+      "PAGE_LOADS": 200,
+      "SW_CONTROLLING": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+      "RUNTIME_CACHE_PRESENT": [
+        "la-taba-runtime-v117-controlled-production"
+      ],
+      "SERVES_EXPECTED_COMMIT": "033946b2397648d51345967d2942890a4d61d225",
+      "EXISTING_SESSION_KEPT": "request",
+      "RELOAD_KEEPS_SW_AND_VERSION": "033946b2397648d51345967d2942890a4d61d225",
+      "UPDATE_CHECK_OK": {
+        "ok": true,
+        "installing": false,
+        "waiting": false
+      },
+      "HARD_RELOAD_OK": "033946b2397648d51345967d2942890a4d61d225",
+      "final": {
+        "controller": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+        "active": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+        "waiting": false,
+        "caches": [
+          "la-taba-runtime-v117-controlled-production"
+        ],
+        "version": {
+          "commit": "033946b2397648d51345967d2942890a4d61d225",
+          "runtime": "la-taba-runtime-v117-controlled-production",
+          "builtAt": "2026-09-25T06:55:22.556Z"
+        },
+        "supabaseUrl": "https://tkanbadcglszlcyfjvpv.supabase.co",
+        "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+        "environment": "pilot",
+        "authKeys": 1
+      },
+      "NO_JS_ERRORS": []
+    },
+    "verdict": "PASS"
+  },
+  "fresh": {
+    "at": "2026-09-25T06:57:40.390Z",
+    "phase": "fresh",
+    "origin": "https://la-taba-commercial-pilot.pages.dev/",
+    "checks": {
+      "PAGE_LOADS": "PASS",
+      "BACKEND_IS_CP": "PASS",
+      "SW_CONTROLLING": "PASS",
+      "RUNTIME_CACHE_PRESENT": "PASS",
+      "SERVES_EXPECTED_COMMIT": "PASS",
+      "RELOAD_KEEPS_SW_AND_VERSION": "PASS",
+      "UPDATE_CHECK_OK": "PASS",
+      "HARD_RELOAD_OK": "PASS",
+      "NO_JS_ERRORS": "PASS"
+    },
+    "observed": {
+      "first": {
+        "status": 200,
+        "controller": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+        "active": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+        "waiting": false,
+        "caches": [
+          "la-taba-runtime-v117-controlled-production"
+        ],
+        "version": {
+          "commit": "033946b2397648d51345967d2942890a4d61d225",
+          "runtime": "la-taba-runtime-v117-controlled-production",
+          "builtAt": "2026-09-25T06:55:22.556Z"
+        },
+        "supabaseUrl": "https://tkanbadcglszlcyfjvpv.supabase.co",
+        "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+        "environment": "pilot",
+        "authKeys": 0
+      },
+      "PAGE_LOADS": 200,
+      "SW_CONTROLLING": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+      "RUNTIME_CACHE_PRESENT": [
+        "la-taba-runtime-v117-controlled-production"
+      ],
+      "SERVES_EXPECTED_COMMIT": "033946b2397648d51345967d2942890a4d61d225",
+      "RELOAD_KEEPS_SW_AND_VERSION": "033946b2397648d51345967d2942890a4d61d225",
+      "UPDATE_CHECK_OK": {
+        "ok": true,
+        "installing": false,
+        "waiting": false
+      },
+      "HARD_RELOAD_OK": "033946b2397648d51345967d2942890a4d61d225",
+      "final": {
+        "controller": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+        "active": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+        "waiting": false,
+        "caches": [
+          "la-taba-runtime-v117-controlled-production"
+        ],
+        "version": {
+          "commit": "033946b2397648d51345967d2942890a4d61d225",
+          "runtime": "la-taba-runtime-v117-controlled-production",
+          "builtAt": "2026-09-25T06:55:22.556Z"
+        },
+        "supabaseUrl": "https://tkanbadcglszlcyfjvpv.supabase.co",
+        "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+        "environment": "pilot",
+        "authKeys": 0
+      },
+      "NO_JS_ERRORS": []
+    },
+    "verdict": "PASS"
+  },
+  "upgradeAfterFinalDeploy": {
+    "at": "2026-09-25T07:45:20.618Z",
+    "phase": "upgrade",
+    "origin": "https://la-taba-commercial-pilot.pages.dev/",
+    "checks": {
+      "PAGE_LOADS": "PASS",
+      "BACKEND_IS_CP": "PASS",
+      "SW_CONTROLLING": "PASS",
+      "RUNTIME_CACHE_PRESENT": "PASS",
+      "SERVES_EXPECTED_COMMIT": "PASS",
+      "EXISTING_SESSION_KEPT": "PASS",
+      "RELOAD_KEEPS_SW_AND_VERSION": "PASS",
+      "UPDATE_CHECK_OK": "PASS",
+      "HARD_RELOAD_OK": "PASS",
+      "NO_JS_ERRORS": "PASS"
+    },
+    "observed": {
+      "first": {
+        "status": 200,
+        "controller": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+        "active": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+        "waiting": false,
+        "caches": [
+          "la-taba-runtime-v117-controlled-production"
+        ],
+        "version": {
+          "commit": "247eec7e9624fdb609bbf20b81796b8145ec7e8b",
+          "runtime": "la-taba-runtime-v117-controlled-production",
+          "builtAt": "2026-09-25T07:43:51.320Z"
+        },
+        "supabaseUrl": "https://tkanbadcglszlcyfjvpv.supabase.co",
+        "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+        "environment": "pilot",
+        "authKeys": 1
+      },
+      "PAGE_LOADS": 200,
+      "SW_CONTROLLING": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+      "RUNTIME_CACHE_PRESENT": [
+        "la-taba-runtime-v117-controlled-production"
+      ],
+      "SERVES_EXPECTED_COMMIT": "247eec7e9624fdb609bbf20b81796b8145ec7e8b",
+      "EXISTING_SESSION_KEPT": "request",
+      "RELOAD_KEEPS_SW_AND_VERSION": "247eec7e9624fdb609bbf20b81796b8145ec7e8b",
+      "UPDATE_CHECK_OK": {
+        "ok": true,
+        "installing": false,
+        "waiting": false
+      },
+      "HARD_RELOAD_OK": "247eec7e9624fdb609bbf20b81796b8145ec7e8b",
+      "final": {
+        "controller": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+        "active": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+        "waiting": false,
+        "caches": [
+          "la-taba-runtime-v117-controlled-production"
+        ],
+        "version": {
+          "commit": "247eec7e9624fdb609bbf20b81796b8145ec7e8b",
+          "runtime": "la-taba-runtime-v117-controlled-production",
+          "builtAt": "2026-09-25T07:43:51.320Z"
+        },
+        "supabaseUrl": "https://tkanbadcglszlcyfjvpv.supabase.co",
+        "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+        "environment": "pilot",
+        "authKeys": 1
+      },
+      "NO_JS_ERRORS": []
+    },
+    "verdict": "PASS"
+  },
+  "summary": {
+    "seedOn": "4378ed2",
+    "upgrades": [
+      "4378ed2 -> 033946b",
+      "033946b -> 247eec7"
+    ],
+    "SERVICE_WORKER": "PASS",
+    "CACHE_UPDATE": "PASS",
+    "OLD_CLIENT_UPGRADE": "PASS"
+  }
+}

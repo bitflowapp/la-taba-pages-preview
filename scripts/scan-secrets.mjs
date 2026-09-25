@@ -7,6 +7,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ignored = new Set(['.git', '.temp', 'node_modules', 'coverage', 'playwright-report', 'test-results']);
 const findings = [];
 const patterns = [
+  ['Supabase secret API key', /\bsb_secret_[A-Za-z0-9_-]{20,}\b/],
   ['Mercado Pago access token', /\b(?:APP_USR|TEST)-[A-Za-z0-9_-]{20,}\b/],
   ['private key', /-----BEGIN(?: [A-Z]+)? PRIVATE KEY-----/],
   ['AWS access key', /\bAKIA[0-9A-Z]{16}\b/],

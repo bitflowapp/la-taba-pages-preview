@@ -1,0 +1,247 @@
+{
+  "target": "controlled-production",
+  "ref": "tkanbadcglszlcyfjvpv",
+  "cli": "supabase 2.101.0 db push --linked (credentials by environment)",
+  "backupBeforeChange": {
+    "kind": "DB_BACKUP_PRE_CHANGE",
+    "at": "2026-09-25T05:19:17.592Z",
+    "ref": "tkanbadcglszlcyfjvpv",
+    "project": "la-taba-controlled-production",
+    "postgres": "17.6.1.166",
+    "migrationHead": "20260924200000",
+    "migrationCount": 134,
+    "pending": [
+      "20260925085000",
+      "20260925090000"
+    ],
+    "platformBackups": {
+      "walg": true,
+      "pitr": false,
+      "latestPhysical": "2026-09-24T21:15:30Z (id 1774304547, COMPLETED)"
+    },
+    "logicalBackup": {
+      "directory": "~\\.taba-backups\\controlled-production\\2026-09-25T05-19-12-676Z",
+      "tables": 92,
+      "rows": 1591,
+      "restoreTest": "PASS",
+      "identical": "92/92"
+    },
+    "schemaFingerprint": {
+      "column_grants": {
+        "n": 81,
+        "md5": "e01d87a08d2f14a30ac30545c5772592"
+      },
+      "columns": {
+        "n": 1333,
+        "md5": "baa0646b60dd36c12f0fdc8541db5173"
+      },
+      "constraints": {
+        "n": 797,
+        "md5": "bfe148bda97a57ad42b92aa42b16dca4"
+      },
+      "cron_jobs": {
+        "n": 4,
+        "md5": "50a2c479efda6b40ff1191414c708b79"
+      },
+      "function_grants": {
+        "n": 1056,
+        "md5": "c0caeee3b8c4ee1e4340b770b9696034"
+      },
+      "functions": {
+        "n": 352,
+        "md5": "482d05f32fc3b25ae8d1d0f739959105"
+      },
+      "indexes": {
+        "n": 275,
+        "md5": "4d16279eb75c25693a95f80d09bbacbf"
+      },
+      "policies": {
+        "n": 68,
+        "md5": "786dd46e008bcd92c0c6b5795227adac"
+      },
+      "realtime_publication": {
+        "n": 10,
+        "md5": "ce1cbd3b68baa348938bd66d98e44592"
+      },
+      "storage_buckets": {
+        "n": 1,
+        "md5": "901d4416d5d4b8bd7ea0737752d011e8"
+      },
+      "table_grants": {
+        "n": 321,
+        "md5": "27c1fa9fd4ec5180b14bb9d122181b83"
+      },
+      "tables": {
+        "n": 99,
+        "md5": "2634f97661d182c5c4386e88955ac2ad"
+      },
+      "triggers": {
+        "n": 93,
+        "md5": "f9be47ca766d64d50bafd9454e26ac12"
+      }
+    },
+    "recoveryPath": [
+      "forward-only compensating migration (REVERSIÓN block in each migration header)",
+      "logical backup restore (backup-drill) for data",
+      "platform daily physical backup restore (Dashboard > Database > Backups)"
+    ],
+    "DB_BACKUP_PRE_CHANGE": "PASS"
+  },
+  "dryRun": [
+    "20260925085000_pause_keeps_ordering_configuration.sql",
+    "20260925090000_cp_qa_window_and_private_product_columns.sql"
+  ],
+  "appliedAt": {
+    "start": "2026-09-25T05:40:57Z",
+    "end": "2026-09-25T05:41:05Z"
+  },
+  "ledgerAfter": {
+    "remote": 136,
+    "local": 136,
+    "head": "20260925090000",
+    "unexpected": []
+  },
+  "preStateOfTouchedObjects": {
+    "check": "CHECK (((NOT ordering_enabled) OR (ordering_verified AND is_active AND (status = open))))",
+    "productsPolicies": "as 20260725030000/20260826140000",
+    "anonSelectProducts": "table-level (unit_cost/verified_by readable)",
+    "newObjects": "absent"
+  },
+  "fingerprintDelta": {
+    "column_grants": {
+      "added": 111,
+      "removed": 0,
+      "changed": 8,
+      "sample": {
+        "added": [
+          "public.businesses.qa_fixture|anon",
+          "public.businesses.qa_window_until|anon",
+          "public.businesses.qa_fixture|service_role",
+          "public.businesses.qa_fixture|authenticated",
+          "public.businesses.qa_window_until|service_role",
+          "public.businesses.qa_window_until|authenticated"
+        ],
+        "changed": [
+          "public.products.stock|anon",
+          "public.products.available|anon",
+          "public.products.is_active|anon",
+          "public.products.sort_order|anon",
+          "public.products.stock|authenticated",
+          "public.products.available|authenticated",
+          "public.products.is_active|authenticated",
+          "public.products.sort_order|authenticated"
+        ]
+      }
+    },
+    "columns": {
+      "added": 2,
+      "removed": 0,
+      "changed": 0,
+      "sample": {
+        "added": [
+          "public.businesses.qa_fixture",
+          "public.businesses.qa_window_until"
+        ],
+        "changed": []
+      }
+    },
+    "constraints": {
+      "added": 0,
+      "removed": 0,
+      "changed": 1,
+      "sample": {
+        "added": [],
+        "changed": [
+          "public.businesses.businesses_ordering_enabled_requires_verification"
+        ]
+      }
+    },
+    "cron_jobs": {
+      "added": 1,
+      "removed": 0,
+      "changed": 0,
+      "sample": {
+        "added": [
+          "taba-qa-window-expiry"
+        ],
+        "changed": []
+      }
+    },
+    "function_grants": {
+      "added": 12,
+      "removed": 0,
+      "changed": 0,
+      "sample": {
+        "added": [
+          "close_qa_window(uuid)|anon",
+          "close_expired_qa_windows()|anon",
+          "guard_business_qa_columns()|anon",
+          "open_qa_window(uuid,integer)|anon",
+          "close_qa_window(uuid)|service_role",
+          "close_qa_window(uuid)|authenticated",
+          "close_expired_qa_windows()|service_role",
+          "close_expired_qa_windows()|authenticated",
+          "guard_business_qa_columns()|service_role",
+          "guard_business_qa_columns()|authenticated",
+          "open_qa_window(uuid,integer)|service_role",
+          "open_qa_window(uuid,integer)|authenticated"
+        ],
+        "changed": []
+      }
+    },
+    "functions": {
+      "added": 4,
+      "removed": 0,
+      "changed": 0,
+      "sample": {
+        "added": [
+          "close_qa_window(uuid)",
+          "close_expired_qa_windows()",
+          "guard_business_qa_columns()",
+          "open_qa_window(uuid,integer)"
+        ],
+        "changed": []
+      }
+    },
+    "policies": {
+      "added": 0,
+      "removed": 0,
+      "changed": 2,
+      "sample": {
+        "added": [],
+        "changed": [
+          "public.products.production verified products are public",
+          "public.products.alcohol verificado con foto se puede mirar"
+        ]
+      }
+    },
+    "table_grants": {
+      "added": 0,
+      "removed": 0,
+      "changed": 2,
+      "sample": {
+        "added": [],
+        "changed": [
+          "public.products|anon",
+          "public.products|authenticated"
+        ]
+      }
+    },
+    "triggers": {
+      "added": 1,
+      "removed": 0,
+      "changed": 0,
+      "sample": {
+        "added": [
+          "public.businesses.businesses_guard_qa_columns"
+        ],
+        "changed": []
+      }
+    }
+  },
+  "anonWritePrivilegesAfter": "none (table or column level)",
+  "SCHEMA_DRIFT": "NONE (ledger identical; the only schema changes between the before/after fingerprints are the objects of the two migrations)",
+  "MIGRATION_085000": "PASS",
+  "MIGRATION_090000": "PASS",
+  "MIGRATION_HISTORY": "PASS"
+}

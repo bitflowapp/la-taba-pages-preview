@@ -1619,6 +1619,58 @@ export function createSupabaseOrderRepository({
         message: `Pedido ${order.id} actualizado a ${statusLabel(order.status)}.`,
       });
     },
+    /*
+     * EL COMERCIO CIERRA SU PROPIO REPARTO CON EL CÓDIGO DEL CLIENTE.
+     * -----------------------------------------------------------------------
+     * No pasa por `transition_order` y no es un atajo: `prevent_unverified_delivery`
+     * corta toda entrega de delivery mientras no haya un handoff confirmado, y
+     * `orders.delivery_code_required` es NOT NULL con default true. Una llamada
+     * a `transition_order('delivered')` moriría con 55000 en el primer pedido
+     * real; el outbox la clasificaría como fallo permanente y el pedido no se
+     * movería nunca. Es el defecto H1, otra vez.
+     *
+     * La RPC devuelve `ok:false` con un `code` para los rechazos que NO son
+     * errores de sistema —código equivocado, demora activa, código vencido—,
+     * porque son parte del trámite y el mostrador tiene que poder reintentar
+     * sin que nada se rompa. Sólo los errores de verdad viajan por `error`.
+     */
+    async confirmBusinessDeliveryCode(orderId, {
+      expectedRevision = null, idempotencyKey = '', deliveryCode = '',
+    } = {}) {
+      const row = await fetchOrderByPublicId(orderId);
+      if (!row) return repositoryResult(false, { message: 'Pedido no encontrado o acceso denegado.' });
+      const revision = normalizeOrderRevision(expectedRevision) || normalizeOrderRevision(row.revision);
+      if (revision === null) {
+        return repositoryResult(false, {
+          code: 'ORDER_REVISION_REQUIRED',
+          message: 'El pedido no tiene una revisión válida; recuperá la bandeja antes de reintentar.',
+        });
+      }
+      // Sólo dígitos: es lo que el cliente lee de su pantalla, y así un espacio
+      // o un guion de más no se cuentan como un intento fallido.
+      const code = String(deliveryCode || '').replace(/\D/g, '').slice(0, 4);
+      const { data, error, status: responseStatus } = await client.rpc('confirm_business_delivery_code', {
+        p_order_id: row.id,
+        p_expected_revision: revision,
+        p_delivery_code: code,
+        p_idempotency_key: normalizeIdempotencyKey(idempotencyKey),
+      });
+      if (error) return failedQuery(error, responseStatus, readableStatusError(error));
+
+      const payload = unwrapOrderRow(data) || {};
+      if (payload.ok === false) {
+        return repositoryResult(false, {
+          code: String(payload.code || 'DELIVERY_CODE_REJECTED'),
+          message: readableDeliveryCodeRejection(payload),
+        });
+      }
+      const updatedRow = await fetchOrderByPublicId(row.id);
+      if (!updatedRow) return repositoryResult(false, { message: 'El backend no devolvió el pedido entregado.' });
+      return repositoryResult(true, {
+        order: mirrorOrder(updatedRow),
+        message: 'Entrega confirmada con el código del cliente.',
+      });
+    },
     async cancelBusinessOrder(orderId, { expectedRevision = null, idempotencyKey = '', reason = '' } = {}) {
       const row = await fetchOrderByPublicId(orderId);
       if (!row) return repositoryResult(false, { message: 'Pedido no encontrado o acceso denegado.' });
@@ -1664,9 +1716,15 @@ export function createSupabaseOrderRepository({
           'No pudimos cargar los riders activos del negocio.',
         );
       }
+      const presence = await client.rpc('list_business_rider_availability', { p_business_id: businessId });
+      const known = !presence.error && Array.isArray(presence.data?.riders);
+      const byId = new Map((known ? presence.data.riders : [])
+        .map(row => [String(row.rider_user_id || ''), row.available === true]));
       const riders = (Array.isArray(data) ? data : [])
         .map(normalizeActiveRider)
-        .filter(Boolean);
+        .filter(Boolean)
+        .map(rider => ({ ...rider, available: known ? byId.get(rider.id) === true : null,
+          availabilityKnown: known }));
       return repositoryResult(true, { riders });
     },
     // Contrato canónico del rider: claim_delivery_order (idempotente, con
@@ -2852,7 +2910,14 @@ function rowToDemoOrder(row = {}) {
     addressDetails,
     deliveryMode,
     paymentMethodCode: sanitizeText(row.payment_method, { fallback: 'coordinate', maxLength: 40 }),
-    paymentMethod: paymentLabel(row.payment_method || 'coordinate'),
+    paymentMethod: row.payment_method === 'cash'
+      ? (deliveryMode === 'pickup' ? 'Efectivo al retirar' : 'Efectivo al recibir')
+      : paymentLabel(row.payment_method || 'coordinate'),
+    manualPaymentStatus: ['cash', 'coordinate'].includes(row.payment_method)
+      ? sanitizeText(row.manual_payment_status, { fallback: 'unverified', maxLength: 24 })
+      : 'not_applicable',
+    manualPaymentMethod: sanitizeText(row.manual_payment_method, { maxLength: 24 }),
+    authoritativeTotal: normalizeMoneyValue(row.total, 0),
     notes: sanitizeNotes(row.customer_notes || row.notes),
     createdAt,
     updatedAt: normalizeIso(row.updated_at || row.created_at),
@@ -3175,17 +3240,60 @@ function dedupeHistory(history) {
   });
 }
 
+/*
+ * Los rechazos del código, dichos para el mostrador.
+ *
+ * Ninguno es un error del sistema: son el trámite saliendo mal, y quien atiende
+ * necesita saber qué hacer, no qué pasó adentro. «temporarily_locked» dice
+ * cuánto falta porque sin ese número la única opción es seguir probando, que es
+ * justamente lo que la demora está tratando de evitar.
+ */
+function readableDeliveryCodeRejection(payload) {
+  const code = String(payload?.code || '');
+  const segundos = Number(payload?.retry_after_seconds || 0);
+  const restantes = Number(payload?.remaining_attempts ?? -1);
+  if (code === 'invalid_format') return 'El código del cliente son 4 números.';
+  if (code === 'code_unavailable') {
+    return 'Este pedido no tiene un código vigente. Pedile al cliente que abra su seguimiento.';
+  }
+  if (code === 'temporarily_locked') {
+    const minutos = Math.max(1, Math.ceil(segundos / 60));
+    return `Hubo varios intentos fallidos. Volvé a probar en ${minutos} min.`;
+  }
+  if (code === 'incorrect_code') {
+    return restantes > 0
+      ? `Ese código no es. Te quedan ${restantes} intento${restantes === 1 ? '' : 's'}.`
+      : 'Ese código no es. Revisalo con el cliente.';
+  }
+  return 'No pudimos confirmar la entrega. Intentá de nuevo.';
+}
+
 export function nextRepositoryStatusForOrder(order) {
   const domainOrder = toDomainOrder(order);
   if (!domainOrder) return null;
   return getNextWorkflowStatus(domainOrder.status, domainOrder.fulfillmentType);
 }
 
+/*
+ * LO QUE VE EL CLIENTE NO PUEDE NOMBRAR A ALGUIEN QUE NO EXISTE.
+ * ---------------------------------------------------------------------------
+ * Decía «El repartidor salió del local». Desde que el comercio puede despachar
+ * su propio reparto (migración 20260919120000), un pedido en `on_the_way`
+ * puede no tener ningún repartidor: lo lleva el dueño en su moto. El cliente
+ * leía sobre una persona que no existe, y si llamaba a preguntar «¿quién me lo
+ * trae?» nadie tenía una respuesta que coincidiera con la pantalla.
+ *
+ * «Tu pedido salió del local» es verdad en los dos casos y además no revela
+ * cómo se organiza el comercio adentro, que es la misma razón por la que el
+ * seguimiento público nunca expuso la identidad del repartidor
+ * (20260725050000_tracking_rider_privacy.sql). No se puede decidir acá con un
+ * `if`: el DTO público de seguimiento no trae -a propósito- si hay rider.
+ */
 function locationLabel(status, deliveryMode) {
   if (deliveryMode === 'pickup') return 'Pedido para retirar en local';
   if (status === 'ready') return 'Pedido listo en el local';
-  if (status === 'on_the_way') return 'El repartidor salió del local';
-  if (status === 'arriving') return 'El repartidor está llegando';
+  if (status === 'on_the_way') return 'Tu pedido salió del local';
+  if (status === 'arriving') return 'Tu pedido está llegando';
   if (status === 'delivered') return 'Pedido entregado';
   if (status === 'cancelled') return 'Pedido cancelado por el negocio';
   return 'Pedido recibido por el local';
@@ -3349,10 +3457,16 @@ export function readableOrderCreationError(error) {
   return 'No pudimos confirmar el pedido. Conservamos el intento para reintentar sin duplicarlo.';
 }
 
+// Conflicto de revisión: PT409 (HTTP 409) desde 20260924200000; 40001 en
+// bases anteriores. 40001 hacía que PostgREST reintentara hasta el timeout.
+function isRevisionConflictCode(code) {
+  return code === 'PT409' || code === '40001';
+}
+
 function readableStatusError(error) {
   const text = `${error?.message || ''} ${error?.details || ''}`.toLowerCase();
   if (
-    error?.code === '40001'
+    isRevisionConflictCode(error?.code)
     || text.includes('expected')
     || text.includes('stale')
     || text.includes('estado actual')
@@ -3372,7 +3486,7 @@ function readableStatusError(error) {
 function readableRiderAssignmentError(error) {
   const text = `${error?.message || ''} ${error?.details || ''}`.toLowerCase();
   if (
-    error?.code === '40001'
+    isRevisionConflictCode(error?.code)
     || text.includes('conflicto de asignacion')
     || text.includes('conflicto de asignación')
   ) {

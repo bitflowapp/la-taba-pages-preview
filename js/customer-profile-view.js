@@ -19,6 +19,7 @@ import {
   hasConfirmedDeliveryLocation,
 } from './core/delivery-location.js';
 import { BUSINESS_POINT, OPERATING_AREA } from './core/business-location.js';
+import { getCommerceAvailability } from './core/commerce-availability-store.js';
 import { nudgePoint, renderDeliveryLocationStep } from './delivery-location-step.js';
 import { createLocationPickerMap } from './map/location_picker_map.js';
 import {
@@ -415,8 +416,16 @@ function currentAddressValues() {
   return {
     street: form.elements?.profileAddressStreet?.value || '',
     streetNumber: form.elements?.profileAddressNumber?.value || '',
+    neighborhood: resolveNeighborhood(form),
     ...resolveAreaFields(form),
   };
+}
+
+function resolveNeighborhood(form) {
+  const field = form?.elements?.profileAddressNeighborhood;
+  if (field) return field.value || '';
+  const saved = findAddress(state.editingAddressId) || {};
+  return state.addressDraft?.neighborhood || saved.neighborhood || '';
 }
 
 // Editar el texto de la dirección invalida la confirmación: el pin queda en
@@ -492,6 +501,7 @@ async function saveAddress(allowDuplicate) {
   const written = {
     street: form.elements?.profileAddressStreet?.value || '',
     streetNumber: form.elements?.profileAddressNumber?.value || '',
+    neighborhood: resolveNeighborhood(form),
     ...resolveAreaFields(form),
   };
   // Se revisa justo antes de guardar: si el texto cambió después de confirmar,
@@ -517,6 +527,14 @@ async function saveAddress(allowDuplicate) {
     ['profileAddressStreet', candidate.street, 'Ingresá la calle.'],
     ['profileAddressNumber', candidate.streetNumber, 'Ingresá el número.'],
   ];
+  const { areas, coverageEnforced } = getCommerceAvailability();
+  if (coverageEnforced && areas.length) {
+    required.push([
+      'profileAddressNeighborhood',
+      areas.some((area) => area.name === candidate.neighborhood),
+      'Elegí un barrio con cobertura.',
+    ]);
+  }
   const invalid = required.find(([, value]) => !value);
   if (invalid) {
     markInvalid(form.elements?.[invalid[0]], invalid[2]);
@@ -815,6 +833,7 @@ function captureEditorDraft() {
     label: form.elements?.profileAddressLabel?.value || '',
     street: form.elements?.profileAddressStreet?.value || '',
     streetNumber: form.elements?.profileAddressNumber?.value || '',
+    neighborhood: resolveNeighborhood(form),
     floor: form.elements?.profileAddressFloor?.value || '',
     apartment: form.elements?.profileAddressApartment?.value || '',
     ...resolveAreaFields(form),
@@ -838,6 +857,7 @@ function renderAddressEditor() {
       <label><span>Etiqueta</span><select name="profileAddressLabel">${['Casa', 'Trabajo', 'Otra'].map((label) => `<option value="${label}" ${(address.label || 'Casa') === label ? 'selected' : ''}>${label}</option>`).join('')}</select></label>
       <label class="is-wide"><span>Calle</span><input name="profileAddressStreet" maxlength="120" autocomplete="address-line1" required value="${escapeAttr(address.street || '')}" placeholder="Antártida Argentina" /></label>
       <label><span>Número</span><input name="profileAddressNumber" maxlength="24" inputmode="text" required value="${escapeAttr(address.streetNumber || '')}" placeholder="1234, 1234 A o S/N" /></label>
+      ${renderNeighborhoodField(address.neighborhood || '')}
       <label><span>Piso <em>opcional</em></span><input name="profileAddressFloor" maxlength="24" autocomplete="address-line2" value="${escapeAttr(address.floor || '')}" /></label>
       <label><span>Departamento <em>opcional</em></span><input name="profileAddressApartment" maxlength="24" autocomplete="address-line2" value="${escapeAttr(address.apartment || '')}" /></label>
       <label class="is-full"><span>Referencias <em>opcional</em></span><textarea name="profileAddressReference" maxlength="180" rows="3" placeholder="Ej. Portón negro, tocar timbre 2">${escapeHtml(address.reference || '')}</textarea></label>
@@ -853,6 +873,23 @@ function renderAddressEditor() {
     <p class="profile-field-error" data-profile-field-error role="alert"></p>
     <div class="profile-card-actions"><button class="primary-button compact" type="button" data-profile-action="save-address" ${disabledAttr()}>${state.saving ? 'Guardando…' : 'Guardar dirección'}</button><button class="ghost-button compact" type="button" data-profile-action="cancel-address">Cancelar</button></div>
   </form>`;
+}
+
+// Perfil y checkout consumen exactamente la misma lista publicada por
+// `commerce_availability`. El navegador sólo guía y valida que haya una opción
+// declarada; la decisión autoritativa sobre cobertura sigue siendo del backend.
+function renderNeighborhoodField(current) {
+  const { areas, coverageEnforced } = getCommerceAvailability();
+  if (!areas.length) return '';
+  const known = areas.some((area) => area.name === current);
+  const options = [
+    '<option value="">Elegí tu barrio</option>',
+    ...areas.map((area) => `<option value="${escapeAttr(area.name)}"${area.name === current ? ' selected' : ''}>${escapeHtml(area.name)}</option>`),
+    ...(current && !known
+      ? [`<option value="${escapeAttr(current)}" selected>${escapeHtml(current)} (fuera de cobertura)</option>`]
+      : []),
+  ].join('');
+  return `<label class="is-wide"><span>Barrio${coverageEnforced ? '' : ' <em>opcional</em>'}</span><select name="profileAddressNeighborhood"${coverageEnforced ? ' required' : ''}>${options}</select></label>`;
 }
 
 function renderDuplicate() {

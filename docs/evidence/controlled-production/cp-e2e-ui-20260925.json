@@ -1,0 +1,14 @@
+{
+  "at": "2026-09-25T06:58Z",
+  "config": "playwright.controlled-production.config.mjs",
+  "staticFilesCommit": "81f1dbe (web runtime identical to the deployed 033946b: no web file changed)",
+  "backend": "tkanbadcglszlcyfjvpv",
+  "business": "QA control e1d2c342-… (QA window opened and closed by the spec)",
+  "flow": "anonymous customer with confirmed pin -> storefront -> cart -> manual payment -> Panel registers cash, accept, prepare, ready, offer -> rider accepts, picks up, GPS, arrives -> customer reads the 4-digit code on screen -> rider confirms -> customer and Panel terminal; cleanup reverses the QA cash, restores stock through an audited movement and classifies QA",
+  "results": [
+    "ok 1 [chrome-android] › tests\\controlled-production\\cp-order-e2e.spec.mjs:40:1 › CP: cliente → pago manual → panel → rider → GPS → código → entregado (52.3s)",
+    "ok 2 [webkit-iphone] › tests\\controlled-production\\cp-order-e2e.spec.mjs:40:1 › CP: cliente → pago manual → panel → rider → GPS → código → entregado (1.7m)",
+    "2 passed (2.6m)"
+  ],
+  "TECHNICAL_PRODUCTION_E2E": "PASS"
+}

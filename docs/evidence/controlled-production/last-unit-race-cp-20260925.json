@@ -1,0 +1,57 @@
+{
+  "at": "2026-09-25T07:04:01.903Z",
+  "ref": "tkanbadcglszlcyfjvpv",
+  "business": "e1d2c342-da14-421e-884f-ff38bb55f642",
+  "checks": {
+    "LAST_UNIT_SET": "PASS",
+    "EXACTLY_ONE_WINNER": "PASS",
+    "NEGATIVE_STOCK": "PASS",
+    "STOCK_ZERO_AFTER_RACE": "PASS",
+    "SOLD_OUT_REFUSED": "PASS",
+    "DUPLICATE_ORDER": "PASS",
+    "DOUBLE_STOCK_RETURN": "PASS",
+    "CLEANUP": "PASS"
+  },
+  "observed": {
+    "adjustDown": "ok",
+    "race": {
+      "codes": [
+        "55000",
+        "accepted"
+      ],
+      "winners": 1,
+      "stockAfterRace": 0
+    },
+    "lateOrder": "55000",
+    "cancel": {
+      "codes": [
+        "ok",
+        "ok",
+        "PT409"
+      ],
+      "stockAfterCancel": 1
+    }
+  },
+  "cleanup": {
+    "orders": [
+      {
+        "reversed": false,
+        "cancelled": false,
+        "restoredUnits": 0,
+        "classified": true
+      }
+    ],
+    "failures": [],
+    "restore": "ok",
+    "stockRestored": true,
+    "republished": "ok",
+    "publicationRestored": true,
+    "window": "closed"
+  },
+  "verdict": "PASS",
+  "previousRun": {
+    "at": "2026-09-25T06:54:13.558Z",
+    "verdict": "PASS",
+    "note": "PASS, but selling the last unit unpublished the product and the harness did not publish it again; the owner republished it through set_commercial_product_publication and the harness now restores publication (CLEANUP checks it)"
+  }
+}

@@ -49,9 +49,10 @@ export class Lifecycle {
     await this.platform.verifyIndividual(remote);
     const versions = await this.session.value("select jsonb_agg(version order by version) from supabase_migrations.schema_migrations");
     const local = fs.readdirSync(path.join(this.root, 'supabase/migrations')).filter(v => v.endsWith('.sql')).sort().map(v => v.slice(0, 14));
-    assert.ok(Array.isArray(versions) && versions.length >= local.length - EXPAND.length, 'pristine OLD migration ledger required');
+    const baseCount = local.filter(v => v < EXPAND[0].slice(0, 14)).length;
+    assert.ok(Array.isArray(versions) && versions.length >= baseCount, 'pristine OLD migration ledger required');
     assert.deepEqual(versions, local.slice(0, versions.length), 'wrong/unknown database migration history');
-    await assertCompatibility(this.session,this.root,this.context.compatibility_sha,versions.length-(local.length-EXPAND.length));
+    await assertCompatibility(this.session,this.root,this.context.compatibility_sha,versions.length-baseCount);
     const statements = EMPTY_TABLES.map(table => `'${table}',(select count(*) from public.${table})`);
     statements.push("'settings',(select count(*) from public.business_payment_settings where enabled is distinct from false)",
       "'sellers',(select count(*) from public.mp_seller_connections where status is distinct from 'disconnected' or protected_tokens is not null or refresh_owner is not null or refresh_started_at is not null)",

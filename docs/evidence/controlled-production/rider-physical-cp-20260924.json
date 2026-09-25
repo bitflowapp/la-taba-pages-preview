@@ -1,0 +1,54 @@
+{
+  "at": "2026-09-24T22:35:51.252Z",
+  "device": "ZY32LHS6PS",
+  "business": "QA control",
+  "installedVersion": {
+    "code": 4,
+    "name": "0.1.3-canonical-pilot"
+  },
+  "order": "LT-0025",
+  "offer": "offered",
+  "firstGpsAt": "2026-09-24T22:36:21.110725+00:00",
+  "firstGpsAccuracyM": 100,
+  "gpsSource": "gps",
+  "recovery": {
+    "wifiReenabledAt": "2026-09-24T22:37:06.725Z",
+    "wifiConnectedAt": "2026-09-24T22:37:12.536Z",
+    "firstReceiptAfterRecoveryAt": "2026-09-24T22:37:21.158557+00:00",
+    "secondsFromWifiToReceipt": 9
+  },
+  "screenOff": {
+    "receipts": 3,
+    "seconds": 30
+  },
+  "networkCut": {
+    "seconds": 12,
+    "receiptsWhileOffline": 0,
+    "receiptsAfterRecovery": 1
+  },
+  "instrumentation": {
+    "exit": 0,
+    "ok": true,
+    "summary": "OK (1 test)\r",
+    "failure": null
+  },
+  "gpsTrailPurgedAfterDelivery": true,
+  "final": {
+    "status": "delivered",
+    "assignedToRider1": true
+  },
+  "gps": {
+    "receipts": 13,
+    "maxGapSeconds": 30,
+    "medianAccuracyM": 5.69999980926514
+  },
+  "cleanup": {
+    "reversed": false,
+    "cancelled": false,
+    "restoredUnits": 2,
+    "classified": true
+  },
+  "stockRestored": true,
+  "verdict": "PASS",
+  "note": "Signed Rider v4 (com.lataba.rider.pilot 0.1.3-canonical-pilot) on the Moto G15 against CONTROLLED_PRODUCTION (QA control business). Earlier attempts in this session failed only on harness timing (keyguard after screen-off, fixed window), never on the app."
+}

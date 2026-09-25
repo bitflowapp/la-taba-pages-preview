@@ -343,7 +343,15 @@ test('ADD · un toque suma uno y una tanda rapida suma exactamente lo que se toc
   // hit-test del control se prueban por la UI en este mismo bloque y en el caso
   // siguiente; acá emitimos los clicks atómicamente sobre el nodo vigente para
   // verificar el contrato que importa: ningún evento deliberado se coalesce.
-  const tocarRafaga = (accion, veces) => page.evaluate(async ({ id, action, count }) => {
+  //
+  // La cadencia respeta la guarda de `runCartAction` (js/app.js): la misma
+  // acción sobre el mismo producto dentro de 120 ms, medidos al ejecutar el
+  // handler, es un doble despacho y se descarta. Con toques cada 60 ms el caso
+  // pasaba sólo si el repintado tardaba lo suficiente, y fallaba en runners
+  // rápidos (runs 36055806337 y 36106082240). 150 ms es una ráfaga humana rápida
+  // y queda siempre fuera de la ventana: ningún toque deliberado se pierde.
+  const CADENCIA_MS = 150;
+  const tocarRafaga = (accion, veces) => page.evaluate(async ({ id, action, count, cadencia }) => {
     const atributo = action === 'sumar' ? 'cartInc' : 'cartDec';
     for (let i = 0; i < count; i += 1) {
       const control = [...document.querySelectorAll(action === 'sumar' ? '[data-cart-inc]' : '[data-cart-dec]')]
@@ -354,9 +362,9 @@ test('ADD · un toque suma uno y una tanda rapida suma exactamente lo que se toc
           && node.getBoundingClientRect().height > 0);
       if (!control) throw new Error(`No hay control visible para ${action} ${id} en el toque ${i + 1}.`);
       control.click();
-      await new Promise((resolve) => setTimeout(resolve, 60));
+      await new Promise((resolve) => setTimeout(resolve, cadencia));
     }
-  }, { id: productId, action: accion, count: veces });
+  }, { id: productId, action: accion, count: veces, cadencia: CADENCIA_MS });
 
   // Seis toques deliberados y rápidos: seis unidades. La guarda contra el doble
   // despacho accidental no puede comerse toques que una persona sí dio.

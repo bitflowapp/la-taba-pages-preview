@@ -273,8 +273,16 @@ export function completePreferenceSearchElements(body: Record<string, unknown>):
   // Search recovery is allowed only from a demonstrably complete result set.
   // Missing/malformed pagination used to fall back to elements.length, which
   // could turn a truncated response into a blind second POST.
+  //
+  // GET /checkout/preferences/search answers `{ elements, next_offset, total }`
+  // with `total` at the top level (measured 2026-09-25, x-request-id
+  // e3af2b6c-b2db-45ea-a647-c5c7241b9c67). Reading only `paging.total` made
+  // every real answer look truncated, so no preference could ever be created.
+  // `paging.total` stays accepted for the older fixtures' shape.
   const paging = object(body.paging);
-  const total = typeof paging.total === 'number' ? paging.total : Number.NaN;
+  const total = typeof body.total === 'number'
+    ? body.total
+    : typeof paging.total === 'number' ? paging.total : Number.NaN;
   if (!Number.isSafeInteger(total) || total < 0 || total !== elements.length) {
     throw preferenceReconciliationRequired();
   }
@@ -373,6 +381,17 @@ export async function disputeSnapshot(
     resolved_at: text(dispute.date_closed) || text(dispute.date_resolved),
     raw_response_hash: rawResponseHash,
   };
+}
+
+/**
+ * Whether a 4xx from Mercado Pago is the provider's final answer about the
+ * operation. Throttling (429), timeouts (408), too-early (425) and conflicts
+ * (409, e.g. the same idempotency key still in flight) say nothing about it:
+ * recording them as a rejection would write a financial state the provider
+ * never decided. Those go through reconciliation, like a 5xx.
+ */
+export function isFinalProviderRejection(status: number): boolean {
+  return status >= 400 && status < 500 && ![408, 409, 425, 429].includes(status);
 }
 
 export class MercadoPagoApiError extends Error {

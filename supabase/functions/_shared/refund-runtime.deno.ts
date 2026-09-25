@@ -1,6 +1,7 @@
 import { assertEquals } from 'jsr:@std/assert@1.0.19';
 import { protect } from './seller-oauth.ts';
 import { signPaymentWorkerRequest } from './payment-worker-signature.ts';
+import { isFinalProviderRejection } from './mercadopago.ts';
 
 const handlers: Array<(request: Request) => Promise<Response>> = [];
 const serve = Deno.serve;
@@ -78,6 +79,8 @@ async function run(scenario: string, creation = false) {
       posted++; assertEquals(url.pathname, '/v1/payments/90001/refunds');
       assertEquals(new Headers(init.headers).get('x-idempotency-key'), key);
       if (scenario === 'lost-response') throw new Error('simulated lost provider response');
+      if (scenario === 'throttled') return Response.json({ message: 'too many requests' }, { status: 429 });
+      if (scenario === 'final-rejection') return Response.json({ message: 'invalid refund amount' }, { status: 400 });
       return Response.json(resource);
     }
     // The list is an adversarial trap: the new worker must never use it to
@@ -94,7 +97,11 @@ async function run(scenario: string, creation = false) {
           confirmation: 'I_UNDERSTAND_THIS_REQUESTS_A_MERCADO_PAGO_REFUND' }),
       }));
       if (scenario === 'valid') { assertEquals(res.status, 200); assertEquals(events, ['identity', 'record']); }
+      else if (scenario === 'final-rejection') { assertEquals(res.status, 409); assertEquals(recordings.map((r) => r.p_status), ['rejected']); }
       else { assertEquals(res.status, 202); assertEquals(recordings.length, 0); }
+      // A throttled POST is not Mercado Pago rejecting the refund: nothing
+      // financial is recorded and the refund goes to reconciliation.
+      if (scenario === 'throttled') assertEquals(events, ['ambiguous']);
       if (scenario === 'partial-response') assertEquals(local.provider_refund_id, '10001');
       if (scenario === 'lost-response') assertEquals(local.provider_refund_id, null);
       assertEquals(posted, 1);
@@ -120,6 +127,12 @@ for (const scenario of ['unknown-missing-time', 'unknown-prior', 'unknown-future
   'known-wrong-payment', 'known-wrong-amount', 'known-owned', 'valid']) {
   Deno.test('A4 actual worker: ' + scenario, () => run(scenario));
 }
-for (const scenario of ['valid', 'partial-response', 'lost-response', 'known-wrong-payment', 'known-wrong-amount']) {
+for (const scenario of ['valid', 'partial-response', 'lost-response', 'known-wrong-payment', 'known-wrong-amount',
+  'throttled', 'final-rejection']) {
   Deno.test('A4 actual refund POST: ' + scenario, () => run(scenario, true));
 }
+
+Deno.test('provider 4xx: only final answers become rejections', () => {
+  for (const status of [400, 401, 403, 404, 422]) assertEquals(isFinalProviderRejection(status), true, String(status));
+  for (const status of [200, 408, 409, 425, 429, 500, 502, 503]) assertEquals(isFinalProviderRejection(status), false, String(status));
+});

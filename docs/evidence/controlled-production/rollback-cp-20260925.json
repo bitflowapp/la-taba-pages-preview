@@ -1,0 +1,93 @@
+{
+  "workflowRun": 36106090499,
+  "deploymentA": "033946b2397648d51345967d2942890a4d61d225",
+  "deploymentB": "247eec7e9624fdb609bbf20b81796b8145ec7e8b",
+  "rule": "A and B share the migration graph (136 migrations); a rollback to a web built before 20260925085000/090000 is refused (ROLLBACK_DB_GRAPH_INCOMPATIBLE)",
+  "blockedAttempt": {
+    "workflowRun": 36102296295,
+    "previous": "4378ed2e19702b6de091c4fac050569534f12019",
+    "candidate": "033946b2397648d51345967d2942890a4d61d225",
+    "result": "PILOT_ROLLBACK_BLOCKED:ROLLBACK_DB_GRAPH_INCOMPATIBLE (expected)"
+  },
+  "steps": [
+    {
+      "pilotPackage": "PASS",
+      "deployed": false,
+      "commit": "247eec7e9624fdb609bbf20b81796b8145ec7e8b",
+      "projectRef": "tkanbadcglszlcyfjvpv",
+      "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+      "approvedSkus": [],
+      "artifact": "dist_pilot",
+      "secretsPrinted": false
+    },
+    {
+      "pilotPublicSmoke": "PASS",
+      "catalogMode": "none",
+      "origin": "https://la-taba-commercial-pilot.pages.dev",
+      "ref": "tkanbadcglszlcyfjvpv",
+      "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+      "approvedProducts": 0,
+      "images": 0,
+      "browsers": {
+        "chromium": "PASS",
+        "chrome_android": "PASS",
+        "webkit": "PASS"
+      }
+    },
+    {
+      "pilotRollbackPreflight": "PASS",
+      "cloudWrites": false,
+      "localReceiptCreated": true,
+      "previousCommit": "033946b2397648d51345967d2942890a4d61d225",
+      "candidateCommit": "247eec7e9624fdb609bbf20b81796b8145ec7e8b"
+    },
+    {
+      "pilotRollbackDrill": "PASS",
+      "phase": "rollback",
+      "restoredCommit": "033946b2397648d51345967d2942890a4d61d225",
+      "backendUnchanged": true,
+      "configVerified": true
+    },
+    {
+      "pilotPublicSmoke": "PASS",
+      "catalogMode": "none",
+      "origin": "https://la-taba-commercial-pilot.pages.dev",
+      "ref": "tkanbadcglszlcyfjvpv",
+      "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+      "approvedProducts": 0,
+      "images": 0,
+      "browsers": {
+        "chromium": "PASS",
+        "chrome_android": "PASS",
+        "webkit": "PASS"
+      }
+    },
+    {
+      "pilotRollbackDrill": "PASS",
+      "phase": "restore",
+      "restoredCommit": "247eec7e9624fdb609bbf20b81796b8145ec7e8b",
+      "backendUnchanged": true,
+      "configVerified": true
+    },
+    {
+      "pilotPublicSmoke": "PASS",
+      "catalogMode": "none",
+      "origin": "https://la-taba-commercial-pilot.pages.dev",
+      "ref": "tkanbadcglszlcyfjvpv",
+      "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+      "approvedProducts": 0,
+      "images": 0,
+      "browsers": {
+        "chromium": "PASS",
+        "chrome_android": "PASS",
+        "webkit": "PASS"
+      }
+    }
+  ],
+  "servedAfterDrill": {
+    "commit": "247eec7e9624fdb609bbf20b81796b8145ec7e8b",
+    "runtime": "la-taba-runtime-v117-controlled-production",
+    "builtAt": "2026-09-25T07:43:51.320Z"
+  },
+  "CONTROLLED_PROD_ROLLBACK": "PASS"
+}

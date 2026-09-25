@@ -224,6 +224,8 @@ Todo lo que no depende de ese pago quedó hecho y medido.
 
 ## 10. Acciones humanas
 
+> La activación productiva en CONTROLLED_PRODUCTION (aplicación La Taba Delivery, secretos, conexión de Walter, interruptor por negocio, pago y reembolso de control, rollback) sigue en [MERCADOPAGO_PRODUCCION_CP.md](MERCADOPAGO_PRODUCCION_CP.md).
+
 1. **Prueba de control OAuth**: hecha (§4.1), mismo error. No se repiten pagos
    equivalentes hasta que Mercado Pago responda.
 2. **WCS-51579**: publicar el texto de §11 desde la cuenta de Mercado Pago

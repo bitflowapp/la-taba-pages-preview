@@ -105,9 +105,18 @@ prueba manual de control (§10).
 | `93ed91b` | la disponibilidad de Mercado Pago no miraba la conexión del vendedor | con el token rechazado o un refresh ambiguo, el cliente veía la opción, se reservaba stock y recién la preferencia fallaba. Migración `20260925170000` + chequeo previo en `mercadopago-create-checkout-session` |
 | `c760ff1` | CONTROLLED_PRODUCTION no tenía binding OAuth ni lugar en la tooling productiva | binding dormido + objetivos `controlled-production` en setup, verificador y worker |
 | `f8ffa07` | la frontera pago manual / Mercado Pago no tenía prueba | 5 aserciones pgTAP |
+| este cierre | `mercadopago-create-checkout-session` y `mercadopago-checkout-status` no figuraban en `supabase/config.toml` | un `functions deploy` común les habría puesto `verify_jwt=true` y el preflight CORS del storefront moriría en 401; se fijaron en `false` (lo que tienen desplegado) |
 
-Desplegado en Staging (sólo funciones): `mercadopago-webhook` v7 y
-`mercadopago-create-preference` v8 desde `1b0e9f1`. La migración
+Desplegado en Staging (sólo funciones): primero `mercadopago-webhook` y
+`mercadopago-create-preference` desde `1b0e9f1` (para medir); después, con el CI
+del candidato en verde (`8ad8dec`: E2E 559, pgTAP, restore, Windows, Rider), las
+nueve funciones de Mercado Pago a las 18:38 UTC, con `verify_jwt` preservado
+(refund y cancel `true`, el resto `false`) y el código desplegado comparado byte
+a byte con la rama. Smoke del candidato: seguridad OAuth 34/34, webhook sin
+firma 401, preflight CORS 204, checkout + preferencia OAuth por el camino con
+el chequeo nuevo (`3594962708-8361b4e4-8d38-41e3-9a22-2ee80cc0d5b9`, collector,
+aplicación y sitio coincidentes; vence sin pago) y E2E de cobro manual contra
+Staging con el storefront de esta rama. La migración
 `20260925170000` **no** se aplicó en Staging: Staging no tiene las tres
 migraciones de CP anteriores y `20260925090000` cambia los grants por columna de
 `products`, lo que puede romper el storefront de Staging que usa Codex. La regla

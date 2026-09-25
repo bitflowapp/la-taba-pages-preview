@@ -21,6 +21,16 @@ verify_jwt = false
 [functions.mercadopago-cancel-payment]
 verify_jwt = true
 
+# Both validate the customer's JWT themselves and answer the storefront's CORS
+# preflight, which carries no Authorization header. They were deployed with
+# verify_jwt = false everywhere; without these entries a plain `functions deploy`
+# silently flips them to true and the preflight dies with 401.
+[functions.mercadopago-create-checkout-session]
+verify_jwt = false
+
+[functions.mercadopago-checkout-status]
+verify_jwt = false
+
 [api]
 enabled = true
 # Port to use for the API URL.

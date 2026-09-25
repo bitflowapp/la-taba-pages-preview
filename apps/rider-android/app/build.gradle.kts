@@ -32,6 +32,10 @@ require(versionCodeOverride == null || (versionCodeOverride.toIntOrNull() != nul
 // Rider: PILOT is pinned to that backend and a signed Staging build must stay
 // below every CP versionCode, so it can never update a production install.
 val controlledProductionRef = "tkanbadcglszlcyfjvpv"
+require(pilotStore == null || (providers.environmentVariable("RIDER_TARGET_MODE").isPresent
+    && providers.environmentVariable("RIDER_BACKEND_REF").isPresent)) {
+    "Signed Rider needs an explicit RIDER_TARGET_MODE and RIDER_BACKEND_REF"
+}
 require(pilotStore == null || targetMode != "pilot" || backendRef == controlledProductionRef) {
     "Signed PILOT Rider must target CONTROLLED_PRODUCTION"
 }

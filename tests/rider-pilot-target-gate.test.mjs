@@ -62,3 +62,31 @@ test('a signed Staging build can never update a CONTROLLED_PRODUCTION install', 
   const gradle = readFileSync('apps/rider-android/app/build.gradle.kts', 'utf8');
   assert.match(gradle, /targetMode != "staging" \|\| pilotVersionCode <= 3/);
 });
+
+// Environment matrix of every signed build (package com.lataba.rider.pilot,
+// pilot-v1 certificate). "Allowed" means the target gate lets it through and
+// the build stops only later, at the signing material this runner does not have.
+test('signed Rider environment matrix', () => {
+  const cp = JSON.parse(readFileSync('deploy/controlled-production.json', 'utf8')).rider.backendRef;
+  const gate = /RIDER_TARGET_REQUIRED|STAGING_REF_IS_FIXED|PILOT_BACKEND_REF_REQUIRED_AND_MUST_BE_ISOLATED|PILOT_VERSION_MUST_UPGRADE_STAGING_V3|PILOT_REF_MUST_BE_CONTROLLED_PRODUCTION|SIGNED_STAGING_MUST_STAY_BELOW_CONTROLLED_PRODUCTION/;
+  const matrix = [
+    ['STAGING_SIGNED_V3', ['--target', 'staging', '--version-code', '3', '--version-name', '0.1.2-canonical'], 'allowed'],
+    ['STAGING_SIGNED_VERSION_GT_3', ['--target', 'staging', '--version-code', '4', '--version-name', '0.1.3-canonical'], /SIGNED_STAGING_MUST_STAY_BELOW_CONTROLLED_PRODUCTION/],
+    ['STAGING_WITH_FOREIGN_REF', ['--target', 'staging', '--project-ref', cp, '--version-code', '3', '--version-name', '0.1.2-canonical'], /STAGING_REF_IS_FIXED/],
+    ['PILOT_V4_WRONG_PROJECT_REF', ['--target', 'pilot', '--project-ref', 'abcdefghijklmnopqrst', '--version-code', '4', '--version-name', '0.1.3-canonical'], /PILOT_REF_MUST_BE_CONTROLLED_PRODUCTION/],
+    ['PILOT_V4_CP_REF', ['--target', 'pilot', '--project-ref', cp, '--version-code', '4', '--version-name', '0.1.3-canonical'], 'allowed'],
+    ['PILOT_WITHOUT_REF', ['--target', 'pilot', '--version-code', '4', '--version-name', '0.1.3-canonical'], /PILOT_BACKEND_REF_REQUIRED_AND_MUST_BE_ISOLATED/],
+    ['PROD_GENERAL_REF', ['--target', 'pilot', '--project-ref', 'wwcpogltfgzgkrlilbcd', '--version-code', '4', '--version-name', '0.1.3-canonical'], /PILOT_BACKEND_REF_REQUIRED_AND_MUST_BE_ISOLATED/],
+    ['STAGING_REF_AS_PILOT', ['--target', 'pilot', '--project-ref', 'ucbtjcurawxjwjdvvcvj', '--version-code', '4', '--version-name', '0.1.3-canonical'], /PILOT_BACKEND_REF_REQUIRED_AND_MUST_BE_ISOLATED/],
+    ['DEMO_REF', ['--target', 'pilot', '--project-ref', 'yakhtrkukqlgzvxuvhzs', '--version-code', '4', '--version-name', '0.1.3-canonical'], /PILOT_BACKEND_REF_REQUIRED_AND_MUST_BE_ISOLATED/],
+    ['NO_TARGET', ['--version-code', '4', '--version-name', '0.1.3-canonical'], /RIDER_TARGET_REQUIRED/],
+  ];
+  for (const [name, args, expected] of matrix) {
+    const result = run(...args);
+    assert.notEqual(result.status, 0, name);
+    if (expected === 'allowed') assert.doesNotMatch(result.stderr, gate, `${name} must pass the target gate`);
+    else assert.match(result.stderr, expected, name);
+  }
+  const gradle = readFileSync('apps/rider-android/app/build.gradle.kts', 'utf8');
+  assert.match(gradle, /Signed Rider needs an explicit RIDER_TARGET_MODE and RIDER_BACKEND_REF/);
+});

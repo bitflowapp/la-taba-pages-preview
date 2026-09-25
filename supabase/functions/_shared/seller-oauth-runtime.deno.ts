@@ -129,6 +129,38 @@ Deno.test("known deployments reject the other Mercado Pago application", async (
   assertEquals(oauthConfig().clientId, "2691240967769590");
   configure();
 });
+Deno.test("controlled production binds only its own host, storefront and the La Taba Delivery application", async () => {
+  configure();
+  const cp = {
+    MERCADOPAGO_CREDENTIAL_MODE: "oauth", SUPABASE_URL: "https://tkanbadcglszlcyfjvpv.supabase.co",
+    MERCADOPAGO_OAUTH_PROJECT_REF: "tkanbadcglszlcyfjvpv", TABA_DEPLOYMENT_ENV: "production",
+    MERCADOPAGO_ENVIRONMENT: "production", MERCADOPAGO_OAUTH_ENVIRONMENT: "production",
+    MERCADOPAGO_PRODUCTION_REVIEW_STATUS: "approved", MERCADOPAGO_CLIENT_ID: "7677852968049976",
+    MERCADOPAGO_OAUTH_PANEL_URL: "https://la-taba-commercial-pilot.pages.dev/",
+    TABA_CHECKOUT_BASE_URL: "https://la-taba-commercial-pilot.pages.dev",
+    TABA_ALLOWED_ORIGINS: "https://la-taba-commercial-pilot.pages.dev",
+  };
+  for (const [name, value] of Object.entries(cp)) Deno.env.set(name, value);
+  const config = oauthConfig();
+  assertEquals(config.clientId, "7677852968049976");
+  assertEquals(config.callback, "https://tkanbadcglszlcyfjvpv.supabase.co/functions/v1/mercadopago-oauth-callback");
+  assertEquals(config.webhook, "https://tkanbadcglszlcyfjvpv.supabase.co/functions/v1/mercadopago-webhook");
+  // The staging application, the old production storefront or a test
+  // environment cannot run under this project.
+  Deno.env.set("MERCADOPAGO_CLIENT_ID", "2691240967769590");
+  await assertRejects(async () => oauthConfig());
+  Deno.env.set("MERCADOPAGO_CLIENT_ID", "7677852968049976");
+  Deno.env.set("TABA_CHECKOUT_BASE_URL", "https://la-taba.pages.dev");
+  await assertRejects(async () => oauthConfig());
+  Deno.env.set("TABA_CHECKOUT_BASE_URL", "https://la-taba-commercial-pilot.pages.dev");
+  Deno.env.set("MERCADOPAGO_OAUTH_ENVIRONMENT", "test");
+  await assertRejects(async () => oauthConfig());
+  Deno.env.set("MERCADOPAGO_OAUTH_ENVIRONMENT", "production");
+  // Without the declared production review nothing starts.
+  Deno.env.delete("MERCADOPAGO_PRODUCTION_REVIEW_STATUS");
+  await assertRejects(async () => oauthConfig());
+  configure();
+});
 Deno.test("known hosted projects cannot fall back to a global credential", async () => {
   configure();
   Deno.env.set("SUPABASE_URL", "https://wwcpogltfgzgkrlilbcd.supabase.co");

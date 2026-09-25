@@ -12,14 +12,16 @@ const FIXTURE_SECRET = 'A'.repeat(64);
 const FIXTURE_TIME = 1_788_844_800_000;
 const FIXTURE_NONCE = '91000000-0000-4000-8000-000000000001';
 
-function hostedSecrets(target = 'production', extra = []) {
+const REFS = { staging: 'ucbtjcurawxjwjdvvcvj', 'controlled-production': 'tkanbadcglszlcyfjvpv', production: 'wwcpogltfgzgkrlilbcd' };
+
+function hostedSecrets(target = 'production', extra = [], refOverride = null) {
   const staging = target === 'staging';
   return [
     ['MERCADOPAGO_CLIENT_ID', staging ? '2691240967769590' : '7677852968049976'],
     ['MERCADOPAGO_CREDENTIAL_MODE', 'oauth'],
     ['MERCADOPAGO_ENVIRONMENT', staging ? 'test' : 'production'],
-    ['TABA_DEPLOYMENT_ENV', target],
-    ['MERCADOPAGO_OAUTH_PROJECT_REF', staging ? 'ucbtjcurawxjwjdvvcvj' : 'wwcpogltfgzgkrlilbcd'],
+    ['TABA_DEPLOYMENT_ENV', staging ? 'staging' : 'production'],
+    ['MERCADOPAGO_OAUTH_PROJECT_REF', refOverride || REFS[target]],
     ['MERCADOPAGO_CLIENT_SECRET', 'fixture-client-secret'],
     ['MERCADOPAGO_OAUTH_WEBHOOK_SECRET', 'fixture-webhook-secret'],
     ['MERCADOPAGO_TOKEN_ENCRYPTION_KEY', 'fixture-encryption-key'],
@@ -29,9 +31,9 @@ function hostedSecrets(target = 'production', extra = []) {
   ].map(([name, value]) => ({ name, value: hash(value) }));
 }
 
-function harness({ active = false, globalToken = false, target = 'production', vaultProvisioned = false, pendingWork = 0 } = {}) {
-  const ref = target === 'staging' ? 'ucbtjcurawxjwjdvvcvj' : 'wwcpogltfgzgkrlilbcd';
-  let secrets = hostedSecrets(target, globalToken ? [['MERCADOPAGO_ACCESS_TOKEN', 'fixture-global']] : []);
+function harness({ active = false, globalToken = false, target = 'production', vaultProvisioned = false, pendingWork = 0, inventoryOf = null } = {}) {
+  const ref = REFS[target];
+  let secrets = hostedSecrets(target, globalToken ? [['MERCADOPAGO_ACCESS_TOKEN', 'fixture-global']] : [], inventoryOf ? REFS[inventoryOf] : null);
   let vaultDigest = '';
   let vaultUrlAligned = false;
   let mutationCalls = 0;
@@ -166,4 +168,32 @@ test('production never takes the first-provisioning exception', async () => {
   const h = harness({ active: true });
   await assert.rejects(() => synchronizeWorkerHmac('production', { ...h, createSecret: () => FIXTURE_SECRET }), /active payment state/);
   assert.equal(h.state().mutationCalls, 0);
+});
+
+test('controlled production is checked as its own project with the La Taba Delivery application', async () => {
+  const h = harness({ target: 'controlled-production' });
+  const result = await checkWorkerHmac('controlled-production', h);
+  assert.equal(result.ok, false);
+  assert.equal(result.vaultProvisioned, false);
+  assert.equal(h.state().mutationCalls, 0);
+});
+
+test('controlled production keeps the strict production guard: no first-provisioning exception', async () => {
+  const h = harness({ target: 'controlled-production', active: true, pendingWork: 1 });
+  await assert.rejects(() => synchronizeWorkerHmac('controlled-production', { ...h, createSecret: () => FIXTURE_SECRET }), /active payment state/);
+  assert.equal(h.state().mutationCalls, 0);
+});
+
+test('a secret inventory of another project is refused for controlled production', async () => {
+  const h = harness({ target: 'controlled-production', inventoryOf: 'production' });
+  await assert.rejects(() => checkWorkerHmac('controlled-production', h), /Environment identity mismatch: MERCADOPAGO_OAUTH_PROJECT_REF/);
+});
+
+test('the production OAuth setup maps controlled production to its own host with the same application', () => {
+  const nodeSetup = readFileSync('scripts/mercadopago/configurar-oauth-produccion.mjs', 'utf8');
+  const powershellSetup = readFileSync('scripts/mercadopago/configurar-oauth-produccion.ps1', 'utf8');
+  assert.match(nodeSetup, /'controlled-production': \{ ref: 'tkanbadcglszlcyfjvpv', site: 'https:\/\/la-taba-commercial-pilot\.pages\.dev' \}/);
+  assert.match(nodeSetup, /production: \{ ref: 'wwcpogltfgzgkrlilbcd', site: 'https:\/\/la-taba\.pages\.dev' \}/);
+  assert.match(powershellSetup, /ValidateSet\('production', 'controlled-production'\)/);
+  assert.match(powershellSetup, /tkanbadcglszlcyfjvpv/);
 });

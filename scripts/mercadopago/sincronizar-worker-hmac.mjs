@@ -11,6 +11,12 @@ const TARGETS = Object.freeze({
     environment: 'test',
     clientId: '2691240967769590',
   }),
+  'controlled-production': Object.freeze({
+    ref: 'tkanbadcglszlcyfjvpv',
+    deployment: 'production',
+    environment: 'production',
+    clientId: '7677852968049976',
+  }),
   production: Object.freeze({
     ref: 'wwcpogltfgzgkrlilbcd',
     deployment: 'production',
@@ -120,7 +126,7 @@ export async function checkWorkerHmac(targetName, {
   withToken = conToken,
 } = {}) {
   const target = TARGETS[targetName];
-  if (!target) throw new Error('Target must be staging or production');
+  if (!target) throw new Error('Target must be staging, controlled-production or production');
   return await withToken(async token => {
     const secrets = await readSecretInventory(request, token, target);
     assertEnvironmentSecrets(target, secrets);
@@ -137,7 +143,7 @@ export async function synchronizeWorkerHmac(targetName, {
   now = () => Date.now(),
 } = {}) {
   const target = TARGETS[targetName];
-  if (!target) throw new Error('Target must be staging or production');
+  if (!target) throw new Error('Target must be staging, controlled-production or production');
   return await withToken(async token => {
     const before = await readSecretInventory(request, token, target);
     assertEnvironmentSecrets(target, before);

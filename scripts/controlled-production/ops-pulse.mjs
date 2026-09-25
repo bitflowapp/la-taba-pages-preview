@@ -2,7 +2,8 @@
 // opening the panel, what an operator needs during the controlled rollout:
 // is the backend the right one, did orders come in, is anything stuck, is
 // money pending registration, are riders and GPS alive, are there open alerts,
-// is stock sane. No PII, tokens or delivery codes are printed.
+// is stock sane, can Mercado Pago charge and is its queue moving. No PII,
+// tokens or delivery codes are printed.
 //
 //   node scripts/controlled-production/ops-pulse.mjs --target controlled-production --business-id <uuid> [--hours 24]
 //   ... --public   only the publishable key (scheduler, realtime, public exposure,
@@ -40,6 +41,42 @@ export function classifyOrders(rows, now = Date.now()) {
     }
   }
   return { byStatus, stuck, unpaidDelivered };
+}
+
+// Mercado Pago signals for one business. The rows come from the service role,
+// but the selects never include credentials (protected_tokens), account ids or
+// payer data: the pulse says WHAT is wrong, the panel and the runbook say how.
+export const MP_TOKEN_EXPIRY_WARNING_DAYS = 7;
+const MP_STALL_MS = 5 * 60_000;
+export function classifyMercadoPago({ settings = [], connections = [], outbox = [], intents = [], refunds = [], receipts = [] }, now = Date.now()) {
+  const warn = [];
+  const setting = settings[0] || null;
+  const enabled = Boolean(setting?.enabled);
+  const environment = setting?.environment || null;
+  const connection = connections.find((row) => row.environment === environment) || connections[0] || null;
+  if (enabled && connection?.status !== 'connected') warn.push(`MP_SELLER_CANNOT_CHARGE:${connection?.status || 'missing'}`);
+  if (connection?.status === 'connected' && connection.expires_at
+    && Date.parse(connection.expires_at) - now < MP_TOKEN_EXPIRY_WARNING_DAYS * 86_400_000) warn.push('MP_SELLER_TOKEN_EXPIRING');
+  const due = outbox.filter((row) => (['pending', 'retry_wait'].includes(row.status) && Date.parse(row.next_attempt_at) < now - MP_STALL_MS)
+    || (['claimed', 'processing'].includes(row.status) && Date.parse(row.lease_expires_at) < now - MP_STALL_MS)).length;
+  const dead = outbox.filter((row) => ['failed', 'dead_letter'].includes(row.status)).length;
+  if (due) warn.push(`MP_OUTBOX_STALLED:${due}`);
+  if (dead) warn.push(`MP_OUTBOX_DEAD_LETTER:${dead}`);
+  const inReview = intents.filter((row) => ['ambiguous', 'security_review_required', 'approved_order_pending'].includes(row.internal_status)).length;
+  const paidWithoutOrder = intents.filter((row) => ['approved', 'approved_order_pending'].includes(row.internal_status)
+    && !row.order_id && Date.parse(row.updated_at) < now - MP_STALL_MS).length;
+  if (inReview) warn.push(`MP_PAYMENTS_NEED_RECONCILIATION:${inReview}`);
+  if (paidWithoutOrder) warn.push(`MP_PAID_WITHOUT_ORDER:${paidWithoutOrder}`);
+  const ambiguousRefunds = refunds.filter((row) => row.status === 'ambiguous').length;
+  if (ambiguousRefunds) warn.push(`MP_REFUND_RECONCILIATION:${ambiguousRefunds}`);
+  const webhookRejected = receipts.filter((row) => row.processing_status === 'rejected_signature').length;
+  const webhookValid = receipts.filter((row) => row.signature_valid === true).length;
+  if (webhookRejected) warn.push(`MP_WEBHOOK_SIGNATURE_REJECTED:${webhookRejected}${webhookValid ? '' : ':NONE_VALID'}`);
+  return {
+    summary: { enabled, environment, reviewStatus: setting?.production_review_status ?? null, connection: connection?.status ?? 'none',
+      outboxDue: due, outboxDead: dead, inReview, paidWithoutOrder, ambiguousRefunds, webhookRejected, webhookValid },
+    warn,
+  };
 }
 
 // Checks that need only the publishable key: runnable from any machine, CI or
@@ -148,6 +185,27 @@ async function main(args) {
       .eq('business_id', businessId).not('status', 'in', '(resolved,closed)'));
     if (rows.length) warn.push(`OPEN_ALERTS:${rows.length}`);
     return { open: rows.length, codes: [...new Set(rows.map((row) => row.alert_code))] };
+  });
+  await check('mercadopago', async () => {
+    const settings = await q(db.from('business_payment_settings').select('enabled,environment,production_review_status')
+      .eq('business_id', businessId).eq('provider', 'mercadopago'));
+    const connections = await q(db.from('mp_seller_connections').select('environment,status,expires_at').eq('business_id', businessId));
+    const intents = await q(db.from('payment_intents').select('id,internal_status,order_id,updated_at').eq('business_id', businessId)
+      .or(`updated_at.gte.${since},internal_status.in.(ambiguous,security_review_required,approved_order_pending,approved)`).limit(1000));
+    const ids = intents.map((row) => row.id);
+    const outbox = [
+      ...(ids.length ? await q(db.from('payment_outbox').select('status,next_attempt_at,lease_expires_at')
+        .in('payment_intent_id', ids).neq('status', 'completed')) : []),
+      // Notification jobs not yet tied to an intent belong to no business but
+      // stall everyone's payments just the same.
+      ...await q(db.from('payment_outbox').select('status,next_attempt_at,lease_expires_at')
+        .is('payment_intent_id', null).neq('status', 'completed').limit(1000)),
+    ];
+    const refunds = ids.length ? await q(db.from('payment_refunds').select('status').in('payment_intent_id', ids).eq('status', 'ambiguous')) : [];
+    const receipts = await q(db.from('payment_webhook_receipts').select('processing_status,signature_valid').gte('received_at', since).limit(5000));
+    const result = classifyMercadoPago({ settings, connections, outbox, intents, refunds, receipts });
+    warn.push(...result.warn);
+    return result.summary;
   });
   await check('stock', async () => {
     const rows = await q(db.from('products').select('sku,stock,available,is_verified,is_active').eq('business_id', businessId));

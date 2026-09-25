@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
-  QA_CONTROL_BUSINESS, QA_WINDOW_MINUTES, REAL_BUSINESS, foreignPublicTenants, openQaWindow, publicCatalogTenants,
+  QA_CONTROL_BUSINESS, QA_WINDOW_MINUTES, REAL_BUSINESS, foreignPublicTenants, openQaWindow, ownerWindowCommand,
+  publicCatalogTenants,
 } from '../scripts/controlled-production/qa-window.mjs';
 
 // Fake owner session. `deployed: false` answers PGRST202 for the windowed RPCs
@@ -72,6 +73,43 @@ test('QA window fails loudly when the server refuses to close', async () => {
   const window = await openQaWindow(owner, QA_CONTROL_BUSINESS);
   owner.rpc = async () => ({ data: null, error: { code: '42501' } });
   await assert.rejects(window.close(), /QA_WINDOW_CLOSED_FAILED:42501/);
+});
+
+// The operator CLI (`qa-window.mjs open|close`): has_business_role only knows a
+// session registered for the business, so a bare password login gets 42501.
+function fakeOperator({ registered = true } = {}) {
+  const calls = [];
+  let session = false;
+  return {
+    calls,
+    rpc: async (name, args) => {
+      calls.push(name);
+      if (name === 'identity_register_session') {
+        session = registered && args.p_business_id === QA_CONTROL_BUSINESS && args.p_client === 'panel_web';
+        return session ? { data: { ok: true, role: 'owner' }, error: null } : { data: { ok: false, code: 'not_member' }, error: null };
+      }
+      if (!session) return { data: null, error: { code: '42501' } };
+      return { data: { ok: true, status: name === 'open_qa_window' ? 'open' : 'closed', qa_window_until: '+45m' }, error: null };
+    },
+  };
+}
+
+test('operator close and open register the Panel session before touching the window', async () => {
+  const closing = fakeOperator();
+  assert.equal(await ownerWindowCommand(closing, QA_CONTROL_BUSINESS, 'close'), 'closed');
+  assert.deepEqual(closing.calls, ['identity_register_session', 'close_qa_window']);
+  const opening = fakeOperator();
+  assert.equal(await ownerWindowCommand(opening, QA_CONTROL_BUSINESS, 'open'), 'open');
+  assert.deepEqual(opening.calls, ['identity_register_session', 'open_qa_window']);
+});
+
+test('operator command fails loudly when the session is refused and never touches the real business', async () => {
+  const refused = fakeOperator({ registered: false });
+  await assert.rejects(ownerWindowCommand(refused, QA_CONTROL_BUSINESS, 'close'), /QA_OWNER_SESSION_REFUSED:not_member/);
+  assert.deepEqual(refused.calls, ['identity_register_session']);
+  const real = fakeOperator();
+  await assert.rejects(ownerWindowCommand(real, REAL_BUSINESS, 'close'), /QA_WINDOW_REFUSES_REAL_BUSINESS/);
+  assert.deepEqual(real.calls, []);
 });
 
 test('public exposure probe flags any tenant other than the real business', async () => {

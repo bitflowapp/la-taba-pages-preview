@@ -81,6 +81,20 @@ export function foreignPublicTenants(tenants, businessId) {
   return tenants.filter((id) => id !== businessId);
 }
 
+// The operator's own open/close. `has_business_role` only recognises a session
+// registered for the business (identity_register_session), exactly like the
+// Panel does after login: a bare password sign-in gets 42501 from both RPCs.
+export async function ownerWindowCommand(ownerClient, businessId, command) {
+  assert.notEqual(businessId, REAL_BUSINESS, 'QA_WINDOW_REFUSES_REAL_BUSINESS');
+  assert.ok(['open', 'close'].includes(command), 'QA_WINDOW_COMMAND_INVALID');
+  const { data, error } = await ownerClient.rpc('identity_register_session', { p_business_id: businessId,
+    p_client: 'panel_web', p_device_label: 'QA window operator', p_device_key_hash: null, p_app_version: 'cp-qa-window' });
+  if (error || data?.ok !== true) throw Error(`QA_OWNER_SESSION_REFUSED:${error?.code || data?.code || 'refused'}`);
+  if (command === 'open') await openWindowState(ownerClient, businessId);
+  else await closeWindowState(ownerClient, businessId);
+  return command === 'open' ? 'open' : 'closed';
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const command = args[0];
@@ -105,10 +119,8 @@ async function main() {
   const owner = createClient(keys.url, keys.publishable, options);
   const signed = await owner.auth.signInWithPassword({ email: stored.usuario, password: stored.secreto });
   if (signed.error) throw Error(`QA_OWNER_SIGNIN_FAILED:${signed.error.code || signed.error.status}`);
-  assert.notEqual(businessId, REAL_BUSINESS, 'QA_WINDOW_REFUSES_REAL_BUSINESS');
-  if (command === 'open') await openWindowState(owner, businessId);
-  else await closeWindowState(owner, businessId);
-  console.log(JSON.stringify({ businessId, command, status: command === 'open' ? 'open' : 'closed' }));
+  const status = await ownerWindowCommand(owner, businessId, command);
+  console.log(JSON.stringify({ businessId, command, status }));
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {

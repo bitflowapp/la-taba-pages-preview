@@ -8,13 +8,14 @@
 --     siga `open`, y el barrido lo cierra;
 --   - nadie lee unit_cost ni verified_by por la API;
 --   - la marca QA y la ventana no se cambian con un UPDATE directo y sólo un
---     owner abre/cierra la ventana, sólo en un tenant QA y por 1–60 minutos.
+--     owner abre/cierra la ventana, sólo en un tenant QA y por 1–60 minutos;
+--   - con pedidos online habilitados el comercio pausa, cierra y reabre.
 --
 -- Todo transaccional: termina en rollback y no deja una fila.
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(32);
+select plan(37);
 
 -- ── Fixture ────────────────────────────────────────────────────────────────
 insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
@@ -149,7 +150,20 @@ select throws_ok($$select public.close_qa_window('c9000000-0000-4000-8000-000000
   'un negocio real no se cierra por close_qa_window');
 select throws_ok($$update public.businesses set qa_fixture = true where id = 'c9000000-0000-4000-8000-0000000000b1'$$, '42501', null,
   'el owner real no puede esconder su catálogo marcándolo QA');
+
+-- PAUSE ALL SYSTEM (20260925085000): con pedidos online habilitados el comercio
+-- pausa, cierra y reabre desde el Panel, y pausado no toma pedidos.
+select lives_ok($$select public.set_business_open_state('c9000000-0000-4000-8000-0000000000b1', 'paused')$$,
+  'con pedidos online habilitados el comercio puede pausar');
+select is((public.commerce_availability('c9000000-0000-4000-8000-0000000000b1', 'delivery', '{}'::jsonb)) ->> 'ordering_ready',
+  'false', 'pausado no toma pedidos');
+select lives_ok($$select public.set_business_open_state('c9000000-0000-4000-8000-0000000000b1', 'closed')$$,
+  'y puede cerrar');
+select lives_ok($$select public.set_business_open_state('c9000000-0000-4000-8000-0000000000b1', 'open')$$,
+  'y volver a abrir');
 reset role;
+select is((select ordering_enabled from public.businesses where id = 'c9000000-0000-4000-8000-0000000000b1'), true,
+  'pausar y cerrar no borran la configuración de pedidos online');
 
 -- ── 5 · Superficie de ejecución ────────────────────────────────────────────
 select ok(not has_function_privilege('anon', 'public.open_qa_window(uuid,integer)', 'EXECUTE'), 'anon no abre ventanas QA');

@@ -145,8 +145,8 @@ try {
       assert.doesNotMatch(output,/^not ok\b/m,name);assert.match(output,/^1\.\.[0-9]+$/m,name);
       assertions+=Number(/^1\.\.([0-9]+)$/m.exec(output)[1]);
     }
-    assert.equal(assertions,376);
-    console.log('CANONICAL_PGTAP: 250 + 44 least-privilege + 50 reparto-propio + 32 ventana QA/columnas privadas assertions PASS');
+    assert.equal(assertions,381);
+    console.log('CANONICAL_PGTAP: 250 + 44 least-privilege + 50 reparto-propio + 37 ventana QA/columnas privadas/pausa assertions PASS');
 
     // Drill the exact compensating rollback in the same isolated schema where
     // the forward migration and its pgTAP contract just passed. The first run

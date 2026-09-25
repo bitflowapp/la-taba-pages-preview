@@ -90,10 +90,37 @@ mismo comprador y vendedor, mismo navegador:
 |---|---|---|---|
 | APP_USR directo | `www` | saldo | challenge → reauth → **aprobado** |
 | Token OAuth (producción) | `sandbox` | tarjeta APRO | challenge → reauth → **error** |
+| Token OAuth, Chrome normal sin automatización (§4.1) | `sandbox` | tarjeta APRO | challenge → reauth → **error** |
 
 Quedan dos celdas sin medir para aislar la causa: APP_USR directo + tarjeta, y
 OAuth + saldo. Por la regla de un solo intento automatizado, se piden como
 prueba manual de control (§10).
+
+### 4.1 Prueba de control en Chrome normal (21:00 UTC)
+
+Para descartar que el error lo provoque la automatización (Playwright/CDP), se
+repitió **una vez** en un Chrome 149 normal: perfil temporal aislado, incógnito,
+sin flags de automatización ni depuración. Se operó con UI Automation de Windows
+y teclado/mouse reales (SendInput), como una persona.
+
+| Dato | Valor |
+|---|---|
+| Preferencia | `3594962708-d0c58b5a-a046-4acf-8b64-351f8dac3add`, creada por `mercadopago-create-preference` con el token OAuth, 20:47:19Z (17:47:19 AR). collector `3594962708`, client **`2691240967769590`**, `MLA` |
+| Pedido La Taba | checkout `3853a26e-1c3e-4622-a783-f947e7d2f06a`, intent `b8a1f248-ab6b-494b-bda2-b2ad8e312b16` |
+| Apertura | `init_point` en `www` → redirigido por MP a `sandbox` (x-request-id del redirect `85ccc64a-b525-4cd5-afe3-9310db12cb54`) |
+| Comprador | `3594962710` (TEST), login con contraseña, sin código; la revisión mostraba sólo la tarjeta, sin dinero disponible |
+| Medio | Nueva tarjeta: Mastercard …0604, APRO, 11/30, DNI 12345678, 1 cuota |
+| Flujo | `22d28891-43ff-4804-acae-bfba158b4196`. Pagar 21:00:04Z → `PUT /checkout/v1/api/flow` (`7cd7a20f-aeaa-4b5e-9c8b-7f58f2c7102e`) → `GET /checkout/v1/api/reauth` 200 (`276bf99e-49b4-49c9-852d-2c93e47238af`) → `PUT /checkout/v1/api/flow` (`fcd81ecb-9466-4832-a670-68472889883b`) → `/error/` «**Oh, no, algo anduvo mal**» 21:00:10Z |
+| Al cargar la tarjeta | `POST /checkout/v1/api/bricks/card-form/association` **404** (`64e1099d-7847-4866-ab59-d17f1d157f84`), seguido de `POST /checkout/v1/api/error` (`293a96b4-4780-4dd4-ad23-04370227aff0`); igual en la corrida automatizada |
+| Pago | ninguno: `GET /v1/payments/search` por external_reference total 0 (`718926ae-2fef-4453-88d6-278cecfe7731`); 0 recibos, 0 pedidos |
+| Stock | la sesión venció 21:02:14Z; reserva liberada 21:03:00Z; producto de vuelta en 42 |
+
+El resultado es el mismo que con Playwright: la automatización no es la causa.
+Un primer flujo (`5e24bebb-8507-4cda-a64e-68d8f4e95025`) se descartó antes de
+pagar. Se tipeó el usuario incompleto y el login devolvió
+`/login/identification/not-found` (código `LGN83-O2G42TB6STQB`).
+Después del error no se presionó «Reintentar» ni se hicieron intentos
+equivalentes.
 
 ## 5. Defectos encontrados y corregidos
 
@@ -197,13 +224,12 @@ Todo lo que no depende de ese pago quedó hecho y medido.
 
 ## 10. Acciones humanas
 
-1. **Prueba manual de control** (una): en una ventana de incógnito, el dueño
-   abre la preferencia que prepara
-   `node scripts/mercadopago/certificacion-app-usr-directo/certificar.mjs preparar --nuevo`
-   (APP_USR directo) y paga con la tarjeta APRO con el comprador 3594962710.
-   Si aprueba, la tarjeta no es la causa y la diferencia es la credencial/sandbox.
-2. **WCS-51579**: publicar la actualización de §11 y pedir el motivo interno del
-   `reauth` → error del flujo `4c4a42bf-a3d4-45bc-b28c-c6822bd90144`.
+1. **Prueba de control OAuth**: hecha (§4.1), mismo error. No se repiten pagos
+   equivalentes hasta que Mercado Pago responda.
+2. **WCS-51579**: publicar el texto de §11 desde la cuenta de Mercado Pago
+   Developers del dueño (el ticket vive en esa sesión) y pedir el motivo interno
+   del `reauth` → error de los flujos `4c4a42bf-a3d4-45bc-b28c-c6822bd90144` y
+   `22d28891-43ff-4804-acae-bfba158b4196`.
 3. **Firma del webhook de Staging**: en Tus integraciones → TABA2 Staging →
    Webhooks → Simular notificación (pago); el recibo tiene que quedar con
    `signature_valid=true`. Si no, recargar la firma con
@@ -234,9 +260,42 @@ Todo lo que no depende de ese pago quedó hecho y medido.
 > 4c4a42bf-a3d4-45bc-b28c-c6822bd90144: challenge → reauth (x-request-id
 > ec1f08bf-fc74-419c-bb50-d4fc380d1b51) → flow (f4effcd9-1b01-46eb-8772-59b3d7c2cb54)
 > → «Oh, no, algo anduvo mal», 17:28:54 UTC (14:28:54 AR).
-> Pedimos el motivo interno de challenge → reauthentication → error del caso 2, y
-> confirmar si una preferencia creada con el token OAuth de un vendedor de prueba
-> debe abrirse en sandbox.
+> 3) Prueba de control, mismo caso 2 en un Chrome 149 normal (Windows 11, perfil
+> nuevo, incógnito, sin automatización del navegador), 2026-09-25:
+> preferencia 3594962708-d0c58b5a-a046-4acf-8b64-351f8dac3add (collector
+> 3594962708, client_id 2691240967769590, MLA), init_point en www redirigido a
+> sandbox (x-request-id 85ccc64a-b525-4cd5-afe3-9310db12cb54). Comprador de
+> prueba 3594962710 logueado con contraseña; Nueva tarjeta Mastercard de prueba
+> …0604 a nombre de APRO, DNI 12345678, 1 cuota; sin dinero disponible.
+> Flujo 22d28891-43ff-4804-acae-bfba158b4196:
+> - Pagar 21:00:04 UTC (18:00:04 AR) → PUT /checkout/v1/api/flow (x-request-id 7cd7a20f-aeaa-4b5e-9c8b-7f58f2c7102e)
+> - → challenge → GET /checkout/v1/api/reauth 200 (x-request-id 276bf99e-49b4-49c9-852d-2c93e47238af)
+> - → PUT /checkout/v1/api/flow (x-request-id fcd81ecb-9466-4832-a670-68472889883b)
+> - → «Oh, no, algo anduvo mal», 21:00:10 UTC. No se creó ningún pago.
+>
+> Al cargar la tarjeta, POST /checkout/v1/api/bricks/card-form/association
+> respondió 404 (x-request-id 64e1099d-7847-4866-ab59-d17f1d157f84), en los dos
+> casos con sandbox.
+>
+> Diferencia de aplicaciones entre los casos:
+> DIRECT TEST APP CLIENT_ID: 4861627125869370 (aplicación de las Credenciales de
+> prueba; su preferencia se abrió en www y aprobó).
+> OAUTH INTEGRATION APP: 2691240967769590 (nuestra aplicación integradora,
+> TABA2 Staging; su preferencia, creada con el token OAuth del vendedor de
+> prueba, se abrió en sandbox y termina en error).
+>
+> Pedimos:
+> a) Confirmar explícitamente si esa separación de aplicaciones es la esperada
+> para probar Checkout Pro. Y si una preferencia creada con el token OAuth de un
+> vendedor de prueba, a través de la aplicación integradora, debe abrirse en
+> sandbox.
+> b) Correlacionar internamente los request IDs de arriba y decirnos el motivo de
+> challenge → reauthentication → error en los flujos
+> 4c4a42bf-a3d4-45bc-b28c-c6822bd90144 y 22d28891-43ff-4804-acae-bfba158b4196.
+> c) Indicar cómo completar una compra de prueba aprobada con la aplicación
+> integradora (tarjeta, cuenta o configuración necesaria).
+>
+> No vamos a repetir pagos equivalentes hasta su respuesta.
 
 La evidencia completa (JSON y capturas sin secretos) queda fuera del
 repositorio, en `%TEMP%\la-taba-mp-directo\` de la PC del operador.

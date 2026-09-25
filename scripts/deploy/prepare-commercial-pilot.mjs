@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadPilotPreflight } from './pilot-preflight.mjs';
+import { loadPilotPreflight, probeOnlinePaymentsBackend } from './pilot-preflight.mjs';
 import { checkRuntimeConfig } from '../check-runtime-config.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
@@ -41,12 +41,21 @@ async function main() {
   run('scripts/build-supabase-vendor.mjs');
   run('scripts/create-release-folder.mjs', ['--out', 'dist_pilot']);
   const config = JSON.parse(readFileSync(path.resolve(configFile), 'utf8'));
+  // Cobros online sólo con la aprobación del preflight Y un backend que ya
+  // tiene el conector configurado: si no, el Panel ofrecería conectar una
+  // cuenta contra funciones cerradas.
+  const onlinePayments = report.onlinePayments === true;
+  if (onlinePayments) {
+    const probe = await probeOnlinePaymentsBackend({ projectRef: plan.projectRef,
+      customerOrigin: new URL(config.customerUrl).origin });
+    assert.ok(probe.ready, `PILOT_ONLINE_PAYMENTS_BACKEND_NOT_CONFIGURED:webhook=${probe.webhookStatus},preflight=${probe.preflightStatus}`);
+  }
   const runtime = { mode: 'production', repository: {
     provider: 'supabase', deploymentEnvironment: 'pilot',
     supabaseUrl: `https://${plan.projectRef}.supabase.co`,
     publishableKey: ownerCredentials.publishableKey, businessId: plan.businessId,
     pollMs: 5000,
-  } };
+  }, ...(onlinePayments ? { payments: { online: true } } : {}) };
   writeFileSync(path.join(OUT, 'runtime-config.js'),
     `globalThis.__LA_TABA_RUNTIME_CONFIG__ = Object.freeze(${JSON.stringify(runtime)});\n`);
   const checked = await checkRuntimeConfig(path.join(OUT, 'runtime-config.js'));
@@ -57,14 +66,14 @@ async function main() {
   const rider = JSON.parse(readFileSync(path.resolve(ROOT, config.rider.buildReceiptFile), 'utf8'));
   writeFileSync(path.join(OUT, 'pilot-deploy-metadata.json'), JSON.stringify({
     environment: 'pilot', catalogMode: report.catalogMode, commit, backendRef: plan.projectRef,
-    businessId: plan.businessId, approvedSkus: plan.approvedSkus, migrationGraphSha256: migrationGraphSha256(),
+    businessId: plan.businessId, approvedSkus: plan.approvedSkus, onlinePayments, migrationGraphSha256: migrationGraphSha256(),
     riderApkSha256: rider.apkSha256, riderVersion: rider.versionName,
   }, null, 2) + '\n');
   run('scripts/scan-production-artifacts.mjs', [OUT,
     '--expect-host', `${plan.projectRef}.supabase.co`, '--business-id', plan.businessId]);
   console.log(JSON.stringify({ pilotPackage: 'PASS', deployed: false, commit,
     projectRef: plan.projectRef, businessId: plan.businessId,
-    approvedSkus: plan.approvedSkus, artifact: 'dist_pilot', secretsPrinted: false }));
+    approvedSkus: plan.approvedSkus, onlinePayments, artifact: 'dist_pilot', secretsPrinted: false }));
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {

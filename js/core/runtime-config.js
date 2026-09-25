@@ -123,12 +123,22 @@ export function isProductionDeployment(source = readRuntimeConfigSource()) {
 
 /**
  * Cobros online. La producción controlada (`pilot`) opera sólo con cobro
- * manual mientras Mercado Pago no esté certificado: ahí no se ofrece conectar
- * una cuenta, porque el backend de ese entorno no tiene el conector
- * desplegado y el botón prometería algo que no ocurre.
+ * manual salvo que el despliegue declare `payments.online === true`. Eso lo
+ * escribe `prepare-commercial-pilot` únicamente cuando la configuración del
+ * piloto trae la aprobación nominal (docs/MERCADOPAGO_PRODUCCION_CP.md) y las
+ * sondas públicas probaron que el backend de ese entorno tiene el conector
+ * configurado. Sin esa declaración no se ofrece conectar una cuenta: el botón
+ * prometería algo que no ocurre. Ofrecer Mercado Pago en el checkout sigue
+ * dependiendo, además, de que el negocio lo tenga encendido y su cuenta pueda
+ * cobrar (lo decide el backend).
  */
 export function onlinePaymentsEnabled(source = readRuntimeConfigSource()) {
-  return declaredDeploymentEnvironment(source) !== 'pilot';
+  if (declaredDeploymentEnvironment(source) !== 'pilot') return true;
+  try {
+    return isRecord(source.payments) && source.payments.online === true;
+  } catch (_) {
+    return false;
+  }
 }
 
 function declaredDeploymentEnvironment(source) {

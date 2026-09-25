@@ -20,3 +20,12 @@ test('CONTROLLED_PRODUCTION (pilot) never offers to connect Mercado Pago', () =>
   // Default keeps the existing Staging/Production behaviour.
   assert.match(renderPaymentsSetupSurface({ role: 'owner' }), /data-mp-connection-action="connect"/);
 });
+
+test('CONTROLLED_PRODUCTION offers to connect Mercado Pago only when the deployment declares it', () => {
+  assert.equal(onlinePaymentsEnabled({ ...pilot, payments: { online: true } }), true);
+  for (const payments of [null, {}, { online: 'true' }, { online: 1 }, { online: false }, 'online']) {
+    assert.equal(onlinePaymentsEnabled({ ...pilot, payments }), false, JSON.stringify(payments));
+  }
+  // Other environments are unchanged by the pilot switch.
+  assert.equal(onlinePaymentsEnabled({ repository: { deploymentEnvironment: 'production' }, payments: { online: false } }), true);
+});

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { validatePilotPreflight, loadPilotPreflight } from '../scripts/deploy/pilot-preflight.mjs';
+import { validatePilotPreflight, loadPilotPreflight, probeOnlinePaymentsBackend } from '../scripts/deploy/pilot-preflight.mjs';
 
 const ref = 'abcdefghijklmnopqrst';
 const businessId = '116d8f37-29f5-40f1-a692-81b86b69a72c';
@@ -87,4 +87,40 @@ test('tech-ready mode deploys with an EMPTY public allowlist and never imports',
     { ...empty, projectRef: 'wwcpogltfgzgkrlilbcd' },
     { phase: 'deploy', ownerCredentials: publicOnly, cloudflare, buildReceipt: receipt }),
   /PILOT_BACKEND_MUST_BE_NEW_AND_ISOLATED/);
+});
+
+test('PILOT_PREFLIGHT keeps manual payments unless online payments carry a named approval', () => {
+  assert.equal(validatePilotPreflight(config, plan, { ownerCredentials }).onlinePayments, false);
+  const online = { ...config, manualPaymentOnly: false };
+  assert.throws(() => validatePilotPreflight(online, plan, { ownerCredentials }), /PILOT_ONLINE_PAYMENTS_PROVIDER_REQUIRED/);
+  const approval = { provider: 'mercadopago-oauth', runbook: 'docs/MERCADOPAGO_PRODUCCION_CP.md',
+    approvedBy: 'Walter, dueño de La Taba', approvedAt: '2026-10-01' };
+  assert.equal(validatePilotPreflight({ ...online, onlinePayments: approval }, plan, { ownerCredentials }).onlinePayments, true);
+  assert.throws(() => validatePilotPreflight({ ...online, onlinePayments: { ...approval, approvedBy: ' ' } }, plan, { ownerCredentials }),
+    /PILOT_ONLINE_PAYMENTS_APPROVER_REQUIRED/);
+  assert.throws(() => validatePilotPreflight({ ...online, onlinePayments: { ...approval, approvedAt: 'mañana' } }, plan, { ownerCredentials }),
+    /PILOT_ONLINE_PAYMENTS_DATE_REQUIRED/);
+  assert.throws(() => validatePilotPreflight({ ...online, onlinePayments: { ...approval, runbook: 'README.md' } }, plan, { ownerCredentials }),
+    /PILOT_ONLINE_PAYMENTS_RUNBOOK_REQUIRED/);
+  assert.throws(() => validatePilotPreflight({ ...config, onlinePayments: approval }, plan, { ownerCredentials }),
+    /PILOT_ONLINE_PAYMENTS_APPROVAL_WITHOUT_ONLINE_PAYMENTS/);
+  assert.throws(() => validatePilotPreflight({ ...config, manualPaymentOnly: 'no' }, plan, { ownerCredentials }),
+    /PILOT_PAYMENT_MODE_REQUIRED/);
+});
+
+test('online payments backend probe: ready only when the webhook rejects unsigned calls and the pilot origin is allowed', async () => {
+  const origin = 'https://la-taba-commercial-pilot.pages.dev';
+  const fake = (webhookStatus, preflightStatus, allowOrigin) => async (url) => {
+    if (String(url).includes('mercadopago-webhook')) return new Response(null, { status: webhookStatus });
+    return new Response(null, { status: preflightStatus, headers: allowOrigin ? { 'access-control-allow-origin': allowOrigin } : {} });
+  };
+  const probe = (request) => probeOnlinePaymentsBackend({ projectRef: ref, customerOrigin: origin, request });
+  assert.equal((await probe(fake(401, 204, origin))).ready, true);
+  // CONTROLLED_PRODUCTION on 2026-09-25: functions deployed, connector not configured.
+  assert.deepEqual(await probe(fake(503, 403, null)), { webhookStatus: 503, preflightStatus: 403,
+    webhookRejectsUnsigned: false, originAllowed: false, ready: false });
+  assert.equal((await probe(fake(401, 204, 'https://evil.example'))).ready, false);
+  assert.equal((await probe(fake(200, 204, origin))).ready, false, 'a webhook that accepts unsigned calls is never ready');
+  await assert.rejects(() => probeOnlinePaymentsBackend({ projectRef: 'not a ref', customerOrigin: origin, request: fake(401, 204, origin) }),
+    /PILOT_ONLINE_PAYMENTS_PROBE_REF_REQUIRED/);
 });

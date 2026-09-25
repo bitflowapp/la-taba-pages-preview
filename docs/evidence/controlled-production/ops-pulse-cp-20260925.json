@@ -92,5 +92,31 @@
       "OTHER_TENANT_OPEN:1"
     ],
     "at": "2026-09-25T05:22:46Z"
+  },
+  "afterFinalDeploy": {
+    "at": "2026-09-25T07:45:31.966Z",
+    "target": "controlled-production",
+    "ref": "tkanbadcglszlcyfjvpv",
+    "mode": "public",
+    "windowHours": 24,
+    "checks": {
+      "scheduler": {
+        "healthy": true,
+        "ageSeconds": 32
+      },
+      "publicExposure": {
+        "foreignPublicTenants": 0
+      },
+      "tenants": {
+        "businessStatus": "closed",
+        "otherTenantsOpen": 0
+      },
+      "realtime": {
+        "status": "SUBSCRIBED",
+        "ms": 290
+      }
+    },
+    "status": "HEALTHY",
+    "attention": []
   }
 }

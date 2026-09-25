@@ -36,10 +36,10 @@ CODE_READY por dos P1 latentes; el 25 se aplicaron y certificaron en CP.
 | Stock | sobre-stock 23514, despublicado 55000, carrito todo-o-nada | `stock-edges-cp-20260925.json` |
 | Backup + restauración real | `pg_dump` bajo un snapshot → PostgreSQL 17.6 aislado: 0 errores, 102/102 tablas idénticas (2152 filas), esquema idéntico (99 tablas, 1335 columnas, 797 constraints, 275 índices, 356 funciones, 67 políticas, 94 triggers, grants), 136 migraciones, RLS funcional como anon | `restore-drill-cp-20260925.json` |
 | Storage | bucket `fiscal-documents` con 0 objetos; 16 archivos de catálogo en git con el sha256 de la base y servidos idénticos | `storage-inventory-cp-20260925.json` |
-| Deploy B + smoke | `033946b` publicado en el Pages de CP; smoke Chromium/Chrome Android/WebKit PASS | run 36102296295 |
-| Service worker / caché | cliente con caché de la versión anterior (`4378ed2`) → sirve la nueva, SW en control, sesión conservada, recarga/update/recarga sin caché OK; visitante nuevo OK; 0 errores JS | `sw-live-cp-20260925.json` |
+| Deploy + smoke | `033946b` (run 36102296295) y luego `247eec7` (run 36106090499) publicados en el Pages de CP con CI exacto verde; smoke Chromium/Chrome Android/WebKit PASS. **Se sirve `247eec7`** | `rollback-cp-20260925.json` |
+| Service worker / caché | el mismo perfil con caché y sesión de `4378ed2` pasó a `033946b` y a `247eec7`: sirve la versión nueva, SW en control, sesión conservada, recarga/update/recarga sin caché OK; visitante nuevo OK; 0 errores JS | `sw-live-cp-20260925.json` |
 | E2E técnico (UI) | Chrome Android y WebKit iPhone, tenant QA con ventana: catálogo → carrito → pago manual → Panel → rider → GPS → código → entregado; limpieza | `cp-e2e-ui-20260925.json` |
-| Rollback real | EN CURSO: ensayo B→A→B con A = `033946b` (vivo, 136 migraciones) y B = el commit de este cierre | se completa en el commit de evidencia siguiente |
+| Rollback real | **PASS** (run 36106090499): A `033946b` vivo → B `247eec7` + smoke → rollback B→A (backend y config verificados) + smoke → restore A→B + smoke; los tres smokes en 3 motores | `rollback-cp-20260925.json` |
 | Rider físico | `PENDING_DEVICE`: el Moto G15 (`ZY32LHS6PS`) no aparece por USB (`adb kill-server`/`start-server`: sin dispositivos) | — |
 | Residuo QA | 0 (tenant cerrado, 8/8 publicados con stock 60, 0 pedidos abiertos o sin clasificar, 0 riders disponibles) | — |
 
@@ -137,7 +137,7 @@ telemetría sería una feature nueva, con una escritura anónima que abrir.
 
 ## Rollback
 
-- **2026-09-25 (#98):** en curso — A = `033946b` (primer deployment con las 136 migraciones), B = el commit de este cierre.
+- **2026-09-25 (#98): PASS** (run 36106090499). A = `033946b` (primer deployment con las 136 migraciones), B = `247eec7`: deploy B + smoke, rollback B→A + smoke, restore A→B + smoke (Chromium, Chrome Android, WebKit en cada paso). Hoy se sirve `247eec7`. Evidencia: `rollback-cp-20260925.json`.
 - 2026-09-25, primer intento (run 36102296295): se publicó B `033946b` con smoke
   PASS, pero el ensayo se negó a volver a `4378ed2`
   (`ROLLBACK_DB_GRAPH_INCOMPATIBLE`): esa web se construyó con 134 migraciones y

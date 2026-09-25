@@ -12,7 +12,7 @@ import {
   requireUuid,
   sha256Hex,
 } from '../_shared/payment-runtime.ts';
-import { mercadoPagoRequest } from '../_shared/mercadopago.ts';
+import { isFinalProviderRejection, mercadoPagoRequest } from '../_shared/mercadopago.ts';
 import { correlateProviderRefund, providerResourceId } from '../_shared/refund-correlation.ts';
 
 const REFUND_CONFIRMATION = 'I_UNDERSTAND_THIS_REQUESTS_A_MERCADO_PAGO_REFUND';
@@ -86,7 +86,7 @@ Deno.serve(async (request) => {
       );
       const responseHash = await sha256Hex(result.rawText);
       if (!result.response.ok || !result.body) {
-        if (result.response.status >= 400 && result.response.status < 500) {
+        if (isFinalProviderRejection(result.response.status)) {
           await service.rpc('record_payment_refund_response_v2', {
             p_refund_id: prepared.refund_id,
             p_provider_refund_id: '',

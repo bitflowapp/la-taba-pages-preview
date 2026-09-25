@@ -383,6 +383,17 @@ export async function disputeSnapshot(
   };
 }
 
+/**
+ * Whether a 4xx from Mercado Pago is the provider's final answer about the
+ * operation. Throttling (429), timeouts (408), too-early (425) and conflicts
+ * (409, e.g. the same idempotency key still in flight) say nothing about it:
+ * recording them as a rejection would write a financial state the provider
+ * never decided. Those go through reconciliation, like a 5xx.
+ */
+export function isFinalProviderRejection(status: number): boolean {
+  return status >= 400 && status < 500 && ![408, 409, 425, 429].includes(status);
+}
+
 export class MercadoPagoApiError extends Error {
   constructor(
     public readonly status: number,

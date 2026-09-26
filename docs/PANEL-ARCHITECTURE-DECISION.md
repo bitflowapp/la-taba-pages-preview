@@ -1,6 +1,6 @@
 # Panel del negocio · decisión de arquitectura (.NET, impresión y ARCA)
 
-Fecha: 2026-09-26. Estado: **decidido (B), sujeto a que el spike demuestre la impresión**.
+Fecha: 2026-09-26. Estado: **decidido (B)**. Implementación v0.1.0 del agente y del backend de impresión: ver [Estado de la implementación](#estado-de-la-implementación-2026-09-26).
 
 Pregunta: ¿hay que migrar el Panel del negocio a .NET? Se evaluó con evidencia
 del repositorio, de la web publicada en CONTROLLED_PRODUCTION y de la
@@ -172,10 +172,12 @@ Decisión: **ARCA se opera del lado del servidor**, no en el agente del local.
   Relaciones; ninguna clave privada viaja a una PC de mostrador.
 - El esquema e idempotencia ya existen del lado del servidor.
 
-El agente .NET conserva una frontera fiscal (`IArcaGateway`: WSAA con
-`SignedCms`, WSFEv1) sólo para el caso en que un comercio exija custodia local
-del certificado (Windows Certificate Store, clave no exportable). Queda
-diseñada y probada con dobles, **no habilitada**.
+El spike del agente traía una frontera fiscal (WSAA con `SignedCms`, WSFEv1)
+para una eventual custodia local del certificado. **Se retiró en la v0.1.0**:
+la lógica fiscal central no vive en la PC del local. Su regla de
+reconciliación (consultar el número reservado y el último autorizado antes de
+decidir recuperar el CAE, reenviar el MISMO número o parar para revisión) se
+portó al worker server-side.
 
 ## RECOMMENDATION
 
@@ -194,3 +196,19 @@ server-side.**
    contenedor privado) y hacer la homologación con certificado real.
 5. El shell Tauri se congela y se retira cuando el agente certifique impresión
    física.
+
+---
+
+## Estado de la implementación (2026-09-26)
+
+Rama `feat/taba-local-agent-v1` (desde el spike). **No cambia la web**: el
+frontend quedó congelado con #102 (`1cf1cb1`, desplegado en CP).
+
+| Pieza | Estado |
+|---|---|
+| Backend `print_jobs` + identidad por instalación | Migración `20260926160000_local_print_agent.sql` (forward-only, rollback probado): `local_devices`, `local_device_pairings`, `business_print_settings`, `print_jobs`, `print_job_events` (inmutable). Reclamo atómico con `claim_token` y lease; `printing` antes de imprimir; `needs_review` sin reimpresión automática; reimpresión auditada; ticket fiscal sólo con CAE; triggers de impresión automática que nunca frenan un pedido. pgTAP 104 + carreras reales (2 agentes, reintento de `printing`, doble toque). **No aplicada** en CP ni Staging. |
+| Puerta del agente | Edge Function `print-agent-gateway`: credencial de dispositivo → RPC sólo `service_role`. `anon` no gana funciones (siguen 8 SECURITY DEFINER públicas). Rechaza cualquier `Origin`. |
+| Agente | `Taba.LocalAgent` 0.1.0: diario durable, ESC/POS 58/80 mm con tablas de caracteres, impresora «Windows» por driver, seguimiento y cancelación de trabajos del spooler, DPAPI, API local endurecida, CLI, logs JSON saneados. |
+| Instalación | MSI (WiX v5) sin secretos: servicio `LOCAL SERVICE`, inicio automático, reinicio ante fallas, carpeta de datos cerrada. Prueba de instalación real en CI. Sin firmar hasta tener el certificado. |
+| Panel | RPC listas (`get_local_print_status`, emparejar, revocar, reimprimir, resolver revisión, configurar); la pantalla va en su propio PR cuando se descongele el frontend. |
+| Físico | `PHYSICAL_PRINTER_GATE: PENDING_DEVICE` (runbook §14). |

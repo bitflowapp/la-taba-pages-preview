@@ -205,7 +205,7 @@ export function renderDeliveryPanel() {
 
 function renderRiderAssignmentPreview(container, order) {
   const itemCount = (order.items || []).reduce((sum, item) => sum + Math.max(0, Number(item.quantity) || 0), 0);
-  const businessName = getBusinessConfig().businessName || 'TABA2';
+  const businessName = getBusinessConfig().businessName || 'La Taba';
   const generalZone = normalizeOrderAddressDetails(order).neighborhood;
   renderWithStableRealMap(container, `
     <div class="delivery-layout rider-map-experience is-empty no-map">

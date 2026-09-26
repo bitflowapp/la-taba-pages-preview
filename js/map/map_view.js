@@ -572,7 +572,9 @@ function idleMapMetaLabel() {
   const config = getBusinessConfig();
   const name = String(config.businessName || '').trim();
   const zone = String(config.deliveryZone || '').trim();
-  const declaredZone = zone && !/a confirmar/i.test(zone) ? zone : '';
+  // Los valores de relleno de la configuración base («Cobertura no publicada»,
+  // «… a confirmar») no son una zona: se leían en el mapa como un dato del local.
+  const declaredZone = zone && !/a confirmar|no publicad/i.test(zone) ? zone : '';
   if (name && declaredZone) return `${name} · ${declaredZone}`;
   return name || 'Zona de reparto';
 }

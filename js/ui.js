@@ -3900,7 +3900,7 @@ function riderTrackingCard(order, riderLocation, presentation = null) {
         decorative: true,
       })}</span>
       <div class="tracking-rider-copy">
-        <small>${assigned ? 'Rider TABA2' : 'Entrega TABA2'}</small>
+        <small>${assigned ? 'Tu Rider' : 'Tu entrega'}</small>
         <strong data-rider-status>${escapeHtml(title)}</strong>
         <span data-rider-message>${escapeHtml(sub)}</span>
       </div>

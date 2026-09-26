@@ -283,7 +283,7 @@ test.describe('contenido extremo y pantallas chicas', () => {
     })).toBe(1);
   });
 
-  test('agotado y precio pendiente avisan sin desbordar, y no se pueden comprar', async ({ page }) => {
+  test('agotado avisa sin desbordar; el precio pendiente no se publica ni se valúa en cero', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 720 });
     await instalarBackend(page);
     await page.goto('/#catalog');
@@ -295,8 +295,12 @@ test.describe('contenido extremo y pantallas chicas', () => {
     const agotado = page.locator(`[data-add-product="${CATALOGO[1].id}"]`);
     await expect(agotado).toBeDisabled();
 
-    // Precio pendiente: se puede tener en el carrito, pero el pedido no sale.
-    // Lo que NO puede pasar nunca es que se cobre cero.
+    // Precio pendiente: en la tienda real no se publica. No hay tarjeta, ni
+    // botón «Precio pendiente», ni se puede buscar; el estado lo conserva para
+    // que el carrito lo reconcilie. Lo que NO puede pasar nunca es que se
+    // cobre cero.
+    await expect(page.locator(`[data-add-product="${CATALOGO[2].id}"]`)).toHaveCount(0);
+    await expect(page.locator('[data-view="catalog"]')).not.toContainText(/Precio pendiente|Precio próximamente/);
     const conPrecio = await page.evaluate(async (ids) => {
       const { getState } = await import('/js/state.js');
       const productos = getState().products;

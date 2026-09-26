@@ -22,7 +22,7 @@ import crypto from 'node:crypto';
 const [dir = 'dist_release', vivo = 'artifacts/ci/staging-v61/preserva/runtime-config.live.js'] = process.argv.slice(2);
 const RAIZ = path.resolve(dir);
 const PROHIBIDAS = ['catalog', 'data', 'docs', 'tests', 'scripts', 'supabase', 'package.json', 'package-lock.json', 'README.md', '.env', 'node_modules'];
-const ESPERADO = { app: '?v=50', css: '?v=60', recovery: '?v=2', cache: 'la-taba-runtime-v118-online-payments-gate' };
+const ESPERADO = { app: '?v=51', css: '?v=61', recovery: '?v=2', cache: 'la-taba-runtime-v119-commercial-frontend' };
 
 const fallas = [];
 const ok = [];

@@ -11,7 +11,9 @@ export function buildBusinessRuntimeViewModel({ connectivity = {}, commands = []
     && active.length === 0
     && !connectivity.lastReconciledAt;
   return Object.freeze({
-    connectionLabel: idleWithoutEvidence ? 'Sin comandos pendientes' : connectivityLabel(connectivity),
+    // «Todo enviado» y no «Sin comandos pendientes»: quien atiende el mostrador
+    // no piensa en comandos, piensa en si lo que tocó llegó.
+    connectionLabel: idleWithoutEvidence ? 'Todo enviado' : connectivityLabel(connectivity),
     connectionState: connectivity.state || 'reconnecting',
     lastReconciledAt: connectivity.lastReconciledAt || null,
     pendingCount: active.length,

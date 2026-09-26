@@ -775,8 +775,12 @@ function buildBaseBusinessConfig() {
   const base = buildDefaultBusinessConfig();
   if (![APP_MODE_PRODUCTION, APP_MODE_UNAVAILABLE].includes(getAppMode())) return base;
   return mergeBusinessConfig(base, {
-    businessName: 'La Taba 2',
-    name: 'La Taba 2',
+    // Hasta que el backend contesta, el nombre es el de la marca. «La Taba 2»
+    // es el nombre de DIRECTORIO del local (lo que busca Maps, en
+    // `core/business-location.js`), no el de la tienda: acá era lo primero que
+    // se leía en cada arranque y cada vez que la configuración fallaba.
+    businessName: 'La Taba',
+    name: 'La Taba',
     subtitle: 'Tienda 24/7',
     address: 'Dirección no publicada',
     deliveryZone: 'Cobertura no publicada',

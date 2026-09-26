@@ -194,7 +194,7 @@ test('sin pendientes ni reconciliación previa, el chip no dice Reconectando', (
     connectivity: { state: 'reconnecting', online: true, lastReconciledAt: null },
     commands: [],
   });
-  assert.equal(viewModel.connectionLabel, 'Sin comandos pendientes');
+  assert.equal(viewModel.connectionLabel, 'Todo enviado');
 });
 
 test('con pendientes reales el chip sí informa el estado de conexión', () => {

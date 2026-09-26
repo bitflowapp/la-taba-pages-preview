@@ -91,8 +91,8 @@ export function accessRegistrationCopy(step, request = null) {
       };
     default:
       return {
-        title: 'Acceso seguro requerido',
-        lead: 'Ingresá con una cuenta owner o empleado vinculada a este comercio.',
+        title: 'Ingresá con tu cuenta',
+        lead: 'Para el dueño y el equipo del local. Cada persona entra con su propia cuenta.',
       };
   }
 }

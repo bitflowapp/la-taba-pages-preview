@@ -462,7 +462,7 @@ function renderDraftForm(draft, { role, busy, errorList }) {
     ${canPrice ? `
       <label>Precio de venta<input name="productPrice" type="number" min="0" step="0.01" inputmode="decimal"></label>
       <label>Costo <small>(opcional)</small><input name="productCost" type="number" min="0" step="0.01" inputmode="decimal"></label>
-      <label class="business-ops-check"><input name="productPricePending" type="checkbox"> Precio pendiente: se ve en la web pero no se puede comprar</label>`
+      <label class="business-ops-check"><input name="productPricePending" type="checkbox"> Precio pendiente: no se muestra en la tienda hasta que cargues el precio</label>`
     : '<p class="form-hint">El precio lo carga el dueño o el encargado.</p>'}
     <div class="button-row">
       <button class="secondary-button" type="button" data-product-preview ${busy ? 'disabled' : ''}>Ver cómo queda</button>

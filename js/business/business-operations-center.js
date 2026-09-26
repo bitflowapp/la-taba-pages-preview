@@ -2651,7 +2651,7 @@ async function completeProductDraft(target) {
     productReadiness = completed.data;
     productPreview = buildStorefrontPreview(validation.value, { imageReady: Boolean(completed.data?.image_bound) });
     feedback = validation.value.pricePending
-      ? 'Producto guardado con precio pendiente: se ve en la web pero todavía no se puede comprar.'
+      ? 'Producto guardado con precio pendiente: no se muestra en la tienda hasta que cargues el precio.'
       : 'Producto guardado. Abajo te decimos qué falta para que aparezca en la web.';
   } else {
     feedback = humanizeFailure(completed?.message, 'El producto se creó pero no se pudieron guardar todos los datos.');

@@ -1,17 +1,18 @@
 using System.Globalization;
 using System.Text;
+using Taba.LocalAgent.Core.Documents;
 
 namespace Taba.LocalAgent.Core.Printing.EscPos;
 
 /// <summary>
 /// Constructor de bytes ESC/POS con el subconjunto que comparten las térmicas
-/// comunes (Epson TM y compatibles): inicializar, alinear, negrita, tamaño doble,
-/// avanzar, código QR (modelo 2) y corte.
+/// comunes (Epson TM y compatibles): inicializar, tabla de caracteres, alinear,
+/// negrita, tamaño doble, avanzar, código QR (modelo 2) y corte.
 ///
-/// El texto se translitera a ASCII por defecto («Neuquén» → «Neuquen»): cada
-/// marca numera distinto sus tablas de caracteres y un acento mal mapeado
-/// imprime basura. Quien tenga una impresora con tabla conocida puede pasar su
-/// codificación explícita.
+/// Texto: por defecto se translitera a ASCII («Neuquén» → «Neuquen»), que se lee
+/// bien en cualquier térmica. Con una tabla de caracteres conocida (PC850,
+/// PC858, WPC1252) se imprimen los acentos: se elige con ESC t y se codifica con
+/// esa tabla; lo que la tabla no tiene sale como «?», nunca como basura.
 /// </summary>
 public sealed class EscPosBuilder
 {
@@ -22,7 +23,9 @@ public sealed class EscPosBuilder
     private readonly List<byte> _bytes = [];
     private readonly Encoding? _encoding;
 
-    public EscPosBuilder(int columns, Encoding? encoding = null)
+    static EscPosBuilder() => Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+    public EscPosBuilder(int columns, EscPosCodePage codePage = EscPosCodePage.Ascii)
     {
         if (columns is < 24 or > 64)
         {
@@ -30,20 +33,29 @@ public sealed class EscPosBuilder
         }
 
         Columns = columns;
-        _encoding = encoding;
+        CodePage = codePage;
         _bytes.AddRange([Esc, (byte)'@']);
+        if (codePage != EscPosCodePage.Ascii)
+        {
+            var (table, codepage) = codePage switch
+            {
+                EscPosCodePage.Pc850 => ((byte)2, 850),
+                EscPosCodePage.Pc858 => ((byte)19, 858),
+                _ => ((byte)16, 1252),
+            };
+            _bytes.AddRange([Esc, (byte)'t', table]);
+            _encoding = Encoding.GetEncoding(codepage, new EncoderReplacementFallback("?"), DecoderFallback.ReplacementFallback);
+        }
     }
 
     public int Columns { get; }
 
-    public static int ColumnsFor(PrintFormat format) => format switch
-    {
-        PrintFormat.EscPos58mm => 32,
-        PrintFormat.EscPos80mm => 48,
-        _ => throw new ArgumentOutOfRangeException(nameof(format), "NOT_A_THERMAL_FORMAT"),
-    };
+    public EscPosCodePage CodePage { get; }
 
-    public EscPosBuilder Align(TextAlign align)
+    /// <summary>Columnas en fuente A según el ancho del papel.</summary>
+    public static int ColumnsFor(int paperWidthMm) => paperWidthMm <= 58 ? 32 : 48;
+
+    public EscPosBuilder Align(TextAlignment align)
     {
         _bytes.AddRange([Esc, (byte)'a', (byte)align]);
         return this;
@@ -61,10 +73,10 @@ public sealed class EscPosBuilder
         return this;
     }
 
-    /// <summary>Una línea de texto, cortada a las columnas disponibles (en palabras).</summary>
-    public EscPosBuilder Line(string text = "")
+    /// <summary>Texto cortado en palabras al ancho indicado (por defecto, las columnas del papel).</summary>
+    public EscPosBuilder Line(string text = "", int? width = null)
     {
-        foreach (var line in Wrap(text ?? string.Empty, Columns))
+        foreach (var line in Wrap(text ?? string.Empty, width ?? Columns))
         {
             _bytes.AddRange(Encode(line));
             _bytes.Add(Lf);
@@ -73,19 +85,33 @@ public sealed class EscPosBuilder
         return this;
     }
 
-    /// <summary>Texto a la izquierda y a la derecha en el mismo renglón (por ejemplo «Total» y el importe).</summary>
+    /// <summary>
+    /// Texto a la izquierda y a la derecha (ítem e importe). Si la izquierda no
+    /// entra, se parte en varios renglones y el importe va en el último: nunca
+    /// se pierde texto ni se pisa el número.
+    /// </summary>
     public EscPosBuilder Row(string left, string right)
     {
-        right ??= string.Empty;
         left ??= string.Empty;
-        var space = Columns - right.Length - 1;
-        if (space < 1)
+        right ??= string.Empty;
+        if (right.Length == 0)
         {
-            return Line(left).Line(right);
+            return Line(left);
         }
 
-        var head = left.Length > space ? left[..space] : left;
-        return Line(head.PadRight(Columns - right.Length) + right);
+        var space = Columns - right.Length - 1;
+        if (space < 8)
+        {
+            return Line(left).Line(right.PadLeft(Columns));
+        }
+
+        var lines = Wrap(left, space).ToList();
+        for (var i = 0; i < lines.Count - 1; i++)
+        {
+            Line(lines[i]);
+        }
+
+        return Line(lines[^1].PadRight(Columns - right.Length) + right);
     }
 
     public EscPosBuilder Separator(char character = '-') => Line(new string(character, Columns));
@@ -105,9 +131,9 @@ public sealed class EscPosBuilder
     {
         ArgumentException.ThrowIfNullOrEmpty(data);
         var payload = Encoding.ASCII.GetBytes(data);
-        if (payload.Length > 2000)
+        if (payload.Length > 2000 || data.Any(c => c > 0x7E || c < 0x20))
         {
-            throw new ArgumentOutOfRangeException(nameof(data), "QR_DATA_TOO_LONG");
+            throw new ArgumentOutOfRangeException(nameof(data), "QR_DATA_INVALID");
         }
 
         var size = (byte)Math.Clamp(moduleSize, 1, 16);
@@ -130,63 +156,40 @@ public sealed class EscPosBuilder
 
     public byte[] Build() => [.. _bytes];
 
-    internal static IEnumerable<string> Wrap(string text, int columns)
-    {
-        if (text.Length == 0)
-        {
-            yield return string.Empty;
-            yield break;
-        }
-
-        var current = new StringBuilder();
-        foreach (var word in text.Split(' ', StringSplitOptions.RemoveEmptyEntries))
-        {
-            var piece = word;
-            while (piece.Length > columns)
-            {
-                if (current.Length > 0)
-                {
-                    yield return current.ToString();
-                    current.Clear();
-                }
-
-                yield return piece[..columns];
-                piece = piece[columns..];
-            }
-
-            if (current.Length > 0 && current.Length + 1 + piece.Length > columns)
-            {
-                yield return current.ToString();
-                current.Clear();
-            }
-
-            if (current.Length > 0)
-            {
-                current.Append(' ');
-            }
-
-            current.Append(piece);
-        }
-
-        if (current.Length > 0)
-        {
-            yield return current.ToString();
-        }
-    }
+    internal static IEnumerable<string> Wrap(string text, int columns) => TextWrap.Wrap(text, columns);
 
     private byte[] Encode(string text)
     {
-        if (_encoding is not null)
+        if (_encoding is null)
         {
-            return _encoding.GetBytes(text);
+            return Encoding.ASCII.GetBytes(Transliterate(text));
         }
 
-        return Encoding.ASCII.GetBytes(Transliterate(text));
+        return _encoding.GetBytes(Typography(text));
+    }
+
+    /// <summary>Signos tipográficos que ninguna tabla de las térmicas trae, a su equivalente simple.</summary>
+    internal static string Typography(string text)
+    {
+        var builder = new StringBuilder(text.Length);
+        foreach (var character in text)
+        {
+            builder.Append(character switch
+            {
+                '“' or '”' or '«' or '»' => "\"",
+                '‘' or '’' => "'",
+                '–' or '—' or '•' or '·' => "-",
+                '…' => "...",
+                _ => character.ToString(),
+            });
+        }
+
+        return builder.ToString();
     }
 
     internal static string Transliterate(string text)
     {
-        var decomposed = text.Normalize(NormalizationForm.FormD);
+        var decomposed = Typography(text).Normalize(NormalizationForm.FormD);
         var builder = new StringBuilder(decomposed.Length);
         foreach (var character in decomposed)
         {
@@ -200,10 +203,6 @@ public sealed class EscPosBuilder
             builder.Append(character switch
             {
                 'º' or '°' => 'o',
-                '·' or '•' => '-',
-                '«' or '»' or '“' or '”' => '"',
-                '‘' or '’' => '\'',
-                '–' or '—' => '-',
                 _ when character < 0x80 => character,
                 _ => '?',
             });
@@ -213,7 +212,7 @@ public sealed class EscPosBuilder
     }
 }
 
-public enum TextAlign : byte
+public enum TextAlignment : byte
 {
     Left = 0,
     Center = 1,

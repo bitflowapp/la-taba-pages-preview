@@ -1,6 +1,6 @@
-using Taba.LocalAgent;
+using Taba.LocalAgent.Cli;
 
 // Servicio de Windows «TabaLocalAgent»: impresión y hardware del mostrador.
-// Escucha sólo en 127.0.0.1; la configuración está en appsettings.json.
-var app = LocalAgentHost.Build(args);
-await app.RunAsync().ConfigureAwait(false);
+// Sin argumentos (o «service») corre el servicio; el resto son comandos de
+// instalación y diagnóstico (ver «TabaLocalAgent help»).
+return await AgentCli.RunAsync(args).ConfigureAwait(false);

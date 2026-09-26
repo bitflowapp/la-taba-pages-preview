@@ -1,9 +1,15 @@
-using System.Text;
-using Taba.LocalAgent.Core.Security;
+using Taba.LocalAgent.Core.Documents;
+using Taba.LocalAgent.Core.Printing;
+using Taba.LocalAgent.Windows;
 
 namespace Taba.LocalAgent;
 
-/// <summary>Configuración del agente. Ningún secreto vive acá: el token está protegido aparte.</summary>
+/// <summary>
+/// Configuración del agente. Ningún secreto vive acá: la credencial del
+/// dispositivo y el token local están protegidos aparte (DPAPI). appsettings.json
+/// trae lo común; %ProgramData%\TabaLocalAgent\agent.json lo de esta PC
+/// (impresoras), y se recarga sin reiniciar.
+/// </summary>
 public sealed class AgentOptions
 {
     public const string Section = "Agent";
@@ -11,39 +17,59 @@ public sealed class AgentOptions
     /// <summary>Puerto local. Sólo se escucha en 127.0.0.1.</summary>
     public int Port { get; set; } = 17872;
 
-    /// <summary>Orígenes exactos del Panel que pueden hablarle al agente.</summary>
+    /// <summary>Orígenes exactos del Panel que pueden hablarle a la API local.</summary>
     public List<string> AllowedOrigins { get; set; } = [];
 
-    /// <summary>Carpeta de datos (cola y token protegido). Por defecto, %ProgramData%\TabaLocalAgent.</summary>
+    /// <summary>Carpeta de datos. Por defecto, %ProgramData%\TabaLocalAgent.</summary>
     public string? DataDirectory { get; set; }
 
-    public string ResolveDataDirectory() =>
-        string.IsNullOrWhiteSpace(DataDirectory)
-            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "TabaLocalAgent")
-            : DataDirectory;
-}
+    public BackendOptions Backend { get; set; } = new();
 
-/// <summary>
-/// El token de instalación se genera una vez y queda protegido en disco. Se
-/// entrega al Panel una sola vez, durante el emparejamiento; no hay endpoint
-/// que lo devuelva.
-/// </summary>
-public static class InstallationToken
-{
-    public static string LoadOrCreate(string directory, ISecretProtector protector)
+    /// <summary>A qué impresora va cada documento (lo escribe «TabaLocalAgent configure»).</summary>
+    public Dictionary<string, RouteOptions> Routes { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    public string ResolveDataDirectory() =>
+        string.IsNullOrWhiteSpace(DataDirectory) ? Windows.DataDirectory.Default : DataDirectory;
+
+    public IReadOnlyDictionary<DocumentType, PrinterProfile> ResolveRoutes()
     {
-        ArgumentNullException.ThrowIfNull(protector);
-        Directory.CreateDirectory(directory);
-        var path = Path.Combine(directory, "agent-token.bin");
-        if (File.Exists(path))
+        var routes = new Dictionary<DocumentType, PrinterProfile>();
+        foreach (var (key, route) in Routes)
         {
-            return Encoding.UTF8.GetString(protector.Unprotect(File.ReadAllBytes(path)));
+            if (!DocumentTypes.TryParse(key, out var type) || string.IsNullOrWhiteSpace(route.Printer))
+            {
+                continue;
+            }
+
+            var profile = new PrinterProfile(route.Printer.Trim(), route.Driver, route.PaperWidthMm, route.Columns, route.CodePage, route.Copies);
+            profile.Validate();
+            routes[type] = profile;
         }
 
-        var token = LocalApiToken.Generate();
-        var temporary = path + ".tmp";
-        File.WriteAllBytes(temporary, protector.Protect(Encoding.UTF8.GetBytes(token)));
-        File.Move(temporary, path, overwrite: true);
-        return token;
+        return routes;
     }
+}
+
+public sealed class BackendOptions
+{
+    /// <summary>URL de la Edge Function print-agent-gateway del proyecto.</summary>
+    public string GatewayUrl { get; set; } = string.Empty;
+
+    /// <summary>Clave publicable del proyecto (es pública: la misma que usa la web).</summary>
+    public string? PublishableKey { get; set; }
+}
+
+public sealed class RouteOptions
+{
+    public string Printer { get; set; } = string.Empty;
+
+    public PrinterDriverKind Driver { get; set; } = PrinterDriverKind.EscPos;
+
+    public int PaperWidthMm { get; set; } = 80;
+
+    public int? Columns { get; set; }
+
+    public EscPosCodePage CodePage { get; set; } = EscPosCodePage.Ascii;
+
+    public int Copies { get; set; } = 1;
 }

@@ -1,4 +1,6 @@
+using System.Text;
 using Taba.LocalAgent.Core.Security;
+using Taba.LocalAgent.Windows;
 
 namespace Taba.LocalAgent.Tests;
 
@@ -98,5 +100,74 @@ public sealed class SecurityTests
         Assert.DoesNotContain("secreto", safe, StringComparison.Ordinal);
         // Lo que no es secreto sigue legible para soporte.
         Assert.Contains("74123456789012", safe, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void La_credencial_del_dispositivo_nunca_sale_en_logs()
+    {
+        var credential = new DeviceCredential(Guid.NewGuid(), DeviceCredential.NewSecret());
+        var raw = $"POST gateway Authorization: Bearer {credential.BearerToken} body {{\"secret_hash\":\"{credential.SecretHash}\",\"pairing_code\":\"ABCDE-12345\"}} token suelto {credential.BearerToken}";
+        var safe = LogSanitizer.Sanitize(raw);
+        Assert.DoesNotContain(credential.Secret, safe, StringComparison.Ordinal);
+        Assert.DoesNotContain(credential.SecretHash, safe, StringComparison.Ordinal);
+        Assert.DoesNotContain("ABCDE-12345", safe, StringComparison.Ordinal);
+        // El id del dispositivo no es secreto: sirve para soporte.
+        Assert.Contains(credential.DeviceId.ToString("D"), safe, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void La_credencial_no_se_muestra_ni_en_el_depurador()
+    {
+        var credential = new DeviceCredential(Guid.NewGuid(), DeviceCredential.NewSecret());
+        var stored = new StoredCredential(credential, credential, Guid.NewGuid(), "A", "Mostrador", DateTimeOffset.UtcNow);
+        Assert.DoesNotContain(credential.Secret, credential.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain(credential.Secret, stored.ToString(), StringComparison.Ordinal);
+        Assert.StartsWith($"tla1.{credential.DeviceId:D}.", credential.BearerToken, StringComparison.Ordinal);
+        Assert.Equal("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad", DeviceCredential.Hash("abc"));
+        Assert.Equal(43, DeviceCredential.NewSecret().Length);
+        Assert.NotEqual(DeviceCredential.NewSecret(), DeviceCredential.NewSecret());
+    }
+
+    [Fact]
+    public async Task La_credencial_se_guarda_protegida_con_DPAPI_y_nunca_en_claro()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "taba-credential-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var protector = new DpapiSecretProtector();
+            var store = new ProtectedCredentialStore(directory, protector);
+            var credential = new DeviceCredential(Guid.NewGuid(), DeviceCredential.NewSecret());
+            store.Save(new StoredCredential(credential, null, Guid.NewGuid(), "TABA", "Mostrador", DateTimeOffset.UtcNow));
+
+            var onDisk = await File.ReadAllBytesAsync(Path.Combine(directory, ProtectedCredentialStore.FileName));
+            Assert.DoesNotContain(credential.Secret, Encoding.UTF8.GetString(onDisk), StringComparison.Ordinal);
+            Assert.DoesNotContain(credential.Secret, Encoding.Unicode.GetString(onDisk), StringComparison.Ordinal);
+            Assert.Equal(credential.Secret, new ProtectedCredentialStore(directory, protector).Load()!.Current.Secret);
+            // Con otro propósito (entropía) DPAPI no abre el blob.
+            Assert.ThrowsAny<System.Security.Cryptography.CryptographicException>(() => new ProtectedCredentialStore(directory, new DpapiSecretProtector("otro")).Load());
+            store.Delete();
+            Assert.Null(store.Load());
+        }
+        finally
+        {
+            await TestFiles.DeleteDirectoryAsync(directory);
+        }
+    }
+
+    [Fact]
+    public async Task El_token_de_la_api_local_se_crea_una_vez_y_queda_protegido()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "taba-token-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var protector = new DpapiSecretProtector();
+            var first = InstallationToken.LoadOrCreate(directory, protector);
+            Assert.Equal(first, InstallationToken.LoadOrCreate(directory, protector));
+            Assert.DoesNotContain(first, Encoding.UTF8.GetString(await File.ReadAllBytesAsync(Path.Combine(directory, InstallationToken.FileName))), StringComparison.Ordinal);
+        }
+        finally
+        {
+            await TestFiles.DeleteDirectoryAsync(directory);
+        }
     }
 }

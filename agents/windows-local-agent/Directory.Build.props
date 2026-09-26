@@ -7,5 +7,9 @@
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <Deterministic>true</Deterministic>
     <InvariantGlobalization>false</InvariantGlobalization>
+    <!-- SemVer del agente. Sale en /v1/health, en los logs y en el Panel. -->
+    <Version>0.1.0</Version>
+    <Product>Taba.LocalAgent</Product>
+    <Company>La Taba</Company>
   </PropertyGroup>
 </Project>

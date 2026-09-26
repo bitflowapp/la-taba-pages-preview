@@ -1,155 +1,199 @@
 using System.Text;
+using Taba.LocalAgent.Core.Documents;
 using Taba.LocalAgent.Core.Printing;
 using Taba.LocalAgent.Core.Printing.EscPos;
 
 namespace Taba.LocalAgent.Tests;
 
+/// <summary>Documentos del mostrador y su codificación ESC/POS en 58 y 80 mm.</summary>
 public sealed class EscPosTests
 {
-    private static readonly DateTimeOffset At = new(2026, 9, 26, 22, 4, 0, TimeSpan.FromHours(-3));
+    private static readonly TimeZoneInfo Argentina = TimeZoneInfo.CreateCustomTimeZone("AR", TimeSpan.FromHours(-3), "AR", "AR");
+    private static readonly TicketComposer Composer = new(Argentina);
+    private static readonly PrinterProfile Thermal80 = new("Termica 80", PrinterDriverKind.EscPos, 80);
+    private static readonly PrinterProfile Thermal58 = new("Termica 58", PrinterDriverKind.EscPos, 58);
 
-    private static OrderTicketData Order() => new(
-        "La Taba",
-        "LT-2044",
-        At,
-        "Delivery",
-        [new TicketLine(4, "Gaseosa cola 2,25 L", LineTotal: 9600m), new TicketLine(2, "Papas fritas clásicas 150 g", "bien crocantes", 3200m)],
-        "Diego Arriagada",
-        "Mendoza 851, Neuquén",
-        12800m,
-        "Efectivo al recibir");
+    private static string Ascii(byte[] bytes) => Encoding.ASCII.GetString(bytes);
+
+    private static byte[] Encode(TicketDocument document, PrinterProfile? profile = null) => EscPosEncoder.Encode(document, profile ?? Thermal80);
 
     [Fact]
     public void Todo_documento_empieza_inicializando_la_impresora_y_termina_cortando()
     {
-        var bytes = TicketRenderer.KitchenTicket(Order(), PrintFormat.EscPos80mm);
-
-        Assert.Equal(new byte[] { 0x1B, 0x40 }, bytes[..2]);
-        Assert.Equal(new byte[] { 0x1D, 0x56, 66, 3 }, bytes[^4..]);
-    }
-
-    [Theory]
-    [InlineData(PrintFormat.EscPos58mm, 32)]
-    [InlineData(PrintFormat.EscPos80mm, 48)]
-    public void Ningun_renglon_supera_el_ancho_del_papel(PrintFormat format, int columns)
-    {
-        var text = Printable(TicketRenderer.OrderTicket(Order() with { DeliveryAddress = new string('x', 120) }, format));
-
-        Assert.All(text.Split('\n'), line => Assert.True(line.Length <= columns, $"«{line}» mide {line.Length}"));
+        var bytes = Encode(Composer.KitchenTicket(PrintPayloadParser.ParseOrder(Payloads.Order())));
+        Assert.Equal(new byte[] { 0x1B, (byte)'@' }, bytes[..2]);
+        Assert.Equal(new byte[] { 0x1D, (byte)'V', 66, 3 }, bytes[^4..]);
     }
 
     [Fact]
     public void La_comanda_no_lleva_precios_y_el_ticket_dice_que_no_es_factura()
     {
-        var kitchen = Printable(TicketRenderer.KitchenTicket(Order(), PrintFormat.EscPos80mm));
-        var ticket = Printable(TicketRenderer.OrderTicket(Order(), PrintFormat.EscPos80mm));
-
-        Assert.Contains("LT-2044", kitchen, StringComparison.Ordinal);
-        Assert.Contains("4 x Gaseosa cola 2,25 L", kitchen, StringComparison.Ordinal);
-        Assert.Contains("Nota: bien crocantes", kitchen, StringComparison.Ordinal);
+        var order = PrintPayloadParser.ParseOrder(Payloads.Order());
+        var kitchen = Ascii(Encode(Composer.KitchenTicket(order)));
+        Assert.Contains("2 x Fernet Branca 750 ml", kitchen, StringComparison.Ordinal);
+        Assert.Contains("Nota: sin cebolla", kitchen, StringComparison.Ordinal);
         Assert.DoesNotContain("$", kitchen, StringComparison.Ordinal);
-        Assert.Contains("TOTAL", ticket, StringComparison.Ordinal);
+        Assert.DoesNotContain("Efectivo", kitchen, StringComparison.Ordinal);
+
+        var ticket = Ascii(Encode(Composer.OrderTicket(order)));
         Assert.Contains("No valido como factura", ticket, StringComparison.Ordinal);
+        Assert.Contains("Pago: Efectivo", ticket, StringComparison.Ordinal);
+        Assert.Contains("Reparte: Marco", ticket, StringComparison.Ordinal);
+        Assert.Contains("Envio a domicilio", ticket, StringComparison.Ordinal);
+        Assert.Matches(@"TOTAL\s+\$ 3\.800,00", ticket);
+        Assert.Contains("c/u $ 1.250,00", ticket, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void La_hora_del_ticket_es_la_del_local_no_la_del_servidor()
+    {
+        var ticket = Ascii(Encode(Composer.OrderTicket(PrintPayloadParser.ParseOrder(Payloads.Order()))));
+        Assert.Contains("26/09/2026 15:30", ticket, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Una_reimpresion_lo_dice_en_el_papel()
+    {
+        var order = PrintPayloadParser.ParseOrder(Payloads.Order(reprint: true));
+        Assert.Contains("*** REIMPRESION ***", Ascii(Encode(Composer.KitchenTicket(order))), StringComparison.Ordinal);
+        Assert.Contains("*** REIMPRESION ***", Ascii(Encode(Composer.OrderTicket(order))), StringComparison.Ordinal);
+        Assert.Contains("DUPLICADO", Ascii(Encode(TicketComposer.FiscalReceipt(PrintPayloadParser.ParseFiscal(Payloads.Fiscal(reprint: true))))), StringComparison.Ordinal);
     }
 
     [Fact]
     public void Los_acentos_se_transliteran_para_no_imprimir_basura()
     {
-        Assert.Equal("Neuquen - canon Anadir", EscPosBuilder.Transliterate("Neuquén · cañón Añadir"));
-        Assert.Equal("Todavia?", EscPosBuilder.Transliterate("¿Todavía?"));
-        var bytes = new EscPosBuilder(32).Line("Neuquén").Build();
-        Assert.All(bytes, b => Assert.True(b < 0x80));
+        Assert.Equal("Neuquen - cafe con n? - Pina", EscPosBuilder.Transliterate("Neuquén – café con ñ? — Piña"));
+        Assert.Equal("Que tal!", EscPosBuilder.Transliterate("¿Qué tal!"));
+        Assert.Equal("\"hola\"", EscPosBuilder.Transliterate("«hola»"));
+    }
+
+    [Fact]
+    public void Con_la_tabla_PC850_se_imprimen_los_acentos_de_verdad()
+    {
+        var bytes = new EscPosBuilder(48, EscPosCodePage.Pc850).Line("Neuquén ñandú ¿Sí?").Build();
+        Assert.Equal(new byte[] { 0x1B, (byte)'@', 0x1B, (byte)'t', 2 }, bytes[..5]);
+        var text = bytes[5..^1];
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        Assert.Equal("Neuquén ñandú ¿Sí?", Encoding.GetEncoding(850).GetString(text));
+    }
+
+    [Fact]
+    public void Un_caracter_que_la_tabla_no_tiene_sale_como_signo_de_pregunta_no_como_basura()
+    {
+        var bytes = new EscPosBuilder(48, EscPosCodePage.Pc850).Line("precio €5").Build();
+        Assert.Equal("precio ?5", Encoding.ASCII.GetString(bytes[5..^1]));
     }
 
     [Fact]
     public void El_qr_usa_el_comando_gs_k_modelo_2_con_el_largo_correcto()
     {
-        const string Url = "https://www.arca.gob.ar/fe/qr/?p=eyJ2ZXIiOjF9";
-        var bytes = new EscPosBuilder(48).QrCode(Url).Build();
-        var data = Encoding.ASCII.GetBytes(Url);
-        var length = data.Length + 3;
-        var store = new byte[] { 0x1D, (byte)'(', (byte)'k', (byte)(length & 0xFF), (byte)(length >> 8), 49, 80, 48 };
+        const string Data = "https://www.arca.gob.ar/fe/qr/?p=abc";
+        var bytes = new EscPosBuilder(32).QrCode(Data).Build();
+        var store = Array.IndexOf(bytes, (byte)80);
+        Assert.True(store > 0);
+        Assert.Equal(new byte[] { 0x1D, (byte)'(', (byte)'k', 4, 0, 49, 65, 50, 0 }, bytes[2..11]);
+        var length = Data.Length + 3;
+        Assert.Equal((byte)(length & 0xFF), bytes[store - 3]);
+        Assert.Equal((byte)(length >> 8), bytes[store - 2]);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new EscPosBuilder(32).QrCode("ñandú"));
+    }
 
-        var at = IndexOf(bytes, store);
-        Assert.True(at > 0, "falta el comando que guarda el dato del QR");
-        Assert.Equal(data, bytes[(at + store.Length)..(at + store.Length + data.Length)]);
-        Assert.True(IndexOf(bytes, new byte[] { 0x1D, (byte)'(', (byte)'k', 4, 0, 49, 65, 50, 0 }) >= 0, "falta elegir el modelo 2");
-        Assert.True(IndexOf(bytes, new byte[] { 0x1D, (byte)'(', (byte)'k', 3, 0, 49, 81, 48 }) > at, "falta imprimir el QR guardado");
+    [Theory]
+    [InlineData("", "FISCAL_WITHOUT_CAE")]
+    [InlineData("123", "FISCAL_WITHOUT_CAE")]
+    [InlineData("1234567890123A", "FISCAL_WITHOUT_CAE")]
+    [InlineData("123456789012345", "MALFORMED_PAYLOAD")]
+    public void Un_comprobante_fiscal_sin_cae_valido_no_se_puede_ni_construir(string cae, string code)
+    {
+        var error = Assert.Throws<MalformedPayloadException>(() => PrintPayloadParser.ParseFiscal(Payloads.Fiscal(cae: cae)));
+        Assert.Equal(code, error.Code);
     }
 
     [Fact]
-    public void Un_comprobante_fiscal_sin_cae_valido_no_se_puede_ni_construir()
+    public void El_comprobante_autorizado_imprime_emisor_tipo_numero_cae_vencimiento_y_qr()
     {
-        Assert.Throws<ArgumentException>(() => Receipt(cae: ""));
-        Assert.Throws<ArgumentException>(() => Receipt(cae: "1234"));
-        Assert.Throws<ArgumentException>(() => Receipt(cae: "7412345678901X"));
-        Assert.Throws<ArgumentException>(() => Receipt(qr: "http://inseguro"));
-    }
-
-    [Fact]
-    public void El_comprobante_autorizado_imprime_cae_vencimiento_y_qr()
-    {
-        var text = Printable(TicketRenderer.FiscalReceipt(Receipt(), PrintFormat.EscPos80mm));
-
-        Assert.Contains("CAE 74123456789012", text, StringComparison.Ordinal);
+        var bytes = Encode(TicketComposer.FiscalReceipt(PrintPayloadParser.ParseFiscal(Payloads.Fiscal(environment: "production"))));
+        var text = Ascii(bytes);
+        Assert.Contains("TABA IMPRIME SA", text, StringComparison.Ordinal);
+        Assert.Contains("CUIT 20-12345678-9", text, StringComparison.Ordinal);
+        Assert.Contains("FACTURA C", text, StringComparison.Ordinal);
+        Assert.Contains("Cod. 11", text, StringComparison.Ordinal);
+        Assert.Contains("Nro 00001-00000123", text, StringComparison.Ordinal);
+        Assert.Contains("CAE 12345678901234", text, StringComparison.Ordinal);
         Assert.Contains("Vto. CAE 06/10/2026", text, StringComparison.Ordinal);
-        Assert.Contains("Factura B 00004-00000042", text, StringComparison.Ordinal);
+        Assert.Contains("Receptor: Consumidor Final", text, StringComparison.Ordinal);
+        Assert.Contains("https://www.arca.gob.ar/fe/qr/?p=eyJ2ZXIiOjF9", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("SIN VALIDEZ FISCAL", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Un_comprobante_de_homologacion_dice_que_no_tiene_validez_fiscal()
+    {
+        var text = Ascii(Encode(TicketComposer.FiscalReceipt(PrintPayloadParser.ParseFiscal(Payloads.Fiscal()))));
+        Assert.Contains("COMPROBANTE DE PRUEBA", text, StringComparison.Ordinal);
+        Assert.Equal(2, text.Split("SIN VALIDEZ FISCAL").Length - 1);
+    }
+
+    [Theory]
+    [InlineData(58, 32)]
+    [InlineData(80, 48)]
+    public void Cada_ancho_de_papel_respeta_sus_columnas(int width, int columns)
+    {
+        var profile = new PrinterProfile("T", PrinterDriverKind.EscPos, width);
+        Assert.Equal(columns, profile.EffectiveColumns);
+        var bytes = Encode(Composer.OrderTicket(PrintPayloadParser.ParseOrder(Payloads.Order(notes: new string('x', 120)))), profile);
+        var lines = Ascii(bytes).Split('\n').Select(l => new string(l.Where(c => c >= 0x20 && c < 0x7F).ToArray()));
+        Assert.All(lines, line => Assert.True(line.Length <= columns + 8, $"renglon de {line.Length}: {line}"));
+        Assert.Contains(new string('-', columns), Ascii(bytes), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Un_item_largo_se_parte_y_el_importe_queda_en_el_ultimo_renglon()
+    {
+        var bytes = new EscPosBuilder(32).Row("2 x Fernet Branca edicion especial aniversario 750 ml", "$ 2.500,00").Build();
+        var lines = Ascii(bytes[2..]).Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        Assert.True(lines.Length >= 2);
+        Assert.EndsWith("$ 2.500,00", lines[^1], StringComparison.Ordinal);
+        Assert.All(lines, line => Assert.True(line.Length <= 32));
     }
 
     [Fact]
     public void Las_palabras_largas_se_parten_sin_perder_texto()
     {
-        var lines = EscPosBuilder.Wrap("Supercalifragilisticoespialidoso de verdad", 10).ToList();
-
-        Assert.All(lines, line => Assert.True(line.Length <= 10));
-        Assert.Equal("Supercalifragilisticoespialidoso de verdad".Replace(" ", "", StringComparison.Ordinal), string.Concat(lines).Replace(" ", "", StringComparison.Ordinal));
+        var word = new string('a', 70);
+        var lines = TextWrap.Wrap($"{word} fin", 32);
+        Assert.Equal(word + "fin", string.Concat(lines).Replace(" ", string.Empty, StringComparison.Ordinal));
+        Assert.All(lines, line => Assert.True(line.Length <= 32));
     }
 
-    private static AuthorizedFiscalReceipt Receipt(string cae = "74123456789012", string qr = "https://www.arca.gob.ar/fe/qr/?p=abc") =>
-        new("La Taba", "20-00000000-1", "Factura B", 4, 42, new DateOnly(2026, 9, 26), 12100m, cae, new DateOnly(2026, 10, 6), qr);
-
-    /// <summary>El texto imprimible: saca los comandos ESC/POS conocidos y deja los renglones.</summary>
-    private static string Printable(byte[] bytes)
+    [Fact]
+    public void El_texto_grande_se_corta_a_la_mitad_de_columnas()
     {
-        var text = new StringBuilder();
-        for (var i = 0; i < bytes.Length; i++)
-        {
-            var b = bytes[i];
-            if (b == 0x1B)
-            {
-                i += bytes[i + 1] == (byte)'@' ? 1 : 2;
-                continue;
-            }
-
-            if (b == 0x1D)
-            {
-                if (bytes[i + 1] == (byte)'(')
-                {
-                    var length = bytes[i + 3] | (bytes[i + 4] << 8);
-                    i += 4 + length;
-                    continue;
-                }
-
-                i += bytes[i + 1] == (byte)'V' ? 3 : 2;
-                continue;
-            }
-
-            text.Append((char)b);
-        }
-
-        return text.ToString().TrimEnd('\n');
+        var document = new TicketBuilder("t").Text("PEDIDO-LARGO-DE-PRUEBA-PARA-DOBLE-ANCHO", large: true).Build();
+        var bytes = Encode(document, Thermal58);
+        var text = Ascii(bytes);
+        Assert.Contains("\u001d!\u0011", text, StringComparison.Ordinal);
+        var body = text[(text.IndexOf("\u001d!\u0011", StringComparison.Ordinal) + 3)..text.IndexOf("\u001d!\0", StringComparison.Ordinal)];
+        Assert.All(body.Split('\n', StringSplitOptions.RemoveEmptyEntries), line => Assert.True(line.Length <= 16));
     }
 
-    private static int IndexOf(byte[] haystack, byte[] needle)
+    [Fact]
+    public void La_hoja_de_prueba_dice_impresora_ancho_y_tabla()
     {
-        for (var i = 0; i <= haystack.Length - needle.Length; i++)
-        {
-            if (haystack.AsSpan(i, needle.Length).SequenceEqual(needle))
-            {
-                return i;
-            }
-        }
+        var page = TicketComposer.TestPage("POS-80", 80, 48, "Pc850", DateTimeOffset.Parse("2026-09-26T12:00:00-03:00", System.Globalization.CultureInfo.InvariantCulture));
+        var text = Ascii(Encode(page));
+        Assert.Contains("POS-80", text, StringComparison.Ordinal);
+        Assert.Contains("80 mm - 48 columnas - Pc850", text, StringComparison.Ordinal);
+        Assert.Contains("123456789012345678901234567890123456789012345678", text, StringComparison.Ordinal);
+    }
 
-        return -1;
+    [Fact]
+    public void Un_perfil_invalido_se_rechaza_antes_de_imprimir()
+    {
+        Assert.Throws<ArgumentException>(() => new PrinterProfile("", PrinterDriverKind.EscPos).Validate());
+        Assert.Throws<ArgumentException>(() => new PrinterProfile("T", PrinterDriverKind.EscPos, 76).Validate());
+        Assert.Throws<ArgumentException>(() => new PrinterProfile("T", PrinterDriverKind.EscPos, 80, null, EscPosCodePage.Ascii, 9).Validate());
+        new PrinterProfile("A4 oficina", PrinterDriverKind.Windows, 210).Validate();
     }
 }

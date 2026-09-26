@@ -1,47 +1,75 @@
 using System.Net;
-using System.Reflection;
-using System.Runtime.Versioning;
+using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Channels;
+using Microsoft.Extensions.Options;
+using Taba.LocalAgent.Core;
+using Taba.LocalAgent.Core.Agent;
+using Taba.LocalAgent.Core.Backend;
+using Taba.LocalAgent.Core.Documents;
 using Taba.LocalAgent.Core.Health;
 using Taba.LocalAgent.Core.Printing;
-using Taba.LocalAgent.Core.Printing.EscPos;
 using Taba.LocalAgent.Core.Security;
+using Taba.LocalAgent.Logging;
 using Taba.LocalAgent.Windows;
 
 namespace Taba.LocalAgent;
 
 /// <summary>
-/// El agente local: una API chica en 127.0.0.1 y un despachador de la cola.
-/// No tiene lógica de pedidos, stock ni usuarios: recibe documentos ya
-/// decididos por el backend y los imprime.
+/// El agente: un servicio de Windows con una API chica en 127.0.0.1 y el ciclo
+/// contra el backend. No tiene lógica de pedidos, stock, precios ni usuarios:
+/// imprime lo que el backend decidió y cuenta honestamente qué pasó.
 /// </summary>
 public static class LocalAgentHost
 {
     public static WebApplication Build(string[] args, Action<WebApplicationBuilder>? configure = null)
     {
-        var builder = WebApplication.CreateSlimBuilder(args);
-        builder.Host.UseWindowsService(options => options.ServiceName = "TabaLocalAgent");
-        var agent = builder.Configuration.GetSection(AgentOptions.Section).Get<AgentOptions>() ?? new AgentOptions();
-        builder.WebHost.ConfigureKestrel(kestrel => kestrel.Listen(IPAddress.Loopback, agent.Port));
-        builder.Services.ConfigureHttpJsonOptions(json => json.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-
-        var dataDirectory = agent.ResolveDataDirectory();
-        builder.Services.AddSingleton(agent);
-        builder.Services.AddSingleton(TimeProvider.System);
-        builder.Services.AddSingleton(Channel.CreateBounded<string>(new BoundedChannelOptions(256) { FullMode = BoundedChannelFullMode.DropOldest }));
-        builder.Services.AddSingleton<IPrintJobStore>(_ => new JsonFilePrintJobStore(Path.Combine(dataDirectory, "print-jobs.json")));
-        builder.Services.AddSingleton<IPrinterResolver, FormatPrinterResolver>();
-        builder.Services.AddSingleton(sp => new PrintSpool(
-            sp.GetRequiredService<IPrintJobStore>(),
-            sp.GetRequiredService<IPrinterResolver>(),
-            sp.GetRequiredService<TimeProvider>()));
-        if (OperatingSystem.IsWindows())
+        // La configuración vive junto al ejecutable, se corra como servicio o a mano desde otra carpeta.
+        var builder = WebApplication.CreateSlimBuilder(new WebApplicationOptions { Args = args, ContentRootPath = AppContext.BaseDirectory });
+        builder.Host.UseWindowsService(options => options.ServiceName = ServiceName);
+        var initial = builder.Configuration.GetSection(AgentOptions.Section).Get<AgentOptions>() ?? new AgentOptions();
+        var dataDirectory = initial.ResolveDataDirectory();
+        // Configuración de esta PC (impresoras). Opcional; se recarga sola.
+        builder.Configuration.AddJsonFile(Path.Combine(dataDirectory, AgentConfigFile.FileName), optional: true, reloadOnChange: true);
+        builder.Services.Configure<AgentOptions>(builder.Configuration.GetSection(AgentOptions.Section));
+        builder.WebHost.ConfigureKestrel(kestrel => kestrel.Listen(IPAddress.Loopback, initial.Port));
+        builder.Services.ConfigureHttpJsonOptions(json =>
         {
-            AddWindowsDevices(builder.Services, agent, dataDirectory);
-        }
+            json.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+            json.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
+        });
+        builder.Logging.AddProvider(new JsonFileLoggerProvider(Path.Combine(dataDirectory, "logs")));
 
-        builder.Services.AddHostedService<PrintDispatcher>();
+        builder.Services.AddSingleton(TimeProvider.System);
+        builder.Services.AddSingleton<ISecretProtector>(new DpapiSecretProtector());
+        builder.Services.AddSingleton<ICredentialStore>(sp => new ProtectedCredentialStore(dataDirectory, sp.GetRequiredService<ISecretProtector>()));
+        builder.Services.AddSingleton<IJournalStore>(_ => new JsonFileJournalStore(Path.Combine(dataDirectory, "journal.json")));
+        builder.Services.AddSingleton(sp => new PrintJournal(sp.GetRequiredService<IJournalStore>(), sp.GetRequiredService<TimeProvider>()));
+        builder.Services.AddSingleton(sp => new AgentState(sp.GetRequiredService<TimeProvider>()));
+        builder.Services.AddSingleton<IPrinterCatalog, WinSpoolPrinterCatalog>();
+        builder.Services.AddSingleton<IRawPrinterTransport>(_ => new WinSpoolRawTransport());
+        builder.Services.AddSingleton<IPrinter>(sp => new EscPosPrinter(sp.GetRequiredService<IRawPrinterTransport>()));
+        builder.Services.AddSingleton<IPrinter>(sp => new PdfPrinter(sp.GetRequiredService<IRawPrinterTransport>()));
+        builder.Services.AddSingleton<IPrinter>(_ => new GdiTicketPrinter());
+        builder.Services.AddSingleton(sp => new PrinterRouter(sp.GetServices<IPrinter>(), sp.GetRequiredService<IPrinterCatalog>()));
+        builder.Services.AddSingleton(sp =>
+        {
+            var monitor = sp.GetRequiredService<IOptionsMonitor<AgentOptions>>();
+            return new PrintRoutes(() => monitor.CurrentValue.ResolveRoutes());
+        });
+        builder.Services.AddSingleton(_ => new TicketComposer());
+        builder.Services.AddSingleton(_ => new HttpClient { Timeout = TimeSpan.FromSeconds(20) });
+        builder.Services.AddSingleton<IBackendClient>(sp =>
+            BackendFactory.Create(sp.GetRequiredService<HttpClient>(), sp.GetRequiredService<IOptionsMonitor<AgentOptions>>().CurrentValue.Backend));
+        builder.Services.AddSingleton<PrintJobProcessor>();
+        builder.Services.AddSingleton(sp => new BackendSyncWorker(
+            sp.GetRequiredService<ICredentialStore>(), sp.GetRequiredService<IBackendClient>(), sp.GetRequiredService<PrintJobProcessor>(),
+            sp.GetRequiredService<PrintJournal>(), sp.GetRequiredService<PrintRoutes>(), sp.GetRequiredService<IPrinterCatalog>(),
+            sp.GetRequiredService<AgentState>(), sp.GetRequiredService<ILogger<BackendSyncWorker>>(), sp.GetRequiredService<TimeProvider>()));
+        builder.Services.AddSingleton(sp => new LocalApiGate(
+            new OriginPolicy(initial.AllowedOrigins),
+            InstallationToken.LoadOrCreate(dataDirectory, sp.GetRequiredService<ISecretProtector>()),
+            initial.Port));
+        builder.Services.AddHostedService<SyncHostedService>();
         configure?.Invoke(builder);
 
         var app = builder.Build();
@@ -50,17 +78,7 @@ public static class LocalAgentHost
         return app;
     }
 
-    [SupportedOSPlatform("windows")]
-    private static void AddWindowsDevices(IServiceCollection services, AgentOptions agent, string dataDirectory)
-    {
-        services.AddSingleton<IPrinterCatalog, WinSpoolPrinterCatalog>();
-        services.AddSingleton<IRawPrinterTransport, WinSpoolRawTransport>();
-        // El token se crea (o se lee, protegido con DPAPI) recién cuando se usa la API.
-        services.AddSingleton(_ => new LocalApiGate(
-            new OriginPolicy(agent.AllowedOrigins),
-            InstallationToken.LoadOrCreate(dataDirectory, new DpapiSecretProtector()),
-            agent.Port));
-    }
+    public const string ServiceName = "TabaLocalAgent";
 
     private static async Task GateMiddleware(HttpContext context, Func<Task> next)
     {
@@ -102,189 +120,149 @@ public static class LocalAgentHost
             return;
         }
 
+        context.Response.Headers.CacheControl = "no-store";
         await next().ConfigureAwait(false);
     }
 
     private static void MapEndpoints(WebApplication app)
     {
-        var version = typeof(LocalAgentHost).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "0.0.0";
+        app.MapGet("/v1/health", (AgentState state, PrintRoutes routes, IPrinterCatalog printers, PrintJournal journal, TimeProvider clock) =>
+            Results.Ok(AgentHealth.Build(state.Snapshot(), routes, printers, journal, clock.GetUtcNow())));
 
-        app.MapGet("/v1/health", (IPrinterCatalog printers, PrintSpool queue, TimeProvider clock) =>
-            Results.Ok(AgentHealth.Build(version, SafeList(printers), queue.List(), ComponentStatus.Disabled, clock.GetUtcNow())));
-
-        app.MapGet("/v1/printers", (IPrinterCatalog printers) => Results.Ok(SafeList(printers)));
-
-        app.MapPost("/v1/print-jobs", (PrintJobRequest body, PrintSpool queue, Channel<string> wake, TimeProvider clock) =>
+        app.MapGet("/v1/printers", (IPrinterCatalog printers) =>
         {
-            byte[] payload;
             try
             {
-                payload = Render(body, clock.GetUtcNow());
+                return Results.Ok(printers.ListPrinters());
+            }
+            catch (System.ComponentModel.Win32Exception)
+            {
+                return Results.Ok(Array.Empty<PrinterDescriptor>());
+            }
+        });
+
+        // Hoja de prueba local: no crea un trabajo en el backend ni imprime datos del negocio.
+        app.MapPost("/v1/print-test", async (PrintTestRequest body, PrinterRouter router, TimeProvider clock, CancellationToken cancellationToken) =>
+        {
+            PrinterProfile profile;
+            try
+            {
+                profile = new PrinterProfile(body.Printer ?? string.Empty, body.Driver ?? PrinterDriverKind.EscPos, body.PaperWidthMm ?? 80, null,
+                    body.CodePage ?? EscPosCodePage.Ascii);
+                profile.Validate();
             }
             catch (ArgumentException error)
             {
                 return Results.BadRequest(new { error = error.Message.Split(' ')[0] });
             }
 
-            PrintJob job;
-            try
-            {
-                job = queue.Enqueue(new PrintRequest(body.IdempotencyKey, body.Kind, body.Format, body.PrinterName, payload, body.Copies, body.RequestedBy));
-            }
-            catch (ArgumentException error)
-            {
-                return Results.BadRequest(new { error = error.Message.Split(' ')[0] });
-            }
-
-            wake.Writer.TryWrite(job.JobId);
-            return Results.Accepted($"/v1/print-jobs/{job.JobId}", PrintJobView.From(job));
+            var page = TicketComposer.TestPage(profile.PrinterName, profile.PaperWidthMm, profile.EffectiveColumns, profile.CodePage.ToString(), clock.GetLocalNow());
+            var outcome = await router.PrintAsync(new TicketContent(page), profile, "La Taba - prueba de impresion", cancellationToken).ConfigureAwait(false);
+            return Results.Ok(new { status = outcome.Status.ToString().ToUpperInvariant(), error = outcome.ErrorCode });
         });
 
-        app.MapGet("/v1/print-jobs/{jobId}", (string jobId, PrintSpool queue) =>
-            queue.Find(jobId) is { } job ? Results.Ok(PrintJobView.From(job)) : Results.NotFound());
-
-        app.MapPost("/v1/print-jobs/{jobId}/reprint", (string jobId, ReprintRequest body, PrintSpool queue, Channel<string> wake) =>
+        // Reimpresión explícita desde el mostrador: el backend crea OTRO trabajo y audita quién y por qué.
+        app.MapPost("/v1/reprint", async (ReprintRequest body, ICredentialStore credentials, IBackendClient backend, CancellationToken cancellationToken) =>
         {
-            if (string.IsNullOrWhiteSpace(body.RequestedBy))
+            var stored = credentials.Load();
+            if (stored is null)
             {
-                return Results.BadRequest(new { error = "REQUESTED_BY_REQUIRED" });
+                return Results.Conflict(new { error = "NOT_REGISTERED" });
+            }
+
+            if (body.JobId is not { } jobId || string.IsNullOrWhiteSpace(body.Reason) || body.Reason.Trim().Length is < 3 or > 300
+                || string.IsNullOrWhiteSpace(body.IdempotencyKey))
+            {
+                return Results.BadRequest(new { error = "REPRINT_REQUEST_INVALID" });
             }
 
             try
             {
-                var job = queue.Reprint(jobId, body.RequestedBy);
-                wake.Writer.TryWrite(job.JobId);
-                return Results.Accepted($"/v1/print-jobs/{job.JobId}", PrintJobView.From(job));
+                var created = await backend.RequestReprintAsync(stored.Current, jobId, body.Reason.Trim(), body.OperatorLabel?.Trim(),
+                    body.IdempotencyKey.Trim(), cancellationToken).ConfigureAwait(false);
+                return Results.Accepted(value: new { print_job_id = created });
             }
-            catch (KeyNotFoundException)
+            catch (BackendException error)
             {
-                return Results.NotFound();
+                return Results.Json(new { error = error.Code }, statusCode: error.Kind switch
+                {
+                    BackendErrorKind.Unauthorized => StatusCodes.Status401Unauthorized,
+                    BackendErrorKind.NotFound => StatusCodes.Status404NotFound,
+                    BackendErrorKind.Invalid => StatusCodes.Status400BadRequest,
+                    BackendErrorKind.NotAllowed or BackendErrorKind.Conflict => StatusCodes.Status409Conflict,
+                    _ => StatusCodes.Status503ServiceUnavailable,
+                });
             }
         });
     }
-
-    /// <summary>
-    /// El agente renderiza a partir de datos estructurados: la web nunca manda
-    /// bytes crudos a la impresora. Un comprobante fiscal sin CAE no se puede
-    /// construir (lo impide <see cref="AuthorizedFiscalReceipt"/>).
-    /// </summary>
-    internal static byte[] Render(PrintJobRequest body, DateTimeOffset now)
-    {
-        ArgumentNullException.ThrowIfNull(body);
-        if (body.Format == PrintFormat.PdfA4)
-        {
-            if (body.Kind != PrintDocumentKind.FiscalReceipt || string.IsNullOrWhiteSpace(body.PdfBase64))
-            {
-                throw new ArgumentException("PDF_ONLY_FOR_AUTHORIZED_FISCAL_DOCUMENTS");
-            }
-
-            var pdf = Convert.FromBase64String(body.PdfBase64);
-            return pdf.AsSpan().StartsWith("%PDF-"u8) ? pdf : throw new ArgumentException("PDF_INVALID");
-        }
-
-        return body.Kind switch
-        {
-            PrintDocumentKind.KitchenTicket => TicketRenderer.KitchenTicket(body.Order ?? throw new ArgumentException("ORDER_REQUIRED"), body.Format),
-            PrintDocumentKind.OrderTicket => TicketRenderer.OrderTicket(body.Order ?? throw new ArgumentException("ORDER_REQUIRED"), body.Format),
-            PrintDocumentKind.FiscalReceipt => TicketRenderer.FiscalReceipt(
-                body.Fiscal?.ToAuthorized() ?? throw new ArgumentException("FISCAL_RECEIPT_REQUIRED"), body.Format),
-            _ => TicketRenderer.TestPage(body.PrinterName, body.Format, now),
-        };
-    }
-
-    private static IReadOnlyList<PrinterDescriptor> SafeList(IPrinterCatalog printers)
-    {
-        try
-        {
-            return printers.ListPrinters();
-        }
-        catch (System.ComponentModel.Win32Exception)
-        {
-            return [];
-        }
-    }
 }
 
-public sealed record PrintJobRequest(
-    string IdempotencyKey,
-    PrintDocumentKind Kind,
-    PrintFormat Format,
-    string PrinterName,
-    int Copies,
-    string RequestedBy,
-    OrderTicketData? Order = null,
-    FiscalReceiptRequest? Fiscal = null,
-    string? PdfBase64 = null);
+public sealed record PrintTestRequest(string? Printer, PrinterDriverKind? Driver, int? PaperWidthMm, EscPosCodePage? CodePage);
 
-public sealed record FiscalReceiptRequest(
-    string IssuerName,
-    string IssuerCuit,
-    string VoucherLabel,
-    int PointOfSale,
-    long VoucherNumber,
-    DateOnly IssueDate,
-    decimal Total,
-    string Cae,
-    DateOnly CaeExpiration,
-    string QrUrl)
-{
-    public AuthorizedFiscalReceipt ToAuthorized() =>
-        new(IssuerName, IssuerCuit, VoucherLabel, PointOfSale, VoucherNumber, IssueDate, Total, Cae, CaeExpiration, QrUrl);
-}
+public sealed record ReprintRequest(Guid? JobId, string? Reason, string? OperatorLabel, string? IdempotencyKey);
 
-public sealed record ReprintRequest(string RequestedBy);
-
-/// <summary>Lo que se devuelve de un trabajo: sin la carga, que puede tener datos del cliente.</summary>
-public sealed record PrintJobView(string JobId, string IdempotencyKey, PrintDocumentKind Kind, string PrinterName, PrintJobState State, int Attempts, string? LastErrorCode, string? ReprintOf, string RequestedBy)
-{
-    public static PrintJobView From(PrintJob job) =>
-        new(job.JobId, job.IdempotencyKey, job.Kind, job.PrinterName, job.State, job.Attempts, job.LastErrorCode, job.ReprintOf, job.RequestedBy);
-}
-
-/// <summary>
-/// Despacha la cola: al arrancar marca como «desconocido» lo que quedó a mitad,
-/// y después imprime lo pendiente en orden, cuando llega un trabajo o cada pocos segundos.
-/// </summary>
-public sealed class PrintDispatcher(PrintSpool queue, Channel<string> wake, ILogger<PrintDispatcher> logger) : BackgroundService
+/// <summary>El ciclo del agente como servicio de fondo: una vuelta, la espera que pide el servidor, y otra.</summary>
+public sealed partial class SyncHostedService(BackendSyncWorker worker, ILogger<SyncHostedService> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        foreach (var job in queue.RecoverAfterRestart())
-        {
-            LogRecovered(logger, job.JobId);
-        }
-
+        LogStarted(logger, AgentInfo.InformationalVersion);
         while (!stoppingToken.IsCancellationRequested)
         {
+            TimeSpan delay;
             try
             {
-                await queue.DispatchPendingAsync(stoppingToken).ConfigureAwait(false);
+                delay = await worker.RunOnceAsync(stoppingToken).ConfigureAwait(false);
             }
-            catch (IOException error)
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
-                LogDispatchError(logger, error.GetType().Name);
+                break;
+            }
+#pragma warning disable CA1031 // El ciclo no puede morir por un error inesperado: se registra y se reintenta.
+            catch (Exception error)
+#pragma warning restore CA1031
+            {
+                LogCycleFailed(logger, error.GetType().Name);
+                delay = TimeSpan.FromSeconds(30);
             }
 
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
-            timeout.CancelAfter(TimeSpan.FromSeconds(3));
             try
             {
-                await wake.Reader.ReadAsync(timeout.Token).ConfigureAwait(false);
+                await Task.Delay(delay, stoppingToken).ConfigureAwait(false);
             }
-            catch (OperationCanceledException) when (!stoppingToken.IsCancellationRequested)
+            catch (OperationCanceledException)
             {
-                // Ningún trabajo nuevo: se vuelve a mirar la cola igual.
+                break;
             }
         }
+
+        LogStopped(logger);
     }
 
-    private static readonly Action<ILogger, string, Exception?> LogRecoveredMessage =
-        LoggerMessage.Define<string>(LogLevel.Warning, new EventId(1, "RecoveredUnknown"), "Trabajo {JobId} quedó a mitad al reiniciar: queda como desconocido y no se reimprime solo.");
+    [LoggerMessage(EventId = 1, Level = LogLevel.Information, Message = "agent action=started version={Version}")]
+    private static partial void LogStarted(ILogger logger, string version);
 
-    private static readonly Action<ILogger, string, Exception?> LogDispatchErrorMessage =
-        LoggerMessage.Define<string>(LogLevel.Error, new EventId(2, "DispatchError"), "No se pudo despachar la cola ({ErrorType}).");
+    [LoggerMessage(EventId = 2, Level = LogLevel.Error, Message = "agent action=cycle_failed error_type={ErrorType}")]
+    private static partial void LogCycleFailed(ILogger logger, string errorType);
 
-    private static void LogRecovered(ILogger logger, string jobId) => LogRecoveredMessage(logger, jobId, null);
+    [LoggerMessage(EventId = 3, Level = LogLevel.Information, Message = "agent action=stopped")]
+    private static partial void LogStopped(ILogger logger);
+}
 
-    private static void LogDispatchError(ILogger logger, string errorType) => LogDispatchErrorMessage(logger, errorType, null);
+/// <summary>El backend configurado, o uno deshabilitado si falta la URL (el agente no reclama nada).</summary>
+public static class BackendFactory
+{
+    public static IBackendClient Create(HttpClient http, BackendOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        return Uri.TryCreate(options.GatewayUrl, UriKind.Absolute, out var gateway)
+            ? new GatewayBackendClient(http, gateway, options.PublishableKey)
+            : new DisabledBackendClient();
+    }
+}
+
+/// <summary>agent.json de esta PC: sólo impresoras. Lo escribe la CLI.</summary>
+public static class AgentConfigFile
+{
+    public const string FileName = "agent.json";
 }

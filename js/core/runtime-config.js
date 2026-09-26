@@ -7,7 +7,7 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3
 const DEFAULT_POLL_MS = 5000;
 const MIN_POLL_MS = 1000;
 const MAX_POLL_MS = 60000;
-const DEPLOYMENT_ENVIRONMENTS = new Set(['local', 'staging', 'production']);
+const DEPLOYMENT_ENVIRONMENTS = new Set(['local', 'staging', 'pilot', 'production']);
 const ACCEPTED_RUNTIME_MODES = new Set([RUNTIME_MODE_PRODUCTION, RUNTIME_MODE_LOCAL_STAGING]);
 let productionCatalogReady = false;
 
@@ -112,13 +112,33 @@ export function isProductionDeployment(source = readRuntimeConfigSource()) {
 
   const declared = declaredDeploymentEnvironment(source);
   if (declared === 'local' || declared === 'staging') return false;
-  if (declared === RUNTIME_MODE_PRODUCTION) return true;
+  if (declared === 'pilot' || declared === RUNTIME_MODE_PRODUCTION) return true;
 
   const resolved = resolveRuntimeConfig(source);
   if (resolved.status === 'ready') {
-    return resolved.repository.deploymentEnvironment === RUNTIME_MODE_PRODUCTION;
+    return ['pilot', RUNTIME_MODE_PRODUCTION].includes(resolved.repository.deploymentEnvironment);
   }
   return true;
+}
+
+/**
+ * Cobros online. La producción controlada (`pilot`) opera sólo con cobro
+ * manual salvo que el despliegue declare `payments.online === true`. Eso lo
+ * escribe `prepare-commercial-pilot` únicamente cuando la configuración del
+ * piloto trae la aprobación nominal (docs/MERCADOPAGO_PRODUCCION_CP.md) y las
+ * sondas públicas probaron que el backend de ese entorno tiene el conector
+ * configurado. Sin esa declaración no se ofrece conectar una cuenta: el botón
+ * prometería algo que no ocurre. Ofrecer Mercado Pago en el checkout sigue
+ * dependiendo, además, de que el negocio lo tenga encendido y su cuenta pueda
+ * cobrar (lo decide el backend).
+ */
+export function onlinePaymentsEnabled(source = readRuntimeConfigSource()) {
+  if (declaredDeploymentEnvironment(source) !== 'pilot') return true;
+  try {
+    return isRecord(source.payments) && source.payments.online === true;
+  } catch (_) {
+    return false;
+  }
 }
 
 function declaredDeploymentEnvironment(source) {
@@ -162,7 +182,7 @@ function normalizeSupabaseRepository(repository, errors, requestedMode = RUNTIME
   }
   if (!UUID_PATTERN.test(businessId)) errors.push('Supabase requiere un businessId UUID válido.');
   if (!DEPLOYMENT_ENVIRONMENTS.has(deploymentEnvironment)) {
-    errors.push('deploymentEnvironment debe ser local, staging o production.');
+    errors.push('deploymentEnvironment debe ser local, staging, pilot o production.');
   }
   if (
     deploymentEnvironment === 'production'
@@ -170,6 +190,18 @@ function normalizeSupabaseRepository(repository, errors, requestedMode = RUNTIME
     && isLoopbackHost(new URL(supabaseUrl).hostname)
   ) {
     errors.push('Producción no puede apuntar a un Supabase local.');
+  }
+  if (deploymentEnvironment === 'pilot' && supabaseUrl) {
+    const host = new URL(supabaseUrl).hostname;
+    if (!/^[a-z0-9]{20}\.supabase\.co$/.test(host)
+      || ['ucbtjcurawxjwjdvvcvj', 'wwcpogltfgzgkrlilbcd', 'yakhtrkukqlgzvxuvhzs']
+        .some((ref) => host === `${ref}.supabase.co`)) {
+      errors.push('PILOTO exige un proyecto Supabase aislado de QA, DEMO y Producción.');
+    }
+    if (['a57b1c20-0f4e-4a6b-9d31-7c2e5f8a41d0',
+      '00000000-0000-4000-8000-000000000001'].includes(businessId.toLowerCase())) {
+      errors.push('PILOTO exige un negocio propio, no la identidad de QA o Producción.');
+    }
   }
   if (repository.pollMs !== undefined && pollMs === null) {
     errors.push(`pollMs debe estar entre ${MIN_POLL_MS} y ${MAX_POLL_MS}.`);

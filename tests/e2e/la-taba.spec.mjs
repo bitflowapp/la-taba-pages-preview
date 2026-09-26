@@ -257,7 +257,7 @@ test('flujo cliente con delivery', async ({ page }) => {
   const paymentMethod = page.getByLabel('Forma de pago');
   await expect(paymentMethod).toBeVisible();
   await expect(paymentMethod).toHaveValue('cash');
-  await expect(paymentMethod.locator('option[value="coordinate"]')).toHaveText('A coordinar con el local');
+  await expect(paymentMethod.locator('option[value="coordinate"]')).toHaveText('A coordinar con el local antes de preparar');
   await expect(page.locator('[data-order-summary]')).toContainText('Envío a domicilio');
   await expect(page.locator('[data-order-summary]')).toContainText('Total');
   await expect(page.getByRole('button', { name: /Copiar pedido/i })).toHaveCount(0);
@@ -316,7 +316,7 @@ test('mobile cliente elige forma de pago y crea pedido simulado', async ({ brows
   const paymentMethod = page.getByLabel('Forma de pago');
   await expect(paymentMethod).toBeVisible();
   await expect(paymentMethod).toHaveValue('cash');
-  await expect(paymentMethod.locator('option[value="coordinate"]')).toHaveText('A coordinar con el local');
+  await expect(paymentMethod.locator('option[value="coordinate"]')).toHaveText('A coordinar con el local antes de preparar');
   await expect(page.locator('[data-checkout-mode-note]')).toContainText('El medio de pago se coordina con el local.');
   await expect(page.locator('[name="couponCode"]')).toHaveCount(0);
 

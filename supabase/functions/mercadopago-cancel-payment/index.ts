@@ -12,7 +12,7 @@ import {
   requireUuid,
   sha256Hex,
 } from '../_shared/payment-runtime.ts';
-import { mercadoPagoRequest } from '../_shared/mercadopago.ts';
+import { isFinalProviderRejection, mercadoPagoRequest } from '../_shared/mercadopago.ts';
 
 const CANCELLATION_CONFIRMATION = 'I_UNDERSTAND_THIS_REQUESTS_A_MERCADO_PAGO_CANCELLATION';
 
@@ -60,7 +60,7 @@ Deno.serve(async (request) => {
         ? 'rejected'
         : ['cancelled', 'canceled'].includes(providerStatus) ? 'cancelled' : 'ambiguous';
       if (!result.response.ok || resolvedStatus === 'ambiguous') {
-        if (result.response.status >= 400 && result.response.status < 500) {
+        if (isFinalProviderRejection(result.response.status)) {
           await service.rpc('record_payment_cancellation_response', {
             p_cancellation_id: prepared.cancellation_id,
             p_status: 'rejected',

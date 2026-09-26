@@ -4,6 +4,14 @@ const httpPort = readPort('TABA_E2E_HTTP_PORT', 8080);
 const relayPort = readPort('TABA_E2E_RELAY_PORT', 18787);
 process.env.TABA_E2E_RELAY_PORT = String(relayPort);
 
+// WebKit para Windows dejó su NetworkProcess huérfano dos veces después de
+// recorrer más de 80 casos en un solo browser. El gate conserva exactamente los
+// mismos 122 casos, pero los reparte 60/62 en dos proyectos. Con `workers: 1`
+// siguen siendo secuenciales y comparten los mismos servidores; sólo se recicla
+// el proceso del navegador antes de acumular ese estado interno.
+const mobileWebkitInteractionSpecs = /(catalog-card-glow|checkout-payment-handoff|delivery-location-confirmation|launch-ux-checkout-reorder|pwa-install)\.spec\.mjs/;
+const mobileWebkitRecoverySpecs = /(address-flow|arranque-sin-jerga|mp-back-navigation-ui|panel-order-recovery|panel-toast|production-cart-persistence|root-entry|service-worker-degraded-recovery|storefront-stress-responsive)\.spec\.mjs/;
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: false,
@@ -58,7 +66,7 @@ export default defineConfig({
      * Desde que la tienda se ofrece a instalarse, un teléfono sin decidir recibe
      * una hoja MODAL a los pocos segundos de arrancar. Para `pwa-install.spec`
      * eso es el objeto de estudio; para cualquier otra suite es una variable
-     * ajena que roba toques: en `mobile-webkit` —que corre con user agent de
+     * ajena que roba toques: en los proyectos `mobile-webkit*` —que corren con user agent de
      * iPhone— apareció encima de "Confirmar ubicación" y se comió un tap del
      * "+" de la góndola, y el segundo caso fue INTERMITENTE, que es peor.
      *
@@ -142,7 +150,15 @@ export default defineConfig({
       // un comportamiento de Safari en iPhone —y esa suite lo mide en 320, 390 y
       // 430—, y la hoja de direcciones es un `<dialog>` modal, cuyo atrapado de
       // foco, cierre con Escape y bloqueo del fondo WebKit implementa aparte.
-      testMatch: /(delivery-location-confirmation|address-flow|panel-order-recovery|arranque-sin-jerga|production-cart-persistence|mp-back-navigation-ui|checkout-payment-handoff|service-worker-degraded-recovery|storefront-stress-responsive|launch-ux-checkout-reorder|catalog-card-glow|pwa-install)\.spec\.mjs/,
+      testMatch: mobileWebkitInteractionSpecs,
+      use: { ...devices['iPhone 13'] },
+    },
+    {
+      // Segunda mitad del mismo gate Safari/iPhone. Un nombre de proyecto
+      // distinto obliga a Playwright a arrancar un worker/browser limpio; no es
+      // un shard opcional y `npm run test:e2e` ejecuta ambas mitades siempre.
+      name: 'mobile-webkit-recovery',
+      testMatch: mobileWebkitRecoverySpecs,
       use: { ...devices['iPhone 13'] },
     },
   ],

@@ -1,0 +1,133 @@
+{
+  "at": "2026-09-25T05:44:45.020Z",
+  "target": "controlled-production",
+  "ref": "tkanbadcglszlcyfjvpv",
+  "business": "e1d2c342-da14-421e-884f-ff38bb55f642",
+  "checks": {
+    "QA_TENANT_DEFAULT_CLOSED": "PASS",
+    "PRECONDITION_ORDERING_ENABLED": "PASS",
+    "FOREIGN_PUBLIC_CATALOG_BEFORE": "PASS",
+    "QA_WINDOW_OPEN": "PASS",
+    "PUBLIC_PRODUCT_COLUMNS": "PASS",
+    "UNIT_COST_PUBLIC": "DENIED",
+    "VERIFIED_BY_PUBLIC": "DENIED",
+    "SELECT_STAR_PUBLIC": "DENIED",
+    "UNIT_COST_CUSTOMER_SESSION": "DENIED",
+    "UNIT_COST_VIA_EMBED": "DENIED",
+    "ISOLATION_TENANT_NOT_PUBLIC": "PASS",
+    "DRAFT_PRODUCT_PUBLIC": "DENIED",
+    "DRAFT_REPUBLISHED": "PASS",
+    "ORDER_ACCEPTED_WHEN_OPEN_CONTROL": "PASS",
+    "BUSINESS_PAUSE_WITH_ORDERING_ENABLED": "PASS",
+    "PAUSED_NOT_ORDERING_READY": "PASS",
+    "ORDER_REJECTED_WHEN_PAUSED": "PASS",
+    "BUSINESS_REOPEN_AFTER_PAUSE": "PASS",
+    "STAFF_CANNOT_CLOSE": "PASS",
+    "BUSINESS_CLOSE_WITH_ORDERING_ENABLED": "PASS",
+    "ORDER_REJECTED_WHEN_CLOSED": "PASS",
+    "PAUSE_ALL_SYSTEM": "PASS",
+    "CANCEL_STOCK_RETURNED_ONCE": "PASS",
+    "QA_WINDOW_CLOSE": "PASS",
+    "QA_WINDOW_NOT_EDITABLE_BY_API": "PASS",
+    "QA_FIXTURE_NOT_EDITABLE_BY_API": "PASS",
+    "QA_WINDOW_REFUSES_REAL_BUSINESS": "PASS",
+    "QA_WINDOW_MAX_60_MIN": "PASS",
+    "QA_WINDOW_NOT_FOR_ANON": "PASS",
+    "QA_WINDOW_NOT_FOR_STAFF": "PASS",
+    "QA_WINDOW_EXPIRES_SERVER_SIDE": "PASS",
+    "QA_TENANT_AFTER_EXPIRY": "CLOSED",
+    "QA_OPEN_WITHOUT_WINDOW_NOT_PUBLIC": "PASS",
+    "QA_OPEN_WITHOUT_WINDOW_CLOSED_BY_CRON": "PASS",
+    "FOREIGN_PUBLIC_CATALOG": 0,
+    "QA_RESIDUE": 0
+  },
+  "codes": {
+    "QA_WINDOW_OPEN": "ok visible=8",
+    "PUBLIC_PRODUCT_COLUMNS": "rows=8",
+    "UNIT_COST_PUBLIC": "42501",
+    "VERIFIED_BY_PUBLIC": "42501",
+    "SELECT_STAR_PUBLIC": "42501",
+    "UNIT_COST_CUSTOMER_SESSION": "42501",
+    "UNIT_COST_VIA_EMBED": "42501",
+    "DRAFT_PRODUCT_PUBLIC": "ok rows=0",
+    "DRAFT_REPUBLISHED": "ok",
+    "ORDER_ACCEPTED_WHEN_OPEN_CONTROL": "accepted",
+    "BUSINESS_PAUSE_WITH_ORDERING_ENABLED": "ok",
+    "ORDER_REJECTED_WHEN_PAUSED": "55000",
+    "BUSINESS_REOPEN_AFTER_PAUSE": "ok",
+    "STAFF_CANNOT_CLOSE": "42501",
+    "BUSINESS_CLOSE_WITH_ORDERING_ENABLED": "ok",
+    "ORDER_REJECTED_WHEN_CLOSED": "55000",
+    "CANCEL_STOCK_RETURNED_ONCE": "60->56->60",
+    "QA_WINDOW_CLOSE": "ok",
+    "QA_WINDOW_NOT_EDITABLE_BY_API": "42501",
+    "QA_FIXTURE_NOT_EDITABLE_BY_API": "42501",
+    "QA_WINDOW_REFUSES_REAL_BUSINESS": "42501",
+    "QA_WINDOW_MAX_60_MIN": "22023",
+    "QA_WINDOW_NOT_FOR_ANON": "42501",
+    "QA_WINDOW_NOT_FOR_STAFF": "42501",
+    "QA_WINDOW_EXPIRES_SERVER_SIDE": "hidden=62s closed=62s",
+    "QA_OPEN_WITHOUT_WINDOW_NOT_PUBLIC": "ok rows=0",
+    "QA_OPEN_WITHOUT_WINDOW_CLOSED_BY_CRON": "closed=60s"
+  },
+  "timings": {
+    "windowUntil": "2026-09-25T05:59:48.147391+00:00"
+  },
+  "initial": {
+    "status": "closed",
+    "qaFixture": true,
+    "window": null,
+    "orderingEnabled": true
+  },
+  "pauseAll": {
+    "pause": "ok",
+    "riderOff": "ok",
+    "riderAvailable": false,
+    "newOrder": "55000",
+    "cancel": "ok",
+    "cancelReplay": "ok",
+    "stock": {
+      "before": 60,
+      "held": 56,
+      "afterCancel": 60,
+      "qty": 4
+    }
+  },
+  "crash": {
+    "childOpened": true,
+    "childCode": null,
+    "until": "2026-09-25T05:45:58.884478+00:00",
+    "killed": true,
+    "exposedAtOpen": 8,
+    "hiddenAfterSeconds": 62,
+    "closedByCronAfterSeconds": 62
+  },
+  "cleanup": {
+    "orders": [
+      {
+        "reversed": false,
+        "cancelled": false,
+        "restoredUnits": 0,
+        "classified": true
+      }
+    ],
+    "failures": [],
+    "finalClose": "ok",
+    "finalStatus": "closed",
+    "finalWindow": null,
+    "ordersCreated": 1,
+    "openResidue": 0,
+    "productsPublished": 8,
+    "stockAll60": true
+  },
+  "verdict": "PASS",
+  "failed": [],
+  "previousRun": {
+    "at": "2026-09-25T05:42:24.401Z",
+    "verdict": "FAIL",
+    "failed": [
+      "QA_WINDOW_EXPIRES_SERVER_SIDE"
+    ],
+    "cause": "crash runner could not open the window: has_business_role needs a registered session; the same defect made the runbook command qa-window.mjs close answer 42501 (fixed in bfcf534)"
+  }
+}

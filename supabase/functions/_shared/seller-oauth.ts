@@ -37,6 +37,20 @@ const DEPLOYMENT_BINDINGS: Record<string, {
     checkoutBaseUrl: "https://taba2-staging.pages.dev",
     allowedOrigins: "https://taba2-staging.pages.dev",
   },
+  // CONTROLLED_PRODUCTION: same La Taba Delivery application as the original
+  // production project, its own callback/webhook host and storefront. Dormant
+  // until the owner registers this callback and webhook in that application
+  // and loads the project's secrets; without them every function fails closed.
+  tkanbadcglszlcyfjvpv: {
+    deployment: "production",
+    paymentEnvironment: "production",
+    oauthEnvironment: "production",
+    clientId: "7677852968049976",
+    supabaseUrl: "https://tkanbadcglszlcyfjvpv.supabase.co",
+    panelUrl: "https://la-taba-commercial-pilot.pages.dev/",
+    checkoutBaseUrl: "https://la-taba-commercial-pilot.pages.dev",
+    allowedOrigins: "https://la-taba-commercial-pilot.pages.dev",
+  },
   wwcpogltfgzgkrlilbcd: {
     deployment: "production",
     paymentEnvironment: "production",

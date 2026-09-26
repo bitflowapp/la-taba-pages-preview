@@ -79,6 +79,22 @@ const missing=await handler(new Request('https://fixture.invalid/__taba_release_
 if(missing.status!==400)throw new Error('unbounded nonce');
 console.log('REAL_DENO_NON_MUTATING_RUNTIME_PROBE: PASS');\n`);
   const image='public.ecr.aws/supabase/edge-runtime:v1.74.3';
+  try {
+    execFileSync('docker', ['image', 'inspect', image], { stdio: 'pipe', windowsHide: true });
+  } catch {
+    for (let attempt = 1; attempt <= 6; attempt++) {
+      try {
+        console.log(`Pulling ${image} (attempt ${attempt}/6)...`);
+        execFileSync('docker', ['pull', image], { stdio: 'inherit', windowsHide: true });
+        break;
+      } catch (err) {
+        if (attempt === 6) throw err;
+        const delay = attempt * 5000;
+        console.warn(`Docker pull failed. Retrying in ${delay}ms...`);
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+  }
   const mount=`type=bind,source=${tmp},target=/work`;
   const userArgs=typeof process.getuid==='function'&&typeof process.getgid==='function'?['--user',`${process.getuid()}:${process.getgid()}`]:[];
   for(const slug of FUNCTIONS){

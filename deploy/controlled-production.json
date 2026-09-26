@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "deploymentEnvironment": "pilot",
+  "catalogMode": "none",
+  "supabaseProjectRef": "tkanbadcglszlcyfjvpv",
+  "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+  "cloudflareProject": "la-taba-commercial-pilot",
+  "customerUrl": "https://la-taba-commercial-pilot.pages.dev/",
+  "businessPanelUrl": "https://la-taba-commercial-pilot.pages.dev/#business",
+  "manualPaymentOnly": false,
+  "onlinePayments": {
+    "provider": "mercadopago-oauth",
+    "runbook": "docs/MERCADOPAGO_PRODUCCION_CP.md",
+    "approvedBy": "Operador de La Taba (instrucción en sesión, 2026-09-26)",
+    "approvedAt": "2026-09-26"
+  },
+  "catalogApprovalFile": null,
+  "rider": {
+    "targetMode": "pilot",
+    "backendRef": "tkanbadcglszlcyfjvpv",
+    "packageId": "com.lataba.rider.pilot",
+    "versionName": "0.1.3-canonical-pilot",
+    "versionCode": 4,
+    "buildReceiptFile": "deploy/controlled-production.rider-receipt.json"
+  },
+  "previousDeploymentId": null,
+  "previousApkFile": null,
+  "previousRiderReceiptFile": null
+}

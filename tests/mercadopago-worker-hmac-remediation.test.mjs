@@ -12,14 +12,16 @@ const FIXTURE_SECRET = 'A'.repeat(64);
 const FIXTURE_TIME = 1_788_844_800_000;
 const FIXTURE_NONCE = '91000000-0000-4000-8000-000000000001';
 
-function hostedSecrets(target = 'production', extra = []) {
+const REFS = { staging: 'ucbtjcurawxjwjdvvcvj', 'controlled-production': 'tkanbadcglszlcyfjvpv', production: 'wwcpogltfgzgkrlilbcd' };
+
+function hostedSecrets(target = 'production', extra = [], refOverride = null) {
   const staging = target === 'staging';
   return [
     ['MERCADOPAGO_CLIENT_ID', staging ? '2691240967769590' : '7677852968049976'],
     ['MERCADOPAGO_CREDENTIAL_MODE', 'oauth'],
     ['MERCADOPAGO_ENVIRONMENT', staging ? 'test' : 'production'],
-    ['TABA_DEPLOYMENT_ENV', target],
-    ['MERCADOPAGO_OAUTH_PROJECT_REF', staging ? 'ukxqbgswjlibmnjemrzd' : 'wwcpogltfgzgkrlilbcd'],
+    ['TABA_DEPLOYMENT_ENV', staging ? 'staging' : 'production'],
+    ['MERCADOPAGO_OAUTH_PROJECT_REF', refOverride || REFS[target]],
     ['MERCADOPAGO_CLIENT_SECRET', 'fixture-client-secret'],
     ['MERCADOPAGO_OAUTH_WEBHOOK_SECRET', 'fixture-webhook-secret'],
     ['MERCADOPAGO_TOKEN_ENCRYPTION_KEY', 'fixture-encryption-key'],
@@ -29,9 +31,12 @@ function hostedSecrets(target = 'production', extra = []) {
   ].map(([name, value]) => ({ name, value: hash(value) }));
 }
 
-function harness({ active = false, globalToken = false, target = 'production' } = {}) {
-  const ref = target === 'staging' ? 'ukxqbgswjlibmnjemrzd' : 'wwcpogltfgzgkrlilbcd';
-  let secrets = hostedSecrets(target, globalToken ? [['MERCADOPAGO_ACCESS_TOKEN', 'fixture-global']] : []);
+function harness({ active = false, globalToken = false, target = 'production', vaultProvisioned = false, pendingWork = 0, inventoryOf = null,
+  withoutWorkerSecret = false, withoutClientSecret = false } = {}) {
+  const ref = REFS[target];
+  let secrets = hostedSecrets(target, globalToken ? [['MERCADOPAGO_ACCESS_TOKEN', 'fixture-global']] : [], inventoryOf ? REFS[inventoryOf] : null)
+    .filter(item => !(withoutWorkerSecret && item.name === 'PAYMENT_WORKER_SECRET'))
+    .filter(item => !(withoutClientSecret && item.name === 'MERCADOPAGO_CLIENT_SECRET'));
   let vaultDigest = '';
   let vaultUrlAligned = false;
   let mutationCalls = 0;
@@ -62,6 +67,7 @@ function harness({ active = false, globalToken = false, target = 'production' } 
         connected_sellers: active ? 1 : 0,
         enabled_settings: active ? 1 : 0,
         unfinished_jobs: active ? 1 : 0,
+        vault_provisioned: vaultProvisioned || Boolean(vaultDigest),
       }]);
     }
     if (url.endsWith('/functions/v1/mercadopago-payment-worker')) {
@@ -71,7 +77,7 @@ function harness({ active = false, globalToken = false, target = 'production' } 
       const manifest = `${timestamp}.${nonce}.POST./functions/v1/mercadopago-payment-worker`;
       assert.equal(headers.get('x-taba-worker-signature'), createHmac('sha256', FIXTURE_SECRET).update(manifest).digest('hex'));
       signedProbe = true;
-      return Response.json({ ok: true, claimed: 0, completed: 0, retried: 0 });
+      return Response.json({ ok: true, claimed: pendingWork, completed: pendingWork, retried: 0 });
     }
     throw new Error(`unexpected request: ${url}`);
   };
@@ -138,4 +144,77 @@ test('worker HMAC remediation aligns Edge and Vault then performs a zero-work si
   });
   assert.equal(h.state().mutationCalls, 2);
   assert.equal(h.state().signedProbe, true);
+});
+
+test('first Staging provisioning is allowed with queued work when Vault never held the worker key', async () => {
+  const h = harness({ target: 'staging', active: true, pendingWork: 2 });
+  const result = await synchronizeWorkerHmac('staging', {
+    ...h,
+    createSecret: () => FIXTURE_SECRET,
+    createNonce: () => FIXTURE_NONCE,
+    now: () => FIXTURE_TIME,
+  });
+  assert.deepEqual(result, {
+    ok: true, target: 'staging', aligned: true, signedProbe: true,
+    firstProvisioning: true, drained: { claimed: 2, completed: 2, retried: 0 },
+  });
+  assert.equal(h.state().mutationCalls, 2);
+});
+
+test('a provisioned Staging worker is still not rotated under active payment state', async () => {
+  const h = harness({ target: 'staging', active: true, vaultProvisioned: true });
+  await assert.rejects(() => synchronizeWorkerHmac('staging', { ...h, createSecret: () => FIXTURE_SECRET }), /active payment state/);
+  assert.equal(h.state().mutationCalls, 0);
+});
+
+test('production never takes the first-provisioning exception', async () => {
+  const h = harness({ active: true });
+  await assert.rejects(() => synchronizeWorkerHmac('production', { ...h, createSecret: () => FIXTURE_SECRET }), /active payment state/);
+  assert.equal(h.state().mutationCalls, 0);
+});
+
+test('controlled production is checked as its own project with the La Taba Delivery application', async () => {
+  const h = harness({ target: 'controlled-production' });
+  const result = await checkWorkerHmac('controlled-production', h);
+  assert.equal(result.ok, false);
+  assert.equal(result.vaultProvisioned, false);
+  assert.equal(h.state().mutationCalls, 0);
+});
+
+test('controlled production keeps the strict production guard: no first-provisioning exception', async () => {
+  const h = harness({ target: 'controlled-production', active: true, pendingWork: 1 });
+  await assert.rejects(() => synchronizeWorkerHmac('controlled-production', { ...h, createSecret: () => FIXTURE_SECRET }), /active payment state/);
+  assert.equal(h.state().mutationCalls, 0);
+});
+
+test('a new controlled production gets its first worker secret, Vault authority and a zero-work signed probe', async () => {
+  const h = harness({ target: 'controlled-production', withoutWorkerSecret: true });
+  await assert.rejects(() => checkWorkerHmac('controlled-production', h), /Missing server secret: PAYMENT_WORKER_SECRET/,
+    'checking still says the worker is not provisioned');
+  const result = await synchronizeWorkerHmac('controlled-production',
+    { ...h, createSecret: () => FIXTURE_SECRET, createNonce: () => FIXTURE_NONCE, now: () => FIXTURE_TIME });
+  assert.deepEqual(result, { ok: true, target: 'controlled-production', aligned: true, signedProbe: true });
+  assert.deepEqual(h.state(), { mutationCalls: 2, signedProbe: true });
+  assert.equal((await checkWorkerHmac('controlled-production', h)).ok, true);
+});
+
+test('the first worker secret is never provisioned for an environment without its application secrets', async () => {
+  const h = harness({ target: 'controlled-production', withoutWorkerSecret: true, withoutClientSecret: true });
+  await assert.rejects(() => synchronizeWorkerHmac('controlled-production', { ...h, createSecret: () => FIXTURE_SECRET }),
+    /Missing server secret: MERCADOPAGO_CLIENT_SECRET/);
+  assert.equal(h.state().mutationCalls, 0);
+});
+
+test('a secret inventory of another project is refused for controlled production', async () => {
+  const h = harness({ target: 'controlled-production', inventoryOf: 'production' });
+  await assert.rejects(() => checkWorkerHmac('controlled-production', h), /Environment identity mismatch: MERCADOPAGO_OAUTH_PROJECT_REF/);
+});
+
+test('the production OAuth setup maps controlled production to its own host with the same application', () => {
+  const nodeSetup = readFileSync('scripts/mercadopago/configurar-oauth-produccion.mjs', 'utf8');
+  const powershellSetup = readFileSync('scripts/mercadopago/configurar-oauth-produccion.ps1', 'utf8');
+  assert.match(nodeSetup, /'controlled-production': \{ ref: 'tkanbadcglszlcyfjvpv', site: 'https:\/\/la-taba-commercial-pilot\.pages\.dev' \}/);
+  assert.match(nodeSetup, /production: \{ ref: 'wwcpogltfgzgkrlilbcd', site: 'https:\/\/la-taba\.pages\.dev' \}/);
+  assert.match(powershellSetup, /ValidateSet\('production', 'controlled-production'\)/);
+  assert.match(powershellSetup, /tkanbadcglszlcyfjvpv/);
 });

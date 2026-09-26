@@ -1,14 +1,27 @@
 /*
  * Configuración segura de credenciales de la aplicación integradora Marco/LUNA en PRODUCCIÓN.
  *
- *   node scripts/mercadopago/configurar-oauth-produccion.mjs
+ *   node scripts/mercadopago/configurar-oauth-produccion.mjs [--target=controlled-production]
  *   echo '{"clientId":"...","clientSecret":"...","webhookSecret":"..."}' | node scripts/mercadopago/configurar-oauth-produccion.mjs --stdin
+ *
+ * `--target=controlled-production` configura CONTROLLED_PRODUCTION
+ * (tkanbadcglszlcyfjvpv, la-taba-commercial-pilot.pages.dev) con la misma
+ * aplicación La Taba Delivery. Sin la bandera, el destino es el de siempre.
+ * Ninguna de las dos habilita cobros: la revisión productiva y la autorización
+ * del primer pago real siguen siendo pasos explícitos y separados.
  */
 import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { conToken } from '../lib/supabase-cli-token.mjs';
 
-const ref = 'wwcpogltfgzgkrlilbcd';
+const TARGETS = {
+  production: { ref: 'wwcpogltfgzgkrlilbcd', site: 'https://la-taba.pages.dev' },
+  'controlled-production': { ref: 'tkanbadcglszlcyfjvpv', site: 'https://la-taba-commercial-pilot.pages.dev' },
+};
+const targetName = String(process.argv.find((value) => value.startsWith('--target='))?.split('=')[1] || 'production');
+const target = TARGETS[targetName];
+if (!target) throw Error('Destino inválido. No se modificó producción.');
+const { ref } = target;
 const expectedClientId = '7677852968049976';
 let input = {};
 const stdinMode = process.argv.includes('--stdin');
@@ -47,13 +60,18 @@ await conToken(async (token) => {
     MERCADOPAGO_OAUTH_ENVIRONMENT: 'production',
     TABA_DEPLOYMENT_ENV: 'production',
     MERCADOPAGO_OAUTH_PROJECT_REF: ref,
-    MERCADOPAGO_OAUTH_PANEL_URL: 'https://la-taba.pages.dev/',
-    TABA_CHECKOUT_BASE_URL: 'https://la-taba.pages.dev',
-    TABA_ALLOWED_ORIGINS: 'https://la-taba.pages.dev',
+    MERCADOPAGO_OAUTH_PANEL_URL: `${target.site}/`,
+    TABA_CHECKOUT_BASE_URL: target.site,
+    TABA_ALLOWED_ORIGINS: target.site,
   };
 
   if (!existing.some((entry) => entry.name === 'MERCADOPAGO_TOKEN_ENCRYPTION_KEY')) {
     values.MERCADOPAGO_TOKEN_ENCRYPTION_KEY = randomBytes(32).toString('base64url');
+  }
+  // La sal de los hashes de logs no se rota nunca desde acá: cambiarla rompe
+  // la correlación de los registros que ya existen.
+  if (!existing.some((entry) => entry.name === 'PAYMENT_LOG_HASH_SALT')) {
+    values.PAYMENT_LOG_HASH_SALT = randomBytes(32).toString('base64url');
   }
 
   const response = await fetch(endpoint, {
@@ -63,6 +81,6 @@ await conToken(async (token) => {
   });
 
   if (!response.ok) throw Error(`La configuración de producción falló (HTTP ${response.status}).`);
-  console.log('Configuración OAuth de Marco guardada en producción.');
+  console.log(`Configuración OAuth de Marco guardada en ${targetName} (${ref}).`);
   console.log('Compuerta fail-closed activa: cobros reales deshabilitados hasta que Walter complete la autorización OAuth.');
 });

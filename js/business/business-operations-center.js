@@ -27,6 +27,7 @@ import {
   normalizeOperationsConfig, validateWeeklyHours, validateZoneDraft,
 } from './business-operations-config.js';
 import { buildAlwaysOpenGrid } from '../core/service-hours.js';
+import { onlinePaymentsEnabled } from '../core/runtime-config.js';
 
 export const BUSINESS_OPERATION_VIEWS = Object.freeze([
   'operation-center', 'day-open', 'orders', 'operations-config', 'payments', 'payments-setup', 'scanner', 'product-create',
@@ -127,6 +128,8 @@ let paymentsActivation = null;
 let sellerConnection = null;
 let payments = [];
 let paymentsStatus = { phase: 'idle', message: '' };
+let manualPayments = [];
+let manualPaymentsStatus = { phase: 'idle', message: '' };
 let paymentsLoadStarted = false;
 let refundTarget = '';
 let operationsConfig = null;
@@ -140,6 +143,10 @@ let arcaAuthorizationDraft = '';
 let openingSignals = null;
 let openingStatusRaw = null;
 let openingLoadStarted = false;
+/** Lo último que contestó el servidor sobre los pedidos cerrados de hoy. */
+let finishedToday = null;
+/** Una sola consulta aunque coincidan el comando local y el snapshot remoto. */
+let finishedTodayRequest = null;
 let deviceResults = {};
 let deviceCheckPrinters = [];
 let devicePrintersLoadStarted = false;
@@ -171,6 +178,8 @@ export function configureBusinessOperations(next = {}) {
   sellerConnection = null;
   payments = [];
   paymentsStatus = { phase: 'idle', message: '' };
+  manualPayments = [];
+  manualPaymentsStatus = { phase: 'idle', message: '' };
   paymentsLoadStarted = false;
   refundTarget = '';
   arcaActivation = null;
@@ -179,6 +188,8 @@ export function configureBusinessOperations(next = {}) {
   openingSignals = null;
   openingStatusRaw = null;
   openingLoadStarted = false;
+  finishedToday = null;
+  finishedTodayRequest = null;
   deviceResults = {};
   deviceCheckPrinters = [];
   devicePrintersLoadStarted = false;
@@ -208,9 +219,11 @@ export function renderBusinessOperations(view) {
       config: operationsConfig, status: operationsConfigStatus, busy, draft: operationsConfigDraft,
     }),
     payments: () => renderPaymentsSurface({
-      payments, status: paymentsStatus, role: context.role, activation: paymentsActivation, connection: sellerConnection, busy, refundTarget,
+      payments, status: paymentsStatus, manualPayments, manualStatus: manualPaymentsStatus,
+      role: context.role, activation: paymentsActivation, connection: sellerConnection, busy, refundTarget,
+      onlinePayments: onlinePaymentsEnabled(),
     }),
-    'payments-setup': () => renderPaymentsSetupSurface({ activation: paymentsActivation, connection: sellerConnection, role: context.role, busy }),
+    'payments-setup': () => renderPaymentsSetupSurface({ activation: paymentsActivation, connection: sellerConnection, role: context.role, busy, onlinePayments: onlinePaymentsEnabled() }),
     'fiscal-setup': () => renderFiscalSetupSurface({
       activation: arcaActivation, role: context.role, busy, authorizationDraft: arcaAuthorizationDraft,
     }),
@@ -260,6 +273,86 @@ export function renderBusinessOperations(view) {
 }
 
 // El panel no ofrece pantallas que el rol no puede usar; el servidor igual revalida.
+/*
+ * ¿ESTÁ ABIERTO EL NEGOCIO? LA CABECERA DE LA BANDEJA TIENE QUE PODER DECIRLO.
+ * ---------------------------------------------------------------------------
+ * `openingStatusRaw` ya existía, pero sólo se llenaba al entrar a «Abrir»: en
+ * la bandeja valía `null` siempre. Y es el dato que separa dos situaciones que
+ * en pantalla se ven IDÉNTICAS —una bandeja tranquila y un comercio marcado
+ * como cerrado, que no recibe ni un pedido—. La segunda es una noche perdida y
+ * hasta ahora sólo se descubría entrando a otra pantalla.
+ *
+ * `primeBusinessOpeningStatus()` lo pide UNA vez por sesión del Panel, no por
+ * repintado ni por latido: el estado de apertura lo cambia una persona desde
+ * «Abrir» o «Cerrar», y esas dos acciones ya vuelven a pedirlo. Es una llamada
+ * por sesión, y devuelve la promesa para que quien la dispare pueda esperarla
+ * en una prueba.
+ */
+export function primeBusinessOpeningStatus() {
+  if (openingLoadStarted) return Promise.resolve(openingStatusRaw);
+  if (typeof context?.getOpeningStatus !== 'function') return Promise.resolve(null);
+  openingLoadStarted = true;
+  return refreshOpeningStatus().then(() => openingStatusRaw).catch(() => null);
+}
+
+/**
+ * El estado de apertura que confirmó el servidor, o `null` si todavía no
+ * contestó. `null` NO es «cerrado»: es «no sabemos», y la cabecera lo calla en
+ * vez de inventar una respuesta.
+ */
+export function businessOpeningStatus() {
+  const estado = String(openingStatusRaw?.business_status || '').toLowerCase();
+  return ['open', 'paused', 'closed'].includes(estado) ? estado : null;
+}
+
+/*
+ * LOS PEDIDOS CERRADOS DE HOY, CONTADOS DONDE ESTÁN.
+ * ---------------------------------------------------------------------------
+ * La bandeja del Panel trae SÓLO estados activos: `fetchBusinessOrderSnapshot`
+ * filtra por `BUSINESS_INBOX_STATUSES` y `delivered` no está entre ellos. Un
+ * «finalizados hoy» contado con lo que hay en memoria daría cero al abrir, cero
+ * después de recargar, y un número distinto en cada pestaña abierta. Es
+ * exactamente el tipo de dato que hace desconfiar de todos los demás de la
+ * pantalla.
+ *
+ * Traer los pedidos del día para contarlos tampoco sirve: en una noche buena
+ * son cientos de filas con sus ítems para mostrar un número de dos dígitos. El
+ * servidor cuenta y devuelve el número.
+ *
+ * Se refresca al arrancar y después de cada cierre —no por latido—: el número
+ * sólo cambia cuando alguien entrega o cancela, y eso siempre pasa por una
+ * acción que el Panel ya ve.
+ */
+export async function refreshBusinessFinishedToday() {
+  if (typeof context?.getFinishedToday !== 'function') return null;
+  if (finishedTodayRequest) return finishedTodayRequest;
+  finishedTodayRequest = (async () => {
+    const respuesta = await context.getFinishedToday();
+    // Una lectura fallida NO pisa el último número bueno con un cero: entre «no
+    // pude preguntar» y «cerraste cero pedidos» hay toda la diferencia, y en la
+    // tira los dos se leerían igual.
+    const dato = respuesta?.data;
+    if (!respuesta?.ok || !dato || typeof dato !== 'object' || Array.isArray(dato)) return finishedToday;
+    finishedToday = {
+      delivered: Number(dato.delivered || 0),
+      cancelled: Number(dato.cancelled || 0),
+      businessDate: String(dato.business_date || ''),
+    };
+    context.onChange?.();
+    return finishedToday;
+  })();
+  try {
+    return await finishedTodayRequest;
+  } finally {
+    finishedTodayRequest = null;
+  }
+}
+
+/** `null` mientras el servidor no contestó. Nunca se inventa un cero. */
+export function businessFinishedToday() {
+  return finishedToday ? { ...finishedToday } : null;
+}
+
 export function allowedBusinessOperationViews(role) {
   return BUSINESS_OPERATION_VIEWS.filter((view) => can(role, VIEW_CAPABILITY[view]));
 }
@@ -389,6 +482,10 @@ export async function handleBusinessOperationsAction(target) {
   if (target.closest('[data-product-publish]')) return refreshProductReadiness();
 
   if (target.closest('[data-payments-refresh]')) return refreshPaymentsAction();
+  const manualConfirm = target.closest('[data-manual-payment-confirm]');
+  if (manualConfirm) return confirmManualPayment(manualConfirm);
+  const manualReverse = target.closest('[data-manual-payment-reverse]');
+  if (manualReverse) return reverseManualPayment(manualReverse);
   const mpAction = target.closest('[data-mp-connection-action]');
   if (mpAction) return runMercadoPagoConnection(mpAction.dataset.mpConnectionAction);
   if (target.closest('[data-mercadopago-status-refresh]')) return refreshPaymentsAction();
@@ -583,6 +680,8 @@ export function resetBusinessOperationsForTests() {
   paymentsActivation = null;
   payments = [];
   paymentsStatus = { phase: 'idle', message: '' };
+  manualPayments = [];
+  manualPaymentsStatus = { phase: 'idle', message: '' };
   paymentsLoadStarted = false;
   refundTarget = '';
   resetOperationsConfigState();
@@ -592,6 +691,8 @@ export function resetBusinessOperationsForTests() {
   openingSignals = null;
   openingStatusRaw = null;
   openingLoadStarted = false;
+  finishedToday = null;
+  finishedTodayRequest = null;
   deviceResults = {};
   deviceCheckPrinters = [];
   devicePrintersLoadStarted = false;
@@ -1465,6 +1566,7 @@ async function installSignedUpdate(button) {
 }
 
 export function businessOperationViewLabel(view) {
+  if (view === 'payments-setup' && !onlinePaymentsEnabled()) return 'Cobros online';
   return VIEW_META[view]?.[0] || '';
 }
 
@@ -1495,12 +1597,12 @@ function renderPos() {
   const fiscalControl = fiscalReady
     ? `<label class="business-ops-check"><input name="requestFiscal" type="checkbox"${posRequestFiscal ? ' checked' : ''}> Solicitar comprobante fiscal</label>`
     : '<p class="form-hint">Comprobante fiscal no disponible: la facturación todavía no está habilitada (ver Facturación).</p><input name="requestFiscal" type="hidden" value="">';
-  return panel('Venta de mostrador', 'El servidor revalora precios y stock; el cliente envía sólo IDs y cantidades.', `${scannerInput()}${renderScanResult()}<ul class="business-ops-cart">${items}</ul><div class="business-ops-form"><label>Medio de pago<select name="paymentMethod"><option value="cash">Efectivo</option><option value="debit_card">Débito</option><option value="credit_card">Crédito</option><option value="transfer">Transferencia</option><option value="qr">QR</option></select></label>${fiscalControl}<div class="button-row"><button class="primary-button" type="button" data-pos-checkout>Confirmar venta</button><button class="ghost-button" type="button" data-pos-clear>Vaciar borrador</button></div></div>`);
+  return panel('Venta de mostrador', 'Precio y stock los confirma el sistema al registrar la venta.', `${scannerInput()}${renderScanResult()}<ul class="business-ops-cart">${items}</ul><div class="business-ops-form"><label>Medio de pago<select name="paymentMethod"><option value="cash">Efectivo</option><option value="debit_card">Débito</option><option value="credit_card">Crédito</option><option value="transfer">Transferencia</option><option value="qr">QR</option></select></label>${fiscalControl}<div class="button-row"><button class="primary-button" type="button" data-pos-checkout>Confirmar venta</button><button class="ghost-button" type="button" data-pos-clear>Vaciar borrador</button></div></div>`);
 }
 function renderFiscalStatus() {
-  const rows = fiscalDocuments.length ? fiscalDocuments.map((document) => renderFiscalDocument(document)).join('') : '<div class="empty-state"><strong>Sin comprobantes</strong><p>No se inventan autorizaciones ni CAE.</p></div>';
+  const rows = fiscalDocuments.length ? fiscalDocuments.map((document) => renderFiscalDocument(document)).join('') : '<div class="empty-state"><strong>Sin comprobantes</strong><p>Todavía no hay comprobantes emitidos por este sistema.</p></div>';
   const preview = fiscalPreview ? `<section class="business-fiscal-preview" data-fiscal-preview-surface><div class="button-row"><strong>Vista previa privada</strong><button class="ghost-button compact" type="button" data-fiscal-preview-close>Cerrar</button></div><iframe title="Vista previa de comprobante fiscal" src="${escapeHtml(fiscalPreview.signedUrl)}" sandbox="allow-scripts allow-same-origin"></iframe><small>El acceso temporal vence automáticamente; el PDF no se guarda en el navegador.</small></section>` : '';
-  return panel('Estado fiscal', 'Autorizado sólo cuando ARCA devolvió CAE válido. La autorización y el PDF se recuperan por separado.', `<div class="button-row"><button class="secondary-button compact" type="button" data-fiscal-refresh>Actualizar</button><button class="ghost-button compact" type="button" data-fiscal-open-cache>Abrir caché de impresión</button></div>${preview}${rows}`);
+  return panel('Estado fiscal', 'Un comprobante está emitido recién cuando ARCA lo autoriza con su CAE. El PDF puede llegar un rato después.', `<div class="button-row"><button class="secondary-button compact" type="button" data-fiscal-refresh>Actualizar</button><button class="ghost-button compact" type="button" data-fiscal-open-cache>Abrir caché de impresión</button></div>${preview}${rows}`);
 }
 
 function renderFiscalDocument(document) {
@@ -1531,9 +1633,17 @@ function renderCreditControls(document) {
   }).join('');
   return `<details class="business-fiscal-credit"${draft ? ' open' : ''}><summary>Solicitar nota de crédito</summary><label>Motivo<input name="creditReason" maxlength="300" value="${escapeHtml(draft?.reason || '')}"></label><label>Tipo<select name="creditKind"><option value="total"${kind === 'total' ? ' selected' : ''}>Total del saldo acreditable</option><option value="partial"${kind === 'partial' ? ' selected' : ''}>Parcial por ítem/cantidad</option><option value="commercial_adjustment"${kind === 'commercial_adjustment' ? ' selected' : ''}>Ajuste comercial autorizado</option></select></label><small>Los importes parciales se calculan desde snapshots; el ajuste comercial exige política aprobada.</small>${lines}<button class="ghost-button compact" type="button" data-fiscal-credit-note="${escapeHtml(document.id)}">Solicitar nota</button></details>`;
 }
+// Los estados viajan como valores de la base ('approved', 'blocked'): en
+// pantalla se dicen en castellano, y un valor desconocido se muestra tal cual
+// en vez de inventarle un significado.
+const FISCAL_REVIEW_LABELS = Object.freeze({ pending: 'pendiente', approved: 'aprobada', rejected: 'rechazada' });
+const FISCAL_GATE_LABELS = Object.freeze({ blocked: 'bloqueada', approved: 'habilitada por el servidor' });
+
 function renderFiscalConfig() {
   const profile = fiscalProfile || {};
-  return panel('Configuración fiscal', 'Sólo homologación desde el panel. Producción requiere revisión contable y activación del servidor.', `<div class="business-fiscal-lock"><strong>Producción fiscal deshabilitada</strong><span>Revisión contable: ${escapeHtml(profile.accountant_review_status || 'pendiente')}</span><span>Gate: ${escapeHtml(profile.production_gate_status || 'bloqueado')}</span></div><div class="business-ops-form"><label>Razón social<input name="legalName" value="${escapeHtml(profile.legal_name || '')}" maxlength="160"></label><label>CUIT<input name="cuit" value="${escapeHtml(profile.cuit || '')}" inputmode="numeric" maxlength="11"></label><label>Condición fiscal<input name="taxCondition" value="${escapeHtml(profile.tax_condition || '')}" maxlength="80"></label><label>Condición predeterminada del receptor<input name="defaultRecipientCondition" value="${escapeHtml(profile.default_recipient_condition || '')}" maxlength="80"></label><label>Domicilio comercial<input name="businessAddress" value="${escapeHtml(profile.business_address || '')}" maxlength="200"></label><label>Punto de venta<input name="pointOfSale" value="${escapeHtml(profile.point_of_sale || '')}" type="number" min="1"></label><button class="primary-button" type="button" data-fiscal-config-save>Guardar perfil de homologación</button></div>`);
+  const review = FISCAL_REVIEW_LABELS[profile.accountant_review_status] || profile.accountant_review_status || 'pendiente';
+  const gate = FISCAL_GATE_LABELS[profile.production_gate_status] || profile.production_gate_status || 'bloqueada';
+  return panel('Configuración fiscal', 'Sólo homologación desde el panel. Producción requiere revisión contable y activación del servidor.', `<div class="business-fiscal-lock"><strong>Producción fiscal deshabilitada</strong><span>Revisión contable: ${escapeHtml(review)}</span><span>Facturación real: ${escapeHtml(gate)}</span></div><div class="business-ops-form"><label>Razón social<input name="legalName" value="${escapeHtml(profile.legal_name || '')}" maxlength="160"></label><label>CUIT<input name="cuit" value="${escapeHtml(profile.cuit || '')}" inputmode="numeric" maxlength="11"></label><label>Condición fiscal<input name="taxCondition" value="${escapeHtml(profile.tax_condition || '')}" maxlength="80"></label><label>Condición predeterminada del receptor<input name="defaultRecipientCondition" value="${escapeHtml(profile.default_recipient_condition || '')}" maxlength="80"></label><label>Domicilio comercial<input name="businessAddress" value="${escapeHtml(profile.business_address || '')}" maxlength="200"></label><label>Punto de venta<input name="pointOfSale" value="${escapeHtml(profile.point_of_sale || '')}" type="number" min="1"></label><button class="primary-button" type="button" data-fiscal-config-save>Guardar perfil de homologación</button></div>`);
 }
 
 function scannerInput() { return `<div class="business-scanner-input"><label>Código<input data-barcode-input inputmode="numeric" autocomplete="off" maxlength="64" value="${escapeHtml(scannerDraftValue)}" placeholder="Escaneá o ingresá un GTIN"></label><button class="primary-button" type="button" data-business-scan-test ${busy ? 'disabled' : ''}>Procesar</button></div>`; }
@@ -2012,6 +2122,7 @@ function bytesToBase64(bytes) {
 
 async function refreshPayments() {
   paymentsStatus = { phase: 'loading', message: '' };
+  void refreshManualPayments();
   context.onChange();
   const [list, activation, connectionResult] = await Promise.all([context.listPayments(), context.getPaymentsActivation(), context.mercadoPagoConnectionAction('status')]);
   sellerConnection = connectionResult?.ok ? connectionResult.data.connection : { status: 'unavailable' };
@@ -2022,6 +2133,77 @@ async function refreshPayments() {
     : { phase: 'error', message: humanizeFailure(list?.message, 'No pudimos leer los pagos ahora.') };
   context.onChange();
   return list;
+}
+
+async function refreshManualPayments() {
+  manualPaymentsStatus = { phase: 'loading', message: '' };
+  context.onChange();
+  const listed = await context.listManualPayments();
+  manualPayments = listed?.ok && Array.isArray(listed.data) ? listed.data : [];
+  manualPaymentsStatus = listed?.ok
+    ? { phase: 'ready', message: '' }
+    : { phase: 'error', message: listed?.message || 'No pudimos leer los cobros manuales.' };
+  context.onChange();
+  return listed;
+}
+
+async function confirmManualPayment(button) {
+  const guard = requireCapability('payments.view');
+  if (!guard.ok) return guard.result;
+  if (busy) return result(false, 'Ya hay una operación en curso.');
+  const order = manualPayments.find((item) => item.id === button.dataset.manualPaymentConfirm);
+  const method = button.dataset.manualPaymentMethod;
+  if (!order || order.manual_payment_status !== 'pending'
+      || ['canceled', 'cancelled', 'rejected'].includes(order.status)
+      || !['cash', 'transfer'].includes(method)
+      || (order.payment_method === 'cash' && method !== 'cash')) {
+    return result(false, 'Actualizá el pedido antes de registrar el cobro.');
+  }
+  const prompt = `¿Recibiste ${order.total} ${order.currency_code || 'ARS'} del pedido ${order.public_code}? Registrarás ${method === 'cash' ? 'efectivo' : 'transferencia'} como pagado.`;
+  if (globalThis.confirm?.(prompt) !== true) return result(false, 'Sin cambios.');
+  busy = true;
+  context.onChange();
+  try {
+    const response = await context.confirmManualPayment({
+      orderId: order.id, expectedRevision: order.revision, actualMethod: method,
+      idempotencyKey: operationKey('manual-confirm', order.id, order.revision, method),
+    });
+    await refreshManualPayments();
+    feedback = response?.ok ? 'Cobro manual registrado por el servidor.'
+      : humanizeFailure(response?.message, 'El cobro no fue confirmado.');
+    return result(Boolean(response?.ok), feedback);
+  } finally {
+    busy = false;
+    context.onChange();
+  }
+}
+
+async function reverseManualPayment(button) {
+  const guard = requireCapability('payments.refund');
+  if (!guard.ok) return guard.result;
+  if (busy) return result(false, 'Ya hay una operación en curso.');
+  const order = manualPayments.find((item) => item.id === button.dataset.manualPaymentReverse);
+  if (!order || order.manual_payment_status !== 'confirmed')
+    return result(false, 'Actualizá el pedido antes de registrar una devolución.');
+  const reason = String(globalThis.prompt?.('Motivo de la devolución manual ya realizada:', '') || '').trim();
+  if (reason.length < 8 || reason.length > 200) return result(false, 'Ingresá un motivo de 8 a 200 caracteres.');
+  if (globalThis.confirm?.(`¿Ya devolviste ${order.total} ${order.currency_code || 'ARS'} del pedido ${order.public_code}?`) !== true)
+    return result(false, 'Sin cambios.');
+  busy = true;
+  context.onChange();
+  try {
+    const response = await context.reverseManualPayment({
+      orderId: order.id, expectedRevision: order.revision, reason,
+      idempotencyKey: operationKey('manual-reverse', order.id, order.revision, reason),
+    });
+    await refreshManualPayments();
+    feedback = response?.ok ? 'Devolución manual registrada por el servidor.'
+      : humanizeFailure(response?.message, 'La devolución no fue confirmada.');
+    return result(Boolean(response?.ok), feedback);
+  } finally {
+    busy = false;
+    context.onChange();
+  }
 }
 
 async function refreshPaymentsAction() {
@@ -2037,6 +2219,7 @@ async function refreshPaymentsAction() {
 async function runMercadoPagoConnection(action) {
   const guard = requireCapability('payments.reconcile');
   if (!guard.ok) return guard.result;
+  if (!onlinePaymentsEnabled()) return result(false, 'Cobros online no habilitados en esta etapa.');
   if (busy) return result(false, 'Ya hay algo en curso.');
   if (action === 'disconnect' && !globalThis.confirm('¿Desconectar Mercado Pago? Se pausarán los pagos online. El historial se conserva.')) return result(false, 'Sin cambios.');
   busy = true;
@@ -2476,7 +2659,7 @@ async function completeProductDraft(target) {
     productReadiness = completed.data;
     productPreview = buildStorefrontPreview(validation.value, { imageReady: Boolean(completed.data?.image_bound) });
     feedback = validation.value.pricePending
-      ? 'Producto guardado con precio pendiente: se ve en la web pero todavía no se puede comprar.'
+      ? 'Producto guardado con precio pendiente: no se muestra en la tienda hasta que cargues el precio.'
       : 'Producto guardado. Abajo te decimos qué falta para que aparezca en la web.';
   } else {
     feedback = humanizeFailure(completed?.message, 'El producto se creó pero no se pudieron guardar todos los datos.');
@@ -2518,6 +2701,9 @@ function defaultContext() {
     setDeliveryPricing: async () => ({ ok: false, message: 'La configuración operativa no está disponible.' }),
     setServiceEnforcement: async () => ({ ok: false, message: 'La configuración operativa no está disponible.' }),
     listPayments: async () => ({ ok: false, message: 'Los pagos no están disponibles.' }),
+    listManualPayments: async () => ({ ok: false, message: 'Los cobros manuales no están disponibles.' }),
+    confirmManualPayment: async () => ({ ok: false }),
+    reverseManualPayment: async () => ({ ok: false }),
     mercadoPagoConnectionAction: async () => ({ ok: false }),
     getPaymentsActivation: async () => ({ ok: false, message: 'El estado de cobros no está disponible.' }),
     configurePaymentSettings: async () => ({ ok: false, message: 'La configuración de cobros no está disponible.' }),

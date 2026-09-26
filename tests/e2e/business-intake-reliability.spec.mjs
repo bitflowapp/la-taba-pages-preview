@@ -172,7 +172,10 @@ test('el panel Negocio real muestra estado honesto y conserva tarjetas ante fall
   await page.goto('/#business');
   const workspace = page.locator('[data-production-workspace="business"]');
   await expect(workspace).toBeVisible();
-  await expect(workspace.locator('[data-business-ops-center="operation-center"]')).toBeVisible();
+  // El Panel ABRE en la bandeja de pedidos: es la pantalla que se mira veinte
+  // veces por turno, y el centro de operacion -que antes era el aterrizaje- son
+  // entre cuatro y cinco pantallas de metricas antes del primer pedido.
+  await expect(workspace.locator('[data-order-tray]')).toBeVisible();
   // `:visible` y no `.first()`: el Panel tiene DOS navegaciones con los mismos
     // destinos -la fila de escritorio y la barra inferior del telefono- y solo una
     // esta visible a la vez. `.first()` depende del orden del DOM y elige la de

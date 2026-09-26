@@ -48,7 +48,8 @@ import { execFileSync } from 'node:child_process';
 import process from 'node:process';
 
 const REFS = {
-  staging: { ref: 'ukxqbgswjlibmnjemrzd', nombre: 'la-taba-staging' },
+  staging: { ref: 'ucbtjcurawxjwjdvvcvj', nombre: 'la-taba-staging' },
+  'produccion-controlada': { ref: 'tkanbadcglszlcyfjvpv', nombre: 'la-taba-controlled-production' },
   produccion: { ref: 'wwcpogltfgzgkrlilbcd', nombre: 'la-taba-production' },
 };
 
@@ -112,6 +113,8 @@ const CANDIDATOS = {
   TABA_CHECKOUT_BASE_URL: [
     'https://la-taba.pages.dev',
     'https://la-taba.pages.dev/',
+    'https://la-taba-commercial-pilot.pages.dev',
+    'https://taba2-staging.pages.dev',
     'https://bitflowapp.github.io/la-taba-pages-preview',
   ],
 };

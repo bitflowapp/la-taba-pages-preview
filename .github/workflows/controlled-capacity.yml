@@ -1,0 +1,60 @@
+name: Controlled production capacity certification
+
+# Runs the 30-user capacity/concurrency harness from a runner with a clean
+# network. Armed per SHA like the Staging deploy: it only runs when the repo
+# variable CAPACITY_RUN_SHA equals the pushed commit. Only QA identities and
+# the target's publishable key travel here; no Supabase secret key.
+on:
+  push:
+    branches:
+      - 'release/taba-controlled-production'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: controlled-capacity
+  cancel-in-progress: false
+
+jobs:
+  capacity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    environment: qa-capacity
+    if: ${{ github.repository == 'bitflowapp/la-taba-pages-preview' && vars.CAPACITY_RUN_SHA == github.sha }}
+    steps:
+      - name: Check out exact armed SHA
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Capacity, concurrency and integrity run
+        env:
+          TABA_QA_PROJECT_REF: ${{ vars.CAPACITY_PROJECT_REF }}
+          TABA_QA_PUBLISHABLE_KEY: ${{ secrets.TABA_QA_PUBLISHABLE_KEY }}
+          TABA_QA_CREDENTIALS: ${{ secrets.TABA_QA_CREDENTIALS }}
+          CAPACITY_TARGET: ${{ vars.CAPACITY_TARGET }}
+          CAPACITY_EXTRA_ARGS: ${{ vars.CAPACITY_EXTRA_ARGS }}
+        run: |
+          set -euo pipefail
+          # shellcheck disable=SC2086
+          node scripts/controlled-production/capacity-30.mjs --target "$CAPACITY_TARGET" --no-secret \
+            --out artifacts/controlled-production/capacity-ci.json $CAPACITY_EXTRA_ARGS
+
+      - name: Upload capacity report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: capacity-${{ github.sha }}-${{ github.run_attempt }}
+          path: artifacts/controlled-production/capacity-ci.json
+          if-no-files-found: warn
+          retention-days: 30

@@ -82,7 +82,7 @@
       lo verifica tests/home-hero-preload.test.mjs.
     -->
     <link rel="preload" as="image" href="assets/promos/cervezas-heineken-band.webp" media="(max-width: 699px)" fetchpriority="high" />
-    <link rel="stylesheet" href="styles.css?v=58" />
+    <link rel="stylesheet" href="styles.css?v=61" />
   </head>
   <!--
     La vista activa se declara ya en el shell servido. `renderNavigation` la
@@ -123,11 +123,11 @@
               </small>
               <strong class="topbar-ops-context">
                 <span class="ops-context-full" data-topbar-ops-context>La Taba</span>
-                <span class="ops-context-short" data-topbar-ops-context-short>Cola al día</span>
-                <span class="ops-context-mini" data-topbar-ops-context-mini>Cola al día</span>
+                <span class="ops-context-short" data-topbar-ops-context-short>La Taba</span>
+                <span class="ops-context-mini" data-topbar-ops-context-mini>La Taba</span>
               </strong>
             </span>
-            <button class="rt-chip topbar-ops-sync" type="button" data-retry-relay data-realtime-sync="business">
+            <button class="rt-chip topbar-ops-sync" type="button" data-retry-relay data-realtime-sync="business" data-demo-only hidden>
               Sólo este equipo
             </button>
             <!--
@@ -252,9 +252,17 @@
           </div>
         </section>
         <section class="section app-view app-home taba-home is-active" data-view="home" aria-hidden="false">
-          <div class="card empty-state" data-production-catalog-gate hidden role="status">
-            <strong>Pedidos online no disponibles</strong>
-            <p data-production-catalog-message>El catálogo verificado todavía no está disponible.</p>
+          <div class="card empty-state store-entry" data-production-catalog-gate hidden role="status">
+            <span class="store-entry-mark" aria-hidden="true"><svg viewBox="0 0 512 512" width="56" height="56" focusable="false"><rect width="512" height="512" rx="102.4" fill="#d0000d"/><path d="M128 150.4h256v70.4h-89.6v140.8h-76.8v-140.8h-89.6Z" fill="#fff"/></svg></span>
+            <p class="store-entry-name" data-store-entry-name>La Taba</p>
+            <strong data-production-catalog-title>Abriendo la tienda…</strong>
+            <p data-production-catalog-message>Estamos trayendo el catálogo del local.</p>
+            <p class="store-entry-address" data-store-entry-address hidden></p>
+            <div class="store-entry-actions">
+              <button class="primary-button compact" type="button" data-store-entry-retry hidden>Reintentar</button>
+              <a class="secondary-button compact" data-store-entry-whatsapp href="https://wa.me/" target="_blank" rel="noopener noreferrer" hidden>Escribinos por WhatsApp</a>
+              <button class="secondary-button compact" type="button" data-nav-view="tracking" data-store-entry-tracking hidden>Seguir un pedido</button>
+            </div>
           </div>
           <div class="taba-home-content" data-catalog-dependent hidden>
             <!--
@@ -477,9 +485,17 @@
         </section>
 
         <section class="section app-view" data-view="catalog" hidden aria-hidden="true">
-          <div class="card empty-state" data-production-catalog-gate hidden role="status">
-            <strong>Pedidos online no disponibles</strong>
-            <p data-production-catalog-message>El catálogo verificado todavía no está disponible.</p>
+          <div class="card empty-state store-entry" data-production-catalog-gate hidden role="status">
+            <span class="store-entry-mark" aria-hidden="true"><svg viewBox="0 0 512 512" width="56" height="56" focusable="false"><rect width="512" height="512" rx="102.4" fill="#d0000d"/><path d="M128 150.4h256v70.4h-89.6v140.8h-76.8v-140.8h-89.6Z" fill="#fff"/></svg></span>
+            <p class="store-entry-name" data-store-entry-name>La Taba</p>
+            <strong data-production-catalog-title>Abriendo la tienda…</strong>
+            <p data-production-catalog-message>Estamos trayendo el catálogo del local.</p>
+            <p class="store-entry-address" data-store-entry-address hidden></p>
+            <div class="store-entry-actions">
+              <button class="primary-button compact" type="button" data-store-entry-retry hidden>Reintentar</button>
+              <a class="secondary-button compact" data-store-entry-whatsapp href="https://wa.me/" target="_blank" rel="noopener noreferrer" hidden>Escribinos por WhatsApp</a>
+              <button class="secondary-button compact" type="button" data-nav-view="tracking" data-store-entry-tracking hidden>Seguir un pedido</button>
+            </div>
           </div>
           <div data-catalog-dependent hidden>
           <!--
@@ -572,9 +588,17 @@
         </section>
 
         <section class="section app-view soft" data-view="cart" hidden aria-hidden="true">
-          <div class="card empty-state" data-production-catalog-gate hidden role="status">
-            <strong>Pedidos online no disponibles</strong>
-            <p data-production-catalog-message>El catálogo verificado todavía no está disponible.</p>
+          <div class="card empty-state store-entry" data-production-catalog-gate hidden role="status">
+            <span class="store-entry-mark" aria-hidden="true"><svg viewBox="0 0 512 512" width="56" height="56" focusable="false"><rect width="512" height="512" rx="102.4" fill="#d0000d"/><path d="M128 150.4h256v70.4h-89.6v140.8h-76.8v-140.8h-89.6Z" fill="#fff"/></svg></span>
+            <p class="store-entry-name" data-store-entry-name>La Taba</p>
+            <strong data-production-catalog-title>Abriendo la tienda…</strong>
+            <p data-production-catalog-message>Estamos trayendo el catálogo del local.</p>
+            <p class="store-entry-address" data-store-entry-address hidden></p>
+            <div class="store-entry-actions">
+              <button class="primary-button compact" type="button" data-store-entry-retry hidden>Reintentar</button>
+              <a class="secondary-button compact" data-store-entry-whatsapp href="https://wa.me/" target="_blank" rel="noopener noreferrer" hidden>Escribinos por WhatsApp</a>
+              <button class="secondary-button compact" type="button" data-nav-view="tracking" data-store-entry-tracking hidden>Seguir un pedido</button>
+            </div>
           </div>
           <div data-catalog-dependent hidden>
           <div class="section-head">
@@ -675,10 +699,10 @@
                        confirma) y su migración; agregar la opción sola
                        reabre el mismo pozo.
                        El test `payment-methods-contract` sostiene esta lista. -->
-                  <option value="coordinate">A coordinar con el local</option>
-                  <option value="cash">Efectivo al recibir</option>
+                  <option value="cash">Efectivo al retirar o recibir</option>
+                  <option value="coordinate">A coordinar con el local antes de preparar</option>
                 </select>
-                <small>El medio se confirma antes de preparar el pedido.</small>
+                <small>El cobro queda pendiente hasta que el negocio registre el dinero recibido. No se paga en esta pantalla.</small>
               </label>
 
               <details class="checkout-instructions">
@@ -815,9 +839,9 @@
 
           <div class="card admin-lock-card production-auth-card" data-production-only data-production-auth-card="business" hidden>
             <div data-production-auth-intro>
-              <p class="eyebrow">Negocio</p>
-              <h1>Acceso seguro requerido</h1>
-              <p>Ingresá con una cuenta owner o empleado vinculada a este comercio.</p>
+              <p class="eyebrow">Panel del negocio</p>
+              <h1>Ingresá con tu cuenta</h1>
+              <p>Para el dueño y el equipo del local. Cada persona entra con su propia cuenta.</p>
             </div>
             <form class="production-auth-form" data-production-auth-form="business">
               <label>
@@ -831,7 +855,7 @@
               <p class="form-hint" data-production-auth-message role="status" hidden></p>
               <div class="button-row">
                 <button class="primary-button" type="submit">Ingresar</button>
-                <button class="secondary-button" type="button" data-nav-view="profile">Volver al perfil</button>
+                <button class="secondary-button" type="button" data-nav-view="home">Ir a la tienda</button>
               </div>
             </form>
             <!-- Alta autogestionada: crear la cuenta, pedir acceso y esperar.
@@ -849,7 +873,7 @@
                 <h1>Central de pedidos</h1>
               </div>
               <div class="view-actions">
-                <button class="secondary-button compact" type="button" data-open-admin-view="rider">Vista rider</button>
+                <button class="secondary-button compact" type="button" data-demo-only data-open-admin-view="rider">Vista rider</button>
                 <button class="ghost-button compact" type="button" data-lock-admin>Salir</button>
               </div>
             </div>
@@ -857,7 +881,7 @@
           </div>
         </section>
 
-        <section class="section app-view admin-section" data-view="rider" data-operational-only hidden aria-hidden="true">
+        <section class="section app-view admin-section" data-view="rider" data-demo-only hidden aria-hidden="true">
           <div class="card admin-lock-card" data-admin-locked data-demo-auth-only>
             <div>
               <p class="eyebrow">Repartidor</p>
@@ -869,31 +893,6 @@
               <button class="secondary-button" type="button" data-nav-view="profile">Volver al perfil</button>
             </div>
           </div>
-
-          <div class="card admin-lock-card production-auth-card" data-production-only data-production-auth-card="rider" hidden>
-            <div>
-              <p class="eyebrow">Repartidor</p>
-              <h1>Acceso seguro requerido</h1>
-              <p>Ingresá con una cuenta rider activa de este comercio.</p>
-            </div>
-            <form class="production-auth-form" data-production-auth-form="rider">
-              <label>
-                Email
-                <input name="email" type="email" autocomplete="username" required />
-              </label>
-              <label>
-                Contraseña
-                <input name="password" type="password" autocomplete="current-password" required />
-              </label>
-              <p class="form-hint" data-production-auth-message role="status" hidden></p>
-              <div class="button-row">
-                <button class="primary-button" type="submit">Ingresar</button>
-                <button class="secondary-button" type="button" data-nav-view="profile">Volver al perfil</button>
-              </div>
-            </form>
-          </div>
-
-          <div class="production-workspace" data-production-only data-production-workspace="rider" hidden aria-hidden="true"></div>
 
           <div data-admin-unlocked hidden>
             <div class="section-head rider-section-head">
@@ -1256,6 +1255,6 @@
       defer
     ></script>
     <script src="js/pwa-update.js?v=4"></script>
-    <script type="module" src="js/app.js?v=49"></script>
+    <script type="module" src="js/app.js?v=51"></script>
   </body>
 </html>

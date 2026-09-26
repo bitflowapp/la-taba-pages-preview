@@ -1,0 +1,515 @@
+{
+  "timestamp": "2026-09-24T19:39:44.160Z",
+  "target": "staging",
+  "project": "ucbtjcurawxjwjdvvcvj",
+  "runner": "GitHub Actions ubuntu-24.04 (clean network)",
+  "config": {
+    "VISITORS": 30,
+    "CARTS": 10,
+    "ORDERS": 8,
+    "RIDERS": 3,
+    "BROWSE_SECONDS": 150
+  },
+  "verdict": {
+    "LOAD_30_USERS": "FAIL",
+    "CONCURRENT_CARTS": "10 carts (8 checkout, 2 abandoned)",
+    "CONCURRENT_ORDERS": "7 created from 8 simultaneous checkouts (1 race loser expected)",
+    "ERROR_RATE": 0.0016,
+    "P95_APPROX_MS": 587,
+    "DATA_INTEGRITY": "PASS",
+    "P0": 0,
+    "P1": 18
+  },
+  "findings": [
+    {
+      "severity": "P1",
+      "code": "GPS_PUBLISH_REFUSED",
+      "detail": "double_click:refused"
+    },
+    {
+      "severity": "P1",
+      "code": "GPS_PUBLISH_REFUSED",
+      "detail": "double_click:refused"
+    },
+    {
+      "severity": "P1",
+      "code": "GPS_PUBLISH_REFUSED",
+      "detail": "normal_5:refused"
+    },
+    {
+      "severity": "P1",
+      "code": "GPS_PUBLISH_REFUSED",
+      "detail": "normal_5:refused"
+    },
+    {
+      "severity": "P1",
+      "code": "GPS_PUBLISH_REFUSED",
+      "detail": "normal_4:refused"
+    },
+    {
+      "severity": "P1",
+      "code": "GPS_PUBLISH_REFUSED",
+      "detail": "normal_4:refused"
+    },
+    {
+      "severity": "P1",
+      "code": "GPS_PUBLISH_REFUSED",
+      "detail": "normal_7:refused"
+    },
+    {
+      "severity": "P1",
+      "code": "GPS_PUBLISH_REFUSED",
+      "detail": "normal_7:refused"
+    },
+    {
+      "severity": "P1",
+      "code": "GPS_PUBLISH_REFUSED",
+      "detail": "double_click:refused"
+    },
+    {
+      "severity": "P1",
+      "code": "GPS_PUBLISH_REFUSED",
+      "detail": "retry_after_loss:refused"
+    },
+    {
+      "severity": "P1",
+      "code": "GPS_PUBLISH_REFUSED",
+      "detail": "retry_after_loss:refused"
+    },
+    {
+      "severity": "P1",
+      "code": "GPS_PUBLISH_REFUSED",
+      "detail": "normal_6:refused"
+    },
+    {
+      "severity": "P1",
+      "code": "GPS_PUBLISH_REFUSED",
+      "detail": "normal_6:refused"
+    },
+    {
+      "severity": "P1",
+      "code": "GPS_PUBLISH_REFUSED",
+      "detail": "normal_5:refused"
+    },
+    {
+      "severity": "P1",
+      "code": "GPS_PUBLISH_REFUSED",
+      "detail": "normal_4:refused"
+    },
+    {
+      "severity": "P1",
+      "code": "GPS_PUBLISH_REFUSED",
+      "detail": "normal_7:refused"
+    },
+    {
+      "severity": "P1",
+      "code": "GPS_PUBLISH_REFUSED",
+      "detail": "retry_after_loss:refused"
+    },
+    {
+      "severity": "P1",
+      "code": "GPS_PUBLISH_REFUSED",
+      "detail": "normal_6:refused"
+    }
+  ],
+  "orders": {
+    "attempted": 8,
+    "created": 7
+  },
+  "stockRace": {
+    "attempts": 2,
+    "accepted": 1,
+    "rejectionCodes": [
+      "23514"
+    ]
+  },
+  "doubleClick": {
+    "distinctIds": 1
+  },
+  "retryAfterLoss": {
+    "sameOrder": true
+  },
+  "twoTabs": {
+    "finalStatus": "accepted",
+    "revisionDelta": 1
+  },
+  "manualPayment": [
+    {
+      "events": 1,
+      "replays": 1,
+      "status": "confirmed"
+    },
+    {
+      "events": 1,
+      "replays": 1,
+      "status": "confirmed"
+    }
+  ],
+  "doubleCancel": {
+    "restored": 22,
+    "expected": 22,
+    "replays": 1
+  },
+  "offerRace": {
+    "secondOfferWhilePending": "offer_in_flight",
+    "acceptA": "offer_not_available",
+    "withdraw": "withdrawn",
+    "reoffer": "offered",
+    "acceptB": "accepted",
+    "winners": 1,
+    "assignedTo": "B"
+  },
+  "delivery": {
+    "deliverable": 6,
+    "delivered": 6,
+    "wrongCodeAnswers": [
+      "incorrect_code"
+    ],
+    "doubleConfirm": [
+      "ok/ok",
+      "ok/ok",
+      "ok/ok",
+      "ok/ok",
+      "ok/ok",
+      "ok/ok"
+    ],
+    "riders": [
+      {
+        "n": 1,
+        "accepted": 1
+      },
+      {
+        "n": 2,
+        "accepted": 2
+      },
+      {
+        "n": 3,
+        "accepted": 2
+      }
+    ]
+  },
+  "tracking": [
+    {
+      "label": "double_click",
+      "lastPublicStatus": "delivered"
+    },
+    {
+      "label": "retry_after_loss",
+      "lastPublicStatus": "delivered"
+    },
+    {
+      "label": "race_a",
+      "lastPublicStatus": "cancelled"
+    },
+    {
+      "label": "normal_4",
+      "lastPublicStatus": "delivered"
+    },
+    {
+      "label": "normal_5",
+      "lastPublicStatus": "delivered"
+    },
+    {
+      "label": "normal_6",
+      "lastPublicStatus": "delivered"
+    },
+    {
+      "label": "normal_7",
+      "lastPublicStatus": "delivered"
+    }
+  ],
+  "realtime": {
+    "attempted": 30,
+    "subscribed": 30,
+    "errors": 0,
+    "closed": 30,
+    "events": 240,
+    "operatorEvents": 158
+  },
+  "anonExposure": {
+    "requests": 30,
+    "rowsVisible": 0
+  },
+  "integrity": {
+    "orderRows": 7,
+    "duplicates": 0,
+    "negativeStock": 0,
+    "stockMismatch": []
+  },
+  "cleanup": {
+    "orders": 7,
+    "failures": [],
+    "stockRestored": true
+  },
+  "metrics": {
+    "perOperation": {
+      "identity_register_session": {
+        "n": 5,
+        "errors": 0,
+        "avg": 271,
+        "p50": 264,
+        "p95": 303,
+        "max": 303
+      },
+      "commerce_availability": {
+        "n": 223,
+        "errors": 0,
+        "avg": 268,
+        "p50": 244,
+        "p95": 369,
+        "max": 749
+      },
+      "get_rider_delivery_board": {
+        "n": 23,
+        "errors": 0,
+        "avg": 254,
+        "p50": 248,
+        "p95": 349,
+        "max": 350
+      },
+      "set_rider_availability": {
+        "n": 3,
+        "errors": 0,
+        "avg": 209,
+        "p50": 208,
+        "p95": 215,
+        "max": 215
+      },
+      "heartbeat_rider_availability": {
+        "n": 48,
+        "errors": 0,
+        "avg": 245,
+        "p50": 238,
+        "p95": 295,
+        "max": 336
+      },
+      "browse.businesses": {
+        "n": 30,
+        "errors": 0,
+        "avg": 321,
+        "p50": 259,
+        "p95": 653,
+        "max": 734
+      },
+      "get_public_business_contact": {
+        "n": 30,
+        "errors": 0,
+        "avg": 297,
+        "p50": 239,
+        "p95": 596,
+        "max": 633
+      },
+      "browse.products": {
+        "n": 212,
+        "errors": 0,
+        "avg": 250,
+        "p50": 234,
+        "p95": 311,
+        "max": 662
+      },
+      "browse.orders_anon": {
+        "n": 30,
+        "errors": 0,
+        "avg": 275,
+        "p50": 230,
+        "p95": 676,
+        "max": 691
+      },
+      "realtime.subscribe": {
+        "n": 30,
+        "errors": 0,
+        "avg": 234,
+        "p50": 213,
+        "p95": 392,
+        "max": 497
+      },
+      "cart.products_recheck": {
+        "n": 10,
+        "errors": 0,
+        "avg": 255,
+        "p50": 264,
+        "p95": 281,
+        "max": 281
+      },
+      "customer.sign_in_anonymous": {
+        "n": 8,
+        "errors": 0,
+        "avg": 369,
+        "p50": 346,
+        "p95": 634,
+        "max": 634
+      },
+      "upsert_current_customer_profile": {
+        "n": 8,
+        "errors": 0,
+        "avg": 415,
+        "p50": 405,
+        "p95": 690,
+        "max": 690
+      },
+      "upsert_current_customer_address": {
+        "n": 8,
+        "errors": 0,
+        "avg": 269,
+        "p50": 266,
+        "p95": 341,
+        "max": 341
+      },
+      "order.create": {
+        "n": 6,
+        "errors": 0,
+        "avg": 954,
+        "p50": 962,
+        "p95": 1017,
+        "max": 1017
+      },
+      "order.create_double_click": {
+        "n": 1,
+        "errors": 0,
+        "avg": 911,
+        "p50": 911,
+        "p95": 911,
+        "max": 911
+      },
+      "order.create_race": {
+        "n": 2,
+        "errors": 0,
+        "avg": 924,
+        "p50": 928,
+        "p95": 928,
+        "max": 928
+      },
+      "order.create_retry": {
+        "n": 1,
+        "errors": 0,
+        "avg": 297,
+        "p50": 297,
+        "p95": 297,
+        "max": 297
+      },
+      "get_public_order_tracking": {
+        "n": 392,
+        "errors": 0,
+        "avg": 247,
+        "p50": 239,
+        "p95": 295,
+        "max": 676
+      },
+      "transition_order": {
+        "n": 19,
+        "errors": 1,
+        "avg": 6867,
+        "p50": 300,
+        "p95": 125267,
+        "max": 125267
+      },
+      "panel.list_orders": {
+        "n": 48,
+        "errors": 0,
+        "avg": 580,
+        "p50": 585,
+        "p95": 652,
+        "max": 890
+      },
+      "confirm_manual_order_payment": {
+        "n": 6,
+        "errors": 0,
+        "avg": 313,
+        "p50": 258,
+        "p95": 657,
+        "max": 657
+      },
+      "cancel_order": {
+        "n": 3,
+        "errors": 1,
+        "avg": 41912,
+        "p50": 267,
+        "p95": 125211,
+        "max": 125211
+      },
+      "offer_order_to_rider": {
+        "n": 8,
+        "errors": 0,
+        "avg": 269,
+        "p50": 281,
+        "p95": 295,
+        "max": 295
+      },
+      "withdraw_rider_order_offer": {
+        "n": 1,
+        "errors": 0,
+        "avg": 216,
+        "p50": 216,
+        "p95": 216,
+        "max": 216
+      },
+      "accept_rider_order_offer": {
+        "n": 7,
+        "errors": 0,
+        "avg": 328,
+        "p50": 336,
+        "p95": 350,
+        "max": 350
+      },
+      "mark_delivery_picked_up": {
+        "n": 6,
+        "errors": 0,
+        "avg": 261,
+        "p50": 259,
+        "p95": 282,
+        "max": 282
+      },
+      "publish_rider_location_fanout": {
+        "n": 24,
+        "errors": 0,
+        "avg": 247,
+        "p50": 247,
+        "p95": 274,
+        "max": 283
+      },
+      "start_rider_delivery": {
+        "n": 6,
+        "errors": 0,
+        "avg": 257,
+        "p50": 265,
+        "p95": 267,
+        "max": 267
+      },
+      "mark_rider_arrived": {
+        "n": 6,
+        "errors": 0,
+        "avg": 284,
+        "p50": 292,
+        "p95": 314,
+        "max": 314
+      },
+      "confirm_delivery_code": {
+        "n": 18,
+        "errors": 0,
+        "avg": 436,
+        "p50": 438,
+        "p95": 481,
+        "max": 481
+      }
+    },
+    "totalRequests": 1222,
+    "errors": 2,
+    "errorRate": 0.0016,
+    "avgMs": 484,
+    "p95Ms": 587
+  },
+  "unexpectedErrors": [
+    {
+      "name": "transition_order",
+      "detail": " upstream request timeout"
+    },
+    {
+      "name": "cancel_order",
+      "detail": " upstream request timeout"
+    }
+  ],
+  "analysis": {
+    "GPS_PUBLISH_REFUSED": "HARNESS_FAILURE: samples sent back-to-back and in picked_up; server throttles < 5 s and publishes only on_the_way/arrived, as the app does. Harness fixed in 56556ae.",
+    "UPSTREAM_TIMEOUT": "PRODUCT_FAILURE P1: SQLSTATE 40001 revision conflicts retried by PostgREST until 504 at ~125 s. Reproduced alone with one stale call (125821 ms). Fixed by 20260924200000_revision_conflicts_answer_409.sql (not applied to Staging)."
+  }
+}

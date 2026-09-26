@@ -12,6 +12,7 @@ import {
   initProductionOperations,
   isProductionOrderPaymentReversed,
   isRoleAuthorizedForView,
+  needsBusinessDeliveryCode,
   nextBusinessStatus,
   nextRiderStatus,
   resetProductionOperationsForTests,
@@ -34,11 +35,35 @@ test('owner/admin/staff y rider sólo habilitan su vista operativa', () => {
   assert.equal(isRoleAuthorizedForView('owner', 'rider'), false);
 });
 
-test('negocio avanza sin saltos y deja delivery listo para el rider', () => {
+/*
+ * El contrato de esta prueba CAMBIO con la migracion 20260919120000, y el
+ * cambio es el punto: `ready` de delivery ya no es un final para el negocio.
+ *
+ * Antes devolvia `null` y esa era la verdad del servidor: la rama de negocio de
+ * `change_order_status` sólo habilitaba `ready -> delivered` para RETIRO. Como
+ * `business_members` tiene `unique (business_id, user_id)`, el dueno no podia
+ * ser ademas repartidor, y un comercio que atiende su dueno solo no cerraba
+ * NINGUNA entrega.
+ *
+ * Lo que NO cambio -y es lo que las dos mitades de esta prueba vigilan- es que
+ * la habilitacion depende de que NO haya repartidor asignado. Con uno en la
+ * calle el pedido es suyo y se cierra con el codigo del cliente.
+ */
+test('el negocio reparte lo suyo, y se aparta cuando el pedido lo lleva un rider', () => {
   assert.equal(nextBusinessStatus({ workflowStatus: 'submitted', deliveryMode: 'delivery' }), 'accepted');
   assert.equal(nextBusinessStatus({ workflowStatus: 'accepted', deliveryMode: 'delivery' }), 'preparing');
   assert.equal(nextBusinessStatus({ workflowStatus: 'preparing', deliveryMode: 'delivery' }), 'ready');
-  assert.equal(nextBusinessStatus({ workflowStatus: 'ready', deliveryMode: 'delivery' }), null);
+  // Reparto propio: el comercio despacha (ready -> on_the_way).
+  // El cierre (on_the_way -> delivered) exige el código del cliente y no pasa
+  // por nextBusinessStatus genérico.
+  assert.equal(nextBusinessStatus({ workflowStatus: 'ready', deliveryMode: 'delivery' }), 'on_the_way');
+  assert.equal(nextBusinessStatus({ workflowStatus: 'on_the_way', deliveryMode: 'delivery' }), null);
+  assert.equal(needsBusinessDeliveryCode({ workflowStatus: 'on_the_way', deliveryMode: 'delivery' }), true);
+  // Con repartidor asignado, ninguna de las dos.
+  assert.equal(nextBusinessStatus({ workflowStatus: 'ready', deliveryMode: 'delivery', assignedRiderId: 'r-1' }), null);
+  assert.equal(nextBusinessStatus({ workflowStatus: 'on_the_way', deliveryMode: 'delivery', assignedRiderId: 'r-1' }), null);
+  assert.equal(nextBusinessStatus({ workflowStatus: 'arrived', deliveryMode: 'delivery', assignedRiderId: 'r-1' }), null);
+  // El retiro no cambio.
   assert.equal(nextBusinessStatus({ workflowStatus: 'ready', deliveryMode: 'pickup' }), 'delivered');
   assert.equal(nextBusinessStatus({ workflowStatus: 'delivered', deliveryMode: 'delivery' }), null);
 });

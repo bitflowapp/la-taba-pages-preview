@@ -145,7 +145,7 @@ function renderAlertCard(alert, { busy } = {}) {
   </article>`;
 }
 
-export function renderPaymentsSurface({ payments, status, role, activation, connection, busy, refundTarget } = {}) {
+export function renderPaymentsSurface({ payments, status, manualPayments, manualStatus, role, activation, connection, busy, refundTarget, onlinePayments = true } = {}) {
   if (!can(role, 'payments.view')) return deniedPanel('Pagos', 'Tu rol no incluye la consulta de pagos.');
   const elevated = isElevated(role);
   const rows = Array.isArray(payments) ? payments : [];
@@ -158,12 +158,45 @@ export function renderPaymentsSurface({ payments, status, role, activation, conn
         : '<p class="form-hint">Todavía no hay pagos para mostrar hoy.</p>';
 
   return panel('Pagos', 'Lo que entró hoy y qué hacer con cada caso.', `
-    ${renderMercadoPagoConnection(connection, busy, elevated)}
+    ${renderManualPaymentsSurface(manualPayments, manualStatus, { elevated, busy })}
+    ${onlinePayments ? renderMercadoPagoConnection(connection, busy, elevated) : renderOnlinePaymentsDisabled()}
     <div class="operation-center-toolbar">
       <span class="form-hint">${rows.length} pago(s) listados</span>
       <button class="ghost-button compact" type="button" data-payments-refresh ${busy ? 'disabled' : ''}>Actualizar</button>
     </div>
     <div class="production-payment-list" aria-live="polite">${body}</div>`);
+}
+
+function renderManualPaymentsSurface(payments, status, { elevated, busy }) {
+  const rows = Array.isArray(payments) ? payments : [];
+  const body = status?.phase === 'error'
+    ? `<p class="production-intake-error">${escapeHtml(status.message || 'No se pudo leer el estado de cobros manuales.')}</p>`
+    : rows.length ? rows.map((order) => {
+      const id = escapeHtml(String(order.id || ''));
+      const payment = String(order.manual_payment_status || 'unverified');
+      const method = String(order.payment_method || '');
+      const closedWithoutCharge = payment === 'pending'
+        && ['canceled', 'cancelled', 'rejected'].includes(String(order.status || ''));
+      const label = closedWithoutCharge ? 'Cerrado sin cobrar' : ({ pending: 'Pendiente', confirmed: 'Pagado', reversed: 'Devuelto',
+        unverified: 'Histórico sin conciliar' })[payment] || 'Sin verificar';
+      const actions = payment === 'pending' && !closedWithoutCharge ? `<div class="button-row">
+        <button class="secondary-button compact" type="button" data-manual-payment-confirm="${id}" data-manual-payment-method="cash" ${busy ? 'disabled' : ''}>Registrar efectivo recibido</button>
+        ${method === 'coordinate' ? `<button class="ghost-button compact" type="button" data-manual-payment-confirm="${id}" data-manual-payment-method="transfer" ${busy ? 'disabled' : ''}>Registrar transferencia recibida</button>` : ''}
+      </div>` : payment === 'confirmed' && elevated
+        ? `<button class="ghost-button compact" type="button" data-manual-payment-reverse="${id}" ${busy ? 'disabled' : ''}>Registrar devolución realizada</button>`
+        : '';
+      return `<article class="production-payment-card" data-manual-payment-card="${id}">
+        <div class="production-order-head"><strong>${escapeHtml(String(order.public_code || 'Pedido'))}</strong>
+          <span class="status-pill" data-manual-payment-status="${escapeHtml(payment)}">${label}</span></div>
+        <p>${escapeHtml(formatMoney(order.total, order.currency_code))} · ${payment === 'confirmed' || payment === 'reversed'
+          ? `Registrado como ${order.manual_payment_method === 'transfer' ? 'transferencia' : 'efectivo'}`
+          : method === 'cash' ? 'Efectivo al retirar/recibir' : 'Pago acordado con el local'}</p>
+        <p class="form-hint">Pedido: ${escapeHtml(String(order.status || ''))}</p>${actions}
+      </article>`;
+    }).join('') : '<p class="form-hint">Todavía no hay pedidos con cobro manual para mostrar.</p>';
+  return `<section class="production-payments-section" aria-label="Cobros manuales">
+    <h3>Cobros manuales</h3><p class="form-hint">Confirmá sólo dinero recibido. Las devoluciones se registran después de entregar el dinero.</p>
+    <div class="production-payment-list">${body}</div></section>`;
 }
 
 function renderPaymentCard(payment, { elevated, busy, refundTarget } = {}) {
@@ -210,18 +243,28 @@ function renderPaymentCard(payment, { elevated, busy, refundTarget } = {}) {
   </article>`;
 }
 
-export function renderPaymentsSetupSurface({ connection, role, busy } = {}) {
+export function renderPaymentsSetupSurface({ connection, role, busy, onlinePayments = true } = {}) {
   if (!can(role, 'payments.reconcile')) return deniedPanel('Mercado Pago', 'La conexión de cobros la hace el dueño o el encargado.');
+  if (!onlinePayments) return panel('Cobros online', 'No habilitados en esta etapa.', renderOnlinePaymentsDisabled());
   return panel('Mercado Pago', 'Recibí los pagos online en tu cuenta.', renderMercadoPagoConnection(connection, busy, true));
+}
+
+// Producción controlada: sólo cobro manual. Se dice sin rodeos y sin botón,
+// para que nadie crea que puede conectar una cuenta que este entorno no usa.
+function renderOnlinePaymentsDisabled() {
+  return '<section aria-label="Cobros online" class="operation-summary tone-calm" data-online-payments="disabled">'
+    + '<h3>Cobros online</h3><p role="status">No habilitados en esta etapa.</p>'
+    + '<p>Se cobra en efectivo o por transferencia al entregar o retirar. Registrá cada cobro recién cuando el dinero esté recibido.</p></section>';
 }
 
 function renderMercadoPagoConnection(connection, busy, elevated) {
   const status = connection?.status;
   const connected = status === 'connected';
   const reauthorize = status === 'requires_reauthorization';
+  const tone = busy ? 'attention' : connected ? 'calm' : status === 'unavailable' ? 'critical' : 'attention';
   const message = busy ? 'Conectando Mercado Pago...' : connected ? '✓ Mercado Pago conectado correctamente' : reauthorize ? 'Necesitamos volver a conectar Mercado Pago.' : status === 'unavailable' ? 'No pudimos verificar la conexión. Intentá nuevamente.' : 'No conectado';
   const button = (action, label) => '<button class="primary-button compact" type="button" data-mp-connection-action="' + action + '" ' + (busy ? 'disabled' : '') + '>' + label + '</button>';
-  return '<section aria-label="Mercado Pago" class="operation-summary" aria-busy="' + Boolean(busy) + '"><h3>Mercado Pago</h3><p role="status" aria-live="polite">' + message + '</p>'
+  return '<section aria-label="Mercado Pago" class="operation-summary operation-summary--mercadopago tone-' + tone + '" aria-busy="' + Boolean(busy) + '"><h3>Mercado Pago</h3><p role="status" aria-live="polite">' + message + '</p>'
     + (!connected ? '<p>Conectá tu cuenta para recibir pagos online.</p>' : '')
     + (connected && connection.seller_id ? '<p>Cuenta: ' + escapeHtml(connection.seller_id) + '</p>' : '')
     + (elevated ? '<div class="button-row">' + (connected ? button('verify','Verificar conexión') + button('disconnect','Desconectar') : button('connect',reauthorize ? 'Reconectar' : 'Conectar Mercado Pago')) + '</div>' : '')
@@ -282,7 +325,7 @@ export function renderDevicesSurface({ results, printers, isNative, busy } = {})
         : `<button class="secondary-button compact" type="button" data-device-test="${escapeHtml(row.id)}" ${busy ? 'disabled' : ''}>Probar</button>`}
     </article>`).join('');
 
-  return panel('Probar dispositivos', 'Se prueba de verdad. Si no se puede confirmar, se dice.', `
+  return panel('Probar dispositivos', 'Probá la impresora y el lector antes de abrir.', `
     <div class="operation-summary tone-${escapeHtml(summary.tone)}" role="status">
       <strong>${escapeHtml(summary.headline)}</strong>
       <span>Un trabajo aceptado por Windows no quiere decir que haya salido el papel.</span>
@@ -419,7 +462,7 @@ function renderDraftForm(draft, { role, busy, errorList }) {
     ${canPrice ? `
       <label>Precio de venta<input name="productPrice" type="number" min="0" step="0.01" inputmode="decimal"></label>
       <label>Costo <small>(opcional)</small><input name="productCost" type="number" min="0" step="0.01" inputmode="decimal"></label>
-      <label class="business-ops-check"><input name="productPricePending" type="checkbox"> Precio pendiente: se ve en la web pero no se puede comprar</label>`
+      <label class="business-ops-check"><input name="productPricePending" type="checkbox"> Precio pendiente: no se muestra en la tienda hasta que cargues el precio</label>`
     : '<p class="form-hint">El precio lo carga el dueño o el encargado.</p>'}
     <div class="button-row">
       <button class="secondary-button" type="button" data-product-preview ${busy ? 'disabled' : ''}>Ver cómo queda</button>
@@ -659,6 +702,35 @@ function formatTimestamp(value) {
  * como se vuelve a separar lo que se acaba de juntar.
  */
 export { formatTimestamp as formatPanelTimestamp };
+
+/*
+ * LA HORA SOLA, PARA LA CABECERA DE LA TARJETA.
+ * ---------------------------------------------------------------------------
+ * «hace 3 min» contesta cuanto espera el cliente; «20:47» contesta a que hora
+ * entro, que es lo que se dice por telefono y lo que se compara contra el
+ * ticket. Las dos se necesitan y ninguna reemplaza a la otra, asi que la hora
+ * exacta sube a la tarjeta en vez de quedarse solo en el detalle.
+ *
+ * Misma zona y mismo reloj de 24 horas que `formatPanelTimestamp`: sale del
+ * MISMO objeto de formato, sin la fecha. La fecha no va en la cabecera porque
+ * un pedido de la bandeja activa es de hoy; la completa sigue en el detalle.
+ */
+const PANEL_CLOCK_FORMAT = Object.freeze({
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+  timeZone: PANEL_TIMEZONE,
+});
+
+export function formatPanelClock(value) {
+  const date = new Date(value || 0);
+  if (Number.isNaN(date.getTime()) || !value) return '';
+  try {
+    return date.toLocaleTimeString('es-AR', PANEL_CLOCK_FORMAT);
+  } catch (_) {
+    return date.toLocaleTimeString('es-AR', { hourCycle: 'h23' });
+  }
+}
 
 function formatMoney(value, currency = 'ARS') {
   const amount = Number(value);

@@ -11,6 +11,7 @@ test-results/
 test-results-certification/
 playwright-report/
 dist_release/
+dist_staging_pilot/
 dist-desktop/
 src-tauri/target/
 scripts/catalog-images/.raw/
@@ -68,3 +69,6 @@ artifacts/taba2-catalog-images/revision/
 # RECHAZARON, y una foto equivocada versionada es una foto equivocada a mano.
 # El motivo de cada rechazo sí queda escrito, en la auditoría de fuentes.
 artifacts/taba2-alcohol-commercial/candidatas/
+
+# Salida local del E2E de producción controlada.
+test-results-cp-e2e/

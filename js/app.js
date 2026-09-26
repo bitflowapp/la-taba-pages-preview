@@ -45,6 +45,7 @@ import {
   showToast,
   stepStoriesModal,
   updateAddressFieldVisibility,
+  publishedBusinessValue,
   $,
 } from './ui.js';
 import { buildWhatsAppMessage, buildWhatsAppUrl, buildWhatsAppUrlFromDraft, getActiveOrder, getLastOrder } from './orders.js';
@@ -59,6 +60,7 @@ import { relayStatusLabel } from './core/realtime-sync.js';
 import {
   alEntrarBackOffice,
   backOfficePresente,
+  cargarBackOffice,
   handleBusinessAction,
   handleBusinessInput,
   handleDeliveryAction,
@@ -112,6 +114,8 @@ import {
   isShowcaseMode,
 } from './core/app-mode.js';
 import { isProductionCatalogReady } from './core/runtime-config.js';
+import { getCommerceAvailability } from './core/commerce-availability-store.js';
+import { describeStoreEntry } from './core/store-entry.js';
 import {
   SHOWCASE_STEPS,
   configureShowcase,
@@ -588,6 +592,7 @@ async function bootstrap() {
     }
     try {
       await startOrderRepositorySync();
+      watchStoreEntrySettles();
     } catch (error) {
       // La tienda YA pintó y se puede usar. Abrir acá el panel de recuperación
       // ponía "No pudimos abrir la tienda" encima de una tienda abierta, y al
@@ -765,7 +770,7 @@ function applyAppMode() {
 
   const checkoutCopy = checkoutModeCopy(mode);
   const submit = document.querySelector('[data-checkout-submit]');
-  if (submit && !hayHandoffDePagoEnCurso()) submit.textContent = checkoutCopy.submit;
+  if (submit && !hayConfirmacionDeCheckoutEnCurso()) submit.textContent = checkoutCopy.submit;
   const trustTitle = document.querySelector('[data-checkout-trust-title]');
   if (trustTitle) trustTitle.textContent = checkoutCopy.title;
   const trustCopy = document.querySelector('[data-checkout-trust-copy]');
@@ -833,26 +838,101 @@ function applyProductionCatalogGate(mode = getAppMode()) {
     node.hidden = blocked;
     node.setAttribute('aria-hidden', String(blocked));
   });
+  // La tarjeta es la puerta del local mientras no se puede pedir: dice quién
+  // es, por qué no se puede pedir ahora —sólo con lo que ya contestó el
+  // backend— y qué se puede hacer. Ver `core/store-entry.js`.
+  const entry = blocked ? describeCurrentStoreEntry(mode) : null;
   document.querySelectorAll('[data-production-catalog-gate]').forEach((node) => {
     node.hidden = !blocked;
     node.setAttribute('aria-hidden', String(!blocked));
-    const message = node.querySelector('[data-production-catalog-message]');
-    if (message) {
-      message.textContent = mode === APP_MODE_UNAVAILABLE
-        ? 'La configuración productiva está incompleta. Los pedidos permanecen bloqueados.'
-        : mode === APP_MODE_PUBLIC
-          ? 'Este despliegue todavía no habilitó pedidos online.'
-          : 'El catálogo verificado todavía no está disponible. Los pedidos permanecen bloqueados.';
-    }
+    if (entry) paintStoreEntry(node, entry, mode);
   });
 
   const submit = document.querySelector('[data-checkout-submit]');
-  if (submit && !hayHandoffDePagoEnCurso()) submit.disabled = blocked;
+  if (submit && !hayConfirmacionDeCheckoutEnCurso()) submit.disabled = blocked;
 }
 
 /*
- * Mientras el checkout está entregado a Mercado Pago, NINGÚN re-render puede
- * devolver el botón a «Confirmar pedido» habilitado.
+ * Un primer arranque que FALLA no cambia el estado de la tienda —no llega
+ * ningún catálogo—, así que ningún render lo pintaba: la entrada se quedaba en
+ * «Abriendo la tienda…» para siempre, medido con el backend devolviendo 503.
+ * Mientras el catálogo siga cargando se vuelve a mirar su estado una vez por
+ * segundo y, apenas se resuelve (listo, vacío, bloqueado o error), se repinta.
+ * Sólo lee un estado en memoria y se apaga solo.
+ */
+let storeEntryWatch = null;
+function watchStoreEntrySettles() {
+  if (storeEntryWatch || getAppMode() !== APP_MODE_PRODUCTION) return;
+  let checks = 0;
+  storeEntryWatch = setInterval(() => {
+    checks += 1;
+    let state = 'idle';
+    try {
+      state = getOrderRepository()?.getCatalogStatus?.()?.state || 'idle';
+    } catch (_) {
+      state = 'idle';
+    }
+    if ((state !== 'idle' && state !== 'loading') || checks >= 120) {
+      clearInterval(storeEntryWatch);
+      storeEntryWatch = null;
+      applyRenderedModeState();
+    }
+  }, 1000);
+}
+
+function describeCurrentStoreEntry(mode) {
+  let catalogState = 'idle';
+  try {
+    catalogState = getOrderRepository()?.getCatalogStatus?.()?.state || 'idle';
+  } catch (_) {
+    catalogState = 'idle';
+  }
+  return describeStoreEntry({
+    mode,
+    catalogState,
+    orderingVerified: Boolean(getBusinessConfig().orderingDetailsVerified),
+    availability: getCommerceAvailability(),
+  });
+}
+
+function paintStoreEntry(node, entry, mode) {
+  const config = getBusinessConfig();
+  const production = mode === APP_MODE_PRODUCTION;
+  setTextIfChanged(node.querySelector('[data-store-entry-name]'), publishedBusinessValue(config.businessName) || 'La Taba');
+  setTextIfChanged(node.querySelector('[data-production-catalog-title]'), entry.title);
+  setTextIfChanged(node.querySelector('[data-production-catalog-message]'), entry.message);
+  // La dirección sólo si el comercio la publicó: el valor de relleno de la
+  // configuración base («Dirección no publicada») no es un dato del local.
+  const address = node.querySelector('[data-store-entry-address]');
+  const addressText = production ? publishedBusinessValue(config.address) : '';
+  if (address) {
+    setTextIfChanged(address, addressText);
+    address.hidden = !addressText;
+  }
+  const retry = node.querySelector('[data-store-entry-retry]');
+  if (retry) retry.hidden = !entry.retry;
+  const tracking = node.querySelector('[data-store-entry-tracking]');
+  if (tracking) tracking.hidden = !(production && entry.tracking);
+  const whatsapp = node.querySelector('[data-store-entry-whatsapp]');
+  const digits = String(config.whatsappNumber || '').replace(/\D/g, '');
+  const whatsappReady = production && config.whatsappVerified === true
+    && digits.length >= 8 && digits.length <= 15;
+  if (whatsapp) {
+    whatsapp.hidden = !whatsappReady;
+    if (whatsappReady) whatsapp.href = `https://wa.me/${digits}`;
+  }
+}
+
+// La tarjeta es una región viva (`role="status"`): reescribir el mismo texto en
+// cada render la haría anunciar de nuevo lo que no cambió.
+function setTextIfChanged(node, text) {
+  if (node && node.textContent !== text) node.textContent = text;
+}
+
+/*
+ * Desde que empieza la confirmación y mientras el checkout está entregado a
+ * Mercado Pago, NINGÚN re-render puede devolver el botón a «Confirmar
+ * pedido» habilitado.
  *
  * Se descubrió en WebKit: el guardián de la closure aguantaba —no se creaba una
  * segunda sesión de pago— pero a los ~3,3 s un re-render de modo pasaba por acá
@@ -861,11 +941,16 @@ function applyProductionCatalogGate(mode = getAppMode()) {
  * no pasa nada. Es la peor de las dos, porque invita al toque que el guardián
  * después ignora en silencio.
  *
- * El estado vive en el DOM justamente para que lo vea cualquier camino de
- * dibujado, no sólo el que lo puso.
+ * `motionBusy` se marca antes del primer `await`; `checkoutHandoff`, recién
+ * cuando existe un destino válido de Mercado Pago. Mirar sólo el segundo deja
+ * una ventana durante la creación de sesión/preferencia en la que un render
+ * vuelve a habilitar el CTA. Ambos estados viven en el DOM justamente para que
+ * los vea cualquier camino de dibujado, no sólo el que los puso.
  */
-function hayHandoffDePagoEnCurso() {
-  return document.querySelector('[data-checkout-form]')?.dataset.checkoutHandoff === 'mercadopago';
+function hayConfirmacionDeCheckoutEnCurso() {
+  const form = document.querySelector('[data-checkout-form]');
+  return form?.dataset.motionBusy === 'true'
+    || form?.dataset.checkoutHandoff === 'mercadopago';
 }
 
 function isProductionOrderingBlocked(mode = getAppMode()) {
@@ -1293,6 +1378,13 @@ function bindEvents() {
         if (sandboxResult.message) showToast(sandboxResult.message);
         return;
       }
+    }
+
+    // «Reintentar» de la entrada de la tienda: el arranque completo es el único
+    // camino que vuelve a pedir configuración, negocio y catálogo en orden.
+    if (target.closest('[data-store-entry-retry]')) {
+      window.location.reload();
+      return;
     }
 
     const clearCatalogFilters = target.closest('[data-clear-catalog-filters]');
@@ -2089,7 +2181,7 @@ function bindEvents() {
     }
   });
 
-  $('[data-pin-form]')?.addEventListener('submit', (event) => {
+  $('[data-pin-form]')?.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!isDemoMode()) {
       closePinModal();
@@ -2098,10 +2190,44 @@ function bindEvents() {
     const form = event.currentTarget;
     const formData = new FormData(form);
     const pin = String(formData.get('pin') || '').trim();
-    const ok = unlockAdmin(pin);
     const error = $('[data-pin-error]');
+    const submit = form.querySelector('[type="submit"]');
+
+    // El panel entra por import dinámico para no cargarle ~759 KB de back office
+    // a cada cliente. El botón de acceso, en cambio, vive en el shell y puede
+    // tocarse antes de que ese import termine. `unlockAdmin()` falla cerrado en
+    // ese intervalo; presentarlo como "código incorrecto" convierte una carga
+    // lenta en un falso rechazo. Esperamos el módulo y mantenemos el formulario
+    // bloqueado para que Enter repetido no lance dos intentos concurrentes.
+    if (form.dataset.pinBusy === 'true') return;
+    form.dataset.pinBusy = 'true';
+    if (submit) {
+      submit.disabled = true;
+      submit.setAttribute('aria-busy', 'true');
+    }
+
+    try {
+      await cargarBackOffice();
+    } catch (_) {
+      if (error) {
+        error.textContent = 'No pudimos cargar el acceso del equipo. Probá nuevamente.';
+        error.classList.remove('hidden');
+      }
+      return;
+    } finally {
+      delete form.dataset.pinBusy;
+      if (submit) {
+        submit.disabled = false;
+        submit.removeAttribute('aria-busy');
+      }
+    }
+
+    // La persona pudo cancelar mientras el módulo terminaba de cargar.
+    if (!$('[data-pin-modal]')?.open) return;
+    const ok = unlockAdmin(pin);
 
     if (!ok) {
+      if (error) error.textContent = 'Código incorrecto. Revisá el acceso del comercio.';
       error?.classList.remove('hidden');
       return;
     }
@@ -2416,7 +2542,14 @@ function openPinModal() {
   if (!isDemoMode()) return;
   const modal = $('[data-pin-modal]');
   if (!modal) return;
-  $('[data-pin-error]')?.classList.add('hidden');
+  const error = $('[data-pin-error]');
+  if (error) {
+    error.textContent = 'Código incorrecto. Revisá el acceso del comercio.';
+    error.classList.add('hidden');
+  }
+  // Calentar el import reduce la espera normal; el submit vuelve a esperarlo y
+  // conserva el fail-closed si esta precarga no pudiera completarse.
+  cargarBackOffice().catch(() => {});
   modal.showModal();
   setTimeout(() => modal.querySelector('input')?.focus(), 80);
 }

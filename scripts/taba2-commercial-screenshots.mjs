@@ -135,7 +135,7 @@ for (const engine of ['chromium', 'webkit']) {
     ['verifying', 'Verificando el pago', 'Verificando el pago', ''],
     ['completed', 'Pedido confirmado', 'Pago acreditado por Mercado Pago.', 'Pedido TABA-4821'],
     ['pending', 'Pago pendiente', 'Mercado Pago todavía no confirmó la acreditación.', 'Seguiremos escuchando la confirmación de Mercado Pago.'],
-    ['manual_review', 'Necesitamos revisar este pago', 'No podemos verificar este pago desde este despliegue.', 'El negocio revisará el pago antes de preparar cualquier pedido.'],
+    ['manual_review', 'Necesitamos revisar este pago', 'No podemos verificar este pago desde acá. Volvé a La Taba para revisar tu carrito.', 'El negocio revisará el pago antes de preparar cualquier pedido.'],
     ['rejected', 'Pago rechazado', 'Mercado Pago rechazó el pago. No se generó ningún pedido.', ''],
   ]) {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, serviceWorkers: 'block' });

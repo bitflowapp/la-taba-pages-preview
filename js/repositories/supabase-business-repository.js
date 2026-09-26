@@ -104,7 +104,7 @@ export function createSupabaseBusinessRepository({ client, businessId }) {
 export function classifyRpcError(error, status = 0) {
   const code = String(error?.code || 'RPC_ERROR');
   const message = safeMessage(error?.message || 'La operaci\u00f3n no fue confirmada por el servidor.');
-  if (code === '40001') return { ok: false, conflict: true, code: 'REVISION_CONFLICT', message };
+  if (code === '40001' || code === 'PT409') return { ok: false, conflict: true, code: 'REVISION_CONFLICT', message };
   if (code === '42501' || status === 401 || status === 403) return { ok: false, retryable: false, code: status === 401 ? 'SESSION_EXPIRED' : 'FORBIDDEN', message };
   if (code === 'P0002') return { ok: false, retryable: false, code: 'NOT_FOUND', message };
   if (code === '22023' || code === '23514' || code === '23505' || code === 'P0001') return { ok: false, retryable: false, code, message };

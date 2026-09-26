@@ -91,8 +91,8 @@ export function accessRegistrationCopy(step, request = null) {
       };
     default:
       return {
-        title: 'Acceso seguro requerido',
-        lead: 'Ingresá con una cuenta owner o empleado vinculada a este comercio.',
+        title: 'Ingresá con tu cuenta',
+        lead: 'Para el dueño y el equipo del local. Cada persona entra con su propia cuenta.',
       };
   }
 }
@@ -208,6 +208,13 @@ export function renderAccessRegistration({
           <input name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="30"
             value="${escapeHtml(request?.contactPhone || '')}" />
         </label>
+        <label>
+          Para qué pedís acceso
+          <select name="access" data-panel-request-access>
+            <option value="panel"${request?.requestedAccess === 'rider' ? '' : ' selected'}>Atender el local (Panel)</option>
+            <option value="rider"${request?.requestedAccess === 'rider' ? ' selected' : ''}>Repartir pedidos (app Rider · teléfono obligatorio)</option>
+          </select>
+        </label>
         ${note}
         <div class="button-row">
           <button class="primary-button" type="submit" ${busy ? 'disabled' : ''}>Pedir acceso</button>
@@ -242,9 +249,14 @@ export function renderAccessRegistration({
 
 function pendingDetail(request) {
   const when = formatMoment(request?.requestedAt);
+  // Un repartidor aprobado no opera acá: entra con el mismo correo en la app.
+  const rider = request?.requestedAccess === 'rider'
+    ? '<div><dt>Después</dt><dd>Cuando el comercio apruebe, ingresá con este correo en la app La Taba Rider.</dd></div>'
+    : '';
   return `<dl class="panel-access-detail">
     <div><dt>Estado</dt><dd>Esperando aprobación</dd></div>
     ${when ? `<div><dt>Enviada</dt><dd>${escapeHtml(when)}</dd></div>` : ''}
+    ${rider}
   </dl>`;
 }
 

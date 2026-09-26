@@ -746,11 +746,13 @@ function normalizeDelivery(delivery, deliveryMode, status) {
   };
 }
 
+// Ver `locationLabel` en supabase_order_repository.js: un pedido en camino
+// puede no tener repartidor desde que el comercio reparte con su propia gente.
 function defaultLocationLabel(status, deliveryMode) {
   if (deliveryMode === 'pickup') return 'Pedido para retirar en local';
   if (status === 'ready') return 'Pedido listo en el local';
-  if (status === 'on_the_way') return 'El repartidor salió del local';
-  if (status === 'arriving') return 'El repartidor está llegando';
+  if (status === 'on_the_way') return 'Tu pedido salió del local';
+  if (status === 'arriving') return 'Tu pedido está llegando';
   if (status === 'delivered') return 'Pedido entregado';
   if (status === 'cancelled') return 'Pedido cancelado por el negocio';
   return 'Pedido recibido por el local';
@@ -773,8 +775,12 @@ function buildBaseBusinessConfig() {
   const base = buildDefaultBusinessConfig();
   if (![APP_MODE_PRODUCTION, APP_MODE_UNAVAILABLE].includes(getAppMode())) return base;
   return mergeBusinessConfig(base, {
-    businessName: 'La Taba 2',
-    name: 'La Taba 2',
+    // Hasta que el backend contesta, el nombre es el de la marca. «La Taba 2»
+    // es el nombre de DIRECTORIO del local (lo que busca Maps, en
+    // `core/business-location.js`), no el de la tienda: acá era lo primero que
+    // se leía en cada arranque y cada vez que la configuración fallaba.
+    businessName: 'La Taba',
+    name: 'La Taba',
     subtitle: 'Tienda 24/7',
     address: 'Dirección no publicada',
     deliveryZone: 'Cobertura no publicada',

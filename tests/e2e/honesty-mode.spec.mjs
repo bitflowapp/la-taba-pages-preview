@@ -112,7 +112,8 @@ test('runtime productivo incompleto falla cerrado y no cae a preview/demo', asyn
   await expect(page.locator('body')).toHaveAttribute('data-app-mode', 'unavailable');
   await expect(page.locator('[data-view="catalog"]')).toHaveClass(/is-active/);
   await expect(page.locator('[data-view="catalog"] [data-production-catalog-gate]')).toBeVisible();
-  await expect(page.locator('[data-view="catalog"] [data-production-catalog-message]')).toContainText('configuración productiva está incompleta');
+  await expect(page.locator('[data-view="catalog"] [data-production-catalog-message]')).toContainText('Estamos resolviendo un problema técnico');
+  await expect(page.locator('[data-view="catalog"] [data-store-entry-retry]')).toBeVisible();
   await expect(page.locator('[data-view="catalog"] [data-catalog-dependent]')).toBeHidden();
   await expect(page.locator('[data-admin-toggle]')).toHaveCount(0);
   await expect(page.locator('.topbar [data-production-only]')).toBeHidden();
@@ -166,7 +167,7 @@ test('checkout del preview valida contrato de Perfil y mantiene copy comercial',
   const paymentMethod = page.getByLabel('Forma de pago');
   await expect(paymentMethod).toBeVisible();
   await expect(paymentMethod.locator('option')).toHaveCount(2);
-  await expect(paymentMethod.locator('option[value="coordinate"]')).toHaveText('A coordinar con el local');
+  await expect(paymentMethod.locator('option[value="coordinate"]')).toHaveText('A coordinar con el local antes de preparar');
   await paymentMethod.selectOption('cash');
   await expect(paymentMethod).toHaveValue('cash');
   await page.locator('[data-checkout-submit]').click();

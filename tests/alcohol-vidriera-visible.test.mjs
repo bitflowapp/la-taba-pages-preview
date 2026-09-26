@@ -75,6 +75,16 @@ test('no dice «agotado» ni «no disponible»: dice lo que realmente pasa', () 
   assert.match(stockPill(agotado), /Agotado/);
 });
 
+test('una bebida alcohólica AGOTADA dice «Agotado», no «Próximamente»', () => {
+  // En la base `available` sigue al stock: la cerveza que se vendió entera
+  // llega con `available` en falso, igual que la de vidriera. Lo que las
+  // distingue es el stock contado.
+  const cervezaAgotada = { ...enVidriera, stock: 0 };
+  assert.match(stockPill(cervezaAgotada), /Agotado/);
+  assert.doesNotMatch(stockPill(cervezaAgotada), /Próximamente/);
+  assert.equal(availabilityLabel(cervezaAgotada), 'Agotado');
+});
+
 test('el texto largo NO promete una fecha que el comercio no decide', () => {
   /*
    * La habilitación de expendio la otorga el municipio, no La Taba. Prometer

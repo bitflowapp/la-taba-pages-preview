@@ -9,7 +9,12 @@ import {
 } from './lib/publishable-image-rights.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const releaseDir = path.join(root, 'dist_release');
+const outputIndex = process.argv.indexOf('--out');
+const outputName = outputIndex < 0 ? 'dist_release' : process.argv[outputIndex + 1];
+if (!['dist_release', 'dist_staging_pilot', 'dist_pilot'].includes(outputName)) {
+  throw new Error('Release output must be dist_release, dist_staging_pilot or dist_pilot');
+}
+const releaseDir = path.join(root, outputName);
 
 // Una foto de producto sin derechos para publicarla no viaja en el paquete.
 //
@@ -63,7 +68,7 @@ const sources = await Promise.all(entries.map(async (entry) => {
   const source = path.join(root, entry);
   return { entry, source, stat: await fs.stat(source) };
 }));
-const temporaryDir = await fs.mkdtemp(path.join(root, '.dist_release-'));
+const temporaryDir = await fs.mkdtemp(path.join(root, `.${outputName}-`));
 const previousDir = `${releaseDir}.previous-${process.pid}-${Date.now()}`;
 let previousMoved = false;
 

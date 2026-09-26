@@ -116,13 +116,13 @@ test('los datos válidos se normalizan para el servidor', () => {
   assert.equal(result.value.presentation, 'Botella 1,5 L');
 });
 
-test('con precio pendiente la vista previa muestra el producto sin permitir comprarlo', () => {
+test('con precio pendiente la vista previa avisa que el producto no se publica hasta tener precio', () => {
   const value = validateProductDraft({ ...VALID_FIELDS, pricePending: true, price: 0 }).value;
   const preview = buildStorefrontPreview(value, { imageReady: true });
   assert.equal(preview.priceLabel, 'Precio pendiente');
   assert.equal(preview.purchasable, false);
-  assert.equal(preview.availabilityLabel, 'Visible, no se puede comprar');
-  assert.ok(preview.blockers.some((blocker) => /nadie va a poder comprarlo/i.test(blocker)));
+  assert.equal(preview.availabilityLabel, 'No se muestra hasta tener precio');
+  assert.ok(preview.blockers.some((blocker) => /no se va a ver en la tienda/i.test(blocker)));
 });
 
 test('la vista previa avisa lo que falta antes de publicar', () => {

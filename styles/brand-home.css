@@ -184,6 +184,20 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .topbar-
   color: var(--brand-ink-muted);
 }
 
+/* UN SOLO BUSCADOR EN ESCRITORIO.
+   La home y el catálogo tienen su propio buscador —el de la home lleva al
+   catálogo, el del catálogo filtra al lado de los resultados—, y en escritorio
+   la barra superior sumaba el suyo 40px más arriba: dos campos idénticos, uno
+   encima del otro. En esas dos vistas manda el de la vista; en el carrito, el
+   seguimiento y el perfil, que no tienen buscador, queda el de la barra.
+   `visibility` y no `display`: la barra conserva su grilla y nada salta al
+   cambiar de vista. Por debajo de 1020px la barra ya no lo muestra. */
+@media (min-width: 1021px) {
+  body:is([data-active-view="home"], [data-active-view="catalog"]) .topbar-search {
+    visibility: hidden;
+  }
+}
+
 body:not([data-active-view="business"]):not([data-active-view="rider"]) .topbar .desktop-nav button {
   color: var(--brand-ink-muted);
 }
@@ -1265,8 +1279,8 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-vie
   box-shadow:
     var(--shadow-shelf-flat),
     inset 0 0 0 1px var(--shelf-line),
-    0 2px 5px -3px rgb(208 0 13 / calc(var(--card-glow, 0) * 10%)),
-    0 8px 18px -8px rgb(208 0 13 / calc(var(--card-glow, 0) * 22%));
+    0 8px 16px -9px rgb(208 0 13 / calc(var(--card-glow, 0) * 18%)),
+    0 20px 38px -17px rgb(208 0 13 / calc(var(--card-glow, 0) * 30%));
 }
 
 /* Lo que no se puede comprar no se destaca. El brillo es una invitación, y
@@ -1290,8 +1304,8 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-vie
     box-shadow:
       var(--shadow-shelf-flat),
       inset 0 0 0 1px var(--shelf-line-strong),
-      0 2px 5px -3px rgb(208 0 13 / calc(var(--card-glow, 0) * 13%)),
-      0 8px 18px -8px rgb(208 0 13 / calc(var(--card-glow, 0) * 28%));
+      0 9px 18px -10px rgb(208 0 13 / calc(var(--card-glow, 0) * 22%)),
+      0 22px 42px -19px rgb(208 0 13 / calc(var(--card-glow, 0) * 30%));
   }
 }
 
@@ -1301,8 +1315,8 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-vie
   box-shadow:
     var(--shadow-shelf-flat),
     inset 0 0 0 1px var(--shelf-line-strong),
-    0 2px 5px -3px rgb(208 0 13 / calc(var(--card-glow, 0) * 13%)),
-    0 8px 18px -8px rgb(208 0 13 / calc(var(--card-glow, 0) * 28%));
+    0 9px 18px -10px rgb(208 0 13 / calc(var(--card-glow, 0) * 22%)),
+    0 22px 42px -19px rgb(208 0 13 / calc(var(--card-glow, 0) * 30%));
 }
 
 /* Títulos y cifras dentro de la góndola. `h1…h4` y `strong` heredan del bloque
@@ -3212,4 +3226,885 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .floatin
   .combo-modal-media {
     height: 240px;
   }
+}
+
+/* ============================================================================
+   12 · CATÁLOGO — VIDRIERA PREMIUM
+   ----------------------------------------------------------------------------
+   Referencia comercial: más aire, grafito con un lavado rojo muy contenido,
+   chips de navegación refinados, plato marfil para el packshot y una acción
+   roja que vuelve a ser el punto de compra. Todo queda dentro de la vista de
+   catálogo: el marcado, el catálogo real y la operación no cambian.
+   ========================================================================== */
+body[data-active-view="catalog"] {
+  --brand-product-plate: #fff8ee;
+  background-image:
+    radial-gradient(circle at 0 0, rgb(208 0 13 / 18%), transparent 34%),
+    radial-gradient(circle at 100% 24%, rgb(208 0 13 / 14%), transparent 28%);
+  background-repeat: no-repeat;
+  background-size: 100% 560px, 100% 720px;
+}
+
+body[data-active-view="catalog"] [data-view="catalog"] {
+  padding-bottom: 24px;
+}
+
+body[data-active-view="catalog"] .catalog-head {
+  display: grid;
+  grid-template-columns: auto auto minmax(24px, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  margin-bottom: 18px;
+}
+
+body[data-active-view="catalog"] .catalog-head::after {
+  display: block;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    var(--shelf-line-strong) 0 72%,
+    var(--brand-red-ink) 100%
+  );
+  box-shadow: 0 0 8px rgb(208 0 13 / 25%);
+  content: "";
+}
+
+body[data-active-view="catalog"] .catalog-head .view-title {
+  color: var(--brand-ink);
+  font-size: clamp(28px, 8vw, 34px);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 1;
+}
+
+body[data-active-view="catalog"] .catalog-count {
+  margin: 0;
+  color: var(--brand-ink-muted);
+  font-size: 14px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+body[data-active-view="catalog"] .catalog-search {
+  border-color: rgb(255 255 255 / 38%);
+  background-color: var(--brand-surface);
+  background-image: linear-gradient(135deg, rgb(255 255 255 / 5%), transparent 56%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 9%), 0 8px 24px rgb(0 0 0 / 22%);
+}
+
+body[data-active-view="catalog"] .catalog-search .catalog-search-icon {
+  color: var(--brand-ink);
+}
+
+body[data-active-view="catalog"] .catalog-search input::placeholder,
+body[data-active-view="catalog"] .search-clear {
+  color: var(--brand-ink-muted);
+}
+
+body[data-active-view="catalog"] .category-strip {
+  gap: 10px;
+  padding-bottom: 16px;
+}
+
+body[data-active-view="catalog"] .category-button {
+  border-color: rgb(255 255 255 / 25%);
+  background-color: var(--brand-surface);
+  background-image: linear-gradient(180deg, rgb(255 255 255 / 5%), transparent 78%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%);
+  color: var(--brand-ink-muted);
+}
+
+body[data-active-view="catalog"] .category-button:hover,
+body[data-active-view="catalog"] .category-button:focus-visible {
+  border-color: var(--brand-border-strong);
+  background-color: var(--brand-surface-hover);
+  color: var(--brand-ink);
+}
+
+body[data-active-view="catalog"] .category-button.active {
+  border-color: var(--brand-red-ink);
+  background-color: var(--taba-red);
+  background-image: linear-gradient(150deg, #f51f2d 0%, var(--taba-red) 58%, #a80009 100%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 24%), 0 7px 18px rgb(208 0 13 / 30%);
+  color: var(--taba-white);
+}
+
+body[data-active-view="catalog"] .category-button.active .category-ico {
+  color: var(--taba-white);
+}
+
+body[data-active-view="catalog"] .product-grid {
+  gap: 14px;
+}
+
+body[data-active-view="catalog"] .product-card {
+  border-color: rgb(255 255 255 / 24%);
+  background-color: var(--shelf);
+  background-image: linear-gradient(180deg, rgb(255 255 255 / 4%), transparent 42%);
+  border-radius: 18px;
+}
+
+body[data-active-view="catalog"] .product-card:hover,
+body[data-active-view="catalog"] .product-card:focus-within {
+  border-color: rgb(255 255 255 / 46%);
+}
+
+body[data-active-view="catalog"] .product-media {
+  background-color: var(--brand-product-plate);
+}
+
+body[data-active-view="catalog"] .thumb {
+  background-color: var(--brand-product-plate);
+}
+
+body[data-active-view="catalog"] .thumb .thumb-img.is-placeholder {
+  background-color: var(--brand-product-plate);
+}
+
+body[data-active-view="catalog"] .product-favorite {
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgb(20 22 26 / 10%);
+  background-color: var(--brand-product-plate);
+  box-shadow: 0 5px 14px rgb(0 0 0 / 24%);
+  color: var(--taba-ink);
+}
+
+body[data-active-view="catalog"] .product-favorite path {
+  stroke: currentColor;
+}
+
+body[data-active-view="catalog"] .product-body {
+  gap: 4px;
+  padding: 12px 12px 14px;
+}
+
+body[data-active-view="catalog"] .product-body h3 {
+  color: var(--shelf-ink);
+  font-size: 16px;
+  line-height: 1.18;
+}
+
+body[data-active-view="catalog"] .product-body p {
+  color: var(--shelf-muted);
+  font-size: 13px;
+}
+
+body[data-active-view="catalog"] .product-foot {
+  gap: 10px;
+  padding-top: 10px;
+}
+
+body[data-active-view="catalog"] .price {
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+}
+
+body[data-active-view="catalog"] .price::after {
+  height: 1px;
+  flex: 1 1 auto;
+  background: var(--shelf-line);
+  content: "";
+}
+
+body[data-active-view="catalog"] .price strong,
+body[data-active-view="catalog"] .price-amounts strong {
+  color: var(--shelf-ink);
+  font-size: 22px;
+  font-weight: 900;
+}
+
+body[data-active-view="catalog"] .product-action .add-button {
+  height: 50px;
+  min-height: 50px;
+  border-color: var(--taba-red);
+  border-radius: var(--radius-action-lg);
+  background-color: var(--taba-red);
+  background-image: linear-gradient(180deg, #f51f2d 0%, var(--taba-red) 60%, #a80009 100%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 20%), 0 7px 16px rgb(208 0 13 / 24%);
+  color: var(--taba-white);
+  font-size: 15px;
+  font-weight: 850;
+}
+
+body[data-active-view="catalog"] .product-action .add-button:hover,
+body[data-active-view="catalog"] .product-action .add-button:focus-visible {
+  border-color: var(--brand-red-ink);
+  background-color: var(--taba-red-hover);
+  background-image: linear-gradient(180deg, #ff3340 0%, var(--taba-red-hover) 70%, #8c0007 100%);
+}
+
+body[data-active-view="catalog"] .catalog-controls {
+  position: relative;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+body[data-active-view="catalog"] .catalog-controls::before {
+  position: absolute;
+  z-index: 1;
+  top: 12px;
+  bottom: 12px;
+  left: 50%;
+  width: 1px;
+  background: var(--shelf-line-strong);
+  content: "";
+  pointer-events: none;
+}
+
+/* El separador existe para la fila de dos controles del teléfono. Desde 821px
+   `.catalog-controls` es `display: contents` (catalog.css), así que su caja
+   desaparece y el pseudo-elemento se posicionaba contra la vista entera: una
+   línea de 1px que cruzaba el catálogo de arriba abajo, por el medio de las
+   tarjetas. Medido a 1366 y 1440. */
+@media (min-width: 821px) {
+  body[data-active-view="catalog"] .catalog-controls::before {
+    content: none;
+  }
+
+  /* Con todo el ancho disponible, el orden elegido se lee entero: el tope de
+     148px del teléfono recortaba «Recomendados» a «Recomendado:». */
+  body[data-active-view="catalog"] .sort-field select {
+    width: auto;
+    max-width: none;
+  }
+}
+
+body[data-active-view="catalog"] .catalog-filters,
+body[data-active-view="catalog"] .sort-field {
+  min-height: 58px;
+  border: 1px solid var(--shelf-line-strong);
+  border-radius: 16px;
+  background-color: var(--brand-surface);
+  background-image: linear-gradient(180deg, rgb(255 255 255 / 5%), transparent 82%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%), 0 8px 22px rgb(0 0 0 / 16%);
+}
+
+body[data-active-view="catalog"] .catalog-filters summary {
+  min-height: 58px;
+  padding-inline: 16px;
+  color: var(--brand-ink);
+  font-size: 15px;
+}
+
+body[data-active-view="catalog"] .catalog-filters summary > span[aria-hidden="true"],
+body[data-active-view="catalog"] .sort-field-label svg,
+body[data-active-view="catalog"] .sort-select-wrap::after {
+  border-color: var(--brand-ink);
+  color: var(--brand-ink);
+}
+
+body[data-active-view="catalog"] .sort-field {
+  padding-left: 16px;
+}
+
+body[data-active-view="catalog"] .sort-field-label {
+  color: var(--brand-ink);
+  font-size: 15px;
+}
+
+body[data-active-view="catalog"] .sort-field select {
+  color: var(--brand-ink);
+}
+
+body[data-active-view="catalog"] .mobile-nav {
+  border-top-color: var(--brand-border-strong);
+  border-radius: 26px 26px 0 0;
+  background-color: var(--brand-bg);
+  background-image: linear-gradient(180deg, rgb(255 255 255 / 5%), transparent 72%);
+  box-shadow: 0 -10px 28px rgb(0 0 0 / 36%);
+}
+
+body[data-active-view="catalog"] .mn-brand-disc {
+  width: 44px;
+  height: 44px;
+  box-shadow: 0 7px 18px rgb(208 0 13 / 34%);
+}
+
+@media (max-width: 820px) {
+  body[data-active-view="catalog"] {
+    --topbar: 64px;
+  }
+
+  body[data-active-view="catalog"] .topbar {
+    min-height: var(--topbar);
+    padding-inline: 12px;
+    background-image: linear-gradient(120deg, rgb(208 0 13 / 10%), transparent 42%);
+  }
+
+  body[data-active-view="catalog"] .brand-word {
+    font-size: 22px;
+  }
+
+  body[data-active-view="catalog"] .brand-text::after {
+    width: 40px;
+    height: 3px;
+    margin-top: 5px;
+  }
+
+  body[data-active-view="catalog"] .topbar-address {
+    min-height: 46px;
+    padding-inline: 10px;
+    border: 1px solid rgb(255 255 255 / 28%);
+    border-radius: var(--radius-pill);
+    background-color: var(--brand-surface);
+    background-image: linear-gradient(135deg, rgb(255 255 255 / 6%), rgb(208 0 13 / 8%));
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 10%), 0 6px 18px rgb(0 0 0 / 20%);
+  }
+
+  body[data-active-view="catalog"] .topbar-address .address-chip-ico {
+    color: var(--brand-red-ink);
+  }
+
+  body[data-active-view="catalog"] .topbar .cart-button {
+    border-color: var(--brand-border-strong);
+    border-radius: 14px;
+    background-color: var(--brand-surface);
+    background-image: linear-gradient(135deg, rgb(255 255 255 / 6%), transparent 70%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 10%);
+  }
+
+  body[data-active-view="catalog"] [data-view="catalog"] {
+    padding: 28px 16px 24px;
+  }
+
+  body[data-active-view="catalog"] .catalog-search {
+    min-height: 56px;
+    margin-bottom: 14px;
+    padding-inline: 16px;
+    border-radius: 18px;
+  }
+
+  body[data-active-view="catalog"] .catalog-controls::before {
+    top: 14px;
+    bottom: 14px;
+  }
+
+  body[data-active-view="catalog"] .product-card {
+    border-radius: 18px;
+  }
+
+  body[data-active-view="catalog"] .product-media-frame {
+    padding: 8px 8px 0;
+  }
+
+  body[data-active-view="catalog"] .product-media {
+    aspect-ratio: 0.95 / 1;
+  }
+}
+
+@media (max-width: 359px) {
+  body[data-active-view="catalog"] [data-view="catalog"] {
+    padding-inline: 12px;
+  }
+
+  body[data-active-view="catalog"] .catalog-search {
+    min-height: 54px;
+  }
+
+  body[data-active-view="catalog"] .product-grid {
+    gap: 10px;
+  }
+
+  body[data-active-view="catalog"] .product-media-frame {
+    padding: 6px 6px 0;
+  }
+
+  body[data-active-view="catalog"] .product-body {
+    padding: 10px 12px;
+  }
+
+  body[data-active-view="catalog"] .product-action .add-button {
+    min-height: 48px;
+    height: 48px;
+  }
+}
+
+/* Cierre de cascada: la superficie de marca existente tiene una especificidad
+   deliberadamente alta para proteger el shell oscuro. Estas declaraciones
+   alcanzan la misma altura de especificidad sólo en catálogo; no usan
+   `!important` y no alteran negocio/rider. */
+body:not([data-active-view="business"]):not([data-active-view="rider"])[data-active-view="catalog"] {
+  background-image:
+    radial-gradient(circle at 0 0, rgb(208 0 13 / 18%), transparent 34%),
+    radial-gradient(circle at 100% 24%, rgb(208 0 13 / 14%), transparent 28%);
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"])[data-active-view="catalog"] .app-shell {
+  background-color: var(--brand-bg);
+  background-image:
+    radial-gradient(ellipse 170% 48% at 0% 0%, rgb(208 0 13 / 42%), transparent 68%),
+    radial-gradient(ellipse 150% 54% at 100% 26%, rgb(208 0 13 / 30%), transparent 72%),
+    radial-gradient(ellipse 110% 30% at 50% 76%, rgb(208 0 13 / 14%), transparent 76%),
+    linear-gradient(180deg, rgb(255 255 255 / 2%), transparent 28%);
+  background-repeat: no-repeat;
+  background-size: 100% 760px, 100% 940px, 100% 1200px, 100% 100%;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] {
+  background-image:
+    radial-gradient(ellipse 120% 32% at 100% 12%, rgb(208 0 13 / 22%), transparent 72%),
+    radial-gradient(ellipse 110% 28% at 0% 48%, rgb(208 0 13 / 14%), transparent 74%),
+    radial-gradient(ellipse 100% 20% at 50% 86%, rgb(208 0 13 / 8%), transparent 76%);
+  background-repeat: no-repeat;
+  background-size: 100% 760px, 100% 1150px, 100% 1500px;
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"])[data-active-view="catalog"] .topbar,
+body:not([data-active-view="business"]):not([data-active-view="rider"])[data-active-view="catalog"] .topbar-address,
+body:not([data-active-view="business"]):not([data-active-view="rider"])[data-active-view="catalog"] .topbar .cart-button {
+  background-image: linear-gradient(135deg, rgb(255 255 255 / 6%), transparent 70%);
+}
+
+body[data-active-view="catalog"] .app-shell .topbar-address {
+  border-color: rgb(255 95 102 / 48%);
+  background-image: linear-gradient(135deg, rgb(208 0 13 / 20%), rgb(29 34 42 / 92%) 62%, rgb(16 19 23 / 96%) 100%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 12%), 0 8px 22px rgb(208 0 13 / 18%);
+}
+
+body[data-active-view="catalog"] .app-shell .catalog-search {
+  border-color: rgb(255 255 255 / 50%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 12%), 0 10px 28px rgb(0 0 0 / 26%);
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .category-button.active {
+  border-color: var(--brand-red-ink);
+  background-color: var(--taba-red);
+  background-image: linear-gradient(150deg, #f51f2d 0%, var(--taba-red) 58%, #a80009 100%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 24%), 0 10px 24px rgb(208 0 13 / 38%);
+  color: var(--taba-white);
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .category-button.active .category-ico {
+  color: var(--taba-white);
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-card {
+  border-color: rgb(233 222 210 / 28%);
+  border-radius: 26px;
+  background-color: var(--shelf);
+  background-image:
+    linear-gradient(180deg, rgb(255 255 255 / 8%), transparent 34%),
+    linear-gradient(180deg, rgb(38 44 53 / 72%), rgb(29 34 42 / 98%) 54%, rgb(19 22 27 / 100%));
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-card:hover,
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-card:focus-within {
+  border-color: rgb(246 231 214 / 44%);
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-media,
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .thumb,
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .thumb .thumb-img.is-placeholder {
+  background-color: var(--brand-product-plate);
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-media {
+  border-radius: 20px;
+  box-shadow: inset 0 0 0 1px rgb(246 231 214 / 58%), 0 10px 24px rgb(0 0 0 / 14%);
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-media-frame {
+  padding: 14px 14px 0;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-media .thumb .thumb-img:not(.is-placeholder) {
+  height: 96%;
+  margin: 2% auto;
+  scale: 1.08;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-favorite {
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgb(20 22 26 / 10%);
+  background-color: var(--brand-product-plate);
+  box-shadow: 0 5px 14px rgb(0 0 0 / 24%);
+  color: var(--taba-ink);
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-favorite path {
+  stroke: currentColor;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-body {
+  gap: 6px;
+  padding: 16px 14px 16px;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-body h3 {
+  min-height: 2.35em;
+  color: var(--shelf-ink);
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  line-height: 1.16;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-body p {
+  color: var(--shelf-muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-foot {
+  gap: 12px;
+  padding-top: 14px;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .price {
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .price strong,
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .price-amounts strong {
+  color: var(--shelf-ink);
+  font-size: 25px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .price::after {
+  height: 1px;
+  flex: 1 1 auto;
+  background: var(--shelf-line);
+  content: "";
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-action .add-button {
+  height: 52px;
+  min-height: 52px;
+  border-color: var(--taba-red);
+  border-radius: var(--radius-action-lg);
+  background-color: var(--taba-red);
+  background-image: linear-gradient(180deg, #f51f2d 0%, var(--taba-red) 60%, #a80009 100%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 22%), 0 8px 18px rgb(208 0 13 / 26%);
+  color: var(--taba-white);
+  font-size: 16px;
+  font-weight: 850;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-filters,
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .sort-field {
+  min-height: 60px;
+  border: 1px solid rgb(255 255 255 / 34%);
+  border-radius: 18px;
+  background-color: var(--brand-surface);
+  background-image: linear-gradient(180deg, rgb(255 255 255 / 5%), transparent 82%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%), 0 8px 22px rgb(0 0 0 / 16%);
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-filters summary {
+  min-height: 60px;
+  padding-inline: 16px;
+  color: var(--brand-ink);
+  font-size: 15px;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .sort-field {
+  padding-left: 16px;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .sort-field-label,
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .sort-field select {
+  color: var(--brand-ink);
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-controls {
+  margin-bottom: 18px;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-head {
+  min-height: 38px;
+  margin-bottom: 12px;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-head .view-title {
+  font-size: clamp(28px, 7vw, 32px);
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-search {
+  min-height: 52px;
+  margin-bottom: 10px;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .category-strip {
+  gap: 8px;
+  padding-bottom: 10px;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .category-button {
+  min-height: 54px;
+  padding-inline: 15px;
+  border-radius: var(--radius-pill);
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-grid {
+  gap: 16px;
+}
+
+body[data-active-view="catalog"] {
+  --nav-h: 64px;
+  --nav-block: calc(var(--nav-h) + var(--safe-b));
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"])[data-active-view="catalog"] .mobile-nav {
+  border-top-color: rgb(255 95 102 / 42%);
+  border-radius: 28px 28px 0 0;
+  background-color: var(--brand-bg);
+  background-image: linear-gradient(180deg, rgb(208 0 13 / 10%), rgb(255 255 255 / 5%) 24%, transparent 72%);
+  box-shadow: 0 -12px 30px rgb(208 0 13 / 14%), 0 -10px 28px rgb(0 0 0 / 36%);
+  padding: 5px 10px calc(10px + var(--safe-b));
+}
+
+body[data-active-view="catalog"] .app-shell .mobile-nav button {
+  gap: 6px;
+  padding-block: 4px;
+}
+
+body[data-active-view="catalog"] .app-shell .mobile-nav .mn-ico {
+  width: 24px;
+  height: 24px;
+}
+
+body[data-active-view="catalog"] .app-shell .mobile-nav .mn-label {
+  font-size: 12.5px;
+}
+
+body[data-active-view="catalog"] .app-shell .mobile-nav .mn-brand-disc {
+  width: 48px;
+  height: 48px;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 28%), 0 8px 22px rgb(208 0 13 / 42%);
+}
+
+body[data-active-view="catalog"] .app-shell .mobile-nav .mn-brand {
+  margin-top: -10px;
+}
+
+@media (min-width: 360px) and (max-width: 820px) {
+  body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] {
+    padding: 20px 14px 32px;
+  }
+
+  body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-media {
+    aspect-ratio: 1 / 1;
+  }
+
+  body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-media-frame {
+    padding: 16px 14px 0;
+  }
+
+  body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-body {
+    padding: 18px 14px 18px;
+  }
+
+  body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-foot {
+    padding-top: 16px;
+  }
+}
+
+@media (max-width: 359px) {
+  body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] {
+    padding: 18px 12px 30px;
+  }
+
+  body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-media-frame {
+    padding: 10px 10px 0;
+  }
+
+  body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-grid {
+    gap: 12px;
+  }
+
+  body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-body {
+    padding: 14px 12px 14px;
+  }
+
+  body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-action .add-button {
+    min-height: 48px;
+    height: 48px;
+  }
+
+  body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-media {
+    aspect-ratio: 1 / 1;
+  }
+}
+
+/* ============================================================================
+   13 · CATÁLOGO — REFINAMIENTO FINAL DE SUPERFICIES
+   ----------------------------------------------------------------------------
+   La composición ya está aprobada en el dispositivo real. Esta última capa no
+   agrega componentes: baja los hairlines que se leían como wireframe y deja
+   que la separación la hagan el grafito, el aire y la sombra inferior.
+   ========================================================================== */
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-search {
+  border-color: rgb(233 222 210 / 12%);
+  background-image: linear-gradient(135deg, rgb(255 255 255 / 3%), transparent 58%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 4%), 0 10px 26px rgb(0 0 0 / 24%);
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-search:focus-within {
+  border-color: rgb(246 231 214 / 25%);
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .category-button {
+  border-color: rgb(233 222 210 / 10%);
+  background-image: linear-gradient(180deg, rgb(255 255 255 / 3%), transparent 82%);
+  box-shadow: 0 8px 20px rgb(0 0 0 / 16%);
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .category-button:hover,
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .category-button:focus-visible {
+  border-color: rgb(246 231 214 / 24%);
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .category-button.active {
+  border-color: rgb(255 95 102 / 36%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 18%), 0 8px 20px rgb(208 0 13 / 24%);
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-filters,
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .sort-field {
+  border-color: rgb(233 222 210 / 12%);
+  background-image: linear-gradient(180deg, rgb(255 255 255 / 3%), transparent 84%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 4%), 0 10px 24px rgb(0 0 0 / 22%);
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-controls {
+  margin-bottom: 30px;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-card {
+  --shelf-line: rgb(233 222 210 / 6%);
+  --shelf-line-strong: rgb(246 231 214 / 12%);
+  --shadow-shelf-flat: 0 16px 34px rgb(0 0 0 / 64%);
+  border-color: rgb(233 222 210 / 8%);
+  background-image:
+    linear-gradient(180deg, rgb(255 255 255 / 4%), transparent 34%),
+    linear-gradient(180deg, rgb(38 44 53 / 74%), rgb(29 34 42 / 98%) 54%, rgb(19 22 27 / 100%));
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-card:hover,
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-card:focus-within {
+  border-color: rgb(246 231 214 / 18%);
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-body {
+  padding: 19px 14px 19px;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-foot {
+  padding-top: 17px;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-action .add-button {
+  border-color: rgb(255 95 102 / 40%);
+  background-image: linear-gradient(180deg, #f31a28 0%, var(--taba-red) 58%, #ad0009 100%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 28%), 0 2px 0 rgb(0 0 0 / 22%), 0 10px 20px rgb(208 0 13 / 28%);
+  font-weight: 900;
+  letter-spacing: 0.01em;
+}
+
+/* El botón conserva los 44px de contacto; sólo se reduce el disco visible. */
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-favorite {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-favorite::before {
+  position: absolute;
+  inset: 5px;
+  border: 1px solid rgb(20 22 26 / 9%);
+  border-radius: 50%;
+  background: var(--brand-product-plate);
+  box-shadow: 0 5px 14px rgb(0 0 0 / 22%);
+  content: "";
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-favorite svg {
+  position: relative;
+  z-index: 1;
+  width: 20px;
+  height: 20px;
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"])[data-active-view="catalog"] .mobile-nav {
+  border-top-color: rgb(233 222 210 / 8%);
+  background-image: linear-gradient(180deg, rgb(208 0 13 / 4%), rgb(255 255 255 / 2%) 24%, transparent 72%);
+  box-shadow: 0 -14px 32px rgb(0 0 0 / 36%), 0 -8px 22px rgb(208 0 13 / 6%);
+}
+
+body[data-active-view="catalog"] .app-shell .mobile-nav button {
+  gap: 9px;
+  padding-block: 3px;
+}
+
+@media (min-width: 360px) and (max-width: 820px) {
+  body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-media {
+    aspect-ratio: 0.97 / 1;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   La entrada de la tienda cuando todavía no se puede pedir.
+   ---------------------------------------------------------------------------
+   Reemplaza a la tarjeta suelta sobre fondo negro que se leía como un sitio
+   caído. El texto lo decide `js/core/store-entry.js`; acá sólo se le da forma
+   de puerta de local: marca, nombre, estado, dirección publicada y acciones.
+   ------------------------------------------------------------------------ */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .store-entry {
+  gap: 10px;
+  width: min(100%, 520px);
+  margin: clamp(16px, 6vh, 56px) auto 0;
+  padding: 32px 24px 28px;
+}
+
+.store-entry-mark svg {
+  display: block;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  box-shadow: 0 10px 26px rgb(208 0 13 / 28%);
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .store-entry .store-entry-name {
+  margin: 6px 0 0;
+  color: var(--brand-ink-muted, currentColor);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .store-entry strong {
+  font-size: 22px;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.store-entry p {
+  max-width: 40ch;
+  margin: 0;
+}
+
+.store-entry .store-entry-address {
+  font-size: 14px;
+}
+
+.store-entry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.store-entry-actions > :is(a, button) {
+  min-height: var(--tap, 44px);
 }

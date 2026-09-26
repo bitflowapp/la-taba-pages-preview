@@ -108,7 +108,8 @@ async function run(route: string, mutation: string, initiallyInvalid = '') {
     }
     if (url.pathname === '/checkout/preferences/search') {
       const elements = route === 'recovered' ? [{ id: 'fixture', external_reference: 'fixture-reference' }] : [];
-      return Response.json({ elements, paging: { total: elements.length, limit: 10, offset: 0 } });
+      // The provider's real search shape: `total` at the top level, no `paging`.
+      return Response.json({ elements, next_offset: elements.length, total: elements.length });
     }
     if (url.pathname === '/checkout/preferences/fixture' || url.pathname === '/checkout/preferences') {
       return Response.json({ id: 'fixture', external_reference: 'fixture-reference', collector_id: seller.seller_id, metadata: { payment_attempt_id: iid, checkout_session_id: sid }, init_point: providerUrl, sandbox_init_point: preparation.sandbox_init_point });

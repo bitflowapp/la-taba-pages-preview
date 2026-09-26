@@ -52,7 +52,10 @@ test('demo exige demo=1, producción exige runtime completo y preview no abre vi
   assert.equal(isOperationalView('business', ''), true);
   assert.equal(isOperationalView('rider', ''), true);
   assert.equal(isOperationalView('business', '?demo=1'), false);
+  assert.equal(isOperationalView('rider', '?demo=1'), false);
   assert.equal(isOperationalView('business', '', PRODUCTION_RUNTIME), false);
+  assert.equal(isOperationalView('rider', '', PRODUCTION_RUNTIME), true);
+  assert.equal(isOperationalView('rider', '?demo=1', PRODUCTION_RUNTIME), true);
   assert.equal(isOperationalView('business', '', { mode: 'production', repository: {} }), true);
 });
 

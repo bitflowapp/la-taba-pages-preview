@@ -52,9 +52,30 @@ test.describe('TABA2 motion system', () => {
     await expect.poll(() => card.evaluate((node) => getComputedStyle(node).transitionProperty)).toContain('transform');
 
     const add = page.locator('[data-product-grid] button[data-add-product]:not(:disabled)').first();
+    // `cart-bump` dura 420 ms. Esperar la clase DESPUÉS del click convierte la
+    // aserción en una carrera bajo carga: el feedback puede haber ocurrido y
+    // terminado antes del siguiente viaje de Playwright. Observamos la mutación
+    // desde antes del click y afirmamos que existió, sin alargar la animación.
+    await page.evaluate(() => {
+      window.__tabaCartBumpObserved = Boolean(document.querySelector('[data-floating-cart].cart-bump'));
+      window.__tabaCartBumpObserver?.disconnect?.();
+      const observer = new MutationObserver(() => {
+        if (!document.querySelector('[data-floating-cart].cart-bump')) return;
+        window.__tabaCartBumpObserved = true;
+        observer.disconnect();
+      });
+      observer.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class'],
+        childList: true,
+        subtree: true,
+      });
+      window.__tabaCartBumpObserver = observer;
+    });
     await add.click();
     await expect(page.locator('[data-toast]')).toContainText('agregado al pedido');
-    await expect(page.locator('[data-floating-cart]')).toHaveClass(/cart-bump/);
+    await expect.poll(() => page.evaluate(() => window.__tabaCartBumpObserved)).toBe(true);
+    await page.evaluate(() => window.__tabaCartBumpObserver?.disconnect?.());
     await guards.assertClean();
   });
 

@@ -1,0 +1,55 @@
+name: Rider Android canonical
+
+on:
+  push:
+    branches:
+      - 'release/**'
+      - 'feat/rider-android-canonical'
+  pull_request:
+    paths:
+      - 'apps/rider-android/**'
+      - '.github/workflows/rider-android-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rider-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  debug-build-and-unit-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: apps/rider-android
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Build isolated QA APK and instrumentation, run unit contracts
+        run: bash ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest --console=plain --no-daemon
+      - name: Verify QA package cannot collide with historical Rider
+        run: |
+          apk='app/build/outputs/apk/debug/app-debug.apk'
+          test -f "$apk"
+          aapt="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name aapt | sort -V | tail -1)"
+          test -n "$aapt"
+          identity="$("$aapt" dump badging "$apk" | head -1)"
+          if [[ "$identity" != "package: name='com.lataba.rider.qa' "* ]]; then
+            echo 'QA APK package identity mismatch' >&2
+            exit 1
+          fi
+          test_apk='app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk'
+          test -f "$test_apk"
+          test_identity="$("$aapt" dump badging "$test_apk" | head -1)"
+          if [[ "$test_identity" != "package: name='com.lataba.rider.qa.test' "* ]]; then
+            echo 'QA instrumentation package identity mismatch' >&2
+            exit 1
+          fi

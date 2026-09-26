@@ -43,10 +43,32 @@ for (const connection of [{status: 'disconnected'}, {environment: 'production'},
     assert.equal(calls.length, 1);
   });
 }
-for (const payment of [{id: 999}, {collector_id: 999}, {live_mode: true}, {external_reference: ''}]) {
+for (const payment of [{id: 999}, {collector_id: 999}, {live_mode: 'true'}, {external_reference: ''}]) {
   test('rejects spoofed seller or mismatched provider payment: '+JSON.stringify(payment), async () => {
     const {dependencies, calls} = scenario({payment});
     await assert.rejects(resolveSellerWebhookBusiness(input, dependencies));
+    assert.equal(calls.length, 2);
+  });
+}
+// Same contract as record_mercadopago_payment_snapshot: a test user's Checkout
+// Pro payment reports live_mode = true, and the collector pins it to the seller.
+for (const liveMode of [true, false, undefined]) {
+  test('test environment routes a test seller payment with live_mode '+String(liveMode), async () => {
+    const {dependencies} = scenario({payment: {live_mode: liveMode}});
+    assert.equal(await resolveSellerWebhookBusiness(input, dependencies), 'business-a');
+  });
+}
+function productionScenario(payment) {
+  return scenario({connection: {environment: 'production'}, intent: {environment: 'production'}, payment});
+}
+test('production routes only a payment the provider reports as live', async () => {
+  const {dependencies} = productionScenario({live_mode: true});
+  assert.equal(await resolveSellerWebhookBusiness({...input, environment: 'production'}, dependencies), 'business-a');
+});
+for (const liveMode of [false, undefined, 'true']) {
+  test('production rejects a payment that is not live: '+String(liveMode), async () => {
+    const {dependencies, calls} = productionScenario({live_mode: liveMode});
+    await assert.rejects(resolveSellerWebhookBusiness({...input, environment: 'production'}, dependencies), /routing mismatch/);
     assert.equal(calls.length, 2);
   });
 }

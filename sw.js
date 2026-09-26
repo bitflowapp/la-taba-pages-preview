@@ -1,25 +1,25 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v118-online-payments-gate';
+const CACHE_NAME = 'la-taba-runtime-v119-commercial-frontend';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=60',
-  './styles/tokens.css?v=60',
-  './styles/common.css?v=60',
-  './styles/storefront.css?v=60',
-  './styles/catalog.css?v=60',
-  './styles/checkout.css?v=60',
-  './styles/profile.css?v=60',
-  './styles/showcase.css?v=60',
-  './styles/tracking.css?v=60',
-  './styles/business.css?v=60',
-  './styles/rider.css?v=60',
-  './styles/responsive.css?v=60',
-  './styles/brand-home.css?v=60',
+  './styles.css?v=61',
+  './styles/tokens.css?v=61',
+  './styles/common.css?v=61',
+  './styles/storefront.css?v=61',
+  './styles/catalog.css?v=61',
+  './styles/checkout.css?v=61',
+  './styles/profile.css?v=61',
+  './styles/showcase.css?v=61',
+  './styles/tracking.css?v=61',
+  './styles/business.css?v=61',
+  './styles/rider.css?v=61',
+  './styles/responsive.css?v=61',
+  './styles/brand-home.css?v=61',
   // `styles.css` la importa desde que existe y nunca estuvo acá: sin red, la
   // home se quedaba sin la capa de movimiento. Lo destapó el guard de la
   // cadena de CSS versionado; no lo introdujo esta integración.
-  './styles/motion.css?v=60',
+  './styles/motion.css?v=61',
   './manifest.webmanifest',
   './runtime-config.js?tenant=walter-staging',
   './pago/resultado/index.html',
@@ -39,7 +39,7 @@ const ASSETS = [
   './assets/products/beverage-placeholder.svg',
   './js/pwa-update.js?v=4',
   './js/startup-recovery.js?v=2',
-  './js/app.js?v=50',
+  './js/app.js?v=51',
   './js/config.js',
   './js/core/address.js',
   './js/core/app-mode.js',
@@ -410,7 +410,7 @@ async function cachePrimero(request) {
  * Cuatro segundos: bien por debajo de los ocho que espera `startup-recovery.js`
  * antes de dar el arranque por perdido, y muy por encima de cualquier respuesta
  * sana. El costo de equivocarse es casi nulo: el precache está versionado
- * (`?v=60`), así que una copia guardada es el MISMO contenido que iba a traer la
+ * (`?v=61`), así que una copia guardada es el MISMO contenido que iba a traer la
  * red, no una versión vieja.
  */
 const PLAZO_DE_RED_MS = 4000;

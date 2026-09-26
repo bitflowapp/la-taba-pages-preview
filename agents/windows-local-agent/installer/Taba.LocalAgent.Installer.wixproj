@@ -1,0 +1,22 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+  <!--
+    dotnet build installer/Taba.LocalAgent.Installer.wixproj -c Release -p:PublishDir=<carpeta del publish win-x64>
+    La versión sale de Directory.Build.props (la misma del agente). No hace falta Visual Studio.
+  -->
+  <PropertyGroup>
+    <OutputName>TabaLocalAgent-$(Version)-win-x64</OutputName>
+    <Platform>x64</Platform>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <DefineConstants>ProductVersion=$(Version);PublishDir=$(PublishDir)</DefineConstants>
+    <SuppressValidation>false</SuppressValidation>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.Util.wixext" Version="5.0.2" />
+  </ItemGroup>
+
+  <Target Name="RequirePublishDir" BeforeTargets="Build">
+    <Error Condition="'$(PublishDir)' == '' or (!Exists('$(PublishDir)TabaLocalAgent.exe') and !Exists('$(PublishDir)\TabaLocalAgent.exe'))"
+           Text="PublishDir debe apuntar al publish win-x64 del agente (TabaLocalAgent.exe)." />
+  </Target>
+</Project>

@@ -7356,3 +7356,28 @@ body[data-active-view="business"] .catalog-admin-row.is-archived[data-catalog-ad
     margin-inline-start: 0;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   El aviso efímero del Panel: legible y por encima de la barra de abajo.
+   ---------------------------------------------------------------------------
+   Medido a 390x844 (Chromium y WebKit) con el Panel productivo abierto:
+   · `.toast` toma `--taba-ink` de fondo y blanco de tinta. En el Panel esa
+     variable es la tinta CLARA del tema oscuro, así que el aviso era texto
+     blanco sobre gris claro (≈1,1:1): no se podía leer.
+   · Debajo de 1020px el Panel tiene su propia barra inferior, pero
+     `tokens.css` declara que la vista business «no reserva nada» abajo
+     (`--nav-block: 0`), así que el aviso caía encima de Pedidos · Qué pasa ·
+     Pagos · Mostrador · Más durante los 2,2 s que dura.
+   Toma la misma lámina clara de la tienda y se apoya sobre la barra.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .toast {
+  background: #f4f5f7;
+  box-shadow: 0 14px 38px rgb(0 0 0 / 55%);
+  color: #14161a;
+}
+
+@media (max-width: 1020px) {
+  body[data-active-view="business"] .toast {
+    bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + var(--stack-gap));
+  }
+}

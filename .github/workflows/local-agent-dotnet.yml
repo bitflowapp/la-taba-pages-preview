@@ -1,0 +1,114 @@
+name: Local agent (.NET)
+
+# Agente local de Windows (impresión y hardware). Corre sólo cuando cambia el
+# agente: no toca el gate web ni el de Supabase. Produce un MSI y un zip
+# técnico SIN FIRMAR para pruebas; la entrega comercial firmada es manual.
+on:
+  push:
+    branches:
+      - 'spike/**'
+      - 'feat/taba-local-agent-**'
+      - 'release/**'
+    paths:
+      - 'agents/windows-local-agent/**'
+      - '.github/workflows/local-agent-dotnet.yml'
+  pull_request:
+    paths:
+      - 'agents/windows-local-agent/**'
+      - '.github/workflows/local-agent-dotnet.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: local-agent-dotnet-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Restore, build, test and package (.NET 10 LTS, Windows)
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: agents/windows-local-agent
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET from global.json
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
+        with:
+          global-json-file: agents/windows-local-agent/global.json
+
+      - name: Restore
+        run: dotnet restore Taba.LocalAgent.sln
+
+      - name: Build (analyzers, warnings as errors)
+        run: dotnet build Taba.LocalAgent.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test Taba.LocalAgent.sln -c Release --no-build --logger "trx;LogFileName=local-agent.trx" --results-directory TestResults
+
+      - name: Publish self-contained single file (win-x64)
+        run: dotnet publish src/Taba.LocalAgent/Taba.LocalAgent.csproj -c Release -r win-x64 -o "$env:RUNNER_TEMP/agent-publish"
+
+      - name: Build MSI (WiX v5, unsigned)
+        run: dotnet build installer/Taba.LocalAgent.Installer.wixproj -c Release -p:PublishDir="$env:RUNNER_TEMP/agent-publish/"
+
+      - name: Verify MSI contents (no secrets, LOCAL SERVICE, locked data folder)
+        shell: powershell
+        run: ./installer/verify-msi.ps1 -Msi (Get-ChildItem installer/bin -Recurse -Filter *.msi | Select-Object -First 1).FullName -Version 0.1.0
+
+      - name: Install, run as a service, print ESC/POS through the spooler, uninstall
+        shell: powershell
+        run: ./installer/ci-install-test.ps1 -Msi (Get-ChildItem installer/bin -Recurse -Filter *.msi | Select-Object -First 1).FullName -Version 0.1.0 -Report "$env:RUNNER_TEMP/install-report.json"
+
+      - name: Assemble technical artifacts (unsigned)
+        shell: powershell
+        run: |
+          $out = Join-Path $env:RUNNER_TEMP 'agent-artifacts'
+          New-Item -ItemType Directory -Force $out | Out-Null
+          $msi = Get-ChildItem installer/bin -Recurse -Filter *.msi | Select-Object -First 1
+          Copy-Item $msi.FullName $out
+          $zipDir = Join-Path $env:RUNNER_TEMP 'agent-zip'
+          New-Item -ItemType Directory -Force $zipDir | Out-Null
+          Copy-Item "$env:RUNNER_TEMP/agent-publish/TabaLocalAgent.exe", "$env:RUNNER_TEMP/agent-publish/appsettings.json" $zipDir
+          Compress-Archive -Path "$zipDir/*" -DestinationPath (Join-Path $out 'TabaLocalAgent-0.1.0-win-x64-unsigned.zip')
+          Copy-Item "$env:RUNNER_TEMP/install-report.json" $out
+          Get-ChildItem $out -File | ForEach-Object { "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.Name } | Set-Content -Encoding ascii (Join-Path $out 'SHA256SUMS.txt')
+          Get-Content (Join-Path $out 'SHA256SUMS.txt')
+
+      - name: Secret scan of the artifacts
+        shell: powershell
+        run: |
+          $out = Join-Path $env:RUNNER_TEMP 'agent-artifacts'
+          $patterns = 'BEGIN [A-Z ]*PRIVATE KEY', 'sb_secret_', 'service_role', 'tla1\.[0-9a-f-]{36}\.[A-Za-z0-9_-]{43}', 'APP_USR-'
+          $check = Join-Path $env:RUNNER_TEMP 'agent-scan'
+          Expand-Archive (Get-ChildItem $out -Filter *.zip).FullName -DestinationPath $check -Force
+          $hits = foreach ($file in Get-ChildItem $check -File) {
+            $text = [Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes($file.FullName))
+            foreach ($pattern in $patterns) { if ($text -match $pattern) { "$($file.Name): $pattern" } }
+          }
+          if ($hits) { $hits; throw 'SECRET_SCAN_FAILED' }
+          'SECRET_SCAN: PASS'
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: local-agent-test-results-${{ github.sha }}
+          path: agents/windows-local-agent/TestResults
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload unsigned installer and technical zip
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: taba-local-agent-0.1.0-unsigned-${{ github.sha }}
+          path: ${{ runner.temp }}/agent-artifacts
+          if-no-files-found: error
+          retention-days: 14

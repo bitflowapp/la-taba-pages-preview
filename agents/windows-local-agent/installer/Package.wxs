@@ -1,0 +1,79 @@
+<!--
+  Instalador de Taba.LocalAgent (MSI por máquina).
+
+  Instala el ejecutable autocontenido y su appsettings.json (sin secretos),
+  registra el servicio «TabaLocalAgent» como LOCAL SERVICE (nunca como
+  administrador), con inicio automático y reinicio ante fallas, y crea
+  %ProgramData%\TabaLocalAgent con permisos cerrados: SYSTEM y Administradores
+  control total, LOCAL SERVICE modificar, nadie más.
+
+  No lleva tokens, certificados ni claves: la credencial del dispositivo se crea
+  en la PC con «TabaLocalAgent register» y queda protegida con DPAPI.
+
+  Al desinstalar se quitan el servicio y los binarios. La carpeta de datos
+  (credencial, diario, logs) se conserva para una reinstalación; el runbook
+  explica cómo borrarla y revocar el dispositivo.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+  <Package Name="La Taba - Agente local"
+           Manufacturer="La Taba"
+           Version="$(var.ProductVersion)"
+           UpgradeCode="364171F1-34AC-4E9F-B1B8-F39F50A327F0"
+           Scope="perMachine"
+           Compressed="yes"
+           InstallerVersion="500">
+
+    <MajorUpgrade DowngradeErrorMessage="Ya hay una versión más nueva del agente de La Taba instalada." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="ManufacturerFolder" Name="La Taba">
+        <Directory Id="INSTALLFOLDER" Name="LocalAgent" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="CommonAppDataFolder">
+      <Directory Id="DATAFOLDER" Name="TabaLocalAgent" />
+    </StandardDirectory>
+
+    <ComponentGroup Id="AgentFiles" Directory="INSTALLFOLDER">
+      <Component Id="AgentExecutable" Bitness="always64">
+        <File Id="TabaLocalAgentExe" Source="$(var.PublishDir)\TabaLocalAgent.exe" KeyPath="yes" />
+        <ServiceInstall Id="TabaLocalAgentService"
+                        Name="TabaLocalAgent"
+                        DisplayName="La Taba - Agente local de impresión"
+                        Description="Imprime comandas y tickets de La Taba. Escucha sólo en 127.0.0.1."
+                        Type="ownProcess"
+                        Start="auto"
+                        ErrorControl="normal"
+                        Account="NT AUTHORITY\LocalService"
+                        Arguments="service"
+                        Vital="yes">
+          <util:ServiceConfig FirstFailureActionType="restart"
+                              SecondFailureActionType="restart"
+                              ThirdFailureActionType="restart"
+                              RestartServiceDelayInSeconds="30"
+                              ResetPeriodInDays="1" />
+        </ServiceInstall>
+        <ServiceControl Id="TabaLocalAgentControl" Name="TabaLocalAgent" Start="install" Stop="both" Remove="uninstall" Wait="yes" />
+      </Component>
+      <Component Id="AgentSettings" Bitness="always64">
+        <File Id="AppSettingsJson" Source="$(var.PublishDir)\appsettings.json" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <ComponentGroup Id="AgentData" Directory="DATAFOLDER">
+      <Component Id="AgentDataFolder" Guid="0D0B6D6E-8E2F-4C4B-9C71-2A0A2D3D5B61" Permanent="yes" Bitness="always64">
+        <CreateFolder>
+          <PermissionEx Sddl="O:BAG:SYD:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1301bf;;;LS)" />
+        </CreateFolder>
+      </Component>
+    </ComponentGroup>
+
+    <Feature Id="Main" Title="Agente local" Level="1">
+      <ComponentGroupRef Id="AgentFiles" />
+      <ComponentGroupRef Id="AgentData" />
+    </Feature>
+  </Package>
+</Wix>

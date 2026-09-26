@@ -461,6 +461,11 @@ verify_jwt = false
 [functions.mercadopago-payment-worker]
 verify_jwt = false
 
+# El agente local de impresión no tiene sesión de usuario: presenta su
+# credencial de dispositivo y la función la verifica contra la base.
+[functions.print-agent-gateway]
+verify_jwt = false
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

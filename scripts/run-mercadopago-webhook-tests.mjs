@@ -36,7 +36,8 @@ const steps = [
     'supabase/functions/_shared/mercadopago-webhook-signature.deno.ts',
     'supabase/functions/_shared/payment-worker-signature.deno.ts',
     'supabase/functions/_shared/request-protocol.deno.ts',
-    'supabase/functions/_shared/webhook-notification.deno.ts']],
+    'supabase/functions/_shared/webhook-notification.deno.ts',
+    'supabase/functions/_shared/print-agent-gateway.deno.ts']],
   /*
    * El importe va en su PROPIO paso porque es el único que necesita
    * `--allow-env`: `preferenceRequest()` lee el entorno del proveedor y la base

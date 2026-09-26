@@ -20,7 +20,27 @@
   },
   "printingBaseline": {
     "rule": "after 20260926160000 the web graph has 140 migrations: a rollback to de7456e (139) is refused by design (ROLLBACK_DB_GRAPH_INCOMPATIBLE)",
-    "deploymentA": "09a22a69aa8cf9096cc2e24312314732b6de5b92 (first deploy with the 140 migrations, no drill)",
-    "deploymentB": "next docs commit, drill B→A→B"
+    "deploymentA": {
+      "commit": "09a22a69aa8cf9096cc2e24312314732b6de5b92",
+      "workflowRun": 36273646583,
+      "pagesDeployment": "2af67e0c",
+      "note": "first deploy with the 140 migrations; public smoke PASS; no drill (the previous deployment had 139)"
+    },
+    "deploymentB": {
+      "commit": "9dbd0954d182de52c4c94e3da5f1cbf257363757",
+      "workflowRun": 36275789477,
+      "attempt": 2,
+      "pagesDeployment": "a82989b1"
+    },
+    "ciRerun": "attempt 1 of the web CI (run 36275789434) failed only in the database job: public.ecr.aws answered \"toomanyrequests: Data limit exceeded\" to docker pull; the failed job was re-run unchanged and passed, then the deploy run was re-run",
+    "steps": [
+      "rollback preflight (same migration graph, 140): PASS",
+      "deploy B + public smoke (Chromium, Chrome Android, WebKit): PASS",
+      "rollback B→A (restored 09a22a6, backend unchanged, config verified): PASS",
+      "smoke on A: PASS",
+      "restore A→B (restored 9dbd095): PASS",
+      "smoke on B: PASS"
+    ],
+    "verdict": "PASS"
   }
 }

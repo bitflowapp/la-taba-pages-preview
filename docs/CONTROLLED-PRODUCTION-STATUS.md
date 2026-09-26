@@ -18,7 +18,7 @@ Rama de despliegue `release/taba-controlled-production`; PR **#98** (reemplaza a
 | Gateway | `print-agent-gateway` v1 `ACTIVE`, `verify_jwt = false`, sólo secretos por defecto; las 9 funciones de Mercado Pago sin tocar (v5) | idem |
 | Impresión en vivo | `verify-cp-printing.mjs` 65/65: guardas de la gateway, alta/rotación/revocación, estados, recuperación, reintentos, reimpresión auditada, 12 reclamos × 2 agentes → 20 únicos y 0 impresiones dobles, automática al entrar el pedido, RLS | `verify-cp-printing-20260926.json` |
 | Agente real (0.1.0) | CLI contra CP 14/14; build .NET 10 sin advertencias, 114/114, MSI verificado; instalación local `PENDING_ADMIN`; papel `PENDING_DEVICE` | `print-agent-cp-20260926.json` |
-| Nueva base de rollback | con 140 migraciones, volver a `de7456e` se rechaza por diseño; A = `09a22a6` (primer deploy con 140), B = el commit de esta documentación | ver Rollback |
+| Nueva base de rollback | con 140 migraciones, volver a `de7456e` se rechaza por diseño. A = `09a22a6` (deploy `2af67e0c`, smoke PASS); B = `9dbd095` (deploy `a82989b1`): **rollback real B→A→B PASS** con smoke en cada paso (run 36275789477). Se sirve `9dbd095` | `rollback-cp-20260926.json` |
 
 Estado: **P0 = 0, P1 = 0; frontend congelado** (sólo P0/P1). ARCA sigue sin
 activar (`ARCA_PRODUCTION: NO`).
@@ -157,9 +157,12 @@ telemetría sería una feature nueva, con una escritura anónima que abrir.
 ## Rollback
 
 - **2026-09-26 (#105): PASS** (run 36268405957). A = `1cf1cb1` (vivo), B = `de7456e`: deploy B + smoke, rollback B→A + smoke, restore A→B + smoke (Chromium, Chrome Android, WebKit en cada paso). Evidencia: `rollback-cp-20260926.json`.
-- **2026-09-26 (impresión)**: la base tiene 140 migraciones desde `20260926160000`, así que
-  `de7456e` (139) deja de ser destino válido. A = `09a22a6` (primer deploy con 140, sin ensayo);
-  B = el commit que agrega esta documentación, con ensayo B→A→B.
+- **2026-09-26 (impresión): PASS** (run 36275789477, intento 2). La base tiene 140 migraciones
+  desde `20260926160000`, así que `de7456e` (139) deja de ser destino válido. A = `09a22a6`
+  (primer deploy con 140, sin ensayo), B = `9dbd095`: deploy B + smoke, rollback B→A + smoke,
+  restore A→B + smoke (3 motores en cada paso). El intento 1 no llegó a publicar: el CI web
+  cayó sólo en el job de base porque `public.ecr.aws` limitó la descarga de una imagen
+  (`toomanyrequests`); se re-ejecutó ese job sin cambios. Se sirve `9dbd095`.
 - **2026-09-25 (#98): PASS** (run 36106090499). A = `033946b` (primer deployment con las 136 migraciones), B = `247eec7`: deploy B + smoke, rollback B→A + smoke, restore A→B + smoke (Chromium, Chrome Android, WebKit en cada paso). Hoy se sirve `247eec7`. Evidencia: `rollback-cp-20260925.json`.
 - 2026-09-25, primer intento (run 36102296295): se publicó B `033946b` con smoke
   PASS, pero el ensayo se negó a volver a `4378ed2`

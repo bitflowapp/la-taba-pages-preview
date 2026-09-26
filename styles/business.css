@@ -7481,3 +7481,10 @@ body[data-active-view="business"] .production-workspace .tray-pulse {
     margin: 0;
   }
 }
+
+/* Las pastillas de estado de las solicitudes de acceso usaban los tonos de
+   una tarjeta clara (#8a5300, #0f7a3d, #b3121b) sobre la superficie grafito:
+   «Esperando» medía 2,22:1. Toman los tonos del tema oscuro del Panel. */
+body[data-active-view="business"] .access-request-status.tone-warning { color: var(--premium-warning, #e8b85c); }
+body[data-active-view="business"] .access-request-status.tone-success { color: var(--premium-success, #69d394); }
+body[data-active-view="business"] .access-request-status.tone-danger { color: var(--brand-red-ink, #ff5f66); }

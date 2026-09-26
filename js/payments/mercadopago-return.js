@@ -11,12 +11,12 @@ let timer = null;
 async function start() {
   const repository = getOrderRepository();
   if (typeof repository?.getMercadoPagoCheckoutRecovery !== 'function') {
-    show('No podemos verificar este pago desde este despliegue.', 'manual_review');
+    show('No podemos verificar este pago desde acá. Volvé a La Taba para revisar tu carrito.', 'manual_review');
     return;
   }
   const recovery = repository.getMercadoPagoCheckoutRecovery();
   if (!recovery?.checkoutSessionId) {
-    show('No encontramos una sesión de pago en este navegador. Volvé a TABA2 para revisar tu carrito.', 'manual_review');
+    show('No encontramos una sesión de pago en este navegador. Volvé a La Taba para revisar tu carrito.', 'manual_review');
     return;
   }
   await verify(repository, recovery.checkoutSessionId);

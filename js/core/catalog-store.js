@@ -1,5 +1,6 @@
 import { categories, products as demoProducts } from '../data.js';
-import { isCommerciallyPurchasable, normalizeMoneyValue, normalizeStock } from './pricing.js';
+import { isProductionMode } from './app-mode.js';
+import { isCommerciallyPurchasable, isPricePending, normalizeMoneyValue, normalizeStock } from './pricing.js';
 import { sanitizeText } from './validators.js';
 import { applyRetailNaming, linkProcurementPacks, publishRetailUnits } from './retail-packaging.js';
 import {
@@ -150,7 +151,15 @@ export function isProductVisibleToCustomer(product) {
   // `procurementOnly` es abastecimiento: el pack con el que el local se surte
   // no es un producto de góndola. Sigue existiendo en el catálogo interno —con
   // su id, su ficha y su historial— pero no se le ofrece al cliente.
-  return Boolean(product && product.archived !== true && product.procurementOnly !== true);
+  if (!product || product.archived === true || product.procurementOnly === true) return false;
+  // En la tienda REAL un producto sin precio confirmado no está publicado: no
+  // se dibuja como una tarjeta más con «Precio pendiente» en el botón. Medido
+  // en la auditoría de frontend, eso era lo que hacía leer la góndola como
+  // una maqueta. Sigue en el estado —el carrito lo reconcilia y el Panel lo
+  // edita— pero el cliente no lo ve hasta que el comercio publique el precio.
+  // La demostración (sin backend) conserva su vidriera de precios pendientes.
+  if (isProductionMode() && isPricePending(product)) return false;
+  return true;
 }
 
 /**

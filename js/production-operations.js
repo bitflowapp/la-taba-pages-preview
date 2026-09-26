@@ -336,7 +336,7 @@ export async function handleProductionAuthSubmit(form) {
   // La activación va por la MISMA cola que el evento SIGNED_IN: un solo camino
   // serializado. Activar directo acá era la mitad de la carrera.
   await refreshProductionAccess();
-  return { handled: true, ok: true, message: 'Acceso seguro iniciado.' };
+  return { handled: true, ok: true, message: 'Sesión iniciada.' };
 }
 
 // Crear la cuenta. No pide rol, no toca membresías, y deja a la persona
@@ -2609,7 +2609,7 @@ function businessWorkspaceParts() {
     <div class="production-ops-head" data-panel-region="head">
       <div class="production-ops-identity">
         <div class="production-ops-title-row"><h1>Panel del negocio</h1>${businessOpeningChipMarkup()}</div>
-        <p class="production-ops-role">${escapeHtml(roleLabel(role))} · sesión verificada</p>
+        <p class="production-ops-role">${escapeHtml(roleLabel(role))}</p>
       </div>
       <div class="production-ops-head-actions">
         ${businessSoundToggleMarkup()}
@@ -2787,7 +2787,7 @@ function businessCommandStatusMarkup() {
   const status = businessCommandStatus;
   if (!status) return '<p class="production-command-status">Persistencia local iniciando…</p>';
   const attention = Number(status.attentionRequired || 0);
-  const lastSync = status.lastReconciledAt ? dateTime(status.lastReconciledAt) : 'sin reconciliación confirmada';
+  const lastSync = status.lastReconciledAt ? dateTime(status.lastReconciledAt) : '';
   // `is-quiet` = no hay nada que hacer: conectado, sin comandos esperando y sin
   // nada que requiera intervención. Es lo que le permite al teléfono mostrar
   // una palabra en vez de tres datos; el marcado no cambia, sólo deja de ocupar
@@ -2816,7 +2816,7 @@ function businessCommandStatusMarkup() {
     : '';
   return `<div class="production-command-status is-${escapeAttribute(status.connectionState)}${quiet ? ' is-quiet' : ''}" data-business-command-status>
     <strong>${escapeHtml(status.connectionLabel)}</strong>
-    <span>Última reconciliación: ${escapeHtml(lastSync)}</span>
+    ${lastSync ? `<span>Confirmado por el servidor: ${escapeHtml(lastSync)}</span>` : ''}
     ${pendingSpan}
     ${attention ? `<span class="production-intake-error">${attention} requiere${attention === 1 ? '' : 'n'} intervención</span>` : ''}
   </div>`;

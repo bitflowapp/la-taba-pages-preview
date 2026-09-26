@@ -7356,3 +7356,135 @@ body[data-active-view="business"] .catalog-admin-row.is-archived[data-catalog-ad
     margin-inline-start: 0;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   El aviso efímero del Panel: legible y por encima de la barra de abajo.
+   ---------------------------------------------------------------------------
+   Medido a 390x844 (Chromium y WebKit) con el Panel productivo abierto:
+   · `.toast` toma `--taba-ink` de fondo y blanco de tinta. En el Panel esa
+     variable es la tinta CLARA del tema oscuro, así que el aviso era texto
+     blanco sobre gris claro (≈1,1:1): no se podía leer.
+   · Debajo de 1020px el Panel tiene su propia barra inferior, pero
+     `tokens.css` declara que la vista business «no reserva nada» abajo
+     (`--nav-block: 0`), así que el aviso caía encima de Pedidos · Qué pasa ·
+     Pagos · Mostrador · Más durante los 2,2 s que dura.
+   Toma la misma lámina clara de la tienda y se apoya sobre la barra.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .toast {
+  background: #f4f5f7;
+  box-shadow: 0 14px 38px rgb(0 0 0 / 55%);
+  color: #14161a;
+}
+
+@media (max-width: 1020px) {
+  body[data-active-view="business"] .toast {
+    bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + var(--stack-gap));
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   El ingreso al Panel.
+   ---------------------------------------------------------------------------
+   · «Creá tu cuenta» y «Olvidé mi contraseña» usaban el rojo oscuro pensado
+     para una tarjeta clara (#9c0c15) sobre la tarjeta grafito del Panel:
+     1,66:1, medido en todos los anchos. Toman el rojo de texto de la marca.
+   · En escritorio la tarjeta era una grilla de dos columnas: el título a la
+     izquierda, el formulario pegado al borde derecho y los dos enlaces debajo
+     del título, lejos del formulario al que pertenecen. Es un formulario de
+     dos campos: una sola columna, centrada, como en el teléfono.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .production-auth-card .link-button {
+  color: var(--brand-red-ink, #ff5f66);
+}
+
+body[data-active-view="business"] .production-auth-card {
+  grid-template-columns: minmax(0, 1fr);
+  width: min(100%, 520px);
+  margin-inline: auto;
+}
+
+body[data-active-view="business"] .production-auth-card .production-auth-form {
+  min-width: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   Lo primero que se ve en el Panel es la cola, no el encabezado.
+   ---------------------------------------------------------------------------
+   Medido con los seis pedidos de `scripts/lib/business-panel-fixtures.mjs`:
+   a 390x844 la primera tarjeta empezaba en 494px —más de la mitad de la
+   pantalla era título, rol, dos botones de sesión, estado, repartidores y
+   contadores— y a 1366x768 en 589px, sin un solo pedido entero a la vista.
+   · Teléfono: «Panel del negocio» queda para el lector de pantalla (la barra
+     de arriba ya dice dónde estás) y el rol comparte renglón con Timbre y
+     Cerrar sesión, que siguen midiendo 44px.
+   · Todos los anchos: menos aire entre las bandas de arriba.
+   ------------------------------------------------------------------------ */
+@media (max-width: 620px) {
+  body[data-active-view="business"] .production-workspace .production-ops-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 0;
+  }
+
+  body[data-active-view="business"] .production-workspace .production-ops-head h1 {
+    position: absolute;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  body[data-active-view="business"] .production-workspace .production-ops-role {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  body[data-active-view="business"] .production-workspace .production-ops-head-actions {
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    width: auto;
+  }
+
+  body[data-active-view="business"] .production-workspace .production-ops-head-actions
+    :is(.ghost-button, .secondary-button) {
+    padding-inline: 12px;
+    white-space: nowrap;
+  }
+}
+
+body[data-active-view="business"] .production-workspace {
+  gap: 12px;
+}
+
+body[data-active-view="business"] .production-workspace .production-ops-status {
+  margin-bottom: 0;
+}
+
+body[data-active-view="business"] .production-workspace .tray-pulse {
+  margin-block: 4px 8px;
+}
+
+@media (min-width: 621px) {
+  /* El rol es una palabra («Dueño», «Equipo»): va al lado del título, no en
+     un renglón propio que empuja la cola 30px más abajo. */
+  body[data-active-view="business"] .production-workspace .production-ops-identity {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 12px;
+  }
+
+  body[data-active-view="business"] .production-workspace .production-ops-role {
+    margin: 0;
+  }
+}
+
+/* Las pastillas de estado de las solicitudes de acceso usaban los tonos de
+   una tarjeta clara (#8a5300, #0f7a3d, #b3121b) sobre la superficie grafito:
+   «Esperando» medía 2,22:1. Toman los tonos del tema oscuro del Panel. */
+body[data-active-view="business"] .access-request-status.tone-warning { color: var(--premium-warning, #e8b85c); }
+body[data-active-view="business"] .access-request-status.tone-success { color: var(--premium-success, #69d394); }
+body[data-active-view="business"] .access-request-status.tone-danger { color: var(--brand-red-ink, #ff5f66); }

@@ -10,7 +10,7 @@ const url = `https://${ref}.supabase.co`;
 const business = 'a57b1c20-0f4e-4a6b-9d31-7c2e5f8a41d0';
 const runName = 'RIDER PILOT FULL UI QA ACTIVE';
 if (leerSecreto(runName)) throw Error('QA_RUN_EXISTS_REVIEW_BEFORE_RETRY');
-const stylesheet = await fetch('http://127.0.0.1:39092/styles/tracking.css?v=60',
+const stylesheet = await fetch('http://127.0.0.1:39092/styles/tracking.css?v=61',
   { signal: AbortSignal.timeout(8000) });
 if (stylesheet.status !== 200 || !(await stylesheet.text()).includes('.tracking-premium')) {
   throw Error('QA_TRACKING_STYLES_UNAVAILABLE');

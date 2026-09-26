@@ -154,14 +154,14 @@ export function validateProductDraft(fields = {}, { existingGtinOwner = null } =
 export function buildStorefrontPreview(value = {}, { imageReady = false } = {}) {
   const blockers = [];
   if (!imageReady) blockers.push('Falta la foto aprobada del producto.');
-  if (value.pricePending) blockers.push('El precio está pendiente: se va a ver, pero nadie va a poder comprarlo.');
+  if (value.pricePending) blockers.push('El precio está pendiente: no se va a ver en la tienda hasta que lo cargues.');
   if (Number(value.stock || 0) <= 0) blockers.push('Sin stock cargado no se puede comprar.');
   return Object.freeze({
     title: String(value.name || 'Producto sin nombre'),
     subtitle: [value.brand, value.presentation].filter(Boolean).join(' · '),
     priceLabel: value.pricePending ? 'Precio pendiente' : formatMoney(value.price),
     availabilityLabel: value.pricePending
-      ? 'Visible, no se puede comprar'
+      ? 'No se muestra hasta tener precio'
       : Number(value.stock || 0) > 0 && imageReady
         ? 'A la venta'
         : 'Visible cuando se complete',

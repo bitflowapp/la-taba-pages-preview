@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import path from 'node:path';
 import test from 'node:test';
 import forge from 'node-forge';
 import { CONFIRM_PHRASE, CliRefusal, parseArgs, runArcaCli } from '../src/cli.js';
@@ -6,8 +7,9 @@ import { CONFIRM_PHRASE, CliRefusal, parseArgs, runArcaCli } from '../src/cli.js
 const homologationEnv = {
   ARCA_ENVIRONMENT: 'homologation',
   ARCA_CUIT: '20123456789',
-  ARCA_CERTIFICATE_PATH: process.platform === 'win32' ? 'C:\\secrets\\cert.pem' : '/run/secrets/cert.pem',
-  ARCA_PRIVATE_KEY_PATH: process.platform === 'win32' ? 'C:\\secrets\\key.pem' : '/run/secrets/key.pem',
+  // Absolutas en cualquier sistema; nunca se leen (las credenciales vienen del doble).
+  ARCA_CERTIFICATE_PATH: path.resolve('/run/secrets/cert.pem'),
+  ARCA_PRIVATE_KEY_PATH: path.resolve('/run/secrets/key.pem'),
   ARCA_HOMOLOGATION_CONSENT: 'I_UNDERSTAND_THIS_USES_ARCA_HOMOLOGATION',
 };
 // Certificado sintético autofirmado (sólo para firmar el TRA contra el doble de WSAA).

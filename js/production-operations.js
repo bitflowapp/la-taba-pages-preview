@@ -336,7 +336,7 @@ export async function handleProductionAuthSubmit(form) {
   // La activación va por la MISMA cola que el evento SIGNED_IN: un solo camino
   // serializado. Activar directo acá era la mitad de la carrera.
   await refreshProductionAccess();
-  return { handled: true, ok: true, message: 'Acceso seguro iniciado.' };
+  return { handled: true, ok: true, message: 'Sesión iniciada.' };
 }
 
 // Crear la cuenta. No pide rol, no toca membresías, y deja a la persona

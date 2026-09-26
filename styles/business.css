@@ -7381,3 +7381,28 @@ body[data-active-view="business"] .toast {
     bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + var(--stack-gap));
   }
 }
+
+/* ---------------------------------------------------------------------------
+   El ingreso al Panel.
+   ---------------------------------------------------------------------------
+   · «Creá tu cuenta» y «Olvidé mi contraseña» usaban el rojo oscuro pensado
+     para una tarjeta clara (#9c0c15) sobre la tarjeta grafito del Panel:
+     1,66:1, medido en todos los anchos. Toman el rojo de texto de la marca.
+   · En escritorio la tarjeta era una grilla de dos columnas: el título a la
+     izquierda, el formulario pegado al borde derecho y los dos enlaces debajo
+     del título, lejos del formulario al que pertenecen. Es un formulario de
+     dos campos: una sola columna, centrada, como en el teléfono.
+   ------------------------------------------------------------------------ */
+body[data-active-view="business"] .production-auth-card .link-button {
+  color: var(--brand-red-ink, #ff5f66);
+}
+
+body[data-active-view="business"] .production-auth-card {
+  grid-template-columns: minmax(0, 1fr);
+  width: min(100%, 520px);
+  margin-inline: auto;
+}
+
+body[data-active-view="business"] .production-auth-card .production-auth-form {
+  min-width: 0;
+}

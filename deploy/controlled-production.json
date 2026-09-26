@@ -7,7 +7,13 @@
   "cloudflareProject": "la-taba-commercial-pilot",
   "customerUrl": "https://la-taba-commercial-pilot.pages.dev/",
   "businessPanelUrl": "https://la-taba-commercial-pilot.pages.dev/#business",
-  "manualPaymentOnly": true,
+  "manualPaymentOnly": false,
+  "onlinePayments": {
+    "provider": "mercadopago-oauth",
+    "runbook": "docs/MERCADOPAGO_PRODUCCION_CP.md",
+    "approvedBy": "Operador de La Taba (instrucción en sesión, 2026-09-26)",
+    "approvedAt": "2026-09-26"
+  },
   "catalogApprovalFile": null,
   "rider": {
     "targetMode": "pilot",

@@ -2754,8 +2754,13 @@ function ageTag(product) {
  * y no hay ninguna que se pueda citar, así que el detalle dice el hecho —todavía
  * no está a la venta— y la pill se queda con la convención corta de góndola.
  */
+// Vidriera es «lo tiene, con stock contado, y todavía no lo puede vender».
+// Sin unidades no es vidriera: en la base `available` sigue al stock, así que
+// una cerveza AGOTADA llegaba con `available` en falso y se anunciaba como
+// «Próximamente / Todavía no está a la venta», que promete algo falso.
 function esVidrieraDeAlcohol(product) {
-  return Boolean(product?.alcoholic) && product?.archived !== true && product?.available !== true;
+  return Boolean(product?.alcoholic) && product?.archived !== true && product?.available !== true
+    && Number(product?.stock) > 0;
 }
 
 // Pill de disponibilidad: sólo aparece cuando hay algo que avisar (agotado,
@@ -2764,8 +2769,8 @@ export function stockPill(product) {
   if (product.pricePending) return '';
   if (product.archived) return '<span class="stock-pill empty">Archivado</span>';
   if (esVidrieraDeAlcohol(product)) return '<span class="stock-pill empty">Próximamente</span>';
-  if (!product.available) return '<span class="stock-pill empty">No disponible</span>';
   if (product.stock <= 0) return '<span class="stock-pill empty">Agotado</span>';
+  if (!product.available) return '<span class="stock-pill empty">No disponible</span>';
   if (product.stock <= 4) return `<span class="stock-pill low">Últimas ${product.stock}</span>`;
   return '';
 }
@@ -2774,8 +2779,9 @@ export function stockPill(product) {
 export function availabilityLabel(product) {
   if (product.pricePending) return `${PRICE_PENDING_TITLE}; ${PRICE_PENDING_DETAIL.toLowerCase()}`;
   if (esVidrieraDeAlcohol(product)) return 'Todavía no está a la venta';
-  if (product.archived || !product.available) return 'No disponible por ahora';
+  if (product.archived) return 'No disponible por ahora';
   if (product.stock <= 0) return 'Agotado';
+  if (!product.available) return 'No disponible por ahora';
   if (product.stock <= 4) return `Últimas ${product.stock}`;
   return 'Disponible';
 }

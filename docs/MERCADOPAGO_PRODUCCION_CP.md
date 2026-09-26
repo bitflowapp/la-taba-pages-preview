@@ -9,7 +9,7 @@ El reporte técnico de Staging está en `docs/MERCADOPAGO_FINALIZATION_2026-09-2
 
 | | |
 |---|---|
-| `ONLINE_PAYMENTS_PRODUCTION_READY` | **NO**: faltan H1–H3 (§3), que son de personas. El backend de CP ya tiene las migraciones y las nueve funciones desplegadas (release `0bc9318`); cerradas hasta H2 |
+| `ONLINE_PAYMENTS_PRODUCTION_READY` | **Configurado (2026-09-26, §8)**. H1, H2 y H2b hechos. Falta el alta de Walter como dueño de `la-taba-cp` y su consentimiento (H3), un catálogo real y las autorizaciones de H4–H6 |
 | `REAL_PAYMENT_E2E` | **NO EJECUTADO**: requiere H1–H5 y el negocio real no tiene productos |
 | Código y pruebas sin dinero | listos (§6) |
 | Arquitectura | marketplace: cada negocio conecta **su** cuenta por OAuth y la preferencia la firma el token de **ese** vendedor |
@@ -234,3 +234,52 @@ Mercado Pago y no volver a encender sin la causa corregida.
    - reembolso y cancelación: 401.
 5. **Secretos.** Ninguno cargado todavía (H2). **Worker.** Sin provisionar
    (después de H2). **Web.** Sigue en sólo cobro manual (H2b).
+
+## 8. Configurado en CP (2026-09-26, madrugada UTC)
+
+**Mercado Pago Developers.** Sesión de la cuenta dueña de La Taba Delivery, con
+tres verificaciones por código al celular. Aplicación `7677852968049976`,
+Checkout Pro, PKCE **Sí**, permisos `read`, `write` y `offline access`.
+
+- **URLs de redirección OAuth.** Se agregó
+  `https://tkanbadcglszlcyfjvpv.supabase.co/functions/v1/mercadopago-oauth-callback`
+  y se conservó la de la producción vieja. Verificado releyendo la página.
+- **Webhooks, modo productivo.** La URL quedó en
+  `https://tkanbadcglszlcyfjvpv.supabase.co/functions/v1/mercadopago-webhook`
+  (antes apuntaba a `wwcpogltfgzgkrlilbcd`). Evento **Pagos (legacy)**, que es
+  el `payment` de Checkout Pro.
+
+**Secretos de CP.** El *Client Secret* y la clave de webhooks se leyeron de la
+página sólo en memoria y viajaron por la entrada estándar del cargador a la
+Management API. Nunca se imprimieron, se guardaron ni pasaron por el
+portapapeles. Se cargaron:
+- `MERCADOPAGO_CLIENT_ID` y `MERCADOPAGO_CLIENT_SECRET`;
+- `MERCADOPAGO_OAUTH_WEBHOOK_SECRET`;
+- la identidad de entorno, OAuth, panel, checkout y orígenes;
+- `MERCADOPAGO_TOKEN_ENCRYPTION_KEY` y `PAYMENT_LOG_HASH_SALT`, generados;
+- `PAYMENT_WORKER_SECRET` y Vault, por la herramienta del worker.
+
+Con Staging no se comparte ningún valor salvo el modo `oauth`, comparado por
+huella. No hay token global.
+
+**Interruptor de plataforma.** `MERCADOPAGO_PRODUCTION_REVIEW_STATUS=approved`.
+Sin él, todo el runtime productivo falla cerrado (503), incluido el
+consentimiento del vendedor. No habilita a ningún negocio: eso sigue siendo el
+interruptor por negocio (H4). Para apagar el cobro real de toda la plataforma
+alcanza con borrar esa variable.
+
+**Worker.** `sincronizar-worker-hmac.mjs --target=controlled-production --apply`
+quedó alineado, con sonda firmada sin trabajo. El cron corre cada 30 s y sólo
+llama al worker si hay trabajo.
+
+**Smokes.**
+- Sonda de preparación: **lista**. El webhook sin firma responde 401 y el
+  preflight desde CP responde 204 con ese origen.
+- 12 casos sin autenticación ni firma, **0 aceptados**. El callback sin `state`
+  redirige al panel.
+- Notificación simulada por Mercado Pago (evento Pagos, firmada con la clave
+  productiva) a la URL de CP: **503**. La firma es válida (una inválida
+  responde 401 antes); el 503 es porque no hay vendedor conectado para rutear.
+
+**Negocios.** `la-taba-cp` sigue cerrado, con 0 dueños, 0 productos y sin
+ajustes de Mercado Pago: no se ofrece. El cobro manual no cambió.

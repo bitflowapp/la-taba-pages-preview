@@ -15,6 +15,12 @@ export interface ArcaConfig {
   endpoints: ArcaEndpoints;
   homologationConsent: boolean;
   productionEnabled: boolean;
+  /**
+   * Ruta absoluta (volumen privado del worker) donde se guarda el Ticket de
+   * Acceso vigente. WSAA no emite otro mientras el anterior vale (12 h,
+   * `coe.alreadyAuthenticated`): sin esto, un reinicio deja al worker sin TA.
+   */
+  ticketCachePath?: string;
 }
 
 export interface LoginTicket {
@@ -32,6 +38,12 @@ export interface FiscalRequest {
   concept: 1 | 2 | 3;
   recipientDocumentType: number;
   recipientDocumentNumber: string;
+  /**
+   * Condición frente al IVA del receptor (`CondicionIVAReceptorId`, RG 5616,
+   * manual WSFEv1 4.0+). Sale de la política contable aprobada y se valida
+   * contra `FEParamGetCondicionIvaReceptor`; ARCA rechaza con 10246 si falta.
+   */
+  recipientVatConditionId: number;
   documentNumber: number;
   issueDate: string;
   totalAmount: number;
@@ -60,6 +72,10 @@ export type ArcaClassification =
 export interface ArcaResult {
   classification: ArcaClassification;
   documentNumber?: number;
+  /** Datos que devuelve FECompConsultar para conciliar (no se usan al emitir). */
+  recipientDocumentType?: number;
+  recipientDocumentNumber?: string;
+  recipientVatConditionId?: number;
   cae?: string;
   caeExpiration?: string;
   issueDate?: string;
@@ -80,7 +96,8 @@ export type FiscalParameterType =
   | 'vat_types'
   | 'currencies'
   | 'concepts'
-  | 'points_of_sale';
+  | 'points_of_sale'
+  | 'recipient_vat_conditions';
 
 export interface FiscalParameterSnapshot {
   environment: Exclude<ArcaEnvironment, 'disabled'>;

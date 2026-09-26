@@ -7,6 +7,8 @@ const REQUIRED_PARAMETER_TYPES: readonly FiscalParameterType[] = Object.freeze([
   'currencies',
   'concepts',
   'points_of_sale',
+  // RG 5616: condiciones frente al IVA del receptor válidas por clase de comprobante.
+  'recipient_vat_conditions',
 ]);
 
 export async function syncOfficialParameterTables({

@@ -12,6 +12,7 @@ export const PARAMETER_OPERATIONS: Readonly<Record<FiscalParameterType, string>>
   currencies: 'FEParamGetTiposMonedas',
   concepts: 'FEParamGetTiposConcepto',
   points_of_sale: 'FEParamGetPtosVenta',
+  recipient_vat_conditions: 'FEParamGetCondicionIvaReceptor',
 });
 
 export class WsfeClient {
@@ -54,15 +55,23 @@ export class WsfeClient {
     const result = findFirst(parsed, 'ResultGet');
     if (!result || !xmlText(findFirst(result, 'CbteNro'))) return null;
     const cae = xmlText(findFirst(result, 'CodAutorizacion'));
+    const outcome = xmlText(findFirst(result, 'Resultado'));
     const totalAmount = numberOrUndefined(xmlText(findFirst(result, 'ImpTotal')));
     const pointOfSale = numberOrUndefined(xmlText(findFirst(result, 'PtoVta')));
     const documentType = numberOrUndefined(xmlText(findFirst(result, 'CbteTipo')));
+    const recipientDocumentType = numberOrUndefined(xmlText(findFirst(result, 'DocTipo')));
+    const recipientDocumentNumber = xmlText(findFirst(result, 'DocNro'));
+    const recipientVatConditionId = numberOrUndefined(xmlText(findFirst(result, 'CondicionIVAReceptorId')));
     return {
-      classification: /^\d{14}$/.test(cae) ? 'authorized' : 'service_error',
+      // Sólo un comprobante aprobado («A») con CAE de 14 dígitos cuenta como autorizado.
+      classification: /^\d{14}$/.test(cae) && (!outcome || outcome === 'A') ? 'authorized' : 'service_error',
       documentNumber: Number(xmlText(findFirst(result, 'CbteNro'))),
       ...(totalAmount !== undefined ? { totalAmount } : {}),
       ...(pointOfSale !== undefined ? { pointOfSale } : {}),
       ...(documentType !== undefined ? { documentType } : {}),
+      ...(recipientDocumentType !== undefined ? { recipientDocumentType } : {}),
+      ...(recipientDocumentNumber ? { recipientDocumentNumber } : {}),
+      ...(recipientVatConditionId !== undefined ? { recipientVatConditionId } : {}),
       ...(cae ? { cae } : {}),
       ...(xmlText(findFirst(result, 'FchVto')) ? { caeExpiration: xmlText(findFirst(result, 'FchVto')) } : {}),
       ...(xmlText(findFirst(result, 'CbteFch')) ? { issueDate: xmlText(findFirst(result, 'CbteFch')) } : {}),
@@ -116,6 +125,9 @@ export function validateFiscalRequest(request: FiscalRequest, configuredCuit: st
   assertPositiveInteger(request.pointOfSale, 'punto de venta');
   assertPositiveInteger(request.documentType, 'tipo de comprobante');
   assertPositiveInteger(request.documentNumber, 'número');
+  // RG 5616: sin la condición frente al IVA del receptor ARCA rechaza (10246).
+  // Se exige ANTES de reservar un número: un dato faltante nunca consume numeración.
+  assertPositiveInteger(request.recipientVatConditionId, 'condición frente al IVA del receptor');
   if (![1, 2, 3].includes(request.concept)) throw new Error('Concepto fiscal no soportado.');
   if (!/^\d{8}$/.test(request.issueDate)) throw new Error('Fecha fiscal inválida.');
   if (!/^[A-Z]{3}$/.test(request.currencyCode) || !(request.currencyRate > 0)) throw new Error('Moneda o cotización inválida.');
@@ -167,11 +179,14 @@ export function parseCaeResponse(xml: string, requestHash = '', responseHash = '
   };
 }
 
-function caeRequestXml(request: FiscalRequest): string {
+// Orden del WSDL oficial de WSFEv1 (FEDetRequest): … MonId, MonCotiz,
+// CanMisMonExt (sólo moneda extranjera), CondicionIVAReceptorId, CbtesAsoc,
+// Tributos, Iva, Opcionales… Un elemento fuera de orden es un SOAP inválido.
+export function caeRequestXml(request: FiscalRequest): string {
   const services = request.concept === 1 ? '' : `<ar:FchServDesde>${request.serviceFrom}</ar:FchServDesde><ar:FchServHasta>${request.serviceTo}</ar:FchServHasta><ar:FchVtoPago>${request.paymentDueDate}</ar:FchVtoPago>`;
   const vat = request.vatItems.length ? `<ar:Iva>${request.vatItems.map((item) => `<ar:AlicIva><ar:Id>${item.id}</ar:Id><ar:BaseImp>${money(item.baseAmount)}</ar:BaseImp><ar:Importe>${money(item.amount)}</ar:Importe></ar:AlicIva>`).join('')}</ar:Iva>` : '';
   const associated = request.associatedDocument ? `<ar:CbtesAsoc><ar:CbteAsoc><ar:Tipo>${request.associatedDocument.documentType}</ar:Tipo><ar:PtoVta>${request.associatedDocument.pointOfSale}</ar:PtoVta><ar:Nro>${request.associatedDocument.documentNumber}</ar:Nro>${request.associatedDocument.cuit ? `<ar:Cuit>${escapeXml(request.associatedDocument.cuit)}</ar:Cuit>` : ''}${request.associatedDocument.issueDate ? `<ar:CbteFch>${escapeXml(request.associatedDocument.issueDate)}</ar:CbteFch>` : ''}</ar:CbteAsoc></ar:CbtesAsoc>` : '';
-  return `<ar:FeCAEReq><ar:FeCabReq><ar:CantReg>1</ar:CantReg><ar:PtoVta>${request.pointOfSale}</ar:PtoVta><ar:CbteTipo>${request.documentType}</ar:CbteTipo></ar:FeCabReq><ar:FeDetReq><ar:FECAEDetRequest><ar:Concepto>${request.concept}</ar:Concepto><ar:DocTipo>${request.recipientDocumentType}</ar:DocTipo><ar:DocNro>${escapeXml(request.recipientDocumentNumber)}</ar:DocNro><ar:CbteDesde>${request.documentNumber}</ar:CbteDesde><ar:CbteHasta>${request.documentNumber}</ar:CbteHasta><ar:CbteFch>${request.issueDate}</ar:CbteFch><ar:ImpTotal>${money(request.totalAmount)}</ar:ImpTotal><ar:ImpTotConc>${money(request.nonTaxedAmount)}</ar:ImpTotConc><ar:ImpNeto>${money(request.netAmount)}</ar:ImpNeto><ar:ImpOpEx>${money(request.exemptAmount)}</ar:ImpOpEx><ar:ImpIVA>${money(request.vatAmount)}</ar:ImpIVA><ar:ImpTrib>${money(request.otherTaxesAmount)}</ar:ImpTrib>${services}<ar:MonId>${escapeXml(request.currencyCode)}</ar:MonId><ar:MonCotiz>${request.currencyRate.toFixed(6)}</ar:MonCotiz>${associated}${vat}</ar:FECAEDetRequest></ar:FeDetReq></ar:FeCAEReq>`;
+  return `<ar:FeCAEReq><ar:FeCabReq><ar:CantReg>1</ar:CantReg><ar:PtoVta>${request.pointOfSale}</ar:PtoVta><ar:CbteTipo>${request.documentType}</ar:CbteTipo></ar:FeCabReq><ar:FeDetReq><ar:FECAEDetRequest><ar:Concepto>${request.concept}</ar:Concepto><ar:DocTipo>${request.recipientDocumentType}</ar:DocTipo><ar:DocNro>${escapeXml(request.recipientDocumentNumber)}</ar:DocNro><ar:CbteDesde>${request.documentNumber}</ar:CbteDesde><ar:CbteHasta>${request.documentNumber}</ar:CbteHasta><ar:CbteFch>${request.issueDate}</ar:CbteFch><ar:ImpTotal>${money(request.totalAmount)}</ar:ImpTotal><ar:ImpTotConc>${money(request.nonTaxedAmount)}</ar:ImpTotConc><ar:ImpNeto>${money(request.netAmount)}</ar:ImpNeto><ar:ImpOpEx>${money(request.exemptAmount)}</ar:ImpOpEx><ar:ImpTrib>${money(request.otherTaxesAmount)}</ar:ImpTrib><ar:ImpIVA>${money(request.vatAmount)}</ar:ImpIVA>${services}<ar:MonId>${escapeXml(request.currencyCode)}</ar:MonId><ar:MonCotiz>${request.currencyRate.toFixed(6)}</ar:MonCotiz><ar:CondicionIVAReceptorId>${request.recipientVatConditionId}</ar:CondicionIVAReceptorId>${associated}${vat}</ar:FECAEDetRequest></ar:FeDetReq></ar:FeCAEReq>`;
 }
 
 function checkedSoap(xml: string): unknown {

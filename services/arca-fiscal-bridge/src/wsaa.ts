@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import forge from 'node-forge';
 import type { ArcaConfig, LoginTicket } from './types.js';
 import { assertRemoteExecutionAllowed } from './config.js';
@@ -60,8 +62,11 @@ export class WsaaClient {
 
   async login(service = 'wsfe', now = new Date()): Promise<LoginTicket> {
     const cacheKey = `${this.#config.environment}:${this.#config.cuit}:${service}`;
-    const cached = this.#cache.get(cacheKey);
-    if (cached && Date.parse(cached.expirationTime) - now.getTime() > 5 * 60_000) return cached;
+    const cached = this.#cache.get(cacheKey) ?? readPersistedTicket(this.#config.ticketCachePath, cacheKey);
+    if (cached && Date.parse(cached.expirationTime) - now.getTime() > 5 * 60_000) {
+      this.#cache.set(cacheKey, cached);
+      return cached;
+    }
     const pending = this.#inflight.get(cacheKey);
     if (pending) return pending;
     const request = this.#loginFresh(service, now, cacheKey);
@@ -77,6 +82,7 @@ export class WsaaClient {
     const response = await postSoap({ endpoint: this.#config.endpoints.wsaa, action: '', body: envelope, fetchImpl: this.#fetchImpl });
     const ticket = parseLoginTicketResponse(response.body);
     this.#cache.set(cacheKey, ticket);
+    persistTicket(this.#config.ticketCachePath, cacheKey, ticket);
     return ticket;
   }
 
@@ -86,7 +92,42 @@ export class WsaaClient {
 function soapFault(value: unknown): Error {
   const code = xmlText(findFirst(value, 'faultcode')) || 'WSAA_FAULT';
   const message = xmlText(findFirst(value, 'faultstring')) || 'WSAA rechazó la autenticación.';
+  if (/alreadyAuthenticated/i.test(code)) {
+    // Hay un TA vigente que este proceso no tiene (se reinició sin caché
+    // persistente). WSAA no emite otro hasta que venza: se reintenta más tarde.
+    const error = new Error('WSAA ya emitió un TA vigente para este certificado; se reintenta cuando venza.');
+    Object.assign(error, { code: 'WSAA_ALREADY_AUTHENTICATED', retryable: true });
+    return error;
+  }
   const error = new Error(message);
-  Object.assign(error, { code, retryable: false });
+  Object.assign(error, { code, retryable: /^(?:ns1:)?(?:wsaa\.|wsn\.unavailable)/.test(code) });
   return error;
+}
+
+interface PersistedTickets { [key: string]: LoginTicket }
+
+function readPersistedTicket(file: string | undefined, key: string): LoginTicket | undefined {
+  if (!file) return undefined;
+  try {
+    const stored = JSON.parse(fs.readFileSync(file, 'utf8')) as PersistedTickets;
+    const ticket = stored[key];
+    return ticket?.token && ticket?.sign && Number.isFinite(Date.parse(ticket.expirationTime)) ? Object.freeze({ ...ticket }) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** TA en el volumen privado del worker: 0600, reemplazo atómico, nunca en logs. */
+function persistTicket(file: string | undefined, key: string, ticket: LoginTicket): void {
+  if (!file) return;
+  let stored: PersistedTickets = {};
+  try { stored = JSON.parse(fs.readFileSync(file, 'utf8')) as PersistedTickets; } catch { stored = {}; }
+  for (const [name, value] of Object.entries(stored)) {
+    if (!Number.isFinite(Date.parse(value?.expirationTime)) || Date.parse(value.expirationTime) < Date.now()) delete stored[name];
+  }
+  stored[key] = ticket;
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const temporary = `${file}.tmp`;
+  fs.writeFileSync(temporary, JSON.stringify(stored), { mode: 0o600 });
+  fs.renameSync(temporary, file);
 }

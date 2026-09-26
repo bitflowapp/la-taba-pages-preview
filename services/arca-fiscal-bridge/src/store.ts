@@ -93,10 +93,10 @@ export interface PrivateStoreConfig {
 export function loadPrivateStoreConfig(env: NodeJS.ProcessEnv = process.env): PrivateStoreConfig {
   const url = String(env.SUPABASE_URL || '').replace(/\/$/, '');
   const keyPath = String(env.SUPABASE_SERVICE_ROLE_PATH || '').trim();
-  if (!/^https:\/\/[a-z0-9-]+[.]supabase[.]co$/i.test(url)) throw new Error('SUPABASE_URL privado invÃ¡lido.');
+  if (!/^https:\/\/[a-z0-9-]+[.]supabase[.]co$/i.test(url)) throw new Error('SUPABASE_URL privado inválido.');
   if (!path.isAbsolute(keyPath) || /-----BEGIN/.test(keyPath)) throw new Error('SUPABASE_SERVICE_ROLE_PATH debe ser una ruta absoluta montada.');
   const serviceRole = fs.readFileSync(keyPath, 'utf8').trim();
-  if (serviceRole.length < 32 || /\s/.test(serviceRole)) throw new Error('Service role invÃ¡lido.');
+  if (serviceRole.length < 32 || /\s/.test(serviceRole)) throw new Error('Service role inválido.');
   return { url, serviceRole };
 }
 
@@ -130,7 +130,7 @@ export class SupabaseFiscalStore implements FiscalStore, FiscalArtifactStore {
     });
     const result = Array.isArray(row) ? row[0] : row;
     const value = Number((result as Record<string, unknown> | undefined)?.document_number);
-    if (!Number.isSafeInteger(value) || value < 1) throw new Error('La reserva fiscal no devolviÃ³ un nÃºmero vÃ¡lido.');
+    if (!Number.isSafeInteger(value) || value < 1) throw new Error('La reserva fiscal no devolvió un número válido.');
     return value;
   }
 
@@ -277,7 +277,7 @@ export class SupabaseFiscalStore implements FiscalStore, FiscalArtifactStore {
     });
     const text = await response.text();
     if (!response.ok) {
-      let message = `PostgreSQL respondiÃ³ ${response.status}.`;
+      let message = `PostgreSQL respondió ${response.status}.`;
       try { message = String((JSON.parse(text) as { message?: string }).message || message); } catch { /* sanitized fallback */ }
       throw Object.assign(new Error(message.slice(0, 300)), { code: response.status >= 500 ? 'DATABASE_UNAVAILABLE' : 'DATABASE_ERROR', retryable: response.status >= 500 });
     }
@@ -298,10 +298,10 @@ export class SupabasePrivateArtifactStorage {
 
   async putPdf(storagePath: string, contents: Uint8Array, expectedSha256: string): Promise<void> {
     if (!/^fiscal\/[0-9a-f-]{36}\/[0-9a-f-]{36}\/[0-9a-f-]{36}[.]pdf$/.test(storagePath)) {
-      throw Object.assign(new Error('Ruta privada de artefacto invÃ¡lida.'), { code: 'ARTIFACT_PATH_INVALID', retryable: false });
+      throw Object.assign(new Error('Ruta privada de artefacto inválida.'), { code: 'ARTIFACT_PATH_INVALID', retryable: false });
     }
     if (contents.byteLength < 1 || contents.byteLength > 16_777_216 || !/^[0-9a-f]{64}$/.test(expectedSha256)) {
-      throw Object.assign(new Error('Contenido de artefacto invÃ¡lido.'), { code: 'ARTIFACT_CONTENT_INVALID', retryable: false });
+      throw Object.assign(new Error('Contenido de artefacto inválido.'), { code: 'ARTIFACT_CONTENT_INVALID', retryable: false });
     }
     const response = await this.#fetchImpl(`${this.#url}/storage/v1/object/fiscal-documents/${encodeStoragePath(storagePath)}`, {
       method: 'POST',
@@ -342,6 +342,8 @@ function rowToRequest(row: Record<string, unknown>, associated?: { documentType:
     concept: numberValue(row.concept, 1) as 1 | 2 | 3,
     recipientDocumentType: numberValue(row.recipient_document_type),
     recipientDocumentNumber: String(row.recipient_document_number || ''),
+    // RG 5616. Sin este dato el worker no reserva número: va a revisión fiscal.
+    recipientVatConditionId: numberValue(row.recipient_vat_condition_id),
     documentNumber: numberValue(row.document_number),
     issueDate,
     totalAmount: numberValue(row.total_amount),

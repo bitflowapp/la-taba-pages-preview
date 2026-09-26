@@ -141,15 +141,15 @@ try {
       'business_self_delivery_test.sql','controlled_production_qa_window_test.sql',
       'mercadopago_availability_requires_seller.local.sql','payment_method_isolation.local.sql',
       'mercadopago_seller_cannot_charge_alert.local.sql','mercadopago_operator_switch.local.sql',
-      'local_print_agent_test.sql'];
+      'local_print_agent_test.sql','fiscal_receiver_vat_condition_test.sql'];
     for(const name of canonicalTests){
       const output=docker(['exec','-i',container,'psql','-h','/tmp','-U','postgres','-d','postgres','-X','-qAt','-v','ON_ERROR_STOP=1'],
         Buffer.from('set search_path=public,extensions;\n'+fs.readFileSync(path.join(ROOT,'supabase/tests',name),'utf8'))).toString();
       assert.doesNotMatch(output,/^not ok\b/m,name);assert.match(output,/^1\.\.[0-9]+$/m,name);
       assertions+=Number(/^1\.\.([0-9]+)$/m.exec(output)[1]);
     }
-    assert.equal(assertions,524);
-    console.log('CANONICAL_PGTAP: 250 + 44 least-privilege + 50 reparto-propio + 37 ventana QA/columnas privadas/pausa + 9 Mercado Pago sólo con vendedor conectado + 5 aislamiento cobro manual/Mercado Pago + 9 alerta de vendedor que no puede cobrar + 16 interruptor de operador por negocio + 104 impresión del mostrador assertions PASS');
+    assert.equal(assertions,538);
+    console.log('CANONICAL_PGTAP: 250 + 44 least-privilege + 50 reparto-propio + 37 ventana QA/columnas privadas/pausa + 9 Mercado Pago sólo con vendedor conectado + 5 aislamiento cobro manual/Mercado Pago + 9 alerta de vendedor que no puede cobrar + 16 interruptor de operador por negocio + 104 impresión del mostrador + 14 condición IVA del receptor (RG 5616) assertions PASS');
 
     // pgTAP no puede probar dos agentes reclamando a la vez: una conexión por llamada.
     const { runPrintClaimRace } = await import('./print-agent/claim-race.mjs');

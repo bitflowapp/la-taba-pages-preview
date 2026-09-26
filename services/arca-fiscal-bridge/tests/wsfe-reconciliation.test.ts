@@ -13,7 +13,7 @@ const config: ArcaConfig = {
 const ticket: LoginTicket = { token: 'token', sign: 'sign', generationTime: '2026-08-02T10:00:00Z', expirationTime: '2026-08-02T22:00:00Z', service: 'wsfe' };
 const request: FiscalRequest = {
   cuit: config.cuit, pointOfSale: 5, documentType: 11, concept: 1,
-  recipientDocumentType: 99, recipientDocumentNumber: '0', documentNumber: 42,
+  recipientDocumentType: 99, recipientDocumentNumber: '0', recipientVatConditionId: 5, documentNumber: 42,
   issueDate: '20260802', totalAmount: 121, netAmount: 100, vatAmount: 21,
   exemptAmount: 0, nonTaxedAmount: 0, otherTaxesAmount: 0,
   currencyCode: 'PES', currencyRate: 1, vatItems: [{ id: 5, baseAmount: 100, amount: 21 }],
@@ -83,8 +83,10 @@ test('sincroniza tablas oficiales versionadas sin hardcodear sus valores', async
     getParameters: (currentTicket, type) => client.getParameters(currentTicket, type, new Date('2026-08-02T12:00:00Z')),
     save: async (snapshot) => { saved.push(snapshot.parameterType); },
   });
-  assert.equal(snapshots.length, 6);
-  assert.equal(saved.length, 6);
-  assert.equal(new Set(calls).size, 6);
+  assert.equal(snapshots.length, 7);
+  assert.equal(saved.length, 7);
+  assert.equal(new Set(calls).size, 7);
+  assert.ok(calls.includes('FEParamGetCondicionIvaReceptor'), 'RG 5616: se sincroniza la condición frente al IVA del receptor');
+  assert.ok(saved.includes('recipient_vat_conditions'));
   assert.ok(snapshots.every((snapshot) => snapshot.version.length === 64));
 });

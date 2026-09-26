@@ -4,7 +4,8 @@ import type { FiscalJob, FiscalStore } from './store.js';
 import type { WsaaClient } from './wsaa.js';
 import type { WsfeClient } from './wsfe.js';
 import { validateFiscalRequest } from './wsfe.js';
-import { classifyTransportFailure, reconcileAmbiguousAuthorization } from './reconciliation.js';
+import { classifyTransportFailure, decideAfterAmbiguity } from './reconciliation.js';
+import type { FiscalRequest, LoginTicket } from './types.js';
 
 export interface FiscalLogger {
   info(event: string, detail: Record<string, unknown>): void;
@@ -58,10 +59,11 @@ export class FiscalWorker {
       }
       const ticket = await this.#wsaa.login('wsfe');
       if (loaded.state === 'ambiguous' || loaded.request.documentNumber > 0) {
-        // A persisted number means a previous process may have reached ARCA. Consult
-        // first even if the local process died before saving a response.
+        // A persisted number means a previous process may have reached ARCA.
+        // Consult first; resend the SAME number only if ARCA does not have it and
+        // the last authorized is still below it. Never a new number.
         reconciled = true;
-        result = await reconcileAmbiguousAuthorization({ client: this.#wsfe, ticket, request: loaded.request });
+        result = await this.#reconcile(ticket, loaded.request, true);
       } else {
         const last = await this.#wsfe.lastAuthorized(ticket, loaded.request.pointOfSale, loaded.request.documentType);
         loaded.request.documentNumber = await this.#store.reserveNumber(job.fiscalDocumentId, this.#config.workerId, last + 1);
@@ -71,8 +73,10 @@ export class FiscalWorker {
         } catch (error) {
           result = classifyTransportFailure(error, loaded.request.documentNumber);
           if (result.classification === 'ambiguous') {
+            // Right after a timeout ARCA may still be processing: consult only.
+            // The resend decision waits for the next attempt (outbox: 60 s).
             reconciled = true;
-            result = await reconcileAmbiguousAuthorization({ client: this.#wsfe, ticket, request: loaded.request });
+            result = await this.#reconcile(ticket, loaded.request, false);
           }
         }
       }
@@ -92,6 +96,18 @@ export class FiscalWorker {
     const log = { requestId, outboxId: job.outboxId, fiscalDocumentId: job.fiscalDocumentId, classification: result.classification, durationMs: enriched.duration_ms };
     if (['authorized', 'authorized_with_observations'].includes(result.classification)) this.#logger.info('fiscal_attempt_completed', log);
     else this.#logger.warn('fiscal_attempt_completed', log);
+  }
+
+  async #reconcile(ticket: LoginTicket, request: FiscalRequest, allowResend: boolean): Promise<ArcaResult> {
+    const decision = await decideAfterAmbiguity({ client: this.#wsfe, ticket, request, allowResend });
+    if (decision.kind !== 'resend') return decision.result;
+    this.#logger.warn('fiscal_resend_same_number', { documentNumber: request.documentNumber, pointOfSale: request.pointOfSale, documentType: request.documentType });
+    try {
+      return await this.#wsfe.authorize(ticket, request);
+    } catch (error) {
+      // Otra vez ambiguo: el próximo intento vuelve a consultar antes de reenviar.
+      return classifyTransportFailure(error, request.documentNumber);
+    }
   }
 }
 

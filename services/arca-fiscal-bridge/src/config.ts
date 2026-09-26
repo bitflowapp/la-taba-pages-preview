@@ -40,6 +40,7 @@ export function loadArcaConfig(env: NodeJS.ProcessEnv = process.env): ArcaConfig
     endpoints,
     homologationConsent: env.ARCA_HOMOLOGATION_CONSENT === HOMOLOGATION_PHRASE,
     productionEnabled: environment === 'production' && env.ARCA_PRODUCTION_ENABLE === PRODUCTION_PHRASE,
+    ...(env.ARCA_TA_CACHE_PATH ? { ticketCachePath: absoluteSecretPath(env.ARCA_TA_CACHE_PATH, 'ARCA_TA_CACHE_PATH') } : {}),
   });
 }
 

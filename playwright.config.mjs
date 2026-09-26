@@ -10,7 +10,7 @@ process.env.TABA_E2E_RELAY_PORT = String(relayPort);
 // siguen siendo secuenciales y comparten los mismos servidores; sólo se recicla
 // el proceso del navegador antes de acumular ese estado interno.
 const mobileWebkitInteractionSpecs = /(catalog-card-glow|checkout-payment-handoff|delivery-location-confirmation|launch-ux-checkout-reorder|pwa-install)\.spec\.mjs/;
-const mobileWebkitRecoverySpecs = /(address-flow|arranque-sin-jerga|mp-back-navigation-ui|panel-order-recovery|production-cart-persistence|service-worker-degraded-recovery|storefront-stress-responsive)\.spec\.mjs/;
+const mobileWebkitRecoverySpecs = /(address-flow|arranque-sin-jerga|mp-back-navigation-ui|panel-order-recovery|production-cart-persistence|root-entry|service-worker-degraded-recovery|storefront-stress-responsive)\.spec\.mjs/;
 
 export default defineConfig({
   testDir: './tests/e2e',

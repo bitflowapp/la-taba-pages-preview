@@ -90,6 +90,7 @@ const ASSETS = [
   './js/core/showcase-mode.js',
   './js/core/simulation.js',
   './js/core/storage.js',
+  './js/core/store-entry.js',
   './js/core/storefront-filters.js',
   './js/core/stories.js',
   './js/core/validators.js',

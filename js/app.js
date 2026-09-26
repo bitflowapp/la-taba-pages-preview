@@ -45,6 +45,7 @@ import {
   showToast,
   stepStoriesModal,
   updateAddressFieldVisibility,
+  publishedBusinessValue,
   $,
 } from './ui.js';
 import { buildWhatsAppMessage, buildWhatsAppUrl, buildWhatsAppUrlFromDraft, getActiveOrder, getLastOrder } from './orders.js';
@@ -113,6 +114,8 @@ import {
   isShowcaseMode,
 } from './core/app-mode.js';
 import { isProductionCatalogReady } from './core/runtime-config.js';
+import { getCommerceAvailability } from './core/commerce-availability-store.js';
+import { describeStoreEntry } from './core/store-entry.js';
 import {
   SHOWCASE_STEPS,
   configureShowcase,
@@ -589,6 +592,7 @@ async function bootstrap() {
     }
     try {
       await startOrderRepositorySync();
+      watchStoreEntrySettles();
     } catch (error) {
       // La tienda YA pintó y se puede usar. Abrir acá el panel de recuperación
       // ponía "No pudimos abrir la tienda" encima de una tienda abierta, y al
@@ -834,21 +838,95 @@ function applyProductionCatalogGate(mode = getAppMode()) {
     node.hidden = blocked;
     node.setAttribute('aria-hidden', String(blocked));
   });
+  // La tarjeta es la puerta del local mientras no se puede pedir: dice quién
+  // es, por qué no se puede pedir ahora —sólo con lo que ya contestó el
+  // backend— y qué se puede hacer. Ver `core/store-entry.js`.
+  const entry = blocked ? describeCurrentStoreEntry(mode) : null;
   document.querySelectorAll('[data-production-catalog-gate]').forEach((node) => {
     node.hidden = !blocked;
     node.setAttribute('aria-hidden', String(!blocked));
-    const message = node.querySelector('[data-production-catalog-message]');
-    if (message) {
-      message.textContent = mode === APP_MODE_UNAVAILABLE
-        ? 'La configuración productiva está incompleta. Los pedidos permanecen bloqueados.'
-        : mode === APP_MODE_PUBLIC
-          ? 'Este despliegue todavía no habilitó pedidos online.'
-          : 'El catálogo verificado todavía no está disponible. Los pedidos permanecen bloqueados.';
-    }
+    if (entry) paintStoreEntry(node, entry, mode);
   });
 
   const submit = document.querySelector('[data-checkout-submit]');
   if (submit && !hayConfirmacionDeCheckoutEnCurso()) submit.disabled = blocked;
+}
+
+/*
+ * Un primer arranque que FALLA no cambia el estado de la tienda —no llega
+ * ningún catálogo—, así que ningún render lo pintaba: la entrada se quedaba en
+ * «Abriendo la tienda…» para siempre, medido con el backend devolviendo 503.
+ * Mientras el catálogo siga cargando se vuelve a mirar su estado una vez por
+ * segundo y, apenas se resuelve (listo, vacío, bloqueado o error), se repinta.
+ * Sólo lee un estado en memoria y se apaga solo.
+ */
+let storeEntryWatch = null;
+function watchStoreEntrySettles() {
+  if (storeEntryWatch || getAppMode() !== APP_MODE_PRODUCTION) return;
+  let checks = 0;
+  storeEntryWatch = setInterval(() => {
+    checks += 1;
+    let state = 'idle';
+    try {
+      state = getOrderRepository()?.getCatalogStatus?.()?.state || 'idle';
+    } catch (_) {
+      state = 'idle';
+    }
+    if ((state !== 'idle' && state !== 'loading') || checks >= 120) {
+      clearInterval(storeEntryWatch);
+      storeEntryWatch = null;
+      applyRenderedModeState();
+    }
+  }, 1000);
+}
+
+function describeCurrentStoreEntry(mode) {
+  let catalogState = 'idle';
+  try {
+    catalogState = getOrderRepository()?.getCatalogStatus?.()?.state || 'idle';
+  } catch (_) {
+    catalogState = 'idle';
+  }
+  return describeStoreEntry({
+    mode,
+    catalogState,
+    orderingVerified: Boolean(getBusinessConfig().orderingDetailsVerified),
+    availability: getCommerceAvailability(),
+  });
+}
+
+function paintStoreEntry(node, entry, mode) {
+  const config = getBusinessConfig();
+  const production = mode === APP_MODE_PRODUCTION;
+  setTextIfChanged(node.querySelector('[data-store-entry-name]'), publishedBusinessValue(config.businessName) || 'La Taba');
+  setTextIfChanged(node.querySelector('[data-production-catalog-title]'), entry.title);
+  setTextIfChanged(node.querySelector('[data-production-catalog-message]'), entry.message);
+  // La dirección sólo si el comercio la publicó: el valor de relleno de la
+  // configuración base («Dirección no publicada») no es un dato del local.
+  const address = node.querySelector('[data-store-entry-address]');
+  const addressText = production ? publishedBusinessValue(config.address) : '';
+  if (address) {
+    setTextIfChanged(address, addressText);
+    address.hidden = !addressText;
+  }
+  const retry = node.querySelector('[data-store-entry-retry]');
+  if (retry) retry.hidden = !entry.retry;
+  const tracking = node.querySelector('[data-store-entry-tracking]');
+  if (tracking) tracking.hidden = !(production && entry.tracking);
+  const whatsapp = node.querySelector('[data-store-entry-whatsapp]');
+  const digits = String(config.whatsappNumber || '').replace(/\D/g, '');
+  const whatsappReady = production && config.whatsappVerified === true
+    && digits.length >= 8 && digits.length <= 15;
+  if (whatsapp) {
+    whatsapp.hidden = !whatsappReady;
+    if (whatsappReady) whatsapp.href = `https://wa.me/${digits}`;
+  }
+}
+
+// La tarjeta es una región viva (`role="status"`): reescribir el mismo texto en
+// cada render la haría anunciar de nuevo lo que no cambió.
+function setTextIfChanged(node, text) {
+  if (node && node.textContent !== text) node.textContent = text;
 }
 
 /*
@@ -1300,6 +1378,13 @@ function bindEvents() {
         if (sandboxResult.message) showToast(sandboxResult.message);
         return;
       }
+    }
+
+    // «Reintentar» de la entrada de la tienda: el arranque completo es el único
+    // camino que vuelve a pedir configuración, negocio y catálogo en orden.
+    if (target.closest('[data-store-entry-retry]')) {
+      window.location.reload();
+      return;
     }
 
     const clearCatalogFilters = target.closest('[data-clear-catalog-filters]');

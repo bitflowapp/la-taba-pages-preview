@@ -4018,3 +4018,61 @@ body[data-active-view="catalog"] .app-shell .mobile-nav button {
     aspect-ratio: 0.97 / 1;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   La entrada de la tienda cuando todavía no se puede pedir.
+   ---------------------------------------------------------------------------
+   Reemplaza a la tarjeta suelta sobre fondo negro que se leía como un sitio
+   caído. El texto lo decide `js/core/store-entry.js`; acá sólo se le da forma
+   de puerta de local: marca, nombre, estado, dirección publicada y acciones.
+   ------------------------------------------------------------------------ */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .store-entry {
+  gap: 10px;
+  width: min(100%, 520px);
+  margin: clamp(16px, 6vh, 56px) auto 0;
+  padding: 32px 24px 28px;
+}
+
+.store-entry-mark svg {
+  display: block;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  box-shadow: 0 10px 26px rgb(208 0 13 / 28%);
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .store-entry .store-entry-name {
+  margin: 6px 0 0;
+  color: var(--brand-ink-muted, currentColor);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .store-entry strong {
+  font-size: 22px;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.store-entry p {
+  max-width: 40ch;
+  margin: 0;
+}
+
+.store-entry .store-entry-address {
+  font-size: 14px;
+}
+
+.store-entry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.store-entry-actions > :is(a, button) {
+  min-height: var(--tap, 44px);
+}

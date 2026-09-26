@@ -1247,12 +1247,36 @@
     <div class="toast hidden" data-toast role="status" aria-live="polite"></div>
 
     <script src="runtime-config.js?tenant=walter-staging"></script>
-    <script src="js/startup-recovery.js?v=2"></script>
+    <script src="js/startup-recovery.js?v=3"></script>
+    <!--
+      EL MOTOR DEL MAPA TAMPOCO PUEDE DECIDIR CUÁNDO ARRANCA LA TIENDA.
+
+      La hoja del mapa ya había salido del camino crítico (ver el <head>), pero
+      el script seguía con `defer`, y un script `defer` y el módulo `app.js`
+      comparten UNA cola de ejecución EN ORDEN: la tienda no ejecutaba una línea
+      hasta que unpkg entregaba ~800 KB de un mapa que la home no usa. Medido el
+      2026-09-26 con el paquete v119, a 390 px:
+
+        unpkg normal (esta PC) ....... tienda lista   5.004 ms (Chromium)
+        unpkg caído (falla rápido) ... tienda lista   1.010 ms, y antes un cartel
+                                       «Puede ser tu conexión» a los 200 ms
+        unpkg COLGADO 15 s ........... tienda lista  16.079 ms, con «La tienda
+                                       está tardando» a los 8 s (igual en WebKit)
+
+      `async` lo saca de esa cola: baja en paralelo y se ejecuta cuando llega.
+      `data-boot-optional` le dice a `startup-recovery.js` que su falla no es
+      una falla del arranque (las vistas con mapa tienen su propio respaldo), y
+      el aviso `taba:maplibre-ready` deja que un mapa que se pintó antes que el
+      motor se vuelva a montar (`js/map/map_view.js`). El `integrity` y el
+      `crossorigin` no se tocan.
+    -->
     <script
       src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"
       integrity="sha384-5+cfbwT0iiub6VsQAdn6yz16nr6sDiQoHx6tm4O8OVYXHYOxcffFmCJBL0dgdvGp"
       crossorigin="anonymous"
-      defer
+      async
+      data-boot-optional
+      onload="window.dispatchEvent(new Event('taba:maplibre-ready'))"
     ></script>
     <script src="js/pwa-update.js?v=4"></script>
     <script type="module" src="js/app.js?v=51"></script>

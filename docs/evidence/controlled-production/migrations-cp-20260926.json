@@ -1,0 +1,147 @@
+{
+  "target": "controlled-production",
+  "ref": "tkanbadcglszlcyfjvpv",
+  "cli": "supabase 2.101.0 (db push --linked)",
+  "releaseCommit": "09a22a69aa8cf9096cc2e24312314732b6de5b92",
+  "before": {
+    "rows": 140,
+    "remoteOnly": 0,
+    "localOnly": [
+      "20260926160000"
+    ],
+    "remoteHead": "20260925223000",
+    "remoteCount": 139
+  },
+  "dryRun": [
+    "20260926160000_local_print_agent.sql"
+  ],
+  "appliedAt": "2026-09-26T21:40:26Z",
+  "after": {
+    "rows": 140,
+    "mismatches": 0,
+    "remoteHead": "20260926160000",
+    "remoteCount": 140,
+    "ledger": {
+      "version": "20260926160000",
+      "name": "local_print_agent"
+    }
+  },
+  "schemaCheck": {
+    "verdict": "PASS",
+    "checks": {
+      "TABLES_WITH_RLS": true,
+      "TABLES_NOT_READABLE_BY_ANON": true,
+      "AUTHENTICATED_READS_ONLY_JOBS_AND_AUDIT": true,
+      "POLICIES_ONLY_BACK_OFFICE_SELECT": true,
+      "TRIGGERS_PRESENT_AND_ENABLED": true,
+      "ALL_FUNCTIONS_PRESENT": true,
+      "SECURITY_DEFINER_WITH_SEARCH_PATH": true,
+      "NO_PRINTING_FUNCTION_FOR_ANON": true,
+      "PANEL_RPCS_FOR_AUTHENTICATED_ONLY": true,
+      "AGENT_RPCS_SERVICE_ROLE_ONLY": true,
+      "PRIVATE_HELPERS_NOT_CALLABLE_BY_CLIENTS": true,
+      "ANON_SECURITY_DEFINER_STILL_8": true
+    },
+    "anonSecurityDefinerCount": 8,
+    "functions": 36,
+    "tables": [
+      {
+        "name": "business_print_settings",
+        "rls": true,
+        "anon_select": false,
+        "auth_select": false,
+        "auth_write": false
+      },
+      {
+        "name": "local_device_pairings",
+        "rls": true,
+        "anon_select": false,
+        "auth_select": false,
+        "auth_write": false
+      },
+      {
+        "name": "local_devices",
+        "rls": true,
+        "anon_select": false,
+        "auth_select": false,
+        "auth_write": false
+      },
+      {
+        "name": "print_job_events",
+        "rls": true,
+        "anon_select": false,
+        "auth_select": true,
+        "auth_write": false
+      },
+      {
+        "name": "print_jobs",
+        "rls": true,
+        "anon_select": false,
+        "auth_select": true,
+        "auth_write": false
+      }
+    ],
+    "triggers": [
+      {
+        "name": "fiscal_documents_enqueue_print_job",
+        "rel": "public.fiscal_documents",
+        "enabled": "O"
+      },
+      {
+        "name": "orders_enqueue_print_jobs",
+        "rel": "public.orders",
+        "enabled": "O"
+      },
+      {
+        "name": "print_job_events_immutable",
+        "rel": "public.print_job_events",
+        "enabled": "O"
+      },
+      {
+        "name": "print_jobs_guard_insert",
+        "rel": "public.print_jobs",
+        "enabled": "O"
+      }
+    ],
+    "policies": [
+      {
+        "tablename": "print_job_events",
+        "policyname": "back office reads its print audit",
+        "cmd": "SELECT",
+        "roles": "{authenticated}"
+      },
+      {
+        "tablename": "print_jobs",
+        "policyname": "back office reads its print jobs",
+        "cmd": "SELECT",
+        "roles": "{authenticated}"
+      }
+    ]
+  },
+  "drift": {
+    "method": "md5 fingerprints (search_path pinned) of CP vs the same 140 migrations applied on PG17+shim",
+    "result": {
+      "columns": "SAME",
+      "constraints": "SAME",
+      "indexes": "SAME",
+      "policies": "SAME",
+      "functions": "SAME"
+    },
+    "functionsCompared": 36,
+    "verdict": "NONE"
+  },
+  "gateway": {
+    "function": "print-agent-gateway",
+    "deployedAt": "2026-09-26T21:43Z",
+    "status": "ACTIVE",
+    "version": 1,
+    "verify_jwt": false,
+    "bundling": "server side (--use-api)",
+    "assets": [
+      "supabase/functions/print-agent-gateway/index.ts",
+      "supabase/functions/_shared/print-agent-gateway.ts"
+    ],
+    "secrets": "platform defaults only (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY); never returned",
+    "otherFunctions": "the 9 Mercado Pago functions stay at v5, untouched"
+  }
+}

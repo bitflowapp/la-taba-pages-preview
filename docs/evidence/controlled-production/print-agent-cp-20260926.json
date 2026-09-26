@@ -1,0 +1,105 @@
+{
+  "agent": "Taba.LocalAgent 0.1.0 (+a0b5e61)",
+  "target": "controlled-production",
+  "realBinary": {
+    "verdict": "PASS",
+    "results": [
+      {
+        "name": "AGENT_BINARY_VERSION",
+        "ok": true,
+        "detail": "Taba.LocalAgent 0.1.0 (0.1.0+a0b5e6131be1268271353e6d517556ff170d9f37)"
+      },
+      {
+        "name": "REAL_AGENT_REGISTER",
+        "ok": true,
+        "detail": "Agente registrado: �QA agente real� en QA Control � no p�blico.\r"
+      },
+      {
+        "name": "CREDENTIAL_STORED_WITH_DPAPI_NOT_PLAINTEXT",
+        "ok": true,
+        "detail": ""
+      },
+      {
+        "name": "REAL_AGENT_CODE_SINGLE_USE",
+        "ok": true,
+        "detail": "El backend respondi� Unauthorized: DEVICE_UNAUTHORIZED"
+      },
+      {
+        "name": "REAL_AGENT_HEARTBEAT_ONLINE_IN_PANEL",
+        "ok": true,
+        "detail": "{\"agent\":\"ONLINE\",\"version\":\"0.1.0\"}"
+      },
+      {
+        "name": "REAL_AGENT_HEALTH_ACTIVE_CONNECTED",
+        "ok": true,
+        "detail": "{\"registration\":\"ACTIVE\",\"backend\":\"CONNECTED\",\"version\":\"0.1.0\"}"
+      },
+      {
+        "name": "HEALTH_EXPOSES_NO_IDS_OR_SECRETS",
+        "ok": true,
+        "detail": ""
+      },
+      {
+        "name": "REAL_AGENT_ROTATE_PENDING",
+        "ok": true,
+        "detail": "Secreto nuevo registrado como pendiente: el servicio lo activa en su pr�ximo latido."
+      },
+      {
+        "name": "REAL_AGENT_ROTATE_PROMOTED_ON_NEXT_HEARTBEAT",
+        "ok": true,
+        "detail": "{\"registration\":\"ACTIVE\",\"backend\":\"CONNECTED\"}"
+      },
+      {
+        "name": "PANEL_REVOKE",
+        "ok": true,
+        "detail": "ok"
+      },
+      {
+        "name": "REAL_AGENT_SEES_REVOKED_AND_STOPS",
+        "ok": true,
+        "detail": "{\"registration\":\"REVOKED\"}"
+      },
+      {
+        "name": "PANEL_SHOWS_DEVICE_REVOKED",
+        "ok": true,
+        "detail": "revoked"
+      },
+      {
+        "name": "REAL_AGENT_UNREGISTER_DELETES_LOCAL_CREDENTIAL",
+        "ok": true,
+        "detail": ""
+      },
+      {
+        "name": "AGENT_LOGS_WITHOUT_SECRETS",
+        "ok": true,
+        "detail": "3991 bytes"
+      }
+    ]
+  },
+  "build": {
+    "sdk": "10.0.401",
+    "restore": "PASS",
+    "build": "Release: 0 warnings, 0 errors (warnings as errors)",
+    "tests": "114/114"
+  },
+  "msi": {
+    "file": "TabaLocalAgent-0.1.0-win-x64.msi",
+    "signed": false,
+    "localSha256": "ba7819c88973b4b860664029b9899e0f6e139ba0d3d0ea52925acd2cb020506e",
+    "verify": {
+      "files": [
+        "TabaLocalAgent.exe",
+        "appsettings.json"
+      ],
+      "service": "TabaLocalAgent",
+      "startType": "auto (2)",
+      "account": "NT AUTHORITY\\LocalService",
+      "arguments": "service",
+      "dataAcl": "O:BAG:SYD:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1301bf;;;LS)",
+      "verdict": "PASS"
+    },
+    "ciInstallTest": "run 36257837032: 22/22 on the admin runner; release push run 36273646645 PASS"
+  },
+  "localInstallGate": "PENDING_ADMIN (this PC runs at Medium integrity: no elevation to install the service)",
+  "physicalPrinterGate": "PENDING_DEVICE (no thermal printer connected: only Microsoft Print to PDF and PDFelement queues)"
+}

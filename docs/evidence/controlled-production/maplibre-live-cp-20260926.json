@@ -1,0 +1,721 @@
+{
+  "origin": "https://la-taba-commercial-pilot.pages.dev",
+  "commit": "de7456e7b2fd32a71d90ecc88bb5233a729a7143",
+  "cases": {
+    "A": "unpkg normal",
+    "B": "unpkg fails fast",
+    "C": "unpkg hung 15 s",
+    "D": "Seguimiento before the engine"
+  },
+  "devices": [
+    "chromium-desktop 1366x768",
+    "chrome-android (Pixel 7)",
+    "webkit-iphone (iPhone 13)"
+  ],
+  "verdict": "PASS",
+  "total": 117,
+  "results": [
+    {
+      "label": "chromium-desktop/A",
+      "name": "serves the #105 commit",
+      "ok": true,
+      "detail": "de7456e7b2fd32a71d90ecc88bb5233a729a7143"
+    },
+    {
+      "label": "chromium-desktop/A",
+      "name": "store ready",
+      "ok": true,
+      "detail": "1889 ms"
+    },
+    {
+      "label": "chromium-desktop/A",
+      "name": "main content visible and interactive",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/A",
+      "name": "Seguimiento mounts the map",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/A",
+      "name": "no recovery panel (\"tardando\" / \"Puede ser tu conexión\")",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/A",
+      "name": "recovery panel hidden",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/A",
+      "name": "page errors 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/A",
+      "name": "console errors 0 (besides the induced engine failure)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/A",
+      "name": "failed requests 0 (besides the induced engine failure)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/A",
+      "name": "4xx/5xx 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/A",
+      "name": "serves the #105 commit",
+      "ok": true,
+      "detail": "de7456e7b2fd32a71d90ecc88bb5233a729a7143"
+    },
+    {
+      "label": "chrome-android/A",
+      "name": "store ready",
+      "ok": true,
+      "detail": "6774 ms"
+    },
+    {
+      "label": "chrome-android/A",
+      "name": "main content visible and interactive",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/A",
+      "name": "Seguimiento mounts the map",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/A",
+      "name": "no recovery panel (\"tardando\" / \"Puede ser tu conexión\")",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/A",
+      "name": "recovery panel hidden",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/A",
+      "name": "page errors 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/A",
+      "name": "console errors 0 (besides the induced engine failure)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/A",
+      "name": "failed requests 0 (besides the induced engine failure)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/A",
+      "name": "4xx/5xx 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/A",
+      "name": "serves the #105 commit",
+      "ok": true,
+      "detail": "de7456e7b2fd32a71d90ecc88bb5233a729a7143"
+    },
+    {
+      "label": "webkit-iphone/A",
+      "name": "store ready",
+      "ok": true,
+      "detail": "3278 ms"
+    },
+    {
+      "label": "webkit-iphone/A",
+      "name": "main content visible and interactive",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/A",
+      "name": "Seguimiento mounts the map",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/A",
+      "name": "no recovery panel (\"tardando\" / \"Puede ser tu conexión\")",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/A",
+      "name": "recovery panel hidden",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/A",
+      "name": "page errors 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/A",
+      "name": "console errors 0 (besides the induced engine failure)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/A",
+      "name": "failed requests 0 (besides the induced engine failure)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/A",
+      "name": "4xx/5xx 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/B",
+      "name": "serves the #105 commit",
+      "ok": true,
+      "detail": "de7456e7b2fd32a71d90ecc88bb5233a729a7143"
+    },
+    {
+      "label": "chromium-desktop/B",
+      "name": "store ready",
+      "ok": true,
+      "detail": "4043 ms"
+    },
+    {
+      "label": "chromium-desktop/B",
+      "name": "main content visible and interactive",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/B",
+      "name": "no recovery panel (\"tardando\" / \"Puede ser tu conexión\")",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/B",
+      "name": "recovery panel hidden",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/B",
+      "name": "page errors 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/B",
+      "name": "console errors 0 (besides the induced engine failure)",
+      "ok": true,
+      "detail": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "label": "chromium-desktop/B",
+      "name": "failed requests 0 (besides the induced engine failure)",
+      "ok": true,
+      "detail": "net::ERR_FAILED https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"
+    },
+    {
+      "label": "chromium-desktop/B",
+      "name": "4xx/5xx 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/B",
+      "name": "serves the #105 commit",
+      "ok": true,
+      "detail": "de7456e7b2fd32a71d90ecc88bb5233a729a7143"
+    },
+    {
+      "label": "chrome-android/B",
+      "name": "store ready",
+      "ok": true,
+      "detail": "1102 ms"
+    },
+    {
+      "label": "chrome-android/B",
+      "name": "main content visible and interactive",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/B",
+      "name": "no recovery panel (\"tardando\" / \"Puede ser tu conexión\")",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/B",
+      "name": "recovery panel hidden",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/B",
+      "name": "page errors 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/B",
+      "name": "console errors 0 (besides the induced engine failure)",
+      "ok": true,
+      "detail": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "label": "chrome-android/B",
+      "name": "failed requests 0 (besides the induced engine failure)",
+      "ok": true,
+      "detail": "net::ERR_FAILED https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"
+    },
+    {
+      "label": "chrome-android/B",
+      "name": "4xx/5xx 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/B",
+      "name": "serves the #105 commit",
+      "ok": true,
+      "detail": "de7456e7b2fd32a71d90ecc88bb5233a729a7143"
+    },
+    {
+      "label": "webkit-iphone/B",
+      "name": "store ready",
+      "ok": true,
+      "detail": "2196 ms"
+    },
+    {
+      "label": "webkit-iphone/B",
+      "name": "main content visible and interactive",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/B",
+      "name": "no recovery panel (\"tardando\" / \"Puede ser tu conexión\")",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/B",
+      "name": "recovery panel hidden",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/B",
+      "name": "page errors 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/B",
+      "name": "console errors 0 (besides the induced engine failure)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/B",
+      "name": "failed requests 0 (besides the induced engine failure)",
+      "ok": true,
+      "detail": "Blocked by Web Inspector https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"
+    },
+    {
+      "label": "webkit-iphone/B",
+      "name": "4xx/5xx 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/C",
+      "name": "serves the #105 commit",
+      "ok": true,
+      "detail": "de7456e7b2fd32a71d90ecc88bb5233a729a7143"
+    },
+    {
+      "label": "chromium-desktop/C",
+      "name": "store usable while unpkg hangs (ready < 5 s)",
+      "ok": true,
+      "detail": "1543 ms"
+    },
+    {
+      "label": "chromium-desktop/C",
+      "name": "main content visible and interactive",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/C",
+      "name": "no recovery panel (\"tardando\" / \"Puede ser tu conexión\")",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/C",
+      "name": "recovery panel hidden",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/C",
+      "name": "page errors 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/C",
+      "name": "console errors 0 (besides the induced engine failure)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/C",
+      "name": "failed requests 0 (besides the induced engine failure)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/C",
+      "name": "4xx/5xx 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/C",
+      "name": "serves the #105 commit",
+      "ok": true,
+      "detail": "de7456e7b2fd32a71d90ecc88bb5233a729a7143"
+    },
+    {
+      "label": "chrome-android/C",
+      "name": "store usable while unpkg hangs (ready < 5 s)",
+      "ok": true,
+      "detail": "1406 ms"
+    },
+    {
+      "label": "chrome-android/C",
+      "name": "main content visible and interactive",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/C",
+      "name": "no recovery panel (\"tardando\" / \"Puede ser tu conexión\")",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/C",
+      "name": "recovery panel hidden",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/C",
+      "name": "page errors 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/C",
+      "name": "console errors 0 (besides the induced engine failure)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/C",
+      "name": "failed requests 0 (besides the induced engine failure)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/C",
+      "name": "4xx/5xx 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/C",
+      "name": "serves the #105 commit",
+      "ok": true,
+      "detail": "de7456e7b2fd32a71d90ecc88bb5233a729a7143"
+    },
+    {
+      "label": "webkit-iphone/C",
+      "name": "store usable while unpkg hangs (ready < 5 s)",
+      "ok": true,
+      "detail": "2479 ms"
+    },
+    {
+      "label": "webkit-iphone/C",
+      "name": "main content visible and interactive",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/C",
+      "name": "no recovery panel (\"tardando\" / \"Puede ser tu conexión\")",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/C",
+      "name": "recovery panel hidden",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/C",
+      "name": "page errors 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/C",
+      "name": "console errors 0 (besides the induced engine failure)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/C",
+      "name": "failed requests 0 (besides the induced engine failure)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/C",
+      "name": "4xx/5xx 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/D",
+      "name": "serves the #105 commit",
+      "ok": true,
+      "detail": "de7456e7b2fd32a71d90ecc88bb5233a729a7143"
+    },
+    {
+      "label": "chromium-desktop/D",
+      "name": "store ready",
+      "ok": true,
+      "detail": "1235 ms"
+    },
+    {
+      "label": "chromium-desktop/D",
+      "name": "main content visible and interactive",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/D",
+      "name": "Seguimiento painted before the engine (fallback shown)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/D",
+      "name": "map remounts when the engine lands",
+      "ok": true,
+      "detail": "mounted=true unavailable=0"
+    },
+    {
+      "label": "chromium-desktop/D",
+      "name": "no recovery panel (\"tardando\" / \"Puede ser tu conexión\")",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/D",
+      "name": "recovery panel hidden",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/D",
+      "name": "page errors 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/D",
+      "name": "console errors 0 (besides the induced engine failure)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/D",
+      "name": "failed requests 0 (besides the induced engine failure)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chromium-desktop/D",
+      "name": "4xx/5xx 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/D",
+      "name": "serves the #105 commit",
+      "ok": true,
+      "detail": "de7456e7b2fd32a71d90ecc88bb5233a729a7143"
+    },
+    {
+      "label": "chrome-android/D",
+      "name": "store ready",
+      "ok": true,
+      "detail": "1594 ms"
+    },
+    {
+      "label": "chrome-android/D",
+      "name": "main content visible and interactive",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/D",
+      "name": "Seguimiento painted before the engine (fallback shown)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/D",
+      "name": "map remounts when the engine lands",
+      "ok": true,
+      "detail": "mounted=true unavailable=0"
+    },
+    {
+      "label": "chrome-android/D",
+      "name": "no recovery panel (\"tardando\" / \"Puede ser tu conexión\")",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/D",
+      "name": "recovery panel hidden",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/D",
+      "name": "page errors 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/D",
+      "name": "console errors 0 (besides the induced engine failure)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/D",
+      "name": "failed requests 0 (besides the induced engine failure)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "chrome-android/D",
+      "name": "4xx/5xx 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/D",
+      "name": "serves the #105 commit",
+      "ok": true,
+      "detail": "de7456e7b2fd32a71d90ecc88bb5233a729a7143"
+    },
+    {
+      "label": "webkit-iphone/D",
+      "name": "store ready",
+      "ok": true,
+      "detail": "2538 ms"
+    },
+    {
+      "label": "webkit-iphone/D",
+      "name": "main content visible and interactive",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/D",
+      "name": "Seguimiento painted before the engine (fallback shown)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/D",
+      "name": "map remounts when the engine lands",
+      "ok": true,
+      "detail": "mounted=true unavailable=0"
+    },
+    {
+      "label": "webkit-iphone/D",
+      "name": "no recovery panel (\"tardando\" / \"Puede ser tu conexión\")",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/D",
+      "name": "recovery panel hidden",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/D",
+      "name": "page errors 0",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/D",
+      "name": "console errors 0 (besides the induced engine failure)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/D",
+      "name": "failed requests 0 (besides the induced engine failure)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "webkit-iphone/D",
+      "name": "4xx/5xx 0",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}

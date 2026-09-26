@@ -39,7 +39,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
     'legacy food or unverified catalog imagery must not be precached',
   );
   assert.ok(assets.includes('./js/pwa-update.js?v=4'));
-  assert.ok(assets.includes('./js/startup-recovery.js?v=2'));
+  assert.ok(assets.includes('./js/startup-recovery.js?v=3'));
   assert.ok(assets.includes('./styles.css?v=61'));
   assert.ok(assets.includes('./styles/storefront.css?v=61'));
   assert.ok(assets.includes('./styles/responsive.css?v=61'));

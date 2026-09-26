@@ -69,6 +69,30 @@ export function renderMapViews(root = document) {
   });
 }
 
+/*
+ * El motor del mapa llega DESPUÉS que la tienda: en index.html va con `async`
+ * para que un CDN lento no retenga el arranque. Si una vista con mapa se pintó
+ * antes —el cliente vuelve a la app con un pedido en camino y arranca directo
+ * en Seguimiento—, el adaptador quedó en su respaldo porque `maplibregl` todavía
+ * no existía, y `ensureTrackingMap` reutiliza esa entrada: sin esto, el mapa no
+ * aparecía más en toda la visita. Sólo se rearman los que fallaron por falta de
+ * motor; un mapa ya montado no se toca.
+ */
+export function remountMapsWaitingForEngine(root = globalThis.document) {
+  let waiting = false;
+  for (const entry of [...mountedMaps]) {
+    const lifecycle = entry.adapter?.getLifecycleState?.();
+    if (lifecycle?.unavailable && lifecycle.failureReason === 'unsupported-webgl') {
+      disposeMapEntry(entry);
+      waiting = true;
+    }
+  }
+  if (waiting && root) renderMapViews(root);
+  return waiting;
+}
+
+globalThis.addEventListener?.('taba:maplibre-ready', () => remountMapsWaitingForEngine());
+
 // Vuelve a centrar el mapa en la ubicación REAL del rider y reanuda el
 // auto-seguimiento. Si no hay fix real montado, no hace nada (no inventa centro).
 export function recenterMapViews(root = document) {

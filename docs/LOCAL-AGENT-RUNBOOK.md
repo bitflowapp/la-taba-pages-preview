@@ -28,6 +28,17 @@ Código: [`agents/windows-local-agent`](../agents/windows-local-agent/README.md)
 
 Nada de esto requiere secretos en la PC del local.
 
+### Estado en CONTROLLED_PRODUCTION (2026-09-26)
+
+| Qué | Valor real |
+|---|---|
+| Proyecto | Supabase `tkanbadcglszlcyfjvpv` (CONTROLLED_PRODUCTION) |
+| Migración | `20260926160000_local_print_agent` aplicada el 2026-09-26 21:40 UTC con `supabase db push --linked` (140 migraciones, local = remoto). Backup previo verificado: `~/.taba-backups/controlled-production/pgdump-2026-09-26T21-36-28-498Z` |
+| Gateway | `https://tkanbadcglszlcyfjvpv.supabase.co/functions/v1/print-agent-gateway` — v1, `ACTIVE`, `verify_jwt = false`; usa sólo los secretos por defecto de la plataforma |
+| `appsettings.json` del MSI | ya apunta a esa gateway con la clave publicable de CP (la misma de la web) |
+| Certificación | `verify-cp-printing.mjs` 65/65 y el binario real 14/14 (ver 16) |
+| Impresión en papel | **PENDING_DEVICE** (sección 14) |
+
 ## 1 · Instalar
 
 Requisitos de la PC: Windows 10/11 x64, impresora instalada en Windows (USB o
@@ -53,13 +64,15 @@ Queda instalado:
 
 ## 2 · Registrar el dispositivo
 
-1. Operación emite un código de un solo uso (vence en 15 minutos):
+1. Se emite un código de un solo uso (vence en 15 minutos; hasta 3 vigentes
+   y 5 agentes activos por negocio):
    ```
    node scripts/print-agent/dispositivos.mjs codigo --target=controlled-production \
      --business=<uuid> --confirmar=<slug> --nombre="Mostrador"
    ```
-   (Cuando el Panel tenga la pantalla de dispositivos, lo emite el dueño con
-   la RPC `create_local_device_pairing`.)
+   o el dueño/admin con la RPC `create_local_device_pairing(business_id, nombre)`
+   (la usa la certificación; la pantalla del Panel todavía no existe). Staff,
+   rider, otro negocio y anónimo reciben `42501`.
 2. En la PC del local, consola **de administrador**:
    ```
    "%ProgramFiles%\La Taba\LocalAgent\TabaLocalAgent.exe" register --code XXXXX-XXXXX --name "Mostrador"
@@ -236,7 +249,41 @@ Con la térmica del local conectada:
 
 Hasta completar esta tabla: **PHYSICAL_PRINTER_GATE: PENDING_DEVICE**.
 
-## 15 · Seguridad (resumen)
+## 15 · Certificación en CONTROLLED_PRODUCTION
+
+Se repite después de cualquier cambio en la migración, la gateway o el agente.
+Usa sólo sesiones QA reales (dueño, staff, dueño del negocio de aislamiento,
+rider), un cliente anónimo para el pedido QA y la gateway tal como la llama el
+agente. Sin clave secreta ni SQL; todo queda en los tenants QA y la limpieza
+revoca los dispositivos, restaura la configuración y cierra la ventana QA.
+
+```
+node scripts/controlled-production/verify-cp-printing.mjs --target controlled-production --out <archivo fuera del repo>
+```
+
+| Frente (2026-09-26, 65/65) | Qué se prueba |
+|---|---|
+| Gateway | `Origin` → 403, `GET` → 405, sin credencial / falsa / código inexistente → 401 |
+| Dispositivos | código sólo dueño/admin, de un uso; alta de 2 agentes del negocio A y 1 del B; latido visible en el Panel; rotación en dos fases (el secreto viejo muere al usar el nuevo) |
+| Trabajos | `order_ticket` y `kitchen_ticket` por la RPC del Panel, idempotentes; rider/ajeno/anónimo `42501`; fiscal desde el Panel rechazado; payload sin datos del cliente y comanda sin precios |
+| Estados | `queued → claimed → printing → printed` con auditoría completa; token o dispositivo equivocado → 409; dispositivo de otro negocio → 404 |
+| Recuperación | `unknown` → `needs_review` → resolución humana; confirmación tardía aceptada; caída imprimiendo → `needs_review` sin reimprimir; red perdida antes de imprimir → vuelve a la cola una vez; reclamo viejo → 409 |
+| Reintentos | `not_printed` respeta la espera (10/20/40/80 s) y pasa a `failed` al 5.º intento |
+| Reimpresión | trabajo nuevo con `reprint_of`, quién y por qué; idempotente; dueño y staff sí, rider y ajeno no; también desde el agente |
+| Concurrencia | 12 reclamos simultáneos de 2 agentes sobre 20 trabajos → 20 únicos; `printing` doble → 1 evento; 0 impresiones dobles |
+| Automática | comanda al entrar un pedido con la impresión automática encendida; se cancela sola si el pedido se cancela |
+| RLS | dueño y staff ven lo suyo; dueño ajeno, rider y cliente 0 filas; anónimo `42501` |
+| Revocación | sólo el dueño del negocio; efecto inmediato (401) y lo reclamado vuelve a la cola |
+
+El binario real (v0.1.0) se certificó aparte contra la misma gateway, 14/14:
+`register` con el código del Panel, credencial DPAPI, código de un uso, latido
+`ONLINE 0.1.0` en el Panel y salud `ACTIVE/CONNECTED` sin ids, `rotate`
+promovido en el siguiente latido, revocación vista por el agente (`REVOKED`),
+`unregister` y logs sin secretos. Evidencia:
+`docs/evidence/controlled-production/verify-cp-printing-20260926.json` y
+`print-agent-cp-20260926.json`.
+
+## 16 · Seguridad (resumen)
 
 - Escucha sólo en `127.0.0.1`; `Host` validado contra DNS rebinding; `Origin`
   exacto (sólo el Panel oficial); token por instalación (DPAPI) para todo menos

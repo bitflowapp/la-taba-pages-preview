@@ -1,0 +1,389 @@
+{
+  "origin": "https://la-taba-commercial-pilot.pages.dev",
+  "from": "1cf1cb1 (v119-commercial-frontend)",
+  "to": "de7456e (v120-map-off-boot-path)",
+  "official": {
+    "seed": {
+      "PAGE_LOADS": "PASS",
+      "BACKEND_IS_CP": "PASS",
+      "SW_CONTROLLING": "PASS",
+      "RUNTIME_CACHE_PRESENT": "PASS",
+      "SERVES_EXPECTED_COMMIT": "PASS",
+      "PANEL_SESSION_RECOGNISED": "PASS",
+      "NO_JS_ERRORS": "PASS"
+    },
+    "upgrade": {
+      "PAGE_LOADS": "PASS",
+      "BACKEND_IS_CP": "PASS",
+      "SW_CONTROLLING": "PASS",
+      "RUNTIME_CACHE_PRESENT": "PASS",
+      "SERVES_EXPECTED_COMMIT": "PASS",
+      "EXISTING_SESSION_KEPT": "PASS",
+      "RELOAD_KEEPS_SW_AND_VERSION": "PASS",
+      "UPDATE_CHECK_OK": "PASS",
+      "HARD_RELOAD_OK": "PASS",
+      "NO_JS_ERRORS": "PASS"
+    },
+    "fresh": {
+      "PAGE_LOADS": "PASS",
+      "BACKEND_IS_CP": "PASS",
+      "SW_CONTROLLING": "PASS",
+      "RUNTIME_CACHE_PRESENT": "PASS",
+      "SERVES_EXPECTED_COMMIT": "PASS",
+      "RELOAD_KEEPS_SW_AND_VERSION": "PASS",
+      "UPDATE_CHECK_OK": "PASS",
+      "HARD_RELOAD_OK": "PASS",
+      "NO_JS_ERRORS": "PASS"
+    }
+  },
+  "seededClients": {
+    "note": "report rebuilt from status.log; the harness hung while closing browsers after the last check",
+    "origin": "https://la-taba-commercial-pilot.pages.dev",
+    "from": "1cf1cb1/v119",
+    "to": "de7456e/v120",
+    "results": [
+      {
+        "client": "chromium-desktop/S1-open-tab",
+        "name": "seed: v119 client controlled with the complete v119 cache",
+        "ok": true,
+        "detail": "{\"served\":\"1cf1cb1a3b085ffc9227fb046b168f1382dc59b7\",\"caches\":{\"la-taba-runtime-v119-commercial-frontend\":181}}"
+      },
+      {
+        "client": "chrome-android/S1-open-tab",
+        "name": "seed: v119 client controlled with the complete v119 cache",
+        "ok": true,
+        "detail": "{\"served\":\"1cf1cb1a3b085ffc9227fb046b168f1382dc59b7\",\"caches\":{\"la-taba-runtime-v119-commercial-frontend\":181}}"
+      },
+      {
+        "client": "webkit-iphone/S1-open-tab",
+        "name": "seed: v119 client controlled with the complete v119 cache",
+        "ok": true,
+        "detail": "{\"served\":\"1cf1cb1a3b085ffc9227fb046b168f1382dc59b7\",\"caches\":{\"la-taba-runtime-v119-commercial-frontend\":181}}"
+      },
+      {
+        "client": "chromium-mobile/S2-closed-app",
+        "name": "seed: v119 client controlled with the complete v119 cache",
+        "ok": true,
+        "detail": "{\"served\":\"1cf1cb1a3b085ffc9227fb046b168f1382dc59b7\",\"caches\":{\"la-taba-runtime-v119-commercial-frontend\":181}}"
+      },
+      {
+        "client": "chromium-desktop/S1-open-tab",
+        "name": "after deploy + reload: v120 waiting and the update banner visible",
+        "ok": true,
+        "detail": "{\"waiting\":true,\"banner\":true,\"caches\":{\"la-taba-runtime-v119-commercial-frontend\":190,\"la-taba-runtime-v120-map-off-boot-path\":181}}"
+      },
+      {
+        "client": "chromium-desktop/S1-open-tab",
+        "name": "while waiting: v119 cache intact next to v120",
+        "ok": true,
+        "detail": "{\"la-taba-runtime-v119-commercial-frontend\":190,\"la-taba-runtime-v120-map-off-boot-path\":181}"
+      },
+      {
+        "client": "chromium-desktop/S1-open-tab",
+        "name": "while waiting: the page already serves de7456e (network-first)",
+        "ok": true,
+        "detail": "de7456e7b2fd32a71d90ecc88bb5233a729a7143"
+      },
+      {
+        "client": "chromium-desktop/S1-open-tab",
+        "name": "after tap: exactly one reload",
+        "ok": true,
+        "detail": "navigations 1"
+      },
+      {
+        "client": "chromium-desktop/S1-open-tab",
+        "name": "after tap: v119 cache deleted, v120 complete",
+        "ok": true,
+        "detail": "{\"la-taba-runtime-v120-map-off-boot-path\":181}"
+      },
+      {
+        "client": "chromium-desktop/S1-open-tab",
+        "name": "after tap: controlled, nothing waiting, banner hidden",
+        "ok": true,
+        "detail": ""
+      },
+      {
+        "client": "chromium-desktop/S1-open-tab",
+        "name": "after tap: serves de7456e",
+        "ok": true,
+        "detail": "de7456e7b2fd32a71d90ecc88bb5233a729a7143"
+      },
+      {
+        "client": "chromium-desktop/S1-open-tab",
+        "name": "after tap: persisted visitor state preserved (localStorage keys, cart, marker)",
+        "ok": true,
+        "detail": "{\"missing\":[],\"changedCart\":[],\"product\":null}"
+      },
+      {
+        "client": "chromium-desktop/S1-open-tab",
+        "name": "no reload loop (4 s after the upgrade)",
+        "ok": true,
+        "detail": "navigations 1"
+      },
+      {
+        "client": "chromium-desktop/S1-open-tab",
+        "name": "reload: still v120 only, no banner",
+        "ok": true,
+        "detail": "{\"la-taba-runtime-v120-map-off-boot-path\":182}"
+      },
+      {
+        "client": "chromium-desktop/S1-open-tab",
+        "name": "errors before the deploy",
+        "ok": true,
+        "detail": ""
+      },
+      {
+        "client": "chromium-desktop/S1-open-tab",
+        "name": "console errors 0",
+        "ok": true,
+        "detail": ""
+      },
+      {
+        "client": "chromium-desktop/S1-open-tab",
+        "name": "page errors 0",
+        "ok": true,
+        "detail": ""
+      },
+      {
+        "client": "chromium-desktop/S1-open-tab",
+        "name": "failed requests 0",
+        "ok": true,
+        "detail": ""
+      },
+      {
+        "client": "chromium-desktop/S1-open-tab",
+        "name": "4xx/5xx 0",
+        "ok": true,
+        "detail": ""
+      },
+      {
+        "client": "chrome-android/S1-open-tab",
+        "name": "after deploy + reload: v120 waiting and the update banner visible",
+        "ok": true,
+        "detail": "{\"waiting\":true,\"banner\":true,\"caches\":{\"la-taba-runtime-v119-commercial-frontend\":190,\"la-taba-runtime-v120-map-off-boot-path\":181}}"
+      },
+      {
+        "client": "chrome-android/S1-open-tab",
+        "name": "while waiting: v119 cache intact next to v120",
+        "ok": true,
+        "detail": "{\"la-taba-runtime-v119-commercial-frontend\":190,\"la-taba-runtime-v120-map-off-boot-path\":181}"
+      },
+      {
+        "client": "chrome-android/S1-open-tab",
+        "name": "while waiting: the page already serves de7456e (network-first)",
+        "ok": true,
+        "detail": "de7456e7b2fd32a71d90ecc88bb5233a729a7143"
+      },
+      {
+        "client": "chrome-android/S1-open-tab",
+        "name": "after tap: exactly one reload",
+        "ok": true,
+        "detail": "navigations 1"
+      },
+      {
+        "client": "chrome-android/S1-open-tab",
+        "name": "after tap: v119 cache deleted, v120 complete",
+        "ok": true,
+        "detail": "{\"la-taba-runtime-v120-map-off-boot-path\":182}"
+      },
+      {
+        "client": "chrome-android/S1-open-tab",
+        "name": "after tap: controlled, nothing waiting, banner hidden",
+        "ok": true,
+        "detail": ""
+      },
+      {
+        "client": "chrome-android/S1-open-tab",
+        "name": "after tap: serves de7456e",
+        "ok": true,
+        "detail": "de7456e7b2fd32a71d90ecc88bb5233a729a7143"
+      },
+      {
+        "client": "chrome-android/S1-open-tab",
+        "name": "after tap: persisted visitor state preserved (localStorage keys, cart, marker)",
+        "ok": true,
+        "detail": "{\"missing\":[],\"changedCart\":[],\"product\":null}"
+      },
+      {
+        "client": "chrome-android/S1-open-tab",
+        "name": "no reload loop (4 s after the upgrade)",
+        "ok": true,
+        "detail": "navigations 1"
+      },
+      {
+        "client": "chrome-android/S1-open-tab",
+        "name": "reload: still v120 only, no banner",
+        "ok": true,
+        "detail": "{\"la-taba-runtime-v120-map-off-boot-path\":183}"
+      },
+      {
+        "client": "chrome-android/S1-open-tab",
+        "name": "errors before the deploy",
+        "ok": true,
+        "detail": ""
+      },
+      {
+        "client": "chrome-android/S1-open-tab",
+        "name": "console errors 0",
+        "ok": true,
+        "detail": ""
+      },
+      {
+        "client": "chrome-android/S1-open-tab",
+        "name": "page errors 0",
+        "ok": true,
+        "detail": ""
+      },
+      {
+        "client": "chrome-android/S1-open-tab",
+        "name": "failed requests 0",
+        "ok": true,
+        "detail": ""
+      },
+      {
+        "client": "chrome-android/S1-open-tab",
+        "name": "4xx/5xx 0",
+        "ok": true,
+        "detail": ""
+      },
+      {
+        "client": "webkit-iphone/S1-open-tab",
+        "name": "after deploy + reload: v120 waiting and the update banner visible",
+        "ok": true,
+        "detail": "{\"waiting\":true,\"banner\":true,\"caches\":{\"la-taba-runtime-v119-commercial-frontend\":185,\"la-taba-runtime-v120-map-off-boot-path\":181}}"
+      },
+      {
+        "client": "webkit-iphone/S1-open-tab",
+        "name": "while waiting: v119 cache intact next to v120",
+        "ok": true,
+        "detail": "{\"la-taba-runtime-v119-commercial-frontend\":185,\"la-taba-runtime-v120-map-off-boot-path\":181}"
+      },
+      {
+        "client": "webkit-iphone/S1-open-tab",
+        "name": "while waiting: the page already serves de7456e (network-first)",
+        "ok": true,
+        "detail": "de7456e7b2fd32a71d90ecc88bb5233a729a7143"
+      },
+      {
+        "client": "webkit-iphone/S1-open-tab",
+        "name": "after tap: exactly one reload",
+        "ok": true,
+        "detail": "navigations 1"
+      },
+      {
+        "client": "webkit-iphone/S1-open-tab",
+        "name": "after tap: v119 cache deleted, v120 complete",
+        "ok": true,
+        "detail": "{\"la-taba-runtime-v120-map-off-boot-path\":181}"
+      },
+      {
+        "client": "webkit-iphone/S1-open-tab",
+        "name": "after tap: controlled, nothing waiting, banner hidden",
+        "ok": true,
+        "detail": ""
+      },
+      {
+        "client": "webkit-iphone/S1-open-tab",
+        "name": "after tap: serves de7456e",
+        "ok": true,
+        "detail": "de7456e7b2fd32a71d90ecc88bb5233a729a7143"
+      },
+      {
+        "client": "webkit-iphone/S1-open-tab",
+        "name": "after tap: persisted visitor state preserved (localStorage keys, cart, marker)",
+        "ok": true,
+        "detail": "{\"missing\":[],\"changedCart\":[],\"product\":null}"
+      },
+      {
+        "client": "webkit-iphone/S1-open-tab",
+        "name": "no reload loop (4 s after the upgrade)",
+        "ok": true,
+        "detail": "navigations 1"
+      },
+      {
+        "client": "webkit-iphone/S1-open-tab",
+        "name": "reload: still v120 only, no banner",
+        "ok": true,
+        "detail": "{\"la-taba-runtime-v120-map-off-boot-path\":182}"
+      },
+      {
+        "client": "webkit-iphone/S1-open-tab",
+        "name": "errors before the deploy",
+        "ok": true,
+        "detail": ""
+      },
+      {
+        "client": "webkit-iphone/S1-open-tab",
+        "name": "console errors 0",
+        "ok": true,
+        "detail": ""
+      },
+      {
+        "client": "webkit-iphone/S1-open-tab",
+        "name": "page errors 0",
+        "ok": true,
+        "detail": ""
+      },
+      {
+        "client": "webkit-iphone/S1-open-tab",
+        "name": "failed requests 0",
+        "ok": true,
+        "detail": ""
+      },
+      {
+        "client": "webkit-iphone/S1-open-tab",
+        "name": "4xx/5xx 0",
+        "ok": true,
+        "detail": ""
+      },
+      {
+        "client": "chromium-mobile/S2-closed-app",
+        "name": "first return after the deploy: v120 installed (waiting or active)",
+        "ok": true,
+        "detail": "{\"waiting\":true,\"caches\":{\"la-taba-runtime-v119-commercial-frontend\":190,\"la-taba-runtime-v120-map-off-boot-path\":181}}"
+      },
+      {
+        "client": "chromium-mobile/S2-closed-app",
+        "name": "first return: serves de7456e",
+        "ok": true,
+        "detail": "de7456e7b2fd32a71d90ecc88bb5233a729a7143"
+      },
+      {
+        "client": "chromium-mobile/S2-closed-app",
+        "name": "second return: v120 active, v119 cache gone, no banner",
+        "ok": true,
+        "detail": "{\"la-taba-runtime-v120-map-off-boot-path\":182}"
+      },
+      {
+        "client": "chromium-mobile/S2-closed-app",
+        "name": "second return: persisted visitor state preserved",
+        "ok": true,
+        "detail": "[\"TABA_VISITOR_SEEN_V1\",\"TABA_INSTALL_PROMPT_V1\",\"taba-qa-upgrade-marker\"]"
+      },
+      {
+        "client": "chromium-mobile/S2-closed-app",
+        "name": "close/return: console errors 0",
+        "ok": true,
+        "detail": ""
+      },
+      {
+        "client": "chromium-mobile/S2-closed-app",
+        "name": "close/return: page errors 0",
+        "ok": true,
+        "detail": ""
+      },
+      {
+        "client": "chromium-mobile/S2-closed-app",
+        "name": "close/return: failed requests 0",
+        "ok": true,
+        "detail": ""
+      },
+      {
+        "client": "chromium-mobile/S2-closed-app",
+        "name": "close/return: 4xx/5xx 0",
+        "ok": true,
+        "detail": ""
+      }
+    ]
+  }
+}

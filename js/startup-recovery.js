@@ -101,6 +101,11 @@
     if (painted) return;
     const target = event.target;
     if (target && target !== window && target !== document && target.tagName !== 'SCRIPT') return;
+    // Un script que el shell declara opcional para el arranque —el motor del
+    // mapa, de un CDN de terceros— puede fallar sin que la tienda deje de
+    // arrancar: las vistas con mapa tienen su propio respaldo. Mostrar acá
+    // «Puede ser tu conexión» era un falso aviso sobre una tienda sana.
+    if (target?.hasAttribute?.('data-boot-optional')) return;
     show({ reason: 'startup' });
   }, true);
   window.addEventListener('unhandledrejection', () => {

@@ -3,7 +3,25 @@
 Rama de despliegue `release/taba-controlled-production`; PR **#98** (reemplaza a
 #97, que queda abierto sólo por trazabilidad). Operación:
 `CONTROLLED-PRODUCTION-RUNBOOK.md`. Evidencia en `docs/evidence/controlled-production/`
-(archivos `*-20260925.json` para este cierre).
+(archivos `*-20260925.json` para el cierre de #98, `*-20260926.json` para el del 26).
+
+## 2026-09-26 · Frontend congelado (#105) e impresión activada (#103)
+
+| Frente | Resultado | Evidencia |
+|---|---|---|
+| #105 (P1: el motor del mapa fuera del arranque) | merge `de7456e`; CI exacto (web + E2E, Rider) verde; deploy `42dfccca`; smoke público 3 motores; **rollback real B→A→B con A = `1cf1cb1`** y smoke en cada paso (run 36268405957); edge convergido (6/6 `de7456e` + caché v120) | `rollback-cp-20260926.json` |
+| Arranque sin depender de unpkg (origen real) | A normal, B unpkg caído, C unpkg colgado 15 s (tienda lista en 1,4–2,5 s), D Seguimiento antes que el motor (el mapa se re-monta): 117/117 en Chromium, Chrome Android y WebKit, 0 errores JS | `maplibre-live-cp-20260926.json` |
+| Service worker v119 → v120 (origen real) | clientes v119 sembrados antes del deploy: aviso, «Actualizar ahora», una sola recarga, caché v119 borrada, estado persistido, sin bucle; app cerrada y reabierta: 57/57. `sw-live-check` oficial: sesión del Panel conservada, recarga, update y recarga sin caché, visitante nuevo: PASS | `sw-live-cp-20260926.json` |
+| E2E técnico y Panel (código v120) | pedido QA de punta a punta 2/2 (Chrome Android, WebKit iPhone); Panel: login + 9 vistas × 2 motores × 2 tamaños | `cp-e2e-ui-20260926.json` |
+| Backup previo a la migración | `pg_dump` bajo snapshot → PG 17 aislado: 0 errores, esquema, filas y RLS idénticos; 139 migraciones, cabeza `20260925223000` | `restore-drill-cp-20260926.json` |
+| #103 → migración | merge `09a22a6`; `db push --linked`: sólo `20260926160000` (dry-run previo); 140 = 140; chequeo de catálogo PASS (RLS en las 5 tablas, `anon` sin nada, `SECURITY DEFINER` con `search_path`, RPC del agente sólo `service_role`, `anon` sigue con exactamente 8); **deriva: ninguna** (36 funciones, columnas, constraints, índices y políticas idénticos a las mismas migraciones en PG 17) | `migrations-cp-20260926.json` |
+| Gateway | `print-agent-gateway` v1 `ACTIVE`, `verify_jwt = false`, sólo secretos por defecto; las 9 funciones de Mercado Pago sin tocar (v5) | idem |
+| Impresión en vivo | `verify-cp-printing.mjs` 65/65: guardas de la gateway, alta/rotación/revocación, estados, recuperación, reintentos, reimpresión auditada, 12 reclamos × 2 agentes → 20 únicos y 0 impresiones dobles, automática al entrar el pedido, RLS | `verify-cp-printing-20260926.json` |
+| Agente real (0.1.0) | CLI contra CP 14/14; build .NET 10 sin advertencias, 114/114, MSI verificado; instalación local `PENDING_ADMIN`; papel `PENDING_DEVICE` | `print-agent-cp-20260926.json` |
+| Nueva base de rollback | con 140 migraciones, volver a `de7456e` se rechaza por diseño; A = `09a22a6` (primer deploy con 140), B = el commit de esta documentación | ver Rollback |
+
+Estado: **P0 = 0, P1 = 0; frontend congelado** (sólo P0/P1). ARCA sigue sin
+activar (`ARCA_PRODUCTION: NO`).
 
 ## Veredicto (2026-09-25, cierre local de #98 sobre CP)
 
@@ -69,7 +87,8 @@ CODE_READY por dos P1 latentes; el 25 se aplicaron y certificaron en CP.
 |---|---|
 | Backend | Supabase `tkanbadcglszlcyfjvpv` (`la-taba-controlled-production`, sa-east-1, org Luna Systems, Pro) |
 | Web | `https://la-taba-commercial-pilot.pages.dev/` (Pages dedicado, `catalogMode: none`); Panel `https://la-taba-commercial-pilot.pages.dev/#business`; versión servida en `version.json` (ver Rollback) |
-| Base | 136 migraciones, última `20260925090000`; PostgreSQL 17.6; backups diarios de la plataforma (PITR apagado) + `restore-drill` antes de cada cambio |
+| Base | 140 migraciones, última `20260926160000` (impresión); PostgreSQL 17.6; backups diarios de la plataforma (PITR apagado) + `restore-drill` antes de cada cambio |
+| Impresión | `print-agent-gateway` v1; agentes Windows 0.1.0 por negocio (máx. 5); runbook `LOCAL-AGENT-RUNBOOK.md` |
 | Negocio real | `e7850ad2-a447-402c-8375-3fd74e9466ba` — cerrado, 0 productos, sin miembros, sin MP |
 | QA (nunca públicos) | control `e1d2c342-…` (8 productos QA), aislamiento `dd515bdd-…`; marcados `qa_fixture`, cerrados fuera de ventana (cron `taba-qa-window-expiry`) |
 | Rider | `com.lataba.rider.pilot` 0.1.3-canonical-pilot (vc 4), APK `2fcc64f9…`, certificado `2dcc9b0a…` |
@@ -137,6 +156,10 @@ telemetría sería una feature nueva, con una escritura anónima que abrir.
 
 ## Rollback
 
+- **2026-09-26 (#105): PASS** (run 36268405957). A = `1cf1cb1` (vivo), B = `de7456e`: deploy B + smoke, rollback B→A + smoke, restore A→B + smoke (Chromium, Chrome Android, WebKit en cada paso). Evidencia: `rollback-cp-20260926.json`.
+- **2026-09-26 (impresión)**: la base tiene 140 migraciones desde `20260926160000`, así que
+  `de7456e` (139) deja de ser destino válido. A = `09a22a6` (primer deploy con 140, sin ensayo);
+  B = el commit que agrega esta documentación, con ensayo B→A→B.
 - **2026-09-25 (#98): PASS** (run 36106090499). A = `033946b` (primer deployment con las 136 migraciones), B = `247eec7`: deploy B + smoke, rollback B→A + smoke, restore A→B + smoke (Chromium, Chrome Android, WebKit en cada paso). Hoy se sirve `247eec7`. Evidencia: `rollback-cp-20260925.json`.
 - 2026-09-25, primer intento (run 36102296295): se publicó B `033946b` con smoke
   PASS, pero el ensayo se negó a volver a `4378ed2`

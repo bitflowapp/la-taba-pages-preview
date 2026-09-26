@@ -1,0 +1,90 @@
+{
+  "code": "de7456e (served from the release worktree, CP backend, QA tenant with window)",
+  "orderE2E": [
+    {
+      "project": "chrome-android",
+      "result": "PASS",
+      "seconds": 44.1
+    },
+    {
+      "project": "webkit-iphone",
+      "result": "PASS",
+      "seconds": 58.4
+    }
+  ],
+  "flow": "customer → manual payment → Panel → rider → GPS → code → delivered; cleanup reverses the QA cash and classifies QA",
+  "panelTour": [
+    {
+      "label": "chromium-390x844",
+      "login": "PASS",
+      "views": {
+        "PEDIDOS": "PASS",
+        "CATALOGO": "PASS",
+        "STOCK": "PASS",
+        "STOCK_CONTEO": "PASS",
+        "CAJA_MOSTRADOR": "PASS",
+        "PAGOS": "PASS",
+        "CIERRE_CAJA": "PASS",
+        "CONFIG": "PASS",
+        "FISCAL": "PASS"
+      },
+      "http4xx5xx": 0,
+      "consoleErrors": 2,
+      "note": "only the harness origin 127.0.0.1 rejected by CORS on mercadopago-connect (same as v119)"
+    },
+    {
+      "label": "chromium-1366x768",
+      "login": "PASS",
+      "views": {
+        "PEDIDOS": "PASS",
+        "CATALOGO": "PASS",
+        "STOCK": "PASS",
+        "STOCK_CONTEO": "PASS",
+        "CAJA_MOSTRADOR": "PASS",
+        "PAGOS": "PASS",
+        "CIERRE_CAJA": "PASS",
+        "CONFIG": "PASS",
+        "FISCAL": "PASS"
+      },
+      "http4xx5xx": 0,
+      "consoleErrors": 2,
+      "note": "only the harness origin 127.0.0.1 rejected by CORS on mercadopago-connect (same as v119)"
+    },
+    {
+      "label": "webkit-390x844",
+      "login": "PASS",
+      "views": {
+        "PEDIDOS": "PASS",
+        "CATALOGO": "PASS",
+        "STOCK": "PASS",
+        "STOCK_CONTEO": "PASS",
+        "CAJA_MOSTRADOR": "PASS",
+        "PAGOS": "PASS",
+        "CIERRE_CAJA": "PASS",
+        "CONFIG": "PASS",
+        "FISCAL": "PASS"
+      },
+      "http4xx5xx": 0,
+      "consoleErrors": 3,
+      "note": "only the harness origin 127.0.0.1 rejected by CORS on mercadopago-connect (same as v119)"
+    },
+    {
+      "label": "webkit-1366x768",
+      "login": "PASS",
+      "views": {
+        "PEDIDOS": "PASS",
+        "CATALOGO": "PASS",
+        "STOCK": "PASS",
+        "STOCK_CONTEO": "PASS",
+        "CAJA_MOSTRADOR": "PASS",
+        "PAGOS": "PASS",
+        "CIERRE_CAJA": "PASS",
+        "CONFIG": "PASS",
+        "FISCAL": "PASS"
+      },
+      "http4xx5xx": 0,
+      "consoleErrors": 3,
+      "note": "only the harness origin 127.0.0.1 rejected by CORS on mercadopago-connect (same as v119)"
+    }
+  ]
+}

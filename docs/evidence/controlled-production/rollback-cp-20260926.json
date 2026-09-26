@@ -1,0 +1,26 @@
+{
+  "p105": {
+    "workflowRun": 36268405957,
+    "deploymentA": "1cf1cb1a3b085ffc9227fb046b168f1382dc59b7",
+    "deploymentB": "de7456e7b2fd32a71d90ecc88bb5233a729a7143",
+    "pagesDeployment": "42dfccca",
+    "ci": {
+      "web": 36268405962,
+      "rider": 36268405916
+    },
+    "steps": [
+      "deploy B + public smoke (Chromium, Chrome Android, WebKit): PASS",
+      "rollback preflight (same migration graph): PASS",
+      "rollback B→A (restored 1cf1cb1, backend unchanged, config verified): PASS",
+      "smoke on A: PASS",
+      "restore A→B (restored de7456e): PASS",
+      "smoke on B: PASS"
+    ],
+    "edgeConvergence": "6/6 reads of version.json = de7456e and sw.js = v120-map-off-boot-path"
+  },
+  "printingBaseline": {
+    "rule": "after 20260926160000 the web graph has 140 migrations: a rollback to de7456e (139) is refused by design (ROLLBACK_DB_GRAPH_INCOMPATIBLE)",
+    "deploymentA": "09a22a69aa8cf9096cc2e24312314732b6de5b92 (first deploy with the 140 migrations, no drill)",
+    "deploymentB": "next docs commit, drill B→A→B"
+  }
+}

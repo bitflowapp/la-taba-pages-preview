@@ -184,6 +184,20 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .topbar-
   color: var(--brand-ink-muted);
 }
 
+/* UN SOLO BUSCADOR EN ESCRITORIO.
+   La home y el catálogo tienen su propio buscador —el de la home lleva al
+   catálogo, el del catálogo filtra al lado de los resultados—, y en escritorio
+   la barra superior sumaba el suyo 40px más arriba: dos campos idénticos, uno
+   encima del otro. En esas dos vistas manda el de la vista; en el carrito, el
+   seguimiento y el perfil, que no tienen buscador, queda el de la barra.
+   `visibility` y no `display`: la barra conserva su grilla y nada salta al
+   cambiar de vista. Por debajo de 1020px la barra ya no lo muestra. */
+@media (min-width: 1021px) {
+  body:is([data-active-view="home"], [data-active-view="catalog"]) .topbar-search {
+    visibility: hidden;
+  }
+}
+
 body:not([data-active-view="business"]):not([data-active-view="rider"]) .topbar .desktop-nav button {
   color: var(--brand-ink-muted);
 }
@@ -3438,6 +3452,24 @@ body[data-active-view="catalog"] .catalog-controls::before {
   background: var(--shelf-line-strong);
   content: "";
   pointer-events: none;
+}
+
+/* El separador existe para la fila de dos controles del teléfono. Desde 821px
+   `.catalog-controls` es `display: contents` (catalog.css), así que su caja
+   desaparece y el pseudo-elemento se posicionaba contra la vista entera: una
+   línea de 1px que cruzaba el catálogo de arriba abajo, por el medio de las
+   tarjetas. Medido a 1366 y 1440. */
+@media (min-width: 821px) {
+  body[data-active-view="catalog"] .catalog-controls::before {
+    content: none;
+  }
+
+  /* Con todo el ancho disponible, el orden elegido se lee entero: el tope de
+     148px del teléfono recortaba «Recomendados» a «Recomendado:». */
+  body[data-active-view="catalog"] .sort-field select {
+    width: auto;
+    max-width: none;
+  }
 }
 
 body[data-active-view="catalog"] .catalog-filters,

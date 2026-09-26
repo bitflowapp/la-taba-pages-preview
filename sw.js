@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v119-commercial-frontend';
+const CACHE_NAME = 'la-taba-runtime-v120-map-off-boot-path';
 const ASSETS = [
   './',
   './index.html',
@@ -38,7 +38,7 @@ const ASSETS = [
   './assets/brand/taba-app-icon-192.png',
   './assets/products/beverage-placeholder.svg',
   './js/pwa-update.js?v=4',
-  './js/startup-recovery.js?v=2',
+  './js/startup-recovery.js?v=3',
   './js/app.js?v=51',
   './js/config.js',
   './js/core/address.js',

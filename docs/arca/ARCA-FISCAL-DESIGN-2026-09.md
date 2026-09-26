@@ -95,9 +95,22 @@ contador (`fiscal_accounting_policies`, por comercio y ambiente):
 | No sincroniza `FEParamGetCondicionIvaReceptor` | No se puede validar la condición antes de enviar | Sumarlo a los snapshots de parámetros |
 | Documentación en manual 4.5 | Reglas nuevas sin revisar (10247, CAEA 4.6, 4.7 caución/no categorizado) | Revisar códigos nuevos contra la política contable |
 
-El contrato de `CondicionIVAReceptorId` quedó implementado y probado en el spike
-.NET (`Taba.LocalAgent.Core/Fiscal`) como referencia; el worker Node es el que
-va a producción.
+**Estado 2026-09-26 — brechas cerradas en el worker server-side** (rama
+`feat/taba-arca-homologation-ready`):
+
+| Brecha | Cierre |
+|---|---|
+| `CondicionIVAReceptorId` | Migración `20260926170000_fiscal_receiver_vat_condition.sql`: política → comprobante → nota de crédito, validado contra la tabla oficial, inmutable al autorizar; el worker lo envía en el orden del WSDL y no numera sin él. pgTAP `fiscal_receiver_vat_condition_test` (14), pruebas del worker con dobles. |
+| `FEParamGetCondicionIvaReceptor` | Séptima tabla sincronizada (`recipient_vat_conditions`). |
+| Orden del sobre | `ImpTrib` antes que `ImpIVA`, como `FEDetRequest` del WSDL (el worker los tenía invertidos). |
+| Reconciliación | Consulta + último autorizado antes de reenviar el MISMO número; nunca otro número (portado del spike, que ya no tiene frontera fiscal: ARCA es server-side). |
+| TA tras reinicio | `ARCA_TA_CACHE_PATH` (0600) y `coe.alreadyAuthenticated` reintentable. |
+
+Verificado contra el WSDL de homologación descargado el 2026-09-26
+(`https://wswhomo.afip.gov.ar/wsfev1/service.asmx?WSDL`): `FEDetRequest`
+declara `…MonId, MonCotiz, CanMisMonExt, CondicionIVAReceptorId, CbtesAsoc,
+Tributos, Iva…` y `FEParamGetCondicionIvaReceptor(Auth, ClaseCmp)` devuelve
+`{Id, Desc, Cmp_Clase}`.
 
 ## CAE: qué se persiste
 
@@ -184,8 +197,9 @@ Pasos (el detalle operativo está en el README):
 2. Montar secretos fuera del repo, `credentials:check`, `FEDummy`, sincronizar parámetros incluida la condición del receptor.
 3. Casos sintéticos acordados con el contador: factura, nota de crédito asociada, reintento con respuesta perdida (consulta antes de reenviar), duplicado de la misma venta, receptor inválido, rechazo.
 
-**ARCA_HOMOLOGATION: BLOCKED** — no hay certificado de homologación, CUIT ni punto de
-venta de prueba en este entorno. Las pruebas con dobles (worker Node y spike
+**ARCA_HOMOLOGATION: PENDING_CREDENTIALS** — no hay certificado de homologación, CUIT ni punto de
+venta de prueba en este entorno. El código está listo (`ARCA_CODE_READY_FOR_HOMOLOGATION: YES`);
+el procedimiento está en [`docs/ARCA-HOMOLOGATION-RUNBOOK.md`](../ARCA-HOMOLOGATION-RUNBOOK.md). Las pruebas con dobles (worker Node y spike
 .NET) validan contratos, no la homologación.
 
 ## Producción

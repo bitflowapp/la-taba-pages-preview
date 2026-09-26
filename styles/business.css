@@ -7406,3 +7406,78 @@ body[data-active-view="business"] .production-auth-card {
 body[data-active-view="business"] .production-auth-card .production-auth-form {
   min-width: 0;
 }
+
+/* ---------------------------------------------------------------------------
+   Lo primero que se ve en el Panel es la cola, no el encabezado.
+   ---------------------------------------------------------------------------
+   Medido con los seis pedidos de `scripts/lib/business-panel-fixtures.mjs`:
+   a 390x844 la primera tarjeta empezaba en 494px —más de la mitad de la
+   pantalla era título, rol, dos botones de sesión, estado, repartidores y
+   contadores— y a 1366x768 en 589px, sin un solo pedido entero a la vista.
+   · Teléfono: «Panel del negocio» queda para el lector de pantalla (la barra
+     de arriba ya dice dónde estás) y el rol comparte renglón con Timbre y
+     Cerrar sesión, que siguen midiendo 44px.
+   · Todos los anchos: menos aire entre las bandas de arriba.
+   ------------------------------------------------------------------------ */
+@media (max-width: 620px) {
+  body[data-active-view="business"] .production-workspace .production-ops-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 0;
+  }
+
+  body[data-active-view="business"] .production-workspace .production-ops-head h1 {
+    position: absolute;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  body[data-active-view="business"] .production-workspace .production-ops-role {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  body[data-active-view="business"] .production-workspace .production-ops-head-actions {
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    width: auto;
+  }
+
+  body[data-active-view="business"] .production-workspace .production-ops-head-actions
+    :is(.ghost-button, .secondary-button) {
+    padding-inline: 12px;
+    white-space: nowrap;
+  }
+}
+
+body[data-active-view="business"] .production-workspace {
+  gap: 12px;
+}
+
+body[data-active-view="business"] .production-workspace .production-ops-status {
+  margin-bottom: 0;
+}
+
+body[data-active-view="business"] .production-workspace .tray-pulse {
+  margin-block: 4px 8px;
+}
+
+@media (min-width: 621px) {
+  /* El rol es una palabra («Dueño», «Equipo»): va al lado del título, no en
+     un renglón propio que empuja la cola 30px más abajo. */
+  body[data-active-view="business"] .production-workspace .production-ops-identity {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 12px;
+  }
+
+  body[data-active-view="business"] .production-workspace .production-ops-role {
+    margin: 0;
+  }
+}

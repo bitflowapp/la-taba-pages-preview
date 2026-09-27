@@ -117,6 +117,9 @@ let fiscalArtifacts = [];
 let fiscalPreview = null;
 let fiscalPrinters = [];
 let fiscalInitialRefreshStarted = false;
+// WhatsApp de facturación: el código recién generado (se muestra una vez) y los vínculos.
+let whatsappPairing = null;
+let whatsappLinks = [];
 let fiscalCreditDrafts = new Map();
 let packingSession = null;
 let packingRestoreStarted = false;
@@ -616,6 +619,9 @@ export async function handleBusinessOperationsAction(target) {
   if (regenerate) return regenerateFiscalArtifact(regenerate);
   if (target.closest('[data-fiscal-open-cache]')) return openFiscalCacheFolder();
   if (target.closest('[data-fiscal-config-save]')) return saveFiscalConfiguration(target);
+  if (target.closest('[data-whatsapp-pairing-create]')) return createWhatsAppPairing();
+  const whatsappRevoke = target.closest('[data-whatsapp-link-revoke]');
+  if (whatsappRevoke) return revokeWhatsAppLink(whatsappRevoke);
   const creditNote = target.closest('[data-fiscal-credit-note]');
   if (creditNote) return requestCreditNote(creditNote);
   if (target.closest('[data-operation-center-refresh]')) return refreshOperationCenterAction();
@@ -711,6 +717,8 @@ export function resetBusinessOperationsForTests() {
   fiscalPrinters = [];
   fiscalInitialRefreshStarted = false;
   fiscalCreditDrafts = new Map();
+  whatsappPairing = null;
+  whatsappLinks = [];
   packingSession = null;
   packingRestoreStarted = false;
   packingCacheStatus = '';
@@ -1260,8 +1268,11 @@ function cachedPackingBinding(gtin) {
 function clonePackingSession(session) { return JSON.parse(JSON.stringify(session)); }
 
 async function refreshFiscal() {
-  const [profile, documents, artifacts] = await Promise.all([context.getFiscalProfile(), context.listFiscalDocuments(), context.listFiscalArtifacts()]);
+  const [profile, documents, artifacts, links] = await Promise.all([
+    context.getFiscalProfile(), context.listFiscalDocuments(), context.listFiscalArtifacts(), context.listWhatsAppLinks(),
+  ]);
   fiscalProfile = profile?.ok ? profile.data : null;
+  whatsappLinks = links?.ok && Array.isArray(links.data) ? links.data : [];
   fiscalDocuments = documents?.ok && Array.isArray(documents.data) ? documents.data : [];
   fiscalArtifacts = artifacts?.ok && Array.isArray(artifacts.data) ? artifacts.data : [];
   await refreshFiscalPrinters();
@@ -1731,7 +1742,47 @@ function renderPos() {
 function renderFiscalStatus() {
   const rows = fiscalDocuments.length ? fiscalDocuments.map((document) => renderFiscalDocument(document)).join('') : '<div class="empty-state"><strong>Sin comprobantes</strong><p>Todavía no hay comprobantes emitidos por este sistema.</p></div>';
   const preview = fiscalPreview ? `<section class="business-fiscal-preview" data-fiscal-preview-surface><div class="button-row"><strong>Vista previa privada</strong><button class="ghost-button compact" type="button" data-fiscal-preview-close>Cerrar</button></div><iframe title="Vista previa de comprobante fiscal" src="${escapeHtml(fiscalPreview.signedUrl)}" sandbox="allow-scripts allow-same-origin"></iframe><small>El acceso temporal vence automáticamente; el PDF no se guarda en el navegador.</small></section>` : '';
-  return panel('Estado fiscal', 'Un comprobante está emitido recién cuando ARCA lo autoriza con su CAE. El PDF puede llegar un rato después.', `<div class="button-row"><button class="secondary-button compact" type="button" data-fiscal-refresh>Actualizar</button><button class="ghost-button compact" type="button" data-fiscal-open-cache>Abrir caché de impresión</button></div>${preview}${rows}`);
+  return panel('Estado fiscal', 'Un comprobante está emitido recién cuando ARCA lo autoriza con su CAE. El PDF puede llegar un rato después.', `<div class="button-row"><button class="secondary-button compact" type="button" data-fiscal-refresh>Actualizar</button><button class="ghost-button compact" type="button" data-fiscal-open-cache>Abrir caché de impresión</button></div>${preview}${rows}`) + renderWhatsAppLinking();
+}
+
+// Vincular el WhatsApp de cada persona del equipo: el código se canjea desde ese teléfono (el número lo
+// da Meta, nadie lo escribe) y vence en 10 minutos. Cada factura pedida por WhatsApp se confirma con SI.
+function renderWhatsAppLinking() {
+  const code = whatsappPairing
+    ? `<div class="business-fiscal-lock" data-whatsapp-code><strong>${escapeHtml(whatsappPairing.code)}</strong><span>Desde tu WhatsApp, mandá al número de La Taba: ${escapeHtml(whatsappPairing.message)}</span><span>Vence en 10 minutos y sirve una sola vez.</span></div>`
+    : '';
+  const links = whatsappLinks.length
+    ? `<ul class="business-ops-cart" data-whatsapp-links>${whatsappLinks.map((link) => `<li data-whatsapp-link="${escapeHtml(link.id)}"><span>${escapeHtml(link.phone_hint)}${link.is_own ? ' · tu WhatsApp' : ''}${link.active ? '' : ' · sin permiso vigente'}</span><button class="ghost-button compact" type="button" data-whatsapp-link-revoke="${escapeHtml(link.id)}">Desvincular</button></li>`).join('')}</ul>`
+    : '<p data-whatsapp-links-empty>Ningún WhatsApp vinculado.</p>';
+  return `<section class="business-ops-panel" data-whatsapp-linking><header><div><h2>WhatsApp de facturación</h2><p>Pedí facturas de pedidos, consultá cómo van y las ventas del día desde tu WhatsApp. Cada factura se confirma con un SI.</p></div></header>${code}<div class="button-row"><button class="secondary-button compact" type="button" data-whatsapp-pairing-create>Generar código para mi WhatsApp</button></div>${links}</section>`;
+}
+
+function whatsappFailureMessage(response) {
+  if (response?.code === '54000') return 'Pediste demasiados códigos. Probá de nuevo en una hora.';
+  if (response?.code === 'FORBIDDEN' || response?.code === 'SESSION_EXPIRED') return 'Tu usuario no puede vincular WhatsApp en este negocio.';
+  if (response?.retryable) return 'No hubo respuesta del servidor. Probá de nuevo en unos segundos.';
+  return 'No se pudo completar la operación. Probá de nuevo.';
+}
+
+async function createWhatsAppPairing() {
+  const response = await context.createWhatsAppPairing();
+  whatsappPairing = response?.ok && response.data?.code ? { code: String(response.data.code), message: String(response.data.message || '') } : null;
+  feedback = whatsappPairing ? 'Código generado. Vence en 10 minutos.' : whatsappFailureMessage(response);
+  context.onChange();
+  return result(Boolean(whatsappPairing), feedback);
+}
+
+async function revokeWhatsAppLink(button) {
+  const linkId = String(button.dataset.whatsappLinkRevoke || '');
+  if (!/^[0-9a-f-]{36}$/i.test(linkId)) return result(false, 'Vínculo no encontrado.');
+  const response = await context.revokeWhatsAppLink({ linkId, reason: 'desvinculado desde el Panel' });
+  if (response?.ok) {
+    const links = await context.listWhatsAppLinks();
+    whatsappLinks = links?.ok && Array.isArray(links.data) ? links.data : whatsappLinks.filter((link) => link.id !== linkId);
+  }
+  feedback = response?.ok ? 'WhatsApp desvinculado: ese teléfono ya no puede pedir facturas.' : whatsappFailureMessage(response);
+  context.onChange();
+  return result(Boolean(response?.ok), feedback);
 }
 
 function renderFiscalDocument(document) {
@@ -2865,6 +2916,8 @@ function defaultContext() {
     configureFiscalProfile: async () => ({ ok: false, message: 'Repositorio no disponible.' }), requestCreditNote: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     requestFiscalArtifactUrl: async () => ({ ok: false, message: 'Acceso privado no disponible.' }), regenerateFiscalArtifact: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     requestFiscalPrintJob: async () => ({ ok: false, message: 'Repositorio no disponible.' }), updateFiscalPrintJob: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
+    createWhatsAppPairing: async () => ({ ok: false, message: 'Repositorio no disponible.' }), listWhatsAppLinks: async () => ({ ok: true, data: [] }),
+    revokeWhatsAppLink: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     getOperationCenter: async () => ({ ok: false, message: 'Centro de operación no disponible.' }),
     acknowledgeOperationalAlert: async () => ({ ok: false, message: 'Repositorio no disponible.' }), resolveOperationalAlert: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     prepareDailyReconciliation: async () => ({ ok: false, message: 'Repositorio no disponible.' }), closeDailyReconciliation: async () => ({ ok: false, message: 'Repositorio no disponible.' }),

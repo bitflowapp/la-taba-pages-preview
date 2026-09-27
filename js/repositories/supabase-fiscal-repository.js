@@ -27,6 +27,10 @@ export function createSupabaseFiscalRepository({ client, businessId }) {
       p_job_id: printJobId, p_reason: reason, p_idempotency_key: idempotencyKey,
     }),
     getLocalPrintStatus: () => rpc('get_local_print_status', { p_business_id: businessId }),
+    // WhatsApp de facturación: el código se muestra una sola vez; los números vuelven enmascarados.
+    createWhatsAppPairing: () => rpc('create_whatsapp_pairing', { p_business_id: businessId }),
+    listWhatsAppLinks: () => rpc('list_whatsapp_links', { p_business_id: businessId }),
+    revokeWhatsAppLink: ({ linkId, reason = null }) => rpc('revoke_whatsapp_link', { p_link_id: linkId, p_reason: reason }),
     configureProfile: (profile) => rpc('configure_fiscal_profile', { p_business_id: businessId, p_profile: profile }),
     requestDocument: ({ sourceType, sourceId, documentIntent = 'invoice', idempotencyKey }) => rpc('request_fiscal_document', {
       p_business_id: businessId, p_source_type: sourceType, p_source_id: sourceId, p_document_intent: documentIntent, p_idempotency_key: idempotencyKey,

@@ -4,6 +4,7 @@ import path from 'node:path';
 import test from 'node:test';
 
 import {
+  assertCpWriteTarget,
   buildCommercialPlan,
   looksLikeQaSku,
   normalizeStoredPrice,
@@ -465,11 +466,20 @@ test('el plan dice si un producto se vuelve comprable, que es lo que le importa 
   assert.equal(resultado.summary.dejanDeSerComprables, 0);
 });
 
-test('--catalogo elige la fuente, y sólo acepta las dos que existen', () => {
+test('--catalogo elige la fuente y CP exige el destino leído', () => {
   assert.equal(parseCommercialImportArgs(['x.csv']).catalogo, 'repo', 'el default no cambia');
   assert.equal(parseCommercialImportArgs(['--catalogo', 'produccion', 'x.csv']).catalogo, 'produccion');
+  assert.equal(parseCommercialImportArgs(['--catalogo', 'cp', 'x.csv']).catalogo, 'cp');
   // El archivo se sigue reconociendo aunque venga después del flag y su valor.
   assert.equal(parseCommercialImportArgs(['--catalogo', 'produccion', 'x.csv']).file, 'x.csv');
-  assert.throws(() => parseCommercialImportArgs(['--catalogo', 'staging', 'x.csv']), /tiene que ser repo o produccion/);
+  assert.throws(() => parseCommercialImportArgs(['--catalogo', 'staging', 'x.csv']), /tiene que ser repo o produccion o cp/);
   assert.throws(() => parseCommercialImportArgs(['--catalogo', 'x.csv']), /Indicá exactamente un archivo CSV|tiene que ser/);
+  assert.doesNotThrow(() => assertCpWriteTarget({
+    SUPABASE_URL: 'https://tkanbadcglszlcyfjvpv.supabase.co',
+    TABA_BUSINESS_ID: 'e7850ad2-a447-402c-8375-3fd74e9466ba',
+  }));
+  assert.throws(() => assertCpWriteTarget({
+    SUPABASE_URL: 'https://tkanbadcglszlcyfjvpv.supabase.co',
+    TABA_BUSINESS_ID: '00000000-0000-4000-8000-000000000001',
+  }), /destino de escritura/);
 });

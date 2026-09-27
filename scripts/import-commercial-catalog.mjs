@@ -28,6 +28,7 @@ import { fileURLToPath } from 'node:url';
 import { parseCsv, PRODUCT_PRICE_MAX, POSTGRES_INTEGER_MAX } from './validate-product-catalog.mjs';
 import { rowsToObjects, PROCUREMENT_SUFFIX } from './catalog-readiness.mjs';
 import { STORE_CATEGORIES, findCategory, slugifyCategoryName } from '../js/core/store-taxonomy.js';
+import { CP_REF, CP_BUSINESS_ID } from './comercial/catalogo-de-produccion.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PRODUCTS_CSV = path.join(ROOT, 'catalog/products.csv');
@@ -746,7 +747,7 @@ export async function applyCommercialImport(client, plan, businessId) {
   return { applied: creadas + actualizadas, created: creadas, updated: actualizadas, rows: applied.rows || [] };
 }
 
-export const CATALOGOS = Object.freeze(['repo', 'produccion']);
+export const CATALOGOS = Object.freeze(['repo', 'produccion', 'cp']);
 
 export function parseCommercialImportArgs(args = []) {
   const known = ['--dry-run', '--apply', '--json', '--target', '--catalogo'];
@@ -805,12 +806,15 @@ async function main(args) {
   let catalog;
   let alcoholHabilitado = false;
   let imageExists;
-  if (options.catalogo === 'produccion') {
+  if (options.catalogo === 'produccion' || options.catalogo === 'cp') {
     const modulo = await import('./comercial/catalogo-de-produccion.mjs');
-    catalog = await modulo.leerCatalogoDeProduccion();
-    alcoholHabilitado = await modulo.leerAlcoholHabilitado();
+    const isCp = options.catalogo === 'cp';
+    const businessId = isCp ? modulo.CP_BUSINESS_ID : modulo.NEGOCIO_CANONICO;
+    const projectRef = isCp ? modulo.CP_REF : undefined;
+    catalog = await modulo.leerCatalogoDeProduccion(businessId, { projectRef });
+    alcoholHabilitado = await modulo.leerAlcoholHabilitado(businessId, { projectRef });
     imageExists = modulo.tieneImagen;
-    console.log(`Catálogo: PRODUCCIÓN · ${catalog.size} SKU · alcohol_sales_enabled=${alcoholHabilitado}`);
+    console.log(`Catálogo: ${isCp ? 'CONTROLLED PRODUCTION' : 'PRODUCCIÓN'} · ${catalog.size} SKU · alcohol_sales_enabled=${alcoholHabilitado}`);
   } else {
     catalog = readCatalogIndex(fs.readFileSync(PRODUCTS_CSV, 'utf8'));
     imageExists = (product) => {
@@ -900,6 +904,16 @@ async function main(args) {
     return;
   }
 
+  if (options.catalogo === 'cp') {
+    assertCpWriteTarget(process.env);
+    if (plan.altas.some((alta) => alta.stock === null)) {
+      const modulo = await import('./comercial/catalogo-de-produccion.mjs');
+      if (!(await modulo.cpConservaStockPendiente())) {
+        throw new Error('CP convierte stock desconocido en cero; importación detenida antes de escribir.');
+      }
+    }
+  }
+
   const rows = planToRpcRows(plan);
   const altas = planToAltaRows(plan);
   if (!rows.length && !altas.length) {
@@ -941,6 +955,14 @@ export function readCommercialCredentials(env = {}) {
     throw new Error('Falta TABA_BUSINESS_ID con un UUID válido.');
   }
   return { url, publishableKey, accessToken, businessId };
+}
+
+export function assertCpWriteTarget(env = {}) {
+  let hostname = '';
+  try { hostname = new URL(env.SUPABASE_URL || '').hostname; } catch {}
+  if (env.TABA_BUSINESS_ID !== CP_BUSINESS_ID || hostname !== `${CP_REF}.supabase.co`) {
+    throw new Error('El destino de escritura no coincide con el catálogo CP leído.');
+  }
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {

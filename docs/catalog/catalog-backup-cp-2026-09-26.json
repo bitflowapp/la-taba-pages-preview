@@ -1,0 +1,10 @@
+{
+  "captured_at_utc": "2026-09-27T00:08:07Z",
+  "project_ref": "tkanbadcglszlcyfjvpv",
+  "business_id": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+  "source": "Read-only Supabase SQL snapshot scoped to the business ID served by Controlled Production runtime-config.js",
+  "products": [],
+  "catalog_assets": [],
+  "catalog_product_drafts": [],
+  "note": "The catalog for this business was empty before any write. QA tenants in the same project are outside this snapshot and were not touched."
+}

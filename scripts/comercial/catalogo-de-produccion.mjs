@@ -25,6 +25,8 @@
 import { consultar, lit } from '../e2e-production-sale/db-solo-lectura.mjs';
 
 export const NEGOCIO_CANONICO = '00000000-0000-4000-8000-000000000001';
+export const CP_REF = 'tkanbadcglszlcyfjvpv';
+export const CP_BUSINESS_ID = 'e7850ad2-a447-402c-8375-3fd74e9466ba';
 
 /**
  * Traduce una fila de `public.products` a la forma que consume
@@ -47,11 +49,11 @@ export function filaAEntradaDeCatalogo(fila) {
 }
 
 /** Índice `sku → producto` leído de producción, con la misma forma que el del CSV. */
-export async function leerCatalogoDeProduccion(negocioId = NEGOCIO_CANONICO) {
+export async function leerCatalogoDeProduccion(negocioId = NEGOCIO_CANONICO, { projectRef } = {}) {
   const filas = await consultar(`
     select sku, name, category, price, price_status, stock, available, is_alcoholic, image_url
       from public.products
-     where business_id = ${lit(negocioId)}`);
+     where business_id = ${lit(negocioId)}`, { projectRef });
 
   const indice = new Map();
   for (const fila of filas) {
@@ -62,9 +64,10 @@ export async function leerCatalogoDeProduccion(negocioId = NEGOCIO_CANONICO) {
 }
 
 /** ¿La venta de alcohol está habilitada? La decide el comercio, no una planilla. */
-export async function leerAlcoholHabilitado(negocioId = NEGOCIO_CANONICO) {
+export async function leerAlcoholHabilitado(negocioId = NEGOCIO_CANONICO, { projectRef } = {}) {
   const [negocio] = await consultar(
     `select alcohol_sales_enabled from public.businesses where id = ${lit(negocioId)}`,
+    { projectRef },
   );
   return negocio?.alcohol_sales_enabled === true;
 }
@@ -72,4 +75,15 @@ export async function leerAlcoholHabilitado(negocioId = NEGOCIO_CANONICO) {
 /** Una foto de verdad publicada. Sin esto, publicar deja un hueco en la góndola. */
 export function tieneImagen(producto) {
   return Boolean(String(producto?.image_url || '').trim());
+}
+
+/** CP no puede interpretar stock vacío como cero: NULL significa no contado. */
+export async function cpConservaStockPendiente() {
+  const [contrato] = await consultar(`
+    select position('v_stock := null' || chr(59) in pg_get_functiondef(p.oid)) > 0 as conserva_null,
+           position('v_stock := 0' || chr(59) in pg_get_functiondef(p.oid)) > 0 as inventa_cero
+      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public' and p.proname = 'apply_commercial_catalog_plan'`,
+    { projectRef: CP_REF });
+  return contrato?.conserva_null === true && contrato?.inventa_cero === false;
 }

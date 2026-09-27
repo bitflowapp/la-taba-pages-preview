@@ -23,7 +23,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(50);
+select plan(51);
 
 -- ── Fixture ────────────────────────────────────────────────────────────────
 insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
@@ -124,6 +124,33 @@ select is((
   where not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
                      where n.nspname = 'public' and p.proname = e.name and array_to_string(p.proargnames, ',') = e.args)),
   0, 'las 8 RPC del worker canonico existen con los nombres de argumento que envia SupabaseFiscalStore (PostgREST)');
+
+-- Los clientes de La Taba tambien llaman por NOMBRE (js/repositories, Edge Function de PDF):
+-- cada juego de argumentos que envian resuelve a UNA funcion (los que no envian, con default).
+select is((
+  with fns as (
+    select p.proname, p.pronargdefaults,
+           array(select a.name from unnest(p.proargnames, coalesce(p.proargmodes, array_fill('i'::"char", array[coalesce(cardinality(p.proargnames), 0)])))
+                   with ordinality as a(name, mode, ord) where a.mode in ('i','b','v') order by a.ord) as inputs
+      from pg_proc p where p.pronamespace = 'public'::regnamespace
+  )
+  select count(*)::integer from (values
+    ('request_fiscal_document', array['p_business_id','p_source_type','p_source_id','p_document_intent','p_idempotency_key']),
+    ('request_credit_note', array['p_original_document_id','p_reason','p_credit_kind','p_lines','p_idempotency_key']),
+    ('request_full_credit_note', array['p_original_document_id','p_reason','p_idempotency_key']),
+    ('request_fiscal_artifact_regeneration', array['p_fiscal_document_id']),
+    ('list_fiscal_document_artifacts', array['p_business_id']),
+    ('request_fiscal_print_job', array['p_fiscal_document_id','p_artifact_id','p_printer_name_hash','p_format','p_copies','p_idempotency_key']),
+    ('update_fiscal_print_job', array['p_print_job_id','p_status','p_error_code']),
+    ('authorize_fiscal_artifact_access', array['p_artifact_id','p_action']),
+    ('configure_fiscal_profile', array['p_business_id','p_profile']),
+    ('get_arca_activation_status', array['p_business_id']),
+    ('authorize_arca_homologation', array['p_business_id','p_authorization']),
+    ('record_fiscal_verification', array['p_business_id','p_verification'])
+  ) c(name, args)
+  where (select count(*) from fns f where f.proname = c.name and c.args <@ f.inputs
+           and f.inputs[1:cardinality(f.inputs) - f.pronargdefaults] <@ c.args) <> 1),
+  0, 'las 12 llamadas fiscales de los clientes de La Taba resuelven por nombre a una sola funcion');
 
 select ok(
   to_regprocedure('public.claim_fiscal_outbox(text,integer,integer)') is null

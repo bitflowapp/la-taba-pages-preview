@@ -1508,7 +1508,7 @@ async function startBusinessIntake(businessId) {
       const fiscalSignature = orders.map((order) => `${order.backendId || order.id}:${order.revision ?? ''}`).join('|');
       if (fiscalSignature !== orderFiscalSignature) {
         orderFiscalSignature = fiscalSignature;
-        refreshOrderFiscalStates().then(notify).catch(() => {});
+        refreshOrderFiscalStates().then((changed) => { if (changed) notify(); }).catch(() => {});
       }
     },
     onStatusChange: (nextStatus) => {
@@ -1812,14 +1812,21 @@ function packingCommandResult(response, revision) {
     };
 }
 
+function orderFiscalFingerprint() {
+  return JSON.stringify([localPrintAgent, [...orderFiscalStates.entries()]]);
+}
+
+// Devuelve si cambió algo de lo que muestra la bandeja: sin cambios no hay por qué repintar
+// (un repintado de más reemplaza las tarjetas debajo del dedo o de una prueba).
 async function refreshOrderFiscalStates() {
-  if (!BUSINESS_ROLES.has(access.membership?.role) || !fiscalRepository) return;
+  if (!BUSINESS_ROLES.has(access.membership?.role) || !fiscalRepository) return false;
+  const before = orderFiscalFingerprint();
   const orderIds = [...new Set((getState().orders || [])
     .map((order) => String(order?.backendId || ''))
     .filter((id) => ORDER_FISCAL_UUID.test(id)))].slice(0, 100);
   if (!orderIds.length) {
     orderFiscalStates = new Map();
-    return;
+    return orderFiscalFingerprint() !== before;
   }
   const [states, agent] = await Promise.all([
     fiscalRepository.getOrderFiscalStates(orderIds),
@@ -1829,6 +1836,7 @@ async function refreshOrderFiscalStates() {
     orderFiscalStates = new Map(states.data.map((row) => [String(row.order_id), row]));
   }
   if (agent?.ok) localPrintAgent = String(agent.data?.agent || '') || null;
+  return orderFiscalFingerprint() !== before;
 }
 
 async function refreshBusinessPayments() {

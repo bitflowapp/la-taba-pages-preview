@@ -160,8 +160,12 @@ insert into public.fiscal_document_items(
   '45000000-0000-4000-8000-000000000001','43000000-0000-4000-8000-000000000001','Item fiscal sintetico',2,50,100,21,5,0,0,0,
   '{"net_amount":"100.00","tax_amount":"21.00","exempt_amount":"0.00","non_taxed_amount":"0.00","other_taxes_amount":"0.00","tax_code":"5"}'::jsonb
 );
+-- Camino real del worker: reserva (numero + envio registrado) y despues la autorizacion.
 update public.fiscal_documents
-set state='authorized',cae='12345678901234',cae_expiration=current_date+10,document_number=1,issue_date=current_date,authorized_at=now()
+set state='authorizing',document_number=1,issue_date=current_date,dispatch_count=1,last_dispatch_at=now()
+where id='43000000-0000-4000-8000-000000000001';
+update public.fiscal_documents
+set state='authorized',cae='12345678901234',cae_expiration=current_date+10,authorized_at=now()
 where id='43000000-0000-4000-8000-000000000001';
 
 select is((select artifact_state from public.fiscal_documents where id='43000000-0000-4000-8000-000000000001'), 'artifact_pending', 'CAE deja el PDF pendiente sin revertir autorizacion');
@@ -205,13 +209,14 @@ set local role service_role;
 select is((select count(*)::integer from public.claim_fiscal_artifact_outbox('fixture-artifact-worker',1,30)), 1, 'un worker reclama una sola generacion de PDF');
 set local role postgres;
 select throws_ok(
-  $$select public.complete_fiscal_artifact('00000000-0000-4000-8000-000000000009','fixture-artifact-worker','{}'::jsonb)$$,
+  $$select public.complete_fiscal_artifact('00000000-0000-4000-8000-000000000009','fixture-artifact-worker',1,'{}'::jsonb)$$,
   '22023','metadata de artefacto incompleta','la metadata de PDF exige fecha y campos completos'
 );
 select lives_ok(
   $$select public.complete_fiscal_artifact(
     (select id from public.fiscal_artifact_outbox where fiscal_document_id='43000000-0000-4000-8000-000000000001'),
     'fixture-artifact-worker',
+    (select lease_epoch from public.fiscal_artifact_outbox where fiscal_document_id='43000000-0000-4000-8000-000000000001'),
     jsonb_build_object(
       'artifact_type','authorized_pdf','storage_provider','supabase_storage',
       'storage_path',(select public.fiscal_artifact_storage_path(business_id,id,(select generation_token from public.fiscal_artifact_outbox where fiscal_document_id='43000000-0000-4000-8000-000000000001')) from public.fiscal_documents where id='43000000-0000-4000-8000-000000000001'),
@@ -261,6 +266,7 @@ select lives_ok(
   $$select public.complete_fiscal_artifact(
     (select id from public.fiscal_artifact_outbox where fiscal_document_id='43000000-0000-4000-8000-000000000001'),
     'fixture-artifact-worker-2',
+    (select lease_epoch from public.fiscal_artifact_outbox where fiscal_document_id='43000000-0000-4000-8000-000000000001'),
     jsonb_build_object(
       'artifact_type','authorized_pdf','storage_provider','supabase_storage',
       'storage_path',(select public.fiscal_artifact_storage_path(business_id,id,(select generation_token from public.fiscal_artifact_outbox where fiscal_document_id='43000000-0000-4000-8000-000000000001')) from public.fiscal_documents where id='43000000-0000-4000-8000-000000000001'),

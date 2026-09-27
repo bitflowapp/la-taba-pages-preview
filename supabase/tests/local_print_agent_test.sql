@@ -518,12 +518,16 @@ insert into public.fiscal_profiles(business_id,legal_name,cuit,tax_condition,env
 values ('b7000000-0000-4000-8000-000000000001','TABA IMPRIME SA','20123456789','monotributo','homologation',1,true,
   'approved',now(),'a7000000-0000-4000-8000-000000000001','consumidor_final',1);
 insert into public.fiscal_documents(id,business_id,source_type,source_id,document_intent,environment,cuit,point_of_sale,
-  document_type,document_number,issue_date,currency,currency_rate,recipient_type,recipient_document_type,recipient_document_number,
+  document_type,issue_date,currency,currency_rate,recipient_type,recipient_document_type,recipient_document_number,
   net_amount,total_amount,state,idempotency_key,issuer_snapshot,recipient_snapshot,concept)
 values ('f7000000-0000-4000-8000-000000000001','b7000000-0000-4000-8000-000000000001','pos_sale','f7000000-0000-4000-8000-0000000000aa',
-  'invoice','homologation','20123456789',1,11,123,'2026-09-26','PES',1,'consumidor_final',99,'0',1234.50,1234.50,
-  'authorizing','fiscal-print-test-0001','{"legal_name":"TABA IMPRIME SA","tax_condition":"monotributo"}',
+  'invoice','homologation','20123456789',1,11,'2026-09-26','PES',1,'consumidor_final',99,'0',1234.50,1234.50,
+  'queued','fiscal-print-test-0001','{"legal_name":"TABA IMPRIME SA","tax_condition":"monotributo"}',
   '{"condition":"consumidor_final","document_type":99,"document_number":"0"}',1);
+-- Camino real del worker (maquina de estados del core fiscal): un comprobante nace en queued y la
+-- reserva registra numero y envio antes de hablar con ARCA.
+update public.fiscal_documents set state = 'authorizing', document_number = 123, dispatch_count = 1, last_dispatch_at = now()
+ where id = 'f7000000-0000-4000-8000-000000000001';
 
 select throws_ok(
   $$insert into public.print_jobs(business_id,document_type,source_entity_id,payload,request_source,idempotency_key)

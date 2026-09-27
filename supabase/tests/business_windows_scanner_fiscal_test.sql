@@ -7,7 +7,7 @@ select has_table('public', 'inventory_movements', 'ledger de inventario persisti
 select has_table('public', 'fiscal_outbox', 'outbox fiscal persistida');
 select has_table('public', 'fiscal_request_attempts', 'intentos fiscales persistidos');
 select has_function('public', 'checkout_pos_sale', array['uuid','jsonb','text','text','boolean'], 'checkout POS existe');
-select has_function('public', 'reserve_fiscal_document_number', array['uuid','text','bigint'], 'reserva fiscal privada existe');
+select has_function('public', 'reserve_fiscal_document_number', array['uuid','text','bigint','bigint','date'], 'reserva fiscal privada existe (fencing por lease_epoch, numero y fecha)');
 
 insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
 values('10000000-0000-4000-8000-000000000001','authenticated','authenticated','operator@example.invalid','',now(),'{}','{}',now(),now());
@@ -60,7 +60,7 @@ select has_table('public', 'fiscal_accounting_policies', 'politicas contables ve
 select has_table('public', 'fiscal_credit_allocations', 'saldo acreditable persistido');
 select has_function('public', 'request_credit_note', array['uuid','text','text','jsonb','text'], 'nota de credito parcial existe');
 select has_function('public', 'claim_fiscal_artifact_outbox', array['text','integer','integer'], 'worker de artefactos privado existe');
-select has_function('public', 'complete_fiscal_artifact', array['uuid','text','jsonb'], 'persistencia de artefacto existe');
+select has_function('public', 'complete_fiscal_artifact', array['uuid','text','bigint','jsonb'], 'persistencia de artefacto existe (lease del PDF con epoch)');
 select has_function('public', 'authorize_fiscal_artifact_access', array['uuid','text'], 'autorizacion de descarga privada existe');
 select has_function('public', 'request_fiscal_print_job', array['uuid','uuid','text','text','integer','text'], 'solicitud de reimpresion existe');
 select is((select public from storage.buckets where id='fiscal-documents'), false, 'bucket fiscal es privado');

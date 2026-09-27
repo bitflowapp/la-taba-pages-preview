@@ -1,0 +1,10 @@
+sku,precio,stock,publicar,nombre,categoria,subcategoria,alcohol,imagen
+"coca-cola-original-2250ml-local","","","no","Coca-Cola Sabor Original 2,25 L","Gaseosas","original","no","no"
+"coca-cola-sin-azucar-2250ml-local","","","no","Coca-Cola Sin Azúcar 2,25 L","Gaseosas","sin-azucar","no","no"
+"sprite-sin-azucar-2250ml-local","","","no","Sprite Sin Azúcar 2,25 L","Gaseosas","sin-azucar","no","no"
+"fanta-naranja-2250ml","","","no","Fanta Naranja 2,25 L","Gaseosas","naranja","no","no"
+"villavicencio-sin-gas-500ml","","","no","Villavicencio Sin Gas 500 ml","Aguas","sin-gas","no","no"
+"red-bull-energy-drink-355ml","","","no","Red Bull Energy Drink 355 ml","Energizantes","original","no","no"
+"quilmes-clasica-710ml","","","no","Quilmes Clásica 710 ml","Cervezas","lager","si","no"
+"heineken-710ml","","","no","Heineken Lager 710 ml","Cervezas","lager","si","no"
+"fernet-branca-750ml","","","no","Fernet Branca 750 ml","Fernet","fernet","si","no"

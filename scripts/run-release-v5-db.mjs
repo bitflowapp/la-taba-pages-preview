@@ -148,8 +148,8 @@ try {
       assert.doesNotMatch(output,/^not ok\b/m,name);assert.match(output,/^1\.\.[0-9]+$/m,name);
       assertions+=Number(/^1\.\.([0-9]+)$/m.exec(output)[1]);
     }
-    assert.equal(assertions,524);
-    console.log('CANONICAL_PGTAP: 250 + 44 least-privilege + 50 reparto-propio + 37 ventana QA/columnas privadas/pausa + 9 Mercado Pago sólo con vendedor conectado + 5 aislamiento cobro manual/Mercado Pago + 9 alerta de vendedor que no puede cobrar + 16 interruptor de operador por negocio + 104 impresión del mostrador assertions PASS');
+    assert.equal(assertions,542);
+    console.log('CANONICAL_PGTAP: 268 + 44 least-privilege + 50 reparto-propio + 37 ventana QA/columnas privadas/pausa + 9 Mercado Pago sólo con vendedor conectado + 5 aislamiento cobro manual/Mercado Pago + 9 alerta de vendedor que no puede cobrar + 16 interruptor de operador por negocio + 104 impresión del mostrador assertions PASS');
 
     // pgTAP no puede probar dos agentes reclamando a la vez: una conexión por llamada.
     const { runPrintClaimRace } = await import('./print-agent/claim-race.mjs');

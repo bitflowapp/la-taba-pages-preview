@@ -73,10 +73,13 @@ export function assertSoloLectura(sql) {
   return limpio;
 }
 
-export async function consultar(sql) {
+export async function consultar(sql, { projectRef = PRODUCCION.supabaseRef } = {}) {
   const seguro = assertSoloLectura(sql);
+  if (!new Set([PRODUCCION.supabaseRef, 'tkanbadcglszlcyfjvpv']).has(projectRef)) {
+    throw new ConsultaNoPermitida('ref de proyecto no autorizado para esta lectura');
+  }
   return conToken(async (token) => {
-    const respuesta = await fetch(`https://api.supabase.com/v1/projects/${PRODUCCION.supabaseRef}/database/query`, {
+    const respuesta = await fetch(`https://api.supabase.com/v1/projects/${projectRef}/database/query`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,

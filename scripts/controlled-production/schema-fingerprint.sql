@@ -1,4 +1,4 @@
--- Schema fingerprint of the application schemas (public, private) plus the
+-- Schema fingerprint of the application schemas (public, private, catalog_admin) plus the
 -- platform objects the app configures (storage policies and buckets, cron jobs,
 -- realtime publication). One row per category: count, md5 of the sorted
 -- key=value lines, and the md5 of every item. Read only. Used to compare
@@ -9,7 +9,7 @@ tbl as (
   select n.nspname||'.'||c.relname as k,
          jsonb_build_object('rls', c.relrowsecurity, 'force', c.relforcerowsecurity, 'kind', c.relkind) as v
   from pg_class c join pg_namespace n on n.oid=c.relnamespace
-  where n.nspname in ('public','private') and c.relkind in ('r','p','v','m')
+  where n.nspname in ('public','private','catalog_admin') and c.relkind in ('r','p','v','m')
 ),
 col as (
   select n.nspname||'.'||c.relname||'.'||a.attname as k,
@@ -17,34 +17,34 @@ col as (
            'def', pg_get_expr(d.adbin, d.adrelid), 'gen', a.attgenerated) as v
   from pg_attribute a join pg_class c on c.oid=a.attrelid join pg_namespace n on n.oid=c.relnamespace
   left join pg_attrdef d on d.adrelid=a.attrelid and d.adnum=a.attnum
-  where n.nspname in ('public','private') and c.relkind in ('r','p','v','m') and a.attnum>0 and not a.attisdropped
+  where n.nspname in ('public','private','catalog_admin') and c.relkind in ('r','p','v','m') and a.attnum>0 and not a.attisdropped
 ),
 con as (
   select n.nspname||'.'||c.relname||'.'||co.conname as k, to_jsonb(pg_get_constraintdef(co.oid)) as v
   from pg_constraint co join pg_class c on c.oid=co.conrelid join pg_namespace n on n.oid=c.relnamespace
-  where n.nspname in ('public','private')
+  where n.nspname in ('public','private','catalog_admin')
 ),
 idx as (
   select n.nspname||'.'||i.relname as k, to_jsonb(pg_get_indexdef(i.oid)) as v
   from pg_index x join pg_class i on i.oid=x.indexrelid join pg_namespace n on n.oid=i.relnamespace
-  where n.nspname in ('public','private')
+  where n.nspname in ('public','private','catalog_admin')
 ),
 fn as (
   select p.oid::regprocedure::text as k,
          jsonb_build_object('src', md5(p.prosrc), 'secdef', p.prosecdef, 'cfg', p.proconfig,
            'vol', p.provolatile, 'ret', pg_get_function_result(p.oid), 'lang', l.lanname) as v
   from pg_proc p join pg_namespace n on n.oid=p.pronamespace join pg_language l on l.oid=p.prolang
-  where n.nspname in ('public','private')
+  where n.nspname in ('public','private','catalog_admin')
 ),
 pol as (
   select schemaname||'.'||tablename||'.'||policyname as k,
          jsonb_build_object('cmd', cmd, 'perm', permissive, 'roles', roles, 'qual', qual, 'check', with_check) as v
-  from pg_policies where schemaname in ('public','private','storage')
+  from pg_policies where schemaname in ('public','private','catalog_admin','storage')
 ),
 trg as (
   select n.nspname||'.'||c.relname||'.'||t.tgname as k, to_jsonb(pg_get_triggerdef(t.oid)) as v
   from pg_trigger t join pg_class c on c.oid=t.tgrelid join pg_namespace n on n.oid=c.relnamespace
-  where not t.tgisinternal and n.nspname in ('public','private')
+  where not t.tgisinternal and n.nspname in ('public','private','catalog_admin')
 ),
 tgrant as (
   select n.nspname||'.'||c.relname||'|'||r.rolname as k,
@@ -52,7 +52,7 @@ tgrant as (
                         where x.grantee=r.oid order by 1)) as v
   from pg_class c join pg_namespace n on n.oid=c.relnamespace
   cross join pg_roles r
-  where n.nspname in ('public','private') and c.relkind in ('r','p','v','m','S')
+  where n.nspname in ('public','private','catalog_admin') and c.relkind in ('r','p','v','m','S')
     and r.rolname in ('anon','authenticated','service_role')
 ),
 cgrant as (
@@ -61,14 +61,14 @@ cgrant as (
                         where x.grantee=r.oid order by 1)) as v
   from pg_attribute a join pg_class c on c.oid=a.attrelid join pg_namespace n on n.oid=c.relnamespace
   cross join pg_roles r
-  where n.nspname in ('public','private') and a.attnum>0 and not a.attisdropped and a.attacl is not null
+  where n.nspname in ('public','private','catalog_admin') and a.attnum>0 and not a.attisdropped and a.attacl is not null
     and r.rolname in ('anon','authenticated','service_role')
 ),
 fgrant as (
   select p.oid::regprocedure::text||'|'||r.rolname as k,
          to_jsonb(has_function_privilege(r.oid, p.oid, 'execute')) as v
   from pg_proc p join pg_namespace n on n.oid=p.pronamespace cross join pg_roles r
-  where n.nspname in ('public','private') and r.rolname in ('anon','authenticated','service_role')
+  where n.nspname in ('public','private','catalog_admin') and r.rolname in ('anon','authenticated','service_role')
 ),
 pub as (
   select schemaname||'.'||tablename as k, to_jsonb(pubname) as v

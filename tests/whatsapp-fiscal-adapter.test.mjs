@@ -423,3 +423,232 @@ test('WhatsApp Adapter: state and summary commands (pendientes, ventas hoy, esta
   assert.match(sentMessages.at(-1).text, /Estado del Ecosistema La Taba Fiscal/);
   assert.match(sentMessages.at(-1).text, /WSFE v1 Operativo/);
 });
+
+test('WhatsApp Adapter: rejects previously revoked pairings', async () => {
+  const sentMessages = [];
+  const processedMessageIds = new Set();
+
+  const mockDb = {
+    async isMessageProcessed(id) {
+      return processedMessageIds.has(id);
+    },
+    async recordIncomingMessage({ waMessageId }) {
+      processedMessageIds.add(waMessageId);
+    },
+    async getActivePairing(waId) {
+      // Query filters out revoked_at is not null, so returns null
+      return null;
+    },
+  };
+
+  const adapter = createWhatsAppFiscalAdapter({
+    db: mockDb,
+    sendWhatsAppMessage: async (to, text) => {
+      sentMessages.push({ to, text });
+    },
+  });
+
+  const res = await adapter.handleIncomingMessage({
+    waMessageId: 'wamid.revoked_test_01',
+    fromWaId: '5491199998888',
+    body: 'ventas hoy',
+  });
+
+  assert.equal(res.ok, false);
+  assert.equal(res.error, 'UNAUTHORIZED_PHONE');
+  assert.match(sentMessages.at(-1).text, /Teléfono no autorizado/);
+});
+
+test('WhatsApp Adapter: duplicate confirmation without pending order is rejected safely', async () => {
+  const sentMessages = [];
+  const processedMessageIds = new Set();
+
+  const mockDb = {
+    async isMessageProcessed(id) {
+      return processedMessageIds.has(id);
+    },
+    async recordIncomingMessage({ waMessageId }) {
+      processedMessageIds.add(waMessageId);
+    },
+    async getActivePairing(waId) {
+      return { business_id: 'biz-123', user_id: 'walter-usr', wa_id: waId };
+    },
+  };
+
+  const adapter = createWhatsAppFiscalAdapter({
+    db: mockDb,
+    sendWhatsAppMessage: async (to, text) => {
+      sentMessages.push({ to, text });
+    },
+  });
+
+  // Sending confirmation "si" when there is nothing pending
+  const res = await adapter.handleIncomingMessage({
+    waMessageId: 'wamid.dup_conf_01',
+    fromWaId: '5491144001122',
+    body: 'si',
+  });
+
+  assert.equal(res.ok, false);
+  assert.equal(res.error, 'NO_PENDING_CONFIRMATION');
+  assert.match(sentMessages.at(-1).text, /No tenés ninguna orden pendiente de confirmación/);
+});
+
+test('WhatsApp Adapter: PANEL + WhatsApp same sale convergence', async () => {
+  const sentMessages = [];
+  const processedMessageIds = new Set();
+  let billCalls = 0;
+
+  const order = {
+    id: 'ord-panel-wa',
+    order_number: '1845',
+    total: 12000,
+    customer_name: 'Marcos Soto',
+    payment_method: 'Efectivo',
+    fiscal_document: null,
+  };
+
+  const mockDb = {
+    async isMessageProcessed(id) {
+      return processedMessageIds.has(id);
+    },
+    async recordIncomingMessage({ waMessageId }) {
+      processedMessageIds.add(waMessageId);
+    },
+    async getActivePairing(waId) {
+      return { business_id: 'biz-123', user_id: 'walter-usr', wa_id: waId };
+    },
+    async findOrderByNumberOrId() {
+      return order;
+    },
+    async billCommercialOrder({ commandSource }) {
+      billCalls++;
+      if (!order.fiscal_document) {
+        order.fiscal_document = {
+          id: 'fdoc-1845',
+          document_type: 'FACTURA_B',
+          pos_number: 5,
+          document_number: 1045,
+          cae: '74239849201999',
+          cae_expiration_date: '2026-10-06',
+          state: 'authorized',
+        };
+        return { ok: true, document: order.fiscal_document, idempotent_replay: false };
+      }
+      return { ok: true, document: order.fiscal_document, idempotent_replay: true };
+    },
+  };
+
+  const adapter = createWhatsAppFiscalAdapter({
+    db: mockDb,
+    sendWhatsAppMessage: async (to, text) => {
+      sentMessages.push({ to, text });
+    },
+  });
+
+  const waId = '5491144001122';
+
+  // WhatsApp initiates
+  await adapter.handleIncomingMessage({
+    waMessageId: 'wamid.panel_wa_init',
+    fromWaId: waId,
+    body: 'facturar 1845',
+  });
+
+  // Simultaneously, operator on PANEL bills the order
+  const panelRes = await mockDb.billCommercialOrder({ orderId: order.id, commandSource: 'PANEL' });
+  assert.equal(panelRes.ok, true);
+  assert.equal(panelRes.idempotent_replay, false);
+
+  // WhatsApp operator confirms
+  const waRes = await adapter.handleIncomingMessage({
+    waMessageId: 'wamid.panel_wa_confirm',
+    fromWaId: waId,
+    body: 'si',
+  });
+
+  assert.equal(waRes.ok, true);
+  assert.equal(waRes.idempotentReplay, true);
+  assert.equal(waRes.cae, panelRes.document.cae);
+  assert.equal(waRes.documentNumber, panelRes.document.document_number);
+  assert.equal(billCalls, 2); // 1 original + 1 idempotent replay
+});
+
+test('WhatsApp Adapter: MOBILE + WhatsApp same sale convergence', async () => {
+  const sentMessages = [];
+  const processedMessageIds = new Set();
+  let billCalls = 0;
+
+  const order = {
+    id: 'ord-mobile-wa',
+    order_number: '1846',
+    total: 9500,
+    customer_name: 'Lucia Paz',
+    payment_method: 'Tarjeta',
+    fiscal_document: null,
+  };
+
+  const mockDb = {
+    async isMessageProcessed(id) {
+      return processedMessageIds.has(id);
+    },
+    async recordIncomingMessage({ waMessageId }) {
+      processedMessageIds.add(waMessageId);
+    },
+    async getActivePairing(waId) {
+      return { business_id: 'biz-123', user_id: 'walter-usr', wa_id: waId };
+    },
+    async findOrderByNumberOrId() {
+      return order;
+    },
+    async billCommercialOrder({ commandSource }) {
+      billCalls++;
+      if (!order.fiscal_document) {
+        order.fiscal_document = {
+          id: 'fdoc-1846',
+          document_type: 'FACTURA_B',
+          pos_number: 5,
+          document_number: 1046,
+          cae: '74239849202000',
+          cae_expiration_date: '2026-10-06',
+          state: 'authorized',
+        };
+        return { ok: true, document: order.fiscal_document, idempotent_replay: false };
+      }
+      return { ok: true, document: order.fiscal_document, idempotent_replay: true };
+    },
+  };
+
+  const adapter = createWhatsAppFiscalAdapter({
+    db: mockDb,
+    sendWhatsAppMessage: async (to, text) => {
+      sentMessages.push({ to, text });
+    },
+  });
+
+  const waId = '5491144001122';
+
+  // WhatsApp initiates
+  await adapter.handleIncomingMessage({
+    waMessageId: 'wamid.mobile_wa_init',
+    fromWaId: waId,
+    body: 'facturar 1846',
+  });
+
+  // Mobile bills first
+  const mobileRes = await mockDb.billCommercialOrder({ orderId: order.id, commandSource: 'MOBILE' });
+  assert.equal(mobileRes.ok, true);
+
+  // WhatsApp confirms
+  const waRes = await adapter.handleIncomingMessage({
+    waMessageId: 'wamid.mobile_wa_confirm',
+    fromWaId: waId,
+    body: 'si',
+  });
+
+  assert.equal(waRes.ok, true);
+  assert.equal(waRes.idempotentReplay, true);
+  assert.equal(waRes.cae, mobileRes.document.cae);
+  assert.equal(waRes.documentNumber, mobileRes.document.document_number);
+});
+

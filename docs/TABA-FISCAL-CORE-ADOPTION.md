@@ -47,8 +47,8 @@ Se portaron **efectos**, en migraciones nuevas generadas con `supabase migration
 | `20260927050851_fiscal_core_receiver_vat_condition` | `20260926170000` | RG 5616: `recipient_vat_condition_id` en política y comprobante, snapshot `recipient_vat_conditions`, resolución de política que lo exige |
 | `20260927050858_fiscal_core_intent_convergence` | `20260926180000` | identidad de intención (negocio, origen, id, intención) con advisory lock; `fiscal_idempotency_keys` con huella (`23505 IDEMPOTENCY_KEY_REUSED`); un solo camino `private.fiscal_request_invoice` con dos entradas (operador y canal de servidor); `command_source` auditado |
 | `20260927050904_fiscal_core_worker_fencing_and_reconciliation` | `20260926190000` + `20260926200000` | lease con `lease_epoch` (TF001), reclamo por entorno + CUIT, reserva write-ahead (`dispatch_count`, `last_dispatch_at`), `begin_fiscal_resend` (período de silencio, tope de 8 envíos), `manual_review`, backfill de estados heredados. Se borran las firmas viejas `(text,integer,integer)`, `(uuid,text,bigint)`, `(uuid,text,jsonb)` y las intermedias |
-| `20260927050910_fiscal_core_state_machines` | `20260926210000` | máquinas de estado de comprobante, PDF (lease con epoch) e impresión (TF004); comprobante autorizado inmutable (55000) |
-| `20260927050916_fiscal_core_security_hardening` | `20260926220000` | endurecimiento de las 6 funciones y grants; lecturas sin el rol `viewer` (La Taba no lo tiene) |
+| `20260927050910_fiscal_core_state_machines` | `20260926210000` | máquinas de estado de comprobante, PDF (lease con epoch) e impresión (TF004); comprobante autorizado inmutable (55000). Conflicto de lease de PDF con `PT409`, no `40001` |
+| `20260927050916_fiscal_core_security_hardening` | `20260926220000` | endurecimiento de las 6 funciones y grants; lecturas sin el rol `viewer` (La Taba no lo tiene); "generación en curso" con `PT409`, no `40001` |
 | `20260927050921_fiscal_core_la_taba_server_channel_guards` | extensión de La Taba | `service_request_fiscal_document` exige JWT `service_role` **dentro** de la función; `WHATSAPP` exige actor; el actor tiene que ser owner/admin/staff activo del negocio. Pendiente de subir al core |
 
 **No adoptado, a propósito**, con los motivos en `fiscal-core.json`:
@@ -61,9 +61,33 @@ Se portaron **efectos**, en migraciones nuevas generadas con `supabase migration
 
 **Equivalencia comprobada.** El esquema adoptado se comparó objeto por objeto con el
 resultado de aplicar ingenuamente las migraciones del core sobre La Taba: 95 funciones,
-22 tablas y 13 triggers idénticos. Las únicas diferencias son las intencionales: 2 cuerpos
-sin `viewer`, la guarda de La Taba y 8 policies. El catálogo final se volvió a volcar
-después de todo el trabajo y coincide.
+22 tablas y 13 triggers idénticos. Las únicas diferencias son las intencionales:
+
+- 2 cuerpos sin `viewer`;
+- la guarda de La Taba;
+- 8 policies;
+- 3 conflictos con `PT409` en lugar de `40001`.
+
+La matriz (§3) verifica cada una: el código es el del core con **ese** cambio y ningún otro.
+
+**Por qué `PT409`.** El core eleva `40001` en tres conflictos:
+
+- lease de PDF vencido, al completar;
+- lease de PDF vencido, al fallar;
+- regeneración con un PDF en curso.
+
+PostgREST toma `40001` como falla de serialización y reintenta la transacción. En Staging,
+una negativa de negocio con `40001` giró ~125 s hasta el 504 del gateway, y por eso
+`20260924200000_revision_conflicts_answer_409` pasó La Taba a `PT409` (HTTP 409 inmediato).
+Una prueba de guarda impide que una migración posterior vuelva a elevar `40001`: la
+adopción literal la rompía, y así se detectó.
+
+El worker de PDF del core reconoce el lease perdido **solo** por `40001`. Con `PT409`:
+
+- el resultado viejo igual se rechaza: el fencing está en la base;
+- el worker lo registra como falla del ciclo en lugar de "lease perdido".
+
+Queda pendiente en el core (§14).
 
 ## 3. Matriz de contrato RPC
 
@@ -92,25 +116,25 @@ servidor (WhatsApp, automatizaciones).
 | `agent_update_print_job` · gateway | (p_device_id, p_secret_hash, p_job_id, p_claim_token, p_transition, p_error_code, p_duration_ms) → service_role, definer | (p_device_id, p_secret_hash, p_job_id, p_claim_token, p_transition, p_error_code, p_duration_ms) → service_role, definer | (p_device_id, p_secret_hash, p_job_id, p_claim_token, p_transition, p_error_code, p_duration_ms) → service_role, definer | UNCHANGED (= core) |
 | `assert_fiscal_execution_authorized` | () → service_role, definer | () → service_role, definer | () → service_role, definer | UNCHANGED (= core) |
 | `authorize_arca_homologation` · panel | (p_business_id, p_authorization) → authenticated+service_role, definer | (p_business_id, p_authorization) → authenticated+service_role, definer | (p_business_id, p_authorization) → authenticated+service_role, definer | UNCHANGED (= core) |
-| `authorize_fiscal_artifact_access` · panel | (p_artifact_id, p_action) → authenticated+service_role, definer | (p_artifact_id, p_action) → authenticated+service_role, definer | (p_artifact_id, p_action) → authenticated+service_role, definer | ADOPTED, CORE_MINUS_VIEWER |
+| `authorize_fiscal_artifact_access` · panel | (p_artifact_id, p_action) → authenticated+service_role, definer | (p_artifact_id, p_action) → authenticated+service_role, definer | (p_artifact_id, p_action) → authenticated+service_role, definer | ADOPTED, CORE_MINUS_VIEWER (verificado) |
 | `begin_fiscal_resend` · worker | — | (p_document_id, p_worker_id, p_lease_epoch, p_expected_number) → service_role, definer | (p_document_id, p_worker_id, p_lease_epoch, p_expected_number) → service_role, definer | ADOPTED (= core) |
 | `cancel_print_job` | (p_job_id, p_reason) → authenticated, definer | (p_job_id, p_reason) → authenticated, definer | (p_job_id, p_reason) → authenticated, definer | UNCHANGED (= core) |
 | `claim_fiscal_artifact_outbox` · worker | (p_worker_id, p_limit, p_lease_seconds) → service_role, definer | (p_worker_id, p_limit, p_lease_seconds) → service_role, definer | (p_worker_id, p_limit, p_lease_seconds) → service_role, definer | ADOPTED (= core) |
 | `claim_fiscal_outbox` · worker | (p_worker_id, p_limit, p_lease_seconds) → service_role, definer | (p_worker_id, p_environment, p_cuit, p_limit, p_lease_seconds) → service_role, definer | (p_worker_id, p_environment, p_cuit, p_limit, p_lease_seconds) → service_role, definer | ADOPTED (= core) |
-| `complete_fiscal_artifact` · worker | (p_artifact_outbox_id, p_worker_id, p_artifact) → service_role, definer | (p_artifact_outbox_id, p_worker_id, p_lease_epoch, p_artifact) → service_role, definer | (p_artifact_outbox_id, p_worker_id, p_lease_epoch, p_artifact) → service_role, definer | ADOPTED (= core) |
+| `complete_fiscal_artifact` · worker | (p_artifact_outbox_id, p_worker_id, p_artifact) → service_role, definer | (p_artifact_outbox_id, p_worker_id, p_lease_epoch, p_artifact) → service_role, definer | (p_artifact_outbox_id, p_worker_id, p_lease_epoch, p_artifact) → service_role, definer | ADOPTED, CORE_WITH_PT409 (verificado) |
 | `complete_fiscal_attempt` · worker | (p_outbox_id, p_worker_id, p_result) → service_role, definer | (p_outbox_id, p_worker_id, p_lease_epoch, p_result) → service_role, definer | (p_outbox_id, p_worker_id, p_lease_epoch, p_result) → service_role, definer | ADOPTED (= core) |
 | `configure_business_print_settings` | (p_business_id, p_settings) → authenticated, definer | (p_business_id, p_settings) → authenticated, definer | (p_business_id, p_settings) → authenticated, definer | UNCHANGED (= core) |
 | `configure_fiscal_profile` · panel | (p_business_id, p_profile) → authenticated+service_role, definer | (p_business_id, p_profile) → authenticated+service_role, definer | (p_business_id, p_profile) → authenticated+service_role, definer | UNCHANGED (La Taba; same contract, code differs) |
 | `create_local_device_pairing` | (p_business_id, p_device_name) → authenticated, definer | (p_business_id, p_device_name) → authenticated, definer | (p_business_id, p_device_name) → authenticated, definer | UNCHANGED (= core) |
 | `enqueue_authorized_fiscal_artifact` | () → service_role, definer | () → service_role, definer | () → service_role, definer | ADOPTED (= core) |
-| `fail_fiscal_artifact` · worker | (p_artifact_outbox_id, p_worker_id, p_error_code, p_error_message, p_retryable) → service_role, definer | (p_artifact_outbox_id, p_worker_id, p_lease_epoch, p_error_code, p_error_message, p_retryable) → service_role, definer | (p_artifact_outbox_id, p_worker_id, p_lease_epoch, p_error_code, p_error_message, p_retryable) → service_role, definer | ADOPTED (= core) |
+| `fail_fiscal_artifact` · worker | (p_artifact_outbox_id, p_worker_id, p_error_code, p_error_message, p_retryable) → service_role, definer | (p_artifact_outbox_id, p_worker_id, p_lease_epoch, p_error_code, p_error_message, p_retryable) → service_role, definer | (p_artifact_outbox_id, p_worker_id, p_lease_epoch, p_error_code, p_error_message, p_retryable) → service_role, definer | ADOPTED, CORE_WITH_PT409 (verificado) |
 | `fiscal_artifact_storage_path` | (p_business_id, p_document_id, p_generation_token) → service_role | (p_business_id, p_document_id, p_generation_token) → service_role | (p_business_id, p_document_id, p_generation_token) → service_role | UNCHANGED (= core) |
 | `fiscal_has_current_parameter_id` | (p_environment, p_parameter_type, p_id) → service_role, definer | (p_environment, p_parameter_type, p_id) → service_role, definer | (p_environment, p_parameter_type, p_id) → service_role, definer | UNCHANGED (= core) |
 | `fiscal_json_contains_parameter_id` | (p_value, p_id) → service_role | (p_value, p_id) → service_role | (p_value, p_id) → service_role | UNCHANGED (= core) |
 | `get_arca_activation_status` · panel | (p_business_id) → authenticated+service_role, definer | — | (p_business_id) → authenticated+service_role, definer | UNCHANGED (La Taba only) |
 | `has_business_role` | (target_business_id, roles) → authenticated+service_role, definer | (p_business_id, p_roles) → anon+authenticated+service_role | (target_business_id, roles) → authenticated+service_role, definer | UNCHANGED (La Taba identity; core has a stub) |
 | `is_business_member` | (target_business_id) → authenticated+service_role, definer | (p_business_id) → anon+authenticated+service_role | (target_business_id) → authenticated+service_role, definer | UNCHANGED (La Taba identity; core has a stub) |
-| `list_fiscal_document_artifacts` · panel | (p_business_id) → authenticated+service_role, definer | (p_business_id) → authenticated+service_role, definer | (p_business_id) → authenticated+service_role, definer | ADOPTED, CORE_MINUS_VIEWER |
+| `list_fiscal_document_artifacts` · panel | (p_business_id) → authenticated+service_role, definer | (p_business_id) → authenticated+service_role, definer | (p_business_id) → authenticated+service_role, definer | ADOPTED, CORE_MINUS_VIEWER (verificado) |
 | `operator_create_local_device_pairing` | (p_business_id, p_device_name) → service_role, definer | (p_business_id, p_device_name) → service_role, definer | (p_business_id, p_device_name) → service_role, definer | UNCHANGED (= core) |
 | `operator_revoke_local_device` | (p_device_id, p_reason) → service_role, definer | (p_device_id, p_reason) → service_role, definer | (p_device_id, p_reason) → service_role, definer | UNCHANGED (= core) |
 | `protect_authorized_fiscal_document` | () → anon+authenticated+service_role | () → service_role | () → service_role | ADOPTED (= core) |
@@ -118,7 +142,7 @@ servidor (WhatsApp, automatizaciones).
 | `record_fiscal_credential_health` | (p_business_id, p_certificate_fingerprint, p_certificate_expires_at, p_certificate_subject_cuit, p_delegation_status, p_connection_ok, p_error_code) → service_role, definer | — | (p_business_id, p_certificate_fingerprint, p_certificate_expires_at, p_certificate_subject_cuit, p_delegation_status, p_connection_ok, p_error_code) → service_role, definer | UNCHANGED (La Taba only) |
 | `record_fiscal_verification` · panel | (p_business_id, p_verification) → authenticated+service_role, definer | — | (p_business_id, p_verification) → authenticated+service_role, definer | UNCHANGED (La Taba only) |
 | `request_credit_note` · panel | (p_original_document_id, p_reason, p_credit_kind, p_lines, p_idempotency_key) → authenticated+service_role, definer | (p_original_document_id, p_reason, p_credit_kind, p_lines, p_idempotency_key) → authenticated+service_role, definer | (p_original_document_id, p_reason, p_credit_kind, p_lines, p_idempotency_key) → authenticated+service_role, definer | ADOPTED (= core) |
-| `request_fiscal_artifact_regeneration` · panel | (p_fiscal_document_id) → authenticated+service_role, definer | (p_fiscal_document_id) → authenticated+service_role, definer | (p_fiscal_document_id) → authenticated+service_role, definer | ADOPTED (= core) |
+| `request_fiscal_artifact_regeneration` · panel | (p_fiscal_document_id) → authenticated+service_role, definer | (p_fiscal_document_id) → authenticated+service_role, definer | (p_fiscal_document_id) → authenticated+service_role, definer | ADOPTED, CORE_WITH_PT409 (verificado) |
 | `request_fiscal_document` · panel | (p_business_id, p_source_type, p_source_id, p_document_intent, p_idempotency_key) → authenticated+service_role, definer | (p_business_id, p_source_type, p_source_id, p_document_intent, p_idempotency_key, p_command_source) → authenticated, definer | (p_business_id, p_source_type, p_source_id, p_document_intent, p_idempotency_key, p_command_source) → authenticated, definer | ADOPTED (= core) |
 | `request_fiscal_print_job` · panel | (p_fiscal_document_id, p_artifact_id, p_printer_name_hash, p_format, p_copies, p_idempotency_key) → authenticated+service_role, definer | (p_fiscal_document_id, p_artifact_id, p_printer_name_hash, p_format, p_copies, p_idempotency_key) → authenticated+service_role, definer | (p_fiscal_document_id, p_artifact_id, p_printer_name_hash, p_format, p_copies, p_idempotency_key) → authenticated+service_role, definer | ADOPTED (= core) |
 | `request_full_credit_note` · panel | (p_original_document_id, p_reason, p_idempotency_key) → authenticated+service_role, definer | (p_original_document_id, p_reason, p_idempotency_key) → authenticated+service_role, definer | (p_original_document_id, p_reason, p_idempotency_key) → authenticated+service_role, definer | UNCHANGED (= core) |
@@ -138,8 +162,9 @@ Resumen: 47 RPC fiscales y de impresión.
 | Estado | Cantidad |
 |---|---|
 | Iguales al core, sin cambios | 21 |
-| Adoptadas iguales al core | 17 |
-| Adoptadas con diferencia intencional (sin `viewer`) | 2 |
+| Adoptadas iguales al core | 14 |
+| Adoptadas con diferencia intencional verificada: sin `viewer` | 2 |
+| Adoptadas con diferencia intencional verificada: `PT409` en lugar de `40001` | 3 |
 | Adoptada con guardas de La Taba | 1 |
 | Propias de La Taba sin cambios | 3 |
 | Identidad de La Taba (el core usa un stub) | 2 |
@@ -261,6 +286,7 @@ con el actor real). Declarar `PANEL`/`MOBILE` es un cambio de UI y va con #106.
 | Reclamo por entorno y CUIT; fencing por `lease_epoch` (TF001); serie bloqueada (TF002); reenvío solo con compuerta | pgTAP contrato y upgrade, carrera, verificación (B, C) |
 | Comprobante autorizado inmutable (55000); transiciones inválidas (TF004) | pgTAP contrato y `fiscal_document_closure_test` |
 | Reúso de clave con otro contenido: `23505` | pgTAP contrato |
+| Un conflicto responde 409 al instante (`PT409`); ninguna función eleva `40001` (PostgREST lo reintentaría hasta el 504) | pgTAP contrato (catálogo + lease de PDF viejo al completar y al fallar + regeneración en curso), guarda `tests/revision-conflict-409`, verificación (F) |
 
 ## 9. Pruebas contra el esquema real de La Taba
 
@@ -268,14 +294,14 @@ Todo corre sobre la cadena **real** de La Taba, no sobre los stubs del core.
 
 | Prueba | Qué cubre | Dónde |
 |---|---|---|
-| `supabase/tests/fiscal_core_contract_test.sql` (51) | superficie, nombres, grants, convergencia de 4 canales, fail closed, aislamiento, guardas, fencing del worker, máquinas de estado | CI |
+| `supabase/tests/fiscal_core_contract_test.sql` (55) | superficie, nombres, grants, convergencia de 4 canales, fail closed, aislamiento, guardas, fencing del worker, máquinas de estado | CI |
 | `supabase/tests/fiscal_core_upgrade_test.sql` (24) | filas heredadas en todos los estados antes de migrar (ver abajo) | CI |
 | `supabase/tests/fiscal_receiver_vat_condition_test.sql` (14) | RG 5616, rescatada de #104 | CI |
 | suites fiscales existentes de La Taba | adaptadas con los mismos cambios que hizo el core a sus copias | CI |
 | `scripts/fiscal-core/intent-race.mjs` | 10/50/100 pedidos simultáneos por los 4 canales → 1 comprobante; 12 workers → 1 reclamo, 1 número, 1 autorización; aislamiento | CI (después del pgTAP) |
 | `npm run fiscal:core:verify` | el worker **canónico** del core contra La Taba (§10) | local (el repo del core es privado: CI no puede clonarlo sin secretos, y `tests/ci-workflow` los prohíbe) |
 
-El total canónico de pgTAP que exige `scripts/run-release-v5-db.mjs` es 613. La fixture
+El total canónico de pgTAP que exige `scripts/run-release-v5-db.mjs` es 617. La fixture
 de filas heredadas se carga en la cabeza `20260926160000`, **antes** de las migraciones de
 adopción.
 
@@ -327,12 +353,15 @@ Qué código de La Taba pasa por ahí:
 | C · 10/50/100 pedidos simultáneos por los 4 canales; 3 workers a la vez | 1 comprobante por venta; números 1..3; 3 FECAESolicitar; las esperas de serie son TF002 |
 | D · aislamiento | pedido, actor y PDF ajenos denegados; cada worker solo reclama su CUIT; cada agente solo su negocio |
 | E · contrato del worker anterior | reclamo, reserva y cierre (y cierre/falla de PDF) responden `PGRST202` |
+| F · conflicto de PDF | un resultado con lease viejo recibe `PT409` (HTTP 409, no reintentable) por el store canónico; el shim devuelve 504 ante un `40001`, como PostgREST |
 
 Se comprobó que la verificación **falla** si:
 
 - se desactiva el trigger de impresión fiscal;
 - vuelve la firma vieja de reclamo;
 - vuelve la firma vieja de cierre.
+
+Las 4 aserciones de `PT409` del pgTAP de contrato fallan sobre el esquema con `40001`.
 
 Pasa tanto con superusuario como con `postgres` sin superusuario (como en CI).
 
@@ -448,5 +477,5 @@ Nada de esto está hecho: requiere revisión y merge de esta PR.
 | PR #106 | **BLOCKED_UNTIL_THIS_PR_MERGED**. Rehacer sobre esta rama: su migración `20260926230000_*` quedaría fuera de orden (anterior a `20260927050921`) y hay que regenerarla con `supabase migration new`. Tiene que usar las entradas adoptadas y no puede convertir `online_order` en una venta POS inventada |
 | PR #107 (WhatsApp) | **BLOCKED_UNTIL_106_REBUILT**. Usará `service_request_fiscal_document` con `WHATSAPP` y el actor real |
 | PR #104 | cerrar (§5) |
-| Pendientes en el core | subir la guarda de canal de servidor de La Taba; acotar `claim_fiscal_artifact_outbox` por entorno/CUIT; decidir `viewer`; validación de `default_concept` |
+| Pendientes en el core | elevar `PT409` (no `40001`) en los conflictos de PDF y reconocerlo en el worker de PDF (`ARTIFACT_LEASE_LOST_SQLSTATE`); subir la guarda de canal de servidor de La Taba; acotar `claim_fiscal_artifact_outbox` por entorno/CUIT; decidir `viewer`; validación de `default_concept` |
 | Verificación del worker en CI | necesita acceso de solo lectura al repo privado del core. Hoy corre local; el resto corre en CI |

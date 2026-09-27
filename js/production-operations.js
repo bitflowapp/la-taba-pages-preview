@@ -6,6 +6,7 @@ import { isMercadoPagoOrder } from './core/business-ops.js';
 import { createProductionRiderGpsController } from './tracking/production_rider_gps.js';
 import { getOrderRepository } from './repositories/repository_factory.js';
 import { createSupabaseInventoryRepository } from './repositories/supabase-inventory-repository.js';
+import { createSupabaseCatalogImageRepository } from './repositories/supabase-catalog-image-repository.js';
 import { createSupabasePosRepository } from './repositories/supabase-pos-repository.js';
 import { createSupabaseFiscalRepository } from './repositories/supabase-fiscal-repository.js';
 import { createSupabasePackingRepository } from './repositories/supabase-packing-repository.js';
@@ -155,6 +156,7 @@ let orderAlerts = null;
  */
 let elapsedTimer = null;
 let inventoryRepository = null;
+let catalogImageRepository = null;
 let posRepository = null;
 let fiscalRepository = null;
 let packingRepository = null;
@@ -1228,6 +1230,7 @@ export function resetProductionOperationsForTests() {
   businessOperationsView = 'orders';
   panelMoreSheetOpen = false;
   inventoryRepository = null;
+  catalogImageRepository = null;
   posRepository = null;
   fiscalRepository = null;
   packingRepository = null;
@@ -1453,6 +1456,7 @@ async function configureBusinessRuntime(result) {
   const runtime = resolveRuntimeConfig();
   const client = getSupabaseClient(runtime.repository);
   inventoryRepository = createSupabaseInventoryRepository({ client, businessId });
+  catalogImageRepository = createSupabaseCatalogImageRepository({ client, businessId });
   paymentsRepository = createSupabasePaymentsRepository({ client, businessId });
   manualPaymentsRepository = createSupabaseManualPaymentsRepository({ client, businessId });
   posRepository = createSupabasePosRepository({ client, businessId });
@@ -1467,6 +1471,11 @@ async function configureBusinessRuntime(result) {
     getOrders: () => getState().orders,
     lookupBarcode: (gtin) => inventoryRepository.lookupBarcode(gtin),
     listCatalogProducts: () => inventoryRepository.listCatalogProducts(),
+    listCatalogImageUploads: () => catalogImageRepository.listCatalogImageUploads(),
+    getCatalogImagePreview: (input) => catalogImageRepository.getCatalogImagePreview(input),
+    uploadCatalogImage: (input) => catalogImageRepository.uploadCatalogImage(input),
+    approveCatalogImageUpload: (input) => catalogImageRepository.approveCatalogImageUpload(input),
+    rejectCatalogImageUpload: (input) => catalogImageRepository.rejectCatalogImageUpload(input),
     saveCommercialBatch: (rows) => inventoryRepository.saveCommercialBatch(rows),
     createProductDraft: (input) => inventoryRepository.createProductDraft(input),
     publishProductDraft: (input) => inventoryRepository.publishProductDraft(input),
@@ -1612,6 +1621,7 @@ function stopBusinessCommandRuntime() {
   businessCommandController = null;
   businessCommandStatus = null;
   inventoryRepository = null;
+  catalogImageRepository = null;
   posRepository = null;
   fiscalRepository = null;
   packingRepository = null;

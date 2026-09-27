@@ -23,7 +23,7 @@ Consulta de solo lectura al proyecto tkanbadcglszlcyfjvpv, acotada al negocio e7
 | catalog_assets del negocio | 0 |
 | catalog_product_drafts del negocio | 0 |
 
-CATALOG_IMAGE_BACKUP: PASS. Export lógico privado guardado en C:\Users\DELL\.taba-backups\controlled-production\catalog-images-2026-09-27\catalog-before-images.json. SHA-256: 39B47EFD47F18AF02C65A4D1209CB438E4B74E7448C5AD5DC52EC8CFD4A19AAD. El respaldo incluye las filas de products, catalog_assets, catalog_product_drafts y sus conteos.
+CATALOG_IMAGE_BACKUP: PASS. Export lógico privado guardado en catalog-images-2026-09-27/catalog-before-images.json. SHA-256: 39B47EFD47F18AF02C65A4D1209CB438E4B74E7448C5AD5DC52EC8CFD4A19AAD. El respaldo incluye las filas de products, catalog_assets, catalog_product_drafts y sus conteos.
 
 ## Investigación existente y canary
 

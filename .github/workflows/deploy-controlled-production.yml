@@ -1,8 +1,9 @@
 name: Deploy CONTROLLED_PRODUCTION
 
 # Publishes only the dedicated Cloudflare Pages project la-taba-commercial-pilot
-# (CONTROLLED_PRODUCTION). Armed per SHA: runs when the repo variable
-# CP_DEPLOY_SHA equals the pushed commit and the exact web + Android CI passed.
+# (CONTROLLED_PRODUCTION). Armed per SHA: push or manual dispatch runs only when
+# the repo variable CP_DEPLOY_SHA equals the exact release-branch HEAD and the
+# exact web + Android push CI passed.
 # The runtime carries only the public (publishable) key; no Supabase secret
 # travels here. The rollback drill runs only when CP_ROLLBACK_DRILL_SHA equals
 # the commit; it rolls back to the deployment that was live before this one.
@@ -10,6 +11,7 @@ on:
   push:
     branches:
       - 'release/taba-controlled-production'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -23,7 +25,7 @@ jobs:
   deploy:
     runs-on: ubuntu-24.04
     timeout-minutes: 80
-    if: ${{ github.repository == 'bitflowapp/la-taba-pages-preview' && vars.CP_DEPLOY_SHA == github.sha }}
+    if: ${{ github.repository == 'bitflowapp/la-taba-pages-preview' && github.ref == 'refs/heads/release/taba-controlled-production' && vars.CP_DEPLOY_SHA == github.sha }}
     env:
       CONFIG: deploy/controlled-production.json
       ORIGIN: https://la-taba-commercial-pilot.pages.dev/

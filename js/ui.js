@@ -3,6 +3,8 @@ import { BRAND } from './config.js';
 import { businessMapsSearchUrl, mapsSearchUrl } from './core/business-location.js';
 import { categories } from './data.js';
 import { getCustomerCatalogProducts, isProductVisibleToCustomer } from './core/catalog-store.js';
+import { resolveCatalogImageUrl } from './core/catalog-image-contract.js';
+import { resolveRuntimeConfig } from './core/runtime-config.js';
 import { COMBO_MANIFEST } from './combos-data.js';
 import { purchasableCombos } from './core/combos.js';
 import { getCustomerOrderHistory, getLatestCustomerOrder } from './core/customer-history.js';
@@ -603,7 +605,14 @@ function brandLine(product, className = 'product-brand') {
 // Acá vivía `presentationText`, que decía el pack pero nunca la capacidad.
 
 function productImage(product) {
-  return product?.image || '';
+  return resolveCatalogImageUrl(product?.image || '', resolveRuntimeConfig().repository?.supabaseUrl || '');
+}
+
+function productImageThumbnail(product) {
+  return resolveCatalogImageUrl(
+    product?.imageThumbnail || product?.thumbnail || '',
+    resolveRuntimeConfig().repository?.supabaseUrl || '',
+  );
 }
 
 // Los únicos estados de derechos que habilitan a PUBLICAR una fotografía. Son
@@ -637,7 +646,7 @@ export function productImageRightsCleared(product) {
  */
 export function productPhotoIsOfficial(product = {}) {
   const image = productImage(product);
-  const thumbnail = product.imageThumbnail || product.thumbnail || '';
+  const thumbnail = productImageThumbnail(product);
   const hasAuthoritativeHashes = [
     product.imageSha256,
     product.imageThumbnailSha256,
@@ -657,7 +666,7 @@ export function productThumb(product, variant = 'grid') {
   const tone = product.tone || (product.alcoholic ? 'alcoholic' : 'drink');
   const category = sanitizeCategoryId(product.categoryId) || 'bebidas';
   const image = productImage(product);
-  const thumbnail = product.imageThumbnail || product.thumbnail || '';
+  const thumbnail = productImageThumbnail(product);
   const official = productPhotoIsOfficial(product);
   const loading = variant === 'modal' ? 'eager' : 'lazy';
   const source = official ? thumbnail : PRODUCT_PLACEHOLDER_IMAGE;
@@ -934,9 +943,11 @@ function homeBestSellerProducts() {
  */
 function homeProductImage(product, className) {
   const official = productPhotoIsOfficial(product);
-  const source = official ? (product.imageThumbnail || product.image) : PRODUCT_PLACEHOLDER_IMAGE;
+  const image = productImage(product);
+  const thumbnail = productImageThumbnail(product);
+  const source = official ? (thumbnail || image) : PRODUCT_PLACEHOLDER_IMAGE;
   const responsive = official
-    ? ` srcset="${escapeHtml(product.imageThumbnail)} 400w, ${escapeHtml(product.image)} 1000w" sizes="(max-width: 700px) 44vw, 260px"`
+    ? ` srcset="${escapeHtml(thumbnail)} 400w, ${escapeHtml(image)} 1000w" sizes="(max-width: 700px) 44vw, 260px"`
     : '';
   const width = official ? Number(product.thumbnailWidth || 400) : 400;
   const height = official ? Number(product.thumbnailHeight || 400) : 400;
@@ -1775,8 +1786,10 @@ export function comboMedia(combo) {
     // image` publicaba la foto sin mirar los derechos, y era la última
     // superficie que todavía lo hacía.
     const oficial = productPhotoIsOfficial(component.product);
+    const image = productImage(component.product);
+    const thumbnail = productImageThumbnail(component.product);
     const foto = oficial
-      ? (component.product.imageThumbnail || component.product.image)
+      ? (thumbnail || image)
       : PRODUCT_PLACEHOLDER_IMAGE;
     return `
         <span class="combo-media-item${oficial ? '' : ' uses-placeholder'}">
@@ -4051,7 +4064,7 @@ function trackingOrderThumbnails(items) {
     if (!hasAuthoritativeTrackingThumbnail(product)) return null;
     return {
       name: product.name || item?.name || 'Bebida',
-      thumbnail: product.imageThumbnail || product.thumbnail,
+      thumbnail: productImageThumbnail(product),
     };
   }).filter(Boolean);
   if (!candidates.length) return '';

@@ -1,8 +1,12 @@
 import { escapeHtml } from '../ui.js';
+import { resolveCatalogImageUrl } from '../core/catalog-image-contract.js';
+import { resolveRuntimeConfig } from '../core/runtime-config.js';
 
 export function normalizeCatalogProduct(row = {}) {
   const stock = row.stock === null || row.stock === undefined ? null : Number(row.stock);
+  const supabaseUrl = resolveRuntimeConfig().repository?.supabaseUrl || '';
   return {
+    id: String(row.id || ''),
     sku: String(row.sku || ''), name: String(row.name || ''), brand: String(row.brand || ''),
     variant: String(row.variant || ''), category: String(row.category || ''),
     packaging: String(row.packaging_type || ''), capacity: String(row.capacity || ''),
@@ -11,6 +15,8 @@ export function normalizeCatalogProduct(row = {}) {
     available: row.available === true, merchantAvailable: row.merchant_available === true,
     verified: row.is_verified === true, active: row.is_active === true,
     alcoholic: row.is_alcoholic === true, hasApprovedImage: Boolean(row.image_url && row.catalog_asset_id),
+    imageUrl: resolveCatalogImageUrl(row.image_url || '', supabaseUrl),
+    imageThumbnailUrl: resolveCatalogImageUrl(row.image_thumbnail_url || '', supabaseUrl),
     catalogOrigin: String(row.catalog_origin || ''),
   };
 }
@@ -52,12 +58,15 @@ export function catalogPublicationReadiness(product) {
   return { ready: true, reason: '' };
 }
 
-export function renderCatalogEditor({ products = [], phase = 'idle', message = '', busy = false } = {}) {
+export function renderCatalogEditor({
+  products = [], imageUploads = [], canManageImages = false,
+  phase = 'idle', message = '', imageMessage = '', busy = false,
+} = {}) {
   const normalized = products.map(normalizeCatalogProduct);
   const rows = normalized.map((product) => {
     const readiness = catalogPublicationReadiness(product);
     const priceConfirmed = product.priceStatus === 'confirmed' && product.price > 0;
-    return `<article class="business-catalog-row" data-catalog-row="${escapeHtml(product.sku)}">
+    const rowMarkup = `<article class="business-catalog-row" data-catalog-row="${escapeHtml(product.sku)}">
       <div class="business-catalog-identity"><h3>${escapeHtml(product.name)}</h3>
         <span>${escapeHtml([product.brand, product.category, product.packaging, product.capacity].filter(Boolean).join(' · '))}</span>
         <small>SKU: ${escapeHtml(product.sku)}</small></div>
@@ -76,6 +85,10 @@ export function renderCatalogEditor({ products = [], phase = 'idle', message = '
           ? `<button class="primary-button compact" type="button" data-catalog-publication="${escapeHtml(product.sku)}" data-publish="true" ${busy ? 'disabled' : ''}>Publicar y habilitar</button>`
           : `<small>${escapeHtml(readiness.reason)}</small>`}</div>
     </article>`;
+    const imageManager = canManageImages
+      ? renderCatalogImageManager(product, imageUploads, { busy, imageMessage })
+      : '';
+    return rowMarkup.replace('</article>', imageManager + '</article>');
   }).join('');
   return `<section class="business-ops-panel business-catalog-editor"><header><div><p class="eyebrow">Centro operativo</p><h2>Catálogo</h2>
     <p>Completá precio y stock sin publicar automáticamente. El botón de publicación aparece cuando la ficha está lista.</p></div></header>
@@ -87,4 +100,83 @@ export function renderCatalogEditor({ products = [], phase = 'idle', message = '
     ${message ? `<p role="status">${escapeHtml(message)}</p>` : ''}
     <div class="business-catalog-list">${rows || (phase === 'ready' ? '<p>No hay productos para este negocio.</p>' : '')}</div>
   </section>`;
+}
+
+function renderCatalogImageManager(product, imageUploads, { busy = false, imageMessage = '' } = {}) {
+  const uploads = imageUploads.filter((upload) => upload.product_id === product.id).slice(0, 5);
+  const history = uploads.map((upload) => {
+    const storagePending = upload.status === 'approved' && upload.cleanup_status !== 'complete';
+    const status = storagePending
+      ? 'Aprobada · almacenamiento pendiente'
+      : upload.status === 'approved' ? 'Aprobada'
+        : upload.status === 'rejected' ? 'Rechazada' : 'Pendiente de revisión';
+    const previewReady = Boolean(
+      upload.preview_url
+      && Date.parse(upload.preview_expires_at || '') > Date.now(),
+    );
+    const preview = upload.status === 'pending' && previewReady
+      ? '<img class="business-catalog-image-preview" src="' + escapeHtml(upload.preview_url)
+        + '" alt="Vista previa privada de ' + escapeHtml(product.name) + '" loading="lazy" decoding="async">'
+      : '';
+    const previewButton = upload.status === 'pending' && upload.upload_completed_at
+      ? '<button class="secondary-button compact" type="button" data-catalog-image-preview="' + escapeHtml(upload.id)
+        + '" ' + (busy ? 'disabled' : '') + '>Vista previa privada</button>'
+      : '';
+    const storageRetry = storagePending
+      ? '<button class="secondary-button compact" type="button" data-catalog-image-approve="' + escapeHtml(upload.id)
+        + '" ' + (busy ? 'disabled' : '') + '>Reintentar almacenamiento</button>'
+      : '';
+    const source = upload.source_url
+      ? '<a href="' + escapeHtml(upload.source_url) + '" target="_blank" rel="noopener noreferrer">Abrir fuente original</a>'
+      : '<span>Foto propia del negocio</span>';
+    const rights = upload.status === 'approved' && upload.rights_status
+      ? '<small>' + escapeHtml(upload.rights_status) + ' · ' + escapeHtml(upload.rights_reference || '') + '</small>'
+      : '';
+    let review = '';
+    if (upload.status === 'pending' && upload.upload_completed_at && previewReady) {
+      review = '<div class="business-catalog-image-review">'
+        + '<label>Derecho de uso<select data-catalog-image-rights-status required ' + (busy ? 'disabled' : '') + '>'
+        + '<option value="">Seleccioná evidencia</option>'
+        + '<option value="PROPIO">Foto propia del negocio</option>'
+        + '<option value="LICENCIA_COMERCIAL">Licencia comercial</option>'
+        + '<option value="PERMISO_DOCUMENTADO">Permiso documentado</option>'
+        + '</select></label>'
+        + '<label>Referencia de autorización<input type="text" data-catalog-image-rights-reference maxlength="300" placeholder="Referencia verificable" ' + (busy ? 'disabled' : '') + '></label>'
+        + '<button class="primary-button compact" type="button" data-catalog-image-approve="' + escapeHtml(upload.id) + '" ' + (busy ? 'disabled' : '') + '>Aprobar y asociar</button>'
+        + '</div>';
+    }
+    const reject = upload.status === 'pending'
+      ? '<div class="business-catalog-image-reject"><label>Motivo para rechazar<input type="text" data-catalog-image-reject-reason maxlength="300" placeholder="Identidad, calidad o licencia" ' + (busy ? 'disabled' : '') + '></label>'
+        + '<button class="secondary-button compact" type="button" data-catalog-image-reject="' + escapeHtml(upload.id) + '" ' + (busy ? 'disabled' : '') + '>Rechazar imagen</button></div>'
+      : '';
+    return '<article class="business-catalog-image-review-item" data-catalog-image-status="' + escapeHtml(upload.status) + '">'
+      + '<div><strong>' + status + '</strong><span>' + escapeHtml(upload.source_type || '') + ' · ' + escapeHtml(upload.source_domain || 'Foto propia') + '</span>' + source + rights + '</div>'
+      + preview + previewButton + storageRetry
+      + (upload.status === 'pending' && upload.upload_completed_at && !previewReady
+        ? '<small>La aprobación requiere abrir y revisar esta vista previa privada.</small>' : '')
+      + (upload.rejection_reason ? '<small>' + escapeHtml(upload.rejection_reason) + '</small>' : '')
+      + review + reject + '</article>';
+  }).join('');
+  const active = product.hasApprovedImage && product.imageThumbnailUrl
+    ? '<img class="business-catalog-image-preview" src="' + escapeHtml(product.imageThumbnailUrl)
+      + '" alt="Imagen aprobada de ' + escapeHtml(product.name) + '" loading="lazy" decoding="async">'
+    : '<span class="business-catalog-image-empty">Sin imagen aprobada</span>';
+  return '<details class="business-catalog-image-manager" data-catalog-image-product="' + escapeHtml(product.id) + '">'
+    + '<summary><strong>Imagen</strong><span class="status-pill ' + (product.hasApprovedImage ? 'success' : 'warning') + '">'
+    + (product.hasApprovedImage ? 'Aprobada' : 'Pendiente') + '</span></summary>'
+    + '<div class="business-catalog-image-body">' + active
+    + '<form data-catalog-image-form="' + escapeHtml(product.id) + '" novalidate>'
+    + '<label>Archivo de imagen<input type="file" data-catalog-image-file accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" ' + (busy ? 'disabled' : '') + '></label>'
+    + '<label>Tipo de fuente<select data-catalog-image-source-type required ' + (busy ? 'disabled' : '') + '>'
+    + '<option value="">Seleccioná fuente</option><option value="brand">Marca</option>'
+    + '<option value="manufacturer">Fabricante</option><option value="official_distributor">Distribuidor oficial</option>'
+    + '<option value="retail_reference">Retail de referencia</option><option value="business_owned_photo">Foto propia</option>'
+    + '</select></label>'
+    + '<label>URL de origen (vacía para foto propia)<input type="url" data-catalog-image-source-url maxlength="2048" placeholder="https://…" ' + (busy ? 'disabled' : '') + '></label>'
+    + '<button class="secondary-button compact" type="button" data-catalog-image-upload="' + escapeHtml(product.id) + '" ' + (busy ? 'disabled' : '') + '>Subir para revisión</button>'
+    + '</form>'
+    + (imageMessage ? '<p role="status">' + escapeHtml(imageMessage) + '</p>' : '')
+    + '<p class="business-catalog-image-private-note">La imagen queda privada hasta que un owner/admin apruebe los derechos y la asocie. Subirla no cambia precio, stock ni publicación.</p>'
+    + '<div class="business-catalog-image-review-list">' + (history || '<small>Sin cargas de imágenes para este producto.</small>') + '</div>'
+    + '</div></details>';
 }

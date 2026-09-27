@@ -466,6 +466,9 @@ verify_jwt = false
 [functions.print-agent-gateway]
 verify_jwt = false
 
+[functions.catalog-image-manager]
+verify_jwt = true
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

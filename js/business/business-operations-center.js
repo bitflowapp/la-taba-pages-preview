@@ -168,6 +168,8 @@ let catalogProducts = [];
 let catalogStatus = { phase: 'idle', message: '' };
 let catalogLoadStarted = false;
 let catalogGeneration = 0;
+let catalogImageUploads = [];
+let catalogImageMessage = '';
 
 export function configureBusinessOperations(next = {}) {
   stopOperationCenterRefresh();
@@ -209,6 +211,8 @@ export function configureBusinessOperations(next = {}) {
   catalogProducts = [];
   catalogStatus = { phase: 'idle', message: '' };
   catalogLoadStarted = false;
+  catalogImageUploads = [];
+  catalogImageMessage = '';
   catalogGeneration += 1;
   return context;
 }
@@ -259,7 +263,13 @@ export function renderBusinessOperations(view) {
       preview: productPreview, errors: productErrors, role: context.role, busy,
     }),
     catalog: () => renderCatalogEditor({
-      products: catalogProducts, phase: catalogStatus.phase, message: catalogStatus.message, busy,
+      products: catalogProducts,
+      imageUploads: catalogImageUploads,
+      canManageImages: ['owner', 'admin'].includes(String(context.role || '').toLowerCase()),
+      phase: catalogStatus.phase,
+      message: catalogStatus.message,
+      imageMessage: catalogImageMessage,
+      busy,
     }),
     'inventory-receive': () => renderInventory('purchase_receipt'),
     'inventory-adjust': () => renderInventory('manual_adjustment'),
@@ -506,6 +516,14 @@ export async function handleBusinessOperationsAction(target) {
   const catalogSave = target.closest('[data-catalog-save]');
   if (catalogSave) return saveCatalogEdits(target, catalogSave.dataset.catalogSave);
   if (target.closest('[data-catalog-save-all]')) return saveCatalogEdits(target);
+  const catalogImageUpload = target.closest('[data-catalog-image-upload]');
+  if (catalogImageUpload) return uploadCatalogImage(target, catalogImageUpload);
+  const catalogImagePreview = target.closest('[data-catalog-image-preview]');
+  if (catalogImagePreview) return previewCatalogImage(catalogImagePreview);
+  const catalogImageApprove = target.closest('[data-catalog-image-approve]');
+  if (catalogImageApprove) return reviewCatalogImage(catalogImageApprove, true);
+  const catalogImageReject = target.closest('[data-catalog-image-reject]');
+  if (catalogImageReject) return reviewCatalogImage(catalogImageReject, false);
   const catalogPublication = target.closest('[data-catalog-publication]');
   if (catalogPublication) return setCatalogPublication(catalogPublication);
 
@@ -947,11 +965,155 @@ async function refreshCatalogProducts() {
   if (response?.ok) {
     catalogProducts = Array.isArray(response.data) ? response.data : [];
     catalogStatus = { phase: 'ready', message: '' };
+    await refreshCatalogImageUploads();
   } else {
     catalogStatus = { phase: 'error', message: humanizeFailure(response?.message, 'No se pudo cargar el catálogo.') };
+    catalogImageUploads = [];
   }
+  if (generation !== catalogGeneration) return response;
   context.onChange();
   return response;
+}
+
+async function refreshCatalogImageUploads() {
+  if (!['owner', 'admin'].includes(String(context.role || '').toLowerCase())) {
+    catalogImageUploads = [];
+    return { ok: true, data: [] };
+  }
+  const load = context.listCatalogImageUploads;
+  if (typeof load !== 'function') {
+    catalogImageUploads = [];
+    return { ok: false };
+  }
+  let response;
+  try { response = await load(); }
+  catch (error) { response = { ok: false, message: error?.message || 'Error de conexión.' }; }
+  if (response?.ok) {
+    catalogImageUploads = Array.isArray(response.data?.uploads) ? response.data.uploads : [];
+    catalogImageMessage = '';
+  } else {
+    catalogImageUploads = [];
+    catalogImageMessage = humanizeFailure(response?.message, 'No se pudo cargar la cola de revisión de imágenes.');
+  }
+  return response;
+}
+
+async function uploadCatalogImage(target, button) {
+  if (!['owner', 'admin'].includes(String(context.role || '').toLowerCase())) {
+    return result(false, 'Sólo owner/admin puede subir imágenes de catálogo.');
+  }
+  if (busy) return result(false, 'Ya hay una actualización en curso.');
+  const productId = button.dataset.catalogImageUpload;
+  const product = catalogProducts.find((item) => String(item.id) === String(productId));
+  if (!product) return result(false, 'El producto cambió. Actualizá el catálogo.');
+  if (product.available || product.is_verified) {
+    return result(false, 'La imagen sólo se puede cambiar mientras el producto siga como borrador.');
+  }
+  const form = button.closest('[data-catalog-image-form]');
+  const file = form?.querySelector('[data-catalog-image-file]')?.files?.[0];
+  const sourceType = String(form?.querySelector('[data-catalog-image-source-type]')?.value || '');
+  const sourceUrl = String(form?.querySelector('[data-catalog-image-source-url]')?.value || '').trim();
+  if (!file) return result(false, 'Elegí una imagen JPG, PNG o WebP de hasta 5 MB.');
+  if (!sourceType) return result(false, 'Indicá de dónde proviene la imagen.');
+  if (sourceType === 'business_owned_photo' && sourceUrl) {
+    return result(false, 'Para una foto propia dejá vacía la URL de origen.');
+  }
+  if (sourceType !== 'business_owned_photo' && !sourceUrl) {
+    return result(false, 'Ingresá la URL de origen para esta fuente externa.');
+  }
+
+  busy = true;
+  catalogImageMessage = '';
+  context.onChange();
+  let response;
+  try {
+    response = await context.uploadCatalogImage({ productId, file, sourceType, sourceUrl });
+  } catch (error) {
+    response = { ok: false, message: error?.message || 'Error de conexión.' };
+  } finally {
+    busy = false;
+  }
+  if (response?.ok) {
+    await refreshCatalogProducts();
+    catalogImageMessage = 'Imagen cargada en privado y pendiente de revisión. No se publicó el producto.';
+  } else {
+    catalogImageMessage = humanizeFailure(response?.message, 'No se pudo cargar la imagen. El producto no cambió.');
+  }
+  context.onChange();
+  return result(Boolean(response?.ok), catalogImageMessage);
+}
+
+async function previewCatalogImage(button) {
+  if (!['owner', 'admin'].includes(String(context.role || '').toLowerCase())) {
+    return result(false, 'Sólo owner/admin puede revisar imágenes de catálogo.');
+  }
+  if (busy) return result(false, 'Ya hay una actualización en curso.');
+  const uploadId = button.dataset.catalogImagePreview;
+  if (!uploadId) return result(false, 'Actualizá la cola de imágenes e intentá de nuevo.');
+  busy = true;
+  catalogImageMessage = '';
+  context.onChange();
+  let response;
+  try {
+    response = await context.getCatalogImagePreview({ uploadId });
+  } catch (error) {
+    response = { ok: false, message: error?.message || 'Error de conexión.' };
+  } finally {
+    busy = false;
+  }
+  if (response?.ok && response.data?.preview_url) {
+    catalogImageUploads = catalogImageUploads.map((upload) => upload.id === uploadId
+      ? { ...upload, preview_url: response.data.preview_url, preview_expires_at: response.data.preview_expires_at }
+      : upload);
+    catalogImageMessage = 'Revisá visualmente la vista previa privada antes de aprobar.';
+  } else {
+    catalogImageMessage = humanizeFailure(response?.message, 'No se pudo abrir la vista previa privada.');
+  }
+  context.onChange();
+  return result(Boolean(response?.ok), catalogImageMessage);
+}
+
+async function reviewCatalogImage(button, approve) {
+  if (!['owner', 'admin'].includes(String(context.role || '').toLowerCase())) {
+    return result(false, 'Sólo owner/admin puede revisar imágenes de catálogo.');
+  }
+  if (busy) return result(false, 'Ya hay una actualización en curso.');
+  const uploadId = button.dataset.catalogImageApprove || button.dataset.catalogImageReject;
+  const review = button.closest('[data-catalog-image-status]');
+  if (!uploadId || !review) return result(false, 'Actualizá la cola de imágenes e intentá de nuevo.');
+  const approvedStorageRetry = approve && review.dataset.catalogImageStatus === 'approved';
+  const rightsStatus = String(review.querySelector('[data-catalog-image-rights-status]')?.value || '');
+  const rightsReference = String(review.querySelector('[data-catalog-image-rights-reference]')?.value || '').trim();
+  const reason = String(review.querySelector('[data-catalog-image-reject-reason]')?.value || '').trim();
+  if (approve && !approvedStorageRetry && !['PROPIO', 'LICENCIA_COMERCIAL', 'PERMISO_DOCUMENTADO'].includes(rightsStatus)) {
+    return result(false, 'Elegí un derecho de uso que puedas respaldar.');
+  }
+  if (approve && !approvedStorageRetry && !rightsReference) return result(false, 'Ingresá una referencia verificable del derecho de uso.');
+  if (!approve && !reason) return result(false, 'Indicá por qué se rechaza la imagen.');
+
+  busy = true;
+  catalogImageMessage = '';
+  context.onChange();
+  let response;
+  try {
+    response = approve
+      ? await context.approveCatalogImageUpload({ uploadId, rightsStatus, rightsReference })
+      : await context.rejectCatalogImageUpload({ uploadId, reason });
+  } catch (error) {
+    response = { ok: false, message: error?.message || 'Error de conexión.' };
+  } finally {
+    busy = false;
+  }
+  if (response?.ok) {
+    await refreshCatalogProducts();
+    catalogImageMessage = approve
+      ? 'Imagen aprobada y asociada. El producto sigue como borrador.'
+      : 'Imagen rechazada y retirada del área privada. El producto no cambió.';
+  } else {
+    catalogImageMessage = humanizeFailure(response?.message, 'No se pudo guardar la revisión de la imagen.');
+  }
+  context.onChange();
+  return result(Boolean(response?.ok), catalogImageMessage);
 }
 
 async function saveCatalogEdits(target, onlySku = '') {
@@ -2853,6 +3015,11 @@ function defaultContext() {
     getScannedProductReadiness: async () => ({ ok: false, message: 'El estado de publicación no está disponible.' }),
     businessId: '', operatorId: '', getOrders: () => [], lookupBarcode: async () => ({ ok: true, data: null }),
     listCatalogProducts: async () => ({ ok: false, message: 'El catálogo no está disponible.' }),
+    listCatalogImageUploads: async () => ({ ok: true, data: { uploads: [] } }),
+    getCatalogImagePreview: async () => ({ ok: false, message: 'La vista previa de imágenes no está disponible.' }),
+    uploadCatalogImage: async () => ({ ok: false, message: 'La carga de imágenes no está disponible.' }),
+    approveCatalogImageUpload: async () => ({ ok: false, message: 'La aprobación de imágenes no está disponible.' }),
+    rejectCatalogImageUpload: async () => ({ ok: false, message: 'El rechazo de imágenes no está disponible.' }),
     saveCommercialBatch: async () => ({ ok: false, message: 'La edición comercial no está disponible.' }),
     createProductDraft: async () => ({ ok: false, message: 'Repositorio no disponible.' }), publishProductDraft: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     applyInventoryMovement: async () => ({ ok: false, message: 'Repositorio no disponible.' }), checkoutPos: async () => ({ ok: false, message: 'Repositorio no disponible.' }),

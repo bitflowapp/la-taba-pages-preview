@@ -11,8 +11,11 @@ export function createSupabaseFiscalRepository({ client, businessId }) {
 
   return Object.freeze({
     configureProfile: (profile) => rpc('configure_fiscal_profile', { p_business_id: businessId, p_profile: profile }),
+    // p_command_source viaja sólo si se pide: PostgREST resuelve la función por
+    // NOMBRES de argumento, y la base que hoy corre en La Taba tiene la firma de 5.
     requestDocument: ({ sourceType, sourceId, documentIntent = 'invoice', idempotencyKey, commandSource = null }) => rpc('request_fiscal_document', {
-      p_business_id: businessId, p_source_type: sourceType, p_source_id: sourceId, p_document_intent: documentIntent, p_idempotency_key: idempotencyKey, p_command_source: commandSource,
+      p_business_id: businessId, p_source_type: sourceType, p_source_id: sourceId, p_document_intent: documentIntent, p_idempotency_key: idempotencyKey,
+      ...(commandSource ? { p_command_source: commandSource } : {}),
     }),
     billCommercialOrder: ({ orderId, idempotencyKey, commandSource = 'PANEL', requestPrint = false }) => rpc('bill_commercial_order', {
       p_order_id: orderId,

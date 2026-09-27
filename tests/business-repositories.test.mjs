@@ -113,6 +113,15 @@ test('fiscal no acepta endpoints, certificado, CAE ni n\u00famero desde el panel
   assert.deepEqual(Object.keys(args).sort(), ['p_business_id', 'p_document_intent', 'p_idempotency_key', 'p_source_id', 'p_source_type']);
 });
 
+test('fiscal envía p_command_source sólo cuando se pide (la firma de 5 sigue resolviendo)', async () => {
+  const client = mockClient();
+  const repository = createSupabaseFiscalRepository({ client, businessId: BUSINESS_ID });
+  await repository.requestDocument({ sourceType: 'pos_sale', sourceId: 's1', idempotencyKey: 'fiscal-00001', commandSource: null });
+  await repository.requestDocument({ sourceType: 'pos_sale', sourceId: 's1', idempotencyKey: 'fiscal-00002', commandSource: 'MOBILE' });
+  assert.equal('p_command_source' in client.calls[0].args, false);
+  assert.equal(client.calls[1].args.p_command_source, 'MOBILE');
+});
+
 test('panel fiscal solicita nota parcial, artefacto privado y reimpresión sólo mediante contratos server-side', async () => {
   const client = mockClient();
   const repository = createSupabaseFiscalRepository({ client, businessId: BUSINESS_ID });

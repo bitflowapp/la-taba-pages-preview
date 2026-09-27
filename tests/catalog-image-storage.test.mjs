@@ -207,3 +207,8 @@ test('browser-visible image code never contains service-role credentials', () =>
   assert.match(repository, /uploadToSignedUrl/);
   assert.doesNotMatch(repository + ui, /SUPABASE_SERVICE_ROLE_KEY|sb_secret_[A-Za-z0-9_-]{20,}/);
 });
+
+test('isolated release database models the Storage bucket update timestamp used by migrations', () => {
+  const bootstrap = fs.readFileSync(new URL('../scripts/bootstrap-a1-v2-local.mjs', import.meta.url), 'utf8');
+  assert.match(bootstrap, /storage\.buckets\([\s\S]*updated_at\s+timestamptz/i);
+});

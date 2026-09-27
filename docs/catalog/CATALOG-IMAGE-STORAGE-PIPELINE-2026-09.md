@@ -65,4 +65,6 @@ El 2026-09-27 se aplicó `20260927175058_catalog_image_storage_pipeline` al proy
 
 La lectura de productos después de DDL/backend sigue dando: 46 productos del negocio objetivo, 0 públicos, 0 duplicados, 0 imágenes, 46 precios pendientes y 46 stocks nulos. El bucket público todavía no contiene imágenes; su acceso anónimo queda habilitado por su configuración `public=true`, y el único camino que deposita objetos es la función después de la aprobación transaccional. La política de `fiscal-documents` y sus límites PDF siguen iguales.
 
+El inventario de Storage de sólo lectura quedó guardado en `docs/evidence/controlled-production/catalog-image-storage-inventory-2026-09-27.json`: `STORAGE_BACKUP_STRATEGY=PASS`, 0 objetos huérfanos, 0 asociaciones cruzadas, 0 cambios a los 8 assets estáticos existentes y 0 imágenes nuevas en staging/público.
+
 La actualización visual del Panel aún depende del release controlado de Pages. Su workflow quedó habilitado para `workflow_dispatch` sólo en `release/taba-controlled-production` cuando `CP_DEPLOY_SHA` coincide exactamente con `github.sha`; el paso de CI sigue exigiendo los workflows push verdes de web y Android para ese SHA. El despliegue de Pages y la QA visual se registran cuando termine ese paso.

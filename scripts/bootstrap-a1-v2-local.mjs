@@ -19,7 +19,7 @@ sql(`create role anon; create role authenticated; create role service_role bypas
 // Repository-owned fixture; never borrow another project's schema or cluster.
 sql(fs.readFileSync('supabase/tests/fixtures/a1-platform-auth.sql','utf8'));
 sql(`create schema if not exists storage;
- create table if not exists storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
+ create table if not exists storage.buckets(id text primary key,name text,created_at timestamptz default now(),updated_at timestamptz default now(),public boolean,file_size_limit bigint,allowed_mime_types text[]);
  create table if not exists storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text,name text);
  alter table storage.objects enable row level security;`);
 sql(`grant usage on schema auth,storage to anon,authenticated,service_role;

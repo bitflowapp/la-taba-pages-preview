@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v125-catalog-image-pipeline';
+const CACHE_NAME = 'la-taba-runtime-v126-catalog-image-pipeline';
 const ASSETS = [
   './',
   './index.html',

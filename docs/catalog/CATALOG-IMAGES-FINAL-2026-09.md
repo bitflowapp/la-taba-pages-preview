@@ -82,10 +82,20 @@ Los 37 candidatos sin inspección visual están en REVIEW_REQUIRED. La falta de 
 - Relectura final contra el respaldo: 0 cambios en precios, stock, price_status, disponibilidad, verificación o referencias de imagen; 46 imágenes siguen pendientes.
 - Secret scan: PASS en el árbol del worktree y PASS en los 6 logs npm de esta tarea; sin hallazgos de claves, tokens, enlaces de autenticación ni asignaciones de contraseña.
 
-## Qué hace falta para continuar
+## Implementación segura del pipeline
 
-1. Una ruta de imágenes propia compatible con el editor desplegado, o la habilitación expresa de un destino y flujo de Storage para imágenes en CP. El bucket fiscal actual no sirve.
-2. Packshots exactos con permiso comercial documentado, o fotos propias de La Taba. Las licencias pendientes no se marcaron como aprobadas.
-3. Una sesión de navegador accesible para revisar el Panel autenticado en 390x844 y 1366x768 después de asociar imágenes.
+El 2026-09-27 se aplicó a CP la migración `20260927175058_catalog_image_storage_pipeline` y quedó activa la Edge Function `catalog-image-manager` v1 con `verify_jwt=true`. CP ahora tiene `catalog-image-staging` privado (JPEG/PNG/WebP, 5 MiB) y `catalog-images` de lectura pública (WebP, 5 MiB). `fiscal-documents` permanece privado y sin cambios.
 
-Hasta cubrir esos puntos, los 46 productos quedan como borradores sin imagen y sin publicación.
+La revisión posterior confirmó que la cola tiene RLS, `anon`/`authenticated` no pueden insertar ni cambiar revisiones, el navegador no puede ejecutar las RPC de finalización/aprobación y sólo `service_role` las ejecuta desde la función. La función valida JWT, membership `owner/admin`, producto comercial en borrador, bytes/MIME/tamaño/hash, preview privada y referencia explícita de derechos. Los WebP llegan al bucket público sólo tras confirmar la asociación en la base; el producto continúa como borrador.
+
+Estado del catálogo después de DDL y función: 46 productos del negocio objetivo; 0 públicos; 0 duplicados; 0 imágenes asociadas; 46 precios pendientes; 46 stocks nulos. No se creó ningún objeto en los buckets. La consulta anónima de la ruta pública de Storage llegó al endpoint sin autenticación (objeto de prueba inexistente, respuesta HTTP 400), y la función devolvió HTTP 401 sin JWT. El inventario posterior quedó en [catalog-image-storage-inventory-2026-09-27.json](../evidence/controlled-production/catalog-image-storage-inventory-2026-09-27.json): `STORAGE_BACKUP_STRATEGY=PASS`, 0 huérfanos, 0 asociaciones cruzadas, assets estáticos existentes intactos.
+
+El cambio del Panel y el despacho manual de Pages están en el PR [#116](https://github.com/bitflowapp/la-taba-pages-preview/pull/116), contra `release/taba-controlled-production`. El deploy sigue requiriendo ese branch, `CP_DEPLOY_SHA` exacto y los CI push verdes de web y Android. La corrida canónica del SHA del PR está en curso; la QA visual autenticada se actualizará tras el deploy. No se cargaron ni aprobaron imágenes durante esta implementación.
+
+## Qué hace falta para cargar imágenes reales
+
+1. Un owner/admin debe ingresar al Panel del negocio y seleccionar el archivo exacto para cada SKU; la carga requiere revisión visual privada antes de aprobar.
+2. Para fotos externas, hace falta una referencia comprobable de licencia comercial o permiso. Para una foto del negocio, el owner debe confirmar que es propia. Ningún derecho se infiere del dominio.
+3. Las presentaciones ambiguas deben quedar `REVIEW_REQUIRED`; las imágenes de carnes necesitan una foto propia del corte correcto.
+
+El pipeline está preparado. Hasta que un owner/admin cargue y apruebe imágenes correctas, los 46 productos siguen como borradores sin imagen, con precio pendiente, stock nulo y sin publicación.

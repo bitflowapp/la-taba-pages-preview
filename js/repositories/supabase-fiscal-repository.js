@@ -11,8 +11,14 @@ export function createSupabaseFiscalRepository({ client, businessId }) {
 
   return Object.freeze({
     configureProfile: (profile) => rpc('configure_fiscal_profile', { p_business_id: businessId, p_profile: profile }),
-    requestDocument: ({ sourceType, sourceId, documentIntent = 'invoice', idempotencyKey }) => rpc('request_fiscal_document', {
-      p_business_id: businessId, p_source_type: sourceType, p_source_id: sourceId, p_document_intent: documentIntent, p_idempotency_key: idempotencyKey,
+    requestDocument: ({ sourceType, sourceId, documentIntent = 'invoice', idempotencyKey, commandSource = null }) => rpc('request_fiscal_document', {
+      p_business_id: businessId, p_source_type: sourceType, p_source_id: sourceId, p_document_intent: documentIntent, p_idempotency_key: idempotencyKey, p_command_source: commandSource,
+    }),
+    billCommercialOrder: ({ orderId, idempotencyKey, commandSource = 'PANEL', requestPrint = false }) => rpc('bill_commercial_order', {
+      p_order_id: orderId,
+      p_idempotency_key: idempotencyKey || `order-invoice:${orderId}`,
+      p_command_source: commandSource,
+      p_request_print: requestPrint === true,
     }),
     requestCreditNote: ({ originalDocumentId, reason, creditKind = 'total', lines = [], idempotencyKey }) => rpc('request_credit_note', {
       p_original_document_id: originalDocumentId,
@@ -65,5 +71,14 @@ export function createSupabaseFiscalRepository({ client, businessId }) {
       const { data, error, status } = await client.from('fiscal_documents').select('id,business_id,source_type,source_id,document_intent,environment,point_of_sale,document_type,document_number,issue_date,currency,total_amount,net_amount,tax_amount,exempt_amount,non_taxed_amount,other_taxes_amount,state,result,cae,cae_expiration,artifact_state,artifact_error_code,artifact_error_message,observations,errors,associated_document_id,credit_kind,credit_reason,created_at,authorized_at,fiscal_document_items(id,description,quantity,unit_price,net_amount,tax_amount,tax_code,exempt_amount,non_taxed_amount,other_taxes_amount)').eq('business_id', businessId).order('created_at', { ascending: false }).limit(Math.min(500, Math.max(1, limit)));
       return error ? classifyRpcError(error, status) : { ok: true, data: Array.isArray(data) ? data : [] };
     },
+    async getFiscalDocument(documentId) {
+      if (!documentId) return { ok: true, data: null };
+      const { data, error, status } = await client.from('fiscal_documents')
+        .select('id,business_id,source_type,source_id,document_intent,environment,point_of_sale,document_type,document_number,issue_date,currency,total_amount,net_amount,tax_amount,exempt_amount,non_taxed_amount,other_taxes_amount,state,result,cae,cae_expiration,artifact_state,artifact_error_code,artifact_error_message,created_at,authorized_at')
+        .eq('id', documentId)
+        .maybeSingle();
+      return error ? classifyRpcError(error, status) : { ok: true, data: data || null };
+    },
+    createWhatsappPairingCode: () => rpc('create_whatsapp_pairing_code', { p_business_id: businessId }),
   });
 }

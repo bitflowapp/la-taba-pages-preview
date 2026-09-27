@@ -800,6 +800,39 @@ body[data-active-view="business"] .topbar-ops-sound-count {
   box-shadow: var(--shadow-xs);
 }
 
+.production-order-fiscal {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm, 6px);
+  background: var(--taba-surface-subtle, #f8fafc);
+  border: 1px solid var(--taba-border, #e2e8f0);
+}
+
+.production-order-fiscal-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.production-order-fiscal-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.fiscal-cae-pill {
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--taba-font-mono, monospace);
+  color: var(--taba-muted, #64748b);
+  background: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--taba-border, #e2e8f0);
+}
+
 .inbox-order-top > div,
 .production-order-head > div {
   display: grid;

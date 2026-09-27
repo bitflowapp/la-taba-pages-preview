@@ -78,6 +78,7 @@ import {
 } from './orders.js';
 import { sanitizeText } from './core/validators.js';
 import { getOrderRepository, isPersistentOrderRepository, isSandboxOrderRepository } from './repositories/repository_factory.js';
+import { presentOrderFiscalStatus } from './pos/fiscal-status-presenter.js';
 import { escapeHtml, productCode, stockPill } from './ui.js';
 import {
   findPromotionConflicts,
@@ -113,6 +114,7 @@ let catalogFormVisible = false;
 // productos, la versión expandida convertía el panel en un scroll interminable.
 let catalogListExpanded = false;
 const CATALOG_LIST_PREVIEW_COUNT = 8;
+const demoFiscalInFlight = new Set();
 /*
  * BUSCAR ANTES DE DESPLEGAR.
  *
@@ -892,7 +894,7 @@ function inboxOrderCard(order, options = {}) {
 
   if (compact) {
     return `
-      <article class="inbox-order o-card is-compact ${freshClass} accent-${statusClass(order.status)} ${options.selected ? 'is-selected' : ''}" data-inbox-order="${escapeHtml(order.id)}" role="listitem">
+      <article class="inbox-order o-card is-compact ${freshClass} accent-${statusClass(order.status)} ${options.selected ? 'is-selected' : ''}" data-inbox-order="${escapeHtml(order.id)}" data-order-card="${escapeHtml(order.id)}" role="listitem">
         <button class="o-card-select" type="button" data-order-select="${escapeHtml(order.id)}" aria-pressed="${Boolean(options.selected)}">
           <span class="inbox-order-top">
             <span class="inbox-id">${escapeHtml(order.id)}</span>
@@ -903,14 +905,15 @@ function inboxOrderCard(order, options = {}) {
           ${isPickup ? '' : `<span class="o-card-address">${escapeHtml(addressLabel)}</span>`}
           <span class="o-card-foot">
             <span>${itemCount} ${itemCount === 1 ? 'artículo' : 'artículos'}</span>
-            <strong>${money(order.total)}</strong>
+            <strong class="inbox-order-money">${money(order.total)}</strong>
           </span>
         </button>
+        ${renderInboxFiscalBlock(order)}
       </article>`;
   }
 
   return `
-    <article class="inbox-order ${priorityClass} ${freshClass} accent-${statusClass(order.status)}" data-inbox-order="${escapeHtml(order.id)}">
+    <article class="inbox-order ${priorityClass} ${freshClass} accent-${statusClass(order.status)}" data-inbox-order="${escapeHtml(order.id)}" data-order-card="${escapeHtml(order.id)}">
       <div class="inbox-order-top">
         <span class="inbox-state-dot" aria-hidden="true"></span>
         <span class="status-chip ${statusClass(order.status)}">${options.priority ? 'Pedido nuevo' : escapeHtml(statusMeta.shortLabel)}</span>
@@ -933,8 +936,8 @@ function inboxOrderCard(order, options = {}) {
 
         <div class="inbox-commerce-panel">
           <aside class="inbox-payment-panel">
-            <span>Total a cobrar</span>
-            <strong>${money(order.total)}</strong>
+            <span class="inbox-order-money">Total a cobrar</span>
+            <strong class="inbox-order-money">${money(order.total)}</strong>
             <small>${escapeHtml(order.paymentMethod || 'Efectivo')}</small>
             ${Number(order.discountTotal || 0) > 0 ? `<em>${escapeHtml(order.coupon?.code || 'Promo')} -${money(order.discountTotal)}</em>` : ''}
           </aside>
@@ -943,6 +946,7 @@ function inboxOrderCard(order, options = {}) {
             ${!isPickup && order.status === 'ready' ? '<button class="primary-button compact main-order-action" type="button" data-open-admin-view="rider">Abrir reparto</button>' : ''}
             ${!isPickup && ['on_the_way', 'arriving'].includes(order.status) ? `<button class="primary-button compact main-order-action" type="button" data-order-track="${escapeHtml(order.id)}">Ver seguimiento</button>` : ''}
           </div>
+          ${renderInboxFiscalBlock(order)}
         </div>
 
         <details class="order-detail inbox-card-details">
@@ -1075,6 +1079,55 @@ function inboxOrderDetail(order) {
       </div>
 
     </article>`;
+}
+
+function renderInboxFiscalBlock(order) {
+  const doc = order.fiscal_document || null;
+  const printJob = order.print_job || null;
+  const isAgentOnline = true;
+  const presentation = presentOrderFiscalStatus({ document: doc, printJob, agentOnline: isAgentOnline });
+  const inFlight = demoFiscalInFlight.has(`bill-${order.id}`);
+  const inPrintFlight = demoFiscalInFlight.has(`print-${order.id}`);
+
+  return `
+    <div class="production-order-fiscal inbox-order-fiscal" data-order-fiscal-block="${escapeHtml(order.id)}">
+      <div class="production-order-fiscal-status">
+        <span class="order-mode-chip" data-fiscal-tone="${escapeHtml(presentation.tone)}" data-order-fiscal-status="${escapeHtml(presentation.code)}">
+          ${escapeHtml(presentation.label)}
+        </span>
+        ${presentation.cae ? `<span class="fiscal-cae-pill">CAE: ${escapeHtml(presentation.cae)}</span>` : ''}
+      </div>
+      <div class="production-order-fiscal-actions">
+        ${presentation.canBill ? `
+          <button
+            class="secondary-button compact"
+            type="button"
+            data-order-bill="${escapeHtml(order.id)}"
+            ${inFlight ? 'disabled aria-disabled="true"' : ''}
+          >${inFlight ? 'Emitiendo…' : 'FACTURAR'}</button>
+          <button
+            class="secondary-button compact"
+            type="button"
+            data-order-bill-print="${escapeHtml(order.id)}"
+            ${inFlight ? 'disabled aria-disabled="true"' : ''}
+          >${inFlight ? 'Emitiendo…' : 'FACTURAR E IMPRIMIR'}</button>
+        ` : ''}
+        ${presentation.canReprint ? `
+          <button
+            class="ghost-button compact"
+            type="button"
+            data-order-view-pdf="${escapeHtml(order.id)}"
+          >Ver PDF</button>
+          <button
+            class="secondary-button compact"
+            type="button"
+            data-order-reprint="${escapeHtml(order.id)}"
+            ${inPrintFlight ? 'disabled aria-disabled="true"' : ''}
+          >${inPrintFlight ? 'Enviando…' : 'Reimprimir'}</button>
+        ` : ''}
+      </div>
+    </div>
+  `;
 }
 
 // El Panel muestra el punto de entrega, no sólo el texto de la dirección. El
@@ -2056,6 +2109,68 @@ export function handleBusinessAction(target) {
       ok: result.ok,
       message: result.ok ? 'Cierre del turno guardado en este dispositivo.' : 'No se pudo guardar el cierre.',
     };
+  }
+
+  const orderBill = target.closest('[data-order-bill]');
+  const orderBillPrint = target.closest('[data-order-bill-print]');
+  if (orderBill || orderBillPrint) {
+    const orderId = (orderBill || orderBillPrint).dataset.orderBill || (orderBill || orderBillPrint).dataset.orderBillPrint;
+    const flightKey = `bill-${orderId}`;
+    if (demoFiscalInFlight.has(flightKey)) {
+      return { handled: true, ok: false, message: 'Ya estamos procesando la emisión fiscal de este pedido.' };
+    }
+    demoFiscalInFlight.add(flightKey);
+    if (typeof document !== 'undefined') renderBusinessDashboard();
+    const order = getState().orders.find((candidate) => candidate.id === orderId);
+    if (!order) {
+      demoFiscalInFlight.delete(flightKey);
+      if (typeof document !== 'undefined') renderBusinessDashboard();
+      return { handled: true, ok: false, message: 'Pedido no encontrado para facturación.' };
+    }
+
+    updateState((draft) => {
+      const targetOrder = draft.orders.find((candidate) => candidate.id === orderId);
+      if (targetOrder) {
+        targetOrder.fiscal_document = {
+          id: `fisc-${targetOrder.id}`,
+          status: 'AUTHORIZED',
+          state: 'authorized',
+          cae: '74123456789012',
+          cae_due_date: '2026-10-06',
+          document_type: 'FACTURA_B',
+          point_of_sale: 5,
+          document_number: 1042,
+        };
+        if (orderBillPrint) {
+          targetOrder.print_job = { status: 'PRINTED' };
+        }
+      }
+    });
+    demoFiscalInFlight.delete(flightKey);
+    if (typeof document !== 'undefined') renderBusinessDashboard();
+    return {
+      handled: true,
+      ok: true,
+      message: orderBillPrint ? 'Factura emitida y enviada a impresión.' : 'Factura emitida.',
+    };
+  }
+
+  const orderReprint = target.closest('[data-order-reprint]');
+  if (orderReprint) {
+    const orderId = orderReprint.dataset.orderReprint;
+    updateState((draft) => {
+      const targetOrder = draft.orders.find((candidate) => candidate.id === orderId);
+      if (targetOrder) {
+        targetOrder.print_job = { status: 'PRINTED' };
+      }
+    });
+    if (typeof document !== 'undefined') renderBusinessDashboard();
+    return { handled: true, ok: true, message: 'Reimpresión enviada a impresora.' };
+  }
+
+  const orderViewPdf = target.closest('[data-order-view-pdf]');
+  if (orderViewPdf) {
+    return { handled: true, ok: true, message: 'Abriendo comprobante PDF…' };
   }
 
   const advanceButton = target.closest('[data-order-advance]');

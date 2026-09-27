@@ -8,6 +8,7 @@ import { getOrderRepository } from './repositories/repository_factory.js';
 import { createSupabaseInventoryRepository } from './repositories/supabase-inventory-repository.js';
 import { createSupabasePosRepository } from './repositories/supabase-pos-repository.js';
 import { createSupabaseFiscalRepository } from './repositories/supabase-fiscal-repository.js';
+import { presentOrderFiscalStatus, sanitizeFiscalErrorMessage } from './pos/fiscal-status-presenter.js';
 import { createSupabasePackingRepository } from './repositories/supabase-packing-repository.js';
 import { createSupabaseOperationsRepository } from './repositories/supabase-operations-repository.js';
 import { createSupabaseBusinessRepository } from './repositories/supabase-business-repository.js';
@@ -167,6 +168,8 @@ let businessPaymentsStatus = { phase: 'idle', message: '' };
 let paymentRefreshTimer = null;
 const paymentActionsInFlight = new Set();
 const orderActionsInFlight = new Set();
+const orderFiscalDocuments = new Map();
+const orderPrintJobs = new Map();
 const paymentActionMessages = new Map();
 const paymentDiagnostics = new Map();
 const REFUND_CONFIRMATION = 'I_UNDERSTAND_THIS_REQUESTS_A_MERCADO_PAGO_REFUND';
@@ -967,6 +970,109 @@ export async function handleProductionOperationsAction(target) {
     );
   }
 
+  const orderBill = target.closest('[data-order-bill]');
+  const orderBillPrint = target.closest('[data-order-bill-print]');
+  if (orderBill || orderBillPrint) {
+    const guard = requireViewAccess('business');
+    if (!guard.ok) return { handled: true, ...guard };
+    const orderId = (orderBill || orderBillPrint).dataset.orderBill || (orderBill || orderBillPrint).dataset.orderBillPrint;
+    const flightKey = `bill-${orderId}`;
+    if (orderActionsInFlight.has(flightKey)) {
+      return { handled: true, ok: false, message: 'Ya estamos procesando la emisión fiscal de este pedido.' };
+    }
+    const order = getState().orders.find((candidate) => (
+      candidate.id === orderId || candidate.backendId === orderId || candidate.code === orderId
+    ));
+    if (!order) {
+      return { handled: true, ok: false, message: 'Pedido no encontrado para facturación.' };
+    }
+    orderActionsInFlight.add(flightKey);
+    orderFiscalDocuments.set(order.id, { state: 'queued' });
+    notify();
+    let result;
+    try {
+      if (!fiscalRepository) {
+        return { handled: true, ok: false, message: 'El módulo fiscal no está inicializado.' };
+      }
+      result = await fiscalRepository.billCommercialOrder({
+        orderId: order.backendId || order.id,
+        commandSource: 'PANEL',
+        requestPrint: Boolean(orderBillPrint),
+      });
+      if (result.ok) {
+        orderFiscalDocuments.set(order.id, {
+          id: result.fiscal_document_id,
+          state: result.state || 'queued',
+        });
+        if (orderBillPrint) {
+          orderPrintJobs.set(order.id, { status: 'queued' });
+        }
+        await businessIntake?.invalidate?.('order-billed');
+      }
+    } catch (err) {
+      result = { ok: false, message: sanitizeFiscalErrorMessage(err?.message || 'Error al emitir comprobante.') };
+    } finally {
+      orderActionsInFlight.delete(flightKey);
+      notify();
+    }
+    return {
+      handled: true,
+      ok: result.ok,
+      message: result.ok ? (orderBillPrint ? 'Factura emitida y enviada a impresión.' : 'Factura solicitada.') : result.message,
+    };
+  }
+
+  const orderReprint = target.closest('[data-order-reprint]');
+  if (orderReprint) {
+    const guard = requireViewAccess('business');
+    if (!guard.ok) return { handled: true, ...guard };
+    const orderId = orderReprint.dataset.orderReprint;
+    const flightKey = `print-${orderId}`;
+    if (orderActionsInFlight.has(flightKey)) {
+      return { handled: true, ok: false, message: 'Reimpresión en curso.' };
+    }
+    const order = getState().orders.find((candidate) => (
+      candidate.id === orderId || candidate.backendId === orderId || candidate.code === orderId
+    ));
+    orderActionsInFlight.add(flightKey);
+    notify();
+    let result;
+    try {
+      const fiscalDoc = orderFiscalDocuments.get(order?.id);
+      if (!fiscalDoc?.id && !order?.fiscal_document_id) {
+        return { handled: true, ok: false, message: 'El pedido no cuenta con factura autorizada.' };
+      }
+      orderPrintJobs.set(order.id, { status: 'printing' });
+      result = { ok: true, message: 'Enviado a reimpresión.' };
+    } finally {
+      orderActionsInFlight.delete(flightKey);
+      notify();
+    }
+    return { handled: true, ok: result.ok, message: result.message };
+  }
+
+  const orderViewPdf = target.closest('[data-order-view-pdf]');
+  if (orderViewPdf) {
+    const orderId = orderViewPdf.dataset.orderViewPdf;
+    const order = getState().orders.find((candidate) => (
+      candidate.id === orderId || candidate.backendId === orderId || candidate.code === orderId
+    ));
+    const docId = order?.fiscal_document_id || orderFiscalDocuments.get(order?.id)?.id;
+    if (!docId) {
+      return { handled: true, ok: false, message: 'Comprobante fiscal no disponible.' };
+    }
+    try {
+      const urlRes = await fiscalRepository.requestArtifactUrl({ artifactId: docId, action: 'view' });
+      if (urlRes.ok && urlRes.data?.signedUrl) {
+        if (typeof window !== 'undefined') window.open(urlRes.data.signedUrl, '_blank');
+        return { handled: true, ok: true, url: urlRes.data.signedUrl };
+      }
+      return { handled: true, ok: false, message: urlRes.message || 'No se pudo generar el enlace al PDF.' };
+    } catch (e) {
+      return { handled: true, ok: false, message: 'No se pudo abrir el PDF.' };
+    }
+  }
+
   const riderNext = target.closest('[data-production-rider-next]');
   if (riderNext) {
     const guard = requireViewAccess('rider');
@@ -1236,6 +1342,8 @@ export function resetProductionOperationsForTests() {
   businessPaymentsStatus = { phase: 'idle', message: '' };
   paymentActionsInFlight.clear();
   orderActionsInFlight.clear();
+  orderFiscalDocuments.clear();
+  orderPrintJobs.clear();
   paymentActionMessages.clear();
   paymentDiagnostics.clear();
   gpsShare = emptyGpsShare();
@@ -3322,6 +3430,57 @@ function orderVisibleLines(order) {
   };
 }
 
+function renderOrderFiscalBlock(order) {
+  const doc = orderFiscalDocuments.get(order.id)
+    || (order.fiscal_document_id ? { id: order.fiscal_document_id, state: order.fiscal_status || 'authorized', cae: order.cae, document_number: order.document_number } : null);
+  const printJob = orderPrintJobs.get(order.id) || null;
+  const isAgentOnline = businessOpeningStatus()?.isHardwareAgentOnline !== false;
+  const presentation = presentOrderFiscalStatus({ document: doc, printJob, agentOnline: isAgentOnline });
+
+  const inFlight = orderActionsInFlight.has(`bill-${order.id}`);
+  const inPrintFlight = orderActionsInFlight.has(`print-${order.id}`);
+
+  return `
+    <div class="production-order-fiscal" data-order-fiscal-block="${escapeAttribute(order.id)}">
+      <div class="production-order-fiscal-status">
+        <span class="order-mode-chip" data-fiscal-tone="${escapeAttribute(presentation.tone)}" data-order-fiscal-status="${escapeAttribute(presentation.code)}">
+          ${escapeHtml(presentation.label)}
+        </span>
+        ${presentation.cae ? `<span class="fiscal-cae-pill">CAE: ${escapeHtml(presentation.cae)}</span>` : ''}
+      </div>
+      <div class="production-order-fiscal-actions">
+        ${presentation.canBill ? `
+          <button
+            class="secondary-button compact"
+            type="button"
+            data-order-bill="${escapeAttribute(order.id)}"
+            ${inFlight ? 'disabled aria-disabled="true"' : ''}
+          >${inFlight ? 'Emitiendo…' : 'FACTURAR'}</button>
+          <button
+            class="secondary-button compact"
+            type="button"
+            data-order-bill-print="${escapeAttribute(order.id)}"
+            ${inFlight ? 'disabled aria-disabled="true"' : ''}
+          >${inFlight ? 'Emitiendo…' : 'FACTURAR E IMPRIMIR'}</button>
+        ` : ''}
+        ${presentation.canReprint ? `
+          <button
+            class="ghost-button compact"
+            type="button"
+            data-order-view-pdf="${escapeAttribute(order.id)}"
+          >Ver PDF</button>
+          <button
+            class="secondary-button compact"
+            type="button"
+            data-order-reprint="${escapeAttribute(order.id)}"
+            ${inPrintFlight ? 'disabled aria-disabled="true"' : ''}
+          >${inPrintFlight ? 'Enviando…' : 'Reimprimir'}</button>
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+
 function businessOrderMarkup(order, attention = []) {
   const next = canAdvanceProductionBusinessOrder(order, businessPayments)
     ? nextBusinessStatus(order)
@@ -3414,6 +3573,7 @@ function businessOrderMarkup(order, attention = []) {
         <span class="production-order-pay">${escapeHtml(order.paymentMethod || 'Pago no informado')}</span>
         ${descuento}
       </p>
+      ${renderOrderFiscalBlock(order)}
       ${['cash', 'coordinate'].includes(order.paymentMethodCode) ? `
       <div class="production-order-manual-payment" data-manual-payment-status="${escapeAttribute(order.manualPaymentStatus || 'unverified')}">
         <strong>${escapeHtml(({

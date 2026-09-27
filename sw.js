@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v120-map-off-boot-path';
+const CACHE_NAME = 'la-taba-runtime-v121-fiscal-integration';
 const ASSETS = [
   './',
   './index.html',

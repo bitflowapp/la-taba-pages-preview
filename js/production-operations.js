@@ -8,6 +8,7 @@ import { getOrderRepository } from './repositories/repository_factory.js';
 import { createSupabaseInventoryRepository } from './repositories/supabase-inventory-repository.js';
 import { createSupabasePosRepository } from './repositories/supabase-pos-repository.js';
 import { createSupabaseFiscalRepository } from './repositories/supabase-fiscal-repository.js';
+import { presentOrderFiscalActionResult, presentOrderFiscalState } from './business/order-fiscal-presenter.js';
 import { createSupabasePackingRepository } from './repositories/supabase-packing-repository.js';
 import { createSupabaseOperationsRepository } from './repositories/supabase-operations-repository.js';
 import { createSupabaseBusinessRepository } from './repositories/supabase-business-repository.js';
@@ -163,6 +164,12 @@ let businessConfigRepository = null;
 let paymentsRepository = null;
 let manualPaymentsRepository = null;
 let businessPayments = [];
+// Estado fiscal REAL por pedido (get_order_fiscal_states) y de la PC de impresion
+// (get_local_print_status). No se inventa en el cliente: se lee de la base y se vuelve a
+// leer despues de cada accion. Si una lectura falla, se conserva la ultima confirmada.
+let orderFiscalStates = new Map();
+let localPrintAgent = null;
+const ORDER_FISCAL_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 let businessPaymentsStatus = { phase: 'idle', message: '' };
 let paymentRefreshTimer = null;
 const paymentActionsInFlight = new Set();
@@ -967,6 +974,74 @@ export async function handleProductionOperationsAction(target) {
     );
   }
 
+  const orderInvoice = target.closest('[data-order-invoice], [data-order-invoice-print]');
+  if (orderInvoice) {
+    const guard = requireViewAccess('business');
+    if (!guard.ok) return { handled: true, ...guard };
+    const orderId = orderInvoice.dataset.orderInvoice || orderInvoice.dataset.orderInvoicePrint || '';
+    const print = orderInvoice.hasAttribute('data-order-invoice-print');
+    const flightKey = `fiscal-${orderId}`;
+    if (!ORDER_FISCAL_UUID.test(orderId)) return { handled: true, ok: false, message: 'Pedido no encontrado para facturar.' };
+    if (orderActionsInFlight.has(flightKey)) return { handled: true, ok: false, message: 'Ya estamos pidiendo la factura de este pedido.' };
+    orderActionsInFlight.add(flightKey);
+    notify();
+    let result;
+    try {
+      // Misma clave para el mismo pedido: un segundo toque es la misma solicitud (y el core
+      // converge por intencion aunque llegue otra clave desde otro canal).
+      result = await repository.requestOrderInvoice({
+        orderId, idempotencyKey: operationKey('order-invoice', orderId), commandSource: 'PANEL', print,
+      });
+      await refreshOrderFiscalStates();
+    } finally {
+      orderActionsInFlight.delete(flightKey);
+      notify();
+    }
+    return { handled: true, ok: Boolean(result?.ok), message: presentOrderFiscalActionResult(result, { print }) };
+  }
+
+  const orderReprint = target.closest('[data-order-reprint]');
+  if (orderReprint) {
+    const guard = requireViewAccess('business');
+    if (!guard.ok) return { handled: true, ...guard };
+    const printJobId = orderReprint.dataset.orderReprint || '';
+    const orderId = orderReprint.dataset.orderReprintOrder || '';
+    const flightKey = `fiscal-${orderId}`;
+    if (!ORDER_FISCAL_UUID.test(printJobId)) return { handled: true, ok: false, message: 'No hay una impresión anterior para repetir.' };
+    if (orderActionsInFlight.has(flightKey)) return { handled: true, ok: false, message: 'Ya hay una operación en curso para este pedido.' };
+    orderActionsInFlight.add(flightKey);
+    notify();
+    let result;
+    try {
+      // La reimpresion real: un trabajo nuevo con reprint_of, actor y motivo. No pide otro CAE.
+      result = await repository.requestPrintJobReprint({
+        printJobId, reason: 'Reimpresión pedida desde el Panel', idempotencyKey: operationKey('order-reprint', printJobId),
+      });
+      await refreshOrderFiscalStates();
+    } finally {
+      orderActionsInFlight.delete(flightKey);
+      notify();
+    }
+    return { handled: true, ok: Boolean(result?.ok), message: result?.ok ? 'Reimpresión enviada a la PC de impresión.' : presentOrderFiscalActionResult(result) };
+  }
+
+  const orderFiscalPdf = target.closest('[data-order-fiscal-pdf]');
+  if (orderFiscalPdf) {
+    const guard = requireViewAccess('business');
+    if (!guard.ok) return { handled: true, ...guard };
+    // El id del ARTEFACTO (PDF vigente), no el del comprobante.
+    const artifactId = orderFiscalPdf.dataset.orderFiscalPdf || '';
+    if (!ORDER_FISCAL_UUID.test(artifactId) || typeof repository?.requestFiscalArtifactUrl !== 'function') {
+      return { handled: true, ok: false, message: 'El PDF todavía no está disponible.' };
+    }
+    const result = await repository.requestFiscalArtifactUrl({ artifactId, action: 'preview' });
+    if (result?.ok && result.data?.signedUrl) {
+      globalThis.open?.(result.data.signedUrl, '_blank', 'noopener');
+      return { handled: true, ok: true, message: 'Abriendo el PDF…' };
+    }
+    return { handled: true, ok: false, message: presentOrderFiscalActionResult(result) };
+  }
+
   const riderNext = target.closest('[data-production-rider-next]');
   if (riderNext) {
     const guard = requireViewAccess('rider');
@@ -1233,6 +1308,8 @@ export function resetProductionOperationsForTests() {
   packingRepository = null;
   businessIntakeStatus = emptyBusinessIntakeStatus();
   businessPayments = [];
+  orderFiscalStates = new Map();
+  localPrintAgent = null;
   businessPaymentsStatus = { phase: 'idle', message: '' };
   paymentActionsInFlight.clear();
   orderActionsInFlight.clear();
@@ -1314,6 +1391,8 @@ function clearProductionOrders() {
   availableRiderOrders = [];
   activeBusinessRiders = [];
   businessPayments = [];
+  orderFiscalStates = new Map();
+  localPrintAgent = null;
   businessPaymentsStatus = { phase: 'idle', message: '' };
   paymentActionsInFlight.clear();
   paymentActionMessages.clear();
@@ -1366,10 +1445,13 @@ async function activateAuthorizedAccess(result, expectedSequence = null) {
   };
   if (BUSINESS_ROLES.has(access.membership?.role)) {
     await refreshBusinessPayments();
+    await refreshOrderFiscalStates();
     startPaymentRefresh();
   } else {
     businessPayments = [];
     businessPaymentsStatus = { phase: 'idle', message: '' };
+    orderFiscalStates = new Map();
+    localPrintAgent = null;
     stopPaymentRefresh();
   }
   notify();
@@ -1482,6 +1564,10 @@ async function configureBusinessRuntime(result) {
     regenerateFiscalArtifact: (fiscalDocumentId) => fiscalRepository.regenerateArtifact(fiscalDocumentId),
     requestFiscalPrintJob: (input) => fiscalRepository.requestPrintJob(input),
     updateFiscalPrintJob: (input) => fiscalRepository.updatePrintJob(input),
+    requestOrderInvoice: (input) => fiscalRepository.requestOrderInvoice(input),
+    getOrderFiscalStates: (orderIds) => fiscalRepository.getOrderFiscalStates(orderIds),
+    requestPrintJobReprint: (input) => fiscalRepository.requestPrintJobReprint(input),
+    getLocalPrintStatus: () => fiscalRepository.getLocalPrintStatus(),
     desktopPlatform,
     startPacking: (input) => packingRepository.start(input),
     getPackingManifest: (sessionId) => packingRepository.manifest({ sessionId }),
@@ -1718,6 +1804,25 @@ function packingCommandResult(response, revision) {
     };
 }
 
+async function refreshOrderFiscalStates() {
+  if (!BUSINESS_ROLES.has(access.membership?.role) || typeof repository?.getOrderFiscalStates !== 'function') return;
+  const orderIds = [...new Set((getState().orders || [])
+    .map((order) => String(order?.backendId || ''))
+    .filter((id) => ORDER_FISCAL_UUID.test(id)))].slice(0, 100);
+  if (!orderIds.length) {
+    orderFiscalStates = new Map();
+    return;
+  }
+  const [states, agent] = await Promise.all([
+    repository.getOrderFiscalStates(orderIds),
+    typeof repository.getLocalPrintStatus === 'function' ? repository.getLocalPrintStatus() : null,
+  ]);
+  if (states?.ok && Array.isArray(states.data)) {
+    orderFiscalStates = new Map(states.data.map((row) => [String(row.order_id), row]));
+  }
+  if (agent?.ok) localPrintAgent = String(agent.data?.agent || '') || null;
+}
+
 async function refreshBusinessPayments() {
   if (!BUSINESS_ROLES.has(access.membership?.role)) return;
   if (typeof repository?.listMercadoPagoBusinessPayments !== 'function') {
@@ -1739,7 +1844,7 @@ async function refreshBusinessPayments() {
 function startPaymentRefresh() {
   stopPaymentRefresh();
   paymentRefreshTimer = globalThis.setInterval?.(() => {
-    Promise.all([refreshBusinessPayments(), refreshActiveBusinessRiders()])
+    Promise.all([refreshBusinessPayments(), refreshActiveBusinessRiders(), refreshOrderFiscalStates()])
       .then(notify).catch(() => {});
   }, 15_000) || null;
 }
@@ -3324,6 +3429,39 @@ function orderVisibleLines(order) {
   };
 }
 
+// El bloque fiscal del pedido: estado REAL leido de la base y botones que solo aparecen
+// habilitados cuando el servidor dice que se puede. Facturar/Facturar e imprimir piden la
+// factura del PEDIDO (online_order), nunca una venta POS.
+function renderOrderFiscalBlock(order) {
+  const orderId = String(order?.backendId || '');
+  if (!ORDER_FISCAL_UUID.test(orderId) || !BUSINESS_ROLES.has(access.membership?.role)) return '';
+  const state = orderFiscalStates.get(orderId) || null;
+  const inFlight = orderActionsInFlight.has(`fiscal-${orderId}`);
+  const view = presentOrderFiscalState(state, { agent: localPrintAgent, inFlight });
+  const disabled = (enabled) => (enabled ? '' : 'disabled aria-disabled="true"');
+  const beforeDocument = !state?.document;
+  const latestJobId = state?.print?.latest_job?.id || '';
+  return `
+      <div class="production-order-fiscal" data-order-fiscal="${escapeAttribute(orderId)}" data-order-fiscal-status="${escapeAttribute(view.code)}">
+        <p class="production-order-fiscal-status">
+          <span class="order-mode-chip" data-fiscal-tone="${escapeAttribute(view.tone)}">${escapeHtml(view.label)}</span>
+          ${view.simulationLabel ? `<span class="fiscal-simulation-badge" data-fiscal-simulation>${escapeHtml(view.simulationLabel)}</span>` : ''}
+        </p>
+        ${view.number ? `<p class="production-order-fiscal-number">${escapeHtml(view.number)} · ${escapeHtml(view.caeLabel)} ${escapeHtml(view.cae)}</p>` : ''}
+        ${view.reasons.length ? `<ul class="production-order-fiscal-reasons">${view.reasons.map((reason) => `<li>${escapeHtml(reason)}</li>`).join('')}</ul>` : ''}
+        ${view.print ? `<p class="production-order-fiscal-print" data-fiscal-print="${escapeAttribute(view.print.code)}">${escapeHtml(view.print.label)}</p>` : ''}
+        <div class="button-row">
+          ${beforeDocument ? `
+            <button class="secondary-button compact" type="button" data-order-invoice="${escapeAttribute(orderId)}" ${disabled(view.actions.invoice)}>${inFlight ? 'Pidiendo factura…' : 'Facturar'}</button>
+            <button class="secondary-button compact" type="button" data-order-invoice-print="${escapeAttribute(orderId)}" ${disabled(view.actions.invoiceAndPrint)}>Facturar e imprimir</button>
+          ` : ''}
+          ${view.actions.print ? `<button class="secondary-button compact" type="button" data-order-invoice-print="${escapeAttribute(orderId)}">Imprimir</button>` : ''}
+          ${view.actions.reprint ? `<button class="ghost-button compact" type="button" data-order-reprint="${escapeAttribute(latestJobId)}" data-order-reprint-order="${escapeAttribute(orderId)}">Reimprimir</button>` : ''}
+          ${view.actions.viewPdf ? `<button class="ghost-button compact" type="button" data-order-fiscal-pdf="${escapeAttribute(state.document.artifact_id)}">Ver PDF</button>` : ''}
+        </div>
+      </div>`;
+}
+
 function businessOrderMarkup(order, attention = []) {
   const next = canAdvanceProductionBusinessOrder(order, businessPayments)
     ? nextBusinessStatus(order)
@@ -3424,6 +3562,7 @@ function businessOrderMarkup(order, attention = []) {
         })[order.manualPaymentStatus] || 'Cobro sin verificar')}</strong>
         <button class="ghost-button compact" type="button" data-business-ops-view="payments">Ver cobros</button>
       </div>` : ''}
+      ${renderOrderFiscalBlock(order)}
       <p class="production-order-address" data-mode="${esRetiro ? 'pickup' : 'delivery'}">${escapeHtml(domicilio)}</p>
       ${hasCustomerNotes(order)
         ? `<p class="production-order-notes"><strong>Observaciones:</strong> ${escapeHtml(order.notes)}</p>`

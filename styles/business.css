@@ -1139,6 +1139,64 @@ body[data-active-view="business"] .topbar-ops-sound-count {
   font-weight: 750;
 }
 
+/* --------------------------------------------------------------------------
+   LA FACTURA DEL PEDIDO.
+   El estado sale de la base (get_order_fiscal_states), no de la tarjeta. La
+   homologación se marca siempre: un CAE de prueba no puede parecer una factura
+   real.
+   -------------------------------------------------------------------------- */
+.production-order-fiscal {
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--panel-line, rgb(255 255 255 / 12%));
+  border-radius: 10px;
+}
+
+.production-order-fiscal p {
+  margin: 0;
+}
+
+.production-order-fiscal-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.production-order-fiscal [data-fiscal-tone="success"] { color: var(--panel-success, #5fd08a); }
+.production-order-fiscal [data-fiscal-tone="warning"] { color: var(--panel-warning, #f0b35a); }
+.production-order-fiscal [data-fiscal-tone="danger"] { color: var(--panel-danger, #ff7a80); }
+.production-order-fiscal [data-fiscal-tone="info"] { color: var(--panel-ink, #eceef1); }
+
+.fiscal-simulation-badge {
+  padding: 2px 8px;
+  border: 1px dashed currentColor;
+  border-radius: 999px;
+  color: var(--panel-warning, #f0b35a);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.production-order-fiscal-number,
+.production-order-fiscal-reasons {
+  color: var(--panel-ink-2, #b6bcc4);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.production-order-fiscal-reasons {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.production-order-fiscal-print {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
 /* El destino. En un retiro no hay nada que llevar, así que la línea se apaga:
    es contexto, no una dirección a la que ir. */
 .production-order-address[data-mode="pickup"] {

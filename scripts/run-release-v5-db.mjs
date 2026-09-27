@@ -169,6 +169,9 @@ try {
     // Ni pgTAP puede probar el Panel, el celular, WhatsApp y una automatizacion pidiendo la misma factura a la vez.
     const { runFiscalIntentRace } = await import('./fiscal-core/intent-race.mjs');
     await runFiscalIntentRace(() => localClient(container));
+    // Lo mismo para un pedido online: 10/50/100 pedidos por canal, un comprobante, ninguna venta POS.
+    const { runOrderIntentRace } = await import('./fiscal-core/order-intent-race.mjs');
+    await runOrderIntentRace(() => localClient(container));
 
     // Drill the exact compensating rollback in the same isolated schema where
     // the forward migration and its pgTAP contract just passed. The first run

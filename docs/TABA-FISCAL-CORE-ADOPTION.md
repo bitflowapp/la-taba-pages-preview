@@ -21,13 +21,13 @@ producción, no habilita ARCA en producción y no define política contable.**
 
 | | |
 |---|---|
-| TABA_MAIN_SHA | `fc97f633f0e26b59ad57cc661ff69931004583c1` |
-| CURRENT_MIGRATION_HEAD | `20260926160000_local_print_agent.sql` (140 migraciones; es también la cabeza aplicada en CONTROLLED_PRODUCTION) |
+| TABA_MAIN_SHA | `fc97f633f0e26b59ad57cc661ff69931004583c1` al inventariar. La rama se rebasó después sobre `c375eca0745987d854b94d611b9a199ede8d0670` (#108 catálogo, #109 documentación, #110 CI): sus 3 migraciones de catálogo no tocan objetos fiscales y la adopción queda después de ellas |
+| CURRENT_MIGRATION_HEAD | al inventariar, `20260926160000_local_print_agent.sql` (140). Base actual del PR, `20260927005628_cp_published_requires_approved_image.sql` (143), que es la cabeza aplicada en CONTROLLED_PRODUCTION (`docs/catalog/CATALOG-EDITOR-CP-BASELINE-2026-09.md`). Con la adopción: 149 |
 | FISCAL_MIGRATIONS_PRESENT | `20260802160000_business_windows_scanner_fiscal`, `20260802170000_fiscal_document_closure`, `20260802171000_fiscal_document_closure_hardening`, `20260805120000_fiscal_homologation_authorization_split`, `20260816121000_fiscal_profile_events_least_privilege`, `20260926160000_local_print_agent` |
 | FISCAL_WORKER_VERSION | copia de La Taba en `services/arca-fiscal-bridge`: el worker del core **anterior** a su PR #1 (el core se extrajo de ahí). No desplegado. Contrato viejo: `claim_fiscal_outbox(text,integer,integer)`, `reserve_fiscal_document_number(uuid,text,bigint)`, `complete_fiscal_attempt(uuid,text,jsonb)` |
 | CORE_SHA | `26d2f4cb9e379789b52e4a85e88f39910b0e852f` |
 | CORE_MIGRATIONS_REQUIRED_BY_LA_TABA | efectos de `20260926170000` … `20260926220000` del core (seis archivos, ver §2). `20260926221000` y `20260803000000` no hacen falta |
-| Baseline (main, antes de tocar nada) | unit 2656/2656 · `npm run check` PASS · pgTAP canónico 524/524 (PG17 + shim local) · worker viejo 22/22 · CI de main: web PASS, job de base falló por `toomanyrequests` de ECR (infraestructura, no código) |
+| Baseline (main en `fc97f63`, antes de tocar nada) | unit 2656/2656 · `npm run check` PASS · pgTAP canónico 524/524 (PG17 + shim local) · worker viejo 22/22 · CI de main: web PASS, job de base falló por `toomanyrequests` de ECR (infraestructura, no código) |
 
 ## 2. Qué se adoptó y cómo
 
@@ -301,9 +301,12 @@ Todo corre sobre la cadena **real** de La Taba, no sobre los stubs del core.
 | `scripts/fiscal-core/intent-race.mjs` | 10/50/100 pedidos simultáneos por los 4 canales → 1 comprobante; 12 workers → 1 reclamo, 1 número, 1 autorización; aislamiento | CI (después del pgTAP) |
 | `npm run fiscal:core:verify` | el worker **canónico** del core contra La Taba (§10) | local (el repo del core es privado: CI no puede clonarlo sin secretos, y `tests/ci-workflow` los prohíbe) |
 
-El total canónico de pgTAP que exige `scripts/run-release-v5-db.mjs` es 617. La fixture
-de filas heredadas se carga en la cabeza `20260926160000`, **antes** de las migraciones de
-adopción.
+El total canónico de pgTAP que exige `scripts/run-release-v5-db.mjs` es 635: 542 de main
+más 55 + 24 + 14.
+
+La fixture de filas heredadas se carga justo antes de la primera migración de adopción
+(`*_fiscal_core_*`), sobre el esquema de main de ese momento (hoy, después de las de
+catálogo). La carga `postgres` sin superusuario, como en CI.
 
 **Upgrade** (`supabase/tests/fixtures/fiscal_core_legacy_rows.sql`):
 
@@ -426,7 +429,7 @@ Nada de esto está hecho: requiere revisión y merge de esta PR.
 4. **Aplicar el delta.**
    - `supabase db push --linked --dry-run` tiene que listar **exactamente** los 6 archivos
      `20260927050851` … `20260927050921`.
-   - Después, `supabase db push --linked`. Ledger 146 = 146.
+   - Después, `supabase db push --linked`. Ledger 149 = 149 (CONTROLLED_PRODUCTION tiene 143).
 5. **Validar las RPC en el destino.**
    - Las firmas nuevas existen y las viejas no (`to_regprocedure`).
    - Sin sobrecargas.
@@ -436,6 +439,7 @@ Nada de esto está hecho: requiere revisión y merge de esta PR.
      `docs/CONTROLLED-PRODUCTION-STATUS.md`).
 6. **Web.** Desplegar el commit mergeado. No cambia nada visible, pero el ensayo de rollback
    exige que la web corresponda al grafo de migraciones (`ROLLBACK_DB_GRAPH_INCOMPATIBLE`).
+   Ese despliegue es la nueva baseline de rollback: el primero compatible con las 149.
 7. **Worker canónico, solo homologación.**
    - Del checkout en el SHA de `fiscal-core.json`, según el runbook: chequeo de credenciales
      y FEDummy (AppServer/DbServer/AuthServer OK).

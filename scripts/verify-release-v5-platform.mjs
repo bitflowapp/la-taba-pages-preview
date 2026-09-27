@@ -78,7 +78,9 @@ if(!result.headers.get('cache-control').includes('no-store')) throw new Error('u
 const missing=await handler(new Request('https://fixture.invalid/__taba_release_v5'));
 if(missing.status!==400)throw new Error('unbounded nonce');
 console.log('REAL_DENO_NON_MUTATING_RUNTIME_PROBE: PASS');\n`);
-  const image='public.ecr.aws/supabase/edge-runtime:v1.74.3';
+  // Supabase's official v1.74.3 GHCR package, pinned by its immutable digest.
+  // GitHub-hosted runners can exhaust the public ECR download quota.
+  const image='ghcr.io/supabase/edge-runtime@sha256:c52405002a890ca9fcf77978671c57f3a988e03174afb277f84ac65bc917013c';
   try {
     execFileSync('docker', ['image', 'inspect', image], { stdio: 'pipe', windowsHide: true });
   } catch {

@@ -98,6 +98,10 @@ select ok(not exists (select 1 from public.fiscal_documents d join t_doc t on t.
   'ningun estado invalido: registro de envios y PDF consistentes');
 
 -- ══ EL WORKER CANONICO RETOMA EL TRABAJO ═════════════════════════════════════
+-- El tiempo pasa antes de que vuelva el worker: vencen las esperas heredadas (L2 quedo con
+-- un reintento a +1 minuto). Sin esto la prueba dependeria de cuanto tardo la migracion.
+update public.fiscal_outbox set next_attempt_at = now() - interval '1 second'
+ where state in ('pending','retry_wait') and fiscal_document_id in (select id from t_doc);
 set local role service_role;
 set local request.jwt.claims = '{"role":"service_role"}';
 create temporary table t_claim on commit drop as

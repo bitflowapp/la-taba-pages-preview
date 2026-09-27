@@ -11,10 +11,12 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
 test('el paquete de release incluye las tres rutas de retorno de Mercado Pago', () => {
   const builder = read('scripts/create-release-folder.mjs');
   assert.match(builder, /['"]pago['"]/);
+  const cssVersion = /href="styles\.css\?v=(\d+)"/.exec(read('index.html'))?.[1];
+  assert.ok(cssVersion, 'el shell declara una versión CSS');
 
   for (const state of ['resultado', 'pendiente', 'error']) {
     const page = read(`pago/${state}/index.html`);
-    assert.match(page, /href="\.\.\/\.\.\/styles\.css\?v=61"/);
+    assert.ok(page.includes(`href="../../styles.css?v=${cssVersion}"`));
     assert.match(page, /src="\.\.\/\.\.\/js\/payments\/mercadopago-return\.js"/);
   }
 });
@@ -30,7 +32,8 @@ test('el worker conserva una página y el módulo del retorno para cada vuelta o
 
 test('el preflight acepta la versión CSS que exige el candidato', () => {
   const preflight = read('scripts/preflight-staging-package.mjs');
-  assert.match(preflight, /css:\s*'\?v=61'/);
+  const cssVersion = /href="styles\.css\?v=(\d+)"/.exec(read('index.html'))?.[1];
+  assert.ok(preflight.includes(`css: '?v=${cssVersion}'`));
 
   // Antes esto miraba la FORMA: buscaba el literal '50' dentro de una lista
   // escrita a mano. Esa lista dejó de existir —las versiones permitidas ahora se

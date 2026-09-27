@@ -29,7 +29,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(26);
+select plan(40);
 
 -- ── Fixture: dos comercios, tres personas ───────────────────────────────────
 --
@@ -298,6 +298,70 @@ select is(
   (select count(distinct business_id) from public.products where sku = 'lavandina-ayudin-1000ml'),
   2::bigint,
   'y cada uno quedo en su propio comercio');
+
+-- ── 10 · STOCK PENDIENTE Y EDICION COMERCIAL EN LOTE ────────────────────────
+select ok(public.commercial_catalog_parse_stock('{"stock":null}'::jsonb) is null,
+  'stock NULL sigue sin contar');
+select ok(public.commercial_catalog_parse_stock('{}'::jsonb) is null,
+  'stock ausente tambien significa sin contar');
+select is(public.commercial_catalog_parse_stock('{"stock":0}'::jsonb), 0,
+  'stock cero queda agotado confirmado');
+select is(public.commercial_catalog_parse_stock('{"stock":5}'::jsonb), 5,
+  'stock cinco queda contado');
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"91000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"93000000-0000-4000-8000-00000000000a"}';
+select is((select count(*) from public.apply_commercial_catalog_batch(
+  '92000000-0000-4000-8000-00000000000a',
+  '[{"sku":"gaseosa-vieja-1500ml","stock":9},{"sku":"lavandina-ayudin-1000ml","price":"1200"}]'::jsonb)),
+  2::bigint, 'dos cambios comerciales entran en una llamada atomica');
+reset role;
+select is((select price_status from public.products where business_id='92000000-0000-4000-8000-00000000000a'
+  and sku='lavandina-ayudin-1000ml'), 'confirmed', 'un precio valido confirma el estado');
+select is((select available from public.products where business_id='92000000-0000-4000-8000-00000000000a'
+  and sku='lavandina-ayudin-1000ml'), false, 'guardar el precio no publica');
+
+insert into public.products(business_id,sku,external_id,name,category,price,price_status,stock,
+  is_active,available,is_verified,is_alcoholic,catalog_origin)
+select '92000000-0000-4000-8000-00000000000a',
+  'catalog-bulk-' || lpad(n::text,2,'0'), 'catalog-bulk-' || lpad(n::text,2,'0'),
+  'Producto bulk ' || n, 'Gaseosas', 0, 'pending', null, true, false, false, false, 'commercial'
+from generate_series(1,20) n;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"91000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"93000000-0000-4000-8000-00000000000a"}';
+select is((select count(*) from public.apply_commercial_catalog_batch(
+  '92000000-0000-4000-8000-00000000000a',
+  (select jsonb_agg(jsonb_build_object('sku',sku,'stock',5) order by sku)
+     from public.products where business_id='92000000-0000-4000-8000-00000000000a'
+       and sku like 'catalog-bulk-%'))),
+  20::bigint, 'veinte cambios comerciales entran en una transaccion');
+reset role;
+select is((select count(*) from public.products where business_id='92000000-0000-4000-8000-00000000000a'
+  and sku like 'catalog-bulk-%' and stock=5),20::bigint,'los veinte stocks quedan contados');
+select is((select count(*) from public.products where business_id='92000000-0000-4000-8000-00000000000a'
+  and sku like 'catalog-bulk-%' and available),0::bigint,'ningun cambio masivo publica');
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"91000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"93000000-0000-4000-8000-00000000000a"}';
+select throws_ok(
+  $$select count(*) from public.apply_commercial_catalog_batch(
+    '92000000-0000-4000-8000-00000000000a',
+    '[{"sku":"catalog-bulk-01","stock":7},{"sku":"no-existe-en-el-lote","stock":1}]'::jsonb)$$,
+  'P0001', null, 'un fallo parcial rechaza el lote entero');
+reset role;
+select is((select stock from public.products where business_id='92000000-0000-4000-8000-00000000000a'
+  and sku='catalog-bulk-01'),5,'el cambio valido del lote fallido se deshizo');
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"91000000-0000-4000-8000-000000000002","role":"authenticated","session_id":"93000000-0000-4000-8000-00000000000b"}';
+select throws_ok(
+  $$select count(*) from public.apply_commercial_catalog_batch(
+    '92000000-0000-4000-8000-00000000000a',
+    '[{"sku":"catalog-bulk-01","stock":8}]'::jsonb)$$,
+  'P0001', null, 'owner del negocio B no edita el negocio A');
+reset role;
+select is((select stock from public.products where business_id='92000000-0000-4000-8000-00000000000a'
+  and sku='catalog-bulk-01'),5,'el intento cruzado no dejo escritura');
 
 select * from finish();
 rollback;

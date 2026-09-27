@@ -1,0 +1,33 @@
+{
+  "verified_at_utc": "2026-09-27T01:09:04Z",
+  "project_ref": "tkanbadcglszlcyfjvpv",
+  "business_id": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+  "source": "docs/catalog/catalog-source-2026-09.json",
+  "candidate_payload_sha256": "6bcafa8ecfb0e41e25ffbf0f6ddce3a6a8516d3afe4497bdad376004c6376e0d",
+  "pre_import_backup": "docs/catalog/catalog-backup-cp-2026-09-26-pre-import.json",
+  "migration_versions": [
+    "20260927004045_catalog_pending_stock_and_cp_drafts",
+    "20260927004347_catalog_draft_juice_taxonomy",
+    "20260927005628_cp_published_requires_approved_image"
+  ],
+  "first_import": { "created": 46, "reused": 0, "matched": 46 },
+  "idempotent_retry": { "created": 0, "reused": 46, "matched": 46 },
+  "database_verification": {
+    "products": 46,
+    "unique_skus": 46,
+    "unique_brand_name_variant_size": 46,
+    "price_status_pending": 46,
+    "unknown_stock_null": 46,
+    "published": 0,
+    "verified": 0,
+    "image_associations": 0
+  },
+  "anonymous_public_product_count": 0,
+  "business_state": {
+    "status": "closed",
+    "ordering_enabled": false,
+    "alcohol_sales_enabled": false
+  },
+  "owner_admin_members": 0,
+  "note": "Rows are commercial draft records in public.products. No rows were inserted into catalog_product_drafts; the existing importer model uses hidden, unverified products as commercial drafts. A CP-specific constraint now requires an approved bound image before any row can become public."
+}

@@ -1,0 +1,10 @@
+{
+  "captured_at_utc": "2026-09-27T00:42:10Z",
+  "project_ref": "tkanbadcglszlcyfjvpv",
+  "business_id": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+  "scope": "Controlled Production business catalog immediately before the first technical draft import",
+  "products": [],
+  "catalog_assets": [],
+  "catalog_product_drafts": [],
+  "source": "Read-only Supabase SQL snapshot; all three arrays were empty after the stock-contract migration and before data import."
+}

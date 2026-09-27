@@ -1,25 +1,25 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v120-map-off-boot-path';
+const CACHE_NAME = 'la-taba-runtime-v121-commercial-catalog-editor';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=61',
-  './styles/tokens.css?v=61',
-  './styles/common.css?v=61',
-  './styles/storefront.css?v=61',
-  './styles/catalog.css?v=61',
-  './styles/checkout.css?v=61',
-  './styles/profile.css?v=61',
-  './styles/showcase.css?v=61',
-  './styles/tracking.css?v=61',
-  './styles/business.css?v=61',
-  './styles/rider.css?v=61',
-  './styles/responsive.css?v=61',
-  './styles/brand-home.css?v=61',
+  './styles.css?v=62',
+  './styles/tokens.css?v=62',
+  './styles/common.css?v=62',
+  './styles/storefront.css?v=62',
+  './styles/catalog.css?v=62',
+  './styles/checkout.css?v=62',
+  './styles/profile.css?v=62',
+  './styles/showcase.css?v=62',
+  './styles/tracking.css?v=62',
+  './styles/business.css?v=62',
+  './styles/rider.css?v=62',
+  './styles/responsive.css?v=62',
+  './styles/brand-home.css?v=62',
   // `styles.css` la importa desde que existe y nunca estuvo acá: sin red, la
   // home se quedaba sin la capa de movimiento. Lo destapó el guard de la
   // cadena de CSS versionado; no lo introdujo esta integración.
-  './styles/motion.css?v=61',
+  './styles/motion.css?v=62',
   './manifest.webmanifest',
   './runtime-config.js?tenant=walter-staging',
   './pago/resultado/index.html',
@@ -210,6 +210,7 @@ const ASSETS = [
   './js/business/business-access-inbox.js',
   './js/business/business-access-registration.js',
   './js/business/business-capabilities.js',
+  './js/business/business-catalog-editor.js',
   './js/business/business-command-outbox.js',
   './js/business/business-connectivity.js',
   './js/business/business-day-control.js',
@@ -410,7 +411,7 @@ async function cachePrimero(request) {
  * Cuatro segundos: bien por debajo de los ocho que espera `startup-recovery.js`
  * antes de dar el arranque por perdido, y muy por encima de cualquier respuesta
  * sana. El costo de equivocarse es casi nulo: el precache está versionado
- * (`?v=61`), así que una copia guardada es el MISMO contenido que iba a traer la
+ * (versión 62 y CACHE_NAME), así que una copia guardada es el MISMO contenido que iba a traer la
  * red, no una versión vieja.
  */
 const PLAZO_DE_RED_MS = 4000;

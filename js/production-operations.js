@@ -1466,6 +1466,8 @@ async function configureBusinessRuntime(result) {
     operatorId,
     getOrders: () => getState().orders,
     lookupBarcode: (gtin) => inventoryRepository.lookupBarcode(gtin),
+    listCatalogProducts: () => inventoryRepository.listCatalogProducts(),
+    saveCommercialBatch: (rows) => inventoryRepository.saveCommercialBatch(rows),
     createProductDraft: (input) => inventoryRepository.createProductDraft(input),
     publishProductDraft: (input) => inventoryRepository.publishProductDraft(input),
     applyInventoryMovement: (input) => inventoryRepository.applyMovement(input),
@@ -2455,7 +2457,7 @@ function restaurarFoco(workspace, foco) {
  */
 export const BUSINESS_VIEW_ORDER = Object.freeze([
   'day-open', 'operation-center', 'orders', 'team-access', 'payments', 'packing', 'pos', 'scanner',
-  'product-create', 'inventory-receive', 'inventory-adjust', 'stock-count',
+  'catalog', 'product-create', 'inventory-receive', 'inventory-adjust', 'stock-count',
   'fiscal-status', 'fiscal-setup', 'fiscal-config', 'operations-config', 'payments-setup',
   'devices', 'day-close',
 ]);
@@ -2468,7 +2470,7 @@ export const BUSINESS_VIEW_ORDER = Object.freeze([
  */
 const BUSINESS_VIEW_SHORT_LABELS = Object.freeze({
   'day-open': 'Abrir', 'operation-center': 'Qué pasa', orders: 'Pedidos', payments: 'Pagos',
-  'product-create': 'Nuevo producto', 'inventory-receive': 'Recepción',
+  'catalog': 'Catálogo', 'product-create': 'Nuevo producto', 'inventory-receive': 'Recepción',
   'team-access': 'Solicitudes', 'day-close': 'Cerrar',
 });
 

@@ -28,10 +28,11 @@ import {
 } from './business-operations-config.js';
 import { buildAlwaysOpenGrid } from '../core/service-hours.js';
 import { onlinePaymentsEnabled } from '../core/runtime-config.js';
+import { buildCommercialEdit, catalogPublicationReadiness, normalizeCatalogProduct, renderCatalogEditor } from './business-catalog-editor.js';
 
 export const BUSINESS_OPERATION_VIEWS = Object.freeze([
   'operation-center', 'day-open', 'orders', 'operations-config', 'payments', 'payments-setup', 'scanner', 'product-create',
-  'inventory-receive', 'inventory-adjust', 'stock-count', 'packing', 'pos',
+  'catalog', 'inventory-receive', 'inventory-adjust', 'stock-count', 'packing', 'pos',
   'fiscal-status', 'fiscal-setup', 'fiscal-config', 'devices', 'team-access', 'day-close',
 ]);
 
@@ -44,6 +45,7 @@ const VIEW_META = Object.freeze({
   'payments-setup': ['Conectar Mercado Pago', null],
   scanner: ['Escáner rápido', 'product_lookup'],
   'product-create': ['Alta de producto', 'product_create'],
+  catalog: ['Catálogo', null],
   'inventory-receive': ['Recepción', 'inventory_receive'],
   'inventory-adjust': ['Ajuste', 'inventory_adjust'],
   'stock-count': ['Conteo físico', 'stock_count'],
@@ -70,6 +72,7 @@ const VIEW_CAPABILITY = Object.freeze({
   'payments-setup': 'payments.reconcile',
   scanner: 'scanner.use',
   'product-create': 'products.draft',
+  catalog: 'products.price',
   'inventory-receive': 'inventory.receive',
   'inventory-adjust': 'inventory.receive',
   'stock-count': 'inventory.count',
@@ -161,6 +164,10 @@ let accessRequests = [];
 let accessRequestsStatus = { phase: 'idle', message: '' };
 let accessRequestsFilter = 'pending';
 let accessRequestsLoadStarted = false;
+let catalogProducts = [];
+let catalogStatus = { phase: 'idle', message: '' };
+let catalogLoadStarted = false;
+let catalogGeneration = 0;
 
 export function configureBusinessOperations(next = {}) {
   stopOperationCenterRefresh();
@@ -199,6 +206,10 @@ export function configureBusinessOperations(next = {}) {
   accessRequestsStatus = { phase: 'idle', message: '' };
   accessRequestsFilter = 'pending';
   accessRequestsLoadStarted = false;
+  catalogProducts = [];
+  catalogStatus = { phase: 'idle', message: '' };
+  catalogLoadStarted = false;
+  catalogGeneration += 1;
   return context;
 }
 
@@ -246,6 +257,9 @@ export function renderBusinessOperations(view) {
     'product-create': () => renderProductOnboardingSurface({
       plan: productPlan, draft: productDraftView, readiness: productReadiness,
       preview: productPreview, errors: productErrors, role: context.role, busy,
+    }),
+    catalog: () => renderCatalogEditor({
+      products: catalogProducts, phase: catalogStatus.phase, message: catalogStatus.message, busy,
     }),
     'inventory-receive': () => renderInventory('purchase_receipt'),
     'inventory-adjust': () => renderInventory('manual_adjustment'),
@@ -391,6 +405,10 @@ export function activateBusinessOperations(view = currentView) {
       accessRequestsLoadStarted = true;
       void refreshAccessRequests();
     }
+    if (view === 'catalog' && !catalogLoadStarted) {
+      catalogLoadStarted = true;
+      void refreshCatalogProducts();
+    }
     return;
   }
   scanner ||= createBarcodeScannerService();
@@ -480,6 +498,16 @@ export async function handleBusinessOperationsAction(target) {
   if (target.closest('[data-product-preview]')) return previewProductDraft(target);
   if (target.closest('[data-product-complete]')) return completeProductDraft(target);
   if (target.closest('[data-product-publish]')) return refreshProductReadiness();
+
+  if (target.closest('[data-catalog-refresh]')) {
+    await refreshCatalogProducts();
+    return result(catalogStatus.phase === 'ready', catalogStatus.message);
+  }
+  const catalogSave = target.closest('[data-catalog-save]');
+  if (catalogSave) return saveCatalogEdits(target, catalogSave.dataset.catalogSave);
+  if (target.closest('[data-catalog-save-all]')) return saveCatalogEdits(target);
+  const catalogPublication = target.closest('[data-catalog-publication]');
+  if (catalogPublication) return setCatalogPublication(catalogPublication);
 
   if (target.closest('[data-payments-refresh]')) return refreshPaymentsAction();
   const manualConfirm = target.closest('[data-manual-payment-confirm]');
@@ -620,6 +648,20 @@ export async function handleBusinessOperationsAction(target) {
 }
 
 export function handleBusinessOperationsInput(target) {
+  if (target?.matches?.('[data-catalog-search]')) {
+    const root = target.closest('[data-business-ops-center]');
+    const query = String(target.value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    let visible = 0;
+    for (const row of root?.querySelectorAll('[data-catalog-row]') || []) {
+      const searchable = String(row.querySelector('.business-catalog-identity')?.textContent || '')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      row.hidden = Boolean(query) && !searchable.includes(query);
+      if (!row.hidden) visible += 1;
+    }
+    const count = root?.querySelector('[data-catalog-visible-count]');
+    if (count) count.textContent = `${visible} de ${catalogProducts.length} productos`;
+    return { handled: true };
+  }
   if (target?.matches?.('[data-barcode-input]')) {
     scannerDraftValue = String(target.value || '').slice(0, 64);
     return { handled: true };
@@ -698,6 +740,10 @@ export function resetBusinessOperationsForTests() {
   devicePrintersLoadStarted = false;
   resetProductOnboarding();
   dailyRun = null;
+  catalogProducts = [];
+  catalogStatus = { phase: 'idle', message: '' };
+  catalogLoadStarted = false;
+  catalogGeneration += 1;
 }
 
 function resetProductOnboarding() {
@@ -889,6 +935,87 @@ async function refreshLookup() {
   if (refreshed?.ok) lookup = refreshed;
 }
 
+async function refreshCatalogProducts() {
+  const generation = ++catalogGeneration;
+  const load = context.listCatalogProducts;
+  catalogStatus = { phase: 'loading', message: '' };
+  context.onChange();
+  let response;
+  try { response = await load(); }
+  catch (error) { response = { ok: false, message: error?.message || 'Error de conexión.' }; }
+  if (generation !== catalogGeneration) return response;
+  if (response?.ok) {
+    catalogProducts = Array.isArray(response.data) ? response.data : [];
+    catalogStatus = { phase: 'ready', message: '' };
+  } else {
+    catalogStatus = { phase: 'error', message: humanizeFailure(response?.message, 'No se pudo cargar el catálogo.') };
+  }
+  context.onChange();
+  return response;
+}
+
+async function saveCatalogEdits(target, onlySku = '') {
+  const guard = requireCapability('products.price');
+  if (!guard.ok) return guard.result;
+  if (busy) return result(false, 'Ya hay una actualización en curso.');
+  const root = target.closest('[data-business-ops-center]');
+  const rows = [...(root?.querySelectorAll('[data-catalog-row]') || [])]
+    .filter((row) => !onlySku || row.dataset.catalogRow === onlySku);
+  if (!rows.length) return result(false, 'No encontramos la fila del producto. Actualizá el catálogo.');
+  const patches = [];
+  for (const row of rows) {
+    const product = catalogProducts.find((item) => item.sku === row.dataset.catalogRow);
+    if (!product) return result(false, 'El producto cambió. Actualizá el catálogo.');
+    const edit = buildCommercialEdit(normalizeCatalogProduct(product), {
+      price: row.querySelector('[data-catalog-price]')?.value,
+      stock: row.querySelector('[data-catalog-stock]')?.value,
+    });
+    if (edit.error) return result(false, edit.error);
+    if (edit.value) patches.push(edit.value);
+  }
+  if (!patches.length) return result(true, 'No hay cambios para guardar.');
+  busy = true;
+  let response;
+  try { response = await context.saveCommercialBatch(patches); }
+  catch (error) { response = { ok: false, message: error?.message || 'Error de conexión.' }; }
+  finally { busy = false; }
+  if (response?.ok) {
+    await refreshCatalogProducts();
+    feedback = `${patches.length} ${patches.length === 1 ? 'producto actualizado' : 'productos actualizados'}. Precio y stock guardados sin publicar.`;
+  } else {
+    feedback = humanizeFailure(response?.message, 'No se guardaron los cambios. El lote es atómico.');
+  }
+  context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+async function setCatalogPublication(button) {
+  const guard = requireCapability('products.publish');
+  if (!guard.ok) return guard.result;
+  if (busy) return result(false, 'Ya hay una actualización en curso.');
+  const sku = button.dataset.catalogPublication;
+  const product = catalogProducts.find((item) => item.sku === sku);
+  if (!product) return result(false, 'El producto cambió. Actualizá el catálogo.');
+  const publish = button.dataset.publish === 'true';
+  if (publish) {
+    const readiness = catalogPublicationReadiness(normalizeCatalogProduct(product));
+    if (!readiness.ready) return result(false, readiness.reason);
+  }
+  busy = true;
+  let response;
+  try { response = await context.setCommercialPublication({ sku, publish }); }
+  catch (error) { response = { ok: false, message: error?.message || 'Error de conexión.' }; }
+  finally { busy = false; }
+  if (response?.ok) {
+    await refreshCatalogProducts();
+    feedback = publish ? 'Producto publicado y disponible.' : 'Producto oculto como borrador.';
+  } else {
+    feedback = humanizeCommercialPublicationFailure(response?.message, { publish });
+  }
+  context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
 async function confirmCommercialPublication(button, { confirmed = false } = {}) {
   const guard = requireCapability('products.publish');
   if (!guard.ok) return guard.result;
@@ -922,6 +1049,7 @@ async function confirmCommercialPublication(button, { confirmed = false } = {}) 
 }
 
 function commercialPublicationGate(product) {
+  if (product.stock === null) return { ok: false, message: 'Falta contar el stock antes de publicar.' };
   if (product.stock <= 0) return { ok: false, message: 'No se puede publicar sin stock. Registrá primero la recepción física.' };
   if (product.catalogOrigin !== 'commercial') return { ok: false, message: 'Este producto todavía no pertenece al catálogo comercial.' };
   if (!product.isVerified) return { ok: false, message: 'Faltan verificar los datos maestros del producto.' };
@@ -952,6 +1080,7 @@ async function confirmStockCount(target) {
   const physical = Number(root?.querySelector('[name="physicalStock"]')?.value);
   const product = normalizedProduct(lookup.data);
   if (!Number.isSafeInteger(physical) || physical < 0) return result(false, 'Ingresá el stock físico contado.');
+  if (product.stock === null) return result(false, 'El stock anterior no está contado. Un owner/admin puede fijar el primer conteo desde Catálogo.');
   const difference = physical - product.stock;
   if (difference === 0) return result(true, 'Conteo sin diferencias; no se creó un movimiento.');
   const response = await context.applyInventoryMovement({
@@ -1664,7 +1793,7 @@ function normalizedProduct(binding) {
     sku: String(product.sku || ''),
     name: String(product.name || 'Producto'),
     presentation: String(product.presentation || binding.package_type || ''),
-    stock: Number.isInteger(product.stock) ? product.stock : Number(product.stock || 0),
+    stock: product.stock === null || product.stock === undefined ? null : Number(product.stock),
     available: product.available === true,
     isVerified: product.is_verified === true,
     isActive: product.is_active !== false,
@@ -1695,6 +1824,9 @@ function renderCommercialPublicationStatus() {
       ${canPublish && !pendingCommercialHide ? `<button class="secondary-button" type="button" data-commercial-publish="false">Ocultar de la tienda</button>` : ''}
       ${canPublish && pendingCommercialHide ? `<div class="business-commercial-confirm" role="alert"><strong>¿Ocultar ${escapeHtml(product.name)} de la tienda?</strong><span>No modifica el stock.</span><div class="button-row"><button class="secondary-button" type="button" data-commercial-publish-confirm="false">Sí, ocultar</button><button class="ghost-button" type="button" data-commercial-publish-cancel>Cancelar</button></div></div>` : ''}
     </div>`;
+  }
+  if (product.stock === null) {
+    return `<div class="business-commercial-publication is-not-ready"><strong>Sin contar</strong><span>El stock todavía no fue confirmado.</span></div>`;
   }
   if (product.stock <= 0) {
     return `<div class="business-commercial-publication is-out-of-stock">
@@ -2720,6 +2852,8 @@ function defaultContext() {
     completeScannedProduct: async () => ({ ok: false, message: 'El alta de producto no está disponible.' }),
     getScannedProductReadiness: async () => ({ ok: false, message: 'El estado de publicación no está disponible.' }),
     businessId: '', operatorId: '', getOrders: () => [], lookupBarcode: async () => ({ ok: true, data: null }),
+    listCatalogProducts: async () => ({ ok: false, message: 'El catálogo no está disponible.' }),
+    saveCommercialBatch: async () => ({ ok: false, message: 'La edición comercial no está disponible.' }),
     createProductDraft: async () => ({ ok: false, message: 'Repositorio no disponible.' }), publishProductDraft: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     applyInventoryMovement: async () => ({ ok: false, message: 'Repositorio no disponible.' }), checkoutPos: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
     setCommercialPublication: async () => ({ ok: false, message: 'Repositorio no disponible.' }),

@@ -80,7 +80,7 @@ export function tieneImagen(producto) {
 /** CP no puede interpretar stock vacío como cero: NULL significa no contado. */
 export async function cpConservaStockPendiente() {
   const [contrato] = await consultar(`
-    select position('v_stock := null' || chr(59) in pg_get_functiondef(p.oid)) > 0 as conserva_null,
+    select position('v_stock := public.commercial_catalog_parse_stock(v_row)' || chr(59) in pg_get_functiondef(p.oid)) > 0 as conserva_null,
            position('v_stock := 0' || chr(59) in pg_get_functiondef(p.oid)) > 0 as inventa_cero
       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname = 'public' and p.proname = 'apply_commercial_catalog_plan'`,

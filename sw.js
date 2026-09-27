@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v123-commercial-catalog-editor';
+const CACHE_NAME = 'la-taba-runtime-v125-checkout-saved-profile';
 const ASSETS = [
   './',
   './index.html',

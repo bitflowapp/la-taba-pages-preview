@@ -11,7 +11,7 @@
 --   3. aislamiento: el negocio A ve y reclama sólo lo suyo; B, el repartidor,
 --      el cliente y anon no ven nada;
 --   4. un ticket fiscal sólo existe con CAE, y su QR es el mismo que genera el
---      worker fiscal (services/arca-fiscal-bridge/src/qr.ts);
+--      worker fiscal canonico (bitflowapp/taba-fiscal, services/arca-fiscal-bridge/src/qr.ts);
 --   5. la impresión automática nunca frena un pedido.
 --
 -- anon se verifica con has_*_privilege: un `set local role anon` seguido de

@@ -1,7 +1,8 @@
 # Facturación ARCA · diseño verificado (septiembre 2026)
 
 Complementa [`README.md`](README.md) y [`credit-notes-and-homologation.md`](credit-notes-and-homologation.md),
-que describen el worker `services/arca-fiscal-bridge` y el esquema fiscal. Este
+que describen el worker `services/arca-fiscal-bridge` (hoy el canonico de `bitflowapp/taba-fiscal`, ver
+[`docs/TABA-FISCAL-CORE-ADOPTION.md`](../TABA-FISCAL-CORE-ADOPTION.md)) y el esquema fiscal. Este
 documento re-verifica ese diseño contra la documentación oficial **vigente** y
 fija las decisiones que faltaban (dónde corre, estados, reembolsos, homologación).
 

@@ -24,7 +24,9 @@ test('release candidate CI validates pull requests without deploy permissions', 
   assert.match(ci, /npm run migrations:validate/);
   assert.match(ci, /npm run catalog:images:verify/);
   assert.match(ci, /npm audit --omit=dev/);
-  assert.match(ci, /npm --prefix services\/arca-fiscal-bridge audit --omit=dev/);
+  // El worker fiscal canonico vive en bitflowapp/taba-fiscal (fiscal-core.json): La Taba no
+  // compila, audita ni prueba una copia propia que pueda divergir.
+  assert.doesNotMatch(ci, /services\/arca-fiscal-bridge|fiscal:build|fiscal:test/);
   // La traza pasó de `retain-on-failure` a `on-first-retry` al adoptar
   // `retries: 1` en CI: con reintentos, el intento que hay que poder mirar es
   // JUSTO el que se recupera —la prueba inestable—, y ese es el que graba esta

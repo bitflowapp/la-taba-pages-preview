@@ -222,11 +222,16 @@ async function measureBrowserProfile(browserInstance, profile) {
 }
 
 async function measureFiscalPdf() {
-  const modulePath = path.join(root, 'services', 'arca-fiscal-bridge', 'dist', 'src', 'pdf.js');
+  // El PDF fiscal lo genera el worker canonico de bitflowapp/taba-fiscal (fiscal-core.json).
+  const fiscalDir = process.env.TABA_FISCAL_DIR;
+  if (!fiscalDir) {
+    return notRun('fiscal_pdf_generation', 'El worker fiscal canonico vive en bitflowapp/taba-fiscal: definir TABA_FISCAL_DIR (checkout en el SHA de fiscal-core.json, compilado) para medir el PDF.');
+  }
+  const modulePath = path.join(fiscalDir, 'services', 'arca-fiscal-bridge', 'dist', 'src', 'pdf.js');
   try {
     await fs.access(modulePath);
   } catch (_) {
-    return notRun('fiscal_pdf_generation', 'El bridge TypeScript compilado no existe; ejecutar npm run fiscal:build antes de medir.');
+    return notRun('fiscal_pdf_generation', 'El worker canonico no esta compilado en TABA_FISCAL_DIR; ejecutar npm run build en services/arca-fiscal-bridge antes de medir.');
   }
   const { createAuthorizedFiscalPdf, sha256Pdf, FISCAL_PDF_GENERATOR_VERSION } = await import(pathToFileURL(modulePath));
   const qr = {

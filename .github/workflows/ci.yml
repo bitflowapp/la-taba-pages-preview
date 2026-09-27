@@ -42,9 +42,6 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Install fiscal bridge dependencies
-        run: npm --prefix services/arca-fiscal-bridge ci --no-audit --no-fund
-
       # Los dos motores que declara playwright.config.mjs, y por eso los dos se
       # instalan. El gate corre `npm run test:e2e` sin filtro de proyecto, así que
       # el proyecto `mobile-webkit` se ejecuta igual: con Chromium solamente,
@@ -110,15 +107,9 @@ jobs:
       - name: Production dependency audits
         run: |
           npm audit --omit=dev
-          npm --prefix services/arca-fiscal-bridge audit --omit=dev
 
       - name: Unit and contract tests
         run: npm test
-
-      - name: Build and test fiscal TypeScript service
-        run: |
-          npm run fiscal:build
-          npm run fiscal:test
 
       - name: Mercado Pago webhook signature tests
         run: npm run test:webhook

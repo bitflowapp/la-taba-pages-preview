@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "canonical_source": {
+    "repository": "bitflowapp/taba-fiscal",
+    "pull_request": 1,
+    "branch": "feat/fiscal-core-hardening",
+    "sha": "26d2f4cb9e379789b52e4a85e88f39910b0e852f"
+  },
+  "worker": {
+    "path": "services/arca-fiscal-bridge",
+    "entrypoint": "dist/src/index.js",
+    "store": "SupabaseFiscalStore (PostgREST, argumentos por nombre)",
+    "la_taba_copy": "REMOVED",
+    "verification": "npm run fiscal:core:verify (TABA_FISCAL_DIR = checkout de canonical_source.sha, compilado)"
+  },
+  "baseline_migration_head": "20260926160000_local_print_agent.sql",
+  "baseline_not_reapplied": [
+    "20260802160000",
+    "20260802170000",
+    "20260802171000",
+    "20260805120000",
+    "20260816121000",
+    "20260926160000"
+  ],
+  "core_only_not_applied": [
+    {
+      "source": "20260803000000_fiscal_profile_homologation_columns.sql",
+      "reason": "retrofechada en el core para su cadena sobre stubs; La Taba ya tiene esas columnas (las crearon sus propias migraciones)"
+    }
+  ],
+  "adopted_migrations": {
+    "20260927050851_fiscal_core_receiver_vat_condition.sql": ["20260926170000_fiscal_receiver_vat_condition.sql"],
+    "20260927050858_fiscal_core_intent_convergence.sql": ["20260926180000_fiscal_intent_convergence.sql"],
+    "20260927050904_fiscal_core_worker_fencing_and_reconciliation.sql": ["20260926190000_fiscal_worker_fencing.sql", "20260926200000_fiscal_ambiguity_reconciliation.sql"],
+    "20260927050910_fiscal_core_state_machines.sql": ["20260926210000_fiscal_state_machines.sql"],
+    "20260927050916_fiscal_core_security_hardening.sql": ["20260926220000_fiscal_security_hardening.sql"]
+  },
+  "not_adopted": [
+    {
+      "source": "20260926170000: request_fiscal_document de 5 parametros y protect_authorized_fiscal_document",
+      "reason": "transitorios: los reemplazan las versiones finales de 180000 y 210000"
+    },
+    {
+      "source": "20260926190000: firmas intermedias de claim/reserve/complete",
+      "reason": "La Taba pasa directo de las firmas del worker anterior a las finales de 200000"
+    },
+    {
+      "source": "20260926220000: las 8 policies de lectura con el rol 'viewer'",
+      "reason": "La Taba no tiene rol viewer (business_members_role_check) y ya limita las lecturas fiscales a owner/admin/staff (20260814050000): sin efecto"
+    },
+    {
+      "source": "20260926221000_commercial_notification_outbox_hardening.sql",
+      "reason": "notification_outbox es comercial y de La Taba, que ya la tiene con RLS y la misma lectura (policy 'business reads notification status')"
+    }
+  ],
+  "la_taba_extensions": [
+    {
+      "migration": "20260927050921_fiscal_core_la_taba_server_channel_guards.sql",
+      "object": "public.service_request_fiscal_document",
+      "change": "exige JWT de service_role; WHATSAPP exige actor; el actor es back office activo (owner/admin/staff) del negocio",
+      "upstream": "pendiente en bitflowapp/taba-fiscal"
+    }
+  ],
+  "intentional_differences_vs_core": [
+    "public.list_fiscal_document_artifacts(uuid): sin 'viewer'",
+    "public.authorize_fiscal_artifact_access(uuid,text): sin 'viewer'",
+    "public.service_request_fiscal_document(uuid,text,uuid,text,text,text,uuid): guardas de La Taba",
+    "8 policies de lectura fiscal: owner/admin/staff de La Taba (sin 'viewer')"
+  ],
+  "fail_closed": {
+    "online_order": "BLOCKED_PENDING_ACCOUNTING_POLICY (P0001 facturacion online requiere politica fiscal validada)",
+    "missing_accounting_policy_or_tax_snapshot": "ACCOUNTING_POLICY_REQUIRED (P0001 fiscal_policy_review_required)"
+  }
+}

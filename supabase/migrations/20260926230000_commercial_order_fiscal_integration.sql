@@ -101,6 +101,9 @@ begin
 end;
 $create_pairing_code$;
 
+-- SECURITY DEFINER en public nace ejecutable por PUBLIC/anon: el contrato es
+-- «exactamente 8 SECURITY DEFINER ejecutables por anon» (production_least_privilege_test).
+revoke all on function public.create_whatsapp_pairing_code(uuid) from public, anon, authenticated;
 grant execute on function public.create_whatsapp_pairing_code(uuid) to authenticated;
 
 -- 5. RPC comercial: Facturación de Pedido hacia Taba Fiscal
@@ -129,17 +132,26 @@ declare
   v_method text;
   v_actor_id uuid;
 begin
+  -- Validar canal y autorizar actor ANTES de tocar el pedido.
+  if coalesce(p_command_source, '') not in ('PANEL', 'MOBILE', 'WHATSAPP', 'AUTOMATION') then
+    raise exception 'canal comercial no reconocido' using errcode = '22023';
+  end if;
+
+  -- WHATSAPP / AUTOMATION son canales de servidor: sólo service_role. Esta
+  -- función es SECURITY DEFINER, así que el grant de service_request_fiscal_document
+  -- no protege nada acá: sin este control, cualquier llamador elegía el canal y
+  -- se salteaba has_business_role.
+  if p_command_source in ('WHATSAPP', 'AUTOMATION')
+     and coalesce(public.identity_jwt_claims() ->> 'role', '') <> 'service_role' then
+    raise exception 'canal de servidor no autorizado' using errcode = '42501';
+  end if;
+
   -- Serializar operación por pedido para evitar carreras concurrentes en la creación de la venta
   perform pg_advisory_xact_lock(hashtextextended('taba:bill-order:' || p_order_id::text, 0));
 
   select * into v_order from public.orders where id = p_order_id for update;
   if not found then
     raise exception 'pedido no encontrado' using errcode = 'P0002';
-  end if;
-
-  -- Validar canal y autorizar actor
-  if coalesce(p_command_source, '') not in ('PANEL', 'MOBILE', 'WHATSAPP', 'AUTOMATION') then
-    raise exception 'canal comercial no reconocido' using errcode = '22023';
   end if;
 
   if p_command_source in ('PANEL', 'MOBILE') then
@@ -275,6 +287,7 @@ begin
 end;
 $bill_order$;
 
+revoke all on function public.bill_commercial_order(uuid, text, text, boolean) from public, anon, authenticated;
 grant execute on function public.bill_commercial_order(uuid, text, text, boolean) to authenticated;
 grant execute on function public.bill_commercial_order(uuid, text, text, boolean) to service_role;
 

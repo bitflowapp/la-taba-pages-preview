@@ -28,6 +28,7 @@ export const ENCODING_SCOPES = [
   'supabase/tests',
   'scripts/fiscal-core',
   'docs/fiscal-core',
+  'docs/TABA-FISCAL-CORE-ADOPTION.md',
   'fiscal-core.json',
 ];
 const TEXT_FILE = /\.(sql|md|json|mjs)$/;

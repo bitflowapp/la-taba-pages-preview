@@ -71,6 +71,16 @@ test('lo historico no se reaplica: las versiones de base existen y ninguna adopc
   assert.equal(new Set(versions).size, versions.length, 'versiones de migracion repetidas');
 });
 
+test('el documento de adopcion describe el mismo SHA, las mismas migraciones y los mismos bloqueos', () => {
+  const doc = fs.readFileSync(path.join(ROOT, 'docs', 'TABA-FISCAL-CORE-ADOPTION.md'), 'utf8');
+  assert.ok(doc.includes(manifest.canonical_source.sha), 'SHA del core');
+  for (const name of adoptionFiles) assert.ok(doc.includes(name.replace(/\.sql$/, '')), name);
+  for (const status of ['PRODUCTION_READY | **NO**', 'ONLINE_ORDER | **BLOCKED_PENDING_ACCOUNTING_POLICY**', 'PHYSICAL_PRINT | **NOT_VERIFIED**']) {
+    assert.ok(doc.includes(status), status);
+  }
+  assert.doesNotMatch(doc, /OVERLOAD|REVIEW \(/, 'la matriz RPC no tiene sobrecargas ni filas sin clasificar');
+});
+
 test("las migraciones de adopcion no introducen el rol 'viewer' que La Taba no tiene", () => {
   for (const name of adoptionFiles) {
     const code = fs.readFileSync(path.join(MIGRATIONS, name), 'utf8').split('\n').filter((line) => !line.trimStart().startsWith('--')).join('\n');

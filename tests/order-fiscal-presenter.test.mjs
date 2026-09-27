@@ -99,9 +99,26 @@ test('nunca se muestra SQL, SOAP, PGRST, stacks ni credenciales', () => {
   ]) {
     assert.equal(sanitizeFiscalMessage(raw), 'No se pudo completar la operación. Probá de nuevo.', raw);
   }
+  assert.equal(sanitizeFiscalMessage('Could not find the function public.request_order_invoice(p_business_id) in the schema cache'),
+    'No se pudo completar la operación. Probá de nuevo.', 'PGRST202 sin el código también es jerga');
   assert.equal(sanitizeFiscalMessage('El pedido no existe.'), 'El pedido no existe.');
-  assert.equal(presentOrderFiscalActionResult({ ok: false, code: 'P0001', message: 'fiscal_policy_review_required errcode' }),
-    'No se pudo completar la operación. Probá de nuevo.');
+});
+
+test('el resultado de una operación sale de un código conocido, nunca del texto del servidor', () => {
+  const generic = 'No se pudo completar la operación. Probá de nuevo.';
+  // Visto en la E2E contra la base: el mensaje de PostgREST no traía "PGRST" y pasaba el filtro.
+  assert.equal(presentOrderFiscalActionResult({ ok: false, code: 'PGRST202', message: 'Could not find the function public.request_order_invoice(p_business_id, p_order_id) in the schema cache' }), generic);
+  assert.equal(presentOrderFiscalActionResult({ ok: false, code: '22023', message: 'canal invalido' }), generic, 'ni siquiera un texto corto en castellano');
+  assert.equal(presentOrderFiscalActionResult({ ok: false, code: 'P0001', message: 'fiscal_policy_review_required errcode' }), generic);
+  assert.equal(presentOrderFiscalActionResult({ ok: false, code: 'SESSION_EXPIRED' }), 'La sesión venció. Volvé a iniciar sesión.');
+  assert.equal(presentOrderFiscalActionResult({ ok: false, code: 'NOT_FOUND', message: 'pedido inexistente' }), 'El pedido ya no está disponible. Actualizá la bandeja.');
+  assert.equal(presentOrderFiscalActionResult({ ok: false, code: 'SERVER_UNAVAILABLE', retryable: true, message: 'upstream request timeout' }),
+    'No hubo respuesta del servidor. Probá de nuevo en unos segundos.');
+  assert.equal(presentOrderFiscalActionResult({ ok: true }, { action: 'reprint' }), 'Reimpresión enviada a la PC de impresión.');
+  assert.equal(presentOrderFiscalActionResult({ ok: false, code: 'P0001', message: 'el trabajo original todavia esta en curso' }, { action: 'reprint' }),
+    'La impresión anterior todavía está en curso. Esperá a que termine para reimprimir.');
+  assert.equal(presentOrderFiscalActionResult({ ok: false, code: 'FORBIDDEN' }, { action: 'pdf' }), 'Tu usuario no puede ver este comprobante.');
+  assert.equal(presentOrderFiscalActionResult({ ok: false, code: 'ARTIFACT_ACCESS_UNAVAILABLE' }, { action: 'pdf' }), 'El PDF todavía no está disponible.');
 });
 
 test('el repositorio llama las RPC reales con sus nombres de argumento', async () => {

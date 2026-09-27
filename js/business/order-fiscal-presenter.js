@@ -63,10 +63,12 @@ const PRINT_STATES = Object.freeze({
 const DOCUMENT_LETTER = Object.freeze({ 1: ['Factura', 'A'], 6: ['Factura', 'B'], 11: ['Factura', 'C'], 3: ['Nota de crédito', 'A'], 8: ['Nota de crédito', 'B'], 13: ['Nota de crédito', 'C'] });
 
 // Rastros de lo que nunca se muestra: SQL, SOAP/XML, PostgREST, stacks, credenciales.
-const UNSAFE = /PGRST|SQLSTATE|violates|constraint|relation\s|function\s+\w+\(|<\/?[a-z:]+>|soap|xml|stack|\b\w*Error:|(?:file|https?):\/\/\S+:\d+|\bat\s+\S+\.(?:js|ts|mjs|cjs):\d|token|sign\b|service.?role|jwt|bearer|select\s|insert\s|update\s|delete\s|errcode|P0001|42501|23505|22023/i;
+const UNSAFE = /PGRST|SQLSTATE|schema cache|could not find|violates|constraint|relation\s|function\s+[\w.]+\(|<\/?[a-z:]+>|soap|xml|stack|\b\w*Error:|(?:file|https?):\/\/\S+:\d+|\bat\s+\S+\.(?:js|ts|mjs|cjs):\d|token|sign\b|service.?role|jwt|bearer|select\s|insert\s|update\s|delete\s|errcode|P0001|42501|23505|22023/i;
+
+const GENERIC_FAILURE = 'No se pudo completar la operación. Probá de nuevo.';
 
 /** Texto de un error del servidor, sin jerga ni secretos. */
-export function sanitizeFiscalMessage(message, fallback = 'No se pudo completar la operación. Probá de nuevo.') {
+export function sanitizeFiscalMessage(message, fallback = GENERIC_FAILURE) {
   const text = String(message ?? '').replace(/\s+/g, ' ').trim().slice(0, 160);
   return !text || UNSAFE.test(text) ? fallback : text;
 }
@@ -163,17 +165,29 @@ export function presentOrderFiscalState(state, { agent = null, inFlight = false 
   });
 }
 
-/** Resultado de una operación fiscal (pedir factura, imprimir, reimprimir) → texto. */
-export function presentOrderFiscalActionResult(result, { print = false } = {}) {
+/**
+ * Resultado de una operación fiscal (pedir factura, reimprimir, ver el PDF) → texto. Cada texto sale de un
+ * código conocido: el mensaje del servidor NO se muestra (puede traer SQL, PGRST o inglés).
+ */
+export function presentOrderFiscalActionResult(result, { print = false, action = 'invoice' } = {}) {
   if (result?.ok) {
+    if (action === 'reprint') return 'Reimpresión enviada a la PC de impresión.';
     return print ? 'Factura pedida. Se imprime cuando ARCA la autorice.' : 'Factura pedida. Queda pendiente hasta que ARCA la autorice.';
   }
   if (result?.code === 'ORDER_NOT_FISCALLY_READY') {
     const reasons = presentFiscalReasons(result.reasons);
     return reasons.length ? `No se puede facturar todavía: ${reasons.join(' · ')}` : 'No se puede facturar todavía.';
   }
-  if (result?.code === 'FORBIDDEN' || result?.code === 'SESSION_EXPIRED') return 'Tu usuario no puede facturar en este negocio.';
+  if (result?.code === 'SESSION_EXPIRED') return 'La sesión venció. Volvé a iniciar sesión.';
+  if (result?.code === 'FORBIDDEN') {
+    return { reprint: 'Tu usuario no puede reimprimir en este negocio.', pdf: 'Tu usuario no puede ver este comprobante.' }[action]
+      || 'Tu usuario no puede facturar en este negocio.';
+  }
+  if (action === 'pdf' && ['ARTIFACT_ACCESS_UNAVAILABLE', 'ARTIFACT_ACCESS_INVALID'].includes(result?.code)) return 'El PDF todavía no está disponible.';
   if (result?.code === 'REVISION_CONFLICT') return 'Otra operación está en curso. Esperá un momento y volvé a intentar.';
+  if (result?.code === 'NOT_FOUND') return 'El pedido ya no está disponible. Actualizá la bandeja.';
+  // La reimpresión solo se niega con P0001 si la impresión anterior no terminó.
+  if (action === 'reprint' && result?.code === 'P0001') return 'La impresión anterior todavía está en curso. Esperá a que termine para reimprimir.';
   if (result?.retryable) return 'No hubo respuesta del servidor. Probá de nuevo en unos segundos.';
-  return sanitizeFiscalMessage(result?.message);
+  return GENERIC_FAILURE;
 }

@@ -65,7 +65,15 @@
     "public.list_fiscal_document_artifacts(uuid): sin 'viewer'",
     "public.authorize_fiscal_artifact_access(uuid,text): sin 'viewer'",
     "public.service_request_fiscal_document(uuid,text,uuid,text,text,text,uuid): guardas de La Taba",
-    "8 policies de lectura fiscal: owner/admin/staff de La Taba (sin 'viewer')"
+    "8 policies de lectura fiscal: owner/admin/staff de La Taba (sin 'viewer')",
+    "public.complete_fiscal_artifact, public.fail_fiscal_artifact y public.request_fiscal_artifact_regeneration: conflicto con PT409 en lugar de 40001 (PostgREST reintenta 40001 hasta el 504; regla de 20260924200000_revision_conflicts_answer_409)"
+  ],
+  "upstream_pending": [
+    "PT409 (no 40001) en los conflictos de PDF y reconocerlo en el worker de PDF (ARTIFACT_LEASE_LOST_SQLSTATE)",
+    "guarda de canal de servidor de La Taba en service_request_fiscal_document (20260927050921)",
+    "acotar claim_fiscal_artifact_outbox por entorno y CUIT, como el reclamo fiscal",
+    "decidir el rol 'viewer' (La Taba no lo tiene)",
+    "validacion de default_concept en configure_fiscal_profile (La Taba la tiene; el core no)"
   ],
   "fail_closed": {
     "online_order": "BLOCKED_PENDING_ACCOUNTING_POLICY (P0001 facturacion online requiere politica fiscal validada)",

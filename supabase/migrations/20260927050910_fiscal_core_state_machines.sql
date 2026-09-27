@@ -8,6 +8,10 @@
 --  (ver docs/TABA-FISCAL-CORE-ADOPTION.md): La Taba ejecuta el mismo contrato.
 --  No se reaplica ninguna migracion historica: esto es el DELTA desde
 --  20260926160000_local_print_agent.sql (cabeza de La Taba) al contrato del core.
+--  Excepcion de La Taba (unica diferencia de codigo con la fuente): los conflictos
+--  se elevan con PT409, no con 40001. PostgREST toma 40001 como falla de
+--  serializacion y reintenta la transaccion hasta el 504 del gateway (~125 s, medido
+--  en Staging); 20260924200000_revision_conflicts_answer_409 lo prohibio en La Taba.
 --
 --  Efectos:
 --    · fiscal: queued -> authorizing|retry_wait|failed; retry_wait -> authorizing|failed; authorizing -> authorized|rejected|ambiguous|manual_review;
@@ -376,7 +380,7 @@ begin
   select o.* into v_outbox from public.fiscal_artifact_outbox o where o.id = p_artifact_outbox_id for update;
   if not found or p_lease_epoch is null or v_outbox.state <> 'leased' or v_outbox.lease_owner is distinct from p_worker_id
      or v_outbox.lease_epoch is distinct from p_lease_epoch or v_outbox.lease_deadline <= now() then
-    raise exception 'lease de artefacto invalido' using errcode = '40001';
+    raise exception 'lease de artefacto invalido' using errcode = 'PT409';
   end if;
   select d.* into v_document from public.fiscal_documents d where d.id = v_outbox.fiscal_document_id for share;
   if v_document.state not in ('authorized','credited') or v_document.cae !~ '^[0-9]{14}$' or v_document.document_number is null then
@@ -462,7 +466,7 @@ begin
   select o.* into v_outbox from public.fiscal_artifact_outbox o where o.id = p_artifact_outbox_id for update;
   if not found or p_lease_epoch is null or v_outbox.state <> 'leased' or v_outbox.lease_owner is distinct from p_worker_id
      or v_outbox.lease_epoch is distinct from p_lease_epoch then
-    raise exception 'lease de artefacto invalido' using errcode = '40001';
+    raise exception 'lease de artefacto invalido' using errcode = 'PT409';
   end if;
   v_dead_letter := not coalesce(p_retryable, true) or v_outbox.attempt_count >= 8;
   update public.fiscal_artifact_outbox

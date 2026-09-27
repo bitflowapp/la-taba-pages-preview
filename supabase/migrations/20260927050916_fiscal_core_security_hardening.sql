@@ -8,6 +8,10 @@
 --  (ver docs/TABA-FISCAL-CORE-ADOPTION.md): La Taba ejecuta el mismo contrato.
 --  No se reaplica ninguna migracion historica: esto es el DELTA desde
 --  20260926160000_local_print_agent.sql (cabeza de La Taba) al contrato del core.
+--  Excepcion de La Taba (ademas de quitar 'viewer', ver abajo): los conflictos
+--  se elevan con PT409, no con 40001. PostgREST toma 40001 como falla de
+--  serializacion y reintenta la transaccion hasta el 504 del gateway (~125 s, medido
+--  en Staging); 20260924200000_revision_conflicts_answer_409 lo prohibio en La Taba.
 --
 --  Efectos:
 --    · request_fiscal_artifact_regeneration, authorize_fiscal_artifact_access, request_credit_note, request_fiscal_print_job y
@@ -18,7 +22,7 @@
 --  No se adopta (sin efecto en La Taba o reemplazado mas adelante):
 --    · las 8 policies de lectura con el rol 'viewer': La Taba no tiene ese rol (business_members_role_check: owner|admin|staff|rider)
 --    ·   y ya limita las lecturas fiscales a owner|admin|staff (20260814050000); reescribirlas no cambia nada. Por la misma razon,
---    ·   list_fiscal_document_artifacts y authorize_fiscal_artifact_access se adoptan SIN 'viewer' (unica diferencia textual).
+--    ·   list_fiscal_document_artifacts y authorize_fiscal_artifact_access se adoptan SIN 'viewer'.
 --    · revocar EXECUTE de anon: La Taba ya lo hizo en 20260816122000; se repite igual (idempotente).
 --
 -- ============================================================================
@@ -85,7 +89,7 @@ begin
   v_has_outbox := found;
   select d.* into v_document from public.fiscal_documents d where d.id = p_fiscal_document_id for update;
   if v_document.state not in ('authorized','credited') then raise exception 'solo se regenera un comprobante autorizado' using errcode = 'P0001'; end if;
-  if v_has_outbox and v_outbox.state = 'leased' and v_outbox.lease_deadline > now() then raise exception 'ya existe una generacion en curso' using errcode = '40001'; end if;
+  if v_has_outbox and v_outbox.state = 'leased' and v_outbox.lease_deadline > now() then raise exception 'ya existe una generacion en curso' using errcode = 'PT409'; end if;
   if v_has_outbox then
     update public.fiscal_artifact_outbox
       set state = 'pending', generation_token = gen_random_uuid(), lease_owner = null, lease_deadline = null,

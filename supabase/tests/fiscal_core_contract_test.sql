@@ -23,7 +23,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(51);
+select plan(55);
 
 -- ── Fixture ────────────────────────────────────────────────────────────────
 insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
@@ -51,6 +51,7 @@ values
 
 insert into public.identity_sessions(session_id,user_id,business_id,role_at_login,client)
 values
+  ('c0c10000-0000-4000-8000-000000000001','a0c10000-0000-4000-8000-000000000001','b0c10000-0000-4000-8000-000000000001','owner','panel_web'),
   ('c0c10000-0000-4000-8000-000000000002','a0c10000-0000-4000-8000-000000000002','b0c10000-0000-4000-8000-000000000001','staff','panel_web'),
   ('c0c10000-0000-4000-8000-000000000003','a0c10000-0000-4000-8000-000000000003','b0c10000-0000-4000-8000-000000000001','rider','rider_android'),
   ('c0c10000-0000-4000-8000-000000000005','a0c10000-0000-4000-8000-000000000005','b0c10000-0000-4000-8000-000000000002','owner','panel_web'),
@@ -336,6 +337,33 @@ select ok((select artifact_state = 'artifact_pending' from public.fiscal_documen
 select throws_ok(
   format($$update public.fiscal_documents set cae = '74000000000999' where id = %L$$, pg_temp.ctx('doc')),
   '55000', 'los datos autorizados son inmutables', 'un CAE autorizado no se reescribe');
+
+-- PDF: un conflicto responde 409 al instante (PT409), nunca 40001. PostgREST toma 40001 como
+-- falla de serializacion y reintenta hasta el 504 del gateway (20260924200000_revision_conflicts_answer_409);
+-- el core usa 40001 y La Taba lo adopta con PT409.
+select is((select count(*)::integer from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname in ('public','private') and p.prosrc ~ 'errcode\s*=\s*''40001'''),
+  0, 'ninguna funcion eleva 40001: los conflictos son PT409, sin reintentos de PostgREST');
+set local role service_role;
+select pg_temp.as_service();
+select pg_temp.put('pdf_epoch', (select lease_epoch::text from public.claim_fiscal_artifact_outbox('core-contract-pdf',10,120)
+                                 where fiscal_document_id = pg_temp.ctx('doc')::uuid));
+select throws_ok(
+  format($$select public.complete_fiscal_artifact((select id from public.fiscal_artifact_outbox where fiscal_document_id = %L),'core-contract-pdf',%s,
+      jsonb_build_object('artifact_type','authorized_pdf','storage_provider','supabase_storage','storage_path','fiscal/contrato.pdf','mime_type','application/pdf',
+        'size_bytes',1024,'sha256',repeat('a',64),'generated_at',now(),'generated_by','core-contract-pdf','generation_version','contract-v1'))$$,
+    pg_temp.ctx('doc'), pg_temp.ctx('pdf_epoch')::bigint - 1),
+  'PT409', 'lease de artefacto invalido', 'un PDF de un lease viejo se rechaza con PT409');
+select throws_ok(
+  format($$select public.fail_fiscal_artifact((select id from public.fiscal_artifact_outbox where fiscal_document_id = %L),'core-contract-pdf',%s,'PDF_CONTRATO','prueba',true)$$,
+    pg_temp.ctx('doc'), pg_temp.ctx('pdf_epoch')::bigint - 1),
+  'PT409', 'lease de artefacto invalido', 'la falla de PDF de un lease viejo tambien: PT409');
+set local role authenticated;
+select pg_temp.as_staff('a0c10000-0000-4000-8000-000000000001','c0c10000-0000-4000-8000-000000000001');
+select throws_ok(
+  format($$select public.request_fiscal_artifact_regeneration(%L)$$, pg_temp.ctx('doc')),
+  'PT409', 'ya existe una generacion en curso', 'regenerar con un PDF en curso: 409 inmediato para el Panel');
+set local role postgres;
 set local role authenticated;
 select pg_temp.as_staff('a0c10000-0000-4000-8000-000000000002','c0c10000-0000-4000-8000-000000000002');
 select pg_temp.put('doc3', public.request_fiscal_document('b0c10000-0000-4000-8000-000000000001','pos_sale','d0c10000-0000-4000-8000-000000000003','invoice','core-contract:panel:0003','PANEL')->>'fiscal_document_id');

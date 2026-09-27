@@ -29,6 +29,20 @@ test('La Taba no mantiene una copia del worker fiscal ni scripts que la construy
   for (const [name, command] of Object.entries(scripts)) assert.doesNotMatch(command, /fiscal:(install|build|test)\b|arca-fiscal-bridge/, name);
 });
 
+test('el worker canonico se verifica contra el esquema de La Taba en el SHA fijado', () => {
+  const scripts = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).scripts;
+  assert.match(scripts['fiscal:core:verify'], /--experimental-transform-types .*scripts\/fiscal-core\/verify-canonical-worker\.mjs$/);
+  assert.match(manifest.worker.verification, /npm run fiscal:core:verify/);
+  const harness = fs.readFileSync(path.join(ROOT, 'scripts', 'fiscal-core', 'verify-canonical-worker.mjs'), 'utf8');
+  // El SHA sale del manifiesto (no de una copia) y la corrida exige una base local descartable.
+  assert.match(harness, /manifest\.canonical_source\.sha/);
+  assert.match(harness, /TABA_LOCAL_FISCAL_DB/);
+  assert.match(harness, /solo bases locales descartables/);
+  for (const scenario of ['E2E', 'RECOVERY_RESPONSE_LOST', 'RECOVERY_CRASH_BEFORE_PERSIST', 'CONCURRENT_WORKERS', 'TENANT_ISOLATION', 'LEGACY_WORKER_CONTRACT']) {
+    assert.match(harness, new RegExp(`FISCAL_CORE_(WORKER_)?${scenario}: PASS`), scenario);
+  }
+});
+
 test('cada migracion de adopcion existe, es posterior a la cabeza y declara su fuente', () => {
   for (const name of adoptionFiles) {
     assert.ok(migrationFiles.includes(name), `${name} no existe`);

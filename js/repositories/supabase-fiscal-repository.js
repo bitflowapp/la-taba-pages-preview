@@ -10,6 +10,23 @@ export function createSupabaseFiscalRepository({ client, businessId }) {
   }
 
   return Object.freeze({
+    // Pedidos online: el servidor evalúa, congela el origen y pide la factura al core.
+    // Si el pedido no se puede facturar, devuelve sus razones estructuradas (no se reinterpretan acá).
+    async requestOrderInvoice({ orderId, idempotencyKey, commandSource = null, print = false }) {
+      const { data, error, status } = await client.rpc('request_order_invoice', {
+        p_business_id: businessId, p_order_id: orderId, p_idempotency_key: idempotencyKey, p_command_source: commandSource, p_print: print === true,
+      });
+      if (!error) return { ok: true, data };
+      if (error.hint === 'ORDER_NOT_FISCALLY_READY') {
+        return { ok: false, retryable: false, code: 'ORDER_NOT_FISCALLY_READY', reasons: parseReadinessReasons(error.details), message: 'El pedido todavía no se puede facturar.' };
+      }
+      return classifyRpcError(error, status);
+    },
+    getOrderFiscalStates: (orderIds) => rpc('get_order_fiscal_states', { p_business_id: businessId, p_order_ids: orderIds }),
+    requestPrintJobReprint: ({ printJobId, reason, idempotencyKey }) => rpc('request_print_job_reprint', {
+      p_job_id: printJobId, p_reason: reason, p_idempotency_key: idempotencyKey,
+    }),
+    getLocalPrintStatus: () => rpc('get_local_print_status', { p_business_id: businessId }),
     configureProfile: (profile) => rpc('configure_fiscal_profile', { p_business_id: businessId, p_profile: profile }),
     requestDocument: ({ sourceType, sourceId, documentIntent = 'invoice', idempotencyKey }) => rpc('request_fiscal_document', {
       p_business_id: businessId, p_source_type: sourceType, p_source_id: sourceId, p_document_intent: documentIntent, p_idempotency_key: idempotencyKey,
@@ -66,4 +83,27 @@ export function createSupabaseFiscalRepository({ client, businessId }) {
       return error ? classifyRpcError(error, status) : { ok: true, data: Array.isArray(data) ? data : [] };
     },
   });
+}
+
+// Razones de readiness que manda el servidor (P0001 ORDER_NOT_FISCALLY_READY, en `details`).
+// Solo códigos y datos conocidos: nada del texto crudo del servidor llega a la pantalla.
+const READINESS_CODES = new Set([
+  'QA_ORDER_NOT_BILLABLE', 'ORDER_CANCELLED', 'FISCAL_PROFILE_DISABLED', 'HOMOLOGATION_NOT_AUTHORIZED', 'PRODUCTION_BLOCKED',
+  'ACCOUNTING_POLICY_REQUIRED', 'ORDER_NOT_BILLABLE_YET', 'PAYMENT_REQUIRED', 'PAYMENT_METHOD_NOT_INVOICEABLE', 'INVALID_TOTAL',
+  'INVALID_PRODUCT_REFERENCE', 'MISSING_TAX_CLASSIFICATION', 'DISCOUNT_NOT_INVOICEABLE', 'DELIVERY_NOT_INVOICEABLE',
+  'FISCAL_PARAMETERS_REQUIRED', 'RECIPIENT_DATA_REQUIRED',
+]);
+const READINESS_FIELDS = ['code', 'scope', 'payment_state', 'payment_method', 'billing_moment', 'item', 'vat_code', 'threshold', 'detail'];
+
+export function parseReadinessReasons(details) {
+  let parsed = details;
+  if (typeof details === 'string') {
+    try { parsed = JSON.parse(details); } catch { return []; }
+  }
+  if (!Array.isArray(parsed)) return [];
+  return parsed.slice(0, 20)
+    .filter((reason) => reason && typeof reason === 'object' && READINESS_CODES.has(reason.code))
+    .map((reason) => Object.fromEntries(READINESS_FIELDS
+      .filter((field) => ['string', 'number'].includes(typeof reason[field]))
+      .map((field) => [field, typeof reason[field] === 'string' ? reason[field].slice(0, 80) : reason[field]])));
 }

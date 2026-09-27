@@ -483,3 +483,23 @@ Nada de esto está hecho: requiere revisión y merge de esta PR.
 | PR #104 | cerrar (§5) |
 | Pendientes en el core | elevar `PT409` (no `40001`) en los conflictos de PDF y reconocerlo en el worker de PDF (`ARTIFACT_LEASE_LOST_SQLSTATE`); subir la guarda de canal de servidor de La Taba; acotar `claim_fiscal_artifact_outbox` por entorno/CUIT; decidir `viewer`; validación de `default_concept` |
 | Verificación del worker en CI | necesita acceso de solo lectura al repo privado del core. Hoy corre local; el resto corre en CI |
+
+## 15. Actualización V2: pedidos online (core #2 y #3)
+
+La rama `feat/taba-commercial-fiscal-v2`, apilada sobre esta adopción, fija el core en
+`bitflowapp/taba-fiscal@9fd32fd29dec4ec4c271edd90f4af2ceef73264c` (PR #3). Ese SHA está
+apilado sobre:
+
+- **#2** (`d93bcaa`): AlicIva totalizado por alícuota. El worker repetía el Id por ítem y
+  ARCA lo rechaza con 10022, según el manual WSFEv1 v4.7.
+- **#1** (`26d2f4c`): el core que adoptó #112.
+
+Se adopta por efectos, con el mismo criterio de las secciones 2 y 3:
+
+| Migración nueva | Fuente en el core | Efecto |
+|---|---|---|
+| `20260927084439_fiscal_core_online_order_source_snapshots` | `20260927100000` | un `online_order` se factura **solo** desde un origen congelado y validado (`fiscal_source_snapshots`); sin él sigue fallando cerrado con el mismo error |
+
+La única diferencia con el core es la lectura del origen congelado: owner/admin/staff, sin
+`viewer`. El adaptador comercial de La Taba (política declarativa, evaluación única, pedido
+de impresión durable) está documentado en `docs/TABA-COMMERCIAL-FISCAL-V2.md`.

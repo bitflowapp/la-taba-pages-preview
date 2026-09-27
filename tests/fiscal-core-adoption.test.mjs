@@ -16,9 +16,13 @@ const adoptionFiles = [
   ...manifest.la_taba_extensions.map((extension) => extension.migration),
 ];
 
+// El core puede estar fijado a una PR apilada: la cadena completa (PR fijada + las que tiene
+// debajo) queda en el manifiesto, cada eslabon con su SHA completo.
+const pinnedShas = [manifest.canonical_source.sha, ...(manifest.canonical_source.stacked_on ?? []).map((pin) => pin.sha)];
+
 test('el core fiscal adoptado esta fijado a un SHA del repositorio canonico', () => {
   assert.equal(manifest.canonical_source.repository, 'bitflowapp/taba-fiscal');
-  assert.match(manifest.canonical_source.sha, /^[0-9a-f]{40}$/);
+  for (const sha of pinnedShas) assert.match(sha, /^[0-9a-f]{40}$/);
   assert.equal(manifest.worker.la_taba_copy, 'REMOVED');
 });
 
@@ -50,7 +54,8 @@ test('cada migracion de adopcion existe, es posterior a la cabeza y declara su f
   }
   for (const [name, sources] of Object.entries(manifest.adopted_migrations)) {
     const sql = fs.readFileSync(path.join(MIGRATIONS, name), 'utf8');
-    assert.match(sql, new RegExp(`bitflowapp/taba-fiscal@${manifest.canonical_source.sha}`), `${name} sin SHA canonico`);
+    // Cada migracion cita el SHA del que se adopto, que tiene que estar en la cadena fijada.
+    assert.ok(pinnedShas.some((sha) => sql.includes(`bitflowapp/taba-fiscal@${sha}`)), `${name} sin un SHA de la cadena fijada`);
     for (const source of sources) assert.ok(sql.includes(source), `${name} no nombra ${source}`);
   }
 });

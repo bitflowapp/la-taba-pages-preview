@@ -2,9 +2,13 @@
   "schema_version": 1,
   "canonical_source": {
     "repository": "bitflowapp/taba-fiscal",
-    "pull_request": 1,
-    "branch": "feat/fiscal-core-hardening",
-    "sha": "26d2f4cb9e379789b52e4a85e88f39910b0e852f"
+    "pull_request": 3,
+    "branch": "feat/online-order-source-snapshots",
+    "sha": "9fd32fd29dec4ec4c271edd90f4af2ceef73264c",
+    "stacked_on": [
+      { "pull_request": 2, "branch": "fix/wsfe-totalize-alicuota", "sha": "d93bcaa396a1748f8586da32570860fc75bcebb5", "change": "AlicIva totalizado por alicuota (ARCA 10022)" },
+      { "pull_request": 1, "branch": "feat/fiscal-core-hardening", "sha": "26d2f4cb9e379789b52e4a85e88f39910b0e852f", "change": "core adoptado por La Taba #112" }
+    ]
   },
   "worker": {
     "path": "services/arca-fiscal-bridge",
@@ -33,7 +37,8 @@
     "20260927050858_fiscal_core_intent_convergence.sql": ["20260926180000_fiscal_intent_convergence.sql"],
     "20260927050904_fiscal_core_worker_fencing_and_reconciliation.sql": ["20260926190000_fiscal_worker_fencing.sql", "20260926200000_fiscal_ambiguity_reconciliation.sql"],
     "20260927050910_fiscal_core_state_machines.sql": ["20260926210000_fiscal_state_machines.sql"],
-    "20260927050916_fiscal_core_security_hardening.sql": ["20260926220000_fiscal_security_hardening.sql"]
+    "20260927050916_fiscal_core_security_hardening.sql": ["20260926220000_fiscal_security_hardening.sql"],
+    "20260927084439_fiscal_core_online_order_source_snapshots.sql": ["20260927100000_fiscal_online_order_source_snapshots.sql"]
   },
   "not_adopted": [
     {
@@ -66,6 +71,7 @@
     "public.authorize_fiscal_artifact_access(uuid,text): sin 'viewer'",
     "public.service_request_fiscal_document(uuid,text,uuid,text,text,text,uuid): guardas de La Taba",
     "8 policies de lectura fiscal: owner/admin/staff de La Taba (sin 'viewer')",
+    "lectura de fiscal_source_snapshots: owner/admin/staff de La Taba (sin 'viewer')",
     "public.complete_fiscal_artifact, public.fail_fiscal_artifact y public.request_fiscal_artifact_regeneration: conflicto con PT409 en lugar de 40001 (PostgREST reintenta 40001 hasta el 504; regla de 20260924200000_revision_conflicts_answer_409)"
   ],
   "upstream_pending": [

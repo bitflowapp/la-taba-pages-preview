@@ -134,8 +134,9 @@ try {
     let legacyFiscalRows=false;
     for(const name of posteriores){
       // Filas fiscales como las pudo dejar el worker anterior, cargadas justo antes de adoptar el
-      // core fiscal: fiscal_core_upgrade_test.sql verifica que la adopcion no pierde ni rompe nada.
-      if(!legacyFiscalRows&&name.slice(0,14)>'20260926160000'){
+      // core fiscal (la primera migracion *_fiscal_core_*), sobre el esquema que tenga main en ese
+      // momento: fiscal_core_upgrade_test.sql verifica que la adopcion no pierde ni rompe nada.
+      if(!legacyFiscalRows&&name.includes('_fiscal_core_')){
         await query(fs.readFileSync(path.join(ROOT,'supabase/tests/fixtures/fiscal_core_legacy_rows.sql'),'utf8'));
         legacyFiscalRows=true;
         console.log('FISCAL_LEGACY_ROWS_BEFORE_CORE_ADOPTION: LOADED');

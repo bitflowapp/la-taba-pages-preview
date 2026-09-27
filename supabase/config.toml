@@ -466,6 +466,11 @@ verify_jwt = false
 [functions.print-agent-gateway]
 verify_jwt = false
 
+# Meta no trae un JWT de Supabase: la función verifica X-Hub-Signature-256 (HMAC-SHA256 del
+# cuerpo con el App Secret) antes de leer nada, y el verify token del GET en tiempo constante.
+[functions.whatsapp-webhook]
+verify_jwt = false
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

@@ -26,6 +26,7 @@ test('La Taba no mantiene una copia del worker fiscal ni scripts que la construy
   assert.equal(fs.existsSync(path.join(ROOT, 'services', 'arca-fiscal-bridge')), false);
   const scripts = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).scripts;
   for (const name of ['fiscal:install', 'fiscal:build', 'fiscal:test']) assert.equal(scripts[name], undefined, name);
+  for (const [name, command] of Object.entries(scripts)) assert.doesNotMatch(command, /fiscal:(install|build|test)\b|arca-fiscal-bridge/, name);
 });
 
 test('cada migracion de adopcion existe, es posterior a la cabeza y declara su fuente', () => {

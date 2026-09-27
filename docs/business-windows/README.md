@@ -14,10 +14,8 @@ Requisitos de desarrollo: Windows 10/11, WebView2, Node.js 22 o posterior, npm, 
 
 ```powershell
 npm ci
-npm run fiscal:install
 npm run check
 npm test
-npm run fiscal:test
 npm run test:e2e
 npm run tauri:build
 ```
@@ -45,7 +43,7 @@ El cierre de la ventana la oculta y conserva la aplicación en tray. Desde el tr
 
 - `npm run check`: sintaxis, assets e higiene de release.
 - `npm test`: dominios, repositorios, seguridad y contratos de migración.
-- `npm run fiscal:test`: WSAA, WSFEv1, reconciliación, QR y PDF sin red real.
+- Worker fiscal: es el canónico de `bitflowapp/taba-fiscal` (SHA en `fiscal-core.json`); sus pruebas corren allá y, contra el esquema de La Taba, con `npm run fiscal:core:verify` (ver [docs/TABA-FISCAL-CORE-ADOPTION.md](../TABA-FISCAL-CORE-ADOPTION.md)).
 - `npm run test:db:local`: pgTAP sobre Supabase local ya iniciado.
 - `npm run test:e2e`: interfaz real y flujos operativos.
 - `cargo test`, `cargo clippy -- -D warnings`: SQLite, comandos Tauri e impresión nativa.

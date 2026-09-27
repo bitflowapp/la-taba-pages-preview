@@ -29,7 +29,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(40);
+select plan(44);
 
 -- ── Fixture: dos comercios, tres personas ───────────────────────────────────
 --
@@ -362,6 +362,44 @@ select throws_ok(
 reset role;
 select is((select stock from public.products where business_id='92000000-0000-4000-8000-00000000000a'
   and sku='catalog-bulk-01'),5,'el intento cruzado no dejo escritura');
+
+-- ── 11 · LAS COMPUERTAS DE PUBLICACION SE EJERCITAN SIN DEJAR VENTA ─────────
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"91000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"93000000-0000-4000-8000-00000000000a"}';
+select throws_ok(
+  $$select count(*) from public.apply_commercial_catalog_batch(
+    '92000000-0000-4000-8000-00000000000a',
+    '[{"sku":"catalog-bulk-01","publish":true}]'::jsonb)$$,
+  'P0001', null, 'sin precio confirmado no se puede publicar');
+reset role;
+select is((select available from public.products where business_id='92000000-0000-4000-8000-00000000000a'
+  and sku='catalog-bulk-01'),false,'el intento sin precio sigue oculto');
+
+-- Un negocio CP descartable en este rollback permite aislar la compuerta de
+-- imagen: precio y stock son validos, la ficha esta completa y falta SOLO asset.
+insert into public.businesses(id,name,status,slug,is_active,ordering_enabled,ordering_verified,alcohol_sales_enabled)
+values ('e7850ad2-a447-402c-8375-3fd74e9466ba','CP imagen fixture','closed','cp-imagen-fixture',true,false,false,false);
+insert into public.business_members(business_id,user_id,role,is_active)
+values ('e7850ad2-a447-402c-8375-3fd74e9466ba','91000000-0000-4000-8000-000000000001','owner',true);
+insert into public.identity_sessions(session_id,user_id,business_id,role_at_login,client)
+values ('93000000-0000-4000-8000-00000000000c','91000000-0000-4000-8000-000000000001',
+  'e7850ad2-a447-402c-8375-3fd74e9466ba','owner','panel_web');
+insert into public.products(business_id,sku,external_id,brand,name,variant,presentation,
+  capacity_value,capacity_unit,capacity,packaging_type,category,subcategory,
+  price,price_status,stock,is_active,available,is_verified,is_alcoholic,catalog_origin)
+values ('e7850ad2-a447-402c-8375-3fd74e9466ba','cp-image-guard-500ml','cp-image-guard-500ml',
+  'Marca CP','Bebida CP 500 ml','Original','Original',500,'ml','500 ml','botella-pet','Gaseosas','cola',
+  1200,'confirmed',5,true,false,false,false,'commercial');
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"91000000-0000-4000-8000-000000000001","role":"authenticated","session_id":"93000000-0000-4000-8000-00000000000c"}';
+select throws_ok(
+  $$select count(*) from public.apply_commercial_catalog_batch(
+    'e7850ad2-a447-402c-8375-3fd74e9466ba',
+    '[{"sku":"cp-image-guard-500ml","publish":true}]'::jsonb)$$,
+  '23514', null, 'CP rechaza publicar sin imagen aprobada');
+reset role;
+select is((select available from public.products where business_id='e7850ad2-a447-402c-8375-3fd74e9466ba'
+  and sku='cp-image-guard-500ml'),false,'el intento sin imagen sigue oculto');
 
 select * from finish();
 rollback;

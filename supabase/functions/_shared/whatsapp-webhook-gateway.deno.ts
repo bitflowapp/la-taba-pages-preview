@@ -1,4 +1,5 @@
 import {
+  createGraphSender,
   extractMessages,
   handleWhatsAppWebhook,
   hmacSha256Hex,
@@ -194,4 +195,48 @@ Deno.test('cuerpo inválido, demasiado grande o método ajeno', async () => {
   const big = JSON.stringify({ object: 'whatsapp_business_account', relleno: 'x'.repeat(300 * 1024) });
   if ((await handleWhatsAppWebhook(await signed(big), deps)).status !== 413) fail('cuerpo demasiado grande');
   if ((await handleWhatsAppWebhook(new Request(URL, { method: 'PUT', body: '{}' }), deps)).status !== 405) fail('método ajeno');
+});
+
+Deno.test('el envío por la Graph API: texto sin vista previa, PDF por su ruta privada firmada', async () => {
+  const requests: Array<{ url: string; init: RequestInit }> = [];
+  const rpcCalls: Array<{ name: string; params: Record<string, unknown> }> = [];
+  const signed: string[] = [];
+  let status = 200;
+  let artifact: RpcResult = { data: { bucket: 'fiscal-documents', storage_path: 'fiscal/b/d/t.pdf', filename: 'comprobante-00006-00000001.pdf' }, error: null };
+  const send = createGraphSender({
+    graphApiVersion: 'v99.0',
+    phoneNumberId: NUMBER,
+    accessToken: 'token-de-prueba',
+    fetch: (url, init) => {
+      requests.push({ url, init });
+      return Promise.resolve(new Response(JSON.stringify(status === 200 ? { messages: [{ id: 'wamid.enviado' }] } : { error: { code: 131047 } }), { status }));
+    },
+    rpc: (name, params) => {
+      rpcCalls.push({ name, params });
+      return Promise.resolve(artifact);
+    },
+    signArtifactUrl: (bucket, path) => {
+      signed.push(`${bucket}/${path}`);
+      return Promise.resolve(`https://storage.invalid/sign/${path}?token=corto`);
+    },
+  });
+  const textResult = await send({ id: 'out-1', kind: 'text', body: 'Solicitud recibida.', to: '5492995550001' });
+  if (!textResult.ok || textResult.providerMessageId !== 'wamid.enviado') fail(`texto: ${JSON.stringify(textResult)}`);
+  const first = JSON.parse(String(requests[0].init.body));
+  if (requests[0].url !== `https://graph.facebook.com/v99.0/${NUMBER}/messages`) fail(`URL: ${requests[0].url}`);
+  if ((requests[0].init.headers as Record<string, string>).authorization !== 'Bearer token-de-prueba') fail('sin credencial de Meta');
+  if (first.type !== 'text' || first.text.body !== 'Solicitud recibida.' || first.text.preview_url !== false || first.to !== '5492995550001') fail(`cuerpo: ${JSON.stringify(first)}`);
+
+  const documentResult = await send({ id: 'out-2', kind: 'document', body: 'Comprobante del pedido LT-1', artifact_id: 'a', to: '5492995550001' });
+  const second = JSON.parse(String(requests[1].init.body));
+  if (!documentResult.ok || rpcCalls[0]?.params.p_outbound_id !== 'out-2' || signed[0] !== 'fiscal-documents/fiscal/b/d/t.pdf') fail('el PDF no salió de la ruta del artefacto');
+  if (second.type !== 'document' || second.document.link !== 'https://storage.invalid/sign/fiscal/b/d/t.pdf?token=corto'
+      || second.document.filename !== 'comprobante-00006-00000001.pdf' || second.document.caption !== 'Comprobante del pedido LT-1') fail(`documento: ${JSON.stringify(second)}`);
+
+  artifact = { data: null, error: { code: 'P0002', message: 'comprobante no disponible' } };
+  const missing = await send({ id: 'out-3', kind: 'document', body: 'x', artifact_id: 'a', to: '5492995550001' });
+  if (missing.ok || missing.error !== 'artifact_unavailable' || requests.length !== 2) fail('sin artefacto no se manda nada');
+  status = 400;
+  const refused = await send({ id: 'out-4', kind: 'text', body: 'x', to: '5492995550001' });
+  if (refused.ok || refused.error !== 'graph_400') fail(`un rechazo de Meta: ${JSON.stringify(refused)}`);
 });

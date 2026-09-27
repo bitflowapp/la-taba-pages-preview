@@ -265,3 +265,40 @@ export async function handleWhatsAppWebhook(request: Request, deps: WhatsAppDeps
   // Si algo no quedó en la base, Meta tiene que reintentar el lote.
   return json(failures === 0 ? 200 : 500, body);
 }
+
+export interface GraphSenderOptions {
+  graphApiVersion: string;
+  phoneNumberId: string;
+  accessToken: string;
+  fetch(input: string, init: RequestInit): Promise<Response>;
+  rpc(name: string, params: Record<string, unknown>): Promise<RpcResult>;
+  /** URL firmada y corta de un objeto privado; null si no se pudo firmar. */
+  signArtifactUrl(bucket: string, storagePath: string): Promise<string | null>;
+}
+
+/** El envío por la Graph API de Meta. El PDF sale por el id del ARTEFACTO: URL firmada de su ruta privada. */
+export function createGraphSender(options: GraphSenderOptions): (reply: OutboundReply) => Promise<SendResult> {
+  return async (reply) => {
+    let message: Record<string, unknown>;
+    if (reply.kind === 'document') {
+      const artifact = await options.rpc('whatsapp_outbound_artifact', { p_outbound_id: reply.id });
+      const location = record(artifact.data);
+      const bucket = text(location.bucket);
+      const storagePath = text(location.storage_path);
+      if (artifact.error || !bucket || !storagePath) return { ok: false, error: 'artifact_unavailable' };
+      const link = await options.signArtifactUrl(bucket, storagePath);
+      if (!link) return { ok: false, error: 'artifact_url_unavailable' };
+      message = { type: 'document', document: { link, filename: text(location.filename) ?? 'comprobante.pdf', caption: reply.body } };
+    } else {
+      message = { type: 'text', text: { body: reply.body, preview_url: false } };
+    }
+    const response = await options.fetch(`https://graph.facebook.com/${options.graphApiVersion}/${options.phoneNumberId}/messages`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${options.accessToken}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to: reply.to, ...message }),
+    });
+    const body = record(await response.json().catch(() => ({})));
+    const providerMessageId = text(record(asArray(body.messages)[0]).id) ?? undefined;
+    return response.ok ? { ok: true, providerMessageId } : { ok: false, error: `graph_${response.status}` };
+  };
+}

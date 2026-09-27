@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { handleWhatsAppWebhook, type OutboundReply, type SendResult } from '../_shared/whatsapp-webhook-gateway.ts';
+import { createGraphSender, handleWhatsAppWebhook } from '../_shared/whatsapp-webhook-gateway.ts';
 
 // Webhook de WhatsApp Cloud API. verify_jwt = false (config.toml) porque Meta no trae un JWT de
 // Supabase: la autenticidad la da la firma X-Hub-Signature-256 con el App Secret, que el
@@ -29,27 +29,17 @@ async function rpc(name: string, params: Record<string, unknown>) {
   return { data, error: error ? { code: error.code, message: error.message } : null };
 }
 
-async function send(reply: OutboundReply): Promise<SendResult> {
-  let message: Record<string, unknown>;
-  if (reply.kind === 'document') {
-    // El PDF vigente del comprobante, por el id del ARTEFACTO: URL firmada y corta.
-    const artifact = await rpc('whatsapp_outbound_artifact', { p_outbound_id: reply.id });
-    const location = artifact.data as { bucket?: string; storage_path?: string; filename?: string } | null;
-    if (artifact.error || !location?.bucket || !location.storage_path) return { ok: false, error: 'artifact_unavailable' };
-    const signed = await admin.storage.from(location.bucket).createSignedUrl(location.storage_path, 600);
-    if (signed.error || !signed.data?.signedUrl) return { ok: false, error: 'artifact_url_unavailable' };
-    message = { type: 'document', document: { link: signed.data.signedUrl, filename: location.filename, caption: reply.body } };
-  } else {
-    message = { type: 'text', text: { body: reply.body, preview_url: false } };
-  }
-  const response = await fetch(`https://graph.facebook.com/${GRAPH_API_VERSION}/${PHONE_NUMBER_ID}/messages`, {
-    method: 'POST',
-    headers: { authorization: `Bearer ${ACCESS_TOKEN}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to: reply.to, ...message }),
-  });
-  const body = await response.json().catch(() => ({})) as { messages?: Array<{ id?: string }> };
-  return response.ok ? { ok: true, providerMessageId: body.messages?.[0]?.id } : { ok: false, error: `graph_${response.status}` };
-}
+const send = createGraphSender({
+  graphApiVersion: GRAPH_API_VERSION,
+  phoneNumberId: PHONE_NUMBER_ID,
+  accessToken: ACCESS_TOKEN,
+  fetch: (input, init) => fetch(input, init),
+  rpc,
+  signArtifactUrl: async (bucket, storagePath) => {
+    const signed = await admin.storage.from(bucket).createSignedUrl(storagePath, 600);
+    return signed.error ? null : signed.data?.signedUrl ?? null;
+  },
+});
 
 Deno.serve((request) => handleWhatsAppWebhook(request, {
   appSecret: APP_SECRET,

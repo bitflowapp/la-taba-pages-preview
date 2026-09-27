@@ -38,7 +38,7 @@ test('el worker canonico se verifica contra el esquema de La Taba en el SHA fija
   assert.match(harness, /manifest\.canonical_source\.sha/);
   assert.match(harness, /TABA_LOCAL_FISCAL_DB/);
   assert.match(harness, /solo bases locales descartables/);
-  for (const scenario of ['E2E', 'RECOVERY_RESPONSE_LOST', 'RECOVERY_CRASH_BEFORE_PERSIST', 'CONCURRENT_WORKERS', 'TENANT_ISOLATION', 'LEGACY_WORKER_CONTRACT']) {
+  for (const scenario of ['E2E', 'RECOVERY_RESPONSE_LOST', 'RECOVERY_CRASH_BEFORE_PERSIST', 'CONCURRENT_WORKERS', 'TENANT_ISOLATION', 'LEGACY_WORKER_CONTRACT', 'PDF_CONFLICT']) {
     assert.match(harness, new RegExp(`FISCAL_CORE_(WORKER_)?${scenario}: PASS`), scenario);
   }
 });

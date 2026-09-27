@@ -27,7 +27,13 @@ function json(status, body) {
 function postgrestError(error) {
   if (error.code === '42883') return json(404, { code: 'PGRST202', message: `Could not find the function in the schema cache: ${error.message}`, details: null, hint: null });
   if (error.code === '42725') return json(300, { code: 'PGRST203', message: `Could not choose the best candidate function: ${error.message}`, details: null, hint: null });
-  const status = error.code === '42501' ? 403 : error.code === '23505' || error.code === '40001' ? 409 : 400;
+  // 40001 es falla de serializacion para PostgREST: reintenta la transaccion y una negativa de
+  // negocio gira hasta el 504 del gateway (~125 s, medido en Staging; 20260924200000). Aca se
+  // devuelve el 504 sin esperar y la llamada queda registrada con su codigo.
+  if (error.code === '40001') return new Response('upstream request timeout', { status: 504 });
+  // PTnnn responde HTTP nnn, como PostgREST.
+  const custom = /^PT([1-5][0-9]{2})$/.exec(error.code ?? '');
+  const status = custom ? Number(custom[1]) : error.code === '42501' ? 403 : error.code === '23505' ? 409 : 400;
   return json(status, { code: error.code, message: error.message, details: error.detail ?? null, hint: error.hint ?? null });
 }
 

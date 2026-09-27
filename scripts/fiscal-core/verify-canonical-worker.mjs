@@ -31,6 +31,7 @@
 //   D  Aislamiento: el worker de un CUIT no toca otro; otro negocio no pide, no
 //      actua ni lee lo ajeno.
 //   E  El contrato del worker anterior de La Taba ya no resuelve (PGRST202).
+//   F  Un conflicto de PDF responde PT409 (409 inmediato), nunca 40001.
 //
 //   TABA_LOCAL_FISCAL_DB=1 TABA_FISCAL_DIR=<checkout de taba-fiscal en el SHA fijado, compilado> \
 //     npm run fiscal:core:verify -- postgres://postgres@127.0.0.1:55461/<base-descartable>
@@ -465,11 +466,27 @@ export async function verifyCanonicalWorker(connect, { core, log = console.log, 
     report.legacy_worker_contract = 'PGRST202 (claim, reserve, complete, complete/fail artifact)';
     log('FISCAL_CORE_LEGACY_WORKER_CONTRACT: PASS (el worker anterior no puede reclamar, reservar ni cerrar: PGRST202)');
 
+    // ══ F · Conflicto de PDF: 409 inmediato (PT409), nunca 40001 ═══════════════
+    // El core eleva 40001 y su worker de PDF lo espera; PostgREST lo reintenta hasta el 504.
+    // La Taba adopta PT409: el store canonico lo recibe como 409 no reintentable.
+    const probeCalls = [];
+    const probe = createSupabaseShim(connect, { calls: probeCalls, label: 'pdf_probe' });
+    const probeStore = new core.SupabaseFiscalStore(probe, probe.fetch);
+    const [pdfJob] = await probeStore.claimArtifacts('taba-fiscal-artifacts-02', 1);
+    assert.ok(pdfJob, 'queda un PDF pendiente para reclamar');
+    const stale = await probeStore.failArtifact(pdfJob.outboxId, 'taba-fiscal-artifacts-02', pdfJob.leaseEpoch - 1, 'PDF_LEASE_VIEJO', 'lease viejo', true)
+      .then(() => null, (error) => error);
+    assert.deepEqual([stale?.sqlState, stale?.retryable], ['PT409', false], 'un resultado de PDF con lease viejo recibe PT409 (409), no un 40001 que PostgREST reintentaria');
+    await probeStore.failArtifact(pdfJob.outboxId, 'taba-fiscal-artifacts-02', pdfJob.leaseEpoch, 'PDF_VERIFICACION', 'devuelto por la verificacion', true);
+    assert.deepEqual(probeCalls.map((call) => call.code ?? 'ok'), ['ok', 'PT409', 'ok']);
+    report.pdf_conflict = 'PT409 -> HTTP 409, no reintentable (el worker de PDF del core todavia espera 40001)';
+    log('FISCAL_CORE_PDF_CONFLICT: PASS (lease de PDF viejo → PT409/409 inmediato; el worker de PDF del core espera 40001: pendiente en el core)');
+
     // ══ Contrato HTTP: el worker canonico nunca choco con la base ═════════════
     const unexpected = workerCalls.filter((call) => !call.ok && call.code !== 'TF002');
     assert.deepEqual(unexpected, [], 'el worker canonico no tuvo errores de contrato');
-    const unresolved = clientCalls.filter((call) => ['PGRST202', 'PGRST203', 'NOT_EMULATED'].includes(call.code));
-    assert.deepEqual(unresolved, [], 'ningun cliente de La Taba llamo una funcion inexistente o ambigua');
+    const unresolved = clientCalls.filter((call) => ['PGRST202', 'PGRST203', 'NOT_EMULATED', '40001'].includes(call.code));
+    assert.deepEqual(unresolved, [], 'ningun cliente de La Taba llamo una funcion inexistente o ambigua, ni recibio un 40001 que PostgREST reintentaria');
     report.worker_routes = [...new Set(workerCalls.map((call) => call.route))].sort();
     report.client_routes = [...new Set(clientCalls.map((call) => call.route))].sort();
     log(`FISCAL_CORE_WORKER_HTTP_CONTRACT: PASS (${workerCalls.length} llamadas del worker, ${clientCalls.length} de clientes de La Taba; rutas del worker: ${report.worker_routes.join(', ')})`);

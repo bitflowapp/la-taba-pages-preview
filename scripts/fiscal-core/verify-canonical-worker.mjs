@@ -32,6 +32,10 @@
 //      actua ni lee lo ajeno.
 //   E  El contrato del worker anterior de La Taba ya no resuelve (PGRST202).
 //   F  Un conflicto de PDF responde PT409 (409 inmediato), nunca 40001.
+//   G  Pedido online (V2): el Panel pide Facturar e imprimir, el servidor congela el origen,
+//      el worker canonico lo autoriza (AlicIva totalizado), PDF, ticket del agente real y
+//      reimpresion real. Ninguna venta POS.
+//   H  Pedido online: respuesta perdida, reinicio y conciliacion; el ticket sale al autorizar.
 //
 //   TABA_LOCAL_FISCAL_DB=1 TABA_FISCAL_DIR=<checkout de taba-fiscal en el SHA fijado, compilado> \
 //     npm run fiscal:core:verify -- postgres://postgres@127.0.0.1:55461/<base-descartable>
@@ -153,6 +157,39 @@ async function seedSale(admin, fixture) {
   return sale;
 }
 
+// Pedido online con cobro REAL registrado: 2 × 1250 (producto por uuid) + 0,5 kg × 9800 (producto
+// legado por external_id) + envio 1210, en un delivery con punto de entrega confirmado. La primera
+// vez por negocio crea los productos comerciales, su clasificacion y la politica comercial FIXTURE.
+async function seedOnlineOrder(admin, fixture) {
+  if (!fixture.online) {
+    const tag = randomUUID().slice(0, 8);
+    const online = { soda: randomUUID(), cheese: randomUUID(), cheeseRef: `legacy-queso-${tag}` };
+    await admin.query(`insert into public.products(id,business_id,name,description,category,price,image_url,is_active,brand,subcategory,presentation,capacity,packaging_type,stock,available,is_alcoholic,tags,is_verified,verified_at,verified_by,external_id,variant,capacity_value,capacity_unit,catalog_origin,units_per_pack)
+      values ($1,$3,'Gaseosa 2,25 L','Fixture','Aguas',1250,'https://example.invalid/p.webp',true,'Marca','Pruebas','Unidad','1 u','unidad',100,false,false,'{}',false,null,null,$4,'Unidad',1,'unidad','commercial',1),
+             ($2,$3,'Queso por kg','Fixture','Almacen',9800,'https://example.invalid/q.webp',true,'Marca','Pruebas','Kilo','1 kg','granel',100,false,false,'{}',false,null,null,$5,'Kilo',1,'kg','commercial',1)`,
+    [online.soda, online.cheese, fixture.business, `harness-gaseosa-${tag}`, online.cheeseRef]);
+    await admin.query(`insert into public.product_fiscal_classifications(business_id,product_id,classification,vat_code,source,classified_by)
+      values ($1,$2,'taxed',5,'accountant',$4),($1,$3,'taxed',4,'accountant',$4)`, [fixture.business, online.soda, online.cheese, fixture.owner]);
+    await admin.query(`insert into public.commercial_fiscal_policies(business_id,policy_version,valid_from,status,billing_moment,mercadopago_rule,cash_rule,coordinate_rule,
+        vat_computation,delivery_treatment,delivery_vat_code,delivery_line_description,discount_treatment,final_consumer_id_threshold,credit_note_policy,accountant_reference,approved_by,approved_at)
+      values ($1,$2,current_date,'approved','after_payment_confirmed','require_approved','require_confirmed','require_confirmed',
+        'price_includes_vat_per_rate','invoice_as_line',5,'Envío','prorate_by_item_gross',1000000,'manual_review_only','FIXTURE DE PRUEBA - no es politica contable',$3,now())`,
+    [fixture.business, `harness-${tag}`, fixture.owner]);
+    fixture.online = online;
+  }
+  const orderId = randomUUID();
+  const tag = orderId.slice(0, 8);
+  await admin.query(`insert into public.orders(id,business_id,code,public_code,status,fulfillment_type,delivery_mode,client_request_id,customer_name,customer_phone,payment_method,
+      subtotal,discount_total,delivery_fee,total,delivery_location_source,delivery_latitude,delivery_longitude,delivery_location_confirmed_at)
+    values ($1,$2,$3,$3,'accepted','delivery','delivery',$4,'CLIENTE_SINTETICO','+540000000000','cash',7400,0,1210,8610,'gps',-38.95,-68.06,now())`,
+  [orderId, fixture.business, `H-${tag}`, `harness-order-${tag}`]);
+  await admin.query(`insert into public.order_items(order_id,product_id,product_uuid,name,quantity,unit,unit_price,subtotal)
+    values ($1,null,$2,'Gaseosa 2,25 L',2,'u',1250,2500),($1,$3,null,'Queso por kg',0.5,'kg',9800,4900)`, [orderId, fixture.online.soda, fixture.online.cheeseRef]);
+  await admin.query(`update public.orders set manual_payment_status = 'confirmed', manual_payment_method = 'cash', manual_payment_confirmed_at = now(),
+      manual_payment_confirmed_by = $2 where id = $1`, [orderId, fixture.staff]);
+  return orderId;
+}
+
 async function one(admin, sql, params = []) {
   return (await admin.query(sql, params)).rows[0];
 }
@@ -256,6 +293,8 @@ export async function verifyCanonicalWorker(connect, { core, log = console.log, 
       ['document_types', 'FEParamGetTiposCbte', [{ Id: 6 }, { Id: 8 }, { Id: 11 }, { Id: 13 }]],
       ['recipient_document_types', 'FEParamGetTiposDoc', [{ Id: 96 }, { Id: 99 }]],
       ['recipient_vat_conditions', 'FEParamGetCondicionIvaReceptor', [{ Id: 5 }]],
+      // FEParamGetTiposIva: los pedidos online exigen cada alicuota en la tabla vigente de ARCA.
+      ['vat_types', 'FEParamGetTiposIva', [{ Id: '4', Desc: '10.5%' }, { Id: '5', Desc: '21%' }]],
     ]) {
       await store.saveParameterSnapshot({
         environment: 'homologation', parameterType, operation, version, synchronizedAt: new Date().toISOString(), values,
@@ -481,6 +520,65 @@ export async function verifyCanonicalWorker(connect, { core, log = console.log, 
     assert.deepEqual(probeCalls.map((call) => call.code ?? 'ok'), ['ok', 'PT409', 'ok']);
     report.pdf_conflict = 'PT409 -> HTTP 409, no reintentable (el worker de PDF del core todavia espera 40001)';
     log('FISCAL_CORE_PDF_CONFLICT: PASS (lease de PDF viejo → PT409/409 inmediato; el worker de PDF del core espera 40001: pendiente en el core)');
+
+    // ══ G · Pedido online de punta a punta (Commercial Fiscal V2) ════════════════
+    // El pedido se factura COMO PEDIDO: el Panel (repositorio real) pide "Facturar e imprimir",
+    // el servidor evalua y congela el origen, el worker canonico lo autoriza contra el doble
+    // estricto de ARCA (AlicIva totalizado), el PDF se genera y el ticket sale por el agente real.
+    // Politica comercial y clasificaciones: FIXTURES de prueba, no son la politica de nadie.
+    const g = await seedBusiness(admin, 'G', 21);
+    const arcaG = new core.FakeArca(g.cuit);
+    const agentG = await pairAgent(g);
+    const orderG = await seedOnlineOrder(admin, g);
+    const posBeforeG = Number((await one(admin, 'select count(*) from public.pos_sales')).count);
+    const requestedG = await panel(g, 'staff').requestOrderInvoice({ orderId: orderG, idempotencyKey: `order-invoice-${orderG}`, commandSource: 'PANEL', print: true });
+    assert.equal(requestedG.ok, true, `Facturar e imprimir desde el Panel: ${JSON.stringify(requestedG)}`);
+    const docG = requestedG.data.fiscal_document_id;
+    assert.equal((await documentState(admin, docG)).print_jobs, 0, 'sin CAE no hay ticket');
+    assert.deepEqual(await canonicalWorker(g, arcaG, 'taba-fiscal-worker-g1').worker.runOnce(), { claimed: 1, completed: 1 });
+    const authorizedG = await documentState(admin, docG);
+    const [voucherG] = arcaG.vouchers(g.pointOfSale, INVOICE_TYPE);
+    assert.deepEqual([authorizedG.state, authorizedG.number, authorizedG.cae, authorizedG.print_jobs], ['authorized', 1, voucherG.cae, 1],
+      `pedido online autorizado y su ticket encolado: ${JSON.stringify(authorizedG)}`);
+    assert.equal(Number(voucherG.totalAmount), 8610, 'ARCA simulado recibio el total del pedido (con envio y 0,5 kg)');
+    await drainArtifacts();
+    const statesG = await panel(g, 'staff').getOrderFiscalStates([orderG]);
+    const stateG = statesG.data?.[0];
+    assert.ok(stateG?.document?.artifact_id, 'el Panel ve el PDF vigente');
+    assert.deepEqual([stateG.document.state, stateG.document.cae, stateG.print.jobs], ['authorized', voucherG.cae, 1]);
+    const claimedG = await agentG({ action: 'claim', document_types: ['fiscal_receipt'], limit: 5 });
+    assert.deepEqual([claimedG.status, claimedG.body.jobs.length, claimedG.body.jobs[0]?.payload?.cae], [200, 1, voucherG.cae]);
+    for (const transition of ['printing', 'printed']) {
+      const updated = await agentG({ action: 'update', job_id: claimedG.body.jobs[0].id, claim_token: claimedG.body.jobs[0].claim_token, transition, ...(transition === 'printed' ? { duration_ms: 700 } : {}) });
+      assert.equal(updated.status, 200, `agente ${transition}: ${JSON.stringify(updated.body)}`);
+    }
+    const reprintG = await panel(g, 'staff').requestPrintJobReprint({ printJobId: claimedG.body.jobs[0].id, reason: 'Copia para el cliente', idempotencyKey: `order-reprint-${claimedG.body.jobs[0].id}` });
+    assert.equal(reprintG.ok, true, `reimpresion real: ${JSON.stringify(reprintG)}`);
+    const reclaimedG = await agentG({ action: 'claim', document_types: ['fiscal_receipt'], limit: 5 });
+    assert.deepEqual([reclaimedG.body.jobs.length, reclaimedG.body.jobs[0]?.reprint_of, reclaimedG.body.jobs[0]?.payload?.cae],
+      [1, claimedG.body.jobs[0].id, voucherG.cae], 'la reimpresion es un trabajo nuevo, del mismo CAE');
+    const totalsG = await one(admin, `select (select count(*)::int from public.fiscal_documents where source_type = 'online_order' and source_id = $1) as documents,
+        (select count(*)::int from public.pos_sales) as pos`, [orderG]);
+    assert.deepEqual([totalsG.documents, totalsG.pos, arcaG.count('FECAESolicitar')], [1, posBeforeG, 1], 'un comprobante, ninguna venta POS, un solo envio a ARCA');
+    report.online_order_e2e = { documents: 1, fecaesolicitar: 1, pdf: 1, print_jobs: 2, reprint_of_real_job: true, pos_sales_created: 0 };
+    log('FISCAL_ORDER_WORKER_E2E: PASS (pedido online → intencion → worker canonico → FakeArca estricto → autorizado → PDF → ticket del agente real → reimpresion real; 0 ventas POS)');
+
+    // ══ H · Pedido online: respuesta perdida, reinicio y conciliacion ═════════════
+    const orderH = await seedOnlineOrder(admin, g);
+    const docH = (await panel(g, 'staff').requestOrderInvoice({ orderId: orderH, idempotencyKey: `order-invoice-${orderH}`, commandSource: 'PANEL', print: true })).data.fiscal_document_id;
+    arcaG.fault('FECAESolicitar', { kind: 'drop-response' }).fault('FECompConsultar', { kind: 'drop-request' });
+    assert.deepEqual(await canonicalWorker(g, arcaG, 'taba-fiscal-worker-g1').worker.runOnce(), { claimed: 1, completed: 1 });
+    const lostH = await documentState(admin, docH);
+    assert.deepEqual([lostH.state, lostH.number, lostH.cae, lostH.print_jobs], ['ambiguous', 2, null, 0], 'sin respuesta: ambiguo y todavia sin ticket');
+    await dueNow(admin, [docH]);
+    assert.deepEqual(await canonicalWorker(g, arcaG, 'taba-fiscal-worker-g2').worker.runOnce(), { claimed: 1, completed: 1 });
+    const recoveredH = await documentState(admin, docH);
+    const voucherH = arcaG.vouchers(g.pointOfSale, INVOICE_TYPE).find((voucher) => voucher.number === 2);
+    assert.deepEqual([recoveredH.state, recoveredH.number, recoveredH.cae, recoveredH.print_jobs], ['authorized', 2, voucherH.cae, 1],
+      'el worker nuevo concilia el mismo numero y CAE, y recien ahi se encola el ticket');
+    assert.equal(arcaG.count('FECAESolicitar'), 2, 'ningun reenvio');
+    report.online_order_recovery = 'ambiguous>restart>FECompConsultar>authorized; print on authorization; 0 resends';
+    log('FISCAL_ORDER_WORKER_RECOVERY: PASS (pedido online: respuesta perdida → reinicio → conciliacion con el mismo CAE; el ticket sale al autorizar; 0 reenvios)');
 
     // ══ Contrato HTTP: el worker canonico nunca choco con la base ═════════════
     const unexpected = workerCalls.filter((call) => !call.ok && call.code !== 'TF002');

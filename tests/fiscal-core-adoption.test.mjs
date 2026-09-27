@@ -45,6 +45,8 @@ test('el worker canonico se verifica contra el esquema de La Taba en el SHA fija
   for (const scenario of ['E2E', 'RECOVERY_RESPONSE_LOST', 'RECOVERY_CRASH_BEFORE_PERSIST', 'CONCURRENT_WORKERS', 'TENANT_ISOLATION', 'LEGACY_WORKER_CONTRACT', 'PDF_CONFLICT']) {
     assert.match(harness, new RegExp(`FISCAL_CORE_(WORKER_)?${scenario}: PASS`), scenario);
   }
+  // Pedidos online (V2): de punta a punta por el worker canonico, y su recuperacion.
+  for (const scenario of ['FISCAL_ORDER_WORKER_E2E', 'FISCAL_ORDER_WORKER_RECOVERY']) assert.match(harness, new RegExp(`${scenario}: PASS`), scenario);
 });
 
 test('cada migracion de adopcion existe, es posterior a la cabeza y declara su fuente', () => {

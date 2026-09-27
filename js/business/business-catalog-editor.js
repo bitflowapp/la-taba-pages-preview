@@ -63,7 +63,8 @@ export function renderCatalogEditor({ products = [], phase = 'idle', message = '
         <small>SKU: ${escapeHtml(product.sku)}</small></div>
       <div class="business-catalog-state"><span class="status-pill ${priceConfirmed ? 'success' : 'warning'}">${priceConfirmed ? 'Precio confirmado' : 'Precio pendiente'}</span>
         <span class="status-pill ${product.stock === null ? 'warning' : product.stock === 0 ? 'danger' : 'success'}">${escapeHtml(catalogStockLabel(product.stock))}</span>
-        <span class="status-pill ${product.available ? 'success' : 'warning'}">${product.available ? 'Disponible · publicado' : 'No disponible · borrador'}</span></div>
+        <span class="status-pill ${product.available ? 'success' : 'warning'}">${product.available ? 'Disponible · publicado' : 'No disponible · borrador'}</span>
+        <span class="status-pill ${product.hasApprovedImage ? 'success' : 'warning'}">${product.hasApprovedImage ? 'Imagen asociada' : 'Imagen pendiente'}</span></div>
       <div class="business-catalog-fields">
         <label>Precio (ARS)<input data-catalog-price type="text" inputmode="decimal" value="${priceConfirmed ? escapeHtml(String(product.price)) : ''}" placeholder="Sin confirmar" ${busy ? 'disabled' : ''}></label>
         <label>Stock contado<input data-catalog-stock type="text" inputmode="numeric" value="${product.stock === null ? '' : escapeHtml(String(product.stock))}" placeholder="Sin contar" ${busy ? 'disabled' : ''}></label>

@@ -51,6 +51,7 @@ test('un borrador sin imagen ni verificación no ofrece publicar', () => {
   assert.match(html, /Sin contar/);
   assert.match(html, /Precio pendiente/);
   assert.match(html, /No disponible · borrador/);
+  assert.match(html, /Imagen pendiente/);
   assert.match(html, /data-catalog-search/);
   assert.doesNotMatch(html, /data-publish="true"/);
 });

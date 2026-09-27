@@ -1,7 +1,7 @@
 // Real backup + restore drill for CONTROLLED_PRODUCTION with pg_dump/pg_restore.
 //
 // Backup: under ONE exported snapshot, pg_dump (custom format) of the app
-// schemas (public, private, supabase_migrations) and of auth.users/identities,
+// schemas (public, private, catalog_admin, supabase_migrations) and of auth.users/identities,
 // plus, from that same snapshot, the schema fingerprint and a content hash of
 // every table. Files go to a PRIVATE directory outside the repository, with a
 // manifest (sizes, sha256, ref, migration head). Nothing secret is printed and
@@ -42,7 +42,8 @@ assert.ok(stored?.secreto && stored.usuario === manifest.supabaseProjectRef && !
 const REF = stored.usuario;
 const OUT = opt('--out', path.join(ROOT, 'artifacts', 'controlled-production', `restore-drill-${Date.now()}.json`));
 const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-const dir = path.join(homedir(), '.taba-backups', 'controlled-production', `pgdump-${stamp}`);
+const backupRoot = path.resolve(opt('--backup-root', path.join(homedir(), '.taba-backups', 'controlled-production')));
+const dir = path.join(backupRoot, `pgdump-${stamp}`);
 assert.ok(!path.resolve(dir).toLowerCase().startsWith(ROOT.toLowerCase()), 'BACKUP_DIR_CANNOT_BE_IN_REPO');
 mkdirSync(dir, { recursive: true });
 const FINGERPRINT = readFileSync(path.join(import.meta.dirname, 'schema-fingerprint.sql'), 'utf8');
@@ -51,6 +52,7 @@ const APP_CATEGORIES = ['tables', 'columns', 'constraints', 'indexes', 'function
   'table_grants', 'column_grants', 'function_grants'];
 const PLATFORM_CATEGORIES = ['cron_jobs', 'realtime_publication', 'storage_buckets'];
 const CRITICAL_FUNCTIONS = ['create_order_with_items(jsonb)', 'transition_order(uuid,bigint,text,text)',
+  'commercial_catalog_parse_stock(jsonb)', 'catalog_admin.import_pending_catalog(uuid,jsonb)',
   'set_business_open_state(uuid,text)', 'open_qa_window(uuid,integer)', 'close_qa_window(uuid)',
   'close_expired_qa_windows()', 'commerce_availability(uuid,text,jsonb)', 'has_business_role(uuid,text[])',
   'identity_register_session(uuid,text,text,text,text)', 'cancel_order(uuid,bigint,text,text)',
@@ -65,7 +67,7 @@ const sha = (file) => createHash('sha256').update(readFileSync(file)).digest('he
 const log = (m) => process.stderr.write(`[restore-drill] ${m}\n`);
 
 const TABLES_SQL = `select format('%I.%I', n.nspname, c.relname) as t from pg_class c join pg_namespace n on n.oid = c.relnamespace
-  where c.relkind in ('r','p') and (n.nspname in ('public','private','supabase_migrations')
+  where c.relkind in ('r','p') and (n.nspname in ('public','private','catalog_admin','supabase_migrations')
     or (n.nspname = 'auth' and c.relname in ('users','identities'))) order by 1`;
 async function tableHashes(client) {
   await client.query(SESSION);
@@ -107,7 +109,7 @@ try {
   };
   const appDump = path.join(dir, 'app.dump');
   const authDump = path.join(dir, 'auth-users.dump');
-  report.backup.files = [dump(appDump, ['-n', 'public', '-n', 'private', '-n', 'supabase_migrations']),
+  report.backup.files = [dump(appDump, ['-n', 'public', '-n', 'private', '-n', 'catalog_admin', '-n', 'supabase_migrations']),
     dump(authDump, ['-t', 'auth.users', '-t', 'auth.identities'])];
   log('dumps written');
   const liveFp = await fingerprint(live);
@@ -271,7 +273,15 @@ try {
   await live.query('rollback').catch(() => {});
 } finally {
   await live.end().catch(() => {});
-  if (cluster) { cluster.stop(); if (!args.includes('--keep')) rmSync(cluster.data, { recursive: true, force: true }); }
+  if (cluster) {
+    cluster.stop();
+    if (!args.includes('--keep')) {
+      const target = path.resolve(cluster.data);
+      assert.ok(target.startsWith(path.resolve(tmpdir()) + path.sep)
+        && path.basename(target).startsWith('taba-restore-'), 'UNSAFE_RESTORE_CLEANUP_TARGET');
+      rmSync(target, { recursive: true, force: true });
+    }
+  }
 }
 report.verdict = !report.error && Object.values(report.checks).length === 4 && Object.values(report.checks).every((v) => v === 'PASS') ? 'PASS' : 'FAIL';
 mkdirSync(path.dirname(OUT), { recursive: true });

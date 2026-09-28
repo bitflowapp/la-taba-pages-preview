@@ -134,6 +134,31 @@ export function createSupabaseBusinessRepository({ client, businessId }) {
     createDevicePairing: (deviceName) => rpc('create_local_device_pairing', { p_business_id: businessId, p_device_name: deviceName }),
     revokeDevice: ({ deviceId, reason }) => rpc('revoke_local_device', { p_device_id: deviceId, p_reason: reason }),
     configurePrintSettings: (settings) => rpc('configure_business_print_settings', { p_business_id: businessId, p_settings: settings }),
+
+    // ── Instaladores del equipo (bucket privado `team-apps`) ────────────────
+    // Sólo el dueño o el encargado de ESTE comercio pueden leerlos (RLS de
+    // storage). Sin permiso o sin carga, el manifiesto es `null`: no hay nada
+    // que ofrecer, y no es un error.
+    async teamAppsManifest() {
+      if (typeof client.storage?.from !== 'function') return { ok: true, data: null };
+      try {
+        const { data, error } = await client.storage.from('team-apps').download(`${businessId}/manifest.json`);
+        if (error || !data) return { ok: true, data: null };
+        return { ok: true, data: JSON.parse(await data.text()) };
+      } catch (_) {
+        return { ok: true, data: null };
+      }
+    },
+    async teamAppLink({ path, seconds, fileName = '' }) {
+      if (typeof path !== 'string' || !path.startsWith(`${businessId}/`)) return { ok: false, message: 'Instalador de otro comercio.' };
+      try {
+        const { data, error } = await client.storage.from('team-apps')
+          .createSignedUrl(path, seconds, fileName ? { download: fileName } : undefined);
+        return error || !data?.signedUrl ? { ok: false, message: '' } : { ok: true, data: data.signedUrl };
+      } catch (_) {
+        return { ok: false, message: '' };
+      }
+    },
   });
 }
 

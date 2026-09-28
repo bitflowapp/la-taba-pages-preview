@@ -123,7 +123,7 @@ export async function handlePrintAgentAction(target, context) {
   return null;
 }
 
-export function renderPrintAgentSurface({ role = '', data = printStatus, status = state, code = pairing, downloadUrl = '' } = {}) {
+export function renderPrintAgentSurface({ role = '', data = printStatus, status = state, code = pairing, downloadMarkup = '' } = {}) {
   const elevated = ['owner', 'admin'].includes(String(role));
   const header = `<header><div><p class="eyebrow">Panel del negocio</p><h2>Impresora del local</h2>
     <p>El agente de impresión de la PC del local. Es opcional: sin impresora, los pedidos se atienden igual.</p></div></header>`;
@@ -159,11 +159,10 @@ export function renderPrintAgentSurface({ role = '', data = printStatus, status 
       ${elevated ? `<button class="secondary-button compact" type="button" data-print-agent-auto="${auto ? 'false' : 'true'}">${auto ? 'Apagar' : 'Encender'}</button>` : ''}
     </section>
     ${elevated ? renderPairing(code) : ''}
-    <section class="business-config-block">
+    ${downloadMarkup || `<section class="business-config-block">
       <h3>Instalar el agente</h3>
       <p class="form-hint">El instalador para Windows es de uso interno y todavía no tiene firma digital: Windows va a pedir confirmación al instalarlo. Instalalo sólo desde el link que te pasa La Taba.</p>
-      ${downloadUrl ? `<a class="secondary-button compact" href="${escapeHtml(downloadUrl)}" target="_blank" rel="noopener noreferrer">Descargar instalador (interno)</a>` : ''}
-    </section>
+    </section>`}
     <div class="button-row"><button class="secondary-button compact" type="button" data-print-agent-refresh>Actualizar</button></div>
   </section>`;
 }

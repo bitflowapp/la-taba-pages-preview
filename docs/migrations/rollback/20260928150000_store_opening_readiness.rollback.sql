@@ -35,6 +35,11 @@ drop function if exists public.set_business_address(uuid, text);
 drop function if exists public.team_invitation_lookup(text);
 drop function if exists public.team_invitation_record_activation(text, uuid, boolean);
 
+-- Los instaladores dejan de poder leerse desde el Panel. El bucket y lo que
+-- tiene quedan (sólo la clave de servicio los ve): borrar binarios no es parte
+-- de un rollback.
+drop policy if exists team_apps_owner_admin_read on storage.objects;
+
 -- set_business_open_state anterior (sin auditoría).
 CREATE OR REPLACE FUNCTION public.set_business_open_state(p_business_id uuid, p_status text)
  RETURNS jsonb

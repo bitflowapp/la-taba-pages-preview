@@ -194,3 +194,19 @@ test('opening:publish aplica sólo con una cuenta del comercio', () => {
   assert.equal(parsePublishArgs(['--apply', '--credential', 'CP OWNER MARCO PANEL']).credential, 'CP OWNER MARCO PANEL');
   assert.throws(() => parsePublishArgs(['--apply', '--service-key']), /Flag desconocido/);
 });
+
+test('alcohol: la política se escribe completa con la sesión del comercio, nunca a medias', async () => {
+  const { parseAlcoholArgs, policyPatch, ENABLE_PHRASE } = await import('../scripts/controlled-production/alcohol-policy.mjs');
+  assert.equal(ENABLE_PHRASE, 'HABILITAR ALCOHOL');
+  assert.deepEqual(parseAlcoholArgs(['status']), { command: 'status', business: 'la-taba-cp', credential: '' });
+  assert.throws(() => parseAlcoholArgs(['apply', '--min-age', '18', '--start', '10:00', '--end', '23:00']), /--credential/);
+  assert.throws(() => parseAlcoholArgs(['apply', '--credential', 'X', '--min-age', '17', '--start', '10:00', '--end', '23:00']), /18 a 99/);
+  assert.throws(() => parseAlcoholArgs(['apply', '--credential', 'X', '--min-age', '18', '--start', '10:00', '--end', '10:00']), /distintas/);
+  const apply = parseAlcoholArgs(['apply', '--credential', 'X', '--min-age', '18', '--start', '20:00', '--end', '02:00']);
+  assert.deepEqual(policyPatch(apply), {
+    alcohol_minimum_age: 18, alcohol_sales_start: '20:00', alcohol_sales_end: '02:00',
+    alcohol_timezone: 'America/Argentina/Buenos_Aires', alcohol_sales_enabled: true,
+  });
+  assert.deepEqual(policyPatch(parseAlcoholArgs(['disable', '--credential', 'X'])), { alcohol_sales_enabled: false });
+  assert.throws(() => parseAlcoholArgs(['enable']), /status, apply o disable/);
+});

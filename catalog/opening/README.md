@@ -1,12 +1,20 @@
 # Planilla de apertura (CONTROLLED_PRODUCTION)
 
-`planilla-apertura-cp.csv` trae los 46 productos del comercio real con precio y stock vacíos y `publicar = no`. Primero van los productos sin alcohol; los que tienen alcohol llevan «(alcohol)» en el nombre.
+`planilla-apertura-cp.csv` trae los 46 productos del comercio real:
+
+- precio y stock vacíos y `publicar = no`;
+- primero los productos sin alcohol;
+- los que tienen alcohol llevan «(alcohol)» en el nombre.
+
+Es la forma de cargar **muchos** productos juntos. Para uno o pocos, el Panel alcanza: Catálogo › precio y stock › «Guardar», y después «Verificar ficha y publicar».
+
+Todos los datos que hay que pedirle al comercio están en [`OWNER-INPUT.md`](OWNER-INPUT.md).
 
 ## Qué completa el comercio
 
 | Columna | Cómo |
 | --- | --- |
-| `precio` | Pesos, sin puntos de mil ni signo: `4200` o `4200.50`. Vacío = «todavía no lo decidí». |
+| `precio` | En pesos, sin puntos de mil ni signo: `4200` o `4200.50`. Vacío = «todavía no lo decidí». |
 | `stock` | Unidades contadas en el local: `12`. Vacío = sin contar; `0` = contado y agotado. |
 | `publicar` | `si` para que aparezca en la tienda, `no` para dejarlo oculto. |
 
@@ -19,30 +27,30 @@ No hace falta tocar `sku` ni `producto`.
   - precio;
   - stock mayor a cero;
   - foto aprobada en el Panel.
-- **Alcohol.** Los productos con alcohol no se pueden publicar mientras la venta de alcohol esté cerrada.
-- **La primera publicación verifica la ficha del producto**, cosa que el Panel no hace. Después, ocultar o volver a publicar se hace desde el Panel → Catálogo.
+- **Alcohol:** los productos con alcohol no se publican mientras la venta de alcohol esté cerrada. Lo controla la planilla y también la base.
+- **La primera publicación verifica la ficha del producto.** Es el mismo contrato que el botón «Verificar ficha y publicar» del Panel.
+- **Se puede repetir sin peligro:** aplicar la misma planilla dos veces no cambia nada la segunda vez.
 
 ## Cómo se aplica
 
-Se prueba siempre primero; esta corrida no escribe nada:
+1. **Ensayo, que no escribe nada.** Valida la planilla contra el catálogo real y dice qué quedaría pendiente para abrir:
+
+   ```
+   npm run opening:dry-run
+   ```
+
+2. **Aplicar**, con la sesión de un dueño o encargado. Nunca con la clave de servicio: la credencial se lee del Administrador de credenciales de Windows. Pide escribir `APLICAR` y hace todo en una transacción:
+
+   ```
+   npm run opening:publish -- --apply --credential "<credencial del dueño o encargado>"
+   ```
+
+3. **Ver qué falta:** Panel › Apertura, o `npm run opening:check`.
+
+Para ensayar la planilla en el tenant QA de CP antes del real:
 
 ```
-node scripts/import-commercial-catalog.mjs catalog/opening/planilla-apertura-cp.csv --catalogo cp
+node scripts/import-commercial-catalog.mjs <planilla> --catalogo cp --business <uuid del tenant QA>
 ```
 
-Después se aplica con la sesión de un dueño o admin del negocio:
-
-```
-node scripts/import-commercial-catalog.mjs <planilla> --catalogo cp --apply --target supabase
-```
-
-- La aplicación necesita, en el entorno, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `TABA_BUSINESS_ID` y `SUPABASE_ACCESS_TOKEN`.
-- El token tiene que ser de una sesión registrada con `identity_register_session`.
-- La aplicación la corre el operador técnico (o Claude) y el comercio la autoriza.
-- Nunca se inventan precios ni stock.
-
-Para ver qué falta para abrir:
-
-```
-node scripts/controlled-production/opening-readiness.mjs
-```
+Nunca se inventan precios ni stock.

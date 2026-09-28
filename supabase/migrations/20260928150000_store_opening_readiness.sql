@@ -1173,6 +1173,42 @@ begin
 end;
 $function$;
 
+-- ── 12 · Instaladores del equipo, sin publicarlos ───────────────────────────
+--
+-- La app de repartidor (APK firmada) y el agente de impresión (MSI interno sin
+-- firma de código) no se publican en ningún lado público. Viven en un bucket
+-- privado, en la carpeta del comercio (`<business_id>/...`). Sube sólo la
+-- clave de servicio (herramienta del operador). El dueño o el encargado de ESE
+-- comercio pueden leerlos, que es lo que les permite crear desde el Panel un
+-- link firmado y temporal para mandárselo a un repartidor o instalar el agente.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('team-apps', 'team-apps', false, 209715200,
+  array['application/vnd.android.package-archive', 'application/x-msi', 'application/octet-stream', 'application/json']::text[])
+on conflict (id) do update set
+  name = excluded.name,
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types,
+  updated_at = statement_timestamp();
+
+drop policy if exists team_apps_service_role_all on storage.objects;
+create policy team_apps_service_role_all
+  on storage.objects for all to service_role
+  using (bucket_id = 'team-apps')
+  with check (bucket_id = 'team-apps');
+
+drop policy if exists team_apps_owner_admin_read on storage.objects;
+create policy team_apps_owner_admin_read
+  on storage.objects for select to authenticated
+  using (
+    bucket_id = 'team-apps'
+    and case
+      when split_part(name, '/', 1) ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+        then public.has_business_role(split_part(name, '/', 1)::uuid, array['owner', 'admin'])
+      else false
+    end
+  );
+
 -- ── 10 · Superficie de ejecución ─────────────────────────────────────────────
 revoke all on function public.set_business_fulfillment(uuid, boolean, boolean) from public, anon;
 revoke all on function public.set_business_opening_hours(uuid, jsonb) from public, anon;

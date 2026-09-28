@@ -206,7 +206,7 @@ test('equipo: sacarle el rol a un dueño exige la frase y el último dueño lo e
 
 test('fotos: el nombre del archivo nombra el SKU exacto', () => {
   assert.deepEqual(skuFromPhotoName('heineken-710ml__front.jpg'), { sku: 'heineken-710ml', kind: 'front' });
-  assert.deepEqual(skuFromPhotoName('C:\\fotos\\Heineken-710ml.JPEG'), { sku: 'heineken-710ml', kind: 'front' });
+  assert.deepEqual(skuFromPhotoName('fotos\\canary\\Heineken-710ml.JPEG'), { sku: 'heineken-710ml', kind: 'front' });
   assert.deepEqual(skuFromPhotoName('heineken-710ml__alternate.png'), { sku: 'heineken-710ml', kind: 'alternate' });
   assert.equal(skuFromPhotoName('IMG_2034.jpg'), null);
   assert.equal(skuFromPhotoName('heineken-710ml.gif'), null);
@@ -456,4 +456,50 @@ test('horarios y cobertura: entrega y WhatsApp se guardan con mensajes del comer
   assert.match(tooShort.message, /entre 8 y 15 números/);
   assert.deepEqual(calls, [['fulfillment', { deliveryEnabled: false, pickupEnabled: true }]], 'lo inválido no llega al servidor');
   assert.match(whatsappFailureMessage('Only an active owner/admin can authorize the business contact channel.'), /dueño o el encargado/);
+});
+
+// ── Instaladores del equipo ────────────────────────────────────────────────
+
+test('instaladores: sólo dueño o encargado crean el link y el agente avisa que no tiene firma', async () => {
+  const { renderTeamAppBlock, handleTeamAppsAction, activateTeamApps, resetTeamApps } = await import('../js/business/business-team-apps.js');
+  resetTeamApps();
+  assert.match(renderTeamAppBlock('rider', { elevated: false }), /lo crea el dueño o el encargado/);
+  const manifest = {
+    rider: { path: 'b/rider/app.apk', file: 'app.apk', version: '0.1.3-canonical-pilot', sha256: 'f'.repeat(64) },
+    agent: { path: 'b/agent/agente.msi', file: 'agente.msi', version: '0.1.0', sha256: 'e'.repeat(64) },
+  };
+  const links = [];
+  const context = {
+    readTeamAppsManifest: async () => ({ ok: true, data: manifest }),
+    createTeamAppLink: async (input) => { links.push(input); return { ok: true, data: 'https://cp.example/storage/v1/object/sign/team-apps/b/rider/app.apk?token=x' }; },
+    onChange() {},
+  };
+  await activateTeamApps(context);
+  const before = renderTeamAppBlock('rider', { elevated: true });
+  assert.match(before, /Versión 0\.1\.3-canonical-pilot/);
+  assert.match(before, /Crear link de descarga \(7 días\)/);
+  assert.match(renderTeamAppBlock('agent', { elevated: true }), /SIN firma de código/);
+  const result = await handleTeamAppsAction(click({ 'data-team-app-link': 'rider' }), context);
+  assert.equal(result.ok, true);
+  assert.deepEqual(links, [{ path: 'b/rider/app.apk', seconds: 604800, fileName: 'app.apk' }]);
+  assert.match(renderTeamAppBlock('rider', { elevated: true }), /token=x/);
+  resetTeamApps();
+  assert.match(renderTeamAppBlock('rider', { elevated: true, data: null }), /todavía no está cargada/);
+});
+
+test('instaladores: la herramienta sólo sube el archivo certificado', async () => {
+  const { parseTeamAppArgs, assertRiderReceipt, manifestEntry, RIDER_CERTIFICATE_SHA256 } = await import('../scripts/controlled-production/publish-team-app.mjs');
+  const sha = 'a'.repeat(64);
+  assert.throws(() => parseTeamAppArgs(['--kind', 'rider', '--file', 'x.apk', '--expect-sha256', sha]), /recibo/);
+  assert.throws(() => parseTeamAppArgs(['--kind', 'agent', '--file', 'x.apk', '--expect-sha256', sha, '--version', '0.1.0']), /\.msi/);
+  assert.throws(() => parseTeamAppArgs(['--kind', 'agent', '--file', 'x.msi', '--expect-sha256', 'nope', '--version', '0.1.0']), /SHA-256/);
+  assert.equal(parseTeamAppArgs(['--kind', 'agent', '--file', 'x.msi', '--expect-sha256', sha, '--version', '0.1.0']).apply, false, 'por defecto es prueba');
+  const receipt = { target: 'pilot', backend: 'tkanbadcglszlcyfjvpv', packageId: 'com.lataba.rider.pilot', certificateSha256: RIDER_CERTIFICATE_SHA256,
+    apkSha256: sha, versionName: '0.1.3-canonical-pilot', versionCode: 4 };
+  assert.equal(assertRiderReceipt(receipt, sha), true);
+  assert.throws(() => assertRiderReceipt({ ...receipt, certificateSha256: 'b'.repeat(64) }, sha), /CERTIFICATE/);
+  assert.throws(() => assertRiderReceipt(receipt, 'c'.repeat(64)), /THIS_APK/);
+  assert.throws(() => assertRiderReceipt({ ...receipt, backend: 'ucbtjcurawxjwjdvvcvj' }, sha), /BACKEND/);
+  assert.equal(manifestEntry({ kind: 'agent', fileName: 'a.msi', sha256: sha, bytes: 1, version: '0.1.0', now: 'T' }).signed, false);
+  assert.equal(manifestEntry({ kind: 'rider', fileName: 'a.apk', sha256: sha, bytes: 1, receipt, now: 'T' }).version_code, 4);
 });

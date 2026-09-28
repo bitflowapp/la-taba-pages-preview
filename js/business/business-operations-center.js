@@ -36,6 +36,7 @@ import {
 import { activateTeam, handleTeamAction, renderTeamSurface, resetTeam } from './business-team.js';
 import { activatePrintAgent, handlePrintAgentAction, renderPrintAgentSurface, resetPrintAgent } from './business-print-agent.js';
 import { handlePhotoIntakeAction, photoIntakeState, renderPhotoIntake, resetPhotoIntake } from './business-photo-intake.js';
+import { activateTeamApps, handleTeamAppsAction, renderTeamAppBlock, resetTeamApps } from './business-team-apps.js';
 
 export const BUSINESS_OPERATION_VIEWS = Object.freeze([
   'store-opening', 'operation-center', 'day-open', 'orders', 'operations-config', 'payments', 'payments-setup', 'scanner', 'product-create',
@@ -240,6 +241,7 @@ export function configureBusinessOperations(next = {}) {
   resetTeam();
   resetPrintAgent();
   resetPhotoIntake();
+  resetTeamApps();
   return context;
 }
 
@@ -256,8 +258,11 @@ export function renderBusinessOperations(view) {
     'store-opening': () => renderStoreOpeningSurface({ allowedViews: allowedBusinessOperationViews(context.role) }),
     team: () => renderTeamSurface({
       role: context.role, operatorId: context.operatorId, allowedViews: allowedBusinessOperationViews(context.role),
+      appsMarkup: renderTeamAppBlock('rider', { elevated: isElevated(context.role) }),
     }),
-    'print-agent': () => renderPrintAgentSurface({ role: context.role, downloadUrl: context.localAgentDownloadUrl || '' }),
+    'print-agent': () => renderPrintAgentSurface({
+      role: context.role, downloadMarkup: renderTeamAppBlock('agent', { elevated: isElevated(context.role) }),
+    }),
     'day-open': () => renderDayOpenSurface({
       opening: openingSignals, businessStatus: openingStatusRaw?.business_status, role: context.role, busy,
       verdict: storeOpeningVerdict(), pendingClose,
@@ -431,8 +436,8 @@ export function activateBusinessOperations(view = currentView) {
       void refreshFiscal();
     }
     if (view === 'store-opening' || view === 'day-open') void activateStoreOpening(context);
-    if (view === 'team') void activateTeam(context);
-    if (view === 'print-agent') void activatePrintAgent(context);
+    if (view === 'team') { void activateTeam(context); void activateTeamApps(context); }
+    if (view === 'print-agent') { void activatePrintAgent(context); void activateTeamApps(context); }
     if (view === 'operations-config' && !operationsConfigLoadStarted) {
       operationsConfigLoadStarted = true;
       void refreshOperationsConfig();
@@ -723,6 +728,7 @@ export async function handleBusinessOperationsAction(target) {
   const moduleResult = await handleStoreOpeningAction(target, context)
     || await handleTeamAction(target, context)
     || await handlePrintAgentAction(target, context)
+    || await handleTeamAppsAction(target, context)
     || await handlePhotoIntakeAction(target, {
       context,
       products: () => catalogProducts,
@@ -3265,7 +3271,8 @@ function defaultContext() {
     revokeLocalDevice: async () => ({ ok: false, message: 'La vinculación de la impresora no está disponible.' }),
     configurePrintSettings: async () => ({ ok: false, message: 'La impresión no está disponible.' }),
     unpublishCatalogProduct: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
-    localAgentDownloadUrl: '',
+    readTeamAppsManifest: async () => ({ ok: true, data: null }),
+    createTeamAppLink: async () => ({ ok: false, message: 'Los instaladores no están disponibles.' }),
     listAccessRequests: async () => ({ ok: false, message: 'Las solicitudes de acceso no están disponibles.' }),
     reviewAccessRequest: async () => ({ ok: false, message: 'Las solicitudes de acceso no están disponibles.' }),
     setBusinessOpenState: async () => ({ ok: false, message: 'No se puede cambiar el estado del negocio.' }),

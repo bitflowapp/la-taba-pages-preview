@@ -16,7 +16,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(79);
+select plan(84);
 
 -- ── Fixture ────────────────────────────────────────────────────────────────
 insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
@@ -309,6 +309,30 @@ reset role;
 select is((select count(*)::integer from public.identity_audit_events
   where event_type = 'invitation_account_activated' and subject_user_id = 'ca000000-0000-4000-8000-0000000000a4'), 1,
   'la auditoria de identidad guarda la activacion');
+
+-- ── 11 · Instaladores del equipo: bucket privado por comercio ─────────────
+select is((select public from storage.buckets where id = 'team-apps'), false, 'el bucket de instaladores es privado');
+insert into storage.objects(bucket_id, name) values
+  ('team-apps', 'ca000000-0000-4000-8000-0000000000b1/rider/app-repartidor.apk'),
+  ('team-apps', 'e7850ad2-a447-402c-8375-3fd74e9466ba/rider/app-repartidor.apk'),
+  ('team-apps', 'sin-comercio/app.apk');
+grant select on storage.objects to authenticated;
+create temporary table team_apps_seen(label text, n integer) on commit drop;
+grant insert, select on team_apps_seen to authenticated;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"ca000000-0000-4000-8000-0000000000a1","role":"authenticated","session_id":"ca000000-0000-4000-8000-0000000000c1"}';
+insert into team_apps_seen select 'dueño', count(*)::integer from storage.objects where bucket_id = 'team-apps';
+set local request.jwt.claims = '{"sub":"ca000000-0000-4000-8000-0000000000a2","role":"authenticated","session_id":"ca000000-0000-4000-8000-0000000000c2"}';
+insert into team_apps_seen select 'equipo', count(*)::integer from storage.objects where bucket_id = 'team-apps';
+set local request.jwt.claims = '{"sub":"ca000000-0000-4000-8000-0000000000a4","role":"authenticated"}';
+insert into team_apps_seen select 'afuera', count(*)::integer from storage.objects where bucket_id = 'team-apps';
+reset role;
+select is((select n from team_apps_seen where label = 'dueño'), 1, 'el dueño ve sólo el instalador de su comercio (con su sesión registrada)');
+select is((select n from team_apps_seen where label = 'equipo'), 0, 'el equipo no ve instaladores');
+select is((select n from team_apps_seen where label = 'afuera'), 0, 'alguien de afuera no ve instaladores');
+select ok(not exists (select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects'
+    and policyname like 'team_apps%' and cmd in ('INSERT', 'UPDATE', 'DELETE', 'ALL') and roles::text like '%authenticated%'),
+  'ninguna persona sube, cambia ni borra instaladores');
 
 select * from finish();
 rollback;

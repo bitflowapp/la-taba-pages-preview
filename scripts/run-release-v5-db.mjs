@@ -148,8 +148,8 @@ try {
       assert.doesNotMatch(output,/^not ok\b/m,name);assert.match(output,/^1\.\.[0-9]+$/m,name);
       assertions+=Number(/^1\.\.([0-9]+)$/m.exec(output)[1]);
     }
-    assert.equal(assertions,640);
-    console.log('CANONICAL_PGTAP: 268 + 44 least-privilege + 50 reparto-propio + 37 ventana QA/columnas privadas/pausa + 9 Mercado Pago sólo con vendedor conectado + 5 aislamiento cobro manual/Mercado Pago + 9 alerta de vendedor que no puede cobrar + 16 interruptor de operador por negocio + 104 impresión del mostrador + 19 pipeline de imágenes + 79 preparar la apertura assertions PASS');
+    assert.equal(assertions,645);
+    console.log('CANONICAL_PGTAP: 268 + 44 least-privilege + 50 reparto-propio + 37 ventana QA/columnas privadas/pausa + 9 Mercado Pago sólo con vendedor conectado + 5 aislamiento cobro manual/Mercado Pago + 9 alerta de vendedor que no puede cobrar + 16 interruptor de operador por negocio + 104 impresión del mostrador + 19 pipeline de imágenes + 84 preparar la apertura assertions PASS');
 
     // pgTAP no puede probar dos agentes reclamando a la vez: una conexión por llamada.
     const { runPrintClaimRace } = await import('./print-agent/claim-race.mjs');
@@ -245,6 +245,9 @@ try {
       const definition=(await query('select pg_get_functiondef($1::regprocedure) as definition',[signature])).rows[0].definition;
       assert.equal(createHash('sha256').update(definition).digest('hex'),previousSha256,signature);
     }
+    assert.equal(Number((await query(
+      "select count(*)::integer as n from pg_policies where schemaname='storage' and policyname='team_apps_owner_admin_read'"
+    )).rows[0].n),0,'team_apps_owner_admin_read');
     await query('rollback');
     console.log('STORE_OPENING_ROLLBACK_DRILL: PASS');
   } else {

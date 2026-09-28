@@ -258,7 +258,7 @@ export async function handleTeamAction(target, context) {
 
 // ── Pantalla ─────────────────────────────────────────────────────────────────
 export function renderTeamSurface({ role = '', operatorId = '', state = status, list = members, invites = invitations,
-  invitation = lastInvitation, allowedViews = [] } = {}) {
+  invitation = lastInvitation, allowedViews = [], appsMarkup = '' } = {}) {
   const grantable = grantableRoles(role);
   const memberCards = list.length
     ? list.map((member) => renderMember(member, { role, operatorId })).join('')
@@ -291,6 +291,8 @@ export function renderTeamSurface({ role = '', operatorId = '', state = status, 
       <button class="primary-button compact" type="button" data-team-invite-send>Crear invitación</button>`
     : '<p class="form-hint">Invitar gente lo hace el dueño o el encargado.</p>'}
     </section>
+
+    ${appsMarkup}
 
     <section class="business-config-block" data-team-members>
       <h3>Personas</h3>

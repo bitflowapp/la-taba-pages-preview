@@ -234,6 +234,7 @@ const ASSETS = [
   './js/business/business-product-onboarding.js',
   './js/business/business-sound-service.js',
   './js/business/business-store-opening.js',
+  './js/business/business-team-apps.js',
   './js/business/business-team.js',
   './js/business/business-tray-patch.js',
   './js/business/business-view-model.js',

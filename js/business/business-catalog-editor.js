@@ -1,5 +1,6 @@
 import { escapeHtml } from '../ui.js';
 import { resolveCatalogImageUrl } from '../core/catalog-image-contract.js';
+import { imageAttributionFor, rightsReferenceRequiresAttribution } from '../core/image-attribution.js';
 import { resolveRuntimeConfig } from '../core/runtime-config.js';
 
 export function normalizeCatalogProduct(row = {}) {
@@ -17,6 +18,7 @@ export function normalizeCatalogProduct(row = {}) {
     alcoholic: row.is_alcoholic === true, hasApprovedImage: Boolean(row.image_url && row.catalog_asset_id),
     imageUrl: resolveCatalogImageUrl(row.image_url || '', supabaseUrl),
     imageThumbnailUrl: resolveCatalogImageUrl(row.image_thumbnail_url || '', supabaseUrl),
+    sourceImageSha256: String(row.source_image_sha256 || ''),
     catalogOrigin: String(row.catalog_origin || ''),
   };
 }
@@ -46,13 +48,28 @@ export function buildCommercialEdit(product, { price = '', stock = '' } = {}) {
   return { value: Object.keys(patch).length > 1 ? patch : null };
 }
 
-export function catalogPublicationReadiness(product) {
+// La foto asociada es la de la última revisión aprobada del producto: aprobar
+// reemplaza la asociación. Si esa revisión declara una licencia CC, la tienda
+// tiene que mostrar el crédito (core/image-attribution.js) antes de publicar.
+export function catalogImageAttributionStatus(product, imageUploads = []) {
+  if (!product?.hasApprovedImage) return { required: false, ready: true };
+  const approved = imageUploads
+    .filter((upload) => upload?.product_id === product.id && upload?.status === 'approved')
+    .sort((a, b) => String(b.reviewed_at || b.created_at || '').localeCompare(String(a.reviewed_at || a.created_at || '')))[0];
+  const required = rightsReferenceRequiresAttribution(approved?.rights_reference);
+  return { required, ready: !required || Boolean(imageAttributionFor(product)) };
+}
+
+export function catalogPublicationReadiness(product, { imageUploads = [] } = {}) {
   if (product.available) return { ready: true, reason: '' };
   if (product.catalogOrigin !== 'commercial' || !product.active) return { ready: false, reason: 'Producto inactivo o fuera del catálogo comercial.' };
   if (product.priceStatus !== 'confirmed' || product.price <= 0) return { ready: false, reason: 'Falta confirmar el precio.' };
   if (product.stock === null) return { ready: false, reason: 'Falta contar el stock.' };
   if (product.stock === 0) return { ready: false, reason: 'El producto está agotado.' };
   if (!product.hasApprovedImage) return { ready: false, reason: 'Falta una imagen aprobada.' };
+  if (!catalogImageAttributionStatus(product, imageUploads).ready) {
+    return { ready: false, reason: 'La foto tiene licencia CC y la tienda todavía no muestra su crédito.' };
+  }
   if (!product.verified) return { ready: false, reason: 'Falta verificar la ficha comercial.' };
   if (product.alcoholic) return { ready: false, reason: 'La venta de alcohol requiere habilitación comercial.' };
   return { ready: true, reason: '' };
@@ -64,7 +81,7 @@ export function renderCatalogEditor({
 } = {}) {
   const normalized = products.map(normalizeCatalogProduct);
   const rows = normalized.map((product) => {
-    const readiness = catalogPublicationReadiness(product);
+    const readiness = catalogPublicationReadiness(product, { imageUploads });
     const priceConfirmed = product.priceStatus === 'confirmed' && product.price > 0;
     const rowMarkup = `<article class="business-catalog-row" data-catalog-row="${escapeHtml(product.sku)}">
       <div class="business-catalog-identity"><h3>${escapeHtml(product.name)}</h3>
@@ -157,6 +174,11 @@ function renderCatalogImageManager(product, imageUploads, { busy = false, imageM
       + (upload.rejection_reason ? '<small>' + escapeHtml(upload.rejection_reason) + '</small>' : '')
       + review + reject + '</article>';
   }).join('');
+  const attribution = catalogImageAttributionStatus(product, imageUploads);
+  const attributionNote = !attribution.required ? ''
+    : attribution.ready
+      ? '<small data-catalog-image-attribution="ready">Licencia CC: la ficha pública muestra el crédito de la foto.</small>'
+      : '<small data-catalog-image-attribution="missing">Licencia CC sin crédito en la tienda: no se puede publicar.</small>';
   const active = product.hasApprovedImage && product.imageThumbnailUrl
     ? '<img class="business-catalog-image-preview" src="' + escapeHtml(product.imageThumbnailUrl)
       + '" alt="Imagen aprobada de ' + escapeHtml(product.name) + '" loading="lazy" decoding="async">'
@@ -164,7 +186,7 @@ function renderCatalogImageManager(product, imageUploads, { busy = false, imageM
   return '<details class="business-catalog-image-manager" data-catalog-image-product="' + escapeHtml(product.id) + '">'
     + '<summary><strong>Imagen</strong><span class="status-pill ' + (product.hasApprovedImage ? 'success' : 'warning') + '">'
     + (product.hasApprovedImage ? 'Aprobada' : 'Pendiente') + '</span></summary>'
-    + '<div class="business-catalog-image-body">' + active
+    + '<div class="business-catalog-image-body">' + active + attributionNote
     + '<form data-catalog-image-form="' + escapeHtml(product.id) + '" novalidate>'
     + '<label>Archivo de imagen<input type="file" data-catalog-image-file accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" ' + (busy ? 'disabled' : '') + '></label>'
     + '<label>Tipo de fuente<select data-catalog-image-source-type required ' + (busy ? 'disabled' : '') + '>'

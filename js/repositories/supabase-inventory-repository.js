@@ -12,7 +12,7 @@ export function createSupabaseInventoryRepository({ client, businessId }) {
   return Object.freeze({
     async listCatalogProducts() {
       const { data, error, status } = await client.from('products')
-        .select('id,sku,name,brand,variant,capacity,capacity_value,capacity_unit,packaging_type,category,subcategory,price,price_status,stock,available,merchant_available,is_verified,is_active,is_alcoholic,image_url,catalog_asset_id,catalog_origin,sort_order')
+        .select('id,sku,name,brand,variant,capacity,capacity_value,capacity_unit,packaging_type,category,subcategory,price,price_status,stock,available,merchant_available,is_verified,is_active,is_alcoholic,image_url,image_thumbnail_url,source_image_sha256,catalog_asset_id,catalog_origin,sort_order')
         .eq('business_id', businessId).eq('catalog_origin', 'commercial')
         .order('sort_order', { ascending: true }).order('name', { ascending: true }).limit(200);
       return error ? classifyRpcError(error, status) : { ok: true, data: Array.isArray(data) ? data : [] };

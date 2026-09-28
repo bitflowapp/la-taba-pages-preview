@@ -1,101 +1,203 @@
-# Controlled Production: informe final de imágenes de catálogo — 2026-09
+# Controlled Production: imágenes reales del catálogo — 2026-09
+
+Última revisión: 2026-09-28 (misión «cerrar catálogo real de imágenes end-to-end»). Proyecto `tkanbadcglszlcyfjvpv`, negocio `e7850ad2-a447-402c-8375-3fd74e9466ba`. No se crearon productos ni se tocó precio, stock, publicación, Mercado Pago, ARCA, Rider, LocalAgent, `print_jobs`, checkout, pedidos ni roles.
 
 ## Resultado
 
-La auditoría en vivo confirmó 46 productos del negocio de Controlled Production, 0 públicos, 0 verificados, 0 con imagen y 0 duplicados por SKU. Los 46 conservan precio pendiente y stock nulo. El respaldo lógico se creó antes de cualquier posible escritura.
-
-No se descargó, subió ni asoció ninguna imagen: Controlled Production no tiene un Storage de imágenes ni un flujo compatible para estos 46 productos. No se escribió en la base de datos y no se modificaron precios, stock, publicación ni otros módulos.
-
-## Auditoría inicial y respaldo
-
-Consulta de solo lectura al proyecto tkanbadcglszlcyfjvpv, acotada al negocio e7850ad2-a447-402c-8375-3fd74e9466ba:
-
-| Medición | Estado inicial |
+| Medición | Resultado |
 | --- | ---: |
-| PRODUCTS_IN_CP | 46 |
-| PRODUCTS_PUBLIC (available=true) | 0 |
-| Productos verificados | 0 |
-| PRODUCTS_WITH_IMAGE | 0 |
-| PRODUCTS_WITHOUT_IMAGE | 46 |
-| Duplicates por SKU | 0 |
-| price_status=pending | 46 |
-| stock=NULL | 46 |
-| catalog_assets del negocio | 0 |
-| catalog_product_drafts del negocio | 0 |
+| `OWNER_SESSION` | PASS: Panel real, rol Dueño, 46 filas y 9 canary verificados en pantalla |
+| `PRODUCTS_IN_CP` | 46 |
+| `PRODUCTS_WITH_REAL_IMAGES` / `PRODUCTS_PENDING_IMAGE` | 1 / 45 |
+| `CANARY_COMPLETED` | 0/9 (ningún canary tiene imagen con derechos verificables) |
+| `CAMPARI_IMAGE_E2E` | PASS: staging privado → vista previa → aprobación → `catalog-images` → asociación |
+| `RIGHTS_VERIFIED` | 1 (Campari Bitter 750 ml, Open Food Facts, CC BY-SA 3.0) |
+| `RIGHTS_REVIEW_REQUIRED` | 41 |
+| `REPLACE_REQUIRED` | 4 (Heineken 710, Lay's 134 g, Cinzano 950, Corona 330) |
+| `IMAGES_STAGED` / `IMAGES_APPROVED` / `IMAGES_ASSOCIATED` | 1 / 1 / 1 |
+| `PRODUCTS_PUBLIC` / `DUPLICATES` | 0 / 0 |
+| `PRICE_VALUES_CHANGED` / `STOCK_VALUES_CHANGED` | 0 / 0; huellas `1da03ffc…` y `e6d1ba5d…` sin cambios |
+| `ANON_PUBLIC_CHECK` | PASS: HTTP 200 con 0 filas; la imagen pública responde 200 `image/webp` con SHA idéntico |
 
-CATALOG_IMAGE_BACKUP: PASS. Export lógico privado guardado en catalog-images-2026-09-27/catalog-before-images.json. SHA-256: 39B47EFD47F18AF02C65A4D1209CB438E4B74E7448C5AD5DC52EC8CFD4A19AAD. El respaldo incluye las filas de products, catalog_assets, catalog_product_drafts y sus conteos.
+Campari sigue en borrador: precio pendiente, stock NULL, `available=false` e `is_verified=false`. No es visible para clientes. Venderlo requiere además habilitar la venta de alcohol.
 
-## Investigación existente y canary
+## Por qué casi todo sigue bloqueado por derechos
 
-Se reutilizaron catalog/real-catalog-initial.csv, catalog/real-catalog-canary.csv, docs/catalog/catalog-source-2026-09.json y docs/catalog/catalog-image-review-2026-09.json de la rama feat/real-catalog-initial. No se creó ningún SKU nuevo.
+El bloqueo es el mismo en las 45 fichas restantes: las fotos limpias y exactas de cada presentación sólo existen en canales del titular (sitio oficial, tienda oficial, renders que la marca entrega al retail), y ninguno publica una licencia que permita a otra tienda reutilizarlas. Los términos revisados dicen lo contrario:
 
-Los 9 SKU canary existen en CP y coinciden con la presentación investigada. En la base siguen con available=false, price_status=pending, stock=NULL, image_url=NULL y sin verificación. Su revisión visual previa quedó registrada en el manifiesto existente:
+| Titular | Fichas | Términos revisados | Qué dicen |
+| --- | ---: | --- | --- |
+| Sistema Coca-Cola (Coca-Cola, Sprite, Fanta, Schweppes, Bonaqua, Cepita) | 10 | [coca-cola.com/ar · términos](https://www.coca-cola.com/ar/es/legal/terms-of-service) | Uso personal y exclusivamente no comercial; prohíbe reproducir o descargar contenido y usar marcas sin permiso escrito |
+| PepsiCo (Pepsi Black, Paso de los Toros, Lay's, Doritos, Pehuamar) | 8 | [PepsiCo · términos del grupo](https://www.pepsico.com.mx/legal/terminos-de-uso) | Uso personal no comercial; `pepsico.com.ar` no resolvió DNS desde este equipo |
+| Cervecería y Maltería Quilmes (Quilmes, Brahma, Stella Artois, Patagonia, Corona, Glaciar) | 7 | [quilmes.com.ar · términos](https://www.quilmes.com.ar/terminos-y-condiciones) | Material sólo para uso personal no comercial (la página responde 403 a lectura automática; verificado por búsqueda) |
+| Heineken / CCU (Heineken, Imperial, Schneider) | 3 | [heineken.com · condiciones](https://www2.heineken.com/es/terms-of-use-and-privacy) | El acceso no implica licencia; se reservan reproducción y distribución |
+| Danone (Villavicencio) | 1 | [danone.com.ar · términos](https://corporate.danone.com.ar/ar/footer/links/terminos-y-condiciones/) | Uso personal no comercial; sin reproducción sin consentimiento escrito |
+| Red Bull | 1 | [Red Bull · términos](https://policies.redbull.com/policies/RedBull.com_International/202003040354/en/terms.html) | Licencia privada/no comercial |
+| Monster (Mango Loco, Ultra) | 2 | [Monster · términos](https://www.monsterenergy.com/en-us/terms-of-use/) | Licencia personal y no comercial |
+| Fratelli Branca (Fernet, Branca Menta) | 2 | [Branca Store · términos](https://www.brancastore.com.ar/terminos-y-condiciones/) | Prohíbe reproducir imágenes y fotografías sin autorización escrita |
+| Campari Group (Campari, Aperol, Cinzano) | 3 | [Campari Group · términos](https://www.camparigroup.info/usa/terms-conditions/) | Todo uso o reproducción requiere autorización escrita |
+| Bodegas (Alamos, Norton, Trapiche x2, Santa Julia) | 5 | [Santa Julia · kit de prensa](https://santajulia.com.ar/press-kit/) | Santa Julia publica imágenes de botellas para prensa, sin términos; las otras bodegas no publican licencia |
+| Marcas locales (Eco de los Andes, Speed, Maní King, Hielo Cristal) | 4 | — | No se encontró licencia publicada |
 
-| SKU | Presentación confirmada en CP | Estado del candidato |
+No se infirió permiso por el dominio oficial ni por el kit de prensa. La autorización declarada `TABA-AUT-2026-08-001` (catalog/autorizaciones-comerciales.json) sigue sin documento: con el acuerdo o el paquete de packshots de cada marca, esas imágenes pasarían a `PERMISO_DOCUMENTADO`.
+
+## Fuentes con licencia abierta revisadas
+
+- **Open Food Facts**: las imágenes están bajo CC BY-SA 3.0 ([términos](https://world.openfoodfacts.org/terms-of-use)), que permite uso comercial con atribución y licencia igual. Se buscó cada GTIN: 35 de 46 tienen ficha. Casi todas son fotos amateur: producto en la mano, góndola, recortes de etiqueta, botellas a medio consumir, ediciones limitadas o diseños viejos.
+- **Wikimedia Commons / Openverse**: búsqueda por marca y por nombre + presentación. Sólo aparecieron fotos que no sirven: Quilmes Clásica 473 cm³ (el SKU es 710), una lata de Heineken en el pasto, góndolas de Fernet y Branca Menta, y una etiqueta de Alamos de la cosecha 2005.
+- **Fotos propias**: `catalog/photo-intake/` sólo tiene su README en este worktree y en todos los demás worktrees de La Taba. `catalog/photo-capture/` tiene la guía y la lista de tomas, sin fotos.
+
+La única candidata que pasó derechos, identidad y revisión visual:
+
+| SKU | Fuente | Derechos | Identidad | Visual |
+| --- | --- | --- | --- | --- |
+| `campari-bitter-750ml` | [Open Food Facts 7791200200781](https://world.openfoodfacts.org/product/7791200200781), foto de `smoothie-app`, 2026-04-24 | CC BY-SA 3.0, atribución obligatoria | Etiqueta legible «Cont. Neto 750 ml», «Industria Argentina», 28,5 % vol. | Botella completa; fondo reemplazado por blanco con un modelo local (u2net), sin retocar el producto; leve desenfoque en la base |
+
+Otras tres fotos se recortaron y se descartaron: Pepsi Black 1,5 L arrastra bordes de otras botellas y corta la tapa, Maní King tiene un reflejo sobre el logo con 384×612 px de producto, y el frente limpio de Cepita Naranja muestra el diseño anterior del envase.
+
+## Canary
+
+| SKU | Estado | Bloqueo concreto |
 | --- | --- | --- |
-| coca-cola-original-2250ml-local | Coca-Cola Sabor Original, botella PET, 2,25 L | REPLACE_REQUIRED: panel lateral grande y texto adicional |
-| coca-cola-sin-azucar-2250ml-local | Coca-Cola Sin Azúcar, botella PET, 2,25 L | REPLACE_REQUIRED: panel lateral grande |
-| sprite-sin-azucar-2250ml-local | Sprite Sin Azúcar, botella PET, 2,25 L | REPLACE_REQUIRED: imagen borrosa |
-| fanta-naranja-2250ml | Fanta Naranja, botella PET, 2,25 L | REPLACE_REQUIRED: panel lateral grande |
-| villavicencio-sin-gas-500ml | Villavicencio Sin Gas, botella PET, 500 ml | LICENSE_REVIEW_REQUIRED: imagen limpia y presentación coincidente; permiso no documentado |
-| red-bull-energy-drink-355ml | Red Bull Energy Drink, lata, 355 ml | REPLACE_REQUIRED: panel de texto grande |
-| quilmes-clasica-710ml | Quilmes Clásica, lata, 710 ml | REPLACE_REQUIRED: imagen de edición limitada Mundial, no la presentación estándar |
-| heineken-710ml | Heineken Lager, lata, 710 ml | REPLACE_REQUIRED: panel de texto grande |
-| fernet-branca-750ml | Fernet Branca Original, botella, 750 ml | REPLACE_REQUIRED: botella recortada y panel lateral |
+| `coca-cola-original-2250ml-local` | `RIGHTS_REVIEW_REQUIRED` | Render limpio sólo de Coca-Cola/retail; en OFF la foto entera corta la tapa |
+| `coca-cola-sin-azucar-2250ml-local` | `RIGHTS_REVIEW_REQUIRED` | Render limpio sólo de Coca-Cola/retail; en OFF la botella está a medio consumir |
+| `sprite-sin-azucar-2250ml-local` | `RIGHTS_REVIEW_REQUIRED` | Render limpio sólo de Coca-Cola/retail; OFF sin ficha |
+| `fanta-naranja-2250ml` | `RIGHTS_REVIEW_REQUIRED` | Render limpio sólo de Coca-Cola/retail; en OFF la botella está casi vacía |
+| `villavicencio-sin-gas-500ml` | `RIGHTS_REVIEW_REQUIRED` | Danone prohíbe reproducir; en OFF la botella está en la mano |
+| `red-bull-energy-drink-355ml` | `RIGHTS_REVIEW_REQUIRED` | Red Bull: licencia no comercial; en OFF la lata está en la mano |
+| `quilmes-clasica-710ml` | `RIGHTS_REVIEW_REQUIRED` | La placa lateral del render es recortable, pero Quilmes no licencia; Commons sólo tiene la lata de 473 |
+| `heineken-710ml` | `REPLACE_REQUIRED` | Ninguna imagen muestra la lata 710 completa; además faltan derechos |
+| `fernet-branca-750ml` | `RIGHTS_REVIEW_REQUIRED` | Branca prohíbe reproducir; en OFF la botella está en la mano |
 
-CANARY_COMPLETED: 0/9. La investigación y revisión visual previa cubren 9/9, pero ninguno llegó a descarga, Storage, asociación ni comprobación visual en el Panel.
+Siete de las nueve fichas coinciden visualmente con una imagen de referencia, pero no tienen derechos. Quilmes dejó de estar en `REPLACE_REQUIRED` porque su placa lateral no pisa el envase.
 
-De los otros 37 SKU no hay revisión visual individual suficiente para aprobar sus imágenes. Las URL guardadas son referencias secundarias de retail. El manifiesto previo cuenta APPROVED_SOURCE=0, LICENSE_REVIEW_REQUIRED=38 y REPLACE_REQUIRED=8. Para la clasificación principal de este log, los 37 candidatos no inspeccionados se dejan en REVIEW_REQUIRED hasta comprobar visualmente la identidad; el único candidato limpio se deja en LICENSE_REVIEW_REQUIRED; los 8 fallidos permanecen en REPLACE_REQUIRED. El CSV conserva prior_review_classification para rastrear el recálculo. La licencia comercial sigue sin documentarse para los 46.
+## Resto del catálogo
 
-Las páginas oficiales anotadas para Coca-Cola, Sprite, Fanta, Red Bull y Heineken son pistas de búsqueda, no packshots aprobados: la investigación previa no confirmó en ellas la presentación exacta ni permiso comercial. Las URLs originales de retail y sus dominios están en catalog/real-catalog-images.csv.
+Detalle por SKU (fuente revisada, términos, veredicto de Open Food Facts, estado y cómo destrabarlo) en [real-catalog-images.csv](../../catalog/real-catalog-images.csv) y [image-rights-research-2026-09-27.json](image-rights-research-2026-09-27.json).
 
-## Bloqueo del flujo de Storage y asociación
+- `REPLACE_REQUIRED`:
+  - Heineken 710: la referencia recorta la lata.
+  - Lay's Clásicas 134 g: la referencia es la edición especial FIFA Qatar 2022, no la bolsa estándar vigente; la foto de OFF corta la bolsa.
+  - Cinzano Rosso 950 ml: la referencia recorta la botella, y OFF declara 1000 ml.
+  - Corona Extra 330 ml: no hay imagen en retail, y OFF mezcla botellas de 12 fl oz de EE. UU.
+- Corrección de ficha detectada, sin aplicar: `cepita-naranja-1000ml` tiene `packaging_type=Botella`, pero el GTIN 7790895648267 es un Tetra Brik de 1 L. Hay que corregirla antes de asociarle una imagen.
+- Carnes: el catálogo de CP no tiene cortes de carne, así que no aplica.
 
-El único bucket actual de Supabase CP es fiscal-documents: privado, limitado a application/pdf y 16 MiB. No puede recibir packshots. No hay otro bucket de imágenes.
+## Campari: primer E2E real en el Panel
 
-El contrato de catalog_assets registra rutas propias assets/products/*.webp, SHA-256, bindings, fuente y derechos; no define rutas de Supabase Storage. La restricción catalog_assets_rights_valid de catalog_assets sólo acepta PROPIO, LICENCIA_COMERCIAL o PERMISO_DOCUMENTADO. Los candidatos actuales no tienen evidencia que permita afirmar ninguno de esos derechos.
+1. **Verificación previa**:
+   - SKU `campari-bitter-750ml` con 750 ml y botella de vidrio en CP;
+   - GTIN 7791200200781, que retail vende como «Campari 750 cc»;
+   - foto de Open Food Facts del 2026-04-24 con «Cont. Neto 750 ml» e «Industria Argentina» legibles;
+   - licencia CC BY-SA 3.0 según los términos de OFF.
+2. **Archivo**: el fondo se reemplazó por blanco con un modelo local (u2net), sin retocar el producto, y se redimensionó a 825×2400.
+   - SHA-256 del archivo subido: `ccc2d1ba…fe92`.
+   - El original y el recorte están archivados fuera del repo, en `catalog-image-sources-2026-09-28/`.
+3. **Staging privado** (upload `a34bdfc3`): tres objetos en `catalog-image-staging` (JPEG 254.447 B, WebP 1000×1000 de 31.614 B y WebP 400×400 de 9.918 B), con hashes registrados.
+4. **Vista previa privada**: la URL firmada muestra el WebP 1000×1000. Se revisó a ojo: botella completa, etiqueta legible, fondo blanco.
+5. **Aprobación**:
+   - derecho `LICENCIA_COMERCIAL`;
+   - referencia: «CC BY-SA 3.0 (uso comercial con atribución y compartir igual) · Open Food Facts, foto smoothie-app 2026-04-24 · https://world.openfoodfacts.org/product/7791200200781 · adaptación: fondo blanco · atribución obligatoria al publicar»;
+   - `source_type=retail_reference`, porque el enum del pipeline no tiene la categoría «licencia abierta».
+6. **Asociación**:
+   - `catalog_assets` `a4f19272…`;
+   - `products.image_*` apuntan a `catalog-images/…/8abd7228….webp` y a `thumb-e96faa57….webp`, que el acceso anónimo lee con 200;
+   - staging quedó limpio y `cleanup_status=complete`.
 
-El pipeline existente en scripts/catalog-images/ prepara WebP y asociaciones para otra combinación de proyecto y negocio, y espera que los archivos assets/products/ formen parte del paquete web. No ofrece carga a Storage de CP. Adaptarlo exigiría cambiar la publicación de assets o crear una infraestructura de imágenes distinta, además de salvar el modelo actual de derechos. Ninguna opción está habilitada por el flujo desplegado del editor; el editor existente no tiene carga de imágenes. No se alteró el frontend, Storage, RLS ni la base de datos para abrir un camino nuevo.
+## Bugs encontrados en el Panel real y corregidos
 
-## Registro SKU por SKU
+| Bug | Reproducción | Fix (PR #119) |
+| --- | --- | --- |
+| La primera aprobación no publica los objetos | `approveUpload` pasaba a `publishApprovedObjects` la fila leída antes de la RPC, todavía en `pending`, y esta la rechaza. El Panel mostró «La asociación de la imagen cambió»; la asociación quedó en la base, pero `catalog-images` seguía vacío. Se completó con «Reintentar almacenamiento». | La fila entregada lleva `status` y `license_status` en `approved`. Test de regresión que falla con el código anterior. |
+| El Panel no muestra la miniatura aprobada | `listCatalogProducts` no pedía `image_thumbnail_url`. Con la imagen asociada, el gestor mostraba el sello «Aprobada» y «Sin imagen aprobada». | El select incluye `image_thumbnail_url` y `source_image_sha256`. Test sobre el select. |
+| El gestor de imagen desborda a 390 px | El input de archivo y el texto largo de la referencia empujaban la fila: `scrollWidth` 386 contra 375. | `min-width: 0` y quiebre de texto. Validado inyectando la regla en el Panel real: 375 contra 375. |
 
-catalog/real-catalog-images.csv registra los 46 SKU con product_name, marca, variante, tamaño, categoría, URL original, dominio, tipo de fuente, estado de licencia, ruta de Storage, image_status y notas. Todos los storage_path están vacíos y todos los permission flags permanecen sin evidencia.
+Queda una observación menor sin corregir: el mensaje de estado de la última acción de imagen se repite dentro del gestor de cada producto. Los gestores están plegados, así que no se ve salvo que se abra otro producto.
 
-| Estado principal | Cantidad |
-| --- | ---: |
-| APPROVED_SOURCE | 0 |
-| LICENSE_REVIEW_REQUIRED | 1 |
-| REPLACE_REQUIRED | 8 |
-| REVIEW_REQUIRED | 37 |
-| license_status=NOT_DOCUMENTED | 46 |
-| Pendientes de imagen en CP | 46 |
+## QA del Panel real
 
-Los 37 candidatos sin inspección visual están en REVIEW_REQUIRED. La falta de permisos se registra aparte en license_status; ninguna fila afirma autorización.
+- **Chromium** (ventana dedicada) en 1366×768, 430×932 y 390×844:
+  - la fila de Campari muestra «Precio pendiente», «Sin contar», «No disponible · borrador» e «Imagen asociada»;
+  - al recargar, la sesión y la asociación se conservan;
+  - capturas sin datos sensibles en `docs/catalog/visual-review/cp-images-2026-09-28/`.
+- **WebKit**: el crédito CC BY-SA de la ficha se probó con el E2E en iPhone 13 (4/4 en Chromium y WebKit). La QA del Panel real en WebKit queda registrada en la sección de deploy.
 
-## QA y comprobación de seguridad
+## Atribución de fotos con licencia abierta
 
-- Recuento CP y canary: lectura SQL de solo lectura; no hubo mutaciones.
-- Comprobación pública anónima: HTTP 200 desde la clave publicable de runtime-config.js; REST devolvió 0 productos disponibles.
-- Panel desktop/móvil: BLOCKED. La sesión de navegador del dueño no estaba conectada a las superficies disponibles. El intento de abrir un navegador dedicado no produjo una página inspeccionable. CAPTURAS: 0; no hay imágenes asociadas que fotografiar.
-- WebKit: no disponible en la superficie de navegador.
-- No se tocó la identidad de Walter, precios, stock, Mercado Pago, ARCA, Rider, LocalAgent, print_jobs, checkout, pedidos, roles o RLS.
-- Relectura final contra el respaldo: 0 cambios en precios, stock, price_status, disponibilidad, verificación o referencias de imagen; 46 imágenes siguen pendientes.
-- Secret scan: PASS en el árbol del worktree y PASS en los 6 logs npm de esta tarea; sin hallazgos de claves, tokens, enlaces de autenticación ni asignaciones de contraseña.
+PR [#119](https://github.com/bitflowapp/la-taba-pages-preview/pull/119) agrega el soporte mínimo para cumplir CC BY-SA sin cambiar el diseño:
 
-## Implementación segura del pipeline
+- **Registro del crédito**: `js/core/image-attribution.js` guarda autor, fuente, enlace a la fuente, licencia, enlace a la licencia y cambios.
+  - Está indexado por el SHA-256 del archivo original aprobado (`products.source_image_sha256`).
+  - Si la foto se reemplaza, el crédito deja de aplicarse solo.
+  - La base conserva la misma evidencia en `catalog_assets.rights_reference`.
+- **Ficha pública**: muestra «Foto: Open Food Facts (smoothie-app) · CC BY-SA 3.0 · fondo reemplazado por blanco». La fuente y la licencia van enlazadas, y el crédito sólo aparece junto a la foto oficial.
+- **Guarda en el Panel**: no ofrece «Publicar» si la revisión aprobada declara una licencia CC y la tienda no tiene su crédito. El gestor de imagen indica si el crédito está listo.
+- **Tests**:
+  - 9 tests unitarios.
+  - E2E en Chromium y WebKit (iPhone 13): 4/4.
+  - `npm test`: 2688/2689, con el flake conocido `rider-pilot-target-gate`, que pasa aislado.
+  - `npm run check` en verde.
+- **Estado**: no desplegado. Hay que desplegarlo antes de publicar cualquier producto con foto CC BY-SA. Hoy Campari no puede publicarse: está en borrador, con precio pendiente y sin venta de alcohol habilitada.
 
-El 2026-09-27 se aplicó a CP la migración `20260927175058_catalog_image_storage_pipeline` y quedó activa la Edge Function `catalog-image-manager` v1 con `verify_jwt=true`. CP ahora tiene `catalog-image-staging` privado (JPEG/PNG/WebP, 5 MiB) y `catalog-images` de lectura pública (WebP, 5 MiB). `fiscal-documents` permanece privado y sin cambios.
+El mismo PR corrige un bug del Panel: `listCatalogProducts` no pedía `image_thumbnail_url`. Por eso una imagen aprobada aparecía como «Sin imagen aprobada» en el gestor de imágenes.
 
-La revisión posterior confirmó que la cola tiene RLS, `anon`/`authenticated` no pueden insertar ni cambiar revisiones, el navegador no puede ejecutar las RPC de finalización/aprobación y sólo `service_role` las ejecuta desde la función. La función valida JWT, membership `owner/admin`, producto comercial en borrador, bytes/MIME/tamaño/hash, preview privada y referencia explícita de derechos. Los WebP llegan al bucket público sólo tras confirmar la asociación en la base; el producto continúa como borrador.
+## GS1 Argentina
 
-Estado del catálogo después de DDL y función: 46 productos del negocio objetivo; 0 públicos; 0 duplicados; 0 imágenes asociadas; 46 precios pendientes; 46 stocks nulos. No se creó ningún objeto en los buckets. La consulta anónima de la ruta pública de Storage llegó al endpoint sin autenticación (objeto de prueba inexistente, respuesta HTTP 400), y la función devolvió HTTP 401 sin JWT. El inventario posterior quedó en [catalog-image-storage-inventory-2026-09-27.json](../evidence/controlled-production/catalog-image-storage-inventory-2026-09-27.json): `STORAGE_BACKUP_STRATEGY=PASS`, 0 huérfanos, 0 asociaciones cruzadas, assets estáticos existentes intactos.
+- **Opción**: `REQUIRES_CONTACT`.
+- **Qué es**: GS1 Argentina ofrece sincronización de datos (GDSN) y el catálogo electrónico DATA.COD, operado por E-Way.
+  - Los proveedores publican los datos de cada GTIN, con hasta 4 imágenes; los reciben cadenas, mayoristas y retail online.
+  - Las condiciones de uso de las imágenes las fija cada proveedor.
+- **Requisitos**:
+  - Asociarse a GS1 Argentina: formularios AD010 a AD013; razón social, CUIT, GLN y cuota según el tamaño.
+  - Suscribirse como receptor.
+  - Que cada marca publique sus productos en ámbito público o autorice a La Taba en ámbito privado.
+- **Costo**: no publicado; la cuota se informa a pedido. La única tabla pública es de DATA.COD en 2007 y no está vigente.
+- **Integración**: ya tenemos el GTIN de referencia de los 46 SKU. El camino sería pedir el catálogo por GTIN, descargar la imagen del proveedor y subirla por el mismo pipeline con derecho `PERMISO_DOCUMENTADO`, citando el acuerdo.
+- **Qué no sirve**: NegociAR (una red para que las pymes ofrezcan productos a supermercados) y Verified by GS1 (consulta de identidad) no son fuentes de imágenes con licencia.
+- **Acción humana**: contactar a GS1 Argentina (info@gs1.org.ar) y aprobar el costo. No se contrató nada.
 
-El cambio del Panel y el despacho manual de Pages están en el PR [#116](https://github.com/bitflowapp/la-taba-pages-preview/pull/116), contra `release/taba-controlled-production`. El deploy sigue requiriendo ese branch, `CP_DEPLOY_SHA` exacto y los CI push verdes de web y Android. La corrida canónica del SHA del PR está en curso; la QA visual autenticada se actualizará tras el deploy. No se cargaron ni aprobaron imágenes durante esta implementación.
+## Distribuidores y recursos B2B
 
-## Qué hace falta para cargar imágenes reales
+- **BEES (Quilmes)**: cubre cervezas, aguas, Pepsi y Red Bull.
+- **Mi Coca-Cola / Coca-Cola Andina B2B**: cubre el sistema Coca-Cola.
+- **CCU**: cubre Heineken, Imperial y Schneider.
+- **Mayoristas de Neuquén**: usan las mismas imágenes de marca y no pueden ceder derechos que no tienen.
 
-1. Un owner/admin debe ingresar al Panel del negocio y seleccionar el archivo exacto para cada SKU; la carga requiere revisión visual privada antes de aprobar.
-2. Para fotos externas, hace falta una referencia comprobable de licencia comercial o permiso. Para una foto del negocio, el owner debe confirmar que es propia. Ningún derecho se infiere del dominio.
-3. Las presentaciones ambiguas deben quedar `REVIEW_REQUIRED`; las imágenes de carnes necesitan una foto propia del corte correcto.
+Los tres portales de marca requieren cuenta de cliente y no publican condiciones que habiliten usar sus imágenes en la tienda propia. Red Bull Content Pool es libre sólo para uso editorial: el uso comercial se licencia a pedido y con precio. El camino es pedir permiso escrito al representante comercial de cada marca.
 
-El pipeline está preparado. Hasta que un owner/admin cargue y apruebe imágenes correctas, los 46 productos siguen como borradores sin imagen, con precio pendiente, stock nulo y sin publicación.
+## Cepita Naranja
+
+- **Estado**: `CEPITA_PACKAGING: BUG_CONFIRMED`, registrado en el issue [#118](https://github.com/bitflowapp/la-taba-pages-preview/issues/118).
+- **Inconsistencia**: la ficha dice `Botella`, pero su referencia (GTIN 7790895648267) es un Tetra Brik de 1 L.
+- **Por qué no se corrigió**: el sistema Coca-Cola vende cuatro «Cepita Naranja» de cerca de 1 L (dos Tetra Brik, uno en botella PET de 1 L y otro de 995 ml). La corrección depende de cuál vende el local.
+- **Qué se hizo**: nada en la base; tampoco se le asoció imagen.
+
+## Fotos propias
+
+[catalog/photo-capture/README.md](../../catalog/photo-capture/README.md) es la guía simple para Marco y Walter. Pide:
+
+- una foto del frente;
+- luz natural, sin flash;
+- fondo liso;
+- el producto entero;
+- sin manos, sin precios y sin otros objetos;
+- el archivo original, sin comprimir por WhatsApp.
+
+La guía trae el nombre de archivo de los 46 SKU. El catálogo de CP no tiene carnes; si se suman, cada corte necesita su propia foto.
+
+## Pipeline, respaldo y observaciones técnicas
+
+- **Pipeline**: el de PR [#116](https://github.com/bitflowapp/la-taba-pages-preview/pull/116) (merge `1e6d106`). CP sirve `la-taba-runtime-v126-catalog-image-pipeline`.
+  - `catalog-image-staging` es privado; `catalog-images` es público y sólo recibe imágenes aprobadas.
+  - La Edge Function es `catalog-image-manager` con `verify_jwt=true`.
+  - No se construyó infraestructura nueva.
+- **Respaldo previo a cualquier escritura** (fuera del repo):
+  - Archivo: `controlled-production-catalog-before-images-2026-09-27.json`, en la carpeta privada `catalog-image-backups-2026-09-27/` junto a los worktrees de La Taba (fuera del repo).
+  - SHA-256 `28715EFD5F0A6AB36E36ABF7831F50D2C7FFAFF346616B58872B13BC833433E3`, verificado de nuevo el 2026-09-27.
+- **Huellas de solo lectura del 2026-09-28 02:3x UTC**, para comprobar que no cambiaron precio, stock ni publicación:
+  - precio/stock `1da03ffce4f6f0730b412706e1cda9e0`;
+  - publicación `e6d1ba5dc6a473ad18500611fc6d793a`;
+  - 0 cargas, 0 `catalog_assets` y 0 objetos en los dos buckets.
+- **`source_type`**: el enum no tiene una categoría de licencia abierta, así que una foto CC BY-SA sólo puede registrarse como `retail_reference`. La procedencia real queda en `source_url` y `rights_reference`. Una mejora futura sería agregar `open_license` (migración + contrato + Panel). No se hizo porque no es un bug que bloquee la carga.
+- **Migraciones**: CP registra `20260927195533_catalog_image_storage_pipeline`, pero el repo tiene `20260927175058_…`. Hay que reconciliarlas con `migration repair` antes de cualquier `db push`. Esta misión no hizo ningún `db push`.
+- **Secretos**: el PAT de CP se leyó del Credential Manager en memoria y nunca se imprimió. La clave publicable sólo se usó para la consulta anónima. No se leyeron ni guardaron contraseñas.

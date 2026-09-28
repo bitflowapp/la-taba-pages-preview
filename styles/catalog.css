@@ -1301,6 +1301,19 @@
   color: var(--taba-muted);
 }
 
+/* Crédito de una foto con licencia abierta (CC BY-SA): autor, fuente, licencia
+   y cambios, debajo de la descripción de la ficha. */
+.modal-product-copy > .modal-image-credit {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.modal-image-credit a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .modal-commerce-row {
   display: flex;
   align-items: end;

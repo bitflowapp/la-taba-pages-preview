@@ -1160,7 +1160,7 @@ async function setCatalogPublication(button) {
   if (!product) return result(false, 'El producto cambió. Actualizá el catálogo.');
   const publish = button.dataset.publish === 'true';
   if (publish) {
-    const readiness = catalogPublicationReadiness(normalizeCatalogProduct(product));
+    const readiness = catalogPublicationReadiness(normalizeCatalogProduct(product), { imageUploads: catalogImageUploads });
     if (!readiness.ready) return result(false, readiness.reason);
   }
   busy = true;

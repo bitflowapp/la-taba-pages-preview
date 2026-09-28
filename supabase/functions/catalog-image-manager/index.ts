@@ -380,7 +380,11 @@ async function approveUpload({ body, user, admin, actorUserId }: ImageRequest) {
     p_rights_reference: rightsReference,
   });
   if (error || !data?.catalog_asset_id) fail('IMAGE_APPROVAL_FAILED', 409);
+  // `row` was read before the RPC and still says `pending`; the Storage step
+  // only publishes an approved row, so hand it the state the RPC just wrote.
   return publishApprovedObjects({ row: { ...row, ...{
+    status: 'approved',
+    license_status: 'approved',
     catalog_asset_id: data.catalog_asset_id,
     public_master_path: paths.master,
     public_thumbnail_path: paths.thumbnail,

@@ -11,6 +11,14 @@ Completar al lado de cada punto. Lo que no se sepa todavía se deja vacío: **va
 - WhatsApp del local, con código de país y área (549 + área + número, sin 0 ni 15):
 - ¿Ese WhatsApp puede mostrarse en la tienda? (sí/no):
 
+## Equipo
+
+Cada persona entra con su propia cuenta; se invita desde el Panel (Equipo) con su correo.
+
+- Encargados (administran catálogo, horarios, pedidos y equipo), con nombre y correo:
+- Empleados (atienden pedidos en el local), con nombre y correo:
+- Marco queda como encargado técnico cuando Walter acepte ser dueño (sí/no):
+
 ## Horarios
 
 Para cada día: cerrado, o apertura–cierre. Pueden ser hasta 4 tramos por día. Un horario que cruza la medianoche se escribe tal cual, por ejemplo 20:00–02:00.
@@ -81,8 +89,14 @@ No se activa para abrir. Hace falta para facturar más adelante:
 - Tipo de comprobante habitual (Factura B/C u otro, según el contador):
 - Certificado y clave de ARCA (homologación primero): los gestiona el titular con su contador. **Nunca se mandan por chat.**
 - Delegación del servicio de facturación electrónica a La Taba (sí/no, fecha):
+- Política contable para facturar pedidos online, que decide el contador. Sin ella ningún pedido se factura:
+  - si cada producto está gravado, exento o no gravado;
+  - cómo se factura el envío;
+  - cómo se tratan los descuentos;
+  - cuándo corresponde una nota de crédito.
 
-## Impresora (opcional)
+## Equipos (opcional)
 
 - ¿Hay impresora térmica en el local? Marca y modelo:
 - ¿En qué PC con Windows se instala el agente de impresión?:
+- Si hay repartidores: el teléfono Android de cada uno, para instalar la app desde el link del Panel:

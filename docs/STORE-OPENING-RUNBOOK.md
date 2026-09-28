@@ -7,6 +7,18 @@ Pasos para pasar La Taba real de «cerrada y sin productos» a «tomando pedidos
 
 Los datos que hay que pedirle al comercio están, todos juntos, en [`catalog/opening/OWNER-INPUT.md`](../catalog/opening/OWNER-INPUT.md). **Nada de este documento inventa un precio, un horario, un costo de envío ni una dirección.**
 
+## El día de la apertura, en siete pasos
+
+1. **Completar los datos** de [`OWNER-INPUT.md`](../catalog/opening/OWNER-INPUT.md) en el Panel: horarios, entrega, fotos, precios y stock (§1–§7).
+2. **Mirar qué falta:** Panel › Apertura, o `npm run opening:check`. Cada ✗ dice dónde se completa.
+3. **Ensayar:** `npm run opening:dry-run`. No escribe nada y dice si la plataforma podría verificar.
+4. **Verificación de plataforma** (§9): la hace el operador, con `npm run opening:approve`, y se niega si falta algo.
+5. **Publicar** (§2 y §3): desde el Panel, o con la planilla para muchos productos.
+6. **Abrir** (§10): Panel › Abrir el negocio.
+7. **Pedido canary** (§11), y después la tienda sigue sola.
+
+Ningún paso pide tocar código ni la base.
+
 ## Antes de empezar: qué falta, en un solo lugar
 
 - **En el Panel:** Panel › **Apertura** (Preparar apertura). Muestra cada paso con ✓ o ✗, qué falta y un botón para ir a completarlo.
@@ -220,9 +232,29 @@ Después, el plan 5 → 15 → 30 de [`docs/LA-TABA-MORNING-HANDOFF-2026-09-28.m
   - Su smoke acepta el catálogo que haya publicado el dueño, con 0 productos o con 46.
   - Exige que cada producto visible tenga precio, stock y foto, y que las fotos del pipeline carguen desde Storage.
   - Antes, el modo `none` exigía un catálogo público vacío, así que el primer deploy después de publicar habría fallado.
-- **Base:** las tres migraciones de esta etapa tienen rollback compensatorio probado en CI. Se revierten en orden inverso:
-  1. [`20260928170000_identity_and_alcohol_invariants_null_safe`](migrations/rollback/20260928170000_identity_and_alcohol_invariants_null_safe.rollback.sql): devuelve las dos restricciones a su texto anterior. Se niega (ROLLBACK_BLOCKED) si ya se borró una cuenta que había aceptado una invitación.
-  2. [`20260928160000_publish_sets_merchant_intent`](migrations/rollback/20260928160000_publish_sets_merchant_intent.rollback.sql): devuelve la planilla al cuerpo anterior. Con ese cuerpo, la primera publicación de un borrador de CP vuelve a fallar.
-  3. [`20260928150000_store_opening_readiness`](migrations/rollback/20260928150000_store_opening_readiness.rollback.sql): retira las RPC nuevas.
+- **Base:** las migraciones de esta etapa tienen rollback compensatorio probado en CI. Se revierten en orden inverso:
+  1. La línea fiscal, `20260928180000` … `180800`, se revierte junta con [`20260928180000_fiscal_core_line.rollback.sql`](migrations/rollback/20260928180000_fiscal_core_line.rollback.sql). Se niega (ROLLBACK_BLOCKED) apenas exista un solo registro fiscal: un comprobante emitido no se borra. Después hay que marcar las nueve versiones como revertidas (`supabase migration repair --status reverted …`, las dice el archivo).
+  2. [`20260928170000_identity_and_alcohol_invariants_null_safe`](migrations/rollback/20260928170000_identity_and_alcohol_invariants_null_safe.rollback.sql): devuelve las dos restricciones a su texto anterior. Se niega (ROLLBACK_BLOCKED) si ya se borró una cuenta que había aceptado una invitación.
+  3. [`20260928160000_publish_sets_merchant_intent`](migrations/rollback/20260928160000_publish_sets_merchant_intent.rollback.sql): devuelve la planilla al cuerpo anterior. Con ese cuerpo, la primera publicación de un borrador de CP vuelve a fallar.
+  4. [`20260928150000_store_opening_readiness`](migrations/rollback/20260928150000_store_opening_readiness.rollback.sql): retira las RPC nuevas.
   - Ninguna toca datos.
   - Nunca se restaura un backup sobre CP sin una decisión humana.
+
+## 13. Facturación electrónica (después de abrir)
+
+No hace falta para abrir: la tienda cobra y entrega sin factura electrónica, y la facturación real está **apagada** en capas:
+
+- el Panel no configura producción;
+- la base exige la aprobación del contador y la de la compuerta de producción;
+- el worker, además, `ARCA_PRODUCTION_ENABLE`.
+
+El código está listo para **homologar** (probar contra ARCA de prueba). Para eso el titular tiene que dar, ver [`OWNER-INPUT.md`](../catalog/opening/OWNER-INPUT.md), sección Facturación:
+
+- CUIT;
+- certificado y clave de homologación;
+- punto de venta de web services;
+- delegación de wsfe;
+- la política contable del contador.
+
+Procedimiento: [`docs/fiscal-core/ARCA-HOMOLOGATION-RUNBOOK.md`](fiscal-core/ARCA-HOMOLOGATION-RUNBOOK.md). Los certificados y claves nunca pasan por el Panel ni por el chat.
+

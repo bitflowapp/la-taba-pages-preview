@@ -215,6 +215,11 @@ Después, el plan 5 → 15 → 30 de [`docs/LA-TABA-MORNING-HANDOFF-2026-09-28.m
 
   Queda auditado. Para volver, hay que verificar de nuevo.
 - **Web:** Cloudflare Pages → `la-taba-commercial-pilot` → promover el deployment anterior. Probado en cada deploy con el simulacro B→A→B.
+- **Deploys después de abrir:** no cambia nada. CP se despliega en modo `catalogMode: "live"` (`deploy/controlled-production.json`).
+  - Un deploy nunca publica productos.
+  - Su smoke acepta el catálogo que haya publicado el dueño, con 0 productos o con 46.
+  - Exige que cada producto visible tenga precio, stock y foto, y que las fotos del pipeline carguen desde Storage.
+  - Antes, el modo `none` exigía un catálogo público vacío, así que el primer deploy después de publicar habría fallado.
 - **Base:** las tres migraciones de esta etapa tienen rollback compensatorio probado en CI. Se revierten en orden inverso:
   1. [`20260928170000_identity_and_alcohol_invariants_null_safe`](migrations/rollback/20260928170000_identity_and_alcohol_invariants_null_safe.rollback.sql): devuelve las dos restricciones a su texto anterior. Se niega (ROLLBACK_BLOCKED) si ya se borró una cuenta que había aceptado una invitación.
   2. [`20260928160000_publish_sets_merchant_intent`](migrations/rollback/20260928160000_publish_sets_merchant_intent.rollback.sql): devuelve la planilla al cuerpo anterior. Con ese cuerpo, la primera publicación de un borrador de CP vuelve a fallar.

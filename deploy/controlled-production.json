@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "deploymentEnvironment": "pilot",
-  "catalogMode": "none",
+  "catalogMode": "live",
   "supabaseProjectRef": "tkanbadcglszlcyfjvpv",
   "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
   "cloudflareProject": "la-taba-commercial-pilot",

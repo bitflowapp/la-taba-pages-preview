@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import fs from 'node:fs';
 import { validatePilotPreflight, loadPilotPreflight, probeOnlinePaymentsBackend } from '../scripts/deploy/pilot-preflight.mjs';
 
 const ref = 'abcdefghijklmnopqrst';
@@ -87,6 +88,35 @@ test('tech-ready mode deploys with an EMPTY public allowlist and never imports',
     { ...empty, projectRef: 'wwcpogltfgzgkrlilbcd' },
     { phase: 'deploy', ownerCredentials: publicOnly, cloudflare, buildReceipt: receipt }),
   /PILOT_BACKEND_MUST_BE_NEW_AND_ISOLATED/);
+});
+
+test('live mode: the store run by its owner — a deploy still publishes nothing and takes no approval file', () => {
+  const live = { ...config, catalogMode: 'live', catalogApprovalFile: null };
+  const empty = { projectRef: ref, businessId, approvedSkus: [] };
+  const cloudflare = { accountId: 'a'.repeat(32), apiToken: 'TEST_ONLY_TOKEN_AT_LEAST_20_CHARS' };
+  const publicOnly = { publishableKey: ownerCredentials.publishableKey };
+  const report = validatePilotPreflight(live, empty,
+    { phase: 'deploy', ownerCredentials: publicOnly, cloudflare, buildReceipt: receipt });
+  assert.equal(report.status, 'PASS');
+  assert.equal(report.catalogMode, 'live');
+  assert.deepEqual(report.approvedSkus, []);
+  assert.throws(() => validatePilotPreflight(live, empty, { phase: 'catalog', ownerCredentials }),
+    /PILOT_CATALOG_IMPORT_REQUIRES_OWNER_APPROVAL/);
+  assert.throws(() => validatePilotPreflight(live, plan,
+    { phase: 'deploy', ownerCredentials: publicOnly, cloudflare, buildReceipt: receipt }),
+  /TECH_READY_MODE_MUST_PUBLISH_NOTHING/);
+  assert.throws(() => validatePilotPreflight({ ...live, catalogApprovalFile: 'x.json' }, empty,
+    { phase: 'deploy', ownerCredentials: publicOnly, cloudflare, buildReceipt: receipt }),
+  /TECH_READY_MODE_HAS_NO_APPROVAL_FILE/);
+});
+
+test('CONTROLLED_PRODUCTION deploys in live mode: no deploy has to change when the owner publishes', () => {
+  const cp = JSON.parse(fs.readFileSync(new URL('../deploy/controlled-production.json', import.meta.url), 'utf8'));
+  assert.equal(cp.catalogMode, 'live');
+  assert.equal(cp.catalogApprovalFile ?? null, null);
+  const workflow = fs.readFileSync(new URL('../.github/workflows/deploy-controlled-production.yml', import.meta.url), 'utf8');
+  assert.doesNotMatch(workflow, /--catalog-mode none/, 'the smoke and the drill take the configured mode');
+  assert.equal((workflow.match(/--catalog-mode "\$mode"/g) || []).length, 3);
 });
 
 test('PILOT_PREFLIGHT keeps manual payments unless online payments carry a named approval', () => {

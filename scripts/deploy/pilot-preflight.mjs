@@ -15,7 +15,12 @@ const CERT_SHA256 = '2dcc9b0a0cf022ebf59c500331103ee31cec9e9142d5431553131877948
 // the merchant approves a catalog: the exact public allowlist is EMPTY, so the
 // smoke fails if any product is visible. It never enables an import; catalog
 // import still requires the approved 5-10 SKU allowlist.
-export const CATALOG_MODES = Object.freeze(['approved', 'none']);
+// catalogMode "live" is the store run by its owner: the catalog is published
+// from the Panel or the opening sheet (verified, priced, stocked, with an
+// approved photo), never by a deploy. A deploy publishes nothing; its smoke
+// checks that whatever is public is coherent, with 0 products or with 46.
+export const CATALOG_MODES = Object.freeze(['approved', 'none', 'live']);
+const DEPLOY_PUBLISHES_NOTHING = new Set(['none', 'live']);
 
 export const ONLINE_PAYMENTS_RUNBOOK = 'docs/MERCADOPAGO_PRODUCCION_CP.md';
 
@@ -69,7 +74,7 @@ export function validatePilotPreflight(config, plan, { phase = 'catalog',
   assertPilotIdentity(config.supabaseProjectRef, config.businessId);
   assert.equal(config.supabaseProjectRef, plan?.projectRef, 'PILOT_BACKEND_REF_MISMATCH');
   assert.equal(config.businessId, plan?.businessId, 'PILOT_BUSINESS_ID_MISMATCH');
-  if (catalogMode === 'none') {
+  if (DEPLOY_PUBLISHES_NOTHING.has(catalogMode)) {
     assert.notEqual(phase, 'catalog', 'PILOT_CATALOG_IMPORT_REQUIRES_OWNER_APPROVAL');
     assert.ok(config.catalogApprovalFile == null, 'TECH_READY_MODE_HAS_NO_APPROVAL_FILE');
     assert.ok(Array.isArray(plan?.approvedSkus) && plan.approvedSkus.length === 0,
@@ -158,7 +163,7 @@ export function loadPilotPreflight({ configFile, approvalFile, phase = 'catalog'
   const cloudflare = { accountId: environment.CLOUDFLARE_ACCOUNT_ID,
     apiToken: environment.CLOUDFLARE_API_TOKEN };
   const technical = JSON.parse(readFileSync(path.resolve(configFile), 'utf8'));
-  if (technical.catalogMode === 'none') {
+  if (DEPLOY_PUBLISHES_NOTHING.has(technical.catalogMode)) {
     assert.ok(!approvalFile, 'TECH_READY_MODE_TAKES_NO_APPROVAL_FILE');
     assertPilotIdentity(technical.supabaseProjectRef, technical.businessId);
     const plan = { projectRef: technical.supabaseProjectRef, businessId: technical.businessId,

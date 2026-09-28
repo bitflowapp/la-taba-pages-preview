@@ -20,7 +20,7 @@ import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { loadTargetKeys } from './target-keys.mjs';
 import { cleanupQaOrder, operatorClient } from './qa-cleanup.mjs';
-import { openQaWindow, publicCatalogTenants, QA_CONTROL_BUSINESS } from './qa-window.mjs';
+import { foreignPublicTenants, openQaWindow, publicCatalogTenants, QA_CONTROL_BUSINESS, REAL_BUSINESS } from './qa-window.mjs';
 
 const BUSINESS = QA_CONTROL_BUSINESS;
 const OPTIONS = { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } };
@@ -147,12 +147,14 @@ try {
   check('QA_FULFILLMENT_RESTORED', !restored.error && after.delivery_enabled === before.delivery_enabled
     && after.pickup_enabled === before.pickup_enabled && after.status === before.status, after.status);
   const publicClient = createClient(keys.url, keys.publishable, OPTIONS);
-  check('QA_WINDOW_CLOSED', (await publicCatalogTenants(publicClient)).length === 0, 'ningún catálogo público');
+  // Ningún tenant QA queda a la vista; el comercio real puede estarlo (después de abrir, lo está).
+  check('QA_WINDOW_CLOSED', foreignPublicTenants(await publicCatalogTenants(publicClient), REAL_BUSINESS).length === 0,
+    'ningún tenant QA público');
   for (const client of [owner, staff]) {
     try { await client.rpc('identity_close_own_session', { p_business_id: BUSINESS }); } catch { /* ya cerrada */ }
-    try { await client.auth.signOut(); } catch { /* sin sesión */ }
+    try { await client.auth.signOut({ scope: 'local' }); } catch { /* sin sesión */ }
   }
-  try { await customer.auth.signOut(); } catch { /* sin sesión */ }
+  try { await customer.auth.signOut({ scope: 'local' }); } catch { /* sin sesión */ }
 }
 
 const failed = checks.filter((c) => !c.ok);

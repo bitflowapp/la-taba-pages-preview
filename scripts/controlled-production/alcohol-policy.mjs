@@ -91,7 +91,7 @@ async function main(args) {
     if (error) throw Error(`La base no aceptó la política (${error.code || 'sin código'}). No cambió nada.`);
   } finally {
     await client.rpc('identity_close_own_session', { p_business_id: business.id }).catch(() => {});
-    await client.auth.signOut().catch(() => {});
+    await client.auth.signOut({ scope: 'local' }).catch(() => {});
   }
   console.log(JSON.stringify({ business: business.slug, ...(await read()) }, null, 2));
 }

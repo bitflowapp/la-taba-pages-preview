@@ -60,7 +60,7 @@ async function sessionClient(credentialName, businessId) {
 }
 async function closeSession(client, businessId) {
   try { await client.rpc('identity_close_own_session', { p_business_id: businessId }); } catch { /* ya cerrada */ }
-  try { await client.auth.signOut(); } catch { /* sin sesión */ }
+  try { await client.auth.signOut({ scope: 'local' }); } catch { /* sin sesión */ }
 }
 async function findUserIdByEmail(email) {
   for (let page = 1; page <= 20; page += 1) {
@@ -211,7 +211,7 @@ try {
     acceptedOk = accepted.data?.ok === true;
     check('INVITE_ACCEPTED_WITH_OWN_SESSION', !verified.error && !updated.error && acceptedOk && accepted.data?.role === 'rider',
       accepted.data?.code || accepted.data?.role || '');
-    await invitee.auth.signOut();
+    await invitee.auth.signOut({ scope: 'local' });
     const again = await invite({ action: 'inspect', token });
     check('INVITE_SINGLE_USE', again.code === 'already_accepted', again.code);
     const rider = createClient(keys.url, keys.publishable, OPTIONS);

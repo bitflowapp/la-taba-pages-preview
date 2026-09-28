@@ -17,7 +17,7 @@ import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { loadTargetKeys } from './target-keys.mjs';
 import { cleanupQaOrder, operatorClient } from './qa-cleanup.mjs';
-import { openQaWindow, publicCatalogTenants, QA_CONTROL_BUSINESS } from './qa-window.mjs';
+import { foreignPublicTenants, openQaWindow, publicCatalogTenants, QA_CONTROL_BUSINESS, REAL_BUSINESS } from './qa-window.mjs';
 
 const BUSINESS = QA_CONTROL_BUSINESS;
 const OPTIONS = { auth: { persistSession: false, autoRefreshToken: false } };
@@ -182,7 +182,8 @@ if (pickup?.id) {
 }
 const publicClient = createClient(keys.url, keys.publishable, OPTIONS);
 // Every business is closed outside QA runs: nobody may read any catalog.
-report.publicCatalogTenantsAfter = (await publicCatalogTenants(publicClient)).length;
+// Ningún tenant QA queda público. El comercio real puede estarlo: después de abrir, lo está.
+report.publicCatalogTenantsAfter = foreignPublicTenants(await publicCatalogTenants(publicClient), REAL_BUSINESS).length;
 
 const failed = Object.entries(report.checks).filter(([, v]) => v !== 'PASS').map(([k]) => k);
 report.failed = failed;

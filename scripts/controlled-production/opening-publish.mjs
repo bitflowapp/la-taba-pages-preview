@@ -134,7 +134,7 @@ async function main(args) {
     p_business_id: business.id, p_client: 'panel_web', p_device_label: 'Planilla de apertura (terminal)', p_device_key_hash: null, p_app_version: 'opening-publish',
   });
   if (registered.error || registered.data?.ok !== true) {
-    await client.auth.signOut().catch(() => {});
+    await client.auth.signOut({ scope: 'local' }).catch(() => {});
     throw Error('Esa cuenta no es dueño ni encargado activo del comercio.');
   }
 
@@ -160,7 +160,7 @@ async function main(args) {
     if (applied.status !== 0) { process.exitCode = applied.status || 1; return; }
   } finally {
     await client.rpc('identity_close_own_session', { p_business_id: business.id }).catch(() => {});
-    await client.auth.signOut().catch(() => {});
+    await client.auth.signOut({ scope: 'local' }).catch(() => {});
   }
 
   // 5 · Qué quedó pendiente, con la misma lista del Panel.

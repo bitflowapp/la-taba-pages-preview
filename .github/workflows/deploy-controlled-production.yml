@@ -124,8 +124,10 @@ jobs:
           ref=$(node -p "require('./$CONFIG').supabaseProjectRef")
           business=$(node -p "require('./$CONFIG').businessId")
           mode=$(node -p "require('./$CONFIG').catalogMode || 'approved'")
-          if [[ "$mode" == "none" ]]; then
-            node scripts/deploy/smoke-commercial-pilot.mjs --origin "$ORIGIN" --project-ref "$ref" --business-id "$business" --catalog-mode none
+          # none: nothing public yet. live: whatever the owner published, every
+          # visible product sellable (price, stock, photo). Neither publishes.
+          if [[ "$mode" == "none" || "$mode" == "live" ]]; then
+            node scripts/deploy/smoke-commercial-pilot.mjs --origin "$ORIGIN" --project-ref "$ref" --business-id "$business" --catalog-mode "$mode"
           else
             echo "Approved-catalog smoke runs on the operator machine with the private approval file." >&2; exit 1
           fi
@@ -143,6 +145,8 @@ jobs:
           node scripts/deploy/drill-commercial-pilot-rollback.mjs --phase rollback --config "$CONFIG" --receipt "$receipt"
           ref=$(node -p "require('./$CONFIG').supabaseProjectRef")
           business=$(node -p "require('./$CONFIG').businessId")
-          node scripts/deploy/smoke-commercial-pilot.mjs --origin "$ORIGIN" --project-ref "$ref" --business-id "$business" --catalog-mode none
+          mode=$(node -p "require('./$CONFIG').catalogMode || 'approved'")
+          [[ "$mode" == "none" || "$mode" == "live" ]]
+          node scripts/deploy/smoke-commercial-pilot.mjs --origin "$ORIGIN" --project-ref "$ref" --business-id "$business" --catalog-mode "$mode"
           node scripts/deploy/drill-commercial-pilot-rollback.mjs --phase restore --config "$CONFIG" --receipt "$receipt"
-          node scripts/deploy/smoke-commercial-pilot.mjs --origin "$ORIGIN" --project-ref "$ref" --business-id "$business" --catalog-mode none
+          node scripts/deploy/smoke-commercial-pilot.mjs --origin "$ORIGIN" --project-ref "$ref" --business-id "$business" --catalog-mode "$mode"

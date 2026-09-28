@@ -1,0 +1,180 @@
+{
+  "origin": "https://la-taba-commercial-pilot.pages.dev/",
+  "from": {
+    "commit": "aefa942a4073ea038a3f61a6aa63955f70bf1fb9",
+    "runtime": "la-taba-runtime-v127-catalog-image-attribution"
+  },
+  "to": {
+    "commit": "98866abca60050b2423f3784c5e4062c472062d5",
+    "runtime": "la-taba-runtime-v128-checkout-saved-profile"
+  },
+  "official": {
+    "seed": {
+      "at": "2026-09-28T07:48:35.634Z",
+      "phase": "seed",
+      "checks": {
+        "PAGE_LOADS": "PASS",
+        "BACKEND_IS_CP": "PASS",
+        "SW_CONTROLLING": "PASS",
+        "RUNTIME_CACHE_PRESENT": "PASS",
+        "SERVES_EXPECTED_COMMIT": "PASS",
+        "PANEL_SESSION_RECOGNISED": "PASS",
+        "NO_JS_ERRORS": "PASS"
+      },
+      "verdict": "PASS",
+      "observed": {
+        "first": {
+          "status": 200,
+          "controller": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+          "active": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+          "waiting": false,
+          "caches": [
+            "la-taba-runtime-v127-catalog-image-attribution"
+          ],
+          "version": {
+            "commit": "aefa942a4073ea038a3f61a6aa63955f70bf1fb9",
+            "runtime": "la-taba-runtime-v127-catalog-image-attribution",
+            "builtAt": "2026-09-28T06:36:53.005Z"
+          },
+          "supabaseUrl": "https://tkanbadcglszlcyfjvpv.supabase.co",
+          "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+          "environment": "pilot",
+          "authKeys": 0
+        },
+        "RUNTIME_CACHE_PRESENT": [
+          "la-taba-runtime-v127-catalog-image-attribution"
+        ]
+      }
+    },
+    "upgrade": {
+      "at": "2026-09-28T09:27:27.314Z",
+      "phase": "upgrade",
+      "checks": {
+        "PAGE_LOADS": "PASS",
+        "BACKEND_IS_CP": "PASS",
+        "SW_CONTROLLING": "PASS",
+        "RUNTIME_CACHE_PRESENT": "PASS",
+        "SERVES_EXPECTED_COMMIT": "PASS",
+        "EXISTING_SESSION_KEPT": "PASS",
+        "RELOAD_KEEPS_SW_AND_VERSION": "PASS",
+        "UPDATE_CHECK_OK": "PASS",
+        "HARD_RELOAD_OK": "PASS",
+        "NO_JS_ERRORS": "PASS"
+      },
+      "verdict": "PASS",
+      "observed": {
+        "first": {
+          "status": 200,
+          "controller": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+          "active": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+          "waiting": false,
+          "caches": [
+            "la-taba-runtime-v127-catalog-image-attribution"
+          ],
+          "version": {
+            "commit": "98866abca60050b2423f3784c5e4062c472062d5",
+            "runtime": "la-taba-runtime-v128-checkout-saved-profile",
+            "builtAt": "2026-09-28T09:25:29.715Z"
+          },
+          "supabaseUrl": "https://tkanbadcglszlcyfjvpv.supabase.co",
+          "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+          "environment": "pilot",
+          "authKeys": 1
+        },
+        "RUNTIME_CACHE_PRESENT": [
+          "la-taba-runtime-v127-catalog-image-attribution"
+        ],
+        "RELOAD_KEEPS_SW_AND_VERSION": "98866abca60050b2423f3784c5e4062c472062d5",
+        "UPDATE_CHECK_OK": {
+          "ok": true,
+          "installing": false,
+          "waiting": true
+        },
+        "HARD_RELOAD_OK": "98866abca60050b2423f3784c5e4062c472062d5",
+        "final": {
+          "controller": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+          "active": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+          "waiting": true,
+          "caches": [
+            "la-taba-runtime-v127-catalog-image-attribution",
+            "la-taba-runtime-v128-checkout-saved-profile"
+          ],
+          "version": {
+            "commit": "98866abca60050b2423f3784c5e4062c472062d5",
+            "runtime": "la-taba-runtime-v128-checkout-saved-profile",
+            "builtAt": "2026-09-28T09:25:29.715Z"
+          },
+          "supabaseUrl": "https://tkanbadcglszlcyfjvpv.supabase.co",
+          "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+          "environment": "pilot",
+          "authKeys": 1
+        }
+      }
+    },
+    "fresh": {
+      "at": "2026-09-28T09:27:50.158Z",
+      "phase": "fresh",
+      "checks": {
+        "PAGE_LOADS": "PASS",
+        "BACKEND_IS_CP": "PASS",
+        "SW_CONTROLLING": "PASS",
+        "RUNTIME_CACHE_PRESENT": "PASS",
+        "SERVES_EXPECTED_COMMIT": "PASS",
+        "RELOAD_KEEPS_SW_AND_VERSION": "PASS",
+        "UPDATE_CHECK_OK": "PASS",
+        "HARD_RELOAD_OK": "PASS",
+        "NO_JS_ERRORS": "PASS"
+      },
+      "verdict": "PASS",
+      "observed": {
+        "first": {
+          "status": 200,
+          "controller": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+          "active": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+          "waiting": false,
+          "caches": [
+            "la-taba-runtime-v128-checkout-saved-profile"
+          ],
+          "version": {
+            "commit": "98866abca60050b2423f3784c5e4062c472062d5",
+            "runtime": "la-taba-runtime-v128-checkout-saved-profile",
+            "builtAt": "2026-09-28T09:25:29.715Z"
+          },
+          "supabaseUrl": "https://tkanbadcglszlcyfjvpv.supabase.co",
+          "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+          "environment": "pilot",
+          "authKeys": 0
+        },
+        "RUNTIME_CACHE_PRESENT": [
+          "la-taba-runtime-v128-checkout-saved-profile"
+        ],
+        "RELOAD_KEEPS_SW_AND_VERSION": "98866abca60050b2423f3784c5e4062c472062d5",
+        "UPDATE_CHECK_OK": {
+          "ok": true,
+          "installing": false,
+          "waiting": false
+        },
+        "HARD_RELOAD_OK": "98866abca60050b2423f3784c5e4062c472062d5",
+        "final": {
+          "controller": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+          "active": "https://la-taba-commercial-pilot.pages.dev/sw.js",
+          "waiting": false,
+          "caches": [
+            "la-taba-runtime-v128-checkout-saved-profile"
+          ],
+          "version": {
+            "commit": "98866abca60050b2423f3784c5e4062c472062d5",
+            "runtime": "la-taba-runtime-v128-checkout-saved-profile",
+            "builtAt": "2026-09-28T09:25:29.715Z"
+          },
+          "supabaseUrl": "https://tkanbadcglszlcyfjvpv.supabase.co",
+          "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+          "environment": "pilot",
+          "authKeys": 0
+        }
+      }
+    }
+  },
+  "note": "The new commit is served network-first at once; the v128 worker waits for the in-app «Actualizar ahora» before replacing v127, by design. A fresh visitor only has v128.",
+  "verdict": "PASS"
+}

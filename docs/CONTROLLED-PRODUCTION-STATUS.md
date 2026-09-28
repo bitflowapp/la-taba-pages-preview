@@ -3,7 +3,24 @@
 Rama de despliegue `release/taba-controlled-production`; PR **#98** (reemplaza a
 #97, que queda abierto sólo por trazabilidad). Operación:
 `CONTROLLED-PRODUCTION-RUNBOOK.md`. Evidencia en `docs/evidence/controlled-production/`
-(archivos `*-20260925.json` para el cierre de #98, `*-20260926.json` para el del 26).
+(archivos `*-20260925.json` para el cierre de #98, `*-20260926.json` para el del 26 y `*-20260928.json` para la noche del 28).
+
+## 2026-09-28 · Noche de cierre: QA-401, ciclo de vida y camino de apertura
+
+| Frente | Resultado | Evidencia |
+|---|---|---|
+| QA-401 (P1: el checkout perdía el nombre del cliente nuevo al guardarlo en línea) | Portado de #117 en #120, merge `98866ab`. Reproducido antes del fix: 6 E2E y 2 unitarios fallando. Después: 6/6 unitarios, 8/8 E2E en Chromium y 8/8 en WebKit, compra completa en CP 2/2. Caché v128 | PR #120 |
+| Deploy | Workflow oficial (run 36399354557) después del CI exacto en verde (web + E2E 36399354417, Rider 36399354472). Deployment `5f5b0b61`; el alias sirve `98866ab`; smoke de 3 motores. **Rollback real B→A→B con A = `aefa942`** y smoke en cada paso. Pulso HEALTHY; tienda anónima 35/35 rutas limpias | `rollback-cp-20260928.json` |
+| Service worker v127 → v128 (origen real) | Seed sobre `aefa942` y actualización a `98866ab`: sesión conservada, recarga, chequeo de actualización y recarga forzada PASS; el worker v128 espera «Actualizar ahora». Visitante nuevo en v128: PASS | `sw-live-cp-20260928.json` |
+| Capacidad (CI, negocio QA) | 30 usuarios y 3 riders: 7 de 8 checkouts simultáneos (1 perdedor de carrera, esperado), 0 errores, p95 ≈ 543 ms, integridad PASS, oferta disputada → 1 ganador, 6/6 entregas, 0 filas anónimas (run 36399354529) | `capacity-cp-ci-20260928.json` |
+| Ciclo de vida, idempotencia y retiro con efectivo | 31/31 (LT-0060 entrega, LT-0061 retiro) | `order-lifecycle-cp-20260928.json` |
+| Controles, RLS, stock, impresión, storage y auditoría de base | 36 controles, RLS 58/58, carrera por la última unidad y bordes de stock PASS, impresión 65/65, storage PASS, auditoría limpia | `verify-cp-controls-`, `rls-cp-`, `last-unit-race-cp-`, `stock-edges-cp-`, `verify-cp-printing-`, `storage-inventory-cp-`, `db-audit-cp-20260928.json` |
+| Backup y restore | PASS: 144 migraciones, 108 tablas y 8051 filas en PG 17 aislado | `restore-drill-cp-20260928.json` |
+| Registro de migraciones | La fila del pipeline de imágenes pasó de `20260927195533` a `20260927175058` (SQL idéntico, sin DDL). CP = release, 144/144 | `migrations-cp-20260928.json` |
+| Rider físico | PARCIAL: GPS, pantalla apagada y recuperación de red PASS. El bloqueo con PIN del Moto frenó la UI; el PASS completo del 09-24 con la misma APK sigue vigente. APK sin secretos | `rider-physical-cp-20260928.json`, `apk-scan-rider-cp-20260928.json` |
+| Apertura del comercio real | `opening-readiness.mjs`: 7 pendientes (entrega, horarios, fotos, precios, stock, publicación y verificación de plataforma). Planilla `catalog/opening/planilla-apertura-cp.csv` prellenada | `opening-readiness-cp-20260928.json` |
+
+Estado: **P0 = 0, P1 = 0**. `REAL_STORE_LIVE: NO`: faltan datos del comercio. Detalle y cola humana en `docs/LA-TABA-MORNING-HANDOFF-2026-09-28.md`.
 
 ## 2026-09-26 · Frontend congelado (#105) e impresión activada (#103)
 

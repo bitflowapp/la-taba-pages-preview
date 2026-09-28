@@ -1,0 +1,134 @@
+{
+  "workflowRun": 36399354557,
+  "workflow": "Deploy CONTROLLED_PRODUCTION",
+  "commit": "98866abca60050b2423f3784c5e4062c472062d5",
+  "previousLive": {
+    "commit": "aefa942a4073ea038a3f61a6aa63955f70bf1fb9",
+    "deploymentId": "ec899bce-7096-4cad-890f-626f682f2980"
+  },
+  "deployment": {
+    "url": "https://5f5b0b61.la-taba-commercial-pilot.pages.dev",
+    "alias": "https://la-taba-commercial-pilot.pages.dev",
+    "runtime": "la-taba-runtime-v128-checkout-saved-profile"
+  },
+  "ciWaited": {
+    "validateReleaseCandidate": 36399354417,
+    "riderAndroidCanonical": 36399354472
+  },
+  "events": [
+    {
+      "step": "CONTROLLED_PRODUCTION preflight and package (no publish)",
+      "result": {
+        "pilotPreflight": "PASS",
+        "status": "PASS",
+        "phase": "deploy",
+        "catalogMode": "none",
+        "onlinePayments": true,
+        "projectRef": "tkanbadcglszlcyfjvpv",
+        "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+        "approvedSkus": [],
+        "cloudflareProject": "la-taba-commercial-pilot",
+        "customerUrl": "https://la-taba-commercial-pilot.pages.dev",
+        "businessPanelUrl": "https://la-taba-commercial-pilot.pages.dev/#business",
+        "secretsPrinted": false
+      }
+    },
+    {
+      "step": "CONTROLLED_PRODUCTION preflight and package (no publish)",
+      "result": {
+        "pilotPackage": "PASS",
+        "deployed": false,
+        "commit": "98866abca60050b2423f3784c5e4062c472062d5",
+        "projectRef": "tkanbadcglszlcyfjvpv",
+        "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+        "approvedSkus": [],
+        "onlinePayments": true,
+        "artifact": "dist_pilot",
+        "secretsPrinted": false
+      }
+    },
+    {
+      "step": "Public smoke (Chromium, Chrome Android, WebKit)",
+      "result": {
+        "pilotPublicSmoke": "PASS",
+        "catalogMode": "none",
+        "origin": "https://la-taba-commercial-pilot.pages.dev",
+        "ref": "tkanbadcglszlcyfjvpv",
+        "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+        "approvedProducts": 0,
+        "images": 0,
+        "browsers": {
+          "chromium": "PASS",
+          "chrome_android": "PASS",
+          "webkit": "PASS"
+        }
+      }
+    },
+    {
+      "step": "Rollback drill to the previous deployment and back",
+      "result": {
+        "pilotRollbackPreflight": "PASS",
+        "cloudWrites": false,
+        "localReceiptCreated": true,
+        "previousCommit": "aefa942a4073ea038a3f61a6aa63955f70bf1fb9",
+        "candidateCommit": "98866abca60050b2423f3784c5e4062c472062d5"
+      }
+    },
+    {
+      "step": "Rollback drill to the previous deployment and back",
+      "result": {
+        "pilotRollbackDrill": "PASS",
+        "phase": "rollback",
+        "restoredCommit": "aefa942a4073ea038a3f61a6aa63955f70bf1fb9",
+        "backendUnchanged": true,
+        "configVerified": true
+      }
+    },
+    {
+      "step": "Rollback drill to the previous deployment and back",
+      "result": {
+        "pilotPublicSmoke": "PASS",
+        "catalogMode": "none",
+        "origin": "https://la-taba-commercial-pilot.pages.dev",
+        "ref": "tkanbadcglszlcyfjvpv",
+        "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+        "approvedProducts": 0,
+        "images": 0,
+        "browsers": {
+          "chromium": "PASS",
+          "chrome_android": "PASS",
+          "webkit": "PASS"
+        }
+      }
+    },
+    {
+      "step": "Rollback drill to the previous deployment and back",
+      "result": {
+        "pilotRollbackDrill": "PASS",
+        "phase": "restore",
+        "restoredCommit": "98866abca60050b2423f3784c5e4062c472062d5",
+        "backendUnchanged": true,
+        "configVerified": true
+      }
+    },
+    {
+      "step": "Rollback drill to the previous deployment and back",
+      "result": {
+        "pilotPublicSmoke": "PASS",
+        "catalogMode": "none",
+        "origin": "https://la-taba-commercial-pilot.pages.dev",
+        "ref": "tkanbadcglszlcyfjvpv",
+        "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+        "approvedProducts": 0,
+        "images": 0,
+        "browsers": {
+          "chromium": "PASS",
+          "chrome_android": "PASS",
+          "webkit": "PASS"
+        }
+      }
+    }
+  ],
+  "drill": "B→A→B: 98866ab → aefa942 → 98866ab, public smoke (Chromium, Chrome Android, WebKit) at each step",
+  "verdict": "PASS"
+}

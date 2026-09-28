@@ -4,6 +4,7 @@ import { businessMapsSearchUrl, mapsSearchUrl } from './core/business-location.j
 import { categories } from './data.js';
 import { getCustomerCatalogProducts, isProductVisibleToCustomer } from './core/catalog-store.js';
 import { resolveCatalogImageUrl } from './core/catalog-image-contract.js';
+import { imageAttributionFor } from './core/image-attribution.js';
 import { resolveRuntimeConfig } from './core/runtime-config.js';
 import { COMBO_MANIFEST } from './combos-data.js';
 import { purchasableCombos } from './core/combos.js';
@@ -682,6 +683,19 @@ export function productThumb(product, variant = 'grid') {
     <span class="thumb ${official ? 'has-photo' : 'uses-placeholder'} tone-${tone} category-${category} thumb-${variant}" role="img" aria-label="${escapeHtml(label)}">
       <img class="thumb-img${official ? '' : ' is-placeholder'}" src="${escapeHtml(source)}"${responsive} width="${width}" height="${height}" alt="" data-product-name="${escapeHtml(product.name || 'bebida')}" loading="${loading}" decoding="async" />
     </span>`;
+}
+
+// Crédito de la foto cuando su licencia lo exige (CC BY-SA: autor, fuente,
+// licencia con enlace y cambios). Va sólo con la foto oficial: el placeholder
+// propio de TABA no lleva crédito, y una foto sin registro en
+// core/image-attribution.js no lo necesita (propia o cedida por la marca).
+export function productImageCredit(product) {
+  if (!productPhotoIsOfficial(product)) return '';
+  const attribution = imageAttributionFor(product);
+  if (!attribution) return '';
+  const author = attribution.author ? ` (${escapeHtml(attribution.author)})` : '';
+  const changes = attribution.changes ? ` · ${escapeHtml(attribution.changes)}` : '';
+  return `<p class="modal-image-credit" data-image-credit>Foto: <a href="${escapeHtml(attribution.sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(attribution.source)}</a>${author} · <a href="${escapeHtml(attribution.licenseUrl)}" target="_blank" rel="license noopener noreferrer">${escapeHtml(attribution.license)}</a>${changes}</p>`;
 }
 
 export function productCode(product) {
@@ -4393,6 +4407,7 @@ export function showProductModal(productId, restoreTrigger = null) {
         <span class="modal-presentation">${escapeHtml(unitText(product))}</span>
         <h2>${escapeHtml(cardTitle(product))}</h2>
         ${descriptionText(product) ? `<p>${escapeHtml(descriptionText(product))}</p>` : ''}
+        ${productImageCredit(product)}
         <div class="modal-commerce-row">
           <div class="modal-price">
             ${isPricePending(product)

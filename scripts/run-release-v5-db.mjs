@@ -141,15 +141,15 @@ try {
       'business_self_delivery_test.sql','controlled_production_qa_window_test.sql',
       'mercadopago_availability_requires_seller.local.sql','payment_method_isolation.local.sql',
       'mercadopago_seller_cannot_charge_alert.local.sql','mercadopago_operator_switch.local.sql',
-      'local_print_agent_test.sql','catalog_image_storage_test.sql'];
+      'local_print_agent_test.sql','catalog_image_storage_test.sql','store_opening_readiness_test.sql'];
     for(const name of canonicalTests){
       const output=docker(['exec','-i',container,'psql','-h','/tmp','-U','postgres','-d','postgres','-X','-qAt','-v','ON_ERROR_STOP=1'],
         Buffer.from('set search_path=public,extensions;\n'+fs.readFileSync(path.join(ROOT,'supabase/tests',name),'utf8'))).toString();
       assert.doesNotMatch(output,/^not ok\b/m,name);assert.match(output,/^1\.\.[0-9]+$/m,name);
       assertions+=Number(/^1\.\.([0-9]+)$/m.exec(output)[1]);
     }
-    assert.equal(assertions,561);
-    console.log('CANONICAL_PGTAP: 268 + 44 least-privilege + 50 reparto-propio + 37 ventana QA/columnas privadas/pausa + 9 Mercado Pago sólo con vendedor conectado + 5 aislamiento cobro manual/Mercado Pago + 9 alerta de vendedor que no puede cobrar + 16 interruptor de operador por negocio + 104 impresión del mostrador + 19 pipeline de imágenes assertions PASS');
+    assert.equal(assertions,637);
+    console.log('CANONICAL_PGTAP: 268 + 44 least-privilege + 50 reparto-propio + 37 ventana QA/columnas privadas/pausa + 9 Mercado Pago sólo con vendedor conectado + 5 aislamiento cobro manual/Mercado Pago + 9 alerta de vendedor que no puede cobrar + 16 interruptor de operador por negocio + 104 impresión del mostrador + 19 pipeline de imágenes + 76 preparar la apertura assertions PASS');
 
     // pgTAP no puede probar dos agentes reclamando a la vez: una conexión por llamada.
     const { runPrintClaimRace } = await import('./print-agent/claim-race.mjs');
@@ -217,6 +217,35 @@ try {
     )).rows[0].allowed,true);
     await query('rollback');
     console.log('BUSINESS_SELF_DELIVERY_ROLLBACK_DRILL: PASS');
+
+    // 20260928150000: el rollback compensatorio retira las RPC de la apertura y
+    // devuelve las dos funciones que reemplaza a su definición anterior, byte
+    // por byte. Corre adentro de una transacción que se deshace: el esquema
+    // queda hacia adelante para el volcado y la restauración de abajo.
+    const openingRollback=fs.readFileSync(path.join(
+      ROOT,'docs/migrations/rollback/20260928150000_store_opening_readiness.rollback.sql'
+    ),'utf8').replace(/^begin;\s*$/m,'').replace(/^commit;\s*$/m,'');
+    await query('begin');
+    await query(openingRollback);
+    for(const signature of [
+      'public.get_store_opening_readiness(uuid,integer)',
+      'public.platform_verify_business_ordering(uuid,text,text,integer,text)',
+      'public.platform_revoke_business_ordering(uuid,text,text,text)',
+      'public.set_business_fulfillment(uuid,boolean,boolean)',
+      'public.set_business_opening_hours(uuid,jsonb)',
+      'public.set_business_address(uuid,text)',
+      'public.team_invitation_lookup(text)',
+      'public.team_invitation_record_activation(text,uuid,boolean)',
+    ]) assert.equal((await query('select to_regprocedure($1) as oid',[signature])).rows[0].oid,null,signature);
+    for(const [signature,previousSha256] of [
+      ['public.set_business_open_state(uuid,text)','420233317694836322cc267d6769228ff643d04a4f87d5b115bc1332ccbcf366'],
+      ['public.apply_commercial_catalog_batch(uuid,jsonb)','51e07f01493fb96fae1ac69f2f2655228354e4544c0391257d86c4e8af53bb5e'],
+    ]){
+      const definition=(await query('select pg_get_functiondef($1::regprocedure) as definition',[signature])).rows[0].definition;
+      assert.equal(createHash('sha256').update(definition).digest('hex'),previousSha256,signature);
+    }
+    await query('rollback');
+    console.log('STORE_OPENING_ROLLBACK_DRILL: PASS');
   } else {
     console.log('FOCUSED_RELEASE_RUN: historical matrix and canonical pgTAP NOT RUN');
   }

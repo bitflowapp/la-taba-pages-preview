@@ -1,6 +1,6 @@
 {
  "schema": "la-taba.catalog-image-rights-research/1",
- "generated_at": "2026-09-28T03:55:35Z",
+ "generated_at": "2026-09-28T05:26:46Z",
  "project": "tkanbadcglszlcyfjvpv",
  "business_id": "e7850ad2-a447-402c-8375-3fd74e9466ba",
  "method": [
@@ -391,7 +391,21 @@
    },
    "data_flag": "",
    "rights_status": "RIGHTS_VERIFIED",
-   "pipeline": {}
+   "pipeline": {
+    "rights_status": "RIGHTS_VERIFIED",
+    "source_url": "https://images.openfoodfacts.org/images/products/779/120/020/0781/front_es.3.full.jpg",
+    "upload_id": "a34bdfc3-fbde-4866-b678-1f5f79bc8f49",
+    "staging_path": "catalog-image-staging/business/e7850ad2-a447-402c-8375-3fd74e9466ba/products/d98aa694-f0eb-4986-9249-408ae8036f6a/pending/a34bdfc3-fbde-4866-b678-1f5f79bc8f49/{source.jpg,master.webp,thumbnail.webp} (retirados tras aprobar)",
+    "approved_path": "catalog-images/business/e7850ad2-a447-402c-8375-3fd74e9466ba/products/d98aa694-f0eb-4986-9249-408ae8036f6a/8abd72280138323ac541eaa547a26aee4787f03f8cb856382d832cc5bb735837.webp (+ thumb-e96faa577dcc1de840c1da48736ea13d144a796fd87b43788ac6df65232c9c63.webp)",
+    "association_status": "ASSOCIATED",
+    "catalog_asset_id": "a4f19272-3d95-42b9-aefe-f347f3d6cf9e",
+    "source_sha256": "ccc2d1bac09400804fb83c9f54b7f15a7a082e3aa2e6ddcfaebb540efe77fe92",
+    "master_sha256": "8abd72280138323ac541eaa547a26aee4787f03f8cb856382d832cc5bb735837",
+    "thumbnail_sha256": "e96faa577dcc1de840c1da48736ea13d144a796fd87b43788ac6df65232c9c63",
+    "visual_review": "PASS: vista previa privada 1000x1000 revisada en el Panel real; botella completa sobre blanco, etiqueta 750 ml legible; imagen pública 200 image/webp con SHA idéntico.",
+    "approved_at": "2026-09-28T04:58:24Z",
+    "storage_completed": "2026-09-28T05:04Z (reintento de almacenamiento del Panel; ver bug de primera aprobación)"
+   }
   },
   {
    "sku": "cinzano-rosso-950ml",

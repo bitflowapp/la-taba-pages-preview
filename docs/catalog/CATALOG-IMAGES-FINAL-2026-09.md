@@ -6,19 +6,20 @@
 
 | Medición | Resultado |
 | --- | ---: |
+| `OWNER_SESSION` | PASS: Panel real, rol Dueño, 46 filas y 9 canary verificados en pantalla |
 | `PRODUCTS_IN_CP` | 46 |
-| `PRODUCTS_WITH_REAL_IMAGES` / `PRODUCTS_PENDING_IMAGE` | 0 / 46 |
-| `CANARY_COMPLETED` | 0/9 |
-| `RIGHTS_VERIFIED` | 1 (Campari Bitter 750 ml, no canary) |
+| `PRODUCTS_WITH_REAL_IMAGES` / `PRODUCTS_PENDING_IMAGE` | 1 / 45 |
+| `CANARY_COMPLETED` | 0/9 (ningún canary tiene imagen con derechos verificables) |
+| `CAMPARI_IMAGE_E2E` | PASS: staging privado → vista previa → aprobación → `catalog-images` → asociación |
+| `RIGHTS_VERIFIED` | 1 (Campari Bitter 750 ml, Open Food Facts, CC BY-SA 3.0) |
 | `RIGHTS_REVIEW_REQUIRED` | 41 |
 | `REPLACE_REQUIRED` | 4 (Heineken 710, Lay's 134 g, Cinzano 950, Corona 330) |
-| `REVIEW_REQUIRED` | 0 (los 46 tienen revisión visual documentada) |
+| `IMAGES_STAGED` / `IMAGES_APPROVED` / `IMAGES_ASSOCIATED` | 1 / 1 / 1 |
 | `PRODUCTS_PUBLIC` / `DUPLICATES` | 0 / 0 |
-| `PRICE_VALUES_CHANGED` / `STOCK_VALUES_CHANGED` | 0 / 0 |
-| `ANON_PUBLIC_CHECK` | PASS: HTTP 200, 0 filas; listado anónimo de `catalog-images` vacío |
-| `OWNER_SESSION` | Pendiente: la ventana dedicada del Panel sigue en «Ingresá con tu cuenta» |
+| `PRICE_VALUES_CHANGED` / `STOCK_VALUES_CHANGED` | 0 / 0; huellas `1da03ffc…` y `e6d1ba5d…` sin cambios |
+| `ANON_PUBLIC_CHECK` | PASS: HTTP 200 con 0 filas; la imagen pública responde 200 `image/webp` con SHA idéntico |
 
-La única imagen con derechos verificados no se asoció todavía porque la carga, la vista previa y la aprobación se hacen desde el Panel con sesión OWNER/ADMIN, y esa sesión no se inició. El archivo está preparado y el procedimiento está en [Cómo terminar](#cómo-terminar).
+Campari sigue en borrador: precio pendiente, stock NULL, `available=false` e `is_verified=false`. No es visible para clientes. Venderlo requiere además habilitar la venta de alcohol.
 
 ## Por qué casi todo sigue bloqueado por derechos
 
@@ -82,21 +83,44 @@ Detalle por SKU (fuente revisada, términos, veredicto de Open Food Facts, estad
 - Corrección de ficha detectada, sin aplicar: `cepita-naranja-1000ml` tiene `packaging_type=Botella`, pero el GTIN 7790895648267 es un Tetra Brik de 1 L. Hay que corregirla antes de asociarle una imagen.
 - Carnes: el catálogo de CP no tiene cortes de carne, así que no aplica.
 
-## Cómo terminar
+## Campari: primer E2E real en el Panel
 
-1. **Sesión**: iniciar sesión OWNER/ADMIN en la ventana dedicada del Panel. Esa ventana es un perfil aparte de Chrome con depuración local, abierto en `/#business`.
-2. **Campari**, en el Panel:
-   1. Catálogo → «Campari Bitter 750 ml» → Imagen.
-   2. Archivo: el recorte preparado.
-   3. Tipo de fuente: «Retail de referencia», porque el pipeline no tiene la categoría «licencia abierta».
-   4. URL de origen: la de la foto en Open Food Facts.
-   5. «Subir para revisión» → «Vista previa privada» → Derecho de uso «Licencia comercial» con la referencia CC BY-SA → «Aprobar y asociar».
-   6. Verificar después: el producto sigue en borrador y hay 0 productos públicos.
-3. **Atribución antes de publicar Campari**: mostrar «Foto: Open Food Facts (smoothie-app), CC BY-SA 3.0» con enlace a la ficha, o reemplazarla por foto propia.
-4. **Las 45 restantes**, cualquiera de estos caminos:
-   - Fotos propias con [la guía de captura](../../catalog/photo-capture/PHOTO_CAPTURE_GUIDE.md), subidas con fuente «Foto propia» y derecho `PROPIO`. Es el camino más rápido y el único que no depende de terceros.
-   - Permiso escrito de cada titular o distribuidor oficial, o su paquete de packshots, que documentaría `TABA-AUT-2026-08-001` como `PERMISO_DOCUMENTADO`.
-   - Suscripción al catálogo electrónico de GS1 Argentina, que distribuye imágenes de los fabricantes a los comercios.
+1. **Verificación previa**:
+   - SKU `campari-bitter-750ml` con 750 ml y botella de vidrio en CP;
+   - GTIN 7791200200781, que retail vende como «Campari 750 cc»;
+   - foto de Open Food Facts del 2026-04-24 con «Cont. Neto 750 ml» e «Industria Argentina» legibles;
+   - licencia CC BY-SA 3.0 según los términos de OFF.
+2. **Archivo**: el fondo se reemplazó por blanco con un modelo local (u2net), sin retocar el producto, y se redimensionó a 825×2400.
+   - SHA-256 del archivo subido: `ccc2d1ba…fe92`.
+   - El original y el recorte están archivados fuera del repo, en `catalog-image-sources-2026-09-28/`.
+3. **Staging privado** (upload `a34bdfc3`): tres objetos en `catalog-image-staging` (JPEG 254.447 B, WebP 1000×1000 de 31.614 B y WebP 400×400 de 9.918 B), con hashes registrados.
+4. **Vista previa privada**: la URL firmada muestra el WebP 1000×1000. Se revisó a ojo: botella completa, etiqueta legible, fondo blanco.
+5. **Aprobación**:
+   - derecho `LICENCIA_COMERCIAL`;
+   - referencia: «CC BY-SA 3.0 (uso comercial con atribución y compartir igual) · Open Food Facts, foto smoothie-app 2026-04-24 · https://world.openfoodfacts.org/product/7791200200781 · adaptación: fondo blanco · atribución obligatoria al publicar»;
+   - `source_type=retail_reference`, porque el enum del pipeline no tiene la categoría «licencia abierta».
+6. **Asociación**:
+   - `catalog_assets` `a4f19272…`;
+   - `products.image_*` apuntan a `catalog-images/…/8abd7228….webp` y a `thumb-e96faa57….webp`, que el acceso anónimo lee con 200;
+   - staging quedó limpio y `cleanup_status=complete`.
+
+## Bugs encontrados en el Panel real y corregidos
+
+| Bug | Reproducción | Fix (PR #119) |
+| --- | --- | --- |
+| La primera aprobación no publica los objetos | `approveUpload` pasaba a `publishApprovedObjects` la fila leída antes de la RPC, todavía en `pending`, y esta la rechaza. El Panel mostró «La asociación de la imagen cambió»; la asociación quedó en la base, pero `catalog-images` seguía vacío. Se completó con «Reintentar almacenamiento». | La fila entregada lleva `status` y `license_status` en `approved`. Test de regresión que falla con el código anterior. |
+| El Panel no muestra la miniatura aprobada | `listCatalogProducts` no pedía `image_thumbnail_url`. Con la imagen asociada, el gestor mostraba el sello «Aprobada» y «Sin imagen aprobada». | El select incluye `image_thumbnail_url` y `source_image_sha256`. Test sobre el select. |
+| El gestor de imagen desborda a 390 px | El input de archivo y el texto largo de la referencia empujaban la fila: `scrollWidth` 386 contra 375. | `min-width: 0` y quiebre de texto. Validado inyectando la regla en el Panel real: 375 contra 375. |
+
+Queda una observación menor sin corregir: el mensaje de estado de la última acción de imagen se repite dentro del gestor de cada producto. Los gestores están plegados, así que no se ve salvo que se abra otro producto.
+
+## QA del Panel real
+
+- **Chromium** (ventana dedicada) en 1366×768, 430×932 y 390×844:
+  - la fila de Campari muestra «Precio pendiente», «Sin contar», «No disponible · borrador» e «Imagen asociada»;
+  - al recargar, la sesión y la asociación se conservan;
+  - capturas sin datos sensibles en `docs/catalog/visual-review/cp-images-2026-09-28/`.
+- **WebKit**: el crédito CC BY-SA de la ficha se probó con el E2E en iPhone 13 (4/4 en Chromium y WebKit). La QA del Panel real en WebKit queda registrada en la sección de deploy.
 
 ## Atribución de fotos con licencia abierta
 

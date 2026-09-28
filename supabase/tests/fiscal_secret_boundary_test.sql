@@ -45,14 +45,14 @@ select throws_ok(
   $$select public.configure_fiscal_profile('ce000000-0000-4000-8000-0000000000b1', jsonb_build_object(
       'legal_name','Frontera','cuit','20123456789','tax_condition','Responsable Inscripto','environment','homologation',
       'point_of_sale',1,'is_enabled',true,'default_recipient_condition','Consumidor Final',
-      'private_key','-----BEGIN PRIVATE KEY-----x'))$$,
+      'private_key','contenido de una clave privada'))$$,
   '22023', 'payload fiscal no permitido', 'una clave privada no entra por el Panel');
 
 select throws_ok(
   $$select public.configure_fiscal_profile('ce000000-0000-4000-8000-0000000000b1', jsonb_build_object(
       'legal_name','Frontera','cuit','20123456789','tax_condition','Responsable Inscripto','environment','homologation',
       'point_of_sale',1,'is_enabled',true,'default_recipient_condition','Consumidor Final',
-      'certificate_pem','-----BEGIN CERTIFICATE-----x','certificate_password','x'))$$,
+      'certificate_pem','contenido de un certificado','certificate_password','x'))$$,
   '22023', 'payload fiscal no permitido', 'ni un certificado ni su contraseña');
 
 -- ── 3 · Lo que el Panel lee del estado de ARCA no trae secretos ─────────────

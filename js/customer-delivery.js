@@ -91,7 +91,7 @@ const capture = createAddressCaptureController({
   requestRender: () => render(),
   getAddresses: () => state.addresses,
   getProfile: () => state.profile,
-  onProfileSaved: (profile) => { state.profile = profile; },
+  onProfileSaved: (profile) => { adoptProfile(profile); },
   onSaved: (address, { reused = false } = {}) => {
     upsertLocalAddress(address);
     // La dirección recién guardada queda ELEGIDA. Guardarla y después tener que
@@ -280,7 +280,7 @@ export function selectDeliveryAddressById(addressId) {
  */
 export function applyProfileFromSheet(profile) {
   if (!profile) return;
-  state.profile = profile;
+  adoptProfile(profile);
   render();
 }
 
@@ -330,9 +330,8 @@ async function loadCustomerDeliveryProfile() {
     notifyDeliveryAddressChanged();
     return result;
   }
-  state.profile = result.profile;
+  adoptProfile(result.profile);
   state.addresses = result.addresses;
-  applyProfileToEmptyFields(result.profile);
   reconcileHydratedAddress({ interactionVersionAtStart });
   render();
   // Las direcciones llegan DESPUÉS del primer pintado, así que el chip «Enviar
@@ -630,6 +629,26 @@ function moveToManualEntry({ preserveVisibleValues = true } = {}) {
   state.addressFormDirty = hasCheckoutAddressInput();
   clearSelectedAddress({ renderAfter: false });
   if (!preserveVisibleValues) clearVisibleAddressFields();
+}
+
+/*
+ * QA-401: LA TARJETA Y EL PEDIDO LEEN EL MISMO PERFIL.
+ *
+ * El nombre y el teléfono viven dos veces en el checkout: en `state.profile`,
+ * que dibuja «Tus datos», y en los ocultos `customerName`/`customerPhone`, que
+ * es lo único que lee `getCheckoutFormValues()` al confirmar. Sólo la carga del
+ * perfil copiaba uno en el otro. Guardar en línea —o guardar la identidad desde
+ * el editor de direcciones o desde la hoja del inicio— cambiaba la tarjeta y
+ * dejaba los ocultos vacíos: la pantalla mostraba el perfil y el pedido viajaba
+ * sin nombre, «Ingresá un nombre de al menos 2 caracteres», sin llegar al
+ * servidor. Recargar lo tapaba porque volvía a pasar por la carga.
+ *
+ * Por eso el perfil del checkout se cambia SÓLO por acá: no hay forma de cambiar
+ * lo que la tarjeta muestra sin cambiar lo que el pedido envía.
+ */
+function adoptProfile(profile) {
+  state.profile = profile;
+  applyProfileToEmptyFields(profile);
 }
 
 function applyProfileToEmptyFields(profile) {
@@ -1174,7 +1193,7 @@ async function guardarIdentidadEnLinea() {
       state.identityError = resultado?.message || 'No pudimos guardar tus datos. Probá de nuevo.';
       return;
     }
-    state.profile = resultado.profile || { ...(state.profile || {}), name: nombre.name, phone: telefono };
+    adoptProfile(resultado.profile || { ...(state.profile || {}), name: nombre.name, phone: telefono });
     state.identityError = '';
     state.identityDraft = null;
   } catch (_) {

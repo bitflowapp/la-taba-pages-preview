@@ -1,101 +1,119 @@
-# Controlled Production: informe final de imágenes de catálogo — 2026-09
+# Controlled Production: carga real de imágenes — 2026-09
 
-## Resultado
+Última revisión: 2026-09-27. Se reutilizaron los 46 SKU existentes. Esta revisión no creó productos ni cambió el catálogo en CP.
 
-La auditoría en vivo confirmó 46 productos del negocio de Controlled Production, 0 públicos, 0 verificados, 0 con imagen y 0 duplicados por SKU. Los 46 conservan precio pendiente y stock nulo. El respaldo lógico se creó antes de cualquier posible escritura.
+## Estado auditado en vivo
 
-No se descargó, subió ni asoció ninguna imagen: Controlled Production no tiene un Storage de imágenes ni un flujo compatible para estos 46 productos. No se escribió en la base de datos y no se modificaron precios, stock, publicación ni otros módulos.
+Consulta de solo lectura al proyecto `tkanbadcglszlcyfjvpv`, negocio `e7850ad2-a447-402c-8375-3fd74e9466ba`:
 
-## Auditoría inicial y respaldo
-
-Consulta de solo lectura al proyecto tkanbadcglszlcyfjvpv, acotada al negocio e7850ad2-a447-402c-8375-3fd74e9466ba:
-
-| Medición | Estado inicial |
+| Medición | Estado |
 | --- | ---: |
-| PRODUCTS_IN_CP | 46 |
-| PRODUCTS_PUBLIC (available=true) | 0 |
-| Productos verificados | 0 |
-| PRODUCTS_WITH_IMAGE | 0 |
-| PRODUCTS_WITHOUT_IMAGE | 46 |
-| Duplicates por SKU | 0 |
-| price_status=pending | 46 |
-| stock=NULL | 46 |
-| catalog_assets del negocio | 0 |
-| catalog_product_drafts del negocio | 0 |
+| Productos en CP | 46 |
+| SKU distintos / duplicados | 46 / 0 |
+| Productos con imagen asociada | 0 |
+| Productos sin imagen asociada | 46 |
+| Productos verificables/visibles para el storefront | 0 |
+| Precio pendiente | 46 |
+| Stock nulo | 46 |
+| Canaries presentes en CP | 9 |
+| Revisiones de imagen pendientes en la cola | 0 |
+| Objetos en `catalog-image-staging` / `catalog-images` | 0 / 0 |
 
-CATALOG_IMAGE_BACKUP: PASS. Export lógico privado guardado en catalog-images-2026-09-27/catalog-before-images.json. SHA-256: 39B47EFD47F18AF02C65A4D1209CB438E4B74E7448C5AD5DC52EC8CFD4A19AAD. El respaldo incluye las filas de products, catalog_assets, catalog_product_drafts y sus conteos.
+`is_active=true` no los publica: los 46 siguen `is_verified=false`, `available=false`, `price_status=pending` y `stock=NULL`. La política pública del catálogo requiere verificación, disponibilidad y stock conocido mayor que cero; por eso el recuento visible es 0.
 
-## Investigación existente y canary
+## Respaldo lógico
 
-Se reutilizaron catalog/real-catalog-initial.csv, catalog/real-catalog-canary.csv, docs/catalog/catalog-source-2026-09.json y docs/catalog/catalog-image-review-2026-09.json de la rama feat/real-catalog-initial. No se creó ningún SKU nuevo.
+`CATALOG_IMAGE_BACKUP: PASS`. Se encontró que la ruta indicada en el informe anterior no estaba presente en el workspace; antes de cualquier escritura en Storage se tomó un export lógico nuevo, se releyó desde disco y se verificó que contiene las 46 filas de producto, 0 duplicados y 0 referencias de imagen. Incluye también `catalog_assets`, `catalog_product_drafts`, cola de imágenes y objetos de ambos buckets.
 
-Los 9 SKU canary existen en CP y coinciden con la presentación investigada. En la base siguen con available=false, price_status=pending, stock=NULL, image_url=NULL y sin verificación. Su revisión visual previa quedó registrada en el manifiesto existente:
+Ruta privada fuera del repo: `C:\Users\DELL\Desktop\la-taba\catalog-image-backups-2026-09-27\controlled-production-catalog-before-images-2026-09-27.json`
 
-| SKU | Presentación confirmada en CP | Estado del candidato |
+SHA-256: `28715EFD5F0A6AB36E36ABF7831F50D2C7FFAFF346616B58872B13BC833433E3`
+
+Snapshot de CP: `2026-09-28 00:11:41 UTC`. El export contiene los valores existentes de catálogo, incluidos precios y stock, sólo como respaldo; no se modificaron.
+
+## Canaries y fuentes revisadas
+
+Se verificaron los nueve SKU en CP y se revisaron visualmente las alternativas. El detalle por producto, URL de imagen, página de referencia, dominio, licencia y notas está en [canary-image-source-review-2026-09-27.json](canary-image-source-review-2026-09-27.json) y [real-catalog-images.csv](../../catalog/real-catalog-images.csv).
+
+| SKU | Candidato revisado | Estado actual |
 | --- | --- | --- |
-| coca-cola-original-2250ml-local | Coca-Cola Sabor Original, botella PET, 2,25 L | REPLACE_REQUIRED: panel lateral grande y texto adicional |
-| coca-cola-sin-azucar-2250ml-local | Coca-Cola Sin Azúcar, botella PET, 2,25 L | REPLACE_REQUIRED: panel lateral grande |
-| sprite-sin-azucar-2250ml-local | Sprite Sin Azúcar, botella PET, 2,25 L | REPLACE_REQUIRED: imagen borrosa |
-| fanta-naranja-2250ml | Fanta Naranja, botella PET, 2,25 L | REPLACE_REQUIRED: panel lateral grande |
-| villavicencio-sin-gas-500ml | Villavicencio Sin Gas, botella PET, 500 ml | LICENSE_REVIEW_REQUIRED: imagen limpia y presentación coincidente; permiso no documentado |
-| red-bull-energy-drink-355ml | Red Bull Energy Drink, lata, 355 ml | REPLACE_REQUIRED: panel de texto grande |
-| quilmes-clasica-710ml | Quilmes Clásica, lata, 710 ml | REPLACE_REQUIRED: imagen de edición limitada Mundial, no la presentación estándar |
-| heineken-710ml | Heineken Lager, lata, 710 ml | REPLACE_REQUIRED: panel de texto grande |
-| fernet-branca-750ml | Fernet Branca Original, botella, 750 ml | REPLACE_REQUIRED: botella recortada y panel lateral |
+| `coca-cola-original-2250ml-local` | Botella Original 2,25 L limpia, galería de Vea/Jumbo | `LICENSE_REVIEW_REQUIRED` |
+| `coca-cola-sin-azucar-2250ml-local` | Botella Sin Azúcar 2,25 L limpia, galería de Vea/Jumbo | `LICENSE_REVIEW_REQUIRED` |
+| `sprite-sin-azucar-2250ml-local` | Botella Sprite Zero 2,25 L limpia, galería de Vea/Jumbo | `LICENSE_REVIEW_REQUIRED` |
+| `fanta-naranja-2250ml` | Botella Fanta Naranja 2,25 L limpia, galería de Jumbo | `LICENSE_REVIEW_REQUIRED` |
+| `villavicencio-sin-gas-500ml` | Botella sin gas 500 ml limpia, packshot de retail | `LICENSE_REVIEW_REQUIRED` |
+| `red-bull-energy-drink-355ml` | Lata Original 355 ml limpia, galería de Jumbo | `LICENSE_REVIEW_REQUIRED` |
+| `quilmes-clasica-710ml` | Lata clásica 710 cc estándar en retail; la imagen disponible tiene una banda lateral ancha | `REVIEW_REQUIRED` |
+| `heineken-710ml` | Lata Heineken Original 710 cc; la imagen exacta disponible tiene una banda lateral ancha | `REVIEW_REQUIRED` |
+| `fernet-branca-750ml` | Botella completa 750 ml en la tienda oficial Branca | `LICENSE_REVIEW_REQUIRED` |
 
-CANARY_COMPLETED: 0/9. La investigación y revisión visual previa cubren 9/9, pero ninguno llegó a descarga, Storage, asociación ni comprobación visual en el Panel.
+Los packshots oficiales de Coca-Cola Original y Zero disponibles en la página argentina muestran 500 ml; el de Sprite muestra 500 ml; el de Fanta es una lata de 473 ml de edición limitada; el asset de Red Bull observado es de 250 ml; el de Quilmes es una lata de 473 ml y la página de Heineken no indica el volumen del asset. No se reutilizaron esas variantes para los SKU de 2,25 L, 355 ml, 710 ml ni 750 ml. Las páginas oficiales verificadas fueron [Coca-Cola Original](https://www.coca-cola.com/ar/es/brands/coca-cola/original), [Coca-Cola Zero](https://www.coca-cola.com/ar/es/brands/coca-cola/zero), [Sprite](https://www.coca-cola.com/ar/es/brands/sprite/productos), [Fanta](https://www.coca-cola.com/ar/es/brands/fanta/productos), [Red Bull](https://www.redbull.com/ar-es/energydrink/products/red-bull-energy-drink), [Quilmes Clásica](https://www.quilmes.com.ar/clasica), [Heineken lata](https://www.heineken.com/ar/es/nuestros-productos/la-lata) y [Villavicencio](https://www.villavicencio.com.ar/nuestra-agua.html).
 
-De los otros 37 SKU no hay revisión visual individual suficiente para aprobar sus imágenes. Las URL guardadas son referencias secundarias de retail. El manifiesto previo cuenta APPROVED_SOURCE=0, LICENSE_REVIEW_REQUIRED=38 y REPLACE_REQUIRED=8. Para la clasificación principal de este log, los 37 candidatos no inspeccionados se dejan en REVIEW_REQUIRED hasta comprobar visualmente la identidad; el único candidato limpio se deja en LICENSE_REVIEW_REQUIRED; los 8 fallidos permanecen en REPLACE_REQUIRED. El CSV conserva prior_review_classification para rastrear el recálculo. La licencia comercial sigue sin documentarse para los 46.
+`LICENSE_REVIEW_REQUIRED` significa que el producto y la presentación coinciden, pero no se encontró permiso comercial verificable. La tienda oficial Branca confirma el producto 750 ml, pero tampoco publica una licencia de reutilización para tiendas externas. Ningún candidato está marcado como autorizado.
 
-Las páginas oficiales anotadas para Coca-Cola, Sprite, Fanta, Red Bull y Heineken son pistas de búsqueda, no packshots aprobados: la investigación previa no confirmó en ellas la presentación exacta ni permiso comercial. Las URLs originales de retail y sus dominios están en catalog/real-catalog-images.csv.
+En total se descargaron 29 copias temporales de candidatos para inspección visual; quedaron fuera del repo y no se subieron a CP. No se alteraron ni versionaron. No se pasó a los otros 37 productos porque aún no se puede completar el paso de canary en el Panel.
 
-## Bloqueo del flujo de Storage y asociación
+## Pipeline CP disponible
 
-El único bucket actual de Supabase CP es fiscal-documents: privado, limitado a application/pdf y 16 MiB. No puede recibir packshots. No hay otro bucket de imágenes.
+El pipeline se desplegó mediante PR [#116](https://github.com/bitflowapp/la-taba-pages-preview/pull/116), merge `1e6d106fd3f0a5802c34c8b3d8bee9e312bc9b5c`:
 
-El contrato de catalog_assets registra rutas propias assets/products/*.webp, SHA-256, bindings, fuente y derechos; no define rutas de Supabase Storage. La restricción catalog_assets_rights_valid de catalog_assets sólo acepta PROPIO, LICENCIA_COMERCIAL o PERMISO_DOCUMENTADO. Los candidatos actuales no tienen evidencia que permita afirmar ninguno de esos derechos.
+- `catalog-image-staging`: privado, JPEG/PNG/WebP, hasta 5 MiB.
+- `catalog-images`: lectura pública para imágenes aprobadas, WebP, hasta 5 MiB.
+- Edge Function `catalog-image-manager` v1 con `verify_jwt=true`.
+- Carga y revisión requieren JWT de OWNER/ADMIN; el navegador sólo recibe URLs firmadas de una vez para staging.
+- La aprobación exige preview y evidencia de derechos (`PROPIO`, `LICENCIA_COMERCIAL` o `PERMISO_DOCUMENTADO`). El objeto público y la asociación activa ocurren sólo tras la aprobación.
+- El producto debe continuar como borrador; la carga no publica.
+- `fiscal-documents` permanece privado y sin cambios.
 
-El pipeline existente en scripts/catalog-images/ prepara WebP y asociaciones para otra combinación de proyecto y negocio, y espera que los archivos assets/products/ formen parte del paquete web. No ofrece carga a Storage de CP. Adaptarlo exigiría cambiar la publicación de assets o crear una infraestructura de imágenes distinta, además de salvar el modelo actual de derechos. Ninguna opción está habilitada por el flujo desplegado del editor; el editor existente no tiene carga de imágenes. No se alteró el frontend, Storage, RLS ni la base de datos para abrir un camino nuevo.
+`CATALOG_IMAGE_STORAGE: READY`; `PANEL_IMAGE_UPLOAD: READY`; `PRODUCT_IMAGE_ASSOCIATION: READY`; `ANON_IMAGE_READ: READY` (bucket público configurado; no hay aún un objeto aprobado para hacer un GET positivo); `OWNER_ADMIN_WRITE_ONLY: PASS`.
 
-## Registro SKU por SKU
+## QA y cambios colaterales
 
-catalog/real-catalog-images.csv registra los 46 SKU con product_name, marca, variante, tamaño, categoría, URL original, dominio, tipo de fuente, estado de licencia, ruta de Storage, image_status y notas. Todos los storage_path están vacíos y todos los permission flags permanecen sin evidencia.
+- Revalidación de sólo lectura en CP: 46 productos, 46 SKU distintos, 0 duplicados, 0 públicos, 0 con imagen, 46 precios pendientes y 46 stocks nulos. Los 9 SKU canary existen con nombre exacto; continúan `available=false`, `price_status=pending`, `stock=NULL` y sin imagen.
+- La comprobación anónima directa a la API pública devolvió HTTP 200 y 0 filas disponibles (`ANON_PUBLIC_CHECK: PASS`).
+- En esta reanudación, Supabase informó `catalog-image-manager` ACTIVE v1 con `verify_jwt=true`; la migración `20260927195533_catalog_image_storage_pipeline` está aplicada. `catalog-image-staging` sigue privado y ambos buckets tienen límite de 5 MiB. La cola, `catalog_assets` y los dos buckets siguen en cero.
+- La Edge Function respondió 401 sin JWT; los buckets nuevos no contienen objetos.
+- `PRICE_VALUES_CHANGED: 0`; `STOCK_VALUES_CHANGED: 0`; `PRODUCTS_PUBLIC: 0`; `DUPLICATES: 0`.
+- No se modificaron precios, stock, publicación, Mercado Pago, ARCA, Rider, LocalAgent, `print_jobs`, checkout, pedidos, roles, RLS ni identidad de Walter.
+- El Panel publicado abre en `/#business`, pero la sesión disponible llega a la pantalla de email/contraseña. No se ingresaron credenciales ni se solicitó un enlace de acceso. Sin una sesión OWNER/ADMIN, `PANEL_QA`, `MOBILE_QA` y `DESKTOP_QA` quedan bloqueados; no se guardaron capturas de categorías ni de productos.
 
-| Estado principal | Cantidad |
+## Resultado de la misión de carga
+
+La revisión canary previa descargó 29 copias temporales locales para inspección visual; ninguna se subió a CP. Las siete que coinciden visualmente con el producto siguen sin permiso comercial documentado. Dos canaries requieren una presentación visual más limpia, y los otros 37 productos no tienen revisión visual individual suficiente. No se procesó el lote 2.
+
+`catalog/real-catalog-images.csv` conserva sus campos de investigación e incorpora `source_url`, `rights_status`, `staging_path`, `approved_path` y `association_status`. Las 46 filas tienen `rights_status=RIGHTS_REVIEW_REQUIRED`, rutas de staging/aprobación vacías y `association_status=NOT_ASSOCIATED_RIGHTS_UNVERIFIED`.
+
+| Medición | Resultado |
 | --- | ---: |
-| APPROVED_SOURCE | 0 |
-| LICENSE_REVIEW_REQUIRED | 1 |
-| REPLACE_REQUIRED | 8 |
-| REVIEW_REQUIRED | 37 |
-| license_status=NOT_DOCUMENTED | 46 |
-| Pendientes de imagen en CP | 46 |
+| `PRODUCTS_IN_CP` | 46 |
+| `PRODUCTS_WITH_REAL_IMAGES` / `PRODUCTS_PENDING_IMAGE` | 0 / 46 |
+| `CANARY_COMPLETED` | 0/9 |
+| `RIGHTS_VERIFIED` / `RIGHTS_REVIEW_REQUIRED` | 0 / 46 |
+| `REPLACE_REQUIRED` / `REVIEW_REQUIRED` | 0 / 39 (37 sin revisión visual y 2 canaries con bandas laterales) |
+| `IMAGES_DOWNLOADED` / `IMAGES_STAGED` | 29 / 0 |
+| `IMAGES_APPROVED` / `IMAGES_ASSOCIATED` | 0 / 0 |
+| `PRODUCTS_PUBLIC` / `DUPLICATES` | 0 / 0 |
+| `PRICE_VALUES_CHANGED` / `STOCK_VALUES_CHANGED` | 0 / 0 |
+| `ANON_PUBLIC_CHECK` | PASS — HTTP 200, 0 filas |
+| `PANEL_QA` / `MOBILE_QA` / `DESKTOP_QA` | Bloqueados por falta de sesión OWNER/ADMIN |
 
-Los 37 candidatos sin inspección visual están en REVIEW_REQUIRED. La falta de permisos se registra aparte en license_status; ninguna fila afirma autorización.
 
-## QA y comprobación de seguridad
+## Pendientes para terminar la carga
 
-- Recuento CP y canary: lectura SQL de solo lectura; no hubo mutaciones.
-- Comprobación pública anónima: HTTP 200 desde la clave publicable de runtime-config.js; REST devolvió 0 productos disponibles.
-- Panel desktop/móvil: BLOCKED. La sesión de navegador del dueño no estaba conectada a las superficies disponibles. El intento de abrir un navegador dedicado no produjo una página inspeccionable. CAPTURAS: 0; no hay imágenes asociadas que fotografiar.
-- WebKit: no disponible en la superficie de navegador.
-- No se tocó la identidad de Walter, precios, stock, Mercado Pago, ARCA, Rider, LocalAgent, print_jobs, checkout, pedidos, roles o RLS.
-- Relectura final contra el respaldo: 0 cambios en precios, stock, price_status, disponibilidad, verificación o referencias de imagen; 46 imágenes siguen pendientes.
-- Secret scan: PASS en el árbol del worktree y PASS en los 6 logs npm de esta tarea; sin hallazgos de claves, tokens, enlaces de autenticación ni asignaciones de contraseña.
+1. Iniciar sesión manualmente en la pestaña abierta del Panel con una cuenta OWNER/ADMIN. No compartir la contraseña en el chat.
+2. Aportar permiso/licencia comercial verificable para cada candidato externo, o confirmar fotos propias del negocio. El permiso no se infiere del dominio ni de la página oficial de una marca.
+3. Conseguir packshots limpios, sin banda lateral, para Quilmes Clásica 710 ml y Heineken 710 ml, o una foto propia exacta de cada envase.
 
-## Implementación segura del pipeline
+Por ahora `CANARY_COMPLETED: 0/9`; `IMAGES_UPLOADED: 0`; `IMAGES_ASSOCIATED: 0`. Los 46 productos siguen como borradores sin imagen y sin publicación.
+## Clasificación vigente, seguridad y discrepancia de migración
 
-El 2026-09-27 se aplicó a CP la migración `20260927175058_catalog_image_storage_pipeline` y quedó activa la Edge Function `catalog-image-manager` v1 con `verify_jwt=true`. CP ahora tiene `catalog-image-staging` privado (JPEG/PNG/WebP, 5 MiB) y `catalog-images` de lectura pública (WebP, 5 MiB). `fiscal-documents` permanece privado y sin cambios.
+| Clasificación del candidato | Cantidad en los 46 SKU |
+| --- | ---: |
+| `APPROVED_SOURCE` | 0 |
+| `LICENSE_REVIEW_REQUIRED` | 7 |
+| `REPLACE_REQUIRED` | 0 |
+| `REVIEW_REQUIRED` | 39 |
 
-La revisión posterior confirmó que la cola tiene RLS, `anon`/`authenticated` no pueden insertar ni cambiar revisiones, el navegador no puede ejecutar las RPC de finalización/aprobación y sólo `service_role` las ejecuta desde la función. La función valida JWT, membership `owner/admin`, producto comercial en borrador, bytes/MIME/tamaño/hash, preview privada y referencia explícita de derechos. Los WebP llegan al bucket público sólo tras confirmar la asociación en la base; el producto continúa como borrador.
+`SECRET_SCAN: PASS`. Se buscaron claves privadas, JWT y claves secretas de Supabase, credenciales en URLs, asignaciones de contraseñas/tokens y cabeceras Bearer con forma de credencial en el repo, diff, logs/evidence y el respaldo privado. No se encontraron valores de credenciales. Las coincidencias de búsqueda amplia fueron nombres de variables, placeholders y fixtures sintéticos de pruebas.
 
-Estado del catálogo después de DDL y función: 46 productos del negocio objetivo; 0 públicos; 0 duplicados; 0 imágenes asociadas; 46 precios pendientes; 46 stocks nulos. No se creó ningún objeto en los buckets. La consulta anónima de la ruta pública de Storage llegó al endpoint sin autenticación (objeto de prueba inexistente, respuesta HTTP 400), y la función devolvió HTTP 401 sin JWT. El inventario posterior quedó en [catalog-image-storage-inventory-2026-09-27.json](../evidence/controlled-production/catalog-image-storage-inventory-2026-09-27.json): `STORAGE_BACKUP_STRATEGY=PASS`, 0 huérfanos, 0 asociaciones cruzadas, assets estáticos existentes intactos.
-
-El cambio del Panel y el despacho manual de Pages están en el PR [#116](https://github.com/bitflowapp/la-taba-pages-preview/pull/116), contra `release/taba-controlled-production`. El deploy sigue requiriendo ese branch, `CP_DEPLOY_SHA` exacto y los CI push verdes de web y Android. La corrida canónica del SHA del PR está en curso; la QA visual autenticada se actualizará tras el deploy. No se cargaron ni aprobaron imágenes durante esta implementación.
-
-## Qué hace falta para cargar imágenes reales
-
-1. Un owner/admin debe ingresar al Panel del negocio y seleccionar el archivo exacto para cada SKU; la carga requiere revisión visual privada antes de aprobar.
-2. Para fotos externas, hace falta una referencia comprobable de licencia comercial o permiso. Para una foto del negocio, el owner debe confirmar que es propia. Ningún derecho se infiere del dominio.
-3. Las presentaciones ambiguas deben quedar `REVIEW_REQUIRED`; las imágenes de carnes necesitan una foto propia del corte correcto.
-
-El pipeline está preparado. Hasta que un owner/admin cargue y apruebe imágenes correctas, los 46 productos siguen como borradores sin imagen, con precio pendiente, stock nulo y sin publicación.
+La lista remota de migraciones de Supabase reporta `20260927195533_catalog_image_storage_pipeline`; el branch actual contiene `supabase/migrations/20260927175058_catalog_image_storage_pipeline.sql`. Ambos usan el nombre lógico `catalog_image_storage_pipeline`, pero difiere la versión registrada. El manager, la tabla y los buckets están activos y las comprobaciones de solo lectura pasan. Esta diferencia queda documentada para reconciliarla antes de cualquier `db push` futuro; no se modificó la historia de migraciones en esta misión.

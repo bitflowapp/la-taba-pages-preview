@@ -1,0 +1,270 @@
+{
+  "reviewed_at": "2026-09-27",
+  "scope": "Nine CP canaries only; no work on the remaining 37 until upload and review are possible in the authenticated Panel.",
+  "cp_snapshot": {
+    "products": 46,
+    "distinct_skus": 46,
+    "canary_products": 9,
+    "public_products": 0,
+    "duplicates": 0,
+    "products_with_image": 0,
+    "price_pending": 46,
+    "stock_null": 46
+  },
+  "candidate_classification": {
+    "APPROVED_SOURCE": 0,
+    "LICENSE_REVIEW_REQUIRED": 7,
+    "REPLACE_REQUIRED": 0,
+    "REVIEW_REQUIRED": 2
+  },
+  "selected_candidates": [
+    {
+      "sku": "coca-cola-original-2250ml-local",
+      "product_name": "Coca-Cola Sabor Original 2,25 L",
+      "brand": "Coca-Cola",
+      "variant": "Original",
+      "size": "2,25 L",
+      "category": "Gaseosas",
+      "source_page_url": "https://www.vea.com.ar/gaseosa-coca-cola-sabor-original-2-25-l/p",
+      "image_url_original": "https://jumboargentina.vtexassets.com/arquivos/ids/782825/Gaseosa-Coca-cola-Sabor-Original-2-25-L-2-247191.jpg?v=638206689776800000",
+      "source_domain": "jumboargentina.vtexassets.com",
+      "source_type": "retailer_reference_secondary",
+      "license_status": "NOT_DOCUMENTED",
+      "commercial_permission_documented": false,
+      "storage_path": "",
+      "image_status": "LICENSE_REVIEW_REQUIRED",
+      "visual_status": "PACKSHOT_MATCH: clean full 2.25 L PET bottle, Original label, white background; Vea product page confirms unit bottle 2.25 L",
+      "notes": "review_2026-09-27; selected clean gallery image 02; exact product/presentation confirmed on source page; rights_documented=False; no upload or association in CP; replaced prior sidebar candidate. source_page=https://www.vea.com.ar/gaseosa-coca-cola-sabor-original-2-25-l/p"
+    },
+    {
+      "sku": "coca-cola-sin-azucar-2250ml-local",
+      "product_name": "Coca-Cola Sin Azúcar 2,25 L",
+      "brand": "Coca-Cola",
+      "variant": "Sin azúcar",
+      "size": "2,25 L",
+      "category": "Gaseosas",
+      "source_page_url": "https://www.vea.com.ar/coca-cola-zero-2-25-lt/p",
+      "image_url_original": "https://jumboargentina.vtexassets.com/arquivos/ids/799869/Gaseosa-Coca-Cola-Sin-Azucar-2-25lt-2-19721.jpg?v=638349573657430000",
+      "source_domain": "jumboargentina.vtexassets.com",
+      "source_type": "retailer_reference_secondary",
+      "license_status": "NOT_DOCUMENTED",
+      "commercial_permission_documented": false,
+      "storage_path": "",
+      "image_status": "LICENSE_REVIEW_REQUIRED",
+      "visual_status": "PACKSHOT_MATCH: clean full 2.25 L PET bottle, Sin Azucar label, white background; Vea confirms unit bottle 2.25 L",
+      "notes": "review_2026-09-27; selected clean gallery image 02; exact product/presentation confirmed on source page; rights_documented=False; no upload or association in CP; replaced prior sidebar candidate. source_page=https://www.vea.com.ar/coca-cola-zero-2-25-lt/p"
+    },
+    {
+      "sku": "sprite-sin-azucar-2250ml-local",
+      "product_name": "Sprite Sin Azúcar 2,25 L",
+      "brand": "Sprite",
+      "variant": "Sin azúcar",
+      "size": "2,25 L",
+      "category": "Gaseosas",
+      "source_page_url": "https://www.vea.com.ar/gaseosa-sprite-lima-limon-zero-2-25lt-2/p",
+      "image_url_original": "https://jumboargentina.vteximg.com.br/arquivos/ids/795699/Gaseosa-Sprite-Sin-Az-car-Lima-lim-n-2-25-Lt-2-28502.jpg?v=638312637629170000",
+      "source_domain": "jumboargentina.vteximg.com.br",
+      "source_type": "retailer_reference_secondary",
+      "license_status": "NOT_DOCUMENTED",
+      "commercial_permission_documented": false,
+      "storage_path": "",
+      "image_status": "LICENSE_REVIEW_REQUIRED",
+      "visual_status": "PACKSHOT_MATCH: clean full 2.25 L PET bottle, Sprite Zero/Sin Azucar label, white background; Vea listing confirms this size/variant",
+      "notes": "review_2026-09-27; selected clean gallery image 03; exact product/presentation confirmed; rights_documented=False; no upload or association in CP; replaced prior blurry candidate. source_page=https://www.vea.com.ar/gaseosa-sprite-lima-limon-zero-2-25lt-2/p"
+    },
+    {
+      "sku": "fanta-naranja-2250ml",
+      "product_name": "Fanta Naranja 2,25 L",
+      "brand": "Fanta",
+      "variant": "Naranja",
+      "size": "2,25 L",
+      "category": "Gaseosas",
+      "source_page_url": "https://www.jumbo.com.ar/gaseosa-naranja-2-25-lts-fanta/p",
+      "image_url_original": "https://jumboargentina.vteximg.com.br/arquivos/ids/893206/Gaseosa-Naranja-2-25-Lts-Fanta-2-248227.jpg?v=639009777706070000",
+      "source_domain": "jumboargentina.vteximg.com.br",
+      "source_type": "retailer_reference_secondary",
+      "license_status": "NOT_DOCUMENTED",
+      "commercial_permission_documented": false,
+      "storage_path": "",
+      "image_status": "LICENSE_REVIEW_REQUIRED",
+      "visual_status": "PACKSHOT_MATCH: clean full 2.25 L PET bottle, Fanta Naranja label, white background; product page/catalog confirms 2.25 L unit",
+      "notes": "review_2026-09-27; selected clean gallery image 02 from the exact Jumbo product gallery; exact size/variant confirmed; rights_documented=False; no upload or association in CP; replaced prior sidebar candidate. source_page=https://www.jumbo.com.ar/gaseosa-naranja-2-25-lts-fanta/p"
+    },
+    {
+      "sku": "villavicencio-sin-gas-500ml",
+      "product_name": "Villavicencio Sin Gas 500 ml",
+      "brand": "Villavicencio",
+      "variant": "Sin gas",
+      "size": "500 ml",
+      "category": "Aguas",
+      "source_page_url": "https://www.jumbo.com.ar/agua-sin-gas-villavicencio-500-ml/p",
+      "image_url_original": "https://jumboargentina.vtexassets.com/arquivos/ids/795828/Agua-Villavicencio-Sin-Gas-500cc-1-997464.jpg?v=638313501973800000",
+      "source_domain": "jumboargentina.vtexassets.com",
+      "source_type": "retailer_reference_secondary",
+      "license_status": "NOT_DOCUMENTED",
+      "commercial_permission_documented": false,
+      "storage_path": "",
+      "image_status": "LICENSE_REVIEW_REQUIRED",
+      "visual_status": "PACKSHOT_MATCH: clean full 500 ml sin gas bottle, centered on white; official Villavicencio page confirms sin gas 500 ml but its image asset is too small",
+      "notes": "review_2026-09-27; retailer packshot remains clean/exact and higher resolution than the official 500 ml asset; official page https://www.villavicencio.com.ar/nuestra-agua.html confirms variant/size; rights_documented=False; no upload or association in CP. source_page=https://www.jumbo.com.ar/agua-sin-gas-villavicencio-500-ml/p"
+    },
+    {
+      "sku": "red-bull-energy-drink-355ml",
+      "product_name": "Red Bull Energy Drink 355 ml",
+      "brand": "Red Bull",
+      "variant": "Original",
+      "size": "355 ml",
+      "category": "Energizantes",
+      "source_page_url": "https://www.vea.com.ar/energizate-red-bull-energy-drink-355cc/p",
+      "image_url_original": "https://jumboargentina.vteximg.com.br/arquivos/ids/872053/Energizate-Red-Bull-Energy-Drink-355cc-1-828794.jpg?v=638854274005130000",
+      "source_domain": "jumboargentina.vteximg.com.br",
+      "source_type": "retailer_reference_secondary",
+      "license_status": "NOT_DOCUMENTED",
+      "commercial_permission_documented": false,
+      "storage_path": "",
+      "image_status": "LICENSE_REVIEW_REQUIRED",
+      "visual_status": "PACKSHOT_MATCH: clean full 355 ml original can, white background; Vea and Jumbo pages confirm unit can 355 cc",
+      "notes": "review_2026-09-27; selected clean gallery image 02; image 03 is a collage and was rejected; exact product/presentation confirmed; rights_documented=False; no upload or association in CP; replaced prior sidebar candidate. source_page=https://www.vea.com.ar/energizate-red-bull-energy-drink-355cc/p"
+    },
+    {
+      "sku": "quilmes-clasica-710ml",
+      "product_name": "Quilmes Clásica 710 ml",
+      "brand": "Quilmes",
+      "variant": "Lager",
+      "size": "710 ml",
+      "category": "Cervezas",
+      "source_page_url": "https://www.labanderita.ar/shop/product/cerveza-quilmes-clasica-710-cc-WS2496453",
+      "image_url_original": "https://cdn.batitienda.com/baticloud/images/product_picture_45aea9e00ba04b9b8c8125bdbbf8975f_638688963716935166_0_m.jpg",
+      "source_domain": "cdn.batitienda.com",
+      "source_type": "retailer_reference_secondary",
+      "license_status": "NOT_DOCUMENTED",
+      "commercial_permission_documented": false,
+      "storage_path": "",
+      "image_status": "REVIEW_REQUIRED",
+      "visual_status": "REVIEW_REQUIRED: standard Quilmes Clasica 710 cc can is visible on white; the image has a broad CLASICA/710 CC side panel and the can is left of center; no crop applied",
+      "notes": "review_2026-09-27; exact single 710 cc standard product page confirmed; current Jumbo image is a limited World Cup edition and remains rejected; a clean standalone packshot is still needed; rights_documented=False; no upload or association in CP. source_page=https://www.labanderita.ar/shop/product/cerveza-quilmes-clasica-710-cc-WS2496453"
+    },
+    {
+      "sku": "heineken-710ml",
+      "product_name": "Heineken Lager 710 ml",
+      "brand": "Heineken",
+      "variant": "Lager",
+      "size": "710 ml",
+      "category": "Cervezas",
+      "source_page_url": "https://www.vea.com.ar/cerveza-heineken-rubia-710cc/p",
+      "image_url_original": "https://jumboargentina.vtexassets.com/arquivos/ids/579473/Cerveza-Heineken-Premiun-710-Cc-1-781941.jpg?v=637215672769700000",
+      "source_domain": "jumboargentina.vtexassets.com",
+      "source_type": "retailer_reference_secondary",
+      "license_status": "NOT_DOCUMENTED",
+      "commercial_permission_documented": false,
+      "storage_path": "",
+      "image_status": "REVIEW_REQUIRED",
+      "visual_status": "REVIEW_REQUIRED: exact 710 cc Heineken Original can is visible; source image has a broad Cerveza Rubia/710 cm3 side panel; clean 473 ml image was rejected as the wrong size",
+      "notes": "review_2026-09-27; exact single 710 cc can confirmed on Vea/Jumbo pages; a clean exact-size standalone image has not been found; rights_documented=False; no upload or association in CP. source_page=https://www.vea.com.ar/cerveza-heineken-rubia-710cc/p"
+    },
+    {
+      "sku": "fernet-branca-750ml",
+      "product_name": "Fernet Branca 750 ml",
+      "brand": "Branca",
+      "variant": "Original",
+      "size": "750 ml",
+      "category": "Fernet",
+      "source_page_url": "https://www.brancastore.com.ar/productos/fernet-branca-750ml/",
+      "image_url_original": "https://acdn-us.mitiendanube.com/stores/006/757/969/products/33-55788569045f14a12c17750533900198-1024-1024.webp",
+      "source_domain": "acdn-us.mitiendanube.com",
+      "source_type": "brand",
+      "license_status": "NOT_DOCUMENTED",
+      "commercial_permission_documented": false,
+      "storage_path": "",
+      "image_status": "LICENSE_REVIEW_REQUIRED",
+      "visual_status": "PACKSHOT_MATCH: complete Fernet Branca bottle centered on white; official Branca Store product page identifies 750 ml; matching brand/size side banner is present",
+      "notes": "review_2026-09-27; selected exact single-unit 750 ml asset from the Fratelli Branca official store; full bottle is uncropped and sharp; rights_documented=False because no separate e-commerce image license was found; no upload or association in CP. source_page=https://www.brancastore.com.ar/productos/fernet-branca-750ml/"
+    }
+  ],
+  "official_reference_checks": [
+    {
+      "sku": "coca-cola-original-2250ml-local",
+      "source_page": "https://www.coca-cola.com/ar/es/brands/coca-cola/original",
+      "asset_url": "https://www.coca-cola.com/content/dam/onexp/ar/es/coca-cola/es_coca-cola-sabor-original_prod_orginal-bottle_750x750_v1.jpg",
+      "observed": "Packshot oficial argentino de botella 500 ml; la presentacion no coincide con 2,25 L.",
+      "result": "REJECTED_WRONG_SIZE"
+    },
+    {
+      "sku": "coca-cola-sin-azucar-2250ml-local",
+      "source_page": "https://www.coca-cola.com/ar/es/brands/coca-cola/zero",
+      "asset_url": "https://www.coca-cola.com/content/dam/onexp/ar/es/coca-cola/coca-cola-zero-v1.jpeg",
+      "observed": "Packshot oficial argentino de botella 500 ml; la presentacion no coincide con 2,25 L.",
+      "result": "REJECTED_WRONG_SIZE"
+    },
+    {
+      "sku": "sprite-sin-azucar-2250ml-local",
+      "source_page": "https://www.coca-cola.com/ar/es/brands/sprite/productos",
+      "asset_url": "https://www.coca-cola.com/content/dam/onexp/ar/es/sprite/productos/38881_ARG_RENDER_928x928_V1.jpg",
+      "observed": "El packshot oficial muestra botella de 500 ml, no 2,25 L.",
+      "result": "REJECTED_WRONG_SIZE"
+    },
+    {
+      "sku": "fanta-naranja-2250ml",
+      "source_page": "https://www.coca-cola.com/ar/es/brands/fanta/productos",
+      "asset_url": "https://www.coca-cola.com/content/dam/onexp/ar/es/offerings/quieres-fanta/productos/latadesktop.png",
+      "observed": "Lata de 473 ml y edicion limitada; no coincide con botella PET de 2,25 L.",
+      "result": "REJECTED_WRONG_PACKAGE_AND_SIZE"
+    },
+    {
+      "sku": "villavicencio-sin-gas-500ml",
+      "source_page": "https://www.villavicencio.com.ar/nuestra-agua.html",
+      "asset_url": "https://www.villavicencio.com.ar/images/productos/producto_07.png",
+      "observed": "Pagina oficial confirma Sin gas 500 ml, pero el packshot descargable es demasiado pequeno para calidad comercial.",
+      "result": "PRESENTATION_CONFIRMED_ASSET_LOW_RESOLUTION"
+    },
+    {
+      "sku": "red-bull-energy-drink-355ml",
+      "source_page": "https://www.redbull.com/ar-es/energydrink/products/red-bull-energy-drink",
+      "asset_url": "https://www.redbull.com/energydrink/v1/resources/storyblok/images/f/287059/528x1348/b0f01ba07f/ar_ed_250ml_energy-drink_country_rgb__cold_closed_front_com_full.png/m/686x0",
+      "observed": "La pagina lista 355 ml disponible, pero el asset del packshot observado corresponde a 250 ml.",
+      "result": "REJECTED_WRONG_SIZE"
+    },
+    {
+      "sku": "quilmes-clasica-710ml",
+      "source_page": "https://www.quilmes.com.ar/clasica",
+      "asset_url": "https://www.quilmes.com.ar/sites/g/files/wnfebl11841/files/CARROUSEL%20LATAS%20217X594_1-CLASICA%20217X594_0.png",
+      "observed": "Packshot oficial muestra lata de 473 ml, no 710 ml.",
+      "result": "REJECTED_WRONG_SIZE"
+    },
+    {
+      "sku": "heineken-710ml",
+      "source_page": "https://www.heineken.com/ar/es/nuestros-productos/la-lata",
+      "asset_url": "https://www.heineken.com/media/xzmjjzak/heineken-original-can.png",
+      "observed": "Pagina oficial muestra una lata pero no declara el volumen de la imagen; no prueba que sea 710 ml.",
+      "result": "REVIEW_REQUIRED_SIZE_UNVERIFIED"
+    },
+    {
+      "sku": "fernet-branca-750ml",
+      "source_page": "https://www.brancastore.com.ar/productos/fernet-branca-750ml/",
+      "asset_url": "https://acdn-us.mitiendanube.com/stores/006/757/969/products/33-55788569045f14a12c17750533900198-1024-1024.webp",
+      "observed": "Tienda oficial de marca identifica producto unitario 750 ml; no se hallo referencia documental que autorice reutilizacion comercial externa.",
+      "result": "LICENSE_REVIEW_REQUIRED"
+    }
+  ],
+  "local_visual_review": {
+    "downloaded_files": 29,
+    "directory": "C:\\Users\\DELL\\Desktop\\la-taba\\image-review-candidates-20260927-8e93cad361cf422fa7e20585330cd960",
+    "versioned_in_repo": false,
+    "notes": "Temporary copies used only to inspect exact packaging, labels, background, framing and resolution. No candidate image was changed."
+  },
+  "controlled_production": {
+    "storage_uploads": 0,
+    "product_associations": 0,
+    "public_image_objects": 0,
+    "pending_image_reviews": 0,
+    "price_values_changed": 0,
+    "stock_values_changed": 0,
+    "products_public": 0
+  },
+  "blockers": [
+    "No browser session is exposed to CUA in this run; OWNER/ADMIN JWT upload flow could not be used.",
+    "Commercial rights are undocumented for every externally sourced candidate; the CP approval flow correctly requires explicit rights evidence.",
+    "Quilmes 710 and Heineken 710 need a clean standalone packshot; the reviewed exact-size retail images include broad side panels.",
+    "Panel visual QA and mobile/desktop/WebKit screenshots remain unavailable."
+  ]
+}

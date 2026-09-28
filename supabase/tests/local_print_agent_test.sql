@@ -11,7 +11,7 @@
 --   3. aislamiento: el negocio A ve y reclama sólo lo suyo; B, el repartidor,
 --      el cliente y anon no ven nada;
 --   4. un ticket fiscal sólo existe con CAE, y su QR es el mismo que genera el
---      worker fiscal (services/arca-fiscal-bridge/src/qr.ts);
+--      worker fiscal canonico (bitflowapp/taba-fiscal, services/arca-fiscal-bridge/src/qr.ts);
 --   5. la impresión automática nunca frena un pedido.
 --
 -- anon se verifica con has_*_privilege: un `set local role anon` seguido de
@@ -518,12 +518,16 @@ insert into public.fiscal_profiles(business_id,legal_name,cuit,tax_condition,env
 values ('b7000000-0000-4000-8000-000000000001','TABA IMPRIME SA','20123456789','monotributo','homologation',1,true,
   'approved',now(),'a7000000-0000-4000-8000-000000000001','consumidor_final',1);
 insert into public.fiscal_documents(id,business_id,source_type,source_id,document_intent,environment,cuit,point_of_sale,
-  document_type,document_number,issue_date,currency,currency_rate,recipient_type,recipient_document_type,recipient_document_number,
+  document_type,issue_date,currency,currency_rate,recipient_type,recipient_document_type,recipient_document_number,
   net_amount,total_amount,state,idempotency_key,issuer_snapshot,recipient_snapshot,concept)
 values ('f7000000-0000-4000-8000-000000000001','b7000000-0000-4000-8000-000000000001','pos_sale','f7000000-0000-4000-8000-0000000000aa',
-  'invoice','homologation','20123456789',1,11,123,'2026-09-26','PES',1,'consumidor_final',99,'0',1234.50,1234.50,
-  'authorizing','fiscal-print-test-0001','{"legal_name":"TABA IMPRIME SA","tax_condition":"monotributo"}',
+  'invoice','homologation','20123456789',1,11,'2026-09-26','PES',1,'consumidor_final',99,'0',1234.50,1234.50,
+  'queued','fiscal-print-test-0001','{"legal_name":"TABA IMPRIME SA","tax_condition":"monotributo"}',
   '{"condition":"consumidor_final","document_type":99,"document_number":"0"}',1);
+-- Camino real del worker (maquina de estados del core fiscal): un comprobante nace en queued y la
+-- reserva registra numero y envio antes de hablar con ARCA.
+update public.fiscal_documents set state = 'authorizing', document_number = 123, dispatch_count = 1, last_dispatch_at = now()
+ where id = 'f7000000-0000-4000-8000-000000000001';
 
 select throws_ok(
   $$insert into public.print_jobs(business_id,document_type,source_entity_id,payload,request_source,idempotency_key)
@@ -537,7 +541,7 @@ select is(
   public.configure_business_print_settings('b7000000-0000-4000-8000-000000000001', '{"fiscal_receipt_auto":true}'::jsonb) ->> 'fiscal_receipt_auto',
   'true', 'con facturacion habilitada el duenio activa el ticket fiscal automatico');
 select is(
-  (select count(*)::integer from public.print_jobs where document_type = 'fiscal_receipt'), 0,
+  (select count(*)::integer from public.print_jobs where document_type = 'fiscal_receipt' and business_id = 'b7000000-0000-4000-8000-000000000001'), 0,
   'mientras ARCA no autoriza, no hay ticket fiscal');
 update public.fiscal_documents set state = 'authorized', cae = '12345678901234', cae_expiration = '2026-10-06', authorized_at = now()
  where id = 'f7000000-0000-4000-8000-000000000001';
@@ -550,7 +554,7 @@ select is(
   'https://www.arca.gob.ar/fe/qr/?p=eyJ2ZXIiOjEsImZlY2hhIjoiMjAyNi0wOS0yNiIsImN1aXQiOjIwMTIzNDU2Nzg5LCJwdG9WdGEiOjEsInRpcG9DbXAiOjExLCJucm9DbXAiOjEyMywiaW1wb3J0ZSI6MTIzNC41LCJtb25lZGEiOiJQRVMiLCJjdHoiOjEsInRpcG9Eb2NSZWMiOjk5LCJucm9Eb2NSZWMiOjAsInRpcG9Db2RBdXQiOiJFIiwiY29kQXV0IjoxMjM0NTY3ODkwMTIzNH0%3D',
   'el QR fiscal es byte a byte el de qr.ts (mismo JSON, mismo orden, mismos numeros)');
 select is(
-  (select payload->>'qr_url' from public.print_jobs where document_type = 'fiscal_receipt'),
+  (select payload->>'qr_url' from public.print_jobs where document_type = 'fiscal_receipt' and source_entity_id = 'f7000000-0000-4000-8000-000000000001'),
   private.fiscal_qr_url((select d from public.fiscal_documents d where d.id = 'f7000000-0000-4000-8000-000000000001')),
   'y es el que viaja en el ticket');
 

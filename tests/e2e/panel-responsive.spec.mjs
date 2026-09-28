@@ -140,7 +140,14 @@ for (const viewport of TELEFONOS) {
 
       const accion = page.locator('.production-order-card .primary-button').first();
       await expect(accion).toBeVisible();
-      const caja = await accion.boundingBox();
+      // La bandeja se repinta dos veces en el primer medio segundo (la foto de pedidos y la
+      // que cierra la suscripción; medido igual en #112): entre el toBeVisible y la medición
+      // el botón puede ser reemplazado. Se mide el que queda, sin aflojar ninguna aserción.
+      let caja = null;
+      await expect(async () => {
+        caja = await accion.boundingBox();
+        expect(caja).not.toBeNull();
+      }).toPass({ timeout: 5_000 });
       expect(caja.x).toBeGreaterThanOrEqual(0);
       expect(caja.x + caja.width).toBeLessThanOrEqual(viewport.width + 1);
       // La acción siguiente es lo que se viene a hacer: se toca con el pulgar.

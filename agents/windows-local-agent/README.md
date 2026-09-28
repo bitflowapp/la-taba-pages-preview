@@ -8,7 +8,7 @@ puede (imprimir sin diálogo, ESC/POS con corte y QR, elegir impresora).
 **No es un segundo backend.** No sabe de pedidos, stock, precios, clientes,
 pagos ni reglas fiscales: imprime lo que el backend decidió (`print_jobs`) y
 cuenta honestamente qué pasó. ARCA corre del lado del servidor
-(`services/arca-fiscal-bridge`); el agente sólo imprime un comprobante que ya
+(worker canonico de `bitflowapp/taba-fiscal`, ver `fiscal-core.json`); el agente sólo imprime un comprobante que ya
 tiene CAE.
 
 Operación: [`docs/LOCAL-AGENT-RUNBOOK.md`](../../docs/LOCAL-AGENT-RUNBOOK.md).

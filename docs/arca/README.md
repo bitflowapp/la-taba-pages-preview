@@ -1,5 +1,11 @@
 # Puente fiscal privado ARCA
 
+> **Worker canonico (2026-09-27).** Con la adopcion del core fiscal ([`docs/TABA-FISCAL-CORE-ADOPTION.md`](../TABA-FISCAL-CORE-ADOPTION.md))
+> el worker descripto aca vive en `bitflowapp/taba-fiscal` (`services/arca-fiscal-bridge`, SHA fijado en
+> [`fiscal-core.json`](../../fiscal-core.json)). La Taba ya no tiene copia: los comandos corren en ese checkout
+> (`TABA_FISCAL_DIR`). Donde este documento difiere del contrato vigente (fencing, ambiguedad, `manual_review`),
+> manda el core; la operatoria de homologacion esta en [`docs/fiscal-core/ARCA-HOMOLOGATION-RUNBOOK.md`](../fiscal-core/ARCA-HOMOLOGATION-RUNBOOK.md).
+
 ## Fuentes y alcance investigado
 
 Consulta realizada el 2 de agosto de 2026. Autoridad utilizada exclusivamente: documentación oficial de ARCA.
@@ -24,11 +30,11 @@ No se puede cambiar ambiente, endpoint, certificado, CUIT, tipo, número o CAE d
 ## Secrets e instalación
 
 ```powershell
-npm --prefix services/arca-fiscal-bridge ci
-npm --prefix services/arca-fiscal-bridge run build
-npm --prefix services/arca-fiscal-bridge run credentials:check
-npm --prefix services/arca-fiscal-bridge test
-npm --prefix services/arca-fiscal-bridge start
+npm --prefix "$TABA_FISCAL_DIR/services/arca-fiscal-bridge" ci
+npm --prefix "$TABA_FISCAL_DIR/services/arca-fiscal-bridge" run build
+npm --prefix "$TABA_FISCAL_DIR/services/arca-fiscal-bridge" run credentials:check
+npm --prefix "$TABA_FISCAL_DIR/services/arca-fiscal-bridge" test
+npm --prefix "$TABA_FISCAL_DIR/services/arca-fiscal-bridge" start
 ```
 
 Certificado, clave privada y service role se montan como archivos absolutos fuera del repositorio. `.env` y extensiones de certificado/clave están ignoradas. `credentials:check` informa solamente coincidencia, fingerprint SHA-256, vencimiento, días restantes y alerta menor a 30 días; nunca imprime PEM. El worker valida CUIT en el certificado y que clave/certificado correspondan.

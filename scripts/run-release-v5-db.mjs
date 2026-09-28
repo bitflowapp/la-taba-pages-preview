@@ -131,8 +131,43 @@ try {
   if(!focused){
     const posteriores=fs.readdirSync(path.join(ROOT,'supabase/migrations'))
       .filter(v=>v.endsWith('.sql')&&v.slice(0,14)>'20260909050330').sort();
-    for(const name of posteriores)
+    let legacyFiscalRows=false;
+    // La línea fiscal (20260928180000…180800) se revierte con un archivo generado comparando dos
+    // bases reales. Se prueba acá, sobre el esquema sin línea fiscal y sin filas fiscales, en una
+    // transacción que se deshace: aplicarla, revertirla (huella IGUAL a la de antes) y volver a
+    // aplicarla (huella IGUAL a la de después). Recién después se cargan las filas legadas.
+    const FINGERPRINT_SQL=fs.readFileSync(path.join(ROOT,'scripts/controlled-production/schema-fingerprint.sql'),'utf8');
+    const schemaFingerprint=async()=>Object.fromEntries((await query(FINGERPRINT_SQL)).rows.map(r=>[r.cat,r.hash]));
+    const sameFingerprint=(actual,expected,label)=>assert.deepEqual(
+      Object.keys(expected).filter(cat=>actual[cat]!==expected[cat]),[],label);
+    const fiscalLine=posteriores.filter(v=>/^2026092818[0-9]{4}_/.test(v));
+    const fiscalRollback=fs.readFileSync(path.join(ROOT,
+      'docs/migrations/rollback/20260928180000_fiscal_core_line.rollback.sql'),'utf8')
+      .replace(/^begin;\s*$/m,'').replace(/^commit;\s*$/m,'');
+    assert.equal(fiscalLine.length,9,'la línea fiscal son nueve migraciones');
+    for(const name of posteriores){
+      // Filas fiscales como las pudo dejar el worker anterior, cargadas justo antes de adoptar el
+      // core fiscal (la primera migracion *_fiscal_core_*), sobre el esquema que tenga main en ese
+      // momento: fiscal_core_upgrade_test.sql verifica que la adopcion no pierde ni rompe nada.
+      if(!legacyFiscalRows&&name.includes('_fiscal_core_')){
+        assert.equal(name,fiscalLine[0],'el core fiscal empieza la línea fiscal');
+        const beforeFiscal=await schemaFingerprint();
+        await query('begin');
+        for(const line of fiscalLine) await query(fs.readFileSync(path.join(ROOT,'supabase/migrations',line),'utf8'));
+        const withFiscal=await schemaFingerprint();
+        await query(fiscalRollback);
+        sameFingerprint(await schemaFingerprint(),beforeFiscal,'FISCAL_LINE_ROLLBACK');
+        for(const line of fiscalLine) await query(fs.readFileSync(path.join(ROOT,'supabase/migrations',line),'utf8'));
+        sameFingerprint(await schemaFingerprint(),withFiscal,'FISCAL_LINE_REFORWARD');
+        await query('rollback');
+        console.log('FISCAL_LINE_ROLLBACK_DRILL: PASS');
+        await query(fs.readFileSync(path.join(ROOT,'supabase/tests/fixtures/fiscal_core_legacy_rows.sql'),'utf8'));
+        legacyFiscalRows=true;
+        console.log('FISCAL_LEGACY_ROWS_BEFORE_CORE_ADOPTION: LOADED');
+      }
       await query(fs.readFileSync(path.join(ROOT,'supabase/migrations',name),'utf8'));
+    }
+    assert.ok(legacyFiscalRows,'la adopcion del core fiscal tiene que correr sobre filas legadas');
     console.log('POST_INTERLOCK_MIGRATIONS='+posteriores.length);
     const canonicalTests=['business_windows_scanner_fiscal_test.sql','mercadopago_seller_oauth.local.sql',
       'mercadopago_clean_business.local.sql','fiscal_document_closure_test.sql','production_operations_control_plane_test.sql',
@@ -142,19 +177,27 @@ try {
       'mercadopago_availability_requires_seller.local.sql','payment_method_isolation.local.sql',
       'mercadopago_seller_cannot_charge_alert.local.sql','mercadopago_operator_switch.local.sql',
       'local_print_agent_test.sql','catalog_image_storage_test.sql','store_opening_readiness_test.sql',
-      'commercial_publish_merchant_intent_test.sql','identity_alcohol_null_safe_test.sql'];
+      'commercial_publish_merchant_intent_test.sql','identity_alcohol_null_safe_test.sql',
+      'fiscal_core_contract_test.sql','fiscal_core_upgrade_test.sql','fiscal_receiver_vat_condition_test.sql',
+      'commercial_order_fiscal_test.sql','fiscal_disaster_recovery_test.sql'];
     for(const name of canonicalTests){
       const output=docker(['exec','-i',container,'psql','-h','/tmp','-U','postgres','-d','postgres','-X','-qAt','-v','ON_ERROR_STOP=1'],
         Buffer.from('set search_path=public,extensions;\n'+fs.readFileSync(path.join(ROOT,'supabase/tests',name),'utf8'))).toString();
       assert.doesNotMatch(output,/^not ok\b/m,name);assert.match(output,/^1\.\.[0-9]+$/m,name);
       assertions+=Number(/^1\.\.([0-9]+)$/m.exec(output)[1]);
     }
-    assert.equal(assertions,681);
-    console.log('CANONICAL_PGTAP: 268 + 44 least-privilege + 50 reparto-propio + 37 ventana QA/columnas privadas/pausa + 9 Mercado Pago sólo con vendedor conectado + 5 aislamiento cobro manual/Mercado Pago + 9 alerta de vendedor que no puede cobrar + 16 interruptor de operador por negocio + 104 impresión del mostrador + 19 pipeline de imágenes + 84 preparar la apertura + 24 primera publicación de un borrador de CP + 12 invariantes a prueba de NULL assertions PASS');
+    assert.equal(assertions,849);
+    console.log('CANONICAL_PGTAP: 268 + 44 least-privilege + 50 reparto-propio + 37 ventana QA/columnas privadas/pausa + 9 Mercado Pago sólo con vendedor conectado + 5 aislamiento cobro manual/Mercado Pago + 9 alerta de vendedor que no puede cobrar + 16 interruptor de operador por negocio + 104 impresión del mostrador + 19 pipeline de imágenes + 84 preparar la apertura + 24 primera publicación de un borrador de CP + 12 invariantes a prueba de NULL + 55 contrato del core fiscal + 24 upgrade fiscal + 14 RG 5616 + 54 pedidos online V2 + 21 recuperación ante desastre fiscal assertions PASS');
 
     // pgTAP no puede probar dos agentes reclamando a la vez: una conexión por llamada.
     const { runPrintClaimRace } = await import('./print-agent/claim-race.mjs');
     await runPrintClaimRace(() => localClient(container));
+    // Ni pgTAP puede probar el Panel, el celular, WhatsApp y una automatizacion pidiendo la misma factura a la vez.
+    const { runFiscalIntentRace } = await import('./fiscal-core/intent-race.mjs');
+    await runFiscalIntentRace(() => localClient(container));
+    // Lo mismo para un pedido online: 10/50/100 pedidos por canal, un comprobante, ninguna venta POS.
+    const { runOrderIntentRace } = await import('./fiscal-core/order-intent-race.mjs');
+    await runOrderIntentRace(() => localClient(container));
 
     // Drill the exact compensating rollback in the same isolated schema where
     // the forward migration and its pgTAP contract just passed. The first run
@@ -295,6 +338,13 @@ try {
     await assert.rejects(query(nullSafeRollback),/ROLLBACK_BLOCKED/);
     await query('rollback');
     console.log('NULL_SAFE_INVARIANTS_ROLLBACK_DRILL: PASS');
+
+    // Con filas fiscales (las legadas del arnés), la reversión de la línea fiscal se niega:
+    // un registro fiscal no se borra.
+    await query('begin');
+    await assert.rejects(query(fiscalRollback),/ROLLBACK_BLOCKED/);
+    await query('rollback');
+    console.log('FISCAL_LINE_ROLLBACK_REFUSES_WITH_FISCAL_ROWS: PASS');
   } else {
     console.log('FOCUSED_RELEASE_RUN: historical matrix and canonical pgTAP NOT RUN');
   }

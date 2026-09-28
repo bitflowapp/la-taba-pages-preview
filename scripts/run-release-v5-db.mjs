@@ -16,6 +16,12 @@ assert.equal(process.env.TABA_LOCAL_PAYMENT_DB,'1','TABA_LOCAL_PAYMENT_DB=1 requ
 const container=`taba-a1-a4-local-v5-${process.pid}-${randomUUID().slice(0,8)}`;
 const restoreDatabase='taba_v5_restore';
 const image='public.ecr.aws/supabase/postgres:17.6.1.166';
+// La misma imagen, byte por byte: se baja POR DIGEST y se etiqueta con el nombre
+// canónico. GHCR primero (Supabase la espeja ahí y desde GitHub Actions no tiene
+// el tope de datos anónimos de ECR Public, que cortó corridas con
+// «toomanyrequests: Data limit exceeded»); ECR como respaldo.
+const imageDigest='sha256:b3bfedb107413abb3b8cb0d0874b0414a1dceb3d55bc0c778de6ad22d1f7dc86';
+const imageSources=[`ghcr.io/supabase/postgres@${imageDigest}`,`public.ecr.aws/supabase/postgres@${imageDigest}`];
 const generateIndex=process.argv.indexOf('--generate-compat');
 const generateOutput=generateIndex<0?null:process.argv[generateIndex+1];
 if(generateIndex>=0)assert.ok(generateOutput,'--generate-compat requires a new output file outside the checkout');
@@ -31,18 +37,29 @@ try {
   try {
     docker(['image','inspect',image]);
   } catch {
-    for (let attempt = 1; attempt <= 6; attempt++) {
-      try {
-        console.log(`Pulling ${image} (attempt ${attempt}/6)...`);
-        docker(['pull', image]);
-        break;
-      } catch (err) {
-        if (attempt === 6) throw err;
+    let pulled=null;
+    for (let attempt = 1; attempt <= 6 && !pulled; attempt++) {
+      for (const source of imageSources) {
+        try {
+          console.log(`Pulling ${source} (attempt ${attempt}/6)...`);
+          docker(['pull', source]);
+          pulled=source;
+          break;
+        } catch (err) {
+          console.warn(`Docker pull failed for ${source}: ${String(err.stderr||err.message).trim().split(/\r?\n/).pop()}`);
+        }
+      }
+      if (!pulled) {
+        if (attempt === 6) throw Error('POSTGRES_IMAGE_UNAVAILABLE_FROM_ALL_SOURCES');
         const delay = attempt * 5000;
-        console.warn(`Docker pull failed. Retrying in ${delay}ms...`);
+        console.warn(`Retrying in ${delay}ms...`);
         await new Promise(r => setTimeout(r, delay));
       }
     }
+    docker(['tag', pulled, image]);
+    const repoDigests=docker(['image','inspect','--format','{{json .RepoDigests}}',image]);
+    assert.ok(repoDigests.includes(imageDigest),'POSTGRES_IMAGE_DIGEST_MISMATCH');
+    console.log(`POSTGRES_IMAGE: ${image} <- ${pulled}`);
   }
   docker(['run','-d','--name',container,'--network','none','--user','postgres',
     '--tmpfs','/var/lib/postgresql/data:rw,size=1024m,uid=100,gid=101','--tmpfs','/tmp:rw,size=128m',

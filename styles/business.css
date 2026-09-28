@@ -7541,13 +7541,16 @@ body[data-active-view="business"] .access-request-status.tone-danger { color: va
 .business-catalog-image-review label {
   display: grid;
   gap: 5px;
+  min-width: 0;
 }
 
 .business-catalog-image-body input,
 .business-catalog-image-body select,
 .business-catalog-image-review input,
 .business-catalog-image-review select {
+  max-width: 100%;
   min-height: 44px;
+  min-width: 0;
   width: 100%;
 }
 
@@ -7594,6 +7597,8 @@ body[data-active-view="business"] .access-request-status.tone-danger { color: va
 .business-catalog-image-review-item > div:first-child {
   display: grid;
   gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .business-catalog-image-review {

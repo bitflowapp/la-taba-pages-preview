@@ -103,6 +103,20 @@ test('image approval updates only image metadata and never publishes a product',
   assert.doesNotMatch(edge, /publish_catalog_product|set_commercial_product_publication|apply_commercial_catalog_batch/);
 });
 
+test('the first approval hands an approved row to the Storage step (no retry needed)', () => {
+  const edge = fs.readFileSync(new URL('../supabase/functions/catalog-image-manager/index.ts', import.meta.url), 'utf8');
+  const approve = edge.slice(edge.indexOf('async function approveUpload'), edge.indexOf('async function resumeApprovedUpload'));
+  const handoff = approve.slice(approve.indexOf('return publishApprovedObjects'));
+  assert.ok(handoff.length > 0);
+  // publishApprovedObjects rejects any row whose status is not 'approved'. Until
+  // 2026-09-28 the merged row kept the pre-RPC 'pending', so every first approval
+  // ended in IMAGE_ASSOCIATION_CHANGED without public objects.
+  assert.match(handoff, /(?<![a-z_])status:\s*'approved'/);
+  assert.match(handoff, /license_status:\s*'approved'/);
+  const publish = edge.slice(edge.indexOf('async function publishApprovedObjects'), edge.indexOf('async function rejectUpload'));
+  assert.match(publish, /row\.status !== 'approved'/);
+});
+
 test('public Storage objects are created only after the approval RPC succeeds and can be retried safely', () => {
   const edge = fs.readFileSync(new URL('../supabase/functions/catalog-image-manager/index.ts', import.meta.url), 'utf8');
   const approve = edge.slice(edge.indexOf('async function approveUpload'), edge.indexOf('async function resumeApprovedUpload'));

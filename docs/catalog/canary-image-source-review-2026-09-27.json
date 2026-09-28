@@ -14,8 +14,8 @@
   "candidate_classification": {
     "APPROVED_SOURCE": 0,
     "LICENSE_REVIEW_REQUIRED": 7,
-    "REPLACE_REQUIRED": 0,
-    "REVIEW_REQUIRED": 2
+    "REPLACE_REQUIRED": 2,
+    "REVIEW_REQUIRED": 0
   },
   "selected_candidates": [
     {
@@ -34,7 +34,7 @@
       "storage_path": "",
       "image_status": "LICENSE_REVIEW_REQUIRED",
       "visual_status": "PACKSHOT_MATCH: clean full 2.25 L PET bottle, Original label, white background; Vea product page confirms unit bottle 2.25 L",
-      "notes": "review_2026-09-27; selected clean gallery image 02; exact product/presentation confirmed on source page; rights_documented=False; no upload or association in CP; replaced prior sidebar candidate. source_page=https://www.vea.com.ar/gaseosa-coca-cola-sabor-original-2-25-l/p"
+      "notes": "review_2026-09-27; selected clean gallery image 02; exact product/presentation confirmed on source page; rights_documented=False; no upload or association in CP; replaced prior sidebar candidate. source_page=https://www.vea.com.ar/gaseosa-coca-cola-sabor-original-2-25-l/p; resumed_2026-09-27: 29 local rights-review images excluded per owner instruction; photo-intake contains no own photos; no commercial rights verified; no upload/staging/approval/association."
     },
     {
       "sku": "coca-cola-sin-azucar-2250ml-local",
@@ -52,7 +52,7 @@
       "storage_path": "",
       "image_status": "LICENSE_REVIEW_REQUIRED",
       "visual_status": "PACKSHOT_MATCH: clean full 2.25 L PET bottle, Sin Azucar label, white background; Vea confirms unit bottle 2.25 L",
-      "notes": "review_2026-09-27; selected clean gallery image 02; exact product/presentation confirmed on source page; rights_documented=False; no upload or association in CP; replaced prior sidebar candidate. source_page=https://www.vea.com.ar/coca-cola-zero-2-25-lt/p"
+      "notes": "review_2026-09-27; selected clean gallery image 02; exact product/presentation confirmed on source page; rights_documented=False; no upload or association in CP; replaced prior sidebar candidate. source_page=https://www.vea.com.ar/coca-cola-zero-2-25-lt/p; resumed_2026-09-27: 29 local rights-review images excluded per owner instruction; photo-intake contains no own photos; no commercial rights verified; no upload/staging/approval/association."
     },
     {
       "sku": "sprite-sin-azucar-2250ml-local",
@@ -70,7 +70,7 @@
       "storage_path": "",
       "image_status": "LICENSE_REVIEW_REQUIRED",
       "visual_status": "PACKSHOT_MATCH: clean full 2.25 L PET bottle, Sprite Zero/Sin Azucar label, white background; Vea listing confirms this size/variant",
-      "notes": "review_2026-09-27; selected clean gallery image 03; exact product/presentation confirmed; rights_documented=False; no upload or association in CP; replaced prior blurry candidate. source_page=https://www.vea.com.ar/gaseosa-sprite-lima-limon-zero-2-25lt-2/p"
+      "notes": "review_2026-09-27; selected clean gallery image 03; exact product/presentation confirmed; rights_documented=False; no upload or association in CP; replaced prior blurry candidate. source_page=https://www.vea.com.ar/gaseosa-sprite-lima-limon-zero-2-25lt-2/p; resumed_2026-09-27: 29 local rights-review images excluded per owner instruction; photo-intake contains no own photos; no commercial rights verified; no upload/staging/approval/association."
     },
     {
       "sku": "fanta-naranja-2250ml",
@@ -88,7 +88,7 @@
       "storage_path": "",
       "image_status": "LICENSE_REVIEW_REQUIRED",
       "visual_status": "PACKSHOT_MATCH: clean full 2.25 L PET bottle, Fanta Naranja label, white background; product page/catalog confirms 2.25 L unit",
-      "notes": "review_2026-09-27; selected clean gallery image 02 from the exact Jumbo product gallery; exact size/variant confirmed; rights_documented=False; no upload or association in CP; replaced prior sidebar candidate. source_page=https://www.jumbo.com.ar/gaseosa-naranja-2-25-lts-fanta/p"
+      "notes": "review_2026-09-27; selected clean gallery image 02 from the exact Jumbo product gallery; exact size/variant confirmed; rights_documented=False; no upload or association in CP; replaced prior sidebar candidate. source_page=https://www.jumbo.com.ar/gaseosa-naranja-2-25-lts-fanta/p; resumed_2026-09-27: 29 local rights-review images excluded per owner instruction; photo-intake contains no own photos; no commercial rights verified; no upload/staging/approval/association."
     },
     {
       "sku": "villavicencio-sin-gas-500ml",
@@ -106,7 +106,7 @@
       "storage_path": "",
       "image_status": "LICENSE_REVIEW_REQUIRED",
       "visual_status": "PACKSHOT_MATCH: clean full 500 ml sin gas bottle, centered on white; official Villavicencio page confirms sin gas 500 ml but its image asset is too small",
-      "notes": "review_2026-09-27; retailer packshot remains clean/exact and higher resolution than the official 500 ml asset; official page https://www.villavicencio.com.ar/nuestra-agua.html confirms variant/size; rights_documented=False; no upload or association in CP. source_page=https://www.jumbo.com.ar/agua-sin-gas-villavicencio-500-ml/p"
+      "notes": "review_2026-09-27; retailer packshot remains clean/exact and higher resolution than the official 500 ml asset; official page https://www.villavicencio.com.ar/nuestra-agua.html confirms variant/size; rights_documented=False; no upload or association in CP. source_page=https://www.jumbo.com.ar/agua-sin-gas-villavicencio-500-ml/p; resumed_2026-09-27: 29 local rights-review images excluded per owner instruction; photo-intake contains no own photos; no commercial rights verified; no upload/staging/approval/association."
     },
     {
       "sku": "red-bull-energy-drink-355ml",
@@ -124,7 +124,7 @@
       "storage_path": "",
       "image_status": "LICENSE_REVIEW_REQUIRED",
       "visual_status": "PACKSHOT_MATCH: clean full 355 ml original can, white background; Vea and Jumbo pages confirm unit can 355 cc",
-      "notes": "review_2026-09-27; selected clean gallery image 02; image 03 is a collage and was rejected; exact product/presentation confirmed; rights_documented=False; no upload or association in CP; replaced prior sidebar candidate. source_page=https://www.vea.com.ar/energizate-red-bull-energy-drink-355cc/p"
+      "notes": "review_2026-09-27; selected clean gallery image 02; image 03 is a collage and was rejected; exact product/presentation confirmed; rights_documented=False; no upload or association in CP; replaced prior sidebar candidate. source_page=https://www.vea.com.ar/energizate-red-bull-energy-drink-355cc/p; resumed_2026-09-27: 29 local rights-review images excluded per owner instruction; photo-intake contains no own photos; no commercial rights verified; no upload/staging/approval/association."
     },
     {
       "sku": "quilmes-clasica-710ml",
@@ -140,9 +140,9 @@
       "license_status": "NOT_DOCUMENTED",
       "commercial_permission_documented": false,
       "storage_path": "",
-      "image_status": "REVIEW_REQUIRED",
-      "visual_status": "REVIEW_REQUIRED: standard Quilmes Clasica 710 cc can is visible on white; the image has a broad CLASICA/710 CC side panel and the can is left of center; no crop applied",
-      "notes": "review_2026-09-27; exact single 710 cc standard product page confirmed; current Jumbo image is a limited World Cup edition and remains rejected; a clean standalone packshot is still needed; rights_documented=False; no upload or association in CP. source_page=https://www.labanderita.ar/shop/product/cerveza-quilmes-clasica-710-cc-WS2496453"
+      "image_status": "REPLACE_REQUIRED",
+      "visual_status": "REPLACE_REQUIRED: exact package/size is visible but source image has a broad retail side panel; clean standalone asset still required.",
+      "notes": "review_2026-09-27; exact single 710 cc standard product page confirmed; current Jumbo image is a limited World Cup edition and remains rejected; a clean standalone packshot is still needed; rights_documented=False; no upload or association in CP. source_page=https://www.labanderita.ar/shop/product/cerveza-quilmes-clasica-710-cc-WS2496453; resumed_2026-09-27: 29 local rights-review images excluded per owner instruction; photo-intake contains no own photos; no commercial rights verified; no upload/staging/approval/association. Current final classification: REPLACE_REQUIRED; do not stage until clean exact image is available."
     },
     {
       "sku": "heineken-710ml",
@@ -158,9 +158,9 @@
       "license_status": "NOT_DOCUMENTED",
       "commercial_permission_documented": false,
       "storage_path": "",
-      "image_status": "REVIEW_REQUIRED",
-      "visual_status": "REVIEW_REQUIRED: exact 710 cc Heineken Original can is visible; source image has a broad Cerveza Rubia/710 cm3 side panel; clean 473 ml image was rejected as the wrong size",
-      "notes": "review_2026-09-27; exact single 710 cc can confirmed on Vea/Jumbo pages; a clean exact-size standalone image has not been found; rights_documented=False; no upload or association in CP. source_page=https://www.vea.com.ar/cerveza-heineken-rubia-710cc/p"
+      "image_status": "REPLACE_REQUIRED",
+      "visual_status": "REPLACE_REQUIRED: exact package/size is visible but source image has a broad retail side panel; clean standalone asset still required.",
+      "notes": "review_2026-09-27; exact single 710 cc can confirmed on Vea/Jumbo pages; a clean exact-size standalone image has not been found; rights_documented=False; no upload or association in CP. source_page=https://www.vea.com.ar/cerveza-heineken-rubia-710cc/p; resumed_2026-09-27: 29 local rights-review images excluded per owner instruction; photo-intake contains no own photos; no commercial rights verified; no upload/staging/approval/association. Current final classification: REPLACE_REQUIRED; do not stage until clean exact image is available."
     },
     {
       "sku": "fernet-branca-750ml",
@@ -178,7 +178,7 @@
       "storage_path": "",
       "image_status": "LICENSE_REVIEW_REQUIRED",
       "visual_status": "PACKSHOT_MATCH: complete Fernet Branca bottle centered on white; official Branca Store product page identifies 750 ml; matching brand/size side banner is present",
-      "notes": "review_2026-09-27; selected exact single-unit 750 ml asset from the Fratelli Branca official store; full bottle is uncropped and sharp; rights_documented=False because no separate e-commerce image license was found; no upload or association in CP. source_page=https://www.brancastore.com.ar/productos/fernet-branca-750ml/"
+      "notes": "review_2026-09-27; selected exact single-unit 750 ml asset from the Fratelli Branca official store; full bottle is uncropped and sharp; rights_documented=False because no separate e-commerce image license was found; no upload or association in CP. source_page=https://www.brancastore.com.ar/productos/fernet-branca-750ml/; resumed_2026-09-27: 29 local rights-review images excluded per owner instruction; photo-intake contains no own photos; no commercial rights verified; no upload/staging/approval/association."
     }
   ],
   "official_reference_checks": [

@@ -43,8 +43,8 @@ Se verificaron los nueve SKU en CP y se revisaron visualmente las alternativas. 
 | `fanta-naranja-2250ml` | Botella Fanta Naranja 2,25 L limpia, galería de Jumbo | `LICENSE_REVIEW_REQUIRED` |
 | `villavicencio-sin-gas-500ml` | Botella sin gas 500 ml limpia, packshot de retail | `LICENSE_REVIEW_REQUIRED` |
 | `red-bull-energy-drink-355ml` | Lata Original 355 ml limpia, galería de Jumbo | `LICENSE_REVIEW_REQUIRED` |
-| `quilmes-clasica-710ml` | Lata clásica 710 cc estándar en retail; la imagen disponible tiene una banda lateral ancha | `REVIEW_REQUIRED` |
-| `heineken-710ml` | Lata Heineken Original 710 cc; la imagen exacta disponible tiene una banda lateral ancha | `REVIEW_REQUIRED` |
+| `quilmes-clasica-710ml` | Lata clásica 710 cc estándar en retail; la imagen disponible tiene una banda lateral ancha | `REPLACE_REQUIRED` |
+| `heineken-710ml` | Lata Heineken Original 710 cc; la imagen exacta disponible tiene una banda lateral ancha | `REPLACE_REQUIRED` |
 | `fernet-branca-750ml` | Botella completa 750 ml en la tienda oficial Branca | `LICENSE_REVIEW_REQUIRED` |
 
 Los packshots oficiales de Coca-Cola Original y Zero disponibles en la página argentina muestran 500 ml; el de Sprite muestra 500 ml; el de Fanta es una lata de 473 ml de edición limitada; el asset de Red Bull observado es de 250 ml; el de Quilmes es una lata de 473 ml y la página de Heineken no indica el volumen del asset. No se reutilizaron esas variantes para los SKU de 2,25 L, 355 ml, 710 ml ni 750 ml. Las páginas oficiales verificadas fueron [Coca-Cola Original](https://www.coca-cola.com/ar/es/brands/coca-cola/original), [Coca-Cola Zero](https://www.coca-cola.com/ar/es/brands/coca-cola/zero), [Sprite](https://www.coca-cola.com/ar/es/brands/sprite/productos), [Fanta](https://www.coca-cola.com/ar/es/brands/fanta/productos), [Red Bull](https://www.redbull.com/ar-es/energydrink/products/red-bull-energy-drink), [Quilmes Clásica](https://www.quilmes.com.ar/clasica), [Heineken lata](https://www.heineken.com/ar/es/nuestros-productos/la-lata) y [Villavicencio](https://www.villavicencio.com.ar/nuestra-agua.html).
@@ -89,7 +89,7 @@ La revisión canary previa descargó 29 copias temporales locales para inspecci�
 | `PRODUCTS_WITH_REAL_IMAGES` / `PRODUCTS_PENDING_IMAGE` | 0 / 46 |
 | `CANARY_COMPLETED` | 0/9 |
 | `RIGHTS_VERIFIED` / `RIGHTS_REVIEW_REQUIRED` | 0 / 46 |
-| `REPLACE_REQUIRED` / `REVIEW_REQUIRED` | 0 / 39 (37 sin revisión visual y 2 canaries con bandas laterales) |
+| `REPLACE_REQUIRED` / `REVIEW_REQUIRED` | 2 / 37 (37 SKU fuera del canary sin revisión visual) |
 | `IMAGES_DOWNLOADED` / `IMAGES_STAGED` | 29 / 0 |
 | `IMAGES_APPROVED` / `IMAGES_ASSOCIATED` | 0 / 0 |
 | `PRODUCTS_PUBLIC` / `DUPLICATES` | 0 / 0 |
@@ -111,9 +111,19 @@ Por ahora `CANARY_COMPLETED: 0/9`; `IMAGES_UPLOADED: 0`; `IMAGES_ASSOCIATED: 0`.
 | --- | ---: |
 | `APPROVED_SOURCE` | 0 |
 | `LICENSE_REVIEW_REQUIRED` | 7 |
-| `REPLACE_REQUIRED` | 0 |
-| `REVIEW_REQUIRED` | 39 |
+| `REPLACE_REQUIRED` | 2 |
+| `REVIEW_REQUIRED` | 37 |
 
 `SECRET_SCAN: PASS`. Se buscaron claves privadas, JWT y claves secretas de Supabase, credenciales en URLs, asignaciones de contraseñas/tokens y cabeceras Bearer con forma de credencial en el repo, diff, logs/evidence y el respaldo privado. No se encontraron valores de credenciales. Las coincidencias de búsqueda amplia fueron nombres de variables, placeholders y fixtures sintéticos de pruebas.
 
 La lista remota de migraciones de Supabase reporta `20260927195533_catalog_image_storage_pipeline`; el branch actual contiene `supabase/migrations/20260927175058_catalog_image_storage_pipeline.sql`. Ambos usan el nombre lógico `catalog_image_storage_pipeline`, pero difiere la versión registrada. El manager, la tabla y los buckets están activos y las comprobaciones de solo lectura pasan. Esta diferencia queda documentada para reconciliarla antes de cualquier `db push` futuro; no se modificó la historia de migraciones en esta misión.
+
+## Revalidación posterior al aviso de inicio manual
+
+Tras el aviso del titular de que la sesión OWNER/ADMIN se había iniciado manualmente, se recargó la pestaña `/#business` disponible en el navegador de Codex. Sigue mostrando “Ingresá con tu cuenta”; esta pestaña no permite confirmar la sesión ni usar el cargador. No se ingresaron credenciales.
+
+La carpeta `catalog/photo-intake/` contiene sólo su README. `catalog/photo-capture/` contiene guía, etiquetas y lista de tomas, sin archivos fotográficos propios. Los ocho canary que aparecen en `catalog/image-manifest.json` tienen `source_type=cadena_comercial_secundaria` y `rights_status=pending_review`; el candidato de Fernet Branca 750 ml sigue sin licencia comercial documentada. El registro `TABA-AUT-2026-08-001` conserva evidencia documental pendiente y excluye las imágenes de cadenas minoristas.
+
+Se mantuvieron excluidas las 29 imágenes locales de revisión marcadas `RIGHTS_REVIEW_REQUIRED`. No se hicieron búsquedas nuevas en Internet en esta reanudación. Ninguno de los 9 canary tiene una foto propia disponible ni un asset con derechos comerciales confirmados, así que no se inició staging.
+
+La lectura final de CP tras esta revisión confirma 46 productos, 0 públicos, 0 duplicados, 0 imágenes asociadas, 0 cargas, 0 objetos en staging y 0 objetos públicos; los 46 precios siguen pendientes y los 46 stocks siguen nulos. No hubo escrituras: `CANARY_COMPLETED=0/9`, `IMAGES_STAGED=0`, `IMAGES_APPROVED=0`, `IMAGES_ASSOCIATED=0`, `PRODUCTS_PUBLIC=0`, `PRICE_VALUES_CHANGED=0`, `STOCK_VALUES_CHANGED=0`. Panel QA y capturas móviles/de escritorio permanecen bloqueados mientras la pestaña conectada siga sin autenticación.

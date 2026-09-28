@@ -47,10 +47,6 @@ No hace falta tocar `sku` ni `producto`.
 
 3. **Ver qué falta:** Panel › Apertura, o `npm run opening:check`.
 
-Para ensayar la planilla en el tenant QA de CP antes del real:
-
-```
-node scripts/import-commercial-catalog.mjs <planilla> --catalogo cp --business <uuid del tenant QA>
-```
+El ensayo es el paso 1: corre contra el catálogo real y no escribe nada. El tenant QA de CP **no sirve** para ensayar la planilla: sus productos se llaman «QA …» y el importador rechaza a propósito los productos de prueba. Lo que la planilla escribe (la RPC `apply_commercial_catalog_batch`) está certificado en vivo sobre QA desde la sesión del dueño (`scripts/controlled-production/opening-cert.mjs`).
 
 Nunca se inventan precios ni stock.

@@ -1,0 +1,237 @@
+{
+  "at": "2026-09-28T18:08:25.021Z",
+  "started": "2026-09-28T18:07:15.035Z",
+  "target": "controlled-production",
+  "qaBusiness": "qa-control-cp",
+  "realBusiness": "la-taba-cp (sólo lectura)",
+  "verdict": "PASS",
+  "passed": 45,
+  "total": 45,
+  "checks": [
+    {
+      "id": "READINESS_ANON_DENIED",
+      "ok": true,
+      "detail": "42501"
+    },
+    {
+      "id": "READINESS_STAFF_READS",
+      "ok": true,
+      "detail": "18 compuertas"
+    },
+    {
+      "id": "READINESS_OTHER_BUSINESS_DENIED",
+      "ok": true,
+      "detail": "42501"
+    },
+    {
+      "id": "READINESS_REAL_BLOCKED",
+      "ok": true,
+      "detail": "FULFILLMENT_MODE,SERVICE_HOURS,CATALOG_PRICES,CATALOG_STOCK,CATALOG_PHOTOS,CATALOG_PUBLISHED,PLATFORM_VERIFICATION"
+    },
+    {
+      "id": "READINESS_NO_PERSONAL_DATA",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "VERIFY_CONFIRMATION_MISMATCH",
+      "ok": true,
+      "detail": "22023"
+    },
+    {
+      "id": "VERIFY_UNKNOWN_VERIFIER",
+      "ok": true,
+      "detail": "22023"
+    },
+    {
+      "id": "VERIFY_PREMATURE_REFUSED",
+      "ok": true,
+      "detail": "FULFILLMENT_MODE,SERVICE_HOURS,CATALOG_PRICES,CATALOG_STOCK,CATALOG_PHOTOS,CATALOG_PUBLISHED"
+    },
+    {
+      "id": "VERIFY_PERSON_CANNOT_CALL",
+      "ok": true,
+      "detail": "42501"
+    },
+    {
+      "id": "VERIFY_REFUSALS_WROTE_NOTHING",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "FULFILLMENT_STAFF_DENIED",
+      "ok": true,
+      "detail": "42501"
+    },
+    {
+      "id": "FULFILLMENT_PICKUP_ONLY",
+      "ok": true,
+      "detail": "delivery=false pickup=true"
+    },
+    {
+      "id": "FULFILLMENT_VERIFIED_NEEDS_ONE",
+      "ok": true,
+      "detail": "22023"
+    },
+    {
+      "id": "HOURS_BOTH_CHANNELS",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "HOURS_OVERLAP_REFUSED",
+      "ok": true,
+      "detail": "22023"
+    },
+    {
+      "id": "ADDRESS_PLACEHOLDER_REFUSED",
+      "ok": true,
+      "detail": "22023"
+    },
+    {
+      "id": "ADDRESS_SAVED_NORMALIZED",
+      "ok": true,
+      "detail": "QA Calle 123, Neuquén"
+    },
+    {
+      "id": "OPEN_STATE_AUDITED",
+      "ok": true,
+      "detail": "2 cambios auditados"
+    },
+    {
+      "id": "CLOSE_NEEDS_OWNER_OR_ADMIN",
+      "ok": true,
+      "detail": "42501"
+    },
+    {
+      "id": "INVITE_CREATED",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "INVITE_INSPECT_NEW",
+      "ok": true,
+      "detail": "op••••••@qa.lataba.invalid"
+    },
+    {
+      "id": "INVITE_WRONG_EMAIL",
+      "ok": true,
+      "detail": "email_mismatch"
+    },
+    {
+      "id": "INVITE_ACTIVATED",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "INVITE_ACCEPTED_WITH_OWN_SESSION",
+      "ok": true,
+      "detail": "rider"
+    },
+    {
+      "id": "INVITE_SINGLE_USE",
+      "ok": true,
+      "detail": "already_accepted"
+    },
+    {
+      "id": "INVITED_RIDER_SIGNS_IN",
+      "ok": true,
+      "detail": "registered"
+    },
+    {
+      "id": "INVITED_RIDER_IS_MEMBER",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "INVITE_AUDITED",
+      "ok": true,
+      "detail": "session_closed,session_opened,invitation_accepted,invitation_account_activated"
+    },
+    {
+      "id": "INVITE_CLEANUP",
+      "ok": true,
+      "detail": "cuenta QA borrada"
+    },
+    {
+      "id": "PRICE_SINGLE_EDIT_STAYS_PUBLISHED",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "PRICE_BULK_EDIT",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "PRICE_STAFF_DENIED",
+      "ok": true,
+      "detail": "P0001"
+    },
+    {
+      "id": "STOCK_ZERO_UNPUBLISHES_AND_REPUBLISH",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "HIDE_AND_REPUBLISH",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "REOPEN_THEN_VERIFY_AND_PUBLISH",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "SHEET_REFUSES_QA_PRODUCTS",
+      "ok": true,
+      "detail": "Línea 2: «aquarius-pomelo-2250ml» parece un producto de prueba. No entra al catálogo comercial."
+    },
+    {
+      "id": "SHEET_REAL_TEMPLATE_DRY_RUN",
+      "ok": true,
+      "detail": "46 filas · 0 cambios · sin escribir"
+    },
+    {
+      "id": "ALCOHOL_POLICY_OWNER_SESSION",
+      "ok": true,
+      "detail": "OK"
+    },
+    {
+      "id": "ALCOHOL_INCOMPLETE_REFUSED",
+      "ok": true,
+      "detail": "23514"
+    },
+    {
+      "id": "TEAM_APPS_OTHER_BUSINESS_DENIED",
+      "ok": true,
+      "detail": "Object not found"
+    },
+    {
+      "id": "TEAM_APPS_OWNER_SIGNED_LINK",
+      "ok": true,
+      "detail": "7171482 bytes"
+    },
+    {
+      "id": "TEAM_APPS_AGENT_SIGNED_LINK",
+      "ok": true,
+      "detail": "45264896 bytes · interno sin firma"
+    },
+    {
+      "id": "QA_CATALOG_RESTORED",
+      "ok": true,
+      "detail": "06fa4b83d20c"
+    },
+    {
+      "id": "QA_BUSINESS_RESTORED",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "REAL_BUSINESS_UNTOUCHED",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}

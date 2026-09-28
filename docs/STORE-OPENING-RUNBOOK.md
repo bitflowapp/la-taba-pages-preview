@@ -215,6 +215,9 @@ Después, el plan 5 → 15 → 30 de [`docs/LA-TABA-MORNING-HANDOFF-2026-09-28.m
 
   Queda auditado. Para volver, hay que verificar de nuevo.
 - **Web:** Cloudflare Pages → `la-taba-commercial-pilot` → promover el deployment anterior. Probado en cada deploy con el simulacro B→A→B.
-- **Base:** la migración de esta etapa tiene rollback compensatorio probado: [`docs/migrations/rollback/20260928150000_store_opening_readiness.rollback.sql`](migrations/rollback/20260928150000_store_opening_readiness.rollback.sql).
-  - Retira las RPC nuevas sin tocar datos.
+- **Base:** las tres migraciones de esta etapa tienen rollback compensatorio probado en CI. Se revierten en orden inverso:
+  1. [`20260928170000_identity_and_alcohol_invariants_null_safe`](migrations/rollback/20260928170000_identity_and_alcohol_invariants_null_safe.rollback.sql): devuelve las dos restricciones a su texto anterior. Se niega (ROLLBACK_BLOCKED) si ya se borró una cuenta que había aceptado una invitación.
+  2. [`20260928160000_publish_sets_merchant_intent`](migrations/rollback/20260928160000_publish_sets_merchant_intent.rollback.sql): devuelve la planilla al cuerpo anterior. Con ese cuerpo, la primera publicación de un borrador de CP vuelve a fallar.
+  3. [`20260928150000_store_opening_readiness`](migrations/rollback/20260928150000_store_opening_readiness.rollback.sql): retira las RPC nuevas.
+  - Ninguna toca datos.
   - Nunca se restaura un backup sobre CP sin una decisión humana.

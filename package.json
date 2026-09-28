@@ -49,6 +49,8 @@
     "opening:dry-run": "node scripts/controlled-production/opening-dry-run.mjs",
     "opening:publish": "node scripts/controlled-production/opening-publish.mjs",
     "opening:approve": "node scripts/controlled-production/opening-approve.mjs",
+    "opening:cert": "node scripts/controlled-production/opening-cert.mjs",
+    "opening:orders-cert": "node scripts/controlled-production/opening-orders-cert.mjs",
     "alcohol:policy": "node scripts/controlled-production/alcohol-policy.mjs",
     "team-apps:status": "node scripts/controlled-production/publish-team-app.mjs status",
     "team-apps:publish": "node scripts/controlled-production/publish-team-app.mjs",

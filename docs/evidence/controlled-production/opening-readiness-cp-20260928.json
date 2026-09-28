@@ -1,0 +1,126 @@
+{
+  "at": "2026-09-28T08:20:28.561Z",
+  "target": "controlled-production",
+  "business": "la-taba-cp",
+  "minProducts": 5,
+  "items": [
+    {
+      "id": "BUSINESS_ACTIVE",
+      "status": "PASS",
+      "detail": "activo",
+      "where": null,
+      "blocking": true
+    },
+    {
+      "id": "OPERATING_TIMEZONE",
+      "status": "PASS",
+      "detail": "America/Argentina/Buenos_Aires",
+      "where": "Panel → Horarios y cobertura → Horarios",
+      "blocking": true
+    },
+    {
+      "id": "FULFILMENT_MODE",
+      "status": "PENDING",
+      "detail": "delivery y retiro apagados",
+      "where": "Panel → Horarios y cobertura (delivery y/o retiro)",
+      "blocking": true
+    },
+    {
+      "id": "SERVICE_HOURS",
+      "status": "PENDING",
+      "detail": "sin franjas para delivery y pickup (el servidor rechaza todo pedido fuera de franja)",
+      "where": "Panel → Horarios y cobertura → Horarios",
+      "blocking": true
+    },
+    {
+      "id": "OWNER",
+      "status": "PASS",
+      "detail": "1 dueño(s) activo(s)",
+      "where": null,
+      "blocking": true
+    },
+    {
+      "id": "PRODUCT_PHOTOS",
+      "status": "PENDING",
+      "detail": "0/28 vendibles con foto aprobada (mínimo 5)",
+      "where": "Panel → Catálogo → Imagen del producto (derecho PROPIO)",
+      "blocking": true
+    },
+    {
+      "id": "PRODUCT_PRICES",
+      "status": "PENDING",
+      "detail": "0/28 con precio confirmado",
+      "where": "catalog/opening/planilla-apertura-cp.csv → scripts/import-commercial-catalog.mjs --catalogo cp",
+      "blocking": true
+    },
+    {
+      "id": "PRODUCT_STOCK",
+      "status": "PENDING",
+      "detail": "0/28 con stock contado > 0",
+      "where": "catalog/opening/planilla-apertura-cp.csv → scripts/import-commercial-catalog.mjs --catalogo cp",
+      "blocking": true
+    },
+    {
+      "id": "PRODUCTS_PUBLISHED",
+      "status": "PENDING",
+      "detail": "0 publicados; 0 listos para publicar (publicar = «si» en la planilla)",
+      "where": "catalog/opening/planilla-apertura-cp.csv → scripts/import-commercial-catalog.mjs --catalogo cp",
+      "blocking": true
+    },
+    {
+      "id": "ALCOHOL_POLICY",
+      "status": "INFO",
+      "detail": "cerrado: 18 SKU con alcohol no se venden",
+      "where": "Decisión comercial y legal: edad mínima, franja y habilitación",
+      "blocking": false
+    },
+    {
+      "id": "MERCADOPAGO",
+      "status": "INFO",
+      "detail": "sin vendedor conectado: sólo pago manual",
+      "where": "Walter conecta su cuenta desde el Panel",
+      "blocking": false
+    },
+    {
+      "id": "PLATFORM_VERIFICATION",
+      "status": "PENDING",
+      "detail": "pedidos online sin verificar/habilitar",
+      "where": "Operador de plataforma: opening-readiness.mjs --verify-ordering",
+      "blocking": true
+    },
+    {
+      "id": "STORE_OPEN",
+      "status": "INFO",
+      "detail": "estado closed",
+      "where": "Panel → abrir el local (botón del dueño)",
+      "blocking": false
+    }
+  ],
+  "counts": {
+    "products": 46,
+    "sellableWithoutAlcohol": 28,
+    "withPhoto": 0,
+    "withPrice": 0,
+    "withStock": 0,
+    "readyToPublish": 0,
+    "published": 0
+  },
+  "blockingPendingBeforeVerification": [
+    "FULFILMENT_MODE",
+    "SERVICE_HOURS",
+    "PRODUCT_PHOTOS",
+    "PRODUCT_PRICES",
+    "PRODUCT_STOCK",
+    "PRODUCTS_PUBLISHED"
+  ],
+  "pending": [
+    "FULFILMENT_MODE",
+    "SERVICE_HOURS",
+    "PRODUCT_PHOTOS",
+    "PRODUCT_PRICES",
+    "PRODUCT_STOCK",
+    "PRODUCTS_PUBLISHED",
+    "PLATFORM_VERIFICATION"
+  ],
+  "readyForCanary": false
+}

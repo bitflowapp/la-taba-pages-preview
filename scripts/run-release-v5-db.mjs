@@ -137,9 +137,16 @@ try {
     // transacción que se deshace: aplicarla, revertirla (huella IGUAL a la de antes) y volver a
     // aplicarla (huella IGUAL a la de después). Recién después se cargan las filas legadas.
     const FINGERPRINT_SQL=fs.readFileSync(path.join(ROOT,'scripts/controlled-production/schema-fingerprint.sql'),'utf8');
-    const schemaFingerprint=async()=>Object.fromEntries((await query(FINGERPRINT_SQL)).rows.map(r=>[r.cat,r.hash]));
-    const sameFingerprint=(actual,expected,label)=>assert.deepEqual(
-      Object.keys(expected).filter(cat=>actual[cat]!==expected[cat]),[],label);
+    const schemaFingerprint=async()=>Object.fromEntries((await query(FINGERPRINT_SQL)).rows.map(r=>[r.cat,r]));
+    // Si difiere, dice QUÉ difiere: categoría y objeto, para arreglarlo sin adivinar.
+    const sameFingerprint=(actual,expected,label)=>{
+      const cats=Object.keys(expected).filter(cat=>actual[cat]?.hash!==expected[cat].hash);
+      const items=cats.flatMap(cat=>{
+        const a=actual[cat]?.items||{};const e=expected[cat].items;
+        return [...new Set([...Object.keys(a),...Object.keys(e)])].filter(k=>a[k]!==e[k]).map(k=>`${cat}:${k}`);
+      });
+      assert.deepEqual(items,[],label);
+    };
     const fiscalLine=posteriores.filter(v=>/^2026092818[0-9]{4}_/.test(v));
     const fiscalRollback=fs.readFileSync(path.join(ROOT,
       'docs/migrations/rollback/20260928180000_fiscal_core_line.rollback.sql'),'utf8')

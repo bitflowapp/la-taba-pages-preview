@@ -141,15 +141,16 @@ try {
       'business_self_delivery_test.sql','controlled_production_qa_window_test.sql',
       'mercadopago_availability_requires_seller.local.sql','payment_method_isolation.local.sql',
       'mercadopago_seller_cannot_charge_alert.local.sql','mercadopago_operator_switch.local.sql',
-      'local_print_agent_test.sql','catalog_image_storage_test.sql','store_opening_readiness_test.sql'];
+      'local_print_agent_test.sql','catalog_image_storage_test.sql','store_opening_readiness_test.sql',
+      'commercial_publish_merchant_intent_test.sql','identity_alcohol_null_safe_test.sql'];
     for(const name of canonicalTests){
       const output=docker(['exec','-i',container,'psql','-h','/tmp','-U','postgres','-d','postgres','-X','-qAt','-v','ON_ERROR_STOP=1'],
         Buffer.from('set search_path=public,extensions;\n'+fs.readFileSync(path.join(ROOT,'supabase/tests',name),'utf8'))).toString();
       assert.doesNotMatch(output,/^not ok\b/m,name);assert.match(output,/^1\.\.[0-9]+$/m,name);
       assertions+=Number(/^1\.\.([0-9]+)$/m.exec(output)[1]);
     }
-    assert.equal(assertions,645);
-    console.log('CANONICAL_PGTAP: 268 + 44 least-privilege + 50 reparto-propio + 37 ventana QA/columnas privadas/pausa + 9 Mercado Pago sólo con vendedor conectado + 5 aislamiento cobro manual/Mercado Pago + 9 alerta de vendedor que no puede cobrar + 16 interruptor de operador por negocio + 104 impresión del mostrador + 19 pipeline de imágenes + 84 preparar la apertura assertions PASS');
+    assert.equal(assertions,681);
+    console.log('CANONICAL_PGTAP: 268 + 44 least-privilege + 50 reparto-propio + 37 ventana QA/columnas privadas/pausa + 9 Mercado Pago sólo con vendedor conectado + 5 aislamiento cobro manual/Mercado Pago + 9 alerta de vendedor que no puede cobrar + 16 interruptor de operador por negocio + 104 impresión del mostrador + 19 pipeline de imágenes + 84 preparar la apertura + 24 primera publicación de un borrador de CP + 12 invariantes a prueba de NULL assertions PASS');
 
     // pgTAP no puede probar dos agentes reclamando a la vez: una conexión por llamada.
     const { runPrintClaimRace } = await import('./print-agent/claim-race.mjs');
@@ -250,6 +251,50 @@ try {
     )).rows[0].n),0,'team_apps_owner_admin_read');
     await query('rollback');
     console.log('STORE_OPENING_ROLLBACK_DRILL: PASS');
+
+    // 20260928160000: el rollback devuelve la planilla al cuerpo de
+    // 20260928150000, byte por byte, sin tocar filas.
+    const intentRollback=fs.readFileSync(path.join(
+      ROOT,'docs/migrations/rollback/20260928160000_publish_sets_merchant_intent.rollback.sql'
+    ),'utf8').replace(/^begin;\s*$/m,'').replace(/^commit;\s*$/m,'');
+    await query('begin');
+    const productsBefore=Number((await query('select count(*)::integer as n from public.products')).rows[0].n);
+    await query(intentRollback);
+    const restoredBatch=(await query(
+      "select pg_get_functiondef('public.apply_commercial_catalog_batch(uuid,jsonb)'::regprocedure) as definition"
+    )).rows[0].definition;
+    assert.equal(createHash('sha256').update(restoredBatch).digest('hex'),
+      'f5a5754667c1347c335e16062aeb51117fc5d2ac64c32fc18bacdda7895c749f','apply_commercial_catalog_batch');
+    assert.equal(Number((await query('select count(*)::integer as n from public.products')).rows[0].n),productsBefore);
+    await query('rollback');
+    console.log('MERCHANT_INTENT_ROLLBACK_DRILL: PASS');
+
+    // 20260928170000: el rollback devuelve las dos restricciones a su texto
+    // anterior (el que tenía CP) y se niega si una aceptación ya perdió su cuenta.
+    const nullSafeRollback=fs.readFileSync(path.join(
+      ROOT,'docs/migrations/rollback/20260928170000_identity_and_alcohol_invariants_null_safe.rollback.sql'
+    ),'utf8').replace(/^begin;\s*$/m,'').replace(/^commit;\s*$/m,'');
+    const constraintDef=async name=>(await query(
+      'select pg_get_constraintdef(oid) as def from pg_constraint where conname=$1',[name])).rows[0].def;
+    await query('begin');
+    await query(nullSafeRollback);
+    assert.equal(await constraintDef('identity_invitations_acceptance_is_complete'),
+      'CHECK (((accepted_at IS NULL) = (accepted_user_id IS NULL)))');
+    assert.equal(await constraintDef('businesses_alcohol_policy_complete'),
+      "CHECK (((NOT alcohol_sales_enabled) OR (((alcohol_minimum_age >= 18) AND (alcohol_minimum_age <= 99)) AND (alcohol_sales_start IS NOT NULL) AND (alcohol_sales_end IS NOT NULL) AND (alcohol_timezone IS NOT NULL) AND (btrim(alcohol_timezone) <> ''::text))))");
+    await query('rollback');
+    await query('begin');
+    await query(`insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
+      values('e6000000-0000-4000-8000-0000000000a7','authenticated','authenticated','drill@null-safe.invalid','',now(),'{}','{}',now(),now());
+      insert into public.businesses(id,name,status,slug,is_active,operating_timezone)
+      values('e6000000-0000-4000-8000-0000000000b7','NULL SAFE DRILL','closed','null-safe-drill',true,'America/Argentina/Buenos_Aires');
+      insert into public.identity_invitations(business_id,invited_email,invited_role,full_name,token_hash,expires_at,accepted_at,accepted_user_id)
+      values('e6000000-0000-4000-8000-0000000000b7','drill@null-safe.invalid','rider','Drill',repeat('e',64),now()+interval '1 day',now(),
+        'e6000000-0000-4000-8000-0000000000a7');
+      delete from auth.users where id='e6000000-0000-4000-8000-0000000000a7'`);
+    await assert.rejects(query(nullSafeRollback),/ROLLBACK_BLOCKED/);
+    await query('rollback');
+    console.log('NULL_SAFE_INVARIANTS_ROLLBACK_DRILL: PASS');
   } else {
     console.log('FOCUSED_RELEASE_RUN: historical matrix and canonical pgTAP NOT RUN');
   }

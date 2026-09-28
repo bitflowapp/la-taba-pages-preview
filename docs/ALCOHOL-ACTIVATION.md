@@ -11,7 +11,7 @@
 | --- | --- |
 | Base: publicar | `set_commercial_product_publication` y `apply_commercial_catalog_batch` (desde 20260928150000) se niegan a publicar o republicar un producto con alcohol mientras `alcohol_sales_enabled` sea falso. Vale para la planilla y para el Panel |
 | Base: pedir | `create_order_with_items` rechaza un pedido con alcohol si falta la política completa (edad, franja, huso), si el cliente no confirmó la mayoría de edad o si está fuera de la franja |
-| Base: invariante | `businesses_alcohol_policy_complete`: no se puede encender sin edad (18–99), franja y huso |
+| Base: invariante | `businesses_alcohol_policy_complete`: no se puede encender sin edad (18–99), franja y huso. Desde 20260928170000 también rechaza la edad **vacía**: antes un NULL pasaba el CHECK, y la planilla o el Panel podían publicar alcohol que después no se podía pedir |
 | Tienda | El checkout pide confirmar la edad antes de un pedido con alcohol. Es el age gate, y **se mantiene** |
 | Panel | El botón de publicar no aparece para productos con alcohol mientras la venta esté cerrada |
 

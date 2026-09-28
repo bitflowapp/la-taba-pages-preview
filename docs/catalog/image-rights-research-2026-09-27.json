@@ -1,6 +1,6 @@
 {
  "schema": "la-taba.catalog-image-rights-research/1",
- "generated_at": "2026-09-28T03:31:31Z",
+ "generated_at": "2026-09-28T03:55:35Z",
  "project": "tkanbadcglszlcyfjvpv",
  "business_id": "e7850ad2-a447-402c-8375-3fd74e9466ba",
  "method": [
@@ -25,6 +25,68 @@
   "quilmes-clasica-710ml",
   "heineken-710ml",
   "fernet-branca-750ml"
+ ],
+ "canary_research_order": {
+  "own_photo": "Sin fotos propias: catalog/photo-intake sólo tiene README en todos los worktrees de La Taba.",
+  "open_food_facts": "Ficha por GTIN revisada; ver skus[].open_food_facts (fotos en mano, consumidas, recortadas o de otra presentación).",
+  "wikimedia_commons": "Sin foto del producto exacto: Quilmes Clásica sólo 473 cm3; Heineken lata tirada en pasto; Fernet sólo góndola.",
+  "openverse": "Sin resultados por nombre + presentación; por marca sólo aparecen fotos ajenas al SKU.",
+  "media_kit": "Red Bull Content Pool: libre sólo para uso editorial; el uso comercial se licencia a pedido y con precio (https://policies.redbull.com/policies/redbullcontentpool/202402222105/en/terms.html). Coca-Cola ofrece pedido de derechos de uso (https://www.coca-colacompany.com/policies-and-practices/usage-rights-requests). Sin media kit con licencia comercial abierta para los 9.",
+  "manufacturer_permission": "Ningún titular publica permiso de reutilización para comercios; sus términos lo prohíben sin autorización escrita (ver skus[].official_terms_url).",
+  "b2b_resources": "BEES (Quilmes: también Pepsi, Red Bull y aguas del portafolio) y Mi Coca-Cola / Coca-Cola Andina B2B requieren cuenta de cliente; no publican términos de uso de imágenes para la tienda propia del comercio.",
+  "catalog_feed": "GS1 Argentina (GDSN / catálogo electrónico) requiere afiliación y suscripción; ver gs1."
+ },
+ "gs1": {
+  "option": "REQUIRES_CONTACT",
+  "service": "GS1 Argentina: sincronización de datos GDSN y catálogo electrónico (DATA.COD, operado por E-Way). Los proveedores publican atributos de producto y hasta 4 imágenes por GTIN; los receptores (cadenas, mayoristas y retail online) los reciben.",
+  "images": "El catálogo acepta imágenes que carga el proveedor. En GDSN las imágenes viajan como enlaces, y las condiciones de uso las fija el proveedor (GS1 Product Image Sharing Guideline).",
+  "requirements": [
+   "Asociarse a GS1 Argentina: formularios AD010, AD011, AD012 y AD013; razón social, CUIT, GLN y cuota social según el tamaño.",
+   "Suscribirse como receptor al catálogo electrónico o a GDSN.",
+   "Que cada marca publique sus GTIN en ámbito público o autorice a La Taba en ámbito privado.",
+   "Aceptar las condiciones de uso de imágenes de cada proveedor."
+  ],
+  "cost": "No publicado. La cuota social se informa a pedido. La única tabla pública es la de DATA.COD de 2007, con valores en pesos de ese año que no están vigentes.",
+  "small_business": "Posible como afiliado adherente, pero el servicio está pensado para cadenas. No hay evidencia de que marcas como Coca-Cola o Quilmes publiquen imágenes en ámbito público.",
+  "integration_path": [
+   "GTIN por SKU: ya relevados los 46 como referencia.",
+   "Consultar el catálogo o GDSN y obtener la URL de la imagen del proveedor.",
+   "Descargarla y subirla por el Panel con fuente fabricante o distribuidor oficial y derecho PERMISO_DOCUMENTADO, citando el acuerdo GS1 o del proveedor.",
+   "Mismo pipeline de staging, vista previa, aprobación y asociación."
+  ],
+  "evidence": [
+   "https://www.gs1.org.ar/Site/EstandaresSoluciones_Bootstrap5/GDSN.html",
+   "https://www.gs1.org.ar/documentos/FAQ%20DATACOD.pdf",
+   "https://www.gs1.org.ar/Site/Servicios_Bootstrap5/Negociar.html",
+   "https://www.gs1.org/standards/product-image-sharing-guideline/current-standard"
+  ],
+  "not_suitable_parts": "NegociAR es una red para que las pymes ofrezcan productos a supermercados; no distribuye imágenes con licencia. Verified by GS1 es una consulta de identidad por GTIN, no una fuente de imágenes para reutilizar."
+ },
+ "distributors": [
+  {
+   "channel": "BEES Argentina (Cervecería y Maltería Quilmes)",
+   "url": "https://mybees.com.ar/",
+   "covers": "Quilmes, Brahma, Stella Artois, Patagonia, Corona, Glaciar, Eco de los Andes; además Pepsi, Paso de los Toros y Red Bull, que Quilmes distribuye.",
+   "finding": "App B2B de pedidos para comercios, con cuenta de cliente. No se encontraron términos públicos que habiliten usar sus imágenes en la tienda propia."
+  },
+  {
+   "channel": "Mi Coca-Cola / Coca-Cola Andina B2B",
+   "url": "https://www.koandina.com/nuestra-compania/ecosistemami/plataforma-b2b/",
+   "covers": "Coca-Cola, Sprite, Fanta, Schweppes, Bonaqua, Cepita (y Monster en la red Coca-Cola).",
+   "finding": "Portal de pedidos para clientes. No publica condiciones de uso de imágenes; la tienda oficial prohíbe reproducirlas."
+  },
+  {
+   "channel": "CCU Argentina",
+   "url": "",
+   "covers": "Heineken, Imperial, Schneider.",
+   "finding": "No se encontró un portal público de recursos para comercios."
+  },
+  {
+   "channel": "Distribuidores mayoristas de Neuquén",
+   "url": "https://www.guiacores.com.ar/index.php?r=search%2Findex&b=DISTRIBUIDORA+DE+BEBIDAS+NEUQUEN",
+   "covers": "Varios.",
+   "finding": "Sus catálogos usan imágenes de las marcas y no pueden ceder derechos que no tienen."
+  }
  ],
  "skus": [
   {

@@ -1,6 +1,6 @@
 # Controlled Production: imágenes reales del catálogo — 2026-09
 
-Última revisión: 2026-09-27 (misión «cerrar imágenes reales», continuación de la revisión canary). Proyecto `tkanbadcglszlcyfjvpv`, negocio `e7850ad2-a447-402c-8375-3fd74e9466ba`. No se crearon productos ni se tocó precio, stock, publicación, Mercado Pago, ARCA, Rider, LocalAgent, `print_jobs`, checkout, pedidos ni roles.
+Última revisión: 2026-09-28 (misión «cerrar catálogo real de imágenes end-to-end»). Proyecto `tkanbadcglszlcyfjvpv`, negocio `e7850ad2-a447-402c-8375-3fd74e9466ba`. No se crearon productos ni se tocó precio, stock, publicación, Mercado Pago, ARCA, Rider, LocalAgent, `print_jobs`, checkout, pedidos ni roles.
 
 ## Resultado
 
@@ -97,6 +97,69 @@ Detalle por SKU (fuente revisada, términos, veredicto de Open Food Facts, estad
    - Fotos propias con [la guía de captura](../../catalog/photo-capture/PHOTO_CAPTURE_GUIDE.md), subidas con fuente «Foto propia» y derecho `PROPIO`. Es el camino más rápido y el único que no depende de terceros.
    - Permiso escrito de cada titular o distribuidor oficial, o su paquete de packshots, que documentaría `TABA-AUT-2026-08-001` como `PERMISO_DOCUMENTADO`.
    - Suscripción al catálogo electrónico de GS1 Argentina, que distribuye imágenes de los fabricantes a los comercios.
+
+## Atribución de fotos con licencia abierta
+
+PR [#119](https://github.com/bitflowapp/la-taba-pages-preview/pull/119) agrega el soporte mínimo para cumplir CC BY-SA sin cambiar el diseño:
+
+- **Registro del crédito**: `js/core/image-attribution.js` guarda autor, fuente, enlace a la fuente, licencia, enlace a la licencia y cambios.
+  - Está indexado por el SHA-256 del archivo original aprobado (`products.source_image_sha256`).
+  - Si la foto se reemplaza, el crédito deja de aplicarse solo.
+  - La base conserva la misma evidencia en `catalog_assets.rights_reference`.
+- **Ficha pública**: muestra «Foto: Open Food Facts (smoothie-app) · CC BY-SA 3.0 · fondo reemplazado por blanco». La fuente y la licencia van enlazadas, y el crédito sólo aparece junto a la foto oficial.
+- **Guarda en el Panel**: no ofrece «Publicar» si la revisión aprobada declara una licencia CC y la tienda no tiene su crédito. El gestor de imagen indica si el crédito está listo.
+- **Tests**:
+  - 9 tests unitarios.
+  - E2E en Chromium y WebKit (iPhone 13): 4/4.
+  - `npm test`: 2688/2689, con el flake conocido `rider-pilot-target-gate`, que pasa aislado.
+  - `npm run check` en verde.
+- **Estado**: no desplegado. Hay que desplegarlo antes de publicar cualquier producto con foto CC BY-SA. Hoy Campari no puede publicarse: está en borrador, con precio pendiente y sin venta de alcohol habilitada.
+
+El mismo PR corrige un bug del Panel: `listCatalogProducts` no pedía `image_thumbnail_url`. Por eso una imagen aprobada aparecía como «Sin imagen aprobada» en el gestor de imágenes.
+
+## GS1 Argentina
+
+- **Opción**: `REQUIRES_CONTACT`.
+- **Qué es**: GS1 Argentina ofrece sincronización de datos (GDSN) y el catálogo electrónico DATA.COD, operado por E-Way.
+  - Los proveedores publican los datos de cada GTIN, con hasta 4 imágenes; los reciben cadenas, mayoristas y retail online.
+  - Las condiciones de uso de las imágenes las fija cada proveedor.
+- **Requisitos**:
+  - Asociarse a GS1 Argentina: formularios AD010 a AD013; razón social, CUIT, GLN y cuota según el tamaño.
+  - Suscribirse como receptor.
+  - Que cada marca publique sus productos en ámbito público o autorice a La Taba en ámbito privado.
+- **Costo**: no publicado; la cuota se informa a pedido. La única tabla pública es de DATA.COD en 2007 y no está vigente.
+- **Integración**: ya tenemos el GTIN de referencia de los 46 SKU. El camino sería pedir el catálogo por GTIN, descargar la imagen del proveedor y subirla por el mismo pipeline con derecho `PERMISO_DOCUMENTADO`, citando el acuerdo.
+- **Qué no sirve**: NegociAR (una red para que las pymes ofrezcan productos a supermercados) y Verified by GS1 (consulta de identidad) no son fuentes de imágenes con licencia.
+- **Acción humana**: contactar a GS1 Argentina (info@gs1.org.ar) y aprobar el costo. No se contrató nada.
+
+## Distribuidores y recursos B2B
+
+- **BEES (Quilmes)**: cubre cervezas, aguas, Pepsi y Red Bull.
+- **Mi Coca-Cola / Coca-Cola Andina B2B**: cubre el sistema Coca-Cola.
+- **CCU**: cubre Heineken, Imperial y Schneider.
+- **Mayoristas de Neuquén**: usan las mismas imágenes de marca y no pueden ceder derechos que no tienen.
+
+Los tres portales de marca requieren cuenta de cliente y no publican condiciones que habiliten usar sus imágenes en la tienda propia. Red Bull Content Pool es libre sólo para uso editorial: el uso comercial se licencia a pedido y con precio. El camino es pedir permiso escrito al representante comercial de cada marca.
+
+## Cepita Naranja
+
+- **Estado**: `CEPITA_PACKAGING: BUG_CONFIRMED`, registrado en el issue [#118](https://github.com/bitflowapp/la-taba-pages-preview/issues/118).
+- **Inconsistencia**: la ficha dice `Botella`, pero su referencia (GTIN 7790895648267) es un Tetra Brik de 1 L.
+- **Por qué no se corrigió**: el sistema Coca-Cola vende cuatro «Cepita Naranja» de cerca de 1 L (dos Tetra Brik, uno en botella PET de 1 L y otro de 995 ml). La corrección depende de cuál vende el local.
+- **Qué se hizo**: nada en la base; tampoco se le asoció imagen.
+
+## Fotos propias
+
+[catalog/photo-capture/README.md](../../catalog/photo-capture/README.md) es la guía simple para Marco y Walter. Pide:
+
+- una foto del frente;
+- luz natural, sin flash;
+- fondo liso;
+- el producto entero;
+- sin manos, sin precios y sin otros objetos;
+- el archivo original, sin comprimir por WhatsApp.
+
+La guía trae el nombre de archivo de los 46 SKU. El catálogo de CP no tiene carnes; si se suman, cada corte necesita su propia foto.
 
 ## Pipeline, respaldo y observaciones técnicas
 

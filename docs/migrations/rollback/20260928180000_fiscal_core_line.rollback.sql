@@ -13,7 +13,10 @@
 -- CÓMO SE HIZO: comparando dos bases reales, A = todas las migraciones hasta
 -- 20260928170000 y B = A + la línea fiscal. Este archivo lleva B a A: tablas,
 -- columnas, restricciones, disparadores, políticas y funciones (con sus permisos
--- y comentarios). CÓMO SE PRUEBA: después de aplicarlo, la huella
+-- y comentarios). Los permisos de una función que vuelve a crearse repiten las
+-- sentencias GRANT/REVOKE de su migración original, porque el resultado depende de
+-- los privilegios por defecto del entorno (en Supabase, EXECUTE para los roles de la
+-- API al crear una función). CÓMO SE PRUEBA: después de aplicarlo, la huella
 -- `scripts/controlled-production/schema-fingerprint.sql` es IGUAL a la de A en
 -- todas sus categorías, y volver a aplicar la línea fiscal da otra vez B. Lo
 -- ejercita scripts/run-release-v5-db.mjs en cada CI.
@@ -47,6 +50,7 @@ begin
   end if;
 end;
 $rollback_guard$;
+
 
 -- ── Políticas nuevas ──────────────────────────────────────────────────────
 drop policy "fiscal source snapshots readable by back office" on public.fiscal_source_snapshots;
@@ -902,55 +906,26 @@ end;
 $function$;
 
 
--- ── Permisos y comentarios de esas funciones ──────────────────────────────
-revoke all on function request_fiscal_document(uuid,text,uuid,text,text) from public, anon, authenticated, service_role;
-grant execute on function request_fiscal_document(uuid,text,uuid,text,text) to authenticated;
-grant execute on function request_fiscal_document(uuid,text,uuid,text,text) to service_role;
-revoke all on function claim_fiscal_outbox(text,integer,integer) from public, anon, authenticated, service_role;
-grant execute on function claim_fiscal_outbox(text,integer,integer) to service_role;
-revoke all on function reserve_fiscal_document_number(uuid,text,bigint) from public, anon, authenticated, service_role;
-grant execute on function reserve_fiscal_document_number(uuid,text,bigint) to service_role;
-revoke all on function complete_fiscal_attempt(uuid,text,jsonb) from public, anon, authenticated, service_role;
-grant execute on function complete_fiscal_attempt(uuid,text,jsonb) to service_role;
-revoke all on function fail_fiscal_artifact(uuid,text,text,text,boolean) from public, anon, authenticated, service_role;
-grant execute on function fail_fiscal_artifact(uuid,text,text,text,boolean) to service_role;
-revoke all on function complete_fiscal_artifact(uuid,text,jsonb) from public, anon, authenticated, service_role;
-grant execute on function complete_fiscal_artifact(uuid,text,jsonb) to service_role;
-revoke all on function complete_fiscal_artifact_unchecked(uuid,text,jsonb) from public, anon, authenticated, service_role;
-revoke all on function protect_authorized_fiscal_document_item() from public, anon, authenticated, service_role;
-grant execute on function protect_authorized_fiscal_document_item() to public;
-grant execute on function protect_authorized_fiscal_document_item() to anon;
-grant execute on function protect_authorized_fiscal_document_item() to authenticated;
-grant execute on function protect_authorized_fiscal_document_item() to service_role;
-revoke all on function protect_authorized_fiscal_document() from public, anon, authenticated, service_role;
-grant execute on function protect_authorized_fiscal_document() to public;
-grant execute on function protect_authorized_fiscal_document() to anon;
-grant execute on function protect_authorized_fiscal_document() to authenticated;
-grant execute on function protect_authorized_fiscal_document() to service_role;
-revoke all on function save_fiscal_parameter_snapshot(text,text,text,jsonb,timestamp with time zone) from public, anon, authenticated, service_role;
-grant execute on function save_fiscal_parameter_snapshot(text,text,text,jsonb,timestamp with time zone) to service_role;
-revoke all on function enqueue_authorized_fiscal_artifact() from public, anon, authenticated, service_role;
-grant execute on function enqueue_authorized_fiscal_artifact() to service_role;
-revoke all on function resolve_fiscal_accounting_policy(uuid,text,text,text,integer,integer,date) from public, anon, authenticated, service_role;
-grant execute on function resolve_fiscal_accounting_policy(uuid,text,text,text,integer,integer,date) to service_role;
-revoke all on function claim_fiscal_artifact_outbox(text,integer,integer) from public, anon, authenticated, service_role;
-grant execute on function claim_fiscal_artifact_outbox(text,integer,integer) to service_role;
-revoke all on function request_credit_note_unchecked(uuid,text,text,jsonb,text) from public, anon, authenticated, service_role;
-revoke all on function request_fiscal_artifact_regeneration(uuid) from public, anon, authenticated, service_role;
-grant execute on function request_fiscal_artifact_regeneration(uuid) to authenticated;
-grant execute on function request_fiscal_artifact_regeneration(uuid) to service_role;
-revoke all on function authorize_fiscal_artifact_access(uuid,text) from public, anon, authenticated, service_role;
-grant execute on function authorize_fiscal_artifact_access(uuid,text) to authenticated;
-grant execute on function authorize_fiscal_artifact_access(uuid,text) to service_role;
-revoke all on function request_credit_note(uuid,text,text,jsonb,text) from public, anon, authenticated, service_role;
-grant execute on function request_credit_note(uuid,text,text,jsonb,text) to authenticated;
-grant execute on function request_credit_note(uuid,text,text,jsonb,text) to service_role;
-revoke all on function update_fiscal_print_job(uuid,text,text) from public, anon, authenticated, service_role;
-grant execute on function update_fiscal_print_job(uuid,text,text) to authenticated;
-grant execute on function update_fiscal_print_job(uuid,text,text) to service_role;
-revoke all on function request_fiscal_print_job(uuid,uuid,text,text,integer,text) from public, anon, authenticated, service_role;
-grant execute on function request_fiscal_print_job(uuid,uuid,text,text,integer,text) to authenticated;
-grant execute on function request_fiscal_print_job(uuid,uuid,text,text,integer,text) to service_role;
+-- ── Permisos de esas funciones ────────────────────────────────────────────
+revoke all on function request_fiscal_document(uuid,text,uuid,text,text) from public, anon, authenticated; -- 20260802160000
+grant execute on function request_fiscal_document(uuid,text,uuid,text,text) to authenticated; -- 20260802160000
+revoke all on function claim_fiscal_outbox(text,integer,integer) from public, anon, authenticated; -- 20260802160000
+grant execute on function claim_fiscal_outbox(text,integer,integer) to service_role; -- 20260802160000
+revoke all on function reserve_fiscal_document_number(uuid,text,bigint) from public, anon, authenticated; -- 20260802160000
+grant execute on function reserve_fiscal_document_number(uuid,text,bigint) to service_role; -- 20260802160000
+revoke all on function complete_fiscal_attempt(uuid,text,jsonb) from public, anon, authenticated; -- 20260802160000
+grant execute on function complete_fiscal_attempt(uuid,text,jsonb) to service_role; -- 20260802160000
+revoke all on function fail_fiscal_artifact(uuid,text,text,text,boolean) from public, anon, authenticated; -- 20260802170000
+grant execute on function fail_fiscal_artifact(uuid,text,text,text,boolean) to service_role; -- 20260802170000
+revoke all on function complete_fiscal_artifact(uuid,text,jsonb) from public, anon, authenticated; -- 20260802170000
+grant execute on function complete_fiscal_artifact(uuid,text,jsonb) to service_role; -- 20260802170000
+revoke all on function complete_fiscal_artifact(uuid,text,jsonb) from public, anon, authenticated; -- 20260802171000
+grant execute on function complete_fiscal_artifact(uuid,text,jsonb) to service_role; -- 20260802171000
+revoke all on function complete_fiscal_artifact_unchecked(uuid,text,jsonb) from public, anon, authenticated, service_role; -- 20260802171000
+grant execute on function protect_authorized_fiscal_document_item() to public, anon, authenticated, service_role;
+grant execute on function protect_authorized_fiscal_document() to public, anon, authenticated, service_role;
+
+-- ── Comentarios de esas funciones ─────────────────────────────────────────
 comment on function request_fiscal_document(uuid,text,uuid,text,text) is null;
 comment on function claim_fiscal_outbox(text,integer,integer) is 'RPC privada para worker fiscal; reclama trabajos con FOR UPDATE SKIP LOCKED.';
 comment on function reserve_fiscal_document_number(uuid,text,bigint) is null;

@@ -39,7 +39,7 @@ const WHERE = Object.freeze({
   open: Object.freeze({ label: 'Panel › Abrir el negocio', view: 'day-open' }),
 });
 
-const CHANNEL_LABEL = Object.freeze({ delivery: 'el delivery', pickup: 'el retiro' });
+const CHANNEL_LABEL = Object.freeze({ delivery: 'delivery', pickup: 'retiro' });
 
 function count(facts, key) {
   const value = Number(facts?.[key]);
@@ -50,9 +50,10 @@ function plural(value, one, many) {
   return `${value} ${value === 1 ? one : many}`;
 }
 
+/** «de delivery y de retiro», «de retiro». */
 function listChannels(channels) {
   const names = (Array.isArray(channels) ? channels : []).map((channel) => CHANNEL_LABEL[channel]).filter(Boolean);
-  return names.length > 1 ? `${names.slice(0, -1).join(', ')} y ${names.at(-1)}` : names[0] || 'la tienda';
+  return names.length ? `de ${names.join(' y de ')}` : 'de la tienda';
 }
 
 // Un texto por código y estado. `reason` explica en qué se nota; `action` dice
@@ -101,7 +102,7 @@ const COPY = Object.freeze({
     pass: (f) => `Horario cargado (${plural(Math.max(count(f, 'delivery_windows'), count(f, 'pickup_windows')), 'tramo', 'tramos')} por canal).`,
     pending: (f) => (f.timezone_ok === false
       ? 'Falta el huso horario del local para poder exigir los horarios.'
-      : `Faltan los horarios de ${listChannels(f.missing_channels)}: sin horarios la tienda rechaza todos los pedidos.`),
+      : `Falta el horario ${listChannels(f.missing_channels)}: sin horario la tienda rechaza todos los pedidos.`),
     warn: () => 'El horario no se exige: mientras el local esté abierto, la tienda toma pedidos a cualquier hora.',
     action: 'Configurá los horarios de atención.',
     where: WHERE.hours,

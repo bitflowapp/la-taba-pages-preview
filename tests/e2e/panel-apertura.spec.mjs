@@ -45,7 +45,7 @@ for (const [nombre, viewport] of [['teléfono', TELEFONO], ['escritorio', ESCRIT
       await irA(page, 'store-opening', viewport);
       await expect(page.getByRole('heading', { name: 'Preparar apertura' })).toBeVisible();
       await expect(page.getByText('Faltan 5 pasos para abrir.')).toBeVisible();
-      await expect(page.locator('[data-opening-code="SERVICE_HOURS"]')).toContainText('el retiro');
+      await expect(page.locator('[data-opening-code="SERVICE_HOURS"]')).toContainText('Falta el horario de retiro');
       await expect(page.locator('[data-opening-code="PLATFORM_VERIFICATION"]')).toContainText('Plataforma');
       await sinDesborde(page);
       await page.locator('[data-opening-code="SERVICE_HOURS"] [data-business-ops-view="operations-config"]').click();

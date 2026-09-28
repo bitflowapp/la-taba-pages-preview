@@ -79,7 +79,7 @@ test('el comercio real de hoy: faltan seis pasos y cada uno dice dónde se arreg
   assert.equal(presented.canOpen, false);
   assert.equal(presented.headline, 'Faltan 6 pasos para abrir.');
   const hours = presented.items.find((row) => row.code === 'SERVICE_HOURS');
-  assert.match(hours.reason, /el delivery y el retiro/);
+  assert.match(hours.reason, /Falta el horario de delivery y de retiro/);
   assert.equal(hours.view, 'operations-config');
   assert.match(hours.where, /Horarios y cobertura/);
   const published = presented.items.find((row) => row.code === 'CATALOG_PUBLISHED');

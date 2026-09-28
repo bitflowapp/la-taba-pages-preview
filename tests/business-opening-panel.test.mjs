@@ -71,7 +71,7 @@ test('preparar apertura: cada paso dice qué falta y lleva adonde se arregla, si
   assert.match(html, /Faltan 3 pasos para abrir/);
   assert.match(html, /1 de 5 pasos obligatorios listos/);
   assert.match(html, /data-opening-code="SERVICE_HOURS"/);
-  assert.match(html, /el retiro/);
+  assert.match(html, /Falta el horario de retiro/);
   assert.equal((html.match(/data-business-ops-view="operations-config"/g) || []).length, 2, 'entrega y horario llevan a Horarios y cobertura');
   assert.doesNotMatch(html, /data-business-ops-view="catalog"/, 'sin permiso de catálogo no se ofrece el atajo');
   assert.match(html, /Panel › Catálogo/, 'pero sí se dice dónde se completa');

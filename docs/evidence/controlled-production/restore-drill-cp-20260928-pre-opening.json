@@ -1,0 +1,256 @@
+{
+  "at": "2026-09-28T17:22:11.418Z",
+  "ref": "tkanbadcglszlcyfjvpv",
+  "backup": {
+    "snapshotAt": "2026-09-28T17:22:12.526Z",
+    "serverVersion": "17.6",
+    "files": [
+      {
+        "file": "app.dump",
+        "bytes": 2829717,
+        "sha256": "3947c9ede4d5d73b3cb9ddd87ec9bda998754c208c9b955d477ab3404af3702b"
+      },
+      {
+        "file": "auth-users.dump",
+        "bytes": 21320,
+        "sha256": "775bb08b10df524251861d9b37567419dc2311e83b7b1af0cbace559d0dda1da"
+      }
+    ],
+    "directory": "~\\.taba-backups\\controlled-production\\pgdump-2026-09-28T17-22-11-415Z",
+    "migrations": {
+      "count": 144,
+      "head": "20260927175058"
+    },
+    "tables": 108,
+    "rows": 9101
+  },
+  "restore": {
+    "steps": [
+      {
+        "file": "auth-users.dump",
+        "sections": [
+          "pre-data",
+          "data"
+        ],
+        "status": 0,
+        "errors": [],
+        "errorCount": 0
+      },
+      {
+        "file": "app.dump",
+        "sections": [
+          "pre-data",
+          "data"
+        ],
+        "status": 0,
+        "errors": [],
+        "errorCount": 0
+      },
+      {
+        "file": "auth-users.dump",
+        "sections": [
+          "post-data"
+        ],
+        "status": 0,
+        "errors": [],
+        "errorCount": 0
+      },
+      {
+        "file": "app.dump",
+        "sections": [
+          "post-data"
+        ],
+        "status": 0,
+        "errors": [],
+        "errorCount": 0
+      }
+    ],
+    "errors": 0
+  },
+  "compare": {
+    "tables": {
+      "live": 105,
+      "restored": 105,
+      "identical": true
+    },
+    "columns": {
+      "live": 1450,
+      "restored": 1450,
+      "identical": true
+    },
+    "constraints": {
+      "live": 883,
+      "restored": 883,
+      "identical": true,
+      "diff": {
+        "onlyLive": [],
+        "onlyRestored": [],
+        "changed": [
+          "public.customers.customers_name_length",
+          "public.businesses.businesses_alcohol_policy_complete",
+          "public.orders.orders_delivery_snapshot_coordinates_pair",
+          "public.customer_addresses.customer_addresses_coordinates_pair",
+          "private.rider_map_business_locations.rider_map_business_locations_coordinates_check",
+          "private.rider_map_order_location_snapshots.rider_map_order_business_coordinates_pair",
+          "private.rider_map_order_location_snapshots.rider_map_order_customer_coordinates_pair"
+        ]
+      },
+      "roundTrip": [
+        {
+          "k": "public.customers.customers_name_length",
+          "equivalent": true
+        },
+        {
+          "k": "public.businesses.businesses_alcohol_policy_complete",
+          "equivalent": true
+        },
+        {
+          "k": "public.orders.orders_delivery_snapshot_coordinates_pair",
+          "equivalent": true
+        },
+        {
+          "k": "public.customer_addresses.customer_addresses_coordinates_pair",
+          "equivalent": true
+        },
+        {
+          "k": "private.rider_map_business_locations.rider_map_business_locations_coordinates_check",
+          "equivalent": true
+        },
+        {
+          "k": "private.rider_map_order_location_snapshots.rider_map_order_business_coordinates_pair",
+          "equivalent": true
+        },
+        {
+          "k": "private.rider_map_order_location_snapshots.rider_map_order_customer_coordinates_pair",
+          "equivalent": true
+        }
+      ],
+      "note": "7 CHECK constraints differ only by the grouping parentheses pg_dump re-parsing gives a BETWEEN; each equals the live definition re-created on the copy"
+    },
+    "indexes": {
+      "live": 300,
+      "restored": 300,
+      "identical": true
+    },
+    "functions": {
+      "live": 403,
+      "restored": 403,
+      "identical": true
+    },
+    "policies": {
+      "live": 70,
+      "restored": 70,
+      "identical": true
+    },
+    "triggers": {
+      "live": 101,
+      "restored": 101,
+      "identical": true
+    },
+    "table_grants": {
+      "live": 342,
+      "restored": 342,
+      "identical": true
+    },
+    "column_grants": {
+      "live": 192,
+      "restored": 192,
+      "identical": true
+    },
+    "function_grants": {
+      "live": 1209,
+      "restored": 1209,
+      "identical": true
+    },
+    "platformLevel": {
+      "cron_jobs": {
+        "live": [
+          "taba-qa-window-expiry",
+          "taba-checkout-expiry-sweep",
+          "taba-payment-outbox-worker",
+          "taba-operational-alerts-sweep",
+          "taba-checkout-provider-truth-sweep"
+        ]
+      },
+      "realtime_publication": {
+        "live": [
+          "public.orders",
+          "public.products",
+          "public.pos_sales",
+          "public.businesses",
+          "public.order_events",
+          "public.rider_locations",
+          "public.fiscal_documents",
+          "public.product_barcodes",
+          "public.inventory_movements",
+          "public.notification_outbox"
+        ]
+      },
+      "storage_buckets": {
+        "live": [
+          "catalog-images",
+          "fiscal-documents",
+          "catalog-image-staging"
+        ]
+      },
+      "storagePolicies": [
+        "storage.objects.fiscal documents service-only",
+        "storage.objects.catalog_images_service_role_only",
+        "storage.objects.catalog_image_staging_service_role_only"
+      ]
+    },
+    "migrations": {
+      "live": 144,
+      "restored": 144,
+      "head": "20260927175058",
+      "identical": true
+    },
+    "criticalFunctions": {
+      "create_order_with_items(jsonb)": true,
+      "transition_order(uuid,bigint,text,text)": true,
+      "commercial_catalog_parse_stock(jsonb)": true,
+      "catalog_admin.import_pending_catalog(uuid,jsonb)": true,
+      "set_business_open_state(uuid,text)": true,
+      "open_qa_window(uuid,integer)": true,
+      "close_qa_window(uuid)": true,
+      "close_expired_qa_windows()": true,
+      "commerce_availability(uuid,text,jsonb)": true,
+      "has_business_role(uuid,text[])": true,
+      "identity_register_session(uuid,text,text,text,text)": true,
+      "cancel_order(uuid,bigint,text,text)": true,
+      "confirm_manual_order_payment(uuid,bigint,text,text)": true,
+      "accept_rider_order_offer(uuid,bigint,text)": true,
+      "confirm_delivery_code(uuid,bigint,text,text)": true
+    },
+    "structures": {
+      "public.products": true,
+      "public.orders": true,
+      "public.order_items": true,
+      "public.order_events": true,
+      "public.businesses": true,
+      "public.catalog_assets": true,
+      "public.business_members": true,
+      "public.customers": true
+    },
+    "data": {
+      "tables": 108,
+      "rows": 9101,
+      "identical": 108,
+      "mismatches": []
+    },
+    "rls": {
+      "anonProducts": 0,
+      "liveAnonProducts": 0,
+      "anonUnitCost": "42501",
+      "anonOrders": 0,
+      "anonProductsDuringQaWindow": 8
+    }
+  },
+  "checks": {
+    "DB_BACKUP": "PASS",
+    "DB_RESTORE_TEST": "PASS",
+    "RESTORED_SCHEMA_MATCH": "PASS",
+    "RESTORED_RLS": "PASS"
+  },
+  "verdict": "PASS"
+}

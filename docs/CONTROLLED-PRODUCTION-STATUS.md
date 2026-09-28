@@ -3,7 +3,31 @@
 Rama de despliegue `release/taba-controlled-production`; PR **#98** (reemplaza a
 #97, que queda abierto sólo por trazabilidad). Operación:
 `CONTROLLED-PRODUCTION-RUNBOOK.md`. Evidencia en `docs/evidence/controlled-production/`
-(archivos `*-20260925.json` para el cierre de #98, `*-20260926.json` para el del 26 y `*-20260928.json` para la noche del 28).
+(archivos `*-20260925.json` para el cierre de #98, `*-20260926.json` para el del 26 y `*-20260928*.json` para el 28: la noche y la base de apertura).
+
+## 2026-09-28 (tarde) · Base de apertura: todo lo técnico, la tienda cerrada
+
+PR **#121** (`feat/taba-opening-base`). El único trabajo pendiente para abrir son datos y decisiones del comercio: [`catalog/opening/OWNER-INPUT.md`](../catalog/opening/OWNER-INPUT.md). Operación: [`docs/STORE-OPENING-RUNBOOK.md`](STORE-OPENING-RUNBOOK.md).
+
+| Frente | Resultado | Evidencia |
+|---|---|---|
+| Qué falta para abrir | Hay una sola fuente: `get_store_opening_readiness`. La leen el Panel («Preparar apertura») y `npm run opening:check`.<br>`TECHNICAL_READY: YES` · `COMMERCIAL_READY: NO` · `CAN_OPEN: NO`.<br>Faltan 6 pasos y todos son del comercio: entrega, horarios, precios, stock, fotos y publicación. Después va la verificación de plataforma | `opening-check-cp-20260928.json` |
+| Tres defectos reales, encontrados en vivo y corregidos | (1) La primera publicación de los 46 borradores fallaba con 23514: `merchant_available` quedaba en falso; lo corrige `20260928160000`.<br>(2) Una cuenta que había aceptado una invitación no se podía borrar por Auth (500).<br>(3) La venta de alcohol se podía encender con la edad mínima vacía, porque un CHECK con NULL pasa.<br>(2) y (3) los corrige `20260928170000`. Cada uno tiene su pgTAP, que falla con el cuerpo viejo, y su rollback ensayado en CI | commit `fdcbc69` |
+| Migraciones | `20260928150000`, `160000` y `170000` aplicadas en CP.<br>Antes de cada una: backup y restauración real PASS.<br>CP = repo, 147/147.<br>La huella del esquema de CP es igual, en las 13 categorías, a la de un PG 17 construido sólo con las migraciones del repo: sin deriva | `migrations-cp-20260928-opening.json`, `restore-drill-cp-20260928-pre-opening.json`, `…-pre-merchant-intent.json`, `…-pre-null-safe.json` |
+| Certificación en vivo de la base | **45/45** con el tenant QA restaurado exacto y el comercio real sin tocar. Cubre:<br>• la preparación y la verificación de plataforma (falla cerrada sobre el real);<br>• retiro y delivery, los horarios de los dos canales, la dirección y abrir/pausar/cerrar auditados;<br>• la invitación de punta a punta con una cuenta QA nueva, que al final se borra;<br>• el catálogo después de publicar;<br>• la planilla: rechaza productos QA y ensaya la real de 46 filas sin escribir;<br>• la política de alcohol;<br>• los instaladores por link firmado | `opening-cert-cp-20260928.json` |
+| Pedidos de la apertura | **17/17** sin dinero real, todo revertido y clasificado QA:<br>• sólo retiro con el delivery apagado;<br>• efectivo en el mostrador y entrega sin código;<br>• delivery rechazado mientras está apagado;<br>• «a coordinar» confirmado como transferencia | `opening-orders-cp-20260928.json` |
+| Instaladores del equipo | En el bucket privado `team-apps`:<br>• el APK del repartidor (`2fcc64f9…`, firma `2dcc9b0a…`);<br>• el agente de impresión 0.1.0, MSI interno **sin firma de código** (`f6ae27ac…`), sin actualización automática.<br>El dueño o el encargado crean un link de 7 días desde el Panel | `docs/TEAM-APPS-DISTRIBUTION.md` |
+| Invitaciones sin SMTP | Función `team-invitation` desplegada: consultar, activar la cuenta y aceptar con la sesión propia. Certificada en vivo | `opening-cert-cp-20260928.json` |
+| Deploy A = `b548e91` | Workflow oficial después del CI exacto en verde: web + E2E, base y Windows, y Rider.<br>Deployment `0753f346`; el alias sirve `b548e91` con caché v129; smoke con 3 motores.<br>Sin simulacro: A es el primer deploy con las tres migraciones nuevas, así que el grafo de base cambia por diseño | runs 36467519503 (deploy), 36467519560 (CI), 36467519545 (Rider) |
+| Panel en vivo (v129, sesión real del dueño técnico) | **16/16** en escritorio y teléfono:<br>• ingreso por el formulario;<br>• «Preparar apertura» muestra exactamente las 7 compuertas pendientes que devuelve el servidor («Faltan 6 pasos para abrir»);<br>• Equipo e Impresora cargan, sin desborde ni errores JS;<br>• «Cerrar sesión» funciona | `panel-live-cp-20260928.json` |
+| Deploys después de abrir | Con `catalogMode: "none"`, cualquier deploy posterior a la primera publicación habría fallado: el smoke exigía un catálogo público vacío, y el modo `approved` exigía una lista de 5 a 10 SKU con fotos del repo.<br>Ahora CP se despliega en modo `live`: el deploy no publica nada, y el smoke exige que cada producto visible tenga precio, stock y foto. Las fotos del pipeline se cargan desde Storage; la expresión regular de rutas no aceptaba `_`.<br>Probado contra CP con la foto aprobada de Campari | commit B |
+| Herramientas del dueño | `opening:publish` y `alcohol:policy` usan la credencial del dueño y cerraban la sesión con alcance **global**: al terminar, lo sacaban del Panel y del teléfono. Ahora cierran sólo su propia sesión | commit B |
+
+Estado:
+
+- **P0 = 0, P1 = 0.**
+- `REAL_STORE_LIVE: NO`.
+- ARCA: producción apagada. La línea fiscal consolidada es la PR #122, todavía sin aplicar en CP.
 
 ## 2026-09-28 · Noche de cierre: QA-401, ciclo de vida y camino de apertura
 

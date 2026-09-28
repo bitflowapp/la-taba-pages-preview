@@ -1,0 +1,89 @@
+{
+  "at": "2026-09-28T18:39:44.534Z",
+  "target": "controlled-production",
+  "ref": "tkanbadcglszlcyfjvpv",
+  "mode": "lectura (transacción read-only)",
+  "ledger": {
+    "count": 147,
+    "head": "20260928170000"
+  },
+  "repo": {
+    "count": 147,
+    "head": "20260928170000"
+  },
+  "ledger_equals_repo": true,
+  "applied_today": [
+    "20260928150000_store_opening_readiness",
+    "20260928160000_publish_sets_merchant_intent",
+    "20260928170000_identity_and_alcohol_invariants_null_safe"
+  ],
+  "fingerprint_vs_repo_migrations_on_pg17": {
+    "column_grants": {
+      "cp": 192,
+      "repo_pg17": 192,
+      "equal": true
+    },
+    "columns": {
+      "cp": 1450,
+      "repo_pg17": 1450,
+      "equal": true
+    },
+    "constraints": {
+      "cp": 883,
+      "repo_pg17": 883,
+      "equal": true
+    },
+    "cron_jobs": {
+      "cp": 5,
+      "repo_pg17": 5,
+      "equal": true
+    },
+    "function_grants": {
+      "cp": 1233,
+      "repo_pg17": 1233,
+      "equal": true
+    },
+    "functions": {
+      "cp": 411,
+      "repo_pg17": 411,
+      "equal": true
+    },
+    "indexes": {
+      "cp": 300,
+      "repo_pg17": 300,
+      "equal": true
+    },
+    "policies": {
+      "cp": 75,
+      "repo_pg17": 75,
+      "equal": true
+    },
+    "realtime_publication": {
+      "cp": 10,
+      "repo_pg17": 10,
+      "equal": true
+    },
+    "storage_buckets": {
+      "cp": 4,
+      "repo_pg17": 4,
+      "equal": true
+    },
+    "table_grants": {
+      "cp": 342,
+      "repo_pg17": 342,
+      "equal": true
+    },
+    "tables": {
+      "cp": 105,
+      "repo_pg17": 105,
+      "equal": true
+    },
+    "triggers": {
+      "cp": 101,
+      "repo_pg17": 101,
+      "equal": true
+    }
+  },
+  "fingerprint_equal": true,
+  "note": "La huella de CP es igual, categoría por categoría, a la de un PG 17 construido sólo con las migraciones del repo: sin deriva."
+}

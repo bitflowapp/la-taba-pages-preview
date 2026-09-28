@@ -19,7 +19,7 @@ import {
   buildStorefrontPreview, CAPACITY_UNITS, describePublishReadiness, PACKAGE_TYPES, stepsForDraft,
 } from './business-product-onboarding.js';
 import {
-  auditLines, enforcementBlockers, MAX_SLOTS_PER_DAY, weeklyGrid,
+  auditLines, enforcementBlockers, MAX_SLOTS_PER_DAY, pickupHoursDiffer, weeklyGrid,
 } from './business-operations-config.js';
 import { describeSlot, describeWeeklyGrid } from '../core/service-hours.js';
 
@@ -159,7 +159,7 @@ export function renderPaymentsSurface({ payments, status, manualPayments, manual
 
   return panel('Pagos', 'Lo que entró hoy y qué hacer con cada caso.', `
     ${renderManualPaymentsSurface(manualPayments, manualStatus, { elevated, busy })}
-    ${onlinePayments ? renderMercadoPagoConnection(connection, busy, elevated) : renderOnlinePaymentsDisabled()}
+    ${onlinePayments ? renderMercadoPagoConnection(connection, busy, elevated, activation) : renderOnlinePaymentsDisabled()}
     <div class="operation-center-toolbar">
       <span class="form-hint">${rows.length} pago(s) listados</span>
       <button class="ghost-button compact" type="button" data-payments-refresh ${busy ? 'disabled' : ''}>Actualizar</button>
@@ -243,10 +243,30 @@ function renderPaymentCard(payment, { elevated, busy, refundTarget } = {}) {
   </article>`;
 }
 
-export function renderPaymentsSetupSurface({ connection, role, busy, onlinePayments = true } = {}) {
+export function renderPaymentsSetupSurface({ connection, activation, role, busy, onlinePayments = true } = {}) {
   if (!can(role, 'payments.reconcile')) return deniedPanel('Mercado Pago', 'La conexión de cobros la hace el dueño o el encargado.');
   if (!onlinePayments) return panel('Cobros online', 'No habilitados en esta etapa.', renderOnlinePaymentsDisabled());
-  return panel('Mercado Pago', 'Recibí los pagos online en tu cuenta.', renderMercadoPagoConnection(connection, busy, true));
+  return panel('Mercado Pago', 'Recibí los pagos online en tu cuenta.', renderMercadoPagoConnection(connection, busy, true, activation));
+}
+
+/**
+ * El estado de la cuenta de Mercado Pago en palabras del dueño. «Bloqueado» es
+ * una cuenta conectada que todavía no puede cobrar en la tienda porque falta la
+ * habilitación de la plataforma (o su revisión productiva).
+ */
+export function mercadoPagoSellerState(connection, activation, { busy = false } = {}) {
+  const status = connection?.status;
+  if (busy) return Object.freeze({ id: 'connecting', label: 'Conectando', tone: 'attention', detail: 'Estamos esperando la respuesta de Mercado Pago.' });
+  if (status === 'connected') {
+    const enabled = activation?.enabled === true
+      && (activation?.environment !== 'production' || activation?.production_review_status === 'approved');
+    return enabled
+      ? Object.freeze({ id: 'connected', label: 'Conectado', tone: 'calm', detail: 'La tienda puede cobrar con Mercado Pago en tu cuenta.' })
+      : Object.freeze({ id: 'blocked', label: 'Bloqueado', tone: 'attention', detail: 'La cuenta está conectada, pero la plataforma todavía no habilitó el cobro online. Mientras tanto se cobra en efectivo o por transferencia.' });
+  }
+  if (status === 'requires_reauthorization') return Object.freeze({ id: 'reconnect', label: 'Requiere reconexión', tone: 'attention', detail: 'Mercado Pago pide volver a autorizar la cuenta.' });
+  if (status === 'unavailable') return Object.freeze({ id: 'unknown', label: 'No pudimos verificar la conexión', tone: 'critical', detail: 'Intentá nuevamente en un momento.' });
+  return Object.freeze({ id: 'disconnected', label: 'No conectado', tone: 'attention', detail: 'Conectá tu cuenta para recibir pagos online. Sin conectarla, se cobra en efectivo o por transferencia.' });
 }
 
 // Producción controlada: sólo cobro manual. Se dice sin rodeos y sin botón,
@@ -257,16 +277,16 @@ function renderOnlinePaymentsDisabled() {
     + '<p>Se cobra en efectivo o por transferencia al entregar o retirar. Registrá cada cobro recién cuando el dinero esté recibido.</p></section>';
 }
 
-function renderMercadoPagoConnection(connection, busy, elevated) {
+function renderMercadoPagoConnection(connection, busy, elevated, activation = null) {
   const status = connection?.status;
   const connected = status === 'connected';
   const reauthorize = status === 'requires_reauthorization';
-  const tone = busy ? 'attention' : connected ? 'calm' : status === 'unavailable' ? 'critical' : 'attention';
-  const message = busy ? 'Conectando Mercado Pago...' : connected ? '✓ Mercado Pago conectado correctamente' : reauthorize ? 'Necesitamos volver a conectar Mercado Pago.' : status === 'unavailable' ? 'No pudimos verificar la conexión. Intentá nuevamente.' : 'No conectado';
+  const state = mercadoPagoSellerState(connection, activation, { busy });
   const button = (action, label) => '<button class="primary-button compact" type="button" data-mp-connection-action="' + action + '" ' + (busy ? 'disabled' : '') + '>' + label + '</button>';
-  return '<section aria-label="Mercado Pago" class="operation-summary operation-summary--mercadopago tone-' + tone + '" aria-busy="' + Boolean(busy) + '"><h3>Mercado Pago</h3><p role="status" aria-live="polite">' + message + '</p>'
-    + (!connected ? '<p>Conectá tu cuenta para recibir pagos online.</p>' : '')
-    + (connected && connection.seller_id ? '<p>Cuenta: ' + escapeHtml(connection.seller_id) + '</p>' : '')
+  // Sin identificadores de cuenta: el dueño reconoce su cuenta en Mercado Pago,
+  // no por un número.
+  return '<section aria-label="Mercado Pago" class="operation-summary operation-summary--mercadopago tone-' + state.tone + '" aria-busy="' + Boolean(busy) + '" data-mp-seller-state="' + state.id + '"><h3>Mercado Pago</h3><p role="status" aria-live="polite"><strong>' + escapeHtml(state.label) + '</strong></p>'
+    + '<p>' + escapeHtml(state.detail) + '</p>'
     + (elevated ? '<div class="button-row">' + (connected ? button('verify','Verificar conexión') + button('disconnect','Desconectar') : button('connect',reauthorize ? 'Reconectar' : 'Conectar Mercado Pago')) + '</div>' : '')
     + (!connected ? '<p>Vas a continuar en Mercado Pago para autorizar la conexión. TABA nunca recibe tu contraseña.</p>' : '') + '</section>';
 }
@@ -346,7 +366,7 @@ export function renderDevicesSurface({ results, printers, isNative, busy } = {})
     </div>`);
 }
 
-export function renderDayOpenSurface({ opening, businessStatus, role, busy } = {}) {
+export function renderDayOpenSurface({ opening, businessStatus, role, busy, verdict = null, pendingClose = false } = {}) {
   const evaluated = evaluateBusinessOpening(opening || {});
   const rows = evaluated.checks.map((check) => `
     <article class="opening-check tone-${escapeHtml(check.tone)}">
@@ -354,22 +374,43 @@ export function renderDayOpenSurface({ opening, businessStatus, role, busy } = {
       <p>${escapeHtml(check.detail)}</p>
       <small>${escapeHtml(check.why)}</small>
     </article>`).join('');
-  const open = String(businessStatus || '') === 'open';
+  const status = String(businessStatus || '');
+  const open = status === 'open';
+  const paused = status === 'paused';
+  const closed = status === 'closed';
+  // Lo que dice «Preparar apertura»: abrir un local que todavía no puede vender
+  // no toma pedidos. Se avisa acá, donde está el botón.
+  const readiness = verdict && !verdict.canOpen
+    ? `<div class="operation-summary tone-attention" role="status" data-day-open-readiness="blocked">
+        <strong>Todavía no se puede vender por la web.</strong>
+        <span>${escapeHtml(verdict.headline)} Aunque abras el local, la tienda no toma pedidos hasta completar lo que falta.</span>
+        <button class="text-button" type="button" data-business-ops-view="store-opening">Ver qué falta</button>
+      </div>`
+    : '';
+  const closeButton = !closed && can(role, 'day.close')
+    ? (pendingClose
+      ? `<button class="ghost-button compact" type="button" data-business-open-state="closed" data-confirmed="true" ${busy ? 'disabled' : ''}>Sí, cerrar el negocio</button>
+         <button class="text-button" type="button" data-business-close-cancel>No, dejarlo como está</button>`
+      : `<button class="ghost-button compact" type="button" data-business-open-state="closed" ${busy ? 'disabled' : ''}>Cerrar el negocio</button>`)
+    : '';
 
-  return panel('Abrir el negocio', 'Una revisión antes de empezar a vender.', `
+  return panel('Abrir el negocio', 'Abrir, pausar, reanudar o cerrar. La tienda lo ve al instante.', `
+    ${readiness}
     <div class="operation-summary tone-${escapeHtml(evaluated.verdict.tone)}" role="status">
       <strong>${escapeHtml(evaluated.verdict.headline)}</strong>
       <span>${escapeHtml(evaluated.verdict.detail)}</span>
     </div>
     ${evaluated.blockers.map((blocker) => `<p class="production-intake-error">${escapeHtml(blocker)}</p>`).join('')}
     <div class="opening-grid">${rows}</div>
+    ${pendingClose ? '<p class="production-intake-error" role="alert">Cerrar el negocio deja de tomar pedidos hasta que lo vuelvas a abrir. Los pedidos en curso siguen en la bandeja.</p>' : ''}
     <div class="button-row">
       <button class="secondary-button compact" type="button" data-opening-refresh ${busy ? 'disabled' : ''}>Volver a revisar</button>
       ${can(role, 'day.open') ? `
-        <button class="primary-button compact" type="button" data-business-open-state="open" ${busy || open ? 'disabled' : ''}>Abrir el negocio</button>
-        <button class="ghost-button compact" type="button" data-business-open-state="paused" ${busy || !open ? 'disabled' : ''}>Pausar pedidos</button>` : ''}
+        ${open ? '' : `<button class="primary-button compact" type="button" data-business-open-state="open" ${busy ? 'disabled' : ''}>${paused ? 'Reanudar pedidos' : 'Abrir el negocio'}</button>`}
+        ${open ? `<button class="ghost-button compact" type="button" data-business-open-state="paused" ${busy ? 'disabled' : ''}>Pausar pedidos</button>` : ''}
+        ${closeButton}` : ''}
     </div>
-    <p class="form-hint">El negocio está ${escapeHtml(businessStateLabel(businessStatus))}.</p>`);
+    <p class="form-hint">El negocio está ${escapeHtml(businessStateLabel(businessStatus))}.${paused ? ' Pausado: la tienda muestra el local pero no toma pedidos nuevos.' : ''}</p>`);
 }
 
 export function renderDayCloseSurface({ run, alerts, role, busy, businessDate, timezone } = {}) {
@@ -521,6 +562,7 @@ export function renderOperationsConfigSurface({ config, status, busy, draft } = 
   }
 
   const readOnly = !config.canManage || busy;
+  const contactReadOnly = !config.canManageContact || busy;
   const blockers = enforcementBlockers(config);
   const grid = weeklyGrid(config, 'delivery');
   const lines = auditLines(config);
@@ -533,9 +575,34 @@ export function renderOperationsConfigSurface({ config, status, busy, draft } = 
       ${config.nextOpenAt && !config.isOpenDelivery ? `<span>Abre ${escapeHtml(formatTimestamp(config.nextOpenAt))}.</span>` : ''}
     </div>
 
+    <section class="business-config-block" data-operations-fulfillment>
+      <h3>Cómo entregás</h3>
+      <p class="form-hint">Encendé sólo lo que el local hace de verdad: la tienda ofrece únicamente lo que esté encendido.</p>
+      <label class="address-default-toggle"><input type="checkbox" name="fulfillmentPickup" ${config.pickupEnabled ? 'checked' : ''} ${readOnly ? 'disabled' : ''} /> Retiro en el local</label>
+      <label class="address-default-toggle"><input type="checkbox" name="fulfillmentDelivery" ${config.deliveryEnabled ? 'checked' : ''} ${readOnly ? 'disabled' : ''} /> Delivery</label>
+      <p class="form-hint">Con delivery hacen falta además el costo de envío y el pedido mínimo del local (el mínimo puede ser 0) y, si exigís zonas, al menos una zona activa. Sin repartidores, el local entrega por su cuenta y cierra la entrega con el código del cliente.</p>
+      <button class="primary-button compact" type="button" data-operations-fulfillment-save ${readOnly ? 'disabled' : ''}>Guardar cómo entregás</button>
+    </section>
+
+    <section class="business-config-block" data-operations-contact>
+      <h3>Datos del local</h3>
+      <p class="form-hint">Lo que ve el cliente: adónde ir a retirar y cómo escribirle al local.</p>
+      <div class="catalog-form-grid">
+        <label>Dirección del local<input type="text" name="storeAddress" maxlength="180" autocomplete="off" value="${escapeHtml(config.address || '')}" placeholder="Calle 123, Ciudad" ${readOnly ? 'disabled' : ''} /></label>
+      </div>
+      <button class="secondary-button compact" type="button" data-operations-address-save ${readOnly ? 'disabled' : ''}>Guardar dirección</button>
+      <div class="catalog-form-grid">
+        <label>WhatsApp del local<input type="tel" name="storeWhatsapp" maxlength="20" inputmode="tel" autocomplete="off" value="${escapeHtml(config.whatsappPhone || '')}" placeholder="549 + área + número" ${contactReadOnly ? 'disabled' : ''} /></label>
+      </div>
+      <label class="address-default-toggle"><input type="checkbox" name="storeWhatsappConfirm" ${contactReadOnly ? 'disabled' : ''} /> Confirmo que es el WhatsApp del local</label>
+      <p class="form-hint" data-operations-whatsapp-state>${config.whatsappVerified ? 'Confirmado: la tienda lo muestra.' : 'Sin confirmar: la tienda todavía no lo muestra.'} Escribilo con código de país y de área, sin 0 ni 15.${config.canManageContact ? '' : ' Lo confirma el dueño o el encargado.'}</p>
+      <button class="secondary-button compact" type="button" data-operations-whatsapp-save ${contactReadOnly ? 'disabled' : ''}>Guardar WhatsApp</button>
+    </section>
+
     <section class="business-config-block" data-operations-hours>
       <h3>Horario de atención</h3>
-      <p class="form-hint">Hasta ${MAX_SLOTS_PER_DAY} tramos por día. Un tramo que termina antes de empezar cruza la medianoche.</p>
+      <p class="form-hint">Vale para retiro y para delivery. Hasta ${MAX_SLOTS_PER_DAY} tramos por día; un día sin tramos queda cerrado. Un tramo que termina antes de empezar cruza la medianoche.</p>
+      ${pickupHoursDiffer(config) ? '<p class="production-intake-error" role="status">El retiro tiene cargado otro horario. Al guardar, retiro y delivery quedan con esta grilla.</p>' : ''}
       <p class="form-hint" data-operations-hours-summary role="status">${escapeHtml(describeWeeklyGrid(grid.flatMap((day) => day.slots.map((slot) => ({ ...slot, weekday: day.value })))))}</p>
       <table class="business-hours-grid">
         <tbody>
@@ -595,7 +662,7 @@ export function renderOperationsConfigSurface({ config, status, busy, draft } = 
 
     <section class="business-config-block" data-operations-pricing>
       <h3>Envío y pedido mínimo del comercio</h3>
-      <p class="form-hint">Son los valores por defecto: una zona que define los suyos manda sobre estos. Dejar el mínimo vacío significa que no hay mínimo.</p>
+      <p class="form-hint">Son los valores por defecto: una zona que define los suyos manda sobre estos. Con delivery, los dos son obligatorios para abrir; si no hay pedido mínimo, poné 0.</p>
       <div class="catalog-form-grid">
         <label>Costo de envío<input type="number" name="businessFee" min="0" step="1" inputmode="numeric" value="${config.deliveryFee === null ? '' : escapeHtml(String(config.deliveryFee))}" ${readOnly ? 'disabled' : ''} /></label>
         <label>Pedido mínimo<input type="number" name="businessMinimum" min="0" step="1" inputmode="numeric" value="${config.minimumSubtotal === null ? '' : escapeHtml(String(config.minimumSubtotal))}" ${readOnly ? 'disabled' : ''} /></label>

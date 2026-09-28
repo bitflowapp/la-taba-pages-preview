@@ -12,13 +12,18 @@ export function createSupabaseInventoryRepository({ client, businessId }) {
   return Object.freeze({
     async listCatalogProducts() {
       const { data, error, status } = await client.from('products')
-        .select('id,sku,name,brand,variant,capacity,capacity_value,capacity_unit,packaging_type,category,subcategory,price,price_status,stock,available,merchant_available,is_verified,is_active,is_alcoholic,image_url,image_thumbnail_url,source_image_sha256,catalog_asset_id,catalog_origin,sort_order')
+        .select('id,sku,external_id,name,brand,variant,capacity,capacity_value,capacity_unit,packaging_type,category,subcategory,price,price_status,stock,available,merchant_available,is_verified,is_active,is_alcoholic,image_url,image_thumbnail_url,source_image_sha256,catalog_asset_id,catalog_origin,sort_order')
         .eq('business_id', businessId).eq('catalog_origin', 'commercial')
         .order('sort_order', { ascending: true }).order('name', { ascending: true }).limit(200);
       return error ? classifyRpcError(error, status) : { ok: true, data: Array.isArray(data) ? data : [] };
     },
     saveCommercialBatch: (rows) => rpc('apply_commercial_catalog_batch', {
       p_business_id: businessId, p_rows: rows,
+    }),
+    // Vuelve el producto a borrador de verdad (oculto y sin verificar): es lo
+    // que permite cambiarle la foto. Contrato existente, owner/admin.
+    unpublishCatalogProduct: (externalId) => rpc('unpublish_catalog_product', {
+      p_business_id: businessId, p_external_id: externalId,
     }),
     async lookupBarcode(gtin) {
       const { data, error, status } = await client.from('product_barcodes')

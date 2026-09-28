@@ -439,7 +439,11 @@ for (const width of [320, 1280]) {
     status='connected';
     await page.goto('/?mp_connection=connected#business', {waitUntil:'domcontentloaded'});
     await expect(page.locator('[data-production-workspace="business"]')).toBeVisible({timeout:30000});
-    await expect(panel).toContainText('Mercado Pago conectado');
+    // Conectada, pero sin la habilitación de la plataforma (este arnés no la
+    // devuelve): el dueño ve «Bloqueado» y por qué, nunca el número de cuenta.
+    await expect(panel).toContainText('Bloqueado');
+    await expect(panel).toContainText('la plataforma todavía no habilitó el cobro online');
+    await expect(panel).not.toContainText('123456');
     await panel.getByRole('button',{name:'Verificar conexión'}).click();
     await expect.poll(()=>actions.includes('verify')).toBe(true);
     page.once('dialog',dialog=>dialog.dismiss());

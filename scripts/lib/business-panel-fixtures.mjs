@@ -76,6 +76,17 @@ export async function instalarDatosDePrueba(page, { conSesion = true, comoEmplea
     if (p.includes('/rpc/get_business_opening_status')) return json(route, apertura());
     if (p.includes('/rpc/get_business_finished_today')) return json(route, cerradosDeHoy());
     if (p.includes('/rest/v1/fiscal_profiles')) return json(route, perfilFiscal());
+    // Preparar apertura, equipo, impresora y configuración operativa: las
+    // mismas formas que devuelven las RPC reales, con datos de prueba.
+    if (p.includes('/rpc/get_store_opening_readiness')) return json(route, preparacionDeApertura());
+    if (p.includes('/rpc/get_business_operations_config')) return json(route, configuracionOperativa());
+    if (p.includes('/rpc/identity_list_members')) return json(route, miembros(actor));
+    if (p.includes('/rpc/identity_list_invitations')) return json(route, invitaciones());
+    if (p.includes('/rpc/identity_create_invitation')) {
+      return json(route, { ok: true, invitation_id: 'abababab-abab-4bab-8bab-abababababab', token: 'ef'.repeat(32),
+        expires_at: '2099-01-08T12:00:00Z', invited_role: 'rider' });
+    }
+    if (p.includes('/rpc/get_local_print_status')) return json(route, estadoDeImpresion());
     if (p.includes('/rest/v1/products')) return json(route, []);
     return json(route, []);
   });
@@ -334,6 +345,72 @@ function perfilFiscal() {
  * devuelve `identity_list_access_requests`. Sirve para fotografiar y medir la
  * bandeja sin una sesion de duenio y sin tocar la base.
  */
+export function preparacionDeApertura() {
+  const item = (code, group, status, blocking, facts = {}) => ({ code, group, status, blocking, facts });
+  return {
+    generated_at: '2099-01-01T12:00:00Z',
+    business_id: BUSINESS_ID,
+    business: { slug: 'la-taba', name: 'La Taba', status: 'closed' },
+    min_products: 1,
+    items: [
+      item('BUSINESS_ACTIVE', 'business', 'pass', true),
+      item('CURRENCY', 'business', 'pass', true, { currency: 'ARS' }),
+      item('BUSINESS_ADDRESS', 'business', 'pass', false, { present: true }),
+      item('BUSINESS_CONTACT', 'business', 'warn', false, { configured: false, confirmed: false }),
+      item('FULFILLMENT_MODE', 'fulfillment', 'pass', true, { delivery: false, pickup: true }),
+      item('SERVICE_HOURS', 'fulfillment', 'pending', true, { enforced: true, timezone_ok: true, missing_channels: ['pickup'] }),
+      item('DELIVERY_PRICING', 'fulfillment', 'na', false),
+      item('DELIVERY_COVERAGE', 'fulfillment', 'na', false),
+      item('RIDERS', 'fulfillment', 'na', false),
+      item('CATALOG_PRICES', 'catalog', 'pending', true, { with_price: 0, candidates: 28, min: 1 }),
+      item('CATALOG_STOCK', 'catalog', 'pending', true, { with_stock: 0, uncounted: 28, sold_out: 0, candidates: 28, min: 1 }),
+      item('CATALOG_PHOTOS', 'catalog', 'pending', true, { required: true, with_photo: 0, candidates: 28, min: 1 }),
+      item('CATALOG_PUBLISHED', 'catalog', 'pending', true, { published: 0, verified: 0, ready_to_publish: 0, min: 1 }),
+      item('ALCOHOL_POLICY', 'catalog', 'info', false, { enabled: false, alcoholic_products: 18 }),
+      item('PAYMENT_MANUAL', 'payments', 'pass', true, { methods: ['cash', 'coordinate'] }),
+      item('PAYMENT_MERCADOPAGO', 'payments', 'info', false, { seller: 'none', platform_enabled: false }),
+      item('PLATFORM_VERIFICATION', 'platform', 'pending', true, { verified: false, enabled: false }),
+      item('STORE_OPEN', 'open', 'info', false, { status: 'closed' }),
+    ],
+    counts: { products: 46, alcoholic: 18, published: 0 },
+    pending: ['SERVICE_HOURS', 'CATALOG_PRICES', 'CATALOG_STOCK', 'CATALOG_PHOTOS', 'CATALOG_PUBLISHED', 'PLATFORM_VERIFICATION'],
+    ready_for_platform_verification: false,
+    can_open: false,
+    accepting_orders: false,
+  };
+}
+
+export function configuracionOperativa() {
+  return {
+    business_id: BUSINESS_ID, can_manage: true, can_manage_contact: true,
+    operating_timezone: 'America/Argentina/Buenos_Aires', hours_enforced: true, delivery_zone_enforced: true,
+    alcohol_hours_enforced: false, alcohol_sales_enabled: false, alcohol_policy_complete: false,
+    delivery_enabled: false, pickup_enabled: true, address: 'Mendoza 827, Neuquén Capital',
+    whatsapp_phone: null, whatsapp_verified: false, delivery_fee: null, minimum_delivery_subtotal: null,
+    delivery_max_radius_meters: null, is_open_delivery: false, is_open_pickup: false, next_open_at: null,
+    hours: [], exceptions: [], zones: [], audit: [],
+  };
+}
+
+function miembros(actor) {
+  return [
+    { user_id: OWNER_ID, role: 'owner', is_active: true, full_name: 'Dueño de prueba', active_sessions: 1, member_since: '2026-09-27T07:28:32Z' },
+    { user_id: RIDER_A, role: 'rider', is_active: true, full_name: 'Rider Uno', active_sessions: 0, member_since: '2026-09-28T10:00:00Z' },
+  ].map((row) => (row.user_id === actor.id ? row : row));
+}
+
+function invitaciones() {
+  return [
+    { invitation_id: 'cdcdcdcd-cdcd-4dcd-8dcd-cdcdcdcdcdcd', invited_email: 'encargado@la-taba.test', invited_role: 'admin',
+      full_name: 'Encargado de prueba', created_at: '2026-09-28T09:00:00Z', expires_at: '2099-01-05T09:00:00Z', status: 'pending' },
+  ];
+}
+
+function estadoDeImpresion() {
+  return { agent: 'NOT_REGISTERED', devices: [], queue: { queued: 0, in_flight: 0, needs_review: 0, failed_24h: 0 },
+    settings: { auto_print_enabled: false }, generated_at: '2099-01-01T12:00:00Z' };
+}
+
 export function solicitudesDeAcceso() {
   return [{
     request_id: '355661df-ace2-4295-b844-ed7e24a827b5',

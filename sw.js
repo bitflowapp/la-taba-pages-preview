@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v128-checkout-saved-profile';
+const CACHE_NAME = 'la-taba-runtime-v129-store-opening';
 const ASSETS = [
   './',
   './index.html',
@@ -229,13 +229,19 @@ const ASSETS = [
   './js/business/business-panel-controller.js',
   './js/business/business-panel-render.js',
   './js/business/business-payments-console.js',
+  './js/business/business-photo-intake.js',
+  './js/business/business-print-agent.js',
   './js/business/business-product-onboarding.js',
   './js/business/business-sound-service.js',
+  './js/business/business-store-opening.js',
+  './js/business/business-team.js',
   './js/business/business-tray-patch.js',
   './js/business/business-view-model.js',
   './js/catalog/barcode-normalizer.js',
   './js/catalog/barcode-scanner-service.js',
   './js/core/fiscal-domain.js',
+  // La traducción de «qué falta para abrir»: la usa el Panel y la terminal.
+  './js/core/store-opening-readiness.js',
   /*
    * `service-hours.js` NO viene de la bandeja: entró con el trabajo de 24/7
    * multi-rubro, que hizo que `business-operations-config.js` lo importe, y

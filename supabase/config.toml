@@ -469,6 +469,11 @@ verify_jwt = false
 [functions.catalog-image-manager]
 verify_jwt = true
 
+# La persona invitada todavía no tiene cuenta: presenta el token de la
+# invitación y la función lo verifica contra la base (RPC sólo service_role).
+[functions.team-invitation]
+verify_jwt = false
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

@@ -76,6 +76,12 @@ export function normalizeOperationsConfig(payload = {}) {
     alcoholHoursEnforced: (source.alcohol_hours_enforced ?? source.alcoholHoursEnforced) === true,
     deliveryEnabled: (source.delivery_enabled ?? source.deliveryEnabled) === true,
     pickupEnabled: (source.pickup_enabled ?? source.pickupEnabled) === true,
+    // Los datos del local que ve el cliente. El WhatsApp lo confirma sólo el
+    // dueño o el encargado; `canManageContact` lo dice el servidor.
+    address: text(source.address, 180),
+    whatsappPhone: text(source.whatsapp_phone ?? source.whatsappPhone, 20).replace(/[^0-9]/g, ''),
+    whatsappVerified: (source.whatsapp_verified ?? source.whatsappVerified) === true,
+    canManageContact: (source.can_manage_contact ?? source.canManageContact) === true,
     deliveryFee: money(source.delivery_fee ?? source.deliveryFee),
     minimumSubtotal: money(source.minimum_delivery_subtotal ?? source.minimumSubtotal),
     maxRadiusMeters: money(source.delivery_max_radius_meters ?? source.maxRadiusMeters),
@@ -131,6 +137,21 @@ export function normalizeOperationsConfig(payload = {}) {
         after: row.after ?? null,
       }))),
   });
+}
+
+/**
+ * ¿El retiro tiene un horario distinto del que muestra la grilla? El Panel
+ * guarda UNA grilla para los dos canales; si en la base quedaron distintos
+ * (cargados antes de que existiera esa regla), se avisa antes de pisarlos.
+ */
+export function pickupHoursDiffer(config) {
+  const key = (channel) => config.hours
+    .filter((row) => row.channel === channel)
+    .map((row) => `${row.weekday}|${row.opensAt}|${row.closesAt}`)
+    .sort()
+    .join(',');
+  const pickup = key('pickup');
+  return pickup !== '' && pickup !== key('delivery');
 }
 
 /** La grilla que se dibuja: un día por fila, con sus tramos ordenados. */
@@ -259,7 +280,15 @@ const SCOPE_LABEL = Object.freeze({
   delivery_pricing: 'Envío y mínimo',
   enforcement: 'Exigencia',
   permission: 'Permiso',
+  payments: 'Cobros',
+  printing: 'Impresión',
+  fulfillment: 'Retiro y delivery',
+  contact: 'Datos del local',
+  open_state: 'Estado del local',
+  platform_verification: 'Verificación de plataforma',
 });
+
+const OPEN_STATE_LABEL = Object.freeze({ open: 'abierto', paused: 'pausado', closed: 'cerrado' });
 
 const ACTION_LABEL = Object.freeze({
   created: 'creó',
@@ -294,5 +323,11 @@ function describeChange(row) {
   if (row.scope === 'zone') return text(row.after?.name ?? row.before?.name, 80);
   if (row.scope === 'hours') return text(row.after?.channel ?? '', 16);
   if (row.scope === 'exception') return text(row.after?.on_date ?? row.before?.on_date ?? '', 10);
+  if (row.scope === 'fulfillment') {
+    const after = row.after || {};
+    return [after.pickup_enabled ? 'retiro' : '', after.delivery_enabled ? 'delivery' : ''].filter(Boolean).join(' y ') || 'sin retiro ni delivery';
+  }
+  if (row.scope === 'contact') return text(row.after?.address ?? '', 80);
+  if (row.scope === 'open_state') return OPEN_STATE_LABEL[row.after?.status] || '';
   return '';
 }

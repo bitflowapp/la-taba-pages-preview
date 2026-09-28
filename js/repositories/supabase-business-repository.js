@@ -98,6 +98,42 @@ export function createSupabaseBusinessRepository({ client, businessId }) {
     setCommercialSettingsDelegation: ({ userId, canManage }) => rpc('set_commercial_settings_delegation', {
       p_business_id: businessId, p_user_id: userId, p_can_manage: canManage,
     }),
+
+    // ── Preparar apertura ──────────────────────────────────────────────────
+    // La lista la arma la base; el Panel la dibuja. Mínimo 1 producto: es lo
+    // que hace falta para tomar un pedido (el canary puede pedir más desde la
+    // herramienta operativa).
+    openingReadiness: () => rpc('get_store_opening_readiness', { p_business_id: businessId, p_min_products: 1 }),
+    setFulfillment: ({ deliveryEnabled, pickupEnabled }) => rpc('set_business_fulfillment', {
+      p_business_id: businessId, p_delivery_enabled: deliveryEnabled === true, p_pickup_enabled: pickupEnabled === true,
+    }),
+    // Una sola grilla para retiro y delivery, en una transacción.
+    setOpeningHours: ({ hours }) => rpc('set_business_opening_hours', { p_business_id: businessId, p_hours: hours }),
+    setAddress: (address) => rpc('set_business_address', { p_business_id: businessId, p_address: address }),
+    setWhatsapp: ({ phone, confirmed }) => rpc('set_business_whatsapp_contact', {
+      p_business_id: businessId, p_whatsapp_phone: phone, p_verified: confirmed === true,
+    }),
+
+    // ── Equipo ─────────────────────────────────────────────────────────────
+    // Las RPC de identidad deciden quién puede qué; el Panel sólo presenta.
+    listMembers: () => rpc('identity_list_members', { p_business_id: businessId }),
+    listInvitations: () => rpc('identity_list_invitations', { p_business_id: businessId }),
+    createInvitation: ({ email, role, fullName, validFor = '7 days' }) => rpc('identity_create_invitation', {
+      p_business_id: businessId, p_email: email, p_role: role, p_full_name: fullName, p_valid_for: validFor,
+    }),
+    revokeInvitation: (invitationId) => rpc('identity_revoke_invitation', { p_invitation_id: invitationId }),
+    setMemberRole: ({ userId, role }) => rpc('identity_set_member_role', {
+      p_business_id: businessId, p_user_id: userId, p_role: role,
+    }),
+    setMemberActive: ({ userId, active, reason = null }) => rpc('identity_set_member_active', {
+      p_business_id: businessId, p_user_id: userId, p_is_active: active === true, p_reason: reason,
+    }),
+
+    // ── Impresora del local ────────────────────────────────────────────────
+    localPrintStatus: () => rpc('get_local_print_status', { p_business_id: businessId }),
+    createDevicePairing: (deviceName) => rpc('create_local_device_pairing', { p_business_id: businessId, p_device_name: deviceName }),
+    revokeDevice: ({ deviceId, reason }) => rpc('revoke_local_device', { p_device_id: deviceId, p_reason: reason }),
+    configurePrintSettings: (settings) => rpc('configure_business_print_settings', { p_business_id: businessId, p_settings: settings }),
   });
 }
 

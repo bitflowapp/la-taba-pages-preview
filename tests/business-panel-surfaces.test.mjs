@@ -75,7 +75,9 @@ test('la pantalla de pagos muestra los estados del día y frena la entrega cuand
   const markup = renderBusinessOperations('payments');
   assert.match(markup, /Aprobado sin pedido/);
   assert.match(markup, /No entregues hasta resolver este pago/);
-  assert.match(markup, /Mercado Pago conectado/);
+  assert.match(markup, /data-mp-seller-state="connected"/);
+  assert.match(markup, /<strong>Conectado<\/strong>/);
+  assert.doesNotMatch(markup, /998877/, 'sin identificadores de cuenta');
   assert.match(markup, /Devolver el dinero/);
   assert.deepEqual(containsForbiddenVocabulary(markup.replace(/<[^>]+>/g, ' ')), []);
   resetBusinessOperationsForTests();

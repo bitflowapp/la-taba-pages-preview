@@ -29,14 +29,24 @@ import {
 import { buildAlwaysOpenGrid } from '../core/service-hours.js';
 import { onlinePaymentsEnabled } from '../core/runtime-config.js';
 import { buildCommercialEdit, catalogPublicationReadiness, normalizeCatalogProduct, renderCatalogEditor } from './business-catalog-editor.js';
+import {
+  activateStoreOpening, handleStoreOpeningAction, markStoreOpeningStale, renderStoreOpeningSurface,
+  resetStoreOpening, storeOpeningVerdict,
+} from './business-store-opening.js';
+import { activateTeam, handleTeamAction, renderTeamSurface, resetTeam } from './business-team.js';
+import { activatePrintAgent, handlePrintAgentAction, renderPrintAgentSurface, resetPrintAgent } from './business-print-agent.js';
+import { handlePhotoIntakeAction, photoIntakeState, renderPhotoIntake, resetPhotoIntake } from './business-photo-intake.js';
 
 export const BUSINESS_OPERATION_VIEWS = Object.freeze([
-  'operation-center', 'day-open', 'orders', 'operations-config', 'payments', 'payments-setup', 'scanner', 'product-create',
+  'store-opening', 'operation-center', 'day-open', 'orders', 'operations-config', 'payments', 'payments-setup', 'scanner', 'product-create',
   'catalog', 'inventory-receive', 'inventory-adjust', 'stock-count', 'packing', 'pos',
-  'fiscal-status', 'fiscal-setup', 'fiscal-config', 'devices', 'team-access', 'day-close',
+  'fiscal-status', 'fiscal-setup', 'fiscal-config', 'devices', 'print-agent', 'team', 'team-access', 'day-close',
 ]);
 
 const VIEW_META = Object.freeze({
+  'store-opening': ['Preparar apertura', null],
+  team: ['Equipo', null],
+  'print-agent': ['Impresora del local', null],
   'operation-center': ['Centro de operación', null],
   'day-open': ['Abrir el negocio', null],
   orders: ['Pedidos', null],
@@ -62,6 +72,12 @@ const VIEW_META = Object.freeze({
 // Qué necesita cada pantalla para poder abrirse. Toda vista lleva permiso:
 // así un rol ajeno al negocio (por ejemplo un repartidor) no recibe ninguna.
 const VIEW_CAPABILITY = Object.freeze({
+  // Qué falta para abrir lo ve todo el equipo: cada paso dice quién lo completa.
+  'store-opening': 'orders.view',
+  // Sumar, quitar y cambiar de rol es conducción: dueño o encargado. La RPC
+  // además limita al encargado a equipo y repartidores.
+  team: 'team.manage',
+  'print-agent': 'printing.run',
   'operation-center': 'orders.view',
   'day-open': 'day.open',
   orders: 'orders.view',
@@ -170,6 +186,9 @@ let catalogLoadStarted = false;
 let catalogGeneration = 0;
 let catalogImageUploads = [];
 let catalogImageMessage = '';
+let pendingClose = false;
+let pendingReopenSku = '';
+let catalogAlcoholEnabled = false;
 
 export function configureBusinessOperations(next = {}) {
   stopOperationCenterRefresh();
@@ -214,6 +233,13 @@ export function configureBusinessOperations(next = {}) {
   catalogImageUploads = [];
   catalogImageMessage = '';
   catalogGeneration += 1;
+  pendingClose = false;
+  pendingReopenSku = '';
+  catalogAlcoholEnabled = false;
+  resetStoreOpening();
+  resetTeam();
+  resetPrintAgent();
+  resetPhotoIntake();
   return context;
 }
 
@@ -227,8 +253,14 @@ export function renderBusinessOperations(view) {
       busy,
       support: { isNative: context.desktopPlatform?.isNative, signedUpdate: signedUpdateStatus },
     }),
+    'store-opening': () => renderStoreOpeningSurface({ allowedViews: allowedBusinessOperationViews(context.role) }),
+    team: () => renderTeamSurface({
+      role: context.role, operatorId: context.operatorId, allowedViews: allowedBusinessOperationViews(context.role),
+    }),
+    'print-agent': () => renderPrintAgentSurface({ role: context.role, downloadUrl: context.localAgentDownloadUrl || '' }),
     'day-open': () => renderDayOpenSurface({
       opening: openingSignals, businessStatus: openingStatusRaw?.business_status, role: context.role, busy,
+      verdict: storeOpeningVerdict(), pendingClose,
     }),
     'operations-config': () => renderOperationsConfigSurface({
       config: operationsConfig, status: operationsConfigStatus, busy, draft: operationsConfigDraft,
@@ -270,6 +302,9 @@ export function renderBusinessOperations(view) {
       message: catalogStatus.message,
       imageMessage: catalogImageMessage,
       busy,
+      alcoholEnabled: catalogAlcoholEnabled,
+      pendingReopenSku,
+      photoIntake: renderPhotoIntake({ ...photoIntakeState(), busy }),
     }),
     'inventory-receive': () => renderInventory('purchase_receipt'),
     'inventory-adjust': () => renderInventory('manual_adjustment'),
@@ -395,6 +430,9 @@ export function activateBusinessOperations(view = currentView) {
       fiscalInitialRefreshStarted = true;
       void refreshFiscal();
     }
+    if (view === 'store-opening' || view === 'day-open') void activateStoreOpening(context);
+    if (view === 'team') void activateTeam(context);
+    if (view === 'print-agent') void activatePrintAgent(context);
     if (view === 'operations-config' && !operationsConfigLoadStarted) {
       operationsConfigLoadStarted = true;
       void refreshOperationsConfig();
@@ -526,6 +564,15 @@ export async function handleBusinessOperationsAction(target) {
   if (catalogImageReject) return reviewCatalogImage(catalogImageReject, false);
   const catalogPublication = target.closest('[data-catalog-publication]');
   if (catalogPublication) return setCatalogPublication(catalogPublication);
+  const verifyPublish = target.closest('[data-catalog-verify-publish]');
+  if (verifyPublish) return verifyAndPublishCatalogProduct(verifyPublish);
+  if (target.closest('[data-catalog-reopen-cancel]')) {
+    pendingReopenSku = '';
+    context.onChange();
+    return result(true, 'El producto sigue como estaba.');
+  }
+  const reopen = target.closest('[data-catalog-reopen]');
+  if (reopen) return reopenCatalogProduct(reopen);
 
   if (target.closest('[data-payments-refresh]')) return refreshPaymentsAction();
   const manualConfirm = target.closest('[data-manual-payment-confirm]');
@@ -556,6 +603,12 @@ export async function handleBusinessOperationsAction(target) {
   if (target.closest('[data-opening-refresh]')) {
     await refreshOpeningStatus();
     return result(true, 'Revisión de apertura actualizada.');
+  }
+  if (target.closest('[data-business-close-cancel]')) {
+    pendingClose = false;
+    feedback = 'El negocio sigue como estaba.';
+    context.onChange();
+    return result(true, feedback);
   }
   const openState = target.closest('[data-business-open-state]');
   if (openState) return setBusinessOpenState(openState);
@@ -649,6 +702,9 @@ export async function handleBusinessOperationsAction(target) {
   if (target.closest('[data-operations-zone-add]')) return addOperationsZone(target);
   if (target.closest('[data-operations-pricing-save]')) return saveOperationsPricing(target);
   if (target.closest('[data-operations-enforcement-save]')) return saveOperationsEnforcement(target);
+  if (target.closest('[data-operations-fulfillment-save]')) return saveOperationsFulfillment(target);
+  if (target.closest('[data-operations-address-save]')) return saveOperationsAddress(target);
+  if (target.closest('[data-operations-whatsapp-save]')) return saveOperationsWhatsapp(target);
   if (target.closest('[data-local-backup-create]')) return createLocalBackup();
   if (target.closest('[data-support-diagnostic-export]')) return exportSupportDiagnostic();
   if (target.closest('[data-support-export-folder]')) return openSupportExportFolder();
@@ -662,6 +718,20 @@ export async function handleBusinessOperationsAction(target) {
   if (target.closest('[data-daily-reconciliation-prepare]')) return prepareDailyReconciliation(target);
   const closeDaily = target.closest('[data-daily-reconciliation-close]');
   if (closeDaily) return closeDailyReconciliation(closeDaily);
+
+  // Las superficies con estado propio contestan si el clic es suyo.
+  const moduleResult = await handleStoreOpeningAction(target, context)
+    || await handleTeamAction(target, context)
+    || await handlePrintAgentAction(target, context)
+    || await handlePhotoIntakeAction(target, {
+      context,
+      products: () => catalogProducts,
+      uploads: () => catalogImageUploads,
+      isBusy: () => busy,
+      setBusy: (value) => { busy = value; },
+      refreshCatalog: refreshCatalogProducts,
+    });
+  if (moduleResult) return moduleResult;
   return { handled: false };
 }
 
@@ -965,6 +1035,13 @@ async function refreshCatalogProducts() {
   if (response?.ok) {
     catalogProducts = Array.isArray(response.data) ? response.data : [];
     catalogStatus = { phase: 'ready', message: '' };
+    // La licencia de alcohol decide si un producto con alcohol puede
+    // publicarse; la trae la configuración operativa (la columna no se lee).
+    try {
+      const config = await context.getOperationsConfig();
+      catalogAlcoholEnabled = Boolean(config?.ok && config.data?.alcohol_sales_enabled === true
+        && config.data?.alcohol_policy_complete === true);
+    } catch (_) { catalogAlcoholEnabled = false; }
     await refreshCatalogImageUploads();
   } else {
     catalogStatus = { phase: 'error', message: humanizeFailure(response?.message, 'No se pudo cargar el catálogo.') };
@@ -1170,12 +1247,86 @@ async function setCatalogPublication(button) {
   finally { busy = false; }
   if (response?.ok) {
     await refreshCatalogProducts();
-    feedback = publish ? 'Producto publicado y disponible.' : 'Producto oculto como borrador.';
+    markStoreOpeningStale();
+    feedback = publish ? 'Producto publicado y disponible.' : 'Producto oculto de la tienda.';
   } else {
     feedback = humanizeCommercialPublicationFailure(response?.message, { publish });
   }
   context.onChange();
   return result(Boolean(response?.ok), feedback);
+}
+
+/*
+ * PRIMERA PUBLICACIÓN DESDE EL PANEL.
+ *
+ * Hasta acá la ficha sólo se verificaba con la planilla y la terminal. Es el
+ * MISMO contrato: `apply_commercial_catalog_batch` con publish = true verifica
+ * la ficha y publica en una transacción, y el servidor vuelve a exigir precio,
+ * stock, foto válida y la licencia de alcohol.
+ */
+async function verifyAndPublishCatalogProduct(button) {
+  const guard = requireCapability('products.publish');
+  if (!guard.ok) return guard.result;
+  if (busy) return result(false, 'Ya hay una actualización en curso.');
+  const sku = button.dataset.catalogVerifyPublish;
+  const product = catalogProducts.find((item) => item.sku === sku);
+  if (!product) return result(false, 'El producto cambió. Actualizá el catálogo.');
+  const readiness = catalogPublicationReadiness(normalizeCatalogProduct(product), {
+    imageUploads: catalogImageUploads, alcoholEnabled: catalogAlcoholEnabled,
+  });
+  if (!readiness.ready || readiness.mode !== 'verify') return result(false, readiness.reason || 'Este producto ya está verificado.');
+  busy = true;
+  let response;
+  try { response = await context.saveCommercialBatch([{ sku, publish: true }]); }
+  catch (error) { response = { ok: false, message: error?.message || 'Error de conexión.' }; }
+  finally { busy = false; }
+  if (response?.ok) {
+    await refreshCatalogProducts();
+    markStoreOpeningStale();
+    feedback = 'Ficha verificada y producto publicado.';
+  } else {
+    feedback = humanizeCommercialPublicationFailure(response?.message, { publish: true });
+  }
+  context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+/*
+ * VOLVER A BORRADOR PARA CAMBIAR LA FOTO O LA FICHA.
+ *
+ * Una ficha verificada no acepta foto nueva (la función de imágenes y la base
+ * lo impiden, a propósito). `unpublish_catalog_product` la deja oculta y sin
+ * verificar; después se sube la foto, se aprueba y «Verificar ficha y publicar».
+ */
+async function reopenCatalogProduct(button) {
+  if (!['owner', 'admin'].includes(String(context.role || '').toLowerCase())) {
+    return result(false, 'Volver un producto a borrador lo hace el dueño o el encargado.');
+  }
+  const sku = button.dataset.catalogReopen;
+  const product = catalogProducts.find((item) => item.sku === sku);
+  if (!product?.external_id) return result(false, 'El producto cambió. Actualizá el catálogo.');
+  if (button.dataset.confirmed !== 'true') {
+    pendingReopenSku = sku;
+    context.onChange();
+    return result(true, 'Confirmá que querés volverlo a borrador.');
+  }
+  if (busy) return result(false, 'Ya hay una actualización en curso.');
+  busy = true;
+  let response;
+  try { response = await context.unpublishCatalogProduct(product.external_id); }
+  catch (error) { response = { ok: false, message: error?.message || 'Error de conexión.' }; }
+  finally { busy = false; }
+  pendingReopenSku = '';
+  const ok = Boolean(response?.ok && response.data === true);
+  if (ok) {
+    await refreshCatalogProducts();
+    markStoreOpeningStale();
+  }
+  feedback = ok
+    ? 'Producto en borrador: ya podés cambiarle la foto o los datos. Después, «Verificar ficha y publicar».'
+    : humanizeFailure(response?.message, 'No se pudo volver el producto a borrador.');
+  context.onChange();
+  return result(ok, feedback);
 }
 
 async function confirmCommercialPublication(button, { confirmed = false } = {}) {
@@ -2213,8 +2364,9 @@ async function saveOperationsHours() {
     return result(false, validation.errors[0]);
   }
   busy = true;
-  const response = await context.setServiceHours({
-    channel: 'delivery',
+  // Una grilla para retiro y delivery, en una transacción: `business_is_open`
+  // evalúa el canal de cada pedido y un canal sin franjas quedaba cerrado.
+  const response = await context.setOpeningHours({
     hours: validation.slots.map((slot) => ({
       weekday: slot.weekday, opens_at: slot.opensAt, closes_at: slot.closesAt,
     })),
@@ -2223,7 +2375,8 @@ async function saveOperationsHours() {
   if (response?.ok) {
     operationsConfigDraft = { slots: null, hoursErrors: [], zoneErrors: [], enforcementError: '' };
     await refreshOperationsConfig();
-    feedback = 'Horarios guardados.';
+    markStoreOpeningStale();
+    feedback = 'Horarios guardados para retiro y delivery.';
   } else {
     feedback = humanizeFailure(response?.message, 'El servidor no acepto los horarios.');
     operationsConfigDraft = { ...operationsConfigDraft, hoursErrors: [feedback] };
@@ -2266,6 +2419,7 @@ async function addOperationsZone(target) {
   if (response?.ok) {
     operationsConfigDraft = { ...operationsConfigDraft, zoneErrors: [] };
     await refreshOperationsConfig();
+    markStoreOpeningStale();
     feedback = 'Zona agregada.';
   } else {
     feedback = humanizeFailure(response?.message, 'El servidor no acepto la zona.');
@@ -2299,10 +2453,73 @@ async function saveOperationsPricing(target) {
     maxRadiusMeters: operationsConfig?.maxRadiusMeters ?? null,
   });
   busy = false;
-  if (response?.ok) await refreshOperationsConfig();
+  if (response?.ok) { await refreshOperationsConfig(); markStoreOpeningStale(); }
   feedback = response?.ok
     ? 'Envio y minimo guardados.'
     : humanizeFailure(response?.message, 'El servidor no acepto el envio y el minimo.');
+  context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+async function saveOperationsFulfillment(target) {
+  const root = target.closest('[data-business-ops-center]');
+  const pickupEnabled = Boolean(root?.querySelector('[name="fulfillmentPickup"]')?.checked);
+  const deliveryEnabled = Boolean(root?.querySelector('[name="fulfillmentDelivery"]')?.checked);
+  if (busy) return result(false, 'Ya hay algo en curso.');
+  busy = true;
+  const response = await context.setFulfillment({ deliveryEnabled, pickupEnabled });
+  busy = false;
+  if (response?.ok) { await refreshOperationsConfig(); markStoreOpeningStale(); }
+  feedback = response?.ok
+    ? (deliveryEnabled && pickupEnabled ? 'Listo: delivery y retiro en el local.'
+      : deliveryEnabled ? 'Listo: sólo delivery.'
+        : pickupEnabled ? 'Listo: sólo retiro en el local.'
+          : 'Listo: sin delivery ni retiro. La tienda no toma pedidos.')
+    : humanizeFailure(response?.message, 'El servidor no aceptó el cambio.');
+  context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+async function saveOperationsAddress(target) {
+  const root = target.closest('[data-business-ops-center]');
+  const address = String(root?.querySelector('[name="storeAddress"]')?.value || '').replace(/\s+/g, ' ').trim();
+  if (address.length < 5) return result(false, 'Escribí la dirección del local: calle, número y ciudad.');
+  if (busy) return result(false, 'Ya hay algo en curso.');
+  busy = true;
+  const response = await context.setBusinessAddress(address);
+  busy = false;
+  if (response?.ok) { await refreshOperationsConfig(); markStoreOpeningStale(); }
+  feedback = response?.ok ? 'Dirección guardada. La tienda ya la muestra.' : humanizeFailure(response?.message, 'El servidor no aceptó la dirección.');
+  context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+// `set_business_whatsapp_contact` contesta en inglés: acá se traduce a lo que
+// la persona tiene que hacer.
+export function whatsappFailureMessage(message) {
+  const raw = String(message || '');
+  if (/8 and 15 digits/i.test(raw)) return 'El WhatsApp tiene que tener entre 8 y 15 números, con código de país y de área.';
+  if (/owner\/admin|authorize/i.test(raw)) return 'El WhatsApp del local lo confirma el dueño o el encargado.';
+  if (/required before verification/i.test(raw)) return 'Escribí el número antes de confirmarlo.';
+  return humanizeFailure(raw, 'El servidor no aceptó el WhatsApp.');
+}
+
+async function saveOperationsWhatsapp(target) {
+  const root = target.closest('[data-business-ops-center]');
+  const phone = String(root?.querySelector('[name="storeWhatsapp"]')?.value || '').replace(/[^0-9]/g, '');
+  const confirmed = Boolean(root?.querySelector('[name="storeWhatsappConfirm"]')?.checked);
+  if (phone && (phone.length < 8 || phone.length > 15)) {
+    return result(false, 'El WhatsApp tiene que tener entre 8 y 15 números, con código de país y de área.');
+  }
+  if (!phone && confirmed) return result(false, 'Escribí el número antes de confirmarlo.');
+  if (busy) return result(false, 'Ya hay algo en curso.');
+  busy = true;
+  const response = await context.setBusinessWhatsapp({ phone, confirmed });
+  busy = false;
+  if (response?.ok) { await refreshOperationsConfig(); markStoreOpeningStale(); }
+  feedback = response?.ok
+    ? (!phone ? 'WhatsApp borrado: la tienda deja de mostrarlo.' : confirmed ? 'WhatsApp confirmado: la tienda ya lo muestra.' : 'WhatsApp guardado sin confirmar: la tienda todavía no lo muestra.')
+    : whatsappFailureMessage(response?.message);
   context.onChange();
   return result(Boolean(response?.ok), feedback);
 }
@@ -2320,6 +2537,7 @@ async function saveOperationsEnforcement(target) {
   if (response?.ok) {
     operationsConfigDraft = { ...operationsConfigDraft, enforcementError: '' };
     await refreshOperationsConfig();
+    markStoreOpeningStale();
     feedback = 'Exigencia guardada.';
   } else {
     feedback = humanizeFailure(response?.message, 'El servidor no acepto el cambio de exigencia.');
@@ -2766,14 +2984,38 @@ async function setBusinessOpenState(button) {
   if (!guard.ok) return guard.result;
   if (busy) return result(false, 'Ya hay algo en curso.');
   const next = String(button.dataset.businessOpenState || '');
+  // Cerrar es del dueño o del encargado, y se confirma: deja de vender hasta
+  // que alguien vuelva a abrir. Pausar y abrir son operación del día.
+  if (next === 'closed') {
+    const closeGuard = requireCapability('day.close');
+    if (!closeGuard.ok) return closeGuard.result;
+    if (button.dataset.confirmed !== 'true') {
+      pendingClose = true;
+      feedback = '';
+      context.onChange();
+      return result(true, 'Confirmá si querés cerrar el negocio.');
+    }
+  }
+  pendingClose = false;
+  const previous = businessOpeningStatus();
   busy = true;
   const response = await context.setBusinessOpenState(next);
   busy = false;
+  const verdict = storeOpeningVerdict();
   feedback = response?.ok
-    ? next === 'open' ? 'Negocio abierto. Ya podés recibir pedidos.' : 'Pedidos pausados. La web deja de tomar nuevos.'
+    ? next === 'open'
+      ? (verdict && !verdict.canOpen
+        ? 'El local quedó abierto, pero la tienda todavía no toma pedidos: revisá «Preparar apertura».'
+        : previous === 'paused' ? 'Pedidos reanudados. La web vuelve a tomar pedidos.' : 'Negocio abierto. Ya podés recibir pedidos.')
+      : next === 'paused'
+        ? 'Pedidos pausados. La web deja de tomar nuevos.'
+        : 'Negocio cerrado. La web no toma pedidos hasta que lo vuelvas a abrir.'
     : humanizeFailure(response?.message, 'No se pudo cambiar el estado del negocio.');
-  if (response?.ok) await refreshOpeningStatus();
-  else context.onChange();
+  if (response?.ok) {
+    markStoreOpeningStale();
+    await refreshOpeningStatus();
+    void activateStoreOpening(context);
+  } else context.onChange();
   return result(Boolean(response?.ok), feedback);
 }
 
@@ -3007,6 +3249,23 @@ function defaultContext() {
     getArcaActivation: async () => ({ ok: false, message: 'El estado de facturación no está disponible.' }),
     authorizeArcaHomologation: async () => ({ ok: false, message: 'La autorización fiscal no está disponible.' }),
     getOpeningStatus: async () => ({ ok: false, message: 'La revisión de apertura no está disponible.' }),
+    getStoreOpeningReadiness: async () => ({ ok: false, message: 'La preparación de la apertura no está disponible.' }),
+    setOpeningHours: async () => ({ ok: false, message: 'La configuración operativa no está disponible.' }),
+    setFulfillment: async () => ({ ok: false, message: 'La configuración operativa no está disponible.' }),
+    setBusinessAddress: async () => ({ ok: false, message: 'La configuración operativa no está disponible.' }),
+    setBusinessWhatsapp: async () => ({ ok: false, message: 'La configuración operativa no está disponible.' }),
+    listTeamMembers: async () => ({ ok: false, message: 'El equipo no está disponible.' }),
+    listTeamInvitations: async () => ({ ok: false, message: 'El equipo no está disponible.' }),
+    createTeamInvitation: async () => ({ ok: false, message: 'Las invitaciones no están disponibles.' }),
+    revokeTeamInvitation: async () => ({ ok: false, message: 'Las invitaciones no están disponibles.' }),
+    setTeamMemberRole: async () => ({ ok: false, message: 'El equipo no está disponible.' }),
+    setTeamMemberActive: async () => ({ ok: false, message: 'El equipo no está disponible.' }),
+    getLocalPrintStatus: async () => ({ ok: false, message: 'El estado de la impresora no está disponible.' }),
+    createLocalDevicePairing: async () => ({ ok: false, message: 'La vinculación de la impresora no está disponible.' }),
+    revokeLocalDevice: async () => ({ ok: false, message: 'La vinculación de la impresora no está disponible.' }),
+    configurePrintSettings: async () => ({ ok: false, message: 'La impresión no está disponible.' }),
+    unpublishCatalogProduct: async () => ({ ok: false, message: 'Repositorio no disponible.' }),
+    localAgentDownloadUrl: '',
     listAccessRequests: async () => ({ ok: false, message: 'Las solicitudes de acceso no están disponibles.' }),
     reviewAccessRequest: async () => ({ ok: false, message: 'Las solicitudes de acceso no están disponibles.' }),
     setBusinessOpenState: async () => ({ ok: false, message: 'No se puede cambiar el estado del negocio.' }),

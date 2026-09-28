@@ -8,7 +8,7 @@ export function normalizeCatalogProduct(row = {}) {
   const supabaseUrl = resolveRuntimeConfig().repository?.supabaseUrl || '';
   return {
     id: String(row.id || ''),
-    sku: String(row.sku || ''), name: String(row.name || ''), brand: String(row.brand || ''),
+    sku: String(row.sku || ''), externalId: String(row.external_id || ''), name: String(row.name || ''), brand: String(row.brand || ''),
     variant: String(row.variant || ''), category: String(row.category || ''),
     packaging: String(row.packaging_type || ''), capacity: String(row.capacity || ''),
     price: Number(row.price || 0), priceStatus: String(row.price_status || 'pending'),
@@ -60,8 +60,19 @@ export function catalogImageAttributionStatus(product, imageUploads = []) {
   return { required, ready: !required || Boolean(imageAttributionFor(product)) };
 }
 
-export function catalogPublicationReadiness(product, { imageUploads = [] } = {}) {
-  if (product.available) return { ready: true, reason: '' };
+/**
+ * ¿Se puede publicar desde el Panel, y cómo?
+ *
+ *   mode 'publish' → ficha ya verificada: `set_commercial_product_publication`.
+ *   mode 'verify'  → primera publicación (o después de cambiar la foto): la
+ *                    ficha se verifica y se publica en el mismo paso, con el
+ *                    MISMO contrato que la planilla (`apply_commercial_catalog_batch`
+ *                    con publish = true). Ya no hace falta la terminal.
+ *
+ * El servidor vuelve a exigir todo: precio, stock, foto válida y licencia de alcohol.
+ */
+export function catalogPublicationReadiness(product, { imageUploads = [], alcoholEnabled = false } = {}) {
+  if (product.available) return { ready: true, reason: '', mode: 'published' };
   if (product.catalogOrigin !== 'commercial' || !product.active) return { ready: false, reason: 'Producto inactivo o fuera del catálogo comercial.' };
   if (product.priceStatus !== 'confirmed' || product.price <= 0) return { ready: false, reason: 'Falta confirmar el precio.' };
   if (product.stock === null) return { ready: false, reason: 'Falta contar el stock.' };
@@ -70,18 +81,19 @@ export function catalogPublicationReadiness(product, { imageUploads = [] } = {})
   if (!catalogImageAttributionStatus(product, imageUploads).ready) {
     return { ready: false, reason: 'La foto tiene licencia CC y la tienda todavía no muestra su crédito.' };
   }
-  if (!product.verified) return { ready: false, reason: 'Falta verificar la ficha comercial.' };
-  if (product.alcoholic) return { ready: false, reason: 'La venta de alcohol requiere habilitación comercial.' };
-  return { ready: true, reason: '' };
+  if (product.alcoholic && !alcoholEnabled) return { ready: false, reason: 'La venta de alcohol requiere habilitación comercial.' };
+  if (!product.verified) return { ready: true, reason: '', mode: 'verify' };
+  return { ready: true, reason: '', mode: 'publish' };
 }
 
 export function renderCatalogEditor({
   products = [], imageUploads = [], canManageImages = false,
   phase = 'idle', message = '', imageMessage = '', busy = false,
+  alcoholEnabled = false, pendingReopenSku = '', photoIntake = '',
 } = {}) {
   const normalized = products.map(normalizeCatalogProduct);
   const rows = normalized.map((product) => {
-    const readiness = catalogPublicationReadiness(product, { imageUploads });
+    const readiness = catalogPublicationReadiness(product, { imageUploads, alcoholEnabled });
     const priceConfirmed = product.priceStatus === 'confirmed' && product.price > 0;
     const rowMarkup = `<article class="business-catalog-row" data-catalog-row="${escapeHtml(product.sku)}">
       <div class="business-catalog-identity"><h3>${escapeHtml(product.name)}</h3>
@@ -97,10 +109,20 @@ export function renderCatalogEditor({
         <button class="secondary-button compact" type="button" data-catalog-save="${escapeHtml(product.sku)}" ${busy ? 'disabled' : ''}>Guardar</button>
       </div>
       <div class="business-catalog-publication">${product.available
-        ? `<button class="secondary-button compact" type="button" data-catalog-publication="${escapeHtml(product.sku)}" data-publish="false" ${busy ? 'disabled' : ''}>Pasar a borrador</button>`
-        : readiness.ready
-          ? `<button class="primary-button compact" type="button" data-catalog-publication="${escapeHtml(product.sku)}" data-publish="true" ${busy ? 'disabled' : ''}>Publicar y habilitar</button>`
-          : `<small>${escapeHtml(readiness.reason)}</small>`}</div>
+        ? `<button class="secondary-button compact" type="button" data-catalog-publication="${escapeHtml(product.sku)}" data-publish="false" ${busy ? 'disabled' : ''}>Ocultar de la tienda</button>`
+        : readiness.ready && readiness.mode === 'verify'
+          ? `<button class="primary-button compact" type="button" data-catalog-verify-publish="${escapeHtml(product.sku)}" ${busy ? 'disabled' : ''}>Verificar ficha y publicar</button>
+             <small>Revisá nombre, presentación, precio y foto: al publicar quedan como la ficha oficial del producto.</small>`
+          : readiness.ready
+            ? `<button class="primary-button compact" type="button" data-catalog-publication="${escapeHtml(product.sku)}" data-publish="true" ${busy ? 'disabled' : ''}>Publicar y habilitar</button>`
+            : `<small>${escapeHtml(readiness.reason)}</small>`}
+        ${canManageImages && (product.verified || product.available) && product.externalId
+          ? (pendingReopenSku === product.sku
+            ? `<p class="production-intake-error" role="alert">Vuelve a borrador: deja de verse en la tienda hasta que lo verifiques y publiques de nuevo.</p>
+               <button class="ghost-button compact" type="button" data-catalog-reopen="${escapeHtml(product.sku)}" data-confirmed="true" ${busy ? 'disabled' : ''}>Sí, volver a borrador</button>
+               <button class="text-button" type="button" data-catalog-reopen-cancel>No</button>`
+            : `<button class="text-button" type="button" data-catalog-reopen="${escapeHtml(product.sku)}" ${busy ? 'disabled' : ''}>Cambiar foto o ficha (vuelve a borrador)</button>`)
+          : ''}</div>
     </article>`;
     const imageManager = canManageImages
       ? renderCatalogImageManager(product, imageUploads, { busy, imageMessage })
@@ -115,6 +137,7 @@ export function renderCatalogEditor({
       <button class="primary-button compact" type="button" data-catalog-save-all ${busy || !normalized.length ? 'disabled' : ''}>Guardar cambios de la lista</button></div>
     ${phase === 'loading' ? '<p role="status">Cargando productos…</p>' : ''}
     ${message ? `<p role="status">${escapeHtml(message)}</p>` : ''}
+    ${canManageImages ? photoIntake : ''}
     <div class="business-catalog-list">${rows || (phase === 'ready' ? '<p>No hay productos para este negocio.</p>' : '')}</div>
   </section>`;
 }
@@ -187,7 +210,10 @@ function renderCatalogImageManager(product, imageUploads, { busy = false, imageM
     + '<summary><strong>Imagen</strong><span class="status-pill ' + (product.hasApprovedImage ? 'success' : 'warning') + '">'
     + (product.hasApprovedImage ? 'Aprobada' : 'Pendiente') + '</span></summary>'
     + '<div class="business-catalog-image-body">' + active + attributionNote
-    + '<form data-catalog-image-form="' + escapeHtml(product.id) + '" novalidate>'
+    + (product.verified || product.available
+      ? '<p class="form-hint">Para cambiar la foto, primero volvé el producto a borrador con «Cambiar foto o ficha».</p>'
+      : '')
+    + '<form data-catalog-image-form="' + escapeHtml(product.id) + '" novalidate' + (product.verified || product.available ? ' hidden' : '') + '>'
     + '<label>Archivo de imagen<input type="file" data-catalog-image-file accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" ' + (busy ? 'disabled' : '') + '></label>'
     + '<label>Tipo de fuente<select data-catalog-image-source-type required ' + (busy ? 'disabled' : '') + '>'
     + '<option value="">Seleccioná fuente</option><option value="brand">Marca</option>'

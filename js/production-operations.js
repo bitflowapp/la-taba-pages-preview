@@ -1540,6 +1540,25 @@ async function configureBusinessRuntime(result) {
     prepareDailyReconciliation: (input) => operationsRepository.prepareDailyReconciliation(input),
     closeDailyReconciliation: (input) => operationsRepository.closeDailyReconciliation(input),
     getOpeningStatus: () => operationsRepository.getOpeningStatus(),
+    // Preparar apertura, entrega, datos del local, equipo e impresora: todo por
+    // RPC; el servidor autoriza y valida.
+    getStoreOpeningReadiness: () => businessConfigRepository.openingReadiness(),
+    setOpeningHours: (input) => businessConfigRepository.setOpeningHours(input),
+    setFulfillment: (input) => businessConfigRepository.setFulfillment(input),
+    setBusinessAddress: (address) => businessConfigRepository.setAddress(address),
+    setBusinessWhatsapp: (input) => businessConfigRepository.setWhatsapp(input),
+    listTeamMembers: () => businessConfigRepository.listMembers(),
+    listTeamInvitations: () => businessConfigRepository.listInvitations(),
+    createTeamInvitation: (input) => businessConfigRepository.createInvitation(input),
+    revokeTeamInvitation: (invitationId) => businessConfigRepository.revokeInvitation(invitationId),
+    setTeamMemberRole: (input) => businessConfigRepository.setMemberRole(input),
+    setTeamMemberActive: (input) => businessConfigRepository.setMemberActive(input),
+    getLocalPrintStatus: () => businessConfigRepository.localPrintStatus(),
+    createLocalDevicePairing: (deviceName) => businessConfigRepository.createDevicePairing(deviceName),
+    revokeLocalDevice: (input) => businessConfigRepository.revokeDevice(input),
+    configurePrintSettings: (settings) => businessConfigRepository.configurePrintSettings(settings),
+    unpublishCatalogProduct: (externalId) => inventoryRepository.unpublishCatalogProduct(externalId),
+    localAgentDownloadUrl: String(runtime.localAgentDownloadUrl || ''),
     getFinishedToday: () => operationsRepository.getFinishedToday(),
     setBusinessOpenState: (status) => operationsRepository.setOpenState(status),
     listAccessRequests: (status) => businessConfigRepository.listAccessRequests(status),
@@ -2466,10 +2485,10 @@ function restaurarFoco(workspace, foco) {
  * persona esperando una decision.
  */
 export const BUSINESS_VIEW_ORDER = Object.freeze([
-  'day-open', 'operation-center', 'orders', 'team-access', 'payments', 'packing', 'pos', 'scanner',
+  'store-opening', 'day-open', 'operation-center', 'orders', 'team-access', 'team', 'payments', 'packing', 'pos', 'scanner',
   'catalog', 'product-create', 'inventory-receive', 'inventory-adjust', 'stock-count',
   'fiscal-status', 'fiscal-setup', 'fiscal-config', 'operations-config', 'payments-setup',
-  'devices', 'day-close',
+  'devices', 'print-agent', 'day-close',
 ]);
 
 /*
@@ -2482,6 +2501,7 @@ const BUSINESS_VIEW_SHORT_LABELS = Object.freeze({
   'day-open': 'Abrir', 'operation-center': 'Qué pasa', orders: 'Pedidos', payments: 'Pagos',
   'catalog': 'Catálogo', 'product-create': 'Nuevo producto', 'inventory-receive': 'Recepción',
   'team-access': 'Solicitudes', 'day-close': 'Cerrar',
+  'store-opening': 'Apertura', team: 'Equipo', 'print-agent': 'Impresora',
 });
 
 /**

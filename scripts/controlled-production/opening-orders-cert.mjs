@@ -83,6 +83,7 @@ try {
 
   let pickup;
   let transfer;
+  let deliveryCash;
   const qaWindow = await openQaWindow(owner, BUSINESS, { log });
   try {
     const created = await customer.rpc('create_order_with_items', { payload: pickupPayload() });
@@ -102,6 +103,10 @@ try {
     transfer = rowOf(coordinated.data);
     if (transfer?.id) orders.push(transfer.id);
     check('COORDINATE_ORDER_CREATED', !coordinated.error && Boolean(transfer?.id), coordinated.error?.message);
+    const cashAtDoor = await customer.rpc('create_order_with_items', { payload: deliveryPayload('cash') });
+    deliveryCash = rowOf(cashAtDoor.data);
+    if (deliveryCash?.id) orders.push(deliveryCash.id);
+    check('DELIVERY_CASH_ORDER_CREATED', !cashAtDoor.error && Boolean(deliveryCash?.id), cashAtDoor.error?.message);
   } finally {
     await qaWindow.close();
   }
@@ -131,6 +136,18 @@ try {
     check('COORDINATE_CONFIRMED_AS_TRANSFER', !paid.error && afterPaid.manual_payment_status === 'confirmed'
       && afterPaid.manual_payment_method === 'transfer', paid.error?.code);
     reports.transfer = transfer.public_code;
+  }
+
+  if (deliveryCash?.id) {
+    const accepted = await step(deliveryCash.id, 'accepted', (await readOrder(deliveryCash.id)).revision);
+    check('DELIVERY_CASH_ACCEPTED', !accepted.error, accepted.error?.code);
+    const asTransfer = await confirmPayment(deliveryCash.id, (await readOrder(deliveryCash.id)).revision, 'transfer');
+    check('DELIVERY_CASH_NOT_CONFIRMABLE_AS_TRANSFER', Boolean(asTransfer.error), asTransfer.error?.code);
+    const cash = await confirmPayment(deliveryCash.id, (await readOrder(deliveryCash.id)).revision, 'cash');
+    const afterCash = await readOrder(deliveryCash.id);
+    check('DELIVERY_CASH_CONFIRMED', !cash.error && afterCash.manual_payment_status === 'confirmed'
+      && afterCash.manual_payment_method === 'cash' && afterCash.delivery_mode === 'delivery', cash.error?.code);
+    reports.deliveryCash = deliveryCash.public_code;
   }
 } finally {
   const cleanup = [];

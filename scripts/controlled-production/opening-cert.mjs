@@ -239,6 +239,26 @@ try {
     }
   }
 
+  // Revocar, y los límites de quién invita a dónde.
+  const revokedEmail = `opening-cert-revoke-${Date.now()}@qa.lataba.invalid`;
+  const toRevoke = await owner.rpc('identity_create_invitation', { p_business_id: QA_CONTROL_BUSINESS, p_email: revokedEmail,
+    p_role: 'staff', p_full_name: 'Empleado Revocado', p_valid_for: '1 hour' });
+  const revoked = await owner.rpc('identity_revoke_invitation', { p_invitation_id: toRevoke.data?.invitation_id });
+  const afterRevoke = await invite({ action: 'inspect', token: toRevoke.data?.token });
+  check('INVITE_REVOKED_IS_DEAD', revoked.data?.ok === true && afterRevoke.ok !== true && ['invalid_token'].includes(afterRevoke.code),
+    afterRevoke.code);
+  const foreignInvite = await owner.rpc('identity_create_invitation', { p_business_id: REAL_BUSINESS,
+    p_email: `opening-cert-foreign-${Date.now()}@qa.lataba.invalid`, p_role: 'rider', p_full_name: 'Ajeno', p_valid_for: '1 hour' });
+  check('INVITE_OTHER_BUSINESS_DENIED', Boolean(foreignInvite.error) || foreignInvite.data?.ok !== true,
+    foreignInvite.error?.code || foreignInvite.data?.code);
+  const staffInvite = await staff.rpc('identity_create_invitation', { p_business_id: QA_CONTROL_BUSINESS,
+    p_email: `opening-cert-staff-${Date.now()}@qa.lataba.invalid`, p_role: 'rider', p_full_name: 'Por Empleado', p_valid_for: '1 hour' });
+  check('INVITE_STAFF_CANNOT_INVITE', Boolean(staffInvite.error) || staffInvite.data?.ok !== true,
+    staffInvite.error?.code || staffInvite.data?.code);
+  for (const stray of [foreignInvite, staffInvite]) {
+    if (stray.data?.invitation_id) await admin.from('identity_invitations').update({ revoked_at: new Date().toISOString() }).eq('id', stray.data.invitation_id);
+  }
+
   // ── 5 · Catálogo después de la primera publicación ────────────────────────
   const productsBefore = await one(admin.from('products').select('sku,external_id,price,price_status,stock,available,merchant_available,is_verified')
     .eq('business_id', QA_CONTROL_BUSINESS).order('sku'));

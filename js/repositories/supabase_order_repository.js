@@ -1505,6 +1505,17 @@ export function createSupabaseOrderRepository({
     async getMercadoPagoCheckoutAvailability() {
       return getMercadoPagoCheckoutAvailability();
     },
+    // La disponibilidad de Mercado Pago se pregunta CON la sesión del cliente: la
+    // RPC es sólo de `authenticated` por contrato, y sin sesión la respuesta es «no
+    // disponible». Un cliente nuevo entra al carrito sin sesión y la sesión nace
+    // cuando guarda sus datos ahí mismo; esto avisa cuando empieza o termina, para
+    // que el carrito vuelva a preguntar sin que la persona tenga que salir y volver.
+    onCustomerSessionChange(callback) {
+      if (typeof callback !== 'function' || typeof auth?.onAuthStateChange !== 'function') return () => {};
+      return auth.onAuthStateChange(({ event, user } = {}) => {
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') callback({ event, signedIn: Boolean(user) });
+      });
+    },
     async createMercadoPagoCheckout(orderDraft = {}) {
       return createMercadoPagoCheckout(orderDraft);
     },

@@ -614,6 +614,13 @@ async function bootstrap() {
     // correr y la pregunta no se hizo. Es el único caso donde el arranque sí
     // tiene que hacerla: ahí ya hay alguien mirando su pedido.
     if (activeView === 'cart') await refreshMercadoPagoCheckoutAvailability();
+    // Y cuando la sesión del cliente empieza (guardó sus datos en el carrito) o
+    // termina, se vuelve a preguntar: sin sesión la respuesta era «no disponible».
+    if (getAppMode() === APP_MODE_PRODUCTION) {
+      getOrderRepository()?.onCustomerSessionChange?.(() => {
+        if (activeView === 'cart') refreshMercadoPagoCheckoutAvailability();
+      });
+    }
     renderAll();
     playViewEnter(activeView);
     resumeSimulationIfNeeded();

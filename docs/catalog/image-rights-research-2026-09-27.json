@@ -1,0 +1,905 @@
+{
+ "schema": "la-taba.catalog-image-rights-research/1",
+ "generated_at": "2026-09-28T02:37:15Z",
+ "project": "tkanbadcglszlcyfjvpv",
+ "business_id": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+ "method": [
+  "GTIN de referencia leído del catálogo público VTEX del retail (sólo identidad; ninguna imagen de retail se reutiliza).",
+  "Términos del titular de cada familia de marcas (sitio oficial / tienda oficial / kit de prensa).",
+  "Open Food Facts por GTIN: licencia CC BY-SA 3.0 para imágenes (https://world.openfoodfacts.org/terms-of-use).",
+  "Wikimedia Commons y Openverse (licencias que permiten uso comercial).",
+  "Revisión visual de la mejor candidata con derechos y del render de referencia."
+ ],
+ "summary": {
+  "RIGHTS_REVIEW_REQUIRED": 41,
+  "REPLACE_REQUIRED": 4,
+  "RIGHTS_VERIFIED": 1
+ },
+ "canary": [
+  "coca-cola-original-2250ml-local",
+  "coca-cola-sin-azucar-2250ml-local",
+  "sprite-sin-azucar-2250ml-local",
+  "fanta-naranja-2250ml",
+  "villavicencio-sin-gas-500ml",
+  "red-bull-energy-drink-355ml",
+  "quilmes-clasica-710ml",
+  "heineken-710ml",
+  "fernet-branca-750ml"
+ ],
+ "skus": [
+  {
+   "sku": "villavicencio-sin-gas-500ml",
+   "canary": true,
+   "gtin_reference": "7799155000173",
+   "rights_holder_family": "danone",
+   "official_terms_url": "https://corporate.danone.com.ar/ar/footer/links/terminos-y-condiciones/",
+   "official_terms_finding": "Términos Danone Argentina: materiales sólo para uso personal no comercial; prohibido copiar, reproducir o usar sin consentimiento escrito.",
+   "retail_reference_render": "clean",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7799155000173",
+    "raw_images": 1,
+    "verdict": "botella en mano (la mano tapa la etiqueta inferior)"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "heineken-710ml",
+   "canary": true,
+   "gtin_reference": "7793147571283",
+   "rights_holder_family": "heineken",
+   "official_terms_url": "https://www2.heineken.com/es/terms-of-use-and-privacy",
+   "official_terms_finding": "Condiciones Heineken: el acceso no implica licencia; se reservan reproducción, distribución y comunicación pública.",
+   "retail_reference_render": "bad",
+   "retail_reference_issue": "la imagen de referencia recorta la lata (tapa y lateral fuera de cuadro)",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7793147571283",
+    "raw_images": 1,
+    "verdict": "lata en mano recortada; la foto CC BY-SA 3.0 de Wikimedia es una lata tirada en pasto sin volumen visible"
+   },
+   "data_flag": "",
+   "rights_status": "REPLACE_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "quilmes-clasica-710ml",
+   "canary": true,
+   "gtin_reference": "7792798014835",
+   "rights_holder_family": "cmq",
+   "official_terms_url": "https://www.quilmes.com.ar/terminos-y-condiciones",
+   "official_terms_finding": "Términos Cervecería y Maltería Quilmes: material sólo para uso personal no comercial; prohíbe copiar, exhibir o distribuir (la página responde 403 a lectura automatizada; contenido verificado por búsqueda).",
+   "retail_reference_render": "band",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7792798014835",
+    "raw_images": 3,
+    "verdict": "lata abierta sobre mesa de bar y góndola; la foto CC BY-SA 4.0 de Wikimedia es de 473 cm3"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "red-bull-energy-drink-355ml",
+   "canary": true,
+   "gtin_reference": "90435225",
+   "rights_holder_family": "redbull",
+   "official_terms_url": "https://policies.redbull.com/policies/RedBull.com_International/202003040354/en/terms.html",
+   "official_terms_finding": "Términos Red Bull: licencia sólo para uso privado/no comercial; excluye uso en ideas comerciales.",
+   "retail_reference_render": "clean",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/90435225",
+    "raw_images": 1,
+    "verdict": "lata en mano"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "fernet-branca-750ml",
+   "canary": true,
+   "gtin_reference": "7790290001193",
+   "rights_holder_family": "branca",
+   "official_terms_url": "https://www.brancastore.com.ar/terminos-y-condiciones/",
+   "official_terms_finding": "Términos Branca Store (tienda oficial): prohíbe la reproducción total o parcial de imágenes y fotografías sin autorización escrita.",
+   "retail_reference_render": "band",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7790290001193",
+    "raw_images": 1,
+    "verdict": "botella en mano recortada; en Wikimedia sólo hay fotos de góndola"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "coca-cola-original-2250ml-local",
+   "canary": true,
+   "gtin_reference": "7790895000997",
+   "rights_holder_family": "coca-cola",
+   "official_terms_url": "https://www.coca-cola.com/ar/es/legal/terms-of-service",
+   "official_terms_finding": "Términos Coca-Cola Argentina: licencia personal, limitada y exclusivamente no comercial; prohíbe reproducir, descargar o exhibir contenido y usar marcas sin permiso escrito.",
+   "retail_reference_render": "clean",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7790895000997",
+    "raw_images": 7,
+    "verdict": "fotos en mano, recortes de etiqueta; la foto de cuerpo entero corta la tapa"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "coca-cola-sin-azucar-2250ml-local",
+   "canary": true,
+   "gtin_reference": "7790895067570",
+   "rights_holder_family": "coca-cola",
+   "official_terms_url": "https://www.coca-cola.com/ar/es/legal/terms-of-service",
+   "official_terms_finding": "Términos Coca-Cola Argentina: licencia personal, limitada y exclusivamente no comercial; prohíbe reproducir, descargar o exhibir contenido y usar marcas sin permiso escrito.",
+   "retail_reference_render": "clean",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7790895067570",
+    "raw_images": 7,
+    "verdict": "botella parcialmente consumida y recortes de etiqueta"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "fanta-naranja-2250ml",
+   "canary": true,
+   "gtin_reference": "7790895001017",
+   "rights_holder_family": "coca-cola",
+   "official_terms_url": "https://www.coca-cola.com/ar/es/legal/terms-of-service",
+   "official_terms_finding": "Términos Coca-Cola Argentina: licencia personal, limitada y exclusivamente no comercial; prohíbe reproducir, descargar o exhibir contenido y usar marcas sin permiso escrito.",
+   "retail_reference_render": "clean",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7790895001017",
+    "raw_images": 8,
+    "verdict": "botella casi vacía, recortes y tapa fuera de cuadro"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "sprite-sin-azucar-2250ml-local",
+   "canary": true,
+   "gtin_reference": "7790895641916",
+   "rights_holder_family": "coca-cola",
+   "official_terms_url": "https://www.coca-cola.com/ar/es/legal/terms-of-service",
+   "official_terms_finding": "Términos Coca-Cola Argentina: licencia personal, limitada y exclusivamente no comercial; prohíbe reproducir, descargar o exhibir contenido y usar marcas sin permiso escrito.",
+   "retail_reference_render": "clean",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": false,
+    "product_url": "",
+    "raw_images": 0,
+    "verdict": "sin ficha"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "bonaqua-sin-gas-2250ml-local",
+   "canary": false,
+   "gtin_reference": "7790895641978",
+   "rights_holder_family": "coca-cola",
+   "official_terms_url": "https://www.coca-cola.com/ar/es/legal/terms-of-service",
+   "official_terms_finding": "Términos Coca-Cola Argentina: licencia personal, limitada y exclusivamente no comercial; prohíbe reproducir, descargar o exhibir contenido y usar marcas sin permiso escrito.",
+   "retail_reference_render": "band",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": false,
+    "product_url": "",
+    "raw_images": 0,
+    "verdict": "sin ficha"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "eco-de-los-andes-sin-gas-2000ml",
+   "canary": false,
+   "gtin_reference": "7792799000097",
+   "rights_holder_family": "local",
+   "official_terms_url": "",
+   "official_terms_finding": "Marca local/nacional: no se localizó sitio con licencia de imágenes de producto.",
+   "retail_reference_render": "band",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7792799000097",
+    "raw_images": 1,
+    "verdict": "botella en mano; la ficha OFF declara 2,25 l (presentación no confirmada)"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "glaciar-con-gas-1500ml",
+   "canary": false,
+   "gtin_reference": "7792931001050",
+   "rights_holder_family": "cmq",
+   "official_terms_url": "https://www.quilmes.com.ar/terminos-y-condiciones",
+   "official_terms_finding": "Términos Cervecería y Maltería Quilmes: material sólo para uso personal no comercial; prohíbe copiar, exhibir o distribuir (la página responde 403 a lectura automatizada; contenido verificado por búsqueda).",
+   "retail_reference_render": "band",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7792931001050",
+    "raw_images": 2,
+    "verdict": "botella en mano y etiqueta"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "glaciar-sin-gas-1500ml",
+   "canary": false,
+   "gtin_reference": "7792931000022",
+   "rights_holder_family": "cmq",
+   "official_terms_url": "https://www.quilmes.com.ar/terminos-y-condiciones",
+   "official_terms_finding": "Términos Cervecería y Maltería Quilmes: material sólo para uso personal no comercial; prohíbe copiar, exhibir o distribuir (la página responde 403 a lectura automatizada; contenido verificado por búsqueda).",
+   "retail_reference_render": "band",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7792931000022",
+    "raw_images": 2,
+    "verdict": "sólo recortes de etiqueta"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "aperol-750ml",
+   "canary": false,
+   "gtin_reference": "7891136057029",
+   "rights_holder_family": "campari",
+   "official_terms_url": "https://www.camparigroup.info/usa/terms-conditions/",
+   "official_terms_finding": "Términos Campari Group: todo uso o reproducción está prohibido sin autorización escrita del titular.",
+   "retail_reference_render": "band",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": false,
+    "product_url": "",
+    "raw_images": 0,
+    "verdict": "sin ficha"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "branca-menta-750ml",
+   "canary": false,
+   "gtin_reference": "7790290101473",
+   "rights_holder_family": "branca",
+   "official_terms_url": "https://www.brancastore.com.ar/terminos-y-condiciones/",
+   "official_terms_finding": "Términos Branca Store (tienda oficial): prohíbe la reproducción total o parcial de imágenes y fotografías sin autorización escrita.",
+   "retail_reference_render": "band",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7790290101473",
+    "raw_images": 1,
+    "verdict": "recorte de etiqueta"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "campari-bitter-750ml",
+   "canary": false,
+   "gtin_reference": "7791200200781",
+   "rights_holder_family": "campari",
+   "official_terms_url": "https://www.camparigroup.info/usa/terms-conditions/",
+   "official_terms_finding": "Términos Campari Group: todo uso o reproducción está prohibido sin autorización escrita del titular.",
+   "retail_reference_render": "clean",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7791200200781",
+    "raw_images": 1,
+    "verdict": "foto 2026-04 de la botella completa; etiqueta legible \"Cont. Neto 750 ml\", \"Industria Argentina\""
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_VERIFIED",
+   "pipeline": {}
+  },
+  {
+   "sku": "cinzano-rosso-950ml",
+   "canary": false,
+   "gtin_reference": "7791200200552",
+   "rights_holder_family": "campari",
+   "official_terms_url": "https://www.camparigroup.info/usa/terms-conditions/",
+   "official_terms_finding": "Términos Campari Group: todo uso o reproducción está prohibido sin autorización escrita del titular.",
+   "retail_reference_render": "bad",
+   "retail_reference_issue": "la imagen de referencia recorta la botella (sólo hombro y etiqueta)",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7791200200552",
+    "raw_images": 1,
+    "verdict": "foto 2021; la ficha OFF declara 1000 ml y el contenido neto no se ve"
+   },
+   "data_flag": "",
+   "rights_status": "REPLACE_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "brahma-chopp-1000ml",
+   "canary": false,
+   "gtin_reference": "7792798007493",
+   "rights_holder_family": "cmq",
+   "official_terms_url": "https://www.quilmes.com.ar/terminos-y-condiciones",
+   "official_terms_finding": "Términos Cervecería y Maltería Quilmes: material sólo para uso personal no comercial; prohíbe copiar, exhibir o distribuir (la página responde 403 a lectura automatizada; contenido verificado por búsqueda).",
+   "retail_reference_render": "band",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7792798007493",
+    "raw_images": 2,
+    "verdict": "foto 2019 sobre fondo oscuro con tapa fuera de cuadro"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "corona-extra-330ml",
+   "canary": false,
+   "gtin_reference": "8066145",
+   "rights_holder_family": "cmq",
+   "official_terms_url": "https://www.quilmes.com.ar/terminos-y-condiciones",
+   "official_terms_finding": "Términos Cervecería y Maltería Quilmes: material sólo para uso personal no comercial; prohíbe copiar, exhibir o distribuir (la página responde 403 a lectura automatizada; contenido verificado por búsqueda).",
+   "retail_reference_render": "bad",
+   "retail_reference_issue": "el retail no publica imagen (\"Imagen no disponible\")",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/08066145",
+    "raw_images": 5,
+    "verdict": "la ficha mezcla fotos de botellas de 12 fl oz (355 ml) de EE. UU.; no acredita 330 ml"
+   },
+   "data_flag": "",
+   "rights_status": "REPLACE_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "imperial-golden-473ml",
+   "canary": false,
+   "gtin_reference": "7793147571689",
+   "rights_holder_family": "ccu",
+   "official_terms_url": "",
+   "official_terms_finding": "CCU Argentina (Imperial, Schneider): no se localizó licencia pública de imágenes de producto.",
+   "retail_reference_render": "clean",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7793147571689",
+    "raw_images": 1,
+    "verdict": "lata cortada en góndola"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "patagonia-lager-del-sur-730ml",
+   "canary": false,
+   "gtin_reference": "7792798015023",
+   "rights_holder_family": "cmq",
+   "official_terms_url": "https://www.quilmes.com.ar/terminos-y-condiciones",
+   "official_terms_finding": "Términos Cervecería y Maltería Quilmes: material sólo para uso personal no comercial; prohíbe copiar, exhibir o distribuir (la página responde 403 a lectura automatizada; contenido verificado por búsqueda).",
+   "retail_reference_render": "band",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7792798015023",
+    "raw_images": 1,
+    "verdict": "góndola con otras botellas"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "schneider-rubia-710ml",
+   "canary": false,
+   "gtin_reference": "7793147570606",
+   "rights_holder_family": "ccu",
+   "official_terms_url": "",
+   "official_terms_finding": "CCU Argentina (Imperial, Schneider): no se localizó licencia pública de imágenes de producto.",
+   "retail_reference_render": "band",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7793147570606",
+    "raw_images": 5,
+    "verdict": "latas en góndola y lata acostada con dedo"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "stella-artois-rubia-473ml",
+   "canary": false,
+   "gtin_reference": "7792798010615",
+   "rights_holder_family": "cmq",
+   "official_terms_url": "https://www.quilmes.com.ar/terminos-y-condiciones",
+   "official_terms_finding": "Términos Cervecería y Maltería Quilmes: material sólo para uso personal no comercial; prohíbe copiar, exhibir o distribuir (la página responde 403 a lectura automatizada; contenido verificado por búsqueda).",
+   "retail_reference_render": "band",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7792798010615",
+    "raw_images": 2,
+    "verdict": "dos latas \"Edición limitada Perfect Serve 2025\" en góndola, no la lata estándar"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "monster-mango-loco-473ml",
+   "canary": false,
+   "gtin_reference": "7798422520045",
+   "rights_holder_family": "monster",
+   "official_terms_url": "https://www.monsterenergy.com/en-us/terms-of-use/",
+   "official_terms_finding": "Términos Monster Energy: licencia personal y no comercial.",
+   "retail_reference_render": "band",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": false,
+    "product_url": "",
+    "raw_images": 0,
+    "verdict": "sin ficha"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "monster-ultra-473ml-local",
+   "canary": false,
+   "gtin_reference": "7798422620021",
+   "rights_holder_family": "monster",
+   "official_terms_url": "https://www.monsterenergy.com/en-us/terms-of-use/",
+   "official_terms_finding": "Términos Monster Energy: licencia personal y no comercial.",
+   "retail_reference_render": "band",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7798422620021",
+    "raw_images": 7,
+    "verdict": "lata en mano con tapa fuera de cuadro; mesa con objetos"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "speed-zero-473ml",
+   "canary": false,
+   "gtin_reference": "7798119220381",
+   "rights_holder_family": "local",
+   "official_terms_url": "",
+   "official_terms_finding": "Marca local/nacional: no se localizó sitio con licencia de imágenes de producto.",
+   "retail_reference_render": "clean",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7798119220381",
+    "raw_images": 1,
+    "verdict": "lata en mano en góndola"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "pepsi-black-1500ml",
+   "canary": false,
+   "gtin_reference": "7791813828419",
+   "rights_holder_family": "pepsico",
+   "official_terms_url": "https://www.pepsico.com.mx/legal/terminos-de-uso",
+   "official_terms_finding": "Términos PepsiCo (sitio del grupo; pepsico.com.ar no resolvió DNS desde este equipo): uso personal no comercial; prohíbe modificar, distribuir o explotar contenido.",
+   "retail_reference_render": "band",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7791813828419",
+    "raw_images": 4,
+    "verdict": "foto 2026 en góndola: el recorte arrastra bordes de otras botellas y corta la tapa"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "pepsi-black-2250ml-local",
+   "canary": false,
+   "gtin_reference": "7791813423331",
+   "rights_holder_family": "pepsico",
+   "official_terms_url": "https://www.pepsico.com.mx/legal/terminos-de-uso",
+   "official_terms_finding": "Términos PepsiCo (sitio del grupo; pepsico.com.ar no resolvió DNS desde este equipo): uso personal no comercial; prohíbe modificar, distribuir o explotar contenido.",
+   "retail_reference_render": "clean",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": false,
+    "product_url": "",
+    "raw_images": 0,
+    "verdict": "sin ficha"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "sprite-sin-azucar-600ml",
+   "canary": false,
+   "gtin_reference": "7790895650895",
+   "rights_holder_family": "coca-cola",
+   "official_terms_url": "https://www.coca-cola.com/ar/es/legal/terms-of-service",
+   "official_terms_finding": "Términos Coca-Cola Argentina: licencia personal, limitada y exclusivamente no comercial; prohíbe reproducir, descargar o exhibir contenido y usar marcas sin permiso escrito.",
+   "retail_reference_render": "band",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": false,
+    "product_url": "",
+    "raw_images": 0,
+    "verdict": "sin ficha"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "hielo-cristal-4kg",
+   "canary": false,
+   "gtin_reference": "7798124020037",
+   "rights_holder_family": "local",
+   "official_terms_url": "",
+   "official_terms_finding": "Marca local/nacional: no se localizó sitio con licencia de imágenes de producto.",
+   "retail_reference_render": "clean",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": false,
+    "product_url": "",
+    "raw_images": 0,
+    "verdict": "sin ficha"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "cepita-durazno-1000ml",
+   "canary": false,
+   "gtin_reference": "7790895009846",
+   "rights_holder_family": "coca-cola",
+   "official_terms_url": "https://www.coca-cola.com/ar/es/legal/terms-of-service",
+   "official_terms_finding": "Términos Coca-Cola Argentina: licencia personal, limitada y exclusivamente no comercial; prohíbe reproducir, descargar o exhibir contenido y usar marcas sin permiso escrito.",
+   "retail_reference_render": "band",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7790895009846",
+    "raw_images": 2,
+    "verdict": "botella con fondo y recortes"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "cepita-naranja-1000ml",
+   "canary": false,
+   "gtin_reference": "7790895648267",
+   "rights_holder_family": "coca-cola",
+   "official_terms_url": "https://www.coca-cola.com/ar/es/legal/terms-of-service",
+   "official_terms_finding": "Términos Coca-Cola Argentina: licencia personal, limitada y exclusivamente no comercial; prohíbe reproducir, descargar o exhibir contenido y usar marcas sin permiso escrito.",
+   "retail_reference_render": "band",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7790895648267",
+    "raw_images": 10,
+    "verdict": "la mejor foto (frente limpio, 2024-05) muestra el diseño anterior del envase; el render vigente de retail es el diseño 2026"
+   },
+   "data_flag": "Ficha CP: packaging_type=Botella, pero el GTIN 7790895648267 es Tetra Brik 1 L (Naranja Tentación). Corregir la ficha antes de asociar imagen.",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "paso-de-los-toros-pomelo-1500ml",
+   "canary": false,
+   "gtin_reference": "7791813421382",
+   "rights_holder_family": "pepsico",
+   "official_terms_url": "https://www.pepsico.com.mx/legal/terminos-de-uso",
+   "official_terms_finding": "Términos PepsiCo (sitio del grupo; pepsico.com.ar no resolvió DNS desde este equipo): uso personal no comercial; prohíbe modificar, distribuir o explotar contenido.",
+   "retail_reference_render": "band",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7791813421382",
+    "raw_images": 5,
+    "verdict": "fotos en mano y de etiqueta"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "paso-de-los-toros-tonica-1500ml",
+   "canary": false,
+   "gtin_reference": "7791813421368",
+   "rights_holder_family": "pepsico",
+   "official_terms_url": "https://www.pepsico.com.mx/legal/terminos-de-uso",
+   "official_terms_finding": "Términos PepsiCo (sitio del grupo; pepsico.com.ar no resolvió DNS desde este equipo): uso personal no comercial; prohíbe modificar, distribuir o explotar contenido.",
+   "retail_reference_render": "band",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7791813421368",
+    "raw_images": 7,
+    "verdict": "fotos en mano y de etiqueta"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "schweppes-pomelo-sin-azucar-2250ml",
+   "canary": false,
+   "gtin_reference": "7790895010095",
+   "rights_holder_family": "coca-cola",
+   "official_terms_url": "https://www.coca-cola.com/ar/es/legal/terms-of-service",
+   "official_terms_finding": "Términos Coca-Cola Argentina: licencia personal, limitada y exclusivamente no comercial; prohíbe reproducir, descargar o exhibir contenido y usar marcas sin permiso escrito.",
+   "retail_reference_render": "band",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7790895010095",
+    "raw_images": 2,
+    "verdict": "botella en mano y recortes de etiqueta"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "schweppes-tonica-354ml-local",
+   "canary": false,
+   "gtin_reference": "7790895006821",
+   "rights_holder_family": "coca-cola",
+   "official_terms_url": "https://www.coca-cola.com/ar/es/legal/terms-of-service",
+   "official_terms_finding": "Términos Coca-Cola Argentina: licencia personal, limitada y exclusivamente no comercial; prohíbe reproducir, descargar o exhibir contenido y usar marcas sin permiso escrito.",
+   "retail_reference_render": "band",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7790895006821",
+    "raw_images": 1,
+    "verdict": "lata en mano"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "doritos-queso-129g",
+   "canary": false,
+   "gtin_reference": "7790310985656",
+   "rights_holder_family": "pepsico",
+   "official_terms_url": "https://www.pepsico.com.mx/legal/terminos-de-uso",
+   "official_terms_finding": "Términos PepsiCo (sitio del grupo; pepsico.com.ar no resolvió DNS desde este equipo): uso personal no comercial; prohíbe modificar, distribuir o explotar contenido.",
+   "retail_reference_render": "band",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7790310985656",
+    "raw_images": 2,
+    "verdict": "bolsa en góndola con sticker o recortada; el peso no se lee"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "lays-clasicas-134g",
+   "canary": false,
+   "gtin_reference": "7790310985465",
+   "rights_holder_family": "pepsico",
+   "official_terms_url": "https://www.pepsico.com.mx/legal/terminos-de-uso",
+   "official_terms_finding": "Términos PepsiCo (sitio del grupo; pepsico.com.ar no resolvió DNS desde este equipo): uso personal no comercial; prohíbe modificar, distribuir o explotar contenido.",
+   "retail_reference_render": "bad",
+   "retail_reference_issue": "la imagen de referencia es la edición especial FIFA Qatar 2022 (134 g), no la bolsa estándar vigente",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7790310985465",
+    "raw_images": 1,
+    "verdict": "bolsa en góndola con el borde superior cortado; el peso no se ve"
+   },
+   "data_flag": "",
+   "rights_status": "REPLACE_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "lays-clasicas-40g",
+   "canary": false,
+   "gtin_reference": "7790310985236",
+   "rights_holder_family": "pepsico",
+   "official_terms_url": "https://www.pepsico.com.mx/legal/terminos-de-uso",
+   "official_terms_finding": "Términos PepsiCo (sitio del grupo; pepsico.com.ar no resolvió DNS desde este equipo): uso personal no comercial; prohíbe modificar, distribuir o explotar contenido.",
+   "retail_reference_render": "band",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7790310985236",
+    "raw_images": 1,
+    "verdict": "bolsa en mano"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "mani-king-salado-sin-piel-100g",
+   "canary": false,
+   "gtin_reference": "7798151953384",
+   "rights_holder_family": "local",
+   "official_terms_url": "",
+   "official_terms_finding": "Marca local/nacional: no se localizó sitio con licencia de imágenes de producto.",
+   "retail_reference_render": "clean",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7798151953384",
+    "raw_images": 5,
+    "verdict": "foto 2025-11 recortable, pero con reflejo sobre el logo y baja resolución (384x612 px de producto)"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "pehuamar-palitos-salados-90g",
+   "canary": false,
+   "gtin_reference": "7790310984352",
+   "rights_holder_family": "pepsico",
+   "official_terms_url": "https://www.pepsico.com.mx/legal/terminos-de-uso",
+   "official_terms_finding": "Términos PepsiCo (sitio del grupo; pepsico.com.ar no resolvió DNS desde este equipo): uso personal no comercial; prohíbe modificar, distribuir o explotar contenido.",
+   "retail_reference_render": "band",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7790310984352",
+    "raw_images": 2,
+    "verdict": "bolsa arrugada de 2021 sobre superficie gris"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "alamos-malbec-750ml-local",
+   "canary": false,
+   "gtin_reference": "7794450091338",
+   "rights_holder_family": "winery",
+   "official_terms_url": "",
+   "official_terms_finding": "Bodega titular: no se localizó licencia pública ni recursos para comercios con condiciones de uso.",
+   "retail_reference_render": "clean",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": false,
+    "product_url": "",
+    "raw_images": 0,
+    "verdict": "sin ficha"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "norton-malbec-750ml-local",
+   "canary": false,
+   "gtin_reference": "7792319971104",
+   "rights_holder_family": "winery",
+   "official_terms_url": "",
+   "official_terms_finding": "Bodega titular: no se localizó licencia pública ni recursos para comercios con condiciones de uso.",
+   "retail_reference_render": "clean",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": false,
+    "product_url": "",
+    "raw_images": 0,
+    "verdict": "sin ficha"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "santa-julia-chenin-dulce-750ml",
+   "canary": false,
+   "gtin_reference": "7791728247091",
+   "rights_holder_family": "santajulia",
+   "official_terms_url": "https://santajulia.com.ar/press-kit/",
+   "official_terms_finding": "Kit de prensa público de Santa Julia con imágenes de botellas en SharePoint, sin términos de uso publicados: no acredita uso comercial en tienda.",
+   "retail_reference_render": "clean",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": true,
+    "product_url": "https://world.openfoodfacts.org/product/7791728247091",
+    "raw_images": 1,
+    "verdict": "recorte de etiqueta"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "trapiche-cabernet-sauvignon-750ml",
+   "canary": false,
+   "gtin_reference": "7790240094466",
+   "rights_holder_family": "winery",
+   "official_terms_url": "",
+   "official_terms_finding": "Bodega titular: no se localizó licencia pública ni recursos para comercios con condiciones de uso.",
+   "retail_reference_render": "band",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": false,
+    "product_url": "",
+    "raw_images": 0,
+    "verdict": "sin ficha"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  },
+  {
+   "sku": "trapiche-red-blend-750ml",
+   "canary": false,
+   "gtin_reference": "7790240940916",
+   "rights_holder_family": "winery",
+   "official_terms_url": "",
+   "official_terms_finding": "Bodega titular: no se localizó licencia pública ni recursos para comercios con condiciones de uso.",
+   "retail_reference_render": "clean",
+   "retail_reference_issue": "",
+   "open_food_facts": {
+    "found": false,
+    "product_url": "",
+    "raw_images": 0,
+    "verdict": "sin ficha"
+   },
+   "data_flag": "",
+   "rights_status": "RIGHTS_REVIEW_REQUIRED",
+   "pipeline": {}
+  }
+ ]
+}

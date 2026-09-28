@@ -11,6 +11,9 @@
 //   --phase fresh    a brand-new profile on the live version.
 //
 //   node scripts/controlled-production/sw-live-check.mjs --phase seed --profile <dir> [--expect-commit <sha>] [--out f]
+//   ... --phase upgrade --expect-cache-from <old CACHE_NAME> --expect-cache-to <new CACHE_NAME>
+//                    when the deploy ships a NEW worker: banner, one reload, old cache purged,
+//                    new cache present, nothing stored in the browser lost.
 //
 // Read-only for the backend: the only request with a credential is the web's own
 // session refresh. Nothing is printed except the report (no tokens).
@@ -90,6 +93,35 @@ try {
   check('SW_CONTROLLING', Boolean(s1.controller) && s1.controller === s1.active, s1.controller);
   check('RUNTIME_CACHE_PRESENT', s1.caches.some((k) => k.startsWith('la-taba-runtime-')), s1.caches);
   if (expectCommit) check('SERVES_EXPECTED_COMMIT', s1.version?.commit === expectCommit, s1.version?.commit);
+
+  // Actualización con worker NUEVO (otro CACHE_NAME), sólo si se pide con
+  // --expect-cache-to: aparece el aviso, «Actualizar ahora» recarga UNA vez, el
+  // worker nuevo queda al mando, la caché vieja se borra, la nueva está y no se
+  // pierde nada de lo guardado en el navegador (carrito, perfil, sesión).
+  const expectFrom = opt('--expect-cache-from');
+  const expectTo = opt('--expect-cache-to');
+  if (phase === 'upgrade' && expectTo) {
+    const storedKeys = () => page.evaluate(() => Object.keys(localStorage).sort());
+    const keysBefore = await storedKeys();
+    const banner = page.locator('[data-app-update-banner]');
+    await banner.waitFor({ state: 'visible', timeout: 120_000 }).catch(() => {});
+    check('UPDATE_BANNER_SHOWN', await banner.isVisible().catch(() => false));
+    let navigations = 0;
+    const onNavigation = (frame) => { if (frame === page.mainFrame()) navigations += 1; };
+    page.on('framenavigated', onNavigation);
+    await page.locator('[data-app-update-now]').click().catch(() => {});
+    await page.waitForTimeout(12_000);
+    page.off('framenavigated', onNavigation);
+    check('SINGLE_RELOAD', navigations === 1, navigations);
+    const updated = await state(page);
+    report.observed.afterUpdate = { ...updated, authKeys: updated.authKeys.length };
+    check('NEW_WORKER_CONTROLS', Boolean(updated.controller) && !updated.waiting
+      && (!expectCommit || updated.version?.commit === expectCommit), updated.controller);
+    check('NEW_CACHE_PRESENT', updated.caches.includes(expectTo), updated.caches);
+    if (expectFrom) check('OLD_CACHE_PURGED', !updated.caches.includes(expectFrom), updated.caches);
+    const keysAfter = await storedKeys();
+    check('LOCAL_STATE_KEPT', keysBefore.every((key) => keysAfter.includes(key)), keysBefore.filter((key) => !keysAfter.includes(key)));
+  }
 
   if (phase === 'seed') {
     // A signed-in Panel user of the previous version (QA identity, no membership in the real business).

@@ -52,6 +52,7 @@ end;
 $rollback_guard$;
 
 
+
 -- ── Políticas nuevas ──────────────────────────────────────────────────────
 drop policy "fiscal source snapshots readable by back office" on public.fiscal_source_snapshots;
 drop policy "commercial fiscal policy readable by back office" on public.commercial_fiscal_policies;
@@ -922,8 +923,30 @@ grant execute on function complete_fiscal_artifact(uuid,text,jsonb) to service_r
 revoke all on function complete_fiscal_artifact(uuid,text,jsonb) from public, anon, authenticated; -- 20260802171000
 grant execute on function complete_fiscal_artifact(uuid,text,jsonb) to service_role; -- 20260802171000
 revoke all on function complete_fiscal_artifact_unchecked(uuid,text,jsonb) from public, anon, authenticated, service_role; -- 20260802171000
-grant execute on function protect_authorized_fiscal_document_item() to public, anon, authenticated, service_role;
-grant execute on function protect_authorized_fiscal_document() to public, anon, authenticated, service_role;
+do $restore_factory_acl$
+declare
+  v_fn regprocedure;
+  v_grantee text;
+begin
+  foreach v_fn in array array['protect_authorized_fiscal_document_item()'::regprocedure, 'protect_authorized_fiscal_document()'::regprocedure] loop
+    execute format('revoke all on function %s from public, anon, authenticated, service_role', v_fn);
+    execute format('grant execute on function %s to public', v_fn);
+    for v_grantee in
+      select distinct case when a.grantee = 0 then 'public' else quote_ident(r.rolname) end
+        from pg_catalog.pg_default_acl d
+        cross join lateral aclexplode(d.defaclacl) a
+        left join pg_catalog.pg_roles r on r.oid = a.grantee
+       where d.defaclobjtype = 'f'
+         and a.privilege_type = 'EXECUTE'
+         and d.defaclrole = (select p.proowner from pg_catalog.pg_proc p where p.oid = v_fn)
+         and d.defaclnamespace in (0, (select p.pronamespace from pg_catalog.pg_proc p where p.oid = v_fn))
+         and a.grantee <> (select p.proowner from pg_catalog.pg_proc p where p.oid = v_fn)
+    loop
+      execute format('grant execute on function %s to %s', v_fn, v_grantee);
+    end loop;
+  end loop;
+end;
+$restore_factory_acl$;
 
 -- ── Comentarios de esas funciones ─────────────────────────────────────────
 comment on function request_fiscal_document(uuid,text,uuid,text,text) is null;

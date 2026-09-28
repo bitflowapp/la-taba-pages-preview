@@ -1,0 +1,52 @@
+{
+  "at": "2026-09-28T07:47:56.847Z",
+  "target": "controlled-production",
+  "business": "QA control",
+  "checks": {
+    "CREATE_OK": "PASS",
+    "CREATE_REPLAY_SAME_ORDER": "PASS",
+    "CREATE_REUSED_ID_OTHER_PAYLOAD_DENIED": "PASS",
+    "STOCK_RESERVED_ONCE": "PASS",
+    "UNKNOWN_STATUS_DENIED": "PASS",
+    "SKIP_TO_DELIVERED_DENIED": "PASS",
+    "STALE_REVISION_DENIED": "PASS",
+    "CUSTOMER_OPERATOR_RPC_DENIED": "PASS",
+    "ACCEPT_OK": "PASS",
+    "ACCEPT_REPLAY_IDEMPOTENT": "PASS",
+    "KEY_REUSED_OTHER_PAYLOAD_DENIED": "PASS",
+    "SAME_STATUS_NO_OP": "PASS",
+    "PREPARING_OK": "PASS",
+    "READY_OK": "PASS",
+    "BACKWARDS_DENIED": "PASS",
+    "RIDER_ONLY_EDGE_DENIED_TO_STAFF": "PASS",
+    "DELIVERY_CLOSE_WITHOUT_CODE_DENIED": "PASS",
+    "CANCEL_OK": "PASS",
+    "STOCK_RETURNED": "PASS",
+    "CANCEL_REPLAY_IDEMPOTENT": "PASS",
+    "STOCK_RETURNED_ONCE": "PASS",
+    "TERMINAL_STATE_LOCKED": "PASS"
+  },
+  "codes": {
+    "CREATE_REUSED_ID_OTHER_PAYLOAD_DENIED": "23505",
+    "UNKNOWN_STATUS_DENIED": "22023",
+    "SKIP_TO_DELIVERED_DENIED": "23514",
+    "STALE_REVISION_DENIED": "PT409",
+    "CUSTOMER_OPERATOR_RPC_DENIED": "42501",
+    "KEY_REUSED_OTHER_PAYLOAD_DENIED": "23505",
+    "BACKWARDS_DENIED": "23514",
+    "RIDER_ONLY_EDGE_DENIED_TO_STAFF": "23514",
+    "DELIVERY_CLOSE_WITHOUT_CODE_DENIED": "23514",
+    "TERMINAL_STATE_LOCKED": "23514"
+  },
+  "order": "LT-0057",
+  "cleanup": {
+    "reversed": false,
+    "cancelled": false,
+    "restoredUnits": 0,
+    "classified": true
+  },
+  "stockRestored": true,
+  "publicCatalogTenantsAfter": 0,
+  "failed": [],
+  "verdict": "PASS"
+}

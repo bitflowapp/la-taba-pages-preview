@@ -1,0 +1,9 @@
+{
+  "file": "com.lataba.rider.pilot v4 (0.1.3-canonical-pilot) pulled from the QA Moto G15 with adb",
+  "sha256": "2fcc64f9c8cac31fcc65449b25d604e9dc04dae87e5947a4f5554b9875b187d4",
+  "publicKeyPresent": true,
+  "forbiddenValuesChecked": 13,
+  "leaks": 0,
+  "privatePatterns": 0,
+  "secretScan": "PASS"
+}

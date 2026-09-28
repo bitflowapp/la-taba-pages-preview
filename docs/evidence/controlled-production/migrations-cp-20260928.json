@@ -1,0 +1,35 @@
+{
+  "target": "controlled-production",
+  "ref": "tkanbadcglszlcyfjvpv",
+  "releaseCommit": "aefa942a4073ea038a3f61a6aa63955f70bf1fb9",
+  "at": "2026-09-28T07:51:00Z",
+  "before": {
+    "cpVersions": 144,
+    "releaseVersions": 144,
+    "cpOnly": [
+      "20260927195533 catalog_image_storage_pipeline"
+    ],
+    "releaseOnly": [
+      "20260927175058_catalog_image_storage_pipeline.sql"
+    ]
+  },
+  "contentCheck": {
+    "ledgerStatementsMd5": "b53a6a1e8632d1462c75a99e9ce462f1",
+    "normalisedEqualToRepoFile": true,
+    "normalisation": "comments and whitespace removed, semicolons ignored"
+  },
+  "repair": {
+    "kind": "ledger relabel only (no DDL)",
+    "statement": "update supabase_migrations.schema_migrations set version='20260927175058' where version='20260927195533' and name='catalog_image_storage_pipeline' and md5(statements)=b53a6a1e… and 20260927175058 absent",
+    "rowsUpdated": 1,
+    "undo": "update supabase_migrations.schema_migrations set version='20260927195533' where version='20260927175058' and name='catalog_image_storage_pipeline'"
+  },
+  "after": {
+    "cpVersions": 144,
+    "releaseVersions": 144,
+    "cpOnly": [],
+    "releaseOnly": [],
+    "head": "20260927175058"
+  },
+  "verdict": "PASS"
+}

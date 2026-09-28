@@ -1,0 +1,71 @@
+{
+  "at": "2026-09-28T06:59:58.508Z",
+  "target": "controlled-production",
+  "ref": "tkanbadcglszlcyfjvpv",
+  "mode": "full",
+  "windowHours": 24,
+  "checks": {
+    "scheduler": {
+      "healthy": true,
+      "ageSeconds": 59
+    },
+    "publicExposure": {
+      "foreignPublicTenants": 0
+    },
+    "tenants": {
+      "businessStatus": "closed",
+      "otherTenantsOpen": 0
+    },
+    "realtime": {
+      "status": "SUBSCRIBED",
+      "ms": 7938
+    },
+    "business": {
+      "status": "closed",
+      "ordering_enabled": false,
+      "is_active": true
+    },
+    "orders": {
+      "createdInWindow": 0,
+      "byStatus": {},
+      "stuck": [],
+      "unpaidDelivered": []
+    },
+    "manualPayments": {
+      "confirmed": 0,
+      "reversed": 0,
+      "cancellations": 0
+    },
+    "riders": {
+      "availableNow": 0,
+      "members": 0,
+      "activeDeliveries": 0,
+      "staleGps": []
+    },
+    "alerts": {
+      "open": 0,
+      "codes": []
+    },
+    "mercadopago": {
+      "enabled": false,
+      "environment": null,
+      "reviewStatus": null,
+      "connection": "none",
+      "outboxDue": 0,
+      "outboxDead": 0,
+      "inReview": 0,
+      "paidWithoutOrder": 0,
+      "ambiguousRefunds": 0,
+      "webhookRejected": 0,
+      "webhookValid": 0
+    },
+    "stock": {
+      "products": 46,
+      "published": 0,
+      "negative": 0,
+      "publishedOutOfStock": 0
+    }
+  },
+  "status": "HEALTHY",
+  "attention": []
+}

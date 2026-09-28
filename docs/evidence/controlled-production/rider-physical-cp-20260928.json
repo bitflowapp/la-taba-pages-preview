@@ -1,0 +1,57 @@
+{
+  "at": "2026-09-28T07:34:01.478Z",
+  "device": "ZY32LHS6PS",
+  "business": "QA control",
+  "installedVersion": {
+    "code": 4,
+    "name": "0.1.3-canonical-pilot"
+  },
+  "order": "LT-0056",
+  "offer": "offered",
+  "firstGpsAt": "2026-09-28T07:34:26.173782+00:00",
+  "firstGpsAccuracyM": 23.5830001831055,
+  "gpsSource": "gps",
+  "recovery": {
+    "wifiReenabledAt": "2026-09-28T07:35:14.768Z",
+    "wifiConnectedAt": "2026-09-28T07:35:24.114Z",
+    "firstReceiptAfterRecoveryAt": "2026-09-28T07:35:30.14901+00:00",
+    "secondsFromWifiToReceipt": 6
+  },
+  "screenOff": {
+    "receipts": 3,
+    "seconds": 30
+  },
+  "networkCut": {
+    "seconds": 12,
+    "receiptsWhileOffline": 0,
+    "receiptsAfterRecovery": 1
+  },
+  "instrumentation": {
+    "exit": 0,
+    "ok": false,
+    "summary": "FAILURES!!!\r | Tests run: 1,  Failures: 1\r",
+    "failure": "Error in signedPilotAcceptsTracksAndCompletesQaOrder(com.lataba.rider.PilotReleasePhysicalTest):\r | java.lang.IllegalStateException: No compose hierarchies found in the app. Possible reasons include: (1) the Activity that calls setContent did not launch; (2) setContent was not called; (3) setContent was called before the ComposeTestRule ran. If setContent is called by the Activity, make sure the Activity is launched after the ComposeTestRule runs\r | \tat com.lataba.rider.PilotReleasePhysicalTest.signedPilotAcceptsTracksAndCompletesQaOrder(PilotReleasePhysicalTest.kt:86)\r | java.lang.IllegalStateException: No compose hierarchies found in the app. Possible reasons include: (1) the Activity that calls setContent did not launch; (2) setContent was not called; (3) setContent was called before the ComposeTestRule ran. If setContent is called by the Activity, make sure the Activity is launched a"
+  },
+  "appLogErrors": [
+    "09-28 04:38:12.865 29381 29394 E TestRunner: failed: signedPilotAcceptsTracksAndCompletesQaOrder(com.lataba.rider.PilotReleasePhysicalTest)\r"
+  ],
+  "gpsTrailPurgedAfterDelivery": false,
+  "final": {
+    "status": "on_the_way",
+    "assignedToRider1": true
+  },
+  "gps": {
+    "receipts": 16,
+    "maxGapSeconds": 30,
+    "medianAccuracyM": 1.5
+  },
+  "cleanup": {
+    "reversed": false,
+    "cancelled": true,
+    "restoredUnits": 2,
+    "classified": true
+  },
+  "stockRestored": true,
+  "verdict": "FAIL",
+  "environmentNote": "Instrumentation lost the Compose UI at PilotReleasePhysicalTest.kt:86 after the runner turned the screen off: the Moto has a secure lock (PIN) and `wm dismiss-keyguard` cannot open a secure keyguard, so the Activity stayed behind the lock screen. GPS, screen-off and network-recovery measurements passed; the QA order was cancelled, its GPS trail purged by the terminal-state trigger (0 rows) and stock restored. Last full PASS with the same APK: rider-physical-cp-20260924.json."
+}

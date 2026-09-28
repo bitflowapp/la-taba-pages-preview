@@ -4,8 +4,10 @@
 // unknown status, skipped states, stale revision, customer and rider-only
 // edges, going backwards, leaving a terminal state — plus the idempotency of
 // order creation, transitions and cancellation (stock returns exactly once).
-// The order is cancelled and classified as QA at the end; the QA window is
-// always closed. Never writes order state by SQL.
+// A second order is picked up at the counter and paid in cash (confirmed
+// once, then reversed by the cleanup). Orders are cancelled or reversed and
+// classified as QA at the end; the QA window is always closed. Never writes
+// order state by SQL.
 //
 //   node scripts/controlled-production/order-lifecycle-cert.mjs [report.json]
 import assert from 'node:assert/strict';
@@ -128,14 +130,64 @@ try {
   try { report.cleanup = await cleanupQaOrder({ admin, owner, staff, businessId: BUSINESS, orderId: order.id, reason: 'QA ciclo de vida' }); }
   catch (error) { report.cleanup = { error: error.message }; }
   report.stockRestored = (await stockOf()) === stockBefore;
-  const publicClient = createClient(keys.url, keys.publishable, OPTIONS);
-  // Every business is closed outside QA runs: nobody may read any catalog.
-  report.publicCatalogTenantsAfter = (await publicCatalogTenants(publicClient)).length;
 }
+
+// Pickup paid in cash at the counter: the simplest shape of a first canary.
+// No rider edge applies, the counter confirms the cash, and the business
+// closes the order itself once the customer took it.
+let pickup;
+const pickupWindow = await openQaWindow(owner, BUSINESS, { log });
+try {
+  const created = await customer.rpc('create_order_with_items', { payload: { business_id: BUSINESS, client_request_id: randomUUID(),
+    tracking_token: randomBytes(32).toString('base64url'), items: [{ product_id: product.id, quantity: 1 }],
+    customer_name: 'QA Ciclo', customer_phone: '2995550810', delivery_mode: 'pickup', payment_method: 'cash',
+    age_confirmed: true, customer_notes: 'QA retiro — no entregar' } });
+  pickup = rowOf(created.data);
+  check('PICKUP_CREATE_OK', !created.error && Boolean(pickup?.id), created.error?.code);
+} finally {
+  await pickupWindow.close();
+}
+if (pickup?.id) {
+  const read = async () => (await staff.from('orders').select('status,revision,manual_payment_status').eq('id', pickup.id).single()).data;
+  const step = (status, rev) => staff.rpc('transition_order', { p_order_id: pickup.id, p_expected_revision: rev,
+    p_new_status: status, p_idempotency_key: `pick_${status}_${randomBytes(6).toString('hex')}` });
+  try {
+    check('PICKUP_STOCK_RESERVED', (await stockOf()) === stockBefore - 1);
+    for (const next of ['accepted', 'preparing', 'ready']) {
+      const r = await step(next, (await read()).revision);
+      check(`PICKUP_${next.toUpperCase()}_OK`, !r.error, r.error?.code);
+    }
+    const dispatch = await step('on_the_way', (await read()).revision);
+    check('PICKUP_NOT_DISPATCHABLE', Boolean(dispatch.error) && (await read()).status === 'ready', dispatch.error?.code || 'ACCEPTED');
+    const payKey = `pick_pay_${compact(pickup.id)}`;
+    const payRevision = (await read()).revision;
+    const pay = () => staff.rpc('confirm_manual_order_payment', { p_order_id: pickup.id,
+      p_expected_revision: payRevision, p_actual_method: 'cash', p_idempotency_key: payKey });
+    const paid = await pay();
+    check('PICKUP_CASH_CONFIRMED', !paid.error && (await read()).manual_payment_status === 'confirmed', paid.error?.code);
+    // A double tap on «Cobrado» may answer as a replay or be refused; either
+    // way the cash is recorded exactly once.
+    const paidAgain = await pay();
+    const cashEvents = (await admin.from('order_events').select('id').eq('order_id', pickup.id)
+      .eq('event_type', 'order.manual_payment_confirmed')).data || [];
+    check('PICKUP_CASH_CONFIRMED_ONCE', cashEvents.length === 1, paidAgain.error?.code || paidAgain.data?.code || 'replay');
+    const handed = await step('delivered', (await read()).revision);
+    check('PICKUP_HANDED_OVER', !handed.error && (await read()).status === 'delivered', handed.error?.code);
+    report.pickupOrder = pickup.public_code;
+  } finally {
+    try { report.pickupCleanup = await cleanupQaOrder({ admin, owner, staff, businessId: BUSINESS, orderId: pickup.id, reason: 'QA retiro' }); }
+    catch (error) { report.pickupCleanup = { error: error.message }; }
+    report.stockRestored = report.stockRestored && (await stockOf()) === stockBefore;
+  }
+}
+const publicClient = createClient(keys.url, keys.publishable, OPTIONS);
+// Every business is closed outside QA runs: nobody may read any catalog.
+report.publicCatalogTenantsAfter = (await publicCatalogTenants(publicClient)).length;
 
 const failed = Object.entries(report.checks).filter(([, v]) => v !== 'PASS').map(([k]) => k);
 report.failed = failed;
-report.verdict = failed.length === 0 && report.stockRestored && !report.cleanup?.error && report.publicCatalogTenantsAfter === 0 ? 'PASS' : 'FAIL';
+report.verdict = failed.length === 0 && report.stockRestored && !report.cleanup?.error && !report.pickupCleanup?.error
+  && report.publicCatalogTenantsAfter === 0 ? 'PASS' : 'FAIL';
 const out = process.argv[2] || `artifacts/controlled-production/order-lifecycle-cp-${Date.now()}.json`;
 mkdirSync(path.dirname(out), { recursive: true });
 writeFileSync(out, `${JSON.stringify(report, null, 2)}\n`);

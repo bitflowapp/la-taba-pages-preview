@@ -1,5 +1,5 @@
 {
-  "at": "2026-09-28T07:47:56.847Z",
+  "at": "2026-09-28T08:28:14.286Z",
   "target": "controlled-production",
   "business": "QA control",
   "checks": {
@@ -24,7 +24,16 @@
     "STOCK_RETURNED": "PASS",
     "CANCEL_REPLAY_IDEMPOTENT": "PASS",
     "STOCK_RETURNED_ONCE": "PASS",
-    "TERMINAL_STATE_LOCKED": "PASS"
+    "TERMINAL_STATE_LOCKED": "PASS",
+    "PICKUP_CREATE_OK": "PASS",
+    "PICKUP_STOCK_RESERVED": "PASS",
+    "PICKUP_ACCEPTED_OK": "PASS",
+    "PICKUP_PREPARING_OK": "PASS",
+    "PICKUP_READY_OK": "PASS",
+    "PICKUP_NOT_DISPATCHABLE": "PASS",
+    "PICKUP_CASH_CONFIRMED": "PASS",
+    "PICKUP_CASH_CONFIRMED_ONCE": "PASS",
+    "PICKUP_HANDED_OVER": "PASS"
   },
   "codes": {
     "CREATE_REUSED_ID_OTHER_PAYLOAD_DENIED": "23505",
@@ -36,9 +45,11 @@
     "BACKWARDS_DENIED": "23514",
     "RIDER_ONLY_EDGE_DENIED_TO_STAFF": "23514",
     "DELIVERY_CLOSE_WITHOUT_CODE_DENIED": "23514",
-    "TERMINAL_STATE_LOCKED": "23514"
+    "TERMINAL_STATE_LOCKED": "23514",
+    "PICKUP_NOT_DISPATCHABLE": "23514",
+    "PICKUP_CASH_CONFIRMED_ONCE": "confirmed"
   },
-  "order": "LT-0057",
+  "order": "LT-0060",
   "cleanup": {
     "reversed": false,
     "cancelled": false,
@@ -46,6 +57,13 @@
     "classified": true
   },
   "stockRestored": true,
+  "pickupOrder": "LT-0061",
+  "pickupCleanup": {
+    "reversed": true,
+    "cancelled": false,
+    "restoredUnits": 1,
+    "classified": true
+  },
   "publicCatalogTenantsAfter": 0,
   "failed": [],
   "verdict": "PASS"

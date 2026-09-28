@@ -70,6 +70,95 @@ $function$
 
 ;
 
+-- get_business_operations_config anterior (sin dirección ni WhatsApp).
+CREATE OR REPLACE FUNCTION public.get_business_operations_config(p_business_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare
+  v_business public.businesses%rowtype;
+  v_can_manage boolean := public.can_manage_commercial_settings(p_business_id);
+begin
+  if not public.has_business_role(p_business_id, array['owner', 'admin', 'staff']) then
+    raise exception 'sin autorizacion para leer la configuracion' using errcode = '42501';
+  end if;
+  select * into v_business from public.businesses where id = p_business_id;
+  if not found then
+    raise exception 'comercio inexistente' using errcode = 'P0002';
+  end if;
+
+  return jsonb_build_object(
+    'business_id', p_business_id,
+    'can_manage', v_can_manage,
+    'operating_timezone', v_business.operating_timezone,
+    'hours_enforced', v_business.hours_enforced,
+    'delivery_zone_enforced', v_business.delivery_zone_enforced,
+    'alcohol_hours_enforced', v_business.alcohol_hours_enforced,
+    -- Las cinco que `create_order` exige juntas. Se devuelven juntas, y con el
+    -- mismo nombre que tienen en la tabla, para que quien lea esto pueda
+    -- comparar contra el mensaje de error sin traducir nada.
+    'alcohol_sales_enabled', v_business.alcohol_sales_enabled,
+    'alcohol_minimum_age', v_business.alcohol_minimum_age,
+    'alcohol_sales_start', to_char(v_business.alcohol_sales_start, 'HH24:MI'),
+    'alcohol_sales_end', to_char(v_business.alcohol_sales_end, 'HH24:MI'),
+    'alcohol_timezone', v_business.alcohol_timezone,
+    -- Y la conclusión ya sacada, que es lo que de verdad se quiere saber: si un
+    -- pedido con alcohol puede entrar AHORA. Calcularla acá evita que cada
+    -- superficie la reimplemente y se equivoque distinto.
+    'alcohol_policy_complete', (
+      v_business.alcohol_minimum_age is not null
+      and v_business.alcohol_sales_start is not null
+      and v_business.alcohol_sales_end is not null
+      and v_business.alcohol_timezone is not null
+      and btrim(coalesce(v_business.alcohol_timezone, '')) <> ''
+    ),
+    'delivery_enabled', v_business.delivery_enabled,
+    'pickup_enabled', v_business.pickup_enabled,
+    'delivery_fee', v_business.delivery_fee,
+    'minimum_delivery_subtotal', v_business.minimum_delivery_subtotal,
+    'delivery_max_radius_meters', v_business.delivery_max_radius_meters,
+    'is_open_delivery', public.business_is_open(p_business_id, 'delivery', now()),
+    'is_open_pickup', public.business_is_open(p_business_id, 'pickup', now()),
+    'next_open_at', public.business_next_open_at(p_business_id, 'delivery', now()),
+    'hours', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+               'id', h.id, 'channel', h.channel, 'weekday', h.weekday,
+               'opens_at', to_char(h.opens_at, 'HH24:MI'), 'closes_at', to_char(h.closes_at, 'HH24:MI'))
+             order by h.channel, h.weekday, h.opens_at), '[]'::jsonb)
+        from public.business_service_hours h where h.business_id = p_business_id),
+    'exceptions', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+               'id', e.id, 'channel', e.channel, 'on_date', e.on_date, 'is_closed', e.is_closed,
+               'opens_at', to_char(e.opens_at, 'HH24:MI'), 'closes_at', to_char(e.closes_at, 'HH24:MI'),
+               'note', e.note)
+             order by e.on_date, e.channel), '[]'::jsonb)
+        from public.business_service_exceptions e
+       where e.business_id = p_business_id and e.on_date >= (now() - interval '30 days')::date),
+    'zones', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+               'id', z.id, 'name', z.name, 'is_active', z.is_active, 'match_kind', z.match_kind,
+               'area', z.area_normalized, 'boundary_points', case when z.boundary is null then 0 else npoints(z.boundary) end,
+               'delivery_fee', z.delivery_fee, 'minimum_subtotal', z.minimum_subtotal,
+               'priority', z.priority, 'notes', z.notes)
+             order by z.priority, z.name), '[]'::jsonb)
+        from public.delivery_zones z where z.business_id = p_business_id),
+    -- La auditoría la ve quien puede cambiar la configuración. Un staff sin
+    -- delegación no ve quién movió los precios.
+    'audit', case when v_can_manage then (
+      select coalesce(jsonb_agg(jsonb_build_object(
+               'id', a.id, 'scope', a.scope, 'action', a.action,
+               'actor_kind', a.actor_kind, 'actor_id', a.actor_id,
+               'before', a.before, 'after', a.after, 'created_at', a.created_at)
+             order by a.created_at desc), '[]'::jsonb)
+        from (select * from public.business_config_audit
+               where business_id = p_business_id
+               order by created_at desc limit 50) a
+    ) else '[]'::jsonb end);
+end;
+$function$;
+
 -- apply_commercial_catalog_batch anterior (sin la compuerta de licencia de alcohol).
 CREATE OR REPLACE FUNCTION public.apply_commercial_catalog_batch(p_business_id uuid, p_rows jsonb)
  RETURNS TABLE(applied_sku text, applied_price numeric, applied_stock integer, applied_available boolean, applied_is_verified boolean, applied_republished boolean, applied_price_status text)

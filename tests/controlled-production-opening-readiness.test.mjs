@@ -1,79 +1,196 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import test from 'node:test';
-import { evaluateOpeningReadiness } from '../scripts/controlled-production/opening-readiness.mjs';
+import {
+  OPENING_CODES, openingItemMark, presentOpeningItem, presentOpeningReadiness,
+} from '../js/core/store-opening-readiness.js';
+import { containsForbiddenVocabulary } from '../js/business/business-operation-language.js';
+import { parseReadinessArgs } from '../scripts/controlled-production/opening-readiness.mjs';
+import { parseCheckArgs, verdictLines } from '../scripts/controlled-production/opening-check.mjs';
+import { describeRefusal, parseApproveArgs } from '../scripts/controlled-production/opening-approve.mjs';
+import { projectCatalog, projectedPending, parseDryRunArgs } from '../scripts/controlled-production/opening-dry-run.mjs';
+import { parsePublishArgs } from '../scripts/controlled-production/opening-publish.mjs';
+import { openingReportJson } from '../scripts/controlled-production/opening-tools.mjs';
 
-const closedBusiness = {
-  slug: 'la-taba-cp', status: 'closed', is_active: true, operating_timezone: 'America/Argentina/Buenos_Aires',
-  hours_enforced: true, delivery_enabled: false, pickup_enabled: false, minimum_delivery_subtotal: null,
-  ordering_enabled: false, ordering_verified: false, alcohol_sales_enabled: false, alcohol_minimum_age: null,
-  alcohol_sales_start: null, alcohol_sales_end: null, alcohol_timezone: null,
+const MIGRATION = fs.readFileSync(new URL('../supabase/migrations/20260928150000_store_opening_readiness.sql', import.meta.url), 'utf8');
+
+const item = (code, status, blocking = true, facts = {}, group = 'business') => ({ code, status, blocking, facts, group });
+
+// Lo que devuelve la base para el comercio real de hoy (2026-09-28).
+const today = {
+  business: { slug: 'la-taba-cp', name: 'La Taba', status: 'closed' },
+  min_products: 1,
+  items: [
+    item('BUSINESS_ACTIVE', 'pass'),
+    item('CURRENCY', 'pass', true, { currency: 'ARS' }),
+    item('BUSINESS_ADDRESS', 'pass', false, { present: true }),
+    item('BUSINESS_CONTACT', 'warn', false, { configured: false, confirmed: false }),
+    item('FULFILLMENT_MODE', 'pending', true, { delivery: false, pickup: false }, 'fulfillment'),
+    item('SERVICE_HOURS', 'pending', true, { enforced: true, timezone_ok: true, missing_channels: ['delivery', 'pickup'] }, 'fulfillment'),
+    item('DELIVERY_PRICING', 'na', false, {}, 'fulfillment'),
+    item('DELIVERY_COVERAGE', 'na', false, {}, 'fulfillment'),
+    item('RIDERS', 'na', false, {}, 'fulfillment'),
+    item('CATALOG_PRICES', 'pending', true, { with_price: 0, candidates: 28, min: 1 }, 'catalog'),
+    item('CATALOG_STOCK', 'pending', true, { with_stock: 0, uncounted: 28, sold_out: 0, candidates: 28, min: 1 }, 'catalog'),
+    item('CATALOG_PHOTOS', 'pending', true, { required: true, with_photo: 0, candidates: 28, min: 1 }, 'catalog'),
+    item('CATALOG_PUBLISHED', 'pending', true, { published: 0, verified: 0, ready_to_publish: 0, min: 1 }, 'catalog'),
+    item('ALCOHOL_POLICY', 'info', false, { enabled: false, alcoholic_products: 18 }, 'catalog'),
+    item('PAYMENT_MANUAL', 'pass', true, { methods: ['cash', 'coordinate'] }, 'payments'),
+    item('PAYMENT_MERCADOPAGO', 'info', false, { seller: 'none', platform_enabled: false }, 'payments'),
+    item('PLATFORM_VERIFICATION', 'pending', true, { verified: false, enabled: false }, 'platform'),
+    item('STORE_OPEN', 'info', false, { status: 'closed' }, 'open'),
+  ],
+  counts: { products: 46, alcoholic: 18, published: 0 },
+  pending: ['FULFILLMENT_MODE', 'SERVICE_HOURS', 'CATALOG_PRICES', 'CATALOG_STOCK', 'CATALOG_PHOTOS', 'CATALOG_PUBLISHED', 'PLATFORM_VERIFICATION'],
+  ready_for_platform_verification: false,
+  can_open: false,
+  accepting_orders: false,
 };
-const draft = (sku, extra = {}) => ({ sku, is_active: true, is_alcoholic: false, available: false, price: null,
-  price_status: 'pending', stock: null, catalog_asset_id: null, image_url: null, ...extra });
-const ready = (sku, extra = {}) => draft(sku, { price: 4200, price_status: 'confirmed', stock: 12,
-  catalog_asset_id: `asset-${sku}`, image_url: `https://cdn.example/${sku}.webp`, ...extra });
-const owner = { role: 'owner', is_active: true };
-const status = (result, id) => result.items.find((item) => item.id === id)?.status;
 
-test('el negocio real de hoy no está listo y dice exactamente qué falta', () => {
-  const result = evaluateOpeningReadiness({ business: closedBusiness, products: [draft('a'), draft('b', { is_alcoholic: true })], members: [owner] });
-  assert.equal(result.readyForCanary, false);
-  assert.deepEqual(result.pending, ['FULFILMENT_MODE', 'SERVICE_HOURS', 'PRODUCT_PHOTOS', 'PRODUCT_PRICES',
-    'PRODUCT_STOCK', 'PRODUCTS_PUBLISHED', 'PLATFORM_VERIFICATION']);
-  assert.equal(status(result, 'ALCOHOL_POLICY'), 'INFO');
-  assert.equal(result.counts.sellableWithoutAlcohol, 1);
+function withStatuses(payload, statuses, extra = {}) {
+  return {
+    ...payload,
+    ...extra,
+    items: payload.items.map((row) => (statuses[row.code] ? { ...row, status: statuses[row.code] } : row)),
+  };
+}
+
+test('cada compuerta que la base puede devolver tiene su texto: no hay requisitos sin explicar', () => {
+  const sqlCodes = [...new Set([...MIGRATION.matchAll(/'code', '([A-Z_]+)'/g)].map((match) => match[1]))];
+  assert.ok(sqlCodes.length >= 18, `la migración declara ${sqlCodes.length} compuertas`);
+  for (const code of sqlCodes) assert.ok(OPENING_CODES.includes(code), `${code} sin texto en el presentador`);
 });
 
-test('un canary con retiro, franjas, cinco productos publicados y verificación queda listo', () => {
-  const business = { ...closedBusiness, pickup_enabled: true, ordering_enabled: true, ordering_verified: true };
-  const products = ['a', 'b', 'c', 'd', 'e'].map((sku) => ready(sku, { available: true }));
-  const result = evaluateOpeningReadiness({ business, hours: [{ channel: 'pickup', weekday: 5 }], products, members: [owner] });
-  assert.equal(result.readyForCanary, true, JSON.stringify(result.pending));
-  assert.equal(result.items.some((item) => item.id === 'RIDERS'), false, 'retiro sólo no exige riders');
-  assert.equal(status(result, 'STORE_OPEN'), 'INFO', 'abrir sigue siendo el botón del dueño');
+test('el texto para el comercio no usa vocabulario técnico', () => {
+  for (const code of OPENING_CODES) {
+    for (const status of ['pass', 'pending', 'warn', 'info', 'na']) {
+      const presented = presentOpeningItem({ code, status, blocking: true, facts: { missing_channels: ['pickup'] } });
+      const text = [presented.title, presented.reason, presented.action, presented.where].join(' ');
+      assert.deepEqual(containsForbiddenVocabulary(text), [], `${code}/${status}: ${text}`);
+      assert.doesNotMatch(text, /[a-z]+_[a-z]+\(|constraint|uuid|sqlstate/i, `${code}/${status}`);
+    }
+  }
 });
 
-test('delivery exige zona con costo, mínimo y al menos un rider', () => {
-  const business = { ...closedBusiness, delivery_enabled: true };
-  const result = evaluateOpeningReadiness({ business, hours: [{ channel: 'delivery', weekday: 1 }],
-    zones: [{ is_active: false, delivery_fee: 1200, minimum_subtotal: 6000 }], members: [owner] });
-  for (const id of ['DELIVERY_ZONES', 'DELIVERY_MINIMUM', 'RIDERS']) assert.equal(status(result, id), 'PENDING', id);
-  const fixed = evaluateOpeningReadiness({ business, hours: [{ channel: 'delivery', weekday: 1 }],
-    zones: [{ is_active: true, delivery_fee: 1200, minimum_subtotal: null }], members: [owner, { role: 'rider', is_active: true }] });
-  assert.equal(status(fixed, 'DELIVERY_ZONES'), 'PASS');
-  assert.equal(status(fixed, 'DELIVERY_MINIMUM'), 'PENDING', 'una zona sin mínimo y un negocio sin mínimo no alcanzan');
-  assert.equal(status(fixed, 'RIDERS'), 'PASS');
+test('el comercio real de hoy: faltan seis pasos y cada uno dice dónde se arregla', () => {
+  const presented = presentOpeningReadiness(today);
+  assert.equal(presented.known, true);
+  assert.equal(presented.commercialReady, false);
+  assert.equal(presented.canOpen, false);
+  assert.equal(presented.headline, 'Faltan 6 pasos para abrir.');
+  const hours = presented.items.find((row) => row.code === 'SERVICE_HOURS');
+  assert.match(hours.reason, /el delivery y el retiro/);
+  assert.equal(hours.view, 'operations-config');
+  assert.match(hours.where, /Horarios y cobertura/);
+  const published = presented.items.find((row) => row.code === 'CATALOG_PUBLISHED');
+  assert.match(published.reason, /foto aprobada/);
+  const photos = presented.items.find((row) => row.code === 'CATALOG_PHOTOS');
+  assert.equal(photos.view, 'catalog');
+  assert.equal(presented.items.find((row) => row.code === 'PAYMENT_MANUAL').action, '', 'lo cumplido no pide acción');
+  assert.deepEqual(presented.groups.map((group) => group.id), ['business', 'fulfillment', 'catalog', 'payments', 'platform', 'open']);
 });
 
-test('las franjas se piden por cada canal habilitado', () => {
-  const business = { ...closedBusiness, delivery_enabled: true, pickup_enabled: true };
-  const result = evaluateOpeningReadiness({ business, hours: [{ channel: 'pickup', weekday: 2 }], members: [owner] });
-  assert.equal(status(result, 'SERVICE_HOURS'), 'PENDING');
-  assert.match(result.items.find((item) => item.id === 'SERVICE_HOURS').detail, /delivery/);
+test('listo del lado del comercio, verificado y abierto: tres titulares distintos', () => {
+  const ready = withStatuses(today, {
+    FULFILLMENT_MODE: 'pass', SERVICE_HOURS: 'pass', CATALOG_PRICES: 'pass', CATALOG_STOCK: 'pass', CATALOG_PHOTOS: 'pass', CATALOG_PUBLISHED: 'pass',
+  }, { ready_for_platform_verification: true, pending: ['PLATFORM_VERIFICATION'] });
+  const commercial = presentOpeningReadiness(ready);
+  assert.equal(commercial.commercialReady, true);
+  assert.equal(commercial.canOpen, false);
+  assert.equal(commercial.headline, 'Todo listo del lado del comercio.');
+
+  const verified = presentOpeningReadiness(withStatuses(ready, { PLATFORM_VERIFICATION: 'pass' }, { can_open: true, pending: [] }));
+  assert.equal(verified.canOpen, true);
+  assert.equal(verified.headline, 'Todo listo: falta abrir el local.');
+
+  const open = presentOpeningReadiness(withStatuses(ready, { PLATFORM_VERIFICATION: 'pass', STORE_OPEN: 'pass' },
+    { can_open: true, pending: [], accepting_orders: true, business: { ...today.business, status: 'open' } }));
+  assert.equal(open.accepting, true);
+  assert.equal(open.headline, 'La tienda está tomando pedidos.');
 });
 
-test('sin horario exigido avisa, pero no bloquea', () => {
-  const result = evaluateOpeningReadiness({ business: { ...closedBusiness, hours_enforced: false }, members: [owner] });
-  const hours = result.items.find((item) => item.id === 'SERVICE_HOURS');
-  assert.equal(hours.status, 'WARN');
-  assert.equal(hours.blocking, false);
-  assert.equal(result.pending.includes('SERVICE_HOURS'), false);
+test('lo que no se pudo leer no se inventa y un código nuevo queda pendiente', () => {
+  assert.equal(presentOpeningReadiness(null).known, false);
+  assert.equal(presentOpeningReadiness({ items: 'x' }).canOpen, false);
+  const unknown = presentOpeningItem({ code: 'NEW_GATE', status: 'pass', blocking: true });
+  assert.equal(unknown.title, 'Requisito nuevo');
+  const blocked = presentOpeningReadiness({ ...today, items: [...today.items, item('NEW_GATE', 'pending')], can_open: true,
+    ready_for_platform_verification: true });
+  assert.equal(blocked.canOpen, false, 'una compuerta pendiente siempre gana');
+  assert.equal(blocked.commercialReady, false);
 });
 
-test('el alcohol sólo cuenta como vendible con la política completa', () => {
-  const alcoholic = ['a', 'b', 'c', 'd', 'e'].map((sku) => ready(sku, { is_alcoholic: true }));
-  const closed = evaluateOpeningReadiness({ business: closedBusiness, products: alcoholic, members: [owner] });
-  assert.equal(closed.counts.readyToPublish, 0);
-  assert.equal(status(closed, 'PRODUCT_PHOTOS'), 'PENDING');
-  const policy = { alcohol_sales_enabled: true, alcohol_minimum_age: 18, alcohol_sales_start: '10:00',
-    alcohol_sales_end: '23:00', alcohol_timezone: 'America/Argentina/Buenos_Aires' };
-  const open = evaluateOpeningReadiness({ business: { ...closedBusiness, ...policy }, products: alcoholic, members: [owner] });
-  assert.equal(open.counts.readyToPublish, 5);
-  assert.equal(status(open, 'ALCOHOL_POLICY'), 'PASS');
+test('marcas de texto plano', () => {
+  assert.equal(openingItemMark({ status: 'pass' }), '✓');
+  assert.equal(openingItemMark({ status: 'pending', blocking: true }), '✗');
+  assert.equal(openingItemMark({ status: 'warn' }), '!');
+  assert.equal(openingItemMark({ status: 'info' }), '·');
+  assert.equal(openingItemMark({ status: 'na' }), '–');
 });
 
-test('la verificación de plataforma se evalúa después de todo lo demás', () => {
-  const result = evaluateOpeningReadiness({ business: closedBusiness, members: [owner] });
-  assert.equal(result.blockingPendingBeforeVerification.includes('PLATFORM_VERIFICATION'), false);
-  assert.equal(result.pending.at(-1), 'PLATFORM_VERIFICATION');
+test('Mercado Pago dice su estado sin identificadores', () => {
+  const say = (facts) => presentOpeningItem({ code: 'PAYMENT_MERCADOPAGO', status: 'info', facts }).reason;
+  assert.match(say({ seller: 'none' }), /No conectado/);
+  assert.match(say({ seller: 'connected', platform_enabled: false }), /falta la habilitación de la plataforma/);
+  assert.match(say({ seller: 'requires_reauthorization' }), /volver a conectar/);
+});
+
+test('el reporte estable para máquinas: code, title, reason, action, where_to_fix', () => {
+  const report = openingReportJson(today, presentOpeningReadiness(today));
+  assert.equal(report.verdict, 'BLOCKED');
+  assert.deepEqual(Object.keys(report.blockers[0]), ['code', 'title', 'reason', 'action', 'where_to_fix']);
+  assert.equal(report.blockers.some((blocker) => blocker.code === 'PLATFORM_VERIFICATION'), true);
+});
+
+test('la terminal ya no escribe la verificación: la hace opening:approve', () => {
+  assert.throws(() => parseReadinessArgs(['--verify-ordering']), /opening:approve/);
+  assert.deepEqual(parseReadinessArgs([]), { business: 'la-taba-cp', minProducts: 1, json: false, verbose: false, out: '' });
+  assert.throws(() => parseReadinessArgs(['--min-products', '0']), /1 a 500/);
+  assert.throws(() => parseReadinessArgs(['--min-products']), /necesita un valor/);
+});
+
+test('opening:check termina con los tres veredictos', () => {
+  assert.deepEqual(parseCheckArgs(['--strict', '--no-pulse']).strict, true);
+  const lines = verdictLines({ technicalReady: true, presented: presentOpeningReadiness(today) });
+  assert.deepEqual(lines, ['TECHNICAL_READY: YES', 'COMMERCIAL_READY: NO', 'CAN_OPEN: NO']);
+});
+
+test('opening:approve exige operador, motivo para revocar y traduce el rechazo', () => {
+  assert.throws(() => parseApproveArgs([]), /verifier-email/);
+  assert.throws(() => parseApproveArgs(['--verifier-email', 'op@example.com', '--revoke']), /--reason/);
+  const parsed = parseApproveArgs(['--verifier-email', 'op@example.com', '--min-products', '5', '--note', 'canary']);
+  assert.equal(parsed.minProducts, 5);
+  assert.equal(parsed.business, 'la-taba-cp');
+  const lines = describeRefusal({ message: 'OPENING_NOT_READY', details: 'SERVICE_HOURS,CATALOG_PRICES' });
+  assert.match(lines.join('\n'), /Horarios/);
+  assert.match(lines.join('\n'), /Precios/);
+  assert.match(describeRefusal({ message: 'CONFIRMATION_MISMATCH' })[0], /No se escribió nada/);
+});
+
+test('el ensayo proyecta el catálogo con los mismos predicados que la base', () => {
+  const products = [
+    { sku: 'a', is_active: true, is_alcoholic: false, price_status: 'pending', price: 0, stock: null, available: false },
+    { sku: 'b', is_active: true, is_alcoholic: false, price_status: 'pending', price: 0, stock: null, available: false },
+    { sku: 'c', is_active: true, is_alcoholic: true, price_status: 'pending', price: 0, stock: null, available: false },
+  ];
+  const planRows = [
+    { sku: 'a', after: { price: 4200, stock: 12, published: true } },
+    { sku: 'b', after: { price: 3000, stock: 0, published: false } },
+    { sku: 'c', after: { price: 9000, stock: 6, published: false } },
+  ];
+  const projection = projectCatalog({ products, planRows, alcoholOpen: false, minProducts: 1 });
+  assert.deepEqual({ p: projection.withPrice, s: projection.withStock, pub: projection.published }, { p: 2, s: 1, pub: 1 },
+    'el alcohol cerrado no cuenta y stock 0 es agotado');
+  assert.deepEqual(projection.statuses, { CATALOG_PRICES: 'pass', CATALOG_STOCK: 'pass', CATALOG_PUBLISHED: 'pass' });
+  assert.deepEqual(projectCatalog({ products, planRows, minProducts: 5 }).statuses.CATALOG_PUBLISHED, 'pending');
+  assert.deepEqual(projectedPending(today.items, projection.statuses),
+    ['FULFILLMENT_MODE', 'SERVICE_HOURS', 'CATALOG_PHOTOS', 'PLATFORM_VERIFICATION']);
+  assert.equal(parseDryRunArgs([]).sheet, 'catalog/opening/planilla-apertura-cp.csv');
+});
+
+test('opening:publish aplica sólo con una cuenta del comercio', () => {
+  assert.equal(parsePublishArgs([]).apply, false);
+  assert.throws(() => parsePublishArgs(['--apply']), /--credential/);
+  assert.equal(parsePublishArgs(['--apply', '--credential', 'CP OWNER MARCO PANEL']).credential, 'CP OWNER MARCO PANEL');
+  assert.throws(() => parsePublishArgs(['--apply', '--service-key']), /Flag desconocido/);
 });

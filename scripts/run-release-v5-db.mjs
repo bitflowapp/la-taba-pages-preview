@@ -148,8 +148,8 @@ try {
       assert.doesNotMatch(output,/^not ok\b/m,name);assert.match(output,/^1\.\.[0-9]+$/m,name);
       assertions+=Number(/^1\.\.([0-9]+)$/m.exec(output)[1]);
     }
-    assert.equal(assertions,637);
-    console.log('CANONICAL_PGTAP: 268 + 44 least-privilege + 50 reparto-propio + 37 ventana QA/columnas privadas/pausa + 9 Mercado Pago sólo con vendedor conectado + 5 aislamiento cobro manual/Mercado Pago + 9 alerta de vendedor que no puede cobrar + 16 interruptor de operador por negocio + 104 impresión del mostrador + 19 pipeline de imágenes + 76 preparar la apertura assertions PASS');
+    assert.equal(assertions,640);
+    console.log('CANONICAL_PGTAP: 268 + 44 least-privilege + 50 reparto-propio + 37 ventana QA/columnas privadas/pausa + 9 Mercado Pago sólo con vendedor conectado + 5 aislamiento cobro manual/Mercado Pago + 9 alerta de vendedor que no puede cobrar + 16 interruptor de operador por negocio + 104 impresión del mostrador + 19 pipeline de imágenes + 79 preparar la apertura assertions PASS');
 
     // pgTAP no puede probar dos agentes reclamando a la vez: una conexión por llamada.
     const { runPrintClaimRace } = await import('./print-agent/claim-race.mjs');
@@ -240,6 +240,7 @@ try {
     for(const [signature,previousSha256] of [
       ['public.set_business_open_state(uuid,text)','420233317694836322cc267d6769228ff643d04a4f87d5b115bc1332ccbcf366'],
       ['public.apply_commercial_catalog_batch(uuid,jsonb)','51e07f01493fb96fae1ac69f2f2655228354e4544c0391257d86c4e8af53bb5e'],
+      ['public.get_business_operations_config(uuid)','0beaa102bb721e85f75102c5f1bb20e5406bfceb22c4809f0e8a03e0b2c35f01'],
     ]){
       const definition=(await query('select pg_get_functiondef($1::regprocedure) as definition',[signature])).rows[0].definition;
       assert.equal(createHash('sha256').update(definition).digest('hex'),previousSha256,signature);

@@ -750,7 +750,7 @@ export async function applyCommercialImport(client, plan, businessId) {
 export const CATALOGOS = Object.freeze(['repo', 'produccion', 'cp']);
 
 export function parseCommercialImportArgs(args = []) {
-  const known = ['--dry-run', '--apply', '--json', '--target', '--catalogo'];
+  const known = ['--dry-run', '--apply', '--json', '--target', '--catalogo', '--business'];
   const unknown = args.filter((argument) => argument.startsWith('--') && !known.includes(argument));
   if (unknown.length) throw new Error(`Flag desconocido: ${unknown[0]}.`);
   const apply = args.includes('--apply');
@@ -776,11 +776,30 @@ export function parseCommercialImportArgs(args = []) {
   if (!CATALOGOS.includes(catalogo)) {
     throw new Error(`--catalogo tiene que ser ${CATALOGOS.join(' o ')}, y llegó «${catalogo || '(vacío)'}».`);
   }
+  /*
+   * CONTRA QUÉ COMERCIO DE CP.
+   *
+   * Por defecto, el comercio real. `--business <uuid>` sirve para ensayar la
+   * misma planilla en un tenant QA de CP antes de tocar el real: se lee ESE
+   * catálogo y sólo se puede escribir en ESE comercio (assertCpWriteTarget).
+   */
+  const businessIndex = args.indexOf('--business');
+  const business = businessIndex >= 0 ? args[businessIndex + 1] : '';
+  if (businessIndex >= 0) {
+    if (catalogo !== 'cp') throw new Error('--business sólo se usa con --catalogo cp.');
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(business || '')) {
+      throw new Error('--business necesita el UUID del comercio.');
+    }
+  }
   const positionals = args.filter((argument, index) => (
     !argument.startsWith('--') && args[index - 1] !== '--target' && args[index - 1] !== '--catalogo'
+      && args[index - 1] !== '--business'
   ));
   if (positionals.length !== 1) throw new Error('Indicá exactamente un archivo CSV.');
-  return { file: positionals[0], mode: apply ? 'apply' : 'dry-run', target, catalogo };
+  return {
+    file: positionals[0], mode: apply ? 'apply' : 'dry-run', target, catalogo,
+    ...(business ? { business: business.toLowerCase() } : {}),
+  };
 }
 
 async function main(args) {
@@ -809,12 +828,14 @@ async function main(args) {
   if (options.catalogo === 'produccion' || options.catalogo === 'cp') {
     const modulo = await import('./comercial/catalogo-de-produccion.mjs');
     const isCp = options.catalogo === 'cp';
-    const businessId = isCp ? modulo.CP_BUSINESS_ID : modulo.NEGOCIO_CANONICO;
+    const businessId = isCp ? (options.business || modulo.CP_BUSINESS_ID) : modulo.NEGOCIO_CANONICO;
     const projectRef = isCp ? modulo.CP_REF : undefined;
     catalog = await modulo.leerCatalogoDeProduccion(businessId, { projectRef });
     alcoholHabilitado = await modulo.leerAlcoholHabilitado(businessId, { projectRef });
     imageExists = modulo.tieneImagen;
-    console.log(`Catálogo: ${isCp ? 'CONTROLLED PRODUCTION' : 'PRODUCCIÓN'} · ${catalog.size} SKU · alcohol_sales_enabled=${alcoholHabilitado}`);
+    // Con --json la salida estándar es SÓLO el plan: esta línea va a stderr.
+    (args.includes('--json') ? console.error : console.log)(
+      `Catálogo: ${isCp ? 'CONTROLLED PRODUCTION' : 'PRODUCCIÓN'}${options.business ? ` (comercio ${options.business})` : ''} · ${catalog.size} SKU · alcohol_sales_enabled=${alcoholHabilitado}`);
   } else {
     catalog = readCatalogIndex(fs.readFileSync(PRODUCTS_CSV, 'utf8'));
     imageExists = (product) => {
@@ -905,7 +926,7 @@ async function main(args) {
   }
 
   if (options.catalogo === 'cp') {
-    assertCpWriteTarget(process.env);
+    assertCpWriteTarget(process.env, options.business || CP_BUSINESS_ID);
     if (plan.altas.some((alta) => alta.stock === null)) {
       const modulo = await import('./comercial/catalogo-de-produccion.mjs');
       if (!(await modulo.cpConservaStockPendiente())) {
@@ -957,10 +978,10 @@ export function readCommercialCredentials(env = {}) {
   return { url, publishableKey, accessToken, businessId };
 }
 
-export function assertCpWriteTarget(env = {}) {
+export function assertCpWriteTarget(env = {}, expectedBusinessId = CP_BUSINESS_ID) {
   let hostname = '';
   try { hostname = new URL(env.SUPABASE_URL || '').hostname; } catch {}
-  if (env.TABA_BUSINESS_ID !== CP_BUSINESS_ID || hostname !== `${CP_REF}.supabase.co`) {
+  if (env.TABA_BUSINESS_ID !== expectedBusinessId || hostname !== `${CP_REF}.supabase.co`) {
     throw new Error('El destino de escritura no coincide con el catálogo CP leído.');
   }
 }

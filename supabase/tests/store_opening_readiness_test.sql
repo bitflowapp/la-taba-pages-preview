@@ -16,7 +16,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(76);
+select plan(79);
 
 -- ── Fixture ────────────────────────────────────────────────────────────────
 insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
@@ -155,6 +155,8 @@ select is((select ordering_verified or ordering_enabled from public.businesses w
 -- ── 4 · Entrega, direccion y horario desde el Panel ────────────────────────
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"ca000000-0000-4000-8000-0000000000a2","role":"authenticated","session_id":"ca000000-0000-4000-8000-0000000000c2"}';
+select is((public.get_business_operations_config('ca000000-0000-4000-8000-0000000000b1')) ->> 'can_manage_contact', 'false',
+  'el equipo ve los datos del local pero no confirma el WhatsApp');
 select throws_ok($$select public.set_business_fulfillment('ca000000-0000-4000-8000-0000000000b1', false, true)$$, '42501', null,
   'el equipo sin delegacion no cambia como entrega el comercio');
 select throws_ok($$select public.set_business_opening_hours('ca000000-0000-4000-8000-0000000000b1', '[]'::jsonb)$$, '42501', null,
@@ -178,6 +180,10 @@ select throws_ok($$select public.set_business_address('ca000000-0000-4000-8000-0
 select is((public.set_business_address('ca000000-0000-4000-8000-0000000000b1', '  Mendoza   827, Neuquén ')) ->> 'address',
   'Mendoza 827, Neuquén', 'la direccion se guarda normalizada');
 
+select is((public.get_business_operations_config('ca000000-0000-4000-8000-0000000000b1')) ->> 'address', 'Mendoza 827, Neuquén',
+  'la configuracion del Panel trae la direccion guardada');
+select is((public.get_business_operations_config('ca000000-0000-4000-8000-0000000000b1')) ->> 'can_manage_contact', 'true',
+  'el dueño puede confirmar el WhatsApp del local');
 select lives_ok($$select public.set_business_opening_hours('ca000000-0000-4000-8000-0000000000b1',
   '[{"weekday":0,"opens_at":"00:00","closes_at":"24:00"},{"weekday":1,"opens_at":"00:00","closes_at":"24:00"},
     {"weekday":2,"opens_at":"00:00","closes_at":"24:00"},{"weekday":3,"opens_at":"00:00","closes_at":"24:00"},

@@ -1,0 +1,76 @@
+{
+  "target": "controlled-production",
+  "origin": "https://la-taba-commercial-pilot.pages.dev/",
+  "device": "Chromium, Pixel 7, perfil persistente",
+  "note": "A (b548e91) y B (03eaa8d) comparten el service worker v129: el perfil sembrado en A pasa a correr B sin reinstalar. La actualización con worker nuevo (v129 -> v130) se certifica en el deploy de la línea fiscal con el perfil sembrado en B.",
+  "seedA": {
+    "at": "2026-09-28T19:27:26.174Z",
+    "phase": "seed",
+    "verdict": "PASS",
+    "checks": {
+      "PAGE_LOADS": "PASS",
+      "BACKEND_IS_CP": "PASS",
+      "SW_CONTROLLING": "PASS",
+      "RUNTIME_CACHE_PRESENT": "PASS",
+      "SERVES_EXPECTED_COMMIT": "PASS",
+      "PANEL_SESSION_RECOGNISED": "PASS",
+      "NO_JS_ERRORS": "PASS"
+    },
+    "observed": {
+      "commit": "b548e913384f1022e63d348366ce40a3b3336f6a"
+    }
+  },
+  "upgradeAB": {
+    "at": "2026-09-28T21:52:11.795Z",
+    "phase": "upgrade",
+    "verdict": "PASS",
+    "checks": {
+      "PAGE_LOADS": "PASS",
+      "BACKEND_IS_CP": "PASS",
+      "SW_CONTROLLING": "PASS",
+      "RUNTIME_CACHE_PRESENT": "PASS",
+      "SERVES_EXPECTED_COMMIT": "PASS",
+      "EXISTING_SESSION_KEPT": "PASS",
+      "RELOAD_KEEPS_SW_AND_VERSION": "PASS",
+      "UPDATE_CHECK_OK": "PASS",
+      "HARD_RELOAD_OK": "PASS",
+      "NO_JS_ERRORS": "PASS"
+    },
+    "observed": {}
+  },
+  "seedB": {
+    "at": "2026-09-28T21:52:45.122Z",
+    "phase": "seed",
+    "verdict": "PASS",
+    "checks": {
+      "PAGE_LOADS": "PASS",
+      "BACKEND_IS_CP": "PASS",
+      "SW_CONTROLLING": "PASS",
+      "RUNTIME_CACHE_PRESENT": "PASS",
+      "SERVES_EXPECTED_COMMIT": "PASS",
+      "PANEL_SESSION_RECOGNISED": "PASS",
+      "NO_JS_ERRORS": "PASS"
+    },
+    "observed": {
+      "commit": "03eaa8da7eb1149aa46b4b3163cac53f319b3f8a"
+    }
+  },
+  "freshB": {
+    "at": "2026-09-28T21:53:04.233Z",
+    "phase": "fresh",
+    "verdict": "PASS",
+    "checks": {
+      "PAGE_LOADS": "PASS",
+      "BACKEND_IS_CP": "PASS",
+      "SW_CONTROLLING": "PASS",
+      "RUNTIME_CACHE_PRESENT": "PASS",
+      "SERVES_EXPECTED_COMMIT": "PASS",
+      "RELOAD_KEEPS_SW_AND_VERSION": "PASS",
+      "UPDATE_CHECK_OK": "PASS",
+      "HARD_RELOAD_OK": "PASS",
+      "NO_JS_ERRORS": "PASS"
+    },
+    "observed": {}
+  },
+  "verdict": "PASS"
+}

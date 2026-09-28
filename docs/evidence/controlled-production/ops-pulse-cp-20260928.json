@@ -1,5 +1,5 @@
 {
-  "at": "2026-09-28T09:32:09.186Z",
+  "at": "2026-09-28T21:53:41.160Z",
   "target": "controlled-production",
   "ref": "tkanbadcglszlcyfjvpv",
   "mode": "full",
@@ -7,7 +7,7 @@
   "checks": {
     "scheduler": {
       "healthy": true,
-      "ageSeconds": 9
+      "ageSeconds": 41
     },
     "publicExposure": {
       "foreignPublicTenants": 0
@@ -18,7 +18,7 @@
     },
     "realtime": {
       "status": "SUBSCRIBED",
-      "ms": 309
+      "ms": 349
     },
     "business": {
       "status": "closed",

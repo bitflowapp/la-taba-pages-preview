@@ -1,0 +1,88 @@
+{
+  "at": "2026-09-28T22:03:55.293Z",
+  "target": "controlled-production",
+  "release": "release/taba-controlled-production",
+  "candidate": {
+    "commit": "03eaa8da7eb1149aa46b4b3163cac53f319b3f8a",
+    "deployment": "9042dc83"
+  },
+  "previous": {
+    "commit": "b548e913384f1022e63d348366ce40a3b3336f6a",
+    "deployment": "0753f346"
+  },
+  "runs": {
+    "deploy": 36474372863,
+    "ci": 36474372787,
+    "riderAndroid": 36474372755
+  },
+  "sequence": "deploy B -> smoke -> rollback to A -> smoke -> restore B -> smoke",
+  "events": [
+    {
+      "step": "preflight",
+      "result": {
+        "status": "PASS",
+        "catalogMode": "live",
+        "onlinePayments": true,
+        "approvedSkus": []
+      }
+    },
+    {
+      "step": "smoke",
+      "result": {
+        "pilotPublicSmoke": "PASS",
+        "catalogMode": "live",
+        "publicProducts": 0,
+        "browsers": {
+          "chromium": "PASS",
+          "chrome_android": "PASS",
+          "webkit": "PASS"
+        }
+      }
+    },
+    {
+      "step": "drill:rollback",
+      "result": {
+        "pilotRollbackDrill": "PASS",
+        "restoredCommit": "b548e913384f1022e63d348366ce40a3b3336f6a",
+        "backendUnchanged": true,
+        "configVerified": true
+      }
+    },
+    {
+      "step": "smoke",
+      "result": {
+        "pilotPublicSmoke": "PASS",
+        "catalogMode": "live",
+        "publicProducts": 0,
+        "browsers": {
+          "chromium": "PASS",
+          "chrome_android": "PASS",
+          "webkit": "PASS"
+        }
+      }
+    },
+    {
+      "step": "drill:restore",
+      "result": {
+        "pilotRollbackDrill": "PASS",
+        "restoredCommit": "03eaa8da7eb1149aa46b4b3163cac53f319b3f8a",
+        "backendUnchanged": true,
+        "configVerified": true
+      }
+    },
+    {
+      "step": "smoke",
+      "result": {
+        "pilotPublicSmoke": "PASS",
+        "catalogMode": "live",
+        "publicProducts": 0,
+        "browsers": {
+          "chromium": "PASS",
+          "chrome_android": "PASS",
+          "webkit": "PASS"
+        }
+      }
+    }
+  ],
+  "verdict": "PASS"
+}

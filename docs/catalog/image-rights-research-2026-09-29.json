@@ -447,5 +447,14 @@
       ],
       "finding": "Las cuatro cadenas tienen por EAN los 13 SKU que aún faltan (sonda de sólo lectura de existencia; no se descargó ni se usó ninguna imagen). Sin usar hasta que el titular confirme si están cubiertas."
     }
+  },
+  "third_pass_jumbo": {
+    "note": "El titular incorporó Jumbo como AUTHORIZED_RETAIL_SOURCE. Se consultaron los 15 pendientes por EAN en Jumbo: 11 se aprobaron (Red Bull, Pepsi Black 1,5 L, Paso de los Toros Tónica, Coca-Cola Sin Azúcar 2,25 L —con la imagen de DIA del 2026-09-23—, Sprite 600 ml y 2,25 L, Bonaqua 2,25 L, Glaciar sin gas 1,5 L, Hielo Cristal 4 kg, Pehuamar 90 g, Trapiche Cabernet) y se reemplazaron dos imágenes previas (Alamos, Stella) por las de Jumbo con el GTIN exacto de la ficha. Rechazadas aunque Jumbo tenga el EAN: Pepsi Black 2,25 L (imagen de 2017) y Lay's 134 g (edición FIFA).",
+    "sources_used": [
+      "Jumbo",
+      "Supermercados DIA",
+      "Supermercados TOP"
+    ],
+    "reference_only_probe_superseded": "La sonda de Jumbo, Vea, Disco y Carrefour de la segunda pasada ya no es sólo de referencia para Jumbo; Vea, Disco y Carrefour siguen sin usarse."
   }
 }

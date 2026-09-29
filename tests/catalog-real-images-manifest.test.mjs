@@ -49,7 +49,7 @@ test('real image manifest: only an image with verified rights, exact identity an
       assert.ok(row.visual_review.trim() && row.retrieved_at && row.approved_asset_id, `${row.sku}: falta la revisión visual, la fecha o el asset aprobado`);
       assert.ok(['GTIN_EXACT', 'NAME_SIZE_VARIANT'].includes(row.identity_basis), `${row.sku}: falta la base de identidad`);
       if (row.authorization_basis === 'AUTHORIZED_RETAIL_SOURCE') {
-        assert.ok(['Supermercados DIA', 'Supermercados TOP'].includes(row.source_business), `${row.sku}: la autorización sólo cubre DIA y TOP, no ${row.source_business}`);
+        assert.ok(['Supermercados DIA', 'Supermercados TOP', 'Jumbo'].includes(row.source_business), `${row.sku}: la autorización sólo cubre DIA, TOP y Jumbo, no ${row.source_business}`);
         assert.equal(row.attribution_required, 'NO');
         assert.match(row.original_sha256, /^[a-f0-9]{64}$/);
       } else {
@@ -70,7 +70,7 @@ test('retail-authorized images come only from the sources the authorization name
   const retail = manifest.filter((row) => row.authorization_basis === 'AUTHORIZED_RETAIL_SOURCE');
   assert.equal(provenance.assets.length, retail.length);
   assert.equal(provenance.counts.assets, retail.length);
-  const hosts = new Set(['ardiaprod.vteximg.com.br', 'supertopar.vteximg.com.br']);
+  const hosts = new Set(['ardiaprod.vteximg.com.br', 'supertopar.vteximg.com.br', 'jumboargentina.vteximg.com.br', 'jumboargentina.vtexassets.com']);
   for (const asset of provenance.assets) {
     const row = retail.find((entry) => entry.sku === asset.sku);
     assert.ok(row, `${asset.sku} no está en el manifiesto`);
@@ -80,9 +80,12 @@ test('retail-authorized images come only from the sources the authorization name
     assert.equal(asset.product_draft, true);
   }
   const authorization = JSON.parse(fs.readFileSync(path.join(root, 'catalog/autorizaciones-comerciales.json'), 'utf8')).autorizaciones[0];
-  const amplification = authorization.ampliaciones.find((entry) => entry.fecha === '2026-09-29');
-  assert.deepEqual(amplification.assets_cubiertos.slice().sort(), retail.map((row) => row.sku).sort());
-  assert.deepEqual(amplification.fuentes_cubiertas.map((source) => source.negocio).sort(), ['Supermercados DIA', 'Supermercados TOP']);
+  const amplifications = authorization.ampliaciones.filter((entry) => entry.authorization_basis === 'AUTHORIZED_RETAIL_SOURCE');
+  assert.equal(amplifications.length, 2);
+  assert.deepEqual(amplifications.flatMap((entry) => entry.assets_cubiertos).sort(), retail.map((row) => row.sku).sort());
+  assert.deepEqual(amplifications.flatMap((entry) => entry.fuentes_cubiertas.map((source) => source.negocio)).sort(), ['Jumbo', 'Supermercados DIA', 'Supermercados TOP']);
+  const jumboEntry = amplifications.find((entry) => entry.fuentes_cubiertas.some((source) => source.negocio === 'Jumbo'));
+  assert.deepEqual(jumboEntry.assets_cubiertos.slice().sort(), retail.filter((row) => row.source_business === 'Jumbo').map((row) => row.sku).sort());
 });
 
 test('shot list names every non-approved SKU exactly once with a filename the Panel bulk intake recognises', () => {

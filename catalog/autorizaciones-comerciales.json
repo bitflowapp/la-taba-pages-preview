@@ -201,6 +201,7 @@
             "quilmes-clasica-710ml",
             "fernet-branca-750ml",
             "coca-cola-original-2250ml-local",
+            "coca-cola-sin-azucar-2250ml-local",
             "fanta-naranja-2250ml",
             "eco-de-los-andes-sin-gas-2000ml",
             "glaciar-con-gas-1500ml",
@@ -211,7 +212,6 @@
             "imperial-golden-473ml",
             "patagonia-lager-del-sur-730ml",
             "schneider-rubia-710ml",
-            "stella-artois-rubia-473ml",
             "monster-mango-loco-473ml",
             "monster-ultra-473ml-local",
             "speed-zero-473ml",
@@ -222,12 +222,51 @@
             "doritos-queso-129g",
             "lays-clasicas-40g",
             "mani-king-salado-sin-piel-100g",
-            "alamos-malbec-750ml-local",
             "norton-malbec-750ml-local",
             "santa-julia-chenin-dulce-750ml",
             "trapiche-red-blend-750ml"
           ],
           "nota": "Las imágenes salen de los catálogos VTEX públicos de DIA y TOP, se buscaron por EAN y se contrastaron con nombre y volumen. Cada una fue mirada a ojo antes y después de subirla."
+        },
+        {
+          "fecha": "2026-09-29",
+          "quien": "titular del comercio",
+          "canal": "instrucción escrita en la sesión de trabajo «Cerrar imágenes reales 31/46» del 2026-09-29 («La Taba tiene autorización para utilizar las imágenes comerciales de Jumbo»)",
+          "que_amplía": "El titular incorpora explícitamente a Jumbo como AUTHORIZED_RETAIL_SOURCE, además de Supermercados DIA y Supermercados TOP. Las fuentes autorizadas para esta misión son esas tres y ninguna más; la instrucción no extiende la autorización a otras cadenas.",
+          "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
+          "fuentes_cubiertas": [
+            {
+              "negocio": "Jumbo",
+              "sitio": "www.jumbo.com.ar",
+              "cdn": "jumboargentina.vtexassets.com"
+            }
+          ],
+          "habilita_source_types": [
+            "fuente_minorista_autorizada"
+          ],
+          "condiciones": [
+            "las mismas de la ampliación anterior del 2026-09-29: SKU, presentación, volumen y variante exactos; packaging actual con fecha de la imagen; calidad visual; sin watermark, precio ni promoción sobre el producto",
+            "la autorización no elimina el requisito de coincidencia exacta: se rechazaron la edición FIFA de Lay's 134 g y una imagen borrosa de 2017 de Pepsi Black 2,25 L aunque Jumbo tenga el EAN exacto",
+            "la placa de la tienda sólo se retira si cae fuera del envase",
+            "flujo oficial: staging privado, vista previa por hash, aprobación de owner/admin con LICENCIA_COMERCIAL y asociación"
+          ],
+          "lo_que_no_amplía": "No habilita otras cadenas (Vea, Disco, Carrefour, La Anónima, etc.), fabricantes, fotógrafos, marketplaces, distribuidores ni sitios de terceros. Los tests fallan si una imagen aprobada sale de un host que no sea DIA, TOP o Jumbo. No publica productos ni toca precio, stock o disponibilidad.",
+          "pendiente_para_el_titular": "Confirmar por escrito el alcance de Jumbo cuando se documente el acuerdo (evidencia_documental.pendiente).",
+          "assets_cubiertos": [
+            "red-bull-energy-drink-355ml",
+            "sprite-sin-azucar-2250ml-local",
+            "bonaqua-sin-gas-2250ml-local",
+            "glaciar-sin-gas-1500ml",
+            "stella-artois-rubia-473ml",
+            "pepsi-black-1500ml",
+            "sprite-sin-azucar-600ml",
+            "hielo-cristal-4kg",
+            "paso-de-los-toros-tonica-1500ml",
+            "pehuamar-palitos-salados-90g",
+            "alamos-malbec-750ml-local",
+            "trapiche-cabernet-sauvignon-750ml"
+          ],
+          "nota": "Coca-Cola Sin Azúcar 2,25 L se aprobó con la imagen de Supermercados DIA (actualizada el 2026-09-23) y figura en la ampliación de DIA/TOP a través del registro de procedencia; el resto de esta ampliación son imágenes de Jumbo."
         }
       ],
       "altas_2026_08_25": {

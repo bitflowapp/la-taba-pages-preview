@@ -1,28 +1,34 @@
 {
-  "schema": "taba.catalog.retail-authorized-images.v1",
+  "schema": "taba.catalog.retail-authorized-images.v2",
   "generated_at": "2026-09-29",
   "business_id": "e7850ad2-a447-402c-8375-3fd74e9466ba",
-  "note": "Procedencia de las 30 imágenes tomadas de fuentes minoristas cubiertas por la autorización del titular (Supermercados DIA y Supermercados TOP). La imagen 31 (Campari) viene de Open Food Facts con CC BY-SA 3.0 y está en catalog/real-catalog-images.csv.",
+  "note": "Procedencia de las imágenes tomadas de fuentes minoristas cubiertas por la autorización del titular: Supermercados DIA, Supermercados TOP y Jumbo. Campari (Open Food Facts, CC BY-SA 3.0) está sólo en catalog/real-catalog-images.csv.",
   "authorization": {
     "id": "TABA-AUT-2026-08-001",
     "amplification": "2026-09-29",
     "covered_sources": [
       "Supermercados DIA (diaonline.supermercadosdia.com.ar)",
-      "Supermercados TOP (www.supertop.com.ar)"
+      "Supermercados TOP (www.supertop.com.ar)",
+      "Jumbo (www.jumbo.com.ar)"
     ],
     "not_extended_to": [
       "fabricantes",
       "fotógrafos",
       "marketplaces",
-      "otros supermercados",
+      "otras cadenas (Vea, Disco, Carrefour, La Anónima…)",
       "distribuidores",
       "sitios de terceros"
     ]
   },
   "counts": {
-    "assets": 30,
-    "gtin_exact": 25,
-    "name_size_variant_gtin_differs": 5
+    "assets": 41,
+    "by_business": {
+      "Jumbo": 12,
+      "Supermercados DIA": 18,
+      "Supermercados TOP": 11
+    },
+    "gtin_exact": 37,
+    "name_size_variant_gtin_differs": 4
   },
   "assets": [
     {
@@ -36,6 +42,7 @@
       "source_product_name": "Agua Villavicencio Sin Gas x 500cc",
       "source_ean": "7799155000173",
       "retrieved_at": "2026-09-29",
+      "image_date": "2025-08-05",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "GTIN_EXACT",
@@ -52,7 +59,8 @@
       "approved_asset_id": "dd16a1ae-a960-4773-acb9-9fb09569fdae",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "heineken-710ml",
@@ -65,6 +73,7 @@
       "source_product_name": "Cerveza Heineken Lata x 710cc",
       "source_ean": "7793147571283",
       "retrieved_at": "2026-09-29",
+      "image_date": "2025-08-05",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "GTIN_EXACT",
@@ -81,7 +90,8 @@
       "approved_asset_id": "1162ea4b-5356-4ee3-8a2a-84b01694deef",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "quilmes-clasica-710ml",
@@ -94,6 +104,7 @@
       "source_product_name": "Cerveza Quilmes Clasica Lata x 710cc",
       "source_ean": "7792798014835",
       "retrieved_at": "2026-09-29",
+      "image_date": "2025-08-06",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "GTIN_EXACT",
@@ -110,7 +121,39 @@
       "approved_asset_id": "04550f74-eec6-4f0f-9be2-fd52cda3933a",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
+    },
+    {
+      "sku": "red-bull-energy-drink-355ml",
+      "product_name": "Red Bull Energy Drink 355 ml",
+      "catalog_gtin": "90435225",
+      "source_business": "Jumbo",
+      "source_site": "jumbo.com.ar",
+      "source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/872053/Energizate-Red-Bull-Energy-Drink-355cc-1-828794.jpg?v=638854274005130000",
+      "source_product_page": "https://www.jumbo.com.ar/energizate-red-bull-energy-drink-355cc/p",
+      "source_product_name": "Bebida Energizante Energy Drink 355 Cc Red Bull",
+      "source_ean": "90435225",
+      "retrieved_at": "2026-09-29",
+      "image_date": "2025-06-13",
+      "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
+      "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
+      "identity_basis": "GTIN_EXACT",
+      "exact_product_match": "YES_GTIN",
+      "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Red Bull Energy Drink 355 ml». Imagen de Jumbo del 2025-06 con los octógonos vigentes; se descartó la de la misma ficha sin octógonos y la de DIA/TOP con la placa sobre la base.",
+      "adaptation": "centrada sobre blanco; envase sin retoque",
+      "sha256": {
+        "original": "ef4bda6000d436f45530cf5378b1db651bc42344d23b10dbf84882d88cc628df",
+        "uploaded_source": "1a00499bcb867d7bc9787c767f5a8ce78c4105371600d9b33b4eead58497d4b1",
+        "master": "1c15e4bea4f01c5d6e23a2461bc7cd10602a80086a28d35cc8811fc070a8abf3",
+        "thumbnail": "ed45d1a48ddbaaebc4769da3d2df32f54f97bcf06a980627d27ac82746dd4215"
+      },
+      "upload_id": "305ea81a-a941-4116-add8-8d2b9868519e",
+      "approved_asset_id": "03b5ec35-c4cc-4a59-b869-2f79871235f9",
+      "rights_status_db": "LICENCIA_COMERCIAL",
+      "source_type_db": "retail_reference",
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "fernet-branca-750ml",
@@ -123,6 +166,7 @@
       "source_product_name": "Aperitivo Fernet Branca 750 ml.",
       "source_ean": "7790290101602",
       "retrieved_at": "2026-09-29",
+      "image_date": "2026-09-29",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "NAME_SIZE_VARIANT",
@@ -139,7 +183,8 @@
       "approved_asset_id": "e690a6d0-9024-411f-badd-5c2d5834ca0e",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "coca-cola-original-2250ml-local",
@@ -152,12 +197,13 @@
       "source_product_name": "Gaseosa Coca-Cola Sabor Original 2.25 Lt.",
       "source_ean": "7790895000997",
       "retrieved_at": "2026-09-29",
+      "image_date": "2026-09-03",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "GTIN_EXACT",
       "exact_product_match": "YES_GTIN",
       "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Coca-Cola Sabor Original 2,25 L».",
-      "adaptation": "centrada sobre blanco",
+      "adaptation": "centrada sobre blanco; envase sin retoque",
       "sha256": {
         "original": "483b2a7ac3e164b96c94103cffdd85cda1bed528145c677787e1306700590587",
         "uploaded_source": "4f8851136048c72387bbd21e71f22509085e70c0b8c7a226a955d947e6b4c946",
@@ -168,7 +214,39 @@
       "approved_asset_id": "d81e9a38-6b2c-4e4c-84da-57bd18916da2",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
+    },
+    {
+      "sku": "coca-cola-sin-azucar-2250ml-local",
+      "product_name": "Coca-Cola Sin Azúcar 2,25 L",
+      "catalog_gtin": "7790895067570",
+      "source_business": "Supermercados DIA",
+      "source_site": "diaonline.supermercadosdia.com.ar",
+      "source_url": "https://ardiaprod.vteximg.com.br/arquivos/ids/311436/Gaseosa-CocaCola-Zero-2-25-Lt-_2.jpg?v=639257726915770000",
+      "source_product_page": "https://diaonline.supermercadosdia.com.ar/gaseosa-coca-cola-zero-225-lt-121537/p",
+      "source_product_name": "Gaseosa Coca-Cola Zero 2.25 Lt.",
+      "source_ean": "7790895067570",
+      "retrieved_at": "2026-09-29",
+      "image_date": "2026-09-23",
+      "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
+      "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
+      "identity_basis": "GTIN_EXACT",
+      "exact_product_match": "YES_GTIN",
+      "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Coca-Cola Sin Azúcar 2,25 L». El envase actual dice «Zero» (DIA actualizó esta imagen el 2026-09-23; Jumbo y TOP muestran lo mismo) aunque el nombre de la ficha diga «Sin Azúcar»: mismo GTIN en las tres tiendas. Se corrige mi rechazo anterior, que se basaba en fotos de 2021 a 2023. Conviene revisar el nombre de la ficha.",
+      "adaptation": "centrada sobre blanco; envase sin retoque",
+      "sha256": {
+        "original": "b95b89dc55d3b20cfc85c6bc6660547ee3eeea095b02b9526a952ea642f91a1d",
+        "uploaded_source": "c51377ae7b68549a2f5638cbf87b6754ea4786948cb306780369bc8c00fc4332",
+        "master": "12588a44fead6677cb503ad490a966bf545fa0ebc748d24d66e586cae9cb1d0b",
+        "thumbnail": "36c6d16df1287bee58f0d4fcb84dc8516e727a54fb093e6c02a7f446a6674f2d"
+      },
+      "upload_id": "89a8f1f6-33ce-4293-b3ad-2644d6420d15",
+      "approved_asset_id": "e09fc0ce-b3cc-4df1-8d1d-1c79f1f4f945",
+      "rights_status_db": "LICENCIA_COMERCIAL",
+      "source_type_db": "retail_reference",
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "fanta-naranja-2250ml",
@@ -181,12 +259,13 @@
       "source_product_name": "Gaseosa Fanta Naranja 2,25 Lt.",
       "source_ean": "7790895001017",
       "retrieved_at": "2026-09-29",
+      "image_date": "2025-08-12",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "GTIN_EXACT",
       "exact_product_match": "YES_GTIN",
       "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Fanta Naranja 2,25 L».",
-      "adaptation": "centrada sobre blanco",
+      "adaptation": "centrada sobre blanco; envase sin retoque",
       "sha256": {
         "original": "3417755a3834abf27742537a03f45a27b473d74bbef9e7cdbaf3ef3e26cc16f5",
         "uploaded_source": "2f3c4258d7fdd6856c145115146f02b16196e7e614966f6e4cfbd351cf469d9c",
@@ -197,7 +276,70 @@
       "approved_asset_id": "8694b99e-94b0-4f79-b912-b72daebfc66a",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
+    },
+    {
+      "sku": "sprite-sin-azucar-2250ml-local",
+      "product_name": "Sprite Sin Azúcar 2,25 L",
+      "catalog_gtin": "7790895641916",
+      "source_business": "Jumbo",
+      "source_site": "jumbo.com.ar",
+      "source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/795699/Gaseosa-Sprite-Sin-Az-car-Lima-lim-n-2-25-Lt-2-28502.jpg?v=638312637629170000",
+      "source_product_page": "https://www.jumbo.com.ar/sprite-zero-lima-limon-2-25-lt/p",
+      "source_product_name": "Gaseosa Sin Azúcar Sabor Lima y Limón 2,25 Lts Sprite",
+      "source_ean": "7790895064166",
+      "retrieved_at": "2026-09-29",
+      "image_date": "2023-09-25",
+      "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
+      "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
+      "identity_basis": "NAME_SIZE_VARIANT",
+      "exact_product_match": "YES_NAME_SIZE_VARIANT_GTIN_DIFFERS",
+      "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Sprite Sin Azúcar 2,25 L». El GTIN de la ficha (7790895641916) es en Jumbo la botella verde antigua de 2019, borrosa; el envase vigente de 2,25 L es el EAN 7790895064166 (Jumbo, DIA y TOP). Se usó el envase vigente. Conviene revisar el GTIN de la ficha.",
+      "adaptation": "centrada sobre blanco; envase sin retoque",
+      "sha256": {
+        "original": "cd061df9a78a659b73da60120312728bd92bb5b833e6cc3548c5259e1963bd14",
+        "uploaded_source": "c3bf17b35f545f0f41bded7bfc9244c2cf9b5bb60a4c4e984c12eafd7fdf5609",
+        "master": "6d713dc2fd9403f16b7c9f034c4e616d52d228750cd330ecc829ba181c2664ae",
+        "thumbnail": "3f4f7d679f32a68ec37f756eb4bc62ea7091136be60833380a39cdb8215f6035"
+      },
+      "upload_id": "4fc69ec8-48eb-4763-b981-316962695cbd",
+      "approved_asset_id": "3d7254dc-d505-4270-874a-e63cd0acc458",
+      "rights_status_db": "LICENCIA_COMERCIAL",
+      "source_type_db": "retail_reference",
+      "product_draft": true,
+      "replaced_previous_image": false
+    },
+    {
+      "sku": "bonaqua-sin-gas-2250ml-local",
+      "product_name": "Bonaqua Sin Gas 2,25 L",
+      "catalog_gtin": "7790895641978",
+      "source_business": "Jumbo",
+      "source_site": "jumbo.com.ar",
+      "source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/580435/Bonaqua-Agua-Sin-Gas-225-L-2-244936.jpg?v=637219992408330000",
+      "source_product_page": "https://www.jumbo.com.ar/agua-mineral-bonaqua-sin-gas-2-25-lt/p",
+      "source_product_name": "Agua Mineral Bonaqua Sin Gas 2.25 Lt",
+      "source_ean": "7790895641978",
+      "retrieved_at": "2026-09-29",
+      "image_date": "2020-04-09",
+      "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
+      "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
+      "identity_basis": "GTIN_EXACT",
+      "exact_product_match": "YES_GTIN",
+      "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Bonaqua Sin Gas 2,25 L».",
+      "adaptation": "centrada sobre blanco; envase sin retoque",
+      "sha256": {
+        "original": "7919f5957d821e4d634def4f6a73c5ea6eacccded7764f63594c427e6548a9fc",
+        "uploaded_source": "ee8a26ceae9ab94d0ac5445718ed4bb1300b26dfaee4ba7d48115776538d668c",
+        "master": "0305931b1fc6225998452ce48e71c97535176e0fe979361ec196a99947d3bb4b",
+        "thumbnail": "d576421d17e9f20bba1b4db74444695ff1588d01e6f66143f392913446d77a69"
+      },
+      "upload_id": "33628924-e6e4-407f-8bc7-256eaf4d505b",
+      "approved_asset_id": "e0af1486-3cbf-42a4-9a2c-7f2652850a5c",
+      "rights_status_db": "LICENCIA_COMERCIAL",
+      "source_type_db": "retail_reference",
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "eco-de-los-andes-sin-gas-2000ml",
@@ -210,6 +352,7 @@
       "source_product_name": "Agua Mineral sin Gas Eco de los Andes 2 Lts.",
       "source_ean": "7792799000097",
       "retrieved_at": "2026-09-29",
+      "image_date": "2026-05-12",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "GTIN_EXACT",
@@ -226,7 +369,8 @@
       "approved_asset_id": "e34bebe8-11d9-403f-9bbd-2463053f88c4",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "glaciar-con-gas-1500ml",
@@ -239,6 +383,7 @@
       "source_product_name": "Agua Mineral con Gas Glaciar 1,5 Lt.",
       "source_ean": "7792931001050",
       "retrieved_at": "2026-09-29",
+      "image_date": "2026-07-01",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "GTIN_EXACT",
@@ -255,7 +400,39 @@
       "approved_asset_id": "785d2322-5e17-4c71-b8a7-57cdff71363b",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
+    },
+    {
+      "sku": "glaciar-sin-gas-1500ml",
+      "product_name": "Glaciar Sin Gas Baja en Sodio 1,5 L",
+      "catalog_gtin": "7792931000022",
+      "source_business": "Jumbo",
+      "source_site": "jumbo.com.ar",
+      "source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/893692/Agua-Mineral-Glaciar-Sin-Gas-Bajo-Sodio-1-5-L-1-237511.jpg?v=639014961662370000",
+      "source_product_page": "https://www.jumbo.com.ar/agua-mineral-glaciar-sin-gas-bajo-sodio-1-5-l/p",
+      "source_product_name": "Agua Mineral sin Gas Bajo Sodio 1.5 Lts Glaciar",
+      "source_ean": "7792931000022",
+      "retrieved_at": "2026-09-29",
+      "image_date": "2025-12-16",
+      "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
+      "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
+      "identity_basis": "GTIN_EXACT",
+      "exact_product_match": "YES_GTIN",
+      "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Glaciar Sin Gas Baja en Sodio 1,5 L».",
+      "adaptation": "placa lateral de la tienda retirada y centrada sobre blanco; envase sin retoque",
+      "sha256": {
+        "original": "f96832250b5116e2f97044b3ccc947ae005b02c65757e8d8f358f6dd8ca37fcc",
+        "uploaded_source": "83dcb89e251659566748c98ce4679005cf823c29187928a8807f3ab34748762e",
+        "master": "6bfb71cfddd256842bdadddd9da9c7489a7d032c77da7666a99fbf0736efceab",
+        "thumbnail": "0512b37fc5f15c65c85d26a82a694aa1441d6a6bf640e0519da4912a993578dd"
+      },
+      "upload_id": "2412d6b8-d2e5-45de-b576-7163e2701041",
+      "approved_asset_id": "e4e1b458-5880-439c-bbbc-0cd8889ae4a9",
+      "rights_status_db": "LICENCIA_COMERCIAL",
+      "source_type_db": "retail_reference",
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "aperol-750ml",
@@ -268,12 +445,13 @@
       "source_product_name": "Aperitivo Aperol 750 Ml.",
       "source_ean": "7891136057029",
       "retrieved_at": "2026-09-29",
+      "image_date": "2026-09-29",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "GTIN_EXACT",
       "exact_product_match": "YES_GTIN",
       "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Aperol 750 ml».",
-      "adaptation": "centrada sobre blanco",
+      "adaptation": "centrada sobre blanco; envase sin retoque",
       "sha256": {
         "original": "df42be030b8b70ec81aa3b4edf55d578ac63ae8ebca9336bfa300263e85208b8",
         "uploaded_source": "be4062d78cb903ba82ff6db3645fc0ec66cb04331868f5d672a1817821cc95f6",
@@ -284,7 +462,8 @@
       "approved_asset_id": "b18db7af-8fbc-4480-90d0-f6bd910d9576",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "branca-menta-750ml",
@@ -297,6 +476,7 @@
       "source_product_name": "Fernet Branca Menta 750 ml.",
       "source_ean": "7790290101473",
       "retrieved_at": "2026-09-29",
+      "image_date": "2026-09-29",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "GTIN_EXACT",
@@ -313,7 +493,8 @@
       "approved_asset_id": "f153d830-bee2-4c32-b263-eee596c5b1e5",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "brahma-chopp-1000ml",
@@ -326,6 +507,7 @@
       "source_product_name": "Cerveza Brahma Chopp Retornable x 1000cc",
       "source_ean": "7792798007493",
       "retrieved_at": "2026-09-29",
+      "image_date": "2025-08-05",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "GTIN_EXACT",
@@ -342,7 +524,8 @@
       "approved_asset_id": "7fcaaa91-5b78-454d-a57e-c66ef21053bf",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "corona-extra-330ml",
@@ -355,6 +538,7 @@
       "source_product_name": "Cerveza Corona Botella No Retornable 330 Ml.",
       "source_ean": "7792798003709",
       "retrieved_at": "2026-09-29",
+      "image_date": "2026-03-25",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "NAME_SIZE_VARIANT",
@@ -371,7 +555,8 @@
       "approved_asset_id": "c88af3c5-ee85-4ad2-9a20-175737c30676",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "imperial-golden-473ml",
@@ -384,6 +569,7 @@
       "source_product_name": "Cerveza Imperial Lata Golden x 473cc",
       "source_ean": "7793147571689",
       "retrieved_at": "2026-09-29",
+      "image_date": "2025-08-05",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "GTIN_EXACT",
@@ -400,7 +586,8 @@
       "approved_asset_id": "c1e4173b-284e-47d5-9d4f-2c7bd3754fb1",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "patagonia-lager-del-sur-730ml",
@@ -413,6 +600,7 @@
       "source_product_name": "Cerveza Patagonia del Sur x 730cc",
       "source_ean": "7792798015023",
       "retrieved_at": "2026-09-29",
+      "image_date": "2025-08-05",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "GTIN_EXACT",
@@ -429,7 +617,8 @@
       "approved_asset_id": "38e8d306-7c2a-440a-a835-9a7d27d69740",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "schneider-rubia-710ml",
@@ -442,6 +631,7 @@
       "source_product_name": "Cerveza Schneider Rubia 710 Ml.",
       "source_ean": "7793147570606",
       "retrieved_at": "2026-09-29",
+      "image_date": "2025-10-04",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "GTIN_EXACT",
@@ -458,36 +648,39 @@
       "approved_asset_id": "b0f875ee-9044-4f28-bc69-c42be995f165",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "stella-artois-rubia-473ml",
       "product_name": "Stella Artois Rubia 473 ml",
       "catalog_gtin": "7792798010615",
-      "source_business": "Supermercados TOP",
-      "source_site": "supertop.com.ar",
-      "source_url": "https://supertopar.vteximg.com.br/arquivos/ids/156608/304146.jpg?v=638899995087230000",
-      "source_product_page": "https://www.supertop.com.ar/cerveza-stella-artois-lager-x-473cc-7792798001293/p",
-      "source_product_name": "Cerveza Stella Artois Lager x 473cc",
-      "source_ean": "7792798001293",
+      "source_business": "Jumbo",
+      "source_site": "jumbo.com.ar",
+      "source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/890507/Cerveza-Stella-Artois-Rubia-473-Ml-1-38031.jpg?v=638987206078500000",
+      "source_product_page": "https://www.jumbo.com.ar/cerveza-stella-artois-rubia-473-ml/p",
+      "source_product_name": "Cerveza Rubia 473 Cc Stella Artois",
+      "source_ean": "7792798010615",
       "retrieved_at": "2026-09-29",
+      "image_date": "2025-11-14",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
-      "identity_basis": "NAME_SIZE_VARIANT",
-      "exact_product_match": "YES_NAME_SIZE_VARIANT_GTIN_DIFFERS",
-      "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Stella Artois Rubia 473 ml». El GTIN del catálogo (7792798010615; OFF lo declara Stella Artois 473) no aparece en las tiendas, que listan la lata estándar de 473 ml con otros EAN. Se rechazaron la edición Vintage y la versión sin alcohol.",
-      "adaptation": "placa inferior de la tienda retirada y centrada sobre blanco; envase sin retoque",
+      "identity_basis": "GTIN_EXACT",
+      "exact_product_match": "YES_GTIN",
+      "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Stella Artois Rubia 473 ml». Imagen de Jumbo (2025-11) del GTIN exacto de la ficha, con el diseño ornamentado; TOP vende otra lata (diseño blanco) con otro GTIN. Reemplaza la imagen anterior de TOP. Confirmar cuál lata compra Walter.",
+      "adaptation": "placa lateral de la tienda retirada y centrada sobre blanco; envase sin retoque",
       "sha256": {
-        "original": "66cc0b3232943ef19f174e547fe3af765093bcf321104824f2d2c7048f137358",
-        "uploaded_source": "ef2aa403cd52d4e93919e384c7950b9c57aa5971a514423503ebe997e9e1e61e",
-        "master": "5dc3d4fb392b39e63c249bf7c0ca07df0dadb5f84712b08d65235310b78d67bc",
-        "thumbnail": "53ba7c461083662f79b436a2588f45c46ee6ff7a099bb2b470f9337b1aeab66c"
+        "original": "d9100d53acaafa1aaaf33501e589c6dbdac62dd940ade36c1a5455d40aedf304",
+        "uploaded_source": "dc37c379db5a36dfe2bc733c4243d80dce1801a14c49c403f7bc963086e6bdd5",
+        "master": "2a9acbae9d8325832345c2b8747ef52a9353d9eefb99fe738d7626951e5e0da8",
+        "thumbnail": "ea51b8657722e92b2409fdae7b47c1ef1f7c830dd49ee75ae6ef55133e80310c"
       },
-      "upload_id": "315825bc-6625-4fac-b4e8-9491638db3d7",
+      "upload_id": "d619eabd-44e1-4bb5-a2a1-262e36761785",
       "approved_asset_id": "eece303d-cab1-418a-9078-a7cfaf4a5aae",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": true
     },
     {
       "sku": "monster-mango-loco-473ml",
@@ -500,12 +693,13 @@
       "source_product_name": "Bebida Energizante Monster Mango Loco 473 Ml.",
       "source_ean": "7798422620045",
       "retrieved_at": "2026-09-29",
+      "image_date": "2026-09-29",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "NAME_SIZE_VARIANT",
       "exact_product_match": "YES_NAME_SIZE_VARIANT_GTIN_DIFFERS",
       "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Monster Mango Loco 473 ml». El GTIN del catálogo (7798422520045) tiene un dígito verificador inválido; el EAN vigente en las dos tiendas es 7798422620045 (error de tipeo probable).",
-      "adaptation": "centrada sobre blanco",
+      "adaptation": "centrada sobre blanco; envase sin retoque",
       "sha256": {
         "original": "120b608d3c21243b4524ae5a1b7088f11efa7d94946ef4d4aaeac0598ee51eaf",
         "uploaded_source": "4e15886041f6709ee1cdc3d5d0ac58800efbb34be34ee0bf93c22c28d220dbdb",
@@ -516,7 +710,8 @@
       "approved_asset_id": "a6d05553-b8f1-41da-941e-cb0bb24843bc",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "monster-ultra-473ml-local",
@@ -529,6 +724,7 @@
       "source_product_name": "Energizante Ultra Monster 473 Ml.",
       "source_ean": "7798422620021",
       "retrieved_at": "2026-09-29",
+      "image_date": "2026-09-29",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "GTIN_EXACT",
@@ -545,7 +741,8 @@
       "approved_asset_id": "4e70cd1f-8cdf-4e5e-8190-474e4d7adfc3",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "speed-zero-473ml",
@@ -558,12 +755,13 @@
       "source_product_name": "Energizante Zero Azucar Speed 473 Ml.",
       "source_ean": "7798119220381",
       "retrieved_at": "2026-09-29",
+      "image_date": "2026-09-29",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "GTIN_EXACT",
       "exact_product_match": "YES_GTIN",
       "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Speed Zero 473 ml».",
-      "adaptation": "centrada sobre blanco",
+      "adaptation": "centrada sobre blanco; envase sin retoque",
       "sha256": {
         "original": "84ae5590b8f61535aaf6fe602dbac85adda14995309f725b211158632cf5c122",
         "uploaded_source": "e2b9e599c1bfaf766cbce5c26a7685cb575a789912e361d69dd46b290bc2b383",
@@ -574,7 +772,101 @@
       "approved_asset_id": "29056abe-e1da-40d1-8a5e-8728714a0d05",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
+    },
+    {
+      "sku": "pepsi-black-1500ml",
+      "product_name": "Pepsi Black 1,5 L",
+      "catalog_gtin": "7791813828419",
+      "source_business": "Jumbo",
+      "source_site": "jumbo.com.ar",
+      "source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/907119/Gaseosa-Pepsi-Black-1-5lt-1-237512.jpg?v=639124043883700000",
+      "source_product_page": "https://www.jumbo.com.ar/gaseosa-pepsi-black-1-5lt/p",
+      "source_product_name": "Gaseosa Cola Black Sin Azúcar 1.5 Lts Pepsi",
+      "source_ean": "7791813828419",
+      "retrieved_at": "2026-09-29",
+      "image_date": "2026-04-21",
+      "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
+      "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
+      "identity_basis": "GTIN_EXACT",
+      "exact_product_match": "YES_GTIN",
+      "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Pepsi Black 1,5 L». Logo Pepsi vigente; imagen de Jumbo del 2026-04.",
+      "adaptation": "placa lateral de la tienda retirada y centrada sobre blanco; envase sin retoque",
+      "sha256": {
+        "original": "04681d44876f6e3465fa69ad5db82f989eb63279001e8b129b06ce422561f78a",
+        "uploaded_source": "9d3b29e9b57ff0140fcca95243965976d9d8fc619e140aa79fa7dede8a4993bd",
+        "master": "cbddbb961f26f8a2c818d3b2995a599af14df41ccbf5b2cbd2fbfc7affe5dab9",
+        "thumbnail": "4a5b8a59cb767b637146543a5a481eaa1e7c28405cfa62774d3765ac06168bb4"
+      },
+      "upload_id": "974f4511-76bf-47c8-8e78-a9a5a8bc60c4",
+      "approved_asset_id": "380e57e2-ad8f-41c2-8ad8-09fc14e5add7",
+      "rights_status_db": "LICENCIA_COMERCIAL",
+      "source_type_db": "retail_reference",
+      "product_draft": true,
+      "replaced_previous_image": false
+    },
+    {
+      "sku": "sprite-sin-azucar-600ml",
+      "product_name": "Sprite Sin Azúcar 600 ml",
+      "catalog_gtin": "7790895650895",
+      "source_business": "Jumbo",
+      "source_site": "jumbo.com.ar",
+      "source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/881688/Gaseosa-Zero-Lima-Lim-n-600-Ml-Sprite-2-1040313.jpg?v=638919057897470000",
+      "source_product_page": "https://www.jumbo.com.ar/gaseosa-zero-lima-limon-600-ml-sprite/p",
+      "source_product_name": "Gaseosa Zero Sabor Lima Limón 600 Ml Sprite",
+      "source_ean": "7790895650895",
+      "retrieved_at": "2026-09-29",
+      "image_date": "2025-08-27",
+      "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
+      "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
+      "identity_basis": "GTIN_EXACT",
+      "exact_product_match": "YES_GTIN",
+      "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Sprite Sin Azúcar 600 ml». El envase vigente dice «Zero» con el texto «Soy 100% hecha de otras botellas» (Jumbo 2025-08 y DIA 2025-11); la ficha lo llama «Sin Azúcar» con el mismo GTIN. Se corrige mi rechazo anterior.",
+      "adaptation": "centrada sobre blanco; envase sin retoque",
+      "sha256": {
+        "original": "8793fc45f83b0de5cc90bf322715847886413913f2a6090ad544e8000997f754",
+        "uploaded_source": "5c0f1589a3d429ec6067666032144fead9feee6666ac7506af1e519c8972efce",
+        "master": "4bf0f42f2745c955b0cc79df8d9ffed37fccf8c0f67c0f1556014720dbbd2542",
+        "thumbnail": "519fb43a343f6821c5d1e112a2b637a0d523175ad0e374f0a009e9a0926b9cba"
+      },
+      "upload_id": "47b2fcaf-f88f-41ab-8ee3-8b751d205604",
+      "approved_asset_id": "46eec16f-5e12-424f-a14a-0d48a789fbc9",
+      "rights_status_db": "LICENCIA_COMERCIAL",
+      "source_type_db": "retail_reference",
+      "product_draft": true,
+      "replaced_previous_image": false
+    },
+    {
+      "sku": "hielo-cristal-4kg",
+      "product_name": "Hielo Cristal 4 kg",
+      "catalog_gtin": "7798124020037",
+      "source_business": "Jumbo",
+      "source_site": "jumbo.com.ar",
+      "source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/840454/Hielo-Cristal-Bolsa-4-Kg-1-19310.jpg?v=638651237838630000",
+      "source_product_page": "https://www.jumbo.com.ar/hielo-cristal-bolsa-4-kg/p",
+      "source_product_name": "Hielo Cristal 4 Kg",
+      "source_ean": "7798124020037",
+      "retrieved_at": "2026-09-29",
+      "image_date": "2024-10-21",
+      "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
+      "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
+      "identity_basis": "GTIN_EXACT",
+      "exact_product_match": "YES_GTIN",
+      "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Hielo Cristal 4 kg». Foto real de la bolsa, con «Peso neto 4 kg» legible.",
+      "adaptation": "centrada sobre blanco; envase sin retoque",
+      "sha256": {
+        "original": "1aec55ba22d6e2e89068030aa8e0de50f94e347b8aa6541a2604cb1cdadc3faa",
+        "uploaded_source": "15c7484f35d8f4577038087b75a28e6d6a6aa2784dcafeb3aa800cc59883c118",
+        "master": "edf66f426bbb83b0f1ea3064ea36b0d0151d288d4f5600593b02341e52aebaa0",
+        "thumbnail": "2266bc2974232b4a51c9b13b32d70ae034fddd12b4fdf050701b8ae64978ac2a"
+      },
+      "upload_id": "618389dd-8a21-4f2f-a4e3-3939ba60216a",
+      "approved_asset_id": "2adb7d57-7d18-430b-9fb8-83676852b8ef",
+      "rights_status_db": "LICENCIA_COMERCIAL",
+      "source_type_db": "retail_reference",
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "cepita-durazno-1000ml",
@@ -587,6 +879,7 @@
       "source_product_name": "Jugo Cepita Hot Fill Durazno Botella x 1000cc",
       "source_ean": "7790895009846",
       "retrieved_at": "2026-09-29",
+      "image_date": "2025-08-05",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "GTIN_EXACT",
@@ -603,7 +896,8 @@
       "approved_asset_id": "b1220e0d-8aec-4acd-90d2-8bcbcf241e9e",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "paso-de-los-toros-pomelo-1500ml",
@@ -616,6 +910,7 @@
       "source_product_name": "Gaseosa Con Gas Pomelo Paso de Los Toros 1,5 Lt.",
       "source_ean": "7791813421382",
       "retrieved_at": "2026-09-29",
+      "image_date": "2026-09-29",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "GTIN_EXACT",
@@ -632,7 +927,39 @@
       "approved_asset_id": "21fd32fb-f52b-40d8-85cd-dde59e4306bd",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
+    },
+    {
+      "sku": "paso-de-los-toros-tonica-1500ml",
+      "product_name": "Paso de los Toros Tónica 1,5 L",
+      "catalog_gtin": "7791813421368",
+      "source_business": "Jumbo",
+      "source_site": "jumbo.com.ar",
+      "source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/907118/Gaseosa-Paso-De-Los-Toros-T-nica-Botella-1-5ltx1-1-17223.jpg?v=639124043880030000",
+      "source_product_page": "https://www.jumbo.com.ar/gaseosa-paso-de-los-toros-tonica-botella-1-5ltx1/p",
+      "source_product_name": "Gaseosa Agua Tónica 1.5 Lts Paso de los Toros",
+      "source_ean": "7791813421368",
+      "retrieved_at": "2026-09-29",
+      "image_date": "2026-04-21",
+      "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
+      "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
+      "identity_basis": "GTIN_EXACT",
+      "exact_product_match": "YES_GTIN",
+      "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Paso de los Toros Tónica 1,5 L». Placa lateral de Jumbo retirada; la de TOP se veía a través de la base de la botella.",
+      "adaptation": "placa lateral de la tienda retirada y centrada sobre blanco; envase sin retoque",
+      "sha256": {
+        "original": "bcebad2580bf26dd82ec2899feb1ae39231cb1c5cf695f6d8c54dbdd0ab40e44",
+        "uploaded_source": "3af9fc7d87f0edca026cfdc464080a6b968d77e3b4f8ba6cdc490450b90fc596",
+        "master": "98cb1f7d4db1c8ccd3579e4b9255b87031e3746103ff56e4b89441429d9c97e4",
+        "thumbnail": "b3d0428069bb79d5b5c04379bd15f030280eee9e19fc76dd03001a9527448ef9"
+      },
+      "upload_id": "bd4da6c5-490b-4413-81a2-c580111e0d9e",
+      "approved_asset_id": "c5a7c3d7-9c7f-492c-88e0-4b566b987d77",
+      "rights_status_db": "LICENCIA_COMERCIAL",
+      "source_type_db": "retail_reference",
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "schweppes-pomelo-sin-azucar-2250ml",
@@ -645,12 +972,13 @@
       "source_product_name": "Gaseosa Schweppes Pomelo Zero 2.25 Lt.",
       "source_ean": "7790895010095",
       "retrieved_at": "2026-09-29",
+      "image_date": "2026-09-29",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "GTIN_EXACT",
       "exact_product_match": "YES_GTIN",
       "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Schweppes Pomelo Sin Azúcar 2,25 L».",
-      "adaptation": "centrada sobre blanco",
+      "adaptation": "centrada sobre blanco; envase sin retoque",
       "sha256": {
         "original": "07b965814183555b92ca5349931faed6f3302b4ac537d6b221568ec971fd91ad",
         "uploaded_source": "cf1ee95ad48064c977bc2e4a8f933a8bc5c7944114df1a7869e14d48e9cef0cf",
@@ -661,7 +989,8 @@
       "approved_asset_id": "a13136eb-e298-410b-bac0-4ea5161e4c69",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "schweppes-tonica-354ml-local",
@@ -674,12 +1003,13 @@
       "source_product_name": "Gaseosa Schweppes Tónica 354 Ml.",
       "source_ean": "7790895006821",
       "retrieved_at": "2026-09-29",
+      "image_date": "2026-09-12",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "GTIN_EXACT",
       "exact_product_match": "YES_GTIN",
       "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Schweppes Tónica 354 ml».",
-      "adaptation": "centrada sobre blanco",
+      "adaptation": "centrada sobre blanco; envase sin retoque",
       "sha256": {
         "original": "53eb222c7737b64bdd8e6759e89951b9710b56c78ea932c33ca12f54bbb41c71",
         "uploaded_source": "34dec00da8f013a654994cda164e03391a6a91bd38f287701924bc7af22dd532",
@@ -690,7 +1020,8 @@
       "approved_asset_id": "a2a8314f-e803-40e6-b5e5-249647783d55",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "doritos-queso-129g",
@@ -703,6 +1034,7 @@
       "source_product_name": "Nachos Sabor A Queso Doritos X 129 Gr.",
       "source_ean": "7790310985656",
       "retrieved_at": "2026-09-29",
+      "image_date": "2024-08-22",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "GTIN_EXACT",
@@ -719,7 +1051,8 @@
       "approved_asset_id": "d1bddac9-6cf1-462a-88d0-eb0b7d6b1351",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "lays-clasicas-40g",
@@ -732,6 +1065,7 @@
       "source_product_name": "Papas Lays Clasicas x 40gr",
       "source_ean": "7790310985236",
       "retrieved_at": "2026-09-29",
+      "image_date": "2025-08-12",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "GTIN_EXACT",
@@ -748,7 +1082,8 @@
       "approved_asset_id": "72aa3b0d-b6cc-465f-acde-de7c04932538",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "mani-king-salado-sin-piel-100g",
@@ -761,6 +1096,7 @@
       "source_product_name": "Mani King Frito Pelado con Sal x 100gr",
       "source_ean": "7798151953384",
       "retrieved_at": "2026-09-29",
+      "image_date": "2025-08-14",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "GTIN_EXACT",
@@ -777,36 +1113,70 @@
       "approved_asset_id": "07ca80f0-2d1a-4b9d-b25b-146031bf835a",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
+    },
+    {
+      "sku": "pehuamar-palitos-salados-90g",
+      "product_name": "Pehuamar Palitos Salados 90 g",
+      "catalog_gtin": "7790310984352",
+      "source_business": "Jumbo",
+      "source_site": "jumbo.com.ar",
+      "source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/826796/Palitos-Salados-Pehuamar-X-90-Gr-1-859472.jpg?v=638556933698530000",
+      "source_product_page": "https://www.jumbo.com.ar/palitos-salados-90-grs-pehuamar/p",
+      "source_product_name": "Palitos Salados 90 Grs Pehuamar",
+      "source_ean": "7790310984352",
+      "retrieved_at": "2026-09-29",
+      "image_date": "2024-07-04",
+      "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
+      "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
+      "identity_basis": "GTIN_EXACT",
+      "exact_product_match": "YES_GTIN",
+      "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Pehuamar Palitos Salados 90 g».",
+      "adaptation": "placa lateral de la tienda retirada y centrada sobre blanco; envase sin retoque",
+      "sha256": {
+        "original": "2bda16a620593320b717c66536771bc182b180285bef3ccbee464aa0e26aa7b2",
+        "uploaded_source": "713264e2390f7058a842f478675d32f46dadff6b311b5af4cf6d337d8fda9bf3",
+        "master": "f65b897837f8d0a9608bc699d1e8680d5e5668c8a250027ecb5e38ef630a4f95",
+        "thumbnail": "8642f3721bd27b69b21ec27d8a94b4e74cc0f6381040fe7065e8fd6fc7f229b4"
+      },
+      "upload_id": "a88ccdff-3cbe-45f9-b8f1-da6e14dbb89c",
+      "approved_asset_id": "1a16d575-0050-457b-9539-5a217bb2d135",
+      "rights_status_db": "LICENCIA_COMERCIAL",
+      "source_type_db": "retail_reference",
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "alamos-malbec-750ml-local",
       "product_name": "Alamos Malbec 750 ml",
       "catalog_gtin": "7794450091338",
-      "source_business": "Supermercados DIA",
-      "source_site": "diaonline.supermercadosdia.com.ar",
-      "source_url": "https://ardiaprod.vteximg.com.br/arquivos/ids/314458/Vino-Tinto-Alamos-Malbec-750-Ml-_1.jpg?v=638599428555500000",
-      "source_product_page": "https://diaonline.supermercadosdia.com.ar/vino-tinto-alamos-malbec-750-ml-180721/p",
-      "source_product_name": "Vino Tinto Alamos Malbec 750 Ml.",
-      "source_ean": "7794450000781",
+      "source_business": "Jumbo",
+      "source_site": "jumbo.com.ar",
+      "source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/709749/Vino-Alamos-Malbec-X-750cc-1-159111.jpg?v=637927402400100000",
+      "source_product_page": "https://www.jumbo.com.ar/vino-alamos-malbec-x-750cc/p",
+      "source_product_name": "Vino Tinto Malbec 750 Cc Alamos",
+      "source_ean": "7794450091338",
       "retrieved_at": "2026-09-29",
+      "image_date": "2022-07-06",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
-      "identity_basis": "NAME_SIZE_VARIANT",
-      "exact_product_match": "YES_NAME_SIZE_VARIANT_GTIN_DIFFERS",
-      "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Alamos Malbec 750 ml». El GTIN del catálogo (7794450091338) no aparece en las tiendas; DIA vende Alamos Malbec 750 ml con EAN 7794450000781.",
-      "adaptation": "centrada sobre blanco",
+      "identity_basis": "GTIN_EXACT",
+      "exact_product_match": "YES_GTIN",
+      "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Alamos Malbec 750 ml». El GTIN de la ficha (7794450091338) es Alamos Malbec RESERVE (el dorso de la botella en Jumbo lo confirma); el nombre de la ficha no dice Reserve. Reemplaza la imagen anterior de DIA (Alamos clásico, otro GTIN). Confirmar con Walter si vende Reserve o el clásico.",
+      "adaptation": "centrada sobre blanco; envase sin retoque",
       "sha256": {
-        "original": "485251f101a48884c8abdfcd0d34195555ac107f22b429eb233da483d269977d",
-        "uploaded_source": "eae9363fb94ca994493455ef6358f8c69e9b12bc5c135382b2cf9b660cbda288",
-        "master": "6165146b2d5ea87bdaebb8887713fad6af30946bc2a0a638b162781b67c3f9fa",
-        "thumbnail": "376964a2c33749879203fd64c9b3ce21da54933d454aadcc02632fbe8acca033"
+        "original": "6f08127f2d3eec328f02405c45657ef941d0e626f1c21bf775aa2907e867cf6e",
+        "uploaded_source": "4b516510222f88352985aeab67c6b74cc4c67298cf0d79d0607005aca0f9bf74",
+        "master": "933e4616c9d4f332eaf5757831ed33e52902d6ec981f7a84e4827a1772c8504b",
+        "thumbnail": "c671bc4cd99d9f41c812017744a0b419b494bf739a86fef8002e166308903cbe"
       },
-      "upload_id": "e73a5103-d238-41e3-ad59-6210c22d5e94",
+      "upload_id": "d28e396c-d280-4524-b35d-affa91e8489b",
       "approved_asset_id": "c59abffa-688b-4999-961b-bc2aea8c9a78",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": true
     },
     {
       "sku": "norton-malbec-750ml-local",
@@ -819,6 +1189,7 @@
       "source_product_name": "Vino Norton Seleccion Malbec x 750cc",
       "source_ean": "7792319971104",
       "retrieved_at": "2026-09-29",
+      "image_date": "2025-08-05",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "GTIN_EXACT",
@@ -835,7 +1206,8 @@
       "approved_asset_id": "9bba3211-8699-4279-9462-093743e3b524",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "santa-julia-chenin-dulce-750ml",
@@ -848,12 +1220,13 @@
       "source_product_name": "Vino Chenin Santa Julia 750 Ml.",
       "source_ean": "7791728247091",
       "retrieved_at": "2026-09-29",
+      "image_date": "2024-10-10",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "GTIN_EXACT",
       "exact_product_match": "YES_GTIN",
       "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Santa Julia Chenin Dulce Natural 750 ml».",
-      "adaptation": "centrada sobre blanco",
+      "adaptation": "centrada sobre blanco; envase sin retoque",
       "sha256": {
         "original": "c9030a660f7efbab54ce2d9bace2c59b9646a89cda575512411d9a3a684d9e8c",
         "uploaded_source": "64eb30a2820977e4e0a0018126d57ad4feb7bd0d5e524a537b82c71e1c930331",
@@ -864,7 +1237,39 @@
       "approved_asset_id": "4d97097b-e388-4669-b6d8-68785df4065b",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
+    },
+    {
+      "sku": "trapiche-cabernet-sauvignon-750ml",
+      "product_name": "Trapiche Cabernet Sauvignon 750 ml",
+      "catalog_gtin": "7790240094466",
+      "source_business": "Jumbo",
+      "source_site": "jumbo.com.ar",
+      "source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/581222/Vino-Tinto-Trapiche-Reserva-Cabernet-Sauvignon-750-Cc-1-248345.jpg?v=637225176833500000",
+      "source_product_page": "https://www.jumbo.com.ar/vino-trapiche-reserva-cabernet-sauvignon-750cc/p",
+      "source_product_name": "Vino Tinto Cabernet Sauvignon 750 Cc Trapiche",
+      "source_ean": "7790240094466",
+      "retrieved_at": "2026-09-29",
+      "image_date": "2020-04-15",
+      "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
+      "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
+      "identity_basis": "GTIN_EXACT",
+      "exact_product_match": "YES_GTIN",
+      "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Trapiche Cabernet Sauvignon 750 ml». La botella es la línea Reserva, como en Jumbo con el mismo GTIN.",
+      "adaptation": "placa lateral de la tienda retirada y centrada sobre blanco; envase sin retoque",
+      "sha256": {
+        "original": "aaa201c31a3e1ace747e4a547992ff99fd352245c60260829e130233789eee95",
+        "uploaded_source": "4e4cef7a53c18d1043ec88dcfe4b806256c79f942752d5eae20cdb37f298fd80",
+        "master": "9178d27a3fdcbc4971aef4e112bbfe48ecf3175a69ad9d213ad055416082ea15",
+        "thumbnail": "c14b194a9a83ea8e71451d0aa53a818026b8737a3017b637aeeb4fcdfc90bfd1"
+      },
+      "upload_id": "3f502a64-8ce8-43f8-b809-38d2247fe016",
+      "approved_asset_id": "a7d35444-2508-46bf-a1c3-41795a5bf710",
+      "rights_status_db": "LICENCIA_COMERCIAL",
+      "source_type_db": "retail_reference",
+      "product_draft": true,
+      "replaced_previous_image": false
     },
     {
       "sku": "trapiche-red-blend-750ml",
@@ -877,6 +1282,7 @@
       "source_product_name": "Vino Trapiche Reserva Red Blend x 750cc",
       "source_ean": "7790240940916",
       "retrieved_at": "2026-09-29",
+      "image_date": "2025-08-05",
       "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
       "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
       "identity_basis": "GTIN_EXACT",
@@ -893,7 +1299,8 @@
       "approved_asset_id": "25b3a3ca-bbb9-4d83-b827-2a2aaf36ef5b",
       "rights_status_db": "LICENCIA_COMERCIAL",
       "source_type_db": "retail_reference",
-      "product_draft": true
+      "product_draft": true,
+      "replaced_previous_image": false
     }
   ]
 }

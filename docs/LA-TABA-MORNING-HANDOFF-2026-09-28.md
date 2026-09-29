@@ -21,6 +21,7 @@ Qué cambió desde esta mañana:
   6. Un cliente nuevo no veía Mercado Pago hasta salir y volver al carrito.
 - **Línea fiscal única** (PR #122): el core `taba-fiscal`, los pedidos online facturados como pedidos y la recuperación ante desastre.
   - Está aplicada en CP con reversión probada, y **apagada**: `ARCA_PRODUCTION: NO`.
+  - La función con la que el Panel muestra, descarga e imprime el PDF de un comprobante también quedó desplegada (2026-09-29). Las 13 funciones de CP son iguales al repo, archivo por archivo.
   - Para homologar faltan CUIT, certificado y clave, punto de venta, delegación y la política contable.
 - **Traspaso Walter dueño / Marco encargado técnico**: está en el runbook y probado contra la base, incluido que el comercio nunca quede sin dueño.
 - **Deploys:** 
@@ -31,7 +32,7 @@ Qué cambió desde esta mañana:
 
   En los cuatro, el smoke corre en modo `live`. `main` = `release`.
 
-Evidencia: `docs/CONTROLLED-PRODUCTION-STATUS.md`, sección «2026-09-28 (tarde)».
+Evidencia: `docs/CONTROLLED-PRODUCTION-STATUS.md`, secciones «2026-09-28 (noche)» y «2026-09-28 (tarde)».
 
 ---
 

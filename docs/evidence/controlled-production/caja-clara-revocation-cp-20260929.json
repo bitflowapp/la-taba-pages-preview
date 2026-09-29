@@ -1,0 +1,75 @@
+{
+  "at": "2026-09-29T07:47:06.528Z",
+  "target": "controlled-production",
+  "business": "QA control",
+  "checks": {
+    "NO_TILL_SESSION_ON_THE_REAL_STORE": "PASS",
+    "ORPHAN_TILL_SESSIONS_CLOSED": "PASS",
+    "STAFF_TILL_CONNECTED": "PASS",
+    "LINKED_IN_SYNC": "PASS",
+    "OWNER_REVOKES_THE_TILL_WITH_THE_PANEL_RPC": "PASS",
+    "REVOCATION_RECORDED_AS_OWNER_REVOKED": "PASS",
+    "LA_TABA_REFUSES_THE_TILL_AT_ONCE": "PASS",
+    "TILL_KEEPS_SELLING_AND_HOLDS_THE_CHANGE": "PASS",
+    "RECONNECT_SENDS_WHAT_WAITED_EXACTLY_ONCE": "PASS",
+    "OLD_TILL_SESSION_STAYS_CLOSED": "PASS"
+  },
+  "codes": {
+    "NO_TILL_SESSION_ON_THE_REAL_STORE": 0,
+    "ORPHAN_TILL_SESSIONS_CLOSED": {
+      "found": 1
+    },
+    "STAFF_TILL_CONNECTED": "staff",
+    "LINKED_IN_SYNC": {
+      "local": 60,
+      "link_state": "InSync",
+      "note": null,
+      "taba_stock": 60,
+      "taba_reserved": 0,
+      "taba_physical": 60,
+      "on_hold": false,
+      "ok": true,
+      "cmd": "stock",
+      "ms": 21
+    },
+    "OWNER_REVOKES_THE_TILL_WITH_THE_PANEL_RPC": "revoked",
+    "REVOCATION_RECORDED_AS_OWNER_REVOKED": "owner_revoked",
+    "LA_TABA_REFUSES_THE_TILL_AT_ONCE": {
+      "failure": "TERMINAL_NOT_AUTHORIZED",
+      "link": "SessionExpired",
+      "ms": 387
+    },
+    "TILL_KEEPS_SELLING_AND_HOLDS_THE_CHANGE": {
+      "outbox": {
+        "StockDelta:Pending": 1
+      },
+      "server": 60,
+      "before": 60
+    },
+    "RECONNECT_SENDS_WHAT_WAITED_EXACTLY_ONCE": {
+      "outbox": {
+        "StockDelta:Done": 1
+      },
+      "server": 59,
+      "link": "Connected"
+    },
+    "OLD_TILL_SESSION_STAYS_CLOSED": 2
+  },
+  "latency": {
+    "revocationNoticedMs": 387
+  },
+  "realStoreTillSessions": 0,
+  "orphansFound": 1,
+  "product": {
+    "sku": "paso-de-los-toros-pomelo-1500ml",
+    "initialStock": 60
+  },
+  "restore": {
+    "delta": 1
+  },
+  "stockRestored": true,
+  "tillSessionsLeftOpen": 0,
+  "realStoreUntouched": true,
+  "failed": [],
+  "verdict": "PASS"
+}

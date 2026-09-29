@@ -41,22 +41,27 @@ test.describe('premium polish', () => {
     await frames(page);
     await expect(page.locator('#fx-track .track-steps')).not.toHaveAttribute('data-motion-advanced', 'true');
 
-    // Avance real: marca y anima el tramo y el punto de la etapa nueva.
-    await page.evaluate((html) => { document.querySelector('#fx-track').innerHTML = `<div class="track-steps customer-progress public" role="list">${html}</div>`; }, timelineHtml(2));
-    await frames(page);
-    const steps = page.locator('#fx-track .track-steps');
-    await expect(steps).toHaveAttribute('data-motion-advanced', 'true');
-    const nombres = await page.evaluate(() => {
-      const actual = document.querySelector('#fx-track .track-step.current');
-      return {
-        dot: getComputedStyle(actual.querySelector('.track-dot')).animationName,
-        tramo: getComputedStyle(actual, '::before').animationName,
-      };
+    // Avance real: marca y anima el tramo y el punto de la etapa nueva. El marcador
+    // dura 420 ms, así que se lo captura al vuelo en vez de sondearlo.
+    await page.evaluate(() => {
+      window.__avance = null;
+      new MutationObserver(() => {
+        const pasos = document.querySelector('#fx-track .track-steps');
+        if (!pasos || pasos.dataset.motionAdvanced !== 'true' || window.__avance) return;
+        const actual = pasos.querySelector('.track-step.current');
+        window.__avance = {
+          dot: getComputedStyle(actual.querySelector('.track-dot')).animationName,
+          tramo: getComputedStyle(actual, '::before').animationName,
+        };
+      }).observe(document.querySelector('#fx-track'), { attributes: true, attributeFilter: ['data-motion-advanced'], subtree: true });
     });
+    await page.evaluate((html) => { document.querySelector('#fx-track').innerHTML = `<div class="track-steps customer-progress public" role="list">${html}</div>`; }, timelineHtml(2));
+    await expect.poll(() => page.evaluate(() => window.__avance)).not.toBeNull();
+    const nombres = await page.evaluate(() => window.__avance);
     expect(nombres.dot).toBe('taba-track-dot');
     expect(nombres.tramo).toBe('taba-track-connector');
     // Se retira solo, sin loop.
-    await expect(steps).not.toHaveAttribute('data-motion-advanced', 'true', { timeout: 3_000 });
+    await expect(page.locator('#fx-track .track-steps')).not.toHaveAttribute('data-motion-advanced', 'true', { timeout: 3_000 });
   });
 
   test('un total que cambia se anima una vez; el mismo valor no', async ({ page }) => {
@@ -70,14 +75,22 @@ test.describe('premium polish', () => {
       document.body.append(total);
     });
     await frames(page);
-    const animaciones = () => page.evaluate(() => document.querySelector('#fx-total').getAnimations().length);
-    expect(await animaciones()).toBe(0);
+    // Se cuenta la llamada a animate() (no la animación viva): en un runner lento
+    // los 180 ms pueden vencer antes de mirar.
+    await page.evaluate(() => {
+      window.__shifts = 0;
+      const original = Element.prototype.animate;
+      Element.prototype.animate = function patched(...args) {
+        if (this.id === 'fx-total') window.__shifts += 1;
+        return original.apply(this, args);
+      };
+    });
+    const cambios = () => page.evaluate(() => window.__shifts);
     await page.evaluate(() => { document.querySelector('#fx-total').textContent = '$1.000'; });
     await frames(page);
-    expect(await animaciones()).toBe(0);
+    expect(await cambios()).toBe(0);
     await page.evaluate(() => { document.querySelector('#fx-total').textContent = '$2.500'; });
-    await frames(page, 2);
-    expect(await animaciones()).toBeGreaterThan(0);
+    await expect.poll(cambios).toBe(1);
   });
 
   test('pedido nuevo: sólo lo reciente y sólo después de la línea de base, y se apaga solo', async ({ page }) => {
@@ -92,14 +105,23 @@ test.describe('premium polish', () => {
     await frames(page);
     await expect(page.locator('[data-order-card="base"]')).not.toHaveAttribute('data-motion-arrived', 'true');
 
+    // El marcador dura 1,6 s: se lo captura al vuelo (con su animación) en vez de sondearlo.
+    await page.evaluate(() => {
+      window.__llegadas = {};
+      new MutationObserver(() => {
+        document.querySelectorAll('[data-order-card][data-motion-arrived="true"]').forEach((card) => {
+          const id = card.dataset.orderCard;
+          if (!window.__llegadas[id]) window.__llegadas[id] = getComputedStyle(card).animationName;
+        });
+      }).observe(document.querySelector('#fx-orders'), { attributes: true, attributeFilter: ['data-motion-arrived'], subtree: true });
+    });
     await page.evaluate((html) => {
       document.querySelector('#fx-orders').insertAdjacentHTML('beforeend', html);
     }, tarjeta('viejo', 60 * 60_000) + tarjeta('nuevo', 4_000));
-    await frames(page);
-    await expect(page.locator('[data-order-card="nuevo"]')).toHaveAttribute('data-motion-arrived', 'true');
-    await expect(page.locator('[data-order-card="viejo"]')).not.toHaveAttribute('data-motion-arrived', 'true');
-    const animacion = await page.locator('[data-order-card="nuevo"]').evaluate((n) => getComputedStyle(n).animationName);
-    expect(animacion).toBe('taba-order-arrival');
+    await expect.poll(() => page.evaluate(() => window.__llegadas.nuevo)).toBe('taba-order-arrival');
+    const llegadas = await page.evaluate(() => window.__llegadas);
+    expect(llegadas.viejo).toBeUndefined();
+    expect(llegadas.base).toBeUndefined();
     await expect(page.locator('[data-order-card="nuevo"]')).not.toHaveAttribute('data-motion-arrived', 'true', { timeout: 4_000 });
   });
 

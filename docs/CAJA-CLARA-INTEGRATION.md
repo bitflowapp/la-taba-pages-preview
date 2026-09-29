@@ -42,7 +42,7 @@ cliente relee con 30 s de solapamiento y deduplica por revisión.
 | Suites pgTAP existentes | sin regresiones (1163 OK; 5 archivos fallan igual sin la migración por límites del arnés local, no del cambio) |
 | `npm run check` y `npm test` | verde, 2778/2778 |
 | Rollback `docs/migrations/rollback/20260929120000_caja_clara_pos_integration.rollback.sql` | drill local: se niega con conflictos abiertos; limpio restituye `identity_register_session` idéntica (md5) y el CHECK; re-aplicar funciona |
-| E2E en vivo en CONTROLLED_PRODUCTION (tenant QA) | 38/38 — `docs/evidence/controlled-production/caja-clara-e2e-cp-20260929.json` |
+| E2E en vivo en CONTROLLED_PRODUCTION (tenant QA) | 40/40 — `docs/evidence/controlled-production/caja-clara-e2e-cp-20260929.json` |
 
 `scripts/controlled-production/caja-clara-e2e.mjs --agent <CajaClara.TabaAgent.dll>` usa el motor real de Caja Clara,
 un cliente web anónimo, dos riders QA con las RPC del Android y el Panel como staff; limpia cada pedido QA con
@@ -55,7 +55,7 @@ un cliente web anónimo, dos riders QA con las RPC del Android y el Panel como s
 2. `db push --linked --dry-run`: una sola migración.
 3. `db push --linked`: aplicada; CP = 157 migraciones. `pos_*` sin EXECUTE para anon.
 4. `opening:check`: `TECHNICAL_READY: YES` sin cambios de bloqueantes comerciales.
-5. E2E 38/38.
+5. E2E 40/40 (y entrega con el Rider Android físico: PASS, `caja-clara-physical-rider-cp-20260929.json`).
 
 Rollback: correr el archivo de rollback (se niega si hay conflictos abiertos: primero contar desde Caja Clara).
 

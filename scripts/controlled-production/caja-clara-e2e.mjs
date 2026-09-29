@@ -284,6 +284,32 @@ try {
       { caja: inCaja.found.status, trail: trail.length });
   }
 
+  // ── 4b. Rider presence reaches Caja Clara; an assigned order cancelled by the shop leaves the rider ──
+  if (riders.length >= 1) {
+    await riderAvailable(riders[0], true);
+    await agent.send('sync', { full: true });
+    const presence = await agent.send('status');
+    check('RIDER_AVAILABILITY_VISIBLE_IN_CAJA', presence.riders_available >= 1, { available: presence.riders_available, riders: presence.riders });
+    const assigned = await placeOrder({ mode: 'delivery', quantity: deliveryQty });
+    await waitInCaja(agent, (o) => o.id === assigned.id, 'assigned-cancel');
+    for (const action of ['accept', 'prepare', 'ready']) await agent.send('act', { order: assigned.id, action });
+    await agent.send('offer', { order: assigned.id, rider: riders[0].id });
+    const offer = (await admin.from('rider_order_offers').select('id,version').eq('order_id', assigned.id).eq('status', 'pending')).data?.[0];
+    const took = offer && await riders[0].c.rpc('accept_rider_order_offer', { p_offer_id: offer.id, p_expected_version: offer.version,
+      p_idempotency_key: riderKey('accept2', offer.id, offer.version) });
+    await agent.send('sync');
+    const beforeCancel = (await stockOf()).stock;
+    const cancelledAssigned = await agent.send('act', { order: assigned.id, action: 'cancel', reason: 'QA Caja Clara: cancelado con rider asignado' });
+    const boardAfter = await riderBoard(riders[0]);
+    const rev = (await panelOrder(assigned.id)).revision;
+    const advanceAfter = await riders[0].c.rpc('mark_delivery_picked_up', { p_order_id: assigned.id, p_expected_revision: rev,
+      p_idempotency_key: riderKey('pickafter', assigned.id, rev) });
+    check('CANCELLED_WHILE_ASSIGNED_LEAVES_THE_RIDER', !took?.error && cancelledAssigned.state === 'Confirmed'
+      && !boardAfter.orders?.some((o) => o.id === assigned.id) && Boolean(advanceAfter.error || advanceAfter.data?.ok === false)
+      && (await stockOf()).stock === beforeCancel + deliveryQty,
+      { accept: took?.error?.code || 'ok', cancel: cancelledAssigned.state, advance: advanceAfter.error?.code || advanceAfter.data?.code });
+  }
+
   // ── 5. Pickup paid in cash at the counter (reflected once) ──────────────
   const pickup = await placeOrder({ mode: 'pickup', payment: 'cash' });
   await waitInCaja(agent, (o) => o.id === pickup.id, 'pickup');

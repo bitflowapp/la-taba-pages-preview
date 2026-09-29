@@ -1,5 +1,5 @@
 {
-  "at": "2026-09-29T06:46:51.265Z",
+  "at": "2026-09-29T07:19:42.241Z",
   "target": "controlled-production",
   "business": "QA control",
   "checks": {
@@ -27,6 +27,8 @@
     "WRONG_DELIVERY_CODE_REFUSED": "PASS",
     "RIGHT_CODE_DELIVERS_ONCE_EVEN_DOUBLE_SUBMIT": "PASS",
     "DELIVERED_IN_CAJA_PANEL_AND_CUSTOMER": "PASS",
+    "RIDER_AVAILABILITY_VISIBLE_IN_CAJA": "PASS",
+    "CANCELLED_WHILE_ASSIGNED_LEAVES_THE_RIDER": "PASS",
     "CASH_CONFIRMED_ONCE_FROM_CAJA": "PASS",
     "PICKUP_HANDED_OVER_FROM_CAJA": "PASS",
     "CANCEL_FROM_CAJA_RELEASES_RESERVATION_ONCE": "PASS",
@@ -56,7 +58,7 @@
       "on_hold": false,
       "ok": true,
       "cmd": "stock",
-      "ms": 40
+      "ms": 25
     },
     "COUNTER_SALE_LOWERS_ONLINE_AVAILABILITY": {
       "beforeSale": 60,
@@ -64,7 +66,7 @@
     },
     "TWO_QA_RIDERS_AVAILABLE_FOR_THE_RACE": 2,
     "NEW_ORDER_REACHES_CAJA_CLARA": {
-      "ms": 159
+      "ms": 139
     },
     "ONLINE_ORDER_RESERVES_WITHOUT_TOUCHING_PHYSICAL": {
       "local": 58,
@@ -76,7 +78,7 @@
       "on_hold": false,
       "ok": true,
       "cmd": "stock",
-      "ms": 1
+      "ms": 2
     },
     "CAJA_ACCEPT_REACHES_PANEL_AND_CUSTOMER": {
       "state": "Confirmed",
@@ -116,7 +118,7 @@
       "on_hold": false,
       "ok": true,
       "cmd": "stock",
-      "ms": 1
+      "ms": 0
     },
     "WRONG_DELIVERY_CODE_REFUSED": "incorrect_code",
     "RIGHT_CODE_DELIVERS_ONCE_EVEN_DOUBLE_SUBMIT": {
@@ -127,6 +129,15 @@
     "DELIVERED_IN_CAJA_PANEL_AND_CUSTOMER": {
       "caja": "delivered",
       "trail": 0
+    },
+    "RIDER_AVAILABILITY_VISIBLE_IN_CAJA": {
+      "available": 2,
+      "riders": 3
+    },
+    "CANCELLED_WHILE_ASSIGNED_LEAVES_THE_RIDER": {
+      "accept": "ok",
+      "cancel": "Confirmed",
+      "advance": "not_ready_for_pickup"
     },
     "CASH_CONFIRMED_ONCE_FROM_CAJA": {
       "again": "Confirmed",
@@ -149,7 +160,7 @@
     },
     "OFFLINE_SALE_WAITS_WITHOUT_SPENDING_ATTEMPTS": {
       "StockDelta:Done": 1,
-      "OrderCommand:Done": 9,
+      "OrderCommand:Done": 13,
       "StockCount:Done": 1,
       "StockDelta:Pending": 1
     },
@@ -173,11 +184,11 @@
     "MERCADO_PAGO_IS_A_WORD_NOT_TOKENS": "not_connected"
   },
   "latency": {
-    "counterSaleToPanelMs": 1502,
-    "orderVisibleInCajaMs": 159,
-    "caja_accept_to_panel_ms": 507,
+    "counterSaleToPanelMs": 1001,
+    "orderVisibleInCajaMs": 139,
+    "caja_accept_to_panel_ms": 552,
     "caja_prepare_to_panel_ms": 420,
-    "caja_ready_to_panel_ms": 420
+    "caja_ready_to_panel_ms": 413
   },
   "notes": [
     "Resume from Caja Clara uses set_commercial_product_publication (owner/admin) exactly like the Panel."
@@ -190,28 +201,35 @@
   "riders": 2,
   "cleanup": [
     {
-      "code": "LT-0081",
+      "code": "LT-0086",
       "reversed": false,
       "cancelled": false,
       "restoredUnits": 2,
       "classified": true
     },
     {
-      "code": "LT-0082",
-      "reversed": true,
-      "cancelled": false,
-      "restoredUnits": 1,
-      "classified": true
-    },
-    {
-      "code": "LT-0083",
+      "code": "LT-0087",
       "reversed": false,
       "cancelled": false,
       "restoredUnits": 0,
       "classified": true
     },
     {
-      "code": "LT-0084",
+      "code": "LT-0088",
+      "reversed": true,
+      "cancelled": false,
+      "restoredUnits": 1,
+      "classified": true
+    },
+    {
+      "code": "LT-0089",
+      "reversed": false,
+      "cancelled": false,
+      "restoredUnits": 0,
+      "classified": true
+    },
+    {
+      "code": "LT-0090",
       "reversed": false,
       "cancelled": false,
       "restoredUnits": 0,

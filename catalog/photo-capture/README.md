@@ -15,11 +15,12 @@ Con fotos sacadas en el local, La Taba puede mostrar cada producto sin pedir per
 
 ## Cómo nombrarlas y dónde dejarlas
 
-- Nombre del archivo: `<sku>__front.jpg`. La tabla de abajo trae el nombre exacto de cada producto.
+- Nombre del archivo: `<sku>.jpg` (también se acepta `<sku>__front.jpg`). La tabla de abajo trae el SKU exacto de cada producto; el nombre tiene que coincidir letra por letra, sin parecidos.
 - Si sacás más de una, la segunda se llama `<sku>__alternate.jpg`.
-- Dejá los archivos en `catalog/photo-intake/`, o mandáselos a Marco para que los suba.
+- Dejá los archivos en `catalog/photo-intake/` y corré `npm run catalog:photos:validate` para ver cuáles se reconocen, o mandáselos a Marco para que los suba.
+- La lista actualizada de lo que falta, agrupada, está en [`../photo-intake/PHOTO-SHOT-LIST.md`](../photo-intake/PHOTO-SHOT-LIST.md).
 
-Después, cada foto se sube desde el Panel (Catálogo → Imagen) con la fuente «Foto propia» y el derecho `PROPIO`. Queda privada hasta que un owner/admin la revisa y la aprueba. Subirla no cambia el precio ni el stock, y no publica el producto.
+Después, las fotos se suben todas juntas desde el Panel (Catálogo → **Cargar fotos en lote**, hasta 5 MB cada una) o de a una (Catálogo → Imagen) con la fuente «Foto propia» y el derecho `PROPIO`. Queda privada hasta que un owner/admin la revisa y la aprueba. Subirla no cambia el precio ni el stock, y no publica el producto.
 
 ## Fotos necesarias (46)
 

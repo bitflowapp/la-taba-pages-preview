@@ -72,3 +72,8 @@ artifacts/taba2-alcohol-commercial/candidatas/
 
 # Salida local del E2E de producción controlada.
 test-results-cp-e2e/
+catalog/photo-intake/*.jpg
+catalog/photo-intake/*.jpeg
+catalog/photo-intake/*.png
+catalog/photo-intake/*.webp
+catalog/photo-intake/*.heic

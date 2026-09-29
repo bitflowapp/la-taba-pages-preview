@@ -1,0 +1,55 @@
+{
+  "at": "2026-09-29T07:02:36.695Z",
+  "device": "ZY32LHS6PS",
+  "business": "QA control",
+  "checks": {
+    "CAJA_CONNECTED": "PASS",
+    "CAJA_ACCEPT": "PASS",
+    "CAJA_PREPARE": "PASS",
+    "CAJA_READY": "PASS",
+    "PHYSICAL_RIDER_AVAILABLE_BY_HEARTBEAT": "PASS",
+    "CAJA_OFFERS_TO_PHYSICAL_RIDER": "PASS",
+    "REAL_GPS_RECEIPT": "PASS",
+    "CUSTOMER_TRACKING_SHOWS_RIDER_ON_THE_WAY": "PASS",
+    "CAJA_SEES_ON_THE_WAY_AND_TAKES_UNITS_ONCE": "PASS",
+    "RIDER_OFFLINE_RECONNECT_RESUMES_GPS": "PASS",
+    "NO_DUPLICATE_MISSION": "PASS",
+    "SIGNED_RIDER_APK_WRONG_CODE_THEN_RIGHT_CODE": "PASS",
+    "DELIVERED_IN_CAJA_AND_PANEL": "PASS"
+  },
+  "latency": {
+    "orderVisibleInCajaMs": 265
+  },
+  "installedVersion": {
+    "code": 4,
+    "name": "0.1.3-canonical-pilot"
+  },
+  "order": "LT-0085",
+  "networkCut": {
+    "seconds": 12,
+    "receiptsWhileOffline": 0,
+    "receiptsAfterRecovery": 1
+  },
+  "instrumentation": {
+    "exit": 0,
+    "ok": true,
+    "summary": "OK (1 test)\r"
+  },
+  "gpsTrailPurgedAfterDelivery": true,
+  "gps": {
+    "receipts": 7,
+    "maxGapSeconds": 24
+  },
+  "cleanup": {
+    "reversed": false,
+    "cancelled": false,
+    "restoredUnits": 2,
+    "classified": true
+  },
+  "stockRestored": true,
+  "qaBusinessClosed": true,
+  "realStoreUntouched": true,
+  "stayOnRestored": true,
+  "failed": [],
+  "verdict": "PASS"
+}

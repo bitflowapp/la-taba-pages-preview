@@ -1,0 +1,233 @@
+{
+  "at": "2026-09-29T06:46:51.265Z",
+  "target": "controlled-production",
+  "business": "QA control",
+  "checks": {
+    "CAJA_CONNECTED_AS_TEAM_MEMBER": "PASS",
+    "SESSION_BOUND_TO_DEVICE_HASH": "PASS",
+    "PANEL_SESSION_CANNOT_IMPERSONATE_THE_TILL": "PASS",
+    "TILL_OF_QA_CANNOT_READ_THE_REAL_STORE": "PASS",
+    "LINKED_IN_SYNC": "PASS",
+    "COUNTER_SALE_LOWERS_ONLINE_AVAILABILITY": "PASS",
+    "COUNTER_SALE_NOT_SENT_TWICE": "PASS",
+    "TWO_QA_RIDERS_AVAILABLE_FOR_THE_RACE": "PASS",
+    "NEW_ORDER_REACHES_CAJA_CLARA": "PASS",
+    "CAJA_ORDER_HAS_NO_DELIVERY_CODE": "PASS",
+    "ONLINE_ORDER_RESERVES_WITHOUT_TOUCHING_PHYSICAL": "PASS",
+    "CAJA_ACCEPT_REACHES_PANEL_AND_CUSTOMER": "PASS",
+    "CAJA_PREPARE_REACHES_PANEL_AND_CUSTOMER": "PASS",
+    "CAJA_READY_REACHES_PANEL_AND_CUSTOMER": "PASS",
+    "ONLINE_ORDER_TICKET": "PASS",
+    "OFFER_RACE_ONE_PENDING_OFFER": "PASS",
+    "RIDER_RACE_ONE_WINNER_ONE_REJECTED": "PASS",
+    "RIDER_APP_REOPENED_RECOVERS_ACTIVE_MISSION": "PASS",
+    "RIDER_PICKUP_AND_START": "PASS",
+    "GPS_PUBLISHED_AND_CUSTOMER_TRACKS_IT": "PASS",
+    "DISPATCH_TAKES_UNITS_OUT_OF_LOCAL_STOCK_ONCE": "PASS",
+    "WRONG_DELIVERY_CODE_REFUSED": "PASS",
+    "RIGHT_CODE_DELIVERS_ONCE_EVEN_DOUBLE_SUBMIT": "PASS",
+    "DELIVERED_IN_CAJA_PANEL_AND_CUSTOMER": "PASS",
+    "CASH_CONFIRMED_ONCE_FROM_CAJA": "PASS",
+    "PICKUP_HANDED_OVER_FROM_CAJA": "PASS",
+    "CANCEL_FROM_CAJA_RELEASES_RESERVATION_ONCE": "PASS",
+    "PANEL_PAUSE_SEEN_BY_CAJA": "PASS",
+    "PRODUCT_RESUMED": "PASS",
+    "COUNT_SETS_AVAILABLE_TO_PHYSICAL_MINUS_RESERVED": "PASS",
+    "OFFLINE_SALE_WAITS_WITHOUT_SPENDING_ATTEMPTS": "PASS",
+    "OFFLINE_OVERSELL_HELD_NOT_NEGATIVE": "PASS",
+    "HELD_PRODUCT_NOT_PURCHASABLE_ONLINE": "PASS",
+    "CANCELLATION_DOES_NOT_REOFFER_A_HELD_PRODUCT": "PASS",
+    "OWNER_COUNT_CLOSES_THE_CONFLICT": "PASS",
+    "STORE_STATUS_PANEL_TO_CAJA_AND_BACK": "PASS",
+    "MERCADO_PAGO_IS_A_WORD_NOT_TOKENS": "PASS",
+    "DISCONNECT_REVOKES_THE_TILL_SESSION": "PASS"
+  },
+  "codes": {
+    "CAJA_CONNECTED_AS_TEAM_MEMBER": "owner",
+    "PANEL_SESSION_CANNOT_IMPERSONATE_THE_TILL": "42501",
+    "TILL_OF_QA_CANNOT_READ_THE_REAL_STORE": "42501",
+    "LINKED_IN_SYNC": {
+      "local": 60,
+      "link_state": "InSync",
+      "note": null,
+      "taba_stock": 60,
+      "taba_reserved": 0,
+      "taba_physical": 60,
+      "on_hold": false,
+      "ok": true,
+      "cmd": "stock",
+      "ms": 40
+    },
+    "COUNTER_SALE_LOWERS_ONLINE_AVAILABILITY": {
+      "beforeSale": 60,
+      "panelStock": 58
+    },
+    "TWO_QA_RIDERS_AVAILABLE_FOR_THE_RACE": 2,
+    "NEW_ORDER_REACHES_CAJA_CLARA": {
+      "ms": 159
+    },
+    "ONLINE_ORDER_RESERVES_WITHOUT_TOUCHING_PHYSICAL": {
+      "local": 58,
+      "link_state": "InSync",
+      "note": null,
+      "taba_stock": 56,
+      "taba_reserved": 2,
+      "taba_physical": 58,
+      "on_hold": false,
+      "ok": true,
+      "cmd": "stock",
+      "ms": 1
+    },
+    "CAJA_ACCEPT_REACHES_PANEL_AND_CUSTOMER": {
+      "state": "Confirmed",
+      "panel": "accepted",
+      "tracking": "accepted"
+    },
+    "CAJA_PREPARE_REACHES_PANEL_AND_CUSTOMER": {
+      "state": "Confirmed",
+      "panel": "preparing",
+      "tracking": "preparing"
+    },
+    "CAJA_READY_REACHES_PANEL_AND_CUSTOMER": {
+      "state": "Confirmed",
+      "panel": "ready",
+      "tracking": "ready"
+    },
+    "OFFER_RACE_ONE_PENDING_OFFER": {
+      "caja": "Conflicted",
+      "panel": "offered",
+      "pending": 1
+    },
+    "RIDER_RACE_ONE_WINNER_ONE_REJECTED": [
+      "P0002",
+      "accepted"
+    ],
+    "RIDER_PICKUP_AND_START": [
+      null,
+      null
+    ],
+    "DISPATCH_TAKES_UNITS_OUT_OF_LOCAL_STOCK_ONCE": {
+      "local": 56,
+      "link_state": "InSync",
+      "note": null,
+      "taba_stock": 56,
+      "taba_reserved": 2,
+      "taba_physical": 58,
+      "on_hold": false,
+      "ok": true,
+      "cmd": "stock",
+      "ms": 1
+    },
+    "WRONG_DELIVERY_CODE_REFUSED": "incorrect_code",
+    "RIGHT_CODE_DELIVERS_ONCE_EVEN_DOUBLE_SUBMIT": {
+      "first": "ok",
+      "second": "ok",
+      "events": 0
+    },
+    "DELIVERED_IN_CAJA_PANEL_AND_CUSTOMER": {
+      "caja": "delivered",
+      "trail": 0
+    },
+    "CASH_CONFIRMED_ONCE_FROM_CAJA": {
+      "again": "Confirmed",
+      "events": 1
+    },
+    "CANCEL_FROM_CAJA_RELEASES_RESERVATION_ONCE": {
+      "state": "Confirmed"
+    },
+    "COUNT_SETS_AVAILABLE_TO_PHYSICAL_MINUS_RESERVED": {
+      "local": 3,
+      "link_state": "InSync",
+      "note": null,
+      "taba_stock": 3,
+      "taba_reserved": 0,
+      "taba_physical": 3,
+      "on_hold": false,
+      "ok": true,
+      "cmd": "stock",
+      "ms": 0
+    },
+    "OFFLINE_SALE_WAITS_WITHOUT_SPENDING_ATTEMPTS": {
+      "StockDelta:Done": 1,
+      "OrderCommand:Done": 9,
+      "StockCount:Done": 1,
+      "StockDelta:Pending": 1
+    },
+    "OFFLINE_OVERSELL_HELD_NOT_NEGATIVE": {
+      "stock": 0,
+      "conflict": 2,
+      "state": "Conflict"
+    },
+    "CANCELLATION_DOES_NOT_REOFFER_A_HELD_PRODUCT": {
+      "stock": 2,
+      "available": false
+    },
+    "OWNER_COUNT_CLOSES_THE_CONFLICT": {
+      "status": "resolved",
+      "resolution": "recounted"
+    },
+    "STORE_STATUS_PANEL_TO_CAJA_AND_BACK": {
+      "caja": "open",
+      "panel": "paused"
+    },
+    "MERCADO_PAGO_IS_A_WORD_NOT_TOKENS": "not_connected"
+  },
+  "latency": {
+    "counterSaleToPanelMs": 1502,
+    "orderVisibleInCajaMs": 159,
+    "caja_accept_to_panel_ms": 507,
+    "caja_prepare_to_panel_ms": 420,
+    "caja_ready_to_panel_ms": 420
+  },
+  "notes": [
+    "Resume from Caja Clara uses set_commercial_product_publication (owner/admin) exactly like the Panel."
+  ],
+  "product": {
+    "sku": "paso-de-los-toros-pomelo-1500ml",
+    "initialStock": 60,
+    "initialReserved": 0
+  },
+  "riders": 2,
+  "cleanup": [
+    {
+      "code": "LT-0081",
+      "reversed": false,
+      "cancelled": false,
+      "restoredUnits": 2,
+      "classified": true
+    },
+    {
+      "code": "LT-0082",
+      "reversed": true,
+      "cancelled": false,
+      "restoredUnits": 1,
+      "classified": true
+    },
+    {
+      "code": "LT-0083",
+      "reversed": false,
+      "cancelled": false,
+      "restoredUnits": 0,
+      "classified": true
+    },
+    {
+      "code": "LT-0084",
+      "reversed": false,
+      "cancelled": false,
+      "restoredUnits": 0,
+      "classified": true
+    }
+  ],
+  "restore": {
+    "delta": 57
+  },
+  "republished": true,
+  "finalAvailable": true,
+  "finalStock": 60,
+  "stockRestored": true,
+  "openConflictsAfter": 0,
+  "qaBusinessClosed": true,
+  "realStoreUntouched": true,
+  "failed": [],
+  "verdict": "PASS"
+}

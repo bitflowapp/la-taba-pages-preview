@@ -422,5 +422,30 @@
       "finding": "Beco, Masivos, Distribuidora Pop, Capri, El Gran Mayorista de Bebidas y MP Drinks publican catálogos con fotos, pero ninguno declara licencia de reutilización. Sólo el proveedor que le vende a Walter puede autorizar por escrito el uso de sus imágenes. No se contactó a nadie ni se aceptó ningún contrato."
     }
   },
-  "note": "Los assets descargados son RESEARCH_ASSET: viven fuera del repo, nunca se subieron y ninguno se aprobó."
+  "note": "Los assets descargados son RESEARCH_ASSET: viven fuera del repo, nunca se subieron y ninguno se aprobó.",
+  "second_pass_retail_authorized": {
+    "note": "Tras la corrección del titular (La Taba está autorizada a usar imágenes de los supermercados que el proyecto autoriza), los 39 SKU en RIGHTS_PERMISSION_REQUIRED se reevaluaron sobre Supermercados DIA y TOP. Resultado y provenance en CATALOG-REAL-CONTENT-2026-09-29.md y retail-authorized-images-2026-09-29.json.",
+    "sources_used": [
+      "Supermercados DIA",
+      "Supermercados TOP"
+    ],
+    "approved": 30,
+    "candidates_rejected_for_quality_or_exactness": [
+      "red-bull-energy-drink-355ml",
+      "pepsi-black-1500ml",
+      "paso-de-los-toros-tonica-1500ml",
+      "lays-clasicas-134g",
+      "coca-cola-sin-azucar-2250ml-local",
+      "sprite-sin-azucar-600ml"
+    ],
+    "reference_only_probe": {
+      "chains": [
+        "Jumbo",
+        "Vea",
+        "Disco",
+        "Carrefour"
+      ],
+      "finding": "Las cuatro cadenas tienen por EAN los 13 SKU que aún faltan (sonda de sólo lectura de existencia; no se descargó ni se usó ninguna imagen). Sin usar hasta que el titular confirme si están cubiertas."
+    }
+  }
 }

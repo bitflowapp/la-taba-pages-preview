@@ -162,6 +162,72 @@
             "gin-gordons-700ml"
           ],
           "nota": "Trapiche Origen Malbec es exactamente el caso que la ampliación del 2026-08-25 nombra como el que su redacción anterior había dejado afuera; queda cerrado acá con el asset que lo resuelve, y por eso `fuera_de_alcance_detectado` deja de tener sentido para ese SKU. Gordon's London Dry entra por la misma fuente: el catálogo del distribuidor lo publica como «GORDON´S GIN 1X700ml» sin nombrar la línea, y sí nombra explícitamente las variantes cuando las hay (Tanqueray Royale, Tanqueray Sevilla, Smirnoff Raspberry). Se resuelve mirando la etiqueta, no el título."
+        },
+        {
+          "fecha": "2026-09-29",
+          "quien": "titular del comercio",
+          "canal": "instrucción escrita en la sesión de trabajo «Catálogo real definitivo» del 2026-09-29 («Actualización importante sobre derechos de imágenes»)",
+          "que_amplía": "El titular declara que La Taba SÍ cuenta con autorización para usar imágenes de producto provenientes de los supermercados/comercios autorizados por el proyecto, y ordena reevaluar los productos que la investigación anterior había dejado en RIGHTS_PERMISSION_REQUIRED. La autorización aplica sólo a las fuentes efectivamente cubiertas. Los ejemplos nombrados por el titular son Supermercados DIA y Supermercados TOP: sólo esos dos quedan habilitados en esta ampliación.",
+          "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
+          "fuentes_cubiertas": [
+            {
+              "negocio": "Supermercados DIA",
+              "sitio": "diaonline.supermercadosdia.com.ar",
+              "cdn": "ardiaprod.vteximg.com.br"
+            },
+            {
+              "negocio": "Supermercados TOP",
+              "sitio": "www.supertop.com.ar",
+              "cdn": "supertopar.vteximg.com.br"
+            }
+          ],
+          "habilita_source_types": [
+            "fuente_minorista_autorizada"
+          ],
+          "supersede": "Para las fuentes nombradas, reemplaza la exclusión de fotografías de cadenas minoristas de `no_cubre` y `rejectedHosts` de catalog/image-source-allowlist.json (que sólo gobierna el pipeline estático anterior y no se modificó). No reetiqueta ni aprueba en masa assets históricos.",
+          "condiciones": [
+            "SKU, presentación, volumen y variante exactos; GTIN cuando existe, y cuando el GTIN del catálogo difiere del de la fuente, la coincidencia por nombre, volumen y variante queda registrada como NAME_SIZE_VARIANT",
+            "packaging razonablemente actual (se rechazó el envase «Zero» anterior frente al «Sin Azúcar» vigente)",
+            "calidad visual suficiente, sin watermark, sin precio ni promoción pegados sobre el producto",
+            "la placa de la tienda sólo se retira si cae fuera del envase; si tapa la base o el halo toca el envase, se rechaza",
+            "URL, fecha, hash, fuente y evidencia de match registrados por asset (docs/catalog/retail-authorized-images-2026-09-29.json)",
+            "pasa por el flujo oficial: staging privado, vista previa, aprobación de owner/admin con LICENCIA_COMERCIAL y asociación"
+          ],
+          "lo_que_no_amplía": "No habilita fabricantes, fotógrafos, marketplaces, otras cadenas (Jumbo, Vea, Disco, Carrefour, La Anónima, etc.), distribuidores ni sitios de terceros que el titular no haya nombrado. No habilita imágenes aproximadas, otra variante o volumen, ediciones limitadas, packs usados como unidad ni imágenes generadas con IA. No publica productos: available y is_verified siguen en false, y no toca precio ni stock.",
+          "pendiente_para_el_titular": "Confirmar por escrito qué otros comercios cubre la autorización. Una sonda sólo de referencia mostró que Jumbo, Vea, Disco y Carrefour tienen los 13 SKU que aún faltan; no se usó ninguna imagen de esas cadenas. Con la confirmación de cuáles están cubiertas, esos SKU pueden reevaluarse. También falta el documento del acuerdo que respalde esta declaración (evidencia_documental.pendiente).",
+          "assets_cubiertos": [
+            "villavicencio-sin-gas-500ml",
+            "heineken-710ml",
+            "quilmes-clasica-710ml",
+            "fernet-branca-750ml",
+            "coca-cola-original-2250ml-local",
+            "fanta-naranja-2250ml",
+            "eco-de-los-andes-sin-gas-2000ml",
+            "glaciar-con-gas-1500ml",
+            "aperol-750ml",
+            "branca-menta-750ml",
+            "brahma-chopp-1000ml",
+            "corona-extra-330ml",
+            "imperial-golden-473ml",
+            "patagonia-lager-del-sur-730ml",
+            "schneider-rubia-710ml",
+            "stella-artois-rubia-473ml",
+            "monster-mango-loco-473ml",
+            "monster-ultra-473ml-local",
+            "speed-zero-473ml",
+            "cepita-durazno-1000ml",
+            "paso-de-los-toros-pomelo-1500ml",
+            "schweppes-pomelo-sin-azucar-2250ml",
+            "schweppes-tonica-354ml-local",
+            "doritos-queso-129g",
+            "lays-clasicas-40g",
+            "mani-king-salado-sin-piel-100g",
+            "alamos-malbec-750ml-local",
+            "norton-malbec-750ml-local",
+            "santa-julia-chenin-dulce-750ml",
+            "trapiche-red-blend-750ml"
+          ],
+          "nota": "Las imágenes salen de los catálogos VTEX públicos de DIA y TOP, se buscaron por EAN y se contrastaron con nombre y volumen. Cada una fue mirada a ojo antes y después de subirla."
         }
       ],
       "altas_2026_08_25": {

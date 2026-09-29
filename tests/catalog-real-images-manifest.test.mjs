@@ -31,7 +31,7 @@ test('real image manifest: one row per SKU, one exact status each, no ambiguous 
   assert.equal(new Set(manifest.map((row) => row.sku)).size, 46, 'SKU duplicado');
   for (const row of manifest) {
     assert.ok(FINAL_STATUSES.has(row.final_status), `${row.sku}: ${row.final_status}`);
-    for (const key of ['sku', 'product_name', 'gtin', 'source', 'source_url', 'license', 'rights_status', 'visual_status', 'local_source_path', 'staging_path', 'approved_path', 'associated', 'notes']) assert.ok(key in row, `columna ${key}`);
+    for (const key of ['sku', 'product_name', 'gtin', 'source', 'source_url', 'license', 'rights_status', 'visual_status', 'local_source_path', 'staging_path', 'approved_path', 'associated', 'notes', 'final_status', 'authorization_basis', 'identity_basis', 'exact_product_match', 'visual_review', 'source_business', 'retrieved_at', 'original_sha256', 'master_sha256', 'approved_asset_id']) assert.ok(key in row, `columna ${key}`);
     assert.doesNotMatch(Object.values(row).join(' '), /[A-Za-z]:[\\]/, `${row.sku}: ruta local absoluta`);
     assert.doesNotMatch(row.final_status, /^(REVIEW|PENDING)$/);
   }
@@ -45,14 +45,44 @@ test('real image manifest: only an image with verified rights, exact identity an
       assert.equal(row.rights_status, 'RIGHTS_VERIFIED');
       assert.equal(row.visual_status, 'PASS');
       assert.ok(row.license && row.source_url && row.approved_path, `${row.sku}: falta licencia, fuente o ruta aprobada`);
-      if (/CC BY/i.test(row.license)) assert.equal(row.attribution_required, 'YES');
+      assert.match(row.master_sha256, /^[a-f0-9]{64}$/, `${row.sku}: falta el hash del master aprobado`);
+      assert.ok(row.visual_review.trim() && row.retrieved_at && row.approved_asset_id, `${row.sku}: falta la revisión visual, la fecha o el asset aprobado`);
+      assert.ok(['GTIN_EXACT', 'NAME_SIZE_VARIANT'].includes(row.identity_basis), `${row.sku}: falta la base de identidad`);
+      if (row.authorization_basis === 'AUTHORIZED_RETAIL_SOURCE') {
+        assert.ok(['Supermercados DIA', 'Supermercados TOP'].includes(row.source_business), `${row.sku}: la autorización sólo cubre DIA y TOP, no ${row.source_business}`);
+        assert.equal(row.attribution_required, 'NO');
+        assert.match(row.original_sha256, /^[a-f0-9]{64}$/);
+      } else {
+        assert.equal(row.authorization_basis, 'OPEN_LICENSE_CC_BY_SA');
+        assert.equal(row.attribution_required, 'YES');
+      }
     } else {
       assert.equal(row.rights_status, 'UNVERIFIED', `${row.sku}: derechos sin verificar deben decir UNVERIFIED`);
       assert.equal(row.approved_path, '', `${row.sku}: ruta aprobada sin estar aprobada`);
       assert.ok(row.blocker.trim() && row.unblock_path.trim(), `${row.sku}: falta qué falta exactamente`);
     }
   }
-  assert.equal(manifest.filter((row) => row.final_status === 'PRODUCT_CONFIRMATION_REQUIRED').every((row) => /^cepita-/.test(row.sku)), true);
+  assert.deepEqual(manifest.filter((row) => row.final_status === 'PRODUCT_CONFIRMATION_REQUIRED').map((row) => row.sku).sort(), ['cepita-naranja-1000ml', 'cinzano-rosso-950ml']);
+});
+
+test('retail-authorized images come only from the sources the authorization names and match the provenance file', () => {
+  const provenance = JSON.parse(fs.readFileSync(path.join(root, 'docs/catalog/retail-authorized-images-2026-09-29.json'), 'utf8'));
+  const retail = manifest.filter((row) => row.authorization_basis === 'AUTHORIZED_RETAIL_SOURCE');
+  assert.equal(provenance.assets.length, retail.length);
+  assert.equal(provenance.counts.assets, retail.length);
+  const hosts = new Set(['ardiaprod.vteximg.com.br', 'supertopar.vteximg.com.br']);
+  for (const asset of provenance.assets) {
+    const row = retail.find((entry) => entry.sku === asset.sku);
+    assert.ok(row, `${asset.sku} no está en el manifiesto`);
+    assert.ok(hosts.has(new URL(asset.source_url).hostname), `${asset.sku}: host fuera de la autorización`);
+    assert.equal(asset.sha256.master, row.master_sha256);
+    assert.equal(asset.approved_asset_id, row.approved_asset_id);
+    assert.equal(asset.product_draft, true);
+  }
+  const authorization = JSON.parse(fs.readFileSync(path.join(root, 'catalog/autorizaciones-comerciales.json'), 'utf8')).autorizaciones[0];
+  const amplification = authorization.ampliaciones.find((entry) => entry.fecha === '2026-09-29');
+  assert.deepEqual(amplification.assets_cubiertos.slice().sort(), retail.map((row) => row.sku).sort());
+  assert.deepEqual(amplification.fuentes_cubiertas.map((source) => source.negocio).sort(), ['Supermercados DIA', 'Supermercados TOP']);
 });
 
 test('shot list names every non-approved SKU exactly once with a filename the Panel bulk intake recognises', () => {

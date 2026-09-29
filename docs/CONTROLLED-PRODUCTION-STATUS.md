@@ -5,6 +5,28 @@ Rama de despliegue `release/taba-controlled-production`; PR **#98** (reemplaza a
 `CONTROLLED-PRODUCTION-RUNBOOK.md`. Evidencia en `docs/evidence/controlled-production/`
 (archivos `*-20260925.json` para el cierre de #98, `*-20260926.json` para el del 26 y `*-20260928*.json` para el 28: la noche y la base de apertura).
 
+## 2026-09-28 (noche) · Línea fiscal aplicada y apagada, cierre de la base
+
+PR **#122** (`feat/taba-fiscal-line`). Es la única línea fiscal y sustituye a #104, #106, #107, #112, #113 y #114, que están cerradas; #115 (WhatsApp) sigue aparte.
+
+| Frente | Resultado | Evidencia |
+|---|---|---|
+| Backup previo a la línea fiscal | PASS: 147 migraciones, 108 tablas, 9694 filas, restauración con 0 errores, esquema y RLS idénticos | `restore-drill-cp-20260928-pre-fiscal.json` |
+| Migraciones fiscales `20260928180000` … `180800` | Aplicadas: el dry-run mostró exactamente las 9. CP = repo, 156/156.<br>Huella de CP = PG 17 construido del repo en las 13 categorías: **sin deriva**.<br>0 comprobantes, 0 perfiles fiscales y 0 perfiles de producción | `migrations-cp-20260928-fiscal.json` |
+| Reversión de la línea fiscal | Generada comparando dos bases reales y probada en CI en el entorno de Supabase: revertir deja la huella igual a la anterior, y volver a aplicar da la de después.<br>Se niega con un solo registro fiscal. Los permisos se restauran como el entorno los crea | CI (`FISCAL_LINE_ROLLBACK_DRILL`, `…_REFUSES_WITH_FISCAL_ROWS`) |
+| Código fiscal listo para homologar | Core `taba-fiscal@9fd32fd`: 55/55 pruebas. Worker canónico contra el esquema final: 15/15 escenarios (FakeArca):<br>• recuperación sin reenvíos;<br>• concurrencia 10/50/100 → 1 comprobante;<br>• aislamiento.<br>Bandeja del Panel contra la base real: 3/3. Frontera de secretos: PASS.<br>CLI de homologación: 8 comandos, sin credenciales `ARCA_DISABLED`, producción rechazada siempre | `fiscal-code-cert-20260928.json` |
+| Mercado Pago para un cliente nuevo | Sin sesión, la disponibilidad es sólo de `authenticated`, por contrato. Al guardar «Tus datos» nace la sesión y el carrito vuelve a preguntar: Mercado Pago aparece sin salir. E2E que falla sin el arreglo | commit `c0ac522` |
+| Deploy A′ = ``e2978e5`` | Workflow oficial después del CI exacto en verde: web + E2E, base y Windows, Rider y agente .NET.<br>Deployment `ac985354`; smoke en modo `live` con 3 motores.<br>Sin simulacro: es el primer deploy con la línea fiscal, así que el grafo de base cambia por diseño | runs 36497439976 (deploy), 36497439822 (CI), 36497439821 (Rider), 36497439929 (.NET) |
+| Service worker v129 → v130 | Perfil sembrado en B (v129, con sesión):<br>• aparece «Actualizar ahora»;<br>• **una** sola recarga;<br>• el worker nuevo queda al mando en `e2978e5`;<br>• la caché v129 se borra y queda la v130;<br>• no se pierde nada guardado.<br>Recarga, chequeo y recarga forzada: PASS. Visitante nuevo: PASS | `sw-live-cp-20260928-fiscal.json` |
+| Certificaciones después del deploy | • opening-cert **48/48**: revocar invitación, invitar a otro comercio y el empleado que no invita.<br>• Pedidos **21/21**, incluido el delivery pagado en efectivo.<br>• Panel en vivo **16/16** (v130).<br>• Tienda anónima **30/30**, con los instaladores privados.<br>• Pulso: HEALTHY.<br>• `opening:check`: TECHNICAL_READY YES, COMMERCIAL_READY NO.<br>• Backup final y restauración: PASS (156 migraciones, 0 errores) | `opening-cert-cp-20260928-final.json`, `opening-orders-cp-20260928-final.json`, `panel-live-cp-20260928-final.json`, `anon-store-cp-20260928-final.json`, `ops-pulse-cp-20260928-final.json`, `opening-check-cp-20260928-final.json`, `restore-drill-cp-20260928-final.json` |
+| Agente de impresión (.NET) | 114/114 pruebas; MSI construido y verificado; instalación limpia en CI: servicio, salud, sólo loopback, origen ajeno rechazado (403), desinstalación limpia. Impresora física: `PENDING_HARDWARE` | run 36497439929 |
+
+Estado:
+
+- **P0 = 0, P1 = 0.**
+- `REAL_STORE_LIVE: NO`, `PRODUCTS_PUBLIC: 0`.
+- `ARCA_CODE_READY_FOR_HOMOLOGATION: YES`, `ARCA_HOMOLOGATION: PENDING_CREDENTIALS`, `ARCA_PRODUCTION: NO`.
+
 ## 2026-09-28 (tarde) · Base de apertura: todo lo técnico, la tienda cerrada
 
 PR **#121** (`feat/taba-opening-base`). El único trabajo pendiente para abrir son datos y decisiones del comercio: [`catalog/opening/OWNER-INPUT.md`](../catalog/opening/OWNER-INPUT.md). Operación: [`docs/STORE-OPENING-RUNBOOK.md`](STORE-OPENING-RUNBOOK.md).

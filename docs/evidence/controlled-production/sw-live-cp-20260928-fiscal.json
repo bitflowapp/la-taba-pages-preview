@@ -1,0 +1,60 @@
+{
+  "target": "controlled-production",
+  "origin": "https://la-taba-commercial-pilot.pages.dev/",
+  "device": "Chromium, Pixel 7, perfil persistente",
+  "from": {
+    "commit": "03eaa8da7eb1149aa46b4b3163cac53f319b3f8a",
+    "cache": "la-taba-runtime-v129-store-opening"
+  },
+  "to": {
+    "commit": "e2978e5fdef82334dcaf18925be3eb0e37517ee4",
+    "cache": "la-taba-runtime-v130-fiscal-line"
+  },
+  "note": "El perfil sembrado en B (v129, con sesión) recibe el worker nuevo: aparece «Actualizar ahora», una sola recarga, la caché v129 se borra, la v130 queda, y no se pierde nada guardado.",
+  "upgrade": {
+    "at": "2026-09-29T00:03:00.309Z",
+    "phase": "upgrade",
+    "verdict": "PASS",
+    "checks": {
+      "PAGE_LOADS": "PASS",
+      "BACKEND_IS_CP": "PASS",
+      "SW_CONTROLLING": "PASS",
+      "RUNTIME_CACHE_PRESENT": "PASS",
+      "SERVES_EXPECTED_COMMIT": "PASS",
+      "UPDATE_BANNER_SHOWN": "PASS",
+      "SINGLE_RELOAD": "PASS",
+      "NEW_WORKER_CONTROLS": "PASS",
+      "NEW_CACHE_PRESENT": "PASS",
+      "OLD_CACHE_PURGED": "PASS",
+      "LOCAL_STATE_KEPT": "PASS",
+      "EXISTING_SESSION_KEPT": "PASS",
+      "RELOAD_KEEPS_SW_AND_VERSION": "PASS",
+      "UPDATE_CHECK_OK": "PASS",
+      "HARD_RELOAD_OK": "PASS",
+      "NO_JS_ERRORS": "PASS"
+    }
+  },
+  "fresh": {
+    "at": "2026-09-29T00:04:00.091Z",
+    "phase": "fresh",
+    "verdict": "PASS",
+    "checks": {
+      "PAGE_LOADS": "PASS",
+      "BACKEND_IS_CP": "PASS",
+      "SW_CONTROLLING": "PASS",
+      "RUNTIME_CACHE_PRESENT": "PASS",
+      "SERVES_EXPECTED_COMMIT": "PASS",
+      "RELOAD_KEEPS_SW_AND_VERSION": "PASS",
+      "UPDATE_CHECK_OK": "PASS",
+      "HARD_RELOAD_OK": "PASS",
+      "NO_JS_ERRORS": "PASS"
+    }
+  },
+  "afterUpdate": {
+    "caches": [
+      "la-taba-runtime-v130-fiscal-line"
+    ],
+    "authKeys": 1
+  },
+  "verdict": "PASS"
+}

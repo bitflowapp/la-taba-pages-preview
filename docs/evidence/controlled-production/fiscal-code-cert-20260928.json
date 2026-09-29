@@ -1,0 +1,111 @@
+{
+  "at": "2026-09-28T23:24:26.611Z",
+  "core": {
+    "repository": "bitflowapp/taba-fiscal",
+    "sha": "9fd32fd29dec4ec4c271edd90f4af2ceef73264c",
+    "pinnedIn": "fiscal-core.json"
+  },
+  "coreUnitTests": {
+    "passed": 55,
+    "failed": 0,
+    "runner": "services/arca-fiscal-bridge: npm test (local, 2026-09-28)"
+  },
+  "section21": {
+    "WSAA": [
+      "TRA se firma como CMS PKCS#7 con certificado",
+      "parser WSAA extrae ticket y rechaza XXE",
+      "WSAA: el TA se persiste y un reinicio lo reutiliza en vez de pedir otro",
+      "WSAA comparte una sola renovación concurrente por CUIT, servicio y ambiente",
+      "WSAA: coe.alreadyAuthenticated se reintenta más tarde (no es un error fatal ni ambiguo)"
+    ],
+    "WSFE": [
+      "cliente usa FEDummy y último autorizado en endpoint homologado",
+      "éxito: último+1, CAE de 14 dígitos, un solo número reservado",
+      "FECompConsultar: la respuesta oficial (CbteDesde/CbteHasta, sin CbteNro) es un comprobante existente",
+      "respuesta rechazada nunca inventa CAE",
+      "FECompUltimoAutorizado: Errors con CbteNro=0 (serialización ASMX) es un error, nunca \"último = 0\""
+    ],
+    "CondicionIVAReceptorId": [
+      "RG 5616: el pedido lleva CondicionIVAReceptorId en el orden del WSDL oficial",
+      "rechazo 10246 (condición IVA inválida) queda rechazado con su código, sin CAE",
+      "RG 5616: un comprobante sin condición IVA va a revisión SIN consumir número",
+      "pgTAP fiscal_receiver_vat_condition_test (14)"
+    ],
+    "timeout": [
+      "timeout: justo después sólo se consulta; si ARCA no lo tiene, queda ambiguo (no reenvía)",
+      "no llegó a ARCA y el número sigue libre: se reenvía el MISMO número, sin reservar otro",
+      "el número ya se usó y ARCA no tiene este comprobante: revisión humana, nunca reemisión",
+      "documento ambiguo consulta antes de cualquier nuevo FECAESolicitar"
+    ],
+    "creditNote": [
+      "pgTAP fiscal_document_closure_test: importe o cantidad excede el saldo acreditable (23514)",
+      "PDF autorizado A4 conserva referencia de nota",
+      "pgTAP fiscal_refund_separation_test: un reembolso de Mercado Pago no genera una nota de crédito"
+    ],
+    "immutableAfterAuthorization": [
+      "pgTAP: protect_authorized_fiscal_document / _item (disparadores)",
+      "fiscal_core_contract_test (55)"
+    ]
+  },
+  "homologationCli": {
+    "commands": [
+      "verify-config",
+      "auth-test",
+      "dummy",
+      "params",
+      "last",
+      "issue-test",
+      "query",
+      "credit-note-test"
+    ],
+    "refusals": {
+      "noCredentials": "ARCA_DISABLED",
+      "production": "producción se rechaza siempre, aunque esté habilitada (homologation-cli.test)"
+    }
+  },
+  "canonicalWorkerOnFinalSchema": {
+    "FISCAL_CORE_WORKER_SOURCE": "bitflowapp/taba-fiscal@9fd32fd29dec4ec4c271edd90f4af2ceef73264c (services/arca-fiscal-bridge, compilado)",
+    "FISCAL_CORE_WORKER_E2E": "PASS (1 comprobante, 1 numero, 1 autorizacion SIMULADA, 1 PDF, 1 trabajo de impresion; WhatsApp repetido no reemite)",
+    "FISCAL_CORE_WORKER_RECOVERY_RESPONSE_LOST": "PASS (ambiguo → reinicio → FECompConsultar → autorizado con el mismo numero y CAE; 0 reenvios)",
+    "FISCAL_CORE_WORKER_RECOVERY_CRASH_BEFORE_PERSIST": "PASS (lease vencido → ambiguo auditado → worker nuevo concilia el CAE del log; 0 reenvios)",
+    "FISCAL_CORE_WORKER_CONCURRENCY_10": "PASS (10 pedidos PANEL/MOBILE/WHATSAPP/AUTOMATION por PostgREST → 1 comprobante, 9 claves)",
+    "FISCAL_CORE_WORKER_CONCURRENCY_50": "PASS (50 pedidos PANEL/MOBILE/WHATSAPP/AUTOMATION por PostgREST → 1 comprobante, 41 claves)",
+    "FISCAL_CORE_WORKER_CONCURRENCY_100": "PASS (100 pedidos PANEL/MOBILE/WHATSAPP/AUTOMATION por PostgREST → 1 comprobante, 81 claves)",
+    "FISCAL_CORE_WORKER_CONCURRENT_WORKERS": "PASS (3 workers canonicos: numeros 1..3, 3 FECAESolicitar, 3 reservas esperaron la serie (TF002))",
+    "FISCAL_CORE_WORKER_TENANT_ISOLATION": "PASS (pedido, actor y PDF ajenos denegados; cada worker solo reclama su CUIT; cada agente solo su negocio)",
+    "FISCAL_CORE_LEGACY_WORKER_CONTRACT": "PASS (el worker anterior no puede reclamar, reservar ni cerrar: PGRST202)",
+    "FISCAL_CORE_PDF_CONFLICT": "PASS (lease de PDF viejo → PT409/409 inmediato; el worker de PDF del core espera 40001: pendiente en el core)",
+    "FISCAL_ORDER_WORKER_E2E": "PASS (pedido online → intencion → worker canonico → FakeArca estricto → autorizado → PDF → ticket del agente real → reimpresion real; 0 ventas POS)",
+    "FISCAL_ORDER_WORKER_RECOVERY": "PASS (pedido online: respuesta perdida → reinicio → conciliacion con el mismo CAE; el ticket sale al autorizar; 0 reenvios)",
+    "FISCAL_CORE_WORKER_HTTP_CONTRACT": "PASS (106 llamadas del worker, 193 de clientes de La Taba; rutas del worker: rest/fiscal_documents, rpc/claim_fiscal_artifact_outbox, rpc/claim_fiscal_outbox, rpc/complete_fiscal_artifact, rpc/complete_fiscal_attempt, rpc/reserve_fiscal_document_number, rpc/save_fiscal_parameter_snapshot, storage/put)",
+    "PHYSICAL_PRINT": "NOT_VERIFIED (agente simulado, sin impresora)"
+  },
+  "realDbPanelE2E": {
+    "spec": "tests/e2e/order-fiscal-real-db.spec.mjs",
+    "passed": 3,
+    "failed": 0,
+    "note": "escritorio y teléfono, base real migrada, worker canónico, FakeArca"
+  },
+  "pgTapInCI": {
+    "fiscal_core_contract": 55,
+    "fiscal_core_upgrade": 24,
+    "fiscal_receiver_vat_condition": 14,
+    "commercial_order_fiscal": 54,
+    "fiscal_disaster_recovery": 21,
+    "fiscal_secret_boundary": 7,
+    "fiscal_refund_separation": 2
+  },
+  "secretBoundary": {
+    "verdict": "PASS",
+    "database": "sin columnas para clave, contraseña, PEM/PKCS ni ticket WSAA; sólo metadata del certificado",
+    "panelWrites": "configure_fiscal_profile acepta 12 claves no secretas; rechaza private_key, certificate_pem y certificate_password",
+    "panelReads": "get_arca_activation_status: certificate_loaded, vencimiento, CUIT, delegación; ningún campo secreto",
+    "worker": "lee clave y certificado de archivos del servidor"
+  },
+  "arca": {
+    "ARCA_CODE_READY_FOR_HOMOLOGATION": "YES",
+    "ARCA_HOMOLOGATION": "PENDING_CREDENTIALS",
+    "ARCA_PRODUCTION": "NO",
+    "PHYSICAL_PRINT": "NOT_VERIFIED"
+  }
+}

@@ -1,5 +1,41 @@
 # La Taba — handoff de la mañana (2026-09-28)
 
+## Actualización de cierre (2026-09-28, noche)
+
+**LA_TABA_BASE_READY: YES. La base técnica está terminada; la tienda sigue cerrada (`STORE_LIVE: NO`, `PRODUCTS_PUBLIC: 0`).**
+
+Lo que falta son sólo datos y decisiones del comercio, todos juntos en [`catalog/opening/OWNER-INPUT.md`](../catalog/opening/OWNER-INPUT.md). El paso a paso sin terminal está en [`docs/STORE-OPENING-RUNBOOK.md`](STORE-OPENING-RUNBOOK.md), empezando por «El día de la apertura, en siete pasos».
+
+Qué cambió desde esta mañana:
+
+- **Preparar apertura** tiene una sola fuente, `get_store_opening_readiness`. La leen:
+  - el Panel (Apertura);
+  - `npm run opening:check`, que responde `TECHNICAL_READY: YES`, `COMMERCIAL_READY: NO`, `CAN_OPEN: NO`;
+  - `npm run opening:dry-run`, que no escribe nada.
+- **Seis defectos reales encontrados en vivo y corregidos**, cada uno con su prueba:
+  1. La primera publicación de los 46 borradores fallaba.
+  2. Una cuenta que aceptó una invitación no se podía borrar.
+  3. El alcohol se podía encender con la edad vacía.
+  4. El primer deploy después de publicar habría fallado.
+  5. Las herramientas del dueño lo sacaban del Panel y del teléfono.
+  6. Un cliente nuevo no veía Mercado Pago hasta salir y volver al carrito.
+- **Línea fiscal única** (PR #122): el core `taba-fiscal`, los pedidos online facturados como pedidos y la recuperación ante desastre.
+  - Está aplicada en CP con reversión probada, y **apagada**: `ARCA_PRODUCTION: NO`.
+  - Para homologar faltan CUIT, certificado y clave, punto de venta, delegación y la política contable.
+- **Traspaso Walter dueño / Marco encargado técnico**: está en el runbook y probado contra la base, incluido que el comercio nunca quede sin dueño.
+- **Deploys:** 
+  - A = `b548e91` (`0753f346`).
+  - B = `03eaa8d` (`9042dc83`), con simulacro B→A→B.
+  - A′ = `e2978e5` (`ac985354`), con la línea fiscal y el worker v130.
+  - B′ = el commit de evidencia, con simulacro B′→A′→B′.
+
+  En los cuatro, el smoke corre en modo `live`. `main` = `release`.
+
+Evidencia: `docs/CONTROLLED-PRODUCTION-STATUS.md`, sección «2026-09-28 (tarde)».
+
+---
+
+
 Noche del 27 al 28 de septiembre sobre CONTROLLED_PRODUCTION (CP): proyecto `tkanbadcglszlcyfjvpv`, web `la-taba-commercial-pilot.pages.dev`.
 
 **Veredicto: la parte técnica está lista para un canary humano con pago manual. La tienda real no está abierta y hoy no puede abrir al público.**

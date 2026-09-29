@@ -1,0 +1,46 @@
+{
+  "at": "2026-09-29T00:10:02.533Z",
+  "origin": "https://la-taba-commercial-pilot.pages.dev",
+  "served": {
+    "commit": "e2978e5fdef82334dcaf18925be3eb0e37517ee4",
+    "runtime": "la-taba-runtime-v130-fiscal-line"
+  },
+  "publicCatalogTenants": 0,
+  "foreignPublicTenants": 0,
+  "realBusinessCatalogPublic": false,
+  "routes": "30/30",
+  "teamApps": {
+    "listed": 0,
+    "signed": false
+  },
+  "verdict": "PASS",
+  "results": [
+    {
+      "engine": "chromium",
+      "route": "/#cart",
+      "status": 200,
+      "pageErrors": [],
+      "unexpected": [],
+      "expected": 1,
+      "clean": true
+    },
+    {
+      "engine": "chrome_android",
+      "route": "/#cart",
+      "status": 200,
+      "pageErrors": [],
+      "unexpected": [],
+      "expected": 1,
+      "clean": true
+    },
+    {
+      "engine": "webkit_iphone",
+      "route": "/#cart",
+      "status": 200,
+      "pageErrors": [],
+      "unexpected": [],
+      "expected": 1,
+      "clean": true
+    }
+  ]
+}

@@ -1,0 +1,303 @@
+{
+  "at": "2026-09-29T00:10:46.558Z",
+  "business": {
+    "name": "La Taba",
+    "slug": "la-taba-cp",
+    "status": "closed"
+  },
+  "min_products": 1,
+  "verdict": "BLOCKED",
+  "commercial_ready": false,
+  "can_open": false,
+  "accepting_orders": false,
+  "blockers": [
+    {
+      "code": "FULFILLMENT_MODE",
+      "title": "Retiro o delivery",
+      "reason": "Todavía no está definido si el local hace retiro, delivery o los dos.",
+      "action": "Elegí retiro, delivery o los dos.",
+      "where_to_fix": "Panel › Horarios y cobertura › Cómo entregás"
+    },
+    {
+      "code": "SERVICE_HOURS",
+      "title": "Horarios",
+      "reason": "Falta el horario de delivery y de retiro: sin horario la tienda rechaza todos los pedidos.",
+      "action": "Configurá los horarios de atención.",
+      "where_to_fix": "Panel › Horarios y cobertura › Horario de atención"
+    },
+    {
+      "code": "CATALOG_PRICES",
+      "title": "Precios",
+      "reason": "0 de 28 productos con precio confirmado (hace falta al menos 1).",
+      "action": "Cargá los precios.",
+      "where_to_fix": "Panel › Catálogo (o la planilla de apertura)"
+    },
+    {
+      "code": "CATALOG_STOCK",
+      "title": "Stock",
+      "reason": "0 productos con stock contado; 28 sin contar y 0 agotados.",
+      "action": "Contá el stock del local.",
+      "where_to_fix": "Panel › Catálogo (o la planilla de apertura)"
+    },
+    {
+      "code": "CATALOG_PHOTOS",
+      "title": "Fotos aprobadas",
+      "reason": "0 de 28 productos con foto aprobada: sin foto aprobada un producto no se publica.",
+      "action": "Subí las fotos y aprobalas.",
+      "where_to_fix": "Panel › Catálogo › Cargar fotos"
+    },
+    {
+      "code": "CATALOG_PUBLISHED",
+      "title": "Productos publicados",
+      "reason": "0 publicados. Un producto se publica con precio, stock y foto aprobada.",
+      "action": "Publicá los productos listos.",
+      "where_to_fix": "Panel › Catálogo › Verificar y publicar"
+    },
+    {
+      "code": "PLATFORM_VERIFICATION",
+      "title": "Verificación de plataforma",
+      "reason": "La plataforma todavía no verificó el comercio. Se pide cuando todo lo anterior está listo.",
+      "action": "Pedile la verificación a la plataforma.",
+      "where_to_fix": "Plataforma (operador de La Taba)"
+    }
+  ],
+  "items": [
+    {
+      "code": "BUSINESS_ACTIVE",
+      "group": "business",
+      "status": "pass",
+      "blocking": true,
+      "title": "Comercio activo",
+      "reason": "El comercio está activo en la plataforma.",
+      "action": "",
+      "where_to_fix": ""
+    },
+    {
+      "code": "CURRENCY",
+      "group": "business",
+      "status": "pass",
+      "blocking": true,
+      "title": "Moneda",
+      "reason": "Los precios se cobran en ARS.",
+      "action": "",
+      "where_to_fix": ""
+    },
+    {
+      "code": "BUSINESS_ADDRESS",
+      "group": "business",
+      "status": "pass",
+      "blocking": false,
+      "title": "Dirección del local",
+      "reason": "La dirección del local está publicada.",
+      "action": "",
+      "where_to_fix": ""
+    },
+    {
+      "code": "BUSINESS_CONTACT",
+      "group": "business",
+      "status": "warn",
+      "blocking": false,
+      "title": "WhatsApp del local",
+      "reason": "Sin WhatsApp del local, el cliente no tiene cómo escribirle.",
+      "action": "Cargá y confirmá el WhatsApp del local.",
+      "where_to_fix": "Panel › Horarios y cobertura › Datos del local"
+    },
+    {
+      "code": "FULFILLMENT_MODE",
+      "group": "fulfillment",
+      "status": "pending",
+      "blocking": true,
+      "title": "Retiro o delivery",
+      "reason": "Todavía no está definido si el local hace retiro, delivery o los dos.",
+      "action": "Elegí retiro, delivery o los dos.",
+      "where_to_fix": "Panel › Horarios y cobertura › Cómo entregás"
+    },
+    {
+      "code": "SERVICE_HOURS",
+      "group": "fulfillment",
+      "status": "pending",
+      "blocking": true,
+      "title": "Horarios",
+      "reason": "Falta el horario de delivery y de retiro: sin horario la tienda rechaza todos los pedidos.",
+      "action": "Configurá los horarios de atención.",
+      "where_to_fix": "Panel › Horarios y cobertura › Horario de atención"
+    },
+    {
+      "code": "DELIVERY_PRICING",
+      "group": "fulfillment",
+      "status": "na",
+      "blocking": false,
+      "title": "Envío y pedido mínimo",
+      "reason": "No aplica: el local no hace delivery.",
+      "action": "",
+      "where_to_fix": ""
+    },
+    {
+      "code": "DELIVERY_COVERAGE",
+      "group": "fulfillment",
+      "status": "na",
+      "blocking": false,
+      "title": "Zona de entrega",
+      "reason": "No aplica: el local no hace delivery.",
+      "action": "",
+      "where_to_fix": ""
+    },
+    {
+      "code": "RIDERS",
+      "group": "fulfillment",
+      "status": "na",
+      "blocking": false,
+      "title": "Repartidores",
+      "reason": "No aplica: el local no hace delivery.",
+      "action": "",
+      "where_to_fix": ""
+    },
+    {
+      "code": "CATALOG_PRICES",
+      "group": "catalog",
+      "status": "pending",
+      "blocking": true,
+      "title": "Precios",
+      "reason": "0 de 28 productos con precio confirmado (hace falta al menos 1).",
+      "action": "Cargá los precios.",
+      "where_to_fix": "Panel › Catálogo (o la planilla de apertura)"
+    },
+    {
+      "code": "CATALOG_STOCK",
+      "group": "catalog",
+      "status": "pending",
+      "blocking": true,
+      "title": "Stock",
+      "reason": "0 productos con stock contado; 28 sin contar y 0 agotados.",
+      "action": "Contá el stock del local.",
+      "where_to_fix": "Panel › Catálogo (o la planilla de apertura)"
+    },
+    {
+      "code": "CATALOG_PHOTOS",
+      "group": "catalog",
+      "status": "pending",
+      "blocking": true,
+      "title": "Fotos aprobadas",
+      "reason": "0 de 28 productos con foto aprobada: sin foto aprobada un producto no se publica.",
+      "action": "Subí las fotos y aprobalas.",
+      "where_to_fix": "Panel › Catálogo › Cargar fotos"
+    },
+    {
+      "code": "CATALOG_PUBLISHED",
+      "group": "catalog",
+      "status": "pending",
+      "blocking": true,
+      "title": "Productos publicados",
+      "reason": "0 publicados. Un producto se publica con precio, stock y foto aprobada.",
+      "action": "Publicá los productos listos.",
+      "where_to_fix": "Panel › Catálogo › Verificar y publicar"
+    },
+    {
+      "code": "ALCOHOL_POLICY",
+      "group": "catalog",
+      "status": "info",
+      "blocking": false,
+      "title": "Venta de alcohol",
+      "reason": "Cerrada: 18 productos con alcohol no se venden.",
+      "action": "La decide el comercio antes de habilitarla.",
+      "where_to_fix": "Decisión del comercio (docs/ALCOHOL-ACTIVATION.md)"
+    },
+    {
+      "code": "PAYMENT_MANUAL",
+      "group": "payments",
+      "status": "pass",
+      "blocking": true,
+      "title": "Pago en efectivo o transferencia",
+      "reason": "Efectivo al retirar o recibir, y transferencia a coordinar con el local.",
+      "action": "",
+      "where_to_fix": ""
+    },
+    {
+      "code": "PAYMENT_MERCADOPAGO",
+      "group": "payments",
+      "status": "info",
+      "blocking": false,
+      "title": "Mercado Pago",
+      "reason": "No conectado: la tienda cobra en efectivo o por transferencia.",
+      "action": "El dueño conecta su cuenta desde el Panel.",
+      "where_to_fix": "Panel › Conectar Mercado Pago"
+    },
+    {
+      "code": "PLATFORM_VERIFICATION",
+      "group": "platform",
+      "status": "pending",
+      "blocking": true,
+      "title": "Verificación de plataforma",
+      "reason": "La plataforma todavía no verificó el comercio. Se pide cuando todo lo anterior está listo.",
+      "action": "Pedile la verificación a la plataforma.",
+      "where_to_fix": "Plataforma (operador de La Taba)"
+    },
+    {
+      "code": "STORE_OPEN",
+      "group": "open",
+      "status": "info",
+      "blocking": false,
+      "title": "Local abierto",
+      "reason": "El local está cerrado.",
+      "action": "Abrí el local cuando quieras empezar a vender.",
+      "where_to_fix": "Panel › Abrir el negocio"
+    }
+  ],
+  "counts": {
+    "products": 46,
+    "sold_out": 0,
+    "verified": 0,
+    "alcoholic": 18,
+    "published": 0,
+    "uncounted": 28,
+    "candidates": 28,
+    "with_photo": 0,
+    "with_price": 0,
+    "with_stock": 0,
+    "ready_to_publish": 0
+  },
+  "target": "controlled-production",
+  "technical_ready": true,
+  "technical": [
+    {
+      "id": "SYSTEM",
+      "label": "Sistema",
+      "ok": true,
+      "detail": "web e2978e5 (la-taba-runtime-v130-fiscal-line) · base responde"
+    },
+    {
+      "id": "SECURITY",
+      "label": "Seguridad",
+      "ok": true,
+      "detail": "anónimo: preparación cerrada · verificación cerrada · pedidos no visibles"
+    },
+    {
+      "id": "ORDERS",
+      "label": "Pedidos",
+      "ok": true,
+      "detail": "alta de pedidos presente y cerrada sin sesión"
+    },
+    {
+      "id": "RIDER_BACKEND",
+      "label": "Rider backend",
+      "ok": true,
+      "detail": "bandeja del repartidor presente"
+    },
+    {
+      "id": "MANUAL_PAYMENT",
+      "label": "Pago manual",
+      "ok": true,
+      "detail": "efectivo y transferencia a coordinar disponibles"
+    },
+    {
+      "id": "OPERATIONS",
+      "label": "Operación",
+      "ok": true,
+      "detail": "pulso operativo HEALTHY"
+    }
+  ],
+  "served": {
+    "commit": "e2978e5fdef82334dcaf18925be3eb0e37517ee4",
+    "runtime": "la-taba-runtime-v130-fiscal-line"
+  }
+}

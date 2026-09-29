@@ -1,0 +1,141 @@
+{
+  "at": "2026-09-29T00:06:18.595Z",
+  "target": "controlled-production",
+  "business": "qa-control-cp",
+  "money": "ninguno",
+  "verdict": "PASS",
+  "passed": 21,
+  "total": 21,
+  "orders": {
+    "pickup": "LT-0074",
+    "transfer": "LT-0075",
+    "deliveryCash": "LT-0076",
+    "cleanup": [
+      {
+        "reversed": true,
+        "cancelled": false,
+        "restoredUnits": 1,
+        "classified": true
+      },
+      {
+        "reversed": true,
+        "cancelled": true,
+        "restoredUnits": 0,
+        "classified": true
+      },
+      {
+        "reversed": true,
+        "cancelled": true,
+        "restoredUnits": 0,
+        "classified": true
+      }
+    ]
+  },
+  "checks": [
+    {
+      "id": "PANEL_DELIVERY_OFF",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "PICKUP_WITH_DELIVERY_OFF",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "DELIVERY_REFUSED_WHEN_OFF",
+      "ok": true,
+      "detail": "delivery no habilitado"
+    },
+    {
+      "id": "PANEL_DELIVERY_BACK",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "COORDINATE_ORDER_CREATED",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "DELIVERY_CASH_ORDER_CREATED",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "PICKUP_ACCEPTED",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "PICKUP_PREPARING",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "PICKUP_READY",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "CASH_ORDER_NOT_CONFIRMABLE_AS_TRANSFER",
+      "ok": true,
+      "detail": "22023"
+    },
+    {
+      "id": "PICKUP_CASH_AT_COUNTER",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "PICKUP_HANDED_OVER_WITHOUT_CODE",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "COORDINATE_ACCEPTED",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "COORDINATE_CONFIRMED_AS_TRANSFER",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "DELIVERY_CASH_ACCEPTED",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "DELIVERY_CASH_NOT_CONFIRMABLE_AS_TRANSFER",
+      "ok": true,
+      "detail": "22023"
+    },
+    {
+      "id": "DELIVERY_CASH_CONFIRMED",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "QA_CLEANUP",
+      "ok": true,
+      "detail": "revertido,revertido,revertido"
+    },
+    {
+      "id": "QA_STOCK_RESTORED",
+      "ok": true,
+      "detail": "60"
+    },
+    {
+      "id": "QA_FULFILLMENT_RESTORED",
+      "ok": true,
+      "detail": "closed"
+    },
+    {
+      "id": "QA_WINDOW_CLOSED",
+      "ok": true,
+      "detail": "ningún tenant QA público"
+    }
+  ]
+}

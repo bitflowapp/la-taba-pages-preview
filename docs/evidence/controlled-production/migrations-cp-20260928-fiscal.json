@@ -1,0 +1,131 @@
+{
+  "at": "2026-09-28T23:19:26.788Z",
+  "target": "controlled-production",
+  "ref": "tkanbadcglszlcyfjvpv",
+  "mode": "lectura (transacción read-only)",
+  "applied": [
+    "20260928180000",
+    "20260928180100",
+    "20260928180200",
+    "20260928180300",
+    "20260928180400",
+    "20260928180500",
+    "20260928180600",
+    "20260928180700",
+    "20260928180800"
+  ],
+  "ledger": {
+    "count": 156,
+    "head": "20260928180800"
+  },
+  "repo": {
+    "count": 156,
+    "head": "20260928180800"
+  },
+  "ledger_equals_repo": true,
+  "fingerprint_vs_repo_migrations_on_pg17": {
+    "column_grants": {
+      "cp": 192,
+      "repo_pg17": 192,
+      "equal": true
+    },
+    "columns": {
+      "cp": 1527,
+      "repo_pg17": 1527,
+      "equal": true
+    },
+    "constraints": {
+      "cp": 962,
+      "repo_pg17": 962,
+      "equal": true
+    },
+    "cron_jobs": {
+      "cp": 5,
+      "repo_pg17": 5,
+      "equal": true
+    },
+    "function_grants": {
+      "cp": 1335,
+      "repo_pg17": 1335,
+      "equal": true
+    },
+    "functions": {
+      "cp": 445,
+      "repo_pg17": 445,
+      "equal": true
+    },
+    "indexes": {
+      "cp": 310,
+      "repo_pg17": 310,
+      "equal": true
+    },
+    "policies": {
+      "cp": 79,
+      "repo_pg17": 79,
+      "equal": true
+    },
+    "realtime_publication": {
+      "cp": 10,
+      "repo_pg17": 10,
+      "equal": true
+    },
+    "storage_buckets": {
+      "cp": 4,
+      "repo_pg17": 4,
+      "equal": true
+    },
+    "table_grants": {
+      "cp": 357,
+      "repo_pg17": 357,
+      "equal": true
+    },
+    "tables": {
+      "cp": 110,
+      "repo_pg17": 110,
+      "equal": true
+    },
+    "triggers": {
+      "cp": 109,
+      "repo_pg17": 109,
+      "equal": true
+    }
+  },
+  "schema_drift": "NONE",
+  "fiscal_rows": {
+    "fiscal_documents": 0,
+    "fiscal_outbox": 0,
+    "fiscal_profiles": 0,
+    "commercial_fiscal_policies": 0,
+    "fiscal_source_snapshots": 0
+  },
+  "production_profiles": 0,
+  "predeploy_backup": {
+    "verdict": "PASS",
+    "checks": {
+      "DB_BACKUP": "PASS",
+      "DB_RESTORE_TEST": "PASS",
+      "RESTORED_SCHEMA_MATCH": "PASS",
+      "RESTORED_RLS": "PASS"
+    },
+    "migrations": {
+      "count": 147,
+      "head": "20260928170000"
+    },
+    "tables": 108,
+    "rows": 9694,
+    "files": [
+      {
+        "file": "app.dump",
+        "bytes": 2918416,
+        "sha256": "bcb9617c0b2af319b8d9ce2d81114057dabc34e31a0f03107798e39551346865"
+      },
+      {
+        "file": "auth-users.dump",
+        "bytes": 21405,
+        "sha256": "985a00f431f1d4ee53a4d9d8d4d26eee782cb6d406671dae3244ec39822532a8"
+      }
+    ],
+    "directory": "~\\.taba-backups\\controlled-production\\pgdump-2026-09-28T23-16-06-682Z"
+  },
+  "note": "La línea fiscal quedó aplicada y apagada: ningún comprobante, ningún perfil de producción, sin worker desplegado."
+}

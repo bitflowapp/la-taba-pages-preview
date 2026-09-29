@@ -1,0 +1,103 @@
+{
+  "at": "2026-09-29T00:07:22.672Z",
+  "target": "controlled-production",
+  "business": "la-taba-cp (sólo lectura)",
+  "served": {
+    "commit": "e2978e5fdef82334dcaf18925be3eb0e37517ee4",
+    "runtime": "la-taba-runtime-v130-fiscal-line"
+  },
+  "pending": [
+    "FULFILLMENT_MODE",
+    "SERVICE_HOURS",
+    "CATALOG_PRICES",
+    "CATALOG_STOCK",
+    "CATALOG_PHOTOS",
+    "CATALOG_PUBLISHED",
+    "PLATFORM_VERIFICATION"
+  ],
+  "verdict": "PASS",
+  "passed": 16,
+  "total": 16,
+  "checks": [
+    {
+      "id": "escritorio:INGRESO_POR_FORMULARIO",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "escritorio:APERTURA_MISMOS_PASOS_QUE_EL_SERVIDOR",
+      "ok": true,
+      "detail": "CATALOG_PHOTOS,CATALOG_PRICES,CATALOG_PUBLISHED,CATALOG_STOCK,FULFILLMENT_MODE,PLATFORM_VERIFICATION,SERVICE_HOURS"
+    },
+    {
+      "id": "escritorio:APERTURA_CUENTA",
+      "ok": true,
+      "detail": "Faltan 6 pasos para abrir."
+    },
+    {
+      "id": "escritorio:SIN_DESBORDE",
+      "ok": true,
+      "detail": "0px"
+    },
+    {
+      "id": "escritorio:EQUIPO_LISTA",
+      "ok": true,
+      "detail": "1 integrantes"
+    },
+    {
+      "id": "escritorio:IMPRESORA_ESTADO",
+      "ok": true,
+      "detail": "NOT_REGISTERED"
+    },
+    {
+      "id": "escritorio:SIN_ERRORES_JS",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "escritorio:CERRAR_SESION",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "telefono:INGRESO_POR_FORMULARIO",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "telefono:APERTURA_MISMOS_PASOS_QUE_EL_SERVIDOR",
+      "ok": true,
+      "detail": "CATALOG_PHOTOS,CATALOG_PRICES,CATALOG_PUBLISHED,CATALOG_STOCK,FULFILLMENT_MODE,PLATFORM_VERIFICATION,SERVICE_HOURS"
+    },
+    {
+      "id": "telefono:APERTURA_CUENTA",
+      "ok": true,
+      "detail": "Faltan 6 pasos para abrir."
+    },
+    {
+      "id": "telefono:SIN_DESBORDE",
+      "ok": true,
+      "detail": "0px"
+    },
+    {
+      "id": "telefono:EQUIPO_LISTA",
+      "ok": true,
+      "detail": "1 integrantes"
+    },
+    {
+      "id": "telefono:IMPRESORA_ESTADO",
+      "ok": true,
+      "detail": "NOT_REGISTERED"
+    },
+    {
+      "id": "telefono:SIN_ERRORES_JS",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "id": "telefono:CERRAR_SESION",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}

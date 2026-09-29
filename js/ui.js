@@ -2629,7 +2629,8 @@ function renderProducts() {
         <div class="empty-state" data-catalog-loading role="status" aria-live="polite">
           <strong>Cargando cat√°logo‚Ä¶</strong>
           <p class="empty-state-copy">Estamos buscando los productos disponibles.</p>
-        </div>`;
+        </div>
+        ${'<div class="catalog-skeleton-card" aria-hidden="true"><span class="motion-skeleton"></span><span class="motion-skeleton"></span><span class="motion-skeleton"></span></div>'.repeat(4)}`;
       return;
     }
     const isFavorites = state.activeCategory === 'favorites';
@@ -4480,6 +4481,8 @@ export async function copyDraftOrderToClipboard() {
   await navigator.clipboard.writeText(message);
 }
 
+const TOAST_LEAVE_MS = 160;
+
 /*
  * El mismo mensaje, dos superficies, UNA sola regi√≥n viva por vez.
  *
@@ -4499,13 +4502,20 @@ export function showToast(message) {
   const cartNotice = $('[data-cart-notice]');
   if (!toast && !cartNotice) return;
   if (cartNotice) cartNotice.textContent = message;
+  clearTimeout(showToast.leaveId);
   if (toast) {
     toast.textContent = message;
+    toast.classList.remove('is-leaving');
     toast.classList.remove('hidden');
   }
   clearTimeout(showToast.timeoutId);
   showToast.timeoutId = setTimeout(() => {
-    toast?.classList.add('hidden');
+    // Salida corta: el aviso se desvanece y reciÈn despuÈs sale del ·rbol.
+    toast?.classList.add('is-leaving');
+    showToast.leaveId = setTimeout(() => {
+      toast?.classList.add('hidden');
+      toast?.classList.remove('is-leaving');
+    }, TOAST_LEAVE_MS);
     // Vaciarla la deja `:empty`, que es lo que apaga su superficie sin devolver
     // el alto: la banda sigue reservada y no hay salto al apagarse.
     if (cartNotice) cartNotice.textContent = '';

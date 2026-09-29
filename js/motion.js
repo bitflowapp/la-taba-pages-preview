@@ -26,6 +26,27 @@ const REVEAL_SELECTORS = [
 const CARD_SELECTORS = ['.product-grid', '.home-promotions-rail', '.home-catalog-grid', '.recommendations-rail'];
 const INTERACTIVE_SELECTOR = 'button, a, [role="button"], input, select, textarea, summary';
 
+/*
+ * CAMBIOS QUE SE NOTAN — números, etapa del pedido, pedido nuevo, vacíos.
+ * El DOM se repinta entero (carrito, seguimiento, bandeja), así que una
+ * animación CSS puesta sobre el nodo repetiría cada refresco. Acá se recuerda
+ * el último valor por clave estable y sólo se anima un cambio REAL; la primera
+ * lectura es la línea de base y nunca anima.
+ */
+const VALUE_SELECTORS = [
+  '[data-cart-total-small]',
+  '[data-floating-cart-summary]',
+  '.summary-row strong',
+  '[data-tracking-title]',
+  '[data-tracking-arrival]',
+];
+const VALUE_SHIFT_MS = 180;
+const TIMELINE_ADVANCE_MS = 420;
+const ORDER_ARRIVAL_MS = 1600;
+const ORDER_ARRIVAL_MAX_AGE_MS = 90000;
+const EMPTY_STATE_REPEAT_MS = 12000;
+const EASE_ENTER = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
+
 let activeController = null;
 
 function getReducedMotion(windowRef) {
@@ -258,15 +279,174 @@ export function initMotion(documentRef = globalThis.document, windowRef = global
     if (event.matches) targets.forEach((node) => node.classList.add('is-motion-visible'));
   };
 
+  const nowMs = () => (windowRef?.performance?.now ? windowRef.performance.now() : Date.now());
+  const valueMemory = new Map();
+  const timelineMemory = new Map();
+  const orderSeen = new Set();
+  const orderArrivals = new Map();
+  const pillMemory = new Map();
+  const emptyMemory = new Map();
+  let ordersBaselined = false;
+  let scanRaf = 0;
+  let scanTimer = 0;
+  let scanScheduled = false;
+
+  const valueKey = (node, selector, index) => {
+    if (selector === '.summary-row strong') {
+      const label = node.closest('.summary-row')?.querySelector('span')?.textContent?.trim();
+      return label ? `row:${label}` : '';
+    }
+    return `${selector}#${index}`;
+  };
+
+  const isRendered = (node) => Boolean(node.getClientRects?.().length);
+
+  const shiftNode = (node, keyframes, duration = VALUE_SHIFT_MS) => {
+    if (preference.reduced || typeof node.animate !== 'function' || !isRendered(node)) return;
+    node.animate(keyframes, { duration, easing: EASE_ENTER });
+  };
+
+  const scanValues = () => {
+    VALUE_SELECTORS.forEach((selector) => {
+      documentRef.querySelectorAll(selector).forEach((node, index) => {
+        const key = valueKey(node, selector, index);
+        if (!key) return;
+        const text = (node.textContent || '').trim();
+        const previous = valueMemory.get(key);
+        valueMemory.set(key, text);
+        if (previous === undefined || previous === text || !text) return;
+        const inline = windowRef?.getComputedStyle?.(node)?.display === 'inline';
+        shiftNode(node, inline
+          ? [{ opacity: 0.35 }, { opacity: 1 }]
+          : [{ opacity: 0.35, transform: 'translateY(4px)' }, { opacity: 1, transform: 'translateY(0)' }]);
+      });
+    });
+  };
+
+  const scanTimelines = () => {
+    const now = nowMs();
+    documentRef.querySelectorAll('.track-steps.customer-progress').forEach((steps, position) => {
+      const index = [...steps.children].findIndex((step) => step.classList.contains('current'));
+      if (index < 0) return;
+      const key = `timeline#${position}`;
+      const memory = timelineMemory.get(key);
+      if (!memory) {
+        timelineMemory.set(key, { index, at: -Infinity });
+        return;
+      }
+      if (index !== memory.index) {
+        if (index > memory.index) memory.at = now;
+        memory.index = index;
+      }
+      const elapsed = now - memory.at;
+      if (!preference.reduced && elapsed < TIMELINE_ADVANCE_MS) {
+        steps.dataset.motionAdvanced = 'true';
+        steps.style.setProperty('--motion-skip', `-${Math.round(elapsed)}ms`);
+      } else if (steps.dataset.motionAdvanced) {
+        delete steps.dataset.motionAdvanced;
+        steps.style.removeProperty('--motion-skip');
+      }
+    });
+  };
+
+  const scanOrders = () => {
+    const cards = documentRef.querySelectorAll('[data-order-card]');
+    if (!cards.length) return;
+    const now = nowMs();
+    cards.forEach((card) => {
+      const id = card.dataset.orderCard;
+      if (!id) return;
+      if (!orderSeen.has(id)) {
+        orderSeen.add(id);
+        if (ordersBaselined) {
+          const created = Date.parse(card.querySelector('[data-elapsed-from]')?.getAttribute('data-elapsed-from') || '');
+          const age = Date.now() - created;
+          if (Number.isFinite(age) && age >= -60000 && age <= ORDER_ARRIVAL_MAX_AGE_MS) orderArrivals.set(id, now);
+        }
+      }
+      const arrivedAt = orderArrivals.get(id);
+      if (arrivedAt !== undefined) {
+        const elapsed = now - arrivedAt;
+        if (elapsed < ORDER_ARRIVAL_MS) {
+          card.dataset.motionArrived = 'true';
+          card.style.setProperty('--motion-skip', `-${Math.round(elapsed)}ms`);
+        } else {
+          orderArrivals.delete(id);
+        }
+      }
+      if (!orderArrivals.has(id) && card.dataset.motionArrived) {
+        delete card.dataset.motionArrived;
+        card.style.removeProperty('--motion-skip');
+      }
+      const pill = card.querySelector('[data-order-state]');
+      if (pill) {
+        const state = pill.getAttribute('data-order-state');
+        const previous = pillMemory.get(id);
+        pillMemory.set(id, state);
+        if (previous !== undefined && previous !== state) {
+          shiftNode(pill, [{ opacity: 0.4, transform: 'scale(0.92)' }, { opacity: 1, transform: 'scale(1)' }]);
+        }
+      }
+    });
+    ordersBaselined = true;
+  };
+
+  let panelViewLabel;
+  const scanPanelView = () => {
+    const active = documentRef.querySelector('.business-ops-nav-button.active, .panel-nav-item.is-active, .panel-more-item.is-active');
+    if (!active) return;
+    const label = (active.textContent || '').trim();
+    const previous = panelViewLabel;
+    panelViewLabel = label;
+    if (previous === undefined || previous === label) return;
+    const region = documentRef.querySelector('[data-panel-region="operations"]');
+    if (region) shiftNode(region, [{ opacity: 0.4, transform: 'translateY(6px)' }, { opacity: 1, transform: 'translateY(0)' }], 240);
+  };
+
+  const scanEmptyStates = () => {
+    const now = nowMs();
+    documentRef.querySelectorAll('.empty-state:not([data-motion-checked])').forEach((node) => {
+      node.dataset.motionChecked = 'true';
+      const key = (node.textContent || '').trim().slice(0, 90);
+      const previous = emptyMemory.get(key);
+      emptyMemory.set(key, now);
+      if (preference.reduced) return;
+      if (previous === undefined || now - previous > EMPTY_STATE_REPEAT_MS) node.classList.add('motion-empty-enter');
+    });
+  };
+
+  function runScans() {
+    scanRaf = 0;
+    scanScheduled = false;
+    if (destroyed) return;
+    scanValues();
+    scanTimelines();
+    scanOrders();
+    scanPanelView();
+    scanEmptyStates();
+    clearTimeout(scanTimer);
+    const advancing = [...timelineMemory.values()].some((entry) => nowMs() - entry.at < TIMELINE_ADVANCE_MS);
+    if (orderArrivals.size > 0 || advancing) scanTimer = setTimeout(scheduleScan, 220);
+  }
+
+  function scheduleScan() {
+    if (scanScheduled || destroyed) return;
+    scanScheduled = true;
+    if (windowRef?.requestAnimationFrame) scanRaf = windowRef.requestAnimationFrame(runScans);
+    else scanRaf = setTimeout(runScans, 0);
+  }
+
   const mutationObserver = 'MutationObserver' in (windowRef || {})
     ? new windowRef.MutationObserver((records) => {
       if (records.some((record) => [...record.addedNodes].some((node) => node.nodeType === 1))) {
         collect({ revealImmediately: true });
       }
+      scheduleScan();
     })
     : null;
 
   collect();
+  runScans();
   mutationObserver?.observe(documentRef.body, { childList: true, subtree: true });
   documentRef.addEventListener('pointerdown', onPointerDown, { passive: true });
   documentRef.addEventListener('pointerup', onPointerUp, { passive: true });
@@ -292,6 +472,20 @@ export function initMotion(documentRef = globalThis.document, windowRef = global
       windowRef?.removeEventListener?.('scroll', onScroll);
       if (rafId) (windowRef?.cancelAnimationFrame ? windowRef.cancelAnimationFrame(rafId) : clearTimeout(rafId));
       clearTimeout(pressTimer);
+      clearTimeout(scanTimer);
+      if (scanRaf) (windowRef?.cancelAnimationFrame ? windowRef.cancelAnimationFrame(scanRaf) : clearTimeout(scanRaf));
+      documentRef.querySelectorAll('[data-motion-advanced]').forEach((node) => {
+        delete node.dataset.motionAdvanced;
+        node.style.removeProperty('--motion-skip');
+      });
+      documentRef.querySelectorAll('[data-motion-arrived]').forEach((node) => {
+        delete node.dataset.motionArrived;
+        node.style.removeProperty('--motion-skip');
+      });
+      documentRef.querySelectorAll('[data-motion-checked]').forEach((node) => {
+        delete node.dataset.motionChecked;
+        node.classList.remove('motion-empty-enter');
+      });
       documentRef.querySelectorAll(GLOW_SHELF).forEach((shelf) => shelf.style.removeProperty('--card-glow'));
       documentRef.body.classList.remove('motion-ready');
       delete documentRef.body.dataset.motionReduced;

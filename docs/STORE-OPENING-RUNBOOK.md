@@ -130,6 +130,8 @@ Sólo retiro es la forma más simple del canary: no hace falta zona, costo de en
    - La exigencia de zonas ya está encendida. Sin una zona activa, el delivery no llega a ningún lado.
 4. **Quién entrega**: repartidores (§7) o el propio local. Sin repartidores, el local cierra la entrega con el código del cliente, así que los repartidores no son obligatorios.
 
+El **tope de distancia** es opcional y no hace falta para abrir. Si se lo pide, la base exige antes el punto del local verificado por una persona. Sin tope, las zonas funcionan igual, y el repartidor ve la dirección del local.
+
 ## 7. Riders
 
 1. Panel › Equipo › Invitar → rol **Repartidor** → «Crear invitación» → mandar el link.
@@ -257,4 +259,6 @@ El código está listo para **homologar** (probar contra ARCA de prueba). Para e
 - la política contable del contador.
 
 Procedimiento: [`docs/fiscal-core/ARCA-HOMOLOGATION-RUNBOOK.md`](fiscal-core/ARCA-HOMOLOGATION-RUNBOOK.md). Los certificados y claves nunca pasan por el Panel ni por el chat.
+
+En CP ya está todo lo técnico para ver los comprobantes en el Panel: la función `fiscal-artifact-access` está desplegada y verificada, 7/7.
 

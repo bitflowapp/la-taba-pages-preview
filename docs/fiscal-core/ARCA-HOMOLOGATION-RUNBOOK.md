@@ -124,6 +124,10 @@ npm --prefix "$TABA_FISCAL_DIR/services/arca-fiscal-bridge" run arca -- query --
 4. Se genera el PDF (A4 con QR) y, si el comercio tiene
    `fiscal_receipt_auto`, un trabajo `fiscal_receipt` para el agente local
    (ticket con banners «COMPROBANTE DE PRUEBA · SIN VALIDEZ FISCAL»).
+5. En el Panel, la vista previa, la descarga y la impresión del PDF piden una URL de 60 s a la
+   Edge Function `fiscal-artifact-access`. En CONTROLLED_PRODUCTION ya está desplegada, con
+   `FISCAL_PANEL_ORIGINS` = origen del Panel. Para comprobarla sin escribir nada:
+   `node scripts/controlled-production/fiscal-artifact-access-check.mjs`.
 
 ## 7 · Nota de crédito
 

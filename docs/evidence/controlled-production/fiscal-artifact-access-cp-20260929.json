@@ -1,0 +1,45 @@
+{
+  "at": "2026-09-29T02:02:58.597Z",
+  "target": "controlled-production",
+  "function": "fiscal-artifact-access",
+  "verdict": "PASS",
+  "passed": 7,
+  "total": 7,
+  "checks": [
+    {
+      "id": "PREFLIGHT_PANEL_ORIGIN",
+      "ok": true,
+      "detail": "204 https://la-taba-commercial-pilot.pages.dev"
+    },
+    {
+      "id": "PREFLIGHT_FOREIGN_ORIGIN_REFUSED",
+      "ok": true,
+      "detail": "403"
+    },
+    {
+      "id": "NO_SESSION_REFUSED",
+      "ok": true,
+      "detail": "401"
+    },
+    {
+      "id": "ANONYMOUS_DENIED",
+      "ok": true,
+      "detail": "403"
+    },
+    {
+      "id": "INVALID_REQUEST_REFUSED",
+      "ok": true,
+      "detail": "400"
+    },
+    {
+      "id": "OWNER_UNKNOWN_ARTIFACT_DENIED",
+      "ok": true,
+      "detail": "403 ARTIFACT_ACCESS_DENIED"
+    },
+    {
+      "id": "NO_FISCAL_ROWS_WRITTEN",
+      "ok": true,
+      "detail": "{\"fiscal_documents\":0,\"fiscal_document_artifacts\":0,\"fiscal_events\":0,\"fiscal_outbox\":0,\"fiscal_profiles\":0}"
+    }
+  ]
+}

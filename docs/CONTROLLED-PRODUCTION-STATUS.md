@@ -5,6 +5,15 @@ Rama de despliegue `release/taba-controlled-production`; PR **#98** (reemplaza a
 `CONTROLLED-PRODUCTION-RUNBOOK.md`. Evidencia en `docs/evidence/controlled-production/`
 (archivos `*-20260925.json` para el cierre de #98, `*-20260926.json` para el del 26 y `*-20260928*.json` para el 28: la noche y la base de apertura).
 
+## 2026-09-29 · Caja Clara como terminal del local (PR #125)
+
+- Migración `20260929120000_caja_clara_pos_integration.sql` aplicada en CP antes del pulido premium, después de backup y restauración PASS (156 migraciones, 113 tablas, 10246 filas; `restore-drill-pre-cajaclara-20260929.json`) y de un dry-run que mostró sólo esa migración. CP = repo, 157/157. Reversión: `docs/migrations/rollback/20260929120000_caja_clara_pos_integration.rollback.sql` (se niega con conflictos de stock abiertos).
+- Caja Clara (POS Windows) entra como sesión de equipo `caja_clara_windows` atada al hash de su PC, con las RPC de siempre más `pos_*` (sin EXECUTE para anon). Sin `service_role` y sin Edge Function nueva. **Sin cambios de web**: el deploy sigue siendo `9fae988`.
+- pgTAP nuevo 54/54, sumado al runner canónico (870 → 924). CI verde en la cabeza integrada con `release` (run 36550292264).
+- En vivo, sólo en el tenant QA: E2E **42/42** (pedido nuevo visible en la caja por Realtime en menos de 0,5 s), entrega con el Rider Android físico PASS y revocación **14/14** (la caja y el teléfono del rider se cierran desde La Taba).
+- Al terminar: tienda real sin tocar, stock QA restituido, 0 conflictos abiertos, 0 sesiones de caja abiertas y ventana QA cerrada. `opening:check`: TECHNICAL_READY YES.
+- Detalle y evidencia: `docs/CAJA-CLARA-INTEGRATION.md`.
+
 ## 2026-09-29 · Pulido premium del frontend (PR #124)
 
 - Sólo frontend: movimiento sobre el sistema existente (`js/motion.js`, `styles/motion.css`), sin tocar checkout, pedidos, stock, pagos, Mercado Pago, Rider, auth, ARCA, RLS, Edge Functions, LocalAgent ni esquema. Sin migraciones. La tienda sigue cerrada y sin productos públicos.

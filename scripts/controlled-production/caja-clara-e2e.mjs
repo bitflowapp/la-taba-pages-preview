@@ -178,6 +178,23 @@ try {
   let stock = await agent.send('stock', { sku: product.sku });
   check('LINKED_IN_SYNC', stock.link_state === 'InSync' && stock.taba_physical === physical, stock);
 
+  // ── 2b. Realtime: La Taba's own channel wakes the till (polling stays as fallback) ──
+  const rt = await agent.send('realtime_start');
+  check('REALTIME_CHANNEL_JOINED_WITH_USER_TOKEN', rt.joined === true, rt);
+  if (rt.joined) {
+    const probe = await placeOrder({ mode: 'pickup', quantity: 1 });
+    const start = Date.now();
+    let visible = null;
+    while (Date.now() - start < 20_000 && !visible) {
+      visible = (await agent.send('orders')).orders.find((o) => o.id === probe.id) || null;
+      if (!visible) await sleep(100);
+    }
+    report.latency.realtimeOrderVisibleMs = visible ? Date.now() - probe.createdAt : null;
+    const after = await agent.send('realtime_status');
+    check('REALTIME_WAKES_CAJA_WITHOUT_POLLING', Boolean(visible) && after.changes > 0, { ms: report.latency.realtimeOrderVisibleMs, changes: after.changes });
+    if (visible) await agent.send('act', { order: probe.id, action: 'cancel', reason: 'QA Caja Clara: sonda de tiempo real' }, { expectOk: false });
+  }
+
   // ── 3. Counter sale → La Taba availability (seconds) ────────────────────
   const beforeSale = (await stockOf()).stock;
   const sale = await agent.send('sell', { sku: product.sku, qty: 2 });

@@ -1,5 +1,5 @@
 {
-  "at": "2026-09-29T07:19:42.241Z",
+  "at": "2026-09-29T07:27:13.566Z",
   "target": "controlled-production",
   "business": "QA control",
   "checks": {
@@ -8,6 +8,8 @@
     "PANEL_SESSION_CANNOT_IMPERSONATE_THE_TILL": "PASS",
     "TILL_OF_QA_CANNOT_READ_THE_REAL_STORE": "PASS",
     "LINKED_IN_SYNC": "PASS",
+    "REALTIME_CHANNEL_JOINED_WITH_USER_TOKEN": "PASS",
+    "REALTIME_WAKES_CAJA_WITHOUT_POLLING": "PASS",
     "COUNTER_SALE_LOWERS_ONLINE_AVAILABILITY": "PASS",
     "COUNTER_SALE_NOT_SENT_TWICE": "PASS",
     "TWO_QA_RIDERS_AVAILABLE_FOR_THE_RACE": "PASS",
@@ -58,7 +60,19 @@
       "on_hold": false,
       "ok": true,
       "cmd": "stock",
-      "ms": 25
+      "ms": 44
+    },
+    "REALTIME_CHANNEL_JOINED_WITH_USER_TOKEN": {
+      "joined": true,
+      "changes": 0,
+      "last_change_at": null,
+      "ok": true,
+      "cmd": "realtime_start",
+      "ms": 1552
+    },
+    "REALTIME_WAKES_CAJA_WITHOUT_POLLING": {
+      "ms": 33,
+      "changes": 1
     },
     "COUNTER_SALE_LOWERS_ONLINE_AVAILABILITY": {
       "beforeSale": 60,
@@ -66,7 +80,7 @@
     },
     "TWO_QA_RIDERS_AVAILABLE_FOR_THE_RACE": 2,
     "NEW_ORDER_REACHES_CAJA_CLARA": {
-      "ms": 139
+      "ms": 155
     },
     "ONLINE_ORDER_RESERVES_WITHOUT_TOUCHING_PHYSICAL": {
       "local": 58,
@@ -118,7 +132,7 @@
       "on_hold": false,
       "ok": true,
       "cmd": "stock",
-      "ms": 0
+      "ms": 1
     },
     "WRONG_DELIVERY_CODE_REFUSED": "incorrect_code",
     "RIGHT_CODE_DELIVERS_ONCE_EVEN_DOUBLE_SUBMIT": {
@@ -156,11 +170,11 @@
       "on_hold": false,
       "ok": true,
       "cmd": "stock",
-      "ms": 0
+      "ms": 1
     },
     "OFFLINE_SALE_WAITS_WITHOUT_SPENDING_ATTEMPTS": {
+      "OrderCommand:Done": 14,
       "StockDelta:Done": 1,
-      "OrderCommand:Done": 13,
       "StockCount:Done": 1,
       "StockDelta:Pending": 1
     },
@@ -184,11 +198,12 @@
     "MERCADO_PAGO_IS_A_WORD_NOT_TOKENS": "not_connected"
   },
   "latency": {
-    "counterSaleToPanelMs": 1001,
-    "orderVisibleInCajaMs": 139,
-    "caja_accept_to_panel_ms": 552,
-    "caja_prepare_to_panel_ms": 420,
-    "caja_ready_to_panel_ms": 413
+    "realtimeOrderVisibleMs": 33,
+    "counterSaleToPanelMs": 2451,
+    "orderVisibleInCajaMs": 155,
+    "caja_accept_to_panel_ms": 1494,
+    "caja_prepare_to_panel_ms": 544,
+    "caja_ready_to_panel_ms": 446
   },
   "notes": [
     "Resume from Caja Clara uses set_commercial_product_publication (owner/admin) exactly like the Panel."
@@ -201,35 +216,42 @@
   "riders": 2,
   "cleanup": [
     {
-      "code": "LT-0086",
+      "code": "LT-0093",
+      "reversed": false,
+      "cancelled": false,
+      "restoredUnits": 0,
+      "classified": true
+    },
+    {
+      "code": "LT-0094",
       "reversed": false,
       "cancelled": false,
       "restoredUnits": 2,
       "classified": true
     },
     {
-      "code": "LT-0087",
+      "code": "LT-0095",
       "reversed": false,
       "cancelled": false,
       "restoredUnits": 0,
       "classified": true
     },
     {
-      "code": "LT-0088",
+      "code": "LT-0096",
       "reversed": true,
       "cancelled": false,
       "restoredUnits": 1,
       "classified": true
     },
     {
-      "code": "LT-0089",
+      "code": "LT-0097",
       "reversed": false,
       "cancelled": false,
       "restoredUnits": 0,
       "classified": true
     },
     {
-      "code": "LT-0090",
+      "code": "LT-0098",
       "reversed": false,
       "cancelled": false,
       "restoredUnits": 0,

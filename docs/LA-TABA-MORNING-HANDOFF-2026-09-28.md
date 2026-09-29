@@ -27,7 +27,7 @@ Qué cambió desde esta mañana:
   - A = `b548e91` (`0753f346`).
   - B = `03eaa8d` (`9042dc83`), con simulacro B→A→B.
   - A′ = `e2978e5` (`ac985354`), con la línea fiscal y el worker v130.
-  - B′ = el commit de evidencia, con simulacro B′→A′→B′.
+  - B′ = `71a73a9` (`ba18d3c5`), con simulacro B′→A′→B′: PASS.
 
   En los cuatro, el smoke corre en modo `live`. `main` = `release`.
 

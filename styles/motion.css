@@ -236,12 +236,15 @@ body[data-motion-scrolled="true"] .topbar {
 }
 
 /* Checkout feedback is tied to the real request lifecycle in app.js. */
-[data-motion-busy] [data-checkout-submit] {
+[data-motion-busy] [data-checkout-submit],
+button.primary-button[aria-busy="true"] {
   position: relative;
+  cursor: progress;
   pointer-events: none;
 }
 
-[data-motion-busy] [data-checkout-submit]::after {
+[data-motion-busy] [data-checkout-submit]::after,
+button.primary-button[aria-busy="true"]::after {
   content: '';
   display: inline-block;
   width: 0.8em;
@@ -333,6 +336,7 @@ dialog[open]::backdrop {
   .badge-pop,
   .motion-quantity-pop,
   [data-motion-busy] [data-checkout-submit]::after,
+  button.primary-button[aria-busy="true"]::after,
   dialog[open],
   dialog[open]::backdrop,
   .toast:not(.hidden),
@@ -417,4 +421,155 @@ dialog[open]::backdrop {
   .qty-stepper.is-just-added::after {
     content: none;
   }
+}
+
+/* ============================================================================
+   PULIDO PREMIUM — cambios de estado que se sienten, sin agregar ruido
+   ----------------------------------------------------------------------------
+   Todo es transform / opacity salvo un anillo de pocos píxeles en el pedido
+   nuevo. Los cambios "reales" (etapa del pedido, pedido nuevo, vacíos) los
+   marca js/motion.js con atributos: el DOM se repinta entero y una animación
+   puesta sobre el nodo se repetiría en cada refresco.
+   `--motion-skip` es un delay NEGATIVO: si el repintado cae a mitad de la
+   animación, el nodo nuevo la continúa en vez de reiniciarla.
+   ========================================================================== */
+
+/* Esqueleto acorde al tema: el degradé usa la tinta del contexto, no blanco fijo. */
+.motion-skeleton {
+  background: linear-gradient(90deg,
+    var(--taba-subtle) 0%,
+    color-mix(in srgb, var(--taba-subtle) 88%, var(--taba-ink) 12%) 48%,
+    var(--taba-subtle) 100%);
+  background-size: 220% 100%;
+}
+
+.catalog-skeleton-card {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-md, 14px);
+}
+
+.catalog-skeleton-card .motion-skeleton:nth-child(1) { aspect-ratio: 4 / 3; border-radius: var(--radius-sm, 10px); }
+.catalog-skeleton-card .motion-skeleton:nth-child(2) { width: 72%; height: 14px; }
+.catalog-skeleton-card .motion-skeleton:nth-child(3) { width: 40%; height: 14px; }
+
+/* Estados vacíos: entran una vez, sin repetirse en cada refresco. */
+.empty-state.motion-empty-enter {
+  animation: taba-motion-soft-in var(--motion-duration-slow) var(--motion-ease-enter) both;
+}
+
+@keyframes taba-motion-soft-in {
+  from { opacity: 0; transform: translate3d(0, 6px, 0); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Seguimiento: la etapa que avanza dibuja el tramo y asienta el punto. */
+.track-steps[data-motion-advanced] .track-step.current::before {
+  transform-origin: left center;
+  animation: taba-track-connector 320ms var(--motion-ease-enter) var(--motion-skip, 0ms) both;
+}
+
+.track-steps[data-motion-advanced] .track-step.current .track-dot {
+  animation: taba-track-dot 300ms var(--motion-ease-enter) var(--motion-skip, 0ms) both;
+}
+
+.track-steps[data-motion-advanced] .track-step.current small {
+  animation: taba-motion-soft-in 240ms var(--motion-ease-enter) var(--motion-skip, 0ms) both;
+}
+
+@keyframes taba-track-connector {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes taba-track-dot {
+  from { opacity: 0.55; transform: scale(0.78); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Aviso: sale en corto antes de irse del árbol (ver showToast). */
+.toast.is-leaving {
+  opacity: 0;
+  translate: 0 6px;
+  transition: opacity 140ms var(--motion-ease-exit), translate 140ms var(--motion-ease-exit);
+}
+
+/* ----------------------------------------------------------------------------
+   PANEL — herramienta seria: respuesta inmediata, nada vistoso
+   ---------------------------------------------------------------------------- */
+.business-ops-nav-button,
+.panel-nav-item,
+.panel-more-item {
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard),
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+body[data-active-view="business"] .business-ops-nav-button.active::after {
+  transform-origin: left center;
+  animation: taba-panel-tab-underline var(--motion-duration-fast) var(--motion-ease-enter) both;
+}
+
+@keyframes taba-panel-tab-underline {
+  from { opacity: 0.4; scale: 0 1; }
+  to { opacity: 1; scale: 1 1; }
+}
+
+.production-order-card {
+  transition: border-color var(--motion-duration-base) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .production-order-card:hover { border-color: var(--taba-border-medium, var(--taba-border)); }
+}
+
+.production-order-card .status-pill {
+  transition: background-color var(--motion-duration-base) var(--motion-ease-standard),
+    color var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+/* Pedido recién llegado: dos pulsos cortos de borde y se apaga solo. */
+.production-order-card[data-motion-arrived] {
+  animation: taba-order-arrival 400ms var(--motion-ease-enter) var(--motion-skip, 0ms) 2;
+}
+
+@keyframes taba-order-arrival {
+  from { box-shadow: 0 0 0 0 rgb(208 0 13 / 42%); }
+  to { box-shadow: 0 0 0 7px rgb(208 0 13 / 0%); }
+}
+
+body[data-active-view="business"] .panel-more-sheet:not([hidden]) {
+  animation: taba-motion-sheet-up var(--motion-duration-base) var(--motion-ease-enter) both;
+}
+
+body[data-active-view="business"] .panel-more-backdrop:not([hidden]) {
+  animation: taba-motion-backdrop-in var(--motion-duration-base) var(--motion-ease-standard) both;
+}
+
+@keyframes taba-motion-sheet-up {
+  from { opacity: 0; transform: translate3d(0, 16px, 0); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .empty-state.motion-empty-enter,
+  .track-steps[data-motion-advanced] .track-step.current::before,
+  .track-steps[data-motion-advanced] .track-step.current .track-dot,
+  .track-steps[data-motion-advanced] .track-step.current small,
+  body[data-active-view="business"] .business-ops-nav-button.active::after,
+  body[data-active-view="business"] .panel-more-sheet:not([hidden]),
+  body[data-active-view="business"] .panel-more-backdrop:not([hidden]) {
+    animation: none !important;
+  }
+
+  /* Sin movimiento el pedido nuevo se marca con un borde fijo que js/motion.js retira. */
+  .production-order-card[data-motion-arrived] {
+    animation: none !important;
+    box-shadow: 0 0 0 2px rgb(208 0 13 / 55%);
+  }
+
+  .toast.is-leaving { transition: none; }
 }

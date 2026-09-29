@@ -166,7 +166,7 @@ async function main() {
   validateRollbackPair(previous, candidate, config);
   if (phase === 'preflight') {
     assert.equal(live?.id, candidateId, 'CANDIDATE_NOT_CURRENT');
-    await aliasMatches(config, candidate);
+    await waitAlias(config, candidate);
     assert.ok(option('--out'), 'ROLLBACK_RECEIPT_PATH_REQUIRED');
     const output = path.resolve(option('--out'));
     assert.ok(output.toLowerCase() !== ROOT.toLowerCase()

@@ -3362,6 +3362,16 @@ body[data-active-view="catalog"] .thumb .thumb-img.is-placeholder {
   background-color: var(--brand-product-plate);
 }
 
+/* La ficha es un <dialog> fuera de `.app-view`, pero `.thumb` de arriba la
+   alcanza mientras la vista activa es el catálogo: la MISMA ficha tenía plato
+   blanco abierta desde la home y crema abierta desde el catálogo. Con las fotos
+   reales —fondo blanco horneado— el crema dibujaba el borde del archivo: dos
+   bandas alrededor del packshot. Vale lo que dice `.modal-media .thumb` en
+   catalog.css: blanco exacto bajo una foto. */
+body[data-active-view="catalog"] .modal-media .thumb.has-photo {
+  background-color: var(--taba-white);
+}
+
 body[data-active-view="catalog"] .product-favorite {
   width: 38px;
   height: 38px;

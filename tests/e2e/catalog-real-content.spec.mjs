@@ -1,20 +1,23 @@
 /*
- * La tarjeta sin precio publicado, dentro de la góndola premium.
+ * La góndola premium con el contenido real.
  *
- * Mirando los 42 productos reales de CP en el frontend real —todos todavía sin
- * precio— la vidriera de precios pendientes se leía rota:
+ * Mirando los 42 productos reales de CP en el frontend real —todos con foto de
+ * fondo blanco y todavía sin precio— aparecieron cinco defectos:
  *
  *   1. «Precio próximamente» heredaba el importe de 25px/900 del bloque premium
  *      y se partía letra por letra en una columna de 37px. La tarjeta medía
- *      704px contra 383px de una con precio, y estiraba su fila entera.
- *   2. El botón «Precio pendiente» salía rojo, como un «Agregar».
- *   3. Una tarjeta no comprable que marcaba la entrada animada volvía a
+ *      704px contra 383px de una con precio, y estiraba su fila entera. El
+ *      botón «Precio pendiente» salía rojo, como un «Agregar».
+ *   2. Una tarjeta no comprable que marcaba la entrada animada volvía a
  *      encenderse: de un estante apagado, cuatro tarjetas brillaban.
- *   4. En el teléfono el contador le comía el título a la categoría.
+ *   3. En el teléfono el contador le comía el título a la categoría.
+ *   4. El nombre dejaba la unidad sola en el último renglón.
+ *   5. La ficha abierta desde la góndola ponía la foto sobre un plato crema.
  *
- * Esa vidriera existe en la demostración, así que se mide ahí. La tienda real no
- * dibuja un producto sin precio, pero la vidriera del alcohol usa el mismo
- * apagado de la prueba 3.
+ * La vidriera de precios pendientes existe en la demostración, así que 1–4 se
+ * miden ahí. La tienda real no dibuja un producto sin precio, pero la vidriera
+ * del alcohol usa el mismo apagado de la prueba 2, y la 5 entra por el camino
+ * productivo porque la demostración no tiene fotos oficiales.
  */
 import { expect, test } from '@playwright/test';
 import { gotoDemoReset, installBrowserStubs, installPageGuards } from './helpers.mjs';
@@ -135,5 +138,88 @@ test('el nombre de la tarjeta no deja la unidad sola en el último renglón', as
     return cs.textWrapStyle || cs.textWrap;
   });
   expect(estilo).toContain('pretty');
+  await guards.assertClean();
+});
+
+// --- 5. La ficha, por el camino productivo ---------------------------------
+const FICHA_URL = 'https://taba-plato-de-ficha1.supabase.co';
+const FICHA_NEGOCIO_ID = '00000000-0000-4000-8000-000000000001';
+const FICHA_FILA = {
+  id: '40000000-0000-4000-8000-000000000001',
+  external_id: 'corona-extra-330ml',
+  sku: 'corona-extra-330ml',
+  name: 'Corona Extra 330 ml',
+  brand: 'Corona',
+  description: '',
+  category: 'Cervezas',
+  subcategory: 'lager',
+  variant: 'Lager',
+  presentation: 'Lager',
+  capacity_value: 330,
+  capacity_unit: 'ml',
+  capacity: '330 ml',
+  packaging_type: 'Botella',
+  units_per_pack: 1,
+  sold_as_pack: false,
+  price: 3600,
+  price_status: 'confirmed',
+  stock: 5,
+  available: true,
+  is_active: true,
+  is_verified: true,
+  chilled: false,
+  is_alcoholic: false,
+  minimum_age: null,
+  // Un packshot con el fondo blanco horneado, como los 42 reales.
+  image_url: 'assets/catalog/beverages/corona-extra-botella-330ml/product.webp',
+  image_sha256: 'a'.repeat(64),
+  image_thumbnail_url: 'assets/catalog/beverages/corona-extra-botella-330ml/thumbnail.webp',
+  image_thumbnail_sha256: 'b'.repeat(64),
+  source_image_sha256: 'c'.repeat(64),
+  tags: [],
+  sort_order: 1,
+};
+
+test('la ficha abierta desde la góndola apoya la foto oficial en plato blanco, igual que desde la home', async ({ page }) => {
+  const guards = installPageGuards(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.routeWebSocket(`${FICHA_URL.replace('https://', 'wss://')}/**`, () => {});
+  await page.route(`${FICHA_URL}/**`, async (route) => {
+    const url = new URL(route.request().url());
+    const json = (body, headers = {}) => route.fulfill({
+      status: 200, contentType: 'application/json', headers, body: JSON.stringify(body),
+    });
+    if (url.pathname.includes('/rest/v1/products')) return json([FICHA_FILA]);
+    if (url.pathname.includes('/rest/v1/businesses')) {
+      return json({
+        id: FICHA_NEGOCIO_ID, name: 'La Taba', address: 'Mendoza 827, Neuquén', currency_code: 'ARS',
+        ordering_enabled: true, ordering_verified: true, delivery_enabled: true, pickup_enabled: true,
+        delivery_fee: 0, minimum_delivery_subtotal: 0, is_active: true, status: 'open',
+      });
+    }
+    if (url.pathname.includes('/rest/v1/rpc/get_public_business_contact')) {
+      return json([{ whatsapp_number: '', whatsapp_verified: false }]);
+    }
+    if (url.pathname.includes('/rest/v1/rpc/get_mercadopago_checkout_availability')) {
+      return json({ available: false });
+    }
+    return json([], { 'content-range': '0-0/0' });
+  });
+  await page.addInitScript(({ supabaseUrl, businessId }) => {
+    globalThis.__LA_TABA_RUNTIME_CONFIG__ = {
+      mode: 'production',
+      repository: { provider: 'supabase', supabaseUrl, publishableKey: 'sb_publishable_test_key', businessId },
+    };
+  }, { supabaseUrl: FICHA_URL, businessId: FICHA_NEGOCIO_ID });
+
+  await page.goto('/#catalog');
+  await expect(page.locator('body')).toHaveAttribute('data-app-mode', 'production');
+  const tarjeta = page.locator('[data-view="catalog"] [data-product-grid] .product-card').first();
+  await expect(tarjeta.locator('.thumb.has-photo')).toHaveCount(1);
+  await tarjeta.locator('[data-product-detail]').first().click();
+  const plato = page.locator('dialog[open] .modal-media .thumb.has-photo');
+  await expect(plato).toBeVisible();
+  expect(await page.evaluate(() => document.body.dataset.activeView)).toBe('catalog');
+  expect(await plato.evaluate((nodo) => getComputedStyle(nodo).backgroundColor)).toBe('rgb(255, 255, 255)');
   await guards.assertClean();
 });

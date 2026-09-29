@@ -3734,12 +3734,16 @@ body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .prod
   padding: 16px 14px 16px;
 }
 
+/* `pretty`: el nombre no termina en un renglón con la unidad sola. Con los 42
+   nombres reales, 5 de ellos en escritorio y 11 en un teléfono de 390px partían
+   «Corona Extra 330 / ml». Un motor sin soporte parte como antes. */
 body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-body h3 {
   min-height: 2.35em;
   color: var(--shelf-ink);
   font-size: 17px;
   letter-spacing: -0.02em;
   line-height: 1.16;
+  text-wrap: pretty;
 }
 
 body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-body p {
@@ -3824,6 +3828,31 @@ body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .cata
 
 body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-head .view-title {
   font-size: clamp(28px, 7vw, 32px);
+}
+
+/* En el teléfono el contador no le puede comer el título. La grilla de arriba
+   (título · contador · filete) no deja partir: el contador es `nowrap` y el
+   título cedía con `overflow: hidden`. Con el texto productivo exacto —«1
+   producto en Fernet y amargos»— el título quedaba en 108 de sus 219px a
+   390px, y lo mismo pasaba con Energizantes y Aperitivos a 360. Cuando entran,
+   siguen en un renglón; cuando no, el contador baja con el filete y el título
+   se lee entero. */
+@media (max-width: 699px) {
+  body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 10px;
+  }
+
+  body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-head .view-title {
+    flex: 0 1 auto;
+    max-width: 100%;
+  }
+
+  body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-head::after {
+    flex: 1 1 24px;
+  }
 }
 
 body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-search {
@@ -4006,6 +4035,37 @@ body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .prod
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 28%), 0 2px 0 rgb(0 0 0 / 22%), 0 10px 20px rgb(208 0 13 / 28%);
   font-weight: 900;
   letter-spacing: 0.01em;
+}
+
+/* PRECIO PENDIENTE DENTRO DE ESTA GÓNDOLA.
+   Las dos reglas de arriba —el importe a 25px/900 en tinta y el botón rojo—
+   empatan o superan en especificidad a las del estado pendiente (§ «Acción de
+   un producto sin precio publicado» y «"Precio próximamente" tenía que salir
+   en dorado») y, por estar después en el archivo, ganaban. Medido con los 42
+   productos reales de CP: el aviso se dibujaba como un importe de 25px en una
+   columna de 37px —«Pr / eci / o / pr / óx…», letra por letra—, la tarjeta
+   medía 704px contra 383px de una con precio y estiraba su fila entera, y
+   «Precio pendiente» se veía como un «Agregar» rojo. Acá vuelven esas dos
+   reglas, y como el aviso no es un importe, ocupa el ancho de la tarjeta con la
+   acción debajo, igual que en el teléfono. Una tarjeta con precio no cambia. */
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-foot:has([data-price-pending-message]) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .price[data-price-pending-message] .price-amounts strong {
+  color: var(--shelf-gold-soft);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-action .add-button.is-price-pending {
+  width: 100%;
+  border-color: rgb(201 149 62 / 52%);
+  background: var(--shelf-gold-wash);
+  box-shadow: none;
+  color: var(--shelf-gold-soft);
 }
 
 /* El botón conserva los 44px de contacto; sólo se reduce el disco visible. */

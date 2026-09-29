@@ -588,6 +588,22 @@
   opacity: 0.66;
 }
 
+/* La entrada de motion.css termina en `opacity: 1` con más especificidad
+   (0,3,0) que la regla de arriba (0,2,0), y motion.js sólo marca las CUATRO
+   primeras tarjetas de cada grilla. Resultado medido: de un estante sin nada
+   comprable, cuatro tarjetas encendidas y el resto apagadas —con la vidriera
+   del alcohol, cuatro vinos que parecen a la venta y un quinto que no—. La
+   entrada termina donde termina la tarjeta: apagada. */
+.motion-ready .product-card.out-of-stock[data-motion-reveal].is-motion-visible {
+  opacity: 0.66;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-ready .product-card.out-of-stock[data-motion-reveal] {
+    opacity: 0.66;
+  }
+}
+
 /* Marco del packshot: única caja a la que se ancla el favorito. Su alto lo
    fija `aspect-ratio`, así que el solape con el título es imposible por
    construcción. */

@@ -5,6 +5,15 @@ Rama de despliegue `release/taba-controlled-production`; PR **#98** (reemplaza a
 `CONTROLLED-PRODUCTION-RUNBOOK.md`. Evidencia en `docs/evidence/controlled-production/`
 (archivos `*-20260925.json` para el cierre de #98, `*-20260926.json` para el del 26 y `*-20260928*.json` para el 28: la noche y la base de apertura).
 
+## 2026-09-29 · Pulido premium del frontend (PR #124)
+
+- Sólo frontend: movimiento sobre el sistema existente (`js/motion.js`, `styles/motion.css`), sin tocar checkout, pedidos, stock, pagos, Mercado Pago, Rider, auth, ARCA, RLS, Edge Functions, LocalAgent ni esquema. Sin migraciones. La tienda sigue cerrada y sin productos públicos.
+- A = `c06f743` (runtime, cache `v131`, CSS `?v=67`), B = `9fae988` (endurece el preflight del ensayo: espera la propagación del alias). CI de la rama 621/621 (run 36537701483); CI de `release` verde en B.
+- Deploy A: smoke PASS. El ensayo abortó en el preflight (`PILOT_ALIAS_COMMIT_MISMATCH`: un borde aún servía `71a73a9`) sin tocar nada.
+- **Deploy B (run 36546474793): PASS.** Smoke (Chromium, Chrome Android, WebKit), rollback B→A + smoke, restore A→B + smoke; `backendUnchanged: true`. Hoy se sirve `9fae988`.
+- Medición (móvil 390, CPU x4): JS +2,2 kB gz, CSS +1,2 kB gz, LCP sin regresión, CLS 0. Evidencia ANTES/DESPUÉS en `artifacts/taba-premium-motion/`.
+- No reintroducir salida animada en `<dialog>` nativos: el modal cerrándose queda 140 ms en el árbol de accesibilidad.
+
 ## 2026-09-28 (noche) · Línea fiscal aplicada y apagada, cierre de la base
 
 PR **#122** (`feat/taba-fiscal-line`). Es la única línea fiscal y sustituye a #104, #106, #107, #112, #113 y #114, que están cerradas; #115 (WhatsApp) sigue aparte.

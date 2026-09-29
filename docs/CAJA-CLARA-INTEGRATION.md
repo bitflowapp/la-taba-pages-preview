@@ -49,7 +49,7 @@ socket cae, la caja sigue con su consulta periódica. En vivo, el pedido nuevo a
 | `npm run check` y `npm test` | verde, 2778/2778 |
 | Rollback `docs/migrations/rollback/20260929120000_caja_clara_pos_integration.rollback.sql` | drill local: se niega con conflictos abiertos; limpio restituye `identity_register_session` idéntica (md5) y el CHECK; re-aplicar funciona |
 | E2E en vivo en CONTROLLED_PRODUCTION (tenant QA) | 42/42 — `docs/evidence/controlled-production/caja-clara-e2e-cp-20260929.json` |
-| Revocación en vivo (el dueño cierra la caja desde La Taba) | 10/10 — `docs/evidence/controlled-production/caja-clara-revocation-cp-20260929.json` |
+| Revocación en vivo (el dueño cierra la caja y el teléfono Rider desde La Taba) | 14/14 — `docs/evidence/controlled-production/caja-clara-revocation-cp-20260929.json` |
 
 `scripts/controlled-production/caja-clara-e2e.mjs --agent <CajaClara.TabaAgent.dll>` usa el motor real de Caja Clara,
 un cliente web anónimo, dos riders QA con las RPC del Android y el Panel como staff; limpia cada pedido QA con
@@ -58,7 +58,10 @@ un cliente web anónimo, dos riders QA con las RPC del Android y el Panel como s
 `scripts/controlled-production/caja-clara-revocation-e2e.mjs` conecta la caja como staff QA y el dueño QA la cierra con
 `identity_revoke_session` (la RPC auditada del Panel): La Taba rechaza la caja en la llamada siguiente (0,4 s), Caja Clara
 lo dice ("sesión cerrada"), sigue vendiendo y guarda el cambio; al volver a conectar lo envía una sola vez. Cierra además,
-con la misma RPC, las sesiones de caja QA que haya dejado abiertas una corrida interrumpida.
+con la misma RPC, las sesiones de caja QA que haya dejado abiertas una corrida interrumpida. Después el dueño cierra la
+sesión del teléfono de un rider QA: ese teléfono deja de leer ofertas y de marcar presencia en el acto (42501), la caja
+deja de contarlo como disponible cuando vence la ventana de presencia de 90 s (93 s medidos) y volver a iniciar sesión
+en el teléfono abre una sesión nueva sin reabrir la cerrada.
 
 ## Aplicación en CONTROLLED_PRODUCTION (2026-09-29)
 

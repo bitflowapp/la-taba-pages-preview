@@ -1,5 +1,5 @@
 {
-  "at": "2026-09-29T07:47:06.528Z",
+  "at": "2026-09-29T07:54:57.803Z",
   "target": "controlled-production",
   "business": "QA control",
   "checks": {
@@ -12,12 +12,16 @@
     "LA_TABA_REFUSES_THE_TILL_AT_ONCE": "PASS",
     "TILL_KEEPS_SELLING_AND_HOLDS_THE_CHANGE": "PASS",
     "RECONNECT_SENDS_WHAT_WAITED_EXACTLY_ONCE": "PASS",
-    "OLD_TILL_SESSION_STAYS_CLOSED": "PASS"
+    "OLD_TILL_SESSION_STAYS_CLOSED": "PASS",
+    "TILL_SEES_THE_RIDER_AVAILABLE": "PASS",
+    "REVOKED_RIDER_PHONE_GETS_NO_WORK": "PASS",
+    "TILL_STOPS_COUNTING_THE_REVOKED_RIDER": "PASS",
+    "RIDER_SIGNS_IN_AGAIN_OLD_SESSION_CLOSED": "PASS"
   },
   "codes": {
     "NO_TILL_SESSION_ON_THE_REAL_STORE": 0,
     "ORPHAN_TILL_SESSIONS_CLOSED": {
-      "found": 1
+      "found": 0
     },
     "STAFF_TILL_CONNECTED": "staff",
     "LINKED_IN_SYNC": {
@@ -30,14 +34,14 @@
       "on_hold": false,
       "ok": true,
       "cmd": "stock",
-      "ms": 21
+      "ms": 22
     },
     "OWNER_REVOKES_THE_TILL_WITH_THE_PANEL_RPC": "revoked",
     "REVOCATION_RECORDED_AS_OWNER_REVOKED": "owner_revoked",
     "LA_TABA_REFUSES_THE_TILL_AT_ONCE": {
       "failure": "TERMINAL_NOT_AUTHORIZED",
       "link": "SessionExpired",
-      "ms": 387
+      "ms": 389
     },
     "TILL_KEEPS_SELLING_AND_HOLDS_THE_CHANGE": {
       "outbox": {
@@ -53,13 +57,29 @@
       "server": 59,
       "link": "Connected"
     },
-    "OLD_TILL_SESSION_STAYS_CLOSED": 2
+    "OLD_TILL_SESSION_STAYS_CLOSED": 2,
+    "TILL_SEES_THE_RIDER_AVAILABLE": {
+      "id": "d5ea6f8b-8475-492f-83b0-93f54b512d15",
+      "available": true,
+      "active_orders": 0
+    },
+    "REVOKED_RIDER_PHONE_GETS_NO_WORK": {
+      "revoke": "revoked",
+      "board": "42501",
+      "heartbeat": "42501"
+    },
+    "TILL_STOPS_COUNTING_THE_REVOKED_RIDER": 93497,
+    "RIDER_SIGNS_IN_AGAIN_OLD_SESSION_CLOSED": {
+      "board": "READ",
+      "old": "owner_revoked"
+    }
   },
   "latency": {
-    "revocationNoticedMs": 387
+    "revocationNoticedMs": 389,
+    "revokedRiderUnavailableMs": 93497
   },
   "realStoreTillSessions": 0,
-  "orphansFound": 1,
+  "orphansFound": 0,
   "product": {
     "sku": "paso-de-los-toros-pomelo-1500ml",
     "initialStock": 60
@@ -70,6 +90,7 @@
   "stockRestored": true,
   "tillSessionsLeftOpen": 0,
   "realStoreUntouched": true,
+  "riderLeftUnavailable": true,
   "failed": [],
   "verdict": "PASS"
 }

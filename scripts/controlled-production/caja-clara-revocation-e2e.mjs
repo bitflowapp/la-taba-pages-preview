@@ -7,7 +7,9 @@
 // Taba must refuse the till at once; Caja Clara must say so and keep selling;
 // what it sold meanwhile waits and is sent exactly once after the staff
 // connects again. Till sessions left open by crashed runs of the QA business
-// are closed the same way. The one QA unit sold is put back at the end.
+// are closed the same way. Then the owner closes a QA rider's phone session:
+// that phone must stop reading offers and sending presence at once, and the
+// till must stop counting it as available. The one QA unit sold is put back.
 //
 //   node scripts/controlled-production/caja-clara-revocation-e2e.mjs --agent <CajaClara.TabaAgent.dll> [report.json]
 import assert from 'node:assert/strict';
@@ -18,6 +20,7 @@ import readline from 'node:readline';
 import { createClient } from '@supabase/supabase-js';
 import { loadTargetKeys } from './target-keys.mjs';
 import { readQaCredential } from './qa-credentials.mjs';
+import { signIn } from './accounts.mjs';
 import { operatorClient } from './qa-cleanup.mjs';
 import { QA_CONTROL_BUSINESS, REAL_BUSINESS } from './qa-window.mjs';
 
@@ -63,6 +66,29 @@ const owner = await operatorClient(keys, 'CP QA OWNER', BUSINESS, 'owner');
 const staff = await operatorClient(keys, 'CP QA STAFF', BUSINESS, 'staff');
 const staffCred = readQaCredential('CP QA STAFF');
 assert.ok(staffCred, 'QA_STAFF_CREDENTIAL_REQUIRED');
+async function riderLogin(cred, label) {
+  const c = createClient(keys.url, keys.publishable, OPTIONS);
+  await signIn(c, cred.usuario, cred.secreto);
+  const reg = await c.rpc('identity_register_session', { p_business_id: BUSINESS, p_client: 'rider_android',
+    p_device_label: label, p_device_key_hash: null, p_app_version: 'caja-clara-revocation' });
+  if (reg.error || !reg.data?.ok || reg.data.role !== 'rider') throw Error(`RIDER_SESSION:${reg.error?.code || reg.data?.code}`);
+  const { data } = await c.auth.getUser();
+  const own = (await admin.from('identity_sessions').select('session_id').eq('user_id', data.user.id).eq('business_id', BUSINESS)
+    .eq('device_label', label).is('revoked_at', null).order('first_seen_at', { ascending: false }).limit(1)).data?.[0];
+  return { c, id: data.user.id, sessionId: reg.data.session_id || own?.session_id };
+}
+async function riderAvailable(r, value) {
+  const board = await r.c.rpc('get_rider_delivery_board');
+  if (board.error) throw Error(`BOARD:${board.error.code}`);
+  // The board reports EFFECTIVE availability (presence within 90 s): a stale "available" row reads false, so going
+  // off is always written.
+  if (board.data.available !== value || !value) {
+    const set = await r.c.rpc('set_rider_availability', { p_business_id: BUSINESS, p_available: value,
+      p_expected_version: board.data.availability_version, p_idempotency_key: `rv_avail_${r.id.replaceAll('-', '')}_${board.data.availability_version}_${value ? 't' : 'f'}_${Date.now()}` });
+    if (set.error) throw Error(`AVAILABILITY:${set.error.code}`);
+  }
+  if (value) await r.c.rpc('heartbeat_rider_availability', { p_business_id: BUSINESS });
+}
 const openTills = async (business) => (await admin.from('identity_sessions').select('session_id,user_id,first_seen_at,last_seen_at')
   .eq('business_id', business).eq('client', 'caja_clara_windows').is('revoked_at', null)).data || [];
 
@@ -90,6 +116,7 @@ const initialStock = Number(product.stock);
 report.product = { sku: product.sku, initialStock };
 
 const agent = startAgent();
+let riderBack = null;
 try {
   // ── 1. The staff opens a till bound to this PC ──────────────────────────
   const init = await agent.send('init');
@@ -140,10 +167,44 @@ try {
     && sent.items['StockDelta:Done'] === 1 && !sent.items['StockDelta:Pending'], { outbox: sent.items, server: after.stock, link: status.link });
   check('OLD_TILL_SESSION_STAYS_CLOSED', sessions.length === 2 && sessions.filter((s) => !s.revoked_at).length === 1
     && sessions.find((s) => s.session_id === tillSession)?.revoked_at, sessions.length);
+
+  // ── 5. The owner closes a rider's phone session ─────────────────────────
+  const riderCred = readQaCredential('CP QA RIDER 1');
+  assert.ok(riderCred, 'QA_RIDER_CREDENTIAL_REQUIRED');
+  const rider = await riderLogin(riderCred, 'QA Rider revocación');
+  await riderAvailable(rider, true);
+  await agent.send('sync', { full: true });
+  const seen = (await agent.send('riders')).riders.find((x) => x.id === rider.id);
+  check('TILL_SEES_THE_RIDER_AVAILABLE', seen?.available === true, seen);
+  const riderRevoke = await owner.rpc('identity_revoke_session', { p_session_id: rider.sessionId });
+  const board = await rider.c.rpc('get_rider_delivery_board');
+  const beat = await rider.c.rpc('heartbeat_rider_availability', { p_business_id: BUSINESS });
+  check('REVOKED_RIDER_PHONE_GETS_NO_WORK', riderRevoke.data?.code === 'revoked' && board.error?.code === '42501' && beat.error?.code === '42501',
+    { revoke: riderRevoke.error?.code || riderRevoke.data?.code, board: board.error?.code || 'READ', heartbeat: beat.error?.code || 'ACCEPTED' });
+  // Without presence the rider stops counting as available (La Taba's 90 s window); the till follows it.
+  const start = Date.now();
+  let gone = null;
+  while (Date.now() - start < 150_000 && !gone) {
+    await sleep(10_000);
+    await agent.send('sync', { full: true });
+    const row = (await agent.send('riders')).riders.find((x) => x.id === rider.id);
+    if (row && row.available === false) gone = Date.now() - start;
+  }
+  report.latency.revokedRiderUnavailableMs = gone;
+  check('TILL_STOPS_COUNTING_THE_REVOKED_RIDER', gone !== null, gone);
+  // Signing in again on the phone is the way back: a new session, the old one stays closed.
+  riderBack = await riderLogin(riderCred, 'QA Rider revocación 2');
+  const board2 = await riderBack.c.rpc('get_rider_delivery_board');
+  const oldRow = (await admin.from('identity_sessions').select('revoked_reason').eq('session_id', rider.sessionId).single()).data;
+  check('RIDER_SIGNS_IN_AGAIN_OLD_SESSION_CLOSED', !board2.error && oldRow?.revoked_reason === 'owner_revoked', { board: board2.error?.code || 'READ', old: oldRow?.revoked_reason });
 } catch (error) {
   report.error = error.message;
   log(`ERROR ${error.message}`);
 } finally {
+  if (riderBack) {
+    try { await riderAvailable(riderBack, false); } catch { /* ignore */ }
+    try { await riderBack.c.rpc('identity_close_own_session', { p_business_id: BUSINESS }); } catch { /* ignore */ }
+  }
   try { await agent.send('disconnect', {}, { expectOk: false }); } catch { /* ignore */ }
   await agent.quit();
   // Put the QA unit back the way the other QA runs do.
@@ -161,12 +222,15 @@ try {
   report.tillSessionsLeftOpen = (await openTills(BUSINESS)).length;
   const realStore = (await admin.from('businesses').select('status,ordering_enabled').eq('id', REAL_BUSINESS).single()).data;
   report.realStoreUntouched = realStore.status === 'closed' && realStore.ordering_enabled === false;
+  report.riderLeftUnavailable = (await admin.from('rider_availability').select('available').eq('business_id', BUSINESS)
+    .eq('available', true)).data?.length === 0;
   for (const c of [owner, staff]) { try { await c.rpc('identity_close_own_session', { p_business_id: BUSINESS }); } catch { /* ignore */ } }
 }
 
 const failed = Object.entries(report.checks).filter(([, v]) => v !== 'PASS').map(([k]) => k);
 report.failed = failed;
-report.verdict = !report.error && failed.length === 0 && report.stockRestored && report.tillSessionsLeftOpen === 0 && report.realStoreUntouched ? 'PASS' : 'FAIL';
+report.verdict = !report.error && failed.length === 0 && report.stockRestored && report.tillSessionsLeftOpen === 0 && report.realStoreUntouched
+  && report.riderLeftUnavailable ? 'PASS' : 'FAIL';
 mkdirSync(path.dirname(out), { recursive: true });
 writeFileSync(out, `${JSON.stringify(report, null, 2)}\n`);
 console.log(JSON.stringify({ verdict: report.verdict, failed, error: report.error, latency: report.latency, orphans: report.orphansFound }, null, 1));

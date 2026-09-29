@@ -54,7 +54,7 @@ La planilla [`planilla-apertura-cp.csv`](planilla-apertura-cp.csv) ya trae los 4
 - `stock` en unidades contadas en el local. Vacío = sin contar; `0` = contado y agotado.
 - `publicar`: `si` o `no`.
 
-Fotos propias de cada producto a publicar, nombradas `<sku>__front.jpg`. Ver [`catalog/photo-capture/README.md`](../photo-capture/README.md). Primero los productos sin alcohol del canary.
+Fotos propias de cada producto a publicar, nombradas `<sku>.jpg` (también sirve `<sku>__front.jpg`). La lista exacta, con los 12 prioritarios marcados, está en [`catalog/photo-intake/PHOTO-SHOT-LIST.md`](../photo-intake/PHOTO-SHOT-LIST.md); la guía, en [`catalog/photo-capture/README.md`](../photo-capture/README.md). Hoy sólo Campari tiene foto real aprobada (1/46).
 
 A confirmar:
 

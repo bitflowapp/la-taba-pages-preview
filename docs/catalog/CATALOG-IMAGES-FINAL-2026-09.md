@@ -1,5 +1,7 @@
 # Controlled Production: imágenes reales del catálogo — 2026-09
 
+> Actualización 2026-09-29: la clasificación vigente por SKU, la lista de fotos a sacar y el resultado de la segunda pasada están en [CATALOG-REAL-CONTENT-2026-09-29.md](CATALOG-REAL-CONTENT-2026-09-29.md). Cobertura real: 1/46.
+
 Última revisión: 2026-09-28 (misión «cerrar catálogo real de imágenes end-to-end»). Proyecto `tkanbadcglszlcyfjvpv`, negocio `e7850ad2-a447-402c-8375-3fd74e9466ba`. No se crearon productos ni se tocó precio, stock, publicación, Mercado Pago, ARCA, Rider, LocalAgent, `print_jobs`, checkout, pedidos ni roles.
 
 ## Resultado

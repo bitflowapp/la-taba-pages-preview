@@ -1,0 +1,426 @@
+{
+  "schema": "taba.catalog.image-rights-research.addendum.v1",
+  "generated_at": "2026-09-29",
+  "method": "Open Food Facts API v2 re-queried by GTIN for the 46 CP SKUs (all raw images listed, 400 px versions downloaded and reviewed by eye); Wikimedia Commons File-namespace search by brand + presentation (37 query groups, license metadata read from the API); shortlisted OFF images reviewed at full size; one local background-removal attempt.",
+  "summary": {
+    "skus": 46,
+    "off_with_card": 35,
+    "off_without_card": 11,
+    "off_raw_images_reviewed": 104,
+    "off_images_usable": 1,
+    "commons_candidates_reviewed": 12,
+    "commons_usable": 0,
+    "local_cutout_attempts": 1,
+    "local_cutout_passed": 0,
+    "shortlist_pending_confirmation": [
+      "cepita-naranja-1000ml (OFF raw 5)"
+    ]
+  },
+  "commons_rejections": [
+    {
+      "file": "Fernetbranca.jpg",
+      "license": "CC BY-SA 4.0",
+      "why": "botella europea de 70 cl, no la de 750 ml de Argentina"
+    },
+    {
+      "file": "Fernet Branca.jpg",
+      "license": "CC BY 2.0",
+      "why": "miniatura con marca de agua"
+    },
+    {
+      "file": "Corona Extra.JPG / Corona Extra.jpg / Corona Extra beer bottle (2019).png",
+      "license": "CC BY-SA 3.0/4.0",
+      "why": "botella importada de 355 ml (12 fl oz); el SKU es de 330 ml y no se sabe cuál vende el local"
+    },
+    {
+      "file": "Can of Stella Artois.jpg",
+      "license": "CC BY-SA 4.0",
+      "why": "lata importada de 500 ml de Bélgica; el SKU es de 473 ml"
+    },
+    {
+      "file": "SchneiderLager.jpg",
+      "license": "CC0",
+      "why": "lata de 473 cm³; el SKU es de 710 ml"
+    },
+    {
+      "file": "Monster Mango Loco.jpg",
+      "license": "CC0",
+      "why": "lata sostenida con la mano"
+    },
+    {
+      "file": "Imperial Golden 0,0.jpg",
+      "license": "CC BY 4.0",
+      "why": "otra variante (sin alcohol), en góndola"
+    },
+    {
+      "file": "Alamos Malbec 2005.jpg",
+      "license": "CC BY-SA 2.0",
+      "why": "etiqueta de la cosecha 2005"
+    }
+  ],
+  "off_rejections_notable": [
+    {
+      "sku": "monster-ultra-473ml-local",
+      "image": "raw 1",
+      "why": "lata completa pero fondo desordenado; el recorte local (u2net) quedó con máscara blanda que muerde la etiqueta, dominante rosada, condensación y rayones"
+    },
+    {
+      "sku": "monster-ultra-473ml-local",
+      "image": "raw 4",
+      "why": "corta tapa y base"
+    },
+    {
+      "sku": "pepsi-black-1500ml",
+      "image": "raw 4",
+      "why": "botellas vecinas en el borde y tapa cortada"
+    },
+    {
+      "sku": "quilmes-clasica-710ml",
+      "image": "raw 2/3",
+      "why": "lata abierta sobre madera con otra lata detrás"
+    },
+    {
+      "sku": "cepita-naranja-1000ml",
+      "image": "raw 5",
+      "why": "frente limpio y vigente (CC BY-SA por OFF), pero la presentación del SKU está sin confirmar (issue #118): no se aprueba"
+    }
+  ],
+  "off_index": {
+    "villavicencio-sin-gas-500ml": {
+      "gtin": "7799155000173",
+      "found": true,
+      "name": "Villavicencio Sin Gas",
+      "quantity": "500 ml",
+      "raw_images": 1
+    },
+    "heineken-710ml": {
+      "gtin": "7793147571283",
+      "found": true,
+      "name": "Heineken",
+      "quantity": null,
+      "raw_images": 1
+    },
+    "quilmes-clasica-710ml": {
+      "gtin": "7792798014835",
+      "found": true,
+      "name": "Quilmes Clásica",
+      "quantity": "710 cm³",
+      "raw_images": 3
+    },
+    "red-bull-energy-drink-355ml": {
+      "gtin": "90435225",
+      "found": true,
+      "name": "Red Bull 355",
+      "quantity": "355 ml",
+      "raw_images": 1
+    },
+    "fernet-branca-750ml": {
+      "gtin": "7790290001193",
+      "found": true,
+      "name": "Fernet Branca",
+      "quantity": "750 ml",
+      "raw_images": 1
+    },
+    "coca-cola-original-2250ml-local": {
+      "gtin": "7790895000997",
+      "found": true,
+      "name": "coca cola",
+      "quantity": "2,25 L",
+      "raw_images": 7
+    },
+    "coca-cola-sin-azucar-2250ml-local": {
+      "gtin": "7790895067570",
+      "found": true,
+      "name": "Coca Cola Zero",
+      "quantity": "2.25 l",
+      "raw_images": 7
+    },
+    "fanta-naranja-2250ml": {
+      "gtin": "7790895001017",
+      "found": true,
+      "name": "Fanta",
+      "quantity": "2,25 L",
+      "raw_images": 8
+    },
+    "sprite-sin-azucar-2250ml-local": {
+      "gtin": "7790895641916",
+      "found": false,
+      "name": null,
+      "quantity": null,
+      "raw_images": 0
+    },
+    "bonaqua-sin-gas-2250ml-local": {
+      "gtin": "7790895641978",
+      "found": false,
+      "name": null,
+      "quantity": null,
+      "raw_images": 0
+    },
+    "eco-de-los-andes-sin-gas-2000ml": {
+      "gtin": "7792799000097",
+      "found": true,
+      "name": "Agua",
+      "quantity": "2,25 l",
+      "raw_images": 1
+    },
+    "glaciar-con-gas-1500ml": {
+      "gtin": "7792931001050",
+      "found": true,
+      "name": "glaciar c/g",
+      "quantity": "1,5",
+      "raw_images": 2
+    },
+    "glaciar-sin-gas-1500ml": {
+      "gtin": "7792931000022",
+      "found": true,
+      "name": "Glaciar Agua",
+      "quantity": "1,5 l",
+      "raw_images": 2
+    },
+    "aperol-750ml": {
+      "gtin": "7891136057029",
+      "found": false,
+      "name": null,
+      "quantity": null,
+      "raw_images": 0
+    },
+    "branca-menta-750ml": {
+      "gtin": "7790290101473",
+      "found": true,
+      "name": "Fernet a la Menta",
+      "quantity": "750 ml",
+      "raw_images": 1
+    },
+    "campari-bitter-750ml": {
+      "gtin": "7791200200781",
+      "found": true,
+      "name": null,
+      "quantity": null,
+      "raw_images": 1
+    },
+    "cinzano-rosso-950ml": {
+      "gtin": "7791200200552",
+      "found": true,
+      "name": "vermouth",
+      "quantity": "1000 ml",
+      "raw_images": 1
+    },
+    "brahma-chopp-1000ml": {
+      "gtin": "7792798007493",
+      "found": true,
+      "name": "cerveza brahma",
+      "quantity": null,
+      "raw_images": 2
+    },
+    "corona-extra-330ml": {
+      "gtin": "8066145",
+      "found": true,
+      "name": "Corona Extra",
+      "quantity": null,
+      "raw_images": 5
+    },
+    "imperial-golden-473ml": {
+      "gtin": "7793147571689",
+      "found": true,
+      "name": "Imperial Golden",
+      "quantity": null,
+      "raw_images": 1
+    },
+    "patagonia-lager-del-sur-730ml": {
+      "gtin": "7792798015023",
+      "found": true,
+      "name": "Lager del sur",
+      "quantity": "730",
+      "raw_images": 1
+    },
+    "schneider-rubia-710ml": {
+      "gtin": "7793147570606",
+      "found": true,
+      "name": "Schneider Rubia",
+      "quantity": "710ml",
+      "raw_images": 5
+    },
+    "stella-artois-rubia-473ml": {
+      "gtin": "7792798010615",
+      "found": true,
+      "name": "Cerveza Stella Artois",
+      "quantity": "473",
+      "raw_images": 2
+    },
+    "monster-mango-loco-473ml": {
+      "gtin": "7798422520045",
+      "found": false,
+      "name": null,
+      "quantity": null,
+      "raw_images": 0
+    },
+    "monster-ultra-473ml-local": {
+      "gtin": "7798422620021",
+      "found": true,
+      "name": "monster energy ultra",
+      "quantity": "473 ml",
+      "raw_images": 7
+    },
+    "speed-zero-473ml": {
+      "gtin": "7798119220381",
+      "found": true,
+      "name": "Speed zero 473ml",
+      "quantity": null,
+      "raw_images": 1
+    },
+    "pepsi-black-1500ml": {
+      "gtin": "7791813828419",
+      "found": true,
+      "name": "Black Pepsi 1.5l",
+      "quantity": "1.5",
+      "raw_images": 4
+    },
+    "pepsi-black-2250ml-local": {
+      "gtin": "7791813423331",
+      "found": false,
+      "name": null,
+      "quantity": null,
+      "raw_images": 0
+    },
+    "sprite-sin-azucar-600ml": {
+      "gtin": "7790895650895",
+      "found": false,
+      "name": null,
+      "quantity": null,
+      "raw_images": 0
+    },
+    "hielo-cristal-4kg": {
+      "gtin": "7798124020037",
+      "found": false,
+      "name": null,
+      "quantity": null,
+      "raw_images": 0
+    },
+    "cepita-durazno-1000ml": {
+      "gtin": "7790895009846",
+      "found": true,
+      "name": "Cepita del Valle durazno delicioso",
+      "quantity": "1 l",
+      "raw_images": 2
+    },
+    "cepita-naranja-1000ml": {
+      "gtin": "7790895648267",
+      "found": true,
+      "name": "Naranja",
+      "quantity": "1 l",
+      "raw_images": 10
+    },
+    "paso-de-los-toros-pomelo-1500ml": {
+      "gtin": "7791813421382",
+      "found": true,
+      "name": "Paso de los toros 1.5l",
+      "quantity": "1,5 l",
+      "raw_images": 5
+    },
+    "paso-de-los-toros-tonica-1500ml": {
+      "gtin": "7791813421368",
+      "found": true,
+      "name": "Paso de los Toros Tonica",
+      "quantity": "1,5 l",
+      "raw_images": 7
+    },
+    "schweppes-pomelo-sin-azucar-2250ml": {
+      "gtin": "7790895010095",
+      "found": true,
+      "name": "Schweppes Pomelo",
+      "quantity": "2,25L",
+      "raw_images": 2
+    },
+    "schweppes-tonica-354ml-local": {
+      "gtin": "7790895006821",
+      "found": true,
+      "name": "Swchepps  agua tonica",
+      "quantity": null,
+      "raw_images": 1
+    },
+    "doritos-queso-129g": {
+      "gtin": "7790310985656",
+      "found": true,
+      "name": "Doritos",
+      "quantity": "129g",
+      "raw_images": 2
+    },
+    "lays-clasicas-134g": {
+      "gtin": "7790310985465",
+      "found": true,
+      "name": "Papas Fritas Clásicas 134f",
+      "quantity": null,
+      "raw_images": 1
+    },
+    "lays-clasicas-40g": {
+      "gtin": "7790310985236",
+      "found": true,
+      "name": "Lays Clásica",
+      "quantity": "40g",
+      "raw_images": 1
+    },
+    "mani-king-salado-sin-piel-100g": {
+      "gtin": "7798151953384",
+      "found": true,
+      "name": "Mani Salado Sin Piel",
+      "quantity": "100gr",
+      "raw_images": 5
+    },
+    "pehuamar-palitos-salados-90g": {
+      "gtin": "7790310984352",
+      "found": true,
+      "name": "Palitos Salados",
+      "quantity": null,
+      "raw_images": 2
+    },
+    "alamos-malbec-750ml-local": {
+      "gtin": "7794450091338",
+      "found": false,
+      "name": null,
+      "quantity": null,
+      "raw_images": 0
+    },
+    "norton-malbec-750ml-local": {
+      "gtin": "7792319971104",
+      "found": false,
+      "name": null,
+      "quantity": null,
+      "raw_images": 0
+    },
+    "santa-julia-chenin-dulce-750ml": {
+      "gtin": "7791728247091",
+      "found": true,
+      "name": "Santa Julia Dulce",
+      "quantity": null,
+      "raw_images": 1
+    },
+    "trapiche-cabernet-sauvignon-750ml": {
+      "gtin": "7790240094466",
+      "found": false,
+      "name": null,
+      "quantity": null,
+      "raw_images": 0
+    },
+    "trapiche-red-blend-750ml": {
+      "gtin": "7790240940916",
+      "found": false,
+      "name": null,
+      "quantity": null,
+      "raw_images": 0
+    }
+  },
+  "distributors_and_catalogs": {
+    "gs1_argentina": {
+      "url": "https://www.gs1.org.ar/Site/Soluciones/catalogoElectronico.html",
+      "finding": "El Catálogo Electrónico de GS1 Argentina permite alinear datos entre proveedor y cliente y, según la búsqueda, descargar imágenes por código de barras según el plan contratado. La página no renderizó desde este equipo, así que los términos de reutilización NO se verificaron. No se contrató ni se pagó nada; no bloquea la apertura. Puede servir para escalar el catálogo si las marcas cargan sus packshots."
+    },
+    "tuali_arca_continental": {
+      "url": "https://www.tuali.com/argentina/",
+      "finding": "App de pedidos de Arca Continental (embotellador de Coca-Cola) para almacenes, con su catálogo. No se encontró licencia de imágenes para tiendas propias; hay que preguntarle al ejecutivo de cuenta. No se contactó a nadie."
+    },
+    "mayoristas": {
+      "finding": "Beco, Masivos, Distribuidora Pop, Capri, El Gran Mayorista de Bebidas y MP Drinks publican catálogos con fotos, pero ninguno declara licencia de reutilización. Sólo el proveedor que le vende a Walter puede autorizar por escrito el uso de sus imágenes. No se contactó a nadie ni se aceptó ningún contrato."
+    }
+  },
+  "note": "Los assets descargados son RESEARCH_ASSET: viven fuera del repo, nunca se subieron y ninguno se aprobó."
+}

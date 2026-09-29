@@ -1,0 +1,245 @@
+{
+  "at": "2026-09-29T02:17:29.709Z",
+  "target": "controlled-production",
+  "repoCommit": "4d8a5c4",
+  "method": "supabase@2.101.0: functions list y functions download --use-api de cada función en un directorio propio; comparación archivo por archivo (sin CR) con supabase/functions del repo",
+  "repoFunctions": 13,
+  "deployedFunctions": 13,
+  "extraDeployed": [],
+  "functions": [
+    {
+      "slug": "catalog-image-manager",
+      "deployed": true,
+      "status": "ACTIVE",
+      "version": 3,
+      "verify_jwt": true,
+      "files": 3,
+      "identical": 3,
+      "differ": []
+    },
+    {
+      "slug": "fiscal-artifact-access",
+      "deployed": true,
+      "status": "ACTIVE",
+      "version": 1,
+      "verify_jwt": true,
+      "files": 1,
+      "identical": 1,
+      "differ": []
+    },
+    {
+      "slug": "mercadopago-cancel-payment",
+      "deployed": true,
+      "status": "ACTIVE",
+      "version": 6,
+      "verify_jwt": true,
+      "files": 6,
+      "identical": 6,
+      "differ": []
+    },
+    {
+      "slug": "mercadopago-checkout-status",
+      "deployed": true,
+      "status": "ACTIVE",
+      "version": 6,
+      "verify_jwt": false,
+      "files": 6,
+      "identical": 6,
+      "differ": []
+    },
+    {
+      "slug": "mercadopago-connect",
+      "deployed": true,
+      "status": "ACTIVE",
+      "version": 6,
+      "verify_jwt": false,
+      "files": 5,
+      "identical": 5,
+      "differ": []
+    },
+    {
+      "slug": "mercadopago-create-checkout-session",
+      "deployed": true,
+      "status": "ACTIVE",
+      "version": 6,
+      "verify_jwt": false,
+      "files": 3,
+      "identical": 3,
+      "differ": []
+    },
+    {
+      "slug": "mercadopago-create-preference",
+      "deployed": true,
+      "status": "ACTIVE",
+      "version": 6,
+      "verify_jwt": false,
+      "files": 6,
+      "identical": 6,
+      "differ": []
+    },
+    {
+      "slug": "mercadopago-oauth-callback",
+      "deployed": true,
+      "status": "ACTIVE",
+      "version": 6,
+      "verify_jwt": false,
+      "files": 5,
+      "identical": 5,
+      "differ": []
+    },
+    {
+      "slug": "mercadopago-payment-worker",
+      "deployed": true,
+      "status": "ACTIVE",
+      "version": 6,
+      "verify_jwt": false,
+      "files": 7,
+      "identical": 7,
+      "differ": []
+    },
+    {
+      "slug": "mercadopago-refund",
+      "deployed": true,
+      "status": "ACTIVE",
+      "version": 6,
+      "verify_jwt": true,
+      "files": 7,
+      "identical": 7,
+      "differ": []
+    },
+    {
+      "slug": "mercadopago-webhook",
+      "deployed": true,
+      "status": "ACTIVE",
+      "version": 6,
+      "verify_jwt": false,
+      "files": 10,
+      "identical": 10,
+      "differ": []
+    },
+    {
+      "slug": "print-agent-gateway",
+      "deployed": true,
+      "status": "ACTIVE",
+      "version": 2,
+      "verify_jwt": false,
+      "files": 2,
+      "identical": 2,
+      "differ": []
+    },
+    {
+      "slug": "team-invitation",
+      "deployed": true,
+      "status": "ACTIVE",
+      "version": 2,
+      "verify_jwt": false,
+      "files": 2,
+      "identical": 2,
+      "differ": []
+    }
+  ],
+  "verdict": "PASS",
+  "versionNote": "secrets set (FISCAL_PANEL_ORIGINS) crea una versión nueva de cada función con el mismo código: las versiones suben en 1 y updated_at no cambia. La descarga posterior confirma el código idéntico.",
+  "bootSmoke": {
+    "note": "Sin efectos: OPTIONS con el origen del Panel para todas; POST vacío sólo a las tres no MP, que se niegan antes de tocar la base. Ningún 5xx = todas arrancan con su entorno.",
+    "results": [
+      {
+        "kind": "OPTIONS",
+        "slug": "catalog-image-manager",
+        "status": 204,
+        "detail": "https://la-taba-commercial-pilot.pages.dev"
+      },
+      {
+        "kind": "OPTIONS",
+        "slug": "fiscal-artifact-access",
+        "status": 204,
+        "detail": "https://la-taba-commercial-pilot.pages.dev"
+      },
+      {
+        "kind": "OPTIONS",
+        "slug": "mercadopago-cancel-payment",
+        "status": 204,
+        "detail": "https://la-taba-commercial-pilot.pages.dev"
+      },
+      {
+        "kind": "OPTIONS",
+        "slug": "mercadopago-checkout-status",
+        "status": 204,
+        "detail": "https://la-taba-commercial-pilot.pages.dev"
+      },
+      {
+        "kind": "OPTIONS",
+        "slug": "mercadopago-connect",
+        "status": 204,
+        "detail": "https://la-taba-commercial-pilot.pages.dev"
+      },
+      {
+        "kind": "OPTIONS",
+        "slug": "mercadopago-create-checkout-session",
+        "status": 204,
+        "detail": "https://la-taba-commercial-pilot.pages.dev"
+      },
+      {
+        "kind": "OPTIONS",
+        "slug": "mercadopago-create-preference",
+        "status": 204,
+        "detail": "https://la-taba-commercial-pilot.pages.dev"
+      },
+      {
+        "kind": "OPTIONS",
+        "slug": "mercadopago-oauth-callback",
+        "status": 405,
+        "detail": "-"
+      },
+      {
+        "kind": "OPTIONS",
+        "slug": "mercadopago-payment-worker",
+        "status": 405,
+        "detail": "https://la-taba-commercial-pilot.pages.dev"
+      },
+      {
+        "kind": "OPTIONS",
+        "slug": "mercadopago-refund",
+        "status": 204,
+        "detail": "https://la-taba-commercial-pilot.pages.dev"
+      },
+      {
+        "kind": "OPTIONS",
+        "slug": "mercadopago-webhook",
+        "status": 405,
+        "detail": "https://la-taba-commercial-pilot.pages.dev"
+      },
+      {
+        "kind": "OPTIONS",
+        "slug": "print-agent-gateway",
+        "status": 403,
+        "detail": "-"
+      },
+      {
+        "kind": "OPTIONS",
+        "slug": "team-invitation",
+        "status": 204,
+        "detail": "https://la-taba-commercial-pilot.pages.dev"
+      },
+      {
+        "kind": "POST_EMPTY",
+        "slug": "catalog-image-manager",
+        "status": 401,
+        "detail": "\"code\":\"AUTH_REQUIRED\""
+      },
+      {
+        "kind": "POST_EMPTY",
+        "slug": "print-agent-gateway",
+        "status": 403,
+        "detail": "\"code\":\"BROWSER_NOT_ALLOWED\""
+      },
+      {
+        "kind": "POST_EMPTY",
+        "slug": "team-invitation",
+        "status": 400,
+        "detail": "\"code\":\"INVALID_REQUEST\""
+      }
+    ],
+    "verdict": "PASS"
+  }
+}

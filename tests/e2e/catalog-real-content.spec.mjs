@@ -120,9 +120,20 @@ for (const width of [360, 390]) {
       await page.locator(`[data-view="catalog"] [data-category-strip] [data-category-id="${id}"]`).first().click();
       const titulo = await page.evaluate(() => {
         const nodo = document.querySelector('[data-view="catalog"] [data-catalog-title]');
-        return { texto: nodo.textContent, necesita: nodo.scrollWidth, tiene: nodo.clientWidth };
+        const contador = document.querySelector('[data-view="catalog"] [data-catalog-count]');
+        const vista = document.querySelector('[data-view="catalog"]').getBoundingClientRect();
+        return {
+          texto: nodo.textContent,
+          necesita: nodo.scrollWidth,
+          tiene: nodo.clientWidth,
+          contador: contador.textContent,
+          contadorCortado: contador.scrollWidth > contador.clientWidth + 1
+            || contador.getBoundingClientRect().right > vista.right + 1,
+        };
       });
       expect(titulo.necesita, `«${titulo.texto}» quedó cortado a ${width}px`).toBeLessThanOrEqual(titulo.tiene + 1);
+      // El contador de un estante sin precios es largo: si no entra, parte.
+      expect(titulo.contadorCortado, `«${titulo.contador}» quedó cortado a ${width}px`).toBe(false);
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await guards.assertClean();

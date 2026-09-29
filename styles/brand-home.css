@@ -3860,6 +3860,12 @@ body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .cata
     max-width: 100%;
   }
 
+  /* Solo en su renglón, el contador también puede partir: «1 producto en
+     Fernet y amargos · todavía sin precio publicado» no entra en 358px. */
+  body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-count {
+    white-space: normal;
+  }
+
   body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-head::after {
     flex: 1 1 24px;
   }

@@ -2691,12 +2691,13 @@ function renderProducts() {
    * pedir. Cuando el negocio publique esos precios, el aviso desaparece solo.
    */
   const nadaComprable = filteredProducts.every((product) => !isCommerciallyPurchasable(product));
+  const hayComprables = getCustomerCatalogProducts(state.products).some(isCommerciallyPurchasable);
   const avisoSinComprables = nadaComprable
     ? `<div class="catalog-none-buyable" role="status">
         <strong>${filteredProducts.length === 1
           ? 'Este producto todavía no tiene precio publicado.'
           : `Ninguno de estos ${filteredProducts.length} tiene precio publicado todavía.`}</strong>
-        <button class="primary-button compact" type="button" data-clear-catalog-filters>Ver lo que sí se puede pedir</button>
+        ${hayComprables ? '<button class="primary-button compact" type="button" data-clear-catalog-filters>Ver lo que sí se puede pedir</button>' : ''}
       </div>`
     : '';
 
@@ -4525,7 +4526,7 @@ export function showToast(message) {
   }
   clearTimeout(showToast.timeoutId);
   showToast.timeoutId = setTimeout(() => {
-    // Salida corta: el aviso se desvanece y reci�n despu�s sale del �rbol.
+    // Salida corta: el aviso se desvanece y después sale del árbol.
     toast?.classList.add('is-leaving');
     showToast.leaveId = setTimeout(() => {
       toast?.classList.add('hidden');

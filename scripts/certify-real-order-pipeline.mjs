@@ -49,6 +49,17 @@ for (const [name, value] of Object.entries({ SUPABASE_URL, SERVICE_ROLE_KEY, ANO
 const service = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
+try {
+  const identity = await verifyStagingCertificationIdentity(service, certificationTarget);
+  if (process.argv.includes('--preflight-only')) {
+    console.log(JSON.stringify({ ok: true, readOnly: true, scope: 'staging_identity_only',
+      projectRef: identity.projectRef, businessId: identity.businessId, paymentEnvironment: 'test' }));
+    process.exit(0);
+  }
+} catch (error) {
+  console.error(error.message);
+  process.exit(2);
+}
 
 const results = [];
 const cleanup = [];
@@ -208,7 +219,6 @@ function orderPayload({ productId, quantity, paymentMethod, clientRequestId, nam
 }
 
 async function main() {
-  await verifyStagingCertificationIdentity(service, certificationTarget);
   console.log(`\n=== Certificación del circuito real de pedidos ===\n${SUPABASE_URL}\n`);
 
   // ---------------------------------------------------------------- baseline
@@ -222,10 +232,6 @@ async function main() {
     .from('rider_locations')
     .select('id', { count: 'exact', head: true })
     .eq('order_id', lt30Before?.id || randomUUID());
-
-  const customer = await createActor('customer');
-  const staff = await createActor('staff');
-  const rider = await createActor('rider');
 
   // Producto comercial (demo_fixture) => pedido de operación real.
   const { data: realProduct } = await service
@@ -250,6 +256,10 @@ async function main() {
     .maybeSingle();
 
   if (!realProduct) throw new Error('El catálogo de staging no tiene un producto comercial verificable.');
+  // Missing fixtures must not create users, memberships or sessions.
+  const customer = await createActor('customer');
+  const staff = await createActor('staff');
+  const rider = await createActor('rider');
 
   // ============================================================ GATE 1: real
   console.log('\n--- Gate 1: pedido real recorre el circuito completo ---');
@@ -549,8 +559,8 @@ async function main() {
   console.log('\n--- Gate 2: el pedido QA queda fuera de la operación real ---');
   if (!qaProduct) {
     check(
-      'staging mantiene los fixtures QA fuera del catálogo comprable',
-      true,
+      'el aislamiento QA no se certifica sin su fixture específico',
+      false,
       'sin fixture QA disponible; no se mutó el catálogo',
     );
   } else {
@@ -643,6 +653,7 @@ async function main() {
   const { data: mpOrders } = await service
     .from('orders')
     .select('id,public_code')
+    .eq('business_id', BUSINESS_ID)
     .eq('payment_method', 'mercadopago');
   let everyMpOrderVerified = true;
   for (const row of mpOrders || []) {

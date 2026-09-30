@@ -18,6 +18,7 @@ import { randomUUID, randomBytes } from 'node:crypto';
 import {
   assertStagingCertificationTarget,
   verifyStagingCertificationIdentity,
+  verifyStagingCertificationOrder,
 } from './lib/staging-certification-target.mjs';
 
 const env = (name) => String(process.env[name] || '').trim();
@@ -26,7 +27,8 @@ const URL = env('SUPABASE_URL');
 const SERVICE = env('SUPABASE_SERVICE_ROLE_KEY');
 const ANON = env('SUPABASE_ANON_KEY');
 const BUSINESS = env('TABA_BUSINESS_ID');
-const CODE = process.argv[2];
+const preflightOnly = process.argv.includes('--preflight-only');
+const CODE = process.argv.slice(2).find((argument) => !argument.startsWith('--'));
 const certificationTarget = {
   supabaseUrl: URL,
   businessId: BUSINESS,
@@ -47,9 +49,22 @@ for (const [name, value] of Object.entries({
 })) {
   if (!value) { console.error(`Falta ${name}.`); process.exit(2); }
 }
-if (!CODE) { console.error('Indica el pedido: npm run certify:circuit:staging -- LT-00XX'); process.exit(2); }
+if (!preflightOnly && !CODE) { console.error('Indica el pedido: npm run certify:circuit:staging -- LT-00XX'); process.exit(2); }
 
 const service = createClient(URL, SERVICE, { auth: { autoRefreshToken: false, persistSession: false } });
+let pedido;
+try {
+  const identity = await verifyStagingCertificationIdentity(service, certificationTarget);
+  if (preflightOnly) {
+    console.log(JSON.stringify({ ok: true, readOnly: true, scope: 'staging_identity_only',
+      projectRef: identity.projectRef, businessId: identity.businessId, paymentEnvironment: 'test' }));
+    process.exit(0);
+  }
+  pedido = await verifyStagingCertificationOrder(service, certificationTarget, CODE);
+} catch (error) {
+  console.error(error.message);
+  process.exit(2);
+}
 const limpieza = [];
 let fallas = 0;
 const check = (ok, name, detail = '') => {
@@ -91,9 +106,6 @@ const fila = async (columns = '*') =>
     .eq('public_code', CODE).single()).data;
 
 try {
-  await verifyStagingCertificationIdentity(service, certificationTarget);
-  const pedido = await fila('id,status,revision,total,subtotal,discount_total,origin,customer_user_id');
-  if (!pedido) throw new Error('STAGING_CERTIFICATION_QA_ORDER_NOT_FOUND');
   console.log(`pedido ${CODE}: ${pedido.status} · $${pedido.total} · origin=${pedido.origin}\n`);
 
   const previo = await fila('status');
@@ -178,12 +190,19 @@ try {
   }
 
   // ── El cliente pide su código ────────────────────────────────────────────
+  if (fallas) throw new Error('STAGING_CERTIFICATION_STOPPED_BEFORE_CUSTOMER_CREDENTIAL_CHANGE');
+  const latest = await verifyStagingCertificationOrder(service, certificationTarget, CODE);
+  if (latest.id !== pedido.id || latest.customer_user_id !== pedido.customer_user_id) {
+    throw new Error('STAGING_CERTIFICATION_CUSTOMER_CHANGED');
+  }
   const email = `rc-customer-${randomUUID()}@staging.local`;
   const password = `Rc-${randomBytes(18).toString('base64url')}`;
-  await service.auth.admin.updateUserById(pedido.customer_user_id, { email, password, email_confirm: true });
+  const changed = await service.auth.admin.updateUserById(pedido.customer_user_id, { email, password, email_confirm: true });
+  if (changed.error) throw new Error('STAGING_CERTIFICATION_CUSTOMER_CREDENTIAL_UPDATE_FAILED');
   const customer = await anon();
   const { error: loginError } = await customer.auth.signInWithPassword({ email, password });
   check(!loginError, 'el cliente del pedido puede autenticarse', loginError?.message || pedido.customer_user_id);
+  if (loginError) throw new Error('STAGING_CERTIFICATION_CUSTOMER_LOGIN_FAILED');
 
   const nuevoToken = token();
   const recuperado = await customer.rpc('recover_order_tracking_access', {

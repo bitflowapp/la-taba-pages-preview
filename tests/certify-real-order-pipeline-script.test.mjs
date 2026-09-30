@@ -23,6 +23,11 @@ test('la ausencia deliberada de fixtures QA no muta el catálogo para forzar el 
   assert.doesNotMatch(source, /products'[\s\S]{0,120}update\(\{\s*available:/);
 });
 
+test('sin fixture el gate de aislamiento no aparece certificado y no se crean actores primero', () => {
+  assert.match(source, /if \(!qaProduct\)[\s\S]{0,180}false,[\s\S]{0,100}sin fixture QA disponible/);
+  assert.ok(source.indexOf('if (!realProduct)') < source.indexOf("await createActor('customer')"));
+});
+
 test('los actores operativos registran y cierran su sesión autoritativa', () => {
   assert.match(source, /client\.rpc\('identity_register_session'/);
   assert.match(source, /registration\?\.ok !== true/);

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -308,14 +308,24 @@ test('real entrypoints refuse missing isolation data and invalid customer access
   const temporary = mkdtempSync(join(root, 'taba-certifier-resources-'));
   try {
     const loader = join(temporary, 'loader.mjs');
-    const sdk = `export function createClient() {
+    const sdk = `import { appendFileSync } from 'node:fs';
+    const writeAttempt = name => {
+      appendFileSync(process.env.TABA_TEST_WRITE_LEDGER, name + '\\n');
+      throw new Error('CERTIFIER_WRITE_REACHED');
+    };
+    export function createClient() {
       const rows = JSON.parse(process.env.TABA_TEST_ROWS);
       return {
         from(table) {
           const filters = [];
           return {
             select() { return this; }, eq(k,v) { filters.push([k,v]); return this; },
-            limit() { return this; }, abortSignal() { return this; },
+            limit() { return this; }, order() { return this; }, abortSignal() { return this; },
+            then(resolve, reject) { return Promise.resolve({ data: [], error: null }).then(resolve, reject); },
+            insert() { return writeAttempt(table + '.insert'); },
+            update() { return writeAttempt(table + '.update'); },
+            upsert() { return writeAttempt(table + '.upsert'); },
+            delete() { return writeAttempt(table + '.delete'); },
             async maybeSingle() {
               const key = table === 'products' ? filters.find(([k]) => k === 'id')[1] : table;
               if (!(key in rows)) throw new Error('CERTIFIER_UNEXPECTED_QUERY');
@@ -323,12 +333,15 @@ test('real entrypoints refuse missing isolation data and invalid customer access
             },
           };
         },
+        rpc(name) { return writeAttempt('rpc.' + name); },
         auth: {
+          signInWithPassword() { return writeAttempt('auth.signInWithPassword'); },
           async getUser() { return process.env.TABA_TEST_TOKEN_EXPIRED === 'true'
             ? { error: { message: 'expired' } } : { data: { user: rows.tokenUser }, error: null }; },
           admin: {
             async getUserById() { return { data: { user: rows.authUser }, error: null }; },
-            async createUser() { throw new Error('CERTIFIER_ACTOR_REACHED'); },
+            async createUser() { return writeAttempt('auth.admin.createUser'); },
+            async updateUserById() { return writeAttempt('auth.admin.updateUserById'); },
           },
         },
       };
@@ -342,16 +355,22 @@ test('real entrypoints refuse missing isolation data and invalid customer access
       [operationalProductId]: realProduct, [isolationProductId]: qaProduct,
       orders: { id: sessionId, business_id: staging.businessId, status: 'received', customer_user_id: userId },
       business_members: null, authUser: { id: userId, is_anonymous: true }, tokenUser: { id: userId, is_anonymous: true } };
-    const invoke = (script, args, changes = {}, rowChanges = {}) => spawnSync(process.execPath, [
-      '--no-warnings', '--experimental-loader', pathToFileURL(loader).href,
-      fileURLToPath(new URL(`../scripts/${script}`, import.meta.url)), ...args,
-    ], { encoding: 'utf8', timeout: 20_000, windowsHide: true, env: { ...process.env,
-      SUPABASE_URL: staging.url, TABA_BUSINESS_ID: staging.businessId, TABA_CERTIFY_CONFIRM: confirmation,
-      SUPABASE_SERVICE_ROLE_KEY: 'fake', SUPABASE_ANON_KEY: 'fake',
-      TABA_CERTIFY_OPERATIONAL_PRODUCT_ID: operationalProductId, TABA_CERTIFY_ISOLATION_PRODUCT_ID: isolationProductId,
-      TABA_CERTIFY_CUSTOMER_ACCESS_TOKEN: '', TABA_TEST_TOKEN_EXPIRED: 'false',
-      TABA_TEST_ROWS: JSON.stringify({ ...rows, ...rowChanges }), ...changes,
-    } });
+    const ledger = join(temporary, 'writes.log');
+    const invoke = (script, args, changes = {}, rowChanges = {}) => {
+      writeFileSync(ledger, '');
+      const result = spawnSync(process.execPath, [
+        '--no-warnings', '--experimental-loader', pathToFileURL(loader).href,
+        fileURLToPath(new URL(`../scripts/${script}`, import.meta.url)), ...args,
+      ], { encoding: 'utf8', timeout: 20_000, windowsHide: true, env: { ...process.env,
+        SUPABASE_URL: staging.url, TABA_BUSINESS_ID: staging.businessId, TABA_CERTIFY_CONFIRM: confirmation,
+        SUPABASE_SERVICE_ROLE_KEY: 'fake', SUPABASE_ANON_KEY: 'fake',
+        TABA_CERTIFY_OPERATIONAL_PRODUCT_ID: operationalProductId, TABA_CERTIFY_ISOLATION_PRODUCT_ID: isolationProductId,
+        TABA_CERTIFY_CUSTOMER_ACCESS_TOKEN: '', TABA_TEST_TOKEN_EXPIRED: 'false',
+        TABA_TEST_WRITE_LEDGER: ledger,
+        TABA_TEST_ROWS: JSON.stringify({ ...rows, ...rowChanges }), ...changes,
+      } });
+      return { ...result, writes: readFileSync(ledger, 'utf8').split('\n').filter(Boolean) };
+    };
     for (const [changes, rowChanges, refusal] of [
       [{ TABA_CERTIFY_ISOLATION_PRODUCT_ID: '' }, {}, 'EXPLICIT_FIXTURES_REQUIRED'],
       [{}, { [isolationProductId]: null }, 'FIXTURE_UNAVAILABLE'],
@@ -362,11 +381,19 @@ test('real entrypoints refuse missing isolation data and invalid customer access
       assert.equal(result.status, 2, result.stderr);
       assert.ok(result.stderr.includes(refusal), result.stderr);
       assert.doesNotMatch(result.stderr, /ACTOR_REACHED/);
+      assert.deepEqual(result.writes, []);
     }
     const valid = invoke('certify-real-order-pipeline.mjs', ['--fixtures-preflight-only']);
     assert.ifError(valid.error);
     assert.equal(valid.status, 0, valid.stderr);
     assert.equal(JSON.parse(valid.stdout).scope, 'staging_identity_and_fixtures');
+    assert.deepEqual(valid.writes, []);
+    // The pipeline uses newly-created actors; the adjacent customer-token cases
+    // belong to the circuit. Valid fixtures must reach its first actor write.
+    const reachable = invoke('certify-real-order-pipeline.mjs', []);
+    assert.ifError(reachable.error);
+    assert.equal(reachable.status, 1, reachable.stderr);
+    assert.deepEqual(reachable.writes, ['auth.admin.createUser']);
     for (const [id, fixture] of [[operationalProductId, realProduct], [isolationProductId, qaProduct]]) {
       for (const is_alcoholic of [true, null, undefined]) {
         for (const args of [[], ['--fixtures-preflight-only']]) {
@@ -378,6 +405,7 @@ test('real entrypoints refuse missing isolation data and invalid customer access
           assert.ok(result.stderr.includes('FIXTURE_UNAVAILABLE'), result.stderr);
           assert.doesNotMatch(result.stderr, /ACTOR_REACHED/);
           assert.doesNotMatch(result.stdout, /staging_identity_and_fixtures/);
+          assert.deepEqual(result.writes, []);
         }
       }
     }
@@ -392,6 +420,7 @@ test('real entrypoints refuse missing isolation data and invalid customer access
       assert.equal(result.status, 2, result.stderr);
       assert.ok(result.stderr.includes(refusal), result.stderr);
       assert.doesNotMatch(result.stderr, /ACTOR_REACHED/);
+      assert.deepEqual(result.writes, []);
     }
   } finally {
     assert.equal(dirname(resolve(temporary)), root);

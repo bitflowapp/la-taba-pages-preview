@@ -86,12 +86,14 @@ for a coordinated test window and checking cleanup evidence.
 
 ## Evidence on 2026-09-30
 
-Read-only live inspection confirmed healthy staging and 12 commercial products;
-11 met the other product safety predicates before the alcohol guard was added.
-Alcohol metadata was not included in that read, so the revised eligible count
-has not been verified live. No isolation-origin product exists, so a
-mutating pipeline run remains blocked by QA fixture data. No fixture was fabricated
-or published. Live SQL confirmed service_role can execute the per-session release
+Read-only live inspection confirmed healthy staging and 12 QA-business products.
+The updated aggregate includes alcohol metadata: 11 operational products meet all
+fixture predicates with explicit nonalcoholic status; zero eligible isolation-origin
+products exist. No alcoholic or unknown-alcohol rows were found. Service-role
+INSERT privilege on products is present, so fixture creation is not blocked by
+that permission. No fixture was created or published: safe actor ownership and
+crash reconciliation remain unmet prerequisites. Live SQL confirmed service_role
+can execute the per-session release
 API, authenticated cannot, and create_checkout_session does not call a global sweep.
 No database migration or deployment is needed for that scoped API change.
 
@@ -108,9 +110,10 @@ or digest comparison only for enumerated safe configuration. No credential value
 or hashes were recorded. Provider seller validity, OAuth/PKCE, webhooks and refunds
 remain unexercised despite the verified test declarations.
 
-Exact commit `21181c191ae205a89772b9ee934b7f2557a2a9eb` passed GitHub Actions
-[Validate release candidate](https://github.com/bitflowapp/la-taba-pages-preview/actions/runs/36676959884).
-The continuation requires its own CI run after it is pushed.
+Exact commit `768b8d4397c7dabfd4ae5b9a2215cb6a58dbe951` passed all three GitHub Actions
+jobs in [Validate release candidate](https://github.com/bitflowapp/la-taba-pages-preview/actions/runs/36689509069),
+including the full browser E2E step. This CI is separate from live staging and
+physical-phone/Panel certification. Any subsequent amendment needs its own CI.
 
 Targeted regression command:
 
@@ -124,14 +127,18 @@ access, cross-business/customer/request checkout refusal, protected payment stat
 alcoholic or unknown-metadata fixtures in either selection, partial actor failures,
 cleanup failures, circuit cancellation/classification
 postconditions, interruption and idempotent release.
+Refused entrypoint cases explicitly record zero insert/update/upsert/delete/RPC
+or actor/auth write attempts. A valid-fixture positive control reaches exactly the
+first fake actor write, showing that refusal tests do not stop at an unrelated
+missing customer-token gate. All SDK operations in this regression are local doubles.
 No full local build, browser or physical-device run was performed.
 
 The earlier independent max-effort Opus review covered the initial target guard,
 not this continuation. Two continuation attempts used `--effort max`, one turn,
 disabled tools/hooks/MCP, and a 420-second deadline. Both timed out without
 findings (elapsed 442 and 441 seconds). Only each attempt's own child was stopped.
-No completed independent sign-off exists for the corrected head, which must stay
-in draft. No absence-of-findings approval is inferred.
+Those timeouts provide no independent sign-off for the broader cleanup changes.
+No absence-of-findings approval is inferred; the PR remains in draft.
 
 A subsequent independent read-only review of `58b3c4f` identified that fixture
 preflight could accept alcohol while the pipeline always submits no age consent.
@@ -140,6 +147,15 @@ Preflight now selects alcohol metadata and requires strict boolean false for bot
 products. Local tests exercise both selections with true, null, missing and malformed
 metadata, and both pipeline modes refuse before actors.
 Other independent review findings remain pending; no backend write was needed.
+
+A later bounded Opus review of the exact `768b8d4` alcohol amendment completed
+successfully with `--effort max`, tools/hooks/MCP disabled and a 720-second cap
+(356 seconds elapsed). It approved the guard and identified a nonblocking gap in
+the proof of zero writes. The write-attempt ledger and positive control above
+address that gap; the 52 targeted tests passed again. Its inferred pipeline
+customer-token prerequisite belonged to the adjacent circuit cases and was not
+a pipeline defect. This review does not cover the whole repository, the later
+test-only strengthening, or live execution.
 
 ## Native preflight failure remains unproven
 
@@ -158,10 +174,29 @@ The original failed evidence is preserved and the root cause remains unresolved.
 
 ## Real access and certification blockers
 
-Physical Moto G15, notebook Panel and staging mutation ownership remain with the
-parent/APEX coordination. No viewport substitutes for physical evidence. The
-pipeline needs an approved isolated QA fixture; the circuit needs the intended
-phone customer's current session and fresh order. No pricing/catalog publication
-is authorized by this source fix. MP sandbox OAuth/PKCE, seller authority,
-correlation, webhooks, refunds and live concurrency remain unexercised.
+The parent granted a staging backend slot; physical Moto G15 and UI remain with
+APEX. No viewport substitutes for physical evidence. That backend slot was not
+used for writes because the following run prerequisites could not be established:
+
+- No existing member in the certifier's synthetic namespace or current task tag
+  was found. This is not a claim that the QA business has no other test accounts.
+  Historical shared QA credentials do not prove exclusive ownership by this task.
+  The current actor helper creates password-backed accounts; the run's instruction
+  prohibits creating persistent access credentials.
+- Cleanup uses in-memory callbacks. Hard crashes and lost server acknowledgements
+  can leave actors, orders, reservations or stock changes without a durable record
+  available for exclusively scoped reconciliation.
+- The repository's QA-origin order classification suppresses pending new-order notifications in
+  the order-items transaction, but Gate 1 uses an operational commercial/demo
+  product. Its order is only classified QA during cleanup. No guarantee that all
+  real notification or preparation consumers are disabled was established. The QA
+  business already has 16 pending new-order events; these unrelated events were
+  left untouched. Staging also lacks the print-settings, print-jobs and local-devices
+  tables used by the current print-agent path.
+
+An isolated fixture could use generic nonalcoholic test data, but creating it
+alone does not resolve actor ownership, notification isolation or crash recovery.
+No order or fixture was written under this slot. The circuit still needs the
+intended phone customer's current session and fresh order. MP sandbox OAuth/PKCE,
+seller authority, correlation, webhooks, refunds and live concurrency remain unexercised.
 No production readiness, financial transaction or customer notification is claimed.

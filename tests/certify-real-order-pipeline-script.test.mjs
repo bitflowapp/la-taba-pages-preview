@@ -2,45 +2,53 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-const source = readFileSync(
-  new URL('../scripts/certify-real-order-pipeline.mjs', import.meta.url),
-  'utf8',
-);
+const source = readFileSync(new URL('../scripts/certify-real-order-pipeline.mjs', import.meta.url), 'utf8');
+const circuit = readFileSync(new URL('../scripts/certify-order-operational-circuit.mjs', import.meta.url), 'utf8');
+const resources = readFileSync(new URL('../scripts/lib/staging-certification-resources.mjs', import.meta.url), 'utf8');
 
-test('la certificación integral queda fijada al staging exacto', () => {
-  assert.match(source, /const STAGING_PROJECT_REF = 'ukxqbgswjlibmnjemrzd'/);
-  assert.match(source, /SUPABASE_URL !== STAGING_URL/);
-  assert.match(source, /TABA_CERTIFY_CONFIRM/);
+test('certification rejects unsafe targets before constructing a privileged client', () => {
+  for (const script of [source, circuit]) {
+    assert.ok(script.indexOf('assertStagingCertificationTarget(certificationTarget)')
+      < script.indexOf('const service = boundedCertificationClient('));
+    assert.ok(script.includes('await verifyStagingCertificationIdentity(service, certificationTarget)'));
+    assert.ok(!script.includes('process.exit('));
+  }
 });
 
-test('la ausencia deliberada de fixtures QA no muta el catálogo para forzar el gate', () => {
-  assert.match(source, /if \(!qaProduct\)/);
-  assert.match(source, /sin fixture QA disponible; no se mutó el catálogo/);
-  assert.doesNotMatch(source, /products'[\s\S]{0,120}update\(\{\s*available:/);
+test('explicit fixtures are verified before actors and catalog data is never published', () => {
+  assert.ok(source.indexOf('await verifyCertificationFixtures(') < source.indexOf("await createActor('customer')"));
+  assert.ok(source.includes('TABA_CERTIFY_OPERATIONAL_PRODUCT_ID'));
+  assert.ok(source.includes('TABA_CERTIFY_ISOLATION_PRODUCT_ID'));
+  assert.doesNotMatch(source, /[.]from[(]'products'[)][\s\S]{0,120}[.](insert|update|upsert)[(]/);
+  assert.doesNotMatch(source, /LT-00(?:30|33|34|35)/);
 });
 
-test('los actores operativos registran y cierran su sesión autoritativa', () => {
-  assert.match(source, /client\.rpc\('identity_register_session'/);
-  assert.match(source, /registration\?\.ok !== true/);
-  assert.match(source, /!registration\?\.session_id/);
-  assert.match(source, /client\.rpc\('identity_close_own_session'/);
-  assert.match(source, /role === 'rider' \? 'rider_android' : 'panel_web'/);
+test('both scripts use the shared session and checked cleanup lifecycle', () => {
+  for (const script of [source, circuit]) {
+    assert.ok(script.includes('return createCertificationActor('));
+    assert.match(script, /await (cleanup|limpieza)[.]run[(][)]/);
+  }
+  assert.ok(resources.includes('identity_register_session'));
+  assert.ok(resources.includes('identity_close_own_session'));
 });
 
-test('el circuito certifica el recibo GPS y el DTO público, no sólo la ausencia de errores', () => {
-  assert.match(source, /delivery_location_source: 'map_pin'/);
-  assert.match(source, /delivery_location_confirmed_at: new Date\(\)\.toISOString\(\)/);
-  assert.match(source, /client\.rpc\('publish_rider_location_receipt'/);
-  assert.match(source, /gpsReceipt\?\.ok === true && gpsReceipt\?\.code === 'accepted'/);
-  assert.match(source, /throttledReceipt\?\.ok === false && throttledReceipt\?\.code === 'throttled'/);
-  assert.match(source, /location_quality === 'valid'/);
-  assert.match(source, /terminal_visible_until/);
-  assert.match(source, /!terminalTracking\?\.rider_location/);
+test('the pipeline checks GPS receipts and the public tracking DTO', () => {
+  assert.ok(source.includes("gpsReceipt?.ok === true && gpsReceipt?.code === 'accepted'"));
+  assert.ok(source.includes("throttledReceipt?.ok === false && throttledReceipt?.code === 'throttled'"));
+  assert.ok(source.includes("location_quality === 'valid'"));
+  assert.ok(source.includes('terminal_visible_until'));
 });
 
-test('la limpieza conserva auditoría, repone stock y sus errores hacen fallar el gate', () => {
-  assert.match(source, /classify_order_as_qa/);
-  assert.match(source, /apply_inventory_movement/);
-  assert.match(source, /p_movement_type: 'manual_adjustment'/);
-  assert.match(source, /failures \+= 1;\s*console\.error\(`limpieza:/);
+test('only the run checkout is released and external certification is never implied', () => {
+  assert.ok(source.includes('await releaseCertificationCheckout('));
+  assert.doesNotMatch(source, /[.]rpc[(]'(sweep_expired_checkout_sessions|expire_checkout_sessions|list_stock_reservation_alerts|list_unfinalized_paid_checkouts)'/);
+  assert.ok(source.includes('GLOBAL_EXPIRY_CRON_CERTIFICATION NOT_EXERCISED'));
+  assert.ok(source.includes('PAYMENT_PROVIDER_CERTIFICATION NOT_EXERCISED'));
+  assert.ok(source.includes('PREEXISTING_QA_ORDER_BASELINE NOT_EXERCISED:EMPTY'));
+});
+
+test('the circuit validates an existing customer session without rotating credentials', () => {
+  assert.ok(circuit.includes('TABA_CERTIFY_CUSTOMER_ACCESS_TOKEN'));
+  assert.ok(circuit.includes('await verifyCertificationCustomer(customer, customerToken, pedido.customer_user_id)'));
+  assert.doesNotMatch(circuit, /updateUserById|email_confirm|signInWithPassword/);
 });

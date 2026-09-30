@@ -119,11 +119,13 @@ export async function verifyCertificationFixtures(service, target, { operational
   for (const [id, origins] of [[operationalProductId, ['commercial', 'demo_fixture']],
     [isolationProductId, ['test_only', 'staging_only']]]) {
     const row = requireCertificationResult(await service.from('products')
-      .select('id,business_id,name,price,stock,catalog_origin,is_active,available,is_verified,merchant_available,price_status')
+      .select('id,business_id,name,price,stock,catalog_origin,is_active,available,is_verified,merchant_available,price_status,is_alcoholic')
       .eq('business_id', target.businessId).eq('id', id).abortSignal(AbortSignal.timeout(timeoutMs)).maybeSingle(), 'FIXTURE_READ');
     if (!row || row.id !== id || row.business_id !== target.businessId || !origins.includes(row.catalog_origin)
       || row.is_active !== true || row.available !== true || row.is_verified !== true
       || row.merchant_available !== true || row.price_status !== 'confirmed'
+      // This harness submits no age confirmation; unknown metadata is unsafe.
+      || row.is_alcoholic !== false
       || !Number.isFinite(Number(row.price)) || Number(row.price) <= 0
       || !Number.isInteger(Number(row.stock)) || Number(row.stock) < 2) {
       throw new Error('STAGING_CERTIFICATION_FIXTURE_UNAVAILABLE');

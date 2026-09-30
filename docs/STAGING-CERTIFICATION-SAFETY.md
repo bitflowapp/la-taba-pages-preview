@@ -25,6 +25,13 @@ The pipeline requires both `TABA_CERTIFY_OPERATIONAL_PRODUCT_ID` and
 `TABA_CERTIFY_ISOLATION_PRODUCT_ID`, distinct UUIDs selected for this coordinated
 QA run. Each must belong to the designated QA business and be active, available,
 verified, merchant available, have a confirmed positive price and stock >= 2.
+Both must explicitly have `is_alcoholic: false`; missing, null or malformed alcohol
+metadata is refused. The helper submits `age_confirmed: false` and never invents
+age verification or consent. Order core in
+`20260812220000_business_operations_checkout_enforcement.sql` and the current
+checkout implementation in `20260813020000_checkout_pro_carries_customer_notes.sql`
+require age confirmation for alcoholic items, so either fixture must be refused
+during preflight before Gate 1 creates actors or orders.
 The operational product may be `commercial` or `demo_fixture`; the isolation
 product must be `test_only` or `staging_only`, matching backend classification.
 All prerequisites are checked before actors are created. The helper never
@@ -80,7 +87,9 @@ for a coordinated test window and checking cleanup evidence.
 ## Evidence on 2026-09-30
 
 Read-only live inspection confirmed healthy staging and 12 commercial products;
-11 meet the product safety predicates. No isolation-origin product exists, so a
+11 met the other product safety predicates before the alcohol guard was added.
+Alcohol metadata was not included in that read, so the revised eligible count
+has not been verified live. No isolation-origin product exists, so a
 mutating pipeline run remains blocked by QA fixture data. No fixture was fabricated
 or published. Live SQL confirmed service_role can execute the per-session release
 API, authenticated cannot, and create_checkout_session does not call a global sweep.
@@ -109,10 +118,11 @@ Targeted regression command:
 node --import ./tests/test-bootstrap.mjs --test --test-concurrency=1 tests/staging-certification-resources.test.mjs tests/staging-certification-target.test.mjs tests/certify-real-order-pipeline-script.test.mjs tests/business-order-recovery.test.mjs tests/mercadopago-payment-recovery.test.mjs
 ```
 
-Continuation checkpoint: 50 passed, 0 failed. Includes real entrypoint execution
+Continuation checkpoint: 52 passed, 0 failed. Includes real entrypoint execution
 with mutation-free SDK doubles, explicit fixture refusal, wrong/expired customer
 access, cross-business/customer/request checkout refusal, protected payment states,
-partial actor failures, cleanup failures, circuit cancellation/classification
+alcoholic or unknown-metadata fixtures in either selection, partial actor failures,
+cleanup failures, circuit cancellation/classification
 postconditions, interruption and idempotent release.
 No full local build, browser or physical-device run was performed.
 
@@ -120,8 +130,16 @@ The earlier independent max-effort Opus review covered the initial target guard,
 not this continuation. Two continuation attempts used `--effort max`, one turn,
 disabled tools/hooks/MCP, and a 420-second deadline. Both timed out without
 findings (elapsed 442 and 441 seconds). Only each attempt's own child was stopped.
-The continuation, including its final cleanup correction, remains independently
-unaudited and must stay in draft. No absence-of-findings approval is inferred.
+No completed independent sign-off exists for the corrected head, which must stay
+in draft. No absence-of-findings approval is inferred.
+
+A subsequent independent read-only review of `58b3c4f` identified that fixture
+preflight could accept alcohol while the pipeline always submits no age consent.
+Two regression cases reproduced the missing rejection before the correction.
+Preflight now selects alcohol metadata and requires strict boolean false for both
+products. Local tests exercise both selections with true, null, missing and malformed
+metadata, and both pipeline modes refuse before actors.
+Other independent review findings remain pending; no backend write was needed.
 
 ## Native preflight failure remains unproven
 

@@ -113,7 +113,8 @@ test('a failed session close or membership revoke is reported while the ban stil
 });
 
 const product = { business_id: staging.businessId, name: 'QA', price: 1, stock: 5,
-  is_active: true, available: true, is_verified: true, merchant_available: true, price_status: 'confirmed' };
+  is_active: true, available: true, is_verified: true, merchant_available: true,
+  price_status: 'confirmed', is_alcoholic: false };
 const realProduct = { ...product, id: operationalProductId, catalog_origin: 'commercial' };
 const qaProduct = { ...product, id: isolationProductId, catalog_origin: 'test_only' };
 const selection = { operationalProductId, isolationProductId };
@@ -141,6 +142,21 @@ test('wrong tenant, disabled, unavailable, unverified, changed-price and exhaust
   await assert.rejects(verifyCertificationFixtures(queryClient(query => ok(query.filters.some(([, id]) => id === operationalProductId)
     ? realProduct : { ...qaProduct, catalog_origin: 'commercial' })), target, selection), /FIXTURE_UNAVAILABLE/);
 });
+
+for (const [id, fixture, label] of [[operationalProductId, realProduct, 'operational'],
+  [isolationProductId, qaProduct, 'isolation']]) {
+  test(`${label} fixture refuses alcohol and unknown alcohol metadata before operational work`, async () => {
+    for (const is_alcoholic of [true, null, undefined, 0, 'false']) {
+      const client = queryClient(query => {
+        const selectedId = query.filters.find(([key]) => key === 'id')[1];
+        return ok(selectedId === id ? { ...fixture, is_alcoholic }
+          : selectedId === operationalProductId ? realProduct : qaProduct);
+      });
+      await assert.rejects(verifyCertificationFixtures(client, target, selection), /FIXTURE_UNAVAILABLE/);
+      assert.ok(client.queries.every(query => query.columns.split(',').includes('is_alcoholic')));
+    }
+  });
+}
 
 const checkout = { id: sessionId, business_id: staging.businessId, customer_id: userId,
   client_request_id: requestId, status: 'created', created_at: '2026-01-01T00:00:00Z', expires_at: '2026-01-01T00:01:00Z' };
@@ -351,6 +367,20 @@ test('real entrypoints refuse missing isolation data and invalid customer access
     assert.ifError(valid.error);
     assert.equal(valid.status, 0, valid.stderr);
     assert.equal(JSON.parse(valid.stdout).scope, 'staging_identity_and_fixtures');
+    for (const [id, fixture] of [[operationalProductId, realProduct], [isolationProductId, qaProduct]]) {
+      for (const is_alcoholic of [true, null, undefined]) {
+        for (const args of [[], ['--fixtures-preflight-only']]) {
+          const result = invoke('certify-real-order-pipeline.mjs', args, {}, {
+            [id]: { ...fixture, is_alcoholic },
+          });
+          assert.ifError(result.error);
+          assert.equal(result.status, 2, result.stderr);
+          assert.ok(result.stderr.includes('FIXTURE_UNAVAILABLE'), result.stderr);
+          assert.doesNotMatch(result.stderr, /ACTOR_REACHED/);
+          assert.doesNotMatch(result.stdout, /staging_identity_and_fixtures/);
+        }
+      }
+    }
     for (const [changes, rowChanges, refusal] of [
       [{}, {}, 'CUSTOMER_SESSION_REQUIRED'],
       [{ TABA_CERTIFY_CUSTOMER_ACCESS_TOKEN: 'fake', TABA_TEST_TOKEN_EXPIRED: 'true' }, {}, 'CUSTOMER_SESSION_READ_FAILED'],

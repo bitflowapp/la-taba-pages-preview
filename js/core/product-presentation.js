@@ -164,7 +164,7 @@ export function cardTitle(product = {}) {
  * gas'`. Dos aguas del mismo estante, con el mismo dato, escritas distinto: una
  * decía el atributo dos veces y la otra una.
  */
-const ATRIBUTOS_QUE_NO_SON_NOMBRE = Object.freeze(['sin gas', 'con gas', 'original']);
+const ATRIBUTOS_QUE_NO_SON_NOMBRE = Object.freeze(['sin gas', 'con gas', 'sabor original', 'original']);
 
 /** ¿El título ya dice que es la versión sin azúcar? */
 function tituloDiceSinAzucar(product) {
@@ -289,7 +289,7 @@ export function cardPresentationLine(product = {}) {
   // desaparece de la tarjeta.
   const nombre = normalizar(cardTitle(product));
   const varianteAporta = variante
-    && !nombre.includes(normalizar(variante))
+    && !nombre.includes(normalizar(variante).replace(/,\s*/g, ' '))
     && normalizar(variante) !== 'unidad'
     && !varianteEsLaCapacidad(variante, capacidad, product)
     // «Original» no distingue: lo que distingue es que NO diga Zero.

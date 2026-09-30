@@ -56,7 +56,7 @@
   {
     "sku": "coca-cola-original-2250ml-local",
     "name": "Coca-Cola Sabor Original 2,25 L",
-    "title": "Coca-Cola Sabor",
+    "title": "Coca-Cola",
     "presentation": "2,25 L"
   },
   {
@@ -99,13 +99,13 @@
     "sku": "glaciar-con-gas-1500ml",
     "name": "Glaciar Con Gas Baja en Sodio 1,5 L",
     "title": "Glaciar Con Gas Baja en Sodio",
-    "presentation": "1,5 L · Con gas, baja en sodio"
+    "presentation": "1,5 L"
   },
   {
     "sku": "glaciar-sin-gas-1500ml",
     "name": "Glaciar Sin Gas Baja en Sodio 1,5 L",
     "title": "Glaciar Sin Gas Baja en Sodio",
-    "presentation": "1,5 L · Sin gas, baja en sodio"
+    "presentation": "1,5 L"
   },
   {
     "sku": "heineken-710ml",

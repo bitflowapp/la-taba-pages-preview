@@ -18,6 +18,7 @@ test('46 current commercial names have reviewed titles and presentations', () =>
     assert.ok(p.title.trim().length > 2);
     assert.doesNotMatch(p.title, /(?:^|\s)(?:undefined|null|SKU|importado|producto genérico)(?:\s|$)/i);
     assert.doesNotMatch(p.title, /\s\d+(?:[,.]\d+)?\s*(?:ml|L|g|kg)$/);
+    assert.doesNotMatch(p.title, /\sSabor$/i);
     assert.ok(p.presentation.length > 0);
   }
 });
@@ -27,6 +28,7 @@ test('capacity is removed only if the structured identity confirms it', () => {
   assert.equal(cardTitle({ name: 'Heineken Lager 710 ml', capacity_value: 473, capacity_unit: 'ml' }), 'Heineken Lager 710 ml');
   assert.equal(cardTitle({ name: 'Heineken Lager 710 ml' }), 'Heineken Lager 710 ml');
   assert.equal(cardTitle({ name: 'Hielo Cristal 4 kg', capacity_value: 4000, capacity_unit: 'g' }), 'Hielo Cristal');
+  assert.equal(cardTitle({ name: 'Coca-Cola Sabor Original 2,25 L', capacity_value: 2250, capacity_unit: 'ml' }), 'Coca-Cola');
 });
 
 test('pending wins over contradictory flags and every residual price', () => {

@@ -6,21 +6,24 @@
  * Usa actores con rol real —no el service_role— para que cada RPC evalúe su
  * `auth.uid()` y sus políticas igual que en la operación.
  *
- * El cliente de un pedido de Mercado Pago es un usuario anónimo creado en el
- * navegador: `finalize_paid_checkout_session` guarda sólo el HASH de su token
- * de seguimiento, así que el texto plano no existe de este lado. Para pedirle
- * el código de entrega como lo haría su app, se le asignan credenciales a ese
- * mismo usuario y se rota el token con `recover_order_tracking_access`, que es
- * exactamente el contrato de recuperación que el producto ya expone.
+ * Requiere la sesion vigente del cliente QA que creo el pedido. Nunca cambia
+ * email/password ni toma control de una cuenta para completar la prueba.
  */
 import { createClient } from '@supabase/supabase-js';
-import { randomUUID, randomBytes } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import {
   assertStagingCertificationTarget,
   verifyStagingCertificationIdentity,
   verifyStagingCertificationOrder,
 } from './lib/staging-certification-target.mjs';
 
+import {
+  boundedCertificationClient, certificationCleanup, certificationInterruption,
+  createCertificationActor, requireCertificationResult, verifyCertificationCustomer,
+  retireCertificationCircuitOrder,
+} from './lib/staging-certification-resources.mjs';
+
+async function runCertification() {
 const env = (name) => String(process.env[name] || '').trim();
 
 const URL = env('SUPABASE_URL');
@@ -39,7 +42,7 @@ try {
   assertStagingCertificationTarget(certificationTarget);
 } catch (error) {
   console.error(error.message);
-  process.exit(2);
+  process.exitCode = 2; return;
 }
 for (const [name, value] of Object.entries({
   SUPABASE_URL: URL,
@@ -47,97 +50,86 @@ for (const [name, value] of Object.entries({
   SUPABASE_ANON_KEY: ANON,
   TABA_BUSINESS_ID: BUSINESS,
 })) {
-  if (!value) { console.error(`Falta ${name}.`); process.exit(2); }
+  if (!value) { console.error(`Falta ${name}.`); process.exitCode = 2; return; }
 }
-if (!preflightOnly && !CODE) { console.error('Indica el pedido: npm run certify:circuit:staging -- LT-00XX'); process.exit(2); }
+if (!preflightOnly && !CODE) { console.error('Indica el pedido: npm run certify:circuit:staging -- LT-00XX'); process.exitCode = 2; return; }
 
-const service = createClient(URL, SERVICE, { auth: { autoRefreshToken: false, persistSession: false } });
+const interruption = certificationInterruption();
+try {
+const service = boundedCertificationClient(createClient, URL, SERVICE, {}, interruption.signal);
+const cleanupService = boundedCertificationClient(createClient, URL, SERVICE);
+const clientFor = ({ cleanup: cleaning = false, accessToken } = {}) =>
+  boundedCertificationClient(createClient, URL, ANON,
+    accessToken ? { global: { headers: { Authorization: `Bearer ${accessToken}` } } } : {},
+    cleaning ? undefined : interruption.signal);
 let pedido;
 try {
   const identity = await verifyStagingCertificationIdentity(service, certificationTarget);
   if (preflightOnly) {
     console.log(JSON.stringify({ ok: true, readOnly: true, scope: 'staging_identity_only',
       projectRef: identity.projectRef, businessId: identity.businessId, paymentEnvironment: 'test' }));
-    process.exit(0);
+    return;
   }
   pedido = await verifyStagingCertificationOrder(service, certificationTarget, CODE);
+  if (pedido.status !== 'received' || pedido.assigned_rider_user_id) {
+    throw new Error('STAGING_CERTIFICATION_FRESH_UNASSIGNED_QA_ORDER_REQUIRED');
+  }
 } catch (error) {
   console.error(error.message);
-  process.exit(2);
+  process.exitCode = 2; return;
 }
-const limpieza = [];
+const customerToken = env('TABA_CERTIFY_CUSTOMER_ACCESS_TOKEN');
+const customer = clientFor({ accessToken: customerToken });
+try { await verifyCertificationCustomer(customer, customerToken, pedido.customer_user_id); }
+catch (error) { console.error(error.message); process.exitCode = 2; return; }
+const limpieza = certificationCleanup();
 let fallas = 0;
 const check = (ok, name, detail = '') => {
   if (!ok) fallas += 1;
-  console.log(`${ok ? 'OK  ' : 'FAIL'}  ${name}${detail ? `  — ${detail}` : ''}`);
+  console.log(`${ok ? 'OK  ' : 'FAIL'}  ${name}${detail ? `  - ${detail}` : ''}`);
+  if (!ok) throw new Error('STAGING_CERTIFICATION_CHECK_FAILED');
 };
 const rid = (prefix) => `${prefix}_${randomBytes(12).toString('hex')}`;
 const token = () => randomBytes(32).toString('hex');
 
-async function anon() {
-  return createClient(URL, ANON, { auth: { autoRefreshToken: false, persistSession: false } });
-}
-
 async function actor(role) {
-  const email = `rc-${role}-${randomUUID()}@staging.local`;
-  const password = `Rc-${randomBytes(18).toString('base64url')}`;
-  const { data, error } = await service.auth.admin.createUser({ email, password, email_confirm: true });
-  if (error) throw new Error(`actor ${role}: ${error.message}`);
-  const userId = data.user.id;
-  const { error: memberError } = await service.from('business_members')
-    .insert({ business_id: BUSINESS, user_id: userId, role, is_active: true });
-  if (memberError) throw new Error(`rol ${role}: ${memberError.message}`);
-  // El actor no se borra: quedó como sujeto de los eventos de auditoría del
-  // pedido y borrarlo destruiría esa evidencia. Se le retira la capacidad de
-  // operar, que es lo que hace falta.
-  limpieza.push(async () => {
-    await service.from('business_members').update({ is_active: false })
-      .eq('business_id', BUSINESS).eq('user_id', userId);
-    await service.auth.admin.updateUserById(userId, { ban_duration: '876000h' });
-  });
-  const client = await anon();
-  const { error: signInError } = await client.auth.signInWithPassword({ email, password });
-  if (signInError) throw new Error(`login ${role}: ${signInError.message}`);
-  return { userId, client };
+  return createCertificationActor({ service, cleanupService, clientFor,
+    target: certificationTarget, role, cleanup: limpieza });
 }
 
-const fila = async (columns = '*') =>
-  (await service.from('orders').select(columns).eq('business_id', BUSINESS)
-    .eq('public_code', CODE).single()).data;
+const fila = async (columns = '*') => {
+  const row = requireCertificationResult(await service.from('orders').select(columns)
+    .eq('business_id', BUSINESS).eq('id', pedido.id).eq('customer_user_id', pedido.customer_user_id)
+    .eq('public_code', CODE).single(), 'ORDER_READ');
+  if (!row) throw new Error('STAGING_CERTIFICATION_QA_ORDER_NOT_FOUND');
+  return row;
+};
 
 try {
   console.log(`pedido ${CODE}: ${pedido.status} · $${pedido.total} · origin=${pedido.origin}\n`);
 
-  const previo = await fila('status');
-  const yaAsignadoPre = ['assigned','picked_up','on_the_way','arrived','delivered'].includes(previo.status);
+  const previo = await fila('status,assigned_rider_user_id');
+  if (previo.status !== 'received' || previo.assigned_rider_user_id) {
+    throw new Error('STAGING_CERTIFICATION_ORDER_CHANGED_BEFORE_ACTORS');
+  }
   const staff = await actor('staff');
+  limpieza.add('qa_order', () => retireCertificationCircuitOrder({
+    service: cleanupService, staffClient: staff.cleanupClient, target: certificationTarget,
+    orderId: pedido.id, customerId: pedido.customer_user_id, publicCode: CODE,
+    idempotencyKey: rid('rc_retire'),
+  }));
   const rider = await actor('rider');
 
   // ── Panel ────────────────────────────────────────────────────────────────
-  const bandeja = yaAsignadoPre ? { data: [{ public_code: CODE }] } : await staff.client.from('orders')
+  const bandeja = await staff.client.from('orders')
     .select('public_code,status').eq('business_id', BUSINESS).eq('origin', 'production')
     .in('status', ['received', 'accepted', 'preparing', 'ready']);
   check(!bandeja.error && (bandeja.data || []).some((r) => r.public_code === CODE),
     'el Panel ve el pedido en su bandeja', JSON.stringify((bandeja.data || []).map((r) => r.public_code)));
 
-  // El script es reanudable: un pedido que ya avanzó no se vuelve a empujar por
-  // estados que no admite, y si quedó tomado por un rider anterior el Panel se
-  // lo reasigna al actual en vez de trabarse.
   let actual = await fila('status,revision,assigned_rider_user_id');
-  const yaAsignado = ['assigned', 'picked_up', 'on_the_way', 'arrived'].includes(actual.status);
-  if (yaAsignado && actual.assigned_rider_user_id !== rider.userId) {
-    const reasign = await staff.client.rpc('assign_order_rider', {
-      p_order_id: pedido.id,
-      p_expected_status: actual.status,
-      p_expected_rider_user_id: actual.assigned_rider_user_id,
-      p_new_rider_user_id: rider.userId,
-    });
-    actual = await fila('status,revision,assigned_rider_user_id');
-    check(!reasign.error && actual.assigned_rider_user_id === rider.userId,
-      'el Panel reasigna el pedido al rider de esta corrida', reasign.error?.message || actual.status);
-  }
 
-  for (const estado of yaAsignado ? [] : ['accepted', 'preparing', 'ready']) {
+  for (const estado of ['accepted', 'preparing', 'ready']) {
     const r = await staff.client.rpc('transition_order', {
       p_order_id: pedido.id,
       p_expected_revision: actual.revision,
@@ -148,30 +140,30 @@ try {
     check(!r.error && actual.status === estado, `el Panel lo mueve a ${estado}`, r.error?.message || actual.status);
   }
 
-  const atrasada = yaAsignadoPre ? { error: new Error('n/a') } : await staff.client.rpc('transition_order', {
+  const atrasada = await staff.client.rpc('transition_order', {
     p_order_id: pedido.id, p_expected_revision: 1, p_new_status: 'delivered', p_idempotency_key: rid('rc_stale'),
   });
   actual = await fila('status,revision');
-  check(yaAsignadoPre || actual.status === 'ready', 'una revisión atrasada no puede mover el pedido',
+  check(Boolean(atrasada.error) && actual.status === 'ready', 'una revisión atrasada no puede mover el pedido',
     atrasada.error ? 'rechazado' : actual.status);
 
   // ── Rider ────────────────────────────────────────────────────────────────
-  const cola = yaAsignadoPre ? { data: [{ public_code: CODE }] } : await rider.client.rpc('list_available_rider_orders', { p_business_id: BUSINESS });
+  const cola = await rider.client.rpc('list_available_rider_orders', { p_business_id: BUSINESS });
   check(!cola.error && (cola.data || []).some((o) => o.public_code === CODE),
     'el rider ve el pedido asignable', cola.error?.message || String((cola.data || []).length));
 
   const claimKey = rid('rc_claim');
-  const claim = yaAsignadoPre ? { error: null } : await rider.client.rpc('claim_delivery_order', {
+  const claim = await rider.client.rpc('claim_delivery_order', {
     p_business_id: BUSINESS, p_public_code: CODE, p_expected_revision: actual.revision, p_idempotency_key: claimKey,
   });
   check(!claim.error, 'el rider toma el pedido', claim.error?.message || 'ok');
   actual = await fila('status,revision,assigned_rider_user_id');
   check(actual.assigned_rider_user_id === rider.userId, 'queda asignado a ese rider', actual.status);
 
-  const otra = yaAsignadoPre ? { data: { idempotent_no_op: true } } : await rider.client.rpc('claim_delivery_order', {
+  const otra = await rider.client.rpc('claim_delivery_order', {
     p_business_id: BUSINESS, p_public_code: CODE, p_expected_revision: actual.revision, p_idempotency_key: claimKey,
   });
-  check(otra.data?.idempotent_no_op === true || !otra.error, 'tomarlo dos veces es un no-op idempotente',
+  check(!otra.error && otra.data?.idempotent_no_op === true, 'tomarlo dos veces es un no-op idempotente',
     JSON.stringify(otra.data || otra.error?.message).slice(0, 60));
 
   // El rider no usa `transition_order`: tiene sus propios contratos, y el
@@ -190,19 +182,12 @@ try {
   }
 
   // ── El cliente pide su código ────────────────────────────────────────────
-  if (fallas) throw new Error('STAGING_CERTIFICATION_STOPPED_BEFORE_CUSTOMER_CREDENTIAL_CHANGE');
+  if (fallas) throw new Error('STAGING_CERTIFICATION_STOPPED_BEFORE_CUSTOMER_RECOVERY');
   const latest = await verifyStagingCertificationOrder(service, certificationTarget, CODE);
   if (latest.id !== pedido.id || latest.customer_user_id !== pedido.customer_user_id) {
     throw new Error('STAGING_CERTIFICATION_CUSTOMER_CHANGED');
   }
-  const email = `rc-customer-${randomUUID()}@staging.local`;
-  const password = `Rc-${randomBytes(18).toString('base64url')}`;
-  const changed = await service.auth.admin.updateUserById(pedido.customer_user_id, { email, password, email_confirm: true });
-  if (changed.error) throw new Error('STAGING_CERTIFICATION_CUSTOMER_CREDENTIAL_UPDATE_FAILED');
-  const customer = await anon();
-  const { error: loginError } = await customer.auth.signInWithPassword({ email, password });
-  check(!loginError, 'el cliente del pedido puede autenticarse', loginError?.message || pedido.customer_user_id);
-  if (loginError) throw new Error('STAGING_CERTIFICATION_CUSTOMER_LOGIN_FAILED');
+  await verifyCertificationCustomer(customer, customerToken, pedido.customer_user_id);
 
   const nuevoToken = token();
   const recuperado = await customer.rpc('recover_order_tracking_access', {
@@ -237,8 +222,19 @@ try {
     'el dinero no se movió en todo el circuito',
     `subtotal=${actual.subtotal} desc=${actual.discount_total} total=${actual.total}`);
 } finally {
-  for (const paso of limpieza) await paso().catch(() => {});
+  for (const name of await limpieza.run()) {
+    fallas += 1;
+    console.error(`limpieza: ${name} FAILED`);
+  }
 }
 
 console.log(`\n=== ${fallas ? `${fallas} FALLAS` : 'circuito operativo completo, todo verde'} ===`);
-process.exit(fallas ? 1 : 0);
+process.exitCode = fallas ? 1 : 0;
+
+} finally { interruption.close(); }
+}
+await runCertification().catch(error => {
+  console.error(/^STAGING_CERTIFICATION_[A-Z_]+(?::[A-Z_0-9]+)?$/.test(error?.message)
+    ? error.message : 'STAGING_CERTIFICATION_RUN_FAILED');
+  process.exitCode = 1;
+});

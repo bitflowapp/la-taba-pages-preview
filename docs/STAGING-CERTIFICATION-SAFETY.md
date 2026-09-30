@@ -1,81 +1,149 @@
 # Staging certification safety
 
-`certify:orders:staging` and `certify:circuit:staging` mutate staging by default.
-Add `--preflight-only` to either command to verify only target identity and test
-payment mode, with no actor, order, session, stock or customer-credential writes.
-This preflight is not a replacement for physical-phone and Panel QA.
+These helpers are engineering diagnostics. A successful CLI run does not certify
+physical-phone UX, the notebook Panel, provider payments or production readiness.
+No backend mutations or deployments were performed while implementing this change.
 
-Both commands now use `scripts/lib/staging-certification-target.mjs` before
-creating actors, changing orders, rotating customer credentials or reserving stock.
-The guard accepts only:
+## Target and read-only modes
 
-- Project `ucbtjcurawxjwjdvvcvj`, exact URL
-  `https://ucbtjcurawxjwjdvvcvj.supabase.co`.
-- QA business `a57b1c20-0f4e-4a6b-9d31-7c2e5f8a41d0`.
-- `TABA_CERTIFY_CONFIRM=I_UNDERSTAND_THIS_MUTATES_STAGING`.
-- A live, active business with slug `la-taba-staging`, and that same business's
-  payment settings explicitly in `test` mode.
+Both helpers require the exact `ucbtjcurawxjwjdvvcvj` staging URL, QA business
+`a57b1c20-0f4e-4a6b-9d31-7c2e5f8a41d0`, and
+`TABA_CERTIFY_CONFIRM=I_UNDERSTAND_THIS_MUTATES_STAGING`. Before any mutation they
+verify the live active business slug `la-taba-staging` and its test payment mode.
+Production, CP, retired staging, another business and uncertain reads fail closed.
 
-Production, controlled production, retired staging projects, other businesses,
-missing identity rows, failed reads and production payment mode fail closed.
-The preflight reads are bounded to 15 seconds each and do not print backend error
-details. Order-code lookups are scoped to the designated QA business.
-Preflight refusals exit 2 and report only a coarse reason, such as missing rows,
-multiple rows, upstream HTTP failure or timeout. A passing read-only preflight
-exits 0 with `scope: staging_identity_only`; it does not certify order fixtures.
+Use `--preflight-only` with either helper to read only identity and payment mode.
+It returns `scope: staging_identity_only`; it does not validate order fixtures.
+The pipeline also accepts `--fixtures-preflight-only`, returning
+`scope: staging_identity_and_fixtures` after checking explicit product IDs.
+Refusals before actors exist exit 2 with coarse diagnostics; failed operational
+checks or cleanup exit 1. Natural exit allows pending output to finish.
 
-The circuit certifier additionally refuses terminal orders, missing customers,
-registered or identified customers, and customers with any business membership.
-These checks run before actors are created and again before changing the
-anonymous test customer's credentials. Earlier failed checks stop that change.
+## Explicit QA resources
 
-## Verification on 2026-09-30
+The pipeline requires both `TABA_CERTIFY_OPERATIONAL_PRODUCT_ID` and
+`TABA_CERTIFY_ISOLATION_PRODUCT_ID`, distinct UUIDs selected for this coordinated
+QA run. Each must belong to the designated QA business and be active, available,
+verified, merchant available, have a confirmed positive price and stock >= 2.
+The operational product may be `commercial` or `demo_fixture`; the isolation
+product must be `test_only` or `staging_only`, matching backend classification.
+All prerequisites are checked before actors are created. The helper never
+creates or edits catalog publication, prices or fixture definitions.
 
-Read-only live checks confirmed the current project is `ACTIVE_HEALTHY`, the QA
-business identity matches, payment settings are in test mode, and 11 of its 12
-products are active, available, positive-stock and positive-price. No backend
-writes or financial transactions were performed for this change.
+Historical `LT-0030/33/34/35` orders are no longer prerequisites. A declared sample
+of up to 100 existing orders in the QA tenant is compared before and after the
+run. An empty sample is printed as NOT_EXERCISED, rather than fabricated evidence.
+This does not certify preservation of every existing order, GPS row or audit event.
+
+The circuit requires a fresh, unassigned `received` QA order and
+`TABA_CERTIFY_CUSTOMER_ACCESS_TOKEN` from that order's current anonymous customer
+session. The token must be passed through a private environment, never arguments
+or logs. Auth verifies its user before actor creation and again before tracking
+recovery. Registered/identified users, memberships, another customer, expired
+access and already-operated orders are refused. No customer email or password
+is changed. The existing anonymous session remains owned by the phone client.
+
+Coordinate exclusive QA use with the resource owner before any mutating run.
+Project credentials are available through the established Windows Credential
+Manager/Management API binding; they are not the current access blocker.
+
+## Scoped expiry and checked cleanup
+
+The pipeline uses the existing `release_checkout_session_inventory` RPC for only
+its freshly-created checkout after verifying business, customer and exact random
+client request ID. It refuses approved, completed, finalizing or review states;
+the backend rechecks protected states under a row lock. Retries release zero
+additional reservations, and cleanup preserves an expired session as expired.
+There are no project-wide sweep or global payment/reservation-alert calls.
+The output explicitly marks global cron and MP provider certification NOT_EXERCISED.
+
+Cleanup is registered immediately after actor creation, before membership writes.
+It runs once in reverse order, checking SDK errors and results. A session-close
+or membership-revocation failure does not prevent the independent actor ban.
+The ban response must confirm the correct user and a future ban timestamp.
+Both helpers register authoritative staff/rider sessions and close them on cleanup.
+Orders are retained as QA audit evidence; pipeline orders retain checked stock
+restoration. Circuit cleanup cancels an unfinished owned order when permitted,
+then classifies it QA even when cancellation fails. Scoped post-reads verify both
+the cancelled status and QA origin; successful RPC responses alone are insufficient.
+A refused cancellation is a failed run requiring manual QA reconciliation, never
+a green result. The circuit preserves delivered orders and does not restore their
+consumed stock; any required restoration belongs in that coordinated QA reconciliation.
+
+All client fetches have a 15-second request deadline. SIGINT/SIGTERM abort normal
+requests while independent bounded cleanup clients remain usable. A failed
+invariant stops subsequent operational work. A native crash, hard kill or lost
+server acknowledgement can still leave resources needing reconciliation; these
+helpers are not durable orchestration. Do not run them unattended as a substitute
+for a coordinated test window and checking cleanup evidence.
+
+## Evidence on 2026-09-30
+
+Read-only live inspection confirmed healthy staging and 12 commercial products;
+11 meet the product safety predicates. No isolation-origin product exists, so a
+mutating pipeline run remains blocked by QA fixture data. No fixture was fabricated
+or published. Live SQL confirmed service_role can execute the per-session release
+API, authenticated cannot, and create_checkout_session does not call a global sweep.
+No database migration or deployment is needed for that scoped API change.
+
+Updated live identity preflights completed at 07:34 UTC using SDK 2.110.8 with
+Management-API-bound credentials and a transport that rejects every non-GET
+request. Both entrypoints exited 0; the pipeline's fixture mode without explicit
+IDs exited 2 with EXPLICIT_FIXTURES_REQUIRED before actors existed. These reads
+do not exercise cleanup, inventory writes or a customer order.
+
+The corrected read-only Management API configuration probe verified
+`TABA_DEPLOYMENT_ENV=staging`, both MP environment declarations as `test`, and
+the OAuth project ref as the current staging ref. It used the API's `value` field
+or digest comparison only for enumerated safe configuration. No credential values
+or hashes were recorded. Provider seller validity, OAuth/PKCE, webhooks and refunds
+remain unexercised despite the verified test declarations.
+
+Exact commit `21181c191ae205a89772b9ee934b7f2557a2a9eb` passed GitHub Actions
+[Validate release candidate](https://github.com/bitflowapp/la-taba-pages-preview/actions/runs/36676959884).
+The continuation requires its own CI run after it is pushed.
 
 Targeted regression command:
 
 ```sh
-node --import ./tests/test-bootstrap.mjs --test --test-concurrency=1 tests/staging-certification-target.test.mjs tests/certify-real-order-pipeline-script.test.mjs tests/business-order-recovery.test.mjs tests/mercadopago-payment-recovery.test.mjs
+node --import ./tests/test-bootstrap.mjs --test --test-concurrency=1 tests/staging-certification-resources.test.mjs tests/staging-certification-target.test.mjs tests/certify-real-order-pipeline-script.test.mjs tests/business-order-recovery.test.mjs tests/mercadopago-payment-recovery.test.mjs
 ```
 
-Result after independent Opus review corrections: 33 passed, 0 failed. Entrypoint tests use an SDK double without mutation
-methods and exercise both static rejection and asynchronous identity rejection.
+Continuation checkpoint: 50 passed, 0 failed. Includes real entrypoint execution
+with mutation-free SDK doubles, explicit fixture refusal, wrong/expired customer
+access, cross-business/customer/request checkout refusal, protected payment states,
+partial actor failures, cleanup failures, circuit cancellation/classification
+postconditions, interruption and idempotent release.
+No full local build, browser or physical-device run was performed.
 
-Both read-only entrypoints also passed against live staging with the pinned
-Supabase JS SDK 2.110.8, existing credentials verified against the Management API,
-and a GET-only transport that rejects every mutation. The pipeline's first
-attempt exited with native Windows code `3221226505`; one isolated retry passed.
-The failed attempt remains in the local evidence and its native crash cause is
-unresolved. No mutating certification was run.
+The earlier independent max-effort Opus review covered the initial target guard,
+not this continuation. Two continuation attempts used `--effort max`, one turn,
+disabled tools/hooks/MCP, and a 420-second deadline. Both timed out without
+findings (elapsed 442 and 441 seconds). Only each attempt's own child was stopped.
+The continuation, including its final cleanup correction, remains independently
+unaudited and must stay in draft. No absence-of-findings approval is inferred.
 
-Independent review used Claude Opus 5.5, `effort=max`, one turn, 644676 ms, with
-tools, hooks and MCP disabled. No introduced P0/P1 was identified in the initial
-guard. Corrections added tenant-filter coverage, read-only preflight and coarse
-refusal diagnostics; they also addressed the pre-existing registered-customer
-credential takeover, writes before missing-product checks, and false green QA
-isolation gate. The final corrections were regression-tested; they were not
-subjected to a second independent audit.
+## Native preflight failure remains unproven
 
-## Remaining prerequisites
+The initial GET-only live pipeline preflight exited `3221226505` (0xC0000409).
+Its stderr was not retained by the original harness. A subsequent isolated retry
+passed; that is not proof of resolution. No matching Windows Node crash event or
+dump was found. A bounded Node v24.18.0 loopback GET probe completed 6 forced-exit
+and 6 natural-exit runs without reproducing the failure.
 
-The pipeline certifier still expects `demo_fixture` products and historical
-`LT-0030`, `LT-0033`, `LT-0034`, `LT-0035` evidence. Current staging products are
-all `commercial`; this guard change does not manufacture fixtures or certify
-that legacy pipeline. Do not run it merely because its target preflight passes.
-Missing product prerequisites are checked before actor creation. A missing QA
-isolation fixture now records a failure rather than an unexercised green gate.
-Coordinate exclusive QA use before running either mutating command. The circuit
-certifier operates an existing QA order and changes only an anonymous test
-customer's Auth credentials; verify the intended test customer before using it.
-The legacy pipeline still calls a project-wide expiry sweep and checks global
-reservation/payment alerts. Those calls and incomplete cleanup error handling
-remain blockers to independent, concurrent or unattended certification.
+[Node's process documentation](https://nodejs.org/docs/latest-v24.x/api/process.html#processexitcode)
+recommends natural exit to avoid truncating pending I/O. A
+[Node Windows issue](https://github.com/nodejs/node/issues/56645) documents the same
+native code after fetch plus forced exit on Node 23; it is a plausible analogue,
+not proof about this Node 24 failure. Both helpers now avoid forced process.exit.
+The original failed evidence is preserved and the root cause remains unresolved.
 
-Physical-phone client, real backend, notebook Panel, same-order lifecycle,
-adversarial retries/concurrency, and MP sandbox seller/webhook/refund correlation
-remain separate certification requirements. This source fix establishes no
-production-readiness claim and performs no deployment.
+## Real access and certification blockers
+
+Physical Moto G15, notebook Panel and staging mutation ownership remain with the
+parent/APEX coordination. No viewport substitutes for physical evidence. The
+pipeline needs an approved isolated QA fixture; the circuit needs the intended
+phone customer's current session and fresh order. No pricing/catalog publication
+is authorized by this source fix. MP sandbox OAuth/PKCE, seller authority,
+correlation, webhooks, refunds and live concurrency remain unexercised.
+No production readiness, financial transaction or customer notification is claimed.

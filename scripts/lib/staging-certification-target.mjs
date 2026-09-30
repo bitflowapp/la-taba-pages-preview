@@ -67,7 +67,7 @@ export async function verifyStagingCertificationIdentity(client, target) {
 export async function verifyStagingCertificationOrder(client, target, publicCode) {
   assertStagingCertificationTarget(target);
   const order = await readGuardQuery(client.from('orders')
-    .select('id,business_id,status,revision,total,subtotal,discount_total,origin,customer_user_id')
+    .select('id,business_id,status,revision,total,subtotal,discount_total,origin,customer_user_id,assigned_rider_user_id')
     .eq('business_id', target.businessId).eq('public_code', publicCode), { required: false });
   if (!order) throw new Error('STAGING_CERTIFICATION_QA_ORDER_NOT_FOUND');
   if (order.business_id !== target.businessId) throw new Error('STAGING_CERTIFICATION_QA_BUSINESS_REJECTED');

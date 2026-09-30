@@ -1,0 +1,278 @@
+[
+  {
+    "sku": "alamos-malbec-750ml-local",
+    "name": "Alamos Malbec 750 ml",
+    "title": "Alamos Malbec",
+    "presentation": "750 ml"
+  },
+  {
+    "sku": "aperol-750ml",
+    "name": "Aperol 750 ml",
+    "title": "Aperol",
+    "presentation": "750 ml"
+  },
+  {
+    "sku": "bonaqua-sin-gas-2250ml-local",
+    "name": "Bonaqua Sin Gas 2,25 L",
+    "title": "Bonaqua",
+    "presentation": "2,25 L · Sin gas"
+  },
+  {
+    "sku": "brahma-chopp-1000ml",
+    "name": "Brahma Chopp Rubia 1 L",
+    "title": "Brahma Chopp Rubia",
+    "presentation": "1 L"
+  },
+  {
+    "sku": "branca-menta-750ml",
+    "name": "Branca Menta 750 ml",
+    "title": "Branca Menta",
+    "presentation": "750 ml"
+  },
+  {
+    "sku": "campari-bitter-750ml",
+    "name": "Campari Bitter 750 ml",
+    "title": "Campari Bitter",
+    "presentation": "750 ml"
+  },
+  {
+    "sku": "cepita-durazno-1000ml",
+    "name": "Cepita Durazno 1 L",
+    "title": "Cepita Durazno",
+    "presentation": "1 L"
+  },
+  {
+    "sku": "cepita-naranja-1000ml",
+    "name": "Cepita Naranja 1 L",
+    "title": "Cepita Naranja",
+    "presentation": "1 L"
+  },
+  {
+    "sku": "cinzano-rosso-950ml",
+    "name": "Cinzano Rosso 950 ml",
+    "title": "Cinzano Rosso",
+    "presentation": "950 ml"
+  },
+  {
+    "sku": "coca-cola-original-2250ml-local",
+    "name": "Coca-Cola Sabor Original 2,25 L",
+    "title": "Coca-Cola Sabor",
+    "presentation": "2,25 L"
+  },
+  {
+    "sku": "coca-cola-sin-azucar-2250ml-local",
+    "name": "Coca-Cola Sin Azúcar 2,25 L",
+    "title": "Coca-Cola Sin Azúcar",
+    "presentation": "2,25 L"
+  },
+  {
+    "sku": "corona-extra-330ml",
+    "name": "Corona Extra 330 ml",
+    "title": "Corona Extra",
+    "presentation": "330 ml · Lager"
+  },
+  {
+    "sku": "doritos-queso-129g",
+    "name": "Doritos Queso 129 g",
+    "title": "Doritos Queso",
+    "presentation": "129 g"
+  },
+  {
+    "sku": "eco-de-los-andes-sin-gas-2000ml",
+    "name": "Eco de los Andes Sin Gas 2 L",
+    "title": "Eco de los Andes",
+    "presentation": "2 L · Sin gas"
+  },
+  {
+    "sku": "fanta-naranja-2250ml",
+    "name": "Fanta Naranja 2,25 L",
+    "title": "Fanta Naranja",
+    "presentation": "2,25 L"
+  },
+  {
+    "sku": "fernet-branca-750ml",
+    "name": "Fernet Branca 750 ml",
+    "title": "Fernet Branca",
+    "presentation": "750 ml"
+  },
+  {
+    "sku": "glaciar-con-gas-1500ml",
+    "name": "Glaciar Con Gas Baja en Sodio 1,5 L",
+    "title": "Glaciar Con Gas Baja en Sodio",
+    "presentation": "1,5 L · Con gas, baja en sodio"
+  },
+  {
+    "sku": "glaciar-sin-gas-1500ml",
+    "name": "Glaciar Sin Gas Baja en Sodio 1,5 L",
+    "title": "Glaciar Sin Gas Baja en Sodio",
+    "presentation": "1,5 L · Sin gas, baja en sodio"
+  },
+  {
+    "sku": "heineken-710ml",
+    "name": "Heineken Lager 710 ml",
+    "title": "Heineken Lager",
+    "presentation": "710 ml · Lata"
+  },
+  {
+    "sku": "hielo-cristal-4kg",
+    "name": "Hielo Cristal 4 kg",
+    "title": "Hielo Cristal",
+    "presentation": "4 kg · Bolsa de hielo"
+  },
+  {
+    "sku": "imperial-golden-473ml",
+    "name": "Imperial Golden 473 ml",
+    "title": "Imperial Golden",
+    "presentation": "473 ml · Lata"
+  },
+  {
+    "sku": "lays-clasicas-134g",
+    "name": "Lay’s Clásicas 134 g",
+    "title": "Lay’s Clásicas",
+    "presentation": "134 g"
+  },
+  {
+    "sku": "lays-clasicas-40g",
+    "name": "Lay’s Clásicas 40 g",
+    "title": "Lay’s Clásicas",
+    "presentation": "40 g"
+  },
+  {
+    "sku": "mani-king-salado-sin-piel-100g",
+    "name": "Mani King Maní Salado sin Piel 100 g",
+    "title": "Mani King Maní Salado sin Piel",
+    "presentation": "100 g"
+  },
+  {
+    "sku": "monster-mango-loco-473ml",
+    "name": "Monster Mango Loco 473 ml",
+    "title": "Monster Mango Loco",
+    "presentation": "473 ml · Lata"
+  },
+  {
+    "sku": "monster-ultra-473ml-local",
+    "name": "Monster Ultra 473 ml",
+    "title": "Monster Ultra",
+    "presentation": "473 ml · Lata · Sin azúcar"
+  },
+  {
+    "sku": "norton-malbec-750ml-local",
+    "name": "Norton Select Malbec 750 ml",
+    "title": "Norton Select Malbec",
+    "presentation": "750 ml"
+  },
+  {
+    "sku": "paso-de-los-toros-pomelo-1500ml",
+    "name": "Paso de los Toros Pomelo 1,5 L",
+    "title": "Paso de los Toros Pomelo",
+    "presentation": "1,5 L"
+  },
+  {
+    "sku": "paso-de-los-toros-tonica-1500ml",
+    "name": "Paso de los Toros Tónica 1,5 L",
+    "title": "Paso de los Toros Tónica",
+    "presentation": "1,5 L"
+  },
+  {
+    "sku": "patagonia-lager-del-sur-730ml",
+    "name": "Patagonia Lager del Sur 730 ml",
+    "title": "Patagonia Lager del Sur",
+    "presentation": "730 ml"
+  },
+  {
+    "sku": "pehuamar-palitos-salados-90g",
+    "name": "Pehuamar Palitos Salados 90 g",
+    "title": "Pehuamar Palitos Salados",
+    "presentation": "90 g"
+  },
+  {
+    "sku": "pepsi-black-1500ml",
+    "name": "Pepsi Black 1,5 L",
+    "title": "Pepsi Black",
+    "presentation": "1,5 L"
+  },
+  {
+    "sku": "pepsi-black-2250ml-local",
+    "name": "Pepsi Black 2,25 L",
+    "title": "Pepsi Black",
+    "presentation": "2,25 L"
+  },
+  {
+    "sku": "quilmes-clasica-710ml",
+    "name": "Quilmes Clásica 710 ml",
+    "title": "Quilmes Clásica",
+    "presentation": "710 ml · Lata · Lager"
+  },
+  {
+    "sku": "red-bull-energy-drink-355ml",
+    "name": "Red Bull Energy Drink 355 ml",
+    "title": "Red Bull Energy Drink",
+    "presentation": "355 ml · Lata"
+  },
+  {
+    "sku": "santa-julia-chenin-dulce-750ml",
+    "name": "Santa Julia Chenin Dulce Natural 750 ml",
+    "title": "Santa Julia Chenin Dulce Natural",
+    "presentation": "750 ml"
+  },
+  {
+    "sku": "schneider-rubia-710ml",
+    "name": "Schneider Rubia 710 ml",
+    "title": "Schneider Rubia",
+    "presentation": "710 ml · Lata"
+  },
+  {
+    "sku": "schweppes-pomelo-sin-azucar-2250ml",
+    "name": "Schweppes Pomelo Sin Azúcar 2,25 L",
+    "title": "Schweppes Pomelo Sin Azúcar",
+    "presentation": "2,25 L"
+  },
+  {
+    "sku": "schweppes-tonica-354ml-local",
+    "name": "Schweppes Tónica 354 ml",
+    "title": "Schweppes Tónica",
+    "presentation": "354 ml · Lata"
+  },
+  {
+    "sku": "speed-zero-473ml",
+    "name": "Speed Zero 473 ml",
+    "title": "Speed Zero",
+    "presentation": "473 ml · Lata"
+  },
+  {
+    "sku": "sprite-sin-azucar-2250ml-local",
+    "name": "Sprite Sin Azúcar 2,25 L",
+    "title": "Sprite Sin Azúcar",
+    "presentation": "2,25 L"
+  },
+  {
+    "sku": "sprite-sin-azucar-600ml",
+    "name": "Sprite Sin Azúcar 600 ml",
+    "title": "Sprite Sin Azúcar",
+    "presentation": "600 ml"
+  },
+  {
+    "sku": "stella-artois-rubia-473ml",
+    "name": "Stella Artois Rubia 473 ml",
+    "title": "Stella Artois Rubia",
+    "presentation": "473 ml · Lata"
+  },
+  {
+    "sku": "trapiche-cabernet-sauvignon-750ml",
+    "name": "Trapiche Cabernet Sauvignon 750 ml",
+    "title": "Trapiche Cabernet Sauvignon",
+    "presentation": "750 ml"
+  },
+  {
+    "sku": "trapiche-red-blend-750ml",
+    "name": "Trapiche Red Blend 750 ml",
+    "title": "Trapiche Red Blend",
+    "presentation": "750 ml"
+  },
+  {
+    "sku": "villavicencio-sin-gas-500ml",
+    "name": "Villavicencio Sin Gas 500 ml",
+    "title": "Villavicencio",
+    "presentation": "500 ml · Sin gas"
+  }
+]

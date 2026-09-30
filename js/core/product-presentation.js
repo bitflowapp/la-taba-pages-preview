@@ -15,6 +15,8 @@
  * Este módulo es puro: recibe datos, devuelve texto. Sin DOM, sin estado.
  */
 
+import { isPricePending } from './pricing.js';
+
 const PACKAGING_LABELS = Object.freeze({
   'botella-pet': 'Botella PET',
   'botella-vidrio': 'Botella de vidrio',
@@ -36,6 +38,7 @@ export function formatCapacity(value, unit = 'ml') {
   if (!Number.isFinite(cantidad) || cantidad <= 0) return '';
   const unidad = String(unit || 'ml').trim().toLowerCase();
   if (unidad === 'l') return `${formatLiters(cantidad)} L`;
+  if (unidad === 'g' && cantidad >= 1000) return `${trimNumber(cantidad / 1000).replace('.', ',')} kg`;
   if (unidad !== 'ml') return `${trimNumber(cantidad)} ${unidad}`;
   if (cantidad >= 1000) return `${formatLiters(cantidad / 1000)} L`;
   return `${trimNumber(cantidad)} ml`;
@@ -122,8 +125,22 @@ const ENVASES_QUE_SE_DICEN = new Set(['lata', 'sifon', 'sifon-pet', 'botella-vid
  * formatos de Coca-Cola pasan a llamarse igual en toda la tienda.
  */
 export function cardTitle(product = {}) {
-  const nombre = String(product?.name || '').trim();
+  let nombre = String(product?.name || '').trim();
   if (!nombre) return '';
+  // Remove capacity only when structured data confirms the SAME quantity.
+  // A bare name keeps its full identity; mismatched presentations are not guessed.
+  const suffix = nombre.match(/\s+(\d+(?:[.,]\d+)?)\s*(ml\.?|L|kg|g)$/i);
+  if (suffix) {
+    const unit = suffix[2].toLowerCase().replace('.', '');
+    const storedUnit = String(product.capacityUnit ?? product.capacity_unit ?? '').toLowerCase();
+    const factor = { ml: 1, l: 1000, g: 1, kg: 1000 };
+    const family = { ml: 'volume', l: 'volume', g: 'mass', kg: 'mass' };
+    const amount = Number(suffix[1].replace(',', '.')) * factor[unit];
+    const stored = Number(product.capacityValue ?? product.capacity_value) * factor[storedUnit];
+    if (family[unit] === family[storedUnit] && Number.isFinite(stored) && Math.abs(amount - stored) < 0.001) {
+      nombre = nombre.slice(0, suffix.index).trim();
+    }
+  }
   const normalizado = normalizar(nombre);
   for (const atributo of ATRIBUTOS_QUE_NO_SON_NOMBRE) {
     if (normalizado === atributo || !normalizado.endsWith(` ${atributo}`)) continue;
@@ -237,6 +254,7 @@ export function packUnitNoun(product = {}) {
 }
 
 export function packUnitPrice(product = {}) {
+  if (isPricePending(product)) return null;
   const porPack = Number(product.unitsPerPack ?? product.units_per_pack);
   if (!Number.isFinite(porPack) || porPack <= 1) return null;
   const precio = Number(product.price);

@@ -256,7 +256,8 @@ export function normalizeCatalogProduct(raw, fallback = null) {
   const name = sanitizeText(source.name, { fallback: fallback?.name || '', maxLength: 100 });
   const categoryId = normalizeCategoryId(source.categoryId || fallback?.categoryId) || DEFAULT_CATEGORY_ID;
   const defaults = defaultsForCategory(categoryId);
-  const pricePending = source.pricePending === true || source.price_status === 'pending';
+  const pricePending = source.pricePending === true || [source.priceStatus, source.price_status]
+    .some((value) => String(value || '').trim().toLowerCase() === 'pending');
   const price = pricePending ? null : normalizeCatalogPrice(source.price, fallback?.price ?? 0);
   if (!id || !name || (price == null && !pricePending)) return fallback ? { ...fallback } : null;
 

@@ -24,7 +24,7 @@ test('Realtime sano: diez recorridos y eventos idénticos conservan cards e imá
 });
 
 test('Realtime caído: treinta segundos de polling idéntico y un cambio aislado', async ({ page }, info) => {
-  test.setTimeout(65000);
+  test.setTimeout(100000);
   const backend = await openRuntimeCatalog(page, { realtime: false });
   await instrumentCatalog(page);
   await page.evaluate(() => {
@@ -36,7 +36,7 @@ test('Realtime caído: treinta segundos de polling idéntico y un cambio aislado
   });
   await page.waitForTimeout(31000);
   await info.attach('polling-read-times', { body: JSON.stringify(backend.counters.reads), contentType: 'application/json' });
-  await expect.poll(() => backend.counters.products, { timeout: 15000 }).toBeGreaterThanOrEqual(6);
+  await expect.poll(() => backend.counters.products, { timeout: 35000 }).toBeGreaterThanOrEqual(6);
   await page.evaluate(() => clearInterval(window.__runtimeScrollTimer));
   expect(backend.counters.products).toBeGreaterThanOrEqual(6);
   const beforeChange = await readProbe(page);

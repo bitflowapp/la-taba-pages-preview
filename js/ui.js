@@ -259,7 +259,9 @@ export function applyBusinessConfig() {
 
   // Marca del PRODUCTO (PedidoPropio): superficie comercial e intro del home.
   // Fuente única en BRAND (config.js); el HTML sólo lleva un fallback de primer pintado.
-  setText('[data-product-name]', BRAND.productName);
+  // Images use data-product-name for their own accessible fallback. The app
+  // brand binding must never append brand text inside a product image.
+  setText('[data-product-name]:not(img)', BRAND.productName);
   setText('[data-product-tagline]', BRAND.tagline);
   setText('[data-product-short-tagline]', BRAND.shortTagline);
 
@@ -399,7 +401,8 @@ function shortZoneLabel(zone) {
 }
 
 function setText(selector, value) {
-  $$(selector).forEach((node) => { node.textContent = value; });
+  const text = String(value ?? '');
+  $$(selector).forEach((node) => { if (node.textContent !== text) node.textContent = text; });
 }
 
 function formatWhatsappDisplay(value) {
@@ -1066,12 +1069,12 @@ function renderHomeHeroPromo() {
   const hero = HOME_HERO_PROMO;
   const category = categoriesForCurrentCatalog().find((entry) => entry.id === hero.categoryId);
   if (!category || !purchasableCategoryIds().has(hero.categoryId)) {
-    slot.innerHTML = '';
+    renderCatalogSurface(slot, '');
     slot.hidden = true;
     return;
   }
   slot.hidden = false;
-  slot.innerHTML = `
+  renderCatalogSurface(slot, `
     <button class="home-hero-promo" type="button" data-category-id="${escapeHtml(hero.categoryId)}" aria-label="${escapeHtml(`${hero.title}. ${hero.subtitle} Ver ${category.name.toLowerCase()}`)}">
       <span class="home-hero-promo-media" aria-hidden="true"></span>
       <span class="home-hero-promo-copy">
@@ -1080,7 +1083,7 @@ function renderHomeHeroPromo() {
         <span class="home-hero-promo-sub">${escapeHtml(hero.subtitle)}</span>
         <span class="home-hero-promo-cta">Ver ${escapeHtml(category.name.toLowerCase())} <span aria-hidden="true">→</span></span>
       </span>
-    </button>`;
+    </button>`);
 }
 
 // ─── Selección del local (tarjetas con estado honesto) ───────────────────────
@@ -1474,7 +1477,7 @@ function renderHomeCategories() {
   const activeCategory = state.searchQuery.trim() ? null : state.activeCategory;
   const list = homeCategoryList();
   if (!list.length) {
-    strip.innerHTML = '';
+    renderCatalogSurface(strip, '');
     strip.hidden = true;
     return;
   }
@@ -1483,14 +1486,14 @@ function renderHomeCategories() {
   // roja tiene que estar VISIBLE sin scroll. Además deja a un toque el resto
   // del catálogo, incluidas las categorías que aún no publican precio.
   const entries = [{ id: 'all', name: 'Todas' }, ...list];
-  strip.innerHTML = entries.map((category) => {
+  renderCatalogSurface(strip, entries.map((category) => {
     const isActive = activeCategory === category.id;
     return `
-      <button class="home-category-card ${isActive ? 'active' : ''}" type="button" data-category-id="${category.id}"${isActive ? ' aria-current="true"' : ''}>
+      <button class="home-category-card ${isActive ? 'active' : ''}" data-catalog-key="category:${escapeHtml(category.id)}" type="button" data-category-id="${category.id}"${isActive ? ' aria-current="true"' : ''}>
         <span class="home-category-icon" aria-hidden="true">${categoryGlyph(category.id)}</span>
         <span>${escapeHtml(category.name)}</span>
       </button>`;
-  }).join('');
+  }).join(''));
 }
 
 function renderHomePromotions() {
@@ -1785,7 +1788,7 @@ function renderCombos() {
       : 'Armados por el local';
   }
 
-  container.innerHTML = combos.map(comboCard).join('');
+  renderCatalogSurface(container, combos.map(comboCard).join(''));
 }
 
 /*
@@ -1836,7 +1839,7 @@ export function comboMedia(combo) {
 function comboCard(combo) {
   const unidades = combo.components.reduce((total, component) => total + component.quantity, 0);
   return `
-    <article class="combo-card" data-combo-card="${escapeHtml(combo.comboId)}">
+    <article class="combo-card" data-catalog-key="combo:${escapeHtml(combo.comboId)}" data-combo-card="${escapeHtml(combo.comboId)}">
       <button class="combo-card-media" type="button" data-combo-detail="${escapeHtml(combo.comboId)}" aria-label="Ver el combo ${escapeHtml(combo.name)}">
         ${comboMedia(combo)}
         ${combo.hasRealSaving ? `<span class="combo-save-badge">Ahorrás ${money(combo.savings)}</span>` : ''}
@@ -2120,6 +2123,8 @@ function categoryGlyph(categoryId) {
   return CATEGORY_GLYPHS[key] || CATEGORY_GLYPHS.all;
 }
 
+const categoryMoreBindings = new WeakSet();
+
 function renderCategories() {
   const strips = $$('[data-category-strip]');
   if (!strips.length) return;
@@ -2155,14 +2160,14 @@ function renderCategories() {
   const remainingCatalogList = byAvailability.slice(VISIBLE_CATALOG_CHIPS);
 
   const markupFor = (list) => list.map((category) => `
-    <button class="category-button ${activeCategory === category.id ? 'active' : ''}" type="button" data-category-id="${category.id}" aria-pressed="${activeCategory === category.id}">
+    <button class="category-button ${activeCategory === category.id ? 'active' : ''}" data-catalog-key="category:${escapeHtml(category.id)}" type="button" data-category-id="${category.id}" aria-pressed="${activeCategory === category.id}">
       <span class="category-ico" aria-hidden="true">${categoryGlyph(category.id)}</span>
       <span class="category-label">${escapeHtml(category.name)}</span>
     </button>
   `).join('');
 
   const moreButton = `
-    <button class="category-button category-more" type="button" data-category-more aria-label="Ver más categorías">
+    <button class="category-button category-more" data-catalog-key="category:more" type="button" data-category-more aria-label="Ver más categorías">
       <span class="category-ico" aria-hidden="true">${categoryGlyph('more')}</span>
       <span class="category-label">Más</span>
     </button>`;
@@ -2174,10 +2179,14 @@ function renderCategories() {
     // trabajo tirado, y bastaba invertir el orden de las llamadas para que la
     // home volviera a ofrecer categorías sin un solo precio publicado.
     if (strip.dataset.categoryStrip === 'home') return;
-    strip.innerHTML = `${markupFor(catalogTopList)}${remainingCatalogList.length ? moreButton : ''}${markupFor(remainingCatalogList)}`;
-    strip.querySelector('[data-category-more]')?.addEventListener('click', () => {
-      strip.scrollBy({ left: Math.max(220, Math.round(strip.clientWidth * 0.85)), behavior: 'smooth' });
-    });
+    renderCatalogSurface(strip, `${markupFor(catalogTopList)}${remainingCatalogList.length ? moreButton : ''}${markupFor(remainingCatalogList)}`);
+    const more = strip.querySelector('[data-category-more]');
+    if (more && !categoryMoreBindings.has(more)) {
+      more.addEventListener('click', () => {
+        strip.scrollBy({ left: Math.max(220, Math.round(strip.clientWidth * 0.85)), behavior: 'smooth' });
+      });
+      categoryMoreBindings.add(more);
+    }
   });
 }
 
@@ -2207,11 +2216,12 @@ function renderCatalogFilters() {
     const control = panel.querySelector(`[data-catalog-filter="${key}"]`);
     if (!field || !control) return;
     field.hidden = values.length < 2;
-    control.innerHTML = [
-      `<option value="all">${escapeHtml(all)}</option>`,
-      ...values.map(({ value, label: optionLabel }) => `<option value="${escapeHtml(value)}">${escapeHtml(optionLabel)}</option>`),
-    ].join('');
-    control.value = values.some((option) => option.value === filters[key]) ? filters[key] : 'all';
+    renderStableCatalog(control, [
+      `<option value="all" data-catalog-key="option:all">${escapeHtml(all)}</option>`,
+      ...values.map(({ value, label: optionLabel }) => `<option value="${escapeHtml(value)}" data-catalog-key="option:${escapeHtml(value)}">${escapeHtml(optionLabel)}</option>`),
+    ].join(''), { cacheLimit: 0 });
+    const selected = values.some((option) => option.value === filters[key]) ? filters[key] : 'all';
+    if (control.value !== selected) control.value = selected;
   };
   select('brand', 'marcas', options.brand, { all: 'Todas las marcas' });
   select('capacity', 'capacidades', options.capacity, { all: 'Todas las capacidades' });
@@ -4443,13 +4453,13 @@ export function showProductModal(productId, restoreTrigger = null, { refresh = f
               ${variants.map((item) => {
                 const itemPricing = productPricePresentation(item);
                 const selected = item.id === product.id;
-                const unavailable = item.stock <= 0 || !item.available;
+                const unavailable = !isCommerciallyPurchasable(item);
                 return `<label class="modal-variant-card ${selected ? 'is-selected' : ''} ${unavailable ? 'is-unavailable' : ''}">
                   <input type="radio" name="productVariant" data-product-variant value="${escapeHtml(item.id)}" ${selected ? 'checked' : ''} ${unavailable ? 'disabled' : ''} />
-                  <span><strong>${escapeHtml(unitText(item) || item.name)}</strong><small>${escapeHtml(item.name)}</small></span>
+                  <span><strong>${escapeHtml(unitText(item) || item.name)}</strong><small>${escapeHtml(cardTitle(item))}</small></span>
                   <b>${pricingLabel(itemPricing)}</b>
                   ${itemPricing.regularPrice && itemPricing.regularPrice > itemPricing.price ? `<s>${money(itemPricing.regularPrice)}</s>` : ''}
-                  ${unavailable ? '<em>Sin stock</em>' : ''}
+                  ${unavailable && !isPricePending(item) ? `<em>${escapeHtml(availabilityLabel(item))}</em>` : ''}
                 </label>`;
               }).join('')}
             </div>

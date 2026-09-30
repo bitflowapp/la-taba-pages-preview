@@ -99,6 +99,7 @@ export async function openRuntimeCatalog(page, { realtime = true } = {}) {
   await expect(page.locator(`${GRID} .product-card`)).toHaveCount(46, { timeout: 20000 });
   await expect(page.locator('html')).toHaveAttribute('data-taba-startup', 'ready', { timeout: 20000 });
   await page.evaluate(() => document.fonts.ready);
+  await page.bringToFront();
   await page.waitForTimeout(600);
   return { rows, counters, emit() {
     for (const { socket, topic, bindings, arrayProtocol, joinRef } of sockets) {
@@ -119,6 +120,10 @@ export async function instrumentCatalog(page) {
     const cards = [...root.querySelectorAll('.product-card')];
     const refs = new Map(cards.map((node) => [node.querySelector('[data-product-detail]').dataset.productDetail,
       { node, img: node.querySelector('img'), src: node.querySelector('img').currentSrc }]));
+    const categoryRefs = new Map([...document.querySelectorAll('[data-view="catalog"] [data-category-strip] [data-category-id]')]
+      .map(node => [node.dataset.categoryId,node]));
+    const optionRefs = new Map([...document.querySelectorAll('[data-catalog-filter] option')]
+      .map(node => [node.parentElement.dataset.catalogFilter + ':' + node.value,node]));
     const metrics = { removedCards: 0, removedImages: 0, skeletons: 0, opacityResets: 0, cls: 0, frames: [] };
     const observer = new MutationObserver((records) => {
       for (const r of records) {
@@ -149,7 +154,12 @@ export async function instrumentCatalog(page) {
         if (old && old.node !== card) cardReplacements++;
         if (old && old.img !== card.querySelector('img')) imageReplacements++;
       }
-      return { ...metrics, cardReplacements, imageReplacements, cards: current.length };
+      const categoryReplacements = [...document.querySelectorAll('[data-view="catalog"] [data-category-strip] [data-category-id]')]
+        .filter(node => categoryRefs.has(node.dataset.categoryId) && categoryRefs.get(node.dataset.categoryId) !== node).length;
+      const filterOptionReplacements = [...document.querySelectorAll('[data-catalog-filter] option')]
+        .filter(node => {const key=node.parentElement.dataset.catalogFilter+':'+node.value;return optionRefs.has(key)&&optionRefs.get(key)!==node;}).length;
+      const imagesWithChildText = [...document.querySelectorAll('img.thumb-img')].filter(node=>node.childNodes.length>0).length;
+      return { ...metrics, cardReplacements, imageReplacements, categoryReplacements, filterOptionReplacements, imagesWithChildText, cards: current.length };
     } };
   }, GRID);
 }
@@ -168,3 +178,15 @@ export async function scrollCatalog(page, cycles = 1) {
 }
 
 export const readProbe = (page) => page.evaluate(() => window.__catalogRuntimeProbe.read());
+
+export async function clickCatalogCategory(page, id) {
+  const chip=page.locator(`[data-view="catalog"] [data-category-id="${id}"]`).first();
+  // A mobile customer pans the horizontal strip before tapping a hidden chip.
+  // Explicitly position it before the normal actionability-checked click.
+  await chip.evaluate(node=>{
+    const strip=node.closest('[data-category-strip]');
+    strip.scrollTo({left:Math.max(0,node.offsetLeft-strip.offsetLeft-(strip.clientWidth-node.offsetWidth)/2),behavior:'instant'});
+  });
+  await expect(chip).toBeInViewport();
+  await chip.click();
+}

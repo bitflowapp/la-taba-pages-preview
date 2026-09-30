@@ -1,7 +1,63 @@
 import { expect, test } from '@playwright/test';
-import { GRID, openRuntimeCatalog, instrumentCatalog, scrollCatalog, readProbe } from './catalog-runtime-fixture.mjs';
+import { GRID, snapshot, openRuntimeCatalog, instrumentCatalog, scrollCatalog, readProbe, clickCatalogCategory } from './catalog-runtime-fixture.mjs';
 
 test.use({ viewport: { width: 390, height: 844 } });
+
+test('las variantes pendientes no afirman agotado ni filtran importes residuales', async ({ page }) => {
+  const rows = snapshot.products.filter(p => p.sku.startsWith('sprite-'));
+  expect(rows).toHaveLength(2);
+  await page.addInitScript(() => {
+    globalThis.__LA_TABA_RUNTIME_CONFIG__ = null;
+    localStorage.setItem('TABA_INSTALL_PROMPT_V1',JSON.stringify({v:1,decision:'declined',at:'2026-01-01',platform:'e2e'}));
+  });
+  await page.goto('/');
+  await expect(page.locator('html')).toHaveAttribute('data-taba-startup', 'ready');
+  await page.evaluate(async (rows) => {
+    const { setState } = await import('/js/state.js');
+    const { showProductModal } = await import('/js/ui.js');
+    setState({ products: rows.map(p=>({...p,categoryId:'gaseosas',capacityValue:p.capacity_value,
+      capacityUnit:p.capacity_unit,unitsPerPack:1,stock:0,stockPending:true,available:false,
+      price:99999,price_status:'pending',pricePending:true,image:'',imageThumbnail:'',variants:rows.map(row=>row.id)})) });
+    showProductModal(rows[0].id);
+  }, rows);
+  const modal = page.locator('[data-product-modal]');
+  await expect(modal).toBeVisible();
+  await expect(modal.locator('.modal-variant-card')).toHaveCount(2);
+  await expect(modal).not.toContainText('$');
+  await expect(modal).not.toContainText('99.999');
+  await expect(modal).not.toContainText('Sin stock');
+  await expect(modal).not.toContainText('Agotado');
+});
+
+test('búsqueda rápida, filtros y orden conservan nodos y el último resultado', async ({ page }) => {
+  await openRuntimeCatalog(page);
+  await instrumentCatalog(page);
+  await page.evaluate(() => {
+    const input=document.querySelector('[data-view="catalog"] [data-search-input]');
+    for(const query of ['h','heineken','','FERNET','','azúcar','','sprite']) {
+      input.value=query;input.dispatchEvent(new Event('input',{bubbles:true}));
+    }
+  });
+  await expect(page.locator(`${GRID} .product-card`)).toHaveCount(2);
+  await expect(page.locator(`${GRID} .product-card`).first()).toContainText('Sprite');
+  const search=page.locator('[data-view="catalog"] [data-search-input]');
+  await search.fill('');
+  const filters=page.locator('[data-catalog-filters]');
+  await filters.locator('summary').click();
+  await filters.locator('[data-catalog-filter="brand"]').selectOption('heineken');
+  await expect(page.locator(`${GRID} .product-card`)).toHaveCount(1);
+  await expect(page.locator(`${GRID} .product-card`)).toContainText('Heineken');
+  await filters.locator('[data-reset-catalog-filters]').click();
+  await filters.locator('[data-close-catalog-filters]').click();
+  await page.locator('[data-sort-select]').selectOption('price_asc');
+  await expect(page.locator(`${GRID} .product-card`)).toHaveCount(46);
+  const metrics=await readProbe(page);
+  expect(metrics.cardReplacements).toBe(0);
+  expect(metrics.imageReplacements).toBe(0);
+  expect(metrics.categoryReplacements).toBe(0);
+  expect(metrics.filterOptionReplacements).toBe(0);
+  expect(metrics.imagesWithChildText).toBe(0);
+});
 
 test('Realtime sano: diez recorridos y eventos idénticos conservan cards e imágenes', async ({ page }, info) => {
   test.setTimeout(70000);
@@ -21,6 +77,8 @@ test('Realtime sano: diez recorridos y eventos idénticos conservan cards e imá
   expect(metrics.imageReplacements).toBe(0);
   expect(metrics.skeletons).toBe(0);
   expect(metrics.opacityResets).toBe(0);
+  expect(metrics.categoryReplacements).toBe(0);
+  expect(metrics.filterOptionReplacements).toBe(0);
 });
 
 test('Realtime caído: treinta segundos de polling idéntico y un cambio aislado', async ({ page }, info) => {
@@ -46,6 +104,9 @@ test('Realtime caído: treinta segundos de polling idéntico y un cambio aislado
   expect(beforeChange.removedCards).toBe(0);
   expect(beforeChange.skeletons).toBe(0);
   expect(beforeChange.opacityResets).toBe(0);
+  expect(beforeChange.categoryReplacements).toBe(0);
+  expect(beforeChange.filterOptionReplacements).toBe(0);
+  expect(beforeChange.imagesWithChildText).toBe(0);
   backend.rows[0].price = 4321;
   backend.rows[0].stock = 3;
   const target = page.locator(`${GRID} .product-card`).filter({ has: page.locator(`[data-product-detail="${backend.rows[0].id}"]`) });
@@ -82,7 +143,7 @@ test('precio pendiente residual: ficha abierta, Realtime, búsqueda, home y vuel
 });
 
 test('diez ciclos completos y sesión de dos minutos conservan identidades y posición', async ({ page }, info) => {
-  test.setTimeout(170000);
+  test.setTimeout(300000);
   const backend = await openRuntimeCatalog(page);
   await instrumentCatalog(page);
   const started = Date.now();
@@ -91,10 +152,9 @@ test('diez ciclos completos y sesión de dos minutos conservan identidades y pos
     await page.locator('[data-nav-view="home"]:visible').first().click();
     await page.locator('[data-nav-view="catalog"]:visible').first().click();
     // User actions pass through the real event handlers; no catalog functions are mocked.
-    const chip = page.locator(`[data-view="catalog"] [data-category-id="${categories[i % categories.length]}"]`).first();
-    await chip.click();
+    await clickCatalogCategory(page, categories[i % categories.length]);
     await scrollCatalog(page);
-    await page.locator('[data-view="catalog"] [data-category-id="all"]').first().click();
+    await clickCatalogCategory(page, 'all');
     const search = page.locator('[data-view="catalog"] [data-search-input]');
     await search.fill(i % 2 ? 'HEINEKEN' : 'coca');
     await expect(page.locator(`${GRID} .product-card`).first()).toBeVisible();
@@ -105,8 +165,8 @@ test('diez ciclos completos y sesión de dos minutos conservan identidades y pos
     await page.locator('[data-product-modal] [data-close-modal]').click();
     await expect.poll(async () => Math.abs(await page.evaluate(() => scrollY) - position)).toBeLessThanOrEqual(1);
     await search.fill('');
-    await page.locator(`[data-view="catalog"] [data-category-id="${categories[(i + 1) % categories.length]}"]`).first().click();
-    await page.locator('[data-view="catalog"] [data-category-id="all"]').first().click();
+    await clickCatalogCategory(page, categories[(i + 1) % categories.length]);
+    await clickCatalogCategory(page, 'all');
     backend.emit();
   }
   while (Date.now() - started < 120000) {

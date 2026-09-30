@@ -103,11 +103,9 @@ function markRevealTargets(documentRef, observer, reduced, revealImmediately = f
 
   targets.forEach((node) => {
     if (!node.dataset.motionReveal) node.dataset.motionReveal = 'section';
-    // Los repintados de catálogo reemplazan las tarjetas al cambiar una
-    // cantidad. Esas tarjetas ya estaban en pantalla: volver a observarlas
-    // reanima el contenedor debajo del dedo y WebKit lo considera inestable
-    // para el siguiente toque. La primera colecta conserva el reveal; las
-    // mutaciones posteriores entran visibles y dejan el feedback en el número.
+    // Las actualizaciones conservan las tarjetas existentes. Los nodos que
+    // llegan después del primer pintado entran visibles: volver a observarlos
+    // reanimaría el contenedor debajo del dedo. El feedback queda en el número.
     if (reduced || revealImmediately || !observer) {
       node.classList.add('is-motion-visible');
       return;
@@ -447,7 +445,9 @@ export function initMotion(documentRef = globalThis.document, windowRef = global
 
   collect();
   runScans();
-  mutationObserver?.observe(documentRef.body, { childList: true, subtree: true });
+  // Incremental updates change text nodes in place. Observe those changes so
+  // quantity/price feedback survives without requiring rebuilt card elements.
+  mutationObserver?.observe(documentRef.body, { childList: true, characterData: true, subtree: true });
   documentRef.addEventListener('pointerdown', onPointerDown, { passive: true });
   documentRef.addEventListener('pointerup', onPointerUp, { passive: true });
   documentRef.addEventListener('pointercancel', onPointerCancel, { passive: true });

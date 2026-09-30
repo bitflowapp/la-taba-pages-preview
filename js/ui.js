@@ -462,7 +462,10 @@ export function renderAdminVisibility() {
 
 function renderCatalogSurface(container, html) {
   const retainedKeys = new Set(getState().products.map((p) => 'product:' + p.id));
-  renderStableCatalog(container, html, { retainedKeys });
+  renderStableCatalog(container, html, { retainedKeys,
+    // Keep filtered cards, but release old master images when changing details.
+    cacheLimit: container.hasAttribute('data-modal-content') ? 0 : 120,
+  });
 }
 
 export function renderCatalog() {
@@ -1968,7 +1971,7 @@ function railCard(product) {
   // renglón al precio. La misma regla, un solo lugar: `cardAvailabilityLabel`.
   const stockState = cardAvailabilityLabel(product);
   return `
-    <article class="offer-card ${outOfStock ? 'out-of-stock' : ''}">
+    <article class="offer-card ${outOfStock ? 'out-of-stock' : ''}" data-catalog-key="product:${escapeHtml(product.id)}">
       <button class="offer-card-media" type="button" data-product-detail="${product.id}" aria-label="${escapeHtml(homeMediaLabel(product))}">
         ${productThumb(product, 'rail')}
         <span class="offer-badge-wrap">${topBadge(product)}</span>

@@ -35,6 +35,7 @@ test('Realtime caído: treinta segundos de polling idéntico y un cambio aislado
     }, 150);
   });
   await page.waitForTimeout(31000);
+  await info.attach('polling-read-times', { body: JSON.stringify(backend.counters.reads), contentType: 'application/json' });
   await expect.poll(() => backend.counters.products, { timeout: 15000 }).toBeGreaterThanOrEqual(6);
   await page.evaluate(() => clearInterval(window.__runtimeScrollTimer));
   expect(backend.counters.products).toBeGreaterThanOrEqual(6);
@@ -109,9 +110,9 @@ test('diez ciclos completos y sesión de dos minutos conservan identidades y pos
     backend.emit();
   }
   while (Date.now() - started < 120000) {
-    await page.mouse.wheel(0, 800);
+    await page.evaluate(() => scrollBy({ top: 800, behavior: 'instant' }));
     await page.waitForTimeout(2000);
-    await page.mouse.wheel(0, -800);
+    await page.evaluate(() => scrollBy({ top: -800, behavior: 'instant' }));
     backend.emit();
     await page.waitForTimeout(2000);
   }

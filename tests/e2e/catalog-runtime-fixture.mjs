@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { expect } from '@playwright/test';
 import { skipInstallInvitation } from './helpers.mjs';
 
@@ -7,6 +8,10 @@ export const snapshot = JSON.parse(fs.readFileSync(new URL('../fixtures/catalog-
 export const GRID = '[data-view="catalog"] [data-product-grid]';
 const BACKEND = 'https://taba-runtime-e2e.supabase.co';
 const BUSINESS_ID = '00000000-0000-4000-8000-000000000001';
+const USER = { id: '10000000-0000-4000-8000-000000000001', is_anonymous: true, aud: 'authenticated' };
+const TOKEN = ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
+  Buffer.from(JSON.stringify({ sub: USER.id, role: 'authenticated', exp: Math.floor(Date.now()/1000)+3600 })).toString('base64url'),
+  'test-signature'].join('.');
 
 // Only this in-memory backend is sellable. CP rows and commercial values stay untouched.
 export async function openRuntimeCatalog(page, { realtime = true } = {}) {
@@ -17,9 +22,33 @@ export async function openRuntimeCatalog(page, { realtime = true } = {}) {
     business_id: BUSINESS_ID, price: 2500, price_status: 'confirmed', stock: 10,
     available: true, is_active: true, is_verified: true,
   }));
-  const counters = { products: 0, images: 0, joined: 0 };
+  const counters = { products: 0, images: 0, joined: 0, reads: [] };
   const sockets = [];
   await skipInstallInvitation(page);
+  if (!realtime) {
+    // Fail the SDK channel contract while keeping the real PostgREST client.
+    // Closing every reconnecting browser WebSocket also tests the transport's
+    // reconnect backoff; this case isolates the five-second UI fallback.
+    await page.route('**/__catalog-original-supabase.js', (route) => route.fulfill({
+      path: fileURLToPath(new URL('../../js/vendor/supabase.js', import.meta.url)),
+      contentType: 'application/javascript',
+    }));
+    await page.route('**/js/vendor/supabase.js', (route) => route.fulfill({ contentType: 'application/javascript', body: `
+      import { createClient as actualCreateClient } from '/__catalog-original-supabase.js';
+      export * from '/__catalog-original-supabase.js';
+      export function createClient(...args) {
+        const client = actualCreateClient(...args);
+        client.channel = () => {
+          const channel = { on() { return channel; }, subscribe(callback) {
+            queueMicrotask(() => callback('CHANNEL_ERROR')); return channel;
+          }, unsubscribe() { return Promise.resolve('ok'); } };
+          return channel;
+        };
+        client.removeChannel = () => Promise.resolve('ok');
+        return client;
+      }
+    ` }));
+  }
   await page.routeWebSocket('wss://taba-runtime-e2e.supabase.co/**', (socket) => {
     if (!realtime) { socket.close({ code: 1011, reason: 'Controlled Realtime outage' }); return; }
     socket.onMessage((message) => {
@@ -49,15 +78,16 @@ export async function openRuntimeCatalog(page, { realtime = true } = {}) {
       if (realRoot) return route.fulfill({ path: path.join(realRoot, path.basename(url.pathname)), contentType: 'image/webp' });
       return route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="400" height="400" fill="white"/><circle cx="200" cy="200" r="70" fill="#942025"/></svg>' });
     }
-    if (url.pathname.endsWith('/products')) { counters.products++; return json(rows); }
+    if (url.pathname.endsWith('/products')) { counters.products++; counters.reads.push(Date.now()); return json(rows); }
     if (url.pathname.endsWith('/businesses')) return json({ id: BUSINESS_ID, name: 'La Taba',
       address: 'Mendoza 827, Neuquén', currency_code: 'ARS', ordering_enabled: true,
       ordering_verified: true, delivery_enabled: true, pickup_enabled: true,
       delivery_fee: 0, minimum_delivery_subtotal: 0, is_active: true, status: 'open' });
     if (url.pathname.endsWith('/get_public_business_contact')) return json([{ whatsapp_number: '', whatsapp_verified: false }]);
     if (url.pathname.endsWith('/get_mercadopago_checkout_availability')) return json({ available: false });
-    if (url.pathname.includes('/auth/')) return json({ access_token: 'test-token', refresh_token: 'test-refresh', token_type: 'bearer', expires_in: 3600,
-      user: { id: '10000000-0000-4000-8000-000000000001', is_anonymous: true, aud: 'authenticated' } });
+    if (url.pathname.endsWith('/auth/v1/user')) return json(USER);
+    if (url.pathname.includes('/auth/')) return json({ access_token: TOKEN, refresh_token: 'test-refresh', token_type: 'bearer', expires_in: 3600,
+      expires_at: Math.floor(Date.now()/1000)+3600, user: USER });
     return json([]);
   });
   await page.addInitScript(({ backend, businessId }) => {
@@ -67,6 +97,7 @@ export async function openRuntimeCatalog(page, { realtime = true } = {}) {
   }, { backend: BACKEND, businessId: BUSINESS_ID });
   await page.goto('/#catalog');
   await expect(page.locator(`${GRID} .product-card`)).toHaveCount(46, { timeout: 20000 });
+  await expect(page.locator('html')).toHaveAttribute('data-taba-startup', 'ready', { timeout: 20000 });
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(600);
   return { rows, counters, emit() {

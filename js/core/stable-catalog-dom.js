@@ -6,11 +6,11 @@ const keyFor = (node) => node?.nodeType === 1 ? node.getAttribute('data-catalog-
 const compatible = (a, b) => a?.nodeType === b.nodeType && a?.nodeName === b.nodeName;
 const runtimeClass = (name) => name === 'is-motion-visible' || name.startsWith('motion-');
 
-export function renderStableCatalog(container, html, { retainedKeys = null } = {}) {
+export function renderStableCatalog(container, html, { retainedKeys = null, cacheLimit = 120 } = {}) {
   if (!container || versions.get(container) === html) return;
   const template = container.ownerDocument.createElement('template');
   template.innerHTML = html;
-  patchChildren(container, template.content, retainedKeys);
+  patchChildren(container, template.content, retainedKeys, cacheLimit);
   versions.set(container, html);
 }
 
@@ -19,7 +19,7 @@ function remember(node, desired) {
   [...node.childNodes].forEach((child, i) => remember(child, desired.childNodes[i]));
 }
 
-function patchNode(node, desired, retainedKeys) {
+function patchNode(node, desired, retainedKeys, cacheLimit) {
   const version = desired.nodeType === 1 ? desired.outerHTML : desired.nodeValue;
   if (versions.get(node) === version) return;
   if (node.nodeType !== 1) {
@@ -40,11 +40,11 @@ function patchNode(node, desired, retainedKeys) {
       if (node.className !== next) node.setAttribute(name, next);
     } else if (node.getAttribute(name) !== value) node.setAttribute(name, value);
   }
-  patchChildren(node, desired, retainedKeys);
+  patchChildren(node, desired, retainedKeys, cacheLimit);
   versions.set(node, version);
 }
 
-function patchChildren(parent, desired, retainedKeys) {
+function patchChildren(parent, desired, retainedKeys, cacheLimit) {
   let pool = detached.get(parent);
   if (!pool) { pool = new Map(); detached.set(parent, pool); }
   const keyed = new Map([...parent.childNodes].filter(keyFor).map((n) => [keyFor(n), n]));
@@ -55,7 +55,7 @@ function patchChildren(parent, desired, retainedKeys) {
     if (!compatible(node, next)) {
       node = next.cloneNode(true);
       remember(node, next);
-    } else patchNode(node, next, retainedKeys);
+    } else patchNode(node, next, retainedKeys, cacheLimit);
     if (key) pool.delete(key);
     if (node !== cursor) parent.insertBefore(node, cursor);
     cursor = node.nextSibling;
@@ -72,5 +72,5 @@ function patchChildren(parent, desired, retainedKeys) {
   }
   // Bound memory for catalogs much larger than the current one. Attached nodes
   // are never evicted; only a maximum of 120 recently filtered cards is kept.
-  while (pool.size > 120) pool.delete(pool.keys().next().value);
+  while (pool.size > cacheLimit) pool.delete(pool.keys().next().value);
 }

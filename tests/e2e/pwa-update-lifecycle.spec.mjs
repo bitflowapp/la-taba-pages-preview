@@ -25,14 +25,19 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const updateScript = fs.readFileSync(path.join(root, 'js', 'pwa-update.js'), 'utf8');
 const workerSource = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+const previousControlledWorker = fs.readFileSync(path.join(root, 'tests/fixtures/sw-runtime-v131.js'), 'utf8');
+let controlledVersions = false;
 
 // El aviso, con el mismo marcado que sirve index.html.
 const BANNER_MARKUP = fs.readFileSync(path.join(root, 'index.html'), 'utf8')
   .match(/<div class="pwa-banner pwa-banner-update"[\s\S]*?<\/div>/)?.[0];
 
 function workerForVersion(version) {
-  return workerSource
-    .replace(/const CACHE_NAME = '[^']+';/, `const CACHE_NAME = 'la-taba-runtime-harness-v${version}';`)
+  const source = controlledVersions && version === 1 ? previousControlledWorker : workerSource;
+  return source
+    .replace(/const CACHE_NAME = '[^']+';/, controlledVersions
+      ? `const CACHE_NAME = '${version === 1 ? 'la-taba-runtime-v131-premium-motion' : 'la-taba-runtime-v133-catalog-stable'}';`
+      : `const CACHE_NAME = 'la-taba-runtime-harness-v${version}';`)
     .replace(/const ASSETS = \[[\s\S]*?\n\];/, "const ASSETS = ['./'];")
     .concat(`\nself.__HARNESS_VERSION = ${version};\n`);
 }
@@ -113,6 +118,7 @@ test.afterAll(async () => {
 
 test.beforeEach(() => {
   publishedVersion = 1;
+  controlledVersions = false;
 });
 
 /** Espera a que la página quede controlada por un worker activo (activate -> claim). */
@@ -149,6 +155,26 @@ async function banner(page) {
 }
 
 test.describe('el aviso de actualización sigue el ciclo de vida real del worker', () => {
+  test('CP v131 a v133: actualización real conserva sesión y carrito', async ({ context }) => {
+    controlledVersions = true;
+    const page = await openControlledPage(context);
+    const storage = {
+      'sb-tkanbadcglszlcyfjvpv-auth-token': JSON.stringify({ user: { id: 'qa-session' }, access_token: 'test-only-session' }),
+      'la_taba_production_cart_v1': JSON.stringify({ businessId: 'qa-business', items: [{ productId: 'qa-product', quantity: 2 }] }),
+    };
+    await page.evaluate((values) => Object.entries(values).forEach(([key,value]) => localStorage.setItem(key,value)), storage);
+    expect(await page.evaluate(() => caches.keys())).toContain('la-taba-runtime-v131-premium-motion');
+    await publishAndWaitForWaiting(page, 2);
+    await nudge(page);
+    await expect(await banner(page)).toBeVisible();
+    await page.locator('[data-app-update-now]').click();
+    await page.waitForFunction(async () => (await caches.keys()).includes('la-taba-runtime-v133-catalog-stable'));
+    const cached = await page.evaluate(() => caches.keys());
+    expect(cached).not.toContain('la-taba-runtime-v131-premium-motion');
+    expect(await page.evaluate((keys) => Object.fromEntries(keys.map(key => [key,localStorage.getItem(key)])), Object.keys(storage))).toEqual(storage);
+    await expect(await banner(page)).toBeHidden();
+  });
+
   test('otra pestaña actualiza: el aviso de esta NO queda huérfano', async ({ context }) => {
     const first = await openControlledPage(context);
     const second = await openControlledPage(context);

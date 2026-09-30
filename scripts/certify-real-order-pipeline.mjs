@@ -17,8 +17,10 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { randomUUID, randomBytes } from 'node:crypto';
-
-const CONFIRMATION = 'I_UNDERSTAND_THIS_MUTATES_STAGING';
+import {
+  assertStagingCertificationTarget,
+  verifyStagingCertificationIdentity,
+} from './lib/staging-certification-target.mjs';
 
 const env = (name) => String(process.env[name] || '').trim();
 
@@ -26,11 +28,16 @@ const SUPABASE_URL = env('SUPABASE_URL');
 const SERVICE_ROLE_KEY = env('SUPABASE_SERVICE_ROLE_KEY');
 const ANON_KEY = env('SUPABASE_ANON_KEY');
 const BUSINESS_ID = env('TABA_BUSINESS_ID');
-const STAGING_PROJECT_REF = 'ukxqbgswjlibmnjemrzd';
-const STAGING_URL = `https://${STAGING_PROJECT_REF}.supabase.co`;
+const certificationTarget = {
+  supabaseUrl: SUPABASE_URL,
+  businessId: BUSINESS_ID,
+  confirmation: env('TABA_CERTIFY_CONFIRM'),
+};
 
-if (env('TABA_CERTIFY_CONFIRM') !== CONFIRMATION) {
-  console.error(`Definí TABA_CERTIFY_CONFIRM=${CONFIRMATION} para correr la certificación.`);
+try {
+  assertStagingCertificationTarget(certificationTarget);
+} catch (error) {
+  console.error(error.message);
   process.exit(2);
 }
 for (const [name, value] of Object.entries({ SUPABASE_URL, SERVICE_ROLE_KEY, ANON_KEY, BUSINESS_ID })) {
@@ -39,11 +46,6 @@ for (const [name, value] of Object.entries({ SUPABASE_URL, SERVICE_ROLE_KEY, ANO
     process.exit(2);
   }
 }
-if (SUPABASE_URL !== STAGING_URL) {
-  console.error(`La certificación sólo corre contra el staging ${STAGING_PROJECT_REF}.`);
-  process.exit(2);
-}
-
 const service = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
@@ -206,12 +208,14 @@ function orderPayload({ productId, quantity, paymentMethod, clientRequestId, nam
 }
 
 async function main() {
+  await verifyStagingCertificationIdentity(service, certificationTarget);
   console.log(`\n=== Certificación del circuito real de pedidos ===\n${SUPABASE_URL}\n`);
 
   // ---------------------------------------------------------------- baseline
   const { data: lt30Before } = await service
     .from('orders')
     .select('id,status,revision,assigned_rider_user_id,arrived_at,origin')
+    .eq('business_id', BUSINESS_ID)
     .eq('public_code', 'LT-0030')
     .maybeSingle();
   const { count: gpsBefore } = await service
@@ -751,6 +755,7 @@ async function main() {
   const { data: lt30After } = await service
     .from('orders')
     .select('id,status,revision,assigned_rider_user_id,arrived_at,origin,origin_reason')
+    .eq('business_id', BUSINESS_ID)
     .eq('public_code', 'LT-0030')
     .maybeSingle();
   const { count: gpsAfter } = await service
@@ -773,12 +778,14 @@ async function main() {
     const { data: row } = await service
       .from('orders')
       .select('public_code,origin,origin_reason,status,payment_method')
+      .eq('business_id', BUSINESS_ID)
       .eq('public_code', code)
       .maybeSingle();
     const { count: events } = await service
       .from('order_events')
       .select('id', { count: 'exact', head: true })
-      .eq('order_id', (await service.from('orders').select('id').eq('public_code', code).maybeSingle()).data?.id);
+      .eq('order_id', (await service.from('orders').select('id').eq('business_id', BUSINESS_ID)
+        .eq('public_code', code).maybeSingle()).data?.id);
     check(`${code} clasificado QA y con su evidencia`,
       row?.origin === 'qa' && Boolean(row?.origin_reason) && Number(events) > 0,
       `origin=${row?.origin} motivo=${row?.origin_reason} eventos=${events}`);

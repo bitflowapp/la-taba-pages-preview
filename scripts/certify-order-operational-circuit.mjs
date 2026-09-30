@@ -15,8 +15,11 @@
  */
 import { createClient } from '@supabase/supabase-js';
 import { randomUUID, randomBytes } from 'node:crypto';
+import {
+  assertStagingCertificationTarget,
+  verifyStagingCertificationIdentity,
+} from './lib/staging-certification-target.mjs';
 
-const CONFIRMATION = 'I_UNDERSTAND_THIS_MUTATES_STAGING';
 const env = (name) => String(process.env[name] || '').trim();
 
 const URL = env('SUPABASE_URL');
@@ -24,9 +27,16 @@ const SERVICE = env('SUPABASE_SERVICE_ROLE_KEY');
 const ANON = env('SUPABASE_ANON_KEY');
 const BUSINESS = env('TABA_BUSINESS_ID');
 const CODE = process.argv[2];
+const certificationTarget = {
+  supabaseUrl: URL,
+  businessId: BUSINESS,
+  confirmation: env('TABA_CERTIFY_CONFIRM'),
+};
 
-if (env('TABA_CERTIFY_CONFIRM') !== CONFIRMATION) {
-  console.error(`Defini TABA_CERTIFY_CONFIRM=${CONFIRMATION} para operar un pedido real.`);
+try {
+  assertStagingCertificationTarget(certificationTarget);
+} catch (error) {
+  console.error(error.message);
   process.exit(2);
 }
 for (const [name, value] of Object.entries({
@@ -38,7 +48,6 @@ for (const [name, value] of Object.entries({
   if (!value) { console.error(`Falta ${name}.`); process.exit(2); }
 }
 if (!CODE) { console.error('Indica el pedido: npm run certify:circuit:staging -- LT-00XX'); process.exit(2); }
-if (/(^|\.)la-taba-demo\./.test(URL)) { console.error('Nunca corre contra la-taba-demo.'); process.exit(2); }
 
 const service = createClient(URL, SERVICE, { auth: { autoRefreshToken: false, persistSession: false } });
 const limpieza = [];
@@ -78,10 +87,13 @@ async function actor(role) {
 }
 
 const fila = async (columns = '*') =>
-  (await service.from('orders').select(columns).eq('public_code', CODE).single()).data;
+  (await service.from('orders').select(columns).eq('business_id', BUSINESS)
+    .eq('public_code', CODE).single()).data;
 
 try {
+  await verifyStagingCertificationIdentity(service, certificationTarget);
   const pedido = await fila('id,status,revision,total,subtotal,discount_total,origin,customer_user_id');
+  if (!pedido) throw new Error('STAGING_CERTIFICATION_QA_ORDER_NOT_FOUND');
   console.log(`pedido ${CODE}: ${pedido.status} · $${pedido.total} · origin=${pedido.origin}\n`);
 
   const previo = await fila('status');

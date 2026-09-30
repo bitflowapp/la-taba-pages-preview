@@ -8,8 +8,12 @@ const source = readFileSync(
 );
 
 test('la certificación integral queda fijada al staging exacto', () => {
-  assert.match(source, /const STAGING_PROJECT_REF = 'ukxqbgswjlibmnjemrzd'/);
-  assert.match(source, /SUPABASE_URL !== STAGING_URL/);
+  assert.match(source, /assertStagingCertificationTarget\(certificationTarget\)/);
+  assert.match(source, /await verifyStagingCertificationIdentity\(service, certificationTarget\)/);
+  assert.ok(source.indexOf('assertStagingCertificationTarget(certificationTarget)')
+    < source.indexOf('const service = createClient('));
+  assert.ok(source.indexOf('await verifyStagingCertificationIdentity(service, certificationTarget)')
+    < source.indexOf("await createActor('customer')"));
   assert.match(source, /TABA_CERTIFY_CONFIRM/);
 });
 

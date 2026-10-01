@@ -1,3 +1,4 @@
+import { renderStableCatalog } from './core/stable-catalog-dom.js';
 import { getBusinessConfig } from './core/business-config-store.js';
 import { BRAND } from './config.js';
 import { businessMapsSearchUrl, mapsSearchUrl } from './core/business-location.js';
@@ -258,7 +259,9 @@ export function applyBusinessConfig() {
 
   // Marca del PRODUCTO (PedidoPropio): superficie comercial e intro del home.
   // Fuente única en BRAND (config.js); el HTML sólo lleva un fallback de primer pintado.
-  setText('[data-product-name]', BRAND.productName);
+  // Images use data-product-name for their own accessible fallback. The app
+  // brand binding must never append brand text inside a product image.
+  setText('[data-product-name]:not(img)', BRAND.productName);
   setText('[data-product-tagline]', BRAND.tagline);
   setText('[data-product-short-tagline]', BRAND.shortTagline);
 
@@ -398,7 +401,8 @@ function shortZoneLabel(zone) {
 }
 
 function setText(selector, value) {
-  $$(selector).forEach((node) => { node.textContent = value; });
+  const text = String(value ?? '');
+  $$(selector).forEach((node) => { if (node.textContent !== text) node.textContent = text; });
 }
 
 function formatWhatsappDisplay(value) {
@@ -459,6 +463,14 @@ export function renderAdminVisibility() {
   });
 }
 
+function renderCatalogSurface(container, html) {
+  const retainedKeys = new Set(getState().products.map((p) => 'product:' + p.id));
+  renderStableCatalog(container, html, { retainedKeys,
+    // Keep filtered cards, but release old master images when changing details.
+    cacheLimit: container.hasAttribute('data-modal-content') ? 0 : 120,
+  });
+}
+
 export function renderCatalog() {
   renderCombos();
   renderCategories();
@@ -468,6 +480,12 @@ export function renderCatalog() {
   renderCatalogMeta();
   renderSearchControls();
   renderProducts();
+  const modal = $('[data-product-modal]');
+  const openId = modal?.open && modal.querySelector('[data-modal-product-id]')?.dataset.modalProductId;
+  if (openId) {
+    if (getProductById(openId)) showProductModal(openId, null, { refresh: true });
+    else closeProductModal();
+  }
 }
 
 export function discountPercent(product) {
@@ -882,7 +900,7 @@ const HOME_CATEGORY_LIMIT = BEVERAGE_HOME_CATEGORY_ORDER.length;
 function homeProducts(ids) {
   const productsById = new Map(
     getCustomerCatalogProducts(getState().products)
-      .filter((product) => !product.pricePending)
+      .filter((product) => !isPricePending(product))
       .map((product) => [product.id, product]),
   );
   return ids.map((id) => productsById.get(id)).filter(Boolean);
@@ -934,7 +952,7 @@ function homePopularSection() {
 
 function homeBestSellerProducts() {
   const popular = homePopularSection()?.products || [];
-  if (popular.length) return popular.filter((product) => !product.pricePending);
+  if (popular.length) return popular.filter((product) => !isPricePending(product));
   // La selección heredada se mantiene como "Destacados" cuando todavía no
   // existe una marca popular real. Nunca se presenta como "Lo más pedido".
   // Sale del mismo orden comercial que las secciones de abajo —y con una marca
@@ -1051,12 +1069,12 @@ function renderHomeHeroPromo() {
   const hero = HOME_HERO_PROMO;
   const category = categoriesForCurrentCatalog().find((entry) => entry.id === hero.categoryId);
   if (!category || !purchasableCategoryIds().has(hero.categoryId)) {
-    slot.innerHTML = '';
+    renderCatalogSurface(slot, '');
     slot.hidden = true;
     return;
   }
   slot.hidden = false;
-  slot.innerHTML = `
+  renderCatalogSurface(slot, `
     <button class="home-hero-promo" type="button" data-category-id="${escapeHtml(hero.categoryId)}" aria-label="${escapeHtml(`${hero.title}. ${hero.subtitle} Ver ${category.name.toLowerCase()}`)}">
       <span class="home-hero-promo-media" aria-hidden="true"></span>
       <span class="home-hero-promo-copy">
@@ -1065,7 +1083,7 @@ function renderHomeHeroPromo() {
         <span class="home-hero-promo-sub">${escapeHtml(hero.subtitle)}</span>
         <span class="home-hero-promo-cta">Ver ${escapeHtml(category.name.toLowerCase())} <span aria-hidden="true">→</span></span>
       </span>
-    </button>`;
+    </button>`);
 }
 
 // ─── Selección del local (tarjetas con estado honesto) ───────────────────────
@@ -1105,7 +1123,7 @@ function renderHomeEditorialSelection() {
   const products = homeEditorialProducts();
   if (section) section.hidden = products.length === 0;
   const cartQuantities = new Map(getCartItems().map((item) => [item.productId, item.quantity]));
-  rail.innerHTML = products.map((product) => homeSectionCard(product, cartQuantities)).join('');
+  renderCatalogSurface(rail, products.map((product) => homeSectionCard(product, cartQuantities)).join(''));
 }
 
 // Banner editorial. NO afirma un descuento: invita a recorrer una categoría que
@@ -1432,7 +1450,7 @@ export function stepStoriesModal(delta) {
 // habilitar "Agregar", así que la fila no puede contradecir al catálogo.
 function purchasableCategoryIds(state = getState()) {
   return new Set(getCustomerCatalogProducts(state.products)
-    .filter((product) => !product.pricePending && product.available && Number(product.stock) > 0)
+    .filter((product) => !isPricePending(product) && product.available && Number(product.stock) > 0)
     .map((product) => product.categoryId)
     .filter(Boolean));
 }
@@ -1459,7 +1477,7 @@ function renderHomeCategories() {
   const activeCategory = state.searchQuery.trim() ? null : state.activeCategory;
   const list = homeCategoryList();
   if (!list.length) {
-    strip.innerHTML = '';
+    renderCatalogSurface(strip, '');
     strip.hidden = true;
     return;
   }
@@ -1468,14 +1486,14 @@ function renderHomeCategories() {
   // roja tiene que estar VISIBLE sin scroll. Además deja a un toque el resto
   // del catálogo, incluidas las categorías que aún no publican precio.
   const entries = [{ id: 'all', name: 'Todas' }, ...list];
-  strip.innerHTML = entries.map((category) => {
+  renderCatalogSurface(strip, entries.map((category) => {
     const isActive = activeCategory === category.id;
     return `
-      <button class="home-category-card ${isActive ? 'active' : ''}" type="button" data-category-id="${category.id}"${isActive ? ' aria-current="true"' : ''}>
+      <button class="home-category-card ${isActive ? 'active' : ''}" data-catalog-key="category:${escapeHtml(category.id)}" type="button" data-category-id="${category.id}"${isActive ? ' aria-current="true"' : ''}>
         <span class="home-category-icon" aria-hidden="true">${categoryGlyph(category.id)}</span>
         <span>${escapeHtml(category.name)}</span>
       </button>`;
-  }).join('');
+  }).join(''));
 }
 
 function renderHomePromotions() {
@@ -1485,7 +1503,7 @@ function renderHomePromotions() {
   const block = container.closest('.home-merch-section');
   if (block) block.hidden = products.length === 0;
   const cartQuantities = new Map(getCartItems().map((item) => [item.productId, item.quantity]));
-  container.innerHTML = products.map((product) => {
+  renderCatalogSurface(container, products.map((product) => {
     const pricing = productPricePresentation(product);
     const old = pricing.regularPrice && pricing.regularPrice > pricing.price
       ? `<s>${money(pricing.regularPrice)}</s>`
@@ -1497,7 +1515,7 @@ function renderHomePromotions() {
     // avisar. "Disponible" en cada tarjeta era un renglón fijo que no informaba.
     const stockState = cardAvailabilityLabel(product);
     return `
-      <article class="home-promo-card ${outOfStock ? 'out-of-stock' : ''}">
+      <article data-catalog-key="product:${escapeHtml(product.id)}" class="home-promo-card ${outOfStock ? 'out-of-stock' : ''}">
         <button class="home-promo-media" type="button" data-product-detail="${product.id}" aria-label="${escapeHtml(homeMediaLabel(product))}">
           <span class="home-promo-badge">${escapeHtml(badge)}</span>
           ${homeProductImage(product, 'home-promo-image')}
@@ -1513,7 +1531,7 @@ function renderHomePromotions() {
         </div>
         <div class="home-card-control">${quickAddControl(product, cartQuantities.get(product.id) || 0, { className: 'home-add-button' })}</div>
       </article>`;
-  }).join('');
+  }).join(''));
   bindHomePromotionPaging();
 }
 
@@ -1532,9 +1550,12 @@ function renderHomeBestSellers() {
   // Misma tarjeta que los carruseles de abajo. Antes "Destacados" emitía su
   // propia variante sin el botón de favorito: dos tarjetas distintas en la
   // misma pantalla, y la primera —la más vista— era la que no dejaba guardar.
-  container.innerHTML = homeBestSellerProducts()
+  const products = homeBestSellerProducts();
+  const section = container.closest('.home-best-section');
+  if (section) section.hidden = products.length === 0;
+  renderCatalogSurface(container, products
     .map((product) => homeSectionCard(product, cartQuantities))
-    .join('');
+    .join(''));
 }
 
 let homePromotionResizeObserver = null;
@@ -1628,7 +1649,7 @@ function renderHomeSections() {
     .filter((id) => !usedByHeader.has(id) && !sectionCategoryIds.has(id));
 
   const cartQuantities = new Map(getCartItems().map((item) => [item.productId, item.quantity]));
-  container.innerHTML = sections.map((section, index) => {
+  renderCatalogSurface(container, sections.map((section, index) => {
     const headingId = `home-section-${escapeHtml(section.id)}`;
     const target = section.categoryIds[0] || 'all';
     const cards = section.products
@@ -1640,7 +1661,7 @@ function renderHomeSections() {
       ? `<div class="home-brand-banners home-brand-banners-inline">${homeBannerMarkup(interleaved.shift())}</div>`
       : '';
     return `
-      <section class="home-merch-section home-category-section" aria-labelledby="${headingId}">
+      <section data-catalog-key="section:${escapeHtml(section.id)}" class="home-merch-section home-category-section" aria-labelledby="${headingId}">
         <div class="home-section-head">
           <div class="home-section-title">
             <h2 id="${headingId}">${escapeHtml(section.title)}</h2>
@@ -1649,7 +1670,7 @@ function renderHomeSections() {
         </div>
         <div class="home-best-sellers offers-rail">${cards}</div>
       </section>${banner}`;
-  }).join('');
+  }).join(''));
 }
 
 // La vidriera no imprime el estado de stock: la tarjeta es chica y el botón ya
@@ -1684,7 +1705,7 @@ function homeSectionCard(product, cartQuantities) {
     ? `<button class="home-add-button is-price-pending" type="button" data-product-detail="${escapeHtml(product.id)}" aria-label="${escapeHtml(`Ver la ficha de ${product.name}. ${PRICE_PENDING_DETAIL}`)}"><span class="add-text">Ver detalle</span></button>`
     : quickAddControl(product, cartQuantities.get(product.id) || 0, { className: 'home-add-button' });
   return `
-    <article class="home-best-card ${outOfStock && !product.pricePending ? 'out-of-stock' : ''}">
+    <article data-catalog-key="product:${escapeHtml(product.id)}" class="home-best-card ${outOfStock && !isPricePending(product) ? 'out-of-stock' : ''}">
       <button class="home-favorite-button ${favorite ? 'is-favorite' : ''}" type="button" data-favorite-toggle="${product.id}" aria-pressed="${favorite}" aria-label="${favorite ? 'Quitar' : 'Guardar'} ${escapeHtml(productAccessibleName(product))} de favoritos">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M20.8 4.8a5.3 5.3 0 0 0-7.5 0L12 6.1l-1.3-1.3a5.3 5.3 0 0 0-7.5 7.5L12 21l8.8-8.7a5.3 5.3 0 0 0 0-7.5Z" fill="currentColor" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
@@ -1767,7 +1788,7 @@ function renderCombos() {
       : 'Armados por el local';
   }
 
-  container.innerHTML = combos.map(comboCard).join('');
+  renderCatalogSurface(container, combos.map(comboCard).join(''));
 }
 
 /*
@@ -1818,7 +1839,7 @@ export function comboMedia(combo) {
 function comboCard(combo) {
   const unidades = combo.components.reduce((total, component) => total + component.quantity, 0);
   return `
-    <article class="combo-card" data-combo-card="${escapeHtml(combo.comboId)}">
+    <article class="combo-card" data-catalog-key="combo:${escapeHtml(combo.comboId)}" data-combo-card="${escapeHtml(combo.comboId)}">
       <button class="combo-card-media" type="button" data-combo-detail="${escapeHtml(combo.comboId)}" aria-label="Ver el combo ${escapeHtml(combo.name)}">
         ${comboMedia(combo)}
         ${combo.hasRealSaving ? `<span class="combo-save-badge">Ahorrás ${money(combo.savings)}</span>` : ''}
@@ -1953,7 +1974,7 @@ function railCard(product) {
   // renglón al precio. La misma regla, un solo lugar: `cardAvailabilityLabel`.
   const stockState = cardAvailabilityLabel(product);
   return `
-    <article class="offer-card ${outOfStock ? 'out-of-stock' : ''}">
+    <article class="offer-card ${outOfStock ? 'out-of-stock' : ''}" data-catalog-key="product:${escapeHtml(product.id)}">
       <button class="offer-card-media" type="button" data-product-detail="${product.id}" aria-label="${escapeHtml(homeMediaLabel(product))}">
         ${productThumb(product, 'rail')}
         <span class="offer-badge-wrap">${topBadge(product)}</span>
@@ -2102,6 +2123,8 @@ function categoryGlyph(categoryId) {
   return CATEGORY_GLYPHS[key] || CATEGORY_GLYPHS.all;
 }
 
+const categoryMoreBindings = new WeakSet();
+
 function renderCategories() {
   const strips = $$('[data-category-strip]');
   if (!strips.length) return;
@@ -2137,14 +2160,14 @@ function renderCategories() {
   const remainingCatalogList = byAvailability.slice(VISIBLE_CATALOG_CHIPS);
 
   const markupFor = (list) => list.map((category) => `
-    <button class="category-button ${activeCategory === category.id ? 'active' : ''}" type="button" data-category-id="${category.id}" aria-pressed="${activeCategory === category.id}">
+    <button class="category-button ${activeCategory === category.id ? 'active' : ''}" data-catalog-key="category:${escapeHtml(category.id)}" type="button" data-category-id="${category.id}" aria-pressed="${activeCategory === category.id}">
       <span class="category-ico" aria-hidden="true">${categoryGlyph(category.id)}</span>
       <span class="category-label">${escapeHtml(category.name)}</span>
     </button>
   `).join('');
 
   const moreButton = `
-    <button class="category-button category-more" type="button" data-category-more aria-label="Ver más categorías">
+    <button class="category-button category-more" data-catalog-key="category:more" type="button" data-category-more aria-label="Ver más categorías">
       <span class="category-ico" aria-hidden="true">${categoryGlyph('more')}</span>
       <span class="category-label">Más</span>
     </button>`;
@@ -2156,10 +2179,14 @@ function renderCategories() {
     // trabajo tirado, y bastaba invertir el orden de las llamadas para que la
     // home volviera a ofrecer categorías sin un solo precio publicado.
     if (strip.dataset.categoryStrip === 'home') return;
-    strip.innerHTML = `${markupFor(catalogTopList)}${remainingCatalogList.length ? moreButton : ''}${markupFor(remainingCatalogList)}`;
-    strip.querySelector('[data-category-more]')?.addEventListener('click', () => {
-      strip.scrollBy({ left: Math.max(220, Math.round(strip.clientWidth * 0.85)), behavior: 'smooth' });
-    });
+    renderCatalogSurface(strip, `${markupFor(catalogTopList)}${remainingCatalogList.length ? moreButton : ''}${markupFor(remainingCatalogList)}`);
+    const more = strip.querySelector('[data-category-more]');
+    if (more && !categoryMoreBindings.has(more)) {
+      more.addEventListener('click', () => {
+        strip.scrollBy({ left: Math.max(220, Math.round(strip.clientWidth * 0.85)), behavior: 'smooth' });
+      });
+      categoryMoreBindings.add(more);
+    }
   });
 }
 
@@ -2179,8 +2206,8 @@ function renderCatalogFilters() {
       etiqueta: (crudo) => packagingLabel(crudo) || crudo,
     }),
   };
-  const available = products.filter((product) => product.available && Number(product.stock) > 0 && !product.pricePending).length;
-  const pending = products.filter((product) => product.pricePending).length;
+  const available = products.filter((product) => product.available && Number(product.stock) > 0 && !isPricePending(product)).length;
+  const pending = products.filter((product) => isPricePending(product)).length;
   const alcohol = products.filter((product) => product.alcoholic).length;
   const packs = products.filter((product) => Number(product.unitsPerPack) > 1).length;
   const promo = activePromotionProductIds(state).size;
@@ -2189,11 +2216,12 @@ function renderCatalogFilters() {
     const control = panel.querySelector(`[data-catalog-filter="${key}"]`);
     if (!field || !control) return;
     field.hidden = values.length < 2;
-    control.innerHTML = [
-      `<option value="all">${escapeHtml(all)}</option>`,
-      ...values.map(({ value, label: optionLabel }) => `<option value="${escapeHtml(value)}">${escapeHtml(optionLabel)}</option>`),
-    ].join('');
-    control.value = values.some((option) => option.value === filters[key]) ? filters[key] : 'all';
+    renderStableCatalog(control, [
+      `<option value="all" data-catalog-key="option:all">${escapeHtml(all)}</option>`,
+      ...values.map(({ value, label: optionLabel }) => `<option value="${escapeHtml(value)}" data-catalog-key="option:${escapeHtml(value)}">${escapeHtml(optionLabel)}</option>`),
+    ].join(''), { cacheLimit: 0 });
+    const selected = values.some((option) => option.value === filters[key]) ? filters[key] : 'all';
+    if (control.value !== selected) control.value = selected;
   };
   select('brand', 'marcas', options.brand, { all: 'Todas las marcas' });
   select('capacity', 'capacidades', options.capacity, { all: 'Todas las capacidades' });
@@ -2211,7 +2239,7 @@ function renderCatalogFilters() {
     ...(products.length - available ? [{ value: 'unavailable', label: 'No disponible' }] : []),
   ], { all: 'Toda disponibilidad' });
   select('price', 'precios', [
-    ...(products.some((product) => !product.pricePending) ? [{ value: 'confirmed', label: 'Con precio' }] : []),
+    ...(products.some((product) => !isPricePending(product)) ? [{ value: 'confirmed', label: 'Con precio' }] : []),
     ...(pending ? [{ value: 'pending', label: 'Precio próximamente' }] : []),
   ], { all: 'Todos los precios' });
   select('promotion', 'promociones', promo ? [{ value: 'active', label: 'Promoción activa' }] : [], { all: 'Sin filtro de promoción' });
@@ -2369,7 +2397,7 @@ function getFilteredProducts(state) {
     // y por eso «500 ml» devolvía botellas de 1,5 L y «energética» no devolvía
     // ningún energizante.
     const matchesQuery = productMatchesQuery(product, state.searchQuery);
-    const isAvailable = product.available && Number(product.stock) > 0 && !product.pricePending;
+    const isAvailable = product.available && Number(product.stock) > 0 && !isPricePending(product);
     const matchesFilters = (
       (filters.brand === 'all' || normalizeSearchText(product.brand) === filters.brand)
       && (filters.capacity === 'all' || normalizeSearchText(product.capacity) === filters.capacity)
@@ -2377,7 +2405,7 @@ function getFilteredProducts(state) {
       && (filters.pack === 'all' || (filters.pack === 'pack' ? Number(product.unitsPerPack) > 1 : Number(product.unitsPerPack) === 1))
       && (filters.alcohol === 'all' || (filters.alcohol === 'with' ? product.alcoholic : !product.alcoholic))
       && (filters.availability === 'all' || (filters.availability === 'available' ? isAvailable : !isAvailable))
-      && (filters.price === 'all' || (filters.price === 'pending' ? product.pricePending : !product.pricePending))
+      && (filters.price === 'all' || (filters.price === 'pending' ? isPricePending(product) : !isPricePending(product)))
       && (filters.promotion === 'all' || isPromotionalProduct(product, promoProductIds))
     );
     return matchesCategory && matchesQuery && matchesFilters;
@@ -2391,7 +2419,7 @@ function getFilteredProducts(state) {
 // un puntaje negativo lo manda al final de cualquier orden, sin sacarlo del
 // catálogo: sigue visible y buscable, que es la decisión de siempre.
 function recommendedScore(product) {
-  if (product.pricePending) return -1;
+  if (isPricePending(product)) return -1;
   let score = 0;
   if (product.available && product.stock > 0) score += 4;
   if (product.featured) score += 2;
@@ -2401,7 +2429,7 @@ function recommendedScore(product) {
 }
 
 function popularScore(product) {
-  if (product.pricePending) return -1;
+  if (isPricePending(product)) return -1;
   let score = 0;
   if (product.popular) score += 3;
   if (product.available && product.stock > 0) score += 2;
@@ -2425,7 +2453,7 @@ function comparePricedAscending(left, right) {
 }
 
 function pricedAmount(product) {
-  if (product?.pricePending) return null;
+  if (isPricePending(product)) return null;
   const amount = Number(product?.price);
   return Number.isFinite(amount) && amount > 0 ? amount : null;
 }
@@ -2547,11 +2575,11 @@ function renderCatalogOffers() {
   const block = container.closest('[data-catalog-offers-block]') || container;
   if (!offers.length) {
     block.hidden = true;
-    container.innerHTML = '';
+    renderCatalogSurface(container, '');
     return;
   }
   block.hidden = false;
-  container.innerHTML = offers.map(railCard).join('');
+  renderCatalogSurface(container, offers.map(railCard).join(''));
 }
 
 function renderCatalogMeta() {
@@ -2625,12 +2653,12 @@ function renderProducts() {
 
   if (!filteredProducts.length) {
     if (isProductionCatalogLoading()) {
-      container.innerHTML = `
+      renderCatalogSurface(container, `
         <div class="empty-state" data-catalog-loading role="status" aria-live="polite">
           <strong>Cargando catálogo…</strong>
           <p class="empty-state-copy">Estamos buscando los productos disponibles.</p>
         </div>
-        ${'<div class="catalog-skeleton-card" aria-hidden="true"><span class="motion-skeleton"></span><span class="motion-skeleton"></span><span class="motion-skeleton"></span></div>'.repeat(4)}`;
+        ${'<div class="catalog-skeleton-card" aria-hidden="true"><span class="motion-skeleton"></span><span class="motion-skeleton"></span><span class="motion-skeleton"></span></div>'.repeat(4)}`);
       return;
     }
     const isFavorites = state.activeCategory === 'favorites';
@@ -2650,7 +2678,7 @@ function renderProducts() {
       : isSearch
         ? 'Probá con la marca o la presentación.'
         : 'Volvé a ver el catálogo completo o elegí otra categoría.';
-    container.innerHTML = `
+    renderCatalogSurface(container, `
       <div class="empty-state">
         <strong>${emptyTitle}</strong>
         <p class="empty-state-copy">${emptyCopy}</p>
@@ -2659,7 +2687,7 @@ function renderProducts() {
           ${isSearch && narrowed ? '<button class="secondary-button compact" type="button" data-search-everywhere>Buscar en todo</button>' : ''}
           <button class="secondary-button compact" type="button" data-clear-catalog-filters>Ver todo el catálogo</button>
         </div>
-      </div>`;
+      </div>`);
     return;
   }
 
@@ -2676,12 +2704,13 @@ function renderProducts() {
    * pedir. Cuando el negocio publique esos precios, el aviso desaparece solo.
    */
   const nadaComprable = filteredProducts.every((product) => !isCommerciallyPurchasable(product));
+  const hayComprables = getCustomerCatalogProducts(state.products).some(isCommerciallyPurchasable);
   const avisoSinComprables = nadaComprable
     ? `<div class="catalog-none-buyable" role="status">
         <strong>${filteredProducts.length === 1
           ? 'Este producto todavía no tiene precio publicado.'
           : `Ninguno de estos ${filteredProducts.length} tiene precio publicado todavía.`}</strong>
-        <button class="primary-button compact" type="button" data-clear-catalog-filters>Ver lo que sí se puede pedir</button>
+        ${hayComprables ? '<button class="primary-button compact" type="button" data-clear-catalog-filters>Ver lo que sí se puede pedir</button>' : ''}
       </div>`
     : '';
 
@@ -2697,7 +2726,7 @@ function renderProducts() {
       </div>`
     : '';
 
-  container.innerHTML = avisoSinComprables + enPantalla.map((product) => {
+  renderCatalogSurface(container, avisoSinComprables + enPantalla.map((product) => {
     const outOfStock = !isCommerciallyPurchasable(product);
     const offer = discountPercent(product) > 0;
     const inCart = cartQuantities.get(product.id) || 0;
@@ -2717,7 +2746,7 @@ function renderProducts() {
       ? `Ver ${product.name}. ${stockState}`
       : `Ver ${product.name}`;
     return `
-      <article class="product-card ${outOfStock ? 'out-of-stock' : ''} ${offer ? 'is-offer' : ''} ${inCart > 0 ? 'in-cart' : ''}">
+      <article data-catalog-key="product:${escapeHtml(product.id)}" class="product-card ${outOfStock ? 'out-of-stock' : ''} ${offer ? 'is-offer' : ''} ${inCart > 0 ? 'in-cart' : ''}">
         <div class="product-media-frame">
           <button class="product-media" type="button" data-product-detail="${product.id}" aria-label="${escapeHtml(mediaLabel)}">
             ${productThumb(product, 'grid')}
@@ -2745,7 +2774,7 @@ function renderProducts() {
         </div>
       </article>
     `;
-  }).join('') + verMas;
+  }).join('') + verMas);
 }
 
 /**
@@ -2794,7 +2823,7 @@ function esVidrieraDeAlcohol(product) {
 // Pill de disponibilidad: sólo aparece cuando hay algo que avisar (agotado,
 // pausado, últimas unidades). Lo normal —estar disponible— no se etiqueta.
 export function stockPill(product) {
-  if (product.pricePending) return '';
+  if (isPricePending(product)) return '';
   if (product.archived) return '<span class="stock-pill empty">Archivado</span>';
   if (esVidrieraDeAlcohol(product)) return '<span class="stock-pill empty">Próximamente</span>';
   if (product.stock <= 0) return '<span class="stock-pill empty">Agotado</span>';
@@ -2805,7 +2834,7 @@ export function stockPill(product) {
 
 // Texto plano de disponibilidad para el detalle del producto.
 export function availabilityLabel(product) {
-  if (product.pricePending) return `${PRICE_PENDING_TITLE}; ${PRICE_PENDING_DETAIL.toLowerCase()}`;
+  if (isPricePending(product)) return `${PRICE_PENDING_TITLE}; ${PRICE_PENDING_DETAIL.toLowerCase()}`;
   if (esVidrieraDeAlcohol(product)) return 'Todavía no está a la venta';
   if (product.archived) return 'No disponible por ahora';
   if (product.stock <= 0) return 'Agotado';
@@ -2817,7 +2846,7 @@ export function availabilityLabel(product) {
 // En la tarjeta sólo se rotula lo que hay que avisar. Estar disponible es lo
 // normal: etiquetarlo llena la grilla de cintas y no aporta información.
 function cardAvailabilityLabel(product) {
-  if (product.pricePending) return '';
+  if (isPricePending(product)) return '';
   if (product.archived || !product.available) return 'No disponible';
   if (product.stock <= 0) return 'Agotado';
   if (product.stock <= 4) return `Últimas ${product.stock}`;
@@ -4359,14 +4388,14 @@ function restoreProductModalFocus() {
   setTimeout(() => requestAnimationFrame(() => trigger.focus({ preventScroll: true })), 0);
 }
 
-export function showProductModal(productId, restoreTrigger = null) {
+export function showProductModal(productId, restoreTrigger = null, { refresh = false } = {}) {
   // Alias seguro: un favorito o un enlace guardado cuando el pack todavía
   // estaba en góndola abre la unidad que hoy lo reemplaza, en vez de no abrir
   // nada. Sin unidad que lo reemplace el id no cambia y la ficha no abre.
   const product = getProductById(resolveRetailProductId(getState().products, productId));
   const modal = $('[data-product-modal]');
   const content = $('[data-modal-content]');
-  if (!product || !isProductVisibleToCustomer(product) || !modal || !content) return;
+  if (!product || !modal || !content || (!isProductVisibleToCustomer(product) && !(refresh && modal.open))) return;
   if (!productModalCloseBound) {
     modal.addEventListener('close', restoreProductModalFocus);
     modal.addEventListener('click', (event) => {
@@ -4397,8 +4426,8 @@ export function showProductModal(productId, restoreTrigger = null) {
     ? quantityControl(product, cartQuantity, { className: 'qty-stepper modal-cart-control' })
     : quickAddControl(product, 0, { className: 'add-button modal-cart-control' });
   const minimumAge = Math.max(18, Number(product.minimumAge || product.minimum_age || 18));
-  content.innerHTML = `
-    <div class="modal-card" role="document" data-modal-product-id="${escapeHtml(product.id)}">
+  renderCatalogSurface(content, `
+    <div class="modal-card" data-catalog-key="product:${escapeHtml(product.id)}" role="document" data-modal-product-id="${escapeHtml(product.id)}">
       <button class="modal-close" type="button" data-close-modal aria-label="Cerrar detalle">×</button>
       <div class="modal-media">
         ${productThumb(product, 'modal')}
@@ -4424,18 +4453,18 @@ export function showProductModal(productId, restoreTrigger = null) {
               ${variants.map((item) => {
                 const itemPricing = productPricePresentation(item);
                 const selected = item.id === product.id;
-                const unavailable = item.stock <= 0 || !item.available;
+                const unavailable = !isCommerciallyPurchasable(item);
                 return `<label class="modal-variant-card ${selected ? 'is-selected' : ''} ${unavailable ? 'is-unavailable' : ''}">
                   <input type="radio" name="productVariant" data-product-variant value="${escapeHtml(item.id)}" ${selected ? 'checked' : ''} ${unavailable ? 'disabled' : ''} />
-                  <span><strong>${escapeHtml(unitText(item) || item.name)}</strong><small>${escapeHtml(item.name)}</small></span>
+                  <span><strong>${escapeHtml(unitText(item) || item.name)}</strong><small>${escapeHtml(cardTitle(item))}</small></span>
                   <b>${pricingLabel(itemPricing)}</b>
                   ${itemPricing.regularPrice && itemPricing.regularPrice > itemPricing.price ? `<s>${money(itemPricing.regularPrice)}</s>` : ''}
-                  ${unavailable ? '<em>Sin stock</em>' : ''}
+                  ${unavailable && !isPricePending(item) ? `<em>${escapeHtml(availabilityLabel(item))}</em>` : ''}
                 </label>`;
               }).join('')}
             </div>
           </fieldset>` : ''}
-        ${product.pricePending ? '' : `<div class="modal-order-fields">
+        ${isPricePending(product) ? '' : `<div class="modal-order-fields">
           <label class="modal-note-field">
             Observación <span>(opcional)</span>
             <input data-product-note type="text" maxlength="120" placeholder="Ej.: bien fría" />
@@ -4455,15 +4484,20 @@ export function showProductModal(productId, restoreTrigger = null) {
         pie dice exactamente eso y el favorito pasa a ser la acción principal:
         es la única que hoy hace algo con ese producto.
       -->
-      <div class="modal-actions${product.pricePending ? ' is-price-pending' : ''}">
+      <div class="modal-actions${isPricePending(product) ? ' is-price-pending' : ''}">
         <button class="secondary-button modal-favorite" type="button" data-favorite-toggle="${product.id}" aria-pressed="${favorite}">${favorite ? 'Guardado' : 'Guardar para después'}</button>
-        ${product.pricePending
+        ${isPricePending(product)
           ? '<p class="modal-pending-note">Todavía no se puede comprar. Guardalo y te va a estar esperando cuando el local publique el precio.</p>'
           : `<div class="modal-quantity-field"><span>Cantidad</span>${modalQuantityControl}</div>`}
       </div>
     </div>
-  `;
-  if (!modal.open) modal.showModal();
+  `);
+  if (!modal.open) {
+    // The retained DOM keeps image identity; notes belong to one open session.
+    const note = content.querySelector('[data-product-note]');
+    if (note) note.value = '';
+    modal.showModal();
+  }
 }
 
 export function closeProductModal() {
@@ -4510,7 +4544,7 @@ export function showToast(message) {
   }
   clearTimeout(showToast.timeoutId);
   showToast.timeoutId = setTimeout(() => {
-    // Salida corta: el aviso se desvanece y reci�n despu�s sale del �rbol.
+    // Salida corta: el aviso se desvanece y después sale del árbol.
     toast?.classList.add('is-leaving');
     showToast.leaveId = setTimeout(() => {
       toast?.classList.add('hidden');

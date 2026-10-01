@@ -1024,6 +1024,43 @@ body[data-active-view="home"] .home-best-copy small {
   line-height: 1.3;
 }
 
+/* NOMBRE LARGO: los mismos dos renglones, compartidos.
+   El bloque mide EXACTAMENTE lo que miden el nombre a una línea (18 px) más la
+   presentación (15,6 px): 33,6 px. Así una tarjeta con nombre largo tiene el
+   mismo alto que su vecina y el primer «Agregar» no se mueve del pliegue.
+   Adentro, el nombre y la presentación fluyen como texto corrido; la
+   presentación no se parte («2,25 L» baja entera al segundo renglón). */
+body[data-active-view="home"] .home-best-copy .home-best-name {
+  display: grid;
+  margin: 0;
+}
+
+/* Sólo en el ancho de teléfono, que es donde el nombre no entra. Más arriba la
+   tarjeta es ancha, el nombre cabe en su renglón y el bloque se comporta como
+   el de cualquier otra tarjeta: nombre arriba, presentación abajo. */
+@media (max-width: 479px) {
+  body[data-active-view="home"] .home-best-copy .home-best-name {
+    display: -webkit-box;
+    height: 33.6px;
+    overflow: hidden;
+    line-height: 16.8px;
+    overflow-wrap: break-word;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  body[data-active-view="home"] .home-best-copy .home-best-name strong {
+    display: inline;
+    min-height: 0;
+    line-height: inherit;
+  }
+
+  body[data-active-view="home"] .home-best-copy .home-best-name small {
+    display: inline;
+    line-height: inherit;
+  }
+}
+
 /* El precio vuelve a TINTA. En rojo competía con el botón —dos rojos por
    tarjeta, veinte por pantallazo— y el resultado era una vidriera que gritaba
    oferta sin que hubiera ninguna. El rojo queda reservado a la acción; el
@@ -3754,6 +3791,13 @@ body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .prod
   letter-spacing: -0.02em;
   line-height: 1.16;
   text-wrap: pretty;
+  /* Dos renglones RESERVADOS, tres PERMITIDOS. Con el tope en dos, a 390 px
+     «Schweppes Pomelo Sin Azúcar» quedaba «Schweppes Pomelo Sin…» y a 360 px se
+     cortaban cuatro nombres más: la tarjeta perdía justo la palabra que
+     distingue al producto. La reserva sigue siendo de dos —así la grilla no
+     pierde su alineación—; el tercero sólo existe cuando el nombre lo necesita
+     y estira su fila, que el grid ya iguala entre las dos tarjetas. */
+  -webkit-line-clamp: 3;
 }
 
 body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-body p {
@@ -4082,6 +4126,30 @@ body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .prod
   background: var(--shelf-gold-wash);
   box-shadow: none;
   color: var(--shelf-gold-soft);
+}
+
+/* RESULTADOS PARECIDOS. Ocupa la fila entera de la grilla y va antes de la
+   primera tarjeta. Es un renglón de texto, no una alerta: informa que lo que
+   sigue es una aproximación y deja el protagonismo a los productos. */
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-similar-note {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--shelf-line);
+  border-radius: 14px;
+  background: var(--shelf);
+  color: var(--shelf-muted);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-similar-note strong {
+  color: var(--shelf-ink);
+  font-weight: 750;
+  overflow-wrap: anywhere;
 }
 
 /* El botón conserva los 44px de contacto; sólo se reduce el disco visible. */

@@ -17,6 +17,7 @@ import {
 } from './core/customer-profile.js';
 import { getFavoriteProductIds, isFavoriteProduct } from './core/customer-preferences.js';
 import {
+  brandAddsToTitle,
   cardPresentationLine,
   cardTitle,
   formatCapacity,
@@ -99,7 +100,7 @@ import {
   storyEntryState,
 } from './core/stories.js';
 import { PREVIEW_STORY_SEED } from './preview-stories-data.js';
-import { normalizeSearchText, productMatchesQuery } from './core/catalog-search.js';
+import { normalizeSearchText, searchProducts } from './core/catalog-search.js';
 import { merchandisingBadge } from './core/merchandising-tags.js';
 
 export const $ = (selector, root = document) => root.querySelector(selector);
@@ -612,10 +613,10 @@ function descriptionText(product) {
  */
 function brandLine(product, className = 'product-brand') {
   const brand = String(product?.brand || '').trim();
-  if (!brand) return '';
-  const normalizedBrand = normalizeSearchText(brand);
-  const normalizedName = normalizeSearchText(product?.name || '');
-  if (!normalizedBrand || normalizedName.startsWith(normalizedBrand)) return '';
+  // La regla —«la marca aparece entera en el título»— vive con sus pruebas en
+  // core/product-presentation.js. Antes sólo miraba el PRINCIPIO del nombre, y
+  // «Fernet Branca» llevaba encima un rótulo «BRANCA».
+  if (!brand || !brandAddsToTitle(product)) return '';
   return `<span class="${className}">${escapeHtml(brand)}</span>`;
 }
 
@@ -1010,6 +1011,59 @@ function homeCapacityText(product) {
  */
 function homeUnitText(product) {
   return cardPresentationLine(product) || homeCapacityText(product);
+}
+
+/*
+ * UN NOMBRE LARGO NO SE CORTA: COMPARTE SUS DOS RENGLONES.
+ *
+ * La tarjeta de la vidriera reserva dos renglones de texto: uno para el nombre
+ * y otro para la presentación. Con el nombre a una línea, el catálogo real
+ * dejaba «Coca-Cola Sin…» al lado de «Coca-Cola» —dos tarjetas contiguas que
+ * pierden justo lo que las distingue—, «Red Bull Energy…» y «Brahma Chopp…».
+ * Medido con las 46 fichas: una de cada cuatro tarjetas de la home.
+ *
+ * Darle dos renglones al nombre costaba 16 px por tarjeta, y a 360×800 el primer
+ * «Agregar» está a un píxel del pliegue útil. Así que el alto NO cambia: cuando
+ * el nombre no entra en un renglón, nombre y presentación fluyen juntos en los
+ * mismos dos renglones —«Coca-Cola Sin / Azúcar 2,25 L»—. La presentación va
+ * como una sola pieza que no se parte.
+ *
+ * La decisión es de marcado y no de medición en pantalla: el HTML tiene que ser
+ * función pura de los datos para que el parcheo estable del catálogo no
+ * reemplace nodos. El ancho se ESTIMA por clase de letra; equivocarse por poco
+ * no rompe nada, porque un nombre que justo entraba fluye igual de bien.
+ *
+ * El umbral está calibrado contra la tarjeta real: una unidad son ~7,5 px a
+ * 13,5 px/750, y la caja de texto mide 114 px a 360 de ancho. 14,7 unidades
+ * (~110 px) es lo que entra en un renglón en el teléfono más angosto que se
+ * prueba: «Sprite Sin Azúcar» (106 px) entra; «Stella Artois Rubia» (115) no.
+ */
+const HOME_NAME_LINE_UNITS = 14.7;
+const NARROW_GLYPHS = /[iljtfrI1.,;:'’·\- ]/;
+const WIDE_GLYPHS = /[mwMWÑ@]/;
+
+export function homeNameNeedsTwoLines(title) {
+  let units = 0;
+  for (const glyph of String(title || '')) {
+    if (NARROW_GLYPHS.test(glyph)) units += 0.58;
+    else if (WIDE_GLYPHS.test(glyph)) units += 1.5;
+    else if (glyph !== glyph.toLowerCase()) units += 1.18;
+    else units += 1;
+  }
+  return units > HOME_NAME_LINE_UNITS;
+}
+
+function homeNameBlock(product) {
+  const title = cardTitle(product);
+  const unit = homeUnitText(product);
+  if (!homeNameNeedsTwoLines(title)) {
+    return `<strong>${escapeHtml(title)}</strong>
+        <small>${escapeHtml(unit)}</small>`;
+  }
+  // Cada tramo de la presentación viaja pegado («2,25 L», «473 ml»): el corte
+  // de línea sólo puede caer entre tramos, nunca entre el número y su unidad.
+  const joined = unit.split(' · ').map((part) => escapeHtml(part).replace(/ /g, '&nbsp;')).join(' · ');
+  return `<p class="home-best-name"><strong>${escapeHtml(title)}</strong>${unit ? ` <small>${joined}</small>` : ''}</p>`;
 }
 
 function renderHomeShowcase() {
@@ -1716,8 +1770,7 @@ function homeSectionCard(product, cartQuantities) {
         ${ageTag(product)}
       </button>
       <div class="home-best-copy">
-        <strong>${escapeHtml(cardTitle(product))}</strong>
-        <small>${escapeHtml(homeUnitText(product))}</small>
+        ${homeNameBlock(product)}
         ${price}
       </div>
       <div class="home-card-control">${control}</div>
@@ -2379,6 +2432,18 @@ export { CATALOG_PAGE_SIZE };
 
 // Productos filtrados por categoría + búsqueda, ya ordenados.
 function getFilteredProducts(state) {
+  return resolveCatalogListing(state).products;
+}
+
+/*
+ * La lista del catálogo Y cómo se llegó a ella.
+ *
+ * `approximate` es verdadero cuando la búsqueda exacta no trajo nada y lo que
+ * se muestra es lo más parecido a lo escrito («heiniken» → Heineken). La
+ * pantalla tiene que decirlo: un resultado aproximado nunca se presenta como
+ * exacto. La regla de coincidencia vive en `core/catalog-search.js`.
+ */
+function resolveCatalogListing(state) {
   const favoriteIds = new Set(getFavoriteProductIds());
   const promoProductIds = activePromotionProductIds(state);
   const filters = { ...defaultCatalogFilters(), ...(state.catalogFilters || {}) };
@@ -2392,11 +2457,6 @@ function getFilteredProducts(state) {
           : state.activeCategory === 'fernet'
             ? isFernetProduct(product)
         : state.activeCategory === 'all' || product.categoryId === state.activeCategory;
-    // El índice y la regla de coincidencia viven en `core/catalog-search.js`,
-    // con sus propios tests: acá había un `includes` sobre una cadena pegada,
-    // y por eso «500 ml» devolvía botellas de 1,5 L y «energética» no devolvía
-    // ningún energizante.
-    const matchesQuery = productMatchesQuery(product, state.searchQuery);
     const isAvailable = product.available && Number(product.stock) > 0 && !isPricePending(product);
     const matchesFilters = (
       (filters.brand === 'all' || normalizeSearchText(product.brand) === filters.brand)
@@ -2408,9 +2468,18 @@ function getFilteredProducts(state) {
       && (filters.price === 'all' || (filters.price === 'pending' ? isPricePending(product) : !isPricePending(product)))
       && (filters.promotion === 'all' || isPromotionalProduct(product, promoProductIds))
     );
-    return matchesCategory && matchesQuery && matchesFilters;
+    return matchesCategory && matchesFilters;
   });
-  return sortProducts(filtered, state.sortBy);
+  // El índice y la regla de coincidencia viven en `core/catalog-search.js`,
+  // con sus propios tests: acá había un `includes` sobre una cadena pegada,
+  // y por eso «500 ml» devolvía botellas de 1,5 L y «energética» no devolvía
+  // ningún energizante. La búsqueda corre DESPUÉS de categoría y filtros: lo
+  // parecido se busca dentro de lo que la persona ya acotó.
+  const search = searchProducts(filtered, state.searchQuery);
+  return {
+    products: sortProducts(search.products, state.sortBy),
+    approximate: search.approximate,
+  };
 }
 
 
@@ -2458,11 +2527,32 @@ function pricedAmount(product) {
   return Number.isFinite(amount) && amount > 0 ? amount : null;
 }
 
+/*
+ * A IGUAL PUNTAJE, JUNTOS POR RUBRO.
+ *
+ * El puntaje sólo distingue lo destacado, lo popular y lo comprable. En un
+ * catálogo recién cargado —nada marcado todavía— TODO empata, y el empate
+ * dejaba el orden en el que llegó la consulta: alfabético. «Todas» abría con
+ * un Malbec, un aperitivo, un agua, una cerveza y otro aperitivo: una mezcla
+ * que no se parece a ninguna góndola.
+ *
+ * El desempate es el orden comercial de los rubros —el MISMO de los chips y de
+ * los carruseles de la home, `STORE_CATEGORY_ORDER`—, así que las tres
+ * superficies cuentan la tienda en el mismo orden. Dentro de un rubro se
+ * conserva el orden con el que el comercio entregó el catálogo (`sort_order`
+ * y nombre): el `sort` es estable y acá no se inventa ningún criterio más.
+ */
+const CATEGORY_RANK = new Map(STORE_CATEGORY_ORDER.map((id, index) => [id, index]));
+
+function categoryRank(product) {
+  return CATEGORY_RANK.get(product?.categoryId) ?? CATEGORY_RANK.size;
+}
+
 function sortProducts(list, sortBy) {
   const arr = [...list];
   if (sortBy === 'price_asc') return arr.sort(comparePricedAscending);
-  if (sortBy === 'popular') return arr.sort((a, b) => popularScore(b) - popularScore(a));
-  return arr.sort((a, b) => recommendedScore(b) - recommendedScore(a));
+  const score = sortBy === 'popular' ? popularScore : recommendedScore;
+  return arr.sort((a, b) => score(b) - score(a) || categoryRank(a) - categoryRank(b));
 }
 
 function activeCategoryName() {
@@ -2649,7 +2739,8 @@ function renderProducts() {
   if (!container) return;
 
   const state = getState();
-  const filteredProducts = getFilteredProducts(state);
+  const listing = resolveCatalogListing(state);
+  const filteredProducts = listing.products;
 
   if (!filteredProducts.length) {
     if (isProductionCatalogLoading()) {
@@ -2726,7 +2817,17 @@ function renderProducts() {
       </div>`
     : '';
 
-  renderCatalogSurface(container, avisoSinComprables + enPantalla.map((product) => {
+  // Lo que se muestra NO es lo que se escribió, y se dice antes de la primera
+  // tarjeta: quien tipeó «heiniken» tiene que saber que está viendo lo más
+  // parecido, no creer que el buscador entendió otra cosa.
+  const avisoParecidos = listing.approximate
+    ? `<p class="catalog-similar-note" role="status" data-catalog-similar>
+        <strong>No encontramos «${escapeHtml(state.searchQuery.trim())}».</strong>
+        <span>Esto es lo más parecido.</span>
+      </p>`
+    : '';
+
+  renderCatalogSurface(container, avisoParecidos + avisoSinComprables + enPantalla.map((product) => {
     const outOfStock = !isCommerciallyPurchasable(product);
     const offer = discountPercent(product) > 0;
     const inCart = cartQuantities.get(product.id) || 0;

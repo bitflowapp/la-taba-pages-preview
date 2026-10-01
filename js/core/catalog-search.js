@@ -20,7 +20,7 @@
  *
  * Módulo puro: recibe productos y texto, devuelve booleanos. Sin DOM, sin estado.
  */
-import { formatCapacity, packagingLabel } from './product-presentation.js';
+import { cardTitle, formatCapacity, packagingLabel } from './product-presentation.js';
 import { CATEGORY_SEARCH_SYNONYMS } from './store-taxonomy.js';
 
 /**
@@ -71,6 +71,51 @@ function claveCategoria(product) {
   return normalizeSearchText(product?.categoryId || product?.categoryName || '').replace(/\s+/g, '-');
 }
 
+/*
+ * LA MARCA ESCRITA DE CORRIDO.
+ *
+ * «Coca-Cola» se indexa como dos palabras, «coca» y «cola», así que quien
+ * escribe «cocacola» —sin guion, que es como sale con el pulgar— no encontraba
+ * ninguna. Lo mismo «redbull», «lays» (el apóstrofo parte «Lay’s» en «lay» y
+ * «s») y «bon aqua». Medido contra las 46 fichas reales: cuatro marcas de las
+ * más pedidas devolvían cero.
+ *
+ * Se agrega la forma pegada de la marca y del título como una palabra MÁS del
+ * índice. No ensancha ninguna búsqueda que ya funcionaba: sigue valiendo que
+ * cada término coincide por principio de palabra.
+ */
+function pegar(texto) {
+  return normalizeSearchText(texto).replace(/[^a-z0-9]+/g, '');
+}
+
+function formasPegadas(product) {
+  const formas = new Set();
+  for (const fuente of [product.brand, cardTitle(product)]) {
+    // Una sola palabra ya está en el índice tal cual: pegarla no agrega nada.
+    if (!/\s/.test(normalizeSearchText(fuente))) continue;
+    const pegada = pegar(fuente);
+    if (pegada.length >= 4) formas.add(pegada);
+  }
+  return [...formas];
+}
+
+/*
+ * «Vino tinto» es como se pide un Malbec. El catálogo guarda el cepaje —que es
+ * el dato— y no el color, así que «tinto» devolvía cero con cinco vinos en
+ * góndola. El color se deduce del cepaje, que lo determina sin ambigüedad; un
+ * vino cuyo cepaje no está en la lista no recibe ninguno: no se adivina.
+ */
+const CEPAJES_TINTOS = /\b(malbec|cabernet|merlot|syrah|shiraz|bonarda|tempranillo|tannat|pinot noir|petit verdot|red blend|blend tinto)\b/;
+const CEPAJES_BLANCOS = /\b(chardonnay|sauvignon blanc|torrontes|chenin|viognier|semillon|blend blanco)\b/;
+
+function colorDeVino(product, texto) {
+  if (!/^vinos/.test(claveCategoria(product))) return [];
+  const colores = [];
+  if (CEPAJES_TINTOS.test(texto) && !/\btinto\b/.test(texto)) colores.push('tinto');
+  if (CEPAJES_BLANCOS.test(texto) && !/\bblanco\b/.test(texto)) colores.push('blanco');
+  return colores;
+}
+
 /**
  * Todo lo que hace encontrable a un producto, ya normalizado.
  *
@@ -110,6 +155,8 @@ export function searchHaystack(product = {}) {
   const texto = normalizeSearchText(partes.join(' '));
   const extras = [];
   if (numeroDeLitros) extras.push(numeroDeLitros);
+  extras.push(...formasPegadas(product));
+  extras.push(...colorDeVino(product, texto));
   if (MARCAS_SIN_AZUCAR.test(texto)) extras.push(...SINONIMOS_SIN_AZUCAR);
   return extras.length ? `${texto} ${normalizeSearchText(extras.join(' '))}` : texto;
 }
@@ -157,13 +204,182 @@ export function productMatchesCode(product, query) {
  * completo.
  */
 export function productMatchesQuery(product, query) {
-  const consulta = normalizeSearchText(query);
+  const consulta = normalizeSearchQuery(query);
   if (!consulta) return true;
   if (productMatchesCode(product, query)) return true;
   const conBordes = ` ${searchHaystack(product)} `;
-  return consulta.split(' ').filter(Boolean).every((termino) => (
+  const porTerminos = consulta.split(' ').filter(Boolean).every((termino) => (
     TERMINO_DE_CAPACIDAD.test(termino)
       ? conBordes.includes(` ${termino} `)
       : conBordes.includes(` ${termino}`)
   ));
+  if (porTerminos) return true;
+  // La marca partida donde no va —«bon aqua», «red bull energy»— es la misma
+  // marca: se compara la consulta entera, pegada, contra las formas pegadas.
+  const pegada = /^[a-z ]+$/.test(consulta) ? consulta.replace(/ /g, '') : '';
+  return pegada.length >= 4 && pegada !== consulta && conBordes.includes(` ${pegada}`);
+}
+
+/*
+ * LA CONSULTA, COMO LA ESCRIBE UNA PERSONA.
+ *
+ * El índice habla en mililitros y con coma decimal; el cliente escribe «1
+ * litro», «2 litros», «710 cc», «2.25» o «litro y medio». Medido contra la
+ * góndola real, las cinco devolvían cero. No son productos que falten: son
+ * maneras de decir un tamaño que el catálogo sí tiene.
+ *
+ * Esto traduce la CONSULTA, no el índice: ninguna ficha gana una palabra que no
+ * le corresponde.
+ */
+export function normalizeSearchQuery(query) {
+  const texto = String(query || '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/\blitro y medio\b/g, '1,5 l')
+    .replace(/\bmedio litro\b/g, '500 ml')
+    .replace(/(\d+(?:[.,]\d+)?)\s*(?:litros?|lts?)\b/g, '$1 l')
+    .replace(/\bun litro\b/g, '1 l')
+    .replace(/\blitro\b/g, '1 l')
+    .replace(/(\d+)\s*cc\b/g, '$1 ml')
+    // «2.25» es «2,25»: el número suelto del índice lleva coma, como la tarjeta.
+    .replace(/(\d)\.(\d)/g, '$1,$2')
+    // «Agua tónica» es una tónica: sin esto «agua» exigía un agua mineral.
+    .replace(/\bagua tonica\b/g, 'tonica');
+  return normalizeSearchText(texto);
+}
+
+/*
+ * TOLERANCIA A ERRORES DE TIPEO — sólo cuando la búsqueda exacta no trae nada.
+ *
+ * «heiniken», «kilmes», «schweps», «pesi», «cervesa»: diecisiete maneras reales
+ * de escribir mal una marca que el local SÍ vende devolvían una góndola vacía.
+ * Un teclado de teléfono produce eso todo el tiempo, y «No encontramos nada» le
+ * dice al cliente que el producto no existe.
+ *
+ * Tres reglas la mantienen honesta:
+ *
+ *   1 · Es un RESPALDO. Si la búsqueda exacta encuentra algo, esto no corre: no
+ *       se mezclan parecidos entre resultados buenos.
+ *   2 · Compara contra las palabras que la ficha ya tiene. No agrega etiquetas,
+ *       así que un producto que el local no vende sigue sin aparecer: «vodka»
+ *       no se parece a nada del índice y sigue devolviendo cero. Un hueco de
+ *       surtido sigue siendo un hueco.
+ *   3 · Quien llama lo DICE en pantalla («Esto es lo más parecido»): un
+ *       resultado aproximado nunca se presenta como exacto.
+ *
+ * Los números y los tamaños no se aproximan: «500 ml» es 500 ml.
+ */
+const LARGO_MINIMO_APROXIMABLE = 4;
+const LARGO_MINIMO_DE_PREFIJO = 5;
+
+function toleranciaPara(largo) {
+  return largo >= 9 ? 2 : 1;
+}
+
+/** Cómo SUENA una palabra, para que «kilmes» y «quilmes» sean la misma. */
+function claveFonetica(palabra) {
+  return palabra
+    // «ch» es un sonido propio: sin apartarlo, «chica» sonaba igual que «coca».
+    .replace(/ch/g, 'x')
+    .replace(/ph/g, 'f')
+    .replace(/qu/g, 'k')
+    .replace(/c(?=[ei])/g, 's')
+    .replace(/c/g, 'k')
+    .replace(/z/g, 's')
+    .replace(/v/g, 'b')
+    .replace(/ll/g, 'y')
+    .replace(/w/g, 'u')
+    .replace(/h/g, '')
+    .replace(/y$/g, 'i')
+    .replace(/(.)\1+/g, '$1');
+}
+
+/** Distancia de edición con transposiciones, cortada en `tope`. */
+function distancia(a, b, tope) {
+  if (Math.abs(a.length - b.length) > tope) return tope + 1;
+  let previa2 = null;
+  let previa = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i += 1) {
+    const actual = [i];
+    let minimo = i;
+    for (let j = 1; j <= b.length; j += 1) {
+      const costo = a[i - 1] === b[j - 1] ? 0 : 1;
+      let valor = Math.min(previa[j] + 1, actual[j - 1] + 1, previa[j - 1] + costo);
+      if (previa2 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        valor = Math.min(valor, previa2[j - 2] + 1);
+      }
+      actual.push(valor);
+      if (valor < minimo) minimo = valor;
+    }
+    if (minimo > tope) return tope + 1;
+    previa2 = previa;
+    previa = actual;
+  }
+  return previa[b.length];
+}
+
+const palabrasPorProducto = new WeakMap();
+
+function palabrasDelIndice(product) {
+  const guardable = product && typeof product === 'object';
+  let palabras = guardable ? palabrasPorProducto.get(product) : null;
+  if (!palabras) {
+    palabras = [...new Set(searchHaystack(product).split(' '))]
+      .filter((palabra) => palabra.length >= 3 && /^[a-z]+$/.test(palabra))
+      .map((palabra) => ({ palabra, fonetica: claveFonetica(palabra) }));
+    if (guardable) palabrasPorProducto.set(product, palabras);
+  }
+  return palabras;
+}
+
+function terminoSeParece(termino, palabras) {
+  if (termino.length < LARGO_MINIMO_APROXIMABLE || !/^[a-z]+$/.test(termino)) return false;
+  const tope = toleranciaPara(termino.length);
+  const fonetico = claveFonetica(termino);
+  return palabras.some(({ palabra, fonetica }) => {
+    // Misma pronunciación desde el principio: «coka» es «coca».
+    if (fonetico.length >= 3 && fonetica.startsWith(fonetico)) return true;
+    // La palabra entera, con una letra de más, de menos o cambiada.
+    if (Math.abs(palabra.length - termino.length) <= tope
+      && (distancia(termino, palabra, tope) <= tope || distancia(fonetico, fonetica, tope) <= tope)) return true;
+    // Todavía se está escribiendo: se compara contra el principio de la palabra.
+    if (termino.length < LARGO_MINIMO_DE_PREFIJO || palabra.length <= termino.length) return false;
+    return [termino.length, termino.length + 1].some((largo) => (
+      largo <= palabra.length && distancia(termino, palabra.slice(0, largo), 1) <= 1
+    ));
+  });
+}
+
+/**
+ * ¿Este producto se PARECE a lo que se escribió? Usar sólo cuando
+ * `productMatchesQuery` no devolvió nada para ningún producto.
+ */
+export function productMatchesQueryLoosely(product, query) {
+  const consulta = normalizeSearchQuery(query);
+  if (!consulta) return false;
+  const conBordes = ` ${searchHaystack(product)} `;
+  const palabras = palabrasDelIndice(product);
+  let aproximados = 0;
+  const todos = consulta.split(' ').filter(Boolean).every((termino) => {
+    if (TERMINO_DE_CAPACIDAD.test(termino)) return conBordes.includes(` ${termino} `);
+    if (conBordes.includes(` ${termino}`)) return true;
+    if (!terminoSeParece(termino, palabras)) return false;
+    aproximados += 1;
+    return true;
+  });
+  return todos && aproximados > 0;
+}
+
+/**
+ * La búsqueda entera: exacta primero y, sólo si no hay nada, parecida.
+ * Devuelve cuál de las dos fue para que la pantalla lo diga.
+ */
+export function searchProducts(products, query) {
+  const lista = Array.isArray(products) ? products : [];
+  if (!normalizeSearchQuery(query)) return { products: lista, approximate: false };
+  const exactos = lista.filter((product) => productMatchesQuery(product, query));
+  if (exactos.length) return { products: exactos, approximate: false };
+  const parecidos = lista.filter((product) => productMatchesQueryLoosely(product, query));
+  return { products: parecidos, approximate: parecidos.length > 0 };
 }

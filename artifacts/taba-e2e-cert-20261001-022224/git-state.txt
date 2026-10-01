@@ -1,5 +1,5 @@
 repo: https://github.com/bitflowapp/la-taba-pages-preview.git
-worktree: C:\Users\DELL\Desktop\la-taba\la-taba-backend-e2e-cert
+worktree: la-taba-backend-e2e-cert (worktree dedicado; ruta local omitida)
 branch: qa/taba-backend-e2e-cert-20260930
 head: 62f85666fb7bdba3f7839517ed259d36dc7df6b9
 head_subject: fix(orders): el resguardo del punto de entrega corre como su dueño

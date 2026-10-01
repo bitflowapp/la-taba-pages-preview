@@ -12,7 +12,7 @@ ENVIRONMENT: STAGING
 PROJECT_REF: ucbtjcurawxjwjdvvcvj (la-taba-staging, sa-east-1)
 STAGING_URL: https://taba2-staging.pages.dev · API https://ucbtjcurawxjwjdvvcvj.supabase.co
 REPO: bitflowapp/la-taba-pages-preview
-WORKTREE: C:\Users\DELL\Desktop\la-taba\la-taba-backend-e2e-cert
+WORKTREE: la-taba-backend-e2e-cert (worktree dedicado; ruta local omitida)
 BRANCH: qa/taba-backend-e2e-cert-20260930
 HEAD_INITIAL: 135818892414f5cc17d7adacd6069eec86602381 (origin/main)
 HEAD_FINAL: el commit de evidencia que contiene este archivo, sobre 7d37322
@@ -329,4 +329,5 @@ Cada una dejó Staging limpio; sus directorios están junto a éste.
 `cleanup-result.json` · `checks.json` · `summary.json`
 
 `git-state.txt` dice `62f8566` con el certificador sin commitear: es el mismo archivo que entró,
-sin cambios, en `7d37322`.
+en `7d37322`; después sólo cambió cómo escribe la línea `worktree` (el nombre, no la ruta de disco:
+la higiene de release no admite rutas locales, y por eso esa línea se redactó en los cuatro directorios).

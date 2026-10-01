@@ -277,7 +277,8 @@ async function phaseIdentity() {
   write('environment.json', env);
   writeFileSync(path.join(EVIDENCE, 'git-state.txt'), [
     `repo: ${git(['config', '--get', 'remote.origin.url'])}`,
-    `worktree: ${ROOT}`,
+    // Sólo el nombre: la evidencia se commitea y la higiene de release no admite rutas de disco locales.
+    `worktree: ${path.basename(ROOT)}`,
     `branch: ${git(['rev-parse', '--abbrev-ref', 'HEAD'])}`,
     `head: ${git(['rev-parse', 'HEAD'])}`,
     `head_subject: ${git(['log', '-1', '--format=%s'])}`,

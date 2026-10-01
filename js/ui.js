@@ -1032,7 +1032,7 @@ function homeUnitText(product) {
 }
 
 /*
- * UN NOMBRE LARGO NO SE CORTA: COMPARTE SUS DOS RENGLONES.
+ * UN NOMBRE LARGO NO SE CORTA: ENVUELVE A LA PRESENTACIÓN.
  *
  * La tarjeta de la vidriera reserva dos renglones de texto: uno para el nombre
  * y otro para la presentación. Con el nombre a una línea, el catálogo real
@@ -1040,16 +1040,30 @@ function homeUnitText(product) {
  * pierden justo lo que las distingue—, «Red Bull Energy…» y «Brahma Chopp…».
  * Medido con las 46 fichas: una de cada cuatro tarjetas de la home.
  *
- * Darle dos renglones al nombre costaba 16 px por tarjeta, y a 360×800 el primer
- * «Agregar» está a un píxel del pliegue útil. Así que el alto NO cambia: cuando
- * el nombre no entra en un renglón, nombre y presentación fluyen juntos en los
- * mismos dos renglones —«Coca-Cola Sin / Azúcar 2,25 L»—. La presentación va
- * como una sola pieza que no se parte.
+ * Darle un tercer renglón costaba 16 px por tarjeta, y a 360×800 el primer
+ * «Agregar» está a tres píxeles del pliegue útil. Así que el alto NO cambia:
+ * cuando el nombre no entra en un renglón, la presentación queda fija al final
+ * del segundo y el nombre ocupa el primero entero y lo que sobra del segundo
+ * —«Coca-Cola Sin / Azúcar · · · 2,25 L»—.
+ *
+ * LA PRESENTACIÓN NO SE PIERDE NUNCA. La primera versión dejaba fluir nombre y
+ * presentación como texto corrido, y lo que no entraba era lo último: la
+ * presentación. A 360 px «Brahma Chopp Rubia» perdía «Retornable», y con una
+ * tipografía de sistema más ancha (el Chromium de Linux del CI; cualquier
+ * teléfono con otra fuente) «Glaciar Con Gas Baja en Sodio» perdía «1,5 L». El
+ * tamaño es lo que separa a dos tarjetas con el mismo nombre, así que ahora la
+ * prioridad es: primer renglón del nombre, presentación, resto del nombre. Si
+ * algo no entra, lo que queda afuera es el final del nombre —que sigue completo
+ * en la etiqueta de la foto, en su texto alternativo y en la ficha—.
+ *
+ * Por eso la presentación va ANTES que el nombre en el marcado: un flotante sólo
+ * reserva su lugar para el texto que viene después.
  *
  * La decisión es de marcado y no de medición en pantalla: el HTML tiene que ser
  * función pura de los datos para que el parcheo estable del catálogo no
- * reemplace nodos. El ancho se ESTIMA por clase de letra; equivocarse por poco
- * no rompe nada, porque un nombre que justo entraba fluye igual de bien.
+ * reemplace nodos. El ancho se ESTIMA por clase de letra, y equivocarse no rompe
+ * nada: si la estimación dice «corto» y no lo era, queda el renglón con puntos
+ * suspensivos de siempre; si dice «largo» y entraba, queda igual de bien.
  *
  * El umbral está calibrado contra la tarjeta real: una unidad son ~7,5 px a
  * 13,5 px/750, y la caja de texto mide 114 px a 360 de ancho. 14,7 unidades
@@ -1078,10 +1092,7 @@ function homeNameBlock(product) {
     return `<strong>${escapeHtml(title)}</strong>
         <small>${escapeHtml(unit)}</small>`;
   }
-  // Cada tramo de la presentación viaja pegado («2,25 L», «473 ml»): el corte
-  // de línea sólo puede caer entre tramos, nunca entre el número y su unidad.
-  const joined = unit.split(' · ').map((part) => escapeHtml(part).replace(/ /g, '&nbsp;')).join(' · ');
-  return `<p class="home-best-name"><strong>${escapeHtml(title)}</strong>${unit ? ` <small>${joined}</small>` : ''}</p>`;
+  return `<p class="home-best-name">${unit ? `<small>${escapeHtml(unit)}</small>` : ''}<strong>${escapeHtml(title)}</strong></p>`;
 }
 
 function renderHomeShowcase() {
@@ -2630,31 +2641,25 @@ function pricedAmount(product) {
 }
 
 /*
- * A IGUAL PUNTAJE, JUNTOS POR RUBRO.
+ * A IGUAL PUNTAJE, EL ORDEN EN EL QUE LLEGÓ EL CATÁLOGO.
  *
- * El puntaje sólo distingue lo destacado, lo popular y lo comprable. En un
- * catálogo recién cargado —nada marcado todavía— TODO empata, y el empate
- * dejaba el orden en el que llegó la consulta: alfabético. «Todas» abría con
- * un Malbec, un aperitivo, un agua, una cerveza y otro aperitivo: una mezcla
- * que no se parece a ninguna góndola.
+ * El puntaje sólo distingue lo destacado, lo popular y lo comprable. Los
+ * empates devuelven 0 a propósito: el `sort` es estable y conserva el orden
+ * con el que se entregó el catálogo, que es una decisión comercial y no de la
+ * grilla.
  *
- * El desempate es el orden comercial de los rubros —el MISMO de los chips y de
- * los carruseles de la home, `STORE_CATEGORY_ORDER`—, así que las tres
- * superficies cuentan la tienda en el mismo orden. Dentro de un rubro se
- * conserva el orden con el que el comercio entregó el catálogo (`sort_order`
- * y nombre): el `sort` es estable y acá no se inventa ningún criterio más.
+ * Acá hubo un desempate por rubro, y estaba en el lugar equivocado: reordenaba
+ * TAMBIÉN un catálogo que ya venía curado. La vidriera demo abre con
+ * energizantes y el desempate le subió siete cervezas al principio: lo primero
+ * que se podía agregar pasó a ser alcohol. Agrupar por rubro es el respaldo de
+ * un catálogo que todavía nadie ordenó, y eso se sabe donde nace ese orden: la
+ * lectura del catálogo real (`sortByShelfOrder`, en `core/store-taxonomy.js`).
  */
-const CATEGORY_RANK = new Map(STORE_CATEGORY_ORDER.map((id, index) => [id, index]));
-
-function categoryRank(product) {
-  return CATEGORY_RANK.get(product?.categoryId) ?? CATEGORY_RANK.size;
-}
-
 function sortProducts(list, sortBy) {
   const arr = [...list];
   if (sortBy === 'price_asc') return arr.sort(comparePricedAscending);
   const score = sortBy === 'popular' ? popularScore : recommendedScore;
-  return arr.sort((a, b) => score(b) - score(a) || categoryRank(a) - categoryRank(b));
+  return arr.sort((a, b) => score(b) - score(a));
 }
 
 function activeCategoryName() {

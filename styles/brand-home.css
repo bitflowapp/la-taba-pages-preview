@@ -1024,40 +1024,68 @@ body[data-active-view="home"] .home-best-copy small {
   line-height: 1.3;
 }
 
-/* NOMBRE LARGO: los mismos dos renglones, compartidos.
+/* NOMBRE LARGO: los mismos dos renglones, y la presentación no se pierde.
    El bloque mide EXACTAMENTE lo que miden el nombre a una línea (18 px) más la
    presentación (15,6 px): 33,6 px. Así una tarjeta con nombre largo tiene el
    mismo alto que su vecina y el primer «Agregar» no se mueve del pliegue.
-   Adentro, el nombre y la presentación fluyen como texto corrido; la
-   presentación no se parte («2,25 L» baja entera al segundo renglón). */
+
+   En el marcado la presentación va antes que el nombre —un flotante sólo le
+   reserva lugar al texto que viene después—, así que fuera del teléfono el
+   orden visible se repone con `order`: nombre arriba, presentación abajo. */
 body[data-active-view="home"] .home-best-copy .home-best-name {
   display: grid;
   margin: 0;
 }
 
+body[data-active-view="home"] .home-best-copy .home-best-name small {
+  order: 1;
+}
+
 /* Sólo en el ancho de teléfono, que es donde el nombre no entra. Más arriba la
    tarjeta es ancha, el nombre cabe en su renglón y el bloque se comporta como
-   el de cualquier otra tarjeta: nombre arriba, presentación abajo. */
+   el de cualquier otra tarjeta.
+
+   La presentación queda fija al final del segundo renglón y el nombre la
+   envuelve: usa el primer renglón entero y lo que sobra del segundo. Si no
+   entra, lo que queda afuera es el final del NOMBRE, nunca la presentación, y
+   eso vale con cualquier tipografía de sistema: no hay un ancho supuesto. */
 @media (max-width: 479px) {
   body[data-active-view="home"] .home-best-copy .home-best-name {
-    display: -webkit-box;
+    display: block;
     height: 33.6px;
     overflow: hidden;
     line-height: 16.8px;
-    overflow-wrap: break-word;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
   }
 
+  /* Un flotante sin ancho y de un renglón de alto: empuja a la presentación al
+     segundo renglón sin quitarle un píxel al primero. */
+  body[data-active-view="home"] .home-best-copy .home-best-name::before {
+    content: "";
+    float: right;
+    width: 0;
+    height: 16.8px;
+  }
+
+  body[data-active-view="home"] .home-best-copy .home-best-name small {
+    float: right;
+    clear: right;
+    max-width: 100%;
+    /* Lo que mide un espacio: es la separación con la última palabra del nombre. */
+    padding-left: 4px;
+    overflow: hidden;
+    line-height: inherit;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* `overflow-wrap: normal`: al lado del flotante, `break-word` partía la última
+     palabra para llenar el hueco («Rub» de «Rubia»). Una palabra que no entra
+     baja entera al tercer renglón, que no se ve. */
   body[data-active-view="home"] .home-best-copy .home-best-name strong {
     display: inline;
     min-height: 0;
     line-height: inherit;
-  }
-
-  body[data-active-view="home"] .home-best-copy .home-best-name small {
-    display: inline;
-    line-height: inherit;
+    overflow-wrap: normal;
   }
 }
 

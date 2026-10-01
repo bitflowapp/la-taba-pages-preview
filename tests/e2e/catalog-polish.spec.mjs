@@ -43,6 +43,42 @@ test('«Todas» se lee por rubro, en el mismo orden que los chips, no por alfabe
   expect(prices).toEqual([...prices].sort((a, b) => a - b));
 });
 
+test('la vidriera demo conserva su orden curado: lo primero que se puede agregar no es alcohol', async ({ page }) => {
+  // REGRESIÓN (CI 36817855269, 2026-10-01). El agrupado por rubro de «Todas»
+  // reordenaba también este catálogo, que ya viene curado y abre con
+  // energizantes: le subió siete cervezas al principio. Los recorridos de compra
+  // agregan «el primer producto», se llevaron una cerveza y el pedido pidió
+  // mayoría de edad. Agrupar por rubro es el respaldo del catálogo real sin
+  // ordenar, no una regla de la grilla.
+  await page.goto('/?demo=1#catalog');
+  const firstAdd = page.locator('[data-view="catalog"] [data-product-grid] [data-add-product]:not([disabled])').first();
+  await expect(firstAdd).toBeVisible();
+  const report = await page.evaluate(async () => {
+    const { getState } = await import('/js/state.js');
+    const products = getState().products;
+    const delivered = new Map(products.map((product, index) => [product.id, index]));
+    const byId = new Map(products.map((product) => [product.id, product]));
+    const buyable = [...document.querySelectorAll('[data-view="catalog"] [data-product-grid] [data-add-product]:not([disabled])')]
+      .map((node) => node.dataset.addProduct);
+    const first = byId.get(buyable[0]);
+    return {
+      first: first ? { name: first.name, alcoholic: Boolean(first.alcoholic), category: first.categoryId } : null,
+      // Rubros de lo comprable, en el orden en que aparecen.
+      categories: buyable.map((id) => byId.get(id)?.categoryId).filter((id, index, all) => id !== all[index - 1]),
+      // Entre productos del MISMO rubro la grilla no tiene ningún motivo para
+      // invertir el orden en que llegaron.
+      keptDeliveredOrder: buyable.every((id, index) => index === 0
+        || byId.get(id)?.categoryId !== byId.get(buyable[index - 1])?.categoryId
+        || delivered.get(id) > delivered.get(buyable[index - 1])),
+    };
+  });
+  expect(report.first, 'la demo no tiene nada para agregar').not.toBeNull();
+  expect(report.first.alcoholic, `lo primero que se puede agregar es «${report.first.name}»`).toBe(false);
+  expect(report.categories.indexOf('energizantes'), 'los energizantes abren la vidriera demo')
+    .toBeLessThan(report.categories.indexOf('cervezas'));
+  expect(report.keptDeliveredOrder).toBe(true);
+});
+
 test('ningún nombre se corta en la grilla, a 360 y a 390 de ancho', async ({ page }) => {
   await openRuntimeCatalog(page);
   for (const width of [360, 390]) {
@@ -128,44 +164,89 @@ test('la búsqueda perdona el tipeo y lo dice; lo que no se vende sigue sin apar
   expect(metrics.imageReplacements).toBe(0);
 });
 
-test('en la vidriera, un nombre largo se lee entero y la tarjeta mide lo mismo que su vecina', async ({ page }) => {
+test('en la vidriera la presentación se ve siempre, y un nombre largo usa sus dos renglones sin cambiar el alto', async ({ page }) => {
+  /*
+   * Lo que se afirma acá vale con CUALQUIER tipografía de sistema. La primera
+   * versión de esta prueba pedía que todo nombre largo entrara entero, y eso
+   * depende del ancho de la fuente: en Windows pasaba y en el Chromium de Linux
+   * del CI «Glaciar Con Gas Baja en Sodio» no entraba (corrida 36817855269). Peor:
+   * lo que se perdía en ese caso era la presentación. Ahora la garantía es la
+   * inversa —la presentación siempre, el nombre hasta donde entre— y es la que
+   * se prueba.
+   */
   await page.setViewportSize({ width: 360, height: 800 });
   await openRuntimeCatalog(page);
   await goHome(page);
-  const cards = await page.locator('[data-view="home"] .home-best-card').evaluateAll((nodes) => nodes.map((card) => {
-    const strong = card.querySelector('.home-best-copy strong');
-    const flow = card.querySelector('.home-best-name');
-    const range = document.createRange();
-    range.selectNodeContents(strong);
-    const rects = [...range.getClientRects()];
-    const lines = new Set(rects.map((rect) => Math.round(rect.top))).size;
-    // Cada renglón del nombre EMPIEZA dentro de la caja de dos renglones. Se
-    // mira el comienzo y no el final: la caja de una línea en línea es más
-    // alta que su renglón, y cuánto más depende del motor.
-    const box = flow ? flow.getBoundingClientRect() : null;
-    return {
-      title: strong.textContent,
-      flow: Boolean(flow),
-      truncated: flow ? false : strong.scrollWidth > strong.clientWidth + 1,
-      lines,
-      titleVisible: flow ? lines <= 2 && rects.every((rect) => rect.top >= box.top - 4 && rect.top < box.bottom - 6) : true,
-      rail: [...document.querySelectorAll('.offers-rail')].indexOf(card.parentElement),
-      height: Math.round(card.getBoundingClientRect().height),
-      copyHeight: Math.round(card.querySelector('.home-best-copy').getBoundingClientRect().height),
-    };
-  }));
-  const coke = cards.find((card) => card.title === 'Coca-Cola Sin Azúcar');
-  expect(coke, 'no está la tarjeta de Coca-Cola Sin Azúcar').toBeTruthy();
-  expect(coke.flow).toBe(true);
-  expect(coke.lines).toBe(2);
-  expect(cards.filter((card) => card.truncated).map((card) => card.title), 'nombres cortados en la vidriera').toEqual([]);
-  expect(cards.filter((card) => !card.titleVisible).map((card) => card.title), 'un nombre largo no entró en sus dos renglones').toEqual([]);
-  // Mismo alto que la vecina de nombre corto, en el mismo carrusel.
-  const neighbour = cards.find((card) => card.rail === coke.rail && !card.flow);
-  expect(coke.height).toBe(neighbour.height);
-  expect(coke.copyHeight).toBe(neighbour.copyHeight);
+  for (const width of [360, 390]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.waitForTimeout(200);
+    const cards = await page.locator('[data-view="home"] .home-best-card').evaluateAll((nodes) => nodes.map((card) => {
+      const copy = card.querySelector('.home-best-copy');
+      const strong = copy.querySelector('strong');
+      const small = copy.querySelector('small');
+      const block = card.querySelector('.home-best-name');
+      const box = (block || copy).getBoundingClientRect();
+      const rectsOf = (node) => {
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        return [...range.getClientRects()].filter((rect) => rect.width > 0);
+      };
+      // El renglón EMPIEZA dentro de la caja. Se mira el comienzo y no el final:
+      // la caja de una línea en línea es más alta que su renglón, y cuánto más
+      // depende del motor.
+      const starts = (rect) => rect.top >= box.top - 4 && rect.top < box.bottom - 6;
+      const nameRects = rectsOf(strong);
+      const unitRects = small ? rectsOf(small) : [];
+      return {
+        title: strong.textContent,
+        unit: small ? small.textContent : '',
+        flow: Boolean(block),
+        truncated: block ? false : strong.scrollWidth > strong.clientWidth + 1,
+        nameLines: new Set(nameRects.filter(starts).map((rect) => Math.round(rect.top))).size,
+        nameWhole: nameRects.every(starts),
+        firstLineVisible: nameRects.length > 0 && starts(nameRects[0]),
+        unitVisible: unitRects.length > 0
+          && unitRects.every((rect) => starts(rect) && rect.left >= box.left - 1.5 && rect.right <= box.right + 1.5),
+        blockHeight: block ? Math.round(block.getBoundingClientRect().height * 10) / 10 : null,
+        rail: [...document.querySelectorAll('.offers-rail')].indexOf(card.parentElement),
+        height: Math.round(card.getBoundingClientRect().height),
+        copyHeight: Math.round(copy.getBoundingClientRect().height),
+      };
+    }));
+    const flow = cards.filter((card) => card.flow);
+    expect(flow.length, `${width}px: ningún nombre largo en la vidriera`).toBeGreaterThan(5);
+    // 1. La presentación: en TODAS las tarjetas, entera adentro de su caja.
+    expect(cards.filter((card) => card.unit && !card.unitVisible).map((card) => `${card.title} · ${card.unit}`),
+      `${width}px: presentaciones que no se ven`).toEqual([]);
+    // 2. El nombre largo: el primer renglón siempre, y nunca más de dos.
+    expect(flow.filter((card) => !card.firstLineVisible).map((card) => card.title), `${width}px: nombres sin primer renglón`).toEqual([]);
+    expect(flow.filter((card) => card.nameLines > 2).map((card) => card.title)).toEqual([]);
+    // 3. El alto no cambia: 33,6 px, lo mismo que nombre + presentación.
+    expect([...new Set(flow.map((card) => card.blockHeight))], `${width}px: el bloque del nombre largo cambió de alto`).toEqual([33.6]);
+    // 4. El caso que motivó todo: «Coca-Cola Sin Azúcar» se lee entero, en dos
+    //    renglones, con su «2,25 L», y la tarjeta mide lo mismo que su vecina.
+    const coke = cards.find((card) => card.title === 'Coca-Cola Sin Azúcar');
+    expect(coke, 'no está la tarjeta de Coca-Cola Sin Azúcar').toBeTruthy();
+    expect(coke.flow).toBe(true);
+    expect(coke.nameLines).toBe(2);
+    expect(coke.nameWhole, '«Coca-Cola Sin Azúcar» no entró en sus dos renglones').toBe(true);
+    expect(coke.unit).toBe('2,25 L');
+    const neighbour = cards.find((card) => card.rail === coke.rail && !card.flow);
+    expect(coke.height).toBe(neighbour.height);
+    expect(coke.copyHeight).toBe(neighbour.copyHeight);
+    // 5. El envase retornable se dice aunque el nombre sea largo: a 360 px era
+    //    justo lo que se perdía.
+    const brahma = cards.find((card) => card.title === 'Brahma Chopp Rubia');
+    expect(brahma, 'no está la tarjeta de Brahma').toBeTruthy();
+    expect(brahma.unit).toBe('1 L · Retornable');
+    expect(brahma.unitVisible).toBe(true);
+    // Los nombres cortos siguen como estaban: un renglón, sin puntos suspensivos.
+    expect(cards.filter((card) => card.truncated).map((card) => card.title), `${width}px: nombres cortos cortados`).toEqual([]);
+  }
 
   // Y el primer «Agregar» sigue sobre la barra inferior con los datos reales.
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.waitForTimeout(200);
   const fold = await page.evaluate(() => {
     const nav = document.querySelector('.mobile-nav');
     const add = document.querySelector('[data-view="home"] [data-add-product]');
@@ -231,6 +312,10 @@ test('el brillo no escribe mientras la página se mueve: una sola escritura, al 
 });
 
 test('un teléfono de densidad 3 baja la miniatura de cada tarjeta, no el master', async ({ browser }) => {
+  // Recorre la grilla entera a densidad 3 esperando cada foto: en el WebKit para
+  // Windows, con la máquina ocupada, no entra en el tiempo de una prueba común.
+  // Lo que se afirma no cambia; sólo tiene más tiempo para recorrerla.
+  test.slow();
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, serviceWorkers: 'block' });
   const page = await context.newPage();
   const requested = [];

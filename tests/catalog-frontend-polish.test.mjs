@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 
 import { brandAddsToTitle, cardPresentationLine, cardTitle } from '../js/core/product-presentation.js';
 import { resolveRuntimeConfig } from '../js/core/runtime-config.js';
+import { STORE_CATEGORY_ORDER, sortByShelfOrder } from '../js/core/store-taxonomy.js';
 import { homeNameNeedsTwoLines } from '../js/ui.js';
 import { money } from '../js/state.js';
 
@@ -85,7 +86,41 @@ test('la hoja reserva el MISMO alto para el nombre largo que para nombre + prese
   const bloque = /@media \(max-width: 479px\) \{\s*body\[data-active-view="home"\] \.home-best-copy \.home-best-name \{([^}]+)\}/.exec(css);
   assert.ok(bloque, 'falta la regla del nombre largo');
   assert.match(bloque[1], /height: 33\.6px;/, 'el bloque tiene que medir 18 + 15,6 px: si cambia, se mueve el pliegue');
-  assert.match(bloque[1], /-webkit-line-clamp: 2;/);
+  assert.match(bloque[1], /overflow: hidden;/);
+  assert.match(bloque[1], /line-height: 16\.8px;/, 'dos renglones de 16,8 px son los 33,6');
+});
+
+test('en el nombre largo la presentación tiene su lugar reservado: lo que puede quedar afuera es el final del nombre', () => {
+  // REGRESIÓN (2026-10-01). Con nombre y presentación como texto corrido, lo que
+  // no entraba era lo último: a 360 px «Brahma Chopp Rubia» perdía «Retornable»
+  // y, con la tipografía más ancha del Chromium de Linux, «Glaciar Con Gas Baja
+  // en Sodio» perdía «1,5 L». Ahora la presentación es un flotante fijo al final
+  // del segundo renglón, y eso no depende del ancho de ninguna fuente.
+  const css = read('styles/brand-home.css');
+  const telefono = css.slice(css.indexOf('/* Sólo en el ancho de teléfono, que es donde el nombre no entra.'));
+  const media = telefono.slice(0, telefono.indexOf('\n}\n') + 3);
+  const regla = (selector) => new RegExp(`${selector} \\{([^}]+)\\}`).exec(media)?.[1] || '';
+  const empuje = regla('\\.home-best-name::before');
+  assert.match(empuje, /float: right;/);
+  assert.match(empuje, /width: 0;/, 'el empuje no le quita ancho al primer renglón');
+  assert.match(empuje, /height: 16\.8px;/, 'un renglón exacto: la presentación cae en el segundo');
+  const presentacion = regla('\\.home-best-name small');
+  assert.match(presentacion, /float: right;/);
+  assert.match(presentacion, /clear: right;/);
+  assert.match(presentacion, /white-space: nowrap;/, 'la presentación no se parte');
+  assert.match(presentacion, /text-overflow: ellipsis;/);
+  assert.match(presentacion, /max-width: 100%;/);
+  assert.match(regla('\\.home-best-name strong'), /overflow-wrap: normal;/, 'al lado del flotante no se parte una palabra');
+  assert.doesNotMatch(media, /-webkit-line-clamp/, 'un recorte por renglones se lleva lo último, que era la presentación');
+  // El flotante sólo reserva lugar para el texto que viene DESPUÉS: en el marcado
+  // la presentación va antes que el nombre, y fuera del teléfono `order` repone
+  // el orden visible.
+  const ui = read('js/ui.js');
+  assert.ok(
+    ui.includes('<p class="home-best-name">${unit ? `<small>${escapeHtml(unit)}</small>` : \'\'}<strong>${escapeHtml(title)}</strong></p>'),
+    'la presentación tiene que ir antes que el nombre en el marcado',
+  );
+  assert.match(css, /body\[data-active-view="home"\] \.home-best-copy \.home-best-name small \{\s*order: 1;\s*\}/);
 });
 
 test('el título de la tarjeta del catálogo reserva dos renglones y permite tres', () => {
@@ -98,12 +133,60 @@ test('el título de la tarjeta del catálogo reserva dos renglones y permite tre
 
 // ─── Orden ────────────────────────────────────────────────────────────────────
 
-test('a igual puntaje, la grilla desempata por el orden comercial de los rubros', () => {
+test('un catálogo real que todavía nadie ordenó se agrupa por rubro, en el orden de los chips', () => {
+  // Así llega la consulta cuando todos los `sort_order` valen 0: por nombre.
+  const alfabetico = [
+    { id: 'alamos', categoryId: 'vinos', sortOrder: 0 },
+    { id: 'aperol', categoryId: 'aperitivos', sortOrder: 0 },
+    { id: 'bonaqua', categoryId: 'aguas', sortOrder: 0 },
+    { id: 'brahma', categoryId: 'cervezas', sortOrder: 0 },
+    { id: 'coca', categoryId: 'gaseosas', sortOrder: 0 },
+    { id: 'corona', categoryId: 'cervezas', sortOrder: 0 },
+    { id: 'fanta', categoryId: 'gaseosas', sortOrder: 0 },
+  ];
+  const copia = structuredClone(alfabetico);
+  assert.deepEqual(
+    sortByShelfOrder(alfabetico).map((producto) => producto.id),
+    ['coca', 'fanta', 'brahma', 'corona', 'bonaqua', 'aperol', 'alamos'],
+    'cada rubro junto, en el orden de STORE_CATEGORY_ORDER, y adentro el orden recibido',
+  );
+  assert.deepEqual(alfabetico, copia, 'la lista recibida no se toca');
+  assert.ok(STORE_CATEGORY_ORDER.indexOf('gaseosas') < STORE_CATEGORY_ORDER.indexOf('cervezas'));
+});
+
+test('el número que pone el comercio manda sobre el rubro', () => {
+  const curado = [
+    { id: 'malbec-de-la-casa', categoryId: 'vinos', sortOrder: 1 },
+    { id: 'coca', categoryId: 'gaseosas', sortOrder: 5 },
+    { id: 'brahma', categoryId: 'cervezas', sortOrder: 5 },
+    { id: 'sin-rubro', categoryId: 'algo-nuevo', sortOrder: 5 },
+    { id: 'sin-numero', categoryId: 'aguas' },
+  ];
+  assert.deepEqual(
+    sortByShelfOrder(curado).map((producto) => producto.id),
+    // Sin número vale 0 y va primero; el 1 antes que los 5; entre los 5, por rubro,
+    // y un rubro que la tienda no conoce queda al final sin romper nada.
+    ['sin-numero', 'malbec-de-la-casa', 'coca', 'brahma', 'sin-rubro'],
+  );
+  assert.deepEqual(sortByShelfOrder(null), []);
+  assert.deepEqual(sortByShelfOrder(undefined), []);
+});
+
+test('la grilla NO reordena un catálogo que ya llega curado: el rubro se agrupa sólo en la lectura del catálogo real', () => {
+  // REGRESIÓN (CI 36817855269, 2026-10-01). El agrupado por rubro vivía en el
+  // `sort` de la grilla y reordenaba también la vidriera demo, que abre con
+  // energizantes: le subió siete cervezas al principio. Lo primero que se podía
+  // agregar pasó a ser alcohol y 36 recorridos de compra pidieron mayoría de edad.
   const ui = read('js/ui.js');
-  assert.match(ui, /const CATEGORY_RANK = new Map\(STORE_CATEGORY_ORDER\.map\(\(id, index\) => \[id, index\]\)\);/);
-  assert.match(ui, /score\(b\) - score\(a\) \|\| categoryRank\(a\) - categoryRank\(b\)/);
-  // «Menor precio» no desempata por rubro: ahí manda el precio.
-  assert.match(ui, /if \(sortBy === 'price_asc'\) return arr\.sort\(comparePricedAscending\);/);
+  const sort = ui.slice(ui.indexOf('function sortProducts('), ui.indexOf('function activeCategoryName('));
+  assert.match(sort, /return arr\.sort\(\(a, b\) => score\(b\) - score\(a\)\);/, 'a igual puntaje, el orden recibido');
+  assert.doesNotMatch(ui, /categoryRank|CATEGORY_RANK/, 'la grilla volvió a desempatar por rubro');
+  // «Menor precio» sigue mandando por precio.
+  assert.match(sort, /if \(sortBy === 'price_asc'\) return arr\.sort\(comparePricedAscending\);/);
+  // Y el agrupado está donde nace el orden alfabético.
+  const repositorio = read('js/repositories/supabase_order_repository.js');
+  assert.match(repositorio, /const products = sortByShelfOrder\(\(Array\.isArray\(data\) \? data : \[\]\)\s+\.map\(rowToCatalogProduct\)\s+\.filter\(Boolean\)\);/);
+  assert.equal(repositorio.split('sortByShelfOrder(').length - 1, 1, 'un solo lugar agrupa por rubro');
 });
 
 // ─── El corazón de favoritos ──────────────────────────────────────────────────

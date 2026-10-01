@@ -26,7 +26,7 @@ import {
   validateCustomerName,
 } from '../core/validators.js';
 import { setProductionCatalogReady } from '../core/runtime-config.js';
-import { categoryDefaults } from '../core/store-taxonomy.js';
+import { categoryDefaults, sortByShelfOrder } from '../core/store-taxonomy.js';
 import {
   clearCommerceAvailability,
   setCommerceAvailability,
@@ -729,9 +729,12 @@ export function createSupabaseOrderRepository({
       return failedQuery(error, status, catalogStatus.message);
     }
 
-    const products = (Array.isArray(data) ? data : [])
+    // La consulta ordena por `sort_order` y nombre. Mientras el comercio no
+    // numere sus productos eso es el alfabeto; `sortByShelfOrder` junta por rubro
+    // lo que empata y respeta cualquier número que el comercio ya haya puesto.
+    const products = sortByShelfOrder((Array.isArray(data) ? data : [])
       .map(rowToCatalogProduct)
-      .filter(Boolean);
+      .filter(Boolean));
     catalogProductCount = products.length;
     catalogStatus = products.length
       ? { state: 'ready', message: `${products.length} productos verificados.` }

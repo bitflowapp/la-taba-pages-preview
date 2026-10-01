@@ -185,3 +185,59 @@ test('diez ciclos completos y sesión de dos minutos conservan identidades y pos
   expect(metrics.opacityResets).toBe(0);
   expect(metrics.cls).toBeLessThan(0.1);
 });
+
+test('una nueva sesión de ficha descarta notas consumidas y canceladas', async ({ page }) => {
+  const backend = await openRuntimeCatalog(page);
+  const product = backend.rows
+    .filter((row) => row.is_alcoholic === false && row.image_url && !row.sold_as_pack)
+    .sort((left, right) => left.name.length - right.name.length)[0];
+  const detail = page.locator(GRID + ' [data-product-detail="' + product.id + '"]').first();
+  const modal = page.locator('[data-product-modal]');
+  const note = modal.locator('[data-product-note]');
+  await detail.click();
+  await note.fill('nota-qa!');
+  await modal.locator('[data-add-product]').click();
+  await expect(modal).not.toBeVisible();
+  const checkoutNote = page.locator('[name="customerNotes"]');
+  const consumed = await checkoutNote.inputValue();
+  expect(consumed).toContain(product.name);
+  await detail.click();
+  await expect(note).toHaveValue('');
+  await modal.locator('[data-cart-dec]').click();
+  await expect(modal.locator('[data-add-product]')).toBeVisible();
+  await modal.locator('[data-add-product]').click();
+  await expect(modal).not.toBeVisible();
+  await expect(checkoutNote).toHaveValue(consumed);
+  await detail.click();
+  await note.fill('descartada con X');
+  await modal.locator('[data-close-modal]').click();
+  await detail.click();
+  await expect(note).toHaveValue('');
+  await note.fill('descartada con Escape');
+  await page.keyboard.press('Escape');
+  await expect(modal).not.toBeVisible();
+  await detail.click();
+  await expect(note).toHaveValue('');
+});
+
+test('Realtime conserva el borrador y la imagen de la ficha abierta', async ({ page }) => {
+  const backend = await openRuntimeCatalog(page);
+  const product = backend.rows.find((row) => row.is_alcoholic === false && row.image_url && !row.sold_as_pack);
+  const detail = page.locator(GRID + ' [data-product-detail="' + product.id + '"]').first();
+  const modal = page.locator('[data-product-modal]');
+  await detail.click();
+  const note = modal.locator('[data-product-note]');
+  const originalNote = await note.elementHandle();
+  const originalImage = await modal.locator('img').elementHandle();
+  await note.fill('borrador vigente');
+  product.price = 3519;
+  backend.emit();
+  await expect(modal.locator('.modal-price')).toContainText('3.519');
+  await expect(note).toHaveValue('borrador vigente');
+  expect(await note.evaluate((node, original) => node === original, originalNote)).toBe(true);
+  expect(await modal.locator('img').evaluate((node, original) => node === original, originalImage)).toBe(true);
+  await modal.locator('[data-close-modal]').click();
+  await detail.click();
+  await expect(note).toHaveValue('');
+});
+

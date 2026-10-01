@@ -4193,6 +4193,24 @@ body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .prod
   content: "";
 }
 
+/* EL CORAZÓN SE TIENE QUE VER.
+   El disco es marfil y el ícono pedía `--taba-ink`. En el alcance del cliente
+   ese token está reasignado a la tinta CLARA de la góndola (#f7f7f8) —es lo
+   que hace legible el texto sobre grafito—, así que el corazón quedaba marfil
+   sobre marfil: 1,03:1. En las 46 tarjetas del catálogo el control de favoritos
+   era un círculo vacío, guardado o sin guardar. WCAG 1.4.11 pide 3:1 para un
+   control.
+   La tinta del disco se declara por lo que es —oscura, porque el plato es
+   claro— y no por un token que cambia de sentido según la superficie:
+   15,6:1 en reposo y 5,6:1 con el rojo de marca cuando está guardado. */
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-favorite {
+  color: #14161a;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-favorite.is-favorite {
+  color: var(--taba-red);
+}
+
 body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-favorite svg {
   position: relative;
   z-index: 1;

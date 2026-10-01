@@ -18,6 +18,7 @@ import {
   clearAddedFlash,
   closeStoriesModal,
   copyDraftOrderToClipboard,
+  dismissCampaign,
   flashAddedProduct,
   getCheckoutFormValues,
   renderAdminVisibility,
@@ -141,6 +142,7 @@ import {
 import { isStandaloneDisplay } from './core/pwa-install.js';
 import { initPwaInstall } from './pwa-install-ui.js';
 import { initMotion } from './motion.js';
+import { initCampaignMotion } from './campaigns/campaign-motion.js';
 
 const VIEWS = ['home', 'catalog', 'cart', 'tracking', 'business', 'rider', 'profile'];
 const RELAY_ROOM_STORAGE_KEY = 'la_taba_rt_room';
@@ -544,6 +546,10 @@ async function bootstrap() {
     // Exponer sólo diagnósticos locales para QA visual/performance; no forma
     // parte de contratos de negocio ni cambia el estado del catálogo.
     window.TABA2_MOTION = motionController;
+    // Las campañas animadas: un observador que decide cuándo corre cada
+    // escena. Sin campañas encendidas no observa nada. Diagnóstico local, igual
+    // que `TABA2_MOTION`.
+    window.TABA2_CAMPAIGNS = initCampaignMotion();
     bindEvents();
     subscribe(renderAll);
     maybeOpenPitchFromUrl();
@@ -1556,6 +1562,21 @@ function bindEvents() {
     const comboId = target.closest('[data-combo-detail]')?.dataset.comboDetail;
     if (comboId) {
       showComboModal(comboId, target.closest('[data-combo-detail]'));
+      return;
+    }
+
+    // Ocultar un anuncio: vale por la visita. El foco no se pierde: pasa a lo
+    // que ocupe ese lugar —la puerta editorial, la tarjeta siguiente— y se avisa
+    // en voz alta, porque para un lector de pantalla la pieza desaparece sin
+    // dejar rastro.
+    const dismissButton = target.closest('[data-campaign-dismiss]');
+    if (dismissButton) {
+      const surface = dismissButton.closest('[data-home-hero-promo], [data-home-campaign], [data-product-grid]');
+      dismissCampaign(dismissButton.dataset.campaignDismiss);
+      renderAll();
+      const next = surface?.hidden ? null : surface?.querySelector('button:not([disabled]), a[href]');
+      (next || document.querySelector(`[data-view="${activeView}"] h1, [data-view="${activeView}"] h2`))?.focus?.({ preventScroll: true });
+      showToast('Ocultamos el anuncio.');
       return;
     }
 

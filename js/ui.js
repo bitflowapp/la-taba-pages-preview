@@ -3,7 +3,10 @@ import { getBusinessConfig } from './core/business-config-store.js';
 import { BRAND } from './config.js';
 import { businessMapsSearchUrl, mapsSearchUrl } from './core/business-location.js';
 import { categories } from './data.js';
-import { getCustomerCatalogProducts, isProductVisibleToCustomer } from './core/catalog-store.js';
+import { getCustomerCatalogProducts, isProductOrderable, isProductVisibleToCustomer } from './core/catalog-store.js';
+import { CAMPAIGNS } from './campaigns/campaign-config.js';
+import { CAMPAIGN_GRID_POSITION, campaignMarkup, selectCampaigns } from './campaigns/campaign-engine.js';
+import { refreshCampaignMotion } from './campaigns/campaign-motion.js';
 import { resolveCatalogImageUrl } from './core/catalog-image-contract.js';
 import { imageAttributionFor } from './core/image-attribution.js';
 import { resolveRuntimeConfig } from './core/runtime-config.js';
@@ -1084,12 +1087,87 @@ function homeNameBlock(product) {
 function renderHomeShowcase() {
   renderHomeCategories();
   renderHomeHeroPromo();
+  renderHomeCampaign();
   renderHomePromotions();
   renderHomeBanners();
   renderHomeBestSellers();
   renderHomeSections();
   renderHomeEditorialSelection();
   renderStoryEntry();
+  refreshCampaignMotion();
+}
+
+// ─── Campañas animadas ───────────────────────────────────────────────────────
+// Una campaña es una pieza editorial con escena animada que lleva a la ficha de
+// un producto que el local vende. Todas nacen apagadas
+// (`campaigns/campaign-config.js`) y el motor falla cerrado: sin una campaña
+// encendida, aprobada, vigente y con producto comprable AHORA, estas funciones
+// devuelven vacío y cada superficie pinta exactamente lo que pintaba antes.
+//
+// Lo que la persona ocultó vale por la visita: no se le vuelve a mostrar hasta
+// que abra la tienda de nuevo. Es memoria de sesión y nada más; no hay perfil.
+const DISMISSED_CAMPAIGNS_KEY = 'taba:campaigns-dismissed';
+const dismissedCampaigns = new Set();
+try {
+  const stored = JSON.parse(globalThis.sessionStorage?.getItem(DISMISSED_CAMPAIGNS_KEY) || '[]');
+  if (Array.isArray(stored)) stored.filter((id) => typeof id === 'string').forEach((id) => dismissedCampaigns.add(id));
+} catch (_) {
+  // Sin almacenamiento de sesión la pieza sólo se oculta hasta la recarga.
+}
+
+export function dismissCampaign(campaignId) {
+  const id = String(campaignId || '').trim();
+  if (!id) return;
+  dismissedCampaigns.add(id);
+  try {
+    globalThis.sessionStorage?.setItem(DISMISSED_CAMPAIGNS_KEY, JSON.stringify([...dismissedCampaigns]));
+  } catch (_) {
+    // Igual que arriba: sin almacenamiento, vale hasta la recarga.
+  }
+}
+
+function activeCampaigns(catalog = null) {
+  return selectCampaigns({
+    campaigns: CAMPAIGNS,
+    products: getCustomerCatalogProducts(getState().products),
+    isOrderable: isProductOrderable,
+    dismissed: dismissedCampaigns,
+    catalog,
+  });
+}
+
+// El subtítulo y el aviso de alcohol salen del PRODUCTO real, con las mismas
+// funciones que usa la tarjeta: la campaña no puede decir otro nombre ni otra
+// presentación que la que está en góndola.
+function campaignPiece(entry, placement) {
+  const { product } = entry;
+  return campaignMarkup(entry, placement, {
+    productId: product.id,
+    title: cardTitle(product),
+    line: cardPresentationLine(product),
+    alcoholic: product.alcoholic === true,
+  });
+}
+
+function renderHomeCampaign() {
+  const slot = $('[data-home-campaign]');
+  if (!slot) return;
+  const entry = activeCampaigns()['home-inline'];
+  slot.hidden = !entry;
+  renderCatalogSurface(slot, entry ? campaignPiece(entry, 'home-inline') : '');
+}
+
+// La pieza de grilla: una sola, y nunca en una búsqueda, con filtros o en una
+// lista corta. Las reglas viven en el motor; acá sólo se le cuenta el contexto.
+function catalogCampaignPiece(state, listSize) {
+  const filters = { ...defaultCatalogFilters(), ...(state.catalogFilters || {}) };
+  const entry = activeCampaigns({
+    categoryId: state.activeCategory,
+    searching: Boolean(state.searchQuery.trim()),
+    filtered: Object.values(filters).some((value) => value !== 'all'),
+    listSize,
+  })['catalog-inline'];
+  return entry ? campaignPiece(entry, 'catalog-inline') : '';
 }
 
 // ─── Hero promocional ────────────────────────────────────────────────────────
@@ -1135,6 +1213,15 @@ export const HOME_HERO_PROMO = Object.freeze({
 function renderHomeHeroPromo() {
   const slot = $('[data-home-hero-promo]');
   if (!slot) return;
+  // Una campaña aprobada toma la banda; ocupa la MISMA caja, así que el primer
+  // precio de la vidriera no se mueve. Sin campaña —que es lo normal— sigue la
+  // puerta editorial de siempre, con su foto y su precarga.
+  const campaign = activeCampaigns()['home-hero'];
+  if (campaign) {
+    slot.hidden = false;
+    renderCatalogSurface(slot, campaignPiece(campaign, 'home-hero'));
+    return;
+  }
   const hero = HOME_HERO_PROMO;
   const category = categoriesForCurrentCatalog().find((entry) => entry.id === hero.categoryId);
   if (!category || !purchasableCategoryIds().has(hero.categoryId)) {
@@ -2842,7 +2929,9 @@ function renderProducts() {
       </p>`
     : '';
 
-  renderCatalogSurface(container, avisoParecidos + avisoSinComprables + enPantalla.map((product) => {
+  const campaignCard = catalogCampaignPiece(state, filteredProducts.length);
+
+  const tarjetas = enPantalla.map((product) => {
     const outOfStock = !isCommerciallyPurchasable(product);
     const offer = discountPercent(product) > 0;
     const inCart = cartQuantities.get(product.id) || 0;
@@ -2890,7 +2979,13 @@ function renderProducts() {
         </div>
       </article>
     `;
-  }).join('') + verMas);
+  });
+  if (campaignCard && tarjetas.length > CAMPAIGN_GRID_POSITION) {
+    tarjetas.splice(CAMPAIGN_GRID_POSITION, 0, campaignCard);
+  }
+
+  renderCatalogSurface(container, avisoParecidos + avisoSinComprables + tarjetas.join('') + verMas);
+  refreshCampaignMotion();
 }
 
 /**

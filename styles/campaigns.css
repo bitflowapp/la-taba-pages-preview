@@ -1,0 +1,1066 @@
+/* ============================================================================
+   CAMPAÑAS ANIMADAS DE LA VIDRIERA
+   ----------------------------------------------------------------------------
+   Una pieza es una tarjeta con texto a la izquierda y una ESCENA a la derecha.
+   La escena es decorativa (`aria-hidden`): todo lo que la pieza dice está en el
+   texto y en el nombre accesible del botón.
+
+   CÓMO SE ANIMA. Cada elemento de la escena está escrito, en su regla base, en
+   su CUADRO FINAL: vaso lleno, envase parado, texto a la vista. Eso es lo que
+   se ve sin JavaScript, con movimiento reducido, en modo liviano o si algo
+   falla. Recién cuando `js/campaigns/campaign-motion.js` marca la raíz con
+   `data-motion-campaign="on"` cada elemento recibe su animación, que termina
+   exactamente en ese mismo cuadro. No hay un estado "roto" intermedio.
+
+   QUÉ SE ANIMA. Sólo `transform` y `opacity`. Nada cambia de tamaño, nada
+   vuelve a maquetar, y la escena está contenida (`contain`) para que no
+   invalide nada fuera de su caja. Sin `filter: blur`: los resplandores son
+   degradados radiales.
+
+   UNA SOLA LÍNEA DE TIEMPO. Todos los elementos de una escena duran lo mismo
+   (`--cmp-dur`) y se reparten por porcentajes. Así pausar la pieza —cuando sale
+   de pantalla— y reanudarla no los desincroniza.
+
+   UNIDAD. La escena mide 11 × 10 unidades y la unidad es un décimo del alto de
+   la pieza (`--cmp-h`). Se escribe en `em` sobre `.cmp-stage`, así la misma
+   escena sirve a 84 px de alto en un teléfono y a 268 en escritorio.
+   ========================================================================== */
+
+.cmp {
+  --cmp-h: 112px;
+  --cmp-loops: 6;
+  position: relative;
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--brand-border);
+  border-radius: 20px;
+  background: linear-gradient(160deg, #171a20 0%, #0d1014 100%);
+  box-shadow: var(--shadow-shelf-flat);
+  color: var(--brand-ink);
+  contain: layout paint;
+  isolation: isolate;
+}
+
+.cmp-hit {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: var(--cmp-h);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cmp-hit:focus-visible {
+  outline: 2px solid var(--brand-gold-soft);
+  outline-offset: -4px;
+}
+
+/* ── Texto ─────────────────────────────────────────────────────────────── */
+.cmp-copy {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  align-content: center;
+  gap: 1px;
+  box-sizing: border-box;
+  /* El texto termina donde empieza la escena: 11 unidades desde la derecha,
+     menos lo que la escena tiene de aire a su izquierda. */
+  width: calc(100% - var(--cmp-h) * 0.82);
+  min-height: var(--cmp-h);
+  padding: 14px 4px 14px 16px;
+}
+
+.cmp-eyebrow {
+  color: var(--brand-gold-soft);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.cmp-headline {
+  margin-top: 2px;
+  font-size: clamp(18px, 5.4vw, 21px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+.cmp-sub {
+  margin-top: 4px;
+  color: var(--brand-ink-muted);
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.cmp-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  margin-top: 6px;
+  color: var(--brand-red-ink);
+  font-size: 13px;
+  font-weight: 850;
+  letter-spacing: 0.01em;
+}
+
+.cmp-hit:hover .cmp-cta {
+  color: var(--taba-white);
+}
+
+/* La leyenda legal va en su propio renglón, fuera del botón: es texto que se
+   lee, no parte del nombre de la acción. */
+.cmp-legal {
+  position: absolute;
+  z-index: 3;
+  right: 16px;
+  bottom: 6px;
+  left: 16px;
+  margin: 0;
+  color: rgb(255 255 255 / 66%);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  pointer-events: none;
+}
+
+.cmp--legal .cmp-copy {
+  padding-bottom: 22px;
+}
+
+/* Ocultar. El botón mide 44 × 44 para el dedo; el disco que se ve, 24. */
+.cmp-close {
+  position: absolute;
+  z-index: 4;
+  top: 0;
+  right: 0;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--brand-ink);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cmp-close span {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 50%;
+  background: rgb(8 10 13 / 62%);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.cmp-close:hover span,
+.cmp-close:focus-visible span {
+  border-color: rgb(255 255 255 / 46%);
+  background: rgb(8 10 13 / 86%);
+}
+
+.cmp-close:focus-visible {
+  outline: 2px solid var(--brand-gold-soft);
+  outline-offset: -6px;
+}
+
+/* ── Escena ────────────────────────────────────────────────────────────── */
+.cmp-stage {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  bottom: 0;
+  display: block;
+  width: 11em;
+  height: 10em;
+  font-size: calc(var(--cmp-h) / 10);
+  pointer-events: none;
+  contain: layout style;
+}
+
+.cmp-stage > *,
+.cmp-stage i {
+  position: absolute;
+  display: block;
+}
+
+/* Resplandor detrás del producto: un degradado, no un desenfoque. */
+.cmp-glow {
+  top: 1.2em;
+  left: 0.6em;
+  width: 9.8em;
+  height: 9em;
+  background: radial-gradient(closest-side, var(--cmp-glow-color, rgb(255 190 80 / 34%)), transparent);
+}
+
+/* La mesa: una línea de luz y el reflejo bajo el producto. */
+.cmp-table {
+  top: 9em;
+  left: 0.4em;
+  width: 10.2em;
+  height: 0.9em;
+  background:
+    radial-gradient(60% 100% at 50% 0, var(--cmp-table-color, rgb(255 200 110 / 26%)), transparent 70%),
+    linear-gradient(90deg, transparent, rgb(255 255 255 / 16%) 30%, rgb(255 255 255 / 16%) 70%, transparent) top / 100% 1px no-repeat;
+}
+
+.cmp-shadow {
+  top: 8.82em;
+  width: 2.8em;
+  height: 0.42em;
+  background: radial-gradient(closest-side, rgb(0 0 0 / 62%), transparent);
+}
+
+/* ── Envase ────────────────────────────────────────────────────────────────
+   `.cmp-actor` es un ancla de tamaño cero puesta en el pico: es lo que se
+   traslada y rota. La silueta cuelga del ancla, así girar alrededor del pico no
+   depende de la forma del envase. */
+.cmp-actor {
+  top: var(--cmp-ay);
+  left: var(--cmp-ax);
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+}
+
+.cmp-vessel {
+  position: absolute;
+  display: block;
+  top: 0;
+  left: var(--cmp-vx, 0);
+  width: var(--cmp-vw);
+  height: var(--cmp-vh);
+  transform-origin: 50% 100%;
+}
+
+.cmp-actor--can {
+  --cmp-vw: 2.2em;
+  --cmp-vh: 4.6em;
+  --cmp-clip: inset(6.5% 4.5% 6.5% 4.5% round 12% / 6%);
+}
+
+.cmp-actor--bottle {
+  --cmp-vw: 1.94em;
+  --cmp-vh: 6em;
+  /* El pico está corrido del borde izquierdo: la silueta se desplaza eso. */
+  --cmp-vx: -0.73em;
+  --cmp-clip: polygon(38% 5%, 62% 5%, 62% 25%, 90% 47%, 90% 98%, 10% 98%, 10% 47%, 38% 25%);
+}
+
+.cmp-vessel-art {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.cmp-v-body { fill: var(--cmp-tint); }
+.cmp-v-band { fill: var(--cmp-tint-deep); }
+.cmp-v-label { fill: rgb(255 250 240 / 92%); }
+.cmp-v-mark { fill: var(--cmp-accent); }
+.cmp-v-cap { fill: var(--cmp-accent); }
+.cmp-v-metal { fill: #c9ced6; }
+.cmp-v-shade { fill: rgb(0 0 0 / 22%); }
+.cmp-v-shine { fill: rgb(255 255 255 / 38%); }
+.cmp-v-shine--soft { fill: rgb(255 255 255 / 14%); }
+.cmp-v-rim { fill: none; stroke: rgb(0 0 0 / 28%); stroke-width: 1.2; stroke-linecap: round; }
+
+/* Capas que viajan con el envase, recortadas por su silueta. */
+.cmp-vessel-fx {
+  position: absolute;
+  inset: 0;
+  display: block;
+  clip-path: var(--cmp-clip);
+}
+
+/* ============================================================================
+   beer_pour
+   ========================================================================== */
+.cmp--beer-pour {
+  --cmp-px: 4.9em;
+  --cmp-py: 2.95em;
+  background:
+    radial-gradient(90% 120% at 82% 60%, color-mix(in srgb, var(--cmp-tint) 34%, transparent), transparent 62%),
+    linear-gradient(160deg, #10161a 0%, #070a0c 100%);
+}
+
+.cmp--beer-pour .cmp-actor--can { --cmp-ax: 6.75em; --cmp-ay: 4.7em; --cmp-vw: 2.06em; --cmp-vh: 4.3em; }
+.cmp--beer-pour .cmp-actor--bottle { --cmp-ax: 7.6em; --cmp-ay: 3.3em; --cmp-vw: 1.84em; --cmp-vh: 5.7em; --cmp-vx: -0.69em; }
+.cmp--beer-pour .cmp-shadow { left: 6.4em; }
+
+.cmp-glass {
+  top: 3.4em;
+  left: 2.9em;
+  width: 3.2em;
+  height: 5.6em;
+}
+
+.cmp-glass-art {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.cmp-g-wall {
+  fill: none;
+  stroke: rgb(255 255 255 / 46%);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.cmp-g-base { fill: rgb(255 255 255 / 20%); }
+
+.cmp-g-shine {
+  fill: none;
+  stroke: rgb(255 255 255 / 44%);
+  stroke-linecap: round;
+  stroke-width: 2.2;
+}
+
+.cmp-g-shine--soft {
+  stroke: rgb(255 255 255 / 18%);
+  stroke-width: 1.4;
+}
+
+/* El interior del vaso: un recorte fijo con la forma de las paredes. */
+.cmp-glass-in {
+  position: absolute;
+  inset: 0;
+  display: block;
+  clip-path: polygon(4.5% 0, 95.5% 0, 85% 88.4%, 15% 88.4%);
+}
+
+.cmp-fill,
+.cmp-fill-in,
+.cmp-foam {
+  position: absolute;
+  display: block;
+}
+
+/* La VENTANA del líquido. Sube; su contenido baja lo mismo. */
+.cmp-fill {
+  top: 16%;
+  right: 0;
+  bottom: 11.6%;
+  left: 0;
+  overflow: hidden;
+}
+
+.cmp-fill-in {
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgb(110 52 0 / 46%), transparent 24%, transparent 68%, rgb(110 52 0 / 52%)),
+    linear-gradient(180deg, #f8cf52 0%, #f0a81d 42%, #d47f06 100%);
+}
+
+/* Espuma: mide un quinto de la ventana, así "bajar cinco veces su alto" es
+   exactamente bajar hasta el fondo del vaso. */
+.cmp-foam {
+  top: 1.52%;
+  right: 0;
+  left: 0;
+  height: 14.48%;
+  background: linear-gradient(180deg, #fffdf6 0%, #f8efd8 70%, #efdfb4 100%);
+  transform-origin: 50% 100%;
+}
+
+/* La corona que asoma sobre el borde: tres lomos, no una línea recta. */
+.cmp-foam-cap {
+  top: -0.34em;
+  left: 4%;
+  width: 92%;
+  height: 0.5em;
+  background:
+    radial-gradient(ellipse 50% 100% at 50% 100%, #fffefa 97%, transparent) 4% 100% / 38% 78% no-repeat,
+    radial-gradient(ellipse 50% 100% at 50% 100%, #fffefa 97%, transparent) 50% 100% / 44% 100% no-repeat,
+    radial-gradient(ellipse 50% 100% at 50% 100%, #fffefa 97%, transparent) 96% 100% / 36% 70% no-repeat;
+  transform-origin: 50% 100%;
+}
+
+/* Burbujas: cupo fijo, adentro del líquido. En reposo quedan tres a la vista. */
+.cmp-b {
+  bottom: 6%;
+  width: 0.2em;
+  height: 0.2em;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 32%, rgb(255 255 255 / 96%), rgb(255 255 255 / 28%) 62%, transparent 66%);
+  opacity: 0;
+}
+
+.cmp-b--1 { left: 22%; width: 0.16em; height: 0.16em; bottom: 34%; opacity: 0.6; }
+.cmp-b--2 { left: 38%; bottom: 62%; opacity: 0.5; }
+.cmp-b--3 { left: 55%; width: 0.14em; height: 0.14em; }
+.cmp-b--4 { left: 66%; width: 0.22em; height: 0.22em; bottom: 20%; opacity: 0.55; }
+.cmp-b--5 { left: 30%; width: 0.13em; height: 0.13em; }
+.cmp-b--6 { left: 48%; width: 0.18em; height: 0.18em; }
+.cmp-b--7 { left: 73%; width: 0.12em; height: 0.12em; }
+
+/* El chorro: un recorte fijo y, adentro, una barra que entra y sale por él. */
+.cmp-stream {
+  top: 2.95em;
+  left: 4.82em;
+  width: 0.17em;
+  height: 5.4em;
+  overflow: hidden;
+  border-radius: 0.09em;
+}
+
+.cmp-stream i {
+  inset: 0;
+  background: linear-gradient(90deg, #d98608, #ffd768 45%, #e29a12);
+  transform: translateY(101%);
+}
+
+/* ── beer_pour · línea de tiempo (5,6 s) ─────────────────────────────────
+     0–9 %    aparece el vaso
+     5–23 %   entra el envase
+    23–31 %   se inclina
+    30–35 %   cae el chorro
+    34–70 %   se llena
+    68–73 %   corta el chorro
+    71–94 %   el envase vuelve y se asienta
+    62–84 %   corona de espuma
+    80–94 %   subtítulo y acción                                            */
+[data-motion-campaign="on"].cmp--beer-pour .cmp-glass { animation: cmp-rise-in var(--cmp-dur) both; }
+[data-motion-campaign="on"].cmp--beer-pour .cmp-actor { animation: cmp-pour-actor var(--cmp-dur) both; }
+[data-motion-campaign="on"].cmp--beer-pour .cmp-shadow { animation: cmp-pour-shadow var(--cmp-dur) both; }
+[data-motion-campaign="on"].cmp--beer-pour .cmp-stream i { animation: cmp-pour-stream var(--cmp-dur) both; }
+[data-motion-campaign="on"].cmp--beer-pour .cmp-fill { animation: cmp-fill-window var(--cmp-dur) both; }
+[data-motion-campaign="on"].cmp--beer-pour .cmp-fill-in { animation: cmp-fill-content var(--cmp-dur) both; }
+[data-motion-campaign="on"].cmp--beer-pour .cmp-foam { animation: cmp-foam var(--cmp-dur) both; }
+[data-motion-campaign="on"].cmp--beer-pour .cmp-foam-cap { animation: cmp-foam-cap var(--cmp-dur) both; }
+[data-motion-campaign="on"].cmp--beer-pour .cmp-glow,
+[data-motion-campaign="on"].cmp--beer-pour .cmp-table { animation: cmp-pour-glow var(--cmp-dur) both; }
+
+[data-motion-campaign="on"].cmp--beer-pour .cmp-b {
+  animation: cmp-bubble 3.1s linear calc(var(--cmp-dur) * 0.4) var(--cmp-loops) both;
+}
+
+[data-motion-campaign="on"].cmp--beer-pour .cmp-b--2 { animation-duration: 3.7s; animation-delay: calc(var(--cmp-dur) * 0.4 + 0.5s); }
+[data-motion-campaign="on"].cmp--beer-pour .cmp-b--3 { animation-duration: 2.6s; animation-delay: calc(var(--cmp-dur) * 0.4 + 1.1s); }
+[data-motion-campaign="on"].cmp--beer-pour .cmp-b--4 { animation-duration: 4.1s; animation-delay: calc(var(--cmp-dur) * 0.4 + 0.2s); }
+[data-motion-campaign="on"].cmp--beer-pour .cmp-b--5 { animation-duration: 3.3s; animation-delay: calc(var(--cmp-dur) * 0.4 + 1.7s); }
+[data-motion-campaign="on"].cmp--beer-pour .cmp-b--6 { animation-duration: 2.9s; animation-delay: calc(var(--cmp-dur) * 0.4 + 2.3s); }
+[data-motion-campaign="on"].cmp--beer-pour .cmp-b--7 { animation-duration: 3.9s; animation-delay: calc(var(--cmp-dur) * 0.4 + 0.9s); }
+
+@keyframes cmp-rise-in {
+  0% { opacity: 0; transform: translateY(0.5em); }
+  9%, 100% { opacity: 1; transform: none; }
+}
+
+@keyframes cmp-pour-actor {
+  0%, 5% {
+    opacity: 0;
+    transform: translate(calc(var(--cmp-px) - var(--cmp-ax) + 4em), calc(var(--cmp-py) - var(--cmp-ay) - 4.4em)) rotate(-56deg);
+    animation-timing-function: cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  9% { opacity: 1; }
+  23% {
+    opacity: 1;
+    transform: translate(calc(var(--cmp-px) - var(--cmp-ax) + 0.5em), calc(var(--cmp-py) - var(--cmp-ay) - 0.7em)) rotate(-72deg);
+    animation-timing-function: ease-in-out;
+  }
+  31% {
+    transform: translate(calc(var(--cmp-px) - var(--cmp-ax)), calc(var(--cmp-py) - var(--cmp-ay))) rotate(-112deg);
+    animation-timing-function: linear;
+  }
+  68% {
+    transform: translate(calc(var(--cmp-px) - var(--cmp-ax)), calc(var(--cmp-py) - var(--cmp-ay) + 0.06em)) rotate(-121deg);
+    animation-timing-function: ease-in-out;
+  }
+  77% {
+    transform: translate(calc(var(--cmp-px) - var(--cmp-ax) + 0.7em), calc(var(--cmp-py) - var(--cmp-ay) - 1em)) rotate(-58deg);
+    animation-timing-function: cubic-bezier(0.3, 0, 0.2, 1);
+  }
+  90% { transform: translate(0, -0.34em) rotate(0deg); animation-timing-function: ease-in; }
+  94% { transform: translate(0, 0) rotate(0deg); animation-timing-function: ease-out; }
+  97% { transform: translate(0, -0.07em) rotate(0deg); animation-timing-function: ease-in; }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes cmp-pour-shadow {
+  0%, 88% { opacity: 0; transform: scaleX(0.5); }
+  95%, 100% { opacity: 1; transform: none; }
+}
+
+@keyframes cmp-pour-stream {
+  0%, 30% { transform: translateY(-101%); animation-timing-function: ease-in; }
+  35%, 68% { transform: translateY(0); animation-timing-function: ease-in; }
+  73%, 100% { transform: translateY(101%); }
+}
+
+/* La ventana, su contenido y la espuma comparten tramo y curva: es lo que
+   mantiene la espuma pegada a la superficie. */
+@keyframes cmp-fill-window {
+  0%, 34% { transform: translateY(100%); animation-timing-function: cubic-bezier(0.36, 0.08, 0.3, 1); }
+  70%, 100% { transform: none; }
+}
+
+@keyframes cmp-fill-content {
+  0%, 34% { transform: translateY(-100%); animation-timing-function: cubic-bezier(0.36, 0.08, 0.3, 1); }
+  70%, 100% { transform: none; }
+}
+
+@keyframes cmp-foam {
+  0%, 33% { opacity: 0; transform: translateY(500%) scaleY(0.25); }
+  34% { opacity: 1; transform: translateY(500%) scaleY(0.25); animation-timing-function: cubic-bezier(0.36, 0.08, 0.3, 1); }
+  70% { opacity: 1; transform: translateY(0) scaleY(0.8); animation-timing-function: ease-out; }
+  78% { transform: translateY(0) scaleY(1.07); animation-timing-function: ease-in-out; }
+  86%, 100% { opacity: 1; transform: none; }
+}
+
+@keyframes cmp-foam-cap {
+  0%, 62% { opacity: 0; transform: scale(0.3, 0); animation-timing-function: ease-out; }
+  76% { opacity: 1; transform: scale(1.04, 1.12); animation-timing-function: ease-in-out; }
+  84%, 100% { opacity: 1; transform: none; }
+}
+
+@keyframes cmp-pour-glow {
+  0%, 30% { opacity: 0.2; }
+  72%, 100% { opacity: 1; }
+}
+
+@keyframes cmp-bubble {
+  0% { opacity: 0; transform: translate3d(0, 1em, 0) scale(0.5); }
+  14% { opacity: 0.9; }
+  82% { opacity: 0.7; }
+  100% { opacity: 0; transform: translate3d(0.14em, -3.3em, 0) scale(1); }
+}
+
+/* ============================================================================
+   cold_can
+   ========================================================================== */
+.cmp--cold-can {
+  --cmp-glow-color: rgb(140 205 255 / 26%);
+  --cmp-table-color: rgb(150 210 255 / 22%);
+  background:
+    radial-gradient(90% 120% at 80% 55%, color-mix(in srgb, var(--cmp-tint) 42%, transparent), transparent 64%),
+    linear-gradient(160deg, #0f151d 0%, #070a0e 100%);
+}
+
+.cmp--cold-can .cmp-actor--can { --cmp-ax: 4.35em; --cmp-ay: 3.1em; --cmp-vw: 2.82em; --cmp-vh: 5.9em; }
+.cmp--cold-can .cmp-actor--bottle { --cmp-ax: 5.1em; --cmp-ay: 2em; --cmp-vw: 2.26em; --cmp-vh: 7em; --cmp-vx: -0.85em; }
+.cmp--cold-can .cmp-shadow { left: 4.1em; width: 3.4em; }
+
+/* Condensación: una trama de gotas mínimas sobre toda la superficie. */
+.cmp-frost {
+  inset: 0;
+  /* Tres tramas con pasos que no son múltiplos entre sí: superpuestas dejan de
+     leerse como una grilla y pasan a leerse como gotas. */
+  background:
+    radial-gradient(circle at 22% 31%, rgb(255 255 255 / 58%) 0 0.05em, transparent 0.07em) 0 0 / 0.61em 0.83em,
+    radial-gradient(circle at 71% 64%, rgb(255 255 255 / 40%) 0 0.032em, transparent 0.05em) 0.13em 0.29em / 0.37em 0.53em,
+    radial-gradient(circle at 44% 82%, rgb(255 255 255 / 30%) 0 0.024em, transparent 0.04em) 0.31em 0.07em / 0.47em 0.29em,
+    linear-gradient(170deg, rgb(225 242 255 / 20%), rgb(225 242 255 / 4%) 55%, rgb(225 242 255 / 12%));
+}
+
+.cmp-drop {
+  top: 14%;
+  width: 0.21em;
+  height: 0.31em;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: radial-gradient(circle at 36% 30%, rgb(255 255 255 / 92%), rgb(210 235 255 / 44%) 68%, transparent 72%);
+  opacity: 0.8;
+}
+
+.cmp-drop--1 { left: 24%; top: 38%; }
+.cmp-drop--2 { left: 58%; top: 22%; width: 0.14em; height: 0.2em; }
+.cmp-drop--3 { left: 72%; top: 55%; width: 0.12em; height: 0.18em; }
+
+.cmp-shine {
+  top: -10%;
+  left: 0;
+  width: 46%;
+  height: 120%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 46%) 50%, transparent);
+  opacity: 0;
+  transform: translateX(-140%) skewX(-16deg);
+}
+
+.cmp-snow {
+  width: 0.12em;
+  height: 0.12em;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(235 247 255 / 95%), transparent 70%);
+  opacity: 0.5;
+}
+
+.cmp-snow--1 { top: 2.4em; left: 2.4em; }
+.cmp-snow--2 { top: 4.4em; left: 8.6em; width: 0.16em; height: 0.16em; }
+.cmp-snow--3 { top: 6.3em; left: 2.9em; width: 0.09em; height: 0.09em; }
+.cmp-snow--4 { top: 1.6em; left: 7.6em; }
+.cmp-snow--5 { top: 7.4em; left: 8.9em; width: 0.1em; height: 0.1em; }
+.cmp-snow--6 { top: 3.3em; left: 9.6em; width: 0.08em; height: 0.08em; }
+
+.cmp-mist {
+  top: 8.1em;
+  left: 2.1em;
+  width: 4.6em;
+  height: 1.3em;
+  background: radial-gradient(closest-side, rgb(205 232 255 / 20%), transparent);
+}
+
+.cmp-mist--2 { left: 4.8em; width: 4.2em; }
+
+/* ── cold_can · línea de tiempo (4,2 s) ──────────────────────────────────
+     0–46 %   el envase llega y se acomoda
+    38–72 %   aparece la condensación
+    46–66 %   primer brillo
+    70–90 %   subtítulo y acción
+    después   gotas, partículas y niebla, un rato                           */
+[data-motion-campaign="on"].cmp--cold-can .cmp-actor { animation: cmp-can-arrive var(--cmp-dur) both; }
+[data-motion-campaign="on"].cmp--cold-can .cmp-shadow { animation: cmp-can-shadow var(--cmp-dur) both; }
+[data-motion-campaign="on"].cmp--cold-can .cmp-frost { animation: cmp-frost var(--cmp-dur) both; }
+[data-motion-campaign="on"].cmp--cold-can .cmp-glow { animation: cmp-fade-up var(--cmp-dur) both; }
+
+[data-motion-campaign="on"].cmp--cold-can .cmp-shine {
+  animation: cmp-shine 5.2s ease-in-out calc(var(--cmp-dur) * 0.46) var(--cmp-loops) both;
+}
+
+[data-motion-campaign="on"] .cmp-drop {
+  animation: cmp-drop 4.4s ease-in calc(var(--cmp-dur) * 0.6) var(--cmp-loops) both;
+}
+
+[data-motion-campaign="on"] .cmp-drop--2 { animation-duration: 5.6s; animation-delay: calc(var(--cmp-dur) * 0.6 + 1.3s); }
+[data-motion-campaign="on"] .cmp-drop--3 { animation-duration: 3.8s; animation-delay: calc(var(--cmp-dur) * 0.6 + 2.6s); }
+
+[data-motion-campaign="on"].cmp--cold-can .cmp-snow {
+  animation: cmp-snow 6s ease-in-out calc(var(--cmp-dur) * 0.3) var(--cmp-loops) both;
+}
+
+[data-motion-campaign="on"].cmp--cold-can :is(.cmp-snow--2, .cmp-snow--4, .cmp-snow--6) { animation-duration: 7.4s; animation-delay: calc(var(--cmp-dur) * 0.3 + 0.8s); }
+[data-motion-campaign="on"].cmp--cold-can :is(.cmp-snow--3, .cmp-snow--5) { animation-duration: 5.2s; animation-delay: calc(var(--cmp-dur) * 0.3 + 1.6s); }
+
+[data-motion-campaign="on"].cmp--cold-can .cmp-mist {
+  animation: cmp-mist 7s ease-in-out calc(var(--cmp-dur) * 0.2) var(--cmp-loops) alternate both;
+}
+
+[data-motion-campaign="on"].cmp--cold-can .cmp-mist--2 { animation-duration: 9s; animation-direction: alternate-reverse; }
+
+@keyframes cmp-can-arrive {
+  0% { opacity: 0; transform: translate(4.6em, 0.3em) rotate(10deg); animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+  10% { opacity: 1; }
+  32% { opacity: 1; transform: translate(-0.16em, 0) rotate(-3.2deg); animation-timing-function: ease-in-out; }
+  40% { transform: translate(0.04em, 0) rotate(1.1deg); animation-timing-function: ease-in-out; }
+  46%, 100% { opacity: 1; transform: none; }
+}
+
+@keyframes cmp-can-shadow {
+  0%, 8% { opacity: 0; transform: translateX(4.6em) scaleX(0.6); animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+  32%, 100% { opacity: 1; transform: none; }
+}
+
+@keyframes cmp-frost {
+  0%, 38% { opacity: 0; }
+  72%, 100% { opacity: 1; }
+}
+
+@keyframes cmp-fade-up {
+  0% { opacity: 0.15; }
+  50%, 100% { opacity: 1; }
+}
+
+@keyframes cmp-shine {
+  0% { opacity: 0; transform: translateX(-140%) skewX(-16deg); }
+  3% { opacity: 1; }
+  17% { opacity: 1; transform: translateX(320%) skewX(-16deg); }
+  20%, 100% { opacity: 0; transform: translateX(320%) skewX(-16deg); }
+}
+
+@keyframes cmp-drop {
+  0% { opacity: 0; transform: translateY(0); }
+  8% { opacity: 0.85; }
+  30% { opacity: 0.85; transform: translateY(0.2em); animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.5); }
+  78% { opacity: 0.8; transform: translateY(2.6em); }
+  88%, 100% { opacity: 0; transform: translateY(2.9em); }
+}
+
+@keyframes cmp-snow {
+  0% { opacity: 0; transform: translate(0, 0.3em); }
+  30% { opacity: 0.75; }
+  70% { opacity: 0.55; }
+  100% { opacity: 0; transform: translate(-0.5em, -1.3em); }
+}
+
+@keyframes cmp-mist {
+  0% { opacity: 0.35; transform: translateX(-0.5em); }
+  100% { opacity: 0.9; transform: translateX(0.6em); }
+}
+
+/* ============================================================================
+   product_drop
+   ========================================================================== */
+.cmp--product-drop {
+  --cmp-glow-color: rgb(255 244 226 / 16%);
+  --cmp-table-color: rgb(255 240 215 / 20%);
+  background:
+    radial-gradient(80% 110% at 80% 62%, color-mix(in srgb, var(--cmp-accent) 22%, transparent), transparent 62%),
+    linear-gradient(160deg, #15181d 0%, #090b0e 100%);
+}
+
+.cmp--product-drop .cmp-actor--can { --cmp-ax: 4.35em; --cmp-ay: 3.1em; --cmp-vw: 2.82em; --cmp-vh: 5.9em; }
+.cmp--product-drop .cmp-actor--bottle { --cmp-ax: 5.1em; --cmp-ay: 2em; --cmp-vw: 2.26em; --cmp-vh: 7em; --cmp-vx: -0.85em; }
+.cmp--product-drop .cmp-shadow { left: 4.05em; width: 3.5em; transform-origin: 50% 50%; }
+
+/* El haz de luz que marca dónde va a caer. */
+.cmp-beam {
+  top: 0;
+  left: 2.3em;
+  width: 7em;
+  height: 9em;
+  background: linear-gradient(180deg, rgb(255 255 255 / 13%), rgb(255 255 255 / 3%) 62%, transparent);
+  clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%);
+}
+
+.cmp-ring {
+  top: 8.72em;
+  left: 3.3em;
+  width: 5em;
+  height: 0.7em;
+  border: 1px solid rgb(255 255 255 / 55%);
+  border-radius: 50%;
+  opacity: 0;
+}
+
+/* ── product_drop · línea de tiempo (3,2 s) ──────────────────────────────
+     0–46 %   baja y desacelera
+    46–90 %   rebote corto; la sombra y el aro reaccionan
+    60–88 %   subtítulo y acción
+    después   nada: la pieza queda quieta                                   */
+[data-motion-campaign="on"].cmp--product-drop .cmp-actor { animation: cmp-drop-fall var(--cmp-dur) both; }
+[data-motion-campaign="on"].cmp--product-drop .cmp-vessel { animation: cmp-drop-squash var(--cmp-dur) both; }
+[data-motion-campaign="on"].cmp--product-drop .cmp-shadow { animation: cmp-drop-shadow var(--cmp-dur) both; }
+[data-motion-campaign="on"].cmp--product-drop .cmp-ring { animation: cmp-drop-ring var(--cmp-dur) both; }
+[data-motion-campaign="on"].cmp--product-drop .cmp-beam { animation: cmp-fade-up var(--cmp-dur) both; }
+
+@keyframes cmp-drop-fall {
+  0% { opacity: 0; transform: translateY(-11em); animation-timing-function: cubic-bezier(0.22, 0.75, 0.3, 1); }
+  8% { opacity: 1; }
+  46% { opacity: 1; transform: translateY(0); animation-timing-function: cubic-bezier(0.2, 0.8, 0.4, 1); }
+  60% { transform: translateY(-0.5em); animation-timing-function: cubic-bezier(0.6, 0, 0.8, 0.4); }
+  72% { transform: translateY(0); animation-timing-function: ease-out; }
+  80% { transform: translateY(-0.11em); animation-timing-function: ease-in; }
+  88%, 100% { opacity: 1; transform: none; }
+}
+
+@keyframes cmp-drop-squash {
+  0%, 44% { transform: none; }
+  50% { transform: scale(1.045, 0.955); }
+  60% { transform: scale(0.985, 1.02); }
+  74% { transform: scale(1.018, 0.982); }
+  88%, 100% { transform: none; }
+}
+
+@keyframes cmp-drop-shadow {
+  0% { opacity: 0; transform: scale(0.3); }
+  46% { opacity: 1; transform: scale(1.1); }
+  60% { opacity: 0.6; transform: scale(0.82); }
+  72% { opacity: 0.95; transform: scale(1.03); }
+  88%, 100% { opacity: 1; transform: none; }
+}
+
+@keyframes cmp-drop-ring {
+  0%, 45% { opacity: 0; transform: scale(0.4); }
+  47% { opacity: 0.55; transform: scale(0.5); animation-timing-function: ease-out; }
+  76%, 100% { opacity: 0; transform: scale(1.5); }
+}
+
+/* ============================================================================
+   ice_reveal
+   ========================================================================== */
+.cmp--ice-reveal {
+  --cmp-glow-color: rgb(150 215 255 / 24%);
+  --cmp-table-color: rgb(170 220 255 / 22%);
+  background:
+    radial-gradient(90% 120% at 80% 58%, color-mix(in srgb, var(--cmp-accent) 30%, transparent), transparent 64%),
+    linear-gradient(160deg, #0d151c 0%, #06090d 100%);
+}
+
+.cmp--ice-reveal .cmp-actor--can { --cmp-ax: 4.5em; --cmp-ay: 3em; --cmp-vw: 2.6em; --cmp-vh: 5.44em; }
+.cmp--ice-reveal .cmp-actor--bottle { --cmp-ax: 5.2em; --cmp-ay: 1.6em; --cmp-vw: 2.2em; --cmp-vh: 6.82em; --cmp-vx: -0.83em; }
+.cmp--ice-reveal .cmp-shadow { left: 3.6em; width: 4.4em; top: 8.6em; }
+
+.cmp-ice {
+  width: 1.3em;
+  height: 1.3em;
+  border: 1px solid rgb(255 255 255 / 56%);
+  border-radius: 0.24em;
+  background:
+    linear-gradient(135deg, rgb(255 255 255 / 62%), rgb(190 228 255 / 14%) 46%, rgb(255 255 255 / 30%)),
+    radial-gradient(circle at 28% 24%, rgb(255 255 255 / 80%), transparent 34%);
+}
+
+.cmp-ice--back1 { top: 6.9em; left: 2.9em; transform: rotate(-16deg); }
+.cmp-ice--back2 { top: 6.6em; left: 6.9em; width: 1.5em; height: 1.5em; transform: rotate(13deg); }
+.cmp-ice--front1 { top: 7.5em; left: 3.9em; width: 1.5em; height: 1.5em; transform: rotate(9deg); }
+.cmp-ice--front2 { top: 7.8em; left: 5.6em; width: 1.15em; height: 1.15em; transform: rotate(-21deg); }
+.cmp-ice--front3 { top: 7.7em; left: 2.75em; width: 1em; height: 1em; transform: rotate(27deg); }
+
+.cmp-vapor {
+  top: 5.2em;
+  left: 3.2em;
+  width: 2em;
+  height: 2.6em;
+  background: radial-gradient(closest-side, rgb(220 240 255 / 17%), transparent);
+  opacity: 0;
+}
+
+.cmp-vapor--2 { left: 5.6em; top: 5.6em; width: 2.4em; }
+.cmp-vapor--3 { left: 4.4em; top: 4.4em; width: 1.7em; }
+
+/* La niebla que se abre. En reposo no existe. */
+.cmp-veil {
+  inset: 0;
+  background: radial-gradient(70% 70% at 52% 58%, rgb(225 242 255 / 82%), rgb(190 224 250 / 54%) 52%, transparent 78%);
+  opacity: 0;
+}
+
+/* ── ice_reveal · línea de tiempo (4,6 s) ────────────────────────────────
+     0–46 %   la niebla se abre
+    10–42 %   aparece el producto
+    14–58 %   los cubos se acomodan, de a uno
+    40–70 %   escarcha
+    70–90 %   subtítulo y acción
+    después   vapor y una gota, un rato                                     */
+[data-motion-campaign="on"].cmp--ice-reveal .cmp-veil { animation: cmp-veil var(--cmp-dur) both; }
+[data-motion-campaign="on"].cmp--ice-reveal .cmp-actor { animation: cmp-ice-product var(--cmp-dur) both; }
+[data-motion-campaign="on"].cmp--ice-reveal .cmp-frost { animation: cmp-frost var(--cmp-dur) both; }
+[data-motion-campaign="on"].cmp--ice-reveal .cmp-glow { animation: cmp-fade-up var(--cmp-dur) both; }
+[data-motion-campaign="on"].cmp--ice-reveal .cmp-ice { animation: cmp-ice-settle var(--cmp-dur) both; }
+[data-motion-campaign="on"].cmp--ice-reveal .cmp-ice--back1 { --cmp-from: translate(-2.4em, 0.5em) rotate(-70deg); --cmp-rest: rotate(-16deg); }
+[data-motion-campaign="on"].cmp--ice-reveal .cmp-ice--back2 { --cmp-from: translate(2.6em, 0.4em) rotate(80deg); --cmp-rest: rotate(13deg); animation-delay: 0.12s; }
+[data-motion-campaign="on"].cmp--ice-reveal .cmp-ice--front1 { --cmp-from: translate(-2em, 1.4em) rotate(-50deg); --cmp-rest: rotate(9deg); animation-delay: 0.22s; }
+[data-motion-campaign="on"].cmp--ice-reveal .cmp-ice--front2 { --cmp-from: translate(2.2em, 1.2em) rotate(60deg); --cmp-rest: rotate(-21deg); animation-delay: 0.34s; }
+[data-motion-campaign="on"].cmp--ice-reveal .cmp-ice--front3 { --cmp-from: translate(-2.6em, 1em) rotate(110deg); --cmp-rest: rotate(27deg); animation-delay: 0.46s; }
+
+[data-motion-campaign="on"].cmp--ice-reveal .cmp-vapor {
+  animation: cmp-vapor 6s ease-out calc(var(--cmp-dur) * 0.5) var(--cmp-loops) both;
+}
+
+[data-motion-campaign="on"].cmp--ice-reveal .cmp-vapor--2 { animation-duration: 7.6s; animation-delay: calc(var(--cmp-dur) * 0.5 + 1.4s); }
+[data-motion-campaign="on"].cmp--ice-reveal .cmp-vapor--3 { animation-duration: 5.2s; animation-delay: calc(var(--cmp-dur) * 0.5 + 2.8s); }
+
+@keyframes cmp-veil {
+  0% { opacity: 1; transform: scale(1); animation-timing-function: ease-in-out; }
+  46%, 100% { opacity: 0; transform: scale(1.22); }
+}
+
+@keyframes cmp-ice-product {
+  0%, 10% { opacity: 0; transform: translateY(0.6em) scale(0.92); animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+  42%, 100% { opacity: 1; transform: none; }
+}
+
+@keyframes cmp-ice-settle {
+  0%, 14% { opacity: 0; transform: var(--cmp-from); animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1); }
+  22% { opacity: 1; }
+  52%, 100% { opacity: 1; transform: var(--cmp-rest); }
+}
+
+@keyframes cmp-vapor {
+  0% { opacity: 0; transform: translateY(0.6em) scale(0.8); }
+  30% { opacity: 0.9; }
+  100% { opacity: 0; transform: translateY(-2.2em) scale(1.3); }
+}
+
+/* ── Texto que llega con la escena ─────────────────────────────────────────
+   El título está a la vista desde el primer cuadro. El subtítulo y la acción
+   llegan cuando la escena se asienta; reservan su lugar desde antes, así que
+   nada se mueve cuando aparecen. */
+[data-motion-campaign="on"] .cmp-sub,
+[data-motion-campaign="on"] .cmp-cta {
+  animation: cmp-copy-in var(--cmp-dur) both;
+}
+
+@keyframes cmp-copy-in {
+  0%, 74% { opacity: 0; transform: translateY(6px); animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+  92%, 100% { opacity: 1; transform: none; }
+}
+
+/* ── Fuera de pantalla: todo en pausa ──────────────────────────────────── */
+[data-motion-campaign-live="false"] *,
+[data-motion-campaign-live="false"] *::before,
+[data-motion-campaign-live="false"] *::after {
+  animation-play-state: paused !important;
+}
+
+/* ── Movimiento reducido: el cuadro final, sin excepciones ────────────────
+   El módulo ya no enciende la escena con esta preferencia; esta regla es la
+   segunda llave, por si el atributo quedara puesto. */
+@media (prefers-reduced-motion: reduce) {
+  .cmp *,
+  .cmp *::before,
+  .cmp *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ============================================================================
+   DÓNDE VIVE CADA PIEZA
+   ========================================================================== */
+
+/* home-hero — ocupa la MISMA caja que la puerta editorial a la que reemplaza:
+   mismos altos en cada corte, para que el primer precio de la vidriera no se
+   mueva un píxel. */
+.cmp--home-hero { --cmp-h: 112px; }
+
+@media (max-width: 699px) and (max-height: 900px) {
+  .cmp--home-hero { --cmp-h: 84px; }
+  .cmp--home-hero .cmp-copy { padding-top: 9px; padding-bottom: 9px; padding-left: 14px; }
+  .cmp--home-hero.cmp--legal .cmp-copy { padding-bottom: 19px; }
+}
+
+@media (max-width: 699px) and (max-height: 820px) {
+  .cmp--home-hero { --cmp-h: 80px; }
+}
+
+/* En la banda del teléfono no hay lugar para todo: el subtítulo cede —el
+   nombre del producto ya está en el nombre accesible y en la ficha— y, cuando
+   hay leyenda legal, el rótulo le deja su renglón. */
+@media (max-width: 699px) {
+  .cmp--home-hero .cmp-sub { display: none; }
+  .cmp--home-hero.cmp--legal .cmp-eyebrow { display: none; }
+  .cmp--home-hero .cmp-headline { max-width: 15ch; }
+  .cmp--home-hero .cmp-legal { right: 14px; left: 14px; bottom: 5px; }
+
+  /* La banda mide 80–112 px: la escena es chica y el botón de ocultar le
+     tapaba el envase mientras servía. Se corre la escena, no el botón —que
+     tiene que seguir en la esquina donde se lo busca—. */
+  .cmp--home-hero .cmp-stage { right: 30px; }
+  .cmp--home-hero .cmp-copy { width: calc(100% - var(--cmp-h) * 0.82 - 30px); }
+
+  /* Con leyenda legal la escena sube y se achica lo que mide ese renglón, así
+     el texto no cruza por la base del vaso. */
+  .cmp--home-hero.cmp--legal .cmp-stage {
+    bottom: 15px;
+    font-size: calc((var(--cmp-h) - 15px) / 10);
+  }
+}
+
+@media (min-width: 700px) {
+  .cmp--home-hero {
+    --cmp-h: 268px;
+    border-radius: 24px;
+    box-shadow: var(--shadow-shelf);
+  }
+
+  .cmp--home-hero .cmp-copy {
+    align-content: end;
+    gap: 2px;
+    width: min(54%, 460px);
+    padding: 20px 20px 34px;
+  }
+
+  .cmp--home-hero .cmp-headline {
+    margin-top: 4px;
+    font-size: clamp(26px, 4vw, 32px);
+    letter-spacing: -0.04em;
+    line-height: 1.08;
+  }
+
+  .cmp--home-hero .cmp-sub { font-size: 13.5px; }
+
+  .cmp--home-hero .cmp-cta {
+    min-height: 46px;
+    margin-top: 12px;
+    padding: 0 20px;
+    border-radius: var(--radius-pill);
+    background: var(--taba-red);
+    color: var(--taba-white);
+    font-size: 14px;
+  }
+
+  .cmp--home-hero .cmp-stage { right: 6%; }
+  .cmp--home-hero .cmp-legal { right: 20px; left: 20px; bottom: 12px; font-size: 10.5px; }
+}
+
+/* home-inline y catalog-inline — una banda con aire: no compite con el
+   pliegue, así que la escena puede medir el doble. */
+.cmp--home-inline,
+.cmp--catalog-inline {
+  --cmp-h: 164px;
+}
+
+.cmp--catalog-inline {
+  grid-column: 1 / -1;
+}
+
+/* La pieza ocupa una fila entera tras la cuarta tarjeta. En una grilla de cinco
+   columnas eso dejaba un hueco al final de la primera fila; con el flujo denso
+   la tarjeta siguiente lo ocupa. Sin una pieza que abarque la fila, denso y
+   normal dan exactamente el mismo resultado. */
+.product-grid {
+  grid-auto-flow: row dense;
+}
+
+.cmp--home-inline .cmp-copy,
+.cmp--catalog-inline .cmp-copy {
+  width: calc(100% - var(--cmp-h) * 0.9);
+}
+
+/* La leyenda legal acompaña al texto y parte en dos renglones: abajo de la
+   escena pasaba por detrás del hielo y de la base del vaso. */
+.cmp--home-inline .cmp-legal,
+.cmp--catalog-inline .cmp-legal {
+  right: auto;
+  bottom: 10px;
+  width: calc(100% - var(--cmp-h) * 0.9 - 20px);
+}
+
+.cmp--home-inline.cmp--legal .cmp-copy,
+.cmp--catalog-inline.cmp--legal .cmp-copy {
+  padding-bottom: 36px;
+}
+
+@media (min-width: 700px) {
+  .cmp--home-inline,
+  .cmp--catalog-inline {
+    --cmp-h: 208px;
+  }
+
+  .cmp--home-inline .cmp-copy,
+  .cmp--catalog-inline .cmp-copy {
+    width: min(56%, 480px);
+    padding: 20px 20px 30px;
+  }
+
+  .cmp--home-inline .cmp-headline,
+  .cmp--catalog-inline .cmp-headline {
+    font-size: clamp(22px, 3vw, 28px);
+  }
+
+  .cmp--home-inline .cmp-stage,
+  .cmp--catalog-inline .cmp-stage { right: 5%; }
+}
+
+/* El hueco de la home para la pieza intermedia: sin campaña no ocupa nada. */
+.home-campaign-slot:not([hidden]) {
+  display: block;
+}

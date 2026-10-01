@@ -19,6 +19,7 @@ const ASSETS = [
   // `styles.css` la importa desde que existe y nunca estuvo acá: sin red, la
   // home se quedaba sin la capa de movimiento. Lo destapó el guard de la
   // cadena de CSS versionado; no lo introdujo esta integración.
+  './styles/campaigns.css?v=68',
   './styles/motion.css?v=68',
   './manifest.webmanifest',
   './runtime-config.js?tenant=walter-staging',
@@ -169,6 +170,15 @@ const ASSETS = [
    */
   './js/back-office.js',
   './js/motion.js',
+  // Campañas animadas: `ui.js` y `app.js` las importan de forma estática.
+  './js/campaigns/campaign-config.js',
+  './js/campaigns/campaign-engine.js',
+  './js/campaigns/campaign-motion.js',
+  './js/campaigns/presets/shared.js',
+  './js/campaigns/presets/beer-pour.js',
+  './js/campaigns/presets/cold-can.js',
+  './js/campaigns/presets/product-drop.js',
+  './js/campaigns/presets/ice-reveal.js',
   './js/combos-data.js',
   './js/preview-promotions-data.js',
   './js/preview-stories-data.js',

@@ -72,3 +72,37 @@ test('un enlace hash nuevo al catálogo comienza arriba', async ({ page }) => {
   await expectCatalogSelection(page);
   await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
 });
+
+// Los filtros son estado global del catálogo; sólo el scroll pertenece a cada
+// entrada. Cambiar filtros en la segunda visita no crea una instantánea antigua.
+test('historial del catálogo mantiene filtros globales y scroll por entrada', async ({ page }, info) => {
+  await filteredCatalog(page);
+  await page.locator('.mobile-nav [data-nav-view="home"]').click();
+  await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
+  await clickCatalogCategory(page, 'all');
+  await page.locator('[data-view="catalog"] [data-search-input]').fill('o');
+  await expect(page.locator(`${GRID} .product-card`).first()).toBeVisible();
+  await settleNavigation(page);
+  await page.evaluate(() => scrollTo({ top: 650, behavior: 'instant' }));
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(650);
+
+  const expectGlobalSelection = async () => {
+    await expect(page.locator('[data-view="catalog"]')).toBeVisible();
+    await expect(page.locator('[data-view="catalog"] [data-search-input]')).toHaveValue('o');
+    await expect.poll(() => page.evaluate(async () => (await import('/js/state.js')).getState().activeCategory)).toBe('all');
+  };
+  await page.goBack();
+  await expect(page.locator('[data-view="home"]')).toBeVisible();
+  await page.goBack();
+  await expectGlobalSelection();
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(450);
+  await page.goForward();
+  await expect(page.locator('[data-view="home"]')).toBeVisible();
+  await page.goForward();
+  await expectGlobalSelection();
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(650);
+  await info.attach('global-selection-history', {
+    body: JSON.stringify({ search: 'o', category: 'all', back: 450, forward: 650, selectionPerEntry: false }),
+    contentType: 'application/json',
+  });
+});

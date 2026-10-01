@@ -9,6 +9,7 @@ async function settleNavigation(page) {
 
 async function filteredCatalog(page) {
   await openRuntimeCatalog(page);
+  expect(await page.evaluate(() => history.scrollRestoration)).toBe('manual');
   await clickCatalogCategory(page, 'gaseosas');
   await page.locator('[data-view="catalog"] [data-search-input]').fill('a');
   await expect(page.locator(`${GRID} .product-card`).first()).toBeVisible();
@@ -19,6 +20,7 @@ async function filteredCatalog(page) {
 
 async function expectCatalogSelection(page) {
   await expect(page.locator('[data-view="catalog"]')).toBeVisible();
+  expect(await page.evaluate(() => history.scrollRestoration)).toBe('manual');
   await expect(page.locator('[data-view="catalog"] [data-search-input]')).toHaveValue('a');
   await expect.poll(() => page.evaluate(async () => (await import('/js/state.js')).getState().activeCategory)).toBe('gaseosas');
 }
@@ -26,6 +28,7 @@ async function expectCatalogSelection(page) {
 test('historial del catálogo restaura posición, búsqueda y categoría en Back y Forward', async ({ page }, info) => {
   await filteredCatalog(page);
   await page.locator('.mobile-nav [data-nav-view="home"]').click();
+  expect(await page.evaluate(() => history.scrollRestoration)).toBe('manual');
   await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
   // Se crea otra entrada: Forward debe restaurar el catálogo, no sólo Back.
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
@@ -48,6 +51,7 @@ test('historial del catálogo restaura posición, búsqueda y categoría en Back
 test('un acceso nuevo al catálogo comienza arriba y conserva la selección', async ({ page }) => {
   await filteredCatalog(page);
   await page.locator('.mobile-nav [data-nav-view="home"]').click();
+  expect(await page.evaluate(() => history.scrollRestoration)).toBe('manual');
   await expect(page.locator('[data-view="home"]')).toBeVisible();
   await settleNavigation(page);
   await page.evaluate(() => scrollTo({ top: 400, behavior: 'instant' }));
@@ -60,6 +64,7 @@ test('un acceso nuevo al catálogo comienza arriba y conserva la selección', as
 test('un enlace hash nuevo al catálogo comienza arriba', async ({ page }) => {
   await filteredCatalog(page);
   await page.locator('.mobile-nav [data-nav-view="home"]').click();
+  expect(await page.evaluate(() => history.scrollRestoration)).toBe('manual');
   await settleNavigation(page);
   await page.evaluate(() => scrollTo({ top: 400, behavior: 'instant' }));
   await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);

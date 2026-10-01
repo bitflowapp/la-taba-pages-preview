@@ -2382,35 +2382,51 @@ function recoverFromUnservedRoute(status) {
   showToast('No encontramos esa página. Te dejamos en el inicio.');
 }
 
-function markCatalogHistoryEntry() {
-  if (window.history.state?.view !== 'catalog') {
-    window.history.replaceState({ ...window.history.state, view: 'catalog' }, '');
+const catalogScrollPositions = new Map();
+let activeCatalogScrollKey = null;
+let pageScrollGeneration = 0;
+
+function rememberCatalogScrollPosition() {
+  if (activeView === 'catalog' && activeCatalogScrollKey) {
+    catalogScrollPositions.set(activeCatalogScrollKey, Math.max(0, window.scrollY));
   }
+}
+
+function catalogHistoryScrollKey() {
+  const existing = window.history.state?.catalogScrollKey;
+  if (typeof existing === 'string' && existing) return existing;
+  const key = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
+  window.history.replaceState({ ...window.history.state, catalogScrollKey: key }, '');
+  return key;
 }
 
 function configureViewScrollRestoration() {
   try {
     if ('scrollRestoration' in window.history) {
-      window.history.scrollRestoration = 'auto';
+      window.history.scrollRestoration = 'manual';
     }
-    if (viewFromHash() === 'catalog') markCatalogHistoryEntry();
+    if (viewFromHash() === 'catalog') activeCatalogScrollKey = catalogHistoryScrollKey();
   } catch (_) {
     // Un navegador sin esta API sigue usando el reset explícito de cada vista.
   }
+  window.addEventListener('scroll', rememberCatalogScrollPosition, { passive: true });
 }
 
-function resetPageScroll() {
+function resetPageScroll(top = 0) {
+  const generation = ++pageScrollGeneration;
   const reset = () => {
+    if (generation !== pageScrollGeneration) return;
     const scroller = document.scrollingElement || document.documentElement;
-    scroller.scrollTop = 0;
+    scroller.scrollTop = top;
     scroller.scrollLeft = 0;
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    window.scrollTo({ top, left: 0, behavior: 'instant' });
   };
   reset();
   requestAnimationFrame(reset);
 }
 
 function setActiveView(view, options = {}) {
+  rememberCatalogScrollPosition();
   const nextView = normalizeView(view);
   const changed = nextView !== activeView;
   activeView = nextView;
@@ -2421,6 +2437,7 @@ function setActiveView(view, options = {}) {
   if (options.writeHash !== false) {
     writeViewHash(nextView, options.replace === true);
   }
+  activeCatalogScrollKey = nextView === 'catalog' ? catalogHistoryScrollKey() : null;
 
   syncGpsSharingWithView(nextView);
   // Entrar al carrito es el primer momento en que importa si Mercado Pago está
@@ -2439,15 +2456,26 @@ function setActiveView(view, options = {}) {
 }
 
 function syncViewFromLocation(event) {
+  try {
+    // WebKit puede iniciar una entrada de fragmento en modo automático.
+    // El router restaura explícitamente la posición de cada entrada.
+    window.history.scrollRestoration = 'manual';
+  } catch (_) { /* Sin esta API, continúa la restauración explícita. */ }
+  rememberCatalogScrollPosition();
   const route = resolveRoute(window.location.hash.slice(1));
   const nextView = route.view;
-  const restoringCatalog = event?.type === 'popstate' && event.state?.view === 'catalog';
-  if (nextView === 'catalog') markCatalogHistoryEntry();
+  activeCatalogScrollKey = nextView === 'catalog' ? catalogHistoryScrollKey() : null;
+  const restoredScroll = event?.type === 'popstate' && nextView === 'catalog'
+    ? catalogScrollPositions.get(activeCatalogScrollKey) || 0
+    : 0;
   // La corrección va ANTES del corte por "no cambió la vista": escribir
   // `#no-existe` estando ya en el inicio no cambia de vista y aun así hay que
   // arreglar la URL y avisar.
   recoverFromUnservedRoute(route.status);
-  if (nextView === activeView) return;
+  if (nextView === activeView) {
+    if (event?.type === 'popstate' && nextView === 'catalog') resetPageScroll(restoredScroll);
+    return;
+  }
   activeView = nextView;
   syncGpsSharingWithView(nextView);
   // Entrar al carrito es el primer momento en que importa si Mercado Pago está
@@ -2458,9 +2486,7 @@ function syncViewFromLocation(event) {
   renderAll();
   window.dispatchEvent(new CustomEvent('taba:realtime-view-enter', { detail: { view: nextView } }));
   playViewEnter(nextView);
-  // El historial nativo devuelve el catálogo a su posición guardada. Los
-  // accesos nuevos y las demás vistas conservan el reset explícito.
-  if (!restoringCatalog || nextView !== 'catalog') resetPageScroll();
+  resetPageScroll(restoredScroll);
   focusActiveViewHeading(nextView);
 }
 

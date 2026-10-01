@@ -501,7 +501,7 @@ test('bottom nav cambia pantallas sin navegar por scroll', async ({ browser }) =
   await installBrowserStubs(page);
   await page.goto('/?demo=1');
   await expect(page.locator('[data-view="home"]')).toBeVisible();
-  expect(await page.evaluate(() => history.scrollRestoration)).toBe('auto');
+  expect(await page.evaluate(() => history.scrollRestoration)).toBe('manual');
 
   const mainScrollState = await page.evaluate(() => {
     const main = document.querySelector('main[data-app-main]');

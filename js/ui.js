@@ -624,6 +624,21 @@ function brandLine(product, className = 'product-brand') {
 // variante sólo si agrega— vive en core/product-presentation.js con sus tests.
 // Acá vivía `presentationText`, que decía el pack pero nunca la capacidad.
 
+/*
+ * QUÉ ARCHIVO BAJA UNA TARJETA EN EL TELÉFONO.
+ *
+ * El `srcset` ofrece la miniatura de 400 px y el master de 1000. Con
+ * `sizes="45vw"`, un teléfono de densidad 3 —casi todos los actuales— calcula
+ * 175 px × 3 = 526 px, descarta la miniatura por 126 px y baja el MASTER de
+ * cada tarjeta. Medido con las 46 fichas a 390×844 @3x: 42 masters y ninguna
+ * miniatura, 1,86 MB de fotos para pintar cajas de 154 px.
+ *
+ * Con 130 px la cuenta da 390 y gana la miniatura hasta densidad 3; a esa
+ * densidad son 2,3 píxeles de imagen por píxel CSS, de sobra para un packshot
+ * de góndola. La ficha del producto no cambia: ahí sí se pide el master.
+ */
+const CARD_IMAGE_SIZES = '(max-width: 700px) 130px, 260px';
+
 function productImage(product) {
   return resolveCatalogImageUrl(product?.image || '', resolveRuntimeConfig().repository?.supabaseUrl || '');
 }
@@ -693,7 +708,7 @@ export function productThumb(product, variant = 'grid') {
   const width = official ? Number(product.thumbnailWidth || 400) : 400;
   const height = official ? Number(product.thumbnailHeight || 400) : 400;
   const responsive = official
-    ? ` srcset="${escapeHtml(thumbnail)} 400w, ${escapeHtml(image)} 1000w" sizes="${variant === 'modal' ? '(max-width: 700px) 92vw, 560px' : '(max-width: 700px) 45vw, 260px'}"`
+    ? ` srcset="${escapeHtml(thumbnail)} 400w, ${escapeHtml(image)} 1000w" sizes="${variant === 'modal' ? '(max-width: 700px) 92vw, 560px' : CARD_IMAGE_SIZES}"`
     : '';
   const label = official
     ? `Imagen oficial de ${product.name || 'producto'}`
@@ -980,7 +995,7 @@ function homeProductImage(product, className) {
   const thumbnail = productImageThumbnail(product);
   const source = official ? (thumbnail || image) : PRODUCT_PLACEHOLDER_IMAGE;
   const responsive = official
-    ? ` srcset="${escapeHtml(thumbnail)} 400w, ${escapeHtml(image)} 1000w" sizes="(max-width: 700px) 44vw, 260px"`
+    ? ` srcset="${escapeHtml(thumbnail)} 400w, ${escapeHtml(image)} 1000w" sizes="${CARD_IMAGE_SIZES}"`
     : '';
   const width = official ? Number(product.thumbnailWidth || 400) : 400;
   const height = official ? Number(product.thumbnailHeight || 400) : 400;

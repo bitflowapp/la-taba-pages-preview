@@ -1320,6 +1320,28 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-vie
     0 20px 38px -17px rgb(208 0 13 / calc(var(--card-glow, 0) * 30%));
 }
 
+/* EL BRILLO ENTRA Y SALE CON UN FUNDIDO, NO CON UN SALTO.
+   `js/motion.js` enciende o apaga el estante cuando el scroll ya se detuvo
+   —dos niveles, una escritura por cruce—, así que el cambio ocurre con la
+   pantalla quieta y se puede suavizar sin costarle un cuadro al desplazamiento.
+   En escritorio la tarjeta ya traía su transición de sombra para el hover; acá
+   se da la misma a los punteros táctiles, que no la tenían. */
+@media (prefers-reduced-motion: no-preference) {
+  body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view [data-glow-shelf] :is(.product-card, .home-best-card) {
+    transition: transform var(--motion-duration-base) var(--motion-ease-enter),
+      border-color var(--motion-duration-base) var(--motion-ease-standard),
+      box-shadow 320ms ease;
+  }
+
+  /* Las primeras tarjetas todavía llevan la transición de su entrada: se le
+     suma la sombra en vez de reemplazarla. */
+  body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view [data-glow-shelf] :is(.product-card, .home-best-card)[data-motion-reveal] {
+    transition: opacity var(--motion-duration-slow) var(--motion-ease-enter),
+      transform var(--motion-duration-slow) var(--motion-ease-enter),
+      box-shadow 320ms ease;
+  }
+}
+
 /* Lo que no se puede comprar no se destaca. El brillo es una invitación, y
    ponérsela a un producto agotado invita a un callejón sin salida; la tarjeta
    conserva su sombra oscura y su opacidad reducida, que es lo que ya la

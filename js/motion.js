@@ -138,19 +138,45 @@ function releasePressed(target) {
 
    1 · No agrega ningún listener. Se cuelga del `scroll` que este módulo ya
        tenía, que ya está limitado a un cuadro por `requestAnimationFrame`.
-   2 · Escribe CUANTIZADO. El valor se redondea a 1/25, así que un scroll
-       continuo produce como mucho 25 escrituras por estante en todo el
-       recorrido en vez de una por cuadro. Cambiar una propiedad heredada
-       invalida el estilo del subárbol: hacerlo 60 veces por segundo para mover
-       un alfa que nadie distingue es exactamente el gasto que se quiere evitar.
+   2 · Escribe CUANTIZADO, y en DOS niveles: encendido o apagado.
    3 · Se escribe en el ESTANTE, no en `body`. La invalidación queda contenida
        en el subárbol que de verdad usa el valor.
+   4 · NO escribe mientras la página se está moviendo: espera a que el scroll
+       se asiente.
+
+   POR QUÉ DOS NIVELES Y POR QUÉ AL ASENTARSE (medido el 2026-09-30, con las 46
+   fichas reales). La versión anterior cuantizaba a 1/25 y escribía durante el
+   scroll: hasta 25 escrituras por estante en la primera pantalla. Cada una
+   cambia una propiedad HEREDADA por las 46 tarjetas —unos 1.400 elementos—, y
+   además les repinta la sombra a todas las visibles. Con trazas del motor:
+
+     estilo recalculado ....... 23 ms por escritura (97 ms la peor)
+     cuadro promedio .......... 60–67 ms, o sea ~15 cuadros por segundo
+     mismo recorrido sin escribir .. 16,7 ms, 60 cuadros por segundo
+
+   El catálogo tartamudeaba exactamente en su primera pantalla, que es la que
+   ve todo el mundo, para modular un alfa que nadie distingue paso a paso. La
+   regla de la casa es que un adorno no puede costarle fluidez a la góndola.
+
+   Ahora el estante está encendido o apagado, con histéresis para que un
+   estante parado en el umbral no parpadee, y el cambio se aplica cuando el
+   scroll se detuvo: una escritura por cruce, con la página quieta. La entrada
+   y la salida las suaviza una transición de CSS, que corre con la pantalla en
+   reposo. La curva de `readShelfGlow` no cambió: sigue decidiendo DÓNDE se
+   enciende.
 
    Y si nada de esto corre —JavaScript apagado, módulo caído— el token conserva
    su valor por defecto y las tarjetas se ven con un brillo fijo y discreto.
    ========================================================================== */
 const GLOW_SHELF = '[data-glow-shelf]';
-const GLOW_STEPS = 25;
+// Niveles de escritura: 1 = encendido/apagado. Ver el bloque de arriba.
+const GLOW_STEPS = 1;
+// Histéresis sobre la curva de `readShelfGlow`: se enciende al pasar el umbral
+// alto y recién se apaga al caer bajo el umbral bajo.
+const GLOW_ON_AT = 0.2;
+const GLOW_OFF_AT = 0.1;
+// Cuánto tiene que estar quieta la página para dar el scroll por asentado.
+const GLOW_SETTLE_MS = 140;
 
 /*
  * Sube mientras el estante entra desde abajo, satura cuando ya ocupa la mitad
@@ -193,6 +219,8 @@ export function initMotion(documentRef = globalThis.document, windowRef = global
   let observedCount = 0;
   const lastGlow = new WeakMap();
   let glowPending = false;
+  let glowSettleTimer = 0;
+  let glowSettling = false;
   let destroyed = false;
 
   const observer = !preference.reduced && 'IntersectionObserver' in (windowRef || {})
@@ -226,11 +254,27 @@ export function initMotion(documentRef = globalThis.document, windowRef = global
     documentRef.querySelectorAll(GLOW_SHELF).forEach((shelf) => {
       const glow = readShelfGlow(shelf, viewport);
       if (glow === null) return;
-      const quantized = Math.round(glow * GLOW_STEPS) / GLOW_STEPS;
+      const previous = lastGlow.get(shelf);
+      // Entre los dos umbrales manda lo que ya estaba: un estante parado en el
+      // borde no cambia de estado por un píxel de scroll.
+      const level = glow >= GLOW_ON_AT ? 1 : glow <= GLOW_OFF_AT ? 0 : (previous ?? 0);
+      const quantized = Math.round(level * GLOW_STEPS) / GLOW_STEPS;
       if (quantized === lastGlow.get(shelf)) return;
       lastGlow.set(shelf, quantized);
       shelf.style.setProperty('--card-glow', String(quantized));
     });
+  };
+
+  // El scroll no escribe: deja armado un único temporizador que se reinicia en
+  // cada cuadro y dispara cuando la página se quedó quieta.
+  const settleShelfGlow = () => {
+    if (destroyed || preference.reduced) return;
+    clearTimeout(glowSettleTimer);
+    glowSettling = true;
+    glowSettleTimer = setTimeout(() => {
+      glowSettling = false;
+      applyShelfGlow();
+    }, GLOW_SETTLE_MS);
   };
 
   const scheduleShelfGlow = () => {
@@ -246,8 +290,11 @@ export function initMotion(documentRef = globalThis.document, windowRef = global
 
   const setScrolled = () => {
     scrollPending = false;
-    documentRef.body.dataset.motionScrolled = String((windowRef?.scrollY || 0) > 8);
-    applyShelfGlow();
+    // Mismo valor, ninguna escritura: asignar el atributo en cada cuadro de
+    // scroll ensuciaba el estilo del documento aunque no cambiara nada.
+    const scrolled = String((windowRef?.scrollY || 0) > 8);
+    if (documentRef.body.dataset.motionScrolled !== scrolled) documentRef.body.dataset.motionScrolled = scrolled;
+    settleShelfGlow();
   };
 
   const onScroll = () => {
@@ -473,6 +520,7 @@ export function initMotion(documentRef = globalThis.document, windowRef = global
       if (rafId) (windowRef?.cancelAnimationFrame ? windowRef.cancelAnimationFrame(rafId) : clearTimeout(rafId));
       clearTimeout(pressTimer);
       clearTimeout(scanTimer);
+      clearTimeout(glowSettleTimer);
       if (scanRaf) (windowRef?.cancelAnimationFrame ? windowRef.cancelAnimationFrame(scanRaf) : clearTimeout(scanRaf));
       documentRef.querySelectorAll('[data-motion-advanced]').forEach((node) => {
         delete node.dataset.motionAdvanced;
@@ -504,6 +552,9 @@ export function initMotion(documentRef = globalThis.document, windowRef = global
         reducedMotion: preference.reduced,
         liteMode: preference.lite,
         glowShelves: documentRef.querySelectorAll(GLOW_SHELF).length,
+        // Hay un scroll reciente cuyo brillo todavía no se aplicó. Las pruebas
+        // lo esperan en vez de cronometrarlo.
+        glowSettling,
         observerCount: observer ? 1 : 0,
         mutationObserverCount: mutationObserver ? 1 : 0,
         revealTargets: targets.length,

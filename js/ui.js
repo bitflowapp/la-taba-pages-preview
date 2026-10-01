@@ -4708,7 +4708,12 @@ export function showProductModal(productId, restoreTrigger = null, { refresh = f
       </div>
     </div>
   `);
-  if (!modal.open) modal.showModal();
+  if (!modal.open) {
+    // The retained DOM keeps image identity; notes belong to one open session.
+    const note = content.querySelector('[data-product-note]');
+    if (note) note.value = '';
+    modal.showModal();
+  }
 }
 
 export function closeProductModal() {

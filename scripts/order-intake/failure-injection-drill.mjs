@@ -211,8 +211,17 @@ const dataDir = option('--data');
 if (pgCtl && dataDir) {
   const before = await truth(admin);
   const keys = Array.from({ length: 60 }, (_, index) => `failure-crash-${String(index).padStart(4, '0')}`);
-  const wave = Promise.all(keys.map((key, index) => order(customer(10 + index), key)));
-  await sleep(120);
+  // Las altas salen escalonadas para que el corte las encuentre en todos los estados:
+  // unas ya confirmadas, otras con la transacción abierta, otras sin haber llegado.
+  const wave = Promise.all(keys.map(async (key, index) => {
+    await sleep(index * 15);
+    return order(customer(10 + index), key);
+  }));
+  for (let waited = 0; waited < 5000; waited += 20) {
+    const { rows } = await admin.query('select count(*)::int as n from public.orders where business_id = $1', [BUSINESS]);
+    if (rows[0].n - before.orders >= 12) break;
+    await sleep(20);
+  }
   // Caída sin aviso: los backends mueren con lo que tuvieran abierto.
   execFileSync(pgCtl, ['-D', dataDir, '-m', 'immediate', 'stop'], { stdio: 'ignore' });
   const outcomes = await wave;
@@ -226,6 +235,9 @@ if (pgCtl && dataDir) {
   const afterCrash = await truth(admin);
   const committed = outcomes.filter((r) => r.ok).length;
   record('server_crash', 'la base volvio y lo que quedo es coherente: ningun pedido a medias', coherent(afterCrash), afterCrash);
+  record('server_crash', 'el corte llego con pedidos ya confirmados y otros en vuelo',
+    afterCrash.orders - before.orders > 0 && afterCrash.orders - before.orders < keys.length,
+    { orders_after_crash: afterCrash.orders - before.orders, of: keys.length });
   record('server_crash', 'ningun pedido que el cliente vio confirmado se perdio', afterCrash.orders - before.orders >= committed,
     { confirmed_to_clients: committed, orders_after_crash: afterCrash.orders - before.orders });
   // El cliente reintenta TODO con las mismas claves, haya visto éxito o error.

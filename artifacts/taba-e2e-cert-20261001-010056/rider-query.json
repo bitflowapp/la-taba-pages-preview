@@ -1,0 +1,85 @@
+{
+  "orderId": "0c6f661d-2b22-44d3-a1f2-0e560fae07ea",
+  "boards": [
+    {
+      "rider": "rider1",
+      "ok": true,
+      "code": null,
+      "available": false,
+      "offers": [],
+      "orders": []
+    },
+    {
+      "rider": "rider1",
+      "ok": true,
+      "code": null,
+      "available": false,
+      "offers": [],
+      "orders": []
+    },
+    {
+      "rider": "rider1",
+      "ok": true,
+      "code": null,
+      "available": true,
+      "offers": [],
+      "orders": []
+    },
+    {
+      "rider": "rider1",
+      "ok": true,
+      "code": null,
+      "available": true,
+      "offers": [
+        {
+          "id": "c7f5c6ec-06b0-400a-92cd-0d4ae89f56aa",
+          "order_id": "0c6f661d-2b22-44d3-a1f2-0e560fae07ea",
+          "version": 1,
+          "public_code": "LT-0057"
+        }
+      ],
+      "orders": []
+    },
+    {
+      "rider": "rider2",
+      "ok": true,
+      "code": null,
+      "available": false,
+      "offers": [],
+      "orders": []
+    },
+    {
+      "rider": "rider1",
+      "ok": true,
+      "code": null,
+      "available": true,
+      "offers": [],
+      "orders": [
+        {
+          "id": "0c6f661d-2b22-44d3-a1f2-0e560fae07ea",
+          "public_code": "LT-0057",
+          "status": "assigned",
+          "revision": 8,
+          "total": 8400,
+          "items": [
+            {
+              "name": "Villavicencio",
+              "unit": "Sin gas",
+              "quantity": 3,
+              "unit_price": 2400
+            }
+          ],
+          "has_customer_location": true
+        }
+      ]
+    },
+    {
+      "rider": "rider1",
+      "ok": true,
+      "code": null,
+      "available": true,
+      "offers": [],
+      "orders": []
+    }
+  ]
+}

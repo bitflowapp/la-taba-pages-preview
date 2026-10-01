@@ -1,0 +1,360 @@
+{
+  "orderId": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+  "publicCode": "LT-0068",
+  "dbEvents": [
+    {
+      "sequence": 542,
+      "event_type": "order.received",
+      "actor_role": "customer",
+      "actor_user_id": "0064352b-3a5c-40ad-97d8-fd81f9b8b98f",
+      "metadata": {
+        "source": "production_checkout"
+      },
+      "created_at": "2026-10-01T02:09:06.461071+00:00"
+    },
+    {
+      "sequence": 547,
+      "event_type": "order.status_changed",
+      "actor_role": "business",
+      "actor_user_id": "90ef9c5b-270c-4d79-afdb-19e764cea3bd",
+      "metadata": {
+        "next_status": "accepted",
+        "previous_status": "received",
+        "inventory_released": false
+      },
+      "created_at": "2026-10-01T02:11:35.039132+00:00"
+    },
+    {
+      "sequence": 548,
+      "event_type": "order.status_changed",
+      "actor_role": "business",
+      "actor_user_id": "90ef9c5b-270c-4d79-afdb-19e764cea3bd",
+      "metadata": {
+        "next_status": "preparing",
+        "previous_status": "accepted",
+        "inventory_released": false
+      },
+      "created_at": "2026-10-01T02:14:44.285013+00:00"
+    },
+    {
+      "sequence": 549,
+      "event_type": "order.status_changed",
+      "actor_role": "business",
+      "actor_user_id": "90ef9c5b-270c-4d79-afdb-19e764cea3bd",
+      "metadata": {
+        "next_status": "ready",
+        "previous_status": "preparing",
+        "inventory_released": false
+      },
+      "created_at": "2026-10-01T02:14:53.707969+00:00"
+    },
+    {
+      "sequence": 550,
+      "event_type": "order.rider_offered",
+      "actor_role": "business",
+      "actor_user_id": "90ef9c5b-270c-4d79-afdb-19e764cea3bd",
+      "metadata": {
+        "offer_id": "19b61126-8207-424f-a875-7c3f912be954",
+        "rider_user_id": "e9b381ad-8287-430e-b53d-caa4f55637cd",
+        "rider_active_orders": 0,
+        "rider_max_active_orders": 3
+      },
+      "created_at": "2026-10-01T02:15:26.268935+00:00"
+    },
+    {
+      "sequence": 551,
+      "event_type": "order.status_changed",
+      "actor_role": "rider",
+      "actor_user_id": "e9b381ad-8287-430e-b53d-caa4f55637cd",
+      "metadata": {
+        "next_status": "assigned",
+        "previous_status": "ready",
+        "inventory_released": false
+      },
+      "created_at": "2026-10-01T02:15:28.221935+00:00"
+    },
+    {
+      "sequence": 552,
+      "event_type": "order.rider_accepted_offer",
+      "actor_role": "rider",
+      "actor_user_id": "e9b381ad-8287-430e-b53d-caa4f55637cd",
+      "metadata": {
+        "offer_id": "19b61126-8207-424f-a875-7c3f912be954",
+        "rider_active_orders": 1,
+        "rider_max_active_orders": 3
+      },
+      "created_at": "2026-10-01T02:15:28.221935+00:00"
+    },
+    {
+      "sequence": 553,
+      "event_type": "order.status_changed",
+      "actor_role": "rider",
+      "actor_user_id": "e9b381ad-8287-430e-b53d-caa4f55637cd",
+      "metadata": {
+        "next_status": "picked_up",
+        "previous_status": "assigned",
+        "inventory_released": false
+      },
+      "created_at": "2026-10-01T02:15:45.867067+00:00"
+    },
+    {
+      "sequence": 554,
+      "event_type": "order.status_changed",
+      "actor_role": "rider",
+      "actor_user_id": "e9b381ad-8287-430e-b53d-caa4f55637cd",
+      "metadata": {
+        "next_status": "on_the_way",
+        "previous_status": "picked_up",
+        "inventory_released": false
+      },
+      "created_at": "2026-10-01T02:15:51.56446+00:00"
+    },
+    {
+      "sequence": 555,
+      "event_type": "order.status_changed",
+      "actor_role": "rider",
+      "actor_user_id": "e9b381ad-8287-430e-b53d-caa4f55637cd",
+      "metadata": {
+        "next_status": "arrived",
+        "previous_status": "on_the_way",
+        "inventory_released": false
+      },
+      "created_at": "2026-10-01T02:16:01.234794+00:00"
+    },
+    {
+      "sequence": 556,
+      "event_type": "order.status_changed",
+      "actor_role": "rider",
+      "actor_user_id": "e9b381ad-8287-430e-b53d-caa4f55637cd",
+      "metadata": {
+        "next_status": "delivered",
+        "previous_status": "arrived",
+        "inventory_released": false
+      },
+      "created_at": "2026-10-01T02:16:17.42337+00:00"
+    },
+    {
+      "sequence": 557,
+      "event_type": "order.manual_payment_confirmed",
+      "actor_role": "business",
+      "actor_user_id": "90ef9c5b-270c-4d79-afdb-19e764cea3bd",
+      "metadata": {
+        "amount": 8400,
+        "actual_method": "cash"
+      },
+      "created_at": "2026-10-01T02:16:31.67835+00:00"
+    }
+  ],
+  "panelContractEvents": [
+    {
+      "order_id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "sequence": 542,
+      "event_type": "order.received",
+      "type": "order.received",
+      "metadata": {
+        "source": "production_checkout"
+      },
+      "payload": {
+        "source": "production_checkout"
+      },
+      "created_at": "2026-10-01T02:09:06.461071+00:00"
+    },
+    {
+      "order_id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "sequence": 547,
+      "event_type": "order.status_changed",
+      "type": "order.status_changed",
+      "metadata": {
+        "next_status": "accepted",
+        "previous_status": "received",
+        "inventory_released": false
+      },
+      "payload": {
+        "next_status": "accepted",
+        "previous_status": "received",
+        "inventory_released": false
+      },
+      "created_at": "2026-10-01T02:11:35.039132+00:00"
+    },
+    {
+      "order_id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "sequence": 548,
+      "event_type": "order.status_changed",
+      "type": "order.status_changed",
+      "metadata": {
+        "next_status": "preparing",
+        "previous_status": "accepted",
+        "inventory_released": false
+      },
+      "payload": {
+        "next_status": "preparing",
+        "previous_status": "accepted",
+        "inventory_released": false
+      },
+      "created_at": "2026-10-01T02:14:44.285013+00:00"
+    },
+    {
+      "order_id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "sequence": 549,
+      "event_type": "order.status_changed",
+      "type": "order.status_changed",
+      "metadata": {
+        "next_status": "ready",
+        "previous_status": "preparing",
+        "inventory_released": false
+      },
+      "payload": {
+        "next_status": "ready",
+        "previous_status": "preparing",
+        "inventory_released": false
+      },
+      "created_at": "2026-10-01T02:14:53.707969+00:00"
+    },
+    {
+      "order_id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "sequence": 550,
+      "event_type": "order.rider_offered",
+      "type": "order.rider_offered",
+      "metadata": {
+        "offer_id": "19b61126-8207-424f-a875-7c3f912be954",
+        "rider_user_id": "e9b381ad-8287-430e-b53d-caa4f55637cd",
+        "rider_active_orders": 0,
+        "rider_max_active_orders": 3
+      },
+      "payload": {
+        "offer_id": "19b61126-8207-424f-a875-7c3f912be954",
+        "rider_user_id": "e9b381ad-8287-430e-b53d-caa4f55637cd"
+      },
+      "created_at": "2026-10-01T02:15:26.268935+00:00"
+    },
+    {
+      "order_id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "sequence": 551,
+      "event_type": "order.status_changed",
+      "type": "order.status_changed",
+      "metadata": {
+        "next_status": "assigned",
+        "previous_status": "ready",
+        "inventory_released": false
+      },
+      "payload": {
+        "next_status": "assigned",
+        "previous_status": "ready",
+        "inventory_released": false
+      },
+      "created_at": "2026-10-01T02:15:28.221935+00:00"
+    },
+    {
+      "order_id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "sequence": 552,
+      "event_type": "order.rider_accepted_offer",
+      "type": "order.rider_accepted_offer",
+      "metadata": {
+        "offer_id": "19b61126-8207-424f-a875-7c3f912be954",
+        "rider_active_orders": 1,
+        "rider_max_active_orders": 3
+      },
+      "payload": {
+        "offer_id": "19b61126-8207-424f-a875-7c3f912be954"
+      },
+      "created_at": "2026-10-01T02:15:28.221935+00:00"
+    },
+    {
+      "order_id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "sequence": 553,
+      "event_type": "order.status_changed",
+      "type": "order.status_changed",
+      "metadata": {
+        "next_status": "picked_up",
+        "previous_status": "assigned",
+        "inventory_released": false
+      },
+      "payload": {
+        "next_status": "picked_up",
+        "previous_status": "assigned",
+        "inventory_released": false
+      },
+      "created_at": "2026-10-01T02:15:45.867067+00:00"
+    },
+    {
+      "order_id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "sequence": 554,
+      "event_type": "order.status_changed",
+      "type": "order.status_changed",
+      "metadata": {
+        "next_status": "on_the_way",
+        "previous_status": "picked_up",
+        "inventory_released": false
+      },
+      "payload": {
+        "next_status": "on_the_way",
+        "previous_status": "picked_up",
+        "inventory_released": false
+      },
+      "created_at": "2026-10-01T02:15:51.56446+00:00"
+    },
+    {
+      "order_id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "sequence": 555,
+      "event_type": "order.status_changed",
+      "type": "order.status_changed",
+      "metadata": {
+        "next_status": "arrived",
+        "previous_status": "on_the_way",
+        "inventory_released": false
+      },
+      "payload": {
+        "next_status": "arrived",
+        "previous_status": "on_the_way",
+        "inventory_released": false
+      },
+      "created_at": "2026-10-01T02:16:01.234794+00:00"
+    },
+    {
+      "order_id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "sequence": 556,
+      "event_type": "order.status_changed",
+      "type": "order.status_changed",
+      "metadata": {
+        "next_status": "delivered",
+        "previous_status": "arrived",
+        "inventory_released": false
+      },
+      "payload": {
+        "next_status": "delivered",
+        "previous_status": "arrived",
+        "inventory_released": false
+      },
+      "created_at": "2026-10-01T02:16:17.42337+00:00"
+    },
+    {
+      "order_id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "sequence": 557,
+      "event_type": "order.manual_payment_confirmed",
+      "type": "order.manual_payment_confirmed",
+      "metadata": {
+        "amount": 8400,
+        "actual_method": "cash"
+      },
+      "payload": {},
+      "created_at": "2026-10-01T02:16:31.67835+00:00"
+    }
+  ],
+  "statusChain": [
+    "received>accepted",
+    "accepted>preparing",
+    "preparing>ready",
+    "ready>assigned",
+    "assigned>picked_up",
+    "picked_up>on_the_way",
+    "on_the_way>arrived",
+    "arrived>delivered"
+  ],
+  "surfaces": {
+    "db": "delivered",
+    "panelInbox": "not-in-inbox(terminal)",
+    "tracking": "delivered",
+    "riderBoard": "released",
+    "revision": 13
+  }
+}

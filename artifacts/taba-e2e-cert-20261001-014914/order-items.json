@@ -1,0 +1,14 @@
+[
+  {
+    "id": "af66a178-6941-4649-b160-d4cf4b65e871",
+    "order_id": "ab9659b6-021f-4d4e-8550-47ababb944f8",
+    "product_id": "27f606da-afb6-4369-8a85-72a171083c1f",
+    "name": "Villavicencio",
+    "quantity": 3,
+    "unit": "Sin gas",
+    "unit_price": 2400,
+    "subtotal": 7200,
+    "created_at": "2026-10-01T01:50:04.434849+00:00",
+    "product_uuid": "27f606da-afb6-4369-8a85-72a171083c1f"
+  }
+]

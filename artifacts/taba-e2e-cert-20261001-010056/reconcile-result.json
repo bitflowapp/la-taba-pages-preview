@@ -1,0 +1,141 @@
+{
+  "runId": "TABA_E2E_CERT_20261001010056",
+  "executedBy": "TABA_E2E_CERT_20261001014331",
+  "steps": [
+    {
+      "name": "restore stock LT-0057 +3.000",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-01T01:44:07.930Z"
+    },
+    {
+      "name": "availability off rider1",
+      "ok": true,
+      "detail": "unchanged",
+      "at": "2026-10-01T01:44:14.934Z"
+    },
+    {
+      "name": "close session owner",
+      "ok": true,
+      "detail": "closed",
+      "at": "2026-10-01T01:44:15.128Z"
+    },
+    {
+      "name": "close session staff",
+      "ok": true,
+      "detail": "closed",
+      "at": "2026-10-01T01:44:15.333Z"
+    },
+    {
+      "name": "close session rider1",
+      "ok": true,
+      "detail": "closed",
+      "at": "2026-10-01T01:44:15.438Z"
+    },
+    {
+      "name": "close session rider2",
+      "ok": true,
+      "detail": "closed",
+      "at": "2026-10-01T01:44:15.641Z"
+    },
+    {
+      "name": "delete user customer-A-main",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-01T01:44:15.902Z"
+    }
+  ],
+  "post": {
+    "orders": [
+      {
+        "id": "725af38e-23c7-44d3-90d9-791bcab4cf40",
+        "code": "LT-0058",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      },
+      {
+        "id": "19a4a972-f704-41d0-a32d-54d7a1113909",
+        "code": "LT-0061",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      },
+      {
+        "id": "62bd88ed-2ade-4071-a9d6-8533edd4e5db",
+        "code": "LT-0059",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      },
+      {
+        "id": "61c74d72-0f99-41da-af4d-b1cd5938ff1a",
+        "code": "LT-0060",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      },
+      {
+        "id": "0c6f661d-2b22-44d3-a1f2-0e560fae07ea",
+        "code": "LT-0057",
+        "status": "delivered",
+        "origin": "qa",
+        "manual_payment": "reversed"
+      },
+      {
+        "id": "4736cd1c-d9b5-40a1-b05f-d60c5b537796",
+        "code": "LT-0062",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      }
+    ],
+    "non_terminal_or_non_qa": 0,
+    "pending_offers": 0,
+    "pending_notifications": 0,
+    "reservations": 0,
+    "users_left": 0,
+    "qa_businesses_left": 0,
+    "open_sessions": 0,
+    "orphan_events": 0,
+    "rider_locations": 0,
+    "riders": [
+      {
+        "rider": "8d77e57b-fd9b-49bb-8023-9b3c699d35b9",
+        "available": false,
+        "version": 2
+      },
+      {
+        "rider": "e9b381ad-8287-430e-b53d-caa4f55637cd",
+        "available": false,
+        "version": 10
+      },
+      {
+        "rider": "c9e5e490-ac76-43ab-be20-afba6cfe35fc",
+        "available": false,
+        "version": 2
+      },
+      {
+        "rider": "b46bc1cd-abfc-4a4a-9952-3ac9287d1bae",
+        "available": false,
+        "version": 8
+      },
+      {
+        "rider": "7ce18ab7-a8aa-4e5d-a77c-4a9db3e8a599",
+        "available": false,
+        "version": 25
+      }
+    ],
+    "print_jobs": 0,
+    "fiscal_documents": 0,
+    "payment_intents": 32,
+    "open_orders_business": 7
+  },
+  "retainedByDesign": [
+    "orders (origin=qa, terminal) + order_items/order_events/order_public_tokens/order_delivery_handoffs: append-only audit of the run, tagged by customer_notes and origin_reason",
+    "inventory_movements (manual_adjustment pilot_qa_return) that restore stock: append-only ledger",
+    "business_command_receipts / rider_delivery_operations / delivery_confirmation_attempts: idempotency receipts",
+    "identity_sessions (revoked) + identity_audit_events: session audit trail, device_label starts with RUN_ID",
+    "notification_outbox / delivery_outbox rows: processed+suppressed, no consumer exists"
+  ]
+}

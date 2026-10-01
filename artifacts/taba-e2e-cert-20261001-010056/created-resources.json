@@ -1,0 +1,283 @@
+{
+  "runId": "TABA_E2E_CERT_20261001010056",
+  "startedAt": "2026-10-01T01:00:56.916Z",
+  "target": {
+    "ref": "ucbtjcurawxjwjdvvcvj",
+    "business": "a57b1c20-0f4e-4a6b-9d31-7c2e5f8a41d0"
+  },
+  "serviceRoleUses": [
+    {
+      "purpose": "setup",
+      "action": "auth.admin.createUser",
+      "label": "nomember",
+      "at": "2026-10-01T01:01:28.284Z"
+    },
+    {
+      "purpose": "setup",
+      "action": "auth.admin.createUser",
+      "label": "otherowner",
+      "at": "2026-10-01T01:01:28.658Z"
+    },
+    {
+      "purpose": "setup",
+      "action": "insert businesses (QA business B)",
+      "at": "2026-10-01T01:01:28.844Z"
+    },
+    {
+      "purpose": "setup",
+      "action": "insert business_members (owner of B)",
+      "at": "2026-10-01T01:01:29.256Z"
+    },
+    {
+      "purpose": "cleanup",
+      "action": "delete QA business B",
+      "ok": true,
+      "at": "2026-10-01T01:06:15.574Z"
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (anonymous_customer)",
+      "ok": false,
+      "at": "2026-10-01T01:06:15.781Z"
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (anonymous_customer)",
+      "ok": true,
+      "at": "2026-10-01T01:06:15.888Z"
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (anonymous_customer)",
+      "ok": true,
+      "at": "2026-10-01T01:06:16.066Z"
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (registered_test_user)",
+      "ok": true,
+      "at": "2026-10-01T01:06:16.238Z"
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (registered_test_user)",
+      "ok": true,
+      "at": "2026-10-01T01:06:16.735Z"
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (anonymous_customer)",
+      "ok": true,
+      "at": "2026-10-01T01:44:15.902Z"
+    }
+  ],
+  "users": [
+    {
+      "kind": "anonymous_customer",
+      "label": "customer-A-main",
+      "userId": "4d57bba1-e9cd-4818-8e35-fcb98f55b44f",
+      "deleted": true
+    },
+    {
+      "kind": "anonymous_customer",
+      "label": "customer-B-other",
+      "userId": "bc88d2f6-df40-4192-997f-abf104544350",
+      "deleted": true
+    },
+    {
+      "kind": "anonymous_customer",
+      "label": "customer-R-races",
+      "userId": "e8f9ade0-c9ad-41d1-823b-8e5211eb4b60",
+      "deleted": true
+    },
+    {
+      "kind": "registered_test_user",
+      "label": "nomember",
+      "userId": "b5f06384-4678-4a24-a36f-a6064b59053f",
+      "email": "taba-e2e-cert-20261001010056-nomember@qa.lataba.invalid",
+      "deleted": true
+    },
+    {
+      "kind": "registered_test_user",
+      "label": "otherowner",
+      "userId": "b24ce75b-07fa-4968-adf4-8c24f71fd9fa",
+      "email": "taba-e2e-cert-20261001010056-otherowner@qa.lataba.invalid",
+      "deleted": true
+    }
+  ],
+  "businesses": [
+    {
+      "id": "10f1e35c-75b7-4093-a413-2f4caa09ebdd",
+      "purpose": "cross-tenant negative tests",
+      "deleted": true
+    }
+  ],
+  "memberships": [
+    {
+      "business": "10f1e35c-75b7-4093-a413-2f4caa09ebdd",
+      "userId": "b24ce75b-07fa-4968-adf4-8c24f71fd9fa",
+      "role": "owner",
+      "id": "71af74a8-ccc6-495c-b9c7-accefecdc0f7"
+    }
+  ],
+  "orders": [
+    {
+      "id": "0c6f661d-2b22-44d3-a1f2-0e560fae07ea",
+      "publicCode": "LT-0057",
+      "label": "main",
+      "clientRequestId": "cert-main-20261001010056-4cfe7b81",
+      "quantity": 3,
+      "mode": "delivery"
+    },
+    {
+      "id": "725af38e-23c7-44d3-90d9-791bcab4cf40",
+      "publicCode": "LT-0058",
+      "label": "race-2",
+      "clientRequestId": "cert-race2-20261001010056-cabe34fd",
+      "quantity": 1,
+      "mode": "pickup",
+      "cancelledByTest": true
+    },
+    {
+      "id": "62bd88ed-2ade-4071-a9d6-8533edd4e5db",
+      "publicCode": "LT-0059",
+      "label": "race-5",
+      "clientRequestId": "cert-race5-20261001010056-061ea245",
+      "quantity": 1,
+      "mode": "pickup",
+      "cancelledByTest": true
+    },
+    {
+      "id": "61c74d72-0f99-41da-af4d-b1cd5938ff1a",
+      "publicCode": "LT-0060",
+      "label": "race-20",
+      "clientRequestId": "cert-race20-20261001010056-b84e0c19",
+      "quantity": 1,
+      "mode": "pickup",
+      "cancelledByTest": true
+    },
+    {
+      "id": "19a4a972-f704-41d0-a32d-54d7a1113909",
+      "publicCode": "LT-0061",
+      "label": "lost-response-A",
+      "clientRequestId": "cert-lostA-20261001010056-b4abbdb6",
+      "quantity": 1,
+      "mode": "pickup",
+      "cancelledByTest": true
+    },
+    {
+      "id": "4736cd1c-d9b5-40a1-b05f-d60c5b537796",
+      "publicCode": "LT-0062",
+      "label": "race-accept-vs-cancel",
+      "clientRequestId": "cert-raceTxCancel-20261001010056-cf97ff5c",
+      "quantity": 1,
+      "mode": "pickup",
+      "cancelledByTest": true
+    }
+  ],
+  "sessions": [
+    {
+      "role": "owner",
+      "userId": "f25d555d-493a-4798-8e8f-5b82f29c1c60",
+      "sessionId": "e8b69d27-7a66-41fb-b285-3d261c116d9f",
+      "client": "panel_web",
+      "closed": true
+    },
+    {
+      "role": "staff",
+      "userId": "90ef9c5b-270c-4d79-afdb-19e764cea3bd",
+      "sessionId": "c4704e8b-2fa3-4194-801e-35637171768e",
+      "client": "panel_web",
+      "closed": true
+    },
+    {
+      "role": "admin",
+      "userId": "a5c2d0c2-2007-495a-beff-7e44a9547337",
+      "sessionId": "9fe1abba-ff90-4a93-98af-4c35e4665f67",
+      "client": "panel_web",
+      "closed": true
+    },
+    {
+      "role": "rider1",
+      "userId": "e9b381ad-8287-430e-b53d-caa4f55637cd",
+      "sessionId": "2baa31f4-2396-46db-8258-b7132c05373e",
+      "client": "rider_android",
+      "closed": true
+    },
+    {
+      "role": "rider2",
+      "userId": "b46bc1cd-abfc-4a4a-9952-3ac9287d1bae",
+      "sessionId": "73fdcdb5-c69e-4f8d-97b7-c9d1b2b7de46",
+      "client": "rider_android",
+      "closed": true
+    },
+    {
+      "role": "owner-B",
+      "userId": "b24ce75b-07fa-4968-adf4-8c24f71fd9fa",
+      "sessionId": "a538cb29-b680-4929-8667-eec144e20705",
+      "business": "10f1e35c-75b7-4093-a413-2f4caa09ebdd",
+      "closed": true
+    },
+    {
+      "role": "owner",
+      "userId": "f25d555d-493a-4798-8e8f-5b82f29c1c60",
+      "sessionId": "5435594b-0085-40b1-8a32-74ffd4d8807c",
+      "client": "panel_web",
+      "closed": false
+    },
+    {
+      "role": "staff",
+      "userId": "90ef9c5b-270c-4d79-afdb-19e764cea3bd",
+      "sessionId": "cc4ead60-7114-4abd-ad7a-3160dba1068e",
+      "client": "panel_web",
+      "closed": false
+    },
+    {
+      "role": "rider1",
+      "userId": "e9b381ad-8287-430e-b53d-caa4f55637cd",
+      "sessionId": "35d24931-301a-4617-8c91-452de5f5e980",
+      "client": "rider_android",
+      "closed": false
+    },
+    {
+      "role": "rider2",
+      "userId": "b46bc1cd-abfc-4a4a-9952-3ac9287d1bae",
+      "sessionId": "f3f8656e-cecd-496f-87a3-7394306c579c",
+      "client": "rider_android",
+      "closed": false
+    }
+  ],
+  "availability": [
+    {
+      "rider": "rider1",
+      "userId": "e9b381ad-8287-430e-b53d-caa4f55637cd",
+      "value": true,
+      "at": "2026-10-01T01:03:48.041Z",
+      "ok": true
+    }
+  ],
+  "inventoryMovements": [
+    {
+      "order": "0c6f661d-2b22-44d3-a1f2-0e560fae07ea",
+      "product": "27f606da-afb6-4369-8a85-72a171083c1f",
+      "quantity": 3,
+      "key": "cert-restore-0c6f661d2b2244d3a1f2-27f606daafb6",
+      "ok": true
+    },
+    {
+      "order": "0c6f661d-2b22-44d3-a1f2-0e560fae07ea",
+      "product": "27f606da-afb6-4369-8a85-72a171083c1f",
+      "quantity": 3,
+      "key": "cert-restore-0c6f661d2b2244d3a1f2-27f606daafb6",
+      "ok": true
+    }
+  ],
+  "manualPayments": [
+    {
+      "order": "0c6f661d-2b22-44d3-a1f2-0e560fae07ea",
+      "confirmed": true,
+      "reversed": true
+    }
+  ],
+  "finishedAt": "2026-10-01T01:44:18.502Z"
+}

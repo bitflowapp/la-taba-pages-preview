@@ -1,0 +1,12 @@
+repo: https://github.com/bitflowapp/la-taba-pages-preview.git
+worktree: C:\Users\DELL\Desktop\la-taba\la-taba-backend-e2e-cert
+branch: qa/taba-backend-e2e-cert-20260930
+head: 62f85666fb7bdba3f7839517ed259d36dc7df6b9
+head_subject: fix(orders): el resguardo del punto de entrega corre como su dueño
+origin_main: 135818892414f5cc17d7adacd6069eec86602381
+status_porcelain:
+?? artifacts/taba-e2e-cert-20261001-010056/
+?? artifacts/taba-e2e-cert-20261001-014914/
+?? artifacts/taba-e2e-cert-20261001-020808/
+?? artifacts/taba-e2e-cert-20261001-022224/
+?? scripts/e2e-staging/backend-e2e-certification.mjs

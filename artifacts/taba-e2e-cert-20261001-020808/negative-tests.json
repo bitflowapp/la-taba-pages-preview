@@ -1,0 +1,147 @@
+[
+  {
+    "name": "NEG_QUANTITY_ZERO",
+    "ok": false,
+    "status": 400,
+    "code": "22023",
+    "message": "cada item acepta solo product_id UUID y quantity entero"
+  },
+  {
+    "name": "NEG_QUANTITY_NEGATIVE",
+    "ok": false,
+    "status": 400,
+    "code": "22023",
+    "message": "cada item acepta solo product_id UUID y quantity entero"
+  },
+  {
+    "name": "NEG_QUANTITY_OVER_STOCK",
+    "ok": false,
+    "status": 400,
+    "code": "23514",
+    "message": "stock insuficiente para producto: 27f606da-afb6-4369-8a85-72a171083c1f"
+  },
+  {
+    "name": "NEG_PRODUCT_UNAVAILABLE",
+    "ok": false,
+    "status": 500,
+    "code": "55000",
+    "message": "producto no disponible: 7aaddd85-d844-4d12-a726-78ea0c661e11"
+  },
+  {
+    "name": "NEG_PRODUCT_NONEXISTENT",
+    "ok": false,
+    "status": 409,
+    "code": "23503",
+    "message": "producto inexistente para el negocio: c9986e02-0377-4b31-988b-e9b2839cdb80"
+  },
+  {
+    "name": "NEG_BUSINESS_NONEXISTENT",
+    "ok": false,
+    "status": 409,
+    "code": "23503",
+    "message": "business_id inexistente"
+  },
+  {
+    "name": "NEG_BUSINESS_NOT_ACCEPTING",
+    "ok": false,
+    "status": 500,
+    "code": "55000",
+    "message": "el negocio no esta habilitado para recibir pedidos"
+  },
+  {
+    "name": "NEG_UNKNOWN_FIELD_PRICE_INJECTION",
+    "ok": false,
+    "status": 400,
+    "code": "22023",
+    "message": "campo no permitido en pedido: total"
+  },
+  {
+    "name": "NEG_DELIVERY_WITHOUT_LOCATION",
+    "ok": false,
+    "status": 400,
+    "code": "22023",
+    "message": "DELIVERY_LOCATION_REQUIRED"
+  },
+  {
+    "name": "NEG_DELIVERY_BELOW_MINIMUM",
+    "ok": false,
+    "status": 400,
+    "code": "23514",
+    "message": "subtotal inferior al minimo de delivery"
+  },
+  {
+    "name": "NEG_CREATE_WITHOUT_SESSION",
+    "status": 401,
+    "code": "42501"
+  },
+  {
+    "name": "NEG_IDEMPOTENCY_KEY_REUSED_DIFFERENT_PAYLOAD",
+    "status": 409,
+    "code": "23505",
+    "message": "client_request_id reutilizado con un payload diferente"
+  },
+  {
+    "name": "NEG_IDEMPOTENCY_KEY_OTHER_CUSTOMER",
+    "status": 409,
+    "code": "23505"
+  },
+  {
+    "name": "NEG_TRANSITION_KEY_REUSED_OTHER_PAYLOAD",
+    "http": 409,
+    "code": "23505"
+  },
+  {
+    "name": "NEG_REPEATED_TRANSITION_IS_NOOP",
+    "ok": true,
+    "no_op": true
+  },
+  {
+    "name": "NEG_UNKNOWN_STATUS",
+    "http": 400,
+    "code": "22023",
+    "statusAfter": "ready"
+  },
+  {
+    "name": "NEG_BUSINESS_DELIVERS_DELIVERY_WITHOUT_CODE",
+    "http": 400,
+    "code": "23514",
+    "statusAfter": "ready"
+  },
+  {
+    "name": "NEG_BUSINESS_TAKES_RIDER_EDGE",
+    "http": 400,
+    "code": "23514",
+    "statusAfter": "ready"
+  },
+  {
+    "name": "NEG_BACKWARDS_READY_TO_PREPARING",
+    "http": 400,
+    "code": "23514",
+    "statusAfter": "ready"
+  },
+  {
+    "name": "NEG_CUSTOMER_CANNOT_OPERATE",
+    "http": 403,
+    "code": "42501",
+    "statusAfter": "ready"
+  },
+  {
+    "name": "NEG_RIDER_CANNOT_USE_OPERATOR_RPC",
+    "http": 403,
+    "code": "42501",
+    "statusAfter": "ready"
+  },
+  {
+    "name": "NEG_ORDER_ID_NONEXISTENT",
+    "http": 500,
+    "code": "P0002"
+  },
+  {
+    "name": "NEG_TERMINAL_STATE_LOCKED",
+    "code": "23514"
+  },
+  {
+    "name": "NEG_CANCEL_DELIVERED",
+    "code": "23514"
+  }
+]

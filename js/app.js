@@ -2382,11 +2382,18 @@ function recoverFromUnservedRoute(status) {
   showToast('No encontramos esa página. Te dejamos en el inicio.');
 }
 
+function markCatalogHistoryEntry() {
+  if (window.history.state?.view !== 'catalog') {
+    window.history.replaceState({ ...window.history.state, view: 'catalog' }, '');
+  }
+}
+
 function configureViewScrollRestoration() {
   try {
     if ('scrollRestoration' in window.history) {
-      window.history.scrollRestoration = 'manual';
+      window.history.scrollRestoration = 'auto';
     }
+    if (viewFromHash() === 'catalog') markCatalogHistoryEntry();
   } catch (_) {
     // Un navegador sin esta API sigue usando el reset explícito de cada vista.
   }
@@ -2431,9 +2438,11 @@ function setActiveView(view, options = {}) {
   if (changed && options.focus !== false) focusActiveViewHeading(nextView);
 }
 
-function syncViewFromLocation() {
+function syncViewFromLocation(event) {
   const route = resolveRoute(window.location.hash.slice(1));
   const nextView = route.view;
+  const restoringCatalog = event?.type === 'popstate' && event.state?.view === 'catalog';
+  if (nextView === 'catalog') markCatalogHistoryEntry();
   // La corrección va ANTES del corte por "no cambió la vista": escribir
   // `#no-existe` estando ya en el inicio no cambia de vista y aun así hay que
   // arreglar la URL y avisar.
@@ -2449,7 +2458,9 @@ function syncViewFromLocation() {
   renderAll();
   window.dispatchEvent(new CustomEvent('taba:realtime-view-enter', { detail: { view: nextView } }));
   playViewEnter(nextView);
-  resetPageScroll();
+  // El historial nativo devuelve el catálogo a su posición guardada. Los
+  // accesos nuevos y las demás vistas conservan el reset explícito.
+  if (!restoringCatalog || nextView !== 'catalog') resetPageScroll();
   focusActiveViewHeading(nextView);
 }
 

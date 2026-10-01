@@ -3904,6 +3904,13 @@ body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .cata
 
 body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-head .view-title {
   font-size: clamp(28px, 7vw, 32px);
+  /* El título lleva interlineado 1 y recorte (para la elipsis), así que su caja
+     mide exactamente la altura de la letra y se comía lo que baja del renglón:
+     «Jugos», «Energizantes» y «Aperitivos» perdían el pie de la g, la j y la
+     p. El relleno le da lugar al descendente dentro del recorte y el margen
+     negativo lo devuelve: la fila no cambia de alto. */
+  padding-bottom: 0.16em;
+  margin-bottom: -0.16em;
 }
 
 /* En el teléfono el contador no le puede comer el título. La grilla de arriba

@@ -8,7 +8,7 @@
  * teléfono bajando la foto grande de cada tarjeta.
  */
 import { expect, test } from '@playwright/test';
-import { GRID, openRuntimeCatalog, instrumentCatalog, readProbe } from './catalog-runtime-fixture.mjs';
+import { GRID, openRuntimeCatalog, instrumentCatalog, readProbe, clickCatalogCategory } from './catalog-runtime-fixture.mjs';
 
 test.use({ viewport: { width: 390, height: 844 } });
 
@@ -59,6 +59,20 @@ test('ningún nombre se corta en la grilla, a 360 y a 390 de ancho', async ({ pa
   }
   const brahma = page.locator(`${GRID} .product-card`).filter({ hasText: 'Brahma Chopp Rubia' });
   await expect(brahma).toContainText('1 L · Retornable');
+});
+
+test('el título del rubro no pierde el pie de sus letras', async ({ page }) => {
+  await openRuntimeCatalog(page);
+  // «Jugos» tiene dos letras que bajan del renglón. El título recorta para poder
+  // poner una elipsis, y con interlineado 1 se comía ese pie.
+  await clickCatalogCategory(page, 'jugos');
+  const title = page.locator('[data-catalog-title]');
+  await expect(title).toHaveText('Jugos');
+  const box = await title.evaluate((node) => ({ visible: node.clientHeight, needed: node.scrollHeight, row: node.parentElement.getBoundingClientRect().height }));
+  expect(box.needed, 'el título se recorta por abajo').toBeLessThanOrEqual(box.visible);
+  await clickCatalogCategory(page, 'all');
+  const rowAll = await title.evaluate((node) => node.parentElement.getBoundingClientRect().height);
+  expect(rowAll, 'darle lugar al descendente cambió el alto de la fila').toBe(box.row);
 });
 
 test('el corazón de favoritos se ve, guardado y sin guardar', async ({ page }) => {

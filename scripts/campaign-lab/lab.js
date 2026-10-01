@@ -37,6 +37,11 @@ const grid = document.querySelector('[data-lab-grid]');
 const only = params.get('only');
 const single = Boolean(only);
 if (single) document.body.classList.add('lab-single');
+// `&zoom=2` agranda la pieza sin cambiar el ancho de la ventana: sirve para
+// grabar la versión de teléfono a buen tamaño sin que entren las reglas de
+// escritorio.
+const zoom = Number(params.get('zoom'));
+if (zoom > 0 && zoom <= 4) document.body.style.zoom = String(zoom);
 
 const cells = [];
 for (const demo of DEMOS) {

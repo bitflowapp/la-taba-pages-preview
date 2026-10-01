@@ -128,6 +128,22 @@ test('el brillo de la góndola no escribe mientras se scrollea', () => {
   assert.match(setScrolled, /if \(documentRef\.body\.dataset\.motionScrolled !== scrolled\)/, 'el atributo se reescribía en cada cuadro');
 });
 
+test('la recolección de movimiento no reescribe lo que ya está escrito', () => {
+  const motion = read('js/motion.js');
+  assert.ok(
+    motion.includes("if (node.dataset.motionReveal !== 'card') node.dataset.motionReveal = 'card';"),
+    'la marca de entrada se reescribe en cada render',
+  );
+  assert.ok(
+    motion.includes("if (node.style.getPropertyValue('--motion-index') !== order) node.style.setProperty('--motion-index', order);"),
+    'el índice de entrada se reescribe en cada render',
+  );
+  assert.ok(
+    motion.includes("if (!node.classList.contains('is-motion-visible')) node.classList.add('is-motion-visible');"),
+    'la clase de entrada se reescribe en cada render',
+  );
+});
+
 test('una tarjeta pide la miniatura en el teléfono; la ficha sigue pidiendo el master', () => {
   const ui = read('js/ui.js');
   assert.match(ui, /const CARD_IMAGE_SIZES = '\(max-width: 700px\) 130px, 260px';/);

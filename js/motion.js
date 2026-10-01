@@ -89,16 +89,24 @@ function markRevealTargets(documentRef, observer, reduced, revealImmediately = f
         .filter((child) => child.matches?.('.product-card, .home-catalog-card, .offer-card, .recommendation-card'))
         .slice(0, 4)
         .forEach((node, index) => {
-          node.dataset.motionReveal = 'card';
-          node.style.setProperty('--motion-index', String(index));
+          // Sólo si cambia. Esta recolección corre en cada render del catálogo,
+          // y reescribir el mismo valor es igual una mutación: un cambio de
+          // precio en UNA tarjeta dejaba además cuatro escrituras sobre las
+          // cuatro primeras, que no habían cambiado en nada.
+          if (node.dataset.motionReveal !== 'card') node.dataset.motionReveal = 'card';
+          const order = String(index);
+          if (node.style.getPropertyValue('--motion-index') !== order) node.style.setProperty('--motion-index', order);
           targets.add(node);
         });
     });
   });
 
   // El cambio de cantidad recibe feedback numérico sin animar el layout.
+  // `classList.add` de una clase que ya está igual deja una mutación sobre el
+  // atributo: se pregunta antes, para que un render que no cambió una tarjeta no
+  // la toque.
   documentRef.querySelectorAll('.qty-stepper strong, .quantity-control strong').forEach((node) => {
-    node.classList.add('motion-quantity-pop');
+    if (!node.classList.contains('motion-quantity-pop')) node.classList.add('motion-quantity-pop');
   });
 
   targets.forEach((node) => {
@@ -107,7 +115,7 @@ function markRevealTargets(documentRef, observer, reduced, revealImmediately = f
     // llegan después del primer pintado entran visibles: volver a observarlos
     // reanimaría el contenedor debajo del dedo. El feedback queda en el número.
     if (reduced || revealImmediately || !observer) {
-      node.classList.add('is-motion-visible');
+      if (!node.classList.contains('is-motion-visible')) node.classList.add('is-motion-visible');
       return;
     }
     if (!node.classList.contains('is-motion-visible')) observer.observe(node);

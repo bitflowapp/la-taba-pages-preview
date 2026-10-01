@@ -23,8 +23,10 @@ TABA_FRONTEND_CATALOG_FINAL_REPORT
 REPO:            bitflowapp/la-taba-pages-preview
 WORKTREE:        la-taba-frontend-polish (aislado; ningún otro worktree se tocó)
 BRANCH:          feat/taba-frontend-commercial-polish
+PR:              #131 (borrador, apilado sobre #129; sin conflictos; no fusionado ni desplegado)
 HEAD_INITIAL:    bae464f  (cabeza del PR #129 al empezar)
 HEAD_CODE:       fd54619  (último commit con código; lo que sigue es documentación)
+HEAD_CI:         273c4e8  (fd54619 más documentación y evidencia; corrida 36839761467 en verde)
 BASE:            fix/taba-catalog-runtime-stability (PR #129), fusionada hasta c1dc3aa
 
 CATALOG_TOTAL:               46
@@ -63,7 +65,7 @@ BACKEND_CHANGED:             NO   (SQL, RLS, Edge Functions, máquina de estados
 STAGING_TOUCHED:             NO
 PRODUCTION_TOUCHED:          NO
 
-FRONTEND_READY:              YES, sujeto a CI verde en fd54619 (resultado en el PR)
+FRONTEND_READY:              YES   (CI 36839761467 en verde sobre 273c4e8: 2.832 unitarias, 682 E2E sin reintentos)
 CATALOG_TECHNICALLY_READY:   YES
 COMMERCIAL_CATALOG_READY:    NO
 ```
@@ -82,7 +84,8 @@ COMMERCIAL_CATALOG_READY:    NO
 | `3b171e3` | Cambio en vivo acotado a su tarjeta; título del rubro |
 | `1936e9d` | Corrige dos regresiones propias: orden de la demo y presentación en la vidriera |
 | `fd54619` | Fusiona el commit nuevo del PR #129; caché v136 |
-| siguiente | Documentación y evidencia |
+| `273c4e8` | Documentación y evidencia |
+| siguiente | Correcciones de esta documentación: resultado del CI y tabla de escritorio |
 
 ## Qué cambió para quien compra
 
@@ -157,7 +160,6 @@ Diseño: `animation-design.md`. Videos: `videos/`.
 
 ## Compuertas externas
 
-- CI sobre `fd54619` y sobre el commit de documentación.
 - Revisión y fusión del PR #129.
 - Datos comerciales de Walter.
 - Prueba en dispositivo.

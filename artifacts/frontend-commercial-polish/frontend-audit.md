@@ -40,7 +40,7 @@ molesta · P3 detalle.
 | F-04 | P2 | Buscador | «cocacola», «redbull», «lays», «1 litro», «710 cc», «2.25», «vino tinto» y 17 errores de tipeo devolvían cero | Corregido |
 | F-05 | P2 | Home, carruseles | Una de cada cuatro tarjetas cortaba el nombre a una línea: «Coca-Cola Sin…» al lado de «Coca-Cola» | Corregido, con un límite declarado (ver abajo) |
 | F-06 | P2 | Catálogo, «Todas» | Orden alfabético: un vino, un aperitivo, un agua, una cerveza | Corregido |
-| F-07 | P2 | Buscador | Cada tecla costaba ~100 ms en escritorio y ~380 ms en un teléfono medio | Mejorado (ver abajo) |
+| F-07 | P2 | Buscador | Cada tecla costaba 80–100 ms en escritorio y ~380 ms en un teléfono medio | Mejorado (ver abajo) |
 | F-08 | P3 | Catálogo, tarjeta | «Schweppes Pomelo Sin…» a 390 px; cinco nombres cortados a 360 px | Corregido |
 | F-09 | P3 | Catálogo, tarjeta | Renglón de marca repetido («BRANCA / Fernet Branca»), y esas dos tarjetas 22 px más altas | Corregido |
 | F-10 | P3 | Catálogo, tarjeta | El envase retornable no se decía | Corregido |
@@ -163,8 +163,12 @@ la configuración de despliegue por cada imagen.
 
 | Tecla promedio | Base | Esta rama |
 |---|---:|---:|
-| Escritorio | 103 ms | 68 ms |
 | Teléfono (CPU 4x), mediana de 9 corridas intercaladas | 378 ms | 236 ms |
+| Escritorio, mediana de 6 corridas intercaladas | 80 ms | 75 ms |
+| Escritorio, tanda anterior (6 corridas de base, 3 de la rama) | 98,5 ms | 54 ms |
+
+En el teléfono la mejora es clara. En escritorio va de 6 % a 45 % según la
+tanda: mejora, pero no alcanza para dar un número.
 
 Sigue sin ser instantáneo en un teléfono lento. Lo que queda es el render
 completo por tecla; cambiarlo es rediseñar cómo se suscribe la interfaz al

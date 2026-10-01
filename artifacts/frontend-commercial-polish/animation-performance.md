@@ -1,11 +1,13 @@
 # Performance — antes y después
 
-Fecha: 2026-10-01. Base: `bae464f` (PR #129). Rama medida: `3b171e3`. Los dos
-commits de código posteriores (`1936e9d` y la fusión `fd54619`) agregan sobre eso
-un ordenamiento de 46 elementos por carga de catálogo, un cambio de maqueta en
-13 tarjetas de la home y la limpieza de la nota de la ficha que trae el PR #129.
-La tabla completa no se volvió a medir después: la máquina quedó al 100 % de CPU
-por otros agentes y cualquier número habría sido ruido.
+Fecha: 2026-10-01. Base: `bae464f` (PR #129).
+
+La tabla del teléfono se midió sobre `3b171e3`. Los dos commits de código
+posteriores (`1936e9d` y la fusión `fd54619`) agregan sobre eso un ordenamiento
+de 46 elementos por carga de catálogo, un cambio de maqueta en 13 tarjetas de la
+home y la limpieza de la nota de la ficha que trae el PR #129; esa tabla no se
+repitió después. La tabla de escritorio sí se midió sobre el commit final,
+`273c4e8`.
 
 ## Cómo se midió, y una corrección
 
@@ -56,25 +58,53 @@ Con CPU 4x las tareas largas son muchas en los dos lados: es un teléfono lento
 simulado renderizando 46 tarjetas. Lo que la rama cambia es cuánto de ese tiempo
 se gasta al scrollear.
 
-## Escritorio
+## Escritorio: base contra rama (mediana de 6, rango entre corchetes)
 
-No se midió intercalado. La base es de la primera tanda y la rama de la última,
-así que **estas dos columnas no son comparables entre sí con la misma confianza
-que la tabla del teléfono**. Se dejan como referencia.
+1366 × 768, sin limitar la CPU. Medido sobre el commit final (`273c4e8`), base y
+rama intercaladas, dos rondas de tres corridas por lado.
 
-| Métrica | Base (primera tanda) | Rama (última tanda) |
+| Métrica | Base `bae464f` | Rama `273c4e8` | Lectura |
+|---|---:|---:|---|
+| FPS · scroll del catálogo, 1.ª pasada | 31,0 [21,9 – 34,4] | 46,9 [14,8 – 53] | Mejora. Una corrida de la rama cayó a 14,8 |
+| FPS · scroll del catálogo, 2.ª pasada | 28,3 [1 – 29,3] | 34,1 [20,7 – 59,1] | Mejora, con rangos que se pisan |
+| FPS · scroll de la home | 44,3 [40,7 – 53,9] | 50,2 [17 – 55,5] | Sin cambio medible |
+| LCP | 2.372 ms [1.900 – 3.600] | 2.368 ms [1.740 – 3.356] | Sin cambio |
+| FCP | 276 ms [240 – 692] | 324 ms [220 – 556] | Sin cambio medible |
+| CLS | 0 | 0 | Igual |
+| DOM_NODE_COUNT | 2.726 | 2.738 | +12 |
+| MEMORY (heap JS) | 10,9 MB | 11,6 MB | +0,7 MB |
+| NETWORK_REQUESTS (home) | 165 | 174 | +9: módulos y hoja de campañas |
+| IMAGE_REQUESTS (home) | 34 | 34 | Igual |
+| Bytes de imágenes · catálogo | 468.677 | 468.677 | Igual: a densidad 1 ya bajaba la miniatura |
+| Bytes totales · home | 5.172.980 | 5.278.312 | +105 kB de JS y CSS sin comprimir |
+| LONG_TASKS · catálogo, cantidad | 61,5 [40 – 67] | 15 [9 – 25] | Mejora |
+| LONG_TASKS · catálogo, tiempo | 9.707 ms [9.441 – 20.685] | 4.361 ms [1.255 – 13.522] | −55 % |
+| Tecla del buscador, promedio | 80 ms [74 – 167] | 75 ms [53 – 89] | Mejora leve en esta tanda |
+| Errores de consola | 0 | 0 | Igual |
+
+En escritorio la rama **no ahorra bytes**: suma 105 kB. El ahorro de fotos es del
+teléfono, que era el que bajaba la foto grande.
+
+Hay una segunda tanda intercalada, anterior, que quedó incompleta porque la
+máquina se apagó: seis corridas de la base y tres de la rama. Va en la misma
+dirección, con otra magnitud, y se deja porque muestra cuánto se mueven estos
+números de una hora a otra en esta máquina:
+
+| Métrica | Base (6 corridas) | Rama (3 corridas) |
 |---|---:|---:|
-| FPS · scroll del catálogo | 16,9 | 34,9 [22,3 – 36,9] |
-| FPS · scroll de la home | 32,7 | 44,8 [43,4 – 50] |
-| LCP | 1.984 ms | 2.120 ms [1.856 – 2.548] |
-| CLS | 0 | 0 |
-| LONG_TASKS · catálogo, tiempo | 15.223 ms | 4.004 ms [2.341 – 5.685] |
-| Tecla del buscador, promedio | 103 ms | 68 ms [66 – 69] |
-| Bytes de imágenes · catálogo | 468.677 | 468.677 |
+| FPS · scroll del catálogo, 1.ª pasada | 14,5 [5,5 – 25,7] | 39,7 [20,3 – 43] |
+| LONG_TASKS · catálogo, tiempo | 13.254 ms [9.683 – 26.462] | 2.016 ms [1.926 – 13.297] |
+| Tecla del buscador, promedio | 98,5 ms [81 – 118] | 54 ms [53 – 69] |
+| LCP | 2.256 ms [1.984 – 2.916] | 1.964 ms [1.588 – 2.396] |
 
-Lo que sí se midió intercalado en escritorio es el costo del scroll, que es la
-causa de fondo (F-01 en `frontend-audit.md`): el recálculo de estilo durante el
-recorrido pasó de 1.141 – 1.149 ms a 2 ms.
+Lo que se sostiene en las dos tandas: el scroll del catálogo mejora, las tareas
+largas bajan a menos de la mitad, y el LCP no cambia de forma demostrable. La
+tecla del buscador en escritorio mejora entre 6 % y 45 % según la tanda: no
+alcanza para dar un número.
+
+La causa de fondo del scroll (F-01 en `frontend-audit.md`) se midió aparte y no
+depende de la carga de la máquina: el recálculo de estilo durante el recorrido
+pasó de 1.141 – 1.149 ms a 2 ms.
 
 ## El costo de las campañas
 

@@ -13,7 +13,13 @@ orden: `3b171e3` → `1936e9d` (corrige dos regresiones propias) → `fd54619`
 |---|---|---|
 | `36817855269` | `3b171e3` | **ROJA.** E2E: 38 fallas, 638 pasadas. Unitarias, migraciones y Windows en verde |
 | `36828580674` | `1936e9d` | **VERDE.** Unitarias 2.833 (2.832 pasadas, 1 omitida, 0 fallas). E2E 678 pasadas, 4 omitidas, ninguna necesitó reintento. Migraciones y Windows en verde |
-| `36839210187` | `fd54619` | Despachada al cerrar este documento. El resultado está en el PR |
+| `36839210187` | `fd54619` | **Sin resultado.** Se canceló sola al despachar la corrida siguiente (el flujo cancela la corrida anterior de la misma rama). No cuenta como verde ni como roja |
+| `36839761467` | `273c4e8` | **VERDE.** Unitarias 2.833 (2.832 pasadas, 1 omitida, 0 fallas). E2E 682 pasadas, 4 omitidas, ninguna necesitó reintento. Migraciones y Windows en verde |
+
+`273c4e8` es `fd54619` más la documentación y la evidencia: el código es el
+mismo, así que la última corrida verde cubre la fusión. Las 4 pruebas E2E que
+suma respecto de la corrida anterior son las que trae el commit nuevo del PR
+#129, en los dos motores.
 
 La corrida roja era mía. 36 de las 38 fallas tenían una sola causa (R-01 en
 `frontend-audit.md`): el agrupado por rubro reordenó el catálogo demo y los
@@ -65,8 +71,9 @@ verdes limpios:
 | `catalog-runtime-stability` «Realtime caído», Chromium | Falló 2 veces, pasó 4 | Cuenta lecturas de polling en una ventana de tiempo |
 | `catalog-runtime-stability` «una nueva sesión de ficha…», WebKit | Falló 3 de 3 por tiempo (45 s) | Es una prueba nueva del PR #129. Corrida sobre el commit de ese PR, sin nada de esta rama, falló 1 de 2 con el mismo límite. No depende de esta rama |
 
-Ninguna se da por buena acá: las tres quedan a cargo de la corrida de CI sobre
-`fd54619`, que corre en una máquina sin carga.
+Ninguna se dio por buena con esas corridas locales: quedaron a cargo del CI, que
+corre en una máquina sin carga. En la corrida `36839761467` las tres pasaron al
+primer intento, igual que el resto del E2E.
 
 ## Estrés de 5 minutos, sobre `1936e9d`
 

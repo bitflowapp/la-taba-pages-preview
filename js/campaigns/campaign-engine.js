@@ -45,7 +45,7 @@ export const ALCOHOL_LEGAL_NOTICE = 'Beber con moderación. Prohibida su venta a
  * popularidad sin dato son invención. Es la misma regla que ya protege al hero
  * de la home, escrita una sola vez.
  */
-const FORBIDDEN_COPY = /\$|%|\b(?:descuent|ofert|promo|rebaj|liquidaci|gratis|ahorr|imperdible|ultimas? unidades|por tiempo limitado|mas vendid|mejor precio|antes\b|\d+\s*x\s*\d+)/i;
+const FORBIDDEN_COPY = /\$|%|\b(?:descuent|ofert|promo|rebaj|liquidaci|gratis|ahorr|imperdible|ultimas? unidades|por tiempo limitado|mas vendid|mejor precio|sorte|premio|antes\b|\d+\s*x\s*\d+)/i;
 
 const GRID_PIECE_AFTER = 4;
 const GRID_PIECE_MIN_PRODUCTS = 8;

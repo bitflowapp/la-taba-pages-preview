@@ -37,9 +37,26 @@ function durationOf(root, windowRef) {
   return (Number.isFinite(seconds) ? seconds : 5) * 1000;
 }
 
+const INERT = Object.freeze({ refresh() {}, destroy() {}, getDiagnostics: () => ({ active: false }) });
+
+/**
+ * Si el movimiento no puede arrancar, la tienda sigue: las piezas quedan en su
+ * cuadro final, que es contenido completo. Una animación nunca decide si la
+ * tienda abre.
+ */
 export function initCampaignMotion(documentRef = globalThis.document, windowRef = globalThis.window) {
+  try {
+    return startCampaignMotion(documentRef, windowRef);
+  } catch (error) {
+    activeController = null;
+    globalThis.console?.warn?.('[TABA] las campañas quedan sin animación', error);
+    return INERT;
+  }
+}
+
+function startCampaignMotion(documentRef, windowRef) {
   activeController?.destroy();
-  const inert = { refresh() {}, destroy() {}, getDiagnostics: () => ({ active: false }) };
+  const inert = INERT;
   if (!documentRef?.body || !windowRef) return inert;
 
   const reducedQuery = windowRef.matchMedia?.('(prefers-reduced-motion: reduce)') || null;

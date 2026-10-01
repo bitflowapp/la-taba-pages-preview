@@ -1,0 +1,60 @@
+{
+  "runId": "TABA_E2E_CERT_20261001014914",
+  "product": {
+    "id": "27f606da-afb6-4369-8a85-72a171083c1f",
+    "sku": "STG-009",
+    "name": "Villavicencio",
+    "price": "2400.00",
+    "price_status": "confirmed",
+    "stock": 40,
+    "available": true,
+    "merchant_available": true,
+    "is_active": true,
+    "is_verified": true,
+    "is_alcoholic": false,
+    "catalog_origin": "commercial",
+    "updated_at": "2026-10-01 01:06:06.48013+00",
+    "inventory_movements": 2,
+    "active_reservations": 0,
+    "units_in_open_orders": 0
+  },
+  "catalogFingerprint": {
+    "fp": "1c151576c3b5ff1bd175f04798c7fd5d",
+    "n": 12
+  },
+  "stagingStateBefore": {
+    "orders": 62,
+    "open_orders": 7,
+    "pending_offers": 0,
+    "print_jobs": 0,
+    "fiscal_documents": 0,
+    "payment_intents": 32,
+    "riders": [
+      {
+        "rider": "8d77e57b-fd9b-49bb-8023-9b3c699d35b9",
+        "available": false,
+        "version": 2
+      },
+      {
+        "rider": "e9b381ad-8287-430e-b53d-caa4f55637cd",
+        "available": false,
+        "version": 10
+      },
+      {
+        "rider": "c9e5e490-ac76-43ab-be20-afba6cfe35fc",
+        "available": false,
+        "version": 2
+      },
+      {
+        "rider": "b46bc1cd-abfc-4a4a-9952-3ac9287d1bae",
+        "available": false,
+        "version": 8
+      },
+      {
+        "rider": "7ce18ab7-a8aa-4e5d-a77c-4a9db3e8a599",
+        "available": false,
+        "version": 25
+      }
+    ]
+  }
+}

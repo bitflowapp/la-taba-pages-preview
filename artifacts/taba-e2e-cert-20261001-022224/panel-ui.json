@@ -1,0 +1,38 @@
+{
+  "contract": "Panel real en navegador: ingreso por formulario + tarjeta del mismo ORDER_ID",
+  "orderId": "10131d32-78e3-45ab-a76a-6c3569e7ab56",
+  "publicCode": "LT-0074",
+  "results": [
+    {
+      "label": "current-build-local",
+      "url": "http://127.0.0.1:<port>/",
+      "build": {
+        "commit": "135818892414f5cc17d7adacd6069eec86602381",
+        "runtime": "la-taba-runtime-v131-premium-motion",
+        "builtAt": "2026-10-01T01:25:11.211Z"
+      },
+      "result": "PASS",
+      "signedInThroughForm": true,
+      "cardFound": true,
+      "cardShowsPublicCode": true,
+      "cardText": "LT-0074 hace 2 min 23:24 Preparando DELIVERY QA Certificacion E2E 3× Villavicencio $ 8.400 Efectivo al recibir Cobro pendiente Ver cobros ESTADO FISCAL NO DISPONIBLE Calle Certificacion 901, Neuquén Capital Observaciones: TABA_E2E_CERT_20261001022224 QA certificacion backend staging no despachar Iniciar preparación 2995550901 WhatsApp Ver pedido completo 3 u.",
+      "screenshot": "panel-ui-current-build-local.png",
+      "signedOut": true,
+      "jsErrors": []
+    },
+    {
+      "label": "deployed-staging",
+      "url": "https://taba2-staging.pages.dev/",
+      "build": null,
+      "result": "PASS",
+      "signedInThroughForm": true,
+      "cardFound": true,
+      "cardShowsPublicCode": true,
+      "cardText": "LT-0074 hace 3 min 23:24 Preparando DELIVERY QA Certificacion E2E 3× Villavicencio $ 8.400 Efectivo al recibir Cobro pendiente Ver cobros Calle Certificacion 901, Neuquén Capital Observaciones: TABA_E2E_CERT_20261001022224 QA certificacion backend staging no despachar Iniciar preparación 2995550901 WhatsApp Ver pedido completo 3 u.",
+      "screenshot": "panel-ui-deployed-staging.png",
+      "signedOut": true,
+      "jsErrors": []
+    }
+  ],
+  "panelSessionsLeftOpen": 0
+}

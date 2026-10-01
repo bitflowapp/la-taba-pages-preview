@@ -1,0 +1,190 @@
+[
+  {
+    "phase": "P16_CLEANUP",
+    "name": "ALL_RUN_ORDERS_TERMINAL_AND_QA",
+    "result": "PASS",
+    "expected": null,
+    "observed": [
+      {
+        "id": "725af38e-23c7-44d3-90d9-791bcab4cf40",
+        "code": "LT-0058",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      },
+      {
+        "id": "19a4a972-f704-41d0-a32d-54d7a1113909",
+        "code": "LT-0061",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      },
+      {
+        "id": "62bd88ed-2ade-4071-a9d6-8533edd4e5db",
+        "code": "LT-0059",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      },
+      {
+        "id": "61c74d72-0f99-41da-af4d-b1cd5938ff1a",
+        "code": "LT-0060",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      },
+      {
+        "id": "0c6f661d-2b22-44d3-a1f2-0e560fae07ea",
+        "code": "LT-0057",
+        "status": "delivered",
+        "origin": "qa",
+        "manual_payment": "reversed"
+      },
+      {
+        "id": "4736cd1c-d9b5-40a1-b05f-d60c5b537796",
+        "code": "LT-0062",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      }
+    ],
+    "at": "2026-10-01T01:44:17.216Z"
+  },
+  {
+    "phase": "P16_CLEANUP",
+    "name": "NO_PENDING_OFFERS_NOTIFICATIONS_RESERVATIONS",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "offers": 0,
+      "notifications": 0,
+      "reservations": 0
+    },
+    "at": "2026-10-01T01:44:17.217Z"
+  },
+  {
+    "phase": "P16_CLEANUP",
+    "name": "TEST_USERS_AND_BUSINESS_B_DELETED",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "users": 0,
+      "businesses": 0
+    },
+    "at": "2026-10-01T01:44:17.217Z"
+  },
+  {
+    "phase": "P16_CLEANUP",
+    "name": "CUSTOMER_DELETION_KEEPS_ORDERS_AND_DELIVERY_POINT",
+    "result": "PASS",
+    "expected": null,
+    "observed": [
+      {
+        "public_code": "LT-0058",
+        "delivery_mode": "pickup",
+        "unlinked": true,
+        "address_unlinked": true,
+        "point_kept": true
+      },
+      {
+        "public_code": "LT-0061",
+        "delivery_mode": "pickup",
+        "unlinked": true,
+        "address_unlinked": true,
+        "point_kept": true
+      },
+      {
+        "public_code": "LT-0059",
+        "delivery_mode": "pickup",
+        "unlinked": true,
+        "address_unlinked": true,
+        "point_kept": true
+      },
+      {
+        "public_code": "LT-0060",
+        "delivery_mode": "pickup",
+        "unlinked": true,
+        "address_unlinked": true,
+        "point_kept": true
+      },
+      {
+        "public_code": "LT-0057",
+        "delivery_mode": "delivery",
+        "unlinked": true,
+        "address_unlinked": true,
+        "point_kept": true
+      },
+      {
+        "public_code": "LT-0062",
+        "delivery_mode": "pickup",
+        "unlinked": true,
+        "address_unlinked": true,
+        "point_kept": true
+      }
+    ],
+    "at": "2026-10-01T01:44:18.502Z"
+  },
+  {
+    "phase": "P16_CLEANUP",
+    "name": "NO_OPEN_RUN_SESSIONS",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "open": 0
+    },
+    "at": "2026-10-01T01:44:18.502Z"
+  },
+  {
+    "phase": "P16_CLEANUP",
+    "name": "NO_ORPHAN_EVENTS_OR_GPS",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "orphanEvents": 0,
+      "gps": 0
+    },
+    "at": "2026-10-01T01:44:18.502Z"
+  },
+  {
+    "phase": "P16_CLEANUP",
+    "name": "NO_RIDER_LEFT_AVAILABLE",
+    "result": "PASS",
+    "expected": null,
+    "observed": [
+      {
+        "rider": "8d77e57b-fd9b-49bb-8023-9b3c699d35b9",
+        "available": false,
+        "version": 2
+      },
+      {
+        "rider": "e9b381ad-8287-430e-b53d-caa4f55637cd",
+        "available": false,
+        "version": 10
+      },
+      {
+        "rider": "c9e5e490-ac76-43ab-be20-afba6cfe35fc",
+        "available": false,
+        "version": 2
+      },
+      {
+        "rider": "b46bc1cd-abfc-4a4a-9952-3ac9287d1bae",
+        "available": false,
+        "version": 8
+      },
+      {
+        "rider": "7ce18ab7-a8aa-4e5d-a77c-4a9db3e8a599",
+        "available": false,
+        "version": 25
+      }
+    ],
+    "at": "2026-10-01T01:44:18.502Z"
+  },
+  {
+    "phase": "P16_CLEANUP",
+    "name": "CLEANUP_STEPS_ALL_OK",
+    "result": "PASS",
+    "expected": null,
+    "observed": [],
+    "at": "2026-10-01T01:44:18.502Z"
+  }
+]

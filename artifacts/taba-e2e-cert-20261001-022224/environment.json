@@ -1,0 +1,135 @@
+{
+  "runId": "TABA_E2E_CERT_20261001022224",
+  "at": "2026-10-01T02:23:07.651Z",
+  "environment": "STAGING",
+  "project": {
+    "ref": "ucbtjcurawxjwjdvvcvj",
+    "name": "la-taba-staging",
+    "region": "sa-east-1",
+    "status": "ACTIVE_HEALTHY",
+    "createdAt": "2026-09-18T00:49:19.209929Z",
+    "organization": "qdhfqytbvgpvhxbbcomv"
+  },
+  "apiUrl": "https://ucbtjcurawxjwjdvvcvj.supabase.co",
+  "web": {
+    "url": "https://taba2-staging.pages.dev",
+    "runtimeConfig": {
+      "provider": "supabase",
+      "deploymentEnvironment": "staging",
+      "supabaseUrl": "https://ucbtjcurawxjwjdvvcvj.supabase.co",
+      "publishableKey": "<public key of this project (verified via Management API)>",
+      "businessId": "a57b1c20-0f4e-4a6b-9d31-7c2e5f8a41d0",
+      "pollMs": 5000
+    },
+    "build": "la-taba-runtime-v114-commercial-pilot"
+  },
+  "database": {
+    "observer": "supabase_read_only_user",
+    "server": "PostgreSQL 17.6 on x86_64-pc-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit",
+    "migrations": 158,
+    "head": "20261001010000",
+    "ledgerEqualsRepo": true
+  },
+  "business": {
+    "id": "a57b1c20-0f4e-4a6b-9d31-7c2e5f8a41d0",
+    "slug": "la-taba-staging",
+    "name": "La Taba (STAGING)",
+    "status": "open",
+    "is_active": true,
+    "ordering_enabled": true,
+    "ordering_verified": true,
+    "delivery_enabled": true,
+    "pickup_enabled": true,
+    "hours_enforced": true,
+    "delivery_zone_enforced": true,
+    "minimum_delivery_subtotal": 6000,
+    "delivery_fee": 1200,
+    "rider_presence_required": true,
+    "qa_fixture": false
+  },
+  "edgeFunctions": [
+    {
+      "slug": "mercadopago-webhook",
+      "version": 10,
+      "verify_jwt": false,
+      "updated_at": 1790379012190
+    },
+    {
+      "slug": "mercadopago-create-preference",
+      "version": 11,
+      "verify_jwt": false,
+      "updated_at": 1790379012190
+    },
+    {
+      "slug": "mercadopago-create-checkout-session",
+      "version": 9,
+      "verify_jwt": false,
+      "updated_at": 1790379012190
+    },
+    {
+      "slug": "mercadopago-checkout-status",
+      "version": 9,
+      "verify_jwt": false,
+      "updated_at": 1790379012190
+    },
+    {
+      "slug": "mercadopago-payment-worker",
+      "version": 9,
+      "verify_jwt": false,
+      "updated_at": 1790379012190
+    },
+    {
+      "slug": "mercadopago-refund",
+      "version": 10,
+      "verify_jwt": true,
+      "updated_at": 1790379012190
+    },
+    {
+      "slug": "mercadopago-cancel-payment",
+      "version": 10,
+      "verify_jwt": true,
+      "updated_at": 1790379012190
+    },
+    {
+      "slug": "mercadopago-connect",
+      "version": 10,
+      "verify_jwt": false,
+      "updated_at": 1790379012190
+    },
+    {
+      "slug": "mercadopago-oauth-callback",
+      "version": 10,
+      "verify_jwt": false,
+      "updated_at": 1790379012190
+    },
+    {
+      "slug": "fiscal-artifact-access",
+      "version": 6,
+      "verify_jwt": false,
+      "updated_at": 1789693501687
+    }
+  ],
+  "repoEdgeFunctions": [
+    "catalog-image-manager",
+    "fiscal-artifact-access",
+    "mercadopago-cancel-payment",
+    "mercadopago-checkout-status",
+    "mercadopago-connect",
+    "mercadopago-create-checkout-session",
+    "mercadopago-create-preference",
+    "mercadopago-oauth-callback",
+    "mercadopago-payment-worker",
+    "mercadopago-refund",
+    "mercadopago-webhook",
+    "print-agent-gateway",
+    "team-invitation"
+  ],
+  "forbiddenRefs": [
+    "tkanbadcglszlcyfjvpv",
+    "wwcpogltfgzgkrlilbcd",
+    "yakhtrkukqlgzvxuvhzs",
+    "ygqbcvxdrewcnzedfcyo",
+    "enznqfzhikpasjzpvjfd"
+  ],
+  "productSku": "STG-009"
+}

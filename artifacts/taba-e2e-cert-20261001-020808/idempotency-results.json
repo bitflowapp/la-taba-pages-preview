@@ -1,0 +1,225 @@
+{
+  "replay": {
+    "ok": true,
+    "status": 200,
+    "sameId": true,
+    "ms": 423
+  },
+  "concurrentReplays": [
+    {
+      "status": 200,
+      "ms": 865,
+      "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "code": null
+    },
+    {
+      "status": 200,
+      "ms": 1073,
+      "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "code": null
+    },
+    {
+      "status": 200,
+      "ms": 1325,
+      "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "code": null
+    },
+    {
+      "status": 200,
+      "ms": 1345,
+      "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "code": null
+    },
+    {
+      "status": 200,
+      "ms": 1324,
+      "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "code": null
+    },
+    {
+      "status": 200,
+      "ms": 1062,
+      "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "code": null
+    },
+    {
+      "status": 200,
+      "ms": 1352,
+      "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "code": null
+    },
+    {
+      "status": 200,
+      "ms": 1107,
+      "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "code": null
+    },
+    {
+      "status": 200,
+      "ms": 1025,
+      "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "code": null
+    },
+    {
+      "status": 200,
+      "ms": 1340,
+      "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "code": null
+    },
+    {
+      "status": 200,
+      "ms": 1385,
+      "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "code": null
+    },
+    {
+      "status": 200,
+      "ms": 1329,
+      "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "code": null
+    },
+    {
+      "status": 200,
+      "ms": 1346,
+      "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "code": null
+    },
+    {
+      "status": 200,
+      "ms": 1365,
+      "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "code": null
+    },
+    {
+      "status": 200,
+      "ms": 1383,
+      "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "code": null
+    },
+    {
+      "status": 200,
+      "ms": 1381,
+      "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "code": null
+    },
+    {
+      "status": 200,
+      "ms": 1381,
+      "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "code": null
+    },
+    {
+      "status": 200,
+      "ms": 1306,
+      "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "code": null
+    },
+    {
+      "status": 200,
+      "ms": 1382,
+      "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "code": null
+    },
+    {
+      "status": 200,
+      "ms": 1299,
+      "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+      "code": null
+    }
+  ],
+  "races": [
+    {
+      "n": 2,
+      "statuses": [
+        200,
+        200
+      ],
+      "latenciesMs": [
+        361,
+        366
+      ],
+      "distinctIds": 1,
+      "dbOrders": 1,
+      "stockPre": 37,
+      "stockPost": 36,
+      "receivedEvents": 1,
+      "codes": []
+    },
+    {
+      "n": 5,
+      "statuses": [
+        200,
+        200,
+        200,
+        200,
+        200
+      ],
+      "latenciesMs": [
+        396,
+        400,
+        427,
+        390,
+        399
+      ],
+      "distinctIds": 1,
+      "dbOrders": 1,
+      "stockPre": 36,
+      "stockPost": 35,
+      "receivedEvents": 1,
+      "codes": []
+    },
+    {
+      "n": 20,
+      "statuses": [
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200
+      ],
+      "latenciesMs": [
+        285,
+        285,
+        284,
+        284,
+        291,
+        330,
+        333,
+        283,
+        304,
+        310,
+        326,
+        306,
+        369,
+        342,
+        354,
+        303,
+        371,
+        309,
+        320,
+        371
+      ],
+      "distinctIds": 1,
+      "dbOrders": 1,
+      "stockPre": 35,
+      "stockPost": 34,
+      "receivedEvents": 1,
+      "codes": []
+    }
+  ]
+}

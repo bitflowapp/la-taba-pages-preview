@@ -1,0 +1,522 @@
+{
+  "orderId": "10131d32-78e3-45ab-a76a-6c3569e7ab56",
+  "transitions": [
+    {
+      "at": "2026-10-01T02:25:54.211Z",
+      "phase": "P11_LOST_RESPONSE",
+      "op": "transition_order",
+      "actor": "staff",
+      "requested": "accepted",
+      "expectedRevision": 3,
+      "before": {
+        "status": "received",
+        "revision": 4
+      },
+      "response": {
+        "ok": false,
+        "http": 409,
+        "code": "PT409",
+        "ms": 731
+      },
+      "after": {
+        "status": "received",
+        "revision": 4
+      }
+    },
+    {
+      "at": "2026-10-01T02:25:58.961Z",
+      "phase": "P6_STATE_MACHINE",
+      "op": "transition_order (concurrent x2)",
+      "actor": "staff+owner",
+      "requested": "accepted",
+      "expectedRevision": 4,
+      "before": {
+        "status": "received",
+        "revision": 4
+      },
+      "response": {
+        "staff": {
+          "http": 200,
+          "code": null,
+          "ms": 201
+        },
+        "owner": {
+          "http": 409,
+          "code": "PT409",
+          "ms": 632
+        },
+        "after": {
+          "status": "accepted",
+          "revision": 5,
+          "assigned_rider_user_id": null,
+          "manual_payment_status": "pending",
+          "origin": "production",
+          "inventory_released_at": null
+        },
+        "acceptedEvents": 1
+      },
+      "after": {
+        "status": "accepted",
+        "revision": 5
+      }
+    },
+    {
+      "at": "2026-10-01T02:26:02.163Z",
+      "phase": "P10_IDEMPOTENCY",
+      "op": "transition_order",
+      "actor": "staff",
+      "requested": "accepted",
+      "expectedRevision": 4,
+      "before": {
+        "status": "accepted",
+        "revision": 5
+      },
+      "response": {
+        "ok": true,
+        "http": 200,
+        "code": null,
+        "idempotent_replay": true,
+        "idempotent_no_op": false,
+        "ms": 509
+      },
+      "after": {
+        "status": "accepted",
+        "revision": 5
+      }
+    },
+    {
+      "at": "2026-10-01T02:26:09.232Z",
+      "phase": "P15_NEGATIVE",
+      "op": "transition_order",
+      "actor": "staff",
+      "requested": "preparing",
+      "expectedRevision": 5,
+      "before": {
+        "status": "accepted",
+        "revision": 5
+      },
+      "response": {
+        "ok": false,
+        "http": 409,
+        "code": "23505",
+        "ms": 490
+      },
+      "after": {
+        "status": "accepted",
+        "revision": 5
+      }
+    },
+    {
+      "at": "2026-10-01T02:26:12.407Z",
+      "phase": "P15_NEGATIVE",
+      "op": "transition_order",
+      "actor": "staff",
+      "requested": "accepted",
+      "expectedRevision": 5,
+      "before": {
+        "status": "accepted",
+        "revision": 5
+      },
+      "response": {
+        "ok": true,
+        "http": 200,
+        "code": null,
+        "idempotent_replay": false,
+        "idempotent_no_op": true,
+        "ms": 421
+      },
+      "after": {
+        "status": "accepted",
+        "revision": 5
+      }
+    },
+    {
+      "at": "2026-10-01T02:28:28.317Z",
+      "phase": "P6_STATE_MACHINE",
+      "op": "transition_order (response lost + retry same key)",
+      "actor": "staff",
+      "requested": "preparing",
+      "expectedRevision": 5,
+      "before": {
+        "status": "accepted",
+        "revision": 5
+      },
+      "response": {
+        "mode": "network-abort-before-response",
+        "attempts": [
+          {
+            "abortAfterMs": 60,
+            "clientSawResponse": false,
+            "clientAborted": true,
+            "serverApplied": false
+          },
+          {
+            "abortAfterMs": 120,
+            "clientSawResponse": false,
+            "clientAborted": true,
+            "serverApplied": false
+          },
+          {
+            "abortAfterMs": 250,
+            "clientSawResponse": false,
+            "clientAborted": true,
+            "serverApplied": false
+          },
+          {
+            "abortAfterMs": 500,
+            "clientSawResponse": false,
+            "clientAborted": true,
+            "serverApplied": true
+          }
+        ],
+        "dropped": null,
+        "retry": {
+          "http": 200,
+          "code": null,
+          "idempotent_replay": true
+        },
+        "after": {
+          "status": "preparing",
+          "revision": 6,
+          "assigned_rider_user_id": null,
+          "manual_payment_status": "pending",
+          "origin": "production",
+          "inventory_released_at": null
+        },
+        "preparingEvents": 1
+      },
+      "after": {
+        "status": "preparing",
+        "revision": 6
+      }
+    },
+    {
+      "at": "2026-10-01T02:28:34.701Z",
+      "phase": "P6_STATE_MACHINE",
+      "op": "transition_order",
+      "actor": "staff",
+      "requested": "ready",
+      "expectedRevision": 6,
+      "before": {
+        "status": "preparing",
+        "revision": 6
+      },
+      "response": {
+        "ok": true,
+        "http": 200,
+        "code": null,
+        "idempotent_replay": false,
+        "idempotent_no_op": false,
+        "ms": 267
+      },
+      "after": {
+        "status": "ready",
+        "revision": 7
+      }
+    },
+    {
+      "at": "2026-10-01T02:28:39.082Z",
+      "phase": "P15_NEGATIVE",
+      "op": "transition_order",
+      "actor": "staff",
+      "requested": "shipped",
+      "expectedRevision": 7,
+      "before": {
+        "status": "ready",
+        "revision": 7
+      },
+      "response": {
+        "ok": false,
+        "http": 400,
+        "code": "22023",
+        "ms": 604
+      },
+      "after": {
+        "status": "ready",
+        "revision": 7
+      }
+    },
+    {
+      "at": "2026-10-01T02:28:41.783Z",
+      "phase": "P15_NEGATIVE",
+      "op": "transition_order",
+      "actor": "staff",
+      "requested": "delivered",
+      "expectedRevision": 7,
+      "before": {
+        "status": "ready",
+        "revision": 7
+      },
+      "response": {
+        "ok": false,
+        "http": 400,
+        "code": "23514",
+        "ms": 111
+      },
+      "after": {
+        "status": "ready",
+        "revision": 7
+      }
+    },
+    {
+      "at": "2026-10-01T02:28:44.371Z",
+      "phase": "P15_NEGATIVE",
+      "op": "transition_order",
+      "actor": "staff",
+      "requested": "assigned",
+      "expectedRevision": 7,
+      "before": {
+        "status": "ready",
+        "revision": 7
+      },
+      "response": {
+        "ok": false,
+        "http": 400,
+        "code": "23514",
+        "ms": 112
+      },
+      "after": {
+        "status": "ready",
+        "revision": 7
+      }
+    },
+    {
+      "at": "2026-10-01T02:28:47.185Z",
+      "phase": "P15_NEGATIVE",
+      "op": "transition_order",
+      "actor": "staff",
+      "requested": "preparing",
+      "expectedRevision": 7,
+      "before": {
+        "status": "ready",
+        "revision": 7
+      },
+      "response": {
+        "ok": false,
+        "http": 400,
+        "code": "23514",
+        "ms": 127
+      },
+      "after": {
+        "status": "ready",
+        "revision": 7
+      }
+    },
+    {
+      "at": "2026-10-01T02:28:49.677Z",
+      "phase": "P15_NEGATIVE",
+      "op": "transition_order",
+      "actor": "customer-A-main",
+      "requested": "accepted",
+      "expectedRevision": 7,
+      "before": {
+        "status": "ready",
+        "revision": 7
+      },
+      "response": {
+        "ok": false,
+        "http": 403,
+        "code": "42501",
+        "ms": 111
+      },
+      "after": {
+        "status": "ready",
+        "revision": 7
+      }
+    },
+    {
+      "at": "2026-10-01T02:28:52.324Z",
+      "phase": "P15_NEGATIVE",
+      "op": "transition_order",
+      "actor": "rider2",
+      "requested": "assigned",
+      "expectedRevision": 7,
+      "before": {
+        "status": "ready",
+        "revision": 7
+      },
+      "response": {
+        "ok": false,
+        "http": 403,
+        "code": "42501",
+        "ms": 106
+      },
+      "after": {
+        "status": "ready",
+        "revision": 7
+      }
+    },
+    {
+      "at": "2026-10-01T02:28:55.903Z",
+      "phase": "P7_RIDER",
+      "op": "offer_order_to_rider",
+      "actor": "staff",
+      "requested": "offer->rider1",
+      "expectedRevision": 7,
+      "before": {
+        "status": "ready",
+        "revision": 7
+      },
+      "response": {
+        "ok": true,
+        "code": "offered",
+        "offer_id": "b2ced032-2bc3-4e4c-bef2-316549a52fc5",
+        "version": 1
+      },
+      "after": {
+        "status": "ready",
+        "revision": 7,
+        "assigned_rider_user_id": null,
+        "manual_payment_status": "pending",
+        "origin": "production",
+        "inventory_released_at": null
+      }
+    },
+    {
+      "at": "2026-10-01T02:28:58.876Z",
+      "phase": "P7_RIDER",
+      "op": "accept_rider_order_offer",
+      "actor": "rider1",
+      "requested": "assigned",
+      "expectedRevision": 1,
+      "before": {
+        "status": "ready"
+      },
+      "response": {
+        "ok": true,
+        "code": "accepted"
+      },
+      "after": {
+        "status": "assigned",
+        "revision": 8
+      }
+    },
+    {
+      "at": "2026-10-01T02:29:13.392Z",
+      "phase": "P7_RIDER",
+      "op": "mark_delivery_picked_up",
+      "actor": "rider1",
+      "requested": "picked_up",
+      "expectedRevision": 8,
+      "before": {
+        "status": "assigned",
+        "revision": 8
+      },
+      "response": {
+        "ok": true,
+        "code": "picked_up",
+        "ms": 137
+      },
+      "after": {
+        "status": "picked_up",
+        "revision": 9
+      }
+    },
+    {
+      "at": "2026-10-01T02:29:17.348Z",
+      "phase": "P7_RIDER",
+      "op": "start_rider_delivery",
+      "actor": "rider1",
+      "requested": "on_the_way",
+      "expectedRevision": 9,
+      "before": {
+        "status": "picked_up",
+        "revision": 9
+      },
+      "response": {
+        "ok": true,
+        "code": "route_started",
+        "ms": 123
+      },
+      "after": {
+        "status": "on_the_way",
+        "revision": 10
+      }
+    },
+    {
+      "at": "2026-10-01T02:29:22.880Z",
+      "phase": "P7_RIDER",
+      "op": "mark_rider_arrived",
+      "actor": "rider1",
+      "requested": "arrived",
+      "expectedRevision": 10,
+      "before": {
+        "status": "on_the_way",
+        "revision": 10
+      },
+      "response": {
+        "ok": true,
+        "code": "arrived",
+        "ms": 127
+      },
+      "after": {
+        "status": "arrived",
+        "revision": 11
+      }
+    },
+    {
+      "at": "2026-10-01T02:29:38.411Z",
+      "phase": "P15_NEGATIVE",
+      "op": "transition_order",
+      "actor": "staff",
+      "requested": "delivered",
+      "expectedRevision": 11,
+      "before": {
+        "status": "arrived",
+        "revision": 11
+      },
+      "response": {
+        "ok": false,
+        "http": 400,
+        "code": "23514",
+        "ms": 282
+      },
+      "after": {
+        "status": "arrived",
+        "revision": 11
+      }
+    },
+    {
+      "at": "2026-10-01T02:29:41.543Z",
+      "phase": "P9_DELIVERY_CODE",
+      "op": "confirm_delivery_code",
+      "actor": "rider1",
+      "requested": "delivered",
+      "expectedRevision": 11,
+      "before": {
+        "status": "arrived",
+        "revision": 11
+      },
+      "response": {
+        "ok": true,
+        "outcome": "confirmed"
+      },
+      "after": {
+        "status": "delivered",
+        "revision": 12
+      }
+    },
+    {
+      "at": "2026-10-01T02:29:49.600Z",
+      "phase": "P15_NEGATIVE",
+      "op": "transition_order",
+      "actor": "staff",
+      "requested": "preparing",
+      "expectedRevision": 12,
+      "before": {
+        "status": "delivered",
+        "revision": 12
+      },
+      "response": {
+        "ok": false,
+        "http": 400,
+        "code": "23514",
+        "ms": 122
+      },
+      "after": {
+        "status": "delivered",
+        "revision": 12
+      }
+    }
+  ]
+}

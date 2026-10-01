@@ -1,0 +1,137 @@
+{
+  "staleRevision": [
+    {
+      "op": "transition_order",
+      "http": 409,
+      "code": "PT409",
+      "ms": 731
+    },
+    {
+      "op": "mark_delivery_picked_up",
+      "ok": true,
+      "code": "stale_revision",
+      "ms": 157
+    }
+  ],
+  "doubleAccept": {
+    "staff": {
+      "http": 200,
+      "code": null,
+      "ms": 201
+    },
+    "owner": {
+      "http": 409,
+      "code": "PT409",
+      "ms": 632
+    },
+    "after": {
+      "status": "accepted",
+      "revision": 5,
+      "assigned_rider_user_id": null,
+      "manual_payment_status": "pending",
+      "origin": "production",
+      "inventory_released_at": null
+    },
+    "acceptedEvents": 1
+  },
+  "raceAcceptVsCancel": {
+    "accept": {
+      "http": 409,
+      "code": "PT409",
+      "ms": 212
+    },
+    "cancel": {
+      "http": 200,
+      "code": null,
+      "ms": 206
+    },
+    "winner": "cancel",
+    "final": {
+      "status": "cancelled",
+      "revision": 4,
+      "assigned_rider_user_id": null,
+      "manual_payment_status": "pending",
+      "origin": "production",
+      "inventory_released_at": "2026-10-01 02:31:01.30444+00"
+    },
+    "stockPre": 36,
+    "stockPost": 37
+  },
+  "lostResponse": {
+    "caseA": {
+      "attempts": [
+        {
+          "abortAfterMs": 60,
+          "clientSawResponse": false,
+          "clientAborted": true,
+          "serverProcessed": false
+        },
+        {
+          "abortAfterMs": 120,
+          "clientSawResponse": false,
+          "clientAborted": true,
+          "serverProcessed": false
+        },
+        {
+          "abortAfterMs": 250,
+          "clientSawResponse": false,
+          "clientAborted": true,
+          "serverProcessed": true
+        }
+      ],
+      "dropped": null,
+      "retry": {
+        "status": 200,
+        "sameId": true
+      },
+      "dbOrders": 1,
+      "stockPre": 34,
+      "stockPost": 33,
+      "mode": "network-abort-before-response"
+    },
+    "caseB": {
+      "mode": "network-abort-before-response",
+      "attempts": [
+        {
+          "abortAfterMs": 60,
+          "clientSawResponse": false,
+          "clientAborted": true,
+          "serverApplied": false
+        },
+        {
+          "abortAfterMs": 120,
+          "clientSawResponse": false,
+          "clientAborted": true,
+          "serverApplied": false
+        },
+        {
+          "abortAfterMs": 250,
+          "clientSawResponse": false,
+          "clientAborted": true,
+          "serverApplied": false
+        },
+        {
+          "abortAfterMs": 500,
+          "clientSawResponse": false,
+          "clientAborted": true,
+          "serverApplied": true
+        }
+      ],
+      "dropped": null,
+      "retry": {
+        "http": 200,
+        "code": null,
+        "idempotent_replay": true
+      },
+      "after": {
+        "status": "preparing",
+        "revision": 6,
+        "assigned_rider_user_id": null,
+        "manual_payment_status": "pending",
+        "origin": "production",
+        "inventory_released_at": null
+      },
+      "preparingEvents": 1
+    }
+  }
+}

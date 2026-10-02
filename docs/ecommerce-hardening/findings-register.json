@@ -66,7 +66,7 @@
       "title": "A non-2xx on the merchant-order lookup turns a legitimate approved payment into a permanent security review with no recovery or refund path",
       "status": "fixed",
       "fixed_by": "5d0c366 (the failed read no longer records an empty preference) · 12f79b8 · 18dcb08 (a charge in review can be recovered into an order or refunded)",
-      "notes": "Database half landed in 18dcb08 (an approved payment parked in security review without an order can be refunded). Still open: fetchMerchantOrder must throw on a non-2xx so the false preference_mismatch is never produced (Edge Function change pending). Residuals, by decision: a payment that has neither an order id nor a preference id is still recorded with an empty preference and goes to manual review (now with a recovery and a refund path); a permanent merchant-order failure (404) retries to dead_letter, which raises the CRITICAL queue alert, instead of going to manual review. Provider simulated: not exercised against real Mercado Pago.",
+      "notes": "Closed in two halves. Database (18dcb08): an approved payment parked in security review without an order can be recovered into an order or refunded. Edge (5d0c366): a failed merchant-order read raises instead of recording an empty preference, so the false preference_mismatch is no longer produced. Residuals, by decision: a payment that has neither an order id nor a preference id is still recorded with an empty preference and goes to manual review (now with a recovery and a refund path); a permanent merchant-order failure (404) retries to dead_letter, which raises the CRITICAL queue alert, instead of going to manual review. Provider simulated: not exercised against real Mercado Pago.",
       "aliases": [],
       "domain": "mp_edge",
       "where": "supabase/functions/_shared/mercadopago.ts fetchMerchantOrder (L318-322) and paymentSnapshot (L343-347); public.record_mercadopago_payment_snapshot; callers mercadopago-payment-worker/index.ts L101-108 and mercadopago-checkout-status/index.ts L92-97"
@@ -110,7 +110,7 @@
       "title": "A rejected first card attempt releases the stock, so the buyer's approved retry in the same Checkout Pro preference becomes a manual review instead of an order",
       "status": "fixed",
       "fixed_by": "a2f6960 (a provider rejection keeps the reservation and the session) · 4d18709 (the worker finds the approved payment by the checkout reference when the pinned one is rejected)",
-      "notes": "Database half landed in a2f6960 (a provider rejection no longer releases the reservation; the first approved payment takes the identity). Still open: the payment worker re-reads the pinned rejected payment id on a probe (Edge Function change pending). Cost of the fix: the reservation of a rejected payment is held until the session expires. Provider simulated: the retry inside one Checkout Pro preference was not exercised against real Mercado Pago (external gate).",
+      "notes": "Closed in two halves. Database (a2f6960): a provider rejection no longer releases the reservation nor cancels the session, and the first approved payment takes the identity. Edge (4d18709): when the pinned payment is rejected the worker looks the payment up by the checkout reference and finds the approved retry. Cost of the fix: the reservation of a rejected payment is held until the session expires. Provider simulated: the retry inside one Checkout Pro preference was not exercised against real Mercado Pago (external gate).",
       "aliases": [
         "PAY-01",
         "EDGE-02"
@@ -348,7 +348,7 @@
       "title": "inventory_movements is not a complete stock ledger: most stock changes write no movement",
       "status": "open",
       "fixed_by": null,
-      "notes": "",
+      "notes": "NOT CHANGED, by decision. Mitigated on this branch: catalog paths now write the catalog change trail and, when they carry a count, an inventory_movements row (142451e); the stock effects of an online order are reconstructed by get_order_trace from its lines and reservations (a39db9a); the race harness asserts conservation of units on every door (c6dac99). A single ledger row for every stock change needs the point-of-sale writers too (pos_apply_stock_movements, pos_apply_stock_count), which the Caja Clara sales-ledger line is redefining in a parallel branch: it has to be designed together with that ledger, not on top of it.",
       "aliases": [
         "DIAG-08",
         "OSM-11"
@@ -362,7 +362,7 @@
       "title": "order_items does not freeze SKU, barcode, category, alcohol flag or tax; SKU is dropped at finalization and pos_list_orders joins it live",
       "status": "open",
       "fixed_by": null,
-      "notes": "",
+      "notes": "PARTIAL (8e7dd77, migration 20261001225000): the SKU is frozen in the order line at insert, backfilled for existing lines and immutable afterwards. With it the order keeps every commercial field the mission lists (name, SKU, quantity, unit price, subtotal, discounts, delivery fee, total, currency). Still read live from the product: barcode, category, the alcohol flag and tax attributes, and the point-of-sale order listing joins the product. The age check of an order does not depend on it (the confirmation is frozen in the order), and the fiscal document is computed by the fiscal core. The point-of-sale listing belongs to the Caja Clara work line and was not touched here. Lead assessment of what remains: P3.",
       "aliases": [],
       "domain": "pricing_snapshot",
       "where": "public.order_items (columns); public.finalize_paid_checkout_session; public.create_order_with_items_core; public.pos_list_orders; private.commercial_order_fiscal_evaluation",
@@ -703,7 +703,7 @@
       "title": "Manual collections on online orders are missing from the daily cash reconciliation and from alerts",
       "status": "open",
       "fixed_by": null,
-      "notes": "",
+      "notes": "NOT CHANGED, by decision: it belongs to the Caja Clara sales-ledger line, whose branch redefines daily_reconciliation_snapshot_internal and close_daily_reconciliation. A second redefinition here would overwrite theirs when both are applied. A delivered-but-unpaid alert was not added either: when a rider settles cash is a business rule nobody has stated.",
       "aliases": [],
       "domain": "payments_db",
       "where": "public.daily_reconciliation_snapshot_internal, public.reconcile_operational_alerts_for_business, public.confirm_manual_order_payment"
@@ -806,7 +806,7 @@
       "title": "The only existing limiter (Mercado Pago path) is weak: NULL means unlimited, the DB count is not race-safe and ignores orders, and the Edge bucket subject mixes IP and user id so a changed IP resets the per-user budget",
       "status": "fixed",
       "fixed_by": "7bdf9d4 (database: the intake guard counts orders and sessions under a lock, NULL uses a default) · ac93db3 (Edge: separate user and address buckets)",
-      "notes": "Database half closed by the intake guard in 7bdf9d4 (defaults instead of NULL, race-safe counts, orders and sessions share one budget). Still open: the Edge rate-limit key mixes address and user.",
+      "notes": "Closed in two halves. Database (7bdf9d4): the intake guard uses defaults instead of NULL, counts under a lock, and orders and checkout sessions share one budget. Edge (ac93db3): the request limit keeps one bucket per user and one per address, and the address is the one the platform sets (not a forwarded header). Residual (P3): a fixed window lets through a double burst across its edge.",
       "aliases": [],
       "domain": "orders_abuse",
       "where": "public.create_checkout_session (supabase/migrations/20260813020000_checkout_pro_carries_customer_notes.sql:498-507); supabase/functions/_shared/payment-runtime.ts:243-270 (enforceRateLimit, requestFingerprint); supabase/functions/mercadopago-create-checkout-session/index.ts:22",
@@ -1099,7 +1099,7 @@
     },
     {
       "fixed_by": null,
-      "notes": "Found by the staging certification runner (development run against the isolated QA tenant, before any migration of this branch was applied): refusals with SQLSTATE 55000 came back as HTTP 500. classifyRpcError (js/repositories/supabase-business-repository.js) answers SERVER_UNAVAILABLE / retryable for any status >= 500, so a final refusal reads as a server outage. The codebase uses 55000 widely for final refusals (order already closed, coverage enforced without a zone, legacy edge retired). This branch did not change the existing ones and one refusal it adds follows the convention of the function it lives in (ENFORCEMENT_LOCKED in set_service_enforcement, 55000); the delivery-coverage refusal of 20261001216000 uses 22023, which the client already shows as a message. Remapping the existing refusals changes the contract of dozens of functions and of the clients that read the code: it needs its own change together with the Panel.",
+      "notes": "Found by the staging certification runner (development run against the isolated QA tenant, before any migration of this branch was applied): refusals with SQLSTATE 55000 came back as HTTP 500. The API maps the whole SQLSTATE class 55 to 500 and that mapping is not configurable. The SQLSTATE does arrive in the response body, and the Panel already classifies by it for 42501, 22023, 23514, 23505, P0001 and P0002: it simply does not know 55000, so classifyRpcError (js/repositories/supabase-business-repository.js) and the two outbox result builders in js/production-operations.js answer retryable for a final refusal. The fix is in the client (three places, one shared predicate) and it changes the web release identity (asset digest and cache name), so it travels with the web release and was not put on this backend branch. Remapping the 213 existing refusals in the database would change the contract of dozens of functions and of every client that reads the code. This branch did not add new behaviour here: its new refusals follow the convention of the function they live in, and the delivery-coverage refusal of 20261001216000 uses 22023, which the client already shows as a message.",
       "aliases": [],
       "id": "API-01",
       "severity": "P2",

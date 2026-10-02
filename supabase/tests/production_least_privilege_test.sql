@@ -12,7 +12,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(44);
+select plan(45);
 
 -- ══════════════════════════════════════════════════════════════════════════
 --  1 · SUPERFICIE QA (migration 101)
@@ -84,13 +84,33 @@ select ok(
   not has_column_privilege('authenticated', 'public.catalog_assets', 'rights_status', 'UPDATE'),
   'authenticated no puede cambiar catalog_assets.rights_status');
 
--- El camino comercial legitimo sigue abierto: lo que el Panel si puede tocar.
+-- Lo unico que el Panel conserva directo sobre products es el orden de la gondola.
 select ok(
-  has_column_privilege('authenticated', 'public.products', 'stock', 'UPDATE')
-  and has_column_privilege('authenticated', 'public.products', 'available', 'UPDATE')
-  and has_column_privilege('authenticated', 'public.products', 'is_active', 'UPDATE')
-  and has_column_privilege('authenticated', 'public.products', 'sort_order', 'UPDATE'),
-  'el Panel conserva stock/available/is_active/sort_order sobre products');
+  has_column_privilege('authenticated', 'public.products', 'sort_order', 'UPDATE'),
+  'el Panel conserva sort_order sobre products');
+
+-- Desde 20261001210000 el stock, la disponibilidad y is_active dejan de escribirse
+-- directo: el stock se mueve por las RPC con libro (apply_inventory_movement, el
+-- lote comercial, las pos_*) y la publicacion por las RPC con compuertas. Este
+-- archivo corre tambien contra una base anterior a esa migracion (verify-a1-v2-sql),
+-- donde el permiso por columna de 20260725110000 sigue entero: vale para ambos. La
+-- marca es la funcion de reversion de lotes que crea la propia migracion: su archivo
+-- de reversion la retira siempre, mientras que las tablas del rastro quedan si tienen
+-- filas. Asi este archivo vale tambien sobre una base revertida.
+select ok(
+  case when to_regprocedure('public.rollback_commercial_catalog_batch(uuid,uuid)') is null then
+    has_column_privilege('authenticated', 'public.products', 'stock', 'UPDATE')
+    and has_column_privilege('authenticated', 'public.products', 'available', 'UPDATE')
+    and has_column_privilege('authenticated', 'public.products', 'is_active', 'UPDATE')
+  else
+    not has_column_privilege('authenticated', 'public.products', 'stock', 'UPDATE')
+    and not has_column_privilege('authenticated', 'public.products', 'available', 'UPDATE')
+    and not has_column_privilege('authenticated', 'public.products', 'is_active', 'UPDATE')
+    and not has_column_privilege('anon', 'public.products', 'stock', 'UPDATE')
+    and not has_column_privilege('anon', 'public.products', 'available', 'UPDATE')
+    and not has_column_privilege('anon', 'public.products', 'is_active', 'UPDATE')
+  end,
+  'stock, available e is_active de products no se escriben directo desde 20261001210000');
 
 -- Desde 20260925090000 la lectura pública es por columna (todo menos
 -- unit_cost y verified_by; lo certifica controlled_production_qa_window_test).

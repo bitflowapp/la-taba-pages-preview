@@ -156,16 +156,17 @@ select is(
   (select count(*)::integer from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and p.prosecdef
       and has_function_privilege('anon', p.oid, 'EXECUTE')),
-  8, 'quedan exactamente 8 SECURITY DEFINER ejecutables por anon');
+  9, 'quedan exactamente 9 SECURITY DEFINER ejecutables por anon');
 
 select bag_eq(
   $$select p.proname::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname = 'public' and p.prosecdef
        and has_function_privilege('anon', p.oid, 'EXECUTE')$$,
   $$values ('can_access_order'), ('check_scheduler_watchdog'), ('commerce_availability'),
+           ('get_business_service_status'),
            ('get_public_business_contact'), ('get_public_order_tracking'),
            ('list_business_combos'), ('resolve_business_combo'), ('scheduler_heartbeat')$$,
-  'y son exactamente las 8 del contrato publico escrito');
+  'y son exactamente las 9 del contrato publico escrito');
 
 -- B · las 5 RPC fiscales: authenticated si, anon no.
 select ok(not has_function_privilege('anon', 'public.authorize_fiscal_artifact_access(uuid,text)', 'EXECUTE'),

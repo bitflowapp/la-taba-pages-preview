@@ -84,6 +84,9 @@ begin
     collector_id, application_id, configured_at, verified_at
   ) values (v_business, true, 'test', 'checkout_pro', 'ARS', true,
     'collector-importe', 'app-importe', clock_timestamp(), clock_timestamp());
+  -- El vendedor conectado por OAuth: sin él la autoridad V2 no deja asentar la preferencia.
+  insert into public.mp_seller_connections(business_id,environment,seller_id,application_id,status,protected_tokens,expires_at)
+  values (v_business, 'test', 'collector-importe', 'app-importe', 'connected', 'ciphertext-only-local-fixture', now() + interval '2 days');
 
   -- A · retiro en efectivo, por el contrato del cliente.
   perform set_config('request.jwt.claims', json_build_object('sub', v_c1, 'role', 'authenticated')::text, true);
@@ -125,10 +128,13 @@ begin
     'contact', jsonb_build_object('name', 'Cliente Pago', 'phone', '5492990000000'),
     'age_confirmed', false, 'payment_method', 'mercadopago'));
   v_session := (v_result ->> 'checkout_session_id')::uuid;
-  v_prepare := public.prepare_mercadopago_preference(v_session, v_c3, false);
-  perform public.record_mercadopago_preference_created(
-    (v_prepare ->> 'payment_attempt_id')::uuid, 'PREF-IMPORTE-0001',
-    'https://www.mercadopago.com/r/importe', 'https://sandbox.mercadopago.com/r/importe',
+  v_prepare := public.prepare_mercadopago_preference_v2(v_session, v_c3, false);
+  perform public.record_mercadopago_preference_created_v2(
+    v_business, 'test', v_session, v_c3, (v_prepare ->> 'payment_attempt_id')::uuid,
+    public.get_mercadopago_payment_authority_v2(v_business, 'test', v_session, v_c3,
+      (v_prepare ->> 'payment_attempt_id')::uuid) ->> 'authority_version',
+    'PREF-IMPORTE-0001', 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=importe',
+    'https://sandbox.mercadopago.com.ar/checkout/v1/redirect?pref_id=importe',
     encode(extensions.gen_random_bytes(32), 'hex'), 'req-importe');
   select id into v_intent from public.payment_intents where checkout_session_id = v_session;
   perform public.record_mercadopago_payment_snapshot(v_intent, (

@@ -96,7 +96,27 @@ begin
     collector_id, application_id, configured_at, verified_at
   ) values (v_business, true, 'test', 'checkout_pro', 'ARS', true,
     'collector-' || p_key, 'app-' || p_key, clock_timestamp(), clock_timestamp());
+  -- El vendedor conectado por OAuth: sin él la autoridad V2 no deja asentar la preferencia.
+  insert into public.mp_seller_connections(business_id,environment,seller_id,application_id,status,protected_tokens,expires_at)
+  values (v_business,'test','collector-' || p_key,'app-' || p_key,'connected','ciphertext-only-local-fixture',now() + interval '2 days');
   insert into mp_ids values (p_key || ':business', v_business), (p_key || ':product', v_product);
+end $$;
+
+-- Asienta la preferencia que devolvió Mercado Pago por el mismo camino que la
+-- función Edge (V2, con la autoridad leída en el momento). El registrador
+-- anterior queda retirado por el interlock A1-A4 y en CI ya no existe.
+create function pg_temp.preferencia(p_session uuid, p_customer uuid, p_attempt uuid, p_ref text)
+returns void language plpgsql as $$
+declare
+  v_business uuid := (select business_id from public.checkout_sessions where id = p_session);
+begin
+  perform public.record_mercadopago_preference_created_v2(
+    v_business, 'test', p_session, p_customer, p_attempt,
+    public.get_mercadopago_payment_authority_v2(v_business, 'test', p_session, p_customer, p_attempt) ->> 'authority_version',
+    'PREF-' || p_ref,
+    'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=' || p_ref,
+    'https://sandbox.mercadopago.com.ar/checkout/v1/redirect?pref_id=' || p_ref,
+    encode(digest('pref-' || p_ref, 'sha256'), 'hex'), 'req-' || p_ref);
 end $$;
 
 create function pg_temp.stock(p_key text) returns integer language sql stable as $$
@@ -123,11 +143,7 @@ begin
     'address', '{}'::jsonb, 'age_confirmed', p_age_confirmed, 'payment_method', 'mercadopago'));
   v_session := (v_result ->> 'checkout_session_id')::uuid;
   v_prepare := public.prepare_mercadopago_preference_v2(v_session, v_customer, false);
-  perform public.record_mercadopago_preference_created(
-    (v_prepare ->> 'payment_attempt_id')::uuid, 'PREF-' || p_name || '-1',
-    'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=' || p_name,
-    'https://sandbox.mercadopago.com.ar/checkout/v1/redirect?pref_id=' || p_name,
-    encode(digest('pref-' || p_name, 'sha256'), 'hex'), 'req-' || p_name);
+  perform pg_temp.preferencia(v_session, v_customer, (v_prepare ->> 'payment_attempt_id')::uuid, p_name || '-1');
   insert into mp_ids values (p_name, v_session);
   insert into mp_ids select p_name || ':intent', pi.id from public.payment_intents pi where pi.checkout_session_id = v_session;
   return v_session;
@@ -348,11 +364,7 @@ create function pg_temp.reintentar(p_name text) returns void language plpgsql as
 declare v_prepare jsonb;
 begin
   v_prepare := public.prepare_mercadopago_preference_v2(pg_temp.id(p_name), pg_temp.id(p_name || ':customer'), true);
-  perform public.record_mercadopago_preference_created(
-    (v_prepare ->> 'payment_attempt_id')::uuid, 'PREF-' || p_name || '-2',
-    'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=' || p_name || '-2',
-    'https://sandbox.mercadopago.com.ar/checkout/v1/redirect?pref_id=' || p_name || '-2',
-    encode(digest('pref-' || p_name || '-2', 'sha256'), 'hex'), 'req-' || p_name || '-2');
+  perform pg_temp.preferencia(pg_temp.id(p_name), pg_temp.id(p_name || ':customer'), (v_prepare ->> 'payment_attempt_id')::uuid, p_name || '-2');
   insert into mp_out values (p_name || '.intento', v_prepare);
 end $$;
 select pg_temp.reintentar('e1');

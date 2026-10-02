@@ -150,6 +150,9 @@ begin
     business_id, enabled, environment, checkout_mode, currency, reserve_stock,
     collector_id, application_id, configured_at, verified_at
   ) values (v_a, true, 'test', 'checkout_pro', 'ARS', true, 'collector-matriz', 'app-matriz', clock_timestamp(), clock_timestamp());
+  -- El vendedor conectado por OAuth: sin él la autoridad V2 no deja asentar la preferencia.
+  insert into public.mp_seller_connections(business_id,environment,seller_id,application_id,status,protected_tokens,expires_at)
+  values (v_a, 'test', 'collector-matriz', 'app-matriz', 'connected', 'ciphertext-only-local-fixture', now() + interval '2 days');
   insert into ids values ('a', v_a), ('b', v_b), ('p1', v_p1), ('p2', v_p2), ('pb', v_pb),
     ('owner', v_owner), ('admin', v_admin), ('staff', v_staff), ('rider', v_rider), ('rider2', v_rider2),
     ('baja', v_disabled), ('revocado', v_revoked), ('ajeno', v_foreign), ('cliente', v_c1), ('cliente2', v_c2);
@@ -226,10 +229,13 @@ begin
     'fulfillment_type', 'pickup', 'contact', jsonb_build_object('name', 'Carla Cliente', 'phone', '5492994111111'),
     'age_confirmed', false, 'payment_method', 'mercadopago'));
   v_checkout := (v_result ->> 'checkout_session_id')::uuid;
-  v_prepare := public.prepare_mercadopago_preference(v_checkout, v_c1, false);
-  perform public.record_mercadopago_preference_created(
-    (v_prepare ->> 'payment_attempt_id')::uuid, 'PREF-MATRIZ-0001',
-    'https://www.mercadopago.com/r/matriz', 'https://sandbox.mercadopago.com/r/matriz',
+  v_prepare := public.prepare_mercadopago_preference_v2(v_checkout, v_c1, false);
+  perform public.record_mercadopago_preference_created_v2(
+    v_a, 'test', v_checkout, v_c1, (v_prepare ->> 'payment_attempt_id')::uuid,
+    public.get_mercadopago_payment_authority_v2(v_a, 'test', v_checkout, v_c1,
+      (v_prepare ->> 'payment_attempt_id')::uuid) ->> 'authority_version',
+    'PREF-MATRIZ-0001', 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=matriz',
+    'https://sandbox.mercadopago.com.ar/checkout/v1/redirect?pref_id=matriz',
     encode(extensions.gen_random_bytes(32), 'hex'), 'req-matriz');
   select id into v_intent from public.payment_intents where checkout_session_id = v_checkout;
   perform public.record_mercadopago_payment_snapshot(v_intent, (

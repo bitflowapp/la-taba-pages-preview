@@ -62,7 +62,7 @@ export const ALCOHOL_LEGAL_NOTICE = 'Beber con moderación. Prohibida su venta a
  * «para regalar». Y una cifra con multiplicador —«2 mil», «2 lucas», «2k»,
  * «40 menos»— es un precio aunque tenga un solo dígito.
  */
-const FORBIDDEN_COPY = /\$|%|\b(?:descuent|ofert|promo|rebaj|liquidaci|gratis|ahorr|imperdible|ultimas? unidades|por tiempo limitado|mas vendid|precios?\b|sorte|premio|antes\b|\d+\s*x\s*\d+|off\b|mitad\b(?! de (?:semana|mes|camino))|regalos?\b|regalamos|regalan\b|sin cargo|bonific|cuotas?\b|interes\b|stock\b|agot|quedan? (?:poc|\d|solo|l[ao]s? ultim)|no quedan?\b|solo por (?:hoy|est[aeo]|tiempo|un)|pesos\b|\d+\s*peso\b|ars\b|\d+\s*por\s*\d+|pag(?:a|as|ue)\s*\d|segunda unidad|\d+\s*(?:da|ra|ta)\.? unidad|\d+\s*(?:mil|lucas?|k)\b|lucas?\b|\d+\s*menos\b|(?:mas|muy) (?:elegid|pedid|popular|querid)|favorit|numero uno|nro\.? ?1\b)/i;
+const FORBIDDEN_COPY = /\$|%|\b(?:descuent|ofert|promo|rebaj|liquidaci|gratis|ahorr|barat|imperdible|ultim[ao]s?\b|por tiempo limitado|limitad|mas vendid|precios?\b|sorte|premio|cupon|codigo\b|hot sale|black friday|cyber|antes\s+(?:\d|costaba|salia|valia|era\b)|\d+\s*x\s*\d+|off\b|mitad\b(?! de (?:semana|mes|camino))|regalos?\b|regalamos|regalan\b|sin cargo|sin costo|bonific|cuotas?\b|interes\b|stock\b|agot|poc[ao]s\b|quedan? (?:poc|\d|solo|l[ao]s? ultim)|(?:solo|no) quedan?\b|solo por (?:hoy|est[aeo]|tiempo|un)|solo hoy|solamente hoy|hoy nomas|hasta (?:el|la|este|esta|manana)\b|vence|termina|pesos\b|\d+\s*peso\b|ars\b|\d+\s*por\s*\d+|(?:un[ao]?|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|cien|quinientos)\s+(?:mil|lucas?|por\s+(?:un[ao]?|dos|tres)|x\s+(?:un[ao]?|dos|tres))\b|llev(?:a|as|ate|e|en)\s+(?:\d|un[ao]?\b|dos\b|tres\b)|pag(?:a|as|ue)\s*(?:\d|un[ao]?\b|dos\b)|segunda (?:unidad|al)\b|\d+\s*(?:da|ra|ta)\.? unidad|\d+\s*(?:mil|lucas?|k)\b|lucas?\b|\d+\s*menos\b|(?:mas|muy) (?:elegid|pedid|popular|querid)|favorit|numero uno|nro\.? ?1\b)/i;
 /*
  * Y un número suelto en el título o en la acción es un precio hasta que se
  * demuestre lo contrario: «Heineken a 2500», «Desde 1.999». La presentación
@@ -70,8 +70,8 @@ const FORBIDDEN_COPY = /\$|%|\b(?:descuent|ofert|promo|rebaj|liquidaci|gratis|ah
  * afuera de esta regla porque es la marca, y hay marcas con número.
  */
 const NUMERIC_CLAIM = /\d{3,}|\d[.,]\d/;
-// El rótulo admite la marca con número («1882», «7UP»), no un número con forma
-// de precio: «Ahora 2500», «Lata 1.999», «2500 la lata».
+// El rótulo admite la marca con número («Fernet 1882», «7UP»), no un número con
+// forma de precio: «Ahora 2500», «Lata 1.999», «2500 la lata».
 const EYEBROW_PRICE = /(?:^|\s)(?:a|desde|por|solo|ahora|hoy|hasta)\s+\d|^\s*\d{3,}\b|\d[.,]\d/i;
 
 const GRID_PIECE_AFTER = 4;
@@ -102,7 +102,7 @@ function escapeHtml(value) {
  * navegador: la misma campaña podía verse en Android y no en iPhone. Lo que no
  * tiene esta forma es una fecha ilegible, y una fecha ilegible apaga la pieza.
  */
-const ISO_INSTANT = /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})$/;
+const ISO_INSTANT = /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/;
 
 function timestamp(value) {
   const candidate = String(value || '').trim();
@@ -116,7 +116,9 @@ function timestamp(value) {
   if (calendar.getUTCFullYear() !== year || calendar.getUTCMonth() !== month - 1 || calendar.getUTCDate() !== day) {
     return Number.NaN;
   }
-  const parsed = Date.parse(candidate);
+  // Una base de datos escribe microsegundos; los motores sólo coinciden hasta
+  // el milisegundo, así que se lee hasta ahí.
+  const parsed = Date.parse(candidate.replace(/(\.\d{3})\d+/, '$1'));
   return Number.isFinite(parsed) ? parsed : Number.NaN;
 }
 
@@ -188,9 +190,11 @@ export function campaignProblems(campaign, { now = Date.now() } = {}) {
   if (!campaign.placements.length) problems.push('no-placement');
   if (!campaign.skus.length) problems.push('no-target');
   if (!campaign.copy.headline || !campaign.copy.cta) problems.push('copy-missing');
-  const copy = plain(`${campaign.copy.eyebrow} ${campaign.copy.headline} ${campaign.copy.cta}`);
+  // Cada texto por separado: pegados, el número de una marca en el rótulo se
+  // juntaba con la primera palabra del título («Fernet 1882» + «Menos hielo…»).
+  const fields = [campaign.copy.eyebrow, campaign.copy.headline, campaign.copy.cta].map(plain);
   if (
-    FORBIDDEN_COPY.test(copy)
+    fields.some((field) => FORBIDDEN_COPY.test(field))
     || NUMERIC_CLAIM.test(plain(`${campaign.copy.headline} ${campaign.copy.cta}`))
     || EYEBROW_PRICE.test(plain(campaign.copy.eyebrow))
   ) {
@@ -202,6 +206,19 @@ export function campaignProblems(campaign, { now = Date.now() } = {}) {
   if (Number.isFinite(from) && now < from) problems.push('not-started');
   if (Number.isFinite(until) && now > until) problems.push('expired');
   return problems;
+}
+
+/*
+ * Una cifra en el texto de la pieza sólo puede venir del PRODUCTO: su nombre o
+ * su marca («7UP», «Fernet 1882»). Las reglas de arriba adivinan por la forma, y
+ * por la forma «Lata 2500» y «Fernet 1882» son lo mismo. Con el producto a la
+ * vista no hace falta adivinar: «A 99», «Lata 2500» o «Llevá 2» traen un número
+ * que el producto no tiene, y eso es un precio o una cantidad escritos a mano.
+ */
+function numbersComeFromProduct(campaign, product) {
+  const source = plain(`${product?.name ?? ''} ${product?.brand ?? ''}`);
+  const runs = plain(`${campaign.copy.eyebrow} ${campaign.copy.headline} ${campaign.copy.cta}`).match(/\d+(?:[.,]\d+)*/g) || [];
+  return runs.every((run) => new RegExp(`(?<!\\d)${run.replace(/[.,]/g, '\\$&')}(?!\\d)`).test(source));
 }
 
 /** El producto de la campaña en el catálogo vivo, o `null`. */
@@ -260,7 +277,7 @@ export function selectCampaigns({
     .map(normalizeCampaign)
     .filter((campaign) => campaign && !dismissed.has(campaign.id) && campaignProblems(campaign, { now }).length === 0)
     .map((campaign) => ({ campaign, product: campaignProduct(campaign, products, isOrderable) }))
-    .filter((entry) => entry.product)
+    .filter((entry) => entry.product && numbersComeFromProduct(entry.campaign, entry.product))
     .sort((a, b) => b.campaign.priority - a.campaign.priority || a.campaign.id.localeCompare(b.campaign.id));
 
   const pick = (placement, accept = () => true) => (

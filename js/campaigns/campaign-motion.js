@@ -144,6 +144,11 @@ function startCampaignMotion(documentRef, windowRef) {
     ? new windowRef.IntersectionObserver((entries) => {
       for (const entry of entries) {
         const root = entry.target;
+        // Una pieza que salió de pantalla a mitad de su entrada conserva "on":
+        // todavía no había terminado. Si vuelve cuando esa entrada ya pasó
+        // —la vista estuvo oculta, y eso reinicia las animaciones CSS—, vuelve
+        // en su cuadro final y no con la función entera de nuevo.
+        if (entry.isIntersecting && !visible.has(root) && settled(root)) delete root.dataset.motionCampaign;
         if (entry.isIntersecting) visible.add(root);
         else visible.delete(root);
         if (entry.isIntersecting && entry.intersectionRatio >= START_RATIO) ready.add(root);

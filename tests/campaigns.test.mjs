@@ -149,6 +149,9 @@ test('una vigencia es un instante con huso: una fecha suelta o un formato local 
   assert.deepEqual(problems({ validFrom: '2026-10-01T00:00:00-03:00', validUntil: '2026-10-31T23:59:59-03:00' }), []);
   assert.ok(problems({ validUntil: '2026-10-31T11:59:59-03:00' }).includes('expired'));
   assert.deepEqual(problems({ validUntil: '2026-10-31T15:00:01Z' }), []);
+  // Una base de datos escribe microsegundos: es el mismo instante.
+  assert.deepEqual(problems({ validUntil: '2026-10-31T23:59:59.123456-03:00' }), []);
+  assert.ok(problems({ validUntil: '2026-10-31T11:59:59.999999-03:00' }).includes('expired'));
   // Un día que no existe: hay motores que lo corren al mes siguiente.
   for (const imposible of ['2026-11-31T23:59:59-03:00', '2026-02-30T00:00:00-03:00', '2026-13-01T00:00:00-03:00']) {
     assert.ok(problems({ validUntil: imposible }).includes('invalid-dates'), `«${imposible}» pasó como vigencia`);
@@ -219,6 +222,24 @@ test('lo que la primera lista dejaba pasar: precio, cantidad, plazo y popularida
     '2da unidad al 50',
     'De regalo',
     'A mitad',
+    // Las formas cortas y las escritas con letras, como se dicen en la calle.
+    'Sólo hoy',
+    'Solo hoy',
+    'Últimas',
+    'Últimas latas',
+    'Dos mil la lata',
+    'Dos por uno',
+    'Llevá dos, pagá una',
+    'Llevá 2',
+    'Más barata',
+    'Envío sin costo',
+    'Hot Sale',
+    'Hasta el domingo',
+    'Edición limitada',
+    'Pocas unidades',
+    'Solo quedan dos',
+    'Segunda al 50',
+    'Cupón TABA',
   ];
   for (const headline of frases) {
     const campaign = normalizeCampaign(approved(beer, { copy: { ...beer.copy, headline } }));
@@ -253,6 +274,9 @@ test('el filtro no se come texto editorial legítimo, ni una marca con número',
     'Una botella preciosa',
     'Solo por gusto',
     'De peso',
+    'Para antes de cenar',
+    'Antes del asado',
+    'Para llevar a la mesa',
   ];
   for (const headline of frases) {
     const campaign = normalizeCampaign(approved(beer, { copy: { ...beer.copy, headline } }));
@@ -263,6 +287,38 @@ test('el filtro no se come texto editorial legítimo, ni una marca con número',
     const marcaConNumero = normalizeCampaign(approved(beer, { copy: { ...beer.copy, eyebrow } }));
     assert.deepEqual(campaignProblems(marcaConNumero), [], `la marca «${eyebrow}» se rechazó`);
   }
+  // Cada texto se mira por separado: el número de la marca no se pega a la
+  // primera palabra del título («1882 menos», «12 mil»).
+  for (const copy of [
+    { eyebrow: 'Fernet 1882', headline: 'Menos hielo, más sabor' },
+    { eyebrow: 'Chivas 12', headline: 'Mil razones para brindar' },
+  ]) {
+    const pegados = normalizeCampaign(approved(beer, { copy: { ...beer.copy, ...copy } }));
+    assert.deepEqual(campaignProblems(pegados), [], `«${copy.eyebrow}» + «${copy.headline}» se rechazó por la costura`);
+  }
+});
+
+test('una cifra en la pieza sólo puede venir del producto: ni precio ni cantidad escritos a mano', () => {
+  const beer = byId('heineken-beer-pour');
+  const pick = (copy, products = catalog) => selectCampaigns({
+    campaigns: [approved(beer, { copy: { ...beer.copy, ...copy } })], products, isOrderable: everythingSells,
+  })['home-hero'];
+  assert.ok(pick({}), 'la pieza sin cifras dejó de mostrarse');
+  // Por la forma, «Lata 2500» y «Fernet 1882» son lo mismo. Con el producto a
+  // la vista no: Heineken no tiene ningún 2500 en el nombre.
+  for (const copy of [
+    { eyebrow: 'Lata 2500' },
+    { eyebrow: 'Hoy: 2500' },
+    { eyebrow: 'c/u 2500' },
+    { eyebrow: 'Imperial 1890' },
+    { headline: 'A 99' },
+    { cta: 'Pedila a 99' },
+  ]) {
+    assert.equal(pick(copy), null, `${JSON.stringify(copy)} mostró una cifra que el producto no tiene`);
+  }
+  // Y la cifra que SÍ es del producto se puede escribir en el rótulo.
+  const conNumero = catalog.map((product) => (product.sku === 'heineken-710ml' ? { ...product, name: 'Fernet 1882', brand: '1882' } : product));
+  assert.ok(pick({ eyebrow: 'Fernet 1882' }, conNumero), 'la marca con número de su propio producto se rechazó');
 });
 
 test('sin título o sin acción no hay pieza; un preset desconocido tampoco', () => {

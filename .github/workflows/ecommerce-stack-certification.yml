@@ -1,0 +1,79 @@
+name: Ecommerce certification on an ephemeral Supabase stack
+
+# Un stack de Supabase completo y descartable (Postgres, PostgREST, GoTrue, Storage,
+# pg_cron y el runtime de Edge), levantado en el runner con la CLI fijada. No toca
+# Staging ni producción y no usa ningún secreto del repositorio: las claves son las
+# locales que la propia CLI genera para ese stack.
+
+on:
+  push:
+    branches:
+      - 'hardening/taba-ecommerce-production'
+    paths:
+      - '.github/workflows/ecommerce-stack-certification.yml'
+      - 'supabase/**'
+      - 'scripts/e2e-staging/**'
+      - 'scripts/order-intake/**'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ecommerce-stack-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+  SUPABASE_CLI_VERSION: '2.101.0'
+
+jobs:
+  ephemeral_stack:
+    name: Ephemeral Supabase stack
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Set up pinned Supabase CLI
+        uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      # Levantar el stack aplica TODAS las migraciones del repositorio, en orden, sobre
+      # un Postgres de Supabase recién creado. Si una falla, el paso falla.
+      - name: Start the stack and apply every migration
+        run: supabase start -x studio,imgproxy,logflare,vector,postgres-meta,mailpit,supavisor
+
+      - name: Stack identity
+        env:
+          PGPASSWORD: postgres
+        run: |
+          supabase status -o env | sed -E 's/(KEY|SECRET|TOKEN|PASSWORD)=.*/\1=<redacted>/' | sed -E 's#(postgresql://[^:]+:)[^@]+@#\1<redacted>@#'
+          repo=$(ls supabase/migrations/*.sql | wc -l)
+          applied=$(psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -Atc "select count(*) from supabase_migrations.schema_migrations")
+          echo "MIGRATIONS_IN_REPO=$repo MIGRATIONS_APPLIED=$applied"
+          test "$repo" = "$applied"
+          psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -Atc "select 'CRON_JOB ' || jobname || ' ' || schedule || ' active=' || active from cron.job order by jobname"
+          psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -Atc "select 'POSTGRES ' || version()"
+          curl -sS -o /dev/null -w 'POSTGREST_ROOT_STATUS=%{http_code}\n' http://127.0.0.1:54321/rest/v1/
+          curl -sS -o /dev/null -w 'GOTRUE_HEALTH_STATUS=%{http_code}\n' http://127.0.0.1:54321/auth/v1/health
+
+      - name: Stop the stack
+        if: always()
+        run: supabase stop --no-backup

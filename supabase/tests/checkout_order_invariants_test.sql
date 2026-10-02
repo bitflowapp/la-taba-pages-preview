@@ -30,6 +30,9 @@
 --   J  confirmar dos veces el cobro manual no lo escribe dos veces;
 --   K  la máquina de estados del pedido por `transition_order`: la matriz completa de
 --      un integrante del comercio, y cada rechazo deja estado y revisión como estaban.
+--   L  lo que el comercio ocultó no vuelve a la venta cuando se libera una reserva: el
+--      checkout abandonado y el del pago rechazado devuelven el stock y el producto
+--      sigue oculto; el que sólo estaba agotado por la reserva sí vuelve.
 --
 -- Después de cada rechazo se comprueba que no se escribió nada: ni pedido, ni sesión,
 -- ni reserva, ni evento, y el stock igual.
@@ -44,7 +47,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(362);
+select plan(377);
 
 -- ── Fixture ────────────────────────────────────────────────────────────────
 create temporary table inv_ids (name text primary key, id uuid not null) on commit drop;
@@ -1514,6 +1517,53 @@ select is(
     || ' lata=' || (select p.stock from public.products p where p.id = pg_temp.id('k:lata')),
   'accepted rev 5 stock_devuelto=true lata=43',
   'LIMITACION K: queda aceptado, con el stock ya devuelto y sin volver a descontarlo');
+
+-- ════════════════════════════════════════════════════════════════
+--  L · LO QUE EL COMERCIO OCULTÓ NO VUELVE A LA VENTA AL LIBERARSE UNA RESERVA
+-- ════════════════════════════════════════════════════════════════
+-- La liberación de una reserva recalcula si el producto se ofrece. Tiene que mirar la
+-- intención del comercio: devolver unidades no es una decisión de publicar.
+select pg_temp.negocio('l', 5, 3);
+-- stock / se ofrece / el comercio lo quiere a la venta
+create function pg_temp.gondola(p_producto text) returns text language sql as $$
+  select concat_ws('/', p.stock, p.available::text, p.merchant_available::text) from public.products p where p.id = pg_temp.id(p_producto)
+$$;
+create function pg_temp.ocultar(p_negocio text, p_producto text) returns text language sql as $$
+  select pg_temp.panel(p_negocio || ':owner', format(
+    '(select to_jsonb(t) from public.set_commercial_product_publication(%L, %L, false) t)',
+    pg_temp.id(p_negocio), (select p.sku from public.products p where p.id = pg_temp.id(p_producto)))) ->> 'applied_available'
+$$;
+
+-- El contraste: un producto que SÓLO quedó agotado por la reserva vuelve solo.
+select is(pg_temp.sesion_nueva('l0', 'l', 'l:c1', jsonb_build_array(pg_temp.linea('l:lata', 5)), '{}', false), 'ok',
+  'L: una sesion se lleva las 5 latas');
+select is(pg_temp.gondola('l:lata'), '0/false/true', 'L: la lata queda agotada por la reserva, con la intencion del comercio encendida');
+select pg_temp.vencer('l0');
+select cmp_ok(public.expire_checkout_sessions(500), '>=', 1, 'L: el barrido vence la sesion abandonada');
+select is(pg_temp.gondola('l:lata'), '5/true/true', 'L: las 5 unidades vuelven y la lata se ofrece de nuevo: el comercio la queria a la venta');
+
+-- Checkout abandonado sobre un producto que el comercio ocultó mientras estaba reservado.
+select is(pg_temp.sesion_nueva('l1', 'l', 'l:c2', jsonb_build_array(pg_temp.linea('l:lata', 2))), 'ok', 'L: otra sesion reserva 2 latas');
+select is(pg_temp.ocultar('l', 'l:lata'), 'false', 'L: el dueño oculta la lata desde el Panel con la reserva viva');
+select is(pg_temp.gondola('l:lata'), '3/false/false', 'L: quedan 3 disponibles, oculta y con la intencion apagada');
+select pg_temp.vencer('l1');
+select cmp_ok(public.expire_checkout_sessions(500), '>=', 1, 'L: el barrido vence esa sesion');
+select is(pg_temp.resumen('l1') || ' | ' || pg_temp.gondola('l:lata'),
+  'sesion=expired motivo=- intent=expired proveedor=- cobrado=- pedido=false reservas=released | 5/false/false',
+  'L: la reserva liberada devuelve las 2 unidades y la lata SIGUE OCULTA');
+
+-- Lo mismo cuando la reserva la retenía un pago rechazado.
+select is(pg_temp.sesion_nueva('l2', 'l', 'l:c3', jsonb_build_array(pg_temp.linea('l:agua', 2))), 'ok', 'L: una sesion reserva 2 aguas');
+select is(pg_temp.registrar('l2', pg_temp.pago('l2', 'INV-PAY-L2', 'rejected', 'l2-rechazado')) ->> 'internal_status', 'rejected',
+  'L: su pago se rechaza y la reserva queda retenida');
+select is(pg_temp.ocultar('l', 'l:agua') || ' ' || pg_temp.gondola('l:agua'), 'false 3/false/false', 'L: el dueño oculta el agua');
+select pg_temp.vencer('l2');
+select cmp_ok(public.expire_checkout_sessions(500), '>=', 1, 'L: el barrido vence la sesion del pago rechazado');
+select is(pg_temp.resumen('l2') || ' | ' || pg_temp.gondola('l:agua'),
+  'sesion=expired motivo=- intent=expired proveedor=rejected cobrado=- pedido=false reservas=released | 5/false/false',
+  'L: el stock vuelve una vez y el agua sigue oculta');
+select matches(pg_temp.checkout('l:c1', pg_temp.checkout_json('l', 'inv-l-oculta-0001', jsonb_build_array(pg_temp.linea('l:lata', 1)))),
+  '^55000 producto no disponible para pago', 'L: y lo oculto no se puede comprar aunque tenga stock');
 
 -- Lo que el COMMIT verificaría con todo lo anterior hecho.
 select lives_ok($$set constraints all immediate$$, 'los resguardos diferidos de orders aceptan el resultado');

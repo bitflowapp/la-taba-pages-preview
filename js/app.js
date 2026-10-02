@@ -116,7 +116,7 @@ import {
 } from './core/app-mode.js';
 import { isProductionCatalogReady } from './core/runtime-config.js';
 import { getCommerceAvailability } from './core/commerce-availability-store.js';
-import { describeStoreEntry } from './core/store-entry.js';
+import { STORE_ENTRY_KIND, describeStoreEntry } from './core/store-entry.js';
 import {
   SHOWCASE_STEPS,
   configureShowcase,
@@ -860,6 +860,12 @@ function applyProductionCatalogGate(mode = getAppMode()) {
     node.setAttribute('aria-hidden', String(!blocked));
     if (entry) paintStoreEntry(node, entry, mode);
   });
+  // Cada vez que la tarjeta queda diciendo «cargando» tiene que haber alguien
+  // mirando cómo termina. El vigía se armaba una sola vez, en el arranque: un
+  // reintento en segundo plano después de un error volvía a «cargando», un
+  // render cualquiera pintaba eso —sin «Reintentar»— y si el reintento también
+  // fallaba ya no quedaba nadie para repintar el error.
+  if (entry?.kind === STORE_ENTRY_KIND.LOADING) watchStoreEntrySettles();
 
   const submit = document.querySelector('[data-checkout-submit]');
   if (submit && !hayConfirmacionDeCheckoutEnCurso()) submit.disabled = blocked;
@@ -872,8 +878,15 @@ function applyProductionCatalogGate(mode = getAppMode()) {
  * Mientras el catálogo siga cargando se vuelve a mirar su estado una vez por
  * segundo y, apenas se resuelve (listo, vacío, bloqueado o error), se repinta.
  * Sólo lee un estado en memoria y se apaga solo.
+ *
+ * Y UN CATÁLOGO QUE NO CONTESTA tampoco cambia nada: ni llega ni falla. Pasados
+ * `STORE_ENTRY_SLOW_AFTER_S` segundos la tarjeta dice que está tardando y ofrece
+ * reintentar (`slow` en `core/store-entry.js`). Si el catálogo llega igual, la
+ * tienda abre sola y el aviso desaparece con la tarjeta.
  */
+const STORE_ENTRY_SLOW_AFTER_S = 12;
 let storeEntryWatch = null;
+let storeEntrySlow = false;
 function watchStoreEntrySettles() {
   if (storeEntryWatch || getAppMode() !== APP_MODE_PRODUCTION) return;
   let checks = 0;
@@ -885,9 +898,18 @@ function watchStoreEntrySettles() {
     } catch (_) {
       state = 'idle';
     }
-    if ((state !== 'idle' && state !== 'loading') || checks >= 120) {
+    const loading = state === 'idle' || state === 'loading';
+    if (!loading || checks >= 120) {
       clearInterval(storeEntryWatch);
       storeEntryWatch = null;
+      // Resuelto, deja de estar lento. Si a los dos minutos sigue cargando, el
+      // aviso se queda: es exactamente el caso para el que existe.
+      storeEntrySlow = loading;
+      applyRenderedModeState();
+      return;
+    }
+    if (checks === STORE_ENTRY_SLOW_AFTER_S && !storeEntrySlow) {
+      storeEntrySlow = true;
       applyRenderedModeState();
     }
   }, 1000);
@@ -905,6 +927,7 @@ function describeCurrentStoreEntry(mode) {
     catalogState,
     orderingVerified: Boolean(getBusinessConfig().orderingDetailsVerified),
     availability: getCommerceAvailability(),
+    slow: storeEntrySlow,
   });
 }
 
@@ -2071,6 +2094,17 @@ function bindEvents() {
     // validar. El markup del diálogo y sus cierres quedan inertes por si una
     // superficie futura lo reutiliza DESPUÉS de una validación exitosa.
     if (confirming) return; // evita doble confirmación / doble pedido
+    // Sin red no hay nada que intentar, y conviene decirlo con esas palabras:
+    // el pedido fallaba igual, pero con «no pudimos confirmar el pedido» o,
+    // pagando con Mercado Pago, con «todavía no está habilitado para este
+    // comercio». Sólo se confía en el `false`: `true` no garantiza conexión.
+    // La demo y el sandbox arman el pedido en el dispositivo: no necesitan red.
+    const orderNeedsNetwork = getAppMode() === APP_MODE_PRODUCTION
+      && !isSandboxOrderRepository(getOrderRepository());
+    if (orderNeedsNetwork && navigator.onLine === false) {
+      showToast(showCheckoutInlineError(form, 'Sin conexión. Revisá internet e intentá nuevamente.'));
+      return;
+    }
     confirming = true;
     const button = event.currentTarget.querySelector('[type="submit"]');
     const originalLabel = button?.textContent;

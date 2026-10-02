@@ -28,6 +28,8 @@ import {
 import { setProductionCatalogReady } from '../core/runtime-config.js';
 import { categoryDefaults, sortByShelfOrder } from '../core/store-taxonomy.js';
 import {
+  COMMERCE_CLOSED_MESSAGE,
+  COMMERCE_OUT_OF_COVERAGE_MESSAGE,
   clearCommerceAvailability,
   setCommerceAvailability,
 } from '../core/commerce-availability-store.js';
@@ -900,8 +902,17 @@ export function createSupabaseOrderRepository({
       ...(normalizedValues.customerNotes ? { customer_notes: normalizedValues.customerNotes } : {}),
     };
 
-    const { data, error, status } = await client.rpc('create_order_with_items', { payload });
-    if (error) return failedQuery(error, status, readableOrderCreationError(error));
+    // Con plazo. Sin él, en una conexión que ni contesta ni falla —poca señal,
+    // un portal cautivo, el cambio de antena— el botón quedaba en «Creando
+    // pedido…» lo que el navegador tardara en rendirse, sin mensaje y sin
+    // salida. Cortar es seguro por la misma razón que lo es reintentar: la clave
+    // del intento ya está guardada y el backend devuelve el mismo pedido si
+    // llegó a crearlo.
+    const { data, error, status } = await withRequestTimeout(
+      client.rpc('create_order_with_items', { payload }),
+      ORDER_REQUEST_TIMEOUT_MS,
+    );
+    if (error) return failedQuery(error, status, readableOrderCreationError(error, status));
 
     const row = unwrapOrderRow(data);
     if (!row?.id) {
@@ -3391,6 +3402,35 @@ function businessSnapshotErrorMessage(error, status) {
   return 'No pudimos consultar PostgreSQL; conservamos la última bandeja confirmada.';
 }
 
+// Cuánto se espera la respuesta del alta de un pedido antes de devolverle el
+// control a la persona. Holgado para una red móvil lenta; corto frente a los
+// minutos que tarda un navegador en abandonar una conexión colgada.
+export const ORDER_REQUEST_TIMEOUT_MS = 25_000;
+
+/**
+ * Espera `request` como mucho `ms`. Vencido el plazo aborta la consulta, que
+ * entonces resuelve con su propio error de transporte (estado 0): quien llama
+ * no necesita un camino aparte para el corte.
+ *
+ * Los clientes de prueba devuelven promesas simples, sin `abortSignal`: ésas se
+ * esperan tal cual.
+ */
+export async function withRequestTimeout(request, ms, {
+  setTimer = globalThis.setTimeout,
+  clearTimer = globalThis.clearTimeout,
+} = {}) {
+  if (typeof request?.abortSignal !== 'function' || typeof globalThis.AbortController !== 'function') {
+    return request;
+  }
+  const controller = new globalThis.AbortController();
+  const timer = setTimer(() => controller.abort(), ms);
+  try {
+    return await request.abortSignal(controller.signal);
+  } finally {
+    clearTimer(timer);
+  }
+}
+
 function failedQuery(error, status, fallback) {
   return repositoryResult(false, {
     message: fallback || readableSupabaseError(error),
@@ -3414,12 +3454,45 @@ function riderContractRefusal(data, messages, fallback) {
 
 // Se exporta para poder probarlo: es una función pura y es la última cosa que
 // una persona lee cuando su compra no entra.
-export function readableOrderCreationError(error) {
+const ORDER_NOT_CONFIRMED_MESSAGE = 'No pudimos confirmar el pedido. Conservamos el intento para reintentar sin duplicarlo.';
+const ALCOHOL_OUT_OF_HOURS_MESSAGE = 'La venta de bebidas con alcohol está fuera del horario permitido. Probá más tarde o quitá esos productos del carrito.';
+
+export function readableOrderCreationError(error, status) {
+  // Estado 0 es que la respuesta NO LLEGÓ: no hay nada del backend que leer. El
+  // cliente pone en `details` la traza del navegador, y clasificar una traza por
+  // palabras sueltas —rutas, nombres de función— es adivinar. Se dice lo único
+  // cierto: no se pudo confirmar, y el intento queda guardado.
+  if (status !== undefined && status !== null && Number(status) === 0) return ORDER_NOT_CONFIRMED_MESSAGE;
   const text = `${error?.message || ''} ${error?.details || ''}`.toLowerCase();
   // El rechazo del contrato de ubicación se dice con el mismo mensaje que usa
   // el checkout, no con el genérico: la persona tiene que saber que le falta
   // confirmar el pin, y dónde hacerlo.
   if (text.includes('delivery_location_required')) return DELIVERY_LOCATION_REQUIRED_MESSAGE;
+  // LO QUE EL BACKEND DECIDE EN EL ÚLTIMO SEGUNDO, CON CÓDIGO PROPIO.
+  //
+  // El alta del pedido vuelve a evaluar horario, cobertura y ventana de alcohol,
+  // y rechaza con `BUSINESS_CLOSED`, `OUT_OF_DELIVERY_ZONE` o
+  // `ALCOHOL_WINDOW_CLOSED` (20260812220000, sección de checkout). Ninguno de
+  // los tres estaba acá: los dos primeros caían en «conservamos el intento para
+  // reintentar», o sea que a quien pedía con el local cerrado se le pedía que
+  // insistiera, y el tercero caía en «este comercio no tiene habilitada la venta
+  // de alcohol», que es falso: la vende, pero no a esta hora.
+  //
+  // Se dicen con las MISMAS frases que la tienda ya usa antes de confirmar
+  // (`commerce-availability-store.js`), así el aviso previo y el rechazo final
+  // no pueden contar historias distintas. Van antes de la rama de stock porque
+  // esa mira palabras sueltas.
+  if (text.includes('business_closed')) return COMMERCE_CLOSED_MESSAGE;
+  if (text.includes('out_of_delivery_zone')) {
+    return `${COMMERCE_OUT_OF_COVERAGE_MESSAGE} Podés elegir retiro en el local o cambiar la dirección.`;
+  }
+  if (text.includes('alcohol_window_closed')) return ALCOHOL_OUT_OF_HOURS_MESSAGE;
+  if (text.includes('no esta habilitado para recibir pedidos')) {
+    return 'El comercio todavía no habilitó los pedidos online.';
+  }
+  if (text.includes('delivery no habilitado') || text.includes('retiro no habilitado')) {
+    return 'La modalidad elegida no está habilitada por el comercio.';
+  }
   // El backend rechaza en castellano —«producto no disponible: <uuid>»— cuando
   // el stock llegó a cero y el contrato comercial apagó la disponibilidad. Este
   // humanizador sólo miraba las palabras en inglés, así que ese rechazo caía en
@@ -3428,9 +3501,14 @@ export function readableOrderCreationError(error) {
   // va a entrar, y sin decir que el producto se agotó.
   // Medido con 100 sesiones concurrentes sobre 40 unidades: es el rechazo que
   // recibieron las 60 personas que llegaron tarde.
+  //
+  // «unavailable» contiene «available»: un 503 del borde —«Service Unavailable»—
+  // se leía como falta de stock y mandaba a la persona a cambiar el carrito en
+  // medio de una caída. Sólo cuenta si habla de un producto.
+  const servicioCaido = text.includes('unavailable') && !text.includes('product');
   if (
     text.includes('stock')
-    || text.includes('available')
+    || (text.includes('available') && !servicioCaido)
     || text.includes('no disponible')
     || text.includes('agotad')
   ) {
@@ -3442,8 +3520,8 @@ export function readableOrderCreationError(error) {
   // reintentar una compra que NUNCA va a entrar, y sin decir por qué. Van antes
   // de la rama de `verified`, que si no se come el de «edad minima configurada».
   if (text.includes('alcohol') || text.includes('mayoria de edad') || text.includes('mayoría de edad')) {
-    if (text.includes('fuera de horario')) {
-      return 'La venta de bebidas con alcohol está fuera del horario permitido. Probá más tarde o quitá esos productos del carrito.';
+    if (text.includes('fuera de horario') || text.includes('fuera de la ventana')) {
+      return ALCOHOL_OUT_OF_HOURS_MESSAGE;
     }
     if (text.includes('confirmacion') || text.includes('confirmación')) {
       return 'Confirmá que sos mayor de 18 años para pedir bebidas con alcohol.';
@@ -3468,7 +3546,7 @@ export function readableOrderCreationError(error) {
   if (text.includes('create_order_with_items') || error?.code === 'PGRST202') {
     return 'El backend de pedidos todavía no tiene aplicada la migración productiva.';
   }
-  return 'No pudimos confirmar el pedido. Conservamos el intento para reintentar sin duplicarlo.';
+  return ORDER_NOT_CONFIRMED_MESSAGE;
 }
 
 // Conflicto de revisión: PT409 (HTTP 409) desde 20260924200000; 40001 en

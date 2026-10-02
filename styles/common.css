@@ -1042,11 +1042,13 @@ dialog::backdrop {
 }
 
 /* "Sin conexión" no tiene controles ni envoltorio: es una sola columna de
-   texto que se apila sola. */
+   texto que se apila sola. Y como no tiene nada que tocar, tampoco se queda
+   con un toque: lo que tenga debajo sigue siendo alcanzable. */
 .pwa-banner-offline {
   grid-template-columns: minmax(0, 1fr);
   grid-template-areas: none;
   gap: 3px;
+  pointer-events: none;
 }
 
 .pwa-banner-copy {

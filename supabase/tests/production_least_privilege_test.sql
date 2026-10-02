@@ -172,21 +172,28 @@ select is(
 --  4 · SECURITY DEFINER ejecutable por anon (migration 103)
 -- ══════════════════════════════════════════════════════════════════════════
 
+-- Este archivo corre tambien contra una base anterior (verify-a1-v2-sql), donde
+-- `get_business_service_status` (20261001213000) todavia no existe: alli son las 8 de
+-- siempre; con esa migracion aplicada son 9. La lista escrita es cerrada en los dos
+-- casos: cualquier otra funcion SECURITY DEFINER ejecutable por anon la hace fallar.
 select is(
   (select count(*)::integer from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and p.prosecdef
       and has_function_privilege('anon', p.oid, 'EXECUTE')),
-  9, 'quedan exactamente 9 SECURITY DEFINER ejecutables por anon');
+  8 + (to_regprocedure('public.get_business_service_status(uuid,timestamptz)') is not null)::integer,
+  'quedan exactamente las SECURITY DEFINER ejecutables por anon del contrato: 8, y 9 con el estado de servicio');
 
 select bag_eq(
   $$select p.proname::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname = 'public' and p.prosecdef
        and has_function_privilege('anon', p.oid, 'EXECUTE')$$,
-  $$values ('can_access_order'), ('check_scheduler_watchdog'), ('commerce_availability'),
-           ('get_business_service_status'),
+  $$select name from (values ('can_access_order'), ('check_scheduler_watchdog'), ('commerce_availability'),
            ('get_public_business_contact'), ('get_public_order_tracking'),
-           ('list_business_combos'), ('resolve_business_combo'), ('scheduler_heartbeat')$$,
-  'y son exactamente las 9 del contrato publico escrito');
+           ('list_business_combos'), ('resolve_business_combo'), ('scheduler_heartbeat')) contract(name)
+    union all
+    select 'get_business_service_status'
+     where to_regprocedure('public.get_business_service_status(uuid,timestamptz)') is not null$$,
+  'y son exactamente las del contrato publico escrito');
 
 -- B · las 5 RPC fiscales: authenticated si, anon no.
 select ok(not has_function_privilege('anon', 'public.authorize_fiscal_artifact_access(uuid,text)', 'EXECUTE'),

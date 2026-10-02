@@ -1,0 +1,1101 @@
+{
+  "schema": 1,
+  "description": "Register of the e-commerce hardening audit findings (severity P0, P1 and P2). The release gates NO_OPEN_P0 and NO_OPEN_P1 read this file: scripts/release/ecommerce-release-gates.mjs.",
+  "seeded_from": "ecommerce hardening audit of 2026-10-01: twelve domain readers plus independent verification of the P1 and top P2 findings (PG17 with the 158-migration baseline)",
+  "rules": {
+    "statuses": [
+      "open",
+      "fixed",
+      "accepted_risk",
+      "external_gate"
+    ],
+    "open": "Blocks PRODUCTION_READY when the severity is P0 or P1.",
+    "fixed": "Needs fixed_by: the commit or the migration that fixes it. Without it a P0/P1 still blocks.",
+    "accepted_risk": "Needs a non-empty notes field saying who accepted the risk and why. Without it a P0/P1 still blocks.",
+    "external_gate": "Depends on a third party or on the owner. Needs a non-empty notes field saying what it waits on and from whom; without it a P0/P1 still blocks. With notes it does not block PRODUCTION_READY and is reported separately as a blocker of the public launch.",
+    "severity": "The reader severity is kept, and for a cluster of aliases the worst one. verification[].severity is what the independent verifier graded; changing severity is a decision for the lead and belongs in notes.",
+    "aliases": "The same defect reported by another reader. An alias is closed together with its canonical finding."
+  },
+  "findings": [
+    {
+      "id": "STK-02",
+      "severity": "P1",
+      "title": "Panel stock edit overwrites products.stock with the counted number: reserved units ignored, no concurrency check, no ledger row; this oversells",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [
+        "CAT-05"
+      ],
+      "domain": "inventory",
+      "where": "public.apply_commercial_catalog_batch (also reached via apply_commercial_catalog_plan); js/business/business-catalog-editor.js buildCommercialEdit; js/business/business-operations-center.js saveCatalogEdits; same pattern in public.complete_scanned_product",
+      "related": [
+        "STK-07"
+      ],
+      "verification": [
+        {
+          "id": "STK-02",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        }
+      ]
+    },
+    {
+      "id": "DIAG-01",
+      "severity": "P1",
+      "title": "No order trace contract: diagnosing one order needs service_role SQL across ~15 tables with PII",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "observability",
+      "where": "Whole schema (NOT IMPLEMENTED); nearest objects: public.list_operational_pipeline, public.list_business_payments, public.get_public_order_tracking",
+      "verification": [
+        {
+          "id": "DIAG-01",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "EDGE-01",
+      "severity": "P1",
+      "title": "A non-2xx on the merchant-order lookup turns a legitimate approved payment into a permanent security review with no recovery or refund path",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "mp_edge",
+      "where": "supabase/functions/_shared/mercadopago.ts fetchMerchantOrder (L318-322) and paymentSnapshot (L343-347); public.record_mercadopago_payment_snapshot; callers mercadopago-payment-worker/index.ts L101-108 and mercadopago-checkout-status/index.ts L92-97"
+    },
+    {
+      "id": "EDGE-03",
+      "severity": "P1",
+      "title": "Production has no steady-state switch for real payments: every production preference needs the 'smoke' secret that runbooks and tooling require to be absent, and the failure happens after stock is reserved",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "mp_edge",
+      "where": "supabase/functions/_shared/payment-runtime.ts requireRealPaymentSmokeAuthorization (L203-211); _shared/seller-oauth.ts L414, L432, L455; _shared/mercadopago.ts L55; scripts/mercadopago/sincronizar-worker-hmac.mjs L90-93; docs/MERCADOPAGO_PRODUCCION_CP.md L54; docs/payments/mercadopago/PRODUCTION_CHECKLIST.md L21"
+    },
+    {
+      "id": "PAY-02",
+      "severity": "P1",
+      "title": "recover_paid_checkout_order can build an order on a payment that was already refunded, or has a refund in flight",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "payments_db",
+      "where": "public.recover_paid_checkout_order, public.can_recover_paid_checkout, public.record_payment_refund_response_v2, public.list_business_payments (can_recover_order)",
+      "related": [
+        "CS-02"
+      ],
+      "verification": [
+        {
+          "id": "PAY-02",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        }
+      ]
+    },
+    {
+      "id": "CS-01",
+      "severity": "P1",
+      "title": "A rejected first card attempt releases the stock, so the buyer's approved retry in the same Checkout Pro preference becomes a manual review instead of an order",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [
+        "PAY-01",
+        "EDGE-02"
+      ],
+      "domain": "checkout",
+      "where": "public.record_mercadopago_payment_snapshot (rejected and approved branches) + public.release_checkout_session_inventory; reached from mercadopago-payment-worker (webhook, and the every-minute provider probe)",
+      "verification": [
+        {
+          "id": "CS-01",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        },
+        {
+          "id": "PAY-01",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        }
+      ]
+    },
+    {
+      "id": "CS-02",
+      "severity": "P1",
+      "title": "Sessions parked in manual_review_required keep their 'active' reservations forever, and recover_paid_checkout_order then decrements the stock a second time",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [
+        "STK-04"
+      ],
+      "domain": "checkout",
+      "where": "public.record_mercadopago_payment_snapshot, public.finalize_paid_checkout_session (manual-review branches), public.release_checkout_session_inventory, public.expire_checkout_sessions, public.recover_paid_checkout_order",
+      "related": [
+        "PAY-02"
+      ],
+      "verification": [
+        {
+          "id": "CS-02",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        }
+      ]
+    },
+    {
+      "id": "CS-03",
+      "severity": "P1",
+      "title": "Mercado Pago orders lose the age confirmation: the rider is not told to verify age for paid alcohol orders",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [
+        "PRICE-07"
+      ],
+      "domain": "checkout",
+      "where": "public.finalize_paid_checkout_session (INSERT INTO public.orders); consumers public.list_available_rider_orders and public.rider_order_rpc_payload",
+      "verification": [
+        {
+          "id": "CS-03",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        }
+      ]
+    },
+    {
+      "id": "CS-04",
+      "severity": "P1",
+      "title": "Unpaid checkout sessions can reserve the whole catalog: no cap on concurrent open sessions, 1000 units per line, DB rate limit off by default, anonymous customers",
+      "status": "fixed",
+      "fixed_by": "7bdf9d4 · supabase/migrations/20261001180000_order_intake_guard.sql",
+      "notes": "Bounded by the same guard on create_checkout_session: sessions count against the customer pending cap and window shared with cash orders, a unit cap applies to any unpaid commitment, and a business ceiling applies. A reservation still holds stock until its TTL by design.",
+      "aliases": [
+        "EDGE-04"
+      ],
+      "domain": "checkout",
+      "where": "public.create_checkout_session; public.businesses.order_rate_limit_per_10_minutes; supabase/functions/mercadopago-create-checkout-session/index.ts; supabase/functions/_shared/payment-runtime.ts (enforceRateLimit, requestFingerprint)",
+      "related": [
+        "F1",
+        "F5",
+        "EDGE-05"
+      ],
+      "verification": [
+        {
+          "id": "CS-04",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        }
+      ]
+    },
+    {
+      "id": "F1",
+      "severity": "P1",
+      "title": "The manual (cash/coordinate) order path enforces no rate limit, pending cap, IP check or abuse logging; max_pending_orders_per_customer is enforced by nothing on either path",
+      "status": "fixed",
+      "fixed_by": "7bdf9d4 · supabase/migrations/20261001180000_order_intake_guard.sql",
+      "notes": "Scope of this entry: the missing intake limits only. The aliases STK-01, PRICE-01, AUTHZ-01 and OSM-01 are carried here for that half; their other half (an unpaid order holds stock with no expiry and no automatic release) is tracked by F2. Marking F1 fixed by the order intake guard does not close F2. Closed in the branch by the central intake guard (per-customer, per-origin and per-business limits, pending caps, cooldown, defaults instead of NULL=unlimited); pgTAP order_intake_guard_test.sql and the concurrency harness scripts/order-intake/intake-race.mjs run in the CI database gate.",
+      "aliases": [
+        "STK-01",
+        "PRICE-01",
+        "AUTHZ-01",
+        "OSM-01"
+      ],
+      "domain": "orders_abuse",
+      "where": "public.create_order_with_items and its chain down to public.create_order_with_items_core (last defined in supabase/migrations/20260812220000_business_operations_checkout_enforcement.sql:40); public.businesses.order_rate_limit_per_10_minutes and max_pending_orders_per_customer; public.order_abuse_events; supabase/migrations/20260725060000_alcohol_reservations_abuse.sql",
+      "related": [
+        "F2",
+        "F5",
+        "CS-04"
+      ],
+      "verification": [
+        {
+          "id": "F1",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        },
+        {
+          "id": "STK-01",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        },
+        {
+          "id": "PRICE-01",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        }
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "P1",
+      "title": "A single unpaid order can take the entire public stock, holds it with no expiry, and cancellation does not republish the products",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "orders_abuse",
+      "where": "public.create_order_with_items_core (item caps and stock UPDATE); public.orders.reservation_expires_at; public.release_expired_stock_reservations; public.change_order_status (supabase/migrations/20260919120000_business_self_delivery_and_finished_today.sql:55)",
+      "related": [
+        "F1",
+        "STK-06"
+      ],
+      "verification": [
+        {
+          "id": "F2",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        }
+      ]
+    },
+    {
+      "id": "CAT-01",
+      "severity": "P1",
+      "title": "Platform verification passes without service hours or delivery zones, and both enforcement flags can be switched off after verification",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "catalog_pipeline",
+      "where": "public.get_store_opening_readiness (items SERVICE_HOURS, DELIVERY_COVERAGE); public.platform_verify_business_ordering; public.set_service_enforcement; column defaults businesses.hours_enforced=false and delivery_zone_enforced=false",
+      "related": [
+        "CAT-02"
+      ]
+    },
+    {
+      "id": "CAT-02",
+      "severity": "P1",
+      "title": "No single PRODUCTION_READY gate; opening:check reports TECHNICAL_READY without checking migration parity, Edge Function deployment, the served commit, payment certification or open P0/P1",
+      "status": "fixed",
+      "fixed_by": "scripts/release/ecommerce-release-gates.mjs · docs/ecommerce-hardening/release-gates.json",
+      "notes": "One gate now evaluates catalog approval, prices, hours, zones, team, seller, payment certification, migration parity, Edge Functions, abuse protection and this register; anything unknown fails closed.",
+      "aliases": [],
+      "domain": "catalog_pipeline",
+      "where": "scripts/controlled-production/opening-check.mjs; scripts/controlled-production/opening-tools.mjs technicalChecks; scripts/comercial/compuerta-comercial.mjs; scripts/ci-catalog-release-gate.mjs; .github/workflows/deploy-controlled-production.yml",
+      "related": [
+        "CAT-01",
+        "TOOL-03"
+      ]
+    },
+    {
+      "id": "TOOL-01",
+      "severity": "P1",
+      "title": "The canonical DB gate (936 pgTAP, non-superuser migration apply, rollback drills, restore) cannot run on this notebook, and CI does not trigger for the hardening branch",
+      "status": "accepted_risk",
+      "fixed_by": null,
+      "notes": "Accepted: the canonical database gate needs Docker and cannot run on the operator notebook; it runs in GitHub Actions and is dispatched for this branch with gh workflow run ci.yml --ref <branch> (run 36924143156 green on 7bdf9d4). A local PostgreSQL 17 harness with shims covers development; its results are always reported as local.",
+      "aliases": [],
+      "domain": "tests_tooling",
+      "where": "scripts/run-release-v5-db.mjs lines 29 and 64-68; .github/workflows/ci.yml lines 3-12",
+      "verification": [
+        {
+          "id": "TOOL-01",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "STK-05",
+      "severity": "P2",
+      "title": "apply_inventory_movement never maintains available: taking a published product to 0 fails with a raw 23514",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "inventory",
+      "where": "public.apply_inventory_movement; CHECK products_available_requires_verification"
+    },
+    {
+      "id": "STK-06",
+      "severity": "P2",
+      "title": "Cancelling or rejecting an order returns stock but never republishes, while checkout expiry and POS do; products silently stay off the storefront",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [
+        "OSM-02"
+      ],
+      "domain": "inventory",
+      "where": "public.change_order_status (reached from cancel_order and transition_order)",
+      "related": [
+        "F2"
+      ]
+    },
+    {
+      "id": "STK-07",
+      "severity": "P2",
+      "title": "inventory_movements is not a complete stock ledger: most stock changes write no movement",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [
+        "DIAG-08",
+        "OSM-11"
+      ],
+      "domain": "inventory",
+      "where": "public.inventory_movements; writers limited to apply_inventory_movement, checkout_pos_sale, pos_apply_stock_movements, pos_apply_stock_count"
+    },
+    {
+      "id": "PRICE-02",
+      "severity": "P2",
+      "title": "order_items does not freeze SKU, barcode, category, alcohol flag or tax; SKU is dropped at finalization and pos_list_orders joins it live",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "pricing_snapshot",
+      "where": "public.order_items (columns); public.finalize_paid_checkout_session; public.create_order_with_items_core; public.pos_list_orders; private.commercial_order_fiscal_evaluation",
+      "verification": [
+        {
+          "id": "PRICE-02",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "PRICE-03",
+      "severity": "P2",
+      "title": "Order money snapshot is immutable only by grants; no trigger protects orders money columns, order_items or order_combos, and nothing reconciles subtotal with the lines",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "pricing_snapshot",
+      "where": "public.orders (subtotal, discount_total, delivery_fee, total, currency_code); public.order_items; public.order_combos",
+      "verification": [
+        {
+          "id": "PRICE-03",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "PRICE-04",
+      "severity": "P2",
+      "title": "With zone enforcement on, the delivery fee and minimum are selected by a neighbourhood string the client declares, with no check against the confirmed pin",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [
+        "F-01"
+      ],
+      "domain": "pricing_snapshot",
+      "where": "public.resolve_delivery_zone (declared_area branch); callers create_order_with_items_core and create_checkout_session",
+      "verification": [
+        {
+          "id": "PRICE-04",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        },
+        {
+          "id": "F-01",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "DIAG-02",
+      "severity": "P2",
+      "title": "Webhook-sourced payment jobs and signature rejections are invisible to alerts and health",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [
+        "PAY-12"
+      ],
+      "domain": "observability",
+      "where": "public.reconcile_operational_alerts_for_business (PAYMENT_OUTBOX_STALLED and PAYMENT_WORKER_IDLE branches); public.build_operational_health (payments.outbox, payments.worker); public.get_production_operation_center (blocked_outboxes); public.record_mercadopago_webhook_receipt",
+      "verification": [
+        {
+          "id": "DIAG-02",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "DIAG-03",
+      "severity": "P2",
+      "title": "production-health-check.mjs can never be green and can never see a CRITICAL alert",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "observability",
+      "where": "scripts/production-health-check.mjs lines 61-66, 177-178, 181-187, 29 and 83",
+      "verification": [
+        {
+          "id": "DIAG-03",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "DIAG-04",
+      "severity": "P2",
+      "title": "Opening the Panel auto-resolves SCHEDULER_WATCHDOG_STALE while the scheduler is still dead",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "observability",
+      "where": "public.reconcile_operational_alerts_for_business (final UPDATE), reached from public.get_production_operation_center -> public.refresh_operational_alerts; alert written by public.check_scheduler_watchdog",
+      "verification": [
+        {
+          "id": "DIAG-04",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "DIAG-05",
+      "severity": "P2",
+      "title": "A disabled or unscheduled cron job raises no alert; the DB holds no expected-job inventory",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "observability",
+      "where": "public.reconcile_operational_alerts_for_business (SCHEDULER_JOB_FAILING and SCHEDULER_JOB_STALLED); public.list_scheduler_health; 20260909050330_a1_a4_release_interlock_v5.sql lines 258 and 515",
+      "verification": [
+        {
+          "id": "DIAG-05",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "DIAG-06",
+      "severity": "P2",
+      "title": "cron.job_run_details is never pruned and list_scheduler_health aggregates its full history every minute",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "observability",
+      "where": "public.list_scheduler_health; callers public.reconcile_operational_alerts_for_business (three references per business per sweep) and public.build_operational_health"
+    },
+    {
+      "id": "DIAG-07",
+      "severity": "P2",
+      "title": "ORDER_NOT_ACCEPTED and ORDER_STALLED self-resolve after 24 h while the order stays open and keeps its stock",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "observability",
+      "where": "public.reconcile_operational_alerts_for_business (ORDER_NOT_ACCEPTED, ORDER_STALLED); public.release_expired_stock_reservations; public.create_order_with_items_core"
+    },
+    {
+      "id": "DIAG-09",
+      "severity": "P2",
+      "title": "Alerts and new-order notifications have no out-of-band channel: outboxes have no consumer and health signals have no emitter",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "observability",
+      "where": "public.notification_outbox (writer enqueue_new_order_notification), public.delivery_outbox (writers confirm_delivery_code, report_rider_delivery_issue), public.service_health_signals / public.record_service_health_signal, public.operational_alerts",
+      "related": [
+        "OSM-05"
+      ]
+    },
+    {
+      "id": "DIAG-10",
+      "severity": "P2",
+      "title": "External watchdogs and health scripts default to projects other than the controlled-production store",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "observability",
+      "where": "scripts/scheduler-watchdog-probe.mjs line 49; services/scheduler-watchdog/wrangler.toml; scripts/production-health-check.mjs; scripts/production-auth-health.mjs; .github/workflows/scheduler-watchdog.yml"
+    },
+    {
+      "id": "AUTHZ-02",
+      "severity": "P2",
+      "title": "Column-level UPDATE grants on products and businesses bypass RPC authority, validation, inventory ledger and audit",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [
+        "STK-03",
+        "CAT-06"
+      ],
+      "domain": "security_rls",
+      "where": "GRANT UPDATE(available,is_active,sort_order,stock) ON public.products TO authenticated + policy 'production team updates products'; GRANT UPDATE(21 columns) ON public.businesses TO authenticated + policy 'production owners update business ordering'",
+      "related": [
+        "CAT-08"
+      ]
+    },
+    {
+      "id": "AUTHZ-03",
+      "severity": "P2",
+      "title": "identity_close_own_session lets any authenticated user (including an anonymous customer) append unlimited audit events to any business",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "security_rls",
+      "where": "public.identity_close_own_session(p_business_id uuid); public.identity_audit_events"
+    },
+    {
+      "id": "AUTHZ-04",
+      "severity": "P2",
+      "title": "Permission catalog is not the enforced contract: admin can authorize ARCA homologation, staff can cancel orders",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "security_rls",
+      "where": "public.identity_role_permissions vs public.authorize_arca_homologation, public.cancel_order, public.transition_order, public.set_business_open_state"
+    },
+    {
+      "id": "EDGE-05",
+      "severity": "P2",
+      "title": "Rate-limit key combines IP and user and takes the first x-forwarded-for hop; the unauthenticated webhook writes a row per rejected request; nothing purges the tables",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [
+        "F7"
+      ],
+      "domain": "mp_edge",
+      "where": "supabase/functions/_shared/payment-runtime.ts enforceRateLimit and requestFingerprint (L243-270); mercadopago-webhook/index.ts L34 and L75-80; public.consume_payment_rate_limit; public.payment_rate_limit_buckets; public.payment_webhook_receipts",
+      "related": [
+        "F5"
+      ]
+    },
+    {
+      "id": "EDGE-06",
+      "severity": "P2",
+      "title": "Preference creation has dead ends: any provider 4xx (including 408/409/429) marks the attempt failed with no way to open a new one; local errors are recorded as provider timeouts; ambiguous attempts are never resolved",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [
+        "PAY-09"
+      ],
+      "domain": "mp_edge",
+      "where": "supabase/functions/mercadopago-create-preference/index.ts L94-153; public.record_mercadopago_preference_failed; public.prepare_mercadopago_preference_v2; public.record_mercadopago_preference_uncertain"
+    },
+    {
+      "id": "EDGE-08",
+      "severity": "P2",
+      "title": "The seller credential is destroyed on non-authoritative provider signals: any HTTP 401 on any resource, and any ambiguous refresh outcome",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "mp_edge",
+      "where": "supabase/functions/_shared/mercadopago.ts mercadoPagoRequest (L147-149); _shared/seller-oauth.ts invalidateRejectedToken (L468-486) and sellerAccessToken (L230-241, L288-306)"
+    },
+    {
+      "id": "PAY-03",
+      "severity": "P2",
+      "title": "Retrying a webhook job is not idempotent: the second snapshot violates the payment_events unique key and the job dead-letters",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "payments_db",
+      "where": "public.record_mercadopago_payment_snapshot (insert into payment_events) + constraint payment_events_payment_intent_id_webhook_receipt_id_event_t_key; supabase/functions/mercadopago-payment-worker/index.ts processJob",
+      "verification": [
+        {
+          "id": "PAY-03",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "PAY-04",
+      "severity": "P2",
+      "title": "The provider payment identity is not pinned: a second payment on the same external_reference overwrites it, and a double charge is not detected",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [
+        "EDGE-07"
+      ],
+      "domain": "payments_db",
+      "where": "public.record_mercadopago_payment_snapshot (update of provider_payment_id / provider_status)",
+      "verification": [
+        {
+          "id": "PAY-04",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "PAY-06",
+      "severity": "P2",
+      "title": "Completed intents are never reconciled again, and a dead-lettered webhook cannot be revived; no provider-vs-local reconciliation report exists",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "payments_db",
+      "where": "public.enqueue_payment_reconciliation, public.enqueue_checkout_provider_probes, public.record_mercadopago_webhook_receipt (duplicate path), public.fail_payment_outbox_job; reconciliation report: NOT IMPLEMENTED",
+      "verification": [
+        {
+          "id": "PAY-06",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "PAY-07",
+      "severity": "P2",
+      "title": "A refund stuck in 'requested', or 'ambiguous' without a provider id, has no resolution path and blocks every later refund of that payment",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [
+        "EDGE-09"
+      ],
+      "domain": "payments_db",
+      "where": "public.prepare_payment_refund_v2, public.mark_payment_refund_ambiguous; supabase/functions/mercadopago-refund/index.ts; worker reconcileRefund"
+    },
+    {
+      "id": "PAY-08",
+      "severity": "P2",
+      "title": "Manual collections on online orders are missing from the daily cash reconciliation and from alerts",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "payments_db",
+      "where": "public.daily_reconciliation_snapshot_internal, public.reconcile_operational_alerts_for_business, public.confirm_manual_order_payment"
+    },
+    {
+      "id": "CS-05",
+      "severity": "P2",
+      "title": "'completed' is not terminal: an invalid later snapshot overwrites a completed session and its intent, and there is no transition guard on checkout_sessions",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [
+        "PAY-05"
+      ],
+      "domain": "checkout",
+      "where": "public.record_mercadopago_payment_snapshot (not v_valid branch); table public.checkout_sessions (no status trigger); private.order_payment_state",
+      "verification": [
+        {
+          "id": "CS-05",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        },
+        {
+          "id": "PAY-05",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "CS-06",
+      "severity": "P2",
+      "title": "The Edge Function hides every server rejection behind CHECKOUT_NOT_AVAILABLE, so the buyer cannot be told what to fix",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [
+        "F-04"
+      ],
+      "domain": "checkout",
+      "where": "supabase/functions/mercadopago-create-checkout-session/index.ts; js/repositories/supabase_order_repository.js (startMercadoPagoCheckout)",
+      "verification": [
+        {
+          "id": "CS-06",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        },
+        {
+          "id": "F-04",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "P2",
+      "title": "next_order_public_code truncates above 9999: a hard lifetime cap of 9,999 order codes per database, after which the code loop never terminates (including finalization of paid Mercado Pago sessions)",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "orders_abuse",
+      "where": "public.next_order_public_code (supabase/migrations/20260601205707_operational_orders_v1.sql:177-181); loops in public.create_order_with_items_core and public.finalize_paid_checkout_session; UNIQUE orders_code_key (code)",
+      "verification": [
+        {
+          "id": "F3",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "P2",
+      "title": "Idempotent replay of a pickup order is not side-effect free: every replay bumps orders.revision and updated_at and can rewrite unfingerprinted columns, letting the customer make operator commands fail with PT409",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "orders_abuse",
+      "where": "public.create_order_with_items_profile_v1_city_legacy (body from supabase/migrations/20260728090000_customer_profiles_addresses.sql:626-640); triggers orders_set_updated_at and orders_zz_bump_revision; public.transition_order and public.cancel_order",
+      "verification": [
+        {
+          "id": "F4",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "P2",
+      "title": "The only existing limiter (Mercado Pago path) is weak: NULL means unlimited, the DB count is not race-safe and ignores orders, and the Edge bucket subject mixes IP and user id so a changed IP resets the per-user budget",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "orders_abuse",
+      "where": "public.create_checkout_session (supabase/migrations/20260813020000_checkout_pro_carries_customer_notes.sql:498-507); supabase/functions/_shared/payment-runtime.ts:243-270 (enforceRateLimit, requestFingerprint); supabase/functions/mercadopago-create-checkout-session/index.ts:22",
+      "related": [
+        "EDGE-05",
+        "CS-04"
+      ],
+      "verification": [
+        {
+          "id": "F5",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "P2",
+      "title": "Payload key address_label is stored without any length limit in orders.delivery_address_formatted; manual-path notes are not stripped of control characters",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "orders_abuse",
+      "where": "public.create_order_with_items_profile_v1_city_legacy; public.create_order_with_items_core (length check); public.orders.delivery_address_formatted",
+      "verification": [
+        {
+          "id": "F6",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "CAT-03",
+      "severity": "P2",
+      "title": "apply_commercial_catalog_batch silently leaves a product hidden and unverified when a row combines a price change with publish=true on a verified but not-available product",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "catalog_pipeline",
+      "where": "public.apply_commercial_catalog_batch (republish block) together with trigger public.fail_close_verified_product_master_change; public.apply_commercial_catalog_plan (discards row outcomes); scripts/import-commercial-catalog.mjs applyCommercialImport"
+    },
+    {
+      "id": "CAT-04",
+      "severity": "P2",
+      "title": "Catalog price, stock and publication changes have no audit trail and no before-image, so a committed batch cannot be rolled back",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "catalog_pipeline",
+      "where": "public.apply_commercial_catalog_batch, public.apply_commercial_catalog_plan, public.set_commercial_product_publication, public.unpublish_catalog_product; table public.products (triggers); public.business_config_audit"
+    },
+    {
+      "id": "CAT-07",
+      "severity": "P2",
+      "title": "Products created by the sheet 'alta' or by scanned drafts have no owner-accessible path to become publishable; the documented 'second pass' cannot succeed",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "catalog_pipeline",
+      "where": "public.apply_commercial_catalog_plan (INSERT column list); public.publish_catalog_product_draft; CHECKs products_verified_master_data, products_verified_publication_authority, products_verified_numeric_ranges"
+    },
+    {
+      "id": "CAT-08",
+      "severity": "P2",
+      "title": "Alcohol enablement, abuse limits, currency and open/ordering state are direct column writes on businesses with no audit, bypassing the audited RPCs",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "catalog_pipeline",
+      "where": "Column grants on public.businesses to authenticated; policy 'production owners update business ordering' (owner/admin); scripts/controlled-production/alcohol-policy.mjs line 90; trigger audit_business_commercial_change",
+      "related": [
+        "AUTHZ-02"
+      ]
+    },
+    {
+      "id": "TOOL-02",
+      "severity": "P2",
+      "title": "The staging certifier cannot be reused as a library: no exports and it executes on import",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "tests_tooling",
+      "where": "scripts/e2e-staging/backend-e2e-certification.mjs line 1476 (`await run();`), and the whole module",
+      "verification": [
+        {
+          "id": "TOOL-02",
+          "real": true,
+          "reproduced": true,
+          "severity": "P3"
+        }
+      ]
+    },
+    {
+      "id": "TOOL-03",
+      "severity": "P2",
+      "title": "The certifier hard-requires staging ledger == repo ledger, and staging promotion is manual with no script (Supabase CLI not installed here)",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "tests_tooling",
+      "where": "scripts/e2e-staging/backend-e2e-certification.mjs lines 259-262 and 509-510; artifacts/taba-e2e-cert-20261001-022224/final-report.md lines 109-125 and 304",
+      "related": [
+        "CAT-02"
+      ],
+      "verification": [
+        {
+          "id": "TOOL-03",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "TOOL-04",
+      "severity": "P2",
+      "title": "Order-core SQL suites are orphaned: the runner they name does not exist and none of them is in CI",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "tests_tooling",
+      "where": "supabase/tests/order_end_to_end_chain.local.sql line 9; order_intake_dispatch_p0.local.sql line 4; order_intake_dispatch_audit.local.sql line 5; scripts/run-release-v5-db.mjs lines 196-208"
+    },
+    {
+      "id": "TOOL-05",
+      "severity": "P2",
+      "title": "`npm test` mutates the worktree: one test rewrites .github/workflows/ci.yml in place",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "tests_tooling",
+      "where": "tests/supabase-config-legible.test.mjs lines 103-112; tests/production-sale-e2e-auto.test.mjs line 49",
+      "verification": [
+        {
+          "id": "TOOL-05",
+          "real": true,
+          "reproduced": true,
+          "severity": "P3"
+        }
+      ]
+    },
+    {
+      "id": "TOOL-06",
+      "severity": "P2",
+      "title": "There is no staging runner for the literal last-unit race, and the staging stock pilot is single-shot",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "tests_tooling",
+      "where": "scripts/controlled-production/last-unit-race.mjs line 22; scripts/e2e-staging/stock-concurrency-pilot.mjs lines 8-9 and 18"
+    },
+    {
+      "id": "TOOL-07",
+      "severity": "P2",
+      "title": "There is no passing capacity baseline on staging, and the capacity tool has no p99 or per-operation thresholds",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "tests_tooling",
+      "where": "scripts/controlled-production/capacity-30.mjs lines 90-103 and 577-584; docs/evidence/controlled-production/capacity-staging-ci-20260924.json"
+    },
+    {
+      "id": "F-02",
+      "severity": "P2",
+      "title": "Paid Mercado Pago orders are created after closing or after a manual pause, with no flag, alert or cutoff; alcohol is not re-checked after session creation",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "hours_delivery",
+      "where": "public.finalize_paid_checkout_session; public.get_mercadopago_payment_authority_base_v2; create_checkout_session",
+      "verification": [
+        {
+          "id": "F-02",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "F-03",
+      "severity": "P2",
+      "title": "No public contract for CLOSES_AT, alcohol-window status or date exceptions; open state is split across two booleans",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "hours_delivery",
+      "where": "public.commerce_availability; absence of any business_closes_at function",
+      "verification": [
+        {
+          "id": "F-03",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "F-05",
+      "severity": "P2",
+      "title": "The web client does not map BUSINESS_CLOSED or OUT_OF_DELIVERY_ZONE on the manual path, and mislabels ALCOHOL_WINDOW_CLOSED",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "hours_delivery",
+      "where": "js/repositories/supabase_order_repository.js, readableOrderCreationError (lines 3414-3469)",
+      "verification": [
+        {
+          "id": "F-05",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "F-06",
+      "severity": "P2",
+      "title": "The functions that gate every order have almost no database-level tests; a migration header claims tests that do not exist",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "hours_delivery",
+      "where": "supabase/tests (missing); business_is_open, business_next_open_at, business_day_windows, resolve_delivery_zone, set_service_enforcement, set_business_service_exception, zone RPCs"
+    },
+    {
+      "id": "OSM-03",
+      "severity": "P2",
+      "title": "Customer cancellation is unreachable: the rule exists but no customer-callable function exposes it",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "lifecycle_cancel",
+      "where": "public.change_order_status (customer branch); grants on change_order_status, transition_order (3-arg), transition_order (4-arg), cancel_order"
+    },
+    {
+      "id": "OSM-04",
+      "severity": "P2",
+      "title": "No recovery path for in-flight deliveries: lost code or deactivated rider after pickup leaves only cancel",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "lifecycle_cancel",
+      "where": "public.confirm_delivery_code, public.confirm_business_delivery_code, public.release_or_reassign_delivery, public.assign_order_rider, public.prevent_unverified_delivery, public.recover_order_tracking_access"
+    },
+    {
+      "id": "OSM-05",
+      "severity": "P2",
+      "title": "notification_outbox has no consumer; customers get no notification or reason on cancel/reject",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "lifecycle_cancel",
+      "where": "public.enqueue_new_order_notification; public.notification_outbox; public.get_public_order_tracking; RLS on public.order_events",
+      "related": [
+        "DIAG-09"
+      ]
+    },
+    {
+      "id": "OSM-06",
+      "severity": "P2",
+      "title": "Partial fulfilment NOT IMPLEMENTED: packing is advisory and a shortage changes neither items, total nor stock",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "",
+      "aliases": [],
+      "domain": "lifecycle_cancel",
+      "where": "public.confirm_packing_session_once; public.change_order_status (preparing to ready); public.confirm_manual_order_payment"
+    }
+  ]
+}

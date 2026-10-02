@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "description": "Signed-off certification record of each payment method. The release gates PAYMENT_CERTIFICATION and MP_SELLER read this file (scripts/release/ecommerce-release-gates.mjs). An entry counts only when certified is true, the evidence is a path under artifacts/ or docs/ that exists and is tracked by git, and the date is a real calendar date that is not in the future.",
+  "opening_decision": null,
+  "opening_decision_shape": {
+    "purpose": "Explicit record of the payment methods the store opens with. While it is null and Mercado Pago is not configured on the target, MP_SELLER fails with PAYMENT_DECISION_MISSING: 'manual only' is never inferred from a missing seller.",
+    "methods": "['manual'] to open with cash and transfer only, or ['manual', 'mercadopago']",
+    "decided_by": "who took the decision (role or name, no e-mail)",
+    "date": "YYYY-MM-DD, a real date that is not in the future",
+    "notes": "free text"
+  },
+  "entries": [
+    {
+      "method": "manual",
+      "environment": "staging",
+      "certified": true,
+      "evidence": "artifacts/taba-e2e-cert-20261001-022224",
+      "date": "2026-10-01",
+      "run_id": "TABA_E2E_CERT_20261001022224",
+      "result": "164/164 checks, 16/16 phases",
+      "limits": "Covers one cash delivery order end to end on staging (customer, business panel contract, rider, tracking, delivery code, idempotency, lost response, RLS, stock) at main 1358188 plus fix 62f8566, with a 158-migration ledger. It does not cover: Mercado Pago, the catalog import and publication pipeline, controlled production, or migration 20261001180000 (order intake guard), which was written after the run, so the guard is not covered by this evidence."
+    },
+    {
+      "method": "mercadopago",
+      "environment": "production",
+      "certified": false,
+      "evidence": null,
+      "date": "2026-10-01",
+      "reason": "sandbox approval blocked at provider (WCS-51579) and requires human test accounts",
+      "limits": "Not certified in any environment. The sandbox approval is blocked at the provider (WCS-51579) and needs human test accounts, and the staging certification report of 2026-10-01 records that the seller of the real store is not connected. Certifying it takes an approved sandbox payment and then the controlled real payment of docs/REAL-PAYMENT-CANARY-RUNBOOK.md."
+    }
+  ]
+}

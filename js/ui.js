@@ -1908,7 +1908,7 @@ function renderHomeSections() {
 // acá va dentro del botón y por lo tanto no se anuncia solo— viajan en el
 // nombre del acceso a la ficha.
 function homeMediaLabel(product) {
-  const parts = [`Ver ${product.name}`];
+  const parts = [`Ver ${productAccessibleName(product)}`];
   const stockState = cardAvailabilityLabel(product);
   if (stockState) parts.push(stockState);
   if (product.alcoholic) {
@@ -2859,8 +2859,10 @@ function renderCatalogMeta() {
   // no se puede comprar: quien entra scrollea diecisiete tarjetas hasta
   // entenderlo solo. Se dice de una vez, y sólo cuando pasa: si hay aunque sea
   // uno comprable, el contador no agrega nada.
-  const buyable = products.filter(isCommerciallyPurchasable).length;
-  const pendingNote = count > 0 && buyable === 0 ? ' · todavía sin precio publicado' : '';
+  const noneBuyable = noneBuyableReason(products);
+  const pendingNote = noneBuyable
+    ? ` · ${count === 1 && noneBuyable === 'showcase' ? 'todavía no está a la venta' : NONE_BUYABLE_COPY[noneBuyable].note}`
+    : '';
   setText(
     '[data-catalog-count]',
     catalogLoading
@@ -2926,24 +2928,44 @@ function renderProducts() {
     const query = state.searchQuery.trim();
     const isSearch = Boolean(query);
     const narrowed = state.activeCategory !== 'all';
+    // Los filtros se suman al rubro y no se sueltan al cambiar de rubro. Sin
+    // mirarlos, una combinación sin resultados —Marca X con Capacidad Y— se
+    // explicaba como «No hay productos disponibles en esta categoría» estando
+    // en «Todas», y con un filtro puesto «Favoritos» decía «Todavía no
+    // guardaste favoritos» a quien sí tenía. La única salida ofrecida borraba
+    // también el rubro y la búsqueda.
+    const filtersActive = Object.values({ ...defaultCatalogFilters(), ...(state.catalogFilters || {}) })
+      .some((value) => value !== 'all');
+    // Y sólo son la causa si sin ellos habría algo: «Favoritos» vacío con un
+    // filtro heredado no se arregla quitando el filtro.
+    const emptyWithoutFilters = filtersActive && !isSearch
+      && resolveCatalogListing({ ...state, catalogFilters: defaultCatalogFilters() }).products.length === 0;
+    const filtersCause = filtersActive && !isSearch && !emptyWithoutFilters;
     // El estado vacío nombra la causa concreta —la consulta— y su acción
     // primaria la deshace. Es el único lugar, junto al input, donde la
     // consulta se repite.
-    const emptyTitle = isFavorites && !isSearch
-      ? 'Todavía no guardaste favoritos.'
-      : isSearch
-        ? `No encontramos «${escapeHtml(query)}»`
-        : 'No hay productos disponibles en esta categoría.';
-    const emptyCopy = isFavorites && !isSearch
-      ? 'Tocá Guardar en un producto para encontrarlo acá.'
-      : isSearch
-        ? 'Probá con la marca o la presentación.'
-        : 'Volvé a ver el catálogo completo o elegí otra categoría.';
+    const emptyTitle = filtersCause
+      ? 'Ningún producto coincide con los filtros.'
+      : isFavorites && !isSearch
+        ? 'Todavía no guardaste favoritos.'
+        : isSearch
+          ? `No encontramos «${escapeHtml(query)}»`
+          : 'No hay productos disponibles en esta categoría.';
+    const emptyCopy = filtersCause
+      ? 'Quitá algún filtro para ver más productos.'
+      : isFavorites && !isSearch
+        // El control de la tarjeta es un corazón sin texto: «Tocá Guardar»
+        // nombraba un botón que en la góndola no se llama así.
+        ? 'Tocá el corazón de un producto para guardarlo y encontrarlo acá.'
+        : isSearch
+          ? 'Probá con la marca o la presentación.'
+          : 'Volvé a ver el catálogo completo o elegí otra categoría.';
     renderCatalogSurface(container, `
       <div class="empty-state">
         <strong>${emptyTitle}</strong>
         <p class="empty-state-copy">${emptyCopy}</p>
         <div class="empty-actions">
+          ${filtersActive ? `<button class="${filtersCause ? 'primary-button' : 'secondary-button'} compact" type="button" data-reset-catalog-filters>Limpiar filtros</button>` : ''}
           ${isSearch ? '<button class="primary-button compact" type="button" data-clear-search>Limpiar búsqueda</button>' : ''}
           ${isSearch && narrowed ? '<button class="secondary-button compact" type="button" data-search-everywhere>Buscar en todo</button>' : ''}
           <button class="secondary-button compact" type="button" data-clear-catalog-filters>Ver todo el catálogo</button>
@@ -2967,13 +2989,13 @@ function renderProducts() {
    * local los va a vender— sólo agrega la puerta a lo que hoy SÍ se puede
    * pedir. Cuando el negocio publique esos precios, el aviso desaparece solo.
    */
-  const nadaComprable = filteredProducts.every((product) => !isCommerciallyPurchasable(product));
+  const nadaComprable = noneBuyableReason(filteredProducts);
   const hayComprables = getCustomerCatalogProducts(state.products).some(isCommerciallyPurchasable);
   const avisoSinComprables = nadaComprable
     ? `<div class="catalog-none-buyable" role="status">
         <strong>${filteredProducts.length === 1
-          ? 'Este producto todavía no tiene precio publicado.'
-          : `Ninguno de estos ${filteredProducts.length} tiene precio publicado todavía.`}</strong>
+          ? NONE_BUYABLE_COPY[nadaComprable].one
+          : NONE_BUYABLE_COPY[nadaComprable].many(filteredProducts.length)}</strong>
         ${hayComprables ? '<button class="primary-button compact" type="button" data-clear-catalog-filters>Ver lo que sí se puede pedir</button>' : ''}
       </div>`
     : '';
@@ -3018,9 +3040,12 @@ function renderProducts() {
     // en el nombre accesible del botón. Antes se imprimía dos veces visibles:
     // «Últimas 3» sobre la imagen y «Últimas 3» otra vez debajo del envase.
     const stockState = cardAvailabilityLabel(product);
+    // Y con el nombre que se LEE en la tarjeta más su presentación: con el
+    // nombre crudo, la Coca-Cola de 2,25 L y la de 1,5 L eran dos botones «Ver
+    // Coca-Cola» iguales, que además no coincidían con el título de al lado.
     const mediaLabel = stockState
-      ? `Ver ${product.name}. ${stockState}`
-      : `Ver ${product.name}`;
+      ? `Ver ${productAccessibleName(product)}. ${stockState}`
+      : `Ver ${productAccessibleName(product)}`;
     return `
       <article data-catalog-key="product:${escapeHtml(product.id)}" class="product-card ${outOfStock ? 'out-of-stock' : ''} ${offer ? 'is-offer' : ''} ${inCart > 0 ? 'in-cart' : ''}">
         <div class="product-media-frame">
@@ -3127,13 +3152,55 @@ export function availabilityLabel(product) {
 
 // En la tarjeta sólo se rotula lo que hay que avisar. Estar disponible es lo
 // normal: etiquetarlo llena la grilla de cintas y no aporta información.
-function cardAvailabilityLabel(product) {
+//
+// Mismo orden que `stockPill`, que es lo que se ve: la pastilla va con
+// `aria-hidden` y este texto es su única voz. Antes `!available` se miraba
+// primero, así que una cerveza en vidriera —pastilla «Próximamente»— y un
+// producto agotado —pastilla «Agotado»— se anunciaban los dos «No disponible».
+export function cardAvailabilityLabel(product) {
   if (isPricePending(product)) return '';
-  if (product.archived || !product.available) return 'No disponible';
+  if (product.archived) return 'No disponible';
+  if (esVidrieraDeAlcohol(product)) return 'Próximamente';
   if (product.stock <= 0) return 'Agotado';
+  if (!product.available) return 'No disponible';
   if (product.stock <= 4) return `Últimas ${product.stock}`;
   return '';
 }
+
+/*
+ * POR QUÉ no se puede pedir NADA de una lista, dicho con la causa real.
+ *
+ * El aviso decía siempre «todavía sin precio publicado». Era cierto en la
+ * demostración, donde hay fichas sin precio; en la tienda real esas fichas no
+ * se muestran, así que cuando aparecía era por otra cosa —toda la góndola de
+ * alcohol en vidriera, o una búsqueda que cae en un agotado— y lo decía al
+ * lado de tarjetas con el precio a la vista. Medido buscando «quilmes» con el
+ * producto en vidriera a $ 2.400: «1 producto · todavía sin precio publicado».
+ */
+export function noneBuyableReason(products = []) {
+  if (!products.length || products.some(isCommerciallyPurchasable)) return '';
+  if (products.every(isPricePending)) return 'price';
+  if (products.every(esVidrieraDeAlcohol)) return 'showcase';
+  return 'unavailable';
+}
+
+const NONE_BUYABLE_COPY = Object.freeze({
+  price: Object.freeze({
+    note: 'todavía sin precio publicado',
+    one: 'Este producto todavía no tiene precio publicado.',
+    many: (count) => `Ninguno de estos ${count} tiene precio publicado todavía.`,
+  }),
+  showcase: Object.freeze({
+    note: 'todavía no están a la venta',
+    one: 'Este producto todavía no está a la venta.',
+    many: (count) => `Ninguno de estos ${count} está a la venta todavía.`,
+  }),
+  unavailable: Object.freeze({
+    note: 'sin disponibilidad por ahora',
+    one: 'Este producto no está disponible por ahora.',
+    many: (count) => `Ninguno de estos ${count} está disponible por ahora.`,
+  }),
+});
 
 // Acceso directo a Tracking desde Home cuando hay un pedido en curso.
 export function renderHomeActiveOrder() {

@@ -744,9 +744,14 @@
   font-weight: 850;
 }
 
+/* Superficie y tinta se declaran JUNTAS. La tinta era `--taba-muted`, que en
+   la tienda del cliente se remapea a un gris claro calibrado para fondo oscuro:
+   sobre esta pastilla clara daba 1,92:1, o sea que «Próximamente», «Agotado» y
+   «No disponible» casi no se leían encima de la foto. En producción es el
+   estado de toda la góndola de alcohol. Con el gris de papel da 5,4:1. */
 .stock-pill.empty {
   background: #f0f0f1;
-  color: var(--taba-muted);
+  color: #5b6270;
 }
 
 /* Jerarquía fija: producto → presentación → precio → acción. Sin `min-height`
@@ -915,6 +920,24 @@
 
   .product-action [data-add-product].is-price-pending .add-text {
     display: inline;
+  }
+
+  /* El disco de 44 px es para «+». Un producto que no se puede comprar no
+     tiene «+» que mostrar: «Próximamente» quedaba como un cuadrado vacío y
+     «No disponible» como un «+» apagado. El estado se escribe, a lo ancho. */
+  .product-action .add-button:disabled:not(.is-price-pending) {
+    width: 100%;
+    flex-basis: auto;
+    padding-inline: 12px;
+  }
+
+  .product-action .add-button:disabled:not(.is-price-pending) .add-plus {
+    display: none;
+  }
+
+  .product-action .add-button:disabled:not(.is-price-pending) .add-text {
+    display: inline;
+    font-size: 13px;
   }
 
   .product-action .qty-stepper {
@@ -1419,8 +1442,23 @@
   font-size: 15px;
 }
 
-.modal-cart-control.add-button .add-text::after {
+/* El sufijo completa «Agregar» y nada más. Sin el `:not(:disabled)` también se
+   le pegaba a los otros dos textos del mismo control y la ficha de una cerveza
+   en vidriera decía «Próximamente al pedido», que además de no ser una frase
+   suena a promesa. */
+.modal-cart-control.add-button:not(:disabled) .add-text::after {
   content: " al pedido";
+}
+
+/* Lo que no se puede comprar no lleva el rojo de comprar. Quedaba el mismo
+   botón a media opacidad: un «Agregar» desteñido que invitaba a tocar. Es la
+   regla que ya tenía la tarjeta (`.product-action .add-button:disabled`), con
+   la superficie de la ficha. */
+.modal-cart-control.add-button:disabled {
+  border-color: var(--shelf-line-strong);
+  background: var(--shelf-raised);
+  color: var(--shelf-muted);
+  opacity: 1;
 }
 
 /* Ya en el carrito: el stepper reemplaza al botón y ocupa el mismo lugar, así

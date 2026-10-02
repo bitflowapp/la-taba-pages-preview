@@ -1828,7 +1828,11 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-vie
 body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view :is(
   .product-card,
   .modal-card
-) [data-price-pending-message] strong {
+) [data-price-pending-message] strong,
+/* La ficha NO vive dentro de `.app-view` —el <dialog> está después de </main>—,
+   así que la rama `.modal-card` de arriba no la alcanzaba nunca y en la ficha
+   «Precio próximamente» seguía saliendo como un importe de 28 px. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .modal-card [data-price-pending-message] strong {
   color: var(--shelf-gold-soft);
   font-size: 14px;
   font-weight: 800;
@@ -4284,6 +4288,27 @@ body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .prod
   background: var(--shelf-gold-wash);
   box-shadow: none;
   color: var(--shelf-gold-soft);
+}
+
+/* LO QUE NO SE PUEDE COMPRAR, DENTRO DE ESTA GÓNDOLA.
+   El mismo problema, en el otro estado: «Próximamente» (alcohol en vidriera) y
+   «No disponible» (agotado) heredaban el degradado rojo de comprar, apenas
+   atenuado por la opacidad de `:disabled`. En producción ese es el estado de
+   toda la góndola de alcohol mientras no esté la habilitación, así que media
+   tienda se veía como una fila de «Agregar» desteñidos. Superficie neutra, sin
+   sombra de botón, y el texto a opacidad plena para que se lea. Con el aviso a
+   lo ancho, el precio va arriba y la acción debajo, igual que en el teléfono. */
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-foot:has(.add-button:disabled:not(.is-price-pending)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-action .add-button:disabled:not(.is-price-pending) {
+  border-color: var(--shelf-line-strong);
+  background: var(--shelf-raised);
+  background-image: none;
+  box-shadow: none;
+  color: var(--shelf-muted);
+  opacity: 1;
 }
 
 /* RESULTADOS PARECIDOS. Ocupa la fila entera de la grilla y va antes de la

@@ -64,6 +64,10 @@ test('la campaña ocupa la banda de apertura sin mover el primer precio ni desbo
   await openRuntimeCatalog(baseline);
   await goHome(baseline);
   const editorial = await fold(baseline);
+  // Y en un escritorio bajo, donde la banda tiene su propio escalón de altura.
+  await baseline.setViewportSize({ width: 1366, height: 768 });
+  await baseline.waitForTimeout(250);
+  const editorialDesktop = await fold(baseline);
   await baseline.close();
 
   await useQaCampaigns(page);
@@ -90,6 +94,12 @@ test('la campaña ocupa la banda de apertura sin mover el primer precio ni desbo
   const campaign = await fold(page);
   expect(campaign.heroHeight, 'la pieza es más alta que la puerta editorial que reemplaza').toBeLessThanOrEqual(editorial.heroHeight);
   expect(campaign.firstAdd, 'la pieza empujó el primer «Agregar»').toBeLessThanOrEqual(editorial.firstAdd);
+
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.waitForTimeout(250);
+  const desktop = await fold(page);
+  expect(desktop.overflowX, '1366px: la pieza desborda a lo ancho').toBe(false);
+  expect(desktop.heroHeight, '1366×768: la pieza y la puerta editorial no miden lo mismo').toBe(editorialDesktop.heroHeight);
 });
 
 test('la escena corre sin crear ni quitar un solo nodo y termina en su cuadro final', async ({ page }) => {
@@ -172,6 +182,135 @@ test('fuera de pantalla la escena se pausa, y al volver sigue donde estaba', asy
   // Volver enseguida NO reinicia la función: sigue la misma entrada.
   const playsBack = (await page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics())).plays;
   expect(playsBack).toBe(playsAway);
+});
+
+test('una pieza que todavía no se vio espera en su primer cuadro, no en el final', async ({ page }) => {
+  await useQaCampaigns(page);
+  await openRuntimeCatalog(page);
+  // La pieza de la grilla va tras la cuarta tarjeta: en un teléfono queda bajo
+  // el pliegue. Antes esperaba mostrando la escena TERMINADA —la acción a la
+  // vista— y al entrar en pantalla saltaba al vacío para recién ahí empezar.
+  const piece = page.locator(`${GRID} [data-campaign]`);
+  await expect(piece).toHaveCount(1);
+  expect(await piece.evaluate((root) => root.getBoundingClientRect().top > window.innerHeight)).toBe(true);
+  await expect(piece).toHaveAttribute('data-motion-campaign', 'on');
+  await expect(piece).toHaveAttribute('data-motion-campaign-live', 'false');
+  const armed = await sceneState(page, `${GRID} [data-campaign]`);
+  expect(armed.total, 'la pieza no tiene su escena preparada').toBeGreaterThan(5);
+  expect(armed.running, 'la escena corre sin que nadie la vea').toBe(0);
+  expect(await piece.locator('.cmp-cta').evaluate((node) => getComputedStyle(node).opacity)).toBe('0');
+  expect((await page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics())).plays).toBe(0);
+  // El título, en cambio, está desde el primer cuadro: la pieza nunca es un hueco.
+  expect(await piece.locator('.cmp-headline').evaluate((node) => getComputedStyle(node).opacity)).toBe('1');
+
+  await piece.scrollIntoViewIfNeeded();
+  await expect(piece).toHaveAttribute('data-motion-campaign-live', 'true');
+  expect((await page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics())).plays).toBe(1);
+  await finishScene(page, `${GRID} [data-campaign]`);
+  expect(await piece.locator('.cmp-cta').evaluate((node) => getComputedStyle(node).opacity)).toBe('1');
+});
+
+test('volver a la home, o borrar una búsqueda, no repite la función', async ({ page }) => {
+  test.setTimeout(60_000);
+  await useQaCampaigns(page);
+  await openRuntimeCatalog(page);
+  await goHome(page);
+  const piece = page.locator(heroPiece);
+  await expect(piece).toHaveAttribute('data-motion-campaign-live', 'true');
+  const duration = await piece.evaluate((root) => Number.parseFloat(getComputedStyle(root).getPropertyValue('--cmp-dur')) * 1000);
+  // La entrada se ve entera, en tiempo real: es lo que hace una persona.
+  await page.waitForTimeout(duration + 400);
+  const plays = (await page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics())).plays;
+
+  // Las vistas se ocultan con `display: none`, que cancela las animaciones CSS:
+  // con la escena todavía «encendida», al volver arrancaba de cero.
+  await goCatalog(page);
+  await expect(piece).not.toHaveAttribute('data-motion-campaign', 'on');
+  await goHome(page);
+  await expect(piece).toBeVisible();
+  await page.waitForTimeout(400);
+  const back = await sceneState(page, heroPiece);
+  expect(back.state, 'la escena se volvió a encender al volver a la home').toBe('still');
+  expect(back.total, 'al volver hay animaciones corriendo otra vez').toBe(0);
+  expect(await piece.locator('.cmp-cta').evaluate((node) => getComputedStyle(node).opacity)).toBe('1');
+  expect((await page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics())).plays, 'la función se repitió').toBe(plays);
+
+  // Lo mismo con la pieza de la grilla, que sale y vuelve con cada búsqueda.
+  await goCatalog(page);
+  const gridPiece = page.locator(`${GRID} [data-campaign]`);
+  await gridPiece.scrollIntoViewIfNeeded();
+  await expect(gridPiece).toHaveAttribute('data-motion-campaign-live', 'true');
+  const gridDuration = await gridPiece.evaluate((root) => Number.parseFloat(getComputedStyle(root).getPropertyValue('--cmp-dur')) * 1000);
+  await page.waitForTimeout(gridDuration + 400);
+  const playsGrid = (await page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics())).plays;
+  const search = page.locator('[data-view="catalog"] [data-search-input]');
+  await search.fill('coca');
+  await expect(gridPiece).toHaveCount(0);
+  await search.fill('');
+  await expect(gridPiece).toHaveCount(1);
+  await gridPiece.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(400);
+  const again = await sceneState(page, `${GRID} [data-campaign]`);
+  expect(again.state, 'borrar la búsqueda volvió a encender la escena').toBe('still');
+  expect((await page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics())).plays).toBe(playsGrid);
+});
+
+test('ocultar un anuncio deja ese lugar sin anuncios: vuelve la puerta editorial, no otra campaña', async ({ page }) => {
+  await useQaCampaigns(page);
+  await openRuntimeCatalog(page);
+  await goHome(page);
+  await expect(page.locator(heroPiece)).toHaveAttribute('data-campaign', 'heineken-beer-pour');
+  await page.locator(`${heroPiece} [data-campaign-dismiss]`).click();
+  // Antes entraba la campaña siguiente —otra escena, arrancando de cero— debajo
+  // del aviso «Ocultamos el anuncio».
+  await expect(page.locator(`${HERO} [data-campaign]`)).toHaveCount(0);
+  await expect(page.locator(`${HERO} .home-hero-promo`)).toBeVisible();
+  await expect(page.locator('[data-toast]')).toContainText('Ocultamos el anuncio');
+  // Los otros lugares siguen como estaban: ahí nadie ocultó nada.
+  await expect(page.locator(`${INLINE} [data-campaign]`)).toHaveCount(1);
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-taba-startup', 'ready', { timeout: 20000 });
+  await goHome(page);
+  await expect(page.locator(`${HERO} [data-campaign]`)).toHaveCount(0);
+});
+
+test('la escena llena la banda que tiene, sin salirse de ella mientras sirve', async ({ page }) => {
+  await useQaCampaigns(page);
+  await openRuntimeCatalog(page);
+  await goHome(page);
+  const piece = page.locator(heroPiece);
+  await expect(piece).toHaveAttribute('data-motion-campaign-live', 'true');
+  for (const size of [{ width: 360, height: 800 }, { width: 390, height: 844 }, { width: 430, height: 932 }]) {
+    await page.setViewportSize(size);
+    await page.waitForTimeout(250);
+    const measured = await piece.evaluate((root) => {
+      const band = root.getBoundingClientRect();
+      const stage = root.querySelector('.cmp-stage').getBoundingClientRect();
+      const legal = root.querySelector('.cmp-legal')?.getBoundingClientRect();
+      return { band: band.height, stage: stage.height, top: stage.top - band.top, bottom: band.bottom - stage.bottom, legal: legal ? legal.height : 0 };
+    });
+    // Antes la escena medía el piso (`--cmp-h`) y no la banda: 65 px en 101.
+    expect(measured.stage / measured.band, `${size.width}px: la escena quedó chica dentro de su banda`).toBeGreaterThan(0.72);
+    expect(measured.top, `${size.width}px: la escena se sale por arriba`).toBeGreaterThanOrEqual(-0.5);
+    expect(measured.bottom, `${size.width}px: la escena pisa la leyenda legal`).toBeGreaterThanOrEqual(measured.legal);
+  }
+  // Y el envase inclinado, que es lo que más sube, queda adentro en todo el servido.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(250);
+  const overflow = await piece.evaluate((root) => {
+    const band = root.getBoundingClientRect();
+    let worst = 0;
+    for (const fraction of [0.24, 0.31, 0.45, 0.6, 0.68, 0.77]) {
+      for (const animation of root.getAnimations({ subtree: true })) {
+        const timing = animation.effect.getComputedTiming();
+        if (timing.iterations === 1) { animation.pause(); animation.currentTime = Number(timing.duration) * fraction; }
+      }
+      const vessel = root.querySelector('.cmp-vessel').getBoundingClientRect();
+      worst = Math.max(worst, band.top - vessel.top);
+    }
+    return worst;
+  });
+  expect(overflow, 'el envase se sale de la pieza al servir').toBeLessThanOrEqual(1);
 });
 
 test('tocar la pieza abre la ficha de SU producto y no toca el carrito', async ({ page }) => {

@@ -1595,7 +1595,10 @@ function bindEvents() {
     const dismissButton = target.closest('[data-campaign-dismiss]');
     if (dismissButton) {
       const surface = dismissButton.closest('[data-home-hero-promo], [data-home-campaign], [data-product-grid]');
-      dismissCampaign(dismissButton.dataset.campaignDismiss);
+      dismissCampaign(
+        dismissButton.dataset.campaignDismiss,
+        dismissButton.closest('[data-campaign]')?.dataset.campaignPlacement,
+      );
       renderAll();
       const next = surface?.hidden ? null : surface?.querySelector('button:not([disabled]), a[href]');
       (next || document.querySelector(`[data-view="${activeView}"] h1, [data-view="${activeView}"] h2`))?.focus?.({ preventScroll: true });

@@ -21,13 +21,17 @@ import { beerPour } from './presets/beer-pour.js';
 import { coldCan } from './presets/cold-can.js';
 import { productDrop } from './presets/product-drop.js';
 import { iceReveal } from './presets/ice-reveal.js';
-import { CAMPAIGN_VESSELS, safeColor, shade } from './presets/shared.js';
+import { spotlightProduct } from './presets/spotlight-product.js';
+import { glassFill } from './presets/glass-fill.js';
+import { CAMPAIGN_VESSELS, safeColor, sceneId, shade } from './presets/shared.js';
 
 export const CAMPAIGN_PRESETS = Object.freeze({
   [beerPour.id]: beerPour,
   [coldCan.id]: coldCan,
   [productDrop.id]: productDrop,
   [iceReveal.id]: iceReveal,
+  [spotlightProduct.id]: spotlightProduct,
+  [glassFill.id]: glassFill,
 });
 
 export const CAMPAIGN_PLACEMENTS = Object.freeze(['home-hero', 'home-inline', 'catalog-inline']);
@@ -45,7 +49,30 @@ export const ALCOHOL_LEGAL_NOTICE = 'Beber con moderación. Prohibida su venta a
  * popularidad sin dato son invención. Es la misma regla que ya protege al hero
  * de la home, escrita una sola vez.
  */
-const FORBIDDEN_COPY = /\$|%|\b(?:descuent|ofert|promo|rebaj|liquidaci|gratis|ahorr|imperdible|ultimas? unidades|por tiempo limitado|mas vendid|mejor precio|sorte|premio|antes\b|\d+\s*x\s*\d+)/i;
+/*
+ * La lista creció porque la primera versión dejaba pasar lo que más importa.
+ * «Precio especial», «50 OFF», «Mitad de precio», «Llevá 3, pagá 2», «Regalo
+ * con tu compra», «Hasta agotar stock», «Sólo por hoy», «Cuotas sin interés»,
+ * «La más elegida»: ninguna tenía problema, y el esquema de las campañas es el
+ * contrato que va a escribir el panel del comercio. Un texto editorial no habla
+ * de plata, de cantidades, de plazos ni de quién más lo compra.
+ *
+ * Cada raíz apunta al reclamo y no a la palabra vecina: «precio» no puede
+ * tumbar «preciosa», ni «queda poco» a «queda bien con todo», ni «de regalo» a
+ * «para regalar». Y una cifra con multiplicador —«2 mil», «2 lucas», «2k»,
+ * «40 menos»— es un precio aunque tenga un solo dígito.
+ */
+const FORBIDDEN_COPY = /\$|%|\b(?:descuent|ofert|promo|rebaj|liquidaci|gratis|ahorr|imperdible|ultimas? unidades|por tiempo limitado|mas vendid|precios?\b|sorte|premio|antes\b|\d+\s*x\s*\d+|off\b|mitad\b(?! de (?:semana|mes|camino))|regalos?\b|regalamos|regalan\b|sin cargo|bonific|cuotas?\b|interes\b|stock\b|agot|quedan? (?:poc|\d|solo|l[ao]s? ultim)|no quedan?\b|solo por (?:hoy|est[aeo]|tiempo|un)|pesos\b|\d+\s*peso\b|ars\b|\d+\s*por\s*\d+|pag(?:a|as|ue)\s*\d|segunda unidad|\d+\s*(?:da|ra|ta)\.? unidad|\d+\s*(?:mil|lucas?|k)\b|lucas?\b|\d+\s*menos\b|(?:mas|muy) (?:elegid|pedid|popular|querid)|favorit|numero uno|nro\.? ?1\b)/i;
+/*
+ * Y un número suelto en el título o en la acción es un precio hasta que se
+ * demuestre lo contrario: «Heineken a 2500», «Desde 1.999». La presentación
+ * —710 ml, 2,25 L— no se escribe acá: sale del producto real. El rótulo queda
+ * afuera de esta regla porque es la marca, y hay marcas con número.
+ */
+const NUMERIC_CLAIM = /\d{3,}|\d[.,]\d/;
+// El rótulo admite la marca con número («1882», «7UP»), no un número con forma
+// de precio: «Ahora 2500», «Lata 1.999», «2500 la lata».
+const EYEBROW_PRICE = /(?:^|\s)(?:a|desde|por|solo|ahora|hoy|hasta)\s+\d|^\s*\d{3,}\b|\d[.,]\d/i;
 
 const GRID_PIECE_AFTER = 4;
 const GRID_PIECE_MIN_PRODUCTS = 8;
@@ -64,9 +91,31 @@ function escapeHtml(value) {
   ));
 }
 
+/*
+ * Una vigencia es un INSTANTE, escrito de la única forma que todos los motores
+ * leen igual: fecha, hora y huso («2026-10-31T23:59:59-03:00»).
+ *
+ * `Date.parse` a secas aceptaba más de lo que entendía. Una fecha sola
+ * —«2026-10-31»— se lee como medianoche UTC: en Neuquén la campaña terminaba a
+ * las 21:00 del día anterior y empezaba tres horas antes de lo aprobado. Y lo
+ * que no es ISO —«2026-10-31 23:59», «31/10/2026»— queda a criterio de cada
+ * navegador: la misma campaña podía verse en Android y no en iPhone. Lo que no
+ * tiene esta forma es una fecha ilegible, y una fecha ilegible apaga la pieza.
+ */
+const ISO_INSTANT = /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})$/;
+
 function timestamp(value) {
   const candidate = String(value || '').trim();
   if (!candidate) return null;
+  const shape = ISO_INSTANT.exec(candidate);
+  if (!shape) return Number.NaN;
+  // Un día que no existe —31 de noviembre— tampoco es una fecha: hay motores
+  // que lo corren al mes siguiente y motores que lo rechazan.
+  const [year, month, day] = shape.slice(1, 4).map(Number);
+  const calendar = new Date(Date.UTC(year, month - 1, day));
+  if (calendar.getUTCFullYear() !== year || calendar.getUTCMonth() !== month - 1 || calendar.getUTCDate() !== day) {
+    return Number.NaN;
+  }
   const parsed = Date.parse(candidate);
   return Number.isFinite(parsed) ? parsed : Number.NaN;
 }
@@ -84,6 +133,9 @@ export function normalizeCampaign(raw) {
   const approval = raw.approval && typeof raw.approval === 'object' ? raw.approval : {};
   const skus = Array.isArray(raw.target?.skus) ? raw.target.skus : [];
   const tint = safeColor(creative.tint, '#3d4450');
+  // El color de la BEBIDA, para las escenas que la sirven. No es el del envase:
+  // una lata azul no trae líquido azul. Sin dato vale un dorado de cerveza.
+  const liquid = safeColor(creative.liquid, '#f0a81d');
   return Object.freeze({
     id,
     type: text(raw.type, 20) || 'editorial',
@@ -109,6 +161,9 @@ export function normalizeCampaign(raw) {
       tintDeep: shade(tint, -0.45),
       tintLite: shade(tint, 0.32),
       accent: safeColor(creative.accent, '#e4b45f'),
+      liquid,
+      liquidDeep: shade(liquid, -0.34),
+      liquidLite: shade(liquid, 0.3),
     }),
     copy: Object.freeze({
       eyebrow: text(copy.eyebrow, 28),
@@ -134,7 +189,13 @@ export function campaignProblems(campaign, { now = Date.now() } = {}) {
   if (!campaign.skus.length) problems.push('no-target');
   if (!campaign.copy.headline || !campaign.copy.cta) problems.push('copy-missing');
   const copy = plain(`${campaign.copy.eyebrow} ${campaign.copy.headline} ${campaign.copy.cta}`);
-  if (FORBIDDEN_COPY.test(copy)) problems.push('copy-claims');
+  if (
+    FORBIDDEN_COPY.test(copy)
+    || NUMERIC_CLAIM.test(plain(`${campaign.copy.headline} ${campaign.copy.cta}`))
+    || EYEBROW_PRICE.test(plain(campaign.copy.eyebrow))
+  ) {
+    problems.push('copy-claims');
+  }
   const from = timestamp(campaign.validFrom);
   const until = timestamp(campaign.validUntil);
   if (Number.isNaN(from) || Number.isNaN(until)) problems.push('invalid-dates');
@@ -165,15 +226,26 @@ function fitsGrid(campaign, product, context) {
   if (!context || context.searching || context.filtered) return false;
   if (Number(context.listSize) < GRID_PIECE_MIN_PRODUCTS) return false;
   const category = String(context.categoryId || 'all');
+  // «Su propio rubro» lo dice el PRODUCTO, no la campaña. Antes alcanzaba con
+  // que la campaña nombrara el rubro en `contexts`: un aperitivo con
+  // `contexts: ['gaseosas', 'popular']` salía en la góndola de gaseosas y en
+  // Destacados. La configuración puede acotar dónde va una pieza con alcohol;
+  // no puede sacarla de su góndola.
+  if (product.alcoholic === true) {
+    return category === String(product.categoryId || '') && campaign.contexts.includes(category);
+  }
   if (campaign.contexts.includes(category)) return true;
-  return category === 'all' && product.alcoholic !== true;
+  return category === 'all';
 }
 
 /**
  * Una campaña por superficie, la de mayor prioridad entre las que pueden.
  *
  * `home` y `catalog` son las dos vistas: en la home la misma campaña no ocupa
- * dos lugares. `dismissed` son las que la persona ocultó en esta visita.
+ * dos lugares. `dismissed` son las que la persona ocultó en esta visita, y
+ * `dismissedPlacements` los lugares donde ocultó una: ahí no va otra. Quien
+ * cierra un anuncio pidió que ese lugar deje de tener anuncios, no el
+ * siguiente de la fila arrancando desde cero.
  */
 export function selectCampaigns({
   campaigns = [],
@@ -181,6 +253,7 @@ export function selectCampaigns({
   isOrderable = () => false,
   now = Date.now(),
   dismissed = new Set(),
+  dismissedPlacements = new Set(),
   catalog = null,
 } = {}) {
   const usable = campaigns
@@ -191,7 +264,9 @@ export function selectCampaigns({
     .sort((a, b) => b.campaign.priority - a.campaign.priority || a.campaign.id.localeCompare(b.campaign.id));
 
   const pick = (placement, accept = () => true) => (
-    usable.find((entry) => entry.campaign.placements.includes(placement) && accept(entry)) || null
+    dismissedPlacements.has(placement)
+      ? null
+      : usable.find((entry) => entry.campaign.placements.includes(placement) && accept(entry)) || null
   );
   const hero = pick('home-hero');
   // Un producto con alcohol no sube a la franja intermedia de la home: ese lugar
@@ -223,12 +298,17 @@ export function campaignMarkup({ campaign }, placement, view = {}) {
     `--cmp-tint-deep:${creative.tintDeep}`,
     `--cmp-tint-lite:${creative.tintLite}`,
     `--cmp-accent:${creative.accent}`,
+    `--cmp-liquid:${creative.liquid}`,
+    `--cmp-liquid-deep:${creative.liquidDeep}`,
+    `--cmp-liquid-lite:${creative.liquidLite}`,
     `--cmp-dur:${preset.duration}s`,
   ].join(';');
+  // Los degradados del envase se referencian por id, y los id son del documento.
+  const uid = sceneId(`cmp-${campaign.id}-${placement}`);
   return `
     <aside class="cmp cmp--${escapeHtml(creative.preset.replace(/_/g, '-'))} cmp--${escapeHtml(placement)}${legal ? ' cmp--legal' : ''}" data-campaign="${escapeHtml(campaign.id)}" data-campaign-preset="${escapeHtml(creative.preset)}" data-campaign-placement="${escapeHtml(placement)}" data-catalog-key="campaign:${escapeHtml(placement)}:${escapeHtml(campaign.id)}" aria-label="${escapeHtml(`Anuncio: ${copy.eyebrow || copy.headline}`)}" style="${style}">
       <button class="cmp-hit" type="button" data-product-detail="${escapeHtml(view.productId)}" data-campaign-cta aria-label="${escapeHtml(label)}">
-        <span class="cmp-stage" aria-hidden="true">${preset.stage(creative)}</span>
+        <span class="cmp-scene"><span class="cmp-stage" aria-hidden="true">${preset.stage(creative, uid)}</span></span>
         <span class="cmp-copy">
           ${copy.eyebrow ? `<small class="cmp-eyebrow">${escapeHtml(copy.eyebrow)}</small>` : ''}
           <strong class="cmp-headline">${escapeHtml(copy.headline)}</strong>

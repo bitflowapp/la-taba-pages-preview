@@ -5,7 +5,7 @@ import { businessMapsSearchUrl, mapsSearchUrl } from './core/business-location.j
 import { categories } from './data.js';
 import { getCustomerCatalogProducts, isProductOrderable, isProductVisibleToCustomer } from './core/catalog-store.js';
 import { CAMPAIGNS } from './campaigns/campaign-config.js';
-import { CAMPAIGN_GRID_POSITION, campaignMarkup, selectCampaigns } from './campaigns/campaign-engine.js';
+import { ALCOHOL_LEGAL_NOTICE, CAMPAIGN_GRID_POSITION, CAMPAIGN_PLACEMENTS, campaignMarkup, selectCampaigns } from './campaigns/campaign-engine.js';
 import { refreshCampaignMotion } from './campaigns/campaign-motion.js';
 import { resolveCatalogImageUrl } from './core/catalog-image-contract.js';
 import { imageAttributionFor } from './core/image-attribution.js';
@@ -1117,23 +1117,43 @@ function renderHomeShowcase() {
 //
 // Lo que la persona ocultó vale por la visita: no se le vuelve a mostrar hasta
 // que abra la tienda de nuevo. Es memoria de sesión y nada más; no hay perfil.
+//
+// Y lo que se oculta es el LUGAR, además de la campaña. Con sólo el id, cerrar
+// la pieza de Heineken ponía la de Aperol en la misma banda, arrancando desde
+// cero y debajo de un aviso que decía «Ocultamos el anuncio»: había que cerrar
+// una por campaña configurada. Quien cierra un anuncio pidió que ese lugar deje
+// de tener anuncios; vuelve la puerta editorial, o nada.
 const DISMISSED_CAMPAIGNS_KEY = 'taba:campaigns-dismissed';
+const DISMISSED_PLACEMENTS_KEY = 'taba:campaign-placements-dismissed';
 const dismissedCampaigns = new Set();
-try {
-  const stored = JSON.parse(globalThis.sessionStorage?.getItem(DISMISSED_CAMPAIGNS_KEY) || '[]');
-  if (Array.isArray(stored)) stored.filter((id) => typeof id === 'string').forEach((id) => dismissedCampaigns.add(id));
-} catch (_) {
-  // Sin almacenamiento de sesión la pieza sólo se oculta hasta la recarga.
+const dismissedCampaignPlacements = new Set();
+function readDismissed(key, target) {
+  try {
+    const stored = JSON.parse(globalThis.sessionStorage?.getItem(key) || '[]');
+    if (Array.isArray(stored)) stored.filter((id) => typeof id === 'string').forEach((id) => target.add(id));
+  } catch (_) {
+    // Sin almacenamiento de sesión la pieza sólo se oculta hasta la recarga.
+  }
 }
+function writeDismissed(key, source) {
+  try {
+    globalThis.sessionStorage?.setItem(key, JSON.stringify([...source]));
+  } catch (_) {
+    // Igual que arriba: sin almacenamiento, vale hasta la recarga.
+  }
+}
+readDismissed(DISMISSED_CAMPAIGNS_KEY, dismissedCampaigns);
+readDismissed(DISMISSED_PLACEMENTS_KEY, dismissedCampaignPlacements);
 
-export function dismissCampaign(campaignId) {
+export function dismissCampaign(campaignId, placement = '') {
   const id = String(campaignId || '').trim();
   if (!id) return;
   dismissedCampaigns.add(id);
-  try {
-    globalThis.sessionStorage?.setItem(DISMISSED_CAMPAIGNS_KEY, JSON.stringify([...dismissedCampaigns]));
-  } catch (_) {
-    // Igual que arriba: sin almacenamiento, vale hasta la recarga.
+  writeDismissed(DISMISSED_CAMPAIGNS_KEY, dismissedCampaigns);
+  const place = String(placement || '').trim();
+  if (CAMPAIGN_PLACEMENTS.includes(place)) {
+    dismissedCampaignPlacements.add(place);
+    writeDismissed(DISMISSED_PLACEMENTS_KEY, dismissedCampaignPlacements);
   }
 }
 
@@ -1143,6 +1163,7 @@ function activeCampaigns(catalog = null) {
     products: getCustomerCatalogProducts(getState().products),
     isOrderable: isProductOrderable,
     dismissed: dismissedCampaigns,
+    dismissedPlacements: dismissedCampaignPlacements,
     catalog,
   });
 }
@@ -2857,6 +2878,7 @@ function renderProducts() {
           <p class="empty-state-copy">Estamos buscando los productos disponibles.</p>
         </div>
         ${'<div class="catalog-skeleton-card" aria-hidden="true"><span class="motion-skeleton"></span><span class="motion-skeleton"></span><span class="motion-skeleton"></span></div>'.repeat(4)}`);
+      refreshCampaignMotion();
       return;
     }
     const isFavorites = state.activeCategory === 'favorites';
@@ -2886,6 +2908,9 @@ function renderProducts() {
           <button class="secondary-button compact" type="button" data-clear-catalog-filters>Ver todo el catálogo</button>
         </div>
       </div>`);
+    // La pieza que estaba en la góndola salió con la lista: el controlador
+    // tiene que enterarse para que, si vuelve, vuelva en su cuadro final.
+    refreshCampaignMotion();
     return;
   }
 

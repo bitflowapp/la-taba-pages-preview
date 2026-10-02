@@ -179,6 +179,8 @@ const ASSETS = [
   './js/campaigns/presets/cold-can.js',
   './js/campaigns/presets/product-drop.js',
   './js/campaigns/presets/ice-reveal.js',
+  './js/campaigns/presets/spotlight-product.js',
+  './js/campaigns/presets/glass-fill.js',
   './js/combos-data.js',
   './js/preview-promotions-data.js',
   './js/preview-stories-data.js',

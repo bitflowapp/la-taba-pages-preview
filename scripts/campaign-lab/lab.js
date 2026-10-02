@@ -11,6 +11,8 @@ const DEMOS = [
   { preset: 'cold_can', vessel: 'can', tint: '#1d3f97', accent: '#c8ccd4', eyebrow: 'Red Bull', headline: 'Fría y lista para llevar', cta: 'Ver Red Bull', title: 'Red Bull Energy Drink', line: '355 ml · Lata', alcoholic: false },
   { preset: 'product_drop', vessel: 'bottle', tint: '#3a140c', accent: '#e30613', eyebrow: 'Coca-Cola', headline: 'La de siempre, para la mesa', cta: 'Ver Coca-Cola', title: 'Coca-Cola', line: '2,25 L', alcoholic: false },
   { preset: 'ice_reveal', vessel: 'bottle', tint: '#f0641e', accent: '#1f5fbf', eyebrow: 'Aperol', headline: 'Con mucho hielo', cta: 'Ver Aperol', title: 'Aperol', line: '750 ml', alcoholic: true },
+  { preset: 'spotlight_product', vessel: 'bottle', tint: '#3b0d16', accent: '#c9a25a', eyebrow: 'Trapiche', headline: 'Para la mesa de hoy', cta: 'Ver Trapiche', title: 'Trapiche Malbec', line: '750 ml', alcoholic: true },
+  { preset: 'glass_fill', vessel: 'bottle', tint: '#f47b20', accent: '#1f3f97', liquid: '#f08a1c', eyebrow: 'Fanta', headline: 'Bien fría, con hielo', cta: 'Ver Fanta', title: 'Fanta Naranja', line: '2,25 L', alcoholic: false },
 ];
 
 const FRAMES = [
@@ -27,7 +29,7 @@ function piece(demo, placement, vessel) {
     placements: [placement],
     contexts: [],
     target: { skus: ['lab'] },
-    creative: { preset: demo.preset, vessel, tint: demo.tint, accent: demo.accent },
+    creative: { preset: demo.preset, vessel, tint: demo.tint, accent: demo.accent, liquid: demo.liquid },
     copy: { eyebrow: demo.eyebrow, headline: demo.headline, cta: demo.cta },
   });
   return campaignMarkup({ campaign }, placement, { productId: 'lab', title: demo.title, line: demo.line, alcoholic: demo.alcoholic });

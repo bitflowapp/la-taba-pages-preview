@@ -11,14 +11,14 @@ import { actorMarkup, repeat } from './shared.js';
 export const iceReveal = Object.freeze({
   id: 'ice_reveal',
   duration: 4.6,
-  stage(creative) {
+  stage(creative, uid) {
     const surface = `<i class="cmp-frost"></i>${repeat('cmp-drop', 2)}`;
     return `
       <span class="cmp-glow"></span>
       <span class="cmp-table"></span>
       ${repeat('cmp-ice', 2, 'back')}
       <span class="cmp-shadow"></span>
-      ${actorMarkup(creative.vessel, surface)}
+      ${actorMarkup(creative.vessel, surface, uid)}
       ${repeat('cmp-ice', 3, 'front')}
       ${repeat('cmp-vapor', 3)}
       <span class="cmp-veil"></span>`;

@@ -10,13 +10,13 @@ import { actorMarkup } from './shared.js';
 export const productDrop = Object.freeze({
   id: 'product_drop',
   duration: 3.2,
-  stage(creative) {
+  stage(creative, uid) {
     return `
       <span class="cmp-beam"></span>
       <span class="cmp-glow"></span>
       <span class="cmp-table"></span>
       <span class="cmp-ring"></span>
       <span class="cmp-shadow"></span>
-      ${actorMarkup(creative.vessel)}`;
+      ${actorMarkup(creative.vessel, "", uid)}`;
   },
 });

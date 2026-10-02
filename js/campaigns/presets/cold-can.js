@@ -11,7 +11,7 @@ import { actorMarkup, repeat } from './shared.js';
 export const coldCan = Object.freeze({
   id: 'cold_can',
   duration: 4.2,
-  stage(creative) {
+  stage(creative, uid) {
     const surface = `<i class="cmp-frost"></i>${repeat('cmp-drop', 3)}<i class="cmp-shine"></i>`;
     return `
       <span class="cmp-glow"></span>
@@ -19,6 +19,6 @@ export const coldCan = Object.freeze({
       ${repeat('cmp-snow', 6)}
       ${repeat('cmp-mist', 2)}
       <span class="cmp-shadow"></span>
-      ${actorMarkup(creative.vessel, surface)}`;
+      ${actorMarkup(creative.vessel, surface, uid)}`;
   },
 });

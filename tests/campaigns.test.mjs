@@ -84,8 +84,13 @@ test('una sola llave no alcanza: encendida sin aprobar, o aprobada sin encender'
   assert.ok(campaignProblems(normalizeCampaign(sinReferencia)).includes('not-approved'), 'aprobar exige decir quién y cuándo');
 });
 
-test('los cuatro presets existen y cada candidata usa uno', () => {
-  assert.deepEqual(Object.keys(CAMPAIGN_PRESETS).sort(), ['beer_pour', 'cold_can', 'ice_reveal', 'product_drop']);
+test('las seis escenas existen, y las candidatas usan las cuatro primeras', () => {
+  assert.deepEqual(
+    Object.keys(CAMPAIGN_PRESETS).sort(),
+    ['beer_pour', 'cold_can', 'glass_fill', 'ice_reveal', 'product_drop', 'spotlight_product'],
+  );
+  // `spotlight_product` y `glass_fill` están listas para una campaña futura:
+  // ninguna candidata las usa, así que agregarlas no encendió nada.
   const used = new Set(CAMPAIGNS.map((campaign) => campaign.creative.preset));
   assert.deepEqual([...used].sort(), ['beer_pour', 'cold_can', 'ice_reveal', 'product_drop']);
   for (const preset of Object.values(CAMPAIGN_PRESETS)) {
@@ -127,6 +132,29 @@ test('la vigencia se respeta y una fecha ilegible apaga la campaña', () => {
   assert.equal(pick({ validUntil: 'mañana' }), null, 'una fecha que no se puede leer no es «sin vencimiento»');
 });
 
+test('una vigencia es un instante con huso: una fecha suelta o un formato local apagan la campaña', () => {
+  const beer = byId('heineken-beer-pour');
+  // Mediodía del 31 de octubre en Neuquén.
+  const now = Date.parse('2026-10-31T12:00:00-03:00');
+  const problems = (changes) => campaignProblems(normalizeCampaign(approved(beer, changes)), { now });
+  // «Hasta el 31» escrito como fecha sola se lee como medianoche UTC: a esta
+  // hora la campaña ya estaba vencida desde las 21:00 del día 30.
+  assert.ok(problems({ validUntil: '2026-10-31' }).includes('invalid-dates'), 'una fecha sin hora pasó como vigencia');
+  assert.ok(problems({ validFrom: '2026-10-01' }).includes('invalid-dates'));
+  // Lo que cada navegador lee a su manera.
+  for (const ambiguous of ['2026-10-31 23:59', '31/10/2026', 'Oct 31 2026', '2026-10-31T23:59']) {
+    assert.ok(problems({ validUntil: ambiguous }).includes('invalid-dates'), `«${ambiguous}» pasó como vigencia`);
+  }
+  // Con hora y huso se respeta el día que la persona quiso decir.
+  assert.deepEqual(problems({ validFrom: '2026-10-01T00:00:00-03:00', validUntil: '2026-10-31T23:59:59-03:00' }), []);
+  assert.ok(problems({ validUntil: '2026-10-31T11:59:59-03:00' }).includes('expired'));
+  assert.deepEqual(problems({ validUntil: '2026-10-31T15:00:01Z' }), []);
+  // Un día que no existe: hay motores que lo corren al mes siguiente.
+  for (const imposible of ['2026-11-31T23:59:59-03:00', '2026-02-30T00:00:00-03:00', '2026-13-01T00:00:00-03:00']) {
+    assert.ok(problems({ validUntil: imposible }).includes('invalid-dates'), `«${imposible}» pasó como vigencia`);
+  }
+});
+
 // ─── 2 · Lo que una pieza editorial no puede decir ────────────────────────────
 
 test('ninguna candidata declara precio, descuento ni oferta, ni en el texto ni en los datos', () => {
@@ -163,6 +191,80 @@ test('un texto que afirma dinero, urgencia o popularidad apaga la campaña', () 
   assert.deepEqual(campaignProblems(limpio), []);
 });
 
+test('lo que la primera lista dejaba pasar: precio, cantidad, plazo y popularidad dichos de otra forma', () => {
+  const beer = byId('heineken-beer-pour');
+  const frases = [
+    'Precio especial',
+    'Mitad de precio',
+    '50 OFF',
+    'Heineken a 2500',
+    'Desde 1.999',
+    'Llevá 3, pagá 2',
+    'Segunda unidad al 50',
+    'Regalo con tu compra',
+    'Hasta agotar stock',
+    'Solo por hoy',
+    'Sólo por hoy',
+    'Cuotas sin interés',
+    'Envío sin cargo',
+    'La más elegida',
+    'La favorita del barrio',
+    'Quedan pocas',
+    'Dos por 4000 pesos',
+    // Una cifra con multiplicador es un precio aunque tenga un solo dígito.
+    'Heineken a 2 mil',
+    'Lata a 2 lucas',
+    'Heineken a 2k',
+    'Hasta 40 menos',
+    '2da unidad al 50',
+    'De regalo',
+    'A mitad',
+  ];
+  for (const headline of frases) {
+    const campaign = normalizeCampaign(approved(beer, { copy: { ...beer.copy, headline } }));
+    assert.ok(campaignProblems(campaign).includes('copy-claims'), `«${headline}» pasó como texto editorial`);
+  }
+  // Y también en la acción, que es texto de la campaña igual que el título.
+  const enLaAccion = normalizeCampaign(approved(beer, { copy: { ...beer.copy, cta: 'Ver a 2500' } }));
+  assert.ok(campaignProblems(enLaAccion).includes('copy-claims'));
+  assert.ok(campaignProblems(normalizeCampaign(approved(beer, { copy: { ...beer.copy, cta: 'Llevala a 2 mil' } }))).includes('copy-claims'));
+  // El rótulo admite una marca con número, no un precio.
+  for (const eyebrow of ['Ahora 2500', 'Lata 1.999', '2500 la lata', 'Desde 900']) {
+    const enElRotulo = normalizeCampaign(approved(beer, { copy: { ...beer.copy, eyebrow } }));
+    assert.ok(campaignProblems(enElRotulo).includes('copy-claims'), `el rótulo «${eyebrow}» pasó como marca`);
+  }
+});
+
+test('el filtro no se come texto editorial legítimo, ni una marca con número', () => {
+  const beer = byId('heineken-beer-pour');
+  const frases = [
+    'Bien fría, recién servida',
+    'Fría y lista para llevar',
+    'La de siempre, para la mesa',
+    'Con mucho hielo',
+    'Para la mesa de hoy',
+    'Interesante para el asado',
+    'Pesada de sabor',
+    // Vecinas de una palabra prohibida que no dicen nada de plata ni de stock.
+    'Para regalar',
+    'Regalate un rato',
+    'A mitad de semana',
+    'Queda bien con todo',
+    'Una botella preciosa',
+    'Solo por gusto',
+    'De peso',
+  ];
+  for (const headline of frases) {
+    const campaign = normalizeCampaign(approved(beer, { copy: { ...beer.copy, headline } }));
+    assert.deepEqual(campaignProblems(campaign), [], `«${headline}» se rechazó sin motivo`);
+  }
+  // El rótulo es la marca: «7UP» o «Cerveza 1890» no son un precio.
+  for (const eyebrow of ['Imperial 1890', 'Fernet 1882', '7UP']) {
+    const marcaConNumero = normalizeCampaign(approved(beer, { copy: { ...beer.copy, eyebrow } }));
+    assert.deepEqual(campaignProblems(marcaConNumero), [], `la marca «${eyebrow}» se rechazó`);
+  }
+});
+
 test('sin título o sin acción no hay pieza; un preset desconocido tampoco', () => {
   const beer = byId('heineken-beer-pour');
   assert.ok(campaignProblems(normalizeCampaign(approved(beer, { copy: { ...beer.copy, headline: '' } }))).includes('copy-missing'));
@@ -197,6 +299,34 @@ test('el alcohol no sale de su rubro: ni en la franja de la home ni en «Todas»
   assert.equal(enGaseosas['catalog-inline'], null, 'una cerveza apareció en la góndola de gaseosas');
 });
 
+test('el rubro del alcohol lo dice el producto: la configuración no puede sacarlo de su góndola', () => {
+  // Una campaña mal escrita —o escrita desde el panel— que nombra rubros que no
+  // son el del producto. Antes alcanzaba con nombrarlos.
+  const aperol = approved(byId('aperol-ice-reveal'), {
+    placements: ['catalog-inline'],
+    contexts: ['gaseosas', 'popular', 'favorites', 'all', 'aperitivos'],
+  });
+  const args = { campaigns: [aperol], products: catalog, isOrderable: everythingSells };
+  for (const categoryId of ['gaseosas', 'popular', 'favorites', 'all', 'cervezas']) {
+    const selected = selectCampaigns({ ...args, catalog: { ...wideCatalog, categoryId } });
+    assert.equal(selected['catalog-inline'], null, `un aperitivo apareció en «${categoryId}»`);
+  }
+  const enSuRubro = selectCampaigns({ ...args, catalog: { ...wideCatalog, categoryId: 'aperitivos' } });
+  assert.equal(enSuRubro['catalog-inline']?.campaign.id, 'aperol-ice-reveal');
+  // Y si la campaña NO nombra el rubro del producto, tampoco va: `contexts`
+  // sigue pudiendo acotar.
+  const sinContexto = approved(byId('aperol-ice-reveal'), { placements: ['catalog-inline'], contexts: [] });
+  assert.equal(
+    selectCampaigns({ ...args, campaigns: [sinContexto], catalog: { ...wideCatalog, categoryId: 'aperitivos' } })['catalog-inline'],
+    null,
+  );
+  // Un producto sin alcohol conserva la regla de siempre.
+  const redBull = approved(byId('red-bull-cold-can'));
+  const sinAlcohol = { campaigns: [redBull], products: catalog, isOrderable: everythingSells };
+  assert.ok(selectCampaigns({ ...sinAlcohol, catalog: wideCatalog })['catalog-inline']);
+  assert.ok(selectCampaigns({ ...sinAlcohol, catalog: { ...wideCatalog, categoryId: 'energizantes' } })['catalog-inline']);
+});
+
 test('la pieza de grilla no va en una búsqueda, con filtros ni en una lista corta', () => {
   const args = { campaigns: allApproved(), products: catalog, isOrderable: everythingSells };
   assert.ok(selectCampaigns({ ...args, catalog: wideCatalog })['catalog-inline']);
@@ -214,6 +344,22 @@ test('lo que la persona ocultó no vuelve, y la superficie pasa a la siguiente c
   assert.equal(sinHeineken['home-hero'].campaign.id, 'aperol-ice-reveal');
   const sinNinguna = selectCampaigns({ ...args, dismissed: new Set(CAMPAIGNS.map((campaign) => campaign.id)) });
   assert.deepEqual(sinNinguna, { 'home-hero': null, 'home-inline': null, 'catalog-inline': null });
+});
+
+test('ocultar un anuncio deja ese LUGAR sin anuncios: no entra el siguiente de la fila', () => {
+  const args = { campaigns: allApproved(), products: catalog, isOrderable: everythingSells, catalog: wideCatalog };
+  // Lo que hace la tienda al tocar «Ocultar este anuncio» en la banda de apertura.
+  const oculto = selectCampaigns({
+    ...args,
+    dismissed: new Set(['heineken-beer-pour']),
+    dismissedPlacements: new Set(['home-hero']),
+  });
+  assert.equal(oculto['home-hero'], null, 'en la banda apareció otra campaña en lugar de la que se ocultó');
+  // Los otros lugares no se enteran: ahí nadie ocultó nada.
+  assert.equal(oculto['home-inline']?.campaign.id, 'red-bull-cold-can');
+  assert.ok(oculto['catalog-inline']);
+  const todos = selectCampaigns({ ...args, dismissedPlacements: new Set(CAMPAIGN_PLACEMENTS) });
+  assert.deepEqual(todos, { 'home-hero': null, 'home-inline': null, 'catalog-inline': null });
 });
 
 // ─── 3 · El marcado ───────────────────────────────────────────────────────────
@@ -272,19 +418,62 @@ test('ningún texto de la campaña ni del producto puede inyectar marcado o esti
   assert.equal((html.match(/<button/g) || []).length, 2, 'el texto abrió o cerró un botón de más');
   assert.match(html, /--cmp-tint:#3d4450;/, 'un color inválido tiene que caer en el de respaldo');
   assert.match(html, /--cmp-accent:#e4b45f;/);
-  assert.doesNotMatch(html, /evil|url\(/);
+  // Ninguna URL: lo único que la pieza referencia son los degradados de su
+  // propio dibujo, por fragmento local y con un id que arma el motor.
+  assert.doesNotMatch(html, /evil|url\((?!#cmp-[a-z0-9-]+\))/);
   assert.match(html, /cmp-actor--can/, 'un envase desconocido cae en el de respaldo');
 });
 
-test('las cuatro escenas tienen cupo fijo de nodos y ninguna trae texto', () => {
-  for (const campaign of CAMPAIGNS) {
-    const normalized = normalizeCampaign(approved(campaign));
-    const html = campaignMarkup({ campaign: normalized }, 'home-inline', { productId: 'p', title: 'T', line: 'L' });
-    const opening = '<span class="cmp-stage" aria-hidden="true">';
-    const stage = html.slice(html.indexOf(opening) + opening.length, html.indexOf('<span class="cmp-copy">'));
-    const nodes = (stage.match(/<(span|i|svg|path|rect|circle)\b/g) || []).length;
-    assert.ok(nodes > 5 && nodes <= 40, `${campaign.id}: ${nodes} nodos en la escena`);
-    assert.equal(stage.replace(/<[^>]+>/g, '').trim(), '', `${campaign.id}: la escena es decorativa y no puede llevar texto`);
+test('el color del líquido se valida como los demás, y sin dato vale el de respaldo', () => {
+  const beer = byId('heineken-beer-pour');
+  const hostile = normalizeCampaign(approved(beer, { creative: { ...beer.creative, preset: 'glass_fill', liquid: 'orange;background:url(//evil)' } }));
+  assert.equal(hostile.creative.liquid, '#f0a81d');
+  const naranja = normalizeCampaign(approved(beer, { creative: { ...beer.creative, preset: 'glass_fill', liquid: '#F08A1C' } }));
+  assert.equal(naranja.creative.liquid, '#f08a1c');
+  const html = campaignMarkup({ campaign: naranja }, 'home-inline', { productId: 'p', title: 'T', line: 'L' });
+  assert.match(html, /--cmp-liquid:#f08a1c;--cmp-liquid-deep:#[0-9a-f]{6};--cmp-liquid-lite:#[0-9a-f]{6};/);
+});
+
+const stageOf = (html) => {
+  const opening = '<span class="cmp-stage" aria-hidden="true">';
+  return html.slice(html.indexOf(opening) + opening.length, html.indexOf('<span class="cmp-copy">'));
+};
+
+test('las seis escenas tienen cupo fijo de nodos y ninguna trae texto', () => {
+  const beer = byId('heineken-beer-pour');
+  for (const preset of Object.keys(CAMPAIGN_PRESETS)) {
+    for (const vessel of ['can', 'bottle']) {
+      const normalized = normalizeCampaign(approved(beer, { creative: { ...beer.creative, preset, vessel } }));
+      const html = campaignMarkup({ campaign: normalized }, 'home-inline', { productId: 'p', title: 'T', line: 'L' });
+      const stage = stageOf(html);
+      // Todo lo que dibuja o agrupa, incluidos los degradados del envase.
+      const nodes = (stage.match(/<(span|i|svg|path|rect|circle|defs|linearGradient|stop)\b/g) || []).length;
+      assert.ok(nodes > 5 && nodes <= 56, `${preset}/${vessel}: ${nodes} nodos en la escena`);
+      // Lo que el navegador tiene que componer: sin los degradados, que son datos del dibujo.
+      const painted = (stage.match(/<(span|i|svg|path|rect|circle)\b/g) || []).length;
+      assert.ok(painted <= 40, `${preset}/${vessel}: ${painted} nodos pintados`);
+      assert.equal(stage.replace(/<[^>]+>/g, '').trim(), '', `${preset}/${vessel}: la escena es decorativa y no puede llevar texto`);
+    }
+  }
+});
+
+test('la escena vive dentro de su caja contenedora y cada pieza trae sus propios degradados', () => {
+  const html = piece('heineken-beer-pour', 'home-hero');
+  assert.match(html, /<span class="cmp-scene"><span class="cmp-stage" aria-hidden="true">/);
+  // La misma campaña en dos lugares: una de las dos vistas siempre está oculta,
+  // y un degradado referenciado dentro de un subárbol oculto no pinta.
+  const ids = (markup) => [...markup.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
+  const hero = ids(html);
+  const grid = ids(piece('heineken-beer-pour', 'catalog-inline'));
+  assert.ok(hero.length >= 2, 'el envase no declaró sus degradados');
+  assert.equal(new Set(hero).size, hero.length, 'hay un id repetido dentro de la pieza');
+  assert.equal(hero.filter((id) => grid.includes(id)).length, 0, 'dos piezas comparten un id de degradado');
+  for (const id of hero) {
+    assert.match(id, /^cmp-[a-z0-9-]+$/);
+    assert.ok(html.includes(`url(#${id})`), `el degradado ${id} no se usa`);
+  }
+  for (const reference of html.matchAll(/url\(#([^)]+)\)/g)) {
+    assert.ok(hero.includes(reference[1]), `se referencia un degradado que la pieza no declara: ${reference[1]}`);
   }
 });
 
@@ -349,7 +538,7 @@ test('los atributos que escribe usan el prefijo que el parcheo estable conserva'
 
 test('la tienda importa las campañas y el worker las precachea', () => {
   const worker = read('sw.js');
-  for (const module of ['campaign-config', 'campaign-engine', 'campaign-motion', 'presets/shared', 'presets/beer-pour', 'presets/cold-can', 'presets/product-drop', 'presets/ice-reveal']) {
+  for (const module of ['campaign-config', 'campaign-engine', 'campaign-motion', 'presets/shared', 'presets/beer-pour', 'presets/cold-can', 'presets/product-drop', 'presets/ice-reveal', 'presets/spotlight-product', 'presets/glass-fill']) {
     assert.ok(worker.includes(`'./js/campaigns/${module}.js'`), `${module} no está en el precache`);
   }
   assert.match(worker, /'\.\/styles\/campaigns\.css\?v=\d+'/);

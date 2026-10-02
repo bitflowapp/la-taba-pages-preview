@@ -4,13 +4,30 @@
  * El CSS tiene la animación entera; este módulo sólo decide si está corriendo.
  * Escribe DOS atributos en la raíz de cada pieza y nada más:
  *
- *   data-motion-campaign="on"            la escena está en marcha
+ *   data-motion-campaign="on"            la escena está armada o en marcha
  *   data-motion-campaign-live="true"     la pieza está a la vista; en "false"
  *                                        el CSS pausa todo lo que haya adentro
  *
- * Sin ninguno de los dos, la pieza es su cuadro final: estática y completa. Ese
- * es el estado con movimiento reducido, en modo liviano, sin
- * IntersectionObserver o si este módulo no llega a arrancar.
+ * Sin el primero, la pieza es su cuadro final: estática y completa. Ese es el
+ * estado con movimiento reducido, en modo liviano, sin IntersectionObserver o si
+ * este módulo no llega a arrancar.
+ *
+ * LOS TRES MOMENTOS DE UNA PIEZA
+ *
+ *   armada     recién observada y todavía sin entrar en pantalla lo suficiente:
+ *              "on" + live "false". Las animaciones existen, pausadas en su
+ *              primer cuadro. Antes la pieza esperaba ese momento mostrando el
+ *              cuadro FINAL —vaso lleno, acción a la vista— y al cruzar el 40 %
+ *              saltaba al vacío para recién ahí empezar: la escena se veía
+ *              terminada antes de ocurrir.
+ *   en marcha  cruzó el umbral: live "true" mientras esté a la vista.
+ *   asentada   terminó su entrada y salió de pantalla: se le quita "on" y queda
+ *              en su cuadro final. Antes "on" se quedaba puesto para siempre, y
+ *              como las vistas se ocultan con `display: none` —que cancela las
+ *              animaciones CSS— cada vuelta a la home o cada búsqueda borrada
+ *              repetía la función entera desde cero, salteando la espera de
+ *              `REPLAY_GAP_MS`. Sin "on" no hay animación que el navegador
+ *              pueda reiniciar por su cuenta.
  *
  * Lo que NO hace, a propósito:
  *
@@ -62,7 +79,15 @@ function startCampaignMotion(documentRef, windowRef) {
   const reducedQuery = windowRef.matchMedia?.('(prefers-reduced-motion: reduce)') || null;
   const observed = new Set();
   const visible = new Set();
+  // Las que ya cruzaron el umbral de arranque. Si el aviso llegó con la pestaña
+  // oculta la escena no arranca en ese momento, y sin esta lista tampoco
+  // arrancaba al volver: quedaba armada en su primer cuadro, sin acción a la vista.
+  const ready = new Set();
   const startedAt = new WeakMap();
+  // La duración se mide al arrancar, con la pieza a la vista: después hay que
+  // poder consultarla con la vista oculta, sin pedirle estilos a un subárbol
+  // que no se está dibujando.
+  const durations = new WeakMap();
   let plays = 0;
   let destroyed = false;
 
@@ -76,25 +101,43 @@ function startCampaignMotion(documentRef, windowRef) {
     delete root.dataset.motionCampaignLive;
   };
 
+  /** La entrada de esta pieza ya terminó de verse. */
+  const settled = (root) => {
+    const last = startedAt.get(root);
+    return last !== undefined && now() - last >= (durations.get(root) ?? Number.POSITIVE_INFINITY);
+  };
+
+  // Una pieza que todavía no se vio queda lista en su PRIMER cuadro. Sólo eso:
+  // la que ya tuvo su entrada no se vuelve a armar por reaparecer en el DOM.
+  const arm = (root) => {
+    if (!allowed() || startedAt.has(root)) return;
+    root.dataset.motionCampaign = 'on';
+    root.dataset.motionCampaignLive = 'false';
+  };
+
   const start = (root) => {
     const last = startedAt.get(root);
-    const finished = last === undefined ? 0 : last + durationOf(root, windowRef) + IDLE_MS;
-    if (last !== undefined && now() - finished < REPLAY_GAP_MS) return;
-    if (root.dataset.motionCampaign === 'on') {
-      // Reiniciar una animación CSS exige quitarla y forzar un recálculo antes
-      // de volver a ponerla. Pasa a lo sumo una vez por pieza cada 45 s.
-      delete root.dataset.motionCampaign;
-      void root.offsetWidth;
+    if (last !== undefined) {
+      const finished = last + (durations.get(root) ?? 0) + IDLE_MS;
+      if (now() - finished < REPLAY_GAP_MS) return;
+      if (root.dataset.motionCampaign === 'on') {
+        // Reiniciar una animación CSS exige quitarla y forzar un recálculo antes
+        // de volver a ponerla. Pasa a lo sumo una vez por pieza cada 45 s.
+        delete root.dataset.motionCampaign;
+        void root.offsetWidth;
+      }
     }
-    root.dataset.motionCampaign = 'on';
+    write(root, 'motionCampaign', 'on');
+    durations.set(root, durationOf(root, windowRef));
     startedAt.set(root, now());
     plays += 1;
   };
 
   const sync = (root) => {
     if (!allowed()) { still(root); return; }
-    const live = visible.has(root) && !documentRef.hidden;
-    if (root.dataset.motionCampaign === 'on') write(root, 'motionCampaignLive', String(live));
+    if (root.dataset.motionCampaign !== 'on' && !startedAt.has(root)) return;
+    const live = startedAt.has(root) && visible.has(root) && !documentRef.hidden;
+    write(root, 'motionCampaignLive', String(live));
   };
 
   const observer = 'IntersectionObserver' in windowRef
@@ -103,7 +146,13 @@ function startCampaignMotion(documentRef, windowRef) {
         const root = entry.target;
         if (entry.isIntersecting) visible.add(root);
         else visible.delete(root);
-        if (allowed() && entry.isIntersecting && entry.intersectionRatio >= START_RATIO && !documentRef.hidden) start(root);
+        if (entry.isIntersecting && entry.intersectionRatio >= START_RATIO) ready.add(root);
+        else ready.delete(root);
+        if (allowed() && ready.has(root) && !documentRef.hidden) {
+          start(root);
+        } else if (!entry.isIntersecting && settled(root)) {
+          delete root.dataset.motionCampaign;
+        }
         sync(root);
       }
     }, { threshold: [0, START_RATIO] })
@@ -122,15 +171,24 @@ function startCampaignMotion(documentRef, windowRef) {
       observer.unobserve(root);
       observed.delete(root);
       visible.delete(root);
+      ready.delete(root);
+      // El parcheo estable guarda el nodo para reusarlo: si vuelve —se borró
+      // la búsqueda, se volvió al rubro— vuelve en su cuadro final, no con la
+      // entrada a medio correr.
+      if (startedAt.has(root)) still(root);
     }
     for (const root of current) {
       if (observed.has(root)) continue;
       observed.add(root);
+      arm(root);
       observer.observe(root);
     }
   };
 
-  const onVisibility = () => observed.forEach(sync);
+  const onVisibility = () => observed.forEach((root) => {
+    if (allowed() && !documentRef.hidden && ready.has(root) && !startedAt.has(root)) start(root);
+    sync(root);
+  });
   const onPreference = () => observed.forEach(sync);
   // Una creatividad que no carga no puede dejar un hueco: la pieza lo declara y
   // el CSS vuelve a mostrar la silueta dibujada.
@@ -155,10 +213,12 @@ function startCampaignMotion(documentRef, windowRef) {
       observed.forEach(still);
       observed.clear();
       visible.clear();
+      ready.clear();
       if (activeController === controller) activeController = null;
     },
     getDiagnostics() {
       const roots = [...observed];
+      const running = roots.filter((root) => root.dataset.motionCampaign === 'on');
       return {
         active: true,
         reducedMotion: Boolean(reducedQuery?.matches),
@@ -166,8 +226,8 @@ function startCampaignMotion(documentRef, windowRef) {
         observerCount: observer ? 1 : 0,
         campaigns: roots.length,
         visible: visible.size,
-        running: roots.filter((root) => root.dataset.motionCampaign === 'on').length,
-        live: roots.filter((root) => root.dataset.motionCampaignLive === 'true').length,
+        running: running.length,
+        live: running.filter((root) => root.dataset.motionCampaignLive === 'true').length,
         plays,
       };
     },

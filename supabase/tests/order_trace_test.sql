@@ -119,6 +119,9 @@ begin
   insert into public.business_payment_settings (business_id, enabled, environment, checkout_mode, currency, reserve_stock,
     collector_id, application_id, configured_at, verified_at)
   values (v_business, true, 'test', 'checkout_pro', 'ARS', true, 'collector-traza', 'app-traza', clock_timestamp(), clock_timestamp());
+  -- El vendedor conectado por OAuth: sin él la autoridad V2 no deja asentar la preferencia.
+  insert into public.mp_seller_connections(business_id,environment,seller_id,application_id,status,protected_tokens,expires_at)
+  values (v_business, 'test', 'collector-traza', 'app-traza', 'connected', 'ciphertext-only-local-fixture', now() + interval '2 days');
   insert into public.local_devices(id, business_id, device_name, status, secret_hash)
   values ('f9000000-0000-4000-8000-000000000001', v_business, 'Caja traza', 'active', repeat('a', 64));
   insert into public.business_print_settings(business_id, auto_print_enabled, kitchen_ticket_on, order_ticket_on)
@@ -187,10 +190,14 @@ begin
     'contact', jsonb_build_object('name', 'Zulema Pii Traza', 'phone', '5492996209137'),
     'address', '{}'::jsonb, 'age_confirmed', false, 'payment_method', 'mercadopago'));
   v_session := (v_res ->> 'checkout_session_id')::uuid;
-  v_prepare := public.prepare_mercadopago_preference(v_session, v_customer, false);
-  perform public.record_mercadopago_preference_created(
-    (v_prepare ->> 'payment_attempt_id')::uuid, 'PREF-TRAZA-0002',
-    'https://www.mercadopago.com/r/traza', 'https://sandbox.mercadopago.com/r/traza',
+  -- Mismo camino que la función Edge: prepara y asienta por V2, con la autoridad leída en el momento.
+  v_prepare := public.prepare_mercadopago_preference_v2(v_session, v_customer, false);
+  perform public.record_mercadopago_preference_created_v2(
+    v_business, 'test', v_session, v_customer, (v_prepare ->> 'payment_attempt_id')::uuid,
+    public.get_mercadopago_payment_authority_v2(v_business, 'test', v_session, v_customer,
+      (v_prepare ->> 'payment_attempt_id')::uuid) ->> 'authority_version',
+    'PREF-TRAZA-0002', 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=traza',
+    'https://sandbox.mercadopago.com.ar/checkout/v1/redirect?pref_id=traza',
     encode(gen_random_bytes(32), 'hex'), 'req-traza-0002');
   select id into v_intent from public.payment_intents where checkout_session_id = v_session;
   v_res := public.record_mercadopago_webhook_receipt('test', 'evt-traza-0002', 'payment', '77700012345', true, 'rq-traza-0002', repeat('d', 64));

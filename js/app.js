@@ -1416,6 +1416,24 @@ function bindDetailSheetHistory() {
   // hasta entonces `history.state` sigue diciendo «ficha». Una ficha abierta en
   // ese hueco —segundo toque rápido— no puede confundirse con la que se cerró.
   let consumingEntry = false;
+  let consumeTimer = 0;
+  // La vista desde la que se pidió esa vuelta. Si al llegar es otra, la persona
+  // ya navegó y la URL de la entrada vieja no manda.
+  let consumeView = '';
+
+  // La marca vale para ESA vuelta y no puede quedar puesta si su `popstate` no
+  // llegara. Pero tampoco se suelta a ciegas: mientras el historial siga
+  // parado en la entrada de la ficha, la vuelta todavía no llegó.
+  const waitForConsumption = (tries = 0) => {
+    clearTimeout(consumeTimer);
+    consumeTimer = setTimeout(() => {
+      if (consumingEntry && onDetailSheetHistoryEntry() && tries < 10) {
+        waitForConsumption(tries + 1);
+        return;
+      }
+      consumingEntry = false;
+    }, 400);
+  };
 
   const pushSheetEntry = () => {
     try {
@@ -1443,10 +1461,9 @@ function bindDetailSheetHistory() {
       if (consumingEntry) return;
       if (onDetailSheetHistoryEntry()) {
         consumingEntry = true;
+        consumeView = activeView;
         window.history.back();
-        // Como `closingFromHistory`: la marca vale para ESA vuelta y no puede
-        // quedar puesta si su `popstate` no llegara.
-        setTimeout(() => { consumingEntry = false; }, 400);
+        waitForConsumption();
       }
     });
   }
@@ -1455,6 +1472,13 @@ function bindDetailSheetHistory() {
     if (consumingEntry) {
       // Es la vuelta que pidió el cierre a mano, no un «atrás» de la persona.
       consumingEntry = false;
+      clearTimeout(consumeTimer);
+      if (activeView !== consumeView) {
+        // Se tocó otra vista mientras la entrada se retiraba: la vuelta aterriza
+        // en una URL de la vista anterior y no puede deshacer esa navegación.
+        writeViewHash(activeView, true);
+        return;
+      }
       if (detailSheetOpen() && !onDetailSheetHistoryEntry()) pushSheetEntry();
       syncViewFromLocation();
       return;

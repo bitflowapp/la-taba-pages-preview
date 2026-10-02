@@ -362,6 +362,28 @@ test('ficha: «atrás» la cierra sin mover el catálogo, y cerrarla a mano no d
     expect(despues.view).toBe('catalog');
   }
 
+  // Entonces un solo «atrás» sale del catálogo, como siempre.
+  await page.goBack();
+  await expect(page.locator('[data-view="home"]')).toBeVisible();
+});
+
+test('ficha: abrir otra mientras se cierra la primera no la cierra sola ni la deja sin su «atrás»', async ({ page }) => {
+  await openRuntimeCatalog(page, { view: 'home' });
+  await page.locator('[data-nav-view="catalog"]:visible').first().click();
+  await expect(page.locator(`${GRID} .product-card`)).toHaveCount(46);
+  const state = () => page.evaluate(() => ({
+    view: document.querySelector('.app-view.is-active')?.dataset.view,
+    entries: window.history.length,
+    sheetEntry: window.history.state?.sheet || '',
+  }));
+  const modal = page.locator('[data-product-modal]');
+  const trigger = page.locator(`${GRID} [data-product-detail]`).nth(8);
+  await trigger.scrollIntoViewIfNeeded();
+  await trigger.click();
+  await expect(modal).toBeVisible();
+  const conFicha = await state();
+  expect(conFicha.sheetEntry).toBe('detail');
+
   // Un segundo toque rápido: se cierra una ficha y se abre otra en el mismo
   // turno, antes de que el historial termine de consumir la entrada de la
   // primera. La segunda no puede cerrarse sola ni quedarse sin su entrada.

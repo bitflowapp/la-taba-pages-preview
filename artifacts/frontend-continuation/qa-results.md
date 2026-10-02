@@ -118,29 +118,36 @@ entera, incluida la home que no se ve. Los rangos no se tocan.
 El costo: dos módulos más (las dos escenas nuevas) y 70 kB más de JS y CSS sin
 comprimir. Las fotos no cambiaron.
 
-### Lo que no se puede afirmar
+### Scroll y LCP: dos mediciones, y sólo una sirve
+
+**Con GPU** (ventana real fuera de pantalla, misma secuencia, tres rondas
+intercaladas). Es la medición válida:
 
 | | Base | Final |
 |---|---|---|
-| LCP, teléfono | 5.224 ms [2.956 – 9.620] | 2.840 ms [2.796 – 3.488] |
-| LCP, escritorio | 2.776 ms [1.984 – 2.976] | 2.816 ms [1.840 – 3.528] |
-| FPS, scroll de la home, teléfono | 36,8 [20,3 – 59,8] | 15,0 [11,7 – 41,2] |
-| FPS, scroll del catálogo, teléfono | 0,9 [0,6 – 24,4] | 6,8 [3,3 – 30,9] |
-| FPS, scroll de la home, escritorio | 43,0 [18,8 – 55,7] | 28,9 [28,7 – 51,8] |
-| FPS, scroll del catálogo, escritorio | 37,9 [1,2 – 46,5] | 30,0 [19,2 – 49,0] |
+| FPS, scroll de la home, teléfono (CPU 4×) | 59,6 [55,8 – 59,7] | 59,7 [59,4 – 59,9] |
+| FPS, scroll del catálogo, teléfono, 1.ª pasada | 59,3 [58,9 – 59,8] | 59,9 [59,6 – 59,9] |
+| FPS, scroll del catálogo, teléfono, 2.ª pasada | 60,1 [60,1 – 60,1] | 60,1 [58,4 – 60,1] |
+| FPS, scroll de la home, escritorio | 60,1 [60,1 – 60,1] | 60,1 [59,9 – 60,1] |
+| FPS, scroll del catálogo, escritorio | 59,8 [59,7 – 59,9] | 59,9 [59,6 – 59,9] |
+| Cuadro p95, catálogo, teléfono | 16,8 ms | 16,7 ms |
+| LCP, teléfono | 3.848 ms [3.140 – 3.896] | 3.488 ms [3.444 – 5.732] |
+| LCP, escritorio | 1.768 ms [1.640 – 4.816] | 2.308 ms [1.528 – 3.100] |
+| CLS, teléfono | 0 | 0 |
+| CLS, escritorio | 0,006 | 0,006 |
 
-Estos números no dicen nada. Un mismo código dio 0,6 y 24 cuadros por segundo
-según la ronda: la máquina estaba ocupada por otras sesiones y el navegador sin
-ventana dibuja por software. Los rangos de base y final se pisan enteros en los
-dos sentidos. No hay una mejora de FPS que reclamar ni una regresión que
-descartar con esta medición. El LCP del teléfono parece mejor, pero las dos
-primeras rondas de la base fueron las más castigadas; en escritorio es el mismo.
+El scroll va a 60 cuadros por segundo antes y después: **sin regresión y sin
+mejora**, que es lo esperable porque esta tanda no tocó nada de lo que corre
+durante el scroll. El LCP no cambió de forma medible: los rangos se pisan.
 
-Lo que sí sostiene «sin regresión de scroll» es de otra clase: el estrés no
-encontró un solo nodo reemplazado ni un render de más, y esta tanda no cambió
-nada de lo que corre durante el scroll.
+**Sin ventana** (la primera que corrí, con la máquina ocupada por otras
+sesiones): entre 0,6 y 60 cuadros por segundo para el mismo código, con los
+rangos de base y final pisándose enteros. Esos números no dicen nada y no se
+usan; quedan anotados para que nadie los repita creyendo que miden algo. Lo
+mismo el LCP de esa tanda (5.224 contra 2.840 ms en teléfono): las dos primeras
+rondas de la base fueron las más castigadas.
 
-`FPS_BASE`, `FPS_FINAL`: **no concluyente**. `LCP`: **sin cambio medible**.
+`FPS_BASE` ≈ `FPS_FINAL` ≈ 60. `LCP`: sin cambio medible.
 
 ## Dónde queda el primer «Agregar» de la home
 

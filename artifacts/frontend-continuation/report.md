@@ -66,12 +66,11 @@ PWA:        caché v137, hojas ?v=70, identidad firmada (204 archivos). Las prue
             corren en el CI
 ACCESSIBILITY:  CRITICAL_ACCESSIBILITY_VIOLATIONS 0 (axe, WCAG 2.2 AA, Chromium y WebKit)
 
-FPS_BASE:   no concluyente
-FPS_FINAL:  no concluyente. La máquina dio entre 0,6 y 60 cuadros por segundo con el mismo
-            código; los rangos de base y final se pisan enteros
-LCP_BASE:   teléfono 5.224 ms [2.956 – 9.620] · escritorio 2.776 ms
-LCP_FINAL:  teléfono 2.840 ms [2.796 – 3.488] · escritorio 2.816 ms. Sin cambio medible
-CLS_FINAL:  0
+FPS_BASE:   59,6 home · 59,3 catálogo (teléfono, CPU 4×, con GPU) · 60,1 / 59,8 escritorio
+FPS_FINAL:  59,7 home · 59,9 catálogo (teléfono) · 60,1 / 59,9 escritorio. Sin cambio
+LCP_BASE:   teléfono 3.848 ms [3.140 – 3.896] · escritorio 1.768 ms [1.640 – 4.816]
+LCP_FINAL:  teléfono 3.488 ms [3.444 – 5.732] · escritorio 2.308 ms [1.528 – 3.100]. Sin cambio medible
+CLS_FINAL:  0 en teléfono · 0,006 en escritorio, igual que la base
 IMAGE_BYTES_BASE:   1.034.131 (home, teléfono) · 471.164 (catálogo, teléfono)
 IMAGE_BYTES_FINAL:  1.034.131 · 471.164. Sin cambio: esta tanda no tocó las fotos
 

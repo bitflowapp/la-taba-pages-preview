@@ -105,6 +105,22 @@ Dos cambios en las pruebas, y por qué no son un aflojamiento:
   que no depende de las fuentes de la máquina: ni cortada, ni sobre la acción,
   ni sobre la escena, y la pieza no más alta que la puerta.
 
+### El segundo rojo: la prueba que escribí para el primero
+
+Corrida 36990439592 sobre `3202177`: 731 en verde y 1 en rojo, y era justo la
+prueba nueva de los dos renglones. **Clasificación: TEST_BUG.** Daba por hecho
+que, sin ayuda, la leyenda cabe en un renglón en la línea de base, y exigía que
+ensancharla hiciera crecer la banda más de 8 px. En el CI, con la letra de Linux,
+la leyenda ya parte en dos sin ayuda —la banda base ya medía 113,3 px—, así que
+no había renglón que sumar. Es el mismo malentendido que dio el primer rojo,
+visto ahora en mi prueba: la prueba dependía de una letra de la máquina.
+
+El producto estaba bien. «La escena llena la banda», que falló en el primer
+rojo, pasó en el segundo. Corrección (`93d87ef`): si la línea de base cabe en un
+renglón, la aserción es la misma; si ya parte en dos, se exige que ensanchar no
+achique la banda. Las demás aserciones de esa prueba no cambiaron. La corrida
+37051659570 sobre `93d87ef` quedó verde.
+
 ## Lo que queda abierto a propósito
 
 Son decisiones, no olvidos. Ninguna la resolví en silencio.

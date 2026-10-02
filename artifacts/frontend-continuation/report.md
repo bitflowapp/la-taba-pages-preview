@@ -33,10 +33,10 @@ REPO:           bitflowapp/la-taba-pages-preview
 WORKTREE:       la-taba-frontend-polish (aislado; ningún otro worktree se tocó)
 BRANCH:         feat/taba-frontend-commercial-polish
 HEAD_INITIAL:   0364a58
-HEAD_FINAL:     4b50616 es el último commit con código; lo sigue el de esta documentación
+HEAD_FINAL:     93d87ef es el último commit con código y el que validó el CI; después sólo hay documentación
 PR_129:         abierto, sin fusionar (c1dc3aa). Es la base de #131
 PR_131:         abierto, borrador, apilado sobre #129, sin conflictos
-COMMITS_NEW:    17 de código y pruebas (6519e31 … 4b50616) más el de documentación
+COMMITS_NEW:    18 de código y pruebas (6519e31 … 93d87ef) más los de documentación
 
 HOME:               hecho. Encabezado en dos renglones, abierto/cerrado según el servidor,
                     leyenda legal de alcohol en la banda. El primer «Agregar» sube 32 px en los
@@ -58,12 +58,12 @@ OTHER_CAMPAIGNS:    ice_reveal (ya estaba), spotlight_product y glass_fill (nuev
                     bottle_condensation, can_spin ni bubble_background: son variaciones de lo que
                     ya hay y no agregan nada que ayude a comprar
 
-CHROMIUM:   PASS local sobre el código final (ver qa-results.md). CI: ver el PR
-WEBKIT:     PASS local: estados de tienda 20 de 20, campañas 15 de 15. CI: ver el PR
+CHROMIUM:   PASS local sobre el código final (ver qa-results.md). CI: PASS (corrida 37051659570)
+WEBKIT:     PASS local: estados de tienda 20 de 20, campañas 15 de 15. CI: PASS (corrida 37051659570)
 MOBILE:     360 × 800, 390 × 844, 430 × 932, en los dos motores
 DESKTOP:    1366 × 768 y 1920 × 1080, en los dos motores
-PWA:        caché v137, hojas ?v=70, identidad firmada (204 archivos). Las pruebas de PWA
-            corren en el CI
+PWA:        caché v137, hojas ?v=70, identidad firmada (204 archivos). Pruebas de PWA
+            en verde en el CI
 ACCESSIBILITY:  CRITICAL_ACCESSIBILITY_VIOLATIONS 0 (axe, WCAG 2.2 AA, Chromium y WebKit)
 
 FPS_BASE:   59,6 home · 59,3 catálogo (teléfono, CPU 4×, con GPU) · 60,1 / 59,8 escritorio
@@ -78,12 +78,13 @@ CARD_REPLACEMENTS:   0   (5 min, Chromium y WebKit)
 IMAGE_REPLACEMENTS:  0
 IMAGE_REDOWNLOADS:   0   (caché real, contado en el servidor)
 CONSOLE_ERRORS:      0
-UNIT_TESTS:  2.857 de 2.858 en local. La que falla es un gate de Gradle del Rider que en esta
-             notebook se queda sin tiempo; en el CI pasa
-E2E:         local: 132 pruebas en Chromium y 35 en WebKit sobre el código final, todas en verde.
-             La suite completa (728) sólo corre en el CI
-CI:          36974637300 sobre 0197ba5: ROJO, 1 de 728 (defecto mío, corregido en 7b8830c).
-             La corrida sobre los arreglos se despacha al subir; su resultado está en el PR
+UNIT_TESTS:  CI: 2.857 de 2.858, 0 fallas, 1 omitida. En local 2.857 de 2.858: la que falla es
+             un gate de Gradle del Rider que en esta notebook se queda sin tiempo
+E2E:         CI: 732 pasadas, 4 omitidas, ninguna necesitó reintento. Local: 132 pruebas
+             en Chromium y 35 en WebKit sobre el código final, todas en verde
+CI:          VERDE: 37051659570 sobre 93d87ef. Antes, dos rojos de 1 prueba cada uno, los dos
+             míos: 36974637300 (0197ba5), defecto del producto —la leyenda legal—, y
+             36990439592 (3202177), defecto de la prueba nueva que lo cubría
 
 P0:  0
 P1:  0 abiertos de esta tanda
@@ -91,14 +92,13 @@ P2:  0 abiertos de esta tanda. Quedan abiertos hallazgos de auditoría fuera del
      (Mercado Pago, totales de pedidos): ver review-findings.md
 P3:  5 decisiones abiertas a propósito: ver review-findings.md
 
-FRONTEND_READY:             NO hasta que el CI de los arreglos esté en verde. Con eso, listo
-                            para revisión; sigue faltando un teléfono físico
+FRONTEND_READY:             YES para revisión (CI verde). Falta un teléfono físico y Safari real
 CATALOG_TECHNICALLY_READY:  YES
 ANIMATION_ENGINE_READY:     YES, y apagado. Encender una campaña es una decisión comercial
 COMMERCIAL_CATALOG_READY:   NO
 PRODUCTS_PENDING_WALTER:    12
 EVIDENCE_PATH:              artifacts/frontend-continuation/
-FINAL_VERDICT:              listo para revisión una vez verde el CI; no listo para vender
+FINAL_VERDICT:              listo para revisión; no listo para vender
 ```
 
 ## Qué cambió, por superficie

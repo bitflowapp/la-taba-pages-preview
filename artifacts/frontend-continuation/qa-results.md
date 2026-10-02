@@ -12,7 +12,8 @@ otras sesiones de trabajo. Donde eso le quita valor a un número, está dicho.
 |---|---|---|
 | 36887542331 | `0364a58` (base) | Verde. 680 E2E, 4 omitidas, 2 inestables al reintento |
 | 36974637300 | `0197ba5` (primera tanda de commits) | **Rojo.** Unitarias, migraciones y Windows en verde. E2E: 723 en verde, 4 omitidas, 1 en rojo |
-| la de los arreglos | ver el PR | Se despacha al subir estos commits; el resultado va en el cuerpo del PR, no acá |
+| 36990439592 | `3202177` (los arreglos de la revisión y de la leyenda) | **Rojo**, 731 en verde y 1 en rojo: sólo la prueba nueva de los dos renglones (ver abajo) |
+| 37051659570 | `93d87ef` (arreglo de esa prueba) | **Verde.** Unitarias 2.857 de 2.858 (1 omitida, 0 fallas); E2E 732 pasadas, 4 omitidas, ninguna necesitó reintento; migraciones y Windows en verde |
 
 Clasificación de lo que falló o titubeó:
 
@@ -20,6 +21,7 @@ Clasificación de lo que falló o titubeó:
 |---|---|---|
 | `checkout-payment-handoff.spec.mjs:351` (inestable en la base) | TEST_BUG | Simulaba la vuelta de Mercado Pago antes de que el traspaso estuviera armado. Ahora espera la marca. En `0197ba5` pasó al primer intento |
 | `service-worker-degraded-recovery.spec.mjs:224` (inestable en la base) | ENVIRONMENT_FLAKE | WebKit «Page crashed» en el runner. En `0197ba5` pasó al primer intento |
+| `campaigns.spec.mjs` «si la leyenda legal parte en dos renglones» (rojo en `3202177`; prueba mía, nueva) | TEST_BUG | Daba por hecho que la leyenda cabe en un renglón sin ayuda y exigía que ensancharla hiciera crecer la banda 8 px. En el CI, con la letra de Linux, ya parte en dos (la banda base ya medía 113,3): no había renglón que sumar. Ahora, si la base ya parte en dos, exige que ensanchar no la achique. Es la prueba que midió mal; el producto estaba bien: «llena la banda», que falló en `0197ba5`, pasó |
 | `campaigns.spec.mjs` «la escena llena la banda que tiene» (rojo en `0197ba5`) | **PRODUCT_BUG** | La leyenda legal partía en dos renglones con la letra de sistema de Linux y la escena la pisaba. Arreglado en el producto; ver `review-findings.md` |
 
 Ninguna aserción se aflojó. Las dos mediciones que cambiaron están explicadas

@@ -2202,7 +2202,10 @@ export function showComboModal(comboId, restoreTrigger = null) {
         <button class="secondary-button" type="button" data-combo-open-component="${escapeHtml(combo.components[0].sku)}">Ver ${escapeHtml(combo.components[0].product.name)}</button>
       </div>
     </div>`;
-  if (!modal.open) modal.showModal();
+  if (!modal.open) {
+    modal.showModal();
+    announceDetailSheetOpened(modal);
+  }
 }
 
 export function closeComboModal() {
@@ -4774,6 +4777,21 @@ function actualProductVariants(product) {
     .filter((candidate) => candidate && isProductVisibleToCustomer(candidate));
 }
 
+/*
+ * Una ficha que se abre lo avisa. `<dialog>` emite `close` pero no tiene un
+ * evento de apertura, y `app.js` necesita los dos para que «atrás» cierre la
+ * ficha en vez de llevarse la tienda de abajo (ver `bindDetailSheetHistory`).
+ */
+export const DETAIL_SHEET_OPENED_EVENT = 'taba:detail-sheet-opened';
+
+function announceDetailSheetOpened(modal) {
+  try {
+    modal.dispatchEvent(new CustomEvent(DETAIL_SHEET_OPENED_EVENT));
+  } catch (_) {
+    // Sin CustomEvent la ficha abre igual; sólo «atrás» conserva su conducta vieja.
+  }
+}
+
 let productModalRestoreFocus = null;
 // El detalle del combo devuelve el foco al control que lo abrió, igual que la
 // ficha de producto: sin esto el lector de pantalla vuelve al principio del
@@ -4905,6 +4923,7 @@ export function showProductModal(productId, restoreTrigger = null, { refresh = f
     const note = content.querySelector('[data-product-note]');
     if (note) note.value = '';
     modal.showModal();
+    announceDetailSheetOpened(modal);
   }
 }
 

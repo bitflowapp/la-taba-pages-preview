@@ -13,6 +13,7 @@ import {
 import {
   applyBusinessConfig,
   closeCheckoutSuggestions,
+  DETAIL_SHEET_OPENED_EVENT,
   closeComboModal,
   closeProductModal,
   clearAddedFlash,
@@ -1372,8 +1373,115 @@ function bloqueoDePerfilEnCheckout(form) {
   };
 }
 
+/*
+ * «ATRÁS» CIERRA LA FICHA.
+ *
+ * Abrir la ficha de un producto no escribía historial, así que con la ficha
+ * abierta «atrás» —el gesto del borde en iPhone, el botón del navegador— le
+ * pegaba a la vista de ABAJO: la ficha quedaba en pantalla sobre la home, el
+ * catálogo volvía arriba de todo, y si el catálogo era la primera entrada el
+ * gesto directamente salía de la tienda. Es el gesto con el que se cierra una
+ * hoja en un teléfono, y perdía la posición que la ficha promete conservar.
+ *
+ * La ficha —de producto o de combo— ocupa UNA entrada de historial con la
+ * misma URL. Las tres salidas quedan consistentes:
+ *
+ *   · «atrás» con la ficha abierta   → se cierra la ficha; la vista no cambia
+ *                                      (misma URL: no hay reset de scroll)
+ *   · cerrarla con ✕, Escape o fondo → la entrada se consume sola
+ *   · combo → componente             → una ficha reemplaza a la otra y la
+ *                                      entrada se reutiliza
+ *
+ * Y una entrada de ficha sin ficha —quedó huérfana porque se navegó en el
+ * mismo instante del cierre, o es una recarga— se saltea, así nunca hay un
+ * «atrás» que no haga nada.
+ */
+const DETAIL_SHEET_STATE = 'detail';
+
+function detailSheets() {
+  return [$('[data-product-modal]'), $('[data-combo-modal]')].filter(Boolean);
+}
+
+function detailSheetOpen() {
+  return detailSheets().some((sheet) => sheet.open);
+}
+
+function onDetailSheetHistoryEntry() {
+  return window.history.state?.sheet === DETAIL_SHEET_STATE;
+}
+
+function bindDetailSheetHistory() {
+  let closingFromHistory = false;
+  // El `history.back()` que consume la entrada tarda un turno en llegar, y
+  // hasta entonces `history.state` sigue diciendo «ficha». Una ficha abierta en
+  // ese hueco —segundo toque rápido— no puede confundirse con la que se cerró.
+  let consumingEntry = false;
+
+  const pushSheetEntry = () => {
+    try {
+      window.history.pushState({ view: activeView, sheet: DETAIL_SHEET_STATE }, '', window.location.href);
+    } catch (_) {
+      // Sin historial disponible la ficha funciona igual que antes.
+    }
+  };
+
+  for (const sheet of detailSheets()) {
+    sheet.addEventListener(DETAIL_SHEET_OPENED_EVENT, () => {
+      // Con la entrada vieja todavía en retirada, la nueva se anota cuando esa
+      // vuelta termina (ver `popstate`).
+      if (consumingEntry || onDetailSheetHistoryEntry()) return;
+      pushSheetEntry();
+    });
+    sheet.addEventListener('close', () => {
+      if (closingFromHistory) {
+        closingFromHistory = false;
+        return;
+      }
+      // Combo → componente: se cerró una y ya hay otra abierta sobre la misma entrada.
+      if (detailSheetOpen()) return;
+      // La entrada ya se está yendo: pedir otro «atrás» sacaría de la vista.
+      if (consumingEntry) return;
+      if (onDetailSheetHistoryEntry()) {
+        consumingEntry = true;
+        window.history.back();
+        // Como `closingFromHistory`: la marca vale para ESA vuelta y no puede
+        // quedar puesta si su `popstate` no llegara.
+        setTimeout(() => { consumingEntry = false; }, 400);
+      }
+    });
+  }
+
+  window.addEventListener('popstate', () => {
+    if (consumingEntry) {
+      // Es la vuelta que pidió el cierre a mano, no un «atrás» de la persona.
+      consumingEntry = false;
+      if (detailSheetOpen() && !onDetailSheetHistoryEntry()) pushSheetEntry();
+      syncViewFromLocation();
+      return;
+    }
+    if (detailSheetOpen()) {
+      if (!onDetailSheetHistoryEntry()) {
+        closingFromHistory = true;
+        closeProductModal();
+        closeComboModal();
+        // La marca vale para ESTE cierre. Si su `close` no llegara, no puede
+        // quedar puesta y tragarse el próximo cierre a mano.
+        setTimeout(() => { closingFromHistory = false; }, 400);
+      }
+    } else if (onDetailSheetHistoryEntry()) {
+      window.history.back();
+      return;
+    }
+    syncViewFromLocation();
+  });
+
+  // Recarga con la ficha abierta: el navegador conserva el estado de la
+  // entrada, pero la ficha ya no está.
+  if (onDetailSheetHistoryEntry() && !detailSheetOpen()) window.history.back();
+}
+
 function bindEvents() {
-  window.addEventListener('popstate', syncViewFromLocation);
+  bindDetailSheetHistory();
   window.addEventListener('hashchange', syncViewFromLocation);
   window.addEventListener('taba:navigate-profile', (event) => {
     const requestedReturn = String(event?.detail?.returnTo || 'cart');

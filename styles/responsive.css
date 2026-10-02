@@ -424,6 +424,18 @@ body[data-active-view="rider"] .floating-cart {
      scrollear, que es lo que le da altura fija a la hoja. */
   .product-modal {
     overflow: hidden;
+    overscroll-behavior: contain;
+  }
+
+  /* `showModal()` deja el fondo inerte pero NO quieto: arrastrar sobre la foto,
+     la barra de acción o el fondo oscurecido —que no scrollean— encadenaba el
+     gesto al documento y la góndola se corría detrás de la ficha. Al cerrar, la
+     persona ya no estaba en la tarjeta que había abierto, que es justo la
+     posición que la ficha promete conservar. Es el mismo bloqueo que ya tiene
+     la hoja de direcciones, escrito en CSS: se suelta solo con cualquier forma
+     de cerrar. La ficha del combo usa la misma clase. */
+  body:has(.product-modal[open]) {
+    overflow: hidden;
   }
 
   .modal-card {

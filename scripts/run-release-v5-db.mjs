@@ -205,15 +205,15 @@ try {
       'fiscal_core_contract_test.sql','fiscal_core_upgrade_test.sql','fiscal_receiver_vat_condition_test.sql',
       'commercial_order_fiscal_test.sql','fiscal_disaster_recovery_test.sql','fiscal_secret_boundary_test.sql',
       'fiscal_refund_separation_test.sql','owner_handover_test.sql','caja_clara_pos_integration_test.sql',
-      'customer_deletion_delivery_order_test.sql','order_intake_guard_test.sql'];
+      'customer_deletion_delivery_order_test.sql','order_intake_guard_test.sql','order_cancel_inventory_release_test.sql'];
     for(const name of canonicalTests){
       const output=docker(['exec','-i',container,'psql','-h','/tmp','-U','postgres','-d','postgres','-X','-qAt','-v','ON_ERROR_STOP=1'],
         Buffer.from('set search_path=public,extensions;\n'+fs.readFileSync(path.join(ROOT,'supabase/tests',name),'utf8'))).toString();
       assert.doesNotMatch(output,/^not ok\b/m,name);assert.match(output,/^1\.\.[0-9]+$/m,name);
       assertions+=Number(/^1\.\.([0-9]+)$/m.exec(output)[1]);
     }
-    assert.equal(assertions,998);
-    console.log('CANONICAL_PGTAP: 268 + 44 least-privilege + 50 reparto-propio + 37 ventana QA/columnas privadas/pausa + 9 Mercado Pago sólo con vendedor conectado + 5 aislamiento cobro manual/Mercado Pago + 9 alerta de vendedor que no puede cobrar + 16 interruptor de operador por negocio + 104 impresión del mostrador + 19 pipeline de imágenes + 84 preparar la apertura + 24 primera publicación de un borrador de CP + 12 invariantes a prueba de NULL + 55 contrato del core fiscal + 24 upgrade fiscal + 14 RG 5616 + 54 pedidos online V2 + 21 recuperación ante desastre fiscal + 7 frontera de secretos fiscales + 2 reembolso no es nota de crédito + 12 traspaso de dueño + 54 Caja Clara como terminal del local + 12 baja de cliente con pedido delivery + 62 guardián de admisión de pedidos assertions PASS');
+    assert.equal(assertions,1033);
+    console.log('CANONICAL_PGTAP: 268 + 44 least-privilege + 50 reparto-propio + 37 ventana QA/columnas privadas/pausa + 9 Mercado Pago sólo con vendedor conectado + 5 aislamiento cobro manual/Mercado Pago + 9 alerta de vendedor que no puede cobrar + 16 interruptor de operador por negocio + 104 impresión del mostrador + 19 pipeline de imágenes + 84 preparar la apertura + 24 primera publicación de un borrador de CP + 12 invariantes a prueba de NULL + 55 contrato del core fiscal + 24 upgrade fiscal + 14 RG 5616 + 54 pedidos online V2 + 21 recuperación ante desastre fiscal + 7 frontera de secretos fiscales + 2 reembolso no es nota de crédito + 12 traspaso de dueño + 54 Caja Clara como terminal del local + 12 baja de cliente con pedido delivery + 62 guardián de admisión de pedidos + 35 cancelar devuelve stock y vuelve a ofrecer assertions PASS');
 
     // pgTAP no puede probar dos agentes reclamando a la vez: una conexión por llamada.
     const { runPrintClaimRace } = await import('./print-agent/claim-race.mjs');

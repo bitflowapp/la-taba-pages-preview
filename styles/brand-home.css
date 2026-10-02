@@ -2038,12 +2038,24 @@ body[data-active-view="home"] .home-sections {
     display: none;
   }
 
+  /* En flujo y subida un renglón, igual que `.cmp-legal` en campaigns.css y
+     por lo mismo: si la leyenda parte en dos —letra de sistema ancha, o 320 px—
+     el segundo renglón hace crecer la banda en vez de caer sobre la acción. */
   .home-hero-promo-legal {
-    right: 14px;
-    bottom: 5px;
-    left: 14px;
+    position: relative;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    margin: calc(-1.25em - 4px) 14px 0;
+    padding-bottom: 4px;
     font-size: 9.5px;
     letter-spacing: 0;
+  }
+}
+
+@media (max-width: 340px) {
+  .home-hero-promo-legal {
+    font-size: 8.5px;
   }
 }
 

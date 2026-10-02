@@ -1220,7 +1220,25 @@
   .cmp--home-hero .cmp-sub { display: none; }
   .cmp--home-hero.cmp--legal .cmp-eyebrow { display: none; }
   .cmp--home-hero .cmp-headline { max-width: 15ch; }
-  .cmp--home-hero .cmp-legal { right: 14px; left: 14px; bottom: 5px; font-size: 9.5px; letter-spacing: 0; }
+  /* EN FLUJO, y subida exactamente un renglón. Con una letra de sistema en la
+     que la leyenda entra en un renglón queda donde estaba. Pero la letra es la
+     del sistema (`system-ui`): en una más ancha —o a 320 px con cualquiera— la
+     leyenda parte en dos, y como estaba posicionada sobre la pieza el segundo
+     renglón caía encima de la acción y de la base del vaso. Ahora ese renglón
+     de más hace crecer la banda y no pisa nada. */
+  .cmp--home-hero .cmp-legal {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    /* 13 y no 14: la pieza tiene un borde de 1 px que la puerta editorial no
+       tiene por dentro. Con el mismo ancho útil las dos leyendas parten —o no—
+       en el mismo punto, y las dos bandas miden lo mismo. */
+    margin: calc(-1.25em - 4px) 13px 0;
+    padding-bottom: 4px;
+    font-size: 9.5px;
+    letter-spacing: 0;
+  }
 
   /* La banda mide 80–112 px: la escena es chica y el botón de ocultar le
      tapaba el envase mientras servía. Se corre la escena, no el botón —que
@@ -1231,7 +1249,7 @@
   /* Con leyenda legal la escena sube y se achica lo que mide ese renglón, así
      el texto no cruza por la base del vaso. */
   .cmp--home-hero.cmp--legal {
-    --cmp-floor: 15px;
+    --cmp-floor: 18px;
   }
 
   /* En las franjas el envase que sirve llega hasta la esquina del botón de
@@ -1246,6 +1264,12 @@
     font-size: 10px;
     letter-spacing: 0;
   }
+}
+
+/* A 320 px la leyenda a 9,5 no entra en un renglón con ninguna letra; a 8,5
+   entra con las de sistema más comunes y la banda no crece. */
+@media (max-width: 340px) {
+  .cmp--home-hero .cmp-legal { font-size: 8.5px; }
 }
 
 @media (min-width: 400px) and (max-width: 699px) {

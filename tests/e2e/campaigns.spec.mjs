@@ -38,7 +38,10 @@ const fold = (page) => page.evaluate(() => {
   const nav = document.querySelector('.mobile-nav');
   const navHeight = nav && getComputedStyle(nav).display !== 'none' ? nav.getBoundingClientRect().height : 0;
   const add = document.querySelector('[data-view="home"] [data-add-product]');
-  const hero = document.querySelector('[data-home-hero-promo] > *');
+  // La banda ENTERA, no su primer hijo: la leyenda legal de la puerta editorial
+  // es un hermano del botón, y medir sólo el botón la dejaba afuera de la
+  // cuenta mientras que en la pieza animada quedaba adentro.
+  const hero = document.querySelector('[data-home-hero-promo]');
   return {
     useful: Math.round(window.innerHeight - navHeight),
     firstAdd: add ? Math.round(add.getBoundingClientRect().bottom + window.scrollY) : null,
@@ -100,6 +103,70 @@ test('la campaña ocupa la banda de apertura sin mover el primer precio ni desbo
   const desktop = await fold(page);
   expect(desktop.overflowX, '1366px: la pieza desborda a lo ancho').toBe(false);
   expect(desktop.heroHeight, '1366×768: la pieza y la puerta editorial no miden lo mismo').toBe(editorialDesktop.heroHeight);
+});
+
+test('si la leyenda legal parte en dos renglones, la banda crece: no pisa la acción ni la escena', async ({ page, browser }) => {
+  // La letra es la del sistema (`system-ui`). Donde es más ancha que la de
+  // este equipo la leyenda no entra en un renglón: pasó en el CI, en Linux.
+  // Estaba posicionada sobre la banda y el segundo renglón caía encima de
+  // «Ver …» y de la base del vaso. La prueba no depende de qué fuentes tenga la
+  // máquina: ensancha la leyenda con espaciado entre letras, que es lo que una
+  // letra más ancha hace.
+  const phone = { width: 360, height: 800 };
+  const widen = (target) => target.addStyleTag({ content: '.cmp-legal, .home-hero-promo-legal { letter-spacing: 0.14em !important; }' });
+  const measure = (target) => target.evaluate(() => {
+    const band = document.querySelector('[data-home-hero-promo]');
+    const legal = band.querySelector('.cmp-legal, .home-hero-promo-legal');
+    const action = band.querySelector('.cmp-cta, .home-hero-promo-cta');
+    const stage = band.querySelector('.cmp-stage');
+    const range = document.createRange();
+    range.selectNodeContents(legal);
+    const lines = new Set([...range.getClientRects()].map((rect) => Math.round(rect.top))).size;
+    const rect = (node) => node.getBoundingClientRect();
+    return {
+      lines,
+      band: Math.round(rect(band).height * 10) / 10,
+      legalTop: rect(legal).top,
+      legalBottom: rect(legal).bottom,
+      bandBottom: rect(band).bottom,
+      actionBottom: action ? rect(action).bottom : null,
+      stageBottom: stage ? rect(stage).bottom : null,
+      clipped: legal.scrollWidth > legal.clientWidth + 1,
+    };
+  });
+
+  const baseline = await browser.newPage({ viewport: phone });
+  await openRuntimeCatalog(baseline);
+  await goHome(baseline);
+  const doorOneLine = await measure(baseline);
+  await widen(baseline);
+  await baseline.waitForTimeout(250);
+  const door = await measure(baseline);
+  await baseline.close();
+
+  await useQaCampaigns(page);
+  await openRuntimeCatalog(page);
+  await goHome(page);
+  await page.setViewportSize(phone);
+  await page.waitForTimeout(250);
+  await expect(page.locator(heroPiece)).toBeVisible();
+  await widen(page);
+  await page.waitForTimeout(250);
+  const piece = await measure(page);
+
+  // El renglón de más se paga con alto de banda, no con texto encimado.
+  expect(door.band, 'la banda no creció con el segundo renglón').toBeGreaterThan(doorOneLine.band + 8);
+  for (const [name, measured] of [['la puerta editorial', door], ['la pieza', piece]]) {
+    expect(measured.lines, `${name}: la leyenda ensanchada debería partir en dos`).toBeGreaterThanOrEqual(2);
+    expect(measured.clipped, `${name}: la leyenda quedó cortada`).toBe(false);
+    expect(measured.legalBottom, `${name}: la leyenda se sale de la banda`).toBeLessThanOrEqual(measured.bandBottom + 0.5);
+    // Las cajas de línea se tocan un par de píxeles por su interlineado; lo que
+    // no puede pasar es que un renglón entero quede sobre la acción.
+    expect(measured.legalTop, `${name}: la leyenda pisa la acción`).toBeGreaterThanOrEqual(measured.actionBottom - 5);
+  }
+  expect(piece.stageBottom, 'la escena llega hasta la leyenda').toBeLessThanOrEqual(piece.legalTop + 0.5);
+  // Y las dos crecen lo mismo: cambiar una por la otra no mueve el primer precio.
+  expect(piece.band, 'la pieza y la puerta dejaron de medir lo mismo con la leyenda en dos renglones').toBeLessThanOrEqual(door.band);
 });
 
 test('la escena corre sin crear ni quitar un solo nodo y termina en su cuadro final', async ({ page }) => {
@@ -286,8 +353,16 @@ test('la escena llena la banda que tiene, sin salirse de ella mientras sirve', a
     const measured = await piece.evaluate((root) => {
       const band = root.getBoundingClientRect();
       const stage = root.querySelector('.cmp-stage').getBoundingClientRect();
-      const legal = root.querySelector('.cmp-legal')?.getBoundingClientRect();
-      return { band: band.height, stage: stage.height, top: stage.top - band.top, bottom: band.bottom - stage.bottom, legal: legal ? legal.height : 0 };
+      const legalNode = root.querySelector('.cmp-legal');
+      const legal = legalNode?.getBoundingClientRect();
+      // Con una letra de sistema ancha la leyenda parte en dos y la banda crece
+      // ese renglón. Ese alto es de la leyenda, no de la escena: se descuenta
+      // para que la proporción mida lo mismo en cualquier máquina. Con un solo
+      // renglón el descuento es cero y la cuenta es la de siempre.
+      const style = legalNode ? getComputedStyle(legalNode) : null;
+      const oneLine = style ? parseFloat(style.lineHeight) + parseFloat(style.paddingBottom) : 0;
+      const extraLegal = legal ? Math.max(0, legal.height - oneLine) : 0;
+      return { band: band.height - extraLegal, stage: stage.height, top: stage.top - band.top, bottom: band.bottom - stage.bottom, legal: legal ? legal.height : 0 };
     });
     // Antes la escena medía el piso (`--cmp-h`) y no la banda: 65 px en 101.
     expect(measured.stage / measured.band, `${size.width}px: la escena quedó chica dentro de su banda`).toBeGreaterThan(0.72);

@@ -336,7 +336,11 @@ select is(pg_temp.estado('H', 'delivery', pg_temp.ba('2026-10-05 12:30')), 'OPEN
 update public.businesses set pickup_enabled = true, delivery_enabled = false where id = pg_temp.id('H');
 select is(pg_temp.estado('H', 'delivery', pg_temp.ba('2026-10-05 12:30')), 'CLOSED | channel_disabled | - | -', 'delivery apagado: ese canal cerrado');
 
-update public.businesses set delivery_enabled = true, alcohol_sales_enabled = false where id = pg_temp.id('H');
+-- Un comercio verificado no vuelve a encender el delivery sin cobertura (20261001216000):
+-- se le carga una zona y se exige la cobertura. El estado de servicio no la mira.
+insert into public.delivery_zones(business_id,name,is_active,match_kind,area_normalized,boundary,delivery_fee,minimum_subtotal,priority)
+values (pg_temp.id('H'),'Centro',true,'declared_area','centro',null,800,0,10);
+update public.businesses set delivery_enabled = true, alcohol_sales_enabled = false, delivery_zone_enforced = true where id = pg_temp.id('H');
 select is(pg_temp.estado('H', 'alcohol', pg_temp.ba('2026-10-05 12:30')), 'CLOSED | alcohol_disabled | - | -', 'venta de alcohol apagada');
 update public.businesses set alcohol_sales_enabled = true where id = pg_temp.id('H');
 

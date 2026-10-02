@@ -30,17 +30,21 @@ values
 insert into public.businesses (
   id, name, slug, status, is_active, ordering_enabled, ordering_verified, ordering_verified_at, ordering_verified_by,
   currency_code, pickup_enabled, delivery_enabled, delivery_fee, minimum_delivery_subtotal, address, phone,
-  operating_timezone
+  operating_timezone, delivery_zone_enforced
 ) values
-  -- V: verificado y abierto
+  -- V: verificado y abierto. Con la cobertura exigida y una zona (más abajo): un comercio
+  -- verificado no enciende el delivery sin eso (20261001216000), y acá se audita ese encendido.
   ('b8000000-0000-4000-8000-0000000000a1','Escritura V','escritura-directa-v','open',true,true,true,clock_timestamp(),
-   'a8000000-0000-4000-8000-0000000000a1','ARS',true,false,0,0,'Calle Uno 100, Neuquen','2990000001','America/Argentina/Buenos_Aires'),
+   'a8000000-0000-4000-8000-0000000000a1','ARS',true,false,0,0,'Calle Uno 100, Neuquen','2990000001','America/Argentina/Buenos_Aires',true),
   -- U: todavía sin verificar
   ('b8000000-0000-4000-8000-0000000000a2','Escritura U','escritura-directa-u','closed',true,false,false,null,
-   null,'ARS',true,false,null,null,'Calle Dos 200, Neuquen',null,'America/Argentina/Buenos_Aires'),
+   null,'ARS',true,false,null,null,'Calle Dos 200, Neuquen',null,'America/Argentina/Buenos_Aires',false),
   -- F: otro comercio
   ('b8000000-0000-4000-8000-0000000000a3','Escritura F','escritura-directa-f','open',true,false,false,null,
-   null,'ARS',true,false,null,null,null,null,'America/Argentina/Buenos_Aires');
+   null,'ARS',true,false,null,null,null,null,'America/Argentina/Buenos_Aires',false);
+
+insert into public.delivery_zones(id,business_id,name,is_active,match_kind,area_normalized,boundary,delivery_fee,minimum_subtotal,priority)
+values ('d8000000-0000-4000-8000-0000000000a1','b8000000-0000-4000-8000-0000000000a1','Centro',true,'declared_area','centro',null,800,0,10);
 
 insert into public.business_members(business_id,user_id,role,is_active)
 values

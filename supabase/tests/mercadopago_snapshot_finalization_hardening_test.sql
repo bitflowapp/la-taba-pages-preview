@@ -779,7 +779,12 @@ select is(
 -- compuertas de `create_checkout_session`.
 select pg_temp.checkout('l5', 'l', 1);
 select pg_temp.registrar('l5.x', 'l5', pg_temp.snap('l5', 'PAY-L5-X', 'approved', 'l5-x-approved'));
-update public.businesses set ordering_enabled = false, delivery_enabled = true, pickup_enabled = false where id = pg_temp.id('l:business');
+-- Para apagar el retiro tiene que quedar el delivery, y un comercio verificado no lo
+-- enciende sin cobertura (20261001216000): se le carga una zona y se exige la cobertura.
+insert into public.delivery_zones(business_id,name,is_active,match_kind,area_normalized,boundary,delivery_fee,minimum_subtotal,priority)
+values (pg_temp.id('l:business'),'Centro',true,'declared_area','centro',null,800,0,10);
+update public.businesses set ordering_enabled = false, delivery_enabled = true, pickup_enabled = false, delivery_zone_enforced = true
+ where id = pg_temp.id('l:business');
 select pg_temp.finalizar('l5.fin', 'l5');
 select is(pg_temp.out('l5.fin') ->> 'ok', 'true', 'L: con los pedidos apagados y el canal deshabilitado el pedido pagado se crea igual');
 select is(pg_temp.marca('l5') -> 'closed_reasons', '["ordering_disabled", "channel_disabled"]'::jsonb,

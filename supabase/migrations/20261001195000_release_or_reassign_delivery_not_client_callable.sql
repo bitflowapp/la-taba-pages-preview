@@ -1,0 +1,37 @@
+-- `release_or_reassign_delivery` deja de ser ejecutable desde un cliente.
+--
+-- QUÉ ESTABA ABIERTO (medido el 2026-10-01 en una base PG17 local con las
+-- migraciones anteriores)
+--
+--   `public.release_or_reassign_delivery(uuid, bigint, uuid)` tenía EXECUTE para
+--   `authenticated`. Ningún cliente la usa: ni el Panel ni la app del repartidor la
+--   llaman (las únicas referencias fuera de las migraciones son un test de
+--   contrato sobre el texto de 20260802100000 y dos documentos). Pero cualquier
+--   sesión del comercio podía invocarla directo por PostgREST, y la función:
+--
+--     · cambia `assigned_rider_user_id` sin escribir ningún `order_events`. Un
+--       cambio de repartidor `assigned -> assigned` no mueve el estado, así que el
+--       trigger de historial tampoco anota nada: el pedido pasa de un repartidor a
+--       otro sin dejar rastro, mientras que `assign_order_rider` —la puerta que sí
+--       usa el Panel— escribe `order.rider_reassigned`;
+--     · no recibe clave de idempotencia.
+--
+-- QUÉ CAMBIA
+--
+--   Se le quita EXECUTE a `authenticated`. No se agrega ningún permiso: el servicio
+--   conserva el que tenía.
+--
+-- QUÉ NO CAMBIA
+--
+--   · El cuerpo de la función: ni una línea.
+--   · `assign_order_rider`, las ofertas a repartidores y `claim_delivery_order`: la
+--     asignación y la reasignación desde el Panel siguen por ahí, con su evento.
+--
+-- Si más adelante hace falta liberar un pedido desde el Panel, la puerta nueva
+-- tiene que nacer con evento (repartidor anterior y nuevo) y clave de idempotencia.
+--
+-- Forward-only. No toca filas.
+-- Reversión: docs/migrations/rollback/20261001195000_release_or_reassign_delivery_not_client_callable.rollback.sql
+
+revoke all on function public.release_or_reassign_delivery(uuid, bigint, uuid)
+  from public, anon, authenticated;

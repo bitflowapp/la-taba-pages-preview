@@ -155,7 +155,13 @@ test('si la leyenda legal parte en dos renglones, la banda crece: no pisa la acc
   const piece = await measure(page);
 
   // El renglón de más se paga con alto de banda, no con texto encimado.
-  expect(door.band, 'la banda no creció con el segundo renglón').toBeGreaterThan(doorOneLine.band + 8);
+  // Donde la letra de la máquina ya parte la leyenda en dos sin ayuda (el CI, en
+  // Linux), no hay renglón que sumar: ensancharla no puede achicar la banda.
+  if (doorOneLine.lines === 1) {
+    expect(door.band, 'la banda no creció con el segundo renglón').toBeGreaterThan(doorOneLine.band + 8);
+  } else {
+    expect(door.band, 'ensanchar la leyenda achicó la banda').toBeGreaterThanOrEqual(doorOneLine.band);
+  }
   for (const [name, measured] of [['la puerta editorial', door], ['la pieza', piece]]) {
     expect(measured.lines, `${name}: la leyenda ensanchada debería partir en dos`).toBeGreaterThanOrEqual(2);
     expect(measured.clipped, `${name}: la leyenda quedó cortada`).toBe(false);

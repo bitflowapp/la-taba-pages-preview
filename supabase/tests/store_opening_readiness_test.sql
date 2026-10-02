@@ -6,7 +6,9 @@
 --   - la verificación de plataforma es sólo de la clave de servicio, pide el
 --     identificador del comercio escrito, un verificador con cuenta confirmada
 --     y FALLA CERRADA con cada compuerta pendiente (entrega, horario, precio,
---     stock, publicación, foto donde se exige, envío y mínimo);
+--     stock, publicación, foto donde se exige, envío y mínimo) y, desde
+--     20261001215000, mientras con delivery encendido la cobertura no se exija
+--     con una zona activa;
 --   - delivery y retiro se encienden desde el Panel, el horario se guarda para
 --     los dos canales y la dirección del local queda auditada;
 --   - la planilla y el Panel no publican alcohol con la venta cerrada;
@@ -16,7 +18,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(84);
+select plan(91);
 
 -- ── Fixture ────────────────────────────────────────────────────────────────
 insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
@@ -230,6 +232,43 @@ select is(pg_temp.snap('listo') -> 'pending', '["PLATFORM_VERIFICATION"]'::jsonb
 select is((pg_temp.snap('listo') ->> 'ready_for_platform_verification')::boolean, true, 'listo para verificar');
 select is((pg_temp.snap('listo') ->> 'can_open')::boolean, false, 'todavia no se puede abrir');
 select is((pg_temp.item(pg_temp.snap('listo'), 'CATALOG_PUBLISHED') -> 'facts' ->> 'published')::integer, 1, 'un producto publicado');
+
+-- ── 6b · Con delivery encendido, sin cobertura exigida no se verifica ──────
+-- 20261001215000: la lista de compuertas de siempre no cambia (por eso lo de
+-- arriba sigue igual), pero la verificación ya no acepta un comercio que
+-- entrega a cualquier dirección. Lo dice `verification_blockers`.
+select is(pg_temp.snap('listo') -> 'verification_blockers', '["DELIVERY_COVERAGE"]'::jsonb,
+  'con delivery y sin cobertura exigida, la verificacion se va a negar por la cobertura');
+select is((pg_temp.snap('listo') ->> 'verification_ready')::boolean, false, 'y la preparacion lo dice');
+
+set local role service_role;
+set local request.jwt.claims = '{"role":"service_role"}';
+do $$
+declare v_detail text;
+begin
+  perform public.platform_verify_business_ordering('ca000000-0000-4000-8000-0000000000b1','platform@opening.invalid','op-apertura',1,null);
+  insert into verify_attempts values ('sin cobertura', '00000', 'ok', null);
+exception when others then
+  get stacked diagnostics v_detail = pg_exception_detail;
+  insert into verify_attempts values ('sin cobertura', sqlstate, sqlerrm, v_detail);
+end $$;
+reset role;
+select is((select state || ' ' || message || ' ' || detail from verify_attempts where label = 'sin cobertura'),
+  '55000 OPENING_NOT_READY DELIVERY_COVERAGE', 'verificar con delivery y sin cobertura exigida falla con DELIVERY_COVERAGE');
+select is((select ordering_verified or ordering_enabled from public.businesses where id = 'ca000000-0000-4000-8000-0000000000b1'), false,
+  'y no escribe nada');
+
+-- El dueño carga una zona y exige la cobertura, desde el Panel.
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"ca000000-0000-4000-8000-0000000000a1","role":"authenticated","session_id":"ca000000-0000-4000-8000-0000000000c1"}';
+select is((public.upsert_delivery_zone('ca000000-0000-4000-8000-0000000000b1',
+  '{"name":"Centro","match_kind":"declared_area","delivery_fee":"800","minimum_subtotal":"0","priority":10}'::jsonb)) ->> 'ok', 'true',
+  'el dueño carga una zona de entrega');
+select is((public.set_service_enforcement('ca000000-0000-4000-8000-0000000000b1', true, true)) ->> 'delivery_zone_enforced', 'true',
+  'y exige la cobertura (el horario ya se exigia)');
+insert into readiness_snap select 'con reglas', public.get_store_opening_readiness('ca000000-0000-4000-8000-0000000000b1', 1);
+reset role;
+select is((pg_temp.snap('con reglas') ->> 'verification_ready')::boolean, true, 'con horario y cobertura exigidos, lista para verificar');
 
 -- ── 7 · Verificar: auditada, idempotente y sin abrir ───────────────────────
 set local role service_role;

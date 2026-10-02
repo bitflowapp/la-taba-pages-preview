@@ -9,7 +9,7 @@
     "doc": "Imágenes de sitio, no de producto. Viajan por su propia decisión y no las gobierna este manifiesto."
   },
   "doc": "Las ÚNICAS fotos de producto que el empaquetado puede copiar. Generado por scripts/catalog-images/build-public-asset-manifest.mjs; no editar a mano.",
-  "fotosDeProductoAuditadas": 267,
+  "fotosDeProductoAuditadas": 279,
   "publicables": [
     {
       "bytes": 22554,
@@ -136,6 +136,78 @@
       "derechos": "LICENCIA_COMERCIAL",
       "ruta": "assets/products/budweiser-lata-473ml-pack-6-d4302164bca107fd-thumb-78b0a2f8c89750d9.webp",
       "sha256": "78b0a2f8c89750d9e07d19cf58a14c74cc6cea68ce4c8239e5c98351789f42ef"
+    },
+    {
+      "bytes": 36356,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/campaign-aperol-750ml-master-8bff69a8a2104673.webp",
+      "sha256": "8bff69a8a2104673ef5a02aa05305f721aa25c306c8126744c1a82c2b80143d5"
+    },
+    {
+      "bytes": 8922,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/campaign-aperol-750ml-thumbnail-0d91addbcbde28a4.webp",
+      "sha256": "0d91addbcbde28a44e53b8ec267347578e6d3cb041dde52e6735f53e25b976e3"
+    },
+    {
+      "bytes": 37376,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/campaign-coca-cola-original-2250ml-local-master-a97bfb9ca463cbd1.webp",
+      "sha256": "a97bfb9ca463cbd1c664c21ae8bb1644640945c36618c32d35cc78e5570bf251"
+    },
+    {
+      "bytes": 9870,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/campaign-coca-cola-original-2250ml-local-thumbnail-92968a5c7541cd9b.webp",
+      "sha256": "92968a5c7541cd9bf0dd73d4e470313b49b4bfa5a65654ea010575dfbd3b53a0"
+    },
+    {
+      "bytes": 29718,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/campaign-fanta-naranja-2250ml-master-f44b4b965e47d807.webp",
+      "sha256": "f44b4b965e47d807478735b63a41be371a5c56d3ca84621df97d6eed088467a8"
+    },
+    {
+      "bytes": 8976,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/campaign-fanta-naranja-2250ml-thumbnail-26c591282712c681.webp",
+      "sha256": "26c591282712c6812e3e3fcc93e3a01a973b1f8df10daf1db09b90e76e3c8e7f"
+    },
+    {
+      "bytes": 84684,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/campaign-heineken-710ml-master-48236e76fb26fb3b.webp",
+      "sha256": "48236e76fb26fb3bd252c2ab22bacd76fd3213eed118e36eca294681abaa4668"
+    },
+    {
+      "bytes": 18252,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/campaign-heineken-710ml-thumbnail-3c56b52649ce5e31.webp",
+      "sha256": "3c56b52649ce5e31355ac316e740622a73a86ed933d09b4802abdae2d45e9104"
+    },
+    {
+      "bytes": 104764,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/campaign-monster-mango-loco-473ml-master-5beb803c7f916d6d.webp",
+      "sha256": "5beb803c7f916d6d98fcf09f02fcd23dae40e0a3da83c8f711d6c50a55759d52"
+    },
+    {
+      "bytes": 24802,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/campaign-monster-mango-loco-473ml-thumbnail-6ad409eb8a1f54a2.webp",
+      "sha256": "6ad409eb8a1f54a245ee1addb23a01298dac175a735366605b0852a251645312"
+    },
+    {
+      "bytes": 50094,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/campaign-red-bull-energy-drink-355ml-master-1c15e4bea4f01c5d.webp",
+      "sha256": "1c15e4bea4f01c5d6e23a2461bc7cd10602a80086a28d35cc8811fc070a8abf3"
+    },
+    {
+      "bytes": 11994,
+      "derechos": "LICENCIA_COMERCIAL",
+      "ruta": "assets/products/campaign-red-bull-energy-drink-355ml-thumbnail-ed45d1a48ddbaaeb.webp",
+      "sha256": "ed45d1a48ddbaaebc4769da3d2df32f54f97bcf06a980627d27ac82746dd4215"
     },
     {
       "bytes": 26694,

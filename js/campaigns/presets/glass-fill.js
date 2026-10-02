@@ -26,7 +26,7 @@ export const glassFill = Object.freeze({
       <span class="cmp-glow"></span>
       <span class="cmp-table"></span>
       <span class="cmp-shadow"></span>
-      ${actorMarkup(creative.vessel, '', uid)}
+      ${actorMarkup(creative.vessel, '', uid, creative.packshot)}
       <span class="cmp-stream"><i></i></span>
       ${glassMarkup(
         `<span class="cmp-fill"><span class="cmp-fill-in">${repeat('cmp-b', 6)}</span></span>

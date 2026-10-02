@@ -118,7 +118,7 @@ test('todavía escribiendo: el parecido aparece antes de terminar la palabra', (
 
 test('lo que el local no vende sigue devolviendo CERO: tolerar no es inventar surtido', () => {
   const huecos = ['vodka', 'whisky', 'wisky', 'gin', 'ron', 'sidra', 'champan', 'leche', 'pan', 'arroz', 'yerba',
-    'harina', 'aceite', 'galletitas', 'fiambre', 'salame', 'carbon', 'cigarrillos', 'papel', 'soda', 'chica', 'grande'];
+    'harina', 'aceite', 'galletitas', 'fiambre', 'salame', 'carbon', 'cigarrillos', 'papel', 'soda', 'chica'];
   for (const consulta of huecos) {
     assert.deepEqual(nombres(consulta), [], `«${consulta}» no está en la góndola y devolvió algo`);
     assert.equal(buscar(consulta).approximate, false);

@@ -17,6 +17,6 @@ export const productDrop = Object.freeze({
       <span class="cmp-table"></span>
       <span class="cmp-ring"></span>
       <span class="cmp-shadow"></span>
-      ${actorMarkup(creative.vessel, "", uid)}`;
+      ${actorMarkup(creative.vessel, "", uid, creative.packshot)}`;
   },
 });

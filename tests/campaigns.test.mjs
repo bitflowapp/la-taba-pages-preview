@@ -36,6 +36,7 @@ const catalog = snapshot.products.map((row) => ({
   id: row.id,
   sku: row.sku,
   name: row.name,
+  brand: row.brand, variant: row.variant, capacityValue: row.capacity_value, capacityUnit: row.capacity_unit, packageType: row.packaging_type,
   alcoholic: row.is_alcoholic === true,
   categoryId: String(row.category).toLowerCase(),
 }));
@@ -301,7 +302,7 @@ test('el filtro no se come texto editorial legítimo, ni una marca con número',
 test('una cifra en la pieza sólo puede venir del producto: ni precio ni cantidad escritos a mano', () => {
   const beer = byId('heineken-beer-pour');
   const pick = (copy, products = catalog) => selectCampaigns({
-    campaigns: [approved(beer, { copy: { ...beer.copy, ...copy } })], products, isOrderable: everythingSells,
+    campaigns: [approved(beer, { target: { ...beer.target, identity: undefined }, copy: { ...beer.copy, ...copy } })], products, isOrderable: everythingSells,
   })['home-hero'];
   assert.ok(pick({}), 'la pieza sin cifras dejó de mostrarse');
   // Por la forma, «Lata 2500» y «Fernet 1882» son lo mismo. Con el producto a

@@ -1402,3 +1402,25 @@
 .home-campaign-slot:not([hidden]) {
   display: block;
 }
+
+/* The original, approved bitmap stays intact, with its full aspect ratio.
+   White source backgrounds remain white: no recoloring, stretching or label masks. */
+.cmp-actor--photo .cmp-vessel { width: calc(var(--cmp-vh) * 1.18); height: calc(var(--cmp-vh) * 1.18); left: calc(var(--cmp-vh) * -0.42); top: calc(var(--cmp-vh) * -0.09); }
+.cmp-packshot { display: block; width: 100%; height: 100%; object-fit: contain; border-radius: 8%; }
+[data-motion-campaign="on"].cmp--product-drop .cmp-actor--photo .cmp-vessel { animation: none; }
+.cmp-actor--fallback .cmp-packshot { opacity: .8; }
+.cmp-actor--bounded .cmp-vessel { width: var(--cmp-vw); height: var(--cmp-vh); left: var(--cmp-vx, 0); top: 0; }
+.cmp-actor--bounded .cmp-packshot {
+  position: absolute;
+  max-width: none;
+  max-height: none;
+  width: calc(var(--cmp-vh) * var(--cmp-img-scale));
+  height: calc(var(--cmp-vh) * var(--cmp-img-scale));
+  left: calc(var(--cmp-vh) * var(--cmp-img-x));
+  top: calc(var(--cmp-vh) * var(--cmp-img-y));
+  clip-path: var(--cmp-img-clip);
+  border-radius: 0;
+}
+.cmp-actor--bounded .cmp-packshot.is-placeholder {
+  width: 100%; height: 100%; left: 0; top: 0; clip-path: none;
+}

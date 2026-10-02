@@ -124,7 +124,14 @@ function colorDeVino(product, texto) {
  * número suelto tal como lo muestra la tarjeta («1,5»), que de otro modo no
  * existiría en el índice porque la normalización se lo come.
  */
+const haystacks = new WeakMap();
 export function searchHaystack(product = {}) {
+  if (haystacks.has(product)) return haystacks.get(product);
+  const value = buildSearchHaystack(product);
+  haystacks.set(product, value);
+  return value;
+}
+function buildSearchHaystack(product = {}) {
   const capacidad = formatCapacity(
     product.capacityValue ?? product.capacity_value,
     product.capacityUnit ?? product.capacity_unit ?? 'ml',
@@ -143,10 +150,12 @@ export function searchHaystack(product = {}) {
     product.unitLabel,
     product.capacity,
     capacidad,
+    product.packageType || product.packagingType || product.packaging_type,
     packagingLabel(product.packageType || product.packagingType || product.packaging_type || ''),
     product.subcategory,
     product.categoryName,
     product.categoryId,
+    ...(Array.isArray(product.searchAliases) ? product.searchAliases : []),
     ...(Array.isArray(product.tags) ? product.tags : []),
     ...(SINONIMOS_POR_CATEGORIA[claveCategoria(product)] || []),
     ...(Number(product.unitsPerPack ?? product.units_per_pack) > 1 ? ['pack', 'packs'] : ['unidad', 'suelta']),
@@ -156,13 +165,17 @@ export function searchHaystack(product = {}) {
   const extras = [];
   if (numeroDeLitros) extras.push(numeroDeLitros);
   extras.push(...formasPegadas(product));
+  if (Number.isFinite(litros) && litros > 0) extras.push(String(litros).replace('.', ','));
+  if (/^(gaseosas|aguas|aguas-saborizadas)$/.test(claveCategoria(product))
+    && ((unidad === 'ml' && litros >= 2000) || (unidad === 'l' && litros >= 2))) extras.push('grande');
+  if (/\bcoca\b/.test(texto) && /zero|sin azucar/.test(texto)) extras.push('cocazero');
   extras.push(...colorDeVino(product, texto));
   if (MARCAS_SIN_AZUCAR.test(texto)) extras.push(...SINONIMOS_SIN_AZUCAR);
   return extras.length ? `${texto} ${normalizeSearchText(extras.join(' '))}` : texto;
 }
 
 /** Un término de capacidad: «500ml», «2250ml». */
-const TERMINO_DE_CAPACIDAD = /^\d+ml$/;
+const TERMINO_DE_CAPACIDAD = /^\d+(?:[.,]\d+)?(?:ml)?$/;
 
 /*
  * EL CÓDIGO DEL PRODUCTO, COMO BÚSQUEDA EXACTA Y NADA MÁS.
@@ -392,11 +405,78 @@ export function productMatchesQueryLoosely(product, query) {
  * La búsqueda entera: exacta primero y, sólo si no hay nada, parecida.
  * Devuelve cuál de las dos fue para que la pantalla lo diga.
  */
+const entries = new WeakMap();
+// Polling can produce fresh DTO objects with identical searchable fields.
+// Reuse their normalized metadata by durable identity, but bind each result
+// to the CURRENT product, so price/stock/availability can never become stale.
+const metadataByIdentity = new Map();
+function searchFingerprint(product) {
+  return JSON.stringify([product.name,product.brand,product.variant,product.presentation,product.unitLabel,
+    product.capacity,product.capacityValue,product.capacity_value,product.capacityUnit,product.capacity_unit,
+    product.packageType,product.packagingType,product.packaging_type,product.subcategory,product.categoryName,
+    product.categoryId,product.tags,product.searchAliases,product.unitsPerPack,product.units_per_pack,
+    product.sku,product.externalId,product.external_id,product.gtin,product.id]);
+}
+export function buildSearchIndex(products) {
+  return (Array.isArray(products) ? products : []).map(product => {
+    let entry = entries.get(product);
+    if (!entry) {
+      const identity = product.id || product.sku || product.externalId;
+      const fingerprint = searchFingerprint(product);
+      let cached = identity ? metadataByIdentity.get(identity) : null;
+      if (!cached || cached.fingerprint !== fingerprint) {
+        cached = { fingerprint, metadata: {
+          name: normalizeSearchQuery(cardTitle(product)), rawName: normalizeSearchQuery(product.name), brand: normalizeSearchQuery(product.brand),
+          bordered: ` ${searchHaystack(product)} `, words: palabrasDelIndice(product),
+          codes: [product.sku,product.externalId,product.external_id,product.gtin,product.id].filter(Boolean).map(normalizeCode),
+        } };
+        if (identity) {
+          metadataByIdentity.set(identity,cached);
+          if (metadataByIdentity.size > 2048) metadataByIdentity.delete(metadataByIdentity.keys().next().value);
+        }
+      }
+      entry = { ...cached.metadata, product };
+      entries.set(product, entry);
+    }
+    return entry;
+  });
+}
+
+// Stable ties retain shelf order; no invented popularity signals.
+function relevance(entry, query) {
+  if (entry.name === query || entry.rawName === query) return 0;
+  if (entry.brand === query) return 1;
+  if (entry.name.startsWith(query) || entry.brand.startsWith(query)) return 2;
+  if (query.split(' ').every(token => (' ' + entry.name + ' ' + entry.brand).includes(' ' + token))) return 3;
+  return 4;
+}
+
 export function searchProducts(products, query) {
   const lista = Array.isArray(products) ? products : [];
-  if (!normalizeSearchQuery(query)) return { products: lista, approximate: false };
-  const exactos = lista.filter((product) => productMatchesQuery(product, query));
-  if (exactos.length) return { products: exactos, approximate: false };
-  const parecidos = lista.filter((product) => productMatchesQueryLoosely(product, query));
-  return { products: parecidos, approximate: parecidos.length > 0 };
+  const consulta = normalizeSearchQuery(query);
+  const index = buildSearchIndex(lista);
+  if (!consulta) return { products: lista, approximate: false };
+  const terms = consulta.split(' ');
+  const code = normalizeCode(query);
+  const glued = /^[a-z ]+$/.test(consulta) ? consulta.replace(/ /g,'') : '';
+  const matchesToken = (entry, token) => entry.bordered.includes(` ${token}${TERMINO_DE_CAPACIDAD.test(token) ? ' ' : ''}`);
+  const exactos = index.filter(entry => entry.codes.includes(code)
+    || terms.every(token => matchesToken(entry,token))
+    || (glued.length >= 4 && glued !== consulta && entry.bordered.includes(` ${glued}`)));
+  if (exactos.length) return { products: exactos.sort((a,b) => relevance(a,consulta)-relevance(b,consulta)).map(entry => entry.product), approximate: false };
+  // A known query token is a constraint, never approximated to another word.
+  // For "coca sero", only Coca products need the edit-distance fallback.
+  const knownTerms = new Set(terms.filter(token => index.some(entry => matchesToken(entry, token))));
+  const parecidos = index.filter(entry => {
+    if ([...knownTerms].some(token => !matchesToken(entry, token))) return false;
+    let approximate = false;
+    const matches = terms.every(token => {
+      if (matchesToken(entry,token)) return true;
+      if (TERMINO_DE_CAPACIDAD.test(token) || !terminoSeParece(token,entry.words)) return false;
+      approximate = true;
+      return true;
+    });
+    return matches && approximate;
+  });
+  return { products: parecidos.map(entry => entry.product), approximate: parecidos.length > 0 };
 }

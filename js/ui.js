@@ -9,7 +9,8 @@ import { getCustomerCatalogProducts, isProductOrderable, isProductVisibleToCusto
 import { CAMPAIGNS } from './campaigns/campaign-config.js';
 import { ALCOHOL_LEGAL_NOTICE, CAMPAIGN_GRID_POSITION, CAMPAIGN_PLACEMENTS, campaignMarkup, selectCampaigns } from './campaigns/campaign-engine.js';
 import { refreshCampaignMotion } from './campaigns/campaign-motion.js';
-import { resolveCatalogImageUrl } from './core/catalog-image-contract.js';
+import { productPhotoIsOfficial as officialPhoto, productImageRightsCleared, resolveProductPhotoUrl } from './core/product-photo.js';
+export { productImageRightsCleared };
 import { imageAttributionFor } from './core/image-attribution.js';
 import { resolveRuntimeConfig } from './core/runtime-config.js';
 import { COMBO_MANIFEST } from './combos-data.js';
@@ -124,9 +125,9 @@ const PRODUCT_PLACEHOLDER_IMAGE = 'assets/products/beverage-placeholder.svg';
 
 export function handleProductImageError(event) {
   const image = event?.target;
-  if (!image?.classList?.contains('thumb-img')) return false;
+  if (!image?.classList?.contains('thumb-img') && !image?.classList?.contains('cmp-packshot')) return false;
 
-  const shell = image.closest?.('.thumb');
+  const shell = image.closest?.('.thumb, .cmp-vessel');
   if (image.dataset?.fallbackApplied === 'true') {
     image.hidden = true;
     shell?.classList?.add('image-unavailable');
@@ -701,11 +702,11 @@ function brandLine(product, className = 'product-brand') {
 const CARD_IMAGE_SIZES = '(max-width: 700px) 130px, 260px';
 
 function productImage(product) {
-  return resolveCatalogImageUrl(product?.image || '', resolveRuntimeConfig().repository?.supabaseUrl || '');
+  return resolveProductPhotoUrl(product?.image || '', resolveRuntimeConfig().repository?.supabaseUrl || '');
 }
 
 function productImageThumbnail(product) {
-  return resolveCatalogImageUrl(
+  return resolveProductPhotoUrl(
     product?.imageThumbnail || product?.thumbnail || '',
     resolveRuntimeConfig().repository?.supabaseUrl || '',
   );
@@ -720,42 +721,8 @@ function productImageThumbnail(product) {
 // `RETAILER_SOLO_REFERENCIA`— significa que la imagen se consiguió, no que se
 // tenga derecho a mostrarla. La ausencia de estado también: un producto que no
 // declara derechos no los tiene.
-const PUBLISHABLE_IMAGE_RIGHTS = new Set(['PROPIO', 'LICENCIA_COMERCIAL', 'PERMISO_DOCUMENTADO']);
-
-export function productImageRightsCleared(product) {
-  return PUBLISHABLE_IMAGE_RIGHTS.has(String(product?.rightsStatus || '').toUpperCase());
-}
-
-/**
- * ¿Podemos publicar la fotografía de este producto?
- *
- * Una fotografía se considera oficial sólo si llega con la cadena de hashes y
- * thumbnail del catálogo productivo Y con derechos para publicarla. Todo lo
- * demás usa el mismo placeholder, que es propio de TABA.
- *
- * Es UNA decisión y tiene que valer igual en TODAS las superficies que dibujan
- * un producto. Vivía adentro de `productThumb` —la tarjeta y la ficha— y la
- * vidriera tenía la suya, sin derechos y sin hashes: `imageThumbnail || image`.
- * Con eso la home publicaba fotos que el catálogo, dos toques después, se
- * negaba a mostrar. Un modelo de derechos que una superficie ignora no es un
- * modelo de derechos.
- */
 export function productPhotoIsOfficial(product = {}) {
-  const image = productImage(product);
-  const thumbnail = productImageThumbnail(product);
-  const hasAuthoritativeHashes = [
-    product.imageSha256,
-    product.imageThumbnailSha256,
-    product.sourceImageSha256,
-  ].every((hash) => /^[a-f0-9]{64}$/i.test(String(hash || '')));
-  return Boolean(
-    image
-    && thumbnail
-    && (!product.qaFixture || product.previewCatalogApproved === true)
-    && product.imageShowsMultipack !== true
-    && hasAuthoritativeHashes
-    && productImageRightsCleared(product),
-  );
+  return officialPhoto(product, resolveRuntimeConfig().repository?.supabaseUrl || '');
 }
 
 export function productThumb(product, variant = 'grid') {
@@ -923,7 +890,7 @@ function wasJustAdded(productId) {
 
 // El mismo control se comparte en catálogo, carruseles, recomendaciones y
 // carrito para que la cantidad sea una única verdad visual por SKU.
-function quantityControl(product, quantity, { className = 'qty-stepper', justAdded = false } = {}) {
+function quantityControl(product, quantity, { className = 'qty-stepper', justAdded = false, expandedTarget = false } = {}) {
   const safeQuantity = Math.max(0, Math.floor(Number(quantity) || 0));
   const reachedStock = safeQuantity >= Number(product.stock || 0);
   const leftLabel = safeQuantity === 1
@@ -931,7 +898,7 @@ function quantityControl(product, quantity, { className = 'qty-stepper', justAdd
     : `Restar uno de ${productAccessibleName(product)}`;
   const leftIcon = safeQuantity === 1 ? removeGlyph() : '<span aria-hidden="true">−</span>';
   return `
-    <div class="${className}${justAdded ? ' is-just-added' : ''}" role="group" aria-label="Cantidad de ${escapeHtml(productAccessibleName(product))} en el pedido"${justAdded ? ' data-added-flash' : ''}>
+    <div class="${className}${expandedTarget ? ' qty-stepper--quick-target' : ''}${justAdded ? ' is-just-added' : ''}" role="group" aria-label="Cantidad de ${escapeHtml(productAccessibleName(product))} en el pedido"${justAdded ? ' data-added-flash' : ''}>
       <button class="icon-button compact qty-stepper-action qty-stepper-remove" type="button" data-cart-dec="${escapeHtml(product.id)}" aria-label="${escapeHtml(leftLabel)}">${leftIcon}</button>
       <strong aria-live="polite">${safeQuantity}</strong>
       <button class="icon-button compact qty-stepper-action" type="button" data-cart-inc="${escapeHtml(product.id)}" aria-label="Sumar uno de ${escapeHtml(productAccessibleName(product))}" ${reachedStock ? 'disabled' : ''}><span aria-hidden="true">+</span></button>
@@ -949,7 +916,7 @@ function quickAddControl(product, quantity, { className = 'add-button' } = {}) {
   // de expendio. El botón queda inhabilitado igual —la compuerta es
   // `isCommerciallyPurchasable`, no este texto— pero dice lo que pasa de verdad.
   const vidrieraAlcohol = !pricePending && outOfStock && esVidrieraDeAlcohol(product);
-  if (quantity > 0) return quantityControl(product, quantity, { justAdded: wasJustAdded(product.id) });
+  if (quantity > 0) return quantityControl(product, quantity, { justAdded: wasJustAdded(product.id), expandedTarget: true });
   const actionLabel = pricePending
     ? `${productAccessibleName(product)}: ${PRICE_PENDING_TITLE.toLowerCase()}; ${PRICE_PENDING_DETAIL.toLowerCase()}`
     : vidrieraAlcohol
@@ -1236,6 +1203,7 @@ function campaignPiece(entry, placement) {
     title: cardTitle(product),
     line: cardPresentationLine(product),
     alcoholic: product.alcoholic === true,
+    supabaseUrl: resolveRuntimeConfig().repository?.supabaseUrl || '',
   });
 }
 
@@ -2682,7 +2650,8 @@ function resolveCatalogListing(state) {
   // parecido se busca dentro de lo que la persona ya acotó.
   const search = searchProducts(filtered, state.searchQuery);
   return {
-    products: sortProducts(search.products, state.sortBy),
+    products: state.searchQuery.trim() && state.sortBy === 'recommended'
+      ? search.products : sortProducts(search.products, state.sortBy),
     approximate: search.approximate,
   };
 }
@@ -3007,7 +2976,7 @@ function renderProducts() {
         // nombraba un botón que en la góndola no se llama así.
         ? 'Tocá el corazón de un producto para guardarlo y encontrarlo acá.'
         : isSearch
-          ? 'Probá con la marca o la presentación.'
+          ? 'Revisá la búsqueda. Probá con una bebida, marca o tamaño.'
           : 'Volvé a ver el catálogo completo o elegí otra categoría.';
     renderCatalogSurface(container, `
       <div class="empty-state">
@@ -3096,7 +3065,7 @@ function renderProducts() {
       ? `Ver ${productAccessibleName(product)}. ${stockState}`
       : `Ver ${productAccessibleName(product)}`;
     return `
-      <article data-catalog-key="product:${escapeHtml(product.id)}" class="product-card ${outOfStock ? 'out-of-stock' : ''} ${offer ? 'is-offer' : ''} ${inCart > 0 ? 'in-cart' : ''}">
+      <article data-card-product="${escapeHtml(product.id)}" data-catalog-key="product:${escapeHtml(product.id)}" class="product-card ${outOfStock ? 'out-of-stock' : ''} ${offer ? 'is-offer' : ''} ${inCart > 0 ? 'in-cart' : ''}">
         <div class="product-media-frame">
           <button class="product-media" type="button" data-product-detail="${product.id}" aria-label="${escapeHtml(mediaLabel)}">
             ${productThumb(product, 'grid')}
@@ -3115,7 +3084,7 @@ function renderProducts() {
         </div>
         <div class="product-body">
           ${brandLine(product)}
-          <h3>${escapeHtml(cardTitle(product))}</h3>
+          <h3><button class="product-name-link" type="button" data-product-name-detail="${escapeHtml(product.id)}" aria-label="${escapeHtml(mediaLabel.replace(/^Ver /, 'Abrir ficha de '))}">${escapeHtml(cardTitle(product))}</button></h3>
           <p>${escapeHtml(presentation)}</p>
           <div class="product-foot">
             ${priceBlock(product)}

@@ -20,6 +20,6 @@ export const spotlightProduct = Object.freeze({
       <span class="cmp-glow"></span>
       <span class="cmp-table"></span>
       <span class="cmp-shadow"></span>
-      ${actorMarkup(creative.vessel, '<i class="cmp-shine"></i>', uid)}`;
+      ${actorMarkup(creative.vessel, '<i class="cmp-shine"></i>', uid, creative.packshot)}`;
   },
 });

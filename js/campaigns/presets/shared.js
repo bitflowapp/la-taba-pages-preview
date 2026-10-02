@@ -134,8 +134,16 @@ const VESSEL_ART = Object.freeze({
  * silueta. El ancla es lo que se mueve; la silueta nunca se vuelve a pintar.
  * `extra` son las capas que viajan con el envase (escarcha, gotas, brillo).
  */
-export function actorMarkup(vessel, extra = '', uid = 'scene') {
+export function actorMarkup(vessel, extra = '', uid = 'scene', packshot = null) {
   const kind = CAMPAIGN_VESSELS.includes(vessel) ? vessel : 'can';
+  const escape = value => String(value || '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  if (packshot) {
+    const layout = packshot.layout;
+    const style = layout ? ` style="--cmp-img-scale:${layout.scale};--cmp-img-x:${layout.x};--cmp-img-y:${layout.y};--cmp-img-clip:inset(${layout.clip.map(n => `${n}%`).join(' ')})"` : '';
+    return `<span class="cmp-actor cmp-actor--${kind} cmp-actor--photo${layout ? ' cmp-actor--bounded' : ''}${packshot.official ? '' : ' cmp-actor--fallback'}"${style}>
+      <span class="cmp-vessel"><img class="cmp-packshot" src="${escape(packshot.src)}"${packshot.master ? ` srcset="${escape(packshot.src)} 400w, ${escape(packshot.master)} 1000w" sizes="(max-width: 700px) 110px, 150px"` : ''} width="400" height="400" alt="${escape(packshot.official ? packshot.name : 'Producto sin imagen oficial: ' + packshot.name)}" loading="lazy" decoding="async" data-campaign-image /></span>
+    </span>`;
+  }
   return `<span class="cmp-actor cmp-actor--${kind}">
       <span class="cmp-vessel">${VESSEL_ART[kind](sceneId(uid))}${extra ? `<span class="cmp-vessel-fx">${extra}</span>` : ''}</span>
     </span>`;

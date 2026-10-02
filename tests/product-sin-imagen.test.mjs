@@ -151,9 +151,10 @@ test('caso 10 · toda foto publicable está declarada en el manifiesto, no en el
   // ahora es la regla, no el número: nada es publicable por estar escrito en un
   // archivo .mjs.
   const publicables = auditProductImageRights(root).filter((imagen) => imagen.publishable);
-  const manifiesto = JSON.parse(fs.readFileSync(path.join(root, 'docs/catalog/image-manifest.json'), 'utf8'));
+  const manifiestos = ['docs/catalog/image-manifest.json', 'catalog/campaign-product-assets.json']
+    .map(file => JSON.parse(fs.readFileSync(path.join(root, file), 'utf8')));
   const declarados = new Map();
-  for (const fuente of manifiesto.sources || []) {
+  for (const fuente of manifiestos.flatMap(manifest => manifest.sources || [])) {
     for (const asset of [fuente.assets?.master, fuente.assets?.thumbnail]) {
       if (asset?.path) declarados.set(asset.path, fuente);
     }

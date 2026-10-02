@@ -19,6 +19,6 @@ export const coldCan = Object.freeze({
       ${repeat('cmp-snow', 6)}
       ${repeat('cmp-mist', 2)}
       <span class="cmp-shadow"></span>
-      ${actorMarkup(creative.vessel, surface, uid)}`;
+      ${actorMarkup(creative.vessel, surface, uid, creative.packshot)}`;
   },
 });

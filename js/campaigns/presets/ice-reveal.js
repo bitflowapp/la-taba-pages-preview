@@ -18,7 +18,7 @@ export const iceReveal = Object.freeze({
       <span class="cmp-table"></span>
       ${repeat('cmp-ice', 2, 'back')}
       <span class="cmp-shadow"></span>
-      ${actorMarkup(creative.vessel, surface, uid)}
+      ${actorMarkup(creative.vessel, surface, uid, creative.packshot)}
       ${repeat('cmp-ice', 3, 'front')}
       ${repeat('cmp-vapor', 3)}
       <span class="cmp-veil"></span>`;

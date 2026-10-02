@@ -55,6 +55,8 @@ test('tracked storefront WebP are approved demo assets or commercial manifest en
     source.assets?.master?.path,
     source.assets?.thumbnail?.path,
   ]).filter(Boolean).sort();
+  const campaignCopies = JSON.parse(fs.readFileSync(path.join(root,'catalog/campaign-product-assets.json'),'utf8'));
+  const campaignArt = campaignCopies.sources.flatMap(source => [source.assets.master.path,source.assets.thumbnail.path]);
   const approvedDemo = products.flatMap((product) => [
     product.image,
     product.imageThumbnail,
@@ -74,7 +76,7 @@ test('tracked storefront WebP are approved demo assets or commercial manifest en
     assert.ok(piece.origen, `${piece.path} sin origen en el lote curado`);
     assert.ok(fs.existsSync(path.join(root, piece.path)), `${piece.path} declarado pero ausente`);
   }
-  assert.deepEqual(webps, [...approvedDemo, ...manifested, ...promoArt.filter((p) => p.endsWith('.webp'))].sort());
+  assert.deepEqual(webps, [...approvedDemo, ...manifested, ...campaignArt, ...promoArt.filter((p) => p.endsWith('.webp'))].sort());
 });
 
 test('commercial image audit and manifest are explicit and traceable', () => {

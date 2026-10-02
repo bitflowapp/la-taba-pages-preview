@@ -2,17 +2,19 @@
 import { campaignMarkup, normalizeCampaign } from '../../js/campaigns/campaign-engine.js';
 import { initCampaignMotion } from '../../js/campaigns/campaign-motion.js';
 
+import { cardTitle, cardPresentationLine } from '../../js/core/product-presentation.js';
+const products = await fetch('./approved-products.json').then(response => response.json());
 const params = new URLSearchParams(location.search);
 
-// Datos de DEMOSTRACIÓN. Los nombres y presentaciones son los del catálogo
-// real; no hay precio, stock ni promoción en ninguna parte.
+// Escenas editoriales de QA. Identidad, nombre, volumen, marca y foto salen
+// exclusivamente de approved-products.json. No contiene precios ni stock.
 const DEMOS = [
-  { preset: 'beer_pour', vessel: 'can', tint: '#0c7a35', accent: '#e2231a', eyebrow: 'Heineken', headline: 'Bien fría, recién servida', cta: 'Ver Heineken', title: 'Heineken Lager', line: '710 ml · Lata', alcoholic: true },
-  { preset: 'cold_can', vessel: 'can', tint: '#1d3f97', accent: '#c8ccd4', eyebrow: 'Red Bull', headline: 'Fría y lista para llevar', cta: 'Ver Red Bull', title: 'Red Bull Energy Drink', line: '355 ml · Lata', alcoholic: false },
-  { preset: 'product_drop', vessel: 'bottle', tint: '#3a140c', accent: '#e30613', eyebrow: 'Coca-Cola', headline: 'La de siempre, para la mesa', cta: 'Ver Coca-Cola', title: 'Coca-Cola', line: '2,25 L', alcoholic: false },
-  { preset: 'ice_reveal', vessel: 'bottle', tint: '#f0641e', accent: '#1f5fbf', eyebrow: 'Aperol', headline: 'Con mucho hielo', cta: 'Ver Aperol', title: 'Aperol', line: '750 ml', alcoholic: true },
-  { preset: 'spotlight_product', vessel: 'bottle', tint: '#3b0d16', accent: '#c9a25a', eyebrow: 'Trapiche', headline: 'Para la mesa de hoy', cta: 'Ver Trapiche', title: 'Trapiche Malbec', line: '750 ml', alcoholic: true },
-  { preset: 'glass_fill', vessel: 'bottle', tint: '#f47b20', accent: '#1f3f97', liquid: '#f08a1c', eyebrow: 'Fanta', headline: 'Bien fría, con hielo', cta: 'Ver Fanta', title: 'Fanta Naranja', line: '2,25 L', alcoholic: false },
+  { preset: 'beer_pour', vessel: 'can', tint: '#0c7a35', accent: '#e2231a', headline: 'Bien fría, recién servida' },
+  { preset: 'cold_can', vessel: 'can', tint: '#1d3f97', accent: '#c8ccd4', headline: 'Fría y lista para llevar' },
+  { preset: 'product_drop', vessel: 'can', tint: '#3a140c', accent: '#e30613', headline: 'Mango Loco, bien frío' },
+  { preset: 'ice_reveal', vessel: 'bottle', tint: '#f0641e', accent: '#1f5fbf', headline: 'Con mucho hielo' },
+  { preset: 'spotlight_product', vessel: 'bottle', tint: '#3b0d16', accent: '#c9a25a', headline: 'Para la mesa de hoy' },
+  { preset: 'glass_fill', vessel: 'bottle', tint: '#f47b20', accent: '#1f3f97', liquid: '#f08a1c', headline: 'Bien fría, con hielo' },
 ];
 
 const FRAMES = [
@@ -22,17 +24,19 @@ const FRAMES = [
 ];
 
 function piece(demo, placement, vessel) {
+  const skus = { beer_pour: 'heineken-710ml', cold_can: 'red-bull-energy-drink-355ml', product_drop: 'monster-mango-loco-473ml', ice_reveal: 'aperol-750ml', spotlight_product: 'coca-cola-original-2250ml-local', glass_fill: 'fanta-naranja-2250ml' };
+  const product = products.find(entry => entry.sku === skus[demo.preset]);
   const campaign = normalizeCampaign({
     id: `lab-${demo.preset.replace(/_/g, '-')}-${vessel}`,
     enabled: true,
     approval: { status: 'APROBADA', reference: 'laboratorio QA' },
     placements: [placement],
     contexts: [],
-    target: { skus: ['lab'] },
+    target: { productId: product.id, skus: [product.sku], identity: { brand: product.brand, variant: product.variant, volumeMl: product.capacityValue, container: demo.vessel } },
     creative: { preset: demo.preset, vessel, tint: demo.tint, accent: demo.accent, liquid: demo.liquid },
-    copy: { eyebrow: demo.eyebrow, headline: demo.headline, cta: demo.cta },
+    copy: { eyebrow: product.brand, headline: demo.headline, cta: 'Ver ' + product.brand },
   });
-  return campaignMarkup({ campaign }, placement, { productId: 'lab', title: demo.title, line: demo.line, alcoholic: demo.alcoholic });
+  return campaignMarkup({ campaign, product }, placement, { productId: product.id, title: cardTitle(product), line: cardPresentationLine(product), alcoholic: product.alcoholic });
 }
 
 const grid = document.querySelector('[data-lab-grid]');
@@ -48,7 +52,7 @@ if (zoom > 0 && zoom <= 4) document.body.style.zoom = String(zoom);
 const cells = [];
 for (const demo of DEMOS) {
   if (only && demo.preset !== only) continue;
-  const vessels = single ? [params.get('vessel') || demo.vessel] : [demo.vessel, demo.vessel === 'can' ? 'bottle' : 'can'];
+  const vessels = single ? [params.get('vessel') || demo.vessel] : [demo.vessel];
   const frames = single
     ? [{ placement: params.get('placement') || 'home-hero', width: Number(params.get('w')) || 358, label: '' }]
     : FRAMES;

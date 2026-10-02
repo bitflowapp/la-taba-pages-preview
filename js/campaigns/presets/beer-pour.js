@@ -28,6 +28,6 @@ export const beerPour = Object.freeze({
         '<span class="cmp-foam-cap"></span>',
       )}
       <span class="cmp-shadow"></span>
-      ${actorMarkup(creative.vessel, '<i class="cmp-frost"></i>', uid)}`;
+      ${actorMarkup(creative.vessel, '<i class="cmp-frost"></i>', uid, creative.packshot)}`;
   },
 });

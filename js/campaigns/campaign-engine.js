@@ -17,6 +17,7 @@
  * producto no existe o no se puede comprar AHORA. El motor elige entre piezas
  * válidas; no inventa una para llenar un hueco.
  */
+import { campaignIdentityMatches, resolveCampaignProductAsset } from './campaign-product.js';
 import { beerPour } from './presets/beer-pour.js';
 import { coldCan } from './presets/cold-can.js';
 import { productDrop } from './presets/product-drop.js';
@@ -155,6 +156,11 @@ export function normalizeCampaign(raw) {
     contexts: Object.freeze((Array.isArray(raw.contexts) ? raw.contexts : [])
       .map((context) => text(context, 40).toLowerCase())
       .filter((context) => /^[a-z0-9][a-z0-9-]*$/.test(context))),
+    productId: text(raw.target?.productId, 120),
+    identity: raw.target?.identity ? Object.freeze({
+      brand: text(raw.target.identity.brand, 80), variant: text(raw.target.identity.variant, 80),
+      volumeMl: Number(raw.target.identity.volumeMl), container: text(raw.target.identity.container, 20),
+    }) : null,
     skus: Object.freeze(skus.map((sku) => text(sku, 120)).filter(Boolean).slice(0, 8)),
     creative: Object.freeze({
       preset: text(creative.preset, 30),
@@ -188,7 +194,7 @@ export function campaignProblems(campaign, { now = Date.now() } = {}) {
   if (campaign.type !== 'editorial') problems.push('unsupported-type');
   if (!Object.hasOwn(CAMPAIGN_PRESETS, campaign.creative.preset)) problems.push('unknown-preset');
   if (!campaign.placements.length) problems.push('no-placement');
-  if (!campaign.skus.length) problems.push('no-target');
+  if (!campaign.skus.length && !campaign.productId) problems.push('no-target');
   if (!campaign.copy.headline || !campaign.copy.cta) problems.push('copy-missing');
   // Cada texto por separado: pegados, el número de una marca en el rótulo se
   // juntaba con la primera palabra del título («Fernet 1882» + «Menos hielo…»).
@@ -223,9 +229,13 @@ function numbersComeFromProduct(campaign, product) {
 
 /** El producto de la campaña en el catálogo vivo, o `null`. */
 function campaignProduct(campaign, products, isOrderable) {
+  if (campaign.productId) {
+    const product = products.find(entry => entry?.id === campaign.productId);
+    return product && isOrderable(product) && campaignIdentityMatches(campaign, product) ? product : null;
+  }
   for (const sku of campaign.skus) {
     const product = products.find((entry) => entry?.sku === sku || entry?.externalId === sku);
-    if (product && isOrderable(product)) return product;
+    if (product && isOrderable(product) && campaignIdentityMatches(campaign, product)) return product;
   }
   return null;
 }
@@ -302,9 +312,11 @@ export const CAMPAIGN_GRID_POSITION = GRID_PIECE_AFTER;
  * la campaña no puede escribir por su cuenta: nombre, presentación y si lleva
  * la leyenda de alcohol.
  */
-export function campaignMarkup({ campaign }, placement, view = {}) {
+export function campaignMarkup({ campaign, product }, placement, view = {}) {
   const preset = CAMPAIGN_PRESETS[campaign.creative.preset];
   const { creative, copy } = campaign;
+  const packshot = product ? resolveCampaignProductAsset(campaign, product, view.supabaseUrl || '') : null;
+  if (product && !packshot) return '';
   const productName = text(view.title, 100);
   const productLine = text(view.line, 80);
   const subtitle = [productName, productLine].filter(Boolean).join(' · ');
@@ -325,7 +337,7 @@ export function campaignMarkup({ campaign }, placement, view = {}) {
   return `
     <aside class="cmp cmp--${escapeHtml(creative.preset.replace(/_/g, '-'))} cmp--${escapeHtml(placement)}${legal ? ' cmp--legal' : ''}" data-campaign="${escapeHtml(campaign.id)}" data-campaign-preset="${escapeHtml(creative.preset)}" data-campaign-placement="${escapeHtml(placement)}" data-catalog-key="campaign:${escapeHtml(placement)}:${escapeHtml(campaign.id)}" aria-label="${escapeHtml(`Anuncio: ${copy.eyebrow || copy.headline}`)}" style="${style}">
       <button class="cmp-hit" type="button" data-product-detail="${escapeHtml(view.productId)}" data-campaign-cta aria-label="${escapeHtml(label)}">
-        <span class="cmp-scene"><span class="cmp-stage" aria-hidden="true">${preset.stage(creative, uid)}</span></span>
+        <span class="cmp-scene"><span class="cmp-stage" aria-hidden="true">${preset.stage({ ...creative, packshot }, uid)}</span></span>
         <span class="cmp-copy">
           ${copy.eyebrow ? `<small class="cmp-eyebrow">${escapeHtml(copy.eyebrow)}</small>` : ''}
           <strong class="cmp-headline">${escapeHtml(copy.headline)}</strong>

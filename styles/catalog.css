@@ -1572,3 +1572,24 @@
 [data-view="catalog"] .catalog-more .secondary-button {
   min-height: 44px;
 }
+
+.catalog-filters[hidden] { display: none !important; }
+.catalog-controls { grid-template-columns: minmax(0, 1fr); }
+.catalog-search { border-width: 2px; }
+.catalog-search-icon { color: var(--taba-ink); }
+.product-name-link { display: block; width: 100%; padding: 0; border: 0; color: inherit; background: none; font: inherit; text-align: left; cursor: pointer; }
+.product-name-link:focus-visible { outline: 2px solid var(--brand-gold); outline-offset: 3px; border-radius: 3px; }
+.product-card[data-card-product] { cursor: pointer; }
+.product-action { touch-action: manipulation; }
+.product-action .qty-stepper strong { user-select: none; }
+/* Preserve the initial Add tap point with a native button after the first tap.
+   Safari does not synthesize delegated clicks reliably on a plain counter. */
+.qty-stepper--quick-target { position: relative; touch-action: manipulation; }
+.qty-stepper--quick-target .qty-stepper-action:last-child {
+  position: absolute; top: 0; right: 0; width: calc(100% - 44px); height: 100%;
+  display: flex; align-items: center; justify-content: flex-end;
+  padding: 0; border: 0; background: transparent;
+}
+.qty-stepper--quick-target .qty-stepper-action:last-child > span {
+  display: grid; width: 44px; height: 100%; place-items: center;
+}

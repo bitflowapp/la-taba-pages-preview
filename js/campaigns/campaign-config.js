@@ -31,8 +31,8 @@
  *   copy         rótulo, título y acción. El subtítulo NO se escribe: sale del
  *                nombre y la presentación reales del producto.
  *
- * El envase que se anima es una silueta genérica con el color de la campaña.
- * No dibuja la marca: una creatividad con marca sale del lote curado.
+ * El envase usa la misma fotografía aprobada del catálogo. Sin foto oficial,
+ * muestra el placeholder propio. La identidad declara marca, variante y envase.
  */
 const candidate = (campaign) => Object.freeze({
   type: 'editorial',
@@ -43,7 +43,7 @@ const candidate = (campaign) => Object.freeze({
   ...campaign,
   placements: Object.freeze([...campaign.placements]),
   contexts: Object.freeze([...campaign.contexts]),
-  target: Object.freeze({ type: 'product', skus: Object.freeze([...campaign.target.skus]) }),
+  target: Object.freeze({ ...campaign.target, type: 'product', skus: Object.freeze([...campaign.target.skus]), identity: Object.freeze({ ...campaign.target.identity }) }),
   creative: Object.freeze({ ...campaign.creative }),
   copy: Object.freeze({ ...campaign.copy }),
 });
@@ -54,7 +54,7 @@ export const CAMPAIGNS = Object.freeze([
     priority: 40,
     placements: ['home-hero', 'catalog-inline'],
     contexts: ['cervezas'],
-    target: { skus: ['heineken-710ml'] },
+    target: { skus: ['heineken-710ml'], identity: {"brand":"Heineken","variant":"Lager","volumeMl":710,"container":"can"} },
     creative: { preset: 'beer_pour', vessel: 'can', tint: '#0c7a35', accent: '#e2231a' },
     copy: { eyebrow: 'Heineken', headline: 'Bien fría, recién servida', cta: 'Ver Heineken' },
   }),
@@ -63,7 +63,7 @@ export const CAMPAIGNS = Object.freeze([
     priority: 30,
     placements: ['home-inline', 'catalog-inline'],
     contexts: ['energizantes'],
-    target: { skus: ['red-bull-energy-drink-355ml'] },
+    target: { skus: ['red-bull-energy-drink-355ml'], identity: {"brand":"Red Bull","variant":"Original","volumeMl":355,"container":"can"} },
     creative: { preset: 'cold_can', vessel: 'can', tint: '#1d3f97', accent: '#c8ccd4' },
     copy: { eyebrow: 'Red Bull', headline: 'Fría y lista para llevar', cta: 'Ver Red Bull' },
   }),
@@ -72,7 +72,7 @@ export const CAMPAIGNS = Object.freeze([
     priority: 20,
     placements: ['home-inline', 'catalog-inline'],
     contexts: ['gaseosas'],
-    target: { skus: ['coca-cola-original-2250ml-local'] },
+    target: { skus: ['coca-cola-original-2250ml-local'], identity: {"brand":"Coca-Cola","variant":"Original","volumeMl":2250,"container":"bottle"} },
     creative: { preset: 'product_drop', vessel: 'bottle', tint: '#3a140c', accent: '#e30613' },
     copy: { eyebrow: 'Coca-Cola', headline: 'La de siempre, para la mesa', cta: 'Ver Coca-Cola' },
   }),
@@ -81,7 +81,7 @@ export const CAMPAIGNS = Object.freeze([
     priority: 10,
     placements: ['home-hero', 'catalog-inline'],
     contexts: ['aperitivos'],
-    target: { skus: ['aperol-750ml'] },
+    target: { skus: ['aperol-750ml'], identity: {"brand":"Aperol","variant":"Original","volumeMl":750,"container":"bottle"} },
     creative: { preset: 'ice_reveal', vessel: 'bottle', tint: '#f0641e', accent: '#1f5fbf' },
     copy: { eyebrow: 'Aperol', headline: 'Con mucho hielo', cta: 'Ver Aperol' },
   }),

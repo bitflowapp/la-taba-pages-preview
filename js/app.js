@@ -209,7 +209,7 @@ function runCartAction(action, productId, callback) {
   const previous = recentCartActions.get(key) || 0;
   // Bloquea la duplicación accidental del mismo evento sin impedir que el
   // cliente vuelva a tocar el control para cambiar la cantidad a propósito.
-  if (now - previous < 120) return { ok: false, duplicate: true, message: '' };
+  if (!['add', 'inc', 'dec'].includes(action) && now - previous < 120) return { ok: false, duplicate: true, message: '' };
   recentCartActions.set(key, now);
   setTimeout(() => recentCartActions.delete(key), 350);
   const resultado = callback();
@@ -1823,9 +1823,13 @@ function bindEvents() {
       return;
     }
 
-    const detailId = target.closest('[data-product-detail]')?.dataset.productDetail;
+    const card = target.closest('[data-card-product]');
+    const cardDetail = card && !target.closest('button, a, input, select, textarea, [role="button"], .product-action')
+      ? card.dataset.cardProduct : null;
+    const detailTrigger = target.closest('[data-product-detail], [data-product-name-detail]');
+    const detailId = detailTrigger?.dataset.productDetail || detailTrigger?.dataset.productNameDetail || cardDetail;
     if (detailId) {
-      showProductModal(detailId, target.closest('[data-product-detail]'));
+      showProductModal(detailId, detailTrigger || card.querySelector('.product-name-link') || card.querySelector('[data-product-detail]'));
       return;
     }
 
@@ -1902,7 +1906,7 @@ function bindEvents() {
       flashAddedProduct(selectedProductId);
       const result = runCartAction('add', selectedProductId, () => addToCart(selectedProductId, requestedQuantity));
       if (!result.ok) clearAddedFlash(selectedProductId);
-      if (!result.duplicate) showToast(result.message);
+      if (!result.duplicate && (!result.ok || modal)) showToast(result.message);
       if (result.ok) {
         // Dentro del gesto: fuera de la activación del usuario el navegador
         // descarta la vibración. Donde no hay háptica no pasa nada.
@@ -1954,7 +1958,8 @@ function bindEvents() {
       return;
     }
 
-    const incId = target.closest('[data-cart-inc]')?.dataset.cartInc;
+    const incId = target.closest('[data-cart-dec]')
+      ? null : target.closest('[data-cart-inc]')?.dataset.cartInc;
     if (incId) {
       const result = runCartAction('inc', incId, () => incrementCartItem(incId));
       if (result.ok) {
@@ -1962,7 +1967,7 @@ function bindEvents() {
         pulseCartFeedback();
         refreshOpenProductModal(incId);
       }
-      if (!result.duplicate) showToast(result.message);
+      if (!result.duplicate && !result.ok) showToast(result.message);
       return;
     }
 

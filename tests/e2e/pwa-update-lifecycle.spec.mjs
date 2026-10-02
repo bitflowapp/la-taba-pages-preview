@@ -36,7 +36,7 @@ function workerForVersion(version) {
   const source = controlledVersions && version === 1 ? previousControlledWorker : workerSource;
   return source
     .replace(/const CACHE_NAME = '[^']+';/, controlledVersions
-      ? `const CACHE_NAME = '${version === 1 ? 'la-taba-runtime-v131-premium-motion' : 'la-taba-runtime-v136-commercial-polish'}';`
+      ? `const CACHE_NAME = '${version === 1 ? 'la-taba-runtime-v131-premium-motion' : 'la-taba-runtime-v137-storefront-states'}';`
       : `const CACHE_NAME = 'la-taba-runtime-harness-v${version}';`)
     .replace(/const ASSETS = \[[\s\S]*?\n\];/, "const ASSETS = ['./'];")
     .concat(`\nself.__HARNESS_VERSION = ${version};\n`);
@@ -155,7 +155,7 @@ async function banner(page) {
 }
 
 test.describe('el aviso de actualización sigue el ciclo de vida real del worker', () => {
-  test('CP v131 a v136: actualización real conserva sesión y carrito', async ({ context }) => {
+  test('CP v131 a v137: actualización real conserva sesión y carrito', async ({ context }) => {
     controlledVersions = true;
     const page = await openControlledPage(context);
     const storage = {
@@ -168,7 +168,7 @@ test.describe('el aviso de actualización sigue el ciclo de vida real del worker
     await nudge(page);
     await expect(await banner(page)).toBeVisible();
     await page.locator('[data-app-update-now]').click();
-    await page.waitForFunction(async () => (await caches.keys()).includes('la-taba-runtime-v136-commercial-polish'));
+    await page.waitForFunction(async () => (await caches.keys()).includes('la-taba-runtime-v137-storefront-states'));
     const cached = await page.evaluate(() => caches.keys());
     expect(cached).not.toContain('la-taba-runtime-v131-premium-motion');
     expect(await page.evaluate((keys) => Object.fromEntries(keys.map(key => [key,localStorage.getItem(key)])), Object.keys(storage))).toEqual(storage);

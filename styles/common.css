@@ -865,8 +865,14 @@ summary {
    líneas del carrito.
    `display: none` y no una ocultación visual: así queda fuera del árbol de
    accesibilidad y la banda del carrito puede ser la única región viva de esta
-   vista, sin anuncios duplicados. */
-body[data-active-view="cart"] .toast {
+   vista, sin anuncios duplicados.
+
+   SÓLO cuando la banda existe. Con el carrito vacío la banda está oculta —no
+   hay líneas que cuidar— y con las dos apagadas el aviso no salía por ningún
+   lado: «Repetir último pedido» fallaba sin decir por qué y «Carrito vaciado»
+   no se veía ni se anunciaba. Ahí vuelve el aviso flotante, que no tiene nada
+   que tapar. Sigue habiendo una sola región viva por vez. */
+body[data-active-view="cart"]:has(.cart-notice:not([hidden])) .toast {
   display: none;
 }
 

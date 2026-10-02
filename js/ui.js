@@ -904,7 +904,7 @@ function quantityControl(product, quantity, { className = 'qty-stepper', justAdd
     : `Restar uno de ${productAccessibleName(product)}`;
   const leftIcon = safeQuantity === 1 ? removeGlyph() : '<span aria-hidden="true">−</span>';
   return `
-    <div class="${className}${justAdded ? ' is-just-added' : ''}" aria-label="Cantidad de ${escapeHtml(productAccessibleName(product))} en el pedido"${justAdded ? ' data-added-flash' : ''}>
+    <div class="${className}${justAdded ? ' is-just-added' : ''}" role="group" aria-label="Cantidad de ${escapeHtml(productAccessibleName(product))} en el pedido"${justAdded ? ' data-added-flash' : ''}>
       <button class="icon-button compact qty-stepper-action qty-stepper-remove" type="button" data-cart-dec="${escapeHtml(product.id)}" aria-label="${escapeHtml(leftLabel)}">${leftIcon}</button>
       <strong aria-live="polite">${safeQuantity}</strong>
       <button class="icon-button compact qty-stepper-action" type="button" data-cart-inc="${escapeHtml(product.id)}" aria-label="Sumar uno de ${escapeHtml(productAccessibleName(product))}" ${reachedStock ? 'disabled' : ''}><span aria-hidden="true">+</span></button>
@@ -3583,19 +3583,23 @@ export function renderCartTotals() {
 function renderMinimumOrderProgress() {
   const container = $('[data-cart-minimum-progress]');
   if (!container) return;
-  const items = getCartItems();
   const config = getBusinessConfig();
-  const canShow = items.length > 0
+  const summary = getCartSummary('delivery');
+  // El MISMO mínimo y la MISMA compuerta que `validateCartForCheckout`. Acá se
+  // pasaba la semilla del comercio a mano, salteando el mínimo que el servidor
+  // resolvió para la dirección: con una zona de mínimo distinto, la barra decía
+  // «Ya alcanzaste el pedido mínimo» y el aviso de abajo «Te faltan $ X». Y un
+  // carrito de sólo combos no veía la barra, aunque el mínimo se le exige.
+  const { minimum, missing, progress } = getDeliveryMinimumProgress(summary.subtotal);
+  const canShow = (summary.items.length > 0 || summary.combos.length > 0)
     && currentDeliveryMode() === 'delivery'
-    && (isDemoMode() || config.orderingDetailsVerified)
-    && Number(config.minDeliveryOrder) > 0;
+    && (isDemoMode() || config.orderingDetailsVerified || hasResolvedDelivery())
+    && minimum > 0;
   if (!canShow) {
-    container.innerHTML = '';
+    if (container.innerHTML) container.innerHTML = '';
     return;
   }
 
-  const summary = getCartSummary('delivery');
-  const { minimum, missing, progress } = getDeliveryMinimumProgress(summary.subtotal, config.minDeliveryOrder);
   container.innerHTML = `
     <aside class="minimum-order-progress ${missing === 0 ? 'is-complete' : ''}" aria-live="polite">
       <div>
@@ -3751,6 +3755,9 @@ function renderCartList() {
     // MISMO número, y estaban impresos los dos: "Unidad · $ 3.576" a la
     // izquierda y "$ 3.576" a la derecha. El unitario aparece cuando empieza a
     // informar algo, o sea cuando hay más de una.
+    // El título es el de la tarjeta (`cardTitle`), no el nombre crudo: con el
+    // crudo la línea decía «Coca-Cola Sabor Original 2,25 L» y debajo «2,25 L»
+    // otra vez, y no se llamaba igual que el producto que se acababa de tocar.
     const meta = [
       unitText(item.product),
       item.quantity > 1 ? `${money(item.product.price)} c/u` : '',
@@ -3762,7 +3769,7 @@ function renderCartList() {
     <div class="cart-item${issue ? ' has-issue' : ''}">
       ${productThumb(item.product, 'cart')}
       <div class="cart-item-info">
-        <div class="cart-title">${escapeHtml(item.product.name)}</div>
+        <div class="cart-title">${escapeHtml(cardTitle(item.product) || item.product.name)}</div>
         <div class="cart-meta">${escapeHtml(meta)}</div>
         ${issue ? `
         <p class="cart-item-issue" role="status">
@@ -3826,8 +3833,14 @@ export function renderOrderSummary() {
   if (warning) {
     const cartIsEmpty = items.length === 0 && combos.length === 0;
     const hide = validation.ok || cartIsEmpty;
+    // Las dos llaves, no una. Quien limpia el aviso al tocar un campo
+    // (`app.js`) pone la clase Y el atributo `hidden`; acá sólo se quitaba la
+    // clase, así que después del primer toque en el formulario el aviso pasivo
+    // —«Te faltan $ X», «Los combos se cobran con Mercado Pago», «El comercio
+    // está cerrado»— no volvía a verse hasta fallar un «Confirmar».
+    warning.hidden = hide;
     warning.classList.toggle('hidden', hide);
-    warning.textContent = validation.message;
+    if (warning.textContent !== validation.message) warning.textContent = validation.message;
   }
 }
 

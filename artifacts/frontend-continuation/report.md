@@ -30,7 +30,7 @@ la disponibilidad cada dos minutos— estaba mal planteada y la rehice.
 TABA_FRONTEND_CONTINUATION_REPORT
 
 REPO:           bitflowapp/la-taba-pages-preview
-WORKTREE:       C:\Users\DELL\Desktop\la-taba\la-taba-frontend-polish (ningún otro worktree se tocó)
+WORKTREE:       la-taba-frontend-polish (aislado; ningún otro worktree se tocó)
 BRANCH:         feat/taba-frontend-commercial-polish
 HEAD_INITIAL:   0364a58
 HEAD_FINAL:     4b50616 es el último commit con código; lo sigue el de esta documentación

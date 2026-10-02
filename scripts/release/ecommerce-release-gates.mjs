@@ -198,6 +198,18 @@ export function createRepoIo(root = ROOT) {
         throw Error('REPO_TRACKING_UNREADABLE');
       }
     },
+    // Cuándo se commiteó por última vez alguna de esas rutas, en milisegundos; null
+    // si git no las conoce. Es la fecha del commit, no la del archivo en el disco.
+    async repoLastCommitTime(relativePaths) {
+      const paths = relativePaths.map((relativePath) => { resolve(relativePath); return String(relativePath); });
+      if (!paths.length) return null;
+      try {
+        const seconds = execFileSync('git', ['log', '-1', '--format=%ct', '--', ...paths], gitRead).trim();
+        return /^\d+$/.test(seconds) ? Number(seconds) * 1000 : null;
+      } catch (_) {
+        throw Error('REPO_LOG_UNREADABLE');
+      }
+    },
   };
 }
 

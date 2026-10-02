@@ -16,7 +16,7 @@ import {
 } from '../scripts/release/gates/evaluate.mjs';
 import {
   FINDINGS_REGISTER_PATH, PAYMENT_CERTIFICATION_PATH, RELEASE_INPUT_PATHS, SQL, assertSelectOnly, collect, collectRepoFacts,
-  isEvidencePath, isRepoRelativePath, parseFunctionsVerifyJwt, parseRepoMigrations,
+  functionSourceFiles, isEvidencePath, isRepoRelativePath, parseFunctionsVerifyJwt, parseRepoMigrations, relativeImports,
 } from '../scripts/release/gates/collect.mjs';
 import {
   EXIT, UsageError, createRepoIo, exitCodeFor, loadSavedFacts, parseArgs, renderMarkdown, renderTable, run,
@@ -50,6 +50,9 @@ const FUNCTIONS = [
   ['mercadopago-create-preference', false], ['mercadopago-oauth-callback', false], ['mercadopago-payment-worker', false],
   ['mercadopago-refund', true], ['mercadopago-webhook', false], ['print-agent-gateway', false], ['team-invitation', false],
 ];
+// El código de cada función se commiteó antes de su despliegue.
+const SOURCE_COMMITTED_AT = '2026-09-25T12:00:00.000Z';
+const DEPLOYED_AT = Date.parse('2026-09-28T12:00:00.000Z');
 const MIGRATIONS = [
   { version: '20260531030000', name: 'la_taba_phase1_orders' },
   { version: '20261001010000', name: 'delivery_location_guard_runs_as_owner' },
@@ -88,10 +91,15 @@ function readyFacts() {
     },
     migrationLedger: { ok: true, versions: MIGRATIONS.map((row) => ({ ...row })) },
     repoMigrations: { ok: true, files: MIGRATIONS.map((row) => ({ ...row })), unrecognized: [] },
-    repoFunctions: { ok: true, functions: FUNCTIONS.map(([slug, verifyJwt]) => ({ slug, verify_jwt: verifyJwt, declared_in_config: true })) },
+    repoFunctions: {
+      ok: true,
+      functions: FUNCTIONS.map(([slug, verifyJwt]) => ({ slug, verify_jwt: verifyJwt, declared_in_config: true,
+        source_committed_at: SOURCE_COMMITTED_AT, source_files: 2 })),
+    },
     deployedFunctions: {
       ok: true,
-      functions: FUNCTIONS.map(([slug, verifyJwt]) => ({ slug, status: 'ACTIVE', verify_jwt: verifyJwt, version: 7, bundle_sha256: sha256(slug) })),
+      functions: FUNCTIONS.map(([slug, verifyJwt]) => ({ slug, status: 'ACTIVE', verify_jwt: verifyJwt, version: 7, bundle_sha256: sha256(slug),
+        updated_at: DEPLOYED_AT })),
     },
     abuse: {
       ok: true, guard_function_exists: true, readiness_function_exists: true,
@@ -194,6 +202,7 @@ const SINGLE_FAULTS = [
   ['funciones: una crítica borrada del repo', (f) => { f.repoFunctions.functions = f.repoFunctions.functions.filter((fn) => fn.slug !== 'mercadopago-refund'); }, 'EDGE_FUNCTIONS', /^CRITICAL_NOT_IN_REPO:mercadopago-refund$/],
   ['funciones: verify_jwt distinto al del repo', (f) => { f.deployedFunctions.functions.find((fn) => fn.slug === 'mercadopago-webhook').verify_jwt = true; }, 'EDGE_FUNCTIONS', /^VERIFY_JWT_MISMATCH:mercadopago-webhook:expected=false:actual=true$/],
   ['funciones: desplegada pero no activa', (f) => { f.deployedFunctions.functions.find((fn) => fn.slug === 'team-invitation').status = 'REMOVED'; }, 'EDGE_FUNCTIONS', /^NOT_ACTIVE:team-invitation:REMOVED$/],
+  ['funciones: el código cambió después del despliegue', (f) => { f.repoFunctions.functions.find((fn) => fn.slug === 'mercadopago-webhook').source_committed_at = '2026-10-02T09:31:07.000Z'; }, 'EDGE_FUNCTIONS', /^SOURCE_NEWER_THAN_DEPLOYMENT:mercadopago-webhook$/],
   ['guardián: en modo monitor', (f) => { f.business.order_intake_guard_mode = 'monitor'; }, 'ABUSE_PROTECTION', /^GUARD_MODE:monitor$/],
   ['guardián: apagado', (f) => { f.business.order_intake_guard_mode = 'off'; }, 'ABUSE_PROTECTION', /^GUARD_MODE:off$/],
   ['guardián: una puerta no lo llama', (f) => { f.abuse.guard_doors.create_checkout_session = false; }, 'ABUSE_PROTECTION', /^GUARD_NOT_WIRED:create_checkout_session$/],
@@ -473,15 +482,22 @@ function fakeIo(overrides = {}) {
     }),
     [FINDINGS_REGISTER_PATH]: JSON.stringify({ findings: facts.findingsRegister.findings }),
     'artifacts/cert-mp': 'evidence file',
+    'supabase/functions/_shared/cors.ts': "export const cors = {};\n",
+    'supabase/functions/_shared/runtime.ts': "import { cors } from './cors.ts';\nexport const runtime = { cors };\n",
+    ...Object.fromEntries(FUNCTIONS.map(([slug]) => [`supabase/functions/${slug}/index.ts`,
+      "import { runtime } from '../_shared/runtime.ts';\nexport default runtime;\n"])),
   };
   const dirs = {
     'supabase/migrations': [...MIGRATIONS.map((row) => ({ name: `${row.version}_${row.name}.sql`, isDirectory: false })), { name: 'README.md', isDirectory: false }],
     'supabase/functions': [...FUNCTIONS.map(([slug]) => ({ name: slug, isDirectory: true })), { name: '_shared', isDirectory: true }, { name: 'deno.json', isDirectory: false }],
     'artifacts/cert-manual': [{ name: 'final-report.md', isDirectory: false }],
+    ...Object.fromEntries(FUNCTIONS.map(([slug]) => [`supabase/functions/${slug}`,
+      [{ name: 'index.ts', isDirectory: false }, { name: 'index.deno.ts', isDirectory: false }]])),
   };
   const sqlSeen = [];
   const untracked = new Set();
   const uncommittedAsked = [];
+  const commitTimeAsked = [];
   const io = {
     sqlSeen,
     async runReadOnlySql(sql) {
@@ -490,7 +506,8 @@ function fakeIo(overrides = {}) {
       return [{ data: answers.get(sql) }];
     },
     async listFunctions() {
-      return FUNCTIONS.map(([slug, verifyJwt]) => ({ slug, status: 'ACTIVE', verify_jwt: verifyJwt, version: 7, ezbr_sha256: sha256(slug) }));
+      return FUNCTIONS.map(([slug, verifyJwt]) => ({ slug, status: 'ACTIVE', verify_jwt: verifyJwt, version: 7, ezbr_sha256: sha256(slug),
+        updated_at: DEPLOYED_AT }));
     },
     async readRepoFile(relativePath) {
       if (!Object.hasOwn(files, relativePath)) throw Error(`REPO_FILE_UNREADABLE:${relativePath}:ENOENT`);
@@ -506,8 +523,9 @@ function fakeIo(overrides = {}) {
     async repoTracked(relativePath) {
       return (Object.hasOwn(files, relativePath) || Object.hasOwn(dirs, relativePath)) && !untracked.has(relativePath);
     },
+    async repoLastCommitTime(paths) { commitTimeAsked.push(paths); return Date.parse(SOURCE_COMMITTED_AT); },
     async ciConclusion() { return { conclusion: 'success', commit: HEAD }; },
-    answers, files, dirs, untracked, uncommittedAsked,
+    answers, files, dirs, untracked, uncommittedAsked, commitTimeAsked,
     ...overrides,
   };
   return io;
@@ -527,7 +545,8 @@ test('collect() arma los hechos con la entrada/salida inyectada y el resultado e
   assert.deepEqual(facts.repoMigrations, { ok: true, files: MIGRATIONS, unrecognized: [] });
   assert.equal(facts.repoFunctions.functions.length, 13, '_shared y los archivos sueltos no son funciones');
   assert.deepEqual(facts.repoFunctions.functions.find((fn) => fn.slug === 'fiscal-artifact-access'),
-    { slug: 'fiscal-artifact-access', verify_jwt: true, declared_in_config: false }, 'sin entrada en config.toml vale el default de la plataforma');
+    { slug: 'fiscal-artifact-access', verify_jwt: true, declared_in_config: false, source_committed_at: SOURCE_COMMITTED_AT, source_files: 4 },
+    'sin entrada en config.toml vale el default de la plataforma');
   assert.equal(facts.deployedFunctions.functions[0].bundle_sha256, sha256('catalog-image-manager'));
   assert.deepEqual(facts.paymentCertification.entries.map((entry) => entry.evidence_exists), [true, true], 'evidencia como directorio y como archivo');
   assert.deepEqual(facts.ci, { conclusion: 'success', commit: HEAD });
@@ -1202,7 +1221,8 @@ test('evaluación y recolección no importan nada; el CLI sólo carga la red cua
     "'git', ['rev-parse', 'HEAD']",
     "'git', ['--no-optional-locks', 'status', '--porcelain', '--', ...paths]",
     "'git', ['ls-files', '--', String(relativePath)]",
-  ], 'los únicos procesos hijos son tres lecturas de git: el commit, qué está sin commitear y qué está versionado');
+    "'git', ['log', '-1', '--format=%ct', '--', ...paths]",
+  ], 'los únicos procesos hijos son cuatro lecturas de git: el commit, qué está sin commitear, qué está versionado y cuándo se commiteó');
   assert.equal((cli.match(/writeFileSync\(/g) || []).length, 1, 'una sola escritura, y es local');
   assert.doesNotMatch(cli, /\bfetch\(|createClient|supabase-js|\.rpc\(/);
   assert.doesNotMatch(read('tests/ecommerce-release-gates.test.mjs'), /from '\.\.\/scripts\/release\/gates\/live-io\.mjs'/);
@@ -1577,4 +1597,92 @@ test('los archivos de la herramienta respetan las compuertas del repo', () => {
     assert.deepEqual(scanText(source), [], `${file}: sin literales con forma de credencial`);
     assert.deepEqual(findPersonalLocalPaths(file, source), [], `${file}: sin rutas de disco locales`);
   }
+});
+
+// ── El código desplegado tiene que ser el del repo ─────────────────────────────
+
+test('una función cuyo código cambió después de su despliegue no pasa, y sin fechas no se sabe', () => {
+  const stale = evaluate(mutated((facts) => {
+    for (const fn of facts.repoFunctions.functions.filter((item) => item.slug.startsWith('mercadopago-'))) fn.source_committed_at = '2026-10-02T09:31:09.000Z';
+  }));
+  assert.equal(stale.verdict, 'NOT_READY');
+  assert.deepEqual(blockerIds(stale), ['EDGE_FUNCTIONS']);
+  assert.deepEqual(gateOf(stale, 'EDGE_FUNCTIONS').missing, CRITICAL_EDGE_FUNCTIONS.map((slug) => `SOURCE_NEWER_THAN_DEPLOYMENT:${slug}`).sort());
+  // Volver a desplegar después del commit lo resuelve; el mismo instante todavía vale.
+  const redeployed = evaluate(mutated((facts) => {
+    for (const fn of facts.repoFunctions.functions) fn.source_committed_at = '2026-10-02T09:31:09.000Z';
+    for (const fn of facts.deployedFunctions.functions) fn.updated_at = Date.parse('2026-10-02T09:31:09.000Z');
+  }));
+  assert.equal(redeployed.verdict, 'PRODUCTION_READY');
+  // La fecha del despliegue llega en milisegundos (Management API) o como instante ISO: las dos se leen.
+  const iso = evaluate(mutated((facts) => { for (const fn of facts.deployedFunctions.functions) fn.updated_at = '2026-09-28T12:00:00.000Z'; }));
+  assert.equal(gateOf(iso, 'EDGE_FUNCTIONS').status, 'PASS');
+
+  const noSource = evaluate(mutated((facts) => { facts.repoFunctions.functions.find((fn) => fn.slug === 'team-invitation').source_committed_at = null; }));
+  assert.deepEqual(noSource.blockers, [{ gate: 'EDGE_FUNCTIONS', status: 'UNKNOWN', missing: ['SOURCE_TIME_UNAVAILABLE:team-invitation'] }]);
+  const noDeploy = evaluate(mutated((facts) => { delete facts.deployedFunctions.functions.find((fn) => fn.slug === 'team-invitation').updated_at; }));
+  assert.deepEqual(noDeploy.blockers, [{ gate: 'EDGE_FUNCTIONS', status: 'UNKNOWN', missing: ['DEPLOY_TIME_UNAVAILABLE:team-invitation'] }]);
+  for (const junk of ['ayer', 0, -5, 1.5, true, {}]) {
+    const result = evaluate(mutated((facts) => { facts.deployedFunctions.functions[0].updated_at = junk; }));
+    assert.equal(gateOf(result, 'EDGE_FUNCTIONS').status, 'UNKNOWN', `una fecha ilegible (${JSON.stringify(junk)}) no es una fecha`);
+  }
+  // Un defecto cierto pesa más que una fecha que falta.
+  const both = evaluate(mutated((facts) => {
+    facts.repoFunctions.functions.find((fn) => fn.slug === 'team-invitation').source_committed_at = null;
+    facts.repoFunctions.functions.find((fn) => fn.slug === 'mercadopago-refund').source_committed_at = '2026-10-02T09:31:09.000Z';
+  }));
+  assert.deepEqual(gateOf(both, 'EDGE_FUNCTIONS'), { ...gateOf(both, 'EDGE_FUNCTIONS'), status: 'FAIL', missing: ['SOURCE_NEWER_THAN_DEPLOYMENT:mercadopago-refund'] });
+});
+
+test('el código de una función es lo que importa, sin sus pruebas, y esa es la lista que se le pregunta a git', async () => {
+  assert.deepEqual(relativeImports(`
+    import { a } from '../_shared/a.ts';
+    import b from "./b.ts";
+    import './side-effect.ts';
+    const c = await import('../_shared/c.ts');
+    export { d } from '../_shared/d.ts';
+    import { serve } from 'https://deno.land/std/http/server.ts';
+    import pg from 'npm:pg';
+  `), ['../_shared/a.ts', './b.ts', './side-effect.ts', '../_shared/c.ts', '../_shared/d.ts']);
+
+  const io = fakeIo();
+  assert.deepEqual(await functionSourceFiles(io, 'mercadopago-webhook'), [
+    'supabase/functions/_shared/cors.ts', 'supabase/functions/_shared/runtime.ts',
+    'supabase/functions/deno.json', 'supabase/functions/mercadopago-webhook/index.ts',
+  ], 'su archivo, el código común que alcanza por imports encadenados y la configuración de Deno; no su prueba');
+
+  const facts = await collect('controlled-production', BUSINESS, io, { now: NOW });
+  assert.equal(io.commitTimeAsked.length, 13, 'una pregunta por función');
+  assert.ok(io.commitTimeAsked.every((paths) => paths.length === 4 && !paths.some((file) => file.endsWith('.deno.ts'))));
+  assert.ok(facts.repoFunctions.functions.every((fn) => fn.source_committed_at === SOURCE_COMMITTED_AT && fn.source_files === 4));
+
+  // Un import que no se puede resolver, o que sale de supabase/functions: no se sabe qué se despliega.
+  const broken = fakeIo();
+  broken.files['supabase/functions/team-invitation/index.ts'] = "import x from '../_shared/no-existe.ts';\n";
+  const outside = fakeIo();
+  outside.files['supabase/functions/print-agent-gateway/index.ts'] = "import x from '../../../scripts/lib/algo.mjs';\n";
+  for (const [fake, slug] of [[broken, 'team-invitation'], [outside, 'print-agent-gateway']]) {
+    const collected = await collect('controlled-production', BUSINESS, fake, { now: NOW });
+    assert.equal(collected.repoFunctions.functions.find((fn) => fn.slug === slug).source_committed_at, null);
+    assert.deepEqual(evaluate(collected).blockers, [{ gate: 'EDGE_FUNCTIONS', status: 'UNKNOWN', missing: [`SOURCE_TIME_UNAVAILABLE:${slug}`] }]);
+  }
+  // Sin git (una entrada/salida que no sabe de commits) tampoco se supone nada.
+  const { repoLastCommitTime: _omitted, ...withoutGit } = fakeIo();
+  const blind = await collect('controlled-production', BUSINESS, withoutGit, { now: NOW });
+  assert.ok(blind.repoFunctions.functions.every((fn) => fn.source_committed_at === null));
+  assert.equal(gateOf(evaluate(blind), 'EDGE_FUNCTIONS').status, 'UNKNOWN');
+});
+
+test('contra el repo real: cada función tiene fecha de código y su lista no incluye pruebas', async () => {
+  const io = createRepoIo(ROOT);
+  const facts = await collect('controlled-production', BUSINESS, io, { now: NOW });
+  for (const fn of facts.repoFunctions.functions) {
+    assert.match(String(fn.source_committed_at), /^\d{4}-\d{2}-\d{2}T/, `${fn.slug} tiene la fecha de su último commit`);
+    assert.ok(fn.source_files >= 1, fn.slug);
+  }
+  const webhook = await functionSourceFiles(io, 'mercadopago-webhook');
+  assert.ok(webhook.includes('supabase/functions/mercadopago-webhook/index.ts'));
+  assert.ok(webhook.includes('supabase/functions/_shared/payment-runtime.ts'), 'sigue los imports hacia el código común');
+  assert.ok(webhook.every((file) => !/\.(deno|test)\.ts$/.test(file)), 'las pruebas no se despliegan');
+  assert.ok(webhook.every((file) => file.startsWith('supabase/functions/')));
 });

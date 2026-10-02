@@ -105,6 +105,8 @@ const instant = (value) => {
   const ms = Date.parse(value);
   return Number.isFinite(ms) ? ms : null;
 };
+/** Un momento como lo da cada fuente: ISO completo, o milisegundos (la Management API fecha así las funciones). */
+const moment = (value) => (Number.isSafeInteger(value) && value > 0 ? value : instant(value));
 /**
  * Una fecha de calendario que existe (AAAA-MM-DD, con o sin hora), en
  * milisegundos, o null. El motor corre el 30 de febrero al 2 de marzo en vez
@@ -613,10 +615,20 @@ function edgeFunctions(facts, env) {
   const live = new Map(deployed.functions.map((fn) => [text(fn?.slug), fn]));
   const declared = new Map(repo.functions.map((fn) => [text(fn?.slug), fn]));
   const missing = [];
+  const undated = [];
   for (const [slug, fn] of [...declared.entries()].sort(([a], [b]) => a.localeCompare(b))) {
     const target = live.get(slug);
     if (!target) { missing.push(`NOT_DEPLOYED:${slug}`); continue; }
     if (target.status !== 'ACTIVE') missing.push(`NOT_ACTIVE:${slug}:${target.status ?? 'unknown'}`);
+    // Que la función esté desplegada no dice QUÉ código corre. El último cambio
+    // del código que entra en su bundle tiene que ser anterior al despliegue: una
+    // corrección que está en el repo y no en el destino no está en producción.
+    // Sin alguna de las dos fechas no se sabe, y no saber no es estar al día.
+    const sourceAt = moment(fn.source_committed_at);
+    const deployedAt = moment(target.updated_at);
+    if (sourceAt === null) undated.push(`SOURCE_TIME_UNAVAILABLE:${slug}`);
+    else if (deployedAt === null) undated.push(`DEPLOY_TIME_UNAVAILABLE:${slug}`);
+    else if (sourceAt > deployedAt) missing.push(`SOURCE_NEWER_THAN_DEPLOYMENT:${slug}`);
     // `verify_jwt` distinto al del repo es un 401 en el preflight del
     // storefront o, peor, un webhook que exige un JWT que el proveedor no manda.
     if (typeof fn.verify_jwt !== 'boolean' || target.verify_jwt !== fn.verify_jwt) {
@@ -661,7 +673,7 @@ function edgeFunctions(facts, env) {
     }
   }
   if (missing.length) return fail(missing, evidence);
-  if (strictUnknown) return unknown(strictUnknown, evidence);
+  if (strictUnknown || undated.length) return unknown([...(strictUnknown ? [strictUnknown] : []), ...undated], evidence);
   return pass(evidence);
 }
 

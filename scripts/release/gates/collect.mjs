@@ -14,6 +14,8 @@
 //   io.repoHead?()           → commit del árbol que se está evaluando
 //   io.repoUncommitted?(rutas) → líneas de `git status --porcelain` de esas rutas
 //   io.repoTracked?(ruta)    → true si git versiona algo bajo esa ruta
+//   io.repoLastCommitTime?(rutas) → milisegundos del último commit que tocó alguna
+//                              de esas rutas, o null si git no las conoce
 //   io.listReferenceFunctions?() → Edge Functions del entorno de referencia
 //   io.projectRef?           → ref del proyecto que responde (sólo evidencia)
 //
@@ -469,18 +471,93 @@ const normalizeFunction = (fn) => ({
 
 // ── Recolectores ─────────────────────────────────────────────────────────────
 
+// El código que entra en el bundle de una función: sus propios archivos y,
+// siguiendo los imports relativos, el código común que alcanza. Las pruebas
+// (`*.deno.ts`, `*.test.ts`) viven al lado y no se despliegan.
+const FUNCTION_SOURCE_FILE = /\.(?:ts|js|mjs|json)$/;
+const FUNCTION_TEST_FILE = /\.(?:deno|test)\.ts$/;
+const RELATIVE_IMPORT = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)(['"])(\.{1,2}\/[^'"]+)\1/g;
+// La configuración de Deno de la carpeta de funciones (mapa de imports) también entra.
+const FUNCTIONS_SHARED_CONFIG = Object.freeze(['deno.json', 'deno.jsonc', 'import_map.json']);
+
+/** Las rutas relativas que importa un archivo fuente (estáticas y dinámicas). */
+export function relativeImports(source) {
+  return [...String(source ?? '').matchAll(RELATIVE_IMPORT)].map((match) => match[2]);
+}
+
+/** `a/b/../c/./d.ts` → `a/c/d.ts`; null si se sale por arriba de la raíz del repo. */
+function normalizeRepoPath(relativePath) {
+  const parts = [];
+  for (const part of String(relativePath).split('/')) {
+    if (part === '' || part === '.') continue;
+    if (part === '..') { if (!parts.length) return null; parts.pop(); } else parts.push(part);
+  }
+  return parts.join('/');
+}
+
+/**
+ * Los archivos del repo de los que depende el bundle de una función, ordenados.
+ * Un import relativo que apunta fuera de supabase/functions, o a un archivo que
+ * no existe, es un error: no se sabe qué se despliega.
+ */
+export async function functionSourceFiles(io, slug, functionsDirEntries = null) {
+  const files = new Set();
+  const pending = [];
+  const add = (file) => { if (!files.has(file)) { files.add(file); pending.push(file); } };
+  const walk = async (dir) => {
+    for (const entry of (await io.listRepoDir(dir)) || []) {
+      const name = String(entry.name);
+      if (entry.isDirectory === true) await walk(`${dir}/${name}`);
+      else if (FUNCTION_SOURCE_FILE.test(name) && !FUNCTION_TEST_FILE.test(name)) add(`${dir}/${name}`);
+    }
+  };
+  await walk(`${FUNCTIONS_DIR}/${slug}`);
+  while (pending.length) {
+    const file = pending.pop();
+    if (!/\.(?:ts|js|mjs)$/.test(file)) continue;
+    const directory = file.slice(0, file.lastIndexOf('/'));
+    for (const specifier of relativeImports(await io.readRepoFile(file))) {
+      const target = normalizeRepoPath(`${directory}/${specifier}`);
+      if (!target || !target.startsWith(`${FUNCTIONS_DIR}/`)) throw Error(`FUNCTION_IMPORT_OUTSIDE_FUNCTIONS:${slug}`);
+      add(target);
+    }
+  }
+  for (const entry of functionsDirEntries ?? (await io.listRepoDir(FUNCTIONS_DIR)) ?? []) {
+    if (entry?.isDirectory !== true && FUNCTIONS_SHARED_CONFIG.includes(String(entry?.name))) files.add(`${FUNCTIONS_DIR}/${entry.name}`);
+  }
+  return [...files].sort();
+}
+
 async function collectRepoFunctions(io) {
   const entries = await io.listRepoDir(FUNCTIONS_DIR);
   const declared = parseFunctionsVerifyJwt(await io.readRepoFile(SUPABASE_CONFIG_PATH));
   // `_shared` (y cualquier directorio con guion bajo) es código común, no una función desplegable.
-  const functions = (entries || [])
+  const slugs = (entries || [])
     .filter((entry) => entry?.isDirectory === true && !/^[_.]/.test(String(entry.name)))
-    .map((entry) => String(entry.name)).sort()
-    .map((slug) => ({
+    .map((entry) => String(entry.name)).sort();
+  const functions = [];
+  for (const slug of slugs) {
+    // Cuándo cambió por última vez el código que entra en su bundle. Si no se
+    // puede saber (sin git, o un import que no se resuelve) queda en null y la
+    // compuerta lo informa: nunca se supone que lo desplegado está al día.
+    let sourceCommittedAt = null;
+    let sourceFiles = null;
+    if (typeof io.repoLastCommitTime === 'function') {
+      try {
+        const files = await functionSourceFiles(io, slug, entries);
+        sourceFiles = files.length;
+        const ms = await io.repoLastCommitTime(files);
+        sourceCommittedAt = Number.isFinite(ms) && ms > 0 ? new Date(ms).toISOString() : null;
+      } catch (_) { sourceCommittedAt = null; }
+    }
+    functions.push({
       slug,
       verify_jwt: Object.hasOwn(declared, slug) ? declared[slug] : PLATFORM_DEFAULT_VERIFY_JWT,
       declared_in_config: Object.hasOwn(declared, slug),
-    }));
+      source_committed_at: sourceCommittedAt,
+      source_files: sourceFiles,
+    });
+  }
   return { functions };
 }
 

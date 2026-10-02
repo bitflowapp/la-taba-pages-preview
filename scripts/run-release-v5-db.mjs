@@ -230,6 +230,10 @@ try {
     // Ni puede probar veinte pedidos a la vez: el tope por cliente y por origen tiene que ser exacto bajo concurrencia.
     const { runOrderIntakeRace } = await import('./order-intake/intake-race.mjs');
     await runOrderIntakeRace(() => localClient(container));
+    // Ni cincuenta compradores por las mismas unidades: sin sobreventa ni stock negativo, por las dos puertas,
+    // con barridos, cancelaciones y avisos de pago repetidos corriendo a la vez.
+    const { runStockRace } = await import('./order-intake/stock-race.mjs');
+    await runStockRace(() => localClient(container));
 
     // Drill the exact compensating rollback in the same isolated schema where
     // the forward migration and its pgTAP contract just passed. The first run

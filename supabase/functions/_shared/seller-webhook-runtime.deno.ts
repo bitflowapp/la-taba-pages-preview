@@ -97,3 +97,243 @@ Deno.test('OAuth webhook cannot queue a verified payment against another busines
   assertEquals(result.status, 503);
   assertEquals(result.receipts.length, 0);
 });
+
+// ── EDGE-05: el webhook no escribe por cada pedido sin firma ─────────────────
+// Es el único endpoint sin autenticación previa. Antes gastaba un cupo ANTES de
+// mirar la firma y guardaba un recibo por cada pedido rechazado: cualquiera
+// podía hacer crecer dos tablas sin límite, y con la dirección de Mercado Pago
+// escrita en `x-forwarded-for`, agotarle el cupo a las notificaciones reales.
+
+type WebhookAttempt = {
+  signed?: boolean;
+  eventId?: string;
+  headers?: Record<string, string>;
+  query?: string;
+  secret?: string | null;
+};
+type WebhookWorld = {
+  /** Respuesta del cupo; por defecto hay lugar. */
+  rateLimit?: (call: { p_scope: string; p_subject_hash: string; p_limit: number; p_window_seconds: number }) => { status?: number; body: unknown };
+  receiptStatus?: number;
+};
+
+async function deliver(attempts: WebhookAttempt[], world: WebhookWorld = {}) {
+  for (const [name, value] of Object.entries({
+    SUPABASE_URL: 'https://ukxqbgswjlibmnjemrzd.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'fixture-server-key',
+    MERCADOPAGO_ENVIRONMENT: 'test', MERCADOPAGO_OAUTH_ENVIRONMENT: 'test', MERCADOPAGO_CREDENTIAL_MODE: 'oauth',
+    TABA_DEPLOYMENT_ENV: 'staging', MERCADOPAGO_OAUTH_PROJECT_REF: 'ukxqbgswjlibmnjemrzd',
+    MERCADOPAGO_OAUTH_PANEL_URL: 'https://taba2-staging.pages.dev/', MERCADOPAGO_CLIENT_ID: '2691240967769590',
+    TABA_CHECKOUT_BASE_URL: 'https://taba2-staging.pages.dev', TABA_ALLOWED_ORIGINS: 'https://taba2-staging.pages.dev',
+    MERCADOPAGO_TOKEN_ENCRYPTION_KEY: randomSecret(), MERCADOPAGO_OAUTH_WEBHOOK_SECRET: secret,
+    PAYMENT_LOG_HASH_SALT: 'fixture-log-salt',
+  })) Deno.env.set(name, value);
+  const row = {
+    business_id: business, seller_id: '123', application_id: '2691240967769590', environment: 'test', status: 'connected',
+    protected_tokens: await protect({access_token: 'fixture-seller-token'}, business),
+    expires_at: new Date(Date.now() + 3 * 86400000).toISOString(), refresh_owner: null,
+  };
+  const timestamp = String(Math.floor(Date.now() / 1000));
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), {name: 'HMAC', hash: 'SHA-256'}, false, ['sign']);
+  const signature = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`id:987;request-id:fixture-request;ts:${timestamp};`)));
+  const hex = Array.from(signature, byte => byte.toString(16).padStart(2, '0')).join('');
+  // Todo lo que queda escrito en la base, en orden.
+  const writes: string[] = [];
+  const rateLimits: Array<{ p_scope: string; p_subject_hash: string; p_limit: number; p_window_seconds: number }> = [];
+  const receipts: Record<string, unknown>[] = [];
+  let providerCalls = 0;
+  const original = globalThis.fetch;
+  globalThis.fetch = async (input, options) => {
+    const url = new URL(String(input));
+    const init = options as RequestInit | undefined;
+    if (url.pathname.endsWith('/consume_payment_rate_limit')) {
+      const call = JSON.parse(String(init?.body));
+      rateLimits.push(call);
+      writes.push('cupo:' + call.p_scope);
+      const answer = world.rateLimit ? world.rateLimit(call) : { body: { allowed: true } };
+      return Response.json(answer.body, { status: answer.status || 200 });
+    }
+    if (url.pathname.endsWith('/mp_seller_connections')) return Response.json(row);
+    if (url.origin === 'https://api.mercadopago.com') {
+      providerCalls++;
+      return Response.json({id: 987, collector_id: 123, live_mode: false, external_reference: 'server-reference'});
+    }
+    if (url.pathname.endsWith('/payment_intents')) return Response.json({business_id: business, environment: 'test'});
+    if (url.pathname.endsWith('/mp_record_seller_webhook') || url.pathname.endsWith('/record_mercadopago_webhook_receipt')) {
+      writes.push('recibo');
+      if (world.receiptStatus) return Response.json({ message: 'boom' }, { status: world.receiptStatus });
+      receipts.push(JSON.parse(String(init?.body)));
+      return Response.json({receipt_id: 'fixture-receipt', duplicate: false, queued: true});
+    }
+    throw new Error('Unexpected test request: ' + url.pathname);
+  };
+  try {
+    const statuses: number[] = [];
+    for (const attempt of attempts) {
+      if (attempt.secret === null) Deno.env.delete('MERCADOPAGO_OAUTH_WEBHOOK_SECRET');
+      else Deno.env.set('MERCADOPAGO_OAUTH_WEBHOOK_SECRET', attempt.secret ?? secret);
+      const response = await handle(new Request(`https://ukxqbgswjlibmnjemrzd.supabase.co/functions/v1/mercadopago-webhook${attempt.query ?? '?data.id=987'}`, {
+        method: 'POST',
+        headers: {'content-type': 'application/json', 'x-request-id': 'fixture-request',
+          'x-signature': `ts=${timestamp},v1=${attempt.signed ? hex : '0'.repeat(64)}`, ...(attempt.headers || {})},
+        body: JSON.stringify({id: attempt.eventId || 'fixture-event', type: 'payment', data: {id: '987'}, user_id: 123}),
+      }));
+      await response.text();
+      statuses.push(response.status);
+    }
+    return {statuses, writes, rateLimits, receipts, providerCalls};
+  } finally {
+    globalThis.fetch = original;
+    Deno.env.delete('MERCADOPAGO_CREDENTIAL_MODE');
+  }
+}
+
+const fromMercadoPago = {'cf-connecting-ip': '203.0.113.7'};
+
+// Un cupo de verdad: cuenta por (scope, clave) y deja pasar hasta `p_limit`.
+function countingRateLimit(): NonNullable<WebhookWorld['rateLimit']> {
+  const counters = new Map<string, number>();
+  return (call) => {
+    const bucket = `${call.p_scope}:${call.p_subject_hash}`, count = (counters.get(bucket) || 0) + 1;
+    counters.set(bucket, count);
+    return {body: {allowed: count <= call.p_limit, count, limit: call.p_limit}};
+  };
+}
+// Los cupos que gastó una corrida, agrupados por clave y en orden de aparición.
+function buckets(result: {rateLimits: Array<{p_subject_hash: string; p_limit: number}>}) {
+  const seen = new Map<string, {limit: number; uses: number}>();
+  for (const call of result.rateLimits) {
+    const entry = seen.get(call.p_subject_hash) || {limit: call.p_limit, uses: 0};
+    entry.uses++;
+    seen.set(call.p_subject_hash, entry);
+  }
+  return [...seen.values()];
+}
+
+Deno.test('EDGE-05 webhook: una firma inválida no gasta el cupo de las notificaciones reales', async () => {
+  const result = await deliver([{headers: fromMercadoPago}]);
+  assertEquals(result.statuses, [401]);
+  // Lo único que se escribe son los dos cupos acotados de rechazos (el de todas
+  // las direcciones y el de ésta) y, con lugar en los dos, su recibo.
+  assertEquals(result.writes, ['cupo:webhook_rejected', 'cupo:webhook_rejected', 'recibo']);
+  assertEquals(new Set(result.rateLimits.map((call) => call.p_subject_hash)).size, 2);
+  assertEquals(result.receipts[0].p_signature_valid, false);
+  assertEquals(result.providerCalls, 0);
+});
+
+Deno.test('EDGE-05 webhook: los recibos rechazados de una dirección tienen tope, y el 401 no', async () => {
+  const result = await deliver(
+    Array.from({length: 60}, (_, index) => ({eventId: `forged-event-${index}`, headers: fromMercadoPago})),
+    {rateLimit: countingRateLimit()},
+  );
+  assertEquals(result.statuses, Array.from({length: 60}, () => 401));
+  assertEquals(new Set(result.rateLimits.map((call) => call.p_scope)), new Set(['webhook_rejected']));
+  assertEquals(buckets(result).length, 2);
+  const [everyAddress, thisAddress] = buckets(result);
+  assertEquals(thisAddress.limit < everyAddress.limit, true);
+  assertEquals(result.receipts.length, thisAddress.limit);
+  assertEquals(thisAddress.limit <= 30, true, `tope de recibos rechazados por dirección: ${thisAddress.limit}`);
+});
+
+// La salud del e-commerce marca `webhook_processing` degradado con cinco
+// rechazos en la hora y ninguna notificación válida. Mercado Pago reintenta la
+// misma notificación varias veces, y cada reintento gasta el cupo sin dejar
+// fila nueva: con un tope de cinco, un secreto mal cargado en producción podía
+// quedar por debajo del umbral que lo delata.
+Deno.test('EDGE-05 webhook: el tope por dirección deja ver un secreto mal cargado aunque el proveedor reintente', async () => {
+  // Seis notificaciones distintas, cada una entregada tres veces seguidas.
+  const result = await deliver(
+    Array.from({length: 18}, (_, index) => ({eventId: `real-notification-${Math.floor(index / 3)}`, headers: fromMercadoPago})),
+    {rateLimit: countingRateLimit()},
+  );
+  assertEquals(result.statuses, Array.from({length: 18}, () => 401));
+  const stored = new Set(result.receipts.map((receipt) => receipt.p_webhook_event_id));
+  assertEquals(stored.size, 6, 'las seis notificaciones quedan con su recibo: por encima del umbral de cinco');
+});
+
+// El tope por dirección acota lo que escribe UNA dirección. Quien tiene muchas
+// (un /48 de IPv6 son 65.536 redes /64) estrenaba un cupo y sus recibos con
+// cada una: el total por hora no tenía techo.
+Deno.test('EDGE-05 webhook: los rechazos de TODAS las direcciones juntas también tienen tope', async () => {
+  const result = await deliver(
+    Array.from({length: 260}, (_, index) => ({
+      eventId: `forged-event-${index}`,
+      headers: {'cf-connecting-ip': `198.51.${100 + Math.floor(index / 250)}.${index % 250 + 1}`},
+    })),
+    {rateLimit: countingRateLimit()},
+  );
+  assertEquals(result.statuses, Array.from({length: 260}, () => 401));
+  const all = buckets(result);
+  const everyAddress = all[0];
+  assertEquals(everyAddress.uses, 260, 'el cupo común se consulta siempre, y primero');
+  assertEquals(everyAddress.limit <= 300, true, `tope de recibos rechazados por hora: ${everyAddress.limit}`);
+  // Agotado el cupo común no se escribe nada más: ni el recibo ni el cupo de
+  // la dirección nueva.
+  assertEquals(result.receipts.length, everyAddress.limit);
+  assertEquals(all.length - 1, everyAddress.limit);
+  assertEquals(result.writes.length, 260 + 2 * everyAddress.limit);
+});
+
+Deno.test('EDGE-05 webhook: si el cupo de rechazos no responde, no se guarda nada y sigue siendo 401', async () => {
+  const result = await deliver([{headers: fromMercadoPago}], {rateLimit: () => ({status: 500, body: {message: 'boom'}})});
+  assertEquals(result.statuses, [401]);
+  assertEquals(result.receipts, []);
+  assertEquals(result.writes, ['cupo:webhook_rejected']);
+});
+
+Deno.test('EDGE-05 webhook: si el recibo rechazado no se pudo guardar, la respuesta sigue siendo 401', async () => {
+  const result = await deliver([{headers: fromMercadoPago}], {receiptStatus: 500});
+  assertEquals(result.statuses, [401]);
+});
+
+Deno.test('EDGE-05 webhook: sin dirección conocida los rechazos igual tienen un tope (uno solo, compartido)', async () => {
+  const result = await deliver([{eventId: 'forged-a'}, {eventId: 'forged-b', headers: {'sb-forwarded-for': '198.51.100.9'}}]);
+  assertEquals(result.statuses, [401, 401]);
+  assertEquals(result.rateLimits.map((call) => call.p_scope), Array.from({length: 4}, () => 'webhook_rejected'));
+  // Los dos pedidos gastan el cupo común y el MISMO cupo «sin dirección».
+  assertEquals(buckets(result).map((bucket) => bucket.uses), [2, 2]);
+});
+
+Deno.test('EDGE-05 webhook: sin el secreto de firma no se escribe nada antes de fallar', async () => {
+  const result = await deliver([{signed: true, headers: fromMercadoPago, secret: null}]);
+  assertEquals(result.statuses, [503]);
+  assertEquals(result.writes, []);
+});
+
+Deno.test('EDGE-05 webhook: un pedido sin recurso es un rechazo más, con el mismo tope', async () => {
+  const result = await deliver([{signed: true, headers: fromMercadoPago, query: ''}]);
+  assertEquals(result.statuses, [401]);
+  assertEquals(result.writes, ['cupo:webhook_rejected', 'cupo:webhook_rejected', 'recibo']);
+  assertEquals(result.receipts[0].p_signature_valid, false);
+});
+
+Deno.test('EDGE-05 webhook: la firma válida gasta el cupo de su dirección recién después de verificada', async () => {
+  const result = await deliver([{signed: true, headers: fromMercadoPago}]);
+  assertEquals(result.statuses, [201]);
+  assertEquals(result.writes, ['cupo:webhook', 'recibo']);
+  assertEquals([result.rateLimits[0].p_limit, result.rateLimits[0].p_window_seconds], [240, 60]);
+  assertEquals(result.receipts[0].p_signature_valid, true);
+});
+
+Deno.test('EDGE-05 webhook: el cupo es de la dirección real; un x-forwarded-for inventado no lo cambia', async () => {
+  const result = await deliver([
+    {signed: true, headers: fromMercadoPago},
+    {signed: true, headers: {...fromMercadoPago, 'x-forwarded-for': '192.0.2.55, 10.0.0.1'}},
+    {signed: true, headers: {'cf-connecting-ip': '198.51.100.9', 'x-forwarded-for': '203.0.113.7'}},
+  ]);
+  const [honest, forged, other] = result.rateLimits.map((call) => call.p_subject_hash);
+  assertEquals(honest, forged);
+  assertEquals(honest === other, false);
+});
+
+Deno.test('EDGE-05 webhook: con el cupo de la dirección agotado responde 429 sin consultar al proveedor', async () => {
+  const result = await deliver([{signed: true, headers: fromMercadoPago}], {rateLimit: () => ({body: {allowed: false}})});
+  assertEquals(result.statuses, [429]);
+  assertEquals(result.providerCalls, 0);
+  assertEquals(result.receipts, []);
+});
+
+Deno.test('EDGE-05 webhook: una notificación firmada sin dirección conocida se procesa igual', async () => {
+  const result = await deliver([{signed: true}]);
+  assertEquals(result.statuses, [201]);
+  assertEquals(result.writes, ['recibo']);
+});

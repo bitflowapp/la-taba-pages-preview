@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient, type User } from 'npm:@supabase/supabase-js@2.110.8';
 import { validatePaymentWorkerSignature } from './payment-worker-signature.ts';
+import { clientAddress } from './request-protocol.ts';
 
 const JSON_HEADERS = {
   'content-type': 'application/json; charset=utf-8',
@@ -240,33 +241,76 @@ export function checkoutReturnUrl(path: '/pago/resultado' | '/pago/pendiente' | 
   return new URL(path, `${base.toString()}/`).toString();
 }
 
+export type RateLimitScope =
+  | 'checkout_session' | 'preference' | 'checkout_status' | 'webhook' | 'webhook_rejected'
+  | 'refund' | 'cancellation' | 'worker';
+
+// Cuántas veces el cupo de una persona se le da a una dirección. Detrás de una
+// misma dirección (la red de un operador móvil, el wifi de un edificio) hay
+// muchos clientes legítimos: el cupo por dirección frena al que fabrica
+// identidades, no al vecino.
+const ADDRESS_LIMIT_FACTOR = 5;
+
+/**
+ * Dos cupos independientes por operación protegida.
+ *
+ *   - por SUJETO (`subject`: el id del usuario autenticado, o el nombre del
+ *     llamador autenticado por firma). No lleva la dirección: cambiar de IP no
+ *     le estrena el cupo a nadie.
+ *   - por DIRECCIÓN (`clientAddress`), más grande. No lleva el usuario: quien
+ *     crea identidades anónimas en serie desde un mismo lugar comparte un cupo.
+ *     Sin dirección conocida este cupo se saltea; no existe un cupo «unknown»
+ *     que compartan todos los que no la traen.
+ *
+ * Antes había uno solo, con clave «primer salto de x-forwarded-for + usuario»:
+ * ni era por persona ni era por dirección.
+ *
+ * Sin `subject` (un endpoint sin usuario, como el webhook) queda sólo el cupo
+ * por dirección, con `limit`. Con `addressLimit = 0` queda sólo el del sujeto
+ * (el worker: lo llama la base, ya autenticada por firma).
+ *
+ * Si el cupo no se puede consultar se responde 429: se cierra, no se abre.
+ */
 export async function enforceRateLimit(
   service: SupabaseClient,
   request: Request,
-  scope: 'checkout_session' | 'preference' | 'checkout_status' | 'webhook' | 'refund' | 'cancellation' | 'worker',
+  scope: RateLimitScope,
   limit: number,
   windowSeconds: number,
   subject = '',
+  addressLimit = subject ? limit * ADDRESS_LIMIT_FACTOR : limit,
 ): Promise<void> {
-  const fingerprint = requestFingerprint(request, subject);
-  const subjectHash = await hashSensitive(fingerprint, `rate-limit:${scope}`);
+  const buckets: Array<Promise<boolean>> = [];
+  if (subject) buckets.push(consumeRateLimit(service, scope, `subject\u0000${subject}`, limit, windowSeconds));
+  const address = clientAddress(request);
+  if (address && addressLimit > 0) {
+    buckets.push(consumeRateLimit(service, scope, `address\u0000${address}`, addressLimit, windowSeconds));
+  }
+  if ((await Promise.all(buckets)).some((allowed) => !allowed)) {
+    throw new PublicPaymentError(429, 'RATE_LIMITED', 'Demasiados intentos. Esperá un momento y volvé a intentar.');
+  }
+}
+
+/**
+ * Gasta una unidad de un cupo y dice si todavía había lugar. `false` también
+ * cuando la consulta falla. La clave nunca llega a la base: viaja su hash con
+ * sal (`PAYMENT_LOG_HASH_SALT`).
+ */
+export async function consumeRateLimit(
+  service: SupabaseClient,
+  scope: RateLimitScope,
+  key: string,
+  limit: number,
+  windowSeconds: number,
+): Promise<boolean> {
+  const subjectHash = await hashSensitive(key, `rate-limit:${scope}`);
   const { data, error } = await service.rpc('consume_payment_rate_limit', {
     p_scope: scope,
     p_subject_hash: subjectHash,
     p_limit: limit,
     p_window_seconds: windowSeconds,
   });
-  if (error || !data?.allowed) {
-    throw new PublicPaymentError(429, 'RATE_LIMITED', 'Demasiados intentos. Esperá un momento y volvé a intentar.');
-  }
-}
-
-export function requestFingerprint(request: Request, subject = ''): string {
-  const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-    || request.headers.get('cf-connecting-ip')?.trim()
-    || request.headers.get('x-real-ip')?.trim()
-    || 'unknown';
-  return `${forwarded}\u0000${subject}`;
+  return !error && data?.allowed === true;
 }
 
 export async function timingSafeEqual(left: string, right: string): Promise<boolean> {

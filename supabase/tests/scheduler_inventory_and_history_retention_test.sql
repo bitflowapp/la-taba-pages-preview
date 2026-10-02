@@ -78,8 +78,8 @@ select bag_eq(
   $$select job_name from private.scheduler_expected_jobs$$,
   $$values ('taba-payment-outbox-worker'), ('taba-checkout-expiry-sweep'), ('taba-checkout-provider-truth-sweep'),
            ('taba-operational-alerts-sweep'), ('taba-qa-window-expiry'), ('taba-order-intake-purge'),
-           ('taba-unattended-order-expiry'), ('taba-cron-history-purge')$$,
-  'el inventario nombra las ocho tareas que tienen que existir');
+           ('taba-unattended-order-expiry'), ('taba-cron-history-purge'), ('taba-payment-traces-purge')$$,
+  'el inventario nombra las nueve tareas que tienen que existir');
 select ok(
   (select c.relrowsecurity from pg_class c where c.oid = 'private.scheduler_expected_jobs'::regclass)
   and not has_table_privilege('anon', 'private.scheduler_expected_jobs', 'select')

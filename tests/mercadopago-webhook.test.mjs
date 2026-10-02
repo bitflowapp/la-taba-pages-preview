@@ -61,8 +61,51 @@ test('HTTPS guard reads the proxy header and keeps request.url as fallback', () 
   assert.match(guard, /new URL\(request\.url\)\.protocol === 'https:'/);
 
   const webhook = read('supabase/functions/mercadopago-webhook/index.ts');
-  assert.match(webhook, /import \{ requestIsHttps \} from '\.\.\/_shared\/request-protocol\.ts'/);
+  // El mismo módulo exporta ahora también la dirección del cliente: la prueba
+  // pide que `requestIsHttps` salga de ahí, no que sea lo único importado.
+  assert.match(webhook, /import \{[^}]*\brequestIsHttps\b[^}]*\} from '\.\.\/_shared\/request-protocol\.ts'/);
   assert.doesNotMatch(webhook, /new URL\(request\.url\)\.protocol/);
+});
+
+test('webhook decides the signature before any durable write and bounds rejected receipts', () => {
+  const webhook = read('supabase/functions/mercadopago-webhook/index.ts');
+  const handlerEnd = webhook.indexOf('const REJECTED_RECEIPTS_PER_ADDRESS');
+  assert.ok(handlerEnd > 0, 'the rejected-receipt caps follow the handler');
+  const handler = webhook.slice(webhook.indexOf('Deno.serve('), handlerEnd);
+  const verified = handler.indexOf('validateMercadoPagoWebhookSignature(');
+  assert.ok(verified > 0, 'the handler validates the signature');
+  // Nothing that writes to the database may appear before the validation.
+  for (const write of ['enforceRateLimit(', 'consumeRateLimit(', 'persistReceipt(', 'recordRejectedNotification(', '.rpc(']) {
+    const first = handler.indexOf(write);
+    assert.ok(first === -1 || first > verified, `${write} runs before the signature is verified`);
+  }
+  // A rejected request is recorded only under its own bounded buckets (one per
+  // address, one for every address together); it never consumes the bucket of
+  // the signed notifications.
+  assert.match(webhook, /'webhook_rejected'/);
+  assert.match(webhook, /REJECTED_RECEIPTS_PER_ADDRESS = \d{1,2};/);
+  assert.match(webhook, /REJECTED_RECEIPTS_ALL_ADDRESSES = \d{1,3};/);
+  assert.doesNotMatch(webhook, /'mercadopago-webhook'\)/);
+});
+
+test('rate limits are keyed on the user alone and on the Cloudflare address alone', () => {
+  const runtime = read('supabase/functions/_shared/payment-runtime.ts');
+  const guard = read('supabase/functions/_shared/request-protocol.ts');
+  // The client address has one definition, and it is not the first
+  // x-forwarded-for hop: that one stays as the fallback for local serving only.
+  assert.doesNotMatch(runtime, /headers\.get\('(?:x-forwarded-for|cf-connecting-ip|sb-forwarded-for|x-real-ip)'\)/);
+  assert.doesNotMatch(runtime, /requestFingerprint|'unknown'/);
+  assert.match(runtime, /clientAddress\(request\)/);
+  assert.match(runtime, /`subject\\u0000\$\{subject\}`/);
+  assert.match(runtime, /`address\\u0000\$\{address\}`/);
+  assert.match(guard, /headers\.get\('cf-connecting-ip'\)/);
+  assert.doesNotMatch(guard, /headers\.get\('sb-forwarded-for'\)|headers\.get\('x-real-ip'\)/);
+  // Every function reads the address through that definition.
+  for (const name of fs.readdirSync(path.join(root, 'supabase/functions'))) {
+    if (!name.startsWith('mercadopago-')) continue;
+    const source = read('supabase/functions', name, 'index.ts');
+    assert.doesNotMatch(source, /headers\.get\('(?:x-forwarded-for|cf-connecting-ip|sb-forwarded-for|x-real-ip)'\)/, name);
+  }
 });
 
 test('proxy protocol suite covers forwarded HTTPS, real HTTP and fallback', () => {

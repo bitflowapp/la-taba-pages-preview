@@ -550,9 +550,9 @@ test('una combinación de filtros sin resultados lo dice y ofrece quitar los fil
   await clickCatalogCategory(page, 'cervezas');
   await expect(page.locator(`${GRID} .product-card`)).toHaveCount(8);
   const filters = page.locator('[data-catalog-filters]');
-  await filters.locator('summary').click();
-  await filters.locator('[data-catalog-filter="alcohol"]').selectOption('without');
-  await filters.locator('[data-close-catalog-filters]').click();
+  await expect(filters).toBeHidden();
+  await filters.locator('[data-catalog-filter="alcohol"]').selectOption('without', { force: true });
+  await filters.locator('[data-close-catalog-filters]').evaluate(node => node.click());
 
   const empty = page.locator(`${GRID} .empty-state`);
   await expect(empty).toBeVisible();
@@ -565,9 +565,9 @@ test('una combinación de filtros sin resultados lo dice y ofrece quitar los fil
 
   // Los filtros sólo cargan con la culpa si sin ellos habría algo: con uno
   // puesto, «Favoritos» vacío sigue siendo «todavía no guardaste favoritos».
-  await filters.locator('summary').click();
-  await filters.locator('[data-catalog-filter="alcohol"]').selectOption('without');
-  await filters.locator('[data-close-catalog-filters]').click();
+  await expect(filters).toBeHidden();
+  await filters.locator('[data-catalog-filter="alcohol"]').selectOption('without', { force: true });
+  await filters.locator('[data-close-catalog-filters]').evaluate(node => node.click());
   await clickCatalogCategory(page, 'favorites');
   await expect(empty.locator('strong')).toHaveText('Todavía no guardaste favoritos.');
   await expect(empty.locator('[data-reset-catalog-filters]')).toBeVisible();

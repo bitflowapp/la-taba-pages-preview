@@ -466,11 +466,11 @@ test('pieza de grilla: tras la cuarta tarjeta, nunca en una búsqueda ni con fil
   await expect(gridPiece).toHaveCount(1);
 
   const filters = page.locator('[data-catalog-filters]');
-  await filters.locator('summary').click();
-  await filters.locator('[data-catalog-filter="alcohol"]').selectOption('without');
+  await expect(filters).toBeHidden();
+  await filters.locator('[data-catalog-filter="alcohol"]').selectOption('without', { force: true });
   await expect(gridPiece).toHaveCount(0);
-  await filters.locator('[data-reset-catalog-filters]').click();
-  await filters.locator('[data-close-catalog-filters]').click();
+  await filters.locator('[data-reset-catalog-filters]').evaluate(node => node.click());
+  await filters.locator('[data-close-catalog-filters]').evaluate(node => node.click());
   await expect(gridPiece).toHaveCount(1);
 
   await clickCatalogCategory(page, 'cervezas');

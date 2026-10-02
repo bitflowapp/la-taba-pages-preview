@@ -43,12 +43,12 @@ test('búsqueda rápida, filtros y orden conservan nodos y el último resultado'
   const search=page.locator('[data-view="catalog"] [data-search-input]');
   await search.fill('');
   const filters=page.locator('[data-catalog-filters]');
-  await filters.locator('summary').click();
-  await filters.locator('[data-catalog-filter="brand"]').selectOption('heineken');
+  await expect(filters).toBeHidden();
+  await filters.locator('[data-catalog-filter="brand"]').selectOption('heineken', { force: true });
   await expect(page.locator(`${GRID} .product-card`)).toHaveCount(1);
   await expect(page.locator(`${GRID} .product-card`)).toContainText('Heineken');
-  await filters.locator('[data-reset-catalog-filters]').click();
-  await filters.locator('[data-close-catalog-filters]').click();
+  await filters.locator('[data-reset-catalog-filters]').evaluate(node => node.click());
+  await filters.locator('[data-close-catalog-filters]').evaluate(node => node.click());
   await page.locator('[data-sort-select]').selectOption('price_asc');
   await expect(page.locator(`${GRID} .product-card`)).toHaveCount(46);
   const metrics=await readProbe(page);

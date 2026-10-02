@@ -48,15 +48,15 @@ async function abrirConAlcohol(browser, ancho) {
    * cualquier cosa. Esa distinción ya fabricó un falso rojo en este proyecto.
    */
   const panel = page.locator('[data-catalog-filters]');
-  await panel.locator('summary').click();
-  await expect(panel).toHaveAttribute('open', '');
+  await expect(panel).toBeHidden();
+  // The retained filter engine is exercised without a visible trigger.
 
   const filtro = page.locator('[data-catalog-filter="alcohol"]');
-  await expect(filtro).toBeVisible();
-  await filtro.selectOption('with');
+  await expect(filtro).toBeAttached();
+  await filtro.selectOption('with', { force: true });
 
   // Cerrar el panel para medir la GRILLA, no el sheet abierto encima de ella.
-  await panel.locator('summary').click();
+  await expect(panel).toBeHidden();
   await expect(page.locator('[data-product-grid] .product-card').first()).toBeVisible();
   return { context, page, guards };
 }

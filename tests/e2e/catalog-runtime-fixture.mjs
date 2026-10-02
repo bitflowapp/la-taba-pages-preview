@@ -120,6 +120,7 @@ export async function openRuntimeCatalog(page, {
   return { rows, counters, emit() {
     for (const { socket, topic, bindings, arrayProtocol, joinRef } of sockets) {
       const binding = bindings.find((b) => b.table === 'products');
+      if (!binding) continue;
       const payload = {
         ids: [binding.id], data: { schema: 'public', table: 'products', type: 'UPDATE',
           commit_timestamp: new Date().toISOString(), errors: null, columns: [], record: rows[0], old_record: {} },

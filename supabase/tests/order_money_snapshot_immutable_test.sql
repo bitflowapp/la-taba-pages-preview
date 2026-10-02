@@ -18,7 +18,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(50);
+select plan(60);
 
 create temporary table snap (k text primary key, v text) on commit drop;
 grant select on snap to authenticated, service_role;
@@ -239,8 +239,8 @@ select ok(
 select is(
   (select string_agg(a.attname, ',' order by a.attname) from pg_attribute a
     where a.attrelid = 'public.order_items'::regclass and a.attnum > 0 and not a.attisdropped),
-  'created_at,id,name,order_id,product_id,product_uuid,quantity,subtotal,unit,unit_price',
-  'order_items tiene exactamente las columnas que el resguardo conoce');
+  'created_at,id,name,order_id,product_id,product_uuid,quantity,sku,subtotal,unit,unit_price',
+  'order_items tiene exactamente las columnas que el resguardo conoce (sku: 20261001225000, con su propio resguardo)');
 select is(
   (select string_agg(a.attname, ',' order by a.attname) from pg_attribute a
     where a.attrelid = 'public.order_combos'::regclass and a.attnum > 0 and not a.attisdropped),
@@ -364,6 +364,42 @@ select is(pg_temp.intento('authenticated',
   $$update public.order_items set unit_price = 1 where order_id = pg_temp.pedido('pago')$$),
   '42501', 'y un cliente sigue sin tener UPDATE sobre los renglones');
 
+-- ══ 5b · EL SKU DEL RENGLÓN QUEDA CONGELADO (20261001225000) ════════════════
+-- Lo escribe la base al nacer el renglón, por los tres caminos de alta.
+select is(
+  (select string_agg(distinct i.sku, ',') from public.order_items i where i.order_id = pg_temp.pedido('retiro')),
+  'importe-lata', 'el pedido de retiro en efectivo guarda el SKU de lo que se vendio');
+select is(
+  (select string_agg(i.sku, ',' order by i.sku) from public.order_items i where i.order_id = pg_temp.pedido('delivery')),
+  (select string_agg(p.sku, ',' order by p.sku)
+     from public.order_items i join public.products p on p.id = i.product_uuid where i.order_id = pg_temp.pedido('delivery')),
+  'el pedido con envio tambien, renglon por renglon');
+select ok(
+  (select count(*) > 0 and bool_and(i.sku is not null and i.sku = p.sku)
+     from public.order_items i join public.products p on p.id = i.product_uuid where i.order_id = pg_temp.pedido('pago')),
+  'y el pedido que nace de un cobro de Mercado Pago');
+select is(
+  (select i.sku from public.order_items i where i.id = 'd7300000-0000-4000-8000-0000000000e1'),
+  'importe-suelto', 'un renglon insertado sin SKU lo recibe del catalogo');
+-- El catálogo cambia de SKU después de la venta: el pedido no.
+select is(pg_temp.intento('dueno',
+  $$update public.products set sku = 'importe-lata-nuevo', external_id = 'importe-lata-nuevo' where id = 'c7300000-0000-4000-8000-0000000000a1'$$),
+  'ok', 'el comercio le cambia el SKU al producto');
+select is(
+  (select string_agg(distinct i.sku, ',') from public.order_items i where i.order_id = pg_temp.pedido('retiro')),
+  'importe-lata', 'el pedido ya hecho conserva el SKU con el que se vendio');
+select is(pg_temp.intento('service_role',
+  $$update public.order_items set sku = 'otro-sku' where order_id = pg_temp.pedido('retiro')$$),
+  '55000', 'la clave de servicio no puede reescribir el SKU de un renglon');
+select is(pg_temp.intento('dueno',
+  $$update public.order_items set sku = null where order_id = pg_temp.pedido('pago')$$),
+  '55000', 'ni el dueño de las tablas puede borrarlo');
+select ok(
+  has_column_privilege('authenticated', 'public.order_items', 'sku', 'SELECT')
+  and has_column_privilege('anon', 'public.order_items', 'sku', 'SELECT')
+  and not has_column_privilege('authenticated', 'public.order_items', 'sku', 'UPDATE'),
+  'lo leen los mismos roles que leen el renglon (un select * no se rompe) y nadie lo escribe');
+
 -- ══ 6 · LAS EXCEPCIONES QUE LA BASE NECESITA ════════════════════════════════
 -- Borrar un producto ya vendido: la clave foránea suelta el renglón.
 select is(pg_temp.intento('dueno', $$delete from public.products where id = 'c7300000-0000-4000-8000-0000000000a3'$$),
@@ -373,6 +409,9 @@ select is(
      from public.order_items i where i.id = 'd7300000-0000-4000-8000-0000000000e1'),
   't|c7300000-0000-4000-8000-0000000000a3|Producto que se va a borrar|700.00|700.00',
   'el renglon queda sin vinculo al producto y conserva lo que se vendio');
+select is(
+  (select i.sku from public.order_items i where i.id = 'd7300000-0000-4000-8000-0000000000e1'),
+  'importe-suelto', 'y conserva el SKU aunque el producto ya no exista');
 
 -- Borrar la definición de un combo ya vendido.
 select is(pg_temp.intento('dueno', $$delete from public.product_combos where id = 'e7300000-0000-4000-8000-0000000000a2'$$),

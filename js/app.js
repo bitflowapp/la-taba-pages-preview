@@ -25,6 +25,7 @@ import {
   renderCart,
   renderCartTotals,
   renderCatalog,
+  renderCatalogSearch,
   renderCustomerHome,
   renderHomeActiveOrder,
   renderNavigation,
@@ -724,7 +725,15 @@ function asegurarBackOffice() {
   return sincronizarBackOffice({ sandbox });
 }
 
+// Verdadero sólo mientras se procesa una tecla del buscador DENTRO del
+// catálogo. Ver `renderCatalogSearch` en ui.js.
+let searchKeystrokeRender = false;
+
 function renderAll() {
+  if (searchKeystrokeRender) {
+    renderCatalogSearch();
+    return;
+  }
   asegurarBackOffice();
   applyBusinessConfig();
   applyAppMode();
@@ -1988,7 +1997,15 @@ function bindEvents() {
 
     const input = event.target.closest?.('[data-search-input]');
     if (!input) return;
-    setSearchQuery(input.value || '');
+    // Escribiendo en el catálogo, la tecla sólo redibuja lo que depende de la
+    // consulta. Desde la home no: ahí la tecla además cambia de vista, y ese
+    // cambio corre el render completo.
+    searchKeystrokeRender = activeView === 'catalog';
+    try {
+      setSearchQuery(input.value || '');
+    } finally {
+      searchKeystrokeRender = false;
+    }
     // El buscador del Home lleva al Catálogo para mostrar resultados.
     if (input.hasAttribute('data-search-jump') && activeView !== 'catalog') {
       setActiveView('catalog', { scroll: false, focus: false });
@@ -1996,6 +2013,9 @@ function bindEvents() {
       setTimeout(() => {
         const catalogSearch = $('[data-view="catalog"] [data-search-input]');
         if (!catalogSearch) return;
+        // Lo tipeado viaja tal cual: un espacio al final todavía no cambió la
+        // consulta, y sin esto la palabra siguiente se pegaba a la anterior.
+        if (catalogSearch.value !== input.value) catalogSearch.value = input.value;
         catalogSearch.focus();
         catalogSearch.setSelectionRange(catalogSearch.value.length, catalogSearch.value.length);
       }, 0);

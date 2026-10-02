@@ -139,15 +139,25 @@ export function mergeCatalogProducts(baseProducts = demoProducts, savedProducts 
 }
 
 export function getCustomerCatalogProducts(products = []) {
+  // El modo se pregunta UNA vez por lista y no una por producto: resolverlo lee
+  // la URL y la configuración del despliegue, y esta función corre varias veces
+  // por render sobre el catálogo entero.
+  const production = isProductionMode();
   return (Array.isArray(products) ? products : [])
     // `outOfCatalog` se retiene SÓLO para que el carrito pueda explicar una
     // línea que se quedó sin producto publicado. La góndola no lo muestra: si
     // lo hiciera, un producto agotado aparecería en la vitrina únicamente
     // porque alguien lo tenía en el carrito, que es peor que no mostrarlo.
-    .filter((product) => isProductVisibleToCustomer(product) && product?.outOfCatalog !== true);
+    .filter((product) => visibleInMode(product, production) && product?.outOfCatalog !== true);
 }
 
+// Un solo argumento a propósito: esta función se pasa tal cual a `filter` y a
+// `find`, que le entregan el índice como segundo parámetro.
 export function isProductVisibleToCustomer(product) {
+  return visibleInMode(product, isProductionMode());
+}
+
+function visibleInMode(product, production) {
   // `procurementOnly` es abastecimiento: el pack con el que el local se surte
   // no es un producto de góndola. Sigue existiendo en el catálogo interno —con
   // su id, su ficha y su historial— pero no se le ofrece al cliente.
@@ -158,7 +168,7 @@ export function isProductVisibleToCustomer(product) {
   // una maqueta. Sigue en el estado —el carrito lo reconcilia y el Panel lo
   // edita— pero el cliente no lo ve hasta que el comercio publique el precio.
   // La demostración (sin backend) conserva su vidriera de precios pendientes.
-  if (isProductionMode() && isPricePending(product)) return false;
+  if (production && isPricePending(product)) return false;
   return true;
 }
 

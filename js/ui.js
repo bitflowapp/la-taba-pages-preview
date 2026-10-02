@@ -523,6 +523,33 @@ export function renderCatalog() {
   }
 }
 
+/*
+ * UNA TECLA EN EL BUSCADOR NO VUELVE A DIBUJAR LA TIENDA.
+ *
+ * Cada tecla es un cambio de estado y cada cambio de estado corría el render
+ * completo: la home que no se está mirando, el carrito, el seguimiento, la
+ * navegación. Perfilado a 390 × 844 con la CPU a un cuarto y las 46 fichas:
+ * 141 ms de script por tecla, y 65 de esos eran la vidriera de la HOME, que
+ * está oculta mientras se busca en el catálogo.
+ *
+ * Lo único que depende de la consulta son estas seis superficies. Las demás
+ * no la leen, y la home se dibuja entera al volver a ella (`setActiveView`
+ * corre el render completo), así que no puede quedar vieja. Los combos y el
+ * resto del catálogo no cambian con lo que se escribe.
+ *
+ * `app.js` usa esto SÓLO para la tecla escrita dentro del catálogo; limpiar la
+ * búsqueda, cambiar de rubro o llegar desde la home siguen por el render de
+ * siempre.
+ */
+export function renderCatalogSearch() {
+  renderCategories();
+  renderCatalogFilters();
+  renderCatalogOffers();
+  renderCatalogMeta();
+  renderSearchControls();
+  renderProducts();
+}
+
 export function discountPercent(product) {
   const pricing = productPricePresentation(product);
   if (!pricing.regularPrice || pricing.regularPrice <= pricing.price) return 0;
@@ -2893,10 +2920,29 @@ function isProductionCatalogLoading() {
   return state === 'idle' || state === 'loading';
 }
 
+/*
+ * Lo que hay escrito en el buscador, como lo guarda el estado: espacios
+ * colapsados, sin los de las puntas y hasta 80 caracteres.
+ *
+ * EL CAMPO NO SE CORRIGE MIENTRAS SE ESCRIBE. El estado guarda la consulta
+ * recortada, y esta hoja le devolvía al campo ese valor cada vez que eran
+ * distintos. Al tocar la barra espaciadora el campo decía «coca » y el estado
+ * «coca»: distintos, así que el espacio se borraba, y la letra siguiente caía
+ * pegada. Medido tecla por tecla: «coca zero» quedaba en «cocazero», «agua sin
+ * gas» en «aguasingas», y las dos respondían «No encontramos…» sobre productos
+ * que el local vende. No se podía escribir una búsqueda de dos palabras.
+ *
+ * Ahora se compara lo que el campo DICE, no cómo lo dice: mientras signifique
+ * lo mismo que el estado, no se toca.
+ */
+function searchFieldText(value) {
+  return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, 80);
+}
+
 function renderSearchControls() {
   const query = getState().searchQuery;
   $$('[data-search-input]').forEach((input) => {
-    if (input.value !== query) input.value = query;
+    if (searchFieldText(input.value) !== query) input.value = query;
   });
   // El botón de limpiar sólo existe con contenido: 44×44 y accesible por
   // nombre. No hay control inerte esperando en el campo vacío.
@@ -4956,7 +5002,9 @@ export function setCategory(categoryId) {
 }
 
 export function setSearchQuery(query) {
-  const nextQuery = String(query || '');
+  // Con la misma forma que guarda el estado: un espacio al final no es una
+  // consulta nueva y no tiene que costar un render.
+  const nextQuery = searchFieldText(query);
   if (getState().searchQuery === nextQuery) return;
   setState({ searchQuery: nextQuery });
 }

@@ -231,11 +231,24 @@ export function productMatchesQuery(product, query) {
  * Esto traduce la CONSULTA, no el índice: ninguna ficha gana una palabra que no
  * le corresponde.
  */
+/*
+ * Palabras que la gente escribe y que no buscan nada. «Coca de 2,25», «cerveza
+ * en lata», «agua de 2 litros»: como TODOS los términos tienen que coincidir,
+ * el «de» y el «en» —que ninguna ficha tiene— dejaban la góndola vacía con un
+ * producto que sí estaba. Lista cerrada y corta. «con» y «sin» NO están: «sin
+ * gas», «con gas» y «sin azúcar» son justamente lo que se quiere distinguir.
+ */
+const PALABRAS_DE_ENLACE = new Set(['de', 'del', 'la', 'las', 'el', 'los', 'en', 'y', 'un', 'una', 'para', 'por']);
+
 export function normalizeSearchQuery(query) {
   const texto = String(query || '')
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
+    // El punto que el teclado agrega solo —«heineken.»— y la coma suelta no son
+    // parte de la consulta. Entre dígitos sí lo son: «2.25» y «1,5» siguen.
+    .replace(/[.,]+(?=\s|$)/g, ' ')
+    .replace(/(^|\s)[.,]+/g, '$1')
     .replace(/\blitro y medio\b/g, '1,5 l')
     .replace(/\bmedio litro\b/g, '500 ml')
     .replace(/(\d+(?:[.,]\d+)?)\s*(?:litros?|lts?)\b/g, '$1 l')
@@ -246,7 +259,11 @@ export function normalizeSearchQuery(query) {
     .replace(/(\d)\.(\d)/g, '$1,$2')
     // «Agua tónica» es una tónica: sin esto «agua» exigía un agua mineral.
     .replace(/\bagua tonica\b/g, 'tonica');
-  return normalizeSearchText(texto);
+  const terminos = normalizeSearchText(texto).split(' ').filter(Boolean);
+  const utiles = terminos.filter((termino) => !PALABRAS_DE_ENLACE.has(termino));
+  // Una consulta hecha sólo de enlaces se deja como está: nunca queda vacía por
+  // esta regla, que es lo que la convertiría en «mostrar todo».
+  return (utiles.length ? utiles : terminos).join(' ');
 }
 
 /*

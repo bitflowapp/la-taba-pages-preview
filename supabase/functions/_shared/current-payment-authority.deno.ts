@@ -164,3 +164,140 @@ for (const state of ['no_seller', 'disconnected', 'requires_reauthorization', 'c
   'wrong_business', 'wrong_environment', 'payments_disabled', 'missing_smoke']) {
   Deno.test('A1 stored URL initially rejects ' + state, () => run('stored', 'none', state));
 }
+
+// ── EDGE-06: qué se asienta cuando el POST de la preferencia no sale bien ────
+// Tres resultados distintos que antes se mezclaban:
+//   - el proveedor RESPONDE que no (4xx final)            → intento `failed`;
+//   - el proveedor no decidió nada (408/409/425/429, 5xx,
+//     corte o plazo vencido)                              → intento dudoso;
+//   - el pedido ni siquiera salió (un error nuestro)      → no se asienta nada.
+
+type CreationScript = {
+  post?: () => Response | Promise<Response>;
+  preparation?: Record<string, unknown>;
+};
+
+async function create(script: CreationScript) {
+  configure();
+  const seller = { business_id: bid, environment: 'production', status: 'connected', seller_id: '123456789',
+    application_id: '7677852968049976', protected_tokens: await protect({ access_token: 'fixture-verified-token' }, bid),
+    expires_at: new Date(Date.now() + 172800000).toISOString(), generation: 'fixture-generation', refresh_owner: null };
+  const business = { id: bid, is_active: true, status: 'open', ordering_enabled: true, ordering_verified: true };
+  const settings = { business_id: bid, provider: 'mercadopago', enabled: true, environment: 'production',
+    checkout_mode: 'checkout_pro', currency: 'ARS', reserve_stock: true, production_review_status: 'approved',
+    collector_id: '123456789', application_id: '7677852968049976', updated_at: '2026-09-08T00:00:00Z' };
+  const checkout = { id: sid, customer_id: uid, business_id: bid, payment_intent_id: iid, environment: 'production',
+    status: 'ready_for_payment', expires_at: new Date(Date.now() + 600000).toISOString(),
+    reservation_valid: true, business_open: true };
+  const preparation = { checkout_session_id: sid, payment_intent_id: iid, payment_attempt_id: iid,
+    attempt_number: 1, preference_id: null, attempt_status: 'prepared', init_point: null, sandbox_init_point: null,
+    environment: 'production', currency: 'ARS', total: 100, external_reference: 'fixture-reference',
+    idempotency_key: iid, expires_at: checkout.expires_at,
+    items: [{ id: 'fixture-product', title: 'Fixture', quantity: 1, unit_price: 100, currency_id: 'ARS' }],
+    allow_offline_payment_methods: false, ...(script.preparation || {}) };
+  const attempt = { id: iid, payment_intent_id: iid, attempt_type: 'preference', attempt_number: 1,
+    idempotency_key: iid, status: 'prepared', preference_id: null as string | null, init_point: null as string | null,
+    authority_revision: 1, seller_generation: null as string | null, seller_id: null as string | null };
+  const intent = { id: iid, business_id: bid, checkout_session_id: sid, current_payment_attempt_id: iid,
+    internal_status: 'preference_creating', preference_id: null as string | null };
+  const snapshot = async () => {
+    const data = structuredClone({ business, settings, seller, checkout, attempt, intent });
+    return { ...data, authority_version: await sha256Hex(JSON.stringify(data)) };
+  };
+  const records: Array<{ name: string; code: unknown }> = [];
+  let posts = 0;
+  const original = globalThis.fetch;
+  globalThis.fetch = async (input, options) => {
+    const url = new URL(String(input));
+    const init = options as RequestInit | undefined;
+    const body = init?.body ? JSON.parse(String(init.body)) : {};
+    if (url.pathname === '/auth/v1/user') return Response.json({ id: uid });
+    if (url.pathname.endsWith('/consume_payment_rate_limit')) return Response.json({ allowed: true });
+    if (url.pathname.endsWith('/prepare_mercadopago_preference_v2')) return Response.json(preparation);
+    if (url.pathname.endsWith('/get_mercadopago_payment_authority_v2')) return Response.json(await snapshot());
+    if (url.pathname.endsWith('/mp_seller_connections')) return Response.json(seller);
+    if (url.pathname.endsWith('/payment_intents')) return Response.json({ business_id: bid, environment: 'production' });
+    if (url.pathname.endsWith('/record_mercadopago_preference_created_v2')) {
+      Object.assign(attempt, { status: 'created', preference_id: body.p_preference_id, init_point: body.p_init_point,
+        authority_revision: attempt.authority_revision + 1, seller_generation: seller.generation, seller_id: seller.seller_id });
+      intent.preference_id = body.p_preference_id;
+      return Response.json(await snapshot());
+    }
+    if (url.pathname.endsWith('/record_mercadopago_preference_failed') || url.pathname.endsWith('/record_mercadopago_preference_uncertain')) {
+      assertEquals(body.p_payment_attempt_id, iid);
+      records.push({ name: url.pathname.split('/').pop()!.replace('record_mercadopago_preference_', ''), code: body.p_error_code });
+      return Response.json(true);
+    }
+    if (url.origin !== 'https://api.mercadopago.com') throw new Error('Unexpected test request: ' + url.pathname);
+    if (url.pathname === '/users/me') return Response.json({ id: 123456789, site_id: 'MLA', tags: ['normal'] });
+    if (url.pathname === '/checkout/preferences/search') return Response.json({ elements: [], next_offset: 0, total: 0 });
+    if (url.pathname === '/checkout/preferences' && init?.method === 'POST') {
+      posts++;
+      assertEquals(new Headers(init.headers).get('x-idempotency-key'), iid);
+      return await (script.post || (() => Response.json({ id: 'fixture', init_point: providerUrl }, { status: 201 })))();
+    }
+    throw new Error('Unexpected provider request: ' + url.pathname);
+  };
+  try {
+    const response = await handle(new Request('https://wwcpogltfgzgkrlilbcd.supabase.co/functions/v1/mercadopago-create-preference', {
+      method: 'POST', headers: { authorization: 'Bearer fixture-customer', 'content-type': 'application/json' },
+      body: JSON.stringify({ checkout_session_id: sid }),
+    }));
+    return { status: response.status, body: await response.json(), records, posts };
+  } finally { globalThis.fetch = original; }
+}
+
+Deno.test('EDGE-06: una preferencia creada no asienta ni fallo ni duda', async () => {
+  const result = await create({});
+  assertEquals(result.status, 200);
+  assertEquals(result.body.init_point, providerUrl);
+  assertEquals(result.records, []);
+  assertEquals(result.posts, 1);
+});
+
+for (const status of [408, 409, 425, 429]) {
+  Deno.test(`EDGE-06: un ${status} del proveedor no es un rechazo: el intento queda dudoso, no fallido`, async () => {
+    const result = await create({ post: () => Response.json({ message: 'not now' }, { status }) });
+    assertEquals(result.status, 202);
+    assertEquals(result.body.code, 'PREFERENCE_RECONCILING');
+    assertEquals(result.records, [{ name: 'uncertain', code: String(status) }]);
+    assertEquals(result.posts, 1);
+  });
+}
+
+for (const status of [400, 403, 404, 422]) {
+  Deno.test(`EDGE-06: un ${status} del proveedor sí es su respuesta final: el intento queda fallido`, async () => {
+    const result = await create({ post: () => Response.json({ message: 'invalid preference' }, { status }) });
+    assertEquals(result.status, 409);
+    assertEquals(result.body.code, 'PAYMENT_SETUP_REJECTED');
+    assertEquals(result.records, [{ name: 'failed', code: String(status) }]);
+  });
+}
+
+for (const [name, post, code] of [
+  ['un 500', () => Response.json({ message: 'internal error' }, { status: 500 }), '500'],
+  ['un 503', () => Response.json({ message: 'service unavailable' }, { status: 503 }), '503'],
+  ['un corte de red', () => Promise.reject(new TypeError('simulated network failure')), 'network_or_timeout'],
+  ['una respuesta 200 sin la preferencia', () => Response.json({ unexpected: true }), '200'],
+] as Array<[string, () => Response | Promise<Response>, string]>) {
+  Deno.test(`EDGE-06: ${name} deja el intento dudoso, como antes`, async () => {
+    const result = await create({ post });
+    assertEquals(result.status, 202);
+    assertEquals(result.records, [{ name: 'uncertain', code }]);
+  });
+}
+
+for (const [name, preparation] of Object.entries({
+  'los items superan el total del checkout': { items: [{ id: 'fixture-product', title: 'Fixture', quantity: 1, unit_price: 150, currency_id: 'ARS' }] },
+  'el checkout ya venció': { expires_at: new Date(Date.now() - 1000).toISOString() },
+  'el total no es un importe': { total: 0 },
+} as Record<string, Record<string, unknown>>)) {
+  Deno.test(`EDGE-06: si ${name}, no sale ningún pedido y no se asienta como duda del proveedor`, async () => {
+    const result = await create({ preparation });
+    // Nada salió hacia Mercado Pago: ni «plazo vencido» ni «rechazo» serían ciertos.
+    assertEquals(result.posts, 0);
+    assertEquals(result.records, []);
+    assertEquals(result.status, 503);
+    assertEquals(result.body.code, 'PAYMENT_UNAVAILABLE');
+  });
+}

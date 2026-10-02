@@ -25,7 +25,7 @@ import {
   sanitizeText,
   validateCustomerName,
 } from '../core/validators.js';
-import { setProductionCatalogReady } from '../core/runtime-config.js';
+import { isProductionCatalogReady, setProductionCatalogReady } from '../core/runtime-config.js';
 import { categoryDefaults, sortByShelfOrder } from '../core/store-taxonomy.js';
 import {
   COMMERCE_CLOSED_MESSAGE,
@@ -610,10 +610,13 @@ export function createSupabaseOrderRepository({
       businessLocationVerified: false,
     };
     // Primero la compuerta: el render que dispara la escritura tiene que leer la
-    // compuerta nueva y la configuración nueva juntas.
-    reconcileProductionReadiness();
+    // compuerta nueva y la configuración nueva juntas. Y si lo único que cambió
+    // fue la compuerta —la tienda volvió después de un corte, con la misma
+    // configuración— también se escribe: abrirla no dibuja nada por sí sola.
+    const wasReady = isProductionCatalogReady();
+    const ready = reconcileProductionReadiness();
     const published = getState().businessConfig || {};
-    if (Object.keys(businessFields).some((key) => published[key] !== businessFields[key])) {
+    if (ready !== wasReady || Object.keys(businessFields).some((key) => published[key] !== businessFields[key])) {
       updateBusinessConfig(businessFields);
     }
     const {

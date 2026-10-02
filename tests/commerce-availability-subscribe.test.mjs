@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import test from 'node:test';
 
 import {
@@ -39,6 +40,18 @@ test('quien dibuja se entera cuando la respuesta cambia, y sólo entonces', () =
   setCommerceAvailability(abierto);
   assert.deepEqual(vistos, [true, false, 'no sé'], 'un oyente desuscripto siguió recibiendo avisos');
   clearCommerceAvailability();
+});
+
+test('editar el barrio o el punto de la MISMA dirección vuelve a preguntar la cobertura', () => {
+  // El servidor resuelve la zona con el barrio y el punto, no con la calle. Si
+  // la clave del aviso no los lleva, agregarle el barrio a una dirección vieja
+  // no dispara la consulta y el carrito sigue diciendo «fuera de zona».
+  const source = fs.readFileSync(new URL('../js/customer-delivery.js', import.meta.url), 'utf8');
+  const key = source.match(/const key = address\s*\?\s*\[([^\]]+)\]\.join\('\|'\)/);
+  assert.ok(key, 'la clave del aviso de dirección cambió de forma');
+  for (const field of ['address.id', 'address.formattedAddress', 'address.neighborhood', 'address.latitude', 'address.longitude']) {
+    assert.ok(key[1].includes(field), `la clave del aviso no incluye ${field}`);
+  }
 });
 
 test('un oyente que falla no deja a los demás sin aviso, y lo que no es función se ignora', () => {

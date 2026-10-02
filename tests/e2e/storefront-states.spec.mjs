@@ -206,6 +206,53 @@ test('home: lo que el backend contesta al volver a la pestaña se dibuja, sin es
   await expect(chip).not.toHaveClass(/is-closed/);
 });
 
+test('home: a la hora de apertura se vuelve a preguntar, sin que la persona salga y vuelva', async ({ page }) => {
+  let abierto = false;
+  const abre = new Date(Date.now() + 2 * 60 * 1000).toISOString();
+  await page.clock.install();
+  await openRuntimeCatalog(page, {
+    view: 'home',
+    availability: () => (abierto ? availability({ hours_enforced: true }) : availability({ is_open: false, hours_enforced: true, next_open_at: abre })),
+  });
+  const chip = page.locator('[data-open-status]').first();
+  await expect(chip).toHaveText(/^Cerrado · Abrimos/);
+
+  // Un minuto antes no hay nada que preguntar: sigue cerrado.
+  await page.clock.fastForward(60 * 1000);
+  await expect(chip).toHaveText(/^Cerrado · Abrimos/);
+
+  // Llega la hora. Nada cambió en la base —no hay evento que avise—, y la
+  // pestaña nunca perdió el foco: la pregunta la dispara el reloj.
+  abierto = true;
+  await page.clock.fastForward(90 * 1000);
+  await expect(chip).toHaveText('Estamos tomando pedidos');
+  await expect(chip).not.toHaveClass(/is-closed/);
+});
+
+test('home: si la consulta del horario falla una vez, se reintenta sola y el «Cerrado» vuelve', async ({ page }) => {
+  let falla = false;
+  const abre = new Date(Date.now() + 5 * 3600 * 1000).toISOString();
+  await page.clock.install();
+  await openRuntimeCatalog(page, {
+    view: 'home',
+    // `null` es una respuesta sin datos: el repositorio la lee como «no sé».
+    availability: () => (falla ? null : availability({ is_open: false, hours_enforced: true, next_open_at: abre })),
+  });
+  const chip = page.locator('[data-open-status]').first();
+  await expect(chip).toHaveText(/^Cerrado · Abrimos/);
+
+  // La vuelta a la pestaña pregunta y la consulta falla: sin respuesta la
+  // tienda deja de afirmar que está cerrada. Eso es deliberado (decide el alta
+  // del pedido), pero no puede quedar así por una falla pasajera.
+  falla = true;
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect(chip).toHaveText('Estamos tomando pedidos');
+
+  falla = false;
+  await page.clock.fastForward(9000);
+  await expect(chip).toHaveText(/^Cerrado · Abrimos/);
+});
+
 // ─── Lo que no se puede comprar ───────────────────────────────────────────────
 
 test('alcohol en vidriera: la lista, la tarjeta y la ficha dicen lo mismo, y ninguna habla de precio', async ({ page }) => {

@@ -2498,6 +2498,12 @@ test('la reconciliación vuelve a preguntar por la dirección activa, no «sin d
   const { getCommerceAvailability } = await import('../js/core/commerce-availability-store.js');
   assert.equal(getCommerceAvailability().delivery.deliveryFee, 1500);
 
+  // Y por el camino real: la reconciliación entra por la fila del comercio.
+  const antes = asked.length;
+  await repository.loadBusinessConfiguration();
+  assert.ok(asked.length > antes, 'la reconciliación no volvió a preguntar');
+  assert.deepEqual(asked.at(-1), { latitude: -38.95, longitude: -68.06, neighborhood: 'Centro' });
+
   // Quitar la dirección es una pregunta explícita y se respeta.
   await repository.refreshCommerceAvailability({ channel: 'delivery' });
   assert.deepEqual(asked.at(-1), {});

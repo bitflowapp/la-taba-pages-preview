@@ -1096,13 +1096,41 @@ function askCommerceAvailability() {
  * repositorio ya vuelve a preguntar en cada vuelta a la pestaña; lo que faltaba
  * era que alguien dibujara lo que contestó.
  */
+const REOPEN_ASK_GRACE_MS = 3000;
+const REOPEN_ASK_MAX_MS = 12 * 60 * 60 * 1000;
+const AVAILABILITY_RETRY_MS = 8000;
+
 function watchCommerceAvailability() {
   let queued = false;
-  subscribeCommerceAvailability(() => {
+  let reopenTimer = 0;
+  let retryTimer = 0;
+  let wasKnown = false;
+  subscribeCommerceAvailability((availability) => {
+    // Una consulta que falla deja el estado en «no sé», y la tienda deja de
+    // afirmar que está cerrada. Se reintenta UNA vez: si la falla fue pasajera
+    // la respuesta vuelve sola; si no, sigue decidiendo el alta del pedido.
+    clearTimeout(retryTimer);
+    if (wasKnown && !availability.known) retryTimer = setTimeout(askCommerceAvailability, AVAILABILITY_RETRY_MS);
+    wasKnown = availability.known;
+    // «Cerrado · Abrimos a las 19:00» tiene una hora en la que deja de ser
+    // cierto, y a esa hora nada cambia en la base: no hay evento que avise. Se
+    // vuelve a preguntar entonces. El horario lo sigue evaluando el servidor;
+    // acá sólo se elige el momento de la pregunta.
+    clearTimeout(reopenTimer);
+    const opensIn = availability.known && availability.hoursEnforced && !availability.isOpen
+      ? new Date(availability.nextOpenAt || '').getTime() - Date.now()
+      : Number.NaN;
+    if (opensIn > 0 && opensIn < REOPEN_ASK_MAX_MS) {
+      reopenTimer = setTimeout(askCommerceAvailability, opensIn + REOPEN_ASK_GRACE_MS);
+    }
     if (queued) return;
     queued = true;
     queueMicrotask(() => {
       queued = false;
+      // La tarjeta de entrada también lee esta respuesta («Ahora estamos
+      // cerrados. Abrimos…»), y mientras está a la vista la home y el carrito
+      // están ocultos: sin esto se repintaba sólo lo que no se veía.
+      applyProductionCatalogGate();
       applyBusinessConfig();
       renderCustomerHome();
       renderCart();

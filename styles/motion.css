@@ -172,6 +172,23 @@ body[data-motion-scrolled="true"] .topbar {
   transition: none;
 }
 
+/* La regla de arriba no alcanzaba a los TRES controles que más se tocan. Sus
+   reglas de reposo viven en brand-home.css con más especificidad —el «Agregar»
+   de la góndola, el de la home y la barra del carrito—, así que el color del
+   toque estaba escrito y nunca se pintaba: en un iPhone, sin `:hover`, sin
+   resalte nativo y sin vibración, lo único que respondía al dedo era el 3 % de
+   escala. Mismas declaraciones, con el alcance que hace falta, y sin el
+   degradado de reposo, que si no tapa el color. Es un estado, no un movimiento:
+   no necesita variante de movimiento reducido. */
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-action .add-button.motion-pressing:not(:disabled),
+body[data-active-view="home"] :is(.home-best-card, .home-promo-card) .home-add-button.motion-pressing:not(:disabled):not(.is-price-pending),
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .floating-cart.motion-pressing:not(:disabled) {
+  border-color: var(--taba-red-hover);
+  background-color: var(--taba-red-hover);
+  background-image: none;
+  transition: none;
+}
+
 /* El stepper responde en la MITAD que se tocó, no entero: quien toca "+" tiene
    que ver que tocó "+", no que la fila parpadeó. */
 .qty-stepper .icon-button.motion-pressing:not(:disabled),
@@ -281,13 +298,20 @@ dialog[open]::backdrop {
   to { opacity: 1; }
 }
 
+/* La entrada anima sólo lo que agrega —opacidad y un corrimiento— y no deja
+   nada puesto al terminar. Con `both` el último cuadro seguía mandando sobre el
+   aviso: `opacity: 1` le ganaba a la salida (`.toast.is-leaving`), que por eso
+   nunca se desvanecía y cortaba en seco, y su `transform` le ganaba al
+   `transform: none` del aviso dentro de una ficha, que quedaba corrido media
+   pastilla hacia afuera de la pantalla. El corrimiento va por `translate`, la
+   misma propiedad que ya usa la salida: la posición sigue siendo de
+   `common.css`. */
 .toast:not(.hidden) {
-  animation: taba-motion-toast-in var(--motion-duration-base) var(--motion-ease-enter) both;
+  animation: taba-motion-toast-in var(--motion-duration-base) var(--motion-ease-enter) backwards;
 }
 
 @keyframes taba-motion-toast-in {
-  from { opacity: 0; transform: translate3d(-50%, 8px, 0); }
-  to { opacity: 1; transform: translate3d(-50%, 0, 0); }
+  from { opacity: 0; translate: 0 8px; }
 }
 
 /* Reusable, bounded skeleton utility for real waits. It is not mounted on a

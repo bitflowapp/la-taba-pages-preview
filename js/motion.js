@@ -24,7 +24,14 @@ const REVEAL_SELECTORS = [
 ];
 
 const CARD_SELECTORS = ['.product-grid', '.home-promotions-rail', '.home-catalog-grid', '.recommendations-rail'];
-const INTERACTIVE_SELECTOR = 'button, a, [role="button"], input, select, textarea, summary';
+/*
+ * Lo que se PRESIONA. Un campo de texto no: la lista incluía `input`, `select`
+ * y `textarea`, así que cada barra espaciadora dentro del buscador —o de las
+ * indicaciones del pedido— le ponía `motion-pressing` al propio campo, y el
+ * texto se encogía un 3 % y volvía con cada espacio.
+ */
+const PRESS_SELECTOR = 'button, a, [role="button"], summary';
+const PRESS_RELEASE_MS = 220;
 
 /*
  * CAMBIOS QUE SE NOTAN — números, etapa del pedido, pedido nuevo, vacíos.
@@ -311,22 +318,31 @@ export function initMotion(documentRef = globalThis.document, windowRef = global
     rafId = windowRef?.requestAnimationFrame?.(setScrolled) || setTimeout(setScrolled, 0);
   };
 
-  const onPointerDown = (event) => {
-    const target = event.target?.closest?.(INTERACTIVE_SELECTOR);
-    if (!target || target.disabled || target.getAttribute('aria-disabled') === 'true') return;
+  const press = (target) => {
     target.classList.add('motion-pressing');
     clearTimeout(pressTimer);
-    pressTimer = setTimeout(() => releasePressed(target), 220);
+    pressTimer = setTimeout(() => releasePressed(target), PRESS_RELEASE_MS);
   };
 
-  const onPointerUp = (event) => releasePressed(event.target?.closest?.(INTERACTIVE_SELECTOR));
-  const onPointerCancel = (event) => releasePressed(event.target?.closest?.(INTERACTIVE_SELECTOR));
+  const onPointerDown = (event) => {
+    const target = event.target?.closest?.(PRESS_SELECTOR);
+    if (!target || target.disabled || target.getAttribute('aria-disabled') === 'true') return;
+    press(target);
+  };
+
+  const onPointerUp = (event) => releasePressed(event.target?.closest?.(PRESS_SELECTOR));
+  const onPointerCancel = (event) => releasePressed(event.target?.closest?.(PRESS_SELECTOR));
+  // Con el teclado el estado se soltaba SÓLO en el `keyup` del mismo control.
+  // Cuando la activación mueve el foco —Enter abre una ficha, cambia de vista—
+  // el `keyup` cae en otro elemento y el original quedaba presionado para
+  // siempre: encogido, y en rojo oscuro si era un botón de compra. Ahora vence
+  // con el mismo plazo que el toque, sin depender de dónde caiga el `keyup`.
   const onKeyDown = (event) => {
     if (event.key !== 'Enter' && event.key !== ' ') return;
-    const target = event.target?.closest?.(INTERACTIVE_SELECTOR);
-    if (target && !target.disabled) target.classList.add('motion-pressing');
+    const target = event.target?.closest?.(PRESS_SELECTOR);
+    if (target && !target.disabled) press(target);
   };
-  const onKeyUp = (event) => releasePressed(event.target?.closest?.(INTERACTIVE_SELECTOR));
+  const onKeyUp = (event) => releasePressed(event.target?.closest?.(PRESS_SELECTOR));
   const onMotionPreferenceChange = (event) => {
     documentRef.body.dataset.motionReduced = String(event.matches);
     if (event.matches) targets.forEach((node) => node.classList.add('is-motion-visible'));

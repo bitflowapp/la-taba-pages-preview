@@ -21,7 +21,7 @@
 --    4  cantidad negativa
 --    5  cantidad cero
 --    6  cantidad enorme        el límite por renglón y el tope del guardián: cuál contesta
---    7  cantidad decimal       1.5, 1.0, "2" (texto), 1e2, y el null de PRICE-05
+--    7  cantidad decimal       1.5, 1.0, "2" (texto), 1e2 y null
 --    8  producto de otro comercio (y producto inexistente o mal formado)
 --    9  producto oculto        cada bandera por separado, y el comercio cerrado o sin verificar
 --   10  producto sin precio    precio pendiente y precio cero
@@ -829,31 +829,30 @@ select is(pg_temp.checkout('cantidad-mil', pg_temp.items('{"p":"granel","q":1000
   'ok 10000.00|0.00|0.00|10000.00|ARS|ready_for_payment|cobrar=10000.00|Caramelo Precio:1000:10.00:10000.00',
   'checkout · igual');
 
--- DEFECTO: PRICE-05 (P3). Una `quantity` JSON null NO la atrapa el validador de
--- renglones en ninguna de las dos puertas. Lo esperado es el mismo rechazo que las
--- demas cantidades invalidas (22023 «cada item acepta ...»). Lo que pasa hoy:
---   · sola en su producto, la frena recien una restriccion NOT NULL de la tabla, con
---     el mensaje crudo de PostgreSQL (nombra la tabla y la columna);
---   · junto a otro renglon valido del MISMO producto, se ignora en silencio: la
---     compra se acepta por la cantidad del otro renglon.
--- No hay efecto sobre el dinero: nunca se cobra de menos ni se entrega de mas.
+-- Una `quantity` JSON null (PRICE-05). El validador de renglones compara un texto y
+-- con null la comparacion no da ni verdadero ni falso: el renglon se le escapaba. Sola
+-- en su producto la frenaba recien un NOT NULL de la tabla, con el mensaje crudo de
+-- PostgreSQL; junto a otro renglon valido del MISMO producto se ignoraba en silencio
+-- y la compra se aceptaba por la cantidad del otro. Desde 20261002030000 las dos
+-- puertas rechazan el pedido entero, con el codigo y el mensaje de cualquier otra
+-- cantidad invalida.
 select is(pg_temp.manual('cantidad-null', pg_temp.items('{"p":"granel","q":null}')),
-  '23502 null value in column "subtotal" of relation "orders" violates not-null constraint / nada escrito',
-  'DEFECTO PRICE-05 · manual · cantidad null: no la rechaza el validador sino el NOT NULL de orders.subtotal');
+  '22023 cada item acepta solo product_id UUID y quantity entero / nada escrito',
+  'manual · cantidad null: rechazada como cualquier cantidad invalida, no por una restriccion de la tabla');
 select is(pg_temp.checkout('cantidad-null', pg_temp.items('{"p":"granel","q":null}')),
-  '23502 null value in column "quantity" of relation "checkout_session_items" violates not-null constraint / nada escrito',
-  'DEFECTO PRICE-05 · checkout · cantidad null: no la rechaza el validador sino el NOT NULL de checkout_session_items.quantity');
+  '22023 cada item acepta product_id UUID o combo_id, con quantity entero / nada escrito',
+  'checkout · igual');
 select is(pg_temp.checkout('cantidad-null-combo', '[{"combo_id": "combo-precio", "quantity": null}]'),
-  '23502 null value in column "quantity" of relation "checkout_session_items" violates not-null constraint / nada escrito',
-  'DEFECTO PRICE-05 · checkout · un combo con cantidad null: mismo rechazo crudo');
+  '22023 cada item acepta product_id UUID o combo_id, con quantity entero / nada escrito',
+  'checkout · un combo con cantidad null: mismo rechazo');
 select is(pg_temp.manual('cantidad-null-y-dos', pg_temp.items('{"p":"granel","q":null}', '{"p":"granel","q":2}')),
-  'ok 20.00|0.00|0.00|20.00|ARS|Caramelo Precio:2.000:10.00:20.00',
-  'DEFECTO PRICE-05 · manual · un renglon con cantidad null junto a otro valido del mismo producto se ignora: se aceptan y se cobran 2');
+  '22023 cada item acepta solo product_id UUID y quantity entero / nada escrito',
+  'manual · un renglon con cantidad null junto a otro valido del mismo producto ya no se ignora: se rechaza el pedido entero');
 select is(pg_temp.checkout('cantidad-null-y-dos', pg_temp.items('{"p":"granel","q":null}', '{"p":"granel","q":2}')),
-  'ok 20.00|0.00|0.00|20.00|ARS|ready_for_payment|cobrar=20.00|Caramelo Precio:2:10.00:20.00',
-  'DEFECTO PRICE-05 · checkout · igual');
-select is(pg_temp.stock('granel'), '2792 publicado',
-  'el stock bajo exactamente lo aceptado: 5000 - 2 x (2 + 100 + 1000 + 2)');
+  '22023 cada item acepta product_id UUID o combo_id, con quantity entero / nada escrito',
+  'checkout · igual');
+select is(pg_temp.stock('granel'), '2796 publicado',
+  'el stock bajo exactamente lo aceptado: 5000 - 2 x (2 + 100 + 1000)');
 
 -- Cantidad enorme con el guardian de admision ENCENDIDO (comercio G, tope por
 -- defecto de 120 unidades por pedido sin cobrar). El guardian corre antes que el
@@ -1126,7 +1125,7 @@ select is(pg_temp.pagar('combo-doble'),
 select is(
   (select string_agg(n.clave || '=' || pg_temp.pedidos(n.clave), ' ' order by n.clave)
      from unnest(array['A', 'B', 'C', 'G']) n(clave)),
-  'A=12 B=1 C=1 G=1', 'pedidos que existen al final, por comercio');
+  'A=11 B=1 C=1 G=1', 'pedidos que existen al final, por comercio');
 select is(
   (select count(*)::integer from public.orders o
     where o.business_id in (select id from precio_ids)

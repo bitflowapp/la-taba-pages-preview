@@ -434,8 +434,6 @@ test('ficha: abrir otra mientras se cierra la primera no la cierra sola ni la de
   // Un segundo toque rápido: se cierra una ficha y se abre otra en el mismo
   // turno, antes de que el historial termine de consumir la entrada de la
   // primera. La segunda no puede cerrarse sola ni quedarse sin su entrada.
-  await trigger.click();
-  await expect(modal).toBeVisible();
   await page.evaluate(() => {
     document.querySelector('[data-product-modal] [data-close-modal]').click();
     document.querySelectorAll('[data-product-grid] [data-product-detail]')[9].click();
@@ -445,12 +443,12 @@ test('ficha: abrir otra mientras se cierra la primera no la cierra sola ni la de
   await page.waitForTimeout(500);
   await expect(modal, 'la ficha recién abierta se cerró sola').toBeVisible();
   // La entrada de la segunda ocupa el lugar de la primera: ni una de más.
-  expect((await state()).entries).toBe(trasAtras.entries);
+  expect((await state()).entries).toBe(conFicha.entries);
+
   await page.goBack();
   await expect(modal).toBeHidden();
   expect((await state()).view).toBe('catalog');
-
-  // Entonces un solo «atrás» sale del catálogo, como siempre.
+  // Y un solo «atrás» más sale del catálogo.
   await page.goBack();
   await expect(page.locator('[data-view="home"]')).toBeVisible();
 });

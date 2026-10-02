@@ -1,4 +1,4 @@
-import { assertOAuthPaymentEnvironment, audit, invalidateRejectedToken, oauthMode, sellerAccessToken } from './seller-oauth.ts';
+import { assertOAuthPaymentEnvironment, audit, invalidateTokenIfProviderRejectsIt, oauthMode, sellerAccessToken } from './seller-oauth.ts';
 import type { PaymentEnvironment } from './payment-runtime.ts';
 import {
   checkoutReturnUrl,
@@ -145,7 +145,14 @@ export async function mercadoPagoRequest(
     });
     const rawText = await response.text();
     if (response.status === 401 && oauthMode() && init.businessId) {
-      await invalidateRejectedToken(init.businessId, accessToken);
+      // Un 401 de un recurso no alcanza para destruir la conexión del vendedor:
+      // se confirma contra la credencial misma (ver seller-oauth.ts).
+      const invalidated = await invalidateTokenIfProviderRejectsIt(init.businessId, accessToken);
+      audit(
+        invalidated ? 'seller_token_rejected_by_provider' : 'provider_resource_unauthorized',
+        init.businessId,
+        response.headers.get('x-request-id') || crypto.randomUUID(),
+      );
     }
     let body: Record<string, unknown> | null = null;
     try {
@@ -166,14 +173,22 @@ export async function mercadoPagoRequest(
   }
 }
 
-export async function createPreference(preparation: PreferencePreparation, businessId?: string, authorityAccessToken?: string): Promise<{
+// `request` se puede armar afuera. `preferenceRequest` falla por razones que no
+// tienen nada que ver con el proveedor (el importe de los items supera el total,
+// el checkout venció): quien necesita distinguir «no llegué a mandar nada» de
+// «mandé y no sé qué pasó» lo arma antes y recién después llama acá.
+export async function createPreference(
+  preparation: PreferencePreparation,
+  businessId?: string,
+  authorityAccessToken?: string,
+  request: Record<string, unknown> = preferenceRequest(preparation, businessId),
+): Promise<{
   preferenceId: string;
   initPoint: string;
   sandboxInitPoint: string;
   responseHash: string;
   requestId: string;
 }> {
-  const request = preferenceRequest(preparation, businessId);
   const result = await mercadoPagoRequest('/checkout/preferences', {
     businessId,
     authorityAccessToken,
@@ -207,6 +222,28 @@ export async function fetchRefund(paymentId: string, refundId: string, businessI
   const result = await mercadoPagoRequest(`/v1/payments/${encodeURIComponent(paymentId)}/refunds/${encodeURIComponent(refundId)}`, { businessId });
   if (!result.response.ok || !result.body) throw new MercadoPagoApiError(result.response.status, await sha256Hex(result.rawText), result.requestId);
   return result.body;
+}
+
+// La lista completa de devoluciones de un pago. Sólo la usan los dos caminos
+// en los que una persona pidió destrabar un reembolso cuya respuesta se perdió
+// (`resolve_stuck_payment_refund`): ahí hace falta saber si el proveedor ya lo
+// ejecutó antes de mandar nada. No reemplaza a `fetchRefund` para una identidad
+// conocida. El recurso responde un arreglo; cualquier otra forma se trata como
+// lectura fallida y no como «no hay devoluciones».
+export async function fetchRefundList(paymentId: string, businessId: string): Promise<Record<string, unknown>[]> {
+  const result = await mercadoPagoRequest(`/v1/payments/${encodeURIComponent(paymentId)}/refunds`, { businessId });
+  const responseHash = await sha256Hex(result.rawText);
+  if (!result.response.ok) throw new MercadoPagoApiError(result.response.status, responseHash, result.requestId);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(result.rawText);
+  } catch (_) {
+    throw new MercadoPagoApiError(502, responseHash, result.requestId);
+  }
+  if (!Array.isArray(parsed) || parsed.some((entry) => !entry || typeof entry !== 'object' || Array.isArray(entry))) {
+    throw new MercadoPagoApiError(502, responseHash, result.requestId);
+  }
+  return parsed as Record<string, unknown>[];
 }
 
 // Reconciliation entry point. Mercado Pago only delivers Checkout Pro test
@@ -315,9 +352,15 @@ export async function verifyStoredPreference(
 // A Checkout Pro payment does not carry `preference_id`: it is only reachable
 // through its merchant order. Without this hop the stored snapshot has an empty
 // preference and the intent assertion can never match.
-export async function fetchMerchantOrder(merchantOrderId: string, businessId?: string): Promise<Record<string, unknown> | null> {
+//
+// Una respuesta que no es 2xx se propaga, igual que en `fetchPayment`. Antes
+// devolvía `null`: un 429 o un 5xx de esta sola lectura dejaba el snapshot con
+// la preferencia vacía, la base lo declaraba `preference_mismatch` y un cobro
+// aprobado y legítimo quedaba en revisión de seguridad, que es un estado del
+// que el reintento siguiente —ya con todo bien leído— no lo saca.
+export async function fetchMerchantOrder(merchantOrderId: string, businessId?: string): Promise<Record<string, unknown>> {
   const result = await mercadoPagoRequest(`/merchant_orders/${encodeURIComponent(merchantOrderId)}`, { businessId });
-  if (!result.response.ok || !result.body) return null;
+  if (!result.response.ok || !result.body) throw new MercadoPagoApiError(result.response.status, await sha256Hex(result.rawText), result.requestId);
   return result.body;
 }
 
@@ -344,6 +387,11 @@ export async function paymentSnapshot(payment: Record<string, unknown>, business
   if (!preferenceId && merchantOrderId) {
     const merchantOrder = await fetchMerchantOrder(merchantOrderId, businessId);
     preferenceId = text(object(merchantOrder).preference_id);
+    // El pago dice tener una orden y la orden no dijo de qué preferencia es:
+    // todavía no se sabe, que no es lo mismo que «no coincide». No se arma el
+    // snapshot; quien llama reintenta (el worker) o conserva el último estado
+    // conocido (la consulta de estado del cliente).
+    if (!preferenceId) throw new Error('Provider payment preference could not be resolved yet');
   }
   return {
     provider_payment_id: text(payment.id),

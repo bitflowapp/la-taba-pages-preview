@@ -79,19 +79,23 @@ async function reconcile(
     return false;
   }
 
-  let payment: Record<string, unknown> | null = null;
+  let snapshot: Record<string, unknown>;
   try {
-    payment = await findPaymentByExternalReference(String(intent.external_reference), intent.business_id);
+    const payment = await findPaymentByExternalReference(String(intent.external_reference), intent.business_id);
+    if (!payment) return false;
+    // El snapshot también le pregunta al proveedor (la orden del pago, de donde
+    // sale la preferencia). Si esa lectura falla no se asienta nada: un snapshot
+    // con la preferencia vacía mandaba un cobro aprobado a revisión de seguridad.
+    snapshot = await paymentSnapshot(payment, intent.business_id);
   } catch (_) {
     // A provider outage must never break the status screen: the shopper keeps
     // seeing the last known state and the next poll retries.
     return false;
   }
-  if (!payment) return false;
 
   const { data: recorded, error: recordError } = await service.rpc('record_mercadopago_payment_snapshot', {
     p_payment_intent_id: intent.id,
-    p_snapshot: await paymentSnapshot(payment, intent.business_id),
+    p_snapshot: snapshot,
     p_source: 'reconciliation',
     p_webhook_receipt_id: null,
   });

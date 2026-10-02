@@ -64,9 +64,9 @@
       "id": "EDGE-01",
       "severity": "P1",
       "title": "A non-2xx on the merchant-order lookup turns a legitimate approved payment into a permanent security review with no recovery or refund path",
-      "status": "open",
-      "fixed_by": null,
-      "notes": "Database half landed in 18dcb08 (an approved payment parked in security review without an order can be refunded). Still open: fetchMerchantOrder must throw on a non-2xx so the false preference_mismatch is never produced (Edge Function change pending).",
+      "status": "fixed",
+      "fixed_by": "5d0c366 (the failed read no longer records an empty preference) · 12f79b8 · 18dcb08 (a charge in review can be recovered into an order or refunded)",
+      "notes": "Database half landed in 18dcb08 (an approved payment parked in security review without an order can be refunded). Still open: fetchMerchantOrder must throw on a non-2xx so the false preference_mismatch is never produced (Edge Function change pending). Residuals, by decision: a payment that has neither an order id nor a preference id is still recorded with an empty preference and goes to manual review (now with a recovery and a refund path); a permanent merchant-order failure (404) retries to dead_letter, which raises the CRITICAL queue alert, instead of going to manual review. Provider simulated: not exercised against real Mercado Pago.",
       "aliases": [],
       "domain": "mp_edge",
       "where": "supabase/functions/_shared/mercadopago.ts fetchMerchantOrder (L318-322) and paymentSnapshot (L343-347); public.record_mercadopago_payment_snapshot; callers mercadopago-payment-worker/index.ts L101-108 and mercadopago-checkout-status/index.ts L92-97"
@@ -75,9 +75,9 @@
       "id": "EDGE-03",
       "severity": "P1",
       "title": "Production has no steady-state switch for real payments: every production preference needs the 'smoke' secret that runbooks and tooling require to be absent, and the failure happens after stock is reserved",
-      "status": "open",
-      "fixed_by": null,
-      "notes": "",
+      "status": "external_gate",
+      "fixed_by": "4b3f40f (the creation gate is evaluated before stock is reserved; one definition of the gate)",
+      "notes": "SOFTWARE HALF FIXED (4b3f40f): with the production gate closed the checkout session answers 409 PAYMENTS_NOT_ENABLED and reserves nothing. WAITING ON THE OWNER: which switch enables real payments in steady state. Today production only issues a preference while the secret named 'smoke' is present, and the runbooks and tools require it to be absent. Options in the decision memo (evidence, payments.md): A, an explicit permanent project-level switch (recommended); B, rely on the project review status plus the per-business switch. Until it is decided production stays closed and fails closed. Not changed in this branch: it is the switch for real money.",
       "aliases": [],
       "domain": "mp_edge",
       "where": "supabase/functions/_shared/payment-runtime.ts requireRealPaymentSmokeAuthorization (L203-211); _shared/seller-oauth.ts L414, L432, L455; _shared/mercadopago.ts L55; scripts/mercadopago/sincronizar-worker-hmac.mjs L90-93; docs/MERCADOPAGO_PRODUCCION_CP.md L54; docs/payments/mercadopago/PRODUCTION_CHECKLIST.md L21"
@@ -108,9 +108,9 @@
       "id": "CS-01",
       "severity": "P1",
       "title": "A rejected first card attempt releases the stock, so the buyer's approved retry in the same Checkout Pro preference becomes a manual review instead of an order",
-      "status": "open",
-      "fixed_by": null,
-      "notes": "Database half landed in a2f6960 (a provider rejection no longer releases the reservation; the first approved payment takes the identity). Still open: the payment worker re-reads the pinned rejected payment id on a probe (Edge Function change pending).",
+      "status": "fixed",
+      "fixed_by": "a2f6960 (a provider rejection keeps the reservation and the session) · 4d18709 (the worker finds the approved payment by the checkout reference when the pinned one is rejected)",
+      "notes": "Database half landed in a2f6960 (a provider rejection no longer releases the reservation; the first approved payment takes the identity). Still open: the payment worker re-reads the pinned rejected payment id on a probe (Edge Function change pending). Cost of the fix: the reservation of a rejected payment is held until the session expires. Provider simulated: the retry inside one Checkout Pro preference was not exercised against real Mercado Pago (external gate).",
       "aliases": [
         "PAY-01",
         "EDGE-02"
@@ -589,9 +589,9 @@
       "id": "EDGE-05",
       "severity": "P2",
       "title": "Rate-limit key combines IP and user and takes the first x-forwarded-for hop; the unauthenticated webhook writes a row per rejected request; nothing purges the tables",
-      "status": "open",
-      "fixed_by": null,
-      "notes": "",
+      "status": "fixed",
+      "fixed_by": "ac93db3 · supabase/migrations/20261001230000_payment_request_traces_purge_and_rejected_webhook_scope.sql",
+      "notes": "Client address from cf-connecting-ip, separate user and address buckets, signature decided before any write, rejected receipts capped per address and overall, daily purge. Not addressed: the fixed-window double burst across a window boundary.",
       "aliases": [
         "F7"
       ],
@@ -607,7 +607,7 @@
       "title": "Preference creation has dead ends: any provider 4xx (including 408/409/429) marks the attempt failed with no way to open a new one; local errors are recorded as provider timeouts; ambiguous attempts are never resolved",
       "status": "open",
       "fixed_by": null,
-      "notes": "",
+      "notes": "PARTIAL (5b247f7): a provider 408/409/425/429 leaves the attempt uncertain instead of failed, and local errors send nothing and record nothing. Still open, needs a decision: an uncertain attempt answers 202 until the session expires and is never re-sent; a final 4xx leaves the intent in preference_creating with no way to open a new attempt. Options: re-POST with the same idempotency key after a provably empty search, and/or a database exit.",
       "aliases": [
         "PAY-09"
       ],
@@ -618,9 +618,9 @@
       "id": "EDGE-08",
       "severity": "P2",
       "title": "The seller credential is destroyed on non-authoritative provider signals: any HTTP 401 on any resource, and any ambiguous refresh outcome",
-      "status": "open",
-      "fixed_by": null,
-      "notes": "",
+      "status": "fixed",
+      "fixed_by": "5d0c366",
+      "notes": "A resource 401 is confirmed against /users/me before the credential is invalidated; an ambiguous refresh keeps the credential and is marked for attention. Residual: a connection can stay 'connected' with an expired token if the refresh keeps failing through the token's last day, and availability does not look at the expiry (database change, not done); no alert reads the pending-refresh marker.",
       "aliases": [],
       "domain": "mp_edge",
       "where": "supabase/functions/_shared/mercadopago.ts mercadoPagoRequest (L147-149); _shared/seller-oauth.ts invalidateRejectedToken (L468-486) and sellerAccessToken (L230-241, L288-306)"
@@ -671,7 +671,7 @@
       "title": "Completed intents are never reconciled again, and a dead-lettered webhook cannot be revived; no provider-vs-local reconciliation report exists",
       "status": "open",
       "fixed_by": null,
-      "notes": "",
+      "notes": "PARTIAL (e2a7df0): a read-only provider-versus-local reconciliation tool exists (scripts/payments/reconcile-payments.mjs) and found one real mismatch on staging test data. Still open: nothing re-reads completed intents on a schedule, and a dead-lettered webhook job has no revive path.",
       "aliases": [],
       "domain": "payments_db",
       "where": "public.enqueue_payment_reconciliation, public.enqueue_checkout_provider_probes, public.record_mercadopago_webhook_receipt (duplicate path), public.fail_payment_outbox_job; reconciliation report: NOT IMPLEMENTED",
@@ -741,7 +741,7 @@
       "title": "The Edge Function hides every server rejection behind CHECKOUT_NOT_AVAILABLE, so the buyer cannot be told what to fix",
       "status": "open",
       "fixed_by": null,
-      "notes": "",
+      "notes": "PARTIAL (4b3f40f): the Edge Function now maps each refusal to a public code and HTTP status from a closed table. Still open on the client: the storefront does not read the body of a non-2xx answer, so the codes do not reach the buyer yet.",
       "aliases": [
         "F-04"
       ],
@@ -804,8 +804,8 @@
       "id": "F5",
       "severity": "P2",
       "title": "The only existing limiter (Mercado Pago path) is weak: NULL means unlimited, the DB count is not race-safe and ignores orders, and the Edge bucket subject mixes IP and user id so a changed IP resets the per-user budget",
-      "status": "open",
-      "fixed_by": null,
+      "status": "fixed",
+      "fixed_by": "7bdf9d4 (database: the intake guard counts orders and sessions under a lock, NULL uses a default) · ac93db3 (Edge: separate user and address buckets)",
       "notes": "Database half closed by the intake guard in 7bdf9d4 (defaults instead of NULL, race-safe counts, orders and sessions share one budget). Still open: the Edge rate-limit key mixes address and user.",
       "aliases": [],
       "domain": "orders_abuse",
@@ -1110,6 +1110,25 @@
       "verification": [
         {
           "id": "API-01",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "fixed_by": "29ade07 · supabase/migrations/20261001222000_paid_without_order_alert_measures_from_approval.sql",
+      "notes": "Found while writing the checkout invariants test (not by the audit). The five minutes were measured from payment_intents.updated_at, which any re-read of the same payment with a different response body rewrites. Now measured from approved_at. Regression: checkout_order_invariants_test.sql, section F.",
+      "aliases": [],
+      "id": "DIAG-13",
+      "severity": "P2",
+      "title": "The PAYMENT_APPROVED_WITHOUT_ORDER alert resolved itself when the same approved payment was read again, with the order still missing",
+      "status": "fixed",
+      "domain": "observability",
+      "where": "public.reconcile_operational_alerts_for_business (PAYMENT_APPROVED_WITHOUT_ORDER branch)",
+      "verification": [
+        {
+          "id": "DIAG-13",
           "real": true,
           "reproduced": true,
           "severity": "P2"

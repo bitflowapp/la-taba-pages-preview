@@ -54,6 +54,7 @@ import { getState, subscribe } from './state.js';
 import { BRAND, STORAGE_KEYS } from './config.js';
 import { getBusinessConfig } from './core/business-config-store.js';
 import { onBrowserResume } from './core/browser-resume.js';
+import { subscribeCommerceAvailability } from './core/commerce-availability-store.js';
 import { relayStatusLabel } from './core/realtime-sync.js';
 // El back office —negocio, reparto, producción y sandbox— entra recién cuando
 // hace falta. Para un cliente eran 759 KB de descarga que nunca se renderizaban.
@@ -1049,6 +1050,56 @@ function applyProductionTrackingCopy() {
   });
 }
 
+/*
+ * LO QUE EL BACKEND DIJO SOBRE EL HORARIO Y LA COBERTURA ENVEJECE.
+ *
+ * Una pestaña que quedó abierta a la tarde seguía diciendo «Estamos tomando
+ * pedidos» —y el carrito sin el aviso de cerrado— a la hora en que el local ya
+ * había cerrado; al revés, quien entró antes de la apertura seguía viendo
+ * «Cerrado» con el local abierto. El repositorio vuelve a preguntar en cada
+ * vuelta a la pestaña, con la dirección de la última consulta; acá se dibuja
+ * lo que contestó.
+ *
+ * No se calcula nada acá: el horario lo evalúa el servidor. Si la consulta
+ * falla, el repositorio deja el estado en «no sé» y la tienda deja de afirmar.
+ */
+let availabilityContext = { channel: 'delivery' };
+
+function askCommerceAvailability() {
+  let repository = null;
+  try {
+    repository = getOrderRepository();
+  } catch (_) {
+    repository = null;
+  }
+  if (typeof repository?.refreshCommerceAvailability !== 'function') return;
+  // El repintado no cuelga de esta promesa: lo dispara el almacén cuando la
+  // respuesta cambia (ver `watchCommerceAvailability`), venga de acá o de la
+  // reconciliación del repositorio.
+  repository.refreshCommerceAvailability(availabilityContext)
+    .catch(() => { /* el estado ya volvió a «no sé»: no hay nada que deshacer */ });
+}
+
+/*
+ * El rótulo de la home, el chip de dirección y el aviso del carrito leen la
+ * misma respuesta: cuando cambia se repintan los tres, una vez por turno. El
+ * repositorio ya vuelve a preguntar en cada vuelta a la pestaña; lo que faltaba
+ * era que alguien dibujara lo que contestó.
+ */
+function watchCommerceAvailability() {
+  let queued = false;
+  subscribeCommerceAvailability(() => {
+    if (queued) return;
+    queued = true;
+    queueMicrotask(() => {
+      queued = false;
+      applyBusinessConfig();
+      renderCustomerHome();
+      renderCart();
+    });
+  });
+}
+
 function applyWhatsappAvailability() {
   const config = getBusinessConfig();
   const whatsappReady = Boolean(config.whatsappVerified && String(config.whatsappNumber || '').replace(/\D/g, '').length >= 8);
@@ -1330,6 +1381,7 @@ function bindEvents() {
     const returnTo = normalizeView(requestedReturn) || 'cart';
     setActiveView(returnTo);
   });
+  watchCommerceAvailability();
   // El destino de la entrega lo resuelve el checkout de forma asíncrona. El chip
   // «Enviar a» del encabezado se entera acá, para no quedar diciendo «Elegí tu
   // dirección» sobre una dirección que el checkout ya eligió.
@@ -1340,17 +1392,13 @@ function bindEvents() {
     // repositorio deja el estado en «no sé» y la tienda no afirma nada; quien
     // decide de verdad es el alta del pedido.
     const address = event?.detail?.address || null;
-    const repository = getOrderRepository();
-    if (typeof repository?.refreshCommerceAvailability !== 'function') return;
-    repository.refreshCommerceAvailability({
+    availabilityContext = {
       channel: 'delivery',
       latitude: address?.latitude ?? null,
       longitude: address?.longitude ?? null,
       neighborhood: address?.neighborhood || '',
-    }).then(() => {
-      renderCustomerHome();
-      renderCart();
-    }).catch(() => { /* el estado ya volvió a «no sé»: no hay nada que deshacer */ });
+    };
+    askCommerceAvailability();
   });
   window.addEventListener('pagehide', () => {
     // Al ir a segundo plano Chrome puede descartar la pestaña del rider. Se

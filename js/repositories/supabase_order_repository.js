@@ -169,6 +169,7 @@ export function createSupabaseOrderRepository({
   let catalogProductCount = 0;
   let catalogLoadGeneration = 0;
   let availabilityLoadGeneration = 0;
+  let lastAvailabilityContext = null;
   let businessStatus = {
     state: 'idle',
     orderingReady: false,
@@ -488,9 +489,17 @@ export function createSupabaseOrderRepository({
   // los calcula: los pregunta. El contexto viaja con lo mínimo necesario —punto
   // confirmado y barrio declarado— y ninguna tarifa: mandarla sería ofrecerle al
   // servidor un número que no va a mirar.
-  async function refreshCommerceAvailability({
-    channel = 'delivery', latitude = null, longitude = null, neighborhood = '',
-  } = {}) {
+  /*
+   * La reconciliación de cada vuelta a la pestaña pregunta sin argumentos. Sin
+   * recordar el último destino preguntaba «sin dirección», y esa respuesta
+   * pisaba la cobertura, el envío y el mínimo ya resueltos para la dirección
+   * activa: el carrito los perdía hasta que la persona volviera a elegirla.
+   */
+  async function refreshCommerceAvailability(requested) {
+    if (requested && typeof requested === 'object') lastAvailabilityContext = requested;
+    const {
+      channel = 'delivery', latitude = null, longitude = null, neighborhood = '',
+    } = lastAvailabilityContext || {};
     const generation = ++availabilityLoadGeneration;
     const context = {};
     const lat = Number(latitude);
@@ -571,7 +580,42 @@ export function createSupabaseOrderRepository({
       deliveryEnabled,
       pickupEnabled,
     };
+    /*
+     * LO QUE DICE LA FILA DEL COMERCIO SE PUBLICA CON LA COMPUERTA, NO DESPUÉS.
+     *
+     * La compuerta de la tienda (`reconcileProductionReadiness`) se abría acá y
+     * la configuración visible —si toma pedidos, si hace envíos, si se retira—
+     * recién se escribía después de esperar el contacto público, que es otro
+     * viaje al backend. Si el catálogo llegaba en ese hueco, la home abría con
+     * la configuración por omisión: medido con el contacto tardando 3 s, la
+     * tienda abierta decía «Ahora no estamos tomando pedidos» con el punto rojo
+     * y las dos modalidades de entrega ocultas durante 2,4 s. Es una afirmación
+     * falsa en la primera pantalla, y en una conexión lenta dura lo suficiente
+     * para leerla e irse.
+     *
+     * Sólo se escribe si algo cambió: esta función corre también en cada
+     * reanudación y no tiene que costar un render de más cuando nada se movió.
+     */
+    const businessFields = {
+      businessName: sanitizeText(data.name, { fallback: 'TABA', maxLength: 80 }),
+      name: sanitizeText(data.name, { fallback: 'TABA', maxLength: 80 }),
+      subtitle: 'Tienda 24/7',
+      address: sanitizeText(data.address, { fallback: 'Dirección no publicada', maxLength: 180 }),
+      deliveryFee: normalizeMoneyValue(data.delivery_fee, 0),
+      minDeliveryOrder: normalizeMoneyValue(data.minimum_delivery_subtotal, 0),
+      orderingDetailsVerified: orderingReady,
+      deliveryEnabled,
+      pickupEnabled,
+      currency: sanitizeText(data.currency_code, { fallback: 'ARS', maxLength: 3 }).toUpperCase(),
+      businessLocationVerified: false,
+    };
+    // Primero la compuerta: el render que dispara la escritura tiene que leer la
+    // compuerta nueva y la configuración nueva juntas.
     reconcileProductionReadiness();
+    const published = getState().businessConfig || {};
+    if (Object.keys(businessFields).some((key) => published[key] !== businessFields[key])) {
+      updateBusinessConfig(businessFields);
+    }
     const {
       data: publicContactPayload,
       error: publicContactError,
@@ -586,22 +630,12 @@ export function createSupabaseOrderRepository({
       : sanitizeText(publicContact?.whatsapp_phone, { maxLength: 40 });
     const whatsappDigits = whatsappNumber.replace(/\D/g, '');
     updateBusinessConfig({
-      businessName: sanitizeText(data.name, { fallback: 'TABA', maxLength: 80 }),
-      name: sanitizeText(data.name, { fallback: 'TABA', maxLength: 80 }),
-      subtitle: 'Tienda 24/7',
-      address: sanitizeText(data.address, { fallback: 'Dirección no publicada', maxLength: 180 }),
+      ...businessFields,
       whatsappNumber,
       whatsappVerified: !publicContactError
         && publicContact?.whatsapp_verified === true
         && whatsappDigits.length >= 8
         && whatsappDigits.length <= 15,
-      deliveryFee: normalizeMoneyValue(data.delivery_fee, 0),
-      minDeliveryOrder: normalizeMoneyValue(data.minimum_delivery_subtotal, 0),
-      orderingDetailsVerified: orderingReady,
-      deliveryEnabled,
-      pickupEnabled,
-      currency: sanitizeText(data.currency_code, { fallback: 'ARS', maxLength: 3 }).toUpperCase(),
-      businessLocationVerified: false,
     });
     // Primera pregunta, sin dirección todavía: alcanza para saber si el comercio
     // está abierto y qué barrios se pueden elegir. La cobertura concreta se

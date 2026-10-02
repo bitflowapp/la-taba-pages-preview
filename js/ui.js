@@ -1,5 +1,7 @@
 import { renderStableCatalog } from './core/stable-catalog-dom.js';
 import { getBusinessConfig } from './core/business-config-store.js';
+import { getCommerceAvailability, hasResolvedDelivery } from './core/commerce-availability-store.js';
+import { nextOpeningLabel } from './core/store-entry.js';
 import { BRAND } from './config.js';
 import { businessMapsSearchUrl, mapsSearchUrl } from './core/business-location.js';
 import { categories } from './data.js';
@@ -90,7 +92,7 @@ import {
   isPurchasableBeverageProduct,
   isVisibleBeverageProduct,
 } from './core/beverage-home-sections.js';
-import { CATEGORY_GLYPH_KEYS, STORE_CATEGORY_ORDER } from './core/store-taxonomy.js';
+import { CATEGORY_GLYPH_KEYS, STORE_CATEGORY_ORDER, isAlcoholicCategory } from './core/store-taxonomy.js';
 import { hasPurchasableDestination, storyCtaDestination } from './core/purchasable-destination.js';
 import { resolveRetailProductId } from './core/retail-packaging.js';
 import { sandboxTrackingPresentation } from './core/sandbox-tracking-presentation.js';
@@ -282,13 +284,26 @@ export function applyBusinessConfig() {
     // (`business_service_hours` vacía, `hours_enforced=false`), así que la
     // aplicación no sabe si el local está abierto — sólo sabe que acepta
     // pedidos.
-    status.textContent = demo
+    //
+    // SALVO QUE EL BACKEND LO HAYA DICHO. Con el horario exigido,
+    // `commerce_availability` contesta `is_open` y la próxima apertura, y el
+    // checkout ya frenaba con «El comercio está cerrado en este momento». La
+    // home seguía leyendo sólo la bandera: medido con el servidor diciendo
+    // cerrado, este rótulo decía «Estamos tomando pedidos», la persona armaba
+    // el carrito y se enteraba al confirmar. Es la misma respuesta y se lee del
+    // mismo lugar; sin respuesta (`known` en falso) no se afirma nada nuevo.
+    const closedNow = !demo && detailsVerified && storeClosedByServer();
+    const reopening = closedNow ? nextOpeningLabel(getCommerceAvailability()) : '';
+    const statusText = demo
       ? 'Pedidos disponibles'
-      : detailsVerified
-        ? 'Estamos tomando pedidos'
-        : 'Ahora no estamos tomando pedidos';
-    status.classList.toggle('is-closed', !demo && !detailsVerified);
-    status.classList.toggle('is-soon', !demo && !detailsVerified);
+      : !detailsVerified
+        ? 'Ahora no estamos tomando pedidos'
+        : closedNow
+          ? (reopening ? `Cerrado · ${reopening}` : 'Ahora estamos cerrados')
+          : 'Estamos tomando pedidos';
+    if (status.textContent !== statusText) status.textContent = statusText;
+    status.classList.toggle('is-closed', !demo && (!detailsVerified || closedNow));
+    status.classList.toggle('is-soon', !demo && (!detailsVerified || closedNow));
   }
   const statusItems = $$('.app-home .status-item');
   const seps = $$('.app-home .status-sep');
@@ -307,6 +322,22 @@ export function applyBusinessConfig() {
     item.hidden = !label;
     if (seps[index]) seps[index].hidden = !label;
   });
+}
+
+/**
+ * El backend contestó, y contestó que ahora está cerrado POR HORARIO.
+ *
+ * Las tres cosas, no sólo `isOpen`. En el backend `is_open` únicamente puede
+ * ser falso con el horario exigido (`business_is_open` devuelve verdadero
+ * mientras `hours_enforced` esté apagado), así que un «cerrado» sin horario
+ * exigido no es una respuesta del comercio: es una respuesta vacía o mal
+ * formada, y sobre eso la home no afirma nada.
+ */
+function storeClosedByServer() {
+  const availability = getCommerceAvailability();
+  return availability.known === true
+    && availability.hoursEnforced === true
+    && availability.isOpen === false;
 }
 
 // Un dato del comercio existe para el cliente sólo si está PUBLICADO. Las
@@ -1262,8 +1293,17 @@ function renderHomeHeroPromo() {
     return;
   }
   slot.hidden = false;
+  // LA LEYENDA DE ALCOHOL. La puerta de apertura es la fotografía de una cerveza
+  // de marca que lleva a la góndola de cervezas: es publicidad de una bebida
+  // alcohólica, y es la imagen más grande de la home. El motor de campañas le
+  // agrega a ESA MISMA caja la leyenda que pide la ley 24.788 —y explica por qué
+  // en `campaign-engine.js`—, pero la puerta de siempre, que es la que se ve
+  // todos los días, salía sin ella. Es la misma constante, por la misma regla, y
+  // va fuera del botón por la misma razón: es texto que se lee, no parte del
+  // nombre de la acción.
+  const legal = isAlcoholicCategory(hero.categoryId);
   renderCatalogSurface(slot, `
-    <button class="home-hero-promo" type="button" data-category-id="${escapeHtml(hero.categoryId)}" aria-label="${escapeHtml(`${hero.title}. ${hero.subtitle} Ver ${category.name.toLowerCase()}`)}">
+    <button class="home-hero-promo${legal ? ' has-legal' : ''}" type="button" data-category-id="${escapeHtml(hero.categoryId)}" aria-label="${escapeHtml(`${hero.title}. ${hero.subtitle} Ver ${category.name.toLowerCase()}`)}">
       <span class="home-hero-promo-media" aria-hidden="true"></span>
       <span class="home-hero-promo-copy">
         <small>${escapeHtml(hero.eyebrow)}</small>
@@ -1271,7 +1311,8 @@ function renderHomeHeroPromo() {
         <span class="home-hero-promo-sub">${escapeHtml(hero.subtitle)}</span>
         <span class="home-hero-promo-cta">Ver ${escapeHtml(category.name.toLowerCase())} <span aria-hidden="true">→</span></span>
       </span>
-    </button>`);
+    </button>
+    ${legal ? `<p class="home-hero-promo-legal">${escapeHtml(ALCOHOL_LEGAL_NOTICE)}</p>` : ''}`);
 }
 
 // ─── Selección del local (tarjetas con estado honesto) ───────────────────────

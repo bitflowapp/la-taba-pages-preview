@@ -248,8 +248,14 @@ body[data-active-view="home"] .topbar-address .address-chip-text small {
   min-width: 0;
 }
 
+/* `order: 1` es lo que hace cierta la frase de arriba. En el HTML el rubro está
+   ENTRE el nombre y el estado, y como ocupa el renglón entero partía la fila en
+   tres: nombre / rubro / estado. Medido a 390 × 844, el estado quedaba solo en
+   un tercer renglón de 26 px, que son los que le faltan al primer «Agregar»
+   para despegarse del pliegue. El orden de lectura no cambia. */
 .brand-hero-place {
   flex: 1 0 100%;
+  order: 1;
 }
 
 /* Fila 2 — HISTORIAS. Emblema + un círculo por historia, en fila. Se desplaza
@@ -1992,7 +1998,55 @@ body[data-active-view="home"] .home-sections {
    píxeles a mitad de la vitrina. El anillo de foco cabe igual, porque la
    sección ya reserva 16px a cada lado. */
 .home-hero-promo-slot:not([hidden]) {
+  position: relative;
   padding: 0;
+}
+
+/* La leyenda que pide la ley 24.788 para la publicidad de bebidas con alcohol.
+   Misma letra, mismo lugar y misma reserva que en las piezas animadas
+   (`.cmp-legal` en campaigns.css): la puerta y la campaña ocupan la misma caja
+   y tienen que medir lo mismo, o el primer precio se mueve al cambiar una por
+   la otra. */
+.home-hero-promo-legal {
+  position: absolute;
+  z-index: 2;
+  right: 16px;
+  bottom: 6px;
+  left: 16px;
+  margin: 0;
+  color: rgb(255 255 255 / 80%);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  pointer-events: none;
+  text-shadow: 0 1px 5px rgb(5 7 10 / 82%);
+}
+
+.home-hero-promo.has-legal .home-hero-promo-copy {
+  padding-bottom: 22px;
+}
+
+/* En la banda del teléfono no entra todo: el rótulo le deja su renglón a la
+   leyenda, igual que en la pieza animada. */
+@media (max-width: 699px) {
+  .home-hero-promo.has-legal .home-hero-promo-copy small {
+    display: none;
+  }
+
+  .home-hero-promo-legal {
+    right: 14px;
+    bottom: 5px;
+    left: 14px;
+    font-size: 9.5px;
+    letter-spacing: 0;
+  }
+}
+
+@media (min-width: 400px) and (max-width: 699px) {
+  .home-hero-promo-legal {
+    font-size: 10px;
+  }
 }
 
 /* En teléfono el hero es una BANDA, no un afiche.
@@ -2148,6 +2202,10 @@ body[data-active-view="home"] .home-sections {
     padding: 9px 14px;
   }
 
+  .home-hero-promo.has-legal .home-hero-promo-copy {
+    padding-bottom: 19px;
+  }
+
   .brand-hero {
     gap: 8px;
   }
@@ -2300,6 +2358,49 @@ body[data-active-view="home"] .home-sections {
   .home-hero-promo:hover .home-hero-promo-cta {
     background: var(--taba-red-hover);
     color: var(--taba-white);
+  }
+
+  .home-hero-promo.has-legal .home-hero-promo-copy {
+    padding-bottom: 38px;
+  }
+
+  .home-hero-promo-legal {
+    right: 20px;
+    bottom: 12px;
+    left: 20px;
+    font-size: 11.5px;
+  }
+}
+
+/* ESCRITORIO BAJO. El afiche de 268 px está pensado para una pantalla alta; en
+   una notebook de 1366 × 768 —la más común— se llevaba un tercio de la ventana
+   y la primera góndola arrancaba en 658: la primera pantalla mostraba el
+   encabezado, la foto, el buscador y los rubros, y ni un producto con su
+   precio. Es el mismo criterio que los escalones del teléfono: el corte se
+   escribe por lo que aprieta, que es el ALTO. A 1920 × 1080 no cambia nada. */
+@media (min-width: 700px) and (max-height: 820px) {
+  .home-hero-promo,
+  .home-hero-promo-copy {
+    min-height: 156px;
+  }
+
+  .home-hero-promo-copy {
+    padding-block: 16px;
+  }
+
+  /* El subtítulo explica; con esta altura cede su lugar, igual que en la banda
+     del teléfono. Sigue en el nombre accesible del botón. */
+  .home-hero-promo-sub {
+    display: none;
+  }
+
+  .home-hero-promo.has-legal .home-hero-promo-copy {
+    padding-bottom: 36px;
+  }
+
+  .home-hero-promo-cta {
+    min-height: 42px;
+    margin-top: 10px;
   }
 }
 

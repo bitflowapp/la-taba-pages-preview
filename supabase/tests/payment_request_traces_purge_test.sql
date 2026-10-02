@@ -23,6 +23,11 @@ create extension if not exists pgtap with schema extensions;
 select plan(41);
 
 -- ── Fixture ────────────────────────────────────────────────────────────────
+-- El punto de partida no depende de lo que haya quedado en la base: si un ensayo de
+-- entrega dejó la pausa puesta, acá se levanta (dentro de la transacción) para que la
+-- sección 5 sea la única que prueba la pausa.
+update private.a1_a4_release_control_v5 set paused = false where paused;
+
 create function pg_temp.hash() returns text language sql as $$ select encode(gen_random_bytes(32), 'hex') $$;
 
 create function pg_temp.usuario(p_tag text) returns uuid language plpgsql as $$

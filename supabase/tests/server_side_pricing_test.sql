@@ -616,7 +616,12 @@ select is(pg_temp.checkout('control-envio', pg_temp.items('{"p":"lata","q":2}'),
   'checkout · delivery: mismo envio y mismo total; se van a cobrar 2800');
 select is(pg_temp.stock('lata'), '496 publicado', 'stock de la lata: 500 - 2 - 2');
 select is(
-  (select string_agg(r.quantity::text || ' ' || r.status, ',' order by r.product_id) from public.inventory_reservations r),
+  -- Sólo las reservas de los comercios de esta prueba: la base del gate trae reservas
+  -- confirmadas de pasos anteriores y la tabla entera no es de esta prueba.
+  (select string_agg(r.quantity::text || ' ' || r.status, ',' order by r.product_id)
+     from public.inventory_reservations r
+     join public.checkout_sessions s on s.id = r.checkout_session_id
+    where s.business_id in (select id from precio_ids)),
   '2 active,2 active', 'cada sesion reservo exactamente lo que va a cobrar');
 select is(pg_temp.pedidos('A') || ' pedidos, ' || pg_temp.sesiones('A') || ' sesiones', '2 pedidos, 2 sesiones',
   'punto de partida de A: dos pedidos en efectivo y dos sesiones de pago');

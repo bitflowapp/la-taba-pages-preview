@@ -123,7 +123,9 @@ begin
   insert into public.mp_seller_connections(business_id,environment,seller_id,application_id,status,protected_tokens,expires_at)
   values (v_business, 'test', 'collector-traza', 'app-traza', 'connected', 'ciphertext-only-local-fixture', now() + interval '2 days');
   insert into public.local_devices(id, business_id, device_name, status, secret_hash)
-  values ('f9000000-0000-4000-8000-000000000001', v_business, 'Caja traza', 'active', repeat('a', 64));
+  -- Hash propio de esta prueba: es único en la tabla y la base del gate ya trae uno con repeat('a', 64).
+  values ('f9000000-0000-4000-8000-000000000001', v_business, 'Caja traza', 'active',
+    encode(digest('order-trace-test:caja-traza', 'sha256'), 'hex'));
   insert into public.business_print_settings(business_id, auto_print_enabled, kitchen_ticket_on, order_ticket_on)
   values (v_business, true, 'accepted', 'submitted');
 

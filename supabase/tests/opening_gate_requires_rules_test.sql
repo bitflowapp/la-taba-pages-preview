@@ -315,7 +315,10 @@ select is(pg_temp.dato('G', 'FISCAL_CONFIG') ->> 'status', 'CONFIGURED', 'FISCAL
 -- Impresion.
 insert into public.business_print_settings(business_id, auto_print_enabled) values (pg_temp.id('G'), true);
 select is(pg_temp.dato('G', 'PRINTER_CONFIG') ->> 'status', 'MISSING', 'impresion automatica encendida sin un equipo activo: MISSING');
-insert into public.local_devices(business_id, device_name, status, secret_hash) values (pg_temp.id('G'), 'Caja', 'active', repeat('a', 64));
+-- El hash es único en toda la tabla y la base del gate ya trae dispositivos confirmados
+-- (las filas fiscales legadas usan repeat('a', 64)): acá va uno propio de esta prueba.
+insert into public.local_devices(business_id, device_name, status, secret_hash)
+values (pg_temp.id('G'), 'Caja', 'active', encode(digest('opening-gate-requires-rules:caja', 'sha256'), 'hex'));
 select is(pg_temp.dato('G', 'PRINTER_CONFIG') ->> 'status', 'CONFIGURED', 'con un equipo activo: CONFIGURED');
 -- Pedidos abandonados.
 update public.businesses set abandoned_order_minutes = 45 where id = pg_temp.id('G');

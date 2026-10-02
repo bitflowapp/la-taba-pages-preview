@@ -14,14 +14,23 @@ const TOKEN = ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
   'test-signature'].join('.');
 
 // Only this in-memory backend is sellable. CP rows and commercial values stay untouched.
-export async function openRuntimeCatalog(page, { realtime = true } = {}) {
+//
+// Optional, all additive (the defaults are the fixture every existing spec uses):
+//   mapRow        (row, index) => row    reshape a product before it is served
+//   availability  object | () => object  answer for the `commerce_availability` RPC
+//   beforeGoto    (page) => Promise      register extra routes; they win over this fixture's
+//   view          'catalog' | 'home'     where the store opens
+//   waitForCatalog false                 do not wait for the 46 cards (boot-failure cases)
+export async function openRuntimeCatalog(page, {
+  realtime = true, mapRow = null, availability = null, beforeGoto = null, view = 'catalog', waitForCatalog = true,
+} = {}) {
   if (process.env.TABA_RUNTIME_BEFORE_UI) await page.route('**/js/ui.js', (route) => route.fulfill({
     contentType: 'application/javascript', path: process.env.TABA_RUNTIME_BEFORE_UI,
   }));
   const rows = structuredClone(snapshot.products).map((p) => ({ ...p,
     business_id: BUSINESS_ID, price: 2500, price_status: 'confirmed', stock: 10,
     available: true, is_active: true, is_verified: true,
-  }));
+  })).map((row, index) => (mapRow ? mapRow(row, index) : row));
   const counters = { products: 0, images: 0, joined: 0, reads: [] };
   const sockets = [];
   await skipInstallInvitation(page);
@@ -85,6 +94,10 @@ export async function openRuntimeCatalog(page, { realtime = true } = {}) {
       delivery_fee: 0, minimum_delivery_subtotal: 0, is_active: true, status: 'open' });
     if (url.pathname.endsWith('/get_public_business_contact')) return json([{ whatsapp_number: '', whatsapp_verified: false }]);
     if (url.pathname.endsWith('/get_mercadopago_checkout_availability')) return json({ available: false });
+    if (availability && url.pathname.endsWith('/commerce_availability')) {
+      counters.availability = (counters.availability || 0) + 1;
+      return json(typeof availability === 'function' ? availability() : availability);
+    }
     if (url.pathname.endsWith('/auth/v1/user')) return json(USER);
     if (url.pathname.includes('/auth/')) return json({ access_token: TOKEN, refresh_token: 'test-refresh', token_type: 'bearer', expires_in: 3600,
       expires_at: Math.floor(Date.now()/1000)+3600, user: USER });
@@ -95,8 +108,11 @@ export async function openRuntimeCatalog(page, { realtime = true } = {}) {
       provider: 'supabase', supabaseUrl: backend, publishableKey: 'sb_publishable_test_key', businessId, pollMs: 5000,
     } };
   }, { backend: BACKEND, businessId: BUSINESS_ID });
-  await page.goto('/#catalog');
-  await expect(page.locator(`${GRID} .product-card`)).toHaveCount(46, { timeout: 20000 });
+  if (beforeGoto) await beforeGoto(page);
+  await page.goto(view === 'home' ? '/' : `/#${view}`);
+  if (waitForCatalog && view === 'catalog') {
+    await expect(page.locator(`${GRID} .product-card`)).toHaveCount(rows.length, { timeout: 20000 });
+  }
   await expect(page.locator('html')).toHaveAttribute('data-taba-startup', 'ready', { timeout: 20000 });
   await page.evaluate(() => document.fonts.ready);
   await page.bringToFront();

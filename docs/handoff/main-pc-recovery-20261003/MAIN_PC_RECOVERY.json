@@ -18,7 +18,7 @@
     "head": "6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a",
     "status": "",
     "upstream": "origin/hardening/taba-ecommerce-production",
-    "current_remote_head": "dfedfcc1e5ca6abb5b61a7eec47c310733f2bb6c",
+    "current_remote_head": "2edd7cbf1df6af2e9629e0df89f21c7e16c3cf5a",
     "remote_handoff_snapshot": "6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a",
     "ci": [
       {
@@ -120,6 +120,14 @@
           "workflowName": "Validate release candidate"
         }
       ],
+      "url": "https://github.com/bitflowapp/la-taba-pages-preview/pull/133"
+    },
+    "commits_ahead_in_origin": 7,
+    "pr_final": {
+      "headRefOid": "2edd7cbf1df6af2e9629e0df89f21c7e16c3cf5a",
+      "isDraft": true,
+      "number": 133,
+      "state": "OPEN",
       "url": "https://github.com/bitflowapp/la-taba-pages-preview/pull/133"
     }
   },
@@ -236,6 +244,18 @@
     "npm_run_check": "PASS; syntax, config, assets, precache, release hygiene/identity, location, encoding and secret scanner",
     "hosted_reads_or_writes_performed": false,
     "deployment_or_real_money_actions": false,
-    "external_watchdog_retarget": "OWNER_APPROVAL_REQUIRED / Owner 7; not performed"
-  }
+    "external_watchdog_retarget": "OWNER_APPROVAL_REQUIRED / Owner 7; not performed",
+    "head": "5f3caac50388bd04e5a8ea92f3236965c0844f71",
+    "remote_head": "5f3caac50388bd04e5a8ea92f3236965c0844f71",
+    "pr": {
+      "headRefOid": "5f3caac50388bd04e5a8ea92f3236965c0844f71",
+      "isDraft": true,
+      "mergeable": "MERGEABLE",
+      "number": 134,
+      "state": "OPEN",
+      "url": "https://github.com/bitflowapp/la-taba-pages-preview/pull/134"
+    }
+  },
+  "final_verified_at": "2026-10-03T21:41:13.170645+00:00",
+  "original_worktrees_unchanged": true
 }

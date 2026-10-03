@@ -16,7 +16,7 @@ Evidencia: `artifacts/taba-autonomous-20261003/`.
 | COMMITS | 60 (lista al final; `47d9ffe9` lo dejó la sesión anterior sin push y lo pusheó esta) |
 | PUSH | todo pusheado a `origin/hardening/taba-ecommerce-production` |
 | PR | ninguno nuevo (la rama sigue apilada sobre #130, que está abierto; abrir el PR es decisión del dueño) |
-| CI | Completos verdes: 37123390677 (`a7eb622c`) y 37125497727 (`011717fa`). Stack: 37129059684 (`2bc7218a`) verde, 450/455, 0 FAIL. **Final: run 37129892043 sobre `59fa86b8`, EN CURSO al cortarse la sesión por límite de uso: verificar su resultado** (la corrida de `1470b3ff` tenía base de datos y Windows en verde; su job web lo canceló el despacho final) |
+| CI | Completos verdes: 37123390677 (`a7eb622c`) y 37125497727 (`011717fa`). Stack: 37129059684 (`2bc7218a`) verde, 450/455, 0 FAIL. Run 37129892043 sobre `59fa86b8`: base de datos y Windows en verde, **job web en FAIL por mi evidencia** (`release-gates-cp-1125.*` nombra el interruptor dentro de `artifacts/`, fuera de los lugares que permitía `tests/mercadopago-real-money-switch.test.mjs`, que ahora acepta la evidencia de sólo lectura). **CI re-despachado sobre el commit que lo corrige: verificar su resultado** (la corrida de `1470b3ff` tenía base de datos y Windows en verde; su job web lo canceló el despacho final) |
 
 ## QA
 

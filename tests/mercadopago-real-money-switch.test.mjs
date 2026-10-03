@@ -39,7 +39,10 @@ test('el interruptor vive sólo en el backend, en las herramientas y en la docum
   const mentions = filesMentioning(SWITCH);
   assert.ok(mentions.length > 0, 'nadie nombra el interruptor: el lector se rompió');
   const allowed = (file) => file.startsWith('supabase/functions/') || file.startsWith('scripts/') || file.startsWith('tests/')
-    || file.startsWith('docs/') || /^[A-Za-z0-9_.-]+\.md$/.test(file);
+    || file.startsWith('docs/') || /^[A-Za-z0-9_.-]+\.md$/.test(file)
+    // La evidencia de sólo lectura (salidas de la compuerta de release, que informan si el interruptor está o no) es
+    // documentación: no es código que lo lea ni lo cargue.
+    || file.startsWith('artifacts/');
   assert.deepEqual(mentions.filter((file) => !allowed(file)), [], 'el interruptor apareció fuera del backend, las herramientas o la documentación');
   // Explícitamente: ni la web, ni una migración, ni una prueba de la base, ni el CI.
   for (const forbidden of ['js/', 'supabase/migrations/', 'supabase/tests/', '.github/', 'deploy/', 'src-tauri/']) {

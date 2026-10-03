@@ -65,9 +65,10 @@ test('publica sólo campos GPS permitidos y detiene el watcher al entregar', asy
 
   assert.equal(published.length, 1);
   assert.deepEqual(Object.keys(published[0].location).sort(), [
-    'accuracy', 'heading', 'lat', 'lng', 'source', 'speed',
+    'accuracy', 'capturedAt', 'heading', 'lat', 'lng', 'source', 'speed',
   ]);
   assert.equal(Object.hasOwn(published[0].location, 'timestamp'), false);
+  assert.equal(typeof published[0].location.capturedAt, 'string');
 
   order = { ...order, workflowStatus: 'delivered' };
   assert.equal(controller.reconcile(), true);

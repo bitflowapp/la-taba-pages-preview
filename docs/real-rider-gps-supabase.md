@@ -14,7 +14,7 @@ Moto G15 rider (Auth + membership rider + pedido asignado)
   -> rider_locations (hora del servidor)
   -> get_public_order_tracking RPC + x-order-token
   -> iPhone cliente (polling tokenizado)
-  -> marcador Leaflet incremental
+  -> marcador MapLibre incremental
 ```
 
 - `js/tracking/production_rider_gps.js` controla el GPS de producción. Sólo
@@ -24,9 +24,19 @@ Moto G15 rider (Auth + membership rider + pedido asignado)
 - `publish_rider_location` vuelve a validar en PostgreSQL Auth, membership,
   asignación, estado, rango, precisión y frecuencia. El navegador no inserta
   filas directamente.
+- `claim_available_rider_order` exige la revision de la cola y serializa la
+  toma con `FOR UPDATE`. El mismo rider puede reintentar sin segundo evento;
+  otro rider recibe conflicto.
+- `start_rider_delivery` limita `assigned/picked_up -> on_the_way` al rider
+  asignado y delega actor, transición y CAS en `transition_order` de Gate 1.
+- `publish_rider_location` exige `orders.revision`, valida antigüedad y
+  frecuencia, y asigna `rider_locations.sequence` única más `recorded_at` de
+  servidor. `captured_at` sólo sirve para rechazar muestras futuras o viejas.
 - `js/tracking/customer_tracking_poll.js` consulta exclusivamente
   `get_public_order_tracking` con el token de la orden. No hay SELECT ni canal
-  Realtime a `rider_locations` desde el cliente.
+  Realtime crudo a `rider_locations` desde el cliente. Realtime es señal para
+  cambios de pedido; PostgreSQL es la autoridad y el DTO tokenizado se
+  reconsulta tras foco, pageshow, visibilidad y regreso de red.
 - El DTO público contiene únicamente estado operativo, ETA confiable y último
   punto redondeado. No contiene datos de contacto, dirección, ítems, totales,
   UUID internos, token ni historial de coordenadas.
@@ -60,7 +70,8 @@ respuestas HTTP:
 Producción no calcula rutas, no geocodifica direcciones y no muestra comercio,
 destino ni polilínea: todavía no existe un contrato consentido para esas
 coordenadas. Leaflet sólo centra el mapa en la posición real publicada por el
-rider. La ruta ficticia permanece exclusivamente en sandbox.
+  rider. La ruta ficticia permanece exclusivamente en sandbox. MapLibre sólo
+  centra el mapa en la posición real publicada; no inventa ruta ni destino.
 
 ## Corte y revocación
 
@@ -80,7 +91,7 @@ domicilios, teléfonos ni coordenadas reales en evidencias.
 3. Tocar Compartir GPS y aceptar el permiso. Registrar sólo hora, precisión
    aproximada y resultado; no la latitud/longitud.
 4. Cambiar cinco veces de posición de forma controlada. En el iPhone verificar
-   que cada cambio llega en hasta un ciclo de cinco segundos y que Leaflet
+   que cada cambio llega en hasta un ciclo de cinco segundos y que MapLibre
    conserva su instancia y zoom.
 5. Pausar conectividad o detener el GPS: comprobar las bandas demorada y
    perdida sin movimiento ni ETA falsos.

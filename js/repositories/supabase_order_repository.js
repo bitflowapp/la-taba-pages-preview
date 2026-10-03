@@ -784,13 +784,35 @@ export function createSupabaseOrderRepository({
 
       const expectedStatus = normalizeWorkflowStatus(row.status);
       const nextStatus = normalizeWorkflowStatus(status);
-      const { data, error, status: responseStatus } = await client.rpc('change_order_status', {
+      let rpcName = 'change_order_status';
+      let rpcArgs = {
         p_order_id: row.id,
         p_expected_status: expectedStatus,
         p_new_status: nextStatus,
-      });
+      };
+      if (nextStatus === 'on_the_way' && row.delivery_mode === 'delivery') {
+        const expectedRevision = normalizeOrderRevision(row.revision);
+        if (expectedRevision === null) {
+          return repositoryResult(false, {
+            errorCode: 'REVISION_REQUIRED',
+            message: 'Actualizá la bandeja antes de iniciar el reparto.',
+          });
+        }
+        rpcName = 'start_rider_delivery';
+        rpcArgs = {
+          p_order_id: row.id,
+          p_expected_revision: expectedRevision,
+        };
+      }
+      const { data, error, status: responseStatus } = await client.rpc(rpcName, rpcArgs);
       if (error) {
-        return failedQuery(error, responseStatus, readableStatusError(error));
+        return failedQuery(
+          error,
+          responseStatus,
+          rpcName === 'start_rider_delivery'
+            ? readableRiderAssignmentError(error)
+            : readableStatusError(error),
+        );
       }
 
       const updatedRow = unwrapOrderRow(data) || await fetchOrderByPublicId(row.id);
@@ -832,18 +854,25 @@ export function createSupabaseOrderRepository({
     async claimRiderOrder(publicCode, {
       expectedStatus = 'ready',
       expectedRiderId = null,
+      expectedRevision = null,
     } = {}) {
       const cleanPublicCode = sanitizeText(publicCode, { maxLength: 80 });
       if (!cleanPublicCode) {
         return repositoryResult(false, { message: 'Ingresá un código de pedido válido.' });
       }
       const cleanExpectedRiderId = isUuid(expectedRiderId) ? expectedRiderId : null;
-      const { data, error, status } = await client.rpc('claim_available_rider_order', {
+      const rpcArgs = {
         p_business_id: businessId,
         p_public_code: cleanPublicCode,
         p_expected_status: normalizeWorkflowStatus(expectedStatus),
         p_expected_rider_user_id: cleanExpectedRiderId,
-      });
+      };
+      const cleanExpectedRevision = normalizeOrderRevision(expectedRevision);
+      // Gate 1 rows always have a revision. The conditional keeps old local
+      // repository mocks readable; a real server without the argument cannot
+      // resolve the Gate 2 function and therefore fails closed.
+      if (cleanExpectedRevision !== null) rpcArgs.p_expected_revision = cleanExpectedRevision;
+      const { data, error, status } = await client.rpc('claim_available_rider_order', rpcArgs);
       if (error) {
         return failedQuery(error, status, readableRiderAssignmentError(error));
       }
@@ -980,27 +1009,37 @@ export function createSupabaseOrderRepository({
 
       const { data, error, status } = await client.rpc('publish_rider_location', {
         p_order_id: row.id,
+        ...(normalizeOrderRevision(row.revision) !== null
+          ? { p_expected_revision: normalizeOrderRevision(row.revision) }
+          : {}),
         p_lat: normalized.lat,
         p_lng: normalized.lng,
         p_accuracy: normalized.accuracy,
         p_heading: normalized.heading ?? null,
         p_speed: normalized.speed ?? null,
+        ...(normalizeCapturedAt(location?.capturedAt ?? location?.timestamp)
+          ? { p_captured_at: normalizeCapturedAt(location?.capturedAt ?? location?.timestamp) }
+          : {}),
       });
       if (error) return failedQuery(error, status, 'No pudimos publicar la ubicación del rider.');
 
       const serverLocation = normalizeTrackingLocation({
         ...(data && typeof data === 'object' ? data : {}),
         source: 'gps',
-        timestamp: data?.created_at || normalized.lastFixAt,
+        timestamp: data?.recorded_at || data?.created_at || normalized.lastFixAt,
       }) || normalized;
+      const serverSequence = Number(data?.sequence);
+      const locationWithSequence = Number.isSafeInteger(serverSequence) && serverSequence > 0
+        ? { ...serverLocation, sequence: serverSequence }
+        : serverLocation;
       const fullRow = await fetchOrderByPublicId(row.id) || {
         ...row,
         rider_locations: [data, ...(row.rider_locations || [])].filter(Boolean),
       };
       const order = mirrorOrder(fullRow);
-      mirrorGpsLocation(order, serverLocation);
+      mirrorGpsLocation(order, locationWithSequence);
       return repositoryResult(true, {
-        location: serverLocation,
+        location: locationWithSequence,
         order,
         message: 'Ubicación GPS actualizada.',
       });
@@ -1719,6 +1758,7 @@ function normalizeAvailableRiderOrder(row = {}) {
   const packageCount = Number(row.approximate_packages);
   const hasEstimate = row.estimated_minutes !== null && row.estimated_minutes !== undefined;
   const rawEstimate = Number(row.estimated_minutes);
+  const revision = normalizeOrderRevision(row.revision);
   return {
     publicCode,
     generalZone: sanitizeText(row.general_zone, { maxLength: 120 }),
@@ -1736,6 +1776,7 @@ function normalizeAvailableRiderOrder(row = {}) {
     operationalRestrictions: sanitizeText(row.operational_restrictions, { maxLength: 180 }),
     expectedStatus: 'ready',
     expectedRiderId: null,
+    ...(revision !== null ? { revision } : {}),
   };
 }
 
@@ -1796,17 +1837,38 @@ function latestRiderLocation(locations) {
   const gpsLocations = locations.filter((location) => location?.source === 'gps');
   if (!gpsLocations.length) return null;
   const latest = [...gpsLocations].sort((a, b) => (
-    Date.parse(b.created_at || '') - Date.parse(a.created_at || '')
+    compareLocationOrder(b, a)
   ))[0];
-  return normalizeTrackingLocation({
+  const normalized = normalizeTrackingLocation({
     lat: latest.lat,
     lng: latest.lng,
     accuracy: latest.accuracy,
     heading: latest.heading,
     speed: latest.speed,
     source: 'gps',
-    timestamp: latest.created_at,
+    timestamp: latest.recorded_at || latest.created_at,
   });
+  const sequence = Number(latest.sequence);
+  return normalized && Number.isSafeInteger(sequence) && sequence > 0
+    ? { ...normalized, sequence }
+    : normalized;
+}
+
+function compareLocationOrder(left = {}, right = {}) {
+  const leftSequence = Number(left.sequence);
+  const rightSequence = Number(right.sequence);
+  if (Number.isSafeInteger(leftSequence) && Number.isSafeInteger(rightSequence)) {
+    return leftSequence - rightSequence;
+  }
+  return Date.parse(left.recorded_at || left.created_at || '')
+    - Date.parse(right.recorded_at || right.created_at || '');
+}
+
+function normalizeCapturedAt(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const timestamp = typeof value === 'number' ? value : Date.parse(String(value));
+  if (!Number.isFinite(timestamp)) return null;
+  return new Date(timestamp).toISOString();
 }
 
 function statusHistoryFromRow(row, status, createdAt) {

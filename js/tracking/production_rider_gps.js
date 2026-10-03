@@ -52,14 +52,16 @@ export function createProductionRiderGpsController({
       return { ok: true, message: 'La ubicación ya está activa.' };
     }
 
-    stop();
+    const resuming = share.resumeOnPageShow === true && share.orderId === order.id;
+    if (!resuming) stop();
     share = {
-      ...emptyShare(),
+      ...(resuming ? share : emptyShare()),
       orderId: order.id,
       watchId: null,
       state: 'requesting',
       message: 'Solicitando permiso de ubicación…',
       status: normalizeWorkflowStatus(order.workflowStatus || order.status, ''),
+      resumeOnPageShow: false,
     };
     const watchId = navigatorRef.geolocation.watchPosition(
       (position) => { void publishPosition(order.id, position); },
@@ -123,6 +125,7 @@ export function createProductionRiderGpsController({
         heading: candidate.heading,
         speed: candidate.speed,
         source: 'gps',
+        capturedAt: candidate.lastFixAt,
       });
     } catch (_) {
       result = { ok: false, message: 'No pudimos publicar la ubicación. Verificá tu conexión.' };
@@ -171,6 +174,32 @@ export function createProductionRiderGpsController({
     return false;
   }
 
+  // Chrome puede suspender una pestaña del rider al volver de otra app o del
+  // bloqueo de pantalla. Pausar conserva la intención explícita del rider;
+  // resume vuelve a validar rol, asignación y estado antes de pedir otro
+  // watchPosition. Esto no promete ejecución GPS confiable en background.
+  function pause() {
+    if (share.watchId === null || !share.orderId) return false;
+    if (navigatorRef?.geolocation?.clearWatch) {
+      try { navigatorRef.geolocation.clearWatch(share.watchId); } catch (_) { /* no-op */ }
+    }
+    share = {
+      ...share,
+      watchId: null,
+      publishing: false,
+      state: 'paused',
+      message: 'GPS pausado al ocultar la pantalla. Se reanudará al volver.',
+      resumeOnPageShow: true,
+    };
+    emit();
+    return true;
+  }
+
+  function resume() {
+    if (!share.resumeOnPageShow || !share.orderId) return false;
+    return start(share.orderId).ok;
+  }
+
   function stop() {
     const previous = share;
     const stopped = previous.watchId !== null || Boolean(previous.orderId);
@@ -201,7 +230,9 @@ export function createProductionRiderGpsController({
   return {
     destroy,
     getSnapshot: snapshot,
+    pause,
     reconcile,
+    resume,
     start,
     stop,
   };
@@ -219,6 +250,7 @@ function emptyShare() {
     lastCapturedAt: '',
     lastPublishedAt: 0,
     publishing: false,
+    resumeOnPageShow: false,
   };
 }
 

@@ -250,6 +250,7 @@ export async function handleProductionOperationsAction(target) {
       {
         expectedStatus: riderClaim.dataset.expectedStatus || 'ready',
         expectedRiderId: null,
+        expectedRevision: riderClaim.dataset.expectedRevision || null,
       },
     );
     if (result.ok) await refreshRiderOrders();
@@ -316,7 +317,22 @@ export function handleProductionOperationsViewChange(view) {
 }
 
 export function handleProductionOperationsPageHide() {
+  if (gpsController?.pause) {
+    const paused = gpsController.pause();
+    gpsShare = gpsController.getSnapshot?.() || emptyGpsShare();
+    if (paused) notify();
+    return paused;
+  }
   return stopGpsShare();
+}
+
+export function handleProductionOperationsPageShow() {
+  const resumed = gpsController?.resume?.() || false;
+  if (resumed) {
+    gpsShare = gpsController.getSnapshot?.() || emptyGpsShare();
+    notify();
+  }
+  return resumed;
 }
 
 export function resetProductionOperationsForTests() {
@@ -604,6 +620,9 @@ function availableRiderOrderMarkup(order) {
         type="button"
         data-production-rider-claim="${escapeAttribute(order.publicCode)}"
         data-expected-status="${escapeAttribute(order.expectedStatus || 'ready')}"
+        ${Number.isSafeInteger(Number(order.revision)) && Number(order.revision) > 0
+          ? `data-expected-revision="${escapeAttribute(order.revision)}"`
+          : ''}
       >Aceptar entrega</button>
     </article>`;
 }

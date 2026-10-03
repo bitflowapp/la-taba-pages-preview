@@ -55,6 +55,7 @@ import {
 } from './repositories/repository_factory.js';
 import {
   handleProductionOperationsPageHide,
+  handleProductionOperationsPageShow,
   handleProductionOperationsViewChange,
   handleProductionAuthSubmit,
   handleProductionOperationsAction,
@@ -902,9 +903,13 @@ function bindEvents() {
     handleProductionOperationsPageHide();
     syncCustomerTrackingWithView('');
   });
-  window.addEventListener('pageshow', () => syncCustomerTrackingWithView(activeView));
+  window.addEventListener('pageshow', () => {
+    handleProductionOperationsPageShow();
+    syncCustomerTrackingWithView(activeView);
+  });
   document.addEventListener('visibilitychange', () => {
     const result = handleGpsVisibilityChange();
+    if (!document.hidden) handleProductionOperationsPageShow();
     if (result?.changed && !document.hidden) renderLiveSurfaces();
   });
 

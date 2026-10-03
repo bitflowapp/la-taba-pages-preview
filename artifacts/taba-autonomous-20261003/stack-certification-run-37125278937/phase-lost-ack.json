@@ -1,0 +1,99 @@
+{
+  "technique": "own socket; the observer confirms the database processed the request; the socket is destroyed without reading the response",
+  "scenarios": [
+    {
+      "command": "create_order_with_items",
+      "order": "LT-0079",
+      "loss": {
+        "lost": true,
+        "mode": "dropped-unread",
+        "requestSent": true,
+        "serverProcessed": true,
+        "responseDeliveredToCaller": false,
+        "waitedMs": 403
+      }
+    },
+    {
+      "command": "transition_order",
+      "loss": {
+        "lost": true,
+        "mode": "dropped-unread",
+        "requestSent": true,
+        "serverProcessed": true,
+        "responseDeliveredToCaller": false,
+        "waitedMs": 404
+      }
+    },
+    {
+      "command": "cancel_order",
+      "loss": {
+        "lost": true,
+        "mode": "dropped-unread",
+        "requestSent": true,
+        "serverProcessed": true,
+        "responseDeliveredToCaller": false,
+        "waitedMs": 403
+      }
+    },
+    {
+      "command": "cancel_own_order",
+      "loss": {
+        "lost": true,
+        "mode": "dropped-unread",
+        "requestSent": true,
+        "serverProcessed": true,
+        "responseDeliveredToCaller": false,
+        "waitedMs": 402
+      }
+    },
+    {
+      "command": "create_checkout_session",
+      "loss": {
+        "lost": true,
+        "mode": "dropped-unread",
+        "requestSent": true,
+        "serverProcessed": true,
+        "responseDeliveredToCaller": false,
+        "waitedMs": 404
+      }
+    },
+    {
+      "command": "finalize_paid_checkout_session",
+      "loss": {
+        "lost": true,
+        "mode": "dropped-unread",
+        "requestSent": true,
+        "serverProcessed": true,
+        "responseDeliveredToCaller": false,
+        "waitedMs": 404
+      }
+    },
+    {
+      "command": "prepare_payment_refund_v2 + record_payment_refund_response_v2",
+      "loss": [
+        {
+          "lost": true,
+          "mode": "dropped-unread",
+          "requestSent": true,
+          "serverProcessed": true,
+          "responseDeliveredToCaller": false,
+          "waitedMs": 405
+        },
+        {
+          "lost": true,
+          "mode": "dropped-unread",
+          "requestSent": true,
+          "serverProcessed": true,
+          "responseDeliveredToCaller": false,
+          "waitedMs": 405
+        }
+      ]
+    }
+  ],
+  "tally": {
+    "lostOrders": 0,
+    "duplicateOrders": 0,
+    "doubleStock": 0,
+    "doubleRefund": 0
+  }
+}

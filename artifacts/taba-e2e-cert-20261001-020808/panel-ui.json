@@ -1,0 +1,30 @@
+{
+  "contract": "Panel real en navegador: ingreso por formulario + tarjeta del mismo ORDER_ID",
+  "orderId": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+  "publicCode": "LT-0068",
+  "results": [
+    {
+      "label": "current-build-local",
+      "url": "http://127.0.0.1:<port>/",
+      "build": {
+        "commit": "135818892414f5cc17d7adacd6069eec86602381",
+        "runtime": "la-taba-runtime-v131-premium-motion",
+        "builtAt": "2026-10-01T01:25:11.211Z"
+      },
+      "result": "FAIL",
+      "signedInThroughForm": true,
+      "error": "locator.waitFor: Timeout 60000ms exceeded.",
+      "jsErrors": []
+    },
+    {
+      "label": "deployed-staging",
+      "url": "https://taba2-staging.pages.dev/",
+      "build": null,
+      "result": "FAIL",
+      "signedInThroughForm": true,
+      "error": "locator.waitFor: Timeout 60000ms exceeded.",
+      "jsErrors": []
+    }
+  ],
+  "panelSessionsLeftOpen": 2
+}

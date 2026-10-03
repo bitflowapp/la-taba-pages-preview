@@ -213,9 +213,9 @@ try {
   const riderAfter = (await rider.c.rpc('get_rider_delivery_board', {})).data;
   const blocked = await attemptOrder(customer1, product.id, qty);
   const current = (await staff.c.from('orders').select('status,revision').eq('id', control.id).single()).data;
-  const cancel = await staff.c.rpc('cancel_order', { p_order_id: control.id, p_expected_revision: current.revision,
+  const cancel = await owner.c.rpc('cancel_order', { p_order_id: control.id, p_expected_revision: current.revision,
     p_reason: 'QA PAUSE ALL SYSTEM: pedido activo cancelado', p_idempotency_key: `verify_cancel_${control.id.replaceAll('-', '')}` });
-  const cancelAgain = await staff.c.rpc('cancel_order', { p_order_id: control.id, p_expected_revision: current.revision,
+  const cancelAgain = await owner.c.rpc('cancel_order', { p_order_id: control.id, p_expected_revision: current.revision,
     p_reason: 'QA PAUSE ALL SYSTEM: pedido activo cancelado', p_idempotency_key: `verify_cancel_${control.id.replaceAll('-', '')}` });
   const stockAfterCancel = await stockOf(product.id);
   report.pauseAll = { pause: codeOf(step1), riderOff: codeOf(step2), riderAvailable: riderAfter?.available ?? null,

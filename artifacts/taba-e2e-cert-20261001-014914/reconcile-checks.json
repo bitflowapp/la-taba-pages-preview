@@ -1,0 +1,176 @@
+[
+  {
+    "phase": "P16_CLEANUP",
+    "name": "ALL_RUN_ORDERS_TERMINAL_AND_QA",
+    "result": "PASS",
+    "expected": null,
+    "observed": [
+      {
+        "id": "ab9659b6-021f-4d4e-8550-47ababb944f8",
+        "code": "LT-0063",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      },
+      {
+        "id": "e87a20c5-e681-418a-b381-f1092e8bad35",
+        "code": "LT-0064",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      },
+      {
+        "id": "f8de0051-4813-4d5a-85f2-6faf779691ec",
+        "code": "LT-0065",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      },
+      {
+        "id": "046e2055-0d85-4c54-ae8c-85a966dc99da",
+        "code": "LT-0066",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      },
+      {
+        "id": "97f52646-5968-4434-a827-6b4dd545905d",
+        "code": "LT-0067",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      }
+    ],
+    "at": "2026-10-01T02:07:35.960Z"
+  },
+  {
+    "phase": "P16_CLEANUP",
+    "name": "NO_PENDING_OFFERS_NOTIFICATIONS_RESERVATIONS",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "offers": 0,
+      "notifications": 0,
+      "reservations": 0
+    },
+    "at": "2026-10-01T02:07:35.960Z"
+  },
+  {
+    "phase": "P16_CLEANUP",
+    "name": "TEST_USERS_AND_BUSINESS_B_DELETED",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "users": 0,
+      "businesses": 0
+    },
+    "at": "2026-10-01T02:07:35.960Z"
+  },
+  {
+    "phase": "P16_CLEANUP",
+    "name": "CUSTOMER_DELETION_KEEPS_ORDERS_AND_DELIVERY_POINT",
+    "result": "PASS",
+    "expected": null,
+    "observed": [
+      {
+        "public_code": "LT-0063",
+        "delivery_mode": "delivery",
+        "unlinked": true,
+        "address_unlinked": true,
+        "point_kept": true
+      },
+      {
+        "public_code": "LT-0064",
+        "delivery_mode": "pickup",
+        "unlinked": true,
+        "address_unlinked": true,
+        "point_kept": true
+      },
+      {
+        "public_code": "LT-0065",
+        "delivery_mode": "pickup",
+        "unlinked": true,
+        "address_unlinked": true,
+        "point_kept": true
+      },
+      {
+        "public_code": "LT-0066",
+        "delivery_mode": "pickup",
+        "unlinked": true,
+        "address_unlinked": true,
+        "point_kept": true
+      },
+      {
+        "public_code": "LT-0067",
+        "delivery_mode": "pickup",
+        "unlinked": true,
+        "address_unlinked": true,
+        "point_kept": true
+      }
+    ],
+    "at": "2026-10-01T02:07:37.555Z"
+  },
+  {
+    "phase": "P16_CLEANUP",
+    "name": "NO_OPEN_RUN_SESSIONS",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "open": 0
+    },
+    "at": "2026-10-01T02:07:37.555Z"
+  },
+  {
+    "phase": "P16_CLEANUP",
+    "name": "NO_ORPHAN_EVENTS_OR_GPS",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "orphanEvents": 0,
+      "gps": 0
+    },
+    "at": "2026-10-01T02:07:37.555Z"
+  },
+  {
+    "phase": "P16_CLEANUP",
+    "name": "NO_RIDER_LEFT_AVAILABLE",
+    "result": "PASS",
+    "expected": null,
+    "observed": [
+      {
+        "rider": "8d77e57b-fd9b-49bb-8023-9b3c699d35b9",
+        "available": false,
+        "version": 2
+      },
+      {
+        "rider": "e9b381ad-8287-430e-b53d-caa4f55637cd",
+        "available": false,
+        "version": 10
+      },
+      {
+        "rider": "c9e5e490-ac76-43ab-be20-afba6cfe35fc",
+        "available": false,
+        "version": 2
+      },
+      {
+        "rider": "b46bc1cd-abfc-4a4a-9952-3ac9287d1bae",
+        "available": false,
+        "version": 8
+      },
+      {
+        "rider": "7ce18ab7-a8aa-4e5d-a77c-4a9db3e8a599",
+        "available": false,
+        "version": 25
+      }
+    ],
+    "at": "2026-10-01T02:07:37.555Z"
+  },
+  {
+    "phase": "P16_CLEANUP",
+    "name": "CLEANUP_STEPS_ALL_OK",
+    "result": "PASS",
+    "expected": null,
+    "observed": [],
+    "at": "2026-10-01T02:07:37.555Z"
+  }
+]

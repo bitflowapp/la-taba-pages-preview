@@ -1,0 +1,253 @@
+{
+  "runId": "TABA_E2E_CERT_20261001014914",
+  "executedBy": "TABA_E2E_CERT_20261001020612",
+  "steps": [
+    {
+      "name": "cancel LT-0063",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-01T02:07:15.124Z"
+    },
+    {
+      "name": "classify QA LT-0063",
+      "ok": true,
+      "detail": "qa",
+      "at": "2026-10-01T02:07:16.492Z"
+    },
+    {
+      "name": "cancel LT-0064",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-01T02:07:17.940Z"
+    },
+    {
+      "name": "classify QA LT-0064",
+      "ok": true,
+      "detail": "qa",
+      "at": "2026-10-01T02:07:21.331Z"
+    },
+    {
+      "name": "cancel LT-0065",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-01T02:07:22.636Z"
+    },
+    {
+      "name": "classify QA LT-0065",
+      "ok": true,
+      "detail": "qa",
+      "at": "2026-10-01T02:07:24.111Z"
+    },
+    {
+      "name": "cancel LT-0066",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-01T02:07:25.474Z"
+    },
+    {
+      "name": "classify QA LT-0066",
+      "ok": true,
+      "detail": "qa",
+      "at": "2026-10-01T02:07:26.771Z"
+    },
+    {
+      "name": "cancel LT-0067",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-01T02:07:28.110Z"
+    },
+    {
+      "name": "classify QA LT-0067",
+      "ok": true,
+      "detail": "qa",
+      "at": "2026-10-01T02:07:29.452Z"
+    },
+    {
+      "name": "revoke stale session TABA_E2E_CERT_20261001014914 owner",
+      "ok": true,
+      "detail": "revoked",
+      "at": "2026-10-01T02:07:31.032Z"
+    },
+    {
+      "name": "revoke stale session TABA_E2E_CERT_20261001014914 staff",
+      "ok": true,
+      "detail": "revoked",
+      "at": "2026-10-01T02:07:31.497Z"
+    },
+    {
+      "name": "revoke stale session TABA_E2E_CERT_20261001014914 admin",
+      "ok": true,
+      "detail": "revoked",
+      "at": "2026-10-01T02:07:31.618Z"
+    },
+    {
+      "name": "revoke stale session TABA_E2E_CERT_20261001014914 rider1",
+      "ok": true,
+      "detail": "revoked",
+      "at": "2026-10-01T02:07:31.734Z"
+    },
+    {
+      "name": "revoke stale session TABA_E2E_CERT_20261001014914 rider2",
+      "ok": true,
+      "detail": "revoked",
+      "at": "2026-10-01T02:07:31.848Z"
+    },
+    {
+      "name": "revoke stale session panel-ui",
+      "ok": true,
+      "detail": "revoked",
+      "at": "2026-10-01T02:07:31.971Z"
+    },
+    {
+      "name": "revoke stale session panel-ui",
+      "ok": true,
+      "detail": "revoked",
+      "at": "2026-10-01T02:07:32.082Z"
+    },
+    {
+      "name": "close session owner",
+      "ok": true,
+      "detail": "closed",
+      "at": "2026-10-01T02:07:32.204Z"
+    },
+    {
+      "name": "close session staff",
+      "ok": true,
+      "detail": "closed",
+      "at": "2026-10-01T02:07:32.317Z"
+    },
+    {
+      "name": "close session rider1",
+      "ok": true,
+      "detail": "closed",
+      "at": "2026-10-01T02:07:32.428Z"
+    },
+    {
+      "name": "close session rider2",
+      "ok": true,
+      "detail": "closed",
+      "at": "2026-10-01T02:07:32.549Z"
+    },
+    {
+      "name": "delete business B d83b309d-8f3b-4fe4-b026-4e5858ad0f81",
+      "ok": true,
+      "at": "2026-10-01T02:07:32.784Z"
+    },
+    {
+      "name": "delete user customer-A-main",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-01T02:07:32.952Z"
+    },
+    {
+      "name": "delete user customer-B-other",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-01T02:07:33.072Z"
+    },
+    {
+      "name": "delete user customer-R-races",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-01T02:07:33.375Z"
+    },
+    {
+      "name": "delete user nomember",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-01T02:07:34.078Z"
+    },
+    {
+      "name": "delete user otherowner",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-01T02:07:34.645Z"
+    }
+  ],
+  "post": {
+    "orders": [
+      {
+        "id": "ab9659b6-021f-4d4e-8550-47ababb944f8",
+        "code": "LT-0063",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      },
+      {
+        "id": "e87a20c5-e681-418a-b381-f1092e8bad35",
+        "code": "LT-0064",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      },
+      {
+        "id": "f8de0051-4813-4d5a-85f2-6faf779691ec",
+        "code": "LT-0065",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      },
+      {
+        "id": "046e2055-0d85-4c54-ae8c-85a966dc99da",
+        "code": "LT-0066",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      },
+      {
+        "id": "97f52646-5968-4434-a827-6b4dd545905d",
+        "code": "LT-0067",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      }
+    ],
+    "non_terminal_or_non_qa": 0,
+    "pending_offers": 0,
+    "pending_notifications": 0,
+    "reservations": 0,
+    "users_left": 0,
+    "qa_businesses_left": 0,
+    "open_sessions": 0,
+    "orphan_events": 0,
+    "rider_locations": 0,
+    "riders": [
+      {
+        "rider": "8d77e57b-fd9b-49bb-8023-9b3c699d35b9",
+        "available": false,
+        "version": 2
+      },
+      {
+        "rider": "e9b381ad-8287-430e-b53d-caa4f55637cd",
+        "available": false,
+        "version": 10
+      },
+      {
+        "rider": "c9e5e490-ac76-43ab-be20-afba6cfe35fc",
+        "available": false,
+        "version": 2
+      },
+      {
+        "rider": "b46bc1cd-abfc-4a4a-9952-3ac9287d1bae",
+        "available": false,
+        "version": 8
+      },
+      {
+        "rider": "7ce18ab7-a8aa-4e5d-a77c-4a9db3e8a599",
+        "available": false,
+        "version": 25
+      }
+    ],
+    "print_jobs": 0,
+    "fiscal_documents": 0,
+    "payment_intents": 32,
+    "open_orders_business": 7
+  },
+  "retainedByDesign": [
+    "orders (origin=qa, terminal) + order_items/order_events/order_public_tokens/order_delivery_handoffs: append-only audit of the run, tagged by customer_notes and origin_reason",
+    "inventory_movements (manual_adjustment pilot_qa_return) that restore stock: append-only ledger",
+    "business_command_receipts / rider_delivery_operations / delivery_confirmation_attempts: idempotency receipts",
+    "identity_sessions (revoked) + identity_audit_events: session audit trail, device_label starts with RUN_ID",
+    "notification_outbox / delivery_outbox rows: processed+suppressed, no consumer exists"
+  ]
+}

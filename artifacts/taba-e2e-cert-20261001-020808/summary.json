@@ -1,0 +1,44 @@
+{
+  "runId": "TABA_E2E_CERT_20261001020808",
+  "evidence": "artifacts\\taba-e2e-cert-20261001-020808",
+  "finishedAt": "2026-10-01T02:18:33.112Z",
+  "fatal": null,
+  "mainOrder": {
+    "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+    "publicCode": "LT-0068",
+    "label": "main",
+    "clientRequestId": "cert-main-20261001020808-0b406b4b",
+    "quantity": 3,
+    "mode": "delivery"
+  },
+  "phases": {
+    "P1_IDENTITY": "PASS",
+    "P2_ISOLATION": "PASS",
+    "P3_CREATE": "PASS",
+    "P4_DATABASE": "PASS",
+    "P5_PANEL": "PASS",
+    "P6_STATE_MACHINE": "PASS",
+    "P7_RIDER": "PASS",
+    "P8_TRACKING": "PASS",
+    "P9_DELIVERY_CODE": "PASS",
+    "P10_IDEMPOTENCY": "PASS",
+    "P11_LOST_RESPONSE": "FAIL",
+    "P12_RLS": "PASS",
+    "P13_EVENTS": "PASS",
+    "P14_STOCK": "PASS",
+    "P15_NEGATIVE": "PASS",
+    "P16_CLEANUP": "PASS"
+  },
+  "panelUi": "FAIL",
+  "totals": {
+    "checks": 164,
+    "pass": 161,
+    "fail": 3
+  },
+  "failed": [
+    "P11_LOST_RESPONSE:CASE_A_SERVER_PROCESSED_CLIENT_LOST_RESPONSE",
+    "P5B_PANEL_UI:PANEL_UI_SHOWS_SAME_ORDER_CURRENT_BUILD_LOCAL",
+    "P5B_PANEL_UI:PANEL_UI_SHOWS_SAME_ORDER_DEPLOYED_STAGING"
+  ],
+  "backendPhasesAllPass": false
+}

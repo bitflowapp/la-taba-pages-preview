@@ -1,0 +1,463 @@
+{
+  "timezone": "America/Argentina/Buenos_Aires",
+  "startedAtLocal": {
+    "date": "2026-10-03",
+    "time": "11:18",
+    "weekday": 6,
+    "minutes": 678
+  },
+  "states": [
+    {
+      "name": "GRID_24X7",
+      "at": "2026-10-03T14:18:56.207Z",
+      "localTime": "11:18",
+      "accepts": true,
+      "reason": null,
+      "attempts": {
+        "pickup": {
+          "http": 200,
+          "ok": true,
+          "code": null,
+          "message": null,
+          "details": null,
+          "ms": 5.9,
+          "publicCode": "LT-0018"
+        },
+        "delivery": {
+          "http": 200,
+          "ok": true,
+          "code": null,
+          "message": null,
+          "details": null,
+          "ms": 48.7,
+          "publicCode": "LT-0019"
+        }
+      },
+      "availability": {
+        "pickup": {
+          "ordering_ready": true,
+          "is_open": true,
+          "next_open_at": "2026-10-04T03:00:00+00:00"
+        },
+        "delivery": {
+          "ordering_ready": true,
+          "is_open": true,
+          "next_open_at": "2026-10-04T03:00:00+00:00"
+        }
+      },
+      "serviceStatus": {
+        "pickup": {
+          "state": "OPEN",
+          "reason": null,
+          "opens_at": null,
+          "closes_at": null
+        },
+        "alcohol": {
+          "state": "CLOSED",
+          "reason": "alcohol_disabled",
+          "opens_at": null,
+          "closes_at": null
+        },
+        "delivery": {
+          "state": "OPEN",
+          "reason": null,
+          "opens_at": null,
+          "closes_at": null
+        }
+      },
+      "ordersCreated": 2
+    },
+    {
+      "name": "OUTSIDE_WINDOW",
+      "at": "2026-10-03T14:18:56.234Z",
+      "localTime": "11:18",
+      "accepts": false,
+      "reason": null,
+      "attempts": {
+        "pickup": {
+          "http": 409,
+          "ok": false,
+          "code": "55000",
+          "message": "BUSINESS_CLOSED",
+          "details": "el comercio no esta abierto para este canal",
+          "ms": 3,
+          "publicCode": null
+        },
+        "delivery": {
+          "http": 409,
+          "ok": false,
+          "code": "55000",
+          "message": "BUSINESS_CLOSED",
+          "details": "el comercio no esta abierto para este canal",
+          "ms": 3.8,
+          "publicCode": null
+        }
+      },
+      "availability": {
+        "pickup": {
+          "ordering_ready": true,
+          "is_open": false,
+          "next_open_at": "2026-10-03T16:18:00+00:00"
+        },
+        "delivery": {
+          "ordering_ready": true,
+          "is_open": false,
+          "next_open_at": "2026-10-03T16:18:00+00:00"
+        }
+      },
+      "serviceStatus": {
+        "pickup": {
+          "state": "CLOSED",
+          "reason": "outside_hours",
+          "opens_at": "2026-10-03T16:18:00+00:00",
+          "closes_at": null
+        },
+        "alcohol": {
+          "state": "CLOSED",
+          "reason": "alcohol_disabled",
+          "opens_at": null,
+          "closes_at": null
+        },
+        "delivery": {
+          "state": "CLOSED",
+          "reason": "outside_hours",
+          "opens_at": "2026-10-03T16:18:00+00:00",
+          "closes_at": null
+        }
+      },
+      "ordersCreated": 0
+    },
+    {
+      "name": "CROSS_MIDNIGHT_EXCLUDING_NOW",
+      "at": "2026-10-03T14:18:56.259Z",
+      "localTime": "11:18",
+      "accepts": false,
+      "reason": null,
+      "attempts": {
+        "pickup": {
+          "http": 409,
+          "ok": false,
+          "code": "55000",
+          "message": "BUSINESS_CLOSED",
+          "details": "el comercio no esta abierto para este canal",
+          "ms": 2.9,
+          "publicCode": null
+        },
+        "delivery": {
+          "http": 409,
+          "ok": false,
+          "code": "55000",
+          "message": "BUSINESS_CLOSED",
+          "details": "el comercio no esta abierto para este canal",
+          "ms": 3.5,
+          "publicCode": null
+        }
+      },
+      "availability": {
+        "pickup": {
+          "ordering_ready": true,
+          "is_open": false,
+          "next_open_at": "2026-10-03T15:18:00+00:00"
+        },
+        "delivery": {
+          "ordering_ready": true,
+          "is_open": false,
+          "next_open_at": "2026-10-03T15:18:00+00:00"
+        }
+      },
+      "serviceStatus": {
+        "pickup": {
+          "state": "CLOSED",
+          "reason": "outside_hours",
+          "opens_at": "2026-10-03T15:18:00+00:00",
+          "closes_at": null
+        },
+        "alcohol": {
+          "state": "CLOSED",
+          "reason": "alcohol_disabled",
+          "opens_at": null,
+          "closes_at": null
+        },
+        "delivery": {
+          "state": "CLOSED",
+          "reason": "outside_hours",
+          "opens_at": "2026-10-03T15:18:00+00:00",
+          "closes_at": null
+        }
+      },
+      "ordersCreated": 0
+    },
+    {
+      "name": "CROSS_MIDNIGHT_INCLUDING_NOW",
+      "at": "2026-10-03T14:18:56.354Z",
+      "localTime": "11:18",
+      "accepts": true,
+      "reason": null,
+      "attempts": {
+        "pickup": {
+          "http": 200,
+          "ok": true,
+          "code": null,
+          "message": null,
+          "details": null,
+          "ms": 5.6,
+          "publicCode": "LT-0020"
+        },
+        "delivery": {
+          "http": 200,
+          "ok": true,
+          "code": null,
+          "message": null,
+          "details": null,
+          "ms": 61.6,
+          "publicCode": "LT-0021"
+        }
+      },
+      "availability": {
+        "pickup": {
+          "ordering_ready": true,
+          "is_open": true,
+          "next_open_at": "2026-10-04T12:18:00+00:00"
+        },
+        "delivery": {
+          "ordering_ready": true,
+          "is_open": true,
+          "next_open_at": "2026-10-04T12:18:00+00:00"
+        }
+      },
+      "serviceStatus": {
+        "pickup": {
+          "state": "OPEN",
+          "reason": null,
+          "opens_at": null,
+          "closes_at": "2026-10-04T10:18:00+00:00"
+        },
+        "alcohol": {
+          "state": "CLOSED",
+          "reason": "alcohol_disabled",
+          "opens_at": null,
+          "closes_at": null
+        },
+        "delivery": {
+          "state": "OPEN",
+          "reason": null,
+          "opens_at": null,
+          "closes_at": "2026-10-04T10:18:00+00:00"
+        }
+      },
+      "ordersCreated": 2
+    },
+    {
+      "name": "CLOSED_DATE_EXCEPTION",
+      "at": "2026-10-03T14:18:56.383Z",
+      "localTime": "11:18",
+      "accepts": false,
+      "reason": null,
+      "attempts": {
+        "pickup": {
+          "http": 409,
+          "ok": false,
+          "code": "55000",
+          "message": "BUSINESS_CLOSED",
+          "details": "el comercio no esta abierto para este canal",
+          "ms": 2.6,
+          "publicCode": null
+        },
+        "delivery": {
+          "http": 409,
+          "ok": false,
+          "code": "55000",
+          "message": "BUSINESS_CLOSED",
+          "details": "el comercio no esta abierto para este canal",
+          "ms": 3.5,
+          "publicCode": null
+        }
+      },
+      "availability": {
+        "pickup": {
+          "ordering_ready": true,
+          "is_open": false,
+          "next_open_at": "2026-10-04T03:00:00+00:00"
+        },
+        "delivery": {
+          "ordering_ready": true,
+          "is_open": false,
+          "next_open_at": "2026-10-04T03:00:00+00:00"
+        }
+      },
+      "serviceStatus": {
+        "pickup": {
+          "state": "CLOSED",
+          "reason": "exception_closed",
+          "opens_at": "2026-10-04T03:00:00+00:00",
+          "closes_at": null
+        },
+        "alcohol": {
+          "state": "CLOSED",
+          "reason": "alcohol_disabled",
+          "opens_at": null,
+          "closes_at": null
+        },
+        "delivery": {
+          "state": "CLOSED",
+          "reason": "exception_closed",
+          "opens_at": "2026-10-04T03:00:00+00:00",
+          "closes_at": null
+        }
+      },
+      "ordersCreated": 0
+    },
+    {
+      "name": "PICKUP_ONLY_EXCEPTION",
+      "at": "2026-10-03T14:18:56.401Z",
+      "localTime": "11:18",
+      "accepts": false,
+      "reason": null,
+      "attempts": {
+        "pickup": {
+          "http": 409,
+          "ok": false,
+          "code": "55000",
+          "message": "BUSINESS_CLOSED",
+          "details": "el comercio no esta abierto para este canal",
+          "ms": 2.5,
+          "publicCode": null
+        }
+      },
+      "availability": {
+        "pickup": {
+          "ordering_ready": true,
+          "is_open": false,
+          "next_open_at": "2026-10-04T03:00:00+00:00"
+        }
+      },
+      "serviceStatus": {
+        "pickup": {
+          "state": "CLOSED",
+          "reason": "exception_closed",
+          "opens_at": "2026-10-04T03:00:00+00:00",
+          "closes_at": null
+        },
+        "alcohol": {
+          "state": "CLOSED",
+          "reason": "alcohol_disabled",
+          "opens_at": null,
+          "closes_at": null
+        },
+        "delivery": {
+          "state": "OPEN",
+          "reason": null,
+          "opens_at": null,
+          "closes_at": null
+        }
+      },
+      "ordersCreated": 0
+    },
+    {
+      "name": "MANUAL_PAUSE",
+      "at": "2026-10-03T14:18:56.426Z",
+      "localTime": "11:18",
+      "accepts": false,
+      "reason": null,
+      "attempts": {
+        "pickup": {
+          "http": 409,
+          "ok": false,
+          "code": "55000",
+          "message": "el negocio no esta habilitado para recibir pedidos",
+          "details": null,
+          "ms": 2.9,
+          "publicCode": null
+        },
+        "delivery": {
+          "http": 409,
+          "ok": false,
+          "code": "55000",
+          "message": "el negocio no esta habilitado para recibir pedidos",
+          "details": null,
+          "ms": 2.9,
+          "publicCode": null
+        }
+      },
+      "availability": {
+        "pickup": {
+          "ordering_ready": false,
+          "is_open": true,
+          "next_open_at": "2026-10-04T03:00:00+00:00"
+        },
+        "delivery": {
+          "ordering_ready": false,
+          "is_open": true,
+          "next_open_at": "2026-10-04T03:00:00+00:00"
+        }
+      },
+      "serviceStatus": {
+        "pickup": {
+          "state": "CLOSED",
+          "reason": "business_paused",
+          "opens_at": null,
+          "closes_at": null
+        },
+        "alcohol": {
+          "state": "CLOSED",
+          "reason": "business_paused",
+          "opens_at": null,
+          "closes_at": null
+        },
+        "delivery": {
+          "state": "CLOSED",
+          "reason": "business_paused",
+          "opens_at": null,
+          "closes_at": null
+        }
+      },
+      "ordersCreated": 0
+    },
+    {
+      "name": "BACK_TO_24X7",
+      "at": "2026-10-03T14:18:56.449Z",
+      "localTime": "11:18",
+      "accepts": true,
+      "reason": null,
+      "attempts": {
+        "pickup": {
+          "http": 200,
+          "ok": true,
+          "code": null,
+          "message": null,
+          "details": null,
+          "ms": 5.7,
+          "publicCode": "LT-0022"
+        }
+      },
+      "availability": {
+        "pickup": {
+          "ordering_ready": true,
+          "is_open": true,
+          "next_open_at": "2026-10-04T03:00:00+00:00"
+        }
+      },
+      "serviceStatus": {
+        "pickup": {
+          "state": "OPEN",
+          "reason": null,
+          "opens_at": null,
+          "closes_at": null
+        },
+        "alcohol": {
+          "state": "CLOSED",
+          "reason": "alcohol_disabled",
+          "opens_at": null,
+          "closes_at": null
+        },
+        "delivery": {
+          "state": "OPEN",
+          "reason": null,
+          "opens_at": null,
+          "closes_at": null
+        }
+      },
+      "ordersCreated": 1
+    }
+  ]
+}

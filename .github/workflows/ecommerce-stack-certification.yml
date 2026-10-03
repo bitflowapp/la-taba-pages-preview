@@ -1,0 +1,198 @@
+name: Ecommerce certification on an ephemeral Supabase stack
+
+# Un stack de Supabase completo y descartable (Postgres, PostgREST, GoTrue, Storage,
+# pg_cron y el runtime de Edge), levantado en el runner con la CLI fijada, y el
+# certificador e-commerce corrido contra ESE stack (`--target stack`): GoTrue real,
+# PostgREST detrás de la puerta de entrada real, pg_cron real y las Edge Functions del
+# repo servidas por el runtime de Edge. No toca Staging ni producción y no usa ningún
+# secreto del repositorio: las claves son las locales que la propia CLI genera para ese
+# stack, y los pocos valores de servidor que necesitan las funciones de pago se generan
+# acá, al azar, y se descartan con el runner.
+#
+# Un check en FAIL hace fallar el job. La evidencia se sube siempre (también cuando la
+# corrida falla o se corta) y el resumen queda en el resumen del job.
+
+on:
+  push:
+    branches:
+      - 'hardening/taba-ecommerce-production'
+    paths:
+      - '.github/workflows/ecommerce-stack-certification.yml'
+      - 'supabase/**'
+      - 'scripts/e2e-staging/**'
+      - 'scripts/order-intake/**'
+      - 'docs/ecommerce-hardening/performance-thresholds.json'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ecommerce-stack-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+  SUPABASE_CLI_VERSION: '2.101.0'
+
+jobs:
+  ephemeral_stack:
+    name: Ephemeral Supabase stack
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Set up pinned Supabase CLI
+        uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      # Dos archivos que existen sólo en este runner (no se versionan y se van con él):
+      #
+      #   supabase/functions/.env   lo que el runtime de Edge les pasa a las funciones. Son
+      #                             valores DESCARTABLES generados acá y nunca impresos, para que
+      #                             las funciones de pago lleguen hasta su propia compuerta en vez de
+      #                             cortarse por un valor de servidor que falta:
+      #                               PAYMENT_LOG_HASH_SALT        sal del hash de los cupos (aleatoria)
+      #                               PAYMENT_WORKER_SECRET        firma del despachador del worker (aleatoria)
+      #                               MERCADOPAGO_ENVIRONMENT      test
+      #                               MERCADOPAGO_CREDENTIAL_MODE  oauth (el modo de los despliegues alojados)
+      #                             Ninguna credencial de Mercado Pago: sin la configuración de un
+      #                             despliegue alojado las funciones de pago se niegan solas antes de
+      #                             llamar al proveedor, y eso es lo que el certificador afirma.
+      #   supabase/roles.sql        corre antes de las migraciones. Les da a `service_role` los
+      #                             privilegios por defecto sobre las tablas y secuencias nuevas de
+      #                             `public` que el job de base de datos del repo
+      #                             (scripts/bootstrap-a1-v2-local.mjs) le da antes de migrar: es como
+      #                             el repo modela a `service_role` en un proyecto alojado. A `anon` y
+      #                             `authenticated` no les da nada: lo suyo lo conceden las migraciones.
+      #                             Si la CLI no lo ejecuta, el preflight del certificador lo dice
+      #                             (STACK_SERVICE_ROLE_HAS_THE_TABLE_PRIVILEGES_OF_A_HOSTED_PROJECT).
+      - name: Throw-away Edge configuration and service_role default privileges
+        run: |
+          set -euo pipefail
+          umask 077
+          {
+            echo "PAYMENT_LOG_HASH_SALT=$(openssl rand -hex 32)"
+            echo "PAYMENT_WORKER_SECRET=$(openssl rand -hex 32)"
+            echo "MERCADOPAGO_ENVIRONMENT=test"
+            echo "MERCADOPAGO_CREDENTIAL_MODE=oauth"
+          } > supabase/functions/.env
+          cat > supabase/roles.sql <<'SQL'
+          -- Generado por el job de CI; no se versiona.
+          do $$
+          begin
+            execute 'alter default privileges for role postgres in schema public grant all on tables to service_role';
+            execute 'alter default privileges for role postgres in schema public grant all on sequences to service_role';
+          exception when others then
+            raise warning 'ci stack: default privileges of postgres for service_role not set: %', sqlerrm;
+          end
+          $$;
+          do $$
+          begin
+            execute 'alter default privileges for role supabase_admin in schema public grant all on tables to service_role';
+            execute 'alter default privileges for role supabase_admin in schema public grant all on sequences to service_role';
+          exception when others then
+            raise warning 'ci stack: default privileges of supabase_admin for service_role not set: %', sqlerrm;
+          end
+          $$;
+          SQL
+          echo "EDGE_ENV_NAMES=$(cut -d= -f1 supabase/functions/.env | paste -sd, -)"
+
+      # Levantar el stack aplica TODAS las migraciones del repositorio, en orden, sobre
+      # un Postgres de Supabase recién creado. Si una falla, el paso falla.
+      - name: Start the stack and apply every migration
+        run: supabase start -x studio,imgproxy,logflare,vector,postgres-meta,mailpit,supavisor
+
+      - name: Stack identity
+        env:
+          PGPASSWORD: postgres
+        run: |
+          supabase status -o env | sed -E 's/(KEY|SECRET|TOKEN|PASSWORD)=.*/\1=<redacted>/' | sed -E 's#(postgresql://[^:]+:)[^@]+@#\1<redacted>@#'
+          repo=$(ls supabase/migrations/*.sql | wc -l)
+          applied=$(psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -Atc "select count(*) from supabase_migrations.schema_migrations")
+          echo "MIGRATIONS_IN_REPO=$repo MIGRATIONS_APPLIED=$applied"
+          test "$repo" = "$applied"
+          psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -Atc "select 'CRON_JOB ' || jobname || ' ' || schedule || ' active=' || active from cron.job order by jobname"
+          psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -Atc "select 'POSTGRES ' || version()"
+          psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -Atc "select 'SERVICE_ROLE_CAN_INSERT_BUSINESSES=' || has_table_privilege('service_role', 'public.businesses', 'INSERT')"
+          psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -Atc "select 'PUBLIC_DEFAULT_ACL ' || pg_get_userbyid(d.defaclrole) || ' ' || d.defaclobjtype::text || ' ' || d.defaclacl::text from pg_default_acl d join pg_namespace n on n.oid = d.defaclnamespace where n.nspname = 'public' order by 1"
+          psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -Atc "select 'ROLE_SETTINGS ' || r.rolname || ' ' || array_to_string(s.setconfig, ',') from pg_db_role_setting s join pg_roles r on r.oid = s.setrole where r.rolname in ('anon', 'authenticated', 'authenticator') order by 1"
+          curl -sS -o /dev/null -w 'POSTGREST_ROOT_STATUS=%{http_code}\n' http://127.0.0.1:54321/rest/v1/
+          curl -sS -o /dev/null -w 'GOTRUE_HEALTH_STATUS=%{http_code}\n' http://127.0.0.1:54321/auth/v1/health
+          curl -sS -o /dev/null -w 'EDGE_RUNTIME_OPTIONS_STATUS=%{http_code}\n' -X OPTIONS http://127.0.0.1:54321/functions/v1/mercadopago-create-checkout-session
+
+      # Las cuatro entradas del destino `stack` salen de `supabase status -o env` y viajan sólo
+      # en el entorno de ESTE proceso: no se imprimen, no se escriben en GITHUB_ENV y se
+      # enmascaran por si algo las repitiera. El certificador las vuelve a validar (loopback,
+      # claves locales sin `ref`, cada una con su rol) antes de abrir una conexión.
+      - name: Ecommerce certification against the stack
+        run: |
+          set -euo pipefail
+          status_file="$RUNNER_TEMP/stack-status.env"
+          supabase status -o env > "$status_file"
+          value() { awk -v key="$1" 'index($0, key "=") == 1 { sub(/^[^=]*=/, ""); gsub(/^"|"$/, ""); print; exit }' "$status_file"; }
+          api_url="$(value API_URL)"
+          anon_key="$(value ANON_KEY)"
+          service_key="$(value SERVICE_ROLE_KEY)"
+          db_url="$(value DB_URL)"
+          rm -f "$status_file"
+          for secret_value in "$anon_key" "$service_key" "$db_url"; do
+            if [ -n "$secret_value" ]; then echo "::add-mask::$secret_value"; fi
+          done
+          if [ -z "$api_url" ] || [ -z "$anon_key" ] || [ -z "$service_key" ] || [ -z "$db_url" ]; then
+            echo "::error::supabase status -o env no imprimió API_URL, ANON_KEY, SERVICE_ROLE_KEY y DB_URL"
+            exit 2
+          fi
+          echo "stack: API en $api_url (claves y DB_URL sin imprimir)"
+          TABA_STACK_API_URL="$api_url" TABA_STACK_ANON_KEY="$anon_key" TABA_STACK_SERVICE_ROLE_KEY="$service_key" TABA_STACK_DB_URL="$db_url" \
+            node scripts/e2e-staging/ecommerce-certification.mjs --target stack --confirm STACK_MUTATION_OK \
+              --evidence-dir "$RUNNER_TEMP/ecommerce-stack-evidence" --max-minutes 60
+
+      # Totales por fase, cada FAIL y cada check no probado con su motivo, y la tabla de
+      # rendimiento (con el bloque de umbrales propuesto mientras el destino no tenga
+      # compuerta). Lee sólo la evidencia: no se conecta a nada.
+      - name: Certification summary
+        if: ${{ always() }}
+        run: |
+          node scripts/e2e-staging/ecommerce-certification.mjs --summarize "$RUNNER_TEMP/ecommerce-stack-evidence" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload certification evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ecommerce-stack-certification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ecommerce-stack-evidence
+          if-no-files-found: warn
+          retention-days: 30
+
+      # Si algo falló, lo último de los contenedores que más pueden explicarlo. Un token con
+      # forma de JWT que aparezca en un log se tapa antes de imprimirse.
+      - name: Stack logs on failure
+        if: ${{ failure() }}
+        run: |
+          for name in $(docker ps -a --format '{{.Names}}' | grep -E '^supabase_(edge_runtime|rest|auth|kong|db)_' || true); do
+            echo "::group::$name (últimas 150 líneas)"
+            docker logs --tail 150 "$name" 2>&1 | sed -E 's/eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/<redacted-jwt>/g'
+            echo "::endgroup::"
+          done
+
+      - name: Stop the stack
+        if: ${{ always() }}
+        run: supabase stop --no-backup

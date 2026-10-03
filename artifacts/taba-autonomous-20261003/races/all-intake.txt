@@ -1,0 +1,4 @@
+ORDER_INTAKE_RACE: 20 pedidos simultaneos de un cliente con 20 claves, tope 5 -> entran 5: PASS
+ORDER_INTAKE_SAME_KEY_RACE: el mismo pedido 20 veces a la vez -> 1 pedido, 1 admision: PASS
+ORDER_INTAKE_ORIGIN_RACE: 30 identidades desde un origen, tope 12 -> entran 12: PASS
+ORDER_INTAKE_STOCK_INTEGRITY: 18 pedidos, 18 unidades descontadas, 18 admisiones: PASS

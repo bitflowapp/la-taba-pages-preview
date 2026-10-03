@@ -1,0 +1,84 @@
+{
+  "schema": "taba.payment_reconciliation.report.v1",
+  "read_only": true,
+  "generated_at": "2026-10-03T11:51:59.024Z",
+  "database_time": "2026-10-03T11:52:00.568309+00:00",
+  "target": {
+    "name": "staging",
+    "project_ref": "ucbtjcurawxjwjdvvcvj"
+  },
+  "business_id": "a57b1c20-0f4e-4a6b-9d31-7c2e5f8a41d0",
+  "business_slug": "la-taba-staging",
+  "window": {
+    "from": "2026-09-26T11:51:58.145Z",
+    "to": "2026-10-03T11:51:58.145Z",
+    "defaulted": true
+  },
+  "clock_skew_minutes": 0,
+  "environment": "test",
+  "mode": "provider-api",
+  "options": {
+    "lag_minutes": 30,
+    "refund_stuck_minutes": 30,
+    "max_intents": 2000
+  },
+  "result": "NO_CRITICAL_FINDINGS",
+  "exit_code": 0,
+  "provider_comparison": "full",
+  "provider_source": {
+    "complete": true,
+    "requests": 1,
+    "range_pages": 1,
+    "reference_lookups": 0,
+    "reference_lookups_inconclusive": 0,
+    "reference_lookups_skipped": 0
+  },
+  "totals": {
+    "local_intents": 0,
+    "local_orders": 0,
+    "local_refunds": 0,
+    "provider_payments": 0,
+    "provider_payments_in_scope": 0,
+    "provider_payments_out_of_scope": 0,
+    "findings": 0,
+    "by_severity": {
+      "critical": 0,
+      "warning": 0,
+      "info": 0
+    },
+    "by_code": {
+      "PAYMENT_MISSING_LOCAL": 0,
+      "PAYMENT_MISSING_PROVIDER": 0,
+      "STATUS_MISMATCH": 0,
+      "AMOUNT_MISMATCH": 0,
+      "ORDER_PAYMENT_MISMATCH": 0,
+      "REFUND_MISMATCH": 0,
+      "UNVERIFIED_AGAINST_PROVIDER": 0
+    }
+  },
+  "coverage": {
+    "provider_supplied": true,
+    "provider_mode": "api",
+    "provider_result_complete": true,
+    "provider_range": {
+      "from": "2026-09-26T11:51:58.145Z",
+      "to": "2026-10-03T11:51:58.145Z",
+      "source": "query"
+    },
+    "provider_references_queried": 0,
+    "provider_payments_collector_mismatch": 0,
+    "local_intents": 0,
+    "compared_against_provider": 0,
+    "no_provider_payment_expected": 0,
+    "missing_at_provider": 0,
+    "unverified_against_provider": 0,
+    "unverified_reasons": {},
+    "unverified_payment_intent_ids": [],
+    "partially_compared": 0,
+    "lag_tolerated": 0,
+    "refund_totals_not_comparable": 0,
+    "reconciled": 0,
+    "provider_comparison": "full"
+  },
+  "findings": []
+}

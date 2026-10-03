@@ -61,11 +61,10 @@ Deno.serve(async (request) => {
         : ['cancelled', 'canceled'].includes(providerStatus) ? 'cancelled' : 'ambiguous';
       if (!result.response.ok || resolvedStatus === 'ambiguous') {
         if (isFinalProviderRejection(result.response.status)) {
-          await service.rpc('record_payment_cancellation_response', {
-            p_cancellation_id: prepared.cancellation_id,
-            p_status: 'rejected',
-            p_response_hash: responseHash,
-          });
+          if (!await recordProviderAnswer(service, prepared.cancellation_id, 'rejected', responseHash)) {
+            await markAmbiguous(service, prepared.cancellation_id, responseHash, 'cancellation_response_not_persisted');
+            return reconciling(request);
+          }
           return jsonResponse(request, {
             ok: false,
             code: 'CANCELLATION_REJECTED',
@@ -75,12 +74,14 @@ Deno.serve(async (request) => {
         await markAmbiguous(service, prepared.cancellation_id, responseHash, `http_${result.response.status || 'network'}`);
         return reconciling(request);
       }
-      const { error: recordError } = await service.rpc('record_payment_cancellation_response', {
-        p_cancellation_id: prepared.cancellation_id,
-        p_status: resolvedStatus,
-        p_response_hash: responseHash,
-      });
-      if (recordError) return unavailable(request);
+      if (!await recordProviderAnswer(service, prepared.cancellation_id, resolvedStatus, responseHash)) {
+        // El proveedor ya contestó y acá no quedó asentado. Responder «no
+        // disponible» dejaba la solicitud en `requested` sin nadie que la
+        // conciliara: el próximo pedido recibía «en verificación» para siempre.
+        // Queda dudosa, que es el estado que sí encola su conciliación.
+        await markAmbiguous(service, prepared.cancellation_id, responseHash, 'cancellation_response_not_persisted');
+        return reconciling(request);
+      }
       return jsonResponse(request, {
         ok: resolvedStatus === 'cancelled',
         status: resolvedStatus,
@@ -97,6 +98,26 @@ Deno.serve(async (request) => {
     return publicErrorResponse(request, error);
   }
 });
+
+// Asienta lo que contestó el proveedor. Si la base falla (un deadlock, un corte
+// de un segundo) se reintenta UNA vez el asiento: es idempotente y no le pide
+// nada al proveedor, así que no hay forma de que salga una segunda cancelación.
+async function recordProviderAnswer(
+  service: ReturnType<typeof createServiceClient>,
+  cancellationId: string,
+  status: 'cancelled' | 'rejected',
+  responseHash: string,
+): Promise<boolean> {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const { error } = await service.rpc('record_payment_cancellation_response', {
+      p_cancellation_id: cancellationId,
+      p_status: status,
+      p_response_hash: responseHash,
+    });
+    if (!error) return true;
+  }
+  return false;
+}
 
 async function markAmbiguous(service: ReturnType<typeof createServiceClient>, cancellationId: string, hash: string, code: string): Promise<void> {
   await service.rpc('mark_payment_cancellation_ambiguous', {

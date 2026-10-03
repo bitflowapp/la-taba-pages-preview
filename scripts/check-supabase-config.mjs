@@ -41,14 +41,29 @@
  * vocabulario que no sabe de qué versión habla no comprueba nada.
  *
  *   node scripts/check-supabase-config.mjs
+ *   node scripts/check-supabase-config.mjs --config <config.toml> --workflow <ci.yml>
+ *
+ * Las dos opciones existen para que las pruebas lean copias: una prueba que
+ * escribe sobre los archivos del repositorio deja el árbol modificado si se
+ * corta a mitad (TOOL-05).
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
-const CONFIG = path.join(ROOT, 'supabase/config.toml');
-const WORKFLOW = path.join(ROOT, '.github/workflows/ci.yml');
+const option = (flag, fallback) => {
+  const i = process.argv.indexOf(flag);
+  if (i < 0) return fallback;
+  const value = process.argv[i + 1];
+  if (!value || value.startsWith('--')) {
+    console.error(`${flag} necesita una ruta.`);
+    process.exit(2);
+  }
+  return path.resolve(value);
+};
+const CONFIG = option('--config', path.join(ROOT, 'supabase/config.toml'));
+const WORKFLOW = option('--workflow', path.join(ROOT, '.github/workflows/ci.yml'));
 
 /** La versión contra la que se derivó el vocabulario de abajo. */
 const CLI_DERIVADO_DE = '2.101.0';

@@ -21,18 +21,34 @@ const CONFIG = path.join(root, 'supabase/config.toml');
  * El guion no necesita Docker ni red, así que esto se puede afirmar acá.
  */
 
-/** Corre la guardia sobre un config dado. Devuelve código de salida y salida. */
-function correrGuardia(contenido) {
-  const original = fs.readFileSync(CONFIG, 'utf8');
-  const temporal = contenido !== undefined;
-  if (temporal) fs.writeFileSync(CONFIG, contenido, 'utf8');
+/*
+ * Corre la guardia sobre un config (y un workflow) dados. Devuelve código de
+ * salida y salida. Lo que cambia va a COPIAS en `test-results/` (en
+ * .gitignore): escribir sobre los archivos del repositorio y restaurarlos en un
+ * `finally` dejaba el árbol modificado si la prueba se cortaba a mitad (TOOL-05).
+ */
+function correrGuardia(contenido, { workflow } = {}) {
+  const base = path.join(root, 'test-results');
+  fs.mkdirSync(base, { recursive: true });
+  const copias = fs.mkdtempSync(path.join(base, 'guardia-supabase-'));
+  const argumentos = [GUARDIA];
+  if (contenido !== undefined) {
+    const copia = path.join(copias, 'config.toml');
+    fs.writeFileSync(copia, contenido, 'utf8');
+    argumentos.push('--config', copia);
+  }
+  if (workflow !== undefined) {
+    const copia = path.join(copias, 'ci.yml');
+    fs.writeFileSync(copia, workflow, 'utf8');
+    argumentos.push('--workflow', copia);
+  }
   try {
-    const salida = execFileSync(process.execPath, [GUARDIA], { encoding: 'utf8', stdio: 'pipe' });
+    const salida = execFileSync(process.execPath, argumentos, { encoding: 'utf8', stdio: 'pipe' });
     return { codigo: 0, salida };
   } catch (error) {
     return { codigo: error.status ?? 1, salida: `${error.stdout || ''}${error.stderr || ''}` };
   } finally {
-    if (temporal) fs.writeFileSync(CONFIG, original, 'utf8');
+    fs.rmSync(copias, { recursive: true, force: true });
   }
 }
 
@@ -101,15 +117,31 @@ test('si alguien mueve el CLI fijado sin rederivar el vocabulario, la guardia lo
   assert.equal(derivada[1], fijada[1], 'el vocabulario y el CLI fijado hablan de versiones distintas');
 
   const movido = original.replace(/SUPABASE_CLI_VERSION:\s*'?[\d.]+'?/, "SUPABASE_CLI_VERSION: '9.9.9'");
-  fs.writeFileSync(workflow, movido, 'utf8');
+  // TOOL-05: la prueba trabaja sobre copias. Escribir y restaurar en un `finally` deja el mismo contenido pero
+  // cambia la fecha de modificación: por eso se mira la fecha, no sólo el texto.
+  const antes = [workflow, CONFIG].map((archivo) => [fs.readFileSync(archivo, 'utf8'), fs.statSync(archivo).mtimeMs]);
+  const { codigo, salida } = correrGuardia(undefined, { workflow: movido });
+  assert.equal(codigo, 1, 'mover el CLI sin rederivar el vocabulario tiene que fallar');
+  assert.match(salida, /9\.9\.9/);
+  assert.match(salida, /rederivarlo|derivar/i);
+  const despues = [workflow, CONFIG].map((archivo) => [fs.readFileSync(archivo, 'utf8'), fs.statSync(archivo).mtimeMs]);
+  assert.deepEqual(despues, antes, 'ni el workflow ni el config del repositorio se reescriben, ni siquiera un instante');
+});
+
+test('la guardia lee las rutas que se le dan y rechaza una opción sin ruta', () => {
+  const roto = `${fs.readFileSync(CONFIG, 'utf8')}\n[telemetria_inventada]\nenabled = true\n`;
+  const conCopia = correrGuardia(roto);
+  assert.equal(conCopia.codigo, 1, 'la copia rota tiene que fallar aunque el config del repositorio esté bien');
+  assert.equal(correrGuardia().codigo, 0, 'sin opciones, la guardia lee el config del repositorio');
+  let sinRuta;
   try {
-    const { codigo, salida } = correrGuardia();
-    assert.equal(codigo, 1, 'mover el CLI sin rederivar el vocabulario tiene que fallar');
-    assert.match(salida, /9\.9\.9/);
-    assert.match(salida, /rederivarlo|derivar/i);
-  } finally {
-    fs.writeFileSync(workflow, original, 'utf8');
+    execFileSync(process.execPath, [GUARDIA, '--config'], { encoding: 'utf8', stdio: 'pipe' });
+    sinRuta = { codigo: 0 };
+  } catch (error) {
+    sinRuta = { codigo: error.status, salida: `${error.stdout || ''}${error.stderr || ''}` };
   }
+  assert.equal(sinRuta.codigo, 2);
+  assert.match(sinRuta.salida, /--config necesita una ruta/);
 });
 
 test('el paso de CI que fija el CLI es el mismo que este guion lee', () => {

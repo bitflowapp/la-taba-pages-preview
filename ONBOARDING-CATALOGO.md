@@ -5,7 +5,7 @@ vendible, cuando el negocio entregue los datos. Sin inventar ni un precio.
 
 ---
 
-## El camino, en cuatro comandos
+## El camino, en cuatro comandos (y uno para volver atrás)
 
 ```bash
 node scripts/catalog-readiness.mjs          # 1. qué falta, SKU por SKU
@@ -14,11 +14,22 @@ node scripts/catalog-commercial-sheet.mjs   # 2. la planilla que se manda
 node scripts/import-commercial-catalog.mjs catalog/planilla-negocio.csv   # 3. dry-run
 node scripts/import-commercial-catalog.mjs catalog/planilla-negocio.csv \
      --apply --target supabase                                            # 4. aplicar
+node scripts/rollback-commercial-catalog.mjs --list                       # 5. los lotes aplicados
+node scripts/rollback-commercial-catalog.mjs <lote>                       #    qué cambió ese lote
+node scripts/rollback-commercial-catalog.mjs <lote> --apply --target supabase   # deshacerlo
 ```
 
 El paso 3 no escribe nada y es obligatorio: imprime el reporte de cambios
 —qué precio pasa de cuánto a cuánto, qué se publica, qué queda igual— para que
 alguien lo lea antes de que exista.
+
+El paso 4 termina diciendo con qué **lote** quedó registrado el cambio. Ese
+identificador es lo que se le pasa al paso 5 si hay que volver atrás. La
+reversión la decide la base, producto por producto: vuelve al valor anterior
+sólo donde nadie cambió precio, estado del precio, intención del comercio o
+verificación después del lote; lo que cambió después se informa y no se pisa; el
+stock nunca se restaura a ciegas; un alta no se borra. Pedirla dos veces
+devuelve el mismo resultado. Sólo la puede pedir el dueño o un encargado.
 
 ---
 

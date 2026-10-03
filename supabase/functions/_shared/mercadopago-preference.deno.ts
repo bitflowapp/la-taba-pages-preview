@@ -28,19 +28,16 @@ function prepararEntorno(entorno: 'test' | 'production', autorizado = false) {
   Deno.env.set('MERCADOPAGO_ENVIRONMENT', entorno);
   Deno.env.set('TABA_CHECKOUT_BASE_URL', BASE);
   Deno.env.set('SUPABASE_URL', SUPABASE);
+  // La variable vieja de humo ya no abre nada: ninguna prueba la deja puesta.
+  Deno.env.delete('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION');
   if (entorno === 'production') {
     Deno.env.set('MERCADOPAGO_PRODUCTION_REVIEW_STATUS', 'approved');
-    if (autorizado) {
-      Deno.env.set(
-        'MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION',
-        'I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE',
-      );
-    } else {
-      Deno.env.delete('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION');
-    }
+    // El interruptor de dinero real (EDGE-03): sólo `enabled`, exacto, abre.
+    if (autorizado) Deno.env.set('MERCADOPAGO_REAL_MONEY_ENABLED', 'enabled');
+    else Deno.env.delete('MERCADOPAGO_REAL_MONEY_ENABLED');
   } else {
     Deno.env.delete('MERCADOPAGO_PRODUCTION_REVIEW_STATUS');
-    Deno.env.delete('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION');
+    Deno.env.delete('MERCADOPAGO_REAL_MONEY_ENABLED');
   }
 }
 
@@ -140,15 +137,52 @@ Deno.test('el importe nunca sale del entorno equivocado', () => {
   );
 });
 
-Deno.test('en producción hace falta la autorización explícita de pago real', () => {
+Deno.test('en producción hace falta el interruptor de dinero real, con el valor exacto', () => {
   prepararEntorno('production', false);
   assertLanza(
     () => preferenceRequest(preparacion({ environment: 'production' })),
-    'se armó una preferencia con plata real sin autorización explícita',
+    'se armó una preferencia con plata real sin el interruptor',
+  );
+  for (const valor of ['true', 'ENABLED', 'Enabled', ' enabled', 'enabled ', '1', 'yes']) {
+    Deno.env.set('MERCADOPAGO_REAL_MONEY_ENABLED', valor);
+    assertLanza(
+      () => preferenceRequest(preparacion({ environment: 'production' })),
+      `el interruptor en ${JSON.stringify(valor)} abrió el dinero real`,
+    );
+  }
+  // La frase vieja de la prueba de humo ya no abre nada.
+  prepararEntorno('production', false);
+  Deno.env.set('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION', 'I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE');
+  assertLanza(
+    () => preferenceRequest(preparacion({ environment: 'production' })),
+    'la variable vieja de humo abrió el dinero real',
   );
   prepararEntorno('production', true);
   const cuerpo = preferenceRequest(preparacion({ environment: 'production' }));
   assert(sumaDeLineas(cuerpo) === 12_300, 'el total productivo no coincide');
+  // Sin revisión aprobada, ni con el interruptor.
+  Deno.env.set('MERCADOPAGO_PRODUCTION_REVIEW_STATUS', 'pending');
+  assertLanza(
+    () => preferenceRequest(preparacion({ environment: 'production' })),
+    'se armó una preferencia productiva sin la revisión aprobada',
+  );
+  prepararEntorno('test');
+});
+
+Deno.test('en test el interruptor no se pide ni cambia nada', () => {
+  prepararEntorno('test');
+  const sinInterruptor = preferenceRequest(preparacion());
+  Deno.env.set('MERCADOPAGO_REAL_MONEY_ENABLED', 'enabled');
+  const conInterruptor = preferenceRequest(preparacion());
+  Deno.env.delete('MERCADOPAGO_REAL_MONEY_ENABLED');
+  assert(sumaDeLineas(sinInterruptor) === sumaDeLineas(conInterruptor), 'el interruptor cambió una preferencia de prueba');
+  // Y no convierte una preparación productiva en algo que un proyecto de prueba arme.
+  Deno.env.set('MERCADOPAGO_REAL_MONEY_ENABLED', 'enabled');
+  assertLanza(
+    () => preferenceRequest(preparacion({ environment: 'production' })),
+    'con el interruptor, un proyecto de prueba armó una preferencia productiva',
+  );
+  Deno.env.delete('MERCADOPAGO_REAL_MONEY_ENABLED');
 });
 
 Deno.test('una sesión vencida no puede generar una preferencia', () => {

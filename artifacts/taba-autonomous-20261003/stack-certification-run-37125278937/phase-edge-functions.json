@@ -1,0 +1,99 @@
+{
+  "at": "2026-10-03T13:12:40.250Z",
+  "functions": {
+    "catalog-image-manager": {
+      "answer": "401 AUTH_REQUIRED",
+      "ms": 1529.8,
+      "runtimeFailure": null
+    },
+    "fiscal-artifact-access": {
+      "answer": "400 INVALID_REQUEST",
+      "ms": 505.3,
+      "runtimeFailure": null
+    },
+    "mercadopago-cancel-payment": {
+      "answer": "409 EXPLICIT_CANCELLATION_CONFIRMATION_REQUIRED",
+      "ms": 149.8,
+      "runtimeFailure": null
+    },
+    "mercadopago-checkout-status": {
+      "answer": "400 INVALID_REQUEST",
+      "ms": 139.5,
+      "runtimeFailure": null
+    },
+    "mercadopago-connect": {
+      "answer": "401 AUTH_REQUIRED",
+      "ms": 148.2,
+      "runtimeFailure": null
+    },
+    "mercadopago-create-checkout-session": {
+      "answer": "401 AUTH_REQUIRED",
+      "ms": 17.6,
+      "runtimeFailure": null
+    },
+    "mercadopago-create-preference": {
+      "answer": "400 INVALID_REQUEST",
+      "ms": 138.6,
+      "runtimeFailure": null
+    },
+    "mercadopago-oauth-callback": {
+      "answer": "503",
+      "ms": 144.5,
+      "runtimeFailure": null
+    },
+    "mercadopago-payment-worker": {
+      "answer": "401 WORKER_AUTH_REQUIRED",
+      "ms": 140.5,
+      "runtimeFailure": null
+    },
+    "mercadopago-refund": {
+      "answer": "409 EXPLICIT_REFUND_CONFIRMATION_REQUIRED",
+      "ms": 141.4,
+      "runtimeFailure": null
+    },
+    "mercadopago-webhook": {
+      "answer": "400 HTTPS_REQUIRED",
+      "ms": 467.6,
+      "runtimeFailure": null
+    },
+    "print-agent-gateway": {
+      "answer": "401 DEVICE_UNAUTHORIZED",
+      "ms": 140.9,
+      "runtimeFailure": null
+    },
+    "team-invitation": {
+      "answer": "400 INVALID_REQUEST",
+      "ms": 229.1,
+      "runtimeFailure": null
+    }
+  },
+  "webhook": {
+    "answer": "400 HTTPS_REQUIRED",
+    "before": {
+      "receipts": 0,
+      "valid_receipts": 0,
+      "jobs": 0,
+      "payment_events": 0
+    },
+    "after": {
+      "receipts": 0,
+      "valid_receipts": 0,
+      "jobs": 0,
+      "payment_events": 0
+    }
+  },
+  "checkout": {
+    "refusal": "409 PAYMENTS_NOT_ENABLED",
+    "availability": {
+      "available": false,
+      "environment": null,
+      "checkout_mode": null,
+      "allow_offline_payment_methods": false,
+      "installments_limit": null
+    },
+    "sessions": [
+      0,
+      0
+    ]
+  }
+}

@@ -1,0 +1,4208 @@
+{
+  "runId": "ecom-cert-stack-20261003-131208",
+  "uses": [
+    {
+      "purpose": "provision",
+      "action": "insert businesses (QA tenant, closed, qa_fixture)",
+      "at": "2026-10-03T13:12:12.289Z",
+      "ok": true,
+      "ms": 67
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent owner)",
+      "at": "2026-10-03T13:12:12.369Z",
+      "ok": true,
+      "ms": 114
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent admin)",
+      "at": "2026-10-03T13:12:12.593Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent staff)",
+      "at": "2026-10-03T13:12:12.799Z",
+      "ok": true,
+      "ms": 95
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent rider1)",
+      "at": "2026-10-03T13:12:13.006Z",
+      "ok": true,
+      "ms": 104
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent rider2)",
+      "at": "2026-10-03T13:12:13.215Z",
+      "ok": true,
+      "ms": 103
+    },
+    {
+      "purpose": "provision",
+      "action": "insert business_members (first owner of a business of this run)",
+      "at": "2026-10-03T13:12:13.423Z",
+      "ok": true,
+      "ms": 12
+    },
+    {
+      "purpose": "provision",
+      "action": "update businesses (intake limits: baseline for a single-origin QA run)",
+      "at": "2026-10-03T13:12:13.725Z",
+      "ok": true,
+      "ms": 5
+    },
+    {
+      "purpose": "provision",
+      "action": "insert products (fixture MAIN, unverified and hidden)",
+      "at": "2026-10-03T13:12:13.735Z",
+      "ok": true,
+      "ms": 5
+    },
+    {
+      "purpose": "provision",
+      "action": "insert products (fixture LAST_UNIT, unverified and hidden)",
+      "at": "2026-10-03T13:12:13.741Z",
+      "ok": true,
+      "ms": 3
+    },
+    {
+      "purpose": "provision",
+      "action": "insert products (fixture PRICE_CHANGE, unverified and hidden)",
+      "at": "2026-10-03T13:12:13.745Z",
+      "ok": true,
+      "ms": 4
+    },
+    {
+      "purpose": "provision",
+      "action": "insert products (fixture HIDE, unverified and hidden)",
+      "at": "2026-10-03T13:12:13.749Z",
+      "ok": true,
+      "ms": 3
+    },
+    {
+      "purpose": "provision",
+      "action": "insert products (fixture PERF, unverified and hidden)",
+      "at": "2026-10-03T13:12:13.754Z",
+      "ok": true,
+      "ms": 3
+    },
+    {
+      "purpose": "provision",
+      "action": "insert products (fixture PENDING_PRICE, unverified and hidden)",
+      "at": "2026-10-03T13:12:13.758Z",
+      "ok": true,
+      "ms": 3
+    },
+    {
+      "purpose": "provision",
+      "action": "insert products (fixture HIDDEN, unverified and hidden)",
+      "at": "2026-10-03T13:12:13.763Z",
+      "ok": true,
+      "ms": 3
+    },
+    {
+      "purpose": "provision",
+      "action": "rpc platform_verify_business_ordering (QA tenant)",
+      "at": "2026-10-03T13:12:13.803Z",
+      "ok": true,
+      "ms": 73
+    },
+    {
+      "purpose": "provision",
+      "action": "insert businesses + products (throwaway business of this run: closed, inactive)",
+      "at": "2026-10-03T13:12:13.889Z",
+      "ok": true,
+      "ms": 7
+    },
+    {
+      "purpose": "provision",
+      "action": "rpc platform_verify_business_ordering (throwaway business of this run: a refusal is expected, nothing changes)",
+      "at": "2026-10-03T13:12:13.898Z",
+      "ok": true,
+      "ms": 6
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer intake-a)",
+      "at": "2026-10-03T13:12:13.913Z",
+      "ok": true,
+      "ms": 104
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer intake-b)",
+      "at": "2026-10-03T13:12:14.147Z",
+      "ok": true,
+      "ms": 97
+    },
+    {
+      "purpose": "provision",
+      "action": "update businesses (intake limits: prove the pending-orders limit per customer)",
+      "at": "2026-10-03T13:12:14.366Z",
+      "ok": true,
+      "ms": 3
+    },
+    {
+      "purpose": "provision",
+      "action": "update businesses (intake limits: prove the pending-orders limit per network origin)",
+      "at": "2026-10-03T13:12:14.433Z",
+      "ok": true,
+      "ms": 3
+    },
+    {
+      "purpose": "provision",
+      "action": "update businesses (intake limits: prove the unit cap of an unpaid order)",
+      "at": "2026-10-03T13:12:14.472Z",
+      "ok": true,
+      "ms": 3
+    },
+    {
+      "purpose": "provision",
+      "action": "update businesses (intake limits: restore the roomy baseline after the limit proof)",
+      "at": "2026-10-03T13:12:14.504Z",
+      "ok": true,
+      "ms": 3
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer catalog)",
+      "at": "2026-10-03T13:12:14.630Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer pricing)",
+      "at": "2026-10-03T13:12:14.946Z",
+      "ok": true,
+      "ms": 97
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer snapshot)",
+      "at": "2026-10-03T13:12:15.480Z",
+      "ok": true,
+      "ms": 99
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer delivery)",
+      "at": "2026-10-03T13:12:15.999Z",
+      "ok": true,
+      "ms": 97
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer hours)",
+      "at": "2026-10-03T13:12:16.947Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer inventory-a)",
+      "at": "2026-10-03T13:12:18.056Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer inventory-b)",
+      "at": "2026-10-03T13:12:18.284Z",
+      "ok": true,
+      "ms": 99
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer idempotency-a)",
+      "at": "2026-10-03T13:12:19.070Z",
+      "ok": true,
+      "ms": 100
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer idempotency-b)",
+      "at": "2026-10-03T13:12:19.304Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer cancellation)",
+      "at": "2026-10-03T13:12:21.142Z",
+      "ok": true,
+      "ms": 99
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer cancellation-stranger)",
+      "at": "2026-10-03T13:12:21.548Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer customer-cancel)",
+      "at": "2026-10-03T13:12:21.851Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "upsert business_payment_settings + mp_seller_connections (certification seller: test environment, no credentials)",
+      "at": "2026-10-03T13:12:22.247Z",
+      "ok": true,
+      "ms": 8
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-001)",
+      "at": "2026-10-03T13:12:22.262Z",
+      "ok": true,
+      "ms": 97
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc create_checkout_session (customer-cancel)",
+      "at": "2026-10-03T13:12:22.472Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc prepare_mercadopago_preference_v2 (customer-cancel)",
+      "at": "2026-10-03T13:12:22.497Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc get_mercadopago_payment_authority_v2 (customer-cancel)",
+      "at": "2026-10-03T13:12:22.507Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc record_mercadopago_preference_created_v2 (customer-cancel)",
+      "at": "2026-10-03T13:12:22.517Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc record_mercadopago_payment_snapshot (customer-cancel)",
+      "at": "2026-10-03T13:12:22.535Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc finalize_paid_checkout_session (customer-cancel)",
+      "at": "2026-10-03T13:12:22.546Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc record_payment_refund_identity (customer-cancel (cierre))",
+      "at": "2026-10-03T13:12:22.621Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc record_payment_refund_response_v2 (customer-cancel (cierre))",
+      "at": "2026-10-03T13:12:22.627Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer rider)",
+      "at": "2026-10-03T13:12:22.690Z",
+      "ok": true,
+      "ms": 99
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer rider-other)",
+      "at": "2026-10-03T13:12:22.926Z",
+      "ok": true,
+      "ms": 97
+    },
+    {
+      "purpose": "provision",
+      "action": "insert businesses (second business of this run, closed, qa_fixture)",
+      "at": "2026-10-03T13:12:23.946Z",
+      "ok": true,
+      "ms": 55
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent b-owner)",
+      "at": "2026-10-03T13:12:24.013Z",
+      "ok": true,
+      "ms": 105
+    },
+    {
+      "purpose": "provision",
+      "action": "insert business_members (first owner of a business of this run)",
+      "at": "2026-10-03T13:12:24.231Z",
+      "ok": true,
+      "ms": 9
+    },
+    {
+      "purpose": "provision",
+      "action": "insert products (fixture of the second business, unverified and hidden)",
+      "at": "2026-10-03T13:12:24.387Z",
+      "ok": true,
+      "ms": 4
+    },
+    {
+      "purpose": "provision",
+      "action": "rpc platform_verify_business_ordering (second business of this run)",
+      "at": "2026-10-03T13:12:24.407Z",
+      "ok": true,
+      "ms": 69
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer second-business)",
+      "at": "2026-10-03T13:12:24.489Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer privacy-a)",
+      "at": "2026-10-03T13:12:24.733Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer privacy-a2)",
+      "at": "2026-10-03T13:12:24.968Z",
+      "ok": true,
+      "ms": 96
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer rls-a)",
+      "at": "2026-10-03T13:12:25.618Z",
+      "ok": true,
+      "ms": 99
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer rls-b)",
+      "at": "2026-10-03T13:12:25.856Z",
+      "ok": true,
+      "ms": 99
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (team rls-revoked)",
+      "at": "2026-10-03T13:12:26.226Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc create_checkout_session (rls)",
+      "at": "2026-10-03T13:12:26.495Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc prepare_mercadopago_preference_v2 (rls)",
+      "at": "2026-10-03T13:12:26.520Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc get_mercadopago_payment_authority_v2 (rls)",
+      "at": "2026-10-03T13:12:26.530Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc record_mercadopago_preference_created_v2 (rls)",
+      "at": "2026-10-03T13:12:26.541Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc record_mercadopago_payment_snapshot (rls)",
+      "at": "2026-10-03T13:12:26.558Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc finalize_paid_checkout_session (rls)",
+      "at": "2026-10-03T13:12:26.568Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc record_payment_refund_identity (rls (cierre))",
+      "at": "2026-10-03T13:12:26.852Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc record_payment_refund_response_v2 (rls (cierre))",
+      "at": "2026-10-03T13:12:26.858Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer trace)",
+      "at": "2026-10-03T13:12:26.912Z",
+      "ok": true,
+      "ms": 99
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc create_checkout_session (trace)",
+      "at": "2026-10-03T13:12:27.430Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc prepare_mercadopago_preference_v2 (trace)",
+      "at": "2026-10-03T13:12:27.446Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc get_mercadopago_payment_authority_v2 (trace)",
+      "at": "2026-10-03T13:12:27.453Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc record_mercadopago_preference_created_v2 (trace)",
+      "at": "2026-10-03T13:12:27.463Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc record_mercadopago_payment_snapshot (trace)",
+      "at": "2026-10-03T13:12:27.478Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc finalize_paid_checkout_session (trace)",
+      "at": "2026-10-03T13:12:27.488Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc mp_record_seller_webhook (trace)",
+      "at": "2026-10-03T13:12:27.703Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc record_payment_refund_identity (trace (cierre))",
+      "at": "2026-10-03T13:12:27.737Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc record_payment_refund_response_v2 (trace (cierre))",
+      "at": "2026-10-03T13:12:27.744Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "platform-read",
+      "action": "rpc get_ecommerce_health (shape, secrets and side effects)",
+      "at": "2026-10-03T13:12:27.793Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer health)",
+      "at": "2026-10-03T13:12:27.817Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "platform-read",
+      "action": "rpc get_ecommerce_health (a stopped scheduler job)",
+      "at": "2026-10-03T13:12:28.060Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "platform-read",
+      "action": "rpc get_ecommerce_health (the scheduler job back on)",
+      "at": "2026-10-03T13:12:28.078Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer abuse-window)",
+      "at": "2026-10-03T13:12:28.135Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "update businesses (intake limits: prove the 10-minute window per customer)",
+      "at": "2026-10-03T13:12:28.419Z",
+      "ok": true,
+      "ms": 4
+    },
+    {
+      "purpose": "provision",
+      "action": "update businesses (intake limits: prove the 10-minute window per network origin)",
+      "at": "2026-10-03T13:12:28.447Z",
+      "ok": true,
+      "ms": 4
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer abuse-origin)",
+      "at": "2026-10-03T13:12:28.465Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "update businesses (intake limits: prove the 10-minute window per business)",
+      "at": "2026-10-03T13:12:28.724Z",
+      "ok": true,
+      "ms": 3
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer abuse-business)",
+      "at": "2026-10-03T13:12:28.743Z",
+      "ok": true,
+      "ms": 96
+    },
+    {
+      "purpose": "provision",
+      "action": "update businesses (intake limits: prove monitor mode records without refusing)",
+      "at": "2026-10-03T13:12:28.984Z",
+      "ok": true,
+      "ms": 4
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer abuse-monitor)",
+      "at": "2026-10-03T13:12:29.003Z",
+      "ok": true,
+      "ms": 96
+    },
+    {
+      "purpose": "provision",
+      "action": "update businesses (intake limits: back to the roomy baseline before the forged-header proof)",
+      "at": "2026-10-03T13:12:29.284Z",
+      "ok": true,
+      "ms": 3
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer abuse-holder)",
+      "at": "2026-10-03T13:12:29.306Z",
+      "ok": true,
+      "ms": 100
+    },
+    {
+      "purpose": "provision",
+      "action": "update businesses (intake limits: prove forged forwarding headers do not change the network origin)",
+      "at": "2026-10-03T13:12:29.556Z",
+      "ok": true,
+      "ms": 3
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer abuse-forger)",
+      "at": "2026-10-03T13:12:29.575Z",
+      "ok": true,
+      "ms": 97
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent abuse-001)",
+      "at": "2026-10-03T13:12:29.822Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent abuse-002)",
+      "at": "2026-10-03T13:12:30.033Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent abuse-003)",
+      "at": "2026-10-03T13:12:30.246Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc create_checkout_session (abuse)",
+      "at": "2026-10-03T13:12:30.463Z",
+      "ok": true,
+      "calls": 24,
+      "transport": "own"
+    },
+    {
+      "purpose": "provision",
+      "action": "update businesses (intake limits: prove both channels share the customer pending quota)",
+      "at": "2026-10-03T13:12:30.481Z",
+      "ok": true,
+      "ms": 3
+    },
+    {
+      "purpose": "provision",
+      "action": "update businesses (intake limits: back to the roomy baseline: the cooldown must not reach other subjects)",
+      "at": "2026-10-03T13:12:30.676Z",
+      "ok": true,
+      "ms": 2
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer abuse-bystander)",
+      "at": "2026-10-03T13:12:30.697Z",
+      "ok": true,
+      "ms": 100
+    },
+    {
+      "purpose": "provision",
+      "action": "update businesses (intake limits: restore the roomy baseline after the abuse phase)",
+      "at": "2026-10-03T13:12:30.966Z",
+      "ok": true,
+      "ms": 3
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc sweep_expired_checkout_sessions (abuse (cierre))",
+      "at": "2026-10-03T13:12:31.018Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-002)",
+      "at": "2026-10-03T13:12:31.074Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-003)",
+      "at": "2026-10-03T13:12:31.182Z",
+      "ok": true,
+      "ms": 95
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-004)",
+      "at": "2026-10-03T13:12:31.288Z",
+      "ok": true,
+      "ms": 96
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-005)",
+      "at": "2026-10-03T13:12:31.394Z",
+      "ok": true,
+      "ms": 96
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-006)",
+      "at": "2026-10-03T13:12:31.501Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc create_checkout_session (payments)",
+      "at": "2026-10-03T13:12:31.616Z",
+      "ok": true,
+      "calls": 6,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc prepare_mercadopago_preference_v2 (payments)",
+      "at": "2026-10-03T13:12:31.639Z",
+      "ok": true,
+      "calls": 6,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc get_mercadopago_payment_authority_v2 (payments)",
+      "at": "2026-10-03T13:12:31.650Z",
+      "ok": true,
+      "calls": 6,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc record_mercadopago_preference_created_v2 (payments)",
+      "at": "2026-10-03T13:12:31.661Z",
+      "ok": true,
+      "calls": 6,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc record_mercadopago_payment_snapshot (payments)",
+      "at": "2026-10-03T13:12:31.679Z",
+      "ok": true,
+      "calls": 10,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc finalize_paid_checkout_session (payments)",
+      "at": "2026-10-03T13:12:31.692Z",
+      "ok": true,
+      "calls": 7,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc sweep_expired_checkout_sessions (payments)",
+      "at": "2026-10-03T13:12:31.963Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc record_payment_refund_identity (payments)",
+      "at": "2026-10-03T13:12:32.105Z",
+      "ok": true,
+      "calls": 3,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc record_payment_refund_response_v2 (payments)",
+      "at": "2026-10-03T13:12:32.114Z",
+      "ok": true,
+      "calls": 3,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc record_payment_refund_identity (payments (cierre))",
+      "at": "2026-10-03T13:12:32.193Z",
+      "ok": true,
+      "calls": 3,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc record_payment_refund_response_v2 (payments (cierre))",
+      "at": "2026-10-03T13:12:32.203Z",
+      "ok": true,
+      "calls": 3,
+      "transport": "own"
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer lost-ack)",
+      "at": "2026-10-03T13:12:32.273Z",
+      "ok": true,
+      "ms": 99
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc create_checkout_session (lost-ack)",
+      "at": "2026-10-03T13:12:34.202Z",
+      "ok": true,
+      "calls": 2,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc prepare_mercadopago_preference_v2 (lost-ack)",
+      "at": "2026-10-03T13:12:34.621Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc get_mercadopago_payment_authority_v2 (lost-ack)",
+      "at": "2026-10-03T13:12:34.632Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc record_mercadopago_preference_created_v2 (lost-ack)",
+      "at": "2026-10-03T13:12:34.644Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc record_mercadopago_payment_snapshot (lost-ack)",
+      "at": "2026-10-03T13:12:34.661Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc finalize_paid_checkout_session (lost-ack)",
+      "at": "2026-10-03T13:12:34.671Z",
+      "ok": true,
+      "calls": 2,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc record_payment_refund_identity (lost-ack)",
+      "at": "2026-10-03T13:12:35.499Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc record_payment_refund_response_v2 (lost-ack)",
+      "at": "2026-10-03T13:12:35.508Z",
+      "ok": true,
+      "calls": 2,
+      "transport": "own"
+    },
+    {
+      "purpose": "cleanup",
+      "action": "update business_payment_settings + mp_seller_connections (certification seller switched off)",
+      "at": "2026-10-03T13:12:39.875Z",
+      "ok": true,
+      "ms": 6
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer edge-checkout)",
+      "at": "2026-10-03T13:12:39.899Z",
+      "ok": true,
+      "ms": 100
+    },
+    {
+      "purpose": "provision",
+      "action": "upsert business_payment_settings + mp_seller_connections (certification seller: test environment, no credentials)",
+      "at": "2026-10-03T13:12:40.289Z",
+      "ok": true,
+      "ms": 6
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc create_checkout_session (expiry)",
+      "at": "2026-10-03T13:12:40.318Z",
+      "ok": true,
+      "calls": 1,
+      "transport": "own"
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer expiry-unattended)",
+      "at": "2026-10-03T13:12:40.354Z",
+      "ok": true,
+      "ms": 97
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-001)",
+      "at": "2026-10-03T13:14:01.878Z",
+      "ok": true,
+      "ms": 166
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-002)",
+      "at": "2026-10-03T13:14:01.891Z",
+      "ok": true,
+      "ms": 183
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-003)",
+      "at": "2026-10-03T13:14:01.903Z",
+      "ok": true,
+      "ms": 183
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-004)",
+      "at": "2026-10-03T13:14:01.916Z",
+      "ok": true,
+      "ms": 145
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-005)",
+      "at": "2026-10-03T13:14:02.213Z",
+      "ok": true,
+      "ms": 105
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-006)",
+      "at": "2026-10-03T13:14:02.348Z",
+      "ok": true,
+      "ms": 108
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-007)",
+      "at": "2026-10-03T13:14:02.484Z",
+      "ok": true,
+      "ms": 108
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-008)",
+      "at": "2026-10-03T13:14:02.622Z",
+      "ok": true,
+      "ms": 106
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-009)",
+      "at": "2026-10-03T13:14:02.757Z",
+      "ok": true,
+      "ms": 106
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-010)",
+      "at": "2026-10-03T13:14:02.893Z",
+      "ok": true,
+      "ms": 105
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-011)",
+      "at": "2026-10-03T13:14:03.029Z",
+      "ok": true,
+      "ms": 106
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-012)",
+      "at": "2026-10-03T13:14:03.166Z",
+      "ok": true,
+      "ms": 105
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-013)",
+      "at": "2026-10-03T13:14:03.302Z",
+      "ok": true,
+      "ms": 105
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-014)",
+      "at": "2026-10-03T13:14:03.439Z",
+      "ok": true,
+      "ms": 108
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-015)",
+      "at": "2026-10-03T13:14:03.580Z",
+      "ok": true,
+      "ms": 109
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-016)",
+      "at": "2026-10-03T13:14:03.723Z",
+      "ok": true,
+      "ms": 115
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-017)",
+      "at": "2026-10-03T13:14:03.871Z",
+      "ok": true,
+      "ms": 108
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-018)",
+      "at": "2026-10-03T13:14:04.016Z",
+      "ok": true,
+      "ms": 110
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-019)",
+      "at": "2026-10-03T13:14:04.163Z",
+      "ok": true,
+      "ms": 119
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-020)",
+      "at": "2026-10-03T13:14:04.316Z",
+      "ok": true,
+      "ms": 109
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-021)",
+      "at": "2026-10-03T13:14:04.460Z",
+      "ok": true,
+      "ms": 104
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-022)",
+      "at": "2026-10-03T13:14:04.600Z",
+      "ok": true,
+      "ms": 105
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-023)",
+      "at": "2026-10-03T13:14:04.741Z",
+      "ok": true,
+      "ms": 104
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-024)",
+      "at": "2026-10-03T13:14:04.880Z",
+      "ok": true,
+      "ms": 104
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-025)",
+      "at": "2026-10-03T13:14:05.020Z",
+      "ok": true,
+      "ms": 105
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-026)",
+      "at": "2026-10-03T13:14:05.161Z",
+      "ok": true,
+      "ms": 102
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-027)",
+      "at": "2026-10-03T13:14:05.301Z",
+      "ok": true,
+      "ms": 109
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-028)",
+      "at": "2026-10-03T13:14:05.448Z",
+      "ok": true,
+      "ms": 106
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-029)",
+      "at": "2026-10-03T13:14:05.592Z",
+      "ok": true,
+      "ms": 106
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-030)",
+      "at": "2026-10-03T13:14:05.736Z",
+      "ok": true,
+      "ms": 102
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-031)",
+      "at": "2026-10-03T13:14:05.878Z",
+      "ok": true,
+      "ms": 103
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-032)",
+      "at": "2026-10-03T13:14:06.022Z",
+      "ok": true,
+      "ms": 110
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-033)",
+      "at": "2026-10-03T13:14:06.172Z",
+      "ok": true,
+      "ms": 109
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-034)",
+      "at": "2026-10-03T13:14:06.320Z",
+      "ok": true,
+      "ms": 109
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-035)",
+      "at": "2026-10-03T13:14:06.470Z",
+      "ok": true,
+      "ms": 110
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-036)",
+      "at": "2026-10-03T13:14:06.623Z",
+      "ok": true,
+      "ms": 104
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-037)",
+      "at": "2026-10-03T13:14:06.770Z",
+      "ok": true,
+      "ms": 107
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-038)",
+      "at": "2026-10-03T13:14:06.921Z",
+      "ok": true,
+      "ms": 102
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-039)",
+      "at": "2026-10-03T13:14:07.066Z",
+      "ok": true,
+      "ms": 104
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-040)",
+      "at": "2026-10-03T13:14:07.217Z",
+      "ok": true,
+      "ms": 107
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-041)",
+      "at": "2026-10-03T13:14:07.368Z",
+      "ok": true,
+      "ms": 104
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-042)",
+      "at": "2026-10-03T13:14:07.516Z",
+      "ok": true,
+      "ms": 108
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-043)",
+      "at": "2026-10-03T13:14:07.668Z",
+      "ok": true,
+      "ms": 108
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-044)",
+      "at": "2026-10-03T13:14:07.821Z",
+      "ok": true,
+      "ms": 103
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-045)",
+      "at": "2026-10-03T13:14:07.970Z",
+      "ok": true,
+      "ms": 112
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-046)",
+      "at": "2026-10-03T13:14:08.131Z",
+      "ok": true,
+      "ms": 104
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-047)",
+      "at": "2026-10-03T13:14:08.282Z",
+      "ok": true,
+      "ms": 105
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-048)",
+      "at": "2026-10-03T13:14:08.435Z",
+      "ok": true,
+      "ms": 110
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-049)",
+      "at": "2026-10-03T13:14:08.592Z",
+      "ok": true,
+      "ms": 105
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-050)",
+      "at": "2026-10-03T13:14:08.746Z",
+      "ok": true,
+      "ms": 111
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-051)",
+      "at": "2026-10-03T13:14:08.906Z",
+      "ok": true,
+      "ms": 114
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-052)",
+      "at": "2026-10-03T13:14:09.072Z",
+      "ok": true,
+      "ms": 107
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-053)",
+      "at": "2026-10-03T13:14:09.231Z",
+      "ok": true,
+      "ms": 103
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-054)",
+      "at": "2026-10-03T13:14:09.385Z",
+      "ok": true,
+      "ms": 107
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-055)",
+      "at": "2026-10-03T13:14:09.545Z",
+      "ok": true,
+      "ms": 104
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-056)",
+      "at": "2026-10-03T13:14:09.701Z",
+      "ok": true,
+      "ms": 107
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-057)",
+      "at": "2026-10-03T13:14:09.860Z",
+      "ok": true,
+      "ms": 107
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-058)",
+      "at": "2026-10-03T13:14:10.020Z",
+      "ok": true,
+      "ms": 111
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-059)",
+      "at": "2026-10-03T13:14:10.183Z",
+      "ok": true,
+      "ms": 106
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-060)",
+      "at": "2026-10-03T13:14:10.343Z",
+      "ok": true,
+      "ms": 105
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-061)",
+      "at": "2026-10-03T13:14:10.502Z",
+      "ok": true,
+      "ms": 106
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-062)",
+      "at": "2026-10-03T13:14:10.664Z",
+      "ok": true,
+      "ms": 106
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-063)",
+      "at": "2026-10-03T13:14:10.825Z",
+      "ok": true,
+      "ms": 105
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-064)",
+      "at": "2026-10-03T13:14:10.985Z",
+      "ok": true,
+      "ms": 107
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-065)",
+      "at": "2026-10-03T13:14:11.147Z",
+      "ok": true,
+      "ms": 107
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-066)",
+      "at": "2026-10-03T13:14:11.310Z",
+      "ok": true,
+      "ms": 103
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-067)",
+      "at": "2026-10-03T13:14:11.470Z",
+      "ok": true,
+      "ms": 106
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-068)",
+      "at": "2026-10-03T13:14:11.635Z",
+      "ok": true,
+      "ms": 109
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-069)",
+      "at": "2026-10-03T13:14:11.802Z",
+      "ok": true,
+      "ms": 111
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-070)",
+      "at": "2026-10-03T13:14:11.972Z",
+      "ok": true,
+      "ms": 104
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-071)",
+      "at": "2026-10-03T13:14:12.136Z",
+      "ok": true,
+      "ms": 106
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-072)",
+      "at": "2026-10-03T13:14:12.302Z",
+      "ok": true,
+      "ms": 113
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-073)",
+      "at": "2026-10-03T13:14:12.477Z",
+      "ok": true,
+      "ms": 108
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-074)",
+      "at": "2026-10-03T13:14:12.646Z",
+      "ok": true,
+      "ms": 104
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-075)",
+      "at": "2026-10-03T13:14:12.813Z",
+      "ok": true,
+      "ms": 104
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-076)",
+      "at": "2026-10-03T13:14:12.979Z",
+      "ok": true,
+      "ms": 105
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-077)",
+      "at": "2026-10-03T13:14:13.148Z",
+      "ok": true,
+      "ms": 105
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-078)",
+      "at": "2026-10-03T13:14:13.317Z",
+      "ok": true,
+      "ms": 111
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-079)",
+      "at": "2026-10-03T13:14:13.494Z",
+      "ok": true,
+      "ms": 108
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-080)",
+      "at": "2026-10-03T13:14:13.668Z",
+      "ok": true,
+      "ms": 110
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-081)",
+      "at": "2026-10-03T13:14:13.846Z",
+      "ok": true,
+      "ms": 105
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-082)",
+      "at": "2026-10-03T13:14:14.017Z",
+      "ok": true,
+      "ms": 116
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-083)",
+      "at": "2026-10-03T13:14:14.202Z",
+      "ok": true,
+      "ms": 156
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-084)",
+      "at": "2026-10-03T13:14:14.355Z",
+      "ok": true,
+      "ms": 140
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-085)",
+      "at": "2026-10-03T13:14:14.564Z",
+      "ok": true,
+      "ms": 106
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-086)",
+      "at": "2026-10-03T13:14:14.739Z",
+      "ok": true,
+      "ms": 105
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-087)",
+      "at": "2026-10-03T13:14:14.913Z",
+      "ok": true,
+      "ms": 108
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-088)",
+      "at": "2026-10-03T13:14:15.094Z",
+      "ok": true,
+      "ms": 104
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-089)",
+      "at": "2026-10-03T13:14:15.268Z",
+      "ok": true,
+      "ms": 101
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-090)",
+      "at": "2026-10-03T13:14:15.441Z",
+      "ok": true,
+      "ms": 104
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-091)",
+      "at": "2026-10-03T13:14:15.615Z",
+      "ok": true,
+      "ms": 107
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-092)",
+      "at": "2026-10-03T13:14:15.795Z",
+      "ok": true,
+      "ms": 106
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-093)",
+      "at": "2026-10-03T13:14:15.974Z",
+      "ok": true,
+      "ms": 103
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-094)",
+      "at": "2026-10-03T13:14:16.150Z",
+      "ok": true,
+      "ms": 111
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-095)",
+      "at": "2026-10-03T13:14:16.335Z",
+      "ok": true,
+      "ms": 110
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-096)",
+      "at": "2026-10-03T13:14:16.521Z",
+      "ok": true,
+      "ms": 109
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-097)",
+      "at": "2026-10-03T13:14:16.705Z",
+      "ok": true,
+      "ms": 108
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-098)",
+      "at": "2026-10-03T13:14:16.890Z",
+      "ok": true,
+      "ms": 108
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-099)",
+      "at": "2026-10-03T13:14:17.078Z",
+      "ok": true,
+      "ms": 107
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (customer perf-100)",
+      "at": "2026-10-03T13:14:17.262Z",
+      "ok": true,
+      "ms": 108
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-007)",
+      "at": "2026-10-03T13:14:17.743Z",
+      "ok": true,
+      "ms": 95
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-008)",
+      "at": "2026-10-03T13:14:17.877Z",
+      "ok": true,
+      "ms": 96
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-009)",
+      "at": "2026-10-03T13:14:18.014Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-010)",
+      "at": "2026-10-03T13:14:18.153Z",
+      "ok": true,
+      "ms": 104
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-011)",
+      "at": "2026-10-03T13:14:18.297Z",
+      "ok": true,
+      "ms": 101
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-012)",
+      "at": "2026-10-03T13:14:18.439Z",
+      "ok": true,
+      "ms": 101
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-013)",
+      "at": "2026-10-03T13:14:18.581Z",
+      "ok": true,
+      "ms": 103
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-014)",
+      "at": "2026-10-03T13:14:18.724Z",
+      "ok": true,
+      "ms": 99
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-015)",
+      "at": "2026-10-03T13:14:18.864Z",
+      "ok": true,
+      "ms": 103
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-016)",
+      "at": "2026-10-03T13:14:19.007Z",
+      "ok": true,
+      "ms": 102
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-017)",
+      "at": "2026-10-03T13:14:19.149Z",
+      "ok": true,
+      "ms": 97
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-018)",
+      "at": "2026-10-03T13:14:19.287Z",
+      "ok": true,
+      "ms": 99
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-019)",
+      "at": "2026-10-03T13:14:19.427Z",
+      "ok": true,
+      "ms": 99
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-020)",
+      "at": "2026-10-03T13:14:19.566Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-021)",
+      "at": "2026-10-03T13:14:19.707Z",
+      "ok": true,
+      "ms": 97
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-022)",
+      "at": "2026-10-03T13:14:19.845Z",
+      "ok": true,
+      "ms": 97
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-023)",
+      "at": "2026-10-03T13:14:19.983Z",
+      "ok": true,
+      "ms": 97
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-024)",
+      "at": "2026-10-03T13:14:20.121Z",
+      "ok": true,
+      "ms": 97
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-025)",
+      "at": "2026-10-03T13:14:20.259Z",
+      "ok": true,
+      "ms": 103
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-026)",
+      "at": "2026-10-03T13:14:20.403Z",
+      "ok": true,
+      "ms": 99
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-027)",
+      "at": "2026-10-03T13:14:20.544Z",
+      "ok": true,
+      "ms": 99
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-028)",
+      "at": "2026-10-03T13:14:20.685Z",
+      "ok": true,
+      "ms": 101
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-029)",
+      "at": "2026-10-03T13:14:20.829Z",
+      "ok": true,
+      "ms": 101
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-030)",
+      "at": "2026-10-03T13:14:20.972Z",
+      "ok": true,
+      "ms": 97
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-031)",
+      "at": "2026-10-03T13:14:21.111Z",
+      "ok": true,
+      "ms": 105
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-032)",
+      "at": "2026-10-03T13:14:21.260Z",
+      "ok": true,
+      "ms": 99
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-033)",
+      "at": "2026-10-03T13:14:21.402Z",
+      "ok": true,
+      "ms": 99
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-034)",
+      "at": "2026-10-03T13:14:21.543Z",
+      "ok": true,
+      "ms": 99
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-035)",
+      "at": "2026-10-03T13:14:21.684Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-036)",
+      "at": "2026-10-03T13:14:21.825Z",
+      "ok": true,
+      "ms": 102
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-037)",
+      "at": "2026-10-03T13:14:21.970Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-038)",
+      "at": "2026-10-03T13:14:22.118Z",
+      "ok": true,
+      "ms": 97
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-039)",
+      "at": "2026-10-03T13:14:22.257Z",
+      "ok": true,
+      "ms": 97
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-040)",
+      "at": "2026-10-03T13:14:22.396Z",
+      "ok": true,
+      "ms": 100
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-041)",
+      "at": "2026-10-03T13:14:22.538Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-042)",
+      "at": "2026-10-03T13:14:22.679Z",
+      "ok": true,
+      "ms": 100
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-043)",
+      "at": "2026-10-03T13:14:22.822Z",
+      "ok": true,
+      "ms": 100
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-044)",
+      "at": "2026-10-03T13:14:22.966Z",
+      "ok": true,
+      "ms": 99
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-045)",
+      "at": "2026-10-03T13:14:23.109Z",
+      "ok": true,
+      "ms": 99
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-046)",
+      "at": "2026-10-03T13:14:23.251Z",
+      "ok": true,
+      "ms": 100
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-047)",
+      "at": "2026-10-03T13:14:23.395Z",
+      "ok": true,
+      "ms": 100
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-048)",
+      "at": "2026-10-03T13:14:23.540Z",
+      "ok": true,
+      "ms": 97
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-049)",
+      "at": "2026-10-03T13:14:23.682Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-050)",
+      "at": "2026-10-03T13:14:23.825Z",
+      "ok": true,
+      "ms": 104
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-051)",
+      "at": "2026-10-03T13:14:23.976Z",
+      "ok": true,
+      "ms": 103
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-052)",
+      "at": "2026-10-03T13:14:24.124Z",
+      "ok": true,
+      "ms": 97
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-053)",
+      "at": "2026-10-03T13:14:24.266Z",
+      "ok": true,
+      "ms": 95
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-054)",
+      "at": "2026-10-03T13:14:24.407Z",
+      "ok": true,
+      "ms": 103
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-055)",
+      "at": "2026-10-03T13:14:24.555Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-056)",
+      "at": "2026-10-03T13:14:24.696Z",
+      "ok": true,
+      "ms": 99
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-057)",
+      "at": "2026-10-03T13:14:24.839Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-058)",
+      "at": "2026-10-03T13:14:24.981Z",
+      "ok": true,
+      "ms": 101
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-059)",
+      "at": "2026-10-03T13:14:25.126Z",
+      "ok": true,
+      "ms": 97
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-060)",
+      "at": "2026-10-03T13:14:25.269Z",
+      "ok": true,
+      "ms": 97
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-061)",
+      "at": "2026-10-03T13:14:25.410Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-062)",
+      "at": "2026-10-03T13:14:25.553Z",
+      "ok": true,
+      "ms": 97
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-063)",
+      "at": "2026-10-03T13:14:25.696Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-064)",
+      "at": "2026-10-03T13:14:25.839Z",
+      "ok": true,
+      "ms": 96
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-065)",
+      "at": "2026-10-03T13:14:25.980Z",
+      "ok": true,
+      "ms": 100
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-066)",
+      "at": "2026-10-03T13:14:26.126Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-067)",
+      "at": "2026-10-03T13:14:26.268Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-068)",
+      "at": "2026-10-03T13:14:26.412Z",
+      "ok": true,
+      "ms": 100
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-069)",
+      "at": "2026-10-03T13:14:26.557Z",
+      "ok": true,
+      "ms": 102
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-070)",
+      "at": "2026-10-03T13:14:26.704Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-071)",
+      "at": "2026-10-03T13:14:26.848Z",
+      "ok": true,
+      "ms": 101
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-072)",
+      "at": "2026-10-03T13:14:26.994Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-073)",
+      "at": "2026-10-03T13:14:27.137Z",
+      "ok": true,
+      "ms": 97
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-074)",
+      "at": "2026-10-03T13:14:27.280Z",
+      "ok": true,
+      "ms": 99
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-075)",
+      "at": "2026-10-03T13:14:27.425Z",
+      "ok": true,
+      "ms": 99
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-076)",
+      "at": "2026-10-03T13:14:27.569Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-077)",
+      "at": "2026-10-03T13:14:27.714Z",
+      "ok": true,
+      "ms": 99
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-078)",
+      "at": "2026-10-03T13:14:27.858Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-079)",
+      "at": "2026-10-03T13:14:28.002Z",
+      "ok": true,
+      "ms": 97
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-080)",
+      "at": "2026-10-03T13:14:28.146Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-081)",
+      "at": "2026-10-03T13:14:28.290Z",
+      "ok": true,
+      "ms": 100
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-082)",
+      "at": "2026-10-03T13:14:28.436Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-083)",
+      "at": "2026-10-03T13:14:28.581Z",
+      "ok": true,
+      "ms": 99
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-084)",
+      "at": "2026-10-03T13:14:28.726Z",
+      "ok": true,
+      "ms": 99
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-085)",
+      "at": "2026-10-03T13:14:28.872Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-086)",
+      "at": "2026-10-03T13:14:29.016Z",
+      "ok": true,
+      "ms": 101
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-087)",
+      "at": "2026-10-03T13:14:29.165Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-088)",
+      "at": "2026-10-03T13:14:29.310Z",
+      "ok": true,
+      "ms": 99
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-089)",
+      "at": "2026-10-03T13:14:29.456Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-090)",
+      "at": "2026-10-03T13:14:29.601Z",
+      "ok": true,
+      "ms": 96
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-091)",
+      "at": "2026-10-03T13:14:29.744Z",
+      "ok": true,
+      "ms": 97
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-092)",
+      "at": "2026-10-03T13:14:29.888Z",
+      "ok": true,
+      "ms": 96
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-093)",
+      "at": "2026-10-03T13:14:30.032Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-094)",
+      "at": "2026-10-03T13:14:30.179Z",
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-095)",
+      "at": "2026-10-03T13:14:30.323Z",
+      "ok": true,
+      "ms": 97
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-096)",
+      "at": "2026-10-03T13:14:30.468Z",
+      "ok": true,
+      "ms": 95
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-097)",
+      "at": "2026-10-03T13:14:30.611Z",
+      "ok": true,
+      "ms": 96
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-098)",
+      "at": "2026-10-03T13:14:30.755Z",
+      "ok": true,
+      "ms": 97
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-099)",
+      "at": "2026-10-03T13:14:30.899Z",
+      "ok": true,
+      "ms": 96
+    },
+    {
+      "purpose": "provision",
+      "action": "auth.admin.createUser (persistent payer-100)",
+      "at": "2026-10-03T13:14:31.044Z",
+      "ok": true,
+      "ms": 97
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc create_checkout_session (performance)",
+      "at": "2026-10-03T13:14:33.588Z",
+      "ok": true,
+      "calls": 210,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc prepare_mercadopago_preference_v2 (performance)",
+      "at": "2026-10-03T13:14:33.637Z",
+      "ok": true,
+      "calls": 210,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc get_mercadopago_payment_authority_v2 (performance)",
+      "at": "2026-10-03T13:14:33.669Z",
+      "ok": true,
+      "calls": 210,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc record_mercadopago_preference_created_v2 (performance)",
+      "at": "2026-10-03T13:14:33.703Z",
+      "ok": true,
+      "calls": 210,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc record_mercadopago_payment_snapshot (performance)",
+      "at": "2026-10-03T13:14:33.745Z",
+      "ok": true,
+      "calls": 210,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc finalize_paid_checkout_session (performance)",
+      "at": "2026-10-03T13:14:33.779Z",
+      "ok": true,
+      "calls": 210,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc record_payment_refund_identity (performance (cierre))",
+      "at": "2026-10-03T13:14:50.435Z",
+      "ok": true,
+      "calls": 210,
+      "transport": "own"
+    },
+    {
+      "purpose": "edge-function",
+      "action": "rpc record_payment_refund_response_v2 (performance (cierre))",
+      "at": "2026-10-03T13:14:50.475Z",
+      "ok": true,
+      "calls": 210,
+      "transport": "own"
+    },
+    {
+      "purpose": "provision",
+      "action": "update businesses (intake limits: restore baseline at cleanup)",
+      "at": "2026-10-03T13:14:53.206Z",
+      "ok": true,
+      "ms": 4
+    },
+    {
+      "purpose": "cleanup",
+      "action": "update business_payment_settings + mp_seller_connections (certification seller switched off)",
+      "at": "2026-10-03T13:14:53.315Z",
+      "ok": true,
+      "ms": 5
+    },
+    {
+      "purpose": "cleanup",
+      "action": "rpc platform_revoke_business_ordering (QA tenant at rest)",
+      "at": "2026-10-03T13:14:53.392Z",
+      "ok": true,
+      "ms": 5
+    },
+    {
+      "purpose": "cleanup",
+      "action": "rpc platform_revoke_business_ordering (second business of this run at rest)",
+      "at": "2026-10-03T13:14:53.479Z",
+      "ok": true,
+      "ms": 5
+    },
+    {
+      "purpose": "cleanup",
+      "action": "delete businesses (throwaway business of this run)",
+      "at": "2026-10-03T13:14:53.613Z",
+      "ok": true,
+      "ms": 21
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:53.701Z",
+      "ok": true,
+      "ms": 360
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:53.738Z",
+      "ok": true,
+      "ms": 246
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:53.774Z",
+      "ok": true,
+      "ms": 137
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:53.808Z",
+      "ok": true,
+      "ms": 324
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:53.983Z",
+      "ok": true,
+      "ms": 223
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:54.060Z",
+      "ok": true,
+      "ms": 381
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:54.132Z",
+      "ok": true,
+      "ms": 167
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:54.200Z",
+      "ok": true,
+      "ms": 171
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:54.284Z",
+      "ok": true,
+      "ms": 234
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:54.371Z",
+      "ok": true,
+      "ms": 308
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:54.441Z",
+      "ok": true,
+      "ms": 163
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (anonymous_customer)",
+      "at": "2026-10-03T13:14:54.516Z",
+      "ok": true,
+      "ms": 231
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:54.598Z",
+      "ok": true,
+      "ms": 221
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:54.678Z",
+      "ok": true,
+      "ms": 229
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:54.751Z",
+      "ok": true,
+      "ms": 332
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:54.823Z",
+      "ok": true,
+      "ms": 179
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:54.899Z",
+      "ok": true,
+      "ms": 250
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:54.982Z",
+      "ok": true,
+      "ms": 232
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:55.076Z",
+      "ok": true,
+      "ms": 219
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:55.154Z",
+      "ok": true,
+      "ms": 238
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:55.224Z",
+      "ok": true,
+      "ms": 243
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:55.298Z",
+      "ok": true,
+      "ms": 238
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (team)",
+      "at": "2026-10-03T13:14:55.377Z",
+      "ok": true,
+      "ms": 222
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:55.465Z",
+      "ok": true,
+      "ms": 229
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:55.536Z",
+      "ok": true,
+      "ms": 237
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:55.610Z",
+      "ok": true,
+      "ms": 243
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:55.688Z",
+      "ok": true,
+      "ms": 231
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:55.770Z",
+      "ok": true,
+      "ms": 228
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:55.848Z",
+      "ok": true,
+      "ms": 231
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:55.924Z",
+      "ok": true,
+      "ms": 233
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:55.998Z",
+      "ok": true,
+      "ms": 230
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:56.075Z",
+      "ok": true,
+      "ms": 223
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:56.156Z",
+      "ok": true,
+      "ms": 312
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:56.228Z",
+      "ok": true,
+      "ms": 163
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:56.302Z",
+      "ok": true,
+      "ms": 237
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:56.379Z",
+      "ok": true,
+      "ms": 225
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:56.465Z",
+      "ok": true,
+      "ms": 309
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:56.539Z",
+      "ok": true,
+      "ms": 162
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:56.613Z",
+      "ok": true,
+      "ms": 234
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:56.692Z",
+      "ok": true,
+      "ms": 227
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:56.774Z",
+      "ok": true,
+      "ms": 311
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:56.846Z",
+      "ok": true,
+      "ms": 163
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:56.922Z",
+      "ok": true,
+      "ms": 242
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:57.001Z",
+      "ok": true,
+      "ms": 230
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:57.084Z",
+      "ok": true,
+      "ms": 229
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:57.161Z",
+      "ok": true,
+      "ms": 233
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:57.236Z",
+      "ok": true,
+      "ms": 241
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:57.311Z",
+      "ok": true,
+      "ms": 238
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:57.389Z",
+      "ok": true,
+      "ms": 233
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:57.475Z",
+      "ok": true,
+      "ms": 319
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:57.548Z",
+      "ok": true,
+      "ms": 167
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:57.624Z",
+      "ok": true,
+      "ms": 245
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:57.707Z",
+      "ok": true,
+      "ms": 230
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:57.790Z",
+      "ok": true,
+      "ms": 228
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:57.869Z",
+      "ok": true,
+      "ms": 236
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:57.941Z",
+      "ok": true,
+      "ms": 244
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:58.018Z",
+      "ok": true,
+      "ms": 238
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:58.097Z",
+      "ok": true,
+      "ms": 232
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:58.181Z",
+      "ok": true,
+      "ms": 237
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:58.257Z",
+      "ok": true,
+      "ms": 247
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:58.334Z",
+      "ok": true,
+      "ms": 244
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:58.413Z",
+      "ok": true,
+      "ms": 234
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:58.501Z",
+      "ok": true,
+      "ms": 232
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:58.577Z",
+      "ok": true,
+      "ms": 318
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:58.652Z",
+      "ok": true,
+      "ms": 166
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:58.729Z",
+      "ok": true,
+      "ms": 237
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:58.810Z",
+      "ok": true,
+      "ms": 233
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:58.894Z",
+      "ok": true,
+      "ms": 241
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:58.968Z",
+      "ok": true,
+      "ms": 250
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:59.045Z",
+      "ok": true,
+      "ms": 245
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:59.128Z",
+      "ok": true,
+      "ms": 236
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:59.213Z",
+      "ok": true,
+      "ms": 258
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:59.292Z",
+      "ok": true,
+      "ms": 268
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:59.368Z",
+      "ok": true,
+      "ms": 266
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:59.454Z",
+      "ok": true,
+      "ms": 246
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:59.557Z",
+      "ok": true,
+      "ms": 327
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:59.634Z",
+      "ok": true,
+      "ms": 332
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:59.708Z",
+      "ok": true,
+      "ms": 411
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:59.781Z",
+      "ok": true,
+      "ms": 262
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:14:59.963Z",
+      "ok": true,
+      "ms": 329
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:00.042Z",
+      "ok": true,
+      "ms": 478
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:00.117Z",
+      "ok": true,
+      "ms": 329
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:00.191Z",
+      "ok": true,
+      "ms": 181
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:00.371Z",
+      "ok": true,
+      "ms": 552
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:00.445Z",
+      "ok": true,
+      "ms": 247
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:00.520Z",
+      "ok": true,
+      "ms": 331
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:00.594Z",
+      "ok": true,
+      "ms": 182
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:00.772Z",
+      "ok": true,
+      "ms": 409
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:00.849Z",
+      "ok": true,
+      "ms": 255
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:00.923Z",
+      "ok": true,
+      "ms": 335
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:00.997Z",
+      "ok": true,
+      "ms": 335
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:01.181Z",
+      "ok": true,
+      "ms": 325
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:01.257Z",
+      "ok": true,
+      "ms": 407
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:01.331Z",
+      "ok": true,
+      "ms": 258
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:01.406Z",
+      "ok": true,
+      "ms": 334
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:01.587Z",
+      "ok": true,
+      "ms": 567
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:01.663Z",
+      "ok": true,
+      "ms": 417
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:01.739Z",
+      "ok": true,
+      "ms": 263
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:01.815Z",
+      "ok": true,
+      "ms": 107
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:02.001Z",
+      "ok": true,
+      "ms": 569
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:02.076Z",
+      "ok": true,
+      "ms": 339
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:02.154Z",
+      "ok": true,
+      "ms": 340
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:02.229Z",
+      "ok": true,
+      "ms": 111
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:02.416Z",
+      "ok": true,
+      "ms": 334
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:02.492Z",
+      "ok": true,
+      "ms": 336
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:02.569Z",
+      "ok": true,
+      "ms": 335
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:02.645Z",
+      "ok": true,
+      "ms": 335
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:02.828Z",
+      "ok": true,
+      "ms": 485
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:02.903Z",
+      "ok": true,
+      "ms": 256
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:02.979Z",
+      "ok": true,
+      "ms": 414
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:03.054Z",
+      "ok": true,
+      "ms": 184
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:03.236Z",
+      "ok": true,
+      "ms": 573
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:03.312Z",
+      "ok": true,
+      "ms": 262
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:03.391Z",
+      "ok": true,
+      "ms": 341
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:03.468Z",
+      "ok": true,
+      "ms": 186
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:03.653Z",
+      "ok": true,
+      "ms": 578
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:03.730Z",
+      "ok": true,
+      "ms": 423
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:03.808Z",
+      "ok": true,
+      "ms": 269
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:03.884Z",
+      "ok": true,
+      "ms": 109
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:04.074Z",
+      "ok": true,
+      "ms": 423
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:04.153Z",
+      "ok": true,
+      "ms": 503
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:04.230Z",
+      "ok": true,
+      "ms": 187
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:04.310Z",
+      "ok": true,
+      "ms": 265
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:04.496Z",
+      "ok": true,
+      "ms": 579
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:04.575Z",
+      "ok": true,
+      "ms": 342
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:04.652Z",
+      "ok": true,
+      "ms": 180
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:04.733Z",
+      "ok": true,
+      "ms": 265
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:04.916Z",
+      "ok": true,
+      "ms": 426
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:04.993Z",
+      "ok": true,
+      "ms": 265
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:05.074Z",
+      "ok": true,
+      "ms": 421
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:05.153Z",
+      "ok": true,
+      "ms": 265
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:05.341Z",
+      "ok": true,
+      "ms": 335
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:05.418Z",
+      "ok": true,
+      "ms": 377
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:05.496Z",
+      "ok": true,
+      "ms": 262
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.deleteUser (customer)",
+      "at": "2026-10-03T13:15:05.573Z",
+      "ok": true,
+      "ms": 145
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:05.874Z",
+      "ok": true,
+      "ms": 420
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:05.913Z",
+      "ok": true,
+      "ms": 300
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:05.955Z",
+      "ok": true,
+      "ms": 418
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:05.993Z",
+      "ok": true,
+      "ms": 141
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:06.215Z",
+      "ok": true,
+      "ms": 621
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:06.294Z",
+      "ok": true,
+      "ms": 382
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:06.372Z",
+      "ok": true,
+      "ms": 384
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:06.450Z",
+      "ok": true,
+      "ms": 145
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:06.676Z",
+      "ok": true,
+      "ms": 240
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:06.756Z",
+      "ok": true,
+      "ms": 392
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:06.835Z",
+      "ok": true,
+      "ms": 393
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:06.914Z",
+      "ok": true,
+      "ms": 151
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:06.999Z",
+      "ok": true,
+      "ms": 309
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:07.145Z",
+      "ok": true,
+      "ms": 246
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:07.227Z",
+      "ok": true,
+      "ms": 391
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:07.311Z",
+      "ok": true,
+      "ms": 222
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:07.390Z",
+      "ok": true,
+      "ms": 312
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:07.476Z",
+      "ok": true,
+      "ms": 303
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:07.617Z",
+      "ok": true,
+      "ms": 244
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:07.700Z",
+      "ok": true,
+      "ms": 383
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:07.782Z",
+      "ok": true,
+      "ms": 384
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:07.861Z",
+      "ok": true,
+      "ms": 139
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:07.947Z",
+      "ok": true,
+      "ms": 296
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:08.082Z",
+      "ok": true,
+      "ms": 244
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:08.165Z",
+      "ok": true,
+      "ms": 389
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:08.246Z",
+      "ok": true,
+      "ms": 223
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:08.326Z",
+      "ok": true,
+      "ms": 311
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:08.416Z",
+      "ok": true,
+      "ms": 296
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:08.552Z",
+      "ok": true,
+      "ms": 245
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:08.636Z",
+      "ok": true,
+      "ms": 307
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:08.717Z",
+      "ok": true,
+      "ms": 394
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:08.797Z",
+      "ok": true,
+      "ms": 230
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:08.887Z",
+      "ok": true,
+      "ms": 302
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:09.026Z",
+      "ok": true,
+      "ms": 246
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:09.110Z",
+      "ok": true,
+      "ms": 400
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:09.192Z",
+      "ok": true,
+      "ms": 226
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:09.273Z",
+      "ok": true,
+      "ms": 327
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:09.360Z",
+      "ok": true,
+      "ms": 317
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:09.504Z",
+      "ok": true,
+      "ms": 253
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:09.598Z",
+      "ok": true,
+      "ms": 481
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:09.680Z",
+      "ok": true,
+      "ms": 225
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:09.762Z",
+      "ok": true,
+      "ms": 232
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:09.850Z",
+      "ok": true,
+      "ms": 306
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:09.992Z",
+      "ok": true,
+      "ms": 251
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:10.077Z",
+      "ok": true,
+      "ms": 311
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:10.160Z",
+      "ok": true,
+      "ms": 406
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:10.242Z",
+      "ok": true,
+      "ms": 234
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:10.333Z",
+      "ok": true,
+      "ms": 318
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:10.474Z",
+      "ok": true,
+      "ms": 262
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:10.562Z",
+      "ok": true,
+      "ms": 319
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:10.650Z",
+      "ok": true,
+      "ms": 404
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:10.735Z",
+      "ok": true,
+      "ms": 235
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:10.825Z",
+      "ok": true,
+      "ms": 311
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:10.969Z",
+      "ok": true,
+      "ms": 254
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:11.056Z",
+      "ok": true,
+      "ms": 313
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:11.140Z",
+      "ok": true,
+      "ms": 315
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:11.223Z",
+      "ok": true,
+      "ms": 318
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:11.312Z",
+      "ok": true,
+      "ms": 309
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:11.454Z",
+      "ok": true,
+      "ms": 253
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:11.540Z",
+      "ok": true,
+      "ms": 492
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:11.624Z",
+      "ok": true,
+      "ms": 322
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:11.707Z",
+      "ok": true,
+      "ms": 148
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:11.797Z",
+      "ok": true,
+      "ms": 312
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:11.943Z",
+      "ok": true,
+      "ms": 256
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:12.032Z",
+      "ok": true,
+      "ms": 506
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:12.117Z",
+      "ok": true,
+      "ms": 228
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:12.201Z",
+      "ok": true,
+      "ms": 244
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:12.292Z",
+      "ok": true,
+      "ms": 328
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:12.432Z",
+      "ok": true,
+      "ms": 263
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:12.534Z",
+      "ok": true,
+      "ms": 399
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:12.622Z",
+      "ok": true,
+      "ms": 405
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:12.706Z",
+      "ok": true,
+      "ms": 135
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:12.797Z",
+      "ok": true,
+      "ms": 313
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:12.934Z",
+      "ok": true,
+      "ms": 264
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:13.027Z",
+      "ok": true,
+      "ms": 322
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:13.113Z",
+      "ok": true,
+      "ms": 326
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:13.198Z",
+      "ok": true,
+      "ms": 328
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:13.290Z",
+      "ok": true,
+      "ms": 320
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:13.436Z",
+      "ok": true,
+      "ms": 262
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:13.525Z",
+      "ok": true,
+      "ms": 337
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:13.612Z",
+      "ok": true,
+      "ms": 433
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:13.699Z",
+      "ok": true,
+      "ms": 254
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:13.796Z",
+      "ok": true,
+      "ms": 337
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:13.950Z",
+      "ok": true,
+      "ms": 272
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:14.041Z",
+      "ok": true,
+      "ms": 352
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:14.133Z",
+      "ok": true,
+      "ms": 352
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:14.223Z",
+      "ok": true,
+      "ms": 357
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:14.318Z",
+      "ok": true,
+      "ms": 342
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:14.485Z",
+      "ok": true,
+      "ms": 265
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:14.578Z",
+      "ok": true,
+      "ms": 413
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:14.665Z",
+      "ok": true,
+      "ms": 235
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:14.752Z",
+      "ok": true,
+      "ms": 334
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:14.845Z",
+      "ok": true,
+      "ms": 328
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:14.989Z",
+      "ok": true,
+      "ms": 277
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:15.081Z",
+      "ok": true,
+      "ms": 420
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:15.175Z",
+      "ok": true,
+      "ms": 238
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:15.263Z",
+      "ok": true,
+      "ms": 329
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:15.360Z",
+      "ok": true,
+      "ms": 319
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:15.502Z",
+      "ok": true,
+      "ms": 267
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:15.594Z",
+      "ok": true,
+      "ms": 413
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:15.682Z",
+      "ok": true,
+      "ms": 233
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:15.769Z",
+      "ok": true,
+      "ms": 328
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:15.863Z",
+      "ok": true,
+      "ms": 318
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:16.004Z",
+      "ok": true,
+      "ms": 270
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:16.096Z",
+      "ok": true,
+      "ms": 421
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:16.185Z",
+      "ok": true,
+      "ms": 379
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:16.272Z",
+      "ok": true,
+      "ms": 150
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:16.370Z",
+      "ok": true,
+      "ms": 232
+    },
+    {
+      "purpose": "cleanup",
+      "action": "auth.admin.updateUserById (persistent identity: suspend access, discard password)",
+      "at": "2026-10-03T13:15:16.514Z",
+      "ok": true,
+      "ms": 136
+    }
+  ],
+  "databaseInterventions": [
+    {
+      "at": "2026-10-03T13:12:28.054Z",
+      "what": "cron.alter_job(taba-cron-history-purge, active := false) and back",
+      "why": "health must notice a stopped scheduler job",
+      "rows": {
+        "stoppedRead": true,
+        "activeAgain": true
+      }
+    },
+    {
+      "at": "2026-10-03T13:12:30.990Z",
+      "what": "age checkout session b9db93e0 and its reservations: expired one minute ago",
+      "why": "cleanup: nobody is going to pay it",
+      "rows": {
+        "checkout_sessions": 1,
+        "inventory_reservations": 1
+      }
+    },
+    {
+      "at": "2026-10-03T13:12:31.003Z",
+      "what": "age checkout session 63144cbf and its reservations: expired one minute ago",
+      "why": "cleanup: nobody is going to pay it",
+      "rows": {
+        "checkout_sessions": 1,
+        "inventory_reservations": 1
+      }
+    },
+    {
+      "at": "2026-10-03T13:12:31.950Z",
+      "what": "age checkout session f4971187 and its reservations: expired one minute ago",
+      "why": "late approval: the reservation expires before the provider approves",
+      "rows": {
+        "checkout_sessions": 1,
+        "inventory_reservations": 1
+      }
+    },
+    {
+      "at": "2026-10-03T13:12:32.044Z",
+      "what": "age payment_intents.approved_at of 01c1d453 by 5.5 minutes",
+      "why": "PAYMENT_APPROVED_WITHOUT_ORDER fires after five minutes",
+      "rows": {
+        "payment_intents": 1
+      }
+    },
+    {
+      "at": "2026-10-03T13:12:40.616Z",
+      "what": "age checkout session 76d4412e and its reservations: expired one minute ago",
+      "why": "the real taba-checkout-expiry-sweep has to release it",
+      "rows": 1
+    },
+    {
+      "at": "2026-10-03T13:12:40.629Z",
+      "what": "age the reservations of checkout session 76d4412e",
+      "why": "they expire with their session",
+      "rows": 1
+    },
+    {
+      "at": "2026-10-03T13:12:40.642Z",
+      "what": "age order LT-0082: created six minutes ago",
+      "why": "the real taba-unattended-order-expiry has to cancel it (abandoned_order_minutes = 5)",
+      "rows": 1
+    }
+  ]
+}

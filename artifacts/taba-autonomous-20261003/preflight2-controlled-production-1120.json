@@ -1,0 +1,98 @@
+{
+ "ref": "tkanbadcglszlcyfjvpv",
+ "checks": [
+  {
+   "finding": "in_flight_delivery_orders",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "scheduler_jobs_inactive",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "payments_in_dispute",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "paid_checkout_money_returned_still_holding_stock",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "signed_delivery_replayed_before_fix",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "dead_lettered_payment_jobs",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "payment_cancellation_stuck_requested",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "orders_cancel_catalog",
+   "rows": 1,
+   "sample": [
+    {
+     "finding": "orders_cancel_catalog",
+     "roles": "admin,owner"
+    }
+   ]
+  },
+  {
+   "finding": "staff_losing_cancel_and_reject",
+   "rows": 2,
+   "sample": [
+    {
+     "finding": "staff_losing_cancel_and_reject",
+     "business_id": "dd515bdd-33bc-4a72-9e70-72d2ab8ae1f0",
+     "slug": "qa-aislamiento-cp",
+     "client": "panel_web",
+     "staff_members": 1
+    },
+    {
+     "finding": "staff_losing_cancel_and_reject",
+     "business_id": "e1d2c342-da14-421e-884f-ff38bb55f642",
+     "slug": "qa-control-cp",
+     "client": "panel_web",
+     "staff_members": 1
+    }
+   ]
+  },
+  {
+   "finding": "staff_cancellations_last_30_days",
+   "rows": 1,
+   "sample": [
+    {
+     "finding": "staff_cancellations_last_30_days",
+     "business_id": "e1d2c342-da14-421e-884f-ff38bb55f642",
+     "slug": "qa-control-cp",
+     "command_type": "cancel_order",
+     "resulting_status": "cancelled",
+     "commands": 40,
+     "last_at": "2026-09-29 16:37:35.849681+00"
+    }
+   ]
+  },
+  {
+   "finding": "checkouts_due_late_provider_probes",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "checkout_preference_from_replaced_seller_connection",
+   "rows": 0,
+   "sample": []
+  }
+ ],
+ "target": "controlled-production",
+ "file": "docs/migrations/checks/20261002_ecommerce_hardening_preflight.sql",
+ "at": "2026-10-03T14:20:41.498Z"
+}

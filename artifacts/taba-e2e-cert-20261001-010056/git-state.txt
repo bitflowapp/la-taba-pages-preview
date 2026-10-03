@@ -1,0 +1,9 @@
+repo: https://github.com/bitflowapp/la-taba-pages-preview.git
+worktree: la-taba-backend-e2e-cert (worktree dedicado; ruta local omitida)
+branch: qa/taba-backend-e2e-cert-20260930
+head: 135818892414f5cc17d7adacd6069eec86602381
+head_subject: docs(status): Caja Clara como terminal del local en CP
+origin_main: 135818892414f5cc17d7adacd6069eec86602381
+status_porcelain:
+?? artifacts/taba-e2e-cert-20261001-010056/
+?? scripts/e2e-staging/backend-e2e-certification.mjs

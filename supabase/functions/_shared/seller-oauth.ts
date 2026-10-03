@@ -3,8 +3,9 @@ import {
   getRequiredEnv,
   providerEnvironment,
   PublicPaymentError,
-  requireRealPaymentSmokeAuthorization,
+  requireRealMoneyGate,
 } from "./payment-runtime.ts";
+import { businessPaymentsEnabled, sellerConnected } from "./real-money-gate.ts";
 import { seal, unseal } from "./seller-oauth-crypto.ts";
 
 const DEPLOYMENT_BINDINGS: Record<string, {
@@ -160,21 +161,43 @@ export class OAuthProviderError extends Error {
     super("OAuth provider unavailable");
   }
 }
+// El pedido de token salió y no volvió respuesta (corte, plazo vencido): no se
+// sabe si el proveedor lo procesó.
+export class OAuthTransportError extends Error {
+  constructor() {
+    super("OAuth provider did not answer");
+  }
+}
+// El proveedor respondió 200 con material que no sirve (sin permiso de refresh,
+// otro modo, campos faltantes). Es una respuesta, no una duda.
+export class OAuthTokenResponseError extends Error {
+  constructor() {
+    super("Invalid OAuth token response");
+  }
+}
 export async function tokenGrant(
   fields: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {
   const c = oauthConfig();
-  const response = await fetch("https://api.mercadopago.com/oauth/token", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    signal: AbortSignal.timeout(12000),
-    body: JSON.stringify({
-      ...fields,
-      client_id: c.clientId,
-      client_secret: getRequiredEnv("MERCADOPAGO_CLIENT_SECRET"),
-      test_token: c.environment === "test",
-    }),
+  // El cuerpo se arma ANTES de salir: una configuración local faltante no es
+  // una respuesta dudosa del proveedor, y quien llama las distingue.
+  const payload = JSON.stringify({
+    ...fields,
+    client_id: c.clientId,
+    client_secret: getRequiredEnv("MERCADOPAGO_CLIENT_SECRET"),
+    test_token: c.environment === "test",
   });
+  let response: Response;
+  try {
+    response = await fetch("https://api.mercadopago.com/oauth/token", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      signal: AbortSignal.timeout(12000),
+      body: payload,
+    });
+  } catch (_) {
+    throw new OAuthTransportError();
+  }
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new OAuthProviderError(
@@ -187,7 +210,7 @@ export async function tokenGrant(
     !Number.isFinite(body.expires_in) || body.expires_in <= 0 ||
     !String(body.scope).split(" ").includes("offline_access") ||
     (body.live_mode === true) !== (c.environment === "production")
-  ) throw new Error("Invalid OAuth token response");
+  ) throw new OAuthTokenResponseError();
   return body;
 }
 export async function sellerIdentity(accessToken: string, sellerId: string) {
@@ -216,6 +239,39 @@ export async function connection(businessId: string) {
   if (error) throw new Error("Connection unavailable");
   return data;
 }
+// Un reclamo de refresh más viejo que esto ya no está en curso: la llamada al
+// proveedor corta a los 12 s.
+const REFRESH_CLAIM_STALE_MS = 60_000;
+// Cuánto se espera para volver a intentar un refresh que no terminó. Sin esta
+// espera, cada pedido de pago repetía contra el proveedor una llamada de hasta
+// 12 s mientras durara su caída.
+const REFRESH_RETRY_AFTER_MS = 5 * 60_000;
+const REFRESH_DUE_BEFORE_EXPIRY_MS = 86_400_000;
+
+/**
+ * La credencial vigente del vendedor, renovándola cuando le queda menos de un
+ * día.
+ *
+ * QUÉ DESTRUYE UNA CONEXIÓN Y QUÉ NO. Pasar a `requires_reauthorization` saca a
+ * Mercado Pago de la tienda y deja sin leer los pagos en curso hasta que el
+ * dueño vuelve a consentir. Eso sólo corresponde cuando el proveedor RESPONDE
+ * que la concesión ya no vale (`invalid_grant`), o devuelve material de otro
+ * vendedor o inservible. Un corte, un plazo vencido, un 5xx, no poder guardar el
+ * resultado o un reclamo que quedó a medias no dicen nada sobre la credencial:
+ * la que está guardada sigue sirviendo hasta que vence, y se sigue usando.
+ *
+ * CÓMO QUEDA ANOTADO. Un refresh que no terminó suelta el reclamo
+ * (`refresh_owner` nulo) y CONSERVA `refresh_started_at`: esa combinación es
+ * «refresh pendiente de atención desde tal hora». Sirve de espera entre
+ * reintentos y es lo que puede leer una alerta. Un refresh que termina bien
+ * limpia las dos columnas (`mp_finish_refresh`).
+ *
+ * POR QUÉ SE REINTENTA con el mismo refresh token. Si el intento dudoso no
+ * llegó a ejecutarse, el reintento conecta y no hubo nada que lamentar. Si sí
+ * se había ejecutado, el proveedor responde `invalid_grant` y recién ahí —con
+ * una respuesta, no con una duda— se pide reautorizar. Nunca hay dos refresh a
+ * la vez: el reclamo sigue siendo de a uno.
+ */
 export async function sellerAccessToken(businessId: string): Promise<string> {
   const service = createServiceClient();
   const environment = oauthConfig().environment;
@@ -227,24 +283,36 @@ export async function sellerAccessToken(businessId: string): Promise<string> {
       "Necesitamos volver a conectar Mercado Pago.",
     );
   }
-  if (
-    row.refresh_owner && Date.parse(row.refresh_started_at) < Date.now() - 60000
-  ) {
-    await service.from("mp_seller_connections").update({
-      status: "requires_reauthorization",
-      protected_tokens: null,
-    }).eq("business_id", businessId).eq("environment", environment).eq(
-      "generation",
-      row.generation,
-    ).eq("refresh_owner", row.refresh_owner);
-    throw new Error("Refresh outcome unknown");
+  const releaseClaim = (claimOwner: string, generation: string) =>
+    service.from("mp_seller_connections").update({ refresh_owner: null })
+      .eq("business_id", businessId).eq("environment", environment)
+      .eq("generation", generation).eq("refresh_owner", claimOwner);
+  const lastAttemptAt = Date.parse(row.refresh_started_at);
+  if (row.refresh_owner && lastAttemptAt < Date.now() - REFRESH_CLAIM_STALE_MS) {
+    // Quien tomó el refresh no lo terminó (el proceso murió, o no pudo soltar el
+    // reclamo). No se sabe cómo salió, y eso no es una revocación.
+    const released = await releaseClaim(row.refresh_owner, row.generation);
+    if (released.error) throw new Error("Refresh claim unavailable");
+    audit("token_refresh_needs_attention", businessId, String(row.refresh_owner));
+    row = { ...row, refresh_owner: null };
   }
-  if (
-    Date.parse(row.expires_at) > Date.now() + 86400000 && !row.refresh_owner
-  ) {
-    return String(
-      (await reveal(row.protected_tokens, businessId)).access_token,
-    );
+  const expiresAt = Date.parse(row.expires_at);
+  if (!row.refresh_owner) {
+    if (expiresAt > Date.now() + REFRESH_DUE_BEFORE_EXPIRY_MS) {
+      return String(
+        (await reveal(row.protected_tokens, businessId)).access_token,
+      );
+    }
+    if (lastAttemptAt > Date.now() - REFRESH_RETRY_AFTER_MS) {
+      // Hubo un intento hace poco que no terminó. Mientras dura la espera se usa
+      // la credencial vigente; si ya venció no hay nada que devolver.
+      if (expiresAt > Date.now()) {
+        return String(
+          (await reveal(row.protected_tokens, businessId)).access_token,
+        );
+      }
+      throw new Error("Seller refresh unavailable");
+    }
   }
   const owner = crypto.randomUUID();
   const claim = await service.rpc("mp_claim_refresh", {
@@ -261,14 +329,16 @@ export async function sellerAccessToken(businessId: string): Promise<string> {
       "Estamos verificando la conexión. Intentá nuevamente en unos segundos.",
     );
   }
+  let currentAccessToken = "";
   try {
     const old = await reveal(row.protected_tokens, businessId);
+    currentAccessToken = typeof old.access_token === "string" ? old.access_token : "";
     const tokens = await tokenGrant({
       grant_type: "refresh_token",
       refresh_token: old.refresh_token,
     });
     if (String(tokens.user_id) !== row.seller_id) {
-      throw new Error("Refreshed seller mismatch");
+      throw new RefreshedSellerMismatchError();
     }
     const saved = await service.rpc("mp_finish_refresh", {
       p_business_id: businessId,
@@ -286,23 +356,45 @@ export async function sellerAccessToken(businessId: string): Promise<string> {
     audit("token_refresh_success", businessId, owner);
     return String(tokens.access_token);
   } catch (error) {
-    // Definite configuration rejection is retryable; invalid/ambiguous rotating grants are not.
-    const definite = error instanceof OAuthProviderError &&
-      !error.invalidGrant && error.status >= 400 && error.status < 500;
-    await service.from("mp_seller_connections").update(
-      definite ? { refresh_owner: null, refresh_started_at: null } : {
+    // Sólo una RESPUESTA del proveedor que invalida la concesión pide volver a
+    // consentir. Todo lo demás conserva lo guardado.
+    const revoked = (error instanceof OAuthProviderError && error.invalidGrant) ||
+      error instanceof OAuthTokenResponseError ||
+      error instanceof RefreshedSellerMismatchError;
+    if (revoked) {
+      await service.from("mp_seller_connections").update({
         status: "requires_reauthorization",
         protected_tokens: null,
         refresh_owner: null,
         refresh_started_at: null,
-      },
-    )
-      .eq("business_id", businessId).eq("environment", environment).eq(
-        "generation",
-        row.generation,
-      ).eq("refresh_owner", owner);
-    audit("token_refresh_failed", businessId, owner);
+      })
+        .eq("business_id", businessId).eq("environment", environment).eq(
+          "generation",
+          row.generation,
+        ).eq("refresh_owner", owner);
+      audit("token_refresh_failed", businessId, owner);
+      throw new Error("Seller refresh unavailable");
+    }
+    // Un 4xx que no es `invalid_grant` es un rechazo de configuración (se
+    // corrige y se reintenta); el resto es un resultado desconocido. En los dos
+    // casos se suelta el reclamo dejando la marca de cuándo se intentó.
+    await releaseClaim(owner, row.generation);
+    const configurationRejected = error instanceof OAuthProviderError &&
+      error.status >= 400 && error.status < 500;
+    audit(
+      configurationRejected ? "token_refresh_failed" : "token_refresh_needs_attention",
+      businessId,
+      owner,
+    );
+    if (currentAccessToken && Date.parse(row.expires_at) > Date.now()) {
+      return currentAccessToken;
+    }
     throw new Error("Seller refresh unavailable");
+  }
+}
+class RefreshedSellerMismatchError extends Error {
+  constructor() {
+    super("Refreshed seller mismatch");
   }
 }
 export async function businessForIntent(intentId: string): Promise<string> {
@@ -364,11 +456,9 @@ function validatePaymentAuthority(
     business.ordering_verified !== true || checkout?.business_open !== true) {
     throw new PublicPaymentError(409, "BUSINESS_NOT_OPERATIONAL", "El comercio no está disponible para cobrar.");
   }
-  if (!settings || settings.business_id !== businessId || settings.provider !== "mercadopago" ||
-    settings.enabled !== true || settings.environment !== environment ||
-    settings.checkout_mode !== "checkout_pro" || settings.currency !== "ARS" ||
-    settings.reserve_stock !== true ||
-    (environment === "production" && settings.production_review_status !== "approved")) {
+  // Comercio y vendedor se juzgan con los mismos predicados que el estado del
+  // interruptor de dinero real (real-money-gate.ts): no hay una segunda copia.
+  if (!settings || !businessPaymentsEnabled(settings, businessId, environment)) {
     throw new PublicPaymentError(409, "PAYMENTS_NOT_ENABLED", "Mercado Pago no está habilitado.");
   }
   if (!checkout || checkout.id !== context.checkoutSessionId || checkout.customer_id !== context.customerId ||
@@ -378,11 +468,7 @@ function validatePaymentAuthority(
     !(Date.parse(String(checkout.expires_at)) > Date.now())) {
     throw new PublicPaymentError(409, "CHECKOUT_NOT_AVAILABLE", "El checkout cambió o venció. Revisá el carrito.");
   }
-  if (!seller || seller.business_id !== businessId || seller.environment !== environment ||
-    seller.status !== "connected" || !seller.protected_tokens || !seller.seller_id || !seller.generation ||
-    seller.refresh_owner || !(Date.parse(seller.expires_at) > Date.now()) ||
-    seller.seller_id !== settings.collector_id ||
-    seller.application_id !== applicationId || settings.application_id !== applicationId) {
+  if (!seller || !sellerConnected(seller, settings, businessId, environment, applicationId, Date.now())) {
     throw new PublicPaymentError(409, "SELLER_REAUTHORIZATION_REQUIRED", "Necesitamos volver a conectar Mercado Pago.");
   }
   if (!/^[a-f0-9]{64}$/.test(snapshot.authority_version || "")) {
@@ -407,11 +493,40 @@ function validatePaymentAuthority(
   return seller;
 }
 
-export async function beginSellerPaymentAuthority(businessId: string, context: PaymentAuthorityContext) {
+/**
+ * La compuerta de despliegue para CREAR un cobro: lo que tiene que ser cierto en
+ * la configuración de este proyecto, antes de mirar el negocio, el vendedor o el
+ * checkout, para que se pueda emitir una preferencia. No toca la base ni llama
+ * al proveedor.
+ *
+ * Es UNA sola función a propósito. `mercadopago-create-preference` la evalúa
+ * acá abajo; `mercadopago-create-checkout-session` la evalúa ANTES de reservar
+ * stock. Cuando cada uno tenía su propia idea de «se puede cobrar», la sesión
+ * se creaba, el stock quedaba reservado quince minutos y recién después la
+ * preferencia respondía que no: en producción, con la compuerta cerrada, eso
+ * era cada cliente que tocaba pagar.
+ *
+ * EL INTERRUPTOR DE DINERO REAL (EDGE-03, decisión del dueño). En producción
+ * la cuarta comprobación es el secreto MERCADOPAGO_REAL_MONEY_ENABLED con el
+ * valor exacto `enabled`, evaluado por `realMoneyGateState` (real-money-gate.ts).
+ * La variable vieja de la prueba de humo ya no abre nada. En test el interruptor
+ * no se pide: ahí la credencial misma es de prueba (binding del proyecto,
+ * `live_mode` del token, vendedor `test_user`).
+ *
+ * Sólo la evalúan los caminos que CREAN un cobro. Reembolsos, cancelaciones,
+ * webhook, worker, conciliación y pantalla de estado no la consultan: cerrar el
+ * dinero real nunca traba la plata que vuelve.
+ */
+export function assertPaymentCreationGate() {
   const environment = providerEnvironment();
   if (!oauthMode()) throw new Error("Seller OAuth mode required");
   const config = oauthConfig();
-  requireRealPaymentSmokeAuthorization(environment);
+  requireRealMoneyGate(environment);
+  return { environment, config };
+}
+
+export async function beginSellerPaymentAuthority(businessId: string, context: PaymentAuthorityContext) {
+  const { environment, config } = assertPaymentCreationGate();
   await sellerAccessToken(businessId);
   const snapshot = await paymentAuthoritySnapshot(businessId, environment, context);
   const seller = validatePaymentAuthority(snapshot, businessId, environment, config.clientId, context, false);
@@ -426,10 +541,7 @@ export async function assertCurrentSellerPaymentAuthority(
   businessId: string, context: PaymentAuthorityContext,
   before: PaymentAuthoritySnapshot,
 ): Promise<void> {
-  const environment = providerEnvironment();
-  if (!oauthMode()) throw new Error("Seller OAuth mode required");
-  const config = oauthConfig();
-  requireRealPaymentSmokeAuthorization(environment);
+  const { environment, config } = assertPaymentCreationGate();
   // Refresh first if necessary. The snapshot, not this return value, supplies
   // the exact ciphertext/generation/expiry whose credential is verified.
   const seller = validatePaymentAuthority(before, businessId, environment, config.clientId, context);
@@ -451,8 +563,7 @@ export async function assertCurrentSellerPaymentAuthority(
   const after = await paymentAuthoritySnapshot(businessId, environment, context);
   let finalConfig: ReturnType<typeof oauthConfig>;
   try {
-    finalConfig = oauthConfig();
-    requireRealPaymentSmokeAuthorization(providerEnvironment());
+    finalConfig = assertPaymentCreationGate().config;
   } catch (_) {
     throw new PublicPaymentError(409, "PAYMENT_AUTHORITY_CHANGED", "La autorización del pago cambió. Intentá nuevamente.");
   }
@@ -463,6 +574,41 @@ export async function assertCurrentSellerPaymentAuthority(
     current.protected_tokens !== seller.protected_tokens) {
     throw new PublicPaymentError(409, "PAYMENT_AUTHORITY_CHANGED", "La autorización del pago cambió. Intentá nuevamente.");
   }
+}
+
+/**
+ * Qué hacer cuando un recurso del proveedor (un pago, un reembolso, una orden,
+ * una preferencia) responde 401.
+ *
+ * Ese 401 no dice que la credencial esté revocada: Mercado Pago lo usa también
+ * cuando la credencial es válida y no alcanza a ESE recurso (medido el
+ * 2026-09-25, docs/MERCADOPAGO_FINALIZATION_2026-09-25.md §3:
+ * `POST /v1/payments/{id}/refunds` → 401 `unauthorized` con una credencial
+ * válida que no era la del vendedor de ese pago). Antes cualquier 401 borraba
+ * los tokens.
+ * Ahora se le pregunta al proveedor por la credencial misma —`/users/me`, la
+ * misma comprobación que usa «verificar conexión»— y sólo si ESA respuesta es
+ * 401 se pide reautorizar. Si no responde, o responde otra cosa, no se toca
+ * nada. Devuelve si la conexión quedó invalidada.
+ */
+export async function invalidateTokenIfProviderRejectsIt(
+  businessId: string,
+  rejectedToken: string,
+): Promise<boolean> {
+  let status = 0;
+  try {
+    const response = await fetch("https://api.mercadopago.com/users/me", {
+      headers: { Authorization: `Bearer ${rejectedToken}` },
+      signal: AbortSignal.timeout(10000),
+    });
+    status = response.status;
+    await response.body?.cancel();
+  } catch (_) {
+    return false;
+  }
+  if (status !== 401) return false;
+  await invalidateRejectedToken(businessId, rejectedToken);
+  return true;
 }
 
 export async function invalidateRejectedToken(

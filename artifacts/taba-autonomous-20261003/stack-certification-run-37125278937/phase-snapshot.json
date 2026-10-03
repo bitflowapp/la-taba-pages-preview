@@ -1,0 +1,104 @@
+{
+  "order": "LT-0009",
+  "frozen": {
+    "subtotal": 3600,
+    "delivery_fee": 1200,
+    "total": 4800,
+    "revision": 4,
+    "items": [
+      {
+        "name": "Cert Agua Precio 500 ml",
+        "quantity": 2,
+        "unit_price": 1800,
+        "subtotal": 3600
+      }
+    ]
+  },
+  "catalogChange": {
+    "from": {
+      "name": "Cert Agua Precio 500 ml",
+      "price": 1800
+    },
+    "to": {
+      "name": "Cert Agua Precio 500 ml RENOMBRADA",
+      "price": 2150
+    },
+    "namePath": "complete_scanned_product (owner)"
+  },
+  "afterChange": {
+    "subtotal": 3600,
+    "delivery_fee": 1200,
+    "total": 4800,
+    "revision": 4,
+    "items": [
+      {
+        "name": "Cert Agua Precio 500 ml",
+        "quantity": 2,
+        "unit_price": 1800,
+        "subtotal": 3600
+      }
+    ]
+  },
+  "reads": {
+    "tracking": {
+      "status": "received",
+      "revision": 4,
+      "created_at": "2026-10-03T13:12:15.711239+00:00",
+      "updated_at": "2026-10-03T13:12:15.711239+00:00",
+      "public_code": "LT-0009",
+      "is_delivered": false,
+      "delivery_mode": "delivery",
+      "location_quality": "unavailable"
+    },
+    "customerHistory": {
+      "total": 4800,
+      "items": [
+        {
+          "id": "54745638-ee76-4f1a-8e14-3a7760081e80",
+          "sku": "ecomcert-price-change",
+          "name": "Cert Agua Precio 500 ml",
+          "unit": "Botella",
+          "order_id": "79f7a984-de28-4251-91c6-3b7cbf070d12",
+          "quantity": 2,
+          "subtotal": 3600,
+          "created_at": "2026-10-03T13:12:15.711239+00:00",
+          "product_id": "cc4186af-bca6-44fa-83c8-4ed87a135d2b",
+          "unit_price": 1800,
+          "product_uuid": "cc4186af-bca6-44fa-83c8-4ed87a135d2b"
+        }
+      ]
+    },
+    "panel": {
+      "total": 4800,
+      "items": [
+        {
+          "id": "54745638-ee76-4f1a-8e14-3a7760081e80",
+          "sku": "ecomcert-price-change",
+          "name": "Cert Agua Precio 500 ml",
+          "unit": "Botella",
+          "order_id": "79f7a984-de28-4251-91c6-3b7cbf070d12",
+          "quantity": 2,
+          "subtotal": 3600,
+          "created_at": "2026-10-03T13:12:15.711239+00:00",
+          "product_id": "cc4186af-bca6-44fa-83c8-4ed87a135d2b",
+          "unit_price": 1800,
+          "product_uuid": "cc4186af-bca6-44fa-83c8-4ed87a135d2b"
+        }
+      ]
+    },
+    "pipeline": {
+      "kind": "order",
+      "reference_id": "79f7a984-de28-4251-91c6-3b7cbf070d12",
+      "public_code": "LT-0009",
+      "pipeline_state": "received",
+      "origin": "production",
+      "payment_method": "cash",
+      "delivery_mode": "delivery",
+      "total": 4800,
+      "customer_name": "QA Cert snapshot",
+      "needs_manual_review": false,
+      "revision": 4,
+      "occurred_at": "2026-10-03T13:12:15.711239+00:00"
+    }
+  }
+}

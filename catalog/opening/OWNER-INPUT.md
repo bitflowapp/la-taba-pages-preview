@@ -6,7 +6,7 @@ Completar al lado de cada punto. Lo que no se sepa todavía se deja vacío: **va
 
 ## Comercio
 
-- Dueño comercial (quien va a administrar La Taba): nombre y **correo** de Walter:
+- Dueño comercial (quien va a administrar La Taba): nombre y **correo** de Walter. Sin la cuenta del dueño la tienda no se puede habilitar para recibir pedidos:
 - Dirección del local para retirar (calle, número, ciudad). Hoy figura «Mendoza 827, Neuquén Capital»; confirmar o corregir:
 - WhatsApp del local, con código de país y área (549 + área + número, sin 0 ni 15):
 - ¿Ese WhatsApp puede mostrarse en la tienda? (sí/no):
@@ -21,7 +21,9 @@ Cada persona entra con su propia cuenta; se invita desde el Panel (Equipo) con s
 
 ## Horarios
 
-Para cada día: cerrado, o apertura–cierre. Pueden ser hasta 4 tramos por día. Un horario que cruza la medianoche se escribe tal cual, por ejemplo 20:00–02:00.
+Para cada día: cerrado, o apertura–cierre. Pueden ser hasta 4 tramos por día. Un horario que cruza la medianoche se escribe tal cual, por ejemplo 20:00–02:00. Un local que atiende las 24 horas se escribe 00:00–24:00.
+
+Sin el horario de cada forma de entrega que se vaya a usar (retiro, delivery) la tienda no se puede habilitar. Si el delivery tiene otro horario que el retiro, completar una tabla para cada uno.
 
 | Día | Cerrado (sí/no) | Tramo 1 | Tramo 2 |
 | --- | --- | --- | --- |
@@ -42,9 +44,20 @@ Para cada día: cerrado, o apertura–cierre. Pueden ser hasta 4 tramos por día
 - Si hay delivery:
   - Barrios o zonas donde se entrega (uno por línea):
   - Costo de envío por zona, o uno general:
+  - Si las zonas tienen distinto costo o mínimo: el cliente elige su barrio de una lista, y el sistema no puede comprobar que la dirección esté de verdad en ese barrio (sólo el tope de distancia de más abajo). Elegir una: un mismo costo y mínimo para todas las zonas / el local mira la dirección antes de aceptar cada pedido / dibujar cada zona en el mapa (se carga con ayuda técnica):
   - Pedido mínimo por zona, o uno general (si no hay mínimo, escribir «0»):
   - ¿Quién reparte? (repartidores / el propio local / los dos):
   - Repartidores, con nombre y correo de cada uno (se invitan desde el Panel):
+  - Distancia máxima de entrega desde el local, en metros (opcional). Sirve de tope aunque alguien declare un barrio de la lista: un punto de entrega más lejos que eso no se acepta. Vacío = sin tope por distancia:
+  - Para que ese tope funcione, una persona tiene que confirmar en el mapa el punto exacto del local (no alcanza con la dirección escrita): ¿quién lo confirma?:
+
+## Pedidos sin atender y límites
+
+Un pedido en efectivo descuenta stock apenas entra. Estas tres decisiones dicen cuánto puede retener un pedido que todavía nadie cobró ni atendió.
+
+- Minutos que espera un pedido en efectivo sin que nadie del local lo atienda antes de cancelarse solo y devolver el stock (entre 5 y 10080). Vacío = no se cancela solo nunca:
+- Máximo de unidades en un pedido que todavía no se cobró (efectivo, o Mercado Pago antes de pagar). Si no se decide, rige 120:
+- Pedidos sin atender que puede tener un mismo cliente a la vez. Si no se decide, rige 5:
 
 ## Catálogo
 

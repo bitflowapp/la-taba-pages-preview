@@ -1,0 +1,17 @@
+{
+  "cases": [
+    {
+      "case": "before-accept",
+      "order": "LT-0044",
+      "events": [
+        "order.received",
+        "order.status_changed",
+        "business_cancel_reason"
+      ]
+    }
+  ],
+  "stock": {
+    "initial": 500,
+    "final": 500
+  }
+}

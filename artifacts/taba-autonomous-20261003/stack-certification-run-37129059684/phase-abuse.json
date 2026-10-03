@@ -1,0 +1,52 @@
+{
+  "at": "2026-10-03T14:19:05.584Z",
+  "manualRefusals": 5,
+  "originBlocks": 9,
+  "trail": {
+    "start": {
+      "blocks": 6,
+      "origin_blocks_recent": 3,
+      "blocks_by_scope_and_reason": {
+        "customer:customer_pending": 1,
+        "customer:ip_pending": 2,
+        "ip:ip_pending": 3
+      },
+      "events": 2,
+      "events_by_type": {
+        "order_intake_blocked:customer_pending": 1,
+        "order_intake_blocked:ip_pending": 1
+      },
+      "admissions": 65,
+      "admissions_in_window": 65,
+      "busiest_origin_in_window": 61,
+      "business_window": 65
+    },
+    "end": {
+      "blocks": 41,
+      "origin_blocks_recent": 9,
+      "blocks_by_scope_and_reason": {
+        "business:business_rate": 1,
+        "customer:business_rate": 1,
+        "customer:cooldown": 22,
+        "customer:customer_pending": 3,
+        "customer:customer_rate": 1,
+        "customer:ip_pending": 3,
+        "customer:ip_rate": 1,
+        "ip:cooldown": 9
+      },
+      "events": 8,
+      "events_by_type": {
+        "order_intake_blocked:business_rate": 1,
+        "order_intake_blocked:customer_pending": 3,
+        "order_intake_blocked:customer_rate": 1,
+        "order_intake_blocked:ip_pending": 2,
+        "order_intake_blocked:ip_rate": 1,
+        "order_intake_would_block:customer_pending": 1
+      },
+      "admissions": 74,
+      "admissions_in_window": 74,
+      "busiest_origin_in_window": 68,
+      "business_window": 74
+    }
+  }
+}

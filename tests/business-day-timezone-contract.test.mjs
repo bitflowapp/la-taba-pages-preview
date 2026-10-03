@@ -30,7 +30,15 @@ function cuerpoDeLaUltimaDefinicion(nombre) {
   // final del archivo también contiene el nombre y dejaría el cuerpo afuera.
   const indice = todo.toLowerCase().lastIndexOf(`create or replace function public.${nombre}`);
   assert.notEqual(indice, -1, `no se encontró la definición de ${nombre}`);
-  return todo.slice(indice);
+  // Hasta el cierre de SU cuerpo, no hasta el final de todas las migraciones: una
+  // función posterior que no tiene nada que ver (por ejemplo una que recibe un huso
+  // como `p_timezone` y lo usa) no es el cuerpo de ésta.
+  const resto = todo.slice(indice);
+  const apertura = /\bas\s+(\$[A-Za-z_]*\$)/.exec(resto);
+  assert.ok(apertura, `no se encontró el cuerpo de ${nombre}`);
+  const cierre = resto.indexOf(apertura[1], apertura.index + apertura[0].length);
+  assert.notEqual(cierre, -1, `el cuerpo de ${nombre} no cierra`);
+  return resto.slice(0, cierre + apertura[1].length);
 }
 
 test('el Panel ya no deriva el día comercial del reloj del navegador', () => {

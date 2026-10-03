@@ -1,0 +1,361 @@
+[
+  {
+    "name": "WRONG_RIDER_ACCEPTS_OFFER",
+    "actor": "rider2",
+    "ok": false,
+    "code": "P0002"
+  },
+  {
+    "name": "WRONG_RIDER_READS_ORDER",
+    "http": 200,
+    "rows": 0
+  },
+  {
+    "name": "WRONG_RIDER_mark_delivery_picked_up",
+    "ok": true,
+    "code": "not_assigned"
+  },
+  {
+    "name": "WRONG_RIDER_start_rider_delivery",
+    "ok": true,
+    "code": "not_assigned"
+  },
+  {
+    "name": "WRONG_RIDER_mark_rider_arrived",
+    "ok": true,
+    "code": "not_assigned"
+  },
+  {
+    "name": "OTHER_CUSTOMER_ISSUES_CODE",
+    "code": "42501"
+  },
+  {
+    "name": "WRONG_TOKEN_ISSUES_CODE",
+    "code": "42501"
+  },
+  {
+    "name": "WRONG_RIDER_CONFIRMS_CODE",
+    "code": "not_assigned"
+  },
+  {
+    "name": "UNAUTHENTICATED_READ",
+    "orders": [
+      200,
+      0
+    ],
+    "items": [
+      200,
+      0
+    ],
+    "events": [
+      401,
+      "42501"
+    ],
+    "list": [
+      200,
+      0
+    ]
+  },
+  {
+    "name": "UNAUTHENTICATED_OPERATE",
+    "transition": {
+      "http": 401,
+      "code": "42501",
+      "okData": null
+    },
+    "cancel": {
+      "http": 401,
+      "code": "42501",
+      "okData": null
+    },
+    "offer": {
+      "http": 401,
+      "code": "42501",
+      "okData": null
+    },
+    "panelCenter": {
+      "http": 401,
+      "code": "42501",
+      "okData": null
+    },
+    "riderAvailability": {
+      "http": 401,
+      "code": "42501",
+      "okData": null
+    },
+    "reversePayment": {
+      "http": 401,
+      "code": "42501",
+      "okData": null
+    },
+    "classify": {
+      "http": 401,
+      "code": "42501",
+      "okData": null
+    },
+    "directUpdate": {
+      "http": 401,
+      "code": "42501",
+      "okData": null
+    },
+    "openStore": {
+      "http": 401,
+      "code": "42501",
+      "okData": null
+    },
+    "stateUnchanged": true
+  },
+  {
+    "name": "AUTHENTICATED_NO_MEMBERSHIP_READ",
+    "orders": [
+      200,
+      0
+    ],
+    "items": [
+      200,
+      0
+    ],
+    "events": [
+      200,
+      0
+    ],
+    "list": [
+      200,
+      0
+    ]
+  },
+  {
+    "name": "AUTHENTICATED_NO_MEMBERSHIP_OPERATE",
+    "transition": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "cancel": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "offer": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "panelCenter": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "riderAvailability": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "reversePayment": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "classify": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "directUpdate": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "openStore": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "stateUnchanged": true
+  },
+  {
+    "name": "ANONYMOUS_OTHER_CUSTOMER_READ",
+    "orders": [
+      200,
+      0
+    ],
+    "items": [
+      200,
+      0
+    ],
+    "events": [
+      200,
+      0
+    ],
+    "list": [
+      200,
+      0
+    ]
+  },
+  {
+    "name": "ANONYMOUS_OTHER_CUSTOMER_OPERATE",
+    "transition": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "cancel": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "offer": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "panelCenter": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "riderAvailability": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "reversePayment": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "classify": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "directUpdate": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "openStore": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "stateUnchanged": true
+  },
+  {
+    "name": "OTHER_BUSINESS_OWNER_READ",
+    "orders": [
+      200,
+      0
+    ],
+    "items": [
+      200,
+      0
+    ],
+    "events": [
+      200,
+      0
+    ],
+    "list": [
+      200,
+      0
+    ]
+  },
+  {
+    "name": "OTHER_BUSINESS_OWNER_OPERATE",
+    "transition": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "cancel": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "offer": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "panelCenter": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "riderAvailability": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "reversePayment": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "classify": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "directUpdate": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "openStore": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "stateUnchanged": true
+  },
+  {
+    "name": "WRONG_RIDER_OPERATE",
+    "transition": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "cancel": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "offer": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "panelCenter": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "riderAvailability": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "reversePayment": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "classify": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "directUpdate": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "openStore": {
+      "http": 403,
+      "code": "42501",
+      "okData": null
+    },
+    "stateUnchanged": true
+  }
+]

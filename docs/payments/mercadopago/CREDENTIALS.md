@@ -23,6 +23,7 @@ Configurar en el gestor de secretos de Supabase Edge Functions, nunca en Postgre
 | `PAYMENT_WORKER_SECRET` | Autentica la ejecución interna del worker. |
 | `TABA_ALLOWED_ORIGINS` | Allowlist HTTPS separada por comas. |
 | `TABA_CHECKOUT_BASE_URL` | Dominio HTTPS controlado de TABA2. |
+| `MERCADOPAGO_REAL_MONEY_ENABLED` | Sólo producción: el interruptor de dinero real (ver abajo). |
 
 Para producción además son obligatorios:
 
@@ -30,13 +31,15 @@ Para producción además son obligatorios:
 MERCADOPAGO_PRODUCTION_REVIEW_STATUS=approved
 ```
 
-La revisión aprobada permite procesar consultas, webhooks y reconciliaciones del ambiente productivo; no autoriza crear una preferencia que pueda cobrar dinero real. Para el smoke controlado, y sólo durante su ventana autorizada, agregar:
+La revisión aprobada permite procesar consultas, webhooks y reconciliaciones del ambiente productivo; no autoriza crear una preferencia que pueda cobrar dinero real. Eso lo abre el interruptor de dinero real, un secreto permanente de backend que sólo se pone con la decisión escrita del dueño:
 
 ```text
-MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION=I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE
+MERCADOPAGO_REAL_MONEY_ENABLED=enabled
 ```
 
-Retirar esa confirmación al terminar el smoke. Nunca guardarla en Git ni en el panel.
+Sólo el valor exacto `enabled` abre; cualquier otro, o la ausencia, deja cerrado el cobro real. Para cortar el cobro real de toda la plataforma en un paso se borra ese secreto: reembolsos, cancelaciones, webhook, worker y conciliación siguen funcionando. Nunca va en Git, en la web, en la base ni en el panel. En `test` no hace falta: ahí no hay dinero real.
+
+La variable vieja `MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION` ya no abre nada. Si está puesta es un error de configuración: `verificar-configuracion.mjs` la informa y `sincronizar-worker-hmac.mjs` no corre hasta que se borre.
 
 La Public Key no se usa en Checkout Pro por redirect y no debe exponerse salvo que una integración futura oficial realmente la requiera.
 

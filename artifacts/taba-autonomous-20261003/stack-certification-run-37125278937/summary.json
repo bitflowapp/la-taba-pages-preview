@@ -1,0 +1,359 @@
+{
+  "runId": "ecom-cert-stack-20261003-131208",
+  "target": {
+    "kind": "stack",
+    "label": "supabase-ephemeral-stack",
+    "project": "supabase-ephemeral-stack",
+    "ref": "stack",
+    "tenantSlug": "taba-ecommerce-stack-20261003-131208",
+    "tenantName": "TABA_ECOMMERCE_STACK_20261003_131208",
+    "tenantId": "02c7d802-fbdc-43ab-a67d-2ac062920a8e"
+  },
+  "startedAt": "2026-10-03T13:12:08.109Z",
+  "finishedAt": "2026-10-03T13:15:16.849Z",
+  "invocations": [
+    {
+      "at": "2026-10-03T13:12:08.109Z",
+      "phases": [
+        "catalog",
+        "pricing",
+        "snapshot",
+        "delivery",
+        "hours",
+        "status",
+        "inventory",
+        "idempotency",
+        "lifecycle",
+        "cancellation",
+        "customer-cancel",
+        "rider",
+        "privacy",
+        "rls",
+        "trace",
+        "health",
+        "abuse",
+        "payments",
+        "lost-ack",
+        "edge-functions",
+        "expiry",
+        "performance"
+      ],
+      "keepOpen": false,
+      "finishedAt": "2026-10-03T13:15:16.848Z"
+    }
+  ],
+  "capabilities": {
+    "order_intake_guard": true,
+    "service_status": true,
+    "customer_cancel": true,
+    "order_expiry": true,
+    "cancel_republish": true,
+    "order_trace": true,
+    "ecommerce_health": true,
+    "catalog_stock_authority": true,
+    "enforcement_lock": true,
+    "delivery_coverage_gate": true,
+    "opening_rules_gate": true,
+    "checkout_payments": true,
+    "payment_refunds": true,
+    "business_self_delivery": true,
+    "operational_alerts": true,
+    "tracking_revocation": true
+  },
+  "phases": {
+    "preflight": {
+      "verdict": "PASS",
+      "checks": 14,
+      "pass": 13,
+      "fail": 0,
+      "skipped": 0,
+      "notAvailableLocally": 0,
+      "notAvailableOnTarget": 1
+    },
+    "tenant": {
+      "verdict": "PASS",
+      "checks": 15,
+      "pass": 15,
+      "fail": 0,
+      "skipped": 0,
+      "notAvailableLocally": 0,
+      "notAvailableOnTarget": 0
+    },
+    "catalog": {
+      "verdict": "PASS",
+      "checks": 19,
+      "pass": 19,
+      "fail": 0,
+      "skipped": 0,
+      "notAvailableLocally": 0,
+      "notAvailableOnTarget": 0
+    },
+    "pricing": {
+      "verdict": "PASS",
+      "checks": 33,
+      "pass": 33,
+      "fail": 0,
+      "skipped": 0,
+      "notAvailableLocally": 0,
+      "notAvailableOnTarget": 0
+    },
+    "snapshot": {
+      "verdict": "PASS",
+      "checks": 17,
+      "pass": 17,
+      "fail": 0,
+      "skipped": 0,
+      "notAvailableLocally": 0,
+      "notAvailableOnTarget": 0
+    },
+    "delivery": {
+      "verdict": "PASS",
+      "checks": 26,
+      "pass": 26,
+      "fail": 0,
+      "skipped": 0,
+      "notAvailableLocally": 0,
+      "notAvailableOnTarget": 0
+    },
+    "hours": {
+      "verdict": "PASS",
+      "checks": 43,
+      "pass": 43,
+      "fail": 0,
+      "skipped": 0,
+      "notAvailableLocally": 0,
+      "notAvailableOnTarget": 0
+    },
+    "status": {
+      "verdict": "PASS",
+      "checks": 21,
+      "pass": 21,
+      "fail": 0,
+      "skipped": 0,
+      "notAvailableLocally": 0,
+      "notAvailableOnTarget": 0
+    },
+    "inventory": {
+      "verdict": "FAIL",
+      "checks": 12,
+      "pass": 11,
+      "fail": 1,
+      "skipped": 0,
+      "notAvailableLocally": 0,
+      "notAvailableOnTarget": 0
+    },
+    "idempotency": {
+      "verdict": "PASS",
+      "checks": 27,
+      "pass": 27,
+      "fail": 0,
+      "skipped": 0,
+      "notAvailableLocally": 0,
+      "notAvailableOnTarget": 0
+    },
+    "lifecycle": {
+      "verdict": "PASS",
+      "checks": 33,
+      "pass": 33,
+      "fail": 0,
+      "skipped": 0,
+      "notAvailableLocally": 0,
+      "notAvailableOnTarget": 0
+    },
+    "cancellation": {
+      "verdict": "FAIL",
+      "checks": 17,
+      "pass": 16,
+      "fail": 1,
+      "skipped": 0,
+      "notAvailableLocally": 0,
+      "notAvailableOnTarget": 0
+    },
+    "customer-cancel": {
+      "verdict": "PASS",
+      "checks": 15,
+      "pass": 15,
+      "fail": 0,
+      "skipped": 0,
+      "notAvailableLocally": 0,
+      "notAvailableOnTarget": 0
+    },
+    "rider": {
+      "verdict": "PASS",
+      "checks": 34,
+      "pass": 34,
+      "fail": 0,
+      "skipped": 0,
+      "notAvailableLocally": 0,
+      "notAvailableOnTarget": 0
+    },
+    "privacy": {
+      "verdict": "PASS",
+      "checks": 25,
+      "pass": 24,
+      "fail": 0,
+      "skipped": 0,
+      "notAvailableLocally": 0,
+      "notAvailableOnTarget": 1
+    },
+    "rls": {
+      "verdict": "PASS",
+      "checks": 19,
+      "pass": 19,
+      "fail": 0,
+      "skipped": 0,
+      "notAvailableLocally": 0,
+      "notAvailableOnTarget": 0
+    },
+    "trace": {
+      "verdict": "PASS",
+      "checks": 12,
+      "pass": 12,
+      "fail": 0,
+      "skipped": 0,
+      "notAvailableLocally": 0,
+      "notAvailableOnTarget": 0
+    },
+    "health": {
+      "verdict": "PASS",
+      "checks": 7,
+      "pass": 7,
+      "fail": 0,
+      "skipped": 0,
+      "notAvailableLocally": 0,
+      "notAvailableOnTarget": 0
+    },
+    "abuse": {
+      "verdict": "PASS",
+      "checks": 13,
+      "pass": 12,
+      "fail": 0,
+      "skipped": 0,
+      "notAvailableLocally": 0,
+      "notAvailableOnTarget": 1
+    },
+    "payments": {
+      "verdict": "PASS",
+      "checks": 12,
+      "pass": 12,
+      "fail": 0,
+      "skipped": 0,
+      "notAvailableLocally": 0,
+      "notAvailableOnTarget": 0
+    },
+    "lost-ack": {
+      "verdict": "PASS",
+      "checks": 11,
+      "pass": 11,
+      "fail": 0,
+      "skipped": 0,
+      "notAvailableLocally": 0,
+      "notAvailableOnTarget": 0
+    },
+    "edge-functions": {
+      "verdict": "PASS",
+      "checks": 5,
+      "pass": 4,
+      "fail": 0,
+      "skipped": 0,
+      "notAvailableLocally": 0,
+      "notAvailableOnTarget": 1
+    },
+    "expiry": {
+      "verdict": "PASS",
+      "checks": 4,
+      "pass": 4,
+      "fail": 0,
+      "skipped": 0,
+      "notAvailableLocally": 0,
+      "notAvailableOnTarget": 0
+    },
+    "performance": {
+      "verdict": "PASS",
+      "checks": 3,
+      "pass": 2,
+      "fail": 0,
+      "skipped": 1,
+      "notAvailableLocally": 0,
+      "notAvailableOnTarget": 0
+    },
+    "teardown": {
+      "verdict": "PASS",
+      "checks": 18,
+      "pass": 18,
+      "fail": 0,
+      "skipped": 0,
+      "notAvailableLocally": 0,
+      "notAvailableOnTarget": 0
+    }
+  },
+  "totals": {
+    "checks": 455,
+    "pass": 448,
+    "fail": 2,
+    "skipped": 1,
+    "notAvailableLocally": 0,
+    "notAvailableOnTarget": 4
+  },
+  "failed": [
+    "inventory:LAST_UNIT_LOSER_GETS_A_CLEAN_REFUSAL",
+    "cancellation:ORDER_NOT_FOUND_IS_ANSWERED_AS_A_CLIENT_ERROR"
+  ],
+  "failures": [
+    {
+      "check": "inventory:LAST_UNIT_LOSER_GETS_A_CLEAN_REFUSAL",
+      "expected": "HTTP 4xx con 23514 (stock insuficiente) o 55000 (producto no disponible)",
+      "observed": "[{\"http\":500,\"ok\":false,\"code\":\"55000\",\"message\":\"producto no disponible: c6f1326d-f468-40f4-9651-2d648fb1c888\",\"details\":null,\"ms\":14.1},{\"http\":500,\"ok\":false,\"code\":\"55000\",\"message\":\"producto no disponible: c6f1326d-f468-40f4-9651-2d648fb1c888\",\"details\":null,\"ms\":13.2},{\"http\":500,\"ok\":false,\"code\":\"55000\",\"message\":\"producto no disponible: c6f1326d-f468-40f4-9651-2d648fb1c888\",\"details\":null,\"ms\":11.4},{\"http\":500,\"ok\":false,\"code\":\"55000\",\"message\":\"producto no disponible: c6f1326d-f468-40f4-9651-2d648fb1c888\",\"details\":null,\"ms\":12.9},{\"http\":500,\"ok\":false,\"code\":\"55000\",\"message\":\"pr…"
+    },
+    {
+      "check": "cancellation:ORDER_NOT_FOUND_IS_ANSWERED_AS_A_CLIENT_ERROR",
+      "expected": "HTTP 4xx · P0002",
+      "observed": "{\"http\":500,\"ok\":false,\"code\":\"P0002\",\"message\":\"pedido inexistente\",\"details\":null,\"ms\":2.9}"
+    }
+  ],
+  "skips": [
+    {
+      "check": "preflight:STACK_GATEWAY_REFUSES_A_REQUEST_WITHOUT_THE_PROJECT_KEY",
+      "verdict": "SKIPPED_NOT_AVAILABLE_ON_TARGET",
+      "reason": "el gateway del stack local no exige la clave del proyecto (observado: HTTP 200 en /rest/v1/ sin apikey); en la plataforma alojada sí la exige"
+    },
+    {
+      "check": "privacy:GATEWAY_REFUSES_A_REQUEST_WITHOUT_THE_PROJECT_KEY",
+      "verdict": "SKIPPED_NOT_AVAILABLE_ON_TARGET",
+      "reason": "el gateway del stack local no exige la clave del proyecto (observado: HTTP 200 sin apikey, con [] en la tabla y null en la RPC: nada se filtró); en la plataforma alojada sí la exige"
+    },
+    {
+      "check": "abuse:A_CLIENT_SUPPLIED_CF_CONNECTING_IP_IS_REFUSED_AT_THE_EDGE",
+      "verdict": "SKIPPED_NOT_AVAILABLE_ON_TARGET",
+      "reason": "el stack no tiene Cloudflare delante: nadie rechaza un cf-connecting-ip escrito por el cliente, y el origen de red es el que declara el transporte de esta herramienta"
+    },
+    {
+      "check": "edge-functions:WEBHOOK_WITHOUT_A_VALID_SIGNATURE_IS_ANSWERED_401",
+      "verdict": "SKIPPED_NOT_AVAILABLE_ON_TARGET",
+      "reason": "el stack no es un despliegue alojado: sirve HTTP plano en loopback y las funciones de pago no lo reconocen como proyecto, así que se niegan antes de mirar la firma del aviso (contestó 400 HTTPS_REQUIRED)"
+    },
+    {
+      "check": "performance:PERFORMANCE_IS_WITHIN_THE_COMMITTED_THRESHOLDS",
+      "verdict": "SKIPPED_NOT_DEPLOYED",
+      "reason": "contrato no desplegado: performance_thresholds — MEASURED_NO_GATE: docs/ecommerce-hardening/performance-thresholds.json no tiene umbrales para «stack»; el bloque propuesto (regla: p95 × 3, redondeado a 50 ms, piso 250 ms, tope el statement_timeout del rol) está en performance.json"
+    }
+  ],
+  "skippedPhases": [],
+  "notRun": [],
+  "fatal": null,
+  "performanceGate": "MEASURED_NO_GATE",
+  "requests": {
+    "total": 4906,
+    "load": 2310,
+    "loadBudget": 12000
+  },
+  "observer": {
+    "calls": 694,
+    "retries": 0
+  },
+  "anonymousSignIns": 1,
+  "serviceRoleUses": 583,
+  "databaseInterventions": 8,
+  "implementedPhasesAllPassOrSkipped": false,
+  "exitCode": 1
+}

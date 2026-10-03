@@ -2,6 +2,7 @@ import { oauthConfig, oauthMode } from '../_shared/seller-oauth.ts';
 import { fetchPayment } from '../_shared/mercadopago.ts';
 import { resolveSellerWebhookBusiness } from '../_shared/seller-webhook-routing.ts';
 import {
+  consumeRateLimit,
   createServiceClient,
   enforceRateLimit,
   getRequiredEnv,
@@ -13,7 +14,7 @@ import {
   sha256Hex,
 } from '../_shared/payment-runtime.ts';
 import { validateMercadoPagoWebhookSignature } from '../_shared/mercadopago-webhook-signature.ts';
-import { requestIsHttps } from '../_shared/request-protocol.ts';
+import { clientAddress, requestIsHttps } from '../_shared/request-protocol.ts';
 import { webhookEventType, webhookResourceId } from '../_shared/webhook-notification.ts';
 
 const WEBHOOK_MAX_BYTES = 16_000;
@@ -31,7 +32,6 @@ Deno.serve(async (request) => {
     }
     const body = await readJsonObject(request, WEBHOOK_MAX_BYTES);
     const service = createServiceClient();
-    await enforceRateLimit(service, request, 'webhook', 240, 60, 'mercadopago-webhook');
 
     const url = new URL(request.url);
     let businessId: string | undefined;
@@ -54,31 +54,28 @@ Deno.serve(async (request) => {
       secret: oauthMode() ? getRequiredEnv('MERCADOPAGO_OAUTH_WEBHOOK_SECRET') : getRequiredEnv('MERCADOPAGO_WEBHOOK_SECRET'),
     });
 
-    if (!eventType || !dataId) {
+    // Hasta acá no se escribió nada: la firma se decide ANTES de tocar la base.
+    // Este endpoint no tiene otra autenticación, y cuando gastaba un cupo y
+    // guardaba un recibo por cada pedido —firmado o no— cualquiera podía hacer
+    // crecer dos tablas sin límite y agotarle el cupo a Mercado Pago.
+    if (!eventType || !dataId || !signatureValid) {
       // Receipt persistence remains minimized: a malformed request can be
       // audited but cannot enter the durable processor.
-      const safeEventType = eventType || 'invalid';
-      const safeResource = dataId || payloadHash.slice(0, 64);
-      await persistReceipt(service, {
-        businessId,
+      await recordRejectedNotification(service, request, {
         environment: providerEnvironment(),
         webhookEventId,
-        eventType: safeEventType,
-        resourceId: safeResource,
+        eventType: eventType || 'invalid',
+        resourceId: dataId || payloadHash.slice(0, 64),
         signatureValid: false,
         requestId,
         payloadHash,
       });
       return jsonResponse(request, { ok: false, code: 'INVALID_WEBHOOK' }, 401);
     }
-
-    if (!signatureValid) {
-      await persistReceipt(service, {
-        environment: providerEnvironment(), webhookEventId, eventType, resourceId: dataId,
-        signatureValid: false, requestId, payloadHash,
-      });
-      return jsonResponse(request, { ok: false, code: 'INVALID_WEBHOOK' }, 401);
-    }
+    // Una notificación firmada gasta el cupo de SU dirección (la que informa
+    // Cloudflare, no un encabezado que escribe el cliente). No hay cupo común:
+    // nadie puede agotar desde otra dirección el de las notificaciones reales.
+    await enforceRateLimit(service, request, 'webhook', 240, 60);
     if (oauthMode()) {
       // Only Payments is subscribed for seller OAuth. Historical topics remain
       // handled by legacy mode; they cannot enter OAuth routing as payment IDs.
@@ -128,6 +125,59 @@ Deno.serve(async (request) => {
     return publicErrorResponse(request, error);
   }
 });
+
+// Cuántos recibos `rejected_signature` se pueden dejar por hora. La respuesta
+// es 401 SIEMPRE, se guarde o no el recibo.
+//
+// POR DIRECCIÓN, veinte. `list_webhook_signature_alerts` avisa con el primero,
+// pero `get_ecommerce_health` recién marca `webhook_processing` degradado con
+// CINCO en la hora (y ninguna notificación válida). Mercado Pago reintenta la
+// misma notificación y cada reintento gasta cupo sin dejar fila nueva (misma
+// clave: sólo suma `attempt_count`): con un tope igual al umbral, un secreto
+// mal cargado en producción podía quedar debajo de lo que lo delata. Veinte
+// dejan lugar para esos reintentos.
+//
+// ENTRE TODAS LAS DIRECCIONES, doscientos. El tope por dirección no acota a
+// quien tiene muchas (un /48 de IPv6 son 65.536 redes /64, cada una con su cupo
+// y sus recibos). Este cupo se gasta PRIMERO: agotado, un pedido sin firma no
+// escribe nada más —ni el recibo ni el cupo de su dirección—. Que alguien lo
+// agote a propósito no esconde nada: para agotarlo dejó sus propios recibos, y
+// son esos mismos recibos los que disparan la alerta y la salud.
+const REJECTED_RECEIPTS_PER_ADDRESS = 20;
+const REJECTED_RECEIPTS_ALL_ADDRESSES = 200;
+const REJECTED_RECEIPT_WINDOW_SECONDS = 3600;
+
+async function recordRejectedNotification(
+  service: ReturnType<typeof createServiceClient>,
+  request: Request,
+  input: Parameters<typeof persistReceipt>[1],
+): Promise<void> {
+  // Si un cupo no se pudo consultar tampoco se guarda: se cierra hacia «no
+  // escribir», que es lo acotado.
+  if (!await consumeRateLimit(
+    service,
+    'webhook_rejected',
+    'all-addresses',
+    REJECTED_RECEIPTS_ALL_ADDRESSES,
+    REJECTED_RECEIPT_WINDOW_SECONDS,
+  )) return;
+  // Sin dirección conocida el tope es uno solo para todos esos pedidos: acá el
+  // objetivo es acotar filas, y un cupo compartido lo cumple.
+  const origin = clientAddress(request);
+  const allowed = await consumeRateLimit(
+    service,
+    'webhook_rejected',
+    origin ? `address\u0000${origin}` : 'address-unknown',
+    REJECTED_RECEIPTS_PER_ADDRESS,
+    REJECTED_RECEIPT_WINDOW_SECONDS,
+  );
+  if (!allowed) return;
+  try {
+    await persistReceipt(service, input);
+  } catch (_) {
+    // El recibo de un rechazo es una traza, no parte de la respuesta.
+  }
+}
 
 async function persistReceipt(
   service: ReturnType<typeof createServiceClient>,

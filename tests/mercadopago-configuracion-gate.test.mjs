@@ -197,3 +197,32 @@ test('la validación de firma acepta el ts en segundos y en milisegundos', () =>
   assert.match(suite, /acepta ts en segundos y en milisegundos/);
   assert.match(suite, /un ts en milisegundos vencido sigue vencido/);
 });
+
+test('la compuerta nombra el interruptor de dinero real y trata la variable vieja de humo como error de configuración', () => {
+  // EDGE-03: en producción el cobro real lo abre MERCADOPAGO_REAL_MONEY_ENABLED
+  // con el valor exacto `enabled`. La variable vieja ya no abre nada.
+  const fuente = read(GATE);
+  const modo = listaDeclarada('SECRETOS_DE_MODO');
+  assert.ok(modo.has('MERCADOPAGO_REAL_MONEY_ENABLED'), 'el interruptor tiene que listarse como secreto de modo');
+  assert.ok(!modo.has('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION'), 'la variable vieja ya no es un secreto de modo');
+  const candidatos = fuente.match(/const CANDIDATOS = \{([\s\S]*?)\n\};/)[1];
+  assert.match(candidatos, /MERCADOPAGO_REAL_MONEY_ENABLED: \['enabled'\],/);
+  assert.doesNotMatch(candidatos, /MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION|I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE/);
+  // Que esté puesta es un problema: sale con 1 y lo dice.
+  assert.match(fuente, /if \(secretos\.has\(LEGACY_SMOKE_CONFIRMATION\)\) \{\s*problemas\.push\(/);
+  // La misma clasificación que la compuerta de release REAL_MONEY_GATE, no una copia.
+  assert.match(fuente, /import \{ LEGACY_SMOKE_CONFIRMATION, REAL_MONEY_SWITCH, classifyRealMoneySecrets \} from '\.\.\/release\/gates\/collect\.mjs';/);
+  assert.match(fuente, /import \{ realMoneyPlatform \} from '\.\.\/release\/gates\/evaluate\.mjs';/);
+  // Producción sin el interruptor en `enabled` no puede cobrar.
+  assert.match(fuente, /const interruptorCerrado = estadosDinero\?\.\[REAL_MONEY_SWITCH\] !== 'ENABLED';/);
+  assert.match(fuente, /else if \(entorno === 'production' && interruptorCerrado\) veredicto = 'DISABLED';/);
+});
+
+test('«producción sin cobro» se afirma sólo con el dinero real probado cerrado, y nada imprime una huella', () => {
+  const fuente = read(GATE);
+  // Un DISABLED por otro problema (una función que falta, el webhook con JWT) no
+  // impide crear un cobro: --esperado=disabled pide además el dinero real CERRADO.
+  assert.match(fuente, /if \(esperado === 'disabled' && plataforma\.value !== 'CLOSED'\) \{/);
+  assert.doesNotMatch(fuente, /digest\.slice\(|huella \$\{|\$\{digest\}/);
+  assert.match(fuente, /se listan nombres; ningún valor ni huella sale de acá/);
+});

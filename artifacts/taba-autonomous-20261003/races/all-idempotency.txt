@@ -1,0 +1,48 @@
+IDEMPOTENCY_CHECKOUT: la misma sesion x20 -> 1 sesion, 20 respuestas identicas, stock -2 una vez; misma clave con dos carritos x5+x5 -> gana el de 3 unidad(es), el otro recibe 23505; dos clientes con una clave x5+x5 -> 2 sesiones: PASS
+IDEMPOTENCY_PREFERENCE: preparar x10 -> 1 intento, 10 respuestas identicas; asentar x10 -> 1 preferencia, sesion redirected una vez, 9 x 55000 «autoridad del intento cambio»; reintento controlado x5 -> intento 2 una vez, 4 x 55000: PASS
+IDEMPOTENCY_WEBHOOK: el mismo aviso x20 -> 1 recibo, 1 trabajo, 19 duplicados; firmado y sin firma x5+x5 -> 1 recibo firmado, 1 trabajo; puerta del vendedor x10 -> 1 recibo, 1 trabajo: PASS
+IDEMPOTENCY_OUTBOX: 12 trabajos y 5 workers a la vez -> cada trabajo para un solo worker (0 ajeno(s) apartado(s)); otra ronda -> nada; plazo vencido -> 1 reclamo nuevo por trabajo; empezar x3 -> 1; terminar x5 -> 1; terminar y fallar x2+x2 -> queda retry_wait: PASS
+IDEMPOTENCY_ORDER_TRANSITION: aceptar x10 -> 1 transicion, 9 recibos repetidos; dos pestanas x5+x5 -> gana staff, 5 x PT409; una clave x8 contra otra x2 -> gana la de 8, 2 x PT409; una clave sobre dos pedidos -> 1 aplica, el otro 23505 (indice unico): PASS
+IDEMPOTENCY_MANUAL_PAYMENT: confirmar x10 -> 1 cobro, 9 recibos repetidos; dos claves con dos medios x5+x5 -> cobra transfer, la otra clave recibe already_confirmed; devolver x10 -> 1 devolucion; dos claves x3+x3 -> 1 devolucion, already_reversed; confirmar lo devuelto -> 55000: PASS
+IDEMPOTENCY_DELIVERY_PICKUP: entregar el retiro x10 -> entregado una vez, 9 recibos repetidos, stock sin cambios: PASS
+IDEMPOTENCY_DELIVERY_RIDER: codigo de entrega x5 -> 1 codigo; oferta x3 -> 1; aceptar x5, retirar x3, salir x3, llegar x3 -> 1 cada uno; el mismo codigo equivocado x3 -> 1 intento fallido; codigo bueno x10 + 3 equivocados -> entregado una vez, 0 fallido(s) antes y 3 con el pedido ya entregado, sin bloqueo; repetir -> no-op: PASS
+IDEMPOTENCY_DELIVERY_BUSINESS: cierre del comercio x10 -> entregado una vez, 9 recibos repetidos; el mismo codigo equivocado x3 -> 1 intento(s) fallido(s): PASS
+IDEMPOTENCY_RIDER_OFFER: el comercio ofrece el pedido a otro repartidor mientras el primero acepta, con la llegada fijada -> aceptado, la otra oferta recibe offer_in_flight; 4 rondas libres -> 4 pedidos asignados a quien acepto (0 x offer_in_flight, 4 x PT409 para la otra oferta); aceptar otra vez x3 -> no-op; aceptar contra retirar la oferta -> gana el retiro, sin deadlock: PASS
+IDEMPOTENCY_REFUND: la misma clave x10 -> 1 solicitud, el mismo refund_id; respuesta del proveedor x10 -> devuelto 3000 una vez, 1 evento; dos claves por el total x5+x5 -> 1 solicitud, la otra clave recibe reconciliation_required; parcial 1000 + dos por el resto -> 1 solicitud de 2000, total devuelto 3000 = cobrado; pedir de mas -> 22023; cobro devuelto -> 55000: PASS
+IDEMPOTENCY_PAYMENT_CANCELLATION: la misma cancelacion x10 -> 1 solicitud; respuesta x10 -> cancelado una vez, reserva liberada una vez; dos claves x5+x5 -> 1 solicitud, la otra recibe reconciliation_required; rechazo x5 -> nada liberado; tardias y contradictorias -> no-op o 55000; marca dudosa contra el segundo toque -> dudosa con 1 trabajo, despues cancelada una vez; cancelacion primero y aprobado despues -> cancelado, reserva liberada una vez, cobro en revision; cancelacion contra aprobado, 5 rondas libres -> 3 pedido(s) con reserva convertida, 2 cancelada(s) con reserva liberada y cobro en revision: PASS
+IDEMPOTENCY_RECOVERY_VS_REFUND: 5 rondas libres de rearmar x5 contra un reembolso total -> 0 con pedido, 5 sin pedido (5 x 55000 «este cobro tiene un reembolso en curso», reserva liberada una vez al volver el dinero); 2 rondas con el rearmado llegando primero -> 1 pedido, reserva convertida una vez, el reembolso pedido sobre el pedido ya armado: PASS
+IDEMPOTENCY_CUSTOMER_PROFILE: el mismo perfil x10 -> 1 perfil; dos nombres x3+x3 -> 1 perfil; la misma direccion x10 -> 1 direccion, 9 «duplicate»; dos pedidos de direccion principal -> 1 principal; archivar x5 -> 1 archivada, 4 x 42501; archivar la principal contra elegir otra -> la otra queda principal, sin deadlock: PASS
+IDEMPOTENCY_INVARIANTS: 21 pedidos (8 pagados por Mercado Pago) y 24 sesiones: ninguno sin renglones ni sin reserva, un pago del proveedor por cobro, total = cobrado y devuelto <= cobrado, ninguna reserva convertida y liberada, 17 claves unicas de recibos sin repetir: PASS
+IDEMPOTENCY_CONSERVATION: 9 productos, 320 unidades iniciales, 46 comprometidas, stock inicial = stock + reservas + pedidos + entregado en todos: PASS
+IDEMPOTENCY_FAMILY: checkout (create_checkout_session): x20 misma clave -> 1 sesion, 1 reserva, 1 intent, stock descontado una vez
+IDEMPOTENCY_FAMILY: stock reservation: x20 la misma sesion / x5+x5 dos carritos con una clave -> 1 juego de reservas por sesion
+IDEMPOTENCY_FAMILY: payment creation (prepare_mercadopago_preference_v2): x10 -> 1 intento (numero 1), la misma respuesta para todos
+IDEMPOTENCY_FAMILY: payment creation (record_mercadopago_preference_created_v2): x10 -> 1 preferencia asentada; 9 conflictos 55000 «autoridad del intento cambio»
+IDEMPOTENCY_FAMILY: payment retry (p_new_attempt): x5 -> 1 intento nuevo (numero 2); 4 rechazos 55000
+IDEMPOTENCY_FAMILY: webhook handling (record_mercadopago_webhook_receipt): x20 el mismo aviso -> 1 recibo, 1 trabajo en la cola
+IDEMPOTENCY_FAMILY: webhook handling (claim_payment_outbox_v2): x5 workers, 12 trabajos -> cada trabajo para un solo worker
+IDEMPOTENCY_FAMILY: webhook handling (start/complete/fail_payment_outbox_job): x3 / x5 / x4 -> 1 empieza, 1 termina, 1 cierra
+IDEMPOTENCY_FAMILY: order transition (transition_order): x10 misma clave -> 1 transicion, 1 evento, 1 recibo; 9 repeticiones del recibo
+IDEMPOTENCY_FAMILY: order transition (transition_order): dos claves x5+x5 -> 1 aplica; la otra clave recibe PT409
+IDEMPOTENCY_FAMILY: manual payment (confirm_manual_order_payment): x10 misma clave / dos claves x5+x5 -> 1 cobro, 1 evento, 1 recibo; la otra clave recibe already_confirmed
+IDEMPOTENCY_FAMILY: refund manual (reverse_manual_order_payment): x10 misma clave / dos claves x3+x3 -> 1 devolucion; la otra clave recibe already_reversed
+IDEMPOTENCY_FAMILY: delivery completion (retiro, transition_order): x10 -> entregado una vez
+IDEMPOTENCY_FAMILY: delivery completion (confirm_delivery_code): x10 codigo bueno + x3 equivocados -> entregado una vez, 1 entrega confirmada
+IDEMPOTENCY_FAMILY: delivery completion (confirm_business_delivery_code): x10 -> entregado una vez, 9 recibos repetidos
+IDEMPOTENCY_FAMILY: rider assignment (accept_rider_order_offer vs offer_order_to_rider): 1 + 1 con la llegada fijada, 4 rondas libres -> el pedido queda asignado una vez a quien acepto; la oferta al otro repartidor no entra
+IDEMPOTENCY_FAMILY: rider assignment (accept_rider_order_offer vs withdraw_rider_order_offer): 1 + 1 con la llegada fijada -> gana una de las dos; sin deadlock
+IDEMPOTENCY_FAMILY: refund (prepare_payment_refund_v2): x10 misma clave / dos claves x5+x5 -> 1 solicitud; las demas copias reciben esa solicitud y reconciliation_required
+IDEMPOTENCY_FAMILY: refund (record_payment_refund_identity + record_payment_refund_response_v2): x10 -> devuelto una vez, 1 evento
+IDEMPOTENCY_FAMILY: payment cancellation (prepare_payment_cancellation): x10 misma clave / dos claves x5+x5 -> 1 solicitud
+IDEMPOTENCY_FAMILY: payment cancellation (record_payment_cancellation_response): x10 -> cancelado una vez, reserva liberada una vez
+IDEMPOTENCY_FAMILY: stock release: x10 la misma respuesta de cancelacion -> la reserva vuelve al stock una vez
+IDEMPOTENCY_FAMILY: recovery (recover_paid_checkout_order): x5 + 1 reembolso total -> a lo sumo 1 pedido; nunca sobre dinero con el reembolso ya pedido
+IDEMPOTENCY_FAMILY: stock commit: x5 / x3 el mismo rearmado -> la reserva se convierte una vez
+IDEMPOTENCY_FAMILY: customer profile (upsert_current_customer_profile): x10 -> 1 perfil
+IDEMPOTENCY_FAMILY: customer address (upsert_current_customer_address): x10 -> 1 direccion; 9 «duplicate»
+IDEMPOTENCY_FAMILY: customer address (archive_current_customer_address vs set_current_customer_default_address): 1 + 1 con la llegada fijada -> la otra queda como unica principal; sin deadlock
+IDEMPOTENCY_COVERED_BY_OTHER_RACES: order creation x20/x25 -> intake-race.mjs (ORDER_INTAKE_SAME_KEY_RACE), stock-race.mjs (STOCK_RACE_RETRY_STORM); cancel order x6 -> stock-race.mjs (STOCK_RACE_CANCELLATION); approved payment x20 + finalize x10 -> stock-race.mjs (STOCK_RACE_DUPLICATE_WEBHOOK); stock reservation/commit/release under contention -> stock-race.mjs (4 a 7)
+DEADLOCKS: 0
+LOCK_TIMEOUTS: 0
+IDEMPOTENCY_RACE_DONE: 758 llamadas en conexiones propias, la mas lenta 818 ms, 43.9 s
+GLOBAL_IDEMPOTENCY: PASS

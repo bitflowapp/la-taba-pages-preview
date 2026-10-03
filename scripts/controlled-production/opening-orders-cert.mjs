@@ -20,6 +20,7 @@ import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { loadTargetKeys } from './target-keys.mjs';
 import { cleanupQaOrder, operatorClient } from './qa-cleanup.mjs';
+import { deliveryRestorable } from './delivery-restorable.mjs';
 import { foreignPublicTenants, openQaWindow, publicCatalogTenants, QA_CONTROL_BUSINESS, REAL_BUSINESS } from './qa-window.mjs';
 
 const BUSINESS = QA_CONTROL_BUSINESS;
@@ -55,7 +56,7 @@ const product = (await staff.from('products').select('id,price,stock').eq('busin
 assert.ok(product, 'QA_PRODUCT_REQUIRED');
 const stockOf = async () => Number((await admin.from('products').select('stock').eq('id', product.id).single()).data.stock);
 const stockBefore = await stockOf();
-const before = (await admin.from('businesses').select('delivery_enabled,pickup_enabled,status').eq('id', BUSINESS).single()).data;
+const before = (await admin.from('businesses').select('delivery_enabled,pickup_enabled,status,ordering_verified').eq('id', BUSINESS).single()).data;
 
 const base = () => ({ business_id: BUSINESS, client_request_id: randomUUID(), tracking_token: randomBytes(32).toString('base64url'),
   customer_name: 'QA Apertura', customer_phone: '2995550820', age_confirmed: true });
@@ -77,6 +78,12 @@ const confirmPayment = (id, revision, method) => staff.rpc('confirm_manual_order
   p_expected_revision: revision, p_actual_method: method, p_idempotency_key: `open_pay_${method}_${randomBytes(6).toString('hex')}` });
 
 try {
+  // Se le va a apagar el delivery al QA: antes, que se le pueda devolver.
+  const restorable = deliveryRestorable(before,
+    (await owner.rpc('get_store_opening_readiness', { p_business_id: BUSINESS, p_min_products: 1 })).data);
+  assert.ok(restorable.ok, 'QA_DELIVERY_NOT_RESTORABLE: el comercio QA está verificado con delivery y sin cobertura exigida; '
+    + 'cargarle una zona y exigir la cobertura antes de certificar');
+
   // ── 1 y 2 · Sólo retiro ────────────────────────────────────────────────────
   const off = await owner.rpc('set_business_fulfillment', { p_business_id: BUSINESS, p_delivery_enabled: false, p_pickup_enabled: true });
   check('PANEL_DELIVERY_OFF', !off.error && off.data?.delivery_enabled === false && off.data?.pickup_enabled === true, off.error?.code);

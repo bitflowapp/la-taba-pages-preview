@@ -32,9 +32,10 @@ function hostedSecrets(target = 'production', extra = [], refOverride = null) {
 }
 
 function harness({ active = false, globalToken = false, target = 'production', vaultProvisioned = false, pendingWork = 0, inventoryOf = null,
-  withoutWorkerSecret = false, withoutClientSecret = false } = {}) {
+  withoutWorkerSecret = false, withoutClientSecret = false, extraSecrets = [] } = {}) {
   const ref = REFS[target];
-  let secrets = hostedSecrets(target, globalToken ? [['MERCADOPAGO_ACCESS_TOKEN', 'fixture-global']] : [], inventoryOf ? REFS[inventoryOf] : null)
+  let secrets = hostedSecrets(target, [...(globalToken ? [['MERCADOPAGO_ACCESS_TOKEN', 'fixture-global']] : []), ...extraSecrets],
+    inventoryOf ? REFS[inventoryOf] : null)
     .filter(item => !(withoutWorkerSecret && item.name === 'PAYMENT_WORKER_SECRET'))
     .filter(item => !(withoutClientSecret && item.name === 'MERCADOPAGO_CLIENT_SECRET'));
   let vaultDigest = '';
@@ -217,4 +218,34 @@ test('the production OAuth setup maps controlled production to its own host with
   assert.match(nodeSetup, /production: \{ ref: 'wwcpogltfgzgkrlilbcd', site: 'https:\/\/la-taba\.pages\.dev' \}/);
   assert.match(powershellSetup, /ValidateSet\('production', 'controlled-production'\)/);
   assert.match(powershellSetup, /tkanbadcglszlcyfjvpv/);
+});
+
+// EDGE-03: el cobro real lo abre MERCADOPAGO_REAL_MONEY_ENABLED = enabled. La
+// variable vieja de la prueba de humo ya no abre nada; que siga puesta en un
+// proyecto productivo es un error de configuración, y la herramienta del worker
+// no sigue hasta que alguien la borre (con funciones viejas todavía abriría).
+const LEGACY_SMOKE = ['MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION', 'I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE'];
+
+test('production and controlled production refuse the legacy smoke variable before touching anything', async () => {
+  for (const target of ['production', 'controlled-production']) {
+    const h = harness({ target, extraSecrets: [LEGACY_SMOKE] });
+    await assert.rejects(() => checkWorkerHmac(target, h), /Legacy MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION is still set/);
+    await assert.rejects(() => synchronizeWorkerHmac(target, { ...h, createSecret: () => FIXTURE_SECRET }),
+      /Legacy MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION is still set/);
+    assert.equal(h.state().mutationCalls, 0, target);
+  }
+  // Tampoco con el interruptor nuevo puesto al lado: la vieja tiene que irse igual.
+  const both = harness({ extraSecrets: [LEGACY_SMOKE, ['MERCADOPAGO_REAL_MONEY_ENABLED', 'enabled']] });
+  await assert.rejects(() => checkWorkerHmac('production', both), /Legacy MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION/);
+  assert.equal(both.state().mutationCalls, 0);
+});
+
+test('the permanent real-money switch is a legitimate secret: the worker tooling does not stop for it', async () => {
+  const h = harness({ extraSecrets: [['MERCADOPAGO_REAL_MONEY_ENABLED', 'enabled']] });
+  const checked = await checkWorkerHmac('production', h);
+  assert.equal(checked.ok, false, 'the fixture Vault is not aligned yet');
+  const result = await synchronizeWorkerHmac('production', {
+    ...h, createSecret: () => FIXTURE_SECRET, createNonce: () => FIXTURE_NONCE, now: () => FIXTURE_TIME,
+  });
+  assert.deepEqual(result, { ok: true, target: 'production', aligned: true, signedProbe: true });
 });

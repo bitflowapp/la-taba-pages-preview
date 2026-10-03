@@ -14,12 +14,15 @@ const iid = '94000000-0000-4000-8000-000000000004';
 const providerUrl = 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=fixture';
 
 function configure() {
+  // La variable vieja de humo no tiene que estar: ya no abre nada, y si quedara
+  // de otra suite, una prueba que pasa con ella no diría nada del interruptor.
+  Deno.env.delete('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION');
   for (const [name, value] of Object.entries({
     SUPABASE_URL: 'https://wwcpogltfgzgkrlilbcd.supabase.co',
     SUPABASE_SERVICE_ROLE_KEY: 'fixture-service', SUPABASE_ANON_KEY: 'fixture-anon',
     MERCADOPAGO_ENVIRONMENT: 'production', MERCADOPAGO_OAUTH_ENVIRONMENT: 'production',
     MERCADOPAGO_CREDENTIAL_MODE: 'oauth', MERCADOPAGO_PRODUCTION_REVIEW_STATUS: 'approved',
-    MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION: 'I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE',
+    MERCADOPAGO_REAL_MONEY_ENABLED: 'enabled',
     TABA_DEPLOYMENT_ENV: 'production', MERCADOPAGO_OAUTH_PROJECT_REF: 'wwcpogltfgzgkrlilbcd',
     MERCADOPAGO_OAUTH_PANEL_URL: 'https://la-taba.pages.dev/',
     TABA_CHECKOUT_BASE_URL: 'https://la-taba.pages.dev', TABA_ALLOWED_ORIGINS: 'https://la-taba.pages.dev',
@@ -48,7 +51,12 @@ async function run(route: string, mutation: string, initiallyInvalid = '') {
   if (initiallyInvalid === 'wrong_business') seller.business_id = uid;
   if (initiallyInvalid === 'wrong_environment') seller.environment = 'test';
   if (initiallyInvalid === 'payments_disabled') settings.enabled = false;
-  if (initiallyInvalid === 'missing_smoke') Deno.env.delete('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION');
+  if (initiallyInvalid === 'switch_off') Deno.env.delete('MERCADOPAGO_REAL_MONEY_ENABLED');
+  if (initiallyInvalid === 'switch_not_exact') Deno.env.set('MERCADOPAGO_REAL_MONEY_ENABLED', 'ENABLED');
+  if (initiallyInvalid === 'legacy_smoke_only') {
+    Deno.env.delete('MERCADOPAGO_REAL_MONEY_ENABLED');
+    Deno.env.set('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION', 'I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE');
+  }
   const preparation = { checkout_session_id: sid, payment_intent_id: iid, payment_attempt_id: iid,
     attempt_number: 1, preference_id: route.startsWith('stored') ? 'fixture' : null,
     attempt_status: route.startsWith('stored') ? 'created' : 'prepared', init_point: route.startsWith('stored') ? providerUrl : null,
@@ -136,7 +144,7 @@ async function run(route: string, mutation: string, initiallyInvalid = '') {
       if (mutation === 'disconnected') { seller.status = 'disconnected'; seller.protected_tokens = null; }
       if (mutation === 'settings_version') settings.updated_at = '2026-09-08T00:01:00Z';
       if (mutation === 'review') settings.production_review_status = 'pending';
-      if (mutation === 'smoke') Deno.env.delete('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION');
+      if (mutation === 'switch') Deno.env.delete('MERCADOPAGO_REAL_MONEY_ENABLED');
       if (mutation === 'reservation') checkout.reservation_valid = false;
       if (mutation === 'expired') checkout.expires_at = new Date(Date.now() - 1000).toISOString();
     }
@@ -150,17 +158,234 @@ async function run(route: string, mutation: string, initiallyInvalid = '') {
       assertEquals(records.some(name => name.endsWith('_uncertain')), false);
     }
     if (!initiallyInvalid) { assertEquals(providerChecks, 1); if (allowed && snapshotReads > 0) assertEquals(snapshotReads, 2); }
-  } finally { releaseProvider(); globalThis.fetch = original; }
+  } finally {
+    releaseProvider(); globalThis.fetch = original;
+    Deno.env.delete('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION');
+  }
 }
 
 for (const route of ['stored', 'stored_legacy', 'recovered', 'new']) {
   for (const mutation of ['payments_disabled', 'business_closed', 'generation', 'credential', 'disconnected',
-    'settings_version', 'review', 'smoke', 'reservation', 'expired', 'none',
+    'settings_version', 'review', 'switch', 'reservation', 'expired', 'none',
     'cancelled', 'superseded', 'attempt_id', 'same_seller_other_attempt', 'preference', 'url', 'aba', 'intent_cancelled']) {
     Deno.test('A1 real handler ' + route + ': ' + mutation + ' during /users/me', () => run(route, mutation));
   }
 }
 for (const state of ['no_seller', 'disconnected', 'requires_reauthorization', 'cleared_tokens',
-  'wrong_business', 'wrong_environment', 'payments_disabled', 'missing_smoke']) {
+  'wrong_business', 'wrong_environment', 'payments_disabled', 'switch_off', 'switch_not_exact', 'legacy_smoke_only']) {
   Deno.test('A1 stored URL initially rejects ' + state, () => run('stored', 'none', state));
+}
+
+// ── EDGE-06: qué se asienta cuando el POST de la preferencia no sale bien ────
+// Tres resultados distintos que antes se mezclaban:
+//   - el proveedor RESPONDE que no (4xx final)            → intento `failed`;
+//   - el proveedor no decidió nada (408/409/425/429, 5xx,
+//     corte o plazo vencido)                              → intento dudoso;
+//   - el pedido ni siquiera salió (un error nuestro)      → no se asienta nada.
+
+type CreationScript = {
+  post?: () => Response | Promise<Response>;
+  preparation?: Record<string, unknown>;
+  /** Variables a cambiar sobre la configuración productiva completa; `null` la borra. */
+  environment?: Record<string, string | null>;
+  /** Cambios sobre la configuración de cobro del comercio y su vendedor. */
+  settings?: Record<string, unknown>;
+  seller?: Record<string, unknown>;
+  /** Pedir un intento nuevo: el camino en el que la preparación puede volver a reservar stock. */
+  newAttempt?: boolean;
+};
+
+async function create(script: CreationScript) {
+  configure();
+  const seller = { business_id: bid, environment: 'production', status: 'connected', seller_id: '123456789',
+    application_id: '7677852968049976', protected_tokens: await protect({ access_token: 'fixture-verified-token' }, bid),
+    expires_at: new Date(Date.now() + 172800000).toISOString(), generation: 'fixture-generation', refresh_owner: null };
+  Object.assign(seller, script.seller || {});
+  const business = { id: bid, is_active: true, status: 'open', ordering_enabled: true, ordering_verified: true };
+  const settings = { business_id: bid, provider: 'mercadopago', enabled: true, environment: 'production',
+    checkout_mode: 'checkout_pro', currency: 'ARS', reserve_stock: true, production_review_status: 'approved',
+    collector_id: '123456789', application_id: '7677852968049976', updated_at: '2026-09-08T00:00:00Z' };
+  Object.assign(settings, script.settings || {});
+  for (const [name, value] of Object.entries(script.environment || {})) {
+    if (value === null) Deno.env.delete(name);
+    else Deno.env.set(name, value);
+  }
+  const checkout = { id: sid, customer_id: uid, business_id: bid, payment_intent_id: iid, environment: 'production',
+    status: 'ready_for_payment', expires_at: new Date(Date.now() + 600000).toISOString(),
+    reservation_valid: true, business_open: true };
+  const preparation = { checkout_session_id: sid, payment_intent_id: iid, payment_attempt_id: iid,
+    attempt_number: 1, preference_id: null, attempt_status: 'prepared', init_point: null, sandbox_init_point: null,
+    environment: 'production', currency: 'ARS', total: 100, external_reference: 'fixture-reference',
+    idempotency_key: iid, expires_at: checkout.expires_at,
+    items: [{ id: 'fixture-product', title: 'Fixture', quantity: 1, unit_price: 100, currency_id: 'ARS' }],
+    allow_offline_payment_methods: false, ...(script.preparation || {}) };
+  const attempt = { id: iid, payment_intent_id: iid, attempt_type: 'preference', attempt_number: 1,
+    idempotency_key: iid, status: 'prepared', preference_id: null as string | null, init_point: null as string | null,
+    authority_revision: 1, seller_generation: null as string | null, seller_id: null as string | null };
+  const intent = { id: iid, business_id: bid, checkout_session_id: sid, current_payment_attempt_id: iid,
+    internal_status: 'preference_creating', preference_id: null as string | null };
+  const snapshot = async () => {
+    const data = structuredClone({ business, settings, seller, checkout, attempt, intent });
+    return { ...data, authority_version: await sha256Hex(JSON.stringify(data)) };
+  };
+  const records: Array<{ name: string; code: unknown }> = [];
+  let posts = 0, prepares = 0, providerCalls = 0;
+  const original = globalThis.fetch;
+  globalThis.fetch = async (input, options) => {
+    const url = new URL(String(input));
+    const init = options as RequestInit | undefined;
+    const body = init?.body ? JSON.parse(String(init.body)) : {};
+    if (url.origin === 'https://api.mercadopago.com') providerCalls++;
+    if (url.pathname === '/auth/v1/user') return Response.json({ id: uid });
+    if (url.pathname.endsWith('/consume_payment_rate_limit')) return Response.json({ allowed: true });
+    if (url.pathname.endsWith('/prepare_mercadopago_preference_v2')) { prepares++; return Response.json(preparation); }
+    if (url.pathname.endsWith('/get_mercadopago_payment_authority_v2')) return Response.json(await snapshot());
+    if (url.pathname.endsWith('/mp_seller_connections')) return Response.json(seller);
+    if (url.pathname.endsWith('/payment_intents')) return Response.json({ business_id: bid, environment: 'production' });
+    if (url.pathname.endsWith('/record_mercadopago_preference_created_v2')) {
+      Object.assign(attempt, { status: 'created', preference_id: body.p_preference_id, init_point: body.p_init_point,
+        authority_revision: attempt.authority_revision + 1, seller_generation: seller.generation, seller_id: seller.seller_id });
+      intent.preference_id = body.p_preference_id;
+      return Response.json(await snapshot());
+    }
+    if (url.pathname.endsWith('/record_mercadopago_preference_failed') || url.pathname.endsWith('/record_mercadopago_preference_uncertain')) {
+      assertEquals(body.p_payment_attempt_id, iid);
+      records.push({ name: url.pathname.split('/').pop()!.replace('record_mercadopago_preference_', ''), code: body.p_error_code });
+      return Response.json(true);
+    }
+    if (url.origin !== 'https://api.mercadopago.com') throw new Error('Unexpected test request: ' + url.pathname);
+    if (url.pathname === '/users/me') return Response.json({ id: 123456789, site_id: 'MLA', tags: ['normal'] });
+    if (url.pathname === '/checkout/preferences/search') return Response.json({ elements: [], next_offset: 0, total: 0 });
+    if (url.pathname === '/checkout/preferences' && init?.method === 'POST') {
+      posts++;
+      assertEquals(new Headers(init.headers).get('x-idempotency-key'), iid);
+      return await (script.post || (() => Response.json({ id: 'fixture', init_point: providerUrl }, { status: 201 })))();
+    }
+    throw new Error('Unexpected provider request: ' + url.pathname);
+  };
+  try {
+    const response = await handle(new Request('https://wwcpogltfgzgkrlilbcd.supabase.co/functions/v1/mercadopago-create-preference', {
+      method: 'POST', headers: { authorization: 'Bearer fixture-customer', 'content-type': 'application/json' },
+      body: JSON.stringify({ checkout_session_id: sid, ...(script.newAttempt ? { new_attempt: true } : {}) }),
+    }));
+    return { status: response.status, body: await response.json(), records, posts, prepares, providerCalls };
+  } finally {
+    globalThis.fetch = original;
+    Deno.env.delete('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION');
+  }
+}
+
+// ── EDGE-03: el interruptor de dinero real en la preferencia ─────────────────
+// La preparación del intento (`prepare_mercadopago_preference_v2`) con
+// `new_attempt` vuelve a reservar el stock de una sesión vencida o cancelada.
+// Con la llave del proyecto cerrada no se llega a ella: ni preparación, ni
+// reserva, ni proveedor, y el mismo rechazo público que la sesión de checkout.
+
+const switchClosed: Record<string, Record<string, string | null>> = {
+  'sin el interruptor': { MERCADOPAGO_REAL_MONEY_ENABLED: null },
+  'con el interruptor en «true»': { MERCADOPAGO_REAL_MONEY_ENABLED: 'true' },
+  'con el interruptor en «ENABLED»': { MERCADOPAGO_REAL_MONEY_ENABLED: 'ENABLED' },
+  'con el interruptor en « enabled»': { MERCADOPAGO_REAL_MONEY_ENABLED: ' enabled' },
+  'con la frase vieja de humo y sin el interruptor': {
+    MERCADOPAGO_REAL_MONEY_ENABLED: null,
+    MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION: 'I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE',
+  },
+  'sin revisión productiva aprobada': { MERCADOPAGO_PRODUCTION_REVIEW_STATUS: 'pending' },
+  'sin revisión ni interruptor': { MERCADOPAGO_PRODUCTION_REVIEW_STATUS: null, MERCADOPAGO_REAL_MONEY_ENABLED: null },
+};
+
+for (const [name, environment] of Object.entries(switchClosed)) {
+  Deno.test(`EDGE-03 preferencia ${name}: 409 PAYMENTS_NOT_ENABLED sin preparar, sin reservar y sin proveedor`, async () => {
+    const result = await create({ environment, newAttempt: true });
+    assertEquals(result.status, 409);
+    assertEquals(result.body, {
+      ok: false, code: 'PAYMENTS_NOT_ENABLED', message: 'Mercado Pago no está disponible para este comercio en este momento.',
+    });
+    assertEquals(result.prepares, 0, 'la preparación puede volver a reservar stock');
+    assertEquals(result.providerCalls, 0);
+    assertEquals(result.posts, 0);
+    assertEquals(result.records, []);
+  });
+}
+
+// Con la llave del proyecto abierta, la del comercio sigue mandando: sin
+// Mercado Pago encendido o sin vendedor conectado no sale ninguna preferencia.
+for (const [name, script] of Object.entries({
+  'comercio con Mercado Pago apagado': { settings: { enabled: false } },
+  'comercio sin la revisión productiva propia': { settings: { production_review_status: 'pending' } },
+  'vendedor desconectado': { seller: { status: 'disconnected' } },
+  'vendedor de otra aplicación': { seller: { application_id: '2691240967769590' } },
+  'comercio apagado y sin interruptor': { settings: { enabled: false }, environment: { MERCADOPAGO_REAL_MONEY_ENABLED: null } },
+} as Record<string, CreationScript>)) {
+  Deno.test(`EDGE-03 preferencia con ${name}: ningún cobro sale`, async () => {
+    const result = await create(script);
+    assertEquals(result.status, 409);
+    assertEquals(result.posts, 0);
+    assertEquals(result.providerCalls, 0);
+    assertEquals(Boolean(result.body.init_point), false);
+    assertEquals(result.records, []);
+  });
+}
+
+Deno.test('EDGE-03 preferencia con las tres llaves abiertas: una sola preferencia, como siempre', async () => {
+  const result = await create({});
+  assertEquals(result.status, 200);
+  assertEquals(result.body.init_point, providerUrl);
+  assertEquals(result.prepares, 1);
+  assertEquals(result.posts, 1);
+});
+
+Deno.test('EDGE-06: una preferencia creada no asienta ni fallo ni duda', async () => {
+  const result = await create({});
+  assertEquals(result.status, 200);
+  assertEquals(result.body.init_point, providerUrl);
+  assertEquals(result.records, []);
+  assertEquals(result.posts, 1);
+});
+
+for (const status of [408, 409, 425, 429]) {
+  Deno.test(`EDGE-06: un ${status} del proveedor no es un rechazo: el intento queda dudoso, no fallido`, async () => {
+    const result = await create({ post: () => Response.json({ message: 'not now' }, { status }) });
+    assertEquals(result.status, 202);
+    assertEquals(result.body.code, 'PREFERENCE_RECONCILING');
+    assertEquals(result.records, [{ name: 'uncertain', code: String(status) }]);
+    assertEquals(result.posts, 1);
+  });
+}
+
+for (const status of [400, 403, 404, 422]) {
+  Deno.test(`EDGE-06: un ${status} del proveedor sí es su respuesta final: el intento queda fallido`, async () => {
+    const result = await create({ post: () => Response.json({ message: 'invalid preference' }, { status }) });
+    assertEquals(result.status, 409);
+    assertEquals(result.body.code, 'PAYMENT_SETUP_REJECTED');
+    assertEquals(result.records, [{ name: 'failed', code: String(status) }]);
+  });
+}
+
+for (const [name, post, code] of [
+  ['un 500', () => Response.json({ message: 'internal error' }, { status: 500 }), '500'],
+  ['un 503', () => Response.json({ message: 'service unavailable' }, { status: 503 }), '503'],
+  ['un corte de red', () => Promise.reject(new TypeError('simulated network failure')), 'network_or_timeout'],
+  ['una respuesta 200 sin la preferencia', () => Response.json({ unexpected: true }), '200'],
+] as Array<[string, () => Response | Promise<Response>, string]>) {
+  Deno.test(`EDGE-06: ${name} deja el intento dudoso, como antes`, async () => {
+    const result = await create({ post });
+    assertEquals(result.status, 202);
+    assertEquals(result.records, [{ name: 'uncertain', code }]);
+  });
+}
+
+for (const [name, preparation] of Object.entries({
+  'los items superan el total del checkout': { items: [{ id: 'fixture-product', title: 'Fixture', quantity: 1, unit_price: 150, currency_id: 'ARS' }] },
+  'el checkout ya venció': { expires_at: new Date(Date.now() - 1000).toISOString() },
+  'el total no es un importe': { total: 0 },
+} as Record<string, Record<string, unknown>>)) {
+  Deno.test(`EDGE-06: si ${name}, no sale ningún pedido y no se asienta como duda del proveedor`, async () => {
+    const result = await create({ preparation });
+    // Nada salió hacia Mercado Pago: ni «plazo vencido» ni «rechazo» serían ciertos.
+    assertEquals(result.posts, 0);
+    assertEquals(result.records, []);
+    assertEquals(result.status, 503);
+    assertEquals(result.body.code, 'PAYMENT_UNAVAILABLE');
+  });
 }

@@ -30,6 +30,7 @@ import { loadTargetKeys } from './target-keys.mjs';
 import { QA_CONTROL_BUSINESS, REAL_BUSINESS } from './qa-window.mjs';
 import { leerSecreto } from '../e2e-production-sale/secretos-windows.mjs';
 import { policyPatch } from './alcohol-policy.mjs';
+import { deliveryRestorable, expectedVerificationRefusal } from './delivery-restorable.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const OPTIONS = { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } };
@@ -127,7 +128,7 @@ try {
   const premature = await admin.rpc('platform_verify_business_ordering', {
     p_business_id: REAL_BUSINESS, p_verifier_email: qaOwnerEmail, p_confirm_slug: realBefore.slug, p_min_products: 1, p_note: 'certificación: debe fallar' });
   check('VERIFY_PREMATURE_REFUSED', premature.error?.message === 'OPENING_NOT_READY'
-    && premature.error?.details === blockingBesidesPlatform.join(','), premature.error?.details);
+    && premature.error?.details === expectedVerificationRefusal(real.data, realPending).join(','), premature.error?.details);
   const personVerify = await owner.rpc('platform_verify_business_ordering', {
     p_business_id: QA_CONTROL_BUSINESS, p_verifier_email: qaOwnerEmail, p_confirm_slug: 'qa-control-cp', p_min_products: 1, p_note: null });
   check('VERIFY_PERSON_CANNOT_CALL', Boolean(personVerify.error), code(personVerify));
@@ -137,6 +138,11 @@ try {
   // ── 3 · QA: entrega, horario, dirección, estado ────────────────────────────
   const qaBefore = await one(admin.from('businesses').select('*').eq('id', QA_CONTROL_BUSINESS).single());
   const hoursBefore = await one(admin.from('business_service_hours').select('channel,weekday,opens_at,closes_at').eq('business_id', QA_CONTROL_BUSINESS));
+  // Se le va a apagar el delivery al QA: antes, que se le pueda devolver.
+  const qaRestorable = deliveryRestorable(qaBefore,
+    (await owner.rpc('get_store_opening_readiness', { p_business_id: QA_CONTROL_BUSINESS, p_min_products: 1 })).data);
+  assert.ok(qaRestorable.ok, 'QA_DELIVERY_NOT_RESTORABLE: el comercio QA está verificado con delivery y sin cobertura exigida; '
+    + 'cargarle una zona y exigir la cobertura antes de certificar');
   restores.push(async () => {
     await owner.rpc('set_business_fulfillment', { p_business_id: QA_CONTROL_BUSINESS,
       p_delivery_enabled: qaBefore.delivery_enabled, p_pickup_enabled: qaBefore.pickup_enabled });

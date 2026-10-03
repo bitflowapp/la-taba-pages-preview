@@ -411,7 +411,7 @@ try {
     const before = await stockOf();
     const cur = await read(staff.c, raceOrder.id);
     const argsCancel = { p_order_id: raceOrder.id, p_expected_revision: cur.revision, p_reason: 'QA capacidad: cancelación doble', p_idempotency_key: key('cancel', raceOrder.id, cur.revision) };
-    const [a, b] = await Promise.all([rpc(staff.c, 'cancel_order', argsCancel), rpc(staff.c, 'cancel_order', argsCancel)]);
+    const [a, b] = await Promise.all([rpc(owner.c, 'cancel_order', argsCancel), rpc(owner.c, 'cancel_order', argsCancel)]);
     const other = await rpc(owner.c, 'cancel_order', { ...argsCancel, p_idempotency_key: key('cancel2', raceOrder.id, cur.revision) }, { allow: ['PT409', '40001', 'P0001', '55000'] });
     const after = await stockOf();
     report.doubleCancel = { restored: after - before, expected: raceOrder.qty, codes: [codeOf(a), codeOf(b), codeOf(other)],

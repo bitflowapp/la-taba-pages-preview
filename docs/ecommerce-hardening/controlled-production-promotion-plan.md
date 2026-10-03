@@ -72,6 +72,8 @@ npx supabase@2.101.0 migration list --linked
 
 Si CP tuviera una migración de otra línea con una versión menor que la última aplicada, `db push` la rechaza: se agrega `--include-all` sólo después de leer cuál es.
 
+`20261002090000` y `20261002091000` (el contrato HTTP de la frontera, API-01) empiezan comparando el cuerpo vivo de cada función que redefinen con el cuerpo del que se generaron. Si alguna cambió fuera de esta rama (a mano o por otra línea), la migración se niega con `ROLLOUT_BLOCKED: <firma>` antes de tocar nada y `db push` para ahí. No se borra la guarda: se para (paso 10), se regenera con `scripts/db/wrap-api-boundary.mjs` contra una base que tenga esa definición y se vuelve a certificar.
+
 Para seguir: el ledger de CP es igual al del repo (misma cantidad, mismas versiones, mismo orden).
 
 ## 5. Edge Functions
@@ -137,7 +139,7 @@ Para seguir: los gates de software (migraciones, Edge Functions, P0/P1, `REAL_MO
 ## 10. Si algo falla
 
 1. **Edge Functions**: volver a desplegar la versión anterior de cada función desde el commit anterior (la versión y el hash de cada una quedan en la salida del paso 5 de la promoción anterior: hoy, en CP, todas las de Mercado Pago están en v6).
-2. **Migraciones**: revertir en orden inverso con `docs/migrations/rollback/<versión>_<nombre>.rollback.sql`, una por una, con `psql` como `postgres`. Cada archivo dice qué no puede restaurar (las tablas con filas de auditoría se conservan sin permisos de cliente). El ensayo completo de la cadena (todas las reversiones de la rama en orden inverso) dio 0 diferencias contra el esquema anterior en `5b3491d` (31 reversiones); se repite sobre el commit que se promueve, porque la rama sumó migraciones después (el 2026-10-03, sobre `0e75dbe8`: 48 reversiones, 0 fallidas, 0 diferencias contra una línea base de 158 armada en el momento, comparando cuerpos sin CR). Diferencia conocida y sólo de forma: la reversión de `20261002041000` deja `upsert_current_customer_address` con fin de línea LF (el original tiene CRLF y los archivos del repo no pueden llevar CR); una huella que compare el texto crudo la marca: normalizar CR antes de comparar.
+2. **Migraciones**: revertir en orden inverso con `docs/migrations/rollback/<versión>_<nombre>.rollback.sql`, una por una, con `psql` como `postgres`. Cada archivo dice qué no puede restaurar (las tablas con filas de auditoría se conservan sin permisos de cliente). El ensayo completo de la cadena (todas las reversiones de la rama en orden inverso) dio 0 diferencias contra el esquema anterior en `5b3491d` (31 reversiones); se repite sobre el commit que se promueve, porque la rama sumó migraciones después (el 2026-10-03, sobre `0e75dbe8`: 48 reversiones, 0 fallidas, 0 diferencias contra una línea base de 158 armada en el momento, comparando cuerpos sin CR; y sobre `11093b0a`, ya con el contrato HTTP: 50 reversiones, 0 fallidas, 0 diferencias). Diferencia conocida y sólo de forma: la reversión de `20261002041000` deja `upsert_current_customer_address` con fin de línea LF (el original tiene CRLF y la reversión se escribió con LF); una huella que compare el texto crudo la marca: normalizar CR antes de comparar. La reversión de `20261002090000` se niega mientras `20261002091000` siga aplicada: el orden inverso ya las deja en el orden correcto.
 3. **Si el esquema no vuelve a la huella del paso 1**: restaurar el backup del paso 1 siguiendo el mismo procedimiento del ensayo del paso 2, sobre el proyecto.
 
 Criterio de cierre: la huella del esquema igual a la del paso 1 y `ops-pulse` sin alertas nuevas.

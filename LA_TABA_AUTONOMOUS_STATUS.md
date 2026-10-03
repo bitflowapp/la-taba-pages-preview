@@ -6,9 +6,10 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
 ## Para retomar (leer primero)
 
 - Informe final: `LA_TABA_AUTONOMOUS_BACKEND_REPORT.md` (estado, hallazgos, OWNER_APPROVAL_REQUIRED con pasos exactos, veredictos).
-- Actualizado 2026-10-03 18:05 (-03:00). Último commit de código: `3573140a`; el último de la rama es el de documentación que
-  trae este archivo. Tarea en curso: cerrar la cuarta revisión de 20261003090000 (revisor y CI). Próximo paso: atender lo que
-  encuentre la cuarta pasada y dejar el CI del HEAD final en verde.
+- Actualizado 2026-10-03 18:22 (-03:00). Último commit de código: `3573140a`; después, tres de pruebas de regresión
+  (`2018ea51`, `4a0ce219`, `3a080d44`) y el de documentación que trae este archivo. Tarea en curso: cerrar la cuarta revisión
+  de 20261003090000 (revisor, gate local y CI). Próximo paso: atender lo que encuentre la cuarta pasada y dejar el CI del HEAD
+  final en verde.
 - Rama `hardening/taba-ecommerce-production`, todo pusheado. **PR #133 en borrador** contra `main` (apilado sobre #130): existe
   para que el CI completo corra en cada push, porque desde la sesión en la nube el despacho manual de workflows da 403.
   No se mergea sin el dueño. Nada aplicado en Staging (158) ni en CP (157); la rama tiene 211 migraciones (157 de `main` + 54).
@@ -125,6 +126,18 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
   en DIAG-14: un negocio cerrado sin checkouts en 30 días ni alertas abiertas no se evalúa si le llega tarde un aviso sobre un
   cobro viejo (un reembolso o contracargo hecho después en Mercado Pago); se calcula al reabrir (un cobro aprobado sin pedido lo
   cuenta igual el pulso de CP, desde las tablas). Cuarta pasada del revisor pedida sobre estos dos commits.
+- 18:05 — push de `dfedfcc1`. Su CI: base de datos (6.452), Windows y el stack efímero en las dos corridas **verdes**; el job
+  web quedó en curso y lo reemplaza el push siguiente.
+- 18:20 — tres pruebas de regresión del mapa de TOOL-04 (ninguna corrige código: la conducta ya era la correcta):
+  **`2018ea51`** el repartidor ve el punto exacto del cliente sólo después de tomar la entrega (la cola da el barrio y ninguna
+  columna trae calle, teléfono ni coordenadas; la función del mapa no lo revela aunque esté guardado; la tabla no le muestra el
+  pedido; después del claim lo lee exacto, otro repartidor no, y dado de baja o entregado el pedido deja de verlo; 18, cinco
+  mutaciones de las guardas detectadas); **`4a0ce219`** un ciclo limpio (Mercado Pago con retiro, con el worker completando su
+  trabajo, y efectivo con envío por la cola) no deja ninguna alerta, ni abierta ni resuelta, con todas sus horas corridas tres
+  horas atrás para que se evalúe cada regla con umbral de tiempo (cinco mutaciones de falso positivo detectadas, que sin el
+  corrimiento sobreviven); **`3a080d44`** en ese ciclo el Panel ve el pedido de Checkout Pro una vez y el checkout pagado deja
+  de figurar como pendiente. pgTAP canónico 6.488. Gate canónico local completo **PASS** sobre `2018ea51` (6.470); el de
+  `3a080d44` corría al escribir esto. Del mapa de TOOL-04 sólo quedan sin portar las métricas del centro de operación (P3).
 
 ## Sesión 1 — 2026-10-03 08:22–13:2x (-03:00), PC de trabajo (histórico)
 

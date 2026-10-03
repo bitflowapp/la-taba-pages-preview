@@ -15,10 +15,10 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
   `scripts/production-health-check.mjs --target controlled-production` (sólo lectura, necesitan un token de la Management API).
 - La sesión en la nube no tiene token de Supabase ni de Mercado Pago: no leyó Staging ni CP. Lo último leído en vivo es de la
   sesión de la mañana (11:20–11:25).
-- En curso al escribir esto: segunda pasada del revisor sobre `d6532530`, sumar al gate los pgTAP huérfanos (TOOL-08) y portar
-  lo que las suites viejas probaban y nada prueba hoy (TOOL-04).
+- En curso al escribir esto: el CI del HEAD final en el PR #133 y una tercera pasada del revisor sobre `dcd541cb..5f9a326b`
+  (su resultado queda en la bitácora y en el informe).
 
-## Sesión 2 — 2026-10-03 14:47–16:4x (-03:00), Claude Cloud
+## Sesión 2 — 2026-10-03 14:47–17:xx (-03:00), Claude Cloud
 
 ### Checkpoint inicial (verificado, no declarado)
 
@@ -79,7 +79,7 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
   (llaman funciones v1 que el contrato A1-A4 retiró); 14/18, 60/74, 19/20 y 3/12 comprobaciones ya están cubiertas por el
   gate o el certificador; queda una lista priorizada para portar (regresión de estados del cobro, reembolso después de un
   rearmado sin stock, STOCK_RESERVATION_STUCK, dos repartidores con `claim_delivery_order`, ORDER_READY_WITHOUT_RIDER).
-- 16:25 — **TOOL-08 (P2, nuevo)**: 12 archivos de `supabase/tests` no corren en ningún gate ni workflow. Sobre el esquema actual,
+- 16:25 — **TOOL-11 (P2, nuevo)**: 12 archivos de `supabase/tests` no corren en ningún gate ni workflow. Sobre el esquema actual,
   5 pasan tal cual (aislamiento de back-office 28, de perfiles de cliente 47, taxonomía 20, aprobación de registro 98) y 2
   tenían fixtures viejos (la oferta releída después de aceptada; un asset atado a otro SKU desde 20260927175058): corregidos,
   14/14 y 16/16. En curso: sumarlos al gate canónico.
@@ -88,6 +88,20 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
   no la frena; barrido y alerta por etapas (20.000 checkouts: 7-10 ms y 64-90 ms, como antes). Prueba de 55 a 84 aserciones
   (11 fallan con la primera versión), 12/12 mutaciones detectadas, simulacro de reversión exacto. Gate canónico local completo
   **PASS** (pgTAP 6.031), `npm test` 3.130/3.131, verificaciones estáticas PASS. Registro: P1 17 corregidos, 0 abiertos.
+- 16:50 — **segunda revisión adversarial** sobre `d6532530`: **PAY-PROBE-07 (P2)**, el cobro guarda el pago más nuevo y un
+  reintento rechazado en la misma preferencia tapaba un pago todavía en revisión (49 h: sin alerta, sin sonda); **DIAG-14 (P2,
+  anterior a la sesión)**, el barrido de alertas salteaba un negocio cerrado sin alertas abiertas, y «cerrado» es el botón de fin
+  de día del Panel; P3: la resolución se comparaba con la hora de resolver y no con el último refresco de la evidencia, U3
+  clasificaba mal un cierre por pago en revisión, y dos guardas no tenían prueba. Todo reproducido con sus guiones.
+- 16:55 — `e3626e89` (TOOL-11): los diez pgTAP huérfanos que pasan entran al gate (+347). El ID provisorio TOOL-08 chocaba con uno
+  de un mapa anterior (lo mismo DIAG-11): quedaron TOOL-11 y DIAG-14.
+- 17:05 — **`dcd541cb`** (tercera revisión de 20261003090000: último estado de cada pago, la sonda relee por id el pago sin resolver,
+  corte en el último refresco, U3; 97 aserciones, 18/18 mutaciones; reversión exacta; 20.000 checkouts: 9-10 ms y 49-58 ms),
+  **`c5166237`** (20261003092000: un negocio cerrado con cobros movidos en 30 días se evalúa; la prueba falla antes y pasa
+  después; reversión exacta) y **`5f9a326b`** (TOOL-04 cerrado: `order_core_gaps_test.sql`, 41, lo que las suites viejas probaban
+  y nada probaba). Gate canónico local completo **PASS con pgTAP 6.440**, `npm test` 3.130/3.131, verificaciones estáticas PASS.
+  Registro: P1 17 corregidos y 0 abiertos; P2 43 corregidos y 20 abiertos. Abiertos y documentados: ALERT-STOCK-01 (P3, texto del
+  Panel) y RIDER-01 (P3, presencia del repartidor en la cola: decisión).
 
 ## Sesión 1 — 2026-10-03 08:22–13:2x (-03:00), PC de trabajo (histórico)
 

@@ -547,6 +547,29 @@
       "where": "scripts/scheduler-watchdog-probe.mjs line 49; services/scheduler-watchdog/wrangler.toml; scripts/production-health-check.mjs; scripts/production-auth-health.mjs; .github/workflows/scheduler-watchdog.yml"
     },
     {
+      "id": "DIAG-14",
+      "severity": "P2",
+      "title": "The alerts sweep skips a closed business with no open alert, and 'closed' is the Panel's end-of-day state: payment alerts of a closed business wait until someone reopens, and an unverified checkout of a business closed for 30+ days never gets its alert",
+      "status": "fixed",
+      "fixed_by": "c5166237 · supabase/migrations/20261003092000_alerts_sweep_watches_closed_business_with_payments.sql",
+      "notes": "Pre-existing (evaluate_operational_alerts_sweep), found by the second adversarial pass and reproduced on the local gate database: a checkout that reached Mercado Pago shortly before the owner pressed 'Cerrar negocio' (business-operations-center.js, status closed) got no CHECKOUT_PROVIDER_UNVERIFIED while the business stayed closed; past 30 days the alert only follows checkouts that already had one, so it never opened. The same skip delayed any payment alert of a closed business (an approval without order arriving at night) until the next opening. Fix: a closed business is also evaluated while any of its payment intents moved in the last 30 days (creation, preference, expiry and every recorded payment move updated_at); after 30 days without movement and without open alerts it is skipped again. Test: alerts_sweep_watches_closed_business_test.sql (fails before the migration: the closed business gets no alert); rollback drill exact.",
+      "aliases": [],
+      "domain": "observability",
+      "where": "public.evaluate_operational_alerts_sweep (business selection: status <> 'closed' or an open alert)",
+      "related": [
+        "PAY-PROBE-02",
+        "DIAG-09"
+      ],
+      "verification": [
+        {
+          "id": "DIAG-14",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
       "id": "AUTHZ-02",
       "severity": "P2",
       "title": "Column-level UPDATE grants on products and businesses bypass RPC authority, validation, inventory ledger and audit",
@@ -934,9 +957,9 @@
       "id": "TOOL-04",
       "severity": "P2",
       "title": "Order-core SQL suites are orphaned: the runner they name does not exist and none of them is in CI",
-      "status": "open",
-      "fixed_by": null,
-      "notes": "PARTIAL (cf0d30fb): the payments part is covered by canonical pgTAP (payment_queue_and_receipts_test.sql, payment_refund_and_reversal_chain_test.sql). supabase/tests/mercadopago_checkout_pro.local.sql is NOT deleted: tests/mercadopago-lifecycle.test.mjs and the A1 verifiers (scripts/verify-a1-v2-*.mjs, verify-a1-a4-reproductions.mjs) read it as a legacy fixture of the pre-branch schema. The order_* suites remain.",
+      "status": "fixed",
+      "fixed_by": "5f9a326b · supabase/tests/order_core_gaps_test.sql",
+      "notes": "PARTIAL (cf0d30fb): the payments part is covered by canonical pgTAP (payment_queue_and_receipts_test.sql, payment_refund_and_reversal_chain_test.sql). supabase/tests/mercadopago_checkout_pro.local.sql is NOT deleted: tests/mercadopago-lifecycle.test.mjs and the A1 verifiers (scripts/verify-a1-v2-*.mjs, verify-a1-a4-reproductions.mjs) read it as a legacy fixture of the pre-branch schema. The order_* suites remain. CLOSED (5f9a326b): the four order_* suites cannot be revived by fixing fixtures (they call v1 payment functions the A1-A4 contract replaced with 55000 stubs, and create no identity sessions). A read-only coverage map of every check against the canonical pgTAP, the race harnesses and the ephemeral-stack certifier found 14/18, 60/74, 19/20 and 3/12 already covered (two of them superseded by 20261003090000). The uncovered ones that matter are ported to order_core_gaps_test.sql (41): the payment-intent status-regression trigger, two riders and one order through claim_delivery_order with revisions and the queue, an order offered to one rider and claimed by another from the open queue (the offer disappears from the first rider's board and accepting it later answers order_unavailable), two sweeps with a probe in flight leave one job, ORDER_READY_WITHOUT_RIDER opening and closing, and STOCK_RESERVATION_STUCK (the sweep closes it; the one held by a payment in manual review stays open and the service list gives the Panel recipe). The legacy files stay as historical evidence.",
       "aliases": [],
       "domain": "tests_tooling",
       "where": "supabase/tests/order_end_to_end_chain.local.sql line 9; order_intake_dispatch_p0.local.sql line 4; order_intake_dispatch_audit.local.sql line 5; scripts/run-release-v5-db.mjs lines 196-208"
@@ -981,6 +1004,28 @@
       "aliases": [],
       "domain": "tests_tooling",
       "where": "scripts/controlled-production/capacity-30.mjs lines 90-103 and 577-584; docs/evidence/controlled-production/capacity-staging-ci-20260924.json"
+    },
+    {
+      "id": "TOOL-11",
+      "severity": "P2",
+      "title": "Twelve pgTAP files in supabase/tests ran in no gate and no workflow, including customer-profile and back-office isolation and the rider multi-order security suite",
+      "status": "fixed",
+      "fixed_by": "e3626e89 · scripts/run-release-v5-db.mjs (canonicalTests) + three fixtures updated",
+      "notes": "Of the 19 files outside canonicalTests, twelve were pgTAP and nothing ran them (scripts/run-rider-multi-order-db.mjs is not in CI either). On the current schema seven passed as they were (back-office isolation 28, customer-profile isolation 47, beverage taxonomy 20, registration approval 98, rider multi-order capacity 27, offers 32, isolation 38) and three had stale fixtures without weakening what they assert: optional_product_assets (an asset dressing a product with another SKU, refused since 20260927175058), customer_read_keeps_rider_offer (the replay re-read the offer as 'pending' after it was accepted and sent NULL), rider_multi_order_security (the cross-tenant refusal message is now capitalised; 42501 still required). All ten are canonical now (+347 assertions; local gate PASS with 6,378). commercial_catalog_stock_null_test.sql is a read-only CP query, not pgTAP; the *.local.sql files stay separate harnesses (see TOOL-04).",
+      "aliases": [],
+      "domain": "tests_tooling",
+      "where": "scripts/run-release-v5-db.mjs canonicalTests; supabase/tests/*_test.sql not listed there",
+      "related": [
+        "TOOL-04"
+      ],
+      "verification": [
+        {
+          "id": "TOOL-11",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
     },
     {
       "id": "F-02",
@@ -1151,8 +1196,8 @@
       "severity": "P1",
       "title": "An unverified checkout closes by time: past the 48-hour probe window CHECKOUT_PROVIDER_UNVERIFIED is auto-resolved as 'condition absent' and the truth sweep stops, with no proof that the buyer did not pay",
       "status": "fixed",
-      "fixed_by": "d89ad936 + d6532530 · supabase/migrations/20261003090000_unverified_checkout_never_closes_by_time.sql",
-      "notes": "Reproduced on the branch (208 migrations, local database built with the gate's image and sequence): a checkout that reached Mercado Pago, expired and only had non-conclusive empties (seller connection changed) or no answered probe had its alert open at 47 h and resolved by the system at 49 h ('Condición ausente en la reconciliación automática.'), and enqueue_checkout_provider_probes stopped asking. Same silent ending PAY-PROBE-01 fixed for empties, 48 hours later. Fix: inside the window nothing changes (only proof closes it; a manual resolution is reopened by the next run). Past the window the alert closes only on proof (without a stored payment a conclusive empty; the provider's final result; the order) or on a resolution with a note by an active owner/admin, which holds while the provider reports nothing new (a payment or a status not seen at resolution time reopens it; an identical re-read does not); a staff resolution is reopened. The sweep keeps one probe per day up to 30 days for those checkouts, also after a person resolved the alert. A per-environment watermark (now - 48 h at apply time) keeps older history out of the alerts (scripts/payments/reconcile-payments.mjs still covers it; without the row everything is watched). Per-minute cost does not grow with checkout history (staged MATERIALIZED queries; past 30 days a no-payment checkout is followed only through its live alert). The first version (d89ad936/56a76d24) had three defects found by an independent adversarial review before any environment applied it: PAY-PROBE-04, PAY-PROBE-05, PAY-PROBE-06, fixed in d6532530. Test: unverified_checkout_never_closes_by_time_test.sql (84 assertions; 11 of them fail on the first version; a 12-mutation harness on the guards is killed 12/12). Rollback drill: schema fingerprint identical to the pre-migration one after rollback, identical to the post-migration one after re-apply, rollback re-runnable.",
+      "fixed_by": "d89ad936 + d6532530 + dcd541cb · supabase/migrations/20261003090000_unverified_checkout_never_closes_by_time.sql",
+      "notes": "Reproduced on the branch (208 migrations, local database built with the gate's image and sequence): a checkout that reached Mercado Pago, expired and only had non-conclusive empties (seller connection changed) or no answered probe had its alert open at 47 h and resolved by the system at 49 h ('Condición ausente en la reconciliación automática.'), and enqueue_checkout_provider_probes stopped asking. Same silent ending PAY-PROBE-01 fixed for empties, 48 hours later. Fix: inside the window nothing changes (only proof closes it; a manual resolution is reopened by the next run). Past the window the alert closes only on proof (without a stored payment a conclusive empty; the provider's final result; the order) or on a resolution with a note by an active owner/admin, which holds while the provider reports nothing new (a payment or a status not seen at resolution time reopens it; an identical re-read does not); a staff resolution is reopened. The sweep keeps one probe per day up to 30 days for those checkouts, also after a person resolved the alert. A per-environment watermark (now - 48 h at apply time) keeps older history out of the alerts (scripts/payments/reconcile-payments.mjs still covers it; without the row everything is watched). Per-minute cost does not grow with checkout history (staged MATERIALIZED queries; past 30 days a no-payment checkout is followed only through its live alert). The first version (d89ad936/56a76d24) had three defects found by an independent adversarial review before any environment applied it: PAY-PROBE-04, PAY-PROBE-05, PAY-PROBE-06, fixed in d6532530. Test: unverified_checkout_never_closes_by_time_test.sql (84 assertions; 11 of them fail on the first version; a 12-mutation harness on the guards is killed 12/12). Rollback drill: schema fingerprint identical to the pre-migration one after rollback, identical to the post-migration one after re-apply, rollback re-runnable. Third revision (dcd541cb, after a second adversarial pass): the owner/admin resolution compares against the evidence as the reconcile last refreshed it (least(resolved_at, last_seen_at)), so a payment recorded between that refresh and the resolution reopens it; test now 97 assertions, 18-mutation harness killed 18/18.",
       "aliases": [],
       "domain": "payments_db",
       "where": "public.reconcile_operational_alerts_for_business (CHECKOUT_PROVIDER_UNVERIFIED 48-hour condition + automatic 'condition absent' resolution), public.enqueue_checkout_provider_probes (48-hour window), private.provider_probe_is_due",
@@ -1173,8 +1218,8 @@
       "severity": "P1",
       "title": "A provider payment left pending or in manual review (in_process) on an expired checkout has no alert at all, and past the 48-hour window nothing reads it again: a late approval whose notification is lost becomes a charge without order and without signal",
       "status": "fixed",
-      "fixed_by": "56a76d24 + d6532530 · supabase/migrations/20261003090000_unverified_checkout_never_closes_by_time.sql",
-      "notes": "Reproduced on the branch: in_process snapshot, session expired by the sweep (stock released, intent expired with the provider payment pinned): no alert at 47 h nor at 49 h, no probe at 49 h. CHECKOUT_PROVIDER_UNVERIFIED required provider_payment_id is null; enqueue_checkout_provider_probes stopped at 48 h. Mercado Pago manual review can take more than two business days. Fixed in the same not-yet-applied migration as PAY-PROBE-02: past the window, a provider payment in pending / in_process / authorized (the list the payment recorder treats as non-final) counts as unverified, whatever empties the sweep recorded before the payment existed (PAY-PROBE-04); the alert closes on the provider's final result (rejected: no money; approved: goes to review with its own window-less alert) or on an owner/admin resolution with a note that holds until the provider reports something new; the sweep re-reads it once a day up to 30 days, also after that resolution; the alert evidence carries provider_status. Inside the window nothing changes (re-read every few minutes, no alert). Test: sections H and I of unverified_checkout_never_closes_by_time_test.sql.",
+      "fixed_by": "56a76d24 + d6532530 + dcd541cb · supabase/migrations/20261003090000_unverified_checkout_never_closes_by_time.sql",
+      "notes": "Reproduced on the branch: in_process snapshot, session expired by the sweep (stock released, intent expired with the provider payment pinned): no alert at 47 h nor at 49 h, no probe at 49 h. CHECKOUT_PROVIDER_UNVERIFIED required provider_payment_id is null; enqueue_checkout_provider_probes stopped at 48 h. Mercado Pago manual review can take more than two business days. Fixed in the same not-yet-applied migration as PAY-PROBE-02: past the window, a provider payment in pending / in_process / authorized (the list the payment recorder treats as non-final) counts as unverified, whatever empties the sweep recorded before the payment existed (PAY-PROBE-04); the alert closes on the provider's final result (rejected: no money; approved: goes to review with its own window-less alert) or on an owner/admin resolution with a note that holds until the provider reports something new; the sweep re-reads it once a day up to 30 days, also after that resolution; the alert evidence carries provider_status. Inside the window nothing changes (re-read every few minutes, no alert). Test: sections H and I of unverified_checkout_never_closes_by_time_test.sql. Third revision (dcd541cb): 'non-final' is decided per provider payment from its latest event, not only from the payment the intent pins (PAY-PROBE-07).",
       "aliases": [],
       "domain": "payments_db",
       "where": "public.reconcile_operational_alerts_for_business (CHECKOUT_PROVIDER_UNVERIFIED: provider_payment_id is null), public.enqueue_checkout_provider_probes (48-hour window), public.release_checkout_session_inventory (in_process ranks below expired)",
@@ -1252,6 +1297,29 @@
       "verification": [
         {
           "id": "PAY-PROBE-06",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "PAY-PROBE-07",
+      "severity": "P2",
+      "title": "Past the 48-hour window, a provider payment still in review was hidden when the buyer retried on the same preference and the newer, pinned payment was final",
+      "status": "fixed",
+      "fixed_by": "dcd541cb · supabase/migrations/20261003090000_unverified_checkout_never_closes_by_time.sql (rewritten before any environment applied it)",
+      "notes": "Found by the second adversarial pass over d6532530, reproduced on the local gate database: the intent pins the newest payment by provider time. Card 1 ends in_process (manual review), the buyer retries with card 2 on the same preference, card 2 is rejected: the intent says provider_status=rejected and both CHECKOUT_PROVIDER_UNVERIFIED and the daily probe read it as 'final result, no money'. At 49 h: no alert of any code and no probe, while card 1 can still be approved at Mercado Pago (charge without order if the webhook is lost). Same with a pending cash ticket followed by a rejected card. Inside the window nothing changed (the sweep searches by external reference). Fix: private.unresolved_provider_payment reads the latest event of each provider payment of the intent; past the window a final pinned payment with another unresolved one keeps the checkout unverified, the alert evidence names that payment (unresolved_provider_payment_id) and the daily probe re-reads it by id. Test: section I (p5) of unverified_checkout_never_closes_by_time_test.sql (fails on d6532530); mutations 'another unresolved payment ignored' (sweep and alert) and 'probe searches instead of reading the unresolved payment' killed.",
+      "aliases": [],
+      "domain": "payments_db",
+      "where": "private.unverified_checkout_findings and public.enqueue_checkout_provider_probes as written by d6532530",
+      "related": [
+        "PAY-PROBE-03",
+        "PAY-PROBE-04"
+      ],
+      "verification": [
+        {
+          "id": "PAY-PROBE-07",
           "real": true,
           "reproduced": true,
           "severity": "P2"

@@ -1,0 +1,573 @@
+/* TABA — sistema de diseño propuesto. Prototipo estático, fuera del repo. */
+
+:root {
+  color-scheme: light;
+
+  /* Paleta existente de styles/tokens.css — sin cambios */
+  --taba-red: #d0000d;
+  --taba-red-hover: #b6000b;
+  --taba-red-soft: #fff0f1;
+  --taba-ink: #17171a;
+  --taba-graphite: #303036;
+  --taba-muted: #626269;
+  --taba-subtle: #f5f5f6;
+  --taba-border: #e4e4e7;
+  --taba-warm-white: #fffefa;
+  --taba-white: #fff;
+  --taba-success: #18864b;
+  --taba-warning: #9a5a00;
+  --taba-focus: #1d5fd1;
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --radius-pill: 999px;
+  --shadow-xs: 0 1px 2px rgb(20 20 22 / 5%);
+  --shadow-sm: 0 8px 24px rgb(20 20 22 / 8%);
+  --shadow-md: 0 18px 48px rgb(20 20 22 / 12%);
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px;
+  --tap: 44px;
+
+  /* NUEVO — corrige business.css:264, que usa un token inexistente */
+  --taba-border-strong: #b4b4bb;
+
+  /* NUEVO — superficies semánticas */
+  --taba-surface: var(--taba-white);
+  --taba-surface-sunken: #f7f6f4;
+  --taba-surface-raised: var(--taba-warm-white);
+  --taba-surface-inverse: #14181e;
+  --taba-separator: #ececef;
+
+  /* NUEVO — tipografía en escalones fijos, sin clamp() */
+  --text-display: 26px;
+  --text-title: 20px;
+  --text-body-lg: 16px;
+  --text-body: 15px;
+  --text-meta: 13px;
+  --text-micro: 12px;
+  /* Piso absoluto, sólo para etiquetas en mayúsculas con tracking. */
+  --text-caps: 11px;
+  --tracking-display: -0.03em;
+  --tracking-caps: 0.08em;
+
+  /* NUEVO — densidad de fila (patrón Settings) */
+  --row-height: 52px;
+  --row-icon: 28px;
+  --row-gutter: 16px;
+
+  /* NUEVO — superficies fijas: fuente única de verdad */
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --nav-height: 62px;
+  --nav-inset: 10px;
+  --nav-band: calc(var(--nav-height) + var(--nav-inset) + var(--safe-area-bottom));
+  --cart-height: 56px;
+  --cart-gap: 12px;
+  --cart-band: calc(var(--nav-band) + var(--cart-height) + var(--cart-gap));
+
+  /* NUEVO — estados de conexión */
+  --state-live: var(--taba-success);
+  --state-live-soft: #eaf6ee;
+  --state-retry: var(--taba-warning);
+  --state-retry-soft: #fdf4e3;
+  --state-offline: var(--taba-muted);
+  --state-offline-soft: #f1f1f2;
+
+  /* NUEVO — prioridad operativa */
+  --prio-new: var(--taba-red);
+  --prio-prep: #9a5a00;
+  --prio-prep-soft: #fdf4e3;
+  --prio-ready: var(--taba-success);
+  --prio-ready-soft: #eaf6ee;
+  --prio-transit: #1d5fd1;
+  --prio-transit-soft: #eaf1fd;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--taba-surface-sunken);
+  color: var(--taba-ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font: inherit; color: inherit; cursor: pointer; }
+img, svg { display: block; max-width: 100%; }
+h1, h2, h3, p { margin: 0; }
+ul { margin: 0; padding: 0; list-style: none; }
+
+:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--taba-focus) 70%, white);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ====================== Marca ====================== */
+
+.brand-word {
+  font-size: 20px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: -0.03em;
+  color: #fff;
+}
+.brand-mark { display: inline-grid; gap: 4px; }
+.brand-mark::after {
+  content: "";
+  width: 34px; height: 3px;
+  background: var(--taba-red);
+  border-radius: 2px;
+}
+
+/* ====================== Chip de sincronización ====================== */
+
+.sync-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-micro);
+  font-weight: 800;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.sync-chip::before {
+  content: "";
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 7px;
+}
+.sync-chip.is-live { background: var(--state-live-soft); color: var(--state-live); }
+.sync-chip.is-retry { background: var(--state-retry-soft); color: var(--state-retry); }
+.sync-chip.is-offline {
+  background: var(--state-offline-soft);
+  color: var(--state-offline);
+  border-color: var(--taba-border);
+}
+.sync-chip.is-offline::before { background: transparent; box-shadow: inset 0 0 0 2px currentColor; }
+.sync-chip.is-retry::before { animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .3; } }
+
+/* ====================== Botones ====================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--tap);
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-body);
+  font-weight: 800;
+  white-space: nowrap;
+}
+.btn-primary { background: var(--taba-red); color: #fff; }
+.btn-primary:hover { background: var(--taba-red-hover); }
+.btn-secondary {
+  background: var(--taba-surface);
+  border-color: var(--taba-border);
+  color: var(--taba-ink);
+}
+.btn-ghost { background: transparent; color: var(--taba-muted); }
+.btn-dark { background: var(--taba-ink); color: #fff; }
+
+/* ====================== Grupo y fila (patrón Settings) ====================== */
+
+.group-label {
+  margin: var(--space-6) 0 var(--space-2);
+  font-size: var(--text-caps);
+  font-weight: 800;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--taba-muted);
+}
+.taba-group {
+  background: var(--taba-surface);
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
+  overflow: hidden;
+}
+.taba-row {
+  display: grid;
+  grid-template-columns: var(--row-icon) minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--row-height);
+  padding: 0 var(--row-gutter);
+  background: none;
+  border: 0;
+  text-align: left;
+}
+.taba-row + .taba-row { border-top: 1px solid var(--taba-separator); }
+/* El separador arranca después del icono, no de borde a borde. */
+.taba-row + .taba-row::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--row-gutter) + var(--row-icon) + var(--space-3));
+}
+.taba-row:hover { background: var(--taba-surface-sunken); }
+.taba-row-ico {
+  display: grid;
+  place-items: center;
+  width: var(--row-icon);
+  height: var(--row-icon);
+  border-radius: var(--radius-xs);
+  background: var(--taba-surface-sunken);
+  color: var(--taba-graphite);
+}
+.taba-row-ico svg { width: 16px; height: 16px; }
+.taba-row-title { font-size: var(--text-body-lg); font-weight: 700; }
+.taba-row-state { font-size: var(--text-meta); font-weight: 700; color: var(--taba-muted); }
+.taba-row-state.attention { color: var(--prio-prep); }
+.taba-row-chev { color: #b9b9c0; font-size: 18px; line-height: 1; }
+
+/* ====================== Resumen operativo ====================== */
+
+.ops-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  background: var(--taba-surface);
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.ops-cell {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  padding: 10px 4px;
+  background: none;
+  border: 0;
+  min-height: 64px;
+  align-content: center;
+}
+.ops-cell + .ops-cell { border-left: 1px solid var(--taba-separator); }
+.ops-cell strong { font-size: 22px; font-weight: 900; line-height: 1; }
+.ops-cell span {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--taba-muted);
+}
+.ops-cell.is-zero strong { color: var(--taba-muted); }
+.ops-new strong { color: var(--prio-new); }
+.ops-prep strong { color: var(--prio-prep); }
+.ops-ready strong { color: var(--prio-ready); }
+.ops-transit strong { color: var(--prio-transit); }
+
+/* ====================== Tarjeta de pedido ====================== */
+
+.order-card {
+  position: relative;
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) var(--space-3) var(--space-5);
+  background: var(--taba-surface);
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
+}
+.order-card::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 12px; bottom: 12px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--prio-new);
+}
+.order-card.is-prep::before { background: var(--prio-prep); }
+.order-card.is-ready::before { background: var(--prio-ready); }
+.order-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+.order-id { font-size: 17px; font-weight: 900; }
+.order-time { font-size: var(--text-meta); color: var(--taba-muted); font-weight: 600; }
+.order-who { font-size: var(--text-meta); color: var(--taba-muted); font-weight: 600; }
+.order-total { font-size: 17px; font-weight: 900; }
+.order-actions { display: flex; gap: var(--space-2); align-items: center; }
+.order-actions .btn-primary { flex: 1; }
+
+/* ====================== Tarjeta de producto ====================== */
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+.product-card {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto auto auto auto;
+  background: var(--taba-surface);
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+/* Alto explícito por breakpoint en vez de aspect-ratio: en una tarjeta de
+   173px el cuadrado da 173px de imagen y empuja el precio fuera del primer
+   viewport. El packshot sigue siendo protagonista (~55% de la tarjeta). */
+.product-media {
+  position: relative;
+  height: 148px;
+  background: var(--taba-white);
+  border: 0;
+  padding: 0;
+  width: 100%;
+}
+.product-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 6%;
+}
+.product-fav {
+  position: absolute;
+  top: 6px; right: 6px;
+  width: var(--tap); height: var(--tap);
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 88%);
+  color: #9a9aa2;
+}
+.product-fav svg { width: 20px; height: 20px; }
+.product-fav.is-on { color: var(--taba-red); }
+.product-name {
+  margin: 0 var(--space-3);
+  font-size: var(--text-body);
+  font-weight: 700;
+  line-height: 1.2;
+  min-height: 36px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.product-pres {
+  margin: 2px var(--space-3) 0;
+  font-size: var(--text-micro);
+  color: var(--taba-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Precio y control en filas separadas, siempre. En una tarjeta de 173px el
+   precio y un stepper de 104px no entran en la misma línea: al compartir fila,
+   o el precio se partía en dos líneas o el control saltaba, y la tarjeta
+   cambiaba de alto según el estado del carrito. Con dos filas fijas todas las
+   tarjetas miden igual, los precios quedan alineados entre columnas y el
+   control gana ancho completo. */
+.product-buy {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3) var(--space-3);
+}
+.product-price {
+  white-space: nowrap;
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--taba-red);
+}
+.product-price.pending {
+  font-size: var(--text-meta);
+  font-weight: 800;
+  color: var(--taba-warning);
+}
+.add-btn {
+  width: 100%;
+  height: var(--tap);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-pill);
+  background: var(--taba-surface);
+  font-size: var(--text-meta);
+  font-weight: 800;
+  color: var(--taba-ink);
+}
+.add-btn i { font-style: normal; font-size: 18px; font-weight: 400; line-height: 1; }
+.add-btn:hover { border-color: var(--taba-ink); background: var(--taba-surface-sunken); }
+.ask-link {
+  width: 100%;
+  height: var(--tap);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-meta);
+  font-weight: 800;
+  color: var(--taba-graphite);
+  background: var(--taba-surface-sunken);
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-pill);
+}
+/* Excepción documentada: los botones del stepper miden 36x44. En una tarjeta de
+   173px dos botones de 44px de ancho no dejan lugar al número. WCAG 2.2 AA pide
+   24px con separación; 36x44 lo supera con margen. */
+.stepper {
+  display: grid;
+  grid-template-columns: var(--tap) 1fr var(--tap);
+  align-items: center;
+  width: 100%;
+  height: var(--tap);
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-pill);
+  background: var(--taba-surface);
+}
+.stepper button {
+  height: var(--tap);
+  min-width: 0; /* los items de grid traen min-width:auto y desbordan la columna */
+  padding: 0; /* sin el reset, el padding nativo del botón desborda su caja */
+  border: 0;
+  background: none;
+  font-size: 18px;
+  color: var(--taba-ink);
+}
+.stepper strong { font-size: var(--text-body); text-align: center; }
+.product-card.is-pending { border-color: color-mix(in srgb, var(--taba-warning) 30%, white); }
+
+.stock-tag {
+  position: absolute;
+  top: 8px; left: 8px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: var(--radius-pill);
+  background: var(--prio-prep-soft);
+  color: var(--prio-prep);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+/* ====================== Skeleton ====================== */
+
+.skeleton {
+  background: linear-gradient(90deg, #eeeef0, #f6f6f7, #eeeef0);
+  border-radius: var(--radius-xs);
+  animation: sk 1.4s ease-in-out infinite;
+}
+@keyframes sk { 50% { opacity: .55; } }
+
+/* ====================== Estado vacío ====================== */
+
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-5);
+  text-align: center;
+}
+.empty strong { font-size: 18px; font-weight: 850; }
+.empty p { font-size: var(--text-body); color: var(--taba-muted); max-width: 34ch; }
+
+/* ====================== Barra de categorías ====================== */
+
+.cat-bar {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-snap-type: inline proximity;
+  padding: 2px 0;
+  /* Affordance de scroll: el contenido se desvanece contra el borde. */
+  mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+}
+.cat-bar::-webkit-scrollbar { display: none; }
+.cat-chip {
+  position: relative;
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--taba-border);
+  border-radius: var(--radius-pill);
+  background: var(--taba-surface);
+  font-size: var(--text-meta);
+  font-weight: 800;
+  color: var(--taba-graphite);
+  display: inline-flex;
+  align-items: center;
+}
+/* Área táctil real de 44px sin crecer visualmente. */
+.cat-chip::after { content: ""; position: absolute; inset: -2px 0; }
+.cat-chip.is-on { background: var(--taba-ink); border-color: var(--taba-ink); color: #fff; }
+
+/* ====================== Superficies fijas ====================== */
+
+.sticky-cart {
+  position: fixed;
+  left: var(--space-3); right: var(--space-3);
+  bottom: var(--nav-band);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--cart-height);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--taba-red);
+  color: #fff;
+  border: 0;
+  box-shadow: 0 8px 20px rgb(208 0 13 / 26%);
+  z-index: 60;
+}
+.sticky-cart small { display: block; font-size: 11px; opacity: .85; font-weight: 700; }
+.sticky-cart b { font-size: var(--text-body); font-weight: 900; }
+.sticky-cart .total { font-size: 17px; font-weight: 900; }
+
+.bottom-nav {
+  position: fixed;
+  left: var(--space-4); right: var(--space-4);
+  bottom: var(--nav-inset);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  min-height: var(--nav-height);
+  padding-bottom: var(--safe-area-bottom);
+  border-radius: var(--radius-md);
+  background: rgb(20 24 30 / 97%);
+  z-index: 70;
+}
+.nav-item {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 3px;
+  border: 0;
+  background: none;
+  color: #e9e9ec;
+  font-size: 11px;
+  font-weight: 700;
+  min-height: var(--tap);
+}
+.nav-item svg { width: 20px; height: 20px; }
+.nav-item.is-on { color: var(--taba-red); }
+
+/* ====================== Utilidades de prototipo ====================== */
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}

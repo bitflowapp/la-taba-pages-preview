@@ -1,0 +1,11 @@
+import { chromium } from 'file:///C:/1212/la-taba-commerce-v3/node_modules/playwright/index.mjs';
+import {installBrowserStubs,gotoDemoReset,seedCheckoutProfile,DEFAULT_CHECKOUT_ADDRESSES} from 'file:///D:/1212/la-taba-commerce-v3/tests/e2e/helpers.mjs';
+const b=await chromium.launch();const page=await b.newPage({viewport:{width:1280,height:900},serviceWorkers:'block'});
+await installBrowserStubs(page);await gotoDemoReset(page,'http://127.0.0.1:18230/?demo=1&reset=1');
+const order=await page.evaluate(async()=>{const {getState}=await import('/js/state.js');const {isProductOrderable}=await import('/js/core/catalog-store.js');return {id:'LT-9001',createdAt:'2026-08-07T21:12:00Z',status:'delivered',deliveryMode:'delivery',paymentMethod:'Efectivo al recibir',paymentMethodCode:'cash',address:'Avenida Argentina 450',items:getState().products.filter(p=>isProductOrderable(p)&&p.stock>=2).slice(0,2).map(p=>({productId:p.id,name:p.name,quantity:2,unitPrice:p.price,unit:'unidad'})),total:10000};});
+await page.addInitScript(o=>localStorage.setItem('la_taba_customer_history_v1',JSON.stringify([o])),order);await page.reload();await page.locator('html[data-taba-startup="ready"]').waitFor();await seedCheckoutProfile(page,{addresses:DEFAULT_CHECKOUT_ADDRESSES});
+await page.locator('[data-customer-actions] [data-repeat-order]').click();
+console.log('AFTER',await page.evaluate(async()=>({cart:(await import('/js/state.js')).getState().cart,mode:document.body.dataset.appMode,view:document.body.dataset.activeView,toast:document.querySelector('[data-toast]')?.textContent})));
+await page.locator('[data-nav-view="cart"] >> visible=true').first().click();
+console.log('NAV',await page.evaluate(async()=>({cart:(await import('/js/state.js')).getState().cart,view:document.body.dataset.activeView,body:document.querySelector('[data-view="cart"]').innerText.slice(0,500)})));
+await page.screenshot({path:'C:/1212/artifacts/taba-commerce-v3/debug-reorder.png'});await b.close();

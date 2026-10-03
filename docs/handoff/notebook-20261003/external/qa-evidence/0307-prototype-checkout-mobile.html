@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>TABA · Pedido y checkout móvil — propuesta v2</title>
+<link rel="stylesheet" href="proto-shared.css" />
+<style>
+  body { background: var(--t-surface-1); }
+  .screen { max-width: 520px; margin: 0 auto; min-height: 100vh; }
+
+  /* Carrito y checkout son pantallas APILADAS: sin bottom nav.
+     La reserva inferior pasa a ser la barra de acción, con la misma fórmula. */
+  body[data-screen-mode="stack"] { --t-nav-block: 0px; --t-cta-block: var(--action-h, 86px); }
+  main { padding-bottom: var(--t-bottom-reserve); }
+
+  .c-appbar { gap: 6px; padding: 0 8px 0 4px; }
+  .c-appbar h1 { font: var(--t-title-m); flex: 1; min-width: 0; }
+  .c-back { display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--t-r-sm); color: var(--t-ink-600); }
+  .c-back:hover { background: var(--t-line-100); }
+
+  /* ── carrito ───────────────────────────────────────────────────────────── */
+  .k-lines { display: grid; }
+  .k-line { display: grid; grid-template-columns: 68px 1fr; gap: 12px; padding: 12px 14px; background: var(--t-white); }
+  .k-line + .k-line { box-shadow: inset 0 1px 0 var(--t-line-100); }
+  .k-line-media { width: 68px; height: 68px; border: 1px solid var(--t-line-200); border-radius: var(--t-r-sm); background: #fff; }
+  .k-line-media img { width: 100%; height: 100%; object-fit: contain; padding: 3px; }
+  .k-line-body { display: grid; gap: 3px; min-width: 0; }
+  .k-line-body .k-name { font: var(--t-title-s); font-weight: 650;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .k-line-body .k-pres { font: var(--t-caption); color: var(--t-text-secondary); }
+  .k-line-foot { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
+  .k-line-foot .k-unit { font: var(--t-caption); color: var(--t-text-secondary); font-variant-numeric: tabular-nums; }
+  .k-line-foot .k-total { margin-left: auto; font: var(--t-price-m); font-variant-numeric: tabular-nums; }
+  /* El stepper conserva sus 44px táctiles también dentro de la línea del carrito. */
+  .k-line .p-step { width: auto; min-width: 128px; }
+
+  .k-more { display: flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 52px; width: 100%; font: var(--t-label); color: var(--t-red-600); background: var(--t-white);
+    box-shadow: inset 0 1px 0 var(--t-line-100); }
+
+  .k-sum { display: grid; gap: 7px; padding: 14px; }
+  .k-sum .k-row { display: flex; align-items: baseline; font: var(--t-body-s); color: var(--t-ink-600); }
+  .k-sum .k-row strong { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--t-ink-900); }
+  .k-sum .k-row.is-total { font: var(--t-title-s); padding-top: 8px; border-top: 1px solid var(--t-line-200); }
+  .k-sum .k-row.is-total strong { font: var(--t-price-l); }
+
+  /* ── checkout ──────────────────────────────────────────────────────────── */
+  .f-wrap { display: grid; gap: 18px; padding: 14px; }
+  .f-sec { display: grid; gap: 8px; }
+  .f-sec > .t-group-label { display: flex; align-items: center; gap: 8px; }
+  .f-sec > .t-group-label .f-step { display: grid; place-items: center; width: 18px; height: 18px;
+    border-radius: 50%; background: var(--t-ink-900); color: #fff; font: 700 10px/1 var(--t-font); }
+
+  /* Opción seleccionable: radio real, área táctil completa, sin depender del color */
+  .f-opt { display: grid; grid-template-columns: 20px 1fr auto; align-items: center; gap: 12px;
+    min-height: 56px; padding: 10px 14px; background: var(--t-white); width: 100%; text-align: left; }
+  .f-opt + .f-opt { box-shadow: inset 0 1px 0 var(--t-line-100); }
+  .f-opt .f-mark { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--t-line-strong);
+    display: grid; place-items: center; }
+  .f-opt[aria-checked="true"] .f-mark { border-color: var(--t-red-600); }
+  .f-opt[aria-checked="true"] .f-mark::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--t-red-600); }
+  .f-opt .f-copy { display: grid; gap: 1px; min-width: 0; }
+  .f-opt .f-copy strong { font: var(--t-title-s); font-weight: 650; }
+  .f-opt .f-copy small { font: var(--t-caption); color: var(--t-text-secondary); }
+  .f-opt .f-side { font: var(--t-label); color: var(--t-text-secondary); white-space: nowrap; }
+
+  .f-field { display: grid; gap: 6px; padding: 12px 14px; background: var(--t-white); }
+  .f-field + .f-field { box-shadow: inset 0 1px 0 var(--t-line-100); }
+  .f-field > span.f-lbl { font: var(--t-label); }
+  .f-field .f-hint { font: var(--t-caption); color: var(--t-text-secondary); }
+  .f-field .f-err { display: none; align-items: center; gap: 6px; font: var(--t-caption); font-weight: 650; color: var(--t-danger-700); }
+  .f-field.is-invalid .f-err { display: flex; }
+  .f-field.is-invalid .t-field { border-color: var(--t-danger-600); box-shadow: 0 0 0 3px color-mix(in srgb, var(--t-danger-600) 14%, transparent); }
+
+  .f-change { min-height: 44px; padding: 0 12px; font: var(--t-label); color: var(--t-red-600); }
+
+  /* Barra de acción: misma fórmula derivada, sin nav inferior */
+  .f-action {
+    position: fixed; z-index: var(--t-z-sticky-cta); inset: auto 0 0 0;
+    display: grid; gap: 8px; padding: 10px 14px calc(10px + var(--t-safe-b));
+    background: color-mix(in srgb, var(--t-paper) 96%, transparent);
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    border-top: 1px solid var(--t-line-200);
+  }
+  .f-action .f-tot { display: flex; align-items: baseline; gap: 8px; font: var(--t-body-s); color: var(--t-ink-600); }
+  .f-action .f-tot strong { margin-left: auto; font: var(--t-price-l); font-variant-numeric: tabular-nums; color: var(--t-ink-900); }
+
+  /* ── confirmación ──────────────────────────────────────────────────────── */
+  .ok-wrap { display: grid; justify-items: center; gap: 14px; padding: 40px 22px 22px; text-align: center; }
+  .ok-mark { display: grid; place-items: center; width: 68px; height: 68px; border-radius: 50%;
+    background: var(--t-success-100); color: var(--t-success-700); }
+  .ok-code { display: grid; gap: 3px; justify-items: center; padding: 16px; width: 100%;
+    background: var(--t-white); border: 1px solid var(--t-line-200); border-radius: var(--t-r-md); }
+  .ok-code strong { font: 800 30px/1 var(--t-font); letter-spacing: .28em; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body data-screen-mode="stack" data-view="cart">
+
+<div class="demo-bar" data-demo>
+  <strong>Vista</strong>
+  <button data-view-btn="cart" aria-pressed="true">Mi pedido</button>
+  <button data-view-btn="empty">Pedido vacío</button>
+  <button data-view-btn="checkout">Checkout</button>
+  <button data-view-btn="invalid">Checkout con error</button>
+  <button data-view-btn="noaddr">Sin dirección</button>
+  <button data-view-btn="pickup">Retiro en el local</button>
+  <button data-view-btn="success">Confirmado</button>
+</div>
+
+<div class="screen">
+  <header class="t-appbar c-appbar">
+    <button class="c-back" type="button" data-back aria-label="Volver al catálogo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m15 6-6 6 6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <h1 data-title>Mi pedido</h1>
+    <span class="t-pill t-pill--neutral t-num" data-count-pill>4</span>
+  </header>
+
+  <main>
+    <!-- ═════════════════════════════ CARRITO ═════════════════════════════ -->
+    <section data-screen="cart">
+      <div class="k-lines" data-lines></div>
+      <button class="k-more" type="button" data-back>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        Agregar más productos
+      </button>
+      <div class="k-sum">
+        <div class="k-row"><span>Subtotal</span><strong class="t-num" data-sub>$ 0</strong></div>
+        <div class="k-row"><span>Envío</span><strong class="t-num" data-ship>$ 1.500</strong></div>
+        <div class="k-row is-total"><span>Total</span><strong class="t-num" data-tot>$ 0</strong></div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════ CARRITO VACÍO ══════════════════════════ -->
+    <section data-screen="empty" hidden>
+      <div class="t-empty" style="padding-top:56px">
+        <span class="t-empty-mark">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 4h2l2.1 10.15a2 2 0 0 0 1.96 1.6h7.94a2 2 0 0 0 1.93-1.47L20.5 9H7.25" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="20" r="1.4" fill="currentColor"/><circle cx="17" cy="20" r="1.4" fill="currentColor"/></svg>
+        </span>
+        <h3>Tu pedido está vacío</h3>
+        <p>Agregá bebidas del catálogo y te las llevamos a Neuquén capital.</p>
+        <div class="t-empty-actions"><button class="t-btn t-btn--primary" type="button" data-back>Ver el catálogo</button></div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════ CHECKOUT ════════════════════════════ -->
+    <section data-screen="checkout" hidden>
+      <div class="f-wrap">
+
+        <!-- 1 · Entrega -->
+        <div class="f-sec">
+          <p class="t-group-label"><span class="f-step">1</span> Entrega</p>
+          <div class="t-group" role="radiogroup" aria-label="Forma de entrega">
+            <button class="f-opt" type="button" role="radio" aria-checked="true" data-mode="delivery">
+              <span class="f-mark" aria-hidden="true"></span>
+              <span class="f-copy"><strong>Envío a domicilio</strong><small>Llega en 30–45 min</small></span>
+              <span class="f-side t-num">$ 1.500</span>
+            </button>
+            <button class="f-opt" type="button" role="radio" aria-checked="false" data-mode="pickup">
+              <span class="f-mark" aria-hidden="true"></span>
+              <span class="f-copy"><strong>Retiro en el local</strong><small>Av. Argentina 1450 · listo en 15 min</small></span>
+              <span class="f-side">Sin cargo</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2 · Dirección (desde Perfil) -->
+        <div class="f-sec" data-sec-addr>
+          <p class="t-group-label"><span class="f-step">2</span> ¿Dónde te lo dejamos?</p>
+          <div class="t-group" data-addr-group></div>
+          <div class="t-group" data-ref-group>
+            <label class="f-field">
+              <span class="f-lbl">Referencia para el rider <span class="t-muted">(opcional)</span></span>
+              <span class="t-field"><input type="text" data-ref placeholder="Timbre, piso, color del portón…" autocomplete="off" /></span>
+              <span class="f-hint">Ayuda a que la entrega no se demore.</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 3 · Contacto -->
+        <div class="f-sec">
+          <p class="t-group-label"><span class="f-step">3</span> Contacto</p>
+          <div class="t-group">
+            <label class="f-field" data-field="name">
+              <span class="f-lbl">Nombre</span>
+              <span class="t-field"><input type="text" data-name value="M. Álvarez" autocomplete="name" /></span>
+              <span class="f-err"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7.5v5M12 16h.01" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg> Necesitamos un nombre para el pedido.</span>
+            </label>
+            <label class="f-field" data-field="phone">
+              <span class="f-lbl">Teléfono</span>
+              <span class="t-field"><input type="tel" inputmode="tel" data-phone value="299 4 821" autocomplete="tel" /></span>
+              <span class="f-hint">El rider te llama sólo si no encuentra la dirección.</span>
+              <span class="f-err"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7.5v5M12 16h.01" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg> Ingresá un teléfono de contacto válido.</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 4 · Pago -->
+        <div class="f-sec">
+          <p class="t-group-label"><span class="f-step">4</span> Pago</p>
+          <div class="t-group" role="radiogroup" aria-label="Forma de pago">
+            <button class="f-opt" type="button" role="radio" aria-checked="true" data-pay="cash">
+              <span class="f-mark" aria-hidden="true"></span>
+              <span class="f-copy"><strong>Efectivo</strong><small>Al recibir el pedido</small></span>
+            </button>
+            <button class="f-opt" type="button" role="radio" aria-checked="false" data-pay="transfer">
+              <span class="f-mark" aria-hidden="true"></span>
+              <span class="f-copy"><strong>Transferencia</strong><small>Te pasamos los datos al confirmar</small></span>
+            </button>
+          </div>
+          <div class="t-group" data-cash-group>
+            <label class="f-field" data-field="cash">
+              <span class="f-lbl">¿Con cuánto abonás? <span class="t-muted">(opcional)</span></span>
+              <span class="t-field"><input type="text" inputmode="numeric" data-cash placeholder="50.000" /></span>
+              <span class="f-hint" data-change>Así el local prepara el vuelto.</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 5 · Resumen -->
+        <div class="f-sec">
+          <p class="t-group-label"><span class="f-step">5</span> Resumen</p>
+          <div class="t-group">
+            <div class="k-sum" style="padding:14px">
+              <div class="k-row"><span data-sum-items>4 artículos</span><strong class="t-num" data-sub2>$ 40.800</strong></div>
+              <div class="k-row"><span data-sum-ship-label>Envío</span><strong class="t-num" data-ship2>$ 1.500</strong></div>
+              <div class="k-row is-total"><span>Total</span><strong class="t-num" data-tot2>$ 42.300</strong></div>
+            </div>
+          </div>
+          <p class="t-caption" style="padding:0 4px">Al confirmar, el local recibe tu pedido y lo acepta en pocos minutos. Te avisamos por cada cambio de estado.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════ CONFIRMADO ═══════════════════════════ -->
+    <section data-screen="success" hidden>
+      <div class="ok-wrap">
+        <span class="ok-mark">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <div>
+          <h2 class="t-title-l">Pedido confirmado</h2>
+          <p class="t-body-s t-muted" style="margin-top:4px">El local ya lo recibió. Te avisamos cuando empiece a prepararlo.</p>
+        </div>
+        <div class="ok-code">
+          <small class="t-caption">Código de entrega · decíselo al rider</small>
+          <strong class="t-num">4 7 2 9</strong>
+        </div>
+        <div class="t-group" style="width:100%;text-align:left">
+          <div class="t-row" style="grid-template-columns:34px 1fr auto">
+            <span class="t-row-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M5 4h14v16l-3-2-2 2-2-2-2 2-3-2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span>
+            <span class="t-row-copy"><strong class="t-num">#A-1042</strong><small>4 artículos · Envío a domicilio</small></span>
+            <span class="t-row-value t-num">$ 42.300</span>
+          </div>
+          <div class="t-row" style="grid-template-columns:34px 1fr auto">
+            <span class="t-row-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="10" r="2.3" stroke="currentColor" stroke-width="1.7"/></svg></span>
+            <span class="t-row-copy"><strong>Av. Argentina 1450</strong><small>Timbre 3B · portón negro</small></span>
+            <span></span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- barra de acción: total siempre visible + una sola primaria -->
+  <div class="f-action" data-action>
+    <div class="f-tot" data-tot-row><span data-tot-label>Total</span><strong class="t-num" data-tot3>$ 42.300</strong></div>
+    <button class="t-btn t-btn--primary t-btn--lg t-btn--block" type="button" data-primary>Continuar</button>
+  </div>
+
+  <div class="t-toast" role="status" data-toast hidden><span></span></div>
+</div>
+
+<script>
+/* Datos reales del catálogo TABA. Cliente y dirección sintéticos, sin PII. */
+const P = {
+  "coca-cola-original-pet-500ml-pack-12": ["Coca-Cola Original","Botella PET · 500 ml · Pack x12",17100],
+  "corona-extra-botella-330ml":           ["Corona Extra","Botella · 330 ml · Unidad",3600],
+  "imperial-apa-lata-473ml":              ["Imperial APA","Lata · 473 ml · Unidad",3000],
+};
+const ADDR = [
+  { id:"casa",   label:"Casa",    line:"Av. Argentina 1450, Neuquén", ref:"Timbre 3B · portón negro" },
+  { id:"trabajo",label:"Trabajo", line:"Ministro González 233, Neuquén", ref:"Recepción, planta baja" },
+];
+const SHIP = 1500;
+
+const S = { view:"cart", cart:{"coca-cola-original-pet-500ml-pack-12":2,"corona-extra-botella-330ml":1,"imperial-apa-lata-473ml":1},
+            mode:"delivery", addr:"casa", pay:"cash", cash:"", invalid:false, hasAddr:true };
+const $ = (s,r=document)=>r.querySelector(s), $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const money = n => "$ " + n.toLocaleString("es-AR");
+const num = s => Number(String(s).replace(/[^\d]/g,"")) || 0;
+
+const subtotal = () => Object.entries(S.cart).reduce((a,[id,q])=>a + P[id][2]*q, 0);
+const ship = () => S.mode === "pickup" ? 0 : SHIP;
+const total = () => subtotal() + ship();
+const count = () => Object.values(S.cart).reduce((a,q)=>a+q,0);
+
+function lineHtml(id,q){
+  const [name,pres,price] = P[id];
+  return `<div class="k-line">
+    <span class="k-line-media"><img src="../assets/products/${id}.webp" alt="" width="68" height="68" /></span>
+    <span class="k-line-body">
+      <span class="k-name">${esc(name)}</span>
+      <span class="k-pres">${esc(pres)}</span>
+      <span class="k-line-foot">
+        <span class="p-step">
+          <button type="button" data-dec="${id}" aria-label="${q===1?"Quitar":"Quitar una unidad de"} ${esc(name)}">${q===1
+            ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 7h14M9 7V5h6v2m-8 0 1 13h8l1-13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+            : "−"}</button>
+          <strong class="t-num">${q}</strong>
+          <button type="button" data-inc="${id}" aria-label="Agregar una unidad de ${esc(name)}">+</button>
+        </span>
+        <span class="k-total t-num">${money(price*q)}</span>
+      </span>
+      <span class="k-unit t-num">${q} × ${money(price)}</span>
+    </span>
+  </div>`;
+}
+
+function addrHtml(){
+  if (!S.hasAddr) return `<div class="f-field" data-field="addr">
+    <span class="f-lbl">Todavía no tenés direcciones guardadas</span>
+    <span class="f-hint">Guardá una en tu Perfil y la vas a tener siempre lista.</span>
+    <button class="t-btn t-btn--secondary t-btn--block" type="button" style="margin-top:6px" data-add-addr>Agregar dirección</button>
+  </div>`;
+  return ADDR.map(a=>`<button class="f-opt" type="button" role="radio" aria-checked="${S.addr===a.id}" data-addr="${a.id}">
+      <span class="f-mark" aria-hidden="true"></span>
+      <span class="f-copy"><strong>${esc(a.label)}</strong><small>${esc(a.line)}</small></span>
+    </button>`).join("") +
+    `<button class="f-opt" type="button" data-add-addr style="grid-template-columns:20px 1fr">
+      <span class="f-mark" aria-hidden="true" style="border-style:dashed"></span>
+      <span class="f-copy"><strong style="color:var(--t-red-600)">Usar otra dirección</strong></span>
+    </button>`;
+}
+
+function render(){
+  const n = count(), sub = subtotal(), sh = ship(), tot = total();
+  const view = S.view;
+
+  $$("[data-screen]").forEach(s=>s.hidden = s.dataset.screen !== (view === "invalid" || view === "noaddr" || view === "pickup" ? "checkout" : view));
+  $$("[data-view-btn]").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.viewBtn === view)));
+
+  const isCheckout = ["checkout","invalid","noaddr","pickup"].includes(view);
+  $("[data-title]").textContent = view === "success" ? "Pedido confirmado" : isCheckout ? "Confirmar pedido" : "Mi pedido";
+  $("[data-count-pill]").hidden = view !== "cart";
+  $("[data-count-pill]").textContent = n;
+
+  // carrito
+  $("[data-lines]").innerHTML = Object.entries(S.cart).map(([id,q])=>lineHtml(id,q)).join("");
+  $("[data-sub]").textContent = money(sub);
+  $("[data-ship]").textContent = sh ? money(sh) : "Sin cargo";
+  $("[data-tot]").textContent = money(tot);
+
+  // checkout
+  $("[data-addr-group]").innerHTML = addrHtml();
+  $("[data-sec-addr]").hidden = S.mode === "pickup";
+  $("[data-ref-group]").hidden = S.mode === "pickup" || !S.hasAddr;
+  $("[data-cash-group]").hidden = S.pay !== "cash";
+  $$("[data-mode]").forEach(b=>b.setAttribute("aria-checked", String(b.dataset.mode === S.mode)));
+  $$("[data-pay]").forEach(b=>b.setAttribute("aria-checked", String(b.dataset.pay === S.pay)));
+  $("[data-sum-items]").textContent = `${n} ${n===1?"artículo":"artículos"}`;
+  $("[data-sum-ship-label]").textContent = S.mode === "pickup" ? "Retiro en el local" : "Envío";
+  $("[data-sub2]").textContent = money(sub);
+  $("[data-ship2]").textContent = sh ? money(sh) : "Sin cargo";
+  $("[data-tot2]").textContent = money(tot);
+
+  const paid = num(S.cash);
+  $("[data-change]").textContent = paid > tot ? `Vuelto: ${money(paid - tot)}`
+    : paid > 0 && paid < tot ? "Ese importe no alcanza para el total."
+    : "Así el local prepara el vuelto.";
+
+  // errores en línea
+  $$(".f-field").forEach(f=>f.classList.remove("is-invalid"));
+  if (view === "invalid") {
+    $('[data-field="phone"]').classList.add("is-invalid");
+    $("[data-phone]").value = "";
+  }
+
+  // barra de acción
+  const act = $("[data-action]");
+  act.hidden = view === "empty";
+  $("[data-tot-row]").hidden = view === "success";
+  $("[data-tot3]").textContent = money(tot);
+  $("[data-tot-label]").textContent = S.mode === "pickup" ? "Total · retiro" : "Total con envío";
+  const btn = $("[data-primary]");
+  btn.textContent = view === "success" ? "Seguir mi pedido" : isCheckout ? "Confirmar pedido" : "Continuar";
+  btn.dataset.go = view === "success" ? "track" : isCheckout ? "success" : "checkout";
+
+  // La reserva inferior se deriva de la ALTURA REAL de la barra de acción.
+  requestAnimationFrame(()=>{
+    const h = act.hidden ? 0 : act.getBoundingClientRect().height;
+    document.body.style.setProperty("--action-h", h + "px");
+  });
+}
+
+let toastT;
+function toast(m){ const t=$("[data-toast]"); t.querySelector("span").textContent=m; t.hidden=false;
+  clearTimeout(toastT); toastT=setTimeout(()=>{t.hidden=true;},2400); }
+
+document.addEventListener("click", e=>{
+  const t = e.target.closest("[data-inc],[data-dec],[data-mode],[data-pay],[data-addr],[data-add-addr],[data-primary],[data-back],[data-view-btn]");
+  if (!t) return;
+  if (t.dataset.inc) S.cart[t.dataset.inc]++;
+  if (t.dataset.dec){ const id=t.dataset.dec; S.cart[id]--; if (S.cart[id]<=0){ delete S.cart[id]; toast("Producto quitado del pedido."); } }
+  if (t.dataset.mode) S.mode = t.dataset.mode;
+  if (t.dataset.pay) S.pay = t.dataset.pay;
+  if (t.dataset.addr) S.addr = t.dataset.addr;
+  if (t.hasAttribute("data-add-addr")) toast("Abre Perfil → Direcciones.");
+  if (t.hasAttribute("data-back")) toast("Vuelve al catálogo.");
+  if (t.dataset.viewBtn) setView(t.dataset.viewBtn);
+  else if (t.dataset.go) { S.view = t.dataset.go === "track" ? "success" : t.dataset.go; window.scrollTo(0,0); }
+  if (!count() && S.view === "cart") S.view = "empty";
+  render();
+});
+$("[data-cash]").addEventListener("input", e=>{ S.cash = e.target.value; render(); });
+
+function setView(v){
+  S.view = v;
+  S.mode = v === "pickup" ? "pickup" : "delivery";
+  S.hasAddr = v !== "noaddr";
+  if (v === "empty") S.cart = {};
+  else if (!count()) S.cart = {"coca-cola-original-pet-500ml-pack-12":2,"corona-extra-botella-330ml":1,"imperial-apa-lata-473ml":1};
+  window.scrollTo(0,0);
+}
+
+const U = new URLSearchParams(location.search);
+if (U.get("chrome") === "0") $("[data-demo]").hidden = true;
+setView(U.get("view") || "cart");
+render();
+</script>
+</body>
+</html>

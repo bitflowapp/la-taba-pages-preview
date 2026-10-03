@@ -1,0 +1,2 @@
+import original from 'file:///D:/1212/la-taba-commerce-v3/playwright.config.mjs';
+export default {...original, testDir:'D:/1212/la-taba-commerce-v3/tests/e2e', testMatch:/commerce-v3\.spec\.mjs/, webServer:undefined, reporter:'list', outputDir:'D:/1212/artifacts/commerce-v3-public-e2e', retries:0, use:{...original.use,baseURL:'https://taba2-staging.pages.dev'}, projects:original.projects.map(p=>({...p,testMatch:/commerce-v3\.spec\.mjs/}))};

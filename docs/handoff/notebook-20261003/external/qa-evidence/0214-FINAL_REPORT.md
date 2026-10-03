@@ -1,0 +1,52 @@
+﻿# TABA Local Supabase Autostart - Final Report
+
+- Usuario: desktop-tk52l9l\marco
+- Windows: Microsoft Windows 11 Pro
+- Fecha/hora de reporte: 2026-07-30 15:24:23
+- Último boot: 2026-07-30 12:08:40
+- PowerShell: 5.1.26100.8457
+- Docker Desktop path/version: C:\Users\marco\AppData\Local\Programs\DockerDesktop\resources\bin\docker.exe / 29.6.2
+- Supabase CLI path/version: C:\1212\scripts\supabase.exe / 2.110.0
+- Proyecto: C:\1212\la-taba-pages
+- config.toml: C:\1212\la-taba-pages\supabase\config.toml
+- Scripts encontrados:
+  - C:\1212\scripts\Start-TabaSupabase.ps1
+  - C:\1212\scripts\Check-TabaLocal.ps1
+  - C:\1212\scripts\Open-TabaLocal.ps1
+- Tarea: TABA - Supabase local
+- UserId: marco
+- LogonType: Interactive
+- RunLevel: Limited
+- Trigger tipo: LogonTrigger ($(MSFT_ScheduledTask (TaskName = "TABA - Supabase local", TaskPath = "\").Triggers[0].GetType().Name))
+- LastRunTime: 2026-07-30 15:23:10
+- LastTaskResult: 0
+- NumberOfMissedRuns: 0
+- Última ejecución posterior al boot: True
+- Cantidad de contenedores: 11
+- Vector presente: False
+- Containers inestables o con reinicios: 0
+- Resultado Check-TabaLocal.ps1: Vector excluido, Estado TABA: OPERATIVO
+- Puertos:
+  - 54321: True
+  - 54322: True
+  - 54323: True
+  - 54324: True
+- Idempotencia:
+  - Primera corrida: Exit 0
+  - Segunda corrida: Exit 0
+  - Conteo contenedores (run1/run2): 11 / 11
+  - Reinicios incrementados: no
+- SHA-256:
+  - Start-TabaSupabase: C7DDB57D0CC64728B9D4BDE91D9D898FBD27EB9AC8F5DE11260AEF0FD88435AE
+  - Check-TabaLocal: BAA90AD2DE72C82B88AE7CC129DCB26FBF30CF82DEF561EED6376B28235F882B
+  - Open-TabaLocal: F438577ACD9AE4CF437AACE749A029EB2F34444AE6F3658AF9481BB09BAB5D57
+- Evidencia adicional:
+  - C:\1212\artifacts\taba-local-autostart\container-summary.txt
+  - C:\1212\artifacts\taba-local-autostart\task-state.txt
+  - C:\1212\artifacts\taba-local-autostart\script-sha256.txt
+  - C:\1212\artifacts\taba-local-autostart\autostart-log-tail.txt
+- Veredicto: TABA_LOCAL_SUPABASE_AUTOSTART_CONFIGURED_AND_VERIFIED
+- Motivo: Se verificó estado operativo con evidencia post-reinicio.
+
+No se modificaron repositorios, migraciones, Git, staging ni producción.
+No se ejecutaron comandos destructivos ni reinicios automáticos.

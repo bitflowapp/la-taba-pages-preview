@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>TABA · Antes y después</title>
+<link rel="stylesheet" href="../prototypes/proto-shared.css" />
+<style>
+  body { background: var(--t-surface-1); }
+  .board { max-width: 1500px; margin: 0 auto; padding: 40px 32px 64px; }
+  .head { display: grid; gap: 10px; padding-bottom: 24px; border-bottom: 1px solid var(--t-line-200); margin-bottom: 32px; }
+  .head h1 { font: 800 34px/1.1 var(--t-font); letter-spacing: -0.03em; }
+  .head p { font: var(--t-body); color: var(--t-text-secondary); max-width: 82ch; }
+  .head .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+
+  .pair { display: grid; grid-template-columns: 1fr 1fr minmax(260px, 340px); gap: 22px;
+    padding: 26px 0; border-bottom: 1px solid var(--t-line-200); align-items: start; }
+  @media (max-width: 1100px) { .pair { grid-template-columns: 1fr 1fr; } .pair .notes { grid-column: 1 / -1; } }
+
+  .shot { display: grid; gap: 8px; }
+  .shot .tag { display: flex; align-items: center; gap: 8px; font: var(--t-label); }
+  .shot .tag .t-pill { font-weight: 700; }
+  .shot figure { margin: 0; border: 1px solid var(--t-line-200); border-radius: var(--t-r-md);
+    overflow: hidden; background: var(--t-white); box-shadow: var(--t-e1); }
+  .shot img { width: 100%; display: block; }
+  .shot figcaption { font: var(--t-caption); color: var(--t-text-secondary); padding: 8px 10px;
+    border-top: 1px solid var(--t-line-100); }
+
+  .notes { display: grid; gap: 14px; align-content: start; padding-top: 26px; }
+  .notes h2 { font: var(--t-title-m); }
+  .notes .prob, .notes .fix { display: grid; gap: 6px; }
+  .notes .lbl { font: var(--t-eyebrow); letter-spacing: .09em; text-transform: uppercase; }
+  .notes .prob .lbl { color: var(--t-danger-600); }
+  .notes .fix .lbl { color: var(--t-success-700); }
+  .notes ul { display: grid; gap: 5px; }
+  .notes li { font: var(--t-body-s); color: var(--t-ink-600); padding-left: 15px; position: relative; }
+  .notes li::before { content: ""; position: absolute; left: 2px; top: 8px; width: 5px; height: 5px;
+    border-radius: 50%; background: var(--t-line-300); }
+  .notes .prob li::before { background: var(--t-danger-600); }
+  .notes .fix li::before { background: var(--t-success-600); }
+  .metric { display: flex; gap: 14px; flex-wrap: wrap; padding: 10px 12px; border-radius: var(--t-r-sm);
+    background: var(--t-surface-2); }
+  .metric span { display: grid; }
+  .metric b { font: 800 17px/1 var(--t-font); font-variant-numeric: tabular-nums; }
+  .metric small { font: var(--t-caption); color: var(--t-text-secondary); }
+  .metric .up b { color: var(--t-success-700); }
+  .metric .down b { color: var(--t-danger-600); }
+
+  .foot { padding-top: 28px; display: grid; gap: 10px; }
+  .foot p { font: var(--t-body-s); color: var(--t-text-secondary); max-width: 88ch; }
+</style>
+</head>
+<body>
+<div class="board">
+
+  <div class="head">
+    <p class="t-eyebrow">Revisión de diseño · 31 de julio de 2026</p>
+    <h1>TABA — antes y después</h1>
+    <p>Izquierda: capturas reales de la aplicación actual (Playwright, 390×844, ×2). Derecha: capturas de los prototipos de esta propuesta, en el mismo viewport y con los mismos datos de catálogo. Ninguna imagen es un montaje: ambas columnas se generaron con el mismo procedimiento.</p>
+    <div class="meta">
+      <span class="t-pill t-pill--neutral">Propuesta — no implementado</span>
+      <span class="t-pill t-pill--neutral">Repositorio sin modificar</span>
+      <span class="t-pill t-pill--neutral">Datos reales del catálogo TABA</span>
+    </div>
+  </div>
+
+  <!-- 1 · CATÁLOGO -->
+  <section class="pair">
+    <div class="shot">
+      <p class="tag"><span class="t-pill t-pill--danger"><i class="t-dot"></i>Antes</span> Catálogo · 390×844</p>
+      <figure><img src="current/catalog-390x844.png" alt="Catálogo actual" />
+        <figcaption>Header negro de 71px · H1 de ~48px · buscador de 65px · categorías de 105px · barra de orden casi vacía</figcaption></figure>
+    </div>
+    <div class="shot">
+      <p class="tag"><span class="t-pill t-pill--ok"><i class="t-dot"></i>Después</span> Catálogo · 390×844</p>
+      <figure><img src="catalog-mobile-390x844.png" alt="Catálogo propuesto" />
+        <figcaption>App bar de 56px con dirección integrada · título de 22px · chips de 44px · dos precios sobre el pliegue</figcaption></figure>
+    </div>
+    <div class="notes">
+      <h2>Catálogo</h2>
+      <div class="prob"><span class="lbl">Problemas</span><ul>
+        <li><b>P0-03</b> · Ningún precio sobre el pliegue: ~435px consumidos antes del primer producto</li>
+        <li><b>P1-07</b> · El packshot ocupa el 15,5% del área de la tarjeta (60×148 en 173×330)</li>
+        <li><b>P1-09</b> · Categorías como tarjetas de 105px con etiquetas de 10px</li>
+        <li><b>P2-08</b> · El carrito vacío ocupa el 55% del header</li>
+        <li><b>P2-09</b> · Barra de orden a ancho completo con el 70% vacío</li>
+      </ul></div>
+      <div class="fix"><span class="lbl">Resuelto</span><ul>
+        <li>Media cuadrada por <code>aspect-ratio</code> y padding de 4px, sin altura fija</li>
+        <li>La dirección pasa de tarjeta de 92px a control de 44px en el app bar</li>
+        <li>Chips de 44px con máscara de continuidad: 5 categorías visibles</li>
+        <li>El badge del carrito sólo existe con contenido</li>
+        <li>El control de orden vuelve a la fila del título</li>
+      </ul></div>
+      <div class="metric">
+        <span class="up"><b>0 → 2</b><small>precios sobre el pliegue</small></span>
+        <span class="up"><b>435 → 208</b><small>px antes del producto</small></span>
+        <span class="up"><b>15% → 35%</b><small>área del packshot</small></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 · CARRITO Y SOLAPE -->
+  <section class="pair">
+    <div class="shot">
+      <p class="tag"><span class="t-pill t-pill--danger"><i class="t-dot"></i>Antes</span> Con producto en el carrito</p>
+      <figure><img src="current/catalog-cart-390x844.png" alt="Catálogo actual con carrito" />
+        <figcaption>El stepper atraviesa el nombre “Coca-Cola Original”; el aviso tapa la presentación de la tarjeta contigua</figcaption></figure>
+    </div>
+    <div class="shot">
+      <p class="tag"><span class="t-pill t-pill--ok"><i class="t-dot"></i>Después</span> Con productos en el carrito</p>
+      <figure><img src="catalog-mobile-cart-390x844.png" alt="Catálogo propuesto con carrito" />
+        <figcaption>Stepper en flujo, en el lugar exacto de la CTA; barra de carrito separada de la navegación</figcaption></figure>
+    </div>
+    <div class="notes">
+      <h2>Solape y control de cantidad</h2>
+      <div class="prob"><span class="lbl">Problemas</span><ul>
+        <li><b>P0-02</b> · <code>.product-media-control { position:absolute; bottom:136px }</code> — número mágico derivado de <code>grid-template-rows: 190px minmax(78px,1fr) 62px</code>. Si el cuerpo crece, el control queda sobre el título</li>
+        <li><b>P0-01</b> · Cuatro valores contradictorios de altura de nav: 104 / 76 / 70 / 82px. Medido real: <b>68px</b></li>
+        <li><b>P0-01</b> · <code>--taba-floating-cart-reserve</code> declarado en <code>:root</code>: resuelve con los valores de <code>:root</code> y el override no tiene efecto. El contenido reserva de menos</li>
+        <li><b>P1-03</b> · El aviso efímero se posiciona con la misma reserva rota y tapa contenido</li>
+      </ul></div>
+      <div class="fix"><span class="lbl">Resuelto</span><ul>
+        <li>Ninguna acción posicionada en absoluto: el solape es imposible por construcción</li>
+        <li>Una sola declaración de altura de nav; todo lo demás derivado</li>
+        <li>La reserva se declara en <code>body</code>, donde varía su entrada</li>
+        <li>Con carrito vacío la reserva es 0: sin espacio muerto</li>
+        <li>El aviso flota por encima de todo el stack</li>
+      </ul></div>
+      <div class="metric">
+        <span class="up"><b>4 → 1</b><small>fuentes de verdad</small></span>
+        <span class="up"><b>0</b><small>nodos tapados al final del scroll</small></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · ESTADO VACÍO -->
+  <section class="pair">
+    <div class="shot">
+      <p class="tag"><span class="t-pill t-pill--danger"><i class="t-dot"></i>Antes</span> Búsqueda sin resultados</p>
+      <figure><img src="current/catalog-empty-390x844.png" alt="Estado vacío actual" />
+        <figcaption>Título “Todos” · chip “Todos” activo en rojo · “0 productos” · carrito con producto</figcaption></figure>
+    </div>
+    <div class="shot">
+      <p class="tag"><span class="t-pill t-pill--ok"><i class="t-dot"></i>Después</span> Búsqueda sin resultados</p>
+      <figure><img src="catalog-mobile-empty-390x844.png" alt="Estado vacío propuesto" />
+        <figcaption>El título es la consulta · chip de búsqueda removible · ninguna categoría activa · “Limpiar búsqueda”</figcaption></figure>
+    </div>
+    <div class="notes">
+      <h2>“Todos · 0 productos · carrito con 4”</h2>
+      <div class="prob"><span class="lbl">Diagnóstico</span><ul>
+        <li><b>No es un bug de filtros, ni de render, ni de estado.</b> <code>getFilteredProducts</code> y el empty state funcionan correctamente</li>
+        <li><code>js/ui.js:986</code> — el título usa siempre <code>activeCategoryName()</code>, nunca la consulta</li>
+        <li>El chip “Todos” sigue activo en rojo: refuerza “no hay filtro aplicado”</li>
+        <li>El contador está ~250px por encima de la explicación, separado por la barra de orden</li>
+        <li>El estado vacío no nombra la consulta ni ofrece limpiarla</li>
+        <li>El carrito con 4 productos es <b>correcto</b>: es un objeto global y persistente</li>
+      </ul></div>
+      <div class="fix"><span class="lbl">Resuelto</span><ul>
+        <li>El título pasa a ser la consulta entre comillas</li>
+        <li>Ninguna categoría queda marcada como activa</li>
+        <li>Chip de búsqueda removible antes de las categorías</li>
+        <li>El contador dice “0 productos en Gaseosas” cuando corresponde</li>
+        <li>La barra de orden se oculta con 0 resultados</li>
+        <li>Acción primaria “Limpiar búsqueda”, que deshace la causa</li>
+      </ul></div>
+      <div class="metric"><span class="up"><b>P1</b><small>clasificación: visual e informativo</small></span></div>
+    </div>
+  </section>
+
+  <!-- 4 · HOME -->
+  <section class="pair">
+    <div class="shot">
+      <p class="tag"><span class="t-pill t-pill--danger"><i class="t-dot"></i>Antes</span> Inicio</p>
+      <figure><img src="current/home-390x844.png" alt="Inicio actual" />
+        <figcaption>“PREVIEW INTERNA” a 8px · dirección truncada · dos filas de tarjetas distintas en “Los más vendidos”, una colapsada</figcaption></figure>
+    </div>
+    <div class="shot">
+      <p class="tag"><span class="t-pill t-pill--ok"><i class="t-dot"></i>Después</span> Inicio</p>
+      <figure><img src="catalog-mobile-home-390x844.png" alt="Inicio propuesto" />
+        <figcaption>Un solo componente de tarjeta · sin etiquetas técnicas · categorías compactas</figcaption></figure>
+    </div>
+    <div class="notes">
+      <h2>Inicio</h2>
+      <div class="prob"><span class="lbl">Problemas</span><ul>
+        <li><b>P1-04</b> · “PREVIEW INTERNA” visible al cliente, a 8px de tamaño</li>
+        <li><b>P1-05 / F-01</b> · Dos carruseles de “Los más vendidos” con markup distinto; el primero colapsado a ~85px con un packshot de ~15px, sin nombre ni precio</li>
+        <li><b>P1-08</b> · “Elegí tu dirección al confirmar el pe…” truncado (medido: 244px de contenido en 169px de caja)</li>
+        <li><b>P1-10</b> · Inicio y catálogo repiten hero, buscador, categorías y rail con componentes distintos</li>
+      </ul></div>
+      <div class="fix"><span class="lbl">Resuelto</span><ul>
+        <li>Un único componente de tarjeta con dos densidades</li>
+        <li>Sin etiquetas de QA en la superficie del cliente</li>
+        <li>Dirección en el app bar, con elipsis controlada</li>
+        <li>Inicio descubre, catálogo filtra: misma pieza, distinta composición</li>
+      </ul></div>
+      <div class="metric"><span class="up"><b>5 → 1</b><small>componentes de tarjeta</small></span></div>
+    </div>
+  </section>
+
+  <!-- 5 · NEGOCIO -->
+  <section class="pair">
+    <div class="shot">
+      <p class="tag"><span class="t-pill t-pill--danger"><i class="t-dot"></i>Antes</span> Panel del negocio · 390×844</p>
+      <figure><img src="current/business-390x844.png" alt="Panel del negocio actual" />
+        <figcaption>Cuatro tarjetas de métrica con ceros (~260px) · dos filas de tabs cortadas · la cola empieza cerca de y≈700</figcaption></figure>
+    </div>
+    <div class="shot">
+      <p class="tag"><span class="t-pill t-pill--ok"><i class="t-dot"></i>Después</span> Panel del negocio · 390×844</p>
+      <figure><img src="business-mobile-home-390x844.png" alt="Panel del negocio propuesto" />
+        <figcaption>Banda de 52px que resume y filtra · tres pedidos completos sobre el pliegue</figcaption></figure>
+    </div>
+    <div class="notes">
+      <h2>Panel del negocio</h2>
+      <div class="prob"><span class="lbl">Problemas</span><ul>
+        <li><b>P1-01</b> · Es el dashboard de escritorio comprimido: ~700px antes del primer pedido</li>
+        <li><b>P1-02</b> · Dos filas de tabs horizontales cortadas como navegación principal</li>
+        <li><b>P1-03</b> · El aviso “Acceso del negocio activado” tapa el estado vacío</li>
+        <li>Las métricas ocupan espacio sin priorizar los pedidos</li>
+      </ul></div>
+      <div class="fix"><span class="lbl">Resuelto</span><ul>
+        <li>Banda de 52px que es resumen <b>y</b> filtro: reemplaza 260px de tarjetas y 60px de tabs</li>
+        <li>Bottom navigation de 4 destinos; sin scroll horizontal para navegar</li>
+        <li>La cola es lo primero; detalle como pantalla apilada con acción primaria sticky</li>
+        <li>La acción repetida de la cola va en tinta, no en rojo: el rojo se reserva para la decisión única</li>
+        <li>Módulos secundarios en una sección “Local” con filas agrupadas</li>
+      </ul></div>
+      <div class="metric">
+        <span class="up"><b>0 → 3</b><small>pedidos sobre el pliegue</small></span>
+        <span class="up"><b>700 → 186</b><small>px antes del primer pedido</small></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 · RIDER -->
+  <section class="pair">
+    <div class="shot">
+      <p class="tag"><span class="t-pill t-pill--neutral"><i class="t-dot"></i>Nuevo</span> Rider Android · en camino</p>
+      <figure><img src="rider-on-the-way-390x844.png" alt="Rider en camino" />
+        <figcaption>Una decisión por pantalla · acción primaria de 56px en la zona del pulgar</figcaption></figure>
+    </div>
+    <div class="shot">
+      <p class="tag"><span class="t-pill t-pill--neutral"><i class="t-dot"></i>Nuevo</span> Rider Android · sin conexión</p>
+      <figure><img src="rider-offline-390x844.png" alt="Rider sin conexión" />
+        <figcaption>Cola de acciones pendientes visible con su hora; se sigue trabajando</figcaption></figure>
+    </div>
+    <div class="notes">
+      <h2>Rider Android</h2>
+      <div class="prob"><span class="lbl">Situación actual</span><ul>
+        <li>Existe una vista rider <b>web</b> dentro de la PWA. <b>La app Android no existe</b></li>
+        <li>El GPS depende de que la pestaña esté abierta</li>
+        <li>No hay cola durable: sin señal, las acciones se pierden</li>
+        <li>La máquina de estados está repartida entre la UI y varios módulos, sin formalizar en el backend</li>
+      </ul></div>
+      <div class="fix"><span class="lbl">Propuesta</span><ul>
+        <li>Flutter + Supabase, con foreground service para la ubicación</li>
+        <li>Cola durable con <code>cmd_id</code> generado en el dispositivo: reintento idempotente</li>
+        <li>La ubicación se emite sólo entre retiro y entrega</li>
+        <li>Teclado numérico propio para el código; confirmación deslizante para lo irreversible</li>
+        <li><b>Primero el contrato, después la app:</b> la máquina de estados se formaliza y la web la usa antes de escribir Dart</li>
+      </ul></div>
+      <div class="metric"><span class="up"><b>14</b><small>pantallas prototipadas</small></span><span class="up"><b>25</b><small>flujos especificados</small></span></div>
+    </div>
+  </section>
+
+  <div class="foot">
+    <hr class="t-horizon" />
+    <p><b>Cómo leer este tablero.</b> Las capturas “antes” provienen de <code>screenshots/current/</code>, generadas contra la aplicación real. Las capturas “después” provienen de los prototipos HTML/CSS de <code>prototypes/</code>, con los mismos 22 productos y los mismos precios del catálogo TABA. No se inventaron precios, descuentos, popularidad ni stock.</p>
+    <p><b>Estado.</b> Esto es una propuesta de diseño. No se implementó ningún cambio en el repositorio, no se creó ningún commit y la aplicación Android del rider no existe.</p>
+  </div>
+
+</div>
+</body>
+</html>

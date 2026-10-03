@@ -1,0 +1,45 @@
+[HISTÓRICO REDACTADO PARA HANDOFF: líneas de credenciales/configuración excluidas; original intacto en notebook.]
+
+/* El catálogo LOCAL con los datos REALES de producción: se sirven los archivos
+ * del worktree y se deja que hablen con el Supabase productivo. Sólo lectura. */
+import { chromium } from '@playwright/test';
+const BASE='http://127.0.0.1:4599'; const OUT='artifacts/weekend-launch';
+const CONFIG = `globalThis.__LA_TABA_RUNTIME_CONFIG__ = {
+  mode: 'production',
+  repository: { provider: 'supabase', deploymentEnvironment: 'production',
+    supabaseUrl: 'https://wwcpogltfgzgkrlilbcd.supabase.co',
+[EXCLUIDO: credencial/configuración; recrear localmente.]
+    businessId: '00000000-0000-4000-8000-000000000001', pollMs: 5000 } };`;
+const nav=await chromium.launch();
+const ctx=await nav.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true,deviceScaleFactor:2,locale:'es-AR'});
+await ctx.route('http://127.0.0.1:4599/runtime-config.js', (r)=>r.fulfill({status:200,contentType:'application/javascript',body:CONFIG}));
+const page=await ctx.newPage();
+const errores=[]; page.on('pageerror',e=>errores.push(e.message)); page.on('console',m=>{if(m.type()==='error')errores.push(m.text().slice(0,160));});
+await page.goto(`${BASE}/#catalog`,{waitUntil:'domcontentloaded'});
+try { await page.locator('html[data-taba-startup="ready"]').waitFor({state:'attached',timeout:25_000}); }
+catch (e) { console.log('NO ARRANCO. estado=', await page.evaluate(()=>document.documentElement.dataset.tabaStartup||'(sin atributo)'));
+  console.log('texto:', (await page.evaluate(()=>document.body.innerText)).slice(0,600));
+  console.log('errores:', JSON.stringify([...new Set(errores)].slice(0,10), null, 1)); await nav.close(); process.exit(0); }
+await page.waitForTimeout(4000);
+const info = await page.evaluate(()=>({
+  tarjetas: document.querySelectorAll('.product-card').length,
+  condiciones: [...document.querySelectorAll('.price-condition')].map(e=>{
+    const card=e.closest('article'); return `${(card?.querySelector('h3')?.textContent||'').trim()} · ${(card?.querySelector('p')?.textContent||'').trim()} → «${e.textContent.trim()}»`;}),
+}));
+console.log(`tarjetas: ${info.tarjetas}`);
+console.log('RENGLONES BAJO EL PRECIO:'); info.condiciones.forEach(c=>console.log('  '+c));
+// abrir la ficha de un pack
+const pack = page.locator('.product-card:has-text("Pack x12")').first();
+if (await pack.count()) {
+  await pack.locator('[data-product-detail]').first().click();
+  await page.waitForTimeout(1800);
+  console.log('\nFICHA DEL PACK:', JSON.stringify(await page.evaluate(()=>{
+    const m=document.querySelector('.modal-price'); const c=document.querySelector('.modal-product-copy');
+    return { presentacion:(c?.querySelector('.modal-presentation')?.textContent||'').trim(),
+      titulo:(c?.querySelector('h2')?.textContent||'').trim(), precio:(m?.textContent||'').replace(/\s+/g,' ').trim() };})));
+  await page.screenshot({ path:`${OUT}/local-ficha-pack.png` });
+  await page.keyboard.press('Escape'); await page.waitForTimeout(800);
+}
+await page.screenshot({ path:`${OUT}/local-catalogo-produccion.png`, fullPage:false });
+console.log('\nERRORES: '+JSON.stringify([...new Set(errores)].slice(0,6)));
+await nav.close();

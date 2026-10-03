@@ -1,0 +1,79 @@
+[HISTÓRICO REDACTADO PARA HANDOFF: líneas de credenciales/configuración excluidas; original intacto en notebook.]
+
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import test from 'node:test';
+import {
+  directoryMatchesBusiness,
+  membershipNeedsFix,
+  parseQaAccess,
+  resolveDirectoryRiderIds,
+  sanitizeMessage,
+} from './validate-qa-runtime.mjs';
+
+const BUSINESS_ID = '00000000-0000-4000-8000-000000000001';
+const RIDER_ID = '00000000-0000-4000-8000-000000000002';
+
+test('membership repair is exact and idempotent', () => {
+  const valid = {
+    business_id: BUSINESS_ID,
+    user_id: RIDER_ID,
+    role: 'rider',
+    is_active: true,
+  };
+  assert.equal(membershipNeedsFix(valid, BUSINESS_ID, 'rider'), false);
+  assert.equal(membershipNeedsFix({ ...valid, role: 'staff' }, BUSINESS_ID, 'rider'), true);
+  assert.equal(membershipNeedsFix({ ...valid, is_active: false }, BUSINESS_ID, 'rider'), true);
+  assert.equal(membershipNeedsFix(null, BUSINESS_ID, 'rider'), true);
+});
+
+test('directory validation uses the real rider_user_id field and rejects foreign rows', () => {
+  const otherId = '00000000-0000-4000-8000-000000000003';
+  const rows = [{ rider_user_id: RIDER_ID, display_name: 'Rider QA' }];
+  assert.deepEqual([...resolveDirectoryRiderIds(rows)], [RIDER_ID]);
+  assert.equal(directoryMatchesBusiness(rows, new Set([RIDER_ID]), RIDER_ID), true);
+  assert.equal(
+    directoryMatchesBusiness([...rows, { rider_user_id: otherId }], new Set([RIDER_ID]), RIDER_ID),
+    false,
+  );
+  assert.equal(directoryMatchesBusiness([{ user_id: RIDER_ID }], new Set([RIDER_ID]), RIDER_ID), false);
+});
+
+test('QA access parser keeps owner and rider credentials separated', () => {
+  const parsed = parseQaAccess([
+    `Business ID: ${BUSINESS_ID}`,
+    '',
+    'Owner QA',
+    'Email: owner@example.invalid',
+    'Password: owner-pass',
+    '',
+    'Rider QA',
+    'Email: rider@example.invalid',
+    'Password: rider-pass',
+  ].join('\n'));
+  assert.equal(parsed.ownerEmail, 'owner@example.invalid');
+  assert.equal(parsed.riderEmail, 'rider@example.invalid');
+});
+
+test('sanitizer removes credentials, UUIDs, emails, and tokens', () => {
+  const message = sanitizeMessage(
+[EXCLUIDO: credencial/configuración; recrear localmente.]
+  );
+  assert.doesNotMatch(message, /sb_secret_|00000000|owner@|eyJabcdef/);
+});
+
+test('runtime validator creates four isolated clients with non-persistent auth', async () => {
+  const source = await readFile(
+    'C:\\1212\\taba-device-test-runtime\\validate-qa-runtime.mjs',
+    'utf8',
+  );
+  assert.equal((source.match(/createIsolatedClient\(/g) || []).length, 5);
+  assert.match(source, /persistSession:\s*false/);
+  assert.match(source, /autoRefreshToken:\s*false/);
+  assert.match(source, /detectSessionInUrl:\s*false/);
+  assert.match(source, /\.rpc\('list_active_business_riders'/);
+  assert.match(source, /row\?\.rider_user_id/);
+  assert.doesNotMatch(source, /Authorization\s*:/);
+  assert.doesNotMatch(source, /Bearer\s+/);
+  assert.doesNotMatch(source, /admin\.createUser|admin\.deleteUser/);
+});

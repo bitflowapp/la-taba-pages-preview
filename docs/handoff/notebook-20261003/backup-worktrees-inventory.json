@@ -4,7 +4,8 @@
     "HEAD": "edb10db5a0b92d18fad8e13ece61145a544b98a8",
     "branch": "refs/heads/feat/taba-production-beverages",
     "recovery_branch": "handoff/notebook-20261003-backup/feat/taba-production-beverages",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-engine-xhigh",
@@ -12,14 +13,25 @@
     "branch": "refs/heads/feature/xhigh-functional-engine-hardening",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "feature/xhigh-functional-engine-hardening",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-final-ux-integration",
     "HEAD": "63a7cf3fe34a3e3c27a054d688464cf485bf890e",
     "branch": "refs/heads/integration/taba-final-ux",
     "recovery_branch": "handoff/notebook-20261003-backup/integration/taba-final-ux",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": [
+      {
+        "baseRefName": "main",
+        "headRefName": "recovery/taba-final-ux-63a7cf3",
+        "headRefOid": "63a7cf3fe34a3e3c27a054d688464cf485bf890e",
+        "number": 66,
+        "state": "CLOSED",
+        "url": "https://github.com/bitflowapp/la-taba-pages-preview/pull/66"
+      }
+    ]
   },
   {
     "worktree": "C:/1212/la-taba-integrate-opus-ui-final",
@@ -27,7 +39,17 @@
     "branch": "refs/heads/feature/integrate-opus-ui-final",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "handoff/notebook-20261003-backup/feature/integrate-opus-ui-final",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": [
+      {
+        "baseRefName": "main",
+        "headRefName": "feature/integrate-opus-ui-final",
+        "headRefOid": "962c3ca8d11813671fdf967eade004477a794bf6",
+        "number": 1,
+        "state": "MERGED",
+        "url": "https://github.com/bitflowapp/la-taba-pages-preview/pull/1"
+      }
+    ]
   },
   {
     "worktree": "C:/1212/la-taba-integrate-premium-ui-and-engine",
@@ -35,7 +57,8 @@
     "branch": "refs/heads/feature/integrate-premium-ui-and-engine",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "feature/integrate-premium-ui-and-engine",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-mobile-touch-safety",
@@ -43,7 +66,8 @@
     "branch": "refs/heads/fix/mobile-touch-safety",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "handoff/notebook-20261003-backup/fix/mobile-touch-safety",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-opus-premium",
@@ -51,7 +75,8 @@
     "branch": "refs/heads/feature/opus-premium-real-delivery-ui",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "feature/opus-premium-real-delivery-ui",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-pages-audit-9882600",
@@ -59,7 +84,8 @@
     "detached": true,
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "handoff/notebook-20261003-backup-worktree-98826008",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-pages-beverages-tracking-baseline",
@@ -67,7 +93,8 @@
     "branch": "refs/heads/validation/taba-beverages-tracking-baseline",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "handoff/notebook-20261003-backup/validation/taba-beverages-tracking-baseline",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-pages-beverages-tracking-integration",
@@ -75,7 +102,8 @@
     "branch": "refs/heads/integration/taba-beverages-tracking",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "handoff/notebook-20261003-backup/integration/taba-beverages-tracking",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-pages-fix-v37",
@@ -83,7 +111,8 @@
     "branch": "refs/heads/fix/public-design-v37",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "handoff/notebook-20261003-backup/fix/public-design-v37",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-pages-gps-relay-fix",
@@ -91,7 +120,8 @@
     "branch": "refs/heads/fix/demo-realtime-real-gps",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "handoff/notebook-20261003-backup/fix/demo-realtime-real-gps",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-pages-preview-release",
@@ -99,7 +129,8 @@
     "branch": "refs/heads/release/unit-storefront-preview",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "handoff/notebook-20261003-backup/fix/demo-realtime-real-gps",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-pages-rider-map",
@@ -107,7 +138,8 @@
     "branch": "refs/heads/feat/rider-operational-map",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "handoff/notebook-20261003-backup/feat/rider-operational-map",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-pages-tracking-terminal",
@@ -115,7 +147,8 @@
     "branch": "refs/heads/fix/tracking-terminal-visibility",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "handoff/notebook-20261003-backup/fix/tracking-terminal-visibility",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-pages-unit-catalog-fix",
@@ -123,7 +156,8 @@
     "branch": "refs/heads/fix/unit-storefront-catalog",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "handoff/notebook-20261003-backup/fix/unit-storefront-catalog",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-pages-v39-gps-physical",
@@ -131,7 +165,8 @@
     "branch": "refs/heads/fix/v39-demo-realtime-gps-physical",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "feat/taba-production-beverages",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-pages-v39-overlay-fix",
@@ -139,7 +174,8 @@
     "branch": "refs/heads/fix/v39-mobile-overlay-hit-testing",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "handoff/notebook-20261003-backup/fix/v39-mobile-overlay-hit-testing",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-pages-v39-publish",
@@ -147,7 +183,8 @@
     "branch": "refs/heads/publish/v39-preview",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "handoff/notebook-20261003-backup/publish/v39-preview",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-pages-v39-publish-corrective",
@@ -155,7 +192,8 @@
     "branch": "refs/heads/publish/v39-preview-corrective",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "feat/taba-production-beverages",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-platform-rc",
@@ -163,14 +201,25 @@
     "branch": "refs/heads/release/taba-platform-rc",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "handoff/notebook-20261003-backup/release/taba-platform-rc",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": [
+      {
+        "baseRefName": "main",
+        "headRefName": "release/taba-platform-rc",
+        "headRefOid": "ed722463a44498a9bd5d1e7b4ebdac145b89d5b5",
+        "number": 63,
+        "state": "MERGED",
+        "url": "https://github.com/bitflowapp/la-taba-pages-preview/pull/63"
+      }
+    ]
   },
   {
     "worktree": "C:/1212/la-taba-platform-rc-clean-integration",
     "HEAD": "6ae559744efb394b78a251dbcc05890452f263c9",
     "branch": "refs/heads/integration/taba-platform-rc-clean",
     "recovery_branch": "handoff/notebook-20261003-backup/integration/taba-platform-rc-clean",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-premium-review",
@@ -178,7 +227,8 @@
     "detached": true,
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "feature/premium-delivery-ui-pass",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-qa-wt",
@@ -186,7 +236,8 @@
     "branch": "refs/heads/feature/claude-final-visual-qa-2",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "feature/claude-final-visual-qa-2",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-recovery-audit",
@@ -194,7 +245,8 @@
     "detached": true,
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "handoff/notebook-20261003-backup-worktree-e5d1660c",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-redesign-review",
@@ -202,7 +254,8 @@
     "detached": true,
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "feature/real-delivery-app-redesign",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-redesign-wt",
@@ -210,7 +263,8 @@
     "branch": "refs/heads/feature/real-delivery-app-redesign",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "feature/real-delivery-app-redesign",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-s23-iphone-test",
@@ -218,7 +272,8 @@
     "detached": true,
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "handoff/notebook-20261003-backup-worktree-cb49a324",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-shell-resolution-parent-validation",
@@ -226,14 +281,25 @@
     "branch": "refs/heads/validation/shell-resolution-parent",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "handoff/notebook-20261003-backup/validation/shell-resolution-parent",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-staging-pilot",
     "HEAD": "63a7cf3fe34a3e3c27a054d688464cf485bf890e",
     "branch": "refs/heads/release/taba-staging-pilot",
     "recovery_branch": "handoff/notebook-20261003-backup/integration/taba-final-ux",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": [
+      {
+        "baseRefName": "main",
+        "headRefName": "recovery/taba-final-ux-63a7cf3",
+        "headRefOid": "63a7cf3fe34a3e3c27a054d688464cf485bf890e",
+        "number": 66,
+        "state": "CLOSED",
+        "url": "https://github.com/bitflowapp/la-taba-pages-preview/pull/66"
+      }
+    ]
   },
   {
     "worktree": "C:/1212/la-taba-tracking-certified-extraction",
@@ -241,7 +307,8 @@
     "branch": "refs/heads/fix/tracking-certified-terminal-visibility",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "handoff/notebook-20261003-backup/fix/tracking-certified-terminal-visibility",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-tracking-complement-validation",
@@ -249,7 +316,8 @@
     "branch": "refs/heads/validation/tracking-complement-16eed",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "handoff/notebook-20261003-backup/validation/tracking-complement-16eed",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-tracking-delivery-code-cleanup",
@@ -257,7 +325,8 @@
     "branch": "refs/heads/fix/tracking-terminal-delivery-code-cleanup",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "handoff/notebook-20261003-backup/fix/tracking-terminal-delivery-code-cleanup",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-tracking-expiry-revalidation",
@@ -265,14 +334,33 @@
     "branch": "refs/heads/fix/tracking-terminal-expiry-revalidation",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "handoff/notebook-20261003-backup/fix/tracking-terminal-expiry-revalidation",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-tracking-premium-visual",
     "HEAD": "2daf26c3d06a960b98d88cbbb474ab3fbe8158a6",
     "branch": "refs/heads/feature/tracking-onthe-way-premium-visual",
     "recovery_branch": "handoff/notebook-20261003-backup/feature/tracking-onthe-way-premium-visual",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": [
+      {
+        "baseRefName": "main",
+        "headRefName": "feature/tracking-onthe-way-premium-visual",
+        "headRefOid": "9a99698ddbe7ef5de10c779699ca58e74f3b379a",
+        "number": 65,
+        "state": "CLOSED",
+        "url": "https://github.com/bitflowapp/la-taba-pages-preview/pull/65"
+      },
+      {
+        "baseRefName": "recovery/taba-final-ux-63a7cf3",
+        "headRefName": "feature/tracking-onthe-way-premium-visual",
+        "headRefOid": "1c85881db65266f9e62bba68517e5bddff869439",
+        "number": 64,
+        "state": "MERGED",
+        "url": "https://github.com/bitflowapp/la-taba-pages-preview/pull/64"
+      }
+    ]
   },
   {
     "worktree": "C:/1212/la-taba-tracking-terminal-shell-resolution",
@@ -280,7 +368,8 @@
     "branch": "refs/heads/fix/tracking-terminal-shell-resolution",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "handoff/notebook-20261003-backup/fix/tracking-terminal-shell-resolution",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-ux-ultra-showcase",
@@ -288,7 +377,8 @@
     "branch": "refs/heads/feat/taba-ux-ultra-showcase",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "handoff/notebook-20261003-backup/feat/taba-ux-ultra-showcase",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "C:/1212/la-taba-xhigh-ui",
@@ -296,7 +386,8 @@
     "branch": "refs/heads/feature/xhigh-premium-ui-refinement",
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "feature/xhigh-premium-ui-refinement",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "D:/work/tmp/la-taba-approved-beverages-validation4-93c6acc1",
@@ -304,7 +395,8 @@
     "detached": true,
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "handoff/notebook-20261003-backup-worktree-089d4cf7",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   },
   {
     "worktree": "D:/work/tmp/la-taba-beverage-commit-2a69444",
@@ -312,6 +404,7 @@
     "detached": true,
     "prunable": "gitdir file points to non-existent location",
     "recovery_branch": "handoff/notebook-20261003-backup/validation/taba-beverages-tracking-baseline",
-    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar."
+    "state": "Registro antiguo relocalizado; checkout no utilizable aquí o pertenece ahora a otro depósito. No borrar.",
+    "associated_prs": []
   }
 ]

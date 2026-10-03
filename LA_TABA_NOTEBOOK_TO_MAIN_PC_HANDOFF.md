@@ -368,3 +368,11 @@ Si la rama backend de origin ya avanzó al retomar, el SHA del snapshot sigue si
 | handoff/notebook-20261003-backup-worktree-cb49a324 | cb49a32483475492efc80602b5914e2fbc76737e |
 | handoff/notebook-20261003-backup-worktree-98826008 | 988260081076078b8621d3573df3bc0827450716 |
 | handoff/notebook-20261003-backup-worktree-089d4cf7 | 089d4cf7c63d4528ca9648a3309f35cd5756ea5a |
+
+## Evidencia de recuperación y PRs por worktree
+
+`final-recovery-verification.json` registra la recuperación desde clones creados sólo por GitHub: 171 referencias web y 33 de Rider con SHA idéntico; checkout completo de backend, frontend y Rider; 1.082 archivos externos/ZIPs verificados en sus árboles y 925 blobs únicos descargados de GitHub y verificados por contenido. El documento canónico también coincidió por bytes. Los 238 archivos útiles de worktrees y los 997 archivos externos sin redacción seguían idénticos al terminar.
+
+`associated_prs` en los inventarios de worktrees vincula todos los PR encontrados por branch o HEAD. Un PR cerrado con otro HEAD no certifica el snapshot histórico: se registran branch, SHA, base y estado por separado. No se creó ni modificó ningún PR en esta tarea.
+
+Clasificación de `uncommitted-classification.csv`: **A** código del proyecto; **B** tests; **C** documentación/evidencia; **D** temporal/regenerable; **E** configuración/secretos excluidos; **F** artefactos grandes; **G** trabajo histórico/incompleto para revisión. Las combinaciones indican un archivo de proyecto cuyo estado funcional todavía debe revisarse.

@@ -1,0 +1,20 @@
+{
+  "web_refs": 171,
+  "rider_refs": 33,
+  "all_sha_equal": true,
+  "document_bytes_equal": true,
+  "failed": [],
+  "backend_checkout_head": "6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a",
+  "frontend_checkout_head": "737371ba82cae6e309cff04c97984443c52c8def",
+  "rider_checkout_head": "434c4d53e021579171398cfd10c3b6439730a22c",
+  "line_endings": "Notebook document normalized to canonical Git blob",
+  "external_files_verified_in_fresh_remote_trees": 1082,
+  "external_blobs_downloaded_from_github": 925,
+  "external_bytes_verified": 7405062,
+  "external_path_failures": [],
+  "external_blob_failures": [],
+  "document_commit_verified_at_check": "5a271273952918c2e0f9a2a62d50999c47b5f106",
+  "external_source_files_still_identical": 997,
+  "worktree_useful_files_still_identical": 238,
+  "scope": "Corte de verificación anterior a este commit de documentación; el HEAD propio se identifica por la rama."
+}

@@ -100,7 +100,7 @@ async function preflight(ctx) {
   // Qué se afirma de la identidad del entorno lo dice el destino: en Staging, el proyecto, las claves, el rol
   // del observador y un libro de migraciones que el repo conoce; en local y en el stack, sus propios hechos.
   const { ledger, facts } = await target.assertIdentity({ check: (name, pass, observed, expected, options) => C(P, name, pass, observed, expected, options),
-    project, db, repoLedger, keys: ctx.env.keys, observe: ctx.env.observe });
+    skip: (name, reason) => ctx.rec.skipOnTarget(P, name, reason), project, db, repoLedger, keys: ctx.env.keys, observe: ctx.env.observe });
   ctx.caps = normalizeCapabilities(db.capabilities);
   ctx.environmentFacts = { ...(facts || {}), cron: db.cron };
   const snapshot = await readTenant(ctx);

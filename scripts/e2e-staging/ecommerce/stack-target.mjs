@@ -188,16 +188,24 @@ export async function createStackTarget({ log = () => {}, env = process.env } = 
     try { body = text ? JSON.parse(text) : null; } catch { body = null; }
     return { status: res.status, body, server: res.headers.get('server'), text: text.slice(0, 200) };
   };
-  async function assertIdentity({ check, project: seen, db: database, repoLedger, keys, observe }) {
+  async function assertIdentity({ check, skip, project: seen, db: database, repoLedger, keys, observe }) {
     log('stack · identidad: claves, puerta de entrada, PostgREST, GoTrue, base, privilegios, migraciones, pg_cron');
     check('STACK_INPUTS_ARE_LOOPBACK_AND_THE_KEYS_ARE_THE_STACKS_OWN', seen?.name === STACK_LABEL && isLoopbackHost(inputs.apiHost) && isLoopbackHost(inputs.dbHost)
       && keys.publishable === inputs.anonKey && keys.secret === inputs.serviceKey && FORBIDDEN_REFS.every((ref) => !inputs.apiUrl.includes(ref)),
     { api: inputs.apiUrl, database: `${inputs.dbHost}:${inputs.dbPort}/${inputs.dbName}`, keyIssuer: inputs.keyIssuer, anonRole: 'anon', serviceRole: 'service_role' });
 
-    // La puerta de entrada exige la clave del proyecto: sin `apikey` la request no llega a PostgREST.
+    // La puerta de entrada de la plataforma exige la clave del proyecto: sin `apikey` la request no llega a
+    // PostgREST. El gateway del stack local de la CLI 2.101 NO la exige: contesta 200 en /rest/v1/ sin clave
+    // (run 37123838754). Es configuración de la plataforma, no del backend, y este destino no la puede
+    // certificar: queda como no probada, con lo observado. Lo que anon ve sin JWT lo prueban rls y privacy.
     const withoutKey = await getJson('/rest/v1/');
-    check('STACK_GATEWAY_REFUSES_A_REQUEST_WITHOUT_THE_PROJECT_KEY', withoutKey.status === 401, { status: withoutKey.status, body: withoutKey.text },
-      'HTTP 401 antes de PostgREST');
+    if (withoutKey.status === 200 && typeof skip === 'function') {
+      skip('STACK_GATEWAY_REFUSES_A_REQUEST_WITHOUT_THE_PROJECT_KEY',
+        'el gateway del stack local no exige la clave del proyecto (observado: HTTP 200 en /rest/v1/ sin apikey); en la plataforma alojada sí la exige');
+    } else {
+      check('STACK_GATEWAY_REFUSES_A_REQUEST_WITHOUT_THE_PROJECT_KEY', withoutKey.status === 401, { status: withoutKey.status, body: withoutKey.text },
+        'HTTP 401 antes de PostgREST');
+    }
 
     // La versión sale de la raíz OpenAPI, pedida con la clave de servicio (la puerta de entrada de una plataforma
     // nueva puede no dársela a anon). Recién levantado, con el catálogo frío, la primera puede vencer (57014 o un

@@ -3,6 +3,7 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { MARKER, excludedPatterns, wrapBody } from '../scripts/db/wrap-api-boundary.mjs';
 import { REFUSAL_STATUS } from '../scripts/e2e-staging/ecommerce/http.mjs';
+import { CASES, fixtureSql } from '../scripts/db/check-api-boundary.mjs';
 
 const read = (relative) => readFileSync(new URL(relative, import.meta.url), 'utf8');
 const contract = JSON.parse(read('../docs/ecommerce-hardening/http-contract.json'));
@@ -76,6 +77,16 @@ test('20261002091000 only adds an errcode to client RAISE statements that had no
   }
   assert.equal(added, 46);
   assert.doesNotMatch(forward.replace(/\$function\$[\s\S]*?\$function\$/g, ''), /\b(grant|revoke)\b/i);
+});
+
+test('the database-level boundary check reuses the pgTAP fixture and covers both codes', () => {
+  const fixture = fixtureSql();
+  assert.match(fixture, /^-- ══ 2 · FIXTURE/);
+  assert.match(fixture, /insert into public\.businesses/);
+  assert.doesNotMatch(fixture, /select plan\(|finish\(\)|rollback;/, 'only the fixture, not the assertions');
+  assert.ok(CASES.length >= 10);
+  assert.deepEqual([...new Set(CASES.map((entry) => entry[3]))].sort(), ['55000', 'P0002']);
+  assert.ok(CASES.some(([label]) => /trigger/.test(label)), 'the currency trigger is checked as a top-level UPDATE');
 });
 
 test('the certifier answers the policy statuses for a refusal by state and for a missing resource', () => {

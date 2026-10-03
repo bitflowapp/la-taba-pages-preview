@@ -112,5 +112,10 @@ expande y siguen contestando 500 si su función interna levanta 55000 / P0002. N
   `node scripts/db/wrap-api-boundary.mjs --database <base local con la migración nueva>`; reconoce lo ya
   envuelto por el marcador y envuelve lo que falte. Si no, el pgTAP `http_error_contract_test.sql` falla.
 - Una función nueva que levanta 55000 o P0002 y que la API expone entra por la misma regla.
+- La conversión misma (PGRST con el cuerpo original y el estado de la política) no se puede ver desde pgTAP:
+  todo llamador de pgTAP es un marco PL/pgSQL. La comprueba `node scripts/db/check-api-boundary.mjs --database
+  <base local>`, que hace cada llamada como sentencia de primer nivel (como PostgREST), con y sin
+  `request.method`, y también desde un llamador PL/pgSQL (sobre la rama: `API_BOUNDARY_CHECK: PASS 11/11`;
+  sobre la base sin la migración: `FAIL 1/11`, sólo pasa el camino feliz).
 - Reversión: `docs/migrations/rollback/20261002090000_api_boundary_answers_refusals_as_4xx.rollback.sql`
   (devuelve los 109 cuerpos anteriores exactos; se niega si otra migración redefinió una función envuelta).

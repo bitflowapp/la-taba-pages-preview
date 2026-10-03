@@ -55,7 +55,9 @@ apuntadas a ESTE worktree; bases sólo `taba_wph_*`; PostgREST propio en `127.0.
     `tests/ecommerce-certifier-cli.test.mjs` 10/10, `tests/ecommerce-certifier-load.test.mjs` 8/8,
     `tests/mercadopago-edge-hardening.test.mjs` 13/13 (suma del total canónico y del mensaje).
 
-11. Corrida canónica con residuo comprometido (`DIRTY=1`: intake-race + stock-race antes de la lista):
+11. Corridas finales sobre HEAD (base nueva, 208 migraciones): limpia y con residuo, las dos
+    `FILES=78 PASS=78 NOT_PASS=0 PLANNED_SUM=5938 TOTAL_CONSISTENT`.
+    Antes, corrida canónica con residuo comprometido (`DIRTY=1`: intake-race + stock-race antes de la lista):
     `FILES=78 PASS=78 NOT_PASS=0 PLANNED_SUM=5938 TOTAL_CONSISTENT`.
 12. Usos de funciones envueltas dentro de otras funciones (scratch `callers.mjs`): 22 lugares; ninguno evalúa una
     envuelta por fila (los 3 marcados son una llamada en FROM que corre una vez y dos textos de comandos de cron).
@@ -67,7 +69,12 @@ pgTAP llama todo desde una función PL/pgSQL (`throws_ok` hace EXECUTE). Con `re
 envuelta no es el marco más externo y re-lanza el original (es el comportamiento pedido para un llamador anidado).
 Por eso el pgTAP afirma: estructura (marcador, manejador exacto, regla directa, exclusiones, uso por fila),
 comportamiento anidado y sin request.method (original letra por letra, con detalle y pista) y los manejadores
-internos. La conversión a PGRST → 409/404 se prueba por HTTP (sección siguiente) y la prueba el certificador en CI.
+internos. La conversión a PGRST → 409/404 se prueba por HTTP (sección siguiente), la prueba el certificador en CI y
+la comprueba `scripts/db/check-api-boundary.mjs` (versionado): cada llamada como sentencia de primer nivel dentro de
+un savepoint, con y sin request.method y desde un bloque DO, sobre el fixture del pgTAP en una transacción que se
+deshace. `node scripts/db/check-api-boundary.mjs --database postgres://postgres@127.0.0.1:55521/taba_wph_canon` →
+`API_BOUNDARY_CHECK: PASS 11/11` (PGRST con el cuerpo original y 409/404; sin request.method y desde DO, el original);
+sobre `taba_wph_base` (sin la migración) → `FAIL 1/11` (sólo el camino feliz), como debe.
 
 ### Prueba HTTP (PostgREST 14.5 real, antes y después, mismo pedido)
 

@@ -160,6 +160,17 @@ después p50 7,48 · p95 11,72 · media 8,55. **+0,64 ms p50, +0,94 ms media** (
   Quedan en 500, por dueño: Caja/POS, fiscal, agente de impresión y los seis cobros heredados (40 entradas), y las dos
   entradas SQL mp_consume_oauth / mp_claim_refresh. El cliente (classifyRpcError y la cola del Panel) ya trata un 409
   como definitivo: no hace falta tocar js/.» C-2 (P0002 → 500) queda cerrado por la misma migración.
+- Orden de reversión: primero 20261002091000 y después 20261002090000 (la guarda de 090000 se niega mientras 091000
+  está aplicada; medido). Sumarlas a la cadena de reversiones de CP.
+- `docs/migrations/checks/20261002_ecommerce_hardening_preflight.sql` cubre hasta 20261002063000: no lo toqué.
+- Despliegue: la guarda de 090000 (y la de 091000) compara el cuerpo vivo con el del que se generó. Si Staging/CP
+  tiene una de las 109 funciones parchada a mano, la migración se niega con `ROLLOUT_BLOCKED: <firma>` en vez de
+  pisarla: regenerar con el script contra una base con esa definición (o borrar el bloque `$guard$` si se prefiere la
+  convención del resto de la rama, que no guarda la ida). En CI los cuerpos son los mismos que acá: el bootstrap y
+  el ciclo A1-A4 aplican los mismos archivos de migración y `supabase/contracts/a1_a4_contract_v5.sql` no redefine
+  funciones de public (revisado); la corrida canónica local con `RETIRE_LEGACY=1` aplica 090000 sin bloqueo.
+- 20261002091000 es un commit aparte (`fix(api): ...`): se puede soltar sin tocar 090000; si se suelta, el trinquete
+  del pgTAP (aserción 9) vuelve a la versión de bfd4cd36 (las cinco funciones conocidas).
 
 ## Decisiones
 
@@ -173,6 +184,27 @@ después p50 7,48 · p95 11,72 · media 8,55. **+0,64 ms p50, +0,94 ms media** (
   service_role tiene EXECUTE por privilegios por defecto sobre más funciones; esas funciones auxiliares no son
   superficie de la API y no se envuelven (seguirían contestando 500 si alguien las llamara directo con la clave de servicio).
 
-## Próximo
+## Otras verificaciones
 
-Ver la tabla de estado.
+- Las 76 RPC que llaman js/, apps/ y supabase/functions (`.rpc('...')`): todas son entradas en la base tipo CI;
+  41 están envueltas; 4 llegan a 55000/P0002 y están excluidas por dueño (`authorize_fiscal_artifact_access`,
+  `checkout_pos_sale`, `request_fiscal_document`, `request_order_invoice`: siguen en 500); 2 son SQL
+  (`mp_claim_refresh`, `mp_consume_oauth`); el resto no llega a esos códigos.
+- Generador sobre la base con las 208 migraciones (`taba_wph_canon`): `selected 109, already_wrapped 109, to_wrap 0,
+  refusals 0, per_row 0` (excluidas que llegan: 41, porque `RETIRE_LEGACY` deja el stub retirado de
+  `get_mercadopago_payment_authority` levantando 55000).
+- Node: las 56 pruebas que leen `supabase/migrations` (719 tests) y las 7 que leen pgTAP/docs/runner/certificador
+  (115 tests): todas pasan. No corrí el `npm test` completo (25 min, máquina compartida).
+
+## Cómo retomar
+
+Herramientas (no versionadas) en el scratch de esta sesión (`.../a47683f6-.../scratchpad/wph/`): `localdb.mjs` y
+`repo-run.mjs` son copias de las del lead (`<scratch del lead>/local/localdb.mjs`, `integrate/repo-run.mjs`) con el
+`createRequire` y `REPO` apuntando a este worktree y las salidas en el scratch propio; `rest-up.mjs` levanta
+`postgrest.exe` (14.5) con el PATH de PG17; `http-proof*.mjs`, `perf.mjs`, `gen-091000.mjs`, `noerrcode.mjs`,
+`callers.mjs`, `acl-diff.mjs`. Para rehacer la canónica: `TABA_DB=taba_wph_canon RETIRE_LEGACY=1 node repo-run.mjs`
+(mi copia). Bases propias: `taba_wph_*` (base, m, rb, r2, canon, dirty, http, http2, before, probe). Nada quedó
+corriendo (PostgREST detenidos).
+
+Pendiente: nada de lo pedido. Opcional: extender el preflight a 090000/091000 y retirar el check
+`KNOWN_API_01_...` del certificador (ambos del lead).

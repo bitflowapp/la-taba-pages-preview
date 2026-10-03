@@ -6,10 +6,9 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
 ## Para retomar (leer primero)
 
 - Informe final: `LA_TABA_AUTONOMOUS_BACKEND_REPORT.md` (estado, hallazgos, OWNER_APPROVAL_REQUIRED con pasos exactos, veredictos).
-- Actualizado 2026-10-03 18:22 (-03:00). Último commit de código: `3573140a`; después, tres de pruebas de regresión
-  (`2018ea51`, `4a0ce219`, `3a080d44`) y el de documentación que trae este archivo. Tarea en curso: cerrar la cuarta revisión
-  de 20261003090000 (revisor, gate local y CI). Próximo paso: atender lo que encuentre la cuarta pasada y dejar el CI del HEAD
-  final en verde.
+- Actualizado 2026-10-03 20:20 (-03:00). Último commit de código: `7d737cf4` (quinta revisión de 20261003090000); el último
+  de la rama es el de documentación que trae este archivo. Tarea en curso: el CI de ese HEAD y una quinta pasada del
+  revisor. Próximo paso: atender lo que encuentre y dejar el CI del HEAD final en verde.
 - Rama `hardening/taba-ecommerce-production`, todo pusheado. **PR #133 en borrador** contra `main` (apilado sobre #130): existe
   para que el CI completo corra en cada push, porque desde la sesión en la nube el despacho manual de workflows da 403.
   No se mergea sin el dueño. Nada aplicado en Staging (158) ni en CP (157); la rama tiene 211 migraciones (157 de `main` + 54).
@@ -19,10 +18,10 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
   `scripts/production-health-check.mjs --target controlled-production` (sólo lectura, necesitan un token de la Management API).
 - La sesión en la nube no tiene token de Supabase ni de Mercado Pago: no leyó Staging ni CP. Lo último leído en vivo es de la
   sesión de la mañana (11:20–11:25).
-- En curso al escribir esto: el CI del HEAD final en el PR #133 y una cuarta pasada del revisor sobre `6fd0b6f4..3573140a`
-  (la cuarta revisión de 20261003090000 y el cambio de 20261003092000; su resultado queda en la bitácora y en el informe).
+- En curso al escribir esto: el CI del HEAD final en el PR #133 y una quinta pasada del revisor sobre `7d737cf4` (su resultado
+  queda en la bitácora y en el informe).
 
-## Sesión 2 — 2026-10-03 14:47–18:xx (-03:00), Claude Cloud
+## Sesión 2 — 2026-10-03 14:47–20:xx (-03:00), Claude Cloud
 
 ### Checkpoint inicial (verificado, no declarado)
 
@@ -138,6 +137,25 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
   corrimiento sobreviven); **`3a080d44`** en ese ciclo el Panel ve el pedido de Checkout Pro una vez y el checkout pagado deja
   de figurar como pendiente. pgTAP canónico 6.488. Gate canónico local completo **PASS** sobre `2018ea51` (6.470); el de
   `3a080d44` corría al escribir esto. Del mapa de TOOL-04 sólo quedan sin portar las métricas del centro de operación (P3).
+- 18:35 — gate canónico local completo **PASS** sobre `3a080d44` (pgTAP 6.488, carreras con 0 deadlocks, restauración).
+- 19:20 — **cuarta revisión adversarial** sobre `6812143a`/`3573140a`: ningún camino por el que un estado incierto de dinero se
+  cierre o desaparezca en silencio. **PAY-PROBE-09 (P2, introducido por la cuarta revisión)**: el prefiltro «otro pago sin resolver
+  asentado» era un IN dentro de un OR y el planificador lo resolvía leyendo todos los asientos sin resultado final de la plataforma,
+  por negocio y por minuto (150.000 de otro negocio: reconciliación 110-185 ms para un negocio chico; reproducido: 116-150 ms). P3:
+  el cupo único del barrido dejaba a un checkout nuevo detrás de 200 vencidos (cuatro corridas) y 20.000 rechazos guardados
+  pasaban por la función del ritmo cada minuto (~500 ms); y el contracargo tardío de un negocio cerrado y dormido (el residual ya
+  documentado de DIAG-14). Sin hallazgo: la evidencia de una alerta resuelta nunca se refresca, los NULL del par, un pago final →
+  no final → final, el prefiltro contra la regla del último evento, las reversiones y las cinco mutaciones de la cuarta revisión.
+- 20:15 — **`7d737cf4`** (quinta revisión de 20261003090000): el pago guardado final con otro sin resolver entra si su alerta sigue
+  viva o si ese otro pago se asentó en los últimos 30 días, leído por un índice parcial nuevo por fecha (con los asientos
+  repartidos en el año: hallazgos 5-7 ms, reconciliación 10-20 ms; el peor caso, los 150.000 dentro del mes, 40-45 y 61-88 ms).
+  Una primera versión con 7 días se descartó en una revisión propia antes del push: junto con 20261003092000 (un negocio cerrado
+  y sin checkouts en 30 días no se evalúa) dejaba un hueco nuevo; con 30 días coincide con el residual ya documentado. El barrido
+  sirve primero lo de las últimas 48 horas con el límite entero y lo vencido con un cupo propio de un quinto, con el ritmo
+  diario contado por índices antes de la función (20.000 rechazados vencidos juntos: el checkout nuevo en la primera
+  corrida, 79-91 ms, ninguna función mil veces). Prueba 114 (las tres del cupo fallan con `6812143a`); 27 mutaciones, 26
+  detectadas y una equivalente; reversión exacta. El gate canónico local completo sobre este árbol corría al escribir esto (su
+  resultado, en la entrada siguiente). Registro: PAY-PROBE-09 (P2) corregido; P2 45 corregidos y 20 abiertos.
 
 ## Sesión 1 — 2026-10-03 08:22–13:2x (-03:00), PC de trabajo (histórico)
 

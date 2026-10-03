@@ -1,0 +1,1047 @@
+{
+  "disks": [
+    {
+      "root": "C:\\",
+      "repos": [
+        "C:\\1212\\la-taba-arca-homologation-readiness",
+        "C:\\1212\\la-taba-business-fiscal-closure",
+        "C:\\1212\\la-taba-business-intake-hardening",
+        "C:\\1212\\la-taba-business-operations-final",
+        "C:\\1212\\la-taba-business-windows-scanner-fiscal",
+        "C:\\1212\\la-taba-catalog-checkout-premium",
+        "C:\\1212\\la-taba-catalog-expansion",
+        "C:\\1212\\la-taba-commerce-v3",
+        "C:\\1212\\la-taba-e2e-ci-fix",
+        "C:\\1212\\la-taba-final-ux-integration",
+        "C:\\1212\\la-taba-final-ux-recovered",
+        "C:\\1212\\la-taba-mercadopago-oauth",
+        "C:\\1212\\la-taba-mostador-patagonico",
+        "C:\\1212\\la-taba-platform-rc-clean-integration",
+        "C:\\1212\\la-taba-premium-catalog-launch",
+        "C:\\1212\\la-taba-production-rc1",
+        "C:\\1212\\la-taba-promos-packshots",
+        "C:\\1212\\la-taba-real-orders-staging",
+        "C:\\1212\\la-taba-real-pilot-staging",
+        "C:\\1212\\la-taba-redesign-rojo",
+        "C:\\1212\\la-taba-rider-map-contracts",
+        "C:\\1212\\la-taba-rider-server-contracts",
+        "C:\\1212\\la-taba-rider-staging-certification-backend",
+        "C:\\1212\\la-taba-staging-pilot",
+        "C:\\1212\\la-taba-tracking-premium-visual",
+        "C:\\1212\\la-taba-ui-polish-brand",
+        "C:\\1212\\la-taba2-argentina-ecommerce",
+        "C:\\1212\\la-taba2-beverage-assets-v2",
+        "C:\\1212\\la-taba2-beverage-catalog-home",
+        "C:\\1212\\la-taba2-catalog-finalization",
+        "C:\\1212\\la-taba2-commercial-catalog-authority",
+        "C:\\1212\\la-taba2-mercadopago-checkout",
+        "C:\\1212\\la-taba2-mobile-brand-refresh",
+        "C:\\1212\\la-taba2-mobile-design-integration",
+        "C:\\1212\\la-taba2-mobile-layout-hardening",
+        "C:\\1212\\la-taba2-storefront-motion",
+        "C:\\1212\\taba-astra-cli-2.101.0",
+        "C:\\1212\\taba-astra-vault-source",
+        "C:\\1212\\luna-catalogo-demo",
+        "C:\\bitflow-final-audit-6ba-20260905\\candidate",
+        "C:\\bitflow-final-audit-6ba-20260905\\previous",
+        "C:\\bitflow-second-audit-2dc-20260906\\candidate",
+        "C:\\t\\apex-marcelino",
+        "C:\\tmp\\caja-clara-integrate-commercial-ready",
+        "C:\\Users\\marco\\.codex\\.tmp\\git-1Gd799",
+        "C:\\Users\\marco\\.codex\\.tmp\\git-AUakbD",
+        "C:\\Users\\marco\\.codex\\.tmp\\git-jofF4w",
+        "C:\\Users\\marco\\.codex\\.tmp\\marketplaces\\mercadopago-claude-marketplace",
+        "C:\\Users\\marco\\.codex\\.tmp\\plugins",
+        "C:\\Users\\marco\\.codex_plus_jariel\\vendor_imports\\skills",
+        "C:\\Users\\marco\\.git_backup_HOME_ACCIDENTAL",
+        "C:\\Users\\marco\\.grok\\marketplace-cache\\783232b622f8182e",
+        "C:\\Users\\marco\\.grok\\marketplace-cache\\c6b314fa671daf8c",
+        "C:\\Users\\marco\\.openclaw-backups\\openclaw-20260224-134813\\workspace",
+        "C:\\Users\\marco\\bitacora_web_work",
+        "C:\\Users\\marco\\Desktop\\_origin_privacy_check",
+        "C:\\Users\\marco\\Desktop\\_verify_after2",
+        "C:\\Users\\marco\\Desktop\\_verify_after_delete",
+        "C:\\Users\\marco\\Desktop\\bitflow-inspecciones",
+        "C:\\Users\\marco\\Desktop\\estela-local-router",
+        "C:\\Users\\marco\\Desktop\\estela-local-router-human-review-v10",
+        "C:\\Users\\marco\\Desktop\\estela-local-router-qwen-calibration-v2",
+        "C:\\Users\\marco\\Desktop\\estela-local-router-qwen-calibration-v5",
+        "C:\\Users\\marco\\Desktop\\estela-local-router-qwen-calibration-v6",
+        "C:\\Users\\marco\\Desktop\\estela-local-router-qwen-calibration-v7",
+        "C:\\Users\\marco\\Desktop\\estela-local-router-qwen-candidate-v8",
+        "C:\\Users\\marco\\Desktop\\estela-local-router-qwen-candidate-v9",
+        "C:\\Users\\marco\\Desktop\\estela-stt-lab",
+        "C:\\Users\\marco\\Desktop\\estela-v2",
+        "C:\\Users\\marco\\Desktop\\estela-v2-codex-stt",
+        "C:\\Users\\marco\\Desktop\\estela-v2-integration",
+        "C:\\Users\\marco\\Desktop\\estela-v2-mic-arbiter",
+        "C:\\Users\\marco\\Desktop\\estela-v2-send",
+        "C:\\Users\\marco\\Desktop\\estela-v2-vosk-production",
+        "C:\\Users\\marco\\Desktop\\estela-v2-vosk-readiness",
+        "C:\\Users\\marco\\dev\\la-taba-business-panel-automation",
+        "C:\\Users\\marco\\dev\\la-taba-pages-preview",
+        "C:\\Users\\marco\\dev\\bitflow_p18",
+        "C:\\Users\\marco\\dev\\bitflow_p18_publish_9ba070f",
+        "C:\\Users\\marco\\dev\\bitflow_p18_sheets_screen_apple_b2b",
+        "C:\\Users\\marco\\dev\\bitflow_pr50_clean",
+        "C:\\Users\\marco\\dev\\cauce",
+        "C:\\Users\\marco\\dev\\cauce-astra-baseline",
+        "C:\\Users\\marco\\dev\\hamburgueseria-neuquen",
+        "C:\\Users\\marco\\Documents\\Estela",
+        "C:\\Users\\marco\\Documents\\New project\\outputs\\taba-handoff-20261003\\recovery-backend-files",
+        "C:\\Users\\marco\\Documents\\New project\\outputs\\taba-handoff-20261003\\recovery-documentation-files",
+        "C:\\Users\\marco\\Documents\\New project\\outputs\\taba-handoff-20261003\\recovery-frontend-files",
+        "C:\\Users\\marco\\Documents\\New project\\outputs\\taba-handoff-20261003\\recovery-rider",
+        "C:\\Users\\marco\\Documents\\New project\\outputs\\taba-handoff-20261003\\recovery-rider-files",
+        "C:\\Users\\marco\\Documents\\New project\\outputs\\taba-handoff-20261003\\recovery-web",
+        "C:\\Users\\marco\\Documents\\projects\\marco-sofi-6-meses-game",
+        "C:\\Users\\marco\\la-casa-que-no-existe",
+        "C:\\Users\\marco\\la-casa-que-no-existe-pc",
+        "C:\\Users\\marco\\luna-apps-systems-landing",
+        "C:\\Users\\marco\\luna-ing",
+        "C:\\Users\\marco\\luna-proyectos-web",
+        "C:\\Users\\marco\\matias-barber-demo\\artifacts\\publication",
+        "C:\\Users\\marco\\mission-control\\.mission-control-fixtures\\identity-empty",
+        "C:\\Users\\marco\\winlab_codex_product_pack",
+        "C:\\Users\\marco\\worktrees\\taba2-production-candidate",
+        "C:\\Work\\tmp\\bitflow_clean_deploy_verify"
+      ],
+      "errors": [
+        "[WinError 5] Acceso denegado: 'C:\\\\PerfLogs'",
+        "[WinError 5] Acceso denegado: 'C:\\\\Users\\\\CodexSandboxOffline'"
+      ]
+    },
+    {
+      "root": "D:\\",
+      "repos": [
+        "D:\\1212\\la-taba-business-fiscal-homologation-gate-fix",
+        "D:\\1212\\la-taba-business-packing-fixture-fix",
+        "D:\\1212\\la-taba-business-synthetic-certification",
+        "D:\\1212\\la-taba-business-synthetic-recertification",
+        "D:\\1212\\la-taba-business-synthetic-recertification-final",
+        "D:\\1212\\la-taba-commerce-v3",
+        "D:\\1212\\la-taba-e2e-test-staging-certification",
+        "D:\\1212\\la-taba-e2e-test-staging-rc",
+        "D:\\1212\\la-taba-migration-fetch-audit",
+        "D:\\1212\\la-taba-production-rc1-business-certification",
+        "D:\\1212\\la-taba-production-rc1-business-integration",
+        "D:\\1212\\la-taba-rider-android",
+        "D:\\1212\\la-taba-rider-live-contracts",
+        "D:\\1212\\la-taba-rider-pilot-readiness",
+        "D:\\1212\\la-taba-rider-production-rc1",
+        "D:\\1212\\la-taba-rider-smoke-automation",
+        "D:\\1212\\la-taba2-arca-fiscal-automation",
+        "D:\\1212\\la-taba2-business-panel-hardening",
+        "D:\\1212\\la-taba2-ci-release-stability",
+        "D:\\1212\\la-taba2-commerce-growth",
+        "D:\\1212\\la-taba2-commercial-activation",
+        "D:\\1212\\la-taba2-commercial-p1-closure",
+        "D:\\1212\\la-taba2-commercial-shelf-stage1",
+        "D:\\1212\\la-taba2-commercial-skills-pack",
+        "D:\\1212\\la-taba2-commercial-storefront",
+        "D:\\1212\\la-taba2-commercial-stories",
+        "D:\\1212\\la-taba2-fable-visual-polish",
+        "D:\\1212\\la-taba2-final-launch-ux-perf",
+        "D:\\1212\\la-taba2-first-physical-e2e",
+        "D:\\1212\\la-taba2-gondola-neuquen",
+        "D:\\1212\\la-taba2-gondola-retail-final",
+        "D:\\1212\\la-taba2-launch-ux-polish",
+        "D:\\1212\\la-taba2-mercadopago-production-ready",
+        "D:\\1212\\la-taba2-mercadopago-staging-rc1",
+        "D:\\1212\\la-taba2-payment-recovery-p0",
+        "D:\\1212\\la-taba2-pilot-integration",
+        "D:\\1212\\la-taba2-pilot-ops",
+        "D:\\1212\\la-taba2-pilot-rc",
+        "D:\\1212\\la-taba2-real-orders-ops",
+        "D:\\1212\\la-taba2-retail-catalog-normalization",
+        "D:\\1212\\la-taba2-retail-unit-publication",
+        "D:\\1212\\la-taba2-rider-first-physical-e2e",
+        "D:\\1212\\la-taba2-rider-multi-order-backend",
+        "D:\\1212\\la-taba2-tracking-visual-polish",
+        "D:\\1212\\la-taba2-unit-catalog-normalization",
+        "D:\\1212\\la-taba2-weekend-launch",
+        "D:\\1212\\la-taba2-whatsapp-commerce",
+        "D:\\1212\\worktrees\\taba2-automated-rider-dispatch",
+        "D:\\1212\\worktrees\\taba2-business-commercial-mobile",
+        "D:\\1212\\worktrees\\taba2-business-operations-delivery",
+        "D:\\1212\\worktrees\\taba2-catalog-image-pipeline",
+        "D:\\1212\\worktrees\\taba2-catalog-premium",
+        "D:\\1212\\worktrees\\taba2-commercial-candidate",
+        "D:\\1212\\worktrees\\taba2-commercial-hardening",
+        "D:\\1212\\worktrees\\taba2-commercial-production-hardening",
+        "D:\\1212\\worktrees\\taba2-customer-experience",
+        "D:\\1212\\worktrees\\taba2-customer-overnight-rc",
+        "D:\\1212\\worktrees\\taba2-customer-postdemo",
+        "D:\\1212\\worktrees\\taba2-digital-commerce",
+        "D:\\1212\\worktrees\\taba2-identity-session-biometrics",
+        "D:\\1212\\worktrees\\taba2-live-schema-reconciliation",
+        "D:\\1212\\worktrees\\taba2-live-tracking-ux",
+        "D:\\1212\\worktrees\\taba2-location-truth-rider",
+        "D:\\1212\\worktrees\\taba2-location-truth-web",
+        "D:\\1212\\worktrees\\taba2-map-marker-semantics",
+        "D:\\1212\\worktrees\\taba2-operational-frontend",
+        "D:\\1212\\worktrees\\taba2-operational-resilience",
+        "D:\\1212\\worktrees\\taba2-order-intake-dispatch",
+        "D:\\1212\\worktrees\\taba2-order-recovery-panel",
+        "D:\\1212\\worktrees\\taba2-pilot-rc1",
+        "D:\\1212\\worktrees\\taba2-pilot-rc2-web",
+        "D:\\1212\\worktrees\\taba2-production-auth-go-live",
+        "D:\\1212\\worktrees\\taba2-production-backend-remediation",
+        "D:\\1212\\worktrees\\taba2-production-blockers",
+        "D:\\1212\\worktrees\\taba2-production-launch-plan",
+        "D:\\1212\\worktrees\\taba2-production-rc2",
+        "D:\\1212\\worktrees\\taba2-production-supabase-provisioning",
+        "D:\\1212\\worktrees\\taba2-pwa-gondola-integration",
+        "D:\\1212\\worktrees\\taba2-pwa-install",
+        "D:\\1212\\worktrees\\taba2-rider-auto-dispatch",
+        "D:\\1212\\worktrees\\taba2-rider-commercial-p1-fix",
+        "D:\\1212\\worktrees\\taba2-rider-commercial-polish",
+        "D:\\1212\\worktrees\\taba2-rider-commercial-redesign",
+        "D:\\1212\\worktrees\\taba2-rider-commercial-ux",
+        "D:\\1212\\worktrees\\taba2-rider-identity-biometrics",
+        "D:\\1212\\worktrees\\taba2-rider-map",
+        "D:\\1212\\worktrees\\taba2-rider-map-cert-baseline",
+        "D:\\1212\\worktrees\\taba2-rider-map-hardening",
+        "D:\\1212\\worktrees\\taba2-rider-map-visual-polish",
+        "D:\\1212\\worktrees\\taba2-rider-multi-order",
+        "D:\\1212\\worktrees\\taba2-rider-multi-order-board-fix",
+        "D:\\1212\\worktrees\\taba2-rider-pilot-integration",
+        "D:\\1212\\worktrees\\taba2-rider-pilot-rc2",
+        "D:\\1212\\worktrees\\taba2-rider-production-auth",
+        "D:\\1212\\worktrees\\taba2-rider-production-rc2",
+        "D:\\1212\\worktrees\\taba2-rider-rc2-integration",
+        "D:\\1212\\worktrees\\taba2-rider-release-hardening-rc2",
+        "D:\\1212\\worktrees\\taba2-rider-sheet-ux-polish",
+        "D:\\1212\\worktrees\\taba2-shelf-glow-final-polish",
+        "D:\\1212\\worktrees\\taba2-storefront-pilot",
+        "D:\\1212\\worktrees\\taba2-tracking-always-map",
+        "D:\\bit flow hoy actualizado 12.2",
+        "D:\\temp\\AI\\ComfyUI\\ComfyUI",
+        "D:\\temp\\bitflow\\build-c0e38cb",
+        "D:\\work\\_quarantine_space_cleanup\\20260429_0242\\bitflow_p18_android_offline_worker_mode",
+        "D:\\work\\_quarantine_space_cleanup\\20260429_0242\\bitflow_p18_clean_pr",
+        "D:\\work\\_quarantine_space_cleanup\\20260429_0242\\bitflow_p18_gh_pages_deploy",
+        "D:\\work\\_quarantine_space_cleanup\\20260429_0242\\bitflow_p18_integrate_offline_android_reliability",
+        "D:\\work\\_quarantine_space_cleanup\\20260429_0242\\bitflow_p18_product_reliability_pass",
+        "D:\\work\\_quarantine_space_cleanup\\20260429_0242\\bitflow_p18_red_team_trust_bugs",
+        "D:\\work\\_quarantine_space_cleanup\\20260429_0242\\bitflow_p18_reliability_offline_android",
+        "D:\\work\\_quarantine_space_cleanup\\20260429_0242\\bitflow_p18_sheet_fast_entry_columns_navigation",
+        "D:\\work\\_quarantine_space_cleanup\\20260429_0242\\bitflow_p18_sheet_prominence_scroll_stability",
+        "D:\\work\\_quarantine_space_cleanup\\20260429_0242\\bitflow_p18_start_experience_polish",
+        "D:\\work\\_quarantine_space_cleanup\\20260429_0242\\bitflow_pr50_clean",
+        "D:\\work\\_quarantine_space_cleanup\\20260429_0242\\New project",
+        "D:\\work\\apex-rel-45",
+        "D:\\work\\apex-rel-47",
+        "D:\\work\\apex-rel-48",
+        "D:\\work\\apex-rel-49",
+        "D:\\work\\apex-win-auto",
+        "D:\\work\\apex51-android-build",
+        "D:\\work\\apex51-windows-build",
+        "D:\\work\\BCWork\\BlackCorridor_ArtKitP1",
+        "D:\\work\\BCWork\\BlackCorridor_CasaViva_Worktree",
+        "D:\\work\\BCWork\\BlackCorridor_CinematicDirector",
+        "D:\\work\\BCWork\\BlackCorridor_Codex_Worktree",
+        "D:\\work\\BCWork\\BlackCorridor_RealHouseP2",
+        "D:\\work\\BCWork\\BlackCorridor_RealHouseP3",
+        "D:\\work\\BCWork\\BlackCorridor_RealSlice",
+        "D:\\work\\BCWork\\BlackCorridor_VisualTruthFix",
+        "D:\\work\\BCWork\\ClaudeAssets_Worktree",
+        "D:\\work\\BCWork\\ClaudeStory_Worktree",
+        "D:\\work\\BCWork\\ClaudeWarm_Worktree",
+        "D:\\work\\BCWork\\PhotoMatchArtKit_Worktree",
+        "D:\\work\\BCWork\\PhotoMatchArtKitP2_Worktree",
+        "D:\\work\\BCWork\\PhotoMatchArtKitP3_Worktree",
+        "D:\\work\\BCWork\\PhotoMatchMaterialFidelity_Worktree",
+        "D:\\work\\BCWork\\VisualTruthGateN_Worktree",
+        "D:\\work\\bf14-winqa-1eb68f6",
+        "D:\\work\\bitflow-apex-autonomy-20260926",
+        "D:\\work\\bitflow-apex-commercial",
+        "D:\\work\\bitflow-apex-hardening-20260925",
+        "D:\\work\\bitflow-apex-iter2",
+        "D:\\work\\bitflow-apex-release-43",
+        "D:\\work\\bitflow-apex-release-44",
+        "D:\\work\\bitflow-apex-report-assets",
+        "D:\\work\\bitflow-apex-support-invite-20260925",
+        "D:\\work\\bitflow-apex-v33-luna",
+        "D:\\work\\bitflow-apex-v39",
+        "D:\\work\\bitflow-apex-walter-hotfix",
+        "D:\\work\\bitflow-apex-walter-legacy-adoption",
+        "D:\\work\\bitflow-apex-walter-media-hotfix",
+        "D:\\work\\bitflow-apex-walter-rc",
+        "D:\\work\\bitflow-apex-windows",
+        "D:\\work\\bitflow-audit-daily-20260717T205100Z",
+        "D:\\work\\bitflow-backup-restore-validation",
+        "D:\\work\\bitflow-build-20260717T145521Z",
+        "D:\\work\\bitflow-build-daily-20260718T000700Z",
+        "D:\\work\\bitflow-build-grid-20260717T160630Z",
+        "D:\\work\\bitflow-build-speech-20260717T172116Z",
+        "D:\\work\\bitflow-hands-free-voice",
+        "D:\\work\\bitflow-inspecciones",
+        "D:\\work\\bitflow-license-integration",
+        "D:\\work\\bitflow-license-worktree",
+        "D:\\work\\bitflow-m7-fix-reaudit-20260717T024239",
+        "D:\\work\\bitflow-m7-migration\\20260716T174915Z\\donor-audit-clone",
+        "D:\\work\\bitflow-m7-worktree-20260716T174915Z",
+        "D:\\work\\bitflow-oc1-domain",
+        "D:\\work\\bitflow-v2-integration",
+        "D:\\work\\bitflow-v2-pre-s2",
+        "D:\\work\\bitflow-v2-shared-s1",
+        "D:\\work\\bitflow-v2-shared-s2",
+        "D:\\work\\bitflow-v5-rollback",
+        "D:\\work\\bitflow_pr50_clean",
+        "D:\\work\\BitFlowG2RedValidation",
+        "D:\\work\\BitFlowG2Validation",
+        "D:\\work\\BitFlowGate3PhysicalQA\\baseline-worktree",
+        "D:\\work\\BitFlowGate3PhysicalQA\\validation-worktree",
+        "D:\\work\\BitFlowPhysicalQA\\20260722T044548Z-g2-001-retest\\qa-worktree",
+        "D:\\work\\BitFlowPhysicalQA\\legacy-worktree",
+        "D:\\work\\BitFlowReleaseValidation\\repo",
+        "D:\\work\\BitFlowSemanticBench\\llama.cpp",
+        "D:\\work\\estela-candidate-946c9fc",
+        "D:\\work\\estela-g1-contact-order",
+        "D:\\work\\estela-known-good-9184f3f",
+        "D:\\work\\estela-next-from-golden",
+        "D:\\work\\estela-p0-send-clean",
+        "D:\\work\\estela-p0-send-gpt",
+        "D:\\work\\estela-p0-send-grok",
+        "D:\\work\\estela-recovery-0c0177",
+        "D:\\work\\estela-recovery-send-candidate-20260723",
+        "D:\\work\\field-flow-demo",
+        "D:\\work\\Gridnote\\bitacora",
+        "D:\\work\\luna-electrical-review",
+        "D:\\work\\operis_clean",
+        "D:\\work\\projects\\marco-sofi-6-meses-game"
+      ],
+      "errors": [
+        "[WinError 5] Acceso denegado: 'D:\\\\Config.Msi'",
+        "[WinError 5] Acceso denegado: 'D:\\\\FlutterProjects\\\\alpha_match'",
+        "[WinError 5] Acceso denegado: 'D:\\\\OneDriveTemp\\\\S-1-5-21-2854823342-4208285958-847607233-1000'",
+        "[WinError 5] Acceso denegado: 'D:\\\\PerfLogs'",
+        "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\temp\\\\bitflow-path-probe-280\\\\xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'",
+        "[WinError 5] Acceso denegado: 'D:\\\\temp\\\\NVRTXVoice\\\\NvAFX'",
+        "[WinError 5] Acceso denegado: 'D:\\\\temp\\\\NVRTXVoice\\\\NVI2'",
+        "[WinError 5] Acceso denegado: 'D:\\\\temp\\\\NVRTXVoice\\\\NvRTXVAD'",
+        "[WinError 5] Acceso denegado: 'D:\\\\Users\\\\Jorge Ariel'",
+        "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\src\\\\main\\\\res\\\\drawable-v21'",
+        "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\src\\\\main\\\\res\\\\mipmap-hdpi'",
+        "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\src\\\\main\\\\res\\\\mipmap-mdpi'",
+        "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\src\\\\main\\\\res\\\\mipmap-xhdpi'",
+        "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\src\\\\main\\\\res\\\\mipmap-xxhdpi'",
+        "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\src\\\\main\\\\res\\\\values-night'",
+        "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android_backup\\\\app\\\\src\\\\main\\\\res\\\\drawable'",
+        "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\.idea\\\\libraries'",
+        "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app'",
+        "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android_backup'"
+      ]
+    },
+    {
+      "root": "E:\\",
+      "repos": [
+        "E:\\taba-backups\\la-taba-pages-20260725-enospc\\relocated-runtime\\git-dir",
+        "E:\\CAUCE-Alumine-0.1.0\\cauce",
+        "E:\\CLEANUP_QUARANTINE_C_2026-07-25\\bitacora_web",
+        "E:\\CLEANUP_QUARANTINE_C_2026-07-25\\bitacora_web_BACKUP_20251213_1637",
+        "E:\\CLEANUP_QUARANTINE_C_2026-07-25\\bitacora_web_BROKEN_20251213_1639",
+        "E:\\CLEANUP_QUARANTINE_C_2026-07-25\\bitacora_web_pages",
+        "E:\\CLEANUP_QUARANTINE_C_2026-07-25\\estela-autopilot-mission",
+        "E:\\CLEANUP_QUARANTINE_C_2026-07-25\\estela_transfer_full",
+        "E:\\CLEANUP_QUARANTINE_C_2026-07-25\\estela_transfer_ready",
+        "E:\\CLEANUP_QUARANTINE_C_2026-07-25\\ojo_claro_ai_accessibility_mvp",
+        "E:\\Work\\BitFlowGate3PhysicalComparison\\baseline",
+        "E:\\Work\\BitFlowGate3PhysicalComparison\\final",
+        "E:\\Work\\BitFlowGate3ReleaseValidation\\final",
+        "E:\\Work\\estela-next-from-golden"
+      ],
+      "errors": []
+    }
+  ],
+  "repos_count": 313,
+  "related": [
+    {
+      "path": "C:\\1212\\la-taba-arca-homologation-readiness",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba-business-fiscal-closure",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba-business-intake-hardening",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba-business-operations-final",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba-business-windows-scanner-fiscal",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba-catalog-checkout-premium",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba-catalog-expansion",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba-commerce-v3",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba-e2e-ci-fix",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba-final-ux-integration",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba-final-ux-recovered",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba-mercadopago-oauth",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba-mostador-patagonico",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba-platform-rc-clean-integration",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba-premium-catalog-launch",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba-production-rc1",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba-promos-packshots",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba-real-orders-staging",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba-real-pilot-staging",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba-redesign-rojo",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba-rider-map-contracts",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba-rider-server-contracts",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba-rider-staging-certification-backend",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba-staging-pilot",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba-tracking-premium-visual",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba-ui-polish-brand",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba2-argentina-ecommerce",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba2-beverage-assets-v2",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba2-beverage-catalog-home",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba2-catalog-finalization",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba2-commercial-catalog-authority",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba2-mercadopago-checkout",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba2-mobile-brand-refresh",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba2-mobile-design-integration",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba2-mobile-layout-hardening",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\1212\\la-taba2-storefront-motion",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\Users\\marco\\Documents\\New project\\outputs\\taba-handoff-20261003\\recovery-backend-files",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch) [blob:none]\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\Users\\marco\\Documents\\New project\\outputs\\taba-handoff-20261003\\recovery-documentation-files",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch) [blob:none]\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\Users\\marco\\Documents\\New project\\outputs\\taba-handoff-20261003\\recovery-frontend-files",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch) [blob:none]\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\Users\\marco\\Documents\\New project\\outputs\\taba-handoff-20261003\\recovery-rider",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch) [blob:none]\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "C:\\Users\\marco\\Documents\\New project\\outputs\\taba-handoff-20261003\\recovery-rider-files",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch) [blob:none]\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "C:\\Users\\marco\\Documents\\New project\\outputs\\taba-handoff-20261003\\recovery-web",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch) [blob:none]\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\Users\\marco\\dev\\la-taba-business-panel-automation",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\Users\\marco\\dev\\la-taba-pages-preview",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "C:\\Users\\marco\\worktrees\\taba2-production-candidate",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba-business-fiscal-homologation-gate-fix",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba-business-packing-fixture-fix",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba-business-synthetic-certification",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba-business-synthetic-recertification",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba-business-synthetic-recertification-final",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba-commerce-v3",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba-e2e-test-staging-certification",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba-e2e-test-staging-rc",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba-migration-fetch-audit",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba-production-rc1-business-certification",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba-production-rc1-business-integration",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba-rider-android",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba-rider-live-contracts",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba-rider-pilot-readiness",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba-rider-production-rc1",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba-rider-smoke-automation",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-arca-fiscal-automation",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-business-panel-hardening",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-ci-release-stability",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-commerce-growth",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-commercial-activation",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-commercial-p1-closure",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-commercial-shelf-stage1",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-commercial-skills-pack",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-commercial-storefront",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-commercial-stories",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-fable-visual-polish",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-final-launch-ux-perf",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-first-physical-e2e",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-gondola-neuquen",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-gondola-retail-final",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-launch-ux-polish",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-mercadopago-production-ready",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-mercadopago-staging-rc1",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-payment-recovery-p0",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-pilot-integration",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-pilot-ops",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-pilot-rc",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-real-orders-ops",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-retail-catalog-normalization",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-retail-unit-publication",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-rider-first-physical-e2e",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-rider-multi-order-backend",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-tracking-visual-polish",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-unit-catalog-normalization",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-weekend-launch",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\la-taba2-whatsapp-commerce",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-automated-rider-dispatch",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-business-commercial-mobile",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-business-operations-delivery",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-catalog-image-pipeline",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-catalog-premium",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-commercial-candidate",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-commercial-hardening",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-commercial-production-hardening",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-customer-experience",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-customer-overnight-rc",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-customer-postdemo",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-digital-commerce",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-identity-session-biometrics",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-live-schema-reconciliation",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-live-tracking-ux",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-location-truth-rider",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-location-truth-web",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-map-marker-semantics",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-operational-frontend",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-operational-resilience",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-order-intake-dispatch",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-order-recovery-panel",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-pilot-rc1",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-pilot-rc2-web",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-production-auth-go-live",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-production-backend-remediation",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-production-blockers",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-production-launch-plan",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-production-rc2",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-production-supabase-provisioning",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-pwa-gondola-integration",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-pwa-install",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-rider-auto-dispatch",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-rider-commercial-p1-fix",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-rider-commercial-polish",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-rider-commercial-redesign",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-rider-commercial-ux",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-rider-identity-biometrics",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-rider-map",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-rider-map-cert-baseline",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-rider-map-hardening",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-rider-map-visual-polish",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-rider-multi-order",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-rider-multi-order-board-fix",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-rider-pilot-integration",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-rider-pilot-rc2",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-rider-production-auth",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-rider-production-rc2",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-rider-rc2-integration",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-rider-release-hardening-rc2",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-rider-sheet-ux-polish",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-rider-android.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-rider-android.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-shelf-glow-final-polish",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-storefront-pilot",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "D:\\1212\\worktrees\\taba2-tracking-always-map",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    },
+    {
+      "path": "E:\\taba-backups\\la-taba-pages-20260725-enospc\\relocated-runtime\\git-dir",
+      "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)"
+    }
+  ],
+  "excluded_generated_dirs": [
+    "$getcurrent",
+    "$recycle.bin",
+    "$windows.~bt",
+    "$windows.~ws",
+    "$winreagent",
+    ".android",
+    ".cache",
+    ".cargo",
+    ".cxx",
+    ".dart_tool",
+    ".git",
+    ".gradle",
+    ".next",
+    ".npm",
+    ".ollama",
+    ".pub-cache",
+    ".pubcache",
+    ".rustup",
+    ".transforms",
+    ".venv",
+    "__pycache__",
+    "android",
+    "appdata",
+    "archived_sessions",
+    "archivos de programa",
+    "bitflow-build",
+    "bitflowbuild",
+    "bitflowrelease",
+    "build",
+    "cache",
+    "caches",
+    "codex-build",
+    "devcache",
+    "devtools",
+    "dists",
+    "documents and settings",
+    "emulator",
+    "flutter",
+    "flutter_sdk",
+    "fvm",
+    "generated",
+    "gradle-cache",
+    "gradle-home",
+    "gradlecache",
+    "hf_cache",
+    "hosted",
+    "incremental",
+    "intermediates",
+    "internet explorer",
+    "microsoft visual studio",
+    "mingw64",
+    "msocache",
+    "ndk",
+    "node_modules",
+    "nueva carpeta (2)",
+    "nvidia corporation",
+    "opt",
+    "platforms",
+    "program files",
+    "program files (x86)",
+    "programdata",
+    "pub-cache",
+    "pubcache",
+    "pubcache_ok",
+    "python313",
+    "recovery",
+    "registry",
+    "release-build",
+    "rider-build-tmp",
+    "riot games",
+    "scoop",
+    "sdk",
+    "sessions",
+    "site-packages",
+    "system volume information",
+    "system-images",
+    "taba-cargo-cache-from-c-20260802",
+    "taba-cert-tauri-target",
+    "taba-rc1-cargo-home",
+    "taba-rc1-cargo-target",
+    "taba-rider-gradle-home",
+    "taba-rider-pub-cache",
+    "taba-tauri-target",
+    "target",
+    "toolchains",
+    "ue_5.8",
+    "usr",
+    "venvs",
+    "vs",
+    "windows",
+    "windows.old",
+    "windowsapps",
+    "winsxs",
+    "wpsystem",
+    "wrapper",
+    "wudownloadcache"
+  ]
+}

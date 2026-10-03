@@ -1,0 +1,241 @@
+{
+  "MAIN_PC_RECOVERY": "PASS",
+  "READY_TO_CONTINUE": "YES",
+  "checked_at": "2026-10-03T21:12:19.634614+00:00",
+  "machine": "DESKTOP-TK52L9L",
+  "local_work_preserved": {
+    "unmodified_original_worktrees": 146,
+    "useful_files_already_remote": 239,
+    "local_config_temporary_excluded": 35,
+    "unique_local_code": [],
+    "stash_code_preserved": true,
+    "new_commits_needed_for_old_local_work": 0,
+    "commits_absent_from_origin": "0"
+  },
+  "backend": {
+    "path": "C:\\Users\\marco\\dev\\la-taba-main-pc-backend",
+    "branch": "hardening/taba-ecommerce-production",
+    "head": "6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a",
+    "status": "",
+    "upstream": "origin/hardening/taba-ecommerce-production",
+    "current_remote_head": "dfedfcc1e5ca6abb5b61a7eec47c310733f2bb6c",
+    "remote_handoff_snapshot": "6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a",
+    "ci": [
+      {
+        "name": "Ephemeral Supabase stack",
+        "sha": "6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/bitflowapp/la-taba-pages-preview/actions/runs/37150987704/job/111284951470"
+      },
+      {
+        "name": "Ephemeral Supabase stack",
+        "sha": "6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/bitflowapp/la-taba-pages-preview/actions/runs/37150992035/job/111284950264"
+      },
+      {
+        "name": "Migrations, pgTAP and isolated restore",
+        "sha": "6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/bitflowapp/la-taba-pages-preview/actions/runs/37150992028/job/111284896644"
+      },
+      {
+        "name": "Web, backend, fiscal and security gates",
+        "sha": "6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/bitflowapp/la-taba-pages-preview/actions/runs/37150992028/job/111284896280"
+      },
+      {
+        "name": "Windows Rust and unsigned verification bundles",
+        "sha": "6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/bitflowapp/la-taba-pages-preview/actions/runs/37150992028/job/111284896151"
+      }
+    ],
+    "documents": {
+      "LA_TABA_AUTONOMOUS_STATUS.md": true,
+      "LA_TABA_AUTONOMOUS_BACKEND_REPORT.md": true
+    },
+    "pr": {
+      "baseRefName": "main",
+      "headRefName": "hardening/taba-ecommerce-production",
+      "headRefOid": "dfedfcc1e5ca6abb5b61a7eec47c310733f2bb6c",
+      "isDraft": true,
+      "number": 133,
+      "state": "OPEN",
+      "statusCheckRollup": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "detailsUrl": "https://github.com/bitflowapp/la-taba-pages-preview/actions/runs/37153710190/job/111292638978",
+          "name": "Ephemeral Supabase stack",
+          "startedAt": "2026-10-03T21:02:48Z",
+          "status": "IN_PROGRESS",
+          "workflowName": "Ecommerce certification on an ephemeral Supabase stack"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "detailsUrl": "https://github.com/bitflowapp/la-taba-pages-preview/actions/runs/37153707297/job/111292629946",
+          "name": "Ephemeral Supabase stack",
+          "startedAt": "2026-10-03T21:02:44Z",
+          "status": "IN_PROGRESS",
+          "workflowName": "Ecommerce certification on an ephemeral Supabase stack"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "detailsUrl": "https://github.com/bitflowapp/la-taba-pages-preview/actions/runs/37153710184/job/111292639095",
+          "name": "Web, backend, fiscal and security gates",
+          "startedAt": "2026-10-03T21:02:47Z",
+          "status": "IN_PROGRESS",
+          "workflowName": "Validate release candidate"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "detailsUrl": "https://github.com/bitflowapp/la-taba-pages-preview/actions/runs/37153710184/job/111292639208",
+          "name": "Migrations, pgTAP and isolated restore",
+          "startedAt": "2026-10-03T21:02:47Z",
+          "status": "IN_PROGRESS",
+          "workflowName": "Validate release candidate"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "detailsUrl": "https://github.com/bitflowapp/la-taba-pages-preview/actions/runs/37153710184/job/111292639248",
+          "name": "Windows Rust and unsigned verification bundles",
+          "startedAt": "2026-10-03T21:02:47Z",
+          "status": "IN_PROGRESS",
+          "workflowName": "Validate release candidate"
+        }
+      ],
+      "url": "https://github.com/bitflowapp/la-taba-pages-preview/pull/133"
+    }
+  },
+  "frontend": {
+    "path": "C:\\Users\\marco\\dev\\la-taba-main-pc-frontend",
+    "branch": "feat/taba-frontend-commercial-polish",
+    "head": "737371ba82cae6e309cff04c97984443c52c8def",
+    "status": "",
+    "upstream": "origin/feat/taba-frontend-commercial-polish",
+    "remote_head": "737371ba82cae6e309cff04c97984443c52c8def",
+    "ci": [
+      {
+        "name": "Windows Rust and unsigned verification bundles",
+        "sha": "737371ba82cae6e309cff04c97984443c52c8def",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/bitflowapp/la-taba-pages-preview/actions/runs/37099419997/job/111135856763"
+      },
+      {
+        "name": "Web, backend, fiscal and security gates",
+        "sha": "737371ba82cae6e309cff04c97984443c52c8def",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/bitflowapp/la-taba-pages-preview/actions/runs/37099419997/job/111135856730"
+      },
+      {
+        "name": "Migrations, pgTAP and isolated restore",
+        "sha": "737371ba82cae6e309cff04c97984443c52c8def",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/bitflowapp/la-taba-pages-preview/actions/runs/37099419997/job/111135856614"
+      }
+    ],
+    "pr": {
+      "baseRefName": "fix/taba-catalog-runtime-stability",
+      "headRefName": "feat/taba-frontend-commercial-polish",
+      "headRefOid": "737371ba82cae6e309cff04c97984443c52c8def",
+      "isDraft": true,
+      "number": 131,
+      "state": "OPEN",
+      "statusCheckRollup": [],
+      "url": "https://github.com/bitflowapp/la-taba-pages-preview/pull/131"
+    }
+  },
+  "branch_classification": {
+    "histórico": 71,
+    "ya integrado": 107,
+    "contiene trabajo único": 24
+  },
+  "handoff_branches_reviewed": 202,
+  "discovery_missing_inventory": [],
+  "local_validation": {
+    "static_checks": "3 PASS",
+    "original_focused_tests": "124/125 PASS; test CLI uses URL.pathname, not portable on Windows",
+    "portable_health_cli_cases": "2/2 PASS with network disabled",
+    "tracked_backend_files_modified": false,
+    "hardening_followup": "137/137 focused tests PASS, no skips, on the separate follow-up branch"
+  },
+  "next_backend_task": "Fix Windows CLI test portability, then DIAG-10 auth health target selection on a separate branch; no hosted calls",
+  "OWNER_APPROVAL_REQUIRED": [
+    "Hosted migration application",
+    "External watchdog retarget/redeploy",
+    "CP promotion or enabling real-money gates"
+  ],
+  "worktrees_after_recovery": {
+    "backend": "C:\\Users\\marco\\dev\\la-taba-main-pc-backend",
+    "frontend": "C:\\Users\\marco\\dev\\la-taba-main-pc-frontend",
+    "autonomous_hardening": "C:\\Users\\marco\\dev\\la-taba-main-pc-hardening",
+    "recovery_report": "C:\\Users\\marco\\dev\\la-taba-main-pc-recovery-report"
+  },
+  "autonomous_hardening_resumed": {
+    "branch": "hardening/main-pc-health-readonly-20261003",
+    "head_at_validation": "5f3caac50388bd04e5a8ea92f3236965c0844f71",
+    "base": "6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a",
+    "changes": [
+      "Portable fileURLToPath for Windows health CLI guards",
+      "DIAG-10 Auth health selects an explicit target and business",
+      "Dedicated read-only API; import-safe runner; credential redaction; library target guard"
+    ],
+    "tests": {
+      "command": [
+        "node",
+        "--import",
+        "./tests/test-bootstrap.mjs",
+        "--test",
+        "--test-concurrency=1",
+        "tests/production-health-check.test.mjs",
+        "tests/production-auth-health.test.mjs",
+        "tests/scheduler-watchdog-probe.test.mjs",
+        "tests/scheduler-watchdog-targets.test.mjs",
+        "tests/payment-reconciliation.test.mjs",
+        "tests/idempotency-key-contract.test.mjs",
+        "tests/authoritative-session-payment-gates.test.mjs",
+        "tests/mercadopago-payment-recovery.test.mjs",
+        "tests/business-order-recovery.test.mjs"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 21.53,
+      "tail": [
+        "✔ producción mira producción, y nunca staging (0.1214ms)",
+        "✔ los dos Workers tienen nombres distintos (0.2431ms)",
+        "✔ los dos entornos conservan su disparador de cron (0.1189ms)",
+        "✔ ninguna clave anónima está versionada acá (0.1606ms)",
+        "ℹ tests 137",
+        "ℹ suites 0",
+        "ℹ pass 137",
+        "ℹ fail 0",
+        "ℹ cancelled 0",
+        "ℹ skipped 0",
+        "ℹ todo 0",
+        "ℹ duration_ms 21478.6547"
+      ]
+    },
+    "npm_run_check": "PASS; syntax, config, assets, precache, release hygiene/identity, location, encoding and secret scanner",
+    "hosted_reads_or_writes_performed": false,
+    "deployment_or_real_money_actions": false,
+    "external_watchdog_retarget": "OWNER_APPROVAL_REQUIRED / Owner 7; not performed"
+  }
+}

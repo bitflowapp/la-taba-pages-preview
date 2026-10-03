@@ -1,0 +1,79 @@
+[
+  {
+    "command": [
+      "node",
+      "scripts/validate-supabase-migrations.mjs"
+    ],
+    "exit_code": 0,
+    "seconds": 0.22,
+    "tail": [
+      "INFO *: Revisar columna de política: id (el análisis estático no pudo resolverla).",
+      "INFO *: Revisar columna de política: business_id (el análisis estático no pudo resolverla).",
+      "INFO *: Revisar columna de política: id (el análisis estático no pudo resolverla).",
+      "INFO *: Revisar columna de política: business_id (el análisis estático no pudo resolverla).",
+      "INFO *: Revisar columna de política: business_id (el análisis estático no pudo resolverla).",
+      "INFO *: Revisar columna de política: business_id (el análisis estático no pudo resolverla).",
+      "INFO *: Revisar columna de política: assigned_rider_user_id (el análisis estático no pudo resolverla).",
+      "INFO *: Revisar columna de política: status (el análisis estático no pudo resolverla).",
+      "INFO *: Revisar columna de política: id (el análisis estático no pudo resolverla).",
+      "INFO *: Revisar columna de política: customer_user_id (el análisis estático no pudo resolverla).",
+      "INFO *: Revisar columna de política: business_id (el análisis estático no pudo resolverla).",
+      "Revisión estática aprobada. Falta aplicar las migraciones a Supabase local o staging."
+    ]
+  },
+  {
+    "command": [
+      "node",
+      "scripts/check-release-identity.mjs"
+    ],
+    "exit_code": 0,
+    "seconds": 2.44,
+    "tail": [
+      "Identidad de release coherente: la-taba-runtime-v131-premium-motion · 192 archivos precacheados."
+    ]
+  },
+  {
+    "command": [
+      "node",
+      "scripts/check-supabase-config.mjs"
+    ],
+    "exit_code": 0,
+    "seconds": 0.05,
+    "tail": [
+      "config de Supabase legible por el CLI 2.101.0: 51 secciones en 11 espacios conocidos."
+    ]
+  },
+  {
+    "command": [
+      "node",
+      "--import",
+      "./tests/test-bootstrap.mjs",
+      "--test",
+      "--test-concurrency=1",
+      "tests/production-health-check.test.mjs",
+      "tests/scheduler-watchdog-probe.test.mjs",
+      "tests/scheduler-watchdog-targets.test.mjs",
+      "tests/payment-reconciliation.test.mjs",
+      "tests/idempotency-key-contract.test.mjs",
+      "tests/authoritative-session-payment-gates.test.mjs",
+      "tests/mercadopago-payment-recovery.test.mjs",
+      "tests/business-order-recovery.test.mjs"
+    ],
+    "exit_code": 1,
+    "seconds": 21.38,
+    "tail": [
+      "      at Test.run (node:internal/test_runner/test:1106:25)",
+      "      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)",
+      "      at Test.postRun (node:internal/test_runner/test:1235:19)",
+      "      at Test.run (node:internal/test_runner/test:1163:12)",
+      "      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {",
+      "    generatedMessage: true,",
+      "    code: 'ERR_ASSERTION',",
+      "    actual: 1,",
+      "    expected: 2,",
+      "    operator: 'strictEqual',",
+      "    diff: 'simple'",
+      "  }"
+    ]
+  }
+]

@@ -1,0 +1,19 @@
+[
+  {
+    "args": [],
+    "exit_code": 2,
+    "stderr": "hay que nombrar el destino: --target production|controlled-production|staging; no hay default implicito",
+    "expected_exit_code": 2,
+    "passed": true
+  },
+  {
+    "args": [
+      "--target",
+      "controlled-production"
+    ],
+    "exit_code": 2,
+    "stderr": "falta SUPABASE_ACCESS_TOKEN en el entorno",
+    "expected_exit_code": 2,
+    "passed": true
+  }
+]

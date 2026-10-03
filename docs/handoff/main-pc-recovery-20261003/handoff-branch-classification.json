@@ -1,0 +1,2022 @@
+[
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive-sources",
+    "head": "ef9b6c233f4fd60e6ce744f06d0f290027046bdd",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/backup/tracking-visual-pre-baseline-9a99698",
+    "head": "9a99698ddbe7ef5de10c779699ca58e74f3b379a",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 3,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/deploy/taba2-order-recovery-panel",
+    "head": "0efe1dc3efb8a9fb0d9036d5f25b5e4b6ae671bb",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/despliegue/main-e5f390e",
+    "head": "e5f390e27dd2479cec71c24a9675ccbd71d53a4f",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/docs/taba2-production-launch-plan",
+    "head": "5470ac66e4f155d140361294084fa61deb012174",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/business-fiscal-document-closure",
+    "head": "89bda02b73b651cc42f8c9fa3a008903501f89e9",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/business-windows-scanner-fiscal",
+    "head": "ba0bdceb3c4d8d73997dfe67381ccd92ae8808b5",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/catalog-checkout-premium",
+    "head": "41e27133849321cb65b61e14376d57c295cf5c2e",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/catalog-expansion-argentina",
+    "head": "67aa86d53be6d774fd88bc1939e4a14ea5837207",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 3,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/catalog-packshots-promos",
+    "head": "64615dbd594279945257078f315ec911dbade5d6",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/la-taba-redesign-rojo",
+    "head": "c6270589756214eac617515248e93a8e8819190b",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/light-live-map-and-rider-moto-ui",
+    "head": "98133b6b480949d0f4e2d979bf45929f396ccb2c",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 2,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/mostrador-patagonico-v1",
+    "head": "2e5f02b5d201f9addbe6d1d1a8f8b5aa900bbde0",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/rider-delivery-server-contracts",
+    "head": "4960da279f0f668559ab55b6a751576b18232b95",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba-mercadopago-oauth",
+    "head": "899caaf849c1db8672e83b5cd9e31b0d4e141199",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba-premium-catalog-launch",
+    "head": "eb1f33d7e2579365a0bdab488fe9fe273f9a7341",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-arca-fiscal-automation",
+    "head": "af93aeb6c7538655cdc9ab38daebbfea027bfe3f",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 19,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-arca-homologation-readiness",
+    "head": "13936d5eedd36a211fa2ab4d255f30ad8fc0dbed",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 4,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-argentina-ecommerce",
+    "head": "e0d74a2469b5eb80c30f33679cd1251d62a29cd9",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-automated-rider-dispatch",
+    "head": "226bca2fea3bcd4f593c29fdef472c9be7e0c1c7",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 6,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-beverage-assets-v2",
+    "head": "e0d74a2469b5eb80c30f33679cd1251d62a29cd9",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-beverage-catalog-home",
+    "head": "3e1f90d3a60a4dcb6b3d7eda943a54e4b061a614",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 5,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-business-commercial-mobile",
+    "head": "88d7ccf65c2fc902b302ab721b80193837b47b7e",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-business-operations-delivery",
+    "head": "a7abc797c52a3d775387c37205545e63b6f0ba99",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 16,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-business-operations-final",
+    "head": "8028dcc26ab271a0d7bb9acb81784d3e41ddae7f",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 10,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-business-panel-hardening",
+    "head": "c7c3bbd5348bbd9891661784b600c3d20204b285",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-catalog-image-pipeline",
+    "head": "d87fb6ed1237eb9f84ec688de38456a038d2d89f",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-catalog-premium-purchase",
+    "head": "280213ded33d66d5259faf5534c7885e74203410",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-commerce-growth-engine",
+    "head": "0192c68d22db8368d48aec3f68cbacecfaf88b98",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 9,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-commercial-catalog-authority",
+    "head": "6d3d1e7a40dd7ba07be0c5945dbd1f81b7e94ada",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-commercial-p1-closure",
+    "head": "b66add06231ff9df5be25144a854a9c1858f01c4",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-commercial-production-hardening",
+    "head": "0a5f6d0d64b27b9e5ba6cb48d262c2bf48c159ed",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-commercial-shelf-stage1",
+    "head": "9cc051af1712e248117ad50fd19d11e06c040837",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 2,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-commercial-skills-pack",
+    "head": "c03b16647612e03830fce97b7e86425367c3e079",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 13,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-commercial-storefront",
+    "head": "6dd05655a491897037af84a77808e7680bb50401",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-commercial-stories",
+    "head": "27155217f0c1f68fb474ab7230bff90de22cbbd9",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 19,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-customer-overnight-rc",
+    "head": "4f49234dc39d565fca7cc0deed785f20fa2d114c",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-digital-commerce-100",
+    "head": "e59ac1c5eefc49fe6835aa2d05a43896c0ded1f9",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-fable-visual-polish",
+    "head": "c761a8d43a9e4abcd17c7687e3e8a25ad545db93",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 11,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-gondola-comercial-neuquen",
+    "head": "786e6a6963f764a1264a925f0099c0cecc196d79",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-identity-session-biometrics",
+    "head": "a0bbac99d242a9c7ec9bd58fa36933381572f380",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 10,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-launch-ux-polish",
+    "head": "3888b611b5a6a66bdb66d3d0a464bb1767eaa3c4",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-live-tracking-production-ux",
+    "head": "73fdb4c5dd9fcc15a7c86cfb19350c25e808fd1f",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-mercadopago-checkout",
+    "head": "051413a24839c9c916a457bce77cf65898041f27",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-mobile-brand-refresh",
+    "head": "0e2e32866f468a8f00e60acd08fde3258b3d412c",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-p0-catalog-finalization",
+    "head": "edbe15e908c18ed04a962504ec626e32a16fe79c",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-panel-retail-publication-flow",
+    "head": "95ac129f12fb85d0ede7f0c40757df4d2406a8a9",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-pilot-ops",
+    "head": "03c2fbdf4b3ba70dbd116788bb3e8612d0fc491d",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 7,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-production-auth-go-live",
+    "head": "34c6ee3601eaf83af819b56ee9aab0a5cd419c80",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-production-backend-remediation",
+    "head": "38372091036b3d4f0b3119e2701bd17724d83c32",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-pwa-installable",
+    "head": "105f85abf6b2baec24d6b7942a8e17f15416e8af",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 2,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-pwa-production-integration",
+    "head": "190b344d11790c8ae606024d7919b07df2799726",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-real-orders-ops",
+    "head": "aed0293c32d5cbf5a4599e5eb4f46033192bb84e",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-retail-catalog-normalization",
+    "head": "4daa44879c43afccbabb1484d852b2f82848eaad",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-retail-unit-publication",
+    "head": "1c7455029f5390b127844d4afd708705e8083566",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-rider-multi-order-backend",
+    "head": "f4d5bc82a3e99eab2ed81f8de7ed8c8b95cf61eb",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-shelf-glow-final-polish",
+    "head": "5758b46c822b9f68bbdda31eaf895494dcb456ae",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-storefront-commercial-pilot",
+    "head": "90a28a119e5cd97a66e3b3b56a35ad58ab508b1b",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-storefront-motion",
+    "head": "cb3751bf8f35b1878c316e3b3ef89f88b3d99903",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-tracking-always-on-map",
+    "head": "36b6f3df1595a7e51dc885a569fec3326e2ab0af",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-tracking-visual-polish",
+    "head": "4ea98c6d040633f7f5cb24dfdb4839706cb3a76f",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-unit-catalog-normalization",
+    "head": "b8ac9a3a5aaca5ba883c2d68dfc2efa62d7f3c6f",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/feature/taba2-whatsapp-commerce",
+    "head": "c1e7cb66d216086d4951b79390068e09d6a7c8d2",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 9,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/fix/a1-a4-production-blockers",
+    "head": "168eaeebb92ce9563e2db873b41070f14200b69b",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/fix/la-taba-ui-polish-brand",
+    "head": "c6270589756214eac617515248e93a8e8819190b",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/fix/rider-staging-certification",
+    "head": "d0b995eaa642a8c78a28a0a9d966a3bdd89b6e7b",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/fix/taba2-customer-postdemo-hardening",
+    "head": "9ef9aee0fa318636ae5a8487589981a66e199ae7",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/fix/taba2-fiscal-homologation-gate",
+    "head": "d1aa4a63da1f9fda01be39e64314afcfa77098ac",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 12,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/fix/taba2-location-truth",
+    "head": "9621d8313524ca30b0348315f739c8c37a7f6a6c",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 12,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/fix/taba2-mobile-layout-hardening",
+    "head": "fd87c1ac164244d19ea7a5344e0afff05db80db2",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 3,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/fix/taba2-operational-resilience",
+    "head": "eda13f833bfc54f52a838ac1f76459b7ae276a5b",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/fix/taba2-order-intake-dispatch",
+    "head": "59d8e036df10650070afbaec9cfc20705dd5b742",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 15,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/fix/taba2-p0-payment-recovery-ux",
+    "head": "3e48bb0bcd777276d23c542c60fec94ed8b0ed84",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 10,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/fix/taba2-packing-capacity-unit-fixture",
+    "head": "0a062fb0c1f77f6e6c27982edd84ee28000bc912",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 15,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/fix/taba2-production-blockers",
+    "head": "cc9e88f1137ca0f65c44234f7270f63774f45c20",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/integration/taba2-customer-experience",
+    "head": "11cd59d8e9fe28a16ad99b9cc7435bd1758924bc",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/integration/taba2-live-schema-reconciliation",
+    "head": "3a1ab114a0cdf212e5e3913ae0dfa5a07adc7d8e",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/integration/taba2-mobile-design-review",
+    "head": "08bb17a0a17d7b86847b9a782f35b23037073094",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/integration/taba2-operational-frontend",
+    "head": "f16c6d92d968f286b69c6562c75fe98958937bcb",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/integration/taba2-rc1-business-panel",
+    "head": "b6d27daf89f04132bf348981869524c21802fe93",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/integration/taba2-schema-canonical",
+    "head": "edad48a24d4c4d2b76880e6f1ceb40072eae3318",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 20,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/main",
+    "head": "31c900b7e4d66a89e80c535e59ed30fdad03ea3a",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/ops/taba2-production-supabase-provisioning",
+    "head": "d9e279c7ed5a0058da9460f632378a306a0d3102",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 5,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/recovery/taba-final-ux-63a7cf3",
+    "head": "425c4aedd9b5d3b418e7949cf1f511c8077368b4",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/release/taba-production-rc",
+    "head": "01035c98e0e7651452dc2cce71fd5d547b514b63",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 27,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/release/taba-real-pilot-staging",
+    "head": "9a99698ddbe7ef5de10c779699ca58e74f3b379a",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 3,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/release/taba2-commercial-candidate",
+    "head": "da56ce9fcbae77bff6f2334b596149b67c2c3e11",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/release/taba2-commercial-hardening",
+    "head": "e160fb15dcff3e77706316a3d4b9284794725f3f",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/release/taba2-commercial-rc",
+    "head": "bc9af92e1f11ce790fb2d620c24acf844053125d",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/release/taba2-e2e-test-staging-rc",
+    "head": "6294a989f67aada984f66cc2312142db63a563a0",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/release/taba2-first-physical-e2e",
+    "head": "3d69e6b59cd70e87b4431a99f3875d9c6ab14711",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/release/taba2-mercadopago-staging-rc1",
+    "head": "0587712be87bc32ebae6be75220eeb863780387c",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 5,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/release/taba2-pilot-integration",
+    "head": "a8b93cfa449256595a240c3b33f181941ce6b5eb",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 2,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/release/taba2-pilot-rc",
+    "head": "55093e030f3a5c3bc7957a7c38588fcde730dc30",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 13,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/release/taba2-pilot-rc1",
+    "head": "f4588f9e2e5993dfb2c7a260bf0e525223d45ba4",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/release/taba2-pilot-rc2",
+    "head": "f611492a5814bf9aeea2469491e6272b9b99663d",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 9,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/release/taba2-pilot-rc2-operational",
+    "head": "eda13f833bfc54f52a838ac1f76459b7ae276a5b",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/release/taba2-production-candidate",
+    "head": "317bbe9dc1c987c31ea4e0915784f881f61f24b6",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/release/taba2-production-external-enablement",
+    "head": "ed0eebed82b73c451c4b55bcfde756c7647c7a85",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/release/taba2-production-rc1",
+    "head": "4ca22af6d425c422fdca2be8e11798a2de170033",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/release/taba2-production-rc2",
+    "head": "01ba45aa2c5d1aa438edba54685607a85e65a7e4",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/rescue/taba2-main-local-20260820",
+    "head": "2d171ac0bf36c906de08a735f6a543a334dc8cb2",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/staging/real-orders-walter",
+    "head": "c6270589756214eac617515248e93a8e8819190b",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/test/taba2-business-synthetic-certification",
+    "head": "5e0c39065b316cd4adb2c2180be2a2ee2af90516",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 14,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/test/taba2-business-synthetic-recertification-8028dcc",
+    "head": "73a37b09e0a3d21fce61f5c97cc167ef022fdcb0",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 11,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/test/taba2-business-synthetic-recertification-final",
+    "head": "e59e28db78bfadc976d2f4b92cba5f8e0df06eb2",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 16,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/test/taba2-e2e-test-staging-certification",
+    "head": "4caa1f1cda3d6d21da704570a073970e82ad0ae7",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/test/taba2-first-human-physical-order",
+    "head": "66ba221e90436015c7f038ee3ecacc13654ff448",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-archive/test/taba2-rc1-business-panel-certification",
+    "head": "06b330169f6b2e1f43206b1b1cc85d767e50e01f",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backend-final",
+    "head": "6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: 6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup-stash-business-inbox",
+    "head": "0b700bce51d0952c6bc3c694fbc378525e02d587",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 2,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup-worktree-089d4cf7",
+    "head": "089d4cf7c63d4528ca9648a3309f35cd5756ea5a",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 6,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup-worktree-98826008",
+    "head": "988260081076078b8621d3573df3bc0827450716",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup-worktree-cb49a324",
+    "head": "cb49a32483475492efc80602b5914e2fbc76737e",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup-worktree-e5d1660c",
+    "head": "e5d1660cb3a75d41f20589ac8e1b9a37b27faf31",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/backup/profile-hydration-before-app-session-amend",
+    "head": "8c433f9178f2a5d076bdb538d0820d2be1d87226",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 4,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/backup/release-taba-platform-rc-bbe61e9",
+    "head": "bbe61e90ee6fca2331f381028ecaca895b16d758",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/feat/rider-operational-map",
+    "head": "2ef0498279e5a7afb0741157b618f8ee96b8d664",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 7,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/feat/taba-production-beverages",
+    "head": "edb10db5a0b92d18fad8e13ece61145a544b98a8",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 9,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/feat/taba-ux-ultra-showcase",
+    "head": "f419b6e5f09ca248696a446e8490bdcc533c7720",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 5,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/feature/claude-final-visual-qa",
+    "head": "b1698b518f20bc0272fa13b32500b27d85dc4ebc",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/feature/commercial-polish-v1",
+    "head": "87b828f3ff11a789933e9791b7426d7b12f203f0",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/feature/integrate-opus-ui-final",
+    "head": "962c3ca8d11813671fdf967eade004477a794bf6",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 6,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/feature/internal-checkout-fix-v2",
+    "head": "52146c3c3eb5d55e171c884c133da968549636ed",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/feature/tracking-onthe-way-premium-visual",
+    "head": "2daf26c3d06a960b98d88cbbb474ab3fbe8158a6",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/fix/demo-realtime-real-gps",
+    "head": "d4dc01bb39e6ff4d8035b0e48d04986071557695",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 3,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/fix/mobile-touch-safety",
+    "head": "71bb08b534b0ce86c79f072bc36f0398dcbba93a",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/fix/public-design-v37",
+    "head": "aca173a2c4bfdc67795799c2abedebdc3ba68d73",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/fix/tracking-certified-terminal-visibility",
+    "head": "a7e7c7b6b055cb43a5897dc22c0e2ef3bb24e6f9",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/fix/tracking-terminal-delivery-code-cleanup",
+    "head": "7400af3e1c1d29c6dd0aa03c277bacd398e24448",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 2,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/fix/tracking-terminal-expiry-revalidation",
+    "head": "16eed686d7a5181a34b1ec52b55870398ccf2474",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 2,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/fix/tracking-terminal-shell-resolution",
+    "head": "fff5e52d1af17d58ccfe0bfa95829dbc6054f59c",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 3,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/fix/tracking-terminal-visibility",
+    "head": "ba68ed19679ead36365183bcb7f081dc62c815d0",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 7,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/fix/unit-storefront-catalog",
+    "head": "cc6f90285f1889e7831391146e93c616e29f7de5",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/fix/v39-mobile-overlay-hit-testing",
+    "head": "5ac7ee509689a05f39a94533c9604690e5db7d8b",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 6,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/integration/taba-beverages-tracking",
+    "head": "1e56fac11afaeb3bd3e2243e513c57cb0b2eaa68",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 7,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/integration/taba-final-ux",
+    "head": "63a7cf3fe34a3e3c27a054d688464cf485bf890e",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/integration/taba-platform-rc-clean",
+    "head": "6ae559744efb394b78a251dbcc05890452f263c9",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/main",
+    "head": "58f9a18cee368fcdfdd03f5c3a4655adcbc7327a",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/publish/v39-preview",
+    "head": "2598a205e5e3f45cfd8add8b08f1320337f5780e",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 5,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/release/taba-platform-rc",
+    "head": "413b7022afa7ac4e740dae9d8726ca5df1ce2b53",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/release/taba-staging-pilot",
+    "head": "63a7cf3fe34a3e3c27a054d688464cf485bf890e",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/release/unit-storefront-preview",
+    "head": "d4dc01bb39e6ff4d8035b0e48d04986071557695",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 3,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/validation/shell-resolution-parent",
+    "head": "0e1fed14deafa703187cb6aeaf76ec38b7913827",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/validation/taba-beverages-tracking-baseline",
+    "head": "2a6944422c2bf013fdb3eeef3edfbedd30721a7d",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 6,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-backup/validation/tracking-complement-16eed",
+    "head": "0da40c91019744b9bcf58d1337e06ee47a6b0905",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-business-panel-automation",
+    "head": "fc406588d2b1455e3e9b272d194dbae0335d5c0f",
+    "category": "contiene trabajo único",
+    "reason": "Commits no alcanzables desde los destinos comparados; equivalencia por squash no afirmada.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-commerce-v3",
+    "head": "ba8c393da8886404de953909c89cdd9b96dbdb87",
+    "category": "contiene trabajo único",
+    "reason": "Commits no alcanzables desde los destinos comparados; equivalencia por squash no afirmada.",
+    "unique_commit_count": 28,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-commerce-v3-c-capturas",
+    "head": "3b78ad3a0517fceaab9cddb9e5dfa5f48ba9cd8a",
+    "category": "contiene trabajo único",
+    "reason": "Commits no alcanzables desde los destinos comparados; equivalencia por squash no afirmada.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-detached-migration-base",
+    "head": "7df4643c2e0bbcccb2eff435217fb43a5663c1a6",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/main",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-documentation",
+    "head": "9feaa6a991c288cc1d9a70e38e982b6af1fe708f",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 3,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-external-backend-qa",
+    "head": "e988d85e89de878f48af3d33de5ac85b5d0dc7fa",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-external-business-fiscal",
+    "head": "161dab838beab7500d16e5ddf19038782c6c914c",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-external-catalog-frontend",
+    "head": "a9901c6a5b925744cbb72bcf481fd005b5170d95",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-external-commercial-media",
+    "head": "d9b632f1a1568f0d1c1bdab92c68168e52631137",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-external-qa-evidence",
+    "head": "d72bdd5df97c16fdfac13eb8102ac51ab97d3c42",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-external-rider",
+    "head": "86be5f9513e948ade9311129998b6a5031cac490",
+    "category": "histórico",
+    "reason": "Preservación de versiones/evidencia anteriores; revisar su procedencia antes de cualquier integración.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-frontend-pr131",
+    "head": "737371ba82cae6e309cff04c97984443c52c8def",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: 737371ba82cae6e309cff04c97984443c52c8def",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-migration-fetch-audit",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "category": "contiene trabajo único",
+    "reason": "Commits no alcanzables desde los destinos comparados; equivalencia por squash no afirmada.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-pages-preview",
+    "head": "9c6232efb8e69120c7e2180276b250b6032286c6",
+    "category": "contiene trabajo único",
+    "reason": "Commits no alcanzables desde los destinos comparados; equivalencia por squash no afirmada.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-promos-packshots",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "category": "contiene trabajo único",
+    "reason": "Commits no alcanzables desde los destinos comparados; equivalencia por squash no afirmada.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-real-orders-staging",
+    "head": "4037ac67087779c565e161993eff007581dfbada",
+    "category": "contiene trabajo único",
+    "reason": "Commits no alcanzables desde los destinos comparados; equivalencia por squash no afirmada.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-real-pilot-staging",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "category": "contiene trabajo único",
+    "reason": "Commits no alcanzables desde los destinos comparados; equivalencia por squash no afirmada.",
+    "unique_commit_count": 4,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-redesign-rojo",
+    "head": "67972cf9aa05c8c19b247b251c84348dc18af1b1",
+    "category": "contiene trabajo único",
+    "reason": "Commits no alcanzables desde los destinos comparados; equivalencia por squash no afirmada.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-taba2-commerce-growth",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "category": "contiene trabajo único",
+    "reason": "Commits no alcanzables desde los destinos comparados; equivalencia por squash no afirmada.",
+    "unique_commit_count": 10,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-taba2-production-auth-go-live",
+    "head": "51b8e2e776f553a32c6a4677b522f0b4611f86ff",
+    "category": "contiene trabajo único",
+    "reason": "Commits no alcanzables desde los destinos comparados; equivalencia por squash no afirmada.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-taba2-production-candidate",
+    "head": "375633b39ece4879d43f5f499c79b0ae50654814",
+    "category": "contiene trabajo único",
+    "reason": "Commits no alcanzables desde los destinos comparados; equivalencia por squash no afirmada.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-taba2-weekend-launch",
+    "head": "7343f968cd23c153590daadf34d800e252e832db",
+    "category": "contiene trabajo único",
+    "reason": "Commits no alcanzables desde los destinos comparados; equivalencia por squash no afirmada.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "web",
+    "branch": "origin/handoff/notebook-20261003-ui-polish-brand",
+    "head": "9446beaee9a560d8034bb1b7b925360142a62dfe",
+    "category": "contiene trabajo único",
+    "reason": "Commits no alcanzables desde los destinos comparados; equivalencia por squash no afirmada.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/chore/taba2-rider-release-hardening-rc2",
+    "head": "e9517a93a015474bdb9a73854ac79094cf53f76e",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/chore/taba2-rider-release-hardening-rc2",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/codex/rider-map-staging",
+    "head": "95294d9d36a6429a21a562ea6a48b8c9ecbf8523",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/chore/taba2-rider-release-hardening-rc2",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/codex/taba2-rider-map-visual-polish",
+    "head": "471f79ef9a9f47ebb9018f5962b0d6538319ccde",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/chore/taba2-rider-release-hardening-rc2",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/develop",
+    "head": "31003891de66c6a3d3fd78b3a4fbab0ac746ac4a",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/chore/taba2-rider-release-hardening-rc2",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/feature/rider-live-contract-integration",
+    "head": "f1f3f37c5e2793c40f672fbc9b099eee6a746dba",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/chore/taba2-rider-release-hardening-rc2",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/feature/rider-map-location-contracts",
+    "head": "898cea6d444e63adeed61f8079cead750036da0c",
+    "category": "contiene trabajo único",
+    "reason": "Commits no alcanzables desde los destinos comparados; equivalencia por squash no afirmada.",
+    "unique_commit_count": 1,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/feature/rider-pilot-readiness-ux",
+    "head": "471f79ef9a9f47ebb9018f5962b0d6538319ccde",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/chore/taba2-rider-release-hardening-rc2",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/feature/taba2-rider-commercial-polish",
+    "head": "1b234a7fdd82f969ac52c26708d3c8f1056b9adf",
+    "category": "contiene trabajo único",
+    "reason": "Commits no alcanzables desde los destinos comparados; equivalencia por squash no afirmada.",
+    "unique_commit_count": 11,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/feature/taba2-rider-commercial-redesign",
+    "head": "d1ce78e814b59ee7df1befdcc8e2a31c23912c3a",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/chore/taba2-rider-release-hardening-rc2",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/feature/taba2-rider-commercial-ux",
+    "head": "8e9cd4f0efb65d2847df668e4851d2060ec23bf9",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/chore/taba2-rider-release-hardening-rc2",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/feature/taba2-rider-identity-biometrics",
+    "head": "acc253a4bdd5cba1090be24d77f617af33f8de19",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/chore/taba2-rider-release-hardening-rc2",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/feature/taba2-rider-map-hardening",
+    "head": "5231a87fc8df9d0b37b263938304935b9213a2d4",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/chore/taba2-rider-release-hardening-rc2",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/feature/taba2-rider-map-polish-v2",
+    "head": "6cb55aaf12c031ec48b4bd1dc940cdf2426e7b6a",
+    "category": "contiene trabajo único",
+    "reason": "Commits no alcanzables desde los destinos comparados; equivalencia por squash no afirmada.",
+    "unique_commit_count": 14,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/feature/taba2-rider-multi-order",
+    "head": "76dbb40c258fc705329de2cfca38a188a9c1529b",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/chore/taba2-rider-release-hardening-rc2",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/feature/taba2-rider-multi-order-board-fix",
+    "head": "5231a87fc8df9d0b37b263938304935b9213a2d4",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/chore/taba2-rider-release-hardening-rc2",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/feature/taba2-rider-pilot-integration",
+    "head": "894267af0a274fab95d3a7237c3895ab0ac20a4c",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/chore/taba2-rider-release-hardening-rc2",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/feature/taba2-rider-production-auth",
+    "head": "1a04870e3583cb5a6acdabf4129c6f4f9c9c3f40",
+    "category": "contiene trabajo único",
+    "reason": "Commits no alcanzables desde los destinos comparados; equivalencia por squash no afirmada.",
+    "unique_commit_count": 7,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/feature/taba2-rider-self-registration",
+    "head": "e25171394c5f6fdf96d595be0f7c287e9db53193",
+    "category": "contiene trabajo único",
+    "reason": "Commits no alcanzables desde los destinos comparados; equivalencia por squash no afirmada.",
+    "unique_commit_count": 37,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/feature/taba2-rider-sheet-ux-polish",
+    "head": "c884e6a50d921616a2b59432b6db7625c199e052",
+    "category": "contiene trabajo único",
+    "reason": "Commits no alcanzables desde los destinos comparados; equivalencia por squash no afirmada.",
+    "unique_commit_count": 4,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/feature/taba2-rider-shifts-dispatch",
+    "head": "ae90ab6cefeb319c7e033fe8e4938fb5fa03f92d",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/chore/taba2-rider-release-hardening-rc2",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/fix/rider-android-runtime-hardening",
+    "head": "434c4d53e021579171398cfd10c3b6439730a22c",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/chore/taba2-rider-release-hardening-rc2",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/fix/taba2-rider-commercial-review-p1",
+    "head": "9b498db2a75e5ff4a4bb93e0d502d0b5f2848109",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/chore/taba2-rider-release-hardening-rc2",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/fix/taba2-rider-location-truth",
+    "head": "4ad0b551d0ae94563d14928b4e90daa3d1f0acd9",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/chore/taba2-rider-release-hardening-rc2",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/fix/taba2-rider-second-delivery-start",
+    "head": "94c6464b6b10a14db3aaf1f773c22377ae38c5ed",
+    "category": "contiene trabajo único",
+    "reason": "Commits no alcanzables desde los destinos comparados; equivalencia por squash no afirmada.",
+    "unique_commit_count": 38,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/handoff/notebook-20261003-map-cert-baseline",
+    "head": "df44dafb674910007f7a41fa2a987b4a9abbfb2a",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/chore/taba2-rider-release-hardening-rc2",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/release/taba2-rider-first-physical-e2e",
+    "head": "7cec5a70969d851fe37cc82aa2ee2f169f5bce7f",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/chore/taba2-rider-release-hardening-rc2",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/release/taba2-rider-pilot-rc2",
+    "head": "ff6d01480b36cfb02fd7e3fb6aabdbdfa6ccf4df",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/chore/taba2-rider-release-hardening-rc2",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/release/taba2-rider-production-external-enablement",
+    "head": "a23b6e41fb2b76c6e4a814cce95d182cbfe0bb9c",
+    "category": "contiene trabajo único",
+    "reason": "Commits no alcanzables desde los destinos comparados; equivalencia por squash no afirmada.",
+    "unique_commit_count": 36,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/release/taba2-rider-production-rc1",
+    "head": "5231a87fc8df9d0b37b263938304935b9213a2d4",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/chore/taba2-rider-release-hardening-rc2",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/release/taba2-rider-production-rc2",
+    "head": "8968fc6e715810563372a0def1d1336ecbe61cb5",
+    "category": "contiene trabajo único",
+    "reason": "Commits no alcanzables desde los destinos comparados; equivalencia por squash no afirmada.",
+    "unique_commit_count": 35,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/release/taba2-rider-rc2-integration",
+    "head": "3875c3c532b8b9baa3a4e90d45268de2b90acb70",
+    "category": "contiene trabajo único",
+    "reason": "Commits no alcanzables desde los destinos comparados; equivalencia por squash no afirmada.",
+    "unique_commit_count": 12,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/test/taba2-rider-first-human-physical-order",
+    "head": "a843b4aaae7b38524e9f2e572ec1965a8e1cd096",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/chore/taba2-rider-release-hardening-rc2",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  },
+  {
+    "repo": "rider",
+    "branch": "origin/test/taba2-rider-staging-smoke-automation",
+    "head": "8e2b671c4123b8916fe628739b5c1d4490c6ae0b",
+    "category": "ya integrado",
+    "reason": "Ancestro verificable del destino: origin/chore/taba2-rider-release-hardening-rc2",
+    "unique_commit_count": 0,
+    "requires_review_before_merge": true,
+    "automatic_merge": false
+  }
+]

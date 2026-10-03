@@ -1180,12 +1180,12 @@
       "where": "public.accept_rider_order_offer"
     },
     {
-      "fixed_by": null,
-      "notes": "Measured by the wp18 package (repro-4 P4/P5: deadlock before and after its fixes). Exact proposed change in the wp18 notes: read the order id without lock, lock the order FOR NO KEY UPDATE, then the offer, PT409 if it moved. Not exercised by the race harness yet.",
+      "fixed_by": "e7287f53 · supabase/migrations/20261002062000_rider_offer_reject_withdraw_lock_order.sql",
+      "notes": "Reproduced on the branch HEAD with the arrival order pinned (wp18 repro-4 P4/P5: 40P01). Fixed: both functions lock the order (FOR NO KEY UPDATE) before the offer; reject answers PT409 if the offer moved between the two reads. After the fix all seven probes (P1-P5, P1b, P2b) run without deadlock. Test: rider_offer_reject_withdraw_lock_order_test.sql (9). Not yet exercised by scripts/order-intake/idempotency-race.mjs.",
       "aliases": [],
       "id": "IDEM-07",
       "severity": "P2",
-      "status": "open",
+      "status": "fixed",
       "domain": "orders_abuse",
       "title": "reject_rider_order_offer and withdraw_rider_order_offer take the offer before the order, the reverse of offer_order_to_rider: 40P01 under contention",
       "where": "public.reject_rider_order_offer, public.withdraw_rider_order_offer vs public.offer_order_to_rider"

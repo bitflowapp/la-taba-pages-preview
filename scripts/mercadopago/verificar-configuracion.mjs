@@ -36,7 +36,23 @@
  * -----------
  * No toca la base, no despliega, no escribe. Es sólo de lectura y, si algo no
  * se puede establecer, FALLA CERRADO: «no sé» se informa como no habilitado,
- * nunca como habilitado.
+ * nunca como habilitado. No imprime valores ni huellas.
+ *
+ * EL INTERRUPTOR DE DINERO REAL (EDGE-03)
+ * ---------------------------------------
+ * En `production` un cobro se crea sólo con MERCADOPAGO_REAL_MONEY_ENABLED en
+ * el valor exacto `enabled` (además de la revisión aprobada y del comercio con
+ * su vendedor). Esto lo lee por la huella, con la misma clasificación que la
+ * compuerta de release REAL_MONEY_GATE (scripts/release/gates), y dice si el
+ * dinero real está POSIBLE, CERRADO o DESCONOCIDO en el proyecto.
+ *
+ * La variable vieja MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION ya no abre nada:
+ * si está puesta es un error de configuración y se informa como tal.
+ *
+ * `--esperado=disabled` afirma que el proyecto NO puede cobrar dinero real: pasa
+ * sólo si el veredicto es DISABLED y, además, el dinero real está PROBADO
+ * cerrado. Un DISABLED por otro problema (una función que falta, un webhook mal
+ * configurado) no prueba que no se pueda crear un cobro.
  *
  * CÓDIGOS DE SALIDA
  *   0  el veredicto se pudo establecer (y coincide con --esperado, si se pasó)
@@ -46,6 +62,8 @@
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import process from 'node:process';
+import { LEGACY_SMOKE_CONFIRMATION, REAL_MONEY_SWITCH, classifyRealMoneySecrets } from '../release/gates/collect.mjs';
+import { realMoneyPlatform } from '../release/gates/evaluate.mjs';
 
 const REFS = {
   staging: { ref: 'ucbtjcurawxjwjdvvcvj', nombre: 'la-taba-staging' },
@@ -94,7 +112,7 @@ const SECRETOS_REQUERIDOS = [
 /** Presentes o no, nunca bloquean: cambian el modo, no la posibilidad. */
 const SECRETOS_DE_MODO = [
   'MERCADOPAGO_PRODUCTION_REVIEW_STATUS',
-  'MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION',
+  'MERCADOPAGO_REAL_MONEY_ENABLED',
   'TABA_ALLOWED_ORIGINS',
 ];
 
@@ -109,7 +127,7 @@ const CANDIDATOS = {
   MERCADOPAGO_ENVIRONMENT: ['test', 'production'],
   MERCADOPAGO_OAUTH_ENVIRONMENT: ['test', 'production'],
   MERCADOPAGO_PRODUCTION_REVIEW_STATUS: ['not_requested', 'pending', 'approved', 'rejected'],
-  MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION: ['I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE'],
+  MERCADOPAGO_REAL_MONEY_ENABLED: ['enabled'],
   TABA_CHECKOUT_BASE_URL: [
     'https://la-taba.pages.dev',
     'https://la-taba.pages.dev/',
@@ -180,7 +198,18 @@ console.log('MERCADO PAGO — VERIFICACIÓN DE CONFIGURACIÓN');
 console.log(`proyecto: ${objetivo.nombre} (${objetivo.ref})`);
 console.log('');
 
-console.log('SECRETOS  (se listan nombre y huella; ningún valor sale de acá)');
+// Lo que se muestra de un secreto: el valor si es uno de los enumerables
+// públicos del contrato, y si no «opaco». Nunca la huella: la de un valor
+// enumerable se revierte probando, y la de uno secreto no le sirve a nadie.
+const detalleDe = (nombre, digest) => {
+  const identificado = identificar(nombre, digest);
+  if (identificado) return `= «${identificado}»`;
+  // El interruptor: cualquier cosa que no sea exactamente `enabled` lo deja cerrado.
+  if (nombre === REAL_MONEY_SWITCH) return 'NO es «enabled»: cerrado';
+  return CANDIDATOS[nombre] ? 'valor no reconocido' : 'valor opaco';
+};
+
+console.log('SECRETOS  (se listan nombres; ningún valor ni huella sale de acá)');
 for (const nombre of SECRETOS_REQUERIDOS) {
   if (identificar('MERCADOPAGO_CREDENTIAL_MODE', secretos.get('MERCADOPAGO_CREDENTIAL_MODE')) === 'oauth'
     && ['MERCADOPAGO_ACCESS_TOKEN', 'MERCADOPAGO_WEBHOOK_SECRET'].includes(nombre)) continue;
@@ -190,9 +219,7 @@ for (const nombre of SECRETOS_REQUERIDOS) {
     console.log(`  ✗ ${nombre.padEnd(44)} AUSENTE`);
     continue;
   }
-  const identificado = identificar(nombre, digest);
-  const detalle = identificado ? `= «${identificado}»` : `huella ${digest.slice(0, 12)}…`;
-  console.log(`  ✓ ${nombre.padEnd(44)} presente   ${detalle}`);
+  console.log(`  ✓ ${nombre.padEnd(44)} presente   ${detalleDe(nombre, digest)}`);
 }
 for (const nombre of SECRETOS_DE_MODO) {
   const digest = secretos.get(nombre);
@@ -200,10 +227,47 @@ for (const nombre of SECRETOS_DE_MODO) {
     console.log(`  · ${nombre.padEnd(44)} sin definir`);
     continue;
   }
-  const identificado = identificar(nombre, digest);
-  const detalle = identificado ? `= «${identificado}»` : `huella ${digest.slice(0, 12)}…`;
-  console.log(`  · ${nombre.padEnd(44)} presente   ${detalle}`);
+  console.log(`  · ${nombre.padEnd(44)} presente   ${detalleDe(nombre, digest)}`);
 }
+// La variable vieja de la prueba de humo ya no abre nada (EDGE-03). Que esté es
+// un error de configuración: se informa y el guion sale con 1.
+if (secretos.has(LEGACY_SMOKE_CONFIRMATION)) {
+  problemas.push(`${LEGACY_SMOKE_CONFIRMATION} está puesta: ya no abre nada y su presencia es un error de configuración `
+    + `(el cobro real lo abre ${REAL_MONEY_SWITCH} = enabled). Borrarla`);
+  console.log(`  ✗ ${LEGACY_SMOKE_CONFIRMATION.padEnd(44)} PRESENTE   variable vieja: ya no abre nada, borrarla`);
+}
+console.log('');
+
+/*
+ * EL DINERO REAL DE ESTE PROYECTO, con la misma clasificación que la compuerta
+ * de release REAL_MONEY_GATE. Del lado del proyecto: POSIBLE, CERRADO o
+ * DESCONOCIDO. El lado del comercio (su fila y su vendedor) se mira aparte.
+ */
+let estadosDinero = null;
+try {
+  estadosDinero = await classifyRealMoneySecrets(listaSecretos.map((s) => ({
+    name: typeof s?.name === 'string' ? s.name : '',
+    digest: typeof s?.value === 'string' ? s.value : null,
+  })));
+} catch (_) {
+  estadosDinero = null;
+}
+const plataforma = estadosDinero
+  ? realMoneyPlatform(estadosDinero)
+  : { value: 'UNKNOWN', closed: [], unknown: ['SECRETS_LISTING_UNREADABLE'], open: [] };
+const dineroReal = { OPEN: 'POSIBLE', CLOSED: 'CERRADO', UNKNOWN: 'DESCONOCIDO' }[plataforma.value];
+const motivosDinero = plataforma.value === 'CLOSED' ? plataforma.closed : plataforma.value === 'UNKNOWN' ? plataforma.unknown : plataforma.open;
+const interruptor = {
+  ENABLED: 'ABIERTO («enabled»)',
+  NOT_ENABLED: 'CERRADO (presente, no es «enabled»)',
+  ABSENT: 'CERRADO (sin definir)',
+  UNREADABLE: 'ILEGIBLE',
+}[estadosDinero?.[REAL_MONEY_SWITCH]] || 'DESCONOCIDO';
+
+console.log(`INTERRUPTOR DE DINERO REAL (${REAL_MONEY_SWITCH})`);
+console.log(`  interruptor .................... ${interruptor}`);
+console.log(`  variable vieja de humo ......... ${secretos.has(LEGACY_SMOKE_CONFIRMATION) ? 'PRESENTE: error de configuración' : 'ausente'}`);
+console.log(`  dinero real en el proyecto ..... ${dineroReal} (${motivosDinero.join(', ')})`);
 console.log('');
 
 /*
@@ -266,8 +330,15 @@ if (webhook && webhook.verify_jwt === true) {
 }
 console.log('');
 
+// En producción, sin el interruptor en `enabled` no se crea ningún cobro: el
+// proyecto no puede cobrar, aunque todo lo demás esté en orden. No es un
+// problema de configuración —cerrado puede ser lo que se quiere—, así que no
+// cambia el código de salida.
+const interruptorCerrado = estadosDinero?.[REAL_MONEY_SWITCH] !== 'ENABLED';
+
 let veredicto;
 if (problemas.length) veredicto = 'DISABLED';
+else if (entorno === 'production' && interruptorCerrado) veredicto = 'DISABLED';
 else if (entorno === 'production') veredicto = 'PRODUCTION';
 else if (entorno === 'test') veredicto = 'TEST';
 else veredicto = 'DISABLED';
@@ -276,17 +347,22 @@ console.log(`VEREDICTO: ${veredicto}`);
 if (veredicto === 'DISABLED') {
   console.log('  Este proyecto NO puede cobrar con Mercado Pago. Motivos:');
   for (const problema of problemas) console.log(`    - ${problema}`);
-  if (!problemas.length) console.log('    - no hay un entorno de proveedor declarado');
+  if (entorno === 'production' && interruptorCerrado) {
+    console.log(`    - el interruptor de dinero real ${REAL_MONEY_SWITCH} no está en «enabled»: ningún cobro real se crea`);
+  }
+  if (!problemas.length && entorno !== 'production') console.log('    - no hay un entorno de proveedor declarado');
+  if (plataforma.value !== 'CLOSED') {
+    // Un DISABLED por un problema de configuración no prueba que no se pueda crear un cobro.
+    console.log(`  ATENCIÓN: el dinero real del proyecto está ${dineroReal}, no probado cerrado.`);
+  }
 }
 if (veredicto === 'TEST') {
   console.log('  Cobra únicamente con credenciales de prueba. Ningún pago es real.');
 }
 if (veredicto === 'PRODUCTION') {
-  const smoke = secretos.has('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION')
-    ? identificar('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION', secretos.get('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION'))
-    : null;
   console.log('  ATENCIÓN: los pagos de este proyecto son REALES.');
-  console.log(`  prueba de humo con plata real autorizada: ${smoke ? 'SÍ' : 'no'}`);
+  console.log(`  Para cortar el cobro real de toda la plataforma en un paso: borrar ${REAL_MONEY_SWITCH}`);
+  console.log('  (o ponerle cualquier otro valor). Reembolsos, cancelaciones, webhook y conciliación siguen funcionando.');
 }
 for (const advertencia of advertencias) console.log(`  aviso: ${advertencia}`);
 
@@ -303,6 +379,13 @@ console.log('configurado con esa fila apagada sigue sin ofrecer Mercado Pago, y 
 if (esperado && veredicto.toLowerCase() !== esperado) {
   console.error('');
   console.error(`FALLA: se esperaba ${esperado.toUpperCase()} y el veredicto es ${veredicto}.`);
+  process.exit(1);
+}
+// «Este proyecto no puede cobrar» se afirma sólo con el dinero real PROBADO
+// cerrado: un DISABLED por otra causa no impide crear un cobro.
+if (esperado === 'disabled' && plataforma.value !== 'CLOSED') {
+  console.error('');
+  console.error(`FALLA: se esperaba que este proyecto no pudiera cobrar dinero real y no está probado: dinero real ${dineroReal} (${motivosDinero.join(', ')}).`);
   process.exit(1);
 }
 process.exit(problemas.length && !esperado ? 1 : 0);

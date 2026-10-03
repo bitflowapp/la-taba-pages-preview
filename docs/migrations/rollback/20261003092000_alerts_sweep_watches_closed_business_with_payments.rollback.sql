@@ -14,7 +14,7 @@ declare
   v_actual text;
 begin
   select md5(replace(p.prosrc, E'\r', '')) into v_actual from pg_proc p where p.oid = to_regprocedure('public.evaluate_operational_alerts_sweep()');
-  if v_actual is null or v_actual not in ('d0eabfeac5f9a3ee98d2a0e0a9bc0e81', '8cf8cf0e6ec3e29ae12b66fde33e94e3') then
+  if v_actual is null or v_actual not in ('b881dad46d80f49a4cb33ca81618fb0b', '8cf8cf0e6ec3e29ae12b66fde33e94e3') then
     raise exception 'ROLLBACK_BLOCKED: public.evaluate_operational_alerts_sweep() no tiene el cuerpo esperado; otra migración la redefinió'
       using errcode = 'P0001';
   end if;

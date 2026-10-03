@@ -12,9 +12,9 @@
 --
 -- QUÉ CAMBIA
 --
---   Un negocio cerrado también se evalúa si alguno de sus cobros se movió en los últimos 30 días
---   (`payment_intents.updated_at`: lo mueve crear el checkout, la preferencia, el vencimiento y cada
---   pago que se asienta). Pasados 30 días sin movimiento y sin alertas abiertas, se vuelve a saltear.
+--   Un negocio cerrado también se evalúa si tiene cobros creados en los últimos 30 días (por el índice
+--   `payment_intents (business_id, created_at)`, sin leer la historia de un negocio dormido). Pasados
+--   30 días y sin alertas abiertas, se vuelve a saltear.
 --
 -- QUÉ NO CAMBIA
 --
@@ -31,7 +31,7 @@ declare
   v_actual text;
 begin
   select md5(replace(p.prosrc, E'\r', '')) into v_actual from pg_proc p where p.oid = to_regprocedure('public.evaluate_operational_alerts_sweep()');
-  if v_actual is null or v_actual not in ('8cf8cf0e6ec3e29ae12b66fde33e94e3', 'd0eabfeac5f9a3ee98d2a0e0a9bc0e81') then
+  if v_actual is null or v_actual not in ('8cf8cf0e6ec3e29ae12b66fde33e94e3', 'b881dad46d80f49a4cb33ca81618fb0b') then
     raise exception 'ROLLOUT_BLOCKED: public.evaluate_operational_alerts_sweep() no tiene el cuerpo esperado; otra migración la redefinió'
       using errcode = 'P0001';
   end if;
@@ -72,16 +72,17 @@ begin
          select 1 from public.operational_alerts a
           where a.business_id = b.id and a.status <> 'resolved'
        )
-       -- Y uno cerrado con movimiento de cobros en los últimos 30 días, también
-       -- (20261003092000): «cerrado» es el estado de fin de día del Panel, y lo que
-       -- llega del proveedor después del cierre (un checkout que nadie verificó, un
-       -- cobro aprobado sin pedido) tiene que verse esa noche y no cuando alguien
-       -- vuelva a abrir. Cada pago que se asienta mueve el cobro. Pasados 30 días sin
-       -- movimiento y sin alertas abiertas, se vuelve a saltear.
+       -- Y uno cerrado con cobros de los últimos 30 días, también (20261003092000):
+       -- «cerrado» es el estado de fin de día del Panel, y lo que llega del proveedor
+       -- después del cierre (un checkout que nadie verificó, un cobro aprobado sin
+       -- pedido) tiene que verse esa noche y no cuando alguien vuelva a abrir. Por el
+       -- índice (business_id, created_at): un negocio cerrado y sin cobros recientes
+       -- no se lee entero en cada corrida. Pasados 30 días y sin alertas abiertas, se
+       -- vuelve a saltear.
        or exists (
          select 1 from public.payment_intents pi
           where pi.business_id = b.id
-            and pi.updated_at > clock_timestamp() - interval '30 days'
+            and pi.created_at > now() - interval '30 days'
        )
     order by b.id
   loop

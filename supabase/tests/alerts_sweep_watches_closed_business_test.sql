@@ -5,7 +5,8 @@
 -- abrir, y un checkout sin verificar de un negocio cerrado más de 30 días no abría nunca su alerta.
 --
 --   A  cerrado y con un cobro que se movió hoy: se evalúa, y el checkout sin verificar abre su alerta
---   B  cerrado y sin ningún cobro: se sigue salteando (un pedido listo sin repartidor no abre nada)
+--   B  cerrado y sin ningún cobro: se sigue salteando (un pedido listo sin repartidor no abre nada);
+--      con cobros de hace más de 30 días, también
 --   C  el mismo pedido en un negocio abierto sí abre la alerta: lo que cambia es sólo a quién se evalúa
 --   D  la función sigue igual en lo demás: SECURITY DEFINER, search_path y permisos
 --
@@ -14,7 +15,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(8);
+select plan(9);
 
 -- ── Fixture ────────────────────────────────────────────────────────────────
 create temporary table cbs_ids (name text primary key, id uuid not null) on commit drop;
@@ -219,19 +220,25 @@ select pg_temp.negocio('y');
 select pg_temp.pedido_listo('z1', 'z');
 select pg_temp.pedido_listo('y1', 'y');
 update public.businesses set status = 'closed' where id = pg_temp.id('z:business');
+-- w: cerrado, con un cobro de hace 40 días y el mismo pedido listo.
+select pg_temp.negocio('w');
+select pg_temp.checkout('w1', 'w', interval '40 days');
+update public.payment_intents set created_at = clock_timestamp() - interval '40 days' where id = pg_temp.id('w1:intent');
+select pg_temp.pedido_listo('w2', 'w');
+update public.businesses set status = 'closed' where id = pg_temp.id('w:business');
 -- Crear un pedido patea la sonda del planificador (orders_kick_scheduler_watchdog) y, como en esta base
 -- pg_cron no corre, abre SCHEDULER_WATCHDOG_STALE. En un entorno con el planificador vivo no existiría:
 -- se cierra acá para que «sin alertas abiertas» sea cierto.
 update public.operational_alerts set status = 'resolved', resolved_at = clock_timestamp(),
        resolution_note = 'fixture: en esta base no corre pg_cron'
- where business_id in (pg_temp.id('z:business'), pg_temp.id('y:business'))
+ where business_id in (pg_temp.id('z:business'), pg_temp.id('y:business'), pg_temp.id('w:business'))
    and alert_code = 'SCHEDULER_WATCHDOG_STALE' and status <> 'resolved';
 
 select is(
   (select count(*)::integer from public.operational_alerts
-    where business_id in (pg_temp.id('k:business'), pg_temp.id('z:business'), pg_temp.id('y:business'))
+    where business_id in (pg_temp.id('k:business'), pg_temp.id('z:business'), pg_temp.id('y:business'), pg_temp.id('w:business'))
       and status <> 'resolved'),
-  0, 'precondición: ninguno de los tres tiene alertas abiertas');
+  0, 'precondición: ninguno de los cuatro tiene alertas abiertas');
 select is(
   (select string_agg(status, ',' order by name) from public.businesses
     where id in (pg_temp.id('k:business'), pg_temp.id('z:business'), pg_temp.id('y:business'))),
@@ -249,6 +256,8 @@ select is(
 -- ══ B ══
 select is(pg_temp.alerta_de('ORDER_READY_WITHOUT_RIDER', 'z1'), null,
   'B: cerrado y sin cobros, se sigue salteando: el pedido listo sin repartidor no abre nada');
+select is(pg_temp.alerta_de('ORDER_READY_WITHOUT_RIDER', 'w2'), null,
+  'B: cerrado y con su último cobro de hace 40 días, también: el límite de 30 días vale');
 -- ══ C ══
 select is(pg_temp.alerta_de('ORDER_READY_WITHOUT_RIDER', 'y1'), 'open',
   'C: el mismo pedido en un negocio abierto sí abre la alerta');

@@ -128,3 +128,11 @@ aserciones, total consistente (base limpia y base «sucia»); carreras admisión
     `REAL_MONEY_GATE` + runbooks.
   - `la-taba-http-contract` (rama `feat/taba-http-contract`): API-01/C-2, las negativas 55000 y P0002 dejan de salir como HTTP
     500 (envoltura en el borde de la API; notas en `docs/ecommerce-hardening/http-contract-NOTES.md` de ese worktree).
+- 10:35–10:45 — **EDGE-03 integrado** (revisado por mí antes de integrar): `6e7af1d4` (interruptor en Edge: sólo
+  `MERCADOPAGO_REAL_MONEY_ENABLED=enabled` exacto abre el cobro real en producción, junto con la revisión aprobada y el vendedor
+  conectado; además se cerraron dos huecos fail-open: la preferencia con intento nuevo re-reservaba stock antes de la compuerta),
+  `297130a7` (compuerta de release `REAL_MONEY_GATE` / `MONEY_MOVEMENT_POSSIBLE` por huella), `cb7f60f2` (verificación de
+  configuración), `d4e5fa13` (runbooks), `24b040c2` (registro: P1 14 corregidos / 0 abiertos; plan y acciones pendientes
+  corregidos). Suites: Deno 52 + 452, `test:payments` 228/228, compuertas 146/146, `npm run check`. NO desplegado: CP sigue sin
+  el secreto, así que el cobro real sigue cerrado. El worktree `la-taba-real-money-gate` ya está integrado (se puede borrar).
+  Corrida 6 del stack: 37127204266.

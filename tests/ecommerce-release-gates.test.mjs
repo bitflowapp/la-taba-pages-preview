@@ -11,12 +11,15 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import {
-  CRITICAL_EDGE_FUNCTIONS, DEFAULT_MAX_FACTS_AGE_MINUTES, FACTS_SCHEMA, FINDING_STATUSES, GATES, OBSERVER_GATE, PROVENANCE_GATE,
-  READ_ONLY_OBSERVER, RELEASE_TARGETS, VERDICTS, evaluate, expectedMercadoPagoEnvironment, findingBlocker, paymentPlan,
+  CRITICAL_EDGE_FUNCTIONS, DEFAULT_MAX_FACTS_AGE_MINUTES, FACTS_SCHEMA, FINDING_STATUSES, GATES, MONEY_MOVEMENT, OBSERVER_GATE,
+  PROVENANCE_GATE, READ_ONLY_OBSERVER, RELEASE_TARGETS, VERDICTS, evaluate, expectedMercadoPagoEnvironment, findingBlocker,
+  moneyMovementPossible, paymentPlan, realMoneyPlatform,
+  LEGACY_SMOKE_CONFIRMATION as EVALUATED_LEGACY_SMOKE, REAL_MONEY_SWITCH as EVALUATED_REAL_MONEY_SWITCH,
 } from '../scripts/release/gates/evaluate.mjs';
 import {
-  FINDINGS_REGISTER_PATH, PAYMENT_CERTIFICATION_PATH, RELEASE_INPUT_PATHS, SQL, assertSelectOnly, collect, collectRepoFacts,
-  functionSourceFiles, isEvidencePath, isRepoRelativePath, parseFunctionsVerifyJwt, parseRepoMigrations, relativeImports,
+  FINDINGS_REGISTER_PATH, LEGACY_SMOKE_CONFIRMATION, PAYMENT_CERTIFICATION_PATH, REAL_MONEY_SWITCH, REAL_MONEY_SWITCH_OPEN_VALUE,
+  RELEASE_INPUT_PATHS, SQL, assertSelectOnly, classifyRealMoneySecrets, collect, collectRepoFacts, functionSourceFiles,
+  isEvidencePath, isRepoRelativePath, parseFunctionsVerifyJwt, parseRepoMigrations, relativeImports,
 } from '../scripts/release/gates/collect.mjs';
 import {
   EXIT, UsageError, createRepoIo, exitCodeFor, loadSavedFacts, parseArgs, renderMarkdown, renderTable, run,
@@ -58,6 +61,22 @@ const MIGRATIONS = [
   { version: '20261001010000', name: 'delivery_location_guard_runs_as_owner' },
   { version: '20261001180000', name: 'order_intake_guard' },
 ];
+
+/** Los estados de los secretos del dinero real (nunca huellas) de un proyecto productivo abierto. */
+function productionRealMoney(overrides = {}) {
+  return {
+    MERCADOPAGO_ENVIRONMENT: 'PRODUCTION', MERCADOPAGO_PRODUCTION_REVIEW_STATUS: 'APPROVED',
+    MERCADOPAGO_REAL_MONEY_ENABLED: 'ENABLED', MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION: 'ABSENT', ...overrides,
+  };
+}
+
+/** Staging: Mercado Pago en test, sin revisión productiva ni interruptor, y ningún comercio que cobre en producción. */
+function stagingRealMoney(facts) {
+  facts.realMoneySecrets = { ok: true, states: productionRealMoney({
+    MERCADOPAGO_ENVIRONMENT: 'TEST', MERCADOPAGO_PRODUCTION_REVIEW_STATUS: 'ABSENT', MERCADOPAGO_REAL_MONEY_ENABLED: 'ABSENT',
+  }) };
+  facts.realMoneyBusinesses = { ok: true, settings_enabled_production: 0, chargeable_production: 0, connected_production_sellers: 0 };
+}
 
 /** Un comercio listo para producción: delivery y retiro, Mercado Pago en producción, todo certificado. */
 function readyFacts() {
@@ -106,6 +125,9 @@ function readyFacts() {
       guard_doors: { create_order_with_items: true, create_checkout_session: true },
     },
     readiness: { ok: true, can_open: true, accepting_orders: false, pending: [] },
+    // El dinero real está abierto: revisión aprobada, interruptor en `enabled` y un comercio que cobra.
+    realMoneySecrets: { ok: true, states: productionRealMoney() },
+    realMoneyBusinesses: { ok: true, settings_enabled_production: 1, chargeable_production: 1, connected_production_sellers: 1 },
     paymentCertification: {
       ok: true,
       opening_decision: { methods: ['manual', 'mercadopago'], decided_by: 'owner', date: '2026-10-01', notes: 'cash, transfer and Mercado Pago' },
@@ -138,10 +160,10 @@ const mutated = (change) => { const facts = readyFacts(); change(facts); return 
 
 // ── Evaluación ───────────────────────────────────────────────────────────────
 
-test('las compuertas son las dieciséis del diseño, con sus ids exactos', () => {
+test('las compuertas son las diecisiete del diseño, con sus ids exactos', () => {
   assert.deepEqual(GATES.map((gate) => gate.id), [
     'CATALOG_APPROVAL', 'VALID_PRICES', 'SERVICE_HOURS', 'DELIVERY_ZONES', 'FULFILMENT', 'TEAM', 'MP_SELLER',
-    'PAYMENT_CERTIFICATION', 'MIGRATION_PARITY', 'EDGE_FUNCTIONS', 'ABUSE_PROTECTION', 'UNATTENDED_ORDER_POLICY',
+    'PAYMENT_CERTIFICATION', 'REAL_MONEY_GATE', 'MIGRATION_PARITY', 'EDGE_FUNCTIONS', 'ABUSE_PROTECTION', 'UNATTENDED_ORDER_POLICY',
     'NO_OPEN_P0', 'NO_OPEN_P1', 'CI_GREEN', 'STORE_STATE',
   ]);
   assert.deepEqual(GATES.filter((gate) => !gate.blocking).map((gate) => gate.id), ['UNATTENDED_ORDER_POLICY', 'STORE_STATE']);
@@ -161,6 +183,10 @@ test('un comercio con todos los hechos en regla es PRODUCTION_READY', () => {
   assert.equal(result.summary.public_launch_ready, true);
   assert.equal(gateOf(result, 'TEAM').evidence.delivery_model, 'SELF_DELIVERY_ALLOWED');
   assert.equal(gateOf(result, 'MP_SELLER').evidence.expected_environment, 'production');
+  // El dinero real es posible, y está certificado y decidido.
+  assert.deepEqual(result.moneyMovementPossible, { value: 'YES', reasons: ['MERCADOPAGO_ENVIRONMENT_PRODUCTION',
+    'PRODUCTION_REVIEW_APPROVED', 'REAL_MONEY_SWITCH_ENABLED', 'BUSINESSES_CAN_CHARGE_IN_PRODUCTION:1'] });
+  assert.match(gateOf(result, 'REAL_MONEY_GATE').evidence.reason, /^REAL_MONEY_CERTIFIED/);
 });
 
 // Cada fila quita UN hecho del comercio listo. El veredicto tiene que ser
@@ -191,8 +217,19 @@ const SINGLE_FAULTS = [
   ['Mercado Pago: revisión de producción sin aprobar', (f) => { f.mercadoPago.settings.production_review_status = 'pending'; }, 'MP_SELLER', /^PRODUCTION_REVIEW_NOT_APPROVED:pending$/],
   ['Mercado Pago: vendedor de otro entorno', (f) => { f.mercadoPago.connections[0].environment = 'test'; }, 'MP_SELLER', /^SELLER_NOT_CONNECTED:none@production$/],
   ['Mercado Pago: el vendedor no es el de los ajustes', (f) => { f.mercadoPago.connections[0].matches_settings = false; }, 'MP_SELLER', /^SELLER_DOES_NOT_MATCH_SETTINGS$/],
-  ['certificación: Mercado Pago sin certificar', (f) => { f.paymentCertification.entries[1].certified = false; }, 'PAYMENT_CERTIFICATION', /^NOT_CERTIFIED:mercadopago:production$/],
-  ['certificación: Mercado Pago certificado sólo en sandbox', (f) => { f.paymentCertification.entries[1].environment = 'test'; }, 'PAYMENT_CERTIFICATION', /^NOT_CERTIFIED:mercadopago:production$/],
+  // Con el dinero real posible, Mercado Pago sin certificar para producción lo frenan DOS compuertas, a propósito:
+  // la de la certificación y la del dinero real (EDGE-03), que no deja mover dinero real sin esa certificación.
+  ['certificación: Mercado Pago sin certificar (con dinero real posible)', (f) => { f.paymentCertification.entries[1].certified = false; },
+    ['PAYMENT_CERTIFICATION', 'REAL_MONEY_GATE'], /^NOT_CERTIFIED:mercadopago:production$/],
+  ['certificación: Mercado Pago certificado sólo en sandbox (con dinero real posible)', (f) => { f.paymentCertification.entries[1].environment = 'test'; },
+    ['PAYMENT_CERTIFICATION', 'REAL_MONEY_GATE'], /^NOT_CERTIFIED:mercadopago:production$/],
+  ['dinero real: la variable vieja de humo sigue puesta', (f) => { f.realMoneySecrets.states.MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION = 'PRESENT'; }, 'REAL_MONEY_GATE', /^LEGACY_SMOKE_CONFIRMATION_PRESENT$/],
+  ['dinero real: Mercado Pago decidido y el interruptor apagado', (f) => { f.realMoneySecrets.states.MERCADOPAGO_REAL_MONEY_ENABLED = 'ABSENT'; }, 'REAL_MONEY_GATE', /^MERCADOPAGO_DECIDED_BUT_MONEY_MOVEMENT_IS_NO$/],
+  // El comercio evaluado abre sólo con efectivo, pero en el destino otro comercio puede cobrar con dinero real.
+  ['dinero real: posible con una decisión de sólo efectivo', (f) => {
+    f.paymentCertification.opening_decision.methods = ['manual'];
+    f.mercadoPago = { ok: true, settings: null, connections: [] };
+  }, 'REAL_MONEY_GATE', /^MONEY_MOVEMENT_POSSIBLE_BUT_DECISION_IS_MANUAL_ONLY$/],
   ['certificación: falta el registro del pago manual', (f) => { f.paymentCertification.entries.shift(); }, 'PAYMENT_CERTIFICATION', /^NOT_CERTIFIED:manual$/],
   ['certificación: la evidencia no está en el repo', (f) => { f.paymentCertification.entries[0].evidence_exists = false; }, 'PAYMENT_CERTIFICATION', /^EVIDENCE_NOT_IN_REPO:artifacts\/cert-manual$/],
   ['migraciones: el repo tiene una que el destino no', (f) => { f.migrationLedger.versions.pop(); }, 'MIGRATION_PARITY', /^REPO_NOT_IN_LEDGER:20261001180000$/],
@@ -215,19 +252,21 @@ const SINGLE_FAULTS = [
   ['CI: verde, pero de otro commit', (f) => { f.ci.commit = 'deadbeefcafe'; }, 'CI_GREEN', /^CI_COMMIT_MISMATCH:/],
 ];
 
-for (const [name, change, expectedGate, expectedMissing] of SINGLE_FAULTS) {
+for (const [name, change, expectedGates, expectedMissing] of SINGLE_FAULTS) {
   test(`un solo hecho en falta bloquea con exactamente su compuerta — ${name}`, () => {
     const result = evaluate(mutated(change));
     assert.equal(result.verdict, 'NOT_READY');
-    assert.deepEqual(blockerIds(result), [expectedGate]);
-    assert.equal(result.blockers[0].status, 'FAIL');
-    assert.match(result.blockers[0].missing[0], expectedMissing);
+    assert.deepEqual(blockerIds(result), [].concat(expectedGates));
+    for (const blocker of result.blockers) {
+      assert.equal(blocker.status, 'FAIL');
+      assert.match(blocker.missing[0], expectedMissing);
+    }
   });
 }
 
 test('cada compuerta bloqueante tiene al menos un caso que la hace fallar sola', () => {
-  const covered = new Set(SINGLE_FAULTS.map(([, , gate]) => gate));
-  assert.deepEqual(GATES.filter((gate) => gate.blocking && !covered.has(gate.id)).map((gate) => gate.id), []);
+  const alone = new Set(SINGLE_FAULTS.filter(([, , gates]) => !Array.isArray(gates)).map(([, , gate]) => gate));
+  assert.deepEqual(GATES.filter((gate) => gate.blocking && !alone.has(gate.id)).map((gate) => gate.id), []);
 });
 
 test('lo que no se pudo recolectar nunca aprueba: UNKNOWN bloquea', () => {
@@ -243,7 +282,10 @@ test('lo que no se pudo recolectar nunca aprueba: UNKNOWN bloquea', () => {
     repoFunctions: ['EDGE_FUNCTIONS'],
     deployedFunctions: ['EDGE_FUNCTIONS'],
     abuse: ['ABUSE_PROTECTION'],
-    paymentCertification: ['PAYMENT_CERTIFICATION'],
+    // Con el dinero real posible, sin la certificación ni la decisión no se sabe si puede moverse.
+    paymentCertification: ['PAYMENT_CERTIFICATION', 'REAL_MONEY_GATE'],
+    realMoneySecrets: ['REAL_MONEY_GATE'],
+    realMoneyBusinesses: ['REAL_MONEY_GATE'],
     findingsRegister: ['NO_OPEN_P0', 'NO_OPEN_P1'],
   };
   for (const [section, gates] of Object.entries(sections)) {
@@ -325,10 +367,12 @@ test('con --require-rider, entregar sin repartidor bloquea aunque la política d
   assert.deepEqual(blockerIds(required), ['TEAM']);
 });
 
-/** Apertura sólo con pago manual: sin ajustes ni vendedor de Mercado Pago. */
+/** Apertura sólo con pago manual: sin ajustes ni vendedor de Mercado Pago, y el dinero real cerrado. */
 function manualOnlyFacts() {
   return mutated((facts) => {
     facts.mercadoPago = { ok: true, settings: null, connections: [] };
+    facts.realMoneySecrets.states = productionRealMoney({ MERCADOPAGO_REAL_MONEY_ENABLED: 'ABSENT' });
+    facts.realMoneyBusinesses = { ok: true, settings_enabled_production: 0, chargeable_production: 0, connected_production_sellers: 0 };
     facts.paymentCertification.opening_decision = { methods: ['manual'], decided_by: 'owner', date: '2026-10-01', notes: 'cash and transfer only' };
     facts.paymentCertification.entries[1] = {
       method: 'mercadopago', environment: 'production', certified: false, evidence: null, evidence_exists: false, evidence_tracked: false, date: '2026-10-01',
@@ -343,17 +387,21 @@ test('abrir sólo con pago manual no necesita vendedor, pero sí el registro de 
   assert.match(gateOf(result, 'MP_SELLER').evidence.reason, /^MANUAL_ONLY/);
   assert.deepEqual(gateOf(result, 'PAYMENT_CERTIFICATION').evidence.methods_to_open, ['manual']);
   assert.equal(paymentPlan(manualOnlyFacts()).mode, 'manual_only');
+  assert.deepEqual(result.moneyMovementPossible, { value: 'NO', reasons: ['REAL_MONEY_SWITCH_ABSENT', 'NO_BUSINESS_CAN_CHARGE_IN_PRODUCTION'] });
+  assert.match(gateOf(result, 'REAL_MONEY_GATE').evidence.reason, /^NO_REAL_MONEY: the opening decision is cash and transfer only/);
 
-  // Sin registro de decisión, que falte el vendedor no significa «sólo efectivo».
+  // Sin registro de decisión, que falte el vendedor no significa «sólo efectivo»; y que no se
+  // mueva dinero real tampoco: la compuerta del dinero real no infiere nada de una decisión en null.
   const noDecision = manualOnlyFacts();
   noDecision.paymentCertification.opening_decision = null;
-  assert.deepEqual(blockerIds(evaluate(noDecision)), ['MP_SELLER']);
-  assert.deepEqual(evaluate(noDecision).blockers[0].missing, ['PAYMENT_DECISION_MISSING']);
+  assert.deepEqual(blockerIds(evaluate(noDecision)), ['MP_SELLER', 'REAL_MONEY_GATE']);
+  assert.deepEqual(evaluate(noDecision).blockers.map((blocker) => blocker.missing), [['PAYMENT_DECISION_MISSING'], ['PAYMENT_DECISION_MISSING']]);
 
   // Un registro a medio llenar no es una decisión.
   const halfDecision = manualOnlyFacts();
   halfDecision.paymentCertification.opening_decision = { methods: ['manual'] };
-  assert.deepEqual(evaluate(halfDecision).blockers[0].missing, ['PAYMENT_DECISION_INVALID']);
+  assert.deepEqual(evaluate(halfDecision).blockers.map((blocker) => [blocker.gate, ...blocker.missing]),
+    [['MP_SELLER', 'PAYMENT_DECISION_INVALID'], ['REAL_MONEY_GATE', 'PAYMENT_DECISION_INVALID']]);
 
   // La certificación manual sigue siendo obligatoria.
   const noManual = manualOnlyFacts();
@@ -376,6 +424,197 @@ test('abrir sólo con pago manual no necesita vendedor, pero sí el registro de 
   assert.equal(evaluate(noMpFunctions).verdict, 'PRODUCTION_READY');
 });
 
+// ── El interruptor de dinero real (EDGE-03) ──────────────────────────────────
+
+test('dinero real: de las huellas de los secretos salen estados, nunca huellas ni valores', async () => {
+  const entry = (name, value) => ({ name, digest: sha256(value) });
+  const states = await classifyRealMoneySecrets([
+    entry('MERCADOPAGO_ENVIRONMENT', 'production'), entry('MERCADOPAGO_PRODUCTION_REVIEW_STATUS', 'approved'),
+    entry('MERCADOPAGO_REAL_MONEY_ENABLED', 'enabled'), entry('PAYMENT_WORKER_SECRET', 'fixture-opaque-value'),
+  ]);
+  assert.deepEqual(states, productionRealMoney());
+  assert.equal(JSON.stringify(states).includes(sha256('enabled')), false);
+  assert.deepEqual(await classifyRealMoneySecrets([]), {
+    MERCADOPAGO_ENVIRONMENT: 'ABSENT', MERCADOPAGO_PRODUCTION_REVIEW_STATUS: 'ABSENT',
+    MERCADOPAGO_REAL_MONEY_ENABLED: 'ABSENT', MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION: 'ABSENT',
+  });
+  // El interruptor: la compuerta compara exacto, así que una huella que no es la de `enabled` PRUEBA que está cerrado.
+  for (const value of ['', 'true', 'ENABLED', 'Enabled', ' enabled', 'enabled ', 'enabled\n', '1', 'yes', 'I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE']) {
+    const classified = await classifyRealMoneySecrets([entry('MERCADOPAGO_REAL_MONEY_ENABLED', value)]);
+    assert.equal(classified.MERCADOPAGO_REAL_MONEY_ENABLED, 'NOT_ENABLED', JSON.stringify(value));
+  }
+  // El entorno y la revisión: las funciones recortan (y el entorno lo pasan a minúsculas). Una variante no es «cerrado».
+  for (const [value, expected] of [['test', 'TEST'], ['production', 'PRODUCTION'], ['Production', 'UNRECOGNIZED'],
+    [' production', 'UNRECOGNIZED'], ['sandbox', 'UNRECOGNIZED']]) {
+    assert.equal((await classifyRealMoneySecrets([entry('MERCADOPAGO_ENVIRONMENT', value)])).MERCADOPAGO_ENVIRONMENT, expected, value);
+  }
+  for (const [value, expected] of [['approved', 'APPROVED'], ['pending', 'NOT_APPROVED'], ['not_requested', 'NOT_APPROVED'],
+    ['rejected', 'NOT_APPROVED'], [' approved', 'UNRECOGNIZED'], ['APPROVED', 'UNRECOGNIZED']]) {
+    assert.equal((await classifyRealMoneySecrets([entry('MERCADOPAGO_PRODUCTION_REVIEW_STATUS', value)])).MERCADOPAGO_PRODUCTION_REVIEW_STATUS, expected, value);
+  }
+  // La variable vieja: alcanza con que esté.
+  assert.equal((await classifyRealMoneySecrets([entry('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION', 'cualquier cosa')]))
+    .MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION, 'PRESENT');
+  // Sin una huella legible no se sabe qué vale. Si la API devolviera el valor en vez de la huella, tampoco.
+  for (const digest of [null, undefined, '', 'enabled', 'abc', sha256('enabled').slice(0, 63), 42]) {
+    const classified = await classifyRealMoneySecrets([{ name: 'MERCADOPAGO_REAL_MONEY_ENABLED', digest }]);
+    assert.equal(classified.MERCADOPAGO_REAL_MONEY_ENABLED, 'UNREADABLE', String(digest));
+  }
+  assert.equal((await classifyRealMoneySecrets([{ name: 'MERCADOPAGO_REAL_MONEY_ENABLED', digest: sha256('enabled').toUpperCase() }]))
+    .MERCADOPAGO_REAL_MONEY_ENABLED, 'ENABLED');
+  // Un listado que no se puede leer no se lee a medias.
+  await assert.rejects(classifyRealMoneySecrets('x'), /SECRETS_NOT_A_LIST/);
+  await assert.rejects(classifyRealMoneySecrets([{ digest: sha256('enabled') }]), /SECRETS_ENTRY_WITHOUT_NAME/);
+  await assert.rejects(classifyRealMoneySecrets([entry('MERCADOPAGO_REAL_MONEY_ENABLED', 'enabled'), entry('MERCADOPAGO_REAL_MONEY_ENABLED', 'no')]),
+    /SECRETS_DUPLICATE_NAME/);
+});
+
+test('dinero real: el nombre del interruptor y el único valor que abre son los mismos en el backend y en la herramienta', () => {
+  const edge = read('supabase/functions/_shared/real-money-gate.ts');
+  assert.match(edge, /export const REAL_MONEY_SWITCH = 'MERCADOPAGO_REAL_MONEY_ENABLED';/);
+  assert.match(edge, /export const REAL_MONEY_SWITCH_OPEN_VALUE = 'enabled';/);
+  assert.match(edge, /export const LEGACY_SMOKE_CONFIRMATION = 'MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION';/);
+  assert.equal(REAL_MONEY_SWITCH, 'MERCADOPAGO_REAL_MONEY_ENABLED');
+  assert.equal(REAL_MONEY_SWITCH_OPEN_VALUE, 'enabled');
+  assert.equal(EVALUATED_REAL_MONEY_SWITCH, REAL_MONEY_SWITCH);
+  assert.equal(LEGACY_SMOKE_CONFIRMATION, 'MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION');
+  assert.equal(EVALUATED_LEGACY_SMOKE, LEGACY_SMOKE_CONFIRMATION);
+  assert.deepEqual(MONEY_MOVEMENT, { YES: 'YES', NO: 'NO', UNKNOWN: 'UNKNOWN' });
+  assert.deepEqual(JSON.parse(read('docs/ecommerce-hardening/release-gates.json')).money_movement_possible, ['YES', 'NO', 'UNKNOWN']);
+});
+
+// MONEY_MOVEMENT_POSSIBLE: [caso, estados de los secretos (sobre un proyecto productivo abierto), comercios que cobran, valor, razones].
+// `null` en los estados o en los comercios = esa sección no se pudo leer.
+const ENV = 'MERCADOPAGO_ENVIRONMENT', REVIEW = 'MERCADOPAGO_PRODUCTION_REVIEW_STATUS';
+const SWITCH = 'MERCADOPAGO_REAL_MONEY_ENABLED', LEGACY = 'MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION';
+const OPEN_REASONS = ['MERCADOPAGO_ENVIRONMENT_PRODUCTION', 'PRODUCTION_REVIEW_APPROVED', 'REAL_MONEY_SWITCH_ENABLED', 'BUSINESSES_CAN_CHARGE_IN_PRODUCTION:1'];
+const MONEY_CASES = [
+  ['las tres llaves abiertas', {}, 1, 'YES', OPEN_REASONS],
+  ['sin el interruptor', { [SWITCH]: 'ABSENT' }, 1, 'NO', ['REAL_MONEY_SWITCH_ABSENT']],
+  ['con el interruptor en otro valor', { [SWITCH]: 'NOT_ENABLED' }, 1, 'NO', ['REAL_MONEY_SWITCH_NOT_ENABLED']],
+  ['sin el interruptor y con la frase vieja de humo', { [SWITCH]: 'ABSENT', [LEGACY]: 'PRESENT' }, 1, 'YES',
+    ['MERCADOPAGO_ENVIRONMENT_PRODUCTION', 'PRODUCTION_REVIEW_APPROVED', 'LEGACY_SMOKE_CONFIRMATION_PRESENT', 'BUSINESSES_CAN_CHARGE_IN_PRODUCTION:1']],
+  ['con un interruptor ilegible', { [SWITCH]: 'UNREADABLE' }, 1, 'UNKNOWN', ['REAL_MONEY_SWITCH_UNREADABLE']],
+  ['en entorno test', { [ENV]: 'TEST' }, 1, 'NO', ['MERCADOPAGO_ENVIRONMENT_TEST']],
+  ['sin entorno', { [ENV]: 'ABSENT' }, 1, 'NO', ['MERCADOPAGO_ENVIRONMENT_ABSENT']],
+  ['con un entorno que no se reconoce', { [ENV]: 'UNRECOGNIZED' }, 1, 'UNKNOWN', ['MERCADOPAGO_ENVIRONMENT_UNRECOGNIZED']],
+  ['con un entorno que no se reconoce y sin el interruptor', { [ENV]: 'UNRECOGNIZED', [SWITCH]: 'ABSENT' }, 1, 'NO', ['REAL_MONEY_SWITCH_ABSENT']],
+  ['sin revisión productiva', { [REVIEW]: 'ABSENT' }, 1, 'NO', ['PRODUCTION_REVIEW_ABSENT']],
+  ['con la revisión pendiente', { [REVIEW]: 'NOT_APPROVED' }, 1, 'NO', ['PRODUCTION_REVIEW_NOT_APPROVED']],
+  ['con una revisión que no se reconoce', { [REVIEW]: 'UNRECOGNIZED' }, 1, 'UNKNOWN', ['PRODUCTION_REVIEW_UNRECOGNIZED']],
+  ['con un estado que la herramienta no conoce', { [REVIEW]: 'MAYBE' }, 1, 'UNKNOWN', ['PRODUCTION_REVIEW_UNREADABLE']],
+  ['sin ningún comercio que cobre en producción', {}, 0, 'NO', ['NO_BUSINESS_CAN_CHARGE_IN_PRODUCTION']],
+  ['sin poder leer los comercios', {}, null, 'UNKNOWN', ['REAL_MONEY_BUSINESSES_UNAVAILABLE:MGMT_HTTP_500']],
+  ['sin poder leer los secretos', null, 1, 'UNKNOWN', ['REAL_MONEY_SECRETS_UNAVAILABLE:MGMT_HTTP_500']],
+  ['sin poder leer los secretos y sin ningún comercio que cobre', null, 0, 'NO', ['NO_BUSINESS_CAN_CHARGE_IN_PRODUCTION']],
+  ['con varias cerradas a la vez', { [REVIEW]: 'ABSENT', [SWITCH]: 'ABSENT' }, 0, 'NO',
+    ['PRODUCTION_REVIEW_ABSENT', 'REAL_MONEY_SWITCH_ABSENT', 'NO_BUSINESS_CAN_CHARGE_IN_PRODUCTION']],
+];
+
+const withMoney = (facts, states, chargeable) => {
+  facts.realMoneySecrets = states === null ? { ok: false, error: 'MGMT_HTTP_500' } : { ok: true, states: productionRealMoney(states) };
+  facts.realMoneyBusinesses = chargeable === null ? { ok: false, error: 'MGMT_HTTP_500' }
+    : { ok: true, settings_enabled_production: chargeable, chargeable_production: chargeable, connected_production_sellers: chargeable };
+  return facts;
+};
+
+for (const [name, states, chargeable, value, reasons] of MONEY_CASES) {
+  test(`MONEY_MOVEMENT_POSSIBLE ${name}: ${value}`, () => {
+    const facts = withMoney(readyFacts(), states, chargeable);
+    assert.deepEqual(moneyMovementPossible(facts), { value, reasons, platform: moneyMovementPossible(facts).platform });
+    const result = evaluate(facts, LIVE);
+    assert.deepEqual(result.moneyMovementPossible, { value, reasons });
+    assert.match(renderTable(result, facts), new RegExp(`^MONEY_MOVEMENT_POSSIBLE: ${value} \\(`, 'm'));
+    // UNKNOWN nunca pasa la compuerta, con ninguna decisión.
+    if (value === 'UNKNOWN') {
+      for (const decide of [() => {}, (f) => { f.paymentCertification.opening_decision.methods = ['manual']; f.mercadoPago = { ok: true, settings: null, connections: [] }; }]) {
+        const undecided = readyFacts();
+        decide(undecided);
+        assert.notEqual(gateOf(evaluate(withMoney(undecided, states, chargeable), LIVE), 'REAL_MONEY_GATE').status, 'PASS', name);
+      }
+    }
+  });
+}
+
+test('MONEY_MOVEMENT_POSSIBLE: el lado del proyecto pide las dos llaves cerradas para decir NO', () => {
+  assert.equal(realMoneyPlatform(productionRealMoney()).value, 'OPEN');
+  assert.equal(realMoneyPlatform(productionRealMoney({ [SWITCH]: 'ABSENT' })).value, 'CLOSED');
+  // Con funciones viejas desplegadas, la frase vieja todavía abriría: no se puede decir «cerrado».
+  assert.equal(realMoneyPlatform(productionRealMoney({ [SWITCH]: 'ABSENT', [LEGACY]: 'PRESENT' })).value, 'OPEN');
+  assert.deepEqual(realMoneyPlatform(productionRealMoney({ [SWITCH]: 'ABSENT', [LEGACY]: 'MAYBE' })).unknown, ['LEGACY_SMOKE_CONFIRMATION_UNREADABLE']);
+  for (const malformed of [null, 'states', [], undefined]) assert.equal(realMoneyPlatform(malformed).value, 'UNKNOWN', String(malformed));
+});
+
+// REAL_MONEY_GATE en controlled-production: [dinero real, decisión, ¿Mercado Pago certificado para producción?, estado, códigos].
+const DECISIONS = {
+  'efectivo y Mercado Pago': { methods: ['manual', 'mercadopago'], decided_by: 'owner', date: '2026-10-01' },
+  'sólo efectivo': { methods: ['manual'], decided_by: 'owner', date: '2026-10-01' },
+  'sin decidir (null)': null,
+  'a medio llenar': { methods: ['manual'] },
+};
+const GATE_CASES = [
+  ['YES', 'efectivo y Mercado Pago', true, 'PASS', []],
+  ['YES', 'efectivo y Mercado Pago', false, 'FAIL', ['NOT_CERTIFIED:mercadopago:production']],
+  ['YES', 'sólo efectivo', true, 'FAIL', ['MONEY_MOVEMENT_POSSIBLE_BUT_DECISION_IS_MANUAL_ONLY']],
+  ['YES', 'sólo efectivo', false, 'FAIL', ['MONEY_MOVEMENT_POSSIBLE_BUT_DECISION_IS_MANUAL_ONLY', 'NOT_CERTIFIED:mercadopago:production']],
+  ['YES', 'sin decidir (null)', true, 'FAIL', ['PAYMENT_DECISION_MISSING']],
+  ['YES', 'sin decidir (null)', false, 'FAIL', ['PAYMENT_DECISION_MISSING', 'NOT_CERTIFIED:mercadopago:production']],
+  ['YES', 'a medio llenar', true, 'FAIL', ['PAYMENT_DECISION_INVALID']],
+  ['NO', 'sólo efectivo', false, 'PASS', []],
+  ['NO', 'sólo efectivo', true, 'PASS', []],
+  ['NO', 'efectivo y Mercado Pago', true, 'FAIL', ['MERCADOPAGO_DECIDED_BUT_MONEY_MOVEMENT_IS_NO']],
+  ['NO', 'sin decidir (null)', false, 'FAIL', ['PAYMENT_DECISION_MISSING']],
+  ['NO', 'a medio llenar', false, 'FAIL', ['PAYMENT_DECISION_INVALID']],
+  ['UNKNOWN', 'efectivo y Mercado Pago', true, 'UNKNOWN', ['MONEY_MOVEMENT_UNKNOWN:REAL_MONEY_SWITCH_UNREADABLE']],
+  ['UNKNOWN', 'sólo efectivo', false, 'UNKNOWN', ['MONEY_MOVEMENT_UNKNOWN:REAL_MONEY_SWITCH_UNREADABLE']],
+  ['UNKNOWN', 'sin decidir (null)', false, 'FAIL', ['PAYMENT_DECISION_MISSING', 'MONEY_MOVEMENT_UNKNOWN:REAL_MONEY_SWITCH_UNREADABLE']],
+];
+const MONEY_STATES = { YES: {}, NO: { [SWITCH]: 'ABSENT' }, UNKNOWN: { [SWITCH]: 'UNREADABLE' } };
+
+for (const [money, decision, certified, status, missing] of GATE_CASES) {
+  test(`REAL_MONEY_GATE en controlled-production: dinero real ${money}, decisión ${decision}, Mercado Pago ${certified ? '' : 'sin '}certificado → ${status}`, () => {
+    const facts = withMoney(readyFacts(), MONEY_STATES[money], 1);
+    facts.paymentCertification.opening_decision = structuredClone(DECISIONS[decision]);
+    facts.paymentCertification.entries[1].certified = certified;
+    const gate = gateOf(evaluate(facts, LIVE), 'REAL_MONEY_GATE');
+    assert.equal(gate.evidence.money_movement_possible, money);
+    assert.equal(gate.status, status);
+    assert.deepEqual(gate.missing, missing);
+  });
+}
+
+test('REAL_MONEY_GATE en staging: sólo pasa con NO; la frase vieja de humo falla en cualquier destino', () => {
+  const staging = (states, chargeable = 0) => {
+    const facts = withMoney(readyFacts(), states, chargeable);
+    facts.target = 'staging';
+    // En Staging la decisión de apertura no cuenta: el gate mira que el dinero real no sea posible.
+    facts.paymentCertification.opening_decision = null;
+    return gateOf(evaluate(facts, LIVE), 'REAL_MONEY_GATE');
+  };
+  const test_ = { [ENV]: 'TEST', [REVIEW]: 'ABSENT', [SWITCH]: 'ABSENT' };
+  assert.deepEqual([staging(test_).status, staging(test_).evidence.reason], ['PASS', 'NO_REAL_MONEY_ON_STAGING']);
+  // El interruptor puesto en Staging no cambia nada: el entorno es test.
+  assert.equal(staging({ ...test_, [SWITCH]: 'ENABLED' }, 1).status, 'PASS');
+  assert.deepEqual(staging({}, 1).missing, ['REAL_MONEY_POSSIBLE_ON_STAGING']);
+  assert.deepEqual([staging({ [SWITCH]: 'UNREADABLE' }, 1).status, staging({ [SWITCH]: 'UNREADABLE' }, 1).missing],
+    ['UNKNOWN', ['MONEY_MOVEMENT_UNKNOWN:REAL_MONEY_SWITCH_UNREADABLE']]);
+  assert.deepEqual(staging({ ...test_, [LEGACY]: 'PRESENT' }).missing, ['LEGACY_SMOKE_CONFIRMATION_PRESENT']);
+  // En controlled-production también, aunque todo lo demás esté en regla.
+  const cp = gateOf(evaluate(withMoney(readyFacts(), { [LEGACY]: 'PRESENT' }, 1), LIVE), 'REAL_MONEY_GATE');
+  assert.deepEqual([cp.status, cp.missing], ['FAIL', ['LEGACY_SMOKE_CONFIRMATION_PRESENT']]);
+});
+
+test('REAL_MONEY_GATE: la evidencia dice estados y cantidades, nunca valores ni huellas', () => {
+  const facts = readyFacts();
+  const gate = gateOf(evaluate(facts, LIVE), 'REAL_MONEY_GATE');
+  assert.deepEqual(gate.evidence.secrets, productionRealMoney());
+  assert.deepEqual(gate.evidence.businesses, { settings_enabled_production: 1, chargeable_production: 1, connected_production_sellers: 1 });
+  assert.deepEqual(gate.evidence.opening_decision, ['manual', 'mercadopago']);
+  assert.equal(gate.evidence.mercadopago_certified_for_production, true);
+  const printed = [renderTable(evaluate(facts, LIVE), facts), renderMarkdown(evaluate(facts, LIVE), facts), JSON.stringify(evaluate(facts, LIVE))].join('\n');
+  for (const value of ['enabled', 'production', 'approved', 'test']) assert.equal(printed.includes(sha256(value)), false, value);
+});
+
 test('en Staging Mercado Pago corre en modo test y un cobro de producción es el entorno equivocado', () => {
   assert.equal(expectedMercadoPagoEnvironment('staging'), 'test');
   assert.equal(expectedMercadoPagoEnvironment('controlled-production'), 'production');
@@ -386,11 +625,24 @@ test('en Staging Mercado Pago corre en modo test y un cobro de producción es el
     facts.mercadoPago.connections[0].environment = 'test';
     facts.paymentCertification.entries[1].environment = 'test';
     facts.catalog.available_non_commercial = 12;
+    stagingRealMoney(facts);
   });
-  assert.equal(evaluate(staging).verdict, 'PRODUCTION_READY', 'el catálogo de QA y el sandbox son lo esperado en Staging');
-  const wrong = evaluate(mutated((facts) => { facts.target = 'staging'; }));
+  const stagingResult = evaluate(staging);
+  assert.equal(stagingResult.verdict, 'PRODUCTION_READY', 'el catálogo de QA y el sandbox son lo esperado en Staging');
+  assert.deepEqual(stagingResult.moneyMovementPossible.value, 'NO');
+  assert.equal(gateOf(stagingResult, 'REAL_MONEY_GATE').evidence.reason, 'NO_REAL_MONEY_ON_STAGING');
+  const wrong = evaluate(mutated((facts) => { facts.target = 'staging'; stagingRealMoney(facts); }));
   assert.deepEqual(blockerIds(wrong), ['MP_SELLER']);
   assert.ok(wrong.blockers[0].missing.includes('WRONG_ENVIRONMENT:production!=test'));
+  // Y si los secretos de Staging dijeran producción con el interruptor abierto: en Staging el dinero real no puede ser posible.
+  const realOnStaging = evaluate(mutated((facts) => {
+    facts.target = 'staging';
+    facts.mercadoPago.settings.environment = 'test';
+    facts.mercadoPago.settings.production_review_status = 'not_requested';
+    facts.mercadoPago.connections[0].environment = 'test';
+    facts.paymentCertification.entries[1].environment = 'test';
+  }));
+  assert.deepEqual(realOnStaging.blockers, [{ gate: 'REAL_MONEY_GATE', status: 'FAIL', missing: ['REAL_MONEY_POSSIBLE_ON_STAGING'] }]);
 });
 
 test('modo estricto: los bundles tienen que ser los del entorno de referencia', () => {
@@ -473,7 +725,17 @@ function fakeIo(overrides = {}) {
     [SQL.migrationLedger(), facts.migrationLedger.versions],
     [SQL.abuse(), strip(facts.abuse)],
     [SQL.readiness(BUSINESS, 1), { can_open: true, accepting_orders: false, pending: [], items: [] }],
+    [SQL.realMoneyBusinesses(), strip(facts.realMoneyBusinesses)],
   ].map(([sql, data]) => [assertSelectOnly(sql), data]));
+  // Los secretos del proyecto como los devuelve la Management API: nombre y huella SHA-256 del valor.
+  // Los valores sólo viven acá, en la prueba; la herramienta ve las huellas.
+  const secrets = new Map([
+    ['MERCADOPAGO_ENVIRONMENT', 'production'],
+    ['MERCADOPAGO_PRODUCTION_REVIEW_STATUS', 'approved'],
+    ['MERCADOPAGO_REAL_MONEY_ENABLED', 'enabled'],
+    ['MERCADOPAGO_CLIENT_SECRET', 'fixture-client-secret-value'],
+    ['PAYMENT_WORKER_SECRET', 'fixture-worker-secret-value'],
+  ]);
   const files = {
     'supabase/config.toml': CONFIG_TOML,
     [PAYMENT_CERTIFICATION_PATH]: JSON.stringify({
@@ -509,6 +771,10 @@ function fakeIo(overrides = {}) {
       return FUNCTIONS.map(([slug, verifyJwt]) => ({ slug, status: 'ACTIVE', verify_jwt: verifyJwt, version: 7, ezbr_sha256: sha256(slug),
         updated_at: DEPLOYED_AT }));
     },
+    async listSecrets() {
+      return [...secrets].map(([name, value]) => ({ name, digest: sha256(value) }));
+    },
+    secrets,
     async readRepoFile(relativePath) {
       if (!Object.hasOwn(files, relativePath)) throw Error(`REPO_FILE_UNREADABLE:${relativePath}:ENOENT`);
       return files[relativePath];
@@ -550,7 +816,16 @@ test('collect() arma los hechos con la entrada/salida inyectada y el resultado e
   assert.equal(facts.deployedFunctions.functions[0].bundle_sha256, sha256('catalog-image-manager'));
   assert.deepEqual(facts.paymentCertification.entries.map((entry) => entry.evidence_exists), [true, true], 'evidencia como directorio y como archivo');
   assert.deepEqual(facts.ci, { conclusion: 'success', commit: HEAD });
-  assert.equal(io.sqlSeen.length, 10);
+  assert.deepEqual(facts.realMoneySecrets, { ok: true, states: productionRealMoney() });
+  assert.deepEqual(facts.realMoneyBusinesses, readyFacts().realMoneyBusinesses);
+  // De los secretos quedan estados: ni la huella ni el valor de ninguno llega a los hechos.
+  const serialized = JSON.stringify(facts);
+  for (const value of io.secrets.values()) assert.equal(serialized.includes(sha256(value)), false, 'una huella de secreto llegó a los hechos');
+  for (const name of ['MERCADOPAGO_CLIENT_SECRET', 'PAYMENT_WORKER_SECRET']) {
+    assert.equal(serialized.includes(io.secrets.get(name)), false, `el valor de ${name} llegó a los hechos`);
+    assert.equal(serialized.includes(name), false, `${name} no es del dinero real y no tiene por qué aparecer`);
+  }
+  assert.equal(io.sqlSeen.length, 11);
   for (const sql of io.sqlSeen) assert.equal(assertSelectOnly(sql), sql);
   const result = evaluate(facts);
   assert.deepEqual(result.blockers, []);
@@ -646,6 +921,9 @@ test('la evidencia de una certificación tiene que ser una ruta del repo que exi
   assert.deepEqual(evaluate(facts).blockers, [{
     gate: 'PAYMENT_CERTIFICATION', status: 'FAIL',
     missing: ['EVIDENCE_PATH_INVALID:../fuera-del-repo', 'EVIDENCE_NOT_IN_REPO:artifacts/no-existe'],
+  }, {
+    // Con el dinero real posible, Mercado Pago sin evidencia de producción también lo frena la compuerta del dinero real.
+    gate: 'REAL_MONEY_GATE', status: 'FAIL', missing: ['EVIDENCE_NOT_IN_REPO:artifacts/no-existe'],
   }]);
   for (const bad of ['', '/etc/passwd', '../x', 'a/../b', 'a//b', 'a\\b', 'a b', 'x'.repeat(301)]) assert.equal(isRepoRelativePath(bad), false, bad);
   assert.equal(isRepoRelativePath('artifacts/taba-e2e-cert-20261001-022224/final-report.md'), true);
@@ -849,6 +1127,7 @@ test('el estado de la tienda no bloquea, pero un comercio dado de baja o de QA e
     facts.mercadoPago.settings.environment = 'test';
     facts.mercadoPago.connections[0].environment = 'test';
     facts.paymentCertification.entries[1].environment = 'test';
+    stagingRealMoney(facts);
   }));
   assert.deepEqual([staging.verdict, staging.warnings], ['PRODUCTION_READY', []]);
 });
@@ -998,6 +1277,8 @@ test('evidencia de certificación: bajo artifacts/ o docs/, versionada y con una
     ],
   });
 
+  // Con el dinero real posible, la certificación de Mercado Pago para producción la exigen las dos compuertas.
+  const realMoneyToo = (...missing) => ({ gate: 'REAL_MONEY_GATE', status: 'FAIL', missing });
   // Antes: «.», «docs» o «package.json» contaban como evidencia porque existen en cualquier checkout.
   const anywhere = fakeIo();
   Object.assign(anywhere.dirs, { '.': [{ name: 'package.json', isDirectory: false }], docs: [{ name: 'README.md', isDirectory: false }] });
@@ -1010,12 +1291,13 @@ test('evidencia de certificación: bajo artifacts/ o docs/, versionada y con una
     const refusal = (evidence) => `${/^(artifacts|docs)\//.test(evidence) ? 'EVIDENCE_NOT_IN_REPO' : 'EVIDENCE_PATH_INVALID'}:${evidence}`;
     assert.deepEqual(evaluate(facts, LIVE).blockers, [{
       gate: 'PAYMENT_CERTIFICATION', status: 'FAIL', missing: [refusal(manualEvidence), refusal(onlineEvidence)],
-    }]);
+    }, realMoneyToo(refusal(onlineEvidence))]);
   }
   // Y aunque unos hechos armados a mano digan que existe y está versionada: la ruta manda.
   for (const evidence of ['.', 'package.json', 'docs', 'docs/.oculto/x', 'artifacts/../package.json', 'node_modules/pg']) {
     const forged = evaluate(mutated((facts) => { facts.paymentCertification.entries[1].evidence = evidence; }));
-    assert.deepEqual(forged.blockers, [{ gate: 'PAYMENT_CERTIFICATION', status: 'FAIL', missing: [`EVIDENCE_PATH_INVALID:${evidence}`] }], evidence);
+    assert.deepEqual(forged.blockers, [{ gate: 'PAYMENT_CERTIFICATION', status: 'FAIL', missing: [`EVIDENCE_PATH_INVALID:${evidence}`] },
+      realMoneyToo(`EVIDENCE_PATH_INVALID:${evidence}`)], evidence);
   }
 
   // Existe en el disco de quien corre la herramienta, pero git no la versiona (una carpeta ignorada).
@@ -1023,7 +1305,8 @@ test('evidencia de certificación: bajo artifacts/ o docs/, versionada y con una
   ignored.untracked.add('artifacts/cert-mp');
   const untracked = await collect('controlled-production', BUSINESS, ignored, { now: NOW });
   assert.deepEqual(untracked.paymentCertification.entries.map((entry) => [entry.evidence_exists, entry.evidence_tracked]), [[true, true], [true, false]]);
-  assert.deepEqual(evaluate(untracked, LIVE).blockers, [{ gate: 'PAYMENT_CERTIFICATION', status: 'FAIL', missing: ['EVIDENCE_NOT_TRACKED:artifacts/cert-mp'] }]);
+  assert.deepEqual(evaluate(untracked, LIVE).blockers, [{ gate: 'PAYMENT_CERTIFICATION', status: 'FAIL', missing: ['EVIDENCE_NOT_TRACKED:artifacts/cert-mp'] },
+    realMoneyToo('EVIDENCE_NOT_TRACKED:artifacts/cert-mp')]);
   // Y si nadie puede decir si está versionada, tampoco cuenta.
   const blind = fakeIo();
   delete blind.repoTracked;
@@ -1032,15 +1315,17 @@ test('evidencia de certificación: bajo artifacts/ o docs/, versionada y con una
   assert.deepEqual(evaluate(unknownTracking, LIVE).blockers, [{
     gate: 'PAYMENT_CERTIFICATION', status: 'FAIL',
     missing: ['EVIDENCE_TRACKING_UNKNOWN:artifacts/cert-manual', 'EVIDENCE_TRACKING_UNKNOWN:artifacts/cert-mp'],
-  }]);
+  }, realMoneyToo('EVIDENCE_TRACKING_UNKNOWN:artifacts/cert-mp')]);
 
+  // Una decisión con una fecha que no sirve no es una decisión: tampoco para el dinero real.
+  const invalidDecision = [{ gate: 'MP_SELLER', status: 'FAIL', missing: ['PAYMENT_DECISION_INVALID'] }, realMoneyToo('PAYMENT_DECISION_INVALID')];
   // Antes: la fecha sólo pasaba por una expresión regular.
   for (const date of ['2099-99-99', '0000-00-00', '2026-02-30', '2026-13-01', '01/10/2026', '', null, 20261001]) {
     const result = evaluate(mutated((facts) => { facts.paymentCertification.entries[0].date = date; }));
     assert.deepEqual(result.blockers, [{ gate: 'PAYMENT_CERTIFICATION', status: 'FAIL', missing: ['CERTIFICATION_DATE_INVALID:manual'] }], String(date));
     const manual = manualOnlyFacts();
     manual.paymentCertification.opening_decision.date = date;
-    assert.deepEqual(evaluate(manual).blockers, [{ gate: 'MP_SELLER', status: 'FAIL', missing: ['PAYMENT_DECISION_INVALID'] }], String(date));
+    assert.deepEqual(evaluate(manual).blockers, invalidDecision, String(date));
   }
   assert.equal(evaluate(mutated((facts) => { facts.paymentCertification.entries[0].date = '2026-09-30T18:30:00-03:00'; })).verdict, 'PRODUCTION_READY');
   // Con reloj, una firma fechada pasado mañana no es una firma (un día de margen por los husos horarios).
@@ -1049,7 +1334,7 @@ test('evidencia de certificación: bajo artifacts/ o docs/, versionada y con una
   assert.equal(evaluate(mutated((facts) => { facts.paymentCertification.entries[0].date = '2026-10-02'; }), LIVE).verdict, 'PRODUCTION_READY');
   const postdatedDecision = manualOnlyFacts();
   postdatedDecision.paymentCertification.opening_decision.date = '2027-01-01';
-  assert.deepEqual(evaluate(postdatedDecision, LIVE).blockers, [{ gate: 'MP_SELLER', status: 'FAIL', missing: ['PAYMENT_DECISION_INVALID'] }]);
+  assert.deepEqual(evaluate(postdatedDecision, LIVE).blockers, invalidDecision);
 });
 
 test('verify_jwt: una función que config.toml no declara se informa con su propio código', () => {
@@ -1090,6 +1375,7 @@ test('el guardián se busca como llamada, no como palabra suelta', () => {
 const ALL_SQL = [
   SQL.observer(), SQL.business(BUSINESS), SQL.serviceHours(BUSINESS), SQL.deliveryZones(BUSINESS), SQL.catalog(BUSINESS),
   SQL.team(BUSINESS), SQL.mercadoPago(BUSINESS), SQL.migrationLedger(), SQL.abuse(), SQL.readiness(BUSINESS, 5),
+  SQL.realMoneyBusinesses(),
 ];
 
 test('toda consulta de la herramienta es UNA sentencia de lectura', () => {
@@ -1189,16 +1475,22 @@ test('ninguna consulta devuelve credenciales, identificadores de cuenta ni datos
   }
 });
 
-test('el cableado real sólo sabe hacer dos llamadas de lectura', () => {
+test('el cableado real sólo sabe hacer tres llamadas de lectura', () => {
   const code = codeOf('scripts/release/gates/live-io.mjs');
-  assert.equal((code.match(/fetchImpl\(/g) || []).length, 2);
-  assert.deepEqual([...code.matchAll(/method:\s*'([A-Z]+)'/g)].map((match) => match[1]), ['GET', 'POST']);
+  assert.equal((code.match(/fetchImpl\(/g) || []).length, 3);
+  assert.deepEqual([...code.matchAll(/method:\s*'([A-Z]+)'/g)].map((match) => match[1]), ['GET', 'GET', 'POST']);
   assert.deepEqual([...code.matchAll(/\/v1\/projects\/\$\{ref\}([^`]*)`/g)].map((match) => match[1]),
-    ['/functions', '/database/query/read-only']);
+    ['/functions', '/secrets', '/database/query/read-only']);
   assert.match(code, /const query = assertSelectOnly\(sql\);/, 'el SQL vuelve a pasar por el cerrojo antes de salir');
   assert.match(code, /body: JSON\.stringify\(\{ query \}\)/);
+  // Los secretos: un GET sin cuerpo, del que quedan nombre y huella, y cuyo cuerpo no se repite en ningún error.
+  const secrets = code.slice(code.indexOf('const listSecrets'), code.indexOf('const runReadOnlySql'));
+  assert.match(secrets, /method: 'GET'/);
+  assert.doesNotMatch(secrets, /\bbody:|safe\(|\$\{body\}|reveal/);
+  assert.match(secrets, /throw Error\(`MGMT_HTTP_\$\{response\.status\}:secrets`\)/);
+  assert.match(secrets, /name: typeof secret\?\.name === 'string' \? secret\.name : null,\s*digest: typeof secret\?\.value === 'string' \? secret\.value : null/);
   for (const forbidden of [/\bPUT\b/, /\bPATCH\b/, /\bDELETE\b/, /supabase-js/, /createClient/, /\.rpc\(/, /\.from\(/, /service_role/,
-    /\/secrets/, /\/config\b/, /\/deploy/, /\/database\/query`/, /writeFile/, /child_process/, /console\./, /guardarSecreto|borrarSecreto/]) {
+    /\/secrets\//, /reveal=/, /\/config\b/, /\/deploy/, /\/database\/query`/, /writeFile/, /child_process/, /console\./, /guardarSecreto|borrarSecreto/]) {
     assert.doesNotMatch(code, forbidden, String(forbidden));
   }
   assert.deepEqual([...code.matchAll(/^import .* from '([^']+)';$/gm)].map((match) => match[1]), [
@@ -1302,7 +1594,9 @@ test('evaluar hechos guardados: tabla, reporte, markdown y códigos de salida, s
   // Quien lee la tabla sabe que mira una foto, de cuándo es, y que lo del repo es el árbol de hoy.
   assert.match(first.output, /^source: SAVED FACTS \(ready\.json\) — target sections from the file, repo sections re-read from the current tree$/m);
   assert.match(first.output, /^facts collected: 2026-10-01T12:00:00\.000Z · age 5 min \(max 30\) · FRESH$/m);
+  assert.match(first.output, /^MONEY_MOVEMENT_POSSIBLE: YES \(MERCADOPAGO_ENVIRONMENT_PRODUCTION, PRODUCTION_REVIEW_APPROVED, REAL_MONEY_SWITCH_ENABLED, BUSINESSES_CAN_CHARGE_IN_PRODUCTION:1\)$/m);
   const report = JSON.parse(fs.readFileSync(file('out/report.json'), 'utf8'));
+  assert.equal(report.moneyMovementPossible.value, 'YES');
   assert.equal(report.verdict, 'PRODUCTION_READY');
   assert.equal(report.tool, 'ecommerce-release-gates');
   assert.equal(report.source, 'saved');
@@ -1312,10 +1606,11 @@ test('evaluar hechos guardados: tabla, reporte, markdown y códigos de salida, s
     max_age_minutes: 30, freshness: 'FRESH', repo_sections: 'REREAD_FROM_CURRENT_TREE', repo_head_at_snapshot: HEAD,
   });
   assert.doesNotMatch(JSON.stringify(report.provenance), /taba-release-gates-/, 'del archivo va sólo el nombre: sin rutas de disco');
-  assert.equal(report.gates.length, 16);
+  assert.equal(report.gates.length, 17);
   assert.equal(report.facts.businessId, BUSINESS);
   const markdown = fs.readFileSync(file('out/report.md'), 'utf8');
   assert.match(markdown, /\*\*VERDICT: PRODUCTION_READY\*\*/);
+  assert.match(markdown, /^- MONEY_MOVEMENT_POSSIBLE: YES \(/m);
   assert.match(markdown, /^- source: SAVED FACTS \(ready\.json\) — target sections from the file/m);
   assert.match(markdown, /^- facts collected: 2026-10-01T12:00:00\.000Z · age 5 min \(max 30\) · FRESH$/m);
   // El reporte trae los hechos adentro: se puede volver a evaluar mientras sigan siendo recientes.
@@ -1352,8 +1647,10 @@ test('hechos guardados viejos, con fecha futura o sin fecha nunca dan PRODUCTION
   // (b) Sin fecha, sin observador y sin versión de formato: no son hechos de ningún momento.
   const anonymous = await runCli(['--facts', save('anonymous.json', (facts) => { delete facts.collectedAt; delete facts.observer; delete facts.schema; })]);
   assert.equal(anonymous.code, 3);
-  assert.match(anonymous.output, /VERDICT: NOT_READY\nBLOCKERS \(15\)\n {2}FACTS_PROVENANCE \[UNKNOWN\] FACTS_NOT_IDENTIFIED:collectedAt,schema$/m);
+  assert.match(anonymous.output, /VERDICT: NOT_READY\nBLOCKERS \(16\)\n {2}FACTS_PROVENANCE \[UNKNOWN\] FACTS_NOT_IDENTIFIED:collectedAt,schema$/m);
   assert.match(anonymous.output, /CATALOG_APPROVAL\s+yes\s+UNKNOWN\s+FACTS_NOT_IDENTIFIED:collectedAt,schema/);
+  // Sin saber de cuándo son los hechos, tampoco se sabe si puede moverse dinero real.
+  assert.match(anonymous.output, /^MONEY_MOVEMENT_POSSIBLE: UNKNOWN \(FACTS_NOT_IDENTIFIED:collectedAt,schema\)$/m);
   assert.match(anonymous.output, /^facts collected: \(unknown\) · UNKNOWN$/m);
   for (const [index, value] of ['ayer', '2026-10-01', '', null, 1790856000000, '2026-13-45T00:00:00Z'].entries()) {
     const undated = await runCli(['--facts', save(`undated-${index}.json`, (facts) => { facts.collectedAt = value; })]);
@@ -1441,7 +1738,7 @@ test('hechos guardados: lo del repo se relee del árbol actual, no de la foto', 
   assert.equal(unreadable.code, 3);
   const blind = JSON.parse(unreadable.output);
   assert.deepEqual(blind.blockers.map((blocker) => [blocker.gate, blocker.status]), [
-    ['PAYMENT_CERTIFICATION', 'UNKNOWN'], ['MIGRATION_PARITY', 'UNKNOWN'], ['EDGE_FUNCTIONS', 'UNKNOWN'],
+    ['PAYMENT_CERTIFICATION', 'UNKNOWN'], ['REAL_MONEY_GATE', 'UNKNOWN'], ['MIGRATION_PARITY', 'UNKNOWN'], ['EDGE_FUNCTIONS', 'UNKNOWN'],
     ['NO_OPEN_P0', 'UNKNOWN'], ['NO_OPEN_P1', 'UNKNOWN'], ['CI_GREEN', 'UNKNOWN'],
   ]);
   for (const section of ['repoMigrations', 'repoFunctions', 'paymentCertification', 'findingsRegister', 'repo']) assert.equal(blind.facts[section].ok, false, section);
@@ -1582,7 +1879,10 @@ test('contra el repo real: funciones, verify_jwt y migraciones se leen completos
   assert.equal(new Set(facts.repoMigrations.files.map((file) => file.version)).size, facts.repoMigrations.files.length);
   assert.ok(facts.repoMigrations.files.some((file) => file.version === '20261001180000' && file.name === 'order_intake_guard'));
   // Lo que es del destino no se leyó: queda desconocido, no aprobado.
-  for (const section of ['business', 'catalog', 'migrationLedger', 'deployedFunctions']) assert.equal(facts[section].ok, false, section);
+  for (const section of ['business', 'catalog', 'migrationLedger', 'deployedFunctions', 'realMoneySecrets', 'realMoneyBusinesses']) {
+    assert.equal(facts[section].ok, false, section);
+  }
+  assert.equal(evaluate(facts).moneyMovementPossible.value, 'UNKNOWN', 'sin leer el destino no se sabe si puede moverse dinero real');
   await assert.rejects(createRepoIo(ROOT).readRepoFile('../fuera.txt'), /REPO_PATH_INVALID/);
   await assert.rejects(createRepoIo(ROOT).readRepoFile('docs/no-existe.json'), /^Error: REPO_FILE_UNREADABLE:docs\/no-existe\.json:ENOENT$/);
 });

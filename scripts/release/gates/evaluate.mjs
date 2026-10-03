@@ -60,6 +60,7 @@ export const GATES = Object.freeze([
   { id: 'TEAM', title: 'Team', blocking: true },
   { id: 'MP_SELLER', title: 'Mercado Pago seller', blocking: true },
   { id: 'PAYMENT_CERTIFICATION', title: 'Payment certification', blocking: true },
+  { id: 'REAL_MONEY_GATE', title: 'Real money gate', blocking: true },
   { id: 'MIGRATION_PARITY', title: 'Migration parity', blocking: true },
   { id: 'EDGE_FUNCTIONS', title: 'Edge Functions deployed', blocking: true },
   { id: 'ABUSE_PROTECTION', title: 'Order intake guard', blocking: true },
@@ -69,6 +70,12 @@ export const GATES = Object.freeze([
   { id: 'CI_GREEN', title: 'CI green on the release commit', blocking: true },
   { id: 'STORE_STATE', title: 'Store state', blocking: false },
 ].map((gate) => Object.freeze(gate)));
+
+// El interruptor de dinero real (EDGE-03). Los nombres son los de
+// supabase/functions/_shared/real-money-gate.ts y de collect.mjs; un test los compara.
+export const REAL_MONEY_SWITCH = 'MERCADOPAGO_REAL_MONEY_ENABLED';
+export const LEGACY_SMOKE_CONFIRMATION = 'MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION';
+export const MONEY_MOVEMENT = Object.freeze({ YES: 'YES', NO: 'NO', UNKNOWN: 'UNKNOWN' });
 
 export const FINDING_STATUSES = Object.freeze(['open', 'fixed', 'accepted_risk', 'external_gate']);
 export const FINDING_SEVERITIES = Object.freeze(['P0', 'P1', 'P2', 'P3']);
@@ -544,6 +551,167 @@ function paymentCertification(facts, env) {
   return pass(evidence);
 }
 
+// ── Dinero real (EDGE-03) ────────────────────────────────────────────────────
+//
+// MONEY_MOVEMENT_POSSIBLE: ¿se puede crear HOY un cobro con dinero real en este
+// destino? Se calcula, no se adivina, con dos lados:
+//
+//   - el PROYECTO, por las huellas de sus secretos: entorno, revisión productiva,
+//     el interruptor MERCADOPAGO_REAL_MONEY_ENABLED y la variable vieja de humo;
+//   - la BASE: cuántos comercios tienen Mercado Pago encendido en producción y un
+//     vendedor productivo conectado (cualquiera, no sólo el evaluado).
+//
+//   NO       alguna condición está PROBADA cerrada con hechos que se leyeron.
+//   YES      se leyó todo y cada condición está abierta o puede estarlo.
+//   UNKNOWN  nada prueba que esté cerrado y algo no se pudo leer o reconocer.
+//
+// Las dos llaves posibles. El interruptor lo lee el código nuevo; la frase vieja
+// de humo la leía el código anterior. Esta herramienta no puede saber cuál está
+// desplegado, así que para decir NO por las llaves hacen falta las dos cerradas:
+// el interruptor ausente o distinto de `enabled`, Y la variable vieja ausente.
+// Si la variable vieja está, puede abrir (con funciones viejas) y además es un
+// error de configuración: la compuerta falla por eso solo.
+//
+// Un NO por el entorno (ausente o `test`), por la revisión (ausente o un valor
+// que no es `approved`) o porque ningún comercio puede cobrar vale para el
+// código nuevo y para el viejo: los dos lo exigen igual.
+
+/** El lado del proyecto. `states` es lo que dejó `classifyRealMoneySecrets` (collect.mjs). */
+export function realMoneyPlatform(states) {
+  const closed = [];
+  const undetermined = [];
+  const open = [];
+  if (!isObject(states)) return { value: 'UNKNOWN', closed, unknown: ['REAL_MONEY_SECRETS_MALFORMED'], open };
+  const environment = states.MERCADOPAGO_ENVIRONMENT;
+  if (environment === 'ABSENT') closed.push('MERCADOPAGO_ENVIRONMENT_ABSENT');
+  else if (environment === 'TEST') closed.push('MERCADOPAGO_ENVIRONMENT_TEST');
+  else if (environment === 'PRODUCTION') open.push('MERCADOPAGO_ENVIRONMENT_PRODUCTION');
+  else undetermined.push(`MERCADOPAGO_ENVIRONMENT_${environment === 'UNRECOGNIZED' ? 'UNRECOGNIZED' : 'UNREADABLE'}`);
+
+  const review = states.MERCADOPAGO_PRODUCTION_REVIEW_STATUS;
+  if (review === 'ABSENT') closed.push('PRODUCTION_REVIEW_ABSENT');
+  else if (review === 'NOT_APPROVED') closed.push('PRODUCTION_REVIEW_NOT_APPROVED');
+  else if (review === 'APPROVED') open.push('PRODUCTION_REVIEW_APPROVED');
+  else undetermined.push(`PRODUCTION_REVIEW_${review === 'UNRECOGNIZED' ? 'UNRECOGNIZED' : 'UNREADABLE'}`);
+
+  const realMoneySwitch = states[REAL_MONEY_SWITCH];
+  const legacy = states[LEGACY_SMOKE_CONFIRMATION];
+  if (realMoneySwitch === 'ENABLED') open.push('REAL_MONEY_SWITCH_ENABLED');
+  if (legacy === 'PRESENT') open.push('LEGACY_SMOKE_CONFIRMATION_PRESENT');
+  if (realMoneySwitch !== 'ENABLED' && legacy !== 'PRESENT') {
+    const switchClosed = realMoneySwitch === 'ABSENT' || realMoneySwitch === 'NOT_ENABLED';
+    if (switchClosed && legacy === 'ABSENT') {
+      closed.push(realMoneySwitch === 'ABSENT' ? 'REAL_MONEY_SWITCH_ABSENT' : 'REAL_MONEY_SWITCH_NOT_ENABLED');
+    } else {
+      if (!switchClosed) undetermined.push('REAL_MONEY_SWITCH_UNREADABLE');
+      if (legacy !== 'ABSENT') undetermined.push('LEGACY_SMOKE_CONFIRMATION_UNREADABLE');
+    }
+  }
+  const value = closed.length ? 'CLOSED' : undetermined.length ? 'UNKNOWN' : 'OPEN';
+  return { value, closed, unknown: undetermined, open };
+}
+
+/** MONEY_MOVEMENT_POSSIBLE del destino: { value: YES | NO | UNKNOWN, reasons, platform }. */
+export function moneyMovementPossible(facts) {
+  const secrets = known(facts?.realMoneySecrets);
+  const platform = secrets
+    ? realMoneyPlatform(secrets.states)
+    : { value: 'UNKNOWN', closed: [], unknown: [`REAL_MONEY_SECRETS_UNAVAILABLE:${reasonOf(facts?.realMoneySecrets)}`], open: [] };
+  const closed = [...platform.closed];
+  const undetermined = [...platform.unknown];
+  const open = [...platform.open];
+  const businesses = known(facts?.realMoneyBusinesses);
+  const chargeable = businesses ? count(businesses.chargeable_production) : null;
+  if (!businesses) undetermined.push(`REAL_MONEY_BUSINESSES_UNAVAILABLE:${reasonOf(facts?.realMoneyBusinesses)}`);
+  else if (chargeable === null) undetermined.push('REAL_MONEY_BUSINESSES_INCOMPLETE:chargeable_production');
+  else if (chargeable === 0) closed.push('NO_BUSINESS_CAN_CHARGE_IN_PRODUCTION');
+  else open.push(`BUSINESSES_CAN_CHARGE_IN_PRODUCTION:${chargeable}`);
+  const value = closed.length ? MONEY_MOVEMENT.NO : undetermined.length ? MONEY_MOVEMENT.UNKNOWN : MONEY_MOVEMENT.YES;
+  const reasons = value === MONEY_MOVEMENT.NO ? closed : value === MONEY_MOVEMENT.UNKNOWN ? undetermined : open;
+  return { value, reasons, platform: platform.value };
+}
+
+/**
+ * REAL_MONEY_GATE.
+ *
+ * En controlled-production pasa SÓLO en dos casos:
+ *   - YES, Mercado Pago certificado para producción en payment-certification.json
+ *     y una decisión de apertura que lo incluye;
+ *   - NO, con una decisión de apertura de efectivo y transferencia (['manual']).
+ * Todo lo demás falla, y UNKNOWN nunca pasa. Sin decisión (null) no se infiere
+ * nada: ni «sólo efectivo» porque no se mueva dinero, ni «Mercado Pago» porque
+ * esté configurado. Con la decisión de cobrar con Mercado Pago y el dinero real
+ * cerrado tampoco pasa: lo decidido no está en marcha.
+ *
+ * En staging pasa sólo con NO: ahí el dinero real no tiene que ser posible.
+ *
+ * La variable vieja de humo puesta falla en cualquier destino: ya no abre nada
+ * con el código nuevo, y con funciones viejas todavía podría.
+ */
+function realMoneyGate(facts, env) {
+  const money = moneyMovementPossible(facts);
+  const secrets = known(facts.realMoneySecrets);
+  const businesses = known(facts.realMoneyBusinesses);
+  const states = secrets && isObject(secrets.states) ? secrets.states : null;
+  const evidence = {
+    money_movement_possible: money.value,
+    reasons: money.reasons,
+    platform: money.platform,
+    // Estados, nunca huellas ni valores.
+    secrets: states ? {
+      MERCADOPAGO_ENVIRONMENT: states.MERCADOPAGO_ENVIRONMENT ?? null,
+      MERCADOPAGO_PRODUCTION_REVIEW_STATUS: states.MERCADOPAGO_PRODUCTION_REVIEW_STATUS ?? null,
+      [REAL_MONEY_SWITCH]: states[REAL_MONEY_SWITCH] ?? null,
+      [LEGACY_SMOKE_CONFIRMATION]: states[LEGACY_SMOKE_CONFIRMATION] ?? null,
+    } : null,
+    businesses: businesses ? {
+      settings_enabled_production: count(businesses.settings_enabled_production),
+      chargeable_production: count(businesses.chargeable_production),
+      connected_production_sellers: count(businesses.connected_production_sellers),
+    } : null,
+  };
+  const failed = [];
+  const undetermined = money.value === MONEY_MOVEMENT.UNKNOWN ? money.reasons.map((reason) => `MONEY_MOVEMENT_UNKNOWN:${reason}`) : [];
+  if (states?.[LEGACY_SMOKE_CONFIRMATION] === 'PRESENT') failed.push('LEGACY_SMOKE_CONFIRMATION_PRESENT');
+
+  if (facts.target === 'staging') {
+    if (money.value === MONEY_MOVEMENT.YES) failed.push('REAL_MONEY_POSSIBLE_ON_STAGING');
+  } else {
+    const certification = known(facts.paymentCertification);
+    if (!certification) undetermined.push(`PAYMENT_DECISION_UNAVAILABLE:${reasonOf(facts.paymentCertification)}`);
+    else {
+      const decision = normalizeDecision(certification.opening_decision, env);
+      const decidedMercadoPago = decision.valid && decision.methods.includes('mercadopago');
+      evidence.opening_decision = !decision.present ? null : decision.valid ? decision.methods : 'INVALID';
+      // Sin decisión, o con una a medio llenar, falla con YES y con NO: no hace
+      // falta saber cuál de los dos es para decirlo.
+      if (!decision.present) failed.push('PAYMENT_DECISION_MISSING');
+      else if (!decision.valid) failed.push('PAYMENT_DECISION_INVALID');
+      if (money.value === MONEY_MOVEMENT.YES) {
+        if (decision.valid && !decidedMercadoPago) failed.push('MONEY_MOVEMENT_POSSIBLE_BUT_DECISION_IS_MANUAL_ONLY');
+        if (!Array.isArray(certification.entries)) undetermined.push('PAYMENT_CERTIFICATION_MALFORMED');
+        else {
+          const online = certifiedEntry(certification.entries, 'mercadopago', ['production'], 'mercadopago:production', env);
+          evidence.mercadopago_certified_for_production = online.entry !== null;
+          failed.push(...online.missing);
+        }
+      } else if (money.value === MONEY_MOVEMENT.NO && decidedMercadoPago) {
+        failed.push('MERCADOPAGO_DECIDED_BUT_MONEY_MOVEMENT_IS_NO');
+      }
+    }
+  }
+  if (failed.length) return fail([...failed, ...undetermined], evidence);
+  if (undetermined.length) return unknown(undetermined, evidence);
+  return pass({
+    ...evidence,
+    reason: money.value === MONEY_MOVEMENT.YES
+      ? 'REAL_MONEY_CERTIFIED: Mercado Pago is certified for production and the opening decision includes it'
+      : facts.target === 'staging'
+        ? 'NO_REAL_MONEY_ON_STAGING'
+        : 'NO_REAL_MONEY: the opening decision is cash and transfer only',
+  });
+}
+
 // ── Plataforma ───────────────────────────────────────────────────────────────
 
 function migrationParity(facts) {
@@ -818,6 +986,7 @@ const EVALUATORS = Object.freeze({
   TEAM: team,
   MP_SELLER: mercadoPagoSeller,
   PAYMENT_CERTIFICATION: paymentCertification,
+  REAL_MONEY_GATE: realMoneyGate,
   MIGRATION_PARITY: migrationParity,
   EDGE_FUNCTIONS: edgeFunctions,
   ABUSE_PROTECTION: abuseProtection,
@@ -944,7 +1113,10 @@ function observerWarning(facts) {
 }
 
 /**
- * (facts, context?) → { verdict, gates, blockers, warnings, publicLaunchBlockers, provenance, summary }.
+ * (facts, context?) → { verdict, moneyMovementPossible, gates, blockers, warnings, publicLaunchBlockers, provenance, summary }.
+ *
+ * `moneyMovementPossible` = { value: YES | NO | UNKNOWN, reasons }: si en el
+ * destino se puede crear hoy un cobro con dinero real (ver REAL_MONEY_GATE).
  *
  * `context` = { source: 'live' | 'saved', now: <instante ISO>, maxFactsAgeMinutes?,
  * repoSections?: 'reread', factsFile?, snapshotRepoHead? }. Con `context` se
@@ -983,8 +1155,20 @@ export function evaluate(input, context = undefined) {
   const tally = (status) => gates.filter((gate) => gate.status === status).length;
   const launch = publicLaunchBlockers(facts);
   const verdict = identified && blockers.length === 0 ? VERDICTS.READY : VERDICTS.NOT_READY;
+  // Se informa siempre, aparte del veredicto: es la respuesta a «¿puede moverse
+  // dinero real acá?», y un hecho ilegible es UNKNOWN, nunca NO.
+  let money;
+  try {
+    const computed = identified ? moneyMovementPossible(facts) : null;
+    money = computed
+      ? { value: computed.value, reasons: computed.reasons }
+      : { value: MONEY_MOVEMENT.UNKNOWN, reasons: [`FACTS_NOT_IDENTIFIED:${unidentified.join(',')}`] };
+  } catch (error) {
+    money = { value: MONEY_MOVEMENT.UNKNOWN, reasons: [`EVALUATION_ERROR:${text(error?.message).slice(0, 120) || 'unexpected'}`] };
+  }
   return {
     verdict,
+    moneyMovementPossible: money,
     target: identified ? facts.target : null,
     businessId: identified ? facts.businessId : null,
     collectedAt: identified ? facts.collectedAt : null,

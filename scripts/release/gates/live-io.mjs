@@ -5,12 +5,19 @@
 // Es lo único de esta herramienta que toca la red y una credencial, así que es
 // lo único que los tests NO importan: lo leen como texto y comprueban que no
 // sepa escribir. Para que esa comprobación valga, acá no hay un «request»
-// genérico: hay exactamente dos llamadas, escritas enteras.
+// genérico: hay exactamente tres llamadas, escritas enteras.
 //
 //   GET  /v1/projects/<ref>/functions                     (listado de Edge Functions)
+//   GET  /v1/projects/<ref>/secrets                       (nombre y huella SHA-256 de cada secreto)
 //   POST /v1/projects/<ref>/database/query/read-only      (SQL con el rol de sólo lectura)
 //
-// El segundo es un POST porque así lo define la Management API; lo que corre
+// El de secretos devuelve, por secreto, el nombre y la HUELLA SHA-256 del valor
+// (verificado: la de MERCADOPAGO_ENVIRONMENT de Staging es la de `test`); el
+// valor no viaja. Acá se queda sólo con nombre y huella, y la huella no sale de
+// `collect.mjs`: se compara contra los valores públicos del contrato y lo que
+// queda es un estado. El cuerpo de esa respuesta no se repite en ningún error.
+//
+// El tercero es un POST porque así lo define la Management API; lo que corre
 // del otro lado es `supabase_read_only_user` en una transacción de sólo
 // lectura. Antes de salir, el texto pasa otra vez por `assertSelectOnly`.
 //
@@ -60,7 +67,7 @@ function readToken(target) {
 }
 
 /**
- * El `io` de red para `collect()`: { runReadOnlySql, listFunctions }.
+ * El `io` de red para `collect()`: { runReadOnlySql, listFunctions, listSecrets }.
  * `fetchImpl` y `readTokenImpl` se pueden inyectar; por defecto, los reales.
  */
 export function createLiveIo(target, { fetchImpl = fetch, readTokenImpl = readToken } = {}) {
@@ -105,6 +112,25 @@ export function createLiveIo(target, { fetchImpl = fetch, readTokenImpl = readTo
     }));
   });
 
+  // Nombres y huellas, nada más. Ni el cuerpo de un error ni el de un JSON roto
+  // se repiten: en esta respuesta hay huellas de secretos.
+  const listSecrets = () => withRetry(async () => {
+    const response = await fetchImpl(`${MANAGEMENT_API}/v1/projects/${ref}/secrets`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${bearer()}` },
+      signal: AbortSignal.timeout(60_000),
+    });
+    const body = await response.text();
+    if (!response.ok) throw Error(`MGMT_HTTP_${response.status}:secrets`);
+    let list;
+    try { list = JSON.parse(body); } catch (_) { throw Error('SECRETS_NOT_JSON'); }
+    if (!Array.isArray(list)) throw Error('SECRETS_NOT_A_LIST');
+    return list.map((secret) => ({
+      name: typeof secret?.name === 'string' ? secret.name : null,
+      digest: typeof secret?.value === 'string' ? secret.value : null,
+    }));
+  });
+
   const runReadOnlySql = (sql) => {
     const query = assertSelectOnly(sql);
     return withRetry(async () => {
@@ -120,5 +146,5 @@ export function createLiveIo(target, { fetchImpl = fetch, readTokenImpl = readTo
     });
   };
 
-  return Object.freeze({ target, ref, runReadOnlySql, listFunctions });
+  return Object.freeze({ target, ref, runReadOnlySql, listFunctions, listSecrets });
 }

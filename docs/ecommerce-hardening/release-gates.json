@@ -4,6 +4,7 @@
   "tool": "scripts/release/ecommerce-release-gates.mjs",
   "verdicts": ["PRODUCTION_READY", "NOT_READY"],
   "statuses": ["PASS", "FAIL", "UNKNOWN"],
+  "money_movement_possible": ["YES", "NO", "UNKNOWN"],
   "exit_codes": { "0": "PRODUCTION_READY", "3": "NOT_READY", "2": "usage error", "1": "unexpected failure (never PRODUCTION_READY)" },
   "provenance": {
     "description": "Two entries of the result that are not gates of this catalogue. They say where the facts came from and who read them.",
@@ -74,6 +75,13 @@
       "blocking": true,
       "checks": "A signed-off record exists for every payment method that will open. Manual payment (always offered by the database) needs an entry with certified true. Mercado Pago, when intended, needs an entry with certified true for the environment of the target: production on controlled-production. An entry counts only if its evidence is a path under artifacts/ or docs/ that exists and is tracked by git (a folder ignored by git is not in the repo), and its date is a real calendar date that is not in the future.",
       "source": "Repo: docs/ecommerce-hardening/payment-certification.json, the evidence paths it names and git ls-files on them."
+    },
+    {
+      "id": "REAL_MONEY_GATE",
+      "title": "Real money gate",
+      "blocking": true,
+      "checks": "Computes MONEY_MOVEMENT_POSSIBLE (YES, NO or UNKNOWN, printed with its reasons in the table, the markdown and the JSON report): whether a real-money charge can be created on the target today. Project side, from the SHA-256 digests the Management API returns for the secrets (compared with the public contract values; no value or digest is stored or printed): MERCADOPAGO_ENVIRONMENT absent or exactly 'test' closes; MERCADOPAGO_PRODUCTION_REVIEW_STATUS absent or exactly one of not_requested, pending, rejected closes; the switch MERCADOPAGO_REAL_MONEY_ENABLED closes when absent or not exactly 'enabled' (the Edge gate compares exactly), but only together with the legacy MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION absent, because older deployed functions read that variable. A digest that matches no known value of the environment or the review is UNRECOGNIZED (the functions trim them), never 'closed'. Database side, for every business of the target: zero businesses with Mercado Pago enabled in production and a connected production seller closes. NO needs at least one condition proven closed; YES needs every fact read and nothing proven closed; anything else is UNKNOWN, and UNKNOWN never passes. On controlled-production the gate PASSES only with YES plus a Mercado Pago entry certified for production (same evidence rules as PAYMENT_CERTIFICATION) plus an opening_decision that includes mercadopago, or with NO plus an opening_decision of cash and transfer only (['manual']). A missing (null) or invalid decision fails (PAYMENT_DECISION_MISSING, PAYMENT_DECISION_INVALID): nothing is inferred from it. YES with a manual-only decision fails (MONEY_MOVEMENT_POSSIBLE_BUT_DECISION_IS_MANUAL_ONLY); NO with a decision that includes mercadopago fails (MERCADOPAGO_DECIDED_BUT_MONEY_MOVEMENT_IS_NO). On staging it passes only with NO (REAL_MONEY_POSSIBLE_ON_STAGING otherwise). The legacy smoke variable present fails on any target (LEGACY_SMOKE_CONFIRMATION_PRESENT).",
+      "source": "Management API: GET /v1/projects/<ref>/secrets (names and SHA-256 digests only). Target database, read-only SQL: public.business_payment_settings, public.mp_seller_connections (counts only). Repo: docs/ecommerce-hardening/payment-certification.json (opening_decision and the mercadopago production entry)."
     },
     {
       "id": "MIGRATION_PARITY",

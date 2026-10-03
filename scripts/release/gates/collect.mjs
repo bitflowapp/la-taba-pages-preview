@@ -17,6 +17,12 @@
 //   io.repoLastCommitTime?(rutas) → milisegundos del último commit que tocó alguna
 //                              de esas rutas, o null si git no las conoce
 //   io.listReferenceFunctions?() → Edge Functions del entorno de referencia
+//   io.listSecrets?()        → secretos del destino como [{ name, digest }]: el
+//                              nombre y la HUELLA SHA-256 que devuelve la
+//                              Management API, nunca el valor. Se comparan acá
+//                              contra los valores públicos del contrato y lo que
+//                              queda en `facts` es un estado (ENABLED, ABSENT…):
+//                              ni la huella ni el valor salen de este archivo.
 //   io.projectRef?           → ref del proyecto que responde (sólo evidencia)
 //
 // Así los tests corren sin red y el cableado real (`live-io.mjs`) queda en un
@@ -335,7 +341,102 @@ export const SQL = Object.freeze({
   // Informativo. El rol de sólo lectura puede no tener EXECUTE: se tolera.
   readiness: (businessId, minProducts) => `
     select public.get_store_opening_readiness(${businessLiteral(businessId)}, ${Number.isInteger(minProducts) ? minProducts : 1}) as data`,
+
+  // El lado de la base del dinero real, para TODO el destino y no sólo para el
+  // comercio evaluado: cualquier comercio con Mercado Pago encendido en
+  // producción y un vendedor productivo conectado puede cobrar si la plataforma
+  // lo deja. Sólo cantidades. Se cuenta con la condición mínima (encendido,
+  // producción, vendedor conectado): sumar más condiciones sólo podría bajar la
+  // cuenta, y contar de más dice «posible», que es el lado seguro.
+  realMoneyBusinesses: () => `
+    with s as (
+      select x.enabled, x.environment,
+             exists (
+               select 1 from public.mp_seller_connections c
+                where c.business_id = x.business_id and c.environment = 'production' and c.status = 'connected') as seller_connected
+        from public.business_payment_settings x
+       where x.provider = 'mercadopago'
+    )
+    select jsonb_build_object(
+      'settings_enabled_production', count(*) filter (where s.enabled and s.environment = 'production'),
+      'chargeable_production', count(*) filter (where s.enabled and s.environment = 'production' and s.seller_connected),
+      'connected_production_sellers', (
+        select count(*) from public.mp_seller_connections c
+         where c.environment = 'production' and c.status = 'connected')) as data
+    from s`,
 });
+
+// ── El interruptor de dinero real (EDGE-03) ──────────────────────────────────
+// Los nombres y el único valor que abre son los de
+// supabase/functions/_shared/real-money-gate.ts; un test los compara.
+
+export const REAL_MONEY_SWITCH = 'MERCADOPAGO_REAL_MONEY_ENABLED';
+export const REAL_MONEY_SWITCH_OPEN_VALUE = 'enabled';
+export const LEGACY_SMOKE_CONFIRMATION = 'MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION';
+
+// Los valores que se reconocen por su huella. Son constantes PÚBLICAS del
+// contrato (`test`, `approved`, `enabled`): adivinar por huella un valor de
+// verdad secreto (un token) es exactamente lo que esta herramienta no hace.
+const KNOWN_SECRET_VALUES = Object.freeze({
+  MERCADOPAGO_ENVIRONMENT: Object.freeze({ test: 'TEST', production: 'PRODUCTION' }),
+  MERCADOPAGO_PRODUCTION_REVIEW_STATUS: Object.freeze({
+    approved: 'APPROVED', not_requested: 'NOT_APPROVED', pending: 'NOT_APPROVED', rejected: 'NOT_APPROVED',
+  }),
+  [REAL_MONEY_SWITCH]: Object.freeze({ [REAL_MONEY_SWITCH_OPEN_VALUE]: 'ENABLED' }),
+});
+// Qué es una huella válida que no coincide con ningún valor conocido. Para el
+// interruptor eso PRUEBA que no vale `enabled`: la compuerta compara exacto.
+// Para el entorno y la revisión no prueba nada: las funciones recortan (y el
+// entorno lo pasan a minúsculas), así que `Production` o ` approved` abren allá
+// y acá no coinciden. Eso queda UNRECOGNIZED, y UNRECOGNIZED no es «cerrado».
+const UNMATCHED_SECRET_STATE = Object.freeze({
+  MERCADOPAGO_ENVIRONMENT: 'UNRECOGNIZED',
+  MERCADOPAGO_PRODUCTION_REVIEW_STATUS: 'UNRECOGNIZED',
+  [REAL_MONEY_SWITCH]: 'NOT_ENABLED',
+});
+const SHA256_HEX = /^[0-9a-f]{64}$/;
+
+async function sha256Hex(text) {
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Del listado de secretos ([{ name, digest }]) a un estado por secreto:
+ *
+ *   MERCADOPAGO_ENVIRONMENT               ABSENT | TEST | PRODUCTION | UNRECOGNIZED | UNREADABLE
+ *   MERCADOPAGO_PRODUCTION_REVIEW_STATUS  ABSENT | APPROVED | NOT_APPROVED | UNRECOGNIZED | UNREADABLE
+ *   MERCADOPAGO_REAL_MONEY_ENABLED        ABSENT | ENABLED | NOT_ENABLED | UNREADABLE
+ *   MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION  ABSENT | PRESENT
+ *
+ * UNREADABLE es una entrada sin una huella SHA-256 legible: no se sabe qué vale.
+ * Un listado con una entrada sin nombre o con un nombre repetido no se lee: no
+ * se sabe cuál de las dos ve el runtime. Ni la huella ni el valor se devuelven.
+ */
+export async function classifyRealMoneySecrets(list) {
+  if (!Array.isArray(list)) throw Error('SECRETS_NOT_A_LIST');
+  const digests = new Map();
+  for (const entry of list) {
+    const name = typeof entry?.name === 'string' ? entry.name : '';
+    if (!name) throw Error('SECRETS_ENTRY_WITHOUT_NAME');
+    if (digests.has(name)) throw Error('SECRETS_DUPLICATE_NAME');
+    digests.set(name, typeof entry?.digest === 'string' ? entry.digest.trim().toLowerCase() : null);
+  }
+  const states = {};
+  for (const [name, known] of Object.entries(KNOWN_SECRET_VALUES)) {
+    if (!digests.has(name)) { states[name] = 'ABSENT'; continue; }
+    const digest = digests.get(name);
+    if (!digest || !SHA256_HEX.test(digest)) { states[name] = 'UNREADABLE'; continue; }
+    let state = UNMATCHED_SECRET_STATE[name];
+    for (const [value, label] of Object.entries(known)) {
+      if ((await sha256Hex(value)) === digest) { state = label; break; }
+    }
+    states[name] = state;
+  }
+  // La variable vieja ya no abre nada: alcanza con saber si está.
+  states[LEGACY_SMOKE_CONFIRMATION] = digests.has(LEGACY_SMOKE_CONFIRMATION) ? 'PRESENT' : 'ABSENT';
+  return states;
+}
 
 // ── Utilidades ───────────────────────────────────────────────────────────────
 
@@ -684,6 +785,14 @@ export async function collect(target, businessId, io, options = {}) {
       pending: Array.isArray(payload.pending) ? payload.pending : [],
     };
   });
+  // El dinero real: los secretos del proyecto (por huella) y los comercios que
+  // podrían cobrar. Dos secciones, para que una que no se pudo leer no esconda
+  // lo que la otra prueba.
+  facts.realMoneySecrets = await attempt(async () => {
+    if (typeof io?.listSecrets !== 'function') throw Error('IO_MISSING:listSecrets');
+    return { states: await classifyRealMoneySecrets(await io.listSecrets()) };
+  });
+  facts.realMoneyBusinesses = await attempt(async () => objectOrThrow(await queryData(io, SQL.realMoneyBusinesses()), 'REAL_MONEY_BUSINESSES_EMPTY'));
   facts.deployedFunctions = await attempt(async () => {
     if (typeof io?.listFunctions !== 'function') throw Error('IO_MISSING:listFunctions');
     const list = await io.listFunctions();

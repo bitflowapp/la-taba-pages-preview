@@ -37,12 +37,21 @@
 //     fecha, son NOT_READY (bloqueo FACTS_PROVENANCE);
 //   - la tabla, el markdown y el JSON dicen que el veredicto salió de un archivo.
 //
+// MONEY_MOVEMENT_POSSIBLE
+// -----------------------
+// La tabla, el markdown y el JSON dicen siempre si en el destino se puede crear
+// hoy un cobro con dinero real: YES, NO o UNKNOWN, con sus razones (compuerta
+// REAL_MONEY_GATE). Sale de las huellas de los secretos del proyecto y de la
+// base; UNKNOWN nunca es NO y nunca pasa la compuerta.
+//
 // QUÉ NO HACE
 // -----------
 // No escribe en ningún entorno: lee por el endpoint de sólo lectura de la
-// Management API y lista funciones. Lo único que escribe son los archivos
+// Management API, lista funciones y lista los NOMBRES y las huellas de los
+// secretos (la API no devuelve valores). Lo único que escribe son los archivos
 // locales que se le piden (--out, --markdown, --save-facts). No imprime
-// credenciales, correos ni identificadores de cuenta.
+// credenciales, valores ni huellas de secretos, correos ni identificadores de
+// cuenta.
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -236,6 +245,14 @@ function ageLine(result) {
   return `facts collected: ${result.collectedAt ?? '(unknown)'}${age} · ${provenance.freshness ?? 'NOT_CHECKED'}`;
 }
 
+/** «¿Puede moverse dinero real en este destino?»: YES, NO o UNKNOWN, con sus razones. Nunca un valor ni una huella. */
+function moneyLine(result) {
+  const money = result.moneyMovementPossible;
+  const value = ['YES', 'NO', 'UNKNOWN'].includes(money?.value) ? money.value : 'UNKNOWN';
+  const reasons = Array.isArray(money?.reasons) ? money.reasons.map(String) : [];
+  return `MONEY_MOVEMENT_POSSIBLE: ${value}${reasons.length ? ` (${reasons.join(', ')})` : ''}`;
+}
+
 function headerLines(result, facts) {
   const business = facts?.business?.ok === true ? facts.business : null;
   const observer = facts?.observer?.ok === true ? facts.observer : null;
@@ -246,6 +263,7 @@ function headerLines(result, facts) {
     ageLine(result),
     `observer: ${observer ? `${observer.current_user} · transaction_read_only=${observer.transaction_read_only}` : 'UNKNOWN'}`,
     `min products: ${facts?.options?.minProducts ?? 1}`,
+    moneyLine(result),
   ];
 }
 
@@ -337,7 +355,10 @@ async function collectLive(options, repoIo) {
   // El cableado de red se carga sólo acá: evaluar hechos guardados no toca credenciales.
   const { createLiveIo } = await import('./gates/live-io.mjs');
   const live = createLiveIo(options.target);
-  const io = { ...repoIo, projectRef: live.ref, runReadOnlySql: live.runReadOnlySql, listFunctions: live.listFunctions };
+  const io = {
+    ...repoIo, projectRef: live.ref, runReadOnlySql: live.runReadOnlySql, listFunctions: live.listFunctions,
+    listSecrets: live.listSecrets,
+  };
   if (options.functionsReference) io.listReferenceFunctions = createLiveIo(options.functionsReference).listFunctions;
   if (options.ciConclusion !== null) io.ciConclusion = async () => ({ conclusion: options.ciConclusion, commit: options.ciCommit });
   return collect(options.target, options.businessId, io, {

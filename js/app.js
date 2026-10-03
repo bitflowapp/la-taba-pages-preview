@@ -1967,7 +1967,7 @@ function bindEvents() {
         pulseCartFeedback();
         refreshOpenProductModal(incId);
       }
-      if (!result.duplicate && !result.ok) showToast(result.message);
+      if (!result.duplicate && (!result.ok || activeView === 'cart')) showToast(result.message);
       return;
     }
 

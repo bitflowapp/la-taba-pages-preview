@@ -183,7 +183,7 @@ Cada frente se volvió a mirar contra evidencia nueva, no contra lo que dijo la 
 
 Lo que encontró la segunda pasada: nada nuevo del producto. Dos errores míos, corregidos: corrí un subconjunto de Node sin
 `--import ./tests/test-bootstrap.mjs` (2 fallas falsas en `address-flow`; con el bootstrap, 985/985), y anoté un número de corrida
-de CI equivocado en esta bitácora (corregido antes del commit).
+de CI equivocado en esta bitácora (corregido antes del commit). Y se cerró un pendiente de herramientas del registro: **TOOL-05** (`npm test` reescribía `ci.yml` y `config.toml` en el lugar; ahora la prueba usa copias, `94479254`). Registro: P2 36 corregidos / 22 abiertos.
 
 ### Estado final de los cinco frentes
 

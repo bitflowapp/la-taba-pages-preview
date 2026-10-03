@@ -112,9 +112,12 @@ habría roto `npm test`, y un candado duplicado.
   reembolsos y cobros (DIAG-05, parte de DIAG-02) — `4a4afa79`.
 - Autorización: cancelar/rechazar por catálogo (AUTHZ-04, parcial) y negativas 42501 (C-1) — `4cee8a74`.
 - Más PAY-PROBE-01, IDEM-07, IDEM-08, TRACK-01, RB-01, RB-02, TOOL-08, FO-01, FO-02 (tabla de arriba).
+- TOOL-05 (P2, segunda pasada): `npm test` reescribía `.github/workflows/ci.yml` y `supabase/config.toml` en el lugar (con
+  restauración en un `finally`: una corrida cortada dejaba el árbol modificado). La guardia acepta `--config`/`--workflow` y la
+  prueba usa copias; la regresión compara contenido y fecha de modificación — `94479254`.
 - **EDGE-03 (P1): interruptor permanente del cobro real** (opción A del dueño): `6e7af1d4`, `297130a7`, `cb7f60f2`, `d4e5fa13` — sólo `MERCADOPAGO_REAL_MONEY_ENABLED=enabled` exacto abre, junto con la revisión aprobada y el vendedor conectado; la compuerta de release `REAL_MONEY_GATE` lo verifica por huella SHA-256 sin ver el valor. Implementado por un agente en un worktree aislado y revisado por mí antes de integrar. **No desplegado.**
 - Registro: **P1 14 corregidos, 0 abiertos, 0 gates externos**, 1 riesgo aceptado (TOOL-01: sin Docker local, lo cubre el
-  CI); P2 35 corregidos, 23 abiertos (`docs/ecommerce-hardening/findings-register.json`).
+  CI); P2 36 corregidos, 22 abiertos (`docs/ecommerce-hardening/findings-register.json`).
 
 ### BUGS_PENDIENTES
 
@@ -126,7 +129,7 @@ habría roto `npm test`, y un candado duplicado.
 | EDGE-15 | P3 | Si también falla `mark_payment_cancellation_ambiguous` (tres fallas seguidas de la base), la cancelación queda «requested» sin trabajo | residual documentado |
 | SCRIPTS | P3 | `scripts/deploy/run-commercial-pilot-e2e.mjs` cancela con la credencial `PILOT BUSINESS QA` en un proyecto piloto aislado (el script rechaza Staging, Producción y DEMO). La credencial no guarda un e-mail como usuario, así que su rol no se pudo confirmar sin leer el secreto (no se leyó). Los otros 4 scripts piloto de Staging usan `STAGING BUSINESS QA 20260920`, que es **encargado** de `la-taba-staging` (leído): AUTHZ-04 no los afecta | ver su rol antes de aplicar 20261002050000 donde ese script corra |
 | Contrato HTTP (resto) | P3 | Las 40 entradas excluidas por dueño y las dos entradas SQL de OAuth (`mp_consume_oauth`, `mp_claim_refresh`) siguen contestando 500 a un 55000/P0002 | son de otras líneas; lista en `docs/ecommerce-hardening/http-contract.json` |
-| Resto | P2 | 23 P2 abiertos del registro (decisiones de producto, canal externo, frontend, otra línea) | ver el registro |
+| Resto | P2 | 22 P2 abiertos del registro (decisiones de producto, canal externo, frontend, otra línea) | ver el registro |
 
 ### RIESGOS_RESIDUALES
 

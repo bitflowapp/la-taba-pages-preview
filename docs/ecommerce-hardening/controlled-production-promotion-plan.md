@@ -23,7 +23,7 @@ Convenciones de los comandos:
 | Ventana sin pedidos abiertos en el comercio real | hoy está cerrado y sin productos publicados; confirmarlo con el paso 3 |
 | El ledger de CP: le falta `20261001010000` además de las migraciones de esta rama | paso 3 |
 | **Decisión del dueño sobre AUTHZ-04 aplicado** (`20261002050000`): al aplicarla, el empleado pierde cancelar y RECHAZAR pedidos en el acto, también en una caja de Caja Clara atendida por un empleado, mientras el Panel y la caja siguen mostrando los botones; el catálogo da permisos por rol y para toda la plataforma | confirmación escrita del dueño; en CP hoy sólo hay empleados en los comercios de QA (`preflight-2`, consulta `staff_losing_cancel_and_reject`) |
-| `deploy/run-commercial-pilot-e2e.mjs` cancela con una credencial de rol no confirmado (`PILOT BUSINESS QA`): no se corre contra CP después de aplicar sin verificar que sea dueño o encargado (los otros scripts piloto usan un encargado) | revisión del operador |
+| `scripts/deploy/run-commercial-pilot-e2e.mjs` cancela con una credencial de rol no confirmado (`PILOT BUSINESS QA`): no se corre contra CP después de aplicar sin verificar que sea dueño o encargado (los otros scripts piloto usan un encargado) | revisión del operador |
 
 ## 1. Backup real
 

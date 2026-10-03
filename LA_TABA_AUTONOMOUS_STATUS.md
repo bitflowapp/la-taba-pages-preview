@@ -287,3 +287,10 @@ de CI equivocado en esta bitácora (corregido antes del commit). Y se cerró un 
 
 - 11:40 — **DIAG-03 confirmado en vivo (sólo lectura)**: `scripts/production-health-check.mjs` cuenta las alertas con `severity = 'critical'` y la tabla sólo admite `'CRITICAL'`: Staging tiene 23 alertas CRITICAL históricas que la sonda nunca vería; además exige exactamente 4 tareas `taba-*` (CP ya tiene 5). El arreglo de la severidad es de una línea; no se hizo porque la sesión se cortó por límite de uso (habría necesitado otro CI). Retargetear la sonda a CP es DIAG-10.
 - 11:40 — sesión cortada por límite de uso. CI final 37129892043 sobre `59fa86b8` en curso: la próxima sesión verifica su resultado.
+
+## PC principal — recuperación verificada y continuación de salud (2026-10-03)
+
+- Recuperación de la PC: PASS / READY_TO_CONTINUE YES. El worktree base quedó limpio en `6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a`; frontend independiente en `737371ba82cae6e309cff04c97984443c52c8def`. Los cinco checks del backend transferido y los tres del frontend terminaron SUCCESS. El reporte e inventarios están en la rama `handoff/main-pc-recovery-20261003`.
+- Origin avanzó tres commits hasta `dfedfcc1` durante la auditoría (PAY-PROBE-08 y DIAG-14); se registró el delta sin modificar el worktree fijado al handoff ni mezclar frontend. Esta continuación va en `hardening/main-pc-health-readonly-20261003`, basada en el SHA transferido.
+- Validación inicial Windows: 124/125 tests focalizados; la falla era `SCRIPT.pathname` en el test CLI de salud. Las dos verificaciones funcionales pasaron con ruta portable y acceso de red bloqueado. Corregido el test con `fileURLToPath`; la suite de salud pasa 11/11.
+- DIAG-10, parte Auth: destino explícito compartido con la sonda de base; CP toma su negocio del manifiesto y staging exige UUID. Las consultas usan el endpoint con rol de sólo lectura; importar el módulo no ejecuta nada. Diez tests nuevos usan respuestas simuladas. El watchdog externo sigue OPEN / OWNER_APPROVAL_REQUIRED (Owner 7). No se consultó ni modificó ningún entorno alojado, ni se ejecutó un cobro o despliegue.

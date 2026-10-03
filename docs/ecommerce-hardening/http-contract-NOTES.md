@@ -181,6 +181,12 @@ después p50 7,48 · p95 11,72 · media 8,55. **+0,64 ms p50, +0,94 ms media** (
 
 ## Decisiones
 
+- Selección = `integrate/api-reach.mjs` del lead con cuatro agujeros cerrados: P0002 implícito de `select ... into
+  strict` (8 funciones vivas), los nombres de condición `no_data_found` / `object_not_in_prerequisite_state` (4),
+  `merge into` y tablas entre comillas en el paso de triggers; y las exclusiones del spec (el regex OTHER_LINES del
+  lead excluía por prefijo fiscal_/caja_/print_ y no cubría agent_*, service_request_*, operator_*local_device*...).
+  Resultado: 150 entradas que llegan (el script del lead: 142) y 109 envueltas tras exclusiones.
+
 - La guarda de la migración (no sólo la de la reversión) compara el md5 del cuerpo vivo con el del que se generó
   (o con el envuelto): si otra rama redefinió una función, la migración se niega en vez de pisarla con un cuerpo viejo.
 - Los cuerpos se copian letra por letra, retornos de carro incluidos (16 funciones vivas tienen CRLF); las guardas

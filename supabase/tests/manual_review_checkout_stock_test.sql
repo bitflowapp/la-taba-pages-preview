@@ -31,7 +31,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(90);
+select plan(91);
 
 -- ── Fixture ────────────────────────────────────────────────────────────────
 create temporary table caso (
@@ -418,6 +418,14 @@ select is((select (r -> 'missing' -> 0 ->> 'necesarias') || '/' || (r -> 'missin
   'M: con lo que hace falta y lo que hay');
 select is(pg_temp.stock('m') || '/' || pg_temp.stock('m', true) || ' ' || pg_temp.reservas('m'),
   '3/0 g1:active:2 g1:released:2', 'M: sin tocar stock ni reservas');
+-- La salida que queda es devolver el dinero: el Panel la sigue ofreciendo (y `can_refund` contesta lo
+-- mismo que acepta prepare_payment_refund_v2: payment_refund_and_reversal_chain_test.sql, sección 8).
+select pg_temp.como_dueno('m');
+select is(
+  (select value ->> 'can_refund' from public.list_business_payments((select business_id from caso where k = 'm')) value
+    where value ->> 'payment_intent_id' = pg_temp.iid('m')::text),
+  'true', 'M: rechazado el rearmado por falta de stock, devolver el dinero sigue ofrecido en el Panel');
+select pg_temp.sin_identidad();
 update public.products p set stock = 5, available = true from caso c where c.k = 'm' and p.id = c.product2_id;
 create temporary table r_m2 on commit drop as select pg_temp.rearmar('m') as r;
 select is((select r ->> 'ok' from r_m2) || '/' || (select r ->> 'reused_reservation' from r_m2), 'true/false',

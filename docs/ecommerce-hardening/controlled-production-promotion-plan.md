@@ -4,7 +4,7 @@
 
 Ningún paso enciende ventas ni cobros: el comercio real sigue cerrado hasta que el dueño cargue sus datos y la plataforma lo verifique, y el cobro real de Mercado Pago sigue cerrado.
 
-**Cómo está cerrado el cobro real HOY (verificado en el código el 2026-10-03):** en producción una preferencia sólo se crea si están las tres cosas a la vez: `MERCADOPAGO_ENVIRONMENT=production`, `MERCADOPAGO_PRODUCTION_REVIEW_STATUS=approved` y el secreto `MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION` con su valor exacto (`requireRealPaymentSmokeAuthorization`, `supabase/functions/_shared/payment-runtime.ts`); además, el comercio necesita su vendedor conectado y su interruptor propio. En CP, leído en sólo lectura el 2026-10-03, el secreto smoke NO está: el cobro real falla cerrado. El interruptor permanente que decidió el dueño (EDGE-03, opción A: un secreto explícito propio del cobro real) **todavía no está implementado** en esta rama; hasta que lo esté, el secreto smoke es la única llave y no se carga sin una decisión del dueño.
+**Cómo queda cerrado el cobro real (EDGE-03 opción A, implementado en esta rama el 2026-10-03, todavía NO desplegado):** en producción una preferencia sólo se crea si se cumplen las tres llaves: la revisión del proyecto aprobada (`MERCADOPAGO_PRODUCTION_REVIEW_STATUS=approved`), el comercio con Mercado Pago encendido en producción y su vendedor productivo conectado, y el secreto de backend `MERCADOPAGO_REAL_MONEY_ENABLED` con el valor EXACTO `enabled` (una sola definición: `supabase/functions/_shared/real-money-gate.ts`). La variable vieja `MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION` ya no abre nada. En CP, leído en sólo lectura el 2026-10-03, no está ni el secreto viejo ni el interruptor: con las funciones viejas o con las nuevas, el cobro real falla cerrado. **Orden obligatorio:** primero se despliegan las funciones nuevas (paso 5) y recién después, con una decisión escrita del dueño, se carga el interruptor; la variable vieja tiene que seguir ausente (las funciones viejas todavía la leen). Apagar el dinero real = quitar el secreto; los reembolsos y cancelaciones no dependen de él.
 
 Convenciones de los comandos:
 
@@ -97,7 +97,7 @@ Para seguir: cada función ACTIVE con la versión nueva; el hash del bundle de c
 npx supabase@2.101.0 secrets list --project-ref tkanbadcglszlcyfjvpv
 ```
 
-Sólo nombres. Esta rama no agrega secretos obligatorios. Para seguir: `MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION` NO está. Hoy es la llave del cobro real (ver arriba): si aparece sin una decisión escrita del dueño, se para acá.
+Sólo nombres. Esta rama no agrega secretos obligatorios. Para seguir: `MERCADOPAGO_REAL_MONEY_ENABLED` NO está (no se abre el dinero real en una promoción) y `MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION` tampoco (las funciones viejas, si quedara alguna, todavía la leen). La compuerta de release `REAL_MONEY_GATE` lo verifica por huella, sin ver el valor.
 
 ## 7. Salud
 
@@ -132,7 +132,7 @@ node scripts/release/ecommerce-release-gates.mjs --target controlled-production 
   --business-id <uuid del comercio real> --out <privado>/gates-cp-despues.json
 ```
 
-Para seguir: los gates de software (migraciones, Edge Functions, P0/P1) en PASS. (El gate del interruptor de dinero real llega con EDGE-03 opción A, que todavía no está implementado.) Los comerciales (catálogo aprobado, precios, horarios, zonas, equipo, vendedor de Mercado Pago, certificación de pagos) siguen cerrados hasta que el dueño entregue sus datos: el gate dice NOT_READY por esos motivos y está bien que lo diga.
+Para seguir: los gates de software (migraciones, Edge Functions, P0/P1, `REAL_MONEY_GATE` con `MONEY_MOVEMENT_POSSIBLE: NO`) en PASS. Los comerciales (catálogo aprobado, precios, horarios, zonas, equipo, vendedor de Mercado Pago, certificación de pagos) siguen cerrados hasta que el dueño entregue sus datos: el gate dice NOT_READY por esos motivos y está bien que lo diga.
 
 ## 10. Si algo falla
 

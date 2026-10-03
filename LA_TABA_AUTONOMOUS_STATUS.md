@@ -14,7 +14,7 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
 - Herramientas locales: Postgres 17 de la sesión anterior en el puerto 55521
   (`…\C--Users-DELL\04e206e5-…\scratchpad\local\localdb.mjs start|reset|test`), arnés `integrate/repo-run.mjs`, cadena
   `integrate/rollback-chain.mjs`; lecturas de Staging/CP en sólo lectura con `.tmp-scratch/mgmt.mjs` (no versionado).
-- Memoria del proyecto: `C:\Users\DELL\.claude\projects\C--Users-DELL\memory\lataba-ecommerce-hardening-2026-10-01.md`.
+- Memoria del proyecto (Claude Code, proyecto del usuario `C--Users-DELL`): `memory/lataba-ecommerce-hardening-2026-10-01.md`.
 
 ## Checkpoint inicial — 2026-10-03 08:40 (-03:00)
 

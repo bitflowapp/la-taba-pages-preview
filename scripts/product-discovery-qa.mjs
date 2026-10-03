@@ -12,7 +12,7 @@ for(const file of fs.readdirSync('assets/products')){
   if(hash)localImages.set(hash,path.resolve('assets/products',file));
 }
 const initial = '0b9e09ee4e8f2c157590e1ee741de5ba1b8bba6d';
-const initialFiles = phase === 'before' ? [...execFileSync('git',['diff','--name-only',initial,'--','js','styles','index.html','styles.css'],{encoding:'utf8'}).trim().split('\n'),'scripts/campaign-lab/lab.js'] : [];
+const initialFiles = phase === 'before' ? [...execFileSync('git',['diff','--name-only','--diff-filter=M',initial,'--','js','styles','index.html','styles.css'],{encoding:'utf8'}).trim().split('\n'),'scripts/campaign-lab/lab.js'] : [];
 const root = `artifacts/product-discovery-real-campaigns/${phase}`;
 fs.mkdirSync(root, { recursive: true });
 for (const [engine, launcher] of Object.entries({ chromium, webkit })) {

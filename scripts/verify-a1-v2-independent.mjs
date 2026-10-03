@@ -30,6 +30,9 @@ const env=new Map(Object.entries({
  SUPABASE_URL:'https://wwcpogltfgzgkrlilbcd.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'fixture-service',SUPABASE_ANON_KEY:'fixture-anon',
  MERCADOPAGO_ENVIRONMENT:'production',MERCADOPAGO_OAUTH_ENVIRONMENT:'production',MERCADOPAGO_CREDENTIAL_MODE:'oauth',
  MERCADOPAGO_PRODUCTION_REVIEW_STATUS:'approved',MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION:'I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE',
+ // El cobro real autorizado, con los dos nombres: los handlers históricos leen la variable vieja de humo y el del
+ // árbol de trabajo, el interruptor de EDGE-03 (MERCADOPAGO_REAL_MONEY_ENABLED, sólo el valor exacto `enabled`).
+ MERCADOPAGO_REAL_MONEY_ENABLED:'enabled',
  TABA_DEPLOYMENT_ENV:'production',MERCADOPAGO_OAUTH_PROJECT_REF:'wwcpogltfgzgkrlilbcd',MERCADOPAGO_CLIENT_ID:'7677852968049976',
  MERCADOPAGO_OAUTH_PANEL_URL:'https://la-taba.pages.dev/',TABA_CHECKOUT_BASE_URL:'https://la-taba.pages.dev',TABA_ALLOWED_ORIGINS:'https://la-taba.pages.dev',
  PAYMENT_LOG_HASH_SALT:'fixture-salt',MERCADOPAGO_TOKEN_ENCRYPTION_KEY:Buffer.alloc(32,1).toString('base64url'),

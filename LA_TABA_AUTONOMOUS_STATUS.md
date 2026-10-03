@@ -55,6 +55,20 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
     Evidencia: `artifacts/taba-autonomous-20261003/races/{all,base}-*.txt`.
   - Tests unitarios del certificador y del arnés: 34/35 (la falla es la esperada: el arnés todavía no está cableado al gate).
 - 08:42 — 4 revisores adversariales en paralelo (sólo lectura), uno por paquete. Sus informes: scratchpad de la sesión `review/`.
+- 08:51 — compuerta de release en sólo lectura contra CP (`la-taba-cp`): **NOT_READY**, 9 bloqueos (catálogo 0/1, horarios,
+  modo de entrega, equipo, decisión de cobro, 33 migraciones sin aplicar, 9 Edge Functions de Mercado Pago más viejas que el código,
+  guardián de admisión ausente, CI) + gate externo EDGE-03. `artifacts/taba-autonomous-20261003/release-gates-cp-0851.*`.
+- 08:52 — conciliación de sólo lectura contra Mercado Pago TEST en Staging (35 días): 31/32 conciliados y **1 CRÍTICO**: pago
+  `179851082485` aprobado y acreditado en el proveedor (1800 ARS, 2026-09-25 17:04Z), intent `e5dbaf33…` «expired», sin pedido.
+- 08:58 — **NUEVO P1 (PAY-PROBE-01), reproducido con datos vivos de Staging**: el barrido de verdad del proveedor corrió 8 veces
+  (17:03–17:32Z) y las 8 respuestas fueron «vacío» (`payment.provider_probe_empty`), pero la misma búsqueda por
+  `external_reference` con la credencial del vendedor devuelve el pago (GET de sólo lectura, total=1, aprobado, el dueño del token es
+  el cobrador). La preferencia se creó con la generación de conexión `fd242d91…`; la conexión se re-enlazó a las 17:43Z
+  (`6963ca5b…`). Después de 8 vacíos el barrido deja de preguntar, y la alerta `CHECKOUT_PROVIDER_UNVERIFIED` excluye
+  explícitamente todo checkout con un sondeo vacío → **cobro sin pedido, sin alerta y sin más sondeos: invisible** salvo para la
+  conciliación manual. Precondiciones: el aviso del proveedor no se procesó, el comprador no volvió, y la búsqueda vino vacía por
+  algo que no es «no hubo pago» (credencial/conexión cambiada). Arreglo previsto (después de integrar wp11, que redefine la misma
+  función de alertas): sondeos tardíos dentro de las 48 h y vacíos no concluyentes cuando la generación del vendedor cambió.
 - Hallazgo a decidir: wp19 también exige `orders.cancel` para **rechazar**, y su propio encabezado avisa que la caja de **Caja
   Clara** opera con la sesión del cajero (si es empleado, deja de poder cancelar/rechazar) y que el Panel le sigue mostrando
   «Cancelar» a todo el equipo. AUTHZ-04 además nombra `authorize_arca_homologation` y `set_business_open_state`, que wp19 no toca.

@@ -3,6 +3,19 @@
 Archivo vivo: se reescribe después de cada frente. Sin secretos. Fuente de verdad: código + git + tests + CI + lecturas en vivo
 de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» hasta verificarlo.
 
+## Para retomar (leer primero)
+
+- Informe final: `LA_TABA_AUTONOMOUS_BACKEND_REPORT.md` (estado, hallazgos, OWNER_APPROVAL_REQUIRED con pasos exactos, veredictos).
+- Rama `hardening/taba-ecommerce-production`, todo pusheado. Nada aplicado en Staging (158) ni en CP (157); la rama tiene 206
+  migraciones. CI completo verde en `a7eb622c` y `011717fa`; el último CI y el certificador del stack están al final de la bitácora.
+- Trabajo en curso fuera de la rama: worktree `la-taba-http-contract` (rama local `feat/taba-http-contract`, sin push): contrato
+  HTTP (API-01/C-2). Retomar desde sus commits y su `docs/ecommerce-hardening/http-contract-NOTES.md`; verificar todo antes de
+  integrar (pgTAP canónico, cadena de reversiones, certificador en el stack). El worktree `la-taba-real-money-gate` ya está integrado.
+- Herramientas locales: Postgres 17 de la sesión anterior en el puerto 55521
+  (`…\C--Users-DELL\04e206e5-…\scratchpad\local\localdb.mjs start|reset|test`), arnés `integrate/repo-run.mjs`, cadena
+  `integrate/rollback-chain.mjs`; lecturas de Staging/CP en sólo lectura con `.tmp-scratch/mgmt.mjs` (no versionado).
+- Memoria del proyecto: `C:\Users\DELL\.claude\projects\C--Users-DELL\memory\lataba-ecommerce-hardening-2026-10-01.md`.
+
 ## Checkpoint inicial — 2026-10-03 08:40 (-03:00)
 
 | Dato | Valor verificado |

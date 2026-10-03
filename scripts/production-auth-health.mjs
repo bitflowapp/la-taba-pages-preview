@@ -35,6 +35,15 @@ const UMBRAL_ANONIMAS_HORA = 40;
 const UMBRAL_CON_CORREO_HORA = 10;
 const UMBRAL_SOLICITUD_VIEJA_HORAS = 48;
 
+function validateAuthTarget(options) {
+  if (!options || !Object.hasOwn(TARGETS, options.target) || options.ref !== TARGETS[options.target].ref) {
+    throw new Error('el destino y el ref tienen que coincidir con el catálogo de salud');
+  }
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(options.canonicalBusiness)) {
+    throw new Error('el negocio del destino tiene que ser un uuid');
+  }
+}
+
 export function parseAuthHealthArgs(argv) {
   const allowed = new Set(['--target', '--ref', '--business-id', '--key', '--key-file', '--report']);
   const seen = new Set();
@@ -59,9 +68,7 @@ export function parseAuthHealthArgs(argv) {
   if (target && ref && ref !== TARGETS[target].ref) throw new Error('--target y --ref no corresponden al mismo proyecto');
   const options = parseHealthArgs(argv);
   if (!options.canonicalBusiness) throw new Error(`--business-id requerido para ${options.target}`);
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(options.canonicalBusiness)) {
-    throw new Error('el negocio del destino tiene que ser un uuid');
-  }
+  validateAuthTarget(options);
   const key = value('key');
   const keyFile = value('key-file');
   if (key && keyFile) throw new Error('usar --key o --key-file, no ambos');
@@ -72,6 +79,7 @@ export function parseAuthHealthArgs(argv) {
 // Las consultas agregadas conservan su significado: identidades y auditoría son
 // métricas del proyecto; solicitudes y equipo pertenecen al negocio nombrado.
 export async function runAuthHealthCheck({ options, sql, configAuth, probeAuth, now = () => new Date(), log = () => {} }) {
+  validateAuthTarget(options);
   const { ref, canonicalBusiness: CANONICAL_BUSINESS } = options;
   const avisos = [];
   const reporte = { schemaVersion: 1, target: options.target, ref, businessId: CANONICAL_BUSINESS, checkedAt: now().toISOString() };

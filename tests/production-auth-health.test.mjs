@@ -110,6 +110,19 @@ test('argumentos de destino inválidos no imprimen valores opacos ni consultan s
   }
 });
 
+test('el uso como biblioteca también rechaza refs cruzados y UUID inválidos antes de cualquier consulta', async () => {
+  const valid = parseAuthHealthArgs(['--target', 'controlled-production']);
+  for (const options of [{ ...valid, ref: TARGETS.production.ref }, { ...valid, canonicalBusiness: "x'; delete from auth.users; --" }]) {
+    let calls = 0;
+    await assert.rejects(runAuthHealthCheck({ options,
+      sql: async () => { calls += 1; return []; },
+      configAuth: async () => { calls += 1; return config; },
+      probeAuth: async () => { calls += 1; return { ok: true, status: 200 }; },
+    }));
+    assert.equal(calls, 0);
+  }
+});
+
 test('help no necesita credenciales, no lee claves y no consulta servicios', async () => {
   const deps = dependencies();
   deps.env = {};

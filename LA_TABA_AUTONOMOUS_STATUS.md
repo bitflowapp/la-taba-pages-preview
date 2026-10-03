@@ -6,9 +6,9 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
 ## Para retomar (leer primero)
 
 - Informe final: `LA_TABA_AUTONOMOUS_BACKEND_REPORT.md` (estado, hallazgos, OWNER_APPROVAL_REQUIRED con pasos exactos, veredictos).
-- Actualizado 2026-10-03 20:20 (-03:00). Último commit de código: `7d737cf4` (quinta revisión de 20261003090000); el último
-  de la rama es el de documentación que trae este archivo. Tarea en curso: el CI de ese HEAD y una quinta pasada del
-  revisor. Próximo paso: atender lo que encuentre y dejar el CI del HEAD final en verde.
+- Actualizado 2026-10-03 20:58 (-03:00). Último commit de código: `f246ee21` (sexta revisión de 20261003090000); el último
+  de la rama es el de documentación que trae este archivo. Tarea en curso: el CI de ese HEAD y una sexta pasada del revisor
+  sobre ese cambio. Próximo paso: atender lo que encuentre y dejar el CI del HEAD final en verde.
 - Rama `hardening/taba-ecommerce-production`, todo pusheado. **PR #133 en borrador** contra `main` (apilado sobre #130): existe
   para que el CI completo corra en cada push, porque desde la sesión en la nube el despacho manual de workflows da 403.
   No se mergea sin el dueño. Nada aplicado en Staging (158) ni en CP (157); la rama tiene 211 migraciones (157 de `main` + 54).
@@ -18,7 +18,7 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
   `scripts/production-health-check.mjs --target controlled-production` (sólo lectura, necesitan un token de la Management API).
 - La sesión en la nube no tiene token de Supabase ni de Mercado Pago: no leyó Staging ni CP. Lo último leído en vivo es de la
   sesión de la mañana (11:20–11:25).
-- En curso al escribir esto: el CI del HEAD final en el PR #133 y una quinta pasada del revisor sobre `7d737cf4` (su resultado
+- En curso al escribir esto: el CI del HEAD final en el PR #133 y una sexta pasada del revisor sobre `f246ee21` (su resultado
   queda en la bitácora y en el informe).
 
 ## Sesión 2 — 2026-10-03 14:47–20:xx (-03:00), Claude Cloud
@@ -156,6 +156,23 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
   corrida, 79-91 ms, ninguna función mil veces). Prueba 114 (las tres del cupo fallan con `6812143a`); 27 mutaciones, 26
   detectadas y una equivalente; reversión exacta. El gate canónico local completo sobre este árbol corría al escribir esto (su
   resultado, en la entrada siguiente). Registro: PAY-PROBE-09 (P2) corregido; P2 45 corregidos y 20 abiertos.
+- 20:25 — gate canónico local completo **PASS** sobre `7d737cf4` (pgTAP 6.495, carreras con 0 deadlocks, restauración);
+  `npm test` 3.130/3.131 (1 skip de plataforma). CI de `2edd7cbf`: **verde completo** (37154858989).
+- 20:40 — **quinta revisión adversarial** sobre `7d737cf4`: nada por encima de P3 en esa versión. **PAY-PROBE-10 (P2, ANTERIOR a
+  20261003090000**, igual con la v4 y con el código previo): dentro de las 48 horas, un checkout con un pago guardado (rechazado,
+  pendiente o en revisión) no anota vacíos y la regla del ritmo sólo mira vacíos: se le volvía a preguntar al proveedor cada
+  minuto durante 48 horas, y con unos 60 de ésos un checkout cuyo comprador estaba pagando no recibía nunca su sonda (reproducido:
+  corridas 1 a 4, «fresh f»). P3: la cota de 30 días con un negocio cerrado y dormido (un primer asiento un mes después del
+  checkout, con el negocio cerrado más de otros 30 días): documentado. Sin hallazgo: el LIMIT del cupo vencido corre antes de
+  la función (10 llamadas por corrida con 20.000), las alertas resueltas por el sistema no vuelven por asientos viejos, la
+  resolución de alguien después dado de baja reabre, reversiones exactas.
+- 20:50 — **`f246ee21`** (sexta revisión de 20261003090000): con un pago guardado, el ritmo dentro de la ventana se cuenta por los
+  trabajos de sonda (8 uno cada 2 minutos y los tardíos a las 2, 6 y 24 horas), y lo nunca preguntado va primero, lo más nuevo
+  antes. Con los 60 rechazados: el checkout nuevo en la primera corrida y ninguna relectura por minuto. Prueba 118 (tres de la
+  sección K fallan con `7d737cf4`); 31 mutaciones, 30 detectadas y una equivalente; reversión exacta. Gate canónico local completo **PASS** sobre este árbol (pgTAP 6.499, carreras con 0 deadlocks, restauración). Registro:
+  PAY-PROBE-10 (P2) corregido; P2 46 corregidos y 20 abiertos.
+- 20:53 — CI de `008cde75` (la quinta versión): **verde completo** (37161211210: web con E2E, base de datos con 6.495,
+  Windows; el stack efímero en push y PR).
 
 ## Sesión 1 — 2026-10-03 08:22–13:2x (-03:00), PC de trabajo (histórico)
 

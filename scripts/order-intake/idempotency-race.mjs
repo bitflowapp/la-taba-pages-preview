@@ -1804,12 +1804,17 @@ if (invoked) {
     console.error('usage: TABA_LOCAL_INTAKE_DB=1 node scripts/order-intake/idempotency-race.mjs <postgres url of a disposable database>');
     process.exit(2);
   }
-  assert.ok(['127.0.0.1', 'localhost'].includes(new URL(url).hostname), 'solo contra una base local descartable');
+  const target = new URL(url);
+  // `?host=` (o `hostaddr`) pisa el host de la URL en el cliente de pg: con eso una URL «local» podía
+  // conectar a otra máquina. No se aceptan, y el host del cliente se vuelve a mirar antes de conectar.
+  assert.ok(['127.0.0.1', 'localhost'].includes(target.hostname) && !target.searchParams.has('host') && !target.searchParams.has('hostaddr'),
+    'solo contra una base local descartable');
   const { default: pg } = await import('pg');
   await runIdempotencyRace(async () => {
     // Los mismos topes que la conexión de CI (tests/fixtures/release-v5-database.mjs).
     const client = new pg.Client({ connectionString: url, statement_timeout: 30_000, lock_timeout: 5_000 });
     client.on('error', () => {});
+    assert.ok(['127.0.0.1', 'localhost'].includes(client.host), 'solo contra una base local descartable');
     await client.connect();
     return client;
   });

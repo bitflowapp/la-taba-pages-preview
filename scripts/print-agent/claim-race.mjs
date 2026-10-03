@@ -132,10 +132,14 @@ if (invoked) {
   }
   const url = process.argv[2];
   const parsed = new URL(url || 'invalid:');
-  assert.ok(['127.0.0.1', 'localhost'].includes(parsed.hostname), 'solo contra una base local descartable');
+  // `?host=` (o `hostaddr`) pisa el host de la URL en el cliente de pg: con eso una URL «local» podía
+  // conectar a otra máquina. No se aceptan, y el host del cliente se vuelve a mirar antes de conectar.
+  assert.ok(['127.0.0.1', 'localhost'].includes(parsed.hostname) && !parsed.searchParams.has('host') && !parsed.searchParams.has('hostaddr'),
+    'solo contra una base local descartable');
   const { default: pg } = await import('pg');
   await runPrintClaimRace(async () => {
     const client = new pg.Client({ connectionString: url, statement_timeout: 30_000 });
+    assert.ok(['127.0.0.1', 'localhost'].includes(client.host), 'solo contra una base local descartable');
     await client.connect();
     return client;
   });

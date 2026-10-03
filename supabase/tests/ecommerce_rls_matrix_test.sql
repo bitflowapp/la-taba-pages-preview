@@ -176,7 +176,8 @@ begin
 
   -- Pedidos del cliente en A: siete retiros y un delivery. Cada operador del Panel
   -- tiene un pedido propio sobre el que ejercer lo que SÍ puede (`o_<rol>`) y otro
-  -- para cancelar (`o_x_<rol>`); `o_cliente` no lo toca nadie con éxito.
+  -- para cancelar (`o_x_<rol>`; el del empleado queda sin cancelar: no tiene el
+  -- permiso `orders.cancel`); `o_cliente` no lo toca nadie con éxito.
   perform set_config('request.jwt.claims', (select claims from actores where actor = 'cliente'), true);
   for v_key in select unnest(array['o_cliente', 'o_staff', 'o_admin', 'o_owner', 'o_x_staff', 'o_x_admin', 'o_x_owner']) loop
     v_result := public.create_order_with_items(jsonb_build_object(
@@ -600,7 +601,7 @@ select pg_temp.matriz('reembolsos · devolver un cobro en efectivo (reverse_manu
 select pg_temp.matriz('pedidos · cancelar un pedido (cancel_order)',
   $q$select public.cancel_order(pg_temp.obj('o_x_', '%ACTOR%', 'o_cliente'), pg_temp.rev(pg_temp.obj('o_x_', '%ACTOR%', 'o_cliente')),
        'cancelacion de prueba', 'matriz-cancelar-%ACTOR%') ->> 'status'$q$,
-  '{"anon":"DENY 42501","cliente":"DENY 42501","cliente2":"DENY 42501","staff":"ALLOW cancelled","admin":"ALLOW cancelled","owner":"ALLOW cancelled",
+  '{"anon":"DENY 42501","cliente":"DENY 42501","cliente2":"DENY 42501","staff":"DENY 42501","admin":"ALLOW cancelled","owner":"ALLOW cancelled",
     "rider":"DENY 42501","rider2":"DENY 42501","ajeno":"DENY 42501","baja":"DENY 42501","revocado":"DENY 42501"}');
 
 select is(
@@ -637,13 +638,15 @@ select pg_temp.matriz('panel · leer la auditoria de configuracion (hay filas)',
   '{"anon":"DENY 42501","cliente":"DENY false","cliente2":"DENY false","staff":"DENY false","admin":"ALLOW true","owner":"ALLOW true",
     "rider":"DENY false","rider2":"DENY false","ajeno":"DENY false","baja":"DENY false","revocado":"DENY false"}');
 
--- AUTHZ-04, pendiente de una decisión del dueño: el catálogo de permisos
--- (`identity_role_permissions`, lo que el Panel le muestra a cada rol) y lo que las RPC
--- exigen no dicen lo mismo en tres lugares. La matriz fija lo que pasa HOY de los dos
--- lados; cuando se decida cuál manda, cambian estas celdas junto con el código.
+-- AUTHZ-04: el catálogo de permisos (`identity_role_permissions`, lo que el Panel le
+-- muestra a cada rol) y lo que las RPC exigen no decían lo mismo en tres lugares.
+-- Cancelar ya sigue al catálogo (20261002050000, decisión del dueño: celda «cancelar un
+-- pedido»). Los otros dos siguen pendientes de una decisión; la matriz fija lo que pasa
+-- HOY de los dos lados y, cuando se decida cuál manda, cambian estas celdas junto con el
+-- código.
 --
+--   orders.cancel      catálogo: owner y admin    RPC: owner y admin (las dos preguntan el permiso)
 --   fiscal.authorize   catálogo: owner            RPC: owner y admin
---   orders.cancel      catálogo: owner y admin    RPC: owner, admin y staff (celda «cancelar un pedido»)
 --   business.settings  catálogo: owner y admin    RPC: staff puede abrir y pausar (celda de abajo)
 --
 -- El comercio de la matriz no tiene perfil fiscal: quien pasa la autorización se detiene
@@ -660,7 +663,7 @@ select is(
             where p.permission in ('fiscal.authorize', 'orders.cancel', 'business.settings')
             group by p.permission) x),
   '{"fiscal.authorize": "owner", "orders.cancel": "admin,owner", "business.settings": "admin,owner"}'::jsonb,
-  'AUTHZ-04 · el catalogo de permisos dice otra cosa que las RPC en estos tres permisos (decision pendiente)');
+  'AUTHZ-04 · lo que dice el catalogo para estos tres permisos: cancelar ya lo sigue; fiscal y ajustes, decision pendiente');
 
 select pg_temp.matriz('panel · pausar el comercio (set_business_open_state paused)',
   $q$select public.set_business_open_state(pg_temp.id('a'), 'paused') ->> 'status'$q$,

@@ -116,7 +116,7 @@ try {
   await denied('DELIVERY_CLOSE_WITHOUT_CODE_DENIED', staff, 'delivered', rev, '23514');
 
   const cancelKey = `life_cancel_${compact(order.id)}`;
-  const cancel = () => staff.rpc('cancel_order', { p_order_id: order.id, p_expected_revision: rev,
+  const cancel = () => owner.rpc('cancel_order', { p_order_id: order.id, p_expected_revision: rev,
     p_reason: 'QA ciclo de vida: sin despacho', p_idempotency_key: cancelKey });
   const cancelled = await cancel();
   check('CANCEL_OK', !cancelled.error && (await statusOf()) === 'cancelled', cancelled.error?.code);

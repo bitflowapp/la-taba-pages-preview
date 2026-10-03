@@ -8,7 +8,8 @@
 --   · la primera cancelación deja un motivo y un recibo, como siempre;
 --   · reintentar con la misma clave devuelve el recibo guardado;
 --   · volver a cancelar con otra clave es un no-op: ni evento, ni recibo, ni
---     revisión, lo pida quien lo pida;
+--     revisión, lo pida el dueño o el encargado (los que pueden cancelar: el
+--     empleado, sin `orders.cancel`, recibe 42501; ver authorization_matrix_test.sql);
 --   · las barreras de siempre siguen: revisión vieja, motivo corto, pedido
 --     rechazado, operador de otro comercio.
 --
@@ -22,7 +23,7 @@ select plan(21);
 insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
 values
   ('a9200000-0000-4000-8000-0000000000e1','authenticated','authenticated','cancelar-owner@example.invalid','',now(),'{}','{}',now(),now()),
-  ('a9200000-0000-4000-8000-0000000000e2','authenticated','authenticated','cancelar-staff@example.invalid','',now(),'{}','{}',now(),now()),
+  ('a9200000-0000-4000-8000-0000000000e2','authenticated','authenticated','cancelar-admin@example.invalid','',now(),'{}','{}',now(),now()),
   ('a9200000-0000-4000-8000-0000000000e3','authenticated','authenticated','cancelar-vecino@example.invalid','',now(),'{}','{}',now(),now());
 
 insert into public.businesses(id,name,status,slug,is_active)
@@ -33,13 +34,13 @@ values
 insert into public.business_members(business_id,user_id,role,is_active)
 values
   ('b9200000-0000-4000-8000-0000000000e1','a9200000-0000-4000-8000-0000000000e1','owner',true),
-  ('b9200000-0000-4000-8000-0000000000e1','a9200000-0000-4000-8000-0000000000e2','staff',true),
+  ('b9200000-0000-4000-8000-0000000000e1','a9200000-0000-4000-8000-0000000000e2','admin',true),
   ('b9200000-0000-4000-8000-0000000000e2','a9200000-0000-4000-8000-0000000000e3','owner',true);
 
 insert into public.identity_sessions(session_id,user_id,business_id,role_at_login,client)
 values
   ('c9200000-0000-4000-8000-0000000000e1','a9200000-0000-4000-8000-0000000000e1','b9200000-0000-4000-8000-0000000000e1','owner','panel_web'),
-  ('c9200000-0000-4000-8000-0000000000e2','a9200000-0000-4000-8000-0000000000e2','b9200000-0000-4000-8000-0000000000e1','staff','panel_web'),
+  ('c9200000-0000-4000-8000-0000000000e2','a9200000-0000-4000-8000-0000000000e2','b9200000-0000-4000-8000-0000000000e1','admin','panel_web'),
   ('c9200000-0000-4000-8000-0000000000e3','a9200000-0000-4000-8000-0000000000e3','b9200000-0000-4000-8000-0000000000e2','owner','panel_web');
 
 -- Dos pedidos de retiro en efectivo recién recibidos: el 1 se cancela, el 2 se rechaza.
@@ -112,7 +113,7 @@ select is(pg_temp.motivos('d9200000-0000-4000-8000-000000000001'), array['client
 select is(pg_temp.recibos('d9200000-0000-4000-8000-000000000001'), 1, 'no se guarda un segundo recibo');
 select is(pg_temp.revision('d9200000-0000-4000-8000-000000000001'), 2::bigint, 'la revision no se movio');
 
--- Otro operador del mismo comercio, misma respuesta.
+-- Otro operador del mismo comercio que también puede cancelar (el encargado), misma respuesta.
 select pg_temp.as_user('a9200000-0000-4000-8000-0000000000e2','c9200000-0000-4000-8000-0000000000e2');
 select is(
   public.cancel_order('d9200000-0000-4000-8000-000000000001', 2, 'lo cancelo yo tambien', 'cancelar-clave-0003') ->> 'idempotent_no_op',

@@ -51,9 +51,13 @@ import process from 'node:process';
 const BUSINESS = 'b7400000-0000-4000-8000-0000000000a1';
 const OWNER = 'a7400000-0000-4000-8000-0000000000ff';
 const STAFF = 'a7400000-0000-4000-8000-0000000000fe';
+// El encargado. Cancelar un pedido pide el permiso `orders.cancel` del catálogo, que el
+// empleado no tiene (20261002050000): las cancelaciones del comercio las hacen él y el dueño.
+const MANAGER = 'a7400000-0000-4000-8000-0000000000fd';
 const SESSION = {
   [OWNER]: 'e7400000-0000-4000-8000-0000000000ff',
   [STAFF]: 'e7400000-0000-4000-8000-0000000000fe',
+  [MANAGER]: 'e7400000-0000-4000-8000-0000000000fd',
 };
 const COLLECTOR = 'stock-race-collector';
 const APPLICATION = 'stock-race-app';
@@ -395,7 +399,8 @@ export async function runStockRace(connect, { log = console.log } = {}) {
     // ── Fixture: un comercio abierto con Mercado Pago conectado y su equipo ───
     await admin.query(`insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
       values ($1,'authenticated','authenticated','stock-race-owner@example.invalid','',now(),'{}','{}',now(),now()),
-             ($2,'authenticated','authenticated','stock-race-staff@example.invalid','',now(),'{}','{}',now(),now())`, [OWNER, STAFF]);
+             ($2,'authenticated','authenticated','stock-race-staff@example.invalid','',now(),'{}','{}',now(),now()),
+             ($3,'authenticated','authenticated','stock-race-manager@example.invalid','',now(),'{}','{}',now(),now())`, [OWNER, STAFF, MANAGER]);
     await admin.query(`insert into auth.users(id,aud,role,encrypted_password,raw_app_meta_data,raw_user_meta_data,is_anonymous,created_at,updated_at)
       select id,'authenticated','authenticated','','{}','{}',true,now(),now() from unnest($1::uuid[]) as id`,
     [Array.from({ length: CUSTOMERS }, (_, index) => customer(index + 1))]);
@@ -409,10 +414,10 @@ export async function runStockRace(connect, { log = console.log } = {}) {
       values ($1,'TABA CARRERA DE STOCK','taba-carrera-stock','open',true,true,true,now(),$2,'ARS',true,false,0,0,
         1000,1000,1000,1000,100000,10080)`, [BUSINESS, OWNER]);
     await admin.query(`insert into public.business_members(business_id,user_id,role,is_active)
-      values ($1,$2,'owner',true), ($1,$3,'staff',true)`, [BUSINESS, OWNER, STAFF]);
+      values ($1,$2,'owner',true), ($1,$3,'staff',true), ($1,$4,'admin',true)`, [BUSINESS, OWNER, STAFF, MANAGER]);
     await admin.query(`insert into public.identity_sessions(session_id,user_id,business_id,role_at_login,client)
-      values ($1,$2,$5,'owner','panel_web'), ($3,$4,$5,'staff','panel_web')`,
-    [SESSION[OWNER], OWNER, SESSION[STAFF], STAFF, BUSINESS]);
+      values ($1,$2,$5,'owner','panel_web'), ($3,$4,$5,'staff','panel_web'), ($6,$7,$5,'admin','panel_web')`,
+    [SESSION[OWNER], OWNER, SESSION[STAFF], STAFF, BUSINESS, SESSION[MANAGER], MANAGER]);
     await admin.query(`insert into public.business_payment_settings(business_id,enabled,environment,checkout_mode,currency,reserve_stock,
         collector_id,application_id,configured_at,verified_at)
       values ($1,true,'test','checkout_pro','ARS',true,$2,$3,clock_timestamp(),clock_timestamp())`, [BUSINESS, COLLECTOR, APPLICATION]);
@@ -656,9 +661,9 @@ export async function runStockRace(connect, { log = console.log } = {}) {
 
       const revision = Number(before.revision);
       const storm = await race([
-        byBusiness(STAFF, revision, 'stock-race-s08-staff'),
+        byBusiness(MANAGER, revision, 'stock-race-s08-manager'),
         byCustomer('stock-race-s08-customer'),
-        byBusiness(STAFF, revision, 'stock-race-s08-staff'),
+        byBusiness(MANAGER, revision, 'stock-race-s08-manager'),
         byTimeout,
         byBusiness(OWNER, revision, 'stock-race-s08-owner'),
         byCustomer('stock-race-s08-customer'),
@@ -677,9 +682,9 @@ export async function runStockRace(connect, { log = console.log } = {}) {
         ? result.value.status === 'cancelled' && (result.value.idempotent_no_op === true || result.value.idempotent_replay === true)
         : clean(result));
       const repeat = [
-        byBusiness(STAFF, revision + 1, 'stock-race-s08-staff-again'),
+        byBusiness(MANAGER, revision + 1, 'stock-race-s08-manager-again'),
         byCustomer('stock-race-s08-customer-again'),
-        byBusiness(STAFF, revision, 'stock-race-s08-staff'),
+        byBusiness(MANAGER, revision, 'stock-race-s08-manager'),
         byTimeout,
         byBusiness(OWNER, revision + 1, 'stock-race-s08-owner-again'),
         byCustomer('stock-race-s08-customer'),

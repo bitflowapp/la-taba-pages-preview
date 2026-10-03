@@ -358,7 +358,7 @@ select throws_ok(
   $$select count(*) from public.apply_commercial_catalog_batch(
     '92000000-0000-4000-8000-00000000000a',
     '[{"sku":"catalog-bulk-01","stock":8}]'::jsonb)$$,
-  'P0001', null, 'owner del negocio B no edita el negocio A');
+  '42501', 'Only an active owner/admin can apply commercial catalog values.', 'owner del negocio B no edita el negocio A');
 reset role;
 select is((select stock from public.products where business_id='92000000-0000-4000-8000-00000000000a'
   and sku='catalog-bulk-01'),5,'el intento cruzado no dejo escritura');

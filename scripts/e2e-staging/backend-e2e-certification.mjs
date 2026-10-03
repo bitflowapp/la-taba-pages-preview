@@ -1046,7 +1046,7 @@ async function certify(ctx) {
     const reissueAfter = await rpc(customerA.client, 'issue_order_delivery_code', { p_order_id: mainOrder.id, p_tracking_token: mainToken });
     check(P.code, 'NO_CODE_AFTER_DELIVERY', !reissueAfter.ok && reissueAfter.code === '55000', { code: reissueAfter.code });
     const afterTerminal = await tx(staff, 'preparing', afterDelivered.revision, `cert-terminal-${randomBytes(6).toString('hex')}`, P.neg);
-    const cancelDelivered = await rpc(staff.client, 'cancel_order', { p_order_id: mainOrder.id, p_expected_revision: afterDelivered.revision, p_reason: 'QA intento cancelar entregado',
+    const cancelDelivered = await rpc(owner.client, 'cancel_order', { p_order_id: mainOrder.id, p_expected_revision: afterDelivered.revision, p_reason: 'QA intento cancelar entregado',
       p_idempotency_key: `cert-cancel-delivered-${randomBytes(6).toString('hex')}` });
     negatives.push({ name: 'NEG_TERMINAL_STATE_LOCKED', code: afterTerminal.r.code }, { name: 'NEG_CANCEL_DELIVERED', code: cancelDelivered.code });
     check(P.neg, 'NEG_TERMINAL_STATE_LOCKED', !afterTerminal.r.ok && afterTerminal.r.code === '23514' && !cancelDelivered.ok && (await orderState()).status === 'delivered',
@@ -1191,7 +1191,7 @@ async function certify(ctx) {
     // ── Fase 14a · stock antes de limpiar ────────────────────────────────────
     for (const ro of raceOrders) {
       const st = await orderState(ro.id);
-      const r = await rpc(staff.client, 'cancel_order', { p_order_id: ro.id, p_expected_revision: st.revision, p_reason: `${RUN_ID} QA limpieza carrera`,
+      const r = await rpc(owner.client, 'cancel_order', { p_order_id: ro.id, p_expected_revision: st.revision, p_reason: `${RUN_ID} QA limpieza carrera`,
         p_idempotency_key: `cert-cancel-${ro.id.replaceAll('-', '').slice(0, 20)}-${st.revision}` });
       ledger.orders.find((x) => x.id === ro.id).cancelledByTest = r.ok;
       persistLedger();
@@ -1213,7 +1213,7 @@ async function certify(ctx) {
         let fin = await orderState(ro.id);
         const winner = acc.ok ? 'accept' : can.ok ? 'cancel' : 'none';
         if (fin.status !== 'cancelled') {
-          await rpc(staff.client, 'cancel_order', { p_order_id: ro.id, p_expected_revision: fin.revision, p_reason: `${RUN_ID} QA limpieza carrera`, p_idempotency_key: `cert-rtc-clean-${randomBytes(6).toString('hex')}` });
+          await rpc(owner.client, 'cancel_order', { p_order_id: ro.id, p_expected_revision: fin.revision, p_reason: `${RUN_ID} QA limpieza carrera`, p_idempotency_key: `cert-rtc-clean-${randomBytes(6).toString('hex')}` });
           fin = await orderState(ro.id);
         }
         const stockPost = (await productSnapshot(product.id)).stock;
@@ -1269,7 +1269,7 @@ async function cleanup(ctx) {
         st = (await observe(`select status, revision, origin, manual_payment_status, picked_up_at, inventory_released_at from public.orders where id = ${q(entry.id)}`))[0];
       }
       if (!['delivered', 'cancelled', 'canceled', 'rejected'].includes(st.status) && staff) {
-        const r = await rpc(staff.client, 'cancel_order', { p_order_id: entry.id, p_expected_revision: st.revision, p_reason: `${RUN_ID} QA limpieza`,
+        const r = await rpc(owner.client, 'cancel_order', { p_order_id: entry.id, p_expected_revision: st.revision, p_reason: `${RUN_ID} QA limpieza`,
           p_idempotency_key: `cert-clean-${entry.id.replaceAll('-', '').slice(0, 24)}-${st.revision}` });
         step(`cancel ${entry.publicCode}`, r.ok, r.code);
         st = (await observe(`select status, revision, origin, manual_payment_status, picked_up_at, inventory_released_at from public.orders where id = ${q(entry.id)}`))[0];

@@ -1356,14 +1356,15 @@ select is(pg_temp.cobro(pg_temp.pedido('j', 'inv-cobro-coordinar')), 'manual=con
 -- Un pedido cancelado no se cobra, y uno cobrado no se cancela sin devolver.
 select matches(pg_temp.pedir('j:c2', pg_temp.pedido_json('j', 'inv-cobro-cancelado', jsonb_build_array(pg_temp.linea('j:lata', 1)))),
   '^ok ', 'J: otro pedido en efectivo');
-select is(pg_temp.mover('j:staff', pg_temp.pedido('j', 'inv-cobro-cancelado'), 'cancelled'), 'ok cancelled rev 4', 'J: el comercio lo cancela');
+-- Cancela y rechaza el dueño: piden el permiso `orders.cancel`, que el empleado no tiene.
+select is(pg_temp.mover('j:owner', pg_temp.pedido('j', 'inv-cobro-cancelado'), 'cancelled'), 'ok cancelled rev 4', 'J: el comercio lo cancela');
 select is(pg_temp.cobrar('j:staff', pg_temp.pedido('j', 'inv-cobro-cancelado'), 4, 'cash', 'inv-cobrar-0021'),
   '{"error": "55000", "message": "Pedido terminal sin cobro permitido"}'::jsonb, 'J: cobrar un pedido cancelado se rechaza');
 select is(pg_temp.cobro(pg_temp.pedido('j', 'inv-cobro-cancelado')), 'manual=pending medio=- rev=4 eventos=0 recibos=0', 'J: y no escribe nada');
 insert into inv_casos (grupo, puerta, negocio, actor, pedido, destino, esperado, que) values
-  ('J', 'transicion', 'j', 'j:staff', pg_temp.pedido('j', 'inv-cobro-efectivo'), 'cancelled',
+  ('J', 'transicion', 'j', 'j:owner', pg_temp.pedido('j', 'inv-cobro-efectivo'), 'cancelled',
     '55000 Devolvé y registrá el cobro manual antes de cancelar el pedido', 'J: cancelar un pedido con el cobro confirmado'),
-  ('J', 'transicion', 'j', 'j:staff', pg_temp.pedido('j', 'inv-cobro-efectivo'), 'rejected',
+  ('J', 'transicion', 'j', 'j:owner', pg_temp.pedido('j', 'inv-cobro-efectivo'), 'rejected',
     '55000 Devolvé y registrá el cobro manual antes de cancelar el pedido', 'J: rechazar un pedido con el cobro confirmado');
 select * from pg_temp.rechazos('J');
 
@@ -1374,6 +1375,11 @@ select * from pg_temp.rechazos('J');
 -- la transición a cada uno de los once estados con `transition_order`, como operador:
 --   si = permitida · igual = no-op (ya está ahí) · un SQLSTATE = rechazada
 -- El ensayo se deshace siempre; el avance de verdad se hace después, y se comprueba.
+-- La matriz la ensaya el dueño, que tiene todos los permisos: cancelar y rechazar piden
+-- `orders.cancel` (20261002050000) y al empleado esas dos columnas le dan 42501 en
+-- cualquier estado; esa fila está en authorization_matrix_test.sql. Los avances de
+-- verdad (aceptar, preparar, listo, entregar, despachar) los sigue haciendo el empleado;
+-- cancelar y rechazar, el dueño.
 select matches(pg_temp.pedir('k:c1', pg_temp.pedido_json('k', 'inv-estado-retiro', jsonb_build_array(pg_temp.linea('k:lata', 2)))), '^ok ', 'K: pedido de retiro');
 select matches(pg_temp.pedir('k:c1', pg_temp.pedido_json('k', 'inv-estado-envio', jsonb_build_array(pg_temp.linea('k:lata', 2)), pg_temp.envio_json())), '^ok ', 'K: pedido de envio');
 select matches(pg_temp.pedir('k:c1', pg_temp.pedido_json('k', 'inv-estado-cancelado', jsonb_build_array(pg_temp.linea('k:lata', 2)))), '^ok ', 'K: pedido que se va a cancelar');
@@ -1388,10 +1394,10 @@ select is((select foto from inv_k),
   'K: seis pedidos recibidos, 11 latas menos');
 
 -- Recibido.
-select is(pg_temp.fila('k:staff', pg_temp.pedido('k', 'inv-estado-retiro')),
+select is(pg_temp.fila('k:owner', pg_temp.pedido('k', 'inv-estado-retiro')),
   'received=igual accepted=si preparing=23514 ready=23514 assigned=23514 picked_up=23514 on_the_way=23514 arrived=23514 delivered=23514 cancelled=si rejected=si',
   'K recibido: se acepta, se rechaza o se cancela; no se saltea a preparar, listo ni entregado');
-select is(pg_temp.fila('k:staff', (pg_temp.sesion('k1')).completed_order_id),
+select is(pg_temp.fila('k:owner', (pg_temp.sesion('k1')).completed_order_id),
   'received=igual accepted=si preparing=23514 ready=23514 assigned=23514 picked_up=23514 on_the_way=23514 arrived=23514 delivered=23514 cancelled=55000 rejected=55000',
   'K recibido y pagado por Mercado Pago: se acepta, pero no se cancela ni se rechaza por esta puerta (55000: va por el reembolso)');
 select is(pg_temp.estado(pg_temp.pedido('k', 'inv-estado-retiro')) || ' | ' || pg_temp.foto('k'), 'received rev 3 | ' || (select foto from inv_k),
@@ -1399,29 +1405,29 @@ select is(pg_temp.estado(pg_temp.pedido('k', 'inv-estado-retiro')) || ' | ' || p
 
 -- Aceptado, en preparación, listo, entregado (retiro).
 select is(pg_temp.mover('k:staff', pg_temp.pedido('k', 'inv-estado-retiro'), 'accepted'), 'ok accepted rev 4', 'K: recibido -> aceptado, la revision sube en uno');
-select is(pg_temp.fila('k:staff', pg_temp.pedido('k', 'inv-estado-retiro')),
+select is(pg_temp.fila('k:owner', pg_temp.pedido('k', 'inv-estado-retiro')),
   'received=22023 accepted=igual preparing=si ready=23514 assigned=23514 picked_up=23514 on_the_way=23514 arrived=23514 delivered=23514 cancelled=si rejected=23514',
   'K aceptado: pasa a preparacion o se cancela; no vuelve a recibido, no se rechaza y no saltea a listo');
 select is(pg_temp.mover('k:staff', pg_temp.pedido('k', 'inv-estado-retiro'), 'preparing'), 'ok preparing rev 5', 'K: aceptado -> en preparacion');
-select is(pg_temp.fila('k:staff', pg_temp.pedido('k', 'inv-estado-retiro')),
+select is(pg_temp.fila('k:owner', pg_temp.pedido('k', 'inv-estado-retiro')),
   'received=22023 accepted=23514 preparing=igual ready=si assigned=23514 picked_up=23514 on_the_way=23514 arrived=23514 delivered=23514 cancelled=si rejected=23514',
   'K en preparacion: pasa a listo o se cancela; no vuelve a aceptado ni saltea a entregado');
 select is(pg_temp.mover('k:staff', pg_temp.pedido('k', 'inv-estado-retiro'), 'ready'), 'ok ready rev 6', 'K: en preparacion -> listo');
-select is(pg_temp.fila('k:staff', pg_temp.pedido('k', 'inv-estado-retiro')),
+select is(pg_temp.fila('k:owner', pg_temp.pedido('k', 'inv-estado-retiro')),
   'received=22023 accepted=23514 preparing=23514 ready=igual assigned=23514 picked_up=23514 on_the_way=23514 arrived=23514 delivered=si cancelled=si rejected=23514',
   'K listo (retiro): se entrega o se cancela; no sale a reparto ni vuelve atras');
 select is(pg_temp.mover('k:staff', pg_temp.pedido('k', 'inv-estado-retiro'), 'delivered'), 'ok delivered rev 7', 'K: listo -> entregado');
-select is(pg_temp.fila('k:staff', pg_temp.pedido('k', 'inv-estado-retiro')),
+select is(pg_temp.fila('k:owner', pg_temp.pedido('k', 'inv-estado-retiro')),
   'received=22023 accepted=23514 preparing=23514 ready=23514 assigned=23514 picked_up=23514 on_the_way=23514 arrived=23514 delivered=igual cancelled=23514 rejected=23514',
   'K entregado: terminal. No se cancela, no se rechaza y no vuelve a ningun estado');
 
 -- Cancelado y rechazado.
-select is(pg_temp.mover('k:staff', pg_temp.pedido('k', 'inv-estado-cancelado'), 'cancelled'), 'ok cancelled rev 4', 'K: recibido -> cancelado');
-select is(pg_temp.fila('k:staff', pg_temp.pedido('k', 'inv-estado-cancelado')),
+select is(pg_temp.mover('k:owner', pg_temp.pedido('k', 'inv-estado-cancelado'), 'cancelled'), 'ok cancelled rev 4', 'K: recibido -> cancelado');
+select is(pg_temp.fila('k:owner', pg_temp.pedido('k', 'inv-estado-cancelado')),
   'received=22023 accepted=23514 preparing=23514 ready=23514 assigned=23514 picked_up=23514 on_the_way=23514 arrived=23514 delivered=23514 cancelled=igual rejected=23514',
   'K cancelado: terminal. No se acepta, no se entrega y no pasa a rechazado');
-select is(pg_temp.mover('k:staff', pg_temp.pedido('k', 'inv-estado-rechazado'), 'rejected'), 'ok rejected rev 4', 'K: recibido -> rechazado');
-select is(pg_temp.fila('k:staff', pg_temp.pedido('k', 'inv-estado-rechazado')),
+select is(pg_temp.mover('k:owner', pg_temp.pedido('k', 'inv-estado-rechazado'), 'rejected'), 'ok rejected rev 4', 'K: recibido -> rechazado');
+select is(pg_temp.fila('k:owner', pg_temp.pedido('k', 'inv-estado-rechazado')),
   'received=22023 accepted=23514 preparing=23514 ready=23514 assigned=23514 picked_up=23514 on_the_way=23514 arrived=23514 delivered=23514 cancelled=23514 rejected=igual',
   'K rechazado: terminal. Ni siquiera se cancela');
 
@@ -1431,11 +1437,11 @@ select is(
     pg_temp.mover('k:staff', pg_temp.pedido('k', 'inv-estado-envio'), 'preparing'),
     pg_temp.mover('k:staff', pg_temp.pedido('k', 'inv-estado-envio'), 'ready')),
   'ok accepted rev 4 / ok preparing rev 5 / ok ready rev 6', 'K: el envio avanza hasta listo');
-select is(pg_temp.fila('k:staff', pg_temp.pedido('k', 'inv-estado-envio')),
+select is(pg_temp.fila('k:owner', pg_temp.pedido('k', 'inv-estado-envio')),
   'received=22023 accepted=23514 preparing=23514 ready=igual assigned=23514 picked_up=23514 on_the_way=si arrived=23514 delivered=23514 cancelled=si rejected=23514',
   'K listo (envio sin repartidor): el comercio lo despacha o lo cancela; no lo da por entregado');
 select is(pg_temp.mover('k:staff', pg_temp.pedido('k', 'inv-estado-envio'), 'on_the_way'), 'ok on_the_way rev 7', 'K: listo -> en camino');
-select is(pg_temp.fila('k:staff', pg_temp.pedido('k', 'inv-estado-envio')),
+select is(pg_temp.fila('k:owner', pg_temp.pedido('k', 'inv-estado-envio')),
   'received=22023 accepted=23514 preparing=23514 ready=23514 assigned=23514 picked_up=23514 on_the_way=igual arrived=23514 delivered=23514 cancelled=si rejected=23514',
   'K en camino: por esta puerta solo se cancela; el cierre es con el codigo de entrega, no una arista de la matriz');
 
@@ -1454,9 +1460,9 @@ insert into inv_casos (grupo, puerta, negocio, actor, pedido, revision, destino,
     '23514 transicion no permitida: cancelled -> preparing', 'K: tampoco el dueno lo reabre'),
   ('K', 'transicion', 'k', 'k:staff', pg_temp.pedido('k', 'inv-estado-rechazado'), null, 'accepted',
     '23514 transicion no permitida: rejected -> accepted', 'K: aceptar un pedido rechazado'),
-  ('K', 'transicion', 'k', 'k:staff', pg_temp.pedido('k', 'inv-estado-retiro'), null, 'cancelled',
+  ('K', 'transicion', 'k', 'k:owner', pg_temp.pedido('k', 'inv-estado-retiro'), null, 'cancelled',
     '23514 transicion no permitida: delivered -> cancelled', 'K: cancelar un pedido entregado'),
-  ('K', 'transicion', 'k', 'k:staff', pg_temp.pedido('k', 'inv-estado-retiro'), null, 'rejected',
+  ('K', 'transicion', 'k', 'k:owner', pg_temp.pedido('k', 'inv-estado-retiro'), null, 'rejected',
     '23514 transicion no permitida: delivered -> rejected', 'K: rechazar un pedido entregado'),
   ('K', 'transicion', 'k', 'k:staff', pg_temp.pedido('k', 'inv-estado-retiro'), null, 'ready',
     '23514 transicion no permitida: delivered -> ready', 'K: volver un pedido entregado a listo'),
@@ -1482,13 +1488,13 @@ insert into inv_casos (grupo, puerta, negocio, actor, pedido, revision, destino,
     '42501 operador no autorizado', 'K: el cliente no usa esta puerta ni para cancelar lo suyo (tiene cancel_own_order)'),
   ('K', 'transicion', 'k', 'j:staff', pg_temp.pedido('k', 'inv-estado-saltos'), null, 'accepted',
     '42501 operador no autorizado', 'K: el operador de OTRO comercio tampoco'),
-  ('K', 'transicion', 'k', 'k:staff', (pg_temp.sesion('k1')).completed_order_id, null, 'cancelled',
+  ('K', 'transicion', 'k', 'k:owner', (pg_temp.sesion('k1')).completed_order_id, null, 'cancelled',
     '55000 pedido cobrado por Mercado Pago: gestionar reembolso desde Pagos', 'K: cancelar un pedido cobrado por Mercado Pago');
 select * from pg_temp.rechazos('K');
 select is(pg_temp.mover('k:staff', gen_random_uuid(), 'accepted', 1), 'P0002 pedido inexistente', 'K: un pedido que no existe');
 
 -- Doble toque y clave repetida.
-select is(pg_temp.mover('k:staff', pg_temp.pedido('k', 'inv-estado-cancelado'), 'cancelled'), 'ok cancelled rev 4 no_op',
+select is(pg_temp.mover('k:owner', pg_temp.pedido('k', 'inv-estado-cancelado'), 'cancelled'), 'ok cancelled rev 4 no_op',
   'K: cancelar por segunda vez es un no-op: mismo estado, misma revision');
 select is(pg_temp.foto('k'),
   'pedidos=6 renglones=6 eventos=16 recibos=11 sesiones=1 intents=1 reservas=0a+1c+0l eventos_pago=3 lata=43 agua=50',
@@ -1497,7 +1503,7 @@ select is(pg_temp.mover('k:staff', pg_temp.pedido('k', 'inv-estado-saltos'), 'ac
   'K: una transicion con clave propia');
 select is(pg_temp.mover('k:staff', pg_temp.pedido('k', 'inv-estado-saltos'), 'accepted', 3, 'inv-clave-repetida-01'), 'ok accepted rev 4 replay',
   'K: la misma llamada con la misma clave devuelve el recibo guardado (respuesta perdida)');
-select is(pg_temp.mover('k:staff', pg_temp.pedido('k', 'inv-estado-saltos'), 'cancelled', 3, 'inv-clave-repetida-01'),
+select is(pg_temp.mover('k:owner', pg_temp.pedido('k', 'inv-estado-saltos'), 'cancelled', 3, 'inv-clave-repetida-01'),
   '23505 idempotency_key reutilizada con otro payload', 'K: la misma clave con otro destino se rechaza (23505)');
 select is(pg_temp.estado(pg_temp.pedido('k', 'inv-estado-saltos')) || ' | ' || pg_temp.foto('k'),
   'accepted rev 4 | pedidos=6 renglones=6 eventos=17 recibos=12 sesiones=1 intents=1 reservas=0a+1c+0l eventos_pago=3 lata=43 agua=50',

@@ -268,7 +268,8 @@ select ok(pg_temp.ctx('count2')::jsonb @> '{"status": "needs_review", "shortfall
   and exists (select 1 from public.pos_stock_conflicts c where c.product_id = 'd8000000-0000-4000-8000-000000000001'
                  and c.status = 'open' and c.kind = 'count_below_reserved'),
   'contar 0 con 2 reservados deja el conflicto abierto y dice qué pedido resolver');
-select pg_temp.as_user('a8000000-0000-4000-8000-000000000002', 'c8000000-0000-4000-8000-000000000003');
+-- Cancela la dueña: cancelar pide el permiso `orders.cancel`, que el cajero (staff) no tiene.
+select pg_temp.as_user('a8000000-0000-4000-8000-000000000001', 'c8000000-0000-4000-8000-000000000001');
 select public.transition_order('e8000000-0000-4000-8000-000000000001',
   (select revision from public.orders where id = 'e8000000-0000-4000-8000-000000000001'), 'cancelled', 'cc-cancel-o1-0001');
 select ok(pg_temp.stock('d8000000-0000-4000-8000-000000000001') = 2 and not pg_temp.avail('d8000000-0000-4000-8000-000000000001'),

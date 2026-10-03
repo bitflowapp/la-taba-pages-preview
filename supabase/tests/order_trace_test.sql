@@ -10,7 +10,8 @@
 --      en camino, incidencia, llegada, un código de entrega equivocado y el bueno;
 --   B  pedido pagado por Mercado Pago (checkout, reserva, preferencia, aviso
 --      firmado, pago aprobado, pedido);
---   C  pedido en efectivo cancelado por el local con un motivo escrito a mano;
+--   C  pedido en efectivo que el empleado acepta y la dueña cancela con un motivo
+--      escrito a mano (cancelar pide el permiso `orders.cancel`);
 --   D  checkout que vence sin pagar: la reserva se libera y no hay pedido.
 --
 -- Se comprueba: que cualquier identificador llega al mismo documento, que la
@@ -234,6 +235,9 @@ begin
     'delivery_mode', 'pickup', 'payment_method', 'cash'));
   v_order_c := (v_res ->> 'id')::uuid;
   perform pg_temp.as_user(v_staff, v_staff_session);
+  perform public.transition_order(v_order_c, pg_temp.rev(v_order_c), 'accepted', 'traza-aceptar-c1');
+  -- Cancela la dueña: cancelar pide el permiso `orders.cancel`, que el empleado no tiene.
+  perform pg_temp.as_user(v_owner, 'e9000000-0000-4000-8000-000000000001');
   perform public.cancel_order(v_order_c, pg_temp.rev(v_order_c), 'El cliente Zulema llamo para cancelar', 'traza-cancel-001');
   insert into trace_ids values ('order_c', v_order_c);
 
@@ -636,12 +640,14 @@ select ok(
 select ok(
   pg_temp.entry(pg_temp.doc('a'), 'command.transition_order') ->> 'actor_ref' ~ '^op_[0-9a-f]{12}$'
   and pg_temp.entry(pg_temp.doc('a'), 'command.transition_order') ->> 'actor_ref'
-      = pg_temp.entry(pg_temp.doc('c'), 'command.cancel_order') ->> 'actor_ref'
+      = pg_temp.entry(pg_temp.doc('c'), 'command.transition_order') ->> 'actor_ref'
   and pg_temp.entry(pg_temp.doc('a'), 'command.transition_order') ->> 'actor_ref'
       = private.order_trace_actor_ref(pg_temp.id('business'), pg_temp.id('staff'))
+  and pg_temp.entry(pg_temp.doc('c'), 'command.cancel_order') ->> 'actor_ref'
+      = private.order_trace_actor_ref(pg_temp.id('business'), pg_temp.id('owner'))
   and private.order_trace_actor_ref(pg_temp.id('business'), pg_temp.id('staff'))
       <> private.order_trace_actor_ref(pg_temp.id('other'), pg_temp.id('staff')),
-  'la misma persona tiene la misma referencia en dos pedidos del negocio y otra distinta en otro negocio');
+  'la misma persona tiene la misma referencia en dos pedidos del negocio y otra distinta en otro negocio; quien cancela figura con la suya');
 select is(
   pg_temp.entry(pg_temp.doc('a'), 'rider.offer_accepted') ->> 'actor_ref',
   pg_temp.doc('a') #>> '{state,rider,assigned_rider_ref}',

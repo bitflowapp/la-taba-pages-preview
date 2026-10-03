@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generadoEl": "2026-08-26T06:35:31.241Z",
+  "generadoEl": "2026-08-26T20:41:59.199Z",
   "fuentePrecio": "catalog/gondola-neuquen.mjs · precio derivado del costo mayorista medido el 2026-08-18",
   "fuenteRedondeo": "js/core/combos.js · roundPromotionalPrice, centena inferior",
   "pisoMargen": 1.35,

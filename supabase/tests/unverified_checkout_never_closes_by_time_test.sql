@@ -6,16 +6,22 @@
 -- («condición ausente»), y el barrido dejaba de preguntar. Un posible cobro sin pedido quedaba
 -- cerrado en silencio.
 --
---   A  dentro de las 48 horas nada cambia
+--   A  dentro de las 48 horas nada cambia: una resolución a mano la reabre la corrida siguiente
 --   B  pasadas las 48 horas la alerta sigue abierta (vacíos no concluyentes o ninguno)
 --   C  la marca de agua: lo anterior a ella no se resucita; sin la fila, se vigila todo
 --   D  la cierra una prueba: un vacío concluyente, o el pago que trae la sonda
---   E  la cierra una persona: dueño o encargado con nota; la de un empleado no cuenta
---   F  el barrido sigue preguntando una vez por día, hasta los 30 días
+--   E  la cierra una persona: dueño o encargado con nota, pasada la ventana, hasta que el
+--      proveedor diga algo nuevo; la de un empleado no cuenta
+--   F  el barrido sigue preguntando una vez por día, hasta los 30 días, aunque una persona haya
+--      resuelto la alerta; un vacío concluyente y la marca de agua lo frenan; pasados los 30
+--      días, la alerta viva sigue abierta y lo que nunca tuvo alerta no se resucita
 --   G  permisos, envoltorio de la frontera y el índice
 --   H  un pago que el proveedor todavía no resolvió (pendiente o en revisión manual) sobre un
 --      checkout vencido: nada dentro de la ventana, alerta y sonda diaria pasada la ventana,
 --      y la cierra el resultado final del proveedor
+--   I  un vacío anterior al pago no prueba nada; la resolución de una persona sobre un pago sin
+--      resultado final no frena la relectura, una relectura igual no la reabre y un estado
+--      nuevo sí
 --
 -- No depende de la hora: los momentos de sesiones, vacíos y trabajos se escriben a mano. Todo
 -- transaccional (rollback). Ids aleatorios y cuentas acotadas a ellos: corre igual sobre la
@@ -23,7 +29,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(55);
+select plan(84);
 
 -- ── Fixture ────────────────────────────────────────────────────────────────
 create temporary table uv_ids (name text primary key, id uuid not null) on commit drop;
@@ -172,7 +178,8 @@ begin
 end $$;
 
 -- Asienta un pago leído del proveedor, por el camino del worker.
-create function pg_temp.pago(p_intent text, p_payment_id text, p_status text, p_detail text) returns jsonb language sql as $$
+create function pg_temp.pago(p_intent text, p_payment_id text, p_status text, p_detail text, p_variant text default '')
+returns jsonb language sql as $$
   select public.record_mercadopago_payment_snapshot(pg_temp.id(p_intent), jsonb_build_object(
       'provider_payment_id', p_payment_id,
       'external_reference', pi.external_reference,
@@ -189,7 +196,7 @@ create function pg_temp.pago(p_intent text, p_payment_id text, p_status text, p_
       'provider_occurred_at', (clock_timestamp() - interval '46 hours 50 minutes')::text,
       'refunded_amount', '0.00',
       'payer_email_hash', repeat('e', 64),
-      'raw_response_hash', encode(digest(p_payment_id || ':' || p_status, 'sha256'), 'hex')), 'reconciliation', null)
+      'raw_response_hash', encode(digest(p_payment_id || ':' || p_status || p_variant, 'sha256'), 'hex')), 'reconciliation', null)
     from public.payment_intents pi
     join public.checkout_sessions cs on cs.id = pi.checkout_session_id
     join public.business_payment_settings ps on ps.business_id = pi.business_id and ps.environment = 'test'
@@ -213,7 +220,10 @@ select pg_temp.checkout('b4', 'b', interval '49 hours');   -- la sonda tardía t
 select pg_temp.checkout('b5', 'b', interval '49 hours');   -- lo resuelve el empleado y después el dueño
 select pg_temp.checkout('b6', 'b', interval '49 hours');   -- lo resuelve el encargado
 select pg_temp.checkout('b7', 'b', interval '12 days');    -- anterior a la marca de agua
-select pg_temp.checkout('b8', 'b', interval '31 days');    -- más de 30 días (con la marca más vieja)
+select pg_temp.checkout('b8', 'b', interval '29 days');    -- llega a los 30 días con su alerta abierta
+select pg_temp.checkout('b9', 'b', interval '72 hours');   -- un vacío concluyente de hace 30 horas
+select pg_temp.checkout('b10', 'b', interval '31 days');   -- más de 30 días y nunca tuvo alerta
+select pg_temp.checkout('b11', 'b', interval '49 hours');  -- lo resuelve el dueño y después aparece un pago
 select public.sweep_expired_checkout_sessions();
 select pg_temp.vacios(pg_temp.id('a1:intent'), 20, clock_timestamp() - interval '40 minutes', false);
 select pg_temp.vacios(pg_temp.id('a2:intent'), 1, clock_timestamp() - interval '40 minutes', true);
@@ -221,11 +231,13 @@ select pg_temp.vacios(pg_temp.id('b1:intent'), 20, clock_timestamp() - interval 
 select pg_temp.vacios(pg_temp.id('b3:intent'), 20, clock_timestamp() - interval '25 hours', false);
 select pg_temp.vacios(pg_temp.id('b5:intent'), 20, clock_timestamp() - interval '25 hours', false);
 select pg_temp.vacios(pg_temp.id('b6:intent'), 20, clock_timestamp() - interval '25 hours', false);
+select pg_temp.vacios(pg_temp.id('b9:intent'), 1, clock_timestamp() - interval '30 hours', true);
+select pg_temp.vacios(pg_temp.id('b11:intent'), 20, clock_timestamp() - interval '25 hours', false);
 
 select is(
   (select count(*)::integer from public.payment_intents pi
     where pi.id in (select id from uv_ids where name like '%:intent') and pi.internal_status = 'expired'),
-  10, 'precondición: los diez checkouts vencieron y su intent quedó «expired»');
+  13, 'precondición: los trece checkouts vencieron y su intent quedó «expired»');
 
 -- ══════════════════════════════════════════════════════════════════════════
 --  A · dentro de las 48 horas nada cambia
@@ -237,6 +249,9 @@ select is(
   (select (a.evidence ->> 'probe_window_closed')::boolean from public.operational_alerts a
     where a.alert_code = 'CHECKOUT_PROVIDER_UNVERIFIED' and a.subject_id = pg_temp.id('a1:intent')),
   false, 'A: la evidencia dice que la ventana de sondas sigue abierta');
+select is(pg_temp.resolver('a:owner', 'a1:intent'), 'resolved', 'A: el dueño la marca resuelta dentro de la ventana');
+select pg_temp.reconciliar('a');
+select is(pg_temp.alerta('a1:intent'), 'open', 'A: y la corrida siguiente la reabre, como siempre: dentro de la ventana la cierra una prueba');
 
 -- ══════════════════════════════════════════════════════════════════════════
 --  B · pasadas las 48 horas la alerta sigue abierta
@@ -255,7 +270,7 @@ select is(
     where a.alert_code = 'CHECKOUT_PROVIDER_UNVERIFIED' and a.subject_id = pg_temp.id('b1:intent')),
   'CRITICAL', 'B: sigue siendo crítica');
 select ok(
-  (select a.required_action like '%Si no existe, el dueño o un encargado la da por resuelta con una nota: no se cierra sola.'
+  (select a.required_action like '%Si no existe, pasadas las 48 horas de sondas el dueño o un encargado la da por resuelta con una nota: no se cierra sola.'
      from public.operational_alerts a
     where a.alert_code = 'CHECKOUT_PROVIDER_UNVERIFIED' and a.subject_id = pg_temp.id('b1:intent')),
   'B: la acción requerida dice cómo se cierra');
@@ -339,8 +354,22 @@ select is(pg_temp.alerta('b5:intent'), 'resolved', 'E: y queda resuelta: las cor
 select is(pg_temp.resolver('b:admin', 'b6:intent'), 'resolved', 'E: el encargado también');
 select pg_temp.reconciliar('b');
 select is(pg_temp.alerta('b6:intent'), 'resolved', 'E: y su resolución cuenta');
-select isnt(private.unverified_checkout_reviewed_at(pg_temp.id('b:business'), pg_temp.id('b5:intent')), null,
-  'E: la resolución del dueño queda registrada con su autor');
+select ok(private.unverified_checkout_review_holds(pg_temp.id('b:business'), pg_temp.id('b5:intent')),
+  'E: la resolución del dueño vale: está resuelta por él y el proveedor no dijo nada nuevo');
+-- b11: el dueño la da por resuelta y después la sonda trae un pago que nadie había visto.
+select is(pg_temp.resolver('b:owner', 'b11:intent'), 'resolved', 'E: el dueño da por resuelta la de b11');
+select pg_temp.reconciliar('b');
+select is(pg_temp.alerta('b11:intent'), 'resolved', 'E: precondición: queda resuelta');
+select pg_temp.pago('b11:intent', 'PAY-UV-B11', 'in_process', 'pending_review_manual');
+select pg_temp.reconciliar('b');
+select is(pg_temp.alerta('b11:intent'), 'open', 'E: un pago que el dueño no vio, asentado después de su resolución, la reabre');
+select is(
+  (select a.evidence ->> 'provider_status' from public.operational_alerts a
+    where a.alert_code = 'CHECKOUT_PROVIDER_UNVERIFIED' and a.subject_id = pg_temp.id('b11:intent')),
+  'in_process', 'E: con el estado del proveedor en la evidencia');
+select is(pg_temp.resolver('b:owner', 'b11:intent'), 'resolved', 'E: el dueño lo mira y la vuelve a resolver');
+select pg_temp.reconciliar('b');
+select is(pg_temp.alerta('b11:intent'), 'resolved', 'E: y esa resolución, posterior al pago, vale');
 update public.business_members set is_active = false
  where business_id = pg_temp.id('b:business') and user_id = pg_temp.id('b:admin');
 select pg_temp.reconciliar('b');
@@ -350,19 +379,44 @@ select is(pg_temp.alerta('b6:intent'), 'open',
 -- ══════════════════════════════════════════════════════════════════════════
 --  F · el barrido sigue preguntando, una vez por día, hasta los 30 días
 -- ══════════════════════════════════════════════════════════════════════════
-update private.payment_safety_watermarks set since = clock_timestamp() - interval '40 days'
- where name = 'unverified_checkout_watch_since';
+-- Con la marca de agua del fixture (10 días): lo anterior no se pregunta.
 select public.enqueue_checkout_provider_probes(200);
 select is(pg_temp.sonda_pendiente('b1:intent'), 1, 'F: pasadas las 48 horas, con el último vacío hace 25 horas, toca la sonda del día');
 select is(pg_temp.sonda_pendiente('b2:intent'), 1, 'F: sin ninguna sonda respondida, también');
-select is(pg_temp.sonda_pendiente('b5:intent'), 0, 'F: el que resolvió el dueño ya no se pregunta');
-select is(pg_temp.sonda_pendiente('b3:intent'), 0, 'F: el que tiene un vacío concluyente tampoco');
-select is(pg_temp.sonda_pendiente('b8:intent'), 0, 'F: ni el de hace más de 30 días (sigue con su alerta abierta)');
+select is(pg_temp.sonda_pendiente('b7:intent'), 0, 'F: el de hace 12 días, anterior a la marca de agua, no se pregunta');
+select is(pg_temp.sonda_pendiente('b9:intent'), 0,
+  'F: un vacío concluyente de hace 30 horas frena la sonda diaria (el ritmo solo ya la dejaría pasar)');
+select is(private.provider_probe_is_due(pg_temp.id('b9:intent'), clock_timestamp() - interval '72 hours'), true,
+  'F: precondición: para el ritmo diario, a b9 le tocaría: lo frena la prueba, no el reloj');
+select is(pg_temp.sonda_pendiente('b5:intent'), 1,
+  'F: el que resolvió el dueño se sigue preguntando: una persona cierra la alerta, no la sonda');
+select is(pg_temp.sonda_pendiente('b3:intent'), 0, 'F: el que tiene un vacío concluyente reciente tampoco');
 select is(pg_temp.sonda_pendiente('a1:intent'), 1,
   'F: dentro de la ventana, el ritmo de siempre: un vacío no concluyente de hace 40 minutos ya deja preguntar');
+update private.payment_safety_watermarks set since = clock_timestamp() - interval '40 days'
+ where name = 'unverified_checkout_watch_since';
+select public.enqueue_checkout_provider_probes(200);
+select is(pg_temp.sonda_pendiente('b7:intent'), 1, 'F: con la marca de agua 40 días atrás, el de hace 12 días sí se pregunta');
+select is(pg_temp.sonda_pendiente('b8:intent'), 1, 'F: y el de hace 29 días también');
+select is(pg_temp.sonda_pendiente('b10:intent'), 0, 'F: el de hace más de 30 días no');
+select pg_temp.reconciliar('b');
+select is(pg_temp.alerta('b8:intent'), 'open', 'F: el de hace 29 días tiene su alerta abierta');
+-- b8 cumple 31 días: ya no se pregunta, pero su alerta no se cierra por tiempo.
+update public.payment_outbox set status = 'completed'
+ where payment_intent_id = pg_temp.id('b8:intent') and topic = 'payment_reconcile'
+   and status in ('pending', 'claimed', 'processing', 'retry_wait');
+update public.checkout_sessions set created_at = clock_timestamp() - interval '31 days',
+       expires_at = clock_timestamp() - interval '31 days' + interval '20 minutes'
+ where id = pg_temp.id('b8');
+update public.payment_outbox set created_at = clock_timestamp() - interval '25 hours'
+ where payment_intent_id = pg_temp.id('b8:intent') and topic = 'payment_reconcile';
+select public.enqueue_checkout_provider_probes(200);
+select is(pg_temp.sonda_pendiente('b8:intent'), 0, 'F: a los 31 días ya no se pregunta');
 select pg_temp.reconciliar('b');
 select is(pg_temp.alerta('b8:intent'), 'open',
-  'F: el de hace más de 30 días ya no se pregunta, pero su alerta sigue abierta hasta que alguien la resuelva');
+  'F: pero su alerta sigue abierta hasta que alguien la resuelva: pasados los 30 días se sigue por su alerta');
+select is(pg_temp.alerta('b10:intent'), null,
+  'F: lo que pasó los 30 días sin alerta no se resucita (lo muestra la conciliación): el costo no crece con la historia');
 -- La sonda del día de b1 se intentó y falló: la próxima es mañana, no en el minuto siguiente.
 update public.payment_outbox set status = 'dead_letter', attempts = 8, last_error = 'provider unreachable'
  where payment_intent_id = pg_temp.id('b1:intent') and topic = 'payment_reconcile'
@@ -376,13 +430,24 @@ update public.payment_outbox set created_at = clock_timestamp() - interval '25 h
 select is(private.provider_probe_is_due(pg_temp.id('b1:intent'), clock_timestamp() - interval '49 hours'), true,
   'F: y al día siguiente vuelve a tocar');
 
+-- a1 cruza la ventana con su alerta abierta: la resolución que el dueño hizo adentro no se arrastra.
+update public.checkout_sessions set created_at = clock_timestamp() - interval '49 hours',
+       expires_at = clock_timestamp() - interval '48 hours 40 minutes'
+ where id = pg_temp.id('a1');
+select pg_temp.reconciliar('a');
+select is(pg_temp.alerta('a1:intent'), 'open', 'E: a1 pasa la ventana abierta: la resolución que el dueño hizo adentro no cuenta');
+select is(pg_temp.resolver('a:owner', 'a1:intent'), 'resolved', 'E: el dueño la resuelve pasada la ventana');
+select pg_temp.reconciliar('a');
+select is(pg_temp.alerta('a1:intent'), 'resolved', 'E: y ésa sí vale');
+
 -- ══════════════════════════════════════════════════════════════════════════
 --  G · permisos, envoltorio de la frontera y el índice
 -- ══════════════════════════════════════════════════════════════════════════
 select is(
   (select count(*)::integer from pg_roles r cross join (values
       ('private.unverified_checkout_watch_since()'::regprocedure),
-      ('private.unverified_checkout_reviewed_at(uuid,uuid)'::regprocedure),
+      ('private.unverified_checkout_review_holds(uuid,uuid)'::regprocedure),
+      ('private.unverified_checkout_findings(uuid)'::regprocedure),
       ('private.provider_probe_is_due(uuid,timestamptz)'::regprocedure)) f(oid)
     where r.rolname in ('anon', 'authenticated', 'service_role')
       and has_function_privilege(r.oid, f.oid, 'EXECUTE')),
@@ -455,6 +520,49 @@ select ok(
            where a.subject_id = pg_temp.id('p2:intent') and a.status <> 'resolved'
              and a.alert_code in ('PAYMENT_RECONCILIATION_REQUIRED', 'PAYMENT_APPROVED_WITHOUT_ORDER')),
   'H: ...y el cobro aprobado sin pedido queda en su propia alerta, que no tiene ventana');
+
+-- ══════════════════════════════════════════════════════════════════════════
+--  I · un vacío anterior al pago no prueba nada; una persona no frena la relectura
+-- ══════════════════════════════════════════════════════════════════════════
+-- p3: la sonda anotó un vacío CONCLUYENTE a los 2 minutos del checkout (el comprador todavía no
+-- había pagado); después pagó con tarjeta y Mercado Pago dejó el pago en revisión manual.
+-- p4: un pago en revisión manual pasada la ventana, que el dueño mira y da por resuelto.
+select pg_temp.checkout('p3', 'p', interval '49 hours');
+select pg_temp.checkout('p4', 'p', interval '49 hours');
+select pg_temp.vacios(pg_temp.id('p3:intent'), 1, clock_timestamp() - interval '48 hours 58 minutes', true);
+select pg_temp.pago('p3:intent', 'PAY-UV-P3', 'in_process', 'pending_review_manual');
+select pg_temp.pago('p4:intent', 'PAY-UV-P4', 'in_process', 'pending_review_manual');
+select public.sweep_expired_checkout_sessions();
+select pg_temp.reconciliar('p');
+select is(pg_temp.alerta('p3:intent'), 'open',
+  'I: un vacío concluyente anterior al pago no calla la alerta del pago que el proveedor no resolvió');
+select public.enqueue_checkout_provider_probes(200);
+select is(pg_temp.sonda_pendiente('p3:intent'), 1, 'I: ni frena su relectura diaria');
+select is(pg_temp.alerta('p4:intent'), 'open', 'I: p4 tiene su alerta abierta');
+select is(pg_temp.resolver('p:owner', 'p4:intent'), 'resolved', 'I: el dueño mira el pago en revisión y la da por resuelta');
+select pg_temp.reconciliar('p');
+select is(pg_temp.alerta('p4:intent'), 'resolved', 'I: y queda resuelta');
+update public.payment_outbox set status = 'completed', created_at = clock_timestamp() - interval '25 hours'
+ where payment_intent_id = pg_temp.id('p4:intent') and topic = 'payment_reconcile';
+select public.enqueue_checkout_provider_probes(200);
+select is(pg_temp.sonda_pendiente('p4:intent'), 1,
+  'I: pero el pago sigue sin resultado final y se sigue releyendo una vez por día');
+-- La relectura trae el mismo pago con el mismo estado (otra respuesta del proveedor, mismo hecho).
+select pg_temp.pago('p4:intent', 'PAY-UV-P4', 'in_process', 'pending_review_manual', '-relectura');
+select is(
+  (select count(*)::integer from public.payment_events pe
+    where pe.payment_intent_id = pg_temp.id('p4:intent') and pe.event_type = 'payment.in_process'),
+  2, 'I: precondición: la relectura quedó asentada como otro evento del mismo pago y estado');
+select pg_temp.reconciliar('p');
+select is(pg_temp.alerta('p4:intent'), 'resolved', 'I: una relectura igual no la reabre');
+-- El proveedor informa otro estado del mismo pago.
+select pg_temp.pago('p4:intent', 'PAY-UV-P4', 'pending', 'pending_contingency');
+select pg_temp.reconciliar('p');
+select is(pg_temp.alerta('p4:intent'), 'open', 'I: un estado nuevo del proveedor, posterior a la resolución, la reabre');
+select is(
+  (select a.evidence ->> 'provider_status' from public.operational_alerts a
+    where a.alert_code = 'CHECKOUT_PROVIDER_UNVERIFIED' and a.subject_id = pg_temp.id('p4:intent')),
+  'pending', 'I: con el estado nuevo en la evidencia');
 
 select * from finish();
 rollback;

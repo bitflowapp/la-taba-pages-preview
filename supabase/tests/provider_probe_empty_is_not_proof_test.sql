@@ -326,7 +326,8 @@ select is(
       and not has_function_privilege('public', p.oid, 'EXECUTE')),
   3, 'F: las tres siguen SECURITY DEFINER, con search_path fijado y EXECUTE sólo para service_role');
 select ok(
-  (select position('private.provider_probe_is_due(pi.id, cs.created_at)' in p.prosrc) > 0
+  -- El alias de la llamada cambia con 20261003090000 (el barrido va por etapas): lo que se fija es la llamada.
+  (select p.prosrc ~ 'private\.provider_probe_is_due\([a-z_]+\.id, [a-z_]+\.created_at\)'
       and position(') < 8' in p.prosrc) = 0
      from pg_proc p where p.oid = 'public.enqueue_checkout_provider_probes(integer)'::regprocedure),
   'F: el barrido decide con la función auxiliar y ya no corta en «8 vacíos cualesquiera»');

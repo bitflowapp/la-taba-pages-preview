@@ -48,6 +48,7 @@ Lo decide y lo ejecuta el dueño de cada comercio de QA, sobre su propia fila de
 `docs/migrations/checks/20261003_unverified_checkout_preflight.sql` (sólo lectura) cubre `20261003090000`: al aplicarla, un
 checkout que llegó a Mercado Pago dentro de las 48 horas anteriores y sigue sin verificar (sin pago del proveedor y sin un vacío
 concluyente, o con un pago pendiente o en revisión) ya no ve su alerta CHECKOUT_PROVIDER_UNVERIFIED cerrarse sola: la cierra el
-resultado del proveedor o el dueño / un encargado con su nota. En Staging, donde el vendedor TEST se reconecta seguido, eso puede
+resultado del proveedor o, pasadas las 48 horas, el dueño / un encargado con su nota, que vale hasta que el proveedor informe un
+pago o un estado nuevo (y no frena la relectura diaria, hasta los 30 días). En Staging, donde el vendedor TEST se reconecta seguido, eso puede
 dejar alertas críticas de checkouts abandonados de esas 48 horas: la consulta U1 dice cuántas antes de aplicar. Lo anterior a la
 marca de agua (el momento de aplicar menos 48 horas) no abre alertas y lo sigue mostrando `scripts/payments/reconcile-payments.mjs`.

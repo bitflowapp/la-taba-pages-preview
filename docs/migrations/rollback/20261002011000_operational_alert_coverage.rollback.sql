@@ -22,9 +22,6 @@
 --   supabase migration repair --status reverted 20261002011000
 begin;
 
-select pg_catalog.pg_advisory_xact_lock(
-  pg_catalog.hashtextextended('la-taba:rollback:20261002011000', 0)
-);
 
 -- Se niega a correr si otra migración redefinió alguna de estas funciones después de
 -- 20261002011000: su cuerpo vivo tiene que ser el que dejó esa migración o el anterior

@@ -585,7 +585,16 @@ export async function runStockRace(connect, { log = console.log } = {}) {
         manualOrder(keen, 'stock-race-s07-keen', item, 2), sweep, sweep]);
       const others = expiry.filter((result) => !result.task.door);
       assert.ok(others.every((result) => result.ok), `barrido y avisos concurrentes no fallan -> ${codes(others)}`);
-      const swept = sum(expiry.filter((result) => result.task === sweep).map((result) => result.value)) - await foreignExpiredSince(since);
+      let swept = sum(expiry.filter((result) => result.task === sweep).map((result) => result.value)) - await foreignExpiredSince(since);
+      // El barrido toma las sesiones con `for update skip locked` y el aviso de pago toma la misma fila con `for update`:
+      // si los dos avisos la tienen tomada mientras corren los cinco barridos, los cinco la saltean y ninguno la vence en
+      // esta ronda (en producción la vence el barrido del minuto siguiente). Pasó con la máquina cargada (gate local sobre
+      // 6dc0e883: 0 en vez de 1). Un barrido más, después de la ronda, cierra esa ventana; la cuenta total tiene que seguir
+      // siendo exactamente uno: dos vencimientos o ninguno siguen fallando.
+      if (swept === 0) {
+        const sinceLate = await dbNow();
+        swept = Number(await mustCall('barrido siguiente', service, sweep.sql)) - await foreignExpiredSince(sinceLate);
+      }
       assert.equal(swept, 1, 'la sesion vence exactamente una vez');
       assert.deepEqual((await sessionsOf([sessionId])).map((row) => `${row.status}/${row.reservations.join()}`),
         ['expired/released:checkout_expired'], 'sesion vencida, reserva liberada una vez');

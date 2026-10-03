@@ -10,8 +10,8 @@ desde los commits si la sesión se corta. Base local: PG17 + shims (no es un sta
 | 1. Mecanismo verificado sobre un PostgREST 14.5 propio | HECHO (ver «Verificado») |
 | 2. Generador `scripts/db/wrap-api-boundary.mjs` + prueba unitaria | HECHO |
 | 3. Migración `20261002090000` + reversión con guardas | HECHO (canónica verde, simulacro de reversión) |
-| 4. pgTAP `http_error_contract_test.sql` + registro en el runner | pendiente |
-| 5. Prueba HTTP + `REFUSAL_STATUS` del certificador | pendiente |
+| 4. pgTAP `http_error_contract_test.sql` (42) + registro en el runner (5938) + prueba Node | HECHO |
+| 5. Prueba HTTP + `REFUSAL_STATUS` del certificador | REFUSAL_STATUS hecho (55000→409, P0002→404); prueba HTTP pendiente |
 | 6. Política `http-contract.{json,md}`, impacto en clientes, `20261002091000` | json hecho (exclusiones y estados); md pendiente |
 
 ## Verificado (comandos y conteos exactos)
@@ -46,6 +46,35 @@ apuntadas a ESTE worktree; bases sólo `taba_wph_*`; PostgREST propio en `127.0.
    script del lead apuntada a este worktree): `MIGRATIONS_APPLIED=207/207`, `LEGACY_RETIRED=6`,
    `FILES=77 PASS=77 NOT_PASS=0 PLANNED_SUM=5896 RUNNER_ASSERTS=5896 TOTAL_CONSISTENT`, sin tocar ninguna aserción.
 7. `npm run check`: PASS (ENCODING_CHECK 314 archivos).
+8. pgTAP nuevo: `TABA_DB=taba_wph_m node localdb.mjs test supabase/tests/http_error_contract_test.sql` → PASS 42/42 con la
+   migración; sobre la base SIN la migración fallan justo los 3 estructurales (conteo 109, regla directa, trigger) y
+   pasan los 39 de comportamiento (anidado y sin request.method no cambian: nada cambia adentro de la base).
+9. Corrida canónica con el pgTAP registrado: `FILES=78 PASS=78 NOT_PASS=0 PLANNED_SUM=5938 RUNNER_ASSERTS=5938 TOTAL_CONSISTENT`.
+10. Node: `tests/http-error-contract.test.mjs` 4/4, `tests/wrap-api-boundary.test.mjs` 10/10,
+    `tests/ecommerce-certifier-cli.test.mjs` 10/10, `tests/ecommerce-certifier-load.test.mjs` 8/8,
+    `tests/mercadopago-edge-hardening.test.mjs` 13/13 (suma del total canónico y del mensaje).
+
+### Lo que pgTAP NO puede ver (medido)
+
+pgTAP llama todo desde una función PL/pgSQL (`throws_ok` hace EXECUTE). Con `request.method` puesto,
+`throws_ok($select public.cancel_own_order(<inexistente>, ...)$, 'PGRST')` FALLA: «caught: P0002» — la función
+envuelta no es el marco más externo y re-lanza el original (es el comportamiento pedido para un llamador anidado).
+Por eso el pgTAP afirma: estructura (marcador, manejador exacto, regla directa, exclusiones, uso por fila),
+comportamiento anidado y sin request.method (original letra por letra, con detalle y pista) y los manejadores
+internos. La conversión a PGRST → 409/404 se prueba por HTTP (sección siguiente) y la prueba el certificador en CI.
+
+## Cambios en pruebas existentes (codificaban el estado viejo como contrato)
+
+- `tests/ecommerce-certifier-cli.test.mjs`: `REFUSAL_STATUS[55000]` 500→409, `REFUSAL_STATUS.P0002` 500→404 y la
+  etiqueta `refusal(CODES.STATE, ...)` «HTTP 500 · 55000» → «HTTP 409 · 55000». Nada más.
+
+## Para el lead al integrar (NO lo toqué: fuera de mi alcance)
+
+- `scripts/e2e-staging/ecommerce/phases/pricing.mjs`: el check `KNOWN_API_01_BUSINESS_REFUSAL_55000_ANSWERS_HTTP_500`
+  afirma `unsellable.http === 500` sin condición: con esta rama va a FALLAR (contesta 409). Hay que retirarlo o
+  invertirlo (p. ej. `API_01_BUSINESS_REFUSAL_55000_ANSWERS_HTTP_409`). El comentario de `phases/inventory.mjs`
+  (línea ~58) que lo menciona también queda viejo.
+- Registro API-01 (no lo edité). Texto propuesto para `notes` y `fixed_by`: ver «Registro API-01» abajo.
 
 ## Decisiones
 

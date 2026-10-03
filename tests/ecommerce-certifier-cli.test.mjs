@@ -118,9 +118,10 @@ test('veredictos: un salteo nunca es PASS ni FAIL, y un FAIL siempre cambia el c
 test('LA TABLA de rechazos: estado y código juntos, y los hallazgos abiertos clavados en un solo lugar', () => {
   // Cada código con nombre tiene su estado en la tabla: ninguna fase afirma un estado por fuera de ella.
   for (const [name, code] of Object.entries(CODES)) assert.ok(REFUSAL_STATUS[code], `${name} (${code}) sin estado en REFUSAL_STATUS`);
-  // API-01 y C-2: lo que contesta HOY. Cuando el backend los arregle, se cambia este número y nada más.
-  assert.equal(REFUSAL_STATUS[55000], 500);
-  assert.equal(REFUSAL_STATUS.P0002, 500);
+  // API-01 y C-2, cerrados del lado del servidor (20261002090000, docs/ecommerce-hardening/http-contract.md):
+  // una negativa por el estado es 409 y un «no existe» es 404; antes los dos salían con 500.
+  assert.equal(REFUSAL_STATUS[55000], 409);
+  assert.equal(REFUSAL_STATUS.P0002, 404);
   assert.deepEqual([refusalStatus('42501', null), refusalStatus('42501', { label: 'cliente' }), refusalStatus('42501')], [401, 403, 403]);
   assert.equal(refusalStatus('P0001'), null, 'C-1: un P0001 no es un rechazo declarado');
   const r = (status, code, message = 'm', details = null) => ({ ok: false, status, code, error: { code, message, details } });
@@ -130,7 +131,7 @@ test('LA TABLA de rechazos: estado y código juntos, y los hallazgos abiertos cl
   assert.ok(!refused(r(500, '22023'), CODES.VALIDATION));
   assert.ok(!refused(r(400, 'P0001'), 'P0001'));
   assert.ok(!refused({ ok: true, status: 200 }, CODES.VALIDATION) && !refused(null, CODES.VALIDATION));
-  assert.equal(refusal(CODES.STATE, { message: 'pedido cobrado por Mercado Pago' }), 'HTTP 500 · 55000 · pedido cobrado por Mercado Pago');
+  assert.equal(refusal(CODES.STATE, { message: 'pedido cobrado por Mercado Pago' }), 'HTTP 409 · 55000 · pedido cobrado por Mercado Pago');
   assert.equal(refusal(CODES.FORBIDDEN, { actor: null }), 'HTTP 401 · 42501');
   // `hidden`: o cero filas, o «sin permiso». Nunca filas, nunca otro error.
   assert.ok(hidden({ status: 200, ok: true, rows: [] }) && hidden(r(403, '42501'), { label: 'x' }) && hidden(r(401, '42501'), null));

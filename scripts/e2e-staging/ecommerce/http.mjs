@@ -281,16 +281,13 @@ export const REFUSAL_STATUS = Object.freeze({
   PT409: 409,   // revisión desactualizada
   PT429: 429,   // frenado por el guardián de admisión (pedido manual)
   54000: 429,   // frenado por el guardián de admisión (canal de checkout: lo recibe la Edge Function)
-  // API-01 (hallazgo registrado, abierto): los rechazos de negocio con SQLSTATE 55000 («el objeto no está en
-  // el estado que hace falta»: comercio cerrado, producto no disponible, fuera de zona…) salen con HTTP 500,
-  // porque PostgREST contesta 500 para toda la clase 55. Acá se afirma lo que contesta HOY, para que cada
-  // rechazo de esa familia quede clavado: el día que el backend los pase a un 4xx, todos estos checks fallan
-  // juntos y este número es lo único que hay que cambiar.
-  55000: 500,
-  // C-2 (hallazgo registrado, abierto): «no existe» (P0002) sale con HTTP 500, el mismo mecanismo con otro
-  // SQLSTATE. `cancellation:ORDER_NOT_FOUND_IS_ANSWERED_AS_A_CLIENT_ERROR` lo mantiene a la vista como FAIL;
-  // los demás checks que reciben un «no existe» afirman lo que contesta hoy por esta línea.
-  P0002: 500,
+  // API-01: un rechazo de negocio con SQLSTATE 55000 («el objeto no está en el estado que hace falta»: comercio
+  // cerrado, producto no disponible, fuera de zona…) es definitivo para ese pedido y sale con HTTP 409. Lo
+  // decide la frontera de la API (20261002090000; política en docs/ecommerce-hardening/http-contract.md): el
+  // cuerpo (code, message, details, hint) es el mismo de antes, sólo cambió el estado, que era 500.
+  55000: 409,
+  // C-2: «no existe» (P0002) sale con HTTP 404, por el mismo mecanismo (antes 500).
+  P0002: 404,
 });
 // Los códigos por su nombre. Las fases nuevas piden el rechazo por lo que SIGNIFICA: si el arreglo de un
 // hallazgo cambia el SQLSTATE además del estado, también se cambia acá y en ningún otro lado.

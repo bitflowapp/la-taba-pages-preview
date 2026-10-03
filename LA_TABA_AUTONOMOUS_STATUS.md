@@ -121,3 +121,10 @@ aserciones, total consistente (base limpia y base «sucia»); carreras admisión
   448 PASS, **2 FAIL = API-01/C-2** (HTTP 500 en 55000/P0002, defecto real abierto), 5 no probados; el check nuevo de AUTHZ-04
   (empleado → 42501) pasó en el stack real. Más arreglos: TRACK-01 (`f02e55b2`, 39000 en la pantalla del pago tras recuperar el
   seguimiento). CI despachado sobre `011717fa`: run 37125497727; corrida 5 del stack: 37125278937.
+- 10:20 — dos paquetes en worktrees aislados, SIN push, a revisar antes de integrar (si el apagado los corta, el avance queda en
+  sus commits locales y en sus notas):
+  - `la-taba-real-money-gate` (rama `feat/taba-real-money-gate`): EDGE-03 opción A, interruptor permanente del cobro real
+    `MERCADOPAGO_REAL_MONEY_ENABLED` (sólo `enabled` abre; el cobro sigue cerrado por defecto) + compuerta de release
+    `REAL_MONEY_GATE` + runbooks.
+  - `la-taba-http-contract` (rama `feat/taba-http-contract`): API-01/C-2, las negativas 55000 y P0002 dejan de salir como HTTP
+    500 (envoltura en el borde de la API; notas en `docs/ecommerce-hardening/http-contract-NOTES.md` de ese worktree).

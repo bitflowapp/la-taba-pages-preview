@@ -29,6 +29,7 @@ Las dos líneas editan `scripts/run-release-v5-db.mjs` en las mismas líneas (la
 | Tope de 120 unidades en un pedido sin cobrar | valor por defecto nuevo | empieza a regir |
 | Un pedido en efectivo sin atender se cancela solo y devuelve el stock | `abandoned_order_minutes` del propio comercio | el comercio ya tenía 120 minutos cargados: pasa a cumplirse |
 | `authenticated` no escribe directo `stock`, `available` ni `is_active` de un producto | esta rama | el cliente de Caja Clara no hace ese PATCH (lee `businesses` y `business_members` por REST y opera por RPC) |
+| Cancelar y rechazar un pedido piden `orders.cancel` del catálogo (dueño y encargado; el empleado no): `20261002050000`, decisión del dueño AUTHZ-04 | esta rama | **cambia**: el comercio tiene un empleado activo por `panel_web` que canceló 24 pedidos hasta el 2026-10-01 (lectura del 2026-10-03 con `docs/migrations/checks/20261002_ecommerce_hardening_preflight.sql`). Lo que cancele como empleado va a recibir 42501 `PERMISSION_REQUIRED: orders.cancel`, y no hay salida por comercio: el catálogo da permisos por rol y para toda la plataforma. **Por eso esta migración no se aplica en Staging sin acordarlo con esa línea** (ver `LA_TABA_AUTONOMOUS_STATUS.md`) |
 
 Medido en Staging, en modo de sólo lectura, sobre los últimos 21 días de ese comercio: a lo sumo 7 pedidos en una ventana de 10 minutos y ningún pedido sin atender. Queda por debajo de todos los topes nuevos, y no hay ningún pedido que el vencimiento vaya a cancelar en su primera corrida.
 

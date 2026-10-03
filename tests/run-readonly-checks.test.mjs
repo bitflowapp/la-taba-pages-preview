@@ -18,6 +18,20 @@ test('la verificación previa se separa en sus 21 consultas, todas de lectura y 
   for (const statement of statements) assert.doesNotMatch(statement, /\bpublic\.[a-z_]+\s*\(/, findingName(statement));
 });
 
+const PREFLIGHT_2 = new URL('../docs/migrations/checks/20261002_ecommerce_hardening_preflight.sql', import.meta.url);
+
+test('la verificación previa de la segunda tanda se separa en sus 12 consultas, todas de lectura y con nombre propio', () => {
+  const statements = splitStatements(fs.readFileSync(PREFLIGHT_2, 'utf8'));
+  assert.equal(statements.length, 12);
+  const names = statements.map(findingName);
+  assert.equal(names.includes(null), false, 'cada consulta devuelve su columna finding');
+  assert.equal(new Set(names).size, names.length, 'sin nombres repetidos');
+  const first = new Set(splitStatements(fs.readFileSync(PREFLIGHT, 'utf8')).map(findingName));
+  assert.deepEqual(names.filter((name) => first.has(name)), [], 'ningún nombre repite uno de la primera tanda');
+  for (const statement of statements) assertReadOnlyStatement(statement);
+  for (const statement of statements) assert.doesNotMatch(statement, /\b(public|private)\.[a-z_]+\s*\(/, findingName(statement));
+});
+
 test('una sentencia que no es de lectura no se manda', () => {
   for (const bad of ['update public.orders set status = 1', 'delete from public.products', 'do $$ begin end $$', 'call x()', 'set role postgres']) {
     assert.throws(() => assertReadOnlyStatement(bad), /NOT_A_READ_ONLY_STATEMENT/);

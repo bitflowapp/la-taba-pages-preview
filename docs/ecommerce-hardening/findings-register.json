@@ -427,7 +427,7 @@
       "title": "Webhook-sourced payment jobs and signature rejections are invisible to alerts and health",
       "status": "open",
       "fixed_by": null,
-      "notes": "PARTIAL (13608b7, 918237f): the whole payment queue, dead letters, rejected signatures and stuck receipts are visible in get_ecommerce_health, and build_operational_health attributes intent-less jobs to the seller's business. Still open: the PAYMENT_OUTBOX_STALLED / PAYMENT_WORKER_IDLE alerts do not see intent-less jobs.",
+      "notes": "PARTIAL (13608b7, 918237f, 4a4afa79): intent-less stalled payment-queue jobs, refunds needing attention (REFUND_NEEDS_ATTENTION) and payments to review (PAYMENT_NEEDS_REVIEW) now open operational alerts (20261002011000). Still open: get_production_operation_center.blocked_outboxes ignores webhook jobs, and the Panel shows the four new codes with generic text.",
       "aliases": [
         "PAY-12"
       ],
@@ -484,9 +484,9 @@
       "id": "DIAG-05",
       "severity": "P2",
       "title": "A disabled or unscheduled cron job raises no alert; the DB holds no expected-job inventory",
-      "status": "open",
-      "fixed_by": null,
-      "notes": "PARTIAL (1fdcc4e, 918237f): the expected-job inventory is a table (private.scheduler_expected_jobs) and get_ecommerce_health reports a missing, inactive or unlisted job. Still open: no SCHEDULER_JOB_DISABLED / SCHEDULER_JOB_MISSING alert.",
+      "status": "fixed",
+      "fixed_by": "4a4afa79 · supabase/migrations/20261002011000_operational_alert_coverage.sql",
+      "notes": "A missing or disabled scheduled job now opens SCHEDULER_JOB_MISSING / SCHEDULER_JOB_DISABLED in the operational alerts (not only in get_ecommerce_health). Test: operational_alert_coverage_test.sql (101).",
       "aliases": [],
       "domain": "observability",
       "where": "public.reconcile_operational_alerts_for_business (SCHEDULER_JOB_FAILING and SCHEDULER_JOB_STALLED); public.list_scheduler_health; 20260909050330_a1_a4_release_interlock_v5.sql lines 258 and 515",
@@ -580,7 +580,7 @@
       "title": "Permission catalog is not the enforced contract: admin can authorize ARCA homologation, staff can cancel orders",
       "status": "open",
       "fixed_by": null,
-      "notes": "",
+      "notes": "PARTIAL (4cee8a74, 20261002050000): cancelling and rejecting an order now follow orders.cancel of the permission catalog (owner and admin; staff only if the catalog grants it). Still open, owner decision: set_business_open_state (staff can open and pause; the catalog says business.settings is owner/admin) and authorize_arca_homologation (admin can authorize; the catalog says fiscal.authorize is owner only). The catalog grants per role and platform-wide: there is no per-member or per-business grant. Before applying 20261002050000 anywhere: staff lose cancel and reject at once (also staff-run Caja Clara tills) while the Panel and the till still show the buttons.",
       "aliases": [],
       "domain": "security_rls",
       "where": "public.identity_role_permissions vs public.authorize_arca_homologation, public.cancel_order, public.transition_order, public.set_business_open_state"
@@ -650,7 +650,7 @@
       "title": "The provider payment identity is not pinned: a second payment on the same external_reference overwrites it, and a double charge is not detected",
       "status": "fixed",
       "fixed_by": "a2f6960 · supabase/migrations/20261001200000_mercadopago_snapshot_keeps_reservation_and_pins_payment.sql",
-      "notes": "Residuals written in the migration header: a duplicate charge is flagged as payment.duplicate_approved but raises no operational alert, the Panel refund targets only the pinned payment, and a dispute on the duplicate payment dead-letters.",
+      "notes": "Residuals written in the migration header: a duplicate charge is flagged as payment.duplicate_approved but raises no operational alert, the Panel refund targets only the pinned payment, and a dispute on the duplicate payment dead-letters. Since 4a4afa79 (20261002011000) a duplicate approved charge opens PAYMENT_NEEDS_REVIEW; a person cannot close it and nothing re-reads that payment, so a historical one can stay critical.",
       "aliases": [
         "EDGE-07"
       ],
@@ -671,7 +671,7 @@
       "title": "Completed intents are never reconciled again, and a dead-lettered webhook cannot be revived; no provider-vs-local reconciliation report exists",
       "status": "open",
       "fixed_by": null,
-      "notes": "PARTIAL (e2a7df0): a read-only provider-versus-local reconciliation tool exists (scripts/payments/reconcile-payments.mjs) and found one real mismatch on staging test data. Still open: nothing re-reads completed intents on a schedule, and a dead-lettered webhook job has no revive path.",
+      "notes": "PARTIAL (e2a7df0, cf0d30fb): the read-only reconciliation tool exists, and a dead-lettered READ job can now be revived (revive_payment_outbox_job, owner or admin, with reason and audit; 20261002023000, payment_queue_and_receipts_test.sql §9). Still open, owner decision: a scheduled re-read of completed intents (window, frequency and provider rate limits), and a dedicated exit for a dead-lettered cancellation_reconcile.",
       "aliases": [],
       "domain": "payments_db",
       "where": "public.enqueue_payment_reconciliation, public.enqueue_checkout_provider_probes, public.record_mercadopago_webhook_receipt (duplicate path), public.fail_payment_outbox_job; reconciliation report: NOT IMPLEMENTED",
@@ -690,7 +690,7 @@
       "title": "A refund stuck in 'requested', or 'ambiguous' without a provider id, has no resolution path and blocks every later refund of that payment",
       "status": "fixed",
       "fixed_by": "18dcb08 · supabase/migrations/20261001204000_stuck_refund_resolution_and_review_refund.sql",
-      "notes": "Database path only: public.resolve_stuck_payment_refund exists for owner/admin; the Panel has no button for it yet.",
+      "notes": "Database path only: public.resolve_stuck_payment_refund exists for owner/admin; the Panel has no button for it yet. Since 4a4afa79 (20261002011000) a refund that needs attention also opens REFUND_NEEDS_ATTENTION.",
       "aliases": [
         "EDGE-09"
       ],
@@ -936,7 +936,7 @@
       "title": "Order-core SQL suites are orphaned: the runner they name does not exist and none of them is in CI",
       "status": "open",
       "fixed_by": null,
-      "notes": "",
+      "notes": "PARTIAL (cf0d30fb): the payments part is covered by canonical pgTAP (payment_queue_and_receipts_test.sql, payment_refund_and_reversal_chain_test.sql). supabase/tests/mercadopago_checkout_pro.local.sql is NOT deleted: tests/mercadopago-lifecycle.test.mjs and the A1 verifiers (scripts/verify-a1-v2-*.mjs, verify-a1-a4-reproductions.mjs) read it as a legacy fixture of the pre-branch schema. The order_* suites remain.",
       "aliases": [],
       "domain": "tests_tooling",
       "where": "supabase/tests/order_end_to_end_chain.local.sql line 9; order_intake_dispatch_p0.local.sql line 4; order_intake_dispatch_audit.local.sql line 5; scripts/run-release-v5-db.mjs lines 196-208"
@@ -1065,9 +1065,9 @@
       "id": "OSM-04",
       "severity": "P2",
       "title": "No recovery path for in-flight deliveries: lost code or deactivated rider after pickup leaves only cancel",
-      "status": "open",
-      "fixed_by": null,
-      "notes": "",
+      "status": "fixed",
+      "fixed_by": "4a4afa79 · supabase/migrations/20261002010000_complete_delivery_without_code.sql",
+      "notes": "The business management (owner or admin) can close an in-flight delivery without the customer code, with a mandatory reason and its own audited mark; never another business order, never a delivered or cancelled one, never outside a delivery state; a replay is a repeat. Test: complete_delivery_without_code_test.sql (162). Panel button: frontend follow-up.",
       "aliases": [],
       "domain": "lifecycle_cancel",
       "where": "public.confirm_delivery_code, public.confirm_business_delivery_code, public.release_or_reassign_delivery, public.assign_order_rider, public.prevent_unverified_delivery, public.recover_order_tracking_access"
@@ -1134,6 +1134,94 @@
           "severity": "P2"
         }
       ]
+    },
+    {
+      "fixed_by": "5c578793 · supabase/migrations/20261002060000_provider_probe_empty_is_not_proof.sql",
+      "notes": "Reproduced with live Staging data (read-only, 2026-10-03): payment 179851082485 approved and accredited at the provider on 2026-09-25 17:04Z; 8 probes 17:03-17:32Z all recorded payment.provider_probe_empty; intent e5dbaf33 ended expired with no order and no alert; the same search by external_reference with the seller credential returns the payment today. The preference was created under seller-connection generation fd242d91; the connection was re-linked at 17:43Z (generation 6963ca5b; mp_begin_oauth rotates the generation). Fix: an empty is conclusive only when searched under the generation that created the preference (and connected); non-conclusive empties do not consume the cap (30 min spacing); three late probes at 2, 6 and 24 h; the alert only stays silent on a conclusive empty. Test: provider_probe_empty_is_not_proof_test.sql (34). The Staging payment itself (TEST money) still needs a person: refund it or recover it.",
+      "aliases": [],
+      "id": "PAY-PROBE-01",
+      "severity": "P1",
+      "status": "fixed",
+      "domain": "payments_db",
+      "title": "An empty provider search is taken as proof that the buyer did not pay: after 8 empties in 30 minutes the truth sweep stops and CHECKOUT_PROVIDER_UNVERIFIED stays silent, so a charged checkout without order becomes invisible",
+      "where": "public.record_provider_probe_empty, public.enqueue_checkout_provider_probes, public.reconcile_operational_alerts_for_business (CHECKOUT_PROVIDER_UNVERIFIED); worker mercadopago-payment-worker probe path"
+    },
+    {
+      "fixed_by": "3007ed39 · supabase/migrations/20261002040000_payment_cancellation_lock_order.sql",
+      "notes": "Found by scripts/order-intake/idempotency-race.mjs (GLOBAL_IDEMPOTENCY: FAIL on the branch before the fix, PASS with 0 deadlocks after); the race now runs in the database gate after the stock race; pgTAP idempotent_retries_test.sql (96).",
+      "aliases": [],
+      "id": "IDEM-01",
+      "severity": "P2",
+      "title": "record_payment_cancellation_response locks request -> intent -> session and mark_payment_cancellation_ambiguous request -> intent, the reverse of the rest: the provider answer or the approved-payment notice is killed by 40P01",
+      "status": "fixed",
+      "domain": "orders_abuse",
+      "where": "public.record_payment_cancellation_response, public.mark_payment_cancellation_ambiguous"
+    },
+    {
+      "fixed_by": "3007ed39 · supabase/migrations/20261002041000_customer_address_book_serialized_per_customer.sql",
+      "notes": "Found by scripts/order-intake/idempotency-race.mjs (GLOBAL_IDEMPOTENCY: FAIL on the branch before the fix, PASS with 0 deadlocks after); the race now runs in the database gate after the stock race; pgTAP idempotent_retries_test.sql (96).",
+      "aliases": [],
+      "id": "IDEM-02",
+      "severity": "P2",
+      "title": "Saving the same customer address concurrently creates several rows and raw 23505 errors (address book not serialized per customer)",
+      "status": "fixed",
+      "domain": "orders_abuse",
+      "where": "public.upsert_current_customer_address"
+    },
+    {
+      "fixed_by": "3007ed39 · supabase/migrations/20261002043000_rider_offer_acceptance_lock_order.sql",
+      "notes": "Found by scripts/order-intake/idempotency-race.mjs (GLOBAL_IDEMPOTENCY: FAIL on the branch before the fix, PASS with 0 deadlocks after); the race now runs in the database gate after the stock race; pgTAP idempotent_retries_test.sql (96).",
+      "aliases": [],
+      "id": "IDEM-06",
+      "severity": "P2",
+      "title": "accept_rider_order_offer locks offer -> order, the reverse of offer_order_to_rider: accepting while the business re-offers deadlocks",
+      "status": "fixed",
+      "domain": "orders_abuse",
+      "where": "public.accept_rider_order_offer"
+    },
+    {
+      "fixed_by": null,
+      "notes": "Measured by the wp18 package (repro-4 P4/P5: deadlock before and after its fixes). Exact proposed change in the wp18 notes: read the order id without lock, lock the order FOR NO KEY UPDATE, then the offer, PT409 if it moved. Not exercised by the race harness yet.",
+      "aliases": [],
+      "id": "IDEM-07",
+      "severity": "P2",
+      "status": "open",
+      "domain": "orders_abuse",
+      "title": "reject_rider_order_offer and withdraw_rider_order_offer take the offer before the order, the reverse of offer_order_to_rider: 40P01 under contention",
+      "where": "public.reject_rider_order_offer, public.withdraw_rider_order_offer vs public.offer_order_to_rider"
+    },
+    {
+      "fixed_by": null,
+      "notes": "Measured by the wp18 package (repro-5 X1/X2). Proposed: lock the intent first, then update the attempt (I -> A), consistent with S -> I -> A.",
+      "aliases": [],
+      "id": "IDEM-08",
+      "severity": "P2",
+      "status": "open",
+      "domain": "payments_db",
+      "title": "record_mercadopago_preference_uncertain updates the attempt before the intent, the reverse of prepare/record_mercadopago_preference_*_v2: 40P01 under contention",
+      "where": "public.record_mercadopago_preference_uncertain vs public.prepare_mercadopago_preference_v2, public.record_mercadopago_preference_created_v2"
+    },
+    {
+      "fixed_by": null,
+      "notes": "Pre-existing; reproduced by the wp11 package (scratch S3) and confirmed statically by its reviewer. Not caused by this branch.",
+      "aliases": [],
+      "id": "TRACK-01",
+      "severity": "P2",
+      "status": "open",
+      "domain": "checkout",
+      "title": "After a customer recovers tracking on a paid Mercado Pago delivery order, the checkout payment-status payload fails with 39000 (wrong key or corrupt data)",
+      "where": "public.recover_order_tracking_access (encrypts the handoff code with the new tracking token) vs public.checkout_session_customer_payload (decrypts every live handoff with the session id)"
+    },
+    {
+      "fixed_by": "4cee8a74 · supabase/migrations/20261002051000_authorization_refusals_answer_42501.sql",
+      "notes": "Found by the certification runner (wp10 notes, defect C-1). Test: authorization_refusals_answer_42501_test.sql (48).",
+      "aliases": [],
+      "id": "C-1",
+      "severity": "P2",
+      "status": "fixed",
+      "domain": "security_rls",
+      "title": "Permission refusals of five catalog/WhatsApp functions raise P0001 (HTTP 400) instead of 42501 (HTTP 403)",
+      "where": "public.apply_commercial_catalog_batch, public.import_catalog_batch, public.publish_catalog_product, public.unpublish_catalog_product, public.set_business_whatsapp_contact"
     }
   ]
 }

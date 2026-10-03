@@ -1,0 +1,253 @@
+{
+  "at": "2026-10-03T14:18:57.259Z",
+  "lastUnitRounds": [
+    {
+      "round": 1,
+      "pre": {
+        "stock": 1,
+        "available": true
+      },
+      "winner": "A",
+      "winners": 1,
+      "loser": {
+        "http": 409,
+        "ok": false,
+        "code": "55000",
+        "message": "producto no disponible: 8425c105-8861-4b47-bfbd-6293f46f4184",
+        "details": null,
+        "ms": 7.2
+      },
+      "latenciesMs": [
+        6.4,
+        7.2
+      ],
+      "ordersInDatabase": 1,
+      "post": {
+        "stock": 0,
+        "available": false
+      },
+      "cleanRefusal": true,
+      "restock": {
+        "movement": {
+          "http": 200,
+          "ok": true,
+          "code": null,
+          "message": null,
+          "details": null,
+          "ms": 5
+        },
+        "previous": 0,
+        "resulting": 1,
+        "republished": {
+          "http": 200,
+          "ok": true,
+          "code": null,
+          "message": null,
+          "details": null,
+          "ms": 4.7
+        }
+      }
+    },
+    {
+      "round": 2,
+      "pre": {
+        "stock": 1,
+        "available": true
+      },
+      "winner": "A",
+      "winners": 1,
+      "loser": {
+        "http": 409,
+        "ok": false,
+        "code": "55000",
+        "message": "producto no disponible: 8425c105-8861-4b47-bfbd-6293f46f4184",
+        "details": null,
+        "ms": 8.2
+      },
+      "latenciesMs": [
+        6.3,
+        8.2
+      ],
+      "ordersInDatabase": 1,
+      "post": {
+        "stock": 0,
+        "available": false
+      },
+      "cleanRefusal": true,
+      "restock": {
+        "movement": {
+          "http": 200,
+          "ok": true,
+          "code": null,
+          "message": null,
+          "details": null,
+          "ms": 4.5
+        },
+        "previous": 0,
+        "resulting": 1,
+        "republished": {
+          "http": 200,
+          "ok": true,
+          "code": null,
+          "message": null,
+          "details": null,
+          "ms": 4.2
+        }
+      }
+    },
+    {
+      "round": 3,
+      "pre": {
+        "stock": 1,
+        "available": true
+      },
+      "winner": "B",
+      "winners": 1,
+      "loser": {
+        "http": 409,
+        "ok": false,
+        "code": "55000",
+        "message": "producto no disponible: 8425c105-8861-4b47-bfbd-6293f46f4184",
+        "details": null,
+        "ms": 6.2
+      },
+      "latenciesMs": [
+        6.2,
+        5
+      ],
+      "ordersInDatabase": 1,
+      "post": {
+        "stock": 0,
+        "available": false
+      },
+      "cleanRefusal": true,
+      "restock": {
+        "movement": {
+          "http": 200,
+          "ok": true,
+          "code": null,
+          "message": null,
+          "details": null,
+          "ms": 3.8
+        },
+        "previous": 0,
+        "resulting": 1,
+        "republished": {
+          "http": 200,
+          "ok": true,
+          "code": null,
+          "message": null,
+          "details": null,
+          "ms": 5.3
+        }
+      }
+    },
+    {
+      "round": 4,
+      "pre": {
+        "stock": 1,
+        "available": true
+      },
+      "winner": "A",
+      "winners": 1,
+      "loser": {
+        "http": 409,
+        "ok": false,
+        "code": "55000",
+        "message": "producto no disponible: 8425c105-8861-4b47-bfbd-6293f46f4184",
+        "details": null,
+        "ms": 6.5
+      },
+      "latenciesMs": [
+        5.5,
+        6.5
+      ],
+      "ordersInDatabase": 1,
+      "post": {
+        "stock": 0,
+        "available": false
+      },
+      "cleanRefusal": true,
+      "restock": {
+        "movement": {
+          "http": 200,
+          "ok": true,
+          "code": null,
+          "message": null,
+          "details": null,
+          "ms": 4.1
+        },
+        "previous": 0,
+        "resulting": 1,
+        "republished": {
+          "http": 200,
+          "ok": true,
+          "code": null,
+          "message": null,
+          "details": null,
+          "ms": 3.3
+        }
+      }
+    },
+    {
+      "round": 5,
+      "pre": {
+        "stock": 1,
+        "available": true
+      },
+      "winner": "A",
+      "winners": 1,
+      "loser": {
+        "http": 409,
+        "ok": false,
+        "code": "55000",
+        "message": "producto no disponible: 8425c105-8861-4b47-bfbd-6293f46f4184",
+        "details": null,
+        "ms": 7.6
+      },
+      "latenciesMs": [
+        6.3,
+        7.6
+      ],
+      "ordersInDatabase": 1,
+      "post": {
+        "stock": 0,
+        "available": false
+      },
+      "cleanRefusal": true,
+      "restock": null
+    }
+  ],
+  "concurrent": {
+    "initial": 500,
+    "accepted": 10,
+    "final": 497,
+    "movement": {
+      "previous": 499,
+      "resulting": 506
+    },
+    "latenciesMs": [
+      10.6,
+      33,
+      39.7,
+      20.7,
+      26.8,
+      110.3,
+      61.2,
+      76.4,
+      93.5,
+      42
+    ]
+  },
+  "retry": {
+    "statuses": [
+      200,
+      200,
+      200
+    ],
+    "stock": [
+      497,
+      496
+    ]
+  }
+}

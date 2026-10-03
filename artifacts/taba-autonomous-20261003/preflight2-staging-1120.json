@@ -1,0 +1,107 @@
+{
+ "ref": "ucbtjcurawxjwjdvvcvj",
+ "checks": [
+  {
+   "finding": "in_flight_delivery_orders",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "scheduler_jobs_inactive",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "payments_in_dispute",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "paid_checkout_money_returned_still_holding_stock",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "signed_delivery_replayed_before_fix",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "dead_lettered_payment_jobs",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "payment_cancellation_stuck_requested",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "orders_cancel_catalog",
+   "rows": 1,
+   "sample": [
+    {
+     "finding": "orders_cancel_catalog",
+     "roles": "admin,owner"
+    }
+   ]
+  },
+  {
+   "finding": "staff_losing_cancel_and_reject",
+   "rows": 2,
+   "sample": [
+    {
+     "finding": "staff_losing_cancel_and_reject",
+     "business_id": "a57b1c20-0f4e-4a6b-9d31-7c2e5f8a41d0",
+     "slug": "la-taba-staging",
+     "client": "panel_web",
+     "staff_members": 1
+    },
+    {
+     "finding": "staff_losing_cancel_and_reject",
+     "business_id": "1a1ab718-f008-4c86-a14e-7674a3bcb03d",
+     "slug": "qa-ecom-cert",
+     "client": null,
+     "staff_members": 1
+    }
+   ]
+  },
+  {
+   "finding": "staff_cancellations_last_30_days",
+   "rows": 2,
+   "sample": [
+    {
+     "finding": "staff_cancellations_last_30_days",
+     "business_id": "1a1ab718-f008-4c86-a14e-7674a3bcb03d",
+     "slug": "qa-ecom-cert",
+     "command_type": "cancel_order",
+     "resulting_status": "cancelled",
+     "commands": 44,
+     "last_at": "2026-10-01 21:31:28.840542+00"
+    },
+    {
+     "finding": "staff_cancellations_last_30_days",
+     "business_id": "a57b1c20-0f4e-4a6b-9d31-7c2e5f8a41d0",
+     "slug": "la-taba-staging",
+     "command_type": "cancel_order",
+     "resulting_status": "cancelled",
+     "commands": 24,
+     "last_at": "2026-10-01 02:30:54.225771+00"
+    }
+   ]
+  },
+  {
+   "finding": "checkouts_due_late_provider_probes",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "checkout_preference_from_replaced_seller_connection",
+   "rows": 0,
+   "sample": []
+  }
+ ],
+ "target": "staging",
+ "file": "docs/migrations/checks/20261002_ecommerce_hardening_preflight.sql",
+ "at": "2026-10-03T14:20:23.407Z"
+}

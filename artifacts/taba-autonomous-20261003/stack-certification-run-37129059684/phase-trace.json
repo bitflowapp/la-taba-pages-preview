@@ -1,0 +1,56 @@
+{
+  "manual": {
+    "order": "LT-0065",
+    "resolvedBy": {
+      "order_id": "order_id",
+      "public_code": "public_code",
+      "client_request_id": "order_client_request_id",
+      "tracking_token_id": "tracking_token_id",
+      "correlation_id": "correlation_id"
+    },
+    "stages": [
+      "order",
+      "stock",
+      "tracking",
+      "notification",
+      "delivery_handoff",
+      "intake"
+    ],
+    "gaps": [
+      "checkout_not_applicable",
+      "stock_ledger_has_no_rows"
+    ],
+    "timelineRows": 9
+  },
+  "paid": {
+    "resolvedBy": {
+      "order_id": "order_id",
+      "public_code": "public_code",
+      "client_request_id": "order_client_request_id",
+      "tracking_token_id": "tracking_token_id",
+      "correlation_id": "correlation_id",
+      "checkout_session_id": "checkout_session_id",
+      "payment_intent_id": "payment_intent_id",
+      "payment_attempt_id": "payment_attempt_id",
+      "checkout_client_request_id": "checkout_client_request_id",
+      "provider_payment_id": "provider_payment_id",
+      "external_reference": "external_reference",
+      "preference_id": "preference_id",
+      "merchant_order_id": "merchant_order_id"
+    },
+    "stages": [
+      "checkout",
+      "stock",
+      "payment",
+      "intake",
+      "order",
+      "tracking",
+      "notification"
+    ],
+    "gaps": [
+      "checkout_transitions_not_recorded",
+      "webhook_receipts_not_found",
+      "stock_ledger_has_no_rows"
+    ]
+  }
+}

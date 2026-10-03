@@ -1,0 +1,307 @@
+{
+  "zones": {
+    "centro": {
+      "id": "ec9e747e-a106-4dd7-b206-6d9bb827e9ac",
+      "key": "centro",
+      "name": "Centro",
+      "fee": 1200,
+      "minimum": null,
+      "priority": 10
+    },
+    "oeste": {
+      "id": "83d49efd-7aa0-490e-b34f-8aa806334370",
+      "key": "oeste",
+      "name": "Oeste",
+      "fee": null,
+      "minimum": 5000,
+      "priority": 20
+    }
+  },
+  "businessFee": 900,
+  "businessMinimum": 3000,
+  "attempts": [
+    {
+      "name": "inside-zone",
+      "http": 200,
+      "ok": true,
+      "code": null,
+      "message": null,
+      "details": null,
+      "ms": 49.9,
+      "publicCode": "LT-0011"
+    },
+    {
+      "name": "zone-with-business-fee",
+      "http": 200,
+      "ok": true,
+      "code": null,
+      "message": null,
+      "details": null,
+      "ms": 58.1,
+      "publicCode": "LT-0012"
+    },
+    {
+      "name": "zone-minimum",
+      "http": 400,
+      "ok": false,
+      "code": "23514",
+      "message": "subtotal inferior al minimo de delivery",
+      "details": null,
+      "ms": 7.1,
+      "publicCode": null
+    },
+    {
+      "name": "outside-zone",
+      "http": 409,
+      "ok": false,
+      "code": "55000",
+      "message": "OUT_OF_DELIVERY_ZONE",
+      "details": "la direccion no esta dentro de la cobertura declarada",
+      "ms": 3.8,
+      "publicCode": null
+    },
+    {
+      "name": "near-miss:Centro Oeste",
+      "http": 409,
+      "ok": false,
+      "code": "55000",
+      "message": "OUT_OF_DELIVERY_ZONE",
+      "details": "la direccion no esta dentro de la cobertura declarada",
+      "ms": 5.6,
+      "publicCode": null
+    },
+    {
+      "name": "near-miss:Centr",
+      "http": 409,
+      "ok": false,
+      "code": "55000",
+      "message": "OUT_OF_DELIVERY_ZONE",
+      "details": "la direccion no esta dentro de la cobertura declarada",
+      "ms": 4,
+      "publicCode": null
+    },
+    {
+      "name": "near-miss:Centros",
+      "http": 409,
+      "ok": false,
+      "code": "55000",
+      "message": "OUT_OF_DELIVERY_ZONE",
+      "details": "la direccion no esta dentro de la cobertura declarada",
+      "ms": 4.8,
+      "publicCode": null
+    },
+    {
+      "name": "below-minimum",
+      "http": 400,
+      "ok": false,
+      "code": "23514",
+      "message": "subtotal inferior al minimo de delivery",
+      "details": null,
+      "ms": 5.3,
+      "publicCode": null
+    },
+    {
+      "name": "no-pin",
+      "http": 400,
+      "ok": false,
+      "code": "22023",
+      "message": "DELIVERY_LOCATION_REQUIRED",
+      "details": "la entrega necesita un punto confirmado por el cliente",
+      "ms": 2.4,
+      "publicCode": null
+    },
+    {
+      "name": "pin-not-confirmed",
+      "http": 400,
+      "ok": false,
+      "code": "22023",
+      "message": "DELIVERY_LOCATION_REQUIRED",
+      "details": "la entrega necesita un punto confirmado por el cliente",
+      "ms": 2.2,
+      "publicCode": null
+    },
+    {
+      "name": "pin-confirmed-in-the-future",
+      "http": 400,
+      "ok": false,
+      "code": "22023",
+      "message": "momento de confirmacion en el futuro",
+      "details": null,
+      "ms": 2.1,
+      "publicCode": null
+    },
+    {
+      "name": "saved-address-without-pin",
+      "http": 400,
+      "ok": false,
+      "code": "22023",
+      "message": "DELIVERY_LOCATION_REQUIRED",
+      "details": "la entrega necesita un punto confirmado por el cliente",
+      "ms": 2.4,
+      "publicCode": null
+    },
+    {
+      "name": "variant:CENTRO",
+      "http": 200,
+      "ok": true,
+      "code": null,
+      "message": null,
+      "details": null,
+      "ms": 49,
+      "publicCode": "LT-0013"
+    },
+    {
+      "name": "variant:  centro  ",
+      "http": 200,
+      "ok": true,
+      "code": null,
+      "message": null,
+      "details": null,
+      "ms": 51,
+      "publicCode": "LT-0014"
+    },
+    {
+      "name": "variant:Céntro",
+      "http": 200,
+      "ok": true,
+      "code": null,
+      "message": null,
+      "details": null,
+      "ms": 49.9,
+      "publicCode": "LT-0015"
+    },
+    {
+      "name": "variant:Centro.",
+      "http": 200,
+      "ok": true,
+      "code": null,
+      "message": null,
+      "details": null,
+      "ms": 51.4,
+      "publicCode": "LT-0016"
+    },
+    {
+      "name": "zone-deactivated",
+      "http": 409,
+      "ok": false,
+      "code": "55000",
+      "message": "OUT_OF_DELIVERY_ZONE",
+      "details": "la direccion no esta dentro de la cobertura declarada",
+      "ms": 4.2,
+      "publicCode": null
+    },
+    {
+      "name": "pickup",
+      "http": 200,
+      "ok": true,
+      "code": null,
+      "message": null,
+      "details": null,
+      "ms": 9.9,
+      "publicCode": "LT-0017"
+    },
+    {
+      "name": "delivery-disabled",
+      "http": 409,
+      "ok": false,
+      "code": "55000",
+      "message": "delivery no habilitado",
+      "details": null,
+      "ms": 3.6,
+      "publicCode": null
+    },
+    {
+      "name": "pickup-disabled",
+      "http": 409,
+      "ok": false,
+      "code": "55000",
+      "message": "retiro no habilitado",
+      "details": null,
+      "ms": 2.9,
+      "publicCode": null
+    }
+  ],
+  "variants": [
+    {
+      "name": "CENTRO",
+      "http": 200,
+      "ok": true,
+      "code": null,
+      "message": null,
+      "details": null,
+      "ms": 49,
+      "zone": "Centro",
+      "fee": "1200.00",
+      "declared": "CENTRO"
+    },
+    {
+      "name": "  centro  ",
+      "http": 200,
+      "ok": true,
+      "code": null,
+      "message": null,
+      "details": null,
+      "ms": 51,
+      "zone": "Centro",
+      "fee": "1200.00",
+      "declared": "centro"
+    },
+    {
+      "name": "Céntro",
+      "http": 200,
+      "ok": true,
+      "code": null,
+      "message": null,
+      "details": null,
+      "ms": 49.9,
+      "zone": "Centro",
+      "fee": "1200.00",
+      "declared": "Céntro"
+    },
+    {
+      "name": "Centro.",
+      "http": 200,
+      "ok": true,
+      "code": null,
+      "message": null,
+      "details": null,
+      "ms": 51.4,
+      "zone": "Centro",
+      "fee": "1200.00",
+      "declared": "Centro."
+    }
+  ],
+  "nearMisses": [
+    {
+      "name": "Centro Oeste",
+      "http": 409,
+      "ok": false,
+      "code": "55000",
+      "message": "OUT_OF_DELIVERY_ZONE",
+      "details": "la direccion no esta dentro de la cobertura declarada",
+      "ms": 5.6,
+      "refused": true
+    },
+    {
+      "name": "Centr",
+      "http": 409,
+      "ok": false,
+      "code": "55000",
+      "message": "OUT_OF_DELIVERY_ZONE",
+      "details": "la direccion no esta dentro de la cobertura declarada",
+      "ms": 4,
+      "refused": true
+    },
+    {
+      "name": "Centros",
+      "http": 409,
+      "ok": false,
+      "code": "55000",
+      "message": "OUT_OF_DELIVERY_ZONE",
+      "details": "la direccion no esta dentro de la cobertura declarada",
+      "ms": 4.8,
+      "refused": true
+    }
+  ],
+  "distanceCap": "NOT EXERCISED: no hay camino para verificar el punto del local en un tenant QA (ver tenant.json · notes)"
+}

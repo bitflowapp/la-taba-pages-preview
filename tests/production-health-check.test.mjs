@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import {
   BASELINE_CRON, TARGETS, evaluateAlerts, evaluateCron, evaluateLedger, parseArgs, readOnlyAsk, repoLedger, runHealthCheck,
 } from '../scripts/production-health-check.mjs';
@@ -175,7 +176,7 @@ test('con inventario en la base, una tarea del inventario que falta pone la sond
 });
 
 test('sin destino o sin token la sonda sale con 2 y no pregunta nada', () => {
-  const run = (args, env = {}) => spawnSync(process.execPath, [SCRIPT.pathname, ...args], {
+  const run = (args, env = {}) => spawnSync(process.execPath, [fileURLToPath(SCRIPT), ...args], {
     encoding: 'utf8', env: { PATH: process.env.PATH, ...env },
   });
   const sinDestino = run([]);

@@ -1191,12 +1191,12 @@
       "where": "public.reject_rider_order_offer, public.withdraw_rider_order_offer vs public.offer_order_to_rider"
     },
     {
-      "fixed_by": null,
-      "notes": "Measured by the wp18 package (repro-5 X1/X2). Proposed: lock the intent first, then update the attempt (I -> A), consistent with S -> I -> A.",
+      "fixed_by": "c997a18c · supabase/migrations/20261002061000_preference_uncertain_lock_order.sql",
+      "notes": "Reproduced on the branch HEAD with the arrival order pinned (wp18 repro-5): X1 and X2 deadlocked (40P01; in X2 the uncertain marker died after the preference already existed at the provider). Fixed: the intent is locked before the attempt is updated. After the fix X1, X2 and X1b: no deadlock. Test: preference_uncertain_lock_order_test.sql (12). Same answers and grants.",
       "aliases": [],
       "id": "IDEM-08",
       "severity": "P2",
-      "status": "open",
+      "status": "fixed",
       "domain": "payments_db",
       "title": "record_mercadopago_preference_uncertain updates the attempt before the intent, the reverse of prepare/record_mercadopago_preference_*_v2: 40P01 under contention",
       "where": "public.record_mercadopago_preference_uncertain vs public.prepare_mercadopago_preference_v2, public.record_mercadopago_preference_created_v2"

@@ -56,7 +56,10 @@ const steps = [
     'supabase/functions/_shared/refund-no-guess.deno.ts',
     'supabase/functions/_shared/refund-runtime.deno.ts',
     'supabase/functions/_shared/cancel-runtime.deno.ts',
-    'supabase/functions/_shared/checkout-session-availability.deno.ts']],
+    'supabase/functions/_shared/checkout-session-availability.deno.ts',
+    // El interruptor de dinero real (EDGE-03): la función pura y la plata que
+    // vuelve con el interruptor apagado, sobre los handlers reales.
+    'supabase/functions/_shared/real-money-gate.deno.ts']],
   ['node', ['--import', './tests/test-bootstrap.mjs', '--test', '--test-concurrency=1',
     'tests/mercadopago-webhook.test.mjs',
     'tests/mercadopago-scheduler.test.mjs']],

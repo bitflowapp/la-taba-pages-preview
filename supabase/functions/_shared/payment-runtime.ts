@@ -1,5 +1,11 @@
 import { createClient, type SupabaseClient, type User } from 'npm:@supabase/supabase-js@2.110.8';
 import { validatePaymentWorkerSignature } from './payment-worker-signature.ts';
+import {
+  REAL_MONEY_SWITCH,
+  type RealMoneyBusiness,
+  type RealMoneyGateState,
+  realMoneyGateState,
+} from './real-money-gate.ts';
 import { clientAddress } from './request-protocol.ts';
 
 const JSON_HEADERS = {
@@ -201,13 +207,35 @@ export function providerEnvironment(): PaymentEnvironment {
   return value;
 }
 
-export function requireRealPaymentSmokeAuthorization(environment: PaymentEnvironment): void {
-  if (
-    environment === 'production'
-    && optionalEnv('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION')
-      !== 'I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE'
-  ) {
-    throw new Error('A real Mercado Pago payment smoke has not been explicitly authorized');
+/**
+ * El estado del interruptor de dinero real con los valores de ESTE proyecto.
+ * La decisión es de `realMoneyGateState` (real-money-gate.ts); acá sólo se
+ * leen las variables, crudas: el interruptor no pasa por `optionalEnv`, que
+ * recorta, porque sólo la cadena exacta `enabled` lo abre.
+ */
+export function readRealMoneyGateState(business: RealMoneyBusiness | null = null): RealMoneyGateState {
+  return realMoneyGateState({
+    environment: Deno.env.get('MERCADOPAGO_ENVIRONMENT'),
+    reviewStatus: Deno.env.get('MERCADOPAGO_PRODUCTION_REVIEW_STATUS'),
+    realMoneySwitch: Deno.env.get(REAL_MONEY_SWITCH),
+    business,
+  });
+}
+
+/**
+ * La llave de plataforma para CREAR un cobro. En producción exige la revisión
+ * aprobada y MERCADOPAGO_REAL_MONEY_ENABLED = `enabled`; en test no pide el
+ * interruptor (ahí no hay dinero real). La variable vieja de la prueba de humo
+ * ya no se consulta: no abre nada.
+ *
+ * Sólo la usan los caminos que crean un cobro. Reembolsos, cancelaciones,
+ * webhook, worker, conciliación y pantalla de estado no pasan por acá.
+ */
+export function requireRealMoneyGate(environment: PaymentEnvironment): void {
+  const state = readRealMoneyGateState();
+  if (!state.creation_allowed || state.environment !== environment) {
+    // Sólo los nombres de lo que falta: el mensaje termina en un log.
+    throw new Error(`Payment creation gate closed: ${state.reasons.join(', ') || 'MERCADOPAGO_ENVIRONMENT_MISMATCH'}`);
   }
 }
 

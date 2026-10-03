@@ -53,10 +53,15 @@ test('financial mutations reuse persisted idempotency keys and require owner/adm
 test('production payment activation is fail-closed behind review and explicit confirmation', () => {
   const runtime = fs.readFileSync(path.join(root, 'supabase/functions/_shared/payment-runtime.ts'), 'utf8');
   const provider = fs.readFileSync(path.join(root, 'supabase/functions/_shared/mercadopago.ts'), 'utf8');
+  const gate = fs.readFileSync(path.join(root, 'supabase/functions/_shared/real-money-gate.ts'), 'utf8');
   assert.match(runtime, /MERCADOPAGO_PRODUCTION_REVIEW_STATUS/);
-  assert.match(runtime, /MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION/);
-  assert.match(runtime, /I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE/);
-  assert.match(provider, /requireRealPaymentSmokeAuthorization\(environment\)/);
+  // The explicit confirmation is now the permanent backend switch (EDGE-03):
+  // MERCADOPAGO_REAL_MONEY_ENABLED, opened only by the exact value `enabled`.
+  assert.match(gate, /'MERCADOPAGO_REAL_MONEY_ENABLED'/);
+  assert.match(runtime, /realMoneySwitch: Deno\.env\.get\(REAL_MONEY_SWITCH\)/);
+  assert.match(provider, /requireRealMoneyGate\(environment\)/);
+  // The legacy smoke phrase opens nothing any more.
+  assert.doesNotMatch(runtime, /MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION|I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE/);
   assert.match(provider, /mercadoPagoRequest[\s\S]*providerEnvironment\(\);[\s\S]*MERCADOPAGO_ACCESS_TOKEN/);
   assert.doesNotMatch(runtime, /I_UNDERSTAND_THIS_ENABLES_REAL_MERCADO_PAGO_PAYMENTS/);
 });

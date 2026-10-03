@@ -15,21 +15,78 @@ const read = (...parts) => fs.readFileSync(path.join(root, ...parts), 'utf8');
 const shared = (name) => read('supabase/functions/_shared', name);
 const handler = (name) => read('supabase/functions', name, 'index.ts');
 
-test('the production payment switch is untouched and has one definition of the creation gate', () => {
+test('the production payment switch is the real-money switch, exact, and has one definition of the creation gate', () => {
   const runtime = shared('payment-runtime.ts');
   const oauth = shared('seller-oauth.ts');
-  // Nothing in this package may make it easier to take real money: the switch
-  // is byte-for-byte the one that was there.
-  assert.match(runtime, /environment === 'production'\s*&& optionalEnv\('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION'\)\s*!== 'I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE'/);
+  const gateModule = shared('real-money-gate.ts');
+  // EDGE-03 (owner's decision): production charges open only with the backend
+  // secret MERCADOPAGO_REAL_MONEY_ENABLED holding exactly `enabled`. The value
+  // is compared raw: no trim, no case folding, no default.
+  assert.match(gateModule, /export const REAL_MONEY_SWITCH = 'MERCADOPAGO_REAL_MONEY_ENABLED';/);
+  assert.match(gateModule, /export const REAL_MONEY_SWITCH_OPEN_VALUE = 'enabled';/);
+  assert.match(gateModule, /const real_money_switch = input\.realMoneySwitch === REAL_MONEY_SWITCH_OPEN_VALUE;/);
+  assert.match(gateModule, /const creation_allowed = environment === 'test'\s*\|\| \(environment === 'production' && review_approved && real_money_switch\);/);
+  assert.match(runtime, /realMoneySwitch: Deno\.env\.get\(REAL_MONEY_SWITCH\),/);
+  assert.doesNotMatch(runtime, /optionalEnv\(REAL_MONEY_SWITCH\)|getRequiredEnv\(REAL_MONEY_SWITCH\)/);
+  // The project review is still required, exactly as before.
   assert.match(runtime, /value === 'production' && optionalEnv\('MERCADOPAGO_PRODUCTION_REVIEW_STATUS'\) !== 'approved'/);
+  // The legacy smoke variable opens nothing any more: no runtime code reads it
+  // and the old phrase is gone from the runtime.
+  for (const file of ['payment-runtime.ts', 'seller-oauth.ts', 'mercadopago.ts']) {
+    assert.doesNotMatch(shared(file), /MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION|I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE|requireRealPaymentSmokeAuthorization/, file);
+  }
   const gate = oauth.slice(oauth.indexOf('export function assertPaymentCreationGate()'), oauth.indexOf('export async function beginSellerPaymentAuthority'));
-  for (const check of ['providerEnvironment()', 'oauthMode()', 'oauthConfig()', 'requireRealPaymentSmokeAuthorization(environment)']) {
+  for (const check of ['providerEnvironment()', 'oauthMode()', 'oauthConfig()', 'requireRealMoneyGate(environment)']) {
     assert.ok(gate.includes(check), `creation gate lost ${check}`);
   }
   // The preference path evaluates it three times (begin, re-check, final check)
   // and never re-implements a looser copy.
   assert.equal((oauth.match(/assertPaymentCreationGate\(\)/g) || []).length, 4);
-  assert.equal((oauth.match(/requireRealPaymentSmokeAuthorization\(/g) || []).length, 1);
+  assert.equal((oauth.match(/requireRealMoneyGate\(/g) || []).length, 1);
+  // Business and seller are judged by the same predicates as the pure state.
+  assert.match(oauth, /!businessPaymentsEnabled\(settings, businessId, environment\)/);
+  assert.match(oauth, /!sellerConnected\(seller, settings, businessId, environment, applicationId, Date\.now\(\)\)/);
+});
+
+test('every path that can create a preference passes through the creation gate first', () => {
+  const provider = shared('mercadopago.ts');
+  // The only POST that creates a charge, and the gate right before it.
+  assert.equal((provider.match(/mercadoPagoRequest\('\/checkout\/preferences',/g) || []).length, 1);
+  const create = provider.slice(provider.indexOf('export async function createPreference'), provider.indexOf('export async function fetchPayment'));
+  const gate = create.indexOf('assertPaymentCreationGate();');
+  const post = create.indexOf("mercadoPagoRequest('/checkout/preferences',");
+  assert.ok(gate > 0 && post > gate, 'createPreference must evaluate the gate before its POST');
+  assert.match(create, /throw new PublicPaymentError\(409, 'PAYMENTS_NOT_ENABLED'/);
+  // The request builder carries the same switch check of its own.
+  const builder = provider.slice(provider.indexOf('export function assertPreparationEnvironment'), provider.indexOf('export function preferenceRequest'));
+  assert.match(builder, /requireRealMoneyGate\(environment\);/);
+  // Only create-preference calls createPreference, and it evaluates the gate
+  // before preparing the attempt (which can re-reserve stock with new_attempt).
+  const handlers = fs.readdirSync(path.join(root, 'supabase/functions'), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && !entry.name.startsWith('_')).map((entry) => entry.name);
+  assert.deepEqual(handlers.filter((name) => /createPreference\(/.test(handler(name))), ['mercadopago-create-preference']);
+  const preference = handler('mercadopago-create-preference');
+  const early = preference.indexOf('assertPaymentCreationGate();');
+  const prepare = preference.indexOf("service.rpc('prepare_mercadopago_preference_v2'");
+  assert.ok(early > 0 && prepare > early, 'the gate must run before prepare_mercadopago_preference_v2');
+  assert.match(preference.slice(early, prepare), /code: 'PAYMENTS_NOT_ENABLED'/);
+  // Nobody else talks to the preferences resource.
+  for (const name of handlers.filter((slug) => slug !== 'mercadopago-create-preference')) {
+    assert.doesNotMatch(handler(name), /checkout\/preferences/, name);
+  }
+});
+
+test('money going back never consults the real-money switch', () => {
+  for (const name of ['mercadopago-refund', 'mercadopago-cancel-payment', 'mercadopago-webhook', 'mercadopago-payment-worker',
+    'mercadopago-checkout-status', 'mercadopago-connect', 'mercadopago-oauth-callback']) {
+    assert.doesNotMatch(handler(name), /assertPaymentCreationGate|requireRealMoneyGate|readRealMoneyGateState|MERCADOPAGO_REAL_MONEY_ENABLED|REAL_MONEY_SWITCH/, name);
+  }
+  // The shared provider call used by refunds, cancellations, the worker and
+  // the status screen checks the project review, not the switch.
+  const provider = shared('mercadopago.ts');
+  const request = provider.slice(provider.indexOf('export async function mercadoPagoRequest'), provider.indexOf('export async function createPreference'));
+  assert.doesNotMatch(request, /requireRealMoneyGate|assertPaymentCreationGate/);
+  assert.match(request, /providerEnvironment\(\);/);
 });
 
 test('create-checkout-session evaluates that same gate before the RPC that reserves stock', () => {

@@ -12,10 +12,16 @@ test('stored, recovered and newly-created preference URLs all use current seller
   assert.match(preference, /attempt_status === 'created'[\s\S]*authorizedPreferenceResponse/);
   assert.equal((preference.match(/authorizedPreferenceResponse\(/g) || []).length, 4);
   assert.match(preference, /await assertCurrentSellerPaymentAuthority\(businessId,[\s\S]*preferenceResponse/);
-  assert.match(oauth, /requireRealPaymentSmokeAuthorization\(environment\)[\s\S]*sellerAccessToken\(businessId\)/);
-  for (const field of ['business.status !== "open"', 'settings.enabled !== true', 'seller.status !== "connected"',
-    'seller.seller_id !== settings.collector_id', 'seller.application_id !== applicationId']) {
-    assert.ok(oauth.includes(field), `missing current authority assertion: ${field}`);
+  assert.match(oauth, /requireRealMoneyGate\(environment\)[\s\S]*sellerAccessToken\(businessId\)/);
+  assert.ok(oauth.includes('business.status !== "open"'), 'missing current authority assertion: business.status !== "open"');
+  // Business and seller are judged by the shared predicates of the real-money
+  // gate (EDGE-03), called from validatePaymentAuthority.
+  assert.match(oauth, /!businessPaymentsEnabled\(settings, businessId, environment\)/);
+  assert.match(oauth, /!sellerConnected\(seller, settings, businessId, environment, applicationId, Date\.now\(\)\)/);
+  const gate = fs.readFileSync('supabase/functions/_shared/real-money-gate.ts', 'utf8');
+  for (const field of ['settings!.enabled === true', "seller!.status === 'connected'",
+    'seller!.seller_id === settings!.collector_id', 'seller!.application_id === applicationId']) {
+    assert.ok(gate.includes(field), `missing current authority assertion: ${field}`);
   }
 });
 

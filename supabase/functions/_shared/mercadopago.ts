@@ -1,4 +1,11 @@
-import { assertOAuthPaymentEnvironment, audit, invalidateTokenIfProviderRejectsIt, oauthMode, sellerAccessToken } from './seller-oauth.ts';
+import {
+  assertOAuthPaymentEnvironment,
+  assertPaymentCreationGate,
+  audit,
+  invalidateTokenIfProviderRejectsIt,
+  oauthMode,
+  sellerAccessToken,
+} from './seller-oauth.ts';
 import type { PaymentEnvironment } from './payment-runtime.ts';
 import {
   checkoutReturnUrl,
@@ -6,7 +13,7 @@ import {
   hashSensitive,
   providerEnvironment,
   PublicPaymentError,
-  requireRealPaymentSmokeAuthorization,
+  requireRealMoneyGate,
   sha256Hex,
   webhookUrl,
 } from './payment-runtime.ts';
@@ -52,7 +59,9 @@ export function assertPreparationEnvironment(preparation: PreferencePreparation)
   if (preparation.environment !== environment) {
     throw new Error('Mercado Pago environment does not match payment settings');
   }
-  requireRealPaymentSmokeAuthorization(environment);
+  // El interruptor de dinero real (EDGE-03): en producción, sin
+  // MERCADOPAGO_REAL_MONEY_ENABLED = `enabled` no se arma ninguna preferencia.
+  requireRealMoneyGate(environment);
   if (preparation.currency !== 'ARS' || !Number.isFinite(Number(preparation.total)) || Number(preparation.total) <= 0) {
     throw new Error('Invalid server-side preference snapshot');
   }
@@ -189,6 +198,15 @@ export async function createPreference(
   responseHash: string;
   requestId: string;
 }> {
+  // Éste es el único POST que crea un cobro. La compuerta se evalúa otra vez
+  // acá, inmediatamente antes, para que ningún camino —tampoco uno que traiga el
+  // pedido armado de afuera— llegue al proveedor sin pasar por ella. Si está
+  // cerrada no salió nada: es un rechazo público, no una duda del proveedor.
+  try {
+    assertPaymentCreationGate();
+  } catch (_) {
+    throw new PublicPaymentError(409, 'PAYMENTS_NOT_ENABLED', 'Mercado Pago no está disponible para este comercio en este momento.');
+  }
   const result = await mercadoPagoRequest('/checkout/preferences', {
     businessId,
     authorityAccessToken,

@@ -3,8 +3,9 @@ import {
   getRequiredEnv,
   providerEnvironment,
   PublicPaymentError,
-  requireRealPaymentSmokeAuthorization,
+  requireRealMoneyGate,
 } from "./payment-runtime.ts";
+import { businessPaymentsEnabled, sellerConnected } from "./real-money-gate.ts";
 import { seal, unseal } from "./seller-oauth-crypto.ts";
 
 const DEPLOYMENT_BINDINGS: Record<string, {
@@ -455,11 +456,9 @@ function validatePaymentAuthority(
     business.ordering_verified !== true || checkout?.business_open !== true) {
     throw new PublicPaymentError(409, "BUSINESS_NOT_OPERATIONAL", "El comercio no está disponible para cobrar.");
   }
-  if (!settings || settings.business_id !== businessId || settings.provider !== "mercadopago" ||
-    settings.enabled !== true || settings.environment !== environment ||
-    settings.checkout_mode !== "checkout_pro" || settings.currency !== "ARS" ||
-    settings.reserve_stock !== true ||
-    (environment === "production" && settings.production_review_status !== "approved")) {
+  // Comercio y vendedor se juzgan con los mismos predicados que el estado del
+  // interruptor de dinero real (real-money-gate.ts): no hay una segunda copia.
+  if (!settings || !businessPaymentsEnabled(settings, businessId, environment)) {
     throw new PublicPaymentError(409, "PAYMENTS_NOT_ENABLED", "Mercado Pago no está habilitado.");
   }
   if (!checkout || checkout.id !== context.checkoutSessionId || checkout.customer_id !== context.customerId ||
@@ -469,11 +468,7 @@ function validatePaymentAuthority(
     !(Date.parse(String(checkout.expires_at)) > Date.now())) {
     throw new PublicPaymentError(409, "CHECKOUT_NOT_AVAILABLE", "El checkout cambió o venció. Revisá el carrito.");
   }
-  if (!seller || seller.business_id !== businessId || seller.environment !== environment ||
-    seller.status !== "connected" || !seller.protected_tokens || !seller.seller_id || !seller.generation ||
-    seller.refresh_owner || !(Date.parse(seller.expires_at) > Date.now()) ||
-    seller.seller_id !== settings.collector_id ||
-    seller.application_id !== applicationId || settings.application_id !== applicationId) {
+  if (!seller || !sellerConnected(seller, settings, businessId, environment, applicationId, Date.now())) {
     throw new PublicPaymentError(409, "SELLER_REAUTHORIZATION_REQUIRED", "Necesitamos volver a conectar Mercado Pago.");
   }
   if (!/^[a-f0-9]{64}$/.test(snapshot.authority_version || "")) {
@@ -511,14 +506,22 @@ function validatePaymentAuthority(
  * preferencia respondía que no: en producción, con la compuerta cerrada, eso
  * era cada cliente que tocaba pagar.
  *
- * No decide nada nuevo ni abre nada: son las mismas cuatro comprobaciones que
- * ya hacía la preferencia, en el mismo orden.
+ * EL INTERRUPTOR DE DINERO REAL (EDGE-03, decisión del dueño). En producción
+ * la cuarta comprobación es el secreto MERCADOPAGO_REAL_MONEY_ENABLED con el
+ * valor exacto `enabled`, evaluado por `realMoneyGateState` (real-money-gate.ts).
+ * La variable vieja de la prueba de humo ya no abre nada. En test el interruptor
+ * no se pide: ahí la credencial misma es de prueba (binding del proyecto,
+ * `live_mode` del token, vendedor `test_user`).
+ *
+ * Sólo la evalúan los caminos que CREAN un cobro. Reembolsos, cancelaciones,
+ * webhook, worker, conciliación y pantalla de estado no la consultan: cerrar el
+ * dinero real nunca traba la plata que vuelve.
  */
 export function assertPaymentCreationGate() {
   const environment = providerEnvironment();
   if (!oauthMode()) throw new Error("Seller OAuth mode required");
   const config = oauthConfig();
-  requireRealPaymentSmokeAuthorization(environment);
+  requireRealMoneyGate(environment);
   return { environment, config };
 }
 

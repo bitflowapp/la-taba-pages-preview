@@ -1,4 +1,10 @@
-import { assertCurrentSellerPaymentAuthority, beginSellerPaymentAuthority, businessForIntent, type PaymentAuthoritySnapshot } from '../_shared/seller-oauth.ts';
+import {
+  assertCurrentSellerPaymentAuthority,
+  assertPaymentCreationGate,
+  beginSellerPaymentAuthority,
+  businessForIntent,
+  type PaymentAuthoritySnapshot,
+} from '../_shared/seller-oauth.ts';
 import {
   assertAllowedOrigin,
   createServiceClient,
@@ -35,6 +41,27 @@ Deno.serve(async (request) => {
     const { user } = await requireAuthenticatedUser(request);
     const service = createServiceClient();
     await enforceRateLimit(service, request, 'preference', 12, 600, user.id);
+
+    // La compuerta de creación (con el interruptor de dinero real), ANTES de
+    // preparar el intento: con `new_attempt` la preparación vuelve a reservar el
+    // stock de una sesión vencida o cancelada. Cerrada, no se prepara ni se
+    // reserva nada y no sale nada hacia el proveedor: el mismo rechazo público
+    // que da la sesión de checkout.
+    try {
+      assertPaymentCreationGate();
+    } catch (error) {
+      // Sólo el motivo: los mensajes de la compuerta nombran lo que falta, nunca un valor.
+      console.warn(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        event: 'payment_creation_gate_closed',
+        reason: error instanceof Error ? error.message : 'unknown',
+      }));
+      return jsonResponse(request, {
+        ok: false,
+        code: 'PAYMENTS_NOT_ENABLED',
+        message: 'Mercado Pago no está disponible para este comercio en este momento.',
+      }, 409);
+    }
 
     const { data, error } = await service.rpc('prepare_mercadopago_preference_v2', {
       p_checkout_session_id: checkoutSessionId,

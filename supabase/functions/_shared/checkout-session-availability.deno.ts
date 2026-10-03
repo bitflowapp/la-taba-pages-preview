@@ -59,13 +59,15 @@ const DEPLOYMENTS: Record<Deployment, { host: string; variables: Record<string, 
       MERCADOPAGO_CLIENT_ID: '7677852968049976', MERCADOPAGO_OAUTH_PANEL_URL: 'https://la-taba.pages.dev/',
       TABA_CHECKOUT_BASE_URL: 'https://la-taba.pages.dev', TABA_ALLOWED_ORIGINS: 'https://la-taba.pages.dev',
       MERCADOPAGO_PRODUCTION_REVIEW_STATUS: 'approved',
-      MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION: 'I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE',
+      // El interruptor de dinero real (EDGE-03): la única llave que abre producción.
+      MERCADOPAGO_REAL_MONEY_ENABLED: 'enabled',
     },
   },
 };
 
 function configure(deployment: Deployment, overrides: Record<string, string | null> = {}) {
-  for (const name of ['MERCADOPAGO_PRODUCTION_REVIEW_STATUS', 'MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION']) Deno.env.delete(name);
+  for (const name of ['MERCADOPAGO_PRODUCTION_REVIEW_STATUS', 'MERCADOPAGO_REAL_MONEY_ENABLED',
+    'MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION']) Deno.env.delete(name);
   for (const [name, value] of Object.entries({
     SUPABASE_SERVICE_ROLE_KEY: 'fixture-service', SUPABASE_ANON_KEY: 'fixture-anon',
     PAYMENT_LOG_HASH_SALT: 'fixture-log-salt', MERCADOPAGO_CREDENTIAL_MODE: 'oauth',
@@ -82,11 +84,13 @@ async function run(scenario: Scenario = {}) {
   const deployment = scenario.deployment || 'staging';
   configure(deployment, scenario.environment);
   const calls: string[] = [], rateLimits: RateLimitCall[] = [];
+  let providerCalls = 0;
   const original = globalThis.fetch;
   globalThis.fetch = async (input, options) => {
     const url = new URL(String(input instanceof Request ? input.url : input));
     const init = options as RequestInit | undefined;
     calls.push(url.pathname.split('/').pop() || '');
+    if (url.origin === 'https://api.mercadopago.com') providerCalls++;
     if (url.pathname === '/auth/v1/user') return Response.json({ id: scenario.user || customer, aud: 'authenticated' });
     if (url.pathname.endsWith('/consume_payment_rate_limit')) {
       const call = JSON.parse(String(init?.body)) as RateLimitCall;
@@ -118,7 +122,7 @@ async function run(scenario: Scenario = {}) {
       }),
     }));
     const text = await response.text();
-    return { status: response.status, body: JSON.parse(text), text, calls, rateLimits };
+    return { status: response.status, body: JSON.parse(text), text, calls, rateLimits, providerCalls };
   } finally {
     globalThis.fetch = original;
     configure('staging');
@@ -152,14 +156,26 @@ Deno.test('a connected seller keeps the normal checkout path', async () => {
 // quedaba reservado quince minutos y recién la preferencia respondía que no.
 
 const gateClosed: Record<string, { deployment: Deployment; environment: Record<string, string | null> }> = {
-  'producción sin la autorización de cobro real': {
-    deployment: 'production', environment: { MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION: null },
+  'producción sin el interruptor de dinero real': {
+    deployment: 'production', environment: { MERCADOPAGO_REAL_MONEY_ENABLED: null },
   },
-  'producción con otra frase de autorización': {
-    deployment: 'production', environment: { MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION: 'yes' },
+  // Sólo la palabra exacta abre: ni un sinónimo, ni otra capitalización, ni con espacios.
+  ...Object.fromEntries(['', 'true', 'ENABLED', 'Enabled', ' enabled', 'enabled ', 'enabled\n', '1', 'yes', 'on', 'enable']
+    .map((value) => [`producción con el interruptor en ${JSON.stringify(value)}`, {
+      deployment: 'production' as Deployment, environment: { MERCADOPAGO_REAL_MONEY_ENABLED: value },
+    }])),
+  // La variable vieja de la prueba de humo ya no abre nada, ni con la frase exacta.
+  'producción con la frase vieja de humo y sin el interruptor': {
+    deployment: 'production', environment: {
+      MERCADOPAGO_REAL_MONEY_ENABLED: null,
+      MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION: 'I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE',
+    },
   },
   'producción sin revisión aprobada': {
     deployment: 'production', environment: { MERCADOPAGO_PRODUCTION_REVIEW_STATUS: 'pending' },
+  },
+  'producción sin revisión declarada, aunque el interruptor esté en enabled': {
+    deployment: 'production', environment: { MERCADOPAGO_PRODUCTION_REVIEW_STATUS: null },
   },
   'sin modo de credencial del vendedor': {
     deployment: 'staging', environment: { MERCADOPAGO_CREDENTIAL_MODE: null },
@@ -182,6 +198,7 @@ for (const [name, closed] of Object.entries(gateClosed)) {
       message: 'Mercado Pago no está disponible para este comercio en este momento.',
     });
     assertEquals(reservations(result), 0);
+    assertEquals(result.providerCalls, 0);
     // Es la MISMA compuerta que evalúa la preferencia: con esta configuración
     // `mercadopago-create-preference` tampoco habría emitido nada.
     configure(closed.deployment, closed.environment);
@@ -190,17 +207,47 @@ for (const [name, closed] of Object.entries(gateClosed)) {
   });
 }
 
-Deno.test('EDGE-03: producción con la compuerta abierta sigue igual (no se afloja ni se endurece nada)', async () => {
+Deno.test('EDGE-03: producción con las tres llaves abiertas crea la sesión y reserva', async () => {
   const result = await run({ deployment: 'production' });
   assertEquals(result.status, 200);
   assertEquals(result.body, { ok: true, checkout: { checkout_session_id: session } });
   assertEquals(reservations(result), 1);
 });
 
-Deno.test('EDGE-03: el entorno de prueba no cambia', async () => {
-  const result = await run({ deployment: 'staging' });
-  assertEquals(result.status, 200);
-  assertEquals(reservations(result), 1);
+// Las tres condiciones del dueño: revisión del proyecto aprobada, comercio con
+// Mercado Pago encendido y vendedor conectado (lo que contesta la disponibilidad
+// de la base), e interruptor de dinero real en `enabled`. En cada una de las
+// siete combinaciones a las que les falta alguna, ni sesión, ni reserva, ni
+// proveedor.
+for (const review of [true, false]) {
+  for (const sellerReady of [true, false]) {
+    for (const realMoney of [true, false]) {
+      const label = `revisión ${review ? 'aprobada' : 'ausente'}, comercio ${sellerReady ? 'listo' : 'sin cobrar'}, interruptor ${realMoney ? 'enabled' : 'ausente'}`;
+      Deno.test(`EDGE-03 tres llaves: ${label}`, async () => {
+        const result = await run({
+          deployment: 'production',
+          available: sellerReady,
+          environment: {
+            MERCADOPAGO_PRODUCTION_REVIEW_STATUS: review ? 'approved' : null,
+            MERCADOPAGO_REAL_MONEY_ENABLED: realMoney ? 'enabled' : null,
+          },
+        });
+        const open = review && sellerReady && realMoney;
+        assertEquals(result.status, open ? 200 : 409, label);
+        assertEquals(result.body.code, open ? undefined : 'PAYMENTS_NOT_ENABLED', label);
+        assertEquals(reservations(result), open ? 1 : 0, label);
+        assertEquals(result.providerCalls, 0, label);
+      });
+    }
+  }
+}
+
+Deno.test('EDGE-03: el entorno de prueba no cambia y no pide el interruptor', async () => {
+  for (const realMoneySwitch of [null, 'enabled', 'true']) {
+    const result = await run({ deployment: 'staging', environment: { MERCADOPAGO_REAL_MONEY_ENABLED: realMoneySwitch } });
+    assertEquals(result.status, 200, String(realMoneySwitch));
+    assertEquals(reservations(result), 1, String(realMoneySwitch));
+  }
 });
 
 Deno.test('EDGE-03: si la configuración del negocio es de otro entorno, tampoco se reserva', async () => {
@@ -218,7 +265,7 @@ Deno.test('EDGE-03: la pregunta de disponibilidad responde con la misma compuert
     allow_offline_payment_methods: false, installments_limit: 3 } });
   assertEquals(reservations(open), 0);
 
-  const closed = await run({ deployment: 'production', environment: { MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION: null },
+  const closed = await run({ deployment: 'production', environment: { MERCADOPAGO_REAL_MONEY_ENABLED: null },
     payload: { availability_only: true } });
   assertEquals(closed.status, 200);
   assertEquals(closed.body.availability.available, false);

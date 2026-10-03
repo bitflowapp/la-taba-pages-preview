@@ -9,26 +9,20 @@
 -- directly, so only a trusted backend process may populate these fields.
 alter table public.orders
   add column if not exists estimated_arrival_at timestamptz;
-
 alter table public.orders
   add column if not exists estimated_arrival_source text;
-
 alter table public.orders
   add column if not exists estimated_arrival_updated_at timestamptz;
-
 alter table public.orders
   drop constraint if exists orders_estimated_arrival_source_check;
-
 alter table public.orders
   add constraint orders_estimated_arrival_source_check
   check (
     estimated_arrival_source is null
     or estimated_arrival_source in ('business', 'routing')
   );
-
 alter table public.orders
   drop constraint if exists orders_estimated_arrival_metadata_consistent;
-
 alter table public.orders
   add constraint orders_estimated_arrival_metadata_consistent
   check (
@@ -43,7 +37,6 @@ alter table public.orders
       and estimated_arrival_updated_at is not null
     )
   );
-
 -- The operational trigger previously omitted arrived_at. Keep all existing
 -- timestamp behavior and add the missing arrival timestamp.
 create or replace function public.set_order_status_timestamps()
@@ -84,7 +77,6 @@ begin
   return new;
 end;
 $$;
-
 -- Internal serializer used only by SECURITY DEFINER order RPCs. It is never
 -- granted to browser roles because it contains the assigned order's PII.
 create or replace function public.rider_order_rpc_payload(p_order_id uuid)
@@ -181,7 +173,6 @@ as $$
     from public.orders o
    where o.id = p_order_id
 $$;
-
 -- Minimized queue for a rider before assignment. It deliberately excludes the
 -- internal order UUID, exact customer address, customer identity and contact
 -- details. ETA is NULL unless trusted, fresh metadata exists.
@@ -239,7 +230,6 @@ as $$
   order by o.ready_at nulls last, o.created_at
   limit 50
 $$;
-
 -- Atomic self-claim by public code. The queue never exposes the internal UUID;
 -- after the claim succeeds, the rider is authorized to receive the full row.
 -- FOR UPDATE plus both expected status and expected assignee produce one winner
@@ -343,7 +333,6 @@ begin
   return public.rider_order_rpc_payload(v_order.id);
 end;
 $$;
-
 -- Business-side assignment and reassignment. Reassignment is restricted to
 -- ready/assigned orders, before pickup, and compares both status and current
 -- assignee under a row lock.
@@ -468,7 +457,6 @@ begin
   return public.rider_order_rpc_payload(v_order.id);
 end;
 $$;
-
 -- GPS writes pass through one authoritative path. Direct table INSERT is
 -- revoked below. The RPC checks the active assignment, input quality and a
 -- server-side minimum interval to limit flooding.
@@ -568,7 +556,6 @@ begin
   return to_jsonb(v_location);
 end;
 $$;
-
 -- Effective token DTO. GPS is returned only for the currently assigned rider,
 -- the requested order, active delivery states, acceptable accuracy and a fresh
 -- server timestamp. ETA is omitted unless trusted metadata is current.
@@ -669,15 +656,12 @@ begin
   ));
 end;
 $$;
-
 -- Assignment audit rows contain Auth UUIDs. Keep them inside the business
 -- operational boundary instead of exposing them through customer order access.
 drop policy if exists "production order events readable with order"
 on public.order_events;
-
 drop policy if exists "production order events readable by business"
 on public.order_events;
-
 create policy "production order events readable by business"
 on public.order_events for select
 to authenticated
@@ -687,29 +671,23 @@ using (
     array['owner', 'admin', 'staff']
   )
 );
-
 revoke select on table public.order_events from anon;
 revoke insert on table public.rider_locations from authenticated;
 revoke select on table public.rider_locations from anon;
-
 revoke all on function public.rider_order_rpc_payload(uuid)
 from public, anon, authenticated;
-
 revoke all on function public.list_available_rider_orders(uuid)
 from public, anon;
 grant execute on function public.list_available_rider_orders(uuid)
 to authenticated;
-
 revoke all on function public.claim_available_rider_order(uuid, text, text, uuid)
 from public, anon;
 grant execute on function public.claim_available_rider_order(uuid, text, text, uuid)
 to authenticated;
-
 revoke all on function public.assign_order_rider(uuid, text, uuid, uuid)
 from public, anon;
 grant execute on function public.assign_order_rider(uuid, text, uuid, uuid)
 to authenticated;
-
 revoke all on function public.publish_rider_location(
   uuid,
   double precision,
@@ -728,21 +706,16 @@ grant execute on function public.publish_rider_location(
   double precision
 )
 to authenticated;
-
 revoke all on function public.get_public_order_tracking(text)
 from public;
 grant execute on function public.get_public_order_tracking(text)
 to anon, authenticated;
-
 revoke execute on function public.set_order_status_timestamps()
 from public, anon, authenticated;
-
 comment on function public.claim_available_rider_order(uuid, text, text, uuid) is
   'Atomic rider self-claim by public code with status + assignee CAS.';
-
 comment on function public.assign_order_rider(uuid, text, uuid, uuid) is
   'Business assignment/reassignment before pickup with row lock and status + assignee CAS.';
-
 comment on function public.publish_rider_location(
   uuid,
   double precision,
@@ -752,6 +725,5 @@ comment on function public.publish_rider_location(
   double precision
 ) is
   'Authorized, accuracy-bounded and rate-limited GPS write for the assigned rider.';
-
 comment on function public.get_public_order_tracking(text) is
   'Minimized token tracking DTO with assigned-rider, active-state, freshness and GPS-quality checks.';

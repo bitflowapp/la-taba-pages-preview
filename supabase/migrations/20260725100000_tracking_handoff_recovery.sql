@@ -9,10 +9,8 @@
 -- assigned rider while the delivery remains active.
 drop policy if exists "production rider locations readable with order"
 on public.rider_locations;
-
 drop policy if exists "tracking rider locations readable by operators"
 on public.rider_locations;
-
 create policy "tracking rider locations readable by operators"
 on public.rider_locations for select
 to authenticated
@@ -37,10 +35,8 @@ using (
        )
   )
 );
-
 revoke select on table public.rider_locations from anon;
 grant select on table public.rider_locations to authenticated;
-
 -- Business assignment needs a minimal directory, not direct access to Auth or
 -- the complete membership table. Only an operational display name and the UUID
 -- required by the assignment CAS leave this SECURITY DEFINER boundary.
@@ -84,12 +80,10 @@ begin
   limit 100;
 end;
 $$;
-
 revoke all on function public.list_active_business_riders(uuid)
 from public, anon, authenticated;
 grant execute on function public.list_active_business_riders(uuid)
 to authenticated;
-
 -- A customer whose tab/session storage was lost can rotate both the bearer
 -- token and the still-unconfirmed handoff code. No old raw token is stored.
 create or replace function public.recover_order_tracking_access(
@@ -241,12 +235,10 @@ begin
   );
 end;
 $$;
-
 revoke all on function public.recover_order_tracking_access(uuid, text)
 from public, anon, authenticated;
 grant execute on function public.recover_order_tracking_access(uuid, text)
 to authenticated;
-
 -- Retry-safe confirmation. A response lost after commit can be repeated by the
 -- same assigned rider and reconciles as success without exposing the order row.
 create or replace function public.confirm_order_delivery(
@@ -445,12 +437,10 @@ begin
   );
 end;
 $$;
-
 revoke all on function public.confirm_order_delivery(uuid, text, text)
 from public, anon, authenticated;
 grant execute on function public.confirm_order_delivery(uuid, text, text)
 to authenticated;
-
 -- Exact rider coordinates are operational transient data. Once an order
 -- reaches a terminal state, public tracking no longer uses them and the exact
 -- history is deleted; status timestamps and audit events remain available.
@@ -473,16 +463,13 @@ begin
   return null;
 end;
 $$;
-
 drop trigger if exists orders_purge_terminal_rider_locations
 on public.orders;
 create trigger orders_purge_terminal_rider_locations
 after update of status on public.orders
 for each row execute function public.purge_terminal_order_rider_locations();
-
 revoke execute on function public.purge_terminal_order_rider_locations()
 from public, anon, authenticated;
-
 -- Preserve the proven reservation implementation as an internal core and put
 -- handoff issuance around it. Both operations now commit or roll back together.
 do $migration$
@@ -493,10 +480,8 @@ begin
   end if;
 end;
 $migration$;
-
 revoke all on function public.create_order_with_items_core(jsonb)
 from public, anon, authenticated;
-
 create or replace function public.create_order_with_items(payload jsonb)
 returns jsonb
 language plpgsql
@@ -536,12 +521,10 @@ begin
   return v_result;
 end;
 $$;
-
 revoke all on function public.create_order_with_items(jsonb)
 from public, anon, authenticated;
 grant execute on function public.create_order_with_items(jsonb)
 to authenticated;
-
 comment on function public.recover_order_tracking_access(uuid, text) is
 'Authenticated customer rotation for a lost tracking bearer and unconfirmed handoff code.';
 comment on function public.list_active_business_riders(uuid) is

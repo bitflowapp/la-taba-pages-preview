@@ -118,15 +118,12 @@ begin
   return v_result;
 end;
 $$;
-
 grant execute on function public.create_order_with_items(jsonb) to anon, authenticated;
-
 -- ===== RLS más estricta para la creación =====
 -- La creación de pedidos/ítems ya NO se hace por INSERT directo anónimo:
 -- se quitan esas policies y queda únicamente la función validada de arriba.
 drop policy if exists "phase1 public create orders" on public.orders;
 drop policy if exists "phase1 public create order items" on public.order_items;
-
 -- Las siguientes policies SIGUEN abiertas a anon a propósito (piloto sin auth):
 -- lectura de pedidos/ítems/negocio/riders/ubicaciones y actualización de estado.
 -- NO usar con datos sensibles. Endurecer en Fase 2 con auth + scoping por business_id.

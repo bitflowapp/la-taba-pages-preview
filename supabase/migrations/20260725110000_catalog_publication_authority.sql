@@ -25,7 +25,6 @@ as $$
     'hex'
   )
 $$;
-
 create or replace function public.catalog_asset_path(
   p_safe_sku text,
   p_identity_sha256 text,
@@ -48,7 +47,6 @@ as $$
     else null
   end
 $$;
-
 create or replace function public.catalog_asset_binding_sha256(
   p_identity_sha256 text,
   p_kind text,
@@ -78,7 +76,6 @@ as $$
     'hex'
   )
 $$;
-
 create table if not exists public.catalog_assets (
   id uuid primary key default gen_random_uuid(),
   business_id uuid not null references public.businesses(id) on delete cascade,
@@ -175,7 +172,6 @@ create table if not exists public.catalog_assets (
     and btrim(rights_reference) <> ''
   )
 );
-
 alter table public.products
   add column if not exists catalog_asset_id uuid references public.catalog_assets(id) on delete restrict;
 alter table public.products add column if not exists image_sha256 text;
@@ -185,7 +181,6 @@ alter table public.products add column if not exists source_image_sha256 text;
 alter table public.products add column if not exists variant text;
 alter table public.products add column if not exists capacity_value numeric;
 alter table public.products add column if not exists capacity_unit text;
-
 alter table public.products
   drop constraint if exists products_catalog_structured_capacity;
 alter table public.products
@@ -203,7 +198,6 @@ alter table public.products
       and capacity_unit in ('ml', 'l', 'g', 'kg', 'unidad')
     )
   );
-
 -- Existing rows have no authoritative registry link. Preserve their source
 -- data, but fail close until an owner/admin registers and republishes them.
 update public.products
@@ -237,7 +231,6 @@ update public.products
      or capacity_value <= 0
      or capacity_unit not in ('ml', 'l', 'g', 'kg', 'unidad')
    );
-
 alter table public.products
   drop constraint if exists products_verified_numeric_ranges;
 alter table public.products
@@ -259,7 +252,6 @@ alter table public.products
       and capacity_value > 0
     )
   );
-
 alter table public.products
   drop constraint if exists products_verified_publication_authority;
 alter table public.products
@@ -291,7 +283,6 @@ alter table public.products
       and source_image_sha256 ~ '^[a-f0-9]{64}$'
     )
   );
-
 create or replace function public.fail_close_verified_product_master_change()
 returns trigger
 language plpgsql
@@ -333,12 +324,10 @@ begin
   return new;
 end;
 $$;
-
 drop trigger if exists products_fail_close_master_change on public.products;
 create trigger products_fail_close_master_change
 before update on public.products
 for each row execute function public.fail_close_verified_product_master_change();
-
 create or replace function public.register_catalog_assets(
   p_business_id uuid,
   p_assets jsonb
@@ -569,7 +558,6 @@ begin
   end loop;
 end;
 $$;
-
 create or replace function public.stage_catalog_products(
   p_business_id uuid,
   p_products jsonb
@@ -825,7 +813,6 @@ begin
   end loop;
 end;
 $$;
-
 -- One RPC call is one PostgreSQL transaction: if asset registration, product
 -- staging, identity reconciliation or cardinality validation fails, every
 -- mutation performed by this function is rolled back.
@@ -939,7 +926,6 @@ begin
   end if;
 end;
 $$;
-
 create or replace function public.publish_catalog_product(
   p_business_id uuid,
   p_external_id text,
@@ -1026,7 +1012,6 @@ begin
   return next;
 end;
 $$;
-
 create or replace function public.unpublish_catalog_product(
   p_business_id uuid,
   p_external_id text
@@ -1055,23 +1040,19 @@ begin
   return v_updated = 1;
 end;
 $$;
-
 alter table public.catalog_assets enable row level security;
 drop policy if exists "catalog team reads approved assets" on public.catalog_assets;
 create policy "catalog team reads approved assets"
 on public.catalog_assets for select
 to authenticated
 using (public.has_business_role(business_id, array['owner', 'admin', 'staff']));
-
 revoke all privileges on table public.catalog_assets from public, anon, authenticated;
 grant select on table public.catalog_assets to authenticated;
-
 -- Direct clients can only operate stock/visibility metadata. Creation, master
 -- changes, verification and verifier stamps all go through the RPCs above.
 revoke insert, update on table public.products from authenticated;
 grant update (stock, available, is_active, sort_order)
 on table public.products to authenticated;
-
 revoke all on function public.fail_close_verified_product_master_change()
 from public, anon, authenticated;
 revoke all on function public.register_catalog_assets(uuid, jsonb)
@@ -1090,7 +1071,6 @@ revoke all on function public.unpublish_catalog_product(uuid, text)
 from public, anon, authenticated;
 grant execute on function public.unpublish_catalog_product(uuid, text)
 to authenticated;
-
 comment on table public.catalog_assets is
   'Server-stamped registry binding product identity, approved source rights, deterministic master/thumbnail names and complete SHA-256 bindings.';
 comment on function public.import_catalog_batch(uuid, jsonb, jsonb) is

@@ -4,17 +4,13 @@
 
 alter table public.orders
   add column if not exists delivery_code_required boolean;
-
 update public.orders
    set delivery_code_required = false
  where delivery_code_required is null;
-
 alter table public.orders
   alter column delivery_code_required set default true;
-
 alter table public.orders
   alter column delivery_code_required set not null;
-
 create table if not exists public.order_delivery_handoffs (
   order_id uuid primary key references public.orders(id) on delete cascade,
   code_hash text not null,
@@ -28,11 +24,9 @@ create table if not exists public.order_delivery_handoffs (
   updated_at timestamptz not null default clock_timestamp(),
   check (expires_at > created_at)
 );
-
 alter table public.order_delivery_handoffs enable row level security;
 revoke all privileges on table public.order_delivery_handoffs
 from public, anon, authenticated;
-
 create or replace function public.set_order_delivery_handoff_updated_at()
 returns trigger
 language plpgsql
@@ -43,13 +37,11 @@ begin
   return new;
 end;
 $$;
-
 drop trigger if exists order_delivery_handoffs_set_updated_at
 on public.order_delivery_handoffs;
 create trigger order_delivery_handoffs_set_updated_at
 before update on public.order_delivery_handoffs
 for each row execute function public.set_order_delivery_handoff_updated_at();
-
 create or replace function public.issue_order_delivery_code(
   p_order_id uuid,
   p_tracking_token text
@@ -151,7 +143,6 @@ begin
   );
 end;
 $$;
-
 create or replace function public.prevent_unverified_delivery()
 returns trigger
 language plpgsql
@@ -174,12 +165,10 @@ begin
   return new;
 end;
 $$;
-
 drop trigger if exists orders_require_verified_delivery_code on public.orders;
 create trigger orders_require_verified_delivery_code
 before update of status on public.orders
 for each row execute function public.prevent_unverified_delivery();
-
 create or replace function public.confirm_order_delivery(
   p_order_id uuid,
   p_expected_status text,
@@ -278,7 +267,6 @@ begin
   );
 end;
 $$;
-
 -- Effective public DTO with optional trusted ETA, fresh assigned-rider GPS and
 -- a token-decrypted handoff code only when the rider has arrived.
 create or replace function public.get_public_order_tracking(p_public_id text)
@@ -392,22 +380,18 @@ begin
   ));
 end;
 $$;
-
 revoke all on function public.issue_order_delivery_code(uuid, text)
 from public, anon, authenticated;
 grant execute on function public.issue_order_delivery_code(uuid, text)
 to authenticated;
-
 revoke all on function public.confirm_order_delivery(uuid, text, text)
 from public, anon, authenticated;
 grant execute on function public.confirm_order_delivery(uuid, text, text)
 to authenticated;
-
 revoke all on function public.get_public_order_tracking(text)
 from public, anon, authenticated;
 grant execute on function public.get_public_order_tracking(text)
 to anon, authenticated;
-
 comment on table public.order_delivery_handoffs is
 'Server-only bcrypt and token-encrypted delivery handoff secrets.';
 comment on function public.confirm_order_delivery(uuid, text, text) is

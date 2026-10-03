@@ -28,7 +28,6 @@ as $$
        )
   )
 $$;
-
 -- Token-authenticated tracking is a deliberately small JSON DTO. Coordinates
 -- are rounded and included only during active delivery. No customer contact,
 -- exact address, notes, internal user IDs, memberships, token data or history
@@ -96,7 +95,6 @@ begin
   ));
 end;
 $$;
-
 create or replace function public.list_available_rider_orders(p_business_id uuid)
 returns table (
   public_code text,
@@ -134,7 +132,6 @@ as $$
   order by o.ready_at nulls last, o.created_at
   limit 50
 $$;
-
 create or replace function public.revoke_public_tracking(p_order_id uuid)
 returns boolean
 language plpgsql
@@ -165,14 +162,12 @@ begin
   return found;
 end;
 $$;
-
 revoke all on function public.get_public_order_tracking(text) from public;
 grant execute on function public.get_public_order_tracking(text) to anon, authenticated;
 revoke all on function public.list_available_rider_orders(uuid) from public, anon;
 grant execute on function public.list_available_rider_orders(uuid) to authenticated;
 revoke all on function public.revoke_public_tracking(uuid) from public, anon;
 grant execute on function public.revoke_public_tracking(uuid) to authenticated;
-
 comment on function public.get_public_order_tracking(text) is
   'Minimized public tracking DTO authorized by a hashed, revocable, expiring bearer token.';
 comment on function public.list_available_rider_orders(uuid) is

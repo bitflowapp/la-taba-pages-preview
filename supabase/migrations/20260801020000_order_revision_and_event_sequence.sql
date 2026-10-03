@@ -19,10 +19,8 @@
 
 alter table public.orders
   add column if not exists revision bigint not null default 1;
-
 comment on column public.orders.revision is
   'Version monotona del pedido. La incrementa el trigger orders_zz_bump_revision en cada UPDATE efectivo; el cliente nunca la escribe.';
-
 -- El cliente puede enviar cualquier valor en la columna: se normaliza al valor
 -- almacenado ANTES de comparar, de modo que una revisión falsificada no pueda
 -- saltear ni congelar la versión real.
@@ -39,10 +37,8 @@ begin
   return new;
 end;
 $bump$;
-
 comment on function public.bump_order_revision() is
   'Incrementa orders.revision en cada UPDATE que cambie la fila; ignora cualquier revision enviada por el cliente.';
-
 -- El nombre empieza con zz a propósito: PostgreSQL dispara los triggers de la
 -- misma fase en orden alfabético, y este debe correr DESPUÉS de
 -- orders_set_updated_at y orders_set_status_timestamps para observar la fila
@@ -52,17 +48,14 @@ create trigger orders_zz_bump_revision
 before update on public.orders
 for each row
 execute function public.bump_order_revision();
-
 -- ===== 2. order_events.sequence: orden total de eventos =====
 
 -- nextval() NO es constante dentro de una transacción, a diferencia de now().
 -- Dos eventos escritos por la misma RPC reciben valores distintos y
 -- crecientes: exactamente lo que created_at no puede dar.
 create sequence if not exists public.order_events_sequence_seq as bigint;
-
 alter table public.order_events
   add column if not exists sequence bigint;
-
 -- Backfill determinista de los eventos ya existentes, respetando el orden
 -- temporal observable y desempatando por id para que sea reproducible.
 update public.order_events e
@@ -73,31 +66,23 @@ update public.order_events e
   ) as ordered
  where e.id = ordered.id
    and e.sequence is null;
-
 select setval(
   'public.order_events_sequence_seq',
   greatest(coalesce((select max(sequence) from public.order_events), 0), 1),
   true
 );
-
 alter table public.order_events
   alter column sequence set default nextval('public.order_events_sequence_seq');
-
 alter table public.order_events
   alter column sequence set not null;
-
 alter sequence public.order_events_sequence_seq
   owned by public.order_events.sequence;
-
 comment on column public.order_events.sequence is
   'Orden total de eventos. Desempata eventos escritos en la misma transaccion, donde created_at es identico.';
-
 create unique index if not exists order_events_sequence_key
   on public.order_events (sequence);
-
 create index if not exists order_events_order_sequence_idx
   on public.order_events (order_id, sequence desc);
-
 -- ===== 3. Realtime debe transportar la revisión =====
 
 -- Sin replica identity full un UPDATE publica sólo la PK y las columnas
@@ -105,7 +90,6 @@ create index if not exists order_events_order_sequence_idx
 -- atrasados.
 alter table public.orders replica identity full;
 alter table public.order_events replica identity full;
-
 -- ===== 4. Vocabulario de estados del Gate 1 =====
 
 -- change_order_status ya traduce received<->submitted y arriving<->arrived,
@@ -126,10 +110,8 @@ as $norm$
     else lower(btrim(coalesce(p_status, '')))
   end;
 $norm$;
-
 comment on function public.normalize_order_status_vocabulary(text) is
   'Traduce el vocabulario publico del contrato (submitted/ready_for_pickup/arriving) al vocabulario almacenado.';
-
 -- ===== 5. transition_order: CAS por revisión =====
 
 -- change_order_status hace CAS por estado esperado. Eso protege el doble
@@ -215,15 +197,12 @@ begin
   return v_result || jsonb_build_object('idempotent_no_op', false);
 end;
 $transition$;
-
 revoke all on function public.transition_order(uuid, bigint, text)
 from public, anon, authenticated;
 grant execute on function public.transition_order(uuid, bigint, text)
 to authenticated;
-
 comment on function public.transition_order(uuid, bigint, text) is
   'Transicion de pedido con CAS por revision, vocabulario Gate 1 y doble toque idempotente. Delega reglas de rol y transicion en change_order_status.';
-
 revoke all on function public.normalize_order_status_vocabulary(text)
 from public, anon;
 grant execute on function public.normalize_order_status_vocabulary(text)

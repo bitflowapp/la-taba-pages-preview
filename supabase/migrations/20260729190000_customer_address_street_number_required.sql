@@ -10,7 +10,6 @@
 
 alter table public.customer_addresses
   drop constraint if exists customer_addresses_active_street_number_required;
-
 alter table public.customer_addresses
   add constraint customer_addresses_active_street_number_required
   check (

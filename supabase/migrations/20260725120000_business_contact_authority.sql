@@ -8,22 +8,17 @@
 
 alter table public.businesses
   add column if not exists whatsapp_verified boolean not null default false;
-
 alter table public.businesses
   add column if not exists whatsapp_verified_at timestamptz;
-
 alter table public.businesses
   add column if not exists whatsapp_verified_by uuid
   references auth.users(id) on delete set null;
-
 update public.businesses
    set whatsapp_verified = false,
        whatsapp_verified_at = null,
        whatsapp_verified_by = null;
-
 alter table public.businesses
   drop constraint if exists businesses_whatsapp_verification_complete;
-
 alter table public.businesses
   add constraint businesses_whatsapp_verification_complete
   check (
@@ -41,7 +36,6 @@ alter table public.businesses
       ) between 8 and 15
     )
   );
-
 create or replace function public.fail_close_business_whatsapp_change()
 returns trigger
 language plpgsql
@@ -64,14 +58,11 @@ begin
   return new;
 end;
 $$;
-
 drop trigger if exists businesses_fail_close_whatsapp_change
 on public.businesses;
-
 create trigger businesses_fail_close_whatsapp_change
 before insert or update of whatsapp_phone, whatsapp_verified_by on public.businesses
 for each row execute function public.fail_close_business_whatsapp_change();
-
 create or replace function public.set_business_whatsapp_contact(
   p_business_id uuid,
   p_whatsapp_phone text,
@@ -131,7 +122,6 @@ begin
    where b.id = p_business_id;
 end;
 $$;
-
 create or replace function public.get_public_business_contact(
   p_business_id uuid
 )
@@ -158,12 +148,10 @@ as $$
     ) between 8 and 15
   limit 1;
 $$;
-
 -- Remove the historic table-wide grants. Browser clients may update normal
 -- operating fields, but verification flags and the WhatsApp number itself are
 -- readable/writable only through authoritative server paths.
 revoke select, update on table public.businesses from anon, authenticated;
-
 grant select (
   id,
   name,
@@ -178,7 +166,6 @@ grant select (
   is_active,
   status
 ) on public.businesses to anon, authenticated;
-
 grant update (
   name,
   status,
@@ -202,7 +189,6 @@ grant update (
   abandoned_order_minutes,
   captcha_required
 ) on public.businesses to authenticated;
-
 revoke all on function public.fail_close_business_whatsapp_change()
 from public, anon, authenticated;
 revoke all on function public.set_business_whatsapp_contact(uuid, text, boolean)
@@ -213,9 +199,7 @@ grant execute on function public.set_business_whatsapp_contact(uuid, text, boole
 to authenticated;
 grant execute on function public.get_public_business_contact(uuid)
 to anon, authenticated;
-
 comment on function public.set_business_whatsapp_contact(uuid, text, boolean) is
   'Owner/admin-only authority for a public WhatsApp channel. Validates digits, rotates the number fail-closed and records a server timestamp plus actor.';
-
 comment on function public.get_public_business_contact(uuid) is
   'Returns the normalized contact only for an active business with a complete server-authoritative verification stamp; otherwise returns no rows.';

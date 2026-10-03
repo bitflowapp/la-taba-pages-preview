@@ -5,7 +5,6 @@
 -- owner verifies the catalog and explicitly enables ordering.
 
 create extension if not exists pgcrypto;
-
 -- ===== Auth roles =====
 --
 -- The operational migration predates the admin role. Owners remain the only
@@ -14,11 +13,9 @@ create extension if not exists pgcrypto;
 
 alter table public.business_members
   drop constraint if exists business_members_role_check;
-
 alter table public.business_members
   add constraint business_members_role_check
   check (role in ('owner', 'admin', 'staff', 'rider'));
-
 -- ===== Master beverage catalog (no invented catalog data) =====
 
 alter table public.products add column if not exists brand text;
@@ -34,7 +31,6 @@ alter table public.products add column if not exists tags text[] not null defaul
 alter table public.products add column if not exists is_verified boolean not null default false;
 alter table public.products add column if not exists verified_at timestamptz;
 alter table public.products add column if not exists verified_by uuid references auth.users(id) on delete set null;
-
 -- Existing records may contain demo or stale data. Preserve the values but do
 -- not expose or sell them until a human verifies every required attribute.
 update public.products
@@ -42,11 +38,9 @@ update public.products
        is_verified = false,
        verified_at = null,
        verified_by = null;
-
 alter table public.products drop constraint if exists products_stock_nonnegative;
 alter table public.products add constraint products_stock_nonnegative
 check (stock is null or stock >= 0);
-
 alter table public.products drop constraint if exists products_verified_master_data;
 alter table public.products add constraint products_verified_master_data check (
   not is_verified
@@ -66,7 +60,6 @@ alter table public.products add constraint products_verified_master_data check (
     and verified_by is not null
   )
 );
-
 alter table public.products drop constraint if exists products_available_requires_verification;
 alter table public.products add constraint products_available_requires_verification check (
   not available
@@ -77,7 +70,6 @@ alter table public.products add constraint products_available_requires_verificat
     and stock > 0
   )
 );
-
 -- ===== Business ordering configuration (fail-closed) =====
 
 alter table public.businesses add column if not exists ordering_enabled boolean not null default false;
@@ -94,21 +86,17 @@ alter table public.businesses add column if not exists alcohol_minimum_age integ
 alter table public.businesses add column if not exists alcohol_sales_start time;
 alter table public.businesses add column if not exists alcohol_sales_end time;
 alter table public.businesses add column if not exists alcohol_timezone text;
-
 update public.businesses
    set ordering_enabled = false,
        ordering_verified = false,
        ordering_verified_at = null,
        ordering_verified_by = null;
-
 alter table public.businesses drop constraint if exists businesses_delivery_fee_nonnegative;
 alter table public.businesses add constraint businesses_delivery_fee_nonnegative
 check (delivery_fee is null or delivery_fee >= 0);
-
 alter table public.businesses drop constraint if exists businesses_minimum_delivery_nonnegative;
 alter table public.businesses add constraint businesses_minimum_delivery_nonnegative
 check (minimum_delivery_subtotal is null or minimum_delivery_subtotal >= 0);
-
 alter table public.businesses drop constraint if exists businesses_ordering_verified_configuration;
 alter table public.businesses add constraint businesses_ordering_verified_configuration check (
   not ordering_verified
@@ -127,7 +115,6 @@ alter table public.businesses add constraint businesses_ordering_verified_config
     )
   )
 );
-
 alter table public.businesses drop constraint if exists businesses_ordering_enabled_requires_verification;
 alter table public.businesses add constraint businesses_ordering_enabled_requires_verification check (
   not ordering_enabled
@@ -137,7 +124,6 @@ alter table public.businesses add constraint businesses_ordering_enabled_require
     and status = 'open'
   )
 );
-
 -- ===== Order ownership and idempotency =====
 
 alter table public.orders add column if not exists customer_user_id uuid references auth.users(id) on delete set null;
@@ -147,7 +133,6 @@ alter table public.orders add column if not exists currency_code text;
 alter table public.orders add column if not exists inventory_released_at timestamptz;
 alter table public.orders add column if not exists age_confirmed_at timestamptz;
 alter table public.orders add column if not exists age_confirmation_policy integer;
-
 -- Orders that existed before this migration were not guaranteed to reserve
 -- master-product stock through the authoritative RPC. Mark them as ineligible
 -- for release so cancelling a legacy order cannot invent inventory. New orders
@@ -155,58 +140,45 @@ alter table public.orders add column if not exists age_confirmation_policy integ
 update public.orders
    set inventory_released_at = now()
  where inventory_released_at is null;
-
 -- Legacy rows receive a deterministic technical key; no commercial value is
 -- invented and future production writes must provide their own key.
 update public.orders
    set client_request_id = 'legacy-' || id::text
  where client_request_id is null or btrim(client_request_id) = '';
-
 alter table public.orders alter column client_request_id set not null;
-
 alter table public.orders drop constraint if exists orders_client_request_id_format;
 alter table public.orders add constraint orders_client_request_id_format check (
   client_request_id ~ '^[A-Za-z0-9_-]{8,128}$'
 );
-
 create unique index if not exists orders_business_client_request_key
 on public.orders(business_id, client_request_id);
-
 create index if not exists orders_customer_created_idx
 on public.orders(customer_user_id, created_at desc)
 where customer_user_id is not null;
-
 -- ===== Hashed public tracking tokens =====
 
 alter table public.order_public_tokens add column if not exists token_hash bytea;
 alter table public.order_public_tokens add column if not exists revoked_at timestamptz;
-
 update public.order_public_tokens
    set token_hash = digest(token, 'sha256')
  where token_hash is null
    and token is not null;
-
 update public.order_public_tokens
    set expires_at = created_at + interval '30 days'
  where expires_at is null;
-
 alter table public.order_public_tokens alter column token drop not null;
 alter table public.order_public_tokens alter column token_hash set not null;
 alter table public.order_public_tokens alter column expires_at set not null;
-
 alter table public.order_public_tokens drop constraint if exists order_public_tokens_hash_size;
 alter table public.order_public_tokens add constraint order_public_tokens_hash_size
 check (octet_length(token_hash) = 32);
-
 create unique index if not exists order_public_tokens_token_hash_key
 on public.order_public_tokens(token_hash);
-
 -- Retain the legacy column only for migration compatibility; never retain raw
 -- bearer secrets after their digest has been created.
 update public.order_public_tokens
    set token = null
  where token is not null;
-
 -- ===== Request/auth helpers =====
 
 create or replace function public.request_order_token_hash()
@@ -220,7 +192,6 @@ as $$
     else digest(public.request_order_token(), 'sha256')
   end
 $$;
-
 create or replace function public.can_access_order(target_order_id uuid)
 returns boolean
 language sql
@@ -258,7 +229,6 @@ as $$
        )
   )
 $$;
-
 -- Attribute status audit events to the authenticated actor. Service-side
 -- changes without a user remain explicitly attributed to the system.
 create or replace function public.log_order_status_event()
@@ -320,7 +290,6 @@ begin
   return new;
 end;
 $$;
-
 -- ===== Transactional, authoritative, idempotent order creation =====
 --
 -- Compatibility: the public function name and jsonb signature are preserved.
@@ -885,10 +854,8 @@ begin
   return v_result;
 end;
 $$;
-
 comment on function public.create_order_with_items(jsonb) is
   'Production RPC: idempotent order creation from product UUID/quantity; prices, totals and stock are authoritative in PostgreSQL.';
-
 -- ===== Concurrency-safe status transition RPC =====
 
 create or replace function public.change_order_status(
@@ -1119,15 +1086,12 @@ begin
   return v_result;
 end;
 $$;
-
 comment on function public.change_order_status(uuid, text, text) is
   'Authenticated, role-aware order transition with expected-status concurrency control.';
-
 -- Product availability must reach open customer catalogs without polling. Full
 -- replica identity lets filtered subscribers also observe removals safely.
 alter table public.products replica identity full;
 alter table public.businesses replica identity full;
-
 -- Keep one table per exception block. PostgreSQL rolls back every statement in
 -- a PL/pgSQL exception subtransaction when any statement fails, so grouping
 -- publication additions could silently undo a preceding successful addition.
@@ -1140,7 +1104,6 @@ exception
     raise notice 'publication supabase_realtime no existe en este entorno';
 end;
 $$;
-
 do $$
 begin
   alter publication supabase_realtime add table public.order_events;
@@ -1150,7 +1113,6 @@ exception
     raise notice 'publication supabase_realtime no existe en este entorno';
 end;
 $$;
-
 do $$
 begin
   alter publication supabase_realtime add table public.rider_locations;
@@ -1160,7 +1122,6 @@ exception
     raise notice 'publication supabase_realtime no existe en este entorno';
 end;
 $$;
-
 do $$
 begin
   alter publication supabase_realtime add table public.products;
@@ -1170,7 +1131,6 @@ exception
     raise notice 'publication supabase_realtime no existe en este entorno';
 end;
 $$;
-
 do $$
 begin
   alter publication supabase_realtime add table public.businesses;
@@ -1180,7 +1140,6 @@ exception
     raise notice 'publication supabase_realtime no existe en este entorno';
 end;
 $$;
-
 -- ===== RLS: remove pilot bypasses and expose only production-safe paths =====
 
 alter table public.businesses enable row level security;
@@ -1191,7 +1150,6 @@ alter table public.order_items enable row level security;
 alter table public.order_events enable row level security;
 alter table public.rider_locations enable row level security;
 alter table public.order_public_tokens enable row level security;
-
 drop policy if exists "phase1 public read businesses" on public.businesses;
 drop policy if exists "operational active businesses are public" on public.businesses;
 drop policy if exists "production active businesses are public" on public.businesses;
@@ -1199,7 +1157,6 @@ create policy "production active businesses are public"
 on public.businesses for select
 to anon, authenticated
 using (is_active = true);
-
 drop policy if exists "operational members read own rows" on public.business_members;
 drop policy if exists "operational owners manage members" on public.business_members;
 drop policy if exists "production members read permitted rows" on public.business_members;
@@ -1207,7 +1164,6 @@ drop policy if exists "production owners manage members" on public.business_memb
 drop policy if exists "production admins add staff and riders" on public.business_members;
 drop policy if exists "production admins update staff and riders" on public.business_members;
 drop policy if exists "production admins remove staff and riders" on public.business_members;
-
 create policy "production members read permitted rows"
 on public.business_members for select
 to authenticated
@@ -1215,13 +1171,11 @@ using (
   user_id = auth.uid()
   or public.has_business_role(business_id, array['owner', 'admin'])
 );
-
 create policy "production owners manage members"
 on public.business_members for all
 to authenticated
 using (public.has_business_role(business_id, array['owner']))
 with check (public.has_business_role(business_id, array['owner']));
-
 create policy "production admins add staff and riders"
 on public.business_members for insert
 to authenticated
@@ -1229,7 +1183,6 @@ with check (
   public.has_business_role(business_id, array['admin'])
   and role in ('staff', 'rider')
 );
-
 create policy "production admins update staff and riders"
 on public.business_members for update
 to authenticated
@@ -1241,7 +1194,6 @@ with check (
   public.has_business_role(business_id, array['admin'])
   and role in ('staff', 'rider')
 );
-
 create policy "production admins remove staff and riders"
 on public.business_members for delete
 to authenticated
@@ -1249,14 +1201,12 @@ using (
   public.has_business_role(business_id, array['admin'])
   and role in ('staff', 'rider')
 );
-
 drop policy if exists "production owners update business ordering" on public.businesses;
 create policy "production owners update business ordering"
 on public.businesses for update
 to authenticated
 using (public.has_business_role(id, array['owner', 'admin']))
 with check (public.has_business_role(id, array['owner', 'admin']));
-
 drop policy if exists "operational active products are public" on public.products;
 drop policy if exists "operational staff manage products" on public.products;
 drop policy if exists "production verified products are public" on public.products;
@@ -1279,28 +1229,23 @@ using (
        and b.ordering_enabled
   )
 );
-
 drop policy if exists "production team manages products" on public.products;
 drop policy if exists "production team reads products" on public.products;
 drop policy if exists "production team adds products" on public.products;
 drop policy if exists "production team updates products" on public.products;
-
 create policy "production team reads products"
 on public.products for select
 to authenticated
 using (public.has_business_role(business_id, array['owner', 'admin', 'staff']));
-
 create policy "production team adds products"
 on public.products for insert
 to authenticated
 with check (public.has_business_role(business_id, array['owner', 'admin', 'staff']));
-
 create policy "production team updates products"
 on public.products for update
 to authenticated
 using (public.has_business_role(business_id, array['owner', 'admin', 'staff']))
 with check (public.has_business_role(business_id, array['owner', 'admin', 'staff']));
-
 drop policy if exists "phase1 public read orders" on public.orders;
 drop policy if exists "phase1 public create orders" on public.orders;
 drop policy if exists "phase1 public update orders" on public.orders;
@@ -1311,7 +1256,6 @@ create policy "production orders readable by owner"
 on public.orders for select
 to anon, authenticated
 using (public.can_access_order(id));
-
 drop policy if exists "phase1 public read order items" on public.order_items;
 drop policy if exists "phase1 public create order items" on public.order_items;
 drop policy if exists "operational order items readable with order" on public.order_items;
@@ -1320,7 +1264,6 @@ create policy "production order items readable with order"
 on public.order_items for select
 to anon, authenticated
 using (public.can_access_order(order_id));
-
 drop policy if exists "phase1 public read order events" on public.order_events;
 drop policy if exists "phase1 public create order events" on public.order_events;
 drop policy if exists "operational order events readable with order" on public.order_events;
@@ -1330,7 +1273,6 @@ create policy "production order events readable with order"
 on public.order_events for select
 to anon, authenticated
 using (public.can_access_order(order_id));
-
 drop policy if exists "phase1 public read rider locations" on public.rider_locations;
 drop policy if exists "phase1 public create rider locations" on public.rider_locations;
 drop policy if exists "operational rider locations readable with order" on public.rider_locations;
@@ -1340,9 +1282,7 @@ create policy "production rider locations readable with order"
 on public.rider_locations for select
 to anon, authenticated
 using (source = 'gps' and public.can_access_order(order_id));
-
 drop policy if exists "production assigned rider writes gps" on public.rider_locations;
-
 -- `created_at` is part of the security boundary: a browser-controlled future
 -- timestamp could otherwise keep a forged location looking fresh indefinitely.
 create or replace function public.stamp_rider_location_server_time()
@@ -1355,12 +1295,10 @@ begin
   return new;
 end;
 $$;
-
 drop trigger if exists rider_locations_server_time on public.rider_locations;
 create trigger rider_locations_server_time
 before insert on public.rider_locations
 for each row execute function public.stamp_rider_location_server_time();
-
 create policy "production assigned rider writes gps"
 on public.rider_locations for insert
 to authenticated
@@ -1378,16 +1316,13 @@ with check (
        and o.status in ('assigned', 'picked_up', 'on_the_way', 'arrived')
   )
 );
-
 -- Token rows are implementation details. Neither the raw token nor its digest
 -- is directly selectable through PostgREST; access is evaluated by the
 -- SECURITY DEFINER can_access_order helper.
 drop policy if exists "operational token reads itself" on public.order_public_tokens;
 drop policy if exists "operational team reads order tokens" on public.order_public_tokens;
-
 drop policy if exists "phase1 public read riders" on public.riders;
 drop policy if exists "phase1 public update riders" on public.riders;
-
 -- ===== Explicit table privileges =====
 
 revoke all privileges on table public.businesses from public, anon, authenticated;
@@ -1399,7 +1334,6 @@ revoke all privileges on table public.order_events from public, anon, authentica
 revoke all privileges on table public.riders from public, anon, authenticated;
 revoke all privileges on table public.rider_locations from public, anon, authenticated;
 revoke all privileges on table public.order_public_tokens from public, anon, authenticated;
-
 grant select on table public.businesses to anon, authenticated;
 grant update on table public.businesses to authenticated;
 grant select, insert, update, delete on table public.business_members to authenticated;
@@ -1413,40 +1347,29 @@ grant select on table public.order_events to anon, authenticated;
 grant select on table public.riders to authenticated;
 grant select on table public.rider_locations to anon, authenticated;
 grant insert on table public.rider_locations to authenticated;
-
 revoke all privileges on sequence public.order_public_code_seq from public, anon, authenticated;
-
 -- ===== Explicit function privileges =====
 
 revoke execute on function public.create_order_with_items(jsonb) from public, anon, authenticated;
 grant execute on function public.create_order_with_items(jsonb) to authenticated;
-
 revoke execute on function public.change_order_status(uuid, text, text) from public, anon, authenticated;
 grant execute on function public.change_order_status(uuid, text, text) to authenticated;
-
 revoke execute on function public.request_order_token() from public, anon, authenticated;
 revoke execute on function public.request_order_token_hash() from public, anon, authenticated;
-
 revoke execute on function public.stamp_rider_location_server_time() from public, anon, authenticated;
-
 revoke execute on function public.is_business_member(uuid) from public, anon, authenticated;
 grant execute on function public.is_business_member(uuid) to authenticated;
-
 revoke execute on function public.has_business_role(uuid, text[]) from public, anon, authenticated;
 grant execute on function public.has_business_role(uuid, text[]) to authenticated;
-
 revoke execute on function public.is_assigned_rider(uuid) from public, anon, authenticated;
 grant execute on function public.is_assigned_rider(uuid) to authenticated;
-
 revoke execute on function public.can_access_order(uuid) from public, anon, authenticated;
 grant execute on function public.can_access_order(uuid) to anon, authenticated;
-
 revoke execute on function public.next_order_public_code() from public, anon, authenticated;
 revoke execute on function public.set_updated_at() from public, anon, authenticated;
 revoke execute on function public.set_order_operational_defaults() from public, anon, authenticated;
 revoke execute on function public.set_order_status_timestamps() from public, anon, authenticated;
 revoke execute on function public.log_order_status_event() from public, anon, authenticated;
-
 comment on table public.products is
   'Master beverage catalog. Rows remain unavailable until commercial data and product identity are verified.';
 comment on table public.business_members is

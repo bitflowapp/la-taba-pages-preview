@@ -40,6 +40,5 @@ alter table public.products
       and verified_by is not null
     )
   );
-
 comment on constraint products_verified_master_data on public.products is
   'Commercial rows require human verification stamps; staging QA rows may use the operational flag without commercial rights approval.';

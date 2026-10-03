@@ -3,10 +3,8 @@
 
 alter table public.order_public_tokens
   add column if not exists terminal_visible_until timestamptz;
-
 comment on column public.order_public_tokens.terminal_visible_until is
 'Read-only public visibility deadline after a terminal order transition. Explicit revoked_at and expires_at always take precedence.';
-
 -- Preserve an already-established terminal window on replay. This backfill
 -- deliberately excludes revoked tokens: a security revocation is irreversible.
 update public.order_public_tokens opt
@@ -26,7 +24,6 @@ update public.order_public_tokens opt
    and opt.revoked_at is null
    and opt.terminal_visible_until is null
    and o.status in ('delivered', 'canceled', 'cancelled', 'rejected');
-
 -- Exact GPS data remains operational and transient. Terminal transitions purge
 -- it immediately, while unrevoked tokens receive a bounded final-state window.
 create or replace function public.purge_terminal_order_rider_locations()
@@ -54,10 +51,8 @@ begin
   return null;
 end;
 $$;
-
 revoke execute on function public.purge_terminal_order_rider_locations()
 from public, anon, authenticated;
-
 -- Public tracking remains token-scoped and minimized. Active orders use the
 -- existing token expiry; terminal orders additionally require their bounded
 -- visibility window. Explicit revoked_at denies access immediately in both.
@@ -192,11 +187,9 @@ begin
   ));
 end;
 $$;
-
 revoke all on function public.get_public_order_tracking(text)
 from public, anon, authenticated;
 grant execute on function public.get_public_order_tracking(text)
 to anon, authenticated;
-
 comment on function public.get_public_order_tracking(text) is
 'Minimized token-scoped tracking DTO with immediate security revocation and a bounded read-only terminal visibility window.';

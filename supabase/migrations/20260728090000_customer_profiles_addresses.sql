@@ -14,7 +14,6 @@ create table if not exists public.customers (
   constraint customers_name_length check (char_length(btrim(name)) between 1 and 120),
   constraint customers_phone_length check (char_length(btrim(phone)) between 6 and 40)
 );
-
 create table if not exists public.customer_addresses (
   id uuid primary key default gen_random_uuid(),
   customer_id uuid not null references public.customers(id) on delete cascade,
@@ -49,32 +48,25 @@ create table if not exists public.customer_addresses (
   ),
   constraint customer_addresses_accuracy_nonnegative check (geolocation_accuracy is null or geolocation_accuracy >= 0)
 );
-
 create index if not exists customers_last_order_idx
 on public.customers(last_order_at desc nulls last);
-
 create index if not exists customer_addresses_customer_active_idx
 on public.customer_addresses(customer_id, updated_at desc)
 where deleted_at is null;
-
 create index if not exists customer_addresses_normalized_idx
 on public.customer_addresses(customer_id, normalized_address)
 where deleted_at is null;
-
 create unique index if not exists customer_addresses_one_default_idx
 on public.customer_addresses(customer_id)
 where is_default and deleted_at is null;
-
 drop trigger if exists customers_set_updated_at on public.customers;
 create trigger customers_set_updated_at
 before update on public.customers
 for each row execute function public.set_updated_at();
-
 drop trigger if exists customer_addresses_set_updated_at on public.customer_addresses;
 create trigger customer_addresses_set_updated_at
 before update on public.customer_addresses
 for each row execute function public.set_updated_at();
-
 alter table public.orders add column if not exists customer_address_id uuid references public.customer_addresses(id) on delete set null;
 alter table public.orders add column if not exists delivery_address_formatted text;
 alter table public.orders add column if not exists delivery_street text;
@@ -89,23 +81,19 @@ alter table public.orders add column if not exists delivery_latitude numeric(9, 
 alter table public.orders add column if not exists delivery_longitude numeric(9, 6);
 alter table public.orders add column if not exists delivery_geolocation_accuracy numeric(10, 2);
 alter table public.orders add column if not exists delivery_address_source text;
-
 alter table public.orders drop constraint if exists orders_delivery_snapshot_coordinates_pair;
 alter table public.orders add constraint orders_delivery_snapshot_coordinates_pair check (
   (delivery_latitude is null and delivery_longitude is null)
   or (delivery_latitude between -90 and 90 and delivery_longitude between -180 and 180)
 );
-
 alter table public.orders drop constraint if exists orders_delivery_snapshot_source_check;
 alter table public.orders add constraint orders_delivery_snapshot_source_check check (
   delivery_address_source is null
   or delivery_address_source in ('manual', 'gps', 'geocoder', 'previous_order')
 );
-
 create index if not exists orders_customer_address_idx
 on public.orders(customer_address_id)
 where customer_address_id is not null;
-
 create or replace function public.normalize_customer_address_text(p_value text)
 returns text
 language sql
@@ -129,7 +117,6 @@ as $$
     'g'
   )
 $$;
-
 create or replace function public.customer_address_json(p_address public.customer_addresses)
 returns jsonb
 language sql
@@ -158,7 +145,6 @@ as $$
     'updatedAt', p_address.updated_at
   )
 $$;
-
 create or replace function public.get_current_customer_profile()
 returns jsonb
 language plpgsql
@@ -194,7 +180,6 @@ begin
   );
 end;
 $$;
-
 create or replace function public.upsert_current_customer_profile(p_name text, p_phone text)
 returns jsonb
 language plpgsql
@@ -234,7 +219,6 @@ begin
   );
 end;
 $$;
-
 create or replace function public.upsert_current_customer_address(p_address jsonb)
 returns jsonb
 language plpgsql
@@ -445,7 +429,6 @@ begin
   return jsonb_build_object('ok', true, 'address', public.customer_address_json(v_result));
 end;
 $$;
-
 create or replace function public.set_current_customer_default_address(p_address_id uuid)
 returns jsonb
 language plpgsql
@@ -474,7 +457,6 @@ begin
   return public.customer_address_json(v_address);
 end;
 $$;
-
 create or replace function public.archive_current_customer_address(p_address_id uuid)
 returns jsonb
 language plpgsql
@@ -513,13 +495,11 @@ begin
   return jsonb_build_object('id', v_address.id, 'archived', true, 'replacementId', v_replacement_id);
 end;
 $$;
-
 -- Keep the established public RPC contract. The legacy transactional function
 -- remains the authority for catalogue, prices, stock and order state; this thin
 -- wrapper resolves an owned saved address and writes immutable snapshots only
 -- after the order was accepted.
 alter function public.create_order_with_items(jsonb) rename to create_order_with_items_legacy;
-
 create or replace function public.create_order_with_items(payload jsonb)
 returns jsonb
 language plpgsql
@@ -650,27 +630,22 @@ begin
   return v_result;
 end;
 $$;
-
 alter table public.customers enable row level security;
 alter table public.customer_addresses enable row level security;
-
 drop policy if exists "customers readable by owner" on public.customers;
 create policy "customers readable by owner"
 on public.customers for select
 to authenticated
 using (id = auth.uid());
-
 drop policy if exists "customer addresses readable by owner" on public.customer_addresses;
 create policy "customer addresses readable by owner"
 on public.customer_addresses for select
 to authenticated
 using (customer_id = auth.uid() and deleted_at is null);
-
 revoke all privileges on table public.customers from public, anon, authenticated;
 revoke all privileges on table public.customer_addresses from public, anon, authenticated;
 grant select on table public.customers to authenticated;
 grant select on table public.customer_addresses to authenticated;
-
 revoke all on function public.get_current_customer_profile() from public, anon;
 revoke all on function public.upsert_current_customer_profile(text, text) from public, anon;
 revoke all on function public.upsert_current_customer_address(jsonb) from public, anon;
@@ -684,7 +659,6 @@ grant execute on function public.upsert_current_customer_address(jsonb) to authe
 grant execute on function public.set_current_customer_default_address(uuid) to authenticated;
 grant execute on function public.archive_current_customer_address(uuid) to authenticated;
 grant execute on function public.create_order_with_items(jsonb) to authenticated;
-
 comment on table public.customers is
   'One persistent customer profile per Supabase Auth user, including anonymous customer sessions.';
 comment on table public.customer_addresses is

@@ -10,10 +10,8 @@
 
 alter table public.orders
   add column if not exists delivery_address_label text;
-
 alter table public.orders
   add column if not exists delivery_snapshot_created_at timestamptz;
-
 alter table public.orders
   drop constraint if exists orders_delivery_address_label_length;
 alter table public.orders
@@ -22,14 +20,12 @@ alter table public.orders
     delivery_address_label is null
     or char_length(btrim(delivery_address_label)) between 1 and 60
   ) not valid;
-
 -- A prior snapshot already has a trustworthy server-side creation timestamp:
 -- the order creation time. Rows without a delivery snapshot remain untouched.
 update public.orders
    set delivery_snapshot_created_at = created_at
  where delivery_snapshot_created_at is null
    and delivery_address_formatted is not null;
-
 alter table public.customers drop constraint if exists customers_name_length;
 alter table public.customers
   add constraint customers_name_length
@@ -37,7 +33,6 @@ alter table public.customers
     char_length(btrim(name)) between 2 and 80
     and name ~ '[[:alpha:]]'
   ) not valid;
-
 alter table public.customers drop constraint if exists customers_phone_length;
 alter table public.customers
   add constraint customers_phone_length
@@ -45,7 +40,6 @@ alter table public.customers
     phone ~ '^[0-9]{10,13}$'
     and phone !~ '^([0-9])\1+$'
   ) not valid;
-
 create or replace function public.upsert_current_customer_profile(p_name text, p_phone text)
 returns jsonb
 language plpgsql
@@ -92,7 +86,6 @@ begin
   );
 end;
 $$;
-
 -- Preserve the established order RPC name while retaining the preceding
 -- transactional implementation as a non-callable internal layer.
 do $migration$
@@ -102,7 +95,6 @@ begin
   end if;
 end;
 $migration$;
-
 create or replace function public.create_order_with_items(payload jsonb)
 returns jsonb
 language plpgsql
@@ -269,19 +261,16 @@ begin
   return v_result;
 end;
 $$;
-
 revoke all on function public.create_order_with_items_profile_v1(jsonb)
   from public, anon, authenticated;
 revoke all on function public.create_order_with_items(jsonb)
   from public, anon;
 grant execute on function public.create_order_with_items(jsonb)
   to authenticated;
-
 revoke all on function public.upsert_current_customer_profile(text, text)
   from public, anon;
 grant execute on function public.upsert_current_customer_profile(text, text)
   to authenticated;
-
 comment on column public.orders.delivery_address_label is
   'Immutable customer-facing label captured for this order, such as Casa or Trabajo.';
 comment on column public.orders.delivery_snapshot_created_at is

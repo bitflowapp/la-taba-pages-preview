@@ -61,7 +61,6 @@ update public.products
        or (is_alcoholic is false and minimum_age is null)
      )
    ), false);
-
 alter table public.products
   drop constraint if exists products_verified_canonical_beverage_category;
 alter table public.products
@@ -82,7 +81,6 @@ alter table public.products
       'Hielo y extras'
     )
   );
-
 alter table public.products
   drop constraint if exists products_verified_alcohol_coherence;
 alter table public.products
@@ -123,17 +121,14 @@ alter table public.products
       )
     )
   );
-
 -- A regular unique index still permits multiple NULL values and is inferable
 -- by PostgREST ON CONFLICT. This makes the catalog import one atomic upsert.
 drop index if exists public.products_business_external_id_key;
 create unique index products_business_external_id_key
 on public.products(business_id, external_id);
-
 drop index if exists public.products_business_sku_key;
 create unique index products_business_sku_key
 on public.products(business_id, sku);
-
 comment on constraint products_verified_canonical_beverage_category on public.products is
   'Verified products use one of the twelve canonical TABA beverage categories.';
 comment on constraint products_verified_alcohol_coherence on public.products is

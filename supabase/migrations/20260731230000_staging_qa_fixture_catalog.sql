@@ -8,31 +8,26 @@
 
 alter table public.catalog_assets
   add column if not exists catalog_origin text not null default 'commercial';
-
 alter table public.catalog_assets
   drop constraint if exists catalog_assets_catalog_origin_valid;
 alter table public.catalog_assets
   add constraint catalog_assets_catalog_origin_valid check (
     catalog_origin in ('commercial', 'demo_fixture', 'test_only', 'staging_only')
   );
-
 alter table public.products
   add column if not exists catalog_origin text not null default 'commercial';
-
 alter table public.products
   drop constraint if exists products_catalog_origin_valid;
 alter table public.products
   add constraint products_catalog_origin_valid check (
     catalog_origin in ('commercial', 'demo_fixture', 'test_only', 'staging_only')
   );
-
 -- QA assets deliberately have no commercial approval stamp. Commercial rows
 -- retain the original strict rights contract.
 alter table public.catalog_assets
   alter column approved_at drop not null;
 alter table public.catalog_assets
   alter column approved_by drop not null;
-
 alter table public.catalog_assets
   drop constraint if exists catalog_assets_rights_valid;
 alter table public.catalog_assets
@@ -52,7 +47,6 @@ alter table public.catalog_assets
       and approved_by is null
     )
   );
-
 -- A QA product may be operationally visible for a private staging test while
 -- its asset remains explicitly UNAPPROVED_QA. The product still has to point
 -- to the registered asset and carry deterministic hashes; only commercial
@@ -98,7 +92,6 @@ alter table public.products
       and source_image_sha256 ~ '^[a-f0-9]{64}$'
     )
   );
-
 create or replace function public.import_qa_fixture_catalog(
   p_business_id uuid,
   p_origin text,
@@ -426,7 +419,6 @@ begin
   end loop;
 end;
 $$;
-
 create or replace function public.publish_qa_fixture_product(
   p_business_id uuid,
   p_external_id text,
@@ -491,17 +483,14 @@ begin
   return next;
 end;
 $$;
-
 revoke all on function public.import_qa_fixture_catalog(uuid, text, jsonb, jsonb)
 from public, anon, authenticated;
 grant execute on function public.import_qa_fixture_catalog(uuid, text, jsonb, jsonb)
 to authenticated;
-
 revoke all on function public.publish_qa_fixture_product(uuid, text, boolean)
 from public, anon, authenticated;
 grant execute on function public.publish_qa_fixture_product(uuid, text, boolean)
 to authenticated;
-
 comment on column public.catalog_assets.catalog_origin is
   'Origin boundary: commercial or staging-only QA fixture provenance.';
 comment on column public.products.catalog_origin is

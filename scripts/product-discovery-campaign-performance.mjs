@@ -15,7 +15,7 @@ for(const [engine,launcher]of Object.entries({chromium,webkit})){
   try{
     for(const enabled of [false,true]){
       const context=await browser.newContext({baseURL:'http://127.0.0.1:8196',viewport:{width:390,height:844},
-        hasTouch:true,serviceWorkers:'block',recordVideo:enabled?{dir:out+'/videos',size:{width:390,height:844}}:undefined});
+        hasTouch:true,serviceWorkers:'block'});
       const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
       if(enabled)await useQaCampaigns(page);
       await openRuntimeCatalog(page,{view:'home',beforeGoto:async()=>{

@@ -1152,7 +1152,7 @@
       "title": "An unverified checkout closes by time: past the 48-hour probe window CHECKOUT_PROVIDER_UNVERIFIED is auto-resolved as 'condition absent' and the truth sweep stops, with no proof that the buyer did not pay",
       "status": "fixed",
       "fixed_by": "d89ad936 · supabase/migrations/20261003090000_unverified_checkout_never_closes_by_time.sql",
-      "notes": "Reproduced on the branch (208 migrations, local database built with the gate's image and sequence): a checkout that reached Mercado Pago, expired and only had non-conclusive empties (seller connection changed) or no answered probe had its alert open at 47 h and resolved by the system at 49 h ('Condición ausente en la reconciliación automática.'), and enqueue_checkout_provider_probes stopped asking. Same silent ending PAY-PROBE-01 fixed for empties, 48 hours later. Fix: past the window the alert closes only on proof (a conclusive empty, the provider payment, the order) or on an active owner/admin resolution with a note (same rule as PAYMENT_NEEDS_REVIEW; a staff resolution is reopened); the sweep keeps one probe per day up to 30 days for those checkouts; a per-environment watermark (now - 48 h at apply time) keeps older history out of the alerts (scripts/payments/reconcile-payments.mjs still covers it; without the row everything is watched). Test: unverified_checkout_never_closes_by_time_test.sql (45; fails without the migration). Rollback drill: schema fingerprint identical before/after rollback, rollback and forward both re-runnable.",
+      "notes": "Reproduced on the branch (208 migrations, local database built with the gate's image and sequence): a checkout that reached Mercado Pago, expired and only had non-conclusive empties (seller connection changed) or no answered probe had its alert open at 47 h and resolved by the system at 49 h ('Condición ausente en la reconciliación automática.'), and enqueue_checkout_provider_probes stopped asking. Same silent ending PAY-PROBE-01 fixed for empties, 48 hours later. Fix: past the window the alert closes only on proof (a conclusive empty, the provider payment, the order) or on an active owner/admin resolution with a note (same rule as PAYMENT_NEEDS_REVIEW; a staff resolution is reopened); the sweep keeps one probe per day up to 30 days for those checkouts; a per-environment watermark (now - 48 h at apply time) keeps older history out of the alerts (scripts/payments/reconcile-payments.mjs still covers it; without the row everything is watched). Test: unverified_checkout_never_closes_by_time_test.sql (55 with PAY-PROBE-03; fails without the migration). Rollback drill: schema fingerprint identical before/after rollback, rollback and forward both re-runnable.",
       "aliases": [],
       "domain": "payments_db",
       "where": "public.reconcile_operational_alerts_for_business (CHECKOUT_PROVIDER_UNVERIFIED 48-hour condition + automatic 'condition absent' resolution), public.enqueue_checkout_provider_probes (48-hour window), private.provider_probe_is_due",
@@ -1162,6 +1162,29 @@
       "verification": [
         {
           "id": "PAY-PROBE-02",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        }
+      ]
+    },
+    {
+      "id": "PAY-PROBE-03",
+      "severity": "P1",
+      "title": "A provider payment left pending or in manual review (in_process) on an expired checkout has no alert at all, and past the 48-hour window nothing reads it again: a late approval whose notification is lost becomes a charge without order and without signal",
+      "status": "fixed",
+      "fixed_by": "56a76d24 · supabase/migrations/20261003090000_unverified_checkout_never_closes_by_time.sql",
+      "notes": "Reproduced on the branch: in_process snapshot, session expired by the sweep (stock released, intent expired with the provider payment pinned): no alert at 47 h nor at 49 h, no probe at 49 h. CHECKOUT_PROVIDER_UNVERIFIED required provider_payment_id is null; enqueue_checkout_provider_probes stopped at 48 h. Mercado Pago manual review can take more than two business days. Fixed in the same not-yet-applied migration as PAY-PROBE-02: past the window, a provider payment in pending / in_process / authorized (the list the payment recorder treats as non-final) counts as unverified; the alert closes on the provider's final result (rejected: no money; approved: goes to review with its own window-less alert) or on an owner/admin resolution with a note; the sweep re-reads it once a day up to 30 days; the alert evidence carries provider_status. Inside the window nothing changes (re-read every few minutes, no alert). Test: section H of unverified_checkout_never_closes_by_time_test.sql.",
+      "aliases": [],
+      "domain": "payments_db",
+      "where": "public.reconcile_operational_alerts_for_business (CHECKOUT_PROVIDER_UNVERIFIED: provider_payment_id is null), public.enqueue_checkout_provider_probes (48-hour window), public.release_checkout_session_inventory (in_process ranks below expired)",
+      "related": [
+        "PAY-PROBE-01",
+        "PAY-PROBE-02"
+      ],
+      "verification": [
+        {
+          "id": "PAY-PROBE-03",
           "real": true,
           "reproduced": true,
           "severity": "P1"

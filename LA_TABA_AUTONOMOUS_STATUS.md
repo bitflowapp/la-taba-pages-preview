@@ -6,19 +6,22 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
 ## Para retomar (leer primero)
 
 - Informe final: `LA_TABA_AUTONOMOUS_BACKEND_REPORT.md` (estado, hallazgos, OWNER_APPROVAL_REQUIRED con pasos exactos, veredictos).
+- Actualizado 2026-10-03 18:05 (-03:00). Último commit de código: `3573140a`; el último de la rama es el de documentación que
+  trae este archivo. Tarea en curso: cerrar la cuarta revisión de 20261003090000 (revisor y CI). Próximo paso: atender lo que
+  encuentre la cuarta pasada y dejar el CI del HEAD final en verde.
 - Rama `hardening/taba-ecommerce-production`, todo pusheado. **PR #133 en borrador** contra `main` (apilado sobre #130): existe
   para que el CI completo corra en cada push, porque desde la sesión en la nube el despacho manual de workflows da 403.
-  No se mergea sin el dueño. Nada aplicado en Staging (158) ni en CP (157); la rama tiene 209 migraciones.
+  No se mergea sin el dueño. Nada aplicado en Staging (158) ni en CP (157); la rama tiene 211 migraciones (157 de `main` + 54).
 - Herramientas que ya están en el repo (sirven en la PC, en CI o en la nube): `scripts/db/dev-database.mjs start|test|stop`
   (base local con la imagen y la secuencia exacta del gate, que queda viva para reproducir y escribir pgTAP),
   `npm run test:db:isolated` (el gate canónico entero, necesita Docker), `scripts/release/run-readonly-checks.mjs` y
   `scripts/production-health-check.mjs --target controlled-production` (sólo lectura, necesitan un token de la Management API).
 - La sesión en la nube no tiene token de Supabase ni de Mercado Pago: no leyó Staging ni CP. Lo último leído en vivo es de la
   sesión de la mañana (11:20–11:25).
-- En curso al escribir esto: el CI del HEAD final en el PR #133 y una tercera pasada del revisor sobre `dcd541cb..5f9a326b`
-  (su resultado queda en la bitácora y en el informe).
+- En curso al escribir esto: el CI del HEAD final en el PR #133 y una cuarta pasada del revisor sobre `6fd0b6f4..3573140a`
+  (la cuarta revisión de 20261003090000 y el cambio de 20261003092000; su resultado queda en la bitácora y en el informe).
 
-## Sesión 2 — 2026-10-03 14:47–17:xx (-03:00), Claude Cloud
+## Sesión 2 — 2026-10-03 14:47–18:xx (-03:00), Claude Cloud
 
 ### Checkpoint inicial (verificado, no declarado)
 
@@ -102,6 +105,26 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
   y nada probaba). Gate canónico local completo **PASS con pgTAP 6.440**, `npm test` 3.130/3.131, verificaciones estáticas PASS.
   Registro: P1 17 corregidos y 0 abiertos; P2 43 corregidos y 20 abiertos. Abiertos y documentados: ALERT-STOCK-01 (P3, texto del
   Panel) y RIDER-01 (P3, presencia del repartidor en la cola: decisión).
+- 17:32 — **tercera revisión adversarial** sobre `dcd541cb..5f9a326b`, todo reproducido con sus guiones: **PAY-PROBE-08 (P2)**: la
+  tarjeta A queda en revisión y sus avisos se pierden (nunca se asienta); el reintento B se rechaza y es lo único asentado. Con el
+  guardado rechazado la sonda busca por la referencia externa, que devuelve el aprobado o el más nuevo (B), y pasadas 48 h el barrido
+  dejaba de buscar: a 49 h sin alerta y sin sonda; si A se aprueba al tercer día con el aviso perdido, cobro sin pedido y sin señal.
+  P3: un pago sin resolver asentado pasados 30 días detrás de un guardado final no abría la alerta; con 20.000 rechazados el paso
+  caro de la reconciliación se encarecía; la selección de 20261003092000 leía por `updated_at` toda la historia de un negocio
+  cerrado y dormido (~32 ms con 100.000 cobros); la resolución comparaba horas de asiento (un asiento confirmado después del
+  refresco con hora anterior contaba como visto); tres mutaciones vivas (el orden por la hora del proveedor, el pago sin resolver
+  más nuevo y el límite de 30 días de 092000).
+- 17:58 — **`6812143a`** (cuarta revisión de 20261003090000: una búsqueda por día durante 30 días detrás de un rechazo o una
+  cancelación guardados; un pago sin resolver asentado abre la alerta a cualquier edad por un índice parcial nuevo; la resolución
+  vale mientras el pago y el estado que la evidencia mostraba sean los de hoy, sin horas; 107 aserciones, las de H1, H4 y H6 fallan
+  con `dcd541cb`; arnés de 23 mutaciones, 23 detectadas; reversión exacta; 20.000 rechazados: reconciliación ~60 ms, barrido
+  ~0,5 s, ~25 µs por checkout para el ritmo diario) y **`3573140a`** (20261003092000: los negocios cerrados se eligen por cobros
+  creados en 30 días, por el índice existente, ~0,5-1 ms; 9 aserciones). Gate canónico local completo **PASS con pgTAP 6.452**
+  (carreras con 0 deadlocks, simulacros, restauración), `npm test` 3.130/3.131 (1 skip de plataforma), `npm run check` y
+  `migrations:validate` PASS. Registro: P1 17 corregidos y 0 abiertos; P2 44 corregidos y 20 abiertos. Residual P3 documentado
+  en DIAG-14: un negocio cerrado sin checkouts en 30 días ni alertas abiertas no se evalúa si le llega tarde un aviso sobre un
+  cobro viejo (un reembolso o contracargo hecho después en Mercado Pago); se calcula al reabrir (un cobro aprobado sin pedido lo
+  cuenta igual el pulso de CP, desde las tablas). Cuarta pasada del revisor pedida sobre estos dos commits.
 
 ## Sesión 1 — 2026-10-03 08:22–13:2x (-03:00), PC de trabajo (histórico)
 

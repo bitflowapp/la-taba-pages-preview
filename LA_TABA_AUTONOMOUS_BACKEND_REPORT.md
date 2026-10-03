@@ -6,8 +6,8 @@ Dos sesiones no supervisadas el mismo día sobre la rama `hardening/taba-ecommer
   autorización, PAY-PROBE-01, el interruptor del cobro real (EDGE-03), el contrato HTTP (API-01) y el certificador sobre un
   Supabase efímero. Leyó Staging y CP en sólo lectura. Su lista de commits está al final.
 - **Sesión 2** (14:47–17:xx -03:00, Claude Cloud): retomó desde git y CI, reprodujo el gate canónico de base de datos en la nube,
-  encontró y corrigió **dos P1 nuevos de pagos** (PAY-PROBE-02 y PAY-PROBE-03), y sometió su propio arreglo a **dos revisiones
-  adversariales independientes** que encontraron otro P1 y cuatro P2 en él, todos corregidos antes de que se aplique en ningún
+  encontró y corrigió **dos P1 nuevos de pagos** (PAY-PROBE-02 y PAY-PROBE-03), y sometió su propio arreglo a **tres revisiones
+  adversariales independientes** que encontraron otro P1 y cinco P2 en él, todos corregidos antes de que se aplique en ningún
   entorno. Además: DIAG-03, DIAG-02 (backend), el barrido de alertas que salteaba negocios cerrados (DIAG-14), diez archivos
   pgTAP que no corría nadie (TOOL-11) y lo que las suites viejas del núcleo de pedidos probaban (TOOL-04). Abrió el **PR #133 en
   borrador** para que el CI corra en cada push. Sin credenciales de Supabase ni de Mercado Pago en la nube: **no leyó Staging ni CP**.
@@ -16,7 +16,7 @@ Producción y CONTROLLED PRODUCTION sólo en lectura; ningún cobro, reembolso n
 Bitácora: `LA_TABA_AUTONOMOUS_STATUS.md`. Registro de hallazgos (lo leen las compuertas):
 `docs/ecommerce-hardening/findings-register.json`.
 
-## Para el dueño, en ocho líneas
+## Para el dueño, en seis puntos
 
 1. **Qué estaba roto y quedó corregido (P1):** un «vacío» del proveedor se tomaba como prueba de que no hubo pago
    (PAY-PROBE-01); pasadas 48 horas un checkout sin verificar se cerraba solo y nadie volvía a preguntar (PAY-PROBE-02); un pago
@@ -24,10 +24,10 @@ Bitácora: `LA_TABA_AUTONOMOUS_STATUS.md`. Registro de hallazgos (lo leen las co
    releía (PAY-PROBE-03); la preferencia re-reservaba stock antes de su compuerta (FO-01); el cobro real lo abría una variable de
    humo (EDGE-03). La primera versión del arreglo de PAY-PROBE-03 tenía su propio P1 (PAY-PROBE-04), corregido antes de aplicarse.
 2. **Registro:** 0 P0 abiertos · **0 P1 abiertos** (17 corregidos, 1 riesgo aceptado: el gate de base necesita Docker y en la PC
-   lo cubre el CI) · 43 P2 corregidos, 20 abiertos (decisiones de producto, frontend, otra línea, canal externo).
-3. **Probado:** pgTAP canónico **6.440** aserciones (era 5.938 al empezar la sesión 2); carreras de admisión, stock e idempotencia
+   lo cubre el CI) · 44 P2 corregidos, 20 abiertos (decisiones de producto, frontend, otra línea, canal externo).
+3. **Probado:** pgTAP canónico **6.452** aserciones (era 5.938 al empezar la sesión 2); carreras de admisión, stock e idempotencia
    con **0 deadlocks**; simulacros de reversión y restauración; `npm test` **3.131** (0 fallas); certificador sobre un Supabase
-   completo y efímero; la migración de pagos nueva, contra un arnés de 18 mutaciones (18 detectadas).
+   completo y efímero; las migraciones nuevas, contra un arnés de 23 mutaciones (23 detectadas).
 4. **Nada de la rama corrió todavía en un proyecto alojado.** Aplicarla en Staging es tu decisión: AUTHZ-04 le saca a un empleado
    cancelar y rechazar (también en una caja de Caja Clara operada con cuenta de staff).
 5. **Compuertas:** READY_FOR_STAGING **YES** · READY_FOR_CONTROLLED_PRODUCTION **BLOCKED** · READY_FOR_REAL_MONEY **NO**.
@@ -38,9 +38,9 @@ Bitácora: `LA_TABA_AUTONOMOUS_STATUS.md`. Registro de hallazgos (lo leen las co
 | | |
 |---|---|
 | HEAD_INICIAL | `8f0d5958` (inicio de la sesión 2; = `origin`, árbol limpio) · la jornada empezó en `47d9ffe9` (sesión 1) |
-| HEAD_FINAL | el último commit de la rama (este informe); último código: `5f9a326b` |
+| HEAD_FINAL | el último commit de la rama (este informe); último código: `3573140a` |
 | RAMA | `hardening/taba-ecommerce-production` (apilada sobre `qa/taba-backend-e2e-cert-20260930` = PR #130) |
-| COMMITS | sesión 2: 21 (lista abajo) · sesión 1: 62 |
+| COMMITS | sesión 2: 25 (lista abajo) · sesión 1: 62 |
 | PUSH | todo pusheado a `origin/hardening/taba-ecommerce-production` |
 | PR | **#133 en borrador → `main`** (abierto por la sesión 2 para que el CI corra: el despacho manual de workflows da 403 desde la nube). Apilado sobre #130: **no mergear** sin decidir el orden y Owner 1–2 |
 | CI | ver «CI» abajo |
@@ -53,16 +53,17 @@ Bitácora: `LA_TABA_AUTONOMOUS_STATUS.md`. Registro de hallazgos (lo leen las co
 | `aae0268d` (PAY-PROBE-02/03 + DIAG-03) | base de datos y Windows **verdes**; web cancelado por el push siguiente | PR **verde**; push **rojo** (2 checks de `health`, carrera del certificador corregida en `632df82a`) |
 | `6dc0e883` | base de datos **verde**; web y Windows cancelados por el push siguiente | push y PR **verdes** (455 checks, 450 PASS, 0 FAIL) |
 | `4187db74` (primera versión de 20261003090000) | **verde completo** (37145732791: web con E2E de navegador, base de datos, Windows) | push y PR **verdes** |
-| `9b106cf3` (segunda versión) | base de datos, Windows **verdes**; web: **verde** (37148525150, E2E de navegador incluido) | push y PR **verdes** |
+| `9b106cf3` (segunda versión) | **verde completo** (37148525150) | push y PR **verdes** |
+| `6fd0b6f4` (tercera versión, TOOL-04, TOOL-11, DIAG-14) | **verde completo** (37150992028: web con E2E, base de datos con 6.441, Windows) | push y PR **verdes** |
 | HEAD final | ver los checks del PR #133 | ver los checks del PR #133 |
 
 ## QA
 
 | | |
 |---|---|
-| TESTS | Local en la nube, con Docker y la imagen del gate por digest: **gate canónico completo** (`npm run test:db:isolated`: migraciones como no-superusuario, pgTAP canónico, carreras de impresión, fiscales, admisión, stock e idempotencia, simulacros de reversión, volcado y restauración) seis veces en la sesión, la última sobre el árbol final; `npm test`; las verificaciones estáticas de CI (`npm run check`, `migrations:validate`, imágenes del catálogo); simulacros de reversión de 20261003090000 y 20261003092000 (huella del esquema en 12 categorías: revertir deja la anterior exacta, re-aplicar la nueva, revertir dos veces no falla); medición con 20.000 checkouts abandonados; un arnés de 18 mutaciones sobre las guardas de la migración de pagos. CI: los tres jobs de `Validate release candidate` y el certificador en el stack |
-| PASS | pgTAP canónico **6.440/6.440** · `npm test` **3.130/3.131** (1 skip de plataforma) · gate canónico local PASS sobre el árbol final · `GLOBAL_IDEMPOTENCY: PASS` (0 deadlocks, 0 esperas agotadas) · mutaciones **18/18** detectadas · certificador del stack 0 FAIL |
-| FAIL | ninguno abierto. Todas las reproducciones de defectos fallaron ANTES de su arreglo y pasan después (los casos nuevos de 20261003090000: 11 fallan con la primera versión y 4 con la segunda) |
+| TESTS | Local en la nube, con Docker y la imagen del gate por digest: **gate canónico completo** (`npm run test:db:isolated`: migraciones como no-superusuario, pgTAP canónico, carreras de impresión, fiscales, admisión, stock e idempotencia, simulacros de reversión, volcado y restauración) ocho veces en la sesión (una falló por la carrera del arnés RACE-01, corregida), la última sobre el árbol final; `npm test`; las verificaciones estáticas de CI (`npm run check`, `migrations:validate`, imágenes del catálogo); simulacros de reversión de 20261003090000 y 20261003092000 (huella del esquema en 12 categorías: revertir deja la anterior exacta, re-aplicar la nueva, revertir dos veces no falla); medición con 20.000 checkouts abandonados; un arnés de 23 mutaciones sobre las guardas de 20261003090000 y 20261003092000. CI: los tres jobs de `Validate release candidate` y el certificador en el stack |
+| PASS | pgTAP canónico **6.452/6.452** · `npm test` **3.130/3.131** (1 skip de plataforma) · gate canónico local PASS sobre el árbol final · `GLOBAL_IDEMPOTENCY: PASS` (0 deadlocks, 0 esperas agotadas) · mutaciones **23/23** detectadas · certificador del stack 0 FAIL |
+| FAIL | ninguno abierto. Todas las reproducciones de defectos fallaron ANTES de su arreglo y pasan después (los casos nuevos de 20261003090000: 11 fallan con la primera versión, 4 con la segunda y 3 con la tercera) |
 | FLAKY | **2, los dos con causa reproducida y arreglo**: (1) la fase `health` del certificador afirmaba el latido del planificador antes de la primera corrida de pg_cron en un stack recién levantado (`632df82a`); (2) la carrera de stock del gate (escenario 7): el aviso de pago retiene la fila de la sesión con `for update` y el barrido saltea filas tomadas (`skip locked`); con la máquina cargada los cinco barridos concurrentes la salteaban. Reproducido de forma determinista y corregido en el arnés (un barrido más después de la ronda; la cuenta sigue teniendo que ser exactamente uno) |
 | SKIPPED | 1 en `npm test`: la prueba de PowerShell, que sólo corre en Windows (en CI corre en el job de Windows). Ningún skip para conseguir verde |
 
@@ -70,7 +71,7 @@ Bitácora: `LA_TABA_AUTONOMOUS_STATUS.md`. Registro de hallazgos (lo leen las co
 
 | Área | Resultado | Evidencia |
 |---|---|---|
-| PAGOS | `PASS` hasta el límite posible sin dinero real | Sesión 2: **PAY-PROBE-02** y **PAY-PROBE-03** en `20261003090000`. Pasada la ventana de 48 h, CHECKOUT_PROVIDER_UNVERIFIED la cierra sólo una prueba (sin pago guardado, un vacío concluyente; el resultado final del proveedor; el pedido) o el dueño / un encargado activo con su nota, que vale hasta que el proveedor informe un pago o un estado nuevo; la sonda sigue una vez por día hasta 30 días aunque una persona haya resuelto la alerta; un pago sin resultado final cuenta aunque el cobro tenga guardado un rechazo posterior (PAY-PROBE-07). La migración pasó **dos revisiones adversariales** (PAY-PROBE-04 P1, -05, -06 y -07 P2, más cuatro P3: todos corregidos). Recorrido del caso crítico: aprobado + vencido → revisión con alerta sin ventana; vacío persistente → sólo calla uno concluyente y sólo sin pago guardado; reintentos agotados → `dead_letter` con alerta CRITICAL; reconexión del vendedor → vacíos no concluyentes y sonda diaria; aviso fuera de orden o tardío → no retrocede (pgTAP, y el disparador del estado probado de forma directa); cobro duplicado → PAYMENT_NEEDS_REVIEW crítica. Sesión 1: reembolsos, avisos firmados, trabajos muertos, PAY-PROBE-01, EDGE-03, FO-01/FO-02 |
+| PAGOS | `PASS` hasta el límite posible sin dinero real | Sesión 2: **PAY-PROBE-02** y **PAY-PROBE-03** en `20261003090000`. Pasada la ventana de 48 h, CHECKOUT_PROVIDER_UNVERIFIED la cierra sólo una prueba (sin pago guardado, un vacío concluyente; el resultado final del proveedor; el pedido) o el dueño / un encargado activo con su nota, que vale hasta que el proveedor informe un pago o un estado nuevo; la sonda sigue una vez por día hasta 30 días aunque una persona haya resuelto la alerta; un pago sin resultado final cuenta aunque el cobro tenga guardado un rechazo posterior (PAY-PROBE-07), y detrás de un rechazo guardado la búsqueda diaria sigue 30 días por si aparece un pago aprobado que nunca se asentó (PAY-PROBE-08). La resolución de una persona vale mientras el pago y el estado que la evidencia mostraba sigan iguales. La migración pasó **tres revisiones adversariales** (PAY-PROBE-04 P1, -05 a -08 P2, más los P3: todos corregidos). Recorrido del caso crítico: aprobado + vencido → revisión con alerta sin ventana; vacío persistente → sólo calla uno concluyente y sólo sin pago guardado; reintentos agotados → `dead_letter` con alerta CRITICAL; reconexión del vendedor → vacíos no concluyentes y sonda diaria; aviso fuera de orden o tardío → no retrocede (pgTAP, y el disparador del estado probado de forma directa); cobro duplicado → PAYMENT_NEEDS_REVIEW crítica. Sesión 1: reembolsos, avisos firmados, trabajos muertos, PAY-PROBE-01, EDGE-03, FO-01/FO-02 |
 | IDEMPOTENCIA | `PASS` | La carrera global (checkout, preferencia, webhook y su cola, transiciones, cobro manual, entrega, oferta, reembolso, cancelación de pago, perfil y direcciones) en el gate: 0 deadlocks, 0 esperas agotadas, local y en CI. Nuevo en pgTAP: dos barridos seguidos con una sonda en curso dejan un trabajo; el reintento de un repartidor con su clave no toca nada |
 | AUTORIZACIÓN | `PASS` en código · aplicación de AUTHZ-04 `OWNER_APPROVAL_REQUIRED` | Barrido de la sesión 2 sobre la rama aplicada: ninguna tabla pública admite escritura directa de clientes salvo columnas de `businesses` (AUTHZ-02) y `products.sort_order`. Matrices pgTAP de 838 (RLS) y 796 (autorización) celdas; ahora también en el gate el aislamiento de back-office (28), de perfiles de cliente (47) y la seguridad del reparto multi-pedido (27), que no corría nadie (TOOL-11). Una prueba de tenant que fallaba resultó ser sólo la mayúscula del mensaje: la negativa 42501 entre comercios está. **Caja Clara:** una caja real con cuenta de staff pierde cancelar/rechazar al aplicar 20261002050000 |
 | CONCURRENCIA | `PASS` | Carreras de stock (12 escenarios), admisión, impresión y fiscal en el gate; IDEM-07/IDEM-08. Nuevo: dos repartidores y un pedido por la cola (`stale_revision`, `taken_by_other`) y un pedido ofrecido a uno que toma otro desde la cola (nadie queda con el mismo pedido dos veces). La migración nueva no toma candados nuevos |
@@ -97,13 +98,14 @@ Bitácora: `LA_TABA_AUTONOMOUS_STATUS.md`. Registro de hallazgos (lo leen las co
 
 | Id | Sev. | Qué | Evidencia | Estado |
 |---|---|---|---|---|
-| PAY-PROBE-02 | **P1** | Pasada la ventana de 48 horas, CHECKOUT_PROVIDER_UNVERIFIED se resolvía sola y el barrido dejaba de preguntar, sin ninguna prueba de que el comprador no pagó | 47 h abierta, 49 h resuelta por el sistema, ninguna sonda | corregido (`d89ad936`, `d6532530`, `dcd541cb`) |
-| PAY-PROBE-03 | **P1** | Un pago pending / in_process / authorized sobre un checkout vencido: ninguna alerta y, pasadas 48 h, nadie lo releía | Ninguna alerta a 47 ni a 49 h, ninguna sonda a 49 h | corregido (`56a76d24`, `d6532530`, `dcd541cb`) |
+| PAY-PROBE-02 | **P1** | Pasada la ventana de 48 horas, CHECKOUT_PROVIDER_UNVERIFIED se resolvía sola y el barrido dejaba de preguntar, sin ninguna prueba de que el comprador no pagó | 47 h abierta, 49 h resuelta por el sistema, ninguna sonda | corregido (`d89ad936`, `d6532530`, `dcd541cb`, `6812143a`) |
+| PAY-PROBE-03 | **P1** | Un pago pending / in_process / authorized sobre un checkout vencido: ninguna alerta y, pasadas 48 h, nadie lo releía | Ninguna alerta a 47 ni a 49 h, ninguna sonda a 49 h | corregido (`56a76d24`, `d6532530`, `dcd541cb`, `6812143a`) |
 | PAY-PROBE-04 | **P1** | En la primera versión del arreglo, un vacío concluyente anterior al pago callaba la alerta y la sonda de un pago en revisión | Revisión adversarial: a 49 h, sin alerta de ningún código y sin sonda | corregido `d6532530` (nunca aplicado) |
 | PAY-PROBE-05 | P2 | La resolución del dueño no se comparaba con lo posterior, frenaba la relectura y cambiaba lo de adentro de la ventana | Revisión adversarial, escenarios r1 y s1 | corregido `d6532530` (nunca aplicado) |
 | PAY-PROBE-06 | P2 | El costo por minuto del barrido y de la alerta crecía con toda la historia | 20.000 checkouts: ~475 y ~400 ms (antes ~20 y ~45) | corregido `d6532530` (nunca aplicado) |
 | PAY-PROBE-07 | P2 | Un pago en revisión quedaba tapado cuando el comprador reintentaba en la misma preferencia y el pago guardado, más nuevo, era un rechazo | Segunda revisión: a 49 h, sin alerta y sin sonda | corregido `dcd541cb` (nunca aplicado) |
-| DIAG-14 | P2 | El barrido de alertas salteaba un negocio cerrado sin alertas abiertas, y «cerrado» es el fin de día del Panel | Segunda revisión: checkout sin verificar de un negocio cerrado, ninguna alerta, nunca pasados 30 días | corregido `c5166237` (20261003092000) |
+| PAY-PROBE-08 | P2 | Un pago en revisión que nunca se asentó (sus avisos se perdieron), detrás de un reintento rechazado: pasadas 48 h la sonda dejaba de buscar | Tercera revisión: a 49 h, sin alerta y sin sonda | corregido `6812143a` (nunca aplicado) |
+| DIAG-14 | P2 | El barrido de alertas salteaba un negocio cerrado sin alertas abiertas, y «cerrado» es el fin de día del Panel | Segunda revisión: checkout sin verificar de un negocio cerrado, ninguna alerta, nunca pasados 30 días | corregido `c5166237` y `3573140a` (20261003092000) |
 | TOOL-11 | P2 | Doce archivos pgTAP no corrían en ningún gate ni workflow (aislamiento de clientes y back-office, seguridad del reparto) | 7 pasaban tal cual; 3 con fixtures viejos | corregido `e3626e89` (+347 aserciones) |
 | TOOL-04 | P2 | Las suites SQL del núcleo de pedidos estaban huérfanas | No reviven (API v1 retirada); mapa de cobertura | cerrado `5f9a326b` (41 aserciones portadas) |
 | DIAG-03 | P2 | La sonda de salud no veía alertas CRITICAL y exigía exactamente cuatro tareas | 1 CRITICAL abierta → la consulta vieja contaba 0 | corregido `b6a94a96` |
@@ -111,17 +113,17 @@ Bitácora: `LA_TABA_AUTONOMOUS_STATUS.md`. Registro de hallazgos (lo leen las co
 | CERT-02 | P3 | La fase `health` del certificador afirmaba el latido antes de la primera corrida de pg_cron | Run 37143748544 | corregido `632df82a` |
 | PULSE-01 | P3 | El pulso de CP contaba un cobro sin pedido desde su última relectura | Prueba nueva que falla con el código anterior | corregido `288da41f` |
 | RACE-01 | P3 | La carrera de stock del gate podía fallar sin defecto del producto | Gate local: 0 ≠ 1; mecanismo reproducido | corregido en el arnés `a181a429` |
-| (revisión) | P3 | Resolución vs. último refresco de la evidencia; U3 de la verificación previa; dos guardas sin prueba | Segunda revisión | corregidos `dcd541cb` |
+| (revisión) | P3 | Segunda pasada: resolución vs. último refresco de la evidencia, U3, dos guardas sin prueba. Tercera: un pago sin resolver asentado después de 30 días, costo del paso caro con muchos rechazados, costo de la selección de negocios cerrados, la carrera de la hora del asiento, tres mutaciones vivas | Segunda y tercera revisión | corregidos `dcd541cb`, `6812143a` y `3573140a` |
 | ALERT-STOCK-01 | P3 | STOCK_RESERVATION_STUCK de un cobro en revisión: el barrido nunca la cierra y el Panel dice «se libera sola, avisá a soporte»; la receta correcta (rearmar o devolver desde el Panel) sólo está en la lista de servicio | Reproducido; caracterizado en `order_core_gaps_test.sql` | **abierto**: el Panel no muestra el texto de la base; hace falta mapear por estado (frontend) |
 | RIDER-01 | P3 | Con `rider_presence_required`, un repartidor «no disponible» igual puede tomar un pedido de la cola abierta (sólo las ofertas exigen presencia) | Leído en el código y en el ensayo de la cola | **abierto**: decisión de producto (Owner 11) |
 
 ### BUGS_CORREGIDOS (la jornada completa)
 
-- Sesión 2: PAY-PROBE-02 a -07, DIAG-14, TOOL-11, TOOL-04, DIAG-03, DIAG-02 (backend), CERT-02, PULSE-01, RACE-01 y los P3 de la
-  segunda revisión (tabla de arriba).
+- Sesión 2: PAY-PROBE-02 a -08, DIAG-14, TOOL-11, TOOL-04, DIAG-03, DIAG-02 (backend), CERT-02, PULSE-01, RACE-01 y los P3 de la
+  segunda y la tercera revisión (tabla de arriba).
 - Sesión 1 (detalle en su bitácora): idempotencia (7 defectos de la carrera), IDEM-07, IDEM-08, reembolsos y avisos firmados,
   PAY-PROBE-01, TRACK-01, RB-01, RB-02, FO-01, FO-02, EDGE-03, contrato HTTP (API-01 + C-2), TOOL-05, AUTHZ-04 (parcial).
-- Registro: **P1 17 corregidos, 0 abiertos**, 1 riesgo aceptado (TOOL-01); P2 43 corregidos, 20 abiertos.
+- Registro: **P1 17 corregidos, 0 abiertos**, 1 riesgo aceptado (TOOL-01); P2 44 corregidos, 20 abiertos.
 
 ### PENDIENTES
 
@@ -130,10 +132,11 @@ Bitácora: `LA_TABA_AUTONOMOUS_STATUS.md`. Registro de hallazgos (lo leen las co
 | DIAG-09 | P2 | Ninguna alerta crítica sale del Panel: no hay correo, WhatsApp ni push | Hace falta elegir el canal y darle una credencial: decisión del dueño (Owner 6) |
 | DIAG-10 | P2 | El vigilante externo del planificador mira el sitio de la producción vieja | Retargetearlo a CP es operativo (Owner 7) |
 | AUTHZ-04 (resto), AUTHZ-02 | P2 | `set_business_open_state`, `authorize_arca_homologation`; escritura directa de columnas de `businesses` | Decisión de producto |
-| PAY-06 (resto) | P2 | Nadie relee en el proveedor un cobro ya completado; un `cancellation_reconcile` muerto no tiene salida propia | Decisión del dueño (ventana, frecuencia, límites del proveedor) |
+| PAY-06 (resto) | P2 | Nadie relee en el proveedor un cobro ya completado (tampoco otro pago pendiente del mismo checkout, como un ticket en efectivo que quedó pendiente después de que la tarjeta armó el pedido); un `cancellation_reconcile` muerto no tiene salida propia | Decisión del dueño (ventana, frecuencia, límites del proveedor) |
+| PAY-PROBE-08 (seguimiento) | P3 | Que el worker asiente también los otros pagos que ve la búsqueda por referencia: haría visible (con alerta) un pago en revisión que nunca se asentó; hoy sólo se encuentra cuando se aprueba | Cambio en la función Edge del worker y su despliegue; el riesgo de dinero ya lo cubre la búsqueda diaria |
 | DIAG-02 (resto), ALERT-STOCK-01 | P2/P3 | Textos del Panel: códigos nuevos con texto genérico; STOCK_RESERVATION_STUCK sin distinguir un cobro en revisión | Frontend: tocar un archivo precacheado obliga a subir la identidad del service worker (línea de frontend). El backend ya da el estado (`list_stock_reservation_alerts`) |
 | EDGE-06, EDGE-15 | P2/P3 | Preferencia dudosa sin re-envío; cancelación `requested` sin trabajo si fallan tres escrituras seguidas | Decisión / residual documentado |
-| Pruebas no portadas | P3 | Del mapa de TOOL-04 quedan sin pgTAP: reembolso disponible después de un rearmado sin stock, el pedido de Checkout Pro en el pipeline del Panel, cero alertas después de un ciclo limpio, métricas del centro de operación, y de la suite de ubicación: que el repartidor no vea el punto exacto antes de tomar la entrega | Prioridad menor que lo portado; quedan listados |
+| Pruebas no portadas | P3 | Del mapa de TOOL-04 quedan sin pgTAP (el reembolso después de un rearmado sin stock ya entró en `6fd0b6f4`): el pedido de Checkout Pro en el pipeline del Panel, cero alertas después de un ciclo limpio, métricas del centro de operación, y de la suite de ubicación: que el repartidor no vea el punto exacto antes de tomar la entrega | Prioridad menor que lo portado; quedan listados |
 | Contrato HTTP (resto) | P3 | 40 entradas de otras líneas y las dos SQL de OAuth siguen contestando 500 a un 55000/P0002 | Son de otras líneas |
 | Resto del registro | P2 | 20 P2 abiertos | Ver el registro |
 
@@ -144,15 +147,19 @@ Bitácora: `LA_TABA_AUTONOMOUS_STATUS.md`. Registro de hallazgos (lo leen las co
 2. **La sesión 2 no leyó ningún entorno.** Lo último en vivo es de las 11:25. Antes de aplicar, repetir las tres verificaciones previas.
 3. Mercado Pago real nunca se ejercitó (regla); los pagos se probaron con un proveedor simulado, Mercado Pago TEST en lectura y el stack.
 4. Una alerta crítica a la noche no la ve nadie hasta que alguien abra el Panel o corra el pulso (DIAG-09). Con 20261003092000 al
-   menos se calcula aunque el negocio esté cerrado.
+   menos se calcula aunque el negocio esté cerrado, si tuvo checkouts en los últimos 30 días o una alerta abierta (un aviso tardío
+   sobre un cobro más viejo de un negocio cerrado y sin movimiento se calcula al reabrir; un cobro aprobado sin pedido lo cuenta igual el pulso de CP).
 5. Al aplicar 20261003090000, los checkouts de las 48 horas previas quedan vigilados sin límite de tiempo: en Staging, donde el
    vendedor TEST se reconecta seguido, pueden aparecer alertas CRITICAL que necesitan una nota del dueño o un encargado pasadas
    las 48 horas. Es la conducta buscada; la verificación previa U1/U2 dice cuántas antes de aplicar.
-6. La migración de pagos de la sesión 2 cambió tres veces antes de aplicarse; la versión final pasó la segunda revisión
-   adversarial con sus hallazgos corregidos y probados (97 aserciones, 18 mutaciones), y una tercera pasada sobre esa versión estaba en curso al cerrar este informe (su resultado queda en la bitácora).
-7. Pasados 30 días, un checkout sin pago se sigue sólo por su alerta: uno que nunca tuvo alerta en sus primeros 30 días (por un
+6. La migración de pagos de la sesión 2 cambió cuatro veces antes de aplicarse; la versión final tiene corregidos y probados los
+   hallazgos de tres revisiones adversariales (107 aserciones, 23 mutaciones), y una cuarta pasada del revisor sobre esa versión estaba en curso al cerrar este informe (su resultado queda en la bitácora).
+7. Costo nuevo de la búsqueda diaria detrás de un rechazo guardado (PAY-PROBE-08): el barrido evalúa por minuto el ritmo de cada
+   checkout con el pago guardado rechazado o cancelado de los últimos 30 días (~25 µs cada uno; con 20.000, ~0,5 s), y el proveedor
+   recibe a lo sumo una búsqueda por día por cada uno. Con el volumen esperado de CP es despreciable.
+8. Pasados 30 días, un checkout sin pago se sigue sólo por su alerta: uno que nunca tuvo alerta en sus primeros 30 días (por un
    corte del planificador de 30 días) no se resucita; lo muestra la conciliación (`scripts/payments/reconcile-payments.mjs`).
-8. AUTHZ-04 cambia lo que puede hacer un empleado en el Panel y en una caja de Caja Clara operada con cuenta de staff.
+9. AUTHZ-04 cambia lo que puede hacer un empleado en el Panel y en una caja de Caja Clara operada con cuenta de staff.
 
 ## OWNER_APPROVAL_REQUIRED
 
@@ -207,7 +214,7 @@ Significado usado: **YES** = técnicamente listo con evidencia reproducible; lo 
 **READY_FOR_STAGING: `YES`**
 
 - Gate canónico PASS en local y en CI, certificador sin FAIL en un Supabase efímero, 0 P0/P1 abiertos, reversión de cada migración
-  nueva ensayada, la migración de pagos revisada dos veces de forma adversarial; CI del HEAD final en el PR #133.
+  nueva ensayada, la migración de pagos revisada tres veces de forma adversarial; CI del HEAD final en el PR #133.
 - Aplicarla es `OWNER_APPROVAL_REQUIRED` (Owner 1 y 2): cambia permisos de empleados y convive con la línea Caja Clara.
 
 **READY_FOR_CONTROLLED_PRODUCTION: `BLOCKED`**
@@ -242,6 +249,10 @@ Significado usado: **YES** = técnicamente listo con evidencia reproducible; lo 
 - `dcd541cb` fix(payments): un pago en revisión no queda tapado por un reintento rechazado, y lo asentado después del último refresco cuenta como nuevo (PAY-PROBE-07)
 - `c5166237` fix(alerts): el barrido de alertas no saltea un negocio cerrado con cobros en movimiento (DIAG-14)
 - `5f9a326b` test(order-core): lo que las suites viejas del núcleo de pedidos probaban y nada probaba hoy (TOOL-04)
+- `1685b3e1` docs(report): tercera revisión de la migración de pagos, el barrido de negocios cerrados, TOOL-04 y TOOL-11, y el informe consolidado
+- `6fd0b6f4` test(payments): rechazado un rearmado por falta de stock, devolver el dinero sigue ofrecido en el Panel
+- `6812143a` fix(payments): una búsqueda por día detrás de un rechazo guardado, y la resolución compara el pago que la evidencia mostraba (PAY-PROBE-08)
+- `3573140a` perf(alerts): el barrido elige los negocios cerrados por el índice de la fecha de creación del cobro (DIAG-14)
 - (este informe, el registro y el archivo de estado)
 
 ## Commits de la sesión 1

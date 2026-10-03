@@ -62,6 +62,12 @@
 --     los checkouts de las últimas 48 horas, que siguen primero. Si el
 --     pago aparece o se resuelve, el worker lo asienta por el camino de siempre y lo toman las
 --     alertas de cobro aprobado sin pedido o de revisión, que no tienen ventana.
+--   · Dentro de las 48 horas, un checkout con un pago del proveedor guardado (rechazado,
+--     pendiente o en revisión) ya no se vuelve a preguntar en cada corrida: el worker relee o
+--     busca ese pago y no anota vacíos, así que el ritmo (8 uno cada 2 minutos y los tardíos a
+--     las 2, 6 y 24 horas) se cuenta por los trabajos de sonda. Lo que nunca se preguntó va
+--     primero (lo más nuevo antes) y después lo que hace más tiempo que no se pregunta: unos 50
+--     checkouts así ya no dejan sin sonda a uno recién creado.
 --   · Una marca de agua por entorno (`private.payment_safety_watermarks`, escrita al aplicar:
 --     ahora menos 48 horas): todo checkout que todavía estaba dentro de la ventana cuando esto
 --     se aplica queda vigilado; lo anterior no se resucita como alertas críticas y lo sigue
@@ -82,8 +88,9 @@
 --   · Firmas, SECURITY DEFINER, search_path y permisos (el barrido y la reconciliación, sólo
 --     service_role; las auxiliares, ningún rol de cliente). El envoltorio de la frontera HTTP
 --     del barrido (20261002090000) queda letra por letra.
---   · Qué es un vacío concluyente, la ventana de 48 horas y su ritmo (8 + 2/6/24 horas, 30
---     minutos para un no concluyente), y todas las demás ramas de la reconciliación.
+--   · Qué es un vacío concluyente, la ventana de 48 horas y su ritmo sin pago guardado (8 +
+--     2/6/24 horas, 30 minutos para un no concluyente), y todas las demás ramas de la
+--     reconciliación.
 --   · Ninguna fila existente: no se escribe ni se borra nada fuera de la marca de agua.
 --   · Costo para el proveedor: a lo sumo una consulta por día, durante 30 días, por checkout
 --     sin verificar o con el pago guardado rechazado o cancelado. Tres índices parciales: el de
@@ -103,8 +110,8 @@ declare
 begin
   for v_row in
     select * from (values
-      ('private.provider_probe_is_due(uuid,timestamptz)', '527187a827aa6abe0abb832be820da39', '43efcbc2c2c4dc344d1965a6ce29b60b'),
-      ('public.enqueue_checkout_provider_probes(integer)', '24eb443ab5e712f436f17a4d67803686', '99d062259616cb67e24a16ebe0dc3e34'),
+      ('private.provider_probe_is_due(uuid,timestamptz)', '527187a827aa6abe0abb832be820da39', '604258a6ba777f4ce0d1b49dc61d70a4'),
+      ('public.enqueue_checkout_provider_probes(integer)', '24eb443ab5e712f436f17a4d67803686', '6e6f472d019ab93d9d3ef36bd61f08bd'),
       ('public.reconcile_operational_alerts_for_business(uuid)', 'dfb440ae088f4674986af94183463e78', '40673b9efadd1f5550db1658b17b5db3')
     ) as t(signature, generated_from, applied)
   loop
@@ -307,8 +314,8 @@ as $function$
              -- Un pago guardado con resultado final y otro del mismo cobro que estuvo sin resolver
              -- (el comprador reintentó en la misma preferencia): si ese otro pago se asentó en los
              -- últimos 30 días, aunque el checkout sea más viejo (la alerta se abre en la primera
-             -- corrida del barrido sobre este negocio después del asiento: 30 días es también lo que
-             -- 20261003092000 deja sin evaluar a un negocio cerrado y sin checkouts), y después
+             -- corrida del barrido sobre este negocio después del asiento; un negocio cerrado y sin
+             -- checkouts en 30 días no se evalúa hasta que vuelva a abrir, 20261003092000), y después
              -- mientras su alerta siga viva (abierta, reconocida o resuelta por una persona). Las dos
              -- preguntas son acotadas: las alertas de este negocio y los asientos sin resultado final de
              -- los últimos 30 días, por su índice por fecha (now(): la misma hora en toda la corrida, así
@@ -415,6 +422,24 @@ AS $function$
                 where po.payment_intent_id = p_payment_intent_id
                   and po.topic = 'payment_reconcile'
              )), '-infinity'::timestamptz) <= clock_timestamp() - interval '24 hours'
+           -- Dentro de la ventana, con un pago del proveedor guardado (rechazado, pendiente, en
+           -- revisión) el worker relee o busca ese pago y no anota vacíos: el mismo ritmo se cuenta
+           -- por los trabajos de sonda —8 uno cada 2 minutos y los tardíos a las 2, 6 y 24 horas—,
+           -- no una relectura por minuto durante 48 horas (20261003090000).
+           when exists (select 1 from public.payment_intents pi
+                         where pi.id = p_payment_intent_id and pi.provider_payment_id is not null) then (
+             select case
+                      when t.ultimo > clock_timestamp() - interval '2 minutes' then false
+                      when t.hechos < 8 then true
+                      when t.hechos = 8 then p_session_created_at <= clock_timestamp() - interval '2 hours'
+                      when t.hechos = 9 then p_session_created_at <= clock_timestamp() - interval '6 hours'
+                      when t.hechos = 10 then p_session_created_at <= clock_timestamp() - interval '24 hours'
+                      else false
+                    end
+               from (select count(*) as hechos, max(po.created_at) as ultimo
+                       from public.payment_outbox po
+                      where po.payment_intent_id = p_payment_intent_id
+                        and po.topic = 'payment_reconcile') t)
            when v.ultimo is null then true
            when v.ultimo > clock_timestamp() - interval '2 minutes' then false
            when not v.ultimo_concluyente and v.ultimo > clock_timestamp() - interval '30 minutes' then false
@@ -429,7 +454,7 @@ $function$;
 
 revoke all on function private.provider_probe_is_due(uuid,timestamptz) from public, anon, authenticated, service_role;
 comment on function private.provider_probe_is_due(uuid,timestamptz) is
-  'Si toca volver a preguntarle al proveedor por un checkout: 8 vacíos concluyentes cada 2 minutos, tres tardíos a las 2, 6 y 24 horas, un vacío no concluyente espera 30 minutos sin gastar el tope (20261002060000) y, pasadas las 48 horas, una sonda por día para el checkout que sigue sin verificar (20261003090000).';
+  'Si toca volver a preguntarle al proveedor por un checkout: 8 vacíos concluyentes cada 2 minutos, tres tardíos a las 2, 6 y 24 horas, un vacío no concluyente espera 30 minutos sin gastar el tope (20261002060000); con un pago del proveedor guardado, el mismo ritmo contado por los trabajos de sonda, y, pasadas las 48 horas, una sonda por día para el checkout que sigue sin verificar (20261003090000).';
 
 -- ── 5. El barrido: un checkout sin verificar no se abandona a las 48 horas ──
 CREATE OR REPLACE FUNCTION public.enqueue_checkout_provider_probes(p_limit integer DEFAULT 50)
@@ -553,7 +578,12 @@ begin
        -- preguntar (20261002060000; medido en Staging: 8 vacíos en 30 minutos y un
        -- pago aprobado que la misma búsqueda encuentra después).
        and private.provider_probe_is_due(s.id, s.created_at)
-     order by s.created_at
+     -- Lo que nunca se preguntó va primero, lo más nuevo antes (el comprador puede estar pagando
+     -- ahora mismo); después, lo que hace más tiempo que no se pregunta.
+     order by (select max(po.created_at) from public.payment_outbox po
+                where po.payment_intent_id = s.id
+                  and po.topic = 'payment_reconcile') asc nulls first,
+              s.created_at desc
      limit greatest(1, least(coalesce(p_limit, 50), 200))
   ),
   -- Lo que pasó la ventana: una sonda por día, contada desde la última pregunta (un trabajo de

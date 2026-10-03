@@ -46,16 +46,20 @@ select is(
       and p.prosecdef
       and exists (select 1 from unnest(coalesce(p.proconfig, '{}')) c where c like 'search_path=pg_catalog, public%')),
   2, 'las dos siguen SECURITY DEFINER con search_path fijado');
-select is(
-  (select string_agg(r.rolname, ',' order by r.rolname) from pg_roles r
-    where r.rolname in ('anon', 'authenticated', 'service_role')
-      and has_function_privilege(r.oid, 'public.reject_rider_order_offer(uuid,bigint,text,text)'::regprocedure, 'EXECUTE')),
-  'authenticated', 'rechazar la ejecuta sólo authenticated');
-select is(
-  (select string_agg(r.rolname, ',' order by r.rolname) from pg_roles r
-    where r.rolname in ('anon', 'authenticated', 'service_role')
-      and has_function_privilege(r.oid, 'public.withdraw_rider_order_offer(uuid)'::regprocedure, 'EXECUTE')),
-  'authenticated', 'retirar la ejecuta sólo authenticated');
+-- service_role no se afirma: en un proyecto alojado la tiene por los privilegios por defecto, y esta
+-- migración no la toca (Staging y CP: {postgres, service_role, authenticated}).
+select ok(
+  has_function_privilege('authenticated', 'public.reject_rider_order_offer(uuid,bigint,text,text)'::regprocedure, 'EXECUTE')
+    and not has_function_privilege('anon', 'public.reject_rider_order_offer(uuid,bigint,text,text)'::regprocedure, 'EXECUTE')
+    and not has_function_privilege('public', 'public.reject_rider_order_offer(uuid,bigint,text,text)'::regprocedure, 'EXECUTE'),
+  'rechazar: authenticated sí; anon y PUBLIC no');
+-- service_role no se afirma: en un proyecto alojado la tiene por los privilegios por defecto, y esta
+-- migración no la toca (Staging y CP: {postgres, service_role, authenticated}).
+select ok(
+  has_function_privilege('authenticated', 'public.withdraw_rider_order_offer(uuid)'::regprocedure, 'EXECUTE')
+    and not has_function_privilege('anon', 'public.withdraw_rider_order_offer(uuid)'::regprocedure, 'EXECUTE')
+    and not has_function_privilege('public', 'public.withdraw_rider_order_offer(uuid)'::regprocedure, 'EXECUTE'),
+  'retirar: authenticated sí; anon y PUBLIC no');
 
 select * from finish();
 rollback;

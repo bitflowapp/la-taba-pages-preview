@@ -112,7 +112,7 @@ begin
 end;
 $function$;
 
-revoke all on function public.reject_rider_order_offer(uuid,bigint,text,text) from public, anon, authenticated, service_role;
+revoke all on function public.reject_rider_order_offer(uuid,bigint,text,text) from public, anon, authenticated;
 grant execute on function public.reject_rider_order_offer(uuid,bigint,text,text) to authenticated;
 
 CREATE OR REPLACE FUNCTION public.withdraw_rider_order_offer(p_offer_id uuid)
@@ -157,7 +157,7 @@ begin
 end;
 $function$;
 
-revoke all on function public.withdraw_rider_order_offer(uuid) from public, anon, authenticated, service_role;
+revoke all on function public.withdraw_rider_order_offer(uuid) from public, anon, authenticated;
 grant execute on function public.withdraw_rider_order_offer(uuid) to authenticated;
 
 commit;

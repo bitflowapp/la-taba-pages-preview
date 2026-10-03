@@ -157,7 +157,7 @@ select throws_ok(
 select pg_temp.as_user('a2000000-0000-4000-8000-0000000000d4','c2000000-0000-4000-8000-0000000000d4');
 select throws_ok(
   $$select public.offer_order_to_rider('d2000000-0000-4000-8000-0000000000d1','ready',null,'a2000000-0000-4000-8000-0000000000d5')$$,
-  '42501', 'rol de negocio requerido',
+  '42501', 'Rol de negocio requerido',
   'el staff de otro comercio no puede ofrecer un pedido ajeno');
 select throws_ok(
   $$select public.list_rider_order_offers('b2000000-0000-4000-8000-0000000000d1')$$,

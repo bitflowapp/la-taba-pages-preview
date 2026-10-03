@@ -32,7 +32,7 @@ GitHub informa **46 commits en #131** y **152 en #133** al corte. No se asumiero
 
 Documentación vigente del backend ya está en el HEAD remoto: `LA_TABA_AUTONOMOUS_STATUS.md`, `LA_TABA_AUTONOMOUS_BACKEND_REPORT.md`, `docs/ecommerce-hardening/findings-register.json` y evidencias `artifacts/taba-autonomous-20261003/`. El informe distingue READY_FOR_STAGING de las compuertas CP/dinero real; esta tarea no ejecuta sus pasos de operación. Leer ese informe para las decisiones Owner 1–2 y el orden de PRs #130/#133.
 
-Trabajo transferido: 14 snapshots de cambios locales, 108 ramas de archivo del depósito activo, 31 ramas de archivo del depósito relocalizado y recuperación del stash. Los commits de preservación usan índices temporales y `commit-tree`: **los worktrees originales permanecen sucios**, pero sus bytes útiles están commiteados y pusheados en las ramas indicadas. Los 238 archivos se compararon por blob y coinciden con el snapshot. No se integraron estos frentes antiguos sobre el hardening actual.
+Trabajo transferido: 14 snapshots de cambios locales, 108 ramas de archivo del depósito activo, 31 ramas de archivo del depósito relocalizado, recuperación del stash y cuatro referencias para HEADs históricos de worktrees (incluido un commit huérfano que sólo estaba en el backup). Los commits de preservación usan índices temporales y `commit-tree`: **los worktrees originales permanecen sucios**, pero sus bytes útiles están commiteados y pusheados en las ramas indicadas. Los 238 archivos se compararon por blob y coinciden con el snapshot. No se integraron estos frentes antiguos sobre el hardening actual.
 
 Trabajo pendiente: revisar funcionalmente los snapshots G antes de integrar. El test histórico de preview tiene una aserción de SHA fuente fijada a `317bbe9`; preservar ese test no significa que vaya a pasar tras un commit nuevo. Las migraciones del audit viejo incluyen cambios de whitespace y contratos de Rider; no se aplicaron. Configuración runtime con keys, metadatos `supabase/.temp`, scripts transitorios de login y evidencias raw quedan locales con motivos exactos.
 
@@ -53,7 +53,7 @@ Este repo no tenía remote. Se creó privado para evitar perder trabajo ni mezcl
 
 Git dir: `E:\taba-backups\la-taba-pages-20260725-enospc\relocated-runtime\git-dir`
 Remote original: mismo repo web. HEAD: `edb10db5a0b92d18fad8e13ece61145a544b98a8`, branch `feat/taba-production-beverages`.
-52 ramas y 40 registros antiguos de worktrees; algunos apuntan a rutas ausentes y otros a rutas hoy usadas por otro depósito. No se repararon ni borraron. Sus refs se importaron mediante Git y cada HEAD local tiene una referencia remota exacta. Las carpetas `relocated-original` y `verified-copy` sólo conservan directorios sin archivos útiles de La Taba.
+52 ramas y 40 registros antiguos de worktrees; algunos apuntan a rutas ausentes y otros a rutas hoy usadas por otro depósito. No se repararon ni borraron. Sus refs se importaron mediante Git y cada HEAD local tiene una referencia remota exacta. La revisión individual de los 35 HEAD distintos de esos registros recuperó `089d4cf7` («temporary exact beverage validation tree»), ausente del repo activo y de origin, y creó referencias exactas para cuatro HEADs históricos: `e5d1660c`, `cb49a324`, `98826008`, `089d4cf7`. Ver `backup-worktree-head-verification.json`. Las carpetas `relocated-original` y `verified-copy` sólo conservan directorios sin archivos útiles de La Taba.
 
 Stash: `stash@0` @ `3393f686c86f8b6808da15a587dbad6c95e5cba3`, «codex-temp-before-pr32-merge», frente `feature/premium-mobile-business-inbox-ui`. Sus cinco blobs de código/tests **no aparecían en las ramas remotas ajenas al handoff**. Recuperación: `handoff/notebook-20261003-backup-stash-business-inbox` @ `0b700bce51d0952c6bc3c694fbc378525e02d587`. Se excluyeron seis archivos `.idea` de metadatos/cache del IDE; el stash original sigue intacto. No se hizo apply/pop/drop sobre ningún worktree. Los repos activos web y Rider no tenían stash.
 
@@ -233,7 +233,7 @@ Estado = al inventario, retenido sin alterar el checkout. Integrado = ancestro d
 | `D:/1212/worktrees/taba2-rider-release-hardening-rc2` | `chore/taba2-rider-release-hardening-rc2` / `e9517a93a015474bdb9a73854ac79094cf53f76e` | limpio | no / Rider independiente | `sin código útil pendiente; ver clasificación` |
 | `D:/1212/worktrees/taba2-rider-sheet-ux-polish` | `feature/taba2-rider-map-polish-v2` / `6cb55aaf12c031ec48b4bd1dc940cdf2426e7b6a` | limpio | no / Rider independiente | `sin código útil pendiente; ver clasificación` |
 
-Hay 140 worktrees activos (113 web y 27 Rider), 15 con cambios locales al inventario. `worktrees-inventory.json` contiene el status completo, ignored, HEAD, relación con main y rama recuperable de cada uno. Los 40 registros del backup se detallan en `backup-worktrees-inventory.json`; **NO borrar** ninguno hasta comprobar el handoff en la PC.
+Hay 140 worktrees activos (113 web y 27 Rider), 15 con cambios locales al inventario. `worktrees-inventory.json` contiene el status completo, ignored, HEAD, relación con main y rama recuperable de cada uno. Las ramas locales repetidas entre depósitos se distinguen por `source_git_dir` en `local-branches.csv`; la recuperación de cada worktree se resuelve por SHA exacto, no sólo por el nombre de su branch. Los 40 registros del backup se detallan en `backup-worktrees-inventory.json`; **NO borrar** ninguno hasta comprobar el handoff en la PC.
 
 ## Evidencias y artefactos locales
 
@@ -355,7 +355,16 @@ Si la rama backend de origin ya avanzó al retomar, el SHA del snapshot sigue si
 - Todos los HEAD de las ramas locales de los depósitos activo, Rider y backup están alcanzables desde origin; conteo de commits de branches ausentes de origin: **0 en cada depósito**.
 - Backend y frontend tienen SHA local/remoto/snapshot idénticos y sus PR apuntan al HEAD esperado al corte.
 - Los 238 archivos de cambios locales útiles coinciden por blob con sus snapshots. El stash único se conserva en origen sin eliminación local.
-- Se verificaron ramas recuperables en clones nuevos creados exclusivamente mediante GitHub. La documentación y los archivos externos nuevos se verifican de la misma forma tras su push final.
+- Se verificaron ramas recuperables en clones nuevos creados exclusivamente mediante GitHub. Tras el push final se verifican también el documento, los archivos externos, ZIPs fuente y el commit huérfano en esos clones, sin usar objetos de la notebook.
 - Los informes autónomos actuales ya se recuperan con el hardening. Los informes externos antiguos tienen procedencia y se mantienen separados de la línea de producto.
 - Artefactos raw/grandes, temporales y configuración sensible quedan intactos en notebook con listado exacto. No existe código importante único de La Taba pendiente de persistencia remota; las caches/dependencias se regeneran.
 - No hay autorización de release por este handoff. Mantener las compuertas y decisiones de operación de la rama actual.
+
+## Referencias adicionales de worktrees históricos
+
+| Branch | SHA remoto exacto |
+|---|---|
+| handoff/notebook-20261003-backup-worktree-e5d1660c | e5d1660cb3a75d41f20589ac8e1b9a37b27faf31 |
+| handoff/notebook-20261003-backup-worktree-cb49a324 | cb49a32483475492efc80602b5914e2fbc76737e |
+| handoff/notebook-20261003-backup-worktree-98826008 | 988260081076078b8621d3573df3bc0827450716 |
+| handoff/notebook-20261003-backup-worktree-089d4cf7 | 089d4cf7c63d4528ca9648a3309f35cd5756ea5a |

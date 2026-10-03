@@ -1174,5 +1174,39 @@
     "local_head": "737371ba82cae6e309cff04c97984443c52c8def",
     "remote_head": "737371ba82cae6e309cff04c97984443c52c8def",
     "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup-worktree-e5d1660c",
+    "head": "e5d1660cb3a75d41f20589ac8e1b9a37b27faf31",
+    "local_head": "e5d1660cb3a75d41f20589ac8e1b9a37b27faf31",
+    "remote_head": "e5d1660cb3a75d41f20589ac8e1b9a37b27faf31",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup-worktree-cb49a324",
+    "head": "cb49a32483475492efc80602b5914e2fbc76737e",
+    "local_head": "cb49a32483475492efc80602b5914e2fbc76737e",
+    "remote_head": "cb49a32483475492efc80602b5914e2fbc76737e",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup-worktree-98826008",
+    "head": "988260081076078b8621d3573df3bc0827450716",
+    "local_head": "988260081076078b8621d3573df3bc0827450716",
+    "remote_head": "988260081076078b8621d3573df3bc0827450716",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup-worktree-089d4cf7",
+    "head": "089d4cf7c63d4528ca9648a3309f35cd5756ea5a",
+    "local_head": "089d4cf7c63d4528ca9648a3309f35cd5756ea5a",
+    "remote_head": "089d4cf7c63d4528ca9648a3309f35cd5756ea5a",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-detached-migration-base",
+    "local_head": "7df4643c2e0bbcccb2eff435217fb43a5663c1a6",
+    "remote_head": "7df4643c2e0bbcccb2eff435217fb43a5663c1a6",
+    "equal": true
   }
 ]

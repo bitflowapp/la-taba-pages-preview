@@ -116,3 +116,8 @@ aserciones, total consistente (base limpia y base «sucia»); carreras admisión
   aislado `la-taba-real-money-gate` (rama `feat/taba-real-money-gate`, sin push); se integra sólo después de revisarlo.
   Verificado para su compuerta de release: la Management API devuelve por secreto `{name, value, updated_at}` con `value` =
   SHA-256 del valor, así que se puede saber si vale `enabled` sin ver nunca el secreto.
+- 10:15 — **CI completo VERDE sobre `a7eb622c`** (run 37123390677: web/backend/fiscal/seguridad con `npm test` completo y E2E;
+  migraciones + pgTAP + carreras + restauración; Windows). Corrida 4 del certificador en el stack (37124837704): 455 checks,
+  448 PASS, **2 FAIL = API-01/C-2** (HTTP 500 en 55000/P0002, defecto real abierto), 5 no probados; el check nuevo de AUTHZ-04
+  (empleado → 42501) pasó en el stack real. Más arreglos: TRACK-01 (`f02e55b2`, 39000 en la pantalla del pago tras recuperar el
+  seguimiento). CI despachado sobre `011717fa`: run 37125497727; corrida 5 del stack: 37125278937.

@@ -134,6 +134,16 @@ test('five minute discovery session preserves DOM/images and identical-data rend
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   const requests=[];page.on('request',r=>{if(r.url().includes('/storage/'))requests.push(r.url());});
   const backend=await openRuntimeCatalog(page,{mapRow:row=>({...row,stock:100})});
+  // Settle initial image selection and the first cart/session transition before
+  // measuring sustained identical-data behavior, as in the existing baselines.
+  await page.locator(searchSelector).fill('monster mango');
+  await page.locator(`${GRID} .product-media`).first().click();
+  await page.locator('[data-product-modal] [data-close-modal]').click();
+  await page.locator(`${GRID} [data-add-product]`).first().click();
+  await page.locator(`${GRID} .qty-stepper-remove`).first().click();
+  await page.locator(searchSelector).fill('');
+  await page.waitForTimeout(1000);
+  requests.length=0;
   await instrumentCatalog(page);
   const preview=await page.context().newPage();
   await preview.goto('/scripts/campaign-lab/index.html?only=beer_pour');
@@ -172,7 +182,7 @@ test('five minute discovery session preserves DOM/images and identical-data rend
   const probe=await readProbe(page);
   const redownloads=requests.length-new Set(requests).size;
   const report={durationMs:Date.now()-start,cycles,cardReplacements:probe.cardReplacements,imageReplacements:probe.imageReplacements,
-    imageRedownloads:redownloads,unexpectedRenderCycles,consoleErrors:errors};
+    imageRedownloads:redownloads,duplicateImageUrls:requests.filter((url,index)=>requests.indexOf(url)!==index),unexpectedRenderCycles,consoleErrors:errors};
   fs.writeFileSync(`artifacts/product-discovery-real-campaigns/stress-${info.project.name}.json`,JSON.stringify(report,null,2));
   expect(report.cardReplacements).toBe(0);expect(report.imageReplacements).toBe(0);
   expect(redownloads).toBe(0);expect(unexpectedRenderCycles).toBe(0);expect(errors).toEqual([]);

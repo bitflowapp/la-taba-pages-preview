@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<title>TABA2 · compositor</title>
+<style>
+  /* Paleta tomada tal cual de styles/tokens.css del producto. */
+  :root{
+    --bg:#090b0e; --raised:#111419; --surface:#171a20; --surface-2:#1e222a;
+    --line:rgb(255 255 255 / 12%); --line-strong:rgb(255 255 255 / 24%);
+    --ink:#f5f5f5; --muted:#a8abb2; --red:#d0000d; --red-ink:#ff4d55; --gold:#c9953e;
+    --ok:#3ecf8e;
+    --display:"Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
+    --text:"Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;
+    --ease:cubic-bezier(.16,1,.3,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  /* body fijo: un scrollIntoView disparado DENTRO del iframe podía correr el
+     documento del compositor y sacar el teléfono de cuadro a mitad de una toma. */
+  html{width:1920px;height:1080px;overflow:hidden;background:var(--bg)}
+  body{position:fixed;inset:0;width:1920px;height:1080px;overflow:hidden;background:var(--bg);
+    color:var(--ink);font-family:var(--text);-webkit-font-smoothing:antialiased}
+
+  #stage{position:absolute;inset:0;overflow:hidden}
+
+  /* ---------- fondo ambiente ---------- */
+  .amb{position:absolute;border-radius:50%;filter:blur(120px);opacity:.5;transition:opacity 1.2s var(--ease),transform 2.4s var(--ease)}
+  .amb-a{width:1100px;height:1100px;left:-260px;top:-360px;background:radial-gradient(circle,rgb(208 0 13 / 22%),transparent 62%)}
+  .amb-b{width:1000px;height:1000px;right:-300px;bottom:-380px;background:radial-gradient(circle,rgb(201 149 62 / 14%),transparent 62%)}
+  .grid{position:absolute;inset:0;opacity:.35;
+    background-image:linear-gradient(rgb(255 255 255 / 3%) 1px,transparent 1px),
+                     linear-gradient(90deg,rgb(255 255 255 / 3%) 1px,transparent 1px);
+    background-size:64px 64px;
+    -webkit-mask-image:radial-gradient(ellipse 90% 70% at 50% 45%,#000 30%,transparent 80%)}
+  .vig{position:absolute;inset:0;background:radial-gradient(ellipse 85% 75% at 50% 50%,transparent 45%,rgb(0 0 0 / 62%))}
+
+  /* ---------- cabecera de marca ---------- */
+  #brand{position:absolute;left:96px;top:56px;display:flex;align-items:center;gap:14px;z-index:36;
+    opacity:0;transition:opacity .6s var(--ease)}
+  #brand.on{opacity:1}
+  #brand .mark{font-family:var(--display);font-weight:700;font-size:26px;letter-spacing:-.02em}
+  #brand .mark i{font-style:italic}
+  #brand .rule{width:34px;height:3px;background:var(--red);border-radius:2px}
+
+  /* ---------- chips de honestidad ---------- */
+  #chips{position:absolute;right:96px;top:52px;display:flex;gap:10px;align-items:center;z-index:36}
+  .chip{display:inline-flex;align-items:center;gap:9px;padding:9px 17px;border-radius:999px;
+    border:1px solid var(--line-strong);background:rgb(255 255 255 / 5%);
+    font-size:15px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);
+    opacity:0;transform:translateY(-8px);transition:opacity .45s var(--ease),transform .45s var(--ease);
+    backdrop-filter:blur(8px)}
+  .chip.on{opacity:1;transform:none}
+  .chip .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+  .chip.warn{color:#ffcf6b;border-color:rgb(201 149 62 / 55%);background:rgb(201 149 62 / 12%)}
+  .chip.warn .dot{background:var(--gold)}
+  .chip.test{color:#8ab4ff;border-color:rgb(138 180 255 / 45%);background:rgb(138 180 255 / 10%)}
+  .chip.test .dot{background:#8ab4ff}
+  .chip.real{color:#7ee2b8;border-color:rgb(62 207 142 / 45%);background:rgb(62 207 142 / 10%)}
+  .chip.real .dot{background:var(--ok)}
+
+  /* ---------- bloque de texto ---------- */
+  #copy{position:absolute;left:96px;top:50%;transform:translateY(-50%);width:660px}
+  #copy.wide{width:1120px}
+  .rise{opacity:0;transform:translateY(26px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
+  .rise.on{opacity:1;transform:none}
+  #num{font-family:var(--display);font-size:15px;font-weight:600;letter-spacing:.34em;color:var(--red-ink);
+    text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;gap:14px}
+  #num .bar{width:40px;height:2px;background:var(--red);display:inline-block}
+  #eyebrow{font-size:20px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:22px}
+  #title{font-family:var(--display);font-size:66px;line-height:1.05;font-weight:700;letter-spacing:-.025em;margin-bottom:26px}
+  #title em{font-style:normal;color:var(--red-ink)}
+  #sub{font-size:26px;line-height:1.5;color:var(--muted);font-weight:400;max-width:600px}
+  #copy.wide #sub{max-width:900px}
+  #bullets{margin-top:34px;display:flex;flex-direction:column;gap:16px}
+  .bul{display:flex;align-items:flex-start;gap:14px;font-size:22px;color:var(--ink);opacity:0;
+    transform:translateY(14px);transition:opacity .5s var(--ease),transform .5s var(--ease)}
+  .bul.on{opacity:1;transform:none}
+  .bul .tick{flex:0 0 auto;width:22px;height:22px;border-radius:50%;background:rgb(62 207 142 / 14%);
+    border:1px solid rgb(62 207 142 / 45%);position:relative;margin-top:3px}
+  .bul .tick::after{content:"";position:absolute;left:7px;top:4px;width:5px;height:10px;
+    border:solid var(--ok);border-width:0 2px 2px 0;transform:rotate(42deg)}
+  .bul.num .tick{background:rgb(208 0 13 / 16%);border-color:rgb(255 77 85 / 45%)}
+  .bul.num .tick::after{display:none}
+
+  /* ---------- marco de teléfono ---------- */
+  #phone{position:absolute;left:1178px;top:50%;margin-top:-477px;width:474px;height:954px;
+    border-radius:50px;background:linear-gradient(160deg,#2b3038,#0d1014 55%);padding:13px;
+    box-shadow:0 60px 130px rgb(0 0 0 / 72%),0 0 0 1px rgb(255 255 255 / 9%),
+               inset 0 1px 0 rgb(255 255 255 / 16%);
+    opacity:0;transform:translateY(40px) scale(.985);
+    transition:opacity .8s var(--ease),transform .8s var(--ease),left .8s var(--ease)}
+  #phone.on{opacity:1;transform:none}
+  #phone.left{left:268px}
+  #phone.mid{left:723px}
+  #phone .screen{position:relative;width:448px;height:928px;border-radius:38px;overflow:hidden;background:#000}
+  #phone .notch{position:absolute;left:50%;top:9px;transform:translateX(-50%);width:104px;height:22px;
+    border-radius:12px;background:#000;z-index:6;box-shadow:0 0 0 1px rgb(255 255 255 / 6%)}
+  #phone iframe{position:absolute;left:8px;top:8px;width:432px;height:912px;border:0;background:#090b0e}
+  .stills{position:absolute;left:8px;top:8px;width:432px;height:912px;overflow:hidden;background:transparent}
+  .stills:empty{display:none}
+  .stills img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;
+    opacity:0;transition:opacity .5s linear;will-change:transform;background:#0b0d10}
+  .stills img.on{opacity:1}
+  @keyframes drift{from{transform:scale(1) translateY(0)}to{transform:scale(1.045) translateY(-9px)}}
+  .stills img.on.kb{animation:drift 7s linear forwards}
+
+  /* ---------- marco de navegador ---------- */
+  /* El iframe mide siempre 1600x900 y se REDUCE por transform: bajar de escala
+     rasteriza de nuevo, así que el panel se lee nítido en vez de interpolado. */
+  #win{position:absolute;left:760px;top:50%;margin-top:-336px;width:1120px;
+    border-radius:16px;overflow:hidden;background:var(--surface);
+    box-shadow:0 50px 120px rgb(0 0 0 / 72%),0 0 0 1px rgb(255 255 255 / 10%);
+    opacity:0;transform:translateY(34px) scale(.99);
+    transition:opacity .8s var(--ease),transform .8s var(--ease)}
+  #win.on{opacity:1;transform:none}
+  #win .bar{height:42px;display:flex;align-items:center;gap:9px;padding:0 16px;
+    background:linear-gradient(#20242c,#171a20);border-bottom:1px solid var(--line)}
+  #win .d{width:11px;height:11px;border-radius:50%;background:#3a3f49}
+  #win .url{margin-left:14px;flex:1;height:24px;border-radius:12px;background:#0d1014;
+    border:1px solid var(--line);display:flex;align-items:center;padding:0 12px;
+    font-size:12px;color:#6d7480;letter-spacing:.02em}
+  #win .hold{position:relative;width:1120px;height:630px;overflow:hidden;background:#fff}
+  #win iframe{position:absolute;left:0;top:0;width:1600px;height:900px;border:0;
+    transform:scale(.70);transform-origin:0 0}
+  /* variante protagonista: ventana grande y centrada, sin columna de texto */
+  #win.hero{left:256px;width:1408px;margin-top:-417px}
+  #win.hero .hold{width:1408px;height:792px}
+  #win.hero iframe{transform:scale(.88)}
+  #win .stills{position:absolute;inset:0;width:100%;height:100%;left:0;top:0}
+  #win .stills img{object-position:top center}
+
+  /* ---------- llamadas sobre la interfaz ---------- */
+  .callout{position:absolute;z-index:20;display:flex;align-items:center;gap:0;
+    opacity:0;transform:translateY(8px);transition:opacity .4s var(--ease),transform .4s var(--ease);
+    pointer-events:none}
+  .callout.on{opacity:1;transform:none}
+  .callout .lbl{background:rgb(9 11 14 / 92%);border:1px solid var(--line-strong);
+    border-radius:10px;padding:10px 16px;font-size:19px;font-weight:600;color:var(--ink);
+    white-space:nowrap;box-shadow:0 14px 34px rgb(0 0 0 / 55%);backdrop-filter:blur(6px)}
+  .callout .lbl b{color:var(--red-ink);font-weight:700}
+  .callout .ln{height:2px;background:linear-gradient(90deg,var(--red),rgb(208 0 13 / 0%));width:58px}
+  .callout.rtl{flex-direction:row-reverse}
+  .callout.rtl .ln{background:linear-gradient(270deg,var(--red),rgb(208 0 13 / 0%))}
+  .ring{position:absolute;z-index:19;border:2px solid var(--red-ink);border-radius:12px;
+    box-shadow:0 0 0 6px rgb(208 0 13 / 16%);opacity:0;transition:opacity .35s var(--ease)}
+  .ring.on{opacity:1}
+
+  /* ---------- banda de subtítulo ---------- */
+  #sub-band{position:absolute;left:96px;right:96px;bottom:44px;display:flex;justify-content:flex-start;
+    pointer-events:none;z-index:30}
+  #sub-band.mid{justify-content:center}
+  #sub-band .txt{max-width:1000px;text-align:left;font-size:28px;line-height:1.35;font-weight:500;
+    color:#fff;padding:14px 30px;border-radius:12px;background:rgb(6 8 10 / 76%);
+    border:1px solid rgb(255 255 255 / 8%);backdrop-filter:blur(10px);
+    opacity:0;transform:translateY(10px);transition:opacity .35s var(--ease),transform .35s var(--ease);
+    text-shadow:0 2px 12px rgb(0 0 0 / 70%)}
+  #sub-band .txt.on{opacity:1;transform:none}
+
+  /* ---------- pie ---------- */
+  #foot{position:absolute;right:96px;bottom:56px;font-size:15px;color:#5f6672;letter-spacing:.05em;
+    text-align:right;z-index:31;opacity:0;transition:opacity .5s var(--ease)}
+  #foot.on{opacity:.9}
+
+  /* ---------- placa a pantalla completa ---------- */
+  #card{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;gap:0;opacity:0;pointer-events:none;transition:opacity .8s var(--ease);z-index:40;
+    background:radial-gradient(ellipse 70% 60% at 50% 45%,#12161c,#070809 70%)}
+  #card.on{opacity:1}
+  #card .kicker{font-size:19px;letter-spacing:.36em;text-transform:uppercase;color:var(--gold);
+    margin-bottom:34px;opacity:0;transform:translateY(18px);transition:all .8s var(--ease)}
+  #card .big{font-family:var(--display);font-size:96px;font-weight:700;letter-spacing:-.03em;line-height:1.02;
+    opacity:0;transform:translateY(24px);transition:all .9s var(--ease);max-width:1500px}
+  #card .big em{font-style:normal;color:var(--red-ink)}
+  #card .small{margin-top:34px;font-size:30px;color:var(--muted);line-height:1.5;max-width:1150px;
+    opacity:0;transform:translateY(20px);transition:all .9s var(--ease)}
+  #card .meta{margin-top:56px;font-size:22px;letter-spacing:.2em;text-transform:uppercase;color:#6d7480;
+    opacity:0;transform:translateY(16px);transition:all .9s var(--ease)}
+  #card .rule{width:88px;height:4px;background:var(--red);border-radius:3px;margin-bottom:40px;
+    opacity:0;transform:scaleX(.2);transform-origin:center;transition:all .9s var(--ease)}
+  #card.step1 .rule,#card.step1 .kicker{opacity:1;transform:none}
+  #card.step2 .big{opacity:1;transform:none}
+  #card.step3 .small{opacity:1;transform:none}
+  #card.step4 .meta{opacity:1;transform:none}
+
+  /* ---------- rótulo grande de advertencia ---------- */
+  #banner{position:absolute;left:0;right:0;top:0;z-index:45;display:flex;justify-content:center;
+    opacity:0;transform:translateY(-100%);transition:opacity .5s var(--ease),transform .5s var(--ease)}
+  #banner.on{opacity:1;transform:none}
+  body.con-banner #brand{top:118px}
+  body.con-banner #chips{top:114px}
+  #banner .b{margin-top:0;width:100%;text-align:center;padding:20px 0;
+    background:repeating-linear-gradient(135deg,rgb(201 149 62 / 20%) 0 22px,rgb(201 149 62 / 8%) 22px 44px);
+    border-bottom:2px solid rgb(201 149 62 / 65%);
+    font-family:var(--display);font-size:30px;font-weight:700;letter-spacing:.14em;color:#ffd489;
+    text-transform:uppercase}
+
+  /* ---------- flujo de conversación ----------
+     NO imita WhatsApp: es un diagrama con la identidad de TABA2 y con los
+     textos que el canal certificado en pruebas produce de verdad. */
+  .flow[hidden]{display:none}
+  .flow{position:absolute;left:8px;top:8px;width:432px;height:912px;background:#0b0d10;
+    padding:46px 14px 16px;overflow:hidden;display:flex;flex-direction:column;gap:11px}
+  .flow .fhead{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#6d7480;
+    border-bottom:1px solid rgb(255 255 255 / 10%);padding-bottom:10px;margin-bottom:3px;line-height:1.5}
+  .flow .row{opacity:0;transform:translateY(10px);transition:opacity .4s var(--ease),transform .4s var(--ease)}
+  .flow .row.on{opacity:1;transform:none}
+  .flow .who{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#6d7480;margin-bottom:5px}
+  .flow .bub{border-radius:12px;padding:11px 13px;font-size:15px;line-height:1.42;
+    border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+  .flow .row.cli{margin-left:56px;text-align:right}
+  .flow .row.cli .bub{background:rgb(208 0 13 / 16%);border-color:rgb(255 77 85 / 40%);text-align:left}
+  .flow .row.sys{margin-right:44px}
+  .flow .row.sys .bub b{color:var(--gold)}
+  .flow .row.note .bub{background:transparent;border-style:dashed;color:var(--muted);font-size:13px}
+
+  /* ---------- puntero simulado ---------- */
+  /* Headless no dibuja cursor. Sin un puntero visible el video parece que se
+     opera solo; con él se lee como alguien usando el producto. */
+  #cur{position:absolute;z-index:38;width:30px;height:30px;left:0;top:0;pointer-events:none;
+    opacity:0;transition:opacity .3s var(--ease),transform .62s cubic-bezier(.33,.9,.28,1)}
+  #cur.on{opacity:1}
+  #cur .dot{position:absolute;inset:0;border-radius:50%;
+    background:radial-gradient(circle at 34% 32%,rgb(255 255 255 / 95%),rgb(255 255 255 / 55%) 55%,rgb(255 255 255 / 10%));
+    border:1.5px solid rgb(255 255 255 / 75%);box-shadow:0 4px 18px rgb(0 0 0 / 55%)}
+  #cur .pulse{position:absolute;inset:0;border-radius:50%;border:2px solid var(--red-ink);opacity:0}
+  @keyframes tapring{0%{transform:scale(.6);opacity:.9}100%{transform:scale(3.1);opacity:0}}
+  #cur.tap .pulse{animation:tapring .55s ease-out}
+  @keyframes tapdot{0%{transform:scale(1)}45%{transform:scale(.74)}100%{transform:scale(1)}}
+  #cur.tap .dot{animation:tapdot .3s ease-out}
+
+  /* ---------- fundido a negro ---------- */
+  #black{position:absolute;inset:0;background:#000;opacity:0;z-index:60;pointer-events:none;
+    transition:opacity .45s linear}
+  #black.on{opacity:1}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="amb amb-a"></div>
+  <div class="amb amb-b"></div>
+  <div class="grid"></div>
+  <div class="vig"></div>
+
+  <div id="brand"><span class="mark">La Taba <i>2</i></span><span class="rule"></span>
+    <span style="font-size:14px;letter-spacing:.22em;text-transform:uppercase;color:#6d7480">TABA2</span></div>
+  <div id="chips"></div>
+
+  <div id="win"><div class="bar"><span class="d"></span><span class="d"></span><span class="d"></span>
+      <span class="url" id="winurl">taba2 · panel del negocio</span></div>
+    <div class="hold"><iframe id="wframe" src="about:blank"></iframe><div class="stills" id="wstills"></div></div></div>
+
+  <div id="phone"><div class="screen"><div class="notch"></div>
+      <iframe id="pframe" src="about:blank"></iframe><div class="stills" id="pstills"></div>
+      <div class="flow" id="pflow" hidden></div></div></div>
+
+  <div id="copy">
+    <div id="num" class="rise"><span class="bar"></span><span id="numtxt"></span></div>
+    <div id="eyebrow" class="rise"></div>
+    <div id="title" class="rise"></div>
+    <div id="sub" class="rise"></div>
+    <div id="bullets"></div>
+  </div>
+
+  <div id="foot"></div>
+  <div id="sub-band"><div class="txt" id="subtxt"></div></div>
+  <div id="banner"><div class="b" id="bantxt"></div></div>
+
+  <div id="card">
+    <div class="rule"></div><div class="kicker" id="ckick"></div>
+    <div class="big" id="cbig"></div><div class="small" id="csmall"></div><div class="meta" id="cmeta"></div>
+  </div>
+
+  <div id="cur"><span class="pulse"></span><span class="dot"></span></div>
+  <div id="black"></div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const on  = (el, cls = 'on') => el.classList.add(cls);
+const off = (el, cls = 'on') => el.classList.remove(cls);
+
+const VFX = {
+  /* --- superficie --- */
+  brand(v){ v ? on($('brand')) : off($('brand')); },
+  foot(t){ const f = $('foot'); f.textContent = t || ''; t ? on(f) : off(f); },
+  black(v){ v ? on($('black')) : off($('black')); },
+
+  chips(list){                       // [{text, kind}] kind: '', 'warn', 'test', 'real'
+    const box = $('chips'); box.innerHTML = '';
+    (list || []).forEach((c, i) => {
+      const el = document.createElement('span');
+      el.className = 'chip ' + (c.kind || '');
+      el.innerHTML = '<span class="dot"></span>' + c.text;
+      box.appendChild(el);
+      setTimeout(() => on(el), 80 * i);
+    });
+  },
+
+  banner(text){
+    const b = $('banner');
+    if (!text) { off(b); document.body.classList.remove('con-banner'); return; }
+    $('bantxt').textContent = text; on(b); document.body.classList.add('con-banner');
+  },
+
+  /* --- bloque de texto lateral --- */
+  copy({ num, eyebrow, title, sub, wide }){
+    const c = $('copy'); wide ? c.classList.add('wide') : c.classList.remove('wide');
+    ['num','eyebrow','title','sub'].forEach((k) => off($(k), 'on'));
+    $('bullets').innerHTML = '';
+    $('numtxt').textContent = num || '';
+    $('eyebrow').textContent = eyebrow || '';
+    $('title').innerHTML = title || '';
+    $('sub').innerHTML = sub || '';
+    const seq = [['num', !!num], ['eyebrow', !!eyebrow], ['title', !!title], ['sub', !!sub]];
+    let d = 0;
+    seq.forEach(([k, show]) => { if (show) { setTimeout(() => on($(k)), d); d += 130; } });
+  },
+  copyOut(){ ['num','eyebrow','title','sub'].forEach((k) => off($(k))); $('bullets').innerHTML = ''; },
+
+  bullet(text, kind){
+    const el = document.createElement('div');
+    el.className = 'bul' + (kind === 'num' ? ' num' : '');
+    el.innerHTML = '<span class="tick"></span><span>' + text + '</span>';
+    $('bullets').appendChild(el);
+    requestAnimationFrame(() => requestAnimationFrame(() => on(el)));
+  },
+
+  /* --- subtítulo (idéntico a la narración) --- */
+  say(text, opts){
+    const band = $('sub-band'); const t = $('subtxt');
+    if (opts && opts.center) band.classList.add('mid'); else band.classList.remove('mid');
+    if (!text) { off(t); return; }
+    t.innerHTML = text; on(t);
+  },
+
+  /* --- dispositivos --- */
+  /* `show` sólo cambia la visibilidad si viene declarado: pasar únicamente
+     `{src}` no puede apagar un dispositivo que ya está en cuadro. */
+  phone({ show, src, side }){
+    const p = $('phone');
+    if (side !== undefined) { p.classList.remove('left', 'mid'); if (side) p.classList.add(side); }
+    if (src !== undefined) $('pframe').src = src;
+    if (show !== undefined) (show ? on(p) : off(p));
+  },
+  win({ show, src, url, hero }){
+    const w = $('win');
+    if (hero !== undefined) (hero ? w.classList.add('hero') : w.classList.remove('hero'));
+    if (url) $('winurl').textContent = url;
+    if (src !== undefined) $('wframe').src = src;
+    if (show !== undefined) (show ? on(w) : off(w));
+  },
+
+  /* --- secuencias de imagen fija con deriva suave --- */
+  stills(target, sources){
+    const box = $(target === 'win' ? 'wstills' : 'pstills');
+    box.innerHTML = '';
+    (sources || []).forEach((s) => { const im = new Image(); im.src = s; im.decoding = 'sync'; box.appendChild(im); });
+    box.dataset.i = '-1';
+  },
+  still(target, index, kenburns){
+    const box = $(target === 'win' ? 'wstills' : 'pstills');
+    [...box.children].forEach((im, i) => {
+      if (i === index) { im.classList.add('on'); if (kenburns) im.classList.add('kb'); }
+      else { im.classList.remove('on'); im.classList.remove('kb'); }
+    });
+    box.dataset.i = String(index);
+  },
+  stillsClear(target){ $(target === 'win' ? 'wstills' : 'pstills').innerHTML = ''; },
+
+  /* --- llamadas ancladas a coordenadas del frame principal --- */
+  callout({ x, y, text, side = 'ltr', id = 'c1' }){
+    let el = document.getElementById('co-' + id);
+    if (!el) {
+      el = document.createElement('div'); el.id = 'co-' + id; el.className = 'callout';
+      el.innerHTML = '<span class="ln"></span><span class="lbl"></span>';
+      $('stage').appendChild(el);
+    }
+    el.className = 'callout' + (side === 'rtl' ? ' rtl' : '');
+    el.querySelector('.lbl').innerHTML = text;
+    el.style.top = (y - 22) + 'px';
+    if (side === 'rtl') { el.style.left = 'auto'; el.style.right = (1920 - x) + 'px'; }
+    else { el.style.right = 'auto'; el.style.left = x + 'px'; }
+    requestAnimationFrame(() => requestAnimationFrame(() => on(el)));
+  },
+  ring({ x, y, w, h, id = 'r1' }){
+    let el = document.getElementById('ri-' + id);
+    if (!el) { el = document.createElement('div'); el.id = 'ri-' + id; el.className = 'ring'; $('stage').appendChild(el); }
+    Object.assign(el.style, { left: (x - 6) + 'px', top: (y - 6) + 'px', width: (w + 12) + 'px', height: (h + 12) + 'px' });
+    requestAnimationFrame(() => requestAnimationFrame(() => on(el)));
+  },
+  clearMarks(){ document.querySelectorAll('.callout,.ring').forEach((el) => el.remove()); },
+
+  /* --- placa a pantalla completa --- */
+  card({ kicker, big, small, meta }){
+    const c = $('card');
+    c.className = ''; $('ckick').textContent = kicker || ''; $('cbig').innerHTML = big || '';
+    $('csmall').innerHTML = small || ''; $('cmeta').textContent = meta || '';
+    on(c);
+    setTimeout(() => c.classList.add('step1'), 60);
+    setTimeout(() => c.classList.add('step2'), 420);
+    setTimeout(() => c.classList.add('step3'), 900);
+    setTimeout(() => c.classList.add('step4'), 1400);
+  },
+  cardOut(){ const c = $('card'); off(c); setTimeout(() => { c.className = ''; }, 800); },
+
+  /* --- diagrama del canal de pedidos --- */
+  flow(head, rows){
+    const box = $('pflow');
+    box.hidden = false;
+    box.innerHTML = `<div class="fhead">${head}</div>` + rows.map((r) => (
+      `<div class="row ${r.who}"><div class="who">${r.label || ''}</div><div class="bub">${r.text}</div></div>`
+    )).join('');
+  },
+  flowStep(i){
+    const rows = $('pflow').querySelectorAll('.row');
+    if (rows[i]) rows[i].classList.add('on');
+  },
+  flowOff(){ const b = $('pflow'); b.hidden = true; b.innerHTML = ''; },
+
+  /* --- puntero --- */
+  cursor(x, y){
+    const c = $('cur');
+    c.style.transform = `translate(${x - 15}px, ${y - 15}px)`;
+    on(c);
+  },
+  cursorOff(){ off($('cur')); },
+  tap(){ const c = $('cur'); c.classList.remove('tap'); void c.offsetWidth; c.classList.add('tap'); },
+
+  /* --- limpieza total entre escenas --- */
+  reset(){
+    VFX.clearMarks(); VFX.copyOut(); VFX.say(''); VFX.banner(''); VFX.cursorOff();
+    off($('phone')); off($('win')); VFX.stillsClear('phone'); VFX.stillsClear('win');
+  },
+};
+window.VFX = VFX;
+</script>
+</body>
+</html>

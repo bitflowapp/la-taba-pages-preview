@@ -34,29 +34,31 @@
 --     Pasada la ventana sigue abierta hasta que la cierre una PRUEBA (sin pago guardado, un
 --     vacío concluyente; el resultado final del proveedor; el pedido) o una PERSONA: el dueño
 --     o un encargado activo que, pasada la ventana, la da por resuelta con su nota
---     (transition_operational_alert). Esa resolución vale mientras el proveedor no diga nada
---     que esa persona no vio: un pago que no estaba u otro estado de un pago que ya estaba la
---     reabren; una relectura igual no (lo posterior a la revisión manda, como en
---     PAYMENT_NEEDS_REVIEW). Lo que vio es la evidencia de la alerta tal como la refrescó la
---     reconciliación por última vez: lo asentado después cuenta como nuevo. La resolución de
---     un empleado no cuenta (no ve el cobro).
+--     (transition_operational_alert). Esa resolución vale mientras el pago que esa persona
+--     tenía a la vista siga igual: la evidencia de la alerta guarda el pago sin resultado final
+--     y su estado (o ninguno); otro pago, otro estado o un pago donde no había ninguno la
+--     reabren, y una relectura igual no (lo posterior a la revisión manda, como en
+--     PAYMENT_NEEDS_REVIEW, sin depender de horas). La resolución de un empleado no cuenta (no
+--     ve el cobro).
 --   · Pasada la ventana, «sin verificar» incluye también un pago que el proveedor todavía no
 --     resolvió (`pending`, `in_process`, `authorized`, la misma lista que el registro de
 --     pagos trata como no final), sea el que el cobro tiene guardado u OTRO de la misma
 --     preferencia: si el comprador reintentó y el guardado es un rechazo, el primero puede
 --     seguir en revisión manual en Mercado Pago. Se mira el último estado de cada pago y la
---     sonda relee el que sigue sin resolver por su id. Para ese caso un vacío no prueba nada: la sonda empieza a
---     los 90 segundos, antes de que el comprador pague, y con el pago guardado lo lee por su
---     id y no vuelve a anotar vacíos; el vacío que haya es de antes del pago. Se cierra cuando
---     el proveedor da un resultado final: un rechazo o una cancelación (no hubo dinero) o una
---     aprobación, que el registro de pagos manda a revisión con su propia alerta. La evidencia
---     de la alerta dice el estado del proveedor.
+--     sonda relee el que sigue sin resolver por su id. Para ese caso un vacío no prueba nada:
+--     la sonda empieza a los 90 segundos, antes de que el comprador pague, y con el pago
+--     guardado lo lee por su id y no vuelve a anotar vacíos; el vacío que haya es de antes del
+--     pago. Se cierra cuando el proveedor da un resultado final: un rechazo o una cancelación
+--     (no hubo dinero) o una aprobación, que el registro de pagos manda a revisión con su
+--     propia alerta. La evidencia de la alerta dice el estado del proveedor.
 --   · El barrido no abandona esos checkouts: pasadas las 48 horas, una sonda por día hasta los
 --     30 días, contada desde la última pregunta (un vacío o un trabajo encolado, aunque haya
---     fallado). La resolución de una persona cierra la alerta, no la sonda: se sigue
---     preguntando. Si el pago aparece o se resuelve, el worker lo asienta por el camino de
---     siempre y lo toman las alertas de cobro aprobado sin pedido o de revisión, que no tienen
---     ventana.
+--     fallado). Lo mismo para un checkout cuyo pago guardado fue rechazado o cancelado: la
+--     búsqueda por la referencia externa prefiere un pago aprobado, así que un pago anterior
+--     cuyos avisos se perdieron y que se aprueba tarde aparece en la búsqueda del día. La
+--     resolución de una persona cierra la alerta, no la sonda: se sigue preguntando. Si el
+--     pago aparece o se resuelve, el worker lo asienta por el camino de siempre y lo toman las
+--     alertas de cobro aprobado sin pedido o de revisión, que no tienen ventana.
 --   · Una marca de agua por entorno (`private.payment_safety_watermarks`, escrita al aplicar:
 --     ahora menos 48 horas): todo checkout que todavía estaba dentro de la ventana cuando esto
 --     se aplica queda vigilado; lo anterior no se resucita como alertas críticas y lo sigue
@@ -75,9 +77,9 @@
 --   · Qué es un vacío concluyente, la ventana de 48 horas y su ritmo (8 + 2/6/24 horas, 30
 --     minutos para un no concluyente), y todas las demás ramas de la reconciliación.
 --   · Ninguna fila existente: no se escribe ni se borra nada fuera de la marca de agua.
---   · Costo para el proveedor: a lo sumo una consulta por día por checkout sin verificar,
---     durante 30 días; y el índice parcial de abajo, sobre una sola clase de trabajo de la
---     cola.
+--   · Costo para el proveedor: a lo sumo una consulta por día, durante 30 días, por checkout
+--     sin verificar o con el pago guardado rechazado o cancelado. Dos índices parciales: el de
+--     una sola clase de trabajo de la cola y el de los asientos de pagos sin resultado final.
 --
 -- Prueba: supabase/tests/unverified_checkout_never_closes_by_time_test.sql
 -- Generada de las definiciones vivas (pg_get_functiondef) con reemplazos que tienen que
@@ -93,7 +95,7 @@ begin
   for v_row in
     select * from (values
       ('private.provider_probe_is_due(uuid,timestamptz)', '527187a827aa6abe0abb832be820da39', '43efcbc2c2c4dc344d1965a6ce29b60b'),
-      ('public.enqueue_checkout_provider_probes(integer)', '24eb443ab5e712f436f17a4d67803686', 'e0cf99f3d691dac0a89210457f875e52'),
+      ('public.enqueue_checkout_provider_probes(integer)', '24eb443ab5e712f436f17a4d67803686', '575e576553043fb31ddf8e02367f1095'),
       ('public.reconcile_operational_alerts_for_business(uuid)', 'dfb440ae088f4674986af94183463e78', '40673b9efadd1f5550db1658b17b5db3')
     ) as t(signature, generated_from, applied)
   loop
@@ -142,17 +144,19 @@ comment on function private.unverified_checkout_watch_since() is
   'Desde cuándo un checkout sin verificar sigue vigilado pasada la ventana de 48 horas en este entorno (20261003090000).';
 
 -- ── 2. «Una persona la dio por resuelta, y el proveedor no dijo nada nuevo» ──
--- La alerta está resuelta y quien la resolvió (transition_operational_alert pide una nota)
--- es hoy dueño o encargado activo del negocio. Vale mientras el proveedor no diga nada que
--- esa persona no vio: un pago que no estaba, u otro estado de un pago que ya estaba. Lo que
--- vio es la evidencia de la alerta, que la reconciliación refrescó por última vez en
--- `last_seen_at`: lo asentado después de ese momento (aunque sea antes de la resolución)
--- cuenta como nuevo. Una relectura igual (el mismo pago con el mismo estado) no la reabre. Es la regla de PAYMENT_NEEDS_REVIEW (private.payment_review_findings): lo posterior
--- a la revisión manda. Se mira el estado vigente de la alerta y no la historia: cuando la
--- reconciliación la reabre, borra su autor y la resolución vieja deja de contar. La alerta
--- se busca por su huella (negocio:código:sujeto), la misma de la reconciliación, por el
--- índice único.
-create or replace function private.unverified_checkout_review_holds(p_business_id uuid, p_payment_intent_id uuid)
+-- La alerta está resuelta y quien la resolvió (transition_operational_alert pide una nota) es hoy
+-- dueño o encargado activo del negocio. Vale mientras el pago que esa persona tenía a la vista siga
+-- igual. Lo que vio es la evidencia de la alerta, que la reconciliación deja de refrescar cuando la
+-- alerta queda resuelta: el pago sin resultado final que había (`unresolved_provider_payment_id`) y su
+-- estado (`provider_status`), o ninguno. Si hoy es otro pago, otro estado, o aparece un pago donde no
+-- había ninguno, la resolución deja de valer y la alerta se reabre. Una relectura igual no la reabre.
+-- Es la regla de PAYMENT_NEEDS_REVIEW (lo posterior a la revisión manda) sin horas de por medio: un
+-- pago asentado después del último refresco de la evidencia, o confirmado después, también es nuevo.
+-- Se mira el estado vigente de la alerta y no la historia: cuando la reconciliación la reabre, borra
+-- su autor y la resolución vieja deja de contar. La alerta se busca por su huella
+-- (negocio:código:sujeto), la misma de la reconciliación, por el índice único.
+create or replace function private.unverified_checkout_review_holds(
+  p_business_id uuid, p_payment_intent_id uuid, p_provider_payment_id text, p_provider_status text)
 returns boolean
 language sql
 stable
@@ -171,29 +175,20 @@ as $function$
              p_business_id::text || ':CHECKOUT_PROVIDER_UNVERIFIED:' || p_payment_intent_id::text, 'sha256'), 'hex')
        and a.status = 'resolved'
        and a.resolved_at is not null
-       and not exists (
-         select 1
-           from public.payment_events nuevo
-          where nuevo.payment_intent_id = p_payment_intent_id
-            and nuevo.event_type <> 'payment.provider_probe_empty'
-            and nuevo.provider_status is not null
-            and nuevo.server_recorded_at > least(a.resolved_at, a.last_seen_at)
-            and not exists (
-              select 1
-                from public.payment_events visto
-               where visto.payment_intent_id = p_payment_intent_id
-                 and visto.event_type <> 'payment.provider_probe_empty'
-                 and visto.provider_event_id is not distinct from nuevo.provider_event_id
-                 and visto.provider_status = nuevo.provider_status
-                 and visto.server_recorded_at <= least(a.resolved_at, a.last_seen_at)
-            )
-       )
+       and a.evidence ->> 'unresolved_provider_payment_id' is not distinct from p_provider_payment_id
+       and a.evidence ->> 'provider_status' is not distinct from p_provider_status
   )
 $function$;
 
-revoke all on function private.unverified_checkout_review_holds(uuid, uuid) from public, anon, authenticated, service_role;
-comment on function private.unverified_checkout_review_holds(uuid, uuid) is
-  'Si la alerta CHECKOUT_PROVIDER_UNVERIFIED de ese cobro está resuelta por el dueño o un encargado activo y el proveedor no informó después ningún pago ni estado nuevo (20261003090000). La reconciliación la consulta sólo pasada la ventana de 48 horas.';
+revoke all on function private.unverified_checkout_review_holds(uuid, uuid, text, text) from public, anon, authenticated, service_role;
+comment on function private.unverified_checkout_review_holds(uuid, uuid, text, text) is
+  'Si la alerta CHECKOUT_PROVIDER_UNVERIFIED de ese cobro está resuelta por el dueño o un encargado activo y el pago sin resultado final que su evidencia mostraba (o ninguno) es el mismo que hoy, con el mismo estado (20261003090000). La reconciliación la consulta sólo pasada la ventana de 48 horas.';
+
+-- El ritmo diario lee el último trabajo de sonda de cada cobro: sin este índice sería una
+-- lectura de toda la cola por candidato y por minuto.
+create index if not exists payment_outbox_reconcile_history_idx
+  on public.payment_outbox (payment_intent_id, created_at desc)
+  where topic = 'payment_reconcile';
 
 -- ── 3. El pago del proveedor que sigue sin resultado final ───────────────────
 -- El cobro guarda UN pago del proveedor (el más nuevo, salvo uno aprobado). Si el comprador
@@ -227,11 +222,11 @@ revoke all on function private.unresolved_provider_payment(uuid) from public, an
 comment on function private.unresolved_provider_payment(uuid) is
   'El pago del proveedor de ese cobro que sigue sin resultado final (pending, in_process, authorized) según su último evento, aunque el cobro tenga guardado otro pago con resultado final (20261003090000). Ninguno: cero filas.';
 
--- El ritmo diario lee el último trabajo de sonda de cada cobro: sin este índice sería una
--- lectura de toda la cola por candidato y por minuto.
-create index if not exists payment_outbox_reconcile_history_idx
-  on public.payment_outbox (payment_intent_id, created_at desc)
-  where topic = 'payment_reconcile';
+-- Los asientos de un pago que el proveedor todavía no resolvió son pocos: este índice deja
+-- preguntar «¿este cobro tuvo alguna vez un pago sin resultado final?» sin leer el resto del rastro.
+create index if not exists payment_events_unresolved_payment_idx
+  on public.payment_events (payment_intent_id)
+  where provider_event_id is not null and provider_status in ('pending', 'in_process', 'authorized');
 
 -- ── 4. Los checkouts sin verificar de un negocio ────────────────────────────
 -- La rama CHECKOUT_PROVIDER_UNVERIFIED de la reconciliación, por etapas para que el costo no
@@ -293,12 +288,19 @@ as $function$
              -- que puede tardar más de dos días hábiles): la sesión venció y liberó el stock,
              -- y si el proveedor lo aprueba y el aviso no llega es un cobro sin pedido.
              pi.provider_status in ('pending', 'in_process', 'authorized')
-             -- Sin pago, o con un pago guardado que ya tiene resultado final (el comprador pudo
-             -- reintentar en la misma preferencia y dejar otro pago en revisión): durante los 30
-             -- días en que el barrido lo sigue preguntando; después, mientras su alerta siga viva.
-             -- Nunca se cierra por tiempo, y lo más viejo no se vuelve a leer entero en cada corrida.
-             or (cs.created_at > r.ahora - interval '30 days'
-                 or pi.id in (select v.subject_id from alertas_vivas v))
+             -- Un pago guardado con resultado final y otro del mismo cobro que alguna vez estuvo sin
+             -- resolver (el comprador reintentó en la misma preferencia), de cualquier edad: el
+             -- índice parcial de esos asientos lo deja preguntar sin leer toda la historia.
+             or (pi.provider_payment_id is not null
+                 and pi.id in (select pe.payment_intent_id from public.payment_events pe
+                                where pe.provider_event_id is not null
+                                  and pe.provider_status in ('pending', 'in_process', 'authorized')))
+             -- Sin pago: durante los 30 días en que el barrido lo sigue preguntando; después,
+             -- mientras su alerta siga viva. Nunca se cierra por tiempo, y lo más viejo no se
+             -- vuelve a leer entero en cada corrida.
+             or (pi.provider_payment_id is null
+                 and (cs.created_at > r.ahora - interval '30 days'
+                      or pi.id in (select v.subject_id from alertas_vivas v)))
            )
          )
        )
@@ -334,20 +336,27 @@ as $function$
             and pe.event_type = 'payment.provider_probe_empty'
             and coalesce((pe.details ->> 'conclusive')::boolean, true)
        ))
+  ),
+  -- El pago a buscar y su estado: el que va en la evidencia y contra el que se compara una resolución.
+  con_pago as (
+    select s.*,
+           coalesce(s.otro_pago_estado, s.provider_status) as estado_a_la_vista,
+           coalesce(s.otro_pago_id,
+                    case when s.provider_status in ('pending', 'in_process', 'authorized') then s.provider_payment_id end)
+             as pago_a_la_vista
+      from sin_prueba s
   )
-  select s.id, s.correlation_id, s.checkout_session_id, s.external_reference, s.fuera_de_ventana,
-         s.internal_status, coalesce(s.otro_pago_estado, s.provider_status),
-         coalesce(s.otro_pago_id,
-                  case when s.provider_status in ('pending', 'in_process', 'authorized') then s.provider_payment_id end),
+  select c.id, c.correlation_id, c.checkout_session_id, c.external_reference, c.fuera_de_ventana,
+         c.internal_status, c.estado_a_la_vista, c.pago_a_la_vista,
          (select count(*)::integer from public.payment_events pe
-           where pe.payment_intent_id = s.id
+           where pe.payment_intent_id = c.id
              and pe.event_type = 'payment.provider_probe_empty')
-    from sin_prueba s
+    from con_pago c
    -- Dentro de la ventana, una resolución a mano no la cierra (la corrida siguiente la reabre,
-   -- como siempre). Pasada la ventana, la cierra el dueño o un encargado activo mientras el
-   -- proveedor no diga nada nuevo.
-   where not s.fuera_de_ventana
-      or not private.unverified_checkout_review_holds(p_business_id, s.id)
+   -- como siempre). Pasada la ventana, la cierra el dueño o un encargado activo mientras el pago
+   -- que tenía a la vista siga igual.
+   where not c.fuera_de_ventana
+      or not private.unverified_checkout_review_holds(p_business_id, c.id, c.pago_a_la_vista, c.estado_a_la_vista)
 $function$;
 
 revoke all on function private.unverified_checkout_findings(uuid) from public, anon, authenticated, service_role;
@@ -469,6 +478,9 @@ begin
      where v.fuera_de_ventana
        and v.provider_payment_id is not null
        and v.provider_status not in ('pending', 'in_process', 'authorized')
+       and v.id in (select pe.payment_intent_id from public.payment_events pe
+                     where pe.provider_event_id is not null
+                       and pe.provider_status in ('pending', 'in_process', 'authorized'))
   ),
   sin_verificar as materialized (
     select v.*, o.provider_payment_id as otro_pago_id
@@ -480,6 +492,10 @@ begin
         -- por su id sin anotar vacíos). Lo mismo con otro pago del cobro sin resultado final.
         or (v.provider_payment_id is not null and v.provider_status in ('pending', 'in_process', 'authorized'))
         or o.id is not null
+        -- Con el pago guardado rechazado o cancelado, la sonda busca por la referencia externa,
+        -- que prefiere un pago aprobado: un pago anterior que nunca se asentó (sus avisos se
+        -- perdieron) y se aprueba tarde aparece en la búsqueda del día.
+        or v.provider_status in ('rejected', 'cancelled', 'canceled')
         -- Sin pago, un vacío concluyente prueba que el comprador no pagó.
         or (v.provider_payment_id is null and not exists (
           select 1 from public.payment_events pe

@@ -3,7 +3,7 @@
 -- Devuelve las tres funciones a su definición anterior, letra por letra (la de
 -- 20261002060000, con el envoltorio de la frontera de 20261002090000 en el barrido), con
 -- los mismos permisos y comentarios, y borra las cuatro funciones auxiliares, la marca de
--- agua y los dos índices. No borra filas: las resoluciones de alertas y los trabajos de la cola
+-- agua y los tres índices. No borra filas: las resoluciones de alertas y los trabajos de la cola
 -- se quedan. Con la definición anterior, CHECKOUT_PROVIDER_UNVERIFIED vuelve a cerrarse a
 -- las 48 horas aunque nadie haya verificado el checkout.
 --
@@ -23,7 +23,7 @@ begin
   for v_row in
     select * from (values
       ('private.provider_probe_is_due(uuid,timestamptz)', '43efcbc2c2c4dc344d1965a6ce29b60b', '527187a827aa6abe0abb832be820da39'),
-      ('public.enqueue_checkout_provider_probes(integer)', '575e576553043fb31ddf8e02367f1095', '24eb443ab5e712f436f17a4d67803686'),
+      ('public.enqueue_checkout_provider_probes(integer)', '99d062259616cb67e24a16ebe0dc3e34', '24eb443ab5e712f436f17a4d67803686'),
       ('public.reconcile_operational_alerts_for_business(uuid)', '40673b9efadd1f5550db1658b17b5db3', 'dfb440ae088f4674986af94183463e78')
     ) as t(signature, applied, previous)
   loop
@@ -847,6 +847,7 @@ drop function if exists private.unverified_checkout_review_holds(uuid, uuid, tex
 drop function if exists private.unverified_checkout_watch_since();
 drop index if exists public.payment_outbox_reconcile_history_idx;
 drop index if exists public.payment_events_unresolved_payment_idx;
+drop index if exists public.payment_events_unresolved_recent_idx;
 drop table if exists private.payment_safety_watermarks;
 
 commit;

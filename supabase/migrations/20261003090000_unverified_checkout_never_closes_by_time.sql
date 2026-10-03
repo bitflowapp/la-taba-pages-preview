@@ -56,7 +56,10 @@
 --     fallado). Lo mismo para un checkout cuyo pago guardado fue rechazado o cancelado: la
 --     búsqueda por la referencia externa prefiere un pago aprobado, así que un pago anterior
 --     cuyos avisos se perdieron y que se aprueba tarde aparece en la búsqueda del día. La
---     resolución de una persona cierra la alerta, no la sonda: se sigue preguntando. Si el
+--     resolución de una persona cierra la alerta, no la sonda: se sigue preguntando. Lo que
+--     pasó la ventana va con un cupo propio por corrida (un quinto del límite), así que una
+--     tanda que vence junta (después de un corte del planificador o del worker) no demora a
+--     los checkouts de las últimas 48 horas, que siguen primero. Si el
 --     pago aparece o se resuelve, el worker lo asienta por el camino de siempre y lo toman las
 --     alertas de cobro aprobado sin pedido o de revisión, que no tienen ventana.
 --   · Una marca de agua por entorno (`private.payment_safety_watermarks`, escrita al aplicar:
@@ -66,8 +69,13 @@
 --     marca vale «desde siempre»: ante la duda, se avisa.
 --   · El costo por minuto no crece con la historia: el barrido y la alerta filtran primero lo
 --     barato (fechas, estados, el reloj leído una vez) y las funciones auxiliares corren sólo
---     sobre lo que queda. Pasados los 30 días de sondas, un checkout sin pago se mira sólo
---     mientras su alerta siga viva (abierta, reconocida o resuelta por una persona).
+--     sobre lo que queda. Pasados los 30 días de sondas, un checkout se mira sólo mientras su
+--     alerta siga viva (abierta, reconocida o resuelta por una persona) o, con un pago guardado
+--     con resultado final, si otro pago suyo sin resultado se asentó en los últimos 30 días (la
+--     alerta se abre en la corrida siguiente al asiento y después la sostiene su alerta viva): la
+--     reconciliación lee esos asientos por un índice parcial por fecha, no toda la historia de la
+--     plataforma. El barrido descarta por índice lo ya preguntado en las últimas 24 horas antes
+--     de evaluar el ritmo de cada fila.
 --
 -- QUÉ NO CAMBIA
 --
@@ -78,8 +86,9 @@
 --     minutos para un no concluyente), y todas las demás ramas de la reconciliación.
 --   · Ninguna fila existente: no se escribe ni se borra nada fuera de la marca de agua.
 --   · Costo para el proveedor: a lo sumo una consulta por día, durante 30 días, por checkout
---     sin verificar o con el pago guardado rechazado o cancelado. Dos índices parciales: el de
---     una sola clase de trabajo de la cola y el de los asientos de pagos sin resultado final.
+--     sin verificar o con el pago guardado rechazado o cancelado. Tres índices parciales: el de
+--     una sola clase de trabajo de la cola y dos de los asientos de pagos sin resultado final
+--     (por cobro y por fecha).
 --
 -- Prueba: supabase/tests/unverified_checkout_never_closes_by_time_test.sql
 -- Generada de las definiciones vivas (pg_get_functiondef) con reemplazos que tienen que
@@ -95,7 +104,7 @@ begin
   for v_row in
     select * from (values
       ('private.provider_probe_is_due(uuid,timestamptz)', '527187a827aa6abe0abb832be820da39', '43efcbc2c2c4dc344d1965a6ce29b60b'),
-      ('public.enqueue_checkout_provider_probes(integer)', '24eb443ab5e712f436f17a4d67803686', '575e576553043fb31ddf8e02367f1095'),
+      ('public.enqueue_checkout_provider_probes(integer)', '24eb443ab5e712f436f17a4d67803686', '99d062259616cb67e24a16ebe0dc3e34'),
       ('public.reconcile_operational_alerts_for_business(uuid)', 'dfb440ae088f4674986af94183463e78', '40673b9efadd1f5550db1658b17b5db3')
     ) as t(signature, generated_from, applied)
   loop
@@ -228,6 +237,13 @@ create index if not exists payment_events_unresolved_payment_idx
   on public.payment_events (payment_intent_id)
   where provider_event_id is not null and provider_status in ('pending', 'in_process', 'authorized');
 
+-- Los mismos asientos por fecha: la reconciliación pregunta «¿qué cobros tuvieron un pago sin
+-- resultado final asentado en los últimos 30 días?» leyendo sólo lo reciente, no toda la historia
+-- de la plataforma (corre por negocio y por minuto).
+create index if not exists payment_events_unresolved_recent_idx
+  on public.payment_events (server_recorded_at)
+  where provider_event_id is not null and provider_status in ('pending', 'in_process', 'authorized');
+
 -- ── 4. Los checkouts sin verificar de un negocio ────────────────────────────
 -- La rama CHECKOUT_PROVIDER_UNVERIFIED de la reconciliación, por etapas para que el costo no
 -- crezca con la historia (la reconciliación corre por negocio y por minuto): primero lo barato
@@ -288,13 +304,21 @@ as $function$
              -- que puede tardar más de dos días hábiles): la sesión venció y liberó el stock,
              -- y si el proveedor lo aprueba y el aviso no llega es un cobro sin pedido.
              pi.provider_status in ('pending', 'in_process', 'authorized')
-             -- Un pago guardado con resultado final y otro del mismo cobro que alguna vez estuvo sin
-             -- resolver (el comprador reintentó en la misma preferencia), de cualquier edad: el
-             -- índice parcial de esos asientos lo deja preguntar sin leer toda la historia.
+             -- Un pago guardado con resultado final y otro del mismo cobro que estuvo sin resolver
+             -- (el comprador reintentó en la misma preferencia): si ese otro pago se asentó en los
+             -- últimos 30 días, aunque el checkout sea más viejo (la alerta se abre en la primera
+             -- corrida del barrido sobre este negocio después del asiento: 30 días es también lo que
+             -- 20261003092000 deja sin evaluar a un negocio cerrado y sin checkouts), y después
+             -- mientras su alerta siga viva (abierta, reconocida o resuelta por una persona). Las dos
+             -- preguntas son acotadas: las alertas de este negocio y los asientos sin resultado final de
+             -- los últimos 30 días, por su índice por fecha (now(): la misma hora en toda la corrida, así
+             -- la subconsulta se resuelve una sola vez). El costo no crece con la historia.
              or (pi.provider_payment_id is not null
-                 and pi.id in (select pe.payment_intent_id from public.payment_events pe
-                                where pe.provider_event_id is not null
-                                  and pe.provider_status in ('pending', 'in_process', 'authorized')))
+                 and (pi.id in (select v.subject_id from alertas_vivas v)
+                      or pi.id in (select pe.payment_intent_id from public.payment_events pe
+                                    where pe.provider_event_id is not null
+                                      and pe.provider_status in ('pending', 'in_process', 'authorized')
+                                      and pe.server_recorded_at > now() - interval '30 days')))
              -- Sin pago: durante los 30 días en que el barrido lo sigue preguntando; después,
              -- mientras su alerta siga viva. Nunca se cierra por tiempo, y lo más viejo no se
              -- vuelve a leer entero en cada corrida.
@@ -506,10 +530,16 @@ begin
   ),
   -- La resolución del dueño o de un encargado cierra la alerta, no la sonda: se sigue
   -- preguntando una vez por día hasta los 30 días.
-  candidatos as (
+  -- Cada clase con su cupo: lo de las últimas 48 horas primero, con el límite entero (el
+  -- comprador puede estar pagando ahora mismo), y lo que pasó la ventana con un cupo propio de
+  -- un quinto del límite, para que una tanda que vence junta (después de un corte del
+  -- planificador o del worker) no demore a los checkouts nuevos ni llene la cola del worker
+  -- delante de los avisos (20261003090000).
+  dentro as (
     select s.id, s.provider_payment_id, s.provider_status, s.otro_pago_id
       from sin_verificar s
-     where not exists (
+     where not s.fuera_de_ventana
+       and not exists (
          select 1 from public.payment_outbox po
           where po.payment_intent_id = s.id
             and po.topic = 'payment_reconcile'
@@ -525,6 +555,41 @@ begin
        and private.provider_probe_is_due(s.id, s.created_at)
      order by s.created_at
      limit greatest(1, least(coalesce(p_limit, 50), 200))
+  ),
+  -- Lo que pasó la ventana: una sonda por día, contada desde la última pregunta (un trabajo de
+  -- sonda, en curso o terminado, o un vacío). Esa cuenta se hace acá, por los índices, y el cupo se
+  -- corta ANTES de la función del ritmo: en una tanda que vence junta la función corre sólo sobre
+  -- las filas del cupo, no sobre toda la tanda en cada corrida.
+  fuera_previa as materialized (
+    select s.id, s.provider_payment_id, s.provider_status, s.otro_pago_id, s.created_at
+      from reloj r
+      cross join sin_verificar s
+     where s.fuera_de_ventana
+       and not exists (
+         select 1 from public.payment_outbox po
+          where po.payment_intent_id = s.id
+            and po.topic = 'payment_reconcile'
+            and (po.status in ('pending', 'claimed', 'processing', 'retry_wait')
+                 or po.created_at > r.ahora - interval '24 hours')
+       )
+       and not exists (
+         select 1 from public.payment_events pe
+          where pe.payment_intent_id = s.id
+            and pe.event_type = 'payment.provider_probe_empty'
+            and pe.server_recorded_at > r.ahora - interval '24 hours'
+       )
+     order by s.created_at
+     limit greatest(1, least(coalesce(p_limit, 50), 200) / 5)
+  ),
+  fuera as (
+    select f.id, f.provider_payment_id, f.provider_status, f.otro_pago_id
+      from fuera_previa f
+     where private.provider_probe_is_due(f.id, f.created_at)
+  ),
+  candidatos as (
+    select * from dentro
+    union all
+    select * from fuera
   )
   insert into public.payment_outbox (payment_intent_id, topic, resource_id)
   -- Un pago rechazado o cancelado no es el que hay que volver a leer: el
@@ -566,7 +631,7 @@ $function$;
 revoke all on function public.enqueue_checkout_provider_probes(integer) from public, anon, authenticated;
 grant execute on function public.enqueue_checkout_provider_probes(integer) to service_role;
 comment on function public.enqueue_checkout_provider_probes(integer) is
-  'Encola una consulta al proveedor por cada checkout que llegó a Mercado Pago y todavía no es pedido. Acotada: 90 s de gracia, 8 vacíos concluyentes uno cada 2 minutos, tres sondas tardías a las 2, 6 y 24 horas, un vacío no concluyente espera 30 minutos, 48 horas en total; pasada esa ventana, el checkout que sigue sin verificar (sin pago y sin vacío concluyente, o con un pago que el proveedor no resolvió) recibe una sonda por día hasta los 30 días, aunque una persona haya resuelto su alerta (20261003090000).';
+  'Encola una consulta al proveedor por cada checkout que llegó a Mercado Pago y todavía no es pedido. Acotada: 90 s de gracia, 8 vacíos concluyentes uno cada 2 minutos, tres sondas tardías a las 2, 6 y 24 horas, un vacío no concluyente espera 30 minutos, 48 horas en total; pasada esa ventana, el checkout que sigue sin verificar (sin pago y sin vacío concluyente, con un pago que el proveedor no resolvió, o con el pago guardado rechazado o cancelado) recibe una sonda por día hasta los 30 días, aunque una persona haya resuelto su alerta, con un cupo propio de un quinto del límite por corrida: lo de las últimas 48 horas va primero (20261003090000).';
 
 -- ── 6. La alerta: no se cierra por tiempo ──────────────────────────────────
 CREATE OR REPLACE FUNCTION public.reconcile_operational_alerts_for_business(p_business_id uuid)

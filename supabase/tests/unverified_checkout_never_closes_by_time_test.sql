@@ -33,7 +33,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(107);
+select plan(114);
 
 -- ── Fixture ────────────────────────────────────────────────────────────────
 create temporary table uv_ids (name text primary key, id uuid not null) on commit drop;
@@ -491,6 +491,11 @@ select is(
   (select count(*)::integer from pg_indexes
     where schemaname = 'public' and indexname = 'payment_outbox_reconcile_history_idx'),
   1, 'G: el índice del ritmo diario existe');
+select is(
+  (select count(*)::integer from pg_indexes
+    where schemaname = 'public' and indexname = 'payment_events_unresolved_recent_idx'
+      and indexdef like '%(server_recorded_at)%'),
+  1, 'G: el índice por fecha de los asientos sin resultado final existe (la reconciliación lee lo reciente, no la historia)');
 
 -- ══════════════════════════════════════════════════════════════════════════
 --  H · un pago que el proveedor todavía no resolvió
@@ -715,6 +720,76 @@ select is(
     where po.payment_intent_id = pg_temp.id('p12:intent') and po.topic = 'payment_reconcile'
       and po.status in ('pending', 'claimed', 'processing', 'retry_wait')),
   'PAY-UV-P12C', 'I: y la sonda diaria lo relee por su id aunque el guardado esté vencido');
+
+-- ══════════════════════════════════════════════════════════════════════════
+--  J · lo que acota el costo no deja de mirar nada (quinta revisión)
+-- ══════════════════════════════════════════════════════════════════════════
+select pg_temp.negocio('q');
+
+-- q1: tarjeta A en revisión y B rechazada (guardada) sobre un checkout de 38 días. La alerta se abre
+-- por el asiento reciente de A; con los asientos ya viejos (corridos 35 días, más allá de los 30 que mira
+-- la reconciliación) la sostiene su alerta viva.
+select pg_temp.checkout('q1', 'q', interval '38 days');
+select public.sweep_expired_checkout_sessions();
+select pg_temp.pago('q1:intent', 'PAY-UV-Q1A', 'in_process', 'pending_review_manual', '', interval '46 hours 50 minutes');
+select pg_temp.pago('q1:intent', 'PAY-UV-Q1B', 'rejected', 'cc_rejected_other_reason', '', interval '46 hours 40 minutes');
+select pg_temp.reconciliar('q');
+select is(pg_temp.alerta('q1:intent'), 'open',
+  'J: un pago sin resolver asentado hoy, detrás de un rechazo guardado, abre la alerta de un checkout de 38 días');
+update public.payment_events set server_recorded_at = server_recorded_at - interval '35 days'
+ where payment_intent_id = pg_temp.id('q1:intent');
+select pg_temp.reconciliar('q');
+select is(
+  (select a.status || '/' || (a.evidence ->> 'unresolved_provider_payment_id') from public.operational_alerts a
+    where a.alert_code = 'CHECKOUT_PROVIDER_UNVERIFIED' and a.subject_id = pg_temp.id('q1:intent')),
+  'open/PAY-UV-Q1A', 'J: con esos asientos ya viejos la alerta sigue abierta: la sostiene su alerta viva, no la fecha');
+
+-- El barrido, con cada clase en su cupo. Para contar sólo lo de esta sección, todo lo demás de la
+-- base queda con un trabajo de sonda en curso (adentro de esta transacción, que termina en rollback).
+insert into public.payment_outbox (payment_intent_id, topic, resource_id)
+select pi.id, 'payment_reconcile', null from public.payment_intents pi
+ where pi.business_id <> pg_temp.id('q:business')
+on conflict do nothing;
+select pg_temp.checkout('q3', 'q', interval '3 days 3 minutes');
+select pg_temp.checkout('q4', 'q', interval '3 days 2 minutes');
+select pg_temp.checkout('q5', 'q', interval '3 days 1 minute');
+select public.sweep_expired_checkout_sessions();
+select pg_temp.pago('q3:intent', 'PAY-UV-Q3', 'rejected', 'cc_rejected_other_reason');
+select pg_temp.pago('q4:intent', 'PAY-UV-Q4', 'rejected', 'cc_rejected_other_reason');
+select pg_temp.pago('q5:intent', 'PAY-UV-Q5', 'rejected', 'cc_rejected_other_reason');
+select pg_temp.checkout('q6', 'q', interval '5 minutes');   -- el comprador está en Mercado Pago ahora
+create function pg_temp.con_sonda(p_names text[]) returns text language sql stable as $$
+  select coalesce(string_agg(n, ',' order by n), '') from unnest(p_names) n
+   where pg_temp.sonda_pendiente(n || ':intent') > 0
+$$;
+select public.enqueue_checkout_provider_probes(2);
+select is(pg_temp.con_sonda(array['q6']), 'q6',
+  'J: con tres checkouts vencidos esperando, el de hace 5 minutos recibe su sonda en la primera corrida');
+select is(pg_temp.con_sonda(array['q3', 'q4', 'q5']), 'q3',
+  'J: lo que pasó la ventana entra con su propio cupo (un quinto del límite: uno con límite 2), el más viejo primero');
+select public.enqueue_checkout_provider_probes(2);
+select is(pg_temp.con_sonda(array['q3', 'q4', 'q5']), 'q3,q4', 'J: y en la corrida siguiente, el que sigue');
+
+-- El ritmo diario contado por los índices coincide con la función del ritmo: una pregunta hace 2 horas
+-- (un trabajo terminado, o un vacío) espera; una de hace 25 horas, no.
+select pg_temp.checkout('q7', 'q', interval '3 days');
+select pg_temp.checkout('q8', 'q', interval '3 days');
+select pg_temp.checkout('q9', 'q', interval '3 days');
+select public.sweep_expired_checkout_sessions();
+select pg_temp.pago('q7:intent', 'PAY-UV-Q7', 'rejected', 'cc_rejected_other_reason');
+select pg_temp.pago('q8:intent', 'PAY-UV-Q8', 'rejected', 'cc_rejected_other_reason');
+select pg_temp.pago('q9:intent', 'PAY-UV-Q9', 'rejected', 'cc_rejected_other_reason');
+insert into public.payment_outbox (payment_intent_id, topic, resource_id, status, created_at, updated_at, completed_at)
+values (pg_temp.id('q7:intent'), 'payment_reconcile', null, 'completed',
+        clock_timestamp() - interval '2 hours', clock_timestamp() - interval '2 hours', clock_timestamp() - interval '2 hours'),
+       (pg_temp.id('q8:intent'), 'payment_reconcile', null, 'completed',
+        clock_timestamp() - interval '25 hours', clock_timestamp() - interval '25 hours', clock_timestamp() - interval '25 hours'),
+       (pg_temp.id('q9:intent'), 'payment_reconcile', null, 'completed',
+        clock_timestamp() - interval '25 hours', clock_timestamp() - interval '25 hours', clock_timestamp() - interval '25 hours');
+select pg_temp.vacios(pg_temp.id('q9:intent'), 1, clock_timestamp() - interval '2 hours', true);
+select public.enqueue_checkout_provider_probes(200);
+select is(pg_temp.con_sonda(array['q7', 'q8', 'q9']), 'q8',
+  'J: una sonda por día contada desde la última pregunta: sólo el que no preguntó en 24 horas (ni trabajo ni vacío)');
 
 select * from finish();
 rollback;

@@ -24,6 +24,7 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await expect(page.locator('.inbox-tabs')).toContainText('Reparto');
   await expect(page.locator('.inbox-tabs')).toContainText('Entregados');
   await expect(page.locator('[data-order-inbox]')).toContainText('Todavía no entraron pedidos');
+  await expect(page.locator('[data-order-inbox]')).toContainText('Cuando un cliente confirme una compra, va a aparecer acá.');
 
   // 2. El cliente confirma un pedido con dirección real.
   await page.locator('.mobile-nav [data-nav-view="catalog"]').click();
@@ -66,12 +67,48 @@ test('Central de pedidos: el pedido entra, se ve completo y el negocio lo gestio
   await expect(card).toContainText('Total a cobrar');
   await expect(card).toContainText('Aceptar pedido');
 
-  // 4. El negocio gestiona el estado: Aceptar -> queda "Listo para entregar".
+  await card.locator('[data-order-advance="LT-0002"]').scrollIntoViewIfNeeded();
+  const primaryActionClear = await page.evaluate(() => {
+    const button = document.querySelector('[data-order-advance="LT-0002"]');
+    const nav = document.querySelector('.mobile-nav');
+    if (!button || !nav) return false;
+    const buttonBox = button.getBoundingClientRect();
+    const navBox = nav.getBoundingClientRect();
+    return buttonBox.left >= 0
+      && buttonBox.right <= window.innerWidth + 1
+      && buttonBox.bottom <= navBox.top - 8;
+  });
+  expect(primaryActionClear).toBeTruthy();
+
+  // 4. El negocio gestiona el estado: Aceptar -> Listo -> Reparto.
   await page.locator('[data-order-advance="LT-0002"]').click();
   await waitForToast(page, 'Estado del pedido actualizado.');
   await expect(page.locator('[data-inbox-order="LT-0002"]')).toContainText('Preparando');
-  await expect(page.locator('[data-inbox-order="LT-0002"]')).toContainText('Listo para entregar');
+  await expect(page.locator('[data-inbox-order="LT-0002"]')).toContainText('Marcar listo');
   await expect(page.locator('[data-inbox-group="preparando"]')).toBeVisible();
+
+  await page.locator('[data-order-advance="LT-0002"]').click();
+  await waitForToast(page, 'Estado del pedido actualizado.');
+  await expect(page.locator('[data-inbox-order="LT-0002"]')).toContainText('Enviar a reparto');
+
+  await page.locator('[data-order-advance="LT-0002"]').click();
+  await waitForToast(page, 'Estado del pedido actualizado.');
+  await expect(page.locator('[data-inbox-order="LT-0002"]')).toContainText('Ver tracking');
+  await expect(page.locator('[data-inbox-order="LT-0002"]')).toContainText('Marcar entregado');
+
+  await page.locator('[data-order-track="LT-0002"]').click();
+  await expect(page.locator('[data-view="tracking"]')).toBeVisible();
+  await expect(page.locator('[data-tracking-panel]')).toContainText('LT-0002');
+  await expect(page.locator('[data-tracking-panel]')).toContainText('En camino');
+
+  await page.locator('.topbar .brand').click();
+  await page.locator('.mobile-nav [data-nav-view="profile"]').click();
+  await page.locator('[data-view="profile"] [data-open-admin-view="rider"]').click();
+  await expect(page.locator('[data-view="rider"]')).toBeVisible();
+  await expect(page.locator('[data-delivery-panel]')).toContainText('LT-0002');
+  await expect(page.locator('[data-delivery-panel]')).toContainText('Walter Cliente');
+  await expect(page.locator('[data-delivery-panel]')).toContainText('Mendoza 851, Centro');
+  await expect(page.locator('[data-delivery-panel]')).toContainText('Portón gris');
 
   // 5. Mobile 390x844 sin overflow horizontal.
   const noOverflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);

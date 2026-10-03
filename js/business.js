@@ -30,6 +30,8 @@ import { escapeHtml, productCode, stockPill } from './ui.js';
 let seenOrderIds = null; // se inicializa en el primer render para detectar pedidos nuevos
 let soundEnabled = readSoundPref();
 let audioCtx = null;
+const ACTION_LOCK_MS = 900;
+const businessActionLocks = new Map();
 
 function readSoundPref() {
   try { return globalThis.localStorage?.getItem('la_taba_business_sound') !== 'off'; } catch (_) { return true; }
@@ -118,7 +120,7 @@ export function renderBusinessDashboard() {
         </button>
         <div class="business-topbar-text">
           <h2>Central de pedidos</h2>
-          <span>Los pedidos confirmados aparecen acá. Aceptás, preparás y mandás a reparto sin perder el foco.</span>
+          <span>Los pedidos confirmados aparecen acá. Revisá datos antes de aceptar.</span>
         </div>
       </header>
 
@@ -179,8 +181,8 @@ export function renderBusinessDashboard() {
 
 const INBOX_GROUPS = [
   { id: 'nuevos', title: 'Pedidos nuevos', hint: 'Atención inmediata', match: (order) => order.status === 'received' },
-  { id: 'preparando', title: 'Preparando', hint: 'En cocina', match: (order) => order.status === 'preparing' },
-  { id: 'reparto', title: 'Reparto', hint: 'Listos o en calle', match: (order) => ['ready', 'on_the_way', 'arriving'].includes(order.status) },
+  { id: 'preparando', title: 'Preparando', hint: 'En preparación', match: (order) => order.status === 'preparing' },
+  { id: 'reparto', title: 'Reparto', hint: 'Listos o en camino', match: (order) => ['ready', 'on_the_way', 'arriving'].includes(order.status) },
 ];
 
 // Central de pedidos: lista vertical mobile-first con los pedidos REALES de la
@@ -201,7 +203,7 @@ function renderOrderInbox(state, metrics, freshOrderIds = new Set()) {
         <header class="inbox-section-head">
           <span>Pedidos nuevos</span>
           <strong>Pedido nuevo</strong>
-          <small>Revisá datos, total y notas antes de aceptar.</small>
+          <small>Revisá datos antes de aceptar.</small>
         </header>
         ${inboxOrderCard(priorityOrder, { priority: true, fresh: freshOrderIds.has(priorityOrder.id) })}
       </section>`);
@@ -230,7 +232,7 @@ function renderOrderInbox(state, metrics, freshOrderIds = new Set()) {
     : `
       <div class="inbox-empty" data-inbox-empty>
         <strong>Todavía no entraron pedidos.</strong>
-        <p>Cuando un cliente confirme una compra, va a aparecer acá para aceptarla y prepararla.</p>
+        <p>Cuando un cliente confirme una compra, va a aparecer acá.</p>
       </div>`;
 
   const closedBlock = closed.length
@@ -298,7 +300,9 @@ function inboxOrderCard(order, options = {}) {
   const address = normalizeOrderAddressDetails(order);
   const reference = formatAddressReference(order);
   const phone = onlyDigits(order.customerPhone);
-  const nextLabel = actionLabelForOrder(order);
+  const nextLabel = inboxActionLabelForOrder(order);
+  const hasNextAction = nextLabel !== 'Sin acción';
+  const canReject = ['received', 'preparing'].includes(order.status);
   const itemsList = order.items.map((item) => `
         <li><span>${item.quantity}× ${escapeHtml(item.name)}</span><strong>${money(item.quantity * item.unitPrice)}</strong></li>`).join('');
   const riderLoc = order.tracking?.lastLocation;
@@ -322,6 +326,7 @@ function inboxOrderCard(order, options = {}) {
         <div class="inbox-card-main">
           <strong class="inbox-id">${escapeHtml(order.id)}</strong>
           <div class="inbox-order-customer">
+            <span class="inbox-customer-kicker">Cliente</span>
             <strong>${escapeHtml(order.customerName)}</strong>
             <span class="inbox-type ${isPickup ? 'pickup' : 'delivery'}">${isPickup ? 'Retiro en local' : 'Delivery'}</span>
           </div>
@@ -333,12 +338,12 @@ function inboxOrderCard(order, options = {}) {
             <strong>${money(order.total)}</strong>
           </aside>
           <div class="inbox-actions">
-            ${nextLabel !== 'Sin acción' ? `<button class="primary-button compact" type="button" data-order-advance="${order.id}">${escapeHtml(nextLabel)}</button>` : ''}
+            ${hasNextAction ? `<button class="primary-button compact" type="button" data-order-advance="${escapeHtml(order.id)}" data-order-status="${escapeHtml(order.status)}" aria-label="${escapeHtml(nextLabel)} para ${escapeHtml(order.id)}">${escapeHtml(nextLabel)}</button>` : ''}
             ${phone ? `<a class="ghost-button compact" href="https://wa.me/${phone}" target="_blank" rel="noopener noreferrer">WhatsApp</a>` : ''}
             ${order.customerPhone ? `<a class="ghost-button compact" href="tel:${encodeURIComponent(order.customerPhone)}">Llamar</a>` : ''}
-            ${showTrack ? `<button class="ghost-button compact" type="button" data-order-track="${order.id}">Ver tracking</button>` : ''}
-            <button class="ghost-button compact" type="button" data-order-ticket="${order.id}">Copiar ticket</button>
-            <button class="ghost-button compact danger-ghost" type="button" data-order-cancel="${order.id}">Rechazar</button>
+            ${showTrack ? `<button class="ghost-button compact" type="button" data-order-track="${escapeHtml(order.id)}">Ver tracking</button>` : ''}
+            <button class="ghost-button compact" type="button" data-order-ticket="${escapeHtml(order.id)}">Copiar ticket</button>
+            ${canReject ? `<button class="ghost-button compact danger-ghost" type="button" data-order-cancel="${escapeHtml(order.id)}" data-order-status="${escapeHtml(order.status)}">Rechazar</button>` : ''}
           </div>
         </div>
 
@@ -358,6 +363,18 @@ function inboxOrderCard(order, options = {}) {
         </div>
       </div>
     </article>`;
+}
+
+function inboxActionLabelForOrder(order) {
+  if (!order || isTerminalOrderStatus(order.status)) return 'Sin acción';
+  const labels = {
+    received: 'Aceptar pedido',
+    preparing: 'Marcar listo',
+    ready: order.deliveryMode === 'pickup' ? 'Marcar entregado' : 'Enviar a reparto',
+    on_the_way: 'Marcar entregado',
+    arriving: 'Marcar entregado',
+  };
+  return labels[order.status] || actionLabelForOrder(order);
 }
 
 function inboxClosedRow(order) {
@@ -488,9 +505,16 @@ function stockRow(product) {
 }
 
 export function handleBusinessAction(target) {
-  const advanceId = target.closest('[data-order-advance]')?.dataset.orderAdvance;
+  const advanceButton = target.closest('[data-order-advance]');
+  const advanceId = advanceButton?.dataset.orderAdvance;
   if (advanceId) {
-    return actionResponse(advanceOrder(advanceId), 'Estado del pedido actualizado.');
+    const expectedStatus = advanceButton.dataset.orderStatus || '';
+    return runLockedOrderAction({
+      key: `advance:${advanceId}:${expectedStatus || 'unknown'}`,
+      button: advanceButton,
+      busyLabel: 'Actualizando...',
+      run: () => actionResponse(advanceOrder(advanceId, expectedStatus), 'Estado del pedido actualizado.'),
+    });
   }
 
   const ticketId = target.closest('[data-order-ticket]')?.dataset.orderTicket;
@@ -530,9 +554,16 @@ export function handleBusinessAction(target) {
     return { handled: true, ok: true, message: '' };
   }
 
-  const cancelId = target.closest('[data-order-cancel]')?.dataset.orderCancel;
+  const cancelButton = target.closest('[data-order-cancel]');
+  const cancelId = cancelButton?.dataset.orderCancel;
   if (cancelId) {
-    return actionResponse(cancelBusinessOrder(cancelId), 'Pedido cancelado.');
+    const expectedStatus = cancelButton.dataset.orderStatus || '';
+    return runLockedOrderAction({
+      key: `cancel:${cancelId}:${expectedStatus || 'unknown'}`,
+      button: cancelButton,
+      busyLabel: 'Cancelando...',
+      run: () => actionResponse(cancelBusinessOrder(cancelId, expectedStatus), 'Pedido cancelado.'),
+    });
   }
 
   const stockInc = target.closest('[data-stock-inc]')?.dataset.stockInc;
@@ -556,17 +587,76 @@ export function handleBusinessAction(target) {
   return { handled: false };
 }
 
-function advanceOrder(orderId) {
+function runLockedOrderAction({ key, button, busyLabel, run }) {
+  if (!beginBusinessActionLock(key)) {
+    return { handled: true, ok: false, message: 'Acción en curso. Esperá un segundo.' };
+  }
+  markBusinessButtonBusy(button, busyLabel);
+  try {
+    const result = run();
+    if (typeof result?.then === 'function') {
+      return Promise.resolve(result)
+        .catch(() => ({ handled: true, ok: false, message: 'No se pudo ejecutar la acción. Reintentá.' }))
+        .finally(() => releaseBusinessActionLockSoon(key));
+    }
+    releaseBusinessActionLockSoon(key);
+    return result;
+  } catch (_) {
+    releaseBusinessActionLockSoon(key);
+    return { handled: true, ok: false, message: 'No se pudo ejecutar la acción. Reintentá.' };
+  }
+}
+
+function beginBusinessActionLock(key) {
+  const now = Date.now();
+  const lockedUntil = businessActionLocks.get(key) || 0;
+  if (lockedUntil > now) return false;
+  businessActionLocks.set(key, now + 10_000);
+  return true;
+}
+
+function releaseBusinessActionLockSoon(key) {
+  businessActionLocks.set(key, Date.now() + ACTION_LOCK_MS);
+  const timer = setTimeout(() => businessActionLocks.delete(key), ACTION_LOCK_MS);
+  if (typeof timer.unref === 'function') timer.unref();
+}
+
+function markBusinessButtonBusy(button, label) {
+  if (!button || typeof button.setAttribute !== 'function') return;
+  button.setAttribute('aria-busy', 'true');
+  button.setAttribute('data-action-busy', 'true');
+  if ('disabled' in button) button.disabled = true;
+  if (label && button.tagName === 'BUTTON') button.textContent = label;
+}
+
+function advanceOrder(orderId, expectedStatus = '') {
+  const order = getState().orders.find((candidate) => candidate.id === orderId);
+  if (!order) return { ok: false, message: 'Pedido no encontrado. Actualizá la central.' };
+  if (expectedStatus && order.status !== expectedStatus) {
+    return { ok: false, message: 'El pedido ya cambió de estado. Revisá la acción disponible.' };
+  }
+  if (isTerminalOrderStatus(order.status)) {
+    return { ok: false, message: 'Este pedido ya está cerrado.' };
+  }
+
   const repository = getOrderRepository();
   if (!isPersistentOrderRepository(repository)) return advanceOrderStatus(orderId);
-  const order = getState().orders.find((candidate) => candidate.id === orderId);
   const domainOrder = toDomainOrder(order);
   const nextStatus = domainOrder ? getNextWorkflowStatus(domainOrder.status, domainOrder.fulfillmentType) : null;
-  if (!nextStatus) return { ok: false, message: 'Sin próxima acción para este pedido.' };
+  if (!nextStatus) return { ok: false, message: 'Este pedido no tiene una acción pendiente.' };
   return repository.updateOrderStatus(orderId, nextStatus);
 }
 
-function cancelBusinessOrder(orderId) {
+function cancelBusinessOrder(orderId, expectedStatus = '') {
+  const order = getState().orders.find((candidate) => candidate.id === orderId);
+  if (!order) return { ok: false, message: 'Pedido no encontrado. Actualizá la central.' };
+  if (expectedStatus && order.status !== expectedStatus) {
+    return { ok: false, message: 'El pedido ya cambió de estado. Revisá la acción disponible.' };
+  }
+  if (isTerminalOrderStatus(order.status)) {
+    return { ok: false, message: 'Este pedido ya está cerrado.' };
+  }
+
   const repository = getOrderRepository();
   if (!isPersistentOrderRepository(repository)) return cancelOrder(orderId);
   return repository.updateOrderStatus(orderId, 'canceled');
@@ -578,8 +668,8 @@ function actionResponse(result, successMessage) {
   }
   return {
     handled: true,
-    ok: result.ok,
-    message: result.ok ? successMessage : result.message,
+    ok: Boolean(result?.ok),
+    message: result?.ok ? successMessage : (result?.message || 'No se pudo ejecutar la acción. Reintentá.'),
   };
 }
 

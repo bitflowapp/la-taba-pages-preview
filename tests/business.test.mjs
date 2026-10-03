@@ -98,6 +98,42 @@ test('business actions advance status, cancel orders, edit stock, and toggle pro
   assert.equal(getState().products.find((product) => product.id === 'p-agua').available, !availabilityBefore);
 });
 
+test('business advance ignores a second tap from the same rendered state', () => {
+  const order = {
+    id: 'LT-DOUBLE-TAP',
+    customerName: 'Walter Cliente',
+    customerPhone: '2995551234',
+    address: 'Mendoza 851, Centro',
+    deliveryMode: 'delivery',
+    paymentMethod: 'Efectivo',
+    notes: 'Sin sal',
+    createdAt: new Date().toISOString(),
+    status: 'received',
+    items: [],
+    subtotal: 0,
+    deliveryFee: 0,
+    total: 0,
+    statusHistory: [{ status: 'received', at: new Date().toISOString() }],
+    delivery: {},
+  };
+
+  setState({ ...getState(), orders: [order], lastOrderId: order.id });
+
+  const staleRenderedButton = makeTarget({
+    '[data-order-advance]': { orderAdvance: order.id, orderStatus: 'received' },
+  });
+
+  const first = handleBusinessAction(staleRenderedButton);
+  assert.equal(first.ok, true);
+  assert.equal(getState().orders[0].status, 'preparing');
+
+  const second = handleBusinessAction(staleRenderedButton);
+  assert.equal(second.handled, true);
+  assert.equal(second.ok, false);
+  assert.match(second.message, /Acción en curso|cambió de estado/);
+  assert.equal(getState().orders[0].status, 'preparing');
+});
+
 test('low-stock detection includes scarce products and excludes out-of-stock ones', () => {
   const lowStock = getLowStockProducts();
   assert.ok(lowStock.some((product) => product.id === 'p-matambre'));

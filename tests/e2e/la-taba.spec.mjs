@@ -395,7 +395,7 @@ test('modo negocio y delivery', async ({ page }) => {
   await expect(advanceButton).toBeVisible();
   await advanceButton.click();
   await waitForToast(page, 'Estado del pedido actualizado.');
-  await expect(page.locator('[data-business-dashboard]')).toContainText('Listo para entregar');
+  await expect(page.locator('[data-business-dashboard]')).toContainText('Marcar listo');
   await page.locator('[data-order-advance="LT-0002"]').click();
   await waitForToast(page, 'Estado del pedido actualizado.');
   await expect(page.locator('[data-business-dashboard]')).toContainText('Enviar a reparto');

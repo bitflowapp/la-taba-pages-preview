@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "title": "Contrato HTTP de los rechazos de la API e-commerce",
+  "decision": "El contrato HTTP se cierra del lado del servidor (decisión del dueño). Una negativa de negocio (55000) y un «no existe» (P0002) no contestan HTTP 500.",
+  "migrations": {
+    "boundary": "20261002090000_api_boundary_answers_refusals_as_4xx",
+    "generator": "scripts/db/wrap-api-boundary.mjs",
+    "marker": "la-taba:api-boundary v1"
+  },
+  "body_contract": "El cuerpo de la respuesta (code, message, details, hint) es el contrato y no cambió: sólo cambia el estado HTTP. El cliente decide qué mostrar por `code` y por el token de `details`.",
+  "status_by_sqlstate": [
+    { "sqlstates": ["22023", "23502", "23514"], "http": 400, "meaning": "entrada inválida o una regla que el pedido viola", "retry": "no: corregir el pedido" },
+    { "sqlstates": ["22007"], "http": 400, "meaning": "un texto que no es un instante (lo rechaza el tipo antes que la función)", "retry": "no: corregir el pedido" },
+    { "sqlstates": ["42501"], "http": 401, "when": "sin sesión", "meaning": "hace falta iniciar sesión", "retry": "no: autenticarse y volver a intentar" },
+    { "sqlstates": ["42501"], "http": 403, "when": "con sesión", "meaning": "sin permiso para esta operación", "retry": "no" },
+    { "sqlstates": ["P0002"], "http": 404, "meaning": "no existe (o no es visible para quien llama: un pedido ajeno contesta igual que uno inexistente)", "retry": "no" },
+    { "sqlstates": ["23503", "23505"], "http": 409, "meaning": "referencia inexistente o clave repetida", "retry": "no" },
+    { "sqlstates": ["PT409"], "http": 409, "meaning": "conflicto de revisión: otro cambió el objeto", "retry": "releer y decidir; no reenviar a ciegas" },
+    { "sqlstates": ["55000"], "http": 409, "meaning": "rechazo por el estado actual, definitivo para ese pedido; el token de `details` dice cuál (BUSINESS_CLOSED, OUT_OF_DELIVERY_ZONE, PRODUCT_UNAVAILABLE, ALCOHOL_WINDOW_CLOSED, ENFORCEMENT_LOCKED, OPENING_NOT_READY, ...)", "retry": "no: no es una falla interna" },
+    { "sqlstates": ["PT429"], "http": 429, "meaning": "frenado por el guardián de admisión", "retry": "sí, después de `Retry-After`" },
+    { "sqlstates": ["54000"], "http": 429, "meaning": "frenado por el guardián del canal de checkout (lo recibe la Edge Function, que contesta 429)", "retry": "sí, después de `Retry-After`" },
+    { "sqlstates": ["*", "40P01", "57014"], "http": 500, "meaning": "falla interna: interbloqueo, tiempo agotado o un error no previsto", "retry": "sí: es la única clase reintentable, junto con una falla de red" }
+  ],
+  "not_used": {
+    "422": "no se usa: el contrato existente de una violación de regla (23514) es 400 y no se cambia",
+    "P0001": "no debe llegar a un cliente: un RAISE EXCEPTION sin errcode es un defecto (contesta 400 · P0001, indistinguible de un dato mal escrito)"
+  },
+  "selection_rule": "ENTRADA = función de `public`, no de trigger, que anon, authenticated o service_role pueden ejecutar. Se envuelve toda entrada PL/pgSQL que puede llegar a un RAISE de 55000 o de P0002 (incluido `select ... into strict` y los nombres de condición no_data_found / object_not_in_prerequisite_state): en su cuerpo, en una función que llama (transitivamente, por nombre) o en un trigger de una tabla que escribe. Más el trigger public.guard_business_currency_code (los clientes escriben `businesses` por PATCH directo).",
+  "excluded": [
+    {
+      "group": "caja_pos",
+      "reason": "Caja Clara / POS, la conciliación diaria y el registro de sesión de identidad: otro equipo los redefine en ramas paralelas; regenerarlos acá pisaría su trabajo.",
+      "patterns": ["pos_*", "checkout_pos_sale", "prepare_daily_reconciliation", "close_daily_reconciliation", "daily_reconciliation_snapshot_internal", "identity_register_session"],
+      "still_answers": "55000 y P0002 siguen saliendo como HTTP 500 por la API"
+    },
+    {
+      "group": "fiscal",
+      "reason": "La línea fiscal (ARCA, comprobantes, notas de crédito): tiene su propio contrato y su propio tren de cambios.",
+      "patterns": ["authorize_arca_homologation", "authorize_fiscal_artifact_access", "begin_fiscal_resend", "claim_fiscal_*", "complete_fiscal_*", "fail_fiscal_artifact", "get_order_fiscal_states", "request_credit_note", "request_full_credit_note", "request_fiscal_*", "request_order_invoice", "reserve_fiscal_document_number", "service_request_*"],
+      "still_answers": "55000 y P0002 siguen saliendo como HTTP 500 por la API"
+    },
+    {
+      "group": "print_agent",
+      "reason": "La línea del agente de impresión y los dispositivos del local: otro equipo la redefine en paralelo.",
+      "patterns": ["agent_*", "cancel_print_job", "create_local_device_pairing", "operator_*local_device*", "get_local_print_status", "request_order_print_job", "request_print_job_reprint", "resolve_print_job_review", "revoke_local_device"],
+      "still_answers": "55000 y P0002 siguen saliendo como HTTP 500 por la API"
+    },
+    {
+      "group": "legacy_payment_retired",
+      "reason": "Las seis funciones de cobro heredadas que el contrato A1-A4 retira en CI (20260909011239): regenerarlas resucitaría un cuerpo retirado.",
+      "patterns": ["claim_payment_outbox", "get_mercadopago_payment_authority", "prepare_mercadopago_preference", "prepare_payment_refund", "record_mercadopago_preference_created", "record_payment_refund_response"],
+      "still_answers": "retiradas: contestan 55000 «retired; use V2» como HTTP 500"
+    }
+  ]
+}

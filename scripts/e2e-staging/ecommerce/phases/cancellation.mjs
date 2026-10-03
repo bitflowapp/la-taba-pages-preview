@@ -128,8 +128,8 @@ export default {
       C(P, 'FOREIGN_ORDER_IS_ANSWERED_EXACTLY_LIKE_A_MISSING_ONE', !foreign.ok && foreign.code === 'P0002' && JSON.stringify(answer(foreign)) === JSON.stringify(answer(missing))
         && untouched?.status === 'received' && untouched.inventory_released_at === null && (await stock()) === s4 - 2,
       { foreign: answer(foreign), missing: answer(missing), order: untouched?.status }, 'la misma respuesta P0002 para los dos, y el pedido intacto');
-      // «No existe» es un error de quien llama. Hoy sale con HTTP 500: PostgREST contesta 500 a toda la familia P0
-      // salvo P0001, el mismo mecanismo de API-01 con otro SQLSTATE. Es un defecto y este check lo deja a la vista.
+      // «No existe» es un error de quien llama. Salía con HTTP 500 (C-2: PostgREST contesta 500 a toda la familia P0
+      // salvo P0001, el mismo mecanismo de API-01 con otro SQLSTATE); desde 20261002090000 la frontera contesta 404.
       C(P, 'ORDER_NOT_FOUND_IS_ANSWERED_AS_A_CLIENT_ERROR', missing.code === 'P0002' && missing.status >= 400 && missing.status < 500, brief(missing), 'HTTP 4xx · P0002');
       const own = mine.order ? await cancelAs(customer, mine.order.id, 'me equivoque de pedido') : { ok: false };
       const after = mine.order ? await ctx.orders.state(mine.order.id) : null;

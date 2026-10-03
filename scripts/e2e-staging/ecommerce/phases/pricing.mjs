@@ -76,11 +76,11 @@ export default {
       { http: nullQuantity.http, code: nullQuantity.code, message: nullQuantity.message, detailsStartWith: String(nullQuantity.details).slice(0, 20) },
       'HTTP 400 · 23502 con texto de la base en message y details (hallazgo PRICE-05; lo correcto es 22023)');
     }
-    // API-01: un rechazo de negocio levantado con SQLSTATE 55000 sale con HTTP 500 (PostgREST contesta 500 a toda
-    // la clase 55). El cuerpo trae el código y el mensaje correctos; el estado dice «falló el servidor».
+    // API-01 (cerrado por 20261002090000): un rechazo de negocio levantado con SQLSTATE 55000 sale por la frontera de
+    // la API como HTTP 409, con el mismo cuerpo (código y mensaje). Antes PostgREST contestaba 500 a toda la clase 55.
     const unsellable = answerOf('HIDDEN_PRODUCT_REJECTED');
-    C(P, 'KNOWN_API_01_BUSINESS_REFUSAL_55000_ANSWERS_HTTP_500', unsellable.http === 500 && unsellable.code === '55000',
-      { http: unsellable.http, code: unsellable.code, message: unsellable.message }, 'HTTP 500 · 55000 (hallazgo API-01; lo correcto es un 4xx)');
+    C(P, 'API_01_BUSINESS_REFUSAL_55000_ANSWERS_HTTP_409', unsellable.http === 409 && unsellable.code === '55000',
+      { http: unsellable.http, code: unsellable.code, message: unsellable.message }, 'HTTP 409 · 55000 (API-01 cerrado por 20261002090000)');
 
     const after = await ctx.orders.footprint();
     const foreignStock = (await ctx.env.observe(`select stock from public.products where id = ${sqlUuid(foreign.productId)}`))[0]?.stock;

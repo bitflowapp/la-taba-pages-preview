@@ -53,9 +53,9 @@ export default {
     C(P, 'LAST_UNIT_RACE_EXACTLY_ONE_ORDER_EVERY_ROUND', rounds.every((r) => r.winners === 1 && r.ordersInDatabase === 1),
       rounds.map((r) => ({ round: r.round, winner: r.winner, winners: r.winners, db: r.ordersInDatabase })));
     C(P, 'LAST_UNIT_STOCK_NEVER_NEGATIVE', rounds.every((r) => r.post.stock === 0 && r.post.available === false), rounds.map((r) => r.post));
-    // Este check es el que encontró API-01 y lo sigue diciendo: quien pierde la carrera recibe «producto no
-    // disponible» (55000) con HTTP 500. Falla mientras el hallazgo esté abierto; lo que contesta hoy está clavado
-    // en la fase pricing (KNOWN_API_01_BUSINESS_REFUSAL_55000_ANSWERS_HTTP_500).
+    // Este check es el que encontró API-01: quien pierde la carrera recibía «producto no disponible» (55000) con
+    // HTTP 500. Desde 20261002090000 la frontera de la API contesta 409 con el mismo cuerpo (también fijado en la
+    // fase pricing: API_01_BUSINESS_REFUSAL_55000_ANSWERS_HTTP_409).
     C(P, 'LAST_UNIT_LOSER_GETS_A_CLEAN_REFUSAL', rounds.every((r) => r.cleanRefusal), rounds.map((r) => r.loser), 'HTTP 4xx con 23514 (stock insuficiente) o 55000 (producto no disponible)');
     C(P, 'LAST_UNIT_RESTOCKED_THROUGH_OWNER_INVENTORY_MOVEMENT', rounds.slice(0, -1).every((r) => r.restock?.movement.ok && r.restock.previous === 0 && r.restock.resulting === 1 && r.restock.republished.ok),
       rounds.slice(0, -1).map((r) => r.restock));

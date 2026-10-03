@@ -1,0 +1,489 @@
+{
+  "timezone": "America/Argentina/Buenos_Aires",
+  "day": "2026-10-06",
+  "next": "2026-10-07",
+  "samples": [
+    {
+      "label": "office",
+      "local": "2026-10-06 09:59:59",
+      "instant": "2026-10-06T12:59:59.000Z",
+      "channel": "pickup",
+      "want": {
+        "state": "CLOSED",
+        "reason": "outside_hours",
+        "opens": "2026-10-06T13:00:00.000Z",
+        "closes": null
+      },
+      "seen": {
+        "state": "CLOSED",
+        "reason": "outside_hours",
+        "opens_at": "2026-10-06T13:00:00+00:00",
+        "closes_at": null
+      },
+      "ok": true
+    },
+    {
+      "label": "office",
+      "local": "2026-10-06 10:00:00",
+      "instant": "2026-10-06T13:00:00.000Z",
+      "channel": "pickup",
+      "want": {
+        "state": "OPEN",
+        "reason": null,
+        "opens": null,
+        "closes": "2026-10-06T21:00:00.000Z"
+      },
+      "seen": {
+        "state": "OPEN",
+        "reason": null,
+        "opens_at": null,
+        "closes_at": "2026-10-06T21:00:00+00:00"
+      },
+      "ok": true
+    },
+    {
+      "label": "office",
+      "local": "2026-10-06 17:59:59",
+      "instant": "2026-10-06T20:59:59.000Z",
+      "channel": "pickup",
+      "want": {
+        "state": "OPEN",
+        "closes": "2026-10-06T21:00:00.000Z"
+      },
+      "seen": {
+        "state": "OPEN",
+        "reason": null,
+        "opens_at": null,
+        "closes_at": "2026-10-06T21:00:00+00:00"
+      },
+      "ok": true
+    },
+    {
+      "label": "office",
+      "local": "2026-10-06 18:00:00",
+      "instant": "2026-10-06T21:00:00.000Z",
+      "channel": "pickup",
+      "want": {
+        "state": "CLOSED",
+        "reason": "outside_hours",
+        "opens": "2026-10-07T13:00:00.000Z"
+      },
+      "seen": {
+        "state": "CLOSED",
+        "reason": "outside_hours",
+        "opens_at": "2026-10-07T13:00:00+00:00",
+        "closes_at": null
+      },
+      "ok": true
+    },
+    {
+      "label": "office",
+      "local": "2026-10-06 03:00:00",
+      "instant": "2026-10-06T06:00:00.000Z",
+      "channel": "pickup",
+      "want": {
+        "state": "CLOSED",
+        "reason": "outside_hours",
+        "opens": "2026-10-06T13:00:00.000Z"
+      },
+      "seen": {
+        "state": "CLOSED",
+        "reason": "outside_hours",
+        "opens_at": "2026-10-06T13:00:00+00:00",
+        "closes_at": null
+      },
+      "ok": true
+    },
+    {
+      "label": "independent",
+      "local": "2026-10-06 03:00:00",
+      "instant": "2026-10-06T06:00:00.000Z",
+      "channel": "delivery",
+      "want": {
+        "state": "OPEN"
+      },
+      "seen": {
+        "state": "OPEN",
+        "reason": null,
+        "opens_at": null,
+        "closes_at": null
+      },
+      "ok": true
+    },
+    {
+      "label": "independent",
+      "local": "2026-10-06 20:00:00",
+      "instant": "2026-10-06T23:00:00.000Z",
+      "channel": "delivery",
+      "want": {
+        "state": "OPEN"
+      },
+      "seen": {
+        "state": "OPEN",
+        "reason": null,
+        "opens_at": null,
+        "closes_at": null
+      },
+      "ok": true
+    },
+    {
+      "label": "night",
+      "local": "2026-10-06 21:59:59",
+      "instant": "2026-10-07T00:59:59.000Z",
+      "channel": "pickup",
+      "want": {
+        "state": "CLOSED",
+        "opens": "2026-10-07T01:00:00.000Z"
+      },
+      "seen": {
+        "state": "CLOSED",
+        "reason": "outside_hours",
+        "opens_at": "2026-10-07T01:00:00+00:00",
+        "closes_at": null
+      },
+      "ok": true
+    },
+    {
+      "label": "night",
+      "local": "2026-10-06 22:00:00",
+      "instant": "2026-10-07T01:00:00.000Z",
+      "channel": "pickup",
+      "want": {
+        "state": "OPEN",
+        "closes": "2026-10-07T05:00:00.000Z"
+      },
+      "seen": {
+        "state": "OPEN",
+        "reason": null,
+        "opens_at": null,
+        "closes_at": "2026-10-07T05:00:00+00:00"
+      },
+      "ok": true
+    },
+    {
+      "label": "night",
+      "local": "2026-10-06 23:59:59",
+      "instant": "2026-10-07T02:59:59.000Z",
+      "channel": "pickup",
+      "want": {
+        "state": "OPEN",
+        "closes": "2026-10-07T05:00:00.000Z"
+      },
+      "seen": {
+        "state": "OPEN",
+        "reason": null,
+        "opens_at": null,
+        "closes_at": "2026-10-07T05:00:00+00:00"
+      },
+      "ok": true
+    },
+    {
+      "label": "night",
+      "local": "2026-10-07 00:00:00",
+      "instant": "2026-10-07T03:00:00.000Z",
+      "channel": "pickup",
+      "want": {
+        "state": "OPEN",
+        "closes": "2026-10-07T05:00:00.000Z"
+      },
+      "seen": {
+        "state": "OPEN",
+        "reason": null,
+        "opens_at": null,
+        "closes_at": "2026-10-07T05:00:00+00:00"
+      },
+      "ok": true
+    },
+    {
+      "label": "night",
+      "local": "2026-10-07 01:59:59",
+      "instant": "2026-10-07T04:59:59.000Z",
+      "channel": "pickup",
+      "want": {
+        "state": "OPEN",
+        "closes": "2026-10-07T05:00:00.000Z"
+      },
+      "seen": {
+        "state": "OPEN",
+        "reason": null,
+        "opens_at": null,
+        "closes_at": "2026-10-07T05:00:00+00:00"
+      },
+      "ok": true
+    },
+    {
+      "label": "night",
+      "local": "2026-10-07 02:00:00",
+      "instant": "2026-10-07T05:00:00.000Z",
+      "channel": "pickup",
+      "want": {
+        "state": "CLOSED",
+        "reason": "outside_hours",
+        "opens": "2026-10-08T01:00:00.000Z"
+      },
+      "seen": {
+        "state": "CLOSED",
+        "reason": "outside_hours",
+        "opens_at": "2026-10-08T01:00:00+00:00",
+        "closes_at": null
+      },
+      "ok": true
+    },
+    {
+      "label": "holiday",
+      "local": "2026-10-06 23:59:59",
+      "instant": "2026-10-07T02:59:59.000Z",
+      "channel": "pickup",
+      "want": {
+        "state": "OPEN",
+        "closes": "2026-10-07T03:00:00.000Z"
+      },
+      "seen": {
+        "state": "OPEN",
+        "reason": null,
+        "opens_at": null,
+        "closes_at": "2026-10-07T03:00:00+00:00"
+      },
+      "ok": true
+    },
+    {
+      "label": "holiday",
+      "local": "2026-10-07 00:00:00",
+      "instant": "2026-10-07T03:00:00.000Z",
+      "channel": "pickup",
+      "want": {
+        "state": "CLOSED",
+        "reason": "exception_closed"
+      },
+      "seen": {
+        "state": "CLOSED",
+        "reason": "exception_closed",
+        "opens_at": "2026-10-09T01:00:00+00:00",
+        "closes_at": null
+      },
+      "ok": true
+    },
+    {
+      "label": "holiday",
+      "local": "2026-10-07 01:00:00",
+      "instant": "2026-10-07T04:00:00.000Z",
+      "channel": "pickup",
+      "want": {
+        "state": "CLOSED",
+        "reason": "exception_closed"
+      },
+      "seen": {
+        "state": "CLOSED",
+        "reason": "exception_closed",
+        "opens_at": "2026-10-09T01:00:00+00:00",
+        "closes_at": null
+      },
+      "ok": true
+    },
+    {
+      "label": "holiday",
+      "local": "2026-10-07 12:00:00",
+      "instant": "2026-10-07T15:00:00.000Z",
+      "channel": "delivery",
+      "want": {
+        "state": "CLOSED",
+        "reason": "exception_closed",
+        "opens": "2026-10-08T03:00:00.000Z"
+      },
+      "seen": {
+        "state": "CLOSED",
+        "reason": "exception_closed",
+        "opens_at": "2026-10-08T03:00:00+00:00",
+        "closes_at": null
+      },
+      "ok": true
+    },
+    {
+      "label": "holiday",
+      "local": "2026-10-08 00:00:00",
+      "instant": "2026-10-08T03:00:00.000Z",
+      "channel": "delivery",
+      "want": {
+        "state": "OPEN"
+      },
+      "seen": {
+        "state": "OPEN",
+        "reason": null,
+        "opens_at": null,
+        "closes_at": null
+      },
+      "ok": true
+    },
+    {
+      "label": "alcohol",
+      "local": "2026-10-06 09:59:59",
+      "instant": "2026-10-06T12:59:59.000Z",
+      "channel": "alcohol",
+      "want": {
+        "state": "CLOSED",
+        "reason": "outside_hours",
+        "opens": "2026-10-06T13:00:00.000Z"
+      },
+      "seen": {
+        "state": "CLOSED",
+        "reason": "outside_hours",
+        "opens_at": "2026-10-06T13:00:00+00:00",
+        "closes_at": null
+      },
+      "ok": true
+    },
+    {
+      "label": "alcohol",
+      "local": "2026-10-06 10:00:00",
+      "instant": "2026-10-06T13:00:00.000Z",
+      "channel": "alcohol",
+      "want": {
+        "state": "OPEN",
+        "reason": null
+      },
+      "seen": {
+        "state": "OPEN",
+        "reason": null,
+        "opens_at": null,
+        "closes_at": "2026-10-07T01:00:00.000001+00:00"
+      },
+      "ok": true
+    },
+    {
+      "label": "alcohol",
+      "local": "2026-10-06 21:59:59",
+      "instant": "2026-10-07T00:59:59.000Z",
+      "channel": "alcohol",
+      "want": {
+        "state": "OPEN"
+      },
+      "seen": {
+        "state": "OPEN",
+        "reason": null,
+        "opens_at": null,
+        "closes_at": "2026-10-07T01:00:00.000001+00:00"
+      },
+      "ok": true
+    },
+    {
+      "label": "alcohol",
+      "local": "2026-10-06 22:00:30",
+      "instant": "2026-10-07T01:00:30.000Z",
+      "channel": "alcohol",
+      "want": {
+        "state": "CLOSED",
+        "reason": "outside_hours",
+        "opens": "2026-10-07T13:00:00.000Z"
+      },
+      "seen": {
+        "state": "CLOSED",
+        "reason": "outside_hours",
+        "opens_at": "2026-10-07T13:00:00+00:00",
+        "closes_at": null
+      },
+      "ok": true
+    },
+    {
+      "label": "alcohol",
+      "local": "2026-10-06 03:00:00",
+      "instant": "2026-10-06T06:00:00.000Z",
+      "channel": "pickup",
+      "want": {
+        "state": "OPEN"
+      },
+      "seen": {
+        "state": "OPEN",
+        "reason": null,
+        "opens_at": null,
+        "closes_at": null
+      },
+      "ok": true
+    },
+    {
+      "label": "paused",
+      "local": "2026-10-06 12:00:00",
+      "instant": "2026-10-06T15:00:00.000Z",
+      "channel": "pickup",
+      "want": {
+        "state": "CLOSED",
+        "reason": "business_paused",
+        "opens": null,
+        "closes": null
+      },
+      "seen": {
+        "state": "CLOSED",
+        "reason": "business_paused",
+        "opens_at": null,
+        "closes_at": null
+      },
+      "ok": true
+    },
+    {
+      "label": "paused",
+      "local": "2026-10-06 12:00:00",
+      "instant": "2026-10-06T15:00:00.000Z",
+      "channel": "delivery",
+      "want": {
+        "state": "CLOSED",
+        "reason": "business_paused"
+      },
+      "seen": {
+        "state": "CLOSED",
+        "reason": "business_paused",
+        "opens_at": null,
+        "closes_at": null
+      },
+      "ok": true
+    },
+    {
+      "label": "paused",
+      "local": "2026-10-06 12:00:00",
+      "instant": "2026-10-06T15:00:00.000Z",
+      "channel": "alcohol",
+      "want": {
+        "state": "CLOSED",
+        "reason": "business_paused"
+      },
+      "seen": {
+        "state": "CLOSED",
+        "reason": "business_paused",
+        "opens_at": null,
+        "closes_at": null
+      },
+      "ok": true
+    },
+    {
+      "label": "channel-off",
+      "local": "2026-10-06 12:00:00",
+      "instant": "2026-10-06T15:00:00.000Z",
+      "channel": "delivery",
+      "want": {
+        "state": "CLOSED",
+        "reason": "channel_disabled"
+      },
+      "seen": {
+        "state": "CLOSED",
+        "reason": "channel_disabled",
+        "opens_at": null,
+        "closes_at": null
+      },
+      "ok": true
+    },
+    {
+      "label": "channel-off",
+      "local": "2026-10-06 12:00:00",
+      "instant": "2026-10-06T15:00:00.000Z",
+      "channel": "pickup",
+      "want": {
+        "state": "OPEN"
+      },
+      "seen": {
+        "state": "OPEN",
+        "reason": null,
+        "opens_at": null,
+        "closes_at": null
+      },
+      "ok": true
+    }
+  ]
+}

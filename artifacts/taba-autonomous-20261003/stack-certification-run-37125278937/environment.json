@@ -1,0 +1,141 @@
+{
+  "runId": "ecom-cert-stack-20261003-131208",
+  "at": "2026-10-03T13:12:12.285Z",
+  "environment": "STACK",
+  "target": "supabase-ephemeral-stack",
+  "project": {
+    "ref": "stack",
+    "name": "supabase-ephemeral-stack",
+    "region": "loopback",
+    "status": "EPHEMERAL_STACK"
+  },
+  "apiUrl": "http://127.0.0.1:54321",
+  "database": {
+    "observer": "postgres",
+    "migrations": 206,
+    "head": "20261002063000",
+    "notApplied": [],
+    "unknownToTheRepo": [],
+    "cron": [
+      {
+        "job": "taba-checkout-expiry-sweep",
+        "active": true
+      },
+      {
+        "job": "taba-checkout-provider-truth-sweep",
+        "active": true
+      },
+      {
+        "job": "taba-cron-history-purge",
+        "active": true
+      },
+      {
+        "job": "taba-operational-alerts-sweep",
+        "active": true
+      },
+      {
+        "job": "taba-order-intake-purge",
+        "active": true
+      },
+      {
+        "job": "taba-payment-outbox-worker",
+        "active": true
+      },
+      {
+        "job": "taba-payment-traces-purge",
+        "active": true
+      },
+      {
+        "job": "taba-qa-window-expiry",
+        "active": true
+      },
+      {
+        "job": "taba-unattended-order-expiry",
+        "active": true
+      }
+    ]
+  },
+  "stack": {
+    "postgrest": {
+      "status": 200,
+      "version": "14.10",
+      "server": "postgrest/14.10",
+      "staging": "14.5",
+      "attempts": [
+        200
+      ]
+    },
+    "gotrue": {
+      "settingsStatus": 200,
+      "anonymousUsers": true,
+      "emailProvider": true,
+      "disableSignup": false,
+      "healthStatus": 200,
+      "version": "v2.188.1",
+      "name": "GoTrue"
+    },
+    "database": "postgres",
+    "observer": "postgres",
+    "serverVersion": "17.6",
+    "pgCron": "1.6.4",
+    "roleSettings": {
+      "anon": [
+        "statement_timeout=3s"
+      ],
+      "authenticated": [
+        "statement_timeout=8s"
+      ],
+      "authenticator": [
+        "lock_timeout=8s",
+        "session_preload_libraries=safeupdate",
+        "statement_timeout=8s"
+      ]
+    },
+    "runOrigin": "203.0.113.55",
+    "serviceRole": {
+      "tablesItCannotWrite": [],
+      "publicTablesWithoutInsert": 6,
+      "publicTables": 107
+    },
+    "cronRuns": {
+      "succeeded": 5,
+      "failed": 0,
+      "failed_jobs": null
+    }
+  },
+  "capabilities": {
+    "order_intake_guard": true,
+    "service_status": true,
+    "customer_cancel": true,
+    "order_expiry": true,
+    "cancel_republish": true,
+    "order_trace": true,
+    "ecommerce_health": true,
+    "catalog_stock_authority": true,
+    "enforcement_lock": true,
+    "delivery_coverage_gate": true,
+    "opening_rules_gate": true,
+    "checkout_payments": true,
+    "payment_refunds": true,
+    "business_self_delivery": true,
+    "operational_alerts": true,
+    "tracking_revocation": true
+  },
+  "forbiddenRefs": [
+    "tkanbadcglszlcyfjvpv",
+    "wwcpogltfgzgkrlilbcd",
+    "yakhtrkukqlgzvxuvhzs",
+    "ygqbcvxdrewcnzedfcyo",
+    "enznqfzhikpasjzpvjfd"
+  ],
+  "protectedBusinesses": [
+    "a57b1c20…",
+    "00000000…"
+  ],
+  "tenantIdentity": {
+    "slug": "taba-ecommerce-stack-20261003-131208",
+    "name": "TABA_ECOMMERCE_STACK_20261003_131208",
+    "reuseAsked": false
+  },
+  "tenant": null
+}

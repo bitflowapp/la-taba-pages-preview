@@ -1,0 +1,75 @@
+{
+  "status": "degraded",
+  "components": {
+    "database": "ok",
+    "auth": "ok",
+    "checkout": "ok",
+    "orders": "ok",
+    "payment_integration": "degraded",
+    "webhook_processing": "ok",
+    "schedulers": "ok"
+  },
+  "summary": {
+    "ok": 6,
+    "degraded": 1
+  },
+  "schedulers": {
+    "status": "ok",
+    "heartbeat": {
+      "healthy": true,
+      "age_seconds": 28,
+      "last_run_at": "2026-10-03T13:12:00.012276+00:00",
+      "stale_after_seconds": 600
+    },
+    "jobs": [
+      {
+        "job": "taba-checkout-expiry-sweep",
+        "state": "al día"
+      },
+      {
+        "job": "taba-checkout-provider-truth-sweep",
+        "state": "al día"
+      },
+      {
+        "job": "taba-cron-history-purge",
+        "state": "esperando su primera corrida"
+      },
+      {
+        "job": "taba-operational-alerts-sweep",
+        "state": "al día"
+      },
+      {
+        "job": "taba-order-intake-purge",
+        "state": "esperando su primera corrida"
+      },
+      {
+        "job": "taba-payment-outbox-worker",
+        "state": "al día"
+      },
+      {
+        "job": "taba-payment-traces-purge",
+        "state": "esperando su primera corrida"
+      },
+      {
+        "job": "taba-qa-window-expiry",
+        "state": "al día"
+      },
+      {
+        "job": "taba-unattended-order-expiry",
+        "state": "al día"
+      }
+    ]
+  },
+  "checkout": {
+    "expiry_sweep": {
+      "state": "al día",
+      "last_success_at": "2026-10-03T13:12:00.012544+00:00",
+      "seconds_since_success": 28
+    },
+    "sessions_past_expiry": 0,
+    "financial_writes_paused": false,
+    "reservations_past_expiry": 0,
+    "oldest_past_expiry_minutes": null
+  },
+  "payments": "degraded"
+}

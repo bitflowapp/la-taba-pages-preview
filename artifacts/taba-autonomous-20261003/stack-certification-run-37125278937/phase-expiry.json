@@ -1,0 +1,81 @@
+{
+  "at": "2026-10-03T13:14:01.811Z",
+  "session": {
+    "created": {
+      "http": 200,
+      "ok": true,
+      "code": null,
+      "message": null,
+      "details": null,
+      "ms": 8.9
+    },
+    "aged": 1,
+    "waitedMs": 21033,
+    "state": {
+      "session": "expired",
+      "reservations": [
+        "released:2:checkout_expired"
+      ]
+    },
+    "sweeps": {
+      "n": 1,
+      "last": "2026-10-03 13:13:00.036934+00"
+    }
+  },
+  "order": {
+    "policy": {
+      "http": 200,
+      "ok": true,
+      "code": null,
+      "message": null,
+      "details": null,
+      "ms": 3.6
+    },
+    "created": {
+      "http": 200,
+      "ok": true,
+      "code": null,
+      "message": null,
+      "details": null,
+      "ms": 10.3
+    },
+    "aged": 1,
+    "waitedMs": 21034,
+    "status": "cancelled",
+    "event": {
+      "actor": "system",
+      "metadata": {
+        "reason": "unattended_timeout",
+        "previous_status": "received",
+        "products_released": 1,
+        "abandoned_order_minutes": 5
+      }
+    },
+    "runs": {
+      "n": 1,
+      "last": "2026-10-03 13:13:00.029659+00"
+    }
+  },
+  "units": {
+    "before": {
+      "stock": 500,
+      "reserved": 0,
+      "in_orders": 10
+    },
+    "held": {
+      "stock": 497,
+      "reserved": 2,
+      "in_orders": 11
+    },
+    "afterRelease": {
+      "stock": 500,
+      "reserved": 0,
+      "in_orders": 10
+    },
+    "afterAnotherRun": {
+      "stock": 500,
+      "reserved": 0,
+      "in_orders": 10
+    }
+  }
+}

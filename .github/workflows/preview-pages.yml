@@ -18,10 +18,20 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
+      - name: Fetch approved staging runtime
+        run: |
+          curl --fail --silent --show-error --location --retry 2 \
+            https://taba2-staging.pages.dev/runtime-config.js \
+            --output runtime-config.live.js
+          node scripts/check-runtime-config.mjs runtime-config.live.js
       - name: Prepare safe preview artifact
         run: |
           npm run vendor:build
           node scripts/create-release-folder.mjs
+          cp runtime-config.live.js dist_release/runtime-config.js
+          node scripts/preflight-staging-package.mjs \
+            dist_release runtime-config.live.js \
+            --report dist_release/release-manifest.json
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload pages artifact

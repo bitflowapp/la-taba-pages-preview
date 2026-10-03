@@ -27,9 +27,12 @@
  *
  *     ¿cambió el contenido de algo que se precachea sin que cambiara CACHE_NAME?
  *
- * La identidad se DERIVA del contenido y se compara contra la que quedó firmada
- * en `release-identity.json`. Un módulo tocado sin bump rompe el gate aunque ese
- * módulo no lleve `?v=` y nadie lo hubiera mirado.
+ * La identidad de CÓDIGO se DERIVA del contenido y se compara contra la que
+ * quedó firmada en `release-identity.json`. `runtime-config.js` es la única
+ * excepción deliberada: es configuración pública deployment-owned, se
+ * materializa al armar el paquete y tiene su propio hash y validación en el
+ * preflight. Sigue estando en el precache; sólo no contamina la identidad del
+ * código.
  *
  * Uso:
  *   node scripts/check-release-identity.mjs           verifica
@@ -42,6 +45,8 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MANIFEST_NAME = 'release-identity.json';
+export const RUNTIME_CONFIG_PATH = 'runtime-config.js';
+export const CODE_IDENTITY_VERSION = 2;
 
 /**
  * Los cuatro tokens `?v=` tienen que coincidir entre `index.html` y `sw.js`.
@@ -75,7 +80,15 @@ export function verificarTokens({ indexHtml, worker }) {
  * prueba sola.
  */
 export function compararIdentidad(firmada, actual) {
-  const mismoContenido = firmada.assetsDigest === actual.assetsDigest;
+  // \`assetsDigest\` se conserva como huella histórica del precache completo
+  // (incluida la plantilla). La decisión de release usa el digest de código;
+  // el fallback permite leer una firma v1 durante la transición.
+  const digestFirmado = firmada.codeAssetsDigest ?? firmada.assetsDigest;
+  const digestActual = actual.codeAssetsDigest ?? actual.assetsDigest;
+  const cantidadFirmada = firmada.codeAssetCount ?? firmada.assetCount;
+  const cantidadActual = actual.codeAssetCount ?? actual.assetCount;
+  const mismoContenido = digestFirmado === digestActual
+    && cantidadFirmada === cantidadActual;
   const mismaIdentidad = firmada.cacheName === actual.cacheName;
 
   // El caso que este gate existe para atrapar.
@@ -146,7 +159,37 @@ export function calcularIdentidad(root = ROOT) {
     .update(Object.keys(porArchivo).sort().map((k) => `${k}:${porArchivo[k]}`).join('\n'))
     .digest('hex');
 
-  return { identidad: { cacheName, assetCount: Object.keys(porArchivo).length, assetsDigest }, fallas };
+  // El worker es código ejecutable y no aparece en su propio precache. Debe
+  // formar parte de la identidad para que una mutación de la estrategia de
+  // caché no pase inadvertida. El único archivo deployment-owned excluido es
+  // el runtime público que cambia al preparar staging/preprod.
+  const archivosDeCodigo = { ...porArchivo };
+  delete archivosDeCodigo[RUNTIME_CONFIG_PATH];
+  archivosDeCodigo['sw.js'] = createHash('sha256')
+    .update(fs.readFileSync(path.join(root, 'sw.js')))
+    .digest('hex');
+  const codeAssetsDigest = createHash('sha256')
+    .update(
+      Object.keys(archivosDeCodigo)
+        .sort()
+        .map((k) => k + ':' + archivosDeCodigo[k])
+        .join('\n'),
+    )
+    .digest('hex');
+
+  return {
+    identidad: {
+      cacheName,
+      assetCount: Object.keys(porArchivo).length,
+      assetsDigest,
+      codeAssetCount: Object.keys(archivosDeCodigo).length,
+      codeAssetsDigest,
+      codeIdentityVersion: CODE_IDENTITY_VERSION,
+      runtimeConfigPath: RUNTIME_CONFIG_PATH,
+      runtimeConfigExcluded: true,
+    },
+    fallas,
+  };
 }
 
 function main() {
@@ -158,8 +201,9 @@ function main() {
     fs.writeFileSync(manifest, `${JSON.stringify(identidad, null, 2)}\n`, 'utf8');
     console.log('Identidad de release firmada:');
     console.log(`  CACHE_NAME    ${identidad.cacheName}`);
-    console.log(`  archivos      ${identidad.assetCount}`);
-    console.log(`  digest        ${identidad.assetsDigest.slice(0, 16)}…`);
+    console.log(`  precache      ${identidad.assetCount} archivos`);
+    console.log(`  código        ${identidad.codeAssetCount} archivos`);
+    console.log(`  digest código ${identidad.codeAssetsDigest.slice(0, 16)}…`);
     return 0;
   }
 

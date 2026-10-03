@@ -47,9 +47,21 @@ Los cinco blockers comerciales quedan cerrados en esta candidate:
 ## Release/PWA
 
 - Identidad: `la-taba-runtime-v66-production-blockers`.
-- Precache firmado: 127 archivos; digest registrado en `release-identity.json`.
+- Precache: 127 archivos; la huella histórica del precache con template es
+  `172c8f0128745f4f35b3c2d3438c22366d9761be56450fa54c355bb7c3285b0c`.
+- Identidad de código v2: 127 archivos — `sw.js` más el precache salvo
+  `runtime-config.js` —, digest
+  `24a46da95273f58387032b513f08b64353a8b884eb1711f86d871f942ca60a62`.
+- `runtime-config.js` sigue en el precache, pero es configuración pública
+  deployment-owned: se materializa al armar el preview, se valida por separado
+  como staging contra `ukxqbgswjlibmnjemrzd` y se registra con su propio SHA-256.
+  Nunca se publica el template.
 - Tokens consistentes: CSS `v50`, `app.js` `v42`, `pwa-update.js` `v3`, `startup-recovery.js` `v2`.
-- `npm run release:identity`: PASS, sin diff.
+- `npm run release:identity`: PASS; la firma v2 no cambia al sustituir sólo el
+  runtime aprobado del entorno.
+- Preflight de preview: exige runtime presente, sintácticamente válido, staging,
+  ref aprobada, sin secretos ni Mercado Pago PROD, además de verificar el hash
+  del código y la igualdad byte a byte con el runtime aprobado.
 - Cambio de asset sin bump: rechazado por el gate en worktree descartable.
 - Upgrade, degradación/recuperación y rollback están cubiertos por unit y E2E focal; no equivalen
   a prueba física de iPhone.
@@ -152,11 +164,11 @@ Declararlos cerrados con Chromium sería declararlos sobre el navegador donde no
 
 ## Identidad de release
 
-Estos arreglos tocan **prueba, documentación y CI**: ni un byte de runtime ni del precache.
-Verificado, no supuesto — `npm run release:identity` vuelve a firmar sin diff:
-`la-taba-runtime-v66-production-blockers`, 127 archivos, digest `172c8f01…`, idéntico al de
-`cc9e88f`. Por eso **no se hizo bump**: subir `CACHE_NAME` sin que cambie el artefacto es
-ruido que después le saca sentido al rollback.
+La reparación del contrato de empaquetado toca **tooling, pruebas, metadata y
+documentación**: ni un byte de `index.html`, `sw.js`, `js/`, `css/` ni de los
+assets de runtime. La firma v2 de código permanece estable cuando el preflight
+inyecta el runtime staging aprobado. No se hizo bump de `CACHE_NAME`: subirlo
+sin cambiar el código sería ruido que después le saca sentido al rollback.
 
 ## No-gates físicos
 

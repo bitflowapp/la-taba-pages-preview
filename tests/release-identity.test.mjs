@@ -24,7 +24,19 @@ test('el árbol publicable coincide con la identidad firmada', () => {
   assert.equal(identidad.cacheName, FIRMADA.cacheName);
   assert.equal(identidad.assetsDigest, FIRMADA.assetsDigest);
   assert.equal(identidad.assetCount, FIRMADA.assetCount);
+  assert.equal(identidad.codeAssetsDigest, FIRMADA.codeAssetsDigest);
+  assert.equal(identidad.codeAssetCount, FIRMADA.codeAssetCount);
+  assert.equal(identidad.codeIdentityVersion, 2);
+  assert.equal(identidad.runtimeConfigPath, 'runtime-config.js');
+  assert.equal(identidad.runtimeConfigExcluded, true);
   assert.deepEqual(compararIdentidad(FIRMADA, identidad), []);
+});
+
+test('runtime-config queda fuera del digest de código, aunque sigue en el precache', () => {
+  const worker = readFileSync(new URL('../sw.js', import.meta.url), 'utf8');
+  assert.ok(worker.includes("'./runtime-config.js'"));
+  assert.equal(FIRMADA.runtimeConfigExcluded, true);
+  assert.notEqual(FIRMADA.codeAssetsDigest, FIRMADA.assetsDigest);
 });
 
 test('EL CASO QUE IMPORTA: contenido nuevo bajo la misma identidad se rechaza', () => {

@@ -30,6 +30,16 @@ test('el worker conserva una página y el módulo del retorno para cada vuelta o
 test('el preflight acepta la versión CSS que exige el candidato', () => {
   const preflight = read('scripts/preflight-staging-package.mjs');
   assert.match(preflight, /css:\s*'\?v=50'/);
-  const allowed = preflight.match(/const permitidas = new Set\(\[([^\]]+)\]\)/)?.[1] || '';
-  assert.match(allowed, /'50'/);
+  assert.match(preflight, /app:\s*'\?v=42'/);
+  assert.match(preflight, /PERMITTED_VERSIONS = new Set\(\['50', '42', '3', '2'\]\)/);
+  // El gate anterior tenía un 41 suelto y por eso rechazaba el candidato v42.
+  assert.doesNotMatch(preflight, /'50',\s*'41'/);
+});
+
+test('el workflow de preview no puede publicar el template sin preflight', () => {
+  const workflow = read('.github/workflows/preview-pages.yml');
+  assert.match(workflow, /runtime-config\.live\.js/);
+  assert.match(workflow, /check-runtime-config\.mjs/);
+  assert.match(workflow, /preflight-staging-package\.mjs/);
+  assert.match(workflow, /cp runtime-config\.live\.js dist_release\/runtime-config\.js/);
 });

@@ -1,5 +1,10 @@
 {
   "cacheName": "la-taba-runtime-v66-production-blockers",
   "assetCount": 127,
-  "assetsDigest": "172c8f0128745f4f35b3c2d3438c22366d9761be56450fa54c355bb7c3285b0c"
+  "assetsDigest": "172c8f0128745f4f35b3c2d3438c22366d9761be56450fa54c355bb7c3285b0c",
+  "codeAssetCount": 127,
+  "codeAssetsDigest": "24a46da95273f58387032b513f08b64353a8b884eb1711f86d871f942ca60a62",
+  "codeIdentityVersion": 2,
+  "runtimeConfigPath": "runtime-config.js",
+  "runtimeConfigExcluded": true
 }

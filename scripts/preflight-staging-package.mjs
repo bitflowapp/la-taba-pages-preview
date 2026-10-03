@@ -1,120 +1,404 @@
 /*
- * Preflight del paquete que se sube a staging. Se planta antes de publicar.
+ * Preflight cerrado del paquete de preview staging/preprod.
  *
- * Comprueba, sobre `dist_release` ya construido:
+ * El paquete tiene dos identidades distintas:
  *
- *  1. que NO se cuele ninguna ruta que el sitio no publica (catalog, data,
- *     docs, tests, scripts, supabase, package.json, README);
- *  2. que `runtime-config.js` sea el VIVO byte a byte y no la plantilla del
- *     repositorio, que falla cerrada y apagaría staging;
- *  3. que todo lo que el service worker promete precachear exista en el
- *     paquete —`cache.addAll()` es todo o nada: un 404 deja al worker sin
- *     instalar nunca—;
- *  4. que las versiones servidas sean las del candidato y no una mezcla.
+ *   1. código: sw.js + todos los archivos del precache salvo runtime-config.js;
+ *   2. runtime: runtime-config.js materializado al preparar el deployment.
+ *
+ * El runtime sigue en el precache, pero no puede cambiar la firma del código
+ * cuando se reemplaza la plantilla por la configuración aprobada del entorno.
  *
  * Uso:
- *   node scripts/preflight-staging-package.mjs <dir> <runtime-config-vivo>
+ *   node scripts/preflight-staging-package.mjs <dir> <runtime-config-vivo> [--report <path>]
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
-const [dir = 'dist_release', vivo = 'artifacts/ci/staging-v61/preserva/runtime-config.live.js'] = process.argv.slice(2);
-const RAIZ = path.resolve(dir);
-const PROHIBIDAS = ['catalog', 'data', 'docs', 'tests', 'scripts', 'supabase', 'package.json', 'package-lock.json', 'README.md', '.env', 'node_modules'];
-const ESPERADO = { app: '?v=42', css: '?v=50', recovery: '?v=2', cache: 'la-taba-runtime-v66-production-blockers' };
+import {
+  calcularIdentidad,
+  RUNTIME_CONFIG_PATH,
+} from './check-release-identity.mjs';
+import {
+  checkRuntimeConfig,
+  readRuntimeFile,
+} from './check-runtime-config.mjs';
 
-const fallas = [];
-const ok = [];
-const sha = (archivo) => crypto.createHash('sha256').update(fs.readFileSync(archivo)).digest('hex');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const MANIFEST_PATH = path.join(ROOT, 'release-identity.json');
+const PROHIBIDAS = [
+  'catalog',
+  'data',
+  'docs',
+  'tests',
+  'scripts',
+  'supabase',
+  'package.json',
+  'package-lock.json',
+  'README.md',
+  '.env',
+  'node_modules',
+];
+export const EXPECTED = Object.freeze({
+  app: '?v=42',
+  css: '?v=50',
+  pwa: '?v=3',
+  recovery: '?v=2',
+  cache: 'la-taba-runtime-v66-production-blockers',
+  environment: 'staging',
+  supabaseRef: 'ukxqbgswjlibmnjemrzd',
+});
+export const PERMITTED_VERSIONS = new Set(['50', '42', '3', '2']);
 
-// 1 · rutas prohibidas
-const colados = PROHIBIDAS.filter((entrada) => fs.existsSync(path.join(RAIZ, entrada)));
-if (colados.length) fallas.push(`se colaron rutas que el sitio no publica: ${colados.join(', ')}`);
-else ok.push(`sin rutas prohibidas (${PROHIBIDAS.length} comprobadas)`);
+const sha = (filePath) => crypto
+  .createHash('sha256')
+  .update(fs.readFileSync(filePath))
+  .digest('hex');
 
-// 2 · runtime-config vivo, byte a byte
-const enPaquete = path.join(RAIZ, 'runtime-config.js');
-if (!fs.existsSync(vivo)) {
-  fallas.push(`no está la copia del runtime-config vivo en ${vivo}: sin eso no se puede publicar`);
-} else if (!fs.existsSync(enPaquete)) {
-  fallas.push('el paquete no trae runtime-config.js');
-} else {
-  const hashVivo = sha(vivo);
-  const hashPaquete = sha(enPaquete);
-  const bytes = fs.statSync(enPaquete).size;
-  if (hashVivo !== hashPaquete) {
-    fallas.push(`runtime-config.js NO es el vivo (paquete ${hashPaquete.slice(0, 16)}… vs vivo ${hashVivo.slice(0, 16)}…)`);
-  } else if (/PROJECT_REF|sb_publishable_\.\.\./.test(fs.readFileSync(enPaquete, 'utf8'))) {
-    fallas.push('runtime-config.js es la plantilla vacía del repositorio: publicarla apaga staging');
-  } else {
-    ok.push(`runtime-config.js vivo preservado: ${bytes} B, sha256 ${hashVivo.slice(0, 16)}…`);
+const read = (filePath) => fs.readFileSync(filePath, 'utf8');
+
+function sourceHead(root) {
+  try {
+    return execFileSync('git', ['rev-parse', 'HEAD'], {
+      cwd: root,
+      encoding: 'utf8',
+    }).trim();
+  } catch {
+    return null;
   }
 }
 
-// 3 · el precache tiene que existir entero dentro del paquete
-const worker = fs.readFileSync(path.join(RAIZ, 'sw.js'), 'utf8');
-const precache = [...worker.matchAll(/'\.\/([^']+)'/g)].map((m) => m[1]);
-const ausentes = precache
-  .map((entrada) => entrada.split('?')[0])
-  .filter((rel) => rel && !fs.existsSync(path.join(RAIZ, rel)));
-if (ausentes.length) fallas.push(`el worker precachea ${ausentes.length} archivo(s) que no están en el paquete: ${ausentes.slice(0, 6).join(', ')}`);
-else ok.push(`precache completo: ${precache.length} entradas, todas presentes`);
+function runtimeSecurityErrors(value, label) {
+  const errors = [];
+  const visit = (candidate, trail = '$') => {
+    if (!candidate || typeof candidate !== 'object') return;
 
-// 4 · versiones del candidato, sin mezcla
-const index = fs.readFileSync(path.join(RAIZ, 'index.html'), 'utf8');
-const hoja = fs.readFileSync(path.join(RAIZ, 'styles.css'), 'utf8');
-const paymentPages = ['resultado', 'pendiente', 'error'].map((state) => ({
-  state,
-  path: path.join(RAIZ, 'pago', state, 'index.html'),
-}));
-const comprobar = (nombre, condicion, detalle) => (condicion ? ok.push(detalle) : fallas.push(`${nombre}: ${detalle}`));
-comprobar('index/app', index.includes(`js/app.js${ESPERADO.app}`), `index.html carga app.js${ESPERADO.app}`);
-comprobar('index/recovery', index.includes(`js/startup-recovery.js${ESPERADO.recovery}`), `index.html carga startup-recovery.js${ESPERADO.recovery}`);
-comprobar('index/css', index.includes(`styles.css${ESPERADO.css}`), `index.html carga styles.css${ESPERADO.css}`);
-comprobar('sw/cache', worker.includes(ESPERADO.cache), `sw.js declara ${ESPERADO.cache}`);
-for (const page of paymentPages) {
-  if (!fs.existsSync(page.path)) {
-    fallas.push(`pago/${page.state}: falta index.html`);
-    continue;
+    for (const [key, child] of Object.entries(candidate)) {
+      const normalizedKey = key.toLowerCase();
+      const childTrail = trail + '.' + key;
+
+      if (
+        typeof child === 'string'
+        && /(?:access.?token|service.?role|webhook.?secret|private.?key|secret)/i.test(normalizedKey)
+        && child.trim()
+      ) {
+        errors.push(label + ': no debe contener secretos en ' + childTrail);
+      }
+
+      if (
+        /(?:demo|showcase)/i.test(normalizedKey)
+        && (child === true || ['demo', 'showcase'].includes(String(child).toLowerCase()))
+      ) {
+        errors.push(label + ': demo/showcase no puede quedar habilitado en runtime');
+      }
+
+      if (/(?:mercado.?pago|mercadopago)/i.test(normalizedKey)) {
+        const text = typeof child === 'string' ? child.toLowerCase() : '';
+        if (child === true || /^(?:prod|production|live)$/.test(text)) {
+          errors.push(label + ': Mercado Pago PROD no puede estar habilitado');
+        }
+        if (child && typeof child === 'object') {
+          const serialized = JSON.stringify(child).toLowerCase();
+          if (/(?:prod|production|live|api\.mercadopago\.com)/.test(serialized)) {
+            errors.push(label + ': Mercado Pago PROD no puede estar habilitado');
+          }
+        }
+      }
+
+      visit(child, childTrail);
+    }
+  };
+
+  visit(value);
+  return errors;
+}
+
+async function validateRuntime(filePath, label) {
+  const errors = [];
+  if (!filePath || !fs.existsSync(filePath)) {
+    return {
+      ok: false,
+      errors: [label + ': archivo ausente; el preview preflight falla cerrado'],
+    };
   }
-  const source = fs.readFileSync(page.path, 'utf8');
-  comprobar(
-    `pago/${page.state}/css`,
-    source.includes(`../../styles.css${ESPERADO.css}`),
-    `retorno carga styles.css${ESPERADO.css}`,
-  );
-  comprobar(
-    `pago/${page.state}/script`,
-    source.includes('../../js/payments/mercadopago-return.js'),
-    'retorno carga mercadopago-return.js',
-  );
+
+  let report;
+  let raw;
+  try {
+    report = await checkRuntimeConfig(filePath);
+    raw = readRuntimeFile(filePath);
+  } catch (error) {
+    return {
+      ok: false,
+      errors: [label + ': sintaxis/configuración inválida (' + error.message + ')'],
+    };
+  }
+
+  if (!report.ok) errors.push(label + ': config:check rechazó el runtime');
+  if (report.environment !== EXPECTED.environment) {
+    errors.push(label + ': environment debe ser staging');
+  }
+  if (report.supabaseHost !== EXPECTED.supabaseRef + '.supabase.co') {
+    errors.push(label + ': Supabase ref inesperada');
+  }
+  errors.push(...runtimeSecurityErrors(raw, label));
+
+  return {
+    ok: errors.length === 0,
+    errors,
+    sha256: sha(filePath),
+    bytes: fs.statSync(filePath).size,
+    environment: report.environment,
+    supabaseRef: report.supabaseHost?.replace(/\.supabase\.co$/, '') || null,
+  };
 }
 
-const versionesSueltas = new Set([
-  ...[...index.matchAll(/\?v=(\d+)/g)].map((m) => m[1]),
-  ...[...hoja.matchAll(/\?v=(\d+)/g)].map((m) => m[1]),
-  ...[...worker.matchAll(/\?v=(\d+)/g)].map((m) => m[1]),
-  ...paymentPages.flatMap((page) => (
-    fs.existsSync(page.path)
-      ? [...fs.readFileSync(page.path, 'utf8').matchAll(/\?v=(\d+)/g)].map((m) => m[1])
-      : []
-  )),
-]);
-// 50 (cadena CSS), 41 (app), 3 (pwa-update) y 2 (startup-recovery) son las
-// cuatro del candidato. Cualquier otra es una mezcla con un artefacto anterior.
-const permitidas = new Set(['50', '41', '3', '2']);
-const intrusas = [...versionesSueltas].filter((v) => !permitidas.has(v));
-if (intrusas.length) fallas.push(`mezcla de versiones: aparecen ?v=${intrusas.join(', ?v=')} además de las del candidato`);
-else ok.push(`sin mezcla de versiones: sólo ${[...versionesSueltas].sort().map((v) => `?v=${v}`).join(' ')}`);
-
-const total = fs.readdirSync(RAIZ, { recursive: true }).filter((rel) => fs.statSync(path.join(RAIZ, rel)).isFile()).length;
-ok.push(`${total} archivos en el paquete`);
-
-console.log(ok.map((linea) => `  ok · ${linea}`).join('\n'));
-if (fallas.length) {
-  console.error(`\nPREFLIGHT DETENIDO (${fallas.length}):`);
-  fallas.forEach((linea) => console.error(`  ✗ ${linea}`));
-  process.exit(1);
+function versionSet(sources) {
+  const versions = new Set();
+  for (const source of sources) {
+    for (const match of source.matchAll(/\?v=(\d+)/g)) versions.add(match[1]);
+  }
+  return versions;
 }
-console.log('\npreflight en verde: el paquete se puede publicar.');
+
+function addFileCheck(errors, filePath, description) {
+  if (!fs.existsSync(filePath)) {
+    errors.push(description + ': falta ' + path.basename(filePath));
+    return null;
+  }
+  return read(filePath);
+}
+
+export async function validatePreviewPackage({
+  dir,
+  vivo,
+  root = ROOT,
+} = {}) {
+  const packageDir = path.resolve(dir || 'dist_release');
+  const livePath = vivo ? path.resolve(vivo) : '';
+  const errors = [];
+  const ok = [];
+
+  if (!fs.existsSync(packageDir) || !fs.statSync(packageDir).isDirectory()) {
+    return {
+      ok: false,
+      okLines: [],
+      errors: ['no existe el directorio de paquete: ' + packageDir],
+    };
+  }
+
+  const colados = PROHIBIDAS.filter((entry) => fs.existsSync(path.join(packageDir, entry)));
+  if (colados.length) errors.push('se colaron rutas que el sitio no publica: ' + colados.join(', '));
+  else ok.push('sin rutas prohibidas (' + PROHIBIDAS.length + ' comprobadas)');
+
+  const packageRuntimePath = path.join(packageDir, RUNTIME_CONFIG_PATH);
+  const liveRuntime = await validateRuntime(livePath, 'runtime vivo');
+  const packageRuntime = await validateRuntime(packageRuntimePath, 'runtime del paquete');
+  errors.push(...liveRuntime.errors, ...packageRuntime.errors);
+
+  if (liveRuntime.ok && packageRuntime.ok) {
+    if (liveRuntime.sha256 !== packageRuntime.sha256) {
+      errors.push(
+        'runtime-config.js NO es el vivo (paquete '
+        + packageRuntime.sha256.slice(0, 16)
+        + '… vs vivo '
+        + liveRuntime.sha256.slice(0, 16)
+        + '…)',
+      );
+    } else {
+      ok.push(
+        'runtime staging aprobado: '
+        + packageRuntime.bytes
+        + ' B, sha256 '
+        + packageRuntime.sha256.slice(0, 16)
+        + '…',
+      );
+    }
+  }
+
+  const workerPath = path.join(packageDir, 'sw.js');
+  const worker = addFileCheck(errors, workerPath, 'worker');
+  const precache = worker
+    ? [...worker.matchAll(/'\.\/([^']+)'/g)].map((match) => match[1])
+    : [];
+  const missing = precache
+    .map((entry) => entry.split('?')[0])
+    .filter((relative) => relative && !fs.existsSync(path.join(packageDir, relative)));
+  if (missing.length) {
+    errors.push(
+      'el worker precachea '
+      + missing.length
+      + ' archivo(s) que no están en el paquete: '
+      + missing.slice(0, 6).join(', '),
+    );
+  } else if (worker) {
+    ok.push('precache completo: ' + precache.length + ' entradas, todas presentes');
+  }
+
+  const index = addFileCheck(errors, path.join(packageDir, 'index.html'), 'index');
+  const hoja = addFileCheck(errors, path.join(packageDir, 'styles.css'), 'css');
+  const paymentPages = ['resultado', 'pendiente', 'error'].map((state) => ({
+    state,
+    path: path.join(packageDir, 'pago', state, 'index.html'),
+  }));
+  const paymentSources = [];
+  for (const page of paymentPages) {
+    const source = addFileCheck(errors, page.path, 'pago/' + page.state);
+    if (!source) continue;
+    paymentSources.push(source);
+    if (!source.includes('../../styles.css' + EXPECTED.css)) {
+      errors.push('pago/' + page.state + ': retorno no carga styles.css' + EXPECTED.css);
+    }
+    if (!source.includes('../../js/payments/mercadopago-return.js')) {
+      errors.push('pago/' + page.state + ': falta mercadopago-return.js');
+    }
+  }
+
+  if (index) {
+    if (!index.includes('js/app.js' + EXPECTED.app)) {
+      errors.push('index/app: index.html no carga app.js' + EXPECTED.app);
+    }
+    if (!index.includes('js/startup-recovery.js' + EXPECTED.recovery)) {
+      errors.push('index/recovery: index.html no carga startup-recovery.js' + EXPECTED.recovery);
+    }
+    if (!index.includes('js/pwa-update.js' + EXPECTED.pwa)) {
+      errors.push('index/pwa: index.html no carga pwa-update.js' + EXPECTED.pwa);
+    }
+    if (!index.includes('styles.css' + EXPECTED.css)) {
+      errors.push('index/css: index.html no carga styles.css' + EXPECTED.css);
+    }
+  }
+  if (worker && !worker.includes(EXPECTED.cache)) {
+    errors.push('sw/cache: sw.js no declara ' + EXPECTED.cache);
+  }
+
+  const versions = versionSet([
+    index || '',
+    hoja || '',
+    worker || '',
+    ...paymentSources,
+  ]);
+  const intrusas = [...versions].filter((version) => !PERMITTED_VERSIONS.has(version));
+  if (intrusas.length) {
+    errors.push(
+      'mezcla de versiones: aparecen ?v='
+      + intrusas.join(', ?v=')
+      + ' además de las del candidato',
+    );
+  } else if (index || hoja || worker) {
+    ok.push(
+      'sin mezcla de versiones: sólo '
+      + [...versions].sort().map((version) => '?v=' + version).join(' '),
+    );
+  }
+
+  let artifactIdentity = null;
+  let signedIdentity = null;
+  try {
+    signedIdentity = JSON.parse(read(path.join(root, 'release-identity.json')));
+    artifactIdentity = calcularIdentidad(packageDir);
+    errors.push(...artifactIdentity.fallas);
+    if (signedIdentity.codeIdentityVersion !== 2 || signedIdentity.runtimeConfigExcluded !== true) {
+      errors.push('release-identity.json no declara el contrato separado de runtime');
+    }
+    if (artifactIdentity.identidad.cacheName !== signedIdentity.cacheName) {
+      errors.push('identidad: CACHE_NAME del paquete no coincide con la firma');
+    }
+    if (artifactIdentity.identidad.assetCount !== signedIdentity.assetCount) {
+      errors.push('identidad: cantidad de precache no coincide con la firma');
+    }
+    if (artifactIdentity.identidad.codeAssetCount !== signedIdentity.codeAssetCount) {
+      errors.push('identidad: cantidad de código no coincide con la firma');
+    }
+    if (artifactIdentity.identidad.codeAssetsDigest !== signedIdentity.codeAssetsDigest) {
+      errors.push('identidad: el código del paquete no corresponde al digest firmado');
+    } else {
+      ok.push(
+        'identidad de código PASS: '
+        + artifactIdentity.identidad.codeAssetCount
+        + ' archivos, digest '
+        + artifactIdentity.identidad.codeAssetsDigest.slice(0, 16)
+        + '…',
+      );
+    }
+  } catch (error) {
+    errors.push('identidad: no se pudo verificar el paquete (' + error.message + ')');
+  }
+
+  const total = fs.readdirSync(packageDir, { recursive: true })
+    .filter((relative) => fs.statSync(path.join(packageDir, relative)).isFile())
+    .length;
+  ok.push(total + ' archivos en el paquete');
+
+  const report = artifactIdentity && packageRuntime.ok
+    ? {
+      schemaVersion: 1,
+      sourceHead: sourceHead(root),
+      codeReleaseIdentity: {
+        version: signedIdentity?.codeIdentityVersion ?? null,
+        cacheName: artifactIdentity.identidad.cacheName,
+        precacheAssetCount: artifactIdentity.identidad.assetCount,
+        codeAssetCount: artifactIdentity.identidad.codeAssetCount,
+        digest: artifactIdentity.identidad.codeAssetsDigest,
+      },
+      runtime: {
+        path: RUNTIME_CONFIG_PATH,
+        sha256: packageRuntime.sha256,
+        bytes: packageRuntime.bytes,
+        environment: packageRuntime.environment,
+        supabaseRef: packageRuntime.supabaseRef,
+      },
+      deploymentId: process.env.TABA_PREVIEW_DEPLOYMENT_ID || null,
+      generatedAt: new Date().toISOString(),
+    }
+    : null;
+
+  return {
+    ok: errors.length === 0,
+    okLines: ok,
+    errors,
+    report,
+    packageDir,
+    livePath,
+  };
+}
+
+async function main() {
+  const args = process.argv.slice(2);
+  const positional = args.filter((arg) => !arg.startsWith('--'));
+  const reportIndex = args.indexOf('--report');
+  const dir = positional[0] || 'dist_release';
+  const vivo = positional[1] || 'artifacts/ci/staging-v61/preserva/runtime-config.live.js';
+  const reportPath = reportIndex >= 0 ? args[reportIndex + 1] : null;
+  const result = await validatePreviewPackage({ dir, vivo });
+
+  console.log(result.okLines.map((line) => '  ok · ' + line).join('\n'));
+  if (!result.ok) {
+    console.error('\nPREFLIGHT DETENIDO (' + result.errors.length + '):');
+    result.errors.forEach((line) => console.error('  ✗ ' + line));
+    process.exitCode = 1;
+    return;
+  }
+
+  if (reportPath) {
+    if (!result.report) {
+      console.error('PREFLIGHT DETENIDO: no se pudo generar release manifest');
+      process.exitCode = 1;
+      return;
+    }
+    fs.writeFileSync(
+      path.resolve(reportPath),
+      JSON.stringify(result.report, null, 2) + '\n',
+      'utf8',
+    );
+    console.log('release manifest: ' + path.resolve(reportPath));
+  }
+  console.log('\npreflight en verde: el paquete se puede publicar.');
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
+  await main();
+}

@@ -215,12 +215,20 @@ notificación sin firma válida se rechaza; una repetida no cobra dos veces.
 ### Paso 5 · La compuerta tiene que decir READY TO ENABLE PAYMENT
 
 ```bash
-npm run mp:config:produccion   # VEREDICTO: PRODUCTION
-npm run commercial:gate        # READY TO ENABLE PAYMENT
+npm run mp:config:produccion   # todo presente; VEREDICTO: DISABLED sólo por el interruptor de dinero real cerrado
+npm run commercial:gate        # ver la nota: todavía no distingue el interruptor
 ```
 
-Si dice otra cosa, **no se enciende**. Lo que falte está listado con nombre y con
-quién lo cierra.
+Hasta el paso 7 el interruptor de dinero real (`MERCADOPAGO_REAL_MONEY_ENABLED`)
+queda sin poner, a propósito: con todo lo demás cargado, `mp:config:produccion`
+tiene que listar los secretos como presentes y decir como único motivo del
+`DISABLED` que el interruptor no está en «enabled». Si dice otra cosa, **no se
+enciende**. Lo que falte está listado con nombre y con quién lo cierra.
+
+Nota: `commercial:gate` lee ese `DISABLED` como «faltan los secretos
+productivos» y responde `TECHNICALLY READY` en vez de `READY TO ENABLE
+PAYMENT`: todavía no sabe del interruptor. Falla del lado seguro (dice menos
+de lo que hay); lo que manda en este paso es `mp:config:produccion`.
 
 ### Paso 6 · Encender, con autorización explícita
 
@@ -234,12 +242,21 @@ update public.business_payment_settings
 
 ### Paso 7 · Primera compra real, controlada
 
-La prueba con plata real exige además declararla. Por el Dashboard, igual que los
-otros sensibles —aunque el valor sea fijo, escribirlo a mano en una consola es
-parte del acto—:
+La plata real la abre el interruptor de dinero real, un secreto permanente de
+backend. Lo pone quien opera la plataforma, con el sí escrito de Walter, por el
+Dashboard (Edge Functions → Secrets) o por consola —el valor es público—:
 
 ```
-MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION = I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE
+MERCADOPAGO_REAL_MONEY_ENABLED=enabled
+```
+
+Sólo el valor exacto `enabled` abre. Para cerrarlo en un paso se borra ese
+secreto; los reembolsos, el webhook y la conciliación siguen funcionando. La
+variable vieja `MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION` ya no abre nada: no
+se pone, y si está es un error de configuración.
+
+```bash
+npm run mp:config:produccion   # ahora sí: VEREDICTO: PRODUCTION, interruptor ABIERTO
 ```
 
 Por el monto más chico posible:
@@ -278,8 +295,13 @@ Verificado con las suites del repositorio el 2026-08-27 (23 casos, 0 fallos):
 
 1. `update business_payment_settings set enabled = false` — el checkout deja de
    ofrecer Mercado Pago de inmediato. Los pedidos en curso siguen su camino.
-2. Para cortar de raíz: borrar `MERCADOPAGO_ACCESS_TOKEN` de los secretos. Las
-   funciones vuelven a fallar cerrado y no cobran.
+2. Para cortar el cobro real de toda la plataforma en un paso: borrar el
+   secreto `MERCADOPAGO_REAL_MONEY_ENABLED`. Ningún comercio crea un cobro
+   nuevo (la sesión de checkout responde `409 PAYMENTS_NOT_ENABLED` sin
+   reservar stock), y lo que ya se cobró sigue su camino: reembolsos,
+   cancelaciones, webhook, worker y conciliación no dependen del interruptor.
+   No se corta borrando `MERCADOPAGO_PRODUCTION_REVIEW_STATUS` ni las
+   credenciales: eso también deja sin poder devolver.
 3. Las devoluciones se hacen con `mercadopago-refund`, nunca a mano en la base:
    un pago devuelto sin registrar deja el pedido y la cuenta contando cosas
    distintas.

@@ -81,3 +81,30 @@ test('la variable vieja de humo no la lee ninguna función', () => {
   }
   assert.doesNotMatch(read('supabase/functions/_shared/real-money-gate.ts'), /Deno\.env\.get\(LEGACY_SMOKE_CONFIRMATION\)/);
 });
+
+const RUNBOOKS = [
+  'docs/MERCADOPAGO_PRODUCCION_CP.md',
+  'docs/payments/mercadopago/PRODUCTION_CHECKLIST.md',
+  'docs/payments/mercadopago/CREDENTIALS.md',
+  'MERCADOPAGO-PRODUCTION-ACTIVATION.md',
+  'RUNBOOK-PRIMER-PEDIDO-REAL.md',
+  'docs/REAL-PAYMENT-CANARY-RUNBOOK.md',
+];
+
+test('los runbooks hablan del interruptor, sólo le dan el valor enabled y ya no mandan a poner la frase vieja', () => {
+  for (const file of RUNBOOKS) {
+    const text = read(file);
+    assert.ok(text.includes(SWITCH), `${file} no nombra el interruptor`);
+    // Cada asignación del interruptor en un runbook es exactamente `enabled`.
+    for (const [, value] of text.matchAll(/MERCADOPAGO_REAL_MONEY_ENABLED\s*[:=]\s*`?([^\s`|,;)]+)/g)) {
+      assert.equal(value, 'enabled', `${file} le asigna otro valor al interruptor`);
+    }
+    // La frase vieja ya no se escribe en ningún runbook: ni como instrucción ni como valor.
+    assert.ok(!text.includes(LEGACY_PHRASE), `${file} todavía trae la frase vieja de humo`);
+    assert.doesNotMatch(text, new RegExp(`${LEGACY}\\s*=`), `${file} todavía manda a poner la variable vieja`);
+  }
+  // Cómo se apaga en un paso, y que la plata que vuelve sigue: lo dice el runbook de CP.
+  const cp = read('docs/MERCADOPAGO_PRODUCCION_CP.md');
+  assert.match(cp, /borrar el secreto `MERCADOPAGO_REAL_MONEY_ENABLED`/);
+  assert.match(cp, /reembolsos/i);
+});

@@ -55,8 +55,12 @@ El pedido entra con `origin='production'`. Los sembrados de QA son `origin='qa'`
 por eso se distinguen sin ambigüedad.
 
 **[DINERO REAL]** Antes de este paso, Mercado Pago tiene que estar en producción
-*y* aprobado. El backend falla cerrado si no lo está — ver
-`docs/payments/mercadopago/PRODUCTION_CHECKLIST.md`.
+*y* aprobado, y el interruptor de dinero real abierto: el secreto de backend
+`MERCADOPAGO_REAL_MONEY_ENABLED=enabled`, que pone quien opera la plataforma
+con la decisión escrita del dueño. El backend falla cerrado si falta
+cualquiera de las tres llaves (revisión, comercio con su vendedor,
+interruptor): la sesión de checkout responde `409 PAYMENTS_NOT_ENABLED` sin
+reservar stock — ver `docs/payments/mercadopago/PRODUCTION_CHECKLIST.md`.
 
 ```bash
 node esperar-pedido.mjs        # engancha el pedido y canta su código LT-XXXX
@@ -129,5 +133,9 @@ pwsh entregar.ps1
 
 ## Al terminar
 
-Pasar los locks a `CERRADO` con el resultado y el HEAD. Si se usó
-`MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION`, **quitarla**.
+Pasar los locks a `CERRADO` con el resultado y el HEAD. Si el interruptor de
+dinero real se abrió sólo para esta corrida, **cerrarlo**: borrar el secreto
+`MERCADOPAGO_REAL_MONEY_ENABLED`, un solo paso. Los reembolsos, las
+cancelaciones, el webhook y la conciliación siguen funcionando con el
+interruptor cerrado. La variable vieja de la prueba de humo no se usa: ya no
+abre nada, y si aparece es un error de configuración.

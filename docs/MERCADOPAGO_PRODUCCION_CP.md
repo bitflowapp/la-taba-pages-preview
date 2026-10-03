@@ -50,9 +50,73 @@ Las URLs de retorno no se cargan en la aplicación: las arma el código
 | `MERCADOPAGO_CLIENT_SECRET`, `MERCADOPAGO_OAUTH_WEBHOOK_SECRET` | H2 (persona con la aplicación) | la misma herramienta, entrada oculta |
 | `MERCADOPAGO_TOKEN_ENCRYPTION_KEY`, `PAYMENT_LOG_HASH_SALT` | la misma herramienta | se generan una sola vez y nunca se rotan desde ahí |
 | `PAYMENT_WORKER_SECRET` + Vault `taba_payment_worker_hmac_secret` / `taba_payment_worker_url` | después de H2 | `sincronizar-worker-hmac.mjs --target=controlled-production --apply` (hace la sonda firmada) |
+| `MERCADOPAGO_REAL_MONEY_ENABLED` = `enabled` | quien opera la plataforma, con la decisión escrita del dueño | §2.1. Es lo último que se pone, y se saca en un paso |
 
 Nunca en CP: `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION`.
-Las herramientas fallan si aparecen.
+Las herramientas fallan si aparecen. La segunda es la variable vieja de la
+prueba de humo: ya no abre nada (el cobro real lo abre el interruptor de §2.1)
+y su presencia es un error de configuración que `verificar-configuracion.mjs`
+informa y por el que `sincronizar-worker-hmac.mjs` no corre.
+
+### 2.1 El interruptor de dinero real (EDGE-03)
+
+**Qué es.** Un secreto de las Edge Functions de CP, permanente:
+`MERCADOPAGO_REAL_MONEY_ENABLED`. Lo abre **sólo** el valor exacto `enabled`.
+Sin el secreto, vacío, `true`, `ENABLED`, con espacios o con cualquier otra
+cosa, está cerrado. No vive en la web ni en la base: sólo en el backend.
+
+En producción se crea un cobro únicamente si se cumplen las tres llaves a la vez:
+
+1. la revisión del proyecto aprobada (`MERCADOPAGO_PRODUCTION_REVIEW_STATUS` = `approved`, como hasta ahora);
+2. el comercio con Mercado Pago encendido y su vendedor productivo conectado (H3 y H4, como hasta ahora);
+3. el interruptor `MERCADOPAGO_REAL_MONEY_ENABLED` = `enabled`.
+
+Si falta cualquiera: la sesión de checkout responde `409 PAYMENTS_NOT_ENABLED`
+antes de reservar stock, no se crea ninguna preferencia y no sale ningún
+pedido a Mercado Pago. La compuerta de release lo informa como
+`MONEY_MOVEMENT_POSSIBLE: NO`.
+
+**Estado de CP hoy.** `MERCADOPAGO_PRODUCTION_REVIEW_STATUS` está y
+`MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION` no está (nombres leídos el
+2026-10-03). El interruptor no está: con las funciones de este cambio
+desplegadas, CP sigue cerrada al dinero real hasta que alguien lo ponga a
+propósito.
+
+**Quién y cuándo.** Quien opera la plataforma con acceso de gestión al
+proyecto, y sólo con la decisión escrita del dueño. Para el pago real de
+control (H5) se abre para esa ventana; para vender, cuando
+`docs/ecommerce-hardening/payment-certification.json` registra Mercado Pago
+certificado en producción y la decisión de apertura lo incluye (la compuerta
+`REAL_MONEY_GATE` no da verde de otro modo). Primero tienen que estar
+desplegadas las funciones con este cambio: las anteriores leían la variable
+vieja, que por eso tiene que seguir ausente.
+
+**Cómo se abre.** En el Dashboard (Edge Functions → Secrets) o por consola; el
+valor es público, no es un secreto:
+
+```powershell
+supabase secrets set MERCADOPAGO_REAL_MONEY_ENABLED=enabled --project-ref tkanbadcglszlcyfjvpv
+npm run mp:config -- --ref=produccion-controlada   # interruptor ABIERTO, dinero real POSIBLE
+```
+
+**Cómo se apaga, en un paso.** Borrar el secreto `MERCADOPAGO_REAL_MONEY_ENABLED`
+(o ponerle cualquier otro valor):
+
+```powershell
+supabase secrets unset MERCADOPAGO_REAL_MONEY_ENABLED --project-ref tkanbadcglszlcyfjvpv
+npm run mp:config -- --ref=produccion-controlada   # interruptor CERRADO, dinero real CERRADO
+```
+
+Desde ahí ningún comercio crea un cobro real. **La plata que vuelve sigue
+funcionando:** los reembolsos, las cancelaciones de cobros que ya existen, el
+webhook, el worker, la conciliación y la pantalla de estado no consultan el
+interruptor. Un pago aprobado después del corte igual termina en su pedido, y
+un cliente puede recibir su devolución. Lo que el corte no retira: una
+preferencia que ya se le entregó a un comprador sigue pagable en Mercado Pago
+hasta que vence la sesión de checkout que la originó; ese pago, si ocurre, se
+asienta y se puede devolver como cualquier otro. Para cortar el cobro **no** se borra
+`MERCADOPAGO_PRODUCTION_REVIEW_STATUS`: eso apaga todo el runtime productivo,
+reembolsos y webhook incluidos.
 
 El binding de CP está fijado en el código (`_shared/seller-oauth.ts`). Rechaza
 otro proyecto, otro entorno, otra aplicación, otro host de panel o de checkout,
@@ -122,7 +186,8 @@ negocio y queda auditado. El cobro manual sigue disponible.
 **H5. Un pago real de control.** Un pedido con un producto real aprobado, al
 precio real. La autorización nombra el importe exacto y el vendedor. Se hace
 una sola vez: si falla antes de crear el pago, se junta evidencia y no se
-reintenta.
+reintenta. Para esa ventana se abre el interruptor de dinero real (§2.1) y,
+si la autorización no dice otra cosa, se vuelve a cerrar al terminar.
 
 Se verifica en este orden:
 1. pago aprobado en el proveedor, cuyo collector es el vendedor conectado;
@@ -140,13 +205,15 @@ stock no cambia dos veces.
 
 | Qué | Cómo | Probado |
 |---|---|---|
+| Cobro real de toda la plataforma | borrar el secreto `MERCADOPAGO_REAL_MONEY_ENABLED` (§2.1). Ningún comercio crea cobros; reembolsos, cancelaciones, webhook, worker y conciliación siguen | Deno `real-money-gate.deno.ts` (handlers reales con el interruptor apagado) |
 | Mercado Pago de un negocio | `cobro-negocio.mjs apagar ... --confirmar=<slug>`: sólo `enabled=false`. Conexión, credencial, pagos e historia intactos; volver a encender no exige reconectar | Staging 2026-09-25 22:05Z, 6/6 (ver §6) + pgTAP 16 |
 | Cuenta del vendedor | Panel → Desconectar: borra la credencial, invalida la generación y apaga Mercado Pago del negocio | Staging 16/16 (reconexión) |
 | Funciones | redeploy de la versión anterior; sin secretos, fallan cerradas | — |
 | Migraciones | `docs/migrations/rollback/20260925170000_*`, `20260925220000_*`, `20260925223000_*` | pgTAP en CI |
 
 Si aparece un P0 financiero, Mercado Pago del negocio se apaga en el acto
-(`apagar`) y el cobro manual sigue:
+(`apagar`) y el cobro manual sigue; si el problema no es de un solo negocio,
+se borra además el interruptor de dinero real (§2.1):
 - pago al vendedor equivocado;
 - pago sin pedido;
 - pedido pagado sin pago;
@@ -262,11 +329,13 @@ portapapeles. Se cargaron:
 Con Staging no se comparte ningún valor salvo el modo `oauth`, comparado por
 huella. No hay token global.
 
-**Interruptor de plataforma.** `MERCADOPAGO_PRODUCTION_REVIEW_STATUS=approved`.
+**Revisión de plataforma.** `MERCADOPAGO_PRODUCTION_REVIEW_STATUS=approved`.
 Sin él, todo el runtime productivo falla cerrado (503), incluido el
 consentimiento del vendedor. No habilita a ningún negocio: eso sigue siendo el
-interruptor por negocio (H4). Para apagar el cobro real de toda la plataforma
-alcanza con borrar esa variable.
+interruptor por negocio (H4). Este registro de 2026-09-26 decía que para
+apagar el cobro real alcanzaba con borrar esa variable; desde EDGE-03 el corte
+de plataforma es el interruptor de §2.1, porque borrar la revisión también
+apaga reembolsos, webhook y worker.
 
 **Worker.** `sincronizar-worker-hmac.mjs --target=controlled-production --apply`
 quedó alineado, con sonda firmada sin trabajo. El cron corre cada 30 s y sólo

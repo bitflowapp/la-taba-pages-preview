@@ -18,6 +18,7 @@ import { HERO, INLINE, finishScene, sceneState, useQaCampaigns } from './campaig
 test.use({ viewport: { width: 390, height: 844 } });
 
 const goHome = async (page) => {
+  await page.bringToFront();
   await page.locator('[data-nav-view="home"]:visible').first().click();
   await expect(page.locator('[data-view="home"]')).toBeVisible();
   // Al cambiar de vista la tienda lleva el foco al encabezado, en el cuadro
@@ -28,10 +29,31 @@ const goHome = async (page) => {
   await page.evaluate(() => new Promise((resolve) => { requestAnimationFrame(() => requestAnimationFrame(resolve)); }));
 };
 const goCatalog = async (page) => {
+  await page.bringToFront();
   await page.locator('[data-nav-view="catalog"]:visible').first().click();
   await expect(page.locator(`${GRID} .product-card`).first()).toBeVisible();
 };
 const heroPiece = `${HERO} [data-campaign]`;
+
+// A slow renderer can spend its motion budget while the preceding scene plays.
+// Assert the live scene or the complete static fallback atomically, so the
+// budget decision cannot race a later attribute read. Neither outcome skips
+// the navigation/search assertions that prove the scene does not restart.
+const assertLiveOrBudgetStill = async (page, selector) => {
+  await expect.poll(() => page.evaluate((target) => {
+    const root = document.querySelector(target);
+    const diagnostics = window.TABA2_CAMPAIGNS?.getDiagnostics?.();
+    if (!root || !diagnostics) return 'waiting';
+    if (!diagnostics.budgetLimited) return root.dataset.motionCampaignLive === 'true' ? 'live' : 'waiting';
+    const animations = document.getAnimations().filter((animation) => root.contains(animation.effect?.target));
+    const cta = root.querySelector('.cmp-cta');
+    const headline = root.querySelector('.cmp-headline');
+    return !root.hasAttribute('data-motion-campaign') && !root.hasAttribute('data-motion-campaign-live')
+      && animations.length === 0 && diagnostics.running === 0 && diagnostics.live === 0
+      && getComputedStyle(cta).opacity === '1' && getComputedStyle(headline).opacity === '1'
+      ? 'budget-static' : 'invalid-budget';
+  }, selector)).toMatch(/^(live|budget-static)$/);
+};
 
 /** Dónde termina el primer «Agregar» y dónde empieza la barra inferior. */
 const fold = (page) => page.evaluate(() => {
@@ -289,7 +311,7 @@ test('volver a la home, o borrar una búsqueda, no repite la función', async ({
   await openRuntimeCatalog(page);
   await goHome(page);
   const piece = page.locator(heroPiece);
-  await expect(piece).toHaveAttribute('data-motion-campaign-live', 'true');
+  await assertLiveOrBudgetStill(page, heroPiece);
   const duration = await piece.evaluate((root) => Number.parseFloat(getComputedStyle(root).getPropertyValue('--cmp-dur')) * 1000);
   // La entrada se ve entera, en tiempo real: es lo que hace una persona.
   await page.waitForTimeout(duration + 400);
@@ -312,7 +334,7 @@ test('volver a la home, o borrar una búsqueda, no repite la función', async ({
   await goCatalog(page);
   const gridPiece = page.locator(`${GRID} [data-campaign]`);
   await gridPiece.scrollIntoViewIfNeeded();
-  await expect(gridPiece).toHaveAttribute('data-motion-campaign-live', 'true');
+  await assertLiveOrBudgetStill(page, `${GRID} [data-campaign]`);
   const gridDuration = await gridPiece.evaluate((root) => Number.parseFloat(getComputedStyle(root).getPropertyValue('--cmp-dur')) * 1000);
   await page.waitForTimeout(gridDuration + 400);
   const playsGrid = (await page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics())).plays;
@@ -325,7 +347,43 @@ test('volver a la home, o borrar una búsqueda, no repite la función', async ({
   await page.waitForTimeout(400);
   const again = await sceneState(page, `${GRID} [data-campaign]`);
   expect(again.state, 'borrar la búsqueda volvió a encender la escena').toBe('still');
+  expect(again.total, 'borrar la búsqueda volvió a crear animaciones').toBe(0);
+  expect(await gridPiece.locator('.cmp-cta').evaluate((node) => getComputedStyle(node).opacity)).toBe('1');
   expect((await page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics())).plays).toBe(playsGrid);
+});
+
+test('un renderer lento queda estático y completo sin reiniciar al navegar o borrar la búsqueda', async ({ page }) => {
+  test.setTimeout(60_000);
+  // Deliver actual browser frames with the timestamps of an 80ms renderer.
+  // This exercises the production budget probe without disabling the guard.
+  await page.addInitScript(() => {
+    const nativeFrame = window.requestAnimationFrame.bind(window);
+    let timestamp = 0;
+    window.requestAnimationFrame = (callback) => nativeFrame(() => callback(timestamp += 80));
+  });
+  await useQaCampaigns(page);
+  await openRuntimeCatalog(page);
+  await goHome(page);
+  await expect.poll(() => page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics().budgetLimited)).toBe(true);
+  await assertLiveOrBudgetStill(page, heroPiece);
+  const plays = (await page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics())).plays;
+  await goCatalog(page);
+  const gridPiece = page.locator(`${GRID} [data-campaign]`);
+  await gridPiece.scrollIntoViewIfNeeded();
+  await assertLiveOrBudgetStill(page, `${GRID} [data-campaign]`);
+  const search = page.locator('[data-view="catalog"] [data-search-input]');
+  await search.fill('coca');
+  await expect(gridPiece).toHaveCount(0);
+  await search.fill('');
+  await gridPiece.scrollIntoViewIfNeeded();
+  await assertLiveOrBudgetStill(page, `${GRID} [data-campaign]`);
+  await goHome(page);
+  await assertLiveOrBudgetStill(page, heroPiece);
+  expect((await page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics())).plays).toBe(plays);
+  await page.locator(`${heroPiece} .cmp-cta`).click();
+  await expect(page.locator('[data-product-modal]')).toBeVisible();
+  await page.locator('[data-product-modal] [data-close-modal]').click();
+  await expect(page.locator('[data-product-modal]')).toBeHidden();
 });
 
 test('ocultar un anuncio deja ese lugar sin anuncios: vuelve la puerta editorial, no otra campaña', async ({ page }) => {

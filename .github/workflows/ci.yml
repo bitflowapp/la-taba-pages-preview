@@ -27,7 +27,7 @@ jobs:
     name: Web, backend, fiscal and security gates
     runs-on: ubuntu-latest
     # The complete browser gate includes five-minute discovery stress sessions
-    # in both engines. The 60-minute job ceiling cut a healthy run at 684/754;
+    # in both engines. The 60-minute job ceiling cut the run at 684/754;
     # allow the same full suite to finish on slower hosted runners.
     timeout-minutes: 90
     steps:

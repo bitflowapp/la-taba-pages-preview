@@ -1,0 +1,151 @@
+/* ============================================================================
+   TABA — Design tokens · dirección "Mostrador Patagónico"
+   Artefacto de propuesta. NO está integrado al repositorio.
+   Fuente única de verdad para los 5 prototipos de esta revisión.
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* --- Neutrales "Basalto" (gris frío, guiño patagónico sin literalidad) --- */
+  --t-ink-900: #14161a;   /* texto principal, wordmark */
+  --t-ink-700: #2a2e35;   /* títulos sobre superficies */
+  --t-ink-600: #414751;   /* texto fuerte secundario */
+  --t-ink-500: #5b6270;   /* texto secundario (AA sobre paper) */
+  --t-ink-400: #656d79;   /* muted — 4.87:1 sobre surface-2 (medido) */
+  --t-line-300: #d7dbe1;  /* borde de control con rótulo visible */
+  --t-line-strong: #878f9d; /* borde que PORTA información (campos): 3.26:1 vs blanco, WCAG 1.4.11 */
+  --t-line-200: #e4e7ec;  /* borde de superficie */
+  --t-line-100: #eef0f3;  /* separador interno */
+  --t-surface-2: #f5f7f9; /* fondo estructural / "estante" del packshot */
+  --t-surface-1: #fbfcfd; /* fondo de app */
+  --t-paper: #fffdfb;     /* blanco cálido TABA */
+  --t-white: #ffffff;     /* superficie de producto (igual al fondo del packshot) */
+
+  /* --- Rojo TABA: acción y marca. Nunca superficie grande. --- */
+  --t-red-700: #a80009;   /* pressed / hover */
+  --t-red-600: #d0000d;   /* acción primaria + marca (rojo TABA original) */
+  --t-red-300: #f0c2c6;   /* borde suave */
+  --t-red-100: #fff0f1;   /* wash */
+
+  /* --- Semánticos --- */
+  --t-success-700: #0f6b36;
+  --t-success-600: #0f7a3d;
+  --t-success-100: #e8f5ed;
+  --t-warning-700: #7a4a00;
+  --t-warning-600: #8a5300;
+  --t-warning-100: #fff4e0;
+  --t-danger-700: #97060f;
+  --t-danger-600: #b3121b;
+  --t-danger-100: #fdeced;
+  --t-info-600: #1a5fd0;
+  --t-focus: #1a5fd0;
+
+  /* --- Roles --- */
+  --t-bg: var(--t-surface-1);
+  --t-bg-elevated: var(--t-paper);
+  --t-text: var(--t-ink-900);
+  --t-text-secondary: var(--t-ink-500);
+  --t-text-muted: var(--t-ink-400);
+  --t-border: var(--t-line-200);
+  --t-action: var(--t-red-600);
+  --t-action-hover: var(--t-red-700);
+  --t-on-action: #ffffff;
+
+  /* --- Tipografía: stack de sistema. NO se declara ninguna fuente que no se sirva. --- */
+  --t-font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --t-font-num: var(--t-font);
+
+  --t-display-l: 700 28px/1.15 var(--t-font);
+  --t-title-l: 700 22px/1.2 var(--t-font);
+  --t-title-m: 700 18px/1.25 var(--t-font);
+  --t-title-s: 700 16px/1.3 var(--t-font);
+  --t-body: 400 15px/1.45 var(--t-font);
+  --t-body-s: 400 13.5px/1.45 var(--t-font);
+  --t-label: 600 13px/1.2 var(--t-font);
+  --t-caption: 500 12px/1.3 var(--t-font);
+  --t-eyebrow: 700 11px/1.2 var(--t-font);
+  --t-price-l: 800 18px/1.1 var(--t-font);
+  --t-price-m: 800 16px/1.1 var(--t-font);
+  --t-metric: 800 22px/1 var(--t-font);
+
+  /* --- Espaciado (base 4) --- */
+  --t-s1: 4px;  --t-s2: 8px;  --t-s3: 12px; --t-s4: 16px;
+  --t-s5: 20px; --t-s6: 24px; --t-s8: 32px; --t-s10: 40px; --t-s12: 48px;
+
+  /* --- Radios (reducidos: menos "demo redondeada") --- */
+  --t-r-xs: 6px; --t-r-sm: 10px; --t-r-md: 14px; --t-r-lg: 18px; --t-r-pill: 999px;
+
+  /* --- Elevación: el borde hace el trabajo; la sombra es soporte --- */
+  --t-e1: 0 1px 2px rgb(20 22 26 / 6%);
+  --t-e2: 0 4px 12px rgb(20 22 26 / 8%);
+  --t-e3: 0 12px 32px rgb(20 22 26 / 14%);
+
+  /* --- Controles --- */
+  --t-ctrl-lg: 48px;  /* CTA primaria */
+  --t-ctrl-md: 44px;  /* mínimo táctil */
+  --t-ctrl-sm: 36px;  /* denso, sólo desktop, con hit-area ampliada */
+  --t-tap: 44px;
+
+  /* --- Movimiento --- */
+  --t-ease: 160ms cubic-bezier(0.2, 0, 0, 1);
+  --t-ease-slow: 240ms cubic-bezier(0.2, 0, 0, 1);
+
+  /* --- Z-index: escala ordenada y única --- */
+  --t-z-base: 0;
+  --t-z-sticky-section: 100;
+  --t-z-appbar: 200;
+  --t-z-bottomnav: 300;
+  --t-z-sticky-cta: 400;
+  --t-z-backdrop: 500;
+  --t-z-sheet: 510;
+  --t-z-modal: 600;
+  --t-z-toast: 700;
+
+  /* ==========================================================================
+     STICKY STACK — fórmula única. Reemplaza los 4 valores contradictorios
+     (104px token / 76px responsive / 70px min-height / 82px fallback).
+     Regla: la altura de la nav se declara UNA vez; todo lo demás se deriva.
+     ====================================================================== */
+  --t-safe-b: env(safe-area-inset-bottom, 0px);
+  --t-nav-h: 56px;                                        /* contenido de la nav */
+  --t-cta-h: 56px;                                        /* barra de carrito */
+  --t-stack-gap: 8px;
+  --t-nav-block: calc(var(--t-nav-h) + var(--t-safe-b));  /* nav + safe area */
+}
+
+/* ⚠️ REGLA CRÍTICA DEL SISTEMA — no mover estas dos declaraciones a :root.
+   La sustitución de una custom property ocurre en el elemento donde se DECLARA,
+   no donde se usa. Si `--t-bottom-reserve` se declarara en :root, resolvería
+   `var(--t-cta-block)` con el valor de :root (0px) y el override de `body`
+   nunca tendría efecto: el contenido reservaría de menos y la barra de carrito
+   taparía el último precio.
+   Éste es exactamente el mecanismo por el que en el repositorio actual
+   `--taba-floating-cart-reserve` quedó sin efecto real.
+   Invariante: un token derivado se declara en el MISMO scope donde varían
+   sus entradas. Si no es posible, se compone en el sitio de uso. */
+body {
+  --t-cta-block: 0px;                                      /* 0 con carrito vacío */
+  --t-bottom-reserve: calc(var(--t-nav-block) + var(--t-cta-block) + var(--t-stack-gap));
+}
+
+/* El carrito con contenido es lo ÚNICO que activa la reserva extra. */
+body[data-cart="filled"] {
+  --t-cta-block: calc(var(--t-cta-h) + var(--t-stack-gap));
+}
+
+/* Superficies sin bottom-nav (negocio desktop, rider) no reservan nada. */
+body[data-chrome="none"] {
+  --t-nav-block: 0px;
+  --t-cta-block: 0px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TABA · Catálogo desktop — propuesta</title>
+<link rel="stylesheet" href="proto-shared.css" />
+<style>
+  body { background: var(--t-surface-1); }
+
+  .k-top {
+    position: sticky; top: 0; z-index: var(--t-z-appbar);
+    display: flex; align-items: center; gap: 16px; height: 60px; padding: 0 24px;
+    background: color-mix(in srgb, var(--t-paper) 94%, transparent);
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--t-line-200);
+  }
+  .k-top .k-search { width: min(420px, 34vw); }
+  .k-addr { display: grid; grid-template-columns: 16px 1fr 12px; align-items: center; gap: 8px;
+    min-height: 44px; padding: 0 12px; border-radius: var(--t-r-pill); background: var(--t-surface-2); max-width: 280px; }
+  .k-addr b { font: var(--t-caption); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .k-addr small { font: 500 10.5px/1.1 var(--t-font); color: var(--t-ink-400); letter-spacing: .06em; text-transform: uppercase; }
+  .k-navlinks { display: flex; gap: 2px; }
+  .k-navlink { min-height: 44px; padding: 0 12px; border-radius: var(--t-r-sm); font: var(--t-label); color: var(--t-ink-500); display: inline-flex; align-items: center; }
+  .k-navlink[aria-current="page"] { color: var(--t-ink-900); background: var(--t-line-100); }
+  .k-cartbtn { position: relative; }
+  .k-cartbtn .k-badge { position: absolute; top: 2px; right: 2px; min-width: 17px; height: 17px; padding: 0 4px;
+    display: grid; place-items: center; border-radius: var(--t-r-pill); background: var(--t-red-600); color: #fff;
+    font: 700 10.5px/1 var(--t-font); font-variant-numeric: tabular-nums; border: 2px solid var(--t-paper); }
+  body:not([data-cart="filled"]) .k-badge { display: none; }
+
+  .k-shell { display: grid; grid-template-columns: 216px minmax(0,1fr); gap: 28px; max-width: 1560px; margin: 0 auto; padding: 22px 24px 60px; }
+  body[data-cart="filled"] .k-shell { grid-template-columns: 216px minmax(0,1fr) 320px; }
+  @media (max-width: 1279px) { .k-shell, body[data-cart="filled"] .k-shell { grid-template-columns: 196px minmax(0,1fr); gap: 20px; } .k-drawer { display: none; } }
+  @media (max-width: 1023px) { .k-shell, body[data-cart="filled"] .k-shell { grid-template-columns: minmax(0,1fr); } .k-side { display: none; } }
+  @media (min-width: 1920px) { .k-shell { max-width: 1680px; } }
+
+  .k-side { align-self: start; position: sticky; top: 78px; display: grid; gap: 18px; }
+  .k-cat { display: grid; }
+  .k-catbtn { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px;
+    min-height: 44px; padding: 0 10px; border-radius: var(--t-r-sm); font: var(--t-label); color: var(--t-ink-600); text-align: left; }
+  .k-catbtn:hover { background: var(--t-line-100); }
+  .k-catbtn[aria-pressed="true"] { background: var(--t-ink-900); color: #fff; }
+  .k-catbtn[aria-pressed="true"] .t-pill { background: rgb(255 255 255 / 16%); color: #fff; }
+
+  .k-head { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 16px; }
+  .k-head h1 { font: var(--t-display-l); letter-spacing: -0.025em; }
+  .k-head .k-count { font: var(--t-body-s); color: var(--t-text-secondary); }
+  .k-head .k-sort { margin-left: auto; }
+
+  .k-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(214px, 1fr)); gap: 18px; }
+  @media (min-width: 1600px) { .k-grid { grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); } }
+  @media (max-width: 1023px) { .k-grid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; } }
+
+  .k-drawer { align-self: start; position: sticky; top: 78px; display: grid; gap: 0;
+    background: var(--t-white); border: 1px solid var(--t-line-200); border-radius: var(--t-r-md); overflow: hidden; }
+  .k-drawer-head { display: flex; align-items: center; gap: 8px; padding: 14px; border-bottom: 1px solid var(--t-line-200); }
+  .k-lines { display: grid; max-height: 46vh; overflow: auto; }
+  .k-line { display: grid; grid-template-columns: 48px 1fr auto; gap: 10px; align-items: center; padding: 10px 14px; }
+  .k-line + .k-line { box-shadow: inset 0 1px 0 var(--t-line-100); }
+  .k-line img { width: 48px; height: 48px; object-fit: contain; }
+  .k-line .k-line-copy { display: grid; gap: 1px; min-width: 0; }
+  .k-line .k-line-copy strong { font: var(--t-label); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .k-line .k-line-copy small { font: var(--t-caption); color: var(--t-text-secondary); }
+  .k-sum { display: grid; gap: 6px; padding: 14px; border-top: 1px solid var(--t-line-200); }
+  .k-sum .k-row { display: flex; align-items: center; font: var(--t-body-s); }
+  .k-sum .k-row strong { margin-left: auto; font-variant-numeric: tabular-nums; }
+  .k-sum .k-row.is-total { font: var(--t-title-s); padding-top: 4px; border-top: 1px solid var(--t-line-100); }
+  .k-sum .k-row.is-total strong { font: var(--t-price-l); }
+
+  dialog.k-modal { border: 0; padding: 0; border-radius: var(--t-r-lg); box-shadow: var(--t-e3);
+    width: min(880px, 92vw); background: var(--t-paper); }
+  dialog.k-modal::backdrop { background: rgb(16 18 22 / 52%); }
+  .k-modal-inner { display: grid; grid-template-columns: 380px minmax(0,1fr); }
+  @media (max-width: 720px) { .k-modal-inner { grid-template-columns: 1fr; } }
+  .k-modal-media { background: var(--t-white); border-right: 1px solid var(--t-line-200); display: grid; place-items: center; padding: 24px; }
+  .k-modal-media img { max-height: 340px; object-fit: contain; }
+  .k-modal-body { display: grid; align-content: start; gap: 12px; padding: 26px 26px 22px; }
+
+  /* Reglas responsive al final: ganan por orden de fuente, sin subir especificidad
+     artificialmente. (Regla del sistema: los breakpoints van SIEMPRE después de
+     la definición base del componente; ver CSS_RISK_MAP.) */
+  @media (max-width: 1023px) { .k-side { display: none; } }
+  @media (max-width: 900px) {
+    .k-top { gap: 10px; padding: 0 14px; }
+    .k-top .k-navlinks, .k-top .k-addr { display: none; }
+    .k-top .k-search { width: auto; flex: 1 1 auto; }
+    .k-shell { padding: 16px 14px 48px; }
+  }
+</style>
+</head>
+<body data-cart="empty" data-chrome="none">
+
+<div class="demo-bar" data-demo>
+  <strong>Estado</strong>
+  <button data-state="default">Carrito vacío</button>
+  <button data-state="cart" aria-pressed="true">Carrito con productos</button>
+  <button data-state="search">Búsqueda</button>
+  <button data-state="empty">Categoría vacía</button>
+  <button data-state="pending">Producto pendiente</button>
+  <button data-state="detail">Detalle</button>
+  <button data-state="loading">Cargando</button>
+</div>
+
+<header class="k-top">
+  <span class="t-wordmark">TABA</span>
+  <nav class="k-navlinks" aria-label="Navegación principal">
+    <a class="k-navlink" href="#">Inicio</a>
+    <a class="k-navlink" href="#" aria-current="page">Catálogo</a>
+    <a class="k-navlink" href="#">Seguir mi pedido</a>
+    <a class="k-navlink" href="#">Perfil</a>
+  </nav>
+  <label class="t-field k-search" style="margin-left:auto">
+    <span class="t-field-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.9"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>
+    <input type="search" data-search placeholder="Buscar productos, marcas y más…" aria-label="Buscar en el catálogo" />
+    <button class="t-iconbtn" type="button" data-clear-search hidden aria-label="Limpiar búsqueda" style="width:44px;height:44px;margin-right:-8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+  </label>
+  <button class="k-addr" type="button" aria-label="Cambiar dirección de entrega">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="10" r="2.4" stroke="currentColor" stroke-width="1.7"/></svg>
+    <span style="display:grid;min-width:0"><small>Enviar a</small><b>Av. Argentina 1450</b></span>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <button class="t-iconbtn k-cartbtn" type="button" aria-label="Ver mi pedido">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 4h2l2.1 10.15a2 2 0 0 0 1.96 1.6h7.94a2 2 0 0 0 1.93-1.47L20.5 9H7.25" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="20" r="1.4" fill="currentColor"/><circle cx="17" cy="20" r="1.4" fill="currentColor"/></svg>
+    <span class="k-badge t-num" data-cart-count>3</span>
+  </button>
+</header>
+
+<div class="k-shell">
+  <aside class="k-side">
+    <div>
+      <p class="t-group-label">Categorías</p>
+      <div class="k-cat" data-cats role="group" aria-label="Categorías"></div>
+    </div>
+    <hr class="t-horizon" />
+    <div>
+      <p class="t-group-label">Presentación</p>
+      <div class="k-cat">
+        <button class="k-catbtn" type="button" aria-pressed="false">Unidad <span class="t-pill t-num">11</span></button>
+        <button class="k-catbtn" type="button" aria-pressed="false">Pack <span class="t-pill t-num">11</span></button>
+      </div>
+    </div>
+    <hr class="t-horizon" />
+    <div>
+      <p class="t-group-label">Disponibilidad</p>
+      <div class="k-cat">
+        <button class="k-catbtn" type="button" aria-pressed="false">Disponible ahora <span class="t-pill t-num">21</span></button>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="k-head">
+      <div>
+        <h1 data-title>Todos</h1>
+        <p class="k-count t-num" data-count>22 productos</p>
+      </div>
+      <button class="t-btn t-btn--secondary k-sort" type="button" data-sort>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h11M4 12h7M4 17h4M17 8v9m0 0 3-3m-3 3-3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Recomendados
+      </button>
+    </div>
+    <div class="k-grid" data-grid></div>
+    <div data-empty hidden></div>
+  </main>
+
+  <aside class="k-drawer" data-drawer aria-label="Mi pedido">
+    <div class="k-drawer-head">
+      <strong class="t-title-s">Mi pedido</strong>
+      <span class="t-pill t-num" data-drawer-count>3</span>
+      <button class="t-btn t-btn--ghost" type="button" style="margin-left:auto" data-clear-cart>Vaciar</button>
+    </div>
+    <div class="k-lines" data-lines></div>
+    <div class="k-sum">
+      <div class="k-row"><span>Subtotal</span><strong class="t-num" data-sub>$ 0</strong></div>
+      <div class="k-row"><span>Envío</span><strong class="t-num">$ 1.500</strong></div>
+      <div class="k-row is-total"><span>Total</span><strong class="t-num" data-total>$ 0</strong></div>
+      <button class="t-btn t-btn--primary t-btn--lg t-btn--block" type="button">Confirmar pedido</button>
+      <p class="t-caption" style="text-align:center">Elegís forma de pago en el siguiente paso.</p>
+    </div>
+  </aside>
+</div>
+
+<dialog class="k-modal" data-modal aria-labelledby="k-modal-title">
+  <div class="k-modal-inner">
+    <div class="k-modal-media"><img data-m-img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="1" height="1" /></div>
+    <div class="k-modal-body">
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div>
+          <p class="p-brand" data-m-brand>COCA-COLA</p>
+          <h2 class="t-title-l" id="k-modal-title" data-m-name>Coca-Cola Original</h2>
+          <p class="t-caption" data-m-pres>Botella PET · 500 ml · Pack x12</p>
+        </div>
+        <button class="t-iconbtn" type="button" data-m-close aria-label="Cerrar" style="margin-left:auto">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <span class="t-pill t-pill--ok" data-m-avail><i class="t-dot"></i>Disponible</span>
+      <p class="t-body-s t-muted">Pack cerrado. Se entrega frío según disponibilidad del local. El precio corresponde al pack completo.</p>
+      <hr class="t-horizon" />
+      <p class="p-price t-num" style="font-size:26px" data-m-price>$ 17.100</p>
+      <div style="display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center">
+        <div class="p-step" style="width:auto"><button type="button" aria-label="Quitar uno">−</button><strong class="t-num">1</strong><button type="button" aria-label="Agregar uno">+</button></div>
+        <button class="t-btn t-btn--primary t-btn--lg" type="button" data-m-close>Agregar al pedido</button>
+        <button class="t-iconbtn" type="button" aria-pressed="false" aria-label="Guardar en favoritos">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 20s-7-4.4-7-9.2A4 4 0 0 1 12 8a4 4 0 0 1 7-2.8c0 4.8-7 14.8-7 14.8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<script>
+const P = [
+  ["coca-cola-original-pet-500ml-pack-12","Coca-Cola","Coca-Cola Original","Botella PET · 500 ml · Pack x12","$ 17.100","gaseosas",1],
+  ["coca-cola-zero-pet-500ml-pack-12","Coca-Cola","Coca-Cola Zero","Botella PET · 500 ml · Pack x12","$ 17.100","gaseosas",1],
+  ["sprite-original-pet-500ml-pack-12","Sprite","Sprite","Botella PET · 500 ml · Pack x12","$ 17.100","gaseosas",1],
+  ["coca-cola-original-pet-1500ml-pack-6","Coca-Cola","Coca-Cola Original","Botella PET · 1500 ml · Pack x6","$ 19.999","gaseosas",1],
+  ["coca-cola-zero-pet-1500ml-pack-6","Coca-Cola","Coca-Cola Zero","Botella PET · 1500 ml · Pack x6","$ 19.999","gaseosas",1],
+  ["sprite-original-pet-1500ml-pack-6","Sprite","Sprite","Botella PET · 1500 ml · Pack x6","$ 19.999","gaseosas",1],
+  ["fanta-naranja-pet-1500ml-pack-6","Fanta","Fanta Naranja","Botella PET · 1500 ml · Pack x6","$ 19.999","gaseosas",1],
+  ["schweppes-tonica-pet-1500ml-pack-6","Schweppes","Schweppes Tónica","Botella PET · 1500 ml · Pack x6","$ 19.999","mixers",1],
+  ["schweppes-citrus-pet-1500ml-pack-6","Schweppes","Schweppes Citrus","Botella PET · 1500 ml · Pack x6","$ 19.999","mixers",1],
+  ["red-bull-original-lata-250ml","Red Bull","Red Bull Energy Drink","Lata · 250 ml · Unidad","$ 3.576","energizantes",1],
+  ["speed-original-lata-473ml","Speed","Speed Unlimited Original","Lata · 473 ml · Unidad","$ 2.925","energizantes",1],
+  ["speed-zero-lata-473ml","Speed","Speed Unlimited Zero","Lata · 473 ml · Unidad","$ 2.925","energizantes",1],
+  ["monster-mango-loco-lata-473ml","Monster","Monster Mango Loco","Lata · 473 ml · Unidad","$ 3.390","energizantes",1],
+  ["heineken-original-lata-473ml","Heineken","Heineken","Lata · 473 ml · Unidad","$ 3.900","cervezas",1],
+  ["heineken-original-lata-473ml-pack-6","Heineken","Heineken","Lata · 473 ml · Pack x6","$ 20.000","cervezas",1],
+  ["imperial-golden-lata-473ml","Imperial","Imperial Golden","Lata · 473 ml · Unidad","$ 3.000","cervezas",1],
+  ["imperial-extra-lager-lata-473ml","Imperial","Imperial Extra Lager","Lata · 473 ml · Unidad","$ 3.000","cervezas",1],
+  ["imperial-apa-lata-473ml","Imperial","Imperial APA","Lata · 473 ml · Unidad","$ 3.000","cervezas",1],
+  ["imperial-cream-stout-lata-473ml","Imperial","Imperial Cream Stout","Lata · 473 ml · Unidad","$ 3.000","cervezas",1],
+  ["schneider-rubia-lata-710ml","Schneider","Schneider Rubia","Lata · 710 ml · Unidad","$ 3.500","cervezas",1],
+  ["corona-extra-botella-330ml","Corona","Corona Extra","Botella · 330 ml · Unidad","$ 3.600","cervezas",1],
+  ["red-bull-original-lata-250ml-pack-4","Red Bull","Red Bull Energy Drink","Lata · 250 ml · Pack x4","Precio a confirmar","energizantes",0],
+].map(([id,brand,name,pres,price,cat,ok])=>({id,brand,name,pres,price,cat,ok:!!ok,img:`../assets/products/${id}.webp`}));
+const CATS = [["all","Todos"],["favorites","Favoritos"],["gaseosas","Gaseosas"],["mixers","Mixers"],["energizantes","Energizantes"],["cervezas","Cervezas"]];
+const S = { cat:"all", q:"", cart:{}, favs:new Set(), loading:false };
+const $ = (s,r=document)=>r.querySelector(s), $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const num = s => Number(String(s).replace(/[^\d]/g,""))||0;
+const money = n => "$ " + n.toLocaleString("es-AR");
+const ICON_HEART='<svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 20s-7-4.4-7-9.2A4 4 0 0 1 12 8a4 4 0 0 1 7-2.8c0 4.8-7 14.8-7 14.8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" fill="var(--fill,none)"/></svg>';
+const ICON_PLUS='<svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
+
+const filtered = () => {
+  const q = S.q.trim().toLowerCase();
+  return P.filter(p => (S.cat==="all"?true:S.cat==="favorites"?S.favs.has(p.id):p.cat===S.cat)
+    && (!q || (p.name+" "+p.brand+" "+p.pres).toLowerCase().includes(q)));
+};
+
+function card(p){
+  const qty = S.cart[p.id]||0, fav = S.favs.has(p.id);
+  const action = !p.ok
+    ? `<button class="t-btn t-btn--secondary" type="button" data-detail="${p.id}">Consultar</button>`
+    : qty>0
+      ? `<div class="p-step"><button type="button" data-dec="${p.id}" aria-label="Quitar una unidad">−</button><strong class="t-num">${qty}</strong><button type="button" data-inc="${p.id}" aria-label="Agregar una unidad">+</button></div>`
+      : `<button class="p-add" type="button" data-inc="${p.id}" aria-label="Agregar ${esc(p.name)} al pedido">${ICON_PLUS}</button>`;
+  return `<article class="p-card${p.ok?"":" is-pending"}">
+    <div class="p-media">
+      ${p.ok?"":'<span class="p-flag t-pill t-pill--warn"><i class="t-dot"></i>Sin precio</span>'}
+      <img src="${p.img}" alt="${esc(p.name)} ${esc(p.pres)}" loading="lazy" width="200" height="200" />
+      <button class="p-fav" type="button" data-fav="${p.id}" aria-pressed="${fav}" aria-label="Guardar ${esc(p.name)}" style="--fill:${fav?"currentColor":"none"}">${ICON_HEART}</button>
+    </div>
+    <div class="p-body">
+      <p class="p-brand">${esc(p.brand)}</p>
+      <h3 class="p-name">${esc(p.name)}</h3>
+      <p class="p-pres">${esc(p.pres)}</p>
+      <div class="p-foot p-foot--inline">
+        <span class="${p.ok?"p-price t-num":"p-price--pending"}">${esc(p.price)}</span>${action}
+      </div>
+    </div></article>`;
+}
+const skeleton = () => `<article class="p-card"><div class="p-media t-skel"></div><div class="p-body"><div class="t-skel" style="height:9px;width:40%"></div><div class="t-skel" style="height:15px;width:85%;margin-top:5px"></div><div class="t-skel" style="height:11px;width:65%;margin-top:5px"></div><div class="p-foot p-foot--inline" style="margin-top:10px"><div class="t-skel" style="height:20px;width:74px"></div><div class="t-skel" style="height:44px;width:44px;border-radius:10px"></div></div></div></article>`;
+
+function emptyBlock(){
+  const q = S.q.trim(), catName = (CATS.find(c=>c[0]===S.cat)||[])[1]||"Todos";
+  if (S.cat==="favorites" && !q) return `<div class="t-empty"><span class="t-empty-mark">${ICON_HEART}</span><h3>Todavía no guardaste favoritos</h3><p>Tocá el corazón en cualquier producto para tenerlo a mano.</p><div class="t-empty-actions"><button class="t-btn t-btn--primary" type="button" data-cat="all">Ver todo el catálogo</button></div></div>`;
+  if (q) return `<div class="t-empty"><span class="t-empty-mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.9"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>
+    <h3>No encontramos “${esc(q)}”</h3><p>${S.cat==="all"?"Probá con la marca o la presentación.":`Buscaste dentro de <strong>${esc(catName)}</strong>.`}</p>
+    <div class="t-empty-actions"><button class="t-btn t-btn--primary" type="button" data-clear-all>Limpiar búsqueda</button>${S.cat!=="all"?'<button class="t-btn t-btn--secondary" type="button" data-cat="all">Buscar en todo</button>':""}</div></div>`;
+  return `<div class="t-empty"><span class="t-empty-mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="16" height="15" rx="2.5" stroke="currentColor" stroke-width="1.8"/><path d="M4 10h16" stroke="currentColor" stroke-width="1.8"/></svg></span><h3>No hay productos en ${esc(catName)}</h3><p>Mirá el resto del catálogo.</p><div class="t-empty-actions"><button class="t-btn t-btn--primary" type="button" data-cat="all">Ver todo el catálogo</button></div></div>`;
+}
+
+function render(){
+  const list = filtered(), q = S.q.trim();
+  const catName = (CATS.find(c=>c[0]===S.cat)||[])[1]||"Todos";
+  $("[data-title]").textContent = q ? `Resultados para “${q}”` : catName;
+  $("[data-count]").textContent = S.loading ? "Cargando catálogo…"
+    : `${list.length} ${list.length===1?"producto":"productos"}${q && S.cat!=="all"?" en "+catName:""}`;
+  const counts = {}; P.forEach(p=>counts[p.cat]=(counts[p.cat]||0)+1);
+  $("[data-cats]").innerHTML = CATS.map(([id,label])=>{
+    const n = id==="all"?P.length:id==="favorites"?S.favs.size:(counts[id]||0);
+    return `<button class="k-catbtn" type="button" data-cat="${id}" aria-pressed="${!q&&S.cat===id}">${label} <span class="t-pill t-num">${n}</span></button>`;
+  }).join("");
+
+  const grid = $("[data-grid]"), empty = $("[data-empty]");
+  if (S.loading){ grid.hidden=false; empty.hidden=true; grid.innerHTML = skeleton().repeat(10); }
+  else if (!list.length){ grid.hidden=true; empty.hidden=false; empty.innerHTML = emptyBlock(); }
+  else { grid.hidden=false; empty.hidden=true; grid.innerHTML = list.map(card).join(""); }
+  $("[data-sort]").hidden = !list.length || S.loading;
+
+  const entries = Object.entries(S.cart);
+  const count = entries.reduce((a,[,q2])=>a+q2,0);
+  const sub = entries.reduce((a,[id,q2])=>a+num((P.find(p=>p.id===id)||{}).price)*q2,0);
+  document.body.dataset.cart = count ? "filled" : "empty";
+  $("[data-cart-count]").textContent = count;
+  $("[data-drawer-count]").textContent = count;
+  $("[data-sub]").textContent = money(sub);
+  $("[data-total]").textContent = money(sub ? sub+1500 : 0);
+  $("[data-lines]").innerHTML = entries.map(([id,q2])=>{
+    const p = P.find(x=>x.id===id);
+    return `<div class="k-line"><img src="${p.img}" alt="" /><span class="k-line-copy"><strong>${esc(p.name)}</strong><small>${esc(p.pres)}</small></span>
+      <span style="display:grid;gap:4px;justify-items:end"><strong class="t-num">${money(num(p.price)*q2)}</strong>
+      <span class="t-caption t-num">${q2} × ${p.price}</span></span></div>`;
+  }).join("");
+  $("[data-clear-search]").hidden = !q;
+  const si = $("[data-search]"); if (si.value !== S.q) si.value = S.q;
+}
+
+document.addEventListener("click", e=>{
+  const t = e.target.closest("[data-cat],[data-inc],[data-dec],[data-fav],[data-clear-all],[data-clear-search],[data-detail],[data-m-close],[data-state],[data-clear-cart]");
+  if (!t) return;
+  if (t.dataset.cat !== undefined) S.cat = t.dataset.cat;
+  if (t.dataset.inc) S.cart[t.dataset.inc] = (S.cart[t.dataset.inc]||0)+1;
+  if (t.dataset.dec){ const id=t.dataset.dec; S.cart[id]=(S.cart[id]||0)-1; if (S.cart[id]<=0) delete S.cart[id]; }
+  if (t.dataset.fav){ const id=t.dataset.fav; S.favs.has(id)?S.favs.delete(id):S.favs.add(id); }
+  if (t.hasAttribute("data-clear-all")||t.hasAttribute("data-clear-search")) S.q="";
+  if (t.hasAttribute("data-clear-cart")) S.cart={};
+  if (t.dataset.detail) openModal(t.dataset.detail);
+  if (t.hasAttribute("data-m-close")) $("[data-modal]").close();
+  if (t.dataset.state) setState(t.dataset.state);
+  render();
+});
+$("[data-search]").addEventListener("input", e=>{ S.q=e.target.value; render(); });
+
+function openModal(id){
+  const p = P.find(x=>x.id===id)||P[0];
+  $("[data-m-img]").src = p.img; $("[data-m-img]").alt = p.name;
+  $("[data-m-brand]").textContent = p.brand.toUpperCase();
+  $("[data-m-name]").textContent = p.name;
+  $("[data-m-pres]").textContent = p.pres;
+  $("[data-m-price]").textContent = p.price;
+  const av = $("[data-m-avail]");
+  av.className = "t-pill " + (p.ok?"t-pill--ok":"t-pill--warn");
+  av.innerHTML = '<i class="t-dot"></i>' + (p.ok?"Disponible":"Precio a confirmar · no se puede agregar");
+  const d = $("[data-modal]"); if (!d.open) d.showModal();
+}
+
+function setState(n){
+  $$("[data-state]").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.state===n)));
+  S.loading=false; S.q=""; S.cat="all"; S.cart={};
+  const d=$("[data-modal]"); if (d.open) d.close();
+  if (n==="cart") S.cart={"coca-cola-original-pet-500ml-pack-12":2,"corona-extra-botella-330ml":1,"imperial-apa-lata-473ml":1};
+  if (n==="search") S.q="imperial";
+  if (n==="empty"){ S.q="zzzzqqq"; S.cart={"coca-cola-original-pet-500ml-pack-12":2,"corona-extra-botella-330ml":1}; }
+  if (n==="pending") S.q="red bull";
+  if (n==="loading") S.loading=true;
+  if (n==="detail"){ S.cart={"coca-cola-original-pet-500ml-pack-12":2}; setTimeout(()=>openModal("coca-cola-original-pet-500ml-pack-12"),0); }
+}
+
+const U = new URLSearchParams(location.search);
+if (U.get("chrome")==="0") $("[data-demo]").hidden = true;
+setState(U.get("state")||"cart");
+render();
+</script>
+</body>
+</html>

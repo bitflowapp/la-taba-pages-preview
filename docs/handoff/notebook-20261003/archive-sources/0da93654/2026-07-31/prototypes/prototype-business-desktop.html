@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TABA · Panel del negocio desktop — propuesta</title>
+<link rel="stylesheet" href="proto-shared.css" />
+<style>
+  body { background: var(--t-surface-1); overflow: hidden; }
+  .d-app { display: grid; grid-template-rows: 56px 1fr; height: 100vh; }
+
+  .d-panes { display: grid; grid-template-columns: 224px 360px minmax(0,1fr); min-height: 0; }
+  /* ≥1440: se suma el riel de acciones */
+  @media (min-width: 1440px) { .d-panes { grid-template-columns: 232px 380px minmax(0,1fr) 300px; } .d-rail { display: grid; } }
+  /* 1024–1279: el sidebar colapsa a iconos */
+  @media (max-width: 1279px) { .d-panes { grid-template-columns: 68px 330px minmax(0,1fr); } .d-nav-item span.d-lbl, .d-side .t-group-label, .d-brandsub { display: none; } .d-nav-item { grid-template-columns: 22px; justify-content: center; padding: 0; width: 44px; margin-inline: auto; } .d-nav-item .t-pill { display: none; } }
+  /* ≤1023 (tablet vertical): dos paneles, el detalle pasa a hoja lateral */
+  @media (max-width: 1023px) { .d-panes { grid-template-columns: 68px minmax(0,1fr); } .d-detail { display: none; } .d-queue { border-right: 0; } .d-tabs { overflow-x: auto; scrollbar-width: none; } }
+  @media (min-width: 1920px) { .d-app { max-width: 1800px; margin: 0 auto; border-inline: 1px solid var(--t-line-200); } }
+
+  .d-side { display: grid; grid-template-rows: 1fr auto; overflow: hidden; }
+  .d-topbar .d-search { width: min(360px, 32vw); flex: 0 1 auto; min-width: 0; }
+  .d-topbar > * { flex: none; }
+  /* ≤1119: la barra superior suelta contexto secundario antes que la búsqueda. */
+  @media (max-width: 1119px) {
+    .d-topbar .d-biz, .d-topbar > .t-pill { display: none; }
+    .d-topbar .d-search { width: clamp(150px, 30vw, 300px); }
+  }
+  .d-topbar .d-biz { display: grid; gap: 0; }
+  .d-topbar .d-biz strong { font: var(--t-title-s); }
+  .d-topbar .d-biz small { font: var(--t-caption); color: var(--t-text-secondary); }
+
+  .d-queue-head { display: grid; gap: 8px; padding: 10px 12px; background: var(--t-paper); border-bottom: 1px solid var(--t-line-200); }
+  .d-tabs { display: flex; gap: 4px; }
+  .d-tab { min-height: 34px; padding: 0 10px; border-radius: var(--t-r-sm); font: var(--t-caption); font-weight: 650; color: var(--t-ink-500); }
+  .d-tab[aria-pressed="true"] { background: var(--t-ink-900); color: #fff; }
+  .d-tab .t-num { opacity: .75; margin-left: 4px; }
+  .d-scroll { overflow: auto; min-height: 0; }
+  .d-orderlist { display: grid; gap: 8px; padding: 10px 12px; }
+  .d-orderlist .o-card { cursor: pointer; }
+  .d-orderlist .o-card[aria-selected="true"] { border-color: var(--t-ink-900); box-shadow: 0 0 0 1px var(--t-ink-900); }
+
+  .d-detail-inner { display: grid; gap: 16px; padding: 18px 22px 28px; max-width: 780px; }
+  .d-detail-head { display: flex; align-items: flex-start; gap: 12px; }
+  .d-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 1180px) { .d-cols { grid-template-columns: 1fr; } }
+
+  .d-rail { display: none; grid-template-rows: auto 1fr; border-left: 1px solid var(--t-line-200); background: var(--t-paper); overflow: auto; }
+  .d-rail-inner { display: grid; gap: 14px; align-content: start; padding: 16px; }
+
+  .d-items { display: grid; }
+  .d-item { display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: center; padding: 9px 14px; font: var(--t-body-s); }
+  .d-item + .d-item { box-shadow: inset 0 1px 0 var(--t-line-100); }
+  .d-item .b-qty { display: grid; place-items: center; width: 28px; height: 28px; border-radius: var(--t-r-xs); background: var(--t-surface-2); font: var(--t-label); font-variant-numeric: tabular-nums; }
+  .d-kv { display: grid; grid-template-columns: auto 1fr; gap: 5px 16px; padding: 12px 14px; font: var(--t-body-s); }
+  .d-kv dt { color: var(--t-text-secondary); }
+  .d-kv dd { margin: 0; text-align: right; font-weight: 600; }
+  .d-total { display: flex; align-items: center; padding: 11px 14px; border-top: 1px solid var(--t-line-200); }
+  .d-total strong { margin-left: auto; font: var(--t-price-l); }
+
+  .b-timeline { display: grid; padding: 6px 14px 12px; }
+  .b-tl { display: grid; grid-template-columns: 20px 1fr; gap: 10px; align-items: start; padding: 6px 0; position: relative; }
+  .b-tl::before { content: ""; position: absolute; left: 9px; top: 19px; bottom: -6px; width: 2px; background: var(--t-line-200); }
+  .b-tl:last-child::before { display: none; }
+  .b-tl .b-tl-dot { width: 12px; height: 12px; margin-top: 3px; border-radius: 50%; background: var(--t-line-300); border: 3px solid var(--t-white); box-shadow: 0 0 0 2px var(--t-line-200); }
+  .b-tl.is-done .b-tl-dot { background: var(--t-success-600); box-shadow: 0 0 0 2px var(--t-success-600); }
+  .b-tl.is-now .b-tl-dot { background: var(--t-red-600); box-shadow: 0 0 0 2px var(--t-red-600); }
+  .b-tl small { display: block; font: var(--t-caption); color: var(--t-text-secondary); }
+  .b-tl b { font: var(--t-label); }
+  .d-code { display: grid; gap: 3px; justify-items: center; padding: 12px; }
+  .d-code strong { font: 800 24px/1 var(--t-font); letter-spacing: .28em; font-variant-numeric: tabular-nums; }
+  /* Tablet táctil: las tabs de estado suben a 44px (regla táctil, no densidad de escritorio). */
+  @media (max-width: 1023px) { .d-queue-head .d-tab { min-height: 44px; padding: 0 14px; font: var(--t-label); } }
+</style>
+</head>
+<body data-chrome="none" data-net="online">
+
+<div class="demo-bar" data-demo>
+  <strong>Estado</strong>
+  <button data-state="queue" aria-pressed="true">Pedidos nuevos</button>
+  <button data-state="prep">En preparación</button>
+  <button data-state="empty">Sin pedidos</button>
+  <button data-state="offline">Sin conexión</button>
+  <button data-state="syncing">Sincronizando</button>
+</div>
+
+<div class="d-app">
+  <header class="d-topbar">
+    <span class="t-wordmark">TABA</span>
+    <span class="d-biz"><strong>TABA Neuquén Centro</strong><small class="d-brandsub">Jueves 31 de julio · abierto hasta 23:30</small></span>
+    <span class="t-pill t-pill--ok"><i class="t-dot"></i>Abierto</span>
+    <label class="t-field d-search">
+      <span class="t-field-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.9"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>
+      <input type="search" data-search placeholder="Buscar pedido, cliente o dirección" aria-label="Buscar pedido" />
+    </label>
+    <span style="margin-left:auto"></span>
+    <button class="b-sync t-btn t-btn--ghost" type="button" data-sync-btn>
+      <i class="t-dot" style="color:var(--t-success-600)"></i><span data-sync-label>Sincronizado</span>
+    </button>
+    <button class="t-iconbtn" type="button" aria-label="Notificaciones"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 10a6 6 0 1 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 14 6 10Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 19a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+    <button class="t-iconbtn" type="button" aria-label="Cuenta"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8.5" r="3.4" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c1.2-3.3 3.8-4.9 7-4.9s5.8 1.6 7 4.9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+  </header>
+
+  <div class="d-panes">
+    <!-- ───────────────────────────── SIDEBAR ───────────────────────────── -->
+    <aside class="d-side">
+      <nav aria-label="Secciones del panel">
+        <button class="d-nav-item" aria-current="page"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 4h14v16l-3-2-2 2-2-2-2 2-3-2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="d-lbl">Pedidos</span><span class="t-pill t-num" data-nav-count>10</span></button>
+        <button class="d-nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 16V7h11v9M15 10h3l3 3v3h-6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="7.5" cy="17.5" r="1.9" stroke="currentColor" stroke-width="1.7"/><circle cx="17" cy="17.5" r="1.9" stroke="currentColor" stroke-width="1.7"/></svg><span class="d-lbl">Riders</span><span class="t-pill">3</span></button>
+        <button class="d-nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="4" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.8"/><rect x="4" y="13" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="13" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.8"/></svg><span class="d-lbl">Catálogo</span><span class="t-pill">22</span></button>
+        <button class="d-nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 7h16v12H4zM4 7l2-3h12l2 3" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg><span class="d-lbl">Stock</span><span class="t-pill t-pill--warn">1</span></button>
+        <button class="d-nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="12" rx="2.5" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="2.6" stroke="currentColor" stroke-width="1.8"/></svg><span class="d-lbl">Caja</span></button>
+        <button class="d-nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 19V9m5 10V5m5 14v-7m5 7V8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="d-lbl">Métricas</span></button>
+        <button class="d-nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 3h9l4 4v14H6z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 12h7M9 16h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span class="d-lbl">Reportes</span></button>
+        <button class="d-nav-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.8"/><path d="M12 3.5v2.2M12 18.3v2.2M20.5 12h-2.2M5.7 12H3.5M17.9 6.1l-1.6 1.6M7.7 16.3l-1.6 1.6M17.9 17.9l-1.6-1.6M7.7 7.7 6.1 6.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span class="d-lbl">Configuración</span></button>
+      </nav>
+      <div style="padding:12px;border-top:1px solid var(--t-line-200)">
+        <button class="d-nav-item" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M14 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 8l-4 4 4 4M6 12h9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="d-lbl">Salir</span></button>
+      </div>
+    </aside>
+
+    <!-- ────────────────────────── COLUMNA DE COLA ────────────────────────── -->
+    <section class="d-queue" aria-label="Cola de pedidos">
+      <!-- Métricas accionables en una banda de 46px. No tarjetas decorativas. -->
+      <div class="d-metrics">
+        <span class="d-metric"><strong class="t-num" data-m-new>4</strong><small>Nuevos</small></span>
+        <span class="d-metric"><strong class="t-num" data-m-prep>2</strong><small>Preparando</small></span>
+        <span class="d-metric is-alert"><strong class="t-num" data-m-late>1</strong><small>Demorados</small></span>
+        <span class="d-metric"><strong class="t-num" data-m-ready>1</strong><small>Listos</small></span>
+        <span class="d-metric"><strong class="t-num">$ 21.400</strong><small>Ticket prom.</small></span>
+        <span class="d-metric"><strong class="t-num">17′</strong><small>Prep. media</small></span>
+      </div>
+      <div class="d-queue-head">
+        <div class="d-tabs" role="group" aria-label="Filtrar por estado">
+          <button class="d-tab" type="button" data-filter="all" aria-pressed="false">Todos <span class="t-num" data-t-all>10</span></button>
+          <button class="d-tab" type="button" data-filter="new" aria-pressed="true">Nuevos <span class="t-num" data-t-new>4</span></button>
+          <button class="d-tab" type="button" data-filter="prep" aria-pressed="false">Preparando <span class="t-num" data-t-prep>2</span></button>
+          <button class="d-tab" type="button" data-filter="ready" aria-pressed="false">Listos <span class="t-num" data-t-ready>1</span></button>
+          <button class="d-tab" type="button" data-filter="way" aria-pressed="false">En camino <span class="t-num" data-t-way>3</span></button>
+        </div>
+      </div>
+      <div class="d-scroll"><div class="d-orderlist" data-list></div><div data-empty hidden></div></div>
+    </section>
+
+    <!-- ──────────────────────────── PANEL CENTRAL ──────────────────────────── -->
+    <section class="d-detail d-scroll" aria-label="Detalle del pedido">
+      <div class="d-detail-inner" data-detail>
+        <div class="d-detail-head">
+          <div>
+            <h1 class="t-title-l t-num" data-d-id>#A-1042</h1>
+            <p class="t-caption" data-d-sub>Recibido 14:18 · hace 6 min · Envío a domicilio · Efectivo</p>
+          </div>
+          <span class="t-pill t-pill--danger" style="margin-left:auto" data-d-state><i class="t-dot"></i>Nuevo</span>
+        </div>
+
+        <div class="d-cols">
+          <div class="t-group">
+            <div class="t-row" style="grid-template-columns:34px 1fr auto">
+              <span class="t-row-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8.5" r="3.4" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c1.2-3.3 3.8-4.9 7-4.9s5.8 1.6 7 4.9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+              <span class="t-row-copy"><strong data-d-who>M. Álvarez</strong><small>Cliente frecuente · 8 pedidos</small></span>
+              <span class="t-row-value">+54 ··· ··4821</span>
+            </div>
+            <div class="t-row" style="grid-template-columns:34px 1fr auto">
+              <span class="t-row-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="10" r="2.4" stroke="currentColor" stroke-width="1.7"/></svg></span>
+              <span class="t-row-copy"><strong data-d-addr>Av. Argentina 1450, Neuquén</strong><small>Timbre 3B · portón negro</small></span>
+              <span class="t-row-value">2,4 km</span>
+            </div>
+          </div>
+          <div class="t-group">
+            <div class="d-code"><small class="t-caption">Código de entrega</small><strong class="t-num">4 7 2 9</strong></div>
+            <hr class="t-horizon" />
+            <div class="t-row" style="grid-template-columns:34px 1fr auto">
+              <span class="t-row-icon t-row-icon--accent"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M4 16V7h11v9M15 10h3l3 3v3h-6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="7.5" cy="17.5" r="1.9" stroke="currentColor" stroke-width="1.7"/><circle cx="17" cy="17.5" r="1.9" stroke="currentColor" stroke-width="1.7"/></svg></span>
+              <span class="t-row-copy"><strong>Rider</strong><small>2 disponibles en turno</small></span>
+              <button class="t-btn t-btn--secondary" type="button">Asignar</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <p class="t-group-label">Productos · 4 unidades</p>
+          <div class="t-group">
+            <div class="d-items">
+              <div class="d-item"><span class="b-qty t-num">2</span><span>Coca-Cola Original · <span class="t-muted">Botella PET · 500 ml · Pack x12</span></span><strong class="t-num">$ 34.200</strong></div>
+              <div class="d-item"><span class="b-qty t-num">1</span><span>Imperial APA · <span class="t-muted">Lata · 473 ml · Unidad</span></span><strong class="t-num">$ 3.000</strong></div>
+              <div class="d-item"><span class="b-qty t-num">1</span><span>Corona Extra · <span class="t-muted">Botella · 330 ml · Unidad</span></span><strong class="t-num">$ 3.600</strong></div>
+            </div>
+            <dl class="d-kv" style="border-top:1px solid var(--t-line-200)">
+              <dt>Subtotal</dt><dd class="t-num">$ 40.800</dd>
+              <dt>Envío</dt><dd class="t-num">$ 1.500</dd>
+              <dt>Pago</dt><dd>Efectivo · abona con $ 50.000 · vuelto $ 7.700</dd>
+            </dl>
+            <div class="d-total"><span class="t-title-s">Total</span><strong class="t-num">$ 42.300</strong></div>
+          </div>
+        </div>
+
+        <div>
+          <p class="t-group-label">Seguimiento</p>
+          <div class="t-group">
+            <div class="b-timeline">
+              <div class="b-tl is-done"><i class="b-tl-dot"></i><span><b>Confirmado</b><small>14:18 · pago en efectivo</small></span></div>
+              <div class="b-tl is-now"><i class="b-tl-dot"></i><span><b>Esperando aceptación del local</b><small>hace 6 min</small></span></div>
+              <div class="b-tl"><i class="b-tl-dot"></i><span><b>Preparando</b><small>pendiente</small></span></div>
+              <div class="b-tl"><i class="b-tl-dot"></i><span><b>En camino</b><small>pendiente</small></span></div>
+              <div class="b-tl"><i class="b-tl-dot"></i><span><b>Entregado</b><small>pendiente</small></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-detail-empty hidden>
+        <div class="t-empty" style="padding-top:22vh">
+          <span class="t-empty-mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 4h14v16l-3-2-2 2-2-2-2 2-3-2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span>
+          <h3>Elegí un pedido de la cola</h3>
+          <p>El detalle, los productos y las acciones del pedido aparecen acá.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────── RIEL DE ACCIONES (≥1440) ─────────────────────── -->
+    <aside class="d-rail" aria-label="Acciones del pedido">
+      <div class="d-rail-inner">
+        <p class="t-group-label">Acción</p>
+        <button class="t-btn t-btn--primary t-btn--lg t-btn--block" type="button">Aceptar y preparar</button>
+        <button class="t-btn t-btn--secondary t-btn--block" type="button">Demorar 10 minutos</button>
+        <button class="t-btn t-btn--danger t-btn--block" type="button">Rechazar pedido…</button>
+        <hr class="t-horizon" />
+        <p class="t-group-label">Tiempos</p>
+        <div class="t-group">
+          <div class="t-row" style="grid-template-columns:1fr auto"><span class="t-row-copy"><strong>Espera del cliente</strong></span><span class="t-row-value t-num">6 min</span></div>
+          <div class="t-row" style="grid-template-columns:1fr auto"><span class="t-row-copy"><strong>Promesa de entrega</strong></span><span class="t-row-value t-num">15:00</span></div>
+          <div class="t-row" style="grid-template-columns:1fr auto"><span class="t-row-copy"><strong>Distancia</strong></span><span class="t-row-value t-num">2,4 km</span></div>
+        </div>
+        <p class="t-group-label">Observaciones</p>
+        <div class="t-card" style="padding:12px;font:var(--t-body-s);color:var(--t-ink-600)">Dejar en portería si no atiende. Cliente avisó por teléfono.</div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+const ORDERS = [
+  { id:"A-1042", t:"14:18", mins:6,  who:"M. Álvarez",  mode:"Envío",  addr:"Av. Argentina 1450",    items:4, total:42300, st:"new"  },
+  { id:"A-1041", t:"14:11", mins:13, who:"J. Sosa",     mode:"Retiro", addr:"Retira en el local",     items:2, total:20000, st:"new"  },
+  { id:"A-1040", t:"14:04", mins:20, who:"C. Painé",    mode:"Envío",  addr:"Ministro González 233",  items:6, total:58900, st:"new", late:true },
+  { id:"A-1039", t:"13:58", mins:26, who:"R. Quiroga",  mode:"Envío",  addr:"Belgrano 780",           items:3, total:26100, st:"new"  },
+  { id:"A-1038", t:"13:47", mins:37, who:"L. Fuentes",  mode:"Envío",  addr:"Perito Moreno 1120",     items:5, total:47500, st:"prep" },
+  { id:"A-1037", t:"13:41", mins:43, who:"S. Barrientos",mode:"Retiro",addr:"Retira en el local",     items:1, total:17100, st:"prep" },
+  { id:"A-1036", t:"13:30", mins:54, who:"D. Millán",   mode:"Envío",  addr:"Rivadavia 455",          items:2, total:23000, st:"ready"},
+  { id:"A-1035", t:"13:12", mins:72, who:"P. Curruhuinca",mode:"Envío",addr:"Alderete 90",            items:4, total:39200, st:"way"  },
+  { id:"A-1034", t:"13:05", mins:79, who:"N. Godoy",    mode:"Envío",  addr:"Roca 612",               items:3, total:31500, st:"way"  },
+  { id:"A-1033", t:"12:52", mins:92, who:"F. Antileo",  mode:"Envío",  addr:"Talero 340",             items:2, total:20600, st:"way"  },
+];
+const LABEL = { new:["Nuevo","t-pill--danger"], prep:["Preparando","t-pill--warn"], ready:["Listo","t-pill--ok"], way:["En camino","t-pill--info"] };
+const CLS = { new:"is-new", prep:"is-prep", ready:"is-ready", way:"is-way" };
+const S = { filter:"new", q:"", sel:"A-1042", net:"online", orders:[...ORDERS] };
+const $ = (s,r=document)=>r.querySelector(s), $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const money = n => "$ " + n.toLocaleString("es-AR");
+
+function card(o){
+  const [lab,cls] = LABEL[o.st];
+  return `<article class="o-card ${CLS[o.st]}${o.late?" is-late":""}" data-pick="${o.id}" aria-selected="${S.sel===o.id}" tabindex="0">
+    <div class="o-head"><span class="o-id t-num">#${o.id}</span><span class="t-pill ${cls}"><i class="t-dot"></i>${lab}</span>${o.late?'<span class="t-pill t-pill--warn"><i class="t-dot"></i>Demorado</span>':""}<span class="o-time t-num">${o.t} · ${o.mins}′</span></div>
+    <div class="o-line"><span class="o-strong">${esc(o.who)}</span><span>·</span><span>${o.mode}</span></div>
+    <div class="o-line o-trunc">${esc(o.addr)}</div>
+    <div class="o-foot"><span class="t-caption t-num">${o.items} art.</span><span class="o-total t-num">${money(o.total)}</span></div>
+  </article>`;
+}
+
+function render(){
+  const c = { new:0, prep:0, ready:0, way:0, late:0 };
+  S.orders.forEach(o=>{ c[o.st]++; if (o.late) c.late++; });
+  $("[data-m-new]").textContent = c.new; $("[data-m-prep]").textContent = c.prep;
+  $("[data-m-late]").textContent = c.late; $("[data-m-ready]").textContent = c.ready;
+  $("[data-t-all]").textContent = S.orders.length; $("[data-t-new]").textContent = c.new;
+  $("[data-t-prep]").textContent = c.prep; $("[data-t-ready]").textContent = c.ready; $("[data-t-way]").textContent = c.way;
+  $("[data-nav-count]").textContent = S.orders.length;
+  $$("[data-filter]").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.filter===S.filter)));
+
+  const q = S.q.trim().toLowerCase();
+  const list = S.orders.filter(o => (S.filter==="all"||o.st===S.filter) &&
+    (!q || (o.id+" "+o.who+" "+o.addr).toLowerCase().includes(q)));
+  $("[data-list]").innerHTML = list.map(card).join("");
+  $("[data-empty]").hidden = !!list.length;
+  $("[data-empty]").innerHTML = list.length ? "" : (S.net==="offline"
+    ? `<div class="t-empty"><span class="t-empty-mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 18.5h.01M4 8.5a13 13 0 0 1 16 0M7 12a8.5 8.5 0 0 1 10 0" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="m3 3 18 18" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span><h3>Sin conexión</h3><p>Último dato 14:32. Los cambios se sincronizan solos.</p><div class="t-empty-actions"><button class="t-btn t-btn--primary" type="button" data-retry>Sincronizar ahora</button></div></div>`
+    : `<div class="t-empty"><span class="t-empty-mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 4h14v16l-3-2-2 2-2-2-2 2-3-2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span><h3>No hay pedidos en esta cola</h3><p>Cuando entre uno nuevo aparece acá y suena la alerta.</p></div>`);
+
+  const sel = S.orders.find(o=>o.id===S.sel);
+  $("[data-detail]").hidden = !sel; $("[data-detail-empty]").hidden = !!sel;
+  if (sel){
+    $("[data-d-id]").textContent = "#"+sel.id;
+    $("[data-d-sub]").textContent = `Recibido ${sel.t} · hace ${sel.mins} min · ${sel.mode==="Retiro"?"Retiro en el local":"Envío a domicilio"} · Efectivo`;
+    $("[data-d-who]").textContent = sel.who;
+    $("[data-d-addr]").textContent = sel.addr;
+    const [lab,cls] = LABEL[sel.st];
+    $("[data-d-state]").className = "t-pill "+cls; $("[data-d-state]").innerHTML = '<i class="t-dot"></i>'+lab;
+  }
+  const nl = { online:"Sincronizado", syncing:"Reconectando…", offline:"Sin conexión" }[S.net];
+  $("[data-sync-label]").textContent = nl;
+  $(".b-sync .t-dot").style.color = S.net==="online" ? "var(--t-success-600)" : S.net==="offline" ? "var(--t-warning-600)" : "var(--t-info-600)";
+}
+
+document.addEventListener("click", e=>{
+  const t = e.target.closest("[data-filter],[data-pick],[data-state],[data-retry],[data-sync-btn]");
+  if (!t) return;
+  if (t.dataset.filter) S.filter = t.dataset.filter;
+  if (t.dataset.pick) S.sel = t.dataset.pick;
+  if (t.hasAttribute("data-retry")||t.hasAttribute("data-sync-btn")) { S.net="syncing"; setTimeout(()=>{S.net="online";render();},1400); }
+  if (t.dataset.state) setState(t.dataset.state);
+  render();
+});
+$("[data-search]").addEventListener("input", e=>{ S.q = e.target.value; render(); });
+
+function setState(n){
+  $$("[data-state]").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.state===n)));
+  S.net="online"; S.q=""; S.orders=[...ORDERS]; S.filter="new"; S.sel="A-1042";
+  if (n==="prep"){ S.filter="prep"; S.sel="A-1038"; }
+  if (n==="empty"){ S.orders=[]; S.sel=null; }
+  if (n==="offline"){ S.net="offline"; S.orders=[]; S.sel=null; }
+  if (n==="syncing") S.net="syncing";
+}
+
+const U = new URLSearchParams(location.search);
+if (U.get("chrome")==="0") $("[data-demo]").hidden = true;
+setState(U.get("state")||"queue");
+render();
+</script>
+</body>
+</html>

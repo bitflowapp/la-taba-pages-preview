@@ -1,0 +1,15 @@
+import fs from 'node:fs';
+import {call} from './la-taba-mp-mcp-client.mjs';
+const credential=await call('get_credentials',{});
+const access=credential.content.filter(c=>c.type==='text').map(c=>c.text).join('\n').split('## Test (Sandbox)')[1]?.match(/(?:APP_USR|TEST)-[A-Za-z0-9_-]+/)?.[0];
+if(!access)throw Error('Missing test credential');
+const audit=JSON.parse(fs.readFileSync('C:/1212/la-taba-mp-cutover-audit.json'));
+const provider=JSON.parse(fs.readFileSync('C:/1212/la-taba-mp-cutover-provider.json'));
+const items=provider.items.filter(i=>i.preference?.http===404);
+let cursor=0;const results=[];
+await Promise.all(Array.from({length:4},async()=>{while(cursor<items.length){const item=items[cursor++],row=audit.attempts.find(r=>r.id===item.intent_id);
+ const r=await fetch(`https://api.mercadopago.com/merchant_orders/search?external_reference=${encodeURIComponent(row.external_reference)}&limit=50`,{headers:{Authorization:`Bearer ${access}`},signal:AbortSignal.timeout(25000)});
+ const body=await r.json();results.push({intent_id:row.id,http:r.status,total:body.total,elements:body.elements?.map(o=>({id:o.id,collector_id:o.collector?.id,preference_id:o.preference_id,external_reference:o.external_reference,paid_amount:o.paid_amount,payments:o.payments?.map(p=>({id:p.id,status:p.status,transaction_amount:p.transaction_amount}))}))});
+}}));
+fs.writeFileSync('C:/1212/la-taba-mp-cutover-orders.json',JSON.stringify(results,null,2));
+console.log(JSON.stringify(results,null,2));

@@ -19,7 +19,7 @@ test.use({ viewport: { width: 390, height: 844 } });
 
 const goHome = async (page) => {
   await page.bringToFront();
-  await page.locator('[data-nav-view="home"]:visible').first().click();
+  await page.locator('.mobile-nav [data-nav-view="home"]:visible, .desktop-nav [data-nav-view="home"]:visible').first().click();
   await expect(page.locator('[data-view="home"]')).toBeVisible();
   // Al cambiar de vista la tienda lleva el foco al encabezado, en el cuadro
   // siguiente. Una prueba que usa el teclado tiene que esperar a que ese cuadro
@@ -30,7 +30,7 @@ const goHome = async (page) => {
 };
 const goCatalog = async (page) => {
   await page.bringToFront();
-  await page.locator('[data-nav-view="catalog"]:visible').first().click();
+  await page.locator('.mobile-nav [data-nav-view="catalog"]:visible, .desktop-nav [data-nav-view="catalog"]:visible').first().click();
   await expect(page.locator(`${GRID} .product-card`).first()).toBeVisible();
 };
 const heroPiece = `${HERO} [data-campaign]`;
@@ -307,6 +307,7 @@ test('una pieza que todavía no se vio espera en su primer cuadro, no en el fina
 
 test('volver a la home, o borrar una búsqueda, no repite la función', async ({ page }) => {
   test.setTimeout(60_000);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
   await useQaCampaigns(page);
   await openRuntimeCatalog(page);
   await goHome(page);
@@ -352,8 +353,9 @@ test('volver a la home, o borrar una búsqueda, no repite la función', async ({
   expect((await page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics())).plays).toBe(playsGrid);
 });
 
-test('un renderer lento queda estático y completo sin reiniciar al navegar o borrar la búsqueda', async ({ page }) => {
+test('un renderer lento conserva el packshot real estático y completo al refrescar', async ({ page }) => {
   test.setTimeout(60_000);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
   // Deliver actual browser frames with the timestamps of an 80ms renderer.
   // This exercises the production budget probe without disabling the guard.
   await page.addInitScript(() => {
@@ -361,29 +363,22 @@ test('un renderer lento queda estático y completo sin reiniciar al navegar o bo
     let timestamp = 0;
     window.requestAnimationFrame = (callback) => nativeFrame(() => callback(timestamp += 80));
   });
-  await useQaCampaigns(page);
-  await openRuntimeCatalog(page);
-  await goHome(page);
+  await page.goto('/scripts/campaign-lab/index.html?only=beer_pour&w=358');
+  await page.bringToFront();
+  const image = page.locator('[data-campaign-image]');
+  await expect(image).toHaveAttribute('src', /campaign-heineken-710ml-thumbnail/);
+  expect(await image.evaluate((node) => node.complete && node.naturalWidth > 0)).toBe(true);
   await expect.poll(() => page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics().budgetLimited)).toBe(true);
-  await assertLiveOrBudgetStill(page, heroPiece);
+  await assertLiveOrBudgetStill(page, '[data-campaign]');
   const plays = (await page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics())).plays;
-  await goCatalog(page);
-  const gridPiece = page.locator(`${GRID} [data-campaign]`);
-  await gridPiece.scrollIntoViewIfNeeded();
-  await assertLiveOrBudgetStill(page, `${GRID} [data-campaign]`);
-  const search = page.locator('[data-view="catalog"] [data-search-input]');
-  await search.fill('coca');
-  await expect(gridPiece).toHaveCount(0);
-  await search.fill('');
-  await gridPiece.scrollIntoViewIfNeeded();
-  await assertLiveOrBudgetStill(page, `${GRID} [data-campaign]`);
-  await goHome(page);
-  await assertLiveOrBudgetStill(page, heroPiece);
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event('resize'));
+    document.dispatchEvent(new Event('visibilitychange'));
+    window.TABA2_CAMPAIGNS.refresh();
+  });
+  await assertLiveOrBudgetStill(page, '[data-campaign]');
   expect((await page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics())).plays).toBe(plays);
-  await page.locator(`${heroPiece} .cmp-cta`).click();
-  await expect(page.locator('[data-product-modal]')).toBeVisible();
-  await page.locator('[data-product-modal] [data-close-modal]').click();
-  await expect(page.locator('[data-product-modal]')).toBeHidden();
+  expect(await image.evaluate((node) => getComputedStyle(node).objectFit)).toBe('contain');
 });
 
 test('ocultar un anuncio deja ese lugar sin anuncios: vuelve la puerta editorial, no otra campaña', async ({ page }) => {

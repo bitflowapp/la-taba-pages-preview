@@ -6,7 +6,8 @@
 -- falsa después de un pedido normal enseña a ignorarlas.
 --
 --   A  un cobro de Mercado Pago con retiro, de punta a punta: checkout, preferencia, aviso firmado, pago
---      aprobado, pedido, aceptado, preparado, listo y entregado en el local
+--      aprobado, pedido (el Panel lo ve una vez, como pedido de Mercado Pago, y el checkout deja de figurar
+--      como pendiente), aceptado, preparado, listo y entregado en el local
 --   B  un pedido en efectivo con envío, de punta a punta: la dirección confirmada, aceptado, preparado,
 --      cobrado, listo, tomado por un repartidor, retirado, en camino, llegó, y el código del cliente
 --   C  con el planificador sano, la reconciliación de alertas del comercio no deja ninguna abierta (ni
@@ -16,7 +17,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(16);
+select plan(18);
 
 do $precondition$
 begin
@@ -196,11 +197,23 @@ begin
 end $$;
 
 select isnt(pg_temp.id('order_a'), null, 'A1 el pago aprobado arma el pedido');
+-- Lo que ve el Panel (list_operational_pipeline): el pedido pagado aparece una vez, como pedido de Mercado
+-- Pago con el importe del checkout, y el checkout ya no figura como pendiente.
+select pg_temp.como('staff');
+create temporary table ccl_pipeline on commit drop as
+  select p.* from public.list_operational_pipeline(pg_temp.id('business'), false) p;
+select pg_temp.sin_sesion();
+select is((select string_agg(kind || '/' || payment_method || '/' || total::text, ',') from ccl_pipeline
+            where reference_id = pg_temp.id('order_a')),
+  'order/mercadopago/' || (select total::text from public.checkout_sessions where id = pg_temp.id('session_a')),
+  'A2 el Panel ve el pedido de Checkout Pro una vez, como pedido de Mercado Pago con el importe del checkout');
+select is((select count(*)::integer from ccl_pipeline where reference_id = pg_temp.id('session_a')), 0,
+  'A3 y su checkout ya no figura como pendiente');
 select pg_temp.mover('order_a', 'accepted', 'ccl-a-aceptar');
 select pg_temp.mover('order_a', 'preparing', 'ccl-a-preparar');
 select pg_temp.mover('order_a', 'ready', 'ccl-a-listo');
 select pg_temp.mover('order_a', 'delivered', 'ccl-a-entregado');
-select is((select status from public.orders where id = pg_temp.id('order_a')), 'delivered', 'A2 entregado en el local');
+select is((select status from public.orders where id = pg_temp.id('order_a')), 'delivered', 'A4 entregado en el local');
 
 -- ══════════════════════════════════════════════════════════════════════════
 --  B · efectivo, envío con repartidor

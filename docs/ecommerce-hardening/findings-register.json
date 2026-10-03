@@ -427,7 +427,7 @@
       "title": "Webhook-sourced payment jobs and signature rejections are invisible to alerts and health",
       "status": "open",
       "fixed_by": null,
-      "notes": "PARTIAL (13608b7, 918237f, 4a4afa79): intent-less stalled payment-queue jobs, refunds needing attention (REFUND_NEEDS_ATTENTION) and payments to review (PAYMENT_NEEDS_REVIEW) now open operational alerts (20261002011000). Still open: get_production_operation_center.blocked_outboxes ignores webhook jobs, and the Panel shows the four new codes with generic text.",
+      "notes": "PARTIAL (13608b7, 918237f, 4a4afa79, 20261003091000): intent-less stalled payment-queue jobs, refunds needing attention (REFUND_NEEDS_ATTENTION) and payments to review (PAYMENT_NEEDS_REVIEW) open operational alerts (20261002011000); build_operational_health attributes webhook jobs to the seller's business (20261001220500); and get_production_operation_center.metrics.blocked_outboxes now counts intent-less failed/dead-lettered webhook jobs of the business's seller (20261003091000, operation_center_counts_provider_notification_jobs_test.sql: 0 before the migration, 1 and 2 after). Signature rejections are platform traffic, not a business alert: get_ecommerce_health() counts them. Still open, frontend only: the Panel shows the new codes with generic text (touching a precached client file requires bumping the service-worker identity, owned by the frontend line).",
       "aliases": [
         "PAY-12"
       ],

@@ -10,13 +10,13 @@ Evidencia: `artifacts/taba-autonomous-20261003/`.
 | | |
 |---|---|
 | HEAD_INICIAL | `47d9ffe9` (local, sin push) · `origin` `423cd90d` |
-| HEAD_FINAL | _se completa al cierre_ |
+| HEAD_FINAL | `59fa86b8` (último commit de código y de CI) + el commit de cierre de este informe |
 | RAMA | `hardening/taba-ecommerce-production` |
 | WORKTREE | `la-taba-ecommerce-hardening`. Propios además, los dos ya integrados (se pueden borrar): `la-taba-real-money-gate` (EDGE-03) y `la-taba-http-contract` (API-01/C-2) |
-| COMMITS | _ver lista al final_ |
+| COMMITS | 60 (lista al final; `47d9ffe9` lo dejó la sesión anterior sin push y lo pusheó esta) |
 | PUSH | todo pusheado a `origin/hardening/taba-ecommerce-production` |
 | PR | ninguno nuevo (la rama sigue apilada sobre #130, que está abierto; abrir el PR es decisión del dueño) |
-| CI | _se completa al cierre_ |
+| CI | Completos verdes: 37123390677 (`a7eb622c`) y 37125497727 (`011717fa`). Stack: 37129059684 (`2bc7218a`) verde, 450/455, 0 FAIL. **Final: run 37129892043 sobre `59fa86b8`, EN CURSO al cortarse la sesión por límite de uso: verificar su resultado** (la corrida de `1470b3ff` tenía base de datos y Windows en verde; su job web lo canceló el despacho final) |
 
 ## QA
 
@@ -200,3 +200,66 @@ habría roto `npm test`, y un candado duplicado.
 **Próximo paso recomendado (en orden):** (1) Marco decide Owner 1–2 (aplicar en Staging y AUTHZ-04); (2) aplicar en Staging con
 el procedimiento de Owner 1 y certificar (`--target staging`); (3) promoción a CP según el plan; (4) recién después, Owner 4
 (dinero real).
+
+## Commits
+
+- `591e06d0` docs(status): checkpoint inicial del operador autónomo y preflight de sólo lectura en Staging y CP
+- `f2cafbd3` docs(evidence): la carrera de idempotencia falla sin los paquetes pendientes y pasa con ellos
+- `b161ad39` docs(evidence): CP no está lista y un cobro aprobado quedó invisible en Staging
+- `b7cd898b` docs(status): el archivo de estado no lleva rutas de disco locales
+- `3007ed39` fix(idempotency): el mismo comando dos veces a la vez no traba ni duplica nada
+- `cf0d30fb` fix(payments): reembolsos, avisos firmados y trabajos muertos con prueba ejecutada
+- `4a4afa79` fix(delivery): una entrega en curso tiene salida, y las alertas cubren lo que faltaba
+- `8d4a275a` chore(rollback): las reversiones de entregas y alertas toman su candado una sola vez
+- `4cee8a74` fix(auth): cancelar o rechazar un pedido sigue el catálogo de permisos (AUTHZ-04), y las negativas de permiso son 403
+- `5c578793` fix(payments): un «vacío» del proveedor no prueba que el comprador no pagó (PAY-PROBE-01)
+- `34460beb` fix(rollback): revertir el cierre de entrega sin código devuelve el EXECUTE de service_role
+- `a7eb622c` fix(tooling): los arneses de carrera sólo corren contra una base local de verdad
+- `c5454a0c` docs(hardening): registro, verificación previa de la segunda tanda y plan de promoción a CP
+- `61e8b464` docs(status): los cinco frentes después de integrar los cuatro paquetes y PAY-PROBE-01
+- `60a7f6ed` feat(cert): el certificador e-commerce corre contra un Supabase completo y efímero en CI
+- `cd7a9e94` fix(ci): el diagnóstico de privilegios por defecto del stack castea el tipo de objeto
+- `511dc88b` fix(cert): en el stack efímero, que el gateway no exija la clave del proyecto queda como no probado
+- `c997a18c` fix(payments): la marca de envío dudoso de la preferencia toma el cobro antes que el intento (IDEM-08)
+- `422f0800` docs(hardening): IDEM-08 corregido en c997a18c
+- `e7287f53` fix(riders): rechazar o retirar una oferta de reparto toma el pedido antes que la oferta (IDEM-07)
+- `ac64a30a` docs(hardening): IDEM-07 corregido en e7287f53
+- `59a8e5ca` fix(riders): 20261002062000 no le saca el EXECUTE a service_role
+- `34f244a9` fix(cert): en el stack, la puerta sin clave de la fase de privacidad queda como no probada si no se filtró nada
+- `7711adad` docs(status): certificador en el stack (448/455), IDEM-07 e IDEM-08, CI de base de datos verde
+- `f02e55b2` fix(checkout): la pantalla del pago no se rompe después de recuperar el seguimiento (TRACK-01)
+- `0e75dbe8` docs(hardening): TRACK-01 corregido en f02e55b2
+- `2b1eb571` docs(cp): la cadena de reversiones sobre 0e75dbe8 y la única diferencia de forma conocida
+- `011717fa` docs(report): borrador del informe del operador autónomo (se completa al cierre)
+- `a11fc45f` docs(status): CI completo verde sobre a7eb622c y certificador 448/455 en el stack
+- `4ba385b7` docs(evidence): el certificador e-commerce contra el Supabase efímero, corrida 37125278937
+- `cd34baf1` docs(status): dos paquetes en worktrees aislados (interruptor del cobro real y contrato HTTP)
+- `6e7af1d4` fix(payments): el cobro real en producción lo abre un interruptor explícito y permanente (EDGE-03)
+- `297130a7` feat(release): compuerta REAL_MONEY_GATE y MONEY_MOVEMENT_POSSIBLE calculado, nunca adivinado
+- `cb7f60f2` fix(mercadopago): la verificación de configuración nombra el interruptor y la variable vieja de humo es un error
+- `d4e5fa13` docs(payments): los runbooks hablan de un solo interruptor de dinero real y de cómo apagarlo en un paso
+- `24b040c2` docs(payments): EDGE-03 corregido; el plan de promoción y las acciones pendientes hablan del interruptor real
+- `1104bf81` docs(status): interruptor del cobro real integrado (EDGE-03)
+- `889903da` docs(report): EDGE-03 integrado y los dos huecos fail-open que encontró
+- `dc8f0771` docs(report): cuatro de los cinco scripts piloto cancelan con un encargado (AUTHZ-04 no los afecta)
+- `7f9cc793` docs(report): el stack efímero (448/455, estable en 4 corridas) y el rendimiento medido
+- `08db0dc1` docs(report): resultado (CP BLOCKED, dinero real NO) y números actualizados
+- `4798c0ac` docs(status): bloque «para retomar» al principio del archivo de estado
+- `e7dd4294` docs(status): sin la ruta de disco que se coló en 4798c0ac
+- `1470b3ff` fix(ci): el verificador A1-A4 simula el cobro real autorizado también con el interruptor de EDGE-03
+- `ec818d12` feat(api): la frontera de la API contesta 409 a una negativa de negocio y 404 a un «no existe»
+- `728a92bc` test(api): el contrato HTTP de la frontera, en pgTAP y en el certificador
+- `019f2cef` docs(api): la política del contrato HTTP y la prueba por PostgREST antes y después
+- `0afe8a70` fix(api): una negativa a un cliente lleva el SQLSTATE de lo que significa, no P0001
+- `11093b0a` docs(api): notas del contrato HTTP para integrar y retomar
+- `a1e760a5` docs(api): las dos entradas SQL que llegan a 55000/P0002, en el contrato legible por máquina
+- `a9e72b2a` test(api): la conversión de la frontera vista como la ve PostgREST, contra una base local
+- `d79992cf` docs(api): qué agujeros de la selección del lead cerró el generador
+- `ed86e3cb` test(certifier): con API-01 cerrado, el check del precio exige 409 y no el 500 del defecto
+- `63119fd8` docs(register): API-01 corregido por 20261002090000 y 20261002091000
+- `2bc7218a` docs(promotion): la guarda ROLLOUT_BLOCKED del contrato HTTP y la cadena de 50 reversiones
+- `8d17f241` docs(evidence): el stack con el contrato HTTP (450/455, 0 FAIL) y CP releída a las 11:25
+- `8253bc43` docs(report): contrato HTTP integrado, stack sin FAIL y segunda pasada
+- `75aa9643` docs(report): la ruta real del script piloto y por qué su rol sigue sin confirmar
+- `94479254` fix(tests): la prueba de la guardia de Supabase trabaja sobre copias y no reescribe ci.yml (TOOL-05)
+- `59fa86b8` docs(register): TOOL-05 corregido en 94479254

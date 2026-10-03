@@ -194,3 +194,6 @@ de CI equivocado en esta bitácora (corregido antes del commit). Y se cerró un 
 | Autorización | `PASS` en código · aplicación `BLOCKED` (dueño) | `4cee8a74` (AUTHZ-04 + C-1); AUTHZ-04 en vivo en el stack (empleado → 42501); aplicarla en un entorno es OWNER_APPROVAL_REQUIRED |
 | Recuperación de entregas y alertas | `PASS` | `4a4afa79`, `34460beb`, `f02e55b2` (TRACK-01); cadena de 50 reversiones sin diferencias |
 | Certificación del stack | `PASS` | certificador en CI sobre un Supabase efímero: 455 checks, 450 PASS, 0 FAIL (37129059684), con el contrato HTTP integrado (`ec818d12`…`ed86e3cb`) |
+
+- 11:40 — **DIAG-03 confirmado en vivo (sólo lectura)**: `scripts/production-health-check.mjs` cuenta las alertas con `severity = 'critical'` y la tabla sólo admite `'CRITICAL'`: Staging tiene 23 alertas CRITICAL históricas que la sonda nunca vería; además exige exactamente 4 tareas `taba-*` (CP ya tiene 5). El arreglo de la severidad es de una línea; no se hizo porque la sesión se cortó por límite de uso (habría necesitado otro CI). Retargetear la sonda a CP es DIAG-10.
+- 11:40 — sesión cortada por límite de uso. CI final 37129892043 sobre `59fa86b8` en curso: la próxima sesión verifica su resultado.

@@ -32,6 +32,22 @@ test('la verificación previa de la segunda tanda se separa en sus 12 consultas,
   for (const statement of statements) assert.doesNotMatch(statement, /\b(public|private)\.[a-z_]+\s*\(/, findingName(statement));
 });
 
+const PREFLIGHT_3 = new URL('../docs/migrations/checks/20261003_unverified_checkout_preflight.sql', import.meta.url);
+
+test('la verificación previa de 20261003090000 se separa en sus 3 consultas, todas de lectura y con nombre propio', () => {
+  const statements = splitStatements(fs.readFileSync(PREFLIGHT_3, 'utf8'));
+  assert.equal(statements.length, 3);
+  const names = statements.map(findingName);
+  assert.equal(names.includes(null), false, 'cada consulta devuelve su columna finding');
+  assert.equal(new Set(names).size, names.length, 'sin nombres repetidos');
+  const earlier = new Set([PREFLIGHT, PREFLIGHT_2].flatMap((file) => splitStatements(fs.readFileSync(file, 'utf8')).map(findingName)));
+  assert.deepEqual(names.filter((name) => earlier.has(name)), [], 'ningún nombre repite uno de las tandas anteriores');
+  for (const statement of statements) assertReadOnlyStatement(statement);
+  // El rol de sólo lectura no puede ejecutar funciones del proyecto, y la consulta tiene que correr antes de la migración.
+  for (const statement of statements) assert.doesNotMatch(statement, /\b(public|private)\.[a-z_]+\s*\(/, findingName(statement));
+  for (const statement of statements) assert.doesNotMatch(statement, /payment_safety_watermarks|unverified_checkout_/, findingName(statement));
+});
+
 test('una sentencia que no es de lectura no se manda', () => {
   for (const bad of ['update public.orders set status = 1', 'delete from public.products', 'do $$ begin end $$', 'call x()', 'set role postgres']) {
     assert.throws(() => assertReadOnlyStatement(bad), /NOT_A_READ_ONLY_STATEMENT/);

@@ -87,6 +87,18 @@ create function pg_temp.run(p_job text, p_status text, p_ago interval) returns v
     from cron.job j where j.jobname = p_job;
 $$;
 
+-- El planificador como en una plataforma en marcha, ANTES de la primera
+-- reconciliación: cada tarea del inventario programada y encendida. Una base de
+-- pruebas compartida puede traer alguna apagada o sin programar (el arnés de CI
+-- ensaya antes la liberación y deja una así). Desde 20261002011000 eso es una
+-- alerta en cada negocio que se reconcilia (SCHEDULER_JOB_DISABLED,
+-- SCHEDULER_JOB_MISSING), con su evento: la sección 7 de esta prueba limpia las
+-- alertas SCHEDULER_JOB_* del negocio A para medir desde cero y no podría borrarla.
+-- Sin esa migración las dos líneas no cambian nada de lo que esta prueba mide.
+select cron.schedule(e.job_name, '* * * * *', 'select 1') from private.scheduler_expected_jobs e
+ where not exists (select 1 from cron.job j where j.jobname = e.job_name);
+select cron.alter_job(j.jobid, active => true) from cron.job j where j.jobname like 'taba-%' and not j.active;
+
 -- ── 1 · Firmas y privilegios intactos ──────────────────────────────────────
 select ok(
   has_function_privilege('anon', 'public.check_scheduler_watchdog(text)', 'execute')

@@ -31,6 +31,21 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
 | Recuperación de entregas y alertas | `INCOMPLETE` | Paquete wp11 (2 migraciones `20261002010000-011000` + 3 pgTAP) borrador sin revisar |
 | Certificación del stack | `INCOMPLETE` | El arranque del stack efímero es real y verde (run 37067129076). El certificador `--target stack` y los cambios al workflow están sin commit y nunca corrieron en CI |
 
+### Estado actual de los cinco frentes (09:45)
+
+| Frente | Estado | Evidencia |
+|---|---|---|
+| Idempotencia | `PASS` (local + CI en curso) | `3007ed39`: 4 migraciones; la carrera queda en el gate. Local, orden del CI: `GLOBAL_IDEMPOTENCY: PASS`, 754 llamadas, 0 deadlocks, 0 esperas agotadas; sin los arreglos FAIL con 7 defectos y 14 deadlocks. Revisión adversarial: aprobada con notas. Abiertos (registro): IDEM-07, IDEM-08 |
+| Pagos | `PASS` (local + CI en curso) | `cf0d30fb`: 4 migraciones + Edge `mercadopago-cancel-payment`; pgTAP 210 + 202 + 46 + 90; Deno 52 + 387. Revisión: sin defectos en los caminos de dinero. **Nuevo P1 PAY-PROBE-01** corregido en `5c578793` (sondas del proveedor), con evidencia viva de Staging |
+| Autorización | `PASS` en código; aplicación `BLOCKED` (dueño) | `4cee8a74`: AUTHZ-04 cancelar/rechazar por catálogo + C-1 42501; matriz 796; seis scripts de CP/Staging pasan a cancelar como dueño. Aplicarla en un entorno cambia lo que puede hacer un empleado (también en una caja de Caja Clara): OWNER_APPROVAL_REQUIRED |
+| Recuperación de entregas y alertas | `PASS` (local + CI en curso) | `4a4afa79` + `34460beb` (la reversión devolvía mal un permiso: hallado por el ensayo de la cadena). pgTAP 162 + 101; pruebas de alertas en verde también con una tarea programada apagada |
+| Certificación del stack | `INCOMPLETE` | Las migraciones aplican en un Supabase real efímero en cada push (runs 37122427290 y 37122606379 verdes; 37123390697 en curso). El certificador `--target stack` sigue sin commit: es el próximo frente |
+
+Verificación local completa sobre el HEAD `a7eb622c` (PG17 + shims): 203/203 migraciones; pgTAP 74/74 archivos, 5.865
+aserciones, total consistente (base limpia y base «sucia»); carreras admisión/stock/idempotencia PASS; cadena de 45 reversiones
+0 fallidas, 0 diferencias contra una línea base de 158 armada en el momento; mínimo privilegio sobre el esquema viejo PASS;
+`npm run check` PASS; 885 tests de Node relevantes PASS. CI completo despachado: run 37123390677.
+
 ### Riesgos iniciales
 
 1. Nada de los 5 frentes está integrado: un agente nuevo que lea «cinco validaciones exitosas» puede creer que hay más hecho de lo que hay.
@@ -72,3 +87,14 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
 - Hallazgo a decidir: wp19 también exige `orders.cancel` para **rechazar**, y su propio encabezado avisa que la caja de **Caja
   Clara** opera con la sesión del cajero (si es empleado, deja de poder cancelar/rechazar) y que el Panel le sigue mostrando
   «Cancelar» a todo el equipo. AUTHZ-04 además nombra `authorize_arca_homologation` y `set_business_open_state`, que wp19 no toca.
+- 09:00–09:15 — revisiones adversariales (sólo lectura): wp18 APROBADO con notas; wp11 APROBADO con notas; wp13 BLOCK sólo por
+  empaquetado (no borrar `mercadopago_checkout_pro.local.sql`, actor del test, guardas de reversión); wp19 BLOCK sólo por guardas
+  de reversión. Todo lo pedido quedó resuelto antes de integrar. Informes: scratchpad de la sesión `review/`.
+- 09:20–09:35 — integrados y pusheados: `3007ed39` (wp18), `cf0d30fb` (wp13), `4a4afa79` (wp11), `4cee8a74` (wp19),
+  `5c578793` (PAY-PROBE-01), `34460beb` (permiso en una reversión), `a7eb622c` (guarda de host de los arneses: `?host=` pisaba
+  la URL local), `c5454a0c` (registro, verificación previa de la segunda tanda, plan de promoción corregido, convivencia).
+- 09:28 — verificación previa nueva (`20261002_ecommerce_hardening_preflight.sql`) en Staging y CP: 12/12 sin error. En CP sólo
+  hay empleados en comercios de QA (40 cancelaciones de `qa-cleanup.mjs` como empleado, ya cambiadas a dueño). En Staging el
+  comercio de la línea Caja Clara canceló 24 pedidos como empleado: 20261002050000 NO se aplica en Staging sin acordarlo.
+- Plan de promoción: decía que el cobro real lo abría `MERCADOPAGO_REAL_MONEY_ENABLED`, que no existe en el código; corregido. La
+  llave real es el secreto smoke, y en CP no está (leído: sólo nombres de secretos).

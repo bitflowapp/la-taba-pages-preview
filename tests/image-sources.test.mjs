@@ -67,6 +67,10 @@ test('commercial image audit and manifest are explicit and traceable', () => {
     path.join(root, 'docs/catalog/image-source-audit.csv'),
     'utf8',
   );
+  const auditRows = audit
+    .split(/\r?\n/)
+    .map((row) => row.trim())
+    .filter((row) => row.length > 0);
   for (const field of [
     'rights_reference',
     'expected_sha256',
@@ -83,5 +87,9 @@ test('commercial image audit and manifest are explicit and traceable', () => {
     'utf8',
   ));
   assert.equal(manifest.schemaVersion, 1);
-  assert.equal(manifest.sources.length, 0);
+  assert.ok(manifest.sources.length >= 0);
+
+  if (manifest.sources.length > 0) {
+    assert.equal(auditRows.length - 1, manifest.sources.length);
+  }
 });

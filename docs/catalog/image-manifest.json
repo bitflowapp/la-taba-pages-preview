@@ -1,11 +1,628 @@
 {
   "encoder": {
-    "effort": 6,
-    "format": "webp",
     "name": "sharp",
+    "format": "webp",
     "quality": 84,
+    "effort": 6,
     "version": "0.35.3"
   },
   "schemaVersion": 1,
-  "sources": []
+  "sources": [
+    {
+      "checkedAt": "2026-07-30",
+      "externalId": "coca-cola-original-pet-1500ml-pack-6",
+      "sku": "coca-cola-original-pet-1500ml-pack-6",
+      "safeSku": "coca-cola-original-pet-1500ml-pack-6",
+      "identitySha256": "4dd4dd8696d9f28a89aa02757355bf224ef0239d291738e89e9068ac63d99eb4",
+      "sourceSha256": "c902a03bb7d90fa1882b952c15ee184780f57e7727e037f8fae6bca0a6f52926",
+      "sourceType": "propio",
+      "sourceUrl": "https://example.com/qa-source/coca-cola-original-pet-1500ml-pack-6.webp",
+      "rightsStatus": "PROPIO",
+      "rightsReference": "QA Fixture",
+      "assets": {
+        "master": {
+          "path": "assets/catalog/products/coca-cola-original-pet-1500ml-pack-6-4dd4dd8696d9f28a-c902a03bb7d90fa1.webp",
+          "sha256": "c902a03bb7d90fa1882b952c15ee184780f57e7727e037f8fae6bca0a6f52926",
+          "width": 1000,
+          "height": 1000,
+          "bindingSha256": "d3923e6507a0e5f2708b25b3f7d66965a78b805fbae41bfff8ee356f11963e08"
+        },
+        "thumbnail": {
+          "path": "assets/catalog/thumbnails/coca-cola-original-pet-1500ml-pack-6-4dd4dd8696d9f28a-thumb-f25ffa6a5e3c3913.webp",
+          "sha256": "f25ffa6a5e3c3913b7d4da94f52c45162caa74a4082674460d65886bd8b0fa8c",
+          "width": 400,
+          "height": 400,
+          "bindingSha256": "1fb6f552442d2b1c482ec0a55d5c7e05c680d8e4cf3496e75ccd783abd70ef8d"
+        }
+      }
+    },
+    {
+      "checkedAt": "2026-07-30",
+      "externalId": "coca-cola-original-pet-500ml-pack-12",
+      "sku": "coca-cola-original-pet-500ml-pack-12",
+      "safeSku": "coca-cola-original-pet-500ml-pack-12",
+      "identitySha256": "f812d28610cbb2095a234017306e5b8f7ed60865a357b352fd9f5e18192e00f5",
+      "sourceSha256": "04dfcc7856cedc7a9e1cc607623e492f2327f8aee4e2584e86e89862d1b3b3af",
+      "sourceType": "propio",
+      "sourceUrl": "https://example.com/qa-source/coca-cola-original-pet-500ml-pack-12.webp",
+      "rightsStatus": "PROPIO",
+      "rightsReference": "QA Fixture",
+      "assets": {
+        "master": {
+          "path": "assets/catalog/products/coca-cola-original-pet-500ml-pack-12-f812d28610cbb209-04dfcc7856cedc7a.webp",
+          "sha256": "04dfcc7856cedc7a9e1cc607623e492f2327f8aee4e2584e86e89862d1b3b3af",
+          "width": 1000,
+          "height": 1000,
+          "bindingSha256": "5ace1c7e77d4114a488e860904c4681fcdf823af76ee87ed2f72c2824bf2ba37"
+        },
+        "thumbnail": {
+          "path": "assets/catalog/thumbnails/coca-cola-original-pet-500ml-pack-12-f812d28610cbb209-thumb-df23de8e26b14f9a.webp",
+          "sha256": "df23de8e26b14f9aad6e99810d1eb8fb693fd454fa7f7ff70e6f04bce7f96b24",
+          "width": 400,
+          "height": 400,
+          "bindingSha256": "5e2c944f45f936b2d3c3805041e7b097581c63eb4da56f23a8b753af19b2dc8c"
+        }
+      }
+    },
+    {
+      "checkedAt": "2026-07-30",
+      "externalId": "coca-cola-zero-pet-1500ml-pack-6",
+      "sku": "coca-cola-zero-pet-1500ml-pack-6",
+      "safeSku": "coca-cola-zero-pet-1500ml-pack-6",
+      "identitySha256": "f8890e19d3c302be003f1702b0eb3bde2111dc84a5a44740fdee8f515393a4f6",
+      "sourceSha256": "9556ac06b128e0f12491a4d9581144919bbe56e41056c91344a9a35f57072d27",
+      "sourceType": "propio",
+      "sourceUrl": "https://example.com/qa-source/coca-cola-zero-pet-1500ml-pack-6.webp",
+      "rightsStatus": "PROPIO",
+      "rightsReference": "QA Fixture",
+      "assets": {
+        "master": {
+          "path": "assets/catalog/products/coca-cola-zero-pet-1500ml-pack-6-f8890e19d3c302be-9556ac06b128e0f1.webp",
+          "sha256": "9556ac06b128e0f12491a4d9581144919bbe56e41056c91344a9a35f57072d27",
+          "width": 1000,
+          "height": 1000,
+          "bindingSha256": "b2cdf0c1cffbfd8d18d38bbb82cc5061849c8e164e436fdda9ed083d5639d57e"
+        },
+        "thumbnail": {
+          "path": "assets/catalog/thumbnails/coca-cola-zero-pet-1500ml-pack-6-f8890e19d3c302be-thumb-4bbc3f297e47ec8c.webp",
+          "sha256": "4bbc3f297e47ec8c4b6ec353ad5e33d1c6a1da8a3e73dabf7fc9e0f0e6e1e08b",
+          "width": 400,
+          "height": 400,
+          "bindingSha256": "72c7b1515e95a1172ae84fa40a6159c068e0e151f50b09870e79f71019a00146"
+        }
+      }
+    },
+    {
+      "checkedAt": "2026-07-30",
+      "externalId": "coca-cola-zero-pet-500ml-pack-12",
+      "sku": "coca-cola-zero-pet-500ml-pack-12",
+      "safeSku": "coca-cola-zero-pet-500ml-pack-12",
+      "identitySha256": "4faf9370e3d0647047e8d29bfc1f812ad73a5499918e7735a20355d4c8fbca53",
+      "sourceSha256": "29bf5929f93628536b56642d81aab2cc901348c1f370cf46303616215768c0ee",
+      "sourceType": "propio",
+      "sourceUrl": "https://example.com/qa-source/coca-cola-zero-pet-500ml-pack-12.webp",
+      "rightsStatus": "PROPIO",
+      "rightsReference": "QA Fixture",
+      "assets": {
+        "master": {
+          "path": "assets/catalog/products/coca-cola-zero-pet-500ml-pack-12-4faf9370e3d06470-29bf5929f9362853.webp",
+          "sha256": "29bf5929f93628536b56642d81aab2cc901348c1f370cf46303616215768c0ee",
+          "width": 1000,
+          "height": 1000,
+          "bindingSha256": "e0992b5d64ad2146b5b4080033905bd4208f7a6483588980fc5075b730c5ed07"
+        },
+        "thumbnail": {
+          "path": "assets/catalog/thumbnails/coca-cola-zero-pet-500ml-pack-12-4faf9370e3d06470-thumb-57e40df3411c3fcd.webp",
+          "sha256": "57e40df3411c3fcd140f29760eb5f2c7a48b7cc132b55c85b7f17edc83cda435",
+          "width": 400,
+          "height": 400,
+          "bindingSha256": "02ecc3dab12f7559eb1b8522c173618553119646c0048a292efc054ee804913d"
+        }
+      }
+    },
+    {
+      "checkedAt": "2026-07-30",
+      "externalId": "corona-extra-botella-330ml",
+      "sku": "corona-extra-botella-330ml",
+      "safeSku": "corona-extra-botella-330ml",
+      "identitySha256": "ca9781e2278bb008a5fa0e946b89eaa5858c72334609cb53925613dbd409f09f",
+      "sourceSha256": "eb14789fc9ba2b5e2ca408cd6c4de35a8cfc7241d7e17fcd89b13182e9f544c8",
+      "sourceType": "propio",
+      "sourceUrl": "https://example.com/qa-source/corona-extra-botella-330ml.webp",
+      "rightsStatus": "PROPIO",
+      "rightsReference": "QA Fixture",
+      "assets": {
+        "master": {
+          "path": "assets/catalog/products/corona-extra-botella-330ml-ca9781e2278bb008-eb14789fc9ba2b5e.webp",
+          "sha256": "eb14789fc9ba2b5e2ca408cd6c4de35a8cfc7241d7e17fcd89b13182e9f544c8",
+          "width": 1000,
+          "height": 1000,
+          "bindingSha256": "5506e73ebe53491dbb5102ff561b8d799d1c4bacc5cd2e5ac3a322a383f3c2be"
+        },
+        "thumbnail": {
+          "path": "assets/catalog/thumbnails/corona-extra-botella-330ml-ca9781e2278bb008-thumb-594b682a7c41a5f9.webp",
+          "sha256": "594b682a7c41a5f9d21b161213f57e96ba739799e771066fd4db4b91441a2df0",
+          "width": 400,
+          "height": 400,
+          "bindingSha256": "829596c89e86c9592380e5f42c5045f573ace2434f7734e4d85dbd220e629466"
+        }
+      }
+    },
+    {
+      "checkedAt": "2026-07-30",
+      "externalId": "fanta-naranja-pet-1500ml-pack-6",
+      "sku": "fanta-naranja-pet-1500ml-pack-6",
+      "safeSku": "fanta-naranja-pet-1500ml-pack-6",
+      "identitySha256": "4bd6206c6990bcd4fd35f3ee0c6fe28339394cc143c001a770f4f67bc668ff12",
+      "sourceSha256": "1db67196a34cef6720a12ad981aa96ae5fa54f1615343cc285dfd157f5e63c5f",
+      "sourceType": "propio",
+      "sourceUrl": "https://example.com/qa-source/fanta-naranja-pet-1500ml-pack-6.webp",
+      "rightsStatus": "PROPIO",
+      "rightsReference": "QA Fixture",
+      "assets": {
+        "master": {
+          "path": "assets/catalog/products/fanta-naranja-pet-1500ml-pack-6-4bd6206c6990bcd4-1db67196a34cef67.webp",
+          "sha256": "1db67196a34cef6720a12ad981aa96ae5fa54f1615343cc285dfd157f5e63c5f",
+          "width": 1000,
+          "height": 1000,
+          "bindingSha256": "54fd657e075cda4d3aa3973aeaff612545b01811006ac02140e6e80c1bbeaa8b"
+        },
+        "thumbnail": {
+          "path": "assets/catalog/thumbnails/fanta-naranja-pet-1500ml-pack-6-4bd6206c6990bcd4-thumb-ffbd8df21238a204.webp",
+          "sha256": "ffbd8df21238a204769b9eece52086fe1984bf90a8a47bf719629dbd35b98947",
+          "width": 400,
+          "height": 400,
+          "bindingSha256": "44be462ccbc62c2bcaa510632d1ac6a54bc9d5f241d0fcc71a4f4f4ac10e1f01"
+        }
+      }
+    },
+    {
+      "checkedAt": "2026-07-30",
+      "externalId": "heineken-original-lata-473ml",
+      "sku": "heineken-original-lata-473ml",
+      "safeSku": "heineken-original-lata-473ml",
+      "identitySha256": "88a70213819737aa1ac2423ca0ce1616bed4fa3912699f433e31790429c59f3e",
+      "sourceSha256": "ef3789546e789f47524a39d718ac84690dd1d11c7169a24e3d2963bba4c326b2",
+      "sourceType": "propio",
+      "sourceUrl": "https://example.com/qa-source/heineken-original-lata-473ml.webp",
+      "rightsStatus": "PROPIO",
+      "rightsReference": "QA Fixture",
+      "assets": {
+        "master": {
+          "path": "assets/catalog/products/heineken-original-lata-473ml-88a70213819737aa-ef3789546e789f47.webp",
+          "sha256": "ef3789546e789f47524a39d718ac84690dd1d11c7169a24e3d2963bba4c326b2",
+          "width": 1000,
+          "height": 1000,
+          "bindingSha256": "27351252ac4867fc778e83a74a44e0080f4a87f64bcc2008d6262ba12b323db2"
+        },
+        "thumbnail": {
+          "path": "assets/catalog/thumbnails/heineken-original-lata-473ml-88a70213819737aa-thumb-e118f0d43eefb385.webp",
+          "sha256": "e118f0d43eefb3851982a294a6e026721299c487447ffdb2003c1d9883c611d9",
+          "width": 400,
+          "height": 400,
+          "bindingSha256": "49ba4bb3d573f8d1af37029c95739af62dc86f56941b6213584a5072624b5f67"
+        }
+      }
+    },
+    {
+      "checkedAt": "2026-07-30",
+      "externalId": "heineken-original-lata-473ml-pack-6",
+      "sku": "heineken-original-lata-473ml-pack-6",
+      "safeSku": "heineken-original-lata-473ml-pack-6",
+      "identitySha256": "23d24c0ba47bf7bd51113a62d0b12c0e5fe313c54a38f7203b444b698726a449",
+      "sourceSha256": "ef3789546e789f47524a39d718ac84690dd1d11c7169a24e3d2963bba4c326b2",
+      "sourceType": "propio",
+      "sourceUrl": "https://example.com/qa-source/heineken-original-lata-473ml-pack-6.webp",
+      "rightsStatus": "PROPIO",
+      "rightsReference": "QA Fixture",
+      "assets": {
+        "master": {
+          "path": "assets/catalog/products/heineken-original-lata-473ml-pack-6-23d24c0ba47bf7bd-ef3789546e789f47.webp",
+          "sha256": "ef3789546e789f47524a39d718ac84690dd1d11c7169a24e3d2963bba4c326b2",
+          "width": 1000,
+          "height": 1000,
+          "bindingSha256": "ff133b110b3f6fbbaf25cf0eedb9452981e3b87d4f9609a3bdbb1232026fd77c"
+        },
+        "thumbnail": {
+          "path": "assets/catalog/thumbnails/heineken-original-lata-473ml-pack-6-23d24c0ba47bf7bd-thumb-e118f0d43eefb385.webp",
+          "sha256": "e118f0d43eefb3851982a294a6e026721299c487447ffdb2003c1d9883c611d9",
+          "width": 400,
+          "height": 400,
+          "bindingSha256": "85c475e282e02852664a68c1e600a345f2bbe564fae31e12a0c563bd7d1fc999"
+        }
+      }
+    },
+    {
+      "checkedAt": "2026-07-30",
+      "externalId": "imperial-apa-lata-473ml",
+      "sku": "imperial-apa-lata-473ml",
+      "safeSku": "imperial-apa-lata-473ml",
+      "identitySha256": "252c09f4b889ae6fb81f7e8227887d7880825b9389544ab0cb73821dc9973422",
+      "sourceSha256": "97237bc8b45d562d3d25efa7669a146dbccd8d4a0e8e76fa3210f68ea36cae68",
+      "sourceType": "propio",
+      "sourceUrl": "https://example.com/qa-source/imperial-apa-lata-473ml.webp",
+      "rightsStatus": "PROPIO",
+      "rightsReference": "QA Fixture",
+      "assets": {
+        "master": {
+          "path": "assets/catalog/products/imperial-apa-lata-473ml-252c09f4b889ae6f-97237bc8b45d562d.webp",
+          "sha256": "97237bc8b45d562d3d25efa7669a146dbccd8d4a0e8e76fa3210f68ea36cae68",
+          "width": 1000,
+          "height": 1000,
+          "bindingSha256": "631f69053bfd8d22e321c164928e9be3d20b7043206377a8ca0be7b9344fab3e"
+        },
+        "thumbnail": {
+          "path": "assets/catalog/thumbnails/imperial-apa-lata-473ml-252c09f4b889ae6f-thumb-dd2eeed7be9a4913.webp",
+          "sha256": "dd2eeed7be9a49130d529a9fd548eda4c192125b6c9db8fadd0eedcfdd394a03",
+          "width": 400,
+          "height": 400,
+          "bindingSha256": "8231d3fc036545aab6ad8b49a6c0d4dda2463411e1b74f36c98f0f3e5f9f725c"
+        }
+      }
+    },
+    {
+      "checkedAt": "2026-07-30",
+      "externalId": "imperial-cream-stout-lata-473ml",
+      "sku": "imperial-cream-stout-lata-473ml",
+      "safeSku": "imperial-cream-stout-lata-473ml",
+      "identitySha256": "c0893e3d352f8171fa04a9458afcbab5e9bc7d182519528225b94a8c2b5bb16c",
+      "sourceSha256": "5713d8684b7243984b388c93d4ba7b96bea5e453a113d97877c2e9c281c3182b",
+      "sourceType": "propio",
+      "sourceUrl": "https://example.com/qa-source/imperial-cream-stout-lata-473ml.webp",
+      "rightsStatus": "PROPIO",
+      "rightsReference": "QA Fixture",
+      "assets": {
+        "master": {
+          "path": "assets/catalog/products/imperial-cream-stout-lata-473ml-c0893e3d352f8171-5713d8684b724398.webp",
+          "sha256": "5713d8684b7243984b388c93d4ba7b96bea5e453a113d97877c2e9c281c3182b",
+          "width": 1000,
+          "height": 1000,
+          "bindingSha256": "2486a672773f0becbad39b9cf2ec6dffdc0e36989a54a809c61265bc13a04081"
+        },
+        "thumbnail": {
+          "path": "assets/catalog/thumbnails/imperial-cream-stout-lata-473ml-c0893e3d352f8171-thumb-42bc405c83f4c6e9.webp",
+          "sha256": "42bc405c83f4c6e9c9b7e607f8defbe91296017ec7c05c6e98b991e6d8b79999",
+          "width": 400,
+          "height": 400,
+          "bindingSha256": "41379f7390a7ad31c22b80074ecf588fc8f1ab00e46a9be11cf724debff396dd"
+        }
+      }
+    },
+    {
+      "checkedAt": "2026-07-30",
+      "externalId": "imperial-extra-lager-lata-473ml",
+      "sku": "imperial-extra-lager-lata-473ml",
+      "safeSku": "imperial-extra-lager-lata-473ml",
+      "identitySha256": "d737ddfe9bbd556bd174c36a23252cf7b870c48d7c50a9fd4791135959e5f50b",
+      "sourceSha256": "9e752cb4d310190d33c4dab7dcb30f99f2e8b6dc8708a79cccb505b2e6786664",
+      "sourceType": "propio",
+      "sourceUrl": "https://example.com/qa-source/imperial-extra-lager-lata-473ml.webp",
+      "rightsStatus": "PROPIO",
+      "rightsReference": "QA Fixture",
+      "assets": {
+        "master": {
+          "path": "assets/catalog/products/imperial-extra-lager-lata-473ml-d737ddfe9bbd556b-9e752cb4d310190d.webp",
+          "sha256": "9e752cb4d310190d33c4dab7dcb30f99f2e8b6dc8708a79cccb505b2e6786664",
+          "width": 1000,
+          "height": 1000,
+          "bindingSha256": "8ca8ec2193987a501776c23794327eefae483ce582652fae834b1f65856c341b"
+        },
+        "thumbnail": {
+          "path": "assets/catalog/thumbnails/imperial-extra-lager-lata-473ml-d737ddfe9bbd556b-thumb-b518b2ad06ca0dde.webp",
+          "sha256": "b518b2ad06ca0dde61a575f1d1ed5e424bc4bf55005272860edf8c676def0db8",
+          "width": 400,
+          "height": 400,
+          "bindingSha256": "23b7065005d89351cb6ceaf2743cbe7b443f92bddb752f2356e314bd611bac35"
+        }
+      }
+    },
+    {
+      "checkedAt": "2026-07-30",
+      "externalId": "imperial-golden-lata-473ml",
+      "sku": "imperial-golden-lata-473ml",
+      "safeSku": "imperial-golden-lata-473ml",
+      "identitySha256": "084d1d52ac7683f65ba85a8593d98009a00b5bcbab6a000421bf1fddaccd3ae9",
+      "sourceSha256": "c05f6df16930fd0ac4ce9fb8cf2a3391379bcf9a729ef116b1c2060781ffc532",
+      "sourceType": "propio",
+      "sourceUrl": "https://example.com/qa-source/imperial-golden-lata-473ml.webp",
+      "rightsStatus": "PROPIO",
+      "rightsReference": "QA Fixture",
+      "assets": {
+        "master": {
+          "path": "assets/catalog/products/imperial-golden-lata-473ml-084d1d52ac7683f6-c05f6df16930fd0a.webp",
+          "sha256": "c05f6df16930fd0ac4ce9fb8cf2a3391379bcf9a729ef116b1c2060781ffc532",
+          "width": 1000,
+          "height": 1000,
+          "bindingSha256": "c9d0fa7de364286b82a067aa09e7e285988b14b8ec50252357a28f5569e18d62"
+        },
+        "thumbnail": {
+          "path": "assets/catalog/thumbnails/imperial-golden-lata-473ml-084d1d52ac7683f6-thumb-0b7ddebd0a506d7c.webp",
+          "sha256": "0b7ddebd0a506d7ccaa0c313da94dd9540ac014f2ab0982f818ee760a4f4db53",
+          "width": 400,
+          "height": 400,
+          "bindingSha256": "42d952c2f68813a7c02ac215c9e8c352927cbfaebf608db4c18a644c0b76cb39"
+        }
+      }
+    },
+    {
+      "checkedAt": "2026-07-30",
+      "externalId": "monster-mango-loco-lata-473ml",
+      "sku": "monster-mango-loco-lata-473ml",
+      "safeSku": "monster-mango-loco-lata-473ml",
+      "identitySha256": "06fc27a074bedc3941ce8f4cff3b09c1ef9ec0ef49fdd47931f1fc1b2a4fd16c",
+      "sourceSha256": "35f4bdbd38d7ffb3de23343075a4d6de83baba0bf02a2fb5e6447d0c596201f9",
+      "sourceType": "propio",
+      "sourceUrl": "https://example.com/qa-source/monster-mango-loco-lata-473ml.webp",
+      "rightsStatus": "PROPIO",
+      "rightsReference": "QA Fixture",
+      "assets": {
+        "master": {
+          "path": "assets/catalog/products/monster-mango-loco-lata-473ml-06fc27a074bedc39-35f4bdbd38d7ffb3.webp",
+          "sha256": "35f4bdbd38d7ffb3de23343075a4d6de83baba0bf02a2fb5e6447d0c596201f9",
+          "width": 1000,
+          "height": 1000,
+          "bindingSha256": "f409a9d082a3e8aab81e771b8b6cf6bfe7c081fd5edad9366b77086eb270b794"
+        },
+        "thumbnail": {
+          "path": "assets/catalog/thumbnails/monster-mango-loco-lata-473ml-06fc27a074bedc39-thumb-cc5e259e03bfa244.webp",
+          "sha256": "cc5e259e03bfa24473d049898747f47605488eb171c27e2ee47a143b64c9b315",
+          "width": 400,
+          "height": 400,
+          "bindingSha256": "06a10e2e5e3c44e87572e8de490634a68941b60c40fa80eea88f8b338d9ef523"
+        }
+      }
+    },
+    {
+      "checkedAt": "2026-07-30",
+      "externalId": "red-bull-original-lata-250ml",
+      "sku": "red-bull-original-lata-250ml",
+      "safeSku": "red-bull-original-lata-250ml",
+      "identitySha256": "a0fb8a1e53857cb01dec1895d65c4a793a1e29ec7b02a9fcc3368c1fa26f9224",
+      "sourceSha256": "2c87ba6374277260f655409bd60086d54446089c835af7a48a97d06dcbbe3284",
+      "sourceType": "propio",
+      "sourceUrl": "https://example.com/qa-source/red-bull-original-lata-250ml.webp",
+      "rightsStatus": "PROPIO",
+      "rightsReference": "QA Fixture",
+      "assets": {
+        "master": {
+          "path": "assets/catalog/products/red-bull-original-lata-250ml-a0fb8a1e53857cb0-2c87ba6374277260.webp",
+          "sha256": "2c87ba6374277260f655409bd60086d54446089c835af7a48a97d06dcbbe3284",
+          "width": 1000,
+          "height": 1000,
+          "bindingSha256": "c9685293835358682a180f96b1e2e2d2b6b3f23cb424f04bbf9b6be427c0dfdb"
+        },
+        "thumbnail": {
+          "path": "assets/catalog/thumbnails/red-bull-original-lata-250ml-a0fb8a1e53857cb0-thumb-19bd5066af5a56f2.webp",
+          "sha256": "19bd5066af5a56f2fe494ffa69d7fb54945144422397f7d561e98cd07b107da7",
+          "width": 400,
+          "height": 400,
+          "bindingSha256": "2ccb3fefb6cb6bf7e113ec50b339e30751dda08949428c895272e072d122b957"
+        }
+      }
+    },
+    {
+      "checkedAt": "2026-07-30",
+      "externalId": "red-bull-original-lata-250ml-pack-4",
+      "sku": "red-bull-original-lata-250ml-pack-4",
+      "safeSku": "red-bull-original-lata-250ml-pack-4",
+      "identitySha256": "dfc483a315041dd99f11509dbd352b8c69c7aae1e535df0eb02a662c8feee37e",
+      "sourceSha256": "2510f4f923172d310cd678df3e4376b646ea59c06ba49f71be4914df4ee2c086",
+      "sourceType": "propio",
+      "sourceUrl": "https://example.com/qa-source/red-bull-original-lata-250ml-pack-4.webp",
+      "rightsStatus": "PROPIO",
+      "rightsReference": "QA Fixture",
+      "assets": {
+        "master": {
+          "path": "assets/catalog/products/red-bull-original-lata-250ml-pack-4-dfc483a315041dd9-2510f4f923172d31.webp",
+          "sha256": "2510f4f923172d310cd678df3e4376b646ea59c06ba49f71be4914df4ee2c086",
+          "width": 1000,
+          "height": 1000,
+          "bindingSha256": "56fc6090f673aea6dc8a620c8a6053bf7990592238cbb0a45f5815478336ec1e"
+        },
+        "thumbnail": {
+          "path": "assets/catalog/thumbnails/red-bull-original-lata-250ml-pack-4-dfc483a315041dd9-thumb-ddf64d388ce47654.webp",
+          "sha256": "ddf64d388ce476548f8c57f23f322cad427c0364b95387b8ca5a553ec0c5b7d9",
+          "width": 400,
+          "height": 400,
+          "bindingSha256": "9285fc9d622bfb5f415a406d589fa78faa8e667ec2d49ea81e90f11b35ca930a"
+        }
+      }
+    },
+    {
+      "checkedAt": "2026-07-30",
+      "externalId": "schneider-rubia-lata-710ml",
+      "sku": "schneider-rubia-lata-710ml",
+      "safeSku": "schneider-rubia-lata-710ml",
+      "identitySha256": "347047a6fbca290515f18ba2e46916ad6ba19eacafe1f3dee638ba5f0084b3bd",
+      "sourceSha256": "c9908164a74d2697f44976dce054f0dbdb91ebfabecedba3af964b181429f798",
+      "sourceType": "propio",
+      "sourceUrl": "https://example.com/qa-source/schneider-rubia-lata-710ml.webp",
+      "rightsStatus": "PROPIO",
+      "rightsReference": "QA Fixture",
+      "assets": {
+        "master": {
+          "path": "assets/catalog/products/schneider-rubia-lata-710ml-347047a6fbca2905-c9908164a74d2697.webp",
+          "sha256": "c9908164a74d2697f44976dce054f0dbdb91ebfabecedba3af964b181429f798",
+          "width": 1000,
+          "height": 1000,
+          "bindingSha256": "f4c5564b6f4fe6229d1874718e2e44085daa527681e5b23f941b4bd5982a250d"
+        },
+        "thumbnail": {
+          "path": "assets/catalog/thumbnails/schneider-rubia-lata-710ml-347047a6fbca2905-thumb-06218f7c70b3b887.webp",
+          "sha256": "06218f7c70b3b8874d5da8e5565a6a394be8b9b68d9967e8feacd69f13f54a64",
+          "width": 400,
+          "height": 400,
+          "bindingSha256": "9e7c377fab73d5f9c4e42bf3da15755f8b937eed862d79dec0463783b3006ce7"
+        }
+      }
+    },
+    {
+      "checkedAt": "2026-07-30",
+      "externalId": "schweppes-citrus-pet-1500ml-pack-6",
+      "sku": "schweppes-citrus-pet-1500ml-pack-6",
+      "safeSku": "schweppes-citrus-pet-1500ml-pack-6",
+      "identitySha256": "a9589d92b449af3f4194ba45d260061b61a42c7b98f980e562dc83ed8cfc4090",
+      "sourceSha256": "d558fc8259b96ff5cf0697375c241cab1bf6a8375b23a0e7a5a65ac25a1ac436",
+      "sourceType": "propio",
+      "sourceUrl": "https://example.com/qa-source/schweppes-citrus-pet-1500ml-pack-6.webp",
+      "rightsStatus": "PROPIO",
+      "rightsReference": "QA Fixture",
+      "assets": {
+        "master": {
+          "path": "assets/catalog/products/schweppes-citrus-pet-1500ml-pack-6-a9589d92b449af3f-d558fc8259b96ff5.webp",
+          "sha256": "d558fc8259b96ff5cf0697375c241cab1bf6a8375b23a0e7a5a65ac25a1ac436",
+          "width": 1000,
+          "height": 1000,
+          "bindingSha256": "29c04c34025c16ea1b64e3c92eed3e4eae840072c28131aef4963bda042d2cc0"
+        },
+        "thumbnail": {
+          "path": "assets/catalog/thumbnails/schweppes-citrus-pet-1500ml-pack-6-a9589d92b449af3f-thumb-d13e9b386cca1f16.webp",
+          "sha256": "d13e9b386cca1f1674fe60548adebab6f5d621196b5cda64e109cd5b482b7b33",
+          "width": 400,
+          "height": 400,
+          "bindingSha256": "da1447e075e7d4ca2cc864e37b0ed92ac8cc63f1cb54c59e9a1124ba97654174"
+        }
+      }
+    },
+    {
+      "checkedAt": "2026-07-30",
+      "externalId": "schweppes-tonica-pet-1500ml-pack-6",
+      "sku": "schweppes-tonica-pet-1500ml-pack-6",
+      "safeSku": "schweppes-tonica-pet-1500ml-pack-6",
+      "identitySha256": "0e47bbb5c6bcca207df1b0b8aaa0f3eb3e1e8e6315c84bd5ff815ca917c17e56",
+      "sourceSha256": "626c925037c60e3f231d42f06e5df2a7c1405c679a6d40aafbfff6b9a019d036",
+      "sourceType": "propio",
+      "sourceUrl": "https://example.com/qa-source/schweppes-tonica-pet-1500ml-pack-6.webp",
+      "rightsStatus": "PROPIO",
+      "rightsReference": "QA Fixture",
+      "assets": {
+        "master": {
+          "path": "assets/catalog/products/schweppes-tonica-pet-1500ml-pack-6-0e47bbb5c6bcca20-626c925037c60e3f.webp",
+          "sha256": "626c925037c60e3f231d42f06e5df2a7c1405c679a6d40aafbfff6b9a019d036",
+          "width": 1000,
+          "height": 1000,
+          "bindingSha256": "fa09a68a16e6639f15162e6bcccac82461172e32533e2b1f6bc45d96e589cbb4"
+        },
+        "thumbnail": {
+          "path": "assets/catalog/thumbnails/schweppes-tonica-pet-1500ml-pack-6-0e47bbb5c6bcca20-thumb-18b3e024b7535279.webp",
+          "sha256": "18b3e024b75352795d2b70ad2483ac1e06517011e4cf66f2762558533b959ac1",
+          "width": 400,
+          "height": 400,
+          "bindingSha256": "9c5758bc9ccb6f41206a004d57bb22d49c1dea68c861c6b2f3e6450ecc5c2a98"
+        }
+      }
+    },
+    {
+      "checkedAt": "2026-07-30",
+      "externalId": "speed-original-lata-473ml",
+      "sku": "speed-original-lata-473ml",
+      "safeSku": "speed-original-lata-473ml",
+      "identitySha256": "a303d09518ae7a4bfe28ffb619bfb8eec929d053c5df8dc2ac4a38474b528750",
+      "sourceSha256": "4e009cb3351fcf747d92fa02683010947fffad8b465aedc9cab3def14b3c8308",
+      "sourceType": "propio",
+      "sourceUrl": "https://example.com/qa-source/speed-original-lata-473ml.webp",
+      "rightsStatus": "PROPIO",
+      "rightsReference": "QA Fixture",
+      "assets": {
+        "master": {
+          "path": "assets/catalog/products/speed-original-lata-473ml-a303d09518ae7a4b-4e009cb3351fcf74.webp",
+          "sha256": "4e009cb3351fcf747d92fa02683010947fffad8b465aedc9cab3def14b3c8308",
+          "width": 1000,
+          "height": 1000,
+          "bindingSha256": "f8c3c40c54761d56bba42dfc8e27059ec689ee4f13943f37e5b20d80cc723d75"
+        },
+        "thumbnail": {
+          "path": "assets/catalog/thumbnails/speed-original-lata-473ml-a303d09518ae7a4b-thumb-5092573e9dc9c62f.webp",
+          "sha256": "5092573e9dc9c62f91af3a234b1af78e191718007432ed9bae85315e19a6f9a3",
+          "width": 400,
+          "height": 400,
+          "bindingSha256": "a877c564e91e2586f012bc8e1dfbfcf7d873871f859f8655f0bf71c8b38d2f6c"
+        }
+      }
+    },
+    {
+      "checkedAt": "2026-07-30",
+      "externalId": "speed-zero-lata-473ml",
+      "sku": "speed-zero-lata-473ml",
+      "safeSku": "speed-zero-lata-473ml",
+      "identitySha256": "c45aff7cdb23246b6c6c7c2a3a2c8fa06bb46a060c9c6c8860f3cf9d681f9ef2",
+      "sourceSha256": "ef7a5d8a4db3a52d0390f8948b07f4b0ab9e12311cf89265df6d3565ec3b9a6c",
+      "sourceType": "propio",
+      "sourceUrl": "https://example.com/qa-source/speed-zero-lata-473ml.webp",
+      "rightsStatus": "PROPIO",
+      "rightsReference": "QA Fixture",
+      "assets": {
+        "master": {
+          "path": "assets/catalog/products/speed-zero-lata-473ml-c45aff7cdb23246b-ef7a5d8a4db3a52d.webp",
+          "sha256": "ef7a5d8a4db3a52d0390f8948b07f4b0ab9e12311cf89265df6d3565ec3b9a6c",
+          "width": 1000,
+          "height": 1000,
+          "bindingSha256": "3a1959d0a1f0661b30f6ff247d6c5a7d02b61e028273a63486c12f818dee2560"
+        },
+        "thumbnail": {
+          "path": "assets/catalog/thumbnails/speed-zero-lata-473ml-c45aff7cdb23246b-thumb-2d99a4943d5df27f.webp",
+          "sha256": "2d99a4943d5df27ffc1027c420e5397688878ff4fa33fb96a740f742123b1dc7",
+          "width": 400,
+          "height": 400,
+          "bindingSha256": "9c7c8b33cdbdb3841ab0d46dae1173be6c7cb91dabe3b90307aba232047a3230"
+        }
+      }
+    },
+    {
+      "checkedAt": "2026-07-30",
+      "externalId": "sprite-original-pet-1500ml-pack-6",
+      "sku": "sprite-original-pet-1500ml-pack-6",
+      "safeSku": "sprite-original-pet-1500ml-pack-6",
+      "identitySha256": "ec5c5b485626c057ee8df91f812c79668640ce91f765fa85214b224285f8e59d",
+      "sourceSha256": "b4d20a5baa5f2a5ae0ddfc0f34b6236837c9bee0688e96798b46c077234d37c8",
+      "sourceType": "propio",
+      "sourceUrl": "https://example.com/qa-source/sprite-original-pet-1500ml-pack-6.webp",
+      "rightsStatus": "PROPIO",
+      "rightsReference": "QA Fixture",
+      "assets": {
+        "master": {
+          "path": "assets/catalog/products/sprite-original-pet-1500ml-pack-6-ec5c5b485626c057-b4d20a5baa5f2a5a.webp",
+          "sha256": "b4d20a5baa5f2a5ae0ddfc0f34b6236837c9bee0688e96798b46c077234d37c8",
+          "width": 1000,
+          "height": 1000,
+          "bindingSha256": "fa4f146895762672ec12d5e9e3949267fc5f2d0f75f35ce0ead1a54ba85e4eba"
+        },
+        "thumbnail": {
+          "path": "assets/catalog/thumbnails/sprite-original-pet-1500ml-pack-6-ec5c5b485626c057-thumb-906cdf37225c3c32.webp",
+          "sha256": "906cdf37225c3c32ec6d1df32fbe015bd2b4d3c53f1401127284fe2b87b94efc",
+          "width": 400,
+          "height": 400,
+          "bindingSha256": "6de87532eaeb2fd5d2f36d2a14aa913b67a031770ba09a6b517ce372e49f8dee"
+        }
+      }
+    },
+    {
+      "checkedAt": "2026-07-30",
+      "externalId": "sprite-original-pet-500ml-pack-12",
+      "sku": "sprite-original-pet-500ml-pack-12",
+      "safeSku": "sprite-original-pet-500ml-pack-12",
+      "identitySha256": "092d6e0e529e38d0dfd584dc65f9af212d07bb442a1826ad35a788764b632067",
+      "sourceSha256": "b19917623b223ce03dd390b4d5bd81f1a58e313a6816d63bee493fc924e3022f",
+      "sourceType": "propio",
+      "sourceUrl": "https://example.com/qa-source/sprite-original-pet-500ml-pack-12.webp",
+      "rightsStatus": "PROPIO",
+      "rightsReference": "QA Fixture",
+      "assets": {
+        "master": {
+          "path": "assets/catalog/products/sprite-original-pet-500ml-pack-12-092d6e0e529e38d0-b19917623b223ce0.webp",
+          "sha256": "b19917623b223ce03dd390b4d5bd81f1a58e313a6816d63bee493fc924e3022f",
+          "width": 1000,
+          "height": 1000,
+          "bindingSha256": "6d05a502ad494a48079d43b296a77821bb5299325ddb51ade02924387c0afcd4"
+        },
+        "thumbnail": {
+          "path": "assets/catalog/thumbnails/sprite-original-pet-500ml-pack-12-092d6e0e529e38d0-thumb-b345ac3117ad8948.webp",
+          "sha256": "b345ac3117ad894812d75cca1f95395440a8e3e60382d5bc116e606997e99e21",
+          "width": 400,
+          "height": 400,
+          "bindingSha256": "f7589b03970fa722cb9691f25db99cc505dc7ffec4405d9799a2e8da909cdbe0"
+        }
+      }
+    }
+  ]
 }

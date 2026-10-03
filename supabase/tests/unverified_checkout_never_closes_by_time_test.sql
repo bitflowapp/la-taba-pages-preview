@@ -13,6 +13,9 @@
 --   E  la cierra una persona: dueño o encargado con nota; la de un empleado no cuenta
 --   F  el barrido sigue preguntando una vez por día, hasta los 30 días
 --   G  permisos, envoltorio de la frontera y el índice
+--   H  un pago que el proveedor todavía no resolvió (pendiente o en revisión manual) sobre un
+--      checkout vencido: nada dentro de la ventana, alerta y sonda diaria pasada la ventana,
+--      y la cierra el resultado final del proveedor
 --
 -- No depende de la hora: los momentos de sesiones, vacíos y trabajos se escriben a mano. Todo
 -- transaccional (rollback). Ids aleatorios y cuentas acotadas a ellos: corre igual sobre la
@@ -20,7 +23,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(45);
+select plan(55);
 
 -- ── Fixture ────────────────────────────────────────────────────────────────
 create temporary table uv_ids (name text primary key, id uuid not null) on commit drop;
@@ -168,12 +171,38 @@ begin
   return v_out ->> 'status';
 end $$;
 
+-- Asienta un pago leído del proveedor, por el camino del worker.
+create function pg_temp.pago(p_intent text, p_payment_id text, p_status text, p_detail text) returns jsonb language sql as $$
+  select public.record_mercadopago_payment_snapshot(pg_temp.id(p_intent), jsonb_build_object(
+      'provider_payment_id', p_payment_id,
+      'external_reference', pi.external_reference,
+      'preference_id', pi.preference_id,
+      'merchant_order_id', 'MO-' || p_payment_id,
+      'collector_id', ps.collector_id,
+      'application_id', '',
+      'currency', 'ARS',
+      'transaction_amount', cs.total::text,
+      'status', p_status,
+      'status_detail', p_detail,
+      'payment_method', 'visa',
+      'live_mode', false,
+      'provider_occurred_at', (clock_timestamp() - interval '46 hours 50 minutes')::text,
+      'refunded_amount', '0.00',
+      'payer_email_hash', repeat('e', 64),
+      'raw_response_hash', encode(digest(p_payment_id || ':' || p_status, 'sha256'), 'hex')), 'reconciliation', null)
+    from public.payment_intents pi
+    join public.checkout_sessions cs on cs.id = pi.checkout_session_id
+    join public.business_payment_settings ps on ps.business_id = pi.business_id and ps.environment = 'test'
+   where pi.id = pg_temp.id(p_intent)
+$$;
+
 -- La migración se aplicó hace 10 días: los checkouts de abajo nacieron con la garantía vigente.
 update private.payment_safety_watermarks set since = clock_timestamp() - interval '10 days'
  where name = 'unverified_checkout_watch_since';
 
 select pg_temp.negocio('a');
 select pg_temp.negocio('b');
+select pg_temp.negocio('p');
 -- a: dentro de la ventana. b: pasada la ventana.
 select pg_temp.checkout('a1', 'a', interval '47 hours');   -- vacíos no concluyentes
 select pg_temp.checkout('a2', 'a', interval '47 hours');   -- un vacío concluyente
@@ -380,6 +409,52 @@ select is(
   (select count(*)::integer from pg_indexes
     where schemaname = 'public' and indexname = 'payment_outbox_reconcile_history_idx'),
   1, 'G: el índice del ritmo diario existe');
+
+-- ══════════════════════════════════════════════════════════════════════════
+--  H · un pago que el proveedor todavía no resolvió
+-- ══════════════════════════════════════════════════════════════════════════
+-- p1: tarjeta en revisión manual (in_process). p2: pendiente. Sus sesiones vencen y el stock
+-- se libera, pero el pago sigue vivo en Mercado Pago.
+select pg_temp.checkout('p1', 'p', interval '47 hours');
+select pg_temp.checkout('p2', 'p', interval '49 hours');
+select pg_temp.pago('p1:intent', 'PAY-UV-P1', 'in_process', 'pending_review_manual');
+select pg_temp.pago('p2:intent', 'PAY-UV-P2', 'pending', 'pending_contingency');
+select public.sweep_expired_checkout_sessions();
+select is(
+  (select string_agg(pi.internal_status || '/' || pi.provider_status, ',' order by pi.provider_payment_id)
+     from public.payment_intents pi where pi.id in (pg_temp.id('p1:intent'), pg_temp.id('p2:intent'))),
+  'expired/in_process,expired/pending',
+  'H: precondición: la sesión venció y el intent quedó «expired» con el pago del proveedor sin resolver');
+select pg_temp.reconciliar('p');
+select is(pg_temp.alerta('p1:intent'), null, 'H: dentro de la ventana no hay alerta: el barrido lo relee cada pocos minutos');
+select is(pg_temp.alerta('p2:intent'), 'open', 'H: pasadas las 48 horas, un pago sin resultado final abre la alerta');
+select is(
+  (select a.evidence ->> 'provider_status' from public.operational_alerts a
+    where a.alert_code = 'CHECKOUT_PROVIDER_UNVERIFIED' and a.subject_id = pg_temp.id('p2:intent')),
+  'pending', 'H: y la evidencia dice en qué estado lo tiene el proveedor');
+select public.enqueue_checkout_provider_probes(200);
+select is(pg_temp.sonda_pendiente('p1:intent'), 1, 'H: dentro de la ventana, la relectura de siempre');
+select is(pg_temp.sonda_pendiente('p2:intent'), 1, 'H: pasada la ventana, la relectura del día');
+update public.checkout_sessions set created_at = clock_timestamp() - interval '49 hours',
+       expires_at = clock_timestamp() - interval '48 hours 40 minutes'
+ where id = pg_temp.id('p1');
+select pg_temp.reconciliar('p');
+select is(pg_temp.alerta('p1:intent'), 'open', 'H: el de la revisión manual, pasada la ventana, también');
+-- El proveedor rechaza p1: no hubo dinero, la alerta se cierra con esa prueba.
+select pg_temp.pago('p1:intent', 'PAY-UV-P1', 'rejected', 'cc_rejected_high_risk');
+select pg_temp.reconciliar('p');
+select is(pg_temp.alerta('p1:intent'), 'resolved', 'H: el rechazo del proveedor la cierra');
+-- El proveedor aprueba p2 al tercer día: el registro de pagos lo manda a revisión, con su alerta.
+select pg_temp.pago('p2:intent', 'PAY-UV-P2', 'approved', 'accredited');
+update public.payment_intents set approved_at = clock_timestamp() - interval '10 minutes'
+ where id = pg_temp.id('p2:intent') and approved_at > clock_timestamp() - interval '5 minutes';
+select pg_temp.reconciliar('p');
+select is(pg_temp.alerta('p2:intent'), 'resolved', 'H: la aprobación cierra la de «sin resultado final»...');
+select ok(
+  exists (select 1 from public.operational_alerts a
+           where a.subject_id = pg_temp.id('p2:intent') and a.status <> 'resolved'
+             and a.alert_code in ('PAYMENT_RECONCILIATION_REQUIRED', 'PAYMENT_APPROVED_WITHOUT_ORDER')),
+  'H: ...y el cobro aprobado sin pedido queda en su propia alerta, que no tiene ventana');
 
 select * from finish();
 rollback;

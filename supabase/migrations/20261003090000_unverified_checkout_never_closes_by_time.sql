@@ -1,4 +1,4 @@
--- TABA · UN CHECKOUT QUE NADIE VERIFICÓ NO SE CIERRA POR TIEMPO
+-- TABA · UN CHECKOUT QUE NADIE VERIFICÓ NO SE CIERRA POR TIEMPO (PAY-PROBE-02 y PAY-PROBE-03)
 --
 -- QUÉ PASABA (reproducido sobre la rama con sus 208 migraciones, base local del gate)
 --
@@ -17,7 +17,15 @@
 --   Medido: a las 47 horas las dos alertas abiertas; a las 49 horas las dos resueltas por el
 --   sistema y ninguna sonda encolada. Un estado en el que pudo haberse movido dinero quedaba
 --   cerrado como si no hubiera pasado nada: es el mismo final silencioso que PAY-PROBE-01
---   corrigió para los vacíos, corrido 48 horas más tarde.
+--   corrigió para los vacíos, corrido 48 horas más tarde (PAY-PROBE-02).
+--
+--   Y un caso que no tenía ninguna alerta (PAY-PROBE-03): el comprador paga con tarjeta y
+--   Mercado Pago deja el pago en revisión manual (`in_process`, puede tardar más de dos días
+--   hábiles). La sesión vence, el stock se libera y el intent queda «expired» con el pago
+--   guardado. La alerta de checkout sin verificar exige que NO haya pago guardado, así que
+--   no lo ve nunca, y pasadas las 48 horas el barrido deja de releerlo: si el proveedor lo
+--   aprueba al tercer día y el aviso no llega, cobro sin pedido y sin señal. Medido: ninguna
+--   alerta a las 47 ni a las 49 horas, y ninguna sonda a las 49.
 --
 -- QUÉ CAMBIA
 --
@@ -27,10 +35,16 @@
 --     encargado activo que la da por resuelta con su nota (transition_operational_alert),
 --     igual que PAYMENT_NEEDS_REVIEW. La resolución de un empleado no cuenta (no ve el cobro):
 --     la corrida siguiente la reabre. La acción requerida lo dice.
+--   · Pasada la ventana, «sin verificar» incluye también un pago que el proveedor todavía no
+--     resolvió (`pending`, `in_process`, `authorized`, la misma lista que el registro de
+--     pagos trata como no final). Se cierra cuando el proveedor da un resultado final: un
+--     rechazo o una cancelación (no hubo dinero) o una aprobación, que el registro de pagos
+--     manda a revisión con su propia alerta. La evidencia de la alerta dice el estado del
+--     proveedor.
 --   · El barrido no abandona esos checkouts: pasadas las 48 horas, una sonda por día hasta los
 --     30 días, contada desde la última pregunta (un vacío o un trabajo encolado, aunque haya
---     fallado). Si el pago aparece, el worker lo asienta por el camino de siempre y lo toma
---     PAYMENT_APPROVED_WITHOUT_ORDER, que no tiene ventana.
+--     fallado). Si el pago aparece o se resuelve, el worker lo asienta por el camino de siempre
+--     y lo toman las alertas de cobro aprobado sin pedido o de revisión, que no tienen ventana.
 --   · Una marca de agua por entorno (`private.payment_safety_watermarks`, escrita al aplicar:
 --     ahora menos 48 horas): todo checkout que todavía estaba dentro de la ventana cuando esto
 --     se aplica queda vigilado; lo anterior no se resucita como alertas críticas y lo sigue
@@ -62,8 +76,8 @@ begin
   for v_row in
     select * from (values
       ('private.provider_probe_is_due(uuid,timestamptz)', '527187a827aa6abe0abb832be820da39', '43efcbc2c2c4dc344d1965a6ce29b60b'),
-      ('public.enqueue_checkout_provider_probes(integer)', '24eb443ab5e712f436f17a4d67803686', '6099d12470614d3ec337c74da2486e51'),
-      ('public.reconcile_operational_alerts_for_business(uuid)', 'dfb440ae088f4674986af94183463e78', '7b3bf2428e0a6bd4b3db86bf8b45708f')
+      ('public.enqueue_checkout_provider_probes(integer)', '24eb443ab5e712f436f17a4d67803686', 'd4ee104764660b8066873d14b55fd524'),
+      ('public.reconcile_operational_alerts_for_business(uuid)', 'dfb440ae088f4674986af94183463e78', 'e04bdf34d0fcb354ea24cd141277c1a1')
     ) as t(signature, generated_from, applied)
   loop
     select md5(replace(p.prosrc, E'\r', '')) into v_actual
@@ -226,9 +240,10 @@ begin
        )
        and cs.created_at < clock_timestamp() - interval '90 seconds'
        -- 48 horas de sondas, como siempre. Pasada esa ventana, un checkout que llegó a
-       -- Mercado Pago y sigue SIN VERIFICAR (sin pago del proveedor, sin un solo vacío
-       -- concluyente y sin que el dueño o un encargado lo haya dado por resuelto) no se
-       -- abandona: una sonda por día hasta los 30 días (20261003090000). La alerta
+       -- Mercado Pago y sigue SIN VERIFICAR (sin pago del proveedor o con uno que el
+       -- proveedor todavía no resolvió, sin un solo vacío concluyente y sin que el dueño
+       -- o un encargado lo haya dado por resuelto) no se abandona: una sonda por día
+       -- hasta los 30 días (20261003090000). La alerta
        -- CHECKOUT_PROVIDER_UNVERIFIED de esos mismos checkouts tampoco se cierra por
        -- tiempo, así que ningún «no sabemos» queda sin que nadie lo consulte.
        and (
@@ -236,7 +251,9 @@ begin
          or (
            cs.created_at > clock_timestamp() - interval '30 days'
            and cs.created_at > private.unverified_checkout_watch_since()
-           and pi.provider_payment_id is null
+           -- Sin pago del proveedor, o con un pago que el proveedor todavía no resolvió
+           -- (pendiente o en revisión): las dos cosas pueden terminar en dinero cobrado.
+           and (pi.provider_payment_id is null or pi.provider_status in ('pending', 'in_process', 'authorized'))
            and pi.internal_status in ('expired', 'redirected', 'pending', 'in_process', 'preference_created')
            and not exists (
              select 1 from public.payment_events pe
@@ -369,6 +386,7 @@ begin
           'external_reference', pi.external_reference,
           'probe_window_closed', cs.created_at <= clock_timestamp() - interval '48 hours',
           'status', pi.internal_status,
+          'provider_status', pi.provider_status,
           'empty_probes', (
             select count(*) from public.payment_events pe
              where pe.payment_intent_id = pi.id
@@ -381,7 +399,15 @@ begin
         and pi.order_id is null
         and cs.completed_order_id is null
         and nullif(btrim(coalesce(pi.preference_id, '')), '') is not null
-        and pi.provider_payment_id is null
+        -- Sin pago del proveedor; o, pasadas las 48 horas, con un pago que el proveedor
+        -- todavía no resolvió (pendiente o en revisión manual, que puede tardar más de dos
+        -- días hábiles): la sesión venció y liberó el stock, y si el proveedor lo aprueba y
+        -- el aviso no llega nadie más lo vuelve a leer (20261003090000).
+        and (
+          pi.provider_payment_id is null
+          or (pi.provider_status in ('pending', 'in_process', 'authorized')
+              and cs.created_at <= clock_timestamp() - interval '48 hours')
+        )
         and pi.internal_status in ('expired','redirected','pending','in_process','preference_created')
         and cs.expires_at < clock_timestamp() - interval '20 minutes'
         -- Dentro de las 48 horas de la sonda, como siempre. Pasada esa ventana la alerta NO

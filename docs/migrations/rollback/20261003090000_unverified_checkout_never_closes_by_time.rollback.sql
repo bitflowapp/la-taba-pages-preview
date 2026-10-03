@@ -23,8 +23,8 @@ begin
   for v_row in
     select * from (values
       ('private.provider_probe_is_due(uuid,timestamptz)', '43efcbc2c2c4dc344d1965a6ce29b60b', '527187a827aa6abe0abb832be820da39'),
-      ('public.enqueue_checkout_provider_probes(integer)', '6099d12470614d3ec337c74da2486e51', '24eb443ab5e712f436f17a4d67803686'),
-      ('public.reconcile_operational_alerts_for_business(uuid)', '7b3bf2428e0a6bd4b3db86bf8b45708f', 'dfb440ae088f4674986af94183463e78')
+      ('public.enqueue_checkout_provider_probes(integer)', 'd4ee104764660b8066873d14b55fd524', '24eb443ab5e712f436f17a4d67803686'),
+      ('public.reconcile_operational_alerts_for_business(uuid)', 'e04bdf34d0fcb354ea24cd141277c1a1', 'dfb440ae088f4674986af94183463e78')
     ) as t(signature, applied, previous)
   loop
     select md5(replace(p.prosrc, E'\r', '')) into v_actual

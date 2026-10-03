@@ -6,16 +6,61 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
 ## Para retomar (leer primero)
 
 - Informe final: `LA_TABA_AUTONOMOUS_BACKEND_REPORT.md` (estado, hallazgos, OWNER_APPROVAL_REQUIRED con pasos exactos, veredictos).
-- Rama `hardening/taba-ecommerce-production`, todo pusheado. Nada aplicado en Staging (158) ni en CP (157); la rama tiene 208
-  migraciones. CI completo verde en `a7eb622c` y `011717fa`; el último CI y el certificador del stack están al final de la bitácora.
-- No queda trabajo fuera de la rama: el contrato HTTP (API-01/C-2) y el interruptor del cobro real (EDGE-03) están integrados;
-  los worktrees `la-taba-http-contract` y `la-taba-real-money-gate` se pueden borrar.
-- Herramientas locales: Postgres 17 de la sesión anterior en el puerto 55521
-  (`…\C--Users-DELL\04e206e5-…\scratchpad\local\localdb.mjs start|reset|test`), arnés `integrate/repo-run.mjs`, cadena
-  `integrate/rollback-chain.mjs`; lecturas de Staging/CP en sólo lectura con `.tmp-scratch/mgmt.mjs` (no versionado).
-- Memoria del proyecto (Claude Code, proyecto del usuario `C--Users-DELL`): `memory/lataba-ecommerce-hardening-2026-10-01.md`.
+- Rama `hardening/taba-ecommerce-production`, todo pusheado. **PR #133 en borrador** contra `main` (apilado sobre #130): existe
+  para que el CI completo corra en cada push, porque desde la sesión en la nube el despacho manual de workflows da 403.
+  No se mergea sin el dueño. Nada aplicado en Staging (158) ni en CP (157); la rama tiene 209 migraciones.
+- Herramientas que ya están en el repo (sirven en la PC, en CI o en la nube): `scripts/db/dev-database.mjs start|test|stop`
+  (base local con la imagen y la secuencia exacta del gate, que queda viva para reproducir y escribir pgTAP),
+  `npm run test:db:isolated` (el gate canónico entero, necesita Docker), `scripts/release/run-readonly-checks.mjs` y
+  `scripts/production-health-check.mjs --target controlled-production` (sólo lectura, necesitan un token de la Management API).
+- La sesión en la nube no tiene token de Supabase ni de Mercado Pago: no leyó Staging ni CP. Lo último leído en vivo es de la
+  sesión de la mañana (11:20–11:25).
 
-## Checkpoint inicial — 2026-10-03 08:40 (-03:00)
+## Sesión 2 — 2026-10-03 14:47–15:4x (-03:00), Claude Cloud
+
+### Checkpoint inicial (verificado, no declarado)
+
+| Dato | Valor |
+|---|---|
+| Rama / HEAD inicial | `hardening/taba-ecommerce-production` @ `8f0d5958` (= `origin`), árbol limpio; `main` = `13581889` |
+| CI sobre `8f0d5958` | **verde**: `Validate release candidate` run 37130800496 (la sesión anterior se cortó antes de verlo) |
+| Stack efímero | último verde sobre `2bc7218a` (37129059684, 450/455, 0 FAIL); no corre si el push no toca `supabase/**` y similares |
+| PR | ninguno de esta rama; #130 (su base) abierto |
+| Gate canónico local | reproducido en este contenedor (Docker + la imagen del gate por digest) sobre `8f0d5958`: **PASS** (pgTAP 5.938, carreras con 0 deadlocks, simulacros de reversión, restauración) |
+| Registro | P1: 14 corregidos, 1 riesgo aceptado, 0 abiertos · P2: 36 corregidos, 22 abiertos |
+| Acceso a entornos | sin credenciales de Supabase/Mercado Pago en la nube: Staging y CP **no** se leyeron en esta sesión |
+
+### Bitácora
+
+- 14:50 — estado reconstruido desde git, CI y documentos. DIAG-03 seguía abierto (la sonda de salud).
+- 15:05 — **PAY-PROBE-02 (P1, nuevo), reproducido**: pasada la ventana de 48 horas, la alerta CHECKOUT_PROVIDER_UNVERIFIED de un
+  checkout que nadie verificó (vacíos no concluyentes o ninguna sonda respondida) la cerraba el sistema («condición ausente») y el
+  barrido dejaba de preguntar. 47 h: abierta; 49 h: resuelta sola. Corregido en `d89ad936` (20261003090000).
+- 15:12 — **DIAG-03 corregido** (`b6a94a96`): la sonda de salud no veía alertas CRITICAL (comparaba en minúscula) y exigía
+  exactamente cuatro tareas. Reproducido contra la base local con un rol igual a `supabase_read_only_user`.
+- 15:14 — PR #133 en borrador para que corra el CI. CI completo y stack despachados por el push de `aae0268d`.
+- 15:17 — **PAY-PROBE-03 (P1, nuevo), reproducido**: un pago con tarjeta en revisión manual (`in_process`) sobre un checkout
+  vencido no tenía ninguna alerta y pasadas las 48 horas nadie lo releía. Corregido en `56a76d24` (misma migración, todavía sin
+  aplicar en ningún entorno).
+- 15:27 — **CERT-02 (P3), causa raíz**: la fase `health` leyó a las 18:21:44Z y pg_cron corrió el primer barrido a las 18:22:00Z
+  (frontera del minuto): latido «nunca», componente «down». La corrida del PR llegó después y pasó. Corregido en `632df82a`: en el
+  stack se espera el primer latido (tope 90 s) antes de afirmar; las aserciones no cambian.
+- 15:28 — gate canónico local sobre `aae0268d`: **PASS** (pgTAP 5.993 con las 55 nuevas, carreras con 0 deadlocks, simulacros,
+  restauración). `npm test`: 3.126, 0 fallas, 1 skip de plataforma (PowerShell). CI de `aae0268d`: base de datos **verde**,
+  Windows **verde**, stack del PR **verde**; stack del push **rojo** en 2 checks de `health`.
+- 15:30 — más: verificación previa de 20261003090000 (`e17fe311`), herramienta de base local versionada (`3986674e`, validada de
+  punta a punta: 209 migraciones en ~30 s), y el pulso de CP cuenta un cobro sin pedido desde su aprobación (`288da41f`, PULSE-01).
+  Un cambio de texto del Panel para la alerta se revirtió: obliga a subir la identidad del service worker (línea de frontend).
+- Auditoría de autorización (sólo lectura, base local): ninguna tabla pública admite INSERT/UPDATE/DELETE directo de clientes
+  salvo columnas de `businesses` (AUTHZ-02, ya registrado) y `products.sort_order`; las políticas están acotadas al comercio; las
+  16 funciones SECURITY DEFINER que una heurística marcó sin control delegan la autorización o son públicas por diseño.
+- AUTHZ-04 y Caja Clara, precisado: el E2E de Caja Clara en CP (42/42) conecta la caja con la credencial del **dueño** y la limpieza
+  QA cancela como dueño: ninguna certificación de CP cancela como empleado. Una caja real operada con cuenta de **staff** sí pierde
+  cancelar y rechazar al aplicar 20261002050000.
+
+## Sesión 1 — 2026-10-03 08:22–13:2x (-03:00), PC de trabajo (histórico)
+
+### Checkpoint inicial — 2026-10-03 08:40 (-03:00)
 
 | Dato | Valor verificado |
 |---|---|
@@ -33,7 +78,7 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
 | Recursos | 16 GB RAM (6,5 GB libres), CPU de 2 núcleos / 4 hilos, 172 GB libres en C: |
 | Worktrees | 31 de este repo + 3 en `Documents/Codex`. Con cambios ajenos sin commit (NO se tocan): `la-taba-caja-final` (línea Caja Clara, migración `20261001030000` sin commit), `la-taba-frontend-polish` (85), `la-taba-pages-preview` (checkout principal, 146), `la-taba-premium-motion` (8), `la-taba-commercial-preview` (1), `la-taba-controlled-production` (1) |
 
-### Los cinco frentes — clasificación inicial (con evidencia)
+#### Los cinco frentes — clasificación inicial (con evidencia)
 
 | Frente | Estado | Evidencia |
 |---|---|---|
@@ -43,7 +88,7 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
 | Recuperación de entregas y alertas | `INCOMPLETE` | Paquete wp11 (2 migraciones `20261002010000-011000` + 3 pgTAP) borrador sin revisar |
 | Certificación del stack | `INCOMPLETE` | El arranque del stack efímero es real y verde (run 37067129076). El certificador `--target stack` y los cambios al workflow están sin commit y nunca corrieron en CI |
 
-### Estado actual de los cinco frentes (09:40)
+#### Estado actual de los cinco frentes (09:40)
 
 | Frente | Estado | Evidencia |
 |---|---|---|
@@ -58,7 +103,7 @@ aserciones, total consistente (base limpia y base «sucia»); carreras admisión
 0 fallidas, 0 diferencias contra una línea base de 158 armada en el momento; mínimo privilegio sobre el esquema viejo PASS;
 `npm run check` PASS; 885 tests de Node relevantes PASS. CI completo despachado: run 37123390677.
 
-### Riesgos iniciales
+#### Riesgos iniciales
 
 1. Nada de los 5 frentes está integrado: un agente nuevo que lea «cinco validaciones exitosas» puede creer que hay más hecho de lo que hay.
 2. Staging no tiene ninguna de las 32 migraciones de la rama: el comportamiento endurecido nunca corrió sobre Staging.
@@ -66,7 +111,7 @@ aserciones, total consistente (base limpia y base «sucia»); carreras admisión
 4. La PC se apaga ~13:27: todo lo que valga tiene que estar commiteado y pusheado antes.
 5. Memoria y CPU acotadas: como máximo 2–3 procesos pesados a la vez, sin gates de fondo de larga vida.
 
-## Bitácora
+### Bitácora (sesión 1)
 
 - 08:40 — checkpoint inicial; preflight de sólo lectura en Staging y CP (21/21, integridad 0). Push `591e06d0` (incluye `47d9ffe9`).
 - 08:38–08:50 — verificación local (PG17 + shims, NO es un stack de Supabase) de los cuatro paquetes SQL juntos sobre el repo
@@ -166,7 +211,7 @@ aserciones, total consistente (base limpia y base «sucia»); carreras admisión
   contesta 409 y el «no existe» 404, con el mismo cuerpo, por un PostgREST real. Las 208 migraciones aplicaron en el Supabase
   efímero sin que la guarda `ROLLOUT_BLOCKED` frenara nada. Evidencia: `artifacts/taba-autonomous-20261003/stack-certification-run-37129059684/`.
 
-## Segunda pasada (11:20–11:30, obligatoria)
+### Segunda pasada de la sesión 1 (11:20–11:30, obligatoria)
 
 Cada frente se volvió a mirar contra evidencia nueva, no contra lo que dijo la primera pasada:
 
@@ -185,7 +230,7 @@ Lo que encontró la segunda pasada: nada nuevo del producto. Dos errores míos, 
 `--import ./tests/test-bootstrap.mjs` (2 fallas falsas en `address-flow`; con el bootstrap, 985/985), y anoté un número de corrida
 de CI equivocado en esta bitácora (corregido antes del commit). Y se cerró un pendiente de herramientas del registro: **TOOL-05** (`npm test` reescribía `ci.yml` y `config.toml` en el lugar; ahora la prueba usa copias, `94479254`). Registro: P2 36 corregidos / 22 abiertos.
 
-### Estado final de los cinco frentes
+#### Estado final de los cinco frentes (sesión 1)
 
 | Frente | Estado | Evidencia |
 |---|---|---|

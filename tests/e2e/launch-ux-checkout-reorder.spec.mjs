@@ -452,14 +452,16 @@ test('REDUCED MOTION · sin movimiento la compra funciona igual y el sello no qu
   expect(cantidad).toBe(2);
 
   // El sello no se pinta: sin animación que lo apague, quedaría tapando el
-  // control para siempre. La confirmación la da el aviso, que es texto.
+  // control para siempre. La confirmación la da la cantidad visible, que es texto.
   const sello = await page.evaluate((id) => {
     const inc = [...document.querySelectorAll(`[data-cart-inc="${id}"]`)]
       .find((node) => node.getBoundingClientRect().width > 0);
     return getComputedStyle(inc.closest('.qty-stepper'), '::after').content;
   }, productId);
   expect(sello).toBe('none');
-  await expect(page.locator('[data-toast]')).toContainText('agregado al pedido');
+  await expect(page.locator(`[data-product-grid] [data-card-product="${productId}"] .qty-stepper strong`)).toHaveText('2');
+  await expect(page.locator('[data-toast]')).toBeEmpty();
+  await expect(page.locator('[data-product-modal]')).toBeHidden();
 
   // Y ninguna animación queda corriendo para siempre.
   const animacionesInfinitas = await page.evaluate(() => document.getAnimations()

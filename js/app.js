@@ -13,17 +13,20 @@ import {
 import {
   applyBusinessConfig,
   closeCheckoutSuggestions,
+  DETAIL_SHEET_OPENED_EVENT,
   closeComboModal,
   closeProductModal,
   clearAddedFlash,
   closeStoriesModal,
   copyDraftOrderToClipboard,
+  dismissCampaign,
   flashAddedProduct,
   getCheckoutFormValues,
   renderAdminVisibility,
   renderCart,
   renderCartTotals,
   renderCatalog,
+  renderCatalogSearch,
   renderCustomerHome,
   renderHomeActiveOrder,
   renderNavigation,
@@ -53,6 +56,7 @@ import { getState, subscribe } from './state.js';
 import { BRAND, STORAGE_KEYS } from './config.js';
 import { getBusinessConfig } from './core/business-config-store.js';
 import { onBrowserResume } from './core/browser-resume.js';
+import { subscribeCommerceAvailability } from './core/commerce-availability-store.js';
 import { relayStatusLabel } from './core/realtime-sync.js';
 // El back office —negocio, reparto, producción y sandbox— entra recién cuando
 // hace falta. Para un cliente eran 759 KB de descarga que nunca se renderizaban.
@@ -115,7 +119,7 @@ import {
 } from './core/app-mode.js';
 import { isProductionCatalogReady } from './core/runtime-config.js';
 import { getCommerceAvailability } from './core/commerce-availability-store.js';
-import { describeStoreEntry } from './core/store-entry.js';
+import { STORE_ENTRY_KIND, describeStoreEntry } from './core/store-entry.js';
 import {
   SHOWCASE_STEPS,
   configureShowcase,
@@ -141,6 +145,7 @@ import {
 import { isStandaloneDisplay } from './core/pwa-install.js';
 import { initPwaInstall } from './pwa-install-ui.js';
 import { initMotion } from './motion.js';
+import { initCampaignMotion } from './campaigns/campaign-motion.js';
 
 const VIEWS = ['home', 'catalog', 'cart', 'tracking', 'business', 'rider', 'profile'];
 const RELAY_ROOM_STORAGE_KEY = 'la_taba_rt_room';
@@ -204,7 +209,7 @@ function runCartAction(action, productId, callback) {
   const previous = recentCartActions.get(key) || 0;
   // Bloquea la duplicación accidental del mismo evento sin impedir que el
   // cliente vuelva a tocar el control para cambiar la cantidad a propósito.
-  if (now - previous < 120) return { ok: false, duplicate: true, message: '' };
+  if (!['add', 'inc', 'dec'].includes(action) && now - previous < 120) return { ok: false, duplicate: true, message: '' };
   recentCartActions.set(key, now);
   setTimeout(() => recentCartActions.delete(key), 350);
   const resultado = callback();
@@ -544,6 +549,10 @@ async function bootstrap() {
     // Exponer sólo diagnósticos locales para QA visual/performance; no forma
     // parte de contratos de negocio ni cambia el estado del catálogo.
     window.TABA2_MOTION = motionController;
+    // Las campañas animadas: un observador que decide cuándo corre cada
+    // escena. Sin campañas encendidas no observa nada. Diagnóstico local, igual
+    // que `TABA2_MOTION`.
+    window.TABA2_CAMPAIGNS = initCampaignMotion();
     bindEvents();
     subscribe(renderAll);
     maybeOpenPitchFromUrl();
@@ -717,7 +726,15 @@ function asegurarBackOffice() {
   return sincronizarBackOffice({ sandbox });
 }
 
+// Verdadero sólo mientras se procesa una tecla del buscador DENTRO del
+// catálogo. Ver `renderCatalogSearch` en ui.js.
+let searchKeystrokeRender = false;
+
 function renderAll() {
+  if (searchKeystrokeRender) {
+    renderCatalogSearch();
+    return;
+  }
   asegurarBackOffice();
   applyBusinessConfig();
   applyAppMode();
@@ -854,6 +871,12 @@ function applyProductionCatalogGate(mode = getAppMode()) {
     node.setAttribute('aria-hidden', String(!blocked));
     if (entry) paintStoreEntry(node, entry, mode);
   });
+  // Cada vez que la tarjeta queda diciendo «cargando» tiene que haber alguien
+  // mirando cómo termina. El vigía se armaba una sola vez, en el arranque: un
+  // reintento en segundo plano después de un error volvía a «cargando», un
+  // render cualquiera pintaba eso —sin «Reintentar»— y si el reintento también
+  // fallaba ya no quedaba nadie para repintar el error.
+  if (entry?.kind === STORE_ENTRY_KIND.LOADING) watchStoreEntrySettles();
 
   const submit = document.querySelector('[data-checkout-submit]');
   if (submit && !hayConfirmacionDeCheckoutEnCurso()) submit.disabled = blocked;
@@ -866,8 +889,15 @@ function applyProductionCatalogGate(mode = getAppMode()) {
  * Mientras el catálogo siga cargando se vuelve a mirar su estado una vez por
  * segundo y, apenas se resuelve (listo, vacío, bloqueado o error), se repinta.
  * Sólo lee un estado en memoria y se apaga solo.
+ *
+ * Y UN CATÁLOGO QUE NO CONTESTA tampoco cambia nada: ni llega ni falla. Pasados
+ * `STORE_ENTRY_SLOW_AFTER_S` segundos la tarjeta dice que está tardando y ofrece
+ * reintentar (`slow` en `core/store-entry.js`). Si el catálogo llega igual, la
+ * tienda abre sola y el aviso desaparece con la tarjeta.
  */
+const STORE_ENTRY_SLOW_AFTER_S = 12;
 let storeEntryWatch = null;
+let storeEntrySlow = false;
 function watchStoreEntrySettles() {
   if (storeEntryWatch || getAppMode() !== APP_MODE_PRODUCTION) return;
   let checks = 0;
@@ -879,9 +909,18 @@ function watchStoreEntrySettles() {
     } catch (_) {
       state = 'idle';
     }
-    if ((state !== 'idle' && state !== 'loading') || checks >= 120) {
+    const loading = state === 'idle' || state === 'loading';
+    if (!loading || checks >= 120) {
       clearInterval(storeEntryWatch);
       storeEntryWatch = null;
+      // Resuelto, deja de estar lento. Si a los dos minutos sigue cargando, el
+      // aviso se queda: es exactamente el caso para el que existe.
+      storeEntrySlow = loading;
+      applyRenderedModeState();
+      return;
+    }
+    if (checks === STORE_ENTRY_SLOW_AFTER_S && !storeEntrySlow) {
+      storeEntrySlow = true;
       applyRenderedModeState();
     }
   }, 1000);
@@ -899,6 +938,7 @@ function describeCurrentStoreEntry(mode) {
     catalogState,
     orderingVerified: Boolean(getBusinessConfig().orderingDetailsVerified),
     availability: getCommerceAvailability(),
+    slow: storeEntrySlow,
   });
 }
 
@@ -1017,6 +1057,84 @@ function applyProductionTrackingCopy() {
     const label = row.querySelector('span');
     const value = row.querySelector('strong');
     if (label?.textContent.trim() === 'Pago' && value) value.textContent = 'A coordinar';
+  });
+}
+
+/*
+ * LO QUE EL BACKEND DIJO SOBRE EL HORARIO Y LA COBERTURA ENVEJECE.
+ *
+ * Una pestaña que quedó abierta a la tarde seguía diciendo «Estamos tomando
+ * pedidos» —y el carrito sin el aviso de cerrado— a la hora en que el local ya
+ * había cerrado; al revés, quien entró antes de la apertura seguía viendo
+ * «Cerrado» con el local abierto. El repositorio vuelve a preguntar en cada
+ * vuelta a la pestaña, con la dirección de la última consulta; acá se dibuja
+ * lo que contestó.
+ *
+ * No se calcula nada acá: el horario lo evalúa el servidor. Si la consulta
+ * falla, el repositorio deja el estado en «no sé» y la tienda deja de afirmar.
+ */
+let availabilityContext = { channel: 'delivery' };
+
+function askCommerceAvailability() {
+  let repository = null;
+  try {
+    repository = getOrderRepository();
+  } catch (_) {
+    repository = null;
+  }
+  if (typeof repository?.refreshCommerceAvailability !== 'function') return;
+  // El repintado no cuelga de esta promesa: lo dispara el almacén cuando la
+  // respuesta cambia (ver `watchCommerceAvailability`), venga de acá o de la
+  // reconciliación del repositorio.
+  repository.refreshCommerceAvailability(availabilityContext)
+    .catch(() => { /* el estado ya volvió a «no sé»: no hay nada que deshacer */ });
+}
+
+/*
+ * El rótulo de la home, el chip de dirección y el aviso del carrito leen la
+ * misma respuesta: cuando cambia se repintan los tres, una vez por turno. El
+ * repositorio ya vuelve a preguntar en cada vuelta a la pestaña; lo que faltaba
+ * era que alguien dibujara lo que contestó.
+ */
+const REOPEN_ASK_GRACE_MS = 3000;
+const REOPEN_ASK_MAX_MS = 12 * 60 * 60 * 1000;
+const AVAILABILITY_RETRY_MS = 8000;
+
+function watchCommerceAvailability() {
+  let queued = false;
+  let reopenTimer = 0;
+  let retryTimer = 0;
+  let wasKnown = false;
+  subscribeCommerceAvailability((availability) => {
+    // Una consulta que falla deja el estado en «no sé», y la tienda deja de
+    // afirmar que está cerrada. Se reintenta UNA vez: si la falla fue pasajera
+    // la respuesta vuelve sola; si no, sigue decidiendo el alta del pedido.
+    clearTimeout(retryTimer);
+    if (wasKnown && !availability.known) retryTimer = setTimeout(askCommerceAvailability, AVAILABILITY_RETRY_MS);
+    wasKnown = availability.known;
+    // «Cerrado · Abrimos a las 19:00» tiene una hora en la que deja de ser
+    // cierto, y a esa hora nada cambia en la base: no hay evento que avise. Se
+    // vuelve a preguntar entonces. El horario lo sigue evaluando el servidor;
+    // acá sólo se elige el momento de la pregunta.
+    clearTimeout(reopenTimer);
+    const opensIn = availability.known && availability.hoursEnforced && !availability.isOpen
+      ? new Date(availability.nextOpenAt || '').getTime() - Date.now()
+      : Number.NaN;
+    if (opensIn > 0 && opensIn < REOPEN_ASK_MAX_MS) {
+      reopenTimer = setTimeout(askCommerceAvailability, opensIn + REOPEN_ASK_GRACE_MS);
+    }
+    if (queued) return;
+    queued = true;
+    queueMicrotask(() => {
+      queued = false;
+      // La tarjeta de entrada también lee esta respuesta («Ahora estamos
+      // cerrados. Abrimos…»), y mientras está a la vista la home y el carrito
+      // están ocultos: sin esto se repintaba sólo lo que no se veía.
+      applyProductionCatalogGate();
+      applyBusinessConfig();
+      renderCustomerHome();
+      renderCart();
+    });
   });
 }
 
@@ -1283,8 +1401,139 @@ function bloqueoDePerfilEnCheckout(form) {
   };
 }
 
+/*
+ * «ATRÁS» CIERRA LA FICHA.
+ *
+ * Abrir la ficha de un producto no escribía historial, así que con la ficha
+ * abierta «atrás» —el gesto del borde en iPhone, el botón del navegador— le
+ * pegaba a la vista de ABAJO: la ficha quedaba en pantalla sobre la home, el
+ * catálogo volvía arriba de todo, y si el catálogo era la primera entrada el
+ * gesto directamente salía de la tienda. Es el gesto con el que se cierra una
+ * hoja en un teléfono, y perdía la posición que la ficha promete conservar.
+ *
+ * La ficha —de producto o de combo— ocupa UNA entrada de historial con la
+ * misma URL. Las tres salidas quedan consistentes:
+ *
+ *   · «atrás» con la ficha abierta   → se cierra la ficha; la vista no cambia
+ *                                      (misma URL: no hay reset de scroll)
+ *   · cerrarla con ✕, Escape o fondo → la entrada se consume sola
+ *   · combo → componente             → una ficha reemplaza a la otra y la
+ *                                      entrada se reutiliza
+ *
+ * Y una entrada de ficha sin ficha —quedó huérfana porque se navegó en el
+ * mismo instante del cierre, o es una recarga— se saltea, así nunca hay un
+ * «atrás» que no haga nada.
+ */
+const DETAIL_SHEET_STATE = 'detail';
+
+function detailSheets() {
+  return [$('[data-product-modal]'), $('[data-combo-modal]')].filter(Boolean);
+}
+
+function detailSheetOpen() {
+  return detailSheets().some((sheet) => sheet.open);
+}
+
+function onDetailSheetHistoryEntry() {
+  return window.history.state?.sheet === DETAIL_SHEET_STATE;
+}
+
+function bindDetailSheetHistory() {
+  let closingFromHistory = false;
+  // El `history.back()` que consume la entrada tarda un turno en llegar, y
+  // hasta entonces `history.state` sigue diciendo «ficha». Una ficha abierta en
+  // ese hueco —segundo toque rápido— no puede confundirse con la que se cerró.
+  let consumingEntry = false;
+  let consumeTimer = 0;
+  // La vista desde la que se pidió esa vuelta. Si al llegar es otra, la persona
+  // ya navegó y la URL de la entrada vieja no manda.
+  let consumeView = '';
+
+  // La marca vale para ESA vuelta y no puede quedar puesta si su `popstate` no
+  // llegara. Pero tampoco se suelta a ciegas: mientras el historial siga
+  // parado en la entrada de la ficha, la vuelta todavía no llegó.
+  const waitForConsumption = (tries = 0) => {
+    clearTimeout(consumeTimer);
+    consumeTimer = setTimeout(() => {
+      if (consumingEntry && onDetailSheetHistoryEntry() && tries < 10) {
+        waitForConsumption(tries + 1);
+        return;
+      }
+      consumingEntry = false;
+    }, 400);
+  };
+
+  const pushSheetEntry = () => {
+    try {
+      window.history.pushState({ view: activeView, sheet: DETAIL_SHEET_STATE }, '', window.location.href);
+    } catch (_) {
+      // Sin historial disponible la ficha funciona igual que antes.
+    }
+  };
+
+  for (const sheet of detailSheets()) {
+    sheet.addEventListener(DETAIL_SHEET_OPENED_EVENT, () => {
+      // Con la entrada vieja todavía en retirada, la nueva se anota cuando esa
+      // vuelta termina (ver `popstate`).
+      if (consumingEntry || onDetailSheetHistoryEntry()) return;
+      pushSheetEntry();
+    });
+    sheet.addEventListener('close', () => {
+      if (closingFromHistory) {
+        closingFromHistory = false;
+        return;
+      }
+      // Combo → componente: se cerró una y ya hay otra abierta sobre la misma entrada.
+      if (detailSheetOpen()) return;
+      // La entrada ya se está yendo: pedir otro «atrás» sacaría de la vista.
+      if (consumingEntry) return;
+      if (onDetailSheetHistoryEntry()) {
+        consumingEntry = true;
+        consumeView = activeView;
+        window.history.back();
+        waitForConsumption();
+      }
+    });
+  }
+
+  window.addEventListener('popstate', () => {
+    if (consumingEntry) {
+      // Es la vuelta que pidió el cierre a mano, no un «atrás» de la persona.
+      consumingEntry = false;
+      clearTimeout(consumeTimer);
+      if (activeView !== consumeView) {
+        // Se tocó otra vista mientras la entrada se retiraba: la vuelta aterriza
+        // en una URL de la vista anterior y no puede deshacer esa navegación.
+        writeViewHash(activeView, true);
+        return;
+      }
+      if (detailSheetOpen() && !onDetailSheetHistoryEntry()) pushSheetEntry();
+      syncViewFromLocation();
+      return;
+    }
+    if (detailSheetOpen()) {
+      if (!onDetailSheetHistoryEntry()) {
+        closingFromHistory = true;
+        closeProductModal();
+        closeComboModal();
+        // La marca vale para ESTE cierre. Si su `close` no llegara, no puede
+        // quedar puesta y tragarse el próximo cierre a mano.
+        setTimeout(() => { closingFromHistory = false; }, 400);
+      }
+    } else if (onDetailSheetHistoryEntry()) {
+      window.history.back();
+      return;
+    }
+    syncViewFromLocation();
+  });
+
+  // Recarga con la ficha abierta: el navegador conserva el estado de la
+  // entrada, pero la ficha ya no está.
+  if (onDetailSheetHistoryEntry() && !detailSheetOpen()) window.history.back();
+}
+
 function bindEvents() {
-  window.addEventListener('popstate', syncViewFromLocation);
+  bindDetailSheetHistory();
   window.addEventListener('hashchange', syncViewFromLocation);
   window.addEventListener('taba:navigate-profile', (event) => {
     const requestedReturn = String(event?.detail?.returnTo || 'cart');
@@ -1301,6 +1550,7 @@ function bindEvents() {
     const returnTo = normalizeView(requestedReturn) || 'cart';
     setActiveView(returnTo);
   });
+  watchCommerceAvailability();
   // El destino de la entrega lo resuelve el checkout de forma asíncrona. El chip
   // «Enviar a» del encabezado se entera acá, para no quedar diciendo «Elegí tu
   // dirección» sobre una dirección que el checkout ya eligió.
@@ -1311,17 +1561,13 @@ function bindEvents() {
     // repositorio deja el estado en «no sé» y la tienda no afirma nada; quien
     // decide de verdad es el alta del pedido.
     const address = event?.detail?.address || null;
-    const repository = getOrderRepository();
-    if (typeof repository?.refreshCommerceAvailability !== 'function') return;
-    repository.refreshCommerceAvailability({
+    availabilityContext = {
       channel: 'delivery',
       latitude: address?.latitude ?? null,
       longitude: address?.longitude ?? null,
       neighborhood: address?.neighborhood || '',
-    }).then(() => {
-      renderCustomerHome();
-      renderCart();
-    }).catch(() => { /* el estado ya volvió a «no sé»: no hay nada que deshacer */ });
+    };
+    askCommerceAvailability();
   });
   window.addEventListener('pagehide', () => {
     // Al ir a segundo plano Chrome puede descartar la pestaña del rider. Se
@@ -1559,9 +1805,31 @@ function bindEvents() {
       return;
     }
 
-    const detailId = target.closest('[data-product-detail]')?.dataset.productDetail;
+    // Ocultar un anuncio: vale por la visita. El foco no se pierde: pasa a lo
+    // que ocupe ese lugar —la puerta editorial, la tarjeta siguiente— y se avisa
+    // en voz alta, porque para un lector de pantalla la pieza desaparece sin
+    // dejar rastro.
+    const dismissButton = target.closest('[data-campaign-dismiss]');
+    if (dismissButton) {
+      const surface = dismissButton.closest('[data-home-hero-promo], [data-home-campaign], [data-product-grid]');
+      dismissCampaign(
+        dismissButton.dataset.campaignDismiss,
+        dismissButton.closest('[data-campaign]')?.dataset.campaignPlacement,
+      );
+      renderAll();
+      const next = surface?.hidden ? null : surface?.querySelector('button:not([disabled]), a[href]');
+      (next || document.querySelector(`[data-view="${activeView}"] h1, [data-view="${activeView}"] h2`))?.focus?.({ preventScroll: true });
+      showToast('Ocultamos el anuncio.');
+      return;
+    }
+
+    const card = target.closest('[data-card-product]');
+    const cardDetail = card && !target.closest('button, a, input, select, textarea, [role="button"], .product-action')
+      ? card.dataset.cardProduct : null;
+    const detailTrigger = target.closest('[data-product-detail], [data-product-name-detail]');
+    const detailId = detailTrigger?.dataset.productDetail || detailTrigger?.dataset.productNameDetail || cardDetail;
     if (detailId) {
-      showProductModal(detailId, target.closest('[data-product-detail]'));
+      showProductModal(detailId, detailTrigger || card.querySelector('.product-name-link') || card.querySelector('[data-product-detail]'));
       return;
     }
 
@@ -1638,7 +1906,7 @@ function bindEvents() {
       flashAddedProduct(selectedProductId);
       const result = runCartAction('add', selectedProductId, () => addToCart(selectedProductId, requestedQuantity));
       if (!result.ok) clearAddedFlash(selectedProductId);
-      if (!result.duplicate) showToast(result.message);
+      if (!result.duplicate && (!result.ok || modal)) showToast(result.message);
       if (result.ok) {
         // Dentro del gesto: fuera de la activación del usuario el navegador
         // descarta la vibración. Donde no hay háptica no pasa nada.
@@ -1690,7 +1958,8 @@ function bindEvents() {
       return;
     }
 
-    const incId = target.closest('[data-cart-inc]')?.dataset.cartInc;
+    const incId = target.closest('[data-cart-dec]')
+      ? null : target.closest('[data-cart-inc]')?.dataset.cartInc;
     if (incId) {
       const result = runCartAction('inc', incId, () => incrementCartItem(incId));
       if (result.ok) {
@@ -1698,7 +1967,7 @@ function bindEvents() {
         pulseCartFeedback();
         refreshOpenProductModal(incId);
       }
-      if (!result.duplicate) showToast(result.message);
+      if (!result.duplicate && (!result.ok || activeView === 'cart')) showToast(result.message);
       return;
     }
 
@@ -1893,7 +2162,15 @@ function bindEvents() {
 
     const input = event.target.closest?.('[data-search-input]');
     if (!input) return;
-    setSearchQuery(input.value || '');
+    // Escribiendo en el catálogo, la tecla sólo redibuja lo que depende de la
+    // consulta. Desde la home no: ahí la tecla además cambia de vista, y ese
+    // cambio corre el render completo.
+    searchKeystrokeRender = activeView === 'catalog';
+    try {
+      setSearchQuery(input.value || '');
+    } finally {
+      searchKeystrokeRender = false;
+    }
     // El buscador del Home lleva al Catálogo para mostrar resultados.
     if (input.hasAttribute('data-search-jump') && activeView !== 'catalog') {
       setActiveView('catalog', { scroll: false, focus: false });
@@ -1901,6 +2178,9 @@ function bindEvents() {
       setTimeout(() => {
         const catalogSearch = $('[data-view="catalog"] [data-search-input]');
         if (!catalogSearch) return;
+        // Lo tipeado viaja tal cual: un espacio al final todavía no cambió la
+        // consulta, y sin esto la palabra siguiente se pegaba a la anterior.
+        if (catalogSearch.value !== input.value) catalogSearch.value = input.value;
         catalogSearch.focus();
         catalogSearch.setSelectionRange(catalogSearch.value.length, catalogSearch.value.length);
       }, 0);
@@ -2050,6 +2330,17 @@ function bindEvents() {
     // validar. El markup del diálogo y sus cierres quedan inertes por si una
     // superficie futura lo reutiliza DESPUÉS de una validación exitosa.
     if (confirming) return; // evita doble confirmación / doble pedido
+    // Sin red no hay nada que intentar, y conviene decirlo con esas palabras:
+    // el pedido fallaba igual, pero con «no pudimos confirmar el pedido» o,
+    // pagando con Mercado Pago, con «todavía no está habilitado para este
+    // comercio». Sólo se confía en el `false`: `true` no garantiza conexión.
+    // La demo y el sandbox arman el pedido en el dispositivo: no necesitan red.
+    const orderNeedsNetwork = getAppMode() === APP_MODE_PRODUCTION
+      && !isSandboxOrderRepository(getOrderRepository());
+    if (orderNeedsNetwork && navigator.onLine === false) {
+      showToast(showCheckoutInlineError(form, 'Sin conexión. Revisá internet e intentá nuevamente.'));
+      return;
+    }
     confirming = true;
     const button = event.currentTarget.querySelector('[type="submit"]');
     const originalLabel = button?.textContent;

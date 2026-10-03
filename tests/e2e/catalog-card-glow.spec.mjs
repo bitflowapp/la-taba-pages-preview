@@ -22,11 +22,32 @@ function alfasRojos(page, selector) {
   ));
 }
 
+/*
+ * EL BRILLO SE APLICA CUANDO EL SCROLL SE ASIENTA, Y ENTRA CON UN FUNDIDO.
+ *
+ * Antes el módulo escribía `--card-glow` en cada cuadro de scroll y alcanzaba
+ * con esperar dos cuadros. Eso costaba fluidez —23 ms de recálculo de estilo por
+ * escritura, el catálogo a ~15 cuadros por segundo en su primera pantalla—, así
+ * que ahora escribe una sola vez, con la página quieta, y la sombra hace una
+ * transición. Leer el alfa en el instante del scroll mide un estado intermedio.
+ *
+ * No se cronometra: el módulo declara si todavía tiene un scroll sin aplicar
+ * (`glowSettling`) y el navegador declara si la transición de la sombra sigue
+ * corriendo. Se esperan las dos condiciones. El contrato no se afloja: después
+ * de eso el alfa sigue teniendo que ser exactamente el esperado.
+ */
+async function asentarBrillo(page) {
+  await page.waitForFunction(() => window.TABA2_MOTION?.getDiagnostics?.().glowSettling !== true);
+  await page.waitForFunction(() => document.getAnimations().every((animacion) => (
+    animacion.transitionProperty !== 'box-shadow' || animacion.playState === 'finished'
+  )));
+}
+
 async function scrollear(page, y) {
   await page.evaluate((destino) => window.scrollTo(0, destino), y);
-  // Dos cuadros: el módulo escribe el valor dentro de un `requestAnimationFrame`.
+  // Dos cuadros: el evento de scroll se atiende dentro de un `requestAnimationFrame`.
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
-  await page.waitForTimeout(120);
+  await asentarBrillo(page);
 }
 
 async function irAlCatalogo(page) {
@@ -57,6 +78,7 @@ async function medirEstanteQuieto(page, selector, etiqueta) {
   // resolverse. Es una condición observable que resuelve sola: se la espera, no
   // se la cronometra.
   await page.evaluate(() => document.fonts?.ready ?? null);
+  await asentarBrillo(page);
 
   /*
    * Cada lectura se toma después de dos cuadros de animación, y el muestreo es

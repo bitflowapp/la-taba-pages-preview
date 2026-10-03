@@ -166,6 +166,25 @@ export function cardTitle(product = {}) {
  */
 const ATRIBUTOS_QUE_NO_SON_NOMBRE = Object.freeze(['sin gas', 'con gas', 'sabor original', 'original']);
 
+/**
+ * ¿El renglón de marca AGREGA algo al título?
+ *
+ * La regla anterior lo callaba sólo cuando el nombre EMPEZABA con la marca, así
+ * que «Fernet Branca» llevaba encima un rótulo «BRANCA» y «Hielo Cristal» uno
+ * «CRISTAL»: la marca dicha dos veces en dos renglones seguidos, y sólo en esas
+ * dos tarjetas de 46 —que además quedaban 22 px más altas que sus vecinas—.
+ *
+ * Ahora se calla cuando la marca aparece como palabras enteras en cualquier
+ * parte del título. Cuando NO está —«Villa del Sur» para «Levité Pomelo»— sigue
+ * apareciendo, porque ahí informa.
+ */
+export function brandAddsToTitle(product = {}) {
+  const marca = normalizar(product?.brand);
+  if (!marca) return false;
+  const titulo = ` ${normalizar(cardTitle(product) || product?.name).replace(/[^a-z0-9]+/g, ' ')} `;
+  return !titulo.includes(` ${marca.replace(/[^a-z0-9]+/g, ' ').trim()} `);
+}
+
 /** ¿El título ya dice que es la versión sin azúcar? */
 function tituloDiceSinAzucar(product) {
   const titulo = normalizar(cardTitle(product));
@@ -299,11 +318,16 @@ export function cardPresentationLine(product = {}) {
 
   const envase = String(product.packageType || product.packagingType || product.packaging_type || '').trim().toLowerCase();
   const envaseAporta = ENVASES_QUE_SE_DICEN.has(envase);
+  // Un envase RETORNABLE cambia la compra: hay que entregar un envase vacío. El
+  // catálogo lo declara («Botella retornable») y la tarjeta lo callaba, igual
+  // que a cualquier botella. Se dice el atributo, no el envase.
+  const esRetornable = /\bretornable\b/.test(normalizar(envase)) && !nombre.includes('retornable');
 
   const partes = [];
   if (esPack) partes.push(`Pack x${porPack}`);
   if (capacidad) partes.push(capacidad);
   if (envaseAporta) partes.push(packagingLabel(envase));
+  if (esRetornable) partes.push('Retornable');
   if (varianteAporta && !esPack) partes.push(variante);
   if (partes.length) return partes.join(' · ');
   if (varianteAporta) return variante;

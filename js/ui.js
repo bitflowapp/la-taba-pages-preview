@@ -1,10 +1,16 @@
 import { renderStableCatalog } from './core/stable-catalog-dom.js';
 import { getBusinessConfig } from './core/business-config-store.js';
+import { getCommerceAvailability, hasResolvedDelivery } from './core/commerce-availability-store.js';
+import { nextOpeningLabel } from './core/store-entry.js';
 import { BRAND } from './config.js';
 import { businessMapsSearchUrl, mapsSearchUrl } from './core/business-location.js';
 import { categories } from './data.js';
-import { getCustomerCatalogProducts, isProductVisibleToCustomer } from './core/catalog-store.js';
-import { resolveCatalogImageUrl } from './core/catalog-image-contract.js';
+import { getCustomerCatalogProducts, isProductOrderable, isProductVisibleToCustomer } from './core/catalog-store.js';
+import { CAMPAIGNS } from './campaigns/campaign-config.js';
+import { ALCOHOL_LEGAL_NOTICE, CAMPAIGN_GRID_POSITION, CAMPAIGN_PLACEMENTS, campaignMarkup, selectCampaigns } from './campaigns/campaign-engine.js';
+import { refreshCampaignMotion } from './campaigns/campaign-motion.js';
+import { productPhotoIsOfficial as officialPhoto, productImageRightsCleared, resolveProductPhotoUrl } from './core/product-photo.js';
+export { productImageRightsCleared };
 import { imageAttributionFor } from './core/image-attribution.js';
 import { resolveRuntimeConfig } from './core/runtime-config.js';
 import { COMBO_MANIFEST } from './combos-data.js';
@@ -17,6 +23,7 @@ import {
 } from './core/customer-profile.js';
 import { getFavoriteProductIds, isFavoriteProduct } from './core/customer-preferences.js';
 import {
+  brandAddsToTitle,
   cardPresentationLine,
   cardTitle,
   formatCapacity,
@@ -86,7 +93,7 @@ import {
   isPurchasableBeverageProduct,
   isVisibleBeverageProduct,
 } from './core/beverage-home-sections.js';
-import { CATEGORY_GLYPH_KEYS, STORE_CATEGORY_ORDER } from './core/store-taxonomy.js';
+import { CATEGORY_GLYPH_KEYS, STORE_CATEGORY_ORDER, isAlcoholicCategory } from './core/store-taxonomy.js';
 import { hasPurchasableDestination, storyCtaDestination } from './core/purchasable-destination.js';
 import { resolveRetailProductId } from './core/retail-packaging.js';
 import { sandboxTrackingPresentation } from './core/sandbox-tracking-presentation.js';
@@ -99,7 +106,7 @@ import {
   storyEntryState,
 } from './core/stories.js';
 import { PREVIEW_STORY_SEED } from './preview-stories-data.js';
-import { normalizeSearchText, productMatchesQuery } from './core/catalog-search.js';
+import { normalizeSearchText, searchProducts } from './core/catalog-search.js';
 import { merchandisingBadge } from './core/merchandising-tags.js';
 
 export const $ = (selector, root = document) => root.querySelector(selector);
@@ -118,9 +125,9 @@ const PRODUCT_PLACEHOLDER_IMAGE = 'assets/products/beverage-placeholder.svg';
 
 export function handleProductImageError(event) {
   const image = event?.target;
-  if (!image?.classList?.contains('thumb-img')) return false;
+  if (!image?.classList?.contains('thumb-img') && !image?.classList?.contains('cmp-packshot')) return false;
 
-  const shell = image.closest?.('.thumb');
+  const shell = image.closest?.('.thumb, .cmp-vessel');
   if (image.dataset?.fallbackApplied === 'true') {
     image.hidden = true;
     shell?.classList?.add('image-unavailable');
@@ -278,13 +285,26 @@ export function applyBusinessConfig() {
     // (`business_service_hours` vacía, `hours_enforced=false`), así que la
     // aplicación no sabe si el local está abierto — sólo sabe que acepta
     // pedidos.
-    status.textContent = demo
+    //
+    // SALVO QUE EL BACKEND LO HAYA DICHO. Con el horario exigido,
+    // `commerce_availability` contesta `is_open` y la próxima apertura, y el
+    // checkout ya frenaba con «El comercio está cerrado en este momento». La
+    // home seguía leyendo sólo la bandera: medido con el servidor diciendo
+    // cerrado, este rótulo decía «Estamos tomando pedidos», la persona armaba
+    // el carrito y se enteraba al confirmar. Es la misma respuesta y se lee del
+    // mismo lugar; sin respuesta (`known` en falso) no se afirma nada nuevo.
+    const closedNow = !demo && detailsVerified && storeClosedByServer();
+    const reopening = closedNow ? nextOpeningLabel(getCommerceAvailability()) : '';
+    const statusText = demo
       ? 'Pedidos disponibles'
-      : detailsVerified
-        ? 'Estamos tomando pedidos'
-        : 'Ahora no estamos tomando pedidos';
-    status.classList.toggle('is-closed', !demo && !detailsVerified);
-    status.classList.toggle('is-soon', !demo && !detailsVerified);
+      : !detailsVerified
+        ? 'Ahora no estamos tomando pedidos'
+        : closedNow
+          ? (reopening ? `Cerrado · ${reopening}` : 'Ahora estamos cerrados')
+          : 'Estamos tomando pedidos';
+    if (status.textContent !== statusText) status.textContent = statusText;
+    status.classList.toggle('is-closed', !demo && (!detailsVerified || closedNow));
+    status.classList.toggle('is-soon', !demo && (!detailsVerified || closedNow));
   }
   const statusItems = $$('.app-home .status-item');
   const seps = $$('.app-home .status-sep');
@@ -303,6 +323,22 @@ export function applyBusinessConfig() {
     item.hidden = !label;
     if (seps[index]) seps[index].hidden = !label;
   });
+}
+
+/**
+ * El backend contestó, y contestó que ahora está cerrado POR HORARIO.
+ *
+ * Las tres cosas, no sólo `isOpen`. En el backend `is_open` únicamente puede
+ * ser falso con el horario exigido (`business_is_open` devuelve verdadero
+ * mientras `hours_enforced` esté apagado), así que un «cerrado» sin horario
+ * exigido no es una respuesta del comercio: es una respuesta vacía o mal
+ * formada, y sobre eso la home no afirma nada.
+ */
+function storeClosedByServer() {
+  const availability = getCommerceAvailability();
+  return availability.known === true
+    && availability.hoursEnforced === true
+    && availability.isOpen === false;
 }
 
 // Un dato del comercio existe para el cliente sólo si está PUBLICADO. Las
@@ -488,6 +524,33 @@ export function renderCatalog() {
   }
 }
 
+/*
+ * UNA TECLA EN EL BUSCADOR NO VUELVE A DIBUJAR LA TIENDA.
+ *
+ * Cada tecla es un cambio de estado y cada cambio de estado corría el render
+ * completo: la home que no se está mirando, el carrito, el seguimiento, la
+ * navegación. Perfilado a 390 × 844 con la CPU a un cuarto y las 46 fichas:
+ * 141 ms de script por tecla, y 65 de esos eran la vidriera de la HOME, que
+ * está oculta mientras se busca en el catálogo.
+ *
+ * Lo único que depende de la consulta son estas seis superficies. Las demás
+ * no la leen, y la home se dibuja entera al volver a ella (`setActiveView`
+ * corre el render completo), así que no puede quedar vieja. Los combos y el
+ * resto del catálogo no cambian con lo que se escribe.
+ *
+ * `app.js` usa esto SÓLO para la tecla escrita dentro del catálogo; limpiar la
+ * búsqueda, cambiar de rubro o llegar desde la home siguen por el render de
+ * siempre.
+ */
+export function renderCatalogSearch() {
+  renderCategories();
+  renderCatalogFilters();
+  renderCatalogOffers();
+  renderCatalogMeta();
+  renderSearchControls();
+  renderProducts();
+}
+
 export function discountPercent(product) {
   const pricing = productPricePresentation(product);
   if (!pricing.regularPrice || pricing.regularPrice <= pricing.price) return 0;
@@ -612,10 +675,10 @@ function descriptionText(product) {
  */
 function brandLine(product, className = 'product-brand') {
   const brand = String(product?.brand || '').trim();
-  if (!brand) return '';
-  const normalizedBrand = normalizeSearchText(brand);
-  const normalizedName = normalizeSearchText(product?.name || '');
-  if (!normalizedBrand || normalizedName.startsWith(normalizedBrand)) return '';
+  // La regla —«la marca aparece entera en el título»— vive con sus pruebas en
+  // core/product-presentation.js. Antes sólo miraba el PRINCIPIO del nombre, y
+  // «Fernet Branca» llevaba encima un rótulo «BRANCA».
+  if (!brand || !brandAddsToTitle(product)) return '';
   return `<span class="${className}">${escapeHtml(brand)}</span>`;
 }
 
@@ -623,12 +686,27 @@ function brandLine(product, className = 'product-brand') {
 // variante sólo si agrega— vive en core/product-presentation.js con sus tests.
 // Acá vivía `presentationText`, que decía el pack pero nunca la capacidad.
 
+/*
+ * QUÉ ARCHIVO BAJA UNA TARJETA EN EL TELÉFONO.
+ *
+ * El `srcset` ofrece la miniatura de 400 px y el master de 1000. Con
+ * `sizes="45vw"`, un teléfono de densidad 3 —casi todos los actuales— calcula
+ * 175 px × 3 = 526 px, descarta la miniatura por 126 px y baja el MASTER de
+ * cada tarjeta. Medido con las 46 fichas a 390×844 @3x: 42 masters y ninguna
+ * miniatura, 1,86 MB de fotos para pintar cajas de 154 px.
+ *
+ * Con 130 px la cuenta da 390 y gana la miniatura hasta densidad 3; a esa
+ * densidad son 2,3 píxeles de imagen por píxel CSS, de sobra para un packshot
+ * de góndola. La ficha del producto no cambia: ahí sí se pide el master.
+ */
+const CARD_IMAGE_SIZES = '(max-width: 700px) 130px, 260px';
+
 function productImage(product) {
-  return resolveCatalogImageUrl(product?.image || '', resolveRuntimeConfig().repository?.supabaseUrl || '');
+  return resolveProductPhotoUrl(product?.image || '', resolveRuntimeConfig().repository?.supabaseUrl || '');
 }
 
 function productImageThumbnail(product) {
-  return resolveCatalogImageUrl(
+  return resolveProductPhotoUrl(
     product?.imageThumbnail || product?.thumbnail || '',
     resolveRuntimeConfig().repository?.supabaseUrl || '',
   );
@@ -643,42 +721,8 @@ function productImageThumbnail(product) {
 // `RETAILER_SOLO_REFERENCIA`— significa que la imagen se consiguió, no que se
 // tenga derecho a mostrarla. La ausencia de estado también: un producto que no
 // declara derechos no los tiene.
-const PUBLISHABLE_IMAGE_RIGHTS = new Set(['PROPIO', 'LICENCIA_COMERCIAL', 'PERMISO_DOCUMENTADO']);
-
-export function productImageRightsCleared(product) {
-  return PUBLISHABLE_IMAGE_RIGHTS.has(String(product?.rightsStatus || '').toUpperCase());
-}
-
-/**
- * ¿Podemos publicar la fotografía de este producto?
- *
- * Una fotografía se considera oficial sólo si llega con la cadena de hashes y
- * thumbnail del catálogo productivo Y con derechos para publicarla. Todo lo
- * demás usa el mismo placeholder, que es propio de TABA.
- *
- * Es UNA decisión y tiene que valer igual en TODAS las superficies que dibujan
- * un producto. Vivía adentro de `productThumb` —la tarjeta y la ficha— y la
- * vidriera tenía la suya, sin derechos y sin hashes: `imageThumbnail || image`.
- * Con eso la home publicaba fotos que el catálogo, dos toques después, se
- * negaba a mostrar. Un modelo de derechos que una superficie ignora no es un
- * modelo de derechos.
- */
 export function productPhotoIsOfficial(product = {}) {
-  const image = productImage(product);
-  const thumbnail = productImageThumbnail(product);
-  const hasAuthoritativeHashes = [
-    product.imageSha256,
-    product.imageThumbnailSha256,
-    product.sourceImageSha256,
-  ].every((hash) => /^[a-f0-9]{64}$/i.test(String(hash || '')));
-  return Boolean(
-    image
-    && thumbnail
-    && (!product.qaFixture || product.previewCatalogApproved === true)
-    && product.imageShowsMultipack !== true
-    && hasAuthoritativeHashes
-    && productImageRightsCleared(product),
-  );
+  return officialPhoto(product, resolveRuntimeConfig().repository?.supabaseUrl || '');
 }
 
 export function productThumb(product, variant = 'grid') {
@@ -692,7 +736,7 @@ export function productThumb(product, variant = 'grid') {
   const width = official ? Number(product.thumbnailWidth || 400) : 400;
   const height = official ? Number(product.thumbnailHeight || 400) : 400;
   const responsive = official
-    ? ` srcset="${escapeHtml(thumbnail)} 400w, ${escapeHtml(image)} 1000w" sizes="${variant === 'modal' ? '(max-width: 700px) 92vw, 560px' : '(max-width: 700px) 45vw, 260px'}"`
+    ? ` srcset="${escapeHtml(thumbnail)} 400w, ${escapeHtml(image)} 1000w" sizes="${variant === 'modal' ? '(max-width: 700px) 92vw, 560px' : CARD_IMAGE_SIZES}"`
     : '';
   const label = official
     ? `Imagen oficial de ${product.name || 'producto'}`
@@ -846,7 +890,7 @@ function wasJustAdded(productId) {
 
 // El mismo control se comparte en catálogo, carruseles, recomendaciones y
 // carrito para que la cantidad sea una única verdad visual por SKU.
-function quantityControl(product, quantity, { className = 'qty-stepper', justAdded = false } = {}) {
+function quantityControl(product, quantity, { className = 'qty-stepper', justAdded = false, expandedTarget = false } = {}) {
   const safeQuantity = Math.max(0, Math.floor(Number(quantity) || 0));
   const reachedStock = safeQuantity >= Number(product.stock || 0);
   const leftLabel = safeQuantity === 1
@@ -854,7 +898,7 @@ function quantityControl(product, quantity, { className = 'qty-stepper', justAdd
     : `Restar uno de ${productAccessibleName(product)}`;
   const leftIcon = safeQuantity === 1 ? removeGlyph() : '<span aria-hidden="true">−</span>';
   return `
-    <div class="${className}${justAdded ? ' is-just-added' : ''}" aria-label="Cantidad de ${escapeHtml(productAccessibleName(product))} en el pedido"${justAdded ? ' data-added-flash' : ''}>
+    <div class="${className}${expandedTarget ? ' qty-stepper--quick-target' : ''}${justAdded ? ' is-just-added' : ''}" role="group" aria-label="Cantidad de ${escapeHtml(productAccessibleName(product))} en el pedido"${justAdded ? ' data-added-flash' : ''}>
       <button class="icon-button compact qty-stepper-action qty-stepper-remove" type="button" data-cart-dec="${escapeHtml(product.id)}" aria-label="${escapeHtml(leftLabel)}">${leftIcon}</button>
       <strong aria-live="polite">${safeQuantity}</strong>
       <button class="icon-button compact qty-stepper-action" type="button" data-cart-inc="${escapeHtml(product.id)}" aria-label="Sumar uno de ${escapeHtml(productAccessibleName(product))}" ${reachedStock ? 'disabled' : ''}><span aria-hidden="true">+</span></button>
@@ -872,7 +916,7 @@ function quickAddControl(product, quantity, { className = 'add-button' } = {}) {
   // de expendio. El botón queda inhabilitado igual —la compuerta es
   // `isCommerciallyPurchasable`, no este texto— pero dice lo que pasa de verdad.
   const vidrieraAlcohol = !pricePending && outOfStock && esVidrieraDeAlcohol(product);
-  if (quantity > 0) return quantityControl(product, quantity, { justAdded: wasJustAdded(product.id) });
+  if (quantity > 0) return quantityControl(product, quantity, { justAdded: wasJustAdded(product.id), expandedTarget: true });
   const actionLabel = pricePending
     ? `${productAccessibleName(product)}: ${PRICE_PENDING_TITLE.toLowerCase()}; ${PRICE_PENDING_DETAIL.toLowerCase()}`
     : vidrieraAlcohol
@@ -979,7 +1023,7 @@ function homeProductImage(product, className) {
   const thumbnail = productImageThumbnail(product);
   const source = official ? (thumbnail || image) : PRODUCT_PLACEHOLDER_IMAGE;
   const responsive = official
-    ? ` srcset="${escapeHtml(thumbnail)} 400w, ${escapeHtml(image)} 1000w" sizes="(max-width: 700px) 44vw, 260px"`
+    ? ` srcset="${escapeHtml(thumbnail)} 400w, ${escapeHtml(image)} 1000w" sizes="${CARD_IMAGE_SIZES}"`
     : '';
   const width = official ? Number(product.thumbnailWidth || 400) : 400;
   const height = official ? Number(product.thumbnailHeight || 400) : 400;
@@ -1012,15 +1056,176 @@ function homeUnitText(product) {
   return cardPresentationLine(product) || homeCapacityText(product);
 }
 
+/*
+ * UN NOMBRE LARGO NO SE CORTA: ENVUELVE A LA PRESENTACIÓN.
+ *
+ * La tarjeta de la vidriera reserva dos renglones de texto: uno para el nombre
+ * y otro para la presentación. Con el nombre a una línea, el catálogo real
+ * dejaba «Coca-Cola Sin…» al lado de «Coca-Cola» —dos tarjetas contiguas que
+ * pierden justo lo que las distingue—, «Red Bull Energy…» y «Brahma Chopp…».
+ * Medido con las 46 fichas: una de cada cuatro tarjetas de la home.
+ *
+ * Darle un tercer renglón costaba 16 px por tarjeta, y a 360×800 el primer
+ * «Agregar» está a tres píxeles del pliegue útil. Así que el alto NO cambia:
+ * cuando el nombre no entra en un renglón, la presentación queda fija al final
+ * del segundo y el nombre ocupa el primero entero y lo que sobra del segundo
+ * —«Coca-Cola Sin / Azúcar · · · 2,25 L»—.
+ *
+ * LA PRESENTACIÓN NO SE PIERDE NUNCA. La primera versión dejaba fluir nombre y
+ * presentación como texto corrido, y lo que no entraba era lo último: la
+ * presentación. A 360 px «Brahma Chopp Rubia» perdía «Retornable», y con una
+ * tipografía de sistema más ancha (el Chromium de Linux del CI; cualquier
+ * teléfono con otra fuente) «Glaciar Con Gas Baja en Sodio» perdía «1,5 L». El
+ * tamaño es lo que separa a dos tarjetas con el mismo nombre, así que ahora la
+ * prioridad es: primer renglón del nombre, presentación, resto del nombre. Si
+ * algo no entra, lo que queda afuera es el final del nombre —que sigue completo
+ * en la etiqueta de la foto, en su texto alternativo y en la ficha—.
+ *
+ * Por eso la presentación va ANTES que el nombre en el marcado: un flotante sólo
+ * reserva su lugar para el texto que viene después.
+ *
+ * La decisión es de marcado y no de medición en pantalla: el HTML tiene que ser
+ * función pura de los datos para que el parcheo estable del catálogo no
+ * reemplace nodos. El ancho se ESTIMA por clase de letra, y equivocarse no rompe
+ * nada: si la estimación dice «corto» y no lo era, queda el renglón con puntos
+ * suspensivos de siempre; si dice «largo» y entraba, queda igual de bien.
+ *
+ * El umbral está calibrado contra la tarjeta real: una unidad son ~7,5 px a
+ * 13,5 px/750, y la caja de texto mide 114 px a 360 de ancho. 14,7 unidades
+ * (~110 px) es lo que entra en un renglón en el teléfono más angosto que se
+ * prueba: «Sprite Sin Azúcar» (106 px) entra; «Stella Artois Rubia» (115) no.
+ */
+const HOME_NAME_LINE_UNITS = 14.7;
+const NARROW_GLYPHS = /[iljtfrI1.,;:'’·\- ]/;
+const WIDE_GLYPHS = /[mwMWÑ@]/;
+
+export function homeNameNeedsTwoLines(title) {
+  let units = 0;
+  for (const glyph of String(title || '')) {
+    if (NARROW_GLYPHS.test(glyph)) units += 0.58;
+    else if (WIDE_GLYPHS.test(glyph)) units += 1.5;
+    else if (glyph !== glyph.toLowerCase()) units += 1.18;
+    else units += 1;
+  }
+  return units > HOME_NAME_LINE_UNITS;
+}
+
+function homeNameBlock(product) {
+  const title = cardTitle(product);
+  const unit = homeUnitText(product);
+  if (!homeNameNeedsTwoLines(title)) {
+    return `<strong>${escapeHtml(title)}</strong>
+        <small>${escapeHtml(unit)}</small>`;
+  }
+  return `<p class="home-best-name">${unit ? `<small>${escapeHtml(unit)}</small>` : ''}<strong>${escapeHtml(title)}</strong></p>`;
+}
+
 function renderHomeShowcase() {
   renderHomeCategories();
   renderHomeHeroPromo();
+  renderHomeCampaign();
   renderHomePromotions();
   renderHomeBanners();
   renderHomeBestSellers();
   renderHomeSections();
   renderHomeEditorialSelection();
   renderStoryEntry();
+  refreshCampaignMotion();
+}
+
+// ─── Campañas animadas ───────────────────────────────────────────────────────
+// Una campaña es una pieza editorial con escena animada que lleva a la ficha de
+// un producto que el local vende. Todas nacen apagadas
+// (`campaigns/campaign-config.js`) y el motor falla cerrado: sin una campaña
+// encendida, aprobada, vigente y con producto comprable AHORA, estas funciones
+// devuelven vacío y cada superficie pinta exactamente lo que pintaba antes.
+//
+// Lo que la persona ocultó vale por la visita: no se le vuelve a mostrar hasta
+// que abra la tienda de nuevo. Es memoria de sesión y nada más; no hay perfil.
+//
+// Y lo que se oculta es el LUGAR, además de la campaña. Con sólo el id, cerrar
+// la pieza de Heineken ponía la de Aperol en la misma banda, arrancando desde
+// cero y debajo de un aviso que decía «Ocultamos el anuncio»: había que cerrar
+// una por campaña configurada. Quien cierra un anuncio pidió que ese lugar deje
+// de tener anuncios; vuelve la puerta editorial, o nada.
+const DISMISSED_CAMPAIGNS_KEY = 'taba:campaigns-dismissed';
+const DISMISSED_PLACEMENTS_KEY = 'taba:campaign-placements-dismissed';
+const dismissedCampaigns = new Set();
+const dismissedCampaignPlacements = new Set();
+function readDismissed(key, target) {
+  try {
+    const stored = JSON.parse(globalThis.sessionStorage?.getItem(key) || '[]');
+    if (Array.isArray(stored)) stored.filter((id) => typeof id === 'string').forEach((id) => target.add(id));
+  } catch (_) {
+    // Sin almacenamiento de sesión la pieza sólo se oculta hasta la recarga.
+  }
+}
+function writeDismissed(key, source) {
+  try {
+    globalThis.sessionStorage?.setItem(key, JSON.stringify([...source]));
+  } catch (_) {
+    // Igual que arriba: sin almacenamiento, vale hasta la recarga.
+  }
+}
+readDismissed(DISMISSED_CAMPAIGNS_KEY, dismissedCampaigns);
+readDismissed(DISMISSED_PLACEMENTS_KEY, dismissedCampaignPlacements);
+
+export function dismissCampaign(campaignId, placement = '') {
+  const id = String(campaignId || '').trim();
+  if (!id) return;
+  dismissedCampaigns.add(id);
+  writeDismissed(DISMISSED_CAMPAIGNS_KEY, dismissedCampaigns);
+  const place = String(placement || '').trim();
+  if (CAMPAIGN_PLACEMENTS.includes(place)) {
+    dismissedCampaignPlacements.add(place);
+    writeDismissed(DISMISSED_PLACEMENTS_KEY, dismissedCampaignPlacements);
+  }
+}
+
+function activeCampaigns(catalog = null) {
+  return selectCampaigns({
+    campaigns: CAMPAIGNS,
+    products: getCustomerCatalogProducts(getState().products),
+    isOrderable: isProductOrderable,
+    dismissed: dismissedCampaigns,
+    dismissedPlacements: dismissedCampaignPlacements,
+    catalog,
+  });
+}
+
+// El subtítulo y el aviso de alcohol salen del PRODUCTO real, con las mismas
+// funciones que usa la tarjeta: la campaña no puede decir otro nombre ni otra
+// presentación que la que está en góndola.
+function campaignPiece(entry, placement) {
+  const { product } = entry;
+  return campaignMarkup(entry, placement, {
+    productId: product.id,
+    title: cardTitle(product),
+    line: cardPresentationLine(product),
+    alcoholic: product.alcoholic === true,
+    supabaseUrl: resolveRuntimeConfig().repository?.supabaseUrl || '',
+  });
+}
+
+function renderHomeCampaign() {
+  const slot = $('[data-home-campaign]');
+  if (!slot) return;
+  const entry = activeCampaigns()['home-inline'];
+  slot.hidden = !entry;
+  renderCatalogSurface(slot, entry ? campaignPiece(entry, 'home-inline') : '');
+}
+
+// La pieza de grilla: una sola, y nunca en una búsqueda, con filtros o en una
+// lista corta. Las reglas viven en el motor; acá sólo se le cuenta el contexto.
+function catalogCampaignPiece(state, listSize) {
+  const filters = { ...defaultCatalogFilters(), ...(state.catalogFilters || {}) };
+  const entry = activeCampaigns({
+    categoryId: state.activeCategory,
+    searching: Boolean(state.searchQuery.trim()),
+    filtered: Object.values(filters).some((value) => value !== 'all'),
+    listSize,
+  })['catalog-inline'];
+  return entry ? campaignPiece(entry, 'catalog-inline') : '';
 }
 
 // ─── Hero promocional ────────────────────────────────────────────────────────
@@ -1066,6 +1271,15 @@ export const HOME_HERO_PROMO = Object.freeze({
 function renderHomeHeroPromo() {
   const slot = $('[data-home-hero-promo]');
   if (!slot) return;
+  // Una campaña aprobada toma la banda; ocupa la MISMA caja, así que el primer
+  // precio de la vidriera no se mueve. Sin campaña —que es lo normal— sigue la
+  // puerta editorial de siempre, con su foto y su precarga.
+  const campaign = activeCampaigns()['home-hero'];
+  if (campaign) {
+    slot.hidden = false;
+    renderCatalogSurface(slot, campaignPiece(campaign, 'home-hero'));
+    return;
+  }
   const hero = HOME_HERO_PROMO;
   const category = categoriesForCurrentCatalog().find((entry) => entry.id === hero.categoryId);
   if (!category || !purchasableCategoryIds().has(hero.categoryId)) {
@@ -1074,8 +1288,17 @@ function renderHomeHeroPromo() {
     return;
   }
   slot.hidden = false;
+  // LA LEYENDA DE ALCOHOL. La puerta de apertura es la fotografía de una cerveza
+  // de marca que lleva a la góndola de cervezas: es publicidad de una bebida
+  // alcohólica, y es la imagen más grande de la home. El motor de campañas le
+  // agrega a ESA MISMA caja la leyenda que pide la ley 24.788 —y explica por qué
+  // en `campaign-engine.js`—, pero la puerta de siempre, que es la que se ve
+  // todos los días, salía sin ella. Es la misma constante, por la misma regla, y
+  // va fuera del botón por la misma razón: es texto que se lee, no parte del
+  // nombre de la acción.
+  const legal = isAlcoholicCategory(hero.categoryId);
   renderCatalogSurface(slot, `
-    <button class="home-hero-promo" type="button" data-category-id="${escapeHtml(hero.categoryId)}" aria-label="${escapeHtml(`${hero.title}. ${hero.subtitle} Ver ${category.name.toLowerCase()}`)}">
+    <button class="home-hero-promo${legal ? ' has-legal' : ''}" type="button" data-category-id="${escapeHtml(hero.categoryId)}" aria-label="${escapeHtml(`${hero.title}. ${hero.subtitle} Ver ${category.name.toLowerCase()}`)}">
       <span class="home-hero-promo-media" aria-hidden="true"></span>
       <span class="home-hero-promo-copy">
         <small>${escapeHtml(hero.eyebrow)}</small>
@@ -1083,7 +1306,8 @@ function renderHomeHeroPromo() {
         <span class="home-hero-promo-sub">${escapeHtml(hero.subtitle)}</span>
         <span class="home-hero-promo-cta">Ver ${escapeHtml(category.name.toLowerCase())} <span aria-hidden="true">→</span></span>
       </span>
-    </button>`);
+    </button>
+    ${legal ? `<p class="home-hero-promo-legal">${escapeHtml(ALCOHOL_LEGAL_NOTICE)}</p>` : ''}`);
 }
 
 // ─── Selección del local (tarjetas con estado honesto) ───────────────────────
@@ -1679,7 +1903,7 @@ function renderHomeSections() {
 // acá va dentro del botón y por lo tanto no se anuncia solo— viajan en el
 // nombre del acceso a la ficha.
 function homeMediaLabel(product) {
-  const parts = [`Ver ${product.name}`];
+  const parts = [`Ver ${productAccessibleName(product)}`];
   const stockState = cardAvailabilityLabel(product);
   if (stockState) parts.push(stockState);
   if (product.alcoholic) {
@@ -1716,8 +1940,7 @@ function homeSectionCard(product, cartQuantities) {
         ${ageTag(product)}
       </button>
       <div class="home-best-copy">
-        <strong>${escapeHtml(cardTitle(product))}</strong>
-        <small>${escapeHtml(homeUnitText(product))}</small>
+        ${homeNameBlock(product)}
         ${price}
       </div>
       <div class="home-card-control">${control}</div>
@@ -1947,7 +2170,10 @@ export function showComboModal(comboId, restoreTrigger = null) {
         <button class="secondary-button" type="button" data-combo-open-component="${escapeHtml(combo.components[0].sku)}">Ver ${escapeHtml(combo.components[0].product.name)}</button>
       </div>
     </div>`;
-  if (!modal.open) modal.showModal();
+  if (!modal.open) {
+    modal.showModal();
+    announceDetailSheetOpened(modal);
+  }
 }
 
 export function closeComboModal() {
@@ -2379,6 +2605,18 @@ export { CATALOG_PAGE_SIZE };
 
 // Productos filtrados por categoría + búsqueda, ya ordenados.
 function getFilteredProducts(state) {
+  return resolveCatalogListing(state).products;
+}
+
+/*
+ * La lista del catálogo Y cómo se llegó a ella.
+ *
+ * `approximate` es verdadero cuando la búsqueda exacta no trajo nada y lo que
+ * se muestra es lo más parecido a lo escrito («heiniken» → Heineken). La
+ * pantalla tiene que decirlo: un resultado aproximado nunca se presenta como
+ * exacto. La regla de coincidencia vive en `core/catalog-search.js`.
+ */
+function resolveCatalogListing(state) {
   const favoriteIds = new Set(getFavoriteProductIds());
   const promoProductIds = activePromotionProductIds(state);
   const filters = { ...defaultCatalogFilters(), ...(state.catalogFilters || {}) };
@@ -2392,11 +2630,6 @@ function getFilteredProducts(state) {
           : state.activeCategory === 'fernet'
             ? isFernetProduct(product)
         : state.activeCategory === 'all' || product.categoryId === state.activeCategory;
-    // El índice y la regla de coincidencia viven en `core/catalog-search.js`,
-    // con sus propios tests: acá había un `includes` sobre una cadena pegada,
-    // y por eso «500 ml» devolvía botellas de 1,5 L y «energética» no devolvía
-    // ningún energizante.
-    const matchesQuery = productMatchesQuery(product, state.searchQuery);
     const isAvailable = product.available && Number(product.stock) > 0 && !isPricePending(product);
     const matchesFilters = (
       (filters.brand === 'all' || normalizeSearchText(product.brand) === filters.brand)
@@ -2408,9 +2641,19 @@ function getFilteredProducts(state) {
       && (filters.price === 'all' || (filters.price === 'pending' ? isPricePending(product) : !isPricePending(product)))
       && (filters.promotion === 'all' || isPromotionalProduct(product, promoProductIds))
     );
-    return matchesCategory && matchesQuery && matchesFilters;
+    return matchesCategory && matchesFilters;
   });
-  return sortProducts(filtered, state.sortBy);
+  // El índice y la regla de coincidencia viven en `core/catalog-search.js`,
+  // con sus propios tests: acá había un `includes` sobre una cadena pegada,
+  // y por eso «500 ml» devolvía botellas de 1,5 L y «energética» no devolvía
+  // ningún energizante. La búsqueda corre DESPUÉS de categoría y filtros: lo
+  // parecido se busca dentro de lo que la persona ya acotó.
+  const search = searchProducts(filtered, state.searchQuery);
+  return {
+    products: state.searchQuery.trim() && state.sortBy === 'recommended'
+      ? search.products : sortProducts(search.products, state.sortBy),
+    approximate: search.approximate,
+  };
 }
 
 
@@ -2458,11 +2701,26 @@ function pricedAmount(product) {
   return Number.isFinite(amount) && amount > 0 ? amount : null;
 }
 
+/*
+ * A IGUAL PUNTAJE, EL ORDEN EN EL QUE LLEGÓ EL CATÁLOGO.
+ *
+ * El puntaje sólo distingue lo destacado, lo popular y lo comprable. Los
+ * empates devuelven 0 a propósito: el `sort` es estable y conserva el orden
+ * con el que se entregó el catálogo, que es una decisión comercial y no de la
+ * grilla.
+ *
+ * Acá hubo un desempate por rubro, y estaba en el lugar equivocado: reordenaba
+ * TAMBIÉN un catálogo que ya venía curado. La vidriera demo abre con
+ * energizantes y el desempate le subió siete cervezas al principio: lo primero
+ * que se podía agregar pasó a ser alcohol. Agrupar por rubro es el respaldo de
+ * un catálogo que todavía nadie ordenó, y eso se sabe donde nace ese orden: la
+ * lectura del catálogo real (`sortByShelfOrder`, en `core/store-taxonomy.js`).
+ */
 function sortProducts(list, sortBy) {
   const arr = [...list];
   if (sortBy === 'price_asc') return arr.sort(comparePricedAscending);
-  if (sortBy === 'popular') return arr.sort((a, b) => popularScore(b) - popularScore(a));
-  return arr.sort((a, b) => recommendedScore(b) - recommendedScore(a));
+  const score = sortBy === 'popular' ? popularScore : recommendedScore;
+  return arr.sort((a, b) => score(b) - score(a));
 }
 
 function activeCategoryName() {
@@ -2600,8 +2858,10 @@ function renderCatalogMeta() {
   // no se puede comprar: quien entra scrollea diecisiete tarjetas hasta
   // entenderlo solo. Se dice de una vez, y sólo cuando pasa: si hay aunque sea
   // uno comprable, el contador no agrega nada.
-  const buyable = products.filter(isCommerciallyPurchasable).length;
-  const pendingNote = count > 0 && buyable === 0 ? ' · todavía sin precio publicado' : '';
+  const noneBuyable = noneBuyableReason(products);
+  const pendingNote = noneBuyable
+    ? ` · ${count === 1 && noneBuyable === 'showcase' ? 'todavía no está a la venta' : NONE_BUYABLE_COPY[noneBuyable].note}`
+    : '';
   setText(
     '[data-catalog-count]',
     catalogLoading
@@ -2632,10 +2892,29 @@ function isProductionCatalogLoading() {
   return state === 'idle' || state === 'loading';
 }
 
+/*
+ * Lo que hay escrito en el buscador, como lo guarda el estado: espacios
+ * colapsados, sin los de las puntas y hasta 80 caracteres.
+ *
+ * EL CAMPO NO SE CORRIGE MIENTRAS SE ESCRIBE. El estado guarda la consulta
+ * recortada, y esta hoja le devolvía al campo ese valor cada vez que eran
+ * distintos. Al tocar la barra espaciadora el campo decía «coca » y el estado
+ * «coca»: distintos, así que el espacio se borraba, y la letra siguiente caía
+ * pegada. Medido tecla por tecla: «coca zero» quedaba en «cocazero», «agua sin
+ * gas» en «aguasingas», y las dos respondían «No encontramos…» sobre productos
+ * que el local vende. No se podía escribir una búsqueda de dos palabras.
+ *
+ * Ahora se compara lo que el campo DICE, no cómo lo dice: mientras signifique
+ * lo mismo que el estado, no se toca.
+ */
+function searchFieldText(value) {
+  return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, 80);
+}
+
 function renderSearchControls() {
   const query = getState().searchQuery;
   $$('[data-search-input]').forEach((input) => {
-    if (input.value !== query) input.value = query;
+    if (searchFieldText(input.value) !== query) input.value = query;
   });
   // El botón de limpiar sólo existe con contenido: 44×44 y accesible por
   // nombre. No hay control inerte esperando en el campo vacío.
@@ -2649,7 +2928,8 @@ function renderProducts() {
   if (!container) return;
 
   const state = getState();
-  const filteredProducts = getFilteredProducts(state);
+  const listing = resolveCatalogListing(state);
+  const filteredProducts = listing.products;
 
   if (!filteredProducts.length) {
     if (isProductionCatalogLoading()) {
@@ -2659,35 +2939,59 @@ function renderProducts() {
           <p class="empty-state-copy">Estamos buscando los productos disponibles.</p>
         </div>
         ${'<div class="catalog-skeleton-card" aria-hidden="true"><span class="motion-skeleton"></span><span class="motion-skeleton"></span><span class="motion-skeleton"></span></div>'.repeat(4)}`);
+      refreshCampaignMotion();
       return;
     }
     const isFavorites = state.activeCategory === 'favorites';
     const query = state.searchQuery.trim();
     const isSearch = Boolean(query);
     const narrowed = state.activeCategory !== 'all';
+    // Los filtros se suman al rubro y no se sueltan al cambiar de rubro. Sin
+    // mirarlos, una combinación sin resultados —Marca X con Capacidad Y— se
+    // explicaba como «No hay productos disponibles en esta categoría» estando
+    // en «Todas», y con un filtro puesto «Favoritos» decía «Todavía no
+    // guardaste favoritos» a quien sí tenía. La única salida ofrecida borraba
+    // también el rubro y la búsqueda.
+    const filtersActive = Object.values({ ...defaultCatalogFilters(), ...(state.catalogFilters || {}) })
+      .some((value) => value !== 'all');
+    // Y sólo son la causa si sin ellos habría algo: «Favoritos» vacío con un
+    // filtro heredado no se arregla quitando el filtro.
+    const emptyWithoutFilters = filtersActive && !isSearch
+      && resolveCatalogListing({ ...state, catalogFilters: defaultCatalogFilters() }).products.length === 0;
+    const filtersCause = filtersActive && !isSearch && !emptyWithoutFilters;
     // El estado vacío nombra la causa concreta —la consulta— y su acción
     // primaria la deshace. Es el único lugar, junto al input, donde la
     // consulta se repite.
-    const emptyTitle = isFavorites && !isSearch
-      ? 'Todavía no guardaste favoritos.'
-      : isSearch
-        ? `No encontramos «${escapeHtml(query)}»`
-        : 'No hay productos disponibles en esta categoría.';
-    const emptyCopy = isFavorites && !isSearch
-      ? 'Tocá Guardar en un producto para encontrarlo acá.'
-      : isSearch
-        ? 'Probá con la marca o la presentación.'
-        : 'Volvé a ver el catálogo completo o elegí otra categoría.';
+    const emptyTitle = filtersCause
+      ? 'Ningún producto coincide con los filtros.'
+      : isFavorites && !isSearch
+        ? 'Todavía no guardaste favoritos.'
+        : isSearch
+          ? `No encontramos «${escapeHtml(query)}»`
+          : 'No hay productos disponibles en esta categoría.';
+    const emptyCopy = filtersCause
+      ? 'Quitá algún filtro para ver más productos.'
+      : isFavorites && !isSearch
+        // El control de la tarjeta es un corazón sin texto: «Tocá Guardar»
+        // nombraba un botón que en la góndola no se llama así.
+        ? 'Tocá el corazón de un producto para guardarlo y encontrarlo acá.'
+        : isSearch
+          ? 'Revisá la búsqueda. Probá con una bebida, marca o tamaño.'
+          : 'Volvé a ver el catálogo completo o elegí otra categoría.';
     renderCatalogSurface(container, `
       <div class="empty-state">
         <strong>${emptyTitle}</strong>
         <p class="empty-state-copy">${emptyCopy}</p>
         <div class="empty-actions">
+          ${filtersActive ? `<button class="${filtersCause ? 'primary-button' : 'secondary-button'} compact" type="button" data-reset-catalog-filters>Limpiar filtros</button>` : ''}
           ${isSearch ? '<button class="primary-button compact" type="button" data-clear-search>Limpiar búsqueda</button>' : ''}
           ${isSearch && narrowed ? '<button class="secondary-button compact" type="button" data-search-everywhere>Buscar en todo</button>' : ''}
           <button class="secondary-button compact" type="button" data-clear-catalog-filters>Ver todo el catálogo</button>
         </div>
       </div>`);
+    // La pieza que estaba en la góndola salió con la lista: el controlador
+    // tiene que enterarse para que, si vuelve, vuelva en su cuadro final.
+    refreshCampaignMotion();
     return;
   }
 
@@ -2703,13 +3007,13 @@ function renderProducts() {
    * local los va a vender— sólo agrega la puerta a lo que hoy SÍ se puede
    * pedir. Cuando el negocio publique esos precios, el aviso desaparece solo.
    */
-  const nadaComprable = filteredProducts.every((product) => !isCommerciallyPurchasable(product));
+  const nadaComprable = noneBuyableReason(filteredProducts);
   const hayComprables = getCustomerCatalogProducts(state.products).some(isCommerciallyPurchasable);
   const avisoSinComprables = nadaComprable
     ? `<div class="catalog-none-buyable" role="status">
         <strong>${filteredProducts.length === 1
-          ? 'Este producto todavía no tiene precio publicado.'
-          : `Ninguno de estos ${filteredProducts.length} tiene precio publicado todavía.`}</strong>
+          ? NONE_BUYABLE_COPY[nadaComprable].one
+          : NONE_BUYABLE_COPY[nadaComprable].many(filteredProducts.length)}</strong>
         ${hayComprables ? '<button class="primary-button compact" type="button" data-clear-catalog-filters>Ver lo que sí se puede pedir</button>' : ''}
       </div>`
     : '';
@@ -2726,7 +3030,19 @@ function renderProducts() {
       </div>`
     : '';
 
-  renderCatalogSurface(container, avisoSinComprables + enPantalla.map((product) => {
+  // Lo que se muestra NO es lo que se escribió, y se dice antes de la primera
+  // tarjeta: quien tipeó «heiniken» tiene que saber que está viendo lo más
+  // parecido, no creer que el buscador entendió otra cosa.
+  const avisoParecidos = listing.approximate
+    ? `<p class="catalog-similar-note" role="status" data-catalog-similar>
+        <strong>No encontramos «${escapeHtml(state.searchQuery.trim())}».</strong>
+        <span>Esto es lo más parecido.</span>
+      </p>`
+    : '';
+
+  const campaignCard = catalogCampaignPiece(state, filteredProducts.length);
+
+  const tarjetas = enPantalla.map((product) => {
     const outOfStock = !isCommerciallyPurchasable(product);
     const offer = discountPercent(product) > 0;
     const inCart = cartQuantities.get(product.id) || 0;
@@ -2742,11 +3058,14 @@ function renderProducts() {
     // en el nombre accesible del botón. Antes se imprimía dos veces visibles:
     // «Últimas 3» sobre la imagen y «Últimas 3» otra vez debajo del envase.
     const stockState = cardAvailabilityLabel(product);
+    // Y con el nombre que se LEE en la tarjeta más su presentación: con el
+    // nombre crudo, la Coca-Cola de 2,25 L y la de 1,5 L eran dos botones «Ver
+    // Coca-Cola» iguales, que además no coincidían con el título de al lado.
     const mediaLabel = stockState
-      ? `Ver ${product.name}. ${stockState}`
-      : `Ver ${product.name}`;
+      ? `Ver ${productAccessibleName(product)}. ${stockState}`
+      : `Ver ${productAccessibleName(product)}`;
     return `
-      <article data-catalog-key="product:${escapeHtml(product.id)}" class="product-card ${outOfStock ? 'out-of-stock' : ''} ${offer ? 'is-offer' : ''} ${inCart > 0 ? 'in-cart' : ''}">
+      <article data-card-product="${escapeHtml(product.id)}" data-catalog-key="product:${escapeHtml(product.id)}" class="product-card ${outOfStock ? 'out-of-stock' : ''} ${offer ? 'is-offer' : ''} ${inCart > 0 ? 'in-cart' : ''}">
         <div class="product-media-frame">
           <button class="product-media" type="button" data-product-detail="${product.id}" aria-label="${escapeHtml(mediaLabel)}">
             ${productThumb(product, 'grid')}
@@ -2765,7 +3084,7 @@ function renderProducts() {
         </div>
         <div class="product-body">
           ${brandLine(product)}
-          <h3>${escapeHtml(cardTitle(product))}</h3>
+          <h3><button class="product-name-link" type="button" data-product-name-detail="${escapeHtml(product.id)}" aria-label="${escapeHtml(mediaLabel.replace(/^Ver /, 'Abrir ficha de '))}">${escapeHtml(cardTitle(product))}</button></h3>
           <p>${escapeHtml(presentation)}</p>
           <div class="product-foot">
             ${priceBlock(product)}
@@ -2774,7 +3093,13 @@ function renderProducts() {
         </div>
       </article>
     `;
-  }).join('') + verMas);
+  });
+  if (campaignCard && tarjetas.length > CAMPAIGN_GRID_POSITION) {
+    tarjetas.splice(CAMPAIGN_GRID_POSITION, 0, campaignCard);
+  }
+
+  renderCatalogSurface(container, avisoParecidos + avisoSinComprables + tarjetas.join('') + verMas);
+  refreshCampaignMotion();
 }
 
 /**
@@ -2845,13 +3170,55 @@ export function availabilityLabel(product) {
 
 // En la tarjeta sólo se rotula lo que hay que avisar. Estar disponible es lo
 // normal: etiquetarlo llena la grilla de cintas y no aporta información.
-function cardAvailabilityLabel(product) {
+//
+// Mismo orden que `stockPill`, que es lo que se ve: la pastilla va con
+// `aria-hidden` y este texto es su única voz. Antes `!available` se miraba
+// primero, así que una cerveza en vidriera —pastilla «Próximamente»— y un
+// producto agotado —pastilla «Agotado»— se anunciaban los dos «No disponible».
+export function cardAvailabilityLabel(product) {
   if (isPricePending(product)) return '';
-  if (product.archived || !product.available) return 'No disponible';
+  if (product.archived) return 'No disponible';
+  if (esVidrieraDeAlcohol(product)) return 'Próximamente';
   if (product.stock <= 0) return 'Agotado';
+  if (!product.available) return 'No disponible';
   if (product.stock <= 4) return `Últimas ${product.stock}`;
   return '';
 }
+
+/*
+ * POR QUÉ no se puede pedir NADA de una lista, dicho con la causa real.
+ *
+ * El aviso decía siempre «todavía sin precio publicado». Era cierto en la
+ * demostración, donde hay fichas sin precio; en la tienda real esas fichas no
+ * se muestran, así que cuando aparecía era por otra cosa —toda la góndola de
+ * alcohol en vidriera, o una búsqueda que cae en un agotado— y lo decía al
+ * lado de tarjetas con el precio a la vista. Medido buscando «quilmes» con el
+ * producto en vidriera a $ 2.400: «1 producto · todavía sin precio publicado».
+ */
+export function noneBuyableReason(products = []) {
+  if (!products.length || products.some(isCommerciallyPurchasable)) return '';
+  if (products.every(isPricePending)) return 'price';
+  if (products.every(esVidrieraDeAlcohol)) return 'showcase';
+  return 'unavailable';
+}
+
+const NONE_BUYABLE_COPY = Object.freeze({
+  price: Object.freeze({
+    note: 'todavía sin precio publicado',
+    one: 'Este producto todavía no tiene precio publicado.',
+    many: (count) => `Ninguno de estos ${count} tiene precio publicado todavía.`,
+  }),
+  showcase: Object.freeze({
+    note: 'todavía no están a la venta',
+    one: 'Este producto todavía no está a la venta.',
+    many: (count) => `Ninguno de estos ${count} está a la venta todavía.`,
+  }),
+  unavailable: Object.freeze({
+    note: 'sin disponibilidad por ahora',
+    one: 'Este producto no está disponible por ahora.',
+    many: (count) => `Ninguno de estos ${count} está disponible por ahora.`,
+  }),
+});
 
 // Acceso directo a Tracking desde Home cuando hay un pedido en curso.
 export function renderHomeActiveOrder() {
@@ -3234,19 +3601,23 @@ export function renderCartTotals() {
 function renderMinimumOrderProgress() {
   const container = $('[data-cart-minimum-progress]');
   if (!container) return;
-  const items = getCartItems();
   const config = getBusinessConfig();
-  const canShow = items.length > 0
+  const summary = getCartSummary('delivery');
+  // El MISMO mínimo y la MISMA compuerta que `validateCartForCheckout`. Acá se
+  // pasaba la semilla del comercio a mano, salteando el mínimo que el servidor
+  // resolvió para la dirección: con una zona de mínimo distinto, la barra decía
+  // «Ya alcanzaste el pedido mínimo» y el aviso de abajo «Te faltan $ X». Y un
+  // carrito de sólo combos no veía la barra, aunque el mínimo se le exige.
+  const { minimum, missing, progress } = getDeliveryMinimumProgress(summary.subtotal);
+  const canShow = (summary.items.length > 0 || summary.combos.length > 0)
     && currentDeliveryMode() === 'delivery'
-    && (isDemoMode() || config.orderingDetailsVerified)
-    && Number(config.minDeliveryOrder) > 0;
+    && (isDemoMode() || config.orderingDetailsVerified || hasResolvedDelivery())
+    && minimum > 0;
   if (!canShow) {
-    container.innerHTML = '';
+    if (container.innerHTML) container.innerHTML = '';
     return;
   }
 
-  const summary = getCartSummary('delivery');
-  const { minimum, missing, progress } = getDeliveryMinimumProgress(summary.subtotal, config.minDeliveryOrder);
   container.innerHTML = `
     <aside class="minimum-order-progress ${missing === 0 ? 'is-complete' : ''}" aria-live="polite">
       <div>
@@ -3402,6 +3773,9 @@ function renderCartList() {
     // MISMO número, y estaban impresos los dos: "Unidad · $ 3.576" a la
     // izquierda y "$ 3.576" a la derecha. El unitario aparece cuando empieza a
     // informar algo, o sea cuando hay más de una.
+    // El título es el de la tarjeta (`cardTitle`), no el nombre crudo: con el
+    // crudo la línea decía «Coca-Cola Sabor Original 2,25 L» y debajo «2,25 L»
+    // otra vez, y no se llamaba igual que el producto que se acababa de tocar.
     const meta = [
       unitText(item.product),
       item.quantity > 1 ? `${money(item.product.price)} c/u` : '',
@@ -3413,7 +3787,7 @@ function renderCartList() {
     <div class="cart-item${issue ? ' has-issue' : ''}">
       ${productThumb(item.product, 'cart')}
       <div class="cart-item-info">
-        <div class="cart-title">${escapeHtml(item.product.name)}</div>
+        <div class="cart-title">${escapeHtml(cardTitle(item.product) || item.product.name)}</div>
         <div class="cart-meta">${escapeHtml(meta)}</div>
         ${issue ? `
         <p class="cart-item-issue" role="status">
@@ -3477,8 +3851,14 @@ export function renderOrderSummary() {
   if (warning) {
     const cartIsEmpty = items.length === 0 && combos.length === 0;
     const hide = validation.ok || cartIsEmpty;
+    // Las dos llaves, no una. Quien limpia el aviso al tocar un campo
+    // (`app.js`) pone la clase Y el atributo `hidden`; acá sólo se quitaba la
+    // clase, así que después del primer toque en el formulario el aviso pasivo
+    // —«Te faltan $ X», «Los combos se cobran con Mercado Pago», «El comercio
+    // está cerrado»— no volvía a verse hasta fallar un «Confirmar».
+    warning.hidden = hide;
     warning.classList.toggle('hidden', hide);
-    warning.textContent = validation.message;
+    if (warning.textContent !== validation.message) warning.textContent = validation.message;
   }
 }
 
@@ -4366,6 +4746,21 @@ function actualProductVariants(product) {
     .filter((candidate) => candidate && isProductVisibleToCustomer(candidate));
 }
 
+/*
+ * Una ficha que se abre lo avisa. `<dialog>` emite `close` pero no tiene un
+ * evento de apertura, y `app.js` necesita los dos para que «atrás» cierre la
+ * ficha en vez de llevarse la tienda de abajo (ver `bindDetailSheetHistory`).
+ */
+export const DETAIL_SHEET_OPENED_EVENT = 'taba:detail-sheet-opened';
+
+function announceDetailSheetOpened(modal) {
+  try {
+    modal.dispatchEvent(new CustomEvent(DETAIL_SHEET_OPENED_EVENT));
+  } catch (_) {
+    // Sin CustomEvent la ficha abre igual; sólo «atrás» conserva su conducta vieja.
+  }
+}
+
 let productModalRestoreFocus = null;
 // El detalle del combo devuelve el foco al control que lo abrió, igual que la
 // ficha de producto: sin esto el lector de pantalla vuelve al principio del
@@ -4497,6 +4892,7 @@ export function showProductModal(productId, restoreTrigger = null, { refresh = f
     const note = content.querySelector('[data-product-note]');
     if (note) note.value = '';
     modal.showModal();
+    announceDetailSheetOpened(modal);
   }
 }
 
@@ -4594,7 +4990,9 @@ export function setCategory(categoryId) {
 }
 
 export function setSearchQuery(query) {
-  const nextQuery = String(query || '');
+  // Con la misma forma que guarda el estado: un espacio al final no es una
+  // consulta nueva y no tiene que costar un render.
+  const nextQuery = searchFieldText(query);
   if (getState().searchQuery === nextQuery) return;
   setState({ searchQuery: nextQuery });
 }

@@ -6,7 +6,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { readableOrderCreationError } from '../js/repositories/supabase_order_repository.js';
+import {
+  ORDER_REQUEST_TIMEOUT_MS,
+  readableOrderCreationError,
+  withRequestTimeout,
+} from '../js/repositories/supabase_order_repository.js';
+import { commerceCheckoutBlock, setCommerceAvailability } from '../js/core/commerce-availability-store.js';
 
 const SIN_STOCK = 'Algunos productos ya no tienen stock. Actualizá el carrito y probá de nuevo.';
 const GENERICO = 'No pudimos confirmar el pedido. Conservamos el intento para reintentar sin duplicarlo.';
@@ -87,4 +92,130 @@ test('el orden de las ramas importa: «edad minima» no se lo come «verified»'
 test('lo que ya funcionaba sigue funcionando', () => {
   assert.equal(readableOrderCreationError({ message: 'producto no disponible: abc' }), SIN_STOCK);
   assert.equal(readableOrderCreationError({ message: 'algo raro' }), GENERICO);
+});
+
+// ── Lo que el alta del pedido decide en el último segundo ───────────────────
+//
+// Los tres rechazos son literales de
+// supabase/migrations/20260812220000_business_operations_checkout_enforcement.sql
+// (líneas 423, 430 y 450): `message` es el código y `detail` la frase.
+const CERRADO = { message: 'BUSINESS_CLOSED', details: 'el comercio no esta abierto para este canal' };
+const FUERA_DE_ZONA = { message: 'OUT_OF_DELIVERY_ZONE', details: 'la direccion no esta dentro de la cobertura declarada' };
+const ALCOHOL_FUERA_DE_VENTANA = { message: 'ALCOHOL_WINDOW_CLOSED', details: 'la venta de alcohol esta fuera de la ventana configurada' };
+
+test('pedir con el comercio cerrado dice que está cerrado, no que reintente', () => {
+  const leido = readableOrderCreationError(CERRADO, 500);
+  assert.match(leido, /cerrado/i);
+  assert.notEqual(leido, GENERICO, 'reintentar no abre el local');
+  assert.notEqual(leido, SIN_STOCK);
+});
+
+test('y lo dice con la misma frase que el aviso previo del carrito', () => {
+  setCommerceAvailability({ is_open: false, hours_enforced: true });
+  try {
+    assert.equal(readableOrderCreationError(CERRADO, 500), commerceCheckoutBlock('delivery').message);
+  } finally {
+    setCommerceAvailability(null);
+  }
+});
+
+test('una dirección fuera de cobertura se dice, con las dos salidas reales', () => {
+  const leido = readableOrderCreationError(FUERA_DE_ZONA, 500);
+  assert.match(leido, /no realizamos entregas en esta zona/i);
+  assert.match(leido, /retiro en el local/i);
+  assert.match(leido, /cambiar la dirección/i);
+  assert.notEqual(leido, GENERICO);
+});
+
+test('el alcohol fuera de su ventana es un horario, no una tienda que no vende alcohol', () => {
+  const leido = readableOrderCreationError(ALCOHOL_FUERA_DE_VENTANA, 500);
+  assert.match(leido, /fuera del horario permitido/i);
+  assert.doesNotMatch(leido, /no tiene habilitada la venta/i, 'la vende, pero no a esta hora');
+});
+
+test('el comercio o la modalidad deshabilitados dicen eso', () => {
+  assert.match(
+    readableOrderCreationError({ message: 'el negocio no esta habilitado para recibir pedidos' }, 500),
+    /no habilitó los pedidos online/i,
+  );
+  for (const message of ['delivery no habilitado', 'retiro no habilitado']) {
+    const leido = readableOrderCreationError({ message }, 500);
+    assert.match(leido, /modalidad elegida no está habilitada/i, message);
+    assert.notEqual(leido, GENERICO, message);
+  }
+});
+
+// ── Una caída no es falta de stock ──────────────────────────────────────────
+
+test('«Service Unavailable» no se lee como producto agotado', () => {
+  // «unavailable» contiene «available»: el 503 del borde mandaba a la persona
+  // a cambiar el carrito en medio de una caída del servicio.
+  for (const message of ['Service Unavailable', 'The service is currently unavailable', 'upstream unavailable']) {
+    assert.equal(readableOrderCreationError({ message }, 503), GENERICO, message);
+  }
+  assert.equal(readableOrderCreationError({ message: 'product unavailable' }, 400), SIN_STOCK);
+});
+
+test('una respuesta que no llegó nunca se clasifica por las palabras de su traza', () => {
+  // Estado 0: el cliente pone en `details` la traza del navegador, con rutas y
+  // nombres de función. «stock», «auth» o «available» ahí adentro no son
+  // respuestas del backend.
+  const sinRespuesta = {
+    message: 'TypeError: Failed to fetch',
+    details: 'TypeError: Failed to fetch\n    at checkStockAvailable (https://tienda/js/stock.js:10:3)\n    at auth (https://tienda/js/auth.js:1:1)',
+  };
+  assert.equal(readableOrderCreationError(sinRespuesta, 0), GENERICO);
+  // Sin estado conocido se conserva la lectura de siempre.
+  assert.equal(readableOrderCreationError({ message: 'producto no disponible: abc' }), SIN_STOCK);
+});
+
+// ── El alta del pedido no espera para siempre ───────────────────────────────
+
+test('una consulta que no contesta se aborta al vencer el plazo', async () => {
+  let abortada = false;
+  let vencer = null;
+  let limpiado = 0;
+  const consulta = {
+    abortSignal(signal) {
+      return new Promise((resolve) => {
+        signal.addEventListener('abort', () => {
+          abortada = true;
+          // Lo que devuelve el cliente real cuando el transporte corta.
+          resolve({ data: null, error: { message: 'AbortError: The operation was aborted.' }, status: 0 });
+        });
+      });
+    },
+  };
+  const espera = withRequestTimeout(consulta, ORDER_REQUEST_TIMEOUT_MS, {
+    setTimer: (callback, ms) => { vencer = { callback, ms }; return 7; },
+    clearTimer: (id) => { if (id === 7) limpiado += 1; },
+  });
+  assert.equal(vencer.ms, ORDER_REQUEST_TIMEOUT_MS);
+  assert.equal(abortada, false, 'antes del plazo la consulta sigue viva');
+  vencer.callback();
+  const resultado = await espera;
+  assert.equal(abortada, true);
+  assert.equal(resultado.status, 0);
+  assert.equal(limpiado, 1, 'el temporizador se limpia siempre');
+  assert.equal(readableOrderCreationError(resultado.error, resultado.status), GENERICO);
+});
+
+test('una consulta que contesta a tiempo no se toca, y su temporizador se limpia', async () => {
+  let limpiado = 0;
+  const consulta = { abortSignal: () => Promise.resolve({ data: { id: 'p-1' }, error: null, status: 200 }) };
+  const resultado = await withRequestTimeout(consulta, 1000, {
+    setTimer: () => 3,
+    clearTimer: (id) => { if (id === 3) limpiado += 1; },
+  });
+  assert.deepEqual(resultado, { data: { id: 'p-1' }, error: null, status: 200 });
+  assert.equal(limpiado, 1);
+});
+
+test('un cliente sin abortSignal se espera tal cual', async () => {
+  const simple = Promise.resolve({ data: 1, error: null });
+  assert.deepEqual(await withRequestTimeout(simple, 5), { data: 1, error: null });
+});
+
+test('el plazo deja lugar a una red móvil lenta', () => {
+  assert.ok(ORDER_REQUEST_TIMEOUT_MS >= 15_000 && ORDER_REQUEST_TIMEOUT_MS <= 45_000);
 });

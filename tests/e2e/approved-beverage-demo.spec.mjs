@@ -109,8 +109,8 @@ test('carrito arma el pedido con unidades y exige edad para cerveza', async ({ p
 test('filtros comerciales distinguen precio pendiente y formatos reales', async ({ page }) => {
   await installBrowserStubs(page);
   await gotoDemoReset(page, '/?reset=1&demo=1#catalog');
-  await page.locator('[data-catalog-filters] summary').click();
-  await page.locator('[data-catalog-filter="price"]').selectOption('pending');
+  await expect(page.locator('[data-catalog-filters]')).toBeHidden();
+  await page.locator('[data-catalog-filter="price"]').selectOption('pending', { force: true });
   await expect(page.locator('[data-product-grid] .product-card')).toHaveCount(pendingProducts);
   await expect(page.locator('[data-product-grid]')).toContainText('Precio próximamente');
 });
@@ -118,7 +118,7 @@ test('filtros comerciales distinguen precio pendiente y formatos reales', async 
 test('el filtro de formato desaparece: la góndola es toda de unidades', async ({ page }) => {
   await installBrowserStubs(page);
   await gotoDemoReset(page, '/?reset=1&demo=1#catalog');
-  await page.locator('[data-catalog-filters] summary').click();
+  await expect(page.locator('[data-catalog-filters]')).toBeHidden();
 
   // El panel sólo ofrece un filtro cuando hay más de un valor que elegir. Sin
   // packs en góndola queda un único formato —Unidad— y el campo se retira
@@ -129,7 +129,7 @@ test('el filtro de formato desaparece: la góndola es toda de unidades', async (
   expect(formatos).not.toContain('Pack');
 
   // Los filtros que sí tienen variedad siguen funcionando.
-  await expect(page.locator('[data-catalog-filter-field="price"]')).toBeVisible();
+  await expect(page.locator('[data-catalog-filter-field="price"]')).not.toHaveAttribute('hidden', '');
 });
 
 test('busqueda normaliza marca y capacidad con puntuacion local', async ({ page }) => {

@@ -168,7 +168,14 @@ export function getActiveDeliveryAddress() {
 let notifiedDeliveryAddressKey = null;
 function notifyDeliveryAddressChanged() {
   const address = getActiveDeliveryAddress();
-  const key = address ? `${address.id}|${address.formattedAddress}` : '';
+  // La clave lleva TODO lo que el servidor usa para resolver la cobertura. El
+  // barrio y el punto se editan sobre la misma dirección —mismo id, misma
+  // calle—: con la clave corta, agregarle el barrio a una dirección vieja no
+  // avisaba, no se volvía a preguntar, y el carrito seguía diciendo «no
+  // realizamos entregas en esta zona» sobre una dirección que ya estaba bien.
+  const key = address
+    ? [address.id, address.formattedAddress, address.neighborhood || '', address.latitude ?? '', address.longitude ?? ''].join('|')
+    : '';
   if (key === notifiedDeliveryAddressKey) return;
   notifiedDeliveryAddressKey = key;
   try {

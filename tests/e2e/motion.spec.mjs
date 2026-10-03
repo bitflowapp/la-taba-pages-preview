@@ -72,8 +72,11 @@ test.describe('TABA2 motion system', () => {
       });
       window.__tabaCartBumpObserver = observer;
     });
+    const productId = await add.getAttribute('data-add-product');
     await add.click();
-    await expect(page.locator('[data-toast]')).toContainText('agregado al pedido');
+    await expect(page.locator(`[data-product-grid] [data-card-product="${productId}"] .qty-stepper strong`)).toHaveText('1');
+    await expect(page.locator('[data-toast]')).toBeEmpty();
+    await expect(page.locator('[data-product-modal]')).toBeHidden();
     await expect.poll(() => page.evaluate(() => window.__tabaCartBumpObserved)).toBe(true);
     await page.evaluate(() => window.__tabaCartBumpObserver?.disconnect?.());
     await guards.assertClean();

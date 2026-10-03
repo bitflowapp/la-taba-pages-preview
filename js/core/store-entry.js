@@ -35,6 +35,7 @@ const MODE_UNAVAILABLE = 'unavailable';
  * @param {string} [input.catalogState]  estado del catálogo del repositorio
  * @param {boolean} [input.orderingVerified] el backend confirmó que el comercio toma pedidos
  * @param {object} [input.availability]  respuesta de `commerce_availability` ya normalizada
+ * @param {boolean} [input.slow]         el catálogo lleva más de lo razonable sin contestar
  * @param {Date} [input.now]
  * @returns {{ kind: string, title: string, message: string, retry: boolean, tracking: boolean }}
  */
@@ -43,6 +44,7 @@ export function describeStoreEntry({
   catalogState = 'idle',
   orderingVerified = false,
   availability = null,
+  slow = false,
   now = new Date(),
 } = {}) {
   if (mode === MODE_PUBLIC) {
@@ -60,6 +62,17 @@ export function describeStoreEntry({
 
   const state = String(catalogState || 'idle');
   if (state === 'idle' || state === 'loading') {
+    // Una consulta que ni contesta ni falla dejaba esta tarjeta fija en
+    // «Abriendo la tienda…» sin plazo y sin salida: medido con el catálogo
+    // colgado, a los 15 s seguía igual. Pasado un rato razonable se dice lo que
+    // pasa —está tardando— y se ofrece lo único que ayuda. No es un error: el
+    // catálogo puede llegar todavía, y cuando llega la tienda abre sola.
+    if (slow === true) {
+      return entry(STORE_ENTRY_KIND.LOADING,
+        'La tienda está tardando más de lo normal',
+        'Revisá tu conexión y probá de nuevo.',
+        { retry: true });
+    }
     return entry(STORE_ENTRY_KIND.LOADING,
       'Abriendo la tienda…',
       'Estamos trayendo el catálogo del local.');

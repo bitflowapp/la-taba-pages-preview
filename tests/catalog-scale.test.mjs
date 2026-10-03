@@ -183,7 +183,7 @@ test('la grilla del catálogo se dibuja de a tramos y el filtro no se pagina', (
   // El contador de arriba sigue contando TODO lo filtrado, no lo dibujado.
   assert.match(ui, /const products = getFilteredProducts\(state\);\s*\n\s*const count = products\.length;/);
   // Y el aviso de «nada comprable» también mira la lista entera.
-  assert.match(ui, /const nadaComprable = filteredProducts\.every\(/);
+  assert.match(ui, /const nadaComprable = noneBuyableReason\(filteredProducts\);/);
   // Cambiar de categoría, de búsqueda, de orden o de filtro vuelve al primer
   // tramo: seguir en la página cuatro de una lista que ya no existe no es
   // conservar el lugar.

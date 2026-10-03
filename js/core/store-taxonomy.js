@@ -248,6 +248,30 @@ export const ALCOHOLIC_CATEGORY_IDS = Object.freeze(
 /** Orden de las categorías vivas: el que usa la home y la tira de chips. */
 export const STORE_CATEGORY_ORDER = Object.freeze(STORE_CATEGORIES.map((entry) => entry.id));
 
+const CATEGORY_RANK = new Map(STORE_CATEGORY_ORDER.map((id, index) => [id, index]));
+
+/**
+ * EL ORDEN DE LA GÓNDOLA CUANDO EL COMERCIO TODAVÍA NO ORDENÓ NADA.
+ *
+ * El catálogo real llega ordenado por `sort_order` y, a igual `sort_order`,
+ * por nombre. En un catálogo recién cargado todos valen 0 y lo que queda es el
+ * alfabeto: «Todas» abría con un Malbec, un aperitivo, un agua y una cerveza.
+ *
+ * Esto agrupa por rubro —en el MISMO orden que los chips y los carruseles de la
+ * home— SÓLO a lo que empata en `sort_order`: en cuanto el comercio numere sus
+ * productos, manda su número. Dentro del rubro se conserva el orden recibido:
+ * el `sort` es estable y acá no se inventa ningún criterio más.
+ *
+ * Es para la lectura del catálogo real, donde ese respaldo alfabético nace. Un
+ * catálogo que ya viene curado en su propio orden no pasa por acá.
+ */
+export function sortByShelfOrder(products) {
+  const list = Array.isArray(products) ? products : [];
+  const order = (product) => (Number.isFinite(Number(product?.sortOrder)) ? Number(product.sortOrder) : 0);
+  const rank = (product) => CATEGORY_RANK.get(product?.categoryId) ?? CATEGORY_RANK.size;
+  return [...list].sort((a, b) => order(a) - order(b) || rank(a) - rank(b));
+}
+
 /**
  * Los carruseles de la home, en orden, cada uno con las categorías que fusiona.
  * Se deriva de `section` para que no exista una segunda lista que se pueda

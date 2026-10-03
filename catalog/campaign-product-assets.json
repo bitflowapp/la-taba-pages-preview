@@ -1,0 +1,371 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Existing approved packshots copied for the isolated QA lab; no product publication flags or associations changed.",
+  "sources": [
+    {
+      "sku": "heineken-710ml",
+      "externalId": "heineken-710ml",
+      "productId": "34f272b0-9dc0-4215-a54e-8100bbc91aee",
+      "rightsStatus": "LICENCIA_COMERCIAL",
+      "rightsReference": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
+      "sourceType": "retail_reference",
+      "sourceUrl": "https://supertopar.vteximg.com.br/arquivos/ids/156651/304171.jpg?v=638899998924070000",
+      "sourceSha256": "53275a4d63762c9d784915a0218a89a528d86199e84efbab97cf0f5d29066400",
+      "checkedAt": "2026-09-29",
+      "assets": {
+        "master": {
+          "path": "assets/products/campaign-heineken-710ml-master-48236e76fb26fb3b.webp",
+          "sha256": "48236e76fb26fb3bd252c2ab22bacd76fd3213eed118e36eca294681abaa4668",
+          "width": 1000,
+          "height": 1000
+        },
+        "thumbnail": {
+          "path": "assets/products/campaign-heineken-710ml-thumbnail-3c56b52649ce5e31.webp",
+          "sha256": "3c56b52649ce5e31355ac316e740622a73a86ed933d09b4802abdae2d45e9104",
+          "width": 400,
+          "height": 400
+        }
+      },
+      "note": "Exact byte copies of existing local aliases; authorized retail evidence on feat/real-catalog-images-definitive. No download or image editing."
+    },
+    {
+      "sku": "red-bull-energy-drink-355ml",
+      "externalId": "red-bull-energy-drink-355ml",
+      "productId": "b88e1ebf-4377-4284-aa65-88bad8abc224",
+      "rightsStatus": "LICENCIA_COMERCIAL",
+      "rightsReference": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
+      "sourceType": "retail_reference",
+      "sourceUrl": "https://jumboargentina.vteximg.com.br/arquivos/ids/872053/Energizate-Red-Bull-Energy-Drink-355cc-1-828794.jpg?v=638854274005130000",
+      "sourceSha256": "1a00499bcb867d7bc9787c767f5a8ce78c4105371600d9b33b4eead58497d4b1",
+      "checkedAt": "2026-09-29",
+      "assets": {
+        "master": {
+          "path": "assets/products/campaign-red-bull-energy-drink-355ml-master-1c15e4bea4f01c5d.webp",
+          "sha256": "1c15e4bea4f01c5d6e23a2461bc7cd10602a80086a28d35cc8811fc070a8abf3",
+          "width": 1000,
+          "height": 1000
+        },
+        "thumbnail": {
+          "path": "assets/products/campaign-red-bull-energy-drink-355ml-thumbnail-ed45d1a48ddbaaeb.webp",
+          "sha256": "ed45d1a48ddbaaebc4769da3d2df32f54f97bcf06a980627d27ac82746dd4215",
+          "width": 400,
+          "height": 400
+        }
+      },
+      "note": "Exact byte copies of existing local aliases; authorized retail evidence on feat/real-catalog-images-definitive. No download or image editing."
+    },
+    {
+      "sku": "monster-mango-loco-473ml",
+      "externalId": "monster-mango-loco-473ml",
+      "productId": "1b34f11e-0752-42bb-8f08-6e34d023883b",
+      "rightsStatus": "LICENCIA_COMERCIAL",
+      "rightsReference": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
+      "sourceType": "retail_reference",
+      "sourceUrl": "https://ardiaprod.vteximg.com.br/arquivos/ids/381087/Bebida-Energizante-Monster-Mango-Loco-473-Ml-_2.jpg?v=639262725094900000",
+      "sourceSha256": "4e15886041f6709ee1cdc3d5d0ac58800efbb34be34ee0bf93c22c28d220dbdb",
+      "checkedAt": "2026-09-29",
+      "assets": {
+        "master": {
+          "path": "assets/products/campaign-monster-mango-loco-473ml-master-5beb803c7f916d6d.webp",
+          "sha256": "5beb803c7f916d6d98fcf09f02fcd23dae40e0a3da83c8f711d6c50a55759d52",
+          "width": 1000,
+          "height": 1000
+        },
+        "thumbnail": {
+          "path": "assets/products/campaign-monster-mango-loco-473ml-thumbnail-6ad409eb8a1f54a2.webp",
+          "sha256": "6ad409eb8a1f54a245ee1addb23a01298dac175a735366605b0852a251645312",
+          "width": 400,
+          "height": 400
+        }
+      },
+      "note": "Exact byte copies of existing local aliases; authorized retail evidence on feat/real-catalog-images-definitive. No download or image editing."
+    },
+    {
+      "sku": "fanta-naranja-2250ml",
+      "externalId": "fanta-naranja-2250ml",
+      "productId": "c0c12839-d119-4995-a309-73127fe0a7f7",
+      "rightsStatus": "LICENCIA_COMERCIAL",
+      "rightsReference": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
+      "sourceType": "retail_reference",
+      "sourceUrl": "https://ardiaprod.vteximg.com.br/arquivos/ids/355899/Gaseosa-Fanta-Naranja-225-Lt-_2.jpg?v=638905892513500000",
+      "sourceSha256": "2f3c4258d7fdd6856c145115146f02b16196e7e614966f6e4cfbd351cf469d9c",
+      "checkedAt": "2026-09-29",
+      "assets": {
+        "master": {
+          "path": "assets/products/campaign-fanta-naranja-2250ml-master-f44b4b965e47d807.webp",
+          "sha256": "f44b4b965e47d807478735b63a41be371a5c56d3ca84621df97d6eed088467a8",
+          "width": 1000,
+          "height": 1000
+        },
+        "thumbnail": {
+          "path": "assets/products/campaign-fanta-naranja-2250ml-thumbnail-26c591282712c681.webp",
+          "sha256": "26c591282712c6812e3e3fcc93e3a01a973b1f8df10daf1db09b90e76e3c8e7f",
+          "width": 400,
+          "height": 400
+        }
+      },
+      "note": "Exact byte copies of existing local aliases; authorized retail evidence on feat/real-catalog-images-definitive. No download or image editing."
+    },
+    {
+      "sku": "aperol-750ml",
+      "externalId": "aperol-750ml",
+      "productId": "536885a1-afe6-43ba-8d80-ee7eafe48125",
+      "rightsStatus": "LICENCIA_COMERCIAL",
+      "rightsReference": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
+      "sourceType": "retail_reference",
+      "sourceUrl": "https://ardiaprod.vteximg.com.br/arquivos/ids/381084/Aperitivo-Aperol-750-Ml-_1.jpg?v=639262725043730000",
+      "sourceSha256": "be4062d78cb903ba82ff6db3645fc0ec66cb04331868f5d672a1817821cc95f6",
+      "checkedAt": "2026-09-29",
+      "assets": {
+        "master": {
+          "path": "assets/products/campaign-aperol-750ml-master-8bff69a8a2104673.webp",
+          "sha256": "8bff69a8a2104673ef5a02aa05305f721aa25c306c8126744c1a82c2b80143d5",
+          "width": 1000,
+          "height": 1000
+        },
+        "thumbnail": {
+          "path": "assets/products/campaign-aperol-750ml-thumbnail-0d91addbcbde28a4.webp",
+          "sha256": "0d91addbcbde28a44e53b8ec267347578e6d3cb041dde52e6735f53e25b976e3",
+          "width": 400,
+          "height": 400
+        }
+      },
+      "note": "Exact byte copies of existing local aliases; authorized retail evidence on feat/real-catalog-images-definitive. No download or image editing."
+    },
+    {
+      "sku": "coca-cola-original-2250ml-local",
+      "externalId": "coca-cola-original-2250ml-local",
+      "productId": "682da318-c15c-40cf-8b58-29d0e25eee6a",
+      "rightsStatus": "LICENCIA_COMERCIAL",
+      "rightsReference": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
+      "sourceType": "retail_reference",
+      "sourceUrl": "https://ardiaprod.vteximg.com.br/arquivos/ids/307377/Gaseosa-CocaCola-Sabor-Original-2-25-Lt-_2.jpg?v=639240426773200000",
+      "sourceSha256": "4f8851136048c72387bbd21e71f22509085e70c0b8c7a226a955d947e6b4c946",
+      "checkedAt": "2026-09-29",
+      "assets": {
+        "master": {
+          "path": "assets/products/campaign-coca-cola-original-2250ml-local-master-a97bfb9ca463cbd1.webp",
+          "sha256": "a97bfb9ca463cbd1c664c21ae8bb1644640945c36618c32d35cc78e5570bf251",
+          "width": 1000,
+          "height": 1000
+        },
+        "thumbnail": {
+          "path": "assets/products/campaign-coca-cola-original-2250ml-local-thumbnail-92968a5c7541cd9b.webp",
+          "sha256": "92968a5c7541cd9bf0dd73d4e470313b49b4bfa5a65654ea010575dfbd3b53a0",
+          "width": 400,
+          "height": 400
+        }
+      },
+      "note": "Exact byte copies of existing local aliases; authorized retail evidence on feat/real-catalog-images-definitive. No download or image editing."
+    }
+  ],
+  "authorizationEvidence": {
+    "commit": "a718135e3253da3b7ecb979bf1528e7e1b4af9af",
+    "path": "docs/catalog/retail-authorized-images-2026-09-29.json",
+    "authorization": {
+      "id": "TABA-AUT-2026-08-001",
+      "amplification": "2026-09-29",
+      "covered_sources": [
+        "Supermercados DIA (diaonline.supermercadosdia.com.ar)",
+        "Supermercados TOP (www.supertop.com.ar)",
+        "Jumbo (www.jumbo.com.ar)"
+      ],
+      "not_extended_to": [
+        "fabricantes",
+        "fotógrafos",
+        "marketplaces",
+        "otras cadenas (Vea, Disco, Carrefour, La Anónima…)",
+        "distribuidores",
+        "sitios de terceros"
+      ]
+    },
+    "assets": [
+      {
+        "sku": "heineken-710ml",
+        "product_name": "Heineken Lager 710 ml",
+        "catalog_gtin": "7793147571283",
+        "source_business": "Supermercados TOP",
+        "source_site": "supertop.com.ar",
+        "source_url": "https://supertopar.vteximg.com.br/arquivos/ids/156651/304171.jpg?v=638899998924070000",
+        "source_product_page": "https://www.supertop.com.ar/cerveza-heineken-lata-x-710cc-7793147571283/p",
+        "source_product_name": "Cerveza Heineken Lata x 710cc",
+        "source_ean": "7793147571283",
+        "retrieved_at": "2026-09-29",
+        "image_date": "2025-08-05",
+        "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
+        "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
+        "identity_basis": "GTIN_EXACT",
+        "exact_product_match": "YES_GTIN",
+        "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Heineken Lager 710 ml». Lata Heineken de 710 ml con «710 cm³» legible; se descartaron la lata de 473 ml, la de 330 ml y la 0.0.",
+        "adaptation": "placa lateral de la tienda retirada y centrada sobre blanco; envase sin retoque",
+        "sha256": {
+          "original": "f7c6bd35e9b1b7d6351c56212c0b199c803ae604ad2c5ece45321b3675ddef8c",
+          "uploaded_source": "53275a4d63762c9d784915a0218a89a528d86199e84efbab97cf0f5d29066400",
+          "master": "48236e76fb26fb3bd252c2ab22bacd76fd3213eed118e36eca294681abaa4668",
+          "thumbnail": "3c56b52649ce5e31355ac316e740622a73a86ed933d09b4802abdae2d45e9104"
+        },
+        "upload_id": "9b232c22-2d22-419c-b594-2dc60d59f4d1",
+        "approved_asset_id": "1162ea4b-5356-4ee3-8a2a-84b01694deef",
+        "rights_status_db": "LICENCIA_COMERCIAL",
+        "source_type_db": "retail_reference",
+        "product_draft": true,
+        "replaced_previous_image": false
+      },
+      {
+        "sku": "red-bull-energy-drink-355ml",
+        "product_name": "Red Bull Energy Drink 355 ml",
+        "catalog_gtin": "90435225",
+        "source_business": "Jumbo",
+        "source_site": "jumbo.com.ar",
+        "source_url": "https://jumboargentina.vteximg.com.br/arquivos/ids/872053/Energizate-Red-Bull-Energy-Drink-355cc-1-828794.jpg?v=638854274005130000",
+        "source_product_page": "https://www.jumbo.com.ar/energizate-red-bull-energy-drink-355cc/p",
+        "source_product_name": "Bebida Energizante Energy Drink 355 Cc Red Bull",
+        "source_ean": "90435225",
+        "retrieved_at": "2026-09-29",
+        "image_date": "2025-06-13",
+        "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
+        "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
+        "identity_basis": "GTIN_EXACT",
+        "exact_product_match": "YES_GTIN",
+        "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Red Bull Energy Drink 355 ml». Imagen de Jumbo del 2025-06 con los octógonos vigentes; se descartó la de la misma ficha sin octógonos y la de DIA/TOP con la placa sobre la base.",
+        "adaptation": "centrada sobre blanco; envase sin retoque",
+        "sha256": {
+          "original": "ef4bda6000d436f45530cf5378b1db651bc42344d23b10dbf84882d88cc628df",
+          "uploaded_source": "1a00499bcb867d7bc9787c767f5a8ce78c4105371600d9b33b4eead58497d4b1",
+          "master": "1c15e4bea4f01c5d6e23a2461bc7cd10602a80086a28d35cc8811fc070a8abf3",
+          "thumbnail": "ed45d1a48ddbaaebc4769da3d2df32f54f97bcf06a980627d27ac82746dd4215"
+        },
+        "upload_id": "305ea81a-a941-4116-add8-8d2b9868519e",
+        "approved_asset_id": "03b5ec35-c4cc-4a59-b869-2f79871235f9",
+        "rights_status_db": "LICENCIA_COMERCIAL",
+        "source_type_db": "retail_reference",
+        "product_draft": true,
+        "replaced_previous_image": false
+      },
+      {
+        "sku": "coca-cola-original-2250ml-local",
+        "product_name": "Coca-Cola Sabor Original 2,25 L",
+        "catalog_gtin": "7790895000997",
+        "source_business": "Supermercados DIA",
+        "source_site": "diaonline.supermercadosdia.com.ar",
+        "source_url": "https://ardiaprod.vteximg.com.br/arquivos/ids/307377/Gaseosa-CocaCola-Sabor-Original-2-25-Lt-_2.jpg?v=639240426773200000",
+        "source_product_page": "https://diaonline.supermercadosdia.com.ar/gaseosa-coca-cola-sabor-original-225-lt-14837/p",
+        "source_product_name": "Gaseosa Coca-Cola Sabor Original 2.25 Lt.",
+        "source_ean": "7790895000997",
+        "retrieved_at": "2026-09-29",
+        "image_date": "2026-09-03",
+        "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
+        "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
+        "identity_basis": "GTIN_EXACT",
+        "exact_product_match": "YES_GTIN",
+        "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Coca-Cola Sabor Original 2,25 L».",
+        "adaptation": "centrada sobre blanco; envase sin retoque",
+        "sha256": {
+          "original": "483b2a7ac3e164b96c94103cffdd85cda1bed528145c677787e1306700590587",
+          "uploaded_source": "4f8851136048c72387bbd21e71f22509085e70c0b8c7a226a955d947e6b4c946",
+          "master": "a97bfb9ca463cbd1c664c21ae8bb1644640945c36618c32d35cc78e5570bf251",
+          "thumbnail": "92968a5c7541cd9bf0dd73d4e470313b49b4bfa5a65654ea010575dfbd3b53a0"
+        },
+        "upload_id": "02296816-02e7-4e2c-a891-24d3e83dafe5",
+        "approved_asset_id": "d81e9a38-6b2c-4e4c-84da-57bd18916da2",
+        "rights_status_db": "LICENCIA_COMERCIAL",
+        "source_type_db": "retail_reference",
+        "product_draft": true,
+        "replaced_previous_image": false
+      },
+      {
+        "sku": "fanta-naranja-2250ml",
+        "product_name": "Fanta Naranja 2,25 L",
+        "catalog_gtin": "7790895001017",
+        "source_business": "Supermercados DIA",
+        "source_site": "diaonline.supermercadosdia.com.ar",
+        "source_url": "https://ardiaprod.vteximg.com.br/arquivos/ids/355899/Gaseosa-Fanta-Naranja-225-Lt-_2.jpg?v=638905892513500000",
+        "source_product_page": "https://diaonline.supermercadosdia.com.ar/gaseosa-fanta-naranja-225-lt-84975/p",
+        "source_product_name": "Gaseosa Fanta Naranja 2,25 Lt.",
+        "source_ean": "7790895001017",
+        "retrieved_at": "2026-09-29",
+        "image_date": "2025-08-12",
+        "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
+        "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
+        "identity_basis": "GTIN_EXACT",
+        "exact_product_match": "YES_GTIN",
+        "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Fanta Naranja 2,25 L».",
+        "adaptation": "centrada sobre blanco; envase sin retoque",
+        "sha256": {
+          "original": "3417755a3834abf27742537a03f45a27b473d74bbef9e7cdbaf3ef3e26cc16f5",
+          "uploaded_source": "2f3c4258d7fdd6856c145115146f02b16196e7e614966f6e4cfbd351cf469d9c",
+          "master": "f44b4b965e47d807478735b63a41be371a5c56d3ca84621df97d6eed088467a8",
+          "thumbnail": "26c591282712c6812e3e3fcc93e3a01a973b1f8df10daf1db09b90e76e3c8e7f"
+        },
+        "upload_id": "77fe2884-bc67-47ee-b2e0-bb821c96cca6",
+        "approved_asset_id": "8694b99e-94b0-4f79-b912-b72daebfc66a",
+        "rights_status_db": "LICENCIA_COMERCIAL",
+        "source_type_db": "retail_reference",
+        "product_draft": true,
+        "replaced_previous_image": false
+      },
+      {
+        "sku": "aperol-750ml",
+        "product_name": "Aperol 750 ml",
+        "catalog_gtin": "7891136057029",
+        "source_business": "Supermercados DIA",
+        "source_site": "diaonline.supermercadosdia.com.ar",
+        "source_url": "https://ardiaprod.vteximg.com.br/arquivos/ids/381084/Aperitivo-Aperol-750-Ml-_1.jpg?v=639262725043730000",
+        "source_product_page": "https://diaonline.supermercadosdia.com.ar/aperitivo-aperol-750-ml-279760/p",
+        "source_product_name": "Aperitivo Aperol 750 Ml.",
+        "source_ean": "7891136057029",
+        "retrieved_at": "2026-09-29",
+        "image_date": "2026-09-29",
+        "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
+        "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
+        "identity_basis": "GTIN_EXACT",
+        "exact_product_match": "YES_GTIN",
+        "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Aperol 750 ml».",
+        "adaptation": "centrada sobre blanco; envase sin retoque",
+        "sha256": {
+          "original": "df42be030b8b70ec81aa3b4edf55d578ac63ae8ebca9336bfa300263e85208b8",
+          "uploaded_source": "be4062d78cb903ba82ff6db3645fc0ec66cb04331868f5d672a1817821cc95f6",
+          "master": "8bff69a8a2104673ef5a02aa05305f721aa25c306c8126744c1a82c2b80143d5",
+          "thumbnail": "0d91addbcbde28a44e53b8ec267347578e6d3cb041dde52e6735f53e25b976e3"
+        },
+        "upload_id": "eafed1a9-076b-45f9-9787-c563e94fe36b",
+        "approved_asset_id": "b18db7af-8fbc-4480-90d0-f6bd910d9576",
+        "rights_status_db": "LICENCIA_COMERCIAL",
+        "source_type_db": "retail_reference",
+        "product_draft": true,
+        "replaced_previous_image": false
+      },
+      {
+        "sku": "monster-mango-loco-473ml",
+        "product_name": "Monster Mango Loco 473 ml",
+        "catalog_gtin": "7798422520045",
+        "source_business": "Supermercados DIA",
+        "source_site": "diaonline.supermercadosdia.com.ar",
+        "source_url": "https://ardiaprod.vteximg.com.br/arquivos/ids/381087/Bebida-Energizante-Monster-Mango-Loco-473-Ml-_2.jpg?v=639262725094900000",
+        "source_product_page": "https://diaonline.supermercadosdia.com.ar/bebida-energizante-monster-mango-loco-473-ml-282433/p",
+        "source_product_name": "Bebida Energizante Monster Mango Loco 473 Ml.",
+        "source_ean": "7798422620045",
+        "retrieved_at": "2026-09-29",
+        "image_date": "2026-09-29",
+        "authorization_basis": "AUTHORIZED_RETAIL_SOURCE",
+        "authorization_ref": "TABA-AUT-2026-08-001, ampliación 2026-09-29",
+        "identity_basis": "NAME_SIZE_VARIANT",
+        "exact_product_match": "YES_NAME_SIZE_VARIANT_GTIN_DIFFERS",
+        "visual_review": "Revisada a ojo en el bucket público: envase completo, etiqueta legible, fondo blanco, sin placa ni precio; coincide con «Monster Mango Loco 473 ml». El GTIN del catálogo (7798422520045) tiene un dígito verificador inválido; el EAN vigente en las dos tiendas es 7798422620045 (error de tipeo probable).",
+        "adaptation": "centrada sobre blanco; envase sin retoque",
+        "sha256": {
+          "original": "120b608d3c21243b4524ae5a1b7088f11efa7d94946ef4d4aaeac0598ee51eaf",
+          "uploaded_source": "4e15886041f6709ee1cdc3d5d0ac58800efbb34be34ee0bf93c22c28d220dbdb",
+          "master": "5beb803c7f916d6d98fcf09f02fcd23dae40e0a3da83c8f711d6c50a55759d52",
+          "thumbnail": "6ad409eb8a1f54a245ee1addb23a01298dac175a735366605b0852a251645312"
+        },
+        "upload_id": "e2df6e9b-b93b-4791-8864-52d5567af412",
+        "approved_asset_id": "a6d05553-b8f1-41da-941e-cb0bb24843bc",
+        "rights_status_db": "LICENCIA_COMERCIAL",
+        "source_type_db": "retail_reference",
+        "product_draft": true,
+        "replaced_previous_image": false
+      }
+    ]
+  }
+}

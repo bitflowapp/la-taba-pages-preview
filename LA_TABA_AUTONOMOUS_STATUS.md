@@ -6,11 +6,10 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
 ## Para retomar (leer primero)
 
 - Informe final: `LA_TABA_AUTONOMOUS_BACKEND_REPORT.md` (estado, hallazgos, OWNER_APPROVAL_REQUIRED con pasos exactos, veredictos).
-- Rama `hardening/taba-ecommerce-production`, todo pusheado. Nada aplicado en Staging (158) ni en CP (157); la rama tiene 206
+- Rama `hardening/taba-ecommerce-production`, todo pusheado. Nada aplicado en Staging (158) ni en CP (157); la rama tiene 208
   migraciones. CI completo verde en `a7eb622c` y `011717fa`; el último CI y el certificador del stack están al final de la bitácora.
-- Trabajo en curso fuera de la rama: worktree `la-taba-http-contract` (rama local `feat/taba-http-contract`, sin push): contrato
-  HTTP (API-01/C-2). Retomar desde sus commits y su `docs/ecommerce-hardening/http-contract-NOTES.md`; verificar todo antes de
-  integrar (pgTAP canónico, cadena de reversiones, certificador en el stack). El worktree `la-taba-real-money-gate` ya está integrado.
+- No queda trabajo fuera de la rama: el contrato HTTP (API-01/C-2) y el interruptor del cobro real (EDGE-03) están integrados;
+  los worktrees `la-taba-http-contract` y `la-taba-real-money-gate` se pueden borrar.
 - Herramientas locales: Postgres 17 de la sesión anterior en el puerto 55521
   (`…\C--Users-DELL\04e206e5-…\scratchpad\local\localdb.mjs start|reset|test`), arnés `integrate/repo-run.mjs`, cadena
   `integrate/rollback-chain.mjs`; lecturas de Staging/CP en sólo lectura con `.tmp-scratch/mgmt.mjs` (no versionado).
@@ -149,3 +148,49 @@ aserciones, total consistente (base limpia y base «sucia»); carreras admisión
   corregidos). Suites: Deno 52 + 452, `test:payments` 228/228, compuertas 146/146, `npm run check`. NO desplegado: CP sigue sin
   el secreto, así que el cobro real sigue cerrado. El worktree `la-taba-real-money-gate` ya está integrado (se puede borrar).
   Corrida 6 del stack: 37127204266.
+- 10:50 — el CI completo sobre `889903da` (run 37127693255) falló en el job de base de datos (y se canceló el resto): el verificador independiente
+  A1-A4 simula un entorno con el cobro real autorizado sólo con la variable vieja, y el handler nuevo (EDGE-03) contestaba
+  `PAYMENT_UNAVAILABLE`. Corregido en `1470b3ff` (el entorno simulado también lleva el interruptor nuevo); CI 37128362175:
+  base de datos y Windows VERDES.
+- 11:00–11:15 — **contrato HTTP integrado (API-01 + C-2)**, revisado y verificado por mí antes de pushear: `ec818d12`…`d79992cf`
+  (cherry-pick de los 8 commits del agente) + `ed86e3cb` (el check del certificador que clavaba el 500 pasa a exigir 409) +
+  `63119fd8` (registro: API-01 corregido; P2 35/23) + `2bc7218a` (plan de promoción: guarda `ROLLOUT_BLOCKED`, cadena de 50).
+  `20261002090000` envuelve 109 funciones de entrada: por la API, un 55000 sale como HTTP 409 y un P0002 como 404, con el mismo
+  cuerpo; sin `request.method` o con un llamador PL/pgSQL, el error original. `20261002091000` les da su SQLSTATE a 46 negativas
+  que salían como P0001 (15 aserciones de 6 tests cambian sólo el SQLSTATE esperado). Verificación local con 208 migraciones:
+  pgTAP 78/78 y 5.938 (limpia y «sucia»), carreras PASS con 0 deadlocks, cadena **50/50, 0 diferencias**, mínimo privilegio
+  sobre el esquema viejo PASS, conversión como la ve PostgREST 11/11 (`scripts/db/check-api-boundary.mjs`), Node 985/985,
+  `npm run check` PASS. Las Edge Functions no deciden por el estado HTTP de una RPC (revisado): no cambian.
+- 11:22 — **certificador en el stack sobre `2bc7218a` (run 37129059684): 455 checks, 450 PASS, 0 FAIL, 5 no probados** (4 no
+  disponibles en el destino + umbrales de rendimiento sin versionar). Los dos FAIL de API-01/C-2 pasan: la negativa 55000
+  contesta 409 y el «no existe» 404, con el mismo cuerpo, por un PostgREST real. Las 208 migraciones aplicaron en el Supabase
+  efímero sin que la guarda `ROLLOUT_BLOCKED` frenara nada. Evidencia: `artifacts/taba-autonomous-20261003/stack-certification-run-37129059684/`.
+
+## Segunda pasada (11:20–11:30, obligatoria)
+
+Cada frente se volvió a mirar contra evidencia nueva, no contra lo que dijo la primera pasada:
+
+- **Idempotencia**: la carrera global sobre el árbol final (208 migraciones, orden del CI): `GLOBAL_IDEMPOTENCY: PASS`,
+  0 deadlocks; idempotencia en el stack 27/27. Sin cambios de estado.
+- **Pagos**: lectura viva de sólo lectura en Staging y CP (11:20): trabajos de pago muertos, cancelaciones trabadas, disputas y
+  dinero devuelto con stock tomado, todo en 0, igual que a las 09:28. Compuerta de CP repetida (11:25): `MONEY_MOVEMENT_POSSIBLE: NO`.
+  Pagos 12/12 y ACK perdido 11/11 en el stack final.
+- **Autorización**: el contrato HTTP no toca los 42501 (401/403); la app Rider sólo reintenta o cierra sesión ante 401/400/403,
+  y el Panel decide conflictos por el código (PT409), no por el estado: un 409 de negocio no se confunde con un conflicto de
+  revisión. AUTHZ-04 sigue esperando al dueño.
+- **Entregas y alertas**: 0 entregas en curso y tareas programadas activas en los dos entornos; cadena de reversiones 50/50.
+- **Stack**: 0 FAIL por primera vez (antes 2, API-01/C-2).
+
+Lo que encontró la segunda pasada: nada nuevo del producto. Dos errores míos, corregidos: corrí un subconjunto de Node sin
+`--import ./tests/test-bootstrap.mjs` (2 fallas falsas en `address-flow`; con el bootstrap, 985/985), y anoté un número de corrida
+de CI equivocado en esta bitácora (corregido antes del commit).
+
+### Estado final de los cinco frentes
+
+| Frente | Estado | Evidencia |
+|---|---|---|
+| Idempotencia | `PASS` | `3007ed39`, `c997a18c` (IDEM-08), `e7287f53` (IDEM-07); carrera global PASS con 0 deadlocks en local y en el gate del CI; stack 27/27 |
+| Pagos | `PASS` hasta donde se puede sin dinero real | `cf0d30fb`, `5c578793` (PAY-PROBE-01, P1), EDGE-03 integrado (no desplegado); stack: pagos 12/12, ACK perdido 11/11; CP falla cerrado |
+| Autorización | `PASS` en código · aplicación `BLOCKED` (dueño) | `4cee8a74` (AUTHZ-04 + C-1); AUTHZ-04 en vivo en el stack (empleado → 42501); aplicarla en un entorno es OWNER_APPROVAL_REQUIRED |
+| Recuperación de entregas y alertas | `PASS` | `4a4afa79`, `34460beb`, `f02e55b2` (TRACK-01); cadena de 50 reversiones sin diferencias |
+| Certificación del stack | `PASS` | certificador en CI sobre un Supabase efímero: 455 checks, 450 PASS, 0 FAIL (37129059684), con el contrato HTTP integrado (`ec818d12`…`ed86e3cb`) |

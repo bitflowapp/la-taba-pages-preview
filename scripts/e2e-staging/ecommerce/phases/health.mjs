@@ -15,7 +15,7 @@
 //   · que la lectura VE un trabajo apagado sólo se puede mostrar donde la base es de
 //     quien corre: se apaga el trabajo diario de poda por la conexión directa, se lee,
 //     y se vuelve a encender (dicho en el check y anotado en el ledger).
-import { nowIso, sqlUuid } from '../env.mjs';
+import { nowIso, sleep, sqlUuid } from '../env.mjs';
 import { CODES, brief, refusal, refused } from '../http.mjs';
 import { piiLeaks } from '../orders.mjs';
 
@@ -24,6 +24,13 @@ export const HEALTH_COMPONENTS = Object.freeze(['database', 'auth', 'checkout', 
 const STATUSES = Object.freeze(['ok', 'degraded', 'down', 'unknown']);
 // El trabajo que se apaga para ver que la salud lo nota: el de poda del historial, que corre una vez por día.
 const PROBE_JOB = 'taba-cron-history-purge';
+// Un stack recién levantado todavía no corrió ningún barrido: pg_cron dispara en la frontera del minuto y el
+// certificador puede llegar antes (run 37143748544: la fase leyó a las 18:21:44 y el primer barrido de alertas corrió
+// a las 18:22:00; el latido decía «nunca» y el componente «down»). Antes de afirmar el planificador se espera su
+// primer latido, con tope: el barrido es de cada minuto, así que 90 s alcanzan con margen. Si no llega, el check
+// falla igual que antes. La espera queda en la evidencia.
+export const FIRST_HEARTBEAT_TIMEOUT_MS = 90_000;
+const FIRST_HEARTBEAT_POLL_MS = 3_000;
 // Formas de secreto que nunca pueden salir en este documento (las mismas que borra el redactor).
 const SECRET_SHAPES = Object.freeze([/eyJ[A-Za-z0-9_-]{10,}\.eyJ/, /sb_(secret|publishable)_/, /sbp_[A-Za-z0-9]{20,}/, /APP_USR-/, /certification-fixture-without-credentials/, /postgres(ql)?:\/\//]);
 
@@ -83,8 +90,21 @@ export default {
     `${refusal(CODES.FORBIDDEN, { actor: null })} sin sesión; ${refusal(CODES.FORBIDDEN)} para un cliente y para el dueño`);
 
     // ── 3. El planificador ────────────────────────────────────────────────────
-    const schedulers = componentOf(document, 'schedulers');
     const noScheduler = target.lacks('scheduler') || target.lacks('environment_ownership');
+    let schedulerDocument = document;
+    const firstHeartbeat = { waitedMs: 0, healthyBeforeWaiting: componentOf(document, 'schedulers')?.detail?.heartbeat?.healthy === true, polls: 0 };
+    if (!noScheduler && !firstHeartbeat.healthyBeforeWaiting) {
+      const started = Date.now();
+      while (Date.now() - started < FIRST_HEARTBEAT_TIMEOUT_MS) {
+        await sleep(FIRST_HEARTBEAT_POLL_MS);
+        firstHeartbeat.polls += 1;
+        const beat = (await ctx.env.observe('select (public.scheduler_heartbeat() ->> \'healthy\')::boolean as healthy'))[0];
+        if (beat?.healthy === true) break;
+      }
+      firstHeartbeat.waitedMs = Date.now() - started;
+      schedulerDocument = (await read('after the first scheduler heartbeat')).data;
+    }
+    const schedulers = componentOf(schedulerDocument, 'schedulers');
     if (noScheduler) {
       ctx.rec.skipOnTarget(P, 'SCHEDULER_COMPONENT_IS_HEALTHY', noScheduler);
     } else {
@@ -92,7 +112,7 @@ export default {
       C(P, 'SCHEDULER_COMPONENT_IS_HEALTHY', schedulers?.status === 'ok' && schedulers?.detail?.pg_cron_installed === true && schedulers?.detail?.heartbeat?.healthy === true
         && (schedulers?.detail?.missing || []).length === 0 && (schedulers?.detail?.inactive || []).length === 0,
       { status: schedulers?.status ?? null, heartbeat: schedulers?.detail?.heartbeat ?? null, missing: schedulers?.detail?.missing ?? null, inactive: schedulers?.detail?.inactive ?? null,
-        jobs: jobs.map((job) => `${job.job}:${job.state}`) }, 'pg_cron instalado, latido sano, ningún trabajo faltante ni apagado, todos en un estado sano');
+        jobs: jobs.map((job) => `${job.job}:${job.state}`), firstHeartbeat }, 'pg_cron instalado, latido sano, ningún trabajo faltante ni apagado, todos en un estado sano');
     }
 
     const noOwnership = target.lacks('database_ownership') || noScheduler;
@@ -134,7 +154,7 @@ export default {
     }
 
     ctx.evidence.write('phase-health.json', { status: document?.status ?? null, components: statusesOf(document), summary: document?.summary ?? null,
-      schedulers: { status: schedulers?.status ?? null, heartbeat: schedulers?.detail?.heartbeat ?? null, jobs: (schedulers?.detail?.jobs || []).map((job) => ({ job: job.job, state: job.state })) },
+      schedulers: { status: schedulers?.status ?? null, heartbeat: schedulers?.detail?.heartbeat ?? null, firstHeartbeat, jobs: (schedulers?.detail?.jobs || []).map((job) => ({ job: job.job, state: job.state })) },
       checkout: componentOf(document, 'checkout')?.detail ?? null, payments: componentOf(document, 'payment_integration')?.status ?? null });
   },
 };

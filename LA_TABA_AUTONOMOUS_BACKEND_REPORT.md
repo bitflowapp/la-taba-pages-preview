@@ -42,7 +42,25 @@ Evidencia: `artifacts/taba-autonomous-20261003/`.
 | MIGRACIONES | `PASS` local y en stack real · aplicación `OWNER_APPROVAL_REQUIRED` | 203/203 en PG17 y en Supabase efímero (CI); verificación previa de sólo lectura en Staging y CP; ninguna de las 45 migraciones de la rama está aplicada en Staging (158) ni en CP (157) |
 | OBSERVABILIDAD | `PASS` con pendientes | traza de pedido sin datos personales, salud por componente, alertas nuevas; DIAG-02 parcial (contador del Panel) |
 | SEGURIDAD | `PASS` con pendientes | guarda de host de los arneses (`?host=` pisaba la URL local, `a7eb622c`); el cobro real en CP falla cerrado (no tiene el secreto viejo ni el interruptor nuevo); el interruptor nuevo exige el valor exacto `enabled`; AUTHZ-04 parcial (`set_business_open_state`, `authorize_arca_homologation`) |
-| STACK | _se completa al cierre_ | migraciones en Supabase real: verde (runs 37122427290, 37122606379, 37123390697) |
+| STACK | `PASS` salvo el contrato HTTP | Certificador e-commerce contra un Supabase completo y efímero en CI (GoTrue, PostgREST, pg_cron y Edge reales; 206 migraciones): **455 checks, 448 PASS, 2 FAIL, 5 no probados**, estable en 4 corridas (37124096351, 37124837704, 37125278937, 37127204266 — la última ya con el interruptor del cobro real). Los 2 FAIL = API-01/C-2. Pagos 12/12, ACK perdido 11/11, idempotencia 27/27, RLS 19/19, AUTHZ-04 en vivo (empleado → 42501). No probados (motivo escrito): gateway local sin clave ×2, sin Cloudflare delante, firma de webhook (las funciones de pago se niegan antes por no ser un despliegue alojado), umbrales de rendimiento sin versionar. Evidencia: `artifacts/taba-autonomous-20261003/stack-certification-run-37125278937/` |
+
+### Rendimiento medido en el stack efímero (informativo, runner de CI de 2 vCPU con todo el stack)
+
+1.680 pedidos, **0 errores**, conservación de stock exacta después de cada escalón. p95 en ms:
+
+| Operación | base | c10 | c30 | c100 |
+|---|---:|---:|---:|---:|
+| catalog_read | 14.7 | 22.2 | 67.2 | 153.7 |
+| order_creation_cash | 39 | 134 | 175.3 | 604.1 |
+| order_query (historial del cliente) | 13.6 | 106 | 425 | 1677.2 |
+| tracking_query | 2.7 | 10.6 | 19.3 | 59.9 |
+| panel_query (bandeja del Panel) | 10.5 | 124.6 | 654.7 | 2897.8 |
+| checkout_creation | 15 | 125.3 | 156.3 | 770.9 |
+| payment_intent | 5.9 | 17.2 | 98.4 | 465.7 |
+| stock_commit_paid | 11.1 | 52.7 | 98.2 | 382.2 |
+
+La bandeja del Panel y el historial del cliente son los que más se degradan con concurrencia. Los umbrales no se versionaron:
+entre corridas la propuesta varía hasta ~60 % (con un caso que llega al timeout de 8 s a c100), y una compuerta así sería inestable.
 
 ## Entornos
 

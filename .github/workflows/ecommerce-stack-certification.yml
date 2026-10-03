@@ -132,7 +132,7 @@ jobs:
           psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -Atc "select 'CRON_JOB ' || jobname || ' ' || schedule || ' active=' || active from cron.job order by jobname"
           psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -Atc "select 'POSTGRES ' || version()"
           psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -Atc "select 'SERVICE_ROLE_CAN_INSERT_BUSINESSES=' || has_table_privilege('service_role', 'public.businesses', 'INSERT')"
-          psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -Atc "select 'PUBLIC_DEFAULT_ACL ' || pg_get_userbyid(d.defaclrole) || ' ' || d.defaclobjtype || ' ' || d.defaclacl::text from pg_default_acl d join pg_namespace n on n.oid = d.defaclnamespace where n.nspname = 'public' order by 1"
+          psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -Atc "select 'PUBLIC_DEFAULT_ACL ' || pg_get_userbyid(d.defaclrole) || ' ' || d.defaclobjtype::text || ' ' || d.defaclacl::text from pg_default_acl d join pg_namespace n on n.oid = d.defaclnamespace where n.nspname = 'public' order by 1"
           psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -Atc "select 'ROLE_SETTINGS ' || r.rolname || ' ' || array_to_string(s.setconfig, ',') from pg_db_role_setting s join pg_roles r on r.oid = s.setrole where r.rolname in ('anon', 'authenticated', 'authenticator') order by 1"
           curl -sS -o /dev/null -w 'POSTGREST_ROOT_STATUS=%{http_code}\n' http://127.0.0.1:54321/rest/v1/
           curl -sS -o /dev/null -w 'GOTRUE_HEALTH_STATUS=%{http_code}\n' http://127.0.0.1:54321/auth/v1/health

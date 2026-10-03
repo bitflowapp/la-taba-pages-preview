@@ -1202,12 +1202,12 @@
       "where": "public.record_mercadopago_preference_uncertain vs public.prepare_mercadopago_preference_v2, public.record_mercadopago_preference_created_v2"
     },
     {
-      "fixed_by": null,
-      "notes": "Pre-existing; reproduced by the wp11 package (scratch S3) and confirmed statically by its reviewer. Not caused by this branch.",
+      "fixed_by": "f02e55b2 · supabase/migrations/20261002063000_checkout_payload_survives_tracking_recovery.sql",
+      "notes": "Reproduced in the real flow (paid MP delivery order, dispatched, tracking recovered, payment status requested): 39000 and the whole payload failed. Fixed: the payload decrypts through private.handoff_code_or_null (null on 39000 only), the same answer the screen gave before the recovery; the code stays visible through tracking. Test: checkout_payload_survives_tracking_recovery_test.sql (10).",
       "aliases": [],
       "id": "TRACK-01",
       "severity": "P2",
-      "status": "open",
+      "status": "fixed",
       "domain": "checkout",
       "title": "After a customer recovers tracking on a paid Mercado Pago delivery order, the checkout payment-status payload fails with 39000 (wrong key or corrupt data)",
       "where": "public.recover_order_tracking_access (encrypts the handoff code with the new tracking token) vs public.checkout_session_customer_payload (decrypts every live handoff with the session id)"

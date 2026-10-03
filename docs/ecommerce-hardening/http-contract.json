@@ -27,6 +27,13 @@
     "P0001": "no debe llegar a un cliente: un RAISE EXCEPTION sin errcode es un defecto (contesta 400 · P0001, indistinguible de un dato mal escrito). 20261002091000 les dio 22023 / P0002 / 55000 a los 46 que quedaban en funciones de cliente; supabase/tests/http_error_contract_test.sql impide uno nuevo."
   },
   "selection_rule": "ENTRADA = función de `public`, no de trigger, que anon, authenticated o service_role pueden ejecutar. Se envuelve toda entrada PL/pgSQL que puede llegar a un RAISE de 55000 o de P0002 (incluido `select ... into strict` y los nombres de condición no_data_found / object_not_in_prerequisite_state): en su cuerpo, en una función que llama (transitivamente, por nombre) o en un trigger de una tabla que escribe. Más el trigger public.guard_business_currency_code (los clientes escriben `businesses` por PATCH directo).",
+  "sql_language_entries": {
+    "rule": "Una función en lenguaje SQL no puede llevar el manejador. Si el planificador la expande (sin SECURITY DEFINER ni cláusulas SET), la función PL/pgSQL envuelta que llama queda como marco más externo y contesta 409/404; si no se expande, el contexto tiene dos marcos y sale el original (HTTP 500 para 55000/P0002). Medido con llamadores de prueba: expandible → PGRST 409; con SET o SECURITY DEFINER → 55000.",
+    "reaching": [
+      { "function": "public.mp_consume_oauth(p_state_hash text, p_environment text)", "callers": "service_role", "answers": 500, "why": "tiene cláusula SET: no se expande" },
+      { "function": "public.mp_claim_refresh(p_business_id uuid, p_environment text, p_owner uuid)", "callers": "service_role", "answers": 500, "why": "tiene cláusula SET: no se expande" }
+    ]
+  },
   "excluded": [
     {
       "group": "caja_pos",

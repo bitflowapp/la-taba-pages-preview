@@ -1,0 +1,214 @@
+[HISTÓRICO REDACTADO PARA HANDOFF: líneas de credenciales/configuración excluidas; original intacto en notebook.]
+
+// Certificacion VIVA del contrato multi-pedido, por HTTP real contra el backend
+// descartable, con JWT de staff y de rider de verdad. No toca staging ni MP.
+// Cubre lo que el gate fisico no puede cubrir porque el cliente Android no
+// dibuja el board: capacidad, concurrencia, PIN, liberacion de cupo, rechazo,
+// privacidad del cliente y aislamiento de cobro.
+const API = 'http://127.0.0.1:54421';
+[EXCLUIDO: credencial/configuración; recrear localmente.]
+const BUSINESS = 'b0000000-0000-4000-8000-000000000001';
+const R1 = '1fe4d525-34f1-4727-b405-6c5da7308c5f';
+const R2 = 'aca0843e-785c-4396-9c10-daec58b3655e';
+const O = {
+  A: '0a000000-0000-4000-8000-000000000001',
+  B: '0a000000-0000-4000-8000-000000000002',
+  C: '0a000000-0000-4000-8000-000000000003',
+  D: '0a000000-0000-4000-8000-000000000004',
+  E: '0a000000-0000-4000-8000-000000000005',
+};
+const PIN = { A: '1111', B: '2222', C: '3333', D: '4444', E: '5555' };
+const TOKEN = {
+  A: 'gate_token_cliente_a_000000001',
+  B: 'gate_token_cliente_b_000000002',
+  C: 'gate_token_cliente_c_000000003',
+};
+
+let pass = 0, fail = 0;
+function check(name, ok, detail = '') {
+  if (ok) { pass++; console.log(`  ok   ${name}${detail ? ' :: ' + detail : ''}`); }
+  else { fail++; console.log(`  FAIL ${name}${detail ? ' :: ' + detail : ''}`); }
+}
+
+async function login(email, password) {
+  const r = await fetch(`${API}/auth/v1/token?grant_type=password`, {
+    method: 'POST', headers: { apikey: ANON, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const j = await r.json();
+  if (!j.access_token) throw new Error(`login ${email}: ${JSON.stringify(j)}`);
+  return j.access_token;
+}
+async function rpc(token, fn, args = {}, extraHeaders = {}) {
+  const r = await fetch(`${API}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: { apikey: ANON, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...extraHeaders },
+    body: JSON.stringify(args),
+  });
+  const t = await r.text();
+  let body; try { body = JSON.parse(t); } catch { body = t; }
+  return { status: r.status, body };
+}
+async function register(token, client) {
+  return rpc(token, 'identity_register_session', { p_business_id: BUSINESS, p_client: client });
+}
+
+const staff = await login('staff-qa@gate.invalid', 'GateQA-2026-staff');
+await register(staff, 'panel_web');
+const rider = await login('rider-qa@gate.invalid', 'GateQA-2026-rider');
+await register(rider, 'rider_android');
+const rider2 = await login('rider2-qa@gate.invalid', 'GateQA-2026-rider2');
+await register(rider2, 'rider_android');
+
+const board = async (tok = rider) => (await rpc(tok, 'get_rider_delivery_board')).body;
+const cap = async () => { const b = await board(); return `${b.active_orders}/${b.max_active_orders}`; };
+const rev = async (orderId) => {
+  const b = await board();
+  const o = (b.orders || []).find((x) => x.id === orderId);
+  return o ? o.revision : null;
+};
+const pendingOffer = async (code) => {
+  const b = await board();
+  return (b.offers || []).find((x) => x.public_code === code) || null;
+};
+async function offer(code) {
+  return rpc(staff, 'offer_order_to_rider', {
+    p_order_id: O[code], p_expected_status: 'ready', p_expected_rider_user_id: null, p_new_rider_user_id: R1,
+  });
+}
+
+console.log('\n== 8. ACEPTAR B -> 2/3');
+{
+  const off = await pendingOffer('MO-B');
+  const r = await rpc(rider, 'accept_rider_order_offer', { p_offer_id: off.offer_id, p_expected_version: off.version, p_idempotency_key: 'gate-acc-b-1' });
+  check('B aceptado', r.body?.code === 'accepted', JSON.stringify(r.body?.code));
+  check('capacidad 2/3', (await cap()) === '2/3', await cap());
+}
+
+console.log('\n== 9. ACEPTAR C -> 3/3');
+{
+  const o = await offer('C');
+  check('C ofrecido', o.body?.code === 'offered', JSON.stringify(o.body?.code));
+  const off = await pendingOffer('MO-C');
+  const r = await rpc(rider, 'accept_rider_order_offer', { p_offer_id: off.offer_id, p_expected_version: off.version, p_idempotency_key: 'gate-acc-c-1' });
+  check('C aceptado', r.body?.code === 'accepted', JSON.stringify(r.body?.code));
+  check('capacidad 3/3', (await cap()) === '3/3', await cap());
+  const b = await board();
+  check('at_capacity marcado por el servidor', b.at_capacity === true, String(b.at_capacity));
+}
+
+console.log('\n== 10. CUARTO PEDIDO -> DEBE NEGARSE');
+{
+  const o = await offer('D');
+  check('el Panel NO puede ofrecer un 4to', o.body?.ok !== true, JSON.stringify(o.body?.code ?? o.body));
+  const rs = await rpc(staff, 'list_active_business_riders', { p_business_id: BUSINESS });
+  const marco = rs.body.find((x) => x.rider_user_id === R1);
+  check('el selector del Panel muestra 3/3', marco.active_orders === 3 && marco.max_active_orders === 3, `${marco.active_orders}/${marco.max_active_orders}`);
+  const asg = await rpc(staff, 'assign_order_rider', { p_order_id: O.D, p_expected_status: 'ready', p_expected_rider_user_id: null, p_new_rider_user_id: R1 });
+  check('la asignacion directa tambien se frena', asg.body?.ok !== true, JSON.stringify(asg.body?.code ?? asg.body));
+}
+
+console.log('\n== 10b. INVARIANTE EN LA TABLA: nunca 4/3');
+{
+  const b = await board();
+  check('exactamente 3 activos', b.active_orders === 3, String(b.active_orders));
+  check('y son A, B y C', (b.orders || []).map((o) => o.public_code).sort().join(',') === 'MO-A,MO-B,MO-C', (b.orders || []).map((o) => o.public_code).sort().join(','));
+}
+
+console.log('\n== 12/21. ESTADOS Y COBROS INDEPENDIENTES');
+{
+  const b = await board();
+  const byCode = Object.fromEntries(b.orders.map((o) => [o.public_code, o]));
+  check('A cobra 1000 en efectivo', byCode['MO-A'].total === 1000 && byCode['MO-A'].payment_method === 'cash', `${byCode['MO-A'].total} ${byCode['MO-A'].payment_method}`);
+  check('B cobra 2500 digital', byCode['MO-B'].total === 2500 && byCode['MO-B'].payment_method === 'mercadopago', `${byCode['MO-B'].total} ${byCode['MO-B'].payment_method}`);
+  check('C cobra 3000 en efectivo', byCode['MO-C'].total === 3000 && byCode['MO-C'].payment_method === 'cash', `${byCode['MO-C'].total} ${byCode['MO-C'].payment_method}`);
+  check('cada uno con SU direccion', byCode['MO-A'].customer_street_address === 'TEST MULTI A' && byCode['MO-B'].customer_street_address === 'TEST MULTI B' && byCode['MO-C'].customer_street_address === 'TEST MULTI C');
+  // tres etapas distintas a la vez
+  await rpc(rider, 'mark_delivery_picked_up', { p_order_id: O.A, p_expected_revision: await rev(O.A), p_idempotency_key: 'gate-pu-a' });
+  await rpc(rider, 'mark_delivery_picked_up', { p_order_id: O.B, p_expected_revision: await rev(O.B), p_idempotency_key: 'gate-pu-b' });
+  await rpc(rider, 'mark_rider_arrived', { p_order_id: O.A, p_expected_revision: await rev(O.A), p_idempotency_key: 'gate-ar-a' });
+  const b2 = await board();
+  const st = Object.fromEntries(b2.orders.map((o) => [o.public_code, o.status]));
+  check('tres etapas distintas conviven', new Set([st['MO-A'], st['MO-B'], st['MO-C']]).size === 3, JSON.stringify(st));
+}
+
+console.log('\n== 14. PIN CRUZADO');
+{
+  const rA = await rev(O.A);
+  const bad1 = await rpc(rider, 'confirm_delivery_code', { p_order_id: O.A, p_expected_revision: rA, p_delivery_code: PIN.B, p_idempotency_key: 'gate-pin-x1' });
+  check('PIN de B contra A: DENY', bad1.body?.outcome !== 'delivered', JSON.stringify(bad1.body?.code ?? bad1.body?.outcome));
+  const bad2 = await rpc(rider, 'confirm_delivery_code', { p_order_id: O.A, p_expected_revision: await rev(O.A), p_delivery_code: PIN.C, p_idempotency_key: 'gate-pin-x2' });
+  check('PIN de C contra A: DENY', bad2.body?.outcome !== 'delivered', JSON.stringify(bad2.body?.code ?? bad2.body?.outcome));
+  const good = await rpc(rider, 'confirm_delivery_code', { p_order_id: O.A, p_expected_revision: await rev(O.A), p_delivery_code: PIN.A, p_idempotency_key: 'gate-pin-ok' });
+  check('PIN propio entrega A', good.body?.outcome === 'delivered', JSON.stringify(good.body?.code ?? good.body?.outcome));
+}
+
+console.log('\n== 15. LA ENTREGA LIBERA CUPO');
+{
+  check('capacidad 3/3 -> 2/3', (await cap()) === '2/3', await cap());
+  const b = await board();
+  const st = Object.fromEntries(b.orders.map((o) => [o.public_code, o.status]));
+  check('B y C intactos', st['MO-B'] === 'picked_up' && st['MO-C'] === 'assigned', JSON.stringify(st));
+  const o = await offer('D');
+  check('ahora si entra D', o.body?.code === 'offered', JSON.stringify(o.body?.code));
+}
+
+console.log('\n== 11. CONCURRENCIA: dos aceptaciones a la vez sobre un rider en 2/3');
+{
+  const oE = await offer('E');
+  check('E tambien ofrecido', oE.body?.code === 'offered', JSON.stringify(oE.body?.code));
+  const offD = await pendingOffer('MO-D');
+  const offE = await pendingOffer('MO-E');
+  const [rD, rE] = await Promise.all([
+    rpc(rider, 'accept_rider_order_offer', { p_offer_id: offD.offer_id, p_expected_version: offD.version, p_idempotency_key: 'gate-race-d' }),
+    rpc(rider, 'accept_rider_order_offer', { p_offer_id: offE.offer_id, p_expected_version: offE.version, p_idempotency_key: 'gate-race-e' }),
+  ]);
+  const okCount = [rD, rE].filter((r) => r.body?.code === 'accepted').length;
+  console.log(`     D -> ${JSON.stringify(rD.body?.code ?? rD.body)}   E -> ${JSON.stringify(rE.body?.code ?? rE.body)}`);
+  check('entra exactamente una', okCount === 1, `entraron ${okCount}`);
+  check('el rider queda en 3/3, nunca 4/3', (await cap()) === '3/3', await cap());
+}
+
+console.log('\n== 16. RECHAZO');
+{
+  const b = await board();
+  const stillPending = (b.offers || [])[0];
+  if (!stillPending) { check('quedaba una oferta viva para rechazar', false, 'no habia'); }
+  else {
+    const rj = await rpc(rider, 'reject_rider_order_offer', { p_offer_id: stillPending.offer_id, p_expected_version: stillPending.version, p_reason_code: null, p_idempotency_key: 'gate-rej-1' });
+    check('el rider rechaza', rj.body?.code === 'rejected', JSON.stringify(rj.body?.code));
+    const again = await rpc(rider, 'reject_rider_order_offer', { p_offer_id: stillPending.offer_id, p_expected_version: stillPending.version, p_reason_code: null, p_idempotency_key: 'gate-rej-1' });
+    check('rechazar dos veces es coherente', again.status === 200 || again.body?.code, JSON.stringify(again.body?.code ?? again.status));
+    check('no consumio capacidad', (await cap()) === '3/3', await cap());
+    const reoffer = await rpc(staff, 'offer_order_to_rider', { p_order_id: stillPending.order_id, p_expected_status: 'ready', p_expected_rider_user_id: null, p_new_rider_user_id: R1 });
+    check('re-ofrecer al mismo rider se rechaza', reoffer.body?.ok !== true, JSON.stringify(reoffer.body?.code ?? reoffer.body));
+    const toOther = await rpc(staff, 'offer_order_to_rider', { p_order_id: stillPending.order_id, p_expected_status: 'ready', p_expected_rider_user_id: null, p_new_rider_user_id: R2 });
+    check('el Staff SI puede darselo a otro rider', toOther.body?.code === 'offered', JSON.stringify(toOther.body?.code ?? toOther.body));
+    const b2 = await board(rider2);
+    check('y no se auto-asigno: sigue como oferta', (b2.offers || []).length === 1 && (b2.orders || []).length === 0, `ofertas=${(b2.offers || []).length} pedidos=${(b2.orders || []).length}`);
+  }
+}
+
+console.log('\n== 13. PRIVACIDAD DEL CLIENTE (cruce entre pedidos)');
+{
+  const withToken = async (tok, code) => {
+    const r = await fetch(`${API}/rest/v1/rpc/get_public_order_tracking`, {
+      method: 'POST',
+      headers: { apikey: ANON, 'Content-Type': 'application/json', 'x-order-token': tok },
+      body: JSON.stringify({ p_public_id: code }),
+    });
+    return { status: r.status, body: await r.text() };
+  };
+  const aa = await withToken(TOKEN.A, 'MO-A');
+  const ab = await withToken(TOKEN.A, 'MO-B');
+  const ac = await withToken(TOKEN.A, 'MO-C');
+  check('el cliente A ve SU pedido', aa.body.includes('MO-A'), aa.status + '');
+  check('con su token NO ve el B', ab.body === 'null' || ab.body === '' || !ab.body.includes('MO-B'), ab.body.slice(0, 60));
+  check('ni el C', ac.body === 'null' || ac.body === '' || !ac.body.includes('MO-C'), ac.body.slice(0, 60));
+  check('su DTO no arrastra el PIN ni datos de otros', !aa.body.includes('2222') && !aa.body.includes('3333') && !aa.body.includes('TEST MULTI B') && !aa.body.includes('TEST MULTI C') && !aa.body.includes(O.B));
+  const bb = await withToken(TOKEN.B, 'MO-B');
+  check('el cliente B ve SU pedido y solo el suyo', bb.body.includes('MO-B') && !bb.body.includes('TEST MULTI A'), bb.status + '');
+}
+
+console.log(`\n===== CERTIFICACION VIVA: ${pass} ok, ${fail} fallas =====`);
+process.exit(fail === 0 ? 0 : 1);

@@ -1,0 +1,78 @@
+[HISTÓRICO REDACTADO PARA HANDOFF: líneas de credenciales/configuración excluidas; original intacto en notebook.]
+
+// Conductor del lado Staff del gate: llama EXACTAMENTE las RPC que usa el
+// Panel, con un usuario staff real, sesion de identidad registrada y JWT propio.
+// Solo habla con el backend descartable local.
+const API = process.env.GATE_API || 'http://127.0.0.1:54421';
+[EXCLUIDO: credencial/configuración; recrear localmente.]
+const BUSINESS = 'b0000000-0000-4000-8000-000000000001';
+const RIDER = '1fe4d525-34f1-4727-b405-6c5da7308c5f';
+
+const ORDERS = {
+  A: '0a000000-0000-4000-8000-000000000001',
+  B: '0a000000-0000-4000-8000-000000000002',
+  C: '0a000000-0000-4000-8000-000000000003',
+  D: '0a000000-0000-4000-8000-000000000004',
+  E: '0a000000-0000-4000-8000-000000000005',
+};
+
+async function login(email, password) {
+  const r = await fetch(`${API}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: { apikey: ANON, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const j = await r.json();
+  if (!j.access_token) throw new Error('login fallo: ' + JSON.stringify(j));
+  return j.access_token;
+}
+
+async function rpc(token, fn, args = {}) {
+  const r = await fetch(`${API}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: {
+      apikey: ANON,
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(args),
+  });
+  const text = await r.text();
+  let body;
+  try { body = JSON.parse(text); } catch { body = text; }
+  return { status: r.status, body };
+}
+
+export async function staffToken() {
+  const token = await login('staff-qa@gate.invalid', 'GateQA-2026-staff');
+  await rpc(token, 'identity_register_session', { p_business_id: BUSINESS, p_client: 'panel_web' });
+  return token;
+}
+
+const cmd = process.argv[2];
+const arg = process.argv[3];
+
+const token = await staffToken();
+let out;
+switch (cmd) {
+  case 'offer':
+    out = await rpc(token, 'offer_order_to_rider', {
+      p_order_id: ORDERS[arg],
+      p_expected_status: 'ready',
+      p_expected_rider_user_id: null,
+      p_new_rider_user_id: RIDER,
+    });
+    break;
+  case 'riders':
+    out = await rpc(token, 'list_active_business_riders', { p_business_id: BUSINESS });
+    break;
+  case 'offers':
+    out = await rpc(token, 'list_rider_order_offers', { p_business_id: BUSINESS });
+    break;
+  case 'withdraw':
+    out = await rpc(token, 'withdraw_rider_order_offer', { p_offer_id: arg });
+    break;
+  default:
+    throw new Error('uso: node panel.mjs offer|riders|offers|withdraw [arg]');
+}
+console.log(JSON.stringify(out, null, 2));

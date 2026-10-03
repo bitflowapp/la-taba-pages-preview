@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>TABA Rider · app Android — propuesta navegable</title>
+<link rel="stylesheet" href="proto-shared.css" />
+<style>
+  body { background: var(--t-surface-1); --t-nav-h: 0px; }
+  .r-app { max-width: 390px; margin: 0 auto; min-height: 100vh; display: grid; grid-template-rows: auto auto 1fr auto; background: var(--t-surface-1); }
+
+  /* Barra superior de Android: alta, legible al sol, un solo título. */
+  .r-top { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 0 8px 0 14px;
+    background: var(--t-ink-900); color: #fff; }
+  .r-top h1 { font: var(--t-title-m); flex: 1; min-width: 0; }
+  .r-top .t-iconbtn { color: #fff; }
+  .r-top .t-iconbtn:hover { background: rgb(255 255 255 / 12%); }
+  .r-top .r-shift { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 10px;
+    border-radius: var(--t-r-pill); background: rgb(255 255 255 / 12%); font: var(--t-caption); font-weight: 700; }
+  .r-top .r-shift.is-on { background: var(--t-success-600); }
+
+  .r-body { overflow: auto; display: grid; align-content: start; }
+  .r-pad { padding: 14px; display: grid; gap: 12px; align-content: start; }
+
+  /* Zona de acción: siempre abajo, alcanzable con el pulgar, una sola primaria. */
+  .r-actions { display: grid; gap: 8px; padding: 12px 14px calc(12px + var(--t-safe-b));
+    background: var(--t-paper); border-top: 1px solid var(--t-line-200); }
+  .r-actions .t-btn--lg { min-height: 56px; font: var(--t-title-s); }
+  .r-actions .r-sec { display: flex; gap: 8px; }
+  .r-actions .r-sec .t-btn { flex: 1; }
+
+  .r-mapwrap { position: relative; height: 260px; }
+  .r-eta { position: absolute; left: 12px; right: 12px; bottom: 12px;
+    display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+    border-radius: var(--t-r-md); background: var(--t-white); border: 1px solid var(--t-line-200); box-shadow: var(--t-e2); }
+  .r-eta .r-eta-num { font: 800 20px/1 var(--t-font); font-variant-numeric: tabular-nums; }
+  .r-pin { position: absolute; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+    color: #fff; font: 700 12px/1 var(--t-font); box-shadow: 0 3px 10px rgb(20 22 26 / 30%); }
+  .r-pin--store { background: var(--t-ink-900); left: 26%; top: 30%; }
+  .r-pin--client { background: var(--t-red-600); right: 22%; bottom: 30%; }
+  .r-pin--me { background: var(--t-info-600); left: 48%; top: 52%; border: 3px solid #fff; }
+
+  .r-jobcard { display: grid; gap: 8px; padding: 13px 14px; background: var(--t-white);
+    border: 1px solid var(--t-line-200); border-radius: var(--t-r-md); border-left: 3px solid var(--t-red-600); }
+  .r-jobcard .r-jobhead { display: flex; align-items: center; gap: 8px; }
+  .r-jobcard .r-jobhead .r-jobid { font: var(--t-title-s); font-variant-numeric: tabular-nums; }
+  .r-jobcard .r-jobline { display: grid; grid-template-columns: 18px 1fr; gap: 8px; align-items: start;
+    font: var(--t-body-s); color: var(--t-ink-600); }
+  .r-jobcard .r-jobline svg { margin-top: 2px; color: var(--t-ink-400); }
+  .r-jobmeta { display: flex; align-items: center; gap: 12px; font: var(--t-caption); color: var(--t-text-secondary); }
+  .r-jobmeta strong { font: var(--t-price-m); color: var(--t-ink-900); margin-left: auto; }
+
+  .r-step { display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: start; padding: 8px 0; position: relative; }
+  .r-step::before { content: ""; position: absolute; left: 12px; top: 26px; bottom: -8px; width: 2px; background: var(--t-line-200); }
+  .r-step:last-child::before { display: none; }
+  .r-step .r-dot { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--t-line-100); color: var(--t-ink-400); font: 700 12px/1 var(--t-font); }
+  .r-step.is-done .r-dot { background: var(--t-success-600); color: #fff; }
+  .r-step.is-now .r-dot { background: var(--t-red-600); color: #fff; }
+  .r-step b { font: var(--t-label); }
+  .r-step small { display: block; font: var(--t-caption); color: var(--t-text-secondary); }
+
+  .r-login { display: grid; gap: 14px; padding: 28px 20px; align-content: start; }
+  .r-brandbig { font: 800 34px/1 var(--t-font); font-style: italic; letter-spacing: .02em; }
+  .r-brandbig::after { content: ""; display: block; width: 40px; height: 4px; background: var(--t-red-600); border-radius: 3px; margin-top: 8px; }
+
+  .r-queue { display: grid; gap: 6px; padding: 12px 14px; background: var(--t-warning-100); }
+  .r-queue-item { display: flex; align-items: center; gap: 8px; font: var(--t-body-s); color: var(--t-warning-700); }
+</style>
+</head>
+<body data-chrome="none">
+
+<div class="demo-bar" data-demo>
+  <strong>Pantalla</strong>
+  <button data-screen="login">Login</button>
+  <button data-screen="home" aria-pressed="true">Turno</button>
+  <button data-screen="orders">Disponibles</button>
+  <button data-screen="detail">Detalle</button>
+  <button data-screen="atstore">En el local</button>
+  <button data-screen="pickup">Retiro</button>
+  <button data-screen="ontheway">En camino</button>
+  <button data-screen="arriving">Llegando</button>
+  <button data-screen="code">Código</button>
+  <button data-screen="codeerror">Código incorrecto</button>
+  <button data-screen="incident">Incidencia</button>
+  <button data-screen="offline">Sin conexión</button>
+  <button data-screen="recovered">Recuperación</button>
+  <button data-screen="shiftend">Fin de turno</button>
+</div>
+
+<div class="r-app">
+  <header class="r-top">
+    <button class="t-iconbtn" type="button" data-back hidden aria-label="Volver">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="m15 6-6 6 6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <h1 data-title>Mi turno</h1>
+    <span class="r-shift is-on" data-shift hidden><i class="t-dot"></i>Disponible</span>
+    <button class="t-iconbtn" type="button" aria-label="Más opciones">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="5" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="19" r="1.6" fill="currentColor"/></svg>
+    </button>
+  </header>
+
+  <div data-banner hidden></div>
+
+  <div class="r-body" data-body></div>
+
+  <div class="r-actions" data-actions></div>
+</div>
+
+<script>
+const $ = (s,r=document)=>r.querySelector(s), $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+const IC = {
+  store:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 9h16v11H4zM4 9l1.6-4h12.8L20 9" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>',
+  pin:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="10" r="2.3" stroke="currentColor" stroke-width="1.7"/></svg>',
+  box:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 7h16v12H4zM4 7l2-3h12l2 3M12 7v12" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+  nav:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="m3 11 18-8-8 18-2-8z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>',
+};
+
+const MAP = (label) => `<div class="r-mapwrap r-map">
+  <span class="r-pin r-pin--store">L</span><span class="r-pin r-pin--me"></span><span class="r-pin r-pin--client">C</span>
+  <div class="r-eta">${IC.nav}<span style="display:grid"><small class="t-caption">${label}</small><b class="r-eta-num t-num">6 min · 2,4 km</b></span>
+  <button class="t-btn t-btn--secondary" type="button" style="margin-left:auto">Abrir mapa</button></div></div>`;
+
+const JOB = `<div class="r-jobcard">
+  <div class="r-jobhead"><span class="r-jobid t-num">#A-1042</span><span class="t-pill t-pill--info"><i class="t-dot"></i>Asignado</span><span class="t-caption t-num" style="margin-left:auto">14:26</span></div>
+  <div class="r-jobline">${IC.store}<span><b>TABA Neuquén Centro</b><br /><small class="t-caption">Av. Argentina 1450 · retiro</small></span></div>
+  <div class="r-jobline">${IC.pin}<span><b>Entrega · M. Álvarez</b><br /><small class="t-caption">Ministro González 233 · timbre 3B</small></span></div>
+  <div class="r-jobmeta"><span class="t-num">4 artículos</span><span class="t-num">2,4 km</span><strong class="t-num">$ 42.300</strong></div>
+</div>`;
+
+const PAY = `<div class="t-group">
+  <div class="t-row" style="grid-template-columns:34px 1fr auto"><span class="t-row-icon">${IC.box}</span><span class="t-row-copy"><strong>4 artículos</strong><small>2 packs · 2 unidades</small></span><span class="t-row-value">Ver</span></div>
+  <div class="t-row" style="grid-template-columns:34px 1fr auto"><span class="t-row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="7" width="18" height="10" rx="2" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="2.4" stroke="currentColor" stroke-width="1.7"/></svg></span><span class="t-row-copy"><strong>Efectivo</strong><small>Cobrar al entregar · abona con $ 50.000</small></span><span class="t-row-value t-num">$ 42.300</span></div>
+</div>`;
+
+const SCREENS = {
+  login: {
+    title:"TABA Rider", back:false, shift:false,
+    body:`<div class="r-login">
+      <span class="r-brandbig">TABA</span>
+      <div><h2 class="t-title-l">Repartidor</h2><p class="t-body-s t-muted">Ingresá con la cuenta que te dio el comercio.</p></div>
+      <label style="display:grid;gap:6px"><span class="t-label">Email</span><span class="t-field"><input type="email" inputmode="email" autocomplete="username" placeholder="tu@email.com" /></span></label>
+      <label style="display:grid;gap:6px"><span class="t-label">Contraseña</span><span class="t-field"><input type="password" autocomplete="current-password" placeholder="••••••••" /></span></label>
+      <p class="t-caption">La sesión queda guardada en este teléfono. Si cambiás de equipo, la sesión anterior se cierra sola.</p>
+    </div>`,
+    actions:`<button class="t-btn t-btn--primary t-btn--lg t-btn--block" type="button" data-go="home">Ingresar</button>
+      <button class="t-btn t-btn--ghost t-btn--block" type="button">¿Olvidaste la contraseña?</button>`
+  },
+
+  home: {
+    title:"Mi turno", back:false, shift:true,
+    body:`<div class="r-pad">
+      <div class="t-card" style="padding:14px;display:grid;gap:10px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="display:grid"><strong class="t-title-m">Disponible</strong><small class="t-caption">Recibís pedidos del local</small></span>
+          <span class="t-pill t-pill--ok" style="margin-left:auto"><i class="t-dot"></i>En turno</span>
+        </div>
+        <hr class="t-horizon" />
+        <div style="display:flex;gap:18px">
+          <span style="display:grid"><strong class="r-bignum">6</strong><small class="t-caption">Entregas hoy</small></span>
+          <span style="display:grid"><strong class="r-bignum">18′</strong><small class="t-caption">Tiempo medio</small></span>
+          <span style="display:grid"><strong class="r-bignum">31</strong><small class="t-caption">km</small></span>
+        </div>
+      </div>
+      <p class="t-group-label">Estado del equipo</p>
+      <div class="t-group">
+        <div class="t-row"><span class="t-row-icon t-row-icon--accent">${IC.pin}</span><span class="t-row-copy"><strong>Ubicación</strong><small>Sólo mientras tenés un pedido activo</small></span><span class="t-pill t-pill--ok"><i class="t-dot"></i>OK</span><span></span></div>
+        <div class="t-row"><span class="t-row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="8" width="15" height="8" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M20 11v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="5" y="10" width="8" height="4" fill="currentColor"/></svg></span><span class="t-row-copy"><strong>Batería</strong><small>Ahorro de energía apagado</small></span><span class="t-row-value t-num">68%</span><span></span></div>
+        <div class="t-row"><span class="t-row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 18h2v-3H4zM9 18h2v-6H9zM14 18h2v-9h-2zM19 18h2V6h-2z" fill="currentColor"/></svg></span><span class="t-row-copy"><strong>Conexión</strong><small>Sincronizado hace 12 s</small></span><span class="t-pill t-pill--ok"><i class="t-dot"></i>Online</span><span></span></div>
+      </div>
+      <p class="t-group-label">Historial</p>
+      <div class="t-group">
+        <button class="t-row" type="button"><span class="t-row-icon">${IC.box}</span><span class="t-row-copy"><strong>Entregas de hoy</strong><small>6 completadas · 0 incidencias</small></span><span class="t-row-value">Ver</span><svg class="t-chev" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+    </div>`,
+    actions:`<button class="t-btn t-btn--primary t-btn--lg t-btn--block" type="button" data-go="orders">Ver pedidos disponibles (2)</button>
+      <div class="r-sec"><button class="t-btn t-btn--secondary" type="button" data-go="shiftend">Terminar turno</button></div>`
+  },
+
+  orders: {
+    title:"Pedidos disponibles", back:true, shift:true,
+    body:`<div class="r-pad">
+      <p class="t-caption">Se asignan por orden de llegada. Aceptá sólo si podés salir ahora.</p>
+      ${JOB}
+      <div class="r-jobcard" style="border-left-color:var(--t-line-300)">
+        <div class="r-jobhead"><span class="r-jobid t-num">#A-1039</span><span class="t-pill t-pill--neutral"><i class="t-dot"></i>Disponible</span><span class="t-caption t-num" style="margin-left:auto">14:24</span></div>
+        <div class="r-jobline">${IC.store}<span><b>TABA Neuquén Centro</b><br /><small class="t-caption">Av. Argentina 1450 · retiro</small></span></div>
+        <div class="r-jobline">${IC.pin}<span><b>Entrega · R. Quiroga</b><br /><small class="t-caption">Belgrano 780</small></span></div>
+        <div class="r-jobmeta"><span class="t-num">3 artículos</span><span class="t-num">1,8 km</span><strong class="t-num">$ 26.100</strong></div>
+      </div>
+    </div>`,
+    actions:`<button class="t-btn t-btn--primary t-btn--lg t-btn--block" type="button" data-go="detail">Tomar #A-1042</button>`
+  },
+
+  detail: {
+    title:"Pedido #A-1042", back:true, shift:false,
+    body:`<div class="r-pad">
+      ${JOB}
+      ${PAY}
+      <p class="t-group-label">Recorrido</p>
+      <div class="t-group" style="padding:10px 14px">
+        <div class="r-step is-now"><span class="r-dot">1</span><span><b>Ir al local</b><small>Av. Argentina 1450 · 900 m</small></span></div>
+        <div class="r-step"><span class="r-dot">2</span><span><b>Retirar el pedido</b><small>Confirmás con el encargado</small></span></div>
+        <div class="r-step"><span class="r-dot">3</span><span><b>Entregar</b><small>Ministro González 233 · código del cliente</small></span></div>
+      </div>
+    </div>`,
+    actions:`<button class="t-btn t-btn--primary t-btn--lg t-btn--block" type="button" data-go="atstore">Voy al local</button>
+      <div class="r-sec"><button class="t-btn t-btn--secondary" type="button">Ver en el mapa</button><button class="t-btn t-btn--danger" type="button" data-go="incident">Rechazar…</button></div>`
+  },
+
+  atstore: {
+    title:"Ir al local", back:true, shift:false,
+    body:`${MAP("Al local · TABA Neuquén Centro")}
+    <div class="r-pad">
+      <div class="t-card" style="padding:14px;display:grid;gap:6px">
+        <span class="t-pill t-pill--info" style="justify-self:start"><i class="t-dot"></i>En camino al local</span>
+        <strong class="t-title-m">TABA Neuquén Centro</strong>
+        <span class="t-body-s t-muted">Av. Argentina 1450 · mostrador de retiro</span>
+      </div>
+      ${PAY}
+      <p class="t-caption">El botón de llegada se habilita cerca del local. Si el GPS falla podés confirmar igual.</p>
+    </div>`,
+    actions:`<button class="t-btn t-btn--primary t-btn--lg t-btn--block" type="button" data-go="pickup">Llegué al local</button>
+      <div class="r-sec"><button class="t-btn t-btn--secondary" type="button">Navegar</button><button class="t-btn t-btn--danger" type="button" data-go="incident">Reportar problema</button></div>`
+  },
+
+  pickup: {
+    title:"Retirar pedido", back:true, shift:false,
+    body:`<div class="r-pad">
+      <div class="t-card" style="padding:14px;display:grid;gap:8px">
+        <span class="t-pill t-pill--warn" style="justify-self:start"><i class="t-dot"></i>Esperando retiro</span>
+        <strong class="t-title-m t-num">#A-1042 · 4 artículos</strong>
+        <span class="t-body-s t-muted">Verificá contra el ticket antes de confirmar.</span>
+      </div>
+      <div class="t-group">
+        <div class="t-row" style="grid-template-columns:34px 1fr auto"><span class="t-row-icon">2</span><span class="t-row-copy"><strong>Coca-Cola Original</strong><small>Botella PET · 500 ml · Pack x12</small></span><span class="t-row-value">✓</span></div>
+        <div class="t-row" style="grid-template-columns:34px 1fr auto"><span class="t-row-icon">1</span><span class="t-row-copy"><strong>Imperial APA</strong><small>Lata · 473 ml · Unidad</small></span><span class="t-row-value">✓</span></div>
+        <div class="t-row" style="grid-template-columns:34px 1fr auto"><span class="t-row-icon">1</span><span class="t-row-copy"><strong>Corona Extra</strong><small>Botella · 330 ml · Unidad</small></span><span class="t-row-value">✓</span></div>
+      </div>
+      <p class="t-caption">Confirmar el retiro inicia el seguimiento del cliente y activa la ubicación.</p>
+    </div>`,
+    actions:`<div class="r-slide" role="button" tabindex="0" aria-label="Deslizá para confirmar el retiro" data-go="ontheway">
+        <span class="r-slide-knob">→</span>Deslizá para confirmar el retiro</div>
+      <div class="r-sec"><button class="t-btn t-btn--danger" type="button" data-go="incident">Falta un producto</button></div>`
+  },
+
+  ontheway: {
+    title:"En camino", back:false, shift:false,
+    body:`${MAP("Al cliente · Ministro González 233")}
+    <div class="r-pad">
+      <div class="t-card" style="padding:14px;display:grid;gap:6px">
+        <span class="t-pill t-pill--info" style="justify-self:start"><i class="t-dot"></i>En camino · ubicación activa</span>
+        <strong class="t-title-m">M. Álvarez</strong>
+        <span class="t-body-s t-muted">Ministro González 233 · timbre 3B · portón negro</span>
+      </div>
+      ${PAY}
+    </div>`,
+    banner:`<div class="r-banner r-banner--sync"><i class="t-dot"></i>Ubicación compartida con el cliente hasta la entrega</div>`,
+    actions:`<button class="t-btn t-btn--primary t-btn--lg t-btn--block" type="button" data-go="arriving">Estoy llegando</button>
+      <div class="r-sec"><button class="t-btn t-btn--secondary" type="button">Navegar</button><button class="t-btn t-btn--secondary" type="button">Llamar</button><button class="t-btn t-btn--danger" type="button" data-go="incident">Problema</button></div>`
+  },
+
+  arriving: {
+    title:"Llegando", back:false, shift:false,
+    body:`${MAP("Llegando · 200 m")}
+    <div class="r-pad">
+      <div class="t-card" style="padding:14px;display:grid;gap:6px">
+        <span class="t-pill t-pill--warn" style="justify-self:start"><i class="t-dot"></i>Llegando · avisamos al cliente</span>
+        <strong class="t-title-m">M. Álvarez</strong>
+        <span class="t-body-s t-muted">Ministro González 233 · timbre 3B</span>
+      </div>
+      <div class="t-group">
+        <div class="t-row" style="grid-template-columns:34px 1fr auto"><span class="t-row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="7" width="18" height="10" rx="2" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="2.4" stroke="currentColor" stroke-width="1.7"/></svg></span><span class="t-row-copy"><strong>Cobrar en efectivo</strong><small>Abona con $ 50.000 · vuelto $ 7.700</small></span><span class="t-row-value t-num">$ 42.300</span></div>
+      </div>
+    </div>`,
+    actions:`<button class="t-btn t-btn--primary t-btn--lg t-btn--block" type="button" data-go="code">Llegué · pedir código</button>
+      <div class="r-sec"><button class="t-btn t-btn--secondary" type="button">Llamar</button><button class="t-btn t-btn--danger" type="button" data-go="incident">Cliente ausente</button></div>`
+  },
+
+  code: {
+    title:"Código de entrega", back:true, shift:false,
+    body:`<div class="r-pad">
+      <p class="t-body-s">Pedile al cliente los 4 números que ve en su pedido.</p>
+      <div class="r-code" data-code><span class="is-filled">4</span><span class="is-filled">7</span><span></span><span></span></div>
+      <div class="r-keypad" style="margin-top:6px">
+        <button type="button">1</button><button type="button">2</button><button type="button">3</button>
+        <button type="button">4</button><button type="button">5</button><button type="button">6</button>
+        <button type="button">7</button><button type="button">8</button><button type="button">9</button>
+        <button type="button" class="t-btn t-btn--ghost">Borrar</button><button type="button">0</button>
+        <button type="button" class="t-btn t-btn--ghost" data-go="incident">No lo tiene</button>
+      </div>
+    </div>`,
+    actions:`<button class="t-btn t-btn--primary t-btn--lg t-btn--block" type="button" disabled>Confirmar entrega</button>`
+  },
+
+  codeerror: {
+    title:"Código de entrega", back:true, shift:false,
+    body:`<div class="r-pad">
+      <div class="r-banner r-banner--offline" style="border-radius:var(--t-r-md);background:var(--t-danger-100);color:var(--t-danger-700)">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8"/><path d="M12 7.5v5M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Código incorrecto · te quedan 2 intentos
+      </div>
+      <div class="r-code"><span class="is-error">4</span><span class="is-error">7</span><span class="is-error">1</span><span class="is-error">1</span></div>
+      <div class="r-keypad" style="margin-top:6px">
+        <button type="button">1</button><button type="button">2</button><button type="button">3</button>
+        <button type="button">4</button><button type="button">5</button><button type="button">6</button>
+        <button type="button">7</button><button type="button">8</button><button type="button">9</button>
+        <button type="button" class="t-btn t-btn--ghost">Borrar</button><button type="button">0</button>
+        <button type="button" class="t-btn t-btn--ghost" data-go="incident">No lo tiene</button>
+      </div>
+      <p class="t-caption">Si el cliente no encuentra el código, podés registrar una entrega con incidencia: queda auditada y la revisa el local.</p>
+    </div>`,
+    actions:`<button class="t-btn t-btn--primary t-btn--lg t-btn--block" type="button" disabled>Confirmar entrega</button>
+      <div class="r-sec"><button class="t-btn t-btn--danger" type="button" data-go="incident">Entregar con incidencia…</button></div>`
+  },
+
+  incident: {
+    title:"Reportar incidencia", back:true, shift:false,
+    body:`<div class="r-pad">
+      <p class="t-body-s">Elegí qué pasó. El local lo ve al instante.</p>
+      <div class="t-group">
+        <button class="t-row" type="button"><span class="t-row-icon t-row-icon--accent"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3h9v18H6z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span><span class="t-row-copy"><strong>Cliente ausente</strong><small>Tocaste timbre y llamaste</small></span><span></span><svg class="t-chev" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="t-row" type="button"><span class="t-row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16v12H4zM4 7l2-3h12l2 3M12 7v12" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span><span class="t-row-copy"><strong>Falta un producto</strong><small>El pedido salió incompleto</small></span><span></span><svg class="t-chev" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="t-row" type="button"><span class="t-row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="10" r="2.3" stroke="currentColor" stroke-width="1.7"/></svg></span><span class="t-row-copy"><strong>Dirección incorrecta</strong><small>No existe o no coincide</small></span><span></span><svg class="t-chev" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="t-row" type="button"><span class="t-row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m14 7 3-3 3 3-3 3M4 20l7-7M6 4l4 4-2 2-4-4z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span><span class="t-row-copy"><strong>Problema del vehículo</strong><small>No puedo continuar</small></span><span></span><svg class="t-chev" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+      <p class="t-caption">No hace falta escribir nada. Podés agregar una nota de voz después.</p>
+    </div>`,
+    actions:`<button class="t-btn t-btn--primary t-btn--lg t-btn--block" type="button" data-go="ontheway">Enviar al local</button>
+      <div class="r-sec"><button class="t-btn t-btn--secondary" type="button" data-go="ontheway">Cancelar</button></div>`
+  },
+
+  offline: {
+    title:"En camino", back:false, shift:false,
+    banner:`<div class="r-banner r-banner--offline"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 18.5h.01M4 8.5a13 13 0 0 1 16 0M7 12a8.5 8.5 0 0 1 10 0" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="m3 3 18 18" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Sin conexión · seguí trabajando normal</div>`,
+    body:`${MAP("Al cliente · última posición 14:41")}
+    <div class="r-queue">
+      <strong class="t-label">2 acciones en cola</strong>
+      <span class="r-queue-item">✓ Retiro confirmado 14:38 · se envía sola</span>
+      <span class="r-queue-item">✓ Llegando 14:41 · se envía sola</span>
+    </div>
+    <div class="r-pad">
+      <div class="t-card" style="padding:14px;display:grid;gap:6px">
+        <strong class="t-title-m">M. Álvarez</strong>
+        <span class="t-body-s t-muted">Ministro González 233 · timbre 3B</span>
+        <span class="t-caption">Los datos del pedido están guardados en el teléfono. Podés entregar y cobrar sin señal.</span>
+      </div>
+    </div>`,
+    actions:`<button class="t-btn t-btn--primary t-btn--lg t-btn--block" type="button" data-go="code">Llegué · pedir código</button>
+      <div class="r-sec"><button class="t-btn t-btn--secondary" type="button" data-go="recovered">Reintentar conexión</button></div>`
+  },
+
+  recovered: {
+    title:"En camino", back:false, shift:false,
+    banner:`<div class="r-banner r-banner--sync"><i class="t-dot"></i>Conexión recuperada · 2 acciones sincronizadas</div>`,
+    body:`${MAP("Al cliente · Ministro González 233")}
+    <div class="r-pad">
+      <div class="t-card" style="padding:14px;display:grid;gap:8px">
+        <span class="t-pill t-pill--ok" style="justify-self:start"><i class="t-dot"></i>Todo al día</span>
+        <strong class="t-title-m">Se recuperó el pedido activo</strong>
+        <span class="t-body-s t-muted">Cerraste la app en “En camino”. Retomamos exactamente donde estabas: el retiro y el aviso de llegada ya quedaron registrados.</span>
+      </div>
+      <div class="t-group" style="padding:10px 14px">
+        <div class="r-step is-done"><span class="r-dot">✓</span><span><b>Retiro confirmado</b><small>14:38 · sincronizado</small></span></div>
+        <div class="r-step is-done"><span class="r-dot">✓</span><span><b>Llegando</b><small>14:41 · sincronizado</small></span></div>
+        <div class="r-step is-now"><span class="r-dot">3</span><span><b>Entrega pendiente</b><small>Falta el código del cliente</small></span></div>
+      </div>
+    </div>`,
+    actions:`<button class="t-btn t-btn--primary t-btn--lg t-btn--block" type="button" data-go="code">Continuar la entrega</button>`
+  },
+
+  shiftend: {
+    title:"Fin de turno", back:true, shift:false,
+    body:`<div class="r-pad">
+      <div class="t-card" style="padding:16px;display:grid;gap:12px">
+        <strong class="t-title-m">Resumen del turno</strong>
+        <div style="display:flex;gap:20px">
+          <span style="display:grid"><strong class="r-bignum">6</strong><small class="t-caption">Entregas</small></span>
+          <span style="display:grid"><strong class="r-bignum">31</strong><small class="t-caption">km</small></span>
+          <span style="display:grid"><strong class="r-bignum">5h</strong><small class="t-caption">En turno</small></span>
+        </div>
+        <hr class="t-horizon" />
+        <div style="display:flex;align-items:center"><span class="t-body-s">Efectivo cobrado</span><strong class="t-num" style="margin-left:auto;font:var(--t-price-l)">$ 184.300</strong></div>
+      </div>
+      <div class="t-group">
+        <div class="t-row" style="grid-template-columns:34px 1fr auto"><span class="t-row-icon t-row-icon--accent">${IC.pin}</span><span class="t-row-copy"><strong>Ubicación</strong><small>Se apaga al cerrar el turno</small></span><span class="t-pill t-pill--neutral"><i class="t-dot"></i>Off</span></div>
+        <div class="t-row" style="grid-template-columns:34px 1fr auto"><span class="t-row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 18h2v-3H4zM9 18h2v-6H9zM14 18h2v-9h-2zM19 18h2V6h-2z" fill="currentColor"/></svg></span><span class="t-row-copy"><strong>Todo sincronizado</strong><small>Sin acciones pendientes</small></span><span class="t-pill t-pill--ok"><i class="t-dot"></i>OK</span></div>
+      </div>
+      <p class="t-caption">Al cerrar el turno dejás de recibir pedidos y se detiene el servicio de ubicación.</p>
+    </div>`,
+    actions:`<button class="t-btn t-btn--primary t-btn--lg t-btn--block" type="button" data-go="login">Cerrar turno</button>
+      <div class="r-sec"><button class="t-btn t-btn--secondary" type="button" data-go="home">Seguir trabajando</button></div>`
+  },
+};
+
+let current = "home";
+function show(name){
+  const s = SCREENS[name] || SCREENS.home;
+  current = name;
+  $("[data-title]").textContent = s.title;
+  $("[data-back]").hidden = !s.back;
+  $("[data-shift]").hidden = !s.shift;
+  const b = $("[data-banner]");
+  b.hidden = !s.banner; b.innerHTML = s.banner || "";
+  $("[data-body]").innerHTML = s.body;
+  $("[data-actions]").innerHTML = s.actions;
+  $$("[data-screen]").forEach(x=>x.setAttribute("aria-pressed", String(x.dataset.screen===name)));
+  $("[data-body]").scrollTop = 0;
+}
+
+document.addEventListener("click", e=>{
+  const t = e.target.closest("[data-go],[data-screen],[data-back]");
+  if (!t) return;
+  if (t.dataset.go) show(t.dataset.go);
+  else if (t.dataset.screen) show(t.dataset.screen);
+  else if (t.hasAttribute("data-back")) show(current === "orders" ? "home" : "orders");
+});
+document.addEventListener("keydown", e=>{
+  if (e.key === "Enter" || e.key === " ") {
+    const t = e.target.closest("[data-go]");
+    if (t) { e.preventDefault(); show(t.dataset.go); }
+  }
+});
+
+const U = new URLSearchParams(location.search);
+if (U.get("chrome")==="0") $("[data-demo]").hidden = true;
+show(U.get("screen") || "home");
+</script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+[HISTÓRICO REDACTADO PARA HANDOFF: líneas de credenciales/configuración excluidas; original intacto en notebook.]
+
+// Sonda de privacidad del lado Rider. Usa un JWT de rider REAL y registra su
+// sesion, o sea que corre con TODOS los privilegios que la app tiene, y trata
+// de salirse del contrato de la oferta. Solo backend descartable local.
+const API = 'http://127.0.0.1:54421';
+[EXCLUIDO: credencial/configuración; recrear localmente.]
+const BUSINESS = 'b0000000-0000-4000-8000-000000000001';
+const ORDERS = {
+  A: '0a000000-0000-4000-8000-000000000001',
+  B: '0a000000-0000-4000-8000-000000000002',
+  C: '0a000000-0000-4000-8000-000000000003',
+  D: '0a000000-0000-4000-8000-000000000004',
+  E: '0a000000-0000-4000-8000-000000000005',
+};
+
+const r = await fetch(`${API}/auth/v1/token?grant_type=password`, {
+  method: 'POST',
+  headers: { apikey: ANON, 'Content-Type': 'application/json' },
+[EXCLUIDO: credencial/configuración; recrear localmente.]
+});
+const token = (await r.json()).access_token;
+
+async function get(path) {
+  const res = await fetch(`${API}/rest/v1/${path}`, {
+    headers: { apikey: ANON, Authorization: `Bearer ${token}` },
+  });
+  const t = await res.text();
+  return { status: res.status, body: t.length > 400 ? t.slice(0, 400) + '...' : t };
+}
+async function rpc(fn, args = {}) {
+  const res = await fetch(`${API}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: { apikey: ANON, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(args),
+  });
+  const t = await res.text();
+  return { status: res.status, body: t.length > 600 ? t.slice(0, 600) + '...' : t };
+}
+
+await rpc('identity_register_session', { p_business_id: BUSINESS, p_client: 'rider_android' });
+
+const probes = {
+  'orders: tabla entera': await get('orders?select=*'),
+  'orders: pedido A ofrecido, campos privados': await get(`orders?id=eq.${ORDERS.A}&select=customer_name,customer_phone,customer_street_address,total`),
+  'orders: pedido B NO ofrecido': await get(`orders?id=eq.${ORDERS.B}&select=customer_name,customer_phone,customer_street_address`),
+  'order_delivery_handoffs: PINes': await get('order_delivery_handoffs?select=*'),
+  'order_public_tokens: tokens de seguimiento': await get('order_public_tokens?select=*'),
+  'rider_order_offers: ofertas crudas': await get('rider_order_offers?select=*'),
+  'payment_intents: cobros': await get('payment_intents?select=*'),
+  'rpc get_rider_delivery_board (contrato legitimo)': await rpc('get_rider_delivery_board'),
+};
+
+for (const [name, out] of Object.entries(probes)) {
+  console.log(`\n--- ${name}\n  status=${out.status}\n  body=${out.body}`);
+}

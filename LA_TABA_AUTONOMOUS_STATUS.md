@@ -7,7 +7,7 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
 
 | Dato | Valor verificado |
 |---|---|
-| Worktree | `C:\Users\DELL\Desktop\la-taba\la-taba-ecommerce-hardening` (repo `bitflowapp/la-taba-pages-preview`, público) |
+| Worktree | `la-taba-ecommerce-hardening` (worktree de la PC de trabajo; repo `bitflowapp/la-taba-pages-preview`, público) |
 | Rama | `hardening/taba-ecommerce-production` (apilada sobre `qa/taba-backend-e2e-cert-20260930` = PR #130, abierto) |
 | HEAD inicial | `47d9ffe9` local, 1 commit por delante de `origin` (`423cd90d`) — herramienta de preflight de sólo lectura, sin push |
 | `origin/main` | `13581889` · `origin/release/taba-controlled-production` `4e215da4` |

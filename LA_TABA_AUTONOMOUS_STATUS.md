@@ -15,8 +15,10 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
   `scripts/production-health-check.mjs --target controlled-production` (sólo lectura, necesitan un token de la Management API).
 - La sesión en la nube no tiene token de Supabase ni de Mercado Pago: no leyó Staging ni CP. Lo último leído en vivo es de la
   sesión de la mañana (11:20–11:25).
+- En curso al escribir esto: segunda pasada del revisor sobre `d6532530`, sumar al gate los pgTAP huérfanos (TOOL-08) y portar
+  lo que las suites viejas probaban y nada prueba hoy (TOOL-04).
 
-## Sesión 2 — 2026-10-03 14:47–15:4x (-03:00), Claude Cloud
+## Sesión 2 — 2026-10-03 14:47–16:4x (-03:00), Claude Cloud
 
 ### Checkpoint inicial (verificado, no declarado)
 
@@ -65,6 +67,27 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
 - AUTHZ-04 y Caja Clara, precisado: el E2E de Caja Clara en CP (42/42) conecta la caja con la credencial del **dueño** y la limpieza
   QA cancela como dueño: ninguna certificación de CP cancela como empleado. Una caja real operada con cuenta de **staff** sí pierde
   cancelar y rechazar al aplicar 20261002050000.
+- 16:00 — CI completo de `4187db74` **verde** por primera vez en un HEAD reciente (web con E2E de navegador, 31 min; base de
+  datos; Windows; stack efímero en las dos corridas). Queda superado: ese HEAD tiene la primera versión de 20261003090000.
+- 16:00 — **revisión adversarial independiente** (subagente de sólo lectura sobre `8f0d5958..dd5f57af`): 5 hallazgos sobre mi
+  propia primera versión de 20261003090000, ninguna aplicada en un entorno. **PAY-PROBE-04 (P1)**: un vacío concluyente
+  anterior al pago callaba la alerta y la sonda diaria de un pago `in_process` (49 h: sin alerta de ningún código, sin sonda).
+  **PAY-PROBE-05 (P2)**: la resolución del dueño no se comparaba con lo posterior, frenaba la relectura y cambiaba lo de
+  adentro de la ventana. **PAY-PROBE-06 (P2)**: costo por minuto proporcional a toda la historia (20.000 checkouts: ~475 ms y
+  ~400 ms). P3: aserciones que pasaban por otra razón y una verificación previa (U2/U3) con afirmaciones inexactas.
+- 16:20 — mapa de cobertura de las suites huérfanas del núcleo de pedidos (TOOL-04, subagente): no reviven arreglando fixtures
+  (llaman funciones v1 que el contrato A1-A4 retiró); 14/18, 60/74, 19/20 y 3/12 comprobaciones ya están cubiertas por el
+  gate o el certificador; queda una lista priorizada para portar (regresión de estados del cobro, reembolso después de un
+  rearmado sin stock, STOCK_RESERVATION_STUCK, dos repartidores con `claim_delivery_order`, ORDER_READY_WITHOUT_RIDER).
+- 16:25 — **TOOL-08 (P2, nuevo)**: 12 archivos de `supabase/tests` no corren en ningún gate ni workflow. Sobre el esquema actual,
+  5 pasan tal cual (aislamiento de back-office 28, de perfiles de cliente 47, taxonomía 20, aprobación de registro 98) y 2
+  tenían fixtures viejos (la oferta releída después de aceptada; un asset atado a otro SKU desde 20260927175058): corregidos,
+  14/14 y 16/16. En curso: sumarlos al gate canónico.
+- 16:40 — **`d6532530`**: 20261003090000 reescrita en su lugar. Un vacío sólo prueba no-pago sin pago guardado; la resolución
+  de una persona se mira sólo pasada la ventana y vale mientras el proveedor no informe un pago o un estado nuevo; la sonda
+  no la frena; barrido y alerta por etapas (20.000 checkouts: 7-10 ms y 64-90 ms, como antes). Prueba de 55 a 84 aserciones
+  (11 fallan con la primera versión), 12/12 mutaciones detectadas, simulacro de reversión exacto. Gate canónico local completo
+  **PASS** (pgTAP 6.031), `npm test` 3.130/3.131, verificaciones estáticas PASS. Registro: P1 17 corregidos, 0 abiertos.
 
 ## Sesión 1 — 2026-10-03 08:22–13:2x (-03:00), PC de trabajo (histórico)
 

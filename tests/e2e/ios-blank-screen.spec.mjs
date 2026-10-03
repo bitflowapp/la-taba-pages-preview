@@ -72,7 +72,7 @@ test('a failed application module leaves an actionable recovery shell instead of
   await page.goto('/?demo=1#home');
 
   await expect(page.locator('[data-app-recovery]')).toBeVisible();
-  await expect(page.locator('[data-app-recovery]')).toContainText('No pudimos cargar TABA');
+  await expect(page.locator('[data-app-recovery]')).toContainText('No pudimos cargar La Taba');
   await expect(page.locator('[data-app-recovery-retry]')).toBeVisible();
   await expect(page.locator('[data-app-recovery-reset]')).toBeVisible();
   await expect(page.locator('[data-view="home"] [data-search-jump]')).toBeHidden();

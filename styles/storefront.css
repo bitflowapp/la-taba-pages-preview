@@ -1725,3 +1725,64 @@
     gap: 14px;
   }
 }
+
+/* Pulido de los rieles destacados: el viewport conserva un adelanto estable
+   de la siguiente tarjeta y cada tarjeta mantiene una caja propia para que el
+   nombre y el precio nunca dependan del ancho visible del riel. */
+.home-promotions-rail,
+.home-best-sellers {
+  min-width: 0;
+  max-width: 100%;
+  overscroll-behavior-x: contain;
+  scroll-padding-inline: 2px;
+}
+
+.home-best-sellers {
+  scroll-snap-type: inline mandatory;
+}
+
+.home-best-copy {
+  min-width: 0;
+}
+
+.home-best-copy strong {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.home-best-copy > span {
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.home-best-copy .home-best-unit {
+  color: var(--taba-muted);
+  font-size: 11px;
+  line-height: 1.2;
+  overflow-wrap: normal;
+}
+
+.home-card-availability,
+.home-available,
+.offer-availability {
+  display: block;
+  color: var(--taba-muted);
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.home-card-availability.is-unavailable,
+.home-available.is-unavailable,
+.offer-availability.is-unavailable {
+  color: var(--taba-danger);
+}
+
+@media (max-width: 760px) {
+  .home-best-sellers {
+    grid-auto-columns: minmax(248px, calc(100% - 50px));
+  }
+
+  .home-best-card {
+    min-width: 0;
+  }
+}

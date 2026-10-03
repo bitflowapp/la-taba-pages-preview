@@ -159,7 +159,7 @@ test('guided shell exposes 14 stops, return navigation and honest release status
   await expect(dialog).toContainText(/Todos los datos y la persistencia .* locales y sintéticos/i);
   await expect(dialog).toContainText(/MapLibre.*mosaicos cartográficos públicos.*Internet/i);
   await expect(dialog).toContainText('No usa Supabase remoto ni datos reales.');
-  await expect(dialog.getByRole('heading', { name: 'Qué mejoró en TABA' })).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Qué mejoró en La Taba' })).toBeVisible();
   await expect(dialog.locator('[data-release-status="integrated"]')).toContainText('Integrado en esta base');
   await expect(dialog.locator('[data-release-status="certified-pending"]'))
     .toContainText('Certificado, pendiente de integración');
@@ -559,7 +559,7 @@ test('operational showcase stops use real business, rider, tracking, terminal an
   await expectActiveView(page, 'profile');
   const privacy = page.locator('.profile-privacy-card');
   await expect(privacy).toBeVisible();
-  await expect(privacy).toContainText('TABA no necesita tu DNI');
+  await expect(privacy).toContainText('La Taba no necesita tu DNI');
   await guards.assertClean();
 });
 

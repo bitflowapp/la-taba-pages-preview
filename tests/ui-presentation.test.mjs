@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test, { beforeEach } from 'node:test';
-import { availabilityLabel, stockPill } from '../js/ui.js';
+import { availabilityLabel, productPresentationLabel, stockPill } from '../js/ui.js';
+import { products } from '../js/approved-beverage-demo-data.js';
 import { resetState } from './helpers.mjs';
 
 beforeEach(() => resetState());
@@ -34,4 +35,14 @@ test('availabilityLabel: texto plano honesto para el detalle del producto', () =
   assert.equal(availabilityLabel({ available: true, stock: 2 }), 'Quedan 2');
   assert.equal(availabilityLabel({ available: true, stock: 0 }), 'Agotado');
   assert.equal(availabilityLabel({ available: false, stock: 9 }), 'No disponible por ahora');
+});
+
+test('productPresentationLabel: distingue la capacidad por unidad del pack', () => {
+  const packTwelve = products.find((product) => product.sku === 'coca-cola-original-pet-500ml-pack-12');
+  const packSix = products.find((product) => product.sku === 'coca-cola-original-pet-1500ml-pack-6');
+  const unit = products.find((product) => product.sku === 'red-bull-original-lata-250ml');
+
+  assert.equal(productPresentationLabel(packTwelve), '500 ml · Pack x12');
+  assert.equal(productPresentationLabel(packSix), '1500 ml · Pack x6');
+  assert.equal(productPresentationLabel(unit), '250 ml');
 });

@@ -399,7 +399,7 @@ function render() {
     <aside class="profile-privacy-card">
       <span aria-hidden="true">âœ“</span>
       <div>
-        <strong>TABA no necesita tu DNI.</strong>
+        <strong>La Taba no necesita tu DNI.</strong>
         <p>Solo guardamos los datos necesarios para identificar al destinatario y entregar tus pedidos.</p>
       </div>
     </aside>`;
@@ -419,7 +419,7 @@ function renderPreviewState() {
     <h2>Perfil de cliente</h2>
     <p>Estará disponible cuando el local habilite los pedidos online. No necesitás cargar DNI ni otros datos innecesarios.</p>
   </div>
-  <aside class="profile-privacy-card"><span aria-hidden="true">✓</span><div><strong>TABA no necesita tu DNI.</strong><p>Solo usamos nombre, teléfono y dirección para preparar y entregar pedidos.</p></div></aside>`;
+  <aside class="profile-privacy-card"><span aria-hidden="true">✓</span><div><strong>La Taba no necesita tu DNI.</strong><p>Solo usamos nombre, teléfono y dirección para preparar y entregar pedidos.</p></div></aside>`;
 }
 
 function renderUnavailableState() {
@@ -503,9 +503,9 @@ function renderAddressCard(rawAddress) {
       </div>
     </div>
     <div class="profile-address-actions">
-      <button class="text-button" type="button" data-profile-action="edit-address" ${disabledAttr()}>Editar</button>
-      ${address.isDefault ? '' : `<button class="text-button" type="button" data-profile-action="make-default" ${disabledAttr()}>Hacer predeterminada</button>`}
-      <button class="text-button danger" type="button" data-profile-action="delete-address" ${disabledAttr()}>Eliminar</button>
+      <button class="text-button profile-address-action" type="button" data-profile-action="edit-address" ${disabledAttr()}>Editar</button>
+      ${address.isDefault ? '' : `<button class="text-button profile-address-action" type="button" data-profile-action="make-default" ${disabledAttr()}>Hacer predeterminada</button>`}
+      <button class="text-button profile-address-action danger" type="button" data-profile-action="delete-address" ${disabledAttr()}>Eliminar</button>
     </div>
   </article>`;
 }

@@ -1,17 +1,17 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Identidad única de TABA. La presentación comercial y el storefront comparten
+// Identidad única de La Taba. La presentación comercial y el storefront comparten
 // marca para evitar que el cliente vea nombres de producto distintos.
 import { isShowcaseMode } from './core/showcase-mode.js';
 
 export const BRAND = Object.freeze({
-  productName: 'TABA',
+  productName: 'La Taba',
   tagline: 'Bebidas, pedidos y delivery en una experiencia simple.',
   shortTagline: 'Bebidas en minutos',
-  demoBusinessName: 'TABA',
+  demoBusinessName: 'La Taba',
   demoBusinessSubtitle: 'Tienda de bebidas',
   demoBusinessClaim: 'Tus bebidas, ahora a un toque.',
   demoBusinessClaimSecondary: 'Pedí. Seguí. Disfrutá.',
-  contactWhatsappMessage: 'Hola, vi TABA y quiero más información.',
+  contactWhatsappMessage: 'Hola, vi La Taba y quiero más información.',
 });
 
 export const BUSINESS_CONFIG = Object.freeze({

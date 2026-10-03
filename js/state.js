@@ -579,8 +579,8 @@ function buildBaseBusinessConfig() {
   const base = buildDefaultBusinessConfig();
   if (![APP_MODE_PRODUCTION, APP_MODE_UNAVAILABLE].includes(getAppMode())) return base;
   return mergeBusinessConfig(base, {
-    businessName: 'TABA',
-    name: 'TABA',
+    businessName: 'La Taba',
+    name: 'La Taba',
     subtitle: 'Tienda de bebidas',
     address: 'Dirección no publicada',
     deliveryZone: 'Cobertura no publicada',

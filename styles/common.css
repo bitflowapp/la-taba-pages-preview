@@ -67,6 +67,7 @@
   font-style: italic;
   letter-spacing: -0.05em;
   line-height: 1;
+  white-space: nowrap;
   color: var(--taba-ink);
 }
 

@@ -122,7 +122,10 @@ export function applyBusinessConfig() {
   const demo = isDemoMode();
   const config = getBusinessConfig();
   const detailsVerified = Boolean(config.orderingDetailsVerified);
-  setText('[data-business-name]', config.businessName);
+  const wordmark = String(config.businessName || '').trim().toLocaleLowerCase() === BRAND.demoBusinessName.toLocaleLowerCase()
+    ? 'LA TABA'
+    : config.businessName;
+  setText('[data-business-name]', wordmark);
   setText('[data-business-subtitle]', config.subtitle);
   setText('.app-home .eyebrow', config.subtitle || 'Tienda de bebidas');
   setText('.app-home .home-lead', demo
@@ -315,8 +318,32 @@ export function productPricePresentation(product) {
   };
 }
 
+function productCapacityText(product) {
+  const value = Number(product?.capacityValue);
+  const rawUnit = String(product?.capacityUnit || '').trim().toLowerCase();
+  if (Number.isFinite(value) && value > 0 && rawUnit) {
+    const formatted = Number.isInteger(value) ? String(value) : String(value).replace('.', ',');
+    return `${formatted} ${rawUnit === 'l' ? 'L' : rawUnit}`;
+  }
+  return String(product?.capacity || '').trim();
+}
+
+export function productPresentationLabel(product) {
+  const capacity = productCapacityText(product);
+  const label = String(product?.unitLabel || product?.unit || '').trim();
+  const unitsPerPack = Number(product?.unitsPerPack || 1);
+  const isPack = unitsPerPack > 1
+    || /^pack\b/i.test(label)
+    || /^pack\b/i.test(String(product?.unit || '').trim());
+  if (isPack && capacity && label) return `${capacity} · ${label}`;
+  return capacity || label;
+}
+
 function unitText(product) {
-  return product.unitLabel || product.unit || '';
+  const label = String(product?.unitLabel || product?.unit || '').trim();
+  const unitsPerPack = Number(product?.unitsPerPack || 1);
+  const isPack = unitsPerPack > 1 || /^pack\b/i.test(label);
+  return isPack ? productPresentationLabel(product) : label || productCapacityText(product);
 }
 
 function productImage(product) {
@@ -552,13 +579,11 @@ function homeProductImage(product, className) {
 }
 
 function homeUnitText(product) {
-  const value = Number(product.capacityValue);
-  const unit = String(product.capacityUnit || '').toLowerCase();
-  if (Number.isFinite(value) && value > 0 && unit) {
-    const formatted = Number.isInteger(value) ? String(value) : String(value).replace('.', ',');
-    return `${formatted} ${unit === 'l' ? 'L' : unit}`;
-  }
-  return unitText(product).replace(/^(?:botella|lata)\s+/i, '');
+  const capacity = productCapacityText(product);
+  const label = productPresentationLabel(product);
+  const unitsPerPack = Number(product?.unitsPerPack || 1);
+  if (unitsPerPack > 1 || /^pack\b/i.test(label)) return label;
+  return capacity || label.replace(/^(?:botella|lata)\s+/i, '');
 }
 
 function renderHomeShowcase() {
@@ -597,6 +622,7 @@ function renderHomePromotions() {
     const discount = discountPercent(product);
     const badge = discount > 0 ? `${discount}% OFF` : 'Promoción vigente';
     const outOfStock = product.stock <= 0 || !product.available;
+    const availability = cardAvailabilityLabel(product);
     return `
       <article class="home-promo-card ${outOfStock ? 'out-of-stock' : ''}">
         <button class="home-promo-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
@@ -608,6 +634,7 @@ function renderHomePromotions() {
           <span class="home-product-price">${money(pricing.price)}</span>
           ${old}
           <small>${escapeHtml(homeUnitText(product))}</small>
+          ${availability ? `<small class="home-card-availability ${outOfStock ? 'is-unavailable' : ''}">${escapeHtml(availability)}</small>` : ''}
         </div>
         <div class="home-card-control">${quickAddControl(product, cartQuantities.get(product.id) || 0, { className: 'home-add-button' })}</div>
       </article>`;
@@ -622,6 +649,7 @@ function renderHomeBestSellers() {
   container.innerHTML = homeBestSellerProducts().map((product) => {
     const pricing = productPricePresentation(product);
     const outOfStock = product.stock <= 0 || !product.available;
+    const availability = cardAvailabilityLabel(product);
     return `
       <article class="home-best-card ${outOfStock ? 'out-of-stock' : ''}">
         <button class="home-best-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
@@ -630,6 +658,8 @@ function renderHomeBestSellers() {
         <div class="home-best-copy">
           <strong>${escapeHtml(product.name)}</strong>
           <span>${money(pricing.price)}</span>
+          <small class="home-best-unit">${escapeHtml(homeUnitText(product))}</small>
+          ${availability ? `<small class="home-card-availability ${outOfStock ? 'is-unavailable' : ''}">${escapeHtml(availability)}</small>` : ''}
         </div>
         <div class="home-card-control">${quickAddControl(product, cartQuantities.get(product.id) || 0, { className: 'home-add-button' })}</div>
       </article>`;
@@ -683,6 +713,7 @@ function renderHomeCatalogPreview() {
     const favorite = isFavoriteProduct(product.id);
     const pricing = productPricePresentation(product);
     const outOfStock = product.stock <= 0 || !product.available || product.pricePending;
+    const availability = cardAvailabilityLabel(product);
     return `
       <article class="home-catalog-card ${outOfStock ? 'out-of-stock' : ''}">
         <button class="home-favorite-button ${favorite ? 'is-favorite' : ''}" type="button" data-favorite-toggle="${product.id}" aria-pressed="${favorite}" aria-label="${favorite ? 'Quitar' : 'Guardar'} ${escapeHtml(product.name)} de favoritos">
@@ -695,7 +726,7 @@ function renderHomeCatalogPreview() {
         </button>
         <div class="home-catalog-copy">
           <strong>${escapeHtml(product.name)}</strong>
-          <span class="home-available">${outOfStock ? 'Agotado' : 'Disponible'}</span>
+          ${availability ? `<span class="home-available ${outOfStock ? 'is-unavailable' : ''}">${escapeHtml(availability)}</span>` : ''}
           <span class="home-product-price">${money(pricing.price)}</span>
           <small>${escapeHtml(homeUnitText(product))}</small>
         </div>
@@ -732,6 +763,7 @@ function railCard(product) {
   const old = pricing.regularPrice && pricing.regularPrice > pricing.price
     ? `<s>${money(pricing.regularPrice)}</s>` : '';
   const quantity = getCartItems().find((item) => item.productId === product.id)?.quantity || 0;
+  const availability = cardAvailabilityLabel(product);
   return `
     <article class="offer-card ${product.stock <= 0 || !product.available ? 'out-of-stock' : ''}">
       <button class="offer-card-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
@@ -741,7 +773,7 @@ function railCard(product) {
       <div class="offer-card-body">
         <strong>${escapeHtml(product.name)}</strong>
         <small>${escapeHtml(unitText(product))}</small>
-        <small class="offer-availability">${product.stock > 0 && product.available ? 'Disponible' : 'Agotado'}</small>
+        ${availability ? `<small class="offer-availability ${product.stock <= 0 || !product.available ? 'is-unavailable' : ''}">${escapeHtml(availability)}</small>` : ''}
         <div class="offer-price">
           <span>${money(pricing.price)}</span>
           ${old}
@@ -1107,11 +1139,11 @@ function renderProducts() {
     const offer = discountPercent(product) > 0;
     const inCart = cartQuantities.get(product.id) || 0;
     const favorite = isFavoriteProduct(product.id);
-    const rawPresentation = product.presentation || product.variant || product.unitLabel || product.packageType || '';
-    const compactPresentation = normalizeSearchText(rawPresentation).replace(/\bpack\b/g, '').trim();
-    const presentation = compactPresentation && normalizeSearchText(product.name).includes(compactPresentation)
-      ? ''
-      : rawPresentation;
+    const presentation = productPresentationLabel(product)
+      || product.presentation
+      || product.variant
+      || product.packageType
+      || '';
     const control = quickAddControl(product, inCart);
     return `
       <article class="product-card ${outOfStock ? 'out-of-stock' : ''} ${offer ? 'is-offer' : ''} ${inCart > 0 ? 'in-cart' : ''}">

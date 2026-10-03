@@ -1,5 +1,5 @@
 /*
- * Configuración de despliegue de TABA.
+ * Configuración de despliegue de La Taba.
  *
  * Este archivo se carga antes de js/app.js. El repositorio conserva una
  * configuración vacía para fallar cerrado: el despliegue debe reemplazar el

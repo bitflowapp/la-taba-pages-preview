@@ -582,3 +582,40 @@
     animation-duration: 1600ms;
   }
 }
+
+/* Acciones de dirección: botones compactos con jerarquía visible, sin una
+   fila de enlaces largos que compita con una dirección de varias líneas. */
+.profile-address-actions .profile-address-action {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 10px;
+  overflow-wrap: normal;
+  border: 1px solid var(--profile-line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--profile-ink);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.15;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.profile-address-actions .profile-address-action:hover {
+  border-color: var(--taba-red);
+  background: var(--taba-red-soft);
+}
+
+.profile-address-actions .profile-address-action.danger {
+  border-color: rgb(190 31 46 / 32%);
+  background: #fff7f7;
+  color: var(--taba-danger);
+}
+
+.profile-address-actions .profile-address-action.danger:hover {
+  border-color: var(--taba-danger);
+  background: #ffeded;
+}

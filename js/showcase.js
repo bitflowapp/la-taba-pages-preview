@@ -353,7 +353,7 @@ function showcaseMarkup() {
         <header class="showcase-dialog-header">
           <div>
             <span class="showcase-kicker">Recorrido guiado</span>
-            <h2 id="taba-showcase-title">Conocé TABA de punta a punta</h2>
+            <h2 id="taba-showcase-title">Conocé La Taba de punta a punta</h2>
             <p data-showcase-progress>${SHOWCASE_STEPS.length} funciones para recorrer</p>
           </div>
           <button
@@ -398,7 +398,7 @@ function showcaseMarkup() {
           <section class="showcase-release-section" aria-labelledby="taba-showcase-release-title">
             <div class="showcase-section-heading">
               <span class="showcase-kicker">Estado de esta base</span>
-              <h3 id="taba-showcase-release-title">Qué mejoró en TABA</h3>
+              <h3 id="taba-showcase-release-title">Qué mejoró en La Taba</h3>
               <p>${escapeHtml(SHOWCASE_RELEASE_STATUS.definition)}</p>
             </div>
             <div class="showcase-release-grid">

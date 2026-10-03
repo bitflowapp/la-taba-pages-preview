@@ -63,8 +63,11 @@ export function classifyMercadoPago({ settings = [], connections = [], outbox = 
   if (due) warn.push(`MP_OUTBOX_STALLED:${due}`);
   if (dead) warn.push(`MP_OUTBOX_DEAD_LETTER:${dead}`);
   const inReview = intents.filter((row) => ['ambiguous', 'security_review_required', 'approved_order_pending'].includes(row.internal_status)).length;
+  // Desde que el cobro se aprobó, como la alerta PAYMENT_APPROVED_WITHOUT_ORDER de la base (20261001222000): cada
+  // relectura del mismo pago reescribe `updated_at`, y medido desde ahí un cobro sin pedido que el barrido relee cada
+  // pocos minutos no llegaba nunca a contarse.
   const paidWithoutOrder = intents.filter((row) => ['approved', 'approved_order_pending'].includes(row.internal_status)
-    && !row.order_id && Date.parse(row.updated_at) < now - MP_STALL_MS).length;
+    && !row.order_id && Date.parse(row.approved_at || row.updated_at) < now - MP_STALL_MS).length;
   if (inReview) warn.push(`MP_PAYMENTS_NEED_RECONCILIATION:${inReview}`);
   if (paidWithoutOrder) warn.push(`MP_PAID_WITHOUT_ORDER:${paidWithoutOrder}`);
   const ambiguousRefunds = refunds.filter((row) => row.status === 'ambiguous').length;
@@ -190,7 +193,7 @@ async function main(args) {
     const settings = await q(db.from('business_payment_settings').select('enabled,environment,production_review_status')
       .eq('business_id', businessId).eq('provider', 'mercadopago'));
     const connections = await q(db.from('mp_seller_connections').select('environment,status,expires_at').eq('business_id', businessId));
-    const intents = await q(db.from('payment_intents').select('id,internal_status,order_id,updated_at').eq('business_id', businessId)
+    const intents = await q(db.from('payment_intents').select('id,internal_status,order_id,updated_at,approved_at').eq('business_id', businessId)
       .or(`updated_at.gte.${since},internal_status.in.(ambiguous,security_review_required,approved_order_pending,approved)`).limit(1000));
     const ids = intents.map((row) => row.id);
     const outbox = [

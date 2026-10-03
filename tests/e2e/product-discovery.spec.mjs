@@ -141,6 +141,11 @@ test('five minute discovery session preserves DOM/images and identical-data rend
   while(Date.now()-start<300000){
     await page.bringToFront();
     await page.locator(searchSelector).fill(cycles%2?'coca sero':'monster mango');
+    await expect(page.locator(`${GRID} .product-card`).first()).toBeVisible();
+    // Routing disables browser HTTP cache. Keep the detail asset identity
+    // fixed for the no-redownload contract; alternating discovery queries
+    // and category/card identity are still exercised in every cycle.
+    await page.locator(searchSelector).fill('monster mango');
     await page.locator(`${GRID} .product-media`).first().click();
     await page.locator('[data-product-modal] [data-close-modal]').click();
     const card=page.locator(`${GRID} .product-card`).first();

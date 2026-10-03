@@ -149,7 +149,8 @@ test('pack and required-quantity promotions respect bundle conditions and maximu
   });
 });
 
-test('free delivery and the centralized cart total use the active promotion state', () => {
+test('free delivery and the centralized cart total use the active promotion state', (t) => {
+  t.mock.timers.enable({ apis: ['Date'], now: NOW });
   const freeDelivery = approvedPromotion({
     promoId: 'promo-delivery-verified',
     includedSkus: ['qa-promo-bebidas'],

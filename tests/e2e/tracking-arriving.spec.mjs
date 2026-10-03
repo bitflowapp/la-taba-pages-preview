@@ -240,9 +240,19 @@ test('tracking público arriving reproduce la composición y conserva datos real
         contactHeight: document.querySelector(
           '[data-tracking-panel] .status-arriving .tracking-rider-contact a',
         )?.getBoundingClientRect().height || 0,
+        debugBoxes: Object.fromEntries([
+          '.topbar', 'main', '.tracking-sheet', '.tracking-hero', '.customer-progress',
+          '.tracking-map-stage', '.tracking-rider-card', '.delivery-code-card',
+          '.tracking-order-summary', '.tracking-help-card',
+        ].map((selector) => {
+          const node = document.querySelector(selector);
+          const rect = node?.getBoundingClientRect();
+          return [selector, rect ? { top: rect.top, bottom: rect.bottom, height: rect.height } : null];
+        })),
       };
     });
     const expectedMapHeight = Math.max(260, Math.min(viewport.width * 0.718, 300));
+    console.log('ARRIVING_MEASUREMENTS', viewport, measurements);
     expect(Math.abs(measurements.mapHeight - expectedMapHeight)).toBeLessThanOrEqual(2);
     expect(Math.max(measurements.documentWidth, measurements.bodyWidth))
       .toBeLessThanOrEqual(measurements.viewportWidth + 1);

@@ -84,3 +84,3592 @@
     touch-action: manipulation;
   }
 }
+:root {
+  --taba-red: #e60c17;
+  --taba-red-hot: #ff2a1c;
+  --taba-red-deep: #8f060e;
+  --taba-black: #0a0a0c;
+  --taba-black-2: #121215;
+  --taba-black-3: #1a1a1e;
+  --taba-hairline: rgba(255, 255, 255, 0.1);
+  --taba-hairline-2: rgba(255, 255, 255, 0.18);
+  --taba-on-dark: #f6f6f7;
+  --taba-on-dark-soft: #9b9da3;
+  --taba-card: #fff;
+  --taba-card-ink: #16171b;
+  --taba-card-muted: #8b8e95;
+  --taba-topbar-h: 76px;
+
+  /* El acento histÃ³rico era cobre; se retinta a rojo de marca para que las
+     vistas que siguen en superficie clara hablen el mismo idioma visual. */
+  --accent: #e60c17;
+  --accent-2: #ff3b2f;
+  --accent-soft: #c00d16;
+  --copper: #e60c17;
+  --copper-2: #ff3b2f;
+  --copper-soft: #c00d16;
+  --red: #d21019;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.taba-display {
+  font-family: "Archivo", "Arial Narrow", "Segoe UI", sans-serif;
+  font-style: italic;
+  font-weight: 900;
+  font-stretch: 76%;
+  text-transform: uppercase;
+}
+
+/* ===== Header =====
+   El header y la barra inferior son chrome de marca: negros en todas las vistas,
+   incluidas las que siguen con superficie clara (carrito, seguimiento, negocio). */
+body:has(.app-view.is-active) .topbar.taba-topbar,
+.topbar.taba-topbar {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  max-width: var(--max);
+  min-height: var(--taba-topbar-h);
+  padding: 0 18px;
+  color: #fff;
+  backdrop-filter: none;
+}
+
+body:has(.app-view.is-active) .topbar.taba-topbar::before,
+.topbar.taba-topbar::before {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: var(--taba-topbar-h);
+  background: var(--taba-black);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.34);
+}
+
+.taba-burger {
+  display: none;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #fff;
+}
+
+.taba-burger span,
+.taba-burger span::before,
+.taba-burger span::after {
+  display: block;
+  width: 21px;
+  height: 2.4px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.taba-burger span {
+  position: relative;
+  margin: 0 auto;
+}
+
+.taba-burger span::before,
+.taba-burger span::after {
+  content: "";
+  position: absolute;
+  left: 0;
+}
+
+.taba-burger span::before { top: -7px; }
+.taba-burger span::after { top: 7px; }
+
+/* Logo: "La" blanco + "Taba" rojo, itÃ¡lica pesada condensada y rayo de marca. */
+.brand.taba-brand {
+  position: relative;
+  align-self: center;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  min-width: 0;
+  padding: 0 12px 0 0;
+  color: #fff;
+}
+
+.brand.taba-brand .brand-text { display: contents; }
+.brand.taba-brand .brand-text small { display: none; }
+
+.brand.taba-brand::after {
+  content: none;
+}
+
+body:has(.app-view.is-active) .taba-brand .brand-la {
+  font-family: "Archivo", "Arial Narrow", "Segoe UI", sans-serif;
+  font-style: italic;
+  font-weight: 800;
+  font-stretch: 92%;
+  font-size: 25px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  flex: 0 0 auto;
+  color: #17171b;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+body:has(.app-view.is-active) .taba-brand .brand-word {
+  font-family: "Archivo", "Arial Narrow", "Segoe UI", sans-serif;
+  font-style: italic;
+  font-weight: 900;
+  font-stretch: 70%;
+  font-size: 36px;
+  line-height: 0.9;
+  letter-spacing: -0.005em;
+  flex: 0 0 auto;
+  color: var(--taba-red);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.taba-brand .brand-bolt {
+  position: absolute;
+  top: -2px;
+  right: 0;
+  width: 9px;
+  height: 17px;
+  color: #fff;
+}
+
+.taba-brand .brand-word::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 12px;
+  bottom: -5px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--taba-red);
+}
+
+/* ===== Nav de escritorio =====
+   El prefijo body:has(.app-view.is-active) sube la especificidad por encima de
+   los overrides del tema claro anterior, que apuntan a cada vista por separado. */
+body:has(.app-view.is-active) .taba-topbar .desktop-nav {
+  justify-self: start;
+  gap: 2px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body:has(.app-view.is-active) .taba-topbar .desktop-nav button {
+  gap: 5px;
+  padding: 8px 9px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.72);
+  background: transparent;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.085em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+body:has(.app-view.is-active) .taba-topbar .desktop-nav button:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+body:has(.app-view.is-active) .taba-topbar .desktop-nav button.active {
+  color: var(--taba-red);
+  background: transparent;
+}
+
+.taba-topbar .desktop-nav .nav-caret {
+  width: 9px;
+  height: 6px;
+  opacity: 0.75;
+}
+
+.taba-topbar .desktop-nav .mini-badge {
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  background: var(--taba-red);
+  color: #fff;
+  font-size: 10px;
+  letter-spacing: 0;
+}
+
+.taba-topbar .desktop-nav .mini-badge.is-empty {
+  background: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.62);
+}
+
+/* ===== Acciones del header ===== */
+.taba-topbar .topbar-actions {
+  flex-wrap: nowrap;
+  gap: 10px;
+  justify-self: end;
+}
+
+body:has(.app-view.is-active) .taba-admin-link.ghost-button.compact {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.5);
+  background: transparent;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+body:has(.app-view.is-active) .taba-admin-link.ghost-button.compact:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.taba-delivery {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  padding-right: 4px;
+}
+
+.taba-delivery-ico {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  color: var(--taba-red);
+}
+
+.taba-delivery-ico svg { width: 30px; height: 22px; }
+
+.taba-delivery-copy { display: grid; }
+
+.taba-delivery-copy strong {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.taba-delivery-copy small {
+  color: var(--taba-on-dark-soft);
+  font-size: 11px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.taba-icon-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  color: #fff;
+  background: transparent;
+  transition: color 0.16s ease, background 0.16s ease, transform 0.16s ease;
+}
+
+.taba-icon-btn svg { width: 21px; height: 21px; }
+.taba-icon-btn:hover { color: var(--taba-red); background: rgba(255, 255, 255, 0.06); }
+.taba-icon-btn:active { transform: scale(0.94); }
+
+.taba-cart-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border: 2px solid var(--taba-black);
+  border-radius: 999px;
+  color: #fff;
+  background: var(--taba-red);
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.taba-cart-badge.is-empty {
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* ===== Barra roja de envÃ­o (mobile) ===== */
+.taba-shipping-strip {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 6px 16px;
+  color: #fff;
+  background: var(--taba-red);
+}
+
+.taba-shipping-ico { display: grid; place-items: center; }
+.taba-shipping-ico svg { width: 22px; height: 16px; }
+.taba-shipping-strip strong { font-size: 11.5px; font-weight: 800; letter-spacing: -0.01em; }
+.taba-shipping-strip small { color: rgba(255, 255, 255, 0.85); font-size: 10.5px; }
+
+/* ===== MenÃº lateral (mobile) ===== */
+.taba-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+}
+
+.taba-drawer[hidden] { display: none; }
+
+.taba-drawer-veil {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(2px);
+}
+
+.taba-drawer-panel {
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: min(300px, 84vw);
+  padding: 14px 14px calc(20px + var(--safe-area-bottom));
+  background: var(--taba-black);
+  border-right: 1px solid var(--taba-hairline);
+  box-shadow: 24px 0 60px rgba(0, 0, 0, 0.5);
+  animation: tabaDrawerIn 0.22s var(--ease-ios);
+  overflow-y: auto;
+}
+
+@keyframes tabaDrawerIn {
+  from { transform: translateX(-16px); opacity: 0.6; }
+  to { transform: none; opacity: 1; }
+}
+
+.taba-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 2px 2px 14px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--taba-hairline);
+}
+
+.taba-drawer-close {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--taba-hairline);
+  border-radius: 10px;
+  color: #fff;
+  background: transparent;
+}
+
+.taba-drawer-close svg { width: 17px; height: 17px; }
+
+.taba-drawer-panel > button {
+  min-height: 48px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.82);
+  background: transparent;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.taba-drawer-panel > button.active {
+  color: var(--taba-red);
+  background: rgba(230, 12, 23, 0.1);
+}
+
+.taba-drawer-note {
+  margin: auto 0 0;
+  padding: 14px 12px 0;
+  border-top: 1px solid var(--taba-hairline);
+  color: var(--taba-on-dark-soft);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+body.taba-menu-open { overflow: hidden; }
+
+/* ===== Fondo oscuro de la superficie de compra ===== */
+body:has(.app-view[data-view="home"].is-active),
+body:has(.app-view[data-view="catalog"].is-active) {
+  color-scheme: dark;
+  background: var(--taba-black);
+}
+
+body:has(.app-view[data-view="home"].is-active) main[data-app-main],
+body:has(.app-view[data-view="catalog"].is-active) main[data-app-main] {
+  color: var(--taba-on-dark);
+}
+
+.taba-home {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 14px 0 8px;
+  color: var(--taba-on-dark);
+  overflow: visible;
+}
+
+/* ===== Hero ===== */
+.taba-hero {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  min-height: 424px;
+  margin: 0 0 16px;
+  padding: 38px 44px;
+  overflow: hidden;
+  border-radius: 20px;
+  background:
+    radial-gradient(115% 125% at 74% 26%, #ff3320 0%, #e50d16 30%, #b30810 58%, #620409 88%);
+}
+
+.taba-hero-glow {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(58% 78% at 4% 46%, rgba(0, 0, 0, 0.62), transparent 72%),
+    radial-gradient(46% 58% at 96% 96%, rgba(0, 0, 0, 0.5), transparent 74%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.24), transparent 26%, rgba(0, 0, 0, 0.3));
+}
+
+/* Los packshots vienen sobre blanco: `multiply` los integra al rojo del hero
+   como en la referencia, y el filtro les devuelve cuerpo y contraste. */
+.taba-hero-art {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  right: 1%;
+  bottom: -2%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 0;
+  width: min(56%, 620px);
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
+/* El filtro va en la imagen, no en el grupo: si se aplica al contenedor,
+   Chromium aÃ­sla el grupo y el multiply deja de fundirse con el rojo. */
+.taba-hero-bottle {
+  flex: 0 0 auto;
+  height: 100%;
+  width: 50%;
+  object-fit: contain;
+  object-position: bottom center;
+  /* brightness > 1 lleva el blanco del packshot a blanco puro para que el
+     multiply no deje el rectÃ¡ngulo de la foto marcado sobre el rojo. */
+  filter: contrast(1.2) saturate(1.14) brightness(1.05);
+  transform-origin: bottom center;
+}
+
+/* El packshot de Fernet es un primer plano sin fondo blanco alrededor: se
+   difumina el borde para que la botella se funda con el rojo del hero. */
+.taba-hero-bottle.is-a {
+  transform: translate(3%, 5%) scale(1.1);
+  -webkit-mask-image: radial-gradient(108% 100% at 54% 94%, #000 34%, transparent 80%);
+  mask-image: radial-gradient(108% 100% at 54% 94%, #000 34%, transparent 80%);
+}
+
+.taba-hero-bottle.is-b { transform: translate(-2%, 4%) scale(1.34); }
+
+.taba-hero-seal {
+  position: absolute;
+  z-index: 3;
+  top: 30px;
+  right: 34px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  width: 104px;
+  height: 104px;
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(103, 4, 10, 0.72);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.34);
+  font-style: normal;
+  text-align: center;
+}
+
+.taba-hero-seal em {
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.92;
+}
+
+.taba-hero-seal b {
+  font-family: "Archivo", "Arial Narrow", "Segoe UI", sans-serif;
+  font-style: italic;
+  font-weight: 900;
+  font-stretch: 80%;
+  font-size: 27px;
+  line-height: 1.05;
+}
+
+.taba-hero-seal i {
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.92;
+}
+
+.taba-hero-copy {
+  position: relative;
+  z-index: 2;
+  max-width: min(560px, 54%);
+}
+
+.taba-hero-copy h1 {
+  display: grid;
+  margin: 0;
+  font-family: "Archivo", "Arial Narrow", "Segoe UI", sans-serif;
+  font-style: italic;
+  font-weight: 900;
+  font-stretch: 74%;
+  font-size: clamp(38px, 5.2vw, 70px);
+  line-height: 0.95;
+  letter-spacing: -0.012em;
+  text-transform: uppercase;
+}
+
+.taba-hero-copy h1 .hl-1 {
+  color: #fff;
+  text-shadow: 0 6px 22px rgba(60, 0, 4, 0.42);
+}
+
+.taba-hero-copy h1 .hl-2 {
+  color: #120306;
+  text-shadow: 0 4px 16px rgba(255, 90, 70, 0.18);
+}
+
+.taba-hero-copy > p {
+  max-width: 340px;
+  margin: 18px 0 22px;
+  color: rgba(255, 255, 255, 0.94);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.taba-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.taba-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 46px;
+  padding: 0 24px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.taba-btn:active { transform: scale(0.97); }
+
+.taba-btn-dark {
+  color: #fff;
+  background: #0d0d10;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.34);
+}
+
+.taba-btn-dark:hover { background: #000; }
+
+.taba-btn-dark .btn-bolt {
+  width: 9px;
+  height: 16px;
+  color: var(--taba-red-hot);
+}
+
+.taba-btn-line {
+  color: #fff;
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.85);
+}
+
+.taba-btn-line:hover { color: #b30810; background: #fff; }
+
+.taba-hero-dots {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: 24px;
+  display: flex;
+  gap: 9px;
+  transform: translateX(-50%);
+}
+
+.taba-hero-dots span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.38);
+}
+
+.taba-hero-dots span.is-active { background: #fff; }
+
+/* ===== Buscador ===== */
+body:has(.app-view.is-active) .search-box.taba-home-search {
+  height: 50px;
+  margin: 0 0 16px;
+  padding: 0 18px;
+  border: 1px solid var(--taba-hairline);
+  border-radius: 12px;
+  color: var(--taba-on-dark-soft);
+  background: var(--taba-black-2);
+  box-shadow: none;
+}
+
+.taba-home-search svg { flex: 0 0 auto; }
+
+body:has(.app-view.is-active) .taba-home-search input {
+  min-height: 48px;
+  padding: 0;
+  border: 0;
+  color: #fff;
+  background: transparent;
+  box-shadow: none;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+body:has(.app-view.is-active) .taba-home-search input::placeholder {
+  color: #7c7f86;
+  opacity: 1;
+}
+
+/* ===== Promos destacadas ===== */
+.taba-promos { margin-bottom: 26px; }
+
+.taba-promos-row {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  min-width: 0;
+}
+
+.taba-promos-tag {
+  flex: 0 0 auto;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 10px;
+  width: 74px;
+  margin: 0;
+  padding: 12px 0;
+  border-radius: 12px;
+  background: #0f0f12;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.taba-promos-tag span {
+  font-family: "Archivo", "Arial Narrow", "Segoe UI", sans-serif;
+  font-style: italic;
+  font-weight: 900;
+  font-stretch: 74%;
+  font-size: 15px;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: #fff;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  text-align: center;
+}
+
+.taba-promos-tag svg {
+  width: 11px;
+  height: 20px;
+  color: var(--taba-red);
+}
+
+.home-promotions-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 24px) / 3);
+  gap: 12px;
+  min-width: 0;
+  padding: 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: inline mandatory;
+  scrollbar-width: none;
+}
+
+.home-promotions-rail::-webkit-scrollbar,
+.home-category-strip::-webkit-scrollbar,
+.taba-product-rail::-webkit-scrollbar { display: none; }
+
+.home-promo-card {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 148px;
+  padding: 16px 18px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: linear-gradient(100deg, #6d050b 0%, #b90a13 42%, #e2131d 78%, #f0202a 100%);
+  scroll-snap-align: start;
+}
+
+.home-promo-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    linear-gradient(96deg, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.12) 42%, transparent 66%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.16), transparent 34%, rgba(0, 0, 0, 0.22));
+  pointer-events: none;
+}
+
+.home-promo-media {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 48%;
+  display: grid;
+  place-items: end center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  mix-blend-mode: multiply;
+  overflow: hidden;
+}
+
+.home-promo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  filter: contrast(1.14) saturate(1.1) brightness(1.05);
+  transform: scale(1.34) translateY(6%);
+  transform-origin: bottom center;
+}
+
+.home-promo-copy {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  width: 60%;
+  min-width: 0;
+  pointer-events: none;
+}
+
+.home-promo-badge {
+  justify-self: start;
+  margin-bottom: 4px;
+  padding: 3px 7px;
+  border-radius: 4px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.42);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.home-promo-copy strong {
+  font-family: "Archivo", "Arial Narrow", "Segoe UI", sans-serif;
+  font-style: italic;
+  font-weight: 900;
+  font-stretch: 76%;
+  font-size: 22px;
+  line-height: 1.02;
+  letter-spacing: -0.005em;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 0 3px 12px rgba(40, 0, 2, 0.4);
+}
+
+.home-promo-prices {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.home-promo-copy .home-product-price {
+  color: #fff;
+  font-size: 23px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.home-promo-copy s {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.home-promo-card > .home-add-button {
+  position: absolute;
+  z-index: 3;
+  right: 12px;
+  bottom: 12px;
+}
+
+.taba-rail-next {
+  flex: 0 0 auto;
+  align-self: center;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--taba-hairline-2);
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  transition: background 0.16s ease, transform 0.16s ease;
+}
+
+.taba-rail-next svg { width: 17px; height: 17px; }
+.taba-rail-next:hover { background: rgba(255, 255, 255, 0.14); }
+.taba-rail-next:active { transform: scale(0.93); }
+
+.home-paging-dots {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.home-paging-dots span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.home-paging-dots span.is-active { background: var(--taba-red); }
+
+/* ===== Encabezados de bloque ===== */
+.taba-block { margin-bottom: 26px; }
+
+.taba-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 14px;
+}
+
+.taba-block-head h2 {
+  margin: 0;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.taba-block-head button {
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  color: var(--taba-red);
+  background: transparent;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.taba-block-head button:hover { color: #ff5a53; }
+
+/* ===== CategorÃ­as ===== */
+.category-strip.home-category-strip {
+  display: flex;
+  gap: 14px;
+  width: 100%;
+  padding: 0 0 2px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: inline proximity;
+  scrollbar-width: none;
+}
+
+.home-category-card {
+  flex: 1 1 0;
+  min-width: 132px;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 14px;
+  border: 1px solid var(--taba-hairline);
+  border-radius: 999px;
+  color: #fff;
+  background: var(--taba-black-2);
+  box-shadow: none;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  scroll-snap-align: start;
+  transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
+  color: #24262b;
+}
+
+.home-category-card:hover {
+  border-color: var(--taba-hairline-2);
+  background: var(--taba-black-3);
+}
+
+.home-category-card.active {
+  border-color: rgba(230, 12, 23, 0.55);
+  color: var(--taba-red);
+  background: linear-gradient(180deg, rgba(230, 12, 23, 0.16), rgba(230, 12, 23, 0.06));
+  box-shadow: none;
+}
+
+.home-category-icon {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  color: var(--taba-red);
+}
+
+.home-category-icon svg { width: 24px; height: 24px; }
+.home-category-card.active .home-category-icon { color: var(--taba-red-hot); }
+
+/* ===== Riel de productos destacados ===== */
+.taba-product-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 56px) / 5);
+  gap: 14px;
+  min-width: 0;
+  padding: 2px 0 6px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: inline proximity;
+  scrollbar-width: none;
+}
+
+/* Las dos listas del showcase comparten un Ãºnico riel visual. */
+.taba-product-rail > .home-best-sellers,
+.taba-product-rail > .home-catalog-preview {
+  display: contents;
+}
+
+/* ===== Tarjeta de producto ===== */
+.taba-pcard {
+  position: relative;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 14px;
+  background: var(--taba-card);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.34);
+  scroll-snap-align: start;
+  transition: transform 0.18s var(--ease-ios), box-shadow 0.18s ease;
+}
+
+.taba-pcard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.42);
+}
+
+.taba-pcard.out-of-stock { opacity: 0.62; }
+
+.taba-pcard-badge {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  left: 10px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: #fff;
+  background: var(--taba-red);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.taba-pcard-badge.is-soft {
+  background: #16171b;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.taba-fav {
+  position: absolute;
+  z-index: 2;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: transparent;
+  background: transparent;
+}
+
+.taba-fav svg { width: 17px; height: 17px; overflow: visible; }
+.taba-fav path { stroke: #c3c6cc; }
+.taba-fav:hover path { stroke: #7d818a; }
+.taba-fav.is-favorite { color: var(--taba-red); }
+.taba-fav.is-favorite path { stroke: var(--taba-red); }
+
+.taba-pcard-media {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 0;
+  padding: 16px 12px 4px;
+  border: 0;
+  background: #fff;
+  overflow: hidden;
+}
+
+.taba-pcard-img {
+  width: 100%;
+  height: 100%;
+  max-height: 152px;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+
+.taba-pcard-body {
+  display: grid;
+  gap: 1px;
+  padding: 0 12px 12px;
+  color: var(--taba-card-ink);
+}
+
+.taba-pcard-body > strong {
+  display: -webkit-box;
+  min-height: 17px;
+  overflow: hidden;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.taba-pcard-body > small {
+  color: var(--taba-card-muted);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.taba-pcard-foot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 7px;
+}
+
+.taba-pcard-prices {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.taba-pcard .home-product-price {
+  color: #101115;
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  line-height: 1;
+}
+
+.taba-pcard-prices s {
+  color: #a2a5ac;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.home-add-button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--taba-red);
+  box-shadow: 0 5px 14px rgba(230, 12, 23, 0.34);
+  font-size: 21px;
+  font-weight: 400;
+  line-height: 1;
+  transition: transform 0.16s ease, background 0.16s ease;
+}
+
+.home-add-button > span { transform: translateY(-1px); }
+.home-add-button:hover { background: #ff2a1c; }
+.home-add-button:active { transform: scale(0.9); }
+.home-add-button:disabled { background: #c9ccd2; box-shadow: none; }
+
+/* ===== CatÃ¡logo con el mismo lenguaje visual ===== */
+body:has(.app-view[data-view="catalog"].is-active) .section-head h2,
+body:has(.app-view[data-view="catalog"].is-active) .catalog-count,
+body:has(.app-view[data-view="catalog"].is-active) .rail-head h2 {
+  color: #fff;
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .crumbs,
+body:has(.app-view[data-view="catalog"].is-active) .crumb-current,
+body:has(.app-view[data-view="catalog"].is-active) .sort-field span {
+  color: var(--taba-on-dark-soft);
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .crumb-link { color: var(--taba-red); }
+
+body:has(.app-view[data-view="catalog"].is-active) .section-head h2 {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .search-box {
+  border-color: var(--taba-hairline);
+  border-radius: 12px;
+  background: var(--taba-black-2);
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .search-box input {
+  padding: 0;
+  border: 0;
+  color: #fff;
+  background: transparent;
+  box-shadow: none;
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .search-box input::placeholder { color: #7c7f86; }
+body:has(.app-view[data-view="catalog"].is-active) .search-box span { color: #7c7f86; }
+body:has(.app-view[data-view="catalog"].is-active) .catalog-toolbar { color: var(--taba-on-dark-soft); }
+
+body:has(.app-view[data-view="catalog"].is-active) .category-button {
+  min-height: 42px;
+  border-color: var(--taba-hairline);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.86);
+  background: var(--taba-black-2);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .category-button.active {
+  border-color: transparent;
+  color: #fff;
+  background: var(--taba-red);
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .sort-field select {
+  border-color: var(--taba-hairline);
+  color: #fff;
+  background: var(--taba-black-2);
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .product-card,
+body:has(.app-view[data-view="catalog"].is-active) .offer-card {
+  border-color: rgba(0, 0, 0, 0.05);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.34);
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .product-card .product-body h3,
+body:has(.app-view[data-view="catalog"].is-active) .offer-card-body strong {
+  color: var(--taba-card-ink);
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .product-card .product-body p,
+body:has(.app-view[data-view="catalog"].is-active) .offer-card-body small {
+  color: var(--taba-card-muted);
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .product-card .price strong,
+body:has(.app-view[data-view="catalog"].is-active) .offer-price span {
+  color: #101115;
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .empty-state {
+  color: var(--taba-on-dark-soft);
+  border-color: var(--taba-hairline);
+  background: var(--taba-black-2);
+}
+
+/* Acentos del catÃ¡logo en rojo de marca (venÃ­an del tema cobre anterior). */
+body:has(.app-view[data-view="catalog"].is-active) .catalog-toolbar,
+body:has(.app-view[data-view="catalog"].is-active) .rail-block,
+body:has(.app-view[data-view="catalog"].is-active) .grid-block {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .catalog-count { color: var(--taba-on-dark-soft); }
+
+body:has(.app-view[data-view="catalog"].is-active) .add-button,
+body:has(.app-view[data-view="catalog"].is-active) .add-round {
+  color: #fff;
+  background: var(--taba-red);
+  box-shadow: 0 6px 16px rgba(230, 12, 23, 0.3);
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .add-button:disabled,
+body:has(.app-view[data-view="catalog"].is-active) .add-round:disabled {
+  color: #6d7078;
+  background: #d7dade;
+  box-shadow: none;
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .offer-badge.discount,
+body:has(.app-view[data-view="catalog"].is-active) .offer-badge.combo,
+body:has(.app-view[data-view="catalog"].is-active) .offer-badge.day {
+  color: #fff;
+  background: var(--taba-red);
+  border: 0;
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .offer-badge.promo {
+  color: #fff;
+  background: #16171b;
+  border: 0;
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .price strong { color: #101115; }
+body:has(.app-view[data-view="catalog"].is-active) .price s,
+body:has(.app-view[data-view="catalog"].is-active) .price small,
+body:has(.app-view[data-view="catalog"].is-active) .offer-price s { color: #9a9da4; }
+
+body:has(.app-view[data-view="catalog"].is-active) .stock-pill {
+  color: #55585f;
+  border-color: rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .stock-pill.featured {
+  color: #fff;
+  border-color: transparent;
+  background: #16171b;
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .product-card:hover,
+body:has(.app-view[data-view="catalog"].is-active) .product-card.is-offer {
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .qty-stepper strong { color: #101115; }
+
+body:has(.app-view[data-view="catalog"].is-active) .qty-stepper .icon-button {
+  color: #16171b;
+  border-color: rgba(0, 0, 0, 0.12);
+  background: #f1f2f4;
+}
+
+/* ===== Carrito flotante ===== */
+body:has(.app-view.is-active) .floating-cart {
+  border-color: rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  color: #fff;
+  background: linear-gradient(100deg, #17171b, #c4101a);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.5);
+}
+
+body:has(.app-view.is-active) .floating-cart span { color: rgba(255, 255, 255, 0.86); }
+
+.floating-cart strong {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* BotÃ³n primario de marca tambiÃ©n en las vistas que siguen en superficie clara. */
+body:has(.app-view.is-active) .primary-button {
+  color: #fff;
+  background: linear-gradient(135deg, #e60c17, #ff3b2f);
+  box-shadow: 0 10px 22px rgba(230, 12, 23, 0.22);
+}
+
+/* ===== Barra inferior (mobile) ===== */
+body:has(.app-view.is-active) .mobile-nav.taba-tabbar {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  min-height: auto;
+  padding: 3px 8px calc(9px + var(--safe-area-bottom));
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0;
+  background: var(--taba-black);
+  backdrop-filter: none;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.42);
+}
+
+body:has(.app-view.is-active) .mobile-nav.taba-tabbar button {
+  gap: 4px;
+  min-width: 0;
+  min-height: var(--tap);
+  color: rgba(255, 255, 255, 0.62);
+  background: transparent;
+  font-family: inherit;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+body:has(.app-view.is-active) .mobile-nav.taba-tabbar .mn-ico {
+  width: 22px;
+  height: 22px;
+  opacity: 1;
+}
+
+.mobile-nav.taba-tabbar .mn-ico svg { width: 22px; height: 22px; }
+
+body:has(.app-view.is-active) .mobile-nav.taba-tabbar button.active {
+  color: var(--taba-red);
+  background: transparent;
+}
+
+body:has(.app-view.is-active) .mobile-nav.taba-tabbar .mn-badge {
+  top: -4px;
+  left: calc(50% + 5px);
+  min-width: 16px;
+  height: 16px;
+  border: 2px solid var(--taba-black);
+  background: var(--taba-red);
+  color: #fff;
+  font-size: 9px;
+}
+
+/* ===== Interacciones ===== */
+.home-category-card,
+.taba-block-head button,
+.home-add-button,
+.taba-fav,
+.taba-icon-btn,
+.taba-btn {
+  transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease, color 150ms ease;
+}
+
+.home-category-card:active,
+.taba-fav:active { transform: scale(0.96); }
+
+.home-category-card:focus-visible,
+.taba-block-head button:focus-visible,
+.home-add-button:focus-visible,
+.taba-fav:focus-visible,
+.taba-icon-btn:focus-visible,
+.taba-btn:focus-visible,
+.taba-pcard-media:focus-visible,
+.home-promo-media:focus-visible,
+.taba-rail-next:focus-visible,
+.taba-burger:focus-visible {
+  outline: 2px solid var(--taba-red);
+  outline-offset: 2px;
+}
+
+/* ===== Desktop ancho ===== */
+@media (min-width: 1080px) {
+  .taba-hero { min-height: 448px; }
+}
+
+/* ===== Tablet: header en dos filas para que nada se corte ni desborde ===== */
+@media (max-width: 1024px) {
+  :root { --taba-topbar-h: 108px; }
+
+  .topbar.taba-topbar {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-items: center;
+    gap: 6px 12px;
+    min-height: 108px;
+    padding: 10px 18px 8px;
+  }
+
+  .topbar.taba-topbar::before { height: 108px; }
+
+  .brand.taba-brand { grid-column: 1; grid-row: 1; }
+
+  .taba-topbar .topbar-actions {
+    grid-column: 2;
+    grid-row: 1;
+    gap: 8px;
+  }
+
+  body:has(.app-view.is-active) .taba-topbar .desktop-nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: center;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  body:has(.app-view.is-active) .taba-topbar .desktop-nav button {
+    padding: 6px 10px;
+    font-size: 10.5px;
+    letter-spacing: 0.07em;
+  }
+
+  .taba-hero { padding: 32px 30px; min-height: 380px; }
+  .taba-product-rail { grid-auto-columns: calc((100% - 42px) / 4); }
+  .home-category-card { min-width: 118px; }
+}
+
+/* ===== Mobile ===== */
+@media (max-width: 760px) {
+  :root { --taba-topbar-h: 60px; }
+
+  .topbar.taba-topbar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto;
+    gap: 8px;
+    min-height: 60px;
+    padding: 0 14px;
+  }
+
+  .topbar.taba-topbar::before { height: 60px; }
+
+  .taba-burger { display: grid; place-items: center; }
+  .taba-topbar .desktop-nav,
+  body:has(.app-view.is-active) .taba-topbar .desktop-nav { display: none; }
+
+  .brand.taba-brand {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+    padding-right: 11px;
+  }
+
+  .taba-topbar .topbar-actions {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  body:has(.app-view.is-active) .taba-brand .brand-la { font-size: 19px; }
+  body:has(.app-view.is-active) .taba-brand .brand-word { font-size: 27px; }
+  .taba-brand .brand-bolt { width: 7px; height: 13px; top: -1px; }
+  .taba-brand .brand-word::after { right: 11px; bottom: -4px; height: 2.5px; }
+
+  .taba-topbar .topbar-actions { gap: 2px; }
+  .taba-delivery { display: none; }
+  .taba-admin-link.ghost-button.compact { display: none; }
+  .taba-icon-account { display: none; }
+  .taba-icon-btn { width: 34px; height: 34px; }
+  .taba-icon-btn svg { width: 20px; height: 20px; }
+
+  .taba-shipping-strip { display: flex; }
+
+  main[data-app-main] { padding-inline: 14px; }
+
+  body:has(.app-view[data-view="home"].is-active) main[data-app-main],
+  body:has(.app-view[data-view="catalog"].is-active) main[data-app-main] {
+    padding-bottom: var(--bottom-reserve);
+  }
+
+  .taba-home { padding-top: 12px; }
+
+  .taba-hero {
+    min-height: 236px;
+    margin-bottom: 14px;
+    padding: 20px 18px;
+    border-radius: 14px;
+  }
+
+  .taba-hero-art { width: 46%; right: -1%; }
+  .taba-hero-bottle { width: 100%; height: 100%; }
+  .taba-hero-bottle.is-a { transform: translate(4%, 6%) scale(1.24); }
+  .taba-hero-bottle.is-b { display: none; }
+
+  .taba-hero-seal { display: none; }
+
+  .taba-hero-copy { max-width: 64%; }
+
+  .taba-hero-copy h1 {
+    font-size: clamp(25px, 8.2vw, 34px);
+    line-height: 0.94;
+  }
+
+  .taba-hero-copy > p {
+    margin: 10px 0 14px;
+    font-size: 11.5px;
+    line-height: 1.4;
+  }
+
+  .taba-hero-actions { gap: 8px; }
+
+  .taba-btn {
+    min-height: 38px;
+    padding: 0 16px;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+  }
+
+  .taba-hero-dots { left: 18px; bottom: 14px; transform: none; }
+  .taba-hero-dots span { width: 6px; height: 6px; }
+
+  .search-box.taba-home-search {
+    height: 44px;
+    margin-bottom: 18px;
+    border-radius: 10px;
+  }
+
+  .taba-home-search input { min-height: 42px; font-size: 16px; }
+
+  .taba-promos { margin-bottom: 22px; }
+  .taba-promos-tag { display: none; }
+  .taba-rail-next { display: none; }
+
+  .home-promotions-rail {
+    grid-auto-columns: 93%;
+    gap: 10px;
+  }
+
+  .home-promo-card {
+    min-height: 96px;
+    padding: 12px 14px;
+  }
+
+  .home-promo-media { width: 42%; }
+  .home-promo-image { transform: scale(1.08) translateY(4%); }
+  .home-promo-copy { width: 64%; }
+  .home-promo-copy strong { font-size: 16px; }
+  .home-promo-copy .home-product-price { font-size: 18px; }
+  .home-promo-copy s { font-size: 11px; }
+  .home-promo-card > .home-add-button { right: 10px; bottom: 10px; width: 26px; height: 26px; font-size: 18px; }
+
+  .home-paging-dots { margin-top: 10px; }
+
+  .taba-block { margin-bottom: 22px; }
+  .taba-block-head { margin-bottom: 10px; }
+  .taba-block-head h2 { font-size: 12.5px; letter-spacing: 0.1em; }
+  .taba-block-head button { font-size: 9.5px; }
+
+  /* CategorÃ­as en cÃ­rculo, como la referencia mobile. */
+  .category-strip.home-category-strip { gap: 12px; }
+
+  .home-category-card {
+    flex: 0 0 auto;
+    min-width: 0;
+    width: 62px;
+    flex-direction: column;
+    gap: 6px;
+    min-height: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    font-size: 8px;
+    letter-spacing: 0.05em;
+    text-align: center;
+  }
+
+  .home-category-card.active { background: transparent; }
+
+  .home-category-icon {
+    width: 54px;
+    height: 54px;
+    border: 1px solid var(--taba-hairline);
+    border-radius: 50%;
+    background: var(--taba-black-2);
+  }
+
+  .home-category-card.active .home-category-icon {
+    border-color: rgba(230, 12, 23, 0.6);
+    background: linear-gradient(180deg, rgba(230, 12, 23, 0.2), rgba(230, 12, 23, 0.05));
+  }
+
+  .home-category-icon svg { width: 24px; height: 24px; }
+
+  .taba-product-rail {
+    grid-auto-columns: 38%;
+    gap: 10px;
+  }
+
+  .taba-pcard { border-radius: 12px; }
+  .taba-pcard-media { padding: 12px 10px 2px; }
+  .taba-pcard-img { max-height: 112px; }
+  .taba-pcard-body { padding: 0 10px 10px; }
+  .taba-pcard-body > strong { font-size: 11.5px; }
+  .taba-pcard-body > small { font-size: 10.5px; }
+  .taba-pcard .home-product-price { font-size: 15px; }
+  .taba-pcard-prices s { font-size: 10.5px; }
+  .taba-pcard-foot { margin-top: 6px; }
+  .home-add-button { width: 26px; height: 26px; font-size: 18px; }
+  .taba-fav { width: 26px; height: 26px; top: 4px; right: 4px; }
+  .taba-fav svg { width: 15px; height: 15px; }
+  .taba-pcard-badge { top: 8px; left: 8px; padding: 3px 6px; font-size: 9px; }
+}
+
+@media (max-width: 440px) {
+  /* Igual que la referencia mobile: en el hero queda sÃ³lo el CTA principal. */
+  .taba-hero-actions .taba-btn-line { display: none; }
+}
+
+@media (max-width: 360px) {
+  .topbar.taba-topbar { gap: 2px; padding-inline: 6px; }
+  .taba-topbar .topbar-address { width: 34px; min-width: 34px; padding-inline: 0; }
+  .taba-topbar .address-chip-text,
+  .taba-topbar .topbar-address-chevron { display: none; }
+  main[data-app-main] { padding-inline: 12px; }
+  body:has(.app-view.is-active) .taba-brand .brand-la { font-size: 15px; }
+  body:has(.app-view.is-active) .taba-brand .brand-word { font-size: 22px; }
+  .taba-hero-copy h1 { font-size: 24px; }
+  .taba-product-rail { grid-auto-columns: 45%; }
+  .home-category-card { width: 58px; }
+  .home-category-icon { width: 50px; height: 50px; }
+}
+@media (max-width: 720px) {
+  body:has(.app-view[data-view="rider"].is-active) .topbar {
+    position: relative;
+    z-index: 24;
+  }
+
+  body:has(.app-view[data-view="rider"].is-active) .topbar::before {
+    position: absolute;
+    inset: 0;
+    height: auto;
+    border-radius: 0;
+    box-shadow: 0 10px 24px rgba(15,23,42,0.07);
+  }
+
+  body:has(.app-view[data-view="rider"].is-active) .rider-map-stage {
+    min-height: min(34svh, 316px);
+  }
+
+  body:has(.app-view[data-view="rider"].is-active) .rider-sheet.is-live {
+    margin-top: -12px;
+  }
+
+  body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .leaflet-control-zoom {
+    opacity: 0.42;
+    transform: scale(0.76);
+    margin-right: 8px !important;
+    margin-bottom: 8px !important;
+  }
+
+  body:has(.app-view[data-view="rider"].is-active) .rider-map-stage .leaflet-control-attribution {
+    opacity: 0.28;
+  }
+
+  body:has(.app-view[data-view="rider"].is-active) .toast {
+    top: auto !important;
+    right: 14px !important;
+    bottom: calc(18px + var(--safe-area-bottom)) !important;
+    left: auto !important;
+    width: min(62vw, 252px);
+    padding: 9px 12px;
+    border-radius: 14px;
+    transform: none !important;
+  }
+
+  body:has(.app-view[data-view="rider"].is-active [data-admin-unlocked]:not([hidden]) .rider-map-stage [data-real-map]) .toast {
+    top: calc(78px + env(safe-area-inset-top)) !important;
+    bottom: auto !important;
+  }
+
+  body:has(.app-view[data-view="rider"].is-active) .rider-sheet .rider-metrics {
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.9fr) minmax(0, 0.92fr);
+  }
+}
+
+/* Recovery compatibility: keep canonical renderers/data contracts while applying the red visual language. */
+body:has(.app-view[data-view="home"].is-active) .home-merch-section,
+body:has(.app-view[data-view="home"].is-active) .home-catalog-preview-section { color: var(--taba-on-dark); }
+body:has(.app-view[data-view="home"].is-active) .home-section-head h2,
+body:has(.app-view[data-view="home"].is-active) .home-section-title h2 { color: var(--taba-on-dark); }
+body:has(.app-view[data-view="home"].is-active) .home-section-head button { color: var(--taba-red); }
+body:has(.app-view[data-view="home"].is-active) .home-best-card,
+body:has(.app-view[data-view="home"].is-active) .home-catalog-card { background: var(--taba-card); color: var(--taba-card-ink); border-color: transparent; }
+body:has(.app-view[data-view="home"].is-active) .home-best-card .home-product-price,
+body:has(.app-view[data-view="home"].is-active) .home-catalog-card .home-product-price { color: var(--taba-red); }
+body:has(.app-view[data-view="home"].is-active) .home-add-button { background: var(--taba-red); color: #fff; }
+
+/* iOS Safari must not auto-zoom the search control on touch devices. */
+@media (hover: none), (pointer: coarse) {
+  body .taba-home-search input,
+  body .search-box input,
+  body select,
+  body textarea { font-size: 16px; }
+}
+
+/* ========================================================================== */
+/* LA TABA RED DESIGN — MOBILE V2                                             */
+/* Final compatibility layer over the canonical storefront renderers.         */
+/* ========================================================================== */
+
+:root {
+  --taba-red: #e3131b;
+  --taba-red-hot: #ff342c;
+  --taba-red-deep: #8e050b;
+  --taba-black: #08090b;
+  --taba-black-2: #111216;
+  --taba-black-3: #191a1f;
+  --taba-on-dark: #f7f7f8;
+  --taba-on-dark-soft: #a8aab1;
+  --taba-card: #fff;
+  --taba-card-ink: #15161a;
+  --taba-card-muted: #6c7079;
+  --taba-home-max: 1180px;
+}
+
+body:has(.app-view[data-view="home"].is-active),
+body:has(.app-view[data-view="catalog"].is-active) {
+  overflow-x: hidden;
+  background:
+    radial-gradient(900px 420px at 50% -180px, rgba(227, 19, 27, 0.14), transparent 70%),
+    var(--taba-black);
+  color: var(--taba-on-dark);
+}
+
+/* Header: the black surface is the header itself, not an empty pseudo node. */
+.topbar.taba-topbar {
+  width: 100%;
+  max-width: none;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 72px;
+  padding: 0 clamp(18px, 3vw, 44px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(8, 9, 11, 0.98);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+  color: #fff;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.topbar.taba-topbar::before { display: none; }
+
+.topbar.taba-topbar .taba-brand {
+  grid-column: 1;
+  justify-self: start;
+  min-height: 48px;
+  padding: 0 11px 0 0;
+}
+
+body:has(.app-view.is-active) .taba-brand .brand-la,
+.taba-brand .brand-la {
+  color: #fff;
+  font-family: Impact, "Arial Narrow", sans-serif;
+  font-size: 24px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+body:has(.app-view.is-active) .taba-brand .brand-word,
+.taba-brand .brand-word {
+  color: var(--taba-red);
+  font-family: Impact, "Arial Narrow", sans-serif;
+  font-size: 34px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+.taba-brand .brand-text::after,
+.taba-brand .brand-word::after { display: none !important; }
+
+.taba-brand .brand-bolt {
+  top: -1px;
+  right: 0;
+  width: 8px;
+  height: 15px;
+  color: #fff;
+}
+
+.taba-topbar .topbar-mid {
+  grid-column: 2;
+  min-width: 0;
+  justify-content: center;
+}
+
+.taba-topbar .topbar-actions {
+  grid-column: 3;
+  min-width: 44px;
+  justify-self: end;
+}
+
+.taba-topbar .topbar-address {
+  max-width: min(260px, 28vw);
+  min-height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.045);
+  color: #fff;
+}
+
+.taba-topbar .topbar-address:hover { background: rgba(255, 255, 255, 0.08); }
+.taba-topbar .topbar-address .address-chip-ico { color: var(--taba-red); }
+.taba-topbar .topbar-address .address-chip-text small { color: #989ba3; }
+.taba-topbar .topbar-address .address-chip-text strong {
+  color: #fff;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+.taba-topbar .topbar-address-chevron { color: #fff; }
+
+.taba-topbar .cart-button.primary-button,
+body:has(.app-view.is-active) .taba-topbar .cart-button.primary-button {
+  display: grid;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: none;
+  color: #fff;
+}
+
+.taba-topbar .cart-button.primary-button:hover { background: rgba(255, 255, 255, 0.09); }
+.taba-topbar .cart-button .cart-button-copy,
+.taba-topbar .cart-button .cart-button-arrow { display: none; }
+.taba-topbar .cart-button-icon { width: 25px; height: 25px; color: #fff; }
+.taba-topbar .cart-button-icon > svg { width: 25px; height: 25px; }
+.taba-topbar .cart-button-count {
+  top: -6px;
+  right: -7px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border: 2px solid var(--taba-black);
+  background: var(--taba-red);
+  color: #fff;
+  font-size: 9px;
+}
+.taba-topbar .cart-button-count.is-empty {
+  display: grid;
+  background: #3b3d44;
+  color: #d3d4d8;
+}
+
+/* Mobile menu lives in the top layer through the native popover contract. */
+.taba-drawer {
+  inset: 0;
+  width: 100vw;
+  max-width: none;
+  height: 100vh;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  color: #fff;
+}
+
+.taba-drawer:not(:popover-open) { display: none; }
+.taba-drawer::backdrop { background: transparent; }
+.taba-drawer-veil {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: rgba(0, 0, 0, 0.7);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.taba-drawer-panel { z-index: 1; }
+.taba-drawer-wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  font-family: Impact, "Arial Narrow", sans-serif;
+  font-size: 25px;
+  font-style: italic;
+  line-height: 1;
+}
+.taba-drawer-wordmark i { color: #fff; font-style: italic; }
+.taba-drawer-wordmark strong { color: var(--taba-red); font-weight: 400; }
+
+/* Home canvas and commercial hierarchy. */
+.taba-home {
+  width: min(calc(100% - 32px), var(--taba-home-max));
+  max-width: var(--taba-home-max);
+  margin-inline: auto;
+  padding: 18px 0 20px;
+  color: var(--taba-on-dark);
+}
+
+.taba-home-content { min-width: 0; gap: 0; }
+
+.taba-hero {
+  min-height: 390px;
+  margin: 0 0 18px;
+  padding: 46px clamp(34px, 4.2vw, 58px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background:
+    radial-gradient(90% 120% at 77% 33%, #ff3b2d 0%, #e00b15 38%, #a4050c 70%, #5b0307 100%);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.11), 0 20px 48px rgba(0, 0, 0, 0.24);
+}
+
+.taba-hero::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 76% 30%, rgba(255, 255, 255, 0.18) 0 1px, transparent 2px) 0 0 / 15px 15px,
+    linear-gradient(105deg, rgba(37, 0, 2, 0.44), transparent 49%, rgba(0, 0, 0, 0.24));
+  opacity: 0.38;
+  content: "";
+}
+
+.taba-hero-glow {
+  background:
+    radial-gradient(65% 100% at 0 48%, rgba(0, 0, 0, 0.48), transparent 74%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.08), transparent 45%, rgba(0, 0, 0, 0.24));
+}
+
+.taba-hero-copy {
+  z-index: 4;
+  width: min(52%, 560px);
+  max-width: 560px;
+}
+
+.taba-hero-copy h1 {
+  gap: 1px;
+  font-family: Impact, "Arial Narrow", sans-serif;
+  font-size: clamp(48px, 5.25vw, 72px);
+  font-style: italic;
+  font-weight: 400;
+  line-height: 0.92;
+  letter-spacing: 0.005em;
+}
+
+.taba-hero-copy h1 .hl-1,
+.taba-hero-copy h1 .hl-2 { white-space: nowrap; }
+.taba-hero-copy h1 .hl-1 { color: #fff; }
+.taba-hero-copy h1 .hl-2 { color: #130305; }
+
+.taba-hero-copy > p {
+  margin: 18px 0 22px;
+  color: rgba(255, 255, 255, 0.94);
+  font-size: clamp(14px, 1.35vw, 18px);
+  line-height: 1.42;
+}
+
+.taba-btn {
+  min-height: 44px;
+  border-radius: 9px;
+  font-size: 11px;
+}
+
+.taba-btn-dark {
+  border-color: #050506;
+  background: #050506;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+}
+
+.taba-hero-art {
+  z-index: 2;
+  top: 1%;
+  right: 2%;
+  bottom: -5%;
+  display: block;
+  width: 54%;
+  overflow: hidden;
+  mix-blend-mode: multiply;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 9%, #000 94%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 9%, #000 94%, transparent 100%);
+}
+
+.taba-hero-bottle {
+  position: absolute;
+  bottom: 0;
+  width: 48%;
+  height: 104%;
+  object-fit: cover;
+  object-position: center;
+  mix-blend-mode: multiply;
+  filter: contrast(1.18) saturate(1.18) brightness(1.08);
+  -webkit-mask-image: radial-gradient(74% 86% at 50% 52%, #000 46%, transparent 78%);
+  mask-image: radial-gradient(74% 86% at 50% 52%, #000 46%, transparent 78%);
+}
+
+.taba-hero-bottle.is-a {
+  z-index: 2;
+  left: 2%;
+  height: 91%;
+  transform: rotate(-5deg) scale(1.14);
+}
+.taba-hero-bottle.is-b {
+  z-index: 3;
+  left: 28%;
+  height: 114%;
+  transform: translateY(5%) scale(1.2);
+}
+.taba-hero-bottle.is-c {
+  z-index: 1;
+  right: -2%;
+  height: 86%;
+  transform: rotate(6deg) scale(1.12);
+}
+
+.taba-hero-seal {
+  z-index: 5;
+  top: 28px;
+  right: 28px;
+  width: 94px;
+  height: 94px;
+}
+.taba-hero-seal b { font-family: Impact, "Arial Narrow", sans-serif; font-size: 25px; font-weight: 400; text-transform: uppercase; }
+
+body:has(.app-view.is-active) .search-box.taba-home-search,
+.search-box.taba-home-search {
+  height: 50px;
+  margin: 0 0 20px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #17181c, #111216);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.04);
+  color: #b5b7be;
+}
+
+.search-box.taba-home-search:focus-within {
+  border-color: var(--taba-red);
+  box-shadow: 0 0 0 3px rgba(227, 19, 27, 0.18);
+}
+
+body:has(.app-view.is-active) .taba-home-search input,
+.taba-home-search input {
+  min-height: 48px;
+  color: #fff;
+  font-size: 16px;
+}
+
+body:has(.app-view.is-active) .taba-home-search input::placeholder,
+.taba-home-search input::placeholder { color: #9699a1; opacity: 1; }
+
+.taba-block,
+.home-merch-section,
+.home-catalog-preview-section { min-width: 0; }
+
+.taba-block,
+.home-merch-section { margin: 0 0 24px; }
+
+.home-section-head {
+  min-height: 44px;
+  margin: 0 2px 10px;
+}
+
+body:has(.app-view[data-view="home"].is-active) .home-section-head h2,
+body:has(.app-view[data-view="home"].is-active) .home-section-title h2,
+.taba-home .home-section-head h2 {
+  color: #fff;
+  font-family: Impact, "Arial Narrow", sans-serif;
+  font-size: 19px;
+  font-weight: 400;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.taba-home .home-section-title { display: grid; gap: 1px; }
+.taba-home .home-section-title small {
+  color: var(--taba-on-dark-soft);
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+body:has(.app-view[data-view="home"].is-active) .home-section-head button,
+.taba-home .home-section-head > button {
+  min-height: 44px;
+  color: #ff3d35;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Honest editorial promotion fallback; real approved promotions reuse the rail. */
+.home-promotions-rail {
+  display: grid;
+  grid-auto-columns: minmax(300px, 1fr);
+  gap: 12px;
+  padding: 0;
+}
+
+.home-promo-editorial {
+  position: relative;
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  min-height: 124px;
+  padding: 18px 22px;
+  overflow: hidden;
+  border: 1px solid rgba(227, 19, 27, 0.72);
+  border-radius: 14px;
+  background:
+    radial-gradient(280px 140px at 82% 25%, rgba(227, 19, 27, 0.36), transparent 72%),
+    linear-gradient(115deg, #111216 0%, #090a0c 60%, #310306 100%);
+  color: #fff;
+  text-align: left;
+}
+
+.home-promo-editorial::after {
+  position: absolute;
+  top: -52px;
+  right: 15%;
+  width: 180px;
+  height: 180px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  content: "";
+}
+
+.home-promo-editorial-mark {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  background: var(--taba-red);
+  color: #fff;
+  box-shadow: 0 12px 28px rgba(227, 19, 27, 0.3);
+}
+.home-promo-editorial-mark svg { width: 27px; height: 27px; }
+.home-promo-editorial-copy { display: grid; min-width: 0; gap: 3px; }
+.home-promo-editorial-copy small {
+  color: #ff4a43;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.home-promo-editorial-copy strong {
+  color: #fff;
+  font-family: Impact, "Arial Narrow", sans-serif;
+  font-size: clamp(20px, 2.4vw, 30px);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1.04;
+  text-transform: uppercase;
+}
+.home-promo-editorial-copy > span { color: #b8bac1; font-size: 12px; }
+.home-promo-editorial-cta {
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 15px;
+  border-radius: 9px;
+  background: #fff;
+  color: #111216;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.home-promo-editorial-cta b { color: var(--taba-red); font-size: 21px; line-height: 1; }
+
+.home-promo-card {
+  border-color: rgba(227, 19, 27, 0.7);
+  background: linear-gradient(125deg, #15161a, #360306);
+  color: #fff;
+}
+
+/* Category buttons use the real four catalog category contracts. */
+.category-strip.home-category-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  padding: 0;
+  overflow: visible;
+}
+
+.taba-home .home-category-card {
+  display: flex;
+  width: auto;
+  min-width: 0;
+  min-height: 62px;
+  flex: initial;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #17181c, #101115);
+  box-shadow: none;
+  color: #f2f2f4;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.taba-home .home-category-card.active {
+  border-color: rgba(227, 19, 27, 0.76);
+  background: linear-gradient(180deg, rgba(227, 19, 27, 0.2), #111216);
+  color: #fff;
+}
+
+.taba-home .home-category-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  background: #090a0c;
+  color: #fff;
+}
+.taba-home .home-category-card.active .home-category-icon { color: var(--taba-red-hot); }
+
+/* Featured cards: five across desktop, three complete cards on mobile. */
+.home-best-sellers {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-auto-flow: row;
+  gap: 10px;
+  padding: 0;
+  overflow: visible;
+}
+
+body:has(.app-view[data-view="home"].is-active) .home-best-card,
+.taba-home .home-best-card {
+  position: relative;
+  display: grid;
+  width: auto;
+  min-width: 0;
+  min-height: 266px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 166px minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 12px;
+  background: var(--taba-card);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+  color: var(--taba-card-ink);
+}
+
+.taba-home .home-best-media {
+  width: 100%;
+  height: 166px;
+  padding: 12px 12px 2px;
+  border-radius: 0;
+  background: linear-gradient(180deg, #f5f5f6, #fff);
+}
+.taba-home .home-best-image { width: 100%; height: 148px; padding: 4px; object-fit: contain; }
+.taba-home .home-best-copy {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  min-width: 0;
+  padding: 10px 44px 12px 11px;
+  border-top: 1px solid #ececef;
+}
+.taba-home .home-best-copy strong {
+  min-height: 31px;
+  color: #17181c;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.25;
+  -webkit-line-clamp: 2;
+}
+.taba-home .home-best-copy span {
+  margin: 0;
+  color: #15161a;
+  font-size: 17px;
+  font-weight: 950;
+  line-height: 1.1;
+}
+.taba-home .home-best-card .home-card-control {
+  position: absolute;
+  right: 9px;
+  bottom: 9px;
+}
+.taba-home .home-card-control .home-add-button,
+.taba-home .home-best-card .home-add-button,
+body:has(.app-view[data-view="home"].is-active) .home-add-button {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  background: var(--taba-red);
+  box-shadow: 0 6px 14px rgba(227, 19, 27, 0.28);
+  color: #fff;
+  font-size: 22px;
+}
+
+/* Four additional canonical products, full cards and no clipped columns. */
+.home-catalog-preview-section { padding: 0 0 24px; }
+.home-catalog-preview {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+body:has(.app-view[data-view="home"].is-active) .home-catalog-card,
+.taba-home .home-catalog-card {
+  min-width: 0;
+  min-height: 290px;
+  grid-template-rows: 164px minmax(0, 1fr);
+  padding: 10px 10px 12px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 13px;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+  color: var(--taba-card-ink);
+}
+.taba-home .home-catalog-media { height: 154px; }
+.taba-home .home-catalog-image { width: 100%; height: 150px; padding: 3px 10px; object-fit: contain; }
+.taba-home .home-catalog-copy { align-content: start; padding: 8px 38px 0 1px; }
+.taba-home .home-catalog-copy strong {
+  min-height: 31px;
+  color: #17181c;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.25;
+  -webkit-line-clamp: 2;
+}
+.taba-home .home-available { color: #087636; font-size: 10px; font-weight: 850; }
+.taba-home .home-catalog-card .home-product-price { color: #15161a; font-size: 17px; }
+.taba-home .home-catalog-copy small { color: var(--taba-card-muted); font-size: 10px; }
+.taba-home .home-favorite-button {
+  top: 6px;
+  right: 6px;
+  width: 38px;
+  height: 38px;
+  padding: 8px;
+}
+.taba-home .home-catalog-card .home-card-control { right: 9px; bottom: 9px; }
+
+/* Benefits are compact cards; SVG dimensions are explicitly bounded. */
+.taba-benefits {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 20px;
+}
+.taba-benefits article {
+  display: flex;
+  min-width: 0;
+  min-height: 82px;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #15161a, #0e0f12);
+}
+.taba-benefit-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(227, 19, 27, 0.14);
+  color: var(--taba-red-hot);
+}
+.taba-benefit-icon svg { width: 23px; height: 23px; }
+.taba-benefits article > span:last-child { display: grid; min-width: 0; gap: 2px; }
+.taba-benefits strong { color: #fff; font-size: 12px; line-height: 1.2; }
+.taba-benefits small { color: var(--taba-on-dark-soft); font-size: 10px; line-height: 1.35; }
+
+.taba-home .order-now-cta {
+  min-height: 48px;
+  border-color: rgba(255, 255, 255, 0.16);
+  background: #111216;
+  color: #fff;
+}
+
+/* Five complete tabs. The global bottom reserve remains single-sourced. */
+body:has(.app-view.is-active) .mobile-nav.taba-tabbar,
+.mobile-nav.taba-tabbar {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  height: var(--nav-block);
+  padding: 3px 5px calc(8px + var(--safe-b));
+  border-top-color: rgba(255, 255, 255, 0.1);
+  background: rgba(8, 9, 11, 0.985);
+}
+
+.mobile-nav.taba-tabbar .mn-ico::before,
+.mobile-nav.taba-tabbar .mn-ico::after { display: none !important; content: none !important; }
+.mobile-nav.taba-tabbar .mn-ico,
+.mobile-nav.taba-tabbar .mn-ico svg { width: 21px; height: 21px; }
+body:has(.app-view.is-active) .mobile-nav.taba-tabbar button,
+.mobile-nav.taba-tabbar button {
+  gap: 2px;
+  padding-inline: 1px;
+  color: #a1a3aa;
+  font-size: 8px;
+  letter-spacing: 0.025em;
+}
+body:has(.app-view.is-active) .mobile-nav.taba-tabbar button.active,
+.mobile-nav.taba-tabbar button.active { color: var(--taba-red-hot); }
+.mobile-nav.taba-tabbar .mn-badge {
+  position: absolute;
+  top: -5px;
+  right: -8px;
+  left: auto;
+  display: grid;
+  min-width: 16px;
+  height: 16px;
+  place-items: center;
+  padding: 0 4px;
+  border: 2px solid var(--taba-black);
+  border-radius: 999px;
+  background: var(--taba-red);
+  color: #fff;
+  font-size: 8px;
+  line-height: 1;
+}
+.mobile-nav.taba-tabbar .mn-badge.is-empty,
+body:has(.app-view.is-active) .mobile-nav.taba-tabbar .mn-badge.is-empty { display: none !important; }
+.mobile-nav.taba-tabbar .mn-label {
+  font-size: inherit;
+  white-space: nowrap;
+}
+
+@media (max-width: 820px) {
+  body:not([data-active-view="business"]):not([data-active-view="rider"]):not([data-active-view="tracking"]) {
+    --topbar: 104px;
+    --taba-topbar-h: 104px;
+  }
+
+  body:not([data-active-view="business"]):not([data-active-view="rider"]):not([data-active-view="tracking"]) .topbar.taba-topbar {
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    grid-template-rows: 58px minmax(40px, auto);
+    gap: 0 6px;
+    min-height: 104px;
+    padding: 0 10px 6px;
+  }
+
+  .topbar.taba-topbar .taba-burger {
+    grid-column: 1;
+    grid-row: 1;
+    display: grid;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+  }
+
+  body:not([data-active-view="business"]):not([data-active-view="rider"]):not([data-active-view="tracking"]) .topbar.taba-topbar .taba-brand {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+  }
+
+  body:not([data-active-view="business"]):not([data-active-view="rider"]):not([data-active-view="tracking"]) .topbar.taba-topbar .topbar-actions {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  body:not([data-active-view="business"]):not([data-active-view="rider"]):not([data-active-view="tracking"]) .topbar.taba-topbar .topbar-mid {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    display: block;
+    width: 100%;
+  }
+
+  body:not([data-active-view="business"]):not([data-active-view="rider"]):not([data-active-view="tracking"]) .taba-topbar .desktop-nav { display: none; }
+
+  body:not([data-active-view="business"]):not([data-active-view="rider"]):not([data-active-view="tracking"]) .taba-topbar .topbar-address {
+    display: flex;
+    width: 100%;
+    max-width: none;
+    min-height: 40px;
+    gap: 9px;
+    padding: 5px 10px;
+    border: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .taba-topbar .topbar-address .address-chip-text {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+    width: 100%;
+    gap: 7px;
+  }
+  .taba-topbar .topbar-address .address-chip-text small { font-size: 9px; white-space: nowrap; }
+  .taba-topbar .topbar-address .address-chip-text strong {
+    display: block;
+    font-size: 11px;
+    line-height: 1.25;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+  }
+
+  body:has(.app-view.is-active) .taba-brand .brand-la,
+  .taba-brand .brand-la { font-size: 20px; }
+  body:has(.app-view.is-active) .taba-brand .brand-word,
+  .taba-brand .brand-word { font-size: 29px; }
+
+  .taba-home {
+    width: 100%;
+    max-width: none;
+    padding-top: 0;
+  }
+
+  .taba-hero {
+    min-height: clamp(236px, 61vw, 278px);
+    margin: 0 -14px 14px;
+    padding: 22px 18px;
+    border-width: 0 0 1px;
+    border-radius: 0;
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.1);
+  }
+
+  .taba-hero-copy { width: 58%; max-width: 58%; }
+  .taba-hero-copy h1 {
+    font-size: clamp(29px, 8.7vw, 40px);
+    line-height: 0.91;
+  }
+  .taba-hero-copy > p {
+    margin: 11px 0 14px;
+    font-size: 11px;
+    line-height: 1.36;
+  }
+  .taba-hero-actions { gap: 6px; }
+  .taba-btn { min-height: 44px; padding: 0 14px; font-size: 9px; }
+  .taba-hero-actions .taba-btn-line { display: none; }
+  .taba-hero-seal { display: none; }
+  .taba-hero-dots { left: 18px; bottom: 11px; transform: none; }
+
+  .taba-hero-art {
+    top: 0;
+    right: -4%;
+    bottom: -7%;
+    width: 55%;
+  }
+  .taba-hero-bottle { display: block; width: 58%; }
+  .taba-hero-bottle.is-a { left: -5%; height: 82%; transform: rotate(-7deg) scale(1.16); }
+  .taba-hero-bottle.is-b { left: 23%; height: 108%; transform: translateY(6%) scale(1.23); }
+  .taba-hero-bottle.is-c { right: -2%; height: 76%; transform: rotate(7deg) scale(1.1); }
+
+  body:has(.app-view.is-active) .search-box.taba-home-search,
+  .search-box.taba-home-search {
+    height: 46px;
+    margin-bottom: 16px;
+    padding-inline: 13px;
+  }
+  body:has(.app-view.is-active) .taba-home-search input,
+  .taba-home-search input { min-height: 44px; }
+
+  .taba-block,
+  .home-merch-section { margin-bottom: 18px; }
+  .home-section-head { min-height: 40px; margin-bottom: 7px; }
+  body:has(.app-view[data-view="home"].is-active) .home-section-head h2,
+  body:has(.app-view[data-view="home"].is-active) .home-section-title h2,
+  .taba-home .home-section-head h2 { font-size: 16px; }
+  .taba-home .home-section-title small { font-size: 9.5px; }
+
+  .home-promotions-rail { grid-auto-columns: 100%; }
+  .home-promo-editorial {
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 11px;
+    min-height: 106px;
+    padding: 13px;
+  }
+  .home-promo-editorial-mark { width: 44px; height: 44px; }
+  .home-promo-editorial-mark svg { width: 21px; height: 21px; }
+  .home-promo-editorial-copy strong { font-size: clamp(17px, 5.2vw, 22px); }
+  .home-promo-editorial-copy > span { font-size: 9.5px; line-height: 1.3; }
+  .home-promo-editorial-cta { display: none; }
+
+  .category-strip.home-category-strip { gap: 8px; }
+  .taba-home .home-category-card {
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    min-height: 72px;
+    padding: 4px 2px;
+    border: 0;
+    background: transparent;
+    font-size: 7.5px;
+    text-align: center;
+  }
+  .taba-home .home-category-card.active { background: transparent; }
+  .taba-home .home-category-icon {
+    width: 48px;
+    height: 48px;
+    flex-basis: 48px;
+    border-color: rgba(255, 255, 255, 0.15);
+    background: #121318;
+  }
+  .taba-home .home-category-card.active .home-category-icon {
+    border-color: rgba(227, 19, 27, 0.74);
+    background: rgba(227, 19, 27, 0.12);
+  }
+
+  .home-best-sellers {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+  .home-best-sellers > .home-best-card:nth-of-type(n+4) { display: none !important; }
+  body:has(.app-view[data-view="home"].is-active) .home-best-card,
+  .taba-home .home-best-card {
+    min-height: 208px;
+    grid-template-rows: 126px minmax(0, 1fr);
+    border-radius: 10px;
+  }
+  .taba-home .home-best-media { height: 126px; padding: 8px 4px 0; }
+  .taba-home .home-best-image { height: 116px; padding: 2px; }
+  .taba-home .home-best-copy { padding: 7px 33px 9px 7px; }
+  .taba-home .home-best-copy strong { min-height: 28px; font-size: 9.5px; line-height: 1.2; }
+  .taba-home .home-best-copy span { font-size: 14px; }
+  .taba-home .home-best-card .home-card-control { right: 6px; bottom: 7px; }
+  .taba-home .home-card-control .home-add-button,
+  .taba-home .home-best-card .home-add-button,
+  body:has(.app-view[data-view="home"].is-active) .home-add-button {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: transparent;
+    box-shadow: none;
+    font-size: 19px;
+  }
+  .taba-home .home-add-button .add-plus {
+    display: grid;
+    width: 30px;
+    height: 30px;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--taba-red);
+    box-shadow: 0 6px 14px rgba(227, 19, 27, 0.28);
+    color: #fff;
+  }
+  .taba-home .home-add-button .add-text { display: none; }
+
+  .home-catalog-preview-section { padding-bottom: 18px; }
+  .home-catalog-preview { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  body:has(.app-view[data-view="home"].is-active) .home-catalog-card,
+  .taba-home .home-catalog-card {
+    min-height: 232px;
+    grid-template-rows: 126px minmax(0, 1fr);
+    padding: 8px 8px 10px;
+    border-radius: 11px;
+  }
+  .taba-home .home-catalog-media { height: 118px; }
+  .taba-home .home-catalog-image { height: 116px; padding: 2px 6px; }
+  .taba-home .home-catalog-copy { padding: 6px 32px 0 1px; }
+  .taba-home .home-catalog-copy strong { min-height: 29px; font-size: 10px; line-height: 1.2; }
+  .taba-home .home-catalog-card .home-product-price { font-size: 15px; }
+  .taba-home .home-favorite-button { width: 44px; height: 44px; padding: 11px; }
+
+  .taba-benefits { grid-template-columns: minmax(0, 1fr); gap: 7px; margin-bottom: 16px; }
+  .taba-benefits article { min-height: 64px; padding: 9px 11px; }
+  .taba-benefit-icon { width: 38px; height: 38px; flex-basis: 38px; }
+
+  body:has(.app-view.is-active) .mobile-nav.taba-tabbar button,
+  .mobile-nav.taba-tabbar button { font-size: clamp(7px, 2.15vw, 9px); }
+}
+
+@media (max-width: 360px) {
+  body:not([data-active-view="business"]):not([data-active-view="rider"]):not([data-active-view="tracking"]) .topbar.taba-topbar {
+    grid-template-columns: 42px minmax(0, 1fr) 42px;
+    gap: 0 3px;
+    padding-inline: 7px;
+  }
+  body:has(.app-view.is-active) .taba-brand .brand-la,
+  .taba-brand .brand-la { font-size: 18px; }
+  body:has(.app-view.is-active) .taba-brand .brand-word,
+  .taba-brand .brand-word { font-size: 26px; }
+  .taba-brand .brand-bolt { width: 7px; height: 13px; }
+  .taba-topbar .topbar-address .address-chip-text,
+  .taba-topbar .topbar-address .topbar-address-chevron { display: grid; }
+  .taba-topbar .topbar-address .address-chip-text { grid-template-columns: auto minmax(0, 1fr); }
+  .taba-hero-copy { width: 60%; max-width: 60%; }
+  .taba-hero-copy h1 { font-size: 28px; }
+  .taba-hero-copy > p { font-size: 10px; }
+  .taba-btn { padding-inline: 11px; font-size: 8.5px; }
+  .taba-hero-art { right: -7%; width: 56%; }
+  .taba-home .home-category-icon { width: 44px; height: 44px; flex-basis: 44px; }
+  .taba-home .home-category-card { font-size: 7px; }
+  .taba-home .home-best-copy { padding-right: 29px; }
+  .taba-home .home-best-copy strong { font-size: 9px; }
+  .taba-home .home-best-copy span { font-size: 13px; }
+}
+
+@media (min-width: 821px) and (max-width: 1024px) {
+  .taba-home { width: calc(100% - 28px); }
+  .taba-hero { min-height: 360px; padding: 34px 30px; }
+  .taba-hero-copy h1 { font-size: clamp(42px, 6.6vw, 62px); }
+  .home-best-sellers { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .taba-home .home-best-copy strong { font-size: 10px; }
+}
+
+/* Exact gutter corrections for the physical review matrix. */
+@media (max-width: 820px) {
+  .taba-home-content { gap: 0; }
+  .taba-hero { margin: 0 0 14px; }
+}
+
+@media (max-width: 760px) {
+  .taba-hero { margin-inline: -14px; }
+}
+
+@media (max-width: 360px) {
+  .taba-hero { margin-inline: -12px; }
+  .taba-topbar .topbar-address .address-chip-text small {
+    display: block;
+  }
+  .taba-hero-art {
+    right: 0;
+    width: 51%;
+  }
+  .taba-hero-bottle.is-b { display: none; }
+  .taba-hero-bottle.is-a { left: -5%; width: 66%; }
+  .taba-hero-bottle.is-c { right: -2%; width: 66%; }
+}
+
+@media (max-width: 340px) {
+  body:has(.app-view.is-active) .mobile-nav.taba-tabbar button,
+  .mobile-nav.taba-tabbar button {
+    font-size: 7.5px;
+    letter-spacing: 0.01em;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 820px) {
+  .taba-home {
+    width: calc(100% - 28px);
+    margin-inline: auto;
+    padding-top: 14px;
+  }
+  .taba-hero {
+    min-height: 278px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+  }
+}
+
+@media (min-width: 1025px) {
+  .topbar.taba-topbar {
+    padding-inline: max(18px, calc((100vw - var(--taba-home-max)) / 2));
+  }
+}
+
+/* ========================================================================== */
+/* LA TABA RED DESIGN — MOBILE V3: PROPORTION AND DENSITY                      */
+/* ========================================================================== */
+
+/* The catalog heading lives on the charcoal surface, so inherited paper ink
+   is never allowed to determine its contrast. */
+body:has(.app-view[data-view="catalog"].is-active) .catalog-head .view-title {
+  color: #fff;
+  font-family: Impact, "Arial Narrow", sans-serif;
+  font-size: clamp(23px, 6vw, 30px);
+  font-weight: 400;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .catalog-count {
+  color: #d3d5da;
+  font-size: 12px;
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .sort-field {
+  border-color: #303239;
+  background: #15161a;
+  color: #fff;
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .sort-field-label {
+  color: #d5d7dc;
+}
+
+body:has(.app-view[data-view="catalog"].is-active) .sort-field select {
+  border: 0;
+  background: transparent;
+  color: #fff;
+}
+
+/* Pack information is a semantic overlay, independent from the baked badge
+   that some canonical photos happen to include. */
+.product-pack-badge {
+  position: absolute;
+  z-index: 4;
+  top: auto;
+  right: auto;
+  left: 8px;
+  bottom: 8px;
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  padding: 0 8px;
+  border: 1px solid rgb(255 255 255 / 74%);
+  border-radius: 999px;
+  background: rgb(12 13 16 / 88%);
+  box-shadow: 0 3px 10px rgb(0 0 0 / 18%);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .045em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Canonical photos are square masters with deliberately generous white
+   margins. Framing is done by sizing the image box — never transform:scale —
+   and only the empty canvas is clipped. The density groups keep every product
+   complete while making the visible packshot occupy roughly 55–70%. */
+:is(.product-media .thumb-img, .home-best-image, .home-promo-image, .cart-item .thumb-img) {
+  position: absolute;
+  inset: -8%;
+  width: 116%;
+  height: 116%;
+  margin: 0;
+  padding: 0;
+  object-fit: contain;
+  object-position: center;
+  transform: none;
+}
+
+:is(.product-media .thumb-img, .home-best-image, .home-promo-image, .cart-item .thumb-img):is(
+  [src*="corona-extra"],
+  [src*="heineken"],
+  [src*="imperial-apa"],
+  [src*="imperial-extra"],
+  [src*="imperial-golden"],
+  [src*="red-bull-original-lata-250ml/product"],
+  [src*="red-bull-original-lata-250ml/thumbnail"],
+  [src*="schneider"],
+  [src*="speed-"]
+) {
+  inset: 4%;
+  width: 92%;
+  height: 92%;
+}
+
+:is(.product-media .thumb-img, .home-best-image, .home-promo-image, .cart-item .thumb-img)[src*="red-bull-original-lata-250ml-pack-4"] {
+  inset: 8%;
+  width: 84%;
+  height: 84%;
+}
+
+:is(.product-media .thumb-img, .home-best-image, .home-promo-image, .cart-item .thumb-img)[src*="monster-mango"] {
+  inset: 13%;
+  width: 74%;
+  height: 74%;
+}
+
+:is(.product-media .thumb-img, .home-best-image, .home-promo-image, .cart-item .thumb-img)[src*="imperial-cream-stout"] {
+  inset: -12%;
+  width: 124%;
+  height: 124%;
+}
+
+.cart-item .thumb-img {
+  inset: -18%;
+  width: 136%;
+  height: 136%;
+}
+
+.cart-item .thumb-img:is(
+  [src*="corona-extra"],
+  [src*="heineken"],
+  [src*="imperial-apa"],
+  [src*="imperial-extra"],
+  [src*="imperial-golden"],
+  [src*="schneider"],
+  [src*="speed-"]
+) {
+  inset: 1%;
+  width: 98%;
+  height: 98%;
+}
+
+/* Visual promotions use the two existing demo candidates. Inactive state and
+   normal price remain explicit; no discount treatment is applied. */
+.home-promotions-rail {
+  display: grid;
+  grid-auto-columns: min(360px, 82vw);
+  grid-auto-flow: column;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 1px 1px 7px;
+  scroll-padding-inline: 1px;
+  scroll-snap-type: inline mandatory;
+}
+
+.taba-home .home-promo-card.is-inactive {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 170px;
+  grid-template-columns: minmax(0, 46%) minmax(0, 54%);
+  align-items: stretch;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #df1721;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #16171b, #2b0508);
+  box-shadow: 0 12px 26px rgb(0 0 0 / 24%);
+  color: #fff;
+}
+
+.taba-home .home-promo-card.is-inactive:nth-child(even) {
+  border-color: #e1e2e5;
+  background: #fff;
+  color: #15161a;
+}
+
+.taba-home .home-promo-card.is-inactive::after {
+  background:
+    radial-gradient(circle at 15% 0%, rgb(237 28 39 / 24%), transparent 44%),
+    linear-gradient(120deg, transparent 50%, rgb(230 12 23 / 14%));
+}
+
+.taba-home .home-promo-card.is-inactive .home-promo-media {
+  position: relative;
+  z-index: 2;
+  inset: auto;
+  width: auto;
+  min-width: 0;
+  height: 170px;
+  overflow: hidden;
+  background: linear-gradient(145deg, #f6f6f7, #fff);
+  mix-blend-mode: normal;
+}
+
+.taba-home .home-promo-card.is-inactive:nth-child(even) .home-promo-media {
+  background: linear-gradient(145deg, #fff2f2, #fff);
+}
+
+.taba-home .home-promo-card.is-inactive .home-promo-badge {
+  position: absolute;
+  z-index: 3;
+  top: 9px;
+  left: 9px;
+  margin: 0;
+  padding: 5px 7px;
+  border-radius: 999px;
+  background: #15161a;
+  color: #fff;
+  font-size: 8px;
+}
+
+.taba-home .home-promo-card.is-inactive .home-promo-copy {
+  z-index: 2;
+  width: auto;
+  align-content: center;
+  gap: 4px;
+  padding: 14px 13px;
+}
+
+.taba-home .home-promo-card.is-inactive .home-promo-state {
+  color: #ff4540;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .075em;
+  text-transform: uppercase;
+}
+
+.taba-home .home-promo-card.is-inactive:nth-child(even) .home-promo-state {
+  color: #bd1019;
+}
+
+.taba-home .home-promo-card.is-inactive .home-promo-copy strong {
+  display: block;
+  color: inherit;
+  font-family: Impact, "Arial Narrow", sans-serif;
+  font-size: clamp(18px, 5vw, 24px);
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: .02em;
+  line-height: 1;
+  min-height: 1em;
+  max-height: none;
+  overflow: visible;
+  text-shadow: none;
+  -webkit-line-clamp: unset;
+}
+
+.taba-home .home-promo-unit {
+  display: block;
+  min-height: 12px;
+  overflow: hidden;
+  color: #b9bbc1;
+  font-size: 10px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.taba-home .home-promo-card.is-inactive:nth-child(even) .home-promo-unit {
+  color: #666970;
+}
+
+.taba-home .home-promo-regular-label {
+  margin-top: 4px;
+  color: #b9bbc1;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.taba-home .home-promo-card.is-inactive:nth-child(even) .home-promo-regular-label {
+  color: #777980;
+}
+
+.taba-home .home-promo-card.is-inactive .home-product-price {
+  color: inherit;
+  font-size: 20px;
+  font-weight: 950;
+}
+
+/* White featured shelf creates the requested red/black/white surface rhythm. */
+.taba-home .home-best-section {
+  padding: 14px;
+  border: 1px solid #e3e4e7;
+  border-radius: 17px;
+  background: #f1f2f4;
+  box-shadow: 0 12px 30px rgb(0 0 0 / 18%);
+}
+
+body:has(.app-view[data-view="home"].is-active) .home-best-section .home-section-head h2,
+.taba-home .home-best-section .home-section-title h2 {
+  color: #15161a;
+}
+
+.taba-home .home-best-section .home-section-title small { color: #666970; }
+.taba-home .home-best-section .home-section-head > button { color: #d20d17; }
+.home-catalog-preview-section { display: none; }
+
+.taba-home .home-best-copy small {
+  overflow: hidden;
+  color: #777a82;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: .055em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.taba-home .home-best-copy em {
+  overflow: hidden;
+  color: #666970;
+  font-size: 9px;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Light customer views keep their readable forms while carrying the La Taba
+   red rule, typography and card geometry across the surface transition. */
+body:has(.app-view[data-view="cart"].is-active),
+body:has(.app-view[data-view="profile"].is-active) {
+  background: #eef0f3;
+}
+
+.app-view[data-view="cart"],
+.app-view[data-view="profile"] {
+  position: relative;
+  border-top: 4px solid var(--taba-red);
+  background:
+    radial-gradient(circle at 100% 0%, rgb(230 12 23 / 8%), transparent 230px),
+    linear-gradient(180deg, #fff 0, #f3f4f6 210px, #eef0f3 100%);
+  color: #15161a;
+}
+
+.app-view[data-view="cart"] > .section-head .view-title,
+.app-view[data-view="profile"] > .section-head .view-title {
+  color: #15161a;
+  font-family: Impact, "Arial Narrow", sans-serif;
+  font-size: clamp(30px, 8vw, 42px);
+  font-weight: 400;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+.app-view[data-view="cart"] :is(.cart-card, .checkout-form),
+.app-view[data-view="profile"] :is(.profile-card, .profile-privacy-card, .profile-business-details) {
+  border-color: #dfe1e5;
+  border-radius: 18px;
+  background: rgb(255 255 255 / 97%);
+  box-shadow: 0 10px 28px rgb(24 25 29 / 8%);
+}
+
+.app-view[data-view="cart"] .secondary-button,
+.app-view[data-view="profile"] .secondary-button {
+  border-color: #cfd2d8;
+  background: #fff;
+  color: #15161a;
+  box-shadow: none;
+}
+
+.app-view[data-view="cart"] .ghost-button,
+.app-view[data-view="profile"] .ghost-button {
+  color: #9f0b13;
+}
+
+@media (min-width: 821px) {
+  .home-promotions-rail {
+    grid-auto-columns: calc((100% - 12px) / 2);
+    overflow: visible;
+  }
+
+  .product-media {
+    height: clamp(158px, 15vw, 188px);
+    aspect-ratio: auto;
+  }
+}
+
+@media (min-width: 1025px) {
+  [data-view="catalog"] .product-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+
+@media (max-width: 820px) {
+  /* Catalog utility row: compact chips, a clear next-chip preview and one
+     visually balanced native sort control. */
+  [data-view="catalog"] .category-strip {
+    gap: 7px;
+    margin-inline: 0;
+    padding: 0 22px 11px 0;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent);
+    scroll-padding-inline: 0 22px;
+    scroll-snap-type: inline mandatory;
+  }
+
+  body:has(.app-view[data-view="catalog"].is-active) [data-view="catalog"] .category-button {
+    min-height: 42px;
+    flex: 0 0 auto;
+    gap: 5px;
+    padding: 0 11px;
+    border-color: #2f3137;
+    background: #141519;
+    color: #e6e7ea;
+    font-size: 11px;
+    letter-spacing: .025em;
+    scroll-snap-align: start;
+  }
+
+  body:has(.app-view[data-view="catalog"].is-active) [data-view="catalog"] .category-button.active {
+    border-color: var(--taba-red);
+    background: var(--taba-red);
+    color: #fff;
+  }
+
+  [data-view="catalog"] .category-ico,
+  [data-view="catalog"] .category-button.active .category-ico,
+  [data-view="catalog"] .category-ico svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  [data-view="catalog"] .category-label { font-size: 11px; }
+
+  body:has(.app-view[data-view="catalog"].is-active) .catalog-toolbar {
+    min-height: 44px;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+  }
+
+  body:has(.app-view[data-view="catalog"].is-active) .sort-field {
+    min-height: 42px;
+    padding: 0 27px 0 10px;
+    border-color: #303239;
+    background: #15161a;
+    color: #fff;
+  }
+
+  body:has(.app-view[data-view="catalog"].is-active) .sort-field-label {
+    color: #f0f1f3;
+    font-size: 11px;
+  }
+
+  body:has(.app-view[data-view="catalog"].is-active) .sort-field-label svg {
+    width: 14px;
+    height: 14px;
+    color: #b7b9c0;
+  }
+
+  .catalog-count { margin-bottom: 13px; }
+
+  /* Two columns remain two columns even at 320px. All inherited horizontal
+     320px card rules are explicitly neutralized here. */
+  [data-view="catalog"] .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  [data-view="catalog"] .product-card {
+    flex-direction: column;
+    align-items: stretch;
+    min-height: 0;
+    border-radius: 13px;
+  }
+
+  [data-view="catalog"] .product-media-frame {
+    width: 100%;
+    flex: 0 0 auto;
+    align-self: stretch;
+  }
+
+  [data-view="catalog"] .product-media {
+    width: 100%;
+    height: clamp(128px, 39vw, 150px);
+    aspect-ratio: auto;
+    border-right: 0;
+    border-bottom: 1px solid #e5e6e9;
+  }
+
+  [data-view="catalog"] .product-favorite {
+    top: 1px;
+    right: 1px;
+    width: 44px;
+    height: 44px;
+    padding: 11px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  [data-view="catalog"] .product-favorite svg {
+    filter: drop-shadow(0 1px 1px rgb(255 255 255 / 90%));
+  }
+
+  [data-view="catalog"] .product-body {
+    min-width: 0;
+    gap: 2px;
+    padding: 8px 9px 9px;
+  }
+
+  [data-view="catalog"] .product-brand {
+    font-size: 9px;
+    letter-spacing: .045em;
+  }
+
+  [data-view="catalog"] .product-body h3 {
+    min-height: 32px;
+    font-size: 13px;
+    line-height: 1.2;
+  }
+
+  [data-view="catalog"] .product-body p {
+    display: -webkit-box;
+    min-height: 25px;
+    overflow: hidden;
+    font-size: 10px;
+    line-height: 1.25;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  [data-view="catalog"] .product-availability { font-size: 10px; }
+
+  [data-view="catalog"] .product-foot {
+    width: auto;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr) 44px;
+    gap: 4px;
+    padding-top: 5px;
+  }
+
+  [data-view="catalog"] .price strong,
+  [data-view="catalog"] .price-amounts strong {
+    font-size: clamp(15px, 4.25vw, 17px);
+    letter-spacing: -.025em;
+  }
+
+  [data-view="catalog"] .product-action .add-button {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  [data-view="catalog"] .product-action .add-plus {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--taba-red);
+    box-shadow: 0 5px 12px rgb(230 12 23 / 30%);
+    color: #fff;
+    font-size: 21px;
+    line-height: 1;
+  }
+
+  [data-view="catalog"] .product-action .add-text { display: none; }
+
+  [data-view="catalog"] .product-foot:has(.qty-stepper) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  [data-view="catalog"] .product-action .qty-stepper {
+    width: 100%;
+    min-width: 0;
+    height: 44px;
+  }
+
+  /* Home hero keeps two complete canonical products. The square source canvas
+     may overlap; the bottles themselves never reach the clipping edge. */
+  .taba-hero {
+    min-height: clamp(248px, 66vw, 286px);
+    padding: 21px 18px;
+  }
+
+  .taba-hero-copy { width: 59%; max-width: 59%; }
+  .taba-hero-art {
+    top: 4px;
+    right: 5px;
+    bottom: 0;
+    width: 48%;
+    overflow: hidden;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .taba-hero-bottle {
+    bottom: 0;
+    width: 120%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center bottom;
+    -webkit-mask-image: none;
+    mask-image: none;
+    transform: none;
+  }
+
+  .taba-hero-bottle.is-a {
+    left: -36%;
+    width: 120%;
+    height: 98%;
+    transform: rotate(-4deg);
+  }
+
+  .taba-hero-bottle.is-b { display: none; }
+
+  .taba-hero-bottle.is-c {
+    right: -26%;
+    width: 116%;
+    height: 92%;
+    transform: rotate(4deg);
+  }
+
+  /* Dark category island between visual promotions and the light shelf. */
+  .taba-home .home-category-section {
+    padding: 11px 10px 10px;
+    border: 1px solid rgb(255 255 255 / 9%);
+    border-radius: 15px;
+    background: #121317;
+  }
+
+  .home-promotions-rail { grid-auto-columns: min(328px, 86vw); }
+
+  .taba-home .home-promo-card.is-inactive,
+  .taba-home .home-promo-card.is-inactive .home-promo-media {
+    min-height: 158px;
+    height: 158px;
+  }
+
+  .taba-home .home-promo-card.is-inactive .home-promo-copy strong {
+    min-height: 2em;
+  }
+
+  /* Featured products use a true two-column grid and four complete cards. */
+  .home-best-sellers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }
+
+  .home-best-sellers > .home-best-card:nth-of-type(4) { display: grid !important; }
+  .home-best-sellers > .home-best-card:nth-of-type(n+5) { display: none !important; }
+
+  body:has(.app-view[data-view="home"].is-active) .home-best-card,
+  .taba-home .home-best-card {
+    min-height: 252px;
+    grid-template-rows: 145px minmax(0, 1fr);
+    border-radius: 12px;
+    box-shadow: 0 7px 18px rgb(25 26 30 / 13%);
+  }
+
+  .taba-home .home-best-media {
+    position: relative;
+    height: 145px;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .taba-home .home-best-copy {
+    gap: 2px;
+    padding: 8px 42px 10px 9px;
+  }
+
+  .taba-home .home-best-copy strong {
+    min-height: 30px;
+    font-size: 12px;
+    line-height: 1.2;
+  }
+
+  .taba-home .home-best-copy span { margin-top: 3px; font-size: 16px; }
+
+  /* The main element owns the only navigation/cart reserve. Profile's legacy
+     safe-area padding is neutralized so it is not counted twice. */
+  main[data-app-main] > .app-view:is([data-view="cart"], [data-view="profile"]) {
+    padding-bottom: 16px;
+  }
+
+  html { scroll-padding-bottom: calc(var(--nav-block) + var(--stack-gap)); }
+  html:has(body[data-cart="filled"]) {
+    scroll-padding-bottom: calc(var(--nav-block) + var(--cta-h) + var(--stack-gap) + var(--stack-gap));
+  }
+
+  /* A software keyboard becomes the bottom interaction surface. Fixed chrome
+     gets out of its way and returns on blur. */
+  body:has(input:not([type="hidden"]):not([type="radio"]):not([type="checkbox"]):focus, textarea:focus, select:focus) :is(
+    .mobile-nav.taba-tabbar,
+    .floating-cart
+  ) {
+    display: none !important;
+  }
+
+  .app-view[data-view="cart"],
+  .app-view[data-view="profile"] {
+    padding-top: 20px;
+  }
+
+  .app-view[data-view="cart"] :is(.cart-card, .checkout-form),
+  .app-view[data-view="profile"] :is(.profile-card, .profile-privacy-card, .profile-business-details) {
+    border-radius: 17px;
+    box-shadow: 0 8px 22px rgb(24 25 29 / 7%);
+  }
+
+  .cart-item .thumb {
+    position: relative;
+    overflow: hidden;
+    background: #fff;
+  }
+}
+
+@media (min-width: 601px) and (max-width: 820px) {
+  [data-view="catalog"] .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .home-best-sellers { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  body:has(.app-view[data-view="home"].is-active) .home-best-card,
+  .taba-home .home-best-card { min-height: 248px; grid-template-rows: 142px minmax(0, 1fr); }
+  .taba-home .home-best-media { height: 142px; }
+}
+
+@media (max-width: 360px) {
+  [data-view="catalog"] .product-grid { gap: 8px; }
+  [data-view="catalog"] .product-body { padding-inline: 8px; }
+  [data-view="catalog"] .product-body h3 { font-size: 12px; }
+  [data-view="catalog"] .product-body p { font-size: 9.5px; }
+  .taba-home .home-best-section { padding: 11px; }
+  .taba-home .home-best-copy { padding-right: 39px; }
+  .taba-home .home-promo-card.is-inactive .home-promo-copy { padding-inline: 10px; }
+  .taba-home .home-promo-card.is-inactive .home-promo-copy strong { font-size: 17px; }
+}

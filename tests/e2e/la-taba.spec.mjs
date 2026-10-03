@@ -563,7 +563,7 @@ test('bottom nav respeta safe-area y no cubre contenido', async ({ browser }) =>
     const safe34 = await measureNav();
 
     await expect(page.locator('.mobile-nav')).toBeVisible();
-    await expect(page.locator('.mobile-nav button')).toHaveCount(4);
+    await expect(page.locator('.mobile-nav button')).toHaveCount(5);
     const navHeight = Number.parseFloat(safe0.navHeightToken);
     const navGap = Number.parseFloat(safe0.navGapToken);
     expect(navHeight).toBeGreaterThan(0);

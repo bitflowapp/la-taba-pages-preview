@@ -539,8 +539,29 @@ function homePromotionalProducts() {
   return promotionalProducts().slice(0, 6);
 }
 
+// Los candidatos del catálogo demo son evidencia comercial incompleta: se
+// muestran como piezas visuales, pero siempre con su estado inactivo y el
+// precio normal del SKU. Nunca se convierten en una promoción vigente.
+function homeInactivePromotionCandidates(state = getState()) {
+  const productsBySku = new Map();
+  unitStorefrontProducts(state).forEach((product) => {
+    [product.id, product.sku, product.externalId].filter(Boolean).forEach((key) => {
+      productsBySku.set(String(key), product);
+    });
+  });
+  return (state.promotions || [])
+    .filter((promotion) => promotion.previewOnly && !promotion.active)
+    .sort((a, b) => Number(b.priority || 0) - Number(a.priority || 0))
+    .map((promotion) => ({
+      promotion,
+      product: (promotion.includedSkus || []).map((sku) => productsBySku.get(String(sku))).find(Boolean),
+    }))
+    .filter((entry) => entry.product && !entry.product.pricePending)
+    .slice(0, 2);
+}
+
 function homeBestSellerProducts() {
-  return unitStorefrontProducts().filter((product) => !product.pricePending).slice(0, 3);
+  return unitStorefrontProducts().filter((product) => !product.pricePending).slice(0, 5);
 }
 
 function homeProductImage(product, className) {
@@ -587,7 +608,42 @@ function renderHomePromotions() {
   if (!container) return;
   const products = homePromotionalProducts();
   const block = container.closest('.home-merch-section');
-  if (block) block.hidden = products.length === 0;
+  if (block) block.hidden = false;
+  if (products.length === 0) {
+    const candidates = homeInactivePromotionCandidates();
+    if (candidates.length) {
+      container.innerHTML = candidates.map(({ promotion, product }) => `
+        <article class="home-promo-card is-inactive">
+          <button class="home-promo-media" type="button" data-product-detail="${product.id}" aria-label="Ver ${escapeHtml(product.name)}">
+            <span class="home-promo-badge">Demo · inactiva</span>
+            ${homeProductImage(product, 'home-promo-image')}
+          </button>
+          <div class="home-promo-copy">
+            <small class="home-promo-state">${escapeHtml(promotion.approvalStatus === 'PENDIENTE' ? 'Pendiente de aprobación' : 'Promoción inactiva')}</small>
+            <strong>${escapeHtml(product.name)}</strong>
+            <span class="home-promo-unit">${escapeHtml(unitText(product))}</span>
+            <span class="home-promo-regular-label">Precio normal</span>
+            <span class="home-product-price">${money(product.price)}</span>
+          </div>
+        </article>`).join('');
+      bindHomePromotionPaging();
+      return;
+    }
+    container.innerHTML = `
+      <button class="home-promo-editorial" type="button" data-nav-view="catalog">
+        <span class="home-promo-editorial-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32"><path d="M19 2 7.5 17H14l-1 13L24.5 14H18z" fill="currentColor" /></svg>
+        </span>
+        <span class="home-promo-editorial-copy">
+          <small>Promociones del local</small>
+          <strong>Descubrí las oportunidades del catálogo</strong>
+          <span>Disponibilidad y condiciones informadas al momento de comprar.</span>
+        </span>
+        <span class="home-promo-editorial-cta">Ver catálogo <b aria-hidden="true">›</b></span>
+      </button>`;
+    bindHomePromotionPaging();
+    return;
+  }
   const cartQuantities = new Map(getCartItems().map((item) => [item.productId, item.quantity]));
   container.innerHTML = products.map((product) => {
     const pricing = productPricePresentation(product);
@@ -628,7 +684,9 @@ function renderHomeBestSellers() {
           ${homeProductImage(product, 'home-best-image')}
         </button>
         <div class="home-best-copy">
+          <small>${escapeHtml(product.brand || 'La Taba')}</small>
           <strong>${escapeHtml(product.name)}</strong>
+          <em>${escapeHtml(unitText(product) || homeUnitText(product))}</em>
           <span>${money(pricing.price)}</span>
         </div>
         <div class="home-card-control">${quickAddControl(product, cartQuantities.get(product.id) || 0, { className: 'home-add-button' })}</div>
@@ -679,7 +737,7 @@ function renderHomeCatalogPreview() {
   const container = $('[data-home-catalog-preview]');
   if (!container) return;
   const cartQuantities = new Map(getCartItems().map((item) => [item.productId, item.quantity]));
-  container.innerHTML = unitStorefrontProducts().filter((product) => !product.pricePending).slice(0, 4).map((product) => {
+  container.innerHTML = unitStorefrontProducts().filter((product) => !product.pricePending).slice(5, 9).map((product) => {
     const favorite = isFavoriteProduct(product.id);
     const pricing = productPricePresentation(product);
     const outOfStock = product.stock <= 0 || !product.available || product.pricePending;
@@ -1112,6 +1170,9 @@ function renderProducts() {
     const presentation = compactPresentation && normalizeSearchText(product.name).includes(compactPresentation)
       ? ''
       : rawPresentation;
+    const packLabel = Number(product.unitsPerPack || 1) > 1
+      ? (product.unitLabel || `Pack x${Math.floor(Number(product.unitsPerPack))}`)
+      : '';
     const control = quickAddControl(product, inCart);
     return `
       <article class="product-card ${outOfStock ? 'out-of-stock' : ''} ${offer ? 'is-offer' : ''} ${inCart > 0 ? 'in-cart' : ''}">
@@ -1120,6 +1181,7 @@ function renderProducts() {
             ${productThumb(product, 'grid')}
             <span class="product-stock-tag">${stockPill(product)}</span>
           </button>
+          ${packLabel ? `<span class="product-pack-badge">${escapeHtml(packLabel)}</span>` : ''}
           <button class="product-favorite ${favorite ? 'is-favorite' : ''}" type="button" data-favorite-toggle="${product.id}" aria-label="${favorite ? 'Quitar' : 'Guardar'} ${escapeHtml(product.name)} de favoritos" aria-pressed="${favorite}">
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
           </button>

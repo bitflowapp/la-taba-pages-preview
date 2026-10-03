@@ -10,7 +10,7 @@ test('la home presenta TABA con marca interna discreta y un storefront comercial
 
   await expect(page.locator('[data-demo-mode-banner]')).toHaveCount(0);
   await expect(page.locator('.topbar .brand-word')).toHaveText('TABA');
-  await expect(page.getByRole('heading', { name: '¿Qué vas a pedir hoy?' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /La previa\s*empieza acá/i })).toBeVisible();
   await expect(page.locator('[data-view="home"] .taba-home-search')).toBeVisible();
   const homeCategories = page.locator('[data-view="home"] .home-category-card');
   await expect(homeCategories).toHaveCount(4);
@@ -22,16 +22,19 @@ test('la home presenta TABA con marca interna discreta y un storefront comercial
   await expect(page.locator('.home-preview-label')).toHaveCount(0);
   await expect(page.locator('[data-view="home"]')).not.toContainText('PREVIEW INTERNA');
 
-  // Sin una promoción aprobada, fechada y verificable no se muestra ningún
-  // descuento ni precio anterior en la superficie cliente.
+  // Sin una promoción aprobada, fechada y verificable los candidatos demo se
+  // muestran sólo como piezas inactivas, con precio normal y sin descuento.
   const promoBanner = page.locator('[data-view="home"] [data-promo-banner]');
   await expect(promoBanner).toBeHidden();
-  await expect(page.locator('[aria-labelledby="home-promotions-title"]')).toBeHidden();
-  await expect(page.locator('[data-home-promotions] .home-promo-card')).toHaveCount(0);
+  await expect(page.locator('[aria-labelledby="home-promotions-title"]')).toBeVisible();
+  await expect(page.locator('[data-home-promotions] .home-promo-card.is-inactive')).toHaveCount(2);
+  await expect(page.locator('[data-home-promotions]')).toContainText('Precio normal');
+  await expect(page.locator('[data-home-promotions]')).not.toContainText(/%\s*OFF|Ahorrás/i);
   // Copy honesto: "Destacados" es una selección del local, no una métrica.
   await expect(page.getByRole('heading', { name: 'Destacados' })).toBeVisible();
   await expect(page.locator('[data-view="home"]')).not.toContainText('Los más vendidos');
   await expect(page.locator('[data-home-catalog-preview] .home-catalog-card')).toHaveCount(4);
+  await expect(page.locator('[data-home-catalog-preview]')).toBeHidden();
 
   await expect(page.locator('[data-view="home"] .role-intro')).toHaveCount(0);
   await expect(page.locator('[data-view="home"] .product-intro')).toHaveCount(0);
@@ -86,7 +89,7 @@ for (const viewport of [
     await gotoDemoReset(page, '/?reset=1&demo=1&home=v37');
     await expect(page.locator('[data-view="home"]')).toBeVisible();
     await expect(page.locator('.mobile-nav [data-nav-view="home"]')).toHaveClass(/active/);
-    await expect(page.locator('[aria-labelledby="home-promotions-title"]')).toBeHidden();
+    await expect(page.locator('[aria-labelledby="home-promotions-title"]')).toBeVisible();
 
     const geometry = await page.evaluate(() => ({
       viewportWidth: window.innerWidth,
@@ -108,7 +111,7 @@ for (const viewport of [
     expect(geometry.innerHeight - geometry.navBottom).toBe(0);
     expect(geometry.navHeight).toBe(geometry.navBlockToken);
 
-    const productImages = page.locator('[data-view="home"] .thumb-img');
+    const productImages = page.locator('[data-view="home"] :is(.home-promo-image, .home-best-image):visible');
     await expect(productImages.first()).toBeVisible();
     await productImages.last().scrollIntoViewIfNeeded();
     await expect.poll(() => productImages.evaluateAll((images) => images.every((image) => (
@@ -126,7 +129,7 @@ for (const viewport of [
       });
     }
 
-    const finalCard = page.locator('[data-home-catalog-preview] .home-catalog-card').last();
+    const finalCard = page.locator('[data-home-best-sellers] .home-best-card:visible').last();
     await finalCard.scrollIntoViewIfNeeded();
     const [finalCardBox, navBox] = await Promise.all([
       finalCard.boundingBox(),
@@ -206,11 +209,9 @@ test('controles táctiles de la Home alcanzan 44 por 44 y el carrusel sincroniza
   await page.goto('/?demo=1&home=v37');
 
   const controlSelector = [
-    '.home-merch-section:not([hidden]) .home-section-head button',
-    '[data-home-promotions] .home-add-button',
-    '[data-home-best-sellers] .home-add-button',
-    '[data-home-catalog-preview] .home-add-button',
-    '[data-home-catalog-preview] .home-favorite-button',
+    '.home-merch-section:not([hidden]) .home-section-head button:visible',
+    '[data-home-category-strip] .home-category-card:visible',
+    '[data-home-best-sellers] .home-add-button:visible',
   ].join(', ');
   for (const viewport of [
     { width: 320, height: 812 },
@@ -219,7 +220,7 @@ test('controles táctiles de la Home alcanzan 44 por 44 y el carrusel sincroniza
   ]) {
     await page.setViewportSize(viewport);
     const controls = page.locator(controlSelector);
-    await expect(controls).toHaveCount(12);
+    await expect(controls).toHaveCount(10);
     const undersized = await controls.evaluateAll((nodes) => nodes
       .map((node) => {
         const rect = node.getBoundingClientRect();
@@ -232,7 +233,7 @@ test('controles táctiles de la Home alcanzan 44 por 44 y el carrusel sincroniza
 
   await page.setViewportSize({ width: 390, height: 844 });
   const dots = page.locator('[data-home-paging-dots] span');
-  await expect(dots).toHaveCount(1);
+  await expect(dots).toHaveCount(2);
   await expect(dots.first()).toHaveClass(/is-active/);
   await page.setViewportSize({ width: 1280, height: 900 });
   await expect(page.locator('[data-home-paging-dots]')).toBeHidden();
@@ -242,7 +243,7 @@ test('la imagen de un producto real se reutiliza en Home, catálogo, modal y car
   await installBrowserStubs(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/?demo=1&home=v37');
-  const homeCard = page.locator('[data-home-catalog-preview] .home-catalog-card').first();
+  const homeCard = page.locator('[data-home-best-sellers] .home-best-card:visible').first();
   const productId = await homeCard.locator('[data-product-detail]').getAttribute('data-product-detail');
   const source = await homeCard.locator('img').getAttribute('src');
   expect(productId).toBeTruthy();

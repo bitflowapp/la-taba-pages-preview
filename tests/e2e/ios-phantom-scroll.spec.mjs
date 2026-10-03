@@ -193,7 +193,7 @@ for (const viewport of [IPHONE_13, IPHONE_SE_1]) {
       const guards = installPageGuards(page);
       await installBrowserStubs(page);
       await gotoDemoReset(page, '/?reset=1&demo=1');
-      await page.waitForSelector('[data-view="home"] .home-catalog-card');
+      await page.waitForSelector('[data-view="home"] .home-best-card');
       await assertNoPhantomScroll(page, 'Home');
       await guards.assertClean();
       await context.close();

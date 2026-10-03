@@ -960,6 +960,7 @@ function bindEvents() {
     const navView = target.closest('[data-nav-view]')?.dataset.navView;
     if (navView) {
       event.preventDefault();
+      target.closest('[popover]')?.hidePopover?.();
       if (normalizeView(navView) === 'profile') {
         clearProfileReturnTarget();
       }
@@ -969,6 +970,7 @@ function bindEvents() {
 
     const categoryId = target.closest('[data-category-id]')?.dataset.categoryId;
     if (categoryId) {
+      target.closest('[popover]')?.hidePopover?.();
       setCategory(categoryId);
       if (activeView !== 'catalog') setActiveView('catalog');
       return;

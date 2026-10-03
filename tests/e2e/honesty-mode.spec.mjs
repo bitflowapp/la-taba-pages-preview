@@ -28,7 +28,11 @@ test('preview privado mantiene la identidad interna fuera de la experiencia clie
   await expect(page.locator('[data-demo-mode-banner]')).toHaveCount(0);
   await expect(page.locator('[data-view="home"] .role-intro')).toHaveCount(0);
   await expect(page.locator('[data-view="home"]')).not.toContainText('1234');
-  await expect(page.locator('[data-view="home"]')).not.toContainText(/\b(?:Demo|QA|fixture|técnico)\b/i);
+  await expect(page.locator('[data-view="home"]')).not.toContainText(/\b(?:QA|fixture|técnico)\b/i);
+  await expect(page.locator('[data-home-promotions] .home-promo-badge')).toHaveText([
+    'Demo · inactiva',
+    'Demo · inactiva',
+  ]);
   await expect(page.locator('.topbar [data-admin-toggle]')).toHaveCount(0);
 
   await page.goto('/?demo=1#profile');

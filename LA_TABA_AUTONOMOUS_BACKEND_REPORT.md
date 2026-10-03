@@ -23,7 +23,7 @@ Bitácora: `LA_TABA_AUTONOMOUS_STATUS.md`. Registro de hallazgos (lo leen las co
    humo (EDGE-03). Más 37 P2 corregidos (idempotencia, deadlocks, reembolsos, contrato HTTP, salud, reversiones).
 2. **Registro:** 0 P0 abiertos · **0 P1 abiertos** (16 corregidos, 1 riesgo aceptado: el gate de base necesita Docker y en la PC lo
    cubre el CI) · 21 P2 abiertos (decisiones de producto, frontend, otra línea, canal externo).
-3. **Probado:** pgTAP canónico **5.993** aserciones; carreras de admisión, stock e idempotencia con **0 deadlocks**; simulacros de
+3. **Probado:** pgTAP canónico **6.002** aserciones; carreras de admisión, stock e idempotencia con **0 deadlocks**; simulacros de
    reversión y de restauración; `npm test` **3.126** (0 fallas); certificador e-commerce sobre un Supabase completo y efímero.
 4. **Nada de la rama corrió todavía en un proyecto alojado.** Aplicarla en Staging es tu decisión: AUTHZ-04 le saca a un empleado
    cancelar y rechazar (también en una caja de Caja Clara operada con cuenta de staff).
@@ -35,9 +35,9 @@ Bitácora: `LA_TABA_AUTONOMOUS_STATUS.md`. Registro de hallazgos (lo leen las co
 | | |
 |---|---|
 | HEAD_INICIAL | `8f0d5958` (inicio de la sesión 2; = `origin`, árbol limpio) · la jornada empezó en `47d9ffe9` (sesión 1) |
-| HEAD_FINAL | el último commit de la rama (este informe); último commit de código: `288da41f` |
+| HEAD_FINAL | el último commit de la rama (este informe); últimos commits de código: `6dc0e883` y el arreglo del arnés de stock |
 | RAMA | `hardening/taba-ecommerce-production` (apilada sobre `qa/taba-backend-e2e-cert-20260930` = PR #130) |
-| COMMITS | sesión 2: 10 + este informe y el archivo de estado (lista abajo) · sesión 1: 60 |
+| COMMITS | sesión 2: 13 + el arreglo de la carrera y los documentos (lista abajo) · sesión 1: 62 |
 | PUSH | todo pusheado a `origin/hardening/taba-ecommerce-production` |
 | PR | **#133 en borrador → `main`** (abierto por la sesión 2 para que el CI corra: el despacho manual de workflows da 403 desde la nube). Apilado sobre #130: **no mergear** sin decidir el orden y Owner 1–2 |
 | CI | ver «CI» abajo |
@@ -47,7 +47,8 @@ Bitácora: `LA_TABA_AUTONOMOUS_STATUS.md`. Registro de hallazgos (lo leen las co
 | HEAD | Validate release candidate | Stack efímero |
 |---|---|---|
 | `8f0d5958` (inicio) | **verde** (37130800496) | último verde `2bc7218a` (37129059684) |
-| `aae0268d` (PAY-PROBE-02/03 + DIAG-03) | base de datos **verde**, Windows **verde**, web: ver el PR (37143751284) | PR **verde** (37143751294, 0 FAIL); push **rojo** (37143748544): 2 checks de la fase `health`, carrera del certificador corregida en `632df82a` |
+| `aae0268d` (PAY-PROBE-02/03 + DIAG-03) | base de datos **verde**, Windows **verde**; web cancelado por el push siguiente (37143751284) | PR **verde** (37143751294, 0 FAIL); push **rojo** (37143748544): 2 checks de la fase `health`, carrera del certificador corregida en `632df82a` |
+| `6dc0e883` (+ certificador, DIAG-02, pulso, herramienta) | base de datos **verde** (37145097552); Windows y web: ver el PR | push **verde** (37145095776) y PR **verde** (37145097561): 455 checks, 450 PASS, **0 FAIL**, 4 no disponibles en el destino, 1 salteado |
 | HEAD final | ver los checks del PR #133 | ver los checks del PR #133 |
 
 ## QA
@@ -55,9 +56,9 @@ Bitácora: `LA_TABA_AUTONOMOUS_STATUS.md`. Registro de hallazgos (lo leen las co
 | | |
 |---|---|
 | TESTS | Local en la nube, con Docker y la imagen del gate por digest: **gate canónico completo** (`npm run test:db:isolated`) sobre `8f0d5958` y sobre `aae0268d`, los dos **PASS** (migraciones como no-superusuario, pgTAP canónico, carreras de impresión, fiscales, admisión, stock e idempotencia, simulacros de reversión, volcado y restauración); `npm test` sobre `aae0268d`; pruebas de la sonda de salud, del certificador, de la herramienta de base local, de las verificaciones previas y del pulso de CP; simulacros de reversión de 20261003090000 (huella del esquema en 12 categorías); la sonda de salud y las verificaciones previas corridas con un rol igual a `supabase_read_only_user` contra la rama aplicada. CI: los tres jobs de `Validate release candidate` y el certificador en el stack |
-| PASS | pgTAP canónico **5.993/5.993** (5.938 + 55 nuevas) · `npm test` **3.125/3.126** · gate canónico local PASS ×2 · `GLOBAL_IDEMPOTENCY: PASS` (751 llamadas, 0 deadlocks, 0 esperas agotadas) · certificador en el stack: 0 FAIL en la corrida del PR |
+| PASS | pgTAP canónico **6.002/6.002** (5.938 + 55 + 9 nuevas) · `npm test` **3.125/3.126** · gate canónico local PASS ×2 · `GLOBAL_IDEMPOTENCY: PASS` (751 llamadas, 0 deadlocks, 0 esperas agotadas) · certificador en el stack: 0 FAIL en la corrida del PR |
 | FAIL | ninguno abierto. Durante la sesión: el stack en 37143748544 (2 checks de `health`, carrera del certificador, corregida); las tres reproducciones de los defectos nuevos fallaron ANTES de su arreglo, como corresponde |
-| FLAKY | **1, con causa y arreglo**: la fase `health` del certificador afirmaba el latido del planificador antes de la primera corrida de pg_cron (frontera del minuto) en un stack recién levantado (`632df82a`) |
+| FLAKY | **2, los dos con causa reproducida y arreglo**: (1) la fase `health` del certificador afirmaba el latido del planificador antes de la primera corrida de pg_cron en un stack recién levantado (`632df82a`; en las dos corridas verdes posteriores el latido ya estaba sano y la espera no hizo falta); (2) la carrera de stock del gate (escenario 7) esperaba que alguno de cinco barridos concurrentes venciera la sesión, pero el aviso de pago retiene la fila con `for update` y el barrido saltea filas tomadas (`skip locked`): con la máquina cargada los cinco la salteaban (gate local sobre `6dc0e883`: 0 en vez de 1). Reproducido de forma determinista (barrido con la fila tomada → 0; liberada → 1) y corregido en el arnés: un barrido más después de la ronda, y la cuenta total sigue teniendo que ser exactamente uno |
 | SKIPPED | 1 en `npm test`: la prueba de PowerShell, que sólo corre en Windows (en CI corre en el job de Windows). Ningún skip para conseguir verde |
 
 ## Auditoría
@@ -70,10 +71,10 @@ Bitácora: `LA_TABA_AUTONOMOUS_STATUS.md`. Registro de hallazgos (lo leen las co
 | CONCURRENCIA | `PASS` | Carreras de stock (12 escenarios, sin sobreventa ni stock negativo), admisión (topes exactos), impresión y fiscal en el gate; IDEM-07/IDEM-08 (orden de candados) con sondas de llegada fijada. La migración nueva no toma candados nuevos (lecturas y un índice) |
 | WEBHOOKS | `PASS` | Aviso duplicado ×20 → 1 recibo y 1 trabajo; firmado y sin firma → 1; snapshot viejo no retrocede; aprobado viejo no revive un cobro reembolsado (pgTAP de la sesión 1) |
 | RECOVERY | `PASS` | Simulacros de reversión en el gate y cadena completa de 50 reversiones (sesión 1); reversión de `20261003090000`: huella idéntica a la anterior, re-ejecutable. Restauración de volcado con evidencia durable (gate) |
-| MIGRACIONES | `PASS` local, en CI y en el stack · aplicación `OWNER_APPROVAL_REQUIRED` | 209 migraciones (158 de `main` + 51 de la rama) en el gate como no-superusuario y en un Supabase efímero. Las nuevas guardas `ROLLOUT_BLOCKED` se niegan si una función cambió fuera de la rama. Verificaciones previas de sólo lectura: tres archivos en `docs/migrations/checks/` (el de 20261003 es de la sesión 2 y nunca corrió contra Staging/CP: no hubo credenciales) |
+| MIGRACIONES | `PASS` local, en CI y en el stack · aplicación `OWNER_APPROVAL_REQUIRED` | 210 migraciones (158 de `main` + 52 de la rama) en el gate como no-superusuario y en un Supabase efímero. Las nuevas guardas `ROLLOUT_BLOCKED` se niegan si una función cambió fuera de la rama. Verificaciones previas de sólo lectura: tres archivos en `docs/migrations/checks/` (el de 20261003 es de la sesión 2 y nunca corrió contra Staging/CP: no hubo credenciales) |
 | ALERTAS | `PASS` con pendientes | Sesión 2: CHECKOUT_PROVIDER_UNVERIFIED ya no se cierra por tiempo y cubre el pago sin resultado final. Sesión 1: tareas faltantes/apagadas, colas sin intent, reembolsos y cobros para revisar. Pendiente: **no hay canal fuera de banda** para una alerta crítica (DIAG-09): se ve en el Panel y en el pulso, nadie recibe un aviso |
 | HEALTH | `PASS` | **DIAG-03 corregido** (`b6a94a96`): la sonda veía 0 CRITICAL con una abierta y exigía exactamente cuatro tareas; ahora exige el inventario de la base, cuenta por severidad y acepta CP y Staging (`--target`). Validada contra la rama aplicada con un rol igual al de sólo lectura de Supabase |
-| OBSERVABILIDAD | `PASS` con pendientes | Traza del pedido sin datos personales, salud por componente, evidencia de la alerta con el estado del proveedor; el pulso de CP cuenta un cobro sin pedido desde su aprobación (`288da41f`). Pendientes: DIAG-02 (textos del Panel para los códigos nuevos), DIAG-09, DIAG-10 (el vigilante externo mira la producción vieja) |
+| OBSERVABILIDAD | `PASS` con pendientes | Traza del pedido sin datos personales, salud por componente, evidencia de la alerta con el estado del proveedor; el pulso de CP cuenta un cobro sin pedido desde su aprobación (`288da41f`); el contador de colas bloqueadas del centro de operación cuenta los avisos de Mercado Pago abandonados (`6dc0e883`, DIAG-02 backend, 20261003091000). Pendientes: DIAG-02 (textos del Panel para los códigos nuevos), DIAG-09, DIAG-10 (el vigilante externo mira la producción vieja) |
 | SEGURIDAD | `PASS` con pendientes | El cobro real en CP falla cerrado (leído por la sesión 1 a las 11:25); el interruptor exige el valor exacto `enabled`; la marca de agua y las auxiliares nuevas no las lee ni ejecuta ningún rol de cliente; las sondas sólo mandan SELECT al endpoint de sólo lectura. AUTHZ-02/AUTHZ-04 (resto) esperan decisión |
 | STACK | `PASS` con la carrera corregida | Certificador contra un Supabase completo y efímero (GoTrue, PostgREST, pg_cron y Edge reales): 0 FAIL en la corrida del PR sobre `aae0268d`; la del push falló por la carrera de la fase `health`, corregida en `632df82a` y reverificada por el CI del HEAD final |
 
@@ -96,10 +97,12 @@ Bitácora: `LA_TABA_AUTONOMOUS_STATUS.md`. Registro de hallazgos (lo leen las co
 | DIAG-03 | P2 | La sonda de salud no veía alertas CRITICAL y no podía dar verde | Con 1 CRITICAL abierta la consulta vieja contaba 0 (rol de sólo lectura, base local) | corregido `b6a94a96` |
 | CERT-02 | P3 | La fase `health` del certificador afirmaba el latido del planificador antes de la primera corrida de pg_cron | Run 37143748544: leyó 18:21:44, primer barrido 18:22:00 | corregido `632df82a` |
 | PULSE-01 | P3 | El pulso de CP contaba un cobro sin pedido desde su última relectura (`updated_at`): uno releído cada pocos minutos no contaba nunca | Prueba nueva que falla con el código anterior | corregido `288da41f` |
+| DIAG-02 (backend) | P2 | El contador `blocked_outboxes` del centro de operación no contaba un aviso de Mercado Pago abandonado (sin intento de pago), aunque la alerta y la salud sí lo veían | pgTAP nueva: 0 antes de la migración, 1 y 2 después | corregido `6dc0e883` (20261003091000); queda el texto del Panel |
+| RACE-01 | P3 | La carrera de stock del gate podía fallar sin defecto del producto: cinco barridos concurrentes salteaban la sesión que dos avisos de pago tenían tomada | Gate local sobre `6dc0e883`: «la sesion vence exactamente una vez» 0 ≠ 1; mecanismo reproducido de forma determinista | corregido en el arnés (commit al final de la lista) |
 
 ### BUGS_CORREGIDOS (la jornada completa)
 
-- Sesión 2: PAY-PROBE-02, PAY-PROBE-03, DIAG-03, CERT-02, PULSE-01 (tabla de arriba).
+- Sesión 2: PAY-PROBE-02, PAY-PROBE-03, DIAG-03, DIAG-02 (backend), CERT-02, PULSE-01, RACE-01 (tabla de arriba).
 - Sesión 1 (detalle en su bitácora): idempotencia (7 defectos de la carrera), IDEM-07, IDEM-08, reembolsos y avisos firmados,
   PAY-PROBE-01, TRACK-01, RB-01, RB-02, TOOL-08, FO-01, FO-02, EDGE-03, contrato HTTP (API-01 + C-2), TOOL-05, AUTHZ-04 (parcial).
 - Registro: **P1 16 corregidos, 0 abiertos**, 1 riesgo aceptado (TOOL-01); P2 37 corregidos, 21 abiertos.
@@ -119,7 +122,7 @@ Bitácora: `LA_TABA_AUTONOMOUS_STATUS.md`. Registro de hallazgos (lo leen las co
 
 ### RIESGOS_RESIDUALES
 
-1. **Nada de la rama corrió sobre un proyecto alojado** (Staging 158, CP 157; la rama 209). La evidencia es el gate (local y CI),
+1. **Nada de la rama corrió sobre un proyecto alojado** (Staging 158, CP 157; la rama 210). La evidencia es el gate (local y CI),
    un Supabase efímero en CI y PG17 local.
 2. **La sesión 2 no leyó ningún entorno.** Lo último en vivo es de las 11:25. Antes de aplicar, repetir las tres verificaciones previas.
 3. Mercado Pago real nunca se ejercitó (regla); los pagos se probaron con un proveedor simulado, Mercado Pago TEST en lectura y el stack.
@@ -133,7 +136,7 @@ Bitácora: `LA_TABA_AUTONOMOUS_STATUS.md`. Registro de hallazgos (lo leen las co
 
 Cada ítem con el paso exacto. **Ninguno se ejecutó.**
 
-1. **Aplicar la rama en Staging** (209 migraciones + las 9 Edge Functions de Mercado Pago).
+1. **Aplicar la rama en Staging** (210 migraciones + las 9 Edge Functions de Mercado Pago).
    - Por qué: es la única forma de certificar el build en un proyecto alojado. Riesgo: AUTHZ-04 cambia lo que hacen las corridas de
      la línea Caja Clara (su comercio `la-taba-staging` canceló 24 pedidos como empleado) y `abandoned_order_minutes=120` de ese
      comercio empieza a cumplirse (`docs/ecommerce-hardening/staging-coexistence.md`); 20261003090000 puede abrir alertas críticas
@@ -202,7 +205,10 @@ Significado usado: **YES** = técnicamente listo con evidencia reproducible; lo 
 - `e17fe311` docs(migrations): verificación previa de 20261003090000 y su lugar en el plan de promoción
 - `3986674e` feat(tooling): una base local armada como la arma el gate, que queda viva para reproducir
 - `288da41f` fix(ops-pulse): un cobro sin pedido se cuenta desde su aprobación, no desde su última relectura
-- (este informe y el archivo de estado)
+- `dd5f57af` docs(report): informe consolidado de la jornada y el estado de la sesión en la nube
+- `a850417f` docs(staging): qué deja 20261003090000 en Staging al aplicarse y cómo medirlo antes
+- `6dc0e883` fix(ops): el centro de operación cuenta los avisos de Mercado Pago que la cola abandonó (DIAG-02)
+- (el arreglo de la carrera de stock, este informe y el archivo de estado)
 
 ## Commits de la sesión 1
 

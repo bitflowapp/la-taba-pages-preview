@@ -54,6 +54,14 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
 - Auditoría de autorización (sólo lectura, base local): ninguna tabla pública admite INSERT/UPDATE/DELETE directo de clientes
   salvo columnas de `businesses` (AUTHZ-02, ya registrado) y `products.sort_order`; las políticas están acotadas al comercio; las
   16 funciones SECURITY DEFINER que una heurística marcó sin control delegan la autorización o son públicas por diseño.
+- 15:40 — **DIAG-02 (backend) corregido** (`6dc0e883`, 20261003091000): el contador `blocked_outboxes` del centro de operación
+  no contaba un aviso de Mercado Pago abandonado (0 antes de la migración; 1 y 2 después). Push de los 8 commits.
+- 15:46 — CI de `6dc0e883`: base de datos **verde**; certificador del stack **verde en las dos corridas** (push y PR: 455 checks,
+  450 PASS, 0 FAIL). Gate local sobre `6dc0e883`: **FAIL** en la carrera de stock (escenario 7, «la sesion vence exactamente una
+  vez» 0 ≠ 1) con la máquina cargada. **RACE-01, causa reproducida**: el aviso de pago retiene la fila de la sesión con
+  `for update` y el barrido saltea filas tomadas (`skip locked`); con la fila tomada, tres barridos devolvieron 0 y, liberada, el
+  siguiente 1. No es el producto (el barrido del minuto siguiente la vence). Arreglo en el arnés: un barrido más después de la
+  ronda y la cuenta total sigue teniendo que ser exactamente uno.
 - AUTHZ-04 y Caja Clara, precisado: el E2E de Caja Clara en CP (42/42) conecta la caja con la credencial del **dueño** y la limpieza
   QA cancela como dueño: ninguna certificación de CP cancela como empleado. Una caja real operada con cuenta de **staff** sí pierde
   cancelar y rechazar al aplicar 20261002050000.

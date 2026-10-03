@@ -446,9 +446,9 @@
       "id": "DIAG-03",
       "severity": "P2",
       "title": "production-health-check.mjs can never be green and can never see a CRITICAL alert",
-      "status": "open",
-      "fixed_by": null,
-      "notes": "",
+      "status": "fixed",
+      "fixed_by": "b6a94a96 · scripts/production-health-check.mjs + tests/production-health-check.test.mjs",
+      "notes": "Reproduced against the branch applied in a local database with a role equal to supabase_read_only_user (bypassrls + pg_read_all_data, read-only transaction): with one open CRITICAL alert the old query counted 0 critical (severity = 'critical'; the table only admits 'CRITICAL'). It also required exactly four taba-* jobs (migrations schedule nine; CP has five) and only accepted the old production ref, so it could never be green and refused to look at CONTROLLED_PRODUCTION. Fixed: open = status <> 'resolved', severity compared case-insensitively, CRITICAL codes named; required jobs come from private.scheduler_expected_jobs when the target has it (else the four baseline jobs), an extra job is fine unless it fails, an inventory read empty is reported; the ledger is compared as sets (missing and drift); --target production|controlled-production|staging (or --ref of one of them, no implicit default), CP business from deploy/controlled-production.json; the read-only Management API endpoint. Tests: tests/production-health-check.test.mjs (11).",
       "aliases": [],
       "domain": "observability",
       "where": "scripts/production-health-check.mjs lines 61-66, 177-178, 181-187, 29 and 83",
@@ -541,7 +541,7 @@
       "title": "External watchdogs and health scripts default to projects other than the controlled-production store",
       "status": "open",
       "fixed_by": null,
-      "notes": "",
+      "notes": "PARTIAL (b6a94a96): scripts/production-health-check.mjs now takes --target controlled-production|staging|production (no implicit default). Still open: scripts/scheduler-watchdog-probe.mjs, services/scheduler-watchdog/wrangler.toml, .github/workflows/scheduler-watchdog.yml and scripts/production-auth-health.mjs keep pointing at other projects; retargeting the external watchdog to CP is an operational change (secrets, Cloudflare worker) for the owner.",
       "aliases": [],
       "domain": "observability",
       "where": "scripts/scheduler-watchdog-probe.mjs line 49; services/scheduler-watchdog/wrangler.toml; scripts/production-health-check.mjs; scripts/production-auth-health.mjs; .github/workflows/scheduler-watchdog.yml"
@@ -1145,6 +1145,28 @@
       "domain": "payments_db",
       "title": "An empty provider search is taken as proof that the buyer did not pay: after 8 empties in 30 minutes the truth sweep stops and CHECKOUT_PROVIDER_UNVERIFIED stays silent, so a charged checkout without order becomes invisible",
       "where": "public.record_provider_probe_empty, public.enqueue_checkout_provider_probes, public.reconcile_operational_alerts_for_business (CHECKOUT_PROVIDER_UNVERIFIED); worker mercadopago-payment-worker probe path"
+    },
+    {
+      "id": "PAY-PROBE-02",
+      "severity": "P1",
+      "title": "An unverified checkout closes by time: past the 48-hour probe window CHECKOUT_PROVIDER_UNVERIFIED is auto-resolved as 'condition absent' and the truth sweep stops, with no proof that the buyer did not pay",
+      "status": "fixed",
+      "fixed_by": "d89ad936 · supabase/migrations/20261003090000_unverified_checkout_never_closes_by_time.sql",
+      "notes": "Reproduced on the branch (208 migrations, local database built with the gate's image and sequence): a checkout that reached Mercado Pago, expired and only had non-conclusive empties (seller connection changed) or no answered probe had its alert open at 47 h and resolved by the system at 49 h ('Condición ausente en la reconciliación automática.'), and enqueue_checkout_provider_probes stopped asking. Same silent ending PAY-PROBE-01 fixed for empties, 48 hours later. Fix: past the window the alert closes only on proof (a conclusive empty, the provider payment, the order) or on an active owner/admin resolution with a note (same rule as PAYMENT_NEEDS_REVIEW; a staff resolution is reopened); the sweep keeps one probe per day up to 30 days for those checkouts; a per-environment watermark (now - 48 h at apply time) keeps older history out of the alerts (scripts/payments/reconcile-payments.mjs still covers it; without the row everything is watched). Test: unverified_checkout_never_closes_by_time_test.sql (45; fails without the migration). Rollback drill: schema fingerprint identical before/after rollback, rollback and forward both re-runnable.",
+      "aliases": [],
+      "domain": "payments_db",
+      "where": "public.reconcile_operational_alerts_for_business (CHECKOUT_PROVIDER_UNVERIFIED 48-hour condition + automatic 'condition absent' resolution), public.enqueue_checkout_provider_probes (48-hour window), private.provider_probe_is_due",
+      "related": [
+        "PAY-PROBE-01"
+      ],
+      "verification": [
+        {
+          "id": "PAY-PROBE-02",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        }
+      ]
     },
     {
       "fixed_by": "3007ed39 · supabase/migrations/20261002040000_payment_cancellation_lock_order.sql",

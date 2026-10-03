@@ -190,8 +190,19 @@ export default {
     else {
       const noKey = await ctx.http.raw('GET', `/rest/v1/orders?select=id&id=eq.${OA}`, { key: false });
       const noKeyRpc = await ctx.http.raw('POST', '/rest/v1/rpc/get_public_order_tracking', { key: false, body: { p_public_id: mine.order.public_code } });
-      C(P, 'GATEWAY_REFUSES_A_REQUEST_WITHOUT_THE_PROJECT_KEY', noKey.status === 401 && noKeyRpc.status === 401, { table: { http: noKey.status, body: noKey.text.slice(0, 120) },
-        rpc: { http: noKeyRpc.status, body: noKeyRpc.text.slice(0, 120) } }, 'HTTP 401 antes de llegar a PostgREST');
+      // El gateway del stack local de la CLI no exige la clave del proyecto (contesta 200: run 37124096351); la
+      // plataforma alojada sí. Si en el stack las dos respuestas sin clave vienen VACÍAS, lo que no se puede probar
+      // acá es la puerta, no la privacidad: queda como no probado, con lo observado. Cualquier dato devuelto sigue
+      // siendo FAIL.
+      const stackGatewayWithoutKeyButNothingLeaked = ctx.env.target.kind === 'stack' && noKey.status === 200 && noKeyRpc.status === 200
+        && noKey.text.trim() === '[]' && noKeyRpc.text.trim() === 'null';
+      if (stackGatewayWithoutKeyButNothingLeaked) {
+        ctx.rec.skipOnTarget(P, 'GATEWAY_REFUSES_A_REQUEST_WITHOUT_THE_PROJECT_KEY',
+          'el gateway del stack local no exige la clave del proyecto (observado: HTTP 200 sin apikey, con [] en la tabla y null en la RPC: nada se filtró); en la plataforma alojada sí la exige');
+      } else {
+        C(P, 'GATEWAY_REFUSES_A_REQUEST_WITHOUT_THE_PROJECT_KEY', noKey.status === 401 && noKeyRpc.status === 401, { table: { http: noKey.status, body: noKey.text.slice(0, 120) },
+          rpc: { http: noKeyRpc.status, body: noKeyRpc.text.slice(0, 120) } }, 'HTTP 401 antes de llegar a PostgREST');
+      }
     }
     const unknownTrace = await ctx.http.call(null, 'get_order_trace', { p_business_id: A, p_reference: OA });
     C(P, 'WITHOUT_A_SESSION_THE_ORDER_TRACE_IS_REFUSED', refused(unknownTrace, CODES.FORBIDDEN, { actor: null }), brief(unknownTrace), refusal(CODES.FORBIDDEN, { actor: null }));

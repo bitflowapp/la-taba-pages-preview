@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>TABA · Panel del negocio móvil — propuesta</title>
+<link rel="stylesheet" href="proto-shared.css" />
+<style>
+  body { background: var(--t-surface-1); --t-cta-h: 60px; }
+  .screen { max-width: 520px; margin: 0 auto; min-height: 100vh; }
+  main { padding-bottom: var(--t-bottom-reserve); }
+
+  .b-appbar { gap: 10px; padding: 0 12px; }
+  .b-appbar .b-ctx { display: grid; gap: 0; flex: 1; min-width: 0; }
+  .b-appbar .b-ctx h1 { font: var(--t-title-s); }
+  .b-appbar .b-ctx h1, .b-appbar .b-ctx small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .b-appbar .b-ctx small { font: 500 11px/1.2 var(--t-font); color: var(--t-ink-400); }
+  .b-sync { display: inline-flex; align-items: center; gap: 5px; height: 44px; padding: 0 8px;
+    font: var(--t-caption); font-weight: 650; color: var(--t-success-700); }
+  body[data-net="offline"] .b-sync { color: var(--t-warning-700); }
+  body[data-net="syncing"] .b-sync { color: #14459c; }
+
+  .b-strip { display: flex; align-items: center; gap: 8px; padding: 8px 14px; font: var(--t-label); }
+  .b-strip .t-btn { margin-left: auto; }
+
+  .b-searchrow { padding: 10px 14px; background: var(--t-paper); border-bottom: 1px solid var(--t-line-200); }
+  .b-list { display: grid; gap: 10px; padding: 12px 14px; }
+  .o-card { gap: 6px; padding: 11px 13px; }
+
+  /* barra de acción primaria del detalle */
+  .b-actionbar {
+    position: fixed; z-index: var(--t-z-sticky-cta); inset: auto 0 0 0;
+    display: grid; gap: 8px; padding: 10px 14px calc(10px + var(--t-safe-b));
+    background: color-mix(in srgb, var(--t-paper) 96%, transparent);
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    border-top: 1px solid var(--t-line-200);
+  }
+  .b-actionbar .b-sec { display: flex; gap: 8px; }
+  .b-actionbar .b-sec .t-btn { flex: 1; }
+
+  /* En el detalle la nav inferior se retira: es una pantalla apilada con una
+     sola acción primaria. La reserva pasa a ser la altura de la barra de acción. */
+  body[data-screen-mode="detail"] .t-bottomnav { display: none; }
+  body[data-screen-mode="detail"] { --t-nav-block: 0px; --t-cta-block: 122px; }
+  .b-detail { display: grid; gap: 14px; padding: 14px; }
+  .b-kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; padding: 12px 14px; font: var(--t-body-s); }
+  .b-kv dt { color: var(--t-text-secondary); }
+  .b-kv dd { margin: 0; font-weight: 600; text-align: right; }
+  .b-items { display: grid; }
+  .b-item { display: grid; grid-template-columns: 30px 1fr auto; gap: 10px; align-items: center;
+    padding: 10px 14px; font: var(--t-body-s); }
+  .b-item + .b-item { box-shadow: inset 0 1px 0 var(--t-line-100); }
+  .b-item .b-qty { display: grid; place-items: center; width: 30px; height: 30px; border-radius: var(--t-r-xs);
+    background: var(--t-surface-2); font: var(--t-label); font-variant-numeric: tabular-nums; }
+  .b-total { display: flex; align-items: center; padding: 12px 14px; border-top: 1px solid var(--t-line-200); }
+  .b-total strong { margin-left: auto; font: var(--t-price-l); }
+
+  .b-timeline { display: grid; gap: 0; padding: 4px 14px 12px; }
+  .b-tl { display: grid; grid-template-columns: 20px 1fr; gap: 10px; align-items: start; padding: 7px 0; position: relative; }
+  .b-tl::before { content: ""; position: absolute; left: 9px; top: 20px; bottom: -7px; width: 2px; background: var(--t-line-200); }
+  .b-tl:last-child::before { display: none; }
+  .b-tl .b-tl-dot { width: 12px; height: 12px; margin-top: 4px; border-radius: 50%; background: var(--t-line-300);
+    border: 3px solid var(--t-white); box-shadow: 0 0 0 2px var(--t-line-200); }
+  .b-tl.is-done .b-tl-dot { background: var(--t-success-600); box-shadow: 0 0 0 2px var(--t-success-600); }
+  .b-tl.is-now .b-tl-dot { background: var(--t-red-600); box-shadow: 0 0 0 2px var(--t-red-600); }
+  .b-tl small { display: block; font: var(--t-caption); color: var(--t-text-secondary); }
+  .b-tl b { font: var(--t-label); }
+
+  .b-code { display: grid; gap: 4px; justify-items: center; padding: 14px; }
+  .b-code strong { font: 800 26px/1 var(--t-font); letter-spacing: .3em; font-variant-numeric: tabular-nums; }
+
+  .b-back { display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 10px 0 4px;
+    font: var(--t-label); color: var(--t-ink-600); }
+  .b-sections { display: grid; gap: 18px; padding: 14px; }
+</style>
+</head>
+<body data-net="online" data-chrome="mobile">
+
+<div class="demo-bar" data-demo>
+  <strong>Estado</strong>
+  <button data-state="queue" aria-pressed="true">Pedidos nuevos</button>
+  <button data-state="prep">En preparación</button>
+  <button data-state="empty">Sin pedidos</button>
+  <button data-state="detail">Detalle</button>
+  <button data-state="offline">Sin conexión</button>
+  <button data-state="syncing">Sincronizando</button>
+  <span class="demo-sep"></span>
+  <strong>Vista</strong>
+  <button data-view-btn="orders" aria-pressed="true">Pedidos</button>
+  <button data-view-btn="local">Local</button>
+</div>
+
+<div class="screen">
+  <header class="t-appbar b-appbar">
+    <span class="t-wordmark">TABA</span>
+    <span class="b-ctx"><h1>Operación</h1><small data-date>Jue 31 jul · 18 pedidos</small></span>
+    <button class="b-sync" type="button" data-sync-btn>
+      <i class="t-dot"></i><span data-sync-label>Sincronizado</span>
+    </button>
+    <button class="t-iconbtn" type="button" aria-label="Sonido de pedidos nuevos: activado" aria-pressed="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 10v4h3l4 3.5v-11L8 10H5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M16 9.5a3.5 3.5 0 0 1 0 5M18.5 7a7 7 0 0 1 0 10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button class="t-iconbtn" type="button" aria-label="Más opciones">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="5" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="19" r="1.6" fill="currentColor"/></svg>
+    </button>
+  </header>
+
+  <!-- Franja de conexión: sólo aparece cuando NO está sincronizado. Honesta y discreta. -->
+  <div class="r-banner r-banner--offline b-strip" data-strip hidden role="status">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 18.5h.01M4 8.5a13 13 0 0 1 16 0M7 12a8.5 8.5 0 0 1 10 0" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="m3 3 18 18" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+    <span data-strip-text>Sin conexión · último dato 14:32</span>
+    <button class="t-btn t-btn--secondary" type="button" data-retry>Sincronizar</button>
+  </div>
+
+  <main>
+    <!-- ═══════════════════════════ PEDIDOS ═══════════════════════════ -->
+    <section data-screen="orders">
+      <!-- Banda operativa compacta: resumen Y filtro a la vez. 52px, no 4 tarjetas. -->
+      <div class="b-band" role="group" aria-label="Filtrar por estado">
+        <button type="button" data-filter="new" aria-pressed="true"><strong class="t-num" data-c-new>4</strong><small>Nuevos</small><i class="b-band-alert" data-alert></i></button>
+        <button type="button" data-filter="prep" aria-pressed="false"><strong class="t-num" data-c-prep>2</strong><small>Preparando</small></button>
+        <button type="button" data-filter="ready" aria-pressed="false"><strong class="t-num" data-c-ready>1</strong><small>Listos</small></button>
+        <button type="button" data-filter="way" aria-pressed="false"><strong class="t-num" data-c-way>3</strong><small>En camino</small></button>
+      </div>
+
+      <div class="b-searchrow">
+        <label class="t-field">
+          <span class="t-field-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.9"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>
+          <input type="search" data-search placeholder="Buscar por ID, cliente o dirección" aria-label="Buscar pedido" />
+        </label>
+      </div>
+
+      <div class="b-list" data-list></div>
+      <div data-empty hidden></div>
+    </section>
+
+    <!-- ═══════════════════════ DETALLE DE PEDIDO ═══════════════════════ -->
+    <section data-screen="detail" hidden>
+      <div style="padding:6px 10px 0"><button class="b-back" type="button" data-back>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m15 6-6 6 6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Pedidos
+      </button></div>
+      <div class="b-detail">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <h2 class="t-title-l t-num">#A-1042</h2>
+            <span class="t-pill t-pill--danger"><i class="t-dot"></i>Nuevo</span>
+          </div>
+          <p class="t-caption">Recibido 14:18 · hace 6 min · Envío a domicilio</p>
+        </div>
+
+        <div class="t-group">
+          <div class="t-row" style="grid-template-columns:34px 1fr auto">
+            <span class="t-row-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8.5" r="3.4" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c1.2-3.3 3.8-4.9 7-4.9s5.8 1.6 7 4.9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+            <span class="t-row-copy"><strong>M. Álvarez</strong><small>Cliente frecuente · 8 pedidos</small></span>
+            <a class="t-btn t-btn--secondary" href="tel:+540000000000" aria-label="Llamar al cliente">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 4h3l1.6 4-2 1.4a12 12 0 0 0 5 5L14 12.4l4 1.6v3a2 2 0 0 1-2.2 2A15.5 15.5 0 0 1 3 6.2 2 2 0 0 1 5 4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+              Llamar
+            </a>
+          </div>
+          <div class="t-row" style="grid-template-columns:34px 1fr auto">
+            <span class="t-row-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="10" r="2.4" stroke="currentColor" stroke-width="1.7"/></svg></span>
+            <span class="t-row-copy"><strong>Av. Argentina 1450, Neuquén</strong><small>Timbre 3B · portón negro</small></span>
+            <button class="t-btn t-btn--secondary" type="button">Mapa</button>
+          </div>
+        </div>
+
+        <div>
+          <p class="t-group-label">Productos · 4 unidades</p>
+          <div class="t-group">
+            <div class="b-items">
+              <div class="b-item"><span class="b-qty t-num">2</span><span>Coca-Cola Original<br /><small class="t-caption">Botella PET · 500 ml · Pack x12</small></span><strong class="t-num">$ 34.200</strong></div>
+              <div class="b-item"><span class="b-qty t-num">1</span><span>Imperial APA<br /><small class="t-caption">Lata · 473 ml · Unidad</small></span><strong class="t-num">$ 3.000</strong></div>
+              <div class="b-item"><span class="b-qty t-num">1</span><span>Corona Extra<br /><small class="t-caption">Botella · 330 ml · Unidad</small></span><strong class="t-num">$ 3.600</strong></div>
+            </div>
+            <dl class="b-kv" style="border-top:1px solid var(--t-line-200)">
+              <dt>Subtotal</dt><dd class="t-num">$ 40.800</dd>
+              <dt>Envío</dt><dd class="t-num">$ 1.500</dd>
+              <dt>Pago</dt><dd>Efectivo · abona con $ 50.000</dd>
+            </dl>
+            <div class="b-total"><span class="t-title-s">Total</span><strong class="t-num">$ 42.300</strong></div>
+          </div>
+        </div>
+
+        <div>
+          <p class="t-group-label">Entrega</p>
+          <div class="t-group">
+            <div class="b-code">
+              <small class="t-caption">Código que debe decir el cliente</small>
+              <strong class="t-num">4 7 2 9</strong>
+            </div>
+            <hr class="t-horizon" />
+            <button class="t-row" type="button">
+              <span class="t-row-icon t-row-icon--accent"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M4 16V7h11v9M15 10h3l3 3v3h-6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="7.5" cy="17.5" r="1.9" stroke="currentColor" stroke-width="1.7"/><circle cx="17" cy="17.5" r="1.9" stroke="currentColor" stroke-width="1.7"/></svg></span>
+              <span class="t-row-copy"><strong>Asignar rider</strong><small>2 disponibles</small></span>
+              <span class="t-row-value">Sin asignar</span>
+              <svg class="t-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <p class="t-group-label">Seguimiento</p>
+          <div class="t-group">
+            <div class="b-timeline">
+              <div class="b-tl is-done"><i class="b-tl-dot"></i><span><b>Confirmado</b><small>14:18 · pago en efectivo</small></span></div>
+              <div class="b-tl is-now"><i class="b-tl-dot"></i><span><b>Esperando aceptación del local</b><small>hace 6 min</small></span></div>
+              <div class="b-tl"><i class="b-tl-dot"></i><span><b>Preparando</b><small>pendiente</small></span></div>
+              <div class="b-tl"><i class="b-tl-dot"></i><span><b>En camino</b><small>pendiente</small></span></div>
+              <div class="b-tl"><i class="b-tl-dot"></i><span><b>Entregado</b><small>pendiente</small></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════ LOCAL: secciones agrupadas ══════════════════ -->
+    <section data-screen="local" hidden>
+      <div class="b-sections">
+        <div>
+          <p class="t-group-label">Operación</p>
+          <div class="t-group">
+            <button class="t-row" type="button"><span class="t-row-icon t-row-icon--accent"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v4.5l3 1.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><span class="t-row-copy"><strong>Estado del local</strong><small>Cierra 23:30</small></span><span class="t-row-value">Abierto</span><svg class="t-chev" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <button class="t-row" type="button"><span class="t-row-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M4 16V7h11v9M15 10h3l3 3v3h-6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="7.5" cy="17.5" r="1.9" stroke="currentColor" stroke-width="1.7"/><circle cx="17" cy="17.5" r="1.9" stroke="currentColor" stroke-width="1.7"/></svg></span><span class="t-row-copy"><strong>Riders</strong><small>2 en turno · 1 en ruta</small></span><span class="t-row-value">3</span><svg class="t-chev" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <button class="t-row" type="button"><span class="t-row-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="12" rx="2.5" stroke="currentColor" stroke-width="1.8"/><path d="M3 10h18" stroke="currentColor" stroke-width="1.8"/></svg></span><span class="t-row-copy"><strong>Caja</strong><small>Abierta 08:05</small></span><span class="t-row-value t-num">$ 184.300</span><svg class="t-chev" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        </div>
+        <div>
+          <p class="t-group-label">Catálogo</p>
+          <div class="t-group">
+            <button class="t-row" type="button"><span class="t-row-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="4" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.8"/><rect x="4" y="13" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="13" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.8"/></svg></span><span class="t-row-copy"><strong>Productos</strong><small>22 publicados</small></span><span class="t-row-value">22</span><svg class="t-chev" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <button class="t-row" type="button"><span class="t-row-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M4 7h16v12H4zM4 7l2-3h12l2 3" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span><span class="t-row-copy"><strong>Stock</strong><small>1 producto sin precio</small></span><span class="t-pill t-pill--warn"><i class="t-dot"></i>1</span><svg class="t-chev" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        </div>
+        <div>
+          <p class="t-group-label">Negocio</p>
+          <div class="t-group">
+            <button class="t-row" type="button"><span class="t-row-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M4 19V9m5 10V5m5 14v-7m5 7V8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span class="t-row-copy"><strong>Métricas del día</strong><small>Ticket promedio $ 21.400</small></span><span class="t-row-value">18</span><svg class="t-chev" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <button class="t-row" type="button"><span class="t-row-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M6 3h9l4 4v14H6z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 12h7M9 16h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span><span class="t-row-copy"><strong>Reportes</strong><small>Cierre y exportación</small></span><span class="t-row-value"></span><svg class="t-chev" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <button class="t-row" type="button"><span class="t-row-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.8"/><path d="M12 3.5v2.2M12 18.3v2.2M20.5 12h-2.2M5.7 12H3.5M17.9 6.1l-1.6 1.6M7.7 16.3l-1.6 1.6M17.9 17.9l-1.6-1.6M7.7 7.7 6.1 6.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><span class="t-row-copy"><strong>Configuración</strong><small>Horarios, envío, usuarios</small></span><span class="t-row-value"></span><svg class="t-chev" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        </div>
+        <button class="t-btn t-btn--danger t-btn--block" type="button">Salir del panel</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Acción primaria sticky del detalle: una sola CTA, destructivas separadas -->
+  <div class="b-actionbar" data-actionbar hidden>
+    <button class="t-btn t-btn--primary t-btn--lg t-btn--block" type="button" data-primary-action>Aceptar y comenzar preparación</button>
+    <div class="b-sec">
+      <button class="t-btn t-btn--secondary" type="button">Demorar 10 min</button>
+      <button class="t-btn t-btn--danger" type="button">Rechazar…</button>
+    </div>
+  </div>
+
+  <nav class="t-bottomnav" aria-label="Navegación del negocio">
+    <button type="button" data-nav="orders" aria-current="page">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 4h14v16l-3-2-2 2-2-2-2 2-3-2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 9h6M9 13h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      Pedidos
+    </button>
+    <button type="button" data-nav="riders">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 16V7h11v9M15 10h3l3 3v3h-6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="7.5" cy="17.5" r="1.9" stroke="currentColor" stroke-width="1.7"/><circle cx="17" cy="17.5" r="1.9" stroke="currentColor" stroke-width="1.7"/></svg>
+      Riders
+    </button>
+    <button type="button" data-nav="local">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 10 12 4l8 6v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      Local
+    </button>
+    <button type="button" data-nav="cash">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2.5" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="2.6" stroke="currentColor" stroke-width="1.8"/></svg>
+      Caja
+    </button>
+  </nav>
+
+  <div class="t-toast" role="status" data-toast hidden><span></span></div>
+</div>
+
+<script>
+/* Datos sintéticos. Sin PII real: iniciales, direcciones de referencia pública. */
+const ORDERS = [
+  { id:"A-1042", t:"14:18", mins:6,  who:"M. Álvarez",  mode:"Envío",  addr:"Av. Argentina 1450",     items:4, total:42300, st:"new"   },
+  { id:"A-1041", t:"14:11", mins:13, who:"J. Sosa",     mode:"Retiro", addr:"Retira en el local",      items:2, total:20000, st:"new"   },
+  { id:"A-1040", t:"14:04", mins:20, who:"C. Painé",    mode:"Envío",  addr:"Ministro González 233",  items:6, total:58900, st:"new", late:true },
+  { id:"A-1039", t:"13:58", mins:26, who:"R. Quiroga",  mode:"Envío",  addr:"Belgrano 780",            items:3, total:26100, st:"new"   },
+  { id:"A-1038", t:"13:47", mins:37, who:"L. Fuentes",  mode:"Envío",  addr:"Perito Moreno 1120",      items:5, total:47500, st:"prep"  },
+  { id:"A-1037", t:"13:41", mins:43, who:"S. Barrientos",mode:"Retiro",addr:"Retira en el local",      items:1, total:17100, st:"prep"  },
+  { id:"A-1036", t:"13:30", mins:54, who:"D. Millán",   mode:"Envío",  addr:"Rivadavia 455",           items:2, total:23000, st:"ready" },
+  { id:"A-1035", t:"13:12", mins:72, who:"P. Curruhuinca",mode:"Envío",addr:"Alderete 90",             items:4, total:39200, st:"way"   },
+  { id:"A-1034", t:"13:05", mins:79, who:"N. Godoy",    mode:"Envío",  addr:"Roca 612",                items:3, total:31500, st:"way"   },
+  { id:"A-1033", t:"12:52", mins:92, who:"F. Antileo",  mode:"Envío",  addr:"Talero 340",              items:2, total:20600, st:"way"   },
+];
+
+const LABEL = { new:["Nuevo","t-pill--danger"], prep:["Preparando","t-pill--warn"], ready:["Listo","t-pill--ok"], way:["En camino","t-pill--info"] };
+const ACTION = { new:"Aceptar", prep:"Marcar listo", ready:"Entregar a rider", way:"Ver seguimiento" };
+const CLS = { new:"is-new", prep:"is-prep", ready:"is-ready", way:"is-way" };
+
+const S = { filter:"new", q:"", screen:"orders", net:"online", orders:[...ORDERS] };
+const $ = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const money = n => "$ " + n.toLocaleString("es-AR");
+
+function orderCard(o){
+  const [lab,cls] = LABEL[o.st];
+  return `<article class="o-card ${CLS[o.st]}${o.late?" is-late":""}">
+    <div class="o-head">
+      <span class="o-id t-num">#${o.id}</span>
+      <span class="t-pill ${cls}"><i class="t-dot"></i>${lab}</span>
+      ${o.late?'<span class="t-pill t-pill--warn"><i class="t-dot"></i>Demorado</span>':""}
+      <span class="o-time t-num">${o.t} · ${o.mins}′</span>
+    </div>
+    <div class="o-line"><span class="o-strong">${esc(o.who)}</span><span>·</span><span>${o.mode}</span></div>
+    <div class="o-line o-trunc">${esc(o.addr)}</div>
+    <div class="o-foot">
+      <span class="t-caption t-num">${o.items} ${o.items===1?"artículo":"artículos"}</span>
+      <span class="o-total t-num">${money(o.total)}</span>
+    </div>
+    <button class="t-btn t-btn--dark t-btn--block" type="button" data-open="${o.id}">${ACTION[o.st]}</button>
+  </article>`;
+}
+
+function emptyFor(){
+  if (S.net === "offline") return `<div class="t-empty"><span class="t-empty-mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 18.5h.01M4 8.5a13 13 0 0 1 16 0M7 12a8.5 8.5 0 0 1 10 0" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="m3 3 18 18" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>
+    <h3>Sin conexión</h3><p>Mostramos los últimos pedidos recibidos a las 14:32. No se pierden: se sincronizan solos al volver la señal.</p>
+    <div class="t-empty-actions"><button class="t-btn t-btn--primary" type="button" data-retry>Sincronizar ahora</button></div></div>`;
+  if (S.q) return `<div class="t-empty"><span class="t-empty-mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.9"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>
+    <h3>Sin resultados para “${esc(S.q)}”</h3><p>Probá con el número de pedido completo o el nombre del cliente.</p>
+    <div class="t-empty-actions"><button class="t-btn t-btn--primary" type="button" data-clear>Limpiar búsqueda</button></div></div>`;
+  return `<div class="t-empty"><span class="t-empty-mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 4h14v16l-3-2-2 2-2-2-2 2-3-2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span>
+    <h3>No hay pedidos en esta cola</h3><p>Cuando entre un pedido nuevo suena una alerta y aparece acá arriba.</p>
+    <div class="t-empty-actions"><button class="t-btn t-btn--secondary" type="button" data-filter-all>Ver todos los estados</button></div></div>`;
+}
+
+function render(){
+  document.body.dataset.net = S.net;
+  const counts = { new:0, prep:0, ready:0, way:0 };
+  S.orders.forEach(o=>counts[o.st]++);
+  $("[data-c-new]").textContent = counts.new;
+  $("[data-c-prep]").textContent = counts.prep;
+  $("[data-c-ready]").textContent = counts.ready;
+  $("[data-c-way]").textContent = counts.way;
+  $("[data-alert]").hidden = !counts.new;
+
+  $$("[data-filter]").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.filter === S.filter)));
+
+  const q = S.q.trim().toLowerCase();
+  const list = S.orders.filter(o =>
+    (S.filter === "all" || o.st === S.filter) &&
+    (!q || (o.id + " " + o.who + " " + o.addr).toLowerCase().includes(q)));
+
+  $("[data-list]").hidden = !list.length;
+  $("[data-list]").innerHTML = list.map(orderCard).join("");
+  $("[data-empty]").hidden = !!list.length;
+  $("[data-empty]").innerHTML = list.length ? "" : emptyFor();
+
+  const label = { online:"Sincronizado", syncing:"Reconectando…", offline:"Sin conexión" }[S.net];
+  $("[data-sync-label]").textContent = label;
+  $("[data-strip]").hidden = S.net === "online";
+  $("[data-strip]").className = "r-banner b-strip " + (S.net === "offline" ? "r-banner--offline" : "r-banner--sync");
+  $("[data-strip-text]").textContent = S.net === "offline"
+    ? "Sin conexión · último dato 14:32" : "Reconectando · 2 cambios en cola";
+
+  $$("[data-screen]").forEach(s=>s.hidden = s.dataset.screen !== S.screen);
+  $("[data-actionbar]").hidden = S.screen !== "detail";
+  document.body.dataset.screenMode = S.screen;
+  $$("[data-nav]").forEach(b=>{
+    const on = (S.screen === "detail" ? "orders" : S.screen) === b.dataset.nav;
+    on ? b.setAttribute("aria-current","page") : b.removeAttribute("aria-current");
+  });
+  $$("[data-view-btn]").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.viewBtn === S.screen)));
+}
+
+document.addEventListener("click", e=>{
+  const t = e.target.closest("[data-filter],[data-open],[data-back],[data-nav],[data-view-btn],[data-state],[data-retry],[data-clear],[data-filter-all],[data-sync-btn]");
+  if (!t) return;
+  if (t.dataset.filter) S.filter = t.dataset.filter;
+  if (t.hasAttribute("data-filter-all")) S.filter = "all";
+  if (t.dataset.open) S.screen = "detail";
+  if (t.hasAttribute("data-back")) S.screen = "orders";
+  if (t.dataset.nav) S.screen = t.dataset.nav === "riders" || t.dataset.nav === "cash" ? "local" : t.dataset.nav;
+  if (t.dataset.viewBtn) S.screen = t.dataset.viewBtn;
+  if (t.hasAttribute("data-clear")) S.q = "";
+  if (t.hasAttribute("data-retry") || t.hasAttribute("data-sync-btn")) { S.net = "syncing"; setTimeout(()=>{ S.net="online"; render(); }, 1400); }
+  if (t.dataset.state) setState(t.dataset.state);
+  window.scrollTo(0,0);
+  render();
+});
+$("[data-search]").addEventListener("input", e=>{ S.q = e.target.value; render(); });
+
+function setState(n){
+  $$("[data-state]").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.state===n)));
+  S.net = "online"; S.q = ""; S.screen = "orders"; S.orders = [...ORDERS]; S.filter = "new";
+  if (n === "prep")    S.filter = "prep";
+  if (n === "empty")   { S.orders = []; S.filter = "new"; }
+  if (n === "detail")  S.screen = "detail";
+  if (n === "offline") { S.net = "offline"; S.orders = []; }
+  if (n === "syncing") S.net = "syncing";
+}
+
+const U = new URLSearchParams(location.search);
+if (U.get("chrome") === "0") $("[data-demo]").hidden = true;
+setState(U.get("state") || "queue");
+if (U.get("view")) S.screen = U.get("view");
+render();
+</script>
+</body>
+</html>

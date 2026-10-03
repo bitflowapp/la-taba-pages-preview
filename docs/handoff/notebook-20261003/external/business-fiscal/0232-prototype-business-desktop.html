@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TABA — Panel del negocio escritorio (prototipo)</title>
+<link rel="stylesheet" href="prototype-shared.css">
+<style>
+  body { background: var(--taba-surface-sunken); overflow: hidden; }
+
+  .app {
+    display: grid;
+    grid-template-columns: 216px 360px minmax(0, 1fr);
+    grid-template-rows: 56px 56px minmax(0, 1fr);
+    grid-template-areas:
+      "side top top"
+      "side metrics metrics"
+      "side queue inspector";
+    height: 100vh;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .side {
+    grid-area: side;
+    background: var(--taba-surface-inverse);
+    display: grid;
+    grid-template-rows: 56px minmax(0, 1fr) auto;
+    overflow: hidden;
+  }
+  .side-brand { display: flex; align-items: center; padding: 0 var(--space-5); }
+  .side-nav { padding: var(--space-3) var(--space-2); overflow-y: auto; }
+  .side-group {
+    margin: var(--space-4) var(--space-3) var(--space-1);
+    font-size: var(--text-caps); font-weight: 800;
+    letter-spacing: var(--tracking-caps); text-transform: uppercase;
+    color: rgb(255 255 255 / 42%);
+  }
+  .side-item {
+    position: relative;
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: var(--tap);
+    padding: 0 12px;
+    border: 0; background: none; border-radius: var(--radius-xs);
+    color: rgb(255 255 255 / 88%);
+    font-size: var(--text-meta); font-weight: 700;
+    text-align: left;
+  }
+  .side-item svg { width: 18px; height: 18px; }
+  .side-item:hover { background: rgb(255 255 255 / 6%); }
+  .side-item.is-on { background: rgb(255 255 255 / 9%); color: #fff; font-weight: 800; }
+  .side-item.is-on::before {
+    content: ""; position: absolute; left: 0; top: 8px; bottom: 8px;
+    width: 3px; border-radius: 0 3px 3px 0; background: var(--taba-red);
+  }
+  .side-badge {
+    min-width: 20px; height: 20px; padding: 0 6px;
+    display: grid; place-items: center; border-radius: var(--radius-pill);
+    background: var(--taba-red); color: #fff; font-size: 11px; font-weight: 900;
+  }
+  .side-badge.quiet { background: rgb(255 255 255 / 14%); color: rgb(255 255 255 / 78%); }
+  .side-foot { padding: var(--space-3); border-top: 1px solid rgb(255 255 255 / 8%); }
+
+  /* ---------- Barra superior ---------- */
+  .top {
+    grid-area: top;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: var(--space-4);
+    padding: 0 var(--space-6);
+    background: var(--taba-surface);
+    border-bottom: 1px solid var(--taba-border);
+  }
+  .top .biz { font-size: var(--text-body-lg); font-weight: 850; }
+  .top .biz span { color: var(--taba-muted); font-weight: 600; }
+  .top .right { display: flex; align-items: center; gap: var(--space-4); }
+  .top .date { font-size: var(--text-meta); color: var(--taba-muted); font-weight: 700; }
+
+  /* ---------- Franja de métricas ---------- */
+  .metrics {
+    grid-area: metrics;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    background: var(--taba-surface);
+    border-bottom: 1px solid var(--taba-border);
+  }
+  .metric {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: var(--space-2);
+    padding: 0 var(--space-5);
+    border: 0; background: none; text-align: left;
+  }
+  .metric + .metric { border-left: 1px solid var(--taba-separator); }
+  .metric strong { font-size: 20px; font-weight: 900; }
+  .metric span { font-size: var(--text-micro); font-weight: 700; color: var(--taba-muted); }
+  .metric.m-new strong { color: var(--prio-new); }
+  .metric.m-prep strong { color: var(--prio-prep); }
+  .metric.m-ready strong { color: var(--prio-ready); }
+  .metric.m-transit strong { color: var(--prio-transit); }
+
+  /* ---------- Cola ---------- */
+  .queue {
+    grid-area: queue;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    background: var(--taba-surface);
+    border-right: 1px solid var(--taba-border);
+    overflow: hidden;
+  }
+  .queue-head { padding: var(--space-3) var(--space-4); display: grid; gap: var(--space-2); }
+  .q-search {
+    display: flex; align-items: center; gap: 8px;
+    height: 40px; padding: 0 12px;
+    border: 1px solid var(--taba-border); border-radius: var(--radius-sm);
+    background: var(--taba-surface-sunken);
+  }
+  .q-search svg { width: 16px; height: 16px; color: var(--taba-muted); }
+  .q-search { height: var(--tap); }
+  .q-search input { flex: 1; min-width: 0; height: 100%; border: 0; background: none; outline: 0; font: inherit; font-size: var(--text-meta); }
+  .seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; padding: 3px; background: var(--taba-surface-sunken); border-radius: var(--radius-sm); }
+  .seg button {
+    min-height: 38px; border: 0; border-radius: var(--radius-xs);
+    background: none; font-size: var(--text-micro); font-weight: 800; color: var(--taba-muted);
+  }
+  .seg button.is-on { background: var(--taba-surface); color: var(--taba-ink); box-shadow: var(--shadow-xs); }
+  .queue-list { overflow-y: auto; }
+  .queue-item {
+    position: relative;
+    display: grid; gap: 4px;
+    width: 100%;
+    padding: var(--space-3) var(--space-4) var(--space-3) var(--space-5);
+    border: 0; border-bottom: 1px solid var(--taba-separator);
+    background: none; text-align: left;
+  }
+  .queue-item::before {
+    content: ""; position: absolute; left: 0; top: 10px; bottom: 10px;
+    width: 3px; border-radius: 0 3px 3px 0; background: var(--prio-new);
+  }
+  .queue-item.q-prep::before { background: var(--prio-prep); }
+  .queue-item.q-ready::before { background: var(--prio-ready); }
+  .queue-item.q-transit::before { background: var(--prio-transit); }
+  .queue-item:hover { background: var(--taba-surface-sunken); }
+  .queue-item.is-sel { background: var(--taba-surface-sunken); }
+  .queue-item.is-sel::after {
+    content: ""; position: absolute; right: 0; top: 0; bottom: 0; width: 3px;
+    background: var(--taba-ink);
+  }
+  .qi-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+  .qi-id { font-size: var(--text-body-lg); font-weight: 900; }
+  .qi-time, .qi-meta { font-size: var(--text-micro); color: var(--taba-muted); font-weight: 600; }
+  .qi-total { font-size: var(--text-body); font-weight: 900; }
+
+  /* ---------- Inspector ---------- */
+  .inspector {
+    grid-area: inspector;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    background: var(--taba-surface);
+    overflow: hidden;
+  }
+  .insp-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: var(--space-4) var(--space-6);
+    border-bottom: 1px solid var(--taba-border);
+  }
+  .insp-head h2 { font-size: 22px; font-weight: 900; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 26px; padding: 0 10px; border-radius: var(--radius-pill);
+    background: var(--taba-red-soft); color: var(--taba-red);
+    font-size: var(--text-micro); font-weight: 850;
+  }
+  .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .insp-body {
+    overflow-y: auto;
+    padding: var(--space-5) var(--space-6);
+    display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    gap: var(--space-6);
+    align-content: start;
+  }
+  .block { display: grid; gap: var(--space-2); align-content: start; }
+  .block h3 {
+    font-size: var(--text-caps); font-weight: 800; letter-spacing: var(--tracking-caps);
+    text-transform: uppercase; color: var(--taba-muted);
+  }
+  .cust-name { font-size: var(--text-title); font-weight: 850; }
+  .row-line { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+  .muted { color: var(--taba-muted); font-size: var(--text-meta); }
+  .items { display: grid; gap: 6px; }
+  .item { display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-body); }
+  .item .q { color: var(--taba-muted); font-weight: 700; }
+  .total-line {
+    display: flex; justify-content: space-between;
+    padding-top: var(--space-3); border-top: 1px solid var(--taba-border);
+    font-size: var(--text-title); font-weight: 900;
+  }
+  .code {
+    display: grid; gap: 4px; justify-items: center;
+    padding: var(--space-4);
+    background: var(--taba-surface-sunken); border-radius: var(--radius-md);
+  }
+  .code strong { font-size: 34px; font-weight: 900; letter-spacing: .22em; font-variant-numeric: tabular-nums; }
+  .timeline { display: grid; gap: 10px; }
+  .tl { display: grid; grid-template-columns: 12px auto minmax(0,1fr); gap: 10px; align-items: center; font-size: var(--text-meta); }
+  .tl i { width: 9px; height: 9px; border-radius: 50%; background: var(--taba-ink); }
+  .tl.future i { background: transparent; box-shadow: inset 0 0 0 2px #c9c9ce; }
+  .tl.future { color: var(--taba-muted); }
+  .tl time { font-variant-numeric: tabular-nums; color: var(--taba-muted); }
+  .insp-foot {
+    display: flex; align-items: center; justify-content: flex-end; gap: var(--space-3);
+    padding: var(--space-4) var(--space-6);
+    border-top: 1px solid var(--taba-border);
+    background: var(--taba-surface);
+  }
+
+  @media (max-width: 1439px) {
+    .insp-body { grid-template-columns: minmax(0, 1fr); }
+    .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .metric.m-billed { display: none; }
+  }
+  @media (max-width: 1279px) {
+    .app { grid-template-columns: 64px 320px minmax(0, 1fr); }
+    .side-item { grid-template-columns: 20px; justify-items: center; padding: 0; }
+    .side-item span:not(.side-badge) { display: none; }
+    .side-badge { position: absolute; top: 2px; right: 6px; }
+    .side-group, .side-brand .brand-word { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <aside class="side">
+    <div class="side-brand"><span class="brand-mark"><span class="brand-word">TABA</span></span></div>
+    <nav class="side-nav" aria-label="Secciones del negocio">
+      <p class="side-group">Operación</p>
+      <button class="side-item is-on" type="button" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M5 6h14M5 12h14M5 18h9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Pedidos</span><span class="side-badge">3</span>
+      </button>
+      <button class="side-item" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/><path d="M12 8v4.4l2.8 1.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>En preparación</span><span class="side-badge quiet">2</span>
+      </button>
+      <button class="side-item" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M3 16V7h11v9M14 10h4l3 3v3h-7" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="7" cy="17.5" r="1.8" stroke="currentColor" stroke-width="1.6"/><circle cx="17" cy="17.5" r="1.8" stroke="currentColor" stroke-width="1.6"/></svg>
+        <span>Rider</span><span class="side-badge quiet">1</span>
+      </button>
+
+      <p class="side-group">Negocio</p>
+      <button class="side-item" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="16" height="14" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M4 10h16" stroke="currentColor" stroke-width="1.7"/></svg>
+        <span>Catálogo</span><span class="side-badge quiet">22</span>
+      </button>
+      <button class="side-item" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 8.5 12 4l8 4.5v7L12 20l-8-4.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        <span>Stock</span><span class="side-badge quiet">3</span>
+      </button>
+      <button class="side-item" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="2.4" stroke="currentColor" stroke-width="1.7"/></svg>
+        <span>Caja</span>
+      </button>
+
+      <p class="side-group">Análisis</p>
+      <button class="side-item" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M5 19V11M12 19V5M19 19v-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Métricas</span>
+      </button>
+      <button class="side-item" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M7 4h7l4 4v12H7Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M10 13h6M10 16h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <span>Reportes</span>
+      </button>
+      <button class="side-item" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <span>Configuración</span>
+      </button>
+    </nav>
+    <div class="side-foot">
+      <button class="side-item" type="button">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M14 5h4a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-4M10 12H3m0 0 3-3m-3 3 3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Salir</span>
+      </button>
+    </div>
+  </aside>
+
+  <header class="top">
+    <span class="biz">TABA <span>· Sucursal Centro</span></span>
+    <span class="right">
+      <span class="date">jueves 30 de julio</span>
+      <span class="sync-chip is-live" aria-live="polite">Sincronizado · 12:04</span>
+    </span>
+  </header>
+
+  <div class="metrics" role="group" aria-label="Resumen del turno">
+    <button class="metric m-new" type="button" aria-pressed="true"><strong>3</strong><span>Nuevos</span></button>
+    <button class="metric m-prep" type="button" aria-pressed="false"><strong>2</strong><span>En preparación</span></button>
+    <button class="metric m-ready" type="button" aria-pressed="false"><strong>1</strong><span>Listos</span></button>
+    <button class="metric m-transit" type="button" aria-pressed="false"><strong>2</strong><span>En camino</span></button>
+    <button class="metric m-billed" type="button"><strong>$ 124.500</strong><span>Facturado hoy</span></button>
+  </div>
+
+  <section class="queue" aria-label="Cola de pedidos">
+    <div class="queue-head">
+      <label class="q-search">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.9"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+        <input type="search" placeholder="ID, cliente o dirección" aria-label="Buscar pedido">
+      </label>
+      <div class="seg" role="tablist">
+        <button class="is-on" role="tab" aria-selected="true">Nuevos</button>
+        <button role="tab" aria-selected="false">Prep.</button>
+        <button role="tab" aria-selected="false">Listos</button>
+        <button role="tab" aria-selected="false">Todos</button>
+      </div>
+    </div>
+    <div class="queue-list" role="listbox" aria-label="Pedidos">
+      <button class="queue-item is-sel" role="option" aria-selected="true">
+        <span class="qi-row"><span class="qi-id">#1042</span><span class="qi-time">hace 2 min</span></span>
+        <span class="qi-meta">Cliente D. · Delivery · Av. Argentina 450</span>
+        <span class="qi-row"><span class="qi-meta">3 productos</span><span class="qi-total">$ 51.300</span></span>
+      </button>
+      <button class="queue-item" role="option" aria-selected="false">
+        <span class="qi-row"><span class="qi-id">#1041</span><span class="qi-time">hace 6 min</span></span>
+        <span class="qi-meta">Cliente M. · Retiro en local</span>
+        <span class="qi-row"><span class="qi-meta">1 producto</span><span class="qi-total">$ 17.100</span></span>
+      </button>
+      <button class="queue-item" role="option" aria-selected="false">
+        <span class="qi-row"><span class="qi-id">#1040</span><span class="qi-time">hace 14 min</span></span>
+        <span class="qi-meta">Cliente R. · Delivery · Olascoaga 755</span>
+        <span class="qi-row"><span class="qi-meta">5 productos</span><span class="qi-total">$ 41.900</span></span>
+      </button>
+      <button class="queue-item q-prep" role="option" aria-selected="false">
+        <span class="qi-row"><span class="qi-id">#1039</span><span class="qi-time">hace 21 min</span></span>
+        <span class="qi-meta">Cliente S. · Delivery · Belgrano 333</span>
+        <span class="qi-row"><span class="qi-meta">2 productos</span><span class="qi-total">$ 34.200</span></span>
+      </button>
+      <button class="queue-item q-prep" role="option" aria-selected="false">
+        <span class="qi-row"><span class="qi-id">#1038</span><span class="qi-time">hace 26 min</span></span>
+        <span class="qi-meta">Cliente L. · Retiro en local</span>
+        <span class="qi-row"><span class="qi-meta">4 productos</span><span class="qi-total">$ 62.800</span></span>
+      </button>
+      <button class="queue-item q-ready" role="option" aria-selected="false">
+        <span class="qi-row"><span class="qi-id">#1037</span><span class="qi-time">hace 33 min</span></span>
+        <span class="qi-meta">Cliente P. · Delivery · Roca 1220</span>
+        <span class="qi-row"><span class="qi-meta">1 producto</span><span class="qi-total">$ 19.999</span></span>
+      </button>
+      <button class="queue-item q-transit" role="option" aria-selected="false">
+        <span class="qi-row"><span class="qi-id">#1036</span><span class="qi-time">hace 41 min</span></span>
+        <span class="qi-meta">Cliente A. · Delivery · Independencia 512</span>
+        <span class="qi-row"><span class="qi-meta">3 productos</span><span class="qi-total">$ 48.700</span></span>
+      </button>
+    </div>
+  </section>
+
+  <section class="inspector" aria-label="Detalle del pedido" aria-live="polite">
+    <div class="insp-head">
+      <h2>#1042</h2>
+      <span class="pill">Nuevo · hace 2 min</span>
+    </div>
+
+    <div class="insp-body">
+      <div style="display:grid;gap:var(--space-5);align-content:start">
+        <div class="block">
+          <h3>Cliente</h3>
+          <p class="cust-name">Cliente Demo</p>
+          <div class="row-line">
+            <span class="muted">299 000 0001</span>
+            <button class="btn btn-secondary" type="button" style="min-height:36px;padding:0 14px">Llamar</button>
+          </div>
+        </div>
+
+        <div class="block">
+          <h3>Entrega</h3>
+          <p style="font-weight:700">Delivery</p>
+          <p class="muted">Avenida Argentina 450 · Neuquén Capital</p>
+          <p class="muted">Portón negro, timbre 2</p>
+        </div>
+
+        <div class="block">
+          <h3>Productos</h3>
+          <div class="items">
+            <span class="item"><span><span class="q">2×</span> Coca-Cola Original · PET 500 ml x12</span><span>$ 34.200</span></span>
+            <span class="item"><span><span class="q">1×</span> Sprite · PET 500 ml x12</span><span>$ 17.100</span></span>
+          </div>
+          <div class="total-line"><span>Total</span><span>$ 51.300</span></div>
+        </div>
+      </div>
+
+      <div style="display:grid;gap:var(--space-5);align-content:start">
+        <div class="block">
+          <h3>Código de entrega</h3>
+          <div class="code"><strong>4729</strong><span class="muted">El cliente lo dicta al recibir</span></div>
+        </div>
+
+        <div class="block">
+          <h3>Historial</h3>
+          <div class="timeline">
+            <span class="tl"><i></i><time>12:02</time><span>Pedido recibido</span></span>
+            <span class="tl future"><i></i><time>—</time><span>Aceptado</span></span>
+            <span class="tl future"><i></i><time>—</time><span>Listo</span></span>
+            <span class="tl future"><i></i><time>—</time><span>En reparto</span></span>
+          </div>
+        </div>
+
+        <div class="block">
+          <h3>Rider</h3>
+          <div class="taba-group">
+            <button class="taba-row" type="button">
+              <span class="taba-row-ico"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8.5" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M5 20a7 7 0 0 1 14 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+              <span class="taba-row-title">Asignar rider</span>
+              <span class="taba-row-state">Sin asignar</span>
+              <span class="taba-row-chev" aria-hidden="true">›</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="insp-foot">
+      <button class="btn btn-ghost" type="button">Rechazar</button>
+      <button class="btn btn-primary" type="button">Aceptar y preparar</button>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

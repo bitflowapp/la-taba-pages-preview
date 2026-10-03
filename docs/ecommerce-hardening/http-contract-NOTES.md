@@ -11,8 +11,9 @@ desde los commits si la sesión se corta. Base local: PG17 + shims (no es un sta
 | 2. Generador `scripts/db/wrap-api-boundary.mjs` + prueba unitaria | HECHO |
 | 3. Migración `20261002090000` + reversión con guardas | HECHO (canónica verde, simulacro de reversión) |
 | 4. pgTAP `http_error_contract_test.sql` (42) + registro en el runner (5938) + prueba Node | HECHO |
-| 5. Prueba HTTP + `REFUSAL_STATUS` del certificador | REFUSAL_STATUS hecho (55000→409, P0002→404); prueba HTTP pendiente |
-| 6. Política `http-contract.{json,md}`, impacto en clientes, `20261002091000` | json hecho (exclusiones y estados); md pendiente |
+| 5. Prueba HTTP + `REFUSAL_STATUS` del certificador | HECHO (11 casos antes/después por PostgREST 14.5; costo medido) |
+| 6. Política `http-contract.{json,md}`, impacto en clientes | HECHO |
+| 7. `20261002091000` (RAISE sin errcode en funciones de cliente) | pendiente (opcional) |
 
 ## Verificado (comandos y conteos exactos)
 
@@ -63,6 +64,50 @@ Por eso el pgTAP afirma: estructura (marcador, manejador exacto, regla directa, 
 comportamiento anidado y sin request.method (original letra por letra, con detalle y pista) y los manejadores
 internos. La conversión a PGRST → 409/404 se prueba por HTTP (sección siguiente) y la prueba el certificador en CI.
 
+### Prueba HTTP (PostgREST 14.5 real, antes y después, mismo pedido)
+
+Dos PostgREST propios: `55591` sobre `taba_wph_before` (base sin la migración) y `55590` sobre `taba_wph_http`
+(con la migración), los dos con el mismo fixture comprometido (el de la sección 2 del pgTAP). Scripts del scratch:
+`http-proof.mjs` y `http-proof-2.mjs`. Resultado (cuerpo idéntico byte a byte en todos):
+
+| Llamada | Antes | Después |
+|---|---:|---:|
+| `create_order_with_items` producto no disponible | 500 | **409** |
+| `create_order_with_items` OUT_OF_DELIVERY_ZONE (con details y hint) | 500 | **409** |
+| `create_order_with_items` ALCOHOL_WINDOW_CLOSED | 500 | **409** |
+| `create_order_with_items` BUSINESS_CLOSED (con hint) | 500 | **409** |
+| `cancel_own_order` pedido inexistente | 500 | **404** |
+| `transition_order` pedido inexistente | 500 | **404** |
+| `set_service_enforcement` ENFORCEMENT_LOCKED (con details y hint) | 500 | **409** |
+| `platform_verify_business_ordering` comercio inexistente (service_role) | 500 | **404** |
+| `platform_verify_business_ordering` OPENING_NOT_READY (lista en details) | 500 | **409** |
+| PATCH `businesses.currency_code` como service_role (trigger) | 500 | **409** |
+| PATCH `businesses.currency_code` como dueño (trigger) | 500 | **409** |
+| control: `create_order_with_items` feliz | 200 | 200 |
+| control: `platform_verify...` con verificador inexistente (22023) | 400 | 400 |
+| control: `pos_get_store_overview` excluida (42501) | 403 | 403 |
+
+### Costo en la puerta del pedido
+
+`perf.mjs` (scratch): `create_order_with_items` ×200 por base, como la API (`request.method` puesto, rol
+authenticated), rondas alternadas antes/después después de calentar: antes p50 6,84 ms · p95 9,73 · media 7,61;
+después p50 7,48 · p95 11,72 · media 8,55. **+0,64 ms p50, +0,94 ms media** (dos capas envueltas en ese camino).
+
+### Clientes y Edge Functions (grep de js/, apps/, supabase/functions, scripts/)
+
+- `js/repositories/supabase-business-repository.js:173` `classifyRpcError`: `status >= 500` → reintentable. Probado
+  con node: 409+55000 → `{retryable:false, code:'55000'}` (antes 500 → `SERVER_UNAVAILABLE` reintentable);
+  404+P0002 → `NOT_FOUND` (igual que antes: decide por código). Sus pruebas
+  (`tests/business-repositories.test.mjs:25-28`) no cubren 55000 y no cambian.
+- `js/production-operations.js:1827` y `:1839`: `retryable` = estado 0 o ≥ 500 → con 409 la negativa queda final.
+- `supabase/functions`: deciden por `code` (`_shared/checkout-refusal.ts`); los únicos predicados por estado
+  (`_shared/mercadopago.ts:442`, `_shared/seller-oauth.ts:382`) son de respuestas de Mercado Pago, no de PostgREST.
+  Los mocks Deno de RPC con 55000 usan estado 400 y deciden por código: no dependen del 500.
+- `scripts/payments/reconciliation/sources.mjs:534`: respuestas del proveedor, no de PostgREST.
+  `scripts/e2e-staging/ecommerce/local-target.mjs:367`: 500 · 57014 del OpenAPI, no cambia.
+- `apps/rider-android`: sin dependencias del estado 500 ni de estos códigos (grep sin resultados).
+- No se cambió código de cliente.
+
 ## Cambios en pruebas existentes (codificaban el estado viejo como contrato)
 
 - `tests/ecommerce-certifier-cli.test.mjs`: `REFUSAL_STATUS[55000]` 500→409, `REFUSAL_STATUS.P0002` 500→404 y la
@@ -74,7 +119,15 @@ internos. La conversión a PGRST → 409/404 se prueba por HTTP (sección siguie
   afirma `unsellable.http === 500` sin condición: con esta rama va a FALLAR (contesta 409). Hay que retirarlo o
   invertirlo (p. ej. `API_01_BUSINESS_REFUSAL_55000_ANSWERS_HTTP_409`). El comentario de `phases/inventory.mjs`
   (línea ~58) que lo menciona también queda viejo.
-- Registro API-01 (no lo edité). Texto propuesto para `notes` y `fixed_by`: ver «Registro API-01» abajo.
+- Registro API-01 (no lo edité). Propuesta: `status: fixed`, `fixed_by: "20261002090000"`, y en `notes`:
+  «Cerrado del lado del servidor (decisión del dueño). 20261002090000 envuelve el cuerpo vigente de 109 funciones de
+  entrada en un manejador de frontera: sólo por la API (request.method) y sólo en el marco PL/pgSQL más externo,
+  55000 sale como HTTP 409 y P0002 como HTTP 404, con el mismo cuerpo (code, message, details, hint). Llamadas sin
+  request.method y llamadores PL/pgSQL anidados ven el SQLSTATE original. Política: docs/ecommerce-hardening/
+  http-contract.md. Medido por un PostgREST 14.5 real: 11 negativas antes 500 / después 409-404, cuerpo idéntico.
+  Quedan en 500, por dueño: Caja/POS, fiscal, agente de impresión y los seis cobros heredados (40 entradas), y las dos
+  entradas SQL mp_consume_oauth / mp_claim_refresh. El cliente (classifyRpcError y la cola del Panel) ya trata un 409
+  como definitivo: no hace falta tocar js/.» C-2 (P0002 → 500) queda cerrado por la misma migración.
 
 ## Decisiones
 

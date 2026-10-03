@@ -41,4 +41,20 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
 
 ## Bitácora
 
-- 08:40 — checkpoint inicial; preflight de sólo lectura en Staging y CP (21/21, integridad 0).
+- 08:40 — checkpoint inicial; preflight de sólo lectura en Staging y CP (21/21, integridad 0). Push `591e06d0` (incluye `47d9ffe9`).
+- 08:38–08:50 — verificación local (PG17 + shims, NO es un stack de Supabase) de los cuatro paquetes SQL juntos sobre el repo
+  (wp11 + wp13 + wp18 + wp19, 202 migraciones):
+  - pgTAP: 72/73 archivos, 5.831 aserciones planificadas. Única falla: `order_cancellation_panel_and_tracking_test.sql` (nuevo de
+    wp13) hace cancelar a un empleado, y wp19 (decisión del dueño AUTHZ-04) exige `orders.cancel`, que el empleado no tiene →
+    conflicto entre paquetes, se adapta el fixture al integrar.
+  - Carreras en el orden del gate: admisión PASS (4), stock PASS (12, 0 deadlocks; con la copia de wp19 del arnés, que cancela
+    con un encargado en vez de un empleado), idempotencia **`GLOBAL_IDEMPOTENCY: PASS`** (758 llamadas, 0 deadlocks, 0 esperas
+    agotadas).
+  - Prueba discriminante: el mismo arnés sobre el repo SIN los paquetes da **`GLOBAL_IDEMPOTENCY: FAIL`, 7 defectos, 14
+    deadlocks** (incluye la respuesta del proveedor y el aviso de pago cortados por 40P01 en la cancelación de pagos).
+    Evidencia: `artifacts/taba-autonomous-20261003/races/{all,base}-*.txt`.
+  - Tests unitarios del certificador y del arnés: 34/35 (la falla es la esperada: el arnés todavía no está cableado al gate).
+- 08:42 — 4 revisores adversariales en paralelo (sólo lectura), uno por paquete. Sus informes: scratchpad de la sesión `review/`.
+- Hallazgo a decidir: wp19 también exige `orders.cancel` para **rechazar**, y su propio encabezado avisa que la caja de **Caja
+  Clara** opera con la sesión del cajero (si es empleado, deja de poder cancelar/rechazar) y que el Panel le sigue mostrando
+  «Cancelar» a todo el equipo. AUTHZ-04 además nombra `authorize_arca_homologation` y `set_business_open_state`, que wp19 no toca.

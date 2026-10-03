@@ -99,7 +99,7 @@ habría roto `npm test`, y un candado duplicado.
 | PAY-06 (resto) | P2 | Nada vuelve a leer en el proveedor los cobros completados; un `cancellation_reconcile` muerto no tiene salida propia | decisión del dueño (ventana, frecuencia, límites del proveedor) |
 | DIAG-02 (resto) | P2 | El contador de colas trabadas del Panel ignora los trabajos de webhook; los códigos nuevos de alerta se muestran con texto genérico | frontend |
 | EDGE-15 | P3 | Si también falla `mark_payment_cancellation_ambiguous` (tres fallas seguidas de la base), la cancelación queda «requested» sin trabajo | residual documentado |
-| SCRIPTS | P3 | 5 scripts piloto de Staging todavía cancelan con una credencial QA de rol no verificado (`deploy/run-commercial-pilot-e2e.mjs`, `e2e-staging/{cancel-rider-soak-qa,rider-canonical-qa,run-pilot-full-ui-signed,stock-concurrency-pilot}.mjs`) | ver su rol antes de aplicar 20261002050000 en Staging |
+| SCRIPTS | P3 | `deploy/run-commercial-pilot-e2e.mjs` cancela con la credencial `PILOT BUSINESS QA` (otro entorno; su rol no se pudo confirmar en sólo lectura). Los otros 4 scripts piloto de Staging usan `STAGING BUSINESS QA 20260920`, que es **encargado** de `la-taba-staging` (leído): AUTHZ-04 no los afecta | ver su rol antes de aplicar 20261002050000 donde ese script corra |
 | Resto | P2 | 24 P2 abiertos del registro (decisiones de producto, canal externo, frontend, otra línea) | ver el registro |
 
 ### RIESGOS_RESIDUALES

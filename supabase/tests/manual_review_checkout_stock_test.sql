@@ -21,6 +21,8 @@
 --   · con dinero devuelto o reembolso en curso no se rearma (55000) y el Panel no
 --     ofrece el botón; un reembolso rechazado no bloquea;
 --   · la alerta receta una acción que funciona en cada estado;
+--   · si la devolución se hace en Mercado Pago, el aviso del proveedor devuelve el
+--     stock solo (20261002021000); un pago cerrado sin haberse aprobado nunca, no;
 --   · un reembolso propio no pisa lo que informó el proveedor ni retrocede el estado.
 --
 -- El tiempo se simula moviendo `created_at`/`expires_at` de la sesión y de sus
@@ -29,7 +31,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(87);
+select plan(90);
 
 -- ── Fixture ────────────────────────────────────────────────────────────────
 create temporary table caso (
@@ -437,17 +439,35 @@ select is(
   (public.release_manual_review_checkout_inventory(pg_temp.iid('x'), 'atestiguada', true) ->> 'reason'),
   'money_not_returned', 'X: y la atestacion de soporte no vale sobre un cobro aprobado: ese se reembolsa desde el Panel');
 select is(pg_temp.stock('x'), 8, 'X: el stock sigue retenido');
--- La devolución se hizo en Mercado Pago y llega como aviso del proveedor.
+-- La devolución se hizo en Mercado Pago y llega como aviso del proveedor. Desde
+-- 20261002021000 ese aviso libera solo: antes el stock quedaba retenido hasta que
+-- alguien con la clave de servicio corriera la liberación que recetaba la alerta.
 select pg_temp.asentar('x', 'refunded', 2000.00);
+select is(pg_temp.stock('x') || ' ' || pg_temp.reservas('x'), '10 g1:released:2',
+  'X: con el dinero devuelto por el proveedor el stock vuelve solo, sin esperar a soporte');
 select pg_temp.envejecer('x', interval '10 minutes');
-select is(pg_temp.alerta('x'),
-  'stock_held_by_checkout_in_manual_review -> run_release_manual_review_checkout_inventory_for_the_payment_intent',
-  'X: con el dinero devuelto por el proveedor la alerta receta la liberacion del servicio');
 select is(
   (public.release_manual_review_checkout_inventory(pg_temp.iid('x'), 'provider_refunded', false) ->> 'released'),
-  '1', 'X: y esa liberacion funciona');
-select is(pg_temp.stock('x') || ' ' || pg_temp.reservas('x'), '10 g1:released:2', 'X: stock completo, reserva liberada');
-select is(pg_temp.alerta('x'), 'sin alerta', 'X: y la alerta desaparece');
+  '0', 'X: a la liberacion del servicio ya no le queda nada: no devuelve dos veces');
+select is(pg_temp.stock('x') || ' ' || pg_temp.reservas('x'), '10 g1:released:2', 'X: stock completo, una sola vez');
+select is(pg_temp.alerta('x'), 'sin alerta', 'X: y no queda ninguna alerta');
+
+-- Lo que el aviso NO libera solo: un pago que el proveedor cerró sin haberlo
+-- aprobado nunca, sobre una sesión que entró en revisión por OTRO pago que no se
+-- pudo validar. De ese cobro no volvió ningún importe; la alerta sigue recetando la
+-- liberación del servicio, y esa liberación sigue funcionando.
+select pg_temp.armar('xr', 10, 2);
+select pg_temp.asentar('xr', 'approved', 0, 1.00);
+select pg_temp.asentar('xr', 'rejected');
+select is(pg_temp.stock('xr') || ' ' || pg_temp.reservas('xr'), '8 g1:active:2',
+  'XR: un pago cerrado sin haberse aprobado nunca no libera el stock por su cuenta');
+select pg_temp.envejecer('xr', interval '10 minutes');
+select is(pg_temp.alerta('xr'),
+  'stock_held_by_checkout_in_manual_review -> run_release_manual_review_checkout_inventory_for_the_payment_intent',
+  'XR: la alerta receta la liberacion del servicio');
+select is(
+  (public.release_manual_review_checkout_inventory(pg_temp.iid('xr'), 'provider_rejected', false) ->> 'released'),
+  '1', 'XR: y esa liberacion funciona');
 
 -- Un cobro que nunca pudo validarse (el importe no coincide): no hay qué
 -- reembolsar desde el Panel. Soporte verifica en Mercado Pago y atestigua.

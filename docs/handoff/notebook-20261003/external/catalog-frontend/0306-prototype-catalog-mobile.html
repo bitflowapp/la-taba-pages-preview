@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>TABA · Catálogo móvil — propuesta</title>
+<link rel="stylesheet" href="proto-shared.css" />
+<style>
+  body { background: var(--t-surface-1); }
+  .screen { max-width: 520px; margin: 0 auto; min-height: 100vh; background: var(--t-surface-1); }
+  main { padding-bottom: var(--t-bottom-reserve); }
+
+  /* --- appbar --- */
+  .c-appbar { gap: 10px; padding: 0 12px; }
+  .c-addr {
+    display: grid; grid-template-columns: 16px 1fr 12px; align-items: center; gap: 6px;
+    flex: 1; min-width: 0; height: 44px; padding: 0 12px;
+    border-radius: var(--t-r-pill); background: var(--t-surface-2); text-align: left;
+  }
+  .c-addr .c-addr-copy { display: grid; min-width: 0; }
+  .c-addr b { font: var(--t-caption); font-weight: 700; color: var(--t-ink-900);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .c-addr small { font: 500 10.5px/1.1 var(--t-font); color: var(--t-ink-400);
+    letter-spacing: .06em; text-transform: uppercase; }
+  .c-addr.is-missing b { color: var(--t-danger-700); }
+  .c-cart { position: relative; }
+  .c-cart .c-badge {
+    position: absolute; top: 2px; right: 2px; min-width: 17px; height: 17px; padding: 0 4px;
+    display: grid; place-items: center; border-radius: var(--t-r-pill);
+    background: var(--t-red-600); color: #fff; font: 700 10.5px/1 var(--t-font);
+    font-variant-numeric: tabular-nums; border: 2px solid var(--t-paper);
+  }
+  body:not([data-cart="filled"]) .c-badge { display: none; }
+
+  /* --- toolbar --- */
+  .c-tools { display: grid; gap: 10px; padding: 12px 16px 10px; background: var(--t-paper);
+    border-bottom: 1px solid var(--t-line-200); }
+  .c-titlerow { display: flex; align-items: baseline; gap: 8px; }
+  .c-titlerow h1 { font: var(--t-title-l); letter-spacing: -0.02em; }
+  .c-count { padding: 12px 16px 0; font: var(--t-caption); color: var(--t-text-secondary);
+    font-variant-numeric: tabular-nums; }
+  .c-searchrow { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+  .c-chips { margin: 0 -16px; padding: 0 16px;
+    -webkit-mask-image: linear-gradient(90deg,#000 88%,transparent);
+    mask-image: linear-gradient(90deg,#000 88%,transparent); }
+  .c-sort { display: flex; align-items: center; gap: 4px;
+    font: var(--t-caption); font-weight: 650; color: var(--t-ink-600);
+    min-height: 44px; padding: 0 10px; margin: 0 -10px 0 auto; }
+
+  /* --- grid --- */
+  .c-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 14px 16px; }
+  @media (max-width: 359px) { .c-grid { grid-template-columns: minmax(0, 1fr); } .c-grid .p-card { grid-template-columns: 108px 1fr; grid-template-rows: auto; } .c-grid .p-media { aspect-ratio: 1/1; } }
+
+  .c-sectionhead { display: flex; align-items: center; gap: 8px; padding: 14px 16px 0; }
+  .c-sectionhead h2 { font: var(--t-title-m); }
+  .c-sectionhead .c-seeall { margin-left: auto; margin-right: -10px; min-height: 44px; padding: 0 10px;
+    display: inline-flex; align-items: center; font: var(--t-label); color: var(--t-red-600); }
+
+  /* --- home --- */
+  .h-hero { padding: 14px 16px 4px; background: var(--t-paper); }
+  .h-hero h1 { font: var(--t-title-l); letter-spacing: -0.02em; }
+  .h-hero p { font: var(--t-body-s); color: var(--t-text-secondary); margin-top: 2px; }
+  .h-cats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 12px 16px; }
+  .h-cat { display: grid; justify-items: center; gap: 5px; padding: 10px 4px;
+    border: 1px solid var(--t-line-200); border-radius: var(--t-r-md); background: var(--t-white); }
+  .h-cat span { font: var(--t-caption); font-weight: 650; color: var(--t-ink-600); }
+  .h-cat .h-cat-ic { display: grid; place-items: center; width: 32px; height: 32px;
+    border-radius: var(--t-r-sm); background: var(--t-surface-2); color: var(--t-ink-600); }
+  .h-cat[aria-pressed="true"] { border-color: var(--t-ink-900); }
+  .h-cat[aria-pressed="true"] .h-cat-ic { background: var(--t-red-100); color: var(--t-red-600); }
+  .h-rail { display: grid; grid-auto-flow: column; grid-auto-columns: 156px; gap: 12px;
+    overflow-x: auto; padding: 12px 16px; scrollbar-width: none; }
+  .h-rail::-webkit-scrollbar { display: none; }
+
+  /* --- sheet detalle --- */
+  .s-hero { aspect-ratio: 16/11; background: linear-gradient(180deg, var(--t-surface-2), #e9edf1); position: relative; }
+  .s-hero img { width: 100%; height: 100%; object-fit: contain; padding: 18px; }
+  .s-body { display: grid; gap: 10px; padding: 16px 18px 18px; }
+  .s-actions { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center;
+    position: sticky; bottom: 0; padding: 12px 18px calc(12px + var(--t-safe-b));
+    background: var(--t-paper); border-top: 1px solid var(--t-line-200); }
+</style>
+</head>
+<body data-cart="empty" data-view="catalog">
+
+<div class="demo-bar" data-demo>
+  <strong>Estado</strong>
+  <button data-state="default" aria-pressed="true">Con productos</button>
+  <button data-state="cart">Carrito con productos</button>
+  <button data-state="search">Búsqueda</button>
+  <button data-state="empty">Categoría vacía</button>
+  <button data-state="pending">Producto pendiente</button>
+  <button data-state="detail">Detalle</button>
+  <button data-state="loading">Cargando</button>
+  <button data-state="variants">Variantes (Speed)</button>
+  <span class="demo-sep"></span>
+  <strong>Vista</strong>
+  <button data-view-btn="home">Inicio</button>
+  <button data-view-btn="catalog" aria-pressed="true">Catálogo</button>
+</div>
+
+<div class="screen">
+
+  <header class="t-appbar c-appbar">
+    <span class="t-wordmark">TABA</span>
+    <button class="c-addr" type="button" aria-label="Cambiar dirección de entrega">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="10" r="2.4" stroke="currentColor" stroke-width="1.7"/></svg>
+      <span class="c-addr-copy"><small>Enviar a</small><b data-addr>Av. Argentina 1450, Neuquén</b></span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="t-iconbtn c-cart" type="button" aria-label="Ver mi pedido">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 4h2l2.1 10.15a2 2 0 0 0 1.96 1.6h7.94a2 2 0 0 0 1.93-1.47L20.5 9H7.25" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="20" r="1.4" fill="currentColor"/><circle cx="17" cy="20" r="1.4" fill="currentColor"/></svg>
+      <span class="c-badge t-num" data-cart-count>3</span>
+    </button>
+  </header>
+
+  <main>
+    <!-- ══════════════════════════════ INICIO ══════════════════════════════ -->
+    <section data-screen="home" hidden>
+      <div class="h-hero">
+        <h1>¿Qué vas a pedir hoy?</h1>
+        <p>Bebidas frías, entrega en Neuquén capital.</p>
+      </div>
+      <div style="padding:10px 16px 0;background:var(--t-paper)">
+        <label class="t-field">
+          <span class="t-field-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.9"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>
+          <input type="search" placeholder="Buscar productos, marcas y más…" aria-label="Buscar en el catálogo" />
+        </label>
+      </div>
+      <div class="h-cats" role="group" aria-label="Categorías">
+        <button class="h-cat" type="button" aria-pressed="true"><span class="h-cat-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 3h6v3l1.5 2v11a2 2 0 0 1-2 2h-5a2 2 0 0 1-2-2V8L9 6V3Z" stroke="currentColor" stroke-width="1.7"/></svg></span><span>Gaseosas</span></button>
+        <button class="h-cat" type="button" aria-pressed="false"><span class="h-cat-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M8 3h8l-1 5v12a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V8L8 3Z" stroke="currentColor" stroke-width="1.7"/></svg></span><span>Mixers</span></button>
+        <button class="h-cat" type="button" aria-pressed="false"><span class="h-cat-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M13 2 5 13h6l-1 9 8-11h-6l1-9Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span><span>Energizantes</span></button>
+        <button class="h-cat" type="button" aria-pressed="false"><span class="h-cat-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M7 8h10v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V8Zm0 0V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v3" stroke="currentColor" stroke-width="1.7"/></svg></span><span>Cervezas</span></button>
+      </div>
+      <div class="c-sectionhead"><h2>Los más pedidos</h2><button class="c-seeall" type="button" data-goto-catalog>Ver todo</button></div>
+      <div class="h-rail" data-home-rail></div>
+      <div class="c-sectionhead"><h2>Gaseosas</h2><button class="c-seeall" type="button" data-goto-catalog>Ver todo</button></div>
+      <div class="c-grid" data-home-grid></div>
+    </section>
+
+    <!-- ═════════════════════════════ CATÁLOGO ═════════════════════════════ -->
+    <section data-screen="catalog">
+      <div class="c-tools">
+        <div class="c-titlerow">
+          <h1 data-title>Todos</h1>
+          <button class="c-sort" type="button" data-sort>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h11M4 12h7M4 17h4M17 8v9m0 0 3-3m-3 3-3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Recomendados
+          </button>
+        </div>
+        <div class="c-searchrow">
+          <label class="t-field">
+            <span class="t-field-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.9"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>
+            <input type="search" data-search placeholder="Buscar productos, marcas y más…" aria-label="Buscar en el catálogo" />
+            <button class="t-iconbtn" type="button" data-clear-search hidden aria-label="Limpiar búsqueda" style="width:44px;height:44px;margin-right:-8px">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+            </button>
+          </label>
+          <button class="t-btn t-btn--secondary" type="button" aria-label="Filtros" style="width:44px;padding:0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M7 12h10M10 17h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+        <div class="t-scroll-x c-chips" data-chips role="group" aria-label="Categorías"></div>
+      </div>
+
+      <p class="c-count t-num" data-count>22 productos</p>
+      <div class="c-grid" data-grid></div>
+      <div data-empty hidden></div>
+    </section>
+  </main>
+
+  <!-- barra de carrito: separada de la nav, altura fija, desaparece si está vacío -->
+  <div class="t-sticky-cta" role="region" aria-label="Resumen del pedido">
+    <span class="cta-copy"><small class="t-num" data-cta-count>3 productos</small><strong class="t-num" data-cta-total>$ 41.100</strong></span>
+    <button class="t-btn" type="button">Ver pedido</button>
+  </div>
+
+  <nav class="t-bottomnav" aria-label="Navegación principal">
+    <button type="button" data-nav="home">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m4 10.5 8-6.5 8 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19v-8.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      Inicio
+    </button>
+    <button type="button" data-nav="catalog" aria-current="page">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="4" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.8"/><rect x="4" y="13" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="13" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.8"/></svg>
+      Catálogo
+    </button>
+    <button type="button" data-nav="track">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="2.6" fill="currentColor"/></svg>
+      Seguir
+    </button>
+    <button type="button" data-nav="profile">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c1.2-3.4 3.8-5 7-5s5.8 1.6 7 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      Perfil
+    </button>
+  </nav>
+
+  <div class="t-toast" role="status" data-toast hidden><span></span></div>
+
+  <!-- ══════════════════════════ DETALLE (bottom sheet) ══════════════════════ -->
+  <div class="t-backdrop" data-sheet-backdrop hidden></div>
+  <div class="t-sheet" data-sheet hidden role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <div class="t-sheet-grab" aria-hidden="true"></div>
+    <div class="s-hero"><img data-sheet-img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="1" height="1" /></div>
+    <div class="s-body">
+      <div>
+        <p class="p-brand" data-sheet-brand>COCA-COLA</p>
+        <h2 class="t-title-m" id="sheet-title" data-sheet-name>Coca-Cola Original</h2>
+        <p class="t-caption" data-sheet-pres>Botella PET · 500 ml · Pack x12</p>
+      </div>
+      <span class="t-pill t-pill--ok" data-sheet-avail><i class="t-dot"></i>Disponible</span>
+      <p class="t-body-s t-muted">Pack cerrado, botellas de 500 ml. Se entrega frío según disponibilidad del local.</p>
+      <hr class="t-horizon" />
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="p-price t-num" data-sheet-price>$ 17.100</span>
+        <button class="t-btn t-btn--secondary" type="button" aria-pressed="false" style="margin-left:auto">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 20s-7-4.4-7-9.2A4 4 0 0 1 12 8a4 4 0 0 1 7-2.8c0 4.8-7 14.8-7 14.8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          Guardar
+        </button>
+      </div>
+    </div>
+    <div class="s-actions">
+      <div class="p-step" data-sheet-step>
+        <button type="button" aria-label="Quitar uno">−</button>
+        <strong class="t-num" data-sheet-qty>1</strong>
+        <button type="button" aria-label="Agregar uno">+</button>
+      </div>
+      <button class="t-btn t-btn--primary t-btn--lg" type="button" data-sheet-close>Agregar al pedido</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── Datos reales del catálogo TABA (extraídos del repositorio, sin inventar precios) ── */
+const P = [
+  ["coca-cola-original-pet-500ml-pack-12","Coca-Cola","Coca-Cola Original","Botella PET · 500 ml · Pack x12","$ 17.100","gaseosas",1],
+  ["coca-cola-zero-pet-500ml-pack-12","Coca-Cola","Coca-Cola Zero","Botella PET · 500 ml · Pack x12","$ 17.100","gaseosas",1],
+  ["sprite-original-pet-500ml-pack-12","Sprite","Sprite","Botella PET · 500 ml · Pack x12","$ 17.100","gaseosas",1],
+  ["coca-cola-original-pet-1500ml-pack-6","Coca-Cola","Coca-Cola Original","Botella PET · 1500 ml · Pack x6","$ 19.999","gaseosas",1],
+  ["coca-cola-zero-pet-1500ml-pack-6","Coca-Cola","Coca-Cola Zero","Botella PET · 1500 ml · Pack x6","$ 19.999","gaseosas",1],
+  ["sprite-original-pet-1500ml-pack-6","Sprite","Sprite","Botella PET · 1500 ml · Pack x6","$ 19.999","gaseosas",1],
+  ["fanta-naranja-pet-1500ml-pack-6","Fanta","Fanta Naranja","Botella PET · 1500 ml · Pack x6","$ 19.999","gaseosas",1],
+  ["schweppes-tonica-pet-1500ml-pack-6","Schweppes","Schweppes Tónica","Botella PET · 1500 ml · Pack x6","$ 19.999","mixers",1],
+  ["schweppes-citrus-pet-1500ml-pack-6","Schweppes","Schweppes Citrus","Botella PET · 1500 ml · Pack x6","$ 19.999","mixers",1],
+  ["red-bull-original-lata-250ml","Red Bull","Red Bull Energy Drink","Lata · 250 ml · Unidad","$ 3.576","energizantes",1],
+  ["speed-original-lata-473ml","Speed","Speed Unlimited Original","Lata · 473 ml · Unidad","$ 2.925","energizantes",1],
+  ["speed-zero-lata-473ml","Speed","Speed Unlimited Zero","Lata · 473 ml · Unidad","$ 2.925","energizantes",1],
+  ["monster-mango-loco-lata-473ml","Monster","Monster Mango Loco","Lata · 473 ml · Unidad","$ 3.390","energizantes",1],
+  ["heineken-original-lata-473ml","Heineken","Heineken","Lata · 473 ml · Unidad","$ 3.900","cervezas",1],
+  ["heineken-original-lata-473ml-pack-6","Heineken","Heineken","Lata · 473 ml · Pack x6","$ 20.000","cervezas",1],
+  ["imperial-golden-lata-473ml","Imperial","Imperial Golden","Lata · 473 ml · Unidad","$ 3.000","cervezas",1],
+  ["imperial-extra-lager-lata-473ml","Imperial","Imperial Extra Lager","Lata · 473 ml · Unidad","$ 3.000","cervezas",1],
+  ["imperial-apa-lata-473ml","Imperial","Imperial APA","Lata · 473 ml · Unidad","$ 3.000","cervezas",1],
+  ["imperial-cream-stout-lata-473ml","Imperial","Imperial Cream Stout","Lata · 473 ml · Unidad","$ 3.000","cervezas",1],
+  ["schneider-rubia-lata-710ml","Schneider","Schneider Rubia","Lata · 710 ml · Unidad","$ 3.500","cervezas",1],
+  ["corona-extra-botella-330ml","Corona","Corona Extra","Botella · 330 ml · Unidad","$ 3.600","cervezas",1],
+  ["red-bull-original-lata-250ml-pack-4","Red Bull","Red Bull Energy Drink","Lata · 250 ml · Pack x4","Precio a confirmar","energizantes",0],
+].map(([id,brand,name,pres,price,cat,ok])=>({id,brand,name,pres,price,cat,ok:!!ok,img:`../assets/products/${id}.webp`}));
+
+const CATS = [["all","Todos"],["favorites","Favoritos"],["gaseosas","Gaseosas"],["mixers","Mixers"],["energizantes","Energizantes"],["cervezas","Cervezas"]];
+
+const S = { cat:"all", q:"", cart:{}, favs:new Set(), loading:false };
+const $ = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const num = s => Number(String(s).replace(/[^\d]/g,"")) || 0;
+const money = n => "$ " + n.toLocaleString("es-AR");
+
+const ICON_HEART = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 20s-7-4.4-7-9.2A4 4 0 0 1 12 8a4 4 0 0 1 7-2.8c0 4.8-7 14.8-7 14.8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" fill="var(--fill,none)"/></svg>';
+const ICON_PLUS = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
+
+function filtered(){
+  const q = S.q.trim().toLowerCase();
+  return P.filter(p=>{
+    const inCat = S.cat === "all" ? true : S.cat === "favorites" ? S.favs.has(p.id) : p.cat === S.cat;
+    const inQ = !q || (p.name+" "+p.brand+" "+p.pres).toLowerCase().includes(q);
+    return inCat && inQ;
+  });
+}
+
+function card(p){
+  const qty = S.cart[p.id] || 0;
+  const fav = S.favs.has(p.id);
+  const action = !p.ok
+    ? `<button class="t-btn t-btn--secondary" type="button" data-detail="${p.id}" style="width:100%">Consultar</button>`
+    : qty > 0
+      ? `<div class="p-step"><button type="button" data-dec="${p.id}" aria-label="Quitar una unidad de ${esc(p.name)}">${qty===1?'<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 7h14M9 7V5h6v2m-8 0 1 13h8l1-13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>':'−'}</button><strong class="t-num">${qty}</strong><button type="button" data-inc="${p.id}" aria-label="Agregar una unidad de ${esc(p.name)}">+</button></div>`
+      : `<button class="p-add" type="button" data-inc="${p.id}" aria-label="Agregar ${esc(p.name)} al pedido">${ICON_PLUS}<span class="p-add-label">Agregar</span></button>`;
+  return `<article class="p-card${p.ok?"":" is-pending"}">
+    <div class="p-media">
+      ${p.ok?"":'<span class="p-flag t-pill t-pill--warn"><i class="t-dot"></i>Sin precio</span>'}
+      <img src="${p.img}" alt="${esc(p.name)} ${esc(p.pres)}" loading="lazy" width="160" height="160" />
+      <button class="p-fav" type="button" data-fav="${p.id}" aria-pressed="${fav}" aria-label="Guardar ${esc(p.name)} en favoritos" style="--fill:${fav?"currentColor":"none"}">${ICON_HEART}</button>
+    </div>
+    <div class="p-body">
+      <p class="p-brand">${esc(p.brand)}</p>
+      <h3 class="p-name">${esc(p.name)}</h3>
+      <p class="p-pres">${esc(p.pres)}</p>
+      <div class="p-foot">
+        <span class="${p.ok?"p-price t-num":"p-price--pending"}">${esc(p.price)}</span>
+        ${action}
+      </div>
+    </div>
+  </article>`;
+}
+
+function skeleton(){
+  return `<article class="p-card"><div class="p-media t-skel" style="background-image:none"></div>
+  <div class="p-body"><div class="t-skel" style="height:9px;width:40%"></div><div class="t-skel" style="height:14px;width:85%;margin-top:4px"></div><div class="t-skel" style="height:11px;width:65%;margin-top:4px"></div>
+  <div class="p-foot"><div class="t-skel" style="height:18px;width:70px"></div><div class="t-skel" style="height:44px;width:44px;border-radius:10px"></div></div></div></article>`;
+}
+
+function emptyBlock(){
+  const q = S.q.trim();
+  const catName = (CATS.find(c=>c[0]===S.cat)||[])[1] || "Todos";
+  if (S.cat === "favorites" && !q) return `<div class="t-empty">
+    <span class="t-empty-mark">${ICON_HEART}</span>
+    <h3>Todavía no guardaste favoritos</h3>
+    <p>Tocá el corazón en cualquier producto para tenerlo a mano la próxima vez.</p>
+    <div class="t-empty-actions"><button class="t-btn t-btn--primary" type="button" data-cat="all">Ver todo el catálogo</button></div></div>`;
+  if (q) return `<div class="t-empty">
+    <span class="t-empty-mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.9"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>
+    <h3>No encontramos “${esc(q)}”</h3>
+    <p>${S.cat==="all" ? "Probá con la marca o la presentación." : `Buscaste dentro de <strong>${esc(catName)}</strong>. Probá en todo el catálogo.`}</p>
+    <div class="t-empty-actions">
+      <button class="t-btn t-btn--primary" type="button" data-clear-all>Limpiar búsqueda</button>
+      ${S.cat!=="all"?'<button class="t-btn t-btn--secondary" type="button" data-cat="all">Buscar en todo</button>':""}
+    </div>
+    <div class="t-scroll-x" style="justify-content:center;margin-top:4px">
+      <button class="t-chip" type="button" data-cat="gaseosas" data-clear-q>Gaseosas</button>
+      <button class="t-chip" type="button" data-cat="cervezas" data-clear-q>Cervezas</button>
+      <button class="t-chip" type="button" data-cat="energizantes" data-clear-q>Energizantes</button>
+    </div></div>`;
+  return `<div class="t-empty">
+    <span class="t-empty-mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="16" height="15" rx="2.5" stroke="currentColor" stroke-width="1.8"/><path d="M4 10h16" stroke="currentColor" stroke-width="1.8"/></svg></span>
+    <h3>No hay productos en ${esc(catName)}</h3>
+    <p>Esta categoría está vacía por ahora. Mirá el resto del catálogo.</p>
+    <div class="t-empty-actions"><button class="t-btn t-btn--primary" type="button" data-cat="all">Ver todo el catálogo</button></div></div>`;
+}
+
+function render(){
+  const list = filtered();
+  const q = S.q.trim();
+  const catName = (CATS.find(c=>c[0]===S.cat)||[])[1] || "Todos";
+
+  // El título refleja la búsqueda activa, no sólo la categoría.
+  $("[data-title]").textContent = q ? `“${q}”` : catName;
+  $("[data-count]").textContent = S.loading ? "Cargando…"
+    : `${list.length} ${list.length===1?"producto":"productos"}${q && S.cat!=="all" ? " en "+catName : ""}`;
+
+  // chips: la búsqueda activa aparece como chip removible ANTES de las categorías
+  $("[data-chips]").innerHTML =
+    (q ? `<button class="t-chip t-chip--query" type="button" data-clear-all aria-label="Quitar la búsqueda ${esc(q)}">“${esc(q)}” <span class="t-chip-x" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></span></button>` : "") +
+    CATS.map(([id,label])=>`<button class="t-chip" type="button" data-cat="${id}" aria-pressed="${!q && S.cat===id}">${label}</button>`).join("");
+
+  const grid = $("[data-grid]"), empty = $("[data-empty]");
+  if (S.loading){ grid.hidden=false; empty.hidden=true; grid.innerHTML = skeleton().repeat(6); }
+  else if (!list.length){ grid.hidden = true; empty.hidden = false; empty.innerHTML = emptyBlock(); }
+  else { grid.hidden = false; empty.hidden = true; grid.innerHTML = list.map(card).join(""); }
+  $("[data-count]").hidden = S.loading;
+  $("[data-sort]").hidden = !list.length || S.loading;
+
+  $("[data-home-rail]").innerHTML = P.slice(0,6).map(card).join("");
+  $("[data-home-grid]").innerHTML = P.filter(p=>p.cat==="gaseosas").slice(0,4).map(card).join("");
+
+  const entries = Object.entries(S.cart);
+  const count = entries.reduce((a,[,q2])=>a+q2,0);
+  const total = entries.reduce((a,[id,q2])=>a + num((P.find(p=>p.id===id)||{}).price)*q2, 0);
+  document.body.dataset.cart = count ? "filled" : "empty";
+  $("[data-cart-count]").textContent = count;
+  $("[data-cta-count]").textContent = `${count} ${count===1?"producto":"productos"}`;
+  $("[data-cta-total]").textContent = money(total);
+  $("[data-clear-search]").hidden = !q;
+  const si = $("[data-search]"); if (si.value !== S.q) si.value = S.q;
+}
+
+let toastT;
+function toast(msg){
+  const t = $("[data-toast]"); t.querySelector("span").textContent = msg; t.hidden = false;
+  clearTimeout(toastT); toastT = setTimeout(()=>{ t.hidden = true; }, 2600);
+}
+
+document.addEventListener("click", e=>{
+  const t = e.target.closest("[data-cat],[data-inc],[data-dec],[data-fav],[data-clear-all],[data-clear-search],[data-detail],[data-sheet-close],[data-sheet-backdrop],[data-nav],[data-view-btn],[data-state],[data-goto-catalog]");
+  if (!t) return;
+  if (t.dataset.cat !== undefined){ S.cat = t.dataset.cat; if (t.hasAttribute("data-clear-q")) S.q=""; }
+  if (t.dataset.inc){ S.cart[t.dataset.inc] = (S.cart[t.dataset.inc]||0)+1; toast(`${P.find(p=>p.id===t.dataset.inc).name} agregado al pedido.`); }
+  if (t.dataset.dec){ const id=t.dataset.dec; S.cart[id]=(S.cart[id]||0)-1; if (S.cart[id]<=0) delete S.cart[id]; }
+  if (t.dataset.fav){ const id=t.dataset.fav; S.favs.has(id)?S.favs.delete(id):S.favs.add(id); }
+  if (t.hasAttribute("data-clear-all")){ S.q=""; }
+  if (t.hasAttribute("data-clear-search")){ S.q=""; }
+  if (t.dataset.detail){ openSheet(t.dataset.detail); }
+  if (t.hasAttribute("data-sheet-close") || t.hasAttribute("data-sheet-backdrop")) closeSheet();
+  if (t.hasAttribute("data-goto-catalog")){ e.preventDefault(); setView("catalog"); }
+  if (t.dataset.nav){ setView(t.dataset.nav === "home" ? "home" : "catalog"); }
+  if (t.dataset.viewBtn){ setView(t.dataset.viewBtn); }
+  if (t.dataset.state) setState(t.dataset.state);
+  render();
+});
+
+$("[data-search]").addEventListener("input", e=>{ S.q = e.target.value; render(); });
+
+function openSheet(id){
+  const p = P.find(x=>x.id===id) || P[0];
+  $("[data-sheet-img]").src = p.img; $("[data-sheet-img]").alt = p.name;
+  $("[data-sheet-brand]").textContent = p.brand.toUpperCase();
+  $("[data-sheet-name]").textContent = p.name;
+  $("[data-sheet-pres]").textContent = p.pres;
+  $("[data-sheet-price]").textContent = p.price;
+  const av = $("[data-sheet-avail]");
+  av.className = "t-pill " + (p.ok ? "t-pill--ok" : "t-pill--warn");
+  av.innerHTML = '<i class="t-dot"></i>' + (p.ok ? "Disponible" : "Precio a confirmar · no se puede agregar");
+  $("[data-sheet]").hidden = false; $("[data-sheet-backdrop]").hidden = false;
+}
+function closeSheet(){ $("[data-sheet]").hidden = true; $("[data-sheet-backdrop]").hidden = true; }
+
+function setView(v){
+  document.body.dataset.view = v;
+  $('[data-screen="home"]').hidden = v !== "home";
+  $('[data-screen="catalog"]').hidden = v !== "catalog";
+  $$("[data-nav]").forEach(b=>b.toggleAttribute("aria-current", false) || b.removeAttribute("aria-current"));
+  const active = $(`[data-nav="${v}"]`); if (active) active.setAttribute("aria-current","page");
+  $$("[data-view-btn]").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.viewBtn===v)));
+  window.scrollTo(0,0);
+}
+
+function setState(name){
+  $$("[data-state]").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.state===name)));
+  S.loading = false; closeSheet();
+  if (name==="default"){ S.cart={}; S.q=""; S.cat="all"; }
+  if (name==="cart"){ S.cart={"coca-cola-original-pet-500ml-pack-12":2,"corona-extra-botella-330ml":1,"imperial-apa-lata-473ml":1}; S.q=""; S.cat="all"; }
+  if (name==="search"){ S.q="imperial"; S.cat="all"; }
+  if (name==="empty"){ S.q="zzzzqqq"; S.cat="all"; S.cart={"coca-cola-original-pet-500ml-pack-12":2,"corona-extra-botella-330ml":1,"imperial-apa-lata-473ml":1}; }
+  if (name==="pending"){ S.q="red bull"; S.cat="all"; }
+  if (name==="loading"){ S.loading = true; S.q=""; S.cat="all"; }
+  if (name==="variants"){ S.q="speed"; S.cat="all"; }
+  if (name==="detail"){ S.cat="all"; S.q=""; setTimeout(()=>openSheet("coca-cola-original-pet-500ml-pack-12"),0); }
+}
+
+/* Parámetros de URL para capturas deterministas: ?state=empty&view=catalog&chrome=0 */
+const U = new URLSearchParams(location.search);
+if (U.get("chrome") === "0") $("[data-demo]").hidden = true;
+setState(U.get("state") || "default");
+setView(U.get("view") || "catalog");
+render();
+</script>
+</body>
+</html>

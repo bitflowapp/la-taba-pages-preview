@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TABA — Catálogo escritorio (prototipo)</title>
+<link rel="stylesheet" href="prototype-shared.css">
+<style>
+  body { background: var(--taba-surface); }
+
+  .top {
+    position: sticky; top: 0; z-index: 50;
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-6);
+    min-height: 64px;
+    padding: 0 var(--space-6);
+    background: var(--taba-surface-inverse);
+  }
+  .top-nav { display: flex; gap: var(--space-1); }
+  .top-nav button {
+    position: relative;
+    min-height: var(--tap); padding: 0 14px;
+    border: 0; background: none; border-radius: var(--radius-xs);
+    color: rgb(255 255 255 / 74%);
+    font-size: var(--text-meta); font-weight: 700;
+  }
+  .top-nav button:hover { color: #fff; }
+  .top-nav button.is-on { color: #fff; font-weight: 800; }
+  .top-nav button.is-on::after {
+    content: ""; position: absolute; left: 14px; right: 14px; bottom: 4px;
+    height: 2px; border-radius: 2px; background: #fff;
+  }
+  .top-search {
+    display: flex; align-items: center; gap: 10px;
+    height: var(--tap); max-width: 360px; padding: 0 14px;
+    border: 1px solid rgb(255 255 255 / 14%); border-radius: var(--radius-pill);
+    background: rgb(255 255 255 / 8%);
+  }
+  .top-search svg { width: 17px; height: 17px; color: rgb(255 255 255 / 62%); }
+  .top-search input {
+    flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: none;
+    color: #fff; font: inherit; font-size: var(--text-meta);
+  }
+  .top-search input::placeholder { color: rgb(255 255 255 / 52%); }
+  .top-cart {
+    display: inline-flex; align-items: center; gap: 8px;
+    min-height: var(--tap); padding: 0 14px 0 8px;
+    border: 1px solid rgb(255 255 255 / 16%); border-radius: var(--radius-pill);
+    background: rgb(255 255 255 / 8%); color: #fff;
+    font-size: var(--text-meta); font-weight: 800;
+  }
+  .top-cart .dot {
+    display: grid; place-items: center; width: 24px; height: 24px;
+    border-radius: 50%; background: var(--taba-red); font-size: 11px; font-weight: 900;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr) 320px;
+    gap: var(--space-6);
+    max-width: 1600px;
+    margin-inline: auto;
+    padding: var(--space-5) var(--space-6) var(--space-8);
+    align-items: start;
+  }
+
+  /* ---------- Sidebar de categorías ---------- */
+  .cats { position: sticky; top: 88px; display: grid; gap: var(--space-5); }
+  .cats h2, .filters h2 {
+    font-size: var(--text-caps); font-weight: 800; letter-spacing: var(--tracking-caps);
+    text-transform: uppercase; color: var(--taba-muted);
+    margin-bottom: var(--space-2);
+  }
+  .cat-list { display: grid; }
+  .cat-item {
+    position: relative;
+    display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
+    width: 100%; min-height: var(--tap); padding: 0 12px;
+    border: 0; background: none; border-radius: var(--radius-xs);
+    font-size: var(--text-body); font-weight: 600; color: var(--taba-graphite);
+    text-align: left;
+  }
+  .cat-item:hover { background: var(--taba-surface-sunken); }
+  .cat-item.is-on { background: var(--taba-surface-sunken); color: var(--taba-ink); font-weight: 800; }
+  .cat-item.is-on::before {
+    content: ""; position: absolute; left: 0; top: 8px; bottom: 8px;
+    width: 3px; border-radius: 0 3px 3px 0; background: var(--taba-ink);
+  }
+  .cat-item .n { font-size: var(--text-micro); color: var(--taba-muted); font-weight: 700; }
+  .filters label {
+    display: flex; align-items: center; gap: 10px;
+    min-height: var(--tap); padding: 0 12px;
+    font-size: var(--text-body); font-weight: 600;
+  }
+  .filters input { width: 17px; height: 17px; accent-color: var(--taba-ink); }
+
+  /* ---------- Grilla ---------- */
+  .context {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+  }
+  .context h1 { font-size: var(--text-title); font-weight: 850; letter-spacing: -.02em; }
+  .context h1 span { color: var(--taba-muted); font-weight: 600; }
+  .sort { display: flex; align-items: center; gap: 8px; }
+  .sort label { font-size: var(--text-meta); font-weight: 700; color: var(--taba-muted); }
+  .sort select {
+    min-height: var(--tap); min-width: 180px; padding: 0 12px;
+    border: 1px solid var(--taba-border); border-radius: var(--radius-sm);
+    background: var(--taba-surface); font: inherit; font-size: var(--text-meta); font-weight: 700;
+  }
+  .product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--space-4);
+  }
+  .product-card:hover { box-shadow: var(--shadow-sm); }
+  .product-card:hover .add-btn { border-color: var(--taba-ink); }
+
+  /* ---------- Carrito lateral ---------- */
+  .cart-aside {
+    position: sticky; top: 88px;
+    display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
+    max-height: calc(100vh - 112px);
+    background: var(--taba-surface);
+    border: 1px solid var(--taba-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-xs);
+    overflow: hidden;
+  }
+  .cart-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: var(--space-4);
+    border-bottom: 1px solid var(--taba-border);
+  }
+  .cart-head h2 { font-size: var(--text-caps); font-weight: 800; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--taba-muted); }
+  .cart-head span { font-size: var(--text-meta); font-weight: 800; }
+  .cart-items { overflow-y: auto; padding: var(--space-3); display: grid; gap: var(--space-3); }
+  .cart-item { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: var(--space-3); align-items: start; }
+  .cart-item img { width: 48px; height: 48px; object-fit: contain; background: var(--taba-surface-sunken); border-radius: var(--radius-xs); padding: 4px; }
+  .cart-item .nm { font-size: var(--text-meta); font-weight: 700; line-height: 1.25; }
+  .cart-item .pr { font-size: var(--text-micro); color: var(--taba-muted); }
+  .cart-item .ln { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-2); row-gap: 6px; margin-top: 6px; }
+  .cart-item .stepper { width: auto; min-width: 100px; height: 36px; grid-template-columns: 32px 1fr 32px; }
+  .cart-item .stepper button { height: 36px; }
+  .cart-item .sub { font-size: var(--text-body); font-weight: 900; white-space: nowrap; }
+  .cart-foot { padding: var(--space-4); border-top: 1px solid var(--taba-border); display: grid; gap: var(--space-3); }
+  .cart-foot .row { display: flex; align-items: baseline; justify-content: space-between; }
+  .cart-foot .row b { font-size: var(--text-title); font-weight: 900; }
+  .cart-foot .btn-primary { width: 100%; }
+
+  @media (max-width: 1179px) {
+    .layout { grid-template-columns: 220px minmax(0, 1fr); }
+    .cart-aside { display: none; }
+  }
+  @media (max-width: 899px) {
+    .layout { grid-template-columns: minmax(0, 1fr); padding-inline: var(--space-5); }
+    .cats { position: static; }
+    .cat-list { display: flex; gap: var(--space-2); overflow-x: auto; }
+    .cat-item { min-height: var(--tap); padding: 0 16px; border: 1px solid var(--taba-border); border-radius: var(--radius-pill); flex: 0 0 auto; }
+    .cat-item.is-on { background: var(--taba-ink); color: #fff; }
+    .cat-item.is-on::before { display: none; }
+    .cat-item .n { display: none; }
+    .filters { display: none; }
+    .top { grid-template-columns: auto minmax(0, 1fr) auto; }
+    .top-nav { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <span class="brand-mark"><span class="brand-word">TABA</span></span>
+  <nav class="top-nav" aria-label="Navegación">
+    <button type="button">Inicio</button>
+    <button class="is-on" type="button" aria-current="page">Catálogo</button>
+    <button type="button">Seguir</button>
+    <button type="button">Perfil</button>
+  </nav>
+  <label class="top-search">
+    <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.9"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+    <input type="search" placeholder="Buscar bebidas, marcas y presentaciones" aria-label="Buscar">
+  </label>
+  <button class="top-cart" type="button"><span class="dot">3</span> $ 51.300</button>
+</header>
+
+<div class="layout">
+
+  <aside>
+    <nav class="cats" aria-label="Categorías">
+      <div>
+        <h2>Categorías</h2>
+        <div class="cat-list">
+          <button class="cat-item is-on" type="button" aria-current="true">Todos <span class="n">22</span></button>
+          <button class="cat-item" type="button">Gaseosas <span class="n">6</span></button>
+          <button class="cat-item" type="button">Cervezas <span class="n">8</span></button>
+          <button class="cat-item" type="button">Energizantes <span class="n">4</span></button>
+          <button class="cat-item" type="button">Mixers <span class="n">2</span></button>
+          <button class="cat-item" type="button">Favoritos <span class="n">2</span></button>
+        </div>
+      </div>
+      <div class="filters">
+        <h2>Filtros</h2>
+        <label><input type="checkbox"> Sólo disponibles</label>
+      </div>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="context">
+      <h1>Catálogo <span>· 22 bebidas</span></h1>
+      <div class="sort">
+        <label for="sort">Orden</label>
+        <select id="sort">
+          <option>Recomendados</option>
+          <option>Menor precio</option>
+          <option>Más pedidos</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="product-grid" role="list">
+
+      <article class="product-card" role="listitem">
+        <button class="product-media" type="button" aria-label="Ver Coca-Cola Original"><img src="assets/products/coca-cola-original-pet-500ml-pack-12.webp" alt="Coca-Cola Original"></button>
+        <button class="product-fav is-on" type="button" aria-pressed="true" aria-label="Quitar de favoritos"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity=".2" stroke="currentColor" stroke-width="1.7"/></svg></button>
+        <h3 class="product-name">Coca-Cola Original</h3>
+        <p class="product-pres">PET 500 ml · Pack x12</p>
+        <div class="product-buy"><span class="product-price">$ 17.100</span><button class="add-btn" type="button" aria-label="Agregar"><i>+</i> Agregar</button></div>
+      </article>
+
+      <article class="product-card" role="listitem">
+        <button class="product-media" type="button" aria-label="Ver Coca-Cola Zero"><img src="assets/products/coca-cola-zero-pet-500ml-pack-12.webp" alt="Coca-Cola Zero"></button>
+        <button class="product-fav" type="button" aria-pressed="false" aria-label="Guardar en favoritos"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.7"/></svg></button>
+        <h3 class="product-name">Coca-Cola Zero</h3>
+        <p class="product-pres">PET 500 ml · Pack x12</p>
+        <div class="product-buy"><span class="product-price">$ 17.100</span><div class="stepper"><button type="button" aria-label="Quitar una unidad">−</button><strong>2</strong><button type="button" aria-label="Agregar una unidad">+</button></div></div>
+      </article>
+
+      <article class="product-card" role="listitem">
+        <button class="product-media" type="button" aria-label="Ver Sprite"><img src="assets/products/sprite-original-pet-500ml-pack-12.webp" alt="Sprite"></button>
+        <button class="product-fav" type="button" aria-pressed="false" aria-label="Guardar en favoritos"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.7"/></svg></button>
+        <h3 class="product-name">Sprite</h3>
+        <p class="product-pres">PET 500 ml · Pack x12</p>
+        <div class="product-buy"><span class="product-price">$ 17.100</span><button class="add-btn" type="button" aria-label="Agregar"><i>+</i> Agregar</button></div>
+      </article>
+
+      <article class="product-card" role="listitem">
+        <button class="product-media" type="button" aria-label="Ver Fanta Naranja"><span class="stock-tag">Últimas 4</span><img src="assets/products/fanta-naranja-pet-1500ml-pack-6.webp" alt="Fanta Naranja"></button>
+        <button class="product-fav" type="button" aria-pressed="false" aria-label="Guardar en favoritos"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.7"/></svg></button>
+        <h3 class="product-name">Fanta Naranja</h3>
+        <p class="product-pres">PET 1500 ml · Pack x6</p>
+        <div class="product-buy"><span class="product-price">$ 19.999</span><button class="add-btn" type="button" aria-label="Agregar"><i>+</i> Agregar</button></div>
+      </article>
+
+      <article class="product-card" role="listitem">
+        <button class="product-media" type="button" aria-label="Ver Coca-Cola Original 1500"><img src="assets/products/coca-cola-original-pet-1500ml-pack-6.webp" alt="Coca-Cola Original 1500 ml"></button>
+        <button class="product-fav" type="button" aria-pressed="false" aria-label="Guardar en favoritos"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.7"/></svg></button>
+        <h3 class="product-name">Coca-Cola Original</h3>
+        <p class="product-pres">PET 1500 ml · Pack x6</p>
+        <div class="product-buy"><span class="product-price">$ 19.999</span><button class="add-btn" type="button" aria-label="Agregar"><i>+</i> Agregar</button></div>
+      </article>
+
+      <article class="product-card" role="listitem">
+        <button class="product-media" type="button" aria-label="Ver Heineken Original"><img src="assets/products/heineken-original-lata-473ml-pack-6.webp" alt="Heineken Original"></button>
+        <button class="product-fav" type="button" aria-pressed="false" aria-label="Guardar en favoritos"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.7"/></svg></button>
+        <h3 class="product-name">Heineken Original</h3>
+        <p class="product-pres">Lata 473 ml · Pack x6</p>
+        <div class="product-buy"><span class="product-price">$ 24.600</span><button class="add-btn" type="button" aria-label="Agregar"><i>+</i> Agregar</button></div>
+      </article>
+
+      <article class="product-card is-pending" role="listitem">
+        <button class="product-media" type="button" aria-label="Ver Corona Extra"><img src="assets/products/corona-extra-botella-330ml.webp" alt="Corona Extra"></button>
+        <button class="product-fav" type="button" aria-pressed="false" aria-label="Guardar en favoritos"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.7"/></svg></button>
+        <h3 class="product-name">Corona Extra</h3>
+        <p class="product-pres">Botella 330 ml</p>
+        <div class="product-buy"><span class="product-price pending">Precio a confirmar</span><button class="ask-link" type="button">Consultar ›</button></div>
+      </article>
+
+      <article class="product-card" role="listitem">
+        <button class="product-media" type="button" aria-label="Ver Red Bull Original"><img src="assets/products/red-bull-original-lata-250ml-pack-4.webp" alt="Red Bull Original"></button>
+        <button class="product-fav" type="button" aria-pressed="false" aria-label="Guardar en favoritos"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.7"/></svg></button>
+        <h3 class="product-name">Red Bull Original</h3>
+        <p class="product-pres">Lata 250 ml · Pack x4</p>
+        <div class="product-buy"><span class="product-price">$ 12.400</span><button class="add-btn" type="button" aria-label="Agregar"><i>+</i> Agregar</button></div>
+      </article>
+
+      <article class="product-card" role="listitem">
+        <button class="product-media" type="button" aria-label="Ver Schweppes Tónica"><img src="assets/products/schweppes-tonica-pet-1500ml-pack-6.webp" alt="Schweppes Tónica"></button>
+        <button class="product-fav" type="button" aria-pressed="false" aria-label="Guardar en favoritos"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.7"/></svg></button>
+        <h3 class="product-name">Schweppes Tónica</h3>
+        <p class="product-pres">PET 1500 ml · Pack x6</p>
+        <div class="product-buy"><span class="product-price">$ 18.300</span><button class="add-btn" type="button" aria-label="Agregar"><i>+</i> Agregar</button></div>
+      </article>
+
+      <article class="product-card" role="listitem">
+        <button class="product-media" type="button" aria-label="Ver Imperial Golden"><img src="assets/products/imperial-golden-lata-473ml.webp" alt="Imperial Golden"></button>
+        <button class="product-fav" type="button" aria-pressed="false" aria-label="Guardar en favoritos"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.7"/></svg></button>
+        <h3 class="product-name">Imperial Golden</h3>
+        <p class="product-pres">Lata 473 ml</p>
+        <div class="product-buy"><span class="product-price">$ 4.850</span><button class="add-btn" type="button" aria-label="Agregar"><i>+</i> Agregar</button></div>
+      </article>
+
+      <article class="product-card" role="listitem">
+        <button class="product-media" type="button" aria-label="Ver Monster Mango Loco"><img src="assets/products/monster-mango-loco-lata-473ml.webp" alt="Monster Mango Loco"></button>
+        <button class="product-fav" type="button" aria-pressed="false" aria-label="Guardar en favoritos"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.7"/></svg></button>
+        <h3 class="product-name">Monster Mango Loco</h3>
+        <p class="product-pres">Lata 473 ml</p>
+        <div class="product-buy"><span class="product-price">$ 5.200</span><button class="add-btn" type="button" aria-label="Agregar"><i>+</i> Agregar</button></div>
+      </article>
+
+      <article class="product-card" role="listitem">
+        <button class="product-media" type="button" aria-label="Ver Schneider Rubia"><img src="assets/products/schneider-rubia-lata-710ml.webp" alt="Schneider Rubia"></button>
+        <button class="product-fav" type="button" aria-pressed="false" aria-label="Guardar en favoritos"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.7"/></svg></button>
+        <h3 class="product-name">Schneider Rubia</h3>
+        <p class="product-pres">Lata 710 ml</p>
+        <div class="product-buy"><span class="product-price">$ 3.900</span><button class="add-btn" type="button" aria-label="Agregar"><i>+</i> Agregar</button></div>
+      </article>
+
+    </div>
+  </main>
+
+  <aside class="cart-aside" aria-label="Tu pedido">
+    <div class="cart-head"><h2>Tu pedido</h2><span>3 productos</span></div>
+    <div class="cart-items">
+      <div class="cart-item">
+        <img src="assets/products/coca-cola-zero-pet-500ml-pack-12.webp" alt="">
+        <div>
+          <p class="nm">Coca-Cola Zero</p>
+          <p class="pr">PET 500 ml · Pack x12</p>
+          <div class="ln">
+            <div class="stepper"><button type="button" aria-label="Quitar una unidad">−</button><strong>2</strong><button type="button" aria-label="Agregar una unidad">+</button></div>
+            <span class="sub">$ 34.200</span>
+          </div>
+        </div>
+      </div>
+      <div class="cart-item">
+        <img src="assets/products/sprite-original-pet-500ml-pack-12.webp" alt="">
+        <div>
+          <p class="nm">Sprite</p>
+          <p class="pr">PET 500 ml · Pack x12</p>
+          <div class="ln">
+            <div class="stepper"><button type="button" aria-label="Quitar una unidad">−</button><strong>1</strong><button type="button" aria-label="Agregar una unidad">+</button></div>
+            <span class="sub">$ 17.100</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cart-foot">
+      <div class="row"><span>Subtotal</span><b aria-live="polite">$ 51.300</b></div>
+      <button class="btn btn-primary" type="button">Ir al pago</button>
+    </div>
+  </aside>
+
+</div>
+</body>
+</html>

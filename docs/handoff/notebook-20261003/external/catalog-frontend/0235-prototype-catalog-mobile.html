@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TABA — Catálogo móvil (prototipo)</title>
+<link rel="stylesheet" href="prototype-shared.css">
+<style>
+  body { background: var(--taba-surface); padding-bottom: calc(var(--cart-band) + 16px); }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between;
+    min-height: 56px; padding: 0 var(--space-4);
+    background: var(--taba-surface-inverse);
+  }
+  .cart-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    min-height: var(--tap); padding: 0 12px 0 8px;
+    border: 1px solid rgb(255 255 255 / 16%); border-radius: var(--radius-pill);
+    background: rgb(255 255 255 / 8%); color: #fff;
+    font-size: var(--text-meta); font-weight: 800;
+  }
+  .cart-btn .dot {
+    display: grid; place-items: center;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--taba-red); font-size: 11px; font-weight: 900;
+  }
+
+  .shell { padding: 0 var(--space-4); }
+
+  .search {
+    display: flex; align-items: center; gap: 10px;
+    height: var(--tap); margin-top: var(--space-3); padding: 0 14px;
+    border: 1px solid var(--taba-border); border-radius: var(--radius-pill);
+    background: var(--taba-surface);
+  }
+  .search svg { width: 18px; height: 18px; color: var(--taba-muted); flex: 0 0 18px; }
+  .search input {
+    flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: none;
+    font: inherit; font-size: var(--text-body);
+  }
+  .search input::placeholder { color: #9a9aa2; }
+
+  /* 36px visuales, 44px de área táctil real. */
+  .addr {
+    position: relative;
+    display: flex; align-items: center; gap: 8px;
+    height: 36px; margin-top: var(--space-2);
+    background: none; border: 0; padding: 0; width: 100%; text-align: left;
+  }
+  .addr::after { content: ""; position: absolute; inset: -4px 0; }
+  .addr svg { width: 16px; height: 16px; color: var(--taba-muted); flex: 0 0 16px; }
+  .addr span {
+    flex: 1; min-width: 0;
+    font-size: var(--text-meta); font-weight: 700;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .addr b { color: #b9b9c0; font-weight: 400; }
+
+  .catwrap { margin-top: var(--space-2); }
+
+  .context {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 36px; margin-top: var(--space-2);
+  }
+  .context h1 { font-size: var(--text-body-lg); font-weight: 800; letter-spacing: -.01em; }
+  .context .count { color: var(--taba-muted); font-weight: 600; }
+  .sort-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    min-height: var(--tap); padding: 0 4px;
+    border: 0; background: none;
+    font-size: var(--text-meta); font-weight: 800; color: var(--taba-graphite);
+  }
+
+  .grid-wrap { margin-top: var(--space-3); }
+
+  /* Marca de referencia del primer viewport, sólo para la captura. */
+  .fold {
+    position: absolute; left: 0; right: 0; z-index: 40;
+    border-top: 2px dashed rgb(208 0 13 / 55%);
+    pointer-events: none;
+  }
+  .fold span {
+    position: absolute; right: 8px; top: -9px;
+    background: var(--taba-red); color: #fff;
+    font-size: 9px; font-weight: 900; letter-spacing: .06em;
+    padding: 2px 6px; border-radius: 3px;
+  }
+
+  /* 320x568: sólo quedan ~422px útiles sobre la banda fija. Para que el precio
+     entre en el primer viewport, el encabezado baja a 252px y el packshot a
+     100px, manteniendo el área táctil de 44px en todos los controles. */
+  @media (max-width: 350px) {
+    .shell { padding: 0 var(--space-3); }
+    .product-grid { gap: 10px; }
+    .product-media { height: 92px; }
+    .product-name { font-size: 14px; min-height: 32px; }
+    .product-pres { font-size: 11px; }
+    .product-price { font-size: 16px; }
+    .stepper { min-width: 96px; grid-template-columns: 32px 1fr 32px; }
+    .addr { height: 36px; margin-top: 6px; }
+    .catwrap { margin-top: 6px; }
+    .cat-chip { height: 38px; padding: 0 12px; }
+    .cat-chip::after { inset: -3px 0; }
+    .context { height: 32px; margin-top: 6px; }
+    .grid-wrap { margin-top: var(--space-2); }
+  }
+  @media (min-width: 600px) {
+    .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+    .shell { padding: 0 var(--space-6); max-width: 900px; margin-inline: auto; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <span class="brand-mark"><span class="brand-word">TABA</span></span>
+  <button class="cart-btn" type="button">
+    <span class="dot">2</span>
+    <span>$ 34.200</span>
+  </button>
+</header>
+
+<div class="shell">
+
+  <label class="search">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.9"/>
+      <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+    </svg>
+    <input type="search" placeholder="Buscar bebidas" aria-label="Buscar bebidas">
+  </label>
+
+  <button class="addr" type="button">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11Z"
+            stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+      <circle cx="12" cy="9.9" r="2.2" fill="currentColor"/>
+    </svg>
+    <span>Av. Argentina 450 · Neuquén Capital</span>
+    <b>›</b>
+  </button>
+
+  <nav class="catwrap" aria-label="Categorías">
+    <div class="cat-bar" role="tablist">
+      <button class="cat-chip is-on" role="tab" aria-selected="true">Todos</button>
+      <button class="cat-chip" role="tab" aria-selected="false">Gaseosas</button>
+      <button class="cat-chip" role="tab" aria-selected="false">Cervezas</button>
+      <button class="cat-chip" role="tab" aria-selected="false">Energizantes</button>
+      <button class="cat-chip" role="tab" aria-selected="false">Mixers</button>
+      <button class="cat-chip" role="tab" aria-selected="false">Favoritos</button>
+    </div>
+  </nav>
+
+  <div class="context">
+    <h1>Catálogo <span class="count">· 22 bebidas</span></h1>
+    <button class="sort-btn" type="button">Orden <span aria-hidden="true">⌄</span></button>
+  </div>
+
+  <div class="grid-wrap">
+    <div class="product-grid" role="list">
+
+      <article class="product-card" role="listitem">
+        <button class="product-media" type="button" aria-label="Ver Coca-Cola Original">
+          <img src="assets/products/coca-cola-original-pet-500ml-pack-12.webp" alt="Coca-Cola Original">
+        </button>
+        <button class="product-fav is-on" type="button" aria-pressed="true" aria-label="Quitar Coca-Cola Original de favoritos">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity=".2" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        </button>
+        <h3 class="product-name">Coca-Cola Original</h3>
+        <p class="product-pres">PET 500 ml · Pack x12</p>
+        <div class="product-buy">
+          <span class="product-price">$ 17.100</span>
+          <button class="add-btn" type="button" aria-label="Agregar Coca-Cola Original"><i>+</i> Agregar</button>
+        </div>
+      </article>
+
+      <article class="product-card" role="listitem">
+        <button class="product-media" type="button" aria-label="Ver Coca-Cola Zero">
+          <img src="assets/products/coca-cola-zero-pet-500ml-pack-12.webp" alt="Coca-Cola Zero">
+        </button>
+        <button class="product-fav" type="button" aria-pressed="false" aria-label="Guardar Coca-Cola Zero en favoritos">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        </button>
+        <h3 class="product-name">Coca-Cola Zero</h3>
+        <p class="product-pres">PET 500 ml · Pack x12</p>
+        <div class="product-buy">
+          <span class="product-price">$ 17.100</span>
+          <div class="stepper">
+            <button type="button" aria-label="Quitar una unidad">−</button>
+            <strong aria-live="polite">2</strong>
+            <button type="button" aria-label="Agregar una unidad">+</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="product-card" role="listitem">
+        <button class="product-media" type="button" aria-label="Ver Sprite">
+          <img src="assets/products/sprite-original-pet-500ml-pack-12.webp" alt="Sprite">
+        </button>
+        <button class="product-fav" type="button" aria-pressed="false" aria-label="Guardar Sprite en favoritos">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        </button>
+        <h3 class="product-name">Sprite</h3>
+        <p class="product-pres">PET 500 ml · Pack x12</p>
+        <div class="product-buy">
+          <span class="product-price">$ 17.100</span>
+          <button class="add-btn" type="button" aria-label="Agregar Sprite"><i>+</i> Agregar</button>
+        </div>
+      </article>
+
+      <article class="product-card" role="listitem">
+        <button class="product-media" type="button" aria-label="Ver Fanta Naranja">
+          <span class="stock-tag">Últimas 4</span>
+          <img src="assets/products/fanta-naranja-pet-1500ml-pack-6.webp" alt="Fanta Naranja">
+        </button>
+        <button class="product-fav" type="button" aria-pressed="false" aria-label="Guardar Fanta Naranja en favoritos">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        </button>
+        <h3 class="product-name">Fanta Naranja</h3>
+        <p class="product-pres">PET 1500 ml · Pack x6</p>
+        <div class="product-buy">
+          <span class="product-price">$ 19.999</span>
+          <button class="add-btn" type="button" aria-label="Agregar Fanta Naranja"><i>+</i> Agregar</button>
+        </div>
+      </article>
+
+      <article class="product-card" role="listitem">
+        <button class="product-media" type="button" aria-label="Ver Heineken Original">
+          <img src="assets/products/heineken-original-lata-473ml-pack-6.webp" alt="Heineken Original">
+        </button>
+        <button class="product-fav" type="button" aria-pressed="false" aria-label="Guardar Heineken Original en favoritos">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        </button>
+        <h3 class="product-name">Heineken Original</h3>
+        <p class="product-pres">Lata 473 ml · Pack x6</p>
+        <div class="product-buy">
+          <span class="product-price">$ 24.600</span>
+          <button class="add-btn" type="button" aria-label="Agregar Heineken Original"><i>+</i> Agregar</button>
+        </div>
+      </article>
+
+      <!-- Precio a confirmar: honesto y no comprable. Sin botón deshabilitado. -->
+      <article class="product-card is-pending" role="listitem">
+        <button class="product-media" type="button" aria-label="Ver Corona Extra">
+          <img src="assets/products/corona-extra-botella-330ml.webp" alt="Corona Extra">
+        </button>
+        <button class="product-fav" type="button" aria-pressed="false" aria-label="Guardar Corona Extra en favoritos">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        </button>
+        <h3 class="product-name">Corona Extra</h3>
+        <p class="product-pres">Botella 330 ml</p>
+        <div class="product-buy">
+          <span class="product-price pending">Precio a confirmar</span>
+          <button class="ask-link" type="button">Consultar ›</button>
+        </div>
+      </article>
+
+      <article class="product-card" role="listitem">
+        <button class="product-media" type="button" aria-label="Ver Red Bull Original">
+          <img src="assets/products/red-bull-original-lata-250ml-pack-4.webp" alt="Red Bull Original">
+        </button>
+        <button class="product-fav" type="button" aria-pressed="false" aria-label="Guardar Red Bull Original en favoritos">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        </button>
+        <h3 class="product-name">Red Bull Original</h3>
+        <p class="product-pres">Lata 250 ml · Pack x4</p>
+        <div class="product-buy">
+          <span class="product-price">$ 12.400</span>
+          <button class="add-btn" type="button" aria-label="Agregar Red Bull Original"><i>+</i> Agregar</button>
+        </div>
+      </article>
+
+      <article class="product-card" role="listitem">
+        <button class="product-media" type="button" aria-label="Ver Schweppes Tónica">
+          <img src="assets/products/schweppes-tonica-pet-1500ml-pack-6.webp" alt="Schweppes Tónica">
+        </button>
+        <button class="product-fav" type="button" aria-pressed="false" aria-label="Guardar Schweppes Tónica en favoritos">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 20.2s-7.1-4.5-7.1-10.1A4.1 4.1 0 0 1 12 7.3a4.1 4.1 0 0 1 7.1 2.8c0 5.6-7.1 10.1-7.1 10.1Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        </button>
+        <h3 class="product-name">Schweppes Tónica</h3>
+        <p class="product-pres">PET 1500 ml · Pack x6</p>
+        <div class="product-buy">
+          <span class="product-price">$ 18.300</span>
+          <button class="add-btn" type="button" aria-label="Agregar Schweppes Tónica"><i>+</i> Agregar</button>
+        </div>
+      </article>
+
+      <!-- Skeletons: geometría idéntica a la tarjeta real, sin salto de layout. -->
+      <article class="product-card" aria-hidden="true">
+        <div class="product-media skeleton" style="border-radius:0"></div>
+        <div class="skeleton" style="height:14px;margin:10px 12px 0"></div>
+        <div class="skeleton" style="height:14px;width:60%;margin:6px 12px 0"></div>
+        <div class="product-buy">
+          <div class="skeleton" style="height:18px;width:76px"></div>
+          <div class="skeleton" style="height:44px;width:44px;border-radius:50%"></div>
+        </div>
+      </article>
+      <article class="product-card" aria-hidden="true">
+        <div class="product-media skeleton" style="border-radius:0"></div>
+        <div class="skeleton" style="height:14px;margin:10px 12px 0"></div>
+        <div class="skeleton" style="height:14px;width:60%;margin:6px 12px 0"></div>
+        <div class="product-buy">
+          <div class="skeleton" style="height:18px;width:76px"></div>
+          <div class="skeleton" style="height:44px;width:44px;border-radius:50%"></div>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</div>
+
+<button class="sticky-cart" type="button">
+  <span>
+    <b>Ver carrito</b>
+    <small>2 productos</small>
+  </span>
+  <span class="total">$ 34.200 ›</span>
+</button>
+
+<nav class="bottom-nav" aria-label="Navegación">
+  <button class="nav-item" type="button">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    Inicio
+  </button>
+  <button class="nav-item is-on" type="button" aria-current="page">
+    <svg viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="4" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.8"/><rect x="4" y="13" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="13" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.8"/></svg>
+    Catálogo
+  </button>
+  <button class="nav-item" type="button">
+    <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+    Seguir
+  </button>
+  <button class="nav-item" type="button">
+    <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8.5" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M5 20a7 7 0 0 1 14 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    Perfil
+  </button>
+</nav>
+
+</body>
+</html>

@@ -1,0 +1,16 @@
+﻿# Changed files since start of this session (non-exhaustive, workspace scoped)
+- index.html
+- js/customer-delivery.js
+- js/repositories/sandbox_order_repository.js
+- styles/checkout.css
+- tests/customer-profile-completion.test.mjs
+- tests/e2e/business-inbox.spec.mjs
+- tests/e2e/cancel-confirmation.spec.mjs
+- tests/e2e/customer-delivery.spec.mjs
+- tests/e2e/direct-ordering-growth.spec.mjs
+- tests/e2e/helpers.mjs
+- tests/e2e/honesty-mode.spec.mjs
+- tests/e2e/la-taba.spec.mjs
+- tests/e2e/sandbox-flow.spec.mjs
+- js/core/profile-checkout.js
+- js/repositories/sandbox_customer_profile_repository.js

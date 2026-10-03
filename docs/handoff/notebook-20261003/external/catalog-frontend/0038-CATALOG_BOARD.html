@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>La Taba — tablero de investigación comercial</title>
+  <style>
+    :root{--ink:#231f20;--muted:#716a62;--paper:#fffaf3;--card:#fff;--accent:#d76f36;--line:#e9ded2;--ok:#277a56;--warn:#a56422;--bad:#a13d3d}
+    *{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}
+    header{padding:28px 18px 18px;max-width:1240px;margin:auto} h1{font-size:clamp(28px,5vw,48px);margin:0 0 6px;letter-spacing:-.04em} .lede{color:var(--muted);max-width:760px;margin:0}
+    .notice{margin-top:16px;padding:12px 14px;border:1px solid #ebc8a0;background:#fff1df;border-radius:12px;color:#70451f}
+    main{max-width:1240px;margin:auto;padding:0 18px 36px}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:10px 0 22px}.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}.stat b{display:block;font-size:28px}.stat span{color:var(--muted);font-size:13px}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0}.toolbar input{flex:1;min-width:220px;border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:white;font:inherit}.toolbar a{color:var(--accent);font-weight:650}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}.product{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column}.visual{position:relative;background:#f8f8f8;aspect-ratio:1/1;display:grid;place-items:center}.visual img{width:100%;height:100%;object-fit:contain}.placeholder{padding:18px;text-align:center;color:var(--muted)}.badge{position:absolute;top:10px;left:10px;border-radius:999px;padding:4px 8px;background:#fff;font-size:11px;font-weight:700;box-shadow:0 1px 6px #0001}.badge.ok{color:var(--ok)}.badge.bad{color:var(--bad)}.badge.warn{color:var(--warn)}.body{padding:13px}.body h2{font-size:16px;line-height:1.2;margin:0 0 7px}.meta{color:var(--muted);font-size:13px}.price{font-weight:750;font-size:18px;margin-top:9px}.confidence{font-size:12px;margin-top:8px}.confidence span{font-weight:700}.source{display:block;margin-top:8px;color:var(--accent);font-size:12px;text-decoration:none}
+    footer{max-width:1240px;margin:25px auto 0;padding:16px 18px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>LA TABA</h1>
+    <p class="lede">Tablero visual de investigación comercial para Neuquén Capital. Candidatos reales, precios en revisión y derechos de imagen sin asumir.</p>
+    <div class="notice"><strong>RESEARCH ONLY.</strong> Este tablero no activa productos, precios ni promociones. El CSV completo contiene 120 candidatos; esta vista muestra una selección visual de assets descargados y estados de confianza.</div>
+  </header>
+  <main>
+    <section class="stats" aria-label="Resumen">
+      <div class="stat"><b>120</b><span>candidatos</span></div><div class="stat"><b>15</b><span>categorías</span></div><div class="stat"><b>73</b><span>con precio observado</span></div><div class="stat"><b>13</b><span>combos pendientes</span></div><div class="stat"><b>1</b><span>imagen research-only limpia</span></div>
+    </section>
+    <div class="toolbar"><label for="filter">Filtrar productos visuales</label><input id="filter" type="search" placeholder="Ej.: gin, fernet, malbec"><a href="COMMERCIAL_CATALOG_CANDIDATES.csv">Abrir catálogo CSV completo</a><a href="IMAGE_MANIFEST.csv">Abrir manifiesto de imágenes</a></div>
+    <section id="grid" class="grid" aria-live="polite"></section>
+  </main>
+  <footer>Fuentes visuales principales: Vea/Jumbo CDN y Vinoteca El Lagar. Una imagen puede ser adecuada para revisar presentación y aun así no estar autorizada para publicación.</footer>
+  <script>
+    const products = [
+      {sku:'LT-CAN-080',name:'Fernet Branca 750 ml',cat:'fernet',price:'$15.545 mediana de revisión',confidence:'alta',state:'retailer_research_only',img:'images/fernet-branca-750-vea.jpg',source:'Vea',href:'https://www.vea.com.ar/fernet-branca-750-ml/p'},
+      {sku:'LT-CAN-067',name:'Fuzion Alta Reserva Malbec 750 ml',cat:'vinos',price:'$7.200 revisión',confidence:'media',state:'rejected',img:'images/fuzion-alta-malbec-750.webp',source:'El Lagar',href:'https://www.ellagarwineshop.com.ar/productos/fuzion-alta-reserva-malbec/'},
+      {sku:'LT-CAN-068',name:'Cruz Alta Malbec 750 ml',cat:'vinos',price:'$7.800 revisión',confidence:'media',state:'rejected',img:'images/cruz-alta-malbec-750.webp',source:'El Lagar',href:'https://www.ellagarwineshop.com.ar/productos/cruz-alta-malbec-750cc/'},
+      {sku:'LT-CAN-069',name:'Trumpeter Reserve Malbec 750 ml',cat:'vinos',price:'$12.500 posiblemente viejo',confidence:'media',state:'rejected',img:'images/trumpeter-reserve-malbec-750.webp',source:'El Lagar',href:'https://www.ellagarwineshop.com.ar/productos/trumpeter-reserve-malbec-750cc/'},
+      {sku:'LT-CAN-070',name:'El Enemigo Malbec 750 ml',cat:'vinos',price:'$30.700 revisión',confidence:'media',state:'rejected',img:'images/el-enemigo-malbec-750.webp',source:'El Lagar',href:'https://www.ellagarwineshop.com.ar/productos/el-enemigo-malbec-750cc/'},
+      {sku:'LT-CAN-071',name:'Tilia Malbec Orgánico 750 ml',cat:'vinos',price:'$12.630 revisión',confidence:'media',state:'rejected',img:'images/tilia-malbec-750.webp',source:'El Lagar',href:'https://www.ellagarwineshop.com.ar/productos/tilia-malbec-organico-750cc/'},
+      {sku:'LT-CAN-072',name:'Lagarde Organic Malbec 750 ml',cat:'vinos',price:'$20.800 revisión',confidence:'alta',state:'rejected',img:'images/lagarde-organic-malbec-750.webp',source:'El Lagar',href:'https://www.ellagarwineshop.com.ar/productos/lagarde-organic-malbec-750cc-bodega-lagarde/'},
+      {sku:'LT-CAN-073',name:'El Esteco Blend de Extremos Malbec 750 ml',cat:'vinos',price:'$17.500 revisión',confidence:'media',state:'rejected',img:'images/el-esteco-malbec-750.webp',source:'El Lagar',href:'https://www.ellagarwineshop.com.ar/productos/el-esteco-blend-de-extremos-malbec-750cc/'},
+      {sku:'LT-CAN-074',name:'Etchart Single Vineyard Malbec 750 ml',cat:'vinos',price:'$23.600 posiblemente viejo',confidence:'media',state:'rejected',img:'images/etchart-malbec-750.png',source:'El Lagar',href:'https://www.ellagarwineshop.com.ar/productos/etchart-single-vineyard-malbec-750cc-bodega-etchart/'},
+      {sku:'LT-CAN-075',name:'Mabellini Malbec 750 ml',cat:'vinos regional',price:'$31.700 revisión',confidence:'alta',state:'rejected',img:'images/mabellini-malbec-750.webp',source:'El Lagar',href:'https://www.ellagarwineshop.com.ar/productos/mabellini-malbec/'},
+      {sku:'LT-CAN-081',name:'Fernet Branca 1 L',cat:'fernet',price:'$27.200 revisión',confidence:'alta',state:'rejected',img:'images/fernet-branca-1l.webp',source:'El Lagar',href:'https://www.ellagarwineshop.com.ar/productos/fernet-branca-1-litro/'},
+      {sku:'LT-CAN-082',name:'Fernet Branca Menta 450 ml',cat:'fernet',price:'$11.000 revisión',confidence:'alta',state:'rejected',img:'images/fernet-branca-menta-450.webp',source:'El Lagar',href:'https://www.ellagarwineshop.com.ar/productos/fernet-branca-menta-450cc/'},
+      {sku:'LT-CAN-084',name:'Gin Aquiles London Dry 750 ml',cat:'gin',price:'$23.499,5 outlier review',confidence:'media',state:'rejected',img:'images/gin-aquiles-750.webp',source:'El Lagar',href:'https://www.ellagarwineshop.com.ar/productos/gin-aquiles-london-dry-gin/'},
+      {sku:'LT-CAN-089',name:'Gin Malaria Original 700 ml',cat:'gin',price:'$43.000 revisión',confidence:'media',state:'rejected',img:'images/gin-malaria-700.webp',source:'El Lagar',href:'https://www.ellagarwineshop.com.ar/productos/gin-malaria-original-700cc/'},
+      {sku:'LT-CAN-096',name:'Vodka Eristoff 700 ml',cat:'vodka',price:'$8.000 revisión',confidence:'media',state:'rejected',img:'images/vodka-eristoff-700.webp',source:'El Lagar',href:'https://www.ellagarwineshop.com.ar/productos/vodka-eristoff-700cc/'},
+      {sku:'LT-CAN-039',name:'Quilmes Clásica lata 473 ml',cat:'cervezas',price:'precio pendiente',confidence:'alta',state:'not_found',source:'Vea',href:'https://www.vea.com.ar/cerveza-quilmes-clasica-lata-473-cc/p'},
+      {sku:'LT-CAN-040',name:'Quilmes Clásica pack x6 473 ml',cat:'cervezas',price:'precio pendiente',confidence:'alta',state:'not_found',source:'Vea',href:'https://www.vea.com.ar/cerveza-quilmes-clasica-lata-473mlx6/p'},
+      {sku:'LT-CAN-041',name:'Quilmes 0.0 lata 473 ml',cat:'sin alcohol',price:'precio pendiente',confidence:'alta',state:'not_found',source:'Vea',href:'https://www.vea.com.ar/cerveza-quilmes-0-0-lata-473mlx1/p'},
+      {sku:'LT-CAN-119',name:'Pack surtido línea Coca-Cola 500 ml x6',cat:'packs y combos',price:'$7.260 mayorista',confidence:'media',state:'not_found',source:'Los Bielitas',href:'https://www.losbielitas.ar/'},
+      {sku:'LT-CAN-120',name:'Pack Coca-Cola 2.25 L x8',cat:'packs y combos',price:'$28.400 mayorista',confidence:'media',state:'not_found',source:'Los Bielitas',href:'https://www.losbielitas.ar/'}
+    ];
+    const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    function render(){const q=document.querySelector('#filter').value.toLowerCase();const rows=products.filter(p=>(p.name+' '+p.cat+' '+p.sku).toLowerCase().includes(q));document.querySelector('#grid').innerHTML=rows.map(p=>`<article class="product"><div class="visual">${p.img?`<img src="${esc(p.img)}" alt="${esc(p.name)}" loading="lazy">`:'<div class="placeholder">Sin imagen verificada<br>ver manifiesto</div>'}<span class="badge ${p.state==='retailer_research_only'?'ok':p.state==='rejected'?'bad':'warn'}">${esc(p.state)}</span></div><div class="body"><h2>${esc(p.name)}</h2><div class="meta">${esc(p.sku)} · ${esc(p.cat)}</div><div class="price">${esc(p.price)}</div><div class="confidence">Confianza: <span>${esc(p.confidence)}</span></div><a class="source" href="${esc(p.href)}" target="_blank" rel="noreferrer">Fuente: ${esc(p.source)} ↗</a></div></article>`).join('')||'<p>No hay productos que coincidan.</p>'}
+    document.querySelector('#filter').addEventListener('input',render); render();
+  </script>
+</body>
+</html>

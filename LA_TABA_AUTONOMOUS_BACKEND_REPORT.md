@@ -22,9 +22,9 @@ Evidencia: `artifacts/taba-autonomous-20261003/`.
 
 | | |
 |---|---|
-| TESTS_EJECUTADOS | pgTAP canónico (74 archivos, 5.865 aserciones) en base limpia y en base «sucia»; carreras de admisión, stock e idempotencia en el orden del gate; cadena de 45 reversiones contra línea base de 158; mínimo privilegio sobre el esquema viejo; pruebas de alertas con una tarea programada apagada; Deno de pagos (52 + 387); 885 tests de Node del área (migraciones, runner, scripts de CP/Staging, gates, certificador); `npm run check`; preflight de sólo lectura en Staging y CP (21 + 12 consultas); compuerta de release en sólo lectura contra CP; conciliación de sólo lectura contra Mercado Pago TEST en Staging; stack efímero de Supabase en CI (203 migraciones) |
+| TESTS_EJECUTADOS | Local (PG17 + shims): pgTAP canónico **77 archivos / 5.896 aserciones** en base limpia y en base «sucia»; carreras de admisión, stock e idempotencia en el orden del gate; cadena de **48 reversiones** contra una línea base de 158 armada en el momento; mínimo privilegio sobre el esquema viejo; pruebas de alertas con una tarea programada apagada; sondas de deadlock con llegada fijada (repro-4, repro-5). Node: 881 tests del área + `test:payments` 228 + compuertas/interruptor 150; Deno 52 + 452; `npm run check`. Sólo lectura: preflight en Staging y CP (21 + 12 consultas), compuerta de release contra CP, conciliación contra Mercado Pago TEST en Staging. CI real: `Validate release candidate` completo y certificador e-commerce en un Supabase efímero (206 migraciones) |
 | PASS | todo lo anterior, salvo lo que dice FAIL |
-| FAIL | _se completa al cierre (certificador en el stack)_ |
+| FAIL | 2 checks del certificador en el stack: `inventory:LAST_UNIT_LOSER_GETS_A_CLEAN_REFUSAL` y `cancellation:ORDER_NOT_FOUND_IS_ANSWERED_AS_A_CLIENT_ERROR` (HTTP 500 en 55000/P0002 = API-01/C-2, defecto abierto) |
 | SKIPPED | la suite completa `npm test` y el E2E de navegador corren en CI (no local, 25 min en esta máquina) |
 | FLAKY | ninguno observado. Nota: el gate DIRTY de los agentes anteriores había muerto con 55P03 por carga de la máquina; hoy, con la máquina libre, las tres carreras corrieron con 0 esperas agotadas |
 
@@ -37,9 +37,9 @@ Evidencia: `artifacts/taba-autonomous-20261003/`.
 | AUTORIZACIÓN | `PASS` en código · aplicación `BLOCKED` (dueño) | `4cee8a74`: cancelar/rechazar por catálogo (AUTHZ-04) + negativas 42501 (C-1); matriz de 796 celdas. Aplicarla cambia lo que puede hacer un empleado (también en una caja de Caja Clara) |
 | PEDIDOS | `PASS` | stock: 12 escenarios de carrera sin sobreventa ni stock negativo; cancelaciones concurrentes devuelven stock una vez; pgTAP de invariantes (377) |
 | WEBHOOKS | `PASS` | aviso duplicado x20 → 1 recibo, 1 trabajo; firmado y sin firma → 1; entrega firmada repetida con otro cuerpo → 1 recibo (`20261002022000`) |
-| RECOVERY | `PASS` local | ensayo de fallas (sesión anterior, 22/22) + entrega en curso con salida (`4a4afa79`) + cadena de reversiones 45/45 con 0 diferencias (tras corregir una reversión que perdía un permiso, `34460beb`) |
+| RECOVERY | `PASS` local | ensayo de fallas (sesión anterior, 22/22) + entrega en curso con salida (`4a4afa79`) + cadena de reversiones 48/48 con 0 diferencias (tras corregir dos permisos, `34460beb` y `59a8e5ca`) + ACK perdido 11/11 en el stack |
 | ALERTAS | `PASS` | `4a4afa79`: tareas faltantes/apagadas, cola trabada sin intent, reembolsos y cobros para revisar; y `5c578793`: el checkout sin verificar ya no queda mudo |
-| MIGRACIONES | `PASS` local y en stack real · aplicación `OWNER_APPROVAL_REQUIRED` | 203/203 en PG17 y en Supabase efímero (CI); verificación previa de sólo lectura en Staging y CP; ninguna de las 45 migraciones de la rama está aplicada en Staging (158) ni en CP (157) |
+| MIGRACIONES | `PASS` local y en stack real · aplicación `OWNER_APPROVAL_REQUIRED` | 206/206 en PG17, en el job de base de datos del CI (como no-superusuario) y en el Supabase efímero; verificación previa de sólo lectura en Staging y CP (dos archivos); ninguna de las 48 migraciones de la rama está aplicada en Staging (158) ni en CP (157) |
 | OBSERVABILIDAD | `PASS` con pendientes | traza de pedido sin datos personales, salud por componente, alertas nuevas; DIAG-02 parcial (contador del Panel) |
 | SEGURIDAD | `PASS` con pendientes | guarda de host de los arneses (`?host=` pisaba la URL local, `a7eb622c`); el cobro real en CP falla cerrado (no tiene el secreto viejo ni el interruptor nuevo); el interruptor nuevo exige el valor exacto `enabled`; AUTHZ-04 parcial (`set_business_open_state`, `authorize_arca_homologation`) |
 | STACK | `PASS` salvo el contrato HTTP | Certificador e-commerce contra un Supabase completo y efímero en CI (GoTrue, PostgREST, pg_cron y Edge reales; 206 migraciones): **455 checks, 448 PASS, 2 FAIL, 5 no probados**, estable en 4 corridas (37124096351, 37124837704, 37125278937, 37127204266 — la última ya con el interruptor del cobro real). Los 2 FAIL = API-01/C-2. Pagos 12/12, ACK perdido 11/11, idempotencia 27/27, RLS 19/19, AUTHZ-04 en vivo (empleado → 42501). No probados (motivo escrito): gateway local sin clave ×2, sin Cloudflare delante, firma de webhook (las funciones de pago se niegan antes por no ser un despliegue alojado), umbrales de rendimiento sin versionar. Evidencia: `artifacts/taba-autonomous-20261003/stack-certification-run-37125278937/` |
@@ -66,7 +66,7 @@ entre corridas la propuesta varía hasta ~60 % (con un caso que llega al timeout
 
 | | |
 |---|---|
-| STAGING | sin cambios hechos por esta sesión (sólo lecturas). Ledger 158; le faltan las 45 migraciones de la rama. Hallazgo de datos: el pago TEST `179851082485` está aprobado en Mercado Pago y su intent «expired» sin pedido (no es dinero real) |
+| STAGING | sin cambios hechos por esta sesión (sólo lecturas). Ledger 158; le faltan las 48 migraciones de la rama. Hallazgo de datos: el pago TEST `179851082485` está aprobado en Mercado Pago y su intent «expired» sin pedido (no es dinero real) |
 | CONTROLLED_PRODUCTION | sin cambios (sólo lecturas). Compuerta de release (08:51): NOT_READY (9 bloqueos: insumos del comercio, migraciones, Edge Functions viejas, guardián ausente, CI). El cobro real falla cerrado: no está `MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION` (llave de las funciones desplegadas hoy) ni `MERCADOPAGO_REAL_MONEY_ENABLED` (llave de las de esta rama) |
 | PRODUCTION_READ_ONLY | todas las lecturas por el endpoint de sólo lectura de la Management API (rol `supabase_read_only_user`, transacción de sólo lectura) o por listados de nombres de secretos |
 
@@ -83,7 +83,7 @@ entre corridas la propuesta varía hasta ~60 % (con un caso que llega al timeout
 | RB-01 | P2 | La reversión de 20261002010000 no devolvía el EXECUTE que `service_role` tiene sobre un disparador | ensayo de la cadena completa de reversiones (1 diferencia); Staging/CP tienen `{postgres, service_role}` | corregido `34460beb` |
 | RB-02 | P2 | Mi propia primera versión de 20261002062000 le habría sacado a `service_role` el EXECUTE que tiene en Staging/CP | ensayo de la cadena (2 diferencias) — **antes de llegar a ningún entorno** | corregido `59a8e5ca` |
 | TOOL-08 | P3 | Los arneses de carrera (que escriben fixtures) aceptaban `?host=` en la URL, que pisa el host «local» del cliente de pg | la versión anterior seguía intentando conectar a 203.0.113.7 a los 12 s | corregido `a7eb622c` (+12 pruebas) |
-| DOC-01 | P1 (doc) | El plan de promoción decía que el cobro real lo abría `MERCADOPAGO_REAL_MONEY_ENABLED` (no existe en el código) y llamaba «error de configuración» al secreto que hoy es la única llave | lectura del código y de los nombres de secretos de CP | corregido `c5454a0c` |
+| DOC-01 | P1 (doc) | El plan de promoción decía que el cobro real lo abría `MERCADOPAGO_REAL_MONEY_ENABLED` (que en ese momento no existía en el código) y llamaba «error de configuración» al secreto que era la única llave | lectura del código y de los nombres de secretos de CP | corregido `c5454a0c` |
 | FO-01 | P1 | Con la compuerta de creación cerrada, `mercadopago-create-preference` con `new_attempt` re-reservaba el stock de una sesión vencida **antes** de evaluar la compuerta | hallado al implementar EDGE-03 (agente, revisado por mí) | corregido `6e7af1d4` (la compuerta va primero; 409 sin reservar) |
 | FO-02 | P2 | La compuerta comercial `mp:gate:produccion-sin-cobro` pasaba ante cualquier problema de configuración aunque el cobro fuera posible | ídem | corregido `cb7f60f2` (exige dinero real probado cerrado) |
 | CI-01 | P3 | El diagnóstico del workflow del stack fallaba por un cast (`text || "char"`) | run 37123682507 | corregido `cd7a9e94` |
@@ -141,7 +141,7 @@ habría roto `npm test`, y un candado duplicado.
      de la línea Caja Clara (su comercio `la-taba-staging` canceló 24 pedidos como empleado) y `abandoned_order_minutes=120` de
      ese comercio empieza a cumplirse (`docs/ecommerce-hardening/staging-coexistence.md`).
    - Pasos: (a) acordar con la línea Caja Clara que sus cancelaciones pasen a dueño/encargado o que el catálogo le dé
-     `orders.cancel` al empleado; (b) backup: `node .tmp-scratch/stg-backup.mjs` (o el respaldo del plan); (c) verificación
+     `orders.cancel` al empleado; (b) backup y ensayo de restauración: `node .tmp-scratch/stg-backup.mjs` y `node .tmp-scratch/stg-restore-drill.mjs` (herramientas locales, no versionadas, de la sesión anterior, en el worktree); (c) verificación
      previa: `node scripts/release/run-readonly-checks.mjs --target staging --file docs/migrations/checks/20261001_ecommerce_hardening_preflight.sql`
      y lo mismo con `20261002_…`; (d) en una carpeta aislada con `supabase/config.toml` y `supabase/migrations/` del commit:
      `npx supabase@2.101.0 link --project-ref ucbtjcurawxjwjdvvcvj` → `db push --linked --dry-run` → `db push --linked --include-all`;
@@ -160,8 +160,8 @@ habría roto `npm test`, y un candado duplicado.
    `node scripts/release/ecommerce-release-gates.mjs --target controlled-production --business-id <uuid>` (`REAL_MONEY_GATE`).
    Hoy CP falla cerrado: no tiene ni el interruptor ni el secreto viejo.
 5. **Abrir el PR** de `hardening/taba-ecommerce-production` (apilado sobre #130) y decidir el orden de merge.
-6. **Contrato HTTP (API-01/C-2)**: autorizar una sesión dedicada para cerrarlo en el servidor (el mecanismo está probado
-   sobre PostgREST 14.5; regenera ~100 funciones).
+6. **Contrato HTTP (API-01/C-2)**: que una sesión verifique e integre el paquete en curso del worktree `la-taba-http-contract`
+   (el mecanismo está probado sobre PostgREST 14.5; regenera ~100 funciones de entrada).
 7. **PAY-06**: política para volver a leer cobros completados (ventana y frecuencia).
 8. **Staging**: reembolsar en el panel TEST de Mercado Pago (o recuperar) el pago `179851082485`.
 9. **Comercio real de CP**: catálogo, horarios, modo de entrega, equipo, vendedor de Mercado Pago y decisión de cobro (los 5
@@ -169,4 +169,24 @@ habría roto `npm test`, y un candado duplicado.
 
 ## Resultado
 
-_se completa al cierre_
+**READY_FOR_CONTROLLED_PRODUCTION: `BLOCKED`**
+
+- Lo que hay: CI completo verde (runs 37123390677 y 37125497727; el final se completa abajo), pgTAP canónico 77 archivos /
+  5.896 aserciones, carreras sin deadlocks, cadena de 48 reversiones sin diferencias, certificador 448/455 en un Supabase real
+  efímero, **0 P0 y 0 P1 abiertos**, migraciones verificadas en sólo lectura contra Staging y CP.
+- Lo que bloquea: la regla «no hay PASS sin el build desplegado» exige certificar ESTE build en Staging, y aplicarlo en Staging
+  es una decisión del dueño (Owner 1 y 2: convivencia con la línea Caja Clara por AUTHZ-04). Además queda abierto el contrato
+  HTTP (API-01/C-2, P2: negativas finales como HTTP 500). Con el punto 1 de Owner hecho y la certificación de Staging verde
+  sobre el mismo commit, el siguiente paso sería el plan de promoción (sin dinero real).
+
+**READY_FOR_REAL_MONEY: `NO`**
+
+- El interruptor del cobro real existe en el código (EDGE-03) pero no está desplegado; Mercado Pago real nunca se ejercitó
+  (regla de la sesión); no hay vendedor real conectado ni decisión de apertura con Mercado Pago; el comercio real de CP no tiene
+  catálogo público, horarios, modo de entrega ni equipo; la rama nunca corrió sobre un proyecto alojado; el contrato HTTP sigue
+  abierto. Hoy CP falla cerrado.
+
+**Próximo paso recomendado (en orden):** (1) Marco decide Owner 1–2 (aplicar en Staging y AUTHZ-04); (2) una sesión verifica e
+integra `feat/taba-http-contract` (contrato HTTP) y vuelve a correr el certificador en el stack hasta 455/455 sin FAIL;
+(3) aplicar en Staging con el procedimiento de Owner 1 y certificar; (4) promoción a CP según el plan; (5) recién después,
+Owner 4 (dinero real).

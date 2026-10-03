@@ -31,7 +31,7 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
 | Recuperación de entregas y alertas | `INCOMPLETE` | Paquete wp11 (2 migraciones `20261002010000-011000` + 3 pgTAP) borrador sin revisar |
 | Certificación del stack | `INCOMPLETE` | El arranque del stack efímero es real y verde (run 37067129076). El certificador `--target stack` y los cambios al workflow están sin commit y nunca corrieron en CI |
 
-### Estado actual de los cinco frentes (09:45)
+### Estado actual de los cinco frentes (09:40)
 
 | Frente | Estado | Evidencia |
 |---|---|---|
@@ -98,3 +98,21 @@ aserciones, total consistente (base limpia y base «sucia»); carreras admisión
   comercio de la línea Caja Clara canceló 24 pedidos como empleado: 20261002050000 NO se aplica en Staging sin acordarlo.
 - Plan de promoción: decía que el cobro real lo abría `MERCADOPAGO_REAL_MONEY_ENABLED`, que no existe en el código; corregido. La
   llave real es el secreto smoke, y en CP no está (leído: sólo nombres de secretos).
+- 09:40–10:02 — 5º frente: certificador e-commerce commiteado (`60a7f6ed`) y corriendo contra el Supabase efímero de CI.
+  Corrida 1 (37123682507): el diagnóstico del workflow fallaba por un cast (`cd7a9e94`). Corrida 2 (37123838754): el preflight
+  paraba porque el gateway del stack local no exige la clave del proyecto → «no probado en este destino» (`511dc88b`).
+  **Corrida 3 (37124096351): 455 checks, 448 PASS, 3 FAIL, 4 no probados; las 24 fases corrieron sobre GoTrue, PostgREST,
+  pg_cron y Edge reales.** FAIL reales: 55000 de negocio y P0002 de pedido inexistente salen como HTTP 500 (API-01/C-2,
+  contrato HTTP abierto). El tercero era la misma diferencia de gateway (ajustado en `34f244a9`, sólo si no se filtró nada).
+  Corrida 4 (37124837704) en curso.
+- 09:45–10:00 — dos P2 de concurrencia más, reproducidos con las sondas de wp18 y corregidos:
+  IDEM-08 (`c997a18c`): la marca de envío dudoso de la preferencia toma el cobro antes que el intento (X1/X2: 40P01 → sin
+  deadlock). IDEM-07 (`e7287f53`, permisos corregidos en el commit siguiente): rechazar o retirar una oferta de reparto toma el pedido antes que la oferta (P4/P5:
+  40P01 → las 7 sondas sin deadlock). El ensayo de la cadena de reversiones detectó que 062000 le sacaba el EXECUTE a
+  service_role (que Staging y CP tienen): corregido; cadena 47/47, 0 diferencias.
+- CI real sobre `a7eb622c` (run 37123390677): job de base de datos VERDE (migraciones como no-superusuario, pgTAP, carreras
+  incluida la de idempotencia, restauración aislada) y Windows VERDE; el job web seguía corriendo.
+- EDGE-03 (interruptor permanente del cobro real, opción A decidida por el dueño): un agente lo implementa en el worktree
+  aislado `la-taba-real-money-gate` (rama `feat/taba-real-money-gate`, sin push); se integra sólo después de revisarlo.
+  Verificado para su compuerta de release: la Management API devuelve por secreto `{name, value, updated_at}` con `value` =
+  SHA-256 del valor, así que se puede saber si vale `enabled` sin ver nunca el secreto.

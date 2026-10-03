@@ -1,0 +1,1178 @@
+[
+  {
+    "branch": "handoff/notebook-20261003-archive/backup/tracking-visual-pre-baseline-9a99698",
+    "local_head": "9a99698ddbe7ef5de10c779699ca58e74f3b379a",
+    "remote_head": "9a99698ddbe7ef5de10c779699ca58e74f3b379a",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/deploy/taba2-order-recovery-panel",
+    "local_head": "0efe1dc3efb8a9fb0d9036d5f25b5e4b6ae671bb",
+    "remote_head": "0efe1dc3efb8a9fb0d9036d5f25b5e4b6ae671bb",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/despliegue/main-e5f390e",
+    "local_head": "e5f390e27dd2479cec71c24a9675ccbd71d53a4f",
+    "remote_head": "e5f390e27dd2479cec71c24a9675ccbd71d53a4f",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/docs/taba2-production-launch-plan",
+    "local_head": "5470ac66e4f155d140361294084fa61deb012174",
+    "remote_head": "5470ac66e4f155d140361294084fa61deb012174",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/business-fiscal-document-closure",
+    "local_head": "89bda02b73b651cc42f8c9fa3a008903501f89e9",
+    "remote_head": "89bda02b73b651cc42f8c9fa3a008903501f89e9",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/business-windows-scanner-fiscal",
+    "local_head": "ba0bdceb3c4d8d73997dfe67381ccd92ae8808b5",
+    "remote_head": "ba0bdceb3c4d8d73997dfe67381ccd92ae8808b5",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/catalog-checkout-premium",
+    "local_head": "41e27133849321cb65b61e14376d57c295cf5c2e",
+    "remote_head": "41e27133849321cb65b61e14376d57c295cf5c2e",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/catalog-expansion-argentina",
+    "local_head": "67aa86d53be6d774fd88bc1939e4a14ea5837207",
+    "remote_head": "67aa86d53be6d774fd88bc1939e4a14ea5837207",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/catalog-packshots-promos",
+    "local_head": "64615dbd594279945257078f315ec911dbade5d6",
+    "remote_head": "64615dbd594279945257078f315ec911dbade5d6",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/la-taba-redesign-rojo",
+    "local_head": "c6270589756214eac617515248e93a8e8819190b",
+    "remote_head": "c6270589756214eac617515248e93a8e8819190b",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/light-live-map-and-rider-moto-ui",
+    "local_head": "98133b6b480949d0f4e2d979bf45929f396ccb2c",
+    "remote_head": "98133b6b480949d0f4e2d979bf45929f396ccb2c",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/mostrador-patagonico-v1",
+    "local_head": "2e5f02b5d201f9addbe6d1d1a8f8b5aa900bbde0",
+    "remote_head": "2e5f02b5d201f9addbe6d1d1a8f8b5aa900bbde0",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/rider-delivery-server-contracts",
+    "local_head": "4960da279f0f668559ab55b6a751576b18232b95",
+    "remote_head": "4960da279f0f668559ab55b6a751576b18232b95",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba-mercadopago-oauth",
+    "local_head": "899caaf849c1db8672e83b5cd9e31b0d4e141199",
+    "remote_head": "899caaf849c1db8672e83b5cd9e31b0d4e141199",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba-premium-catalog-launch",
+    "local_head": "eb1f33d7e2579365a0bdab488fe9fe273f9a7341",
+    "remote_head": "eb1f33d7e2579365a0bdab488fe9fe273f9a7341",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-arca-fiscal-automation",
+    "local_head": "af93aeb6c7538655cdc9ab38daebbfea027bfe3f",
+    "remote_head": "af93aeb6c7538655cdc9ab38daebbfea027bfe3f",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-arca-homologation-readiness",
+    "local_head": "13936d5eedd36a211fa2ab4d255f30ad8fc0dbed",
+    "remote_head": "13936d5eedd36a211fa2ab4d255f30ad8fc0dbed",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-argentina-ecommerce",
+    "local_head": "e0d74a2469b5eb80c30f33679cd1251d62a29cd9",
+    "remote_head": "e0d74a2469b5eb80c30f33679cd1251d62a29cd9",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-automated-rider-dispatch",
+    "local_head": "226bca2fea3bcd4f593c29fdef472c9be7e0c1c7",
+    "remote_head": "226bca2fea3bcd4f593c29fdef472c9be7e0c1c7",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-beverage-assets-v2",
+    "local_head": "e0d74a2469b5eb80c30f33679cd1251d62a29cd9",
+    "remote_head": "e0d74a2469b5eb80c30f33679cd1251d62a29cd9",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-beverage-catalog-home",
+    "local_head": "3e1f90d3a60a4dcb6b3d7eda943a54e4b061a614",
+    "remote_head": "3e1f90d3a60a4dcb6b3d7eda943a54e4b061a614",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-business-commercial-mobile",
+    "local_head": "88d7ccf65c2fc902b302ab721b80193837b47b7e",
+    "remote_head": "88d7ccf65c2fc902b302ab721b80193837b47b7e",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-business-operations-delivery",
+    "local_head": "a7abc797c52a3d775387c37205545e63b6f0ba99",
+    "remote_head": "a7abc797c52a3d775387c37205545e63b6f0ba99",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-business-operations-final",
+    "local_head": "8028dcc26ab271a0d7bb9acb81784d3e41ddae7f",
+    "remote_head": "8028dcc26ab271a0d7bb9acb81784d3e41ddae7f",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-business-panel-hardening",
+    "local_head": "c7c3bbd5348bbd9891661784b600c3d20204b285",
+    "remote_head": "c7c3bbd5348bbd9891661784b600c3d20204b285",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-catalog-image-pipeline",
+    "local_head": "d87fb6ed1237eb9f84ec688de38456a038d2d89f",
+    "remote_head": "d87fb6ed1237eb9f84ec688de38456a038d2d89f",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-catalog-premium-purchase",
+    "local_head": "280213ded33d66d5259faf5534c7885e74203410",
+    "remote_head": "280213ded33d66d5259faf5534c7885e74203410",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-commerce-growth-engine",
+    "local_head": "0192c68d22db8368d48aec3f68cbacecfaf88b98",
+    "remote_head": "0192c68d22db8368d48aec3f68cbacecfaf88b98",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-commercial-catalog-authority",
+    "local_head": "6d3d1e7a40dd7ba07be0c5945dbd1f81b7e94ada",
+    "remote_head": "6d3d1e7a40dd7ba07be0c5945dbd1f81b7e94ada",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-commercial-p1-closure",
+    "local_head": "b66add06231ff9df5be25144a854a9c1858f01c4",
+    "remote_head": "b66add06231ff9df5be25144a854a9c1858f01c4",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-commercial-production-hardening",
+    "local_head": "0a5f6d0d64b27b9e5ba6cb48d262c2bf48c159ed",
+    "remote_head": "0a5f6d0d64b27b9e5ba6cb48d262c2bf48c159ed",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-commercial-shelf-stage1",
+    "local_head": "9cc051af1712e248117ad50fd19d11e06c040837",
+    "remote_head": "9cc051af1712e248117ad50fd19d11e06c040837",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-commercial-skills-pack",
+    "local_head": "c03b16647612e03830fce97b7e86425367c3e079",
+    "remote_head": "c03b16647612e03830fce97b7e86425367c3e079",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-commercial-storefront",
+    "local_head": "6dd05655a491897037af84a77808e7680bb50401",
+    "remote_head": "6dd05655a491897037af84a77808e7680bb50401",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-commercial-stories",
+    "local_head": "27155217f0c1f68fb474ab7230bff90de22cbbd9",
+    "remote_head": "27155217f0c1f68fb474ab7230bff90de22cbbd9",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-customer-overnight-rc",
+    "local_head": "4f49234dc39d565fca7cc0deed785f20fa2d114c",
+    "remote_head": "4f49234dc39d565fca7cc0deed785f20fa2d114c",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-digital-commerce-100",
+    "local_head": "e59ac1c5eefc49fe6835aa2d05a43896c0ded1f9",
+    "remote_head": "e59ac1c5eefc49fe6835aa2d05a43896c0ded1f9",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-fable-visual-polish",
+    "local_head": "c761a8d43a9e4abcd17c7687e3e8a25ad545db93",
+    "remote_head": "c761a8d43a9e4abcd17c7687e3e8a25ad545db93",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-gondola-comercial-neuquen",
+    "local_head": "786e6a6963f764a1264a925f0099c0cecc196d79",
+    "remote_head": "786e6a6963f764a1264a925f0099c0cecc196d79",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-identity-session-biometrics",
+    "local_head": "a0bbac99d242a9c7ec9bd58fa36933381572f380",
+    "remote_head": "a0bbac99d242a9c7ec9bd58fa36933381572f380",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-launch-ux-polish",
+    "local_head": "3888b611b5a6a66bdb66d3d0a464bb1767eaa3c4",
+    "remote_head": "3888b611b5a6a66bdb66d3d0a464bb1767eaa3c4",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-live-tracking-production-ux",
+    "local_head": "73fdb4c5dd9fcc15a7c86cfb19350c25e808fd1f",
+    "remote_head": "73fdb4c5dd9fcc15a7c86cfb19350c25e808fd1f",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-mercadopago-checkout",
+    "local_head": "051413a24839c9c916a457bce77cf65898041f27",
+    "remote_head": "051413a24839c9c916a457bce77cf65898041f27",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-mobile-brand-refresh",
+    "local_head": "0e2e32866f468a8f00e60acd08fde3258b3d412c",
+    "remote_head": "0e2e32866f468a8f00e60acd08fde3258b3d412c",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-p0-catalog-finalization",
+    "local_head": "edbe15e908c18ed04a962504ec626e32a16fe79c",
+    "remote_head": "edbe15e908c18ed04a962504ec626e32a16fe79c",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-panel-retail-publication-flow",
+    "local_head": "95ac129f12fb85d0ede7f0c40757df4d2406a8a9",
+    "remote_head": "95ac129f12fb85d0ede7f0c40757df4d2406a8a9",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-pilot-ops",
+    "local_head": "03c2fbdf4b3ba70dbd116788bb3e8612d0fc491d",
+    "remote_head": "03c2fbdf4b3ba70dbd116788bb3e8612d0fc491d",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-production-auth-go-live",
+    "local_head": "34c6ee3601eaf83af819b56ee9aab0a5cd419c80",
+    "remote_head": "34c6ee3601eaf83af819b56ee9aab0a5cd419c80",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-production-backend-remediation",
+    "local_head": "38372091036b3d4f0b3119e2701bd17724d83c32",
+    "remote_head": "38372091036b3d4f0b3119e2701bd17724d83c32",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-pwa-installable",
+    "local_head": "105f85abf6b2baec24d6b7942a8e17f15416e8af",
+    "remote_head": "105f85abf6b2baec24d6b7942a8e17f15416e8af",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-pwa-production-integration",
+    "local_head": "190b344d11790c8ae606024d7919b07df2799726",
+    "remote_head": "190b344d11790c8ae606024d7919b07df2799726",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-real-orders-ops",
+    "local_head": "aed0293c32d5cbf5a4599e5eb4f46033192bb84e",
+    "remote_head": "aed0293c32d5cbf5a4599e5eb4f46033192bb84e",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-retail-catalog-normalization",
+    "local_head": "4daa44879c43afccbabb1484d852b2f82848eaad",
+    "remote_head": "4daa44879c43afccbabb1484d852b2f82848eaad",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-retail-unit-publication",
+    "local_head": "1c7455029f5390b127844d4afd708705e8083566",
+    "remote_head": "1c7455029f5390b127844d4afd708705e8083566",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-rider-multi-order-backend",
+    "local_head": "f4d5bc82a3e99eab2ed81f8de7ed8c8b95cf61eb",
+    "remote_head": "f4d5bc82a3e99eab2ed81f8de7ed8c8b95cf61eb",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-shelf-glow-final-polish",
+    "local_head": "5758b46c822b9f68bbdda31eaf895494dcb456ae",
+    "remote_head": "5758b46c822b9f68bbdda31eaf895494dcb456ae",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-storefront-commercial-pilot",
+    "local_head": "90a28a119e5cd97a66e3b3b56a35ad58ab508b1b",
+    "remote_head": "90a28a119e5cd97a66e3b3b56a35ad58ab508b1b",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-storefront-motion",
+    "local_head": "cb3751bf8f35b1878c316e3b3ef89f88b3d99903",
+    "remote_head": "cb3751bf8f35b1878c316e3b3ef89f88b3d99903",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-tracking-always-on-map",
+    "local_head": "36b6f3df1595a7e51dc885a569fec3326e2ab0af",
+    "remote_head": "36b6f3df1595a7e51dc885a569fec3326e2ab0af",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-tracking-visual-polish",
+    "local_head": "4ea98c6d040633f7f5cb24dfdb4839706cb3a76f",
+    "remote_head": "4ea98c6d040633f7f5cb24dfdb4839706cb3a76f",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-unit-catalog-normalization",
+    "local_head": "b8ac9a3a5aaca5ba883c2d68dfc2efa62d7f3c6f",
+    "remote_head": "b8ac9a3a5aaca5ba883c2d68dfc2efa62d7f3c6f",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/feature/taba2-whatsapp-commerce",
+    "local_head": "c1e7cb66d216086d4951b79390068e09d6a7c8d2",
+    "remote_head": "c1e7cb66d216086d4951b79390068e09d6a7c8d2",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/fix/a1-a4-production-blockers",
+    "local_head": "168eaeebb92ce9563e2db873b41070f14200b69b",
+    "remote_head": "168eaeebb92ce9563e2db873b41070f14200b69b",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/fix/la-taba-ui-polish-brand",
+    "local_head": "c6270589756214eac617515248e93a8e8819190b",
+    "remote_head": "c6270589756214eac617515248e93a8e8819190b",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/fix/rider-staging-certification",
+    "local_head": "d0b995eaa642a8c78a28a0a9d966a3bdd89b6e7b",
+    "remote_head": "d0b995eaa642a8c78a28a0a9d966a3bdd89b6e7b",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/fix/taba2-customer-postdemo-hardening",
+    "local_head": "9ef9aee0fa318636ae5a8487589981a66e199ae7",
+    "remote_head": "9ef9aee0fa318636ae5a8487589981a66e199ae7",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/fix/taba2-fiscal-homologation-gate",
+    "local_head": "d1aa4a63da1f9fda01be39e64314afcfa77098ac",
+    "remote_head": "d1aa4a63da1f9fda01be39e64314afcfa77098ac",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/fix/taba2-location-truth",
+    "local_head": "9621d8313524ca30b0348315f739c8c37a7f6a6c",
+    "remote_head": "9621d8313524ca30b0348315f739c8c37a7f6a6c",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/fix/taba2-mobile-layout-hardening",
+    "local_head": "fd87c1ac164244d19ea7a5344e0afff05db80db2",
+    "remote_head": "fd87c1ac164244d19ea7a5344e0afff05db80db2",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/fix/taba2-operational-resilience",
+    "local_head": "eda13f833bfc54f52a838ac1f76459b7ae276a5b",
+    "remote_head": "eda13f833bfc54f52a838ac1f76459b7ae276a5b",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/fix/taba2-order-intake-dispatch",
+    "local_head": "59d8e036df10650070afbaec9cfc20705dd5b742",
+    "remote_head": "59d8e036df10650070afbaec9cfc20705dd5b742",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/fix/taba2-p0-payment-recovery-ux",
+    "local_head": "3e48bb0bcd777276d23c542c60fec94ed8b0ed84",
+    "remote_head": "3e48bb0bcd777276d23c542c60fec94ed8b0ed84",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/fix/taba2-packing-capacity-unit-fixture",
+    "local_head": "0a062fb0c1f77f6e6c27982edd84ee28000bc912",
+    "remote_head": "0a062fb0c1f77f6e6c27982edd84ee28000bc912",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/fix/taba2-production-blockers",
+    "local_head": "cc9e88f1137ca0f65c44234f7270f63774f45c20",
+    "remote_head": "cc9e88f1137ca0f65c44234f7270f63774f45c20",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/integration/taba2-customer-experience",
+    "local_head": "11cd59d8e9fe28a16ad99b9cc7435bd1758924bc",
+    "remote_head": "11cd59d8e9fe28a16ad99b9cc7435bd1758924bc",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/integration/taba2-live-schema-reconciliation",
+    "local_head": "3a1ab114a0cdf212e5e3913ae0dfa5a07adc7d8e",
+    "remote_head": "3a1ab114a0cdf212e5e3913ae0dfa5a07adc7d8e",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/integration/taba2-mobile-design-review",
+    "local_head": "08bb17a0a17d7b86847b9a782f35b23037073094",
+    "remote_head": "08bb17a0a17d7b86847b9a782f35b23037073094",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/integration/taba2-operational-frontend",
+    "local_head": "f16c6d92d968f286b69c6562c75fe98958937bcb",
+    "remote_head": "f16c6d92d968f286b69c6562c75fe98958937bcb",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/integration/taba2-rc1-business-panel",
+    "local_head": "b6d27daf89f04132bf348981869524c21802fe93",
+    "remote_head": "b6d27daf89f04132bf348981869524c21802fe93",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/integration/taba2-schema-canonical",
+    "local_head": "edad48a24d4c4d2b76880e6f1ceb40072eae3318",
+    "remote_head": "edad48a24d4c4d2b76880e6f1ceb40072eae3318",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/main",
+    "local_head": "31c900b7e4d66a89e80c535e59ed30fdad03ea3a",
+    "remote_head": "31c900b7e4d66a89e80c535e59ed30fdad03ea3a",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/ops/taba2-production-supabase-provisioning",
+    "local_head": "d9e279c7ed5a0058da9460f632378a306a0d3102",
+    "remote_head": "d9e279c7ed5a0058da9460f632378a306a0d3102",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/recovery/taba-final-ux-63a7cf3",
+    "local_head": "425c4aedd9b5d3b418e7949cf1f511c8077368b4",
+    "remote_head": "425c4aedd9b5d3b418e7949cf1f511c8077368b4",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/release/taba-production-rc",
+    "local_head": "01035c98e0e7651452dc2cce71fd5d547b514b63",
+    "remote_head": "01035c98e0e7651452dc2cce71fd5d547b514b63",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/release/taba-real-pilot-staging",
+    "local_head": "9a99698ddbe7ef5de10c779699ca58e74f3b379a",
+    "remote_head": "9a99698ddbe7ef5de10c779699ca58e74f3b379a",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/release/taba2-commercial-candidate",
+    "local_head": "da56ce9fcbae77bff6f2334b596149b67c2c3e11",
+    "remote_head": "da56ce9fcbae77bff6f2334b596149b67c2c3e11",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/release/taba2-commercial-hardening",
+    "local_head": "e160fb15dcff3e77706316a3d4b9284794725f3f",
+    "remote_head": "e160fb15dcff3e77706316a3d4b9284794725f3f",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/release/taba2-commercial-rc",
+    "local_head": "bc9af92e1f11ce790fb2d620c24acf844053125d",
+    "remote_head": "bc9af92e1f11ce790fb2d620c24acf844053125d",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/release/taba2-e2e-test-staging-rc",
+    "local_head": "6294a989f67aada984f66cc2312142db63a563a0",
+    "remote_head": "6294a989f67aada984f66cc2312142db63a563a0",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/release/taba2-first-physical-e2e",
+    "local_head": "3d69e6b59cd70e87b4431a99f3875d9c6ab14711",
+    "remote_head": "3d69e6b59cd70e87b4431a99f3875d9c6ab14711",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/release/taba2-mercadopago-staging-rc1",
+    "local_head": "0587712be87bc32ebae6be75220eeb863780387c",
+    "remote_head": "0587712be87bc32ebae6be75220eeb863780387c",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/release/taba2-pilot-integration",
+    "local_head": "a8b93cfa449256595a240c3b33f181941ce6b5eb",
+    "remote_head": "a8b93cfa449256595a240c3b33f181941ce6b5eb",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/release/taba2-pilot-rc",
+    "local_head": "55093e030f3a5c3bc7957a7c38588fcde730dc30",
+    "remote_head": "55093e030f3a5c3bc7957a7c38588fcde730dc30",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/release/taba2-pilot-rc1",
+    "local_head": "f4588f9e2e5993dfb2c7a260bf0e525223d45ba4",
+    "remote_head": "f4588f9e2e5993dfb2c7a260bf0e525223d45ba4",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/release/taba2-pilot-rc2",
+    "local_head": "f611492a5814bf9aeea2469491e6272b9b99663d",
+    "remote_head": "f611492a5814bf9aeea2469491e6272b9b99663d",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/release/taba2-pilot-rc2-operational",
+    "local_head": "eda13f833bfc54f52a838ac1f76459b7ae276a5b",
+    "remote_head": "eda13f833bfc54f52a838ac1f76459b7ae276a5b",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/release/taba2-production-candidate",
+    "local_head": "317bbe9dc1c987c31ea4e0915784f881f61f24b6",
+    "remote_head": "317bbe9dc1c987c31ea4e0915784f881f61f24b6",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/release/taba2-production-external-enablement",
+    "local_head": "ed0eebed82b73c451c4b55bcfde756c7647c7a85",
+    "remote_head": "ed0eebed82b73c451c4b55bcfde756c7647c7a85",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/release/taba2-production-rc1",
+    "local_head": "4ca22af6d425c422fdca2be8e11798a2de170033",
+    "remote_head": "4ca22af6d425c422fdca2be8e11798a2de170033",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/release/taba2-production-rc2",
+    "local_head": "01ba45aa2c5d1aa438edba54685607a85e65a7e4",
+    "remote_head": "01ba45aa2c5d1aa438edba54685607a85e65a7e4",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/rescue/taba2-main-local-20260820",
+    "local_head": "2d171ac0bf36c906de08a735f6a543a334dc8cb2",
+    "remote_head": "2d171ac0bf36c906de08a735f6a543a334dc8cb2",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/staging/real-orders-walter",
+    "local_head": "c6270589756214eac617515248e93a8e8819190b",
+    "remote_head": "c6270589756214eac617515248e93a8e8819190b",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/test/taba2-business-synthetic-certification",
+    "local_head": "5e0c39065b316cd4adb2c2180be2a2ee2af90516",
+    "remote_head": "5e0c39065b316cd4adb2c2180be2a2ee2af90516",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/test/taba2-business-synthetic-recertification-8028dcc",
+    "local_head": "73a37b09e0a3d21fce61f5c97cc167ef022fdcb0",
+    "remote_head": "73a37b09e0a3d21fce61f5c97cc167ef022fdcb0",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/test/taba2-business-synthetic-recertification-final",
+    "local_head": "e59e28db78bfadc976d2f4b92cba5f8e0df06eb2",
+    "remote_head": "e59e28db78bfadc976d2f4b92cba5f8e0df06eb2",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/test/taba2-e2e-test-staging-certification",
+    "local_head": "4caa1f1cda3d6d21da704570a073970e82ad0ae7",
+    "remote_head": "4caa1f1cda3d6d21da704570a073970e82ad0ae7",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/test/taba2-first-human-physical-order",
+    "local_head": "66ba221e90436015c7f038ee3ecacc13654ff448",
+    "remote_head": "66ba221e90436015c7f038ee3ecacc13654ff448",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive/test/taba2-rc1-business-panel-certification",
+    "local_head": "06b330169f6b2e1f43206b1b1cc85d767e50e01f",
+    "remote_head": "06b330169f6b2e1f43206b1b1cc85d767e50e01f",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-business-panel-automation",
+    "local_head": "fc406588d2b1455e3e9b272d194dbae0335d5c0f",
+    "remote_head": "fc406588d2b1455e3e9b272d194dbae0335d5c0f",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-commerce-v3",
+    "local_head": "ba8c393da8886404de953909c89cdd9b96dbdb87",
+    "remote_head": "ba8c393da8886404de953909c89cdd9b96dbdb87",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-commerce-v3-c-capturas",
+    "local_head": "3b78ad3a0517fceaab9cddb9e5dfa5f48ba9cd8a",
+    "remote_head": "3b78ad3a0517fceaab9cddb9e5dfa5f48ba9cd8a",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-migration-fetch-audit",
+    "local_head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "remote_head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-pages-preview",
+    "local_head": "9c6232efb8e69120c7e2180276b250b6032286c6",
+    "remote_head": "9c6232efb8e69120c7e2180276b250b6032286c6",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-promos-packshots",
+    "local_head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "remote_head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-real-orders-staging",
+    "local_head": "4037ac67087779c565e161993eff007581dfbada",
+    "remote_head": "4037ac67087779c565e161993eff007581dfbada",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-real-pilot-staging",
+    "local_head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "remote_head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-redesign-rojo",
+    "local_head": "67972cf9aa05c8c19b247b251c84348dc18af1b1",
+    "remote_head": "67972cf9aa05c8c19b247b251c84348dc18af1b1",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-taba2-commerce-growth",
+    "local_head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "remote_head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-taba2-production-auth-go-live",
+    "local_head": "51b8e2e776f553a32c6a4677b522f0b4611f86ff",
+    "remote_head": "51b8e2e776f553a32c6a4677b522f0b4611f86ff",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-taba2-production-candidate",
+    "local_head": "375633b39ece4879d43f5f499c79b0ae50654814",
+    "remote_head": "375633b39ece4879d43f5f499c79b0ae50654814",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-taba2-weekend-launch",
+    "local_head": "7343f968cd23c153590daadf34d800e252e832db",
+    "remote_head": "7343f968cd23c153590daadf34d800e252e832db",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-ui-polish-brand",
+    "local_head": "9446beaee9a560d8034bb1b7b925360142a62dfe",
+    "remote_head": "9446beaee9a560d8034bb1b7b925360142a62dfe",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/backup/profile-hydration-before-app-session-amend",
+    "local_head": "8c433f9178f2a5d076bdb538d0820d2be1d87226",
+    "remote_head": "8c433f9178f2a5d076bdb538d0820d2be1d87226",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/backup/release-taba-platform-rc-bbe61e9",
+    "local_head": "bbe61e90ee6fca2331f381028ecaca895b16d758",
+    "remote_head": "bbe61e90ee6fca2331f381028ecaca895b16d758",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/feat/rider-operational-map",
+    "local_head": "2ef0498279e5a7afb0741157b618f8ee96b8d664",
+    "remote_head": "2ef0498279e5a7afb0741157b618f8ee96b8d664",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/feat/taba-production-beverages",
+    "local_head": "edb10db5a0b92d18fad8e13ece61145a544b98a8",
+    "remote_head": "edb10db5a0b92d18fad8e13ece61145a544b98a8",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/feat/taba-ux-ultra-showcase",
+    "local_head": "f419b6e5f09ca248696a446e8490bdcc533c7720",
+    "remote_head": "f419b6e5f09ca248696a446e8490bdcc533c7720",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/feature/claude-final-visual-qa",
+    "local_head": "b1698b518f20bc0272fa13b32500b27d85dc4ebc",
+    "remote_head": "b1698b518f20bc0272fa13b32500b27d85dc4ebc",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/feature/commercial-polish-v1",
+    "local_head": "87b828f3ff11a789933e9791b7426d7b12f203f0",
+    "remote_head": "87b828f3ff11a789933e9791b7426d7b12f203f0",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/feature/integrate-opus-ui-final",
+    "local_head": "962c3ca8d11813671fdf967eade004477a794bf6",
+    "remote_head": "962c3ca8d11813671fdf967eade004477a794bf6",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/feature/internal-checkout-fix-v2",
+    "local_head": "52146c3c3eb5d55e171c884c133da968549636ed",
+    "remote_head": "52146c3c3eb5d55e171c884c133da968549636ed",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/feature/tracking-onthe-way-premium-visual",
+    "local_head": "2daf26c3d06a960b98d88cbbb474ab3fbe8158a6",
+    "remote_head": "2daf26c3d06a960b98d88cbbb474ab3fbe8158a6",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/fix/demo-realtime-real-gps",
+    "local_head": "d4dc01bb39e6ff4d8035b0e48d04986071557695",
+    "remote_head": "d4dc01bb39e6ff4d8035b0e48d04986071557695",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/fix/mobile-touch-safety",
+    "local_head": "71bb08b534b0ce86c79f072bc36f0398dcbba93a",
+    "remote_head": "71bb08b534b0ce86c79f072bc36f0398dcbba93a",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/fix/public-design-v37",
+    "local_head": "aca173a2c4bfdc67795799c2abedebdc3ba68d73",
+    "remote_head": "aca173a2c4bfdc67795799c2abedebdc3ba68d73",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/fix/tracking-certified-terminal-visibility",
+    "local_head": "a7e7c7b6b055cb43a5897dc22c0e2ef3bb24e6f9",
+    "remote_head": "a7e7c7b6b055cb43a5897dc22c0e2ef3bb24e6f9",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/fix/tracking-terminal-delivery-code-cleanup",
+    "local_head": "7400af3e1c1d29c6dd0aa03c277bacd398e24448",
+    "remote_head": "7400af3e1c1d29c6dd0aa03c277bacd398e24448",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/fix/tracking-terminal-expiry-revalidation",
+    "local_head": "16eed686d7a5181a34b1ec52b55870398ccf2474",
+    "remote_head": "16eed686d7a5181a34b1ec52b55870398ccf2474",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/fix/tracking-terminal-shell-resolution",
+    "local_head": "fff5e52d1af17d58ccfe0bfa95829dbc6054f59c",
+    "remote_head": "fff5e52d1af17d58ccfe0bfa95829dbc6054f59c",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/fix/tracking-terminal-visibility",
+    "local_head": "ba68ed19679ead36365183bcb7f081dc62c815d0",
+    "remote_head": "ba68ed19679ead36365183bcb7f081dc62c815d0",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/fix/unit-storefront-catalog",
+    "local_head": "cc6f90285f1889e7831391146e93c616e29f7de5",
+    "remote_head": "cc6f90285f1889e7831391146e93c616e29f7de5",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/fix/v39-mobile-overlay-hit-testing",
+    "local_head": "5ac7ee509689a05f39a94533c9604690e5db7d8b",
+    "remote_head": "5ac7ee509689a05f39a94533c9604690e5db7d8b",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/integration/taba-beverages-tracking",
+    "local_head": "1e56fac11afaeb3bd3e2243e513c57cb0b2eaa68",
+    "remote_head": "1e56fac11afaeb3bd3e2243e513c57cb0b2eaa68",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/integration/taba-final-ux",
+    "local_head": "63a7cf3fe34a3e3c27a054d688464cf485bf890e",
+    "remote_head": "63a7cf3fe34a3e3c27a054d688464cf485bf890e",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/integration/taba-platform-rc-clean",
+    "local_head": "6ae559744efb394b78a251dbcc05890452f263c9",
+    "remote_head": "6ae559744efb394b78a251dbcc05890452f263c9",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/main",
+    "local_head": "58f9a18cee368fcdfdd03f5c3a4655adcbc7327a",
+    "remote_head": "58f9a18cee368fcdfdd03f5c3a4655adcbc7327a",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/publish/v39-preview",
+    "local_head": "2598a205e5e3f45cfd8add8b08f1320337f5780e",
+    "remote_head": "2598a205e5e3f45cfd8add8b08f1320337f5780e",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/release/taba-platform-rc",
+    "local_head": "413b7022afa7ac4e740dae9d8726ca5df1ce2b53",
+    "remote_head": "413b7022afa7ac4e740dae9d8726ca5df1ce2b53",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/release/taba-staging-pilot",
+    "local_head": "63a7cf3fe34a3e3c27a054d688464cf485bf890e",
+    "remote_head": "63a7cf3fe34a3e3c27a054d688464cf485bf890e",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/release/unit-storefront-preview",
+    "local_head": "d4dc01bb39e6ff4d8035b0e48d04986071557695",
+    "remote_head": "d4dc01bb39e6ff4d8035b0e48d04986071557695",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/validation/shell-resolution-parent",
+    "local_head": "0e1fed14deafa703187cb6aeaf76ec38b7913827",
+    "remote_head": "0e1fed14deafa703187cb6aeaf76ec38b7913827",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/validation/taba-beverages-tracking-baseline",
+    "local_head": "2a6944422c2bf013fdb3eeef3edfbedd30721a7d",
+    "remote_head": "2a6944422c2bf013fdb3eeef3edfbedd30721a7d",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup/validation/tracking-complement-16eed",
+    "local_head": "0da40c91019744b9bcf58d1337e06ee47a6b0905",
+    "remote_head": "0da40c91019744b9bcf58d1337e06ee47a6b0905",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup-stash-business-inbox",
+    "local_head": "0b700bce51d0952c6bc3c694fbc378525e02d587",
+    "remote_head": "0b700bce51d0952c6bc3c694fbc378525e02d587",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-external-backend-qa",
+    "local_head": "e988d85e89de878f48af3d33de5ac85b5d0dc7fa",
+    "remote_head": "e988d85e89de878f48af3d33de5ac85b5d0dc7fa",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-external-qa-evidence",
+    "local_head": "d72bdd5df97c16fdfac13eb8102ac51ab97d3c42",
+    "remote_head": "d72bdd5df97c16fdfac13eb8102ac51ab97d3c42",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-external-business-fiscal",
+    "local_head": "161dab838beab7500d16e5ddf19038782c6c914c",
+    "remote_head": "161dab838beab7500d16e5ddf19038782c6c914c",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-external-catalog-frontend",
+    "local_head": "a9901c6a5b925744cbb72bcf481fd005b5170d95",
+    "remote_head": "a9901c6a5b925744cbb72bcf481fd005b5170d95",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-external-rider",
+    "local_head": "86be5f9513e948ade9311129998b6a5031cac490",
+    "remote_head": "86be5f9513e948ade9311129998b6a5031cac490",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-external-commercial-media",
+    "local_head": "d9b632f1a1568f0d1c1bdab92c68168e52631137",
+    "remote_head": "d9b632f1a1568f0d1c1bdab92c68168e52631137",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive-sources",
+    "local_head": "ef9b6c233f4fd60e6ce744f06d0f290027046bdd",
+    "remote_head": "ef9b6c233f4fd60e6ce744f06d0f290027046bdd",
+    "equal": true
+  },
+  {
+    "branch": "chore/taba2-rider-release-hardening-rc2",
+    "local_head": "e9517a93a015474bdb9a73854ac79094cf53f76e",
+    "remote_head": "e9517a93a015474bdb9a73854ac79094cf53f76e",
+    "equal": true
+  },
+  {
+    "branch": "codex/rider-map-staging",
+    "local_head": "95294d9d36a6429a21a562ea6a48b8c9ecbf8523",
+    "remote_head": "95294d9d36a6429a21a562ea6a48b8c9ecbf8523",
+    "equal": true
+  },
+  {
+    "branch": "codex/taba2-rider-map-visual-polish",
+    "local_head": "471f79ef9a9f47ebb9018f5962b0d6538319ccde",
+    "remote_head": "471f79ef9a9f47ebb9018f5962b0d6538319ccde",
+    "equal": true
+  },
+  {
+    "branch": "develop",
+    "local_head": "31003891de66c6a3d3fd78b3a4fbab0ac746ac4a",
+    "remote_head": "31003891de66c6a3d3fd78b3a4fbab0ac746ac4a",
+    "equal": true
+  },
+  {
+    "branch": "feature/rider-live-contract-integration",
+    "local_head": "f1f3f37c5e2793c40f672fbc9b099eee6a746dba",
+    "remote_head": "f1f3f37c5e2793c40f672fbc9b099eee6a746dba",
+    "equal": true
+  },
+  {
+    "branch": "feature/rider-map-location-contracts",
+    "local_head": "898cea6d444e63adeed61f8079cead750036da0c",
+    "remote_head": "898cea6d444e63adeed61f8079cead750036da0c",
+    "equal": true
+  },
+  {
+    "branch": "feature/rider-pilot-readiness-ux",
+    "local_head": "471f79ef9a9f47ebb9018f5962b0d6538319ccde",
+    "remote_head": "471f79ef9a9f47ebb9018f5962b0d6538319ccde",
+    "equal": true
+  },
+  {
+    "branch": "feature/taba2-rider-commercial-polish",
+    "local_head": "1b234a7fdd82f969ac52c26708d3c8f1056b9adf",
+    "remote_head": "1b234a7fdd82f969ac52c26708d3c8f1056b9adf",
+    "equal": true
+  },
+  {
+    "branch": "feature/taba2-rider-commercial-redesign",
+    "local_head": "d1ce78e814b59ee7df1befdcc8e2a31c23912c3a",
+    "remote_head": "d1ce78e814b59ee7df1befdcc8e2a31c23912c3a",
+    "equal": true
+  },
+  {
+    "branch": "feature/taba2-rider-commercial-ux",
+    "local_head": "8e9cd4f0efb65d2847df668e4851d2060ec23bf9",
+    "remote_head": "8e9cd4f0efb65d2847df668e4851d2060ec23bf9",
+    "equal": true
+  },
+  {
+    "branch": "feature/taba2-rider-identity-biometrics",
+    "local_head": "acc253a4bdd5cba1090be24d77f617af33f8de19",
+    "remote_head": "acc253a4bdd5cba1090be24d77f617af33f8de19",
+    "equal": true
+  },
+  {
+    "branch": "feature/taba2-rider-map-hardening",
+    "local_head": "5231a87fc8df9d0b37b263938304935b9213a2d4",
+    "remote_head": "5231a87fc8df9d0b37b263938304935b9213a2d4",
+    "equal": true
+  },
+  {
+    "branch": "feature/taba2-rider-map-polish-v2",
+    "local_head": "6cb55aaf12c031ec48b4bd1dc940cdf2426e7b6a",
+    "remote_head": "6cb55aaf12c031ec48b4bd1dc940cdf2426e7b6a",
+    "equal": true
+  },
+  {
+    "branch": "feature/taba2-rider-multi-order",
+    "local_head": "76dbb40c258fc705329de2cfca38a188a9c1529b",
+    "remote_head": "76dbb40c258fc705329de2cfca38a188a9c1529b",
+    "equal": true
+  },
+  {
+    "branch": "feature/taba2-rider-multi-order-board-fix",
+    "local_head": "5231a87fc8df9d0b37b263938304935b9213a2d4",
+    "remote_head": "5231a87fc8df9d0b37b263938304935b9213a2d4",
+    "equal": true
+  },
+  {
+    "branch": "feature/taba2-rider-pilot-integration",
+    "local_head": "894267af0a274fab95d3a7237c3895ab0ac20a4c",
+    "remote_head": "894267af0a274fab95d3a7237c3895ab0ac20a4c",
+    "equal": true
+  },
+  {
+    "branch": "feature/taba2-rider-production-auth",
+    "local_head": "1a04870e3583cb5a6acdabf4129c6f4f9c9c3f40",
+    "remote_head": "1a04870e3583cb5a6acdabf4129c6f4f9c9c3f40",
+    "equal": true
+  },
+  {
+    "branch": "feature/taba2-rider-self-registration",
+    "local_head": "e25171394c5f6fdf96d595be0f7c287e9db53193",
+    "remote_head": "e25171394c5f6fdf96d595be0f7c287e9db53193",
+    "equal": true
+  },
+  {
+    "branch": "feature/taba2-rider-sheet-ux-polish",
+    "local_head": "c884e6a50d921616a2b59432b6db7625c199e052",
+    "remote_head": "c884e6a50d921616a2b59432b6db7625c199e052",
+    "equal": true
+  },
+  {
+    "branch": "feature/taba2-rider-shifts-dispatch",
+    "local_head": "ae90ab6cefeb319c7e033fe8e4938fb5fa03f92d",
+    "remote_head": "ae90ab6cefeb319c7e033fe8e4938fb5fa03f92d",
+    "equal": true
+  },
+  {
+    "branch": "fix/rider-android-runtime-hardening",
+    "local_head": "434c4d53e021579171398cfd10c3b6439730a22c",
+    "remote_head": "434c4d53e021579171398cfd10c3b6439730a22c",
+    "equal": true
+  },
+  {
+    "branch": "fix/taba2-rider-commercial-review-p1",
+    "local_head": "9b498db2a75e5ff4a4bb93e0d502d0b5f2848109",
+    "remote_head": "9b498db2a75e5ff4a4bb93e0d502d0b5f2848109",
+    "equal": true
+  },
+  {
+    "branch": "fix/taba2-rider-location-truth",
+    "local_head": "4ad0b551d0ae94563d14928b4e90daa3d1f0acd9",
+    "remote_head": "4ad0b551d0ae94563d14928b4e90daa3d1f0acd9",
+    "equal": true
+  },
+  {
+    "branch": "fix/taba2-rider-second-delivery-start",
+    "local_head": "94c6464b6b10a14db3aaf1f773c22377ae38c5ed",
+    "remote_head": "94c6464b6b10a14db3aaf1f773c22377ae38c5ed",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-map-cert-baseline",
+    "local_head": "df44dafb674910007f7a41fa2a987b4a9abbfb2a",
+    "remote_head": "df44dafb674910007f7a41fa2a987b4a9abbfb2a",
+    "equal": true
+  },
+  {
+    "branch": "release/taba2-rider-first-physical-e2e",
+    "local_head": "7cec5a70969d851fe37cc82aa2ee2f169f5bce7f",
+    "remote_head": "7cec5a70969d851fe37cc82aa2ee2f169f5bce7f",
+    "equal": true
+  },
+  {
+    "branch": "release/taba2-rider-pilot-rc2",
+    "local_head": "ff6d01480b36cfb02fd7e3fb6aabdbdfa6ccf4df",
+    "remote_head": "ff6d01480b36cfb02fd7e3fb6aabdbdfa6ccf4df",
+    "equal": true
+  },
+  {
+    "branch": "release/taba2-rider-production-external-enablement",
+    "local_head": "a23b6e41fb2b76c6e4a814cce95d182cbfe0bb9c",
+    "remote_head": "a23b6e41fb2b76c6e4a814cce95d182cbfe0bb9c",
+    "equal": true
+  },
+  {
+    "branch": "release/taba2-rider-production-rc1",
+    "local_head": "5231a87fc8df9d0b37b263938304935b9213a2d4",
+    "remote_head": "5231a87fc8df9d0b37b263938304935b9213a2d4",
+    "equal": true
+  },
+  {
+    "branch": "release/taba2-rider-production-rc2",
+    "local_head": "8968fc6e715810563372a0def1d1336ecbe61cb5",
+    "remote_head": "8968fc6e715810563372a0def1d1336ecbe61cb5",
+    "equal": true
+  },
+  {
+    "branch": "release/taba2-rider-rc2-integration",
+    "local_head": "3875c3c532b8b9baa3a4e90d45268de2b90acb70",
+    "remote_head": "3875c3c532b8b9baa3a4e90d45268de2b90acb70",
+    "equal": true
+  },
+  {
+    "branch": "test/taba2-rider-first-human-physical-order",
+    "local_head": "a843b4aaae7b38524e9f2e572ec1965a8e1cd096",
+    "remote_head": "a843b4aaae7b38524e9f2e572ec1965a8e1cd096",
+    "equal": true
+  },
+  {
+    "branch": "test/taba2-rider-staging-smoke-automation",
+    "local_head": "8e2b671c4123b8916fe628739b5c1d4490c6ae0b",
+    "remote_head": "8e2b671c4123b8916fe628739b5c1d4490c6ae0b",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-backend-final",
+    "local_head": "6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a",
+    "remote_head": "6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a",
+    "equal": true
+  },
+  {
+    "branch": "handoff/notebook-20261003-frontend-pr131",
+    "local_head": "737371ba82cae6e309cff04c97984443c52c8def",
+    "remote_head": "737371ba82cae6e309cff04c97984443c52c8def",
+    "equal": true
+  }
+]

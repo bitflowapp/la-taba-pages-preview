@@ -1,0 +1,252 @@
+[
+  {
+    "path": "C:/1212/la-taba-promos-packshots/js/approved-beverage-demo-data.js",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-promos-packshots/js/preview-promotions-data.js",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-promos-packshots/scripts/catalog-images/compose-promotion-images.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-promos-packshots/scripts/catalog-images/normalize-demo-packshots.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-promos-packshots/scripts/import-approved-beverages.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-promos-packshots/scripts/import-preview-promotions.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-real-orders-staging/js/app.js",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-real-orders-staging/js/production-operations.js",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-real-orders-staging/js/repositories/supabase_order_repository.js",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-real-orders-staging/js/tracking/production_rider_gps.js",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-real-orders-staging/tests/production-rider-gps.test.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-real-orders-staging/tests/e2e/rider-gps-gate2.spec.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-real-orders-staging/tests/rider-gps-gate2.test.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-real-pilot-staging/tests/catalog-image-pipeline.test.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-real-pilot-staging/tests/image-sources.test.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-redesign-rojo/js/app.js",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-redesign-rojo/js/ui.js",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-redesign-rojo/tests/e2e/beverage-storefront.spec.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-redesign-rojo/tests/e2e/honesty-mode.spec.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-redesign-rojo/tests/e2e/ios-autozoom-safety.spec.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-redesign-rojo/tests/e2e/ios-phantom-scroll.spec.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-redesign-rojo/tests/e2e/la-taba.spec.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-redesign-rojo/tests/e2e/tracking-arriving.spec.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-redesign-rojo/tests/promotions.test.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-ui-polish-brand/js/config.js",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-ui-polish-brand/js/customer-profile-view.js",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-ui-polish-brand/js/showcase.js",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-ui-polish-brand/js/state.js",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-ui-polish-brand/js/ui.js",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-ui-polish-brand/runtime-config.js",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-ui-polish-brand/sw.js",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-ui-polish-brand/tests/config.test.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-ui-polish-brand/tests/e2e/beverage-storefront.spec.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-ui-polish-brand/tests/e2e/business-inbox.spec.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-ui-polish-brand/tests/e2e/business-setup.spec.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-ui-polish-brand/tests/e2e/ios-blank-screen.spec.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-ui-polish-brand/tests/e2e/showcase.spec.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-ui-polish-brand/tests/github-pages.test.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-ui-polish-brand/tests/pwa.test.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/1212/la-taba-ui-polish-brand/tests/ui-presentation.test.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/Users/marco/worktrees/taba2-production-candidate/scripts/check-release-identity.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/Users/marco/worktrees/taba2-production-candidate/scripts/preflight-staging-package.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/Users/marco/worktrees/taba2-production-candidate/tests/release-identity.test.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/Users/marco/worktrees/taba2-production-candidate/tests/release-payment-return-package.test.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "C:/Users/marco/worktrees/taba2-production-candidate/tests/preview-package-preflight.test.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "D:/1212/la-taba-commerce-v3/scratch/audit-commerce-production.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "D:/1212/la-taba-commerce-v3/scratch/check-web-production.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "D:/1212/la-taba-commerce-v3/scratch/execute-production-smoke.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "D:/1212/la-taba-commerce-v3/scripts/verify-oauth-result.mjs",
+    "exit_code": 0,
+    "result": "syntax OK"
+  },
+  {
+    "path": "D:/1212/la-taba2-commerce-growth/runtime-config.original.js",
+    "exit_code": 0,
+    "result": "syntax OK"
+  }
+]

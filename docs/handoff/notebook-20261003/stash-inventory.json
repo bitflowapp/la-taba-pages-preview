@@ -1,0 +1,51 @@
+{
+  "web": [],
+  "rider": [],
+  "backup": [
+    {
+      "source": "E:\\taba-backups\\la-taba-pages-20260725-enospc\\relocated-runtime\\git-dir",
+      "stash": "stash@{0}|3393f686c86f8b6808da15a587dbad6c95e5cba3|On feature/premium-mobile-business-inbox-ui: codex-temp-before-pr32-merge",
+      "base": "6769c3f3333b96e48cec4e65b6e02b5f5cc6d67d",
+      "branch": "handoff/notebook-20261003-backup-stash-business-inbox",
+      "head": "0b700bce51d0952c6bc3c694fbc378525e02d587",
+      "files": [
+        "js/business.js",
+        "styles.css",
+        "tests/business.test.mjs",
+        "tests/e2e/business-inbox.spec.mjs",
+        "tests/e2e/la-taba.spec.mjs"
+      ],
+      "excluded": [
+        ".idea/: metadatos y caches IDE, sin cambios de producto"
+      ],
+      "integrated": "Hay versiones únicas respecto de ramas origin ajenas al handoff",
+      "integration_check": [
+        {
+          "file": "js/business.js",
+          "blob": "4754e9b19be797049cebad963a274331e048ad5c",
+          "existed_in_nonhandoff_origin": false
+        },
+        {
+          "file": "styles.css",
+          "blob": "b89b91f3aafea07b52614e78ecd152a4ad634cec",
+          "existed_in_nonhandoff_origin": false
+        },
+        {
+          "file": "tests/business.test.mjs",
+          "blob": "5639c4bbf28bca7075938b235e636f932f355f76",
+          "existed_in_nonhandoff_origin": false
+        },
+        {
+          "file": "tests/e2e/business-inbox.spec.mjs",
+          "blob": "61a8b18931a401eb93500d22ecdf48032015d6b6",
+          "existed_in_nonhandoff_origin": false
+        },
+        {
+          "file": "tests/e2e/la-taba.spec.mjs",
+          "blob": "c095c50243c6b745e1991a063e10c19f3a61cf92",
+          "existed_in_nonhandoff_origin": false
+        }
+      ]
+    }
+  ]
+}

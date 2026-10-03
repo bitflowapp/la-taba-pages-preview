@@ -1,0 +1,153 @@
+[
+  {
+    "branch": "handoff/notebook-20261003-commerce-v3-c-capturas",
+    "head": "3b78ad3a0517fceaab9cddb9e5dfa5f48ba9cd8a",
+    "files": 5,
+    "kind": "uncommitted snapshot"
+  },
+  {
+    "branch": "handoff/notebook-20261003-promos-packshots",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "files": 51,
+    "kind": "uncommitted snapshot"
+  },
+  {
+    "branch": "handoff/notebook-20261003-real-orders-staging",
+    "head": "4037ac67087779c565e161993eff007581dfbada",
+    "files": 9,
+    "kind": "uncommitted snapshot"
+  },
+  {
+    "branch": "handoff/notebook-20261003-real-pilot-staging",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "files": 49,
+    "kind": "uncommitted snapshot"
+  },
+  {
+    "branch": "handoff/notebook-20261003-redesign-rojo",
+    "head": "67972cf9aa05c8c19b247b251c84348dc18af1b1",
+    "files": 11,
+    "kind": "uncommitted snapshot"
+  },
+  {
+    "branch": "handoff/notebook-20261003-ui-polish-brand",
+    "head": "9446beaee9a560d8034bb1b7b925360142a62dfe",
+    "files": 22,
+    "kind": "uncommitted snapshot"
+  },
+  {
+    "branch": "handoff/notebook-20261003-business-panel-automation",
+    "head": "fc406588d2b1455e3e9b272d194dbae0335d5c0f",
+    "files": 3,
+    "kind": "uncommitted snapshot"
+  },
+  {
+    "branch": "handoff/notebook-20261003-pages-preview",
+    "head": "9c6232efb8e69120c7e2180276b250b6032286c6",
+    "files": 5,
+    "kind": "uncommitted snapshot"
+  },
+  {
+    "branch": "handoff/notebook-20261003-taba2-production-candidate",
+    "head": "375633b39ece4879d43f5f499c79b0ae50654814",
+    "files": 8,
+    "kind": "uncommitted snapshot"
+  },
+  {
+    "branch": "handoff/notebook-20261003-commerce-v3",
+    "head": "ba8c393da8886404de953909c89cdd9b96dbdb87",
+    "files": 7,
+    "kind": "uncommitted snapshot"
+  },
+  {
+    "branch": "handoff/notebook-20261003-migration-fetch-audit",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "files": 25,
+    "kind": "uncommitted snapshot"
+  },
+  {
+    "branch": "handoff/notebook-20261003-taba2-commerce-growth",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "files": 26,
+    "kind": "uncommitted snapshot"
+  },
+  {
+    "branch": "handoff/notebook-20261003-taba2-weekend-launch",
+    "head": "7343f968cd23c153590daadf34d800e252e832db",
+    "files": 14,
+    "kind": "uncommitted snapshot"
+  },
+  {
+    "branch": "handoff/notebook-20261003-taba2-production-auth-go-live",
+    "head": "51b8e2e776f553a32c6a4677b522f0b4611f86ff",
+    "files": 3,
+    "kind": "uncommitted snapshot"
+  },
+  {
+    "branch": "handoff/notebook-20261003-backup-stash-business-inbox",
+    "head": "0b700bce51d0952c6bc3c694fbc378525e02d587",
+    "files": 5,
+    "kind": "stash snapshot"
+  },
+  {
+    "branch": "handoff/notebook-20261003-external-backend-qa",
+    "head": "e988d85e89de878f48af3d33de5ac85b5d0dc7fa",
+    "parent": "6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a",
+    "front": "backend-qa",
+    "files": 238,
+    "bytes": 1669523,
+    "kind": "external historical evidence"
+  },
+  {
+    "branch": "handoff/notebook-20261003-external-qa-evidence",
+    "head": "d72bdd5df97c16fdfac13eb8102ac51ab97d3c42",
+    "parent": "6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a",
+    "front": "qa-evidence",
+    "files": 233,
+    "bytes": 1991677,
+    "kind": "external historical evidence"
+  },
+  {
+    "branch": "handoff/notebook-20261003-external-business-fiscal",
+    "head": "161dab838beab7500d16e5ddf19038782c6c914c",
+    "parent": "6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a",
+    "front": "business-fiscal",
+    "files": 64,
+    "bytes": 525615,
+    "kind": "external historical evidence"
+  },
+  {
+    "branch": "handoff/notebook-20261003-external-catalog-frontend",
+    "head": "a9901c6a5b925744cbb72bcf481fd005b5170d95",
+    "parent": "6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a",
+    "front": "catalog-frontend",
+    "files": 198,
+    "bytes": 1395735,
+    "kind": "external historical evidence"
+  },
+  {
+    "branch": "handoff/notebook-20261003-external-rider",
+    "head": "86be5f9513e948ade9311129998b6a5031cac490",
+    "parent": "6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a",
+    "front": "rider",
+    "files": 204,
+    "bytes": 2122682,
+    "kind": "external historical evidence"
+  },
+  {
+    "branch": "handoff/notebook-20261003-external-commercial-media",
+    "head": "d9b632f1a1568f0d1c1bdab92c68168e52631137",
+    "parent": "6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a",
+    "front": "commercial-media",
+    "files": 77,
+    "bytes": 743295,
+    "kind": "external historical evidence"
+  },
+  {
+    "branch": "handoff/notebook-20261003-archive-sources",
+    "head": "ef9b6c233f4fd60e6ce744f06d0f290027046bdd",
+    "files": 68,
+    "parent": "6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a",
+    "kind": "source snapshots from ZIPs"
+  }
+]

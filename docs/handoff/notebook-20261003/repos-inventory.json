@@ -1,0 +1,317 @@
+{
+  "date": "2026-10-03T20:33:49.231154+00:00",
+  "scope": "Sólo Git/GitHub y documentos. Sin despliegues, migraciones aplicadas, staging, CP, dinero ni infraestructura.",
+  "discovery": {
+    "repos_total": 299,
+    "active_related_worktrees": 140,
+    "old_backup_worktree_records": 40,
+    "errors": [
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'C:\\\\bitflow-workspace-remediation-20260905\\\\android-build\\\\flutter_image_compress_common\\\\.transforms\\\\e86928dcee0c2dd001f6fe486c56b2fb\\\\transformed\\\\bundleLibRuntimeToDirDebug\\\\bundleLibRuntimeToDirDebug_dex\\\\com\\\\fluttercandies\\\\flutter_image_compress\\\\handle\\\\common'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'C:\\\\bitflow-workspace-remediation-20260905\\\\android-build\\\\flutter_image_compress_common\\\\.transforms\\\\e86928dcee0c2dd001f6fe486c56b2fb\\\\transformed\\\\bundleLibRuntimeToDirDebug\\\\bundleLibRuntimeToDirDebug_global-synthetics\\\\com\\\\fluttercandies\\\\flutter_image_compress'",
+      "[WinError 5] Acceso denegado: 'C:\\\\PerfLogs'",
+      "[WinError 5] Acceso denegado: 'C:\\\\Users\\\\CodexSandboxOffline'",
+      "[WinError 5] Acceso denegado: 'D:\\\\Config.Msi'",
+      "[WinError 5] Acceso denegado: 'D:\\\\FlutterProjects\\\\alpha_match'",
+      "[WinError 5] Acceso denegado: 'D:\\\\OneDriveTemp\\\\S-1-5-21-2854823342-4208285958-847607233-1000'",
+      "[WinError 5] Acceso denegado: 'D:\\\\PerfLogs'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\temp\\\\bitflow-path-probe-280\\\\xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'",
+      "[WinError 5] Acceso denegado: 'D:\\\\temp\\\\NVRTXVoice\\\\NvAFX'",
+      "[WinError 5] Acceso denegado: 'D:\\\\temp\\\\NVRTXVoice\\\\NVI2'",
+      "[WinError 5] Acceso denegado: 'D:\\\\temp\\\\NVRTXVoice\\\\NvRTXVAD'",
+      "[WinError 5] Acceso denegado: 'D:\\\\Users\\\\Jorge Ariel'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\.cxx\\\\debug\\\\1g19715k\\\\arm64-v8a\\\\CMakeFiles\\\\3.22.1-g37088a8-dirty\\\\CompilerIdC'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\.cxx\\\\debug\\\\1g19715k\\\\arm64-v8a\\\\CMakeFiles\\\\3.22.1-g37088a8-dirty\\\\CompilerIdCXX'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\.cxx\\\\debug\\\\1g19715k\\\\armeabi-v7a\\\\CMakeFiles\\\\3.22.1-g37088a8-dirty\\\\CompilerIdC'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\.cxx\\\\debug\\\\1g19715k\\\\x86_64\\\\CMakeFiles\\\\3.22.1-g37088a8-dirty\\\\CompilerIdC\\\\tmp'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\.cxx\\\\debug\\\\1g19715k\\\\x86_64\\\\CMakeFiles\\\\3.22.1-g37088a8-dirty\\\\CompilerIdCXX'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\.cxx\\\\debug\\\\2x41s4q1\\\\arm64-v8a\\\\CMakeFiles\\\\3.22.1-g37088a8-dirty\\\\CompilerIdC'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\.cxx\\\\debug\\\\2x41s4q1\\\\arm64-v8a\\\\CMakeFiles\\\\3.22.1-g37088a8-dirty\\\\CompilerIdCXX'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\.cxx\\\\debug\\\\2x41s4q1\\\\armeabi-v7a\\\\CMakeFiles\\\\3.22.1-g37088a8-dirty\\\\CompilerIdC'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\.cxx\\\\debug\\\\2x41s4q1\\\\x86_64\\\\CMakeFiles\\\\3.22.1-g37088a8-dirty\\\\CompilerIdC\\\\tmp'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\.cxx\\\\debug\\\\2x41s4q1\\\\x86_64\\\\CMakeFiles\\\\3.22.1-g37088a8-dirty\\\\CompilerIdCXX'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\.cxx\\\\debug\\\\1g19715k\\\\arm64-v8a\\\\.cmake\\\\api\\\\v1\\\\query'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\.cxx\\\\debug\\\\1g19715k\\\\arm64-v8a\\\\.cmake\\\\api\\\\v1\\\\reply'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\.cxx\\\\debug\\\\1g19715k\\\\arm64-v8a\\\\CMakeFiles\\\\CMakeTmp'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\.cxx\\\\debug\\\\1g19715k\\\\armeabi-v7a\\\\.cmake\\\\api\\\\v1\\\\query'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\.cxx\\\\debug\\\\1g19715k\\\\armeabi-v7a\\\\.cmake\\\\api\\\\v1\\\\reply'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\.cxx\\\\debug\\\\1g19715k\\\\armeabi-v7a\\\\CMakeFiles\\\\CMakeTmp'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\.cxx\\\\debug\\\\2x41s4q1\\\\arm64-v8a\\\\.cmake\\\\api\\\\v1\\\\query'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\.cxx\\\\debug\\\\2x41s4q1\\\\arm64-v8a\\\\.cmake\\\\api\\\\v1\\\\reply'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\.cxx\\\\debug\\\\2x41s4q1\\\\arm64-v8a\\\\CMakeFiles\\\\CMakeTmp'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\.cxx\\\\debug\\\\2x41s4q1\\\\armeabi-v7a\\\\.cmake\\\\api\\\\v1\\\\query'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\.cxx\\\\debug\\\\2x41s4q1\\\\armeabi-v7a\\\\.cmake\\\\api\\\\v1\\\\reply'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\.cxx\\\\debug\\\\2x41s4q1\\\\armeabi-v7a\\\\CMakeFiles\\\\CMakeTmp'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\.cxx\\\\debug\\\\1g19715k\\\\x86_64'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\.cxx\\\\debug\\\\2x41s4q1\\\\x86_64'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\src\\\\main\\\\res\\\\drawable-v21'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\src\\\\main\\\\res\\\\mipmap-hdpi'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\src\\\\main\\\\res\\\\mipmap-mdpi'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\src\\\\main\\\\res\\\\mipmap-xhdpi'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\src\\\\main\\\\res\\\\mipmap-xxhdpi'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app\\\\src\\\\main\\\\res\\\\values-night'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android_backup\\\\app\\\\src\\\\main\\\\res\\\\drawable'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\.idea\\\\libraries'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android.bak\\\\app'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'D:\\\\work\\\\bitacora\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\diag_20250917_230604\\\\src\\\\android_backup'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'E:\\\\Work\\\\BitFlowGate3PhysicalComparison\\\\gradle-cache-final\\\\wrapper\\\\dists\\\\gradle-9.1.0-all\\\\7wzd0jkjit61aq2p43wpjgij9\\\\gradle-9.1.0\\\\docs\\\\kotlin-dsl\\\\gradle\\\\org.gradle.tooling.events.configuration\\\\-project-configuration-operation-result\\\\-plugin-application-result'",
+      "[WinError 3] El sistema no puede encontrar la ruta especificada: 'E:\\\\Work\\\\BitFlowGate3PhysicalComparison\\\\gradle-cache-final\\\\wrapper\\\\dists\\\\gradle-9.1.0-all\\\\7wzd0jkjit61aq2p43wpjgij9\\\\gradle-9.1.0\\\\docs\\\\kotlin-dsl\\\\gradle\\\\org.gradle.tooling.events.task.java\\\\-java-compile-task-operation-result\\\\-annotation-processor-result\\\\-type'"
+    ],
+    "excluded_tool_roots": [
+      "$getcurrent",
+      "$recycle.bin",
+      "$windows.~bt",
+      "$windows.~ws",
+      "$winreagent",
+      ".android",
+      ".cache",
+      ".cargo",
+      ".dart_tool",
+      ".git",
+      ".gradle",
+      ".next",
+      ".npm",
+      ".ollama",
+      ".pub-cache",
+      ".pubcache",
+      ".rustup",
+      ".transforms",
+      ".venv",
+      "__pycache__",
+      "android",
+      "appdata",
+      "archived_sessions",
+      "archivos de programa",
+      "bitflow-build",
+      "bitflowbuild",
+      "build",
+      "cache",
+      "caches",
+      "devcache",
+      "devtools",
+      "documents and settings",
+      "emulator",
+      "flutter",
+      "flutter_sdk",
+      "fvm",
+      "generated",
+      "gradle-cache",
+      "gradle-home",
+      "hf_cache",
+      "hosted",
+      "incremental",
+      "intermediates",
+      "internet explorer",
+      "microsoft visual studio",
+      "msocache",
+      "ndk",
+      "node_modules",
+      "nueva carpeta (2)",
+      "nvidia corporation",
+      "platforms",
+      "program files",
+      "program files (x86)",
+      "programdata",
+      "pub-cache",
+      "pubcache",
+      "pubcache_ok",
+      "python313",
+      "recovery",
+      "registry",
+      "riot games",
+      "scoop",
+      "sdk",
+      "sessions",
+      "site-packages",
+      "system volume information",
+      "system-images",
+      "taba-cargo-cache-from-c-20260802",
+      "taba-cert-tauri-target",
+      "taba-rc1-cargo-home",
+      "taba-rc1-cargo-target",
+      "taba-rider-gradle-home",
+      "taba-rider-pub-cache",
+      "taba-tauri-target",
+      "target",
+      "toolchains",
+      "ue_5.8",
+      "venvs",
+      "vs",
+      "windows",
+      "windows.old",
+      "windowsapps",
+      "winsxs",
+      "wpsystem",
+      "wudownloadcache"
+    ],
+    "missing_inventory": []
+  },
+  "web": {
+    "repo": "bitflowapp/la-taba-pages-preview",
+    "remote": "https://github.com/bitflowapp/la-taba-pages-preview.git",
+    "notebook_path": "C:\\Users\\marco\\dev\\la-taba-pages-preview",
+    "original_head": "31c900b7e4d66a89e80c535e59ed30fdad03ea3a",
+    "original_branch": "main",
+    "backend": {
+      "branch": "hardening/taba-ecommerce-production",
+      "local_head": "6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a",
+      "snapshot": "handoff/notebook-20261003-backend-final",
+      "head_initial": "9b106cf375944f73b4f342c7d31857f58b714b2f",
+      "remote_head": "6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a",
+      "snapshot_remote_head": "6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a",
+      "equal": true
+    },
+    "frontend": {
+      "branch": "feat/taba-frontend-commercial-polish",
+      "local_head": "737371ba82cae6e309cff04c97984443c52c8def",
+      "snapshot": "handoff/notebook-20261003-frontend-pr131",
+      "head_initial": "737371ba82cae6e309cff04c97984443c52c8def",
+      "remote_head": "737371ba82cae6e309cff04c97984443c52c8def",
+      "snapshot_remote_head": "737371ba82cae6e309cff04c97984443c52c8def",
+      "equal": true
+    },
+    "commits_not_reachable_origin": "0"
+  },
+  "rider": {
+    "repo": "bitflowapp/la-taba-rider-android",
+    "remote": "https://github.com/bitflowapp/la-taba-rider-android.git",
+    "private": true,
+    "path": "D:\\1212\\la-taba-rider-android",
+    "branch": "fix/rider-android-runtime-hardening",
+    "head": "434c4d53e021579171398cfd10c3b6439730a22c",
+    "remote_before": "No había remote",
+    "remote_after": "origin",
+    "commits_not_reachable_origin": "0"
+  },
+  "backup": {
+    "path": "E:\\taba-backups\\la-taba-pages-20260725-enospc\\relocated-runtime\\git-dir",
+    "remote": "origin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (fetch)\norigin\thttps://github.com/bitflowapp/la-taba-pages-preview.git (push)",
+    "head": "edb10db5a0b92d18fad8e13ece61145a544b98a8",
+    "branch": "feat/taba-production-beverages",
+    "branches": "backup/profile-hydration-before-app-session-amend|8c433f9178f2a5d076bdb538d0820d2be1d87226||\nbackup/release-taba-platform-rc-bbe61e9|bbe61e90ee6fca2331f381028ecaca895b16d758||\nfeat/la-taba-pizzeria-walter-demo|19295cae1c2d322b4380d447be818e8ea0fad549|origin/feat/la-taba-pizzeria-walter-demo|\nfeat/la-taba-product-polish|333b5a2c5016afb0383ce409c2c381e54d93fcf9|origin/feat/la-taba-product-polish|\nfeat/rider-operational-map|2ef0498279e5a7afb0741157b618f8ee96b8d664|origin/feat/rider-operational-map|[ahead 1]\nfeat/taba-production-beverages|edb10db5a0b92d18fad8e13ece61145a544b98a8|origin/feat/taba-production-beverages|[ahead 10, behind 6]\nfeat/taba-ux-ultra-showcase|f419b6e5f09ca248696a446e8490bdcc533c7720||\nfeat/walter-demo-pwa|7503c9ccc21e25d851ac2592b5b5c1b168b5b4bc|origin/feat/walter-demo-pwa|\nfeature/claude-final-visual-qa|b1698b518f20bc0272fa13b32500b27d85dc4ebc||\nfeature/claude-final-visual-qa-2|9db6dec69407910c0d80dc0e994fa361b5621b8e|origin/feature/claude-final-visual-qa-2|\nfeature/codex-la-taba-phase-2-planning|ee87ba332aa9f63ef40b4bd7929be038c4fa420c|origin/feature/codex-la-taba-phase-2-planning|\nfeature/commercial-polish-v1|87b828f3ff11a789933e9791b7426d7b12f203f0|origin/feature/commercial-polish-v1|[gone]\nfeature/commercial-reference-polish|00f863413e1667c0ace9f22fca7c118cb51ce1ee|origin/feature/commercial-reference-polish|\nfeature/direct-ordering-growth-engine-v1|121bd8cae8da19f370fc076c5c32f76c6855766f|origin/feature/direct-ordering-growth-engine-v1|\nfeature/fiambres-quesos-category|41942654c7d1822fac02afe28de765e243c2f838||\nfeature/fix-rider-real-gps-map|729de2d2ccfe971c1c2bc8c23103f4fee3468639||\nfeature/integrate-opus-ui-final|962c3ca8d11813671fdf967eade004477a794bf6|origin/feature/integrate-opus-ui-final|[gone]\nfeature/integrate-premium-ui-and-engine|f8159019d53a1f7764d240d622b8ccc10480ed0a|origin/feature/integrate-premium-ui-and-engine|\nfeature/internal-checkout-fix-v2|52146c3c3eb5d55e171c884c133da968549636ed||\nfeature/live-delivery-visual-polish|2ca6acc9f643efda82bd62e33afc16a71c51249f|origin/feature/live-delivery-visual-polish|\nfeature/opus-premium-real-delivery-ui|2cf42e97057cda8839f65ee8d3e2322b2e46dea9|origin/feature/opus-premium-real-delivery-ui|\nfeature/premium-delivery-ui-pass|311999d988b0afc2c7b622dd4fc3046e20febfec|origin/feature/premium-delivery-ui-pass|\nfeature/product-level-7|9d0a5b094b36f7416a504f54417addae5901f9d4|origin/main|[ahead 1, behind 1020]\nfeature/real-delivery-app-redesign|95fdcd9e3d6f76048bbf850f7365e0b24b2dd336|origin/feature/real-delivery-app-redesign|\nfeature/realtime-engine-hardening|9fd94aed8194329e57efce216d8d795b2299399c|origin/feature/realtime-engine-hardening|\nfeature/tracking-onthe-way-premium-visual|2daf26c3d06a960b98d88cbbb474ab3fbe8158a6||\nfeature/xhigh-functional-engine-hardening|83e9ab7ea5c80fa3a660b740ea1a22f4c6d0f938|origin/feature/xhigh-functional-engine-hardening|\nfeature/xhigh-premium-ui-refinement|eaebbee243fccf6d6e9e475b89170f24cfdc50c4|origin/feature/xhigh-premium-ui-refinement|\nfix/demo-realtime-real-gps|d4dc01bb39e6ff4d8035b0e48d04986071557695||\nfix/la-taba-demo-honesty|d81847f7c43f9497a8c78391a34745b797611747|origin/fix/la-taba-demo-honesty|\nfix/mobile-touch-safety|71bb08b534b0ce86c79f072bc36f0398dcbba93a||\nfix/public-design-v37|aca173a2c4bfdc67795799c2abedebdc3ba68d73||\nfix/tracking-certified-terminal-visibility|a7e7c7b6b055cb43a5897dc22c0e2ef3bb24e6f9||\nfix/tracking-terminal-delivery-code-cleanup|7400af3e1c1d29c6dd0aa03c277bacd398e24448||\nfix/tracking-terminal-expiry-revalidation|16eed686d7a5181a34b1ec52b55870398ccf2474||\nfix/tracking-terminal-shell-resolution|fff5e52d1af17d58ccfe0bfa95829dbc6054f59c||\nfix/tracking-terminal-visibility|ba68ed19679ead36365183bcb7f081dc62c815d0||\nfix/unit-storefront-catalog|cc6f90285f1889e7831391146e93c616e29f7de5||\nfix/v39-demo-realtime-gps-physical|62fbd51f2490f6acadfb2ddc65b485068fb1a927||\nfix/v39-mobile-overlay-hit-testing|5ac7ee509689a05f39a94533c9604690e5db7d8b||\nintegration/taba-beverages-tracking|1e56fac11afaeb3bd3e2243e513c57cb0b2eaa68||\nintegration/taba-final-ux|63a7cf3fe34a3e3c27a054d688464cf485bf890e||\nintegration/taba-platform-rc-clean|6ae559744efb394b78a251dbcc05890452f263c9||\nmain|58f9a18cee368fcdfdd03f5c3a4655adcbc7327a|origin/main|[behind 1016]\npublish/v39-preview|2598a205e5e3f45cfd8add8b08f1320337f5780e|origin/feat/taba-production-beverages|[behind 1]\npublish/v39-preview-corrective|62fbd51f2490f6acadfb2ddc65b485068fb1a927|origin/feat/taba-production-beverages|\nrelease/taba-platform-rc|413b7022afa7ac4e740dae9d8726ca5df1ce2b53|origin/release/taba-platform-rc|[ahead 2]\nrelease/taba-staging-pilot|63a7cf3fe34a3e3c27a054d688464cf485bf890e||\nrelease/unit-storefront-preview|d4dc01bb39e6ff4d8035b0e48d04986071557695|origin/feat/taba-production-beverages|[behind 3]\nvalidation/shell-resolution-parent|0e1fed14deafa703187cb6aeaf76ec38b7913827||\nvalidation/taba-beverages-tracking-baseline|2a6944422c2bf013fdb3eeef3edfbedd30721a7d||\nvalidation/tracking-complement-16eed|0da40c91019744b9bcf58d1337e06ee47a6b0905||",
+    "stash": "stash@{0}|3393f686c86f8b6808da15a587dbad6c95e5cba3|On feature/premium-mobile-business-inbox-ui: codex-temp-before-pr32-merge",
+    "worktrees": "worktree E:/taba-backups/la-taba-pages-20260725-enospc/relocated-runtime/git-dir\nHEAD edb10db5a0b92d18fad8e13ece61145a544b98a8\nbranch refs/heads/feat/taba-production-beverages\n\nworktree C:/1212/la-taba-engine-xhigh\nHEAD 83e9ab7ea5c80fa3a660b740ea1a22f4c6d0f938\nbranch refs/heads/feature/xhigh-functional-engine-hardening\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-final-ux-integration\nHEAD 63a7cf3fe34a3e3c27a054d688464cf485bf890e\nbranch refs/heads/integration/taba-final-ux\n\nworktree C:/1212/la-taba-integrate-opus-ui-final\nHEAD 962c3ca8d11813671fdf967eade004477a794bf6\nbranch refs/heads/feature/integrate-opus-ui-final\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-integrate-premium-ui-and-engine\nHEAD f8159019d53a1f7764d240d622b8ccc10480ed0a\nbranch refs/heads/feature/integrate-premium-ui-and-engine\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-mobile-touch-safety\nHEAD 71bb08b534b0ce86c79f072bc36f0398dcbba93a\nbranch refs/heads/fix/mobile-touch-safety\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-opus-premium\nHEAD 2cf42e97057cda8839f65ee8d3e2322b2e46dea9\nbranch refs/heads/feature/opus-premium-real-delivery-ui\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-pages-audit-9882600\nHEAD 988260081076078b8621d3573df3bc0827450716\ndetached\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-pages-beverages-tracking-baseline\nHEAD 2a6944422c2bf013fdb3eeef3edfbedd30721a7d\nbranch refs/heads/validation/taba-beverages-tracking-baseline\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-pages-beverages-tracking-integration\nHEAD 1e56fac11afaeb3bd3e2243e513c57cb0b2eaa68\nbranch refs/heads/integration/taba-beverages-tracking\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-pages-fix-v37\nHEAD aca173a2c4bfdc67795799c2abedebdc3ba68d73\nbranch refs/heads/fix/public-design-v37\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-pages-gps-relay-fix\nHEAD d4dc01bb39e6ff4d8035b0e48d04986071557695\nbranch refs/heads/fix/demo-realtime-real-gps\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-pages-preview-release\nHEAD d4dc01bb39e6ff4d8035b0e48d04986071557695\nbranch refs/heads/release/unit-storefront-preview\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-pages-rider-map\nHEAD 2ef0498279e5a7afb0741157b618f8ee96b8d664\nbranch refs/heads/feat/rider-operational-map\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-pages-tracking-terminal\nHEAD ba68ed19679ead36365183bcb7f081dc62c815d0\nbranch refs/heads/fix/tracking-terminal-visibility\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-pages-unit-catalog-fix\nHEAD cc6f90285f1889e7831391146e93c616e29f7de5\nbranch refs/heads/fix/unit-storefront-catalog\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-pages-v39-gps-physical\nHEAD 62fbd51f2490f6acadfb2ddc65b485068fb1a927\nbranch refs/heads/fix/v39-demo-realtime-gps-physical\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-pages-v39-overlay-fix\nHEAD 5ac7ee509689a05f39a94533c9604690e5db7d8b\nbranch refs/heads/fix/v39-mobile-overlay-hit-testing\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-pages-v39-publish\nHEAD 2598a205e5e3f45cfd8add8b08f1320337f5780e\nbranch refs/heads/publish/v39-preview\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-pages-v39-publish-corrective\nHEAD 62fbd51f2490f6acadfb2ddc65b485068fb1a927\nbranch refs/heads/publish/v39-preview-corrective\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-platform-rc\nHEAD 413b7022afa7ac4e740dae9d8726ca5df1ce2b53\nbranch refs/heads/release/taba-platform-rc\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-platform-rc-clean-integration\nHEAD 6ae559744efb394b78a251dbcc05890452f263c9\nbranch refs/heads/integration/taba-platform-rc-clean\n\nworktree C:/1212/la-taba-premium-review\nHEAD 311999d988b0afc2c7b622dd4fc3046e20febfec\ndetached\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-qa-wt\nHEAD 9db6dec69407910c0d80dc0e994fa361b5621b8e\nbranch refs/heads/feature/claude-final-visual-qa-2\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-recovery-audit\nHEAD e5d1660cb3a75d41f20589ac8e1b9a37b27faf31\ndetached\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-redesign-review\nHEAD 95fdcd9e3d6f76048bbf850f7365e0b24b2dd336\ndetached\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-redesign-wt\nHEAD 95fdcd9e3d6f76048bbf850f7365e0b24b2dd336\nbranch refs/heads/feature/real-delivery-app-redesign\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-s23-iphone-test\nHEAD cb49a32483475492efc80602b5914e2fbc76737e\ndetached\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-shell-resolution-parent-validation\nHEAD 0e1fed14deafa703187cb6aeaf76ec38b7913827\nbranch refs/heads/validation/shell-resolution-parent\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-staging-pilot\nHEAD 63a7cf3fe34a3e3c27a054d688464cf485bf890e\nbranch refs/heads/release/taba-staging-pilot\n\nworktree C:/1212/la-taba-tracking-certified-extraction\nHEAD a7e7c7b6b055cb43a5897dc22c0e2ef3bb24e6f9\nbranch refs/heads/fix/tracking-certified-terminal-visibility\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-tracking-complement-validation\nHEAD 0da40c91019744b9bcf58d1337e06ee47a6b0905\nbranch refs/heads/validation/tracking-complement-16eed\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-tracking-delivery-code-cleanup\nHEAD 7400af3e1c1d29c6dd0aa03c277bacd398e24448\nbranch refs/heads/fix/tracking-terminal-delivery-code-cleanup\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-tracking-expiry-revalidation\nHEAD 16eed686d7a5181a34b1ec52b55870398ccf2474\nbranch refs/heads/fix/tracking-terminal-expiry-revalidation\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-tracking-premium-visual\nHEAD 2daf26c3d06a960b98d88cbbb474ab3fbe8158a6\nbranch refs/heads/feature/tracking-onthe-way-premium-visual\n\nworktree C:/1212/la-taba-tracking-terminal-shell-resolution\nHEAD fff5e52d1af17d58ccfe0bfa95829dbc6054f59c\nbranch refs/heads/fix/tracking-terminal-shell-resolution\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-ux-ultra-showcase\nHEAD f419b6e5f09ca248696a446e8490bdcc533c7720\nbranch refs/heads/feat/taba-ux-ultra-showcase\nprunable gitdir file points to non-existent location\n\nworktree C:/1212/la-taba-xhigh-ui\nHEAD eaebbee243fccf6d6e9e475b89170f24cfdc50c4\nbranch refs/heads/feature/xhigh-premium-ui-refinement\nprunable gitdir file points to non-existent location\n\nworktree D:/work/tmp/la-taba-approved-beverages-validation4-93c6acc1\nHEAD 089d4cf7c63d4528ca9648a3309f35cd5756ea5a\ndetached\nprunable gitdir file points to non-existent location\n\nworktree D:/work/tmp/la-taba-beverage-commit-2a69444\nHEAD 2a6944422c2bf013fdb3eeef3edfbedd30721a7d\ndetached\nprunable gitdir file points to non-existent location",
+    "unpushed": "2daf26c fix(ui): refine on-the-way tracking experience\nf419b6e test(e2e): disambiguate business price fields\n36c15d8 test(showcase): cover guided commercial flows\n92ec4cc perf(ux): reduce unnecessary local rendering work\nefbd264 feat(showcase): add guided TABA product tour\n21b8716 fix(ux): improve commercial customer journey\nfff5e52 fix(tracking): preserve fallback suppression across status updates\n7400af3 fix(tracking): reject delivery code from terminal DTO\nbf958f9 test(tracking): cover terminal expiry and revocation e2e\n9acd534 fix(tracking): prevent active-order fallback after public expiry\nc5a24da fix(tracking): clear cached terminal delivery code\n0da40c9 fix(tracking): revalidate terminal visibility safely\n16eed68 fix(tracking): revalidate terminal visibility safely\n71bb08b fix(mobile): preserve MapLibre gestures on touch devices\n6f47d41 fix(tracking): revalidate expired terminal visibility\n413b702 fix(tracking): align terminal visibility migration contract\na7e7c7b fix(tracking): clear expired public tracking access safely\nedb10db fix(profile): preserve validation error codes\n1e56fac fix(tracking): preserve terminal delivery visibility safely\n23856ef fix(profile): export Argentine phone formatter\n6951758 fix(catalog): preserve pending-price beverage products\nba68ed1 fix(tracking): preserve terminal delivery visibility safely\n2a69444 feat(demo): add approved beverage catalog assets\n7e6a2e2 fix(address): require street number for saved addresses\n129f244 fix(profile): stabilize customer delivery address hydration\n8c433f9 fix(profile): stabilize customer delivery address hydration\n12ba134 fix(profile): stabilize customer delivery form visibility\n0104f63 fix(cart): compact mobile cart CTA and prevent overlap\n6d0bb86 test(catalog): isolate legacy QA products from approved demo\n5ac7ee5 fix(ui): keep modal toast clear of product controls\n762ead7 chore(preview): publish overlay fixes cache v39\n27f6e28 fix(ui): prevent storefront overlays from blocking controls\ncc6f902 fix(catalog): align storefront count with valid unit products\n2ef0498 fix(ui): preserve catalog clearance above bottom navigation\n87b828f Finish La Taba commercial polish v1\n962c3ca Integrate Opus delivery UI final",
+    "working_tree": "Original relocalizado incompleto; no se toma git-dir como checkout. Ver nonrepo-files.json. Worktrees históricos ausentes o registrados en otro repo."
+  },
+  "stash": {
+    "source": "E:\\taba-backups\\la-taba-pages-20260725-enospc\\relocated-runtime\\git-dir",
+    "stash": "stash@{0}|3393f686c86f8b6808da15a587dbad6c95e5cba3|On feature/premium-mobile-business-inbox-ui: codex-temp-before-pr32-merge",
+    "base": "6769c3f3333b96e48cec4e65b6e02b5f5cc6d67d",
+    "branch": "handoff/notebook-20261003-backup-stash-business-inbox",
+    "head": "0b700bce51d0952c6bc3c694fbc378525e02d587",
+    "files": [
+      "js/business.js",
+      "styles.css",
+      "tests/business.test.mjs",
+      "tests/e2e/business-inbox.spec.mjs",
+      "tests/e2e/la-taba.spec.mjs"
+    ],
+    "excluded": [
+      ".idea/: metadatos y caches IDE, sin cambios de producto"
+    ],
+    "integrated": "Hay versiones únicas respecto de ramas origin ajenas al handoff",
+    "integration_check": [
+      {
+        "file": "js/business.js",
+        "blob": "4754e9b19be797049cebad963a274331e048ad5c",
+        "existed_in_nonhandoff_origin": false
+      },
+      {
+        "file": "styles.css",
+        "blob": "b89b91f3aafea07b52614e78ecd152a4ad634cec",
+        "existed_in_nonhandoff_origin": false
+      },
+      {
+        "file": "tests/business.test.mjs",
+        "blob": "5639c4bbf28bca7075938b235e636f932f355f76",
+        "existed_in_nonhandoff_origin": false
+      },
+      {
+        "file": "tests/e2e/business-inbox.spec.mjs",
+        "blob": "61a8b18931a401eb93500d22ecdf48032015d6b6",
+        "existed_in_nonhandoff_origin": false
+      },
+      {
+        "file": "tests/e2e/la-taba.spec.mjs",
+        "blob": "c095c50243c6b745e1991a063e10c19f3a61cf92",
+        "existed_in_nonhandoff_origin": false
+      }
+    ]
+  },
+  "checks": {
+    "backend": [
+      {
+        "name": "Ephemeral Supabase stack",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/bitflowapp/la-taba-pages-preview/actions/runs/37150987704/job/111284951470"
+      },
+      {
+        "name": "Ephemeral Supabase stack",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/bitflowapp/la-taba-pages-preview/actions/runs/37150992035/job/111284950264"
+      },
+      {
+        "name": "Migrations, pgTAP and isolated restore",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/bitflowapp/la-taba-pages-preview/actions/runs/37150992028/job/111284896644"
+      },
+      {
+        "name": "Web, backend, fiscal and security gates",
+        "status": "in_progress",
+        "conclusion": null,
+        "url": "https://github.com/bitflowapp/la-taba-pages-preview/actions/runs/37150992028/job/111284896280"
+      },
+      {
+        "name": "Windows Rust and unsigned verification bundles",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/bitflowapp/la-taba-pages-preview/actions/runs/37150992028/job/111284896151"
+      }
+    ],
+    "frontend": [
+      {
+        "name": "Windows Rust and unsigned verification bundles",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/bitflowapp/la-taba-pages-preview/actions/runs/37099419997/job/111135856763"
+      },
+      {
+        "name": "Web, backend, fiscal and security gates",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/bitflowapp/la-taba-pages-preview/actions/runs/37099419997/job/111135856730"
+      },
+      {
+        "name": "Migrations, pgTAP and isolated restore",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/bitflowapp/la-taba-pages-preview/actions/runs/37099419997/job/111135856614"
+      }
+    ]
+  },
+  "prs": [
+    {
+      "number": 131,
+      "url": "https://github.com/bitflowapp/la-taba-pages-preview/pull/131",
+      "draft": true,
+      "state": "open",
+      "commits": 46,
+      "branch": "feat/taba-frontend-commercial-polish",
+      "head": "737371ba82cae6e309cff04c97984443c52c8def",
+      "base": "fix/taba-catalog-runtime-stability"
+    },
+    {
+      "number": 133,
+      "url": "https://github.com/bitflowapp/la-taba-pages-preview/pull/133",
+      "draft": true,
+      "state": "open",
+      "commits": 152,
+      "branch": "hardening/taba-ecommerce-production",
+      "head": "6fd0b6f48bc105bd153ffe6f0d7a4af6daa6115a",
+      "base": "main"
+    }
+  ]
+}

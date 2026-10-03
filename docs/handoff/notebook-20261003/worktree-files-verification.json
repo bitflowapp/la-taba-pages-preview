@@ -1,0 +1,1906 @@
+[
+  {
+    "repo_path": "C:/1212/la-taba-commerce-v3",
+    "file": "artifacts/taba2-gondola-neuquen/01-home.png",
+    "head": "3b78ad3a0517fceaab9cddb9e5dfa5f48ba9cd8a",
+    "local_blob": "b6494e863046c4febd8b23eea6f3ed4a0d47d863",
+    "snapshot_blob": "b6494e863046c4febd8b23eea6f3ed4a0d47d863",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-commerce-v3",
+    "file": "artifacts/taba2-gondola-neuquen/02-catalogo.png",
+    "head": "3b78ad3a0517fceaab9cddb9e5dfa5f48ba9cd8a",
+    "local_blob": "86075e27d61cefc9770ca20b77ba6342c2db46a8",
+    "snapshot_blob": "86075e27d61cefc9770ca20b77ba6342c2db46a8",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-commerce-v3",
+    "file": "artifacts/taba2-gondola-neuquen/03-cervezas.png",
+    "head": "3b78ad3a0517fceaab9cddb9e5dfa5f48ba9cd8a",
+    "local_blob": "cb391567df51585541802f5e34ab8336e3bfe45b",
+    "snapshot_blob": "cb391567df51585541802f5e34ab8336e3bfe45b",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-commerce-v3",
+    "file": "artifacts/taba2-gondola-neuquen/04-fernet.png",
+    "head": "3b78ad3a0517fceaab9cddb9e5dfa5f48ba9cd8a",
+    "local_blob": "b48b4dcb7722f9ff95ccd186036e757daa340a25",
+    "snapshot_blob": "b48b4dcb7722f9ff95ccd186036e757daa340a25",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-commerce-v3",
+    "file": "artifacts/taba2-gondola-neuquen/05-ficha.png",
+    "head": "3b78ad3a0517fceaab9cddb9e5dfa5f48ba9cd8a",
+    "local_blob": "f3204d5885adaa8bdec31292afde92531053c4fe",
+    "snapshot_blob": "f3204d5885adaa8bdec31292afde92531053c4fe",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/coca-cola-original-pet-1500ml-pack-6/product.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "ce75557ad3c801ba093094b8d214bbeb423c7044",
+    "snapshot_blob": "ce75557ad3c801ba093094b8d214bbeb423c7044",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/coca-cola-original-pet-1500ml-pack-6/thumbnail.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "241338d37a7b60c9249c563fd68716b7d9ef3ea1",
+    "snapshot_blob": "241338d37a7b60c9249c563fd68716b7d9ef3ea1",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/coca-cola-original-pet-500ml-pack-12/product.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "79f4ad128f4628af9f5094a3286fb65feb32286f",
+    "snapshot_blob": "79f4ad128f4628af9f5094a3286fb65feb32286f",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/coca-cola-original-pet-500ml-pack-12/thumbnail.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "70c22d046c8653e9486b4202638c59e7aa15a6ea",
+    "snapshot_blob": "70c22d046c8653e9486b4202638c59e7aa15a6ea",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/coca-cola-zero-pet-1500ml-pack-6/product.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "a03c193744ab0f7e79c36bf0967632b2cfcedff7",
+    "snapshot_blob": "a03c193744ab0f7e79c36bf0967632b2cfcedff7",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/coca-cola-zero-pet-1500ml-pack-6/thumbnail.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "459096c24dc9732ef33967b37916364604847fa6",
+    "snapshot_blob": "459096c24dc9732ef33967b37916364604847fa6",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/coca-cola-zero-pet-500ml-pack-12/product.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "64b337ee6ff6838c1be18f676e36059f0307c37d",
+    "snapshot_blob": "64b337ee6ff6838c1be18f676e36059f0307c37d",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/coca-cola-zero-pet-500ml-pack-12/thumbnail.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "52f1f73a8563c2fdc1fd71b8ec0fd205cf7af290",
+    "snapshot_blob": "52f1f73a8563c2fdc1fd71b8ec0fd205cf7af290",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/corona-extra-botella-330ml/product.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "2c7e20b31b86ddaa800bdf36269e307486807a0e",
+    "snapshot_blob": "2c7e20b31b86ddaa800bdf36269e307486807a0e",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/corona-extra-botella-330ml/thumbnail.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "ec3b9b2faa9453e5f2951e214db279c59c630b2e",
+    "snapshot_blob": "ec3b9b2faa9453e5f2951e214db279c59c630b2e",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/fanta-naranja-pet-1500ml-pack-6/product.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "ca956081b25c29ea649a1656341ce8d0cddb65f0",
+    "snapshot_blob": "ca956081b25c29ea649a1656341ce8d0cddb65f0",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/fanta-naranja-pet-1500ml-pack-6/thumbnail.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "c760d3e45351c4ce15073b75cdbd470633cd49cf",
+    "snapshot_blob": "c760d3e45351c4ce15073b75cdbd470633cd49cf",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/heineken-original-lata-473ml-pack-6/product.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "068c6b5f3436b41671b9b23c111e2bdc0fbcced6",
+    "snapshot_blob": "068c6b5f3436b41671b9b23c111e2bdc0fbcced6",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/heineken-original-lata-473ml-pack-6/thumbnail.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "d0ed247974c07c8596aa75445ac76dccaa4280c9",
+    "snapshot_blob": "d0ed247974c07c8596aa75445ac76dccaa4280c9",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/heineken-original-lata-473ml/product.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "068c6b5f3436b41671b9b23c111e2bdc0fbcced6",
+    "snapshot_blob": "068c6b5f3436b41671b9b23c111e2bdc0fbcced6",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/heineken-original-lata-473ml/thumbnail.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "d0ed247974c07c8596aa75445ac76dccaa4280c9",
+    "snapshot_blob": "d0ed247974c07c8596aa75445ac76dccaa4280c9",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/imperial-apa-lata-473ml/product.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "ecaa37c4d0b46c1414bac5e6a92126d26e4bb6e2",
+    "snapshot_blob": "ecaa37c4d0b46c1414bac5e6a92126d26e4bb6e2",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/imperial-apa-lata-473ml/thumbnail.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "90016c566a1bdd076bdf011c1c0aed1103607534",
+    "snapshot_blob": "90016c566a1bdd076bdf011c1c0aed1103607534",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/imperial-cream-stout-lata-473ml/product.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "de6a8a6405db9153d5438d8bd7c0b1f01959800f",
+    "snapshot_blob": "de6a8a6405db9153d5438d8bd7c0b1f01959800f",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/imperial-cream-stout-lata-473ml/thumbnail.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "9436d3a20dc8b0ec533f0a40e9ceefef48475953",
+    "snapshot_blob": "9436d3a20dc8b0ec533f0a40e9ceefef48475953",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/imperial-extra-lager-lata-473ml/product.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "f611decd964ac00720559d06d74f53865efcc7f0",
+    "snapshot_blob": "f611decd964ac00720559d06d74f53865efcc7f0",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/imperial-extra-lager-lata-473ml/thumbnail.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "5768f3a193a6bafe089a1e7d86ad51a56edeebf8",
+    "snapshot_blob": "5768f3a193a6bafe089a1e7d86ad51a56edeebf8",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/imperial-golden-lata-473ml/product.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "86cbdb98c1cd3ab7ebd681490cc3044f31ff8dd8",
+    "snapshot_blob": "86cbdb98c1cd3ab7ebd681490cc3044f31ff8dd8",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/imperial-golden-lata-473ml/thumbnail.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "43181cbcb2505a07530cec53186d081d575203d3",
+    "snapshot_blob": "43181cbcb2505a07530cec53186d081d575203d3",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/monster-mango-loco-lata-473ml/product.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "7ed2d663126daf66519b681746b3e43b7f2d600b",
+    "snapshot_blob": "7ed2d663126daf66519b681746b3e43b7f2d600b",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/monster-mango-loco-lata-473ml/thumbnail.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "267ec2c71c9cafe9ab37a734fd22e7681f063a09",
+    "snapshot_blob": "267ec2c71c9cafe9ab37a734fd22e7681f063a09",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/red-bull-original-lata-250ml-pack-4/product.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "c9a2cf8b96487cdbcc523fde1ef829320d124040",
+    "snapshot_blob": "c9a2cf8b96487cdbcc523fde1ef829320d124040",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/red-bull-original-lata-250ml-pack-4/thumbnail.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "0d8d8975d264481f72b70919c84737a2fc12ae67",
+    "snapshot_blob": "0d8d8975d264481f72b70919c84737a2fc12ae67",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/red-bull-original-lata-250ml/product.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "8bd929624832dd04def73991e7cd1a9007dc1550",
+    "snapshot_blob": "8bd929624832dd04def73991e7cd1a9007dc1550",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/red-bull-original-lata-250ml/thumbnail.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "c5e01edf5ce4e5a2e525bd73eb1d18dfa24d7167",
+    "snapshot_blob": "c5e01edf5ce4e5a2e525bd73eb1d18dfa24d7167",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/schneider-rubia-lata-710ml/product.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "e9baaa8850a3406440655174f1b64160452085ec",
+    "snapshot_blob": "e9baaa8850a3406440655174f1b64160452085ec",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/schneider-rubia-lata-710ml/thumbnail.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "e86b0a373e0c12dfdc6069b196f98eaa13760431",
+    "snapshot_blob": "e86b0a373e0c12dfdc6069b196f98eaa13760431",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/schweppes-citrus-pet-1500ml-pack-6/product.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "e409735f3c1de00c53de97d333d2d480b70c1be0",
+    "snapshot_blob": "e409735f3c1de00c53de97d333d2d480b70c1be0",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/schweppes-citrus-pet-1500ml-pack-6/thumbnail.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "6c2b3b97bb98843fbbd4a1cff7fb5129ad962db5",
+    "snapshot_blob": "6c2b3b97bb98843fbbd4a1cff7fb5129ad962db5",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/schweppes-tonica-pet-1500ml-pack-6/product.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "01bbee24ef3be0752927e1d44ea58b945da79aca",
+    "snapshot_blob": "01bbee24ef3be0752927e1d44ea58b945da79aca",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/schweppes-tonica-pet-1500ml-pack-6/thumbnail.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "0fd531eff65e13c95dc781659f6c97d250e369de",
+    "snapshot_blob": "0fd531eff65e13c95dc781659f6c97d250e369de",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/speed-original-lata-473ml/product.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "16db348c0101100443dc548c9943a44b1abdd9ba",
+    "snapshot_blob": "16db348c0101100443dc548c9943a44b1abdd9ba",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/speed-original-lata-473ml/thumbnail.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "51390b274ffd7ff88a40cffb6d829eb2a8585a0b",
+    "snapshot_blob": "51390b274ffd7ff88a40cffb6d829eb2a8585a0b",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/speed-zero-lata-473ml/product.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "1fb0a1552247f1d319ab0a9495e8484e9ef6efca",
+    "snapshot_blob": "1fb0a1552247f1d319ab0a9495e8484e9ef6efca",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/speed-zero-lata-473ml/thumbnail.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "aa5b37e402f0852a7ef56a1b05dd7857b5250152",
+    "snapshot_blob": "aa5b37e402f0852a7ef56a1b05dd7857b5250152",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/sprite-original-pet-1500ml-pack-6/product.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "2fa20af7c01c89912e3150e1f59e6589e639987b",
+    "snapshot_blob": "2fa20af7c01c89912e3150e1f59e6589e639987b",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/sprite-original-pet-1500ml-pack-6/thumbnail.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "ad68ccd79ddcf44f9a11ec9e6fb9b70081aca22d",
+    "snapshot_blob": "ad68ccd79ddcf44f9a11ec9e6fb9b70081aca22d",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/sprite-original-pet-500ml-pack-12/product.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "38a5abd4e44b2aedc89910ce89b03519921d7374",
+    "snapshot_blob": "38a5abd4e44b2aedc89910ce89b03519921d7374",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "assets/catalog/beverages/sprite-original-pet-500ml-pack-12/thumbnail.webp",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "e69a41c0acc1a504f7e0aaf636d1d903cdfdfe04",
+    "snapshot_blob": "e69a41c0acc1a504f7e0aaf636d1d903cdfdfe04",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "data/preview-promotions.csv",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "9d4e5c9a33c679e2fcc107988a428fd6bed78cf7",
+    "snapshot_blob": "9d4e5c9a33c679e2fcc107988a428fd6bed78cf7",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "js/approved-beverage-demo-data.js",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "65bb21cf7b3f9378829feccf8131f9e9dc636702",
+    "snapshot_blob": "65bb21cf7b3f9378829feccf8131f9e9dc636702",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "js/preview-promotions-data.js",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "9db752ebfdd896ac0e17d1a34a27bf2e1127d742",
+    "snapshot_blob": "9db752ebfdd896ac0e17d1a34a27bf2e1127d742",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "scripts/catalog-images/compose-promotion-images.mjs",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "93bb0db4d58ab66a4fa9780a8c39dcd06c885665",
+    "snapshot_blob": "93bb0db4d58ab66a4fa9780a8c39dcd06c885665",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "scripts/catalog-images/normalize-demo-packshots.mjs",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "17704d6353dd13363a0b6e82cc228a5b21a71164",
+    "snapshot_blob": "17704d6353dd13363a0b6e82cc228a5b21a71164",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "scripts/import-approved-beverages.mjs",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "7103c206010bbaf6e259dec7799278535f0640e3",
+    "snapshot_blob": "7103c206010bbaf6e259dec7799278535f0640e3",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-promos-packshots",
+    "file": "scripts/import-preview-promotions.mjs",
+    "head": "6fd46ae0b8c04b0ded5c21a7df3f38c8a6e817a8",
+    "local_blob": "0d2111804b58716c14e3ff87ff067536e0002083",
+    "snapshot_blob": "0d2111804b58716c14e3ff87ff067536e0002083",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-orders-staging",
+    "file": "docs/real-rider-gps-supabase.md",
+    "head": "4037ac67087779c565e161993eff007581dfbada",
+    "local_blob": "57c24e8a97da0e4f3d1977262e3d06e07ffb4b56",
+    "snapshot_blob": "57c24e8a97da0e4f3d1977262e3d06e07ffb4b56",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-orders-staging",
+    "file": "js/app.js",
+    "head": "4037ac67087779c565e161993eff007581dfbada",
+    "local_blob": "f3de28681035b3dc8ab6b8c3ed37f5cff03a701a",
+    "snapshot_blob": "f3de28681035b3dc8ab6b8c3ed37f5cff03a701a",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-orders-staging",
+    "file": "js/production-operations.js",
+    "head": "4037ac67087779c565e161993eff007581dfbada",
+    "local_blob": "6d1b6988484e375a4e40dd7d2f4929c3e6ab6cfe",
+    "snapshot_blob": "6d1b6988484e375a4e40dd7d2f4929c3e6ab6cfe",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-orders-staging",
+    "file": "js/repositories/supabase_order_repository.js",
+    "head": "4037ac67087779c565e161993eff007581dfbada",
+    "local_blob": "8b0cddb9b8801738b0b85fd57cc897f1c9f8b3f6",
+    "snapshot_blob": "8b0cddb9b8801738b0b85fd57cc897f1c9f8b3f6",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-orders-staging",
+    "file": "js/tracking/production_rider_gps.js",
+    "head": "4037ac67087779c565e161993eff007581dfbada",
+    "local_blob": "cd8ed91e4fc57b23d727212fcc148255001668b5",
+    "snapshot_blob": "cd8ed91e4fc57b23d727212fcc148255001668b5",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-orders-staging",
+    "file": "tests/production-rider-gps.test.mjs",
+    "head": "4037ac67087779c565e161993eff007581dfbada",
+    "local_blob": "072c997f0948e59a9a40af8968d38b16d71e2ba5",
+    "snapshot_blob": "072c997f0948e59a9a40af8968d38b16d71e2ba5",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-orders-staging",
+    "file": "supabase/migrations/20260801040000_rider_gps_tracking_gate2.sql",
+    "head": "4037ac67087779c565e161993eff007581dfbada",
+    "local_blob": "66ea026c200895fb43d1c72aec15961a7bf30bba",
+    "snapshot_blob": "66ea026c200895fb43d1c72aec15961a7bf30bba",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-orders-staging",
+    "file": "tests/e2e/rider-gps-gate2.spec.mjs",
+    "head": "4037ac67087779c565e161993eff007581dfbada",
+    "local_blob": "8c915898cb2e33f9d6f8ba9f82f28d398b4193c5",
+    "snapshot_blob": "8c915898cb2e33f9d6f8ba9f82f28d398b4193c5",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-orders-staging",
+    "file": "tests/rider-gps-gate2.test.mjs",
+    "head": "4037ac67087779c565e161993eff007581dfbada",
+    "local_blob": "5e28d3990775ebad56dba3df6e5c5992fe7acbab",
+    "snapshot_blob": "5e28d3990775ebad56dba3df6e5c5992fe7acbab",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "docs/catalog/image-manifest.json",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "9778594924e85f5ccce30144b846cbec770047cd",
+    "snapshot_blob": "9778594924e85f5ccce30144b846cbec770047cd",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "docs/catalog/image-source-audit.csv",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "e757c04f04f2121ac5bf6f6255dda42dfa95451a",
+    "snapshot_blob": "e757c04f04f2121ac5bf6f6255dda42dfa95451a",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "tests/catalog-image-pipeline.test.mjs",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "85981ce9e0113acc3b77fc7af30adc41778e068b",
+    "snapshot_blob": "85981ce9e0113acc3b77fc7af30adc41778e068b",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "tests/image-sources.test.mjs",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "aa414ac6d5a35040fb1b2ec4eefd82dfb1a10f92",
+    "snapshot_blob": "aa414ac6d5a35040fb1b2ec4eefd82dfb1a10f92",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/products/coca-cola-original-pet-1500ml-pack-6-4dd4dd8696d9f28a-c902a03bb7d90fa1.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "1cbf8eabb38cea8166fc845b438866a03e6ce2a1",
+    "snapshot_blob": "1cbf8eabb38cea8166fc845b438866a03e6ce2a1",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/products/coca-cola-original-pet-500ml-pack-12-f812d28610cbb209-04dfcc7856cedc7a.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "30c30d4440b789c8b767cf8436c7bdc17d33e2ce",
+    "snapshot_blob": "30c30d4440b789c8b767cf8436c7bdc17d33e2ce",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/products/coca-cola-zero-pet-1500ml-pack-6-f8890e19d3c302be-9556ac06b128e0f1.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "20b7111ef38926c1c3ad5323d6810f4eb1ffdeff",
+    "snapshot_blob": "20b7111ef38926c1c3ad5323d6810f4eb1ffdeff",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/products/coca-cola-zero-pet-500ml-pack-12-4faf9370e3d06470-29bf5929f9362853.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "2031d9ab77d17100a0e7061980450e6acbb6022a",
+    "snapshot_blob": "2031d9ab77d17100a0e7061980450e6acbb6022a",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/products/corona-extra-botella-330ml-ca9781e2278bb008-eb14789fc9ba2b5e.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "8814c8154330e33a465b3d438635a0140bd5efef",
+    "snapshot_blob": "8814c8154330e33a465b3d438635a0140bd5efef",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/products/fanta-naranja-pet-1500ml-pack-6-4bd6206c6990bcd4-1db67196a34cef67.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "4acb77bd21e360ed6be113b75dee25fbe481dbb5",
+    "snapshot_blob": "4acb77bd21e360ed6be113b75dee25fbe481dbb5",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/products/heineken-original-lata-473ml-88a70213819737aa-ef3789546e789f47.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "789a1dbae170502886a87a853c35eeb499fedf19",
+    "snapshot_blob": "789a1dbae170502886a87a853c35eeb499fedf19",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/products/heineken-original-lata-473ml-pack-6-23d24c0ba47bf7bd-ef3789546e789f47.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "789a1dbae170502886a87a853c35eeb499fedf19",
+    "snapshot_blob": "789a1dbae170502886a87a853c35eeb499fedf19",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/products/imperial-apa-lata-473ml-252c09f4b889ae6f-97237bc8b45d562d.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "1fbc31222ca06c223c3900ab71c7f666b6a06f04",
+    "snapshot_blob": "1fbc31222ca06c223c3900ab71c7f666b6a06f04",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/products/imperial-cream-stout-lata-473ml-c0893e3d352f8171-5713d8684b724398.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "f54835ba413f068b9e76264e73ddafd328ee3949",
+    "snapshot_blob": "f54835ba413f068b9e76264e73ddafd328ee3949",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/products/imperial-extra-lager-lata-473ml-d737ddfe9bbd556b-9e752cb4d310190d.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "82274223064fff7a32c21e0a71e31c78203b1e75",
+    "snapshot_blob": "82274223064fff7a32c21e0a71e31c78203b1e75",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/products/imperial-golden-lata-473ml-084d1d52ac7683f6-c05f6df16930fd0a.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "9a2e7d68d17bd1b059d1cd0e566de0f8c2c1f089",
+    "snapshot_blob": "9a2e7d68d17bd1b059d1cd0e566de0f8c2c1f089",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/products/monster-mango-loco-lata-473ml-06fc27a074bedc39-35f4bdbd38d7ffb3.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "6f39d26811334aa2750f4a0848e0ff8641ca8cca",
+    "snapshot_blob": "6f39d26811334aa2750f4a0848e0ff8641ca8cca",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/products/red-bull-original-lata-250ml-a0fb8a1e53857cb0-2c87ba6374277260.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "6a93e016514999641927d5e2073e4a950f93c846",
+    "snapshot_blob": "6a93e016514999641927d5e2073e4a950f93c846",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/products/red-bull-original-lata-250ml-pack-4-dfc483a315041dd9-2510f4f923172d31.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "4af17338d7cb72354742bf9645c45c6775b7b665",
+    "snapshot_blob": "4af17338d7cb72354742bf9645c45c6775b7b665",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/products/schneider-rubia-lata-710ml-347047a6fbca2905-c9908164a74d2697.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "f52e25c8558d9240cb1ffef8bd0102a3c5633720",
+    "snapshot_blob": "f52e25c8558d9240cb1ffef8bd0102a3c5633720",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/products/schweppes-citrus-pet-1500ml-pack-6-a9589d92b449af3f-d558fc8259b96ff5.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "f57f1ac2d4b2e7233ce6112cb8dc14ab0ce489d9",
+    "snapshot_blob": "f57f1ac2d4b2e7233ce6112cb8dc14ab0ce489d9",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/products/schweppes-tonica-pet-1500ml-pack-6-0e47bbb5c6bcca20-626c925037c60e3f.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "b4b9ffc5713ff186416f327601076ab4d77c16b2",
+    "snapshot_blob": "b4b9ffc5713ff186416f327601076ab4d77c16b2",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/products/speed-original-lata-473ml-a303d09518ae7a4b-4e009cb3351fcf74.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "e23e7a87f2bfa224b4ce7c66d0e07c4ddacec169",
+    "snapshot_blob": "e23e7a87f2bfa224b4ce7c66d0e07c4ddacec169",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/products/speed-zero-lata-473ml-c45aff7cdb23246b-ef7a5d8a4db3a52d.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "584f377407d4054c0e0144c0ac9e882365d872fe",
+    "snapshot_blob": "584f377407d4054c0e0144c0ac9e882365d872fe",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/products/sprite-original-pet-1500ml-pack-6-ec5c5b485626c057-b4d20a5baa5f2a5a.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "789441c5d9f9282cc20ec6c6bf8e0a3b274a26b7",
+    "snapshot_blob": "789441c5d9f9282cc20ec6c6bf8e0a3b274a26b7",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/products/sprite-original-pet-500ml-pack-12-092d6e0e529e38d0-b19917623b223ce0.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "d46e8bbd409ee1ded5875d6aaadaf7eda7f13ee0",
+    "snapshot_blob": "d46e8bbd409ee1ded5875d6aaadaf7eda7f13ee0",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/thumbnails/coca-cola-original-pet-1500ml-pack-6-4dd4dd8696d9f28a-thumb-f25ffa6a5e3c3913.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "4f8cb5559576b21a83a60ac6510f614e3bc8f157",
+    "snapshot_blob": "4f8cb5559576b21a83a60ac6510f614e3bc8f157",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/thumbnails/coca-cola-original-pet-500ml-pack-12-f812d28610cbb209-thumb-df23de8e26b14f9a.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "817ffaa60416bdc84707e00ef30a0f12584b49c4",
+    "snapshot_blob": "817ffaa60416bdc84707e00ef30a0f12584b49c4",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/thumbnails/coca-cola-zero-pet-1500ml-pack-6-f8890e19d3c302be-thumb-4bbc3f297e47ec8c.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "e95b18dca8d07ca6f6ce3dd314f03c72ebdd0eb0",
+    "snapshot_blob": "e95b18dca8d07ca6f6ce3dd314f03c72ebdd0eb0",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/thumbnails/coca-cola-zero-pet-500ml-pack-12-4faf9370e3d06470-thumb-57e40df3411c3fcd.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "52019843e311c9c3569230d3f4db080f7616b27e",
+    "snapshot_blob": "52019843e311c9c3569230d3f4db080f7616b27e",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/thumbnails/corona-extra-botella-330ml-ca9781e2278bb008-thumb-594b682a7c41a5f9.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "7c448132f8e817744b689f6173d5344432889272",
+    "snapshot_blob": "7c448132f8e817744b689f6173d5344432889272",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/thumbnails/fanta-naranja-pet-1500ml-pack-6-4bd6206c6990bcd4-thumb-ffbd8df21238a204.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "1aae54e5b3025fa22c5a4e4401dfbcadf6ecb530",
+    "snapshot_blob": "1aae54e5b3025fa22c5a4e4401dfbcadf6ecb530",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/thumbnails/heineken-original-lata-473ml-88a70213819737aa-thumb-e118f0d43eefb385.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "1f59c0df38b7471747eb482051ea6a417944f62e",
+    "snapshot_blob": "1f59c0df38b7471747eb482051ea6a417944f62e",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/thumbnails/heineken-original-lata-473ml-pack-6-23d24c0ba47bf7bd-thumb-e118f0d43eefb385.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "1f59c0df38b7471747eb482051ea6a417944f62e",
+    "snapshot_blob": "1f59c0df38b7471747eb482051ea6a417944f62e",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/thumbnails/imperial-apa-lata-473ml-252c09f4b889ae6f-thumb-dd2eeed7be9a4913.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "fdceb6da594750f0d99e252ec190f510353b56cd",
+    "snapshot_blob": "fdceb6da594750f0d99e252ec190f510353b56cd",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/thumbnails/imperial-cream-stout-lata-473ml-c0893e3d352f8171-thumb-42bc405c83f4c6e9.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "b24769aaf579732955b44f0012d802664b9ea699",
+    "snapshot_blob": "b24769aaf579732955b44f0012d802664b9ea699",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/thumbnails/imperial-extra-lager-lata-473ml-d737ddfe9bbd556b-thumb-b518b2ad06ca0dde.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "1824c0e36429a283545e5ae907719376ef0d8fc7",
+    "snapshot_blob": "1824c0e36429a283545e5ae907719376ef0d8fc7",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/thumbnails/imperial-golden-lata-473ml-084d1d52ac7683f6-thumb-0b7ddebd0a506d7c.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "0cafa5b576b1a4adbbcffb874dbf1d8a721c1550",
+    "snapshot_blob": "0cafa5b576b1a4adbbcffb874dbf1d8a721c1550",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/thumbnails/monster-mango-loco-lata-473ml-06fc27a074bedc39-thumb-cc5e259e03bfa244.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "0c5036ddf1611fdbcf7efe544a99f7cd90e80e14",
+    "snapshot_blob": "0c5036ddf1611fdbcf7efe544a99f7cd90e80e14",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/thumbnails/red-bull-original-lata-250ml-a0fb8a1e53857cb0-thumb-19bd5066af5a56f2.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "68344d4edcabc80ef34be3479b893274783b354f",
+    "snapshot_blob": "68344d4edcabc80ef34be3479b893274783b354f",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/thumbnails/red-bull-original-lata-250ml-pack-4-dfc483a315041dd9-thumb-ddf64d388ce47654.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "10281b424439226fd1899f726745f259a21fce61",
+    "snapshot_blob": "10281b424439226fd1899f726745f259a21fce61",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/thumbnails/schneider-rubia-lata-710ml-347047a6fbca2905-thumb-06218f7c70b3b887.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "4fe7d9ba5260a248be07387bc234155f631efb8b",
+    "snapshot_blob": "4fe7d9ba5260a248be07387bc234155f631efb8b",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/thumbnails/schweppes-citrus-pet-1500ml-pack-6-a9589d92b449af3f-thumb-d13e9b386cca1f16.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "19abfa1214f44a71e7bf89236529308fc26ccc57",
+    "snapshot_blob": "19abfa1214f44a71e7bf89236529308fc26ccc57",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/thumbnails/schweppes-tonica-pet-1500ml-pack-6-0e47bbb5c6bcca20-thumb-18b3e024b7535279.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "496954ebe405cfd0e40c52c6f3b493c37f472b0d",
+    "snapshot_blob": "496954ebe405cfd0e40c52c6f3b493c37f472b0d",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/thumbnails/speed-original-lata-473ml-a303d09518ae7a4b-thumb-5092573e9dc9c62f.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "bda041a780bed343ab1aaa715f23f2011087880e",
+    "snapshot_blob": "bda041a780bed343ab1aaa715f23f2011087880e",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/thumbnails/speed-zero-lata-473ml-c45aff7cdb23246b-thumb-2d99a4943d5df27f.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "54de2627a268baefcb4a18dd6208c59eb52250f5",
+    "snapshot_blob": "54de2627a268baefcb4a18dd6208c59eb52250f5",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/thumbnails/sprite-original-pet-1500ml-pack-6-ec5c5b485626c057-thumb-906cdf37225c3c32.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "5f561ebee49472f8d3518f327ca2a7c804b6c440",
+    "snapshot_blob": "5f561ebee49472f8d3518f327ca2a7c804b6c440",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "assets/catalog/thumbnails/sprite-original-pet-500ml-pack-12-092d6e0e529e38d0-thumb-b345ac3117ad8948.webp",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "ae3b573561001ea7b39e9bcf9eec45bdff78dd7f",
+    "snapshot_blob": "ae3b573561001ea7b39e9bcf9eec45bdff78dd7f",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-real-pilot-staging",
+    "file": "data/catalog-staging-qa.csv",
+    "head": "a386b2790e04d24ce10f26b9bcb3011fa282be48",
+    "local_blob": "70b3b2e6c224a1959b85227c2acc807d739d3ac7",
+    "snapshot_blob": "70b3b2e6c224a1959b85227c2acc807d739d3ac7",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-redesign-rojo",
+    "file": "index.html",
+    "head": "67972cf9aa05c8c19b247b251c84348dc18af1b1",
+    "local_blob": "d0d1b02fd8e870ef8e576e0c9ad85f03957d1f44",
+    "snapshot_blob": "d0d1b02fd8e870ef8e576e0c9ad85f03957d1f44",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-redesign-rojo",
+    "file": "js/app.js",
+    "head": "67972cf9aa05c8c19b247b251c84348dc18af1b1",
+    "local_blob": "3fa241529c847a0e990317fde75e3e4a94cfa283",
+    "snapshot_blob": "3fa241529c847a0e990317fde75e3e4a94cfa283",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-redesign-rojo",
+    "file": "js/ui.js",
+    "head": "67972cf9aa05c8c19b247b251c84348dc18af1b1",
+    "local_blob": "aff08129a67566a270a0db6894a2e4d11e3347fa",
+    "snapshot_blob": "aff08129a67566a270a0db6894a2e4d11e3347fa",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-redesign-rojo",
+    "file": "styles.css",
+    "head": "67972cf9aa05c8c19b247b251c84348dc18af1b1",
+    "local_blob": "44019c8bc698473c99c960e88cb3b469c778d107",
+    "snapshot_blob": "44019c8bc698473c99c960e88cb3b469c778d107",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-redesign-rojo",
+    "file": "tests/e2e/beverage-storefront.spec.mjs",
+    "head": "67972cf9aa05c8c19b247b251c84348dc18af1b1",
+    "local_blob": "8ad7523afcf74b712cb30b4416f90f886cc3ca08",
+    "snapshot_blob": "8ad7523afcf74b712cb30b4416f90f886cc3ca08",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-redesign-rojo",
+    "file": "tests/e2e/honesty-mode.spec.mjs",
+    "head": "67972cf9aa05c8c19b247b251c84348dc18af1b1",
+    "local_blob": "851a2bfe3a24a74215cced825363022a5e39d355",
+    "snapshot_blob": "851a2bfe3a24a74215cced825363022a5e39d355",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-redesign-rojo",
+    "file": "tests/e2e/ios-autozoom-safety.spec.mjs",
+    "head": "67972cf9aa05c8c19b247b251c84348dc18af1b1",
+    "local_blob": "47034e6a8def77f2f713bafd6176857938135f53",
+    "snapshot_blob": "47034e6a8def77f2f713bafd6176857938135f53",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-redesign-rojo",
+    "file": "tests/e2e/ios-phantom-scroll.spec.mjs",
+    "head": "67972cf9aa05c8c19b247b251c84348dc18af1b1",
+    "local_blob": "429f6ea1e68de334ffed39f8aa5579fa6b9fae0a",
+    "snapshot_blob": "429f6ea1e68de334ffed39f8aa5579fa6b9fae0a",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-redesign-rojo",
+    "file": "tests/e2e/la-taba.spec.mjs",
+    "head": "67972cf9aa05c8c19b247b251c84348dc18af1b1",
+    "local_blob": "644a9ff94315b0eccee205aa7610bf85a9f20677",
+    "snapshot_blob": "644a9ff94315b0eccee205aa7610bf85a9f20677",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-redesign-rojo",
+    "file": "tests/e2e/tracking-arriving.spec.mjs",
+    "head": "67972cf9aa05c8c19b247b251c84348dc18af1b1",
+    "local_blob": "85a08eb7531b4f02e199a7c67bae0e4b31c9c16b",
+    "snapshot_blob": "85a08eb7531b4f02e199a7c67bae0e4b31c9c16b",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-redesign-rojo",
+    "file": "tests/promotions.test.mjs",
+    "head": "67972cf9aa05c8c19b247b251c84348dc18af1b1",
+    "local_blob": "d7374e5c4b7eb974491c2d13f55ddd047fedc71f",
+    "snapshot_blob": "d7374e5c4b7eb974491c2d13f55ddd047fedc71f",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-ui-polish-brand",
+    "file": "index.html",
+    "head": "9446beaee9a560d8034bb1b7b925360142a62dfe",
+    "local_blob": "7eadf1a65b7cf6cee199d1485d667f483ba23e76",
+    "snapshot_blob": "7eadf1a65b7cf6cee199d1485d667f483ba23e76",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-ui-polish-brand",
+    "file": "js/config.js",
+    "head": "9446beaee9a560d8034bb1b7b925360142a62dfe",
+    "local_blob": "859c1307750bba9fdd2e2588df3422352abb0637",
+    "snapshot_blob": "859c1307750bba9fdd2e2588df3422352abb0637",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-ui-polish-brand",
+    "file": "js/customer-profile-view.js",
+    "head": "9446beaee9a560d8034bb1b7b925360142a62dfe",
+    "local_blob": "0f79058f35234478762913201ba8cb3751039152",
+    "snapshot_blob": "0f79058f35234478762913201ba8cb3751039152",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-ui-polish-brand",
+    "file": "js/showcase.js",
+    "head": "9446beaee9a560d8034bb1b7b925360142a62dfe",
+    "local_blob": "cab9bf298f2d0ee446ec18d134f1a4e9fa4560a3",
+    "snapshot_blob": "cab9bf298f2d0ee446ec18d134f1a4e9fa4560a3",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-ui-polish-brand",
+    "file": "js/state.js",
+    "head": "9446beaee9a560d8034bb1b7b925360142a62dfe",
+    "local_blob": "2ba82f8be4409adcf339172d1162c5d2f15db4d5",
+    "snapshot_blob": "2ba82f8be4409adcf339172d1162c5d2f15db4d5",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-ui-polish-brand",
+    "file": "js/ui.js",
+    "head": "9446beaee9a560d8034bb1b7b925360142a62dfe",
+    "local_blob": "e532f6d786c2ea23d32d6ac23a72b058642fee00",
+    "snapshot_blob": "e532f6d786c2ea23d32d6ac23a72b058642fee00",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-ui-polish-brand",
+    "file": "manifest.webmanifest",
+    "head": "9446beaee9a560d8034bb1b7b925360142a62dfe",
+    "local_blob": "42eebe1ceeae3576a7e0f8fa4c500e3feec7752a",
+    "snapshot_blob": "42eebe1ceeae3576a7e0f8fa4c500e3feec7752a",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-ui-polish-brand",
+    "file": "runtime-config.js",
+    "head": "9446beaee9a560d8034bb1b7b925360142a62dfe",
+    "local_blob": "f3cd78f22d3790334cf404d8043e232393eb5c4e",
+    "snapshot_blob": "f3cd78f22d3790334cf404d8043e232393eb5c4e",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-ui-polish-brand",
+    "file": "styles.css",
+    "head": "9446beaee9a560d8034bb1b7b925360142a62dfe",
+    "local_blob": "31a497a4a9eb7ec208f6aaa4deb2d37703b0badc",
+    "snapshot_blob": "31a497a4a9eb7ec208f6aaa4deb2d37703b0badc",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-ui-polish-brand",
+    "file": "styles/common.css",
+    "head": "9446beaee9a560d8034bb1b7b925360142a62dfe",
+    "local_blob": "4f1ef70ec651713c875a6fef7bc8a3a114fcdd7d",
+    "snapshot_blob": "4f1ef70ec651713c875a6fef7bc8a3a114fcdd7d",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-ui-polish-brand",
+    "file": "styles/profile.css",
+    "head": "9446beaee9a560d8034bb1b7b925360142a62dfe",
+    "local_blob": "1a6e0cf8ae7b3b086b42ae5de2be18b23db13d4c",
+    "snapshot_blob": "1a6e0cf8ae7b3b086b42ae5de2be18b23db13d4c",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-ui-polish-brand",
+    "file": "styles/storefront.css",
+    "head": "9446beaee9a560d8034bb1b7b925360142a62dfe",
+    "local_blob": "65ab4490022f8c3d12859d89bdf13796a50481e3",
+    "snapshot_blob": "65ab4490022f8c3d12859d89bdf13796a50481e3",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-ui-polish-brand",
+    "file": "sw.js",
+    "head": "9446beaee9a560d8034bb1b7b925360142a62dfe",
+    "local_blob": "3f749ed4a7e060bb529813a3eab1efc16ca740a1",
+    "snapshot_blob": "3f749ed4a7e060bb529813a3eab1efc16ca740a1",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-ui-polish-brand",
+    "file": "tests/config.test.mjs",
+    "head": "9446beaee9a560d8034bb1b7b925360142a62dfe",
+    "local_blob": "234827d668a42f0f0551a5a3b44967e1a6d07aa0",
+    "snapshot_blob": "234827d668a42f0f0551a5a3b44967e1a6d07aa0",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-ui-polish-brand",
+    "file": "tests/e2e/beverage-storefront.spec.mjs",
+    "head": "9446beaee9a560d8034bb1b7b925360142a62dfe",
+    "local_blob": "d9cdc99a1e7adaca232595f3680c2974c808afe1",
+    "snapshot_blob": "d9cdc99a1e7adaca232595f3680c2974c808afe1",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-ui-polish-brand",
+    "file": "tests/e2e/business-inbox.spec.mjs",
+    "head": "9446beaee9a560d8034bb1b7b925360142a62dfe",
+    "local_blob": "c457eabc03b7f12e469fdddacac0fda906d41034",
+    "snapshot_blob": "c457eabc03b7f12e469fdddacac0fda906d41034",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-ui-polish-brand",
+    "file": "tests/e2e/business-setup.spec.mjs",
+    "head": "9446beaee9a560d8034bb1b7b925360142a62dfe",
+    "local_blob": "3a461d7f3d7fed216533799b6d768e023d05fb51",
+    "snapshot_blob": "3a461d7f3d7fed216533799b6d768e023d05fb51",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-ui-polish-brand",
+    "file": "tests/e2e/ios-blank-screen.spec.mjs",
+    "head": "9446beaee9a560d8034bb1b7b925360142a62dfe",
+    "local_blob": "d3b0e615be2eaa64a4f895c566da25f4c3127dde",
+    "snapshot_blob": "d3b0e615be2eaa64a4f895c566da25f4c3127dde",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-ui-polish-brand",
+    "file": "tests/e2e/showcase.spec.mjs",
+    "head": "9446beaee9a560d8034bb1b7b925360142a62dfe",
+    "local_blob": "4ac0a9d0aaf2afca23b91d7fd780eb0cfb1b797d",
+    "snapshot_blob": "4ac0a9d0aaf2afca23b91d7fd780eb0cfb1b797d",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-ui-polish-brand",
+    "file": "tests/github-pages.test.mjs",
+    "head": "9446beaee9a560d8034bb1b7b925360142a62dfe",
+    "local_blob": "1ccd98964e0054d0e6ae14f7f6430dc152e82f28",
+    "snapshot_blob": "1ccd98964e0054d0e6ae14f7f6430dc152e82f28",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-ui-polish-brand",
+    "file": "tests/pwa.test.mjs",
+    "head": "9446beaee9a560d8034bb1b7b925360142a62dfe",
+    "local_blob": "513efb2602f92c8b5a29f9d732a4afbcdbb969ed",
+    "snapshot_blob": "513efb2602f92c8b5a29f9d732a4afbcdbb969ed",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/1212/la-taba-ui-polish-brand",
+    "file": "tests/ui-presentation.test.mjs",
+    "head": "9446beaee9a560d8034bb1b7b925360142a62dfe",
+    "local_blob": "b4d76824b329b71ac28bd5125f06f8e6b9aa9688",
+    "snapshot_blob": "b4d76824b329b71ac28bd5125f06f8e6b9aa9688",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/Users/marco/dev/la-taba-business-panel-automation",
+    "file": "promo-video/CREATIVO.md",
+    "head": "fc406588d2b1455e3e9b272d194dbae0335d5c0f",
+    "local_blob": "986fbb17de69bc19acc1deb2525ede4906aaa92a",
+    "snapshot_blob": "986fbb17de69bc19acc1deb2525ede4906aaa92a",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/Users/marco/dev/la-taba-business-panel-automation",
+    "file": "promo-video/TABA_PROMO_SHORT_1080x1920.mp4",
+    "head": "fc406588d2b1455e3e9b272d194dbae0335d5c0f",
+    "local_blob": "c02a6393f47aea2641bdf57be500d7fd833bef7c",
+    "snapshot_blob": "c02a6393f47aea2641bdf57be500d7fd833bef7c",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/Users/marco/dev/la-taba-business-panel-automation",
+    "file": "promo-video/TABA_PROMO_VERTICAL_1080x1920.mp4",
+    "head": "fc406588d2b1455e3e9b272d194dbae0335d5c0f",
+    "local_blob": "2d5e9574f4266de1ac6d3c74df042bd736748b83",
+    "snapshot_blob": "2d5e9574f4266de1ac6d3c74df042bd736748b83",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/Users/marco/dev/la-taba-pages-preview",
+    "file": "artifacts/taba2-alcohol-commercial/PROMOS-MARGEN.json",
+    "head": "9c6232efb8e69120c7e2180276b250b6032286c6",
+    "local_blob": "61cc62e590918ad28dc1efc77c43a071b679fd4d",
+    "snapshot_blob": "61cc62e590918ad28dc1efc77c43a071b679fd4d",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/Users/marco/dev/la-taba-pages-preview",
+    "file": "artifacts/taba2-gondola-neuquen/01-home.png",
+    "head": "9c6232efb8e69120c7e2180276b250b6032286c6",
+    "local_blob": "bde55e0ede5fe4300f9e1d2b01b6dc3419c16101",
+    "snapshot_blob": "bde55e0ede5fe4300f9e1d2b01b6dc3419c16101",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/Users/marco/dev/la-taba-pages-preview",
+    "file": "artifacts/taba2-gondola-neuquen/02-catalogo.png",
+    "head": "9c6232efb8e69120c7e2180276b250b6032286c6",
+    "local_blob": "f3e3624cda44eaddd4b266ea746a79a179db46cc",
+    "snapshot_blob": "f3e3624cda44eaddd4b266ea746a79a179db46cc",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/Users/marco/dev/la-taba-pages-preview",
+    "file": "artifacts/taba2-gondola-neuquen/03-cervezas.png",
+    "head": "9c6232efb8e69120c7e2180276b250b6032286c6",
+    "local_blob": "0add8df461b86e9af8974bae5172521185c3b4d8",
+    "snapshot_blob": "0add8df461b86e9af8974bae5172521185c3b4d8",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/Users/marco/dev/la-taba-pages-preview",
+    "file": "docs/catalog/gondola-publica-imagenes.json",
+    "head": "9c6232efb8e69120c7e2180276b250b6032286c6",
+    "local_blob": "d0c4218de389b8117438a3a26d7de1ad35c4f885",
+    "snapshot_blob": "d0c4218de389b8117438a3a26d7de1ad35c4f885",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/Users/marco/worktrees/taba2-production-candidate",
+    "file": ".github/workflows/preview-pages.yml",
+    "head": "375633b39ece4879d43f5f499c79b0ae50654814",
+    "local_blob": "e19dcbeeb237ece5d3c6cfce0549c7331d94f582",
+    "snapshot_blob": "e19dcbeeb237ece5d3c6cfce0549c7331d94f582",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/Users/marco/worktrees/taba2-production-candidate",
+    "file": "docs/PRODUCTION-GO-LIVE-CHECKLIST.md",
+    "head": "375633b39ece4879d43f5f499c79b0ae50654814",
+    "local_blob": "221f12070e0dfd498b0836382b3f4d5b6c44ab28",
+    "snapshot_blob": "221f12070e0dfd498b0836382b3f4d5b6c44ab28",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/Users/marco/worktrees/taba2-production-candidate",
+    "file": "release-identity.json",
+    "head": "375633b39ece4879d43f5f499c79b0ae50654814",
+    "local_blob": "cc835e817823b00532eccdab9e1490c3cca4f069",
+    "snapshot_blob": "cc835e817823b00532eccdab9e1490c3cca4f069",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/Users/marco/worktrees/taba2-production-candidate",
+    "file": "scripts/check-release-identity.mjs",
+    "head": "375633b39ece4879d43f5f499c79b0ae50654814",
+    "local_blob": "0968115dedf6cedcec3174975963f37b194c51ed",
+    "snapshot_blob": "0968115dedf6cedcec3174975963f37b194c51ed",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/Users/marco/worktrees/taba2-production-candidate",
+    "file": "scripts/preflight-staging-package.mjs",
+    "head": "375633b39ece4879d43f5f499c79b0ae50654814",
+    "local_blob": "783bad515905902457996b7fa456c12198366376",
+    "snapshot_blob": "783bad515905902457996b7fa456c12198366376",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/Users/marco/worktrees/taba2-production-candidate",
+    "file": "tests/release-identity.test.mjs",
+    "head": "375633b39ece4879d43f5f499c79b0ae50654814",
+    "local_blob": "e309d078e94e29ad31f4e373ce86138efef5a2ea",
+    "snapshot_blob": "e309d078e94e29ad31f4e373ce86138efef5a2ea",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/Users/marco/worktrees/taba2-production-candidate",
+    "file": "tests/release-payment-return-package.test.mjs",
+    "head": "375633b39ece4879d43f5f499c79b0ae50654814",
+    "local_blob": "5b62d481033b889239060c9661c60d474d806dbe",
+    "snapshot_blob": "5b62d481033b889239060c9661c60d474d806dbe",
+    "equal": true
+  },
+  {
+    "repo_path": "C:/Users/marco/worktrees/taba2-production-candidate",
+    "file": "tests/preview-package-preflight.test.mjs",
+    "head": "375633b39ece4879d43f5f499c79b0ae50654814",
+    "local_blob": "3cfb53be70bb1748c03da3b8a64434cee4f64181",
+    "snapshot_blob": "3cfb53be70bb1748c03da3b8a64434cee4f64181",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-commerce-v3",
+    "file": "artifacts/agent-release-progress.md",
+    "head": "ba8c393da8886404de953909c89cdd9b96dbdb87",
+    "local_blob": "fa8570ed857bab9ca0382a0cbf33393323cd97a0",
+    "snapshot_blob": "fa8570ed857bab9ca0382a0cbf33393323cd97a0",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-commerce-v3",
+    "file": "scratch/audit-commerce-production.mjs",
+    "head": "ba8c393da8886404de953909c89cdd9b96dbdb87",
+    "local_blob": "83c677a90d1407473015e3459fc71a89cf7e76ac",
+    "snapshot_blob": "83c677a90d1407473015e3459fc71a89cf7e76ac",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-commerce-v3",
+    "file": "scratch/check-web-production.mjs",
+    "head": "ba8c393da8886404de953909c89cdd9b96dbdb87",
+    "local_blob": "69794f45fe4ee3ecc569627e63f2ec3675c8eb34",
+    "snapshot_blob": "69794f45fe4ee3ecc569627e63f2ec3675c8eb34",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-commerce-v3",
+    "file": "scratch/execute-production-smoke.mjs",
+    "head": "ba8c393da8886404de953909c89cdd9b96dbdb87",
+    "local_blob": "bf5d09aa6f43b2f4272688e1be357c977b3c3bb6",
+    "snapshot_blob": "bf5d09aa6f43b2f4272688e1be357c977b3c3bb6",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-commerce-v3",
+    "file": "scratch/generate-rider-production-keystore.ps1",
+    "head": "ba8c393da8886404de953909c89cdd9b96dbdb87",
+    "local_blob": "3dc8e33fe94c1f48c2b8d62b7ad668e5eca7f3ff",
+    "snapshot_blob": "3dc8e33fe94c1f48c2b8d62b7ad668e5eca7f3ff",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-commerce-v3",
+    "file": "scratch/verify-rider-artifacts.ps1",
+    "head": "ba8c393da8886404de953909c89cdd9b96dbdb87",
+    "local_blob": "2593b91491c606f11833a3723ef2e7c3ba5c4f6c",
+    "snapshot_blob": "2593b91491c606f11833a3723ef2e7c3ba5c4f6c",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-commerce-v3",
+    "file": "scripts/verify-oauth-result.mjs",
+    "head": "ba8c393da8886404de953909c89cdd9b96dbdb87",
+    "local_blob": "58495a8db7e69d068f83949d397cb7c656a90a11",
+    "snapshot_blob": "58495a8db7e69d068f83949d397cb7c656a90a11",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-migration-fetch-audit",
+    "file": "supabase/migrations/20260531030000_la_taba_phase1_orders.sql",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "local_blob": "66e115e1ad6844a0690afaa520ab2180b7770e79",
+    "snapshot_blob": "66e115e1ad6844a0690afaa520ab2180b7770e79",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-migration-fetch-audit",
+    "file": "supabase/migrations/20260531040000_la_taba_phase1_hardening.sql",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "local_blob": "47e58fbdc43a0e58aef0863c0d1a00383802be2c",
+    "snapshot_blob": "47e58fbdc43a0e58aef0863c0d1a00383802be2c",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-migration-fetch-audit",
+    "file": "supabase/migrations/20260601205707_operational_orders_v1.sql",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "local_blob": "f9b546d6426c6efe3f3f8cd87d9b0b1f0c926a57",
+    "snapshot_blob": "f9b546d6426c6efe3f3f8cd87d9b0b1f0c926a57",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-migration-fetch-audit",
+    "file": "supabase/migrations/20260725030000_taba_production_orders.sql",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "local_blob": "1802f8d255a0a764b8e2ccb4859b56da2ab8bb0e",
+    "snapshot_blob": "1802f8d255a0a764b8e2ccb4859b56da2ab8bb0e",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-migration-fetch-audit",
+    "file": "supabase/migrations/20260725050000_tracking_rider_privacy.sql",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "local_blob": "ca153cc9f3f5357779c03a2583ded8713c4819bc",
+    "snapshot_blob": "ca153cc9f3f5357779c03a2583ded8713c4819bc",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-migration-fetch-audit",
+    "file": "supabase/migrations/20260725060000_alcohol_reservations_abuse.sql",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "local_blob": "371425b12daa020178e351b407035f164ef884e3",
+    "snapshot_blob": "371425b12daa020178e351b407035f164ef884e3",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-migration-fetch-audit",
+    "file": "supabase/migrations/20260725070000_catalog_category_authority.sql",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "local_blob": "3fa5e595e328f928dfe7a7bfac34c667e4e4da7b",
+    "snapshot_blob": "3fa5e595e328f928dfe7a7bfac34c667e4e4da7b",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-migration-fetch-audit",
+    "file": "supabase/migrations/20260725080000_rider_assignment_tracking_gate.sql",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "local_blob": "03d6ec44d32b3d99aabbda728801b03b11e01fa5",
+    "snapshot_blob": "03d6ec44d32b3d99aabbda728801b03b11e01fa5",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-migration-fetch-audit",
+    "file": "supabase/migrations/20260725090000_delivery_handoff_code.sql",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "local_blob": "dc18265543450086682e5892f0e0f4b810305e2b",
+    "snapshot_blob": "dc18265543450086682e5892f0e0f4b810305e2b",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-migration-fetch-audit",
+    "file": "supabase/migrations/20260725100000_tracking_handoff_recovery.sql",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "local_blob": "1ce8876ac06d315b1eba2a2167add49575f21e80",
+    "snapshot_blob": "1ce8876ac06d315b1eba2a2167add49575f21e80",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-migration-fetch-audit",
+    "file": "supabase/migrations/20260725110000_catalog_publication_authority.sql",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "local_blob": "9c15cdc8f2c5616cd33271b57309b3f2a29ec57b",
+    "snapshot_blob": "9c15cdc8f2c5616cd33271b57309b3f2a29ec57b",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-migration-fetch-audit",
+    "file": "supabase/migrations/20260725120000_business_contact_authority.sql",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "local_blob": "15617e20682bf8265d38ef46af987cc1ce836d99",
+    "snapshot_blob": "15617e20682bf8265d38ef46af987cc1ce836d99",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-migration-fetch-audit",
+    "file": "supabase/migrations/20260728090000_customer_profiles_addresses.sql",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "local_blob": "65910f9d839933958b8be30dea17833fd3c9c28b",
+    "snapshot_blob": "65910f9d839933958b8be30dea17833fd3c9c28b",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-migration-fetch-audit",
+    "file": "supabase/migrations/20260729150000_customer_profile_completion.sql",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "local_blob": "4eab8c51e99465b543158f175de3dd9176ddf290",
+    "snapshot_blob": "4eab8c51e99465b543158f175de3dd9176ddf290",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-migration-fetch-audit",
+    "file": "supabase/migrations/20260729190000_customer_address_street_number_required.sql",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "local_blob": "9c07f134e55bbc8ff944622eb4d82de9ac085d58",
+    "snapshot_blob": "9c07f134e55bbc8ff944622eb4d82de9ac085d58",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-migration-fetch-audit",
+    "file": "supabase/migrations/20260729203000_public_tracking_terminal_visibility.sql",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "local_blob": "4655197ccc1e087de4e6907280b4f0a4f9d7db0a",
+    "snapshot_blob": "4655197ccc1e087de4e6907280b4f0a4f9d7db0a",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-migration-fetch-audit",
+    "file": "supabase/migrations/20260731230000_staging_qa_fixture_catalog.sql",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "local_blob": "c1cdc2b472a1111ca1e073565636b728beec4b41",
+    "snapshot_blob": "c1cdc2b472a1111ca1e073565636b728beec4b41",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-migration-fetch-audit",
+    "file": "supabase/migrations/20260731231000_staging_qa_product_verification.sql",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "local_blob": "81fe62dde9f53d284e5b5f171081e95336bc8380",
+    "snapshot_blob": "81fe62dde9f53d284e5b5f171081e95336bc8380",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-migration-fetch-audit",
+    "file": "supabase/migrations/20260801020000_order_revision_and_event_sequence.sql",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "local_blob": "1c43c00df880567acce377214a63427b220096c7",
+    "snapshot_blob": "1c43c00df880567acce377214a63427b220096c7",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-migration-fetch-audit",
+    "file": "supabase/migrations/20260801040000_rider_gps_tracking_gate2.sql",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "local_blob": "e877e517ca2a7c9688dc32b1b8e7b8db3f34069b",
+    "snapshot_blob": "e877e517ca2a7c9688dc32b1b8e7b8db3f34069b",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-migration-fetch-audit",
+    "file": "supabase/migrations/20260802100000_rider_delivery_server_contracts.sql",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "local_blob": "5c6dd30388ed4d451fe0d0f2f924a92ea5ed7eaf",
+    "snapshot_blob": "5c6dd30388ed4d451fe0d0f2f924a92ea5ed7eaf",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-migration-fetch-audit",
+    "file": "supabase/migrations/20260802101000_rider_delivery_legacy_start_revocation.sql",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "local_blob": "41d24ff8b79b2d96b076e2fa340df36f422ab114",
+    "snapshot_blob": "41d24ff8b79b2d96b076e2fa340df36f422ab114",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-migration-fetch-audit",
+    "file": "supabase/migrations/20260802102000_rider_delivery_legacy_claim_gps_revocation.sql",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "local_blob": "93c6e6b54b5f8a4103ad368535313418463dfa6c",
+    "snapshot_blob": "93c6e6b54b5f8a4103ad368535313418463dfa6c",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-migration-fetch-audit",
+    "file": "supabase/migrations/20260802103000_rider_queue_read_lock_mode.sql",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "local_blob": "78bc711f1478293a2186caede519494d0951728f",
+    "snapshot_blob": "78bc711f1478293a2186caede519494d0951728f",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba-migration-fetch-audit",
+    "file": "supabase/migrations/20260802104000_rider_location_receipt_revision.sql",
+    "head": "fd77257f88ca2f7f13546734d302790b7cf116bd",
+    "local_blob": "1d97b8507c90141bede2fb39a773db62ba22ccff",
+    "snapshot_blob": "1d97b8507c90141bede2fb39a773db62ba22ccff",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-commerce-growth",
+    "file": "artifacts/argentina-merchandising/1280/01-cold-start-home.png",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "local_blob": "3639b3dde8c9e21270202b89fb269b3ec7faf4a7",
+    "snapshot_blob": "3639b3dde8c9e21270202b89fb269b3ec7faf4a7",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-commerce-growth",
+    "file": "artifacts/argentina-merchandising/1280/02-beer-intent-home.png",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "local_blob": "51bf9cc2c7de2bef6ad565f55fb8201a0b99600c",
+    "snapshot_blob": "51bf9cc2c7de2bef6ad565f55fb8201a0b99600c",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-commerce-growth",
+    "file": "artifacts/argentina-merchandising/1280/03-beer-packs-and-combos.png",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "local_blob": "ec891b901443107845b5aa545c7842e37e69784c",
+    "snapshot_blob": "ec891b901443107845b5aa545c7842e37e69784c",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-commerce-growth",
+    "file": "artifacts/argentina-merchandising/1280/04-beer-cart-home.png",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "local_blob": "f544b2cfde5bbefbbb1766e14cde8c4810ffa357",
+    "snapshot_blob": "f544b2cfde5bbefbbb1766e14cde8c4810ffa357",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-commerce-growth",
+    "file": "artifacts/argentina-merchandising/1280/04-beer-pack-cart.png",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "local_blob": "46c009fcf4aec41a4d831afa146f3a57c8192121",
+    "snapshot_blob": "46c009fcf4aec41a4d831afa146f3a57c8192121",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-commerce-growth",
+    "file": "artifacts/argentina-merchandising/1280/05-beer-cart-home.png",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "local_blob": "f66f1f29ff7ed25687c718b606ff22f1c419dbfb",
+    "snapshot_blob": "f66f1f29ff7ed25687c718b606ff22f1c419dbfb",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-commerce-growth",
+    "file": "artifacts/argentina-merchandising/1280/05-fernet-intent-pending-catalog.png",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "local_blob": "a2da0ac203c5d599ce10d01759440bd6f86ca538",
+    "snapshot_blob": "a2da0ac203c5d599ce10d01759440bd6f86ca538",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-commerce-growth",
+    "file": "artifacts/argentina-merchandising/1280/06-fernet-intent-pending-catalog.png",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "local_blob": "d15b16c1c12574cff996177d61345c929ef041fb",
+    "snapshot_blob": "d15b16c1c12574cff996177d61345c929ef041fb",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-commerce-growth",
+    "file": "artifacts/argentina-merchandising/1280/06-vodka-gap-no-authority.png",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "local_blob": "cd78901a89439a6965027a61d4e29da1f1962144",
+    "snapshot_blob": "cd78901a89439a6965027a61d4e29da1f1962144",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-commerce-growth",
+    "file": "artifacts/argentina-merchandising/1280/07-combo-detail-components.png",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "local_blob": "510d9caf560c1e2e1b2b79f60367159bdb1ed044",
+    "snapshot_blob": "510d9caf560c1e2e1b2b79f60367159bdb1ed044",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-commerce-growth",
+    "file": "artifacts/argentina-merchandising/1280/07-vodka-gap-no-authority.png",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "local_blob": "e50e4b66784bf54f46f216e8d760f69b57a23295",
+    "snapshot_blob": "e50e4b66784bf54f46f216e8d760f69b57a23295",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-commerce-growth",
+    "file": "artifacts/argentina-merchandising/1280/08-combo-detail-components.png",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "local_blob": "12c6d9a52d58bbc6a4334dc7fbcfdcb9b2c5da00",
+    "snapshot_blob": "12c6d9a52d58bbc6a4334dc7fbcfdcb9b2c5da00",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-commerce-growth",
+    "file": "artifacts/argentina-merchandising/390/01-cold-start-home.png",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "local_blob": "c58a301d2d099fe5cfa120e3d43cdad053ccf191",
+    "snapshot_blob": "c58a301d2d099fe5cfa120e3d43cdad053ccf191",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-commerce-growth",
+    "file": "artifacts/argentina-merchandising/390/02-beer-intent-home.png",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "local_blob": "495cb8ab93539060bd0c1df615df5ac4c58f88ee",
+    "snapshot_blob": "495cb8ab93539060bd0c1df615df5ac4c58f88ee",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-commerce-growth",
+    "file": "artifacts/argentina-merchandising/390/03-beer-packs-and-combos.png",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "local_blob": "35ab97d1e4b8fec833d92a04f6fe676c1883485a",
+    "snapshot_blob": "35ab97d1e4b8fec833d92a04f6fe676c1883485a",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-commerce-growth",
+    "file": "artifacts/argentina-merchandising/390/04-beer-cart-home.png",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "local_blob": "4f032b4345f5b24e2195fa1c1d071bfe9bda2cb1",
+    "snapshot_blob": "4f032b4345f5b24e2195fa1c1d071bfe9bda2cb1",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-commerce-growth",
+    "file": "artifacts/argentina-merchandising/390/04-beer-pack-cart.png",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "local_blob": "e78461e0e398e2bfa0154c4175dffa96d7c1d318",
+    "snapshot_blob": "e78461e0e398e2bfa0154c4175dffa96d7c1d318",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-commerce-growth",
+    "file": "artifacts/argentina-merchandising/390/05-beer-cart-home.png",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "local_blob": "7f3dff9a9702f6c259c52e9679c701d26c8cb340",
+    "snapshot_blob": "7f3dff9a9702f6c259c52e9679c701d26c8cb340",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-commerce-growth",
+    "file": "artifacts/argentina-merchandising/390/05-fernet-intent-pending-catalog.png",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "local_blob": "45c175eda5e319b19ad3b9ac324bb4213af5d5f7",
+    "snapshot_blob": "45c175eda5e319b19ad3b9ac324bb4213af5d5f7",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-commerce-growth",
+    "file": "artifacts/argentina-merchandising/390/06-fernet-intent-pending-catalog.png",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "local_blob": "03d5e65f57056166ff1add4438fec7998b4fca79",
+    "snapshot_blob": "03d5e65f57056166ff1add4438fec7998b4fca79",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-commerce-growth",
+    "file": "artifacts/argentina-merchandising/390/06-vodka-gap-no-authority.png",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "local_blob": "595fc64a48d6d028ae534fb71c23f8fbe8f71122",
+    "snapshot_blob": "595fc64a48d6d028ae534fb71c23f8fbe8f71122",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-commerce-growth",
+    "file": "artifacts/argentina-merchandising/390/07-combo-detail-components.png",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "local_blob": "3dda49440b8043caaa9f2f2e0231c8b1b0877845",
+    "snapshot_blob": "3dda49440b8043caaa9f2f2e0231c8b1b0877845",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-commerce-growth",
+    "file": "artifacts/argentina-merchandising/390/07-vodka-gap-no-authority.png",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "local_blob": "b97bdad20d52f33913a2849c3c9e3061a4220aec",
+    "snapshot_blob": "b97bdad20d52f33913a2849c3c9e3061a4220aec",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-commerce-growth",
+    "file": "artifacts/argentina-merchandising/390/08-combo-detail-components.png",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "local_blob": "0752e3d64b6447b3915a5bf5949a8683a7deba59",
+    "snapshot_blob": "0752e3d64b6447b3915a5bf5949a8683a7deba59",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-commerce-growth",
+    "file": "artifacts/performance/argentina-20260814.json",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "local_blob": "03843d0630b07d322ffface1a81e751f9968a56f",
+    "snapshot_blob": "03843d0630b07d322ffface1a81e751f9968a56f",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-commerce-growth",
+    "file": "runtime-config.original.js",
+    "head": "fc3be5c6c2e90fc5dfa5d2aac6c997a509c43004",
+    "local_blob": "c387afbb9c428593d47e4a80adf6a8a7eada83c9",
+    "snapshot_blob": "c387afbb9c428593d47e4a80adf6a8a7eada83c9",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-weekend-launch",
+    "file": "artifacts/weekend-launch/movil-chromium-390-busqueda.png",
+    "head": "7343f968cd23c153590daadf34d800e252e832db",
+    "local_blob": "ad7cd5d9a5c53680f5662d145e5011ecff46c302",
+    "snapshot_blob": "ad7cd5d9a5c53680f5662d145e5011ecff46c302",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-weekend-launch",
+    "file": "artifacts/weekend-launch/movil-chromium-390-cart.png",
+    "head": "7343f968cd23c153590daadf34d800e252e832db",
+    "local_blob": "1e4e7fc231a9abbce130a3a6f5f4b6afdcbf8e7d",
+    "snapshot_blob": "1e4e7fc231a9abbce130a3a6f5f4b6afdcbf8e7d",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-weekend-launch",
+    "file": "artifacts/weekend-launch/movil-chromium-390-catalog.png",
+    "head": "7343f968cd23c153590daadf34d800e252e832db",
+    "local_blob": "71059a618eacf65f63efad54fc4f0ccc03bb591d",
+    "snapshot_blob": "71059a618eacf65f63efad54fc4f0ccc03bb591d",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-weekend-launch",
+    "file": "artifacts/weekend-launch/movil-chromium-390-ficha.png",
+    "head": "7343f968cd23c153590daadf34d800e252e832db",
+    "local_blob": "bad452936062c3effcaaba289efd94624d85b38d",
+    "snapshot_blob": "bad452936062c3effcaaba289efd94624d85b38d",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-weekend-launch",
+    "file": "artifacts/weekend-launch/movil-chromium-390-home.png",
+    "head": "7343f968cd23c153590daadf34d800e252e832db",
+    "local_blob": "47f835bae6222ce5771046a2b40b5d030df4cb72",
+    "snapshot_blob": "47f835bae6222ce5771046a2b40b5d030df4cb72",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-weekend-launch",
+    "file": "artifacts/weekend-launch/movil-chromium-390-profile.png",
+    "head": "7343f968cd23c153590daadf34d800e252e832db",
+    "local_blob": "4fd0a6714413a28e3aa2a435743fe8b487091a9c",
+    "snapshot_blob": "4fd0a6714413a28e3aa2a435743fe8b487091a9c",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-weekend-launch",
+    "file": "artifacts/weekend-launch/movil-chromium-390-tracking.png",
+    "head": "7343f968cd23c153590daadf34d800e252e832db",
+    "local_blob": "5bf362e44adc823a3b4dd792bd7cb3b6b1dd64be",
+    "snapshot_blob": "5bf362e44adc823a3b4dd792bd7cb3b6b1dd64be",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-weekend-launch",
+    "file": "artifacts/weekend-launch/movil-webkit-390-busqueda.png",
+    "head": "7343f968cd23c153590daadf34d800e252e832db",
+    "local_blob": "6282053c2400af85a8cfe014f5a2964c059dc010",
+    "snapshot_blob": "6282053c2400af85a8cfe014f5a2964c059dc010",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-weekend-launch",
+    "file": "artifacts/weekend-launch/movil-webkit-390-cart.png",
+    "head": "7343f968cd23c153590daadf34d800e252e832db",
+    "local_blob": "1451623519e459eb12d35694ba6016e029c18a39",
+    "snapshot_blob": "1451623519e459eb12d35694ba6016e029c18a39",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-weekend-launch",
+    "file": "artifacts/weekend-launch/movil-webkit-390-catalog.png",
+    "head": "7343f968cd23c153590daadf34d800e252e832db",
+    "local_blob": "77b5ecd37448454eb3155409d589447000f267a4",
+    "snapshot_blob": "77b5ecd37448454eb3155409d589447000f267a4",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-weekend-launch",
+    "file": "artifacts/weekend-launch/movil-webkit-390-ficha.png",
+    "head": "7343f968cd23c153590daadf34d800e252e832db",
+    "local_blob": "06420309e9a8a00e176093bab0fd7e653a55fecb",
+    "snapshot_blob": "06420309e9a8a00e176093bab0fd7e653a55fecb",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-weekend-launch",
+    "file": "artifacts/weekend-launch/movil-webkit-390-home.png",
+    "head": "7343f968cd23c153590daadf34d800e252e832db",
+    "local_blob": "0983275686082d1353f6c50464a7017386de306b",
+    "snapshot_blob": "0983275686082d1353f6c50464a7017386de306b",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-weekend-launch",
+    "file": "artifacts/weekend-launch/movil-webkit-390-profile.png",
+    "head": "7343f968cd23c153590daadf34d800e252e832db",
+    "local_blob": "51c4587ff4443dc3ce698339d7ccb27d49813ad4",
+    "snapshot_blob": "51c4587ff4443dc3ce698339d7ccb27d49813ad4",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/la-taba2-weekend-launch",
+    "file": "artifacts/weekend-launch/movil-webkit-390-tracking.png",
+    "head": "7343f968cd23c153590daadf34d800e252e832db",
+    "local_blob": "daf9f4e701761aec0ec2bcb8c3d656d3ad7869c3",
+    "snapshot_blob": "daf9f4e701761aec0ec2bcb8c3d656d3ad7869c3",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/worktrees/taba2-production-auth-go-live",
+    "file": "vitrina-catalogo.png",
+    "head": "51b8e2e776f553a32c6a4677b522f0b4611f86ff",
+    "local_blob": "f4a2497ec9bbcb9c4d97333287ee32a2b8b7124d",
+    "snapshot_blob": "f4a2497ec9bbcb9c4d97333287ee32a2b8b7124d",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/worktrees/taba2-production-auth-go-live",
+    "file": "vitrina-ficha.png",
+    "head": "51b8e2e776f553a32c6a4677b522f0b4611f86ff",
+    "local_blob": "d7c6cf225810d63cf502463e44779d5c01c5eca0",
+    "snapshot_blob": "d7c6cf225810d63cf502463e44779d5c01c5eca0",
+    "equal": true
+  },
+  {
+    "repo_path": "D:/1212/worktrees/taba2-production-auth-go-live",
+    "file": "vitrina-produccion.png",
+    "head": "51b8e2e776f553a32c6a4677b522f0b4611f86ff",
+    "local_blob": "638d5dfaef6a6e99943c2c143e1b7703ed4f434d",
+    "snapshot_blob": "638d5dfaef6a6e99943c2c143e1b7703ed4f434d",
+    "equal": true
+  }
+]

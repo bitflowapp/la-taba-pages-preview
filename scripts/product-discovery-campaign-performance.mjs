@@ -34,16 +34,14 @@ for(const [engine,launcher]of Object.entries({chromium,webkit})){
         const support=PerformanceObserver.supportedEntryTypes||[];
         if(support.includes('longtask'))new PerformanceObserver(list=>tasks.push(...list.getEntries().map(e=>e.duration))).observe({type:'longtask'});
         if(support.includes('layout-shift'))new PerformanceObserver(list=>shifts.push(...list.getEntries().filter(e=>!e.hadRecentInput).map(e=>e.value))).observe({type:'layout-shift'});
-        const root=document.querySelector('[data-home-hero-promo] [data-campaign]');
-        if(root){window.TABA2_CAMPAIGNS.destroy();delete root.dataset.motionCampaign;delete root.dataset.motionCampaignLive;
-          root.dataset.motionCampaign='on';root.dataset.motionCampaignLive='true';}
         await new Promise(resolve=>{
           const start=performance.now();function frame(now){if(last)frames.push(now-last);last=now;if(now-start<8000)requestAnimationFrame(frame);else resolve();}requestAnimationFrame(frame);
         });
         const sorted=[...frames].sort((a,b)=>a-b);
         return {durationMs:frames.reduce((a,b)=>a+b,0),fps:1000/(frames.reduce((a,b)=>a+b,0)/frames.length),
           frameP95:sorted[Math.floor(sorted.length*.95)],longTasks:support.includes('longtask')?tasks:null,
-          layoutShifts:support.includes('layout-shift')?shifts.reduce((a,b)=>a+b,0):null};
+          layoutShifts:support.includes('layout-shift')?shifts.reduce((a,b)=>a+b,0):null,
+          campaignDiagnostics:window.TABA2_CAMPAIGNS?.getDiagnostics?.()};
       });
       const after=cdp?await cdp.send('Performance.getMetrics'):null;
       const value=(set,name)=>set?.metrics.find(m=>m.name===name)?.value??null;

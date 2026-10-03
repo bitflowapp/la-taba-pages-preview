@@ -33,11 +33,12 @@
  *
  *   · No crea ni quita nodos. `js/motion.js` observa el documento y una
  *     inserción dispara una recolección completa.
- *   · No usa temporizadores ni `requestAnimationFrame`. La escena avanza sola
- *     en el compositor; acá sólo hay un IntersectionObserver.
+ *   · La escena avanza sola en el compositor; un muestreo acotado del módulo
+ *     de presupuesto vuelve al cuadro estático si el renderer no la sostiene.
  *   · No escribe estilos en línea. Los nombres empiezan con `data-motion-`
  *     porque es el prefijo que el parcheo estable del catálogo conserva.
  */
+import { createCampaignBudget } from './campaign-budget.js';
 const ROOT = '[data-campaign]';
 const START_RATIO = 0.4;
 // Cuánto tiene que haber pasado desde que TERMINÓ una entrada para repetirla
@@ -90,9 +91,10 @@ function startCampaignMotion(documentRef, windowRef) {
   const durations = new WeakMap();
   let plays = 0;
   let destroyed = false;
+  let budgetLimited = false;
 
   const lite = () => documentRef.body.dataset.motionLite === 'true';
-  const allowed = () => !destroyed && !reducedQuery?.matches && !lite();
+  const allowed = () => !destroyed && !budgetLimited && !reducedQuery?.matches && !lite();
   const now = () => (windowRef.performance?.now ? windowRef.performance.now() : Date.now());
   const write = (root, name, value) => { if (root.dataset[name] !== value) root.dataset[name] = value; };
 
@@ -100,6 +102,9 @@ function startCampaignMotion(documentRef, windowRef) {
     delete root.dataset.motionCampaign;
     delete root.dataset.motionCampaignLive;
   };
+  const budget = createCampaignBudget(windowRef,
+    () => allowed() && !documentRef.hidden && [...observed].some(root => root.dataset.motionCampaignLive === 'true'),
+    () => { budgetLimited=true;observed.forEach(still); });
 
   /** La entrada de esta pieza ya terminó de verse. */
   const settled = (root) => {
@@ -138,6 +143,7 @@ function startCampaignMotion(documentRef, windowRef) {
     if (root.dataset.motionCampaign !== 'on' && !startedAt.has(root)) return;
     const live = startedAt.has(root) && visible.has(root) && !documentRef.hidden;
     write(root, 'motionCampaignLive', String(live));
+    if(live)budget.check();
   };
 
   const observer = 'IntersectionObserver' in windowRef
@@ -211,6 +217,7 @@ function startCampaignMotion(documentRef, windowRef) {
     refresh,
     destroy() {
       destroyed = true;
+      budget.destroy();
       observer?.disconnect();
       documentRef.removeEventListener('visibilitychange', onVisibility);
       documentRef.removeEventListener('error', onAssetError, true);
@@ -228,6 +235,7 @@ function startCampaignMotion(documentRef, windowRef) {
         active: true,
         reducedMotion: Boolean(reducedQuery?.matches),
         liteMode: lite(),
+        budgetLimited,
         observerCount: observer ? 1 : 0,
         campaigns: roots.length,
         visible: visible.size,

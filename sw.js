@@ -80,6 +80,7 @@ const ASSETS = [
   './js/core/catalog-search.js',
   './js/core/product-photo.js',
   './js/campaigns/campaign-product.js',
+  './js/campaigns/campaign-budget.js',
   './js/campaigns/product-art-layout.js',
   './js/core/merchandising-tags.js',
   './js/core/pricing.js',

@@ -80,6 +80,10 @@ end;
 $function$;
 
 revoke all on function public.prevent_unverified_delivery() from public, anon, authenticated, service_role;
+-- Antes de 20261002010000 la función de disparador tenía EXECUTE para service_role (privilegios por
+-- defecto del proyecto; así está en Staging y en CONTROLLED PRODUCTION, leído el 2026-10-03). La migración
+-- se lo saca (un disparador no lo necesita); la reversión se lo devuelve para dejar el esquema idéntico.
+grant execute on function public.prevent_unverified_delivery() to service_role;
 
 -- La tabla de marcas: se va sólo si está vacía.
 do $marks$

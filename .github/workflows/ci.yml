@@ -26,9 +26,10 @@ jobs:
   web_backend:
     name: Web, backend, fiscal and security gates
     runs-on: ubuntu-latest
-    # The existing browser gate takes about 35 minutes. The mandatory catalog
-    # stress sessions add 2 real minutes per engine, plus polling and navigation.
-    timeout-minutes: 60
+    # The complete browser gate includes five-minute discovery stress sessions
+    # in both engines. The 60-minute job ceiling cut a healthy run at 684/754;
+    # allow the same full suite to finish on slower hosted runners.
+    timeout-minutes: 90
     steps:
       - name: Check out exact candidate
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4

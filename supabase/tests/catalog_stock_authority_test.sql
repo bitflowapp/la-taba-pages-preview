@@ -218,7 +218,7 @@ select is(pg_temp.q($q$select applied_stock from public.apply_commercial_catalog
   '[{"sku":"csa-agua","stock":12,"expected_stock":9}]')$q$), '10', 'con el stock esperado correcto el conteo entra');
 select throws_ok($$select * from public.apply_commercial_catalog_batch('b5100000-0000-4000-8000-000000000001',
   '[{"sku":"csa-agua","stock":12,"expected_stock":"muchos"}]')$$,
-  'P0001', null, 'un expected_stock que no es un entero se rechaza');
+  '22023', null, 'un expected_stock que no es un entero se rechaza');
 
 -- ══ 3 · CONTEO POR DEBAJO DE LO RESERVADO → CONFLICTO ════════════════════════
 select is(pg_temp.q($q$select applied_stock || ' ' || applied_available from public.apply_commercial_catalog_batch(

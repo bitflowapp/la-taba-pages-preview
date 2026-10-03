@@ -9,7 +9,8 @@
 --
 --   · la negativa de cada una, para cada actor sin autoridad: 42501 y el mensaje de antes;
 --   · que ningún intento escribió nada;
---   · que lo demás no cambió: las validaciones siguen saliendo sin código (P0001), el
+--   · que lo demás no cambió: las validaciones siguen siendo validaciones (22023 / P0002
+--     desde 20261002091000; antes salían sin código, P0001), el
 --     dueño y el encargado siguen pasando, y las cinco conservan seguridad, permisos y
 --     comentario;
 --   · que no queda ninguna función ejecutable por un cliente con el mismo defecto.
@@ -183,24 +184,26 @@ select is(current_setting('taba.test_negativas_antes'),
   'y «como antes» es: la lata publicada a 1000, sin contacto, sin lotes');
 
 -- ══ 3 · LAS VALIDACIONES NO CAMBIARON ═══════════════════════════════════════
--- Para quien SÍ tiene autoridad, un dato mal escrito sigue saliendo sin código (P0001,
+-- (20261002091000 les dio a estas validaciones el SQLSTATE de lo que significan: 22023 un dato mal
+-- escrito, P0002 algo que no existe; antes salían sin código, P0001.)
+-- Para quien SÍ tiene autoridad, un dato mal escrito sigue siendo una validación (no 42501,
 -- que la API contesta 400): eso es una validación, no un permiso.
 select is(
   pg_temp.hacer('owner', $q$select count(*) from public.apply_commercial_catalog_batch(pg_temp.id('a'), '[]'::jsonb)$q$),
-  'P0001 Commercial rows must be a JSON array with 1 to 500 entries.', 'un lote comercial vacio: P0001');
+  '22023 Commercial rows must be a JSON array with 1 to 500 entries.', 'un lote comercial vacio: 22023');
 select is(
   pg_temp.hacer('owner', $q$select count(*) from public.apply_commercial_catalog_batch(pg_temp.id('a'), '[{"sku":"authorization-refusals-no-existe","price":"10"}]'::jsonb)$q$),
-  'P0001 Unknown sku authorization-refusals-no-existe for this business. Commercial import never creates products.',
-  'un SKU que no existe: P0001');
+  'P0002 Unknown sku authorization-refusals-no-existe for this business. Commercial import never creates products.',
+  'un SKU que no existe: P0002');
 select is(
   pg_temp.hacer('admin', $q$select count(*) from public.import_catalog_batch(pg_temp.id('a'), '[]'::jsonb, '[]'::jsonb)$q$),
-  'P0001 Catalog import must contain 1 to 500 assets and products.', 'un alta vacia: P0001');
+  '22023 Catalog import must contain 1 to 500 assets and products.', 'un alta vacia: 22023');
 select is(
   pg_temp.hacer('owner', $q$select count(*) from public.publish_catalog_product(pg_temp.id('a'), 'authorization-refusals-no-existe', true)$q$),
-  'P0001 Catalog product not found.', 'publicar un producto que no existe: P0001');
+  'P0002 Catalog product not found.', 'publicar un producto que no existe: P0002');
 select is(
   pg_temp.hacer('admin', $q$select w.whatsapp_phone from public.set_business_whatsapp_contact(pg_temp.id('a'), '123', false) w$q$),
-  'P0001 WhatsApp phone must contain between 8 and 15 digits.', 'un WhatsApp de tres digitos: P0001');
+  '22023 WhatsApp phone must contain between 8 and 15 digits.', 'un WhatsApp de tres digitos: 22023');
 -- La autorización se pregunta antes que la validación: el empleado con un dato mal escrito
 -- recibe la negativa de permisos.
 select is(

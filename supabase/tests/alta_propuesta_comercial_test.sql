@@ -235,7 +235,7 @@ select throws_ok(
       '92000000-0000-4000-8000-00000000000a',
       '[{"sku":"snack-del-lote","name":"Snack del lote","category":"Snacks","is_alcoholic":false,"price":"1200","stock":5,"publish":false}]'::jsonb,
       '[{"sku":"gaseosa-vieja-1500ml","price":"3100"},{"sku":"sku-que-no-existe","price":"999"}]'::jsonb)$$,
-  'P0001', null,
+  'P0002', null,
   'una modificacion invalida hace fallar el plan entero');
 reset role;
 select is(
@@ -347,7 +347,7 @@ select throws_ok(
   $$select count(*) from public.apply_commercial_catalog_batch(
     '92000000-0000-4000-8000-00000000000a',
     '[{"sku":"catalog-bulk-01","stock":7},{"sku":"no-existe-en-el-lote","stock":1}]'::jsonb)$$,
-  'P0001', null, 'un fallo parcial rechaza el lote entero');
+  'P0002', null, 'un fallo parcial rechaza el lote entero');
 reset role;
 select is((select stock from public.products where business_id='92000000-0000-4000-8000-00000000000a'
   and sku='catalog-bulk-01'),5,'el cambio valido del lote fallido se deshizo');
@@ -370,7 +370,7 @@ select throws_ok(
   $$select count(*) from public.apply_commercial_catalog_batch(
     '92000000-0000-4000-8000-00000000000a',
     '[{"sku":"catalog-bulk-01","publish":true}]'::jsonb)$$,
-  'P0001', null, 'sin precio confirmado no se puede publicar');
+  '55000', null, 'sin precio confirmado no se puede publicar');
 reset role;
 select is((select available from public.products where business_id='92000000-0000-4000-8000-00000000000a'
   and sku='catalog-bulk-01'),false,'el intento sin precio sigue oculto');

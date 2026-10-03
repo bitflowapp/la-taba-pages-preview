@@ -4,6 +4,7 @@
   "decision": "El contrato HTTP se cierra del lado del servidor (decisión del dueño). Una negativa de negocio (55000) y un «no existe» (P0002) no contestan HTTP 500.",
   "migrations": {
     "boundary": "20261002090000_api_boundary_answers_refusals_as_4xx",
+    "client_refusals_sqlstate": "20261002091000_client_refusals_carry_their_sqlstate",
     "generator": "scripts/db/wrap-api-boundary.mjs",
     "marker": "la-taba:api-boundary v1"
   },
@@ -23,7 +24,7 @@
   ],
   "not_used": {
     "422": "no se usa: el contrato existente de una violación de regla (23514) es 400 y no se cambia",
-    "P0001": "no debe llegar a un cliente: un RAISE EXCEPTION sin errcode es un defecto (contesta 400 · P0001, indistinguible de un dato mal escrito)"
+    "P0001": "no debe llegar a un cliente: un RAISE EXCEPTION sin errcode es un defecto (contesta 400 · P0001, indistinguible de un dato mal escrito). 20261002091000 les dio 22023 / P0002 / 55000 a los 46 que quedaban en funciones de cliente; supabase/tests/http_error_contract_test.sql impide uno nuevo."
   },
   "selection_rule": "ENTRADA = función de `public`, no de trigger, que anon, authenticated o service_role pueden ejecutar. Se envuelve toda entrada PL/pgSQL que puede llegar a un RAISE de 55000 o de P0002 (incluido `select ... into strict` y los nombres de condición no_data_found / object_not_in_prerequisite_state): en su cuerpo, en una función que llama (transitivamente, por nombre) o en un trigger de una tabla que escribe. Más el trigger public.guard_business_currency_code (los clientes escriben `businesses` por PATCH directo).",
   "excluded": [

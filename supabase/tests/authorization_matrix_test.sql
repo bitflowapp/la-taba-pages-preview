@@ -587,16 +587,16 @@ select pg_temp.matriz('catalogo · aplicar un plan comercial (apply_commercial_c
   pg_temp.direccion('ALLOW 1'));
 
 -- El alta por lote con un lote vacío: quien pasa la autorización se detiene en la
--- validación (P0001: «entre 1 y 500»); quien no la pasa recibe 42501.
-select pg_temp.matriz('catalogo · alta por lote, vacio (import_catalog_batch: pasar la autorizacion = P0001 de validacion)',
+-- validación (22023 desde 20261002091000; antes P0001: «entre 1 y 500»); quien no la pasa recibe 42501.
+select pg_temp.matriz('catalogo · alta por lote, vacio (import_catalog_batch: pasar la autorizacion = 22023 de validacion)',
   $q$select count(*) from public.import_catalog_batch(pg_temp.id('a'), '[]'::jsonb, '[]'::jsonb)$q$,
-  pg_temp.direccion('ALLOW P0001'));
+  pg_temp.direccion('ALLOW 22023'));
 
 -- Publicar por la puerta del alta un producto sin foto aprobada: quien pasa la
--- autorización se detiene en la validación de la foto (P0001).
-select pg_temp.matriz('catalogo · publicar por el alta (publish_catalog_product: pasar la autorizacion = P0001 de validacion)',
+-- autorización se detiene en la compuerta de la foto (55000 desde 20261002091000; antes P0001).
+select pg_temp.matriz('catalogo · publicar por el alta (publish_catalog_product: pasar la autorizacion = 55000 de la compuerta)',
   $q$select count(*) from public.publish_catalog_product(pg_temp.id('a'), 'authorization-matrix-botella', false)$q$,
-  pg_temp.direccion('ALLOW P0001'));
+  pg_temp.direccion('ALLOW 55000'));
 
 select pg_temp.matriz('catalogo · despublicar (unpublish_catalog_product)',
   $q$select public.unpublish_catalog_product(pg_temp.id('a'), 'authorization-matrix-lata')::text$q$,

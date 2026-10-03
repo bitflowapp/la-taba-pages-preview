@@ -114,15 +114,13 @@ select is_empty($q$
 $q$, 'ninguna función envuelta se evalúa por fila en una política o una vista (una subtransacción por llamada)');
 
 -- RAISE EXCEPTION '...' [, args] ; sin USING: el cliente recibe 400 · P0001, indistinguible de un dato mal
--- escrito. Las cinco que quedan son validaciones del catálogo y del contacto (20261002051000 les dio 42501 a
--- sus negativas de permiso y dejó estas como 400). Una función nueva con ese defecto falla acá.
-select is(
-  (select array_agg(name order by name) from api_functions
-    where lang = 'plpgsql' and client and not is_trigger
-      and regexp_replace(src, '--[^\n]*', '', 'g') ~* $re$\yraise\s+exception\s+'([^']|'')*'((?!\yusing\y)[^;])*;$re$),
-  array['apply_commercial_catalog_batch', 'import_catalog_batch', 'publish_catalog_product', 'set_business_whatsapp_contact',
-        'set_commercial_product_publication']::name[],
-  'RAISE sin errcode en funciones de cliente: sólo las cinco conocidas del catálogo y del contacto');
+-- escrito. 20261002051000 les dio 42501 a las negativas de permiso y 20261002091000 el SQLSTATE de lo que
+-- significan a las 46 que quedaban (22023, P0002, 55000). Una función nueva con ese defecto falla acá.
+select is_empty($q$
+  select signature from api_functions
+   where lang = 'plpgsql' and client and not is_trigger
+     and regexp_replace(src, '--[^\n]*', '', 'g') ~* $re$\yraise\s+exception\s+'([^']|'')*'((?!\yusing\y)[^;])*;$re$
+$q$, 'ninguna función que un cliente ejecuta tiene un RAISE EXCEPTION sin errcode (P0001 no llega a un cliente)');
 
 -- ══ 2 · FIXTURE ══════════════════════════════════════════════════════════════
 insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,is_anonymous,created_at,updated_at)

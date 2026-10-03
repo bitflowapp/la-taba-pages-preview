@@ -50,6 +50,34 @@ test('the migration and its rollback cover the same functions with swapped md5 g
   assert.doesNotMatch(MIGRATION.replace(/\$function\$[\s\S]*?\$function\$/g, ''), /\b(grant|revoke)\b/i);
 });
 
+test('20261002091000 only adds an errcode to client RAISE statements that had none', () => {
+  const forward = read('../supabase/migrations/20261002091000_client_refusals_carry_their_sqlstate.sql');
+  const back = read('../docs/migrations/rollback/20261002091000_client_refusals_carry_their_sqlstate.rollback.sql');
+  const defs = (sql) => sql.split('\nCREATE OR REPLACE FUNCTION ').slice(1).map((part) => part.split('\n$function$;')[0]);
+  const after = defs(forward);
+  const before = defs(back);
+  assert.equal(after.length, 5);
+  assert.deepEqual(guardRows(back).map((row) => row.signature), guardRows(forward).map((row) => row.signature));
+  let added = 0;
+  for (let index = 0; index < after.length; index += 1) {
+    const lines = after[index].split('\n');
+    const previous = before[index].split('\n');
+    assert.equal(lines.length, previous.length, 'no line added or removed');
+    for (let line = 0; line < lines.length; line += 1) {
+      if (lines[line] === previous[line]) continue;
+      const clause = / using errcode = '(22023|P0002|55000)';/g;
+      const extra = (lines[line].match(clause) || []).length - (previous[line].match(clause) || []).length;
+      assert.ok(extra > 0 && lines[line].replace(clause, ';') === previous[line].replace(clause, ';'),
+        `only an errcode before the ';': «${lines[line]}»`);
+      added += extra;
+    }
+    assert.ok(after[index].includes(`-- ${MARKER}: `) || after[index].startsWith('public.import_catalog_batch('),
+      'a function that now raises 55000 / P0002 keeps the boundary wrapper');
+  }
+  assert.equal(added, 46);
+  assert.doesNotMatch(forward.replace(/\$function\$[\s\S]*?\$function\$/g, ''), /\b(grant|revoke)\b/i);
+});
+
 test('the certifier answers the policy statuses for a refusal by state and for a missing resource', () => {
   const statusOf = (code) => contract.status_by_sqlstate.find((row) => row.sqlstates.includes(code)).http;
   assert.equal(statusOf('55000'), 409);

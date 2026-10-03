@@ -13,7 +13,7 @@ desde los commits si la sesión se corta. Base local: PG17 + shims (no es un sta
 | 4. pgTAP `http_error_contract_test.sql` (42) + registro en el runner (5938) + prueba Node | HECHO |
 | 5. Prueba HTTP + `REFUSAL_STATUS` del certificador | HECHO (11 casos antes/después por PostgREST 14.5; costo medido) |
 | 6. Política `http-contract.{json,md}`, impacto en clientes | HECHO |
-| 7. `20261002091000` (RAISE sin errcode en funciones de cliente) | pendiente (opcional) |
+| 7. `20261002091000` (RAISE sin errcode en funciones de cliente) | HECHO (commit aparte: se puede soltar sin tocar 090000) |
 
 ## Verificado (comandos y conteos exactos)
 
@@ -54,6 +54,11 @@ apuntadas a ESTE worktree; bases sólo `taba_wph_*`; PostgREST propio en `127.0.
 10. Node: `tests/http-error-contract.test.mjs` 4/4, `tests/wrap-api-boundary.test.mjs` 10/10,
     `tests/ecommerce-certifier-cli.test.mjs` 10/10, `tests/ecommerce-certifier-load.test.mjs` 8/8,
     `tests/mercadopago-edge-hardening.test.mjs` 13/13 (suma del total canónico y del mensaje).
+
+11. Corrida canónica con residuo comprometido (`DIRTY=1`: intake-race + stock-race antes de la lista):
+    `FILES=78 PASS=78 NOT_PASS=0 PLANNED_SUM=5938 TOTAL_CONSISTENT`.
+12. Usos de funciones envueltas dentro de otras funciones (scratch `callers.mjs`): 22 lugares; ninguno evalúa una
+    envuelta por fila (los 3 marcados son una llamada en FROM que corre una vez y dos textos de comandos de cron).
 
 ### Lo que pgTAP NO puede ver (medido)
 
@@ -108,7 +113,34 @@ después p50 7,48 · p95 11,72 · media 8,55. **+0,64 ms p50, +0,94 ms media** (
 - `apps/rider-android`: sin dependencias del estado 500 ni de estos códigos (grep sin resultados).
 - No se cambió código de cliente.
 
-## Cambios en pruebas existentes (codificaban el estado viejo como contrato)
+### 20261002091000 · RAISE sin errcode en funciones de cliente
+
+- Inventario (scratch `noerrcode.mjs`, base con las 206): 46 RAISE EXCEPTION sin errcode en 5 funciones de cliente
+  (`apply_commercial_catalog_batch` 25, `import_catalog_batch` 8, `set_commercial_product_publication` 7,
+  `publish_catalog_product` 3, `set_business_whatsapp_contact` 3). wp19 había dejado éstas como P0001 a propósito
+  («son validaciones y 400 es su respuesta»); la política nueva dice que P0001 no llega a un cliente.
+- Decisión por mensaje (tabla completa en el encabezado de la migración): 24 · 22023 (lote/fila/teléfono mal formado),
+  3 · P0002 (SKU desconocido para el comercio, producto del alta inexistente, comercio inexistente), 19 · 55000 (no se
+  publica: precio, stock, imagen, licencia de alcohol, datos incompletos, conflicto de stock, origen, verificación).
+  Las 4 funciones con P0002/55000 ya están envueltas (salen 404/409); `import_catalog_batch` sólo recibe 22023.
+- Generada de la definición viva (base + 090000) por `gen-091000.mjs` (scratch): sólo inserta ` using errcode = 'X'`
+  antes del `;` de cada RAISE; falla si un mensaje no tiene regla o si queda uno sin código.
+- Verificado: aplicada sobre una copia de `taba_wph_m`: 0 diferencias de metadatos, 5 cuerpos; reaplicable; la
+  reversión deja la base idéntica (0/0) y se niega tras redefinir `set_business_whatsapp_contact`; la reversión de
+  090000 se niega mientras 091000 está aplicada (`ROLLBACK_BLOCKED apply_commercial_catalog_batch`). Canónica con las
+  208 migraciones: `FILES=78 PASS=78 NOT_PASS=0 PLANNED_SUM=5938 TOTAL_CONSISTENT`. Inventario después: 0.
+- HTTP (PostgREST propio, antes = base, después = 090000 + 091000): lote vacío 400 P0001 → 400 22023; SKU inexistente
+  400 P0001 → **404 P0002**; expected_stock no entero 400 P0001 → 400 22023; WhatsApp de 3 dígitos 400 P0001 → 400 22023;
+  `publish_catalog_product` inexistente 400 P0001 → **404 P0002**. Mismo mensaje en todos.
+- Aserciones existentes que fijaban P0001 y cambian SÓLO el SQLSTATE esperado (15, en 6 archivos):
+  `alta_propuesta_comercial_test.sql` (3: SKU inexistente en el plan → P0002, fila inexistente en el lote → P0002,
+  publicar sin precio confirmado → 55000), `catalog_stock_authority_test.sql` (1 → 22023),
+  `catalog_change_rollback_test.sql` (1 → P0002), `authorization_refusals_answer_42501_test.sql` (5 → 22023/P0002,
+  más el comentario de su sección 3 y una línea del encabezado), `authorization_matrix_test.sql` (2 filas de la matriz,
+  4 aserciones: `ALLOW P0001` → `ALLOW 22023` para el alta vacía y `ALLOW 55000` para publicar sin foto aprobada),
+  y la mía (`http_error_contract_test.sql`: el trinquete pasa a «ninguna»).
+
+## Cambios en pruebas existentes por 090000 (codificaban el estado viejo como contrato)
 
 - `tests/ecommerce-certifier-cli.test.mjs`: `REFUSAL_STATUS[55000]` 500→409, `REFUSAL_STATUS.P0002` 500→404 y la
   etiqueta `refusal(CODES.STATE, ...)` «HTTP 500 · 55000» → «HTTP 409 · 55000». Nada más.

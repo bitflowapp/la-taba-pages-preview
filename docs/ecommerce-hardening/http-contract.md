@@ -31,9 +31,11 @@ Reglas:
   y por el token de `details`; decide si reintenta por el estado.
 - **422 no se usa**: el contrato existente de una violación de regla (23514) es 400 y no se cambia.
 - **P0001 no debe llegar a un cliente.** Un `RAISE EXCEPTION` sin `errcode` sale como 400 · P0001, lo mismo
-  que un dato mal escrito: es un defecto. Quedan cinco funciones con validaciones así (el catálogo comercial
-  y el contacto de WhatsApp; `20261002051000` ya les dio 42501 a sus negativas de permiso). El pgTAP
-  `http_error_contract_test.sql` impide que aparezca una nueva.
+  que un dato mal escrito: es un defecto. Quedaban 46 en cinco funciones de cliente (el catálogo comercial,
+  el alta por lote y el contacto de WhatsApp; `20261002051000` ya les había dado 42501 a sus negativas de
+  permiso). `20261002091000_client_refusals_carry_their_sqlstate` les da el SQLSTATE de lo que significan
+  (24 · 22023 entrada inválida, 3 · P0002 no existe, 19 · 55000 el producto no está en condiciones de
+  publicarse), con el mismo mensaje. El pgTAP `http_error_contract_test.sql` impide que aparezca uno nuevo.
 
 ## Cómo funciona
 
@@ -97,6 +99,9 @@ expande y siguen contestando 500 si su función interna levanta 55000 / P0002. N
   `SERVER_UNAVAILABLE` reintentable. Un 404 con `P0002` sigue siendo `NOT_FOUND` (ya se clasificaba por
   código). Los dos armadores de resultado de la cola del Panel (`js/production-operations.js`) reintentan
   sólo con estado 0 o ≥ 500: con 409 la negativa queda definitiva. No se cambió código del cliente.
+- Catálogo y contacto (`20261002091000`): el Panel llama esas RPC por `classifyRpcError`; 22023 cae en la
+  misma rama que P0001 (definitivo, se muestra el mensaje), P0002 en `NOT_FOUND` y 55000 con 409 en
+  definitivo; el mensaje es el mismo en los tres casos.
 - Edge Functions: deciden por `code` (`_shared/checkout-refusal.ts` mapea 55000 + mensaje a su código
   público); ninguna mira el estado HTTP de una RPC.
 - Certificador (`scripts/e2e-staging/ecommerce/http.mjs`, `REFUSAL_STATUS`): 55000 → 409, P0002 → 404.

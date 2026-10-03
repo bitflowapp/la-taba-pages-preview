@@ -249,7 +249,7 @@ set local role authenticated;
 -- Un lote que falla no deja rastro.
 select pg_temp.owner();
 select throws_ok($$select * from public.apply_commercial_catalog_batch('b5200000-0000-4000-8000-000000000001',
-  '[{"sku":"ccr-cola","price":"400"},{"sku":"no-existe","price":"1"}]')$$, 'P0001', null,
+  '[{"sku":"ccr-cola","price":"400"},{"sku":"no-existe","price":"1"}]')$$, 'P0002', null,
   'un lote con una fila inválida se rechaza entero');
 select is(pg_temp.batches('commercial_batch'), 1, 'y no deja un lote a medias en el rastro');
 

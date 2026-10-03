@@ -1,4 +1,4 @@
--- Verificación previa de las migraciones 20261002010000 .. 20261002061000 (endurecimiento del e-commerce,
+-- Verificación previa de las migraciones 20261002010000 .. 20261002062000 (endurecimiento del e-commerce,
 -- segunda tanda: entregas y alertas, pagos, idempotencia, autorización y sondas del proveedor).
 --
 -- SÓLO LECTURA: no cambia nada. Se corre en cada entorno ANTES de aplicar esas migraciones y otra vez

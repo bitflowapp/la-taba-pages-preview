@@ -58,8 +58,11 @@ select 'provider_payments_without_final_result' as finding, pi.business_id, b.sl
 
 -- U3. INFORMATIVA. Alertas CHECKOUT_PROVIDER_UNVERIFIED que el sistema cerró solo (sin autor), según lo que hay
 --     HOY en su cobro. Cerró con una prueba si hay pedido, un pago con resultado final del proveedor, un vacío
---     concluyente sin pago guardado, o el cobro salió de los estados vigilados; «sin_prueba» es el final
---     silencioso que la migración corrige. Antes de aplicarla puede haber filas «sin_prueba»: son la historia (la
+--     concluyente sin pago guardado, o el cobro salió de los estados vigilados. «pago_sin_resultado_final»: algún
+--     pago de ese cobro (el guardado u otro de la misma preferencia) sigue pendiente o en revisión según su último
+--     evento; dentro de las 48 horas la alerta se cierra al aparecer el pago y, con la migración, vuelve a abrirse
+--     pasada la ventana: no es una prueba ni el final silencioso. «sin_prueba» es el final silencioso que la
+--     migración corrige. Antes de aplicarla puede haber filas «sin_prueba»: son la historia (la
 --     muestra la conciliación). Después no tiene que aparecer ninguna «sin_prueba» nueva de un checkout creado
 --     después de la marca de agua (la hora de aplicación menos 48 horas): comparar `last_closed` y
 --     `newest_checkout` de esa fila entre la salida de antes y la de después. Las demás clases sí crecen: son
@@ -68,6 +71,16 @@ select 'unverified_alerts_closed_by_the_system' as finding, a.business_id, b.slu
        case
          when pi.id is null then 'sin_cobro'
          when pi.order_id is not null or cs.completed_order_id is not null then 'pedido'
+         when exists (
+           select 1
+             from (select distinct on (pe.provider_event_id) pe.provider_status
+                     from public.payment_events pe
+                    where pe.payment_intent_id = pi.id
+                      and pe.provider_event_id is not null
+                      and pe.provider_status is not null
+                    order by pe.provider_event_id, coalesce(pe.provider_occurred_at, pe.server_recorded_at) desc, pe.sequence desc) ultimo
+            where ultimo.provider_status in ('pending', 'in_process', 'authorized')
+         ) then 'pago_sin_resultado_final'
          when pi.provider_payment_id is not null
               and coalesce(pi.provider_status, '') not in ('pending', 'in_process', 'authorized')
            then 'pago_con_resultado_final'

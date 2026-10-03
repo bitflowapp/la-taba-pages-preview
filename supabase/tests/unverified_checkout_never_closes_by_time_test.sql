@@ -21,7 +21,9 @@
 --      y la cierra el resultado final del proveedor
 --   I  un vacío anterior al pago no prueba nada; la resolución de una persona sobre un pago sin
 --      resultado final no frena la relectura, una relectura igual no la reabre y un estado
---      nuevo sí
+--      nuevo sí; otro pago de la misma preferencia que sigue sin resolver no queda tapado por
+--      un rechazo guardado; un pago distinto con el mismo estado es nuevo; lo asentado después
+--      del último refresco de la evidencia también
 --
 -- No depende de la hora: los momentos de sesiones, vacíos y trabajos se escriben a mano. Todo
 -- transaccional (rollback). Ids aleatorios y cuentas acotadas a ellos: corre igual sobre la
@@ -29,7 +31,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(84);
+select plan(97);
 
 -- ── Fixture ────────────────────────────────────────────────────────────────
 create temporary table uv_ids (name text primary key, id uuid not null) on commit drop;
@@ -417,6 +419,17 @@ select is(pg_temp.alerta('b8:intent'), 'open',
   'F: pero su alerta sigue abierta hasta que alguien la resuelva: pasados los 30 días se sigue por su alerta');
 select is(pg_temp.alerta('b10:intent'), null,
   'F: lo que pasó los 30 días sin alerta no se resucita (lo muestra la conciliación): el costo no crece con la historia');
+-- b8, con 31 días: la resuelve el encargado (de nuevo activo) y después deja de serlo.
+update public.business_members set is_active = true
+ where business_id = pg_temp.id('b:business') and user_id = pg_temp.id('b:admin');
+select is(pg_temp.resolver('b:admin', 'b8:intent'), 'resolved', 'F: el encargado resuelve la alerta de 31 días');
+select pg_temp.reconciliar('b');
+select is(pg_temp.alerta('b8:intent'), 'resolved', 'F: y queda resuelta');
+update public.business_members set is_active = false
+ where business_id = pg_temp.id('b:business') and user_id = pg_temp.id('b:admin');
+select pg_temp.reconciliar('b');
+select is(pg_temp.alerta('b8:intent'), 'open',
+  'F: si deja de ser encargado, la alerta de más de 30 días vuelve (una resuelta por una persona sigue viva)');
 -- La sonda del día de b1 se intentó y falló: la próxima es mañana, no en el minuto siguiente.
 update public.payment_outbox set status = 'dead_letter', attempts = 8, last_error = 'provider unreachable'
  where payment_intent_id = pg_temp.id('b1:intent') and topic = 'payment_reconcile'
@@ -447,6 +460,7 @@ select is(
   (select count(*)::integer from pg_roles r cross join (values
       ('private.unverified_checkout_watch_since()'::regprocedure),
       ('private.unverified_checkout_review_holds(uuid,uuid)'::regprocedure),
+      ('private.unresolved_provider_payment(uuid)'::regprocedure),
       ('private.unverified_checkout_findings(uuid)'::regprocedure),
       ('private.provider_probe_is_due(uuid,timestamptz)'::regprocedure)) f(oid)
     where r.rolname in ('anon', 'authenticated', 'service_role')
@@ -563,6 +577,60 @@ select is(
   (select a.evidence ->> 'provider_status' from public.operational_alerts a
     where a.alert_code = 'CHECKOUT_PROVIDER_UNVERIFIED' and a.subject_id = pg_temp.id('p4:intent')),
   'pending', 'I: con el estado nuevo en la evidencia');
+
+-- p5: la tarjeta 1 queda en revisión manual; el comprador reintenta en la misma preferencia con la
+-- tarjeta 2 y se la rechazan. El cobro guarda el pago más nuevo: el rechazo.
+select pg_temp.checkout('p5', 'p', interval '49 hours');
+select public.sweep_expired_checkout_sessions();
+select pg_temp.pago('p5:intent', 'PAY-UV-P5A', 'in_process', 'pending_review_manual');
+select pg_temp.pago('p5:intent', 'PAY-UV-P5B', 'rejected', 'cc_rejected_high_risk');
+select is(
+  (select pi.internal_status || '/' || pi.provider_payment_id || '/' || pi.provider_status from public.payment_intents pi
+    where pi.id = pg_temp.id('p5:intent')),
+  'expired/PAY-UV-P5B/rejected', 'I: precondición: el cobro tiene guardado el rechazo de la tarjeta 2');
+select pg_temp.reconciliar('p');
+select is(pg_temp.alerta('p5:intent'), 'open',
+  'I: el rechazo guardado no tapa la tarjeta 1, que sigue en revisión: la alerta se abre');
+select is(
+  (select (a.evidence ->> 'provider_status') || '/' || (a.evidence ->> 'unresolved_provider_payment_id')
+     from public.operational_alerts a
+    where a.alert_code = 'CHECKOUT_PROVIDER_UNVERIFIED' and a.subject_id = pg_temp.id('p5:intent')),
+  'in_process/PAY-UV-P5A', 'I: y la evidencia dice qué pago buscar y en qué estado está');
+select public.enqueue_checkout_provider_probes(200);
+select is(
+  (select string_agg(coalesce(po.resource_id, '<búsqueda>'), ',') from public.payment_outbox po
+    where po.payment_intent_id = pg_temp.id('p5:intent') and po.topic = 'payment_reconcile'
+      and po.status in ('pending', 'claimed', 'processing', 'retry_wait')),
+  'PAY-UV-P5A', 'I: la sonda diaria relee la tarjeta 1 por su id');
+
+-- p6: el dueño resuelve con la tarjeta A en revisión a la vista; después aparece la tarjeta B,
+-- también en revisión: es otro pago, aunque tenga el mismo estado.
+select pg_temp.checkout('p6', 'p', interval '49 hours');
+select public.sweep_expired_checkout_sessions();
+select pg_temp.pago('p6:intent', 'PAY-UV-P6A', 'in_process', 'pending_review_manual');
+select pg_temp.reconciliar('p');
+select is(pg_temp.resolver('p:owner', 'p6:intent'), 'resolved', 'I: el dueño resuelve p6 con la tarjeta A a la vista');
+select pg_temp.reconciliar('p');
+select is(pg_temp.alerta('p6:intent'), 'resolved', 'I: precondición: queda resuelta');
+select pg_temp.pago('p6:intent', 'PAY-UV-P6B', 'in_process', 'pending_review_manual');
+select pg_temp.reconciliar('p');
+select is(pg_temp.alerta('p6:intent'), 'open', 'I: un pago distinto con el mismo estado es nuevo: la reabre');
+
+-- p7: la alerta se refresca sin pago a la vista; la sonda asienta un pago en revisión y, antes de
+-- la corrida siguiente, el dueño la resuelve: no vio ese pago.
+select pg_temp.checkout('p7', 'p', interval '49 hours');
+select public.sweep_expired_checkout_sessions();
+select pg_temp.vacios(pg_temp.id('p7:intent'), 20, clock_timestamp() - interval '25 hours', false);
+select pg_temp.reconciliar('p');
+select is(
+  (select a.status || '/' || coalesce(a.evidence ->> 'provider_status', '<ninguno>') from public.operational_alerts a
+    where a.alert_code = 'CHECKOUT_PROVIDER_UNVERIFIED' and a.subject_id = pg_temp.id('p7:intent')),
+  'open/<ninguno>', 'I: precondición: la evidencia de p7 no muestra ningún pago');
+select pg_temp.pago('p7:intent', 'PAY-UV-P7', 'in_process', 'pending_review_manual');
+select is(pg_temp.resolver('p:owner', 'p7:intent'), 'resolved', 'I: el dueño la resuelve antes de que la evidencia se refresque');
+select pg_temp.reconciliar('p');
+select is(pg_temp.alerta('p7:intent'), 'open',
+  'I: lo asentado después del último refresco de la evidencia cuenta como nuevo: la reabre con el pago a la vista');
 
 select * from finish();
 rollback;

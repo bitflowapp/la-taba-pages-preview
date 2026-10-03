@@ -2,7 +2,7 @@
 --
 -- Devuelve las tres funciones a su definición anterior, letra por letra (la de
 -- 20261002060000, con el envoltorio de la frontera de 20261002090000 en el barrido), con
--- los mismos permisos y comentarios, y borra las tres funciones auxiliares, la marca de
+-- los mismos permisos y comentarios, y borra las cuatro funciones auxiliares, la marca de
 -- agua y el índice. No borra filas: las resoluciones de alertas y los trabajos de la cola
 -- se quedan. Con la definición anterior, CHECKOUT_PROVIDER_UNVERIFIED vuelve a cerrarse a
 -- las 48 horas aunque nadie haya verificado el checkout.
@@ -23,8 +23,8 @@ begin
   for v_row in
     select * from (values
       ('private.provider_probe_is_due(uuid,timestamptz)', '43efcbc2c2c4dc344d1965a6ce29b60b', '527187a827aa6abe0abb832be820da39'),
-      ('public.enqueue_checkout_provider_probes(integer)', '24839ee63f8dcdf8ec1b45cb909006ba', '24eb443ab5e712f436f17a4d67803686'),
-      ('public.reconcile_operational_alerts_for_business(uuid)', '425aede7931e678dc3efb0a71dc94134', 'dfb440ae088f4674986af94183463e78')
+      ('public.enqueue_checkout_provider_probes(integer)', 'e0cf99f3d691dac0a89210457f875e52', '24eb443ab5e712f436f17a4d67803686'),
+      ('public.reconcile_operational_alerts_for_business(uuid)', '40673b9efadd1f5550db1658b17b5db3', 'dfb440ae088f4674986af94183463e78')
     ) as t(signature, applied, previous)
   loop
     select md5(replace(p.prosrc, E'\r', '')) into v_actual
@@ -842,6 +842,7 @@ comment on function public.reconcile_operational_alerts_for_business(uuid) is
   'Calcula y reconcilia las alertas operativas de un negocio SIN exigir sesion. Incluye Mercado Pago encendido con una cuenta de vendedor que no puede cobrar.';
 
 drop function if exists private.unverified_checkout_findings(uuid);
+drop function if exists private.unresolved_provider_payment(uuid);
 drop function if exists private.unverified_checkout_review_holds(uuid, uuid);
 drop function if exists private.unverified_checkout_watch_since();
 drop index if exists public.payment_outbox_reconcile_history_idx;

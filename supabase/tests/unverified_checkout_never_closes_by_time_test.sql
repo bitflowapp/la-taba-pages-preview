@@ -33,7 +33,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(118);
+select plan(119);
 
 -- ── Fixture ────────────────────────────────────────────────────────────────
 create temporary table uv_ids (name text primary key, id uuid not null) on commit drop;
@@ -809,35 +809,49 @@ create function pg_temp.sondas_hechas(p_intent text, p_n integer, p_last_ago int
          clock_timestamp() - p_last_ago - make_interval(mins => 3 * (p_n - g))
     from generate_series(1, p_n) g
 $$;
--- r1..r3: rechazados de hace 40, 39 y 38 minutos, preguntados por última vez hace 5; r4: el comprador está
--- en Mercado Pago ahora (hace 3 minutos) y nunca se preguntó.
+-- r1..r3: rechazados de hace 40, 39 y 38 minutos, preguntados por última vez hace 20 (les toca otra vez); r4:
+-- el comprador está en Mercado Pago ahora (hace 3 minutos) y nunca se preguntó.
 select pg_temp.checkout('r1', 'r', interval '40 minutes');
 select pg_temp.checkout('r2', 'r', interval '39 minutes');
 select pg_temp.checkout('r3', 'r', interval '38 minutes');
 select pg_temp.pago('r1:intent', 'PAY-UV-R1', 'rejected', 'cc_rejected_other_reason', '', interval '35 minutes');
 select pg_temp.pago('r2:intent', 'PAY-UV-R2', 'rejected', 'cc_rejected_other_reason', '', interval '35 minutes');
 select pg_temp.pago('r3:intent', 'PAY-UV-R3', 'rejected', 'cc_rejected_other_reason', '', interval '35 minutes');
-select pg_temp.sondas_hechas('r1:intent', 3, interval '5 minutes');
-select pg_temp.sondas_hechas('r2:intent', 3, interval '5 minutes');
-select pg_temp.sondas_hechas('r3:intent', 3, interval '5 minutes');
+select pg_temp.sondas_hechas('r1:intent', 3, interval '20 minutes');
+select pg_temp.sondas_hechas('r2:intent', 3, interval '20 minutes');
+select pg_temp.sondas_hechas('r3:intent', 3, interval '20 minutes');
 select pg_temp.checkout('r4', 'r', interval '3 minutes');
 select public.enqueue_checkout_provider_probes(2);
 select is(pg_temp.con_sonda(array['r4']), 'r4',
   'K: lo que nunca se preguntó va primero: tres rechazados recientes no dejan sin sonda al checkout de hace 3 minutos');
 
--- r5: rechazado, preguntado hace 1 minuto: espera los 2 minutos, como con los vacíos.
-select pg_temp.checkout('r5', 'r', interval '30 minutes');
-select pg_temp.pago('r5:intent', 'PAY-UV-R5', 'rejected', 'cc_rejected_other_reason', '', interval '25 minutes');
+-- Con un pago guardado se relee a intervalo fijo desde la última sonda: cada 2 minutos en la primera media
+-- hora del checkout y después cada 15, sin cupo que se gaste (ni las sondas de antes del pago ni las que
+-- fallaron frenan la siguiente).
+-- r5: rechazado hace 40 minutos, preguntado hace 1: espera.
+select pg_temp.checkout('r5', 'r', interval '40 minutes');
+select pg_temp.pago('r5:intent', 'PAY-UV-R5', 'rejected', 'cc_rejected_other_reason', '', interval '35 minutes');
 select pg_temp.sondas_hechas('r5:intent', 2, interval '1 minute');
--- r6 / r7: rechazados con las 8 sondas tempranas hechas (la última hace 30 minutos): la tardía de las 2
--- horas toca para el de hace 3 horas y no para el de hace 1 hora.
-select pg_temp.checkout('r6', 'r', interval '3 hours');
-select pg_temp.checkout('r7', 'r', interval '1 hour');
+-- r6 / r7: tarjetas en revisión de hace 6 horas con 10 sondas previas (tres fallidas); a r6 se le preguntó
+-- por última vez hace 20 minutos, a r7 hace 10.
+select pg_temp.checkout('r6', 'r', interval '6 hours');
+select pg_temp.checkout('r7', 'r', interval '6 hours');
 select public.sweep_expired_checkout_sessions();
-select pg_temp.pago('r6:intent', 'PAY-UV-R6', 'rejected', 'cc_rejected_other_reason', '', interval '170 minutes');
-select pg_temp.pago('r7:intent', 'PAY-UV-R7', 'rejected', 'cc_rejected_other_reason', '', interval '50 minutes');
-select pg_temp.sondas_hechas('r6:intent', 8, interval '30 minutes');
-select pg_temp.sondas_hechas('r7:intent', 8, interval '30 minutes');
+select pg_temp.pago('r6:intent', 'PAY-UV-R6', 'in_process', 'pending_review_manual', '', interval '355 minutes');
+select pg_temp.pago('r7:intent', 'PAY-UV-R7', 'in_process', 'pending_review_manual', '', interval '355 minutes');
+select pg_temp.sondas_hechas('r6:intent', 10, interval '20 minutes');
+select pg_temp.sondas_hechas('r7:intent', 10, interval '10 minutes');
+update public.payment_outbox set status = 'dead_letter', completed_at = null, last_error = 'provider unavailable (fixture)'
+ where id in (select po.id from public.payment_outbox po
+               where po.payment_intent_id = pg_temp.id('r6:intent') and po.topic = 'payment_reconcile'
+               order by po.created_at limit 3);
+-- r9 / r10: tarjetas en revisión de hace 10 minutos (la sesión sigue): preguntadas hace 3 y hace 1 minuto.
+select pg_temp.checkout('r9', 'r', interval '10 minutes');
+select pg_temp.checkout('r10', 'r', interval '10 minutes');
+select pg_temp.pago('r9:intent', 'PAY-UV-R9', 'in_process', 'pending_review_manual', '', interval '8 minutes');
+select pg_temp.pago('r10:intent', 'PAY-UV-R10', 'in_process', 'pending_review_manual', '', interval '8 minutes');
+select pg_temp.sondas_hechas('r9:intent', 3, interval '3 minutes');
+select pg_temp.sondas_hechas('r10:intent', 3, interval '1 minute');
 -- r8: sin pago, dos vacíos concluyentes (el último hace 3 minutos): el ritmo de los vacíos sigue igual.
 select pg_temp.checkout('r8', 'r', interval '20 minutes');
 select pg_temp.vacios(pg_temp.id('r8:intent'), 2, clock_timestamp() - interval '3 minutes', true);
@@ -846,7 +860,9 @@ select public.enqueue_checkout_provider_probes(200);
 select is(pg_temp.con_sonda(array['r5']), '',
   'K: con un pago guardado, preguntado hace 1 minuto, espera: ya no se le vuelve a preguntar en cada corrida');
 select is(pg_temp.con_sonda(array['r6', 'r7']), 'r6',
-  'K: con las 8 sondas tempranas hechas, la tardía de las 2 horas toca para el de hace 3 horas y no para el de hace 1');
+  'K: pasada la media hora, un pago sin resolver se relee cada 15 minutos desde la última sonda: 10 sondas previas (tres fallidas) no lo frenan');
+select is(pg_temp.con_sonda(array['r9', 'r10']), 'r9',
+  'K: en la primera media hora del checkout, cada 2 minutos');
 select is(pg_temp.con_sonda(array['r8']), 'r8', 'K: sin pago guardado, el ritmo de los vacíos sigue igual');
 
 select * from finish();

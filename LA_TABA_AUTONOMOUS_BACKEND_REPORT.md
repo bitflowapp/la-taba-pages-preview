@@ -25,7 +25,8 @@ Bitácora: `LA_TABA_AUTONOMOUS_STATUS.md`. Registro de hallazgos (lo leen las co
    releía (PAY-PROBE-03); la preferencia re-reservaba stock antes de su compuerta (FO-01); el cobro real lo abría una variable de
    humo (EDGE-03). La primera versión del arreglo de PAY-PROBE-03 tenía su propio P1 (PAY-PROBE-04), corregido antes de aplicarse.
 2. **Registro:** 0 P0 abiertos · **0 P1 abiertos** (17 corregidos, 1 riesgo aceptado: el gate de base necesita Docker y en la PC
-   lo cubre el CI) · 47 P2 corregidos, 20 abiertos (decisiones de producto, frontend, otra línea, canal externo).
+   lo cubre el CI) · 47 P2 corregidos, 20 abiertos (decisiones del dueño, frontend, la línea de Caja Clara, canal externo o
+   Staging; cada uno con su motivo en PENDIENTES y en el registro).
 3. **Probado:** pgTAP canónico **6.501** aserciones (era 5.938 al empezar la sesión 2); carreras de admisión, stock e idempotencia
    con **0 deadlocks**; simulacros de reversión y restauración; `npm test` **3.131** (0 fallas); certificador sobre un Supabase
    completo y efímero; las migraciones nuevas, contra un arnés de 33 mutaciones (32 detectadas y una equivalente).
@@ -41,7 +42,7 @@ Bitácora: `LA_TABA_AUTONOMOUS_STATUS.md`. Registro de hallazgos (lo leen las co
 | HEAD_INICIAL | `8f0d5958` (inicio de la sesión 2; = `origin`, árbol limpio) · la jornada empezó en `47d9ffe9` (sesión 1) |
 | HEAD_FINAL | el último commit de la rama (este informe); último código: `b8b3d440` |
 | RAMA | `hardening/taba-ecommerce-production` (apilada sobre `qa/taba-backend-e2e-cert-20260930` = PR #130) |
-| COMMITS | sesión 2: 37 (lista abajo) · sesión 1: 62 |
+| COMMITS | sesión 2: 38 (lista abajo) · sesión 1: 62 |
 | PUSH | todo pusheado a `origin/hardening/taba-ecommerce-production` |
 | PR | **#133 en borrador → `main`** (abierto por la sesión 2 para que el CI corra: el despacho manual de workflows da 403 desde la nube). Apilado sobre #130: **no mergear** sin decidir el orden y Owner 1–2 |
 | CI | ver «CI» abajo |
@@ -60,7 +61,8 @@ Bitácora: `LA_TABA_AUTONOMOUS_STATUS.md`. Registro de hallazgos (lo leen las co
 | `008cde75` (quinta versión, PAY-PROBE-09) | **verde completo** (37161211210: web con E2E, base de datos con 6.495, Windows) | push y PR **verdes** |
 | `45d068b1` (sexta versión, PAY-PROBE-10) | base de datos (6.499) y Windows **verdes**; web cortado por el push siguiente | push y PR **verdes** |
 | `bd675d68` (séptima versión, PAY-PROBE-11) | **verde completo** (37164686198: web con E2E, base de datos con 6.500, Windows) | push y PR **verdes** |
-| HEAD final | ver los checks del PR #133 | ver los checks del PR #133 |
+| `96889bff` (octava versión `b8b3d440` + informe) | **verde completo** (37166844340: web con E2E, base de datos con 6.501, Windows) | push y PR **verdes** (37166841033, 37166844428) |
+| HEAD final (sólo documentación sobre `96889bff`) | ver los checks del PR #133 | ver los checks del PR #133 |
 
 ## QA
 
@@ -146,7 +148,15 @@ Bitácora: `LA_TABA_AUTONOMOUS_STATUS.md`. Registro de hallazgos (lo leen las co
 | EDGE-06, EDGE-15 | P2/P3 | Preferencia dudosa sin re-envío; cancelación `requested` sin trabajo si fallan tres escrituras seguidas | Decisión / residual documentado |
 | Pruebas no portadas | P3 | Del mapa de TOOL-04 quedan sin pgTAP las métricas del centro de operación (lo demás ya entró: `6fd0b6f4`, `2018ea51`, `4a0ce219`, `3a080d44`) | Prioridad menor que lo portado; quedan listados |
 | Contrato HTTP (resto) | P3 | 40 entradas de otras líneas y las dos SQL de OAuth siguen contestando 500 a un 55000/P0002 | Son de otras líneas |
-| Resto del registro | P2 | 20 P2 abiertos | Ver el registro |
+| STK-07, PAY-08 | P2 | El libro de stock no registra cada cambio (faltan los del punto de venta); los cobros manuales de pedidos online no entran al cierre de caja | Los redefine la línea de Caja Clara en su rama (`pos_apply_stock_*`, `close_daily_reconciliation`): una segunda redefinición acá pisaría la suya |
+| PRICE-02 | P2 | El renglón congela el SKU, pero código de barras, categoría, alcohol e impuestos se leen del producto | Parcial (`8e7dd77`); lo que falta lo usan el núcleo fiscal y el listado del punto de venta (Caja Clara). El líder lo evalúa P3 |
+| PRICE-04 | P2 | Con zonas declaradas de distinto precio, un cliente dentro del radio puede declarar la más barata | Dato del dueño: una tarifa para todas las zonas declaradas, o polígonos |
+| CS-06, F-05 | P2 | La tienda no lee el código de una negativa de la función Edge; el pedido manual no traduce comercio cerrado ni fuera de zona (cae en «reintentá») y presenta el horario del alcohol como «no vende alcohol» | Frontend precacheado: cambiarlo obliga a una identidad nueva del service worker, que es de la línea de frontend. El backend ya devuelve los códigos |
+| CAT-07 | P2 | Un producto escaneado nace sin SKU ni `external_id` e inactivo: ninguna función de publicación lo alcanza | Quién lo nombra y lo activa es decisión de la autoridad de verificación (dueño) |
+| TOOL-02, TOOL-03 | P2 | El certificador de Staging no se puede importar; exige que el libro de Staging sea el del repo, y la promoción a Staging es manual | La igualdad es la garantía (certificar otro libro sería evidencia falsa); falta aplicar la rama en Staging (Owner 1). Nadie lo importa: el CI usa `ecommerce-certification.mjs` |
+| TOOL-06, TOOL-07 | P2 | Sin corredor de la última unidad en Staging; sin línea base de capacidad que pase en Staging ni umbrales p99 por operación | Necesitan Staging con la rama (Owner 1) y credenciales que la nube no tiene. La última unidad corre en el gate (`stock-race.mjs`); umbrales sin línea base serían inventados |
+| OSM-05 | P2 | Nadie consume `notification_outbox`: el cliente no recibe aviso ni motivo de una cancelación o un rechazo | El canal es el de Owner 6 (DIAG-09); mostrar el motivo (texto libre del comercio) en el seguimiento público es decisión de producto |
+| OSM-06 | P2 | Entrega parcial no implementada: un faltante no cambia renglones, total ni stock | Cambiar un pedido cobrado implica devoluciones parciales (dinero real): decisión del dueño |
 
 ### RIESGOS_RESIDUALES
 
@@ -277,7 +287,8 @@ Significado usado: **YES** = técnicamente listo con evidencia reproducible; lo 
 - `16799bf8` fix(payments): un pago guardado sin resolver se relee cada 15 minutos desde la última sonda, sin cupo que se gaste (PAY-PROBE-11)
 - `bd675d68` docs(report): sexta revisión adversarial y séptima versión de la migración de pagos (PAY-PROBE-11)
 - `b8b3d440` fix(payments): la relectura de 2 minutos dura mientras la reserva del checkout siga viva
-- (este informe, el registro y el archivo de estado)
+- `96889bff` docs(report): séptima revisión adversarial y octava versión de la migración de pagos; cierre de la sesión
+- (este informe, el registro y el archivo de estado: el motivo y lo que destraba cada P2 abierto)
 
 ## Commits de la sesión 1
 

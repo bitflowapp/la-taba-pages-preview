@@ -6,9 +6,10 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
 ## Para retomar (leer primero)
 
 - Informe final: `LA_TABA_AUTONOMOUS_BACKEND_REPORT.md` (estado, hallazgos, OWNER_APPROVAL_REQUIRED con pasos exactos, veredictos).
-- Actualizado 2026-10-03 22:05 (-03:00). Último commit de código: `b8b3d440` (octava versión de 20261003090000); el último de
-  la rama es el de documentación que trae este archivo. Tarea en curso: el CI de ese HEAD (su resultado va en el mensaje
-  final de la sesión). Próximo paso: las aprobaciones del dueño del informe (Owner 1 y 2 primero).
+- Actualizado 2026-10-03 23:00 (-03:00). Último commit de código: `b8b3d440` (octava versión de 20261003090000), verde
+  completo en CI con `96889bff`; el último de la rama es el de documentación que trae este archivo (sólo informe, registro y
+  bitácora). Tarea en curso: el CI de ese HEAD (su resultado va en el mensaje final de la sesión). Próximo paso: las
+  aprobaciones del dueño del informe (Owner 1 y 2 primero).
 - Rama `hardening/taba-ecommerce-production`, todo pusheado. **PR #133 en borrador** contra `main` (apilado sobre #130): existe
   para que el CI completo corra en cada push, porque desde la sesión en la nube el despacho manual de workflows da 403.
   No se mergea sin el dueño. Nada aplicado en Staging (158) ni en CP (157); la rama tiene 211 migraciones (157 de `main` + 54).
@@ -202,6 +203,17 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
   propuso la séptima pasada y queda cubierta por la prueba y la mutación nuevas.
 - 22:00 — CI de `bd675d68` (la séptima versión): **verde completo** (37164686198: web con E2E, base de datos con 6.500, Windows;
   el stack efímero en push y PR).
+- 22:47 — CI de `96889bff` (la octava versión `b8b3d440` más el informe): **verde completo** (37166844340: web con E2E, base de
+  datos con 6.501, Windows; el stack efímero en push 37166841033 y PR 37166844428). PR #133: sin conflictos y sin hilos de
+  revisión abiertos.
+- 23:00 — Repaso de los 20 P2 abiertos antes de cerrar: ocho no tenían nota en el registro (DIAG-09, TOOL-02, TOOL-03, TOOL-06,
+  TOOL-07, F-05, OSM-05, OSM-06) y el informe nombraba 7 de los 20 (los otros 13 iban en «resto del registro»). Ahora cada uno
+  dice por qué sigue abierto y qué lo destraba, verificado en el código: F-05 sigue igual (el pedido manual rechaza con
+  BUSINESS_CLOSED, OUT_OF_DELIVERY_ZONE y ALCOHOL_WINDOW_CLOSED desde `create_order_with_items_core` y el traductor web no tiene
+  rama para los dos primeros; es frontend precacheado); la última unidad sí corre en el gate (`stock-race.mjs`, carrera 1);
+  nadie consume `notification_outbox`. Ninguno se corrige sin el dueño, sin Staging o sin pisar otra línea, salvo TOOL-02 (P3
+  para el verificador), que queda hasta que alguien necesite importar el certificador. Sólo documentación; `npm test` 3.131
+  (0 fallas, 1 omitida por plataforma), `npm run check` y las 146 pruebas de las compuertas de release pasan.
 
 ## Sesión 1 — 2026-10-03 08:22–13:2x (-03:00), PC de trabajo (histórico)
 

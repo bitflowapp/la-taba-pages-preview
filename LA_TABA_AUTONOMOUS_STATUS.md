@@ -6,9 +6,9 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
 ## Para retomar (leer primero)
 
 - Informe final: `LA_TABA_AUTONOMOUS_BACKEND_REPORT.md` (estado, hallazgos, OWNER_APPROVAL_REQUIRED con pasos exactos, veredictos).
-- Actualizado 2026-10-03 21:22 (-03:00). Último commit de código: `16799bf8` (séptima revisión de 20261003090000); el último
-  de la rama es el de documentación que trae este archivo. Tarea en curso: el CI de ese HEAD y una verificación corta del
-  revisor sobre ese cambio. Próximo paso: atender lo que encuentre y dejar el CI del HEAD final en verde.
+- Actualizado 2026-10-03 22:05 (-03:00). Último commit de código: `b8b3d440` (octava versión de 20261003090000); el último de
+  la rama es el de documentación que trae este archivo. Tarea en curso: el CI de ese HEAD (su resultado va en el mensaje
+  final de la sesión). Próximo paso: las aprobaciones del dueño del informe (Owner 1 y 2 primero).
 - Rama `hardening/taba-ecommerce-production`, todo pusheado. **PR #133 en borrador** contra `main` (apilado sobre #130): existe
   para que el CI completo corra en cada push, porque desde la sesión en la nube el despacho manual de workflows da 403.
   No se mergea sin el dueño. Nada aplicado en Staging (158) ni en CP (157); la rama tiene 211 migraciones (157 de `main` + 54).
@@ -18,10 +18,10 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
   `scripts/production-health-check.mjs --target controlled-production` (sólo lectura, necesitan un token de la Management API).
 - La sesión en la nube no tiene token de Supabase ni de Mercado Pago: no leyó Staging ni CP. Lo último leído en vivo es de la
   sesión de la mañana (11:20–11:25).
-- En curso al escribir esto: el CI del HEAD final en el PR #133 y una verificación corta del revisor sobre `16799bf8` (su
-  resultado queda en la bitácora y en el informe).
+- En curso al escribir esto: el CI del HEAD final en el PR #133. Las revisiones adversariales de 20261003090000 terminaron:
+  la séptima no encontró nada por encima de P3 y su P3 quedó corregido en la octava versión.
 
-## Sesión 2 — 2026-10-03 14:47–21:xx (-03:00), Claude Cloud
+## Sesión 2 — 2026-10-03 14:47–22:xx (-03:00), Claude Cloud
 
 ### Checkpoint inicial (verificado, no declarado)
 
@@ -187,6 +187,21 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
   escribir esto (su resultado, en la entrada siguiente). Registro: PAY-PROBE-11 (P2) corregido; P2 47 corregidos y 20 abiertos.
 - 21:22 — CI de `45d068b1` (la sexta versión): base de datos (6.499), Windows y el stack efímero en push y PR **verdes**; el job
   web seguía en curso y lo corta el push de la séptima.
+- 21:30 — gate canónico local completo **PASS** sobre `16799bf8` (pgTAP 6.500, carreras con 0 deadlocks, restauración).
+- 21:52 — **séptima revisión adversarial** (sólo el cambio de `16799bf8`): **nada por encima de P3**. Confirma la cota de 15
+  minutos dentro de la ventana con una simulación minuto a minuto del barrido real de 5 horas y alrededor de las 25 h (con
+  sondas de antes del pago, trabajos fallidos y un pago nuevo que reemplaza al guardado). P3, introducido por la sexta/séptima:
+  la fase de 2 minutos duraba 30 minutos fijos, pero un comercio puede dar sesiones de hasta 60; una aprobación tardía con el aviso
+  perdido podía leerse con la reserva vencida (revisión manual en vez de pedido). Nota anterior, sin cambio: un trabajo que
+  reintenta cuenta como en curso y su espera (hasta 32 minutos) pone el ritmo después de una caída del proveedor. Sin hallazgo:
+  la regla diaria, el cupo vencido, el orden y el costo (barrido 104-113 ms con unas 3.300 filas vencidas).
+- 21:56 — **`b8b3d440`** (octava versión): cada 2 minutos mientras la reserva del checkout siga viva o en su primera media hora,
+  después cada 15. Prueba 120 (una sesión de 60 minutos con la reserva viva al minuto 50: falla con `16799bf8`); 33 mutaciones,
+  32 detectadas y una equivalente; reversión exacta. Gate canónico local completo **PASS** sobre este árbol (pgTAP 6.501,
+  carreras con 0 deadlocks, restauración). Con esto se cierra el ciclo de revisiones de la migración: la corrección es la que
+  propuso la séptima pasada y queda cubierta por la prueba y la mutación nuevas.
+- 22:00 — CI de `bd675d68` (la séptima versión): **verde completo** (37164686198: web con E2E, base de datos con 6.500, Windows;
+  el stack efímero en push y PR).
 
 ## Sesión 1 — 2026-10-03 08:22–13:2x (-03:00), PC de trabajo (histórico)
 

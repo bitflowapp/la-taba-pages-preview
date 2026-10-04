@@ -33,7 +33,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(119);
+select plan(120);
 
 -- ── Fixture ────────────────────────────────────────────────────────────────
 create temporary table uv_ids (name text primary key, id uuid not null) on commit drop;
@@ -852,6 +852,13 @@ select pg_temp.pago('r9:intent', 'PAY-UV-R9', 'in_process', 'pending_review_manu
 select pg_temp.pago('r10:intent', 'PAY-UV-R10', 'in_process', 'pending_review_manual', '', interval '8 minutes');
 select pg_temp.sondas_hechas('r9:intent', 3, interval '3 minutes');
 select pg_temp.sondas_hechas('r10:intent', 3, interval '1 minute');
+-- r11: un comercio con sesiones de 60 minutos; checkout de hace 50 con la reserva todavía viva, tarjeta en
+-- revisión, preguntada hace 3 minutos: sigue cada 2 minutos aunque pasó la media hora (una aprobación con la
+-- reserva viva todavía arma el pedido).
+select pg_temp.checkout('r11', 'r', interval '50 minutes');
+update public.checkout_sessions set expires_at = clock_timestamp() + interval '10 minutes' where id = pg_temp.id('r11');
+select pg_temp.pago('r11:intent', 'PAY-UV-R11', 'in_process', 'pending_review_manual', '', interval '45 minutes');
+select pg_temp.sondas_hechas('r11:intent', 3, interval '3 minutes');
 -- r8: sin pago, dos vacíos concluyentes (el último hace 3 minutos): el ritmo de los vacíos sigue igual.
 select pg_temp.checkout('r8', 'r', interval '20 minutes');
 select pg_temp.vacios(pg_temp.id('r8:intent'), 2, clock_timestamp() - interval '3 minutes', true);
@@ -863,6 +870,8 @@ select is(pg_temp.con_sonda(array['r6', 'r7']), 'r6',
   'K: pasada la media hora, un pago sin resolver se relee cada 15 minutos desde la última sonda: 10 sondas previas (tres fallidas) no lo frenan');
 select is(pg_temp.con_sonda(array['r9', 'r10']), 'r9',
   'K: en la primera media hora del checkout, cada 2 minutos');
+select is(pg_temp.con_sonda(array['r11']), 'r11',
+  'K: mientras la reserva siga viva (un comercio con sesiones de 60 minutos), cada 2 minutos aunque pasó la media hora');
 select is(pg_temp.con_sonda(array['r8']), 'r8', 'K: sin pago guardado, el ritmo de los vacíos sigue igual');
 
 select * from finish();

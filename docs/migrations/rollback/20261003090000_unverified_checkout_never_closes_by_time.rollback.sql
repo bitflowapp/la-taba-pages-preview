@@ -22,7 +22,7 @@ declare
 begin
   for v_row in
     select * from (values
-      ('private.provider_probe_is_due(uuid,timestamptz)', 'ac43741aacb5baf57069143084e33691', '527187a827aa6abe0abb832be820da39'),
+      ('private.provider_probe_is_due(uuid,timestamptz)', '638d303654e7ea4a036fbe2fd1137530', '527187a827aa6abe0abb832be820da39'),
       ('public.enqueue_checkout_provider_probes(integer)', '6e6f472d019ab93d9d3ef36bd61f08bd', '24eb443ab5e712f436f17a4d67803686'),
       ('public.reconcile_operational_alerts_for_business(uuid)', '40673b9efadd1f5550db1658b17b5db3', 'dfb440ae088f4674986af94183463e78')
     ) as t(signature, applied, previous)

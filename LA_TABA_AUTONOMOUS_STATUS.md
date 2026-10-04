@@ -6,9 +6,9 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
 ## Para retomar (leer primero)
 
 - Informe final: `LA_TABA_AUTONOMOUS_BACKEND_REPORT.md` (estado, hallazgos, OWNER_APPROVAL_REQUIRED con pasos exactos, veredictos).
-- Actualizado 2026-10-03 20:58 (-03:00). Último commit de código: `f246ee21` (sexta revisión de 20261003090000); el último
-  de la rama es el de documentación que trae este archivo. Tarea en curso: el CI de ese HEAD y una sexta pasada del revisor
-  sobre ese cambio. Próximo paso: atender lo que encuentre y dejar el CI del HEAD final en verde.
+- Actualizado 2026-10-03 21:22 (-03:00). Último commit de código: `16799bf8` (séptima revisión de 20261003090000); el último
+  de la rama es el de documentación que trae este archivo. Tarea en curso: el CI de ese HEAD y una verificación corta del
+  revisor sobre ese cambio. Próximo paso: atender lo que encuentre y dejar el CI del HEAD final en verde.
 - Rama `hardening/taba-ecommerce-production`, todo pusheado. **PR #133 en borrador** contra `main` (apilado sobre #130): existe
   para que el CI completo corra en cada push, porque desde la sesión en la nube el despacho manual de workflows da 403.
   No se mergea sin el dueño. Nada aplicado en Staging (158) ni en CP (157); la rama tiene 211 migraciones (157 de `main` + 54).
@@ -18,10 +18,10 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
   `scripts/production-health-check.mjs --target controlled-production` (sólo lectura, necesitan un token de la Management API).
 - La sesión en la nube no tiene token de Supabase ni de Mercado Pago: no leyó Staging ni CP. Lo último leído en vivo es de la
   sesión de la mañana (11:20–11:25).
-- En curso al escribir esto: el CI del HEAD final en el PR #133 y una sexta pasada del revisor sobre `f246ee21` (su resultado
-  queda en la bitácora y en el informe).
+- En curso al escribir esto: el CI del HEAD final en el PR #133 y una verificación corta del revisor sobre `16799bf8` (su
+  resultado queda en la bitácora y en el informe).
 
-## Sesión 2 — 2026-10-03 14:47–20:xx (-03:00), Claude Cloud
+## Sesión 2 — 2026-10-03 14:47–21:xx (-03:00), Claude Cloud
 
 ### Checkpoint inicial (verificado, no declarado)
 
@@ -173,6 +173,20 @@ de sólo lectura. Lo que dice una sesión anterior se cita como «declarado» ha
   PAY-PROBE-10 (P2) corregido; P2 46 corregidos y 20 abiertos.
 - 20:53 — CI de `008cde75` (la quinta versión): **verde completo** (37161211210: web con E2E, base de datos con 6.495,
   Windows; el stack efímero en push y PR).
+- 21:15 — **sexta revisión adversarial** (sólo el cambio de `f246ee21`): **PAY-PROBE-11 (P2, introducido por la sexta versión)**:
+  con un pago guardado, el cupo de los vacíos (8 y luego 2/6/24 h) contado sobre todos los trabajos del checkout (de antes del
+  pago o fallidos) dejaba un aviso de aprobación perdido sin leer hasta 18-24 horas (aprobado a las 6 h: leído a las 24 h) o
+  fuera de la ventana con 11 trabajos previos (~44 h); reproducido con su guion. P3: el conteo costaba 328 ms por corrida con
+  historias largas. Sin hallazgo: el cupo vencido y la regla diaria; el orden nuevo solo ya resolvía PAY-PROBE-10.
+- 21:20 — **`16799bf8`** (séptima revisión de 20261003090000): un pago guardado se relee a intervalo fijo desde la última sonda
+  (aunque haya fallado), cada 2 minutos en la primera media hora del checkout y después cada 15, sin cupo ni conteos: un aviso
+  perdido se ve a lo sumo 15 minutos después (~200 lecturas por checkout en 48 h, contra ~2.880 en la v5). El guion del revisor:
+  todo vence salvo los dos preguntados hace 2-3 minutos; el checkout nuevo sigue en la primera corrida; la función del ritmo con
+  historias largas, 9,6 ms. Prueba 119 (la sección K reescrita; el caso de las sondas previas falla con `f246ee21`); 32
+  mutaciones, 31 detectadas y una equivalente; reversión exacta. El gate canónico local completo sobre este árbol corría al
+  escribir esto (su resultado, en la entrada siguiente). Registro: PAY-PROBE-11 (P2) corregido; P2 47 corregidos y 20 abiertos.
+- 21:22 — CI de `45d068b1` (la sexta versión): base de datos (6.499), Windows y el stack efímero en push y PR **verdes**; el job
+  web seguía en curso y lo corta el push de la séptima.
 
 ## Sesión 1 — 2026-10-03 08:22–13:2x (-03:00), PC de trabajo (histórico)
 

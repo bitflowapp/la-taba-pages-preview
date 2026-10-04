@@ -1,0 +1,12 @@
+{
+  "start": {
+    "stock": 500,
+    "reserved": 0,
+    "in_orders": 10
+  },
+  "end": {
+    "stock": 496,
+    "reserved": 0,
+    "in_orders": 14
+  }
+}

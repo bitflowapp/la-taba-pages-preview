@@ -1,0 +1,2840 @@
+{
+  "tool": "ecommerce-release-gates",
+  "schema": 1,
+  "evaluatedAt": "2026-10-03T11:51:28.669Z",
+  "source": "live",
+  "verdict": "NOT_READY",
+  "target": "controlled-production",
+  "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+  "collectedAt": "2026-10-03T11:51:11.652Z",
+  "provenance": {
+    "source": "live",
+    "facts_file": null,
+    "collected_at": "2026-10-03T11:51:11.652Z",
+    "evaluated_at": "2026-10-03T11:51:28.669Z",
+    "age_minutes": 0,
+    "max_age_minutes": 30,
+    "freshness": "FRESH",
+    "repo_sections": "READ_WITH_THE_FACTS",
+    "repo_head_at_snapshot": null
+  },
+  "gates": [
+    {
+      "id": "CATALOG_APPROVAL",
+      "title": "Catalog approval",
+      "blocking": true,
+      "status": "FAIL",
+      "evidence": {
+        "min_products": 1,
+        "public": 0,
+        "available": 0,
+        "total": 46,
+        "available_unverified": 0,
+        "available_without_intent": 0,
+        "image_policy_applies": true,
+        "available_without_approved_image": 0,
+        "commercial_origin_required": true,
+        "available_non_commercial": 0,
+        "offenders": []
+      },
+      "missing": [
+        "PUBLIC_PRODUCTS_BELOW_MINIMUM:0/1"
+      ]
+    },
+    {
+      "id": "VALID_PRICES",
+      "title": "Valid prices",
+      "blocking": true,
+      "status": "PASS",
+      "evidence": {
+        "available": 0,
+        "available_bad_price": 0,
+        "available_price_not_confirmed": 0,
+        "pending_price_total": 46,
+        "offenders": []
+      },
+      "missing": []
+    },
+    {
+      "id": "SERVICE_HOURS",
+      "title": "Service hours",
+      "blocking": true,
+      "status": "FAIL",
+      "evidence": {
+        "hours_enforced": true,
+        "operating_timezone": "America/Argentina/Buenos_Aires",
+        "timezone_valid": true,
+        "channels": [
+          "delivery",
+          "pickup"
+        ],
+        "rows": {
+          "delivery": 0,
+          "pickup": 0
+        }
+      },
+      "missing": [
+        "NO_HOURS_FOR_CHANNEL:delivery",
+        "NO_HOURS_FOR_CHANNEL:pickup"
+      ]
+    },
+    {
+      "id": "DELIVERY_ZONES",
+      "title": "Delivery zones",
+      "blocking": true,
+      "status": "PASS",
+      "evidence": {
+        "delivery_enabled": false,
+        "reason": "NO_DELIVERY: delivery is disabled (see FULFILMENT)"
+      },
+      "missing": []
+    },
+    {
+      "id": "FULFILMENT",
+      "title": "Fulfilment mode and address",
+      "blocking": true,
+      "status": "FAIL",
+      "evidence": {
+        "delivery_enabled": false,
+        "pickup_enabled": false,
+        "address_set": true
+      },
+      "missing": [
+        "NO_FULFILMENT_MODE"
+      ]
+    },
+    {
+      "id": "TEAM",
+      "title": "Team",
+      "blocking": true,
+      "status": "FAIL",
+      "evidence": {
+        "owners": 1,
+        "admins": 0,
+        "staff": 0,
+        "riders": 0,
+        "delivery_enabled": false,
+        "rider_required": false,
+        "delivery_model": "NO_DELIVERY"
+      },
+      "missing": [
+        "NO_ACTIVE_STAFF_OR_ADMIN"
+      ]
+    },
+    {
+      "id": "MP_SELLER",
+      "title": "Mercado Pago seller",
+      "blocking": true,
+      "status": "FAIL",
+      "evidence": {
+        "payment_mode": "undecided",
+        "decision_present": false,
+        "decision_valid": false
+      },
+      "missing": [
+        "PAYMENT_DECISION_MISSING"
+      ]
+    },
+    {
+      "id": "PAYMENT_CERTIFICATION",
+      "title": "Payment certification",
+      "blocking": true,
+      "status": "PASS",
+      "evidence": {
+        "payment_mode": "undecided",
+        "methods_to_open": [
+          "manual"
+        ],
+        "certified": {
+          "manual": {
+            "environment": "staging",
+            "evidence": "artifacts/taba-e2e-cert-20261001-022224",
+            "date": "2026-10-01"
+          }
+        }
+      },
+      "missing": []
+    },
+    {
+      "id": "MIGRATION_PARITY",
+      "title": "Migration parity",
+      "blocking": true,
+      "status": "FAIL",
+      "evidence": {
+        "repo": 190,
+        "ledger": 157,
+        "repo_head": "20261002030000",
+        "ledger_head": "20260929120000",
+        "repo_not_in_ledger": 33,
+        "ledger_not_in_repo": 0,
+        "name_mismatches": 0
+      },
+      "missing": [
+        "REPO_NOT_IN_LEDGER:20261001010000",
+        "REPO_NOT_IN_LEDGER:20261001180000",
+        "REPO_NOT_IN_LEDGER:20261001190000",
+        "REPO_NOT_IN_LEDGER:20261001190500",
+        "REPO_NOT_IN_LEDGER:20261001191000",
+        "REPO_NOT_IN_LEDGER:20261001192000",
+        "REPO_NOT_IN_LEDGER:20261001193000",
+        "REPO_NOT_IN_LEDGER:20261001194000",
+        "REPO_NOT_IN_LEDGER:20261001195000",
+        "REPO_NOT_IN_LEDGER:20261001200000",
+        "REPO_NOT_IN_LEDGER:20261001200100",
+        "REPO_NOT_IN_LEDGER:20261001200200",
+        "REPO_NOT_IN_LEDGER:20261001200300",
+        "REPO_NOT_IN_LEDGER:20261001203000",
+        "REPO_NOT_IN_LEDGER:20261001204000",
+        "REPO_NOT_IN_LEDGER:20261001205000",
+        "REPO_NOT_IN_LEDGER:20261001210000",
+        "REPO_NOT_IN_LEDGER:20261001213000",
+        "REPO_NOT_IN_LEDGER:20261001214000",
+        "REPO_NOT_IN_LEDGER:20261001215000",
+        "REPO_NOT_IN_LEDGER:20261001216000",
+        "REPO_NOT_IN_LEDGER:20261001220000",
+        "REPO_NOT_IN_LEDGER:20261001220500",
+        "REPO_NOT_IN_LEDGER:20261001221000",
+        "REPO_NOT_IN_LEDGER:20261001221500",
+        "REPO_NOT_IN_LEDGER:20261001222000",
+        "REPO_NOT_IN_LEDGER:20261001223000",
+        "REPO_NOT_IN_LEDGER:20261001223500",
+        "REPO_NOT_IN_LEDGER:20261001224000",
+        "REPO_NOT_IN_LEDGER:20261001224500",
+        "REPO_NOT_IN_LEDGER:20261001225000",
+        "REPO_NOT_IN_LEDGER:20261001230000",
+        "REPO_NOT_IN_LEDGER:20261002030000"
+      ]
+    },
+    {
+      "id": "EDGE_FUNCTIONS",
+      "title": "Edge Functions deployed",
+      "blocking": true,
+      "status": "FAIL",
+      "evidence": {
+        "repo": 13,
+        "deployed": 13,
+        "critical_required": true,
+        "critical": 9,
+        "unexpected_on_target": [],
+        "strict_reference": null
+      },
+      "missing": [
+        "SOURCE_NEWER_THAN_DEPLOYMENT:mercadopago-cancel-payment",
+        "SOURCE_NEWER_THAN_DEPLOYMENT:mercadopago-checkout-status",
+        "SOURCE_NEWER_THAN_DEPLOYMENT:mercadopago-connect",
+        "SOURCE_NEWER_THAN_DEPLOYMENT:mercadopago-create-checkout-session",
+        "SOURCE_NEWER_THAN_DEPLOYMENT:mercadopago-create-preference",
+        "SOURCE_NEWER_THAN_DEPLOYMENT:mercadopago-oauth-callback",
+        "SOURCE_NEWER_THAN_DEPLOYMENT:mercadopago-payment-worker",
+        "SOURCE_NEWER_THAN_DEPLOYMENT:mercadopago-refund",
+        "SOURCE_NEWER_THAN_DEPLOYMENT:mercadopago-webhook"
+      ]
+    },
+    {
+      "id": "ABUSE_PROTECTION",
+      "title": "Order intake guard",
+      "blocking": true,
+      "status": "FAIL",
+      "evidence": {
+        "guard_function_exists": false,
+        "guard_doors": {
+          "create_checkout_session": false,
+          "create_order_with_items": false
+        },
+        "order_intake_guard_mode": null
+      },
+      "missing": [
+        "GUARD_FUNCTION_MISSING",
+        "GUARD_MODE:absent"
+      ]
+    },
+    {
+      "id": "UNATTENDED_ORDER_POLICY",
+      "title": "Unattended order policy",
+      "blocking": false,
+      "status": "FAIL",
+      "evidence": {
+        "abandoned_order_minutes": null
+      },
+      "missing": [
+        "ABANDONED_ORDER_MINUTES_NOT_DECIDED"
+      ]
+    },
+    {
+      "id": "NO_OPEN_P0",
+      "title": "No open P0 findings",
+      "blocking": true,
+      "status": "PASS",
+      "evidence": {
+        "severity": "P0",
+        "total": 0,
+        "open": 0,
+        "fixed": 0,
+        "accepted_risk": 0,
+        "external_gate": 0
+      },
+      "missing": []
+    },
+    {
+      "id": "NO_OPEN_P1",
+      "title": "No open P1 findings",
+      "blocking": true,
+      "status": "PASS",
+      "evidence": {
+        "severity": "P1",
+        "total": 14,
+        "open": 0,
+        "fixed": 12,
+        "accepted_risk": 1,
+        "external_gate": 1
+      },
+      "missing": []
+    },
+    {
+      "id": "CI_GREEN",
+      "title": "CI green on the release commit",
+      "blocking": true,
+      "status": "FAIL",
+      "evidence": {
+        "conclusion": null,
+        "commit": null,
+        "repo_head": "f2cafbd3885c8f9c7ee9ec0c615bd3e3a13d6317",
+        "uncommitted_release_inputs": [
+          "M supabase/functions/_shared/cancel-runtime.deno.ts",
+          "M supabase/functions/_shared/refund-runtime.deno.ts",
+          "M supabase/functions/_shared/seller-webhook-runtime.deno.ts",
+          "M supabase/functions/mercadopago-cancel-payment/index.ts"
+        ]
+      },
+      "missing": [
+        "RELEASE_INPUTS_NOT_COMMITTED:4",
+        "CI_CONCLUSION_NOT_SUPPLIED"
+      ]
+    },
+    {
+      "id": "STORE_STATE",
+      "title": "Store state",
+      "blocking": false,
+      "status": "PASS",
+      "evidence": {
+        "slug": "la-taba-cp",
+        "status": "closed",
+        "is_active": true,
+        "ordering_enabled": false,
+        "ordering_verified": false,
+        "qa_fixture": false,
+        "opening_readiness": "NOT_AVAILABLE:MGMT_HTTP_400:read-only-sql:{\"message\":\"Failed to run sql query: ERROR: 42501: permission denied for function get_store_opening_readiness\\n\"}"
+      },
+      "missing": []
+    }
+  ],
+  "blockers": [
+    {
+      "gate": "CATALOG_APPROVAL",
+      "status": "FAIL",
+      "missing": [
+        "PUBLIC_PRODUCTS_BELOW_MINIMUM:0/1"
+      ]
+    },
+    {
+      "gate": "SERVICE_HOURS",
+      "status": "FAIL",
+      "missing": [
+        "NO_HOURS_FOR_CHANNEL:delivery",
+        "NO_HOURS_FOR_CHANNEL:pickup"
+      ]
+    },
+    {
+      "gate": "FULFILMENT",
+      "status": "FAIL",
+      "missing": [
+        "NO_FULFILMENT_MODE"
+      ]
+    },
+    {
+      "gate": "TEAM",
+      "status": "FAIL",
+      "missing": [
+        "NO_ACTIVE_STAFF_OR_ADMIN"
+      ]
+    },
+    {
+      "gate": "MP_SELLER",
+      "status": "FAIL",
+      "missing": [
+        "PAYMENT_DECISION_MISSING"
+      ]
+    },
+    {
+      "gate": "MIGRATION_PARITY",
+      "status": "FAIL",
+      "missing": [
+        "REPO_NOT_IN_LEDGER:20261001010000",
+        "REPO_NOT_IN_LEDGER:20261001180000",
+        "REPO_NOT_IN_LEDGER:20261001190000",
+        "REPO_NOT_IN_LEDGER:20261001190500",
+        "REPO_NOT_IN_LEDGER:20261001191000",
+        "REPO_NOT_IN_LEDGER:20261001192000",
+        "REPO_NOT_IN_LEDGER:20261001193000",
+        "REPO_NOT_IN_LEDGER:20261001194000",
+        "REPO_NOT_IN_LEDGER:20261001195000",
+        "REPO_NOT_IN_LEDGER:20261001200000",
+        "REPO_NOT_IN_LEDGER:20261001200100",
+        "REPO_NOT_IN_LEDGER:20261001200200",
+        "REPO_NOT_IN_LEDGER:20261001200300",
+        "REPO_NOT_IN_LEDGER:20261001203000",
+        "REPO_NOT_IN_LEDGER:20261001204000",
+        "REPO_NOT_IN_LEDGER:20261001205000",
+        "REPO_NOT_IN_LEDGER:20261001210000",
+        "REPO_NOT_IN_LEDGER:20261001213000",
+        "REPO_NOT_IN_LEDGER:20261001214000",
+        "REPO_NOT_IN_LEDGER:20261001215000",
+        "REPO_NOT_IN_LEDGER:20261001216000",
+        "REPO_NOT_IN_LEDGER:20261001220000",
+        "REPO_NOT_IN_LEDGER:20261001220500",
+        "REPO_NOT_IN_LEDGER:20261001221000",
+        "REPO_NOT_IN_LEDGER:20261001221500",
+        "REPO_NOT_IN_LEDGER:20261001222000",
+        "REPO_NOT_IN_LEDGER:20261001223000",
+        "REPO_NOT_IN_LEDGER:20261001223500",
+        "REPO_NOT_IN_LEDGER:20261001224000",
+        "REPO_NOT_IN_LEDGER:20261001224500",
+        "REPO_NOT_IN_LEDGER:20261001225000",
+        "REPO_NOT_IN_LEDGER:20261001230000",
+        "REPO_NOT_IN_LEDGER:20261002030000"
+      ]
+    },
+    {
+      "gate": "EDGE_FUNCTIONS",
+      "status": "FAIL",
+      "missing": [
+        "SOURCE_NEWER_THAN_DEPLOYMENT:mercadopago-cancel-payment",
+        "SOURCE_NEWER_THAN_DEPLOYMENT:mercadopago-checkout-status",
+        "SOURCE_NEWER_THAN_DEPLOYMENT:mercadopago-connect",
+        "SOURCE_NEWER_THAN_DEPLOYMENT:mercadopago-create-checkout-session",
+        "SOURCE_NEWER_THAN_DEPLOYMENT:mercadopago-create-preference",
+        "SOURCE_NEWER_THAN_DEPLOYMENT:mercadopago-oauth-callback",
+        "SOURCE_NEWER_THAN_DEPLOYMENT:mercadopago-payment-worker",
+        "SOURCE_NEWER_THAN_DEPLOYMENT:mercadopago-refund",
+        "SOURCE_NEWER_THAN_DEPLOYMENT:mercadopago-webhook"
+      ]
+    },
+    {
+      "gate": "ABUSE_PROTECTION",
+      "status": "FAIL",
+      "missing": [
+        "GUARD_FUNCTION_MISSING",
+        "GUARD_MODE:absent"
+      ]
+    },
+    {
+      "gate": "CI_GREEN",
+      "status": "FAIL",
+      "missing": [
+        "RELEASE_INPUTS_NOT_COMMITTED:4",
+        "CI_CONCLUSION_NOT_SUPPLIED"
+      ]
+    }
+  ],
+  "warnings": [
+    {
+      "gate": "UNATTENDED_ORDER_POLICY",
+      "status": "FAIL",
+      "missing": [
+        "ABANDONED_ORDER_MINUTES_NOT_DECIDED"
+      ]
+    }
+  ],
+  "publicLaunchBlockers": [
+    {
+      "id": "EDGE-03",
+      "severity": "P1",
+      "title": "Production has no steady-state switch for real payments: every production preference needs the 'smoke' secret that runbooks and tooling require to be absent, and the failure happens after stock is reserved",
+      "notes": "SOFTWARE HALF FIXED (4b3f40f): with the production gate closed the checkout session answers 409 PAYMENTS_NOT_ENABLED and reserves nothing. WAITING ON THE OWNER: which switch enables real payments in steady state. Today production only issues a preference while the secret named 'smoke' is present, and the runbooks and tools require it to be absent. Options in the decision memo (evidence, payments.md): A, an explicit permanent project-level switch (recommended); B, rely on the project review status plus the per-business switch. Until it is decided production stays closed and fails closed. Not changed in this branch: it is the switch for real money."
+    }
+  ],
+  "summary": {
+    "gates": 16,
+    "pass": 6,
+    "fail": 10,
+    "unknown": 0,
+    "blocking_not_passing": 9,
+    "public_launch_ready": false
+  },
+  "facts": {
+    "schema": 1,
+    "collectedAt": "2026-10-03T11:51:11.652Z",
+    "target": "controlled-production",
+    "projectRef": "tkanbadcglszlcyfjvpv",
+    "businessId": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+    "options": {
+      "minProducts": 1,
+      "requireRider": false,
+      "requireImages": false,
+      "functionsReference": null
+    },
+    "observer": {
+      "ok": true,
+      "current_user": "supabase_read_only_user",
+      "transaction_read_only": "on"
+    },
+    "business": {
+      "ok": true,
+      "id": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+      "slug": "la-taba-cp",
+      "status": "closed",
+      "is_active": true,
+      "address_ok": true,
+      "qa_fixture": false,
+      "delivery_fee": null,
+      "currency_code": "ARS",
+      "hours_enforced": true,
+      "pickup_enabled": false,
+      "timezone_valid": true,
+      "delivery_enabled": false,
+      "ordering_enabled": false,
+      "ordering_verified": false,
+      "operating_timezone": "America/Argentina/Buenos_Aires",
+      "delivery_zone_enforced": true,
+      "abandoned_order_minutes": null,
+      "order_intake_guard_mode": null,
+      "rider_presence_required": true,
+      "minimum_delivery_subtotal": null,
+      "stock_reservation_minutes": null,
+      "delivery_max_radius_meters": null
+    },
+    "serviceHours": {
+      "ok": true,
+      "pickup": 0,
+      "alcohol": 0,
+      "delivery": 0
+    },
+    "deliveryZones": {
+      "ok": true,
+      "total": 0,
+      "active": 0,
+      "active_without_fee": 0,
+      "active_without_minimum": 0
+    },
+    "catalog": {
+      "ok": true,
+      "total": 46,
+      "public": 0,
+      "available": 0,
+      "image_offenders": [],
+      "price_offenders": [],
+      "approval_offenders": [],
+      "available_inactive": 0,
+      "available_bad_price": 0,
+      "pending_price_total": 46,
+      "available_unverified": 0,
+      "image_policy_applies": true,
+      "available_without_stock": 0,
+      "available_non_commercial": 0,
+      "available_without_intent": 0,
+      "non_commercial_offenders": [],
+      "available_price_not_confirmed": 0,
+      "available_without_approved_image": 0
+    },
+    "team": {
+      "ok": true,
+      "staff": 0,
+      "admins": 0,
+      "owners": 1,
+      "riders": 0
+    },
+    "mercadoPago": {
+      "ok": true,
+      "settings": null,
+      "connections": []
+    },
+    "migrationLedger": {
+      "ok": true,
+      "versions": [
+        {
+          "name": "la_taba_phase1_orders",
+          "version": "20260531030000"
+        },
+        {
+          "name": "la_taba_phase1_hardening",
+          "version": "20260531040000"
+        },
+        {
+          "name": "operational_orders_v1",
+          "version": "20260601205707"
+        },
+        {
+          "name": "taba_production_orders",
+          "version": "20260725030000"
+        },
+        {
+          "name": "tracking_rider_privacy",
+          "version": "20260725050000"
+        },
+        {
+          "name": "alcohol_reservations_abuse",
+          "version": "20260725060000"
+        },
+        {
+          "name": "catalog_category_authority",
+          "version": "20260725070000"
+        },
+        {
+          "name": "rider_assignment_tracking_gate",
+          "version": "20260725080000"
+        },
+        {
+          "name": "delivery_handoff_code",
+          "version": "20260725090000"
+        },
+        {
+          "name": "tracking_handoff_recovery",
+          "version": "20260725100000"
+        },
+        {
+          "name": "catalog_publication_authority",
+          "version": "20260725110000"
+        },
+        {
+          "name": "business_contact_authority",
+          "version": "20260725120000"
+        },
+        {
+          "name": "fix_tracking_token_regex",
+          "version": "20260725130000"
+        },
+        {
+          "name": "customer_profiles_addresses",
+          "version": "20260728090000"
+        },
+        {
+          "name": "customer_profile_completion",
+          "version": "20260729150000"
+        },
+        {
+          "name": "customer_address_street_number_required",
+          "version": "20260729190000"
+        },
+        {
+          "name": "public_tracking_terminal_visibility",
+          "version": "20260729203000"
+        },
+        {
+          "name": "staging_qa_fixture_catalog",
+          "version": "20260731230000"
+        },
+        {
+          "name": "staging_qa_product_verification",
+          "version": "20260731231000"
+        },
+        {
+          "name": "order_revision_and_event_sequence",
+          "version": "20260801020000"
+        },
+        {
+          "name": "rider_gps_tracking_gate2",
+          "version": "20260801040000"
+        },
+        {
+          "name": "mercadopago_checkout_pro_foundation",
+          "version": "20260802090000"
+        },
+        {
+          "name": "mercadopago_checkout_pro_lifecycle",
+          "version": "20260802093000"
+        },
+        {
+          "name": "mercadopago_rate_limits",
+          "version": "20260802094000"
+        },
+        {
+          "name": "rider_delivery_server_contracts",
+          "version": "20260802100000"
+        },
+        {
+          "name": "rider_delivery_legacy_start_revocation",
+          "version": "20260802101000"
+        },
+        {
+          "name": "rider_delivery_legacy_claim_gps_revocation",
+          "version": "20260802102000"
+        },
+        {
+          "name": "rider_queue_read_lock_mode",
+          "version": "20260802103000"
+        },
+        {
+          "name": "rider_location_receipt_revision",
+          "version": "20260802104000"
+        },
+        {
+          "name": "business_windows_scanner_fiscal",
+          "version": "20260802160000"
+        },
+        {
+          "name": "fiscal_document_closure",
+          "version": "20260802170000"
+        },
+        {
+          "name": "fiscal_document_closure_hardening",
+          "version": "20260802171000"
+        },
+        {
+          "name": "production_operations_control_plane",
+          "version": "20260802180000"
+        },
+        {
+          "name": "durable_offline_packing",
+          "version": "20260802200000"
+        },
+        {
+          "name": "mercadopago_staging_worker_scheduler",
+          "version": "20260803120000"
+        },
+        {
+          "name": "payment_recovery_p0",
+          "version": "20260803140000"
+        },
+        {
+          "name": "business_operations_panel",
+          "version": "20260804090000"
+        },
+        {
+          "name": "reconcile_business_operations_panel_version_collision",
+          "version": "20260804093000"
+        },
+        {
+          "name": "fiscal_homologation_authorization_split",
+          "version": "20260805120000"
+        },
+        {
+          "name": "mercadopago_provider_snapshot_contract",
+          "version": "20260806140000"
+        },
+        {
+          "name": "mercadopago_order_delivery_address_snapshot",
+          "version": "20260806150000"
+        },
+        {
+          "name": "order_qa_origin_classification",
+          "version": "20260806160000"
+        },
+        {
+          "name": "order_payment_modality_integrity",
+          "version": "20260806170000"
+        },
+        {
+          "name": "checkout_expiry_stock_recovery",
+          "version": "20260806180000"
+        },
+        {
+          "name": "operational_pipeline_projection",
+          "version": "20260806190000"
+        },
+        {
+          "name": "qa_orders_do_not_ring_the_panel",
+          "version": "20260806200000"
+        },
+        {
+          "name": "manual_qa_reclassification",
+          "version": "20260806210000"
+        },
+        {
+          "name": "rider_canonical_claim_excludes_qa",
+          "version": "20260806220000"
+        },
+        {
+          "name": "lock_down_classification_triggers",
+          "version": "20260806230000"
+        },
+        {
+          "name": "taba2_combo_catalog_contract",
+          "version": "20260806240000"
+        },
+        {
+          "name": "taba2_combo_checkout_pricing",
+          "version": "20260806250000"
+        },
+        {
+          "name": "taba2_combo_preference_lines",
+          "version": "20260806260000"
+        },
+        {
+          "name": "taba2_order_total_with_discount",
+          "version": "20260806270000"
+        },
+        {
+          "name": "business_panel_contract_hardening",
+          "version": "20260807090000"
+        },
+        {
+          "name": "order_events_type_in_business_commands",
+          "version": "20260807100000"
+        },
+        {
+          "name": "rider_map_location_contract_reconciliation",
+          "version": "20260807155000"
+        },
+        {
+          "name": "checkout_pro_delivery_coordinates",
+          "version": "20260807160000"
+        },
+        {
+          "name": "pickup_point_provenance",
+          "version": "20260807170000"
+        },
+        {
+          "name": "delivery_location_confirmation",
+          "version": "20260808190000"
+        },
+        {
+          "name": "checkout_pro_delivery_location_confirmation",
+          "version": "20260808191000"
+        },
+        {
+          "name": "commercial_catalog_price_and_stock_batch",
+          "version": "20260809050000"
+        },
+        {
+          "name": "commercial_price_and_stock_contract",
+          "version": "20260809060000"
+        },
+        {
+          "name": "commercial_batch_price_status",
+          "version": "20260809070000"
+        },
+        {
+          "name": "checkout_provider_truth_sweep",
+          "version": "20260809180000"
+        },
+        {
+          "name": "operational_alerts_intake_and_dispatch",
+          "version": "20260809190000"
+        },
+        {
+          "name": "operator_reconcile_without_payment_id",
+          "version": "20260809200000"
+        },
+        {
+          "name": "recover_paid_checkout_order",
+          "version": "20260809210000"
+        },
+        {
+          "name": "resolve_security_review",
+          "version": "20260809220000"
+        },
+        {
+          "name": "autonomous_operational_alert_evaluation",
+          "version": "20260810120000"
+        },
+        {
+          "name": "operational_health_surface",
+          "version": "20260810130000"
+        },
+        {
+          "name": "scheduler_stalled_needs_history",
+          "version": "20260810140000"
+        },
+        {
+          "name": "scheduler_watchdog",
+          "version": "20260810150000"
+        },
+        {
+          "name": "public_tracking_canonical_capture_order",
+          "version": "20260811020000"
+        },
+        {
+          "name": "identity_core_model",
+          "version": "20260812010000"
+        },
+        {
+          "name": "identity_sessions_and_audit",
+          "version": "20260812020000"
+        },
+        {
+          "name": "identity_authorization_gate",
+          "version": "20260812030000"
+        },
+        {
+          "name": "identity_session_lifecycle",
+          "version": "20260812040000"
+        },
+        {
+          "name": "identity_invitations",
+          "version": "20260812050000"
+        },
+        {
+          "name": "identity_admin_surface",
+          "version": "20260812060000"
+        },
+        {
+          "name": "identity_audit_survives_deletion",
+          "version": "20260812070000"
+        },
+        {
+          "name": "identity_membership_guard_sees_the_real_caller",
+          "version": "20260812080000"
+        },
+        {
+          "name": "rider_rpcs_consult_the_gate",
+          "version": "20260812090000"
+        },
+        {
+          "name": "active_delivery_checks_the_session_first",
+          "version": "20260812100000"
+        },
+        {
+          "name": "assign_order_rider_uses_the_gate",
+          "version": "20260812110000"
+        },
+        {
+          "name": "business_operations_hours_and_delivery_zones",
+          "version": "20260812200000"
+        },
+        {
+          "name": "business_operations_resolution",
+          "version": "20260812210000"
+        },
+        {
+          "name": "business_operations_checkout_enforcement",
+          "version": "20260812220000"
+        },
+        {
+          "name": "business_operations_panel_rpcs",
+          "version": "20260812230000"
+        },
+        {
+          "name": "customer_address_declared_neighborhood",
+          "version": "20260812240000"
+        },
+        {
+          "name": "pos_last_unit_keeps_availability_contract",
+          "version": "20260813010000"
+        },
+        {
+          "name": "checkout_pro_carries_customer_notes",
+          "version": "20260813020000"
+        },
+        {
+          "name": "public_tracking_restores_terminal_window",
+          "version": "20260813030000"
+        },
+        {
+          "name": "public_tracking_publishes_gps_quality",
+          "version": "20260814010000"
+        },
+        {
+          "name": "daily_reconciliation_uses_business_timezone",
+          "version": "20260814020000"
+        },
+        {
+          "name": "identity_requires_registered_session",
+          "version": "20260814030000"
+        },
+        {
+          "name": "paid_orders_require_payment_refund",
+          "version": "20260814040000"
+        },
+        {
+          "name": "back_office_reads_exclude_riders",
+          "version": "20260814050000"
+        },
+        {
+          "name": "commercial_contract_remediation_is_private",
+          "version": "20260814060000"
+        },
+        {
+          "name": "rider_active_order_capacity",
+          "version": "20260815010000"
+        },
+        {
+          "name": "rider_order_offers",
+          "version": "20260815020000"
+        },
+        {
+          "name": "production_qa_surface_remediation",
+          "version": "20260816120000"
+        },
+        {
+          "name": "fiscal_profile_events_least_privilege",
+          "version": "20260816121000"
+        },
+        {
+          "name": "security_definer_anon_least_privilege",
+          "version": "20260816122000"
+        },
+        {
+          "name": "business_access_requests",
+          "version": "20260817010000"
+        },
+        {
+          "name": "access_request_review_contract",
+          "version": "20260817020000"
+        },
+        {
+          "name": "reviewer_identity_can_be_deleted",
+          "version": "20260817030000"
+        },
+        {
+          "name": "membership_guard_allows_account_deletion",
+          "version": "20260817040000"
+        },
+        {
+          "name": "optional_verified_product_assets",
+          "version": "20260818020000"
+        },
+        {
+          "name": "products_sold_as_pack",
+          "version": "20260818030000"
+        },
+        {
+          "name": "gondola_beverage_taxonomy",
+          "version": "20260818040000"
+        },
+        {
+          "name": "commercial_batch_image_optional_gate",
+          "version": "20260819050000"
+        },
+        {
+          "name": "commercial_product_publication_toggle",
+          "version": "20260819060000"
+        },
+        {
+          "name": "tracking_recovery_keeps_order_revision",
+          "version": "20260822210000"
+        },
+        {
+          "name": "catalog_staging_speaks_gondola_taxonomy",
+          "version": "20260825160000"
+        },
+        {
+          "name": "alcohol_policy_readable",
+          "version": "20260826120000"
+        },
+        {
+          "name": "alcohol_con_foto_visible_sin_venta",
+          "version": "20260826140000"
+        },
+        {
+          "name": "catalogo_multirubro",
+          "version": "20260828120000"
+        },
+        {
+          "name": "horario_24x7_representable",
+          "version": "20260828130000"
+        },
+        {
+          "name": "alta_propuesta_comercial",
+          "version": "20260828140000"
+        },
+        {
+          "name": "mercadopago_seller_oauth",
+          "version": "20260905063914"
+        },
+        {
+          "name": "mercadopago_clean_seller_binding",
+          "version": "20260905195357"
+        },
+        {
+          "name": "astra_p2_webhook_retry_and_refund_identity",
+          "version": "20260908070341"
+        },
+        {
+          "name": "current_payment_authority_and_refund_identity",
+          "version": "20260908164550"
+        },
+        {
+          "name": "a1_attempt_authority_expand_v2",
+          "version": "20260908190758"
+        },
+        {
+          "name": "a1_a4_durable_contract_control_v3",
+          "version": "20260909011239"
+        },
+        {
+          "name": "a1_a4_release_interlock_v5",
+          "version": "20260909050330"
+        },
+        {
+          "name": "commerce_v3_product_draft_details",
+          "version": "20260913011340"
+        },
+        {
+          "name": "merchant_availability_separate_from_stock",
+          "version": "20260918010000"
+        },
+        {
+          "name": "business_self_delivery_and_finished_today",
+          "version": "20260919120000"
+        },
+        {
+          "name": "customer_address_json_declared_neighborhood",
+          "version": "20260920120000"
+        },
+        {
+          "name": "saved_address_neighborhood_order_contract",
+          "version": "20260920130000"
+        },
+        {
+          "name": "commercial_pilot_manual_payment",
+          "version": "20260923064927"
+        },
+        {
+          "name": "pilot_rider_shared_availability",
+          "version": "20260923071557"
+        },
+        {
+          "name": "revision_conflicts_answer_409",
+          "version": "20260924200000"
+        },
+        {
+          "name": "pause_keeps_ordering_configuration",
+          "version": "20260925085000"
+        },
+        {
+          "name": "cp_qa_window_and_private_product_columns",
+          "version": "20260925090000"
+        },
+        {
+          "name": "mercadopago_offered_only_with_connected_seller",
+          "version": "20260925170000"
+        },
+        {
+          "name": "mercadopago_seller_cannot_charge_alert",
+          "version": "20260925220000"
+        },
+        {
+          "name": "mercadopago_operator_switch_per_business",
+          "version": "20260925223000"
+        },
+        {
+          "name": "local_print_agent",
+          "version": "20260926160000"
+        },
+        {
+          "name": "catalog_pending_stock_and_cp_drafts",
+          "version": "20260927004045"
+        },
+        {
+          "name": "catalog_draft_juice_taxonomy",
+          "version": "20260927004347"
+        },
+        {
+          "name": "cp_published_requires_approved_image",
+          "version": "20260927005628"
+        },
+        {
+          "name": "catalog_image_storage_pipeline",
+          "version": "20260927175058"
+        },
+        {
+          "name": "store_opening_readiness",
+          "version": "20260928150000"
+        },
+        {
+          "name": "publish_sets_merchant_intent",
+          "version": "20260928160000"
+        },
+        {
+          "name": "identity_and_alcohol_invariants_null_safe",
+          "version": "20260928170000"
+        },
+        {
+          "name": "fiscal_core_receiver_vat_condition",
+          "version": "20260928180000"
+        },
+        {
+          "name": "fiscal_core_intent_convergence",
+          "version": "20260928180100"
+        },
+        {
+          "name": "fiscal_core_worker_fencing_and_reconciliation",
+          "version": "20260928180200"
+        },
+        {
+          "name": "fiscal_core_state_machines",
+          "version": "20260928180300"
+        },
+        {
+          "name": "fiscal_core_security_hardening",
+          "version": "20260928180400"
+        },
+        {
+          "name": "fiscal_core_la_taba_server_channel_guards",
+          "version": "20260928180500"
+        },
+        {
+          "name": "fiscal_core_online_order_source_snapshots",
+          "version": "20260928180600"
+        },
+        {
+          "name": "commercial_fiscal_policy",
+          "version": "20260928180700"
+        },
+        {
+          "name": "commercial_order_fiscal_adapter",
+          "version": "20260928180800"
+        },
+        {
+          "name": "caja_clara_pos_integration",
+          "version": "20260929120000"
+        }
+      ]
+    },
+    "abuse": {
+      "ok": true,
+      "guard_doors": {
+        "create_checkout_session": false,
+        "create_order_with_items": false
+      },
+      "guard_function_exists": false,
+      "readiness_function_exists": true
+    },
+    "readiness": {
+      "ok": false,
+      "error": "MGMT_HTTP_400:read-only-sql:{\"message\":\"Failed to run sql query: ERROR: 42501: permission denied for function get_store_opening_readiness\\n\"}"
+    },
+    "deployedFunctions": {
+      "ok": true,
+      "functions": [
+        {
+          "slug": "mercadopago-cancel-payment",
+          "status": "ACTIVE",
+          "verify_jwt": true,
+          "version": 6,
+          "bundle_sha256": "feec5329eb2c5d5da0ac20c0dfb6de87973dce2ffa308ea502f3e53b5ef40e10",
+          "updated_at": 1790376753100
+        },
+        {
+          "slug": "mercadopago-checkout-status",
+          "status": "ACTIVE",
+          "verify_jwt": false,
+          "version": 6,
+          "bundle_sha256": "1a1a8f9d70283f28b29ffc85a3c16b89ff1fb21de13d0c99ef15fc4f630f0809",
+          "updated_at": 1790376753100
+        },
+        {
+          "slug": "mercadopago-connect",
+          "status": "ACTIVE",
+          "verify_jwt": false,
+          "version": 6,
+          "bundle_sha256": "a7b129deb2b18acea5273947e73ca0f98d7f64ba7ea5f230f448a1f8b89ca126",
+          "updated_at": 1790376753100
+        },
+        {
+          "slug": "mercadopago-create-checkout-session",
+          "status": "ACTIVE",
+          "verify_jwt": false,
+          "version": 6,
+          "bundle_sha256": "cbfc9592b12a77d38c59e8c944266cb721be6621d76b2ae6bd1b8ff6fb530a3c",
+          "updated_at": 1790376753100
+        },
+        {
+          "slug": "mercadopago-create-preference",
+          "status": "ACTIVE",
+          "verify_jwt": false,
+          "version": 6,
+          "bundle_sha256": "6291db6bf82c9ab6b2dcc5c60d101acea6961c11d729163098f9acdf42172d2b",
+          "updated_at": 1790376753100
+        },
+        {
+          "slug": "mercadopago-oauth-callback",
+          "status": "ACTIVE",
+          "verify_jwt": false,
+          "version": 6,
+          "bundle_sha256": "e72b2076b63c205033c6299879970329e3800f97bbd0c32502d31ea8343359ea",
+          "updated_at": 1790376753100
+        },
+        {
+          "slug": "mercadopago-payment-worker",
+          "status": "ACTIVE",
+          "verify_jwt": false,
+          "version": 6,
+          "bundle_sha256": "cd108de63e3d9b2c74f64e2aae97a62ead4e5c92c967cf8b6d64b0ba785b9a3d",
+          "updated_at": 1790376753100
+        },
+        {
+          "slug": "mercadopago-refund",
+          "status": "ACTIVE",
+          "verify_jwt": true,
+          "version": 6,
+          "bundle_sha256": "420908c336c69def808356f19b49045598676a7726eb218ca333e912ce2559c5",
+          "updated_at": 1790376753100
+        },
+        {
+          "slug": "mercadopago-webhook",
+          "status": "ACTIVE",
+          "verify_jwt": false,
+          "version": 6,
+          "bundle_sha256": "8d60097d67d684365907efc358d80e496189fce6551a255b10e156854e5452c3",
+          "updated_at": 1790376753100
+        },
+        {
+          "slug": "print-agent-gateway",
+          "status": "ACTIVE",
+          "verify_jwt": false,
+          "version": 2,
+          "bundle_sha256": "67ef3678e3d373464019fa8bf6b20da73bea2955203e133a1e5eaa74aafea1e6",
+          "updated_at": 1790458988073
+        },
+        {
+          "slug": "catalog-image-manager",
+          "status": "ACTIVE",
+          "verify_jwt": true,
+          "version": 3,
+          "bundle_sha256": "7122962d50139953286a02eb7d96d3c743185d3cd8a8eea6eb3e0c95a4f46592",
+          "updated_at": 1790575110254
+        },
+        {
+          "slug": "team-invitation",
+          "status": "ACTIVE",
+          "verify_jwt": false,
+          "version": 2,
+          "bundle_sha256": "3b3d5367643e242cf0810925daca87e45f3e97c764511749b594aefbdc72d5a8",
+          "updated_at": 1790616531546
+        },
+        {
+          "slug": "fiscal-artifact-access",
+          "status": "ACTIVE",
+          "verify_jwt": true,
+          "version": 1,
+          "bundle_sha256": "a3ba8ba74426d1cf186d434052916d2d63e617576c350392d41557bd44631840",
+          "updated_at": 1790647224439
+        }
+      ]
+    },
+    "repoMigrations": {
+      "ok": true,
+      "files": [
+        {
+          "version": "20260531030000",
+          "name": "la_taba_phase1_orders"
+        },
+        {
+          "version": "20260531040000",
+          "name": "la_taba_phase1_hardening"
+        },
+        {
+          "version": "20260601205707",
+          "name": "operational_orders_v1"
+        },
+        {
+          "version": "20260725030000",
+          "name": "taba_production_orders"
+        },
+        {
+          "version": "20260725050000",
+          "name": "tracking_rider_privacy"
+        },
+        {
+          "version": "20260725060000",
+          "name": "alcohol_reservations_abuse"
+        },
+        {
+          "version": "20260725070000",
+          "name": "catalog_category_authority"
+        },
+        {
+          "version": "20260725080000",
+          "name": "rider_assignment_tracking_gate"
+        },
+        {
+          "version": "20260725090000",
+          "name": "delivery_handoff_code"
+        },
+        {
+          "version": "20260725100000",
+          "name": "tracking_handoff_recovery"
+        },
+        {
+          "version": "20260725110000",
+          "name": "catalog_publication_authority"
+        },
+        {
+          "version": "20260725120000",
+          "name": "business_contact_authority"
+        },
+        {
+          "version": "20260725130000",
+          "name": "fix_tracking_token_regex"
+        },
+        {
+          "version": "20260728090000",
+          "name": "customer_profiles_addresses"
+        },
+        {
+          "version": "20260729150000",
+          "name": "customer_profile_completion"
+        },
+        {
+          "version": "20260729190000",
+          "name": "customer_address_street_number_required"
+        },
+        {
+          "version": "20260729203000",
+          "name": "public_tracking_terminal_visibility"
+        },
+        {
+          "version": "20260731230000",
+          "name": "staging_qa_fixture_catalog"
+        },
+        {
+          "version": "20260731231000",
+          "name": "staging_qa_product_verification"
+        },
+        {
+          "version": "20260801020000",
+          "name": "order_revision_and_event_sequence"
+        },
+        {
+          "version": "20260801040000",
+          "name": "rider_gps_tracking_gate2"
+        },
+        {
+          "version": "20260802090000",
+          "name": "mercadopago_checkout_pro_foundation"
+        },
+        {
+          "version": "20260802093000",
+          "name": "mercadopago_checkout_pro_lifecycle"
+        },
+        {
+          "version": "20260802094000",
+          "name": "mercadopago_rate_limits"
+        },
+        {
+          "version": "20260802100000",
+          "name": "rider_delivery_server_contracts"
+        },
+        {
+          "version": "20260802101000",
+          "name": "rider_delivery_legacy_start_revocation"
+        },
+        {
+          "version": "20260802102000",
+          "name": "rider_delivery_legacy_claim_gps_revocation"
+        },
+        {
+          "version": "20260802103000",
+          "name": "rider_queue_read_lock_mode"
+        },
+        {
+          "version": "20260802104000",
+          "name": "rider_location_receipt_revision"
+        },
+        {
+          "version": "20260802160000",
+          "name": "business_windows_scanner_fiscal"
+        },
+        {
+          "version": "20260802170000",
+          "name": "fiscal_document_closure"
+        },
+        {
+          "version": "20260802171000",
+          "name": "fiscal_document_closure_hardening"
+        },
+        {
+          "version": "20260802180000",
+          "name": "production_operations_control_plane"
+        },
+        {
+          "version": "20260802200000",
+          "name": "durable_offline_packing"
+        },
+        {
+          "version": "20260803120000",
+          "name": "mercadopago_staging_worker_scheduler"
+        },
+        {
+          "version": "20260803140000",
+          "name": "payment_recovery_p0"
+        },
+        {
+          "version": "20260804090000",
+          "name": "business_operations_panel"
+        },
+        {
+          "version": "20260804093000",
+          "name": "reconcile_business_operations_panel_version_collision"
+        },
+        {
+          "version": "20260805120000",
+          "name": "fiscal_homologation_authorization_split"
+        },
+        {
+          "version": "20260806140000",
+          "name": "mercadopago_provider_snapshot_contract"
+        },
+        {
+          "version": "20260806150000",
+          "name": "mercadopago_order_delivery_address_snapshot"
+        },
+        {
+          "version": "20260806160000",
+          "name": "order_qa_origin_classification"
+        },
+        {
+          "version": "20260806170000",
+          "name": "order_payment_modality_integrity"
+        },
+        {
+          "version": "20260806180000",
+          "name": "checkout_expiry_stock_recovery"
+        },
+        {
+          "version": "20260806190000",
+          "name": "operational_pipeline_projection"
+        },
+        {
+          "version": "20260806200000",
+          "name": "qa_orders_do_not_ring_the_panel"
+        },
+        {
+          "version": "20260806210000",
+          "name": "manual_qa_reclassification"
+        },
+        {
+          "version": "20260806220000",
+          "name": "rider_canonical_claim_excludes_qa"
+        },
+        {
+          "version": "20260806230000",
+          "name": "lock_down_classification_triggers"
+        },
+        {
+          "version": "20260806240000",
+          "name": "taba2_combo_catalog_contract"
+        },
+        {
+          "version": "20260806250000",
+          "name": "taba2_combo_checkout_pricing"
+        },
+        {
+          "version": "20260806260000",
+          "name": "taba2_combo_preference_lines"
+        },
+        {
+          "version": "20260806270000",
+          "name": "taba2_order_total_with_discount"
+        },
+        {
+          "version": "20260807090000",
+          "name": "business_panel_contract_hardening"
+        },
+        {
+          "version": "20260807100000",
+          "name": "order_events_type_in_business_commands"
+        },
+        {
+          "version": "20260807155000",
+          "name": "rider_map_location_contract_reconciliation"
+        },
+        {
+          "version": "20260807160000",
+          "name": "checkout_pro_delivery_coordinates"
+        },
+        {
+          "version": "20260807170000",
+          "name": "pickup_point_provenance"
+        },
+        {
+          "version": "20260808190000",
+          "name": "delivery_location_confirmation"
+        },
+        {
+          "version": "20260808191000",
+          "name": "checkout_pro_delivery_location_confirmation"
+        },
+        {
+          "version": "20260809050000",
+          "name": "commercial_catalog_price_and_stock_batch"
+        },
+        {
+          "version": "20260809060000",
+          "name": "commercial_price_and_stock_contract"
+        },
+        {
+          "version": "20260809070000",
+          "name": "commercial_batch_price_status"
+        },
+        {
+          "version": "20260809180000",
+          "name": "checkout_provider_truth_sweep"
+        },
+        {
+          "version": "20260809190000",
+          "name": "operational_alerts_intake_and_dispatch"
+        },
+        {
+          "version": "20260809200000",
+          "name": "operator_reconcile_without_payment_id"
+        },
+        {
+          "version": "20260809210000",
+          "name": "recover_paid_checkout_order"
+        },
+        {
+          "version": "20260809220000",
+          "name": "resolve_security_review"
+        },
+        {
+          "version": "20260810120000",
+          "name": "autonomous_operational_alert_evaluation"
+        },
+        {
+          "version": "20260810130000",
+          "name": "operational_health_surface"
+        },
+        {
+          "version": "20260810140000",
+          "name": "scheduler_stalled_needs_history"
+        },
+        {
+          "version": "20260810150000",
+          "name": "scheduler_watchdog"
+        },
+        {
+          "version": "20260811020000",
+          "name": "public_tracking_canonical_capture_order"
+        },
+        {
+          "version": "20260812010000",
+          "name": "identity_core_model"
+        },
+        {
+          "version": "20260812020000",
+          "name": "identity_sessions_and_audit"
+        },
+        {
+          "version": "20260812030000",
+          "name": "identity_authorization_gate"
+        },
+        {
+          "version": "20260812040000",
+          "name": "identity_session_lifecycle"
+        },
+        {
+          "version": "20260812050000",
+          "name": "identity_invitations"
+        },
+        {
+          "version": "20260812060000",
+          "name": "identity_admin_surface"
+        },
+        {
+          "version": "20260812070000",
+          "name": "identity_audit_survives_deletion"
+        },
+        {
+          "version": "20260812080000",
+          "name": "identity_membership_guard_sees_the_real_caller"
+        },
+        {
+          "version": "20260812090000",
+          "name": "rider_rpcs_consult_the_gate"
+        },
+        {
+          "version": "20260812100000",
+          "name": "active_delivery_checks_the_session_first"
+        },
+        {
+          "version": "20260812110000",
+          "name": "assign_order_rider_uses_the_gate"
+        },
+        {
+          "version": "20260812200000",
+          "name": "business_operations_hours_and_delivery_zones"
+        },
+        {
+          "version": "20260812210000",
+          "name": "business_operations_resolution"
+        },
+        {
+          "version": "20260812220000",
+          "name": "business_operations_checkout_enforcement"
+        },
+        {
+          "version": "20260812230000",
+          "name": "business_operations_panel_rpcs"
+        },
+        {
+          "version": "20260812240000",
+          "name": "customer_address_declared_neighborhood"
+        },
+        {
+          "version": "20260813010000",
+          "name": "pos_last_unit_keeps_availability_contract"
+        },
+        {
+          "version": "20260813020000",
+          "name": "checkout_pro_carries_customer_notes"
+        },
+        {
+          "version": "20260813030000",
+          "name": "public_tracking_restores_terminal_window"
+        },
+        {
+          "version": "20260814010000",
+          "name": "public_tracking_publishes_gps_quality"
+        },
+        {
+          "version": "20260814020000",
+          "name": "daily_reconciliation_uses_business_timezone"
+        },
+        {
+          "version": "20260814030000",
+          "name": "identity_requires_registered_session"
+        },
+        {
+          "version": "20260814040000",
+          "name": "paid_orders_require_payment_refund"
+        },
+        {
+          "version": "20260814050000",
+          "name": "back_office_reads_exclude_riders"
+        },
+        {
+          "version": "20260814060000",
+          "name": "commercial_contract_remediation_is_private"
+        },
+        {
+          "version": "20260815010000",
+          "name": "rider_active_order_capacity"
+        },
+        {
+          "version": "20260815020000",
+          "name": "rider_order_offers"
+        },
+        {
+          "version": "20260816120000",
+          "name": "production_qa_surface_remediation"
+        },
+        {
+          "version": "20260816121000",
+          "name": "fiscal_profile_events_least_privilege"
+        },
+        {
+          "version": "20260816122000",
+          "name": "security_definer_anon_least_privilege"
+        },
+        {
+          "version": "20260817010000",
+          "name": "business_access_requests"
+        },
+        {
+          "version": "20260817020000",
+          "name": "access_request_review_contract"
+        },
+        {
+          "version": "20260817030000",
+          "name": "reviewer_identity_can_be_deleted"
+        },
+        {
+          "version": "20260817040000",
+          "name": "membership_guard_allows_account_deletion"
+        },
+        {
+          "version": "20260818020000",
+          "name": "optional_verified_product_assets"
+        },
+        {
+          "version": "20260818030000",
+          "name": "products_sold_as_pack"
+        },
+        {
+          "version": "20260818040000",
+          "name": "gondola_beverage_taxonomy"
+        },
+        {
+          "version": "20260819050000",
+          "name": "commercial_batch_image_optional_gate"
+        },
+        {
+          "version": "20260819060000",
+          "name": "commercial_product_publication_toggle"
+        },
+        {
+          "version": "20260822210000",
+          "name": "tracking_recovery_keeps_order_revision"
+        },
+        {
+          "version": "20260825160000",
+          "name": "catalog_staging_speaks_gondola_taxonomy"
+        },
+        {
+          "version": "20260826120000",
+          "name": "alcohol_policy_readable"
+        },
+        {
+          "version": "20260826140000",
+          "name": "alcohol_con_foto_visible_sin_venta"
+        },
+        {
+          "version": "20260828120000",
+          "name": "catalogo_multirubro"
+        },
+        {
+          "version": "20260828130000",
+          "name": "horario_24x7_representable"
+        },
+        {
+          "version": "20260828140000",
+          "name": "alta_propuesta_comercial"
+        },
+        {
+          "version": "20260905063914",
+          "name": "mercadopago_seller_oauth"
+        },
+        {
+          "version": "20260905195357",
+          "name": "mercadopago_clean_seller_binding"
+        },
+        {
+          "version": "20260908070341",
+          "name": "astra_p2_webhook_retry_and_refund_identity"
+        },
+        {
+          "version": "20260908164550",
+          "name": "current_payment_authority_and_refund_identity"
+        },
+        {
+          "version": "20260908190758",
+          "name": "a1_attempt_authority_expand_v2"
+        },
+        {
+          "version": "20260909011239",
+          "name": "a1_a4_durable_contract_control_v3"
+        },
+        {
+          "version": "20260909050330",
+          "name": "a1_a4_release_interlock_v5"
+        },
+        {
+          "version": "20260913011340",
+          "name": "commerce_v3_product_draft_details"
+        },
+        {
+          "version": "20260918010000",
+          "name": "merchant_availability_separate_from_stock"
+        },
+        {
+          "version": "20260919120000",
+          "name": "business_self_delivery_and_finished_today"
+        },
+        {
+          "version": "20260920120000",
+          "name": "customer_address_json_declared_neighborhood"
+        },
+        {
+          "version": "20260920130000",
+          "name": "saved_address_neighborhood_order_contract"
+        },
+        {
+          "version": "20260923064927",
+          "name": "commercial_pilot_manual_payment"
+        },
+        {
+          "version": "20260923071557",
+          "name": "pilot_rider_shared_availability"
+        },
+        {
+          "version": "20260924200000",
+          "name": "revision_conflicts_answer_409"
+        },
+        {
+          "version": "20260925085000",
+          "name": "pause_keeps_ordering_configuration"
+        },
+        {
+          "version": "20260925090000",
+          "name": "cp_qa_window_and_private_product_columns"
+        },
+        {
+          "version": "20260925170000",
+          "name": "mercadopago_offered_only_with_connected_seller"
+        },
+        {
+          "version": "20260925220000",
+          "name": "mercadopago_seller_cannot_charge_alert"
+        },
+        {
+          "version": "20260925223000",
+          "name": "mercadopago_operator_switch_per_business"
+        },
+        {
+          "version": "20260926160000",
+          "name": "local_print_agent"
+        },
+        {
+          "version": "20260927004045",
+          "name": "catalog_pending_stock_and_cp_drafts"
+        },
+        {
+          "version": "20260927004347",
+          "name": "catalog_draft_juice_taxonomy"
+        },
+        {
+          "version": "20260927005628",
+          "name": "cp_published_requires_approved_image"
+        },
+        {
+          "version": "20260927175058",
+          "name": "catalog_image_storage_pipeline"
+        },
+        {
+          "version": "20260928150000",
+          "name": "store_opening_readiness"
+        },
+        {
+          "version": "20260928160000",
+          "name": "publish_sets_merchant_intent"
+        },
+        {
+          "version": "20260928170000",
+          "name": "identity_and_alcohol_invariants_null_safe"
+        },
+        {
+          "version": "20260928180000",
+          "name": "fiscal_core_receiver_vat_condition"
+        },
+        {
+          "version": "20260928180100",
+          "name": "fiscal_core_intent_convergence"
+        },
+        {
+          "version": "20260928180200",
+          "name": "fiscal_core_worker_fencing_and_reconciliation"
+        },
+        {
+          "version": "20260928180300",
+          "name": "fiscal_core_state_machines"
+        },
+        {
+          "version": "20260928180400",
+          "name": "fiscal_core_security_hardening"
+        },
+        {
+          "version": "20260928180500",
+          "name": "fiscal_core_la_taba_server_channel_guards"
+        },
+        {
+          "version": "20260928180600",
+          "name": "fiscal_core_online_order_source_snapshots"
+        },
+        {
+          "version": "20260928180700",
+          "name": "commercial_fiscal_policy"
+        },
+        {
+          "version": "20260928180800",
+          "name": "commercial_order_fiscal_adapter"
+        },
+        {
+          "version": "20260929120000",
+          "name": "caja_clara_pos_integration"
+        },
+        {
+          "version": "20261001010000",
+          "name": "delivery_location_guard_runs_as_owner"
+        },
+        {
+          "version": "20261001180000",
+          "name": "order_intake_guard"
+        },
+        {
+          "version": "20261001190000",
+          "name": "order_cancel_returns_stock_and_republishes"
+        },
+        {
+          "version": "20261001190500",
+          "name": "cancel_order_no_op_when_already_cancelled"
+        },
+        {
+          "version": "20261001191000",
+          "name": "unattended_manual_orders_expire"
+        },
+        {
+          "version": "20261001192000",
+          "name": "customer_cancels_own_unattended_order"
+        },
+        {
+          "version": "20261001193000",
+          "name": "order_public_code_grows_past_9999"
+        },
+        {
+          "version": "20261001194000",
+          "name": "pickup_order_replay_is_side_effect_free"
+        },
+        {
+          "version": "20261001195000",
+          "name": "release_or_reassign_delivery_not_client_callable"
+        },
+        {
+          "version": "20261001200000",
+          "name": "mercadopago_snapshot_keeps_reservation_and_pins_payment"
+        },
+        {
+          "version": "20261001200100",
+          "name": "paid_checkout_finalization_carries_age_and_closing_mark"
+        },
+        {
+          "version": "20261001200200",
+          "name": "checkout_session_completed_is_terminal"
+        },
+        {
+          "version": "20261001200300",
+          "name": "mercadopago_orders_age_confirmation_backfill"
+        },
+        {
+          "version": "20261001203000",
+          "name": "manual_review_checkout_keeps_stock_exact"
+        },
+        {
+          "version": "20261001204000",
+          "name": "stuck_refund_resolution_and_review_refund"
+        },
+        {
+          "version": "20261001205000",
+          "name": "cancellation_recorders_terminal_and_dead_release"
+        },
+        {
+          "version": "20261001210000",
+          "name": "catalog_stock_authority"
+        },
+        {
+          "version": "20261001213000",
+          "name": "business_service_status"
+        },
+        {
+          "version": "20261001214000",
+          "name": "delivery_rules_and_enforcement_lock"
+        },
+        {
+          "version": "20261001215000",
+          "name": "opening_gate_requires_rules"
+        },
+        {
+          "version": "20261001216000",
+          "name": "verified_business_delivery_needs_coverage"
+        },
+        {
+          "version": "20261001220000",
+          "name": "scheduler_inventory_and_history_retention"
+        },
+        {
+          "version": "20261001220500",
+          "name": "operational_alerts_stay_truthful"
+        },
+        {
+          "version": "20261001221000",
+          "name": "ecommerce_health"
+        },
+        {
+          "version": "20261001221500",
+          "name": "order_trace"
+        },
+        {
+          "version": "20261001222000",
+          "name": "paid_without_order_alert_measures_from_approval"
+        },
+        {
+          "version": "20261001223000",
+          "name": "identity_session_close_and_invitation_guards"
+        },
+        {
+          "version": "20261001223500",
+          "name": "combo_rpcs_follow_catalog_visibility"
+        },
+        {
+          "version": "20261001224000",
+          "name": "business_direct_write_audit_and_currency_lock"
+        },
+        {
+          "version": "20261001224500",
+          "name": "order_money_snapshot_immutable"
+        },
+        {
+          "version": "20261001225000",
+          "name": "order_items_freeze_sku"
+        },
+        {
+          "version": "20261001230000",
+          "name": "payment_request_traces_purge_and_rejected_webhook_scope"
+        },
+        {
+          "version": "20261002030000",
+          "name": "order_lines_reject_null_quantity"
+        }
+      ],
+      "unrecognized": []
+    },
+    "repoFunctions": {
+      "ok": true,
+      "functions": [
+        {
+          "slug": "catalog-image-manager",
+          "verify_jwt": true,
+          "declared_in_config": true,
+          "source_committed_at": "2026-09-28T05:10:09.000Z",
+          "source_files": 3
+        },
+        {
+          "slug": "fiscal-artifact-access",
+          "verify_jwt": true,
+          "declared_in_config": false,
+          "source_committed_at": "2026-08-03T01:48:53.000Z",
+          "source_files": 1
+        },
+        {
+          "slug": "mercadopago-cancel-payment",
+          "verify_jwt": true,
+          "declared_in_config": true,
+          "source_committed_at": "2026-10-02T09:31:07.000Z",
+          "source_files": 7
+        },
+        {
+          "slug": "mercadopago-checkout-status",
+          "verify_jwt": false,
+          "declared_in_config": true,
+          "source_committed_at": "2026-10-02T09:31:07.000Z",
+          "source_files": 7
+        },
+        {
+          "slug": "mercadopago-connect",
+          "verify_jwt": false,
+          "declared_in_config": true,
+          "source_committed_at": "2026-10-02T09:31:07.000Z",
+          "source_files": 6
+        },
+        {
+          "slug": "mercadopago-create-checkout-session",
+          "verify_jwt": false,
+          "declared_in_config": true,
+          "source_committed_at": "2026-10-02T09:31:08.000Z",
+          "source_files": 7
+        },
+        {
+          "slug": "mercadopago-create-preference",
+          "verify_jwt": false,
+          "declared_in_config": true,
+          "source_committed_at": "2026-10-02T09:31:08.000Z",
+          "source_files": 7
+        },
+        {
+          "slug": "mercadopago-oauth-callback",
+          "verify_jwt": false,
+          "declared_in_config": true,
+          "source_committed_at": "2026-10-02T09:31:07.000Z",
+          "source_files": 6
+        },
+        {
+          "slug": "mercadopago-payment-worker",
+          "verify_jwt": false,
+          "declared_in_config": true,
+          "source_committed_at": "2026-10-02T09:31:09.000Z",
+          "source_files": 8
+        },
+        {
+          "slug": "mercadopago-refund",
+          "verify_jwt": true,
+          "declared_in_config": true,
+          "source_committed_at": "2026-10-02T09:31:09.000Z",
+          "source_files": 8
+        },
+        {
+          "slug": "mercadopago-webhook",
+          "verify_jwt": false,
+          "declared_in_config": true,
+          "source_committed_at": "2026-10-02T09:31:07.000Z",
+          "source_files": 10
+        },
+        {
+          "slug": "print-agent-gateway",
+          "verify_jwt": false,
+          "declared_in_config": true,
+          "source_committed_at": "2026-09-26T17:05:51.000Z",
+          "source_files": 2
+        },
+        {
+          "slug": "team-invitation",
+          "verify_jwt": false,
+          "declared_in_config": true,
+          "source_committed_at": "2026-09-28T17:02:24.000Z",
+          "source_files": 2
+        }
+      ]
+    },
+    "paymentCertification": {
+      "ok": true,
+      "path": "docs/ecommerce-hardening/payment-certification.json",
+      "opening_decision": null,
+      "entries": [
+        {
+          "method": "manual",
+          "environment": "staging",
+          "certified": true,
+          "evidence": "artifacts/taba-e2e-cert-20261001-022224",
+          "evidence_exists": true,
+          "evidence_tracked": true,
+          "date": "2026-10-01",
+          "limits": "Covers one cash delivery order end to end on staging (customer, business panel contract, rider, tracking, delivery code, idempotency, lost response, RLS, stock) at main 1358188 plus fix 62f8566, with a 158-migration ledger. It does not cover: Mercado Pago, the catalog import and publication pipeline, controlled production, or migration 20261001180000 (order intake guard), which was written after the run, so the guard is not covered by this evidence.",
+          "reason": null
+        },
+        {
+          "method": "mercadopago",
+          "environment": "production",
+          "certified": false,
+          "evidence": null,
+          "evidence_exists": false,
+          "evidence_tracked": false,
+          "date": "2026-10-01",
+          "limits": "Not certified in any environment. The sandbox approval is blocked at the provider (WCS-51579) and needs human test accounts, and the staging certification report of 2026-10-01 records that the seller of the real store is not connected. Certifying it takes an approved sandbox payment and then the controlled real payment of docs/REAL-PAYMENT-CANARY-RUNBOOK.md.",
+          "reason": "sandbox approval blocked at provider (WCS-51579) and requires human test accounts"
+        }
+      ]
+    },
+    "findingsRegister": {
+      "ok": true,
+      "path": "docs/ecommerce-hardening/findings-register.json",
+      "findings": [
+        {
+          "id": "STK-02",
+          "severity": "P1",
+          "title": "Panel stock edit overwrites products.stock with the counted number: reserved units ignored, no concurrency check, no ledger row; this oversells",
+          "status": "fixed",
+          "fixed_by": "142451e · supabase/migrations/20261001210000_catalog_stock_authority.sql",
+          "notes": "The count sent by the sheet, the plan and the product form is translated like the Caja Clara count (available = max(count - reserved, 0), ledger row, stock conflict when the count does not cover the reserved units), with an optional expected_stock guard (PT409). The Panel scanner count sends only a difference against the available figure and cannot be translated: while the product has reserved units it is refused (22023, STOCK_COUNT_HAS_RESERVED) and points to the catalog count. Client follow-ups, not blocking: the Panel still prefills the count field with the available figure (errs on the safe side) and does not send expected_stock; stage_catalog_products (import_catalog_batch) still writes an absolute stock.",
+          "aliases": [
+            "CAT-05"
+          ]
+        },
+        {
+          "id": "DIAG-01",
+          "severity": "P1",
+          "title": "No order trace contract: diagnosing one order needs service_role SQL across ~15 tables with PII",
+          "status": "fixed",
+          "fixed_by": "a39db9a · supabase/migrations/20261001221500_order_trace.sql",
+          "notes": "get_order_trace (owner/admin/staff of the business) and get_order_trace_service (service_role): identifiers, state, ordered timeline and gaps, with no PII by construction.",
+          "aliases": []
+        },
+        {
+          "id": "EDGE-01",
+          "severity": "P1",
+          "title": "A non-2xx on the merchant-order lookup turns a legitimate approved payment into a permanent security review with no recovery or refund path",
+          "status": "fixed",
+          "fixed_by": "5d0c366 (the failed read no longer records an empty preference) · 12f79b8 · 18dcb08 (a charge in review can be recovered into an order or refunded)",
+          "notes": "Closed in two halves. Database (18dcb08): an approved payment parked in security review without an order can be recovered into an order or refunded. Edge (5d0c366): a failed merchant-order read raises instead of recording an empty preference, so the false preference_mismatch is no longer produced. Residuals, by decision: a payment that has neither an order id nor a preference id is still recorded with an empty preference and goes to manual review (now with a recovery and a refund path); a permanent merchant-order failure (404) retries to dead_letter, which raises the CRITICAL queue alert, instead of going to manual review. Provider simulated: not exercised against real Mercado Pago.",
+          "aliases": []
+        },
+        {
+          "id": "EDGE-03",
+          "severity": "P1",
+          "title": "Production has no steady-state switch for real payments: every production preference needs the 'smoke' secret that runbooks and tooling require to be absent, and the failure happens after stock is reserved",
+          "status": "external_gate",
+          "fixed_by": "4b3f40f (the creation gate is evaluated before stock is reserved; one definition of the gate)",
+          "notes": "SOFTWARE HALF FIXED (4b3f40f): with the production gate closed the checkout session answers 409 PAYMENTS_NOT_ENABLED and reserves nothing. WAITING ON THE OWNER: which switch enables real payments in steady state. Today production only issues a preference while the secret named 'smoke' is present, and the runbooks and tools require it to be absent. Options in the decision memo (evidence, payments.md): A, an explicit permanent project-level switch (recommended); B, rely on the project review status plus the per-business switch. Until it is decided production stays closed and fails closed. Not changed in this branch: it is the switch for real money.",
+          "aliases": []
+        },
+        {
+          "id": "PAY-02",
+          "severity": "P1",
+          "title": "recover_paid_checkout_order can build an order on a payment that was already refunded, or has a refund in flight",
+          "status": "fixed",
+          "fixed_by": "12f79b8 · supabase/migrations/20261001203000_manual_review_checkout_keeps_stock_exact.sql",
+          "notes": "",
+          "aliases": []
+        },
+        {
+          "id": "CS-01",
+          "severity": "P1",
+          "title": "A rejected first card attempt releases the stock, so the buyer's approved retry in the same Checkout Pro preference becomes a manual review instead of an order",
+          "status": "fixed",
+          "fixed_by": "a2f6960 (a provider rejection keeps the reservation and the session) · 4d18709 (the worker finds the approved payment by the checkout reference when the pinned one is rejected)",
+          "notes": "Closed in two halves. Database (a2f6960): a provider rejection no longer releases the reservation nor cancels the session, and the first approved payment takes the identity. Edge (4d18709): when the pinned payment is rejected the worker looks the payment up by the checkout reference and finds the approved retry. Cost of the fix: the reservation of a rejected payment is held until the session expires. Provider simulated: the retry inside one Checkout Pro preference was not exercised against real Mercado Pago (external gate).",
+          "aliases": [
+            "PAY-01",
+            "EDGE-02"
+          ]
+        },
+        {
+          "id": "CS-02",
+          "severity": "P1",
+          "title": "Sessions parked in manual_review_required keep their 'active' reservations forever, and recover_paid_checkout_order then decrements the stock a second time",
+          "status": "fixed",
+          "fixed_by": "12f79b8 · supabase/migrations/20261001203000_manual_review_checkout_keeps_stock_exact.sql",
+          "notes": "",
+          "aliases": [
+            "STK-04"
+          ]
+        },
+        {
+          "id": "CS-03",
+          "severity": "P1",
+          "title": "Mercado Pago orders lose the age confirmation: the rider is not told to verify age for paid alcohol orders",
+          "status": "fixed",
+          "fixed_by": "d9de49b · 0c0b287 (finalization copies the age confirmation; backfill of existing orders)",
+          "notes": "",
+          "aliases": [
+            "PRICE-07"
+          ]
+        },
+        {
+          "id": "CS-04",
+          "severity": "P1",
+          "title": "Unpaid checkout sessions can reserve the whole catalog: no cap on concurrent open sessions, 1000 units per line, DB rate limit off by default, anonymous customers",
+          "status": "fixed",
+          "fixed_by": "7bdf9d4 · supabase/migrations/20261001180000_order_intake_guard.sql",
+          "notes": "Bounded by the same guard on create_checkout_session: sessions count against the customer pending cap and window shared with cash orders, a unit cap applies to any unpaid commitment, and a business ceiling applies. A reservation still holds stock until its TTL by design.",
+          "aliases": [
+            "EDGE-04"
+          ]
+        },
+        {
+          "id": "F1",
+          "severity": "P1",
+          "title": "The manual (cash/coordinate) order path enforces no rate limit, pending cap, IP check or abuse logging; max_pending_orders_per_customer is enforced by nothing on either path",
+          "status": "fixed",
+          "fixed_by": "7bdf9d4 · supabase/migrations/20261001180000_order_intake_guard.sql",
+          "notes": "Scope of this entry: the missing intake limits only. The aliases STK-01, PRICE-01, AUTHZ-01 and OSM-01 are carried here for that half; their other half (an unpaid order holds stock with no expiry and no automatic release) is tracked by F2. Marking F1 fixed by the order intake guard does not close F2. Closed in the branch by the central intake guard (per-customer, per-origin and per-business limits, pending caps, cooldown, defaults instead of NULL=unlimited); pgTAP order_intake_guard_test.sql and the concurrency harness scripts/order-intake/intake-race.mjs run in the CI database gate.",
+          "aliases": [
+            "STK-01",
+            "PRICE-01",
+            "AUTHZ-01",
+            "OSM-01"
+          ]
+        },
+        {
+          "id": "F2",
+          "severity": "P1",
+          "title": "A single unpaid order can take the entire public stock, holds it with no expiry, and cancellation does not republish the products",
+          "status": "fixed",
+          "fixed_by": "7bdf9d4 (unit cap and pending caps) · af0451d (cancel republishes) · 6634022 (unattended orders expire)",
+          "notes": "Closed in the branch. The expiry only acts when the owner sets businesses.abandoned_order_minutes; while it is NULL an unattended order still holds stock until staff cancel it, bounded by the guard caps.",
+          "aliases": []
+        },
+        {
+          "id": "CAT-01",
+          "severity": "P1",
+          "title": "Platform verification passes without service hours or delivery zones, and both enforcement flags can be switched off after verification",
+          "status": "fixed",
+          "fixed_by": "7030f69 · 8ec5de2 · 0977a75",
+          "notes": "Verification refuses without an active owner, enforced hours with a window per enabled channel and, with delivery, enforced coverage with an active zone (8ec5de2). A verified business cannot switch either enforcement off (7030f69) nor switch delivery on without coverage (0977a75, the residual door the adversarial review found). Already verified businesses are not revoked by any migration: the read-only pre-flight query for them is in the migration matrix.",
+          "aliases": []
+        },
+        {
+          "id": "CAT-02",
+          "severity": "P1",
+          "title": "No single PRODUCTION_READY gate; opening:check reports TECHNICAL_READY without checking migration parity, Edge Function deployment, the served commit, payment certification or open P0/P1",
+          "status": "fixed",
+          "fixed_by": "scripts/release/ecommerce-release-gates.mjs · docs/ecommerce-hardening/release-gates.json",
+          "notes": "One gate now evaluates catalog approval, prices, hours, zones, team, seller, payment certification, migration parity, Edge Functions, abuse protection and this register; anything unknown fails closed.",
+          "aliases": []
+        },
+        {
+          "id": "TOOL-01",
+          "severity": "P1",
+          "title": "The canonical DB gate (936 pgTAP, non-superuser migration apply, rollback drills, restore) cannot run on this notebook, and CI does not trigger for the hardening branch",
+          "status": "accepted_risk",
+          "fixed_by": null,
+          "notes": "Accepted: the canonical database gate needs Docker and cannot run on the operator notebook; it runs in GitHub Actions and is dispatched for this branch with gh workflow run ci.yml --ref <branch> (run 36924143156 green on 7bdf9d4). A local PostgreSQL 17 harness with shims covers development; its results are always reported as local.",
+          "aliases": []
+        },
+        {
+          "id": "STK-05",
+          "severity": "P2",
+          "title": "apply_inventory_movement never maintains available: taking a published product to 0 fails with a raw 23514",
+          "status": "fixed",
+          "fixed_by": "142451e · supabase/migrations/20261001210000_catalog_stock_authority.sql",
+          "notes": "",
+          "aliases": []
+        },
+        {
+          "id": "STK-06",
+          "severity": "P2",
+          "title": "Cancelling or rejecting an order returns stock but never republishes, while checkout expiry and POS do; products silently stay off the storefront",
+          "status": "fixed",
+          "fixed_by": "af0451d · supabase/migrations/20261001190000_order_cancel_returns_stock_and_republishes.sql",
+          "notes": "",
+          "aliases": [
+            "OSM-02"
+          ]
+        },
+        {
+          "id": "STK-07",
+          "severity": "P2",
+          "title": "inventory_movements is not a complete stock ledger: most stock changes write no movement",
+          "status": "open",
+          "fixed_by": null,
+          "notes": "NOT CHANGED, by decision. Mitigated on this branch: catalog paths now write the catalog change trail and, when they carry a count, an inventory_movements row (142451e); the stock effects of an online order are reconstructed by get_order_trace from its lines and reservations (a39db9a); the race harness asserts conservation of units on every door (c6dac99). A single ledger row for every stock change needs the point-of-sale writers too (pos_apply_stock_movements, pos_apply_stock_count), which the Caja Clara sales-ledger line is redefining in a parallel branch: it has to be designed together with that ledger, not on top of it.",
+          "aliases": [
+            "DIAG-08",
+            "OSM-11"
+          ]
+        },
+        {
+          "id": "PRICE-02",
+          "severity": "P2",
+          "title": "order_items does not freeze SKU, barcode, category, alcohol flag or tax; SKU is dropped at finalization and pos_list_orders joins it live",
+          "status": "open",
+          "fixed_by": null,
+          "notes": "PARTIAL (8e7dd77, migration 20261001225000): the SKU is frozen in the order line at insert, backfilled for existing lines and immutable afterwards. With it the order keeps every commercial field the mission lists (name, SKU, quantity, unit price, subtotal, discounts, delivery fee, total, currency). Still read live from the product: barcode, category, the alcohol flag and tax attributes, and the point-of-sale order listing joins the product. The age check of an order does not depend on it (the confirmation is frozen in the order), and the fiscal document is computed by the fiscal core. The point-of-sale listing belongs to the Caja Clara work line and was not touched here. Lead assessment of what remains: P3.",
+          "aliases": []
+        },
+        {
+          "id": "PRICE-03",
+          "severity": "P2",
+          "title": "Order money snapshot is immutable only by grants; no trigger protects orders money columns, order_items or order_combos, and nothing reconciles subtotal with the lines",
+          "status": "fixed",
+          "fixed_by": "56941df · supabase/migrations/20261001224500_order_money_snapshot_immutable.sql",
+          "notes": "Residual: nothing asserts at commit that the lines add up to the header totals.",
+          "aliases": []
+        },
+        {
+          "id": "PRICE-04",
+          "severity": "P2",
+          "title": "With zone enforcement on, the delivery fee and minimum are selected by a neighbourhood string the client declares, with no check against the confirmed pin",
+          "status": "open",
+          "fixed_by": null,
+          "notes": "PARTIAL (7030f69): the radius cap now always denies beyond the bound, enforced or not, and the readiness answer reports customer_selects_price. Still reproducible by design: with declared-area zones of different prices a customer inside the bound can declare the cheap zone. Only polygons tell zones apart and none were invented: owner input (one fee for all declared zones, or polygons).",
+          "aliases": [
+            "F-01"
+          ]
+        },
+        {
+          "id": "DIAG-02",
+          "severity": "P2",
+          "title": "Webhook-sourced payment jobs and signature rejections are invisible to alerts and health",
+          "status": "open",
+          "fixed_by": null,
+          "notes": "PARTIAL (13608b7, 918237f): the whole payment queue, dead letters, rejected signatures and stuck receipts are visible in get_ecommerce_health, and build_operational_health attributes intent-less jobs to the seller's business. Still open: the PAYMENT_OUTBOX_STALLED / PAYMENT_WORKER_IDLE alerts do not see intent-less jobs.",
+          "aliases": [
+            "PAY-12"
+          ]
+        },
+        {
+          "id": "DIAG-03",
+          "severity": "P2",
+          "title": "production-health-check.mjs can never be green and can never see a CRITICAL alert",
+          "status": "open",
+          "fixed_by": null,
+          "notes": "",
+          "aliases": []
+        },
+        {
+          "id": "DIAG-04",
+          "severity": "P2",
+          "title": "Opening the Panel auto-resolves SCHEDULER_WATCHDOG_STALE while the scheduler is still dead",
+          "status": "fixed",
+          "fixed_by": "13608b7 · supabase/migrations/20261001220500_operational_alerts_stay_truthful.sql",
+          "notes": "",
+          "aliases": []
+        },
+        {
+          "id": "DIAG-05",
+          "severity": "P2",
+          "title": "A disabled or unscheduled cron job raises no alert; the DB holds no expected-job inventory",
+          "status": "open",
+          "fixed_by": null,
+          "notes": "PARTIAL (1fdcc4e, 918237f): the expected-job inventory is a table (private.scheduler_expected_jobs) and get_ecommerce_health reports a missing, inactive or unlisted job. Still open: no SCHEDULER_JOB_DISABLED / SCHEDULER_JOB_MISSING alert.",
+          "aliases": []
+        },
+        {
+          "id": "DIAG-06",
+          "severity": "P2",
+          "title": "cron.job_run_details is never pruned and list_scheduler_health aggregates its full history every minute",
+          "status": "fixed",
+          "fixed_by": "1fdcc4e · supabase/migrations/20261001220000_scheduler_inventory_and_history_retention.sql",
+          "notes": "Bounded read of the run history with exact numbers, daily purge job taba-cron-history-purge, schedule-aware stalled threshold.",
+          "aliases": []
+        },
+        {
+          "id": "DIAG-07",
+          "severity": "P2",
+          "title": "ORDER_NOT_ACCEPTED and ORDER_STALLED self-resolve after 24 h while the order stays open and keeps its stock",
+          "status": "fixed",
+          "fixed_by": "13608b7 · supabase/migrations/20261001220500_operational_alerts_stay_truthful.sql",
+          "notes": "",
+          "aliases": []
+        },
+        {
+          "id": "DIAG-09",
+          "severity": "P2",
+          "title": "Alerts and new-order notifications have no out-of-band channel: outboxes have no consumer and health signals have no emitter",
+          "status": "open",
+          "fixed_by": null,
+          "notes": "",
+          "aliases": []
+        },
+        {
+          "id": "DIAG-10",
+          "severity": "P2",
+          "title": "External watchdogs and health scripts default to projects other than the controlled-production store",
+          "status": "open",
+          "fixed_by": null,
+          "notes": "",
+          "aliases": []
+        },
+        {
+          "id": "AUTHZ-02",
+          "severity": "P2",
+          "title": "Column-level UPDATE grants on products and businesses bypass RPC authority, validation, inventory ledger and audit",
+          "status": "open",
+          "fixed_by": null,
+          "notes": "PARTIAL. Products half CLOSED (142451e): UPDATE on stock, available and is_active is revoked from authenticated; stock moves through the RPCs with a ledger row and publication through the RPCs with gates. Businesses half MITIGATED, not closed (91840b3, 0977a75): the column grant stays because the Panel writes some of those columns directly; every such write is now audited with before, after and actor, the currency of a verified business is locked and delivery cannot be switched on without coverage. Still true: an owner or admin can change status, fulfilment switches and contact data with a direct PATCH instead of the RPC. Closing it means moving the Panel to the RPCs and revoking the grant.",
+          "aliases": [
+            "STK-03",
+            "CAT-06"
+          ]
+        },
+        {
+          "id": "AUTHZ-03",
+          "severity": "P2",
+          "title": "identity_close_own_session lets any authenticated user (including an anonymous customer) append unlimited audit events to any business",
+          "status": "fixed",
+          "fixed_by": "2415299 · supabase/migrations/20261001223000_identity_session_close_and_invitation_guards.sql",
+          "notes": "",
+          "aliases": []
+        },
+        {
+          "id": "AUTHZ-04",
+          "severity": "P2",
+          "title": "Permission catalog is not the enforced contract: admin can authorize ARCA homologation, staff can cancel orders",
+          "status": "open",
+          "fixed_by": null,
+          "notes": "",
+          "aliases": []
+        },
+        {
+          "id": "EDGE-05",
+          "severity": "P2",
+          "title": "Rate-limit key combines IP and user and takes the first x-forwarded-for hop; the unauthenticated webhook writes a row per rejected request; nothing purges the tables",
+          "status": "fixed",
+          "fixed_by": "ac93db3 · supabase/migrations/20261001230000_payment_request_traces_purge_and_rejected_webhook_scope.sql",
+          "notes": "Client address from cf-connecting-ip, separate user and address buckets, signature decided before any write, rejected receipts capped per address and overall, daily purge. Not addressed: the fixed-window double burst across a window boundary.",
+          "aliases": [
+            "F7"
+          ]
+        },
+        {
+          "id": "EDGE-06",
+          "severity": "P2",
+          "title": "Preference creation has dead ends: any provider 4xx (including 408/409/429) marks the attempt failed with no way to open a new one; local errors are recorded as provider timeouts; ambiguous attempts are never resolved",
+          "status": "open",
+          "fixed_by": null,
+          "notes": "PARTIAL (5b247f7): a provider 408/409/425/429 leaves the attempt uncertain instead of failed, and local errors send nothing and record nothing. Still open, needs a decision: an uncertain attempt answers 202 until the session expires and is never re-sent; a final 4xx leaves the intent in preference_creating with no way to open a new attempt. Options: re-POST with the same idempotency key after a provably empty search, and/or a database exit.",
+          "aliases": [
+            "PAY-09"
+          ]
+        },
+        {
+          "id": "EDGE-08",
+          "severity": "P2",
+          "title": "The seller credential is destroyed on non-authoritative provider signals: any HTTP 401 on any resource, and any ambiguous refresh outcome",
+          "status": "fixed",
+          "fixed_by": "5d0c366",
+          "notes": "A resource 401 is confirmed against /users/me before the credential is invalidated; an ambiguous refresh keeps the credential and is marked for attention. Residual: a connection can stay 'connected' with an expired token if the refresh keeps failing through the token's last day, and availability does not look at the expiry (database change, not done); no alert reads the pending-refresh marker.",
+          "aliases": []
+        },
+        {
+          "id": "PAY-03",
+          "severity": "P2",
+          "title": "Retrying a webhook job is not idempotent: the second snapshot violates the payment_events unique key and the job dead-letters",
+          "status": "fixed",
+          "fixed_by": "a2f6960 · supabase/migrations/20261001200000_mercadopago_snapshot_keeps_reservation_and_pins_payment.sql",
+          "notes": "",
+          "aliases": []
+        },
+        {
+          "id": "PAY-04",
+          "severity": "P2",
+          "title": "The provider payment identity is not pinned: a second payment on the same external_reference overwrites it, and a double charge is not detected",
+          "status": "fixed",
+          "fixed_by": "a2f6960 · supabase/migrations/20261001200000_mercadopago_snapshot_keeps_reservation_and_pins_payment.sql",
+          "notes": "Residuals written in the migration header: a duplicate charge is flagged as payment.duplicate_approved but raises no operational alert, the Panel refund targets only the pinned payment, and a dispute on the duplicate payment dead-letters.",
+          "aliases": [
+            "EDGE-07"
+          ]
+        },
+        {
+          "id": "PAY-06",
+          "severity": "P2",
+          "title": "Completed intents are never reconciled again, and a dead-lettered webhook cannot be revived; no provider-vs-local reconciliation report exists",
+          "status": "open",
+          "fixed_by": null,
+          "notes": "PARTIAL (e2a7df0): a read-only provider-versus-local reconciliation tool exists (scripts/payments/reconcile-payments.mjs) and found one real mismatch on staging test data. Still open: nothing re-reads completed intents on a schedule, and a dead-lettered webhook job has no revive path.",
+          "aliases": []
+        },
+        {
+          "id": "PAY-07",
+          "severity": "P2",
+          "title": "A refund stuck in 'requested', or 'ambiguous' without a provider id, has no resolution path and blocks every later refund of that payment",
+          "status": "fixed",
+          "fixed_by": "18dcb08 · supabase/migrations/20261001204000_stuck_refund_resolution_and_review_refund.sql",
+          "notes": "Database path only: public.resolve_stuck_payment_refund exists for owner/admin; the Panel has no button for it yet.",
+          "aliases": [
+            "EDGE-09"
+          ]
+        },
+        {
+          "id": "PAY-08",
+          "severity": "P2",
+          "title": "Manual collections on online orders are missing from the daily cash reconciliation and from alerts",
+          "status": "open",
+          "fixed_by": null,
+          "notes": "NOT CHANGED, by decision: it belongs to the Caja Clara sales-ledger line, whose branch redefines daily_reconciliation_snapshot_internal and close_daily_reconciliation. A second redefinition here would overwrite theirs when both are applied. A delivered-but-unpaid alert was not added either: when a rider settles cash is a business rule nobody has stated.",
+          "aliases": []
+        },
+        {
+          "id": "CS-05",
+          "severity": "P2",
+          "title": "'completed' is not terminal: an invalid later snapshot overwrites a completed session and its intent, and there is no transition guard on checkout_sessions",
+          "status": "fixed",
+          "fixed_by": "a2f6960 · a1fb610 (snapshot leaves a completed checkout alone; transition guard on checkout_sessions)",
+          "notes": "Residual: payment.post_completion_anomaly and in_mediation are only payment_events rows today; no operational alert reads them.",
+          "aliases": [
+            "PAY-05"
+          ]
+        },
+        {
+          "id": "CS-06",
+          "severity": "P2",
+          "title": "The Edge Function hides every server rejection behind CHECKOUT_NOT_AVAILABLE, so the buyer cannot be told what to fix",
+          "status": "open",
+          "fixed_by": null,
+          "notes": "PARTIAL (4b3f40f): the Edge Function now maps each refusal to a public code and HTTP status from a closed table. Still open on the client: the storefront does not read the body of a non-2xx answer, so the codes do not reach the buyer yet.",
+          "aliases": [
+            "F-04"
+          ]
+        },
+        {
+          "id": "F3",
+          "severity": "P2",
+          "title": "next_order_public_code truncates above 9999: a hard lifetime cap of 9,999 order codes per database, after which the code loop never terminates (including finalization of paid Mercado Pago sessions)",
+          "status": "fixed",
+          "fixed_by": "5787a6f · supabase/migrations/20261001193000_order_public_code_grows_past_9999.sql",
+          "notes": "",
+          "aliases": []
+        },
+        {
+          "id": "F4",
+          "severity": "P2",
+          "title": "Idempotent replay of a pickup order is not side-effect free: every replay bumps orders.revision and updated_at and can rewrite unfingerprinted columns, letting the customer make operator commands fail with PT409",
+          "status": "fixed",
+          "fixed_by": "77f2f9e · supabase/migrations/20261001194000_pickup_order_replay_is_side_effect_free.sql",
+          "notes": "Also observed live on staging by the certification runner before the fix (revision 3 to 6 after three replays).",
+          "aliases": []
+        },
+        {
+          "id": "F5",
+          "severity": "P2",
+          "title": "The only existing limiter (Mercado Pago path) is weak: NULL means unlimited, the DB count is not race-safe and ignores orders, and the Edge bucket subject mixes IP and user id so a changed IP resets the per-user budget",
+          "status": "fixed",
+          "fixed_by": "7bdf9d4 (database: the intake guard counts orders and sessions under a lock, NULL uses a default) · ac93db3 (Edge: separate user and address buckets)",
+          "notes": "Closed in two halves. Database (7bdf9d4): the intake guard uses defaults instead of NULL, counts under a lock, and orders and checkout sessions share one budget. Edge (ac93db3): the request limit keeps one bucket per user and one per address, and the address is the one the platform sets (not a forwarded header). Residual (P3): a fixed window lets through a double burst across its edge.",
+          "aliases": []
+        },
+        {
+          "id": "F6",
+          "severity": "P2",
+          "title": "Payload key address_label is stored without any length limit in orders.delivery_address_formatted; manual-path notes are not stripped of control characters",
+          "status": "fixed",
+          "fixed_by": "7bdf9d4 · supabase/migrations/20261001180000_order_intake_guard.sql",
+          "notes": "Input hygiene lives in the public order wrapper: payload size cap, address_label length, control characters stripped from notes.",
+          "aliases": []
+        },
+        {
+          "id": "CAT-03",
+          "severity": "P2",
+          "title": "apply_commercial_catalog_batch silently leaves a product hidden and unverified when a row combines a price change with publish=true on a verified but not-available product",
+          "status": "fixed",
+          "fixed_by": "142451e · supabase/migrations/20261001210000_catalog_stock_authority.sql",
+          "notes": "",
+          "aliases": []
+        },
+        {
+          "id": "CAT-04",
+          "severity": "P2",
+          "title": "Catalog price, stock and publication changes have no audit trail and no before-image, so a committed batch cannot be rolled back",
+          "status": "fixed",
+          "fixed_by": "142451e (catalog change trail and rollback_commercial_catalog_batch)",
+          "notes": "The adversarial review found two defects of the first version of the rollback (stock restored over a count that had closed a conflict; a publication decided by the batch not undone); both fixed and covered. Known and reported by the rollback itself: a product whose merchant intent was already on can be reoffered by a later stock return (off_sale_intent_on).",
+          "aliases": []
+        },
+        {
+          "id": "CAT-07",
+          "severity": "P2",
+          "title": "Products created by the sheet 'alta' or by scanned drafts have no owner-accessible path to become publishable; the documented 'second pass' cannot succeed",
+          "status": "open",
+          "fixed_by": null,
+          "notes": "PARTIAL (142451e): a product created by the sheet can now be completed (packaging and subcategory) and published by the owner, and the batch names the missing field. Still open: a scanned draft is born without sku or external_id and inactive, so no publication RPC can address it; who names and activates a scanned product is a verification-authority decision.",
+          "aliases": []
+        },
+        {
+          "id": "CAT-08",
+          "severity": "P2",
+          "title": "Alcohol enablement, abuse limits, currency and open/ordering state are direct column writes on businesses with no audit, bypassing the audited RPCs",
+          "status": "fixed",
+          "fixed_by": "91840b3 · supabase/migrations/20261001224000_business_direct_write_audit_and_currency_lock.sql",
+          "notes": "",
+          "aliases": []
+        },
+        {
+          "id": "TOOL-02",
+          "severity": "P2",
+          "title": "The staging certifier cannot be reused as a library: no exports and it executes on import",
+          "status": "open",
+          "fixed_by": null,
+          "notes": "",
+          "aliases": []
+        },
+        {
+          "id": "TOOL-03",
+          "severity": "P2",
+          "title": "The certifier hard-requires staging ledger == repo ledger, and staging promotion is manual with no script (Supabase CLI not installed here)",
+          "status": "open",
+          "fixed_by": null,
+          "notes": "",
+          "aliases": []
+        },
+        {
+          "id": "TOOL-04",
+          "severity": "P2",
+          "title": "Order-core SQL suites are orphaned: the runner they name does not exist and none of them is in CI",
+          "status": "open",
+          "fixed_by": null,
+          "notes": "",
+          "aliases": []
+        },
+        {
+          "id": "TOOL-05",
+          "severity": "P2",
+          "title": "`npm test` mutates the worktree: one test rewrites .github/workflows/ci.yml in place",
+          "status": "open",
+          "fixed_by": null,
+          "notes": "",
+          "aliases": []
+        },
+        {
+          "id": "TOOL-06",
+          "severity": "P2",
+          "title": "There is no staging runner for the literal last-unit race, and the staging stock pilot is single-shot",
+          "status": "open",
+          "fixed_by": null,
+          "notes": "",
+          "aliases": []
+        },
+        {
+          "id": "TOOL-07",
+          "severity": "P2",
+          "title": "There is no passing capacity baseline on staging, and the capacity tool has no p99 or per-operation thresholds",
+          "status": "open",
+          "fixed_by": null,
+          "notes": "",
+          "aliases": []
+        },
+        {
+          "id": "F-02",
+          "severity": "P2",
+          "title": "Paid Mercado Pago orders are created after closing or after a manual pause, with no flag, alert or cutoff; alcohol is not re-checked after session creation",
+          "status": "fixed",
+          "fixed_by": "d9de49b · supabase/migrations/20261001200100_paid_checkout_finalization_carries_age_and_closing_mark.sql",
+          "notes": "The paid order is still created (the customer paid while the session was valid) and is marked with an order.created_after_closing event.",
+          "aliases": []
+        },
+        {
+          "id": "F-03",
+          "severity": "P2",
+          "title": "No public contract for CLOSES_AT, alcohol-window status or date exceptions; open state is split across two booleans",
+          "status": "fixed",
+          "fixed_by": "1cde20c · supabase/migrations/20261001213000_business_service_status.sql",
+          "notes": "Backend contract: get_business_service_status answers OPEN / CLOSED with reason, opens_at and closes_at per channel (delivery, pickup, alcohol), from the same primitive the order path calls. The storefront does not call it yet: client work, tracked by F-05.",
+          "aliases": []
+        },
+        {
+          "id": "F-05",
+          "severity": "P2",
+          "title": "The web client does not map BUSINESS_CLOSED or OUT_OF_DELIVERY_ZONE on the manual path, and mislabels ALCOHOL_WINDOW_CLOSED",
+          "status": "open",
+          "fixed_by": null,
+          "notes": "",
+          "aliases": []
+        },
+        {
+          "id": "F-06",
+          "severity": "P2",
+          "title": "The functions that gate every order have almost no database-level tests; a migration header claims tests that do not exist",
+          "status": "fixed",
+          "fixed_by": "1cde20c · 7030f69 · 8ec5de2 (four pgTAP files, 388 assertions, in the canonical gate)",
+          "notes": "",
+          "aliases": []
+        },
+        {
+          "id": "OSM-03",
+          "severity": "P2",
+          "title": "Customer cancellation is unreachable: the rule exists but no customer-callable function exposes it",
+          "status": "fixed",
+          "fixed_by": "2f76304 · supabase/migrations/20261001192000_customer_cancels_own_unattended_order.sql",
+          "notes": "Backend contract only: the web client does not call cancel_own_order yet.",
+          "aliases": []
+        },
+        {
+          "id": "OSM-04",
+          "severity": "P2",
+          "title": "No recovery path for in-flight deliveries: lost code or deactivated rider after pickup leaves only cancel",
+          "status": "open",
+          "fixed_by": null,
+          "notes": "",
+          "aliases": []
+        },
+        {
+          "id": "OSM-05",
+          "severity": "P2",
+          "title": "notification_outbox has no consumer; customers get no notification or reason on cancel/reject",
+          "status": "open",
+          "fixed_by": null,
+          "notes": "",
+          "aliases": []
+        },
+        {
+          "id": "OSM-06",
+          "severity": "P2",
+          "title": "Partial fulfilment NOT IMPLEMENTED: packing is advisory and a shortage changes neither items, total nor stock",
+          "status": "open",
+          "fixed_by": null,
+          "notes": "",
+          "aliases": []
+        },
+        {
+          "id": "API-01",
+          "severity": "P2",
+          "title": "Business refusals raised with SQLSTATE 55000 are answered as HTTP 500 by the API, and the Panel outbox treats every status >= 500 as retryable",
+          "status": "open",
+          "fixed_by": null,
+          "notes": "Found by the staging certification runner (development run against the isolated QA tenant, before any migration of this branch was applied): refusals with SQLSTATE 55000 came back as HTTP 500. The API maps the whole SQLSTATE class 55 to 500 and that mapping is not configurable. The SQLSTATE does arrive in the response body, and the Panel already classifies by it for 42501, 22023, 23514, 23505, P0001 and P0002: it simply does not know 55000, so classifyRpcError (js/repositories/supabase-business-repository.js) and the two outbox result builders in js/production-operations.js answer retryable for a final refusal. The fix is in the client (three places, one shared predicate) and it changes the web release identity (asset digest and cache name), so it travels with the web release and was not put on this backend branch. Remapping the 213 existing refusals in the database would change the contract of dozens of functions and of every client that reads the code. This branch did not add new behaviour here: its new refusals follow the convention of the function they live in, and the delivery-coverage refusal of 20261001216000 uses 22023, which the client already shows as a message.",
+          "aliases": []
+        },
+        {
+          "id": "DIAG-13",
+          "severity": "P2",
+          "title": "The PAYMENT_APPROVED_WITHOUT_ORDER alert resolved itself when the same approved payment was read again, with the order still missing",
+          "status": "fixed",
+          "fixed_by": "29ade07 · supabase/migrations/20261001222000_paid_without_order_alert_measures_from_approval.sql",
+          "notes": "Found while writing the checkout invariants test (not by the audit). The five minutes were measured from payment_intents.updated_at, which any re-read of the same payment with a different response body rewrites. Now measured from approved_at. Regression: checkout_order_invariants_test.sql, section F.",
+          "aliases": []
+        }
+      ]
+    },
+    "repo": {
+      "ok": true,
+      "head": "f2cafbd3885c8f9c7ee9ec0c615bd3e3a13d6317",
+      "uncommitted_release_inputs": [
+        "M supabase/functions/_shared/cancel-runtime.deno.ts",
+        "M supabase/functions/_shared/refund-runtime.deno.ts",
+        "M supabase/functions/_shared/seller-webhook-runtime.deno.ts",
+        "M supabase/functions/mercadopago-cancel-payment/index.ts"
+      ]
+    },
+    "ci": null
+  }
+}

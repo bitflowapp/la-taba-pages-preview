@@ -1,0 +1,52 @@
+{
+  "orderX": "LT-0040",
+  "orderY": "LT-0041",
+  "chain": [
+    "received>accepted",
+    "accepted>preparing",
+    "preparing>ready",
+    "ready>assigned",
+    "assigned>picked_up",
+    "picked_up>on_the_way",
+    "on_the_way>arrived",
+    "arrived>delivered"
+  ],
+  "events": [
+    "158:order.received:customer",
+    "160:business_acknowledged:business",
+    "161:order.status_changed:business",
+    "164:order.status_changed:business",
+    "165:order.status_changed:business",
+    "166:order.rider_offered:business",
+    "167:order.status_changed:rider",
+    "168:order.rider_accepted_offer:rider",
+    "169:order.status_changed:rider",
+    "170:order.status_changed:rider",
+    "171:order.status_changed:rider",
+    "172:order.status_changed:rider"
+  ],
+  "receipts": [
+    {
+      "command": "transition_order",
+      "key_hash": "540f0e457bf8648fe17660385be55549"
+    },
+    {
+      "command": "transition_order",
+      "key_hash": "9c1f763d8ed3be42aaf5bf0f5f3e0bb7"
+    },
+    {
+      "command": "transition_order",
+      "key_hash": "e44f171b895a281c5d26c0567c94b0dd"
+    },
+    {
+      "command": "acknowledge_order",
+      "key_hash": "0ba3e0402b5b5af8a5d6b2514644aa0e"
+    }
+  ],
+  "stock": {
+    "initial": 500,
+    "afterCreate": 498,
+    "afterCancel": 498,
+    "final": 498
+  }
+}

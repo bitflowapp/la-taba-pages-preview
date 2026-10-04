@@ -1,0 +1,1500 @@
+{
+  "schema": 1,
+  "description": "Register of the e-commerce hardening audit findings (severity P0, P1 and P2). The release gates NO_OPEN_P0 and NO_OPEN_P1 read this file: scripts/release/ecommerce-release-gates.mjs.",
+  "seeded_from": "ecommerce hardening audit of 2026-10-01: twelve domain readers plus independent verification of the P1 and top P2 findings (PG17 with the 158-migration baseline)",
+  "rules": {
+    "statuses": [
+      "open",
+      "fixed",
+      "accepted_risk",
+      "external_gate"
+    ],
+    "open": "Blocks PRODUCTION_READY when the severity is P0 or P1.",
+    "fixed": "Needs fixed_by: the commit or the migration that fixes it. Without it a P0/P1 still blocks.",
+    "accepted_risk": "Needs a non-empty notes field saying who accepted the risk and why. Without it a P0/P1 still blocks.",
+    "external_gate": "Depends on a third party or on the owner. Needs a non-empty notes field saying what it waits on and from whom; without it a P0/P1 still blocks. With notes it does not block PRODUCTION_READY and is reported separately as a blocker of the public launch.",
+    "severity": "The reader severity is kept, and for a cluster of aliases the worst one. verification[].severity is what the independent verifier graded; changing severity is a decision for the lead and belongs in notes.",
+    "aliases": "The same defect reported by another reader. An alias is closed together with its canonical finding."
+  },
+  "findings": [
+    {
+      "id": "STK-02",
+      "severity": "P1",
+      "title": "Panel stock edit overwrites products.stock with the counted number: reserved units ignored, no concurrency check, no ledger row; this oversells",
+      "status": "fixed",
+      "fixed_by": "142451e · supabase/migrations/20261001210000_catalog_stock_authority.sql",
+      "notes": "The count sent by the sheet, the plan and the product form is translated like the Caja Clara count (available = max(count - reserved, 0), ledger row, stock conflict when the count does not cover the reserved units), with an optional expected_stock guard (PT409). The Panel scanner count sends only a difference against the available figure and cannot be translated: while the product has reserved units it is refused (22023, STOCK_COUNT_HAS_RESERVED) and points to the catalog count. Client follow-ups, not blocking: the Panel still prefills the count field with the available figure (errs on the safe side) and does not send expected_stock; stage_catalog_products (import_catalog_batch) still writes an absolute stock.",
+      "aliases": [
+        "CAT-05"
+      ],
+      "domain": "inventory",
+      "where": "public.apply_commercial_catalog_batch (also reached via apply_commercial_catalog_plan); js/business/business-catalog-editor.js buildCommercialEdit; js/business/business-operations-center.js saveCatalogEdits; same pattern in public.complete_scanned_product",
+      "related": [
+        "STK-07"
+      ],
+      "verification": [
+        {
+          "id": "STK-02",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        }
+      ]
+    },
+    {
+      "id": "DIAG-01",
+      "severity": "P1",
+      "title": "No order trace contract: diagnosing one order needs service_role SQL across ~15 tables with PII",
+      "status": "fixed",
+      "fixed_by": "a39db9a · supabase/migrations/20261001221500_order_trace.sql",
+      "notes": "get_order_trace (owner/admin/staff of the business) and get_order_trace_service (service_role): identifiers, state, ordered timeline and gaps, with no PII by construction.",
+      "aliases": [],
+      "domain": "observability",
+      "where": "Whole schema (NOT IMPLEMENTED); nearest objects: public.list_operational_pipeline, public.list_business_payments, public.get_public_order_tracking",
+      "verification": [
+        {
+          "id": "DIAG-01",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "EDGE-01",
+      "severity": "P1",
+      "title": "A non-2xx on the merchant-order lookup turns a legitimate approved payment into a permanent security review with no recovery or refund path",
+      "status": "fixed",
+      "fixed_by": "5d0c366 (the failed read no longer records an empty preference) · 12f79b8 · 18dcb08 (a charge in review can be recovered into an order or refunded)",
+      "notes": "Closed in two halves. Database (18dcb08): an approved payment parked in security review without an order can be recovered into an order or refunded. Edge (5d0c366): a failed merchant-order read raises instead of recording an empty preference, so the false preference_mismatch is no longer produced. Residuals, by decision: a payment that has neither an order id nor a preference id is still recorded with an empty preference and goes to manual review (now with a recovery and a refund path); a permanent merchant-order failure (404) retries to dead_letter, which raises the CRITICAL queue alert, instead of going to manual review. Provider simulated: not exercised against real Mercado Pago.",
+      "aliases": [],
+      "domain": "mp_edge",
+      "where": "supabase/functions/_shared/mercadopago.ts fetchMerchantOrder (L318-322) and paymentSnapshot (L343-347); public.record_mercadopago_payment_snapshot; callers mercadopago-payment-worker/index.ts L101-108 and mercadopago-checkout-status/index.ts L92-97"
+    },
+    {
+      "id": "EDGE-03",
+      "severity": "P1",
+      "title": "Production has no steady-state switch for real payments: every production preference needs the 'smoke' secret that runbooks and tooling require to be absent, and the failure happens after stock is reserved",
+      "status": "fixed",
+      "fixed_by": "4b3f40f (gate before any reservation) · 6e7af1d4 (Edge switch) · 297130a7 (REAL_MONEY_GATE) · cb7f60f2 (config checker) · d4e5fa13 (runbooks)",
+      "notes": "FIXED in the branch, NOT deployed (owner decision 2026-10-02, option A: an explicit, permanent backend switch). In production a charge is created only when all three keys hold: project review approved (MERCADOPAGO_PRODUCTION_REVIEW_STATUS=approved), the business has Mercado Pago enabled in production with its connected production seller, and the Edge secret MERCADOPAGO_REAL_MONEY_ENABLED holds exactly 'enabled' (anything else is closed; compared raw). One pure definition (real-money-gate.ts) is evaluated by assertPaymentCreationGate (checkout session before any reservation; preference), by mercadopago-create-preference before prepare_mercadopago_preference_v2 (closes a fail-open: new_attempt re-reserved stock before the gate), and by createPreference right before the only POST that creates a charge. Closed: 409 PAYMENTS_NOT_ENABLED, no reservation, no provider call. The legacy MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION opens nothing; the config checker reports it and sincronizar-worker-hmac.mjs refuses to run with it. Test environment: switch not required; real money excluded by the credential itself. Money going back never consults the switch (refund, cancel, webhook, worker, reconciliation, status: Deno tests with the switch off). REAL_MONEY_GATE prints MONEY_MOVEMENT_POSSIBLE (YES/NO/UNKNOWN; UNKNOWN never passes) from the secrets' SHA-256 digests (the Management API returns value = sha256(secret), verified on Staging). CP today: review present, no legacy variable, no switch: stays closed. Deploy the new functions BEFORE ever setting the switch. Residuals: a preference already handed to a buyer stays payable until its checkout expires; the storefront availability does not see the switch (the checkout then refuses with no reservation). Implemented by an agent in an isolated worktree, reviewed by the lead (runtime predicates equivalent to the previous ones, fail-closed paths), suites green: Deno 52+452, test:payments 228, release gates 150.",
+      "aliases": [],
+      "domain": "mp_edge",
+      "where": "supabase/functions/_shared/real-money-gate.ts; _shared/payment-runtime.ts requireRealMoneyGate; _shared/seller-oauth.ts assertPaymentCreationGate; mercadopago-create-preference/index.ts (early gate); _shared/mercadopago.ts createPreference; scripts/release/gates (REAL_MONEY_GATE)"
+    },
+    {
+      "id": "PAY-02",
+      "severity": "P1",
+      "title": "recover_paid_checkout_order can build an order on a payment that was already refunded, or has a refund in flight",
+      "status": "fixed",
+      "fixed_by": "12f79b8 · supabase/migrations/20261001203000_manual_review_checkout_keeps_stock_exact.sql",
+      "notes": "",
+      "aliases": [],
+      "domain": "payments_db",
+      "where": "public.recover_paid_checkout_order, public.can_recover_paid_checkout, public.record_payment_refund_response_v2, public.list_business_payments (can_recover_order)",
+      "related": [
+        "CS-02"
+      ],
+      "verification": [
+        {
+          "id": "PAY-02",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        }
+      ]
+    },
+    {
+      "id": "CS-01",
+      "severity": "P1",
+      "title": "A rejected first card attempt releases the stock, so the buyer's approved retry in the same Checkout Pro preference becomes a manual review instead of an order",
+      "status": "fixed",
+      "fixed_by": "a2f6960 (a provider rejection keeps the reservation and the session) · 4d18709 (the worker finds the approved payment by the checkout reference when the pinned one is rejected)",
+      "notes": "Closed in two halves. Database (a2f6960): a provider rejection no longer releases the reservation nor cancels the session, and the first approved payment takes the identity. Edge (4d18709): when the pinned payment is rejected the worker looks the payment up by the checkout reference and finds the approved retry. Cost of the fix: the reservation of a rejected payment is held until the session expires. Provider simulated: the retry inside one Checkout Pro preference was not exercised against real Mercado Pago (external gate).",
+      "aliases": [
+        "PAY-01",
+        "EDGE-02"
+      ],
+      "domain": "checkout",
+      "where": "public.record_mercadopago_payment_snapshot (rejected and approved branches) + public.release_checkout_session_inventory; reached from mercadopago-payment-worker (webhook, and the every-minute provider probe)",
+      "verification": [
+        {
+          "id": "CS-01",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        },
+        {
+          "id": "PAY-01",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        }
+      ]
+    },
+    {
+      "id": "CS-02",
+      "severity": "P1",
+      "title": "Sessions parked in manual_review_required keep their 'active' reservations forever, and recover_paid_checkout_order then decrements the stock a second time",
+      "status": "fixed",
+      "fixed_by": "12f79b8 · supabase/migrations/20261001203000_manual_review_checkout_keeps_stock_exact.sql",
+      "notes": "",
+      "aliases": [
+        "STK-04"
+      ],
+      "domain": "checkout",
+      "where": "public.record_mercadopago_payment_snapshot, public.finalize_paid_checkout_session (manual-review branches), public.release_checkout_session_inventory, public.expire_checkout_sessions, public.recover_paid_checkout_order",
+      "related": [
+        "PAY-02"
+      ],
+      "verification": [
+        {
+          "id": "CS-02",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        }
+      ]
+    },
+    {
+      "id": "CS-03",
+      "severity": "P1",
+      "title": "Mercado Pago orders lose the age confirmation: the rider is not told to verify age for paid alcohol orders",
+      "status": "fixed",
+      "fixed_by": "d9de49b · 0c0b287 (finalization copies the age confirmation; backfill of existing orders)",
+      "notes": "",
+      "aliases": [
+        "PRICE-07"
+      ],
+      "domain": "checkout",
+      "where": "public.finalize_paid_checkout_session (INSERT INTO public.orders); consumers public.list_available_rider_orders and public.rider_order_rpc_payload",
+      "verification": [
+        {
+          "id": "CS-03",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        }
+      ]
+    },
+    {
+      "id": "CS-04",
+      "severity": "P1",
+      "title": "Unpaid checkout sessions can reserve the whole catalog: no cap on concurrent open sessions, 1000 units per line, DB rate limit off by default, anonymous customers",
+      "status": "fixed",
+      "fixed_by": "7bdf9d4 · supabase/migrations/20261001180000_order_intake_guard.sql",
+      "notes": "Bounded by the same guard on create_checkout_session: sessions count against the customer pending cap and window shared with cash orders, a unit cap applies to any unpaid commitment, and a business ceiling applies. A reservation still holds stock until its TTL by design.",
+      "aliases": [
+        "EDGE-04"
+      ],
+      "domain": "checkout",
+      "where": "public.create_checkout_session; public.businesses.order_rate_limit_per_10_minutes; supabase/functions/mercadopago-create-checkout-session/index.ts; supabase/functions/_shared/payment-runtime.ts (enforceRateLimit, requestFingerprint)",
+      "related": [
+        "F1",
+        "F5",
+        "EDGE-05"
+      ],
+      "verification": [
+        {
+          "id": "CS-04",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        }
+      ]
+    },
+    {
+      "id": "F1",
+      "severity": "P1",
+      "title": "The manual (cash/coordinate) order path enforces no rate limit, pending cap, IP check or abuse logging; max_pending_orders_per_customer is enforced by nothing on either path",
+      "status": "fixed",
+      "fixed_by": "7bdf9d4 · supabase/migrations/20261001180000_order_intake_guard.sql",
+      "notes": "Scope of this entry: the missing intake limits only. The aliases STK-01, PRICE-01, AUTHZ-01 and OSM-01 are carried here for that half; their other half (an unpaid order holds stock with no expiry and no automatic release) is tracked by F2. Marking F1 fixed by the order intake guard does not close F2. Closed in the branch by the central intake guard (per-customer, per-origin and per-business limits, pending caps, cooldown, defaults instead of NULL=unlimited); pgTAP order_intake_guard_test.sql and the concurrency harness scripts/order-intake/intake-race.mjs run in the CI database gate.",
+      "aliases": [
+        "STK-01",
+        "PRICE-01",
+        "AUTHZ-01",
+        "OSM-01"
+      ],
+      "domain": "orders_abuse",
+      "where": "public.create_order_with_items and its chain down to public.create_order_with_items_core (last defined in supabase/migrations/20260812220000_business_operations_checkout_enforcement.sql:40); public.businesses.order_rate_limit_per_10_minutes and max_pending_orders_per_customer; public.order_abuse_events; supabase/migrations/20260725060000_alcohol_reservations_abuse.sql",
+      "related": [
+        "F2",
+        "F5",
+        "CS-04"
+      ],
+      "verification": [
+        {
+          "id": "F1",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        },
+        {
+          "id": "STK-01",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        },
+        {
+          "id": "PRICE-01",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        }
+      ]
+    },
+    {
+      "id": "F2",
+      "severity": "P1",
+      "title": "A single unpaid order can take the entire public stock, holds it with no expiry, and cancellation does not republish the products",
+      "status": "fixed",
+      "fixed_by": "7bdf9d4 (unit cap and pending caps) · af0451d (cancel republishes) · 6634022 (unattended orders expire)",
+      "notes": "Closed in the branch. The expiry only acts when the owner sets businesses.abandoned_order_minutes; while it is NULL an unattended order still holds stock until staff cancel it, bounded by the guard caps.",
+      "aliases": [],
+      "domain": "orders_abuse",
+      "where": "public.create_order_with_items_core (item caps and stock UPDATE); public.orders.reservation_expires_at; public.release_expired_stock_reservations; public.change_order_status (supabase/migrations/20260919120000_business_self_delivery_and_finished_today.sql:55)",
+      "related": [
+        "F1",
+        "STK-06"
+      ],
+      "verification": [
+        {
+          "id": "F2",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        }
+      ]
+    },
+    {
+      "id": "CAT-01",
+      "severity": "P1",
+      "title": "Platform verification passes without service hours or delivery zones, and both enforcement flags can be switched off after verification",
+      "status": "fixed",
+      "fixed_by": "7030f69 · 8ec5de2 · 0977a75",
+      "notes": "Verification refuses without an active owner, enforced hours with a window per enabled channel and, with delivery, enforced coverage with an active zone (8ec5de2). A verified business cannot switch either enforcement off (7030f69) nor switch delivery on without coverage (0977a75, the residual door the adversarial review found). Already verified businesses are not revoked by any migration: the read-only pre-flight query for them is in the migration matrix.",
+      "aliases": [],
+      "domain": "catalog_pipeline",
+      "where": "public.get_store_opening_readiness (items SERVICE_HOURS, DELIVERY_COVERAGE); public.platform_verify_business_ordering; public.set_service_enforcement; column defaults businesses.hours_enforced=false and delivery_zone_enforced=false",
+      "related": [
+        "CAT-02"
+      ]
+    },
+    {
+      "id": "CAT-02",
+      "severity": "P1",
+      "title": "No single PRODUCTION_READY gate; opening:check reports TECHNICAL_READY without checking migration parity, Edge Function deployment, the served commit, payment certification or open P0/P1",
+      "status": "fixed",
+      "fixed_by": "scripts/release/ecommerce-release-gates.mjs · docs/ecommerce-hardening/release-gates.json",
+      "notes": "One gate now evaluates catalog approval, prices, hours, zones, team, seller, payment certification, migration parity, Edge Functions, abuse protection and this register; anything unknown fails closed.",
+      "aliases": [],
+      "domain": "catalog_pipeline",
+      "where": "scripts/controlled-production/opening-check.mjs; scripts/controlled-production/opening-tools.mjs technicalChecks; scripts/comercial/compuerta-comercial.mjs; scripts/ci-catalog-release-gate.mjs; .github/workflows/deploy-controlled-production.yml",
+      "related": [
+        "CAT-01",
+        "TOOL-03"
+      ]
+    },
+    {
+      "id": "TOOL-01",
+      "severity": "P1",
+      "title": "The canonical DB gate (936 pgTAP, non-superuser migration apply, rollback drills, restore) cannot run on this notebook, and CI does not trigger for the hardening branch",
+      "status": "accepted_risk",
+      "fixed_by": null,
+      "notes": "Accepted: the canonical database gate needs Docker and cannot run on the operator notebook; it runs in GitHub Actions and is dispatched for this branch with gh workflow run ci.yml --ref <branch> (run 36924143156 green on 7bdf9d4). A local PostgreSQL 17 harness with shims covers development; its results are always reported as local.",
+      "aliases": [],
+      "domain": "tests_tooling",
+      "where": "scripts/run-release-v5-db.mjs lines 29 and 64-68; .github/workflows/ci.yml lines 3-12",
+      "verification": [
+        {
+          "id": "TOOL-01",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "STK-05",
+      "severity": "P2",
+      "title": "apply_inventory_movement never maintains available: taking a published product to 0 fails with a raw 23514",
+      "status": "fixed",
+      "fixed_by": "142451e · supabase/migrations/20261001210000_catalog_stock_authority.sql",
+      "notes": "",
+      "aliases": [],
+      "domain": "inventory",
+      "where": "public.apply_inventory_movement; CHECK products_available_requires_verification"
+    },
+    {
+      "id": "STK-06",
+      "severity": "P2",
+      "title": "Cancelling or rejecting an order returns stock but never republishes, while checkout expiry and POS do; products silently stay off the storefront",
+      "status": "fixed",
+      "fixed_by": "af0451d · supabase/migrations/20261001190000_order_cancel_returns_stock_and_republishes.sql",
+      "notes": "",
+      "aliases": [
+        "OSM-02"
+      ],
+      "domain": "inventory",
+      "where": "public.change_order_status (reached from cancel_order and transition_order)",
+      "related": [
+        "F2"
+      ]
+    },
+    {
+      "id": "STK-07",
+      "severity": "P2",
+      "title": "inventory_movements is not a complete stock ledger: most stock changes write no movement",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "NOT CHANGED, by decision. Mitigated on this branch: catalog paths now write the catalog change trail and, when they carry a count, an inventory_movements row (142451e); the stock effects of an online order are reconstructed by get_order_trace from its lines and reservations (a39db9a); the race harness asserts conservation of units on every door (c6dac99). A single ledger row for every stock change needs the point-of-sale writers too (pos_apply_stock_movements, pos_apply_stock_count), which the Caja Clara sales-ledger line is redefining in a parallel branch: it has to be designed together with that ledger, not on top of it.",
+      "aliases": [
+        "DIAG-08",
+        "OSM-11"
+      ],
+      "domain": "inventory",
+      "where": "public.inventory_movements; writers limited to apply_inventory_movement, checkout_pos_sale, pos_apply_stock_movements, pos_apply_stock_count"
+    },
+    {
+      "id": "PRICE-02",
+      "severity": "P2",
+      "title": "order_items does not freeze SKU, barcode, category, alcohol flag or tax; SKU is dropped at finalization and pos_list_orders joins it live",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "PARTIAL (8e7dd77, migration 20261001225000): the SKU is frozen in the order line at insert, backfilled for existing lines and immutable afterwards. With it the order keeps every commercial field the mission lists (name, SKU, quantity, unit price, subtotal, discounts, delivery fee, total, currency). Still read live from the product: barcode, category, the alcohol flag and tax attributes, and the point-of-sale order listing joins the product. The age check of an order does not depend on it (the confirmation is frozen in the order), and the fiscal document is computed by the fiscal core. The point-of-sale listing belongs to the Caja Clara work line and was not touched here. Lead assessment of what remains: P3.",
+      "aliases": [],
+      "domain": "pricing_snapshot",
+      "where": "public.order_items (columns); public.finalize_paid_checkout_session; public.create_order_with_items_core; public.pos_list_orders; private.commercial_order_fiscal_evaluation",
+      "verification": [
+        {
+          "id": "PRICE-02",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "PRICE-03",
+      "severity": "P2",
+      "title": "Order money snapshot is immutable only by grants; no trigger protects orders money columns, order_items or order_combos, and nothing reconciles subtotal with the lines",
+      "status": "fixed",
+      "fixed_by": "56941df · supabase/migrations/20261001224500_order_money_snapshot_immutable.sql",
+      "notes": "Residual: nothing asserts at commit that the lines add up to the header totals.",
+      "aliases": [],
+      "domain": "pricing_snapshot",
+      "where": "public.orders (subtotal, discount_total, delivery_fee, total, currency_code); public.order_items; public.order_combos",
+      "verification": [
+        {
+          "id": "PRICE-03",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "PRICE-04",
+      "severity": "P2",
+      "title": "With zone enforcement on, the delivery fee and minimum are selected by a neighbourhood string the client declares, with no check against the confirmed pin",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "PARTIAL (7030f69): the radius cap now always denies beyond the bound, enforced or not, and the readiness answer reports customer_selects_price. Still reproducible by design: with declared-area zones of different prices a customer inside the bound can declare the cheap zone. Only polygons tell zones apart and none were invented: owner input (one fee for all declared zones, or polygons).",
+      "aliases": [
+        "F-01"
+      ],
+      "domain": "pricing_snapshot",
+      "where": "public.resolve_delivery_zone (declared_area branch); callers create_order_with_items_core and create_checkout_session",
+      "verification": [
+        {
+          "id": "PRICE-04",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        },
+        {
+          "id": "F-01",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "DIAG-02",
+      "severity": "P2",
+      "title": "Webhook-sourced payment jobs and signature rejections are invisible to alerts and health",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "PARTIAL (13608b7, 918237f, 4a4afa79, 20261003091000): intent-less stalled payment-queue jobs, refunds needing attention (REFUND_NEEDS_ATTENTION) and payments to review (PAYMENT_NEEDS_REVIEW) open operational alerts (20261002011000); build_operational_health attributes webhook jobs to the seller's business (20261001220500); and get_production_operation_center.metrics.blocked_outboxes now counts intent-less failed/dead-lettered webhook jobs of the business's seller (20261003091000, operation_center_counts_provider_notification_jobs_test.sql: 0 before the migration, 1 and 2 after). Signature rejections are platform traffic, not a business alert: get_ecommerce_health() counts them. Still open, frontend only: the Panel shows the new codes with generic text (touching a precached client file requires bumping the service-worker identity, owned by the frontend line).",
+      "aliases": [
+        "PAY-12"
+      ],
+      "domain": "observability",
+      "where": "public.reconcile_operational_alerts_for_business (PAYMENT_OUTBOX_STALLED and PAYMENT_WORKER_IDLE branches); public.build_operational_health (payments.outbox, payments.worker); public.get_production_operation_center (blocked_outboxes); public.record_mercadopago_webhook_receipt",
+      "verification": [
+        {
+          "id": "DIAG-02",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "DIAG-03",
+      "severity": "P2",
+      "title": "production-health-check.mjs can never be green and can never see a CRITICAL alert",
+      "status": "fixed",
+      "fixed_by": "b6a94a96 · scripts/production-health-check.mjs + tests/production-health-check.test.mjs",
+      "notes": "Reproduced against the branch applied in a local database with a role equal to supabase_read_only_user (bypassrls + pg_read_all_data, read-only transaction): with one open CRITICAL alert the old query counted 0 critical (severity = 'critical'; the table only admits 'CRITICAL'). It also required exactly four taba-* jobs (migrations schedule nine; CP has five) and only accepted the old production ref, so it could never be green and refused to look at CONTROLLED_PRODUCTION. Fixed: open = status <> 'resolved', severity compared case-insensitively, CRITICAL codes named; required jobs come from private.scheduler_expected_jobs when the target has it (else the four baseline jobs), an extra job is fine unless it fails, an inventory read empty is reported; the ledger is compared as sets (missing and drift); --target production|controlled-production|staging (or --ref of one of them, no implicit default), CP business from deploy/controlled-production.json; the read-only Management API endpoint. Tests: tests/production-health-check.test.mjs (11).",
+      "aliases": [],
+      "domain": "observability",
+      "where": "scripts/production-health-check.mjs lines 61-66, 177-178, 181-187, 29 and 83",
+      "verification": [
+        {
+          "id": "DIAG-03",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "DIAG-04",
+      "severity": "P2",
+      "title": "Opening the Panel auto-resolves SCHEDULER_WATCHDOG_STALE while the scheduler is still dead",
+      "status": "fixed",
+      "fixed_by": "13608b7 · supabase/migrations/20261001220500_operational_alerts_stay_truthful.sql",
+      "notes": "",
+      "aliases": [],
+      "domain": "observability",
+      "where": "public.reconcile_operational_alerts_for_business (final UPDATE), reached from public.get_production_operation_center -> public.refresh_operational_alerts; alert written by public.check_scheduler_watchdog",
+      "verification": [
+        {
+          "id": "DIAG-04",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "DIAG-05",
+      "severity": "P2",
+      "title": "A disabled or unscheduled cron job raises no alert; the DB holds no expected-job inventory",
+      "status": "fixed",
+      "fixed_by": "4a4afa79 · supabase/migrations/20261002011000_operational_alert_coverage.sql",
+      "notes": "A missing or disabled scheduled job now opens SCHEDULER_JOB_MISSING / SCHEDULER_JOB_DISABLED in the operational alerts (not only in get_ecommerce_health). Test: operational_alert_coverage_test.sql (101).",
+      "aliases": [],
+      "domain": "observability",
+      "where": "public.reconcile_operational_alerts_for_business (SCHEDULER_JOB_FAILING and SCHEDULER_JOB_STALLED); public.list_scheduler_health; 20260909050330_a1_a4_release_interlock_v5.sql lines 258 and 515",
+      "verification": [
+        {
+          "id": "DIAG-05",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "DIAG-06",
+      "severity": "P2",
+      "title": "cron.job_run_details is never pruned and list_scheduler_health aggregates its full history every minute",
+      "status": "fixed",
+      "fixed_by": "1fdcc4e · supabase/migrations/20261001220000_scheduler_inventory_and_history_retention.sql",
+      "notes": "Bounded read of the run history with exact numbers, daily purge job taba-cron-history-purge, schedule-aware stalled threshold.",
+      "aliases": [],
+      "domain": "observability",
+      "where": "public.list_scheduler_health; callers public.reconcile_operational_alerts_for_business (three references per business per sweep) and public.build_operational_health"
+    },
+    {
+      "id": "DIAG-07",
+      "severity": "P2",
+      "title": "ORDER_NOT_ACCEPTED and ORDER_STALLED self-resolve after 24 h while the order stays open and keeps its stock",
+      "status": "fixed",
+      "fixed_by": "13608b7 · supabase/migrations/20261001220500_operational_alerts_stay_truthful.sql",
+      "notes": "",
+      "aliases": [],
+      "domain": "observability",
+      "where": "public.reconcile_operational_alerts_for_business (ORDER_NOT_ACCEPTED, ORDER_STALLED); public.release_expired_stock_reservations; public.create_order_with_items_core"
+    },
+    {
+      "id": "DIAG-09",
+      "severity": "P2",
+      "title": "Alerts and new-order notifications have no out-of-band channel: outboxes have no consumer and health signals have no emitter",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "NOT CHANGED: it needs a channel and a credential, an owner decision (report, OWNER_APPROVAL_REQUIRED item 6). operational_alerts are computed every minute (with 20261003092000 also for a closed business with checkouts in the last 30 days or an open alert) and the CP pulse reads them, but nothing leaves the Panel. The minimal proposal in the report adds no product code: a scheduled workflow that runs scripts/production-health-check.mjs --target controlled-production and fails (GitHub sends the mail) while a CRITICAL alert is open; it needs a Management API token as a repository secret. The same channel decision covers OSM-05.",
+      "aliases": [],
+      "domain": "observability",
+      "where": "public.notification_outbox (writer enqueue_new_order_notification), public.delivery_outbox (writers confirm_delivery_code, report_rider_delivery_issue), public.service_health_signals / public.record_service_health_signal, public.operational_alerts",
+      "related": [
+        "OSM-05"
+      ]
+    },
+    {
+      "id": "DIAG-10",
+      "severity": "P2",
+      "title": "External watchdogs and health scripts default to projects other than the controlled-production store",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "PARTIAL (b6a94a96): scripts/production-health-check.mjs now takes --target controlled-production|staging|production (no implicit default). Still open: scripts/scheduler-watchdog-probe.mjs, services/scheduler-watchdog/wrangler.toml, .github/workflows/scheduler-watchdog.yml and scripts/production-auth-health.mjs keep pointing at other projects; retargeting the external watchdog to CP is an operational change (secrets, Cloudflare worker) for the owner.",
+      "aliases": [],
+      "domain": "observability",
+      "where": "scripts/scheduler-watchdog-probe.mjs line 49; services/scheduler-watchdog/wrangler.toml; scripts/production-health-check.mjs; scripts/production-auth-health.mjs; .github/workflows/scheduler-watchdog.yml"
+    },
+    {
+      "id": "DIAG-14",
+      "severity": "P2",
+      "title": "The alerts sweep skips a closed business with no open alert, and 'closed' is the Panel's end-of-day state: payment alerts of a closed business wait until someone reopens, and an unverified checkout of a business closed for 30+ days never gets its alert",
+      "status": "fixed",
+      "fixed_by": "c5166237 + 3573140a · supabase/migrations/20261003092000_alerts_sweep_watches_closed_business_with_payments.sql",
+      "notes": "Pre-existing (evaluate_operational_alerts_sweep), found by the second adversarial pass and reproduced on the local gate database: a checkout that reached Mercado Pago shortly before the owner pressed 'Cerrar negocio' (business-operations-center.js, status closed) got no CHECKOUT_PROVIDER_UNVERIFIED while the business stayed closed; past 30 days the alert only follows checkouts that already had one, so it never opened. The same skip delayed any payment alert of a closed business (an approval without order arriving at night) until the next opening. Fix: a closed business is also evaluated while any of its payment intents moved in the last 30 days (creation, preference, expiry and every recorded payment move updated_at); after 30 days without movement and without open alerts it is skipped again. Test: alerts_sweep_watches_closed_business_test.sql (fails before the migration: the closed business gets no alert); rollback drill exact. 3573140a: the selection uses payment_intents.created_at > now() - 30 days through the existing (business_id, created_at) index (the third pass measured ~32 ms per run for a dormant closed business with 100,000 intents on updated_at; now ~0.5-1 ms, index only scan); the test adds the 30-day bound. Residual (P3, documented): a closed business with no checkout created in the last 30 days and no open alert is not evaluated when a late event lands on an older intent (a refund or chargeback made later in Mercado Pago); its alerts are computed when it reopens or once any alert is open, and the CP pulse still counts an approved payment without order from the tables (MP_PAID_WITHOUT_ORDER, PULSE-01). The updated_at selection of c5166237 covered it at the cost of reading the whole history of a dormant business every minute; an index on payment_intents (business_id, updated_at) is the way back if that case matters. Fourth pass (i3_dormant_closed_chargeback.sql) reproduced it: a chargeback on a 45-day-old sale of a closed business raises no PAYMENT_NEEDS_REVIEW until it reopens (10 days old: open); kept at P3 (only closed businesses without a checkout in 30 days; Mercado Pago notifies the seller of chargebacks directly). The reviewer's indexed alternative, evaluating closed businesses with provider notifications in the last 30 days (index on payment_webhook_receipts (seller_business_id, received_at)), covers only notifications that arrive through the seller's own webhook URL (mp_record_seller_webhook sets seller_business_id; the platform-level receipt does not), so it is listed, not applied.",
+      "aliases": [],
+      "domain": "observability",
+      "where": "public.evaluate_operational_alerts_sweep (business selection: status <> 'closed' or an open alert)",
+      "related": [
+        "PAY-PROBE-02",
+        "DIAG-09"
+      ],
+      "verification": [
+        {
+          "id": "DIAG-14",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "AUTHZ-02",
+      "severity": "P2",
+      "title": "Column-level UPDATE grants on products and businesses bypass RPC authority, validation, inventory ledger and audit",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "PARTIAL. Products half CLOSED (142451e): UPDATE on stock, available and is_active is revoked from authenticated; stock moves through the RPCs with a ledger row and publication through the RPCs with gates. Businesses half MITIGATED, not closed (91840b3, 0977a75): the column grant stays because the Panel writes some of those columns directly; every such write is now audited with before, after and actor, the currency of a verified business is locked and delivery cannot be switched on without coverage. Still true: an owner or admin can change status, fulfilment switches and contact data with a direct PATCH instead of the RPC. Closing it means moving the Panel to the RPCs and revoking the grant.",
+      "aliases": [
+        "STK-03",
+        "CAT-06"
+      ],
+      "domain": "security_rls",
+      "where": "GRANT UPDATE(available,is_active,sort_order,stock) ON public.products TO authenticated + policy 'production team updates products'; GRANT UPDATE(21 columns) ON public.businesses TO authenticated + policy 'production owners update business ordering'",
+      "related": [
+        "CAT-08"
+      ]
+    },
+    {
+      "id": "AUTHZ-03",
+      "severity": "P2",
+      "title": "identity_close_own_session lets any authenticated user (including an anonymous customer) append unlimited audit events to any business",
+      "status": "fixed",
+      "fixed_by": "2415299 · supabase/migrations/20261001223000_identity_session_close_and_invitation_guards.sql",
+      "notes": "",
+      "aliases": [],
+      "domain": "security_rls",
+      "where": "public.identity_close_own_session(p_business_id uuid); public.identity_audit_events"
+    },
+    {
+      "id": "AUTHZ-04",
+      "severity": "P2",
+      "title": "Permission catalog is not the enforced contract: admin can authorize ARCA homologation, staff can cancel orders",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "PARTIAL (4cee8a74, 20261002050000): cancelling and rejecting an order now follow orders.cancel of the permission catalog (owner and admin; staff only if the catalog grants it). Still open, owner decision: set_business_open_state (staff can open and pause; the catalog says business.settings is owner/admin) and authorize_arca_homologation (admin can authorize; the catalog says fiscal.authorize is owner only). The catalog grants per role and platform-wide: there is no per-member or per-business grant. Before applying 20261002050000 anywhere: staff lose cancel and reject at once (also staff-run Caja Clara tills) while the Panel and the till still show the buttons.",
+      "aliases": [],
+      "domain": "security_rls",
+      "where": "public.identity_role_permissions vs public.authorize_arca_homologation, public.cancel_order, public.transition_order, public.set_business_open_state"
+    },
+    {
+      "id": "EDGE-05",
+      "severity": "P2",
+      "title": "Rate-limit key combines IP and user and takes the first x-forwarded-for hop; the unauthenticated webhook writes a row per rejected request; nothing purges the tables",
+      "status": "fixed",
+      "fixed_by": "ac93db3 · supabase/migrations/20261001230000_payment_request_traces_purge_and_rejected_webhook_scope.sql",
+      "notes": "Client address from cf-connecting-ip, separate user and address buckets, signature decided before any write, rejected receipts capped per address and overall, daily purge. Not addressed: the fixed-window double burst across a window boundary.",
+      "aliases": [
+        "F7"
+      ],
+      "domain": "mp_edge",
+      "where": "supabase/functions/_shared/payment-runtime.ts enforceRateLimit and requestFingerprint (L243-270); mercadopago-webhook/index.ts L34 and L75-80; public.consume_payment_rate_limit; public.payment_rate_limit_buckets; public.payment_webhook_receipts",
+      "related": [
+        "F5"
+      ]
+    },
+    {
+      "id": "EDGE-06",
+      "severity": "P2",
+      "title": "Preference creation has dead ends: any provider 4xx (including 408/409/429) marks the attempt failed with no way to open a new one; local errors are recorded as provider timeouts; ambiguous attempts are never resolved",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "PARTIAL (5b247f7): a provider 408/409/425/429 leaves the attempt uncertain instead of failed, and local errors send nothing and record nothing. Still open, needs a decision: an uncertain attempt answers 202 until the session expires and is never re-sent; a final 4xx leaves the intent in preference_creating with no way to open a new attempt. Options: re-POST with the same idempotency key after a provably empty search, and/or a database exit.",
+      "aliases": [
+        "PAY-09"
+      ],
+      "domain": "mp_edge",
+      "where": "supabase/functions/mercadopago-create-preference/index.ts L94-153; public.record_mercadopago_preference_failed; public.prepare_mercadopago_preference_v2; public.record_mercadopago_preference_uncertain"
+    },
+    {
+      "id": "EDGE-08",
+      "severity": "P2",
+      "title": "The seller credential is destroyed on non-authoritative provider signals: any HTTP 401 on any resource, and any ambiguous refresh outcome",
+      "status": "fixed",
+      "fixed_by": "5d0c366",
+      "notes": "A resource 401 is confirmed against /users/me before the credential is invalidated; an ambiguous refresh keeps the credential and is marked for attention. Residual: a connection can stay 'connected' with an expired token if the refresh keeps failing through the token's last day, and availability does not look at the expiry (database change, not done); no alert reads the pending-refresh marker.",
+      "aliases": [],
+      "domain": "mp_edge",
+      "where": "supabase/functions/_shared/mercadopago.ts mercadoPagoRequest (L147-149); _shared/seller-oauth.ts invalidateRejectedToken (L468-486) and sellerAccessToken (L230-241, L288-306)"
+    },
+    {
+      "id": "PAY-03",
+      "severity": "P2",
+      "title": "Retrying a webhook job is not idempotent: the second snapshot violates the payment_events unique key and the job dead-letters",
+      "status": "fixed",
+      "fixed_by": "a2f6960 · supabase/migrations/20261001200000_mercadopago_snapshot_keeps_reservation_and_pins_payment.sql",
+      "notes": "",
+      "aliases": [],
+      "domain": "payments_db",
+      "where": "public.record_mercadopago_payment_snapshot (insert into payment_events) + constraint payment_events_payment_intent_id_webhook_receipt_id_event_t_key; supabase/functions/mercadopago-payment-worker/index.ts processJob",
+      "verification": [
+        {
+          "id": "PAY-03",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "PAY-04",
+      "severity": "P2",
+      "title": "The provider payment identity is not pinned: a second payment on the same external_reference overwrites it, and a double charge is not detected",
+      "status": "fixed",
+      "fixed_by": "a2f6960 · supabase/migrations/20261001200000_mercadopago_snapshot_keeps_reservation_and_pins_payment.sql",
+      "notes": "Residuals written in the migration header: a duplicate charge is flagged as payment.duplicate_approved but raises no operational alert, the Panel refund targets only the pinned payment, and a dispute on the duplicate payment dead-letters. Since 4a4afa79 (20261002011000) a duplicate approved charge opens PAYMENT_NEEDS_REVIEW; a person cannot close it and nothing re-reads that payment, so a historical one can stay critical.",
+      "aliases": [
+        "EDGE-07"
+      ],
+      "domain": "payments_db",
+      "where": "public.record_mercadopago_payment_snapshot (update of provider_payment_id / provider_status)",
+      "verification": [
+        {
+          "id": "PAY-04",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "PAY-06",
+      "severity": "P2",
+      "title": "Completed intents are never reconciled again, and a dead-lettered webhook cannot be revived; no provider-vs-local reconciliation report exists",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "PARTIAL (e2a7df0, cf0d30fb): the read-only reconciliation tool exists, and a dead-lettered READ job can now be revived (revive_payment_outbox_job, owner or admin, with reason and audit; 20261002023000, payment_queue_and_receipts_test.sql §9). Still open, owner decision: a scheduled re-read of completed intents (window, frequency and provider rate limits), and a dedicated exit for a dead-lettered cancellation_reconcile. Also open under this owner decision (third adversarial pass, pre-existing): a completed checkout whose other payment of the same preference is still pending (a cash ticket left pending after the card created the order) is watched by nothing; private.unresolved_provider_payment (20261003090000) already identifies it.",
+      "aliases": [],
+      "domain": "payments_db",
+      "where": "public.enqueue_payment_reconciliation, public.enqueue_checkout_provider_probes, public.record_mercadopago_webhook_receipt (duplicate path), public.fail_payment_outbox_job; reconciliation report: NOT IMPLEMENTED",
+      "verification": [
+        {
+          "id": "PAY-06",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "PAY-07",
+      "severity": "P2",
+      "title": "A refund stuck in 'requested', or 'ambiguous' without a provider id, has no resolution path and blocks every later refund of that payment",
+      "status": "fixed",
+      "fixed_by": "18dcb08 · supabase/migrations/20261001204000_stuck_refund_resolution_and_review_refund.sql",
+      "notes": "Database path only: public.resolve_stuck_payment_refund exists for owner/admin; the Panel has no button for it yet. Since 4a4afa79 (20261002011000) a refund that needs attention also opens REFUND_NEEDS_ATTENTION.",
+      "aliases": [
+        "EDGE-09"
+      ],
+      "domain": "payments_db",
+      "where": "public.prepare_payment_refund_v2, public.mark_payment_refund_ambiguous; supabase/functions/mercadopago-refund/index.ts; worker reconcileRefund"
+    },
+    {
+      "id": "PAY-08",
+      "severity": "P2",
+      "title": "Manual collections on online orders are missing from the daily cash reconciliation and from alerts",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "NOT CHANGED, by decision: it belongs to the Caja Clara sales-ledger line, whose branch redefines daily_reconciliation_snapshot_internal and close_daily_reconciliation. A second redefinition here would overwrite theirs when both are applied. A delivered-but-unpaid alert was not added either: when a rider settles cash is a business rule nobody has stated.",
+      "aliases": [],
+      "domain": "payments_db",
+      "where": "public.daily_reconciliation_snapshot_internal, public.reconcile_operational_alerts_for_business, public.confirm_manual_order_payment"
+    },
+    {
+      "id": "CS-05",
+      "severity": "P2",
+      "title": "'completed' is not terminal: an invalid later snapshot overwrites a completed session and its intent, and there is no transition guard on checkout_sessions",
+      "status": "fixed",
+      "fixed_by": "a2f6960 · a1fb610 (snapshot leaves a completed checkout alone; transition guard on checkout_sessions)",
+      "notes": "Residual: payment.post_completion_anomaly and in_mediation are only payment_events rows today; no operational alert reads them.",
+      "aliases": [
+        "PAY-05"
+      ],
+      "domain": "checkout",
+      "where": "public.record_mercadopago_payment_snapshot (not v_valid branch); table public.checkout_sessions (no status trigger); private.order_payment_state",
+      "verification": [
+        {
+          "id": "CS-05",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        },
+        {
+          "id": "PAY-05",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "CS-06",
+      "severity": "P2",
+      "title": "The Edge Function hides every server rejection behind CHECKOUT_NOT_AVAILABLE, so the buyer cannot be told what to fix",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "PARTIAL (4b3f40f): the Edge Function now maps each refusal to a public code and HTTP status from a closed table. Still open on the client: the storefront does not read the body of a non-2xx answer, so the codes do not reach the buyer yet.",
+      "aliases": [
+        "F-04"
+      ],
+      "domain": "checkout",
+      "where": "supabase/functions/mercadopago-create-checkout-session/index.ts; js/repositories/supabase_order_repository.js (startMercadoPagoCheckout)",
+      "verification": [
+        {
+          "id": "CS-06",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        },
+        {
+          "id": "F-04",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "P2",
+      "title": "next_order_public_code truncates above 9999: a hard lifetime cap of 9,999 order codes per database, after which the code loop never terminates (including finalization of paid Mercado Pago sessions)",
+      "status": "fixed",
+      "fixed_by": "5787a6f · supabase/migrations/20261001193000_order_public_code_grows_past_9999.sql",
+      "notes": "",
+      "aliases": [],
+      "domain": "orders_abuse",
+      "where": "public.next_order_public_code (supabase/migrations/20260601205707_operational_orders_v1.sql:177-181); loops in public.create_order_with_items_core and public.finalize_paid_checkout_session; UNIQUE orders_code_key (code)",
+      "verification": [
+        {
+          "id": "F3",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "F4",
+      "severity": "P2",
+      "title": "Idempotent replay of a pickup order is not side-effect free: every replay bumps orders.revision and updated_at and can rewrite unfingerprinted columns, letting the customer make operator commands fail with PT409",
+      "status": "fixed",
+      "fixed_by": "77f2f9e · supabase/migrations/20261001194000_pickup_order_replay_is_side_effect_free.sql",
+      "notes": "Also observed live on staging by the certification runner before the fix (revision 3 to 6 after three replays).",
+      "aliases": [],
+      "domain": "orders_abuse",
+      "where": "public.create_order_with_items_profile_v1_city_legacy (body from supabase/migrations/20260728090000_customer_profiles_addresses.sql:626-640); triggers orders_set_updated_at and orders_zz_bump_revision; public.transition_order and public.cancel_order",
+      "verification": [
+        {
+          "id": "F4",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "F5",
+      "severity": "P2",
+      "title": "The only existing limiter (Mercado Pago path) is weak: NULL means unlimited, the DB count is not race-safe and ignores orders, and the Edge bucket subject mixes IP and user id so a changed IP resets the per-user budget",
+      "status": "fixed",
+      "fixed_by": "7bdf9d4 (database: the intake guard counts orders and sessions under a lock, NULL uses a default) · ac93db3 (Edge: separate user and address buckets)",
+      "notes": "Closed in two halves. Database (7bdf9d4): the intake guard uses defaults instead of NULL, counts under a lock, and orders and checkout sessions share one budget. Edge (ac93db3): the request limit keeps one bucket per user and one per address, and the address is the one the platform sets (not a forwarded header). Residual (P3): a fixed window lets through a double burst across its edge.",
+      "aliases": [],
+      "domain": "orders_abuse",
+      "where": "public.create_checkout_session (supabase/migrations/20260813020000_checkout_pro_carries_customer_notes.sql:498-507); supabase/functions/_shared/payment-runtime.ts:243-270 (enforceRateLimit, requestFingerprint); supabase/functions/mercadopago-create-checkout-session/index.ts:22",
+      "related": [
+        "EDGE-05",
+        "CS-04"
+      ],
+      "verification": [
+        {
+          "id": "F5",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "F6",
+      "severity": "P2",
+      "title": "Payload key address_label is stored without any length limit in orders.delivery_address_formatted; manual-path notes are not stripped of control characters",
+      "status": "fixed",
+      "fixed_by": "7bdf9d4 · supabase/migrations/20261001180000_order_intake_guard.sql",
+      "notes": "Input hygiene lives in the public order wrapper: payload size cap, address_label length, control characters stripped from notes.",
+      "aliases": [],
+      "domain": "orders_abuse",
+      "where": "public.create_order_with_items_profile_v1_city_legacy; public.create_order_with_items_core (length check); public.orders.delivery_address_formatted",
+      "verification": [
+        {
+          "id": "F6",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "CAT-03",
+      "severity": "P2",
+      "title": "apply_commercial_catalog_batch silently leaves a product hidden and unverified when a row combines a price change with publish=true on a verified but not-available product",
+      "status": "fixed",
+      "fixed_by": "142451e · supabase/migrations/20261001210000_catalog_stock_authority.sql",
+      "notes": "",
+      "aliases": [],
+      "domain": "catalog_pipeline",
+      "where": "public.apply_commercial_catalog_batch (republish block) together with trigger public.fail_close_verified_product_master_change; public.apply_commercial_catalog_plan (discards row outcomes); scripts/import-commercial-catalog.mjs applyCommercialImport"
+    },
+    {
+      "id": "CAT-04",
+      "severity": "P2",
+      "title": "Catalog price, stock and publication changes have no audit trail and no before-image, so a committed batch cannot be rolled back",
+      "status": "fixed",
+      "fixed_by": "142451e (catalog change trail and rollback_commercial_catalog_batch)",
+      "notes": "The adversarial review found two defects of the first version of the rollback (stock restored over a count that had closed a conflict; a publication decided by the batch not undone); both fixed and covered. Known and reported by the rollback itself: a product whose merchant intent was already on can be reoffered by a later stock return (off_sale_intent_on).",
+      "aliases": [],
+      "domain": "catalog_pipeline",
+      "where": "public.apply_commercial_catalog_batch, public.apply_commercial_catalog_plan, public.set_commercial_product_publication, public.unpublish_catalog_product; table public.products (triggers); public.business_config_audit"
+    },
+    {
+      "id": "CAT-07",
+      "severity": "P2",
+      "title": "Products created by the sheet 'alta' or by scanned drafts have no owner-accessible path to become publishable; the documented 'second pass' cannot succeed",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "PARTIAL (142451e): a product created by the sheet can now be completed (packaging and subcategory) and published by the owner, and the batch names the missing field. Still open: a scanned draft is born without sku or external_id and inactive, so no publication RPC can address it; who names and activates a scanned product is a verification-authority decision.",
+      "aliases": [],
+      "domain": "catalog_pipeline",
+      "where": "public.apply_commercial_catalog_plan (INSERT column list); public.publish_catalog_product_draft; CHECKs products_verified_master_data, products_verified_publication_authority, products_verified_numeric_ranges"
+    },
+    {
+      "id": "CAT-08",
+      "severity": "P2",
+      "title": "Alcohol enablement, abuse limits, currency and open/ordering state are direct column writes on businesses with no audit, bypassing the audited RPCs",
+      "status": "fixed",
+      "fixed_by": "91840b3 · supabase/migrations/20261001224000_business_direct_write_audit_and_currency_lock.sql",
+      "notes": "",
+      "aliases": [],
+      "domain": "catalog_pipeline",
+      "where": "Column grants on public.businesses to authenticated; policy 'production owners update business ordering' (owner/admin); scripts/controlled-production/alcohol-policy.mjs line 90; trigger audit_business_commercial_change",
+      "related": [
+        "AUTHZ-02"
+      ]
+    },
+    {
+      "id": "TOOL-02",
+      "severity": "P2",
+      "title": "The staging certifier cannot be reused as a library: no exports and it executes on import",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "NOT CHANGED (the verifier graded it P3). Nothing imports this Staging certifier: the CI stack job runs its own (scripts/e2e-staging/ecommerce-certification.mjs --target stack). Making it importable means splitting the CLI from the module; a main-module guard (import.meta.url against process.argv[1]) is not a safe shortcut, because under a symlinked path it skips the run without an error. Left for when a caller exists, together with TOOL-03; this session has no Staging credentials to run the tool end to end after such a split.",
+      "aliases": [],
+      "domain": "tests_tooling",
+      "where": "scripts/e2e-staging/backend-e2e-certification.mjs line 1476 (`await run();`), and the whole module",
+      "verification": [
+        {
+          "id": "TOOL-02",
+          "real": true,
+          "reproduced": true,
+          "severity": "P3"
+        }
+      ]
+    },
+    {
+      "id": "TOOL-03",
+      "severity": "P2",
+      "title": "The certifier hard-requires staging ledger == repo ledger, and staging promotion is manual with no script (Supabase CLI not installed here)",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "NOT CHANGED, by design: DB_LEDGER_EQUALS_REPO is what makes a Staging certification evidence about this branch (certifying against another ledger would be false evidence), so it stays a hard check. The missing piece is applying the branch to Staging (its migrations and the 9 Mercado Pago Edge Functions), an owner step with exact instructions in the report (OWNER_APPROVAL_REQUIRED item 1); the cloud session has no Supabase credentials. Until then the branch is certified by the canonical database gate and by the ecommerce certifier on an ephemeral Supabase stack in CI.",
+      "aliases": [],
+      "domain": "tests_tooling",
+      "where": "scripts/e2e-staging/backend-e2e-certification.mjs lines 259-262 and 509-510; artifacts/taba-e2e-cert-20261001-022224/final-report.md lines 109-125 and 304",
+      "related": [
+        "CAT-02"
+      ],
+      "verification": [
+        {
+          "id": "TOOL-03",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "TOOL-04",
+      "severity": "P2",
+      "title": "Order-core SQL suites are orphaned: the runner they name does not exist and none of them is in CI",
+      "status": "fixed",
+      "fixed_by": "5f9a326b · supabase/tests/order_core_gaps_test.sql + 6fd0b6f4, 2018ea51, 4a0ce219, 3a080d44",
+      "notes": "PARTIAL (cf0d30fb): the payments part is covered by canonical pgTAP (payment_queue_and_receipts_test.sql, payment_refund_and_reversal_chain_test.sql). supabase/tests/mercadopago_checkout_pro.local.sql is NOT deleted: tests/mercadopago-lifecycle.test.mjs and the A1 verifiers (scripts/verify-a1-v2-*.mjs, verify-a1-a4-reproductions.mjs) read it as a legacy fixture of the pre-branch schema. The order_* suites remain. CLOSED (5f9a326b): the four order_* suites cannot be revived by fixing fixtures (they call v1 payment functions the A1-A4 contract replaced with 55000 stubs, and create no identity sessions). A read-only coverage map of every check against the canonical pgTAP, the race harnesses and the ephemeral-stack certifier found 14/18, 60/74, 19/20 and 3/12 already covered (two of them superseded by 20261003090000). The uncovered ones that matter are ported to order_core_gaps_test.sql (41): the payment-intent status-regression trigger, two riders and one order through claim_delivery_order with revisions and the queue, an order offered to one rider and claimed by another from the open queue (the offer disappears from the first rider's board and accepting it later answers order_unavailable), two sweeps with a probe in flight leave one job, ORDER_READY_WITHOUT_RIDER opening and closing, and STOCK_RESERVATION_STUCK (the sweep closes it; the one held by a payment in manual review stays open and the service list gives the Panel recipe). The legacy files stay as historical evidence. Follow-ups from the same coverage map: 6fd0b6f4 (the refund stays offered after a re-arm refused for stock), 2018ea51 (rider_sees_customer_point_only_after_claim_test.sql, 18: the exact customer point only for the rider who took the delivery, through the open queue, private.rider_map_location_payload and the orders table; five guard mutations killed) and 4a0ce219 (clean_cycle_leaves_no_alerts_test.sql, 16: a Mercado Pago pickup and a cash delivery end to end with a healthy scheduler, every timestamp of the cycle shifted three hours back, leave no alert open or resolved; five false-positive mutations of the reconcile killed, all of which survive without the shift) and 3a080d44 (in the same cycle, list_operational_pipeline shows the paid Checkout Pro order once, as a Mercado Pago order with the checkout amount, and the paid checkout no longer as pending). Still unported (P3): the operations-center metrics.",
+      "aliases": [],
+      "domain": "tests_tooling",
+      "where": "supabase/tests/order_end_to_end_chain.local.sql line 9; order_intake_dispatch_p0.local.sql line 4; order_intake_dispatch_audit.local.sql line 5; scripts/run-release-v5-db.mjs lines 196-208"
+    },
+    {
+      "id": "TOOL-05",
+      "severity": "P2",
+      "title": "`npm test` mutates the worktree: one test rewrites .github/workflows/ci.yml in place",
+      "status": "fixed",
+      "fixed_by": "94479254 · scripts/check-supabase-config.mjs (--config/--workflow) + tests/supabase-config-legible.test.mjs",
+      "notes": "tests/supabase-config-legible.test.mjs wrote a broken config over supabase/config.toml and a moved CLI version over .github/workflows/ci.yml and restored them in a finally: an interrupted run left the tree modified and a concurrent reader saw the changed file. The guard now takes --config and --workflow (defaults: the repository files) and the test hands it copies under the gitignored test-results/, removed afterwards. Regression: the moved-CLI test compares content AND modification time of both repository files before and after (a write-and-restore keeps the text but changes the time; checked that the assertion catches the old behaviour). tests/production-sale-e2e-auto.test.mjs line 49 only creates and removes scratch dirs under the gitignored test-results/ on purpose (the system temp disk of the owner machine is nearly full): not a tracked-file mutation.",
+      "aliases": [],
+      "domain": "tests_tooling",
+      "where": "tests/supabase-config-legible.test.mjs lines 103-112; tests/production-sale-e2e-auto.test.mjs line 49",
+      "verification": [
+        {
+          "id": "TOOL-05",
+          "real": true,
+          "reproduced": true,
+          "severity": "P3"
+        }
+      ]
+    },
+    {
+      "id": "TOOL-06",
+      "severity": "P2",
+      "title": "There is no staging runner for the literal last-unit race, and the staging stock pilot is single-shot",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "NOT CHANGED: a hosted run needs Staging (or CP) credentials the cloud session does not have. The literal last-unit race runs in the canonical gate: scripts/order-intake/stock-race.mjs (c6dac99e), race 1, stock 1 and two customers at the same instant for 10 rounds -> one order, stock 0, the other refused for stock, plus nine more races (manual orders, Checkout Pro sessions, sweeps, cancellations and duplicate webhooks). The hosted tools stay as they are: last-unit-race.mjs requires --target controlled-production, and the Staging pilot refuses a second run under the same run name and reads its credentials from the Windows secret store. A Staging runner is worth writing once Staging carries this branch (OWNER_APPROVAL_REQUIRED item 1).",
+      "aliases": [],
+      "domain": "tests_tooling",
+      "where": "scripts/controlled-production/last-unit-race.mjs line 22; scripts/e2e-staging/stock-concurrency-pilot.mjs lines 8-9 and 18"
+    },
+    {
+      "id": "TOOL-07",
+      "severity": "P2",
+      "title": "There is no passing capacity baseline on staging, and the capacity tool has no p99 or per-operation thresholds",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "NOT CHANGED: a baseline needs Staging with this branch applied. The last Staging run (capacity-staging-ci-20260924.json) failed on harness findings (GPS samples sent back to back, fixed in 56556ae5) and on revision conflicts retried by PostgREST until a 504 (fixed afterwards by 20260924200000, per the run's own analysis); data integrity passed. The tool reports p50, p95 and max per operation; thresholds (p99 or per operation) set before a passing baseline would be invented numbers. Next: apply the branch to Staging (OWNER_APPROVAL_REQUIRED item 1), run capacity-30.mjs there (workflow controlled-capacity.yml), then set the thresholds from that baseline.",
+      "aliases": [],
+      "domain": "tests_tooling",
+      "where": "scripts/controlled-production/capacity-30.mjs lines 90-103 and 577-584; docs/evidence/controlled-production/capacity-staging-ci-20260924.json"
+    },
+    {
+      "id": "TOOL-11",
+      "severity": "P2",
+      "title": "Twelve pgTAP files in supabase/tests ran in no gate and no workflow, including customer-profile and back-office isolation and the rider multi-order security suite",
+      "status": "fixed",
+      "fixed_by": "e3626e89 · scripts/run-release-v5-db.mjs (canonicalTests) + three fixtures updated",
+      "notes": "Of the 19 files outside canonicalTests, twelve were pgTAP and nothing ran them (scripts/run-rider-multi-order-db.mjs is not in CI either). On the current schema seven passed as they were (back-office isolation 28, customer-profile isolation 47, beverage taxonomy 20, registration approval 98, rider multi-order capacity 27, offers 32, isolation 38) and three had stale fixtures without weakening what they assert: optional_product_assets (an asset dressing a product with another SKU, refused since 20260927175058), customer_read_keeps_rider_offer (the replay re-read the offer as 'pending' after it was accepted and sent NULL), rider_multi_order_security (the cross-tenant refusal message is now capitalised; 42501 still required). All ten are canonical now (+347 assertions; local gate PASS with 6,378). commercial_catalog_stock_null_test.sql is a read-only CP query, not pgTAP; the *.local.sql files stay separate harnesses (see TOOL-04).",
+      "aliases": [],
+      "domain": "tests_tooling",
+      "where": "scripts/run-release-v5-db.mjs canonicalTests; supabase/tests/*_test.sql not listed there",
+      "related": [
+        "TOOL-04"
+      ],
+      "verification": [
+        {
+          "id": "TOOL-11",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "F-02",
+      "severity": "P2",
+      "title": "Paid Mercado Pago orders are created after closing or after a manual pause, with no flag, alert or cutoff; alcohol is not re-checked after session creation",
+      "status": "fixed",
+      "fixed_by": "d9de49b · supabase/migrations/20261001200100_paid_checkout_finalization_carries_age_and_closing_mark.sql",
+      "notes": "The paid order is still created (the customer paid while the session was valid) and is marked with an order.created_after_closing event.",
+      "aliases": [],
+      "domain": "hours_delivery",
+      "where": "public.finalize_paid_checkout_session; public.get_mercadopago_payment_authority_base_v2; create_checkout_session",
+      "verification": [
+        {
+          "id": "F-02",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "F-03",
+      "severity": "P2",
+      "title": "No public contract for CLOSES_AT, alcohol-window status or date exceptions; open state is split across two booleans",
+      "status": "fixed",
+      "fixed_by": "1cde20c · supabase/migrations/20261001213000_business_service_status.sql",
+      "notes": "Backend contract: get_business_service_status answers OPEN / CLOSED with reason, opens_at and closes_at per channel (delivery, pickup, alcohol), from the same primitive the order path calls. The storefront does not call it yet: client work, tracked by F-05.",
+      "aliases": [],
+      "domain": "hours_delivery",
+      "where": "public.commerce_availability; absence of any business_closes_at function",
+      "verification": [
+        {
+          "id": "F-03",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "F-05",
+      "severity": "P2",
+      "title": "The web client does not map BUSINESS_CLOSED or OUT_OF_DELIVERY_ZONE on the manual path, and mislabels ALCOHOL_WINDOW_CLOSED",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "NOT CHANGED: web client, release line of the frontend. The manual path refuses with BUSINESS_CLOSED, OUT_OF_DELIVERY_ZONE and ALCOHOL_WINDOW_CLOSED (create_order_with_items_core, 20260812220000, errcode 55000 with a detail), but readableOrderCreationError has no branch for the first two, so both fall into the generic 'Conservamos el intento para reintentar' (it invites a retry that will never enter), and the third contains 'alcohol' without 'fuera de horario', so it reads as 'this business does not sell alcohol yet'. The file is precached by the service worker (listed in sw.js), so changing it means a new service-worker identity, which the frontend line owns: two branches shipping different files under the same cache name would leave installed clients on the stale copy (same reason as DIAG-02's Panel texts and ALERT-STOCK-01).",
+      "aliases": [],
+      "domain": "hours_delivery",
+      "where": "js/repositories/supabase_order_repository.js, readableOrderCreationError (lines 3414-3469)",
+      "verification": [
+        {
+          "id": "F-05",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "F-06",
+      "severity": "P2",
+      "title": "The functions that gate every order have almost no database-level tests; a migration header claims tests that do not exist",
+      "status": "fixed",
+      "fixed_by": "1cde20c · 7030f69 · 8ec5de2 (four pgTAP files, 388 assertions, in the canonical gate)",
+      "notes": "",
+      "aliases": [],
+      "domain": "hours_delivery",
+      "where": "supabase/tests (missing); business_is_open, business_next_open_at, business_day_windows, resolve_delivery_zone, set_service_enforcement, set_business_service_exception, zone RPCs"
+    },
+    {
+      "id": "OSM-03",
+      "severity": "P2",
+      "title": "Customer cancellation is unreachable: the rule exists but no customer-callable function exposes it",
+      "status": "fixed",
+      "fixed_by": "2f76304 · supabase/migrations/20261001192000_customer_cancels_own_unattended_order.sql",
+      "notes": "Backend contract only: the web client does not call cancel_own_order yet.",
+      "aliases": [],
+      "domain": "lifecycle_cancel",
+      "where": "public.change_order_status (customer branch); grants on change_order_status, transition_order (3-arg), transition_order (4-arg), cancel_order"
+    },
+    {
+      "id": "OSM-04",
+      "severity": "P2",
+      "title": "No recovery path for in-flight deliveries: lost code or deactivated rider after pickup leaves only cancel",
+      "status": "fixed",
+      "fixed_by": "4a4afa79 · supabase/migrations/20261002010000_complete_delivery_without_code.sql",
+      "notes": "The business management (owner or admin) can close an in-flight delivery without the customer code, with a mandatory reason and its own audited mark; never another business order, never a delivered or cancelled one, never outside a delivery state; a replay is a repeat. Test: complete_delivery_without_code_test.sql (162). Panel button: frontend follow-up.",
+      "aliases": [],
+      "domain": "lifecycle_cancel",
+      "where": "public.confirm_delivery_code, public.confirm_business_delivery_code, public.release_or_reassign_delivery, public.assign_order_rider, public.prevent_unverified_delivery, public.recover_order_tracking_access"
+    },
+    {
+      "id": "OSM-05",
+      "severity": "P2",
+      "title": "notification_outbox has no consumer; customers get no notification or reason on cancel/reject",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "NOT CHANGED: nothing consumes notification_outbox (the scripts that read it are QA monitors and certifiers), and public tracking (get_public_order_tracking, 20260814010000) shows cancelled_at and rejected_at but no reason. Both need decisions: the channel and its credential (the same as DIAG-09, OWNER_APPROVAL_REQUIRED item 6), and whether the reason the business types in cancel_order (free text) may be shown on a public tracking page (privacy, product).",
+      "aliases": [],
+      "domain": "lifecycle_cancel",
+      "where": "public.enqueue_new_order_notification; public.notification_outbox; public.get_public_order_tracking; RLS on public.order_events",
+      "related": [
+        "DIAG-09"
+      ]
+    },
+    {
+      "id": "OSM-06",
+      "severity": "P2",
+      "title": "Partial fulfilment NOT IMPLEMENTED: packing is advisory and a shortage changes neither items, total nor stock",
+      "status": "open",
+      "fixed_by": null,
+      "notes": "NOT CHANGED, product decision: confirm_packing_session_once records the packing, but a shortage changes neither the lines, the total nor the stock. Partial fulfilment of a paid order means a partial refund through Mercado Pago (real money) and a rule for who accepts the change; nothing was invented. Today a shortage is handled by cancelling the whole order (the stock returns once: order_cancel_inventory_release_test.sql) and, for a paid order, the refund flow.",
+      "aliases": [],
+      "domain": "lifecycle_cancel",
+      "where": "public.confirm_packing_session_once; public.change_order_status (preparing to ready); public.confirm_manual_order_payment"
+    },
+    {
+      "fixed_by": "ec818d12 · supabase/migrations/20261002090000_api_boundary_answers_refusals_as_4xx.sql; 0afe8a70 · supabase/migrations/20261002091000_client_refusals_carry_their_sqlstate.sql",
+      "notes": "Found by the staging certification runner: refusals with SQLSTATE 55000 came back as HTTP 500 (PostgREST maps the whole class 55 to 500, and the P0 family except P0001 as well, so a \"not found\" P0002 was also a 500: defect C-2 of the certifier). Closed on the server side (owner decision). 20261002090000 wraps the current body of 109 API entry functions in a boundary handler that, only when the call comes through the API (request.method set) and only in the outermost PL/pgSQL frame, re-raises 55000 as HTTP 409 and P0002 as HTTP 404 with the same body (code, message, details, hint); calls without request.method and nested PL/pgSQL callers still see the original SQLSTATE. 20261002091000 gives 46 client refusals in 5 functions the SQLSTATE of what they mean instead of P0001. Policy: docs/ecommerce-hardening/http-contract.md. Regression: supabase/tests/http_error_contract_test.sql (42), tests/http-error-contract.test.mjs, and the certifier through a real PostgREST (pricing:API_01_BUSINESS_REFUSAL_55000_ANSWERS_HTTP_409, cancellation:ORDER_NOT_FOUND_IS_ANSWERED_AS_A_CLIENT_ERROR, REFUSAL_STATUS 55000->409, P0002->404). The Panel (classifyRpcError and the two outbox result builders in js/production-operations.js) already treats a 409 as final, so js/ did not change. Still answering 500, by ownership: the 40 entries of POS/Caja, fiscal, the print agent and the six legacy payment functions, and the two SQL entries mp_consume_oauth / mp_claim_refresh. Rollback order: 20261002091000 first, then 20261002090000 (the 090000 rollback refuses while 091000 is applied). Both migrations refuse to apply (ROLLOUT_BLOCKED) when a wrapped function body differs from the one they were generated from.",
+      "aliases": [],
+      "id": "API-01",
+      "severity": "P2",
+      "title": "Business refusals raised with SQLSTATE 55000 are answered as HTTP 500 by the API, and the Panel outbox treats every status >= 500 as retryable",
+      "status": "fixed",
+      "domain": "orders_abuse",
+      "where": "every function that raises errcode 55000 for a business refusal (transition_order, cancel_order, set_service_enforcement, the A1-A4 retired stubs, ...); js/repositories/supabase-business-repository.js classifyRpcError; js/production-operations.js",
+      "verification": [
+        {
+          "id": "API-01",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "fixed_by": "29ade07 · supabase/migrations/20261001222000_paid_without_order_alert_measures_from_approval.sql",
+      "notes": "Found while writing the checkout invariants test (not by the audit). The five minutes were measured from payment_intents.updated_at, which any re-read of the same payment with a different response body rewrites. Now measured from approved_at. Regression: checkout_order_invariants_test.sql, section F.",
+      "aliases": [],
+      "id": "DIAG-13",
+      "severity": "P2",
+      "title": "The PAYMENT_APPROVED_WITHOUT_ORDER alert resolved itself when the same approved payment was read again, with the order still missing",
+      "status": "fixed",
+      "domain": "observability",
+      "where": "public.reconcile_operational_alerts_for_business (PAYMENT_APPROVED_WITHOUT_ORDER branch)",
+      "verification": [
+        {
+          "id": "DIAG-13",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "fixed_by": "5c578793 · supabase/migrations/20261002060000_provider_probe_empty_is_not_proof.sql",
+      "notes": "Reproduced with live Staging data (read-only, 2026-10-03): payment 179851082485 approved and accredited at the provider on 2026-09-25 17:04Z; 8 probes 17:03-17:32Z all recorded payment.provider_probe_empty; intent e5dbaf33 ended expired with no order and no alert; the same search by external_reference with the seller credential returns the payment today. The preference was created under seller-connection generation fd242d91; the connection was re-linked at 17:43Z (generation 6963ca5b; mp_begin_oauth rotates the generation). Fix: an empty is conclusive only when searched under the generation that created the preference (and connected); non-conclusive empties do not consume the cap (30 min spacing); three late probes at 2, 6 and 24 h; the alert only stays silent on a conclusive empty. Test: provider_probe_empty_is_not_proof_test.sql (34). The Staging payment itself (TEST money) still needs a person: refund it or recover it.",
+      "aliases": [],
+      "id": "PAY-PROBE-01",
+      "severity": "P1",
+      "status": "fixed",
+      "domain": "payments_db",
+      "title": "An empty provider search is taken as proof that the buyer did not pay: after 8 empties in 30 minutes the truth sweep stops and CHECKOUT_PROVIDER_UNVERIFIED stays silent, so a charged checkout without order becomes invisible",
+      "where": "public.record_provider_probe_empty, public.enqueue_checkout_provider_probes, public.reconcile_operational_alerts_for_business (CHECKOUT_PROVIDER_UNVERIFIED); worker mercadopago-payment-worker probe path"
+    },
+    {
+      "id": "PAY-PROBE-02",
+      "severity": "P1",
+      "title": "An unverified checkout closes by time: past the 48-hour probe window CHECKOUT_PROVIDER_UNVERIFIED is auto-resolved as 'condition absent' and the truth sweep stops, with no proof that the buyer did not pay",
+      "status": "fixed",
+      "fixed_by": "d89ad936 + d6532530 + dcd541cb + 6812143a + 7d737cf4 + f246ee21 + 16799bf8 + b8b3d440 · supabase/migrations/20261003090000_unverified_checkout_never_closes_by_time.sql",
+      "notes": "Reproduced on the branch (208 migrations, local database built with the gate's image and sequence): a checkout that reached Mercado Pago, expired and only had non-conclusive empties (seller connection changed) or no answered probe had its alert open at 47 h and resolved by the system at 49 h ('Condición ausente en la reconciliación automática.'), and enqueue_checkout_provider_probes stopped asking. Same silent ending PAY-PROBE-01 fixed for empties, 48 hours later. Fix: inside the window nothing changes (only proof closes it; a manual resolution is reopened by the next run). Past the window the alert closes only on proof (without a stored payment a conclusive empty; the provider's final result; the order) or on a resolution with a note by an active owner/admin, which holds while the provider reports nothing new (a payment or a status not seen at resolution time reopens it; an identical re-read does not); a staff resolution is reopened. The sweep keeps one probe per day up to 30 days for those checkouts, also after a person resolved the alert. A per-environment watermark (now - 48 h at apply time) keeps older history out of the alerts (scripts/payments/reconcile-payments.mjs still covers it; without the row everything is watched). Per-minute cost does not grow with checkout history (staged MATERIALIZED queries; past 30 days a no-payment checkout is followed only through its live alert). The first version (d89ad936/56a76d24) had three defects found by an independent adversarial review before any environment applied it: PAY-PROBE-04, PAY-PROBE-05, PAY-PROBE-06, fixed in d6532530. Test: unverified_checkout_never_closes_by_time_test.sql (84 assertions; 11 of them fail on the first version; a 12-mutation harness on the guards is killed 12/12). Rollback drill: schema fingerprint identical to the pre-migration one after rollback, identical to the post-migration one after re-apply, rollback re-runnable. Third revision (dcd541cb, after a second adversarial pass): the owner/admin resolution compares against the evidence as the reconcile last refreshed it (least(resolved_at, last_seen_at)), so a payment recorded between that refresh and the resolution reopens it; test now 97 assertions, 18-mutation harness killed 18/18. Fourth revision (6812143a, after a third adversarial pass): the owner/admin resolution holds while the (payment, status) pair the alert evidence showed is the same today (no timestamps, so an event committed after the last evidence refresh reopens it even if its time is earlier); test 107 assertions; mutation harness 23/23 (with 20261003092000).",
+      "aliases": [],
+      "domain": "payments_db",
+      "where": "public.reconcile_operational_alerts_for_business (CHECKOUT_PROVIDER_UNVERIFIED 48-hour condition + automatic 'condition absent' resolution), public.enqueue_checkout_provider_probes (48-hour window), private.provider_probe_is_due",
+      "related": [
+        "PAY-PROBE-01"
+      ],
+      "verification": [
+        {
+          "id": "PAY-PROBE-02",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        }
+      ]
+    },
+    {
+      "id": "PAY-PROBE-03",
+      "severity": "P1",
+      "title": "A provider payment left pending or in manual review (in_process) on an expired checkout has no alert at all, and past the 48-hour window nothing reads it again: a late approval whose notification is lost becomes a charge without order and without signal",
+      "status": "fixed",
+      "fixed_by": "56a76d24 + d6532530 + dcd541cb + 6812143a + 7d737cf4 + f246ee21 + 16799bf8 + b8b3d440 · supabase/migrations/20261003090000_unverified_checkout_never_closes_by_time.sql",
+      "notes": "Reproduced on the branch: in_process snapshot, session expired by the sweep (stock released, intent expired with the provider payment pinned): no alert at 47 h nor at 49 h, no probe at 49 h. CHECKOUT_PROVIDER_UNVERIFIED required provider_payment_id is null; enqueue_checkout_provider_probes stopped at 48 h. Mercado Pago manual review can take more than two business days. Fixed in the same not-yet-applied migration as PAY-PROBE-02: past the window, a provider payment in pending / in_process / authorized (the list the payment recorder treats as non-final) counts as unverified, whatever empties the sweep recorded before the payment existed (PAY-PROBE-04); the alert closes on the provider's final result (rejected: no money; approved: goes to review with its own window-less alert) or on an owner/admin resolution with a note that holds until the provider reports something new; the sweep re-reads it once a day up to 30 days, also after that resolution; the alert evidence carries provider_status. Inside the window nothing changes (re-read every few minutes, no alert). Test: sections H and I of unverified_checkout_never_closes_by_time_test.sql. Third revision (dcd541cb): 'non-final' is decided per provider payment from its latest event, not only from the payment the intent pins (PAY-PROBE-07). Fourth revision (6812143a): a recorded unresolved payment behind a final stored one opens the alert at any age (partial index payment_events_unresolved_payment_idx), and a checkout whose stored payment is rejected or cancelled keeps a daily search by external reference for 30 days (PAY-PROBE-08). Fifth revision (7d737cf4, after the fourth adversarial pass): the final-stored + other-unresolved case is a candidate while its alert is alive, or when that other payment was recorded in the last 30 days (read through the new partial index payment_events_unresolved_recent_idx); the 'any age' prefilter of the fourth revision read every non-final event of the platform per business per minute (PAY-PROBE-09). Section J of the test: a live alert keeps a 38-day-old checkout with 35-day-old events open.",
+      "aliases": [],
+      "domain": "payments_db",
+      "where": "public.reconcile_operational_alerts_for_business (CHECKOUT_PROVIDER_UNVERIFIED: provider_payment_id is null), public.enqueue_checkout_provider_probes (48-hour window), public.release_checkout_session_inventory (in_process ranks below expired)",
+      "related": [
+        "PAY-PROBE-01",
+        "PAY-PROBE-02"
+      ],
+      "verification": [
+        {
+          "id": "PAY-PROBE-03",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        }
+      ]
+    },
+    {
+      "id": "PAY-PROBE-04",
+      "severity": "P1",
+      "title": "The first PAY-PROBE-03 fix let a conclusive empty recorded before the buyer paid silence the alert and the daily re-read of a later, still unresolved provider payment",
+      "status": "fixed",
+      "fixed_by": "d6532530 · supabase/migrations/20261003090000_unverified_checkout_never_closes_by_time.sql (rewritten before any environment applied it)",
+      "notes": "Found by the session's independent adversarial review of d89ad936..dd5f57af, reproduced on the local gate database: the 'no conclusive empty' condition also applied to the branch for a stored non-final payment. The sweep's first probe runs 90 s after the checkout, before a card payment completes, and once a payment is stored the worker reads it by id and never records another empty, so such an empty always predates the payment and can only suppress. Two identical checkouts with an in_process payment, one of them with an early conclusive empty: at 49 h the first had CHECKOUT_PROVIDER_UNVERIFIED open and a daily probe, the second no alert of any code and no probe; a day-3 approval with a lost webhook would be a charge without order and without signal. Fix: a conclusive empty only proves no payment when there is no stored payment (sweep stage sin_verificar, private.unverified_checkout_findings). Test: section I (p3) of unverified_checkout_never_closes_by_time_test.sql; mutation 'empties also silence a non-final payment' is killed in the sweep and in the alert.",
+      "aliases": [],
+      "domain": "payments_db",
+      "where": "public.enqueue_checkout_provider_probes and public.reconcile_operational_alerts_for_business as first written by 20261003090000",
+      "related": [
+        "PAY-PROBE-03",
+        "PAY-PROBE-01"
+      ],
+      "verification": [
+        {
+          "id": "PAY-PROBE-04",
+          "real": true,
+          "reproduced": true,
+          "severity": "P1"
+        }
+      ]
+    },
+    {
+      "id": "PAY-PROBE-05",
+      "severity": "P2",
+      "title": "The first PAY-PROBE-02 fix never compared an owner/admin resolution with later provider evidence, let it stop the daily re-read, and changed the in-window behavior it claimed to keep",
+      "status": "fixed",
+      "fixed_by": "d6532530 · supabase/migrations/20261003090000_unverified_checkout_never_closes_by_time.sql (rewritten before any environment applied it)",
+      "notes": "Found by the same review: private.unverified_checkout_reviewed_at returned a timestamp both callers only tested for null. A checkout resolved by the owner stayed resolved inside the 48 h window (the previous code reopens it) and after the provider reported an in_process payment later; and a resolution past the window over an in_process payment stopped the daily re-read. Fix: private.unverified_checkout_review_holds looks at the alert's current state (resolved, resolved_by an active owner/admin) and holds only while no payment event recorded after the resolution carries a (payment, status) pair not seen before it, the PAYMENT_NEEDS_REVIEW rule; it is consulted only past the window; the sweep ignores resolutions. Test: sections A, E, F and I.",
+      "aliases": [],
+      "domain": "payments_db",
+      "where": "private.unverified_checkout_reviewed_at and its two callers as first written by 20261003090000",
+      "related": [
+        "PAY-PROBE-02"
+      ],
+      "verification": [
+        {
+          "id": "PAY-PROBE-05",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "PAY-PROBE-06",
+      "severity": "P2",
+      "title": "The first PAY-PROBE-02 fix made the per-minute sweep and the per-business alert reconciliation cost grow with the whole checkout history",
+      "status": "fixed",
+      "fixed_by": "d6532530 · supabase/migrations/20261003090000_unverified_checkout_never_closes_by_time.sql (rewritten before any environment applied it)",
+      "notes": "Found by the same review and measured with 20,000 abandoned checkouts older than 30 days, each with a conclusive empty (rows the logic must never touch): the window test referenced payment_intents and the helpers were evaluated for every historical row (provider_probe_is_due, reviewed_at and watch_since about 20,000 calls each): sweep ~475-500 ms and reconcile ~380-450 ms against ~18-22 / ~37-55 ms before. Fix: staged MATERIALIZED queries (clock read once, cheap date and status filters first, the empties anti-join next, helpers last) and, past 30 days, a no-payment checkout is followed only through its live alert. Same data on the corrected version: sweep 7-10 ms, reconcile 64-90 ms, no function called 1,000+ times; previous bodies in the same container 5-7 / 69-80 ms.",
+      "aliases": [],
+      "domain": "payments_db",
+      "where": "public.enqueue_checkout_provider_probes and public.reconcile_operational_alerts_for_business as first written by 20261003090000",
+      "related": [
+        "PAY-PROBE-02"
+      ],
+      "verification": [
+        {
+          "id": "PAY-PROBE-06",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "PAY-PROBE-07",
+      "severity": "P2",
+      "title": "Past the 48-hour window, a provider payment still in review was hidden when the buyer retried on the same preference and the newer, pinned payment was final",
+      "status": "fixed",
+      "fixed_by": "dcd541cb + 6812143a · supabase/migrations/20261003090000_unverified_checkout_never_closes_by_time.sql (rewritten before any environment applied it)",
+      "notes": "Found by the second adversarial pass over d6532530, reproduced on the local gate database: the intent pins the newest payment by provider time. Card 1 ends in_process (manual review), the buyer retries with card 2 on the same preference, card 2 is rejected: the intent says provider_status=rejected and both CHECKOUT_PROVIDER_UNVERIFIED and the daily probe read it as 'final result, no money'. At 49 h: no alert of any code and no probe, while card 1 can still be approved at Mercado Pago (charge without order if the webhook is lost). Same with a pending cash ticket followed by a rejected card. Inside the window nothing changed (the sweep searches by external reference). Fix: private.unresolved_provider_payment reads the latest event of each provider payment of the intent; past the window a final pinned payment with another unresolved one keeps the checkout unverified, the alert evidence names that payment (unresolved_provider_payment_id) and the daily probe re-reads it by id. Test: section I (p5) of unverified_checkout_never_closes_by_time_test.sql (fails on d6532530); mutations 'another unresolved payment ignored' (sweep and alert) and 'probe searches instead of reading the unresolved payment' killed.",
+      "aliases": [],
+      "domain": "payments_db",
+      "where": "private.unverified_checkout_findings and public.enqueue_checkout_provider_probes as written by d6532530",
+      "related": [
+        "PAY-PROBE-03",
+        "PAY-PROBE-04"
+      ],
+      "verification": [
+        {
+          "id": "PAY-PROBE-07",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "PAY-PROBE-08",
+      "severity": "P2",
+      "title": "Past the 48-hour window, a payment in review that was never recorded stayed hidden behind a newer rejected retry: the probe stopped searching",
+      "status": "fixed",
+      "fixed_by": "6812143a + 7d737cf4 + f246ee21 + 16799bf8 + b8b3d440 · supabase/migrations/20261003090000_unverified_checkout_never_closes_by_time.sql (rewritten before any environment applied it)",
+      "notes": "Found by the third adversarial pass over dcd541cb, reproduced on the local gate database: card A goes in_process and its notifications are lost (never recorded); the buyer retries with card B, rejected, and only B is recorded. With the stored payment rejected the probe searches by external reference, and the search keeps the approved payment or the newest one (supabase/functions/_shared/mercadopago.ts findPaymentByExternalReference), so B while A is not approved. Past 48 h the sweep only continued when an unresolved payment was recorded: at 49 h no alert and no probe; an approval of A on day 3 with its notice lost would be a charge without order and without signal. Fix: past the window and up to 30 days, a checkout whose stored payment is rejected or cancelled keeps one search per day, which prefers an approved payment. No alert while A is unknown (nothing to show); recording every payment the search sees in the worker would also make A visible and stays as a possible follow-up. Test: section I (p8) of unverified_checkout_never_closes_by_time_test.sql (fails on dcd541cb); mutation 'no daily search behind a rejected stored payment' killed. Cost: the sweep evaluates the daily cadence of each such checkout of the last 30 days every minute (~25 microseconds each; 20,000 -> ~0.5 s), and the provider gets at most one search per day for each. 7d737cf4: past-window rows (the daily search behind a stored rejection among them) have their own budget, a fifth of the limit (10 per run by default, 14,400 searches per day; beyond that the cadence stretches, nothing is dropped), after the in-window rows; the daily cadence is counted through the indexes before the cadence function.",
+      "aliases": [],
+      "domain": "payments_db",
+      "where": "public.enqueue_checkout_provider_probes as written by dcd541cb (past-window rows with a final stored payment)",
+      "related": [
+        "PAY-PROBE-07",
+        "PAY-PROBE-03"
+      ],
+      "verification": [
+        {
+          "id": "PAY-PROBE-08",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "PAY-PROBE-09",
+      "severity": "P2",
+      "title": "The fourth revision's prefilter made the per-business reconcile read every non-final payment event of the platform every minute, and its single sweep budget let a backlog of past-window rows delay brand-new checkouts",
+      "status": "fixed",
+      "fixed_by": "7d737cf4 + f246ee21 + 16799bf8 + b8b3d440 · supabase/migrations/20261003090000_unverified_checkout_never_closes_by_time.sql (rewritten before any environment applied it)",
+      "notes": "Found by the fourth adversarial pass over 6812143a, reproduced on the local gate database (i1_reconcile_prefilter_scan.sql): in private.unverified_checkout_findings, `pi.id in (select payment_intent_id from payment_events where non-final)` sat inside an OR, so the planner built a hashed SubPlan over a Seq Scan of every non-final event of every business, once per business per minute (150,000 of another business: findings 85-128 ms, reconcile 110-185 ms for one small business with a single rejected checkout); a correlated EXISTS in the same OR was not a reliable fix (2-25 ms or 310-400 ms depending on the plan). Fix: the final-stored + other-unresolved case is a candidate while its alert is alive (any age) or when that other payment was recorded in the last 30 days (the alert opens on the first run over that business after the recording, then its live alert holds it; 30 days is also what 20261003092000 leaves unevaluated for a closed business without checkouts, so the bound adds no gap of its own, which a 7-day bound would have), read through a new partial index on payment_events (server_recorded_at) with the same predicate; with the events spread over a year findings take 5-7 ms and the reconcile 10-20 ms; the worst case, all 150,000 non-final events inside the month, 40-45 ms and 61-88 ms (it follows the month's volume, not the history). Same pass, P3 (i2_sweep_rejected_backlog.sql, h2_otro_pago_cost.sql): one budget ordered by age let 200 past-window rows due together (after a scheduler or worker outage) delay a 3-minute-old checkout by four runs, and every stored rejection of the last 30 days went through provider_probe_is_due each minute (20,000: 20,001 calls, ~500 ms). Fix: in-window rows first with the whole limit, past-window rows with their own budget (a fifth: 10 per run, below the worker's ~40 jobs per minute), the daily cadence counted through payment_outbox_reconcile_history_idx and the empty probes before the function, and the budget cut before the function: the new checkout is served on the first run, the sweep takes 79-91 ms and no function runs 1,000 times. Tests: section J of unverified_checkout_never_closes_by_time_test.sql (114; the three budget assertions and the G assertion for the new index fail on 6812143a; a live alert keeps a 38-day-old checkout with 35-day-old events open; the index-counted cadence matches the function). Mutation harness 27 (with 20261003092000): 26 killed, 1 equivalent (the cadence function in the past-window budget confirms what the index filter already decided, by the same rule). Rollback drill exact. Fifth adversarial pass over 7d737cf4: nothing above P3 in that version. Its P3 (j2_dormant_late_record_gap.sql): the 30-day bound together with 20261003092000 hides the alert when the first record of a non-final payment arrives more than 30 days after its checkout, while the business is closed without checkouts, and the business reopens more than 30 days after that record (10 days later: open; 31 days later: no alert, no probe). Documented, not fixed: it needs a first-ever non-final record a month after the checkout; the cheap closure would be evaluating closed businesses with a non-final record in the last 30 days through payment_events_unresolved_recent_idx. f246ee21 corrects the migration comment that described the interaction as 'the same 30 days'.",
+      "aliases": [],
+      "domain": "payments_db",
+      "where": "private.unverified_checkout_findings and public.enqueue_checkout_provider_probes as written by 6812143a",
+      "related": [
+        "PAY-PROBE-06",
+        "PAY-PROBE-08",
+        "PAY-PROBE-03"
+      ],
+      "verification": [
+        {
+          "id": "PAY-PROBE-09",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "PAY-PROBE-10",
+      "severity": "P2",
+      "title": "Inside the 48-hour window a checkout with a stored provider payment was probed every minute for 48 hours, and about 50 of them kept a brand-new checkout from ever getting its first probe",
+      "status": "fixed",
+      "fixed_by": "f246ee21 + 16799bf8 + b8b3d440 · supabase/migrations/20261003090000_unverified_checkout_never_closes_by_time.sql (rewritten before any environment applied it)",
+      "notes": "Pre-existing (the same with 6812143a and with the code before 20261003090000, j1b_inwindow_starvation_before_090000.sql), found by the fifth adversarial pass and reproduced on the local gate database (j1_inwindow_starvation.sql): private.provider_probe_is_due's in-window rule only looks at empty probes, and a checkout with a stored provider payment (rejected, pending, in_process) never records empties (the worker re-reads or finds the same payment), so it was due again on every run for 48 hours (one Mercado Pago request per minute per checkout, ~2,880), and the sweep served the window oldest first under limit 50: with 60 rejected-and-abandoned checkouts of the last 48 hours, a checkout whose buyer was paying got no probe on any run (sweep 1..4: enqueued 50, fresh f); a lost webhook for its approval would surface late, maybe after the session expired (manual review instead of an order). Fix: with a stored payment the same cadence as with empties is counted by probe jobs (8 two minutes apart, then the late ones at 2, 6 and 24 hours; after 48 hours, daily), and the in-window rows are served never-asked first (newest first), then least recently asked. With the 60 rejected: the fresh checkout on run 1, then 13, 1 and 1 enqueued (no more per-minute re-reads). Tests: section K of unverified_checkout_never_closes_by_time_test.sql (118; three fail on 7d737cf4; the empty-probe cadence without a stored payment is unchanged). Mutation harness 31 (with 20261003092000): 30 killed, 1 equivalent. Rollback drill exact; sweep with 20,000 rejected past-window checkouts 87-93 ms. Sixth revision's stored-payment schedule replaced in 16799bf8 (PAY-PROBE-11): a stored payment is now re-read at a fixed interval since the last probe job (2 minutes during the checkout's first half hour, then 15), with no count or cap; the never-asked-first order stays, and j1 still serves the fresh checkout on run 1.",
+      "aliases": [],
+      "domain": "payments_db",
+      "where": "private.provider_probe_is_due (in-window rule) and public.enqueue_checkout_provider_probes (in-window order), as written by 20261002060000 and kept by 20261003090000 through 7d737cf4",
+      "related": [
+        "PAY-PROBE-01",
+        "PAY-PROBE-09"
+      ],
+      "verification": [
+        {
+          "id": "PAY-PROBE-10",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "id": "PAY-PROBE-11",
+      "severity": "P2",
+      "title": "The sixth revision re-read an unresolved stored payment only on the empty-probe schedule (8 jobs, then 2/6/24 h) counted over every probe job of the checkout: a lost approval webhook surfaced up to 18-24 h later, or not inside the window at all",
+      "status": "fixed",
+      "fixed_by": "16799bf8 + b8b3d440 · supabase/migrations/20261003090000_unverified_checkout_never_closes_by_time.sql (rewritten before any environment applied it)",
+      "notes": "Found by the sixth adversarial pass over f246ee21 and reproduced on the local gate database (k1_stored_payment_latency.sql): with a stored payment, f246ee21 counted every payment_reconcile job of the checkout (before the payment existed, dead-lettered, for an earlier payment) against the 8 + 2/6/24 h budget: an in_process card approved at 6h01 with its webhook lost was read at 24h02, one approved at 24h02 at 48h02 (daily rule), a cash ticket paid at 2h05 at 6 h, and with 11 jobs before the payment existed nothing was read inside the window (~44 h); a newer pinned payment inherited the count; dead jobs used up the budget (unlike the empty-probe path); checkouts in flight at deploy with per-minute history would get no in-window reads. v5 re-read every minute. Fix (16799bf8): a stored payment is re-read at a fixed interval since the last probe job, failed or not (2 minutes during the checkout's first half hour, while an approval still builds the order; then 15 minutes), with no count: a lost webhook surfaces within 15 minutes and a failed job only delays one interval (~200 reads per checkout in 48 h against ~2,880 in v5). The reviewer's k1 on the fix: every stored-payment scenario due, except the two whose last probe was 2-3 minutes earlier (due before 15). Also fixes the sixth pass's P3 (k2_ordering_cost.sql): provider_probe_is_due over 300 checkouts with 1,440 jobs each took 328 ms on f246ee21 and 9.6 ms now; the sweep with 3,300 due rows and 441,000 outbox rows takes 111-119 ms. Tests: section K of unverified_checkout_never_closes_by_time_test.sql rewritten (119; ten earlier probes, three dead, do not hold back the re-read, which fails on f246ee21; every 2 minutes during the first half hour; the order tested with real competition). Mutation harness 32 (with 20261003092000): 31 killed, 1 equivalent. Rollback drill exact. Seventh adversarial pass over 16799bf8: nothing above P3; it confirmed the 15-minute bound inside the window with a minute-by-minute simulation of the real sweep over 5 hours and around 25 h (l1, l2), including probes before the payment, dead jobs and a newer pinned payment. Its P3 (m1_two_minute_phase_vs_session_lifetime.sql), a regression of the sixth/seventh revision: the 2-minute phase lasted a fixed 30 minutes from the checkout, while the session and its reservation last preference_expiration_minutes (5 to 60, default 15) and a retry renews it; with 60, an in_process card probed at minute 50 was next read at 65, after the reservation expired, so a lost approval went to manual review (approved_after_reservation_expired) instead of building the order. Fixed in b8b3d440: every 2 minutes while the checkout's reservation is alive or during its first half hour, then every 15 (test K: a 60-minute session alive at minute 50, which fails on 16799bf8; mutation 'fast phase ignores a live reservation' killed; harness 33: 32 killed, 1 equivalent; rollback drill exact). Noted without change (pre-existing, same in v5 and production): while a probe job is still retrying it counts as active, so no new probe is queued and its backoff (30 seconds doubling to 32 minutes, about 64 minutes before dead_letter) sets the pace after a provider outage.",
+      "aliases": [],
+      "domain": "payments_db",
+      "where": "private.provider_probe_is_due (stored-payment branch) as written by f246ee21",
+      "related": [
+        "PAY-PROBE-10",
+        "PAY-PROBE-03"
+      ],
+      "verification": [
+        {
+          "id": "PAY-PROBE-11",
+          "real": true,
+          "reproduced": true,
+          "severity": "P2"
+        }
+      ]
+    },
+    {
+      "fixed_by": "3007ed39 · supabase/migrations/20261002040000_payment_cancellation_lock_order.sql",
+      "notes": "Found by scripts/order-intake/idempotency-race.mjs (GLOBAL_IDEMPOTENCY: FAIL on the branch before the fix, PASS with 0 deadlocks after); the race now runs in the database gate after the stock race; pgTAP idempotent_retries_test.sql (96).",
+      "aliases": [],
+      "id": "IDEM-01",
+      "severity": "P2",
+      "title": "record_payment_cancellation_response locks request -> intent -> session and mark_payment_cancellation_ambiguous request -> intent, the reverse of the rest: the provider answer or the approved-payment notice is killed by 40P01",
+      "status": "fixed",
+      "domain": "orders_abuse",
+      "where": "public.record_payment_cancellation_response, public.mark_payment_cancellation_ambiguous"
+    },
+    {
+      "fixed_by": "3007ed39 · supabase/migrations/20261002041000_customer_address_book_serialized_per_customer.sql",
+      "notes": "Found by scripts/order-intake/idempotency-race.mjs (GLOBAL_IDEMPOTENCY: FAIL on the branch before the fix, PASS with 0 deadlocks after); the race now runs in the database gate after the stock race; pgTAP idempotent_retries_test.sql (96).",
+      "aliases": [],
+      "id": "IDEM-02",
+      "severity": "P2",
+      "title": "Saving the same customer address concurrently creates several rows and raw 23505 errors (address book not serialized per customer)",
+      "status": "fixed",
+      "domain": "orders_abuse",
+      "where": "public.upsert_current_customer_address"
+    },
+    {
+      "fixed_by": "3007ed39 · supabase/migrations/20261002043000_rider_offer_acceptance_lock_order.sql",
+      "notes": "Found by scripts/order-intake/idempotency-race.mjs (GLOBAL_IDEMPOTENCY: FAIL on the branch before the fix, PASS with 0 deadlocks after); the race now runs in the database gate after the stock race; pgTAP idempotent_retries_test.sql (96).",
+      "aliases": [],
+      "id": "IDEM-06",
+      "severity": "P2",
+      "title": "accept_rider_order_offer locks offer -> order, the reverse of offer_order_to_rider: accepting while the business re-offers deadlocks",
+      "status": "fixed",
+      "domain": "orders_abuse",
+      "where": "public.accept_rider_order_offer"
+    },
+    {
+      "fixed_by": "e7287f53 · supabase/migrations/20261002062000_rider_offer_reject_withdraw_lock_order.sql",
+      "notes": "Reproduced on the branch HEAD with the arrival order pinned (wp18 repro-4 P4/P5: 40P01). Fixed: both functions lock the order (FOR NO KEY UPDATE) before the offer; reject answers PT409 if the offer moved between the two reads. After the fix all seven probes (P1-P5, P1b, P2b) run without deadlock. Test: rider_offer_reject_withdraw_lock_order_test.sql (9). Not yet exercised by scripts/order-intake/idempotency-race.mjs.",
+      "aliases": [],
+      "id": "IDEM-07",
+      "severity": "P2",
+      "status": "fixed",
+      "domain": "orders_abuse",
+      "title": "reject_rider_order_offer and withdraw_rider_order_offer take the offer before the order, the reverse of offer_order_to_rider: 40P01 under contention",
+      "where": "public.reject_rider_order_offer, public.withdraw_rider_order_offer vs public.offer_order_to_rider"
+    },
+    {
+      "fixed_by": "c997a18c · supabase/migrations/20261002061000_preference_uncertain_lock_order.sql",
+      "notes": "Reproduced on the branch HEAD with the arrival order pinned (wp18 repro-5): X1 and X2 deadlocked (40P01; in X2 the uncertain marker died after the preference already existed at the provider). Fixed: the intent is locked before the attempt is updated. After the fix X1, X2 and X1b: no deadlock. Test: preference_uncertain_lock_order_test.sql (12). Same answers and grants.",
+      "aliases": [],
+      "id": "IDEM-08",
+      "severity": "P2",
+      "status": "fixed",
+      "domain": "payments_db",
+      "title": "record_mercadopago_preference_uncertain updates the attempt before the intent, the reverse of prepare/record_mercadopago_preference_*_v2: 40P01 under contention",
+      "where": "public.record_mercadopago_preference_uncertain vs public.prepare_mercadopago_preference_v2, public.record_mercadopago_preference_created_v2"
+    },
+    {
+      "fixed_by": "f02e55b2 · supabase/migrations/20261002063000_checkout_payload_survives_tracking_recovery.sql",
+      "notes": "Reproduced in the real flow (paid MP delivery order, dispatched, tracking recovered, payment status requested): 39000 and the whole payload failed. Fixed: the payload decrypts through private.handoff_code_or_null (null on 39000 only), the same answer the screen gave before the recovery; the code stays visible through tracking. Test: checkout_payload_survives_tracking_recovery_test.sql (10).",
+      "aliases": [],
+      "id": "TRACK-01",
+      "severity": "P2",
+      "status": "fixed",
+      "domain": "checkout",
+      "title": "After a customer recovers tracking on a paid Mercado Pago delivery order, the checkout payment-status payload fails with 39000 (wrong key or corrupt data)",
+      "where": "public.recover_order_tracking_access (encrypts the handoff code with the new tracking token) vs public.checkout_session_customer_payload (decrypts every live handoff with the session id)"
+    },
+    {
+      "fixed_by": "4cee8a74 · supabase/migrations/20261002051000_authorization_refusals_answer_42501.sql",
+      "notes": "Found by the certification runner (wp10 notes, defect C-1). Test: authorization_refusals_answer_42501_test.sql (48).",
+      "aliases": [],
+      "id": "C-1",
+      "severity": "P2",
+      "status": "fixed",
+      "domain": "security_rls",
+      "title": "Permission refusals of five catalog/WhatsApp functions raise P0001 (HTTP 400) instead of 42501 (HTTP 403)",
+      "where": "public.apply_commercial_catalog_batch, public.import_catalog_batch, public.publish_catalog_product, public.unpublish_catalog_product, public.set_business_whatsapp_contact"
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "tenant": {
+    "order": "LT-0060",
+    "neighbour": "LT-0061"
+  },
+  "second": {
+    "slug": "taba-ecommerce-stack-20261003-131208-b",
+    "order": "LT-0059"
+  },
+  "trackingKeys": [
+    "status",
+    "revision",
+    "created_at",
+    "updated_at",
+    "public_code",
+    "is_delivered",
+    "delivery_mode",
+    "location_quality"
+  ],
+  "crossBusiness": {
+    "tenantOwnerOnSecond": {
+      "transition_order": "403 42501",
+      "cancel_order": "403 42501",
+      "acknowledge_order": "403 42501",
+      "confirm_manual_order_payment": "403 42501",
+      "classify_order_as_qa": "403 42501",
+      "set_business_open_state": "403 42501",
+      "apply_inventory_movement": "403 42501",
+      "set_commercial_product_publication": "403 42501",
+      "get_order_trace": "403 42501",
+      "revoke_public_tracking": "403 42501"
+    },
+    "secondOwnerOnTenant": {
+      "transition_order": "403 42501",
+      "cancel_order": "403 42501",
+      "acknowledge_order": "403 42501",
+      "confirm_manual_order_payment": "403 42501",
+      "classify_order_as_qa": "403 42501",
+      "set_business_open_state": "403 42501",
+      "apply_inventory_movement": "403 42501",
+      "set_commercial_product_publication": "403 42501",
+      "get_order_trace": "403 42501",
+      "revoke_public_tracking": "403 42501"
+    }
+  }
+}

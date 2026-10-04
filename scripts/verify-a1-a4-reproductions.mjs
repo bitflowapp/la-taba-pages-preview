@@ -42,6 +42,8 @@ const env = new Map(Object.entries({
   SUPABASE_ANON_KEY: 'fixture-anon', MERCADOPAGO_ENVIRONMENT: 'production', MERCADOPAGO_OAUTH_ENVIRONMENT: 'production',
   MERCADOPAGO_CREDENTIAL_MODE: 'oauth', MERCADOPAGO_PRODUCTION_REVIEW_STATUS: 'approved',
   MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION: 'I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE',
+  // Con los dos nombres: los handlers históricos leen la variable vieja; el del árbol de trabajo, el interruptor de EDGE-03.
+  MERCADOPAGO_REAL_MONEY_ENABLED: 'enabled',
   TABA_DEPLOYMENT_ENV: 'production', MERCADOPAGO_OAUTH_PROJECT_REF: 'wwcpogltfgzgkrlilbcd',
   MERCADOPAGO_CLIENT_ID: '7677852968049976', MERCADOPAGO_OAUTH_PANEL_URL: 'https://la-taba.pages.dev/',
   TABA_CHECKOUT_BASE_URL: 'https://la-taba.pages.dev', TABA_ALLOWED_ORIGINS: 'https://la-taba.pages.dev',

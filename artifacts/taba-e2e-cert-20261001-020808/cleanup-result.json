@@ -1,0 +1,236 @@
+{
+  "runId": "TABA_E2E_CERT_20261001020808",
+  "executedBy": "TABA_E2E_CERT_20261001020808",
+  "steps": [
+    {
+      "name": "reverse payment LT-0068",
+      "ok": true,
+      "detail": "reversed",
+      "at": "2026-10-01T02:18:03.148Z"
+    },
+    {
+      "name": "restore stock LT-0068 +3.000",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-01T02:18:06.720Z"
+    },
+    {
+      "name": "classify QA LT-0068",
+      "ok": true,
+      "detail": "qa",
+      "at": "2026-10-01T02:18:06.839Z"
+    },
+    {
+      "name": "classify QA LT-0069",
+      "ok": true,
+      "detail": "qa",
+      "at": "2026-10-01T02:18:08.543Z"
+    },
+    {
+      "name": "classify QA LT-0070",
+      "ok": true,
+      "detail": "qa",
+      "at": "2026-10-01T02:18:12.870Z"
+    },
+    {
+      "name": "classify QA LT-0071",
+      "ok": true,
+      "detail": "qa",
+      "at": "2026-10-01T02:18:16.157Z"
+    },
+    {
+      "name": "classify QA undefined",
+      "ok": true,
+      "detail": "qa",
+      "at": "2026-10-01T02:18:17.453Z"
+    },
+    {
+      "name": "classify QA LT-0073",
+      "ok": true,
+      "detail": "qa",
+      "at": "2026-10-01T02:18:18.874Z"
+    },
+    {
+      "name": "availability off rider1",
+      "ok": true,
+      "detail": "updated",
+      "at": "2026-10-01T02:18:19.072Z"
+    },
+    {
+      "name": "revoke stale session panel-ui",
+      "ok": true,
+      "detail": "revoked",
+      "at": "2026-10-01T02:18:21.135Z"
+    },
+    {
+      "name": "revoke stale session panel-ui",
+      "ok": true,
+      "detail": "revoked",
+      "at": "2026-10-01T02:18:21.337Z"
+    },
+    {
+      "name": "close session owner",
+      "ok": true,
+      "detail": "closed",
+      "at": "2026-10-01T02:18:21.501Z"
+    },
+    {
+      "name": "close session staff",
+      "ok": true,
+      "detail": "closed",
+      "at": "2026-10-01T02:18:21.603Z"
+    },
+    {
+      "name": "close session admin",
+      "ok": true,
+      "detail": "closed",
+      "at": "2026-10-01T02:18:21.719Z"
+    },
+    {
+      "name": "close session rider1",
+      "ok": true,
+      "detail": "closed",
+      "at": "2026-10-01T02:18:21.849Z"
+    },
+    {
+      "name": "close session rider2",
+      "ok": true,
+      "detail": "closed",
+      "at": "2026-10-01T02:18:22.465Z"
+    },
+    {
+      "name": "close session owner-B",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-01T02:18:24.517Z"
+    },
+    {
+      "name": "delete business B 988a477e-6f5f-4a51-a09b-3e9ca39129fb",
+      "ok": true,
+      "at": "2026-10-01T02:18:24.945Z"
+    },
+    {
+      "name": "delete user customer-A-main",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-01T02:18:25.796Z"
+    },
+    {
+      "name": "delete user customer-B-other",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-01T02:18:25.947Z"
+    },
+    {
+      "name": "delete user customer-R-races",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-01T02:18:26.506Z"
+    },
+    {
+      "name": "delete user nomember",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-01T02:18:26.782Z"
+    },
+    {
+      "name": "delete user otherowner",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-01T02:18:27.213Z"
+    }
+  ],
+  "post": {
+    "orders": [
+      {
+        "id": "02bb44dd-9282-4289-97e1-f4324928c648",
+        "code": "LT-0072",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      },
+      {
+        "id": "e5841118-ace5-4b83-8b58-f5ad804f1100",
+        "code": "LT-0070",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      },
+      {
+        "id": "988693f7-14b3-4f9d-a991-a5b76affb5db",
+        "code": "LT-0073",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      },
+      {
+        "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+        "code": "LT-0068",
+        "status": "delivered",
+        "origin": "qa",
+        "manual_payment": "reversed"
+      },
+      {
+        "id": "a20a9de0-cb80-45c2-8a05-1dbbe5378107",
+        "code": "LT-0069",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      },
+      {
+        "id": "d39cc963-c622-4403-b08f-0d9faa8bc7e6",
+        "code": "LT-0071",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      }
+    ],
+    "non_terminal_or_non_qa": 0,
+    "pending_offers": 0,
+    "pending_notifications": 0,
+    "reservations": 0,
+    "users_left": 0,
+    "qa_businesses_left": 0,
+    "open_sessions": 0,
+    "orphan_events": 0,
+    "rider_locations": 0,
+    "riders": [
+      {
+        "rider": "8d77e57b-fd9b-49bb-8023-9b3c699d35b9",
+        "available": false,
+        "version": 2
+      },
+      {
+        "rider": "c9e5e490-ac76-43ab-be20-afba6cfe35fc",
+        "available": false,
+        "version": 2
+      },
+      {
+        "rider": "e9b381ad-8287-430e-b53d-caa4f55637cd",
+        "available": false,
+        "version": 12
+      },
+      {
+        "rider": "b46bc1cd-abfc-4a4a-9952-3ac9287d1bae",
+        "available": false,
+        "version": 8
+      },
+      {
+        "rider": "7ce18ab7-a8aa-4e5d-a77c-4a9db3e8a599",
+        "available": false,
+        "version": 25
+      }
+    ],
+    "print_jobs": 0,
+    "fiscal_documents": 0,
+    "payment_intents": 32,
+    "open_orders_business": 7
+  },
+  "retainedByDesign": [
+    "orders (origin=qa, terminal) + order_items/order_events/order_public_tokens/order_delivery_handoffs: append-only audit of the run, tagged by customer_notes and origin_reason",
+    "inventory_movements (manual_adjustment pilot_qa_return) that restore stock: append-only ledger",
+    "business_command_receipts / rider_delivery_operations / delivery_confirmation_attempts: idempotency receipts",
+    "identity_sessions (revoked) + identity_audit_events: session audit trail, device_label starts with RUN_ID",
+    "notification_outbox / delivery_outbox rows: processed+suppressed, no consumer exists"
+  ]
+}

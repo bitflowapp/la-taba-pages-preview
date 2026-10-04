@@ -1,0 +1,207 @@
+{
+  "order": "LT-0042",
+  "anonymousCustomer": true,
+  "stages": [
+    {
+      "stage": "received",
+      "at": "2026-10-03T14:18:58.053Z",
+      "tracking": {
+        "status": "received",
+        "revision": 4,
+        "location_quality": "unavailable",
+        "hasRiderLocation": false
+      }
+    },
+    {
+      "stage": "accepted",
+      "at": "2026-10-03T14:18:58.069Z",
+      "tracking": {
+        "status": "accepted",
+        "revision": 6,
+        "location_quality": "unavailable",
+        "hasRiderLocation": false
+      }
+    },
+    {
+      "stage": "preparing",
+      "at": "2026-10-03T14:18:58.076Z",
+      "tracking": {
+        "status": "preparing",
+        "revision": 7,
+        "location_quality": "unavailable",
+        "hasRiderLocation": false
+      }
+    },
+    {
+      "stage": "ready",
+      "at": "2026-10-03T14:18:58.083Z",
+      "tracking": {
+        "status": "ready",
+        "revision": 8,
+        "location_quality": "unavailable",
+        "hasRiderLocation": false
+      }
+    },
+    {
+      "stage": "assigned",
+      "at": "2026-10-03T14:18:58.118Z",
+      "tracking": {
+        "status": "assigned",
+        "revision": 9,
+        "location_quality": "unavailable",
+        "hasRiderLocation": false
+      }
+    },
+    {
+      "stage": "picked_up",
+      "at": "2026-10-03T14:18:58.130Z",
+      "tracking": {
+        "status": "picked_up",
+        "revision": 10,
+        "location_quality": "unavailable",
+        "hasRiderLocation": false
+      }
+    },
+    {
+      "stage": "on_the_way",
+      "at": "2026-10-03T14:18:58.743Z",
+      "tracking": {
+        "status": "on_the_way",
+        "revision": 11,
+        "location_quality": "valid",
+        "hasRiderLocation": true
+      }
+    },
+    {
+      "stage": "arrived",
+      "at": "2026-10-03T14:18:58.752Z",
+      "tracking": {
+        "status": "arrived",
+        "revision": 12,
+        "location_quality": "valid",
+        "hasRiderLocation": true
+      }
+    },
+    {
+      "stage": "delivered",
+      "at": "2026-10-03T14:18:58.854Z",
+      "tracking": {
+        "status": "delivered",
+        "revision": 13,
+        "location_quality": "unavailable",
+        "hasRiderLocation": false
+      }
+    }
+  ],
+  "chain": [
+    "received>accepted",
+    "accepted>preparing",
+    "preparing>ready",
+    "ready>assigned",
+    "assigned>picked_up",
+    "picked_up>on_the_way",
+    "on_the_way>arrived",
+    "arrived>delivered"
+  ],
+  "events": [
+    {
+      "sequence": 175,
+      "type": "order.received",
+      "actor": "customer",
+      "at": "2026-10-03T14:18:57.997007+00:00"
+    },
+    {
+      "sequence": 176,
+      "type": "business_acknowledged",
+      "actor": "business",
+      "at": "2026-10-03T14:18:58.059276+00:00"
+    },
+    {
+      "sequence": 177,
+      "type": "order.status_changed",
+      "actor": "business",
+      "at": "2026-10-03T14:18:58.063164+00:00"
+    },
+    {
+      "sequence": 178,
+      "type": "order.status_changed",
+      "actor": "business",
+      "at": "2026-10-03T14:18:58.070507+00:00"
+    },
+    {
+      "sequence": 179,
+      "type": "order.status_changed",
+      "actor": "business",
+      "at": "2026-10-03T14:18:58.077+00:00"
+    },
+    {
+      "sequence": 180,
+      "type": "order.rider_offered",
+      "actor": "business",
+      "at": "2026-10-03T14:18:58.098897+00:00"
+    },
+    {
+      "sequence": 181,
+      "type": "order.status_changed",
+      "actor": "rider",
+      "at": "2026-10-03T14:18:58.110345+00:00"
+    },
+    {
+      "sequence": 182,
+      "type": "order.rider_accepted_offer",
+      "actor": "rider",
+      "at": "2026-10-03T14:18:58.110345+00:00"
+    },
+    {
+      "sequence": 183,
+      "type": "order.status_changed",
+      "actor": "rider",
+      "at": "2026-10-03T14:18:58.122931+00:00"
+    },
+    {
+      "sequence": 184,
+      "type": "order.status_changed",
+      "actor": "rider",
+      "at": "2026-10-03T14:18:58.131883+00:00"
+    },
+    {
+      "sequence": 185,
+      "type": "order.status_changed",
+      "actor": "rider",
+      "at": "2026-10-03T14:18:58.745607+00:00"
+    },
+    {
+      "sequence": 186,
+      "type": "order.status_changed",
+      "actor": "rider",
+      "at": "2026-10-03T14:18:58.804128+00:00"
+    },
+    {
+      "sequence": 187,
+      "type": "order.manual_payment_confirmed",
+      "actor": "business",
+      "at": "2026-10-03T14:18:58.85626+00:00"
+    }
+  ],
+  "timestamps": {
+    "created_at": "2026-10-03T14:18:57.997007+00:00",
+    "acknowledged_at": "2026-10-03T14:18:58.059276+00:00",
+    "accepted_at": "2026-10-03T14:18:58.064824+00:00",
+    "preparing_at": "2026-10-03T14:18:58.072298+00:00",
+    "ready_at": "2026-10-03T14:18:58.078588+00:00",
+    "picked_up_at": "2026-10-03T14:18:58.124752+00:00",
+    "arrived_at": "2026-10-03T14:18:58.746826+00:00",
+    "delivered_at": "2026-10-03T14:18:58.805707+00:00"
+  },
+  "trackingDtoKeys": [
+    "status",
+    "revision",
+    "created_at",
+    "updated_at",
+    "public_code",
+    "is_delivered",
+    "delivery_mode",
+    "location_quality"
+  ],
+  "pickupOrder": "LT-0043"
+}

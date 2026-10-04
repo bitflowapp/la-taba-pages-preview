@@ -88,8 +88,13 @@ export function assertEnvironmentSecrets(target, secrets, { workerSecretMayBeMis
     throw new Error('Hosted environment still contains a forbidden global Mercado Pago access token');
   }
   if (target.deployment === 'production') {
+    // La variable vieja de la prueba de humo ya no abre nada: el cobro real lo
+    // abre MERCADOPAGO_REAL_MONEY_ENABLED = enabled (EDGE-03). Que siga puesta
+    // es un error de configuración, y con funciones viejas todavía abriría el
+    // cobro real: no se sigue hasta que alguien la borre. El interruptor nuevo,
+    // en cambio, es un secreto permanente y legítimo: no detiene nada acá.
     if (secrets.has('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION')) {
-      throw new Error('Production real-payment authorization must remain absent');
+      throw new Error('Legacy MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION is still set: it no longer opens real payments and must be removed');
     }
   }
 }

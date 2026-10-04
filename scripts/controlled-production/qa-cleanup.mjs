@@ -30,7 +30,8 @@ export async function cleanupQaOrder({ admin, owner, staff, businessId, orderId,
     done.reversed = true; cur = await read();
   }
   if (!TERMINAL.has(cur.status)) {
-    const r = await staff.rpc('cancel_order', { p_order_id: orderId, p_expected_revision: cur.revision,
+    // Cancela el dueño: cancelar pide el permiso orders.cancel, que el empleado no tiene (20261002050000).
+    const r = await owner.rpc('cancel_order', { p_order_id: orderId, p_expected_revision: cur.revision,
       p_reason: `${reason}: limpieza`, p_idempotency_key: `qa_cancel_${compact(orderId)}_${cur.revision}` });
     if (r.error) throw Error(`CANCEL:${r.error.code}`);
     done.cancelled = true; cur = await read();

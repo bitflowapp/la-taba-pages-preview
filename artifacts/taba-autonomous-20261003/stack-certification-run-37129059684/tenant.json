@@ -1,0 +1,163 @@
+{
+  "runId": "ecom-cert-stack-20261003-141842",
+  "at": "2026-10-03T14:18:53.871Z",
+  "tenant": {
+    "id": "b0fb2f22-9528-41ac-86ff-6fa6ecbe171b",
+    "slug": "taba-ecommerce-stack-20261003-141842",
+    "name": "TABA_ECOMMERCE_STACK_20261003_141842",
+    "created": true,
+    "reused": false,
+    "business": {
+      "id": "b0fb2f22-9528-41ac-86ff-6fa6ecbe171b",
+      "slug": "taba-ecommerce-stack-20261003-141842",
+      "name": "TABA_ECOMMERCE_STACK_20261003_141842",
+      "status": "open",
+      "is_active": true,
+      "ordering_enabled": true,
+      "ordering_verified": true,
+      "ordering_verified_by": "9545d1a5-1bd7-4759-8959-a5d0ce75a990",
+      "currency_code": "ARS",
+      "operating_timezone": "America/Argentina/Buenos_Aires",
+      "hours_enforced": true,
+      "delivery_zone_enforced": true,
+      "alcohol_hours_enforced": false,
+      "delivery_enabled": true,
+      "pickup_enabled": true,
+      "delivery_fee": 900,
+      "minimum_delivery_subtotal": 3000,
+      "delivery_max_radius_meters": null,
+      "rider_presence_required": false,
+      "qa_fixture": true,
+      "qa_window_until": "2026-10-03T15:18:53.869428+00:00",
+      "address": "Avenida Certificacion 100, Neuquen Capital",
+      "abandoned_order_minutes": null,
+      "order_rate_limit_per_10_minutes": 100000,
+      "max_pending_orders_per_customer": 100000
+    }
+  },
+  "operators": {
+    "owner": {
+      "userId": "9545d1a5-1bd7-4759-8959-a5d0ce75a990",
+      "role": "owner",
+      "membership": "owner_created"
+    },
+    "admin": {
+      "userId": "88862881-88a4-4c6b-96cd-d2d72d2b0c88",
+      "role": "admin",
+      "membership": "approved"
+    },
+    "staff": {
+      "userId": "4f4f4cfe-9cc4-44f0-ae60-57d7e0007f73",
+      "role": "staff",
+      "membership": "approved"
+    },
+    "rider1": {
+      "userId": "1e9dc650-b205-4ca2-a9e6-659e4d18ca66",
+      "role": "rider",
+      "membership": "approved"
+    },
+    "rider2": {
+      "userId": "146d432b-c950-4a13-878f-f82e5b2fe059",
+      "role": "rider",
+      "membership": "approved"
+    }
+  },
+  "configSteps": [
+    "pricing",
+    "hours_delivery",
+    "hours_pickup",
+    "zone_centro",
+    "zone_oeste",
+    "enforcement",
+    "fulfillment"
+  ],
+  "fixtureSteps": [
+    "insert:MAIN",
+    "insert:LAST_UNIT",
+    "insert:PRICE_CHANGE",
+    "insert:HIDE",
+    "insert:PERF",
+    "insert:PENDING_PRICE",
+    "insert:HIDDEN",
+    "verified:MAIN+LAST_UNIT+PRICE_CHANGE+HIDE+PERF+HIDDEN",
+    "hidden:HIDDEN"
+  ],
+  "opening": {
+    "verifiedBy": null,
+    "verification": "platform_verify_business_ordering",
+    "fallback": null,
+    "window": "2026-10-03T15:18:53.869428+00:00"
+  },
+  "zones": {
+    "centro": {
+      "id": "ec9e747e-a106-4dd7-b206-6d9bb827e9ac",
+      "key": "centro",
+      "name": "Centro",
+      "fee": 1200,
+      "minimum": null,
+      "priority": 10
+    },
+    "oeste": {
+      "id": "83d49efd-7aa0-490e-b34f-8aa806334370",
+      "key": "oeste",
+      "name": "Oeste",
+      "fee": null,
+      "minimum": 5000,
+      "priority": 20
+    }
+  },
+  "products": {
+    "MAIN": {
+      "id": "cfa8740c-8515-4cf8-8b76-1305174d096a",
+      "sku": "ecomcert-main",
+      "price": 1500,
+      "stock": 500,
+      "state": "published"
+    },
+    "LAST_UNIT": {
+      "id": "8425c105-8861-4b47-bfbd-6293f46f4184",
+      "sku": "ecomcert-last-unit",
+      "price": 2400,
+      "stock": 1,
+      "state": "published"
+    },
+    "PRICE_CHANGE": {
+      "id": "4e0c6e96-559e-4568-9136-b64032e9226c",
+      "sku": "ecomcert-price-change",
+      "price": 1800,
+      "stock": 100,
+      "state": "published"
+    },
+    "HIDE": {
+      "id": "689a9e34-6976-4ad5-b6bf-d6e5371bf94f",
+      "sku": "ecomcert-hide",
+      "price": 1200,
+      "stock": 50,
+      "state": "published"
+    },
+    "PERF": {
+      "id": "7ba5385d-6e39-435a-9dc6-5bb5c524b866",
+      "sku": "ecomcert-perf",
+      "price": 1000,
+      "stock": 5000,
+      "state": "published"
+    },
+    "PENDING_PRICE": {
+      "id": "00d1c995-e6fa-4694-9bab-003200c82b26",
+      "sku": "ecomcert-pending-price",
+      "price": 0,
+      "stock": 20,
+      "state": "pending"
+    },
+    "HIDDEN": {
+      "id": "fb58abd2-cdb7-4eac-860a-0fc068381d8c",
+      "sku": "ecomcert-hidden",
+      "price": 1300,
+      "stock": 30,
+      "state": "hidden"
+    }
+  },
+  "notes": [
+    "DISTANCE_CAP_NOT_EXERCISED: no existe un camino (RPC o tabla expuesta) para que service_role escriba private.rider_map_business_locations; set_delivery_pricing rechaza un tope de distancia sin punto verificado."
+  ]
+}

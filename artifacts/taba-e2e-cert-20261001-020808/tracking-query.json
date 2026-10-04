@@ -1,0 +1,252 @@
+{
+  "orderId": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+  "calls": [
+    {
+      "stage": "received",
+      "publicId": "LT-0068",
+      "tokenIsMain": true,
+      "ok": true,
+      "status": 200,
+      "code": null,
+      "dto": {
+        "status": "received",
+        "revision": 4,
+        "created_at": "2026-10-01T02:09:06.461071+00:00",
+        "updated_at": "2026-10-01T02:09:06.461071+00:00",
+        "public_code": "LT-0068",
+        "is_delivered": false,
+        "delivery_mode": "delivery",
+        "location_quality": "unavailable"
+      }
+    },
+    {
+      "stage": "accepted",
+      "publicId": "LT-0068",
+      "tokenIsMain": true,
+      "ok": true,
+      "status": 200,
+      "code": null,
+      "dto": {
+        "status": "accepted",
+        "revision": 5,
+        "created_at": "2026-10-01T02:09:06.461071+00:00",
+        "updated_at": "2026-10-01T02:11:35.039132+00:00",
+        "accepted_at": "2026-10-01T02:11:35.054224+00:00",
+        "public_code": "LT-0068",
+        "is_delivered": false,
+        "delivery_mode": "delivery",
+        "location_quality": "unavailable"
+      }
+    },
+    {
+      "stage": "assigned",
+      "publicId": "LT-0068",
+      "tokenIsMain": true,
+      "ok": true,
+      "status": 200,
+      "code": null,
+      "dto": {
+        "status": "assigned",
+        "ready_at": "2026-10-01T02:14:53.722744+00:00",
+        "revision": 8,
+        "created_at": "2026-10-01T02:09:06.461071+00:00",
+        "updated_at": "2026-10-01T02:15:28.221935+00:00",
+        "accepted_at": "2026-10-01T02:11:35.054224+00:00",
+        "public_code": "LT-0068",
+        "is_delivered": false,
+        "preparing_at": "2026-10-01T02:14:44.300602+00:00",
+        "delivery_mode": "delivery",
+        "location_quality": "unavailable"
+      }
+    },
+    {
+      "stage": "picked_up",
+      "publicId": "LT-0068",
+      "tokenIsMain": true,
+      "ok": true,
+      "status": 200,
+      "code": null,
+      "dto": {
+        "status": "picked_up",
+        "ready_at": "2026-10-01T02:14:53.722744+00:00",
+        "revision": 9,
+        "created_at": "2026-10-01T02:09:06.461071+00:00",
+        "updated_at": "2026-10-01T02:15:45.867067+00:00",
+        "accepted_at": "2026-10-01T02:11:35.054224+00:00",
+        "public_code": "LT-0068",
+        "is_delivered": false,
+        "preparing_at": "2026-10-01T02:14:44.300602+00:00",
+        "delivery_mode": "delivery",
+        "dispatched_at": "2026-10-01T02:15:45.87059+00:00",
+        "location_quality": "unavailable"
+      }
+    },
+    {
+      "stage": "on_the_way",
+      "publicId": "LT-0068",
+      "tokenIsMain": true,
+      "ok": true,
+      "status": 200,
+      "code": null,
+      "dto": {
+        "status": "on_the_way",
+        "ready_at": "2026-10-01T02:14:53.722744+00:00",
+        "revision": 10,
+        "created_at": "2026-10-01T02:09:06.461071+00:00",
+        "updated_at": "2026-10-01T02:15:51.56446+00:00",
+        "accepted_at": "2026-10-01T02:11:35.054224+00:00",
+        "public_code": "LT-0068",
+        "is_delivered": false,
+        "preparing_at": "2026-10-01T02:14:44.300602+00:00",
+        "delivery_mode": "delivery",
+        "dispatched_at": "2026-10-01T02:15:45.87059+00:00",
+        "rider_location": {
+          "lat": -38.9488,
+          "lng": -68.0562,
+          "source": "gps",
+          "accuracy": 100,
+          "created_at": "2026-10-01T02:15:55.989003+00:00",
+          "captured_at": "2026-10-01T02:15:54.006+00:00"
+        },
+        "location_quality": "valid"
+      }
+    },
+    {
+      "stage": "arrived",
+      "publicId": "LT-0068",
+      "tokenIsMain": true,
+      "ok": true,
+      "status": 200,
+      "code": null,
+      "dto": {
+        "status": "arrived",
+        "ready_at": "2026-10-01T02:14:53.722744+00:00",
+        "revision": 11,
+        "arrived_at": "2026-10-01T02:16:01.24242+00:00",
+        "created_at": "2026-10-01T02:09:06.461071+00:00",
+        "updated_at": "2026-10-01T02:16:01.234794+00:00",
+        "accepted_at": "2026-10-01T02:11:35.054224+00:00",
+        "public_code": "LT-0068",
+        "is_delivered": false,
+        "preparing_at": "2026-10-01T02:14:44.300602+00:00",
+        "delivery_mode": "delivery",
+        "dispatched_at": "2026-10-01T02:15:45.87059+00:00",
+        "rider_location": {
+          "lat": -38.9488,
+          "lng": -68.0562,
+          "source": "gps",
+          "accuracy": 100,
+          "created_at": "2026-10-01T02:15:55.989003+00:00",
+          "captured_at": "2026-10-01T02:15:54.006+00:00"
+        },
+        "location_quality": "valid"
+      }
+    },
+    {
+      "stage": "delivered",
+      "publicId": "LT-0068",
+      "tokenIsMain": true,
+      "ok": true,
+      "status": 200,
+      "code": null,
+      "dto": {
+        "status": "delivered",
+        "ready_at": "2026-10-01T02:14:53.722744+00:00",
+        "revision": 13,
+        "arrived_at": "2026-10-01T02:16:01.24242+00:00",
+        "created_at": "2026-10-01T02:09:06.461071+00:00",
+        "updated_at": "2026-10-01T02:16:31.67835+00:00",
+        "accepted_at": "2026-10-01T02:11:35.054224+00:00",
+        "public_code": "LT-0068",
+        "delivered_at": "2026-10-01T02:16:17.425146+00:00",
+        "is_delivered": true,
+        "preparing_at": "2026-10-01T02:14:44.300602+00:00",
+        "delivery_mode": "delivery",
+        "dispatched_at": "2026-10-01T02:15:45.87059+00:00",
+        "location_quality": "unavailable",
+        "terminal_visible_until": "2026-10-01T02:46:17.488805+00:00"
+      }
+    },
+    {
+      "stage": "cross-order-with-main-token",
+      "publicId": "LT-0069",
+      "tokenIsMain": true,
+      "ok": true,
+      "status": 200,
+      "code": null,
+      "dto": null
+    },
+    {
+      "stage": "wrong-token",
+      "publicId": "LT-0068",
+      "tokenIsMain": false,
+      "ok": true,
+      "status": 200,
+      "code": null,
+      "dto": null
+    },
+    {
+      "stage": "enumerate:LT-0065",
+      "publicId": "LT-0065",
+      "tokenIsMain": true,
+      "ok": true,
+      "status": 200,
+      "code": null,
+      "dto": null
+    },
+    {
+      "stage": "enumerate:LT-0066",
+      "publicId": "LT-0066",
+      "tokenIsMain": true,
+      "ok": true,
+      "status": 200,
+      "code": null,
+      "dto": null
+    },
+    {
+      "stage": "enumerate:LT-0067",
+      "publicId": "LT-0067",
+      "tokenIsMain": true,
+      "ok": true,
+      "status": 200,
+      "code": null,
+      "dto": null
+    },
+    {
+      "stage": "enumerate:LT-0069",
+      "publicId": "LT-0069",
+      "tokenIsMain": true,
+      "ok": true,
+      "status": 200,
+      "code": null,
+      "dto": null
+    },
+    {
+      "stage": "enumerate:LT-0070",
+      "publicId": "LT-0070",
+      "tokenIsMain": true,
+      "ok": true,
+      "status": 200,
+      "code": null,
+      "dto": null
+    },
+    {
+      "stage": "enumerate:LT-0071",
+      "publicId": "LT-0071",
+      "tokenIsMain": true,
+      "ok": true,
+      "status": 200,
+      "code": null,
+      "dto": null
+    },
+    {
+      "stage": "lookup-by-uuid-other-order",
+      "publicId": "a20a9de0-cb80-45c2-8a05-1dbbe5378107",
+      "tokenIsMain": true,
+      "ok": true,
+      "status": 200,
+      "code": null,
+      "dto": null
+    }
+  ]
+}

@@ -1,0 +1,880 @@
+{
+  "benchmark": {
+    "target": "stack",
+    "levels": [
+      1,
+      10,
+      30,
+      100
+    ],
+    "baselineSamples": 30,
+    "requestsPerLevel": {
+      "10": 40,
+      "30": 40,
+      "100": 100
+    },
+    "customers": 100,
+    "payers": 100,
+    "originsPerCustomer": true,
+    "product": {
+      "sku": "ecomcert-perf",
+      "start": {
+        "stock": 5000,
+        "reserved": 0,
+        "in_orders": 0
+      }
+    },
+    "steps": [
+      {
+        "operation": "catalog_read",
+        "step": "baseline",
+        "concurrency": 1,
+        "requests": 30,
+        "ok": 30,
+        "errors": 0,
+        "statuses": {
+          "200": 30
+        },
+        "p50": 5.8,
+        "p95": 17,
+        "p99": 18.4,
+        "max": 18.4,
+        "mean": 7.8,
+        "min": 4.8,
+        "wallMs": 234,
+        "perSecond": 128.3,
+        "peakInFlight": 1
+      },
+      {
+        "operation": "order_creation_cash",
+        "step": "baseline",
+        "concurrency": 1,
+        "requests": 30,
+        "ok": 30,
+        "errors": 0,
+        "statuses": {
+          "200": 30
+        },
+        "p50": 25.4,
+        "p95": 49.3,
+        "p99": 50.5,
+        "max": 50.5,
+        "mean": 33,
+        "min": 24.3,
+        "wallMs": 996,
+        "perSecond": 30.1,
+        "peakInFlight": 1
+      },
+      {
+        "operation": "order_query",
+        "step": "baseline",
+        "concurrency": 1,
+        "requests": 30,
+        "ok": 30,
+        "errors": 0,
+        "statuses": {
+          "200": 30
+        },
+        "p50": 21.5,
+        "p95": 23.1,
+        "p99": 23.2,
+        "max": 23.2,
+        "mean": 21.8,
+        "min": 21,
+        "wallMs": 654,
+        "perSecond": 45.8,
+        "peakInFlight": 1
+      },
+      {
+        "operation": "tracking_query",
+        "step": "baseline",
+        "concurrency": 1,
+        "requests": 30,
+        "ok": 30,
+        "errors": 0,
+        "statuses": {
+          "200": 30
+        },
+        "p50": 2.3,
+        "p95": 3.8,
+        "p99": 3.8,
+        "max": 3.8,
+        "mean": 2.7,
+        "min": 2.1,
+        "wallMs": 81,
+        "perSecond": 372.5,
+        "peakInFlight": 1
+      },
+      {
+        "operation": "panel_query",
+        "step": "baseline",
+        "concurrency": 1,
+        "requests": 30,
+        "ok": 30,
+        "errors": 0,
+        "statuses": {
+          "200": 30
+        },
+        "p50": 13.8,
+        "p95": 17.6,
+        "p99": 18.3,
+        "max": 18.3,
+        "mean": 14.3,
+        "min": 13,
+        "wallMs": 429,
+        "perSecond": 69.9,
+        "peakInFlight": 1
+      },
+      {
+        "operation": "checkout_creation",
+        "step": "baseline",
+        "concurrency": 1,
+        "requests": 30,
+        "ok": 30,
+        "errors": 0,
+        "statuses": {
+          "200": 30
+        },
+        "p50": 8.4,
+        "p95": 21.7,
+        "p99": 25,
+        "max": 25,
+        "mean": 10.9,
+        "min": 7.7,
+        "wallMs": 1668,
+        "perSecond": 18,
+        "peakInFlight": 1
+      },
+      {
+        "operation": "payment_intent",
+        "step": "baseline",
+        "concurrency": 1,
+        "requests": 30,
+        "ok": 30,
+        "errors": 0,
+        "statuses": {
+          "200": 30
+        },
+        "p50": 3.7,
+        "p95": 7.5,
+        "p99": 8.5,
+        "max": 8.5,
+        "mean": 4.4,
+        "min": 3.5,
+        "wallMs": 1668,
+        "perSecond": 18,
+        "peakInFlight": 1
+      },
+      {
+        "operation": "stock_commit_paid",
+        "step": "baseline",
+        "concurrency": 1,
+        "requests": 30,
+        "ok": 30,
+        "errors": 0,
+        "statuses": {
+          "200": 30
+        },
+        "p50": 7.9,
+        "p95": 26.4,
+        "p99": 43.8,
+        "max": 43.8,
+        "mean": 10.6,
+        "min": 7.1,
+        "wallMs": 1668,
+        "perSecond": 18,
+        "peakInFlight": 1
+      },
+      {
+        "operation": "catalog_read",
+        "step": "c10",
+        "concurrency": 10,
+        "requests": 40,
+        "ok": 40,
+        "errors": 0,
+        "statuses": {
+          "200": 40
+        },
+        "p50": 18.2,
+        "p95": 33.6,
+        "p99": 37.4,
+        "max": 37.4,
+        "mean": 19.7,
+        "min": 9.1,
+        "wallMs": 85,
+        "perSecond": 471.1,
+        "peakInFlight": 10
+      },
+      {
+        "operation": "order_creation_cash",
+        "step": "c10",
+        "concurrency": 10,
+        "requests": 40,
+        "ok": 40,
+        "errors": 0,
+        "statuses": {
+          "200": 40
+        },
+        "p50": 50.7,
+        "p95": 186.6,
+        "p99": 247.8,
+        "max": 247.8,
+        "mean": 66.7,
+        "min": 15.1,
+        "wallMs": 293,
+        "perSecond": 136.6,
+        "peakInFlight": 10
+      },
+      {
+        "operation": "order_query",
+        "step": "c10",
+        "concurrency": 10,
+        "requests": 40,
+        "ok": 40,
+        "errors": 0,
+        "statuses": {
+          "200": 40
+        },
+        "p50": 132.5,
+        "p95": 153.5,
+        "p99": 156,
+        "max": 156,
+        "mean": 122.9,
+        "min": 54.5,
+        "wallMs": 521,
+        "perSecond": 76.8,
+        "peakInFlight": 10
+      },
+      {
+        "operation": "tracking_query",
+        "step": "c10",
+        "concurrency": 10,
+        "requests": 40,
+        "ok": 40,
+        "errors": 0,
+        "statuses": {
+          "200": 40
+        },
+        "p50": 8.8,
+        "p95": 12.9,
+        "p99": 13.3,
+        "max": 13.3,
+        "mean": 8.5,
+        "min": 3.7,
+        "wallMs": 37,
+        "perSecond": 1092.1,
+        "peakInFlight": 10
+      },
+      {
+        "operation": "panel_query",
+        "step": "c10",
+        "concurrency": 10,
+        "requests": 40,
+        "ok": 40,
+        "errors": 0,
+        "statuses": {
+          "200": 40
+        },
+        "p50": 148,
+        "p95": 226.9,
+        "p99": 259.4,
+        "max": 259.4,
+        "mean": 150.8,
+        "min": 62.4,
+        "wallMs": 645,
+        "perSecond": 62.1,
+        "peakInFlight": 10
+      },
+      {
+        "operation": "checkout_creation",
+        "step": "c10",
+        "concurrency": 10,
+        "requests": 40,
+        "ok": 40,
+        "errors": 0,
+        "statuses": {
+          "200": 40
+        },
+        "p50": 38.1,
+        "p95": 88.3,
+        "p99": 130.1,
+        "max": 130.1,
+        "mean": 49.2,
+        "min": 19.3,
+        "wallMs": 620,
+        "perSecond": 64.6,
+        "peakInFlight": 10
+      },
+      {
+        "operation": "payment_intent",
+        "step": "c10",
+        "concurrency": 10,
+        "requests": 40,
+        "ok": 40,
+        "errors": 0,
+        "statuses": {
+          "200": 40
+        },
+        "p50": 9.6,
+        "p95": 17.1,
+        "p99": 23.1,
+        "max": 23.1,
+        "mean": 10.9,
+        "min": 4.3,
+        "wallMs": 620,
+        "perSecond": 64.6,
+        "peakInFlight": 10
+      },
+      {
+        "operation": "stock_commit_paid",
+        "step": "c10",
+        "concurrency": 10,
+        "requests": 40,
+        "ok": 40,
+        "errors": 0,
+        "statuses": {
+          "200": 40
+        },
+        "p50": 25.5,
+        "p95": 63.5,
+        "p99": 72.9,
+        "max": 72.9,
+        "mean": 29.9,
+        "min": 8.5,
+        "wallMs": 620,
+        "perSecond": 64.6,
+        "peakInFlight": 10
+      },
+      {
+        "operation": "catalog_read",
+        "step": "c30",
+        "concurrency": 30,
+        "requests": 40,
+        "ok": 40,
+        "errors": 0,
+        "statuses": {
+          "200": 40
+        },
+        "p50": 39.7,
+        "p95": 85.3,
+        "p99": 86.5,
+        "max": 86.5,
+        "mean": 48.9,
+        "min": 16.1,
+        "wallMs": 90,
+        "perSecond": 444.7,
+        "peakInFlight": 30
+      },
+      {
+        "operation": "order_creation_cash",
+        "step": "c30",
+        "concurrency": 30,
+        "requests": 40,
+        "ok": 40,
+        "errors": 0,
+        "statuses": {
+          "200": 40
+        },
+        "p50": 114.3,
+        "p95": 214.7,
+        "p99": 222.4,
+        "max": 222.4,
+        "mean": 114.8,
+        "min": 22.2,
+        "wallMs": 227,
+        "perSecond": 176.5,
+        "peakInFlight": 30
+      },
+      {
+        "operation": "order_query",
+        "step": "c30",
+        "concurrency": 30,
+        "requests": 40,
+        "ok": 40,
+        "errors": 0,
+        "statuses": {
+          "200": 40
+        },
+        "p50": 398.7,
+        "p95": 688.5,
+        "p99": 714.9,
+        "max": 714.9,
+        "mean": 399,
+        "min": 77.6,
+        "wallMs": 736,
+        "perSecond": 54.4,
+        "peakInFlight": 30
+      },
+      {
+        "operation": "tracking_query",
+        "step": "c30",
+        "concurrency": 30,
+        "requests": 40,
+        "ok": 40,
+        "errors": 0,
+        "statuses": {
+          "200": 40
+        },
+        "p50": 22.7,
+        "p95": 26.6,
+        "p99": 27,
+        "max": 27,
+        "mean": 21.1,
+        "min": 11.7,
+        "wallMs": 36,
+        "perSecond": 1102.4,
+        "peakInFlight": 30
+      },
+      {
+        "operation": "panel_query",
+        "step": "c30",
+        "concurrency": 30,
+        "requests": 40,
+        "ok": 40,
+        "errors": 0,
+        "statuses": {
+          "200": 40
+        },
+        "p50": 581.9,
+        "p95": 981.6,
+        "p99": 1061.5,
+        "max": 1061.5,
+        "mean": 585.5,
+        "min": 106.8,
+        "wallMs": 1062,
+        "perSecond": 37.7,
+        "peakInFlight": 30
+      },
+      {
+        "operation": "checkout_creation",
+        "step": "c30",
+        "concurrency": 30,
+        "requests": 40,
+        "ok": 40,
+        "errors": 0,
+        "statuses": {
+          "200": 40
+        },
+        "p50": 85.1,
+        "p95": 197.2,
+        "p99": 251,
+        "max": 251,
+        "mean": 97.3,
+        "min": 31.8,
+        "wallMs": 622,
+        "perSecond": 64.3,
+        "peakInFlight": 30
+      },
+      {
+        "operation": "payment_intent",
+        "step": "c30",
+        "concurrency": 30,
+        "requests": 40,
+        "ok": 40,
+        "errors": 0,
+        "statuses": {
+          "200": 40
+        },
+        "p50": 63,
+        "p95": 119.8,
+        "p99": 142.1,
+        "max": 142.1,
+        "mean": 59.3,
+        "min": 5.3,
+        "wallMs": 622,
+        "perSecond": 64.3,
+        "peakInFlight": 30
+      },
+      {
+        "operation": "stock_commit_paid",
+        "step": "c30",
+        "concurrency": 30,
+        "requests": 40,
+        "ok": 40,
+        "errors": 0,
+        "statuses": {
+          "200": 40
+        },
+        "p50": 42.8,
+        "p95": 125,
+        "p99": 239.9,
+        "max": 239.9,
+        "mean": 57.6,
+        "min": 6.6,
+        "wallMs": 622,
+        "perSecond": 64.3,
+        "peakInFlight": 30
+      },
+      {
+        "operation": "catalog_read",
+        "step": "c100",
+        "concurrency": 100,
+        "requests": 100,
+        "ok": 100,
+        "errors": 0,
+        "statuses": {
+          "200": 100
+        },
+        "p50": 126.2,
+        "p95": 213.2,
+        "p99": 216.6,
+        "max": 219.1,
+        "mean": 129.1,
+        "min": 41.6,
+        "wallMs": 227,
+        "perSecond": 439.8,
+        "peakInFlight": 100
+      },
+      {
+        "operation": "order_creation_cash",
+        "step": "c100",
+        "concurrency": 100,
+        "requests": 100,
+        "ok": 100,
+        "errors": 0,
+        "statuses": {
+          "200": 100
+        },
+        "p50": 493.6,
+        "p95": 781,
+        "p99": 795.3,
+        "max": 800.1,
+        "mean": 474.7,
+        "min": 51.8,
+        "wallMs": 815,
+        "perSecond": 122.7,
+        "peakInFlight": 100
+      },
+      {
+        "operation": "order_query",
+        "step": "c100",
+        "concurrency": 100,
+        "requests": 100,
+        "ok": 100,
+        "errors": 0,
+        "statuses": {
+          "200": 100
+        },
+        "p50": 1507.4,
+        "p95": 2775.4,
+        "p99": 2814.4,
+        "max": 2831.1,
+        "mean": 1537.2,
+        "min": 221.8,
+        "wallMs": 2838,
+        "perSecond": 35.2,
+        "peakInFlight": 100
+      },
+      {
+        "operation": "tracking_query",
+        "step": "c100",
+        "concurrency": 100,
+        "requests": 100,
+        "ok": 100,
+        "errors": 0,
+        "statuses": {
+          "200": 100
+        },
+        "p50": 86.5,
+        "p95": 98,
+        "p99": 102.3,
+        "max": 103.3,
+        "mean": 83.3,
+        "min": 46.9,
+        "wallMs": 105,
+        "perSecond": 948.6,
+        "peakInFlight": 100
+      },
+      {
+        "operation": "panel_query",
+        "step": "c100",
+        "concurrency": 100,
+        "requests": 100,
+        "ok": 100,
+        "errors": 0,
+        "statuses": {
+          "200": 100
+        },
+        "p50": 2489.1,
+        "p95": 4374.4,
+        "p99": 4471.2,
+        "max": 4478.3,
+        "mean": 2481.6,
+        "min": 353.9,
+        "wallMs": 4484,
+        "perSecond": 22.3,
+        "peakInFlight": 100
+      },
+      {
+        "operation": "checkout_creation",
+        "step": "c100",
+        "concurrency": 100,
+        "requests": 100,
+        "ok": 100,
+        "errors": 0,
+        "statuses": {
+          "200": 100
+        },
+        "p50": 284.6,
+        "p95": 780.3,
+        "p99": 1232.3,
+        "max": 1280.8,
+        "mean": 347,
+        "min": 50.1,
+        "wallMs": 1569,
+        "perSecond": 63.7,
+        "peakInFlight": 100
+      },
+      {
+        "operation": "payment_intent",
+        "step": "c100",
+        "concurrency": 100,
+        "requests": 100,
+        "ok": 100,
+        "errors": 0,
+        "statuses": {
+          "200": 100
+        },
+        "p50": 158.7,
+        "p95": 579.5,
+        "p99": 795.5,
+        "max": 901.8,
+        "mean": 234.2,
+        "min": 4.8,
+        "wallMs": 1569,
+        "perSecond": 63.7,
+        "peakInFlight": 100
+      },
+      {
+        "operation": "stock_commit_paid",
+        "step": "c100",
+        "concurrency": 100,
+        "requests": 100,
+        "ok": 100,
+        "errors": 0,
+        "statuses": {
+          "200": 100
+        },
+        "p50": 96.6,
+        "p95": 308.7,
+        "p99": 562.7,
+        "max": 576.7,
+        "mean": 126.3,
+        "min": 9.6,
+        "wallMs": 1569,
+        "perSecond": 63.7,
+        "peakInFlight": 100
+      }
+    ],
+    "conservation": [
+      {
+        "after": "order_creation_cash:baseline",
+        "stock": 4970,
+        "reserved": 0,
+        "inOrders": 30,
+        "total": 5000,
+        "expected": 5000,
+        "exact": true
+      },
+      {
+        "after": "paid_path:baseline",
+        "stock": 4940,
+        "reserved": 0,
+        "inOrders": 60,
+        "total": 5000,
+        "expected": 5000,
+        "exact": true
+      },
+      {
+        "after": "order_creation_cash:c10",
+        "stock": 4900,
+        "reserved": 0,
+        "inOrders": 100,
+        "total": 5000,
+        "expected": 5000,
+        "exact": true
+      },
+      {
+        "after": "paid_path:c10",
+        "stock": 4860,
+        "reserved": 0,
+        "inOrders": 140,
+        "total": 5000,
+        "expected": 5000,
+        "exact": true
+      },
+      {
+        "after": "order_creation_cash:c30",
+        "stock": 4820,
+        "reserved": 0,
+        "inOrders": 180,
+        "total": 5000,
+        "expected": 5000,
+        "exact": true
+      },
+      {
+        "after": "paid_path:c30",
+        "stock": 4780,
+        "reserved": 0,
+        "inOrders": 220,
+        "total": 5000,
+        "expected": 5000,
+        "exact": true
+      },
+      {
+        "after": "order_creation_cash:c100",
+        "stock": 4680,
+        "reserved": 0,
+        "inOrders": 320,
+        "total": 5000,
+        "expected": 5000,
+        "exact": true
+      },
+      {
+        "after": "paid_path:c100",
+        "stock": 4580,
+        "reserved": 0,
+        "inOrders": 420,
+        "total": 5000,
+        "expected": 5000,
+        "exact": true
+      }
+    ],
+    "chainBreaks": [],
+    "notes": [],
+    "operations": {
+      "catalog_read": "anon",
+      "order_creation_cash": "authenticated",
+      "order_query": "authenticated",
+      "tracking_query": "anon",
+      "panel_query": "authenticated",
+      "checkout_creation": "service_role",
+      "payment_intent": "service_role",
+      "stock_commit_paid": "service_role"
+    }
+  },
+  "gate": {
+    "verdict": "MEASURED_NO_GATE",
+    "thresholdsFile": "docs/ecommerce-hardening/performance-thresholds.json",
+    "target": "stack",
+    "checked": 0,
+    "violations": [],
+    "notMeasured": [],
+    "withoutThreshold": [
+      "catalog_read:baseline",
+      "order_creation_cash:baseline",
+      "order_query:baseline",
+      "tracking_query:baseline",
+      "panel_query:baseline",
+      "checkout_creation:baseline",
+      "payment_intent:baseline",
+      "stock_commit_paid:baseline",
+      "catalog_read:c10",
+      "order_creation_cash:c10",
+      "order_query:c10",
+      "tracking_query:c10",
+      "panel_query:c10",
+      "checkout_creation:c10",
+      "payment_intent:c10",
+      "stock_commit_paid:c10",
+      "catalog_read:c30",
+      "order_creation_cash:c30",
+      "order_query:c30",
+      "tracking_query:c30",
+      "panel_query:c30",
+      "checkout_creation:c30",
+      "payment_intent:c30",
+      "stock_commit_paid:c30",
+      "catalog_read:c100",
+      "order_creation_cash:c100",
+      "order_query:c100",
+      "tracking_query:c100",
+      "panel_query:c100",
+      "checkout_creation:c100",
+      "payment_intent:c100",
+      "stock_commit_paid:c100"
+    ],
+    "rule": {
+      "metric": "p95_ms",
+      "multiplier": 3,
+      "round_up_to_ms": 50,
+      "floor_ms": 250,
+      "cap": "statement_timeout of the role that makes the call"
+    },
+    "roleTimeoutsMs": {
+      "anon": 3000,
+      "authenticated": 8000,
+      "service_role": 8000
+    },
+    "proposed": {
+      "measured_at": "2026-10-03T13:14:50.408Z",
+      "run_id": "ecom-cert-stack-20261003-131208",
+      "rule": {
+        "metric": "p95_ms",
+        "multiplier": 3,
+        "round_up_to_ms": 50,
+        "floor_ms": 250,
+        "cap": "statement_timeout of the role that makes the call"
+      },
+      "role_timeouts_ms": {
+        "anon": 3000,
+        "authenticated": 8000,
+        "service_role": 8000
+      },
+      "operations": {
+        "catalog_read": {
+          "baseline": 250,
+          "c10": 250,
+          "c30": 300,
+          "c100": 650
+        },
+        "order_creation_cash": {
+          "baseline": 250,
+          "c10": 600,
+          "c30": 650,
+          "c100": 2350
+        },
+        "order_query": {
+          "baseline": 250,
+          "c10": 500,
+          "c30": 2100,
+          "c100": 8000
+        },
+        "tracking_query": {
+          "baseline": 250,
+          "c10": 250,
+          "c30": 250,
+          "c100": 300
+        },
+        "panel_query": {
+          "baseline": 250,
+          "c10": 700,
+          "c30": 2950,
+          "c100": 8000
+        },
+        "checkout_creation": {
+          "baseline": 250,
+          "c10": 300,
+          "c30": 600,
+          "c100": 2350
+        },
+        "payment_intent": {
+          "baseline": 250,
+          "c10": 250,
+          "c30": 400,
+          "c100": 1750
+        },
+        "stock_commit_paid": {
+          "baseline": 250,
+          "c10": 250,
+          "c30": 400,
+          "c100": 950
+        }
+      },
+      "at_timeout": [
+        "order_query:c100",
+        "panel_query:c100"
+      ]
+    }
+  }
+}

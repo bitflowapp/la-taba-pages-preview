@@ -1,0 +1,231 @@
+{
+  "rejected": [
+    {
+      "name": "ITEM_PRICE_1_REJECTED",
+      "http": 400,
+      "ok": false,
+      "code": "22023",
+      "message": "cada item acepta solo product_id UUID y quantity entero",
+      "details": null,
+      "ms": 7.9
+    },
+    {
+      "name": "ITEM_PRICE_NEGATIVE_REJECTED",
+      "http": 400,
+      "ok": false,
+      "code": "22023",
+      "message": "cada item acepta solo product_id UUID y quantity entero",
+      "details": null,
+      "ms": 8.2
+    },
+    {
+      "name": "ITEM_PRICE_NULL_REJECTED",
+      "http": 400,
+      "ok": false,
+      "code": "22023",
+      "message": "cada item acepta solo product_id UUID y quantity entero",
+      "details": null,
+      "ms": 7.7
+    },
+    {
+      "name": "ITEM_UNIT_PRICE_REJECTED",
+      "http": 400,
+      "ok": false,
+      "code": "22023",
+      "message": "cada item acepta solo product_id UUID y quantity entero",
+      "details": null,
+      "ms": 2.6
+    },
+    {
+      "name": "ITEM_SUBTOTAL_REJECTED",
+      "http": 400,
+      "ok": false,
+      "code": "22023",
+      "message": "cada item acepta solo product_id UUID y quantity entero",
+      "details": null,
+      "ms": 7.2
+    },
+    {
+      "name": "PAYLOAD_DELIVERY_FEE_REJECTED",
+      "http": 400,
+      "ok": false,
+      "code": "22023",
+      "message": "campo no permitido en pedido: delivery_fee",
+      "details": null,
+      "ms": 3.7
+    },
+    {
+      "name": "PAYLOAD_TOTAL_REJECTED",
+      "http": 400,
+      "ok": false,
+      "code": "22023",
+      "message": "campo no permitido en pedido: total",
+      "details": null,
+      "ms": 3.7
+    },
+    {
+      "name": "PAYLOAD_SUBTOTAL_REJECTED",
+      "http": 400,
+      "ok": false,
+      "code": "22023",
+      "message": "campo no permitido en pedido: subtotal",
+      "details": null,
+      "ms": 2.4
+    },
+    {
+      "name": "PAYLOAD_DISCOUNT_REJECTED",
+      "http": 400,
+      "ok": false,
+      "code": "22023",
+      "message": "campo no permitido en pedido: discount",
+      "details": null,
+      "ms": 2
+    },
+    {
+      "name": "PAYLOAD_DISCOUNT_TOTAL_REJECTED",
+      "http": 400,
+      "ok": false,
+      "code": "22023",
+      "message": "campo no permitido en pedido: discount_total",
+      "details": null,
+      "ms": 2.4
+    },
+    {
+      "name": "QUANTITY_ZERO_REJECTED",
+      "http": 400,
+      "ok": false,
+      "code": "22023",
+      "message": "cada item acepta solo product_id UUID y quantity entero",
+      "details": null,
+      "ms": 2.7
+    },
+    {
+      "name": "QUANTITY_NEGATIVE_REJECTED",
+      "http": 400,
+      "ok": false,
+      "code": "22023",
+      "message": "cada item acepta solo product_id UUID y quantity entero",
+      "details": null,
+      "ms": 2.4
+    },
+    {
+      "name": "QUANTITY_FRACTIONAL_REJECTED",
+      "http": 400,
+      "ok": false,
+      "code": "22023",
+      "message": "cada item acepta solo product_id UUID y quantity entero",
+      "details": null,
+      "ms": 2.3
+    },
+    {
+      "name": "QUANTITY_NON_NUMERIC_REJECTED",
+      "http": 400,
+      "ok": false,
+      "code": "22023",
+      "message": "cada item acepta solo product_id UUID y quantity entero",
+      "details": null,
+      "ms": 2.1
+    },
+    {
+      "name": "QUANTITY_1001_REJECTED",
+      "http": 400,
+      "ok": false,
+      "code": "22023",
+      "message": "cada item acepta solo product_id UUID y quantity entero",
+      "details": null,
+      "ms": 2.5
+    },
+    {
+      "name": "QUANTITY_JSON_NULL_REJECTED",
+      "http": 400,
+      "ok": false,
+      "code": "22023",
+      "message": "cada item acepta solo product_id UUID y quantity entero",
+      "details": null,
+      "ms": 1.5
+    },
+    {
+      "name": "UNKNOWN_PRODUCT_REJECTED",
+      "http": 409,
+      "ok": false,
+      "code": "23503",
+      "message": "producto inexistente para el negocio: fb5920ac-05ce-4b84-9183-38331efe5c53",
+      "details": null,
+      "ms": 3.1
+    },
+    {
+      "name": "PRODUCT_OF_ANOTHER_BUSINESS_REJECTED",
+      "http": 409,
+      "ok": false,
+      "code": "23503",
+      "message": "producto inexistente para el negocio: 214a4a93-ccf1-496a-96b1-38075014909b",
+      "details": null,
+      "ms": 3
+    },
+    {
+      "name": "PENDING_PRICE_PRODUCT_REJECTED",
+      "http": 409,
+      "ok": false,
+      "code": "55000",
+      "message": "producto no disponible: 00d1c995-e6fa-4694-9bab-003200c82b26",
+      "details": null,
+      "ms": 2.5
+    },
+    {
+      "name": "HIDDEN_PRODUCT_REJECTED",
+      "http": 409,
+      "ok": false,
+      "code": "55000",
+      "message": "producto no disponible: fb58abd2-cdb7-4eac-860a-0fc068381d8c",
+      "details": null,
+      "ms": 3.4
+    },
+    {
+      "name": "VALID_ITEM_PLUS_UNSELLABLE_ITEM_REJECTED_AS_A_WHOLE",
+      "http": 409,
+      "ok": false,
+      "code": "55000",
+      "message": "producto no disponible: fb58abd2-cdb7-4eac-860a-0fc068381d8c",
+      "details": null,
+      "ms": 4
+    },
+    {
+      "name": "NULL_QUANTITY_LINE_NEXT_TO_A_VALID_LINE_REJECTED_AS_A_WHOLE",
+      "http": 400,
+      "ok": false,
+      "code": "22023",
+      "message": "cada item acepta solo product_id UUID y quantity entero",
+      "details": null,
+      "ms": 1.7
+    }
+  ],
+  "serverRules": {
+    "business_fee": 900,
+    "business_minimum": 3000,
+    "currency": "ARS",
+    "zone_fee": 1200,
+    "zone_minimum": null,
+    "zone_id": "ec9e747e-a106-4dd7-b206-6d9bb827e9ac"
+  },
+  "otherBusinessProduct": "producto de un negocio descartable creado por esta corrida (cerrado e inactivo)",
+  "accepted": [
+    {
+      "publicCode": "LT-0006",
+      "subtotal": 4200,
+      "delivery_fee": 1200,
+      "total": 5400
+    },
+    {
+      "publicCode": "LT-0007",
+      "subtotal": 1500,
+      "delivery_fee": 0,
+      "total": 1500
+    },
+    {
+      "publicCode": "LT-0008",
+      "subtotal": 4500,
+      "delivery_fee": 0,
+      "total": 4500
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "log": [
+    {
+      "order": "LT-0057",
+      "chain": [
+        "received>accepted",
+        "accepted>preparing",
+        "preparing>ready",
+        "ready>assigned",
+        "assigned>picked_up",
+        "picked_up>on_the_way",
+        "on_the_way>arrived",
+        "arrived>delivered"
+      ],
+      "steps": {
+        "mark_delivery_picked_up": {
+          "http": 200,
+          "ok": true,
+          "code": "picked_up",
+          "status": "picked_up",
+          "expected": "picked_up"
+        },
+        "start_rider_delivery": {
+          "http": 200,
+          "ok": true,
+          "code": "route_started",
+          "status": "on_the_way",
+          "expected": "on_the_way"
+        },
+        "mark_rider_arrived": {
+          "http": 200,
+          "ok": true,
+          "code": "arrived",
+          "status": "arrived",
+          "expected": "arrived"
+        }
+      }
+    },
+    {
+      "order": "LT-0058",
+      "chain": [
+        "received>accepted",
+        "accepted>preparing",
+        "preparing>ready",
+        "ready>on_the_way",
+        "on_the_way>delivered"
+      ]
+    }
+  ]
+}

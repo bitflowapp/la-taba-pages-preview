@@ -1,0 +1,72 @@
+{
+  "cases": [
+    {
+      "name": "ORDER_ALREADY_TAKEN_IS_REFUSED_WITH_ITS_REASON",
+      "order": "LT-0052",
+      "answer": {
+        "http": 409,
+        "ok": false,
+        "code": "55000",
+        "message": "el comercio ya tomo el pedido: pedir la cancelacion al comercio",
+        "details": "ORDER_ALREADY_TAKEN",
+        "ms": 2.4
+      },
+      "status": [
+        "accepted",
+        "accepted"
+      ]
+    },
+    {
+      "name": "DELIVERED_ORDER_IS_REFUSED_AS_CLOSED",
+      "order": "LT-0053",
+      "answer": {
+        "http": 409,
+        "ok": false,
+        "code": "55000",
+        "message": "el pedido ya esta cerrado",
+        "details": "ORDER_CLOSED",
+        "ms": 2.5
+      },
+      "status": [
+        "delivered",
+        "delivered"
+      ]
+    },
+    {
+      "name": "ORDER_WITH_A_RECORDED_PAYMENT_IS_REFUSED_WITH_ITS_REASON",
+      "order": "LT-0054",
+      "answer": {
+        "http": 409,
+        "ok": false,
+        "code": "55000",
+        "message": "el pedido ya tiene un cobro registrado: pedir la cancelacion al comercio",
+        "details": "MANUAL_PAYMENT_RECORDED",
+        "ms": 2.2
+      },
+      "status": [
+        "received",
+        "received"
+      ]
+    },
+    {
+      "name": "ORDER_WITH_A_REVERSED_PAYMENT_STILL_NEEDS_THE_BUSINESS",
+      "order": "LT-0054",
+      "answer": {
+        "http": 409,
+        "ok": false,
+        "code": "55000",
+        "message": "el pedido ya tiene un cobro registrado: pedir la cancelacion al comercio",
+        "details": "MANUAL_PAYMENT_RECORDED",
+        "ms": 2.1
+      },
+      "status": [
+        "received",
+        "received"
+      ]
+    }
+  ],
+  "stock": {
+    "initial": 500,
+    "final": 495
+  }
+}

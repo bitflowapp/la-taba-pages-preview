@@ -1,0 +1,119 @@
+{
+  "query": "products?select=id,business_id,external_id,sku,name,brand,description,category,subcategory,variant,presentation,capacity_value,capacity_unit,capacity,packaging_type,units_per_pack,sold_as_pack,price,price_status,stock,available,chilled,is_alcoholic,minimum_age,image_url,image_sha256,image_thumbnail_url,image_thumbnail_sha256,source_image_sha256,tags,sort_order,is_active,is_verified&business_id=eq.<tenant>&is_active=eq.true&is_verified=eq.true&or=(available.eq.true,and(is_alcoholic.is.true,available.is.false,image_url.not.is.null))&order=sort_order.asc,name.asc",
+  "storefrontRows": [
+    {
+      "sku": "ecomcert-main",
+      "name": "Cert Agua Principal 500 ml",
+      "price": 1500,
+      "stock": 500,
+      "available": true
+    },
+    {
+      "sku": "ecomcert-last-unit",
+      "name": "Cert Agua Ultima Unidad 500 ml",
+      "price": 2400,
+      "stock": 1,
+      "available": true
+    },
+    {
+      "sku": "ecomcert-price-change",
+      "name": "Cert Agua Precio 500 ml",
+      "price": 1800,
+      "stock": 100,
+      "available": true
+    },
+    {
+      "sku": "ecomcert-hide",
+      "name": "Cert Agua Ocultable 500 ml",
+      "price": 1200,
+      "stock": 50,
+      "available": true
+    },
+    {
+      "sku": "ecomcert-perf",
+      "name": "Cert Agua Rendimiento 500 ml",
+      "price": 1000,
+      "stock": 5000,
+      "available": true
+    }
+  ],
+  "database": [
+    {
+      "sku": "ecomcert-main",
+      "price": "1500.00",
+      "stock": 500,
+      "available": true,
+      "price_status": "confirmed",
+      "is_verified": true,
+      "is_active": true,
+      "merchant_available": true,
+      "name": "Cert Agua Principal 500 ml"
+    },
+    {
+      "sku": "ecomcert-last-unit",
+      "price": "2400.00",
+      "stock": 1,
+      "available": true,
+      "price_status": "confirmed",
+      "is_verified": true,
+      "is_active": true,
+      "merchant_available": true,
+      "name": "Cert Agua Ultima Unidad 500 ml"
+    },
+    {
+      "sku": "ecomcert-price-change",
+      "price": "1800.00",
+      "stock": 100,
+      "available": true,
+      "price_status": "confirmed",
+      "is_verified": true,
+      "is_active": true,
+      "merchant_available": true,
+      "name": "Cert Agua Precio 500 ml"
+    },
+    {
+      "sku": "ecomcert-hide",
+      "price": "1200.00",
+      "stock": 50,
+      "available": true,
+      "price_status": "confirmed",
+      "is_verified": true,
+      "is_active": true,
+      "merchant_available": true,
+      "name": "Cert Agua Ocultable 500 ml"
+    },
+    {
+      "sku": "ecomcert-perf",
+      "price": "1000.00",
+      "stock": 5000,
+      "available": true,
+      "price_status": "confirmed",
+      "is_verified": true,
+      "is_active": true,
+      "merchant_available": true,
+      "name": "Cert Agua Rendimiento 500 ml"
+    },
+    {
+      "sku": "ecomcert-pending-price",
+      "price": "0.00",
+      "stock": 20,
+      "available": false,
+      "price_status": "pending",
+      "is_verified": false,
+      "is_active": true,
+      "merchant_available": true,
+      "name": "Cert Agua Sin Precio 500 ml"
+    },
+    {
+      "sku": "ecomcert-hidden",
+      "price": "1300.00",
+      "stock": 30,
+      "available": false,
+      "price_status": "confirmed",
+      "is_verified": true,
+      "is_active": true,
+      "merchant_available": false,
+      "name": "Cert Agua Oculta 500 ml"
+    }
+  ]
+}

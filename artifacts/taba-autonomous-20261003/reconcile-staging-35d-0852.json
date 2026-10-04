@@ -1,0 +1,128 @@
+{
+  "schema": "taba.payment_reconciliation.report.v1",
+  "read_only": true,
+  "generated_at": "2026-10-03T11:52:08.773Z",
+  "database_time": "2026-10-03T11:52:10.115628+00:00",
+  "target": {
+    "name": "staging",
+    "project_ref": "ucbtjcurawxjwjdvvcvj"
+  },
+  "business_id": "a57b1c20-0f4e-4a6b-9d31-7c2e5f8a41d0",
+  "business_slug": "la-taba-staging",
+  "window": {
+    "from": "2026-08-28T00:00:00.000Z",
+    "to": "2026-10-03T12:00:00.000Z",
+    "defaulted": false
+  },
+  "clock_skew_minutes": 0,
+  "environment": "test",
+  "mode": "provider-api",
+  "options": {
+    "lag_minutes": 30,
+    "refund_stuck_minutes": 30,
+    "max_intents": 2000
+  },
+  "result": "CRITICAL_FINDINGS",
+  "exit_code": 3,
+  "provider_comparison": "full",
+  "provider_source": {
+    "complete": true,
+    "requests": 1,
+    "range_pages": 1,
+    "reference_lookups": 0,
+    "reference_lookups_inconclusive": 0,
+    "reference_lookups_skipped": 0
+  },
+  "totals": {
+    "local_intents": 32,
+    "local_orders": 0,
+    "local_refunds": 0,
+    "provider_payments": 1,
+    "provider_payments_in_scope": 1,
+    "provider_payments_out_of_scope": 0,
+    "findings": 1,
+    "by_severity": {
+      "critical": 1,
+      "warning": 0,
+      "info": 0
+    },
+    "by_code": {
+      "PAYMENT_MISSING_LOCAL": 0,
+      "PAYMENT_MISSING_PROVIDER": 0,
+      "STATUS_MISMATCH": 1,
+      "AMOUNT_MISMATCH": 0,
+      "ORDER_PAYMENT_MISMATCH": 0,
+      "REFUND_MISMATCH": 0,
+      "UNVERIFIED_AGAINST_PROVIDER": 0
+    }
+  },
+  "coverage": {
+    "provider_supplied": true,
+    "provider_mode": "api",
+    "provider_result_complete": true,
+    "provider_range": {
+      "from": "2026-08-28T00:00:00.000Z",
+      "to": "2026-10-03T12:00:00.000Z",
+      "source": "query"
+    },
+    "provider_references_queried": 0,
+    "provider_payments_collector_mismatch": 0,
+    "local_intents": 32,
+    "compared_against_provider": 1,
+    "no_provider_payment_expected": 31,
+    "missing_at_provider": 0,
+    "unverified_against_provider": 0,
+    "unverified_reasons": {},
+    "unverified_payment_intent_ids": [],
+    "partially_compared": 0,
+    "lag_tolerated": 0,
+    "refund_totals_not_comparable": 0,
+    "reconciled": 31,
+    "provider_comparison": "full"
+  },
+  "findings": [
+    {
+      "code": "STATUS_MISMATCH",
+      "reason": "provider_approved_local_not_paid",
+      "severity": "critical",
+      "business_id": "a57b1c20-0f4e-4a6b-9d31-7c2e5f8a41d0",
+      "payment_intent_id": "e5dbaf33-43e4-42aa-9e12-601c0888ae60",
+      "provider_payment_id": "179851082485",
+      "order_id": null,
+      "order_public_code": null,
+      "facts": {
+        "external_reference": "taba2:checkout:fd4883ec-71a6-4c7d-8f5a-8120a65eb676",
+        "provider_status": "approved",
+        "provider_status_detail": "accredited",
+        "provider_transaction_amount": 1800,
+        "provider_refunded_total": 0,
+        "provider_currency": "ARS",
+        "provider_date_created": "2026-09-25T17:04:21.000Z",
+        "provider_date_approved": "2026-09-25T17:04:21.000Z",
+        "provider_date_last_updated": "2026-09-25T17:04:25.000Z",
+        "environment": "test",
+        "local_internal_status": "expired",
+        "local_provider_status": null,
+        "local_expected_amount": 1800,
+        "local_paid_amount": null,
+        "local_refunded_amount": 0,
+        "local_currency": "ARS",
+        "local_session_status": "expired",
+        "security_review_reason": null,
+        "local_created_at": "2026-09-25T17:00:37.955Z",
+        "local_updated_at": "2026-09-25T17:16:00.169Z",
+        "local_approved_at": null,
+        "session_expires_at": "2026-09-25T17:15:37.894Z",
+        "in_window": true,
+        "expected_internal_statuses": [
+          "approved",
+          "approved_order_pending",
+          "completed"
+        ],
+        "minutes_since_provider_update": 11208,
+        "lag_minutes_allowed": 30
+      },
+      "explanation": "Mercado Pago cobró el pago y la base no lo registró («expired») pasado el margen de atraso: cliente cobrado sin que el sistema lo sepa."
+    }
+  ]
+}

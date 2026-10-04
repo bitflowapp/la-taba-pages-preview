@@ -95,7 +95,7 @@ try {
   const cur = (await staff.from('orders').select('status,revision').eq('id', winner).single()).data;
   const cancelArgs = { p_order_id: winner, p_expected_revision: cur.revision, p_reason: 'QA última unidad: cancelación doble',
     p_idempotency_key: `qa_last_cancel_${compact(winner)}` };
-  const [x, y] = await Promise.all([staff.rpc('cancel_order', cancelArgs), staff.rpc('cancel_order', cancelArgs)]);
+  const [x, y] = await Promise.all([owner.rpc('cancel_order', cancelArgs), owner.rpc('cancel_order', cancelArgs)]);
   const z = await owner.rpc('cancel_order', { ...cancelArgs, p_idempotency_key: `qa_last_cancel2_${compact(winner)}` });
   const stockAfterCancel = await stockOf(product.id);
   report.observed.cancel = { codes: [codeOf(x), codeOf(y), codeOf(z)], stockAfterCancel };

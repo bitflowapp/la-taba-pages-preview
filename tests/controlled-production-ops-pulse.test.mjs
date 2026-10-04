@@ -106,6 +106,15 @@ test('Mercado Pago pulse: money that needs a person', () => {
   assert.deepEqual(warn, ['MP_PAYMENTS_NEED_RECONCILIATION:1', 'MP_PAID_WITHOUT_ORDER:1', 'MP_REFUND_RECONCILIATION:1']);
 });
 
+test('Mercado Pago pulse: a paid checkout without order counts from its approval, not from its last re-read', () => {
+  // El barrido relee el pago cada pocos minutos y eso reescribe updated_at: medido desde ahí no contaba nunca.
+  const intents = [
+    { internal_status: 'approved', order_id: null, approved_at: minutesAgo(40), updated_at: minutesAgo(1) },
+    { internal_status: 'approved_order_pending', order_id: null, approved_at: minutesAgo(2), updated_at: minutesAgo(1) },
+  ];
+  assert.deepEqual(classifyMercadoPago({ intents }, NOW).warn, ['MP_PAYMENTS_NEED_RECONCILIATION:1', 'MP_PAID_WITHOUT_ORDER:1']);
+});
+
 test('Mercado Pago pulse: notifications whose signature never validates', () => {
   const rejected = [{ processing_status: 'rejected_signature', signature_valid: false }, { processing_status: 'rejected_signature', signature_valid: false }];
   assert.deepEqual(classifyMercadoPago({ receipts: rejected }, NOW).warn, ['MP_WEBHOOK_SIGNATURE_REJECTED:2:NONE_VALID']);

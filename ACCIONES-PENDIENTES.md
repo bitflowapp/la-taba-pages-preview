@@ -94,13 +94,16 @@ Lo imprescindible:
    falla cerrado — está implementado, no es una promesa.
 6. `business_payment_settings.production_review_status = 'approved'`.
 
-Para un smoke con dinero real hace falta además, sólo durante esa ventana:
+Para cobrar dinero real hace falta además el interruptor permanente del backend (EDGE-03, decisión del dueño del
+2026-10-02), con el valor exacto `enabled` — y sólo después de desplegar las Edge Functions que lo leen:
 
 ```
-MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION=I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE
+MERCADOPAGO_REAL_MONEY_ENABLED=enabled
 ```
 
-**Y tu autorización explícita justo antes.** Quitar la variable al terminar.
+**Y tu autorización explícita justo antes.** Se apaga en un paso quitando el secreto; reembolsos y cancelaciones siguen
+funcionando con el interruptor apagado. La variable vieja `MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION` ya no abre nada y
+no tiene que estar (la verificación de configuración la marca como error). Detalle: `docs/MERCADOPAGO_PRODUCCION_CP.md` §2.1.
 
 ---
 

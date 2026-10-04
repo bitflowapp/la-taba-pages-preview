@@ -1,0 +1,1003 @@
+{
+  "actors": [
+    "anon",
+    "customer",
+    "other_customer",
+    "staff",
+    "admin",
+    "owner",
+    "rider",
+    "other_rider",
+    "foreign_owner",
+    "revoked_member"
+  ],
+  "tables": [
+    "products",
+    "orders",
+    "order_items",
+    "payment_intents",
+    "payment_refunds",
+    "inventory_movements",
+    "customer_addresses",
+    "order_public_tokens",
+    "pos_sales"
+  ],
+  "cells": [
+    {
+      "table": "products",
+      "actor": "anon",
+      "expected": {
+        "sees": [
+          "19e82429-b992-478d-beaa-b76aade2f5f5"
+        ]
+      },
+      "http": 200,
+      "code": null,
+      "rows": 1,
+      "ok": true
+    },
+    {
+      "table": "products",
+      "actor": "customer",
+      "expected": {
+        "sees": [
+          "19e82429-b992-478d-beaa-b76aade2f5f5"
+        ]
+      },
+      "http": 200,
+      "code": null,
+      "rows": 1,
+      "ok": true
+    },
+    {
+      "table": "products",
+      "actor": "other_customer",
+      "expected": {
+        "sees": [
+          "19e82429-b992-478d-beaa-b76aade2f5f5"
+        ]
+      },
+      "http": 200,
+      "code": null,
+      "rows": 1,
+      "ok": true
+    },
+    {
+      "table": "products",
+      "actor": "staff",
+      "expected": {
+        "sees": [
+          "19e82429-b992-478d-beaa-b76aade2f5f5",
+          "912e4fd3-6260-413b-b52f-60be079934b6"
+        ]
+      },
+      "http": 200,
+      "code": null,
+      "rows": 2,
+      "ok": true
+    },
+    {
+      "table": "products",
+      "actor": "admin",
+      "expected": {
+        "sees": [
+          "19e82429-b992-478d-beaa-b76aade2f5f5",
+          "912e4fd3-6260-413b-b52f-60be079934b6"
+        ]
+      },
+      "http": 200,
+      "code": null,
+      "rows": 2,
+      "ok": true
+    },
+    {
+      "table": "products",
+      "actor": "owner",
+      "expected": {
+        "sees": [
+          "19e82429-b992-478d-beaa-b76aade2f5f5",
+          "912e4fd3-6260-413b-b52f-60be079934b6"
+        ]
+      },
+      "http": 200,
+      "code": null,
+      "rows": 2,
+      "ok": true
+    },
+    {
+      "table": "products",
+      "actor": "rider",
+      "expected": {
+        "sees": [
+          "19e82429-b992-478d-beaa-b76aade2f5f5"
+        ]
+      },
+      "http": 200,
+      "code": null,
+      "rows": 1,
+      "ok": true
+    },
+    {
+      "table": "products",
+      "actor": "other_rider",
+      "expected": {
+        "sees": [
+          "19e82429-b992-478d-beaa-b76aade2f5f5"
+        ]
+      },
+      "http": 200,
+      "code": null,
+      "rows": 1,
+      "ok": true
+    },
+    {
+      "table": "products",
+      "actor": "foreign_owner",
+      "expected": {
+        "sees": [
+          "19e82429-b992-478d-beaa-b76aade2f5f5"
+        ]
+      },
+      "http": 200,
+      "code": null,
+      "rows": 1,
+      "ok": true
+    },
+    {
+      "table": "products",
+      "actor": "revoked_member",
+      "expected": {
+        "sees": [
+          "19e82429-b992-478d-beaa-b76aade2f5f5"
+        ]
+      },
+      "http": 200,
+      "code": null,
+      "rows": 1,
+      "ok": true
+    },
+    {
+      "table": "orders",
+      "actor": "anon",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "orders",
+      "actor": "customer",
+      "expected": {
+        "sees": [
+          "89749fce-0dd0-4b1e-9d3f-7b25e06928cf"
+        ]
+      },
+      "http": 200,
+      "code": null,
+      "rows": 1,
+      "ok": true
+    },
+    {
+      "table": "orders",
+      "actor": "other_customer",
+      "expected": {
+        "sees": [
+          "5575546d-db5b-408b-8537-8456a8a87813"
+        ]
+      },
+      "http": 200,
+      "code": null,
+      "rows": 1,
+      "ok": true
+    },
+    {
+      "table": "orders",
+      "actor": "staff",
+      "expected": {
+        "sees": [
+          "89749fce-0dd0-4b1e-9d3f-7b25e06928cf",
+          "5575546d-db5b-408b-8537-8456a8a87813"
+        ]
+      },
+      "http": 200,
+      "code": null,
+      "rows": 2,
+      "ok": true
+    },
+    {
+      "table": "orders",
+      "actor": "admin",
+      "expected": {
+        "sees": [
+          "89749fce-0dd0-4b1e-9d3f-7b25e06928cf",
+          "5575546d-db5b-408b-8537-8456a8a87813"
+        ]
+      },
+      "http": 200,
+      "code": null,
+      "rows": 2,
+      "ok": true
+    },
+    {
+      "table": "orders",
+      "actor": "owner",
+      "expected": {
+        "sees": [
+          "89749fce-0dd0-4b1e-9d3f-7b25e06928cf",
+          "5575546d-db5b-408b-8537-8456a8a87813"
+        ]
+      },
+      "http": 200,
+      "code": null,
+      "rows": 2,
+      "ok": true
+    },
+    {
+      "table": "orders",
+      "actor": "rider",
+      "expected": {
+        "sees": [
+          "89749fce-0dd0-4b1e-9d3f-7b25e06928cf"
+        ]
+      },
+      "http": 200,
+      "code": null,
+      "rows": 1,
+      "ok": true
+    },
+    {
+      "table": "orders",
+      "actor": "other_rider",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "orders",
+      "actor": "foreign_owner",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "orders",
+      "actor": "revoked_member",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "order_items",
+      "actor": "anon",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "order_items",
+      "actor": "customer",
+      "expected": {
+        "sees": [
+          "89749fce-0dd0-4b1e-9d3f-7b25e06928cf"
+        ]
+      },
+      "http": 200,
+      "code": null,
+      "rows": 1,
+      "ok": true
+    },
+    {
+      "table": "order_items",
+      "actor": "other_customer",
+      "expected": {
+        "sees": [
+          "5575546d-db5b-408b-8537-8456a8a87813"
+        ]
+      },
+      "http": 200,
+      "code": null,
+      "rows": 1,
+      "ok": true
+    },
+    {
+      "table": "order_items",
+      "actor": "staff",
+      "expected": {
+        "sees": [
+          "89749fce-0dd0-4b1e-9d3f-7b25e06928cf",
+          "5575546d-db5b-408b-8537-8456a8a87813"
+        ]
+      },
+      "http": 200,
+      "code": null,
+      "rows": 2,
+      "ok": true
+    },
+    {
+      "table": "order_items",
+      "actor": "admin",
+      "expected": {
+        "sees": [
+          "89749fce-0dd0-4b1e-9d3f-7b25e06928cf",
+          "5575546d-db5b-408b-8537-8456a8a87813"
+        ]
+      },
+      "http": 200,
+      "code": null,
+      "rows": 2,
+      "ok": true
+    },
+    {
+      "table": "order_items",
+      "actor": "owner",
+      "expected": {
+        "sees": [
+          "89749fce-0dd0-4b1e-9d3f-7b25e06928cf",
+          "5575546d-db5b-408b-8537-8456a8a87813"
+        ]
+      },
+      "http": 200,
+      "code": null,
+      "rows": 2,
+      "ok": true
+    },
+    {
+      "table": "order_items",
+      "actor": "rider",
+      "expected": {
+        "sees": [
+          "89749fce-0dd0-4b1e-9d3f-7b25e06928cf"
+        ]
+      },
+      "http": 200,
+      "code": null,
+      "rows": 1,
+      "ok": true
+    },
+    {
+      "table": "order_items",
+      "actor": "other_rider",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "order_items",
+      "actor": "foreign_owner",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "order_items",
+      "actor": "revoked_member",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "payment_intents",
+      "actor": "anon",
+      "expected": "hidden",
+      "http": 401,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "payment_intents",
+      "actor": "customer",
+      "expected": "hidden",
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "payment_intents",
+      "actor": "other_customer",
+      "expected": "hidden",
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "payment_intents",
+      "actor": "staff",
+      "expected": "hidden",
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "payment_intents",
+      "actor": "admin",
+      "expected": {
+        "own": "business_id",
+        "min": 1
+      },
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "payment_intents",
+      "actor": "owner",
+      "expected": {
+        "own": "business_id",
+        "min": 1
+      },
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "payment_intents",
+      "actor": "rider",
+      "expected": "hidden",
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "payment_intents",
+      "actor": "other_rider",
+      "expected": "hidden",
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "payment_intents",
+      "actor": "foreign_owner",
+      "expected": "hidden",
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "payment_intents",
+      "actor": "revoked_member",
+      "expected": "hidden",
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "payment_refunds",
+      "actor": "anon",
+      "expected": "hidden",
+      "http": 401,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "payment_refunds",
+      "actor": "customer",
+      "expected": "hidden",
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "payment_refunds",
+      "actor": "other_customer",
+      "expected": "hidden",
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "payment_refunds",
+      "actor": "staff",
+      "expected": "hidden",
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "payment_refunds",
+      "actor": "admin",
+      "expected": {
+        "ownIntent": true,
+        "min": 1
+      },
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "payment_refunds",
+      "actor": "owner",
+      "expected": {
+        "ownIntent": true,
+        "min": 1
+      },
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "payment_refunds",
+      "actor": "rider",
+      "expected": "hidden",
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "payment_refunds",
+      "actor": "other_rider",
+      "expected": "hidden",
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "payment_refunds",
+      "actor": "foreign_owner",
+      "expected": "hidden",
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "payment_refunds",
+      "actor": "revoked_member",
+      "expected": "hidden",
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "inventory_movements",
+      "actor": "anon",
+      "expected": "hidden",
+      "http": 401,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "inventory_movements",
+      "actor": "customer",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "inventory_movements",
+      "actor": "other_customer",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "inventory_movements",
+      "actor": "staff",
+      "expected": {
+        "own": "business_id",
+        "min": 1,
+        "granted": true
+      },
+      "http": 200,
+      "code": null,
+      "rows": 3,
+      "ok": true
+    },
+    {
+      "table": "inventory_movements",
+      "actor": "admin",
+      "expected": {
+        "own": "business_id",
+        "min": 1,
+        "granted": true
+      },
+      "http": 200,
+      "code": null,
+      "rows": 3,
+      "ok": true
+    },
+    {
+      "table": "inventory_movements",
+      "actor": "owner",
+      "expected": {
+        "own": "business_id",
+        "min": 1,
+        "granted": true
+      },
+      "http": 200,
+      "code": null,
+      "rows": 3,
+      "ok": true
+    },
+    {
+      "table": "inventory_movements",
+      "actor": "rider",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "inventory_movements",
+      "actor": "other_rider",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "inventory_movements",
+      "actor": "foreign_owner",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "inventory_movements",
+      "actor": "revoked_member",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "customer_addresses",
+      "actor": "anon",
+      "expected": "hidden",
+      "http": 401,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "customer_addresses",
+      "actor": "customer",
+      "expected": {
+        "ownCustomer": true,
+        "min": 1
+      },
+      "http": 200,
+      "code": null,
+      "rows": 1,
+      "ok": true
+    },
+    {
+      "table": "customer_addresses",
+      "actor": "other_customer",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "customer_addresses",
+      "actor": "staff",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "customer_addresses",
+      "actor": "admin",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "customer_addresses",
+      "actor": "owner",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "customer_addresses",
+      "actor": "rider",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "customer_addresses",
+      "actor": "other_rider",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "customer_addresses",
+      "actor": "foreign_owner",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "customer_addresses",
+      "actor": "revoked_member",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "order_public_tokens",
+      "actor": "anon",
+      "expected": "hidden",
+      "http": 401,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "order_public_tokens",
+      "actor": "customer",
+      "expected": "hidden",
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "order_public_tokens",
+      "actor": "other_customer",
+      "expected": "hidden",
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "order_public_tokens",
+      "actor": "staff",
+      "expected": "hidden",
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "order_public_tokens",
+      "actor": "admin",
+      "expected": "hidden",
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "order_public_tokens",
+      "actor": "owner",
+      "expected": "hidden",
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "order_public_tokens",
+      "actor": "rider",
+      "expected": "hidden",
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "order_public_tokens",
+      "actor": "other_rider",
+      "expected": "hidden",
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "order_public_tokens",
+      "actor": "foreign_owner",
+      "expected": "hidden",
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "order_public_tokens",
+      "actor": "revoked_member",
+      "expected": "hidden",
+      "http": 403,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "pos_sales",
+      "actor": "anon",
+      "expected": "hidden",
+      "http": 401,
+      "code": "42501",
+      "rows": null,
+      "ok": true
+    },
+    {
+      "table": "pos_sales",
+      "actor": "customer",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "pos_sales",
+      "actor": "other_customer",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "pos_sales",
+      "actor": "staff",
+      "expected": {
+        "nothingForeign": "business_id"
+      },
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "pos_sales",
+      "actor": "admin",
+      "expected": {
+        "nothingForeign": "business_id"
+      },
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "pos_sales",
+      "actor": "owner",
+      "expected": {
+        "nothingForeign": "business_id"
+      },
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "pos_sales",
+      "actor": "rider",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "pos_sales",
+      "actor": "other_rider",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "pos_sales",
+      "actor": "foreign_owner",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    },
+    {
+      "table": "pos_sales",
+      "actor": "revoked_member",
+      "expected": "hidden",
+      "http": 200,
+      "code": null,
+      "rows": 0,
+      "ok": true
+    }
+  ],
+  "writes": {
+    "anon": {
+      "insert_order": "401 42501 rows=-",
+      "patch_product": "401 42501 rows=-",
+      "delete_items": "401 42501 rows=-"
+    },
+    "customer": {
+      "patch_own_order_status": "403 42501 rows=-",
+      "patch_own_order_total": "403 42501 rows=-",
+      "delete_own_order": "403 42501 rows=-",
+      "insert_item": "403 42501 rows=-",
+      "patch_address_of_another": "403 42501 rows=-"
+    },
+    "staff": {
+      "patch_order_total": "403 42501 rows=-",
+      "patch_order_status": "403 42501 rows=-",
+      "delete_ledger": "403 42501 rows=-",
+      "insert_ledger": "403 42501 rows=-",
+      "patch_payment_as_owner": "403 42501 rows=-",
+      "insert_refund_as_owner": "403 42501 rows=-"
+    },
+    "rider": {
+      "patch_assigned_order": "403 42501 rows=-",
+      "patch_other_order": "403 42501 rows=-"
+    },
+    "foreign_owner": {
+      "patch_product": "200  rows=0",
+      "patch_order": "403 42501 rows=-",
+      "insert_product": "403 42501 rows=-"
+    },
+    "revoked_member": {
+      "patch_product": "200  rows=0",
+      "insert_product": "403 42501 rows=-"
+    }
+  },
+  "note": "service_role no participa de ninguna celda; pos_sales sólo se lee"
+}

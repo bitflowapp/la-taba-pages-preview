@@ -1,0 +1,143 @@
+{
+  "schema": 1,
+  "description": "Machine-readable catalogue of the e-commerce release gates. The verdict PRODUCTION_READY is emitted only by scripts/release/ecommerce-release-gates.mjs and only when every blocking gate is PASS. A fact that could not be collected is UNKNOWN, and UNKNOWN on a blocking gate is NOT_READY; the same holds for a fact that arrives with the wrong shape (a flag that is not a boolean, a counter that is not an integer, a row without its key): it is never read as 'off' or zero. This file documents the gates; the blocking flags are enforced in scripts/release/gates/evaluate.mjs and a unit test keeps both in step.",
+  "tool": "scripts/release/ecommerce-release-gates.mjs",
+  "verdicts": ["PRODUCTION_READY", "NOT_READY"],
+  "statuses": ["PASS", "FAIL", "UNKNOWN"],
+  "money_movement_possible": ["YES", "NO", "UNKNOWN"],
+  "exit_codes": { "0": "PRODUCTION_READY", "3": "NOT_READY", "2": "usage error", "1": "unexpected failure (never PRODUCTION_READY)" },
+  "provenance": {
+    "description": "Two entries of the result that are not gates of this catalogue. They say where the facts came from and who read them.",
+    "FACTS_PROVENANCE": {
+      "blocking": true,
+      "checks": "The facts carry target, business id, schema, a collection instant (collectedAt) and readable operator options; without them nothing is evaluated and every gate is UNKNOWN (FACTS_NOT_IDENTIFIED). The business facts must belong to the business id being evaluated (BUSINESS_ID_MISMATCH). At evaluation time the facts are at most --max-facts-age-minutes old (default 30, live runs included) and are not dated in the future (two minutes of clock tolerance): otherwise FACTS_STALE or FACTS_FROM_THE_FUTURE. With --facts only the target-side sections are taken from the file; the findings register, the payment certification, the migrations, the functions and the commit are re-read from the current tree (SAVED_REPO_SECTIONS_NOT_REREAD blocks a caller that does not). The table, the markdown and the JSON report state the source (live read or saved facts, with the file name and the age).",
+      "source": "The facts object, the clock of the machine that evaluates, and the working tree."
+    },
+    "OBSERVER": {
+      "blocking": false,
+      "checks": "The target was read as supabase_read_only_user inside a read-only transaction. Anything else, or an observer that could not be read, is reported as a WARNING: it says how the facts were read, not how the store is.",
+      "source": "Target database, read-only SQL: current_user and transaction_read_only."
+    }
+  },
+  "gates": [
+    {
+      "id": "CATALOG_APPROVAL",
+      "title": "Catalog approval",
+      "blocking": true,
+      "checks": "At least --min-products (default 1, 1 to 500; an unreadable minimum is UNKNOWN, never replaced by 1) products are publicly available (available, active, verified, stock above zero). Every available product is verified and has merchant intent (merchant_available). Where the image policy applies (the CHECK cp_published_requires_approved_image names the business, or --require-images) every available product has an approved image (catalog asset with approved_at and rights other than UNAPPROVED_QA). On controlled-production every available product has catalog_origin 'commercial'.",
+      "source": "Target database, read-only SQL: public.products, public.catalog_assets, pg_constraint."
+    },
+    {
+      "id": "VALID_PRICES",
+      "title": "Valid prices",
+      "blocking": true,
+      "checks": "No available product has a price that is null or not above zero, and none has price_status other than 'confirmed' (a pending price cannot be on sale).",
+      "source": "Target database, read-only SQL: public.products."
+    },
+    {
+      "id": "SERVICE_HOURS",
+      "title": "Service hours",
+      "blocking": true,
+      "checks": "businesses.hours_enforced is true, operating_timezone is set and is a valid time zone, and every enabled channel (delivery, pickup) has at least one row in business_service_hours. delivery_enabled, pickup_enabled and hours_enforced must be booleans: a null or missing flag is UNKNOWN, not 'channel off'. Audit finding CAT-01: without enforcement the store is always open.",
+      "source": "Target database, read-only SQL: public.businesses, public.business_service_hours, pg_timezone_names."
+    },
+    {
+      "id": "DELIVERY_ZONES",
+      "title": "Delivery zones",
+      "blocking": true,
+      "checks": "When delivery is enabled: businesses.delivery_zone_enforced is true, at least one delivery zone is active, and every active zone has an effective delivery fee and an effective minimum (its own or the business one). A pickup-only business passes with a reason, and 'pickup only' means delivery_enabled is exactly false: a null or missing flag is UNKNOWN.",
+      "source": "Target database, read-only SQL: public.businesses, public.delivery_zones."
+    },
+    {
+      "id": "FULFILMENT",
+      "title": "Fulfilment mode and address",
+      "blocking": true,
+      "checks": "Delivery or pickup is enabled and the business address is set (same predicate as get_store_opening_readiness: at least five characters and not a placeholder). The three facts must be booleans, otherwise UNKNOWN.",
+      "source": "Target database, read-only SQL: public.businesses."
+    },
+    {
+      "id": "TEAM",
+      "title": "Team",
+      "blocking": true,
+      "checks": "At least one active owner and at least one active staff or admin (active membership and not disabled in identity_user_security). When delivery is enabled and the business works with riders (businesses.rider_presence_required, or --require-rider) at least one active rider. Without that policy the business may close its own deliveries with the customer's code (migration 20260919120000), so a rider is not required. delivery_enabled and rider_presence_required must be booleans, otherwise UNKNOWN.",
+      "source": "Target database, read-only SQL: public.business_members, public.identity_user_security, public.businesses. Counts per role only."
+    },
+    {
+      "id": "MP_SELLER",
+      "title": "Mercado Pago seller",
+      "blocking": true,
+      "checks": "When online payment is intended (payment settings enabled, a connected seller, or a decision record that includes mercadopago): payment settings exist and are enabled in the environment of the target (production on controlled-production, test on staging), the production review is approved, and a seller is connected in that environment with a stored credential and matching the settings. When the business opens with manual payment only: PASS only if docs/ecommerce-hardening/payment-certification.json carries an explicit opening_decision with methods ['manual'] and Mercado Pago is not enabled on the target. No configuration and no decision record is a FAIL. A Mercado Pago section that does not carry settings (null, or an object with a boolean enabled) and a list of connections is UNKNOWN (MERCADOPAGO_FACTS_MALFORMED): 'not enabled' is only concluded from facts that were read. The decision record needs a date that exists and is not in the future.",
+      "source": "Target database, read-only SQL: public.business_payment_settings, public.mp_seller_connections (states and booleans only, never credentials or account ids). Repo: docs/ecommerce-hardening/payment-certification.json (opening_decision)."
+    },
+    {
+      "id": "PAYMENT_CERTIFICATION",
+      "title": "Payment certification",
+      "blocking": true,
+      "checks": "A signed-off record exists for every payment method that will open. Manual payment (always offered by the database) needs an entry with certified true. Mercado Pago, when intended, needs an entry with certified true for the environment of the target: production on controlled-production. An entry counts only if its evidence is a path under artifacts/ or docs/ that exists and is tracked by git (a folder ignored by git is not in the repo), and its date is a real calendar date that is not in the future.",
+      "source": "Repo: docs/ecommerce-hardening/payment-certification.json, the evidence paths it names and git ls-files on them."
+    },
+    {
+      "id": "REAL_MONEY_GATE",
+      "title": "Real money gate",
+      "blocking": true,
+      "checks": "Computes MONEY_MOVEMENT_POSSIBLE (YES, NO or UNKNOWN, printed with its reasons in the table, the markdown and the JSON report): whether a real-money charge can be created on the target today. Project side, from the SHA-256 digests the Management API returns for the secrets (compared with the public contract values; no value or digest is stored or printed): MERCADOPAGO_ENVIRONMENT absent or exactly 'test' closes; MERCADOPAGO_PRODUCTION_REVIEW_STATUS absent or exactly one of not_requested, pending, rejected closes; the switch MERCADOPAGO_REAL_MONEY_ENABLED closes when absent or not exactly 'enabled' (the Edge gate compares exactly), but only together with the legacy MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION absent, because older deployed functions read that variable. A digest that matches no known value of the environment or the review is UNRECOGNIZED (the functions trim them), never 'closed'. Database side, for every business of the target: zero businesses with Mercado Pago enabled in production and a connected production seller closes. NO needs at least one condition proven closed; YES needs every fact read and nothing proven closed; anything else is UNKNOWN, and UNKNOWN never passes. On controlled-production the gate PASSES only with YES plus a Mercado Pago entry certified for production (same evidence rules as PAYMENT_CERTIFICATION) plus an opening_decision that includes mercadopago, or with NO plus an opening_decision of cash and transfer only (['manual']). A missing (null) or invalid decision fails (PAYMENT_DECISION_MISSING, PAYMENT_DECISION_INVALID): nothing is inferred from it. YES with a manual-only decision fails (MONEY_MOVEMENT_POSSIBLE_BUT_DECISION_IS_MANUAL_ONLY); NO with a decision that includes mercadopago fails (MERCADOPAGO_DECIDED_BUT_MONEY_MOVEMENT_IS_NO). On staging it passes only with NO (REAL_MONEY_POSSIBLE_ON_STAGING otherwise). The legacy smoke variable present fails on any target (LEGACY_SMOKE_CONFIRMATION_PRESENT).",
+      "source": "Management API: GET /v1/projects/<ref>/secrets (names and SHA-256 digests only). Target database, read-only SQL: public.business_payment_settings, public.mp_seller_connections (counts only). Repo: docs/ecommerce-hardening/payment-certification.json (opening_decision and the mercadopago production entry)."
+    },
+    {
+      "id": "MIGRATION_PARITY",
+      "title": "Migration parity",
+      "blocking": true,
+      "checks": "Every migration file in supabase/migrations is in the target ledger, the ledger has no version the repo lacks, and a shared version has the same name on both sides. A row without a version on either side is UNKNOWN (MIGRATION_FACTS_MALFORMED), never parity. A .sql file in the migrations directory that does not follow <version>_<name>.sql fails the gate (REPO_FILE_NOT_A_MIGRATION): the Supabase CLI would skip it.",
+      "source": "Target database, read-only SQL: supabase_migrations.schema_migrations. Repo: supabase/migrations."
+    },
+    {
+      "id": "EDGE_FUNCTIONS",
+      "title": "Edge Functions deployed",
+      "blocking": true,
+      "checks": "Every function directory under supabase/functions except shared code is deployed on the target with status ACTIVE and with the verify_jwt value declared in supabase/config.toml (true, the platform default, when the file does not declare it; that case is reported as VERIFY_JWT_NOT_DECLARED_IN_CONFIG instead of VERIFY_JWT_MISMATCH). The nine mercadopago-* functions must exist in the repo and on the target unless an explicit manual-only decision record exists. The deployed code must be the repo's: for every function, the last commit that touched the files its bundle is built from (its own directory plus the shared code it reaches through relative imports and the Deno configuration; test files are not deployed) must not be later than the deployment (SOURCE_NEWER_THAN_DEPLOYMENT); when either date cannot be read the gate is UNKNOWN (SOURCE_TIME_UNAVAILABLE, DEPLOY_TIME_UNAVAILABLE). This compares dates, not bytes: a redeploy or a secrets change after the commit moves the deployment date without proving the code is the same. With --functions-reference the deployed bundle hash of every function must equal the one of the reference environment, which is the byte-level check.",
+      "source": "Management API: GET /v1/projects/<ref>/functions (status, verify_jwt, bundle hash, updated_at). Repo: supabase/functions, supabase/config.toml, and git log on the source files of each function."
+    },
+    {
+      "id": "ABUSE_PROTECTION",
+      "title": "Order intake guard",
+      "blocking": true,
+      "checks": "The function private.order_intake_guard exists, both order doors (public.create_order_with_items and public.create_checkout_session, every overload) call it — the call private.order_intake_guard( is looked for in the function source, not the bare name, which also appears in the mode column the doors read — and businesses.order_intake_guard_mode is 'enforce'.",
+      "source": "Target database, read-only SQL: pg_proc, pg_namespace, public.businesses."
+    },
+    {
+      "id": "UNATTENDED_ORDER_POLICY",
+      "title": "Unattended order policy",
+      "blocking": false,
+      "checks": "businesses.abandoned_order_minutes is decided. A null value is reported as a WARNING and does not block.",
+      "source": "Target database, read-only SQL: public.businesses."
+    },
+    {
+      "id": "NO_OPEN_P0",
+      "title": "No open P0 findings",
+      "blocking": true,
+      "checks": "No finding with severity P0 is open. A finding marked fixed needs fixed_by, and one marked accepted_risk needs notes; otherwise it still blocks. A finding whose severity cannot be read is treated as P0. Findings marked external_gate do not block when their notes say what they wait on (without notes they block, like accepted_risk) and are reported separately as blockers of the public launch.",
+      "source": "Repo: docs/ecommerce-hardening/findings-register.json."
+    },
+    {
+      "id": "NO_OPEN_P1",
+      "title": "No open P1 findings",
+      "blocking": true,
+      "checks": "Same rules as NO_OPEN_P0 for severity P1.",
+      "source": "Repo: docs/ecommerce-hardening/findings-register.json."
+    },
+    {
+      "id": "CI_GREEN",
+      "title": "CI green on the release commit",
+      "blocking": true,
+      "checks": "The CI conclusion supplied with --ci-conclusion is 'success' and --ci-commit is the commit being evaluated (git HEAD of the tree). Not supplied is UNKNOWN. The inputs of the verdict that are read from the working tree (findings register, payment certification, supabase/migrations, supabase/functions, supabase/config.toml and scripts/release) must have no uncommitted or untracked changes: CI ran on the commit, not on local edits (RELEASE_INPUTS_NOT_COMMITTED; REPO_DIRTY_STATE_UNKNOWN when git cannot say).",
+      "source": "Operator input (--ci-conclusion, --ci-commit), git rev-parse HEAD and git status on the release inputs."
+    },
+    {
+      "id": "STORE_STATE",
+      "title": "Store state",
+      "blocking": false,
+      "checks": "Informational: store status (open, paused, closed), ordering flags, QA fixture flag and, when the read-only role may call it, what get_store_opening_readiness reports as pending. Closed, paused or not yet verified are valid states before opening. Two states are raised as a WARNING (they never block): a business that is not active (BUSINESS_NOT_ACTIVE) and a QA fixture evaluated on controlled-production (QA_FIXTURE_ON_CONTROLLED_PRODUCTION).",
+      "source": "Target database, read-only SQL: public.businesses, public.get_store_opening_readiness."
+    }
+  ]
+}

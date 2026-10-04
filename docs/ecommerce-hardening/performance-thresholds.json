@@ -1,0 +1,26 @@
+{
+  "description": "Techos de latencia (p95, ms, medida en el cliente) de la fase `performance` del certificador e-commerce (scripts/e2e-staging/ecommerce/phases/performance.mjs), uno por destino. NO se inventan: cada bloque sale de una corrida medida, con la regla de abajo, y se versiona a mano después de mirarlo. Un destino con `null` todavía no tiene compuerta: la fase mide, contesta MEASURED_NO_GATE y deja en performance.json el bloque propuesto (`gate.proposed`) para copiar acá. Con un bloque presente, cada p95 medido se compara contra su techo y la compuerta es PASS o FAIL; un techo versionado que la corrida no midió es FAIL.",
+  "rule": {
+    "metric": "p95_ms",
+    "multiplier": 3,
+    "round_up_to_ms": 50,
+    "floor_ms": 250,
+    "cap": "statement_timeout of the role that makes the call (anon 3 s; authenticated 8 s; service_role through authenticator, 8 s). A ceiling equal to the timeout is listed under at_timeout: that call would already be failing, so it says nothing about performance and has to be looked at before committing."
+  },
+  "operations": {
+    "catalog_read": "anon: the storefront shelf query (products, storefront columns and filters)",
+    "order_creation_cash": "authenticated customer: create_order_with_items, cash pickup (validation, intake guard, stock decrement and order in one transaction: the stock commit of the cash door)",
+    "order_query": "authenticated customer: the storefront order history (orders with order_items)",
+    "tracking_query": "anon with the order token: get_public_order_tracking",
+    "panel_query": "authenticated operator: the Panel inbox query of the order repository",
+    "checkout_creation": "service_role (what the Edge Function calls): create_checkout_session, stock reserved",
+    "payment_intent": "service_role: prepare_mercadopago_preference_v2",
+    "stock_commit_paid": "service_role: finalize_paid_checkout_session (the reservation becomes the order)"
+  },
+  "steps": "baseline (sequential) and c10, c30, c100 (Staging: c10 and c30 only, it is shared)",
+  "targets": {
+    "staging": null,
+    "local": null,
+    "stack": null
+  }
+}

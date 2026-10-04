@@ -1,4 +1,10 @@
-import { assertCurrentSellerPaymentAuthority, beginSellerPaymentAuthority, businessForIntent, type PaymentAuthoritySnapshot } from '../_shared/seller-oauth.ts';
+import {
+  assertCurrentSellerPaymentAuthority,
+  assertPaymentCreationGate,
+  beginSellerPaymentAuthority,
+  businessForIntent,
+  type PaymentAuthoritySnapshot,
+} from '../_shared/seller-oauth.ts';
 import {
   assertAllowedOrigin,
   createServiceClient,
@@ -16,6 +22,8 @@ import {
 import {
   createPreference,
   findPreferenceByExternalReference,
+  isFinalProviderRejection,
+  preferenceRequest,
   verifyStoredPreference,
   MercadoPagoApiError,
   type PreferencePreparation,
@@ -33,6 +41,27 @@ Deno.serve(async (request) => {
     const { user } = await requireAuthenticatedUser(request);
     const service = createServiceClient();
     await enforceRateLimit(service, request, 'preference', 12, 600, user.id);
+
+    // La compuerta de creación (con el interruptor de dinero real), ANTES de
+    // preparar el intento: con `new_attempt` la preparación vuelve a reservar el
+    // stock de una sesión vencida o cancelada. Cerrada, no se prepara ni se
+    // reserva nada y no sale nada hacia el proveedor: el mismo rechazo público
+    // que da la sesión de checkout.
+    try {
+      assertPaymentCreationGate();
+    } catch (error) {
+      // Sólo el motivo: los mensajes de la compuerta nombran lo que falta, nunca un valor.
+      console.warn(JSON.stringify({
+        timestamp: new Date().toISOString(),
+        event: 'payment_creation_gate_closed',
+        reason: error instanceof Error ? error.message : 'unknown',
+      }));
+      return jsonResponse(request, {
+        ok: false,
+        code: 'PAYMENTS_NOT_ENABLED',
+        message: 'Mercado Pago no está disponible para este comercio en este momento.',
+      }, 409);
+    }
 
     const { data, error } = await service.rpc('prepare_mercadopago_preference_v2', {
       p_checkout_session_id: checkoutSessionId,
@@ -100,25 +129,17 @@ Deno.serve(async (request) => {
       }, 202);
     }
 
+    // El pedido se arma ANTES del intento, fuera del `try`. Armarlo puede fallar
+    // por razones nuestras —los items superan el total del checkout, la sesión
+    // venció— y cuando eso ocurría adentro se asentaba `network_or_timeout`:
+    // una duda sobre el proveedor por un pedido que nunca salió, que además
+    // dejaba el intento sin salida hasta que venciera el checkout.
+    const preferencePayload = preferenceRequest(preparation, businessId);
+    let created: Awaited<ReturnType<typeof createPreference>>;
     try {
-      const created = await createPreference(preparation, businessId, authority.accessToken);
-      const { data: persisted, error: persistError } = await service.rpc('record_mercadopago_preference_created_v2', {
-        ...persistenceContext(preparation, businessId, user.id, authority.snapshot),
-        p_payment_attempt_id: preparation.payment_attempt_id,
-        p_preference_id: created.preferenceId,
-        p_init_point: created.initPoint,
-        p_sandbox_init_point: created.sandboxInitPoint || null,
-        p_response_hash: created.responseHash,
-        p_provider_request_id: created.requestId || null,
-      });
-      if (persistError || !persisted) return checkoutUnavailable(request);
-      const ready = {
-        ...preparation,
-        preference_id: created.preferenceId,
-        init_point: created.initPoint,
-        sandbox_init_point: created.sandboxInitPoint,
-      };
-      return await authorizedPreferenceResponse(request, ready, selectedInitPoint(ready), businessId, user.id, persisted);
+      // El `try` cubre sólo el envío: lo que falle después (guardar, volver a
+      // verificar la autoridad) ya no es una duda sobre si la preferencia existe.
+      created = await createPreference(preparation, businessId, authority.accessToken, preferencePayload);
     } catch (error) {
       // A final authority rejection is not an uncertain provider POST.
       if (error instanceof PublicPaymentError) throw error;
@@ -127,7 +148,11 @@ Deno.serve(async (request) => {
         paymentAttemptId: preparation.payment_attempt_id,
         externalReference: preparation.external_reference,
       }));
-      if (error instanceof MercadoPagoApiError && error.status >= 400 && error.status < 500) {
+      // Sólo un 4xx que es la respuesta final del proveedor marca el intento
+      // como fallido. 408, 409, 425 y 429 no deciden nada sobre la preferencia
+      // (un 429 es «ahora no», no «no»): van por el mismo camino que un 5xx,
+      // igual que en el reembolso y en la cancelación.
+      if (error instanceof MercadoPagoApiError && isFinalProviderRejection(error.status)) {
         await service.rpc('record_mercadopago_preference_failed', {
           p_payment_attempt_id: preparation.payment_attempt_id,
           p_response_hash: error.responseHash,
@@ -151,6 +176,23 @@ Deno.serve(async (request) => {
         message: 'Estamos verificando la preparación de tu pago. No vuelvas a pagar todavía.',
       }, 202);
     }
+    const { data: persisted, error: persistError } = await service.rpc('record_mercadopago_preference_created_v2', {
+      ...persistenceContext(preparation, businessId, user.id, authority.snapshot),
+      p_payment_attempt_id: preparation.payment_attempt_id,
+      p_preference_id: created.preferenceId,
+      p_init_point: created.initPoint,
+      p_sandbox_init_point: created.sandboxInitPoint || null,
+      p_response_hash: created.responseHash,
+      p_provider_request_id: created.requestId || null,
+    });
+    if (persistError || !persisted) return checkoutUnavailable(request);
+    const ready = {
+      ...preparation,
+      preference_id: created.preferenceId,
+      init_point: created.initPoint,
+      sandbox_init_point: created.sandboxInitPoint,
+    };
+    return await authorizedPreferenceResponse(request, ready, selectedInitPoint(ready), businessId, user.id, persisted);
   } catch (error) {
     return publicErrorResponse(request, error);
   }

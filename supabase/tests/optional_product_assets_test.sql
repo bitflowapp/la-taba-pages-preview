@@ -74,7 +74,10 @@ create function pg_temp.alta(
   p_image_sha text default null,
   p_thumb_url text default null,
   p_thumb_sha text default null,
-  p_source_sha text default null
+  p_source_sha text default null,
+  -- La identidad del producto (sku + external_id) es la del asset que lo viste: el disparador de
+  -- 20260927175058 (products_validate_catalog_asset_binding) exige que coincidan.
+  p_external_id text default null
 ) returns void language sql as $$
   insert into public.products(
     business_id, name, description, category, subcategory, brand, presentation,
@@ -88,7 +91,7 @@ create function pg_temp.alta(
     'Botella PET 500 ml Pack x12', 'Gaseosas', 'Cola', p_marca,
     'Botella PET 500 ml Pack x12', '500 ml', 500, 'ml', 'Botella PET',
     'Botella PET 500 ml Pack x12',
-    'ext-' || coalesce(p_sku,'x'), p_sku, 12, p_precio, p_stock, true, true,
+    coalesce(p_external_id, 'ext-' || coalesce(p_sku,'x')), p_sku, 12, p_precio, p_stock, true, true,
     false, true, now(), 'e8000000-0000-4000-8000-000000000001',
     (random() * 1000)::int, 'confirmed', p_origen, p_asset,
     p_image_url, p_image_sha, p_thumb_url, p_thumb_sha, p_source_sha);
@@ -161,7 +164,7 @@ select throws_ok(
 
 -- ── 7 · la imagen con derechos en regla sigue publicando igual ─────────────
 select lives_ok(
-  $$select pg_temp.alta('sku-con-foto',
+  $$select pg_temp.alta('sku-ok', p_external_id => 'p-ok',
       p_asset => (select id from public.catalog_assets where sku = 'sku-ok'),
       p_image_url => (select master_path from public.catalog_assets where sku = 'sku-ok'),
       p_image_sha => (select master_sha256 from public.catalog_assets where sku = 'sku-ok'),
@@ -208,10 +211,10 @@ select throws_ok(
 update public.products
    set image_url = null, image_sha256 = null, image_thumbnail_url = null,
        image_thumbnail_sha256 = null, source_image_sha256 = null, catalog_asset_id = null
- where sku = 'sku-con-foto';
+ where sku = 'sku-ok';
 
 select is(
-  (select is_verified from public.products where sku = 'sku-con-foto'),
+  (select is_verified from public.products where sku = 'sku-ok'),
   false,
   'sacarle la foto a un producto verificado lo desverifica (fail-close)'
 );

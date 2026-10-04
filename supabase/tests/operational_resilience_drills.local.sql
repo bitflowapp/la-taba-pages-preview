@@ -297,14 +297,15 @@ begin
   -- quedaran corridas reales de la prueba anterior, el fixture mediría contra
   -- un reloj que no controla.
   delete from cron.job_run_details;
-  -- Punto de partida honesto: las cuatro tareas propias corrieron bien hace un
+  -- Punto de partida honesto: todas las tareas propias corrieron bien hace un
   -- rato. Sin esto, una tarea que todavía no corrió nunca se vería "detenida" y
   -- el ensayo estaría midiendo el fixture en vez del sistema.
-  perform pg_temp.corrida_de_cron(j, 'succeeded', clock_timestamp() - interval '4 minutes')
-    from unnest(array[
-      'taba-payment-outbox-worker', 'taba-checkout-expiry-sweep',
-      'taba-checkout-provider-truth-sweep', 'taba-operational-alerts-sweep'
-    ]) as j;
+  -- TODAS las que existan, no una lista de nombres: con la lista de cuatro, cada
+  -- tarea agregada después (ventana de QA, poda del guardián de admisión,
+  -- vencimiento de pedidos sin atender, poda del historial) quedaba sin sembrar y
+  -- el punto de partida ya traía su alerta de tarea detenida.
+  perform pg_temp.corrida_de_cron(j.jobname, 'succeeded', clock_timestamp() - interval '4 minutes')
+    from cron.job j where j.jobname like 'taba-%';
   r := pg_temp.barrer();
   perform pg_temp.ok(not pg_temp.abierta(f.business_id, 'SCHEDULER_JOB_FAILING')
     and not pg_temp.abierta(f.business_id, 'SCHEDULER_JOB_STALLED'),
@@ -625,7 +626,9 @@ begin
   perform pg_temp.ok(pg_temp.abierta(f.business_id, 'SCHEDULER_WATCHDOG_STALE'),
     'la muerte del planificador se detecta SIN el planificador', r ->> 'action');
   a := pg_temp.alerta(f.business_id, 'SCHEDULER_WATCHDOG_STALE');
-  perform pg_temp.ok(a.severity = 'CRITICAL' and (a.evidence ->> 'observed_by') = 'ensayo',
+  -- La sonda la llama cualquiera (también `anon`), así que lo que guarda sale de una
+  -- lista cerrada (20261001220500): 'ensayo' no está en ella y queda como 'external'.
+  perform pg_temp.ok(a.severity = 'CRITICAL' and (a.evidence ->> 'observed_by') = 'external',
     'y queda dicho quién lo vio y hace cuánto',
     'edad=' || (a.evidence ->> 'age_seconds') || ' s');
 

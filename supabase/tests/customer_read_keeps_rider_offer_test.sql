@@ -86,9 +86,11 @@ create or replace function pg_temp.cliente() returns void language sql as $$
 $$;
 create or replace function pg_temp.revision(p_order uuid) returns bigint language sql as $$
   select revision from public.orders where id = p_order; $$;
+-- La última oferta del pedido, en el estado que esté: reintentar una aceptación es volver a mandar
+-- la MISMA oferta, que después de aceptada ya no está pendiente.
 create or replace function pg_temp.oferta(p_order uuid) returns uuid language sql as $$
   select f.id from public.rider_order_offers f
-   where f.order_id = p_order and f.status = 'pending' order by f.offered_at desc limit 1; $$;
+   where f.order_id = p_order order by f.offered_at desc limit 1; $$;
 create or replace function pg_temp.token(n int) returns text language sql as $$
   select 'cro-token-' || lpad(n::text, 4, '0') || repeat('x', 22); $$;
 

@@ -1,0 +1,197 @@
+{
+ "ref": "tkanbadcglszlcyfjvpv",
+ "checks": [
+  {
+   "finding": "intake_limits_by_business",
+   "rows": 3,
+   "sample": [
+    {
+     "finding": "intake_limits_by_business",
+     "business_id": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+     "slug": "la-taba-cp",
+     "status": "closed",
+     "ordering_verified": false,
+     "max_pending_orders_per_customer": 5,
+     "order_rate_limit_per_10_minutes": 20,
+     "abandoned_order_minutes": null
+    },
+    {
+     "finding": "intake_limits_by_business",
+     "business_id": "dd515bdd-33bc-4a72-9e70-72d2ab8ae1f0",
+     "slug": "qa-aislamiento-cp",
+     "status": "closed",
+     "ordering_verified": false,
+     "max_pending_orders_per_customer": 5,
+     "order_rate_limit_per_10_minutes": 20,
+     "abandoned_order_minutes": null
+    },
+    {
+     "finding": "intake_limits_by_business",
+     "business_id": "e1d2c342-da14-421e-884f-ff38bb55f642",
+     "slug": "qa-control-cp",
+     "status": "closed",
+     "ordering_verified": true,
+     "max_pending_orders_per_customer": 5,
+     "order_rate_limit_per_10_minutes": 20,
+     "abandoned_order_minutes": 120
+    }
+   ]
+  },
+  {
+   "finding": "customer_over_pending_cap",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "unattended_orders_that_will_expire",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "double_converted",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "held_by_paid_or_review_checkout",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "order_on_refunded_payment",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "refund_in_flight",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "cancellation_downgraded",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "approved_payment_without_order",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "radius_cap_without_enforced_coverage",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "zone_name_differs_from_area",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "closure_and_special_hours_same_date",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "all_channel_special_hours_with_alcohol_grid",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "verified_without_rules",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "unverified_missing_new_requirements",
+   "rows": 2,
+   "sample": [
+    {
+     "finding": "unverified_missing_new_requirements",
+     "business_id": "e7850ad2-a447-402c-8375-3fd74e9466ba",
+     "slug": "la-taba-cp",
+     "owner_missing": false,
+     "hours_not_enforced": false,
+     "hour_rows": 0,
+     "coverage_not_enforced": false,
+     "active_zones": 0
+    },
+    {
+     "finding": "unverified_missing_new_requirements",
+     "business_id": "dd515bdd-33bc-4a72-9e70-72d2ab8ae1f0",
+     "slug": "qa-aislamiento-cp",
+     "owner_missing": false,
+     "hours_not_enforced": false,
+     "hour_rows": 0,
+     "coverage_not_enforced": false,
+     "active_zones": 0
+    }
+   ]
+  },
+  {
+   "finding": "open_orders_older_than_24h",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "payment_traces_first_purge",
+   "rows": 1,
+   "sample": [
+    {
+     "finding": "payment_traces_first_purge",
+     "rate_limit_buckets": 26,
+     "rejected_receipts": 0
+    }
+   ]
+  },
+  {
+   "finding": "order_lines_without_product",
+   "rows": 1,
+   "sample": [
+    {
+     "finding": "order_lines_without_product",
+     "order_lines": 0
+    }
+   ]
+  },
+  {
+   "finding": "qa_fixture_businesses_get_ceilings",
+   "rows": 2,
+   "sample": [
+    {
+     "finding": "qa_fixture_businesses_get_ceilings",
+     "business_id": "dd515bdd-33bc-4a72-9e70-72d2ab8ae1f0",
+     "slug": "qa-aislamiento-cp",
+     "status": "closed",
+     "ordering_verified": false
+    },
+    {
+     "finding": "qa_fixture_businesses_get_ceilings",
+     "business_id": "e1d2c342-da14-421e-884f-ff38bb55f642",
+     "slug": "qa-control-cp",
+     "status": "closed",
+     "ordering_verified": true
+    }
+   ]
+  },
+  {
+   "finding": "age_confirmation_backfill",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "order_lines_sku_backfill",
+   "rows": 1,
+   "sample": [
+    {
+     "finding": "order_lines_sku_backfill",
+     "lines_filled": 136,
+     "lines_whose_product_has_no_sku": 0
+    }
+   ]
+  }
+ ],
+ "target": "controlled-production",
+ "file": "docs/migrations/checks/20261001_ecommerce_hardening_preflight.sql",
+ "at": "2026-10-03T11:35:02.041Z"
+}

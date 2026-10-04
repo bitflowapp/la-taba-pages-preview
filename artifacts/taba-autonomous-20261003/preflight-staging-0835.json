@@ -1,0 +1,197 @@
+{
+ "ref": "ucbtjcurawxjwjdvvcvj",
+ "checks": [
+  {
+   "finding": "intake_limits_by_business",
+   "rows": 3,
+   "sample": [
+    {
+     "finding": "intake_limits_by_business",
+     "business_id": "00000000-0000-4000-8000-000000000001",
+     "slug": "business-00000000000040008000000000000001",
+     "status": "open",
+     "ordering_verified": false,
+     "max_pending_orders_per_customer": null,
+     "order_rate_limit_per_10_minutes": null,
+     "abandoned_order_minutes": null
+    },
+    {
+     "finding": "intake_limits_by_business",
+     "business_id": "a57b1c20-0f4e-4a6b-9d31-7c2e5f8a41d0",
+     "slug": "la-taba-staging",
+     "status": "open",
+     "ordering_verified": true,
+     "max_pending_orders_per_customer": 5,
+     "order_rate_limit_per_10_minutes": 20,
+     "abandoned_order_minutes": 120
+    },
+    {
+     "finding": "intake_limits_by_business",
+     "business_id": "1a1ab718-f008-4c86-a14e-7674a3bcb03d",
+     "slug": "qa-ecom-cert",
+     "status": "closed",
+     "ordering_verified": true,
+     "max_pending_orders_per_customer": null,
+     "order_rate_limit_per_10_minutes": null,
+     "abandoned_order_minutes": null
+    }
+   ]
+  },
+  {
+   "finding": "customer_over_pending_cap",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "unattended_orders_that_will_expire",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "double_converted",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "held_by_paid_or_review_checkout",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "order_on_refunded_payment",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "refund_in_flight",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "cancellation_downgraded",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "approved_payment_without_order",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "radius_cap_without_enforced_coverage",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "zone_name_differs_from_area",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "closure_and_special_hours_same_date",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "all_channel_special_hours_with_alcohol_grid",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "verified_without_rules",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "unverified_missing_new_requirements",
+   "rows": 1,
+   "sample": [
+    {
+     "finding": "unverified_missing_new_requirements",
+     "business_id": "00000000-0000-4000-8000-000000000001",
+     "slug": "business-00000000000040008000000000000001",
+     "owner_missing": true,
+     "hours_not_enforced": true,
+     "hour_rows": 0,
+     "coverage_not_enforced": false,
+     "active_zones": 0
+    }
+   ]
+  },
+  {
+   "finding": "open_orders_older_than_24h",
+   "rows": 2,
+   "sample": [
+    {
+     "finding": "open_orders_older_than_24h",
+     "business_id": "a57b1c20-0f4e-4a6b-9d31-7c2e5f8a41d0",
+     "slug": "la-taba-staging",
+     "status": "ready",
+     "orders": 6,
+     "oldest": "2026-09-18 01:17:04.591258+00"
+    },
+    {
+     "finding": "open_orders_older_than_24h",
+     "business_id": "a57b1c20-0f4e-4a6b-9d31-7c2e5f8a41d0",
+     "slug": "la-taba-staging",
+     "status": "accepted",
+     "orders": 1,
+     "oldest": "2026-09-18 02:48:26.538294+00"
+    }
+   ]
+  },
+  {
+   "finding": "payment_traces_first_purge",
+   "rows": 1,
+   "sample": [
+    {
+     "finding": "payment_traces_first_purge",
+     "rate_limit_buckets": 178,
+     "rejected_receipts": 0
+    }
+   ]
+  },
+  {
+   "finding": "order_lines_without_product",
+   "rows": 1,
+   "sample": [
+    {
+     "finding": "order_lines_without_product",
+     "order_lines": 0
+    }
+   ]
+  },
+  {
+   "finding": "qa_fixture_businesses_get_ceilings",
+   "rows": 1,
+   "sample": [
+    {
+     "finding": "qa_fixture_businesses_get_ceilings",
+     "business_id": "1a1ab718-f008-4c86-a14e-7674a3bcb03d",
+     "slug": "qa-ecom-cert",
+     "status": "closed",
+     "ordering_verified": true
+    }
+   ]
+  },
+  {
+   "finding": "age_confirmation_backfill",
+   "rows": 0,
+   "sample": []
+  },
+  {
+   "finding": "order_lines_sku_backfill",
+   "rows": 1,
+   "sample": [
+    {
+     "finding": "order_lines_sku_backfill",
+     "lines_filled": 126,
+     "lines_whose_product_has_no_sku": 0
+    }
+   ]
+  }
+ ],
+ "target": "staging",
+ "file": "docs/migrations/checks/20261001_ecommerce_hardening_preflight.sql",
+ "at": "2026-10-03T11:34:33.437Z"
+}

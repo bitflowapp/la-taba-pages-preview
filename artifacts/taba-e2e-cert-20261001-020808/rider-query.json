@@ -1,0 +1,92 @@
+{
+  "orderId": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+  "boards": [
+    {
+      "stage": "before-availability",
+      "rider": "rider1",
+      "ok": true,
+      "code": null,
+      "available": false,
+      "offers": [],
+      "orders": []
+    },
+    {
+      "stage": "read-availability-version",
+      "rider": "rider1",
+      "ok": true,
+      "code": null,
+      "available": false,
+      "offers": [],
+      "orders": []
+    },
+    {
+      "stage": "available",
+      "rider": "rider1",
+      "ok": true,
+      "code": null,
+      "available": true,
+      "offers": [],
+      "orders": []
+    },
+    {
+      "stage": "offer-pending",
+      "rider": "rider1",
+      "ok": true,
+      "code": null,
+      "available": true,
+      "offers": [
+        {
+          "id": "19b61126-8207-424f-a875-7c3f912be954",
+          "order_id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+          "version": 1,
+          "public_code": "LT-0068"
+        }
+      ],
+      "orders": []
+    },
+    {
+      "stage": "offer-pending-other-rider",
+      "rider": "rider2",
+      "ok": true,
+      "code": null,
+      "available": false,
+      "offers": [],
+      "orders": []
+    },
+    {
+      "stage": "assigned",
+      "rider": "rider1",
+      "ok": true,
+      "code": null,
+      "available": true,
+      "offers": [],
+      "orders": [
+        {
+          "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+          "public_code": "LT-0068",
+          "status": "assigned",
+          "revision": 8,
+          "total": 8400,
+          "items": [
+            {
+              "name": "Villavicencio",
+              "unit": "Sin gas",
+              "quantity": 3,
+              "unit_price": 2400
+            }
+          ],
+          "has_customer_location": true
+        }
+      ]
+    },
+    {
+      "stage": "delivered",
+      "rider": "rider1",
+      "ok": true,
+      "code": null,
+      "available": true,
+      "offers": [],
+      "orders": []
+    }
+  ]
+}

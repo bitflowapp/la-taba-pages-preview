@@ -1,0 +1,2656 @@
+[
+  {
+    "phase": "P1_IDENTITY",
+    "name": "MGMT_PROJECT_IS_LA_TABA_STAGING",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "name": "la-taba-staging",
+      "ref": "ucbtjcurawxjwjdvvcvj",
+      "region": "sa-east-1",
+      "status": "ACTIVE_HEALTHY"
+    },
+    "at": "2026-10-01T01:00:59.485Z"
+  },
+  {
+    "phase": "P1_IDENTITY",
+    "name": "KEYS_BOUND_TO_STAGING_REF",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "ref": "ucbtjcurawxjwjdvvcvj"
+    },
+    "at": "2026-10-01T01:01:05.585Z"
+  },
+  {
+    "phase": "P1_IDENTITY",
+    "name": "PUBLISHED_WEB_POINTS_TO_STAGING",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "supabaseUrl": "https://ucbtjcurawxjwjdvvcvj.supabase.co",
+      "deploymentEnvironment": "staging",
+      "businessId": "a57b1c20-0f4e-4a6b-9d31-7c2e5f8a41d0",
+      "webPublishableKeyIsAKeyOfThisProject": true,
+      "runPublishableKeyIsAKeyOfThisProject": true,
+      "sameKey": false
+    },
+    "at": "2026-10-01T01:01:07.918Z"
+  },
+  {
+    "phase": "P1_IDENTITY",
+    "name": "OBSERVER_IS_READ_ONLY_ROLE",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "user": "supabase_read_only_user"
+    },
+    "at": "2026-10-01T01:01:09.452Z"
+  },
+  {
+    "phase": "P1_IDENTITY",
+    "name": "DB_LEDGER_EQUALS_REPO",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "staging": 157,
+      "repo": 157,
+      "head": "20260929120000"
+    },
+    "at": "2026-10-01T01:01:09.452Z"
+  },
+  {
+    "phase": "P1_IDENTITY",
+    "name": "QA_BUSINESS_IS_STAGING_TENANT",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "id": "a57b1c20-0f4e-4a6b-9d31-7c2e5f8a41d0",
+      "slug": "la-taba-staging",
+      "name": "La Taba (STAGING)",
+      "status": "open",
+      "is_active": true,
+      "ordering_enabled": true,
+      "ordering_verified": true,
+      "delivery_enabled": true,
+      "pickup_enabled": true,
+      "hours_enforced": true,
+      "delivery_zone_enforced": true,
+      "minimum_delivery_subtotal": 6000,
+      "delivery_fee": 1200,
+      "rider_presence_required": true,
+      "qa_fixture": false
+    },
+    "at": "2026-10-01T01:01:09.452Z"
+  },
+  {
+    "phase": "P2_ISOLATION",
+    "name": "FIXTURE_PRODUCT_IS_STAGING_SYNTHETIC",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "id": "27f606da-afb6-4369-8a85-72a171083c1f",
+      "sku": "STG-009",
+      "name": "Villavicencio",
+      "price": "2400.00",
+      "stock": 40,
+      "available": true,
+      "merchant_available": true,
+      "is_active": true,
+      "is_verified": true,
+      "is_alcoholic": false,
+      "catalog_origin": "commercial"
+    },
+    "at": "2026-10-01T01:01:11.779Z"
+  },
+  {
+    "phase": "P2_ISOLATION",
+    "name": "OPERATOR_ROLES",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "owner": "owner",
+      "staff": "staff",
+      "admin": "admin",
+      "rider1": "rider",
+      "rider2": "rider"
+    },
+    "at": "2026-10-01T01:01:26.491Z"
+  },
+  {
+    "phase": "P2_ISOLATION",
+    "name": "ISOLATED_TEST_IDENTITIES_CREATED",
+    "result": "PASS",
+    "expected": null,
+    "observed": null,
+    "at": "2026-10-01T01:01:29.449Z"
+  },
+  {
+    "phase": "P3_CREATE",
+    "name": "ORDER_CREATED_BY_CUSTOMER_CONTRACT",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "code": null,
+      "message": null,
+      "ms": 296
+    },
+    "at": "2026-10-01T01:01:29.747Z"
+  },
+  {
+    "phase": "P3_CREATE",
+    "name": "ORDER_RESPONSE_SHAPE",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "status": "received",
+      "subtotal": 7200,
+      "fee": 1200,
+      "total": 8400
+    },
+    "at": "2026-10-01T01:01:29.756Z"
+  },
+  {
+    "phase": "P4_DATABASE",
+    "name": "DB_ORDER_PERSISTED",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "status": "received",
+      "origin": "production",
+      "payment": "pending"
+    },
+    "at": "2026-10-01T01:01:32.299Z"
+  },
+  {
+    "phase": "P4_DATABASE",
+    "name": "DB_ORDER_ITEMS_FROZEN_PRICES",
+    "result": "PASS",
+    "expected": null,
+    "observed": [
+      {
+        "id": "6548d4ec-a6d2-469d-bf54-f1f8d2439ead",
+        "order_id": "0c6f661d-2b22-44d3-a1f2-0e560fae07ea",
+        "product_id": "27f606da-afb6-4369-8a85-72a171083c1f",
+        "name": "Villavicencio",
+        "quantity": 3,
+        "unit": "Sin gas",
+        "unit_price": 2400,
+        "subtotal": 7200,
+        "created_at": "2026-10-01T01:01:29.71354+00:00",
+        "product_uuid": "27f606da-afb6-4369-8a85-72a171083c1f"
+      }
+    ],
+    "at": "2026-10-01T01:01:32.299Z"
+  },
+  {
+    "phase": "P4_DATABASE",
+    "name": "DB_TOTALS",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "subtotal": 7200,
+      "fee": 1200,
+      "total": 8400
+    },
+    "at": "2026-10-01T01:01:32.299Z"
+  },
+  {
+    "phase": "P4_DATABASE",
+    "name": "DB_DELIVERY_SNAPSHOT",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "zone": "Centro",
+      "lat": -38.9516,
+      "lng": -68.0591
+    },
+    "at": "2026-10-01T01:01:32.299Z"
+  },
+  {
+    "phase": "P4_DATABASE",
+    "name": "DB_RECEIVED_EVENT_AND_TOKEN",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "events": [
+        "order.received"
+      ],
+      "tokens": 1
+    },
+    "at": "2026-10-01T01:01:32.299Z"
+  },
+  {
+    "phase": "P4_DATABASE",
+    "name": "STOCK_DECREMENT_EXACT",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "before": 40,
+      "ordered": 3,
+      "after": 37
+    },
+    "at": "2026-10-01T01:01:32.299Z"
+  },
+  {
+    "phase": "P4_DATABASE",
+    "name": "NO_TEMPORARY_RESERVATIONS_MANUAL_PATH",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "reservations": 0
+    },
+    "at": "2026-10-01T01:01:32.299Z"
+  },
+  {
+    "phase": "P5_PANEL",
+    "name": "PANEL_INBOX_SHOWS_SAME_ORDER",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "stage": "received",
+      "ok": true,
+      "code": null,
+      "inboxSize": 8,
+      "found": true,
+      "row": {
+        "id": "0c6f661d-2b22-44d3-a1f2-0e560fae07ea",
+        "public_code": "LT-0057",
+        "status": "received",
+        "revision": 4,
+        "delivery_mode": "delivery",
+        "payment_method": "cash",
+        "subtotal": 7200,
+        "delivery_fee": 1200,
+        "total": 8400,
+        "origin": "production",
+        "assigned_rider_user_id": null,
+        "manual_payment_status": "pending",
+        "customer_name": "QA Certificacion E2E",
+        "customer_street_address": "Calle Certificacion 901",
+        "created_at": "2026-10-01T01:01:29.71354+00:00",
+        "accepted_at": null,
+        "ready_at": null,
+        "items": [
+          {
+            "product_uuid": "27f606da-afb6-4369-8a85-72a171083c1f",
+            "name": "Villavicencio",
+            "quantity": 3,
+            "unit_price": 2400,
+            "subtotal": 7200
+          }
+        ]
+      },
+      "domain": {
+        "status": "received",
+        "code": "LT-0057",
+        "total": 8400
+      }
+    },
+    "at": "2026-10-01T01:01:32.477Z"
+  },
+  {
+    "phase": "P5_PANEL",
+    "name": "PANEL_INBOX_FILTER_IS_PRODUCTION_ORIGIN_ACTIVE",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "statuses": [
+        "submitted",
+        "accepted",
+        "preparing",
+        "ready",
+        "assigned",
+        "picked_up",
+        "on_the_way",
+        "arrived",
+        "received",
+        "arriving"
+      ]
+    },
+    "at": "2026-10-01T01:01:32.477Z"
+  },
+  {
+    "phase": "P5_PANEL",
+    "name": "PANEL_ORDER_AUDIT_READS_EVENTS",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "ok": true,
+      "n": 1
+    },
+    "at": "2026-10-01T01:01:32.621Z"
+  },
+  {
+    "phase": "P8_TRACKING",
+    "name": "TRACKING_SAME_ORDER_RECEIVED",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "status": "received",
+      "revision": 4,
+      "created_at": "2026-10-01T01:01:29.71354+00:00",
+      "updated_at": "2026-10-01T01:01:29.71354+00:00",
+      "public_code": "LT-0057",
+      "is_delivered": false,
+      "delivery_mode": "delivery",
+      "location_quality": "unavailable"
+    },
+    "at": "2026-10-01T01:01:32.751Z"
+  },
+  {
+    "phase": "P8_TRACKING",
+    "name": "TRACKING_DTO_HAS_NO_PII",
+    "result": "PASS",
+    "expected": null,
+    "observed": [
+      "status",
+      "revision",
+      "created_at",
+      "updated_at",
+      "public_code",
+      "is_delivered",
+      "delivery_mode",
+      "location_quality"
+    ],
+    "at": "2026-10-01T01:01:32.752Z"
+  },
+  {
+    "phase": "P15_NEGATIVE",
+    "name": "NEG_QUANTITY_ZERO",
+    "result": "PASS",
+    "expected": "22023",
+    "observed": {
+      "status": 400,
+      "code": "22023",
+      "message": "cada item acepta solo product_id UUID y quantity entero"
+    },
+    "at": "2026-10-01T01:01:40.391Z"
+  },
+  {
+    "phase": "P15_NEGATIVE",
+    "name": "NEG_QUANTITY_NEGATIVE",
+    "result": "PASS",
+    "expected": "22023",
+    "observed": {
+      "status": 400,
+      "code": "22023",
+      "message": "cada item acepta solo product_id UUID y quantity entero"
+    },
+    "at": "2026-10-01T01:01:40.518Z"
+  },
+  {
+    "phase": "P15_NEGATIVE",
+    "name": "NEG_QUANTITY_OVER_STOCK",
+    "result": "PASS",
+    "expected": "23514",
+    "observed": {
+      "status": 400,
+      "code": "23514",
+      "message": "stock insuficiente para producto: 27f606da-afb6-4369-8a85-72a171083c1f"
+    },
+    "at": "2026-10-01T01:01:40.859Z"
+  },
+  {
+    "phase": "P15_NEGATIVE",
+    "name": "NEG_PRODUCT_UNAVAILABLE",
+    "result": "PASS",
+    "expected": "55000",
+    "observed": {
+      "status": 500,
+      "code": "55000",
+      "message": "producto no disponible: 7aaddd85-d844-4d12-a726-78ea0c661e11"
+    },
+    "at": "2026-10-01T01:01:40.983Z"
+  },
+  {
+    "phase": "P15_NEGATIVE",
+    "name": "NEG_PRODUCT_NONEXISTENT",
+    "result": "PASS",
+    "expected": "23503",
+    "observed": {
+      "status": 409,
+      "code": "23503",
+      "message": "producto inexistente para el negocio: 811394b5-9616-4f84-b34a-d2a2f7bbb90c"
+    },
+    "at": "2026-10-01T01:01:41.110Z"
+  },
+  {
+    "phase": "P15_NEGATIVE",
+    "name": "NEG_BUSINESS_NONEXISTENT",
+    "result": "PASS",
+    "expected": "23503",
+    "observed": {
+      "status": 409,
+      "code": "23503",
+      "message": "business_id inexistente"
+    },
+    "at": "2026-10-01T01:01:41.216Z"
+  },
+  {
+    "phase": "P15_NEGATIVE",
+    "name": "NEG_BUSINESS_NOT_ACCEPTING",
+    "result": "PASS",
+    "expected": "55000",
+    "observed": {
+      "status": 500,
+      "code": "55000",
+      "message": "el negocio no esta habilitado para recibir pedidos"
+    },
+    "at": "2026-10-01T01:01:41.408Z"
+  },
+  {
+    "phase": "P15_NEGATIVE",
+    "name": "NEG_UNKNOWN_FIELD_PRICE_INJECTION",
+    "result": "PASS",
+    "expected": "22023",
+    "observed": {
+      "status": 400,
+      "code": "22023",
+      "message": "campo no permitido en pedido: total"
+    },
+    "at": "2026-10-01T01:01:41.537Z"
+  },
+  {
+    "phase": "P15_NEGATIVE",
+    "name": "NEG_DELIVERY_WITHOUT_LOCATION",
+    "result": "PASS",
+    "expected": "22023",
+    "observed": {
+      "status": 400,
+      "code": "22023",
+      "message": "DELIVERY_LOCATION_REQUIRED"
+    },
+    "at": "2026-10-01T01:01:41.647Z"
+  },
+  {
+    "phase": "P15_NEGATIVE",
+    "name": "NEG_DELIVERY_BELOW_MINIMUM",
+    "result": "PASS",
+    "expected": "23514",
+    "observed": {
+      "status": 400,
+      "code": "23514",
+      "message": "subtotal inferior al minimo de delivery"
+    },
+    "at": "2026-10-01T01:01:41.754Z"
+  },
+  {
+    "phase": "P15_NEGATIVE",
+    "name": "NEG_CREATE_WITHOUT_SESSION",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "status": 401,
+      "code": "42501"
+    },
+    "at": "2026-10-01T01:01:41.865Z"
+  },
+  {
+    "phase": "P15_NEGATIVE",
+    "name": "NEG_IDEMPOTENCY_KEY_REUSED_DIFFERENT_PAYLOAD",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "code": "23505",
+      "message": "client_request_id reutilizado con un payload diferente"
+    },
+    "at": "2026-10-01T01:01:41.984Z"
+  },
+  {
+    "phase": "P15_NEGATIVE",
+    "name": "NEG_IDEMPOTENCY_KEY_OTHER_CUSTOMER",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "code": "23505"
+    },
+    "at": "2026-10-01T01:01:42.117Z"
+  },
+  {
+    "phase": "P15_NEGATIVE",
+    "name": "NEG_NO_SIDE_EFFECTS",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "ordersBefore": 57,
+      "ordersAfter": 57,
+      "stockBefore": 37
+    },
+    "at": "2026-10-01T01:01:46.546Z"
+  },
+  {
+    "phase": "P10_IDEMPOTENCY",
+    "name": "REPLAY_RETURNS_SAME_ORDER",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "ok": true,
+      "status": 200,
+      "sameId": true,
+      "ms": 309
+    },
+    "at": "2026-10-01T01:01:55.185Z"
+  },
+  {
+    "phase": "P10_IDEMPOTENCY",
+    "name": "REPLAY_20_CONCURRENT_SAME_ORDER",
+    "result": "PASS",
+    "expected": null,
+    "observed": [
+      "200:same",
+      "200:same",
+      "200:same",
+      "200:same",
+      "200:same",
+      "200:same",
+      "200:same",
+      "200:same",
+      "200:same",
+      "200:same",
+      "200:same",
+      "200:same",
+      "200:same",
+      "200:same",
+      "200:same",
+      "200:same",
+      "200:same",
+      "200:same",
+      "200:same",
+      "200:same"
+    ],
+    "at": "2026-10-01T01:01:55.185Z"
+  },
+  {
+    "phase": "P10_IDEMPOTENCY",
+    "name": "REPLAY_NO_DUPLICATES",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "orders": 1,
+      "items": 1,
+      "events": 1
+    },
+    "at": "2026-10-01T01:01:57.252Z"
+  },
+  {
+    "phase": "P10_IDEMPOTENCY",
+    "name": "RACE_2_SAME_KEY_ONE_ORDER",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "n": 2,
+      "statuses": [
+        200,
+        200
+      ],
+      "latenciesMs": [
+        295,
+        276
+      ],
+      "distinctIds": 1,
+      "dbOrders": 1,
+      "stockPre": 37,
+      "stockPost": 36,
+      "receivedEvents": 1,
+      "codes": []
+    },
+    "at": "2026-10-01T01:02:03.206Z"
+  },
+  {
+    "phase": "P10_IDEMPOTENCY",
+    "name": "RACE_2_ONE_STOCK_DECREMENT",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "stockPre": 37,
+      "stockPost": 36
+    },
+    "at": "2026-10-01T01:02:03.206Z"
+  },
+  {
+    "phase": "P10_IDEMPOTENCY",
+    "name": "RACE_5_SAME_KEY_ONE_ORDER",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "n": 5,
+      "statuses": [
+        200,
+        200,
+        200,
+        200,
+        200
+      ],
+      "latenciesMs": [
+        306,
+        330,
+        291,
+        295,
+        324
+      ],
+      "distinctIds": 1,
+      "dbOrders": 1,
+      "stockPre": 36,
+      "stockPost": 35,
+      "receivedEvents": 1,
+      "codes": []
+    },
+    "at": "2026-10-01T01:02:10.737Z"
+  },
+  {
+    "phase": "P10_IDEMPOTENCY",
+    "name": "RACE_5_ONE_STOCK_DECREMENT",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "stockPre": 36,
+      "stockPost": 35
+    },
+    "at": "2026-10-01T01:02:10.737Z"
+  },
+  {
+    "phase": "P10_IDEMPOTENCY",
+    "name": "RACE_20_SAME_KEY_ONE_ORDER",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "n": 20,
+      "statuses": [
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200
+      ],
+      "latenciesMs": [
+        560,
+        553,
+        533,
+        598,
+        513,
+        620,
+        503,
+        676,
+        636,
+        647,
+        611,
+        708,
+        604,
+        579,
+        696,
+        701,
+        730,
+        712,
+        646,
+        657
+      ],
+      "distinctIds": 1,
+      "dbOrders": 1,
+      "stockPre": 35,
+      "stockPost": 34,
+      "receivedEvents": 1,
+      "codes": []
+    },
+    "at": "2026-10-01T01:02:22.489Z"
+  },
+  {
+    "phase": "P10_IDEMPOTENCY",
+    "name": "RACE_20_ONE_STOCK_DECREMENT",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "stockPre": 35,
+      "stockPost": 34
+    },
+    "at": "2026-10-01T01:02:22.489Z"
+  },
+  {
+    "phase": "P11_LOST_RESPONSE",
+    "name": "CASE_A_SERVER_PROCESSED_CLIENT_LOST_RESPONSE",
+    "result": "PASS",
+    "expected": null,
+    "observed": [
+      {
+        "abortAfterMs": 60,
+        "clientSawResponse": false,
+        "clientAborted": true,
+        "serverProcessed": false
+      },
+      {
+        "abortAfterMs": 120,
+        "clientSawResponse": false,
+        "clientAborted": true,
+        "serverProcessed": true
+      }
+    ],
+    "at": "2026-10-01T01:02:46.378Z"
+  },
+  {
+    "phase": "P11_LOST_RESPONSE",
+    "name": "CASE_A_RETRY_RETURNS_SAME_ORDER_NO_DUPLICATE",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "attempts": [
+        {
+          "abortAfterMs": 60,
+          "clientSawResponse": false,
+          "clientAborted": true,
+          "serverProcessed": false
+        },
+        {
+          "abortAfterMs": 120,
+          "clientSawResponse": false,
+          "clientAborted": true,
+          "serverProcessed": true
+        }
+      ],
+      "retry": {
+        "status": 200,
+        "sameId": true
+      },
+      "dbOrders": 1,
+      "stockPre": 34,
+      "stockPost": 33
+    },
+    "at": "2026-10-01T01:02:46.378Z"
+  },
+  {
+    "phase": "P11_LOST_RESPONSE",
+    "name": "CASE_C_STALE_REVISION_REJECTED_FAST",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "http": 409,
+      "code": "PT409",
+      "ms": 214
+    },
+    "at": "2026-10-01T01:02:54.508Z"
+  },
+  {
+    "phase": "P11_LOST_RESPONSE",
+    "name": "CASE_C_CONCURRENT_SAME_REVISION_ONE_WINNER",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "staff": {
+        "http": 200,
+        "code": null,
+        "ms": 264
+      },
+      "owner": {
+        "http": 409,
+        "code": "PT409",
+        "ms": 265
+      },
+      "after": {
+        "status": "accepted",
+        "revision": 5,
+        "assigned_rider_user_id": null,
+        "manual_payment_status": "pending",
+        "origin": "production",
+        "inventory_released_at": null
+      },
+      "acceptedEvents": 1
+    },
+    "at": "2026-10-01T01:02:59.396Z"
+  },
+  {
+    "phase": "P6_STATE_MACHINE",
+    "name": "RECEIVED_TO_ACCEPTED",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "status": "accepted",
+      "revision": 5,
+      "assigned_rider_user_id": null,
+      "manual_payment_status": "pending",
+      "origin": "production",
+      "inventory_released_at": null
+    },
+    "at": "2026-10-01T01:02:59.396Z"
+  },
+  {
+    "phase": "P10_IDEMPOTENCY",
+    "name": "TRANSITION_REPLAY_SAME_KEY_IDEMPOTENT",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "replay": true,
+      "revision": 5
+    },
+    "at": "2026-10-01T01:03:02.991Z"
+  },
+  {
+    "phase": "P15_NEGATIVE",
+    "name": "NEG_TRANSITION_KEY_REUSED_OTHER_PAYLOAD",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "code": "23505"
+    },
+    "at": "2026-10-01T01:03:05.625Z"
+  },
+  {
+    "phase": "P15_NEGATIVE",
+    "name": "NEG_REPEATED_TRANSITION_IS_NOOP",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "no_op": true
+    },
+    "at": "2026-10-01T01:03:12.277Z"
+  },
+  {
+    "phase": "P5_PANEL",
+    "name": "PANEL_SEES_ACCEPTED",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "id": "0c6f661d-2b22-44d3-a1f2-0e560fae07ea",
+      "public_code": "LT-0057",
+      "status": "accepted",
+      "revision": 5,
+      "delivery_mode": "delivery",
+      "payment_method": "cash",
+      "subtotal": 7200,
+      "delivery_fee": 1200,
+      "total": 8400,
+      "origin": "production",
+      "assigned_rider_user_id": null,
+      "manual_payment_status": "pending",
+      "customer_name": "QA Certificacion E2E",
+      "customer_street_address": "Calle Certificacion 901",
+      "created_at": "2026-10-01T01:01:29.71354+00:00",
+      "accepted_at": "2026-10-01T01:02:56.502513+00:00",
+      "ready_at": null,
+      "items": [
+        {
+          "product_uuid": "27f606da-afb6-4369-8a85-72a171083c1f",
+          "name": "Villavicencio",
+          "quantity": 3,
+          "unit_price": 2400,
+          "subtotal": 7200
+        }
+      ]
+    },
+    "at": "2026-10-01T01:03:12.566Z"
+  },
+  {
+    "phase": "P8_TRACKING",
+    "name": "TRACKING_SEES_ACCEPTED",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "status": "accepted",
+      "revision": 5,
+      "created_at": "2026-10-01T01:01:29.71354+00:00",
+      "updated_at": "2026-10-01T01:02:56.483525+00:00",
+      "accepted_at": "2026-10-01T01:02:56.502513+00:00",
+      "public_code": "LT-0057",
+      "is_delivered": false,
+      "delivery_mode": "delivery",
+      "location_quality": "unavailable"
+    },
+    "at": "2026-10-01T01:03:12.760Z"
+  },
+  {
+    "phase": "P11_LOST_RESPONSE",
+    "name": "CASE_B_TIMEOUT_DURING_TRANSITION_RETRY_SAFE",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "attempts": [
+        {
+          "abortAfterMs": 60,
+          "clientSawResponse": false,
+          "clientAborted": true,
+          "serverApplied": true
+        }
+      ],
+      "retry": {
+        "http": 200,
+        "code": null,
+        "idempotent_replay": true
+      },
+      "after": {
+        "status": "preparing",
+        "revision": 6,
+        "assigned_rider_user_id": null,
+        "manual_payment_status": "pending",
+        "origin": "production",
+        "inventory_released_at": null
+      },
+      "preparingEvents": 1
+    },
+    "at": "2026-10-01T01:03:18.837Z"
+  },
+  {
+    "phase": "P6_STATE_MACHINE",
+    "name": "ACCEPTED_TO_PREPARING",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "status": "preparing",
+      "revision": 6,
+      "assigned_rider_user_id": null,
+      "manual_payment_status": "pending",
+      "origin": "production",
+      "inventory_released_at": null
+    },
+    "at": "2026-10-01T01:03:18.838Z"
+  },
+  {
+    "phase": "P6_STATE_MACHINE",
+    "name": "PREPARING_TO_READY",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "status": "ready",
+      "revision": 7,
+      "assigned_rider_user_id": null,
+      "manual_payment_status": "pending",
+      "origin": "production",
+      "inventory_released_at": null
+    },
+    "at": "2026-10-01T01:03:23.207Z"
+  },
+  {
+    "phase": "P15_NEGATIVE",
+    "name": "NEG_UNKNOWN_STATUS",
+    "result": "PASS",
+    "expected": "22023",
+    "observed": {
+      "http": 400,
+      "code": "22023"
+    },
+    "at": "2026-10-01T01:03:32.969Z"
+  },
+  {
+    "phase": "P15_NEGATIVE",
+    "name": "NEG_BUSINESS_DELIVERS_DELIVERY_WITHOUT_CODE",
+    "result": "PASS",
+    "expected": "23514",
+    "observed": {
+      "http": 400,
+      "code": "23514"
+    },
+    "at": "2026-10-01T01:03:35.938Z"
+  },
+  {
+    "phase": "P15_NEGATIVE",
+    "name": "NEG_BUSINESS_TAKES_RIDER_EDGE",
+    "result": "PASS",
+    "expected": "23514",
+    "observed": {
+      "http": 400,
+      "code": "23514"
+    },
+    "at": "2026-10-01T01:03:38.442Z"
+  },
+  {
+    "phase": "P15_NEGATIVE",
+    "name": "NEG_BACKWARDS_READY_TO_PREPARING",
+    "result": "PASS",
+    "expected": "23514",
+    "observed": {
+      "http": 400,
+      "code": "23514"
+    },
+    "at": "2026-10-01T01:03:41.004Z"
+  },
+  {
+    "phase": "P15_NEGATIVE",
+    "name": "NEG_CUSTOMER_CANNOT_OPERATE",
+    "result": "PASS",
+    "expected": "42501",
+    "observed": {
+      "http": 403,
+      "code": "42501"
+    },
+    "at": "2026-10-01T01:03:43.709Z"
+  },
+  {
+    "phase": "P15_NEGATIVE",
+    "name": "NEG_RIDER_CANNOT_USE_OPERATOR_RPC",
+    "result": "PASS",
+    "expected": "42501",
+    "observed": {
+      "http": 403,
+      "code": "42501"
+    },
+    "at": "2026-10-01T01:03:47.332Z"
+  },
+  {
+    "phase": "P15_NEGATIVE",
+    "name": "NEG_ORDER_ID_NONEXISTENT",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "code": "P0002"
+    },
+    "at": "2026-10-01T01:03:47.446Z"
+  },
+  {
+    "phase": "P7_RIDER",
+    "name": "RIDER_AVAILABILITY_ON_AND_VISIBLE_TO_PANEL",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "set": {
+        "ok": true,
+        "code": "updated",
+        "version": 9,
+        "available": true,
+        "idempotent_no_op": false
+      },
+      "board": true
+    },
+    "at": "2026-10-01T01:03:48.580Z"
+  },
+  {
+    "phase": "P7_RIDER",
+    "name": "OFFER_CREATED_BY_PANEL_CONTRACT",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "ok": true,
+      "code": "offered",
+      "version": 1,
+      "offer_id": "c7f5c6ec-06b0-400a-92cd-0d4ae89f56aa",
+      "rider_active_orders": 0,
+      "rider_max_active_orders": 3
+    },
+    "at": "2026-10-01T01:03:51.468Z"
+  },
+  {
+    "phase": "P7_RIDER",
+    "name": "OFFER_DEDUP_AND_IN_FLIGHT_GUARD",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "duplicate": "already_offered",
+      "other": "rider_unavailable"
+    },
+    "at": "2026-10-01T01:03:51.765Z"
+  },
+  {
+    "phase": "P7_RIDER",
+    "name": "RIDER_BOARD_SHOWS_OFFER_ONLY_TO_TARGET",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "rider1Offers": 1,
+      "rider2Offers": 0
+    },
+    "at": "2026-10-01T01:03:52.025Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "WRONG_RIDER_CANNOT_ACCEPT_OFFER",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "code": "P0002"
+    },
+    "at": "2026-10-01T01:03:52.158Z"
+  },
+  {
+    "phase": "P7_RIDER",
+    "name": "RIDER_ACCEPTS_OFFER_ASSIGNED",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "code": "accepted",
+      "status": "assigned"
+    },
+    "at": "2026-10-01T01:03:55.568Z"
+  },
+  {
+    "phase": "P10_IDEMPOTENCY",
+    "name": "RIDER_ACCEPT_REPLAY_IDEMPOTENT",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "replay": true
+    },
+    "at": "2026-10-01T01:03:57.192Z"
+  },
+  {
+    "phase": "P5_PANEL",
+    "name": "PANEL_SEES_ASSIGNED_RIDER",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "id": "0c6f661d-2b22-44d3-a1f2-0e560fae07ea",
+      "public_code": "LT-0057",
+      "status": "assigned",
+      "revision": 8,
+      "delivery_mode": "delivery",
+      "payment_method": "cash",
+      "subtotal": 7200,
+      "delivery_fee": 1200,
+      "total": 8400,
+      "origin": "production",
+      "assigned_rider_user_id": "e9b381ad-8287-430e-b53d-caa4f55637cd",
+      "manual_payment_status": "pending",
+      "customer_name": "QA Certificacion E2E",
+      "customer_street_address": "Calle Certificacion 901",
+      "created_at": "2026-10-01T01:01:29.71354+00:00",
+      "accepted_at": "2026-10-01T01:02:56.502513+00:00",
+      "ready_at": "2026-10-01T01:03:21.945589+00:00",
+      "items": [
+        {
+          "product_uuid": "27f606da-afb6-4369-8a85-72a171083c1f",
+          "name": "Villavicencio",
+          "quantity": 3,
+          "unit_price": 2400,
+          "subtotal": 7200
+        }
+      ]
+    },
+    "at": "2026-10-01T01:03:57.542Z"
+  },
+  {
+    "phase": "P8_TRACKING",
+    "name": "TRACKING_SEES_ASSIGNED",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "status": "assigned",
+      "ready_at": "2026-10-01T01:03:21.945589+00:00",
+      "revision": 8,
+      "created_at": "2026-10-01T01:01:29.71354+00:00",
+      "updated_at": "2026-10-01T01:03:52.413612+00:00",
+      "accepted_at": "2026-10-01T01:02:56.502513+00:00",
+      "public_code": "LT-0057",
+      "is_delivered": false,
+      "preparing_at": "2026-10-01T01:03:14.514814+00:00",
+      "delivery_mode": "delivery",
+      "location_quality": "unavailable"
+    },
+    "at": "2026-10-01T01:03:57.649Z"
+  },
+  {
+    "phase": "P7_RIDER",
+    "name": "RIDER_BOARD_SHOWS_SAME_ORDER_ITEMS_TOTAL",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "rider": "rider1",
+      "ok": true,
+      "code": null,
+      "available": true,
+      "offers": [],
+      "orders": [
+        {
+          "id": "0c6f661d-2b22-44d3-a1f2-0e560fae07ea",
+          "public_code": "LT-0057",
+          "status": "assigned",
+          "revision": 8,
+          "total": 8400,
+          "items": [
+            {
+              "name": "Villavicencio",
+              "unit": "Sin gas",
+              "quantity": 3,
+              "unit_price": 2400
+            }
+          ],
+          "has_customer_location": true
+        }
+      ]
+    },
+    "at": "2026-10-01T01:03:57.773Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "WRONG_RIDER_CANNOT_READ_ORDER",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "status": 200,
+      "rows": [],
+      "code": null
+    },
+    "at": "2026-10-01T01:03:57.885Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "WRONG_RIDER_CANNOT_MARK_DELIVERY_PICKED_UP",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "code": "not_assigned"
+    },
+    "at": "2026-10-01T01:04:00.972Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "WRONG_RIDER_CANNOT_START_RIDER_DELIVERY",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "code": "not_assigned"
+    },
+    "at": "2026-10-01T01:04:03.226Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "WRONG_RIDER_CANNOT_MARK_RIDER_ARRIVED",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "code": "not_assigned"
+    },
+    "at": "2026-10-01T01:04:04.988Z"
+  },
+  {
+    "phase": "P7_RIDER",
+    "name": "ASSIGNED_RIDER_READS_ORDER_VIA_RLS",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "status": 200,
+      "rows": [
+        {
+          "id": "0c6f661d-2b22-44d3-a1f2-0e560fae07ea",
+          "status": "assigned",
+          "total": 8400
+        }
+      ],
+      "code": null
+    },
+    "at": "2026-10-01T01:04:05.091Z"
+  },
+  {
+    "phase": "P11_LOST_RESPONSE",
+    "name": "RIDER_STALE_REVISION_REJECTED",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "ok": false,
+      "code": "stale_revision",
+      "revision": 8
+    },
+    "at": "2026-10-01T01:04:07.797Z"
+  },
+  {
+    "phase": "P6_STATE_MACHINE",
+    "name": "ASSIGNED_TO_PICKED_UP",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "after": {
+        "status": "picked_up",
+        "revision": 9,
+        "assigned_rider_user_id": "e9b381ad-8287-430e-b53d-caa4f55637cd",
+        "manual_payment_status": "pending",
+        "origin": "production",
+        "inventory_released_at": null
+      }
+    },
+    "at": "2026-10-01T01:04:11.036Z"
+  },
+  {
+    "phase": "P10_IDEMPOTENCY",
+    "name": "RIDER_MARK_DELIVERY_PICKED_UP_REPLAY_IDEMPOTENT",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "replay": true
+    },
+    "at": "2026-10-01T01:04:12.902Z"
+  },
+  {
+    "phase": "P8_TRACKING",
+    "name": "TRACKING_SEES_PICKED_UP",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "status": "picked_up",
+      "ready_at": "2026-10-01T01:03:21.945589+00:00",
+      "revision": 9,
+      "created_at": "2026-10-01T01:01:29.71354+00:00",
+      "updated_at": "2026-10-01T01:04:09.646068+00:00",
+      "accepted_at": "2026-10-01T01:02:56.502513+00:00",
+      "public_code": "LT-0057",
+      "is_delivered": false,
+      "preparing_at": "2026-10-01T01:03:14.514814+00:00",
+      "delivery_mode": "delivery",
+      "dispatched_at": "2026-10-01T01:04:09.654168+00:00",
+      "location_quality": "unavailable"
+    },
+    "at": "2026-10-01T01:04:13.258Z"
+  },
+  {
+    "phase": "P6_STATE_MACHINE",
+    "name": "PICKED_UP_TO_ON_THE_WAY",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "after": {
+        "status": "on_the_way",
+        "revision": 10,
+        "assigned_rider_user_id": "e9b381ad-8287-430e-b53d-caa4f55637cd",
+        "manual_payment_status": "pending",
+        "origin": "production",
+        "inventory_released_at": null
+      }
+    },
+    "at": "2026-10-01T01:04:16.487Z"
+  },
+  {
+    "phase": "P10_IDEMPOTENCY",
+    "name": "RIDER_START_RIDER_DELIVERY_REPLAY_IDEMPOTENT",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "replay": true
+    },
+    "at": "2026-10-01T01:04:18.234Z"
+  },
+  {
+    "phase": "P7_RIDER",
+    "name": "RIDER_GPS_RECEIPT_ACCEPTED",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "ok": true
+    },
+    "at": "2026-10-01T01:04:19.762Z"
+  },
+  {
+    "phase": "P8_TRACKING",
+    "name": "TRACKING_SEES_ON_THE_WAY_WITH_COARSE_GPS",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "status": "on_the_way",
+      "ready_at": "2026-10-01T01:03:21.945589+00:00",
+      "revision": 10,
+      "created_at": "2026-10-01T01:01:29.71354+00:00",
+      "updated_at": "2026-10-01T01:04:15.041358+00:00",
+      "accepted_at": "2026-10-01T01:02:56.502513+00:00",
+      "public_code": "LT-0057",
+      "is_delivered": false,
+      "preparing_at": "2026-10-01T01:03:14.514814+00:00",
+      "delivery_mode": "delivery",
+      "dispatched_at": "2026-10-01T01:04:09.654168+00:00",
+      "rider_location": {
+        "lat": -38.9488,
+        "lng": -68.0562,
+        "source": "gps",
+        "accuracy": 100,
+        "created_at": "2026-10-01T01:04:18.493355+00:00",
+        "captured_at": "2026-10-01T01:04:18.234+00:00"
+      },
+      "location_quality": "valid"
+    },
+    "at": "2026-10-01T01:04:19.762Z"
+  },
+  {
+    "phase": "P5_PANEL",
+    "name": "PANEL_SEES_ON_THE_WAY",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "id": "0c6f661d-2b22-44d3-a1f2-0e560fae07ea",
+      "public_code": "LT-0057",
+      "status": "on_the_way",
+      "revision": 10,
+      "delivery_mode": "delivery",
+      "payment_method": "cash",
+      "subtotal": 7200,
+      "delivery_fee": 1200,
+      "total": 8400,
+      "origin": "production",
+      "assigned_rider_user_id": "e9b381ad-8287-430e-b53d-caa4f55637cd",
+      "manual_payment_status": "pending",
+      "customer_name": "QA Certificacion E2E",
+      "customer_street_address": "Calle Certificacion 901",
+      "created_at": "2026-10-01T01:01:29.71354+00:00",
+      "accepted_at": "2026-10-01T01:02:56.502513+00:00",
+      "ready_at": "2026-10-01T01:03:21.945589+00:00",
+      "items": [
+        {
+          "product_uuid": "27f606da-afb6-4369-8a85-72a171083c1f",
+          "name": "Villavicencio",
+          "quantity": 3,
+          "unit_price": 2400,
+          "subtotal": 7200
+        }
+      ]
+    },
+    "at": "2026-10-01T01:04:20.182Z"
+  },
+  {
+    "phase": "P6_STATE_MACHINE",
+    "name": "ON_THE_WAY_TO_ARRIVED",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "after": {
+        "status": "arrived",
+        "revision": 11,
+        "assigned_rider_user_id": "e9b381ad-8287-430e-b53d-caa4f55637cd",
+        "manual_payment_status": "pending",
+        "origin": "production",
+        "inventory_released_at": null
+      }
+    },
+    "at": "2026-10-01T01:04:22.788Z"
+  },
+  {
+    "phase": "P10_IDEMPOTENCY",
+    "name": "RIDER_MARK_RIDER_ARRIVED_REPLAY_IDEMPOTENT",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "replay": true
+    },
+    "at": "2026-10-01T01:04:24.244Z"
+  },
+  {
+    "phase": "P8_TRACKING",
+    "name": "TRACKING_SEES_ARRIVED",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "status": "arrived",
+      "ready_at": "2026-10-01T01:03:21.945589+00:00",
+      "revision": 11,
+      "arrived_at": "2026-10-01T01:04:21.645007+00:00",
+      "created_at": "2026-10-01T01:01:29.71354+00:00",
+      "updated_at": "2026-10-01T01:04:21.640909+00:00",
+      "accepted_at": "2026-10-01T01:02:56.502513+00:00",
+      "public_code": "LT-0057",
+      "is_delivered": false,
+      "preparing_at": "2026-10-01T01:03:14.514814+00:00",
+      "delivery_mode": "delivery",
+      "dispatched_at": "2026-10-01T01:04:09.654168+00:00",
+      "rider_location": {
+        "lat": -38.9488,
+        "lng": -68.0562,
+        "source": "gps",
+        "accuracy": 100,
+        "created_at": "2026-10-01T01:04:18.493355+00:00",
+        "captured_at": "2026-10-01T01:04:18.234+00:00"
+      },
+      "location_quality": "valid"
+    },
+    "at": "2026-10-01T01:04:24.522Z"
+  },
+  {
+    "phase": "P9_DELIVERY_CODE",
+    "name": "CUSTOMER_OBTAINS_CODE_WITH_TOKEN",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "ok": true,
+      "code": null
+    },
+    "at": "2026-10-01T01:04:24.844Z"
+  },
+  {
+    "phase": "P9_DELIVERY_CODE",
+    "name": "CODE_STABLE_ON_REISSUE",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "same": true
+    },
+    "at": "2026-10-01T01:04:24.954Z"
+  },
+  {
+    "phase": "P9_DELIVERY_CODE",
+    "name": "CODE_NOT_ISSUED_TO_OTHER_CUSTOMER_OR_WRONG_TOKEN",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "other": "42501",
+      "wrongToken": "42501"
+    },
+    "at": "2026-10-01T01:04:25.192Z"
+  },
+  {
+    "phase": "P9_DELIVERY_CODE",
+    "name": "WRONG_CODE_REJECTED",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "code": "incorrect_code",
+      "remaining": 4
+    },
+    "at": "2026-10-01T01:04:27.909Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "WRONG_RIDER_CANNOT_CONFIRM_CODE",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "code": "not_assigned"
+    },
+    "at": "2026-10-01T01:04:31.120Z"
+  },
+  {
+    "phase": "P15_NEGATIVE",
+    "name": "NEG_BUSINESS_CANNOT_CLOSE_RIDER_DELIVERY",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "code": "23514"
+    },
+    "at": "2026-10-01T01:04:34.102Z"
+  },
+  {
+    "phase": "P9_DELIVERY_CODE",
+    "name": "RIGHT_CODE_DELIVERS",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "outcome": "confirmed"
+    },
+    "at": "2026-10-01T01:04:37.264Z"
+  },
+  {
+    "phase": "P6_STATE_MACHINE",
+    "name": "ARRIVED_TO_DELIVERED",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "status": "delivered",
+      "revision": 12,
+      "assigned_rider_user_id": "e9b381ad-8287-430e-b53d-caa4f55637cd",
+      "manual_payment_status": "pending",
+      "origin": "production",
+      "inventory_released_at": null
+    },
+    "at": "2026-10-01T01:04:37.264Z"
+  },
+  {
+    "phase": "P9_DELIVERY_CODE",
+    "name": "CODE_REPLAY_DOES_NOT_REDELIVER",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "sameKey": "confirmed",
+      "newKey": "already_delivered",
+      "deliveredEvents": 1
+    },
+    "at": "2026-10-01T01:04:40.280Z"
+  },
+  {
+    "phase": "P9_DELIVERY_CODE",
+    "name": "NO_CODE_AFTER_DELIVERY",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "code": "55000"
+    },
+    "at": "2026-10-01T01:04:40.600Z"
+  },
+  {
+    "phase": "P15_NEGATIVE",
+    "name": "NEG_TERMINAL_STATE_LOCKED",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "transition": "23514",
+      "cancel": "23514"
+    },
+    "at": "2026-10-01T01:04:47.559Z"
+  },
+  {
+    "phase": "P6_STATE_MACHINE",
+    "name": "CASH_PAYMENT_CONFIRMED_ONCE",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "pay": "confirmed",
+      "again": true,
+      "cashEvents": 1
+    },
+    "at": "2026-10-01T01:04:51.614Z"
+  },
+  {
+    "phase": "P5_PANEL",
+    "name": "PANEL_INBOX_RELEASES_DELIVERED_ORDER",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "found": false
+    },
+    "at": "2026-10-01T01:04:51.740Z"
+  },
+  {
+    "phase": "P7_RIDER",
+    "name": "RIDER_BOARD_RELEASES_DELIVERED_ORDER",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "orders": 0
+    },
+    "at": "2026-10-01T01:04:52.079Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "RIDER_LOSES_READ_ACCESS_AFTER_DELIVERY",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "status": 200,
+      "rows": [],
+      "code": null
+    },
+    "at": "2026-10-01T01:04:52.198Z"
+  },
+  {
+    "phase": "P8_TRACKING",
+    "name": "TRACKING_OTHER_ORDER_WITH_MY_TOKEN_IS_NULL",
+    "result": "PASS",
+    "expected": null,
+    "observed": null,
+    "at": "2026-10-01T01:04:54.163Z"
+  },
+  {
+    "phase": "P8_TRACKING",
+    "name": "TRACKING_WRONG_TOKEN_IS_NULL",
+    "result": "PASS",
+    "expected": null,
+    "observed": null,
+    "at": "2026-10-01T01:04:54.163Z"
+  },
+  {
+    "phase": "P8_TRACKING",
+    "name": "TRACKING_ENUMERATION_RETURNS_NOTHING",
+    "result": "PASS",
+    "expected": null,
+    "observed": [
+      {
+        "candidate": "LT-0054",
+        "data": null,
+        "code": null
+      },
+      {
+        "candidate": "LT-0055",
+        "data": null,
+        "code": null
+      },
+      {
+        "candidate": "LT-0056",
+        "data": null,
+        "code": null
+      },
+      {
+        "candidate": "LT-0058",
+        "data": null,
+        "code": null
+      },
+      {
+        "candidate": "LT-0059",
+        "data": null,
+        "code": null
+      },
+      {
+        "candidate": "LT-0060",
+        "data": null,
+        "code": null
+      }
+    ],
+    "at": "2026-10-01T01:04:54.163Z"
+  },
+  {
+    "phase": "P8_TRACKING",
+    "name": "TRACKING_WITHOUT_TOKEN_IS_NULL",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "http": 200,
+      "data": null
+    },
+    "at": "2026-10-01T01:04:54.163Z"
+  },
+  {
+    "phase": "P8_TRACKING",
+    "name": "TRACKING_UUID_OF_OTHER_ORDER_IS_NULL",
+    "result": "PASS",
+    "expected": null,
+    "observed": null,
+    "at": "2026-10-01T01:04:54.163Z"
+  },
+  {
+    "phase": "P8_TRACKING",
+    "name": "CUSTOMER_CANNOT_WRITE_ORDER",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "status": 403,
+      "rows": null,
+      "code": "42501"
+    },
+    "at": "2026-10-01T01:04:54.273Z"
+  },
+  {
+    "phase": "P8_TRACKING",
+    "name": "TRACKING_TERMINAL_STATE_CONSISTENT",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "visible": true,
+      "status": "delivered",
+      "until": "2026-10-01T01:34:35.953691+00:00"
+    },
+    "at": "2026-10-01T01:04:54.273Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "UNAUTHENTICATED_CANNOT_READ_OR_LIST",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "name": "UNAUTHENTICATED_READ",
+      "orders": [
+        200,
+        0
+      ],
+      "items": [
+        200,
+        0
+      ],
+      "events": [
+        401,
+        "42501"
+      ],
+      "list": [
+        200,
+        0
+      ]
+    },
+    "at": "2026-10-01T01:04:54.720Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "UNAUTHENTICATED_CANNOT_OPERATE",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "transition": {
+        "http": 401,
+        "code": "42501",
+        "okData": null
+      },
+      "cancel": {
+        "http": 401,
+        "code": "42501",
+        "okData": null
+      },
+      "offer": {
+        "http": 401,
+        "code": "42501",
+        "okData": null
+      },
+      "panelCenter": {
+        "http": 401,
+        "code": "42501",
+        "okData": null
+      },
+      "riderAvailability": {
+        "http": 401,
+        "code": "42501",
+        "okData": null
+      },
+      "reversePayment": {
+        "http": 401,
+        "code": "42501",
+        "okData": null
+      },
+      "classify": {
+        "http": 401,
+        "code": "42501",
+        "okData": null
+      },
+      "directUpdate": {
+        "http": 401,
+        "code": "42501",
+        "okData": null
+      },
+      "openStore": {
+        "http": 401,
+        "code": "42501",
+        "okData": null
+      }
+    },
+    "at": "2026-10-01T01:04:59.046Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "UNAUTHENTICATED_NO_DATA_CHANGE",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "notesIntact": true
+    },
+    "at": "2026-10-01T01:05:00.365Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "UNAUTHENTICATED_CANNOT_CLOSE_STORE",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "businessStatus": "open"
+    },
+    "at": "2026-10-01T01:05:02.189Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "AUTHENTICATED_NO_MEMBERSHIP_CANNOT_READ_OR_LIST",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "name": "AUTHENTICATED_NO_MEMBERSHIP_READ",
+      "orders": [
+        200,
+        0
+      ],
+      "items": [
+        200,
+        0
+      ],
+      "events": [
+        200,
+        0
+      ],
+      "list": [
+        200,
+        0
+      ]
+    },
+    "at": "2026-10-01T01:05:04.663Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "AUTHENTICATED_NO_MEMBERSHIP_CANNOT_OPERATE",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "transition": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "cancel": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "offer": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "panelCenter": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "riderAvailability": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "reversePayment": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "classify": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "directUpdate": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "openStore": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      }
+    },
+    "at": "2026-10-01T01:05:09.010Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "AUTHENTICATED_NO_MEMBERSHIP_NO_DATA_CHANGE",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "notesIntact": true
+    },
+    "at": "2026-10-01T01:05:10.587Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "AUTHENTICATED_NO_MEMBERSHIP_CANNOT_CLOSE_STORE",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "businessStatus": "open"
+    },
+    "at": "2026-10-01T01:05:11.940Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "ANONYMOUS_OTHER_CUSTOMER_CANNOT_READ_OR_LIST",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "name": "ANONYMOUS_OTHER_CUSTOMER_READ",
+      "orders": [
+        200,
+        0
+      ],
+      "items": [
+        200,
+        0
+      ],
+      "events": [
+        200,
+        0
+      ],
+      "list": [
+        200,
+        0
+      ]
+    },
+    "at": "2026-10-01T01:05:12.756Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "ANONYMOUS_OTHER_CUSTOMER_CANNOT_OPERATE",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "transition": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "cancel": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "offer": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "panelCenter": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "riderAvailability": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "reversePayment": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "classify": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "directUpdate": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "openStore": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      }
+    },
+    "at": "2026-10-01T01:05:17.737Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "ANONYMOUS_OTHER_CUSTOMER_NO_DATA_CHANGE",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "notesIntact": true
+    },
+    "at": "2026-10-01T01:05:19.332Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "ANONYMOUS_OTHER_CUSTOMER_CANNOT_CLOSE_STORE",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "businessStatus": "open"
+    },
+    "at": "2026-10-01T01:05:20.951Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "OTHER_BUSINESS_OWNER_CANNOT_READ_OR_LIST",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "name": "OTHER_BUSINESS_OWNER_READ",
+      "orders": [
+        200,
+        0
+      ],
+      "items": [
+        200,
+        0
+      ],
+      "events": [
+        200,
+        0
+      ],
+      "list": [
+        200,
+        0
+      ]
+    },
+    "at": "2026-10-01T01:05:21.896Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "OTHER_BUSINESS_OWNER_CANNOT_OPERATE",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "transition": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "cancel": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "offer": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "panelCenter": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "riderAvailability": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "reversePayment": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "classify": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "directUpdate": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "openStore": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      }
+    },
+    "at": "2026-10-01T01:05:25.918Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "OTHER_BUSINESS_OWNER_NO_DATA_CHANGE",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "notesIntact": true
+    },
+    "at": "2026-10-01T01:05:27.252Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "OTHER_BUSINESS_OWNER_CANNOT_CLOSE_STORE",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "businessStatus": "open"
+    },
+    "at": "2026-10-01T01:05:28.632Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "OTHER_BUSINESS_OWNER_CANNOT_REGISTER_SESSION_IN_A",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "ok": false,
+      "code": "not_authorized"
+    },
+    "at": "2026-10-01T01:05:28.837Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "ANONYMOUS_CANNOT_REGISTER_OPERATOR_SESSION",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "ok": false,
+      "code": "not_authorized"
+    },
+    "at": "2026-10-01T01:05:29.117Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "WRONG_RIDER_CANNOT_OPERATE",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "transition": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "cancel": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "offer": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "panelCenter": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "riderAvailability": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "reversePayment": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "classify": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "directUpdate": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      },
+      "openStore": {
+        "http": 403,
+        "code": "42501",
+        "okData": null
+      }
+    },
+    "at": "2026-10-01T01:05:32.853Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "WRONG_RIDER_NO_DATA_CHANGE",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "notesIntact": true
+    },
+    "at": "2026-10-01T01:05:34.387Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "WRONG_RIDER_CANNOT_CLOSE_STORE",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "businessStatus": "open"
+    },
+    "at": "2026-10-01T01:05:35.541Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "OWNING_CUSTOMER_READS_OWN_ORDER_ONLY",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "status": 200,
+      "rows": [
+        {
+          "id": "0c6f661d-2b22-44d3-a1f2-0e560fae07ea",
+          "status": "delivered"
+        }
+      ],
+      "code": null
+    },
+    "at": "2026-10-01T01:05:35.784Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "BUSINESS_MEMBER_WITH_SESSION_READS_ORDER",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "http": 200,
+      "rows": 1
+    },
+    "at": "2026-10-01T01:05:35.945Z"
+  },
+  {
+    "phase": "P12_RLS",
+    "name": "MEMBER_WITHOUT_REGISTERED_SESSION_HAS_NO_ROLE",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "read": 0,
+      "op": "42501"
+    },
+    "at": "2026-10-01T01:05:38.025Z"
+  },
+  {
+    "phase": "P13_EVENTS",
+    "name": "EVENT_CHAIN_EXACT_NO_GAPS_NO_DUPLICATES",
+    "result": "PASS",
+    "expected": null,
+    "observed": [
+      "received>accepted",
+      "accepted>preparing",
+      "preparing>ready",
+      "ready>assigned",
+      "assigned>picked_up",
+      "picked_up>on_the_way",
+      "on_the_way>arrived",
+      "arrived>delivered"
+    ],
+    "at": "2026-10-01T01:05:39.621Z"
+  },
+  {
+    "phase": "P13_EVENTS",
+    "name": "EVENT_SEQUENCE_AND_TIME_MONOTONIC",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "seqOk": true,
+      "timeOk": true
+    },
+    "at": "2026-10-01T01:05:39.621Z"
+  },
+  {
+    "phase": "P13_EVENTS",
+    "name": "NO_STATUS_EVENT_AFTER_TERMINAL",
+    "result": "PASS",
+    "expected": null,
+    "observed": [],
+    "at": "2026-10-01T01:05:39.621Z"
+  },
+  {
+    "phase": "P13_EVENTS",
+    "name": "EVENT_ACTORS_MATCH_ROLES",
+    "result": "PASS",
+    "expected": null,
+    "observed": [
+      "order.received:customer",
+      "order.status_changed:business",
+      "order.status_changed:business",
+      "order.status_changed:business",
+      "order.rider_offered:business",
+      "order.status_changed:rider",
+      "order.rider_accepted_offer:rider",
+      "order.status_changed:rider",
+      "order.status_changed:rider",
+      "order.status_changed:rider",
+      "order.status_changed:rider",
+      "order.manual_payment_confirmed:business"
+    ],
+    "at": "2026-10-01T01:05:39.622Z"
+  },
+  {
+    "phase": "P13_EVENTS",
+    "name": "SINGLE_RECEIVED_OFFER_ACCEPT_PAYMENT_EVENTS",
+    "result": "PASS",
+    "expected": null,
+    "observed": [
+      "order.received:1",
+      "order.rider_offered:1",
+      "order.rider_accepted_offer:1",
+      "order.manual_payment_confirmed:1"
+    ],
+    "at": "2026-10-01T01:05:39.622Z"
+  },
+  {
+    "phase": "P13_EVENTS",
+    "name": "ORDER_TIMESTAMPS_ORDERED",
+    "result": "PASS",
+    "expected": null,
+    "observed": [
+      "created_at=2026-10-01T01:01:29.71354+00:00",
+      "accepted_at=2026-10-01T01:02:56.502513+00:00",
+      "preparing_at=2026-10-01T01:03:14.514814+00:00",
+      "ready_at=2026-10-01T01:03:21.945589+00:00",
+      "picked_up_at=2026-10-01T01:04:09.654168+00:00",
+      "arrived_at=2026-10-01T01:04:21.645007+00:00",
+      "delivered_at=2026-10-01T01:04:35.883524+00:00"
+    ],
+    "at": "2026-10-01T01:05:39.623Z"
+  },
+  {
+    "phase": "P13_EVENTS",
+    "name": "PANEL_AUDIT_EQUALS_DB_EVENTS",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "panel": 12,
+      "db": 12
+    },
+    "at": "2026-10-01T01:05:39.623Z"
+  },
+  {
+    "phase": "P13_EVENTS",
+    "name": "SURFACES_AGREE_ON_FINAL_STATE",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "db": "delivered",
+      "panelInbox": "not-in-inbox(terminal)",
+      "tracking": "delivered",
+      "riderBoard": "released",
+      "revision": 13
+    },
+    "at": "2026-10-01T01:05:39.623Z"
+  },
+  {
+    "phase": "P13_EVENTS",
+    "name": "GPS_TRAIL_PURGED_AT_TERMINAL",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "riderLocations": 0
+    },
+    "at": "2026-10-01T01:05:39.623Z"
+  },
+  {
+    "phase": "P11_LOST_RESPONSE",
+    "name": "CASE_C_ACCEPT_VS_CANCEL_ONE_WINNER_NO_CORRUPTION",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "accept": {
+        "http": 200,
+        "code": null,
+        "ms": 115
+      },
+      "cancel": {
+        "http": 409,
+        "code": "PT409",
+        "ms": 457
+      },
+      "winner": "accept",
+      "final": {
+        "status": "cancelled",
+        "revision": 5,
+        "assigned_rider_user_id": null,
+        "manual_payment_status": "pending",
+        "origin": "production",
+        "inventory_released_at": "2026-10-01 01:05:56.433527+00"
+      },
+      "stockPre": 36,
+      "stockPost": 37
+    },
+    "at": "2026-10-01T01:06:00.317Z"
+  },
+  {
+    "phase": "P14_STOCK",
+    "name": "STOCK_AFTER_DELIVERY_EQUALS_INITIAL_MINUS_MAIN",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "initial": 40,
+      "main": 3,
+      "now": 37
+    },
+    "at": "2026-10-01T01:06:02.059Z"
+  },
+  {
+    "phase": "P14_STOCK",
+    "name": "STOCK_RESTORED_EXACTLY",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "before": 40,
+      "after": 40
+    },
+    "at": "2026-10-01T01:06:20.747Z"
+  },
+  {
+    "phase": "P14_STOCK",
+    "name": "CATALOG_FINGERPRINT_IDENTICAL",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "before": {
+        "fp": "1c151576c3b5ff1bd175f04798c7fd5d",
+        "n": 12
+      },
+      "after": {
+        "fp": "1c151576c3b5ff1bd175f04798c7fd5d",
+        "n": 12
+      }
+    },
+    "at": "2026-10-01T01:06:20.747Z"
+  },
+  {
+    "phase": "P16_CLEANUP",
+    "name": "ALL_RUN_ORDERS_TERMINAL_AND_QA",
+    "result": "PASS",
+    "expected": null,
+    "observed": [
+      {
+        "id": "725af38e-23c7-44d3-90d9-791bcab4cf40",
+        "code": "LT-0058",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      },
+      {
+        "id": "19a4a972-f704-41d0-a32d-54d7a1113909",
+        "code": "LT-0061",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      },
+      {
+        "id": "0c6f661d-2b22-44d3-a1f2-0e560fae07ea",
+        "code": "LT-0057",
+        "status": "delivered",
+        "origin": "qa",
+        "manual_payment": "reversed"
+      },
+      {
+        "id": "62bd88ed-2ade-4071-a9d6-8533edd4e5db",
+        "code": "LT-0059",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      },
+      {
+        "id": "61c74d72-0f99-41da-af4d-b1cd5938ff1a",
+        "code": "LT-0060",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      },
+      {
+        "id": "4736cd1c-d9b5-40a1-b05f-d60c5b537796",
+        "code": "LT-0062",
+        "status": "cancelled",
+        "origin": "qa",
+        "manual_payment": "pending"
+      }
+    ],
+    "at": "2026-10-01T01:06:20.751Z"
+  },
+  {
+    "phase": "P16_CLEANUP",
+    "name": "NO_PENDING_OFFERS_NOTIFICATIONS_RESERVATIONS",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "offers": 0,
+      "notifications": 0,
+      "reservations": 0
+    },
+    "at": "2026-10-01T01:06:20.751Z"
+  },
+  {
+    "phase": "P16_CLEANUP",
+    "name": "TEST_USERS_AND_BUSINESS_B_DELETED",
+    "result": "FAIL",
+    "expected": null,
+    "observed": {
+      "users": 1,
+      "businesses": 0
+    },
+    "at": "2026-10-01T01:06:20.751Z"
+  },
+  {
+    "phase": "P16_CLEANUP",
+    "name": "NO_OPEN_RUN_SESSIONS",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "open": 0
+    },
+    "at": "2026-10-01T01:06:20.751Z"
+  },
+  {
+    "phase": "P16_CLEANUP",
+    "name": "NO_ORPHAN_EVENTS_OR_GPS",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "orphanEvents": 0,
+      "gps": 0
+    },
+    "at": "2026-10-01T01:06:20.751Z"
+  },
+  {
+    "phase": "P16_CLEANUP",
+    "name": "RIDER_AVAILABILITY_RESTORED",
+    "result": "PASS",
+    "expected": null,
+    "observed": [
+      {
+        "rider": "8d77e57b-fd9b-49bb-8023-9b3c699d35b9",
+        "available": false,
+        "version": 2
+      },
+      {
+        "rider": "e9b381ad-8287-430e-b53d-caa4f55637cd",
+        "available": false,
+        "version": 10
+      },
+      {
+        "rider": "c9e5e490-ac76-43ab-be20-afba6cfe35fc",
+        "available": false,
+        "version": 2
+      },
+      {
+        "rider": "b46bc1cd-abfc-4a4a-9952-3ac9287d1bae",
+        "available": false,
+        "version": 8
+      },
+      {
+        "rider": "7ce18ab7-a8aa-4e5d-a77c-4a9db3e8a599",
+        "available": false,
+        "version": 25
+      }
+    ],
+    "at": "2026-10-01T01:06:20.751Z"
+  },
+  {
+    "phase": "P16_CLEANUP",
+    "name": "NO_FISCAL_PAYMENT_OR_PRINT_SIDE_EFFECTS",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "print": 0,
+      "fiscal": 0,
+      "intents": 32
+    },
+    "at": "2026-10-01T01:06:20.751Z"
+  },
+  {
+    "phase": "P16_CLEANUP",
+    "name": "BUSINESS_OPEN_ORDERS_BACK_TO_BASELINE",
+    "result": "PASS",
+    "expected": null,
+    "observed": {
+      "before": 7,
+      "after": 7
+    },
+    "at": "2026-10-01T01:06:20.751Z"
+  },
+  {
+    "phase": "P16_CLEANUP",
+    "name": "CLEANUP_STEPS_ALL_OK",
+    "result": "FAIL",
+    "expected": null,
+    "observed": [
+      {
+        "name": "delete user customer-A-main",
+        "ok": false,
+        "detail": 500,
+        "at": "2026-10-01T01:06:15.781Z"
+      }
+    ],
+    "at": "2026-10-01T01:06:20.751Z"
+  }
+]

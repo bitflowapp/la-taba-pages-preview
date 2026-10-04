@@ -21,6 +21,13 @@
    ```
 
    El Panel pasa a «Conectado» y la tienda empieza a ofrecer Mercado Pago. Antes de este paso no lo ofrece: la RPC de disponibilidad exige vendedor conectado y habilitado.
+5. La plataforma abre el interruptor de dinero real para la ventana del pago (§2.1 de [`MERCADOPAGO_PRODUCCION_CP.md`](MERCADOPAGO_PRODUCCION_CP.md)): el secreto de backend `MERCADOPAGO_REAL_MONEY_ENABLED=enabled`, que pone quien opera la plataforma con la autorización del dueño. Sin él la sesión de checkout responde `409 PAYMENTS_NOT_ENABLED` sin reservar stock y no se crea ningún cobro, aunque los pasos 2 a 4 estén hechos.
+
+   ```
+   node scripts/mercadopago/verificar-configuracion.mjs --ref=produccion-controlada
+   ```
+
+   Tiene que decir el interruptor ABIERTO y el dinero real POSIBLE. La variable vieja de la prueba de humo no se usa: ya no abre nada.
 
 ## El pago (una sola vez)
 
@@ -71,6 +78,14 @@ Apagar Mercado Pago del comercio en el acto. El cobro manual sigue funcionando:
 node scripts/mercadopago/cobro-negocio.mjs apagar --target=controlled-production --business=e7850ad2-a447-402c-8375-3fd74e9466ba --confirmar=la-taba-cp
 ```
 
+Para cortar el cobro real de toda la plataforma en un solo paso, borrar el secreto `MERCADOPAGO_REAL_MONEY_ENABLED`:
+
+```
+supabase secrets unset MERCADOPAGO_REAL_MONEY_ENABLED --project-ref tkanbadcglszlcyfjvpv
+```
+
+Con el interruptor cerrado la devolución sigue funcionando: el reembolso desde el Panel, la cancelación de un cobro, el webhook, el worker y la conciliación no lo consultan.
+
 Criterios para apagar (P0):
 
 - pago al vendedor equivocado;
@@ -80,6 +95,10 @@ Criterios para apagar (P0):
 - firma inválida aceptada;
 - stock corrupto;
 - credencial expuesta.
+
+## Al terminar
+
+Si la autorización era sólo para este pago, cerrar el interruptor de dinero real (el mismo paso de arriba) y comprobarlo con `verificar-configuracion.mjs`: interruptor CERRADO, dinero real CERRADO.
 
 ## Qué ya está probado sin dinero
 

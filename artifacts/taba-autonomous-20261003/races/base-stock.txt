@@ -1,0 +1,16 @@
+STOCK_RACE_LAST_UNIT: 10 rondas, dos clientes por la ultima unidad -> 1 pedido, stock 0, el otro rechazado por stock (gano la primera llamada 6/10): PASS
+STOCK_RACE_TEN_FOR_THREE: stock 3, 10 clientes a la vez -> 3 pedidos, stock 0, 7 rechazados por stock; pidiendo de a 2 -> 1 pedido, queda 1, 9 rechazados con 23514: PASS
+STOCK_RACE_FIFTY_MIXED: stock 20, 50 clientes pidiendo 1, 2 o 3 -> 13 pedidos por 20 unidades, stock 0, 37 rechazados por stock: PASS
+STOCK_RACE_CHECKOUT_FIFTY: stock 5, 50 sesiones de Mercado Pago a la vez -> 5 reservas activas, stock 0, 45 rechazadas por stock: PASS
+STOCK_RACE_BOTH_DOORS: stock 6, 25 pedidos y 25 sesiones a la vez -> 5 unidades en pedidos + 1 en reservas, stock 0: PASS
+STOCK_RACE_ABANDONED_CHECKOUT: 3 sesiones vencidas, barrido desde 5 conexiones (dos veces) -> stock vuelve a 3 una sola vez, 5 clientes recompran 3: PASS
+STOCK_RACE_REJECTED_THEN_EXPIRED: pago rechazado conserva la reserva (stock 0), vence con 5 barridos, 2 avisos y 2 compradores a la vez -> stock vuelve 2 una sola vez y se revende una vez (durante la carrera): PASS
+STOCK_RACE_CANCELLATION: 6 cancelaciones a la vez (comercio x3, cliente x2, vencimiento) -> cancela order.expired_unattended, 3 conflicto(s) PT409, stock +2 una sola vez, repetir es no-op, se revende y se entrega: PASS
+STOCK_RACE_DUPLICATE_WEBHOOK: el mismo pago aprobado 20 veces y 10 finalizaciones a la vez -> 1 pedido, reserva convertida una vez, stock descontado una vez, un pago: PASS
+STOCK_RACE_RETRY_STORM: stock 1, el mismo pedido 25 veces y otro cliente a la vez, 2 rondas -> 1 unidad vendida (gana el rival, 25 rechazos por stock; gana el que reintenta, 25 respuestas con el mismo pedido): PASS
+STOCK_RACE_REFUSALS: 23514 stock insuficiente para producto: <id> x11 | 55000 producto no disponible para pago: <id> x69 | 55000 producto no disponible: <id> x106
+STOCK_RACE_CONSERVATION: 22 productos, 60 unidades iniciales, 58 comprometidas, stock inicial = stock + reservas + pedidos + entregado en todos: PASS
+OVERSALE: 0
+NEGATIVE_STOCK: 0
+DEADLOCKS: 0
+STOCK_RACE_DONE: 350 llamadas en conexiones propias, la mas lenta 1585 ms, 26.3 s

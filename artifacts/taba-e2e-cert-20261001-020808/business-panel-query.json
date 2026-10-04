@@ -1,0 +1,174 @@
+{
+  "orderId": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+  "snapshots": [
+    {
+      "stage": "received",
+      "ok": true,
+      "code": null,
+      "inboxSize": 8,
+      "found": true,
+      "row": {
+        "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+        "public_code": "LT-0068",
+        "status": "received",
+        "revision": 4,
+        "delivery_mode": "delivery",
+        "payment_method": "cash",
+        "subtotal": 7200,
+        "delivery_fee": 1200,
+        "total": 8400,
+        "origin": "production",
+        "assigned_rider_user_id": null,
+        "manual_payment_status": "pending",
+        "customer_name": "QA Certificacion E2E",
+        "customer_street_address": "Calle Certificacion 901",
+        "created_at": "2026-10-01T02:09:06.461071+00:00",
+        "accepted_at": null,
+        "ready_at": null,
+        "items": [
+          {
+            "product_uuid": "27f606da-afb6-4369-8a85-72a171083c1f",
+            "name": "Villavicencio",
+            "quantity": 3,
+            "unit_price": 2400,
+            "subtotal": 7200
+          }
+        ]
+      },
+      "domain": {
+        "status": "received",
+        "code": "LT-0068",
+        "total": 8400
+      }
+    },
+    {
+      "stage": "accepted",
+      "ok": true,
+      "code": null,
+      "inboxSize": 12,
+      "found": true,
+      "row": {
+        "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+        "public_code": "LT-0068",
+        "status": "accepted",
+        "revision": 5,
+        "delivery_mode": "delivery",
+        "payment_method": "cash",
+        "subtotal": 7200,
+        "delivery_fee": 1200,
+        "total": 8400,
+        "origin": "production",
+        "assigned_rider_user_id": null,
+        "manual_payment_status": "pending",
+        "customer_name": "QA Certificacion E2E",
+        "customer_street_address": "Calle Certificacion 901",
+        "created_at": "2026-10-01T02:09:06.461071+00:00",
+        "accepted_at": "2026-10-01T02:11:35.054224+00:00",
+        "ready_at": null,
+        "items": [
+          {
+            "product_uuid": "27f606da-afb6-4369-8a85-72a171083c1f",
+            "name": "Villavicencio",
+            "quantity": 3,
+            "unit_price": 2400,
+            "subtotal": 7200
+          }
+        ]
+      },
+      "domain": {
+        "status": "preparing",
+        "code": "LT-0068",
+        "total": 8400
+      }
+    },
+    {
+      "stage": "assigned",
+      "ok": true,
+      "code": null,
+      "inboxSize": 12,
+      "found": true,
+      "row": {
+        "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+        "public_code": "LT-0068",
+        "status": "assigned",
+        "revision": 8,
+        "delivery_mode": "delivery",
+        "payment_method": "cash",
+        "subtotal": 7200,
+        "delivery_fee": 1200,
+        "total": 8400,
+        "origin": "production",
+        "assigned_rider_user_id": "e9b381ad-8287-430e-b53d-caa4f55637cd",
+        "manual_payment_status": "pending",
+        "customer_name": "QA Certificacion E2E",
+        "customer_street_address": "Calle Certificacion 901",
+        "created_at": "2026-10-01T02:09:06.461071+00:00",
+        "accepted_at": "2026-10-01T02:11:35.054224+00:00",
+        "ready_at": "2026-10-01T02:14:53.722744+00:00",
+        "items": [
+          {
+            "product_uuid": "27f606da-afb6-4369-8a85-72a171083c1f",
+            "name": "Villavicencio",
+            "quantity": 3,
+            "unit_price": 2400,
+            "subtotal": 7200
+          }
+        ]
+      },
+      "domain": {
+        "status": "ready",
+        "code": "LT-0068",
+        "total": 8400
+      }
+    },
+    {
+      "stage": "on_the_way",
+      "ok": true,
+      "code": null,
+      "inboxSize": 12,
+      "found": true,
+      "row": {
+        "id": "e76640ab-4478-4513-8d40-f1ef1c7c082c",
+        "public_code": "LT-0068",
+        "status": "on_the_way",
+        "revision": 10,
+        "delivery_mode": "delivery",
+        "payment_method": "cash",
+        "subtotal": 7200,
+        "delivery_fee": 1200,
+        "total": 8400,
+        "origin": "production",
+        "assigned_rider_user_id": "e9b381ad-8287-430e-b53d-caa4f55637cd",
+        "manual_payment_status": "pending",
+        "customer_name": "QA Certificacion E2E",
+        "customer_street_address": "Calle Certificacion 901",
+        "created_at": "2026-10-01T02:09:06.461071+00:00",
+        "accepted_at": "2026-10-01T02:11:35.054224+00:00",
+        "ready_at": "2026-10-01T02:14:53.722744+00:00",
+        "items": [
+          {
+            "product_uuid": "27f606da-afb6-4369-8a85-72a171083c1f",
+            "name": "Villavicencio",
+            "quantity": 3,
+            "unit_price": 2400,
+            "subtotal": 7200
+          }
+        ]
+      },
+      "domain": {
+        "status": "on_the_way",
+        "code": "LT-0068",
+        "total": 8400
+      }
+    },
+    {
+      "stage": "delivered",
+      "ok": true,
+      "code": null,
+      "inboxSize": 11,
+      "found": false,
+      "row": null,
+      "domain": null
+    }
+  ]
+}

@@ -19,6 +19,7 @@ export function reviewMigrations(directory = DIR) {
   const files = fs.readdirSync(directory).filter((name) => name.endsWith('.sql')).sort();
   const issues = [];
   const timestamps = new Set();
+  const texts = [];
   const combined = files.map((file) => {
     const match = file.match(NAME);
     if (!match) issues.push(issue('error', file, 'Nombre inválido; usar YYYYMMDDHHMMSS_descripcion.sql.'));
@@ -49,7 +50,9 @@ export function reviewMigrations(directory = DIR) {
       ));
     }
 
-    return `\n-- FILE ${file}\n${crudo.toString('utf8')}`;
+    const text = crudo.toString('utf8');
+    texts.push(text);
+    return `\n-- FILE ${file}\n${text}`;
   }).join('\n');
 
   const normalized = stripSqlComments(combined).toLowerCase();
@@ -69,9 +72,19 @@ export function reviewMigrations(directory = DIR) {
     issues.push(issue('error', '*', 'Mutación directa anónima sobre pedidos o tokens.'));
   }
 
-  const functions = [...combined.matchAll(
+  /*
+   * Archivo por archivo, no sobre todas las migraciones concatenadas. Una
+   * función no cruza de un archivo a otro, y los cuantificadores perezosos de
+   * esta expresión recorren el texto hasta el final cada vez que una definición
+   * no tiene la forma que busca (`$$ ... $$ language`): sobre el texto entero el
+   * costo es cuadrático. Medido el 2026-10-02 en una notebook cargada: más de
+   * cuatro minutos con 158 migraciones y casi nueve con 187, sólo en esta
+   * expresión, que además corre dos veces en CI (este script y su prueba) dentro
+   * de un job con límite de 45 minutos.
+   */
+  const functions = texts.flatMap((text) => [...text.matchAll(
     /create\s+or\s+replace\s+function\s+([\w.]+)\s*\([^;]*?\)\s*returns[\s\S]*?\$\$[\s\S]*?\$\$\s*language[\s\S]*?;/gi,
-  )];
+  )]);
   for (const match of functions) {
     const block = match[0];
     if (/security\s+definer/i.test(block) && !/set\s+search_path\s*=\s*(?:pg_catalog,\s*)?public/i.test(block)) {

@@ -1,0 +1,267 @@
+{
+  "runId": "ecom-cert-stack-20261003-141842",
+  "at": "2026-10-03T14:21:47.879Z",
+  "keepOpen": false,
+  "steps": [
+    {
+      "name": "orders settled (0)",
+      "ok": true,
+      "detail": [],
+      "at": "2026-10-03T14:21:32.682Z"
+    },
+    {
+      "name": "availability off rider1",
+      "ok": true,
+      "detail": "updated",
+      "at": "2026-10-03T14:21:32.694Z"
+    },
+    {
+      "name": "availability off rider2",
+      "ok": true,
+      "detail": "updated",
+      "at": "2026-10-03T14:21:32.694Z"
+    },
+    {
+      "name": "config restored",
+      "ok": true,
+      "detail": [],
+      "at": "2026-10-03T14:21:32.697Z"
+    },
+    {
+      "name": "intake limits baseline",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-03T14:21:32.771Z"
+    },
+    {
+      "name": "fixtures at declared state",
+      "ok": true,
+      "detail": [],
+      "at": "2026-10-03T14:21:32.773Z"
+    },
+    {
+      "name": "payment fixture disabled",
+      "ok": true,
+      "detail": {
+        "settings": null,
+        "seller": null
+      },
+      "at": "2026-10-03T14:21:32.824Z"
+    },
+    {
+      "name": "tenant closed and ordering disabled",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-03T14:21:32.877Z"
+    },
+    {
+      "name": "second business: cancel LT-0059",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-03T14:21:32.881Z"
+    },
+    {
+      "name": "second business: classify LT-0059",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-03T14:21:32.883Z"
+    },
+    {
+      "name": "second business closed and ordering disabled",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-03T14:21:32.936Z"
+    },
+    {
+      "name": "close session b-owner",
+      "ok": true,
+      "detail": "closed",
+      "at": "2026-10-03T14:21:32.940Z"
+    },
+    {
+      "name": "close session admin",
+      "ok": true,
+      "detail": "closed",
+      "at": "2026-10-03T14:21:32.943Z"
+    },
+    {
+      "name": "close session staff",
+      "ok": true,
+      "detail": "closed",
+      "at": "2026-10-03T14:21:32.946Z"
+    },
+    {
+      "name": "close session rider1",
+      "ok": true,
+      "detail": "closed",
+      "at": "2026-10-03T14:21:32.948Z"
+    },
+    {
+      "name": "close session rider2",
+      "ok": true,
+      "detail": "closed",
+      "at": "2026-10-03T14:21:32.951Z"
+    },
+    {
+      "name": "close session owner",
+      "ok": true,
+      "detail": "closed",
+      "at": "2026-10-03T14:21:32.954Z"
+    },
+    {
+      "name": "delete throwaway business",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-03T14:21:33.035Z"
+    },
+    {
+      "name": "run users deleted (135 of 135)",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-03T14:21:40.447Z"
+    },
+    {
+      "name": "persistent identities suspended (109)",
+      "ok": true,
+      "detail": null,
+      "at": "2026-10-03T14:21:47.810Z"
+    }
+  ],
+  "post": {
+    "open_orders": 0,
+    "non_qa_orders": 0,
+    "confirmed_payments": 0,
+    "orders": 501,
+    "pending_offers": 0,
+    "pending_notifications": 0,
+    "reservations": 0,
+    "rider_locations": 0,
+    "checkout_sessions": 223,
+    "open_checkout_sessions": 0,
+    "payments_not_refunded": 0,
+    "payment_outbox_jobs": 0,
+    "payment_fixture": {
+      "enabled": false,
+      "seller": "disconnected"
+    },
+    "run_users_left": 0,
+    "any_run_users_left": 0,
+    "open_sessions": 0,
+    "riders": [
+      {
+        "rider": "1e9dc650-b205-4ca2-a9e6-659e4d18ca66",
+        "available": false
+      },
+      {
+        "rider": "146d432b-c950-4a13-878f-f82e5b2fe059",
+        "available": false
+      }
+    ],
+    "throwaway_businesses": 0,
+    "exceptions": 0,
+    "inactive_zones": 0,
+    "persistent_identities": 109,
+    "operators_not_suspended": 0,
+    "business": {
+      "status": "closed",
+      "is_active": true,
+      "ordering_enabled": false,
+      "ordering_verified": false,
+      "qa_fixture": true,
+      "qa_window_until": null,
+      "hours_enforced": true,
+      "delivery_zone_enforced": true,
+      "delivery_enabled": true,
+      "pickup_enabled": true,
+      "delivery_fee": 900,
+      "minimum_delivery_subtotal": 3000,
+      "alcohol_sales_enabled": false
+    },
+    "second_business": {
+      "status": "closed",
+      "ordering_enabled": false,
+      "ordering_verified": false,
+      "qa_fixture": true,
+      "qa_window_until": null,
+      "open_orders": 0,
+      "non_qa_orders": 0,
+      "open_sessions": 0
+    }
+  },
+  "fixtures": [
+    {
+      "role": "MAIN",
+      "declaredStock": 500,
+      "stock": 500,
+      "stockOk": true,
+      "priceOk": true,
+      "nameOk": true,
+      "stateOk": true
+    },
+    {
+      "role": "LAST_UNIT",
+      "declaredStock": 1,
+      "stock": 1,
+      "stockOk": true,
+      "priceOk": true,
+      "nameOk": true,
+      "stateOk": true
+    },
+    {
+      "role": "PRICE_CHANGE",
+      "declaredStock": 100,
+      "stock": 100,
+      "stockOk": true,
+      "priceOk": true,
+      "nameOk": true,
+      "stateOk": true
+    },
+    {
+      "role": "HIDE",
+      "declaredStock": 50,
+      "stock": 50,
+      "stockOk": true,
+      "priceOk": true,
+      "nameOk": true,
+      "stateOk": true
+    },
+    {
+      "role": "PERF",
+      "declaredStock": 5000,
+      "stock": 5000,
+      "stockOk": true,
+      "priceOk": true,
+      "nameOk": true,
+      "stateOk": true
+    },
+    {
+      "role": "PENDING_PRICE",
+      "declaredStock": 20,
+      "stock": 20,
+      "stockOk": true,
+      "priceOk": true,
+      "nameOk": true,
+      "stateOk": true
+    },
+    {
+      "role": "HIDDEN",
+      "declaredStock": 30,
+      "stock": 30,
+      "stockOk": true,
+      "priceOk": true,
+      "nameOk": true,
+      "stateOk": true
+    }
+  ],
+  "retainedByDesign": [
+    "businesses row of the QA tenant «TABA_ECOMMERCE_STACK_20261003_141842» (closed, ordering disabled, qa_fixture) with its hours, zones and fixture products",
+    "businesses row of the second business «TABA_ECOMMERCE_STACK_20261003_141842_B» (closed, ordering disabled, qa_fixture): its order retains it",
+    "persistent identities of the tenant (109: operators, paying customers, the owner of the second business), suspended and with the password discarded: command receipts, config audit, inventory movements, rider offers and checkout sessions reference them with ON DELETE RESTRICT",
+    "orders of the tenant (origin=qa, terminal) with order_items / order_events / order_public_tokens / order_delivery_handoffs: append-only audit",
+    "inventory_movements of the tenant (manual_adjustment qa_ecom_cert_reset): append-only ledger",
+    "business_command_receipts, business_config_audit, rider_delivery_operations, delivery_confirmation_attempts, identity_sessions (revoked) and identity_audit_events of the tenant",
+    "notification_outbox rows of the tenant: processed and suppressed when the order is classified QA",
+    "checkout_sessions, payment_intents, payment_attempts, payment_events and payment_refunds of the tenant (all refunded or never charged; provider ids are invented, no provider was called)",
+    "business_payment_settings (disabled) and mp_seller_connections (disconnected, no credentials) of the tenant"
+  ]
+}

@@ -75,7 +75,10 @@ try {
   // pg_cron's C routines temporarily use the EXTENSION owner. Merely changing
   // cron.job/function owners is not an accurate managed-platform fixture.
   docker(['exec',container,'psql','-h','/tmp','-U','supabase_admin','-d','postgres','-X','-v','ON_ERROR_STOP=1','-c',
-    'create extension pg_cron with schema pg_catalog; grant usage on schema cron to postgres; grant select on cron.job to postgres; grant execute on all functions in schema cron to postgres']);
+    // The managed platform also lets postgres write and prune the run history (measured read-only on staging:
+    // has_table_privilege('postgres','cron.job_run_details','insert'|'delete') = true). The scheduler tests
+    // seed runs there and the history purge deletes from it.
+    'create extension pg_cron with schema pg_catalog; grant usage on schema cron to postgres; grant select on cron.job to postgres; grant select, insert, delete on cron.job_run_details to postgres; grant execute on all functions in schema cron to postgres']);
   run('scripts/bootstrap-a1-v2-local.mjs');
   if(!focused){
   run('scripts/verify-a1-v2-independent.mjs');
@@ -204,15 +207,32 @@ try {
       'commercial_publish_merchant_intent_test.sql','identity_alcohol_null_safe_test.sql',
       'fiscal_core_contract_test.sql','fiscal_core_upgrade_test.sql','fiscal_receiver_vat_condition_test.sql',
       'commercial_order_fiscal_test.sql','fiscal_disaster_recovery_test.sql','fiscal_secret_boundary_test.sql',
-      'fiscal_refund_separation_test.sql','owner_handover_test.sql','caja_clara_pos_integration_test.sql'];
+      'fiscal_refund_separation_test.sql','owner_handover_test.sql','caja_clara_pos_integration_test.sql',
+      'customer_deletion_delivery_order_test.sql','order_intake_guard_test.sql','order_cancel_inventory_release_test.sql','cancel_order_idempotent_test.sql','unattended_order_expiry_test.sql','customer_cancel_own_order_test.sql','order_public_code_growth_test.sql','order_replay_side_effect_free_test.sql','release_or_reassign_delivery_grant_test.sql','mercadopago_snapshot_finalization_hardening_test.sql','manual_review_checkout_stock_test.sql','stuck_refund_resolution_test.sql','payment_cancellation_terminal_test.sql','identity_session_close_audit_test.sql','identity_invitation_acceptance_guard_test.sql','combo_rpc_visibility_test.sql','business_direct_write_audit_test.sql','order_money_snapshot_immutable_test.sql','ecommerce_rls_matrix_test.sql','service_hours_engine_test.sql','business_service_status_test.sql','delivery_rules_and_enforcement_lock_test.sql','opening_gate_requires_rules_test.sql','scheduler_inventory_and_history_retention_test.sql','operational_alerts_stay_truthful_test.sql','ecommerce_health_test.sql','order_trace_test.sql','verified_business_delivery_needs_coverage_test.sql','catalog_stock_authority_test.sql','catalog_change_rollback_test.sql','server_side_pricing_test.sql','checkout_order_invariants_test.sql','payment_request_traces_purge_test.sql','idempotent_retries_test.sql','payment_queue_and_receipts_test.sql','payment_refund_and_reversal_chain_test.sql','order_cancellation_panel_and_tracking_test.sql','complete_delivery_without_code_test.sql','operational_alert_coverage_test.sql','order_cancel_follows_permission_catalog_test.sql','authorization_refusals_answer_42501_test.sql','authorization_matrix_test.sql','provider_probe_empty_is_not_proof_test.sql','preference_uncertain_lock_order_test.sql','rider_offer_reject_withdraw_lock_order_test.sql','checkout_payload_survives_tracking_recovery_test.sql','http_error_contract_test.sql','unverified_checkout_never_closes_by_time_test.sql','operation_center_counts_provider_notification_jobs_test.sql',
+      // Archivos pgTAP que existían y no corría ningún gate (TOOL-11): aislamiento de back-office y de perfiles de cliente,
+      // taxonomía, aprobación de registro, imagen opcional, la lectura del cliente que no invalida la oferta y el reparto
+      // multi-pedido (antes sólo en scripts/run-rider-multi-order-db.mjs, fuera de CI).
+      'back_office_role_isolation_test.sql','customer_profile_isolation_test.sql','gondola_beverage_taxonomy_test.sql',
+      'registration_approval_test.sql','optional_product_assets_test.sql','customer_read_keeps_rider_offer_test.sql',
+      'rider_multi_order_capacity_test.sql','rider_multi_order_offer_test.sql','rider_multi_order_security_test.sql',
+      'rider_multi_order_isolation_test.sql',
+      // Lo que las suites viejas del núcleo de pedidos (*.local.sql, API de pagos v1 retirada) probaban y nada probaba
+      // hoy (TOOL-04), y el barrido de alertas que no saltea un negocio cerrado con cobros en movimiento (20261003092000).
+      'order_core_gaps_test.sql','alerts_sweep_watches_closed_business_test.sql',
+      // El punto exacto del cliente sólo para el repartidor que tomó la entrega (lo afirmaba
+      // delivery_location_confirmation.local.sql, que no corría en ningún gate).
+      'rider_sees_customer_point_only_after_claim_test.sql',
+      // Un ciclo limpio (Mercado Pago con retiro y efectivo con envío) no deja ninguna alerta abierta (lo afirmaba
+      // order_end_to_end_chain.local.sql).
+      'clean_cycle_leaves_no_alerts_test.sql'];
     for(const name of canonicalTests){
       const output=docker(['exec','-i',container,'psql','-h','/tmp','-U','postgres','-d','postgres','-X','-qAt','-v','ON_ERROR_STOP=1'],
         Buffer.from('set search_path=public,extensions;\n'+fs.readFileSync(path.join(ROOT,'supabase/tests',name),'utf8'))).toString();
       assert.doesNotMatch(output,/^not ok\b/m,name);assert.match(output,/^1\.\.[0-9]+$/m,name);
       assertions+=Number(/^1\.\.([0-9]+)$/m.exec(output)[1]);
     }
-    assert.equal(assertions,924);
-    console.log('CANONICAL_PGTAP: 268 + 44 least-privilege + 50 reparto-propio + 37 ventana QA/columnas privadas/pausa + 9 Mercado Pago sólo con vendedor conectado + 5 aislamiento cobro manual/Mercado Pago + 9 alerta de vendedor que no puede cobrar + 16 interruptor de operador por negocio + 104 impresión del mostrador + 19 pipeline de imágenes + 84 preparar la apertura + 24 primera publicación de un borrador de CP + 12 invariantes a prueba de NULL + 55 contrato del core fiscal + 24 upgrade fiscal + 14 RG 5616 + 54 pedidos online V2 + 21 recuperación ante desastre fiscal + 7 frontera de secretos fiscales + 2 reembolso no es nota de crédito + 12 traspaso de dueño + 54 Caja Clara como terminal del local assertions PASS');
+    assert.equal(assertions,6501);
+    console.log('CANONICAL_PGTAP: 268 + 44 least-privilege + 50 reparto-propio + 37 ventana QA/columnas privadas/pausa + 9 Mercado Pago sólo con vendedor conectado + 5 aislamiento cobro manual/Mercado Pago + 9 alerta de vendedor que no puede cobrar + 16 interruptor de operador por negocio + 104 impresión del mostrador + 19 pipeline de imágenes + 84 preparar la apertura + 24 primera publicación de un borrador de CP + 12 invariantes a prueba de NULL + 55 contrato del core fiscal + 24 upgrade fiscal + 14 RG 5616 + 54 pedidos online V2 + 21 recuperación ante desastre fiscal + 7 frontera de secretos fiscales + 2 reembolso no es nota de crédito + 12 traspaso de dueño + 54 Caja Clara como terminal del local + 12 baja de cliente con pedido delivery + 62 guardián de admisión de pedidos + 35 cancelar devuelve stock y vuelve a ofrecer + 21 cancelar dos veces no escribe dos motivos + 62 vencimiento de pedidos sin atender + 40 cancelación por el cliente + 15 código público más allá de LT-9999 + 23 reintento de retiro sin efectos + 3 reasignación sin auditoría fuera del alcance del cliente + 146 snapshot y finalización de Mercado Pago + 91 checkout en revisión manual: stock exacto y el dinero que devuelve el proveedor + 95 reembolso trabado y reembolso de un cobro en revisión + 38 cancelaciones de pago terminales + 67 cierre de sesión e invitaciones + 34 combos con la visibilidad del catálogo + 48 auditoría de escrituras directas sobre el comercio + 50 importe y renglones del pedido inmutables + 838 matriz RLS del e-commerce + 202 motor de horarios y estado de servicio + 106 reglas de delivery y exigencias que no se apagan + 87 la verificación exige reglas cargadas + 28 inventario del planificador e historial acotado + 38 alertas operativas que dicen la verdad + 32 salud del e-commerce + 76 traza del pedido sin datos personales + 27 delivery de un comercio verificado sólo con cobertura + 252 una sola autoridad de stock, rastro y reversión de cambios de catálogo + 230 precio, total, descuento, envío y stock decididos por el servidor en las dos puertas + 377 lo que no puede pasar en un checkout ni en un pedido + 41 poda del rastro de pagos y cupo de webhooks rechazados + 10 SKU congelado en el renglón del pedido + 96 el mismo comando dos veces en serie: código equivocado del comercio, aceptar una oferta y la libreta de direcciones + 210 recibo de avisos y cola de pagos ejecutados + 202 pedido cobrado: reembolso, reversión y lo que ve el Panel + 46 cada puerta de cancelación vista desde el Panel y el seguimiento + 162 cierre de entrega sin código por la gerencia + 101 cobertura de alertas: tareas, avisos, devoluciones y cobros para revisar + 61 cancelar sigue el catálogo de permisos + 48 negativas de permiso con 42501 + 796 matriz de autorización + 34 un vacío del proveedor no prueba que el comprador no pagó + 12 la marca de envío dudoso toma el cobro antes que el intento + 9 rechazar o retirar una oferta toma el pedido antes que la oferta + 10 la pantalla del pago sigue respondiendo después de recuperar el seguimiento + 42 contrato HTTP: una negativa de negocio y un «no existe» no contestan 500 + 120 un checkout que nadie verificó, o con un pago que el proveedor no resolvió, no se cierra por tiempo + 9 el centro de operación cuenta los avisos que la cola abandonó + 28 aislamiento de back-office + 47 aislamiento de perfiles de cliente + 20 taxonomía de bebidas + 98 aprobación de registro + 14 la imagen es opcional y los derechos siguen firmes + 16 la lectura del cliente no invalida la oferta del repartidor + 124 reparto multi-pedido: capacidad, ofertas, seguridad y aislamiento + 41 lo que las suites viejas del núcleo de pedidos probaban + 9 el barrido de alertas no saltea un negocio cerrado con cobros recientes + 18 el repartidor ve el punto exacto del cliente sólo después de tomar la entrega + 18 un ciclo limpio no deja ninguna alerta abierta y el Panel ve el pedido de Checkout Pro assertions PASS');
 
     // pgTAP no puede probar dos agentes reclamando a la vez: una conexión por llamada.
     const { runPrintClaimRace } = await import('./print-agent/claim-race.mjs');
@@ -223,6 +243,18 @@ try {
     // Lo mismo para un pedido online: 10/50/100 pedidos por canal, un comprobante, ninguna venta POS.
     const { runOrderIntentRace } = await import('./fiscal-core/order-intent-race.mjs');
     await runOrderIntentRace(() => localClient(container));
+    // Ni puede probar veinte pedidos a la vez: el tope por cliente y por origen tiene que ser exacto bajo concurrencia.
+    const { runOrderIntakeRace } = await import('./order-intake/intake-race.mjs');
+    await runOrderIntakeRace(() => localClient(container));
+    // Ni cincuenta compradores por las mismas unidades: sin sobreventa ni stock negativo, por las dos puertas,
+    // con barridos, cancelaciones y avisos de pago repetidos corriendo a la vez.
+    const { runStockRace } = await import('./order-intake/stock-race.mjs');
+    await runStockRace(() => localClient(container));
+    // Ni que el MISMO comando llegue dos veces a la vez: checkout, preferencia, webhook y su cola, transiciones,
+    // cobro manual, entrega, oferta al repartidor, reembolso, cancelación de pago, rearmado contra reembolso,
+    // perfil y libreta de direcciones.
+    const { runIdempotencyRace } = await import('./order-intake/idempotency-race.mjs');
+    await runIdempotencyRace(() => localClient(container));
 
     // Drill the exact compensating rollback in the same isolated schema where
     // the forward migration and its pgTAP contract just passed. The first run

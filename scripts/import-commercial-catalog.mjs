@@ -744,7 +744,13 @@ export async function applyCommercialImport(client, plan, businessId) {
       + `se esperaban ${altas.length} y ${rows.length}.`,
     );
   }
-  return { applied: creadas + actualizadas, created: creadas, updated: actualizadas, rows: applied.rows || [] };
+  return {
+    applied: creadas + actualizadas, created: creadas, updated: actualizadas, rows: applied.rows || [],
+    // El lote con el que la base registró este cambio: es lo que se le pasa a
+    // `rollback-commercial-catalog.mjs` para deshacerlo. Una base anterior al
+    // rastro de cambios no lo devuelve.
+    ...(typeof applied.batch_id === 'string' && applied.batch_id ? { batchId: applied.batch_id } : {}),
+  };
 }
 
 export const CATALOGOS = Object.freeze(['repo', 'produccion', 'cp']);
@@ -955,6 +961,10 @@ async function main(args) {
     const result = await applyCommercialImport(client, plan, businessId);
     console.log(`Aplicado: ${result.created} alta(s) y ${result.updated} modificación(es).`);
     console.log('El resto del catálogo quedó intacto: sólo viajaron los SKU de la planilla.');
+    if (result.batchId) {
+      console.log(`Lote: ${result.batchId}`);
+      console.log(`Para ver o deshacer este lote: node scripts/rollback-commercial-catalog.mjs ${result.batchId}`);
+    }
   } catch (error) {
     console.error(`ERROR ${error.message}`);
     process.exitCode = 1;

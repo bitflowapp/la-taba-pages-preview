@@ -397,6 +397,59 @@ async function json(route, body) {
   await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
 }
 
+/*
+ * El link de Caja Clara («Vincular Mercado Pago»): una pestaña nueva, sin nada
+ * guardado de antes, tiene que caer directo en Panel → Mercado Pago, sin que el
+ * dueño busque «Pagos». El link sólo elige la pantalla: se borra de la barra y
+ * el estado sale del servidor.
+ */
+test('el link de Caja Clara abre el Panel directo en Mercado Pago y sigue el OAuth existente', async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await installRuntime(page, staffSession('owner'));
+  let status = 'disconnected';
+  const actions = [];
+  await page.route(SUPABASE_URL + '/functions/v1/mercadopago-connect', async (route) => {
+    const body = route.request().postDataJSON();
+    expect(body.business_id).toBe(BUSINESS_ID);
+    actions.push(body.action);
+    if (body.action === 'connect') return json(route, { ok: true, authorization_url: 'https://auth.mercadopago.com.ar/authorization?client_id=123&state=fixture' });
+    return json(route, { ok: true, connection: { status, seller_id: status === 'connected' ? '123456' : null } });
+  });
+  await page.route('https://auth.mercadopago.com.ar/authorization?**', (route) => route.fulfill({ contentType: 'text/html', body: '<h1>Autorización simulada</h1>' }));
+
+  await page.goto('/?panel=mercadopago#business', { waitUntil: 'domcontentloaded' });
+  const workspace = page.locator('[data-production-workspace="business"]');
+  await expect(workspace).toBeVisible({ timeout: 30000 });
+  const panel = page.locator('[data-business-ops-center="payments-setup"]');
+  await expect(panel).toBeVisible();
+  await expect(panel.locator('[data-mp-seller-state]')).toHaveAttribute('data-mp-seller-state', 'disconnected');
+  await expect(panel.getByRole('heading', { name: 'Mercado Pago' }).first()).toBeVisible();
+  await expect(panel).toContainText('No conectado');
+  await expect(panel.getByRole('button', { name: 'Conectar Mercado Pago', exact: true })).toBeVisible();
+  await expect(panel.locator('input')).toHaveCount(0);
+  // El link no queda en la barra: recargar no lo repite y nada sensible viaja en él.
+  await expect(page).toHaveURL(/\/#business$/);
+  expect(page.url()).not.toContain('panel=');
+
+  // El mismo botón de siempre: mercadopago-connect → Mercado Pago.
+  await panel.getByRole('button', { name: 'Conectar Mercado Pago', exact: true }).click();
+  await expect(page).toHaveURL(/auth\.mercadopago\.com/, { timeout: 30000 });
+  expect(actions).toContain('connect');
+
+  // El callback de La Taba vuelve al Panel. La URL no decide: el servidor dice «connected».
+  status = 'connected';
+  await page.goto('/?mp_connection=connected#business', { waitUntil: 'domcontentloaded' });
+  await expect(workspace).toBeVisible({ timeout: 30000 });
+  await expect(panel).toBeVisible();
+  await expect(panel.locator('[data-mp-seller-state]')).toHaveAttribute('data-mp-seller-state', 'blocked');
+  // Vinculada no es cobrar: sin la habilitación de la plataforma, «Bloqueado».
+  await expect(panel).toContainText('Bloqueado');
+  await expect(panel).toContainText('la plataforma todavía no habilitó el cobro online');
+  await expect(panel).not.toContainText('123456');
+  await expect(panel.getByRole('button', { name: 'Verificar conexión' })).toBeVisible();
+});
+
 for (const width of [320, 1280]) {
   test('Mercado Pago OAuth: autorización simple y desconexión confirmada a ' + width, async ({ page }) => {
     // Two complete navigations each have a 30-second startup budget.

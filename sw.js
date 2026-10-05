@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v132-catalog-cards';
+const CACHE_NAME = 'la-taba-runtime-v133-mp-deeplink';
 const ASSETS = [
   './',
   './index.html',

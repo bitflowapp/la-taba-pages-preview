@@ -1,13 +1,9 @@
 /*
  * CAMPAÑAS DE QA PARA EL NAVEGADOR DE PRUEBA.
  *
- * En el repositorio todas las campañas están apagadas, y así tienen que seguir:
- * no existe una bandera de URL ni un gancho global que las encienda en la
- * tienda. Para probar el motor contra la tienda real, la prueba le sirve al
- * navegador OTRO archivo de configuración: las mismas campañas del repositorio,
- * marcadas como aprobadas sólo dentro de esta página.
- *
- * Nada de esto viaja al paquete publicado: es una ruta de Playwright.
+ * Las campañas publicadas están aprobadas. Este fixture permite a Playwright
+ * limitar el conjunto —o dejarlo vacío— sin agregar una bandera de producción
+ * ni cambiar el paquete real. Es una ruta exclusivamente de prueba.
  */
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';

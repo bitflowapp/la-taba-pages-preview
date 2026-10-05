@@ -55,22 +55,21 @@ const wideCatalog = { categoryId: 'all', searching: false, filtered: false, list
 
 // ─── 1 · Las llaves ───────────────────────────────────────────────────────────
 
-test('todas las campañas del repositorio nacen apagadas y sin aprobar', () => {
-  assert.ok(CAMPAIGNS.length >= 4, 'faltan campañas candidatas');
+test('las campañas aprobadas del repositorio salen encendidas y siguen cumpliendo el contrato editorial', () => {
+  assert.ok(CAMPAIGNS.length >= 4, 'faltan campañas');
   for (const campaign of CAMPAIGNS) {
-    assert.equal(campaign.enabled, false, `${campaign.id} está encendida en el repositorio`);
-    assert.equal(campaign.approval.status, 'PENDIENTE', `${campaign.id} figura aprobada en el repositorio`);
-    assert.deepEqual(
-      campaignProblems(normalizeCampaign(campaign)).filter((problem) => !['disabled', 'not-approved'].includes(problem)),
-      [],
-      `${campaign.id} tiene un defecto además de estar apagada`,
-    );
+    assert.equal(campaign.enabled, true, `${campaign.id} quedó apagada`);
+    assert.equal(campaign.approval.status, 'APROBADA', `${campaign.id} no figura aprobada`);
+    assert.match(campaign.approval.reference, /Marco.*2026-10-05/, `${campaign.id} no conserva la aprobación comercial`);
+    assert.deepEqual(campaignProblems(normalizeCampaign(campaign)), [], `${campaign.id} no cumple el contrato editorial`);
   }
 });
 
-test('con la configuración del repositorio no se muestra ninguna pieza, aunque todo se pueda vender', () => {
+test('con la configuración publicada aparecen las campañas de productos reales', () => {
   const selected = selectCampaigns({ campaigns: CAMPAIGNS, products: catalog, isOrderable: everythingSells, catalog: wideCatalog });
-  assert.deepEqual(selected, { 'home-hero': null, 'home-inline': null, 'catalog-inline': null });
+  assert.equal(selected['home-hero']?.campaign.id, 'heineken-beer-pour');
+  assert.equal(selected['home-inline']?.campaign.id, 'red-bull-cold-can');
+  assert.ok(selected['catalog-inline'], 'la grilla no recibió ninguna campaña aprobada');
 });
 
 test('una sola llave no alcanza: encendida sin aprobar, o aprobada sin encender', () => {

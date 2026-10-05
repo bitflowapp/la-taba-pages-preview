@@ -69,7 +69,7 @@ reset role;
 
 select is((select count(*)::int from anon_row), 1, 'anon ve la fila publicada por sus columnas públicas');
 select ok(not ((select doc from anon_row) ? 'unit_cost') and not ((select doc from anon_row) ? 'verified_by')
-  and (select doc->>'price' from anon_row) = '100', 'lo que recibe anon no trae ni unit_cost ni verified_by, y trae el precio');
+  and (select (doc->>'price')::numeric from anon_row) = 100, 'lo que recibe anon no trae ni unit_cost ni verified_by, y trae el precio');
 
 set local role authenticated;
 select throws_ok($$select unit_cost from public.products where id = 'c9100000-0000-4000-8000-0000000000d1'$$,

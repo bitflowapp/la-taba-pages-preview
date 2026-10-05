@@ -154,6 +154,9 @@ function main() {
   const manifest = path.join(ROOT, MANIFEST_NAME);
   const { identidad, fallas } = calcularIdentidad(ROOT);
 
+  // Temporal para certificar la activación comercial en CI; se retira al firmar.
+  if (!escribir) console.log(`IDENTIDAD_ACTUAL ${JSON.stringify(identidad)}`);
+
   if (escribir) {
     fs.writeFileSync(manifest, `${JSON.stringify(identidad, null, 2)}\n`, 'utf8');
     console.log('Identidad de release firmada:');

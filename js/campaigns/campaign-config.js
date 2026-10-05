@@ -6,14 +6,9 @@
  * declara precio, porcentaje ni oferta. El dinero tiene su propio contrato
  * validado (`core/promotions.js`) y su propio camino a pantalla.
  *
- * TODAS NACEN APAGADAS. Las de abajo son CANDIDATAS: están escritas para que el
- * motor y las cuatro escenas se puedan probar en QA, y esperan la aprobación
- * comercial del local. Para que una se vea hacen falta LAS DOS cosas:
- *
- *     enabled: true
- *     approval: { status: 'APROBADA', reference: '<quién y cuándo>' }
- *
- * y aun así el motor (`campaign-engine.js`) la descarta si el producto no está
+ * Las cuatro campañas de abajo están APROBADAS para producción por Marco
+ * (2026-10-05). Siguen siendo editoriales: la configuración no escribe dinero y
+ * marca/precio/foto se resuelven desde el producto vivo. El motor (`campaign-engine.js`) la descarta si el producto no está
  * en el catálogo, no se puede comprar ahora, está fuera de vigencia o su texto
  * afirma un precio. Encender una sola de las dos banderas no muestra nada.
  *
@@ -39,8 +34,8 @@
  */
 const candidate = (campaign) => Object.freeze({
   type: 'editorial',
-  enabled: false,
-  approval: Object.freeze({ status: 'PENDIENTE', reference: '' }),
+  enabled: true,
+  approval: Object.freeze({ status: 'APROBADA', reference: 'Marco · producción · 2026-10-05' }),
   validFrom: '',
   validUntil: '',
   ...campaign,

@@ -154,7 +154,7 @@ function main() {
   const manifest = path.join(ROOT, MANIFEST_NAME);
   const { identidad, fallas } = calcularIdentidad(ROOT);
 
-  // Temporal para certificar la activación comercial en CI; se retira al firmar.
+  // Temporal para certificar la activación comercial en CI; se retira al firmar (activación 2026-10-05).
   if (!escribir) console.log(`IDENTIDAD_ACTUAL ${JSON.stringify(identidad)}`);
 
   if (escribir) {

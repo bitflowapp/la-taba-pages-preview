@@ -3,8 +3,8 @@
  *
  * La tienda corre en modo producción con las 46 fichas reales servidas por un
  * backend en memoria (`catalog-runtime-fixture.mjs`). Las campañas del
- * repositorio están apagadas; `useQaCampaigns` le sirve a ESTA página las
- * mismas campañas marcadas como aprobadas.
+ * repositorio están aprobadas para producción; `useQaCampaigns` permite
+ * acotar o apagar campañas sólo dentro de una página de prueba.
  *
  * Lo que se comprueba es lo que una hoja de estilos no puede afirmar sola: que
  * la pieza no mueve el primer precio, que no toca el carrito, que se pausa
@@ -72,20 +72,20 @@ const fold = (page) => page.evaluate(() => {
   };
 });
 
-test('con la configuración del repositorio no hay ninguna pieza: la tienda es la de siempre', async ({ page }) => {
+test('la configuración publicada muestra las campañas aprobadas con producto vivo', async ({ page }) => {
   await openRuntimeCatalog(page);
-  await expect(page.locator('[data-campaign]')).toHaveCount(0);
   await goHome(page);
-  await expect(page.locator('[data-campaign]')).toHaveCount(0);
-  await expect(page.locator(`${HERO} .home-hero-promo`)).toBeVisible();
-  await expect(page.locator(INLINE)).toBeHidden();
+  await expect(page.locator(`${HERO} [data-campaign="heineken-beer-pour"]`)).toBeVisible();
+  await expect(page.locator(`${INLINE} [data-campaign="red-bull-cold-can"]`)).toHaveCount(1);
   const diagnostics = await page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics());
-  expect(diagnostics).toMatchObject({ active: true, campaigns: 0, running: 0, plays: 0 });
+  expect(diagnostics.active).toBe(true);
+  expect(diagnostics.campaigns).toBeGreaterThanOrEqual(2);
 });
 
 test('la campaña ocupa la banda de apertura sin mover el primer precio ni desbordar', async ({ page, browser }) => {
   // Línea de base: la puerta editorial, en otra página, con los mismos datos.
   const baseline = await browser.newPage({ viewport: { width: 360, height: 800 } });
+  await useQaCampaigns(baseline, { only: [] });
   await openRuntimeCatalog(baseline);
   await goHome(baseline);
   const editorial = await fold(baseline);

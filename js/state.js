@@ -893,12 +893,24 @@ export function subscribe(listener) {
   return () => listeners.delete(listener);
 }
 
+/*
+ * Un formateador por moneda, no uno por precio.
+ *
+ * `new Intl.NumberFormat` es de las construcciones más caras de la plataforma y
+ * esto se llama una vez por precio en pantalla: cada render armaba cientos. En
+ * el perfil del buscador —una tecla, un render— era el tercer costo de toda la
+ * pulsación. El resultado es idéntico; lo único que cambia es que se reutiliza.
+ */
+const moneyFormatters = new Map();
+
 export function money(value) {
-  return new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: getBusinessConfig().currency,
-    maximumFractionDigits: 0,
-  }).format(Number(value || 0));
+  const currency = getBusinessConfig().currency;
+  let formatter = moneyFormatters.get(currency);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat('es-AR', { style: 'currency', currency, maximumFractionDigits: 0 });
+    moneyFormatters.set(currency, formatter);
+  }
+  return formatter.format(Number(value || 0));
 }
 
 export function dateTime(value) {

@@ -50,7 +50,7 @@ function readJson(file) {
  */
 function declaredRights(root) {
   const declared = new Map();
-  for (const file of ['catalog/image-manifest.json', 'docs/catalog/image-manifest.json']) {
+  for (const file of ['catalog/image-manifest.json', 'docs/catalog/image-manifest.json', 'catalog/campaign-product-assets.json']) {
     const manifest = readJson(path.join(root, file));
     for (const source of manifest?.sources || []) {
       const rights = source.rights_status || source.rightsStatus || 'sin declarar';

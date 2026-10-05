@@ -45,8 +45,15 @@ test('manifest: alcance y arranque son RELATIVOS', () => {
   // otro: la app instalada se saldría de su propio scope en la primera
   // navegación. `check-static-assets.mjs` cubre lo mismo para los iconos.
   assert.equal(manifest.scope, './');
-  assert.equal(manifest.start_url, './index.html');
-  assert.equal(manifest.id, undefined, 'sin `id`: el implícito es start_url y así no se pierde la identidad de quien ya la instaló');
+  // `/index.html` es una redirección (308 a `/`) y una app instalada NO puede
+  // arrancar en una URL que redirige bajo el worker: ver
+  // `service-worker-navigation-redirect.test.mjs`. El arranque es la raíz.
+  assert.equal(manifest.start_url, './');
+  // La identidad de quien ya instaló la app era el `start_url` implícito
+  // (`/index.html`). Al mover el arranque a `./` esa identidad se fija con un
+  // `id` explícito: sin él, Chrome vería otra aplicación y no actualizaría la
+  // instalada, que se quedaría con el arranque roto.
+  assert.equal(manifest.id, './index.html');
 });
 
 test('manifest: fondo rojo TABA y tema igual al del documento', () => {

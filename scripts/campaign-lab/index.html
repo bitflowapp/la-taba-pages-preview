@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Laboratorio de campañas · La Taba (QA)</title>
+    <!--
+      LABORATORIO DE CAMPAÑAS — sólo QA y desarrollo.
+
+      Vive en `scripts/`, que no entra a ningún paquete publicado. Sirve para
+      mirar las cuatro escenas en cada tamaño sin encender una campaña en la
+      tienda. Usa el MISMO motor y la MISMA hoja que la tienda; lo único propio
+      es este marco y los datos de demostración, que no son precios ni ofertas.
+
+      Abrir con el servidor local del repo:
+        node scripts/realtime-relay.mjs 8080  →  /scripts/campaign-lab/
+
+      Parámetros (para capturas reproducibles):
+        ?only=beer_pour       una sola escena
+        &vessel=bottle        can | bottle
+        &placement=home-hero  home-hero | home-inline | catalog-inline
+        &w=358                ancho del marco en px
+        &t=2.4                congelar la escena en ese segundo
+        &static=1             no encender la animación (el cuadro de respaldo)
+        &zoom=2               agrandar la pieza sin cambiar el ancho de la ventana
+    -->
+    <link rel="stylesheet" href="../../styles/tokens.css" />
+    <link rel="stylesheet" href="../../styles/campaigns.css" />
+    <style>
+      html { background: #0b0d10; color: #f5f5f5; font-family: var(--font-sans, system-ui, sans-serif); }
+      body { margin: 0; padding: 20px 16px 60px; }
+      h1 { margin: 0 0 4px; font-size: 20px; }
+      .lab-note { max-width: 70ch; margin: 0 0 18px; color: #a8abb2; font-size: 13px; line-height: 1.45; }
+      .lab-bar { position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; gap: 8px; margin: 0 -16px 18px; padding: 10px 16px; background: rgb(11 13 16 / 92%); }
+      .lab-bar button { min-height: 40px; padding: 0 14px; border: 1px solid rgb(255 255 255 / 22%); border-radius: 999px; background: #1d222a; color: inherit; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+      .lab-bar output { align-self: center; color: #a8abb2; font-size: 12px; }
+      .lab-grid { display: flex; flex-wrap: wrap; gap: 28px 22px; align-items: flex-start; }
+      .lab-cell { display: grid; gap: 6px; }
+      .lab-cell > small { color: #a8abb2; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; }
+      .lab-frame { box-sizing: border-box; }
+      body.lab-single { padding: 0; }
+      body.lab-single .lab-bar, body.lab-single h1, body.lab-single .lab-note, body.lab-single .lab-cell > small { display: none; }
+      body.lab-single .lab-grid { gap: 0; }
+    </style>
+  </head>
+  <body>
+    <h1>Laboratorio de campañas</h1>
+    <p class="lab-note">Demostración de QA. Las campañas de la tienda están apagadas hasta que el local las apruebe; acá se ven con el mismo motor y la misma hoja de estilos. Los textos son de prueba: no hay precios ni ofertas.</p>
+    <div class="lab-bar">
+      <button type="button" data-lab-replay>Repetir</button>
+      <button type="button" data-lab-pause>Pausar / seguir</button>
+      <button type="button" data-lab-static>Ver cuadro de respaldo</button>
+      <output data-lab-status></output>
+    </div>
+    <div class="lab-grid" data-lab-grid></div>
+    <script type="module" src="./lab.js"></script>
+  </body>
+</html>

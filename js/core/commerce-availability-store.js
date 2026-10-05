@@ -51,6 +51,38 @@ const EMPTY = Object.freeze({
 
 let current = EMPTY;
 
+/*
+ * QUIÉN SE ENTERA CUANDO LA RESPUESTA CAMBIA
+ *
+ * El repositorio vuelve a preguntar en cada reconciliación —al volver a la
+ * pestaña, al reconectar— y escribía la respuesta acá sin que nadie la
+ * dibujara: la tienda seguía diciendo «Estamos tomando pedidos» con el local ya
+ * cerrado hasta que otra cosa provocara un render. Quien dibuja se suscribe y
+ * se entera sólo cuando la respuesta es otra, no en cada consulta.
+ */
+const listeners = new Set();
+
+function publish(next) {
+  const changed = JSON.stringify(next) !== JSON.stringify(current);
+  current = next;
+  if (!changed) return current;
+  for (const listener of [...listeners]) {
+    try {
+      listener(current);
+    } catch (_) {
+      // Un oyente roto no puede impedir que el resto se entere.
+    }
+  }
+  return current;
+}
+
+/** Avisa cuando la respuesta del backend cambia. Devuelve la función que desuscribe. */
+export function subscribeCommerceAvailability(listener) {
+  if (typeof listener !== 'function') return () => {};
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
 function text(value, maxLength = 200) {
   if (typeof value !== 'string') return '';
   // Los caracteres de control no llegan a una pantalla. Se escriben con
@@ -111,11 +143,8 @@ function normalizeDelivery(value) {
 }
 
 export function setCommerceAvailability(payload) {
-  if (!payload || typeof payload !== 'object') {
-    current = EMPTY;
-    return current;
-  }
-  current = Object.freeze({
+  if (!payload || typeof payload !== 'object') return publish(EMPTY);
+  return publish(Object.freeze({
     known: true,
     businessId: text(payload.business_id ?? payload.businessId, 64),
     channel: (payload.channel === 'pickup') ? 'pickup' : 'delivery',
@@ -128,13 +157,11 @@ export function setCommerceAvailability(payload) {
     hours: normalizeHours(payload.hours),
     areas: normalizeAreas(payload.areas),
     delivery: normalizeDelivery(payload.delivery),
-  });
-  return current;
+  }));
 }
 
 export function clearCommerceAvailability() {
-  current = EMPTY;
-  return current;
+  return publish(EMPTY);
 }
 
 export function getCommerceAvailability() {

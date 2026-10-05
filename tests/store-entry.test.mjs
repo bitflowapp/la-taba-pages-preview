@@ -82,6 +82,26 @@ test('el error de arranque ofrece reintentar; cargar no', () => {
   assert.equal(describeStoreEntry({ mode: 'unavailable' }).retry, true);
 });
 
+test('un catálogo que tarda demasiado lo dice y ofrece reintentar, sin llamarlo error', () => {
+  for (const catalogState of ['idle', 'loading']) {
+    const lento = describeStoreEntry({ mode: 'production', catalogState, slow: true });
+    assert.equal(lento.kind, STORE_ENTRY_KIND.LOADING, 'sigue cargando: puede llegar todavía');
+    assert.equal(lento.retry, true);
+    assert.match(lento.title, /tardando más de lo normal/i);
+    assert.doesNotMatch(`${lento.title} ${lento.message}`, /no pudimos|error|timeout|\d{3}/i);
+    assert.equal(lento.tracking, true, 'un pedido en curso se sigue pudiendo seguir');
+  }
+});
+
+test('«lento» sólo describe la espera: no pisa un resultado que ya llegó', () => {
+  const error = describeStoreEntry({ mode: 'production', catalogState: 'error', slow: true });
+  assert.equal(error.kind, STORE_ENTRY_KIND.ERROR);
+  assert.equal(error.title, describeStoreEntry({ mode: 'production', catalogState: 'error' }).title);
+  const vacio = describeStoreEntry({ mode: 'production', catalogState: 'empty', orderingVerified: true, slow: true, now: NOW });
+  assert.equal(vacio.kind, STORE_ENTRY_KIND.CATALOG_EMPTY);
+  assert.equal(describeStoreEntry({ mode: 'public', slow: true }).kind, STORE_ENTRY_KIND.UNCONFIGURED);
+});
+
 test('sin backend configurado no se ofrece seguir un pedido que no puede existir', () => {
   assert.equal(describeStoreEntry({ mode: 'public' }).tracking, false);
   assert.equal(describeStoreEntry({ mode: 'unavailable' }).tracking, false);

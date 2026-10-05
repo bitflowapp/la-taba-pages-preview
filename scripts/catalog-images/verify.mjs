@@ -107,6 +107,32 @@ for (const source of manifestSources) {
   }
 }
 
+// QA copies have their own authority and cannot become catalog associations.
+// Verify exact approved bytes and provenance before allowing them in assets/.
+const campaignCopies = JSON.parse(await fs.readFile(path.join(ROOT,'catalog/campaign-product-assets.json'),'utf8')
+  .catch(() => '{"sources":[]}'));
+for (const source of campaignCopies.sources || []) {
+  const proof = campaignCopies.authorizationEvidence?.assets?.find(asset => asset.sku === source.sku);
+  if (!proof || source.rightsStatus !== proof.rights_status_db || source.rightsStatus !== 'LICENCIA_COMERCIAL'
+    || source.rightsReference !== proof.authorization_ref || source.sourceUrl !== proof.source_url
+    || source.sourceSha256 !== proof.sha256.uploaded_source) errors.push(`${source.sku}: copia de campaña sin autorización exacta.`);
+  for (const [kind,size] of [['master',1000],['thumbnail',400]]) {
+    const asset = source.assets?.[kind];
+    if (!asset || !isSafeProductAssetPath(asset.path) || !asset.path.startsWith('assets/products/campaign-')) {
+      errors.push(`${source.sku}: ruta insegura de copia de campaña.`); continue;
+    }
+    if (expectedFiles.has(asset.path)) errors.push(`${asset.path}: referencia duplicada.`);
+    expectedFiles.add(asset.path);
+    const bytes = await fs.readFile(path.join(ROOT,asset.path)).catch(() => null);
+    if (!bytes || sha256(bytes) !== asset.sha256 || asset.sha256 !== proof?.sha256?.[kind]) {
+      errors.push(`${asset.path}: copia distinta de la imagen aprobada.`); continue;
+    }
+    const metadata = await sharp(bytes).metadata();
+    if (metadata.format !== 'webp' || metadata.width !== size || metadata.height !== size
+      || asset.width !== size || asset.height !== size) errors.push(`${asset.path}: dimensiones inválidas.`);
+  }
+}
+
 const files = (await Promise.all(DIRS.map(async (directory) => {
   const relativeDirectory = path.relative(ROOT, directory).replaceAll('\\', '/');
   return (await fs.readdir(directory).catch(() => []))

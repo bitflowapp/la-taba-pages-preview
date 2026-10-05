@@ -248,8 +248,14 @@ body[data-active-view="home"] .topbar-address .address-chip-text small {
   min-width: 0;
 }
 
+/* `order: 1` es lo que hace cierta la frase de arriba. En el HTML el rubro está
+   ENTRE el nombre y el estado, y como ocupa el renglón entero partía la fila en
+   tres: nombre / rubro / estado. Medido a 390 × 844, el estado quedaba solo en
+   un tercer renglón de 26 px, que son los que le faltan al primer «Agregar»
+   para despegarse del pliegue. El orden de lectura no cambia. */
 .brand-hero-place {
   flex: 1 0 100%;
+  order: 1;
 }
 
 /* Fila 2 — HISTORIAS. Emblema + un círculo por historia, en fila. Se desplaza
@@ -1024,6 +1030,71 @@ body[data-active-view="home"] .home-best-copy small {
   line-height: 1.3;
 }
 
+/* NOMBRE LARGO: los mismos dos renglones, y la presentación no se pierde.
+   El bloque mide EXACTAMENTE lo que miden el nombre a una línea (18 px) más la
+   presentación (15,6 px): 33,6 px. Así una tarjeta con nombre largo tiene el
+   mismo alto que su vecina y el primer «Agregar» no se mueve del pliegue.
+
+   En el marcado la presentación va antes que el nombre —un flotante sólo le
+   reserva lugar al texto que viene después—, así que fuera del teléfono el
+   orden visible se repone con `order`: nombre arriba, presentación abajo. */
+body[data-active-view="home"] .home-best-copy .home-best-name {
+  display: grid;
+  margin: 0;
+}
+
+body[data-active-view="home"] .home-best-copy .home-best-name small {
+  order: 1;
+}
+
+/* Sólo en el ancho de teléfono, que es donde el nombre no entra. Más arriba la
+   tarjeta es ancha, el nombre cabe en su renglón y el bloque se comporta como
+   el de cualquier otra tarjeta.
+
+   La presentación queda fija al final del segundo renglón y el nombre la
+   envuelve: usa el primer renglón entero y lo que sobra del segundo. Si no
+   entra, lo que queda afuera es el final del NOMBRE, nunca la presentación, y
+   eso vale con cualquier tipografía de sistema: no hay un ancho supuesto. */
+@media (max-width: 479px) {
+  body[data-active-view="home"] .home-best-copy .home-best-name {
+    display: block;
+    height: 33.6px;
+    overflow: hidden;
+    line-height: 16.8px;
+  }
+
+  /* Un flotante sin ancho y de un renglón de alto: empuja a la presentación al
+     segundo renglón sin quitarle un píxel al primero. */
+  body[data-active-view="home"] .home-best-copy .home-best-name::before {
+    content: "";
+    float: right;
+    width: 0;
+    height: 16.8px;
+  }
+
+  body[data-active-view="home"] .home-best-copy .home-best-name small {
+    float: right;
+    clear: right;
+    max-width: 100%;
+    /* Lo que mide un espacio: es la separación con la última palabra del nombre. */
+    padding-left: 4px;
+    overflow: hidden;
+    line-height: inherit;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* `overflow-wrap: normal`: al lado del flotante, `break-word` partía la última
+     palabra para llenar el hueco («Rub» de «Rubia»). Una palabra que no entra
+     baja entera al tercer renglón, que no se ve. */
+  body[data-active-view="home"] .home-best-copy .home-best-name strong {
+    display: inline;
+    min-height: 0;
+    line-height: inherit;
+    overflow-wrap: normal;
+  }
+}
+
 /* El precio vuelve a TINTA. En rojo competía con el botón —dos rojos por
    tarjeta, veinte por pantallazo— y el resultado era una vidriera que gritaba
    oferta sin que hubiera ninguna. El rojo queda reservado a la acción; el
@@ -1281,6 +1352,28 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-vie
     inset 0 0 0 1px var(--shelf-line),
     0 8px 16px -9px rgb(208 0 13 / calc(var(--card-glow, 0) * 18%)),
     0 20px 38px -17px rgb(208 0 13 / calc(var(--card-glow, 0) * 30%));
+}
+
+/* EL BRILLO ENTRA Y SALE CON UN FUNDIDO, NO CON UN SALTO.
+   `js/motion.js` enciende o apaga el estante cuando el scroll ya se detuvo
+   —dos niveles, una escritura por cruce—, así que el cambio ocurre con la
+   pantalla quieta y se puede suavizar sin costarle un cuadro al desplazamiento.
+   En escritorio la tarjeta ya traía su transición de sombra para el hover; acá
+   se da la misma a los punteros táctiles, que no la tenían. */
+@media (prefers-reduced-motion: no-preference) {
+  body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view [data-glow-shelf] :is(.product-card, .home-best-card) {
+    transition: transform var(--motion-duration-base) var(--motion-ease-enter),
+      border-color var(--motion-duration-base) var(--motion-ease-standard),
+      box-shadow 320ms ease;
+  }
+
+  /* Las primeras tarjetas todavía llevan la transición de su entrada: se le
+     suma la sombra en vez de reemplazarla. */
+  body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view [data-glow-shelf] :is(.product-card, .home-best-card)[data-motion-reveal] {
+    transition: opacity var(--motion-duration-slow) var(--motion-ease-enter),
+      transform var(--motion-duration-slow) var(--motion-ease-enter),
+      box-shadow 320ms ease;
+  }
 }
 
 /* Lo que no se puede comprar no se destaca. El brillo es una invitación, y
@@ -1735,7 +1828,11 @@ body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-vie
 body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-view :is(
   .product-card,
   .modal-card
-) [data-price-pending-message] strong {
+) [data-price-pending-message] strong,
+/* La ficha NO vive dentro de `.app-view` —el <dialog> está después de </main>—,
+   así que la rama `.modal-card` de arriba no la alcanzaba nunca y en la ficha
+   «Precio próximamente» seguía saliendo como un importe de 28 px. */
+body:not([data-active-view="business"]):not([data-active-view="rider"]) .modal-card [data-price-pending-message] strong {
   color: var(--shelf-gold-soft);
   font-size: 14px;
   font-weight: 800;
@@ -1905,7 +2002,67 @@ body[data-active-view="home"] .home-sections {
    píxeles a mitad de la vitrina. El anillo de foco cabe igual, porque la
    sección ya reserva 16px a cada lado. */
 .home-hero-promo-slot:not([hidden]) {
+  position: relative;
   padding: 0;
+}
+
+/* La leyenda que pide la ley 24.788 para la publicidad de bebidas con alcohol.
+   Misma letra, mismo lugar y misma reserva que en las piezas animadas
+   (`.cmp-legal` en campaigns.css): la puerta y la campaña ocupan la misma caja
+   y tienen que medir lo mismo, o el primer precio se mueve al cambiar una por
+   la otra. */
+.home-hero-promo-legal {
+  position: absolute;
+  z-index: 2;
+  right: 16px;
+  bottom: 6px;
+  left: 16px;
+  margin: 0;
+  color: rgb(255 255 255 / 80%);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  pointer-events: none;
+  text-shadow: 0 1px 5px rgb(5 7 10 / 82%);
+}
+
+.home-hero-promo.has-legal .home-hero-promo-copy {
+  padding-bottom: 22px;
+}
+
+/* En la banda del teléfono no entra todo: el rótulo le deja su renglón a la
+   leyenda, igual que en la pieza animada. */
+@media (max-width: 699px) {
+  .home-hero-promo.has-legal .home-hero-promo-copy small {
+    display: none;
+  }
+
+  /* En flujo y subida un renglón, igual que `.cmp-legal` en campaigns.css y
+     por lo mismo: si la leyenda parte en dos —letra de sistema ancha, o 320 px—
+     el segundo renglón hace crecer la banda en vez de caer sobre la acción. */
+  .home-hero-promo-legal {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    margin: calc(-1.25em - 4px) 14px 0;
+    padding-bottom: 4px;
+    font-size: 9.5px;
+    letter-spacing: 0;
+  }
+}
+
+@media (max-width: 340px) {
+  .home-hero-promo-legal {
+    font-size: 8.5px;
+  }
+}
+
+@media (min-width: 400px) and (max-width: 699px) {
+  .home-hero-promo-legal {
+    font-size: 10px;
+  }
 }
 
 /* En teléfono el hero es una BANDA, no un afiche.
@@ -2061,6 +2218,10 @@ body[data-active-view="home"] .home-sections {
     padding: 9px 14px;
   }
 
+  .home-hero-promo.has-legal .home-hero-promo-copy {
+    padding-bottom: 19px;
+  }
+
   .brand-hero {
     gap: 8px;
   }
@@ -2213,6 +2374,49 @@ body[data-active-view="home"] .home-sections {
   .home-hero-promo:hover .home-hero-promo-cta {
     background: var(--taba-red-hover);
     color: var(--taba-white);
+  }
+
+  .home-hero-promo.has-legal .home-hero-promo-copy {
+    padding-bottom: 38px;
+  }
+
+  .home-hero-promo-legal {
+    right: 20px;
+    bottom: 12px;
+    left: 20px;
+    font-size: 11.5px;
+  }
+}
+
+/* ESCRITORIO BAJO. El afiche de 268 px está pensado para una pantalla alta; en
+   una notebook de 1366 × 768 —la más común— se llevaba un tercio de la ventana
+   y la primera góndola arrancaba en 658: la primera pantalla mostraba el
+   encabezado, la foto, el buscador y los rubros, y ni un producto con su
+   precio. Es el mismo criterio que los escalones del teléfono: el corte se
+   escribe por lo que aprieta, que es el ALTO. A 1920 × 1080 no cambia nada. */
+@media (min-width: 700px) and (max-height: 820px) {
+  .home-hero-promo,
+  .home-hero-promo-copy {
+    min-height: 156px;
+  }
+
+  .home-hero-promo-copy {
+    padding-block: 16px;
+  }
+
+  /* El subtítulo explica; con esta altura cede su lugar, igual que en la banda
+     del teléfono. Sigue en el nombre accesible del botón. */
+  .home-hero-promo-sub {
+    display: none;
+  }
+
+  .home-hero-promo.has-legal .home-hero-promo-copy {
+    padding-bottom: 36px;
+  }
+
+  .home-hero-promo-cta {
+    min-height: 42px;
+    margin-top: 10px;
   }
 }
 
@@ -3362,6 +3566,16 @@ body[data-active-view="catalog"] .thumb .thumb-img.is-placeholder {
   background-color: var(--brand-product-plate);
 }
 
+/* La ficha es un <dialog> fuera de `.app-view`, pero `.thumb` de arriba la
+   alcanza mientras la vista activa es el catálogo: la MISMA ficha tenía plato
+   blanco abierta desde la home y crema abierta desde el catálogo. Con las fotos
+   reales —fondo blanco horneado— el crema dibujaba el borde del archivo: dos
+   bandas alrededor del packshot. Vale lo que dice `.modal-media .thumb` en
+   catalog.css: blanco exacto bajo una foto. */
+body[data-active-view="catalog"] .modal-media .thumb.has-photo {
+  background-color: var(--taba-white);
+}
+
 body[data-active-view="catalog"] .product-favorite {
   width: 38px;
   height: 38px;
@@ -3734,12 +3948,23 @@ body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .prod
   padding: 16px 14px 16px;
 }
 
+/* `pretty`: el nombre no termina en un renglón con la unidad sola. Con los 42
+   nombres reales, 5 de ellos en escritorio y 11 en un teléfono de 390px partían
+   «Corona Extra 330 / ml». Un motor sin soporte parte como antes. */
 body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-body h3 {
   min-height: 2.35em;
   color: var(--shelf-ink);
   font-size: 17px;
   letter-spacing: -0.02em;
   line-height: 1.16;
+  text-wrap: pretty;
+  /* Dos renglones RESERVADOS, tres PERMITIDOS. Con el tope en dos, a 390 px
+     «Schweppes Pomelo Sin Azúcar» quedaba «Schweppes Pomelo Sin…» y a 360 px se
+     cortaban cuatro nombres más: la tarjeta perdía justo la palabra que
+     distingue al producto. La reserva sigue siendo de dos —así la grilla no
+     pierde su alineación—; el tercero sólo existe cuando el nombre lo necesita
+     y estira su fila, que el grid ya iguala entre las dos tarjetas. */
+  -webkit-line-clamp: 3;
 }
 
 body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-body p {
@@ -3824,6 +4049,44 @@ body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .cata
 
 body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-head .view-title {
   font-size: clamp(28px, 7vw, 32px);
+  /* El título lleva interlineado 1 y recorte (para la elipsis), así que su caja
+     mide exactamente la altura de la letra y se comía lo que baja del renglón:
+     «Jugos», «Energizantes» y «Aperitivos» perdían el pie de la g, la j y la
+     p. El relleno le da lugar al descendente dentro del recorte y el margen
+     negativo lo devuelve: la fila no cambia de alto. */
+  padding-bottom: 0.16em;
+  margin-bottom: -0.16em;
+}
+
+/* En el teléfono el contador no le puede comer el título. La grilla de arriba
+   (título · contador · filete) no deja partir: el contador es `nowrap` y el
+   título cedía con `overflow: hidden`. Con el texto productivo exacto —«1
+   producto en Fernet y amargos»— el título quedaba en 108 de sus 219px a
+   390px, y lo mismo pasaba con Energizantes y Aperitivos a 360. Cuando entran,
+   siguen en un renglón; cuando no, el contador baja con el filete y el título
+   se lee entero. */
+@media (max-width: 699px) {
+  body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 10px;
+  }
+
+  body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-head .view-title {
+    flex: 0 1 auto;
+    max-width: 100%;
+  }
+
+  /* Solo en su renglón, el contador también puede partir: «1 producto en
+     Fernet y amargos · todavía sin precio publicado» no entra en 358px. */
+  body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-count {
+    white-space: normal;
+  }
+
+  body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-head::after {
+    flex: 1 1 24px;
+  }
 }
 
 body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-search {
@@ -4008,6 +4271,82 @@ body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .prod
   letter-spacing: 0.01em;
 }
 
+/* PRECIO PENDIENTE DENTRO DE ESTA GÓNDOLA.
+   Las dos reglas de arriba —el importe a 25px/900 en tinta y el botón rojo—
+   empatan o superan en especificidad a las del estado pendiente (§ «Acción de
+   un producto sin precio publicado» y «"Precio próximamente" tenía que salir
+   en dorado») y, por estar después en el archivo, ganaban. Medido con los 42
+   productos reales de CP: el aviso se dibujaba como un importe de 25px en una
+   columna de 37px —«Pr / eci / o / pr / óx…», letra por letra—, la tarjeta
+   medía 704px contra 383px de una con precio y estiraba su fila entera, y
+   «Precio pendiente» se veía como un «Agregar» rojo. Acá vuelven esas dos
+   reglas, y como el aviso no es un importe, ocupa el ancho de la tarjeta con la
+   acción debajo, igual que en el teléfono. Una tarjeta con precio no cambia. */
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-foot:has([data-price-pending-message]) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .price[data-price-pending-message] .price-amounts strong {
+  color: var(--shelf-gold-soft);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-action .add-button.is-price-pending {
+  width: 100%;
+  border-color: rgb(201 149 62 / 52%);
+  background: var(--shelf-gold-wash);
+  box-shadow: none;
+  color: var(--shelf-gold-soft);
+}
+
+/* LO QUE NO SE PUEDE COMPRAR, DENTRO DE ESTA GÓNDOLA.
+   El mismo problema, en el otro estado: «Próximamente» (alcohol en vidriera) y
+   «No disponible» (agotado) heredaban el degradado rojo de comprar, apenas
+   atenuado por la opacidad de `:disabled`. En producción ese es el estado de
+   toda la góndola de alcohol mientras no esté la habilitación, así que media
+   tienda se veía como una fila de «Agregar» desteñidos. Superficie neutra, sin
+   sombra de botón, y el texto a opacidad plena para que se lea. Con el aviso a
+   lo ancho, el precio va arriba y la acción debajo, igual que en el teléfono. */
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-foot:has(.add-button:disabled:not(.is-price-pending)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-action .add-button:disabled:not(.is-price-pending) {
+  border-color: var(--shelf-line-strong);
+  background: var(--shelf-raised);
+  background-image: none;
+  box-shadow: none;
+  color: var(--shelf-muted);
+  opacity: 1;
+}
+
+/* RESULTADOS PARECIDOS. Ocupa la fila entera de la grilla y va antes de la
+   primera tarjeta. Es un renglón de texto, no una alerta: informa que lo que
+   sigue es una aproximación y deja el protagonismo a los productos. */
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-similar-note {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--shelf-line);
+  border-radius: 14px;
+  background: var(--shelf);
+  color: var(--shelf-muted);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-similar-note strong {
+  color: var(--shelf-ink);
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
 /* El botón conserva los 44px de contacto; sólo se reduce el disco visible. */
 body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-favorite {
   width: 44px;
@@ -4025,6 +4364,24 @@ body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .prod
   background: var(--brand-product-plate);
   box-shadow: 0 5px 14px rgb(0 0 0 / 22%);
   content: "";
+}
+
+/* EL CORAZÓN SE TIENE QUE VER.
+   El disco es marfil y el ícono pedía `--taba-ink`. En el alcance del cliente
+   ese token está reasignado a la tinta CLARA de la góndola (#f7f7f8) —es lo
+   que hace legible el texto sobre grafito—, así que el corazón quedaba marfil
+   sobre marfil: 1,03:1. En las 46 tarjetas del catálogo el control de favoritos
+   era un círculo vacío, guardado o sin guardar. WCAG 1.4.11 pide 3:1 para un
+   control.
+   La tinta del disco se declara por lo que es —oscura, porque el plato es
+   claro— y no por un token que cambia de sentido según la superficie:
+   15,6:1 en reposo y 5,6:1 con el rojo de marca cuando está guardado. */
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-favorite {
+  color: #14161a;
+}
+
+body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-favorite.is-favorite {
+  color: var(--taba-red);
 }
 
 body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-favorite svg {

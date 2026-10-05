@@ -2467,6 +2467,48 @@ test('una respuesta vieja de disponibilidad no pisa la dirección más nueva', a
   assert.equal((await import('../js/core/commerce-availability-store.js')).getCommerceAvailability().delivery.deliveryFee, 2000);
 });
 
+test('la reconciliación vuelve a preguntar por la dirección activa, no «sin dirección»', async () => {
+  const mock = createSupabaseClientMock();
+  const originalRpc = mock.client.rpc.bind(mock.client);
+  const asked = [];
+  const client = {
+    ...mock.client,
+    rpc(name, args) {
+      if (name !== 'commerce_availability') return originalRpc(name, args);
+      asked.push(args.p_context);
+      return Promise.resolve({ data: {
+        business_id: BUSINESS_ID, channel: 'delivery', ordering_ready: true, is_open: true,
+        delivery: { eligible: Boolean(args.p_context?.neighborhood), reason: 'ok', delivery_fee: 1500 },
+      }, error: null });
+    },
+  };
+  const repository = makeRepository(mock, { client });
+
+  // El arranque pregunta sin dirección: todavía no hay ninguna.
+  await repository.refreshCommerceAvailability();
+  assert.deepEqual(asked.at(-1), {});
+
+  await repository.refreshCommerceAvailability({ channel: 'delivery', latitude: -38.95, longitude: -68.06, neighborhood: 'Centro' });
+  assert.deepEqual(asked.at(-1), { latitude: -38.95, longitude: -68.06, neighborhood: 'Centro' });
+
+  // Volver a la pestaña reconcilia sin argumentos. Antes eso preguntaba «sin
+  // dirección» y la respuesta pisaba el envío ya resuelto para la dirección.
+  await repository.refreshCommerceAvailability();
+  assert.deepEqual(asked.at(-1), { latitude: -38.95, longitude: -68.06, neighborhood: 'Centro' });
+  const { getCommerceAvailability } = await import('../js/core/commerce-availability-store.js');
+  assert.equal(getCommerceAvailability().delivery.deliveryFee, 1500);
+
+  // Y por el camino real: la reconciliación entra por la fila del comercio.
+  const antes = asked.length;
+  await repository.loadBusinessConfiguration();
+  assert.ok(asked.length > antes, 'la reconciliación no volvió a preguntar');
+  assert.deepEqual(asked.at(-1), { latitude: -38.95, longitude: -68.06, neighborhood: 'Centro' });
+
+  // Quitar la dirección es una pregunta explícita y se respeta.
+  await repository.refreshCommerceAvailability({ channel: 'delivery' });
+  assert.deepEqual(asked.at(-1), {});
+});
+
 test('una consulta vieja de catálogo no revive stock después de una nueva', async () => {
   const mock = createSupabaseClientMock();
   const originalFrom = mock.client.from.bind(mock.client);

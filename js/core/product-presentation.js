@@ -15,6 +15,8 @@
  * Este módulo es puro: recibe datos, devuelve texto. Sin DOM, sin estado.
  */
 
+import { isPricePending } from './pricing.js';
+
 const PACKAGING_LABELS = Object.freeze({
   'botella-pet': 'Botella PET',
   'botella-vidrio': 'Botella de vidrio',
@@ -36,6 +38,7 @@ export function formatCapacity(value, unit = 'ml') {
   if (!Number.isFinite(cantidad) || cantidad <= 0) return '';
   const unidad = String(unit || 'ml').trim().toLowerCase();
   if (unidad === 'l') return `${formatLiters(cantidad)} L`;
+  if (unidad === 'g' && cantidad >= 1000) return `${trimNumber(cantidad / 1000).replace('.', ',')} kg`;
   if (unidad !== 'ml') return `${trimNumber(cantidad)} ${unidad}`;
   if (cantidad >= 1000) return `${formatLiters(cantidad / 1000)} L`;
   return `${trimNumber(cantidad)} ml`;
@@ -122,8 +125,22 @@ const ENVASES_QUE_SE_DICEN = new Set(['lata', 'sifon', 'sifon-pet', 'botella-vid
  * formatos de Coca-Cola pasan a llamarse igual en toda la tienda.
  */
 export function cardTitle(product = {}) {
-  const nombre = String(product?.name || '').trim();
+  let nombre = String(product?.name || '').trim();
   if (!nombre) return '';
+  // Remove capacity only when structured data confirms the SAME quantity.
+  // A bare name keeps its full identity; mismatched presentations are not guessed.
+  const suffix = nombre.match(/\s+(\d+(?:[.,]\d+)?)\s*(ml\.?|L|kg|g)$/i);
+  if (suffix) {
+    const unit = suffix[2].toLowerCase().replace('.', '');
+    const storedUnit = String(product.capacityUnit ?? product.capacity_unit ?? '').toLowerCase();
+    const factor = { ml: 1, l: 1000, g: 1, kg: 1000 };
+    const family = { ml: 'volume', l: 'volume', g: 'mass', kg: 'mass' };
+    const amount = Number(suffix[1].replace(',', '.')) * factor[unit];
+    const stored = Number(product.capacityValue ?? product.capacity_value) * factor[storedUnit];
+    if (family[unit] === family[storedUnit] && Number.isFinite(stored) && Math.abs(amount - stored) < 0.001) {
+      nombre = nombre.slice(0, suffix.index).trim();
+    }
+  }
   const normalizado = normalizar(nombre);
   for (const atributo of ATRIBUTOS_QUE_NO_SON_NOMBRE) {
     if (normalizado === atributo || !normalizado.endsWith(` ${atributo}`)) continue;
@@ -147,7 +164,26 @@ export function cardTitle(product = {}) {
  * gas'`. Dos aguas del mismo estante, con el mismo dato, escritas distinto: una
  * decía el atributo dos veces y la otra una.
  */
-const ATRIBUTOS_QUE_NO_SON_NOMBRE = Object.freeze(['sin gas', 'con gas', 'original']);
+const ATRIBUTOS_QUE_NO_SON_NOMBRE = Object.freeze(['sin gas', 'con gas', 'sabor original', 'original']);
+
+/**
+ * ¿El renglón de marca AGREGA algo al título?
+ *
+ * La regla anterior lo callaba sólo cuando el nombre EMPEZABA con la marca, así
+ * que «Fernet Branca» llevaba encima un rótulo «BRANCA» y «Hielo Cristal» uno
+ * «CRISTAL»: la marca dicha dos veces en dos renglones seguidos, y sólo en esas
+ * dos tarjetas de 46 —que además quedaban 22 px más altas que sus vecinas—.
+ *
+ * Ahora se calla cuando la marca aparece como palabras enteras en cualquier
+ * parte del título. Cuando NO está —«Villa del Sur» para «Levité Pomelo»— sigue
+ * apareciendo, porque ahí informa.
+ */
+export function brandAddsToTitle(product = {}) {
+  const marca = normalizar(product?.brand);
+  if (!marca) return false;
+  const titulo = ` ${normalizar(cardTitle(product) || product?.name).replace(/[^a-z0-9]+/g, ' ')} `;
+  return !titulo.includes(` ${marca.replace(/[^a-z0-9]+/g, ' ').trim()} `);
+}
 
 /** ¿El título ya dice que es la versión sin azúcar? */
 function tituloDiceSinAzucar(product) {
@@ -237,6 +273,7 @@ export function packUnitNoun(product = {}) {
 }
 
 export function packUnitPrice(product = {}) {
+  if (isPricePending(product)) return null;
   const porPack = Number(product.unitsPerPack ?? product.units_per_pack);
   if (!Number.isFinite(porPack) || porPack <= 1) return null;
   const precio = Number(product.price);
@@ -271,7 +308,7 @@ export function cardPresentationLine(product = {}) {
   // desaparece de la tarjeta.
   const nombre = normalizar(cardTitle(product));
   const varianteAporta = variante
-    && !nombre.includes(normalizar(variante))
+    && !nombre.includes(normalizar(variante).replace(/,\s*/g, ' '))
     && normalizar(variante) !== 'unidad'
     && !varianteEsLaCapacidad(variante, capacidad, product)
     // «Original» no distingue: lo que distingue es que NO diga Zero.
@@ -281,11 +318,16 @@ export function cardPresentationLine(product = {}) {
 
   const envase = String(product.packageType || product.packagingType || product.packaging_type || '').trim().toLowerCase();
   const envaseAporta = ENVASES_QUE_SE_DICEN.has(envase);
+  // Un envase RETORNABLE cambia la compra: hay que entregar un envase vacío. El
+  // catálogo lo declara («Botella retornable») y la tarjeta lo callaba, igual
+  // que a cualquier botella. Se dice el atributo, no el envase.
+  const esRetornable = /\bretornable\b/.test(normalizar(envase)) && !nombre.includes('retornable');
 
   const partes = [];
   if (esPack) partes.push(`Pack x${porPack}`);
   if (capacidad) partes.push(capacidad);
   if (envaseAporta) partes.push(packagingLabel(envase));
+  if (esRetornable) partes.push('Retornable');
   if (varianteAporta && !esPack) partes.push(variante);
   if (partes.length) return partes.join(' · ');
   if (varianteAporta) return variante;

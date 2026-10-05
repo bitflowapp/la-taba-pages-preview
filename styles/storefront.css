@@ -992,18 +992,14 @@
   background: var(--shelf-raised);
 }
 
-.home-best-card:has(.qty-stepper) {
-  grid-template-columns: 80px minmax(0, 1fr);
-  grid-template-rows: minmax(88px, auto) 48px;
-}
-
-.home-best-card:has(.qty-stepper) .home-card-control {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-row: 2;
-  justify-self: end;
-  align-self: center;
-}
+/* Acá vivían dos reglas `.home-best-card:has(.qty-stepper)` de cuando la
+   tarjeta de la home era horizontal (foto de 80 px a la izquierda). La tarjeta
+   vertical de `brand-home.css` pisaba la grilla pero no la UBICACIÓN del
+   control, que seguía clavado en la fila 2: al tocar «Agregar» el selector de
+   cantidad saltaba entre la foto y el nombre, angosto y a la derecha, y el
+   nombre y el precio caían donde había estado el botón. Medido a 390 × 844: el
+   control pasaba de y=191 a y=132 dentro de la tarjeta. Sin esas reglas el
+   selector reemplaza al botón en su mismo lugar y con su mismo ancho. */
 
 .home-paging-dots {
   display: flex;

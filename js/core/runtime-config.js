@@ -35,7 +35,39 @@ export function readRuntimeConfigSource(globalObject = globalThis) {
   }
 }
 
+/*
+ * LA MISMA CONFIGURACIÓN NO SE VALIDA DOS VECES.
+ *
+ * Esta función se llama por cada imagen y por cada tarjeta de la góndola —para
+ * saber el origen de las fotos y si la tienda es la real—, o sea cientos de
+ * veces por render, y cada llamada volvía a parsear URLs y a validar la clave.
+ * Medido en el perfil del buscador: los dos primeros costos de cada tecla.
+ *
+ * La configuración es del despliegue y no cambia mientras la página vive, pero
+ * las pruebas sí la reemplazan y la mutan. Por eso la memoria se lleva por
+ * CONTENIDO —la huella serializada— y no por identidad del objeto: una
+ * mutación en el lugar cambia la huella y se resuelve de nuevo. El resultado
+ * ya era inmutable (`freezeResult`), así que compartirlo es seguro.
+ */
+let resolvedMemo = null;
+
+function fingerprint(source) {
+  try {
+    return JSON.stringify(source);
+  } catch (_) {
+    return null;
+  }
+}
+
 export function resolveRuntimeConfig(source = readRuntimeConfigSource()) {
+  const key = source === null || source === undefined ? 'absent' : fingerprint(source);
+  if (key !== null && resolvedMemo?.key === key) return resolvedMemo.result;
+  const result = resolveRuntimeConfigUncached(source);
+  if (key !== null) resolvedMemo = { key, result };
+  return result;
+}
+
+function resolveRuntimeConfigUncached(source) {
   if (source === null || source === undefined) {
     return freezeResult({
       status: 'absent',

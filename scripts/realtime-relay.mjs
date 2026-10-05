@@ -196,7 +196,7 @@ async function handleRequest(request, response) {
     return;
   }
 
-  serveStatic(response, url.pathname);
+  serveStatic(response, url.pathname, url.search);
 }
 
 function openEventStream(request, response, url) {
@@ -385,9 +385,18 @@ function responderDegradado(response, modo, tipoReal) {
   response.end(`<!doctype html><title>${status}</title><h1>${status}</h1>`);
 }
 
-function serveStatic(response, rawPathname) {
+function serveStatic(response, rawPathname, search = '') {
   let pathname = '/';
   try { pathname = decodeURIComponent(rawPathname || '/'); } catch (_) { /* invalid path */ }
+  // Cloudflare Pages contesta `/index.html` con un 308 a `/`. Sin esto el
+  // servidor de pruebas es MÁS indulgente que producción y ningún navegador
+  // puede reproducir el `ERR_FAILED` de la PWA instalada (ver
+  // `tests/e2e/pwa-launch-redirect.spec.mjs`).
+  if (pathname === '/index.html') {
+    response.writeHead(308, { Location: `/${search}`, 'Cache-Control': 'no-cache' });
+    response.end();
+    return;
+  }
   const relative = pathname === '/' ? 'index.html' : pathname.replace(/^\/+/, '');
 
   const extension = path.extname(relative).toLowerCase();

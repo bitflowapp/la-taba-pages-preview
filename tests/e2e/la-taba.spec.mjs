@@ -60,8 +60,12 @@ test('agregar producto desde una categoría del catálogo', async ({ page }) => 
 
   // Una sola unidad: este contrato mide el stepper de la tarjeta, no el mínimo
   // de delivery, así que no hace falta llegar a él.
-  await page.locator('[data-product-grid] [data-add-product]:not([disabled]) >> visible=true').first().click();
-  await waitForToast(page, /agregado al pedido/);
+  const quickAdd = page.locator('[data-product-grid] [data-add-product]:not([disabled]) >> visible=true').first();
+  const productId = await quickAdd.getAttribute('data-add-product');
+  await quickAdd.click();
+  await expect(page.locator(`[data-product-grid] [data-card-product="${productId}"] .qty-stepper strong`)).toHaveText('1');
+  await expect(page.locator('[data-toast]')).toBeEmpty();
+  await expect(page.locator('[data-product-modal]')).toBeHidden();
   await expect(page.locator('[data-cart-count]').first()).not.toHaveText('0');
   const desktopCart = page.locator('.topbar [data-open-cart]');
   await expect(desktopCart).toBeVisible();

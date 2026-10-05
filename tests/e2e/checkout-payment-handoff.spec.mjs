@@ -357,6 +357,16 @@ test.describe('handoff a Mercado Pago', () => {
     await boton.click();
     await expect.poll(() => llamadas.sesiones, { timeout: 15_000 }).toBe(1);
     await expect(boton).toBeDisabled();
+    /*
+     * Nadie vuelve de un lugar al que todavía no fue. El contador de arriba se
+     * mueve cuando el backend RECIBE el pedido de sesión; la entrega a Mercado
+     * Pago ocurre después, cuando contestan la sesión y la preferencia. Los
+     * eventos de regreso disparados en ese hueco llegaban antes de la entrega,
+     * el re-armado los ignoraba —con razón— y el botón quedaba tomado: la
+     * prueba fallaba en el primer intento bajo carga (WebKit, corrida
+     * 36887542331) sin que el producto estuviera mal. Se espera la entrega.
+     */
+    await expect(page.locator('[data-checkout-form]')).toHaveAttribute('data-checkout-handoff', 'mercadopago', { timeout: 15_000 });
 
     // La vuelta: los tres eventos que dispara un regreso real, sea con «atrás»
     // o desde otra aplicación. El bloqueo tiene que soltarse, o el checkout
@@ -467,6 +477,9 @@ test.describe('handoff a Mercado Pago', () => {
     await boton.click();
     await expect.poll(() => llamadas.sesiones, { timeout: 15_000 }).toBe(1);
     await expect(boton).toBeDisabled();
+    // El escenario es «la entrega se intentó y no salió»: se espera a que se
+    // haya intentado, igual que en la prueba del regreso.
+    await expect(page.locator('[data-checkout-form]')).toHaveAttribute('data-checkout-handoff', 'mercadopago', { timeout: 15_000 });
 
     await page.evaluate(() => { window.location.hash = '#home'; });
     await page.waitForTimeout(600);

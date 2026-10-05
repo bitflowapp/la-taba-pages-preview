@@ -1,25 +1,26 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v131-premium-motion';
+const CACHE_NAME = 'la-taba-runtime-v141-pwa-live-campaigns';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=67',
-  './styles/tokens.css?v=67',
-  './styles/common.css?v=67',
-  './styles/storefront.css?v=67',
-  './styles/catalog.css?v=67',
-  './styles/checkout.css?v=67',
-  './styles/profile.css?v=67',
-  './styles/showcase.css?v=67',
-  './styles/tracking.css?v=67',
-  './styles/business.css?v=67',
-  './styles/rider.css?v=67',
-  './styles/responsive.css?v=67',
-  './styles/brand-home.css?v=67',
+  './styles.css?v=72',
+  './styles/tokens.css?v=72',
+  './styles/common.css?v=72',
+  './styles/storefront.css?v=72',
+  './styles/catalog.css?v=72',
+  './styles/checkout.css?v=72',
+  './styles/profile.css?v=72',
+  './styles/showcase.css?v=72',
+  './styles/tracking.css?v=72',
+  './styles/business.css?v=72',
+  './styles/rider.css?v=72',
+  './styles/responsive.css?v=72',
+  './styles/brand-home.css?v=72',
   // `styles.css` la importa desde que existe y nunca estuvo acá: sin red, la
   // home se quedaba sin la capa de movimiento. Lo destapó el guard de la
   // cadena de CSS versionado; no lo introdujo esta integración.
-  './styles/motion.css?v=67',
+  './styles/campaigns.css?v=72',
+  './styles/motion.css?v=72',
   './manifest.webmanifest',
   './runtime-config.js?tenant=walter-staging',
   './pago/resultado/index.html',
@@ -39,7 +40,7 @@ const ASSETS = [
   './assets/products/beverage-placeholder.svg',
   './js/pwa-update.js?v=4',
   './js/startup-recovery.js?v=3',
-  './js/app.js?v=52',
+  './js/app.js?v=53',
   './js/config.js',
   './js/core/address.js',
   './js/core/app-mode.js',
@@ -77,9 +78,14 @@ const ASSETS = [
   './js/core/order-timeline.js',
   './js/core/order-workflow.js',
   './js/core/catalog-search.js',
+  './js/core/product-photo.js',
+  './js/campaigns/campaign-product.js',
+  './js/campaigns/campaign-budget.js',
+  './js/campaigns/product-art-layout.js',
   './js/core/merchandising-tags.js',
   './js/core/pricing.js',
   './js/core/product-presentation.js',
+  './js/core/stable-catalog-dom.js',
   // `state.js` la importa de forma estática: sin ella acá, un cliente con la
   // PWA instalada y sin red no puede ni arrancar la tienda.
   './js/core/production-cart-storage.js',
@@ -168,6 +174,17 @@ const ASSETS = [
    */
   './js/back-office.js',
   './js/motion.js',
+  // Campañas animadas: `ui.js` y `app.js` las importan de forma estática.
+  './js/campaigns/campaign-config.js',
+  './js/campaigns/campaign-engine.js',
+  './js/campaigns/campaign-motion.js',
+  './js/campaigns/presets/shared.js',
+  './js/campaigns/presets/beer-pour.js',
+  './js/campaigns/presets/cold-can.js',
+  './js/campaigns/presets/product-drop.js',
+  './js/campaigns/presets/ice-reveal.js',
+  './js/campaigns/presets/spotlight-product.js',
+  './js/campaigns/presets/glass-fill.js',
   './js/combos-data.js',
   './js/preview-promotions-data.js',
   './js/preview-stories-data.js',
@@ -326,7 +343,10 @@ async function precargar() {
     if ((destination === 'style' || destination === 'script') && await pareceDocumentoHtml(response)) {
       throw new Error(`precache_html:${asset}`);
     }
-    return [request, response];
+    // Pages contesta `/index.html` con un 308 a `/` y `fetch` lo sigue: lo que
+    // llega trae `redirected === true`. Guardado así, el navegador lo rechaza
+    // cada vez que se lo entregan a una navegación (ver `sinRedireccion`).
+    return [request, await sinRedireccion(response)];
   }));
 
   // Ningún byte se escribe hasta que TODOS los assets pasaron. Con un nombre
@@ -382,8 +402,45 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Una sola forma de abrir la tienda: la raíz. `/index.html` existe sólo como
+  // alias y el borde ya lo redirige; hacerlo acá da el MISMO resultado con red y
+  // sin ella (offline no hay borde que responda el 308).
+  if (request.mode === 'navigate' && esIndiceDeLaRaiz(url)) {
+    event.respondWith(Response.redirect(`${raizDelAlcance().href}${url.search}`, 308));
+    return;
+  }
+
   event.respondWith(networkFirst(request));
 });
+
+function raizDelAlcance() {
+  return new URL('./', self.registration?.scope || self.location);
+}
+
+function esIndiceDeLaRaiz(url) {
+  return url.pathname === `${raizDelAlcance().pathname}index.html`;
+}
+
+/*
+ * El navegador PROHÍBE responder una navegación con una respuesta marcada
+ * `redirected`: la trata como un error de red y muestra `ERR_FAILED`. Es lo que
+ * le pasaba a la PWA instalada, cuyo `start_url` era `/index.html` (un 308 a `/`):
+ * `install` guardó esa respuesta tal cual la devolvió `fetch` y el respaldo la
+ * entregaba, con o sin red.
+ *
+ * La copia limpia conserva cuerpo, estado y cabeceras y sólo pierde la marca. Sólo
+ * hace falta para navegaciones; el resto de los pedidos admite respuestas
+ * redirigidas, así que no se toca nada que no lo necesite.
+ */
+async function sinRedireccion(response) {
+  if (!response || !response.redirected) return response;
+  const copia = response.clone();
+  return new Response(copia.body, {
+    status: copia.status,
+    statusText: copia.statusText,
+    headers: copia.headers,
+  });
+}
 
 /*
  * El arte de producto es INMUTABLE: el nombre del archivo lleva la huella de su
@@ -501,6 +558,9 @@ async function networkFirst(request) {
   }
 
   const { response, error } = await red;
+  // Una redirección del borde (`/cuenta` -> `/cuenta/`) se entrega tal cual: el
+  // navegador la sigue. Sustituirla por la shell dejaría la URL equivocada.
+  if (response?.type === 'opaqueredirect') return response;
   if (error || !response) return (await cachedFallback(request)) || Response.error();
   if (isUsable(request, response) && !(await elCuerpoDesmienteAlTipo(request, response))) {
     guardar(request, response.clone());
@@ -524,11 +584,19 @@ async function cachedFallback(request) {
    * por cada respaldo, incluidas las imágenes.
    */
   const desmentida = cached && request.destination === 'style' && await pareceDocumentoHtml(cached);
-  if (cached && isUsable(request, cached) && !desmentida) return cached;
-  if (request.mode === 'navigate') {
+  const esNavegacion = request.mode === 'navigate';
+  // Una copia heredada de un worker anterior puede traer la marca `redirected`
+  // (v97 guardó así `./index.html`): se sanea al leerla, no sólo al escribirla.
+  if (cached && isUsable(request, cached) && !desmentida) {
+    return esNavegacion ? sinRedireccion(cached) : cached;
+  }
+  if (esNavegacion) {
     const paymentReturn = await paymentReturnFallback(request);
-    if (paymentReturn) return paymentReturn;
-    return (await caches.match('./index.html')) || null;
+    if (paymentReturn) return sinRedireccion(paymentReturn);
+    // La shell canónica es la raíz: es la que sirve la red. `./index.html` queda
+    // sólo como último recurso para una caché que no tenga `./`.
+    const shell = (await caches.match('./')) || (await caches.match('./index.html'));
+    return shell ? sinRedireccion(shell) : null;
   }
   return null;
 }

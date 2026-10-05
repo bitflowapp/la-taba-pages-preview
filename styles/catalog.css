@@ -588,6 +588,22 @@
   opacity: 0.66;
 }
 
+/* La entrada de motion.css termina en `opacity: 1` con más especificidad
+   (0,3,0) que la regla de arriba (0,2,0), y motion.js sólo marca las CUATRO
+   primeras tarjetas de cada grilla. Resultado medido: de un estante sin nada
+   comprable, cuatro tarjetas encendidas y el resto apagadas —con la vidriera
+   del alcohol, cuatro vinos que parecen a la venta y un quinto que no—. La
+   entrada termina donde termina la tarjeta: apagada. */
+.motion-ready .product-card.out-of-stock[data-motion-reveal].is-motion-visible {
+  opacity: 0.66;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-ready .product-card.out-of-stock[data-motion-reveal] {
+    opacity: 0.66;
+  }
+}
+
 /* Marco del packshot: única caja a la que se ancla el favorito. Su alto lo
    fija `aspect-ratio`, así que el solape con el título es imposible por
    construcción. */
@@ -728,9 +744,14 @@
   font-weight: 850;
 }
 
+/* Superficie y tinta se declaran JUNTAS. La tinta era `--taba-muted`, que en
+   la tienda del cliente se remapea a un gris claro calibrado para fondo oscuro:
+   sobre esta pastilla clara daba 1,92:1, o sea que «Próximamente», «Agotado» y
+   «No disponible» casi no se leían encima de la foto. En producción es el
+   estado de toda la góndola de alcohol. Con el gris de papel da 5,4:1. */
 .stock-pill.empty {
   background: #f0f0f1;
-  color: var(--taba-muted);
+  color: #5b6270;
 }
 
 /* Jerarquía fija: producto → presentación → precio → acción. Sin `min-height`
@@ -899,6 +920,24 @@
 
   .product-action [data-add-product].is-price-pending .add-text {
     display: inline;
+  }
+
+  /* El disco de 44 px es para «+». Un producto que no se puede comprar no
+     tiene «+» que mostrar: «Próximamente» quedaba como un cuadrado vacío y
+     «No disponible» como un «+» apagado. El estado se escribe, a lo ancho. */
+  .product-action .add-button:disabled:not(.is-price-pending) {
+    width: 100%;
+    flex-basis: auto;
+    padding-inline: 12px;
+  }
+
+  .product-action .add-button:disabled:not(.is-price-pending) .add-plus {
+    display: none;
+  }
+
+  .product-action .add-button:disabled:not(.is-price-pending) .add-text {
+    display: inline;
+    font-size: 13px;
   }
 
   .product-action .qty-stepper {
@@ -1403,8 +1442,23 @@
   font-size: 15px;
 }
 
-.modal-cart-control.add-button .add-text::after {
+/* El sufijo completa «Agregar» y nada más. Sin el `:not(:disabled)` también se
+   le pegaba a los otros dos textos del mismo control y la ficha de una cerveza
+   en vidriera decía «Próximamente al pedido», que además de no ser una frase
+   suena a promesa. */
+.modal-cart-control.add-button:not(:disabled) .add-text::after {
   content: " al pedido";
+}
+
+/* Lo que no se puede comprar no lleva el rojo de comprar. Quedaba el mismo
+   botón a media opacidad: un «Agregar» desteñido que invitaba a tocar. Es la
+   regla que ya tenía la tarjeta (`.product-action .add-button:disabled`), con
+   la superficie de la ficha. */
+.modal-cart-control.add-button:disabled {
+  border-color: var(--shelf-line-strong);
+  background: var(--shelf-raised);
+  color: var(--shelf-muted);
+  opacity: 1;
 }
 
 /* Ya en el carrito: el stepper reemplaza al botón y ocupa el mismo lugar, así
@@ -1517,4 +1571,25 @@
 
 [data-view="catalog"] .catalog-more .secondary-button {
   min-height: 44px;
+}
+
+.catalog-filters[hidden] { display: none !important; }
+.catalog-controls { grid-template-columns: minmax(0, 1fr); }
+.catalog-search { border-width: 2px; }
+.catalog-search-icon { color: var(--taba-ink); }
+.product-name-link { display: block; width: 100%; padding: 0; border: 0; color: inherit; background: none; font: inherit; text-align: left; cursor: pointer; }
+.product-name-link:focus-visible { outline: 2px solid var(--brand-gold); outline-offset: 3px; border-radius: 3px; }
+.product-card[data-card-product] { cursor: pointer; }
+.product-action { touch-action: manipulation; }
+.product-action .qty-stepper strong { user-select: none; }
+/* Preserve the initial Add tap point with a native button after the first tap.
+   Safari does not synthesize delegated clicks reliably on a plain counter. */
+.qty-stepper--quick-target { position: relative; touch-action: manipulation; }
+.qty-stepper--quick-target .qty-stepper-action:last-child {
+  position: absolute; top: 0; right: 0; width: calc(100% - 44px); height: 100%;
+  display: flex; align-items: center; justify-content: flex-end;
+  padding: 0; border: 0; background: transparent;
+}
+.qty-stepper--quick-target .qty-stepper-action:last-child > span {
+  display: grid; width: 44px; height: 100%; place-items: center;
 }

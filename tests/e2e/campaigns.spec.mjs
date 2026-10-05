@@ -72,7 +72,10 @@ const fold = (page) => page.evaluate(() => {
   };
 });
 
-test('la configuración publicada muestra las campañas aprobadas con producto vivo', async ({ page }) => {
+// El MOTOR con las campañas de prueba del snapshot CP. La configuración que se
+// publica, con el catálogo vivo, está en `campaigns-live-products.spec.mjs`.
+test('la configuración de prueba CP muestra sus campañas aprobadas con producto del snapshot', async ({ page }) => {
+  await useQaCampaigns(page);
   await openRuntimeCatalog(page);
   await goHome(page);
   await expect(page.locator(`${HERO} [data-campaign="heineken-beer-pour"]`)).toBeVisible();

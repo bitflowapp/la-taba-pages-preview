@@ -6,7 +6,8 @@ import { performance } from 'node:perf_hooks';
 import { searchProducts, buildSearchIndex } from '../js/core/catalog-search.js';
 import { normalizeCampaign, campaignMarkup, selectCampaigns } from '../js/campaigns/campaign-engine.js';
 import { resolveCampaignProductAsset } from '../js/campaigns/campaign-product.js';
-import { CAMPAIGNS } from '../js/campaigns/campaign-config.js';
+// Datos de prueba del motor (snapshot CP), no las campañas publicadas.
+import { CAMPAIGNS } from './fixtures/campaign-config-cp46.js';
 
 const raw = JSON.parse(fs.readFileSync(new URL('./fixtures/catalog-cp-46.json', import.meta.url))).products;
 const rows = raw.map(p => ({ id:p.id,sku:p.sku,name:p.name,brand:p.brand,variant:p.variant,

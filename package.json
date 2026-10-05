@@ -35,6 +35,7 @@
     "pwa:icons": "node scripts/build-brand-app-icons.mjs",
     "pwa:icons:check": "node scripts/build-brand-app-icons.mjs --check",
     "pwa:verify": "node scripts/verify-pwa-install.mjs",
+    "campaigns:verify-live": "node --import ./tests/test-bootstrap.mjs scripts/campaigns/verify-live-campaigns.mjs",
     "production:live": "node scripts/verify-production-live.mjs",
     "migrations:validate": "node scripts/validate-supabase-migrations.mjs",
     "production:verify": "node scripts/verify-production.mjs",

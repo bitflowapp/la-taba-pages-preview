@@ -15,7 +15,12 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { CAMPAIGNS } from '../js/campaigns/campaign-config.js';
+import { CAMPAIGNS as PUBLISHED } from '../js/campaigns/campaign-config.js';
+// El MOTOR se ejerce con las campañas de prueba del snapshot CP (tienen Heineken y
+// Aperol). Las publicadas se validan contra el catálogo VIVO en
+// `campaign-live-catalog.test.mjs`: que el motor ande con datos de prueba no
+// demuestra que las publicadas encuentren su producto.
+import { CAMPAIGNS } from './fixtures/campaign-config-cp46.js';
 import {
   ALCOHOL_LEGAL_NOTICE,
   CAMPAIGN_GRID_POSITION,
@@ -55,17 +60,22 @@ const wideCatalog = { categoryId: 'all', searching: false, filtered: false, list
 
 // ─── 1 · Las llaves ───────────────────────────────────────────────────────────
 
-test('las campañas aprobadas del repositorio salen encendidas y siguen cumpliendo el contrato editorial', () => {
-  assert.ok(CAMPAIGNS.length >= 4, 'faltan campañas');
-  for (const campaign of CAMPAIGNS) {
-    assert.equal(campaign.enabled, true, `${campaign.id} quedó apagada`);
+test('las campañas publicadas: las encendidas están aprobadas por Marco y cumplen el contrato; las demás, pendientes', () => {
+  assert.ok(PUBLISHED.length >= 4, 'faltan campañas');
+  const encendidas = PUBLISHED.filter((campaign) => campaign.enabled);
+  assert.ok(encendidas.length >= 3, 'tiene que haber varias campañas encendidas con producto real');
+  for (const campaign of encendidas) {
     assert.equal(campaign.approval.status, 'APROBADA', `${campaign.id} no figura aprobada`);
     assert.match(campaign.approval.reference, /Marco.*2026-10-05/, `${campaign.id} no conserva la aprobación comercial`);
     assert.deepEqual(campaignProblems(normalizeCampaign(campaign)), [], `${campaign.id} no cumple el contrato editorial`);
   }
+  for (const campaign of PUBLISHED.filter((entry) => !entry.enabled)) {
+    assert.equal(campaign.approval.status, 'PENDIENTE', `${campaign.id}: apagada pero no figura pendiente`);
+    assert.ok(campaignProblems(normalizeCampaign(campaign)).includes('disabled'));
+  }
 });
 
-test('con la configuración publicada aparecen las campañas de productos reales', () => {
+test('con la configuración de prueba CP aparecen las campañas de productos reales', () => {
   const selected = selectCampaigns({ campaigns: CAMPAIGNS, products: catalog, isOrderable: everythingSells, catalog: wideCatalog });
   assert.equal(selected['home-hero']?.campaign.id, 'heineken-beer-pour');
   assert.equal(selected['home-inline']?.campaign.id, 'red-bull-cold-can');
@@ -100,12 +110,14 @@ test('las seis escenas existen, y las candidatas usan las cuatro primeras', () =
 
 // ─── El producto tiene que existir y poder comprarse ──────────────────────────
 
-test('cada candidata apunta a un producto que EXISTE en el catálogo real', () => {
+// Esto sólo comprueba que los datos de PRUEBA sean coherentes entre sí. NO dice
+// nada de lo que se publica: eso lo mide `campaign-live-catalog.test.mjs`.
+test('las campañas de prueba apuntan a productos del snapshot CP (coherencia del fixture)', () => {
   const skus = new Set(catalog.map((product) => product.sku));
   for (const campaign of CAMPAIGNS) {
     assert.ok(
       campaign.target.skus.some((sku) => skus.has(sku)),
-      `${campaign.id} apunta a un SKU que no está entre las 46 fichas`,
+      `${campaign.id} apunta a un SKU que no está entre las 46 fichas del snapshot CP`,
     );
   }
 });

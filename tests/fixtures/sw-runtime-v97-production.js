@@ -1,26 +1,25 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v141-pwa-live-campaigns';
+const CACHE_NAME = 'la-taba-runtime-v97-explicit-seller-status';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=72',
-  './styles/tokens.css?v=72',
-  './styles/common.css?v=72',
-  './styles/storefront.css?v=72',
-  './styles/catalog.css?v=72',
-  './styles/checkout.css?v=72',
-  './styles/profile.css?v=72',
-  './styles/showcase.css?v=72',
-  './styles/tracking.css?v=72',
-  './styles/business.css?v=72',
-  './styles/rider.css?v=72',
-  './styles/responsive.css?v=72',
-  './styles/brand-home.css?v=72',
+  './styles.css?v=58',
+  './styles/tokens.css?v=58',
+  './styles/common.css?v=58',
+  './styles/storefront.css?v=58',
+  './styles/catalog.css?v=58',
+  './styles/checkout.css?v=58',
+  './styles/profile.css?v=58',
+  './styles/showcase.css?v=58',
+  './styles/tracking.css?v=58',
+  './styles/business.css?v=58',
+  './styles/rider.css?v=58',
+  './styles/responsive.css?v=58',
+  './styles/brand-home.css?v=58',
   // `styles.css` la importa desde que existe y nunca estuvo acá: sin red, la
   // home se quedaba sin la capa de movimiento. Lo destapó el guard de la
   // cadena de CSS versionado; no lo introdujo esta integración.
-  './styles/campaigns.css?v=72',
-  './styles/motion.css?v=72',
+  './styles/motion.css?v=58',
   './manifest.webmanifest',
   './runtime-config.js?tenant=walter-staging',
   './pago/resultado/index.html',
@@ -39,8 +38,8 @@ const ASSETS = [
   './assets/brand/taba-app-icon-192.png',
   './assets/products/beverage-placeholder.svg',
   './js/pwa-update.js?v=4',
-  './js/startup-recovery.js?v=3',
-  './js/app.js?v=53',
+  './js/startup-recovery.js?v=2',
+  './js/app.js?v=49',
   './js/config.js',
   './js/core/address.js',
   './js/core/app-mode.js',
@@ -53,9 +52,6 @@ const ASSETS = [
   './js/core/business-setup.js',
   './js/core/cashbox-store.js',
   './js/core/catalog-store.js',
-  './js/core/catalog-image-contract.js',
-  './js/core/image-attribution.js',
-  './js/core/catalog-image-upload.js',
   './js/core/store-taxonomy.js',
   './js/core/cart-recommendations.js',
   './js/core/customer-addresses.js',
@@ -78,14 +74,9 @@ const ASSETS = [
   './js/core/order-timeline.js',
   './js/core/order-workflow.js',
   './js/core/catalog-search.js',
-  './js/core/product-photo.js',
-  './js/campaigns/campaign-product.js',
-  './js/campaigns/campaign-budget.js',
-  './js/campaigns/product-art-layout.js',
   './js/core/merchandising-tags.js',
   './js/core/pricing.js',
   './js/core/product-presentation.js',
-  './js/core/stable-catalog-dom.js',
   // `state.js` la importa de forma estática: sin ella acá, un cliente con la
   // PWA instalada y sin red no puede ni arrancar la tienda.
   './js/core/production-cart-storage.js',
@@ -99,7 +90,6 @@ const ASSETS = [
   './js/core/showcase-mode.js',
   './js/core/simulation.js',
   './js/core/storage.js',
-  './js/core/store-entry.js',
   './js/core/storefront-filters.js',
   './js/core/stories.js',
   './js/core/validators.js',
@@ -149,7 +139,6 @@ const ASSETS = [
   './js/repositories/unavailable_order_repository.js',
   './js/services/supabase-auth.js',
   './js/services/supabase-client.js',
-  './js/repositories/supabase-catalog-image-repository.js',
   './js/services/customer-geolocation.js',
   './js/vendor/supabase.js',
   './js/business.js',
@@ -174,17 +163,6 @@ const ASSETS = [
    */
   './js/back-office.js',
   './js/motion.js',
-  // Campañas animadas: `ui.js` y `app.js` las importan de forma estática.
-  './js/campaigns/campaign-config.js',
-  './js/campaigns/campaign-engine.js',
-  './js/campaigns/campaign-motion.js',
-  './js/campaigns/presets/shared.js',
-  './js/campaigns/presets/beer-pour.js',
-  './js/campaigns/presets/cold-can.js',
-  './js/campaigns/presets/product-drop.js',
-  './js/campaigns/presets/ice-reveal.js',
-  './js/campaigns/presets/spotlight-product.js',
-  './js/campaigns/presets/glass-fill.js',
   './js/combos-data.js',
   './js/preview-promotions-data.js',
   './js/preview-stories-data.js',
@@ -231,7 +209,6 @@ const ASSETS = [
   './js/business/business-access-inbox.js',
   './js/business/business-access-registration.js',
   './js/business/business-capabilities.js',
-  './js/business/business-catalog-editor.js',
   './js/business/business-command-outbox.js',
   './js/business/business-connectivity.js',
   './js/business/business-day-control.js',
@@ -246,21 +223,13 @@ const ASSETS = [
   './js/business/business-panel-controller.js',
   './js/business/business-panel-render.js',
   './js/business/business-payments-console.js',
-  './js/business/business-photo-intake.js',
-  './js/business/business-print-agent.js',
   './js/business/business-product-onboarding.js',
   './js/business/business-sound-service.js',
-  './js/business/business-store-opening.js',
-  './js/business/business-team-apps.js',
-  './js/business/business-team.js',
   './js/business/business-tray-patch.js',
   './js/business/business-view-model.js',
-  './js/business/order-fiscal-presenter.js',
   './js/catalog/barcode-normalizer.js',
   './js/catalog/barcode-scanner-service.js',
   './js/core/fiscal-domain.js',
-  // La traducción de «qué falta para abrir»: la usa el Panel y la terminal.
-  './js/core/store-opening-readiness.js',
   /*
    * `service-hours.js` NO viene de la bandeja: entró con el trabajo de 24/7
    * multi-rubro, que hizo que `business-operations-config.js` lo importe, y
@@ -282,7 +251,6 @@ const ASSETS = [
   './js/repositories/supabase-operations-repository.js',
   './js/repositories/supabase-packing-repository.js',
   './js/repositories/supabase-payments-repository.js',
-  './js/repositories/supabase-manual-payments-repository.js',
   './js/repositories/supabase-pos-repository.js',
   /*
    * Sí: una herramienta de DEMOSTRACIÓN, en la lista que hace que el comercio
@@ -343,10 +311,7 @@ async function precargar() {
     if ((destination === 'style' || destination === 'script') && await pareceDocumentoHtml(response)) {
       throw new Error(`precache_html:${asset}`);
     }
-    // Pages contesta `/index.html` con un 308 a `/` y `fetch` lo sigue: lo que
-    // llega trae `redirected === true`. Guardado así, el navegador lo rechaza
-    // cada vez que se lo entregan a una navegación (ver `sinRedireccion`).
-    return [request, await sinRedireccion(response)];
+    return [request, response];
   }));
 
   // Ningún byte se escribe hasta que TODOS los assets pasaron. Con un nombre
@@ -402,45 +367,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Una sola forma de abrir la tienda: la raíz. `/index.html` existe sólo como
-  // alias y el borde ya lo redirige; hacerlo acá da el MISMO resultado con red y
-  // sin ella (offline no hay borde que responda el 308).
-  if (request.mode === 'navigate' && esIndiceDeLaRaiz(url)) {
-    event.respondWith(Response.redirect(`${raizDelAlcance().href}${url.search}`, 308));
-    return;
-  }
-
   event.respondWith(networkFirst(request));
 });
-
-function raizDelAlcance() {
-  return new URL('./', self.registration?.scope || self.location);
-}
-
-function esIndiceDeLaRaiz(url) {
-  return url.pathname === `${raizDelAlcance().pathname}index.html`;
-}
-
-/*
- * El navegador PROHÍBE responder una navegación con una respuesta marcada
- * `redirected`: la trata como un error de red y muestra `ERR_FAILED`. Es lo que
- * le pasaba a la PWA instalada, cuyo `start_url` era `/index.html` (un 308 a `/`):
- * `install` guardó esa respuesta tal cual la devolvió `fetch` y el respaldo la
- * entregaba, con o sin red.
- *
- * La copia limpia conserva cuerpo, estado y cabeceras y sólo pierde la marca. Sólo
- * hace falta para navegaciones; el resto de los pedidos admite respuestas
- * redirigidas, así que no se toca nada que no lo necesite.
- */
-async function sinRedireccion(response) {
-  if (!response || !response.redirected) return response;
-  const copia = response.clone();
-  return new Response(copia.body, {
-    status: copia.status,
-    statusText: copia.statusText,
-    headers: copia.headers,
-  });
-}
 
 /*
  * El arte de producto es INMUTABLE: el nombre del archivo lleva la huella de su
@@ -480,7 +408,7 @@ async function cachePrimero(request) {
  * Cuatro segundos: bien por debajo de los ocho que espera `startup-recovery.js`
  * antes de dar el arranque por perdido, y muy por encima de cualquier respuesta
  * sana. El costo de equivocarse es casi nulo: el precache está versionado
- * (versión 62 y CACHE_NAME), así que una copia guardada es el MISMO contenido que iba a traer la
+ * (`?v=58`), así que una copia guardada es el MISMO contenido que iba a traer la
  * red, no una versión vieja.
  */
 const PLAZO_DE_RED_MS = 4000;
@@ -558,9 +486,6 @@ async function networkFirst(request) {
   }
 
   const { response, error } = await red;
-  // Una redirección del borde (`/cuenta` -> `/cuenta/`) se entrega tal cual: el
-  // navegador la sigue. Sustituirla por la shell dejaría la URL equivocada.
-  if (response?.type === 'opaqueredirect') return response;
   if (error || !response) return (await cachedFallback(request)) || Response.error();
   if (isUsable(request, response) && !(await elCuerpoDesmienteAlTipo(request, response))) {
     guardar(request, response.clone());
@@ -584,19 +509,11 @@ async function cachedFallback(request) {
    * por cada respaldo, incluidas las imágenes.
    */
   const desmentida = cached && request.destination === 'style' && await pareceDocumentoHtml(cached);
-  const esNavegacion = request.mode === 'navigate';
-  // Una copia heredada de un worker anterior puede traer la marca `redirected`
-  // (v97 guardó así `./index.html`): se sanea al leerla, no sólo al escribirla.
-  if (cached && isUsable(request, cached) && !desmentida) {
-    return esNavegacion ? sinRedireccion(cached) : cached;
-  }
-  if (esNavegacion) {
+  if (cached && isUsable(request, cached) && !desmentida) return cached;
+  if (request.mode === 'navigate') {
     const paymentReturn = await paymentReturnFallback(request);
-    if (paymentReturn) return sinRedireccion(paymentReturn);
-    // La shell canónica es la raíz: es la que sirve la red. `./index.html` queda
-    // sólo como último recurso para una caché que no tenga `./`.
-    const shell = (await caches.match('./')) || (await caches.match('./index.html'));
-    return shell ? sinRedireccion(shell) : null;
+    if (paymentReturn) return paymentReturn;
+    return (await caches.match('./index.html')) || null;
   }
   return null;
 }

@@ -8,10 +8,17 @@
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-const SHIPPED = fileURLToPath(new URL('../../js/campaigns/campaign-config.js', import.meta.url));
+// Por defecto el motor se ejerce con las campañas de PRUEBA del snapshot CP (las
+// que tienen Heineken y Aperol), no con las publicadas: las publicadas apuntan a
+// productos del catálogo VIVO, que este backend en memoria no tiene. Su
+// validación contra el catálogo vivo está en `tests/campaign-live-catalog.test.mjs`
+// y en `campaigns-live-products.spec.mjs`, que pasa `published: true`.
+const CP_TEST_CONFIG = fileURLToPath(new URL('../fixtures/campaign-config-cp46.js', import.meta.url));
+const PUBLISHED = fileURLToPath(new URL('../../js/campaigns/campaign-config.js', import.meta.url));
 
-/** `only`: ids de campaña a encender; sin lista, todas. */
-export async function useQaCampaigns(page, { only = null } = {}) {
+/** `only`: ids de campaña a encender; sin lista, todas. `published`: la configuración que se publica. */
+export async function useQaCampaigns(page, { only = null, published = false } = {}) {
+  const SHIPPED = published ? PUBLISHED : CP_TEST_CONFIG;
   await page.route('**/__shipped-campaign-config.js', (route) => route.fulfill({
     contentType: 'application/javascript', body: fs.readFileSync(SHIPPED, 'utf8'),
   }));

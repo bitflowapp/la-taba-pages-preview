@@ -1,4 +1,17 @@
 /*
+ * CONFIGURACIÓN DE PRUEBA DEL MOTOR DE CAMPAÑAS — NO ES LA PUBLICADA.
+ *
+ * Copia de las cuatro campañas con los SKU del snapshot CP (`catalog-cp-46.json`)
+ * tal como se publicaron hasta v140. Sirve para ejercer el MOTOR (selección,
+ * escenas, precio vivo, stock) contra el catálogo que usan las pruebas, que
+ * tiene Heineken y Aperol.
+ *
+ * Lo que se publica está en `js/campaigns/campaign-config.js` y se valida contra
+ * el catálogo VIVO en `tests/campaign-live-catalog.test.mjs`. Que el motor ande
+ * con estos datos no demuestra que las campañas publicadas encuentren su
+ * producto: eso fue justamente lo que no se miró.
+ */
+/*
  * CAMPAÑAS ANIMADAS DE LA VIDRIERA — configuración.
  *
  * Una campaña es una pieza EDITORIAL con una escena animada: muestra un
@@ -6,23 +19,11 @@
  * declara precio, porcentaje ni oferta. El dinero tiene su propio contrato
  * validado (`core/promotions.js`) y su propio camino a pantalla.
  *
- * Las campañas ENCENDIDAS de abajo están APROBADAS para producción por Marco
- * (2026-10-05) y cada una apunta a un producto que EXISTE en el catálogo vivo,
- * con su marca, variante, capacidad y envase exactos (`tests/campaign-live-
- * catalog.test.mjs` lo exige contra una instantánea del catálogo de producción y
- * `npm run campaigns:verify-live` contra el catálogo en línea). Siguen siendo
- * editoriales: la configuración no escribe dinero y marca/precio/foto se
- * resuelven desde el producto vivo. El motor (`campaign-engine.js`) la descarta
- * si el producto no está en el catálogo, no se puede comprar ahora, está fuera de
- * vigencia o su texto afirma un precio. Encender una sola de las dos banderas no
- * muestra nada.
- *
- * Una campaña SIN producto real queda APAGADA y PENDIENTE hasta que el comercio
- * lo cargue de verdad: no se inventan productos, stock ni precios, y no se le
- * pone la foto de otra presentación. Hoy son las de Heineken y Aperol: no están
- * en el catálogo y el alcohol sigue cerrado (todos los productos con alcohol
- * están sin disponibilidad), así que ninguna cerveza ni aperitivo podría
- * «comprarse ahora».
+ * Las cuatro campañas de abajo están APROBADAS para producción por Marco
+ * (2026-10-05). Siguen siendo editoriales: la configuración no escribe dinero y
+ * marca/precio/foto se resuelven desde el producto vivo. El motor (`campaign-engine.js`) la descarta si el producto no está
+ * en el catálogo, no se puede comprar ahora, está fuera de vigencia o su texto
+ * afirma un precio. Encender una sola de las dos banderas no muestra nada.
  *
  * El esquema —id, vigencia, placements, destino, prioridad, contextos,
  * creatividad— es el contrato que va a escribir el panel del comercio.
@@ -58,17 +59,8 @@ const candidate = (campaign) => Object.freeze({
   copy: Object.freeze({ ...campaign.copy }),
 });
 
-/** Una campaña a la que todavía le falta su producto real: apagada, sin aprobar. */
-const pendiente = (campaign, motivo) => candidate({
-  ...campaign,
-  enabled: false,
-  approval: Object.freeze({ status: 'PENDIENTE', reference: motivo }),
-});
-
 export const CAMPAIGNS = Object.freeze([
-  // Sin producto real hoy (no está en el catálogo y el alcohol está cerrado): se
-  // enciende cuando el comercio cargue Heineken y abra el alcohol, no antes.
-  pendiente({
+  candidate({
     id: 'heineken-beer-pour',
     priority: 40,
     placements: ['home-hero', 'catalog-inline'],
@@ -76,52 +68,32 @@ export const CAMPAIGNS = Object.freeze([
     target: { skus: ['heineken-710ml'], identity: {"brand":"Heineken","variant":"Lager","volumeMl":710,"container":"can"} },
     creative: { preset: 'beer_pour', vessel: 'can', tint: '#0c7a35', accent: '#e2231a' },
     copy: { eyebrow: 'Heineken', headline: 'Bien fría, recién servida', cta: 'Ver Heineken' },
-  }, 'Sin producto en el catálogo vivo y alcohol cerrado'),
-  // Red Bull Original 250 ml (lata), tal cual está cargado. La campaña se había
-  // pensado para 355 ml: la identidad, la foto y el SKU son los del producto vivo.
+  }),
   candidate({
     id: 'red-bull-cold-can',
     priority: 30,
-    // Sólo la banda: la pieza de grilla pide una lista de 8 productos o más y
-    // «Energizantes» tiene 5, así que ahí nunca saldría. Y en «Todo» le tocaría a
-    // ella por prioridad, tapando a las demás campañas reales.
-    placements: ['home-hero'],
+    placements: ['home-inline', 'catalog-inline'],
     contexts: ['energizantes'],
-    target: { skus: ['red-bull-original-250ml'], identity: {"brand":"Red Bull","variant":"Original","volumeMl":250,"container":"can"} },
+    target: { skus: ['red-bull-energy-drink-355ml'], identity: {"brand":"Red Bull","variant":"Original","volumeMl":355,"container":"can"} },
     creative: { preset: 'cold_can', vessel: 'can', tint: '#1d3f97', accent: '#c8ccd4' },
     copy: { eyebrow: 'Red Bull', headline: 'Fría y lista para llevar', cta: 'Ver Red Bull' },
   }),
-  // Coca-Cola Original 2250 ml (botella): la misma presentación que la pieza.
   candidate({
     id: 'coca-cola-product-drop',
     priority: 20,
     placements: ['home-inline', 'catalog-inline'],
     contexts: ['gaseosas'],
-    target: { skus: ['coca-cola-original-2250ml'], identity: {"brand":"Coca-Cola","variant":"Original","volumeMl":2250,"container":"bottle"} },
+    target: { skus: ['coca-cola-original-2250ml-local'], identity: {"brand":"Coca-Cola","variant":"Original","volumeMl":2250,"container":"bottle"} },
     creative: { preset: 'product_drop', vessel: 'bottle', tint: '#3a140c', accent: '#e30613' },
     copy: { eyebrow: 'Coca-Cola', headline: 'La de siempre, para la mesa', cta: 'Ver Coca-Cola' },
   }),
-  // Aquarius Pomelo 2250 ml (botella): una botella real y comprable para la
-  // escena del hielo, que se había pensado para un aperitivo que no existe.
   candidate({
-    id: 'aquarius-ice-reveal',
-    priority: 25,
-    // Grilla de «Todo» (51 productos) y, si Red Bull se agota, la banda. En su
-    // propio rubro (3 productos) la pieza de grilla no sale: la lista es corta.
-    placements: ['home-hero', 'catalog-inline'],
-    contexts: ['aguas-saborizadas'],
-    target: { skus: ['aquarius-pomelo-2250ml'], identity: {"brand":"Aquarius","variant":"Pomelo","volumeMl":2250,"container":"bottle"} },
-    creative: { preset: 'ice_reveal', vessel: 'bottle', tint: '#f0641e', accent: '#1f5fbf' },
-    copy: { eyebrow: 'Aquarius', headline: 'Con mucho hielo', cta: 'Ver Aquarius' },
-  }),
-  // Sin producto real hoy: no está en el catálogo y el alcohol está cerrado.
-  pendiente({
     id: 'aperol-ice-reveal',
-    priority: 5,
+    priority: 10,
     placements: ['home-hero', 'catalog-inline'],
     contexts: ['aperitivos'],
     target: { skus: ['aperol-750ml'], identity: {"brand":"Aperol","variant":"Original","volumeMl":750,"container":"bottle"} },
     creative: { preset: 'ice_reveal', vessel: 'bottle', tint: '#f0641e', accent: '#1f5fbf' },
     copy: { eyebrow: 'Aperol', headline: 'Con mucho hielo', cta: 'Ver Aperol' },
-  }, 'Sin producto en el catálogo vivo y alcohol cerrado'),
+  }),
 ]);

@@ -21,16 +21,22 @@ const TOKEN = ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
 //   beforeGoto    (page) => Promise      register extra routes; they win over this fixture's
 //   view          'catalog' | 'home'     where the store opens
 //   waitForCatalog false                 do not wait for the 46 cards (boot-failure cases)
+//   catalogRows   filas servidas TAL CUAL (precio, stock y disponibilidad incluidos), en
+//                 lugar del snapshot CP con sus valores de prueba: es lo que permite
+//                 ejercer el navegador con el catálogo vivo (`catalog-live.json`)
 export async function openRuntimeCatalog(page, {
   realtime = true, mapRow = null, availability = null, beforeGoto = null, view = 'catalog', waitForCatalog = true,
+  catalogRows = null,
 } = {}) {
   if (process.env.TABA_RUNTIME_BEFORE_UI) await page.route('**/js/ui.js', (route) => route.fulfill({
     contentType: 'application/javascript', path: process.env.TABA_RUNTIME_BEFORE_UI,
   }));
-  const rows = structuredClone(snapshot.products).map((p) => ({ ...p,
-    business_id: BUSINESS_ID, price: 2500, price_status: 'confirmed', stock: 10,
-    available: true, is_active: true, is_verified: true,
-  })).map((row, index) => (mapRow ? mapRow(row, index) : row));
+  const rows = (catalogRows
+    ? structuredClone(catalogRows).map((p) => ({ ...p, business_id: BUSINESS_ID }))
+    : structuredClone(snapshot.products).map((p) => ({ ...p,
+      business_id: BUSINESS_ID, price: 2500, price_status: 'confirmed', stock: 10,
+      available: true, is_active: true, is_verified: true,
+    }))).map((row, index) => (mapRow ? mapRow(row, index) : row));
   const counters = { products: 0, images: 0, joined: 0, reads: [] };
   const sockets = [];
   await skipInstallInvitation(page);

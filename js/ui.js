@@ -1193,18 +1193,41 @@ function activeCampaigns(catalog = null) {
   });
 }
 
-// El subtítulo y el aviso de alcohol salen del PRODUCTO real, con las mismas
-// funciones que usa la tarjeta: la campaña no puede decir otro nombre ni otra
-// presentación que la que está en góndola.
+// La marca, el subtítulo, el precio y el aviso de alcohol salen del PRODUCTO
+// real, con las mismas funciones que usa la tarjeta: la campaña no puede decir
+// otra marca, otro nombre, otra presentación ni otro precio que los que están
+// en góndola.
 function campaignPiece(entry, placement) {
   const { product } = entry;
   return campaignMarkup(entry, placement, {
     productId: product.id,
+    brand: product.brand,
     title: cardTitle(product),
     line: cardPresentationLine(product),
+    price: campaignPriceView(product),
     alcoholic: product.alcoholic === true,
     supabaseUrl: resolveRuntimeConfig().repository?.supabaseUrl || '',
   });
+}
+
+/*
+ * El precio de la pieza es el de la tarjeta, pieza por pieza: el importe por
+ * `pricingLabel`, el tachado sólo si hay una promoción validada que lo baja
+ * (como `priceBlock`), el porcentaje con `discountPercent` (como `topBadge`) y
+ * la condición de esa promoción. Sin promoción —que en producción es siempre—
+ * es el precio de lista y nada más. Un precio pendiente no llega a la pieza.
+ */
+function campaignPriceView(product) {
+  const pricing = productPricePresentation(product);
+  if (pricing.pricePending) return { pending: true };
+  const off = discountPercent(product);
+  const lowered = Boolean(pricing.regularPrice && pricing.regularPrice > pricing.price);
+  return {
+    amount: pricingLabel(pricing),
+    previous: lowered ? money(pricing.regularPrice) : '',
+    off: lowered && off > 0 ? `${off}% OFF` : '',
+    note: pricing.promotion && pricing.condition ? pricing.condition : '',
+  };
 }
 
 function renderHomeCampaign() {

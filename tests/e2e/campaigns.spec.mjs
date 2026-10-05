@@ -454,7 +454,9 @@ test('tocar la pieza abre la ficha de SU producto y no toca el carrito', async (
   const cartBefore = await page.locator('[data-cart-count]').first().textContent();
   const hashBefore = await page.evaluate(() => window.location.hash);
   const hit = page.locator(`${heroPiece} [data-campaign-cta]`);
-  await expect(hit).toHaveAccessibleName(/Bien fría, recién servida\. Heineken Lager · 710 ml · Lata\. Ver Heineken/);
+  // El nombre de la acción dice todo lo que la pieza muestra, precio incluido:
+  // el de la tarjeta, porque sale de la misma función.
+  await expect(hit).toHaveAccessibleName(/Bien fría, recién servida\. Heineken Lager · 710 ml · Lata\. \$\s2\.500\. Ver Heineken/);
   await hit.click();
   const modal = page.locator('[data-product-modal]');
   await expect(modal).toBeVisible();
@@ -471,6 +473,126 @@ test('tocar la pieza abre la ficha de SU producto y no toca el carrito', async (
   await expect(modal).toBeVisible();
   await modal.locator('[data-close-modal]').click();
   expect(await page.locator('[data-cart-count]').first().textContent()).toBe(cartBefore);
+});
+
+/*
+ * PROMO_PRODUCT_MATCHES_CATALOG
+ *
+ * La pieza no puede mostrar otro producto, otra marca, otra foto, otro precio
+ * ni otro stock que los del catálogo vivo. Se comprueba contra la FUENTE —las
+ * filas que sirve el backend— y contra las otras tres superficies que muestran
+ * el mismo producto: la tarjeta, la ficha y el carrito. Cada ficha recibe un
+ * precio distinto, así un precio copiado de otra ficha o escrito a mano no
+ * puede coincidir por casualidad. Y cuando el dato cambia por Realtime, la
+ * pieza cambia con la tarjeta —sin reiniciar la escena— o se va sola.
+ */
+test('PROMO_PRODUCT_MATCHES_CATALOG: cada pieza es su producto del catálogo —nombre, marca, foto, precio y stock— igual que la tarjeta, la ficha y el carrito', async ({ page }) => {
+  test.setTimeout(90_000);
+  await useQaCampaigns(page);
+  const backend = await openRuntimeCatalog(page, { mapRow: (row, index) => ({ ...row, price: 1990 + index * 137 }) });
+  const rowOf = (id) => backend.rows.find((row) => row.id === id);
+  const money = (amount) => page.evaluate((value) => new Intl.NumberFormat('es-AR', {
+    style: 'currency', currency: 'ARS', maximumFractionDigits: 0,
+  }).format(value), amount);
+  const readPiece = (selector) => page.locator(selector).evaluate((root) => ({
+    campaign: root.dataset.campaign,
+    productId: root.querySelector('[data-campaign-cta]').dataset.productDetail,
+    brand: root.querySelector('.cmp-eyebrow')?.textContent.trim() ?? null,
+    sub: root.querySelector('.cmp-sub')?.textContent.replace(/\s+/g, ' ').trim() ?? null,
+    price: root.querySelector('.cmp-price-now')?.textContent ?? null,
+    previous: root.querySelector('.cmp-price-was')?.textContent ?? null,
+    image: root.querySelector('img.cmp-packshot')?.getAttribute('src') ?? null,
+    srcset: root.querySelector('img.cmp-packshot')?.getAttribute('srcset') ?? '',
+    fallback: Boolean(root.querySelector('.cmp-actor--fallback')),
+    label: root.querySelector('[data-campaign-cta]').getAttribute('aria-label'),
+  }));
+  const readCard = (id) => page.locator(`${GRID} [data-card-product="${id}"]`).evaluate((card) => ({
+    title: card.querySelector('.product-name-link').textContent.trim(),
+    presentation: card.querySelector('.product-body > p').textContent.trim(),
+    price: card.querySelector('.price-amounts strong')?.textContent ?? null,
+    image: card.querySelector('img.thumb-img').getAttribute('src'),
+    // «Agregar», o el selector de cantidad cuando ya está en el carrito.
+    orderable: !card.classList.contains('out-of-stock')
+      && Boolean(card.querySelector('[data-add-product]:not([disabled]), [data-cart-inc]:not([disabled])')),
+  }));
+  const matchesCatalog = async (selector) => {
+    const piece = await readPiece(selector);
+    const row = rowOf(piece.productId);
+    expect(row, `${piece.campaign}: el producto de la pieza no está en el catálogo`).toBeTruthy();
+    expect(row.stock > 0 && row.available === true && row.price_status === 'confirmed' && row.price > 0,
+      `${piece.campaign}: la pieza muestra un producto que no se puede comprar`).toBe(true);
+    const card = await readCard(piece.productId);
+    expect(card.orderable, `${piece.campaign}: la tarjeta del mismo producto no se puede comprar`).toBe(true);
+    expect(piece.brand, `${piece.campaign}: la marca no es la del producto`).toBe(row.brand);
+    expect(piece.sub, `${piece.campaign}: nombre o presentación distintos de la tarjeta`).toBe(`${card.title} · ${card.presentation}`);
+    expect(piece.price, `${piece.campaign}: el precio no es el del catálogo`).toBe(await money(row.price));
+    expect(piece.price, `${piece.campaign}: el precio no es el de la tarjeta`).toBe(card.price);
+    expect(piece.previous, `${piece.campaign}: un tachado sin promoción validada`).toBeNull();
+    expect(piece.label).toContain(piece.price);
+    expect(piece.fallback, `${piece.campaign}: la pieza no usa la foto aprobada`).toBe(false);
+    expect(piece.image, `${piece.campaign}: la foto no es la de la tarjeta`).toBe(card.image);
+    // La miniatura y el original aprobados de ESA ficha, por su huella.
+    expect(piece.image).toContain(row.image_thumbnail_sha256);
+    expect(piece.srcset).toContain(row.image_sha256);
+    return { piece, row, card };
+  };
+
+  // Catálogo: la pieza de la grilla.
+  await expect(page.locator(`${GRID} [data-campaign]`)).toHaveCount(1);
+  const grid = await matchesCatalog(`${GRID} [data-campaign]`);
+  expect(grid.row.sku).toBe('red-bull-energy-drink-355ml');
+
+  // Home: la banda de apertura y la franja intermedia.
+  await goHome(page);
+  const hero = await matchesCatalog(heroPiece);
+  expect(hero.row.sku).toBe('heineken-710ml');
+  const inline = await matchesCatalog(`${INLINE} [data-campaign]`);
+  expect(inline.row.sku).toBe('red-bull-energy-drink-355ml');
+
+  // La ficha que abre la pieza cobra lo mismo, y el carrito también.
+  await page.locator(`${heroPiece} [data-campaign-cta]`).click();
+  const modal = page.locator('[data-product-modal]');
+  await expect(modal).toBeVisible();
+  await expect(modal.locator('.modal-price strong')).toHaveText(hero.piece.price);
+  await modal.locator('.modal-cart-control[data-add-product]').click();
+  await expect(modal).toBeHidden();
+  await page.locator('[data-nav-view="cart"] >> visible=true').first().click();
+  const line = page.locator('.cart-item', { hasText: hero.card.title });
+  await expect(line).toHaveCount(1);
+  await expect(line.locator('.cart-line')).toHaveText(hero.piece.price);
+  await goHome(page);
+
+  // El precio cambia en el catálogo: la pieza lo sigue con la tarjeta, en el
+  // MISMO nodo y sin volver a empezar la escena.
+  await page.evaluate(() => { window.__heroPiece = document.querySelector('[data-home-hero-promo] [data-campaign]'); });
+  const plays = (await page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics())).plays;
+  const heineken = backend.rows.find((row) => row.sku === 'heineken-710ml');
+  heineken.price += 310;
+  backend.emit();
+  const repriced = await money(heineken.price);
+  await expect(page.locator(`${heroPiece} .cmp-price-now`)).toHaveText(repriced, { timeout: 10000 });
+  await expect(page.locator(`${GRID} [data-card-product="${heineken.id}"] .price-amounts strong`)).toHaveText(repriced);
+  await matchesCatalog(heroPiece);
+  expect(await page.evaluate(() => window.__heroPiece === document.querySelector('[data-home-hero-promo] [data-campaign]')),
+    'un precio nuevo reemplazó la pieza').toBe(true);
+  expect((await page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics())).plays, 'un precio nuevo reinició la escena').toBe(plays);
+
+  // Sin stock la pieza se va sola: nunca se anuncia lo que no se puede comprar.
+  // La banda la toma la siguiente campaña válida —Aperol, que se puede
+  // comprar— y esa también es su producto del catálogo.
+  heineken.stock = 0;
+  heineken.available = false;
+  backend.emit();
+  await expect(page.locator('[data-campaign="heineken-beer-pour"]')).toHaveCount(0, { timeout: 10000 });
+  await expect(page.locator(heroPiece)).toHaveAttribute('data-campaign', 'aperol-ice-reveal');
+  expect((await matchesCatalog(heroPiece)).row.sku).toBe('aperol-750ml');
+  // Y sin ninguna campaña comprable vuelve la puerta editorial de siempre.
+  const aperol = backend.rows.find((row) => row.sku === 'aperol-750ml');
+  aperol.stock = 0;
+  aperol.available = false;
+  backend.emit();
+  await expect(page.locator(heroPiece)).toHaveCount(0, { timeout: 10000 });
+  await expect(page.locator(`${HERO} .home-hero-promo`)).toBeVisible();
 });
 
 test('la pieza se recorre con teclado y se puede ocultar; no vuelve en la visita', async ({ page }) => {

@@ -141,7 +141,7 @@ export function actorMarkup(vessel, extra = '', uid = 'scene', packshot = null) 
     const layout = packshot.layout;
     const style = layout ? ` style="--cmp-img-scale:${layout.scale};--cmp-img-x:${layout.x};--cmp-img-y:${layout.y};--cmp-img-clip:inset(${layout.clip.map(n => `${n}%`).join(' ')})"` : '';
     return `<span class="cmp-actor cmp-actor--${kind} cmp-actor--photo${layout ? ' cmp-actor--bounded' : ''}${packshot.official ? '' : ' cmp-actor--fallback'}"${style}>
-      <span class="cmp-vessel"><img class="cmp-packshot" src="${escape(packshot.src)}"${packshot.master ? ` srcset="${escape(packshot.src)} 400w, ${escape(packshot.master)} 1000w" sizes="(max-width: 700px) 110px, 150px"` : ''} width="400" height="400" alt="${escape(packshot.official ? packshot.name : 'Producto sin imagen oficial: ' + packshot.name)}" loading="lazy" decoding="async" data-campaign-image /></span>
+      <span class="cmp-vessel"><img class="cmp-packshot" src="${escape(packshot.src)}"${packshot.master ? ` srcset="${escape(packshot.src)} 400w, ${escape(packshot.master)} 1000w" sizes="(max-width: 700px) 110px, 150px"` : ''} width="400" height="400" alt="${escape(packshot.official ? packshot.name : 'Producto sin imagen oficial: ' + packshot.name)}" loading="${packshot.eager ? 'eager' : 'lazy'}" decoding="async" data-campaign-image /></span>
     </span>`;
   }
   return `<span class="cmp-actor cmp-actor--${kind}">

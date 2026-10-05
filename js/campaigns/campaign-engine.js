@@ -307,21 +307,68 @@ export function selectCampaigns({
 /** Tras cuántas tarjetas va la pieza de grilla. */
 export const CAMPAIGN_GRID_POSITION = GRID_PIECE_AFTER;
 
+/*
+ * El precio de la pieza. NO lo escribe la campaña —su texto no puede nombrar
+ * dinero y la configuración no tiene un solo campo de plata—: llega en `view`
+ * ya escrito por la tienda con las MISMAS funciones que la tarjeta
+ * (`productPricePresentation` + `pricingLabel`), así que la pieza no puede
+ * decir otro precio que el de la góndola. Acá sólo se sanea y se ordena.
+ *
+ * Un precio pendiente no se dibuja: no hay «$ 0» ni «Precio próximamente» en un
+ * anuncio. Igual no debería llegar, porque el motor sólo elige productos que se
+ * pueden comprar ahora; esto es la segunda llave.
+ */
+function priceText(value) {
+  // El espacio duro entre «$» y la cifra se conserva: un importe no se parte.
+  return String(value ?? '').replace(/[\r\n\t]+/g, ' ').trim().slice(0, 24);
+}
+
+function campaignPrice(price) {
+  if (!price || typeof price !== 'object' || price.pending === true) return null;
+  const amount = priceText(price.amount);
+  if (!amount) return null;
+  const previous = priceText(price.previous);
+  const off = priceText(price.off);
+  const note = text(price.note, 48);
+  return {
+    amount,
+    previous: previous && previous !== amount ? previous : '',
+    off: previous && previous !== amount ? off : '',
+    note,
+  };
+}
+
 /**
- * El HTML de la pieza. `view` son los textos que salen del PRODUCTO real y que
- * la campaña no puede escribir por su cuenta: nombre, presentación y si lleva
- * la leyenda de alcohol.
+ * El HTML de la pieza. `view` son los datos que salen del PRODUCTO real y que
+ * la campaña no puede escribir por su cuenta: marca, nombre, presentación,
+ * precio vivo y si lleva la leyenda de alcohol.
  */
 export function campaignMarkup({ campaign, product }, placement, view = {}) {
   const preset = CAMPAIGN_PRESETS[campaign.creative.preset];
   const { creative, copy } = campaign;
-  const packshot = product ? resolveCampaignProductAsset(campaign, product, view.supabaseUrl || '') : null;
-  if (product && !packshot) return '';
+  const asset = product ? resolveCampaignProductAsset(campaign, product, view.supabaseUrl || '') : null;
+  if (product && !asset) return '';
+  // En la banda de apertura el envase está a la vista desde el primer
+  // pantallazo: se pide en el acto, no cuando el navegador decide que es visible.
+  const packshot = asset ? { ...asset, eager: placement === 'home-hero' } : null;
+  // El rótulo es la MARCA, y la marca la dice el producto: la que se escribió
+  // en la campaña queda sólo para un producto que no declara la suya.
+  const brand = text(view.brand, 28) || copy.eyebrow;
   const productName = text(view.title, 100);
   const productLine = text(view.line, 80);
   const subtitle = [productName, productLine].filter(Boolean).join(' · ');
+  // Cada dato de la presentación viaja entero —«355 ml» no se parte— y el
+  // separador va con el dato que sigue: un renglón no termina en «·».
+  const [firstPart, ...restParts] = subtitle.split(' · ');
+  const subtitleMarkup = subtitle
+    ? [escapeHtml(firstPart), ...restParts.map((part) => `<span class="cmp-seg">· ${escapeHtml(part)}</span>`)].join(' ')
+    : '';
+  const price = campaignPrice(view.price);
+  const priceLabel = price
+    ? [price.amount, price.previous ? `antes ${price.previous}` : '', price.note].filter(Boolean).join(', ')
+    : '';
   const legal = view.alcoholic === true;
-  const label = [copy.headline, subtitle, copy.cta].filter(Boolean).join('. ');
+  const label = [copy.headline, subtitle, priceLabel, copy.cta].filter(Boolean).join('. ');
   const style = [
     `--cmp-tint:${creative.tint}`,
     `--cmp-tint-deep:${creative.tintDeep}`,
@@ -334,15 +381,21 @@ export function campaignMarkup({ campaign, product }, placement, view = {}) {
   ].join(';');
   // Los degradados del envase se referencian por id, y los id son del documento.
   const uid = sceneId(`cmp-${campaign.id}-${placement}`);
+  // El precio y la acción comparten renglón: en la banda del teléfono no hay
+  // lugar para uno más sin mover el primer precio de la vidriera.
+  const priceMarkup = price
+    ? `<span class="cmp-price" data-campaign-price><strong class="cmp-price-now">${escapeHtml(price.amount)}</strong>${price.previous ? `<s class="cmp-price-was">${escapeHtml(price.previous)}</s>` : ''}${price.off ? `<em class="cmp-price-off">${escapeHtml(price.off)}</em>` : ''}</span>`
+    : '';
   return `
-    <aside class="cmp cmp--${escapeHtml(creative.preset.replace(/_/g, '-'))} cmp--${escapeHtml(placement)}${legal ? ' cmp--legal' : ''}" data-campaign="${escapeHtml(campaign.id)}" data-campaign-preset="${escapeHtml(creative.preset)}" data-campaign-placement="${escapeHtml(placement)}" data-catalog-key="campaign:${escapeHtml(placement)}:${escapeHtml(campaign.id)}" aria-label="${escapeHtml(`Anuncio: ${copy.eyebrow || copy.headline}`)}" style="${style}">
+    <aside class="cmp cmp--${escapeHtml(creative.preset.replace(/_/g, '-'))} cmp--${escapeHtml(placement)}${legal ? ' cmp--legal' : ''}${price ? ' cmp--priced' : ''}" data-campaign="${escapeHtml(campaign.id)}" data-campaign-preset="${escapeHtml(creative.preset)}" data-campaign-placement="${escapeHtml(placement)}" data-catalog-key="campaign:${escapeHtml(placement)}:${escapeHtml(campaign.id)}" aria-label="${escapeHtml(`Anuncio: ${brand || copy.headline}`)}" style="${style}">
       <button class="cmp-hit" type="button" data-product-detail="${escapeHtml(view.productId)}" data-campaign-cta aria-label="${escapeHtml(label)}">
         <span class="cmp-scene"><span class="cmp-stage" aria-hidden="true">${preset.stage({ ...creative, packshot }, uid)}</span></span>
         <span class="cmp-copy">
-          ${copy.eyebrow ? `<small class="cmp-eyebrow">${escapeHtml(copy.eyebrow)}</small>` : ''}
+          ${brand ? `<small class="cmp-eyebrow">${escapeHtml(brand)}</small>` : ''}
           <strong class="cmp-headline">${escapeHtml(copy.headline)}</strong>
-          ${subtitle ? `<span class="cmp-sub">${escapeHtml(subtitle)}</span>` : ''}
-          <span class="cmp-cta">${escapeHtml(copy.cta)} <span aria-hidden="true">→</span></span>
+          ${subtitle ? `<span class="cmp-sub">${subtitleMarkup}</span>` : ''}
+          ${price?.note ? `<small class="cmp-price-note">${escapeHtml(price.note)}</small>` : ''}
+          <span class="cmp-buy">${priceMarkup}<span class="cmp-cta">${escapeHtml(copy.cta)} <span aria-hidden="true">→</span></span></span>
         </span>
       </button>
       <button class="cmp-close" type="button" data-campaign-dismiss="${escapeHtml(campaign.id)}" aria-label="Ocultar este anuncio"><span aria-hidden="true">×</span></button>

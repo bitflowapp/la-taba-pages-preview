@@ -10,6 +10,19 @@ producto que el local vende y lleva a su ficha. No es una promoción. No declara
 precio, porcentaje ni oferta: eso tiene su propio contrato validado
 (`js/core/promotions.js`) y su propio camino a pantalla.
 
+**Lo que la pieza muestra del producto sale del producto.** La marca del
+rótulo, el nombre y la presentación del subtítulo, la foto aprobada y el
+**precio vivo** llegan del catálogo, con las mismas funciones que usa la
+tarjeta (`cardTitle`, `cardPresentationLine`, `productPricePresentation` +
+`pricingLabel`, `discountPercent`). La configuración sigue sin un solo campo de
+dinero y su texto sigue sin poder nombrarlo: el precio que se ve es el de la
+góndola, cambia con ella por Realtime y desaparece con la pieza cuando el
+producto deja de poder comprarse. Tachado, porcentaje y condición existen sólo
+si hay una promoción validada activa —en producción, nunca— y no entran en la
+banda del teléfono, donde el importe comparte renglón con la acción.
+`tests/e2e/campaigns.spec.mjs` (PROMO_PRODUCT_MATCHES_CATALOG) lo comprueba
+contra las filas del backend, la tarjeta, la ficha y el carrito.
+
 Todo está hecho con HTML, CSS y JavaScript nativo. No hay librerías, canvas,
 WebGL, video ni sonido. Las escenas no piden ninguna imagen.
 
@@ -150,7 +163,7 @@ la pieza. La misma escena sirve a 80 px y a 268 px.
 | 68–73 % | corta el chorro |
 | 71–94 % | el envase vuelve y se asienta, con un rebote mínimo |
 | 62–84 % | corona de espuma |
-| 74–92 % | subtítulo y acción |
+| 28–44 % | subtítulo, precio y acción (todas las escenas) |
 | después | siete burbujas suben, seis veces cada una, y se detienen |
 
 ### cold_can — 4,2 s, 31 nodos
@@ -204,7 +217,7 @@ Lo mismo en modo liviano (ahorro de datos o poca memoria).
 ## Accesibilidad
 
 - Toda la pieza es **un botón** que abre la ficha del producto; su nombre
-  accesible dice título, producto y acción.
+  accesible dice título, producto, precio y acción.
 - La escena es `aria-hidden`: es decorativa y no hace falta para entender nada.
 - La leyenda legal va fuera del botón: es texto que se lee.
 - **Ocultar**: botón de 44 × 44 px con nombre «Ocultar este anuncio». Vale por la

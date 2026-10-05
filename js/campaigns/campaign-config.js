@@ -29,7 +29,10 @@
  *   target.skus  el producto; el primero que exista en el catálogo vivo gana
  *   creative     preset de escena, forma del envase y colores (hex de 6 dígitos)
  *   copy         rótulo, título y acción. El subtítulo NO se escribe: sale del
- *                nombre y la presentación reales del producto.
+ *                nombre y la presentación reales del producto. El rótulo es la
+ *                marca: en pantalla manda la del producto, y éste queda de
+ *                respaldo. El PRECIO tampoco se escribe: la pieza muestra el
+ *                precio vivo del producto, el mismo de la tarjeta.
  *
  * El envase usa la misma fotografía aprobada del catálogo. Sin foto oficial,
  * muestra el placeholder propio. La identidad declara marca, variante y envase.

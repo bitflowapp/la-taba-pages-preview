@@ -444,8 +444,86 @@ test('la pieza es UN botón que lleva a la ficha, con la escena fuera del árbol
 
 test('el subtítulo sale del producto real, no de la campaña', () => {
   const html = piece('red-bull-cold-can', 'home-inline', { title: 'Red Bull Energy Drink', line: '355 ml · Lata' });
-  assert.match(html, /<span class="cmp-sub">Red Bull Energy Drink · 355 ml · Lata<\/span>/);
+  // Cada dato de la presentación viaja entero y el «·» va con el dato que
+  // sigue: el renglón no puede partir «355» de «ml» ni terminar en «·».
+  assert.match(html, /<span class="cmp-sub">Red Bull Energy Drink <span class="cmp-seg">· 355 ml<\/span> <span class="cmp-seg">· Lata<\/span><\/span>/);
+  const sub = /<span class="cmp-sub">([\s\S]*?)<\/span>\s*<span class="cmp-buy">/.exec(html)[1];
+  assert.equal(sub.replace(/<[^>]+>/g, ''), 'Red Bull Energy Drink · 355 ml · Lata', 'el texto que se lee es el de siempre');
   assert.equal(Object.hasOwn(byId('red-bull-cold-can').copy, 'subheadline'), false);
+});
+
+// ─── El precio y la marca: del producto, nunca de la campaña ──────────────────
+
+test('el precio de la pieza es el que le pasa la tienda; la campaña no tiene de dónde sacar uno', () => {
+  const priced = piece('heineken-beer-pour', 'home-hero', { price: { amount: '$\u00a02.500', previous: '', off: '', note: '' } });
+  assert.match(priced, /<span class="cmp-price" data-campaign-price><strong class="cmp-price-now">\$\u00a02\.500<\/strong><\/span><span class="cmp-cta">/);
+  assert.match(priced, /aria-label="Bien fría, recién servida\. Heineken Lager · 710 ml · Lata\. \$\u00a02\.500\. Ver Heineken"/);
+  assert.match(priced, /class="cmp [^"]*cmp--priced/);
+  // Sin precio en la vista no hay precio: la pieza no lo inventa ni lo arrastra.
+  const unpriced = piece('heineken-beer-pour', 'home-hero');
+  assert.doesNotMatch(unpriced, /cmp-price|cmp--priced|\$/);
+  // Un precio pendiente no se anuncia: ni «$ 0» ni «Precio próximamente».
+  for (const price of [{ pending: true, amount: 'Precio próximamente' }, { amount: '' }, { amount: '   ' }, null, 'gratis', 2500]) {
+    assert.doesNotMatch(piece('heineken-beer-pour', 'home-hero', { price }), /cmp-price|Precio próximamente|gratis|2500/);
+  }
+});
+
+test('el tachado y el porcentaje sólo existen con un precio anterior real y distinto', () => {
+  const lowered = piece('red-bull-cold-can', 'home-inline', {
+    price: { amount: '$\u00a02.000', previous: '$\u00a02.500', off: '20% OFF', note: 'Precio promocional' },
+  });
+  assert.match(lowered, /<strong class="cmp-price-now">\$\u00a02\.000<\/strong><s class="cmp-price-was">\$\u00a02\.500<\/s><em class="cmp-price-off">20% OFF<\/em>/);
+  assert.match(lowered, /<small class="cmp-price-note">Precio promocional<\/small>/);
+  assert.match(lowered, /\$\u00a02\.000, antes \$\u00a02\.500, Precio promocional\./, 'el nombre de la acción dice las dos cifras y la condición');
+  // Un «antes» igual al de ahora no es un descuento, y un porcentaje sin
+  // «antes» no tiene contra qué compararse: ninguno de los dos se dibuja.
+  const same = piece('red-bull-cold-can', 'home-inline', { price: { amount: '$\u00a02.500', previous: '$\u00a02.500', off: '0% OFF' } });
+  assert.doesNotMatch(same, /cmp-price-was|cmp-price-off|antes/);
+  const orphan = piece('red-bull-cold-can', 'home-inline', { price: { amount: '$\u00a02.500', off: '30% OFF' } });
+  assert.doesNotMatch(orphan, /cmp-price-off|30%/);
+});
+
+test('el rótulo es la marca del producto, no la que se escribió en la campaña', () => {
+  const html = piece('heineken-beer-pour', 'home-hero', { brand: 'Heineken' });
+  assert.match(html, /<small class="cmp-eyebrow">Heineken<\/small>/);
+  // Si la campaña dijera otra marca, gana la del producto.
+  const drift = normalizeCampaign(approved(byId('heineken-beer-pour'), { copy: { ...byId('heineken-beer-pour').copy, eyebrow: 'Otra Marca' } }));
+  const corrected = campaignMarkup({ campaign: drift }, 'home-hero', { productId: 'p-1', brand: 'Heineken', title: 'Heineken Lager' });
+  assert.match(corrected, /<small class="cmp-eyebrow">Heineken<\/small>/);
+  assert.match(corrected, /aria-label="Anuncio: Heineken"/);
+  assert.doesNotMatch(corrected, /Otra Marca/);
+  // Sólo un producto que no declara marca usa el rótulo de la campaña.
+  assert.match(piece('heineken-beer-pour', 'home-hero', { brand: '' }), /<small class="cmp-eyebrow">Heineken<\/small>/);
+});
+
+test('cada candidata nombra en su acción la marca de SU producto', () => {
+  for (const campaign of CAMPAIGNS) {
+    const { brand } = campaign.target.identity;
+    assert.ok(brand, `${campaign.id} no declara la marca de su producto`);
+    assert.ok(campaign.copy.cta.includes(brand), `${campaign.id}: la acción «${campaign.copy.cta}» no nombra ${brand}`);
+    assert.equal(campaign.copy.eyebrow, brand, `${campaign.id}: el rótulo de respaldo no es la marca del producto`);
+  }
+});
+
+test('un precio o una marca hostiles llegan como texto', () => {
+  const html = piece('heineken-beer-pour', 'home-hero', {
+    brand: '<b>B</b>',
+    price: { amount: '"><img src=x onerror=1>', previous: '<s>1</s>', off: '<script>', note: '<i>n</i>' },
+  });
+  assert.doesNotMatch(html, /<img|<script|<b>|<i>n/);
+  assert.match(html, /&lt;b&gt;B&lt;\/b&gt;/);
+  assert.match(html, /&quot;&gt;&lt;img src=x onerror=1&gt;/);
+  assert.equal((html.match(/<button/g) || []).length, 2, 'el precio abrió o cerró un botón de más');
+});
+
+test('la foto del envase se pide en el acto en la banda de apertura, y perezosa en las franjas', () => {
+  const lab = JSON.parse(read('scripts/campaign-lab/approved-products.json'));
+  const product = lab.find((entry) => entry.sku === 'heineken-710ml');
+  const campaign = normalizeCampaign(approved(byId('heineken-beer-pour')));
+  const hero = campaignMarkup({ campaign, product }, 'home-hero', { productId: product.id, title: product.name });
+  const grid = campaignMarkup({ campaign, product }, 'catalog-inline', { productId: product.id, title: product.name });
+  assert.match(hero, /<img class="cmp-packshot"[^>]* loading="eager"/);
+  assert.match(grid, /<img class="cmp-packshot"[^>]* loading="lazy"/);
 });
 
 test('un producto con alcohol lleva la leyenda legal; uno sin alcohol, no', () => {

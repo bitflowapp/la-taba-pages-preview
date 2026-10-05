@@ -74,9 +74,9 @@ test('con la configuración publicada aparecen las campañas de productos reales
 
 test('una sola llave no alcanza: encendida sin aprobar, o aprobada sin encender', () => {
   const beer = byId('heineken-beer-pour');
-  const soloEncendida = { ...beer, enabled: true };
-  const soloAprobada = { ...beer, approval: { status: 'APROBADA', reference: 'x' } };
-  const sinReferencia = approved(beer, { approval: { status: 'APROBADA', reference: '' } });
+  const soloEncendida = { ...beer, enabled: true, approval: { status: 'PENDIENTE', reference: '' } };
+  const soloAprobada = { ...beer, enabled: false, approval: { status: 'APROBADA', reference: 'x' } };
+  const sinReferencia = { ...beer, enabled: true, approval: { status: 'APROBADA', reference: '' } };
   for (const campaign of [soloEncendida, soloAprobada, sinReferencia]) {
     const selected = selectCampaigns({ campaigns: [campaign], products: catalog, isOrderable: everythingSells });
     assert.equal(selected['home-hero'], null);

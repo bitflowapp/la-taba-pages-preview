@@ -312,8 +312,8 @@ select ok(pg_temp.dto('CC-9') is null, 'el pedido del comercio B no aparece');
 
 -- ══ 7 · TIENDA Y REPARTO ═════════════════════════════════════════════════════
 select pg_temp.put('overview', public.pos_get_store_overview('b8000000-0000-4000-8000-000000000001', pg_temp.ctx('h1'))::text);
-select is(pg_temp.ctx('overview')::jsonb -> 'mercadopago', '{"state": "not_connected"}'::jsonb,
-  'Mercado Pago llega como una palabra: no conectado, sin tokens ni ids');
+select is(pg_temp.ctx('overview')::jsonb -> 'mercadopago', '{"state": "not_connected", "checkout_enabled": false}'::jsonb,
+  'Mercado Pago llega como una palabra y un sí/no de cobro: no conectado, sin tokens ni ids');
 select ok(pg_temp.ctx('overview')::jsonb -> 'riders' -> 'list' @> '[{"name": "Rider Norte"}]', 'los repartidores del comercio con su nombre');
 select is(pg_temp.ctx('overview')::jsonb -> 'business' ->> 'status', 'open', 'el estado del comercio es el real');
 

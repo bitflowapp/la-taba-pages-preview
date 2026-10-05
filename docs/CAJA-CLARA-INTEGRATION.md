@@ -79,3 +79,25 @@ Rollback: correr el archivo de rollback (se niega si hay conflictos abiertos: pr
 - La cuenta de dueño de Walter (correo) para conectar la caja del local real.
 - Mercado Pago del vendedor (Walter comercial, nunca Marco), ARCA producción, impresora y lector físicos, teléfono
   Rider desbloqueado para el E2E físico.
+
+## Vincular Mercado Pago desde Caja Clara (deep link del Panel)
+
+Caja Clara (Tienda y reparto → Cobros online → **Vincular Mercado Pago**) abre en el navegador:
+
+    <tienda>/?panel=mercadopago#business
+
+`businessDeepLinkFromUrl` (`js/production-operations.js`) lo lee al iniciar el Panel, elige la pantalla
+`payments-setup` (Mercado Pago: Conectar, Reconectar, Verificar conexión, Desconectar) y borra el parámetro de la barra.
+La vuelta del OAuth (`?mp_connection=<resultado>#business`, la arma `mercadopago-oauth-callback`) pasa por la misma
+función y cae en la misma pantalla. Ninguno de los dos trae estado: la conexión se lee del servidor. Un `panel=`
+desconocido se ignora (el Panel abre en su pantalla de siempre). Contrato atado por `tests/business-deep-link.test.mjs`
+y por el E2E «el link de Caja Clara abre el Panel directo en Mercado Pago…» en
+`tests/e2e/business-windows-operations.spec.mjs`.
+
+El botón «Conectar Mercado Pago» sigue siendo el flujo existente (`mercadopago-connect` → Mercado Pago con PKCE S256 →
+`mercadopago-oauth-callback` → `mp_seller_connections`). Caja Clara no ve el `code`, los tokens ni el Client Secret.
+
+`pos_get_store_overview` → `mercadopago` lleva `state` (`connected` / `needs_attention` / `not_connected`) y, desde
+`20261005120000_caja_clara_overview_mercadopago_checkout.sql`, `checkout_enabled`: la habilitación de la plataforma con
+la misma regla del checkout. Cuenta vinculada no es cobro habilitado: con `checkout_enabled=false` el Panel dice
+«Bloqueado» y Caja Clara «Cobros online todavía pendientes de habilitación».

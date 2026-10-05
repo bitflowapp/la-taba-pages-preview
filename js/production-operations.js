@@ -196,6 +196,41 @@ let access = {
 let accessRegistration = emptyAccessRegistration();
 let gpsShare = emptyGpsShare();
 
+/*
+ * Los links que abren el Panel directamente en una pantalla.
+ *
+ *   ?panel=mercadopago#business   → Mercado Pago (conectar, reconectar, verificar,
+ *                                   desconectar). Es el que abre Caja Clara con
+ *                                   «Vincular Mercado Pago».
+ *   ?mp_connection=<resultado>     → la vuelta del OAuth (la arma el callback):
+ *                                   cae en la misma pantalla.
+ *
+ * Sólo eligen la pantalla: no traen ni llevan estado, y el resultado del OAuth
+ * NO se cree desde la URL —la verdad de la conexión se lee del servidor—. Por
+ * eso el parámetro se borra al leerlo: recargar no lo repite y no queda en el
+ * historial. El hash no se toca (`#business` decide la vista de la app).
+ *
+ * Un `panel=` desconocido se ignora y se limpia igual: abrir el Panel en su
+ * pantalla de siempre es mejor que un error por un link viejo.
+ */
+const BUSINESS_DEEP_LINK_VIEWS = Object.freeze({ mercadopago: 'payments-setup' });
+
+export function businessDeepLinkFromUrl(href) {
+  let url;
+  try {
+    url = new URL(String(href || ''));
+  } catch (_) {
+    return null;
+  }
+  const panel = url.searchParams.get('panel');
+  const oauthReturn = url.searchParams.has('mp_connection');
+  if (panel === null && !oauthReturn) return null;
+  const view = oauthReturn ? 'payments-setup' : BUSINESS_DEEP_LINK_VIEWS[String(panel).trim().toLowerCase()] || null;
+  url.searchParams.delete('panel');
+  url.searchParams.delete('mp_connection');
+  return { view, cleanUrl: url.toString() };
+}
+
 export function initProductionOperations({
   onChange = () => {},
   onOrderAlert = () => {},
@@ -207,12 +242,11 @@ export function initProductionOperations({
   // preferencia del timbre y la lista de lo ya anunciado viven adentro.
   orderAlerts ||= createBusinessOrderAlertChannel();
   initialized = true;
-  const returnUrl = new URL(globalThis.location.href);
-  if (returnUrl.searchParams.has('mp_connection')) {
-    businessOperationsView = 'payments-setup';
+  const deepLink = businessDeepLinkFromUrl(globalThis.location.href);
+  if (deepLink) {
+    if (deepLink.view) businessOperationsView = deepLink.view;
     // The query only chooses the screen. Connection truth is read from the server.
-    returnUrl.searchParams.delete('mp_connection');
-    globalThis.history.replaceState(null, '', returnUrl.toString());
+    globalThis.history.replaceState(null, '', deepLink.cleanUrl);
   }
   repository = getOrderRepository();
   auth = repository?.auth || null;

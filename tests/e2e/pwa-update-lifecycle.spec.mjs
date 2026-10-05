@@ -155,7 +155,7 @@ async function banner(page) {
 }
 
 test.describe('el aviso de actualización sigue el ciclo de vida real del worker', () => {
-  test('CP v131 a v138: actualización real conserva sesión y carrito', async ({ context }) => {
+  test('CP v131 a v139: actualización real conserva sesión y carrito', async ({ context }) => {
     controlledVersions = true;
     const page = await openControlledPage(context);
     const storage = {

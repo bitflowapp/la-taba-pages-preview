@@ -260,6 +260,61 @@ test('el jitter real del equipo quieto no dispara movimiento visible', () => {
   assert.equal(motion.debugState().rejected, 0);
 });
 
+/*
+ * LT-0004 (2026-10-06, producción, en bici): con la página en segundo plano el navegador espacia los sondeos (≈1 por
+ * minuto). El motor tomaba esos huecos como la cadencia «normal» del reparto, así que al volver el siguiente salto ya
+ * no parecía una recuperación: el marcador arrancaba donde el rider estuvo antes y «caminaba» 14 s hasta donde está.
+ */
+function secuenciaConSegundoPlano(motion, t) {
+  let at = 0;
+  let metros = 0;
+  const empujar = (hueco, paso) => {
+    at += hueco;
+    metros += paso;
+    t.avanzar(hueco);
+    return motion.pushFix(fix({ at, lat: -38.9459 + metros * METER_LAT }));
+  };
+  motion.pushFix(fix({ at: 0 }));
+  for (let i = 0; i < 4; i += 1) empujar(10_000, 40);           // en vivo: un fix cada 10 s
+  const enSegundoPlano = [];
+  for (let i = 0; i < 4; i += 1) enSegundoPlano.push(empujar(60_000, 240)); // sondeos espaciados
+  return { empujar, enSegundoPlano };
+}
+
+test('los sondeos espaciados del segundo plano no se vuelven la cadencia del reparto', () => {
+  const t = reloj();
+  const motion = createRiderMotion({ now: t.now });
+  const { enSegundoPlano } = secuenciaConSegundoPlano(motion, t);
+  assert.ok(enSegundoPlano.every((r) => r.mode === 'converge'),
+    `cada salto de un minuto es una recuperación: ${enSegundoPlano.map((r) => r.mode).join(', ')}`);
+  assert.equal(motion.observedGapMs(), 10_000, 'la cadencia sigue siendo la del reparto en vivo');
+});
+
+test('volver a primer plano: el fix siguiente se planta donde está, sin caminar desde el pasado', () => {
+  const t = reloj();
+  const motion = createRiderMotion({ now: t.now });
+  const { empujar } = secuenciaConSegundoPlano(motion, t);
+  motion.resume();
+  const vuelta = empujar(20_000, 80);
+  assert.equal(vuelta.mode, 'instant');
+  assert.deepEqual(motion.visualPositionAt(), { lat: motion.measuredPosition().lat, lng: motion.measuredPosition().lng });
+  assert.equal(motion.isMoving(), false);
+  // Y después de volver, el reparto en vivo se vuelve a recorrer con su cadencia de siempre.
+  const siguiente = empujar(10_000, 40);
+  assert.equal(siguiente.mode, 'travel');
+});
+
+test('resume conserva la guardia: un fix viejo o repetido después de volver no entra', () => {
+  const t = reloj();
+  const motion = createRiderMotion({ now: t.now });
+  motion.pushFix(fix({ at: 0 }));
+  t.avanzar(10_000);
+  motion.pushFix(fix({ at: 10_000, lat: -38.9459 + 40 * METER_LAT }));
+  motion.resume();
+  assert.equal(motion.pushFix(fix({ at: 5_000 })).reason, MOTION_REJECTIONS.BACKWARDS);
+  assert.equal(motion.pushFix(fix({ at: 10_000, lat: -38.9459 + 40 * METER_LAT })).reason, MOTION_REJECTIONS.DUPLICATE);
+});
+
 test('reset deja el motor como recién creado', () => {
   const t = reloj();
   const motion = createRiderMotion({ now: t.now });

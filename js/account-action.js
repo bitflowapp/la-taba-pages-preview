@@ -26,6 +26,7 @@
 // `mountAccountAction`.
 
 import { RECOVERY_SENT_COPY, readableAuthError, TEAM_PASSWORD_MIN_LENGTH } from './services/supabase-auth.js';
+import { passwordAidsMarkup, passwordFieldAttributes } from './password-aids.js';
 
 export const ACCOUNT_STEP = Object.freeze({
   WORKING: 'working',
@@ -191,8 +192,9 @@ export function renderAccountAction({ step, type = '', message = '', busy = fals
         <label>
           Contraseña nueva
           <input name="password" type="password" autocomplete="new-password"
-            minlength="${TEAM_PASSWORD_MIN_LENGTH}" required />
+            minlength="${TEAM_PASSWORD_MIN_LENGTH}" required ${passwordFieldAttributes()} />
         </label>
+        ${passwordAidsMarkup(TEAM_PASSWORD_MIN_LENGTH)}
         ${note}
         <div class="button-row">
           <button class="primary-button" type="submit"${busy ? ' disabled' : ''}>Guardar contraseña</button>

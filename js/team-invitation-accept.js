@@ -13,6 +13,7 @@
 // sesión vive en memoria (`persistSession: false`) y se cierra al terminar.
 // El token se saca de la barra de direcciones apenas se lee.
 import { readableAuthError, TEAM_PASSWORD_MIN_LENGTH } from './services/supabase-auth.js';
+import { passwordAidsMarkup, passwordFieldAttributes } from './password-aids.js';
 
 export const INVITE_STEP = Object.freeze({
   WORKING: 'working',
@@ -193,7 +194,8 @@ export function renderInvitation({ step, info = null, message = '', busy = false
     case INVITE_STEP.SET_PASSWORD:
       return `${head('Elegí tu contraseña', `Al menos ${TEAM_PASSWORD_MIN_LENGTH} caracteres. No se aceptan contraseñas que ya aparecieron en filtraciones conocidas.`)}
         <form class="production-auth-form" data-invite-password-form novalidate>
-          <label>Contraseña<input name="password" type="password" autocomplete="new-password" minlength="${TEAM_PASSWORD_MIN_LENGTH}" required /></label>
+          <label>Contraseña<input name="password" type="password" autocomplete="new-password" minlength="${TEAM_PASSWORD_MIN_LENGTH}" required ${passwordFieldAttributes()} /></label>
+          ${passwordAidsMarkup(TEAM_PASSWORD_MIN_LENGTH)}
           ${note}
           <div class="button-row"><button class="primary-button" type="submit"${disabled}>Guardar y aceptar</button></div>
         </form>`;

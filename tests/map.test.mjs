@@ -618,6 +618,49 @@ test('el gesto del cliente suspende el seguimiento y el mapa deja de mover la c�
   }
 });
 
+/*
+ * LT-0004 (2026-10-06): con la página en segundo plano y vuelta a abrir, el marcador aparecía donde el rider había
+ * estado antes y «caminaba» de a poco hasta la posición real. Al volver a primer plano el próximo fix se planta.
+ */
+function recorridoConSegundoPlano({ volver }) {
+  const environment = installMapLibreStub();
+  globalThis.matchMedia = () => ({ matches: false }); // con animaciones: es donde se veía el defecto
+  const { shell, canvas, fallback } = createMapShell(volver ? 'LT-BG-1' : 'LT-BG-2', { documentRef: environment.document });
+  const controller = createMapLibreTrackingMap();
+  const base = Date.now() - 200_000;
+  const enCamino = { freshness: 'fresh', status: 'on_the_way' };
+  try {
+    controller.mount({ container: canvas, shell, fallback, riderLocation: gpsFix({ at: base }), ...enCamino, source: 'gps' });
+    environment.calls.maps[0].emit('load');
+    controller.updateRiderLocation(gpsFix({ lat: -38.9455, at: base + 12_000 }), enCamino);
+    if (volver) {
+      environment.document.hidden = true;
+      environment.document.dispatchEvent('visibilitychange');
+    }
+    controller.updateRiderLocation(gpsFix({ lat: -38.9440, at: base + 72_000 }), enCamino); // sondeo espaciado
+    if (volver) {
+      environment.document.hidden = false;
+      environment.document.dispatchEvent('visibilitychange');
+    }
+    const destino = gpsFix({ lat: -38.9433, at: base + 92_000 });
+    controller.updateRiderLocation(destino, enCamino);
+    return { primerDibujo: environment.calls.setLngLat.at(-1), destino: [destino.lng, destino.lat] };
+  } finally {
+    controller.destroy();
+    environment.restore();
+  }
+}
+
+test('volver a primer plano planta el fix siguiente en vez de caminar desde el pasado', () => {
+  const { primerDibujo, destino } = recorridoConSegundoPlano({ volver: true });
+  assert.deepEqual(primerDibujo, destino);
+});
+
+test('control: sin volver de segundo plano, ese mismo fix se recorre (no se planta)', () => {
+  const { primerDibujo, destino } = recorridoConSegundoPlano({ volver: false });
+  assert.notDeepEqual(primerDibujo, destino);
+});
+
 test('volver al rider recupera cámara, zoom útil y seguimiento', () => {
   const environment = installMapLibreStub();
   const { shell, canvas, fallback } = createMapShell('LT-CAM-2', {

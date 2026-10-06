@@ -64,7 +64,7 @@ class MainActivity: ComponentActivity() {
             state.cachedAt?.let { confirmedAt ->
                 Card(Modifier.fillMaxWidth().padding(vertical = 6.dp).testTag("offline-mission")) { Column(Modifier.padding(12.dp)) {
                     Text("Sin conexión · información guardada en este teléfono", style = MaterialTheme.typography.titleSmall)
-                    Text("Es lo último que La Taba confirmó, a las ${DateFormat.getTimeFormat(context).format(Date(confirmedAt))}. " +
+                    Text("Confirmado por La Taba a las ${DateFormat.getTimeFormat(context).format(Date(confirmedAt))} · " +
                         "No es el estado actual: las acciones vuelven cuando haya conexión.", style = MaterialTheme.typography.bodySmall)
                 } }
             }
@@ -87,6 +87,8 @@ class MainActivity: ComponentActivity() {
                         board?.orders?.forEach { order ->
                             Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) { Column(Modifier.padding(12.dp)) {
                                 Text(order.code); Text(if (state.cachedAt != null) "Último estado confirmado: ${order.statusLabel}" else order.statusLabel)
+                                if (order.paymentInstruction.isNotBlank()) Text(order.paymentInstruction,
+                                    style = MaterialTheme.typography.titleSmall, modifier = Modifier.testTag("payment-${order.code}"))
                                 Button(onClick = { nav.navigate("delivery/${order.id}") }, modifier = Modifier.testTag("detail-${order.code}")) { Text("Ver entrega") }
                             } }
                         }
@@ -112,7 +114,14 @@ class MainActivity: ComponentActivity() {
                         else {
                             Text(order.code, style = MaterialTheme.typography.titleLarge)
                             Text(if (state.cachedAt != null) "Último estado confirmado: ${order.statusLabel}" else "Estado: ${order.statusLabel}")
-                            Text("Retiro: ${order.pickup}"); Text("Destino: ${order.address}"); Text("Total: ${order.total}")
+                            if (order.paymentInstruction.isNotBlank()) Card(Modifier.fillMaxWidth().padding(vertical = 6.dp).testTag("payment")) {
+                                Text(order.paymentInstruction, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(12.dp))
+                            }
+                            if (order.items.isNotEmpty()) Text("Lleva: ${order.items.joinToString(" · ")}")
+                            Text("Retiro: ${order.pickup}"); Text("Destino: ${order.address}")
+                            if (order.reference.isNotBlank()) Text("Referencia: ${order.reference}")
+                            if (order.notes.isNotBlank()) Text("Notas: ${order.notes}")
+                            Text("Total: ${order.totalText}")
                             val navigationTarget = order.navigationTarget()
                             TextButton(onClick = {
                                 navigationTarget?.let { target ->

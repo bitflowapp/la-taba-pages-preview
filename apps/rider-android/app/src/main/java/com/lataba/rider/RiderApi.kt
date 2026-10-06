@@ -22,7 +22,9 @@ class RiderApi(private val vault: SessionVault): RiderBackend {
     private fun save() { session?.let { vault.save(it.toString()) } }
 
     private suspend fun request(path: String, body: JSONObject?, token: String? = null): String = withContext(Dispatchers.IO) {
-        check(BuildConfig.BACKEND_REF != "wwcpogltfgzgkrlilbcd")
+        // Only a signed release PRODUCTION build may talk to production, and it may talk to nothing else.
+        check((BuildConfig.TARGET_MODE == "production") == (BuildConfig.BACKEND_REF == "wwcpogltfgzgkrlilbcd"))
+        check(BuildConfig.TARGET_MODE != "production" || !BuildConfig.DEBUG)
         check(BuildConfig.SUPABASE_URL == "https://${BuildConfig.BACKEND_REF}.supabase.co")
         check((BuildConfig.TARGET_MODE == "staging") ==
             (BuildConfig.BACKEND_REF == "ucbtjcurawxjwjdvvcvj"))
@@ -55,8 +57,7 @@ class RiderApi(private val vault: SessionVault): RiderBackend {
             session!!.put("business_id", memberships.getJSONObject(0).getString("business_id"))
             save()
             val registration = rpc("identity_register_session", JSONObject().put("p_business_id", businessId)
-                .put("p_client", "rider_android").put("p_device_label",
-                    if (BuildConfig.TARGET_MODE == "pilot") "Android Rider Piloto" else "Android Rider QA")
+                .put("p_client", "rider_android").put("p_device_label", RiderTarget.deviceLabel)
                 .put("p_device_key_hash", JSONObject.NULL).put("p_app_version", BuildConfig.VERSION_NAME))
             check(registration.optBoolean("ok") && registration.optString("role") == "rider") { "Rol Rider requerido" }
         } catch (e: Exception) { clear(); throw e }

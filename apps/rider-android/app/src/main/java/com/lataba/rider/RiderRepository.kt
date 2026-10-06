@@ -7,9 +7,18 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import org.json.JSONObject
 
-class RiderRepository(val api: RiderBackend) {
-    private val _state = MutableStateFlow(RiderState(signedIn = api.hasSession))
+class RiderRepository(val api: RiderBackend, private val store: BoardStore = NoBoardStore,
+    private val clock: () -> Long = System::currentTimeMillis) {
+    // A cold start shows the last mission the server confirmed (if the session survived), marked as offline
+    // information; the first successful refresh replaces it. Commands stay disabled until then (online = false).
+    private val _state = MutableStateFlow(initialState())
     val state: StateFlow<RiderState> = _state
+    private fun initialState(): RiderState {
+        if (!api.hasSession) { store.clear(); return RiderState() }
+        val cached = store.load() ?: return RiderState(signedIn = true)
+        return RiderState(signedIn = true, board = cached.board, online = false, refreshedAt = cached.confirmedAt,
+            cachedAt = cached.confirmedAt, message = "Sin conexión · última información confirmada en este teléfono")
+    }
     private val commandLock = Mutex()
     private val readLock = Mutex()
     private var lastHeartbeatAt = 0L
@@ -21,7 +30,7 @@ class RiderRepository(val api: RiderBackend) {
         if (!api.hasSession || !readLock.tryLock()) return
         try {
             var board = api.board()
-            val now = System.currentTimeMillis()
+            val now = clock()
             if (board.available && now - lastHeartbeatAt >= 20_000) {
                 val business = requireNotNull(api.businessId)
                 api.rpc("heartbeat_rider_availability", JSONObject().put("p_business_id", business))
@@ -29,8 +38,9 @@ class RiderRepository(val api: RiderBackend) {
                 board = api.board()
             }
             if (!api.hasSession) return
+            store.save(board, now)
             _state.update { it.copy(board = board, signedIn = true, available = board.available,
-                online = true, refreshedAt = now, message = if (!it.online || it.refreshedAt == null)
+                online = true, refreshedAt = now, cachedAt = null, message = if (!it.online || it.refreshedAt == null)
                     "Sincronizado con ${RiderTarget.label}" else it.message) }
         }
         catch (e: Exception) { failed(e) } finally { readLock.unlock() }
@@ -82,12 +92,13 @@ class RiderRepository(val api: RiderBackend) {
                     .put("p_idempotency_key", RiderCommands.key("availability", business,
                         board.availabilityVersion, "false")))
             }
-        } finally { api.logout(); _state.value = RiderState() }
+        } finally { api.logout(); store.clear(); _state.value = RiderState() }
     }
     fun gps(message: String) { _state.update { it.copy(gps = message) } }
     private fun failed(e: Exception) {
         if (e is CancellationException) throw e
         val signed = api.hasSession
+        if (!signed) store.clear()
         _state.update { it.copy(signedIn = signed, online = false, board = if (signed) it.board else null,
             message = when(e) { is ApiFailure -> e.message.orEmpty(); is java.io.IOException -> "Sin conexión. Reintentá al recuperar red."; else -> "Operación no confirmada. Revisá sesión y conexión." }) }
     }

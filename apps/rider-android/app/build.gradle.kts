@@ -5,24 +5,37 @@ val productionRef = "wwcpogltfgzgkrlilbcd"
 val demoRef = "yakhtrkukqlgzvxuvhzs"
 val targetMode = providers.environmentVariable("RIDER_TARGET_MODE").orElse("staging").get()
 val backendRef = providers.environmentVariable("RIDER_BACKEND_REF").orElse(stagingRef).get()
-require(targetMode in setOf("staging", "pilot")) { "Unknown Rider target mode" }
-require(backendRef.matches(Regex("[a-z0-9]{20}")) && backendRef != productionRef
+require(targetMode in setOf("staging", "pilot", "production")) { "Unknown Rider target mode" }
+// PRODUCTION (la-taba.pages.dev) is the only target that may name the production backend,
+// and it may name nothing else.
+require(backendRef.matches(Regex("[a-z0-9]{20}")) && (targetMode == "production") == (backendRef == productionRef)
     && (targetMode != "pilot" || backendRef != demoRef)) {
-    "Rider backend must be a non-Production Supabase project"
+    "Only a PRODUCTION Rider build targets the production backend"
 }
 require((targetMode == "staging") == (backendRef == stagingRef)) {
     "Staging and PILOT Rider builds require distinct backends"
 }
-val publicKey = if (targetMode == "pilot") providers.environmentVariable("RIDER_PUBLIC_KEY").orElse("").get()
+val publicKey = if (targetMode != "staging") providers.environmentVariable("RIDER_PUBLIC_KEY").orElse("").get()
     else providers.environmentVariable("RIDER_PUBLIC_KEY").orNull
         ?: providers.environmentVariable("RIDER_STAGING_PUBLIC_KEY").orElse("").get()
 require(publicKey.isEmpty() || publicKey.startsWith("sb_publishable_")) { "Only a publishable key is accepted" }
-require(targetMode != "pilot" || publicKey.startsWith("sb_publishable_")) {
-    "PILOT Rider requires an explicit publishable key"
+require(targetMode == "staging" || publicKey.startsWith("sb_publishable_")) {
+    "PILOT and PRODUCTION Rider builds require an explicit publishable key"
+}
+// PRODUCTION has its own package and its own certificate (never the PILOT one): a production
+// install can only be updated by another production build.
+val productionStore = providers.environmentVariable("RIDER_PRODUCTION_KEYSTORE_PATH").orNull
+val productionPassword = providers.environmentVariable("RIDER_PRODUCTION_SIGNING_PASS").orNull
+require((productionStore == null) == (productionPassword == null)) { "Production signer needs both path and password" }
+require(productionStore == null || targetMode == "production") { "The production signer only signs PRODUCTION builds" }
+require(targetMode != "production" || (productionStore != null && providers.environmentVariable("RIDER_TARGET_MODE").isPresent
+    && providers.environmentVariable("RIDER_BACKEND_REF").isPresent)) {
+    "A PRODUCTION Rider is always signed by the production signer and names its target explicitly"
 }
 val pilotStore = providers.environmentVariable("RIDER_PILOT_KEYSTORE_PATH").orNull
 val pilotPassword = providers.environmentVariable("RIDER_PILOT_SIGNING_PASS").orNull
 require((pilotStore == null) == (pilotPassword == null)) { "Pilot signer needs both path and password" }
+require(pilotStore == null || targetMode != "production") { "The PILOT signer never signs a PRODUCTION build" }
 val versionCodeOverride = providers.gradleProperty("riderPilotVersionCode").orNull
 val pilotVersionCode = versionCodeOverride?.toIntOrNull() ?: 1
 require(versionCodeOverride == null || (versionCodeOverride.toIntOrNull() != null && pilotVersionCode in 1..99999)) {
@@ -75,6 +88,15 @@ android {
             storeType = "pkcs12"
         }
     }
+    if (productionStore != null && productionPassword != null) signingConfigs {
+        create("production") {
+            storeFile = file(productionStore)
+            storePassword = productionPassword
+            keyAlias = "lataba-rider-production-v1"
+            keyPassword = productionPassword
+            storeType = "pkcs12"
+        }
+    }
     buildTypes {
         getByName("debug") {
             applicationIdSuffix = ".qa"
@@ -82,11 +104,11 @@ android {
             manifestPlaceholders["appLabel"] = "La Taba Rider QA"
         }
         getByName("release") {
-            applicationIdSuffix = ".pilot"
-            versionNameSuffix = "-pilot"
-            manifestPlaceholders["appLabel"] = "La Taba Rider Piloto"
+            applicationIdSuffix = if (targetMode == "production") ".production" else ".pilot"
+            versionNameSuffix = if (targetMode == "production") "-production" else "-pilot"
+            manifestPlaceholders["appLabel"] = if (targetMode == "production") "La Taba Rider" else "La Taba Rider Piloto"
             isMinifyEnabled = false
-            signingConfig = signingConfigs.findByName("pilot")
+            signingConfig = signingConfigs.findByName(if (targetMode == "production") "production" else "pilot")
         }
     }
     buildFeatures { compose = true; buildConfig = true }

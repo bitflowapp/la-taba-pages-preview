@@ -42,9 +42,11 @@ class RiderLocationService: Service(), LocationListener {
             .addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT), PendingIntent.FLAG_IMMUTABLE)
         val stop = PendingIntent.getService(this, 1, Intent(this, javaClass).setAction("STOP"), PendingIntent.FLAG_IMMUTABLE)
         startForeground(10, NotificationCompat.Builder(this, "rider_gps").setSmallIcon(android.R.drawable.ic_menu_mylocation)
-            .setContentTitle(if (BuildConfig.TARGET_MODE == "pilot")
-                "La Taba Rider Piloto · GPS activo" else "La Taba Rider QA · GPS activo")
-            .setContentText(if (BuildConfig.TARGET_MODE == "pilot")
+            .setContentTitle(when (BuildConfig.TARGET_MODE) {
+                "production" -> "La Taba Rider · GPS activo"
+                "pilot" -> "La Taba Rider Piloto · GPS activo"
+                else -> "La Taba Rider QA · GPS activo" })
+            .setContentText(if (BuildConfig.TARGET_MODE in setOf("pilot", "production"))
                 "Sólo entregas activas asignadas" else "Sólo entregas activas de Staging")
             .setContentIntent(open).addAction(0, "Detener GPS", stop).setOngoing(true).build())
         // Foreground service alone does not keep the CPU awake with the screen off.
@@ -59,8 +61,10 @@ class RiderLocationService: Service(), LocationListener {
         } catch (_: SecurityException) { repository.gps("Permiso de ubicación revocado"); stopSelf() }
         return START_NOT_STICKY
     }
+    companion object { @Volatile var running = false; private set }
     override fun onCreate() {
         super.onCreate()
+        running = true
         scope.launch {
             while (isActive) {
                 repository.refresh()
@@ -94,6 +98,7 @@ class RiderLocationService: Service(), LocationListener {
     override fun onDestroy() {
         if (::locations.isInitialized) locations.removeUpdates(this)
         wakeLock?.takeIf { it.isHeld }?.release()
+        running = false
         scope.cancel(); repository.gps("GPS detenido"); super.onDestroy()
     }
     private fun holdCpuForActiveTrip() {

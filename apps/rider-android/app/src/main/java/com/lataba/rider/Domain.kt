@@ -7,6 +7,19 @@ data class Delivery(val id: String, val code: String, val revision: Long, val st
     val address: String, val pickup: String, val total: String, val location: JSONObject?,
     val pickupLocation: JSONObject? = null) {
     val publishable get() = status in setOf("on_the_way", "arrived")
+    /** What the rider reads; the server status code stays the source of every decision. */
+    val statusLabel: String get() = when (status) {
+        "assigned" -> "Asignado · retirar en el local"
+        "picked_up" -> "Retirado · listo para salir"
+        "on_the_way" -> "En camino"
+        "arrived" -> "En el destino · pedir el código"
+        "delivered" -> "Entregado"
+        else -> status
+    }
+    fun toJson(): JSONObject = JSONObject().put("id", id).put("public_code", code).put("revision", revision)
+        .put("status", status).put("customer_street_address", address).put("pickup_summary", pickup)
+        .put("total", total).put("customer_location", location ?: JSONObject.NULL)
+        .put("business_location", pickupLocation ?: JSONObject.NULL)
     fun navigationTarget(): String? {
         val point = if (status == "assigned") pickupLocation else location
         val latitude = point?.optDouble("latitude", Double.NaN) ?: Double.NaN
@@ -41,10 +54,21 @@ data class Board(val orders: List<Delivery>, val offers: List<Offer>, val capaci
         }
     }
 }
-// Human name of the backend this build talks to. PILOT builds serve the
-// controlled production rollout; only QA builds may say Staging.
+// Human name of the backend this build talks to. PRODUCTION builds serve
+// la-taba.pages.dev, PILOT builds the controlled production rollout; only QA
+// builds may say Staging.
 object RiderTarget {
-    val label: String get() = if (BuildConfig.TARGET_MODE == "pilot") "La Taba" else "Staging"
+    val label: String get() = if (BuildConfig.TARGET_MODE in setOf("pilot", "production")) "La Taba" else "Staging"
+    val title: String get() = when (BuildConfig.TARGET_MODE) {
+        "production" -> "La Taba · Rider"
+        "pilot" -> "La Taba · Rider Piloto"
+        else -> "La Taba · Rider QA"
+    }
+    val deviceLabel: String get() = when (BuildConfig.TARGET_MODE) {
+        "production" -> "Android Rider"
+        "pilot" -> "Android Rider Piloto"
+        else -> "Android Rider QA"
+    }
 }
 
 object RiderCommands {
@@ -62,6 +86,8 @@ object RiderCommands {
     fun validCode(code: String) = code.matches(Regex("[0-9]{$CODE_LENGTH}"))
 }
 
+// cachedAt != null: the board is the last one the server confirmed at that time, restored from this phone
+// after a cold start without network. It is information, not the server's current state.
 data class RiderState(val signedIn: Boolean = false, val available: Boolean = false, val board: Board? = null,
     val busy: Boolean = false, val online: Boolean = false, val message: String = "Iniciá sesión en ${RiderTarget.label}",
-    val gps: String = "GPS detenido", val refreshedAt: Long? = null)
+    val gps: String = "GPS detenido", val refreshedAt: Long? = null, val cachedAt: Long? = null)

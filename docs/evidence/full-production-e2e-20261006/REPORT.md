@@ -196,10 +196,35 @@ comercio B no lee el comercio A», «un rider no lee la bandeja de la caja»). E
 7. Caja Clara muestra «Sincronización: requiere revisión» por su nube propia no vinculada (ruido, no es La Taba).
 8. `tracking-terminal-expiry` falla en el host Windows también sobre `main` (en CI Linux pasa).
 
+## Capacidad (laboratorio con copia de producción)
+
+`capacity-30.mjs` bloquea a propósito el ref de producción y el staging de Supabase ya no existe, así que corrió contra
+un stack **local** de Supabase (PostgREST, GoTrue y Realtime reales, 127.0.0.1) con las 159 migraciones y una copia de
+los datos de producción del respaldo de 05:38Z. El arnés corrió igual que siempre salvo tres cosas: destino local,
+repartidores QA dados de alta por solicitud y aprobación del dueño, y el mínimo general cuando la cobertura no se
+exige (como en producción). Resultado: **PASS** ([`capacity-local-lab.json`](backend-readonly-snapshots/capacity-local-lab.json)).
+
+| Prueba | Resultado |
+|---|---|
+| 20 visitas con realtime, 10 carritos, 8 pedidos casi simultáneos | 631 pedidos HTTP, 0 errores, p95 44 ms; realtime 20/20 |
+| Doble clic en «Confirmar» | un solo pedido |
+| Reintento tras perder la respuesta | el mismo pedido |
+| Carrera por las últimas unidades | exactamente un ganador; el otro rechazado por el CHECK de stock |
+| Dos pestañas aceptan el mismo pedido | una sola transición; la otra recibe 409 |
+| Cobro en efectivo dos veces a la vez + con otra clave | 1 evento de cobro; repetición idempotente; `already_confirmed` |
+| Doble cancelación | el stock vuelve una sola vez (13 de 13) |
+| Oferta disputada entre dos repartidores | un solo repartidor asignado |
+| 6 entregas con 3 repartidores | 6/6; código equivocado rechazado; doble confirmación idempotente; 6 handoffs |
+| Seguimiento del cliente | todos ven «entregado»; el de la carrera ve «cancelado» |
+| Visitas anónimas leyendo pedidos | 0 filas |
+| Integridad (SQL directo) | 0 duplicados, 1 entrega por pedido, stock 24 → 23 con 1 vendido en cada producto, nada negativo, ningún repartidor ocupado al final |
+
+El arnés reportó 2 «P0» y 1 «P1» que son falsos positivos del laboratorio: en una base construida desde cero
+(mínimo privilegio) `service_role` no puede leer `orders`, `order_events` ni `products`, así que sus lecturas de
+integridad y su limpieza fallaron con 42501. Lo que esas lecturas debían comprobar se verificó por SQL directo.
+
 ## Qué no se corrió
 
-- **Capacidad** (5 pedidos simultáneos, 2–3 repartidores). `capacity-30.mjs` bloquea a propósito el ref de
-  producción y el staging de Supabase ya no existe. Hace falta un stack local con el mismo esquema.
 - **Venta de mostrador sin conexión** en Caja Clara: bloquear la salida de `CajaClara.exe` pide una regla de firewall
   con administrador, y la venta mueve caja y stock reales.
 - **Video corto publicable.** La grabación de la PC (81 min, sha256 `3658aeec…`) muestra la terminal y la tarjeta con
@@ -210,9 +235,8 @@ comercio B no lee el comercio A», «un rider no lee la bandeja de la caja»). E
 ## Qué falta para decir READY_FOR_REAL_CUSTOMERS = YES
 
 1. Desplegar el PR #139 (SHA exacto) y que el cliente confirme en el teléfono que el seguimiento no repite el recorrido ni parpadea.
-2. Prueba de capacidad en un stack local con el esquema de producción.
-3. Venta de mostrador sin conexión con reconciliación posterior.
-4. Decidir el arqueo del efectivo online en Caja Clara.
+2. Venta de mostrador sin conexión con reconciliación posterior.
+3. Decidir el arqueo del efectivo online en Caja Clara.
 
 ## Capturas
 

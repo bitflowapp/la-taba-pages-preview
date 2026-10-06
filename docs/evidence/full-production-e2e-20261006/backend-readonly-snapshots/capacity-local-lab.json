@@ -1,0 +1,194 @@
+{
+ "at": "2026-10-06T06:06:30.380Z",
+ "where": "stack LOCAL de Supabase (127.0.0.1, CLI 2.113) con las 159 migraciones y una copia de los datos de producción del respaldo de 05:38Z; descartado al terminar",
+ "harness": "scripts/controlled-production/capacity-30.mjs sin cambios salvo: destino local, repartidores por TABA_QA_CREDENTIALS y mínimo general cuando la cobertura no se exige (como producción)",
+ "config": {
+  "VISITORS": 20,
+  "CARTS": 10,
+  "ORDERS": 8,
+  "RIDERS": 3,
+  "BROWSE_SECONDS": 150
+ },
+ "orders": {
+  "attempted": 8,
+  "created": 7
+ },
+ "doubleClick": {
+  "codes": [
+   "LT-0005",
+   "LT-0005"
+  ],
+  "distinctIds": 1
+ },
+ "retryAfterLoss": {
+  "sameOrder": true,
+  "code": "LT-0007"
+ },
+ "stockRace": {
+  "attempts": 2,
+  "accepted": 1,
+  "rejectionCodes": [
+   "23514"
+  ]
+ },
+ "twoTabs": {
+  "codes": [
+   "PT409",
+   "LT-0005"
+  ],
+  "finalStatus": "accepted",
+  "revisionDelta": 1
+ },
+ "manualPayment": [
+  {
+   "label": "double_click",
+   "codes": [
+    "confirmed",
+    "confirmed",
+    "already_confirmed"
+   ],
+   "replays": 1,
+   "status": "confirmed"
+  },
+  {
+   "label": "retry_after_loss",
+   "codes": [
+    "confirmed",
+    "confirmed",
+    "already_confirmed"
+   ],
+   "replays": 1,
+   "status": "confirmed"
+  }
+ ],
+ "doubleCancel": {
+  "restored": 13,
+  "expected": 13,
+  "codes": [
+   "LT-0006",
+   "LT-0006",
+   "PT409"
+  ],
+  "replays": 1
+ },
+ "offerRace": {
+  "secondOfferWhilePending": "offer_in_flight",
+  "acceptA": "offer_not_available",
+  "withdraw": "withdrawn",
+  "reoffer": "offered",
+  "acceptB": "accepted",
+  "winners": 1,
+  "assignedTo": "B"
+ },
+ "delivery": {
+  "deliverable": 6,
+  "delivered": 6,
+  "wrongCodeAnswers": [
+   "incorrect_code"
+  ],
+  "doubleConfirm": [
+   "ok/ok",
+   "ok/ok",
+   "ok/ok",
+   "ok/ok",
+   "ok/ok",
+   "ok/ok"
+  ],
+  "riders": [
+   {
+    "n": 1,
+    "accepted": 1
+   },
+   {
+    "n": 2,
+    "accepted": 2
+   },
+   {
+    "n": 3,
+    "accepted": 2
+   }
+  ]
+ },
+ "tracking": [
+  {
+   "label": "double_click",
+   "lastPublicStatus": "delivered"
+  },
+  {
+   "label": "retry_after_loss",
+   "lastPublicStatus": "delivered"
+  },
+  {
+   "label": "race_b",
+   "lastPublicStatus": "cancelled"
+  },
+  {
+   "label": "normal_4",
+   "lastPublicStatus": "delivered"
+  },
+  {
+   "label": "normal_5",
+   "lastPublicStatus": "delivered"
+  },
+  {
+   "label": "normal_6",
+   "lastPublicStatus": "delivered"
+  },
+  {
+   "label": "normal_7",
+   "lastPublicStatus": "delivered"
+  }
+ ],
+ "realtime": {
+  "attempted": 20,
+  "subscribed": 20,
+  "errors": 0,
+  "closed": 20,
+  "events": 160,
+  "operatorEvents": 158
+ },
+ "anonExposure": {
+  "requests": 20,
+  "rowsVisible": 0
+ },
+ "metrics": {
+  "totalRequests": 631,
+  "errors": 0,
+  "errorRate": 0,
+  "avgMs": 11,
+  "p95Ms": 44
+ },
+ "harnessFindings": [
+  {
+   "severity": "P0",
+   "code": "MANUAL_PAYMENT_NOT_EXACTLY_ONCE",
+   "detail": "{\"label\":\"double_click\",\"codes\":[\"confirmed\",\"confirmed\",\"already_confirmed\"],\"replays\":1,\"status\":\"confirmed\"}"
+  },
+  {
+   "severity": "P0",
+   "code": "MANUAL_PAYMENT_NOT_EXACTLY_ONCE",
+   "detail": "{\"label\":\"retry_after_loss\",\"codes\":[\"confirmed\",\"confirmed\",\"already_confirmed\"],\"replays\":1,\"status\":\"confirmed\"}"
+  },
+  {
+   "severity": "P1",
+   "code": "QA_CLEANUP_FAILED",
+   "detail": "double_click:ITEMS:42501;retry_after_loss:ITEMS:42501;race_b:CLASSIFY:42501;normal_4:ITEMS:42501;normal_5:ITEMS:42501;normal_6:ITEMS:42501;normal_7:ITEMS:42501"
+  }
+ ],
+ "harnessFindingsCause": "falsos positivos del arnés: con la base construida desde cero (mínimo privilegio) service_role no tiene SELECT sobre orders/order_events/products ni puede clasificar/limpiar (42501). La integridad se verificó por SQL directo:",
+ "sqlIntegrity": {
+  "orders": 7,
+  "duplicateClientRequest": 0,
+  "statuses": {
+   "delivered": 6,
+   "cancelled": 1
+  },
+  "deliveredTransitionsPerOrder": 1,
+  "handoffsConfirmed": 6,
+  "negativeStock": 0,
+  "ridersActiveAfter": 0,
+  "paymentEventsPerConfirmedOrder": 1,
+  "stock": "6 productos 24→23 con 1 vendido cada uno (24 = producción, solo lectura); producto de la carrera 24→24 tras cancelar"
+ },
+ "verdict": "PASS"
+}

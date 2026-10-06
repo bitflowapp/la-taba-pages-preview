@@ -261,25 +261,69 @@ test('movimiento reducido: ninguna animación, y la pieza completa', async ({ br
   await context.close();
 });
 
+/*
+ * La pausa fuera de pantalla se mide con un reloj de cuadros estable. El
+ * presupuesto de movimiento (campaign-budget.js) mide el ritmo REAL de cuadros y,
+ * si la máquina va lenta, apaga el movimiento: es su diseño y tiene su propia
+ * prueba («un renderer lento…»). En el WebKit de CI esa máquina lenta gastaba el
+ * presupuesto en medio de esta prueba (5 de 7 corridas, 2026-10-06; con la CPU
+ * 16× más lenta se reproduce en Chromium) y la pieza quedaba estática: la prueba
+ * terminaba midiendo el presupuesto, no la pausa. Con cuadros de 16,7 ms el
+ * presupuesto nunca se gasta, así que una pieza que siguiera animándose fuera de
+ * pantalla vuelve a ser una falla visible en todos los motores.
+ */
+const useSteadyFrameClock = (page) => page.addInitScript(() => {
+  const nativeFrame = window.requestAnimationFrame.bind(window);
+  let timestamp = 0;
+  window.requestAnimationFrame = (callback) => nativeFrame(() => callback(timestamp += 1000 / 60));
+});
+
+/*
+ * Una sola lectura del estado de la pieza, para no correr contra el presupuesto.
+ * `want`: 'live' (a la vista) o 'paused' (fuera de pantalla). Con el reloj estable
+ * el presupuesto sólo puede gastarse si el renderer dejó de entregar cuadros
+ * ('frame_stall'): entonces la pieza queda estática y completa, y eso se anota en
+ * el reporte de la corrida. Cualquier otro estado es falla.
+ */
+const pieceState = (page, selector, want) => page.evaluate(([target, mode]) => {
+  const root = document.querySelector(target);
+  const diagnostics = window.TABA2_CAMPAIGNS?.getDiagnostics?.();
+  if (!root || !diagnostics) return 'waiting';
+  const running = root.getAnimations({ subtree: true }).filter((animation) => animation.playState === 'running').length;
+  if (diagnostics.budgetLimited) {
+    if (diagnostics.budgetReason !== 'frame_stall') return `invalid-budget:${diagnostics.budgetReason}`;
+    return !root.hasAttribute('data-motion-campaign') && !root.hasAttribute('data-motion-campaign-live') && running === 0
+      ? 'stall-static' : 'waiting';
+  }
+  if (mode === 'live') return root.dataset.motionCampaignLive === 'true' && running > 0 ? 'live' : 'waiting';
+  return root.dataset.motionCampaignLive === 'false' && running === 0 ? 'paused' : `running-offscreen:${running}`;
+}, [selector, want]);
+
 test('fuera de pantalla la escena se pausa, y al volver sigue donde estaba', async ({ page }) => {
+  await useSteadyFrameClock(page);
   await useQaCampaigns(page);
   await openRuntimeCatalog(page);
   await goHome(page);
-  const piece = page.locator(heroPiece);
-  await expect(piece).toHaveAttribute('data-motion-campaign-live', 'true');
-  expect((await sceneState(page, heroPiece)).running).toBeGreaterThan(0);
+  const seen = [];
+  const expectState = async (want, allowed) => {
+    await expect.poll(async () => { const state = await pieceState(page, heroPiece, want); seen.push(state); return state; },
+      { message: `estado de la pieza (${want})` }).toMatch(allowed);
+  };
+  await expectState('live', /^(live|stall-static)$/);
 
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-  await expect(piece).toHaveAttribute('data-motion-campaign-live', 'false');
-  const away = await sceneState(page, heroPiece);
-  expect(away.running, 'quedó una animación corriendo fuera de pantalla').toBe(0);
+  await expectState('paused', /^(paused|stall-static)$/);
   const playsAway = (await page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics())).plays;
 
   await page.evaluate(() => window.scrollTo(0, 0));
-  await expect(piece).toHaveAttribute('data-motion-campaign-live', 'true');
+  await expectState('live', /^(live|stall-static)$/);
   // Volver enseguida NO reinicia la función: sigue la misma entrada.
-  const playsBack = (await page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics())).plays;
-  expect(playsBack).toBe(playsAway);
+  const diagnostics = await page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics());
+  expect(diagnostics.plays).toBe(playsAway);
+  if (diagnostics.budgetLimited) {
+    test.info().annotations.push({ type: 'renderer-stall',
+      description: `el renderer dejó de entregar cuadros 1,2 s; la pieza quedó estática y completa (estados: ${[...new Set(seen)].join(' → ')})` });
+  }
 });
 
 test('una pieza que todavía no se vio espera en su primer cuadro, no en el final', async ({ page }) => {

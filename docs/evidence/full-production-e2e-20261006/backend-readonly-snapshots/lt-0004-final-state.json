@@ -1,0 +1,41 @@
+{
+ "at": "2026-10-06T05:51:29.111Z",
+ "code": "LT-0004",
+ "order": {
+  "status": "delivered",
+  "revision": "13",
+  "updated_at": "2026-10-06T04:36:28.740Z",
+  "manual_payment_status": "confirmed",
+  "manual_payment_method": "cash",
+  "manual_payment_confirmed_at": "2026-10-06T04:36:28.742Z",
+  "manual_payment_confirmed_by": "business-1",
+  "assigned_rider_user_id": "rider-1",
+  "inventory_released_at": null,
+  "accepted_at": "2026-10-06T03:22:32.297Z",
+  "preparing_at": "2026-10-06T03:22:46.851Z",
+  "ready_at": "2026-10-06T03:23:01.853Z",
+  "picked_up_at": "2026-10-06T03:24:35.210Z",
+  "dispatched_at": "2026-10-06T03:24:35.210Z",
+  "arrived_at": "2026-10-06T03:51:11.297Z",
+  "delivered_at": "2026-10-06T03:52:23.688Z",
+  "cancelled_at": null,
+  "delivery_code_required": true
+ },
+ "locations": {
+  "n": 0,
+  "last_created": null,
+  "last_captured": null,
+  "distinct_requests": 0
+ },
+ "stock": {
+  "stock": 23,
+  "available": true,
+  "updated_at": "2026-10-06T03:21:33.521Z"
+ },
+ "presence": {
+  "available": false,
+  "version": "4",
+  "last_seen_at": null,
+  "effective": false
+ }
+}

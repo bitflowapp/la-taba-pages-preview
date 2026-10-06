@@ -29,3 +29,8 @@ test('backgrounding before the deadline cancels the probe without disabling late
   budget.check();live=false;d.expire();assert.equal(limited,0);assert.equal(d.pending(),false);
   live=true;budget.check();d.run();assert.equal(limited,0);assert.equal(d.calls(),12);assert.equal(d.pending(),false);
 });
+test('the fallback says why: slow frames measured or a renderer that stopped delivering them',()=>{
+  const slow=driver(80);const reasons=[];createCampaignBudget(slow.win,()=>true,(reason)=>reasons.push(reason)).check();slow.run();
+  const stalled=driver(16.7);createCampaignBudget(stalled.win,()=>true,(reason)=>reasons.push(reason)).check();stalled.expire();
+  assert.deepEqual(reasons,['slow_frames','frame_stall']);
+});

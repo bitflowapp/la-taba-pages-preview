@@ -92,6 +92,10 @@ function startCampaignMotion(documentRef, windowRef) {
   let plays = 0;
   let destroyed = false;
   let budgetLimited = false;
+  // Por qué se apagó el movimiento: 'slow_frames' (cuadros lentos medidos) o
+  // 'frame_stall' (el renderer dejó de entregar cuadros). Se publica en el
+  // diagnóstico para que una prueba —o una persona— sepa cuál de las dos fue.
+  let budgetReason = null;
 
   const lite = () => documentRef.body.dataset.motionLite === 'true';
   const allowed = () => !destroyed && !budgetLimited && !reducedQuery?.matches && !lite();
@@ -104,7 +108,7 @@ function startCampaignMotion(documentRef, windowRef) {
   };
   const budget = createCampaignBudget(windowRef,
     () => allowed() && !documentRef.hidden && [...observed].some(root => root.dataset.motionCampaignLive === 'true'),
-    () => { budgetLimited=true;observed.forEach(still); });
+    (reason) => { budgetLimited=true;budgetReason=reason||null;observed.forEach(still); });
 
   /** La entrada de esta pieza ya terminó de verse. */
   const settled = (root) => {
@@ -236,6 +240,7 @@ function startCampaignMotion(documentRef, windowRef) {
         reducedMotion: Boolean(reducedQuery?.matches),
         liteMode: lite(),
         budgetLimited,
+        budgetReason,
         observerCount: observer ? 1 : 0,
         campaigns: roots.length,
         visible: visible.size,

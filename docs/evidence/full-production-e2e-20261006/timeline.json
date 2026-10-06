@@ -1,0 +1,1753 @@
+[
+ {
+  "observedAt": "2026-10-06T03:16:09.587Z",
+  "kind": "observer.start",
+  "since": "2026-10-06T03:16:04.876Z",
+  "code": null,
+  "skewMsServerMinusLocal": 289,
+  "sku": "coca-cola-original-2250ml"
+ },
+ {
+  "observedAt": "2026-10-06T03:16:09.975Z",
+  "kind": "product.stock",
+  "sku": "coca-cola-original-2250ml",
+  "stock": 24,
+  "available": true,
+  "updatedAt": "2026-10-06T02:11:30.155Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:16:10.168Z",
+  "kind": "rider.presence",
+  "available": true,
+  "version": "2",
+  "last_seen_at": "2026-10-06T03:16:05.125Z",
+  "effective": true
+ },
+ {
+  "observedAt": "2026-10-06T03:21:33.806Z",
+  "kind": "order.detected",
+  "order": "LT-0004",
+  "code": "LT-0004",
+  "createdAt": "2026-10-06T03:21:33.521Z",
+  "status": "received"
+ },
+ {
+  "observedAt": "2026-10-06T03:21:33.990Z",
+  "kind": "product.stock",
+  "sku": "coca-cola-original-2250ml",
+  "stock": 23,
+  "available": true,
+  "updatedAt": "2026-10-06T03:21:33.521Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:21:34.361Z",
+  "kind": "order.state",
+  "code": "LT-0004",
+  "status": "received",
+  "revision": "4",
+  "updated_at": "2026-10-06T03:21:33.521Z",
+  "manual_payment_status": "pending",
+  "manual_payment_method": null,
+  "manual_payment_confirmed_at": null,
+  "manual_payment_confirmed_by": null,
+  "assigned_rider_user_id": null,
+  "inventory_released_at": null,
+  "accepted_at": null,
+  "preparing_at": null,
+  "ready_at": null,
+  "picked_up_at": null,
+  "dispatched_at": null,
+  "arrived_at": null,
+  "delivered_at": null,
+  "cancelled_at": null,
+  "delivery_code_required": true
+ },
+ {
+  "observedAt": "2026-10-06T03:21:34.546Z",
+  "kind": "order.event",
+  "code": "LT-0004",
+  "eventType": "order.received",
+  "actorRole": "customer",
+  "actorUserId": "customer-1",
+  "createdAt": "2026-10-06T03:21:33.521Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:21:35.101Z",
+  "kind": "delivery.handoff",
+  "code": "LT-0004",
+  "failed_attempts": 0,
+  "locked_until": null,
+  "confirmed_at": null,
+  "confirmed_by_user_id": null,
+  "expires_at": "2026-10-08T03:21:33.647Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:21:35.474Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 0,
+  "distinctRequests": 0,
+  "lastCreated": null,
+  "lastCaptured": null
+ },
+ {
+  "observedAt": "2026-10-06T03:22:32.979Z",
+  "kind": "order.state",
+  "code": "LT-0004",
+  "status": "accepted",
+  "revision": "5",
+  "updated_at": "2026-10-06T03:22:32.287Z",
+  "manual_payment_status": "pending",
+  "manual_payment_method": null,
+  "manual_payment_confirmed_at": null,
+  "manual_payment_confirmed_by": null,
+  "assigned_rider_user_id": null,
+  "inventory_released_at": null,
+  "accepted_at": "2026-10-06T03:22:32.297Z",
+  "preparing_at": null,
+  "ready_at": null,
+  "picked_up_at": null,
+  "dispatched_at": null,
+  "arrived_at": null,
+  "delivered_at": null,
+  "cancelled_at": null,
+  "delivery_code_required": true
+ },
+ {
+  "observedAt": "2026-10-06T03:22:33.164Z",
+  "kind": "order.event",
+  "code": "LT-0004",
+  "eventType": "order.status_changed",
+  "actorRole": "business",
+  "actorUserId": "business-1",
+  "createdAt": "2026-10-06T03:22:32.287Z",
+  "transition": "received → accepted"
+ },
+ {
+  "observedAt": "2026-10-06T03:22:48.182Z",
+  "kind": "order.state",
+  "code": "LT-0004",
+  "status": "preparing",
+  "revision": "6",
+  "updated_at": "2026-10-06T03:22:46.841Z",
+  "manual_payment_status": "pending",
+  "manual_payment_method": null,
+  "manual_payment_confirmed_at": null,
+  "manual_payment_confirmed_by": null,
+  "assigned_rider_user_id": null,
+  "inventory_released_at": null,
+  "accepted_at": "2026-10-06T03:22:32.297Z",
+  "preparing_at": "2026-10-06T03:22:46.851Z",
+  "ready_at": null,
+  "picked_up_at": null,
+  "dispatched_at": null,
+  "arrived_at": null,
+  "delivered_at": null,
+  "cancelled_at": null,
+  "delivery_code_required": true
+ },
+ {
+  "observedAt": "2026-10-06T03:22:48.367Z",
+  "kind": "order.event",
+  "code": "LT-0004",
+  "eventType": "order.status_changed",
+  "actorRole": "business",
+  "actorUserId": "business-1",
+  "createdAt": "2026-10-06T03:22:46.841Z",
+  "transition": "accepted → preparing"
+ },
+ {
+  "observedAt": "2026-10-06T03:23:03.385Z",
+  "kind": "order.state",
+  "code": "LT-0004",
+  "status": "ready",
+  "revision": "7",
+  "updated_at": "2026-10-06T03:23:01.847Z",
+  "manual_payment_status": "pending",
+  "manual_payment_method": null,
+  "manual_payment_confirmed_at": null,
+  "manual_payment_confirmed_by": null,
+  "assigned_rider_user_id": null,
+  "inventory_released_at": null,
+  "accepted_at": "2026-10-06T03:22:32.297Z",
+  "preparing_at": "2026-10-06T03:22:46.851Z",
+  "ready_at": "2026-10-06T03:23:01.853Z",
+  "picked_up_at": null,
+  "dispatched_at": null,
+  "arrived_at": null,
+  "delivered_at": null,
+  "cancelled_at": null,
+  "delivery_code_required": true
+ },
+ {
+  "observedAt": "2026-10-06T03:23:03.570Z",
+  "kind": "order.event",
+  "code": "LT-0004",
+  "eventType": "order.status_changed",
+  "actorRole": "business",
+  "actorUserId": "business-1",
+  "createdAt": "2026-10-06T03:23:01.847Z",
+  "transition": "preparing → ready"
+ },
+ {
+  "observedAt": "2026-10-06T03:23:36.162Z",
+  "kind": "order.event",
+  "code": "LT-0004",
+  "eventType": "order.rider_offered",
+  "actorRole": "business",
+  "actorUserId": "business-1",
+  "createdAt": "2026-10-06T03:23:35.428Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:23:36.349Z",
+  "kind": "rider.offer",
+  "code": "LT-0004",
+  "offerId": "offer-1",
+  "rider": "rider-1",
+  "status": "pending",
+  "version": "1",
+  "offeredAt": "2026-10-06T03:23:35.435Z",
+  "respondedAt": null
+ },
+ {
+  "observedAt": "2026-10-06T03:23:59.862Z",
+  "kind": "order.state",
+  "code": "LT-0004",
+  "status": "assigned",
+  "revision": "8",
+  "updated_at": "2026-10-06T03:23:59.535Z",
+  "manual_payment_status": "pending",
+  "manual_payment_method": null,
+  "manual_payment_confirmed_at": null,
+  "manual_payment_confirmed_by": null,
+  "assigned_rider_user_id": "rider-1",
+  "inventory_released_at": null,
+  "accepted_at": "2026-10-06T03:22:32.297Z",
+  "preparing_at": "2026-10-06T03:22:46.851Z",
+  "ready_at": "2026-10-06T03:23:01.853Z",
+  "picked_up_at": null,
+  "dispatched_at": null,
+  "arrived_at": null,
+  "delivered_at": null,
+  "cancelled_at": null,
+  "delivery_code_required": true
+ },
+ {
+  "observedAt": "2026-10-06T03:24:00.047Z",
+  "kind": "order.event",
+  "code": "LT-0004",
+  "eventType": "order.rider_accepted_offer",
+  "actorRole": "rider",
+  "actorUserId": "rider-1",
+  "createdAt": "2026-10-06T03:23:59.535Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:24:00.048Z",
+  "kind": "order.event",
+  "code": "LT-0004",
+  "eventType": "order.status_changed",
+  "actorRole": "rider",
+  "actorUserId": "rider-1",
+  "createdAt": "2026-10-06T03:23:59.535Z",
+  "transition": "ready → assigned"
+ },
+ {
+  "observedAt": "2026-10-06T03:24:00.232Z",
+  "kind": "rider.offer",
+  "code": "LT-0004",
+  "offerId": "offer-1",
+  "rider": "rider-1",
+  "status": "accepted",
+  "version": "2",
+  "offeredAt": "2026-10-06T03:23:35.435Z",
+  "respondedAt": "2026-10-06T03:23:59.539Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:24:36.756Z",
+  "kind": "order.state",
+  "code": "LT-0004",
+  "status": "picked_up",
+  "revision": "9",
+  "updated_at": "2026-10-06T03:24:35.206Z",
+  "manual_payment_status": "pending",
+  "manual_payment_method": null,
+  "manual_payment_confirmed_at": null,
+  "manual_payment_confirmed_by": null,
+  "assigned_rider_user_id": "rider-1",
+  "inventory_released_at": null,
+  "accepted_at": "2026-10-06T03:22:32.297Z",
+  "preparing_at": "2026-10-06T03:22:46.851Z",
+  "ready_at": "2026-10-06T03:23:01.853Z",
+  "picked_up_at": "2026-10-06T03:24:35.210Z",
+  "dispatched_at": "2026-10-06T03:24:35.210Z",
+  "arrived_at": null,
+  "delivered_at": null,
+  "cancelled_at": null,
+  "delivery_code_required": true
+ },
+ {
+  "observedAt": "2026-10-06T03:24:36.942Z",
+  "kind": "order.event",
+  "code": "LT-0004",
+  "eventType": "order.status_changed",
+  "actorRole": "rider",
+  "actorUserId": "rider-1",
+  "createdAt": "2026-10-06T03:24:35.206Z",
+  "transition": "assigned → picked_up"
+ },
+ {
+  "observedAt": "2026-10-06T03:24:54.125Z",
+  "kind": "order.state",
+  "code": "LT-0004",
+  "status": "on_the_way",
+  "revision": "10",
+  "updated_at": "2026-10-06T03:24:54.300Z",
+  "manual_payment_status": "pending",
+  "manual_payment_method": null,
+  "manual_payment_confirmed_at": null,
+  "manual_payment_confirmed_by": null,
+  "assigned_rider_user_id": "rider-1",
+  "inventory_released_at": null,
+  "accepted_at": "2026-10-06T03:22:32.297Z",
+  "preparing_at": "2026-10-06T03:22:46.851Z",
+  "ready_at": "2026-10-06T03:23:01.853Z",
+  "picked_up_at": "2026-10-06T03:24:35.210Z",
+  "dispatched_at": "2026-10-06T03:24:35.210Z",
+  "arrived_at": null,
+  "delivered_at": null,
+  "cancelled_at": null,
+  "delivery_code_required": true
+ },
+ {
+  "observedAt": "2026-10-06T03:24:54.310Z",
+  "kind": "order.event",
+  "code": "LT-0004",
+  "eventType": "order.status_changed",
+  "actorRole": "rider",
+  "actorUserId": "rider-1",
+  "createdAt": "2026-10-06T03:24:54.300Z",
+  "transition": "picked_up → on_the_way"
+ },
+ {
+  "observedAt": "2026-10-06T03:25:08.259Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 1,
+  "distinctRequests": 1,
+  "lastCreated": "2026-10-06T03:25:06.495Z",
+  "lastCaptured": "2026-10-06T03:25:05.818Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:25:32.130Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 2,
+  "distinctRequests": 2,
+  "lastCreated": "2026-10-06T03:25:30.941Z",
+  "lastCaptured": "2026-10-06T03:25:30.169Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:25:42.988Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 3,
+  "distinctRequests": 3,
+  "lastCreated": "2026-10-06T03:25:42.583Z",
+  "lastCaptured": "2026-10-06T03:25:41.819Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:27:12.922Z",
+  "kind": "rider.presence",
+  "available": true,
+  "version": "2",
+  "last_seen_at": "2026-10-06T03:25:42.190Z",
+  "effective": false
+ },
+ {
+  "observedAt": "2026-10-06T03:27:35.904Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 4,
+  "distinctRequests": 4,
+  "lastCreated": "2026-10-06T03:27:34.294Z",
+  "lastCaptured": "2026-10-06T03:27:33.500Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:27:40.239Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 5,
+  "distinctRequests": 5,
+  "lastCreated": "2026-10-06T03:27:40.270Z",
+  "lastCaptured": "2026-10-06T03:27:39.506Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:28:00.023Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 6,
+  "distinctRequests": 6,
+  "lastCreated": "2026-10-06T03:28:00.264Z",
+  "lastCaptured": "2026-10-06T03:27:59.508Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:28:20.036Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 7,
+  "distinctRequests": 7,
+  "lastCreated": "2026-10-06T03:28:20.254Z",
+  "lastCaptured": "2026-10-06T03:28:19.510Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:28:40.058Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 8,
+  "distinctRequests": 8,
+  "lastCreated": "2026-10-06T03:28:40.288Z",
+  "lastCaptured": "2026-10-06T03:28:39.511Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:29:00.089Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 9,
+  "distinctRequests": 9,
+  "lastCreated": "2026-10-06T03:29:00.268Z",
+  "lastCaptured": "2026-10-06T03:28:59.514Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:29:20.109Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 10,
+  "distinctRequests": 10,
+  "lastCreated": "2026-10-06T03:29:20.247Z",
+  "lastCaptured": "2026-10-06T03:29:19.514Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:29:33.454Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 11,
+  "distinctRequests": 11,
+  "lastCreated": "2026-10-06T03:29:32.209Z",
+  "lastCaptured": "2026-10-06T03:29:31.651Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:29:40.133Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 12,
+  "distinctRequests": 12,
+  "lastCreated": "2026-10-06T03:29:40.284Z",
+  "lastCaptured": "2026-10-06T03:29:39.517Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:29:49.016Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 13,
+  "distinctRequests": 13,
+  "lastCreated": "2026-10-06T03:29:47.397Z",
+  "lastCaptured": "2026-10-06T03:29:47.252Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:29:57.911Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 14,
+  "distinctRequests": 14,
+  "lastCreated": "2026-10-06T03:29:58.191Z",
+  "lastCaptured": "2026-10-06T03:29:58.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:30:08.895Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 15,
+  "distinctRequests": 15,
+  "lastCreated": "2026-10-06T03:30:08.203Z",
+  "lastCaptured": "2026-10-06T03:30:08.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:30:15.562Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 16,
+  "distinctRequests": 16,
+  "lastCreated": "2026-10-06T03:30:14.210Z",
+  "lastCaptured": "2026-10-06T03:30:13.636Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:30:24.441Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 17,
+  "distinctRequests": 17,
+  "lastCreated": "2026-10-06T03:30:23.158Z",
+  "lastCaptured": "2026-10-06T03:30:23.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:30:33.324Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 18,
+  "distinctRequests": 18,
+  "lastCreated": "2026-10-06T03:30:33.175Z",
+  "lastCaptured": "2026-10-06T03:30:33.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:30:44.423Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 19,
+  "distinctRequests": 19,
+  "lastCreated": "2026-10-06T03:30:43.177Z",
+  "lastCaptured": "2026-10-06T03:30:43.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:30:53.320Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 20,
+  "distinctRequests": 20,
+  "lastCreated": "2026-10-06T03:30:53.162Z",
+  "lastCaptured": "2026-10-06T03:30:53.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:31:04.435Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 21,
+  "distinctRequests": 21,
+  "lastCreated": "2026-10-06T03:31:03.161Z",
+  "lastCaptured": "2026-10-06T03:31:03.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:31:13.324Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 22,
+  "distinctRequests": 22,
+  "lastCreated": "2026-10-06T03:31:13.157Z",
+  "lastCaptured": "2026-10-06T03:31:13.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:31:24.431Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 23,
+  "distinctRequests": 23,
+  "lastCreated": "2026-10-06T03:31:23.185Z",
+  "lastCaptured": "2026-10-06T03:31:23.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:31:33.317Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 24,
+  "distinctRequests": 24,
+  "lastCreated": "2026-10-06T03:31:33.158Z",
+  "lastCaptured": "2026-10-06T03:31:33.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:31:44.425Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 25,
+  "distinctRequests": 25,
+  "lastCreated": "2026-10-06T03:31:43.191Z",
+  "lastCaptured": "2026-10-06T03:31:43.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:31:53.315Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 26,
+  "distinctRequests": 26,
+  "lastCreated": "2026-10-06T03:31:53.180Z",
+  "lastCaptured": "2026-10-06T03:31:53.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:31:59.983Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 27,
+  "distinctRequests": 27,
+  "lastCreated": "2026-10-06T03:31:59.772Z",
+  "lastCaptured": "2026-10-06T03:31:59.211Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:32:08.871Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 28,
+  "distinctRequests": 28,
+  "lastCreated": "2026-10-06T03:32:08.171Z",
+  "lastCaptured": "2026-10-06T03:32:08.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:32:19.985Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 29,
+  "distinctRequests": 29,
+  "lastCreated": "2026-10-06T03:32:18.161Z",
+  "lastCaptured": "2026-10-06T03:32:18.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:32:28.870Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 30,
+  "distinctRequests": 30,
+  "lastCreated": "2026-10-06T03:32:28.191Z",
+  "lastCaptured": "2026-10-06T03:32:28.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:32:39.980Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 31,
+  "distinctRequests": 31,
+  "lastCreated": "2026-10-06T03:32:38.312Z",
+  "lastCaptured": "2026-10-06T03:32:38.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:32:48.854Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 32,
+  "distinctRequests": 32,
+  "lastCreated": "2026-10-06T03:32:48.173Z",
+  "lastCaptured": "2026-10-06T03:32:48.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:32:59.973Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 33,
+  "distinctRequests": 33,
+  "lastCreated": "2026-10-06T03:32:58.246Z",
+  "lastCaptured": "2026-10-06T03:32:58.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:33:08.849Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 34,
+  "distinctRequests": 34,
+  "lastCreated": "2026-10-06T03:33:08.331Z",
+  "lastCaptured": "2026-10-06T03:33:08.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:33:19.970Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 35,
+  "distinctRequests": 35,
+  "lastCreated": "2026-10-06T03:33:18.251Z",
+  "lastCaptured": "2026-10-06T03:33:18.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:33:28.852Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 36,
+  "distinctRequests": 36,
+  "lastCreated": "2026-10-06T03:33:28.212Z",
+  "lastCaptured": "2026-10-06T03:33:28.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:33:39.961Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 37,
+  "distinctRequests": 37,
+  "lastCreated": "2026-10-06T03:33:38.241Z",
+  "lastCaptured": "2026-10-06T03:33:38.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:33:48.849Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 38,
+  "distinctRequests": 38,
+  "lastCreated": "2026-10-06T03:33:48.251Z",
+  "lastCaptured": "2026-10-06T03:33:48.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:33:59.969Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 39,
+  "distinctRequests": 39,
+  "lastCreated": "2026-10-06T03:33:58.225Z",
+  "lastCaptured": "2026-10-06T03:33:58.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:34:08.849Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 40,
+  "distinctRequests": 40,
+  "lastCreated": "2026-10-06T03:34:08.292Z",
+  "lastCaptured": "2026-10-06T03:34:08.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:34:19.964Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 41,
+  "distinctRequests": 41,
+  "lastCreated": "2026-10-06T03:34:18.401Z",
+  "lastCaptured": "2026-10-06T03:34:18.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:34:28.847Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 42,
+  "distinctRequests": 42,
+  "lastCreated": "2026-10-06T03:34:28.198Z",
+  "lastCaptured": "2026-10-06T03:34:28.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:34:37.728Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 43,
+  "distinctRequests": 43,
+  "lastCreated": "2026-10-06T03:34:36.022Z",
+  "lastCaptured": "2026-10-06T03:34:35.210Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:34:44.396Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 44,
+  "distinctRequests": 44,
+  "lastCreated": "2026-10-06T03:34:43.224Z",
+  "lastCaptured": "2026-10-06T03:34:43.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:34:53.305Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 45,
+  "distinctRequests": 45,
+  "lastCreated": "2026-10-06T03:34:53.232Z",
+  "lastCaptured": "2026-10-06T03:34:53.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:35:04.417Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 46,
+  "distinctRequests": 46,
+  "lastCreated": "2026-10-06T03:35:03.304Z",
+  "lastCaptured": "2026-10-06T03:35:03.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:35:13.310Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 47,
+  "distinctRequests": 47,
+  "lastCreated": "2026-10-06T03:35:13.223Z",
+  "lastCaptured": "2026-10-06T03:35:13.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:35:39.956Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 48,
+  "distinctRequests": 48,
+  "lastCreated": "2026-10-06T03:35:38.105Z",
+  "lastCaptured": "2026-10-06T03:35:37.342Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:35:48.836Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 49,
+  "distinctRequests": 49,
+  "lastCreated": "2026-10-06T03:35:48.249Z",
+  "lastCaptured": "2026-10-06T03:35:48.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:35:59.944Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 50,
+  "distinctRequests": 50,
+  "lastCreated": "2026-10-06T03:35:58.253Z",
+  "lastCaptured": "2026-10-06T03:35:58.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:36:08.830Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 51,
+  "distinctRequests": 51,
+  "lastCreated": "2026-10-06T03:36:08.234Z",
+  "lastCaptured": "2026-10-06T03:36:08.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:36:19.934Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 52,
+  "distinctRequests": 52,
+  "lastCreated": "2026-10-06T03:36:20.257Z",
+  "lastCaptured": "2026-10-06T03:36:20.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:36:31.049Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 53,
+  "distinctRequests": 53,
+  "lastCreated": "2026-10-06T03:36:30.235Z",
+  "lastCaptured": "2026-10-06T03:36:30.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:36:39.940Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 54,
+  "distinctRequests": 54,
+  "lastCreated": "2026-10-06T03:36:40.230Z",
+  "lastCaptured": "2026-10-06T03:36:40.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:36:51.048Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 55,
+  "distinctRequests": 55,
+  "lastCreated": "2026-10-06T03:36:50.244Z",
+  "lastCaptured": "2026-10-06T03:36:50.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:36:59.959Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 56,
+  "distinctRequests": 56,
+  "lastCreated": "2026-10-06T03:37:00.240Z",
+  "lastCaptured": "2026-10-06T03:37:00.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:37:11.061Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 57,
+  "distinctRequests": 57,
+  "lastCreated": "2026-10-06T03:37:10.235Z",
+  "lastCaptured": "2026-10-06T03:37:10.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:37:19.947Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 58,
+  "distinctRequests": 58,
+  "lastCreated": "2026-10-06T03:37:20.228Z",
+  "lastCaptured": "2026-10-06T03:37:20.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:37:31.055Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 59,
+  "distinctRequests": 59,
+  "lastCreated": "2026-10-06T03:37:30.241Z",
+  "lastCaptured": "2026-10-06T03:37:30.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:37:55.522Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 60,
+  "distinctRequests": 60,
+  "lastCreated": "2026-10-06T03:37:55.658Z",
+  "lastCaptured": "2026-10-06T03:37:55.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:38:06.630Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 61,
+  "distinctRequests": 61,
+  "lastCreated": "2026-10-06T03:38:05.241Z",
+  "lastCaptured": "2026-10-06T03:38:05.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:38:15.518Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 62,
+  "distinctRequests": 62,
+  "lastCreated": "2026-10-06T03:38:15.209Z",
+  "lastCaptured": "2026-10-06T03:38:15.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:38:26.627Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 63,
+  "distinctRequests": 63,
+  "lastCreated": "2026-10-06T03:38:25.238Z",
+  "lastCaptured": "2026-10-06T03:38:25.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:38:35.516Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 64,
+  "distinctRequests": 64,
+  "lastCreated": "2026-10-06T03:38:35.228Z",
+  "lastCaptured": "2026-10-06T03:38:35.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:38:46.627Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 65,
+  "distinctRequests": 65,
+  "lastCreated": "2026-10-06T03:38:45.207Z",
+  "lastCaptured": "2026-10-06T03:38:45.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:38:55.510Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 66,
+  "distinctRequests": 66,
+  "lastCreated": "2026-10-06T03:38:55.217Z",
+  "lastCaptured": "2026-10-06T03:38:55.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:39:06.614Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 67,
+  "distinctRequests": 67,
+  "lastCreated": "2026-10-06T03:39:05.187Z",
+  "lastCaptured": "2026-10-06T03:39:05.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:39:17.730Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 68,
+  "distinctRequests": 68,
+  "lastCreated": "2026-10-06T03:39:16.192Z",
+  "lastCaptured": "2026-10-06T03:39:15.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:39:26.622Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 69,
+  "distinctRequests": 69,
+  "lastCreated": "2026-10-06T03:39:25.232Z",
+  "lastCaptured": "2026-10-06T03:39:25.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:39:35.515Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 70,
+  "distinctRequests": 70,
+  "lastCreated": "2026-10-06T03:39:35.214Z",
+  "lastCaptured": "2026-10-06T03:39:35.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:39:46.626Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 71,
+  "distinctRequests": 71,
+  "lastCreated": "2026-10-06T03:39:45.260Z",
+  "lastCaptured": "2026-10-06T03:39:45.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:39:55.528Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 72,
+  "distinctRequests": 72,
+  "lastCreated": "2026-10-06T03:39:55.193Z",
+  "lastCaptured": "2026-10-06T03:39:55.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:40:06.522Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 73,
+  "distinctRequests": 73,
+  "lastCreated": "2026-10-06T03:40:05.220Z",
+  "lastCaptured": "2026-10-06T03:40:05.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:40:15.225Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 74,
+  "distinctRequests": 74,
+  "lastCreated": "2026-10-06T03:40:15.219Z",
+  "lastCaptured": "2026-10-06T03:40:15.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:40:26.074Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 75,
+  "distinctRequests": 75,
+  "lastCreated": "2026-10-06T03:40:25.225Z",
+  "lastCaptured": "2026-10-06T03:40:25.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:40:36.941Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 76,
+  "distinctRequests": 76,
+  "lastCreated": "2026-10-06T03:40:35.203Z",
+  "lastCaptured": "2026-10-06T03:40:35.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:40:45.627Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 77,
+  "distinctRequests": 77,
+  "lastCreated": "2026-10-06T03:40:45.228Z",
+  "lastCaptured": "2026-10-06T03:40:45.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:40:56.513Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 78,
+  "distinctRequests": 78,
+  "lastCreated": "2026-10-06T03:40:55.200Z",
+  "lastCaptured": "2026-10-06T03:40:55.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:41:05.193Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 79,
+  "distinctRequests": 79,
+  "lastCreated": "2026-10-06T03:41:05.213Z",
+  "lastCaptured": "2026-10-06T03:41:05.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:41:16.056Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 80,
+  "distinctRequests": 80,
+  "lastCreated": "2026-10-06T03:41:15.214Z",
+  "lastCaptured": "2026-10-06T03:41:15.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:41:26.871Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 81,
+  "distinctRequests": 81,
+  "lastCreated": "2026-10-06T03:41:25.181Z",
+  "lastCaptured": "2026-10-06T03:41:25.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:41:35.560Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 82,
+  "distinctRequests": 82,
+  "lastCreated": "2026-10-06T03:41:35.254Z",
+  "lastCaptured": "2026-10-06T03:41:35.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:41:46.421Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 83,
+  "distinctRequests": 83,
+  "lastCreated": "2026-10-06T03:41:45.221Z",
+  "lastCaptured": "2026-10-06T03:41:45.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:41:55.101Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 84,
+  "distinctRequests": 84,
+  "lastCreated": "2026-10-06T03:41:55.219Z",
+  "lastCaptured": "2026-10-06T03:41:55.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:42:05.949Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 85,
+  "distinctRequests": 85,
+  "lastCreated": "2026-10-06T03:42:05.221Z",
+  "lastCaptured": "2026-10-06T03:42:05.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:42:16.805Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 86,
+  "distinctRequests": 86,
+  "lastCreated": "2026-10-06T03:42:15.223Z",
+  "lastCaptured": "2026-10-06T03:42:15.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:42:25.505Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 87,
+  "distinctRequests": 87,
+  "lastCreated": "2026-10-06T03:42:25.246Z",
+  "lastCaptured": "2026-10-06T03:42:25.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:42:36.370Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 88,
+  "distinctRequests": 88,
+  "lastCreated": "2026-10-06T03:42:35.299Z",
+  "lastCaptured": "2026-10-06T03:42:35.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:42:47.219Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 89,
+  "distinctRequests": 89,
+  "lastCreated": "2026-10-06T03:42:45.469Z",
+  "lastCaptured": "2026-10-06T03:42:45.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:42:55.896Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 90,
+  "distinctRequests": 90,
+  "lastCreated": "2026-10-06T03:42:55.218Z",
+  "lastCaptured": "2026-10-06T03:42:55.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:43:06.766Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 91,
+  "distinctRequests": 91,
+  "lastCreated": "2026-10-06T03:43:05.236Z",
+  "lastCaptured": "2026-10-06T03:43:05.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:43:15.436Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 92,
+  "distinctRequests": 92,
+  "lastCreated": "2026-10-06T03:43:15.199Z",
+  "lastCaptured": "2026-10-06T03:43:15.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:43:26.291Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 93,
+  "distinctRequests": 93,
+  "lastCreated": "2026-10-06T03:43:25.187Z",
+  "lastCaptured": "2026-10-06T03:43:25.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:43:34.985Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 94,
+  "distinctRequests": 94,
+  "lastCreated": "2026-10-06T03:43:34.174Z",
+  "lastCaptured": "2026-10-06T03:43:34.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:43:45.809Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 95,
+  "distinctRequests": 95,
+  "lastCreated": "2026-10-06T03:43:44.230Z",
+  "lastCaptured": "2026-10-06T03:43:44.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:43:54.489Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 96,
+  "distinctRequests": 96,
+  "lastCreated": "2026-10-06T03:43:54.187Z",
+  "lastCaptured": "2026-10-06T03:43:54.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:44:05.342Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 97,
+  "distinctRequests": 97,
+  "lastCreated": "2026-10-06T03:44:04.197Z",
+  "lastCaptured": "2026-10-06T03:44:04.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:44:14.010Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 98,
+  "distinctRequests": 98,
+  "lastCreated": "2026-10-06T03:44:14.216Z",
+  "lastCaptured": "2026-10-06T03:44:14.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:44:24.833Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 99,
+  "distinctRequests": 99,
+  "lastCreated": "2026-10-06T03:44:24.205Z",
+  "lastCaptured": "2026-10-06T03:44:24.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:44:35.653Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 100,
+  "distinctRequests": 100,
+  "lastCreated": "2026-10-06T03:44:34.321Z",
+  "lastCaptured": "2026-10-06T03:44:34.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:44:44.300Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 101,
+  "distinctRequests": 101,
+  "lastCreated": "2026-10-06T03:44:44.245Z",
+  "lastCaptured": "2026-10-06T03:44:44.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:44:55.140Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 102,
+  "distinctRequests": 102,
+  "lastCreated": "2026-10-06T03:44:54.229Z",
+  "lastCaptured": "2026-10-06T03:44:54.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:45:05.953Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 103,
+  "distinctRequests": 103,
+  "lastCreated": "2026-10-06T03:45:04.226Z",
+  "lastCaptured": "2026-10-06T03:45:04.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:45:14.615Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 104,
+  "distinctRequests": 104,
+  "lastCreated": "2026-10-06T03:45:14.242Z",
+  "lastCaptured": "2026-10-06T03:45:14.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:45:25.434Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 105,
+  "distinctRequests": 105,
+  "lastCreated": "2026-10-06T03:45:24.235Z",
+  "lastCaptured": "2026-10-06T03:45:24.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:45:34.129Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 106,
+  "distinctRequests": 106,
+  "lastCreated": "2026-10-06T03:45:34.360Z",
+  "lastCaptured": "2026-10-06T03:45:34.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:45:44.958Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 107,
+  "distinctRequests": 107,
+  "lastCreated": "2026-10-06T03:45:44.216Z",
+  "lastCaptured": "2026-10-06T03:45:44.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:45:55.805Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 108,
+  "distinctRequests": 108,
+  "lastCreated": "2026-10-06T03:45:54.207Z",
+  "lastCaptured": "2026-10-06T03:45:54.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:46:04.476Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 109,
+  "distinctRequests": 109,
+  "lastCreated": "2026-10-06T03:46:04.237Z",
+  "lastCaptured": "2026-10-06T03:46:04.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:46:15.329Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 110,
+  "distinctRequests": 110,
+  "lastCreated": "2026-10-06T03:46:14.226Z",
+  "lastCaptured": "2026-10-06T03:46:14.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:46:24.006Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 111,
+  "distinctRequests": 111,
+  "lastCreated": "2026-10-06T03:46:24.237Z",
+  "lastCaptured": "2026-10-06T03:46:24.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:46:34.953Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 112,
+  "distinctRequests": 112,
+  "lastCreated": "2026-10-06T03:46:34.246Z",
+  "lastCaptured": "2026-10-06T03:46:34.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:46:46.061Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 113,
+  "distinctRequests": 113,
+  "lastCreated": "2026-10-06T03:46:44.198Z",
+  "lastCaptured": "2026-10-06T03:46:44.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:46:54.938Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 114,
+  "distinctRequests": 114,
+  "lastCreated": "2026-10-06T03:46:54.193Z",
+  "lastCaptured": "2026-10-06T03:46:54.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:47:06.067Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 115,
+  "distinctRequests": 115,
+  "lastCreated": "2026-10-06T03:47:04.236Z",
+  "lastCaptured": "2026-10-06T03:47:04.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:47:14.941Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 116,
+  "distinctRequests": 116,
+  "lastCreated": "2026-10-06T03:47:14.590Z",
+  "lastCaptured": "2026-10-06T03:47:14.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:47:26.046Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 117,
+  "distinctRequests": 117,
+  "lastCreated": "2026-10-06T03:47:24.221Z",
+  "lastCaptured": "2026-10-06T03:47:24.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:47:34.937Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 118,
+  "distinctRequests": 118,
+  "lastCreated": "2026-10-06T03:47:34.189Z",
+  "lastCaptured": "2026-10-06T03:47:34.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:47:46.032Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 119,
+  "distinctRequests": 119,
+  "lastCreated": "2026-10-06T03:47:44.217Z",
+  "lastCaptured": "2026-10-06T03:47:44.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:47:59.361Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 120,
+  "distinctRequests": 120,
+  "lastCreated": "2026-10-06T03:47:57.916Z",
+  "lastCaptured": "2026-10-06T03:47:54.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:48:06.018Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 121,
+  "distinctRequests": 121,
+  "lastCreated": "2026-10-06T03:48:04.216Z",
+  "lastCaptured": "2026-10-06T03:48:04.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:48:14.895Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 122,
+  "distinctRequests": 122,
+  "lastCreated": "2026-10-06T03:48:14.291Z",
+  "lastCaptured": "2026-10-06T03:48:14.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:48:25.997Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 123,
+  "distinctRequests": 123,
+  "lastCreated": "2026-10-06T03:48:24.217Z",
+  "lastCaptured": "2026-10-06T03:48:24.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:49:28.101Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 124,
+  "distinctRequests": 124,
+  "lastCreated": "2026-10-06T03:49:27.686Z",
+  "lastCaptured": "2026-10-06T03:49:27.567Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:49:50.188Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 125,
+  "distinctRequests": 125,
+  "lastCreated": "2026-10-06T03:49:48.770Z",
+  "lastCaptured": "2026-10-06T03:49:48.645Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:50:03.467Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 126,
+  "distinctRequests": 126,
+  "lastCreated": "2026-10-06T03:50:02.821Z",
+  "lastCaptured": "2026-10-06T03:50:02.086Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:50:23.381Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 127,
+  "distinctRequests": 127,
+  "lastCreated": "2026-10-06T03:50:22.826Z",
+  "lastCaptured": "2026-10-06T03:50:22.088Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:50:34.441Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 128,
+  "distinctRequests": 128,
+  "lastCreated": "2026-10-06T03:50:33.178Z",
+  "lastCaptured": "2026-10-06T03:50:33.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:50:43.285Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 129,
+  "distinctRequests": 129,
+  "lastCreated": "2026-10-06T03:50:42.855Z",
+  "lastCaptured": "2026-10-06T03:50:42.090Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:50:54.336Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 130,
+  "distinctRequests": 130,
+  "lastCreated": "2026-10-06T03:50:53.192Z",
+  "lastCaptured": "2026-10-06T03:50:53.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:51:00.985Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 131,
+  "distinctRequests": 131,
+  "lastCreated": "2026-10-06T03:51:00.185Z",
+  "lastCaptured": "2026-10-06T03:51:00.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:51:11.085Z",
+  "kind": "order.event",
+  "code": "LT-0004",
+  "eventType": "order.status_changed",
+  "actorRole": "rider",
+  "actorUserId": "rider-1",
+  "createdAt": "2026-10-06T03:51:11.293Z",
+  "transition": "on_the_way → arrived"
+ },
+ {
+  "observedAt": "2026-10-06T03:51:12.035Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 132,
+  "distinctRequests": 132,
+  "lastCreated": "2026-10-06T03:51:10.209Z",
+  "lastCaptured": "2026-10-06T03:51:10.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:51:13.113Z",
+  "kind": "order.state",
+  "code": "LT-0004",
+  "status": "arrived",
+  "revision": "11",
+  "updated_at": "2026-10-06T03:51:11.293Z",
+  "manual_payment_status": "pending",
+  "manual_payment_method": null,
+  "manual_payment_confirmed_at": null,
+  "manual_payment_confirmed_by": null,
+  "assigned_rider_user_id": "rider-1",
+  "inventory_released_at": null,
+  "accepted_at": "2026-10-06T03:22:32.297Z",
+  "preparing_at": "2026-10-06T03:22:46.851Z",
+  "ready_at": "2026-10-06T03:23:01.853Z",
+  "picked_up_at": "2026-10-06T03:24:35.210Z",
+  "dispatched_at": "2026-10-06T03:24:35.210Z",
+  "arrived_at": "2026-10-06T03:51:11.297Z",
+  "delivered_at": null,
+  "cancelled_at": null,
+  "delivery_code_required": true
+ },
+ {
+  "observedAt": "2026-10-06T03:51:20.888Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 133,
+  "distinctRequests": 133,
+  "lastCreated": "2026-10-06T03:51:20.140Z",
+  "lastCaptured": "2026-10-06T03:51:20.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:51:24.746Z",
+  "kind": "delivery.code_attempt",
+  "code": "LT-0004",
+  "result": "incorrect_code",
+  "attemptedAt": "2026-10-06T03:51:24.778Z",
+  "lockLevel": 0
+ },
+ {
+  "observedAt": "2026-10-06T03:51:24.936Z",
+  "kind": "delivery.handoff",
+  "code": "LT-0004",
+  "failed_attempts": 1,
+  "locked_until": null,
+  "confirmed_at": null,
+  "confirmed_by_user_id": null,
+  "expires_at": "2026-10-08T03:21:33.647Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:51:31.966Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 134,
+  "distinctRequests": 134,
+  "lastCreated": "2026-10-06T03:51:30.184Z",
+  "lastCaptured": "2026-10-06T03:51:30.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:51:40.812Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 135,
+  "distinctRequests": 135,
+  "lastCreated": "2026-10-06T03:51:40.193Z",
+  "lastCaptured": "2026-10-06T03:51:40.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:51:51.879Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 136,
+  "distinctRequests": 136,
+  "lastCreated": "2026-10-06T03:51:51.194Z",
+  "lastCaptured": "2026-10-06T03:51:51.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:52:02.947Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 137,
+  "distinctRequests": 137,
+  "lastCreated": "2026-10-06T03:52:01.175Z",
+  "lastCaptured": "2026-10-06T03:52:01.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:52:11.788Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 138,
+  "distinctRequests": 138,
+  "lastCreated": "2026-10-06T03:52:11.188Z",
+  "lastCaptured": "2026-10-06T03:52:11.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:52:20.638Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 139,
+  "distinctRequests": 139,
+  "lastCreated": "2026-10-06T03:52:20.155Z",
+  "lastCaptured": "2026-10-06T03:52:20.000Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:52:23.938Z",
+  "kind": "order.state",
+  "code": "LT-0004",
+  "status": "delivered",
+  "revision": "12",
+  "updated_at": "2026-10-06T03:52:23.684Z",
+  "manual_payment_status": "pending",
+  "manual_payment_method": null,
+  "manual_payment_confirmed_at": null,
+  "manual_payment_confirmed_by": null,
+  "assigned_rider_user_id": "rider-1",
+  "inventory_released_at": null,
+  "accepted_at": "2026-10-06T03:22:32.297Z",
+  "preparing_at": "2026-10-06T03:22:46.851Z",
+  "ready_at": "2026-10-06T03:23:01.853Z",
+  "picked_up_at": "2026-10-06T03:24:35.210Z",
+  "dispatched_at": "2026-10-06T03:24:35.210Z",
+  "arrived_at": "2026-10-06T03:51:11.297Z",
+  "delivered_at": "2026-10-06T03:52:23.688Z",
+  "cancelled_at": null,
+  "delivery_code_required": true
+ },
+ {
+  "observedAt": "2026-10-06T03:52:24.128Z",
+  "kind": "order.event",
+  "code": "LT-0004",
+  "eventType": "order.status_changed",
+  "actorRole": "rider",
+  "actorUserId": "rider-1",
+  "createdAt": "2026-10-06T03:52:23.684Z",
+  "transition": "arrived → delivered"
+ },
+ {
+  "observedAt": "2026-10-06T03:52:24.509Z",
+  "kind": "delivery.code_attempt",
+  "code": "LT-0004",
+  "result": "confirmed",
+  "attemptedAt": "2026-10-06T03:52:23.775Z",
+  "lockLevel": 0
+ },
+ {
+  "observedAt": "2026-10-06T03:52:24.698Z",
+  "kind": "delivery.handoff",
+  "code": "LT-0004",
+  "failed_attempts": 0,
+  "locked_until": null,
+  "confirmed_at": "2026-10-06T03:52:23.688Z",
+  "confirmed_by_user_id": "rider-1",
+  "expires_at": "2026-10-08T03:21:33.647Z"
+ },
+ {
+  "observedAt": "2026-10-06T03:52:25.080Z",
+  "kind": "rider.locations",
+  "code": "LT-0004",
+  "count": 0,
+  "distinctRequests": 0,
+  "lastCreated": null,
+  "lastCaptured": null
+ },
+ {
+  "observedAt": "2026-10-06T04:02:25.649Z",
+  "kind": "rider.presence",
+  "available": true,
+  "version": "3",
+  "last_seen_at": "2026-10-06T04:02:25.303Z",
+  "effective": true
+ },
+ {
+  "observedAt": "2026-10-06T04:04:09.654Z",
+  "kind": "rider.presence",
+  "available": false,
+  "version": "4",
+  "last_seen_at": null,
+  "effective": false
+ },
+ {
+  "observedAt": "2026-10-06T04:36:28.630Z",
+  "kind": "order.state",
+  "code": "LT-0004",
+  "status": "delivered",
+  "revision": "13",
+  "updated_at": "2026-10-06T04:36:28.740Z",
+  "manual_payment_status": "confirmed",
+  "manual_payment_method": "cash",
+  "manual_payment_confirmed_at": "2026-10-06T04:36:28.742Z",
+  "manual_payment_confirmed_by": "business-1",
+  "assigned_rider_user_id": "rider-1",
+  "inventory_released_at": null,
+  "accepted_at": "2026-10-06T03:22:32.297Z",
+  "preparing_at": "2026-10-06T03:22:46.851Z",
+  "ready_at": "2026-10-06T03:23:01.853Z",
+  "picked_up_at": "2026-10-06T03:24:35.210Z",
+  "dispatched_at": "2026-10-06T03:24:35.210Z",
+  "arrived_at": "2026-10-06T03:51:11.297Z",
+  "delivered_at": "2026-10-06T03:52:23.688Z",
+  "cancelled_at": null,
+  "delivery_code_required": true
+ },
+ {
+  "observedAt": "2026-10-06T04:36:28.818Z",
+  "kind": "order.event",
+  "code": "LT-0004",
+  "eventType": "order.manual_payment_confirmed",
+  "actorRole": "business",
+  "actorUserId": "business-1",
+  "createdAt": "2026-10-06T04:36:28.740Z",
+  "payment": {
+   "amount": 5900,
+   "method": "cash"
+  }
+ }
+]

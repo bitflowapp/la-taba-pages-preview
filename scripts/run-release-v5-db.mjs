@@ -193,6 +193,16 @@ try {
     }
     assert.ok(legacyFiscalRows,'la adopcion del core fiscal tiene que correr sobre filas legadas');
     console.log('POST_INTERLOCK_MIGRATIONS='+posteriores.length);
+    // La huella del esquema construido desde cero, antes de pgTAP: es la referencia contra la
+    // que scripts/production/schema-catchup-rehearsal.mjs compara la copia de producción migrada.
+    if(process.env.TABA_FRESH_FINGERPRINT_OUT){
+      await query('set search_path to "$user", public, extensions');
+      fs.writeFileSync(path.resolve(process.env.TABA_FRESH_FINGERPRINT_OUT),
+        JSON.stringify({migrations:fs.readdirSync(path.join(ROOT,'supabase/migrations')).filter(v=>v.endsWith('.sql')).length,
+          fingerprint:await schemaFingerprint()},null,2)+'\n',{flag:'wx'});
+      await query('reset search_path');
+      console.log('FRESH_SCHEMA_FINGERPRINT_WRITTEN');
+    }
     const canonicalTests=['business_windows_scanner_fiscal_test.sql','mercadopago_seller_oauth.local.sql',
       'mercadopago_clean_business.local.sql','fiscal_document_closure_test.sql','production_operations_control_plane_test.sql',
       'durable_offline_packing_test.sql','public_tracking_gps_quality_test.sql','business_timezone_windows_test.sql',
@@ -211,8 +221,8 @@ try {
       assert.doesNotMatch(output,/^not ok\b/m,name);assert.match(output,/^1\.\.[0-9]+$/m,name);
       assertions+=Number(/^1\.\.([0-9]+)$/m.exec(output)[1]);
     }
-    assert.equal(assertions,940);
-    console.log('CANONICAL_PGTAP: 268 + 44 least-privilege + 50 reparto-propio + 37 ventana QA/columnas privadas/pausa + 16 columnas internas de producto fuera del público + 9 Mercado Pago sólo con vendedor conectado + 5 aislamiento cobro manual/Mercado Pago + 9 alerta de vendedor que no puede cobrar + 16 interruptor de operador por negocio + 104 impresión del mostrador + 19 pipeline de imágenes + 84 preparar la apertura + 24 primera publicación de un borrador de CP + 12 invariantes a prueba de NULL + 55 contrato del core fiscal + 24 upgrade fiscal + 14 RG 5616 + 54 pedidos online V2 + 21 recuperación ante desastre fiscal + 7 frontera de secretos fiscales + 2 reembolso no es nota de crédito + 12 traspaso de dueño + 54 Caja Clara como terminal del local assertions PASS');
+    assert.equal(assertions,943);
+    console.log('CANONICAL_PGTAP: 268 + 44 least-privilege + 50 reparto-propio + 37 ventana QA/columnas privadas/pausa + 16 columnas internas de producto fuera del público + 9 Mercado Pago sólo con vendedor conectado + 5 aislamiento cobro manual/Mercado Pago + 9 alerta de vendedor que no puede cobrar + 16 interruptor de operador por negocio + 104 impresión del mostrador + 19 pipeline de imágenes + 84 preparar la apertura + 24 primera publicación de un borrador de CP + 12 invariantes a prueba de NULL + 55 contrato del core fiscal + 24 upgrade fiscal + 14 RG 5616 + 54 pedidos online V2 + 21 recuperación ante desastre fiscal + 7 frontera de secretos fiscales + 2 reembolso no es nota de crédito + 12 traspaso de dueño + 57 Caja Clara como terminal del local assertions PASS');
 
     // pgTAP no puede probar dos agentes reclamando a la vez: una conexión por llamada.
     const { runPrintClaimRace } = await import('./print-agent/claim-race.mjs');

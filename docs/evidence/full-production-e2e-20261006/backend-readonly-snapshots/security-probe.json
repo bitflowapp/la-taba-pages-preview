@@ -1,0 +1,157 @@
+{
+ "at": "2026-10-06T05:36:29.224Z",
+ "ref": "wwcpogltfgzgkrlilbcd",
+ "checks": [
+  {
+   "name": "anon: ninguna tabla privada devuelve filas",
+   "ok": true,
+   "detail": "103 tablas probadas"
+  },
+  {
+   "name": "anon: el seguimiento de LT-0004 sin su token no devuelve nada",
+   "ok": true,
+   "detail": "HTTP 200 null"
+  },
+  {
+   "name": "anon: un token inventado en x-order-token no abre LT-0004",
+   "ok": true,
+   "detail": "HTTP 200 null"
+  },
+  {
+   "name": "anon: un token inventado en x-taba-order-token no abre LT-0004",
+   "ok": true,
+   "detail": "HTTP 200 null"
+  },
+  {
+   "name": "anon: un token inventado en x-order-access-token no abre LT-0004",
+   "ok": true,
+   "detail": "HTTP 200 null"
+  },
+  {
+   "name": "existe la identidad anónima de visita",
+   "ok": true,
+   "detail": "HTTP 200"
+  },
+  {
+   "name": "el JWT de visita es authenticated + is_anonymous",
+   "ok": true,
+   "detail": "role=authenticated is_anonymous=true"
+  },
+  {
+   "name": "visita: ninguna tabla privada devuelve filas",
+   "ok": true,
+   "detail": "103 tablas probadas"
+  },
+  {
+   "name": "visita: no obtiene rol de negocio",
+   "ok": true,
+   "detail": "rol=(ninguno) HTTP 404"
+  },
+  {
+   "name": "visita: no puede darse membresía",
+   "ok": true,
+   "detail": "HTTP 403"
+  },
+  {
+   "name": "visita: no inserta pedidos por fuera del RPC",
+   "ok": true,
+   "detail": "HTTP 403"
+  },
+  {
+   "name": "visita: no ve el seguimiento de un pedido ajeno",
+   "ok": true,
+   "detail": "HTTP 200 null"
+  },
+  {
+   "name": "visita: pos_list_orders no entrega datos ni actúa",
+   "ok": true,
+   "detail": "HTTP 403 {\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"terminal no autorizada\"}"
+  },
+  {
+   "name": "visita: list_business_payments no entrega datos ni actúa",
+   "ok": true,
+   "detail": "HTTP 403 {\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"pagos no autorizados\"}"
+  },
+  {
+   "name": "visita: list_available_rider_orders no entrega datos ni actúa",
+   "ok": true,
+   "detail": "HTTP 200 []"
+  },
+  {
+   "name": "visita: list_rider_order_offers no entrega datos ni actúa",
+   "ok": true,
+   "detail": "HTTP 403 {\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"rol de negocio requerido\"}"
+  },
+  {
+   "name": "visita: list_business_rider_availability no entrega datos ni actúa",
+   "ok": true,
+   "detail": "HTTP 403 {\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"Rol de negocio requerido\"}"
+  },
+  {
+   "name": "visita: list_active_business_riders no entrega datos ni actúa",
+   "ok": true,
+   "detail": "HTTP 403 {\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"rol de negocio requerido\"}"
+  },
+  {
+   "name": "visita: identity_list_members no entrega datos ni actúa",
+   "ok": true,
+   "detail": "HTTP 403 {\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"identity: no autorizado\"}"
+  },
+  {
+   "name": "visita: issue_order_delivery_code no entrega datos ni actúa",
+   "ok": true,
+   "detail": "HTTP 403 {\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"pedido no encontrado o acceso denegado\"}"
+  },
+  {
+   "name": "visita: recover_order_tracking_access no entrega datos ni actúa",
+   "ok": true,
+   "detail": "HTTP 403 {\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"pedido no encontrado o acceso denegado\"}"
+  },
+  {
+   "name": "visita: confirm_delivery_code no entrega datos ni actúa",
+   "ok": true,
+   "detail": "HTTP 403 {\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"membership rider activa requerida\"}"
+  },
+  {
+   "name": "visita: claim_delivery_order no entrega datos ni actúa",
+   "ok": true,
+   "detail": "HTTP 403 {\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"membership rider activa requerida\"}"
+  },
+  {
+   "name": "visita: publish_rider_location_receipt no entrega datos ni actúa",
+   "ok": true,
+   "detail": "HTTP 403 {\"code\":\"42501\",\"details\":null,\"hint\":null,\"message\":\"membership rider activa requerida\"}"
+  },
+  {
+   "name": "visita: el catálogo público se lee (columnas de tienda)",
+   "ok": true,
+   "detail": "HTTP 200 · 5 producto(s)"
+  },
+  {
+   "name": "visita: products.unit_cost no se puede leer",
+   "ok": true,
+   "detail": "HTTP 403 {\"code\":\"42501\",\"details\":null,\"hint\":\"Grant the required privileges to the current role with: GRANT"
+  },
+  {
+   "name": "anon: products.unit_cost no se puede leer",
+   "ok": true,
+   "detail": "HTTP 401 {\"code\":\"42501\",\"details\":null,\"hint\":\"Grant the required privileges to the current role with: GRANT"
+  },
+  {
+   "name": "visita: products.verified_by no se puede leer",
+   "ok": true,
+   "detail": "HTTP 403 {\"code\":\"42501\",\"details\":null,\"hint\":\"Grant the required privileges to the current role with: GRANT"
+  },
+  {
+   "name": "anon: products.verified_by no se puede leer",
+   "ok": true,
+   "detail": "HTTP 401 {\"code\":\"42501\",\"details\":null,\"hint\":\"Grant the required privileges to the current role with: GRANT"
+  },
+  {
+   "name": "visita: identity_current_context (firma real) no da rol",
+   "ok": true,
+   "detail": "HTTP 200 {\"role\":null,\"user_id\":\"3660535a-b1cd-4f15-b7bd-955d0f694e81\",\"session_id\":\"9eab1680-676c-47f5-a35c-8268f979cc0b\",\"business_id\":\"00000000-00"
+  }
+ ],
+ "findings": []
+}

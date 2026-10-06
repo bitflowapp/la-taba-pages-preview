@@ -1,0 +1,100 @@
+{
+ "at": "2026-10-06T04:26:24.100Z",
+ "ref": "wwcpogltfgzgkrlilbcd",
+ "dryRun": false,
+ "bundleSha256": "4ffe129e2b7d19b02380d46def9875e25eefc442f81483d766febf34bcb3bb42",
+ "migrations": 1,
+ "rehearsal": {
+  "checks": {
+   "PROD_BACKUP": "PASS",
+   "RESTORE_TEST": "PASS",
+   "ATOMIC_APPLY": "PASS",
+   "APPLY": "PASS",
+   "REQUIRED_RPCS_PRESENT": "PASS",
+   "PRIVATE_PRODUCT_COLUMNS_STAY_PRIVATE": "PASS",
+   "PGTAP_ON_MIGRATED_PRODUCTION_COPY": "PASS",
+   "MIGRATED_EQUALS_FRESH": "REVIEW"
+  }
+ },
+ "before": {
+  "ledger": {
+   "count": 158,
+   "head": "20261005210000"
+  },
+  "values": {
+   "public.orders": 4,
+   "public.order_items": 4,
+   "public.products": 72,
+   "public.businesses": 1,
+   "public.business_members": 5,
+   "public.order_events": 59,
+   "public.catalog_assets": 51,
+   "public.inventory_movements": 2,
+   "auth.users": 14
+  }
+ },
+ "inTransaction": {
+  "applyMs": 69,
+  "valuesChanged": [],
+  "ledger": {
+   "count": 159,
+   "head": "20261006050000",
+   "matchesRepo": true
+  },
+  "probe": {
+   "missing_rpcs": [],
+   "anon_unit_cost": false,
+   "anon_verified_by": false,
+   "auth_unit_cost": false,
+   "auth_verified_by": false
+  },
+  "verdict": "PASS"
+ },
+ "after": {
+  "ledger": {
+   "count": 159,
+   "head": "20261006050000",
+   "matchesRepo": true
+  },
+  "cronJobs": [
+   {
+    "jobname": "taba-checkout-expiry-sweep",
+    "schedule": "* * * * *",
+    "active": true
+   },
+   {
+    "jobname": "taba-checkout-provider-truth-sweep",
+    "schedule": "* * * * *",
+    "active": true
+   },
+   {
+    "jobname": "taba-operational-alerts-sweep",
+    "schedule": "* * * * *",
+    "active": true
+   },
+   {
+    "jobname": "taba-payment-outbox-worker",
+    "schedule": "30 seconds",
+    "active": true
+   },
+   {
+    "jobname": "taba-qa-window-expiry",
+    "schedule": "* * * * *",
+    "active": true
+   }
+  ],
+  "business": [
+   {
+    "status": "open",
+    "ordering_enabled": true,
+    "ordering_verified": true,
+    "is_active": true,
+    "rider_presence_required": true,
+    "delivery_enabled": true,
+    "pickup_enabled": false
+   }
+  ]
+ },
+ "outcome": "COMMITTED",
+ "committedAt": "2026-10-06T04:26:30.046Z"
+}

@@ -1,0 +1,285 @@
+{
+ "at": "2026-10-06T00:49:15.713Z",
+ "ref": "wwcpogltfgzgkrlilbcd",
+ "checks": {
+  "PROD_BACKUP": "PASS",
+  "RESTORE_TEST": "PASS",
+  "ATOMIC_APPLY": "PASS",
+  "APPLY": "PASS",
+  "REQUIRED_RPCS_PRESENT": "PASS",
+  "PRIVATE_PRODUCT_COLUMNS_STAY_PRIVATE": "PASS",
+  "PGTAP_ON_MIGRATED_PRODUCTION_COPY": "PASS",
+  "MIGRATED_EQUALS_FRESH": "REVIEW"
+ },
+ "pending": {
+  "count": 30,
+  "first": "20260919120000_business_self_delivery_and_finished_today.sql",
+  "last": "20261005210000_products_internal_columns_private.sql",
+  "files": [
+   "20260919120000_business_self_delivery_and_finished_today.sql",
+   "20260920120000_customer_address_json_declared_neighborhood.sql",
+   "20260920130000_saved_address_neighborhood_order_contract.sql",
+   "20260923064927_commercial_pilot_manual_payment.sql",
+   "20260923071557_pilot_rider_shared_availability.sql",
+   "20260924200000_revision_conflicts_answer_409.sql",
+   "20260925085000_pause_keeps_ordering_configuration.sql",
+   "20260925090000_cp_qa_window_and_private_product_columns.sql",
+   "20260925170000_mercadopago_offered_only_with_connected_seller.sql",
+   "20260925220000_mercadopago_seller_cannot_charge_alert.sql",
+   "20260925223000_mercadopago_operator_switch_per_business.sql",
+   "20260926160000_local_print_agent.sql",
+   "20260927004045_catalog_pending_stock_and_cp_drafts.sql",
+   "20260927004347_catalog_draft_juice_taxonomy.sql",
+   "20260927005628_cp_published_requires_approved_image.sql",
+   "20260927175058_catalog_image_storage_pipeline.sql",
+   "20260928150000_store_opening_readiness.sql",
+   "20260928160000_publish_sets_merchant_intent.sql",
+   "20260928170000_identity_and_alcohol_invariants_null_safe.sql",
+   "20260928180000_fiscal_core_receiver_vat_condition.sql",
+   "20260928180100_fiscal_core_intent_convergence.sql",
+   "20260928180200_fiscal_core_worker_fencing_and_reconciliation.sql",
+   "20260928180300_fiscal_core_state_machines.sql",
+   "20260928180400_fiscal_core_security_hardening.sql",
+   "20260928180500_fiscal_core_la_taba_server_channel_guards.sql",
+   "20260928180600_fiscal_core_online_order_source_snapshots.sql",
+   "20260928180700_commercial_fiscal_policy.sql",
+   "20260928180800_commercial_order_fiscal_adapter.sql",
+   "20260929120000_caja_clara_pos_integration.sql",
+   "20261005210000_products_internal_columns_private.sql"
+  ]
+ },
+ "restoreErrors": 0,
+ "backup": {
+  "ledger": {
+   "count": 128,
+   "head": "20260918010000"
+  },
+  "tables": 100,
+  "rows": 16177
+ },
+ "apply": {
+  "bundle": {
+   "bytes": 1205729,
+   "sha256": "470e1216da3c469f2f458f634f4eca021648ef52d64f4cff5fda15dc5569942d",
+   "migrations": 30
+  },
+  "durationMs": 333,
+  "status": 0
+ },
+ "pgtap": {
+  "assertions": 916,
+  "files": {
+   "business_windows_scanner_fiscal_test.sql": {
+    "status": 0,
+    "plan": 30,
+    "notOk": [],
+    "error": null
+   },
+   "mercadopago_seller_oauth.local.sql": {
+    "status": 0,
+    "plan": 15,
+    "notOk": [],
+    "error": null
+   },
+   "mercadopago_clean_business.local.sql": {
+    "status": 0,
+    "plan": 15,
+    "notOk": [],
+    "error": null
+   },
+   "fiscal_document_closure_test.sql": {
+    "status": 0,
+    "plan": 41,
+    "notOk": [],
+    "error": null
+   },
+   "production_operations_control_plane_test.sql": {
+    "status": 0,
+    "plan": 50,
+    "notOk": [],
+    "error": null
+   },
+   "durable_offline_packing_test.sql": {
+    "status": 0,
+    "plan": 28,
+    "notOk": [],
+    "error": null
+   },
+   "public_tracking_gps_quality_test.sql": {
+    "status": 0,
+    "plan": 17,
+    "notOk": [],
+    "error": null
+   },
+   "business_timezone_windows_test.sql": {
+    "status": 0,
+    "plan": 14,
+    "notOk": [],
+    "error": null
+   },
+   "horario_24x7_test.sql": {
+    "status": 0,
+    "plan": 14,
+    "notOk": [],
+    "error": null
+   },
+   "alta_propuesta_comercial_test.sql": {
+    "status": 0,
+    "plan": 44,
+    "notOk": [],
+    "error": null
+   },
+   "production_least_privilege_test.sql": {
+    "status": 0,
+    "plan": 44,
+    "notOk": [],
+    "error": null
+   },
+   "business_self_delivery_test.sql": {
+    "status": 0,
+    "plan": 50,
+    "notOk": [],
+    "error": null
+   },
+   "controlled_production_qa_window_test.sql": {
+    "status": 0,
+    "plan": 37,
+    "notOk": [],
+    "error": null
+   },
+   "anon_internal_product_columns_test.sql": {
+    "status": 0,
+    "plan": 16,
+    "notOk": [],
+    "error": null
+   },
+   "mercadopago_availability_requires_seller.local.sql": {
+    "status": 0,
+    "plan": 9,
+    "notOk": [],
+    "error": null
+   },
+   "payment_method_isolation.local.sql": {
+    "status": 0,
+    "plan": 5,
+    "notOk": [],
+    "error": null
+   },
+   "mercadopago_seller_cannot_charge_alert.local.sql": {
+    "status": 0,
+    "plan": 9,
+    "notOk": [],
+    "error": null
+   },
+   "mercadopago_operator_switch.local.sql": {
+    "status": 0,
+    "plan": 16,
+    "notOk": [],
+    "error": null
+   },
+   "local_print_agent_test.sql": {
+    "status": 0,
+    "plan": 104,
+    "notOk": [],
+    "error": null
+   },
+   "catalog_image_storage_test.sql": {
+    "status": 0,
+    "plan": 19,
+    "notOk": [],
+    "error": null
+   },
+   "store_opening_readiness_test.sql": {
+    "status": 0,
+    "plan": 84,
+    "notOk": [],
+    "error": null
+   },
+   "commercial_publish_merchant_intent_test.sql": {
+    "status": 0,
+    "plan": 24,
+    "notOk": [],
+    "error": null
+   },
+   "identity_alcohol_null_safe_test.sql": {
+    "status": 0,
+    "plan": 12,
+    "notOk": [],
+    "error": null
+   },
+   "fiscal_core_contract_test.sql": {
+    "status": 0,
+    "plan": 55,
+    "notOk": [],
+    "error": null
+   },
+   "fiscal_receiver_vat_condition_test.sql": {
+    "status": 0,
+    "plan": 14,
+    "notOk": [],
+    "error": null
+   },
+   "commercial_order_fiscal_test.sql": {
+    "status": 0,
+    "plan": 54,
+    "notOk": [],
+    "error": null
+   },
+   "fiscal_disaster_recovery_test.sql": {
+    "status": 0,
+    "plan": 21,
+    "notOk": [],
+    "error": null
+   },
+   "fiscal_secret_boundary_test.sql": {
+    "status": 0,
+    "plan": 7,
+    "notOk": [],
+    "error": null
+   },
+   "fiscal_refund_separation_test.sql": {
+    "status": 0,
+    "plan": 2,
+    "notOk": [],
+    "error": null
+   },
+   "owner_handover_test.sql": {
+    "status": 0,
+    "plan": 12,
+    "notOk": [],
+    "error": null
+   },
+   "caja_clara_pos_integration_test.sql": {
+    "status": 0,
+    "plan": 54,
+    "notOk": [],
+    "error": null
+   }
+  }
+ },
+ "data": {
+  "changedTables": [
+   {
+    "table": "public.businesses",
+    "before": 1,
+    "after": 1
+   },
+   {
+    "table": "public.catalog_assets",
+    "before": 51,
+    "after": 51
+   },
+   {
+    "table": "public.orders",
+    "before": 3,
+    "after": 3
+   },
+   {
+    "table": "supabase_migrations.schema_migrations",
+    "before": 128,
+    "after": 158
+   }
+  ],
+  "newTables": 15
+ }
+}

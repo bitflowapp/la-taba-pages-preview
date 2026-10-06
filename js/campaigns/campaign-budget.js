@@ -8,7 +8,7 @@ export function createCampaignBudget(windowRef, isLive, limit) {
     if(deadline!==null)windowRef.clearTimeout?.(deadline);
     id=null;deadline=null;
   };
-  const finish=slow=>{decided=true;cancel();if(slow)limit();};
+  const finish=(slow,reason)=>{decided=true;cancel();if(slow)limit(reason);};
   const frame=now=>{
     id=null;
     if(destroyed||!isLive()){cancel();previous=null;samples=[];return;}
@@ -17,7 +17,7 @@ export function createCampaignBudget(windowRef, isLive, limit) {
     if(samples.length>=10){
       const measured=samples.slice(2);
       const average=measured.reduce((a,b)=>a+b,0)/measured.length;
-      finish(average>45&&measured.filter(ms=>ms>50).length>=4);
+      finish(average>45&&measured.filter(ms=>ms>50).length>=4,'slow_frames');
       return;
     }
     id=windowRef.requestAnimationFrame(frame);
@@ -32,7 +32,8 @@ export function createCampaignBudget(windowRef, isLive, limit) {
         deadline=null;
         if(destroyed||decided)return;
         if(!isLive()){cancel();previous=null;samples=[];return;}
-        finish(true);
+        // The renderer delivered no frames for 1,2 s: it is starved, not slow.
+        finish(true,'frame_stall');
       },1200);
     },
     destroy(){destroyed=true;cancel();},

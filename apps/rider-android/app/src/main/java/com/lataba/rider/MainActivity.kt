@@ -96,7 +96,7 @@ class MainActivity: ComponentActivity() {
                         if (board?.offers?.isEmpty() == true) Text("Sin solicitudes pendientes")
                         board?.offers?.forEach { offer ->
                             Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) { Column(Modifier.padding(12.dp)) {
-                                Text(offer.code); Text("Retiro: ${offer.pickup}"); Text("Zona: ${offer.zone}")
+                                Text(offer.code); Text("Retiro: ${offer.pickup}"); Text(offer.zoneLabel)
                                 Row {
                                     Button(onClick = { vm.offer(offer, true) }, enabled = !state.busy && state.online && state.available && !board.atCapacity, modifier = Modifier.testTag("accept-${offer.code}")) { Text("Aceptar") }
                                     TextButton(onClick = { vm.offer(offer, false) }, enabled = !state.busy && state.online) { Text("Rechazar") }

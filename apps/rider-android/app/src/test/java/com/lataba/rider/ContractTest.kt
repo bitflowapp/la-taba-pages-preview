@@ -46,6 +46,13 @@ class ContractTest {
         val offer = Offer.from(JSONObject("""{"offer_id":"o","public_code":"QA","version":2,"delivery_summary":"zona"}"""))
         assertEquals("zona", offer.zone); assertEquals(2L, offer.version)
     }
+    @Test fun offerWithoutNeighborhoodSaysSoInsteadOfAnEmptyZone() {
+        val missing = Offer.from(JSONObject("""{"offer_id":"o","public_code":"LT-0004","version":1,"delivery_summary":null}"""))
+        assertEquals("", missing.zone)
+        assertEquals("Barrio sin dato · la dirección se ve al aceptar", missing.zoneLabel)
+        val named = Offer.from(JSONObject("""{"offer_id":"o","public_code":"LT-1","version":1,"delivery_summary":" Centro "}"""))
+        assertEquals("Barrio: Centro", named.zoneLabel)
+    }
     @Test fun navigationUsesConfirmedCoordinatesBeforeAddressSearch() {
         val assigned = order().put("pickup_summary", "Local")
             .put("business_location", JSONObject().put("latitude", -38.9460616).put("longitude", -68.0533209))

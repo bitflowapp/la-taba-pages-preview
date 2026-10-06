@@ -134,10 +134,18 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   await expect(page.locator('[data-tracking-panel]')).not.toContainText(/\b\d+(?:[.,]\d+)?\s*km\b/i);
   await rememberTrackingMapIdentity(page);
 
-  const delayedIdentity = await setLatestTrackingFixAge(page, 20_000);
+  // 20 s es el ritmo normal del reparto (LT-0004: un fix cada 10–12 s, consulta
+  // cada 5 s y hasta 3,9 s de publicación): sigue «en vivo», con la edad a la vista.
+  const liveIdentity = await setLatestTrackingFixAge(page, 20_000);
+  expect(liveIdentity).toEqual({ sameShell: true, sameMarker: true });
+  await expect(page.locator('[data-tracking-panel] [data-map-meta-text]')).toHaveText(
+    /^Ubicación en vivo · hace \d+ s$/,
+  );
+
+  const delayedIdentity = await setLatestTrackingFixAge(page, 35_000);
   expect(delayedIdentity).toEqual({ sameShell: true, sameMarker: true });
   await expect(page.locator('[data-tracking-panel] [data-real-map]')).toBeVisible();
-  // Un fix de 20 s no es «en vivo» pero tampoco es una pérdida: se dice que el
+  // Un fix de 35 s no es «en vivo» pero tampoco es una pérdida: se dice que el
   // dato se actualizó hace tanto y se deja al cliente decidir si espera.
   await expect(page.locator('[data-tracking-panel] [data-map-meta-text]')).toHaveText(
     /^Actualizado hace \d+ s$/,

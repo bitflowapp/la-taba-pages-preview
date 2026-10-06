@@ -1,26 +1,26 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v141-pwa-live-campaigns';
+const CACHE_NAME = 'la-taba-runtime-v142-tracking-resume';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=72',
-  './styles/tokens.css?v=72',
-  './styles/common.css?v=72',
-  './styles/storefront.css?v=72',
-  './styles/catalog.css?v=72',
-  './styles/checkout.css?v=72',
-  './styles/profile.css?v=72',
-  './styles/showcase.css?v=72',
-  './styles/tracking.css?v=72',
-  './styles/business.css?v=72',
-  './styles/rider.css?v=72',
-  './styles/responsive.css?v=72',
-  './styles/brand-home.css?v=72',
+  './styles.css?v=73',
+  './styles/tokens.css?v=73',
+  './styles/common.css?v=73',
+  './styles/storefront.css?v=73',
+  './styles/catalog.css?v=73',
+  './styles/checkout.css?v=73',
+  './styles/profile.css?v=73',
+  './styles/showcase.css?v=73',
+  './styles/tracking.css?v=73',
+  './styles/business.css?v=73',
+  './styles/rider.css?v=73',
+  './styles/responsive.css?v=73',
+  './styles/brand-home.css?v=73',
   // `styles.css` la importa desde que existe y nunca estuvo acá: sin red, la
   // home se quedaba sin la capa de movimiento. Lo destapó el guard de la
   // cadena de CSS versionado; no lo introdujo esta integración.
-  './styles/campaigns.css?v=72',
-  './styles/motion.css?v=72',
+  './styles/campaigns.css?v=73',
+  './styles/motion.css?v=73',
   './manifest.webmanifest',
   './runtime-config.js?tenant=walter-staging',
   './pago/resultado/index.html',
@@ -112,6 +112,8 @@ const ASSETS = [
   // El motor de movimiento visual también es import estático del mapa: sin él
   // en la caché, offline el rider se queda sin marcador.
   './js/map/rider_motion.js',
+  // Import estático del mapa y de ui.js: sin él, offline no evalúa ninguno.
+  './js/map/animation_phase.js',
   './js/map/route_geometry.js',
   './js/map/tracking_status.js',
   // El tema nocturno es un import ESTÁTICO de maplibre_tracking_map.js. Sin él

@@ -1221,6 +1221,47 @@ body[data-active-view="cart"] .cart-notice:not([hidden]):empty {
   color: var(--shelf-ink);
 }
 
+/* /cuenta/ escribe sobre la tarjeta oscura, pero el campo traía el fondo
+   blanco del formulario claro con la tinta clara heredada de la tarjeta:
+   #f7f7f8 sobre blanco, 1,07:1. La contraseña se tecleaba invisible y, como
+   cada intento fallido repintaba el campo vacío, cambiarla parecía no hacer
+   nada (medido en producción, 2026-10-06). El campo pasa a ser una
+   sub-superficie de la tarjeta, con su tinta. */
+.payment-return-card input {
+  border-color: var(--shelf-line-strong);
+  background: var(--shelf-raised);
+  color: var(--shelf-ink);
+  caret-color: var(--shelf-ink);
+}
+
+/* El aviso del intento es lo que la persona tiene que leer: tinta plena. */
+.payment-return-card .account-action-message {
+  color: var(--shelf-ink);
+  font-weight: 650;
+}
+
+.account-password-aids {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.account-password-aids .form-hint {
+  margin: 0;
+}
+
+.account-password-reveal {
+  min-height: var(--tap);
+  padding: 0 14px;
+  border: 1px solid var(--shelf-line-strong);
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--shelf-ink);
+  font-size: 14px;
+  font-weight: 750;
+}
+
 .payment-return-brand {
   display: flex;
   align-items: center;

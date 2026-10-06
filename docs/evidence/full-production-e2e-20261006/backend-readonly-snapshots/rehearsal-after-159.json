@@ -1,0 +1,231 @@
+{
+ "at": "2026-10-06T05:38:46.694Z",
+ "ref": "wwcpogltfgzgkrlilbcd",
+ "checks": {
+  "PROD_BACKUP": "PASS",
+  "RESTORE_TEST": "PASS",
+  "ATOMIC_APPLY": "PASS",
+  "APPLY": "PASS",
+  "REQUIRED_RPCS_PRESENT": "PASS",
+  "PRIVATE_PRODUCT_COLUMNS_STAY_PRIVATE": "PASS",
+  "PGTAP_ON_MIGRATED_PRODUCTION_COPY": "PASS",
+  "MIGRATED_EQUALS_FRESH": "NOT_RUN"
+ },
+ "pending": {
+  "count": 0,
+  "files": []
+ },
+ "restoreErrors": 0,
+ "backup": {
+  "ledger": {
+   "count": 159,
+   "head": "20261006050000"
+  },
+  "tables": 115,
+  "rows": 10875
+ },
+ "apply": {
+  "bundle": {
+   "bytes": 48,
+   "sha256": "c14b35bd0ccd0d45e592ca4465d74695d0cfb2a4c372fd6afdf3150f8e5d0025",
+   "migrations": 0
+  },
+  "durationMs": 129,
+  "status": 0
+ },
+ "pgtap": {
+  "assertions": 919,
+  "files": {
+   "business_windows_scanner_fiscal_test.sql": {
+    "status": 0,
+    "plan": 30,
+    "notOk": [],
+    "error": null
+   },
+   "mercadopago_seller_oauth.local.sql": {
+    "status": 0,
+    "plan": 15,
+    "notOk": [],
+    "error": null
+   },
+   "mercadopago_clean_business.local.sql": {
+    "status": 0,
+    "plan": 15,
+    "notOk": [],
+    "error": null
+   },
+   "fiscal_document_closure_test.sql": {
+    "status": 0,
+    "plan": 41,
+    "notOk": [],
+    "error": null
+   },
+   "production_operations_control_plane_test.sql": {
+    "status": 0,
+    "plan": 50,
+    "notOk": [],
+    "error": null
+   },
+   "durable_offline_packing_test.sql": {
+    "status": 0,
+    "plan": 28,
+    "notOk": [],
+    "error": null
+   },
+   "public_tracking_gps_quality_test.sql": {
+    "status": 0,
+    "plan": 17,
+    "notOk": [],
+    "error": null
+   },
+   "business_timezone_windows_test.sql": {
+    "status": 0,
+    "plan": 14,
+    "notOk": [],
+    "error": null
+   },
+   "horario_24x7_test.sql": {
+    "status": 0,
+    "plan": 14,
+    "notOk": [],
+    "error": null
+   },
+   "alta_propuesta_comercial_test.sql": {
+    "status": 0,
+    "plan": 44,
+    "notOk": [],
+    "error": null
+   },
+   "production_least_privilege_test.sql": {
+    "status": 0,
+    "plan": 44,
+    "notOk": [],
+    "error": null
+   },
+   "business_self_delivery_test.sql": {
+    "status": 0,
+    "plan": 50,
+    "notOk": [],
+    "error": null
+   },
+   "controlled_production_qa_window_test.sql": {
+    "status": 0,
+    "plan": 37,
+    "notOk": [],
+    "error": null
+   },
+   "anon_internal_product_columns_test.sql": {
+    "status": 0,
+    "plan": 16,
+    "notOk": [],
+    "error": null
+   },
+   "mercadopago_availability_requires_seller.local.sql": {
+    "status": 0,
+    "plan": 9,
+    "notOk": [],
+    "error": null
+   },
+   "payment_method_isolation.local.sql": {
+    "status": 0,
+    "plan": 5,
+    "notOk": [],
+    "error": null
+   },
+   "mercadopago_seller_cannot_charge_alert.local.sql": {
+    "status": 0,
+    "plan": 9,
+    "notOk": [],
+    "error": null
+   },
+   "mercadopago_operator_switch.local.sql": {
+    "status": 0,
+    "plan": 16,
+    "notOk": [],
+    "error": null
+   },
+   "local_print_agent_test.sql": {
+    "status": 0,
+    "plan": 104,
+    "notOk": [],
+    "error": null
+   },
+   "catalog_image_storage_test.sql": {
+    "status": 0,
+    "plan": 19,
+    "notOk": [],
+    "error": null
+   },
+   "store_opening_readiness_test.sql": {
+    "status": 0,
+    "plan": 84,
+    "notOk": [],
+    "error": null
+   },
+   "commercial_publish_merchant_intent_test.sql": {
+    "status": 0,
+    "plan": 24,
+    "notOk": [],
+    "error": null
+   },
+   "identity_alcohol_null_safe_test.sql": {
+    "status": 0,
+    "plan": 12,
+    "notOk": [],
+    "error": null
+   },
+   "fiscal_core_contract_test.sql": {
+    "status": 0,
+    "plan": 55,
+    "notOk": [],
+    "error": null
+   },
+   "fiscal_receiver_vat_condition_test.sql": {
+    "status": 0,
+    "plan": 14,
+    "notOk": [],
+    "error": null
+   },
+   "commercial_order_fiscal_test.sql": {
+    "status": 0,
+    "plan": 54,
+    "notOk": [],
+    "error": null
+   },
+   "fiscal_disaster_recovery_test.sql": {
+    "status": 0,
+    "plan": 21,
+    "notOk": [],
+    "error": null
+   },
+   "fiscal_secret_boundary_test.sql": {
+    "status": 0,
+    "plan": 7,
+    "notOk": [],
+    "error": null
+   },
+   "fiscal_refund_separation_test.sql": {
+    "status": 0,
+    "plan": 2,
+    "notOk": [],
+    "error": null
+   },
+   "owner_handover_test.sql": {
+    "status": 0,
+    "plan": 12,
+    "notOk": [],
+    "error": null
+   },
+   "caja_clara_pos_integration_test.sql": {
+    "status": 0,
+    "plan": 57,
+    "notOk": [],
+    "error": null
+   }
+  }
+ },
+ "data": {
+  "changedTables": [],
+  "newTables": 0
+ }
+}

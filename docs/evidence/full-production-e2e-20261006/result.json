@@ -6,7 +6,8 @@
     "backend_ref": "wwcpogltfgzgkrlilbcd",
     "web_release_during_e2e": "v141 (main 5acecb44)",
     "migrations_ledger": 159,
-    "migrations_head": "20261006050000"
+    "migrations_head": "20261006050000",
+    "web_release_after": "v142 (main fe49d229) desplegado 2026-10-06T16:41Z, corrida deploy-production 37497573486, smoke en vivo verde"
   },
   "PRODUCTION_SCHEMA_PARITY": "PASS",
   "PENDING_MIGRATIONS_AFTER": 0,
@@ -50,16 +51,16 @@
   "RIDER_FINAL_STATE": "PASS",
   "P0_OPEN": 0,
   "P1_OPEN": 0,
-  "P2_OPEN": 5,
-  "P3_OPEN": 9,
+  "P2_OPEN": 4,
+  "P3_OPEN": 10,
   "CASH_DELIVERY_PRODUCTION_READY": "YES",
   "READY_FOR_REAL_CUSTOMERS": "NO",
   "notes": {
     "ORDER_TO_CAJA_LATENCY_MS": "orders.created_at 03:21:33.521Z → tarjeta vista por el vigía UIA de Caja Clara 03:21:34.842Z, sin que nadie tocara la caja.",
     "STUCK_OUTBOX": "0 en las colas con consumidor (Caja Clara: 4 Done + 1 Rejected terminal; payment_outbox vacía). Aparte: notification_outbox y delivery_outbox NO tienen consumidor desplegado en producción y acumulan filas desde agosto (LT-0004 dejó 1 en cada una). Hallazgo P3 previo, ver REPORT.md.",
-    "CUSTOMER_TRACKING": "Funcionó en la calle (139 fixes, mediana 10 s). El cliente encontró dos defectos de presentación (recorrido viejo al volver a la pestaña y parpadeo del marcador) y un defecto en /cuenta/: corregidos en el PR #139, que se despliega aparte.",
+    "CUSTOMER_TRACKING": "Funcionó en la calle (139 fixes, mediana 10 s). El cliente encontró dos defectos de presentación (recorrido viejo al volver a la pestaña y parpadeo del marcador): corregidos y desplegados en v142 (desfase del pulso 0 ms medido contra producción); falta que el cliente lo confirme en su teléfono.",
     "CUSTOMER_FINAL_STATE": "Confirmado por el cliente en su teléfono («todo salió bien de parte del cliente»); no hay captura del teléfono del cliente en este dossier.",
-    "READY_FOR_REAL_CUSTOMERS": "NO hasta: PR #139 desplegado y verificado en un teléfono, venta de mostrador sin conexión y el arqueo del efectivo online en Caja Clara. La capacidad pasó en laboratorio. Ver REPORT.md."
+    "READY_FOR_REAL_CUSTOMERS": "NO hasta: que el cliente confirme el seguimiento v142 en el teléfono, la venta de mostrador sin conexión y el arqueo del efectivo online en Caja Clara. La capacidad pasó en laboratorio. Ver REPORT.md."
   },
   "builds": {
     "rider": {

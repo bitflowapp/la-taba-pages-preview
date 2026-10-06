@@ -49,7 +49,7 @@ Todo con las tres aplicaciones reales y el backend real, sin RPC directas, sin S
 | STUCK_OUTBOX | 0 (ver «Colas sin consumidor») |
 | OPEN_STOCK_CONFLICTS | 0 |
 | CUSTOMER_FINAL_STATE / CAJA_FINAL_STATE / RIDER_FINAL_STATE | PASS / PASS / PASS |
-| P0_OPEN / P1_OPEN / P2_OPEN / P3_OPEN | 0 / 0 / 5 / 9 |
+| P0_OPEN / P1_OPEN / P2_OPEN / P3_OPEN | 0 / 0 / 4 / 10 |
 | CASH_DELIVERY_PRODUCTION_READY | **YES** |
 | READY_FOR_REAL_CUSTOMERS | **NO** — falta lo de «Qué falta para decir YES» |
 
@@ -81,7 +81,7 @@ GPS del reparto: 139 fixes, 139 pedidos distintos (cero duplicados), intervalo m
 
 ## Qué hubo que arreglar para llegar acá
 
-Cada uno con causa, arreglo y una prueba que fallaba antes. Del 1 al 6, además, corridos de verdad con LT-0004; del 7 al 11 falta verlos con un pedido real, y el 9 y el 10 todavía tienen que desplegarse.
+Cada uno con causa, arreglo y una prueba que fallaba antes. Del 1 al 6, además, corridos de verdad con LT-0004; el 10 se verificó en vivo; del 7 al 9 y el 11 falta verlos con un pedido real.
 
 | # | Eslabón | Defecto | Arreglo |
 |---|---|---|---|
@@ -93,8 +93,8 @@ Cada uno con causa, arreglo y una prueba que fallaba antes. Del 1 al 6, además,
 | 6 | backend + Caja Clara | Un envío entregado en efectivo no se podía cobrar: `pos_list_orders` dejaba de ofrecer `confirm_payment` al entregar | Migración `20261006050000` (159), ensayada y aplicada; Caja Clara muestra «Cobrar en efectivo» en Entregados |
 | 7 | Rider | El repartidor no veía que tenía que cobrar | v6: «Cobrar en efectivo: $ 5.900», productos, referencia y notas |
 | 8 | Caja Clara | Un entregado con cobro pendiente decía «para poder entregarlo» | Texto según el estado (1.1.5) |
-| 9 | tienda | Volver al seguimiento repetía el recorrido viejo; la moto parpadeaba | PR #139 (ver abajo) |
-| 10 | tienda | `/cuenta/`: la contraseña se escribía invisible (1,07:1) y un error la borraba | PR #139 |
+| 9 | tienda | Volver al seguimiento repetía el recorrido viejo; la moto parpadeaba | PR #139, desplegado en v142 (ver abajo) |
+| 10 | tienda | `/cuenta/`: la contraseña se escribía invisible (1,07:1) y un error la borraba | PR #139, desplegado en v142 y verificado en vivo |
 | 11 | Caja Clara | Un envío entregado con el efectivo sin registrar desaparecía del tablero con «Entregados y cancelados de hoy» apagado, y a la medianoche aunque estuviera prendido | Queda en «En camino» con «Cobrar en efectivo» hasta registrarlo (1.1.6) |
 
 ### Semántica del efectivo
@@ -113,6 +113,21 @@ El cliente siguió al repartidor en la calle y reportó dos cosas, las dos repro
 - **La moto parpadeaba.** Con el corte de «en vivo» en 15 s y la cadencia real (10–12 s + consulta cada 5 s + hasta
   3,9 s de publicación) el estado alternaba en cada ciclo; además cada lectura saca el lienzo del DOM y reinicia la
   animación CSS del pulso. Corte en 25 s y pulso anclado al reloj del documento.
+
+## Despliegue v142 (2026-10-06 16:41Z)
+
+El PR #139 se mergeó (`fe49d229`), el CI canónico de `main` pasó sobre ese SHA exacto y `deploy-production.yml`
+lo publicó (corrida 37497573486: no retroceder, CI verde del SHA, artefacto, Cloudflare Pages y smoke en vivo).
+Verificación independiente contra https://la-taba.pages.dev, con el estado anterior medido antes como control:
+
+| | v141 (antes) | v142 (después) |
+|---|---|---|
+| `version.json` / `CACHE_NAME` | `5acecb44` · v141 | `fe49d229` · `la-taba-runtime-v142-tracking-resume` |
+| Umbral «en vivo» | 15 s | 25 s |
+| Motor de movimiento con `resume()` | no | sí |
+| Pulso tras 5 redibujos seguidos del lienzo (código publicado) | — | desfase 0 ms en los 5 |
+| `/cuenta/`: tinta del campo sobre su fondo | 1,07:1 | 13,13:1 |
+| `/cuenta/`: un error borra lo escrito | sí | no; contador «Llevás 7 de 12 caracteres.» |
 
 ## Clasificación de las 30 migraciones aplicadas
 
@@ -177,15 +192,14 @@ comercio B no lee el comercio A», «un rider no lee la bandeja de la caja»). E
 
 ## Hallazgos abiertos
 
-**P2 (5)**
+**P2 (4)**
 
-1. Seguimiento: recorrido viejo al volver y parpadeo — **corregido en el PR #139**, abierto hasta desplegarlo y verlo en un teléfono.
-2. `/cuenta/`: contraseña invisible y borrada al fallar — **corregido en el PR #139**, abierto hasta desplegarlo.
-3. Caja Clara: el efectivo de un pedido online registrado en Caja Clara no entra al arqueo de la caja.
-4. CI de bitflow-inspecciones bloqueado por facturación de GitHub: el PR #38 no tiene CI; se validó local (325/325) y en la PC real.
-5. La Edge Function `team-invitation` no está desplegada en producción: invitar personal por correo no funciona (la solicitud de acceso sí).
+1. Seguimiento: recorrido viejo al volver y parpadeo — **corregido y desplegado (v142)**; abierto hasta que el cliente lo confirme en su teléfono.
+2. Caja Clara: el efectivo de un pedido online registrado en Caja Clara no entra al arqueo de la caja.
+3. CI de bitflow-inspecciones bloqueado por facturación de GitHub: el PR #38 no tiene CI; se validó local (325/325) y en la PC real.
+4. La Edge Function `team-invitation` no está desplegada en producción: invitar personal por correo no funciona (la solicitud de acceso sí).
 
-**P3 (9)**
+**P3 (10)**
 
 1. Caja Clara dice «Repartidor sin conexión» en un pedido ya entregado (lee sólo la presencia).
 2. La oferta en el Rider muestra «Zona:» vacía.
@@ -196,6 +210,7 @@ comercio B no lee el comercio A», «un rider no lee la bandeja de la caja»). E
 7. Caja Clara muestra «Sincronización: requiere revisión» por su nube propia no vinculada (ruido, no es La Taba).
 8. `tracking-terminal-expiry` falla en el host Windows también sobre `main` (en CI Linux pasa).
 9. Caja Clara a 1366×768: con «Entregados y cancelados de hoy» prendido, la columna «Entregados» queda cortada ([captura 08](screenshots/08-caja-clara-columna-entregados-cortada-1366.png)). Era P2 mientras ahí estaba el cobro pendiente; desde la 1.1.6 el cobro vive en «En camino».
+10. `campaigns › fuera de pantalla` en WebKit de CI: con la máquina cargada, el presupuesto de cuadros apaga el movimiento de la campaña (es su diseño) y la prueba lo lee como falla. Falló en 2 de 4 corridas del 2026-10-06 en PR sin cambios de campañas; localmente 5/5.
 
 ## Capacidad (laboratorio con copia de producción)
 
@@ -235,7 +250,7 @@ integridad y su limpieza fallaron con 42501. Lo que esas lecturas debían compro
 
 ## Qué falta para decir READY_FOR_REAL_CUSTOMERS = YES
 
-1. Desplegar el PR #139 (SHA exacto) y que el cliente confirme en el teléfono que el seguimiento no repite el recorrido ni parpadea.
+1. Que el cliente confirme en el teléfono que el seguimiento ya no repite el recorrido ni parpadea (v142 ya está en producción).
 2. Venta de mostrador sin conexión con reconciliación posterior.
 3. Decidir el arqueo del efectivo online en Caja Clara.
 

@@ -49,7 +49,7 @@ Todo con las tres aplicaciones reales y el backend real, sin RPC directas, sin S
 | STUCK_OUTBOX | 0 (ver «Colas sin consumidor») |
 | OPEN_STOCK_CONFLICTS | 0 |
 | CUSTOMER_FINAL_STATE / CAJA_FINAL_STATE / RIDER_FINAL_STATE | PASS / PASS / PASS |
-| P0_OPEN / P1_OPEN / P2_OPEN / P3_OPEN | 0 / 0 / 6 / 8 |
+| P0_OPEN / P1_OPEN / P2_OPEN / P3_OPEN | 0 / 0 / 5 / 9 |
 | CASH_DELIVERY_PRODUCTION_READY | **YES** |
 | READY_FOR_REAL_CUSTOMERS | **NO** — falta lo de «Qué falta para decir YES» |
 
@@ -81,7 +81,7 @@ GPS del reparto: 139 fixes, 139 pedidos distintos (cero duplicados), intervalo m
 
 ## Qué hubo que arreglar para llegar acá
 
-Cada uno con causa, arreglo, prueba que fallaba antes y nueva pasada de punta a punta.
+Cada uno con causa, arreglo y una prueba que fallaba antes. Del 1 al 6, además, corridos de verdad con LT-0004; del 7 al 11 falta verlos con un pedido real, y el 9 y el 10 todavía tienen que desplegarse.
 
 | # | Eslabón | Defecto | Arreglo |
 |---|---|---|---|
@@ -95,6 +95,7 @@ Cada uno con causa, arreglo, prueba que fallaba antes y nueva pasada de punta a 
 | 8 | Caja Clara | Un entregado con cobro pendiente decía «para poder entregarlo» | Texto según el estado (1.1.5) |
 | 9 | tienda | Volver al seguimiento repetía el recorrido viejo; la moto parpadeaba | PR #139 (ver abajo) |
 | 10 | tienda | `/cuenta/`: la contraseña se escribía invisible (1,07:1) y un error la borraba | PR #139 |
+| 11 | Caja Clara | Un envío entregado con el efectivo sin registrar desaparecía del tablero con «Entregados y cancelados de hoy» apagado, y a la medianoche aunque estuviera prendido | Queda en «En camino» con «Cobrar en efectivo» hasta registrarlo (1.1.6) |
 
 ### Semántica del efectivo
 
@@ -176,16 +177,15 @@ comercio B no lee el comercio A», «un rider no lee la bandeja de la caja»). E
 
 ## Hallazgos abiertos
 
-**P2 (6)**
+**P2 (5)**
 
 1. Seguimiento: recorrido viejo al volver y parpadeo — **corregido en el PR #139**, abierto hasta desplegarlo y verlo en un teléfono.
 2. `/cuenta/`: contraseña invisible y borrada al fallar — **corregido en el PR #139**, abierto hasta desplegarlo.
 3. Caja Clara: el efectivo de un pedido online registrado en Caja Clara no entra al arqueo de la caja.
-4. Caja Clara a 1366×768: la columna «Entregados» queda cortada y hay que desplazarse para cobrar ([captura 08](screenshots/08-caja-clara-columna-entregados-cortada-1366.png)).
-5. CI de bitflow-inspecciones bloqueado por facturación de GitHub: el PR #38 no tiene CI; se validó local (325/325) y en la PC real.
-6. La Edge Function `team-invitation` no está desplegada en producción: invitar personal por correo no funciona (la solicitud de acceso sí).
+4. CI de bitflow-inspecciones bloqueado por facturación de GitHub: el PR #38 no tiene CI; se validó local (325/325) y en la PC real.
+5. La Edge Function `team-invitation` no está desplegada en producción: invitar personal por correo no funciona (la solicitud de acceso sí).
 
-**P3 (8)**
+**P3 (9)**
 
 1. Caja Clara dice «Repartidor sin conexión» en un pedido ya entregado (lee sólo la presencia).
 2. La oferta en el Rider muestra «Zona:» vacía.
@@ -195,6 +195,7 @@ comercio B no lee el comercio A», «un rider no lee la bandeja de la caja»). E
 6. `notification_outbox` y `delivery_outbox` no tienen consumidor en producción y acumulan filas desde agosto.
 7. Caja Clara muestra «Sincronización: requiere revisión» por su nube propia no vinculada (ruido, no es La Taba).
 8. `tracking-terminal-expiry` falla en el host Windows también sobre `main` (en CI Linux pasa).
+9. Caja Clara a 1366×768: con «Entregados y cancelados de hoy» prendido, la columna «Entregados» queda cortada ([captura 08](screenshots/08-caja-clara-columna-entregados-cortada-1366.png)). Era P2 mientras ahí estaba el cobro pendiente; desde la 1.1.6 el cobro vive en «En camino».
 
 ## Capacidad (laboratorio con copia de producción)
 

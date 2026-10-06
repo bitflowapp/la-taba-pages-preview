@@ -210,7 +210,7 @@ comercio B no lee el comercio A», «un rider no lee la bandeja de la caja»). E
 7. Caja Clara muestra «Sincronización: requiere revisión» por su nube propia no vinculada (ruido, no es La Taba).
 8. `tracking-terminal-expiry` falla en el host Windows también sobre `main` (en CI Linux pasa).
 9. Caja Clara a 1366×768: con «Entregados y cancelados de hoy» prendido, la columna «Entregados» queda cortada ([captura 08](screenshots/08-caja-clara-columna-entregados-cortada-1366.png)). Era P2 mientras ahí estaba el cobro pendiente; desde la 1.1.6 el cobro vive en «En camino».
-10. `campaigns › fuera de pantalla` en WebKit de CI: con la máquina cargada, el presupuesto de cuadros apaga el movimiento de la campaña (es su diseño) y la prueba lo lee como falla. Falló en 2 de 4 corridas del 2026-10-06 en PR sin cambios de campañas; localmente 5/5.
+10. `campaigns › fuera de pantalla` en WebKit de CI falló en 3 de 5 corridas del 2026-10-06, en PR sin cambios de campañas (localmente 5/5). En CI la pieza siguió «en vivo» fuera de pantalla varios sondeos y después el presupuesto de cuadros la dejó estática. Con la CPU de Chromium 16× más lenta la prueba falla igual; pero forzando un defecto real (seguir animando fuera de pantalla) WebKit muestra la misma firma, así que «CI lento» y «WebKit no pausa a tiempo» no se pueden distinguir con estos datos. No se suavizó la prueba (un parche que aceptaba el estático dejaba pasar ese defecto en WebKit): queda abierto para investigar en un iPhone.
 
 ## Capacidad (laboratorio con copia de producción)
 

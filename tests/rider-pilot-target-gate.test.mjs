@@ -44,10 +44,17 @@ test('compiled Rider checks its backend ref and displays its target mode', () =>
   const builderSource = readFileSync(builder, 'utf8');
   const api = readFileSync('apps/rider-android/app/src/main/java/com/lataba/rider/RiderApi.kt', 'utf8');
   const activity = readFileSync('apps/rider-android/app/src/main/java/com/lataba/rider/MainActivity.kt', 'utf8');
-  assert.match(gradle, /backendRef != productionRef/);
+  // Only the PRODUCTION target names the production backend, and it names nothing else.
+  assert.match(gradle, /\(targetMode == "production"\) == \(backendRef == productionRef\)/);
+  assert.match(gradle, /Only a PRODUCTION Rider build targets the production backend/);
   assert.match(gradle, /Staging and PILOT Rider builds require distinct backends/);
-  assert.match(gradle, /PILOT Rider requires an explicit publishable key/);
-  assert.match(api, /BuildConfig\.BACKEND_REF != "wwcpogltfgzgkrlilbcd"/);
+  assert.match(gradle, /PILOT and PRODUCTION Rider builds require an explicit publishable key/);
+  // Two signers that never cross: a production install only updates with a production build.
+  assert.match(gradle, /The PILOT signer never signs a PRODUCTION build/);
+  assert.match(gradle, /The production signer only signs PRODUCTION builds/);
+  assert.match(gradle, /A PRODUCTION Rider is always signed by the production signer/);
+  assert.match(api, /\(BuildConfig\.TARGET_MODE == "production"\) == \(BuildConfig\.BACKEND_REF == "wwcpogltfgzgkrlilbcd"\)/);
+  assert.match(api, /BuildConfig\.TARGET_MODE != "production" \|\| !BuildConfig\.DEBUG/);
   assert.match(activity, /BuildConfig\.TARGET_MODE\.uppercase\(\)/);
   assert.match(builderSource, /PILOT_ANDROID_TEST_SIGNER_MISMATCH/);
 });

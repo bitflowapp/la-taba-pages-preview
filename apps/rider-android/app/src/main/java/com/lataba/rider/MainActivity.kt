@@ -2,9 +2,13 @@ package com.lataba.rider
 
 import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.text.format.DateFormat
+import androidx.core.content.ContextCompat
+import java.util.Date
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -39,9 +43,16 @@ class MainActivity: ComponentActivity() {
         if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true)
             context.startForegroundService(Intent(context, RiderLocationService::class.java))
     }
+    // After a restart the trip's GPS comes back by itself once the SERVER confirms a trip in progress and the
+    // precise-location permission is already granted; the first time it still takes the rider's tap.
+    val tripInProgress = state.online && state.cachedAt == null && state.board?.orders?.any { it.publishable } == true
+    LaunchedEffect(tripInProgress) {
+        if (tripInProgress && !RiderLocationService.running && ContextCompat.checkSelfPermission(context,
+                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
+            runCatching { context.startForegroundService(Intent(context, RiderLocationService::class.java)) }
+    }
     Column(Modifier.fillMaxSize().safeDrawingPadding().padding(20.dp).verticalScroll(rememberScrollState())) {
-        Text(if (BuildConfig.APPLICATION_ID.endsWith(".pilot")) "La Taba · Rider Piloto" else "La Taba · Rider QA",
-            style = MaterialTheme.typography.headlineSmall)
+        Text(RiderTarget.title, style = MaterialTheme.typography.headlineSmall)
         Text("${BuildConfig.TARGET_MODE.uppercase()} · App nativa", style = MaterialTheme.typography.labelSmall)
         Spacer(Modifier.height(16.dp))
         if (!state.signedIn) {
@@ -50,6 +61,13 @@ class MainActivity: ComponentActivity() {
             Button(onClick = { vm.login(email.trim(), password); password = "" }, enabled = !state.busy && email.isNotBlank() && password.isNotBlank(), modifier = Modifier.testTag("login")) { Text("Ingresar") }
         } else {
             Row { Text(if (state.online) "Conectado" else "Sin conexión · datos anteriores", Modifier.weight(1f)); TextButton(onClick = { context.stopService(Intent(context, RiderLocationService::class.java)); vm.logout() }) { Text("Salir") } }
+            state.cachedAt?.let { confirmedAt ->
+                Card(Modifier.fillMaxWidth().padding(vertical = 6.dp).testTag("offline-mission")) { Column(Modifier.padding(12.dp)) {
+                    Text("Sin conexión · información guardada en este teléfono", style = MaterialTheme.typography.titleSmall)
+                    Text("Confirmado por La Taba a las ${DateFormat.getTimeFormat(context).format(Date(confirmedAt))} · " +
+                        "No es el estado actual: las acciones vuelven cuando haya conexión.", style = MaterialTheme.typography.bodySmall)
+                } }
+            }
             Row { Text(if (state.available) "Disponible" else "No disponible", Modifier.weight(1f)); Switch(state.available, { vm.available(it) }, enabled = state.online && !state.busy, modifier = Modifier.testTag("available")) }
             Text("Disponibilidad compartida con el negocio; caduca sin conexión.", style = MaterialTheme.typography.labelSmall)
             TextButton(onClick = vm::refresh, modifier = Modifier.testTag("refresh")) { Text("Actualizar") }
@@ -68,7 +86,9 @@ class MainActivity: ComponentActivity() {
                         Text("Tus entregas ${board?.orders?.size ?: "—"}/${board?.capacity ?: "—"}", style = MaterialTheme.typography.titleLarge)
                         board?.orders?.forEach { order ->
                             Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) { Column(Modifier.padding(12.dp)) {
-                                Text(order.code); Text(order.status)
+                                Text(order.code); Text(if (state.cachedAt != null) "Último estado confirmado: ${order.statusLabel}" else order.statusLabel)
+                                if (order.paymentInstruction.isNotBlank()) Text(order.paymentInstruction,
+                                    style = MaterialTheme.typography.titleSmall, modifier = Modifier.testTag("payment-${order.code}"))
                                 Button(onClick = { nav.navigate("delivery/${order.id}") }, modifier = Modifier.testTag("detail-${order.code}")) { Text("Ver entrega") }
                             } }
                         }
@@ -93,7 +113,15 @@ class MainActivity: ComponentActivity() {
                         if (order == null) Text("La entrega ya no está activa. Actualizá para confirmar su estado.")
                         else {
                             Text(order.code, style = MaterialTheme.typography.titleLarge)
-                            Text("Estado: ${order.status}"); Text("Retiro: ${order.pickup}"); Text("Destino: ${order.address}"); Text("Total: ${order.total}")
+                            Text(if (state.cachedAt != null) "Último estado confirmado: ${order.statusLabel}" else "Estado: ${order.statusLabel}")
+                            if (order.paymentInstruction.isNotBlank()) Card(Modifier.fillMaxWidth().padding(vertical = 6.dp).testTag("payment")) {
+                                Text(order.paymentInstruction, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(12.dp))
+                            }
+                            if (order.items.isNotEmpty()) Text("Lleva: ${order.items.joinToString(" · ")}")
+                            Text("Retiro: ${order.pickup}"); Text("Destino: ${order.address}")
+                            if (order.reference.isNotBlank()) Text("Referencia: ${order.reference}")
+                            if (order.notes.isNotBlank()) Text("Notas: ${order.notes}")
+                            Text("Total: ${order.totalText}")
                             val navigationTarget = order.navigationTarget()
                             TextButton(onClick = {
                                 navigationTarget?.let { target ->

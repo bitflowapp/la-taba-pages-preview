@@ -68,4 +68,39 @@ class ContractTest {
         assertEquals("mark_rider_arrived", RiderCommands.next("on_the_way"))
         assertNull(RiderCommands.next("unknown"))
     }
+    // The shape get_rider_delivery_board sent for LT-0004 (2026-10-06), personal data replaced: a numeric total,
+    // order_items and the payment method. The Rider showed none of it and the rider never learned to collect cash.
+    private val cashDelivery = JSONObject("""{"id":"fc2d4711-87c5-4b5b-b91f-9b9a956ac0df","public_code":"LT-0004","revision":10,
+        "status":"on_the_way","customer_street_address":"Calle 123","pickup_summary":"Local","payment_method":"cash",
+        "subtotal":5900.00,"delivery_fee":0.00,"total":5900.00,"customer_reference":"Portón negro","customer_notes":"Tocar timbre",
+        "order_items":[{"name":"Coca-Cola 2,25 L","quantity":1.000,"unit_price":5900.00}]}""")
+    @Test fun cashDeliveryTellsTheRiderToCollectTheTotal() {
+        val delivery = Delivery.from(cashDelivery)
+        assertEquals("Cobrar en efectivo: $ 5.900", delivery.paymentInstruction)
+        assertEquals("$ 5.900", delivery.totalText)
+        assertEquals(listOf("1 × Coca-Cola 2,25 L"), delivery.items)
+        assertEquals("Portón negro", delivery.reference); assertEquals("Tocar timbre", delivery.notes)
+    }
+    @Test fun eachPaymentMethodSaysWhatTheRiderDoesWithTheMoney() {
+        fun instruction(method: String) = Delivery.from(JSONObject(cashDelivery.toString()).put("payment_method", method)).paymentInstruction
+        assertEquals("Cobro a coordinar con el local ($ 5.900)", instruction("coordinate"))
+        assertEquals("Pagado online · no cobrar", instruction("mercadopago"))
+        assertEquals("", instruction("qa_no_charge"))
+        assertEquals("", Delivery.from(order()).paymentInstruction)
+    }
+    @Test fun moneyReadsLikePesos() {
+        assertEquals("$ 5.900", Money.format("5900.00"))
+        assertEquals("$ 5.900", Money.format("5900.0"))
+        assertEquals("$ 5.900,50", Money.format("5900.5"))
+        assertEquals("$ 1.234.567,80", Money.format("1234567.8"))
+        assertEquals("$ 990", Money.format("990"))
+        assertEquals("sin dato", Money.format("sin dato"))
+    }
+    @Test fun offlineCopyKeepsWhatTheRiderNeedsToCollectAndDeliver() {
+        val restored = BoardCodec.decode(BoardCodec.encode(Board(listOf(Delivery.from(cashDelivery)), emptyList(), 3), 1L))!!
+        val back = restored.board.orders.single()
+        assertEquals("Cobrar en efectivo: $ 5.900", back.paymentInstruction)
+        assertEquals(listOf("1 × Coca-Cola 2,25 L"), back.items)
+        assertEquals("Portón negro", back.reference); assertEquals("Tocar timbre", back.notes)
+    }
 }

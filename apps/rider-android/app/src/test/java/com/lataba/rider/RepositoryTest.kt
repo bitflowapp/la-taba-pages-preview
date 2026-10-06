@@ -87,6 +87,80 @@ class RepositoryTest {
         val api = Backend(); val repo = RiderRepository(api); repo.refresh()
         repo.advance(order.copy(status = "delivered")); assertEquals(0, api.calls)
     }
+    // Mirrors EncryptedBoardStore: what is kept is exactly what the codec keeps.
+    private class MemoryStore: BoardStore {
+        var cached: CachedBoard? = null
+        override fun save(board: Board, confirmedAt: Long) {
+            cached = if (board.orders.isEmpty()) null else BoardCodec.decode(BoardCodec.encode(board, confirmedAt))
+        }
+        override fun load() = cached
+        override fun clear() { cached = null }
+    }
+    private val onTheWay = order.copy(status = "on_the_way", revision = 5)
+    @Test fun coldStartWithoutNetworkShowsLastConfirmedMissionAsOfflineInformation() = runTest {
+        val store = MemoryStore()
+        val api = Backend().apply { snapshot = Board(listOf(onTheWay), listOf(offer), 3, true, 4) }
+        RiderRepository(api, store) { 1_000L }.refresh()
+        api.offline = true
+        val restarted = RiderRepository(api, store) { 2_000L }
+        val state = restarted.state.value
+        assertEquals(1_000L, state.cachedAt); assertFalse(state.online); assertTrue(state.signedIn)
+        assertEquals(listOf("on_the_way"), state.board!!.orders.map { it.status })
+        assertTrue("an offer is never restored", state.board!!.offers.isEmpty())
+        assertFalse("availability is the server's to say", state.available)
+        restarted.refresh()
+        assertEquals(1_000L, restarted.state.value.cachedAt); assertFalse(restarted.state.value.online)
+        restarted.advance(restarted.state.value.board!!.orders.single())
+        assertEquals("offline information never becomes a command", 0, api.calls)
+    }
+    @Test fun reconnectReconcilesWithTheServerAndForgetsTheOfflineCopy() = runTest {
+        val store = MemoryStore()
+        val api = Backend().apply { snapshot = Board(listOf(onTheWay), emptyList(), 3) }
+        RiderRepository(api, store) { 1_000L }.refresh()
+        api.offline = true
+        val restarted = RiderRepository(api, store) { 2_000L }
+        api.offline = false; api.snapshot = Board(emptyList(), emptyList(), 3)
+        restarted.refresh()
+        assertTrue(restarted.state.value.online); assertNull(restarted.state.value.cachedAt)
+        assertTrue(restarted.state.value.board!!.orders.isEmpty()); assertNull(store.cached)
+    }
+    @Test fun serverStateReplacesTheOfflineCopyEvenWhenItAdvanced() = runTest {
+        val store = MemoryStore()
+        val api = Backend().apply { snapshot = Board(listOf(onTheWay), emptyList(), 3) }
+        RiderRepository(api, store) { 1_000L }.refresh()
+        api.snapshot = Board(listOf(onTheWay.copy(status = "arrived", revision = 6)), emptyList(), 3)
+        val restarted = RiderRepository(api, store) { 2_000L }
+        assertEquals("on_the_way", restarted.state.value.board!!.orders.single().status)
+        restarted.refresh()
+        assertEquals("arrived", restarted.state.value.board!!.orders.single().status)
+        assertEquals(6L, store.cached!!.board.orders.single().revision)
+    }
+    @Test fun withoutASessionNoStoredMissionIsShownAndItIsForgotten() = runTest {
+        val store = MemoryStore().apply { cached = BoardCodec.decode(BoardCodec.encode(Board(listOf(onTheWay), emptyList(), 3), 7L)) }
+        val api = Backend().apply { hasSession = false }
+        val repo = RiderRepository(api, store)
+        assertNull(repo.state.value.board); assertFalse(repo.state.value.signedIn); assertNull(store.cached)
+    }
+    @Test fun logoutForgetsTheOfflineCopy() = runTest {
+        val store = MemoryStore()
+        val api = Backend().apply { snapshot = Board(listOf(onTheWay), emptyList(), 3) }
+        val repo = RiderRepository(api, store); repo.refresh(); assertNotNull(store.cached)
+        repo.logout(); assertNull(store.cached)
+    }
+    @Test fun codecKeepsWhatTheMissionNeedsAndNothingElse() {
+        val location = JSONObject().put("latitude", -38.95).put("longitude", -68.06)
+        val pickup = JSONObject().put("latitude", -38.96).put("longitude", -68.05)
+        val delivery = Delivery("o1", "LT-0004", 9, "arrived", "Mendoza 851", "La Taba", "4990.00", location, pickup)
+        val restored = BoardCodec.decode(BoardCodec.encode(Board(listOf(delivery), listOf(offer), 3, true, 8), 42L))!!
+        val back = restored.board.orders.single()
+        assertEquals(42L, restored.confirmedAt); assertEquals(3, restored.board.capacity)
+        assertEquals(listOf("o1", "LT-0004", "arrived", "Mendoza 851", "La Taba", "4990.00"),
+            listOf(back.id, back.code, back.status, back.address, back.pickup, back.total))
+        assertEquals(9L, back.revision); assertEquals(location.toString(), back.location.toString())
+        assertEquals(pickup.toString(), back.pickupLocation.toString())
+        assertTrue(restored.board.offers.isEmpty()); assertFalse(restored.board.available)
+        assertNull(BoardCodec.decode("{\"v\":2}")); assertNull(BoardCodec.decode("not json"))
+    }
     @Test fun availabilityComesFromSharedBoardAndPersistsAcrossRepositories() = runTest {
         val api = Backend();val first = RiderRepository(api);val second = RiderRepository(api)
         first.refresh();second.refresh();assertFalse(second.state.value.available)

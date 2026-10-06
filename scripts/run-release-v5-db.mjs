@@ -193,6 +193,16 @@ try {
     }
     assert.ok(legacyFiscalRows,'la adopcion del core fiscal tiene que correr sobre filas legadas');
     console.log('POST_INTERLOCK_MIGRATIONS='+posteriores.length);
+    // La huella del esquema construido desde cero, antes de pgTAP: es la referencia contra la
+    // que scripts/production/schema-catchup-rehearsal.mjs compara la copia de producción migrada.
+    if(process.env.TABA_FRESH_FINGERPRINT_OUT){
+      await query('set search_path to "$user", public, extensions');
+      fs.writeFileSync(path.resolve(process.env.TABA_FRESH_FINGERPRINT_OUT),
+        JSON.stringify({migrations:fs.readdirSync(path.join(ROOT,'supabase/migrations')).filter(v=>v.endsWith('.sql')).length,
+          fingerprint:await schemaFingerprint()},null,2)+'\n',{flag:'wx'});
+      await query('reset search_path');
+      console.log('FRESH_SCHEMA_FINGERPRINT_WRITTEN');
+    }
     const canonicalTests=['business_windows_scanner_fiscal_test.sql','mercadopago_seller_oauth.local.sql',
       'mercadopago_clean_business.local.sql','fiscal_document_closure_test.sql','production_operations_control_plane_test.sql',
       'durable_offline_packing_test.sql','public_tracking_gps_quality_test.sql','business_timezone_windows_test.sql',

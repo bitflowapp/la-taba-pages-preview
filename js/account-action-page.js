@@ -12,6 +12,7 @@ import {
 } from './team-invitation-accept.js';
 import { createConfiguredSupabaseClient } from './services/supabase-client.js';
 import { resolveRuntimeConfig } from './core/runtime-config.js';
+import { passwordCountCopy } from './password-aids.js';
 
 const PANEL_URL = '../#negocio';
 const INVITATION_FOOT = 'La invitación sirve una sola vez y sólo para el correo al que se mandó. '
@@ -45,7 +46,8 @@ export function mountAccountAction({
   }
 
   const controller = createAccountActionController({ service, panelUrl: PANEL_URL });
-  controller.onChange(({ markup }) => { host.innerHTML = markup; });
+  controller.onChange(({ markup }) => { paintForm(host, markup); });
+  listenPasswordAids(doc, host);
 
   doc.addEventListener('submit', (event) => {
     const form = event.target;
@@ -82,7 +84,8 @@ function mountInvitation({ doc, host, runtimeConfig, createClient, hash, history
     service = null;
   }
   const controller = createInvitationController({ service, token, panelUrl: PANEL_URL });
-  controller.onChange(({ markup }) => { host.innerHTML = markup; });
+  controller.onChange(({ markup }) => { paintForm(host, markup); });
+  listenPasswordAids(doc, host);
 
   doc.addEventListener('submit', (event) => {
     const form = event.target;
@@ -101,6 +104,53 @@ function mountInvitation({ doc, host, runtimeConfig, createClient, hash, history
 
   controller.start();
   return controller;
+}
+
+/*
+ * Cada cambio de estado vuelve a escribir el formulario entero —«guardando»,
+ * el aviso del error, el botón habilitado otra vez—. Escribirlo de cero tiraba
+ * lo que la persona había tecleado: un intento fallido devolvía el campo vacío
+ * y había que adivinar de nuevo. Lo escrito sobrevive al repintado si el campo
+ * sigue estando; si el paso cambió y el campo ya no existe, no se arrastra.
+ */
+export function paintForm(host, markup) {
+  const kept = new Map();
+  for (const field of host.querySelectorAll?.('input[name]') || []) kept.set(field.name, field.value);
+  const revealed = host.querySelector?.('[data-password-reveal]')?.getAttribute?.('aria-pressed') === 'true';
+  host.innerHTML = markup;
+  for (const field of host.querySelectorAll?.('input[name]') || []) {
+    if (kept.get(field.name)) field.value = kept.get(field.name);
+  }
+  if (revealed) host.querySelector?.('[data-password-reveal]')?.setAttribute?.('aria-pressed', 'true');
+  syncPasswordAids(host);
+}
+
+export function syncPasswordAids(host) {
+  const field = host.querySelector?.('[data-password-field]');
+  if (!field) return;
+  const reveal = host.querySelector('[data-password-reveal]');
+  if (reveal) {
+    const shown = reveal.getAttribute('aria-pressed') === 'true';
+    field.type = shown ? 'text' : 'password';
+    reveal.textContent = shown ? 'Ocultar' : 'Mostrar';
+  }
+  const count = host.querySelector('[data-password-count]');
+  if (!count) return;
+  const min = Number(count.dataset?.passwordMin);
+  count.textContent = passwordCountCopy(String(field.value || '').length, min > 0 ? min : undefined);
+}
+
+function listenPasswordAids(doc, host) {
+  doc.addEventListener('input', (event) => {
+    if (event.target?.matches?.('[data-password-field]')) syncPasswordAids(host);
+  });
+  doc.addEventListener('click', (event) => {
+    const reveal = event.target?.closest?.('[data-password-reveal]');
+    if (!reveal) return;
+    reveal.setAttribute('aria-pressed', reveal.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+    syncPasswordAids(host);
+    host.querySelector('[data-password-field]')?.focus?.();
+  });
 }
 
 if (typeof document !== 'undefined' && typeof window !== 'undefined') {

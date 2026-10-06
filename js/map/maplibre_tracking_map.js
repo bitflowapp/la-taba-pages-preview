@@ -5,6 +5,7 @@ import {
 } from './rider_marker.js';
 import { applyTabaMapTheme } from './taba_map_theme.js';
 import { createRiderMotion } from './rider_motion.js';
+import { lockAmbientAnimationPhase } from './animation_phase.js';
 import { isGeoPoint } from '../core/geo-point.js';
 
 export const MAPLIBRE_PUBLIC_STYLE_URL = 'https://tiles.openfreemap.org/styles/positron';
@@ -336,12 +337,14 @@ export function createMapLibreTrackingMap({
       })
         .setLngLat(toLngLat(motion.visualPositionAt() || state.riderLocation))
         .addTo(state.map);
+      lockAmbientAnimationPhase(state.shell);
       renderAccuracyHalo();
       followCamera({ immediate: true });
       return state.riderMarker;
     }
 
     updateRiderMarkerElement(state.riderElement, { status, source });
+    lockAmbientAnimationPhase(state.shell);
     paintMotionFrame();
     startMotionLoop();
     return state.riderMarker;
@@ -453,6 +456,7 @@ export function createMapLibreTrackingMap({
         const copy = state.shell.querySelector?.('[data-map-meta-text]');
         if (copy) copy.textContent = String(label);
       }
+      lockAmbientAnimationPhase(state.shell);
     }
     return freshness;
   }
@@ -608,13 +612,35 @@ export function createMapLibreTrackingMap({
     }
     if (documentRef?.addEventListener) {
       addDomListener(documentRef, 'visibilitychange', () => {
-        if (!documentRef.hidden) resize();
+        if (documentRef.hidden) return;
+        resumeFromBackground();
+        resize();
       });
     }
     if (root?.addEventListener) {
-      addDomListener(root, 'pageshow', resize);
+      addDomListener(root, 'pageshow', () => {
+        resumeFromBackground();
+        resize();
+      });
       addDomListener(root, 'orientationchange', resize);
     }
+  }
+
+  /*
+   * Volver a primer plano. Con la página oculta el navegador espacia los
+   * sondeos y no corre frames: lo dibujado quedó viejo y el salto hasta el
+   * próximo fix no es un tramo que alguien haya mirado. El próximo fix se
+   * planta donde está, en vez de que el marcador «camine» desde donde el rider
+   * estuvo antes (LT-0004, 2026-10-06).
+   */
+  function resumeFromBackground() {
+    if (state.motionFrame !== null) {
+      cancelFrame(state.motionFrame);
+      state.motionFrame = null;
+    }
+    state.motion?.resume();
+    // Si un tramo quedó a mitad de camino, el marcador vuelve a la última coordenada MEDIDA.
+    paintMotionFrame();
   }
 
   function collapseCompactAttribution() {

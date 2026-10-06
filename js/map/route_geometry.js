@@ -45,7 +45,15 @@ const ROUTES = Object.freeze({
   ...STREET_ROUTES,
 });
 
-export const GPS_LOCATION_FRESH_MS = 15_000;
+/*
+ * «En vivo» tiene que sobrevivir al ritmo REAL del reparto. Medido en LT-0004
+ * (producción, 2026-10-06, 139 fixes): un fix cada 10 s de mediana y 12,1 s de
+ * p90, el cliente consulta cada 5 s y la publicación tarda hasta 3,9 s. Con 15 s
+ * la edad cruzaba el umbral casi en cada ciclo: el estado saltaba de «en vivo» a
+ * «demorado» y el pulso de la moto se apagaba y se volvía a encender —el
+ * parpadeo que se vio en la calle—. 25 s cubre el peor caso normal (≈21 s).
+ */
+export const GPS_LOCATION_FRESH_MS = 25_000;
 export const GPS_LOCATION_DELAYED_MS = 45_000;
 // Compatibility default for acceptance and rendering policies. Product UI uses
 // `trackingLocationFreshness` to distinguish fresh, delayed and lost fixes.
@@ -437,8 +445,8 @@ export function hasLiveRiderLocation(location, options = {}) {
 // pestaña y deja de publicar). Es puro (sin DOM ni timers) para poder testearlo.
 //   - 'none'     : no hay pedido.
 //   - 'terminal' : pedido entregado/cancelado (no se sigue).
-//   - 'fresh'    : hay un fix GPS real con menos de 15 s.
-//   - 'delayed'  : el último fix tiene entre 16 y 45 s.
+//   - 'fresh'    : hay un fix GPS real con hasta 25 s (GPS_LOCATION_FRESH_MS).
+//   - 'delayed'  : el último fix tiene más de 25 s y hasta 45 s.
 //   - 'lost'     : existe una última ubicación, pero supera 45 s.
 //   - 'idle'     : hay pedido activo pero sin ubicación GPS válida.
 export function activeTrackingLiveness(order, sim = null, { now = Date.now(), staleMs = GPS_FIX_STALE_MS } = {}) {

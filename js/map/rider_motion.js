@@ -57,6 +57,15 @@ export const MOTION_MAX_TRAVEL_METERS = 400;
 export const MOTION_RECOVERY_GAP_FACTOR = 2.5;
 /** Cuántos fixes medidos se conservan para calcular la cadencia observada. */
 export const MOTION_HISTORY = 6;
+/**
+ * Un hueco más largo que esto no es la cadencia de nadie: el Rider publica cada
+ * 6–12 s. Es el navegador espaciando los sondeos con la página en segundo plano
+ * (≈1 por minuto) o un corte de red. Ese hueco ni entra al cálculo de la
+ * cadencia ni se recorre: se converge. Medido en LT-0004 (2026-10-06): con los
+ * sondeos de un minuto tomados como «normales», al volver el marcador caminaba
+ * 14 s desde donde el rider había estado antes.
+ */
+export const MOTION_MAX_CADENCE_GAP_MS = 30_000;
 
 export const MOTION_REJECTIONS = Object.freeze({
   INVALID: 'invalid-coordinates',
@@ -174,15 +183,17 @@ export function createRiderMotion({
     durationMs: 0,
     converging: false,
     rejected: [],
+    // Después de volver a primer plano, el próximo fix se planta sin animar.
+    snapNext: false,
   };
 
-  /** Cadencia observada entre los últimos fixes admitidos. */
+  /** Cadencia observada entre los últimos fixes admitidos (sólo huecos que son cadencia). */
   function observedGapMs() {
     if (state.history.length < 2) return MOTION_DEFAULT_GAP_MS;
     const gaps = [];
     for (let i = 1; i < state.history.length; i += 1) {
       const gap = state.history[i] - state.history[i - 1];
-      if (gap > 0) gaps.push(gap);
+      if (gap > 0 && gap <= MOTION_MAX_CADENCE_GAP_MS) gaps.push(gap);
     }
     if (!gaps.length) return MOTION_DEFAULT_GAP_MS;
     const sorted = [...gaps].sort((a, b) => a - b);
@@ -216,7 +227,8 @@ export function createRiderMotion({
     state.history.push(locationTimestamp(fix));
     if (state.history.length > MOTION_HISTORY) state.history.shift();
 
-    if (instant || reducedMotion || !previous) {
+    if (instant || reducedMotion || !previous || state.snapNext) {
+      state.snapNext = false;
       state.from = null;
       state.to = null;
       state.durationMs = 0;
@@ -240,7 +252,8 @@ export function createRiderMotion({
     // cliente necesita ver, en vez de fingir un recorrido que nadie observó.
     const gapMs = previousTimestamp ? locationTimestamp(fix) - previousTimestamp : 0;
     const converging = meters > maxTravelMeters
-      || (gapMs > 0 && gapMs > normalGapMs * MOTION_RECOVERY_GAP_FACTOR);
+      || (gapMs > 0 && gapMs > normalGapMs * MOTION_RECOVERY_GAP_FACTOR)
+      || gapMs > MOTION_MAX_CADENCE_GAP_MS;
     state.from = from;
     state.to = fix;
     state.startedAt = at;
@@ -289,6 +302,24 @@ export function createRiderMotion({
     state.durationMs = 0;
     state.converging = false;
     state.rejected = [];
+    state.snapNext = false;
+  }
+
+  /**
+   * La página volvió a primer plano. Lo que se dibujó mientras estaba oculta no
+   * lo vio nadie y el salto hasta el próximo fix no es un tramo que alguien haya
+   * mirado: ese fix se planta donde está. Se conserva la última coordenada
+   * medida —sigue rechazando un fix viejo o repetido— y se olvida la cadencia
+   * aprendida en segundo plano.
+   */
+  function resume() {
+    state.history = state.measured ? [locationTimestamp(state.measured)] : [];
+    state.from = null;
+    state.to = null;
+    state.startedAt = 0;
+    state.durationMs = 0;
+    state.converging = false;
+    state.snapNext = true;
   }
 
   function debugState() {
@@ -310,6 +341,7 @@ export function createRiderMotion({
     measuredPosition,
     observedGapMs,
     reset,
+    resume,
     debugState,
   });
 }

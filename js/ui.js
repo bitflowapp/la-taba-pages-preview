@@ -98,6 +98,7 @@ import { hasPurchasableDestination, storyCtaDestination } from './core/purchasab
 import { resolveRetailProductId } from './core/retail-packaging.js';
 import { sandboxTrackingPresentation } from './core/sandbox-tracking-presentation.js';
 import { riderAvatarHelmetSvg } from './map/rider_marker.js';
+import { lockAmbientAnimationPhase } from './map/animation_phase.js';
 import {
   markStorySeen,
   publishedStories,
@@ -202,6 +203,9 @@ function restoreStableRealMap(container, shell, acrossOrders = false) {
   // que el mapa lee en el frame siguiente.
   if (acrossOrders) syncStableRealMapIdentity(shell, replacement);
   replacement.replaceWith(shell);
+  // Sacarlo y volverlo a poner reinicia sus animaciones CSS; el latido tiene
+  // que seguir donde iba (js/map/animation_phase.js).
+  lockAmbientAnimationPhase(shell);
 }
 
 function syncStableRealMapIdentity(shell, replacement) {

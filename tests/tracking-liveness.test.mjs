@@ -48,8 +48,8 @@ test('activeTrackingLiveness: GPS real fresco del pedido => live', () => {
 
 test('trackingLocationFreshness clasifica los umbrales de cliente', () => {
   const source = gpsSim('LT-1', 0);
-  assert.equal(trackingLocationFreshness({ ...source, timestamp: NOW - 15_000 }, { now: NOW }), 'fresh');
-  assert.equal(trackingLocationFreshness({ ...source, timestamp: NOW - 16_000 }, { now: NOW }), 'delayed');
+  assert.equal(trackingLocationFreshness({ ...source, timestamp: NOW - 25_000 }, { now: NOW }), 'fresh');
+  assert.equal(trackingLocationFreshness({ ...source, timestamp: NOW - 26_000 }, { now: NOW }), 'delayed');
   assert.equal(trackingLocationFreshness({ ...source, timestamp: NOW - 46_000 }, { now: NOW }), 'lost');
 });
 
@@ -74,7 +74,7 @@ test('ETA del cliente exige fuente confiable, timestamps válidos y GPS fresco',
     ),
     12,
   );
-  assert.equal(trustedTrackingEtaMinutes(etaOrder, gpsSim('LT-1', 20_000), { now: NOW }), null);
+  assert.equal(trustedTrackingEtaMinutes(etaOrder, gpsSim('LT-1', 30_000), { now: NOW }), null);
   assert.equal(trustedTrackingEtaMinutes(etaOrder, gpsSim('LT-1', 50_000), { now: NOW }), null);
   assert.equal(
     trustedTrackingEtaMinutes(

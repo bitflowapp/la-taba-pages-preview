@@ -42,10 +42,20 @@ test('en vivo con unos segundos encima lleva la antigüedad a la vista', () => {
   assert.equal(status.label, 'Ubicación en vivo · hace 8 s');
 });
 
-test('pasados los 15 s el texto deja de prometer que es en vivo', () => {
+// LT-0004 (producción, 2026-10-06): un fix cada 10–12 s, consulta cada 5 s y
+// hasta 3,9 s de publicación. Un dato de 22 s es el ritmo normal del reparto,
+// no una demora; con el corte en 15 s el texto saltaba entre «en vivo» y
+// «actualizado» en cada ciclo.
+test('con el ritmo real del reparto el texto sigue en vivo y muestra la edad', () => {
   const status = trackingStatus(fix({ ageMs: 22_000 }), { now: NOW });
+  assert.equal(status.state, TRACKING_STATE.LIVE);
+  assert.equal(status.label, 'Ubicación en vivo · hace 22 s');
+});
+
+test('pasados los 25 s el texto deja de prometer que es en vivo', () => {
+  const status = trackingStatus(fix({ ageMs: 30_000 }), { now: NOW });
   assert.equal(status.state, TRACKING_STATE.DELAYED);
-  assert.equal(status.label, 'Actualizado hace 22 s');
+  assert.equal(status.label, 'Actualizado hace 30 s');
 });
 
 test('la precisión pobre se dice, no se disimula', () => {

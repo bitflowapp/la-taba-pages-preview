@@ -24,7 +24,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(54);
+select plan(57);
 
 -- ── Fixture ────────────────────────────────────────────────────────────────
 insert into auth.users(id,aud,role,email,encrypted_password,email_confirmed_at,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
@@ -309,6 +309,22 @@ select ok(pg_temp.ctx('orders')::jsonb ->> 'next_cursor' is not null
   'con cursor posterior sólo vuelven los pedidos activos (CC-2), no los terminados');
 select is(pg_temp.dto('CC-2') -> 'payment' ->> 'state', 'pending', 'efectivo a cobrar figura como pendiente');
 select ok(pg_temp.dto('CC-9') is null, 'el pedido del comercio B no aparece');
+
+-- El efectivo de un envío se cobra DESPUÉS de entregar (LT-0004, 2026-10-06): el repartidor vuelve con la plata y
+-- recién ahí el local la registra. Fixture: CC-2 entregado sin pasar por los disparadores de transición.
+set local session_replication_role = replica;
+update public.orders set status = 'delivered', delivered_at = now(), updated_at = now() where public_code = 'CC-2';
+set local session_replication_role = origin;
+select pg_temp.put('orders', public.pos_list_orders('b8000000-0000-4000-8000-000000000001', pg_temp.ctx('h1'), null, 50)::text);
+select ok((pg_temp.dto('CC-2') -> 'allowed_actions') ? 'confirm_payment' and not (pg_temp.dto('CC-2') -> 'allowed_actions') ? 'cancel',
+  'entregado con el efectivo pendiente: la caja puede registrar el cobro (y ya no cancelar)');
+select ok(not (pg_temp.dto('CC-1') -> 'allowed_actions') ? 'confirm_payment', 'cancelado: nunca se ofrece cobrar');
+set local session_replication_role = replica;
+update public.orders set manual_payment_status = 'confirmed', manual_payment_method = 'cash', manual_payment_confirmed_at = now(),
+  updated_at = now() where public_code = 'CC-2';
+set local session_replication_role = origin;
+select pg_temp.put('orders', public.pos_list_orders('b8000000-0000-4000-8000-000000000001', pg_temp.ctx('h1'), null, 50)::text);
+select ok(not (pg_temp.dto('CC-2') -> 'allowed_actions') ? 'confirm_payment', 'ya cobrado: no se ofrece cobrar otra vez');
 
 -- ══ 7 · TIENDA Y REPARTO ═════════════════════════════════════════════════════
 select pg_temp.put('overview', public.pos_get_store_overview('b8000000-0000-4000-8000-000000000001', pg_temp.ctx('h1'))::text);

@@ -221,8 +221,8 @@ try {
       assert.doesNotMatch(output,/^not ok\b/m,name);assert.match(output,/^1\.\.[0-9]+$/m,name);
       assertions+=Number(/^1\.\.([0-9]+)$/m.exec(output)[1]);
     }
-    assert.equal(assertions,940);
-    console.log('CANONICAL_PGTAP: 268 + 44 least-privilege + 50 reparto-propio + 37 ventana QA/columnas privadas/pausa + 16 columnas internas de producto fuera del público + 9 Mercado Pago sólo con vendedor conectado + 5 aislamiento cobro manual/Mercado Pago + 9 alerta de vendedor que no puede cobrar + 16 interruptor de operador por negocio + 104 impresión del mostrador + 19 pipeline de imágenes + 84 preparar la apertura + 24 primera publicación de un borrador de CP + 12 invariantes a prueba de NULL + 55 contrato del core fiscal + 24 upgrade fiscal + 14 RG 5616 + 54 pedidos online V2 + 21 recuperación ante desastre fiscal + 7 frontera de secretos fiscales + 2 reembolso no es nota de crédito + 12 traspaso de dueño + 54 Caja Clara como terminal del local assertions PASS');
+    assert.equal(assertions,943);
+    console.log('CANONICAL_PGTAP: 268 + 44 least-privilege + 50 reparto-propio + 37 ventana QA/columnas privadas/pausa + 16 columnas internas de producto fuera del público + 9 Mercado Pago sólo con vendedor conectado + 5 aislamiento cobro manual/Mercado Pago + 9 alerta de vendedor que no puede cobrar + 16 interruptor de operador por negocio + 104 impresión del mostrador + 19 pipeline de imágenes + 84 preparar la apertura + 24 primera publicación de un borrador de CP + 12 invariantes a prueba de NULL + 55 contrato del core fiscal + 24 upgrade fiscal + 14 RG 5616 + 54 pedidos online V2 + 21 recuperación ante desastre fiscal + 7 frontera de secretos fiscales + 2 reembolso no es nota de crédito + 12 traspaso de dueño + 57 Caja Clara como terminal del local assertions PASS');
 
     // pgTAP no puede probar dos agentes reclamando a la vez: una conexión por llamada.
     const { runPrintClaimRace } = await import('./print-agent/claim-race.mjs');

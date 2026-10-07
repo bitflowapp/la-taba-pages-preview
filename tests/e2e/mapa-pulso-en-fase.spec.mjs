@@ -20,7 +20,7 @@ test('el redibujo estable conserva la fase del pulso; sin anclar, arranca de cer
   await page.route('**/__pulso-fixture.html', (route) => route.fulfill({
     contentType: 'text/html; charset=utf-8',
     body: `<!doctype html><html lang="es"><head><meta charset="utf-8">
-      <link rel="stylesheet" href="/styles.css?v=73"></head>
+      <link rel="stylesheet" href="/styles.css?v=74"></head>
       <body><div class="tracking-premium status-on_the_way"><div id="host"></div></div></body></html>`,
   }));
   await page.goto('/__pulso-fixture.html');

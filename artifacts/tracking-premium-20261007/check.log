@@ -1,0 +1,16 @@
+
+> check
+> node scripts/check-syntax.mjs && node scripts/check-supabase-config.mjs && node scripts/check-static-assets.mjs && node scripts/check-precache-graph.mjs && node scripts/check-release-hygiene.mjs && node scripts/check-release-identity.mjs && node scripts/check-location-contract.mjs && node scripts/check-sql-encoding.mjs && node scripts/scan-secrets.mjs
+
+config de Supabase legible por el CLI 2.101.0: 51 secciones en 11 espacios conocidos.
+precache completo: 123 módulos del grafo estático del cliente y 63 del grafo diferido (panel del negocio), todos en sw.js.
+Release hygiene check passed.
+Identidad de release coherente: la-taba-runtime-v146-tracking-premium · 211 archivos precacheados.
+contrato de ubicación: La Taba 2 — Mendoza 827, Neuquén
+  -38.9460616, -68.0533209  source=public_directory_cross_checked confidence=high human_verified=false precisión=20 m
+  destino demo: Destino demo · Plaza de la Vida (-38.945584, -68.040579)
+  aviso: no se encontró el repositorio del Rider al lado; su coordenada no se verificó. Indicar la ruta con TABA_RIDER_REPO=... para incluirlo.
+
+las superficies coinciden con el contrato.
+ENCODING_CHECK: PASS (221 archivos: UTF-8 valido, sin BOM, sin controles, sin mojibake)
+Secret scan passed: no assigned payment credentials or private keys found.

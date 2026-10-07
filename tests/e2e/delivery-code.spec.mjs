@@ -82,7 +82,7 @@ test('Delivery code: cliente ve codigo, rider confirma y negocio lo audita', asy
   await page.locator(`[data-delivery-done="${orderId}"]`).click();
   await waitForToast(page, 'Pedido marcado como entregado.');
   await page.goto('/?demo=1#tracking');
-  await expect(tracking.locator('.tracking-hero h1')).toHaveText('Pedido entregado');
+  await expect(tracking.locator('.tracking-hero h1')).toHaveText('¡Llegó tu pedido!');
   await expect(tracking.locator('[data-delivery-code]')).toHaveCount(0);
   await expect(tracking.locator('[data-delivery-code-card]')).toHaveCount(0);
   const deliveredTimeline = tracking.getByRole('list', { name: 'Progreso del pedido' });

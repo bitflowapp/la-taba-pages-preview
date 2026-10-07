@@ -173,6 +173,8 @@ export function createRiderMotion({
   reducedMotion = false,
   convergeMs = MOTION_CONVERGE_MS,
   maxTravelMeters = MOTION_MAX_TRAVEL_METERS,
+  maxDurationMs = MOTION_MAX_DURATION_MS,
+  minTravelMeters = 0,
 } = {}) {
   const state = {
     measured: null,
@@ -185,6 +187,7 @@ export function createRiderMotion({
     rejected: [],
     // Después de volver a primer plano, el próximo fix se planta sin animar.
     snapNext: false,
+    quietPoint: null,
   };
 
   /** Cadencia observada entre los últimos fixes admitidos (sólo huecos que son cadencia). */
@@ -228,6 +231,7 @@ export function createRiderMotion({
     if (state.history.length > MOTION_HISTORY) state.history.shift();
 
     if (instant || reducedMotion || !previous || state.snapNext) {
+      state.quietPoint = null;
       state.snapNext = false;
       state.from = null;
       state.to = null;
@@ -237,6 +241,12 @@ export function createRiderMotion({
     }
 
     const meters = distanceKm(from, fix) * 1000;
+    if (meters > 0 && meters < minTravelMeters) {
+      state.quietPoint = pointOf(from);
+      state.from = null; state.to = null; state.durationMs = 0; state.converging = false;
+      return {accepted:true,mode:'jitter',fix};
+    }
+    state.quietPoint = null;
     if (meters <= 0) {
       state.from = null;
       state.to = null;
@@ -257,7 +267,7 @@ export function createRiderMotion({
     state.from = from;
     state.to = fix;
     state.startedAt = at;
-    state.durationMs = converging ? convergeMs : travelDurationMs(normalGapMs);
+    state.durationMs = converging ? convergeMs : travelDurationMs(normalGapMs,{maxMs:maxDurationMs});
     state.converging = converging;
     return {
       accepted: true,
@@ -271,7 +281,7 @@ export function createRiderMotion({
   /** Dónde dibujar el marcador en este instante. Null si no hay nada medido. */
   function visualPositionAt(at = now()) {
     if (!state.to || !state.from || state.durationMs <= 0) {
-      return state.measured ? pointOf(state.measured) : null;
+      return state.quietPoint || (state.measured ? pointOf(state.measured) : null);
     }
     const elapsed = at - state.startedAt;
     if (elapsed >= state.durationMs) return pointOf(state.to);
@@ -294,6 +304,7 @@ export function createRiderMotion({
   }
 
   function reset() {
+    state.quietPoint = null;
     state.measured = null;
     state.history = [];
     state.from = null;
@@ -313,6 +324,7 @@ export function createRiderMotion({
    * aprendida en segundo plano.
    */
   function resume() {
+    state.quietPoint = null;
     state.history = state.measured ? [locationTimestamp(state.measured)] : [];
     state.from = null;
     state.to = null;

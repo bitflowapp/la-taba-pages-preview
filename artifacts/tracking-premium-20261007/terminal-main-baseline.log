@@ -1,0 +1,67 @@
+[WebServer] (node:20188) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:15516) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 2 tests using 1 worker
+
+(node:9176) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:9176) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+terminal-expiry-diagnostic {"browserNow":"2026-07-30T02:30:01.139Z","accessRemovals":[],"requests":[{"publicId":"70000000-0000-4000-8000-000000000001","token":"terminal_tracking_token_e2e_1234567890ABCDE"},{"publicId":"70000000-0000-4000-8000-000000000001","token":"terminal_tracking_token_e2e_1234567890ABCDE"}],"snapshot":{"access":"{\"orderId\":\"70000000-0000-4000-8000-000000000001\",\"publicCode\":\"LT-TERMINAL-A\",\"trackingToken\":\"terminal_tracking_token_e2e_1234567890ABCDE\",\"tokenExpiresAt\":\"2026-07-30T03:30:00.000Z\",\"transferredAt\":\"2026-07-30T02:30:00.022Z\"}","lastOrderId":"LT-TERMINAL-A","activeOrderId":"LT-TERMINAL-A","poll":{"active":false,"terminal":true,"inFlight":false,"orderId":"70000000-0000-4000-8000-000000000001","status":"delivered"},"orders":[{"id":"LT-ACTIVE-B","status":"preparing","publicTrackingOnly":false,"hasDeliveryCode":false,"hasTracking":false},{"id":"LT-TERMINAL-A","status":"delivered","publicTrackingOnly":true,"hasDeliveryCode":false,"hasTracking":false}]}}
+  x  1 [chromium] › tests\e2e\tracking-terminal-expiry.spec.mjs:14:1 › tracking terminal vence, limpia sólo Pedido A y no cae en Pedido B (1.4s)
+(node:21088) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:21088) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  2 [chromium] › tests\e2e\tracking-terminal-expiry.spec.mjs:44:1 › tracking terminal revocado coalesce lifecycle y limpia sin fallback (6.1s)
+
+
+  1) [chromium] › tests\e2e\tracking-terminal-expiry.spec.mjs:14:1 › tracking terminal vence, limpia sólo Pedido A y no cae en Pedido B
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 0
+    + Received  + 1
+
+      Array [
+        "terminal_tracking_token_e2e_1234567890ABCDE",
+    +   "terminal_tracking_token_e2e_1234567890ABCDE",
+      ]
+
+      27 |   }));
+      28 |   await expectTerminalOrder(page);
+    > 29 |   expect(fixture.requestTokens()).toEqual([TRACKING_TOKEN]);
+         |                                   ^
+      30 |
+      31 |   fixture.makeUnavailable();
+      32 |   const revalidationRequest = page.waitForRequest(isPublicTrackingRequest);
+        at <repo>\tests\e2e\tracking-terminal-expiry.spec.mjs:29:35
+
+    Error Context: test-results\tracking-terminal-expiry-t-d4c94-dido-A-y-no-cae-en-Pedido-B-chromium\error-context.md
+
+  2) [chromium] › tests\e2e\tracking-terminal-expiry.spec.mjs:44:1 › tracking terminal revocado coalesce lifecycle y limpia sin fallback
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: 2
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      50 |   await page.goto('/#tracking');
+      51 |   await expectTerminalOrder(page);
+    > 52 |   await expect.poll(() => fixture.requestCount()).toBe(1);
+         |                                                   ^
+      53 |   expect(fixture.requestTokens()).toEqual([TRACKING_TOKEN]);
+      54 |
+      55 |   fixture.makeUnavailable();
+        at <repo>\tests\e2e\tracking-terminal-expiry.spec.mjs:52:51
+
+    Error Context: test-results\tracking-terminal-expiry-t-b0cff-cycle-y-limpia-sin-fallback-chromium\error-context.md
+
+  2 failed
+    [chromium] › tests\e2e\tracking-terminal-expiry.spec.mjs:14:1 › tracking terminal vence, limpia sólo Pedido A y no cae en Pedido B
+    [chromium] › tests\e2e\tracking-terminal-expiry.spec.mjs:44:1 › tracking terminal revocado coalesce lifecycle y limpia sin fallback

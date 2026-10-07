@@ -1,0 +1,32 @@
+[WebServer] (node:24396) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 8 tests using 1 worker
+
+(node:20996) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20996) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [android-chromium] › tests\e2e\tracking-premium.spec.mjs:43:1 › native one finger pan and vertical intent scroll the page without ghost selection (8.3s)
+  ok 2 [android-chromium] › tests\e2e\tracking-premium.spec.mjs:91:1 › TouchEvent pan and pinch exercise MapLibre handlers; vertical intent stays uncancelled (5.4s)
+(node:10548) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:10548) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  -  3 [iphone-webkit] › tests\e2e\tracking-premium.spec.mjs:43:1 › native one finger pan and vertical intent scroll the page without ghost selection
+  ok 4 [iphone-webkit] › tests\e2e\tracking-premium.spec.mjs:91:1 › TouchEvent pan and pinch exercise MapLibre handlers; vertical intent stays uncancelled (5.6s)
+(node:21648) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:21648) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  -  5 [desktop-chromium] › tests\e2e\tracking-premium.spec.mjs:43:1 › native one finger pan and vertical intent scroll the page without ghost selection
+  ok 6 [desktop-chromium] › tests\e2e\tracking-premium.spec.mjs:91:1 › TouchEvent pan and pinch exercise MapLibre handlers; vertical intent stays uncancelled (4.9s)
+(node:18600) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:18600) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  -  7 [desktop-webkit] › tests\e2e\tracking-premium.spec.mjs:43:1 › native one finger pan and vertical intent scroll the page without ghost selection
+  ok 8 [desktop-webkit] › tests\e2e\tracking-premium.spec.mjs:91:1 › TouchEvent pan and pinch exercise MapLibre handlers; vertical intent stays uncancelled (5.4s)
+
+  3 skipped
+  5 passed (33.0s)

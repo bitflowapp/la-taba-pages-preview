@@ -17,21 +17,11 @@ import {
 const ANCHOS = [320, 360, 390, 432];
 
 /*
- * ALCANCE DE ESTE ARCHIVO, dicho de frente.
- *
- * El mapa del cliente monta con `cooperativeGestures`: un arrastre de un solo
- * dedo NO le pertenece —se lo deja pasar para que la página siga scrolleando
- * debajo, contrato fijado en tracking-arriving.spec.mjs— y los gestos que sí
- * toma son el arrastre y el pellizco de DOS dedos. Playwright no sintetiza
- * multi-touch de forma confiable, así que acá NO se simula el gesto.
- *
- * Lo que la máquina verifica: que el seguimiento arranque activo, que el rider y
- * el mapa sobrevivan a perder la señal, y que el CTA de vuelta —una vez
- * visible— entre y funcione en las cuatro anchuras.
- * Lo que verifica el doble de MapLibre en tests/map.test.mjs: que un evento de
- * gesto con `originalEvent` suspenda el seguimiento y que la vuelta lo reanude.
- * Lo que sólo puede verificar una persona con el teléfono en la mano: que el
- * gesto de dos dedos se sienta natural. Eso va en la prueba física.
+ * This legacy flow verifies GPS persistence and CTA geometry across widths.
+ * tracking-premium.spec.mjs additionally exercises the real MapLibre handlers:
+ * native Chromium touch pan/pinch, synthetic touch in both engines, manual
+ * override, camera follow and background/foreground. Physical Safari remains
+ * a separate short acceptance check; emulation is never IPHONE_REAL: PASS.
  */
 
 /*
@@ -122,7 +112,7 @@ test('el mapa se deja explorar y devuelve el seguimiento cuando el cliente quier
   // el seguimiento activo: es la misma acción que el recentrado.
   await revelarCta(page);
   await expect(cta).toBeVisible();
-  await expect(cta).toContainText('Volver al Rider');
+  await expect(cta).toContainText('Seguir repartidor');
   await cta.click();
   await expect(shell).toHaveAttribute('data-map-camera', 'follow');
 

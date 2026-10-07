@@ -9,6 +9,7 @@ node_modules/
 .local/
 test-results/
 test-results-premium/
+test-results-tracking-premium/
 test-results-certification/
 playwright-report/
 dist_release/

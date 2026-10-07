@@ -193,7 +193,7 @@ async function installTerminalTrackingRuntime(page) {
 
 async function expectTerminalOrder(page) {
   const tracking = page.locator('[data-tracking-panel]');
-  await expect(tracking.locator('[data-tracking-title]')).toHaveText('Pedido entregado');
+  await expect(tracking.locator('[data-tracking-title]')).toHaveText('¡Llegó tu pedido!');
   await expect(tracking.locator('[data-tracking-status="delivered"]')).toBeVisible();
   /*
    * El mapa YA NO desaparece al entregar: «Seguir» es una sección de mapa

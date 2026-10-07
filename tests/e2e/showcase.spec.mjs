@@ -625,7 +625,7 @@ test('operational showcase stops use real business, rider, tracking, terminal an
   await selectShowcaseStep(page, 'delivered');
   await expectActiveView(page, 'tracking');
   await expect(tracking.locator('[data-tracking-status="delivered"]')).toBeVisible();
-  await expect(tracking.locator('[data-tracking-title]')).toHaveText('Pedido entregado');
+  await expect(tracking.locator('[data-tracking-title]')).toHaveText('¡Llegó tu pedido!');
   // Entregado conserva el mapa —la sección es un mapa— y suelta lo que ya no
   // corresponde: el rider y el código de entrega.
   await expect(tracking.locator('[data-real-map]')).toHaveCount(1);

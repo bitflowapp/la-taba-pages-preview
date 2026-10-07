@@ -1,0 +1,29 @@
+✔ service worker caches only existing GitHub Pages assets (19.1476ms)
+✔ viewport mobile does not block accessibility zoom (1.2008ms)
+✔ commercial app defaults to light premium theme, not dark fallback (5.9263ms)
+✔ service worker fallback is guarded to navigation requests only (0.3148ms)
+✔ service worker sólo elimina caches anteriores de TABA y exige precache completo (0.2953ms)
+✔ a published update waits for an explicit customer refresh instead of interrupting the journey (1.2481ms)
+✔ MapLibre GL remoto está fijado con SRI y CORS anónimo (1.0236ms)
+✔ el preflight no puede exigir una versión y prohibirla al mismo tiempo (1.6134ms)
+✔ las versiones permitidas se derivan de ESPERADO, no se copian a mano (0.1788ms)
+✔ el CACHE_NAME que el preflight exige es el que sw.js declara de verdad (0.9762ms)
+✔ la identidad firmada y el CACHE_NAME del worker son el mismo nombre (0.8493ms)
+✔ las versiones que el preflight exige son las que index.html carga de verdad (1.4946ms)
+✔ PWA and GitHub Pages entry points exist (1.3533ms)
+✔ manifest is relative and PWA-ready for GitHub Pages (0.4286ms)
+✔ index.html loads the module entry point and avoids root-absolute asset paths (1.1663ms)
+✔ service worker precaches the versioned showcase graph (0.4096ms)
+✔ la cadena de CSS versionado cierra: shell, @imports y precache dicen lo mismo (1.6427ms)
+✔ el precache cierra el grafo de imports estáticos del mapa (3.3774ms)
+✔ el paquete de release incluye las tres rutas de retorno de Mercado Pago (3.1096ms)
+✔ el worker conserva una página y el módulo del retorno para cada vuelta offline (0.3061ms)
+✔ el preflight acepta la versión CSS que exige el candidato (2.2888ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 102.491

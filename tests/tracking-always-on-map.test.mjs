@@ -385,8 +385,8 @@ test('con rider asignado y fix válido aparece la moto, y desasignarlo se la lle
     const marcador = env.calls.markers.at(-1);
     assert.equal(marcador.options.anchor, 'center');
     assert.match(marcador.options.element.className, /\blt-rider-marker\b/);
-    assert.match(marcador.options.element.innerHTML, /data-map-rider-scooter/);
-    assert.match(marcador.options.element.innerHTML, /aria-label="Moto del repartidor TABA"/);
+    assert.match(marcador.options.element.innerHTML, /data-map-rider-helmet/);
+    assert.match(marcador.options.element.innerHTML, /aria-label="Casco del repartidor TABA"/);
 
     controller.clearRider();
     assert.equal(controller.getLifecycleState().hasRiderMarker, false);

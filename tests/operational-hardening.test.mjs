@@ -185,7 +185,7 @@ test('el marker del rider es un vector inline accesible, sin persona, emoji ni r
   assert.match(marker.innerHTML, /\btaba-map-helmet\b/);
   assert.doesNotMatch(marker.innerHTML, /taba-delivery-helmet/);
   assert.match(marker.innerHTML, /role="img"/);
-  assert.match(marker.innerHTML, /aria-label="Moto del repartidor TABA"/);
+  assert.match(marker.innerHTML, /aria-label="Casco del repartidor TABA"/);
   // Disco rojo intenso con aro blanco: el único marcador rojo pleno del mapa.
   assert.match(marker.innerHTML, /<circle[^>]*fill="var\(--map-rider-disc\)"[^>]*stroke="var\(--taba-white\)"[^>]*stroke-width="3\.2"/);
   // Un solo SVG: si vuelven a aparecer piezas sueltas, esto lo delata.

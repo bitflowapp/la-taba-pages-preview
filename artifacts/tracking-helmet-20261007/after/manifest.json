@@ -1,0 +1,150 @@
+[
+  {
+    "phase": "after",
+    "engine": "chromium",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "errors": [],
+    "marker": {
+      "width": 50,
+      "height": 50,
+      "left": 72,
+      "top": 444.4375
+    },
+    "map": {
+      "width": 352,
+      "height": 388.234375,
+      "left": 19,
+      "top": 212.4375
+    },
+    "cardIcon": {
+      "width": 46,
+      "height": 46,
+      "left": 33,
+      "top": 653.890625
+    },
+    "avatar": {
+      "width": 40,
+      "height": 40,
+      "left": 36,
+      "top": 656.890625
+    },
+    "helmetMarkers": 1,
+    "scooterMarkers": 0,
+    "overflow": false,
+    "forever": 0
+  },
+  {
+    "phase": "after",
+    "engine": "chromium",
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "errors": [],
+    "marker": {
+      "width": 50,
+      "height": 50,
+      "left": 92,
+      "top": 467.171875
+    },
+    "map": {
+      "width": 392,
+      "height": 428.71875,
+      "left": 19,
+      "top": 215.171875
+    },
+    "cardIcon": {
+      "width": 46,
+      "height": 46,
+      "left": 33,
+      "top": 697.109375
+    },
+    "avatar": {
+      "width": 40,
+      "height": 40,
+      "left": 36,
+      "top": 700.109375
+    },
+    "helmetMarkers": 1,
+    "scooterMarkers": 0,
+    "overflow": false,
+    "forever": 0
+  },
+  {
+    "phase": "after",
+    "engine": "webkit",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "errors": [],
+    "marker": {
+      "width": 50,
+      "height": 50,
+      "left": 72,
+      "top": 444.421875
+    },
+    "map": {
+      "width": 352,
+      "height": 388.234375,
+      "left": 19,
+      "top": 212.421875
+    },
+    "cardIcon": {
+      "width": 46,
+      "height": 46,
+      "left": 33,
+      "top": 653.875
+    },
+    "avatar": {
+      "width": 40,
+      "height": 40,
+      "left": 36,
+      "top": 656.875
+    },
+    "helmetMarkers": 1,
+    "scooterMarkers": 0,
+    "overflow": false,
+    "forever": 0
+  },
+  {
+    "phase": "after",
+    "engine": "webkit",
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "errors": [],
+    "marker": {
+      "width": 50,
+      "height": 50,
+      "left": 92,
+      "top": 467.15625
+    },
+    "map": {
+      "width": 392,
+      "height": 428.71875,
+      "left": 19,
+      "top": 215.15625
+    },
+    "cardIcon": {
+      "width": 46,
+      "height": 46,
+      "left": 33,
+      "top": 697.09375
+    },
+    "avatar": {
+      "width": 40,
+      "height": 40,
+      "left": 36,
+      "top": 700.09375
+    },
+    "helmetMarkers": 1,
+    "scooterMarkers": 0,
+    "overflow": false,
+    "forever": 0
+  }
+]

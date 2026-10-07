@@ -26,7 +26,7 @@ import {
   createRiderMarkerElement,
   riderAvatarHelmetSvg,
   riderMarkerClass,
-  riderScooterSvg,
+  riderMapHelmetSvg,
 } from '../js/map/rider_marker.js';
 import {
   chooseRiderLocation,
@@ -224,10 +224,11 @@ test('rider marker class reflects status and source', () => {
   assert.match(marker.innerHTML, /lt-rider-helmet-core/);
   assert.match(marker.innerHTML, /<svg[^>]*class="[^"]*\blt-rider-helmet-icon\b[^"]*"/);
   assert.match(marker.innerHTML, /\btaba-map-helmet\b/);
-  assert.match(marker.innerHTML, /data-map-rider-scooter/);
+  assert.match(marker.innerHTML, /data-map-rider-helmet/);
+  assert.doesNotMatch(marker.innerHTML, /data-map-rider-scooter/);
   assert.doesNotMatch(marker.innerHTML, /taba-delivery-helmet/);
   assert.match(marker.innerHTML, /role="img"/);
-  assert.match(marker.innerHTML, /aria-label="Moto del repartidor TABA"/);
+  assert.match(marker.innerHTML, /aria-label="Casco del repartidor TABA"/);
   assert.doesNotMatch(marker.innerHTML, />R</);
   assert.doesNotMatch(marker.innerHTML, /<text/);
   assert.doesNotMatch(marker.innerHTML, /(?:emoji|<image\b|(?:src|href)=|https?:\/\/)/i);
@@ -297,7 +298,7 @@ test('el pin del destino dice CASA: dorado, aro blanco y techo a dos aguas', () 
 test('local, destino y rider no comparten ni glifo ni color: se distinguen sin leer', () => {
   const store = glyphOf('store');
   const destination = glyphOf('destination');
-  const rider = riderScooterSvg();
+  const rider = riderMapHelmetSvg();
 
   // El defecto original era exactamente éste: el mismo dibujo dos veces.
   assert.notEqual(store, destination, 'local y destino no pueden compartir el glifo');
@@ -345,7 +346,7 @@ test('cambiar el glifo no mueve el punto: los dos pines conservan silueta y lien
   }
 });
 
-test('rider avatar keeps a profile helmet separate from the map marker', () => {
+test('avatar y marcador reutilizan el mismo casco de perfil, con contenedores propios', () => {
   const avatar = riderAvatarHelmetSvg({ className: 'tracking-rider-helmet', decorative: true });
   assert.match(avatar, /class="[^"]*\btracking-rider-helmet\b[^"]*"/);
   assert.match(avatar, /\btaba-delivery-helmet\b/);
@@ -358,6 +359,10 @@ test('rider avatar keeps a profile helmet separate from the map marker', () => {
   assert.match(avatar, /<circle[^>]*cx="27\.5"[^>]*cy="31\.4"/);
   assert.doesNotMatch(avatar, /(?:moto|scooter|emoji|<image\b|(?:src|href)=|https?:\/\/)/i);
   assert.doesNotMatch(avatar, /(?:<filter|<linearGradient|<radialGradient|<image\b)/i);
+  const mapHelmet = riderMapHelmetSvg();
+  const paths = [...mapHelmet.matchAll(/<path d="([^"]+)"/g)].map((match) => match[1]);
+  assert.equal(paths.length, 3);
+  for (const path of paths) assert.ok(avatar.includes(`d="${path}"`), 'el casco del mapa se separó del de la tarjeta');
 });
 
 test('chooseRiderLocation prioriza GPS real sobre simulación', () => {

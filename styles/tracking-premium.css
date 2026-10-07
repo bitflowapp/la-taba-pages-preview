@@ -105,6 +105,20 @@ body[data-active-view="tracking"] .tracking-premium .tracking-rider-card {
   box-shadow: 0 6px 16px rgb(0 0 0 / 14%);
 }
 body[data-active-view="tracking"] .tracking-premium .tracking-rider-icon { width: 46px; height: 46px; }
+body[data-active-view="tracking"] .tracking-premium:is(.status-on_the_way,.status-picked_up) .tracking-rider-icon {
+  --map-rider-disc: #e8273a;
+  border: 1px solid rgb(255 255 255 / 32%);
+  border-radius: 50%;
+  background: var(--map-rider-disc);
+  box-shadow: 0 3px 8px rgb(0 0 0 / 20%);
+}
+body[data-active-view="tracking"] .tracking-premium:is(.status-on_the_way,.status-picked_up) .tracking-rider-helmet {
+  --delivery-helmet-contrast: var(--map-rider-disc);
+  width: 40px;
+  height: 40px;
+  color: var(--taba-white);
+  transform: none;
+}
 body[data-active-view="tracking"] .tracking-premium .tracking-rider-copy small { color: #bcbdc6; font-size: 11px; }
 body[data-active-view="tracking"] .tracking-premium .tracking-rider-copy strong { font-size: 16px; color: #fff; }
 body[data-active-view="tracking"] .tracking-premium .tracking-rider-copy span { color: #c8cbd2; font-size: 12px; }

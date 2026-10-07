@@ -105,6 +105,40 @@
     "phase": "before",
     "engine": "chromium",
     "viewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "errors": [],
+    "marker": null,
+    "map": {
+      "width": 682,
+      "height": 390,
+      "left": 619,
+      "top": 200.140625
+    },
+    "cardIcon": {
+      "width": 46,
+      "height": 46,
+      "left": 622,
+      "top": 725.65625
+    },
+    "avatar": {
+      "width": 46,
+      "height": 50,
+      "left": 622.3499755859375,
+      "top": 726.15625
+    },
+    "riderStatus": "Tu Rider\nRider asignado\nTe avisaremos cuando salga del local.",
+    "trackingStatus": "received",
+    "helmetMarkers": 0,
+    "scooterMarkers": 0,
+    "overflow": false,
+    "forever": 0
+  },
+  {
+    "phase": "before",
+    "engine": "chromium",
+    "viewport": {
       "width": 390,
       "height": 844
     },
@@ -135,6 +169,58 @@
     },
     "riderStatus": "Tu Rider\nEn camino\nTu pedido va con él",
     "trackingStatus": "on_the_way",
+    "helmetMarkers": 0,
+    "scooterMarkers": 1,
+    "overflow": false,
+    "forever": 0
+  },
+  {
+    "phase": "before",
+    "engine": "chromium",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "zoom": 11,
+    "errors": [],
+    "marker": {
+      "width": 50,
+      "height": 50,
+      "left": 170,
+      "top": 381.4375
+    },
+    "map": {
+      "width": 352,
+      "height": 388.234375,
+      "left": 19,
+      "top": 212.4375
+    },
+    "helmetMarkers": 0,
+    "scooterMarkers": 1,
+    "overflow": false,
+    "forever": 0
+  },
+  {
+    "phase": "before",
+    "engine": "chromium",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "zoom": 17,
+    "errors": [],
+    "marker": {
+      "width": 50,
+      "height": 50,
+      "left": 170,
+      "top": 381.4375
+    },
+    "map": {
+      "width": 352,
+      "height": 388.234375,
+      "left": 19,
+      "top": 212.4375
+    },
     "helmetMarkers": 0,
     "scooterMarkers": 1,
     "overflow": false,
@@ -209,6 +295,45 @@
       "width": 46,
       "height": 58,
       "left": 393.3500061035156,
+      "top": 710.421875
+    },
+    "riderStatus": "Tu Rider\nEn camino\nTu pedido va con él",
+    "trackingStatus": "on_the_way",
+    "helmetMarkers": 0,
+    "scooterMarkers": 1,
+    "overflow": false,
+    "forever": 0
+  },
+  {
+    "phase": "before",
+    "engine": "chromium",
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "errors": [],
+    "marker": {
+      "width": 50,
+      "height": 50,
+      "left": 837,
+      "top": 464.703125
+    },
+    "map": {
+      "width": 682,
+      "height": 460,
+      "left": 619,
+      "top": 196.703125
+    },
+    "cardIcon": {
+      "width": 46,
+      "height": 46,
+      "left": 633,
+      "top": 709.921875
+    },
+    "avatar": {
+      "width": 46,
+      "height": 58,
+      "left": 633.3499755859375,
       "top": 710.421875
     },
     "riderStatus": "Tu Rider\nEn camino\nTu pedido va con él",
@@ -324,6 +449,40 @@
     "phase": "before",
     "engine": "webkit",
     "viewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "errors": [],
+    "marker": null,
+    "map": {
+      "width": 682,
+      "height": 390,
+      "left": 619,
+      "top": 200.140625
+    },
+    "cardIcon": {
+      "width": 46,
+      "height": 46,
+      "left": 622,
+      "top": 725.65625
+    },
+    "avatar": {
+      "width": 46,
+      "height": 50,
+      "left": 622.3499755859375,
+      "top": 726.15625
+    },
+    "riderStatus": "Tu Rider\nRider asignado\nTe avisaremos cuando salga del local.",
+    "trackingStatus": "received",
+    "helmetMarkers": 0,
+    "scooterMarkers": 0,
+    "overflow": false,
+    "forever": 0
+  },
+  {
+    "phase": "before",
+    "engine": "webkit",
+    "viewport": {
       "width": 390,
       "height": 844
     },
@@ -354,6 +513,58 @@
     },
     "riderStatus": "Tu Rider\nEn camino\nTu pedido va con él",
     "trackingStatus": "on_the_way",
+    "helmetMarkers": 0,
+    "scooterMarkers": 1,
+    "overflow": false,
+    "forever": 0
+  },
+  {
+    "phase": "before",
+    "engine": "webkit",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "zoom": 11,
+    "errors": [],
+    "marker": {
+      "width": 50,
+      "height": 50,
+      "left": 170,
+      "top": 381.421875
+    },
+    "map": {
+      "width": 352,
+      "height": 388.234375,
+      "left": 19,
+      "top": 212.421875
+    },
+    "helmetMarkers": 0,
+    "scooterMarkers": 1,
+    "overflow": false,
+    "forever": 0
+  },
+  {
+    "phase": "before",
+    "engine": "webkit",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "zoom": 17,
+    "errors": [],
+    "marker": {
+      "width": 50,
+      "height": 50,
+      "left": 170,
+      "top": 381.421875
+    },
+    "map": {
+      "width": 352,
+      "height": 388.234375,
+      "left": 19,
+      "top": 212.421875
+    },
     "helmetMarkers": 0,
     "scooterMarkers": 1,
     "overflow": false,
@@ -428,6 +639,45 @@
       "width": 46,
       "height": 58,
       "left": 393.3500061035156,
+      "top": 710.421875
+    },
+    "riderStatus": "Tu Rider\nEn camino\nTu pedido va con él",
+    "trackingStatus": "on_the_way",
+    "helmetMarkers": 0,
+    "scooterMarkers": 1,
+    "overflow": false,
+    "forever": 0
+  },
+  {
+    "phase": "before",
+    "engine": "webkit",
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "errors": [],
+    "marker": {
+      "width": 50,
+      "height": 50,
+      "left": 837,
+      "top": 464.703125
+    },
+    "map": {
+      "width": 682,
+      "height": 460,
+      "left": 619,
+      "top": 196.703125
+    },
+    "cardIcon": {
+      "width": 46,
+      "height": 46,
+      "left": 633,
+      "top": 709.921875
+    },
+    "avatar": {
+      "width": 46,
+      "height": 58,
+      "left": 633.3499755859375,
       "top": 710.421875
     },
     "riderStatus": "Tu Rider\nEn camino\nTu pedido va con él",

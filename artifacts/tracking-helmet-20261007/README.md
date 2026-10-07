@@ -6,15 +6,16 @@ El dark mode mantiene el disco rojo, aro blanco y casco blanco. El disco de la t
 
 ## Comparación
 
-- Abrí [comparison.html](comparison.html) para mover la cortinilla antes/después, elegir los estados assigned/on_the_way, 390×844, 430×932 o 1440×900 y Chromium/WebKit.
-- On the way: [antes mobile 390](before/chromium/390x844-on-the-way.webp) · [después mobile 390](after/chromium/390x844-on-the-way.webp); [antes mobile 430](before/chromium/430x932-on-the-way.webp) · [después mobile 430](after/chromium/430x932-on-the-way.webp); [antes desktop 1440](before/chromium/1440x900-on-the-way.webp) · [después desktop 1440](after/chromium/1440x900-on-the-way.webp).
-- Assigned: [antes mobile 390](before/chromium/390x844-assigned.webp) · [después mobile 390](after/chromium/390x844-assigned.webp); [antes mobile 430](before/chromium/430x932-assigned.webp) · [después mobile 430](after/chromium/430x932-assigned.webp); [antes desktop 1440](before/chromium/1440x900-assigned.webp) · [después desktop 1440](after/chromium/1440x900-assigned.webp).
+- Abrí [comparison.html](comparison.html) para mover la cortinilla antes/después, elegir los estados assigned/on_the_way, 390×844, 430×932, 1440×900 o 1920×1080 y Chromium/WebKit. Para mobile 390, el selector de zoom también compara 11, 14 y 17.
+- On the way: [antes mobile 390](before/chromium/390x844-on-the-way.webp) · [después mobile 390](after/chromium/390x844-on-the-way.webp); [antes mobile 430](before/chromium/430x932-on-the-way.webp) · [después mobile 430](after/chromium/430x932-on-the-way.webp); [antes desktop 1440](before/chromium/1440x900-on-the-way.webp) · [después desktop 1440](after/chromium/1440x900-on-the-way.webp); [antes desktop 1920](before/chromium/1920x1080-on-the-way.webp) · [después desktop 1920](after/chromium/1920x1080-on-the-way.webp).
+- Assigned: [antes mobile 390](before/chromium/390x844-assigned.webp) · [después mobile 390](after/chromium/390x844-assigned.webp); [antes mobile 430](before/chromium/430x932-assigned.webp) · [después mobile 430](after/chromium/430x932-assigned.webp); [antes desktop 1440](before/chromium/1440x900-assigned.webp) · [después desktop 1440](after/chromium/1440x900-assigned.webp); [antes desktop 1920](before/chromium/1920x1080-assigned.webp) · [después desktop 1920](after/chromium/1920x1080-assigned.webp).
+- Zoom mobile 390: [bajo 11 antes/después](before/chromium/390x844-on-the-way-zoom-11.webp) · [después](after/chromium/390x844-on-the-way-zoom-11.webp); [alto 17 antes/después](before/chromium/390x844-on-the-way-zoom-17.webp) · [después](after/chromium/390x844-on-the-way-zoom-17.webp).
 - Card on the way: [antes](before/chromium/390x844-on-the-way-card.webp) · [después](after/chromium/390x844-on-the-way-card.webp). Marker 5×: [antes](before/chromium/390x844-on-the-way-marker-5x.png) · [después](after/chromium/390x844-on-the-way-marker-5x.png).
-- Matriz: 2 estados × 3 viewports × 2 motores × 2 versiones; incluye mapa, tarjeta y recorte del marker. WebKit es emulado en Windows, no una certificación física.
+- Matriz: 2 estados × 4 viewports × 2 motores × 2 versiones; incluye mapa, tarjeta y recorte del marker. En 390 mobile se suman zoom 11/17 además del 14 base. WebKit es emulado en Windows, no una certificación física.
 
 En assigned la tarjeta sí identifica al Rider, pero la UI todavía no muestra ubicación ni marker porque no hay GPS de reparto publicado. La suite conserva ese comportamiento y prueba que no invente una ubicación; el marker se compara únicamente en on_the_way.
 
-Antes se usa el SVG y CSS capturados de PR #143 head `f85ca90f`; después el candidato de este ajuste. Se bloquea la cámara con el mismo centro y zoom en ambas capturas para aislar la identidad del ícono. Los pedidos y el GPS son de QA local; el engine y mapa base son reales. preserveDrawingBuffer sólo está habilitado por el script de screenshot para leer el buffer; la ejecución normal y la medición conservan el default del mapa.
+Antes se usa el SVG y CSS capturados de PR #143 head `f85ca90f`; después el candidato de este ajuste. Se bloquea la cámara con el mismo centro y zoom en ambas capturas para aislar la identidad del ícono. Los pedidos y el GPS son de QA local; el fix de screenshot usa 12 m de precisión para leer el casco sin que el radio cubra la tarjeta del mapa. El engine y mapa base son reales. preserveDrawingBuffer sólo está habilitado por el script de screenshot para leer el buffer; la ejecución normal y la medición conservan el default del mapa.
 
 ## Archivos
 
@@ -48,7 +49,7 @@ AUTO_FOLLOW: PASS
 MANUAL_OVERRIDE: PASS
 BACKGROUND_FOREGROUND: PASS
 MOBILE_VISUAL: PASS (390, 430; Chromium y WebKit emulado)
-DESKTOP_VISUAL: PASS (1440×900)
+DESKTOP_VISUAL: PASS (1440×900 y 1920×1080)
 IPHONE_REAL: NOT_RUN
 READY_FOR_REVIEW: YES
 ```

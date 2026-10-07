@@ -7,7 +7,7 @@ export const DESTINATION={lat:-38.9430,lng:-68.0470};
 
 // Demo order and GPS values are QA-only, isolated in the browser. The renderer,
 // MapLibre, public basemap and real tracking adapter remain the shipped app.
-export async function openPremiumTracking(page,{status='received',captureMap=true,capturePixels=false,displayStatus=status}={}) {
+export async function openPremiumTracking(page,{status='received',accuracy=100,captureMap=true,capturePixels=false,displayStatus=status}={}) {
   await skipInstallInvitation(page);
   if(captureMap) await page.addInitScript(capturePixels => {
     window.__qaMaps=[];window.__qaCameraCalls=[];
@@ -22,7 +22,7 @@ export async function openPremiumTracking(page,{status='received',captureMap=tru
   },capturePixels);
   await page.goto('/?demo=1#tracking',{waitUntil:'domcontentloaded'});
   await expect(page.locator('html')).toHaveAttribute('data-taba-startup','ready',{timeout:30000});
-  await page.evaluate(async ({status,start,destination})=>{
+  await page.evaluate(async ({status,start,destination,accuracy})=>{
     const {getState,setState}=await import('/js/state.js');
     const state=getState();
     const now=new Date().toISOString();
@@ -36,13 +36,13 @@ export async function openPremiumTracking(page,{status='received',captureMap=tru
       statusHistory:[{status:'received',at:now},{status,at:now}],
       items:[{productId:state.products[0].id,name:state.products[0].name,quantity:2,unitPrice:state.products[0].price,unit:state.products[0].unit}],
       subtotal:5600,total:5600,paymentMethod:'Efectivo',paymentMethodCode:'cash',
-      tracking:{lastLocation:{...start,source:'gps',accuracy:100,quality:'valid',gpsStatus:'active',lastFixAt:now,timestamp:Date.now()},updatedAt:now},
+      tracking:{lastLocation:{...start,source:'gps',accuracy,quality:'valid',gpsStatus:'active',lastFixAt:now,timestamp:Date.now()},updatedAt:now},
     };
     window.__trackingQaTimestamp=Date.now();
     setState({orders:[order],lastOrderId:order.id,activeOrderId:order.id,simulation:null});
     const {renderTracking}=await import('/js/ui.js');renderTracking();
     const {renderMapViews}=await import('/js/map/map_view.js');renderMapViews();
-  },{status,start:START,destination:DESTINATION});
+  },{status,start:START,destination:DESTINATION,accuracy});
   await expect(page.locator('[data-tracking-status]')).toHaveAttribute('data-tracking-status',displayStatus);
   await expect(page.locator(TRACKING_MAP)).toHaveAttribute('data-map-status','ready',{timeout:30000});
   await page.evaluate(()=>document.fonts.ready);

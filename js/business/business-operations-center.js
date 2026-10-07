@@ -2755,6 +2755,11 @@ async function runMercadoPagoConnection(action) {
       return result(true, 'Conectando Mercado Pago...');
     }
     sellerConnection = response.data.connection;
+    // A successful provider verification must refresh the operator's current
+    // activation decision as well; a stale settings snapshot kept «Bloqueado»
+    // visible after the platform enabled payments.
+    const activation = await context.getPaymentsActivation();
+    paymentsActivation = activation?.ok ? activation.data : null;
     feedback = action === 'disconnect' ? 'Mercado Pago desconectado.' : 'Conexión verificada.';
     return result(true, feedback);
   } catch (_) {

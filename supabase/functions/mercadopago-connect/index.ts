@@ -19,13 +19,10 @@ import {
   audit,
   assertOAuthBusiness,
   connection,
-  invalidateRejectedToken,
   oauthConfig,
-  OAuthProviderError,
   protect,
-  sellerAccessToken,
-  sellerIdentity,
 } from "../_shared/seller-oauth.ts";
+import { verifySellerConnection } from '../_shared/seller-connection-verification.ts';
 
 Deno.serve(async (request) => {
   const preflight = handleOptions(request);
@@ -58,6 +55,7 @@ Deno.serve(async (request) => {
     );
     const config = oauthConfig();
     const action = String(body.action || "status");
+    let verification;
     if (action === "connect") {
       const state = randomSecret(), verifier = randomSecret();
       const started = await service.rpc("mp_begin_oauth", {
@@ -97,28 +95,19 @@ Deno.serve(async (request) => {
       if (disconnected.error) throw new Error("Unable to disconnect");
       audit("seller_disconnected", businessId, crypto.randomUUID());
     } else if (action === "verify") {
-      const token = await sellerAccessToken(businessId);
-      const row = await connection(businessId);
-      try {
-        await sellerIdentity(token, String(row.seller_id));
-      } catch (error) {
-        // Verification does not claim a disconnected seller is connected.
-        // A provider/network error itself is not proof of revocation.
-        if (error instanceof OAuthProviderError && error.status === 401) {
-          await invalidateRejectedToken(businessId, token);
-        }
-        throw new Error("Unable to verify seller");
-      }
+      verification = await verifySellerConnection(businessId);
     } else if (action !== "status") {
       return jsonResponse(request, { ok: false, code: "INVALID_ACTION" }, 400);
     }
     const row = await connection(businessId);
     return jsonResponse(request, {
       ok: true,
+      ...(verification ? { verification } : {}),
       connection: {
         status: row?.status || "disconnected",
         seller_id: row?.seller_id || null,
         connected_at: row?.connected_at || null,
+        ...(verification ? { verification } : {}),
       },
     });
   } catch (error) {

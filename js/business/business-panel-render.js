@@ -259,9 +259,10 @@ export function mercadoPagoSellerState(connection, activation, { busy = false } 
   if (busy) return Object.freeze({ id: 'connecting', label: 'Conectando', tone: 'attention', detail: 'Estamos esperando la respuesta de Mercado Pago.' });
   if (status === 'connected') {
     const enabled = activation?.enabled === true
-      && (activation?.environment !== 'production' || activation?.production_review_status === 'approved');
+      && (activation?.environment !== 'production' || activation?.production_review_status === 'approved')
+      && connection?.verification?.online_payments_enabled !== false;
     return enabled
-      ? Object.freeze({ id: 'connected', label: 'Conectado', tone: 'calm', detail: 'La tienda puede cobrar con Mercado Pago en tu cuenta.' })
+      ? Object.freeze({ id: 'connected', label: 'Conectado', tone: 'calm', detail: 'Cobros online habilitados. Los pagos se reciben en tu cuenta de Mercado Pago.' })
       : Object.freeze({ id: 'blocked', label: 'Bloqueado', tone: 'attention', detail: 'La cuenta está conectada, pero la plataforma todavía no habilitó el cobro online. Mientras tanto se cobra en efectivo o por transferencia.' });
   }
   if (status === 'requires_reauthorization') return Object.freeze({ id: 'reconnect', label: 'Requiere reconexión', tone: 'attention', detail: 'Mercado Pago pide volver a autorizar la cuenta.' });

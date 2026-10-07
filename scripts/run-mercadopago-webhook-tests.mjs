@@ -49,6 +49,7 @@ const steps = [
   ['npx', ['--yes', 'deno@2.6.1', 'test', '--node-modules-dir=none', '--allow-env', '--deny-net',
     'supabase/functions/_shared/mercadopago-preference.deno.ts',
     'supabase/functions/_shared/seller-oauth-runtime.deno.ts',
+    'supabase/functions/_shared/seller-connection-verification.deno.ts',
     'supabase/functions/_shared/clean-business-oauth.deno.ts',
     'supabase/functions/_shared/seller-webhook-runtime.deno.ts',
     'supabase/functions/_shared/current-payment-authority.deno.ts',

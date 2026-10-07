@@ -1,14 +1,32 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
-import { estado, leerArgumentos, PLANES, validar } from '../scripts/mercadopago/cobro-negocio.mjs';
+import { estado, leerArgumentos, PLANES, productionKeys, validar } from '../scripts/mercadopago/cobro-negocio.mjs';
 
 const NEGOCIO = 'e7850ad2-a447-402c-8375-3fd74e9466ba';
 const args = (texto) => leerArgumentos(texto.split(' ').filter(Boolean));
 
 test('cobro-negocio: each target switches its own environment and application', () => {
+  assert.deepEqual(PLANES.production, { environment: 'production', application: '7677852968049976' });
   assert.deepEqual(PLANES['controlled-production'], { environment: 'production', application: '7677852968049976' });
   assert.deepEqual(PLANES.staging, { environment: 'test', application: '2691240967769590' });
+});
+
+test('original production rejects credentials for any other project or browser role', async () => {
+  const ref = 'wwcpogltfgzgkrlilbcd';
+  const token = claims => `fixture.${Buffer.from(JSON.stringify(claims)).toString('base64url')}.fixture`;
+  for (const claims of [{ ref, role: 'service_role' }, { ref: 'tkanbadcglszlcyfjvpv', role: 'service_role' }, { ref, role: 'anon' }]) {
+    const options = {
+      withToken: async fn => fn('fixture-management-key'),
+      request: async url => {
+        assert.equal(url, `https://api.supabase.com/v1/projects/${ref}/api-keys`);
+        return Response.json([{ name: 'service_role', api_key: token(claims) }]);
+      },
+    };
+    if (claims.ref === ref && claims.role === 'service_role') {
+      assert.equal((await productionKeys(options)).ref, ref);
+    } else await assert.rejects(productionKeys(options), /PRODUCTION_KEY_NOT_BOUND/);
+  }
 });
 
 test('cobro-negocio: nothing changes without a known command, target and business', () => {

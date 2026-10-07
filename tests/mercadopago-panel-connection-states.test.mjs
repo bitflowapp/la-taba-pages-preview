@@ -26,6 +26,11 @@ test('conectado sin la habilitación de la plataforma: «Bloqueado», y lo expli
   }
 });
 
+test('a failed execution verification cannot show payments as enabled despite green settings', () => {
+  const html = card({ status: 'connected', verification: { online_payments_enabled: false } }, 'owner', { activation: ENABLED });
+  assert.equal(status(html), 'Bloqueado');
+});
+
 test('desconectado: no finge nada y ofrece conectar', () => {
   for (const connection of [{ status: 'disconnected', seller_id: '3594962708' }, undefined]) {
     const html = card(connection);

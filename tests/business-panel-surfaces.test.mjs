@@ -44,6 +44,27 @@ async function settle() {
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+test('Verificar conexión reloads activation when the operator enabled payments after the screen opened', async () => {
+  let enabled = false;
+  configureBusinessOperations({
+    role: 'owner',
+    mercadoPagoConnectionAction: async action => {
+      if (action === 'verify') enabled = true;
+      return { ok: true, data: { connection: { status: 'connected' } } };
+    },
+    getPaymentsActivation: async () => ({ ok: true, data: { ...READY_PAYMENTS, enabled } }),
+    listPayments: async () => ({ ok: true, data: [] }),
+    onChange() {},
+  });
+  renderBusinessOperations('payments-setup');
+  await settle();
+  assert.match(renderBusinessOperations('payments-setup'), /<strong>Bloqueado<\/strong>/);
+  await handleBusinessOperationsAction(target('[data-mp-connection-action]', { mpConnectionAction: 'verify' }));
+  assert.match(renderBusinessOperations('payments-setup'), /<strong>Conectado<\/strong>/);
+  assert.match(renderBusinessOperations('payments-setup'), /Cobros online habilitados/);
+  resetBusinessOperationsForTests();
+});
+
 test('el panel sólo ofrece las pantallas que el rol puede usar', () => {
   const staff = allowedBusinessOperationViews('staff');
   assert.ok(staff.includes('packing'));

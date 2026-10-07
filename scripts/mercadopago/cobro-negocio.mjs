@@ -26,11 +26,31 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
 import { loadTargetKeys } from '../controlled-production/target-keys.mjs';
+import { conToken } from '../lib/supabase-cli-token.mjs';
 
 export const PLANES = Object.freeze({
+  production: Object.freeze({ environment: 'production', application: '7677852968049976' }),
   staging: Object.freeze({ environment: 'test', application: '2691240967769590' }),
   'controlled-production': Object.freeze({ environment: 'production', application: '7677852968049976' }),
 });
+
+// Original production uses its own management-bound credential. Never borrow
+// the controlled-production credential or print either key.
+export async function productionKeys({ withToken = conToken, request = fetch } = {}) {
+  const ref = 'wwcpogltfgzgkrlilbcd';
+  return withToken(async token => {
+    const response = await request(`https://api.supabase.com/v1/projects/${ref}/api-keys`, {
+      headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(20_000),
+    });
+    if (!response.ok) throw Error('PRODUCTION_KEYS_UNAVAILABLE');
+    const keys = await response.json();
+    const secret = keys.find(key => key.name === 'service_role')?.api_key;
+    if (!secret) throw Error('PRODUCTION_SERVER_KEY_UNAVAILABLE');
+    const claims = JSON.parse(Buffer.from(secret.split('.')[1], 'base64url').toString('utf8'));
+    if (claims.ref !== ref || claims.role !== 'service_role') throw Error('PRODUCTION_KEY_NOT_BOUND');
+    return { ref, url: `https://${ref}.supabase.co`, secret };
+  });
+}
 const COMANDOS = new Set(['estado', 'apagar', 'encender']);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -97,7 +117,7 @@ async function main(argv) {
     return;
   }
   const plan = PLANES[args.target];
-  const keys = await loadTargetKeys(args.target);
+  const keys = args.target === 'production' ? await productionKeys() : await loadTargetKeys(args.target);
   const db = createClient(keys.url, keys.secret, { auth: { persistSession: false, autoRefreshToken: false } });
   const antes = await estado(db, args.business, plan);
   if (args.comando === 'estado') {

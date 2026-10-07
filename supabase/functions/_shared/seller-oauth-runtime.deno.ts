@@ -1,6 +1,7 @@
 import { assertEquals, assertRejects } from "jsr:@std/assert@1.0.19";
 import {
   connection,
+  invalidateRejectedToken,
   assertOAuthBusiness,
   assertOAuthPaymentEnvironment,
   oauthConfig,
@@ -65,6 +66,109 @@ const tokens = {
   scope: "read write offline_access",
   live_mode: false,
 };
+
+async function refreshFailureFixture(mode: string) {
+  configure();
+  const sealed = await protect(tokens, business);
+  const row = {
+    business_id: business, environment: 'test', seller_id: '123', status: 'connected',
+    protected_tokens: sealed, scopes: tokens.scope, generation: 'fixture-generation',
+    expires_at: new Date(Date.now() + (mode === 'stale_lease' || mode === 'rejected_access' ? 3 * 86400000 : 1000)).toISOString(),
+    refresh_owner: mode === 'stale_lease' ? 'stale-owner' : null as string | null,
+    refresh_started_at: mode === 'stale_lease' ? new Date(Date.now() - 61000).toISOString() : null,
+  };
+  const original = globalThis.fetch;
+  const patches: Record<string, unknown>[] = [];
+  let providerCalls = 0;
+  globalThis.fetch = async (input, init) => {
+    const url = new URL(String(input));
+    const options = init as { method?: string; body?: unknown } | undefined;
+    if (url.origin === 'https://api.mercadopago.com') {
+      providerCalls++;
+      assertEquals(url.pathname, '/oauth/token');
+      if (mode === 'network') throw new TypeError('fixture network loss');
+      if (mode === 'server') return Response.json({error:'temporarily_unavailable'}, {status:503});
+      if (mode === 'invalid_grant') return Response.json({error:'invalid_grant'}, {status:400});
+      return Response.json({...tokens, access_token:'rotated-access', refresh_token:'rotated-refresh'});
+    }
+    if (url.pathname.endsWith('/mp_seller_connections')) {
+      if (options?.method === 'PATCH') {
+        const patch = JSON.parse(String(options.body));
+        patches.push(patch);
+        Object.assign(row, patch);
+      }
+      return Response.json(row);
+    }
+    if (url.pathname.endsWith('/mp_claim_refresh')) {
+      const body = JSON.parse(String(options?.body));
+      if (row.refresh_owner) return Response.json([]);
+      row.refresh_owner = body.p_owner;
+      return Response.json([row]);
+    }
+    if (url.pathname.endsWith('/mp_finish_refresh')) {
+      if (mode === 'persist_failure') return Response.json({message:'fixture persistence unavailable'}, {status:503});
+      const body = JSON.parse(String(options?.body));
+      row.protected_tokens = body.p_protected_tokens;
+      row.expires_at = body.p_expires_at;
+      row.refresh_owner = null;
+      return Response.json(true);
+    }
+    throw Error('Unexpected refresh fixture request');
+  };
+  return {row, sealed, patches, providerCalls:()=>providerCalls, cleanup:()=>{globalThis.fetch=original;}};
+}
+
+for (const mode of ['network','server','persist_failure']) Deno.test(`OAuth ${mode} preserves the encrypted grant and does not demand seller consent`, async () => {
+  const f = await refreshFailureFixture(mode);
+  try {
+    await assertRejects(() => sellerAccessToken(business));
+    assertEquals(f.row.status, 'connected');
+    assertEquals(f.row.protected_tokens, f.sealed);
+    assertEquals(f.row.refresh_owner, null);
+    assertEquals(f.patches.some(patch => 'protected_tokens' in patch), false);
+  } finally {f.cleanup();}
+});
+
+Deno.test('only a confirmed invalid_grant requires seller reauthorization, without deleting the sealed grant', async () => {
+  const f = await refreshFailureFixture('invalid_grant');
+  try {
+    await assertRejects(() => sellerAccessToken(business));
+    assertEquals(f.row.status, 'requires_reauthorization');
+    assertEquals(f.row.protected_tokens, f.sealed);
+  } finally {f.cleanup();}
+});
+
+Deno.test('a stale refresh lease is recovered without revoking a still-valid seller', async () => {
+  const f = await refreshFailureFixture('stale_lease');
+  try {
+    assertEquals(await sellerAccessToken(business), tokens.access_token);
+    assertEquals(f.row.status, 'connected');
+    assertEquals(f.row.protected_tokens, f.sealed);
+    assertEquals(f.providerCalls(), 0);
+  } finally {f.cleanup();}
+});
+
+Deno.test('an access-token 401 renews through the existing offline grant instead of reconnecting the seller', async () => {
+  const f = await refreshFailureFixture('rejected_access');
+  try {
+    await invalidateRejectedToken(business, tokens.access_token);
+    assertEquals(f.row.status, 'connected');
+    assertEquals(f.row.protected_tokens, f.sealed);
+    assertEquals(await sellerAccessToken(business), 'rotated-access');
+    assertEquals(f.providerCalls(), 1);
+    assertEquals(f.row.status, 'connected');
+  } finally {f.cleanup();}
+});
+
+Deno.test('a stale 401 cannot expire a newer credential', async () => {
+  const f = await refreshFailureFixture('rejected_access');
+  try {
+    const expiry = f.row.expires_at;
+    await invalidateRejectedToken(business, 'obsolete-fixture-access');
+    assertEquals(f.row.expires_at, expiry);
+    assertEquals(f.patches.length, 0);
+  } finally {f.cleanup();}
+});
 
 Deno.test("OAuth configuration rejects project and deployment crossover", () => {
   configure();

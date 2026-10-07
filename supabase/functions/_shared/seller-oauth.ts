@@ -230,14 +230,16 @@ export async function sellerAccessToken(businessId: string): Promise<string> {
   if (
     row.refresh_owner && Date.parse(row.refresh_started_at) < Date.now() - 60000
   ) {
-    await service.from("mp_seller_connections").update({
-      status: "requires_reauthorization",
-      protected_tokens: null,
+    const released = await service.from("mp_seller_connections").update({
+      refresh_owner: null,
+      refresh_started_at: null,
     }).eq("business_id", businessId).eq("environment", environment).eq(
       "generation",
       row.generation,
     ).eq("refresh_owner", row.refresh_owner);
-    throw new Error("Refresh outcome unknown");
+    if (released.error) throw new Error("Refresh recovery unavailable");
+    row = await connection(businessId);
+    if (!row || row.status !== "connected") throw new Error("Connection changed during refresh recovery");
   }
   if (
     Date.parse(row.expires_at) > Date.now() + 86400000 && !row.refresh_owner
@@ -286,13 +288,13 @@ export async function sellerAccessToken(businessId: string): Promise<string> {
     audit("token_refresh_success", businessId, owner);
     return String(tokens.access_token);
   } catch (error) {
-    // Definite configuration rejection is retryable; invalid/ambiguous rotating grants are not.
-    const definite = error instanceof OAuthProviderError &&
-      !error.invalidGrant && error.status >= 400 && error.status < 500;
+    // A timeout, 5xx or persistence failure does not prove revocation. Keep
+    // the encrypted access/refresh grant and release only this owner's lease.
+    // Only an explicit invalid_grant requires a new seller authorization.
+    const revoked = error instanceof OAuthProviderError && error.invalidGrant;
     await service.from("mp_seller_connections").update(
-      definite ? { refresh_owner: null, refresh_started_at: null } : {
-        status: "requires_reauthorization",
-        protected_tokens: null,
+      {
+        ...(revoked ? { status: "requires_reauthorization" } : {}),
         refresh_owner: null,
         refresh_started_at: null,
       },
@@ -443,8 +445,9 @@ export async function assertCurrentSellerPaymentAuthority(
   } catch (error) {
     if (error instanceof OAuthProviderError && error.status === 401) {
       await invalidateRejectedToken(businessId, accessToken);
+      throw new PublicPaymentError(409, "SELLER_REFRESHING", "Estamos renovando la conexión. Intentá nuevamente en unos segundos.");
     }
-    throw new PublicPaymentError(409, "SELLER_REAUTHORIZATION_REQUIRED", "Necesitamos volver a conectar Mercado Pago.");
+    throw new PublicPaymentError(503, "SELLER_VERIFICATION_UNAVAILABLE", "No pudimos verificar Mercado Pago. Intentá nuevamente.");
   }
   // One MVCC snapshot covers the complete final decision. No transaction spans
   // provider I/O, and no provider call follows this final database read.
@@ -470,16 +473,18 @@ export async function invalidateRejectedToken(
   rejectedToken: string,
 ) {
   const row = await connection(businessId);
-  if (!row?.protected_tokens || row.status !== "connected") return;
+  if (!row?.protected_tokens || row.status !== "connected" || row.refresh_owner) return;
   const current = await reveal(row.protected_tokens, businessId);
   if (current.access_token !== rejectedToken) return;
   const updated = await createServiceClient().from("mp_seller_connections")
-    .update({ status: "requires_reauthorization", protected_tokens: null })
+    // An access-token 401 is not proof that the offline refresh grant was
+    // revoked. Mark the access token due for renewal without discarding it.
+    .update({ expires_at: new Date(0).toISOString() })
     .eq("business_id", businessId).eq("environment", oauthConfig().environment)
     .eq("generation", row.generation).eq(
       "protected_tokens",
       row.protected_tokens,
-    );
+    ).is("refresh_owner", null);
   if (updated.error) {
     throw new Error("Unable to persist rejected authorization");
   }

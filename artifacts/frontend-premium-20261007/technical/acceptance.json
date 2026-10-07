@@ -1,0 +1,27 @@
+{
+  "PROJECT_PATH": ". (worktree; absolute path is in the external delivery report)",
+  "REPOSITORY": "bitflowapp/la-taba-pages-preview",
+  "BRANCH": "feat/frontend-premium-liquid-glass-20261007",
+  "SOURCE_MAIN_SHA": "cd26834b25909a3fbf6b5133af7b70c39a35fc2d",
+  "DESKTOP_REFINEMENT": "PASS",
+  "LIQUID_GLASS_CATEGORIES": "PASS",
+  "CATEGORY_MOTION": "PASS",
+  "RED_AMBIENT_GRADIENT": "PASS",
+  "PRODUCT_CARDS_REFINEMENT": "PASS",
+  "MOBILE_REGRESSION": "PASS",
+  "WEBKIT": "PASS",
+  "CHROMIUM": "PASS",
+  "PERFORMANCE": "PASS",
+  "REDUCED_MOTION": "PASS",
+  "CHECKOUT_REGRESSION": "PASS",
+  "MERCADOPAGO_ENTRY_REGRESSION": "PASS",
+  "BEFORE_EVIDENCE": "before/",
+  "AFTER_EVIDENCE": "after/",
+  "MOTION_VIDEO": [
+    "motion/desktop-categories.mp4",
+    "motion/mobile-touch.mp4"
+  ],
+  "READY_FOR_VISUAL_REVIEW": "YES",
+  "DEPLOYED": false,
+  "scope": "Local verification with the real public product snapshot, simulated backend, Playwright Chromium and WebKit on Windows. No real payments. No physical iPhone certification."
+}

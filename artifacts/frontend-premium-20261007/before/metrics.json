@@ -1,0 +1,240 @@
+[
+  {
+    "engine": "chromium",
+    "width": 390,
+    "height": 844,
+    "source": "Lectura de sólo lectura del catálogo público de producción (https://la-taba.pages.dev/runtime-config.js). Sólo las columnas que pide la tienda; ni costos ni autores.",
+    "geometry": {
+      "gridWidth": 362,
+      "columns": 2,
+      "cardWidth": 173,
+      "cardHeight": 383.734375,
+      "overflow": false
+    },
+    "errors": [],
+    "elapsedMs": 5486,
+    "performanceEvidence": "../technical/performance-paired.json",
+    "captureSource": "cd26834b25909a3fbf6b5133af7b70c39a35fc2d"
+  },
+  {
+    "engine": "chromium",
+    "width": 430,
+    "height": 932,
+    "source": "Lectura de sólo lectura del catálogo público de producción (https://la-taba.pages.dev/runtime-config.js). Sólo las columnas que pide la tienda; ni costos ni autores.",
+    "geometry": {
+      "gridWidth": 402,
+      "columns": 2,
+      "cardWidth": 193,
+      "cardHeight": 404.34375,
+      "overflow": false
+    },
+    "errors": [],
+    "elapsedMs": 6498,
+    "performanceEvidence": "../technical/performance-paired.json",
+    "captureSource": "cd26834b25909a3fbf6b5133af7b70c39a35fc2d"
+  },
+  {
+    "engine": "chromium",
+    "width": 1366,
+    "height": 768,
+    "source": "Lectura de sólo lectura del catálogo público de producción (https://la-taba.pages.dev/runtime-config.js). Sólo las columnas que pide la tienda; ni costos ni autores.",
+    "geometry": {
+      "gridWidth": 1140,
+      "columns": 5,
+      "cardWidth": 215.1875,
+      "cardHeight": 382.515625,
+      "overflow": false
+    },
+    "errors": [],
+    "elapsedMs": 6973,
+    "performanceEvidence": "../technical/performance-paired.json",
+    "captureSource": "cd26834b25909a3fbf6b5133af7b70c39a35fc2d"
+  },
+  {
+    "engine": "chromium",
+    "width": 1440,
+    "height": 900,
+    "source": "Lectura de sólo lectura del catálogo público de producción (https://la-taba.pages.dev/runtime-config.js). Sólo las columnas que pide la tienda; ni costos ni autores.",
+    "geometry": {
+      "gridWidth": 1140,
+      "columns": 5,
+      "cardWidth": 215.1875,
+      "cardHeight": 382.515625,
+      "overflow": false
+    },
+    "errors": [],
+    "elapsedMs": 7148,
+    "performanceEvidence": "../technical/performance-paired.json",
+    "captureSource": "cd26834b25909a3fbf6b5133af7b70c39a35fc2d"
+  },
+  {
+    "engine": "chromium",
+    "width": 1536,
+    "height": 864,
+    "source": "Lectura de sólo lectura del catálogo público de producción (https://la-taba.pages.dev/runtime-config.js). Sólo las columnas que pide la tienda; ni costos ni autores.",
+    "geometry": {
+      "gridWidth": 1140,
+      "columns": 5,
+      "cardWidth": 215.1875,
+      "cardHeight": 382.515625,
+      "overflow": false
+    },
+    "errors": [],
+    "elapsedMs": 7126,
+    "performanceEvidence": "../technical/performance-paired.json",
+    "captureSource": "cd26834b25909a3fbf6b5133af7b70c39a35fc2d"
+  },
+  {
+    "engine": "chromium",
+    "width": 1920,
+    "height": 1080,
+    "source": "Lectura de sólo lectura del catálogo público de producción (https://la-taba.pages.dev/runtime-config.js). Sólo las columnas que pide la tienda; ni costos ni autores.",
+    "geometry": {
+      "gridWidth": 1140,
+      "columns": 4,
+      "cardWidth": 273,
+      "cardHeight": 440.3125,
+      "overflow": false
+    },
+    "errors": [],
+    "elapsedMs": 7479,
+    "performanceEvidence": "../technical/performance-paired.json",
+    "captureSource": "cd26834b25909a3fbf6b5133af7b70c39a35fc2d"
+  },
+  {
+    "engine": "chromium",
+    "width": 2560,
+    "height": 1440,
+    "source": "Lectura de sólo lectura del catálogo público de producción (https://la-taba.pages.dev/runtime-config.js). Sólo las columnas que pide la tienda; ni costos ni autores.",
+    "geometry": {
+      "gridWidth": 1140,
+      "columns": 4,
+      "cardWidth": 273,
+      "cardHeight": 440.3125,
+      "overflow": false
+    },
+    "errors": [],
+    "elapsedMs": 7856,
+    "performanceEvidence": "../technical/performance-paired.json",
+    "captureSource": "cd26834b25909a3fbf6b5133af7b70c39a35fc2d"
+  },
+  {
+    "engine": "webkit",
+    "width": 390,
+    "height": 844,
+    "source": "Lectura de sólo lectura del catálogo público de producción (https://la-taba.pages.dev/runtime-config.js). Sólo las columnas que pide la tienda; ni costos ni autores.",
+    "geometry": {
+      "gridWidth": 362,
+      "columns": 2,
+      "cardWidth": 173,
+      "cardHeight": 384.640625,
+      "overflow": false
+    },
+    "errors": [],
+    "elapsedMs": 8485,
+    "performanceEvidence": "../technical/performance-paired.json",
+    "captureSource": "cd26834b25909a3fbf6b5133af7b70c39a35fc2d"
+  },
+  {
+    "engine": "webkit",
+    "width": 430,
+    "height": 932,
+    "source": "Lectura de sólo lectura del catálogo público de producción (https://la-taba.pages.dev/runtime-config.js). Sólo las columnas que pide la tienda; ni costos ni autores.",
+    "geometry": {
+      "gridWidth": 402,
+      "columns": 2,
+      "cardWidth": 193,
+      "cardHeight": 405.25,
+      "overflow": false
+    },
+    "errors": [],
+    "elapsedMs": 8819,
+    "performanceEvidence": "../technical/performance-paired.json",
+    "captureSource": "cd26834b25909a3fbf6b5133af7b70c39a35fc2d"
+  },
+  {
+    "engine": "webkit",
+    "width": 1366,
+    "height": 768,
+    "source": "Lectura de sólo lectura del catálogo público de producción (https://la-taba.pages.dev/runtime-config.js). Sólo las columnas que pide la tienda; ni costos ni autores.",
+    "geometry": {
+      "gridWidth": 1140,
+      "columns": 5,
+      "cardWidth": 215.1875,
+      "cardHeight": 383.421875,
+      "overflow": false
+    },
+    "errors": [],
+    "elapsedMs": 10353,
+    "performanceEvidence": "../technical/performance-paired.json",
+    "captureSource": "cd26834b25909a3fbf6b5133af7b70c39a35fc2d"
+  },
+  {
+    "engine": "webkit",
+    "width": 1440,
+    "height": 900,
+    "source": "Lectura de sólo lectura del catálogo público de producción (https://la-taba.pages.dev/runtime-config.js). Sólo las columnas que pide la tienda; ni costos ni autores.",
+    "geometry": {
+      "gridWidth": 1140,
+      "columns": 5,
+      "cardWidth": 215.1875,
+      "cardHeight": 383.421875,
+      "overflow": false
+    },
+    "errors": [],
+    "elapsedMs": 10753,
+    "performanceEvidence": "../technical/performance-paired.json",
+    "captureSource": "cd26834b25909a3fbf6b5133af7b70c39a35fc2d"
+  },
+  {
+    "engine": "webkit",
+    "width": 1536,
+    "height": 864,
+    "source": "Lectura de sólo lectura del catálogo público de producción (https://la-taba.pages.dev/runtime-config.js). Sólo las columnas que pide la tienda; ni costos ni autores.",
+    "geometry": {
+      "gridWidth": 1140,
+      "columns": 5,
+      "cardWidth": 215.1875,
+      "cardHeight": 383.421875,
+      "overflow": false
+    },
+    "errors": [],
+    "elapsedMs": 10730,
+    "performanceEvidence": "../technical/performance-paired.json",
+    "captureSource": "cd26834b25909a3fbf6b5133af7b70c39a35fc2d"
+  },
+  {
+    "engine": "webkit",
+    "width": 1920,
+    "height": 1080,
+    "source": "Lectura de sólo lectura del catálogo público de producción (https://la-taba.pages.dev/runtime-config.js). Sólo las columnas que pide la tienda; ni costos ni autores.",
+    "geometry": {
+      "gridWidth": 1140,
+      "columns": 4,
+      "cardWidth": 273,
+      "cardHeight": 441.21875,
+      "overflow": false
+    },
+    "errors": [],
+    "elapsedMs": 11882,
+    "performanceEvidence": "../technical/performance-paired.json",
+    "captureSource": "cd26834b25909a3fbf6b5133af7b70c39a35fc2d"
+  },
+  {
+    "engine": "webkit",
+    "width": 2560,
+    "height": 1440,
+    "source": "Lectura de sólo lectura del catálogo público de producción (https://la-taba.pages.dev/runtime-config.js). Sólo las columnas que pide la tienda; ni costos ni autores.",
+    "geometry": {
+      "gridWidth": 1140,
+      "columns": 4,
+      "cardWidth": 273,
+      "cardHeight": 441.21875,
+      "overflow": false
+    },
+    "errors": [],
+    "elapsedMs": 13040,
+    "performanceEvidence": "../technical/performance-paired.json",
+    "captureSource": "cd26834b25909a3fbf6b5133af7b70c39a35fc2d"
+  }
+]

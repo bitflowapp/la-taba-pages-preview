@@ -8,6 +8,8 @@
  * visible and usable.
  */
 
+import { initCategoryGlass } from './category-glass.js';
+
 const REVEAL_SELECTORS = [
   '.taba-home-hero',
   '.home-merch-section',
@@ -131,7 +133,14 @@ function markRevealTargets(documentRef, observer, reduced, revealImmediately = f
 }
 
 function releasePressed(target) {
+  const wasPressed = target?.classList?.contains('motion-pressing');
   target?.classList?.remove('motion-pressing');
+  if (wasPressed && target.matches?.('.add-button, .home-add-button') && !target.disabled
+    && !getReducedMotion(target.ownerDocument?.defaultView)
+    && target.ownerDocument?.body?.dataset.motionLite !== 'true') {
+    target.animate?.([{ transform: 'scale(.97)' }, { transform: 'scale(1.012)', offset: .6 },
+      { transform: 'none' }], { duration: 180, easing: 'cubic-bezier(.2,.8,.2,1)' });
+  }
 }
 
 /* ============================================================================
@@ -227,6 +236,7 @@ export function initMotion(documentRef = globalThis.document, windowRef = global
   activeController?.destroy?.();
 
   const preference = setMotionPreference(documentRef, windowRef);
+  const categoryGlass = initCategoryGlass(documentRef, windowRef);
   let rafId = 0;
   let scrollPending = false;
   let pressTimer = 0;
@@ -344,6 +354,7 @@ export function initMotion(documentRef = globalThis.document, windowRef = global
   };
   const onKeyUp = (event) => releasePressed(event.target?.closest?.(PRESS_SELECTOR));
   const onMotionPreferenceChange = (event) => {
+    preference.reduced = event.matches;
     documentRef.body.dataset.motionReduced = String(event.matches);
     if (event.matches) targets.forEach((node) => node.classList.add('is-motion-visible'));
   };
@@ -531,6 +542,7 @@ export function initMotion(documentRef = globalThis.document, windowRef = global
 
   const controller = {
     destroy() {
+      categoryGlass.destroy();
       destroyed = true;
       observer?.disconnect();
       mutationObserver?.disconnect();
@@ -575,6 +587,7 @@ export function initMotion(documentRef = globalThis.document, windowRef = global
         active: true,
         reducedMotion: preference.reduced,
         liteMode: preference.lite,
+        categoryGlass: categoryGlass.getDiagnostics(),
         glowShelves: documentRef.querySelectorAll(GLOW_SHELF).length,
         // Hay un scroll reciente cuyo brillo todavía no se aplicó. Las pruebas
         // lo esperan en vez de cronometrarlo.

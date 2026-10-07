@@ -166,16 +166,9 @@ test('hasLiveRiderLocation: solo GPS real y reciente cuenta como en vivo', () =>
 /*
  * ===== 4. Guard anti regresión: un vector inline, sin persona ni recursos externos ====
  *
- * Este guard nació cuando el marcador del rider era un contraption de divs
- * (`lt-rider-box`, `lt-rider-wheel`, `lt-rider-frame`, `lt-rider-light`) con un
- * avatar humano encima, y por eso prohibía también las PALABRAS «moto» y
- * «scooter»: eran los nombres de aquellas piezas.
- *
- * Lo que protegía era el principio —un solo SVG inline, accesible, sin persona,
- * sin emoji, sin raster y sin pedirle nada a la red—, no el vehículo dibujado.
- * El marcador hoy ES una moto de perfil, en un único vector geométrico, porque
- * a 43–48 px el casco dejaba de leerse. El principio sigue medido entero; lo
- * único que se retiró es la prohibición del motivo.
+ * Protege el principio: un único SVG inline, accesible, sin persona, emoji,
+ * raster ni recursos remotos. La geometría del marcador comparte el casco de
+ * perfil que ya se usa en la tarjeta del cliente.
  */
 test('el marker del rider es un vector inline accesible, sin persona, emoji ni recursos externos', () => {
   const documentRef = { createElement: () => ({ className: '', innerHTML: '' }) };

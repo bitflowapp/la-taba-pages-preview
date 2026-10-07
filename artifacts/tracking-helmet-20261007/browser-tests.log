@@ -1,31 +1,24 @@
-[WebServer] (node:9044) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (node:12176) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:21916) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 [WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
 
-Running 8 tests using 1 worker
+Running 9 tests using 1 worker
 
-(node:16020) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(node:24188) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
-(node:16020) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(node:24188) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 (Use `node --trace-warnings ...` to show where the warning was created)
-  ok 1 [android-chromium] › tests\e2e\tracking-premium.spec.mjs:9:1 › rider auto focus, manual override, recenter and new fixes keep one connected map (7.9s)
-  ok 2 [android-chromium] › tests\e2e\tracking-premium.spec.mjs:80:1 › all states keep accessible text, reduced motion and responsive geometry (13.9s)
-(node:4432) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
-(Use `node --trace-warnings ...` to show where the warning was created)
-(node:4432) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
-(Use `node --trace-warnings ...` to show where the warning was created)
-  ok 3 [iphone-webkit] › tests\e2e\tracking-premium.spec.mjs:9:1 › rider auto focus, manual override, recenter and new fixes keep one connected map (7.5s)
-  ok 4 [iphone-webkit] › tests\e2e\tracking-premium.spec.mjs:80:1 › all states keep accessible text, reduced motion and responsive geometry (9.4s)
-(node:4544) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
-(Use `node --trace-warnings ...` to show where the warning was created)
-(node:4544) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
-(Use `node --trace-warnings ...` to show where the warning was created)
-  ok 5 [desktop-chromium] › tests\e2e\tracking-premium.spec.mjs:9:1 › rider auto focus, manual override, recenter and new fixes keep one connected map (7.3s)
-  ok 6 [desktop-chromium] › tests\e2e\tracking-premium.spec.mjs:80:1 › all states keep accessible text, reduced motion and responsive geometry (7.8s)
-(node:23412) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
-(Use `node --trace-warnings ...` to show where the warning was created)
-(node:23412) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
-(Use `node --trace-warnings ...` to show where the warning was created)
-  ok 7 [desktop-webkit] › tests\e2e\tracking-premium.spec.mjs:9:1 › rider auto focus, manual override, recenter and new fixes keep one connected map (7.1s)
-  ok 8 [desktop-webkit] › tests\e2e\tracking-premium.spec.mjs:80:1 › all states keep accessible text, reduced motion and responsive geometry (6.3s)
+  ok 1 [chromium] › tests\e2e\tracking-premium.spec.mjs:9:1 › rider auto focus, manual override, recenter and new fixes keep one connected map (6.3s)
+  -  2 [chromium] › tests\e2e\tracking-premium.spec.mjs:43:1 › native one finger pan and vertical intent scroll the page without ghost selection
+  -  3 [chromium] › tests\e2e\tracking-premium.spec.mjs:56:1 › native pinch zoom retains north up
+  ok 4 [chromium] › tests\e2e\tracking-premium.spec.mjs:67:1 › background/foreground converges to current GPS without replay (3.9s)
+  ok 5 [chromium] › tests\e2e\tracking-premium.spec.mjs:80:1 › all states keep accessible text, reduced motion and responsive geometry (5.4s)
+  ok 6 [chromium] › tests\e2e\tracking-premium.spec.mjs:91:1 › TouchEvent pan and pinch exercise MapLibre handlers; vertical intent stays uncancelled (4.6s)
+  ok 7 [chromium] › tests\e2e\tracking-premium.spec.mjs:117:1 › location picker shares one-finger gestures and a tap selects a real point (3.7s)
+  ok 8 [chromium] › tests\e2e\tracking-premium.spec.mjs:137:1 › keyboard map navigation pauses follow and retains focus through a GPS render (3.9s)
+  ok 9 [chromium] › tests\e2e\tracking-premium.spec.mjs:148:1 › background resume preserves explore; rejected history and metre jitter never move the camera (8.8s)
 
-  8 passed (1.2m)
+  2 skipped
+  7 passed (38.5s)
+E2E estable: ninguna prueba necesitó reintento.

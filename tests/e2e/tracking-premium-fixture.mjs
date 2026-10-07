@@ -7,7 +7,7 @@ export const DESTINATION={lat:-38.9430,lng:-68.0470};
 
 // Demo order and GPS values are QA-only, isolated in the browser. The renderer,
 // MapLibre, public basemap and real tracking adapter remain the shipped app.
-export async function openPremiumTracking(page,{status='received',captureMap=true,capturePixels=false}={}) {
+export async function openPremiumTracking(page,{status='received',captureMap=true,capturePixels=false,displayStatus=status}={}) {
   await skipInstallInvitation(page);
   if(captureMap) await page.addInitScript(capturePixels => {
     window.__qaMaps=[];window.__qaCameraCalls=[];
@@ -43,7 +43,7 @@ export async function openPremiumTracking(page,{status='received',captureMap=tru
     const {renderTracking}=await import('/js/ui.js');renderTracking();
     const {renderMapViews}=await import('/js/map/map_view.js');renderMapViews();
   },{status,start:START,destination:DESTINATION});
-  await expect(page.locator('[data-tracking-status]')).toHaveAttribute('data-tracking-status',status);
+  await expect(page.locator('[data-tracking-status]')).toHaveAttribute('data-tracking-status',displayStatus);
   await expect(page.locator(TRACKING_MAP)).toHaveAttribute('data-map-status','ready',{timeout:30000});
   await page.evaluate(()=>document.fonts.ready);
   await page.bringToFront();

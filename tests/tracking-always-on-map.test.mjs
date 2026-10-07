@@ -338,7 +338,7 @@ test('el encuadre local–destino contiene a los dos y admite su propio zoom', (
 // ── Quién se dibuja, y en qué coordenada ─────────────────────────────────────
 //
 // La iconografía de los pines cambió (local = vitrina, destino = casa, rider =
-// moto) y estos tests fijan lo que ese cambio NO puede tocar: quién aparece en
+// casco) y estos tests fijan lo que ese cambio NO puede tocar: quién aparece en
 // el mapa, y sobre qué punto se cuelga.
 
 test('sin ubicación válida no hay marcador de rider, aunque el pedido tenga uno asignado', () => {
@@ -369,7 +369,7 @@ test('sin ubicación válida no hay marcador de rider, aunque el pedido tenga un
   }
 });
 
-test('con rider asignado y fix válido aparece la moto, y desasignarlo se la lleva entera', () => {
+test('con rider asignado y fix válido aparece el casco, y desasignarlo lo retira', () => {
   const env = installMapLibreStub();
   const { shell, canvas, fallback } = createMapShell({ documentRef: env.document });
   const controller = createMapLibreTrackingMap({ root: env.root, documentRef: env.document });

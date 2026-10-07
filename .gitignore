@@ -8,6 +8,7 @@ node_modules/
 # copia una lista blanca y `.local/` no está en ella.
 .local/
 test-results/
+test-results-tracking-premium/
 test-results-certification/
 playwright-report/
 dist_release/

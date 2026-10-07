@@ -169,8 +169,55 @@ export function renderWithStableRealMap(container, html, {
   acrossOrders = false,
 } = {}) {
   const stableMap = captureStableRealMap(container, rolePrefix, orderId, acrossOrders);
+  if (stableMap && acrossOrders && rolePrefix === 'tracking') {
+    const template = document.createElement('template');
+    template.innerHTML = html;
+    const nextShell = template.content.querySelector('[data-real-map]');
+    if (nextShell && nextShell.dataset.mapSource === stableMap.dataset.mapSource) {
+      // Patch the existing ancestors in place: disconnecting a WebGL canvas on
+      // every poll loses focus, resets motion and can flicker on Safari.
+      syncTrackingTree(container, template.content, stableMap);
+      return;
+    }
+  }
   container.innerHTML = html;
   restoreStableRealMap(container, stableMap, acrossOrders);
+}
+
+function syncTrackingTree(parent, desired, mapShell) {
+  let cursor = parent.firstChild;
+  for (const next of [...desired.childNodes]) {
+    let node = cursor;
+    const ownsMap = next.nodeType === 1 && (next.hasAttribute('data-real-map') || next.querySelector('[data-real-map]'));
+    if (ownsMap) {
+      node = next.hasAttribute('data-real-map') ? mapShell
+        : [...parent.childNodes].find(n => n.nodeType === 1 && n.contains(mapShell));
+    }
+    const compatible = node && node.nodeType === next.nodeType
+      && (node.nodeType !== 1 || node.tagName === next.tagName);
+    if (!compatible) {
+      node = next.cloneNode(true);
+      parent.insertBefore(node, cursor);
+    } else if (node !== cursor) {
+      parent.insertBefore(node, cursor);
+    }
+    if (node === mapShell) {
+      syncStableRealMapIdentity(node, next);
+    } else if (node.nodeType === 3) {
+      if (node.textContent !== next.textContent) node.textContent = next.textContent;
+    } else if (node.nodeType === 1) {
+      const preserveOpen = node.tagName === 'DETAILS' && node.open;
+      for (const attr of [...node.attributes]) if (!next.hasAttribute(attr.name) && !(preserveOpen && attr.name === 'open')) node.removeAttribute(attr.name);
+      for (const attr of [...next.attributes]) if (node.getAttribute(attr.name) !== attr.value) node.setAttribute(attr.name,attr.value);
+      syncTrackingTree(node,next,mapShell);
+    }
+    cursor = node.nextSibling;
+  }
+  while (cursor) {
+    const following = cursor.nextSibling;
+    if (cursor !== mapShell && !cursor.contains?.(mapShell)) cursor.remove();
+    cursor = following;
+  }
 }
 
 function captureStableRealMap(container, rolePrefix, orderId, acrossOrders = false) {
@@ -214,6 +261,9 @@ function syncStableRealMapIdentity(shell, replacement) {
     if (next === undefined) delete shell.dataset[key];
     else shell.dataset[key] = next;
   }
+  const canvas=shell.querySelector('[data-map-canvas]');
+  const label=replacement.querySelector('[data-map-canvas]')?.getAttribute('aria-label');
+  if(canvas && label && canvas.getAttribute('aria-label')!==label)canvas.setAttribute('aria-label',label);
 }
 
 // El enlace a Maps abre POR COORDENADAS, no por el texto de la dirección: la
@@ -4149,7 +4199,7 @@ function trackingHeadline(order, { riderLocation = null, locationFreshness = 'no
   const pickup = order?.deliveryMode === 'pickup';
   if (order.status === 'delivered') {
     return {
-      title: 'Pedido entregado',
+      title: '¡Llegó tu pedido!',
       sub: `La entrega fue confirmada. Gracias por comprar en ${getBusinessConfig().businessName}.`,
     };
   }
@@ -4168,7 +4218,10 @@ function trackingHeadline(order, { riderLocation = null, locationFreshness = 'no
         : 'El local ya está preparando tu pedido.',
     };
   }
-  if (['ready', 'assigned'].includes(status)) {
+  if (status === 'assigned') {
+    return {title:'Tu repartidor va a buscarlo',sub:'Te avisamos cuando salga del local.'};
+  }
+  if (status === 'ready') {
     return {
       title: pickup ? 'Tu pedido está listo' : 'Tu pedido está listo',
       sub: pickup
@@ -4196,7 +4249,7 @@ function trackingHeadline(order, { riderLocation = null, locationFreshness = 'no
       title: 'Tu pedido está en camino',
       sub: etaMinutes
         ? `Llega en ${etaMinutes} min`
-        : 'Calculando llegada',
+        : 'Tu repartidor está llevando tu pedido.',
       etaActive: Boolean(etaMinutes),
       etaMinutes,
     };
@@ -4335,7 +4388,7 @@ function trackingFollowCta() {
         <path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"></path>
         <circle cx="12" cy="10" r="2.6" fill="currentColor"></circle>
       </svg>
-      <span>Volver al Rider</span>
+      <span>Seguir repartidor</span>
     </button>`;
 }
 
@@ -4660,7 +4713,7 @@ export function renderTracking() {
     riderLocation,
     locationFreshness,
   });
-  const trackableStatus = ['picked_up', 'on_the_way', 'arrived', 'arriving'].includes(order.status);
+  const trackableStatus = ['assigned', 'picked_up', 'on_the_way', 'arrived', 'arriving'].includes(order.status);
   const sandboxSimulation = getOrderSimulation(order);
   const sandboxPresentation = sandboxTrackingPresentation(order, sandboxSimulation);
   const sandboxMapActive = isSandboxOrderRepository(getOrderRepository())
@@ -4703,6 +4756,7 @@ export function renderTracking() {
         ${sandboxMapActive
           ? sandboxTrackingStage(order, sandboxSimulation)
           : trackingMapStage({ order, freshness: locationFreshness, showRecenter: riderOnMap })}
+        <p class="tracking-map-scroll-hint">Deslizá hacia arriba para ver los detalles</p>
         ${riderOnMap ? '' : trackingWaitingStage(order, locationFreshness)}
         ${showRiderCard
           ? riderTrackingCard(order, riderLocation, sandboxPresentation)

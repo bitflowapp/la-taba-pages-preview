@@ -1,0 +1,290 @@
+[
+  {
+    "file": "after/chromium/1440x900-checkout.webp",
+    "bytes": 33068
+  },
+  {
+    "file": "after/chromium/1440x900-confirmed.webp",
+    "bytes": 78206
+  },
+  {
+    "file": "after/chromium/1440x900-delivered.webp",
+    "bytes": 107058
+  },
+  {
+    "file": "after/chromium/1440x900-on-the-way.webp",
+    "bytes": 127456
+  },
+  {
+    "file": "after/chromium/1440x900-preparing.webp",
+    "bytes": 79234
+  },
+  {
+    "file": "after/chromium/1440x900-rider-assigned.webp",
+    "bytes": 77944
+  },
+  {
+    "file": "after/chromium/390x844-checkout.webp",
+    "bytes": 23594
+  },
+  {
+    "file": "after/chromium/390x844-confirmed.webp",
+    "bytes": 45228
+  },
+  {
+    "file": "after/chromium/390x844-delivered.webp",
+    "bytes": 54220
+  },
+  {
+    "file": "after/chromium/390x844-on-the-way.webp",
+    "bytes": 91662
+  },
+  {
+    "file": "after/chromium/390x844-preparing.webp",
+    "bytes": 46068
+  },
+  {
+    "file": "after/chromium/390x844-rider-assigned.webp",
+    "bytes": 44934
+  },
+  {
+    "file": "after/chromium/430x932-checkout.webp",
+    "bytes": 24416
+  },
+  {
+    "file": "after/chromium/430x932-confirmed.webp",
+    "bytes": 47534
+  },
+  {
+    "file": "after/chromium/430x932-delivered.webp",
+    "bytes": 62716
+  },
+  {
+    "file": "after/chromium/430x932-on-the-way.webp",
+    "bytes": 96924
+  },
+  {
+    "file": "after/chromium/430x932-preparing.webp",
+    "bytes": 48426
+  },
+  {
+    "file": "after/chromium/430x932-rider-assigned.webp",
+    "bytes": 47264
+  },
+  {
+    "file": "after/webkit/1440x900-checkout.webp",
+    "bytes": 27128
+  },
+  {
+    "file": "after/webkit/1440x900-confirmed.webp",
+    "bytes": 81560
+  },
+  {
+    "file": "after/webkit/1440x900-delivered.webp",
+    "bytes": 18254
+  },
+  {
+    "file": "after/webkit/1440x900-on-the-way.webp",
+    "bytes": 33094
+  },
+  {
+    "file": "after/webkit/1440x900-preparing.webp",
+    "bytes": 82492
+  },
+  {
+    "file": "after/webkit/1440x900-rider-assigned.webp",
+    "bytes": 81376
+  },
+  {
+    "file": "after/webkit/390x844-checkout.webp",
+    "bytes": 18878
+  },
+  {
+    "file": "after/webkit/390x844-confirmed.webp",
+    "bytes": 52642
+  },
+  {
+    "file": "after/webkit/390x844-delivered.webp",
+    "bytes": 18864
+  },
+  {
+    "file": "after/webkit/390x844-on-the-way.webp",
+    "bytes": 32728
+  },
+  {
+    "file": "after/webkit/390x844-preparing.webp",
+    "bytes": 53556
+  },
+  {
+    "file": "after/webkit/390x844-rider-assigned.webp",
+    "bytes": 52248
+  },
+  {
+    "file": "after/webkit/430x932-checkout.webp",
+    "bytes": 19240
+  },
+  {
+    "file": "after/webkit/430x932-confirmed.webp",
+    "bytes": 56150
+  },
+  {
+    "file": "after/webkit/430x932-delivered.webp",
+    "bytes": 18958
+  },
+  {
+    "file": "after/webkit/430x932-on-the-way.webp",
+    "bytes": 32950
+  },
+  {
+    "file": "after/webkit/430x932-preparing.webp",
+    "bytes": 57008
+  },
+  {
+    "file": "after/webkit/430x932-rider-assigned.webp",
+    "bytes": 55624
+  },
+  {
+    "file": "before/chromium/1440x900-checkout.webp",
+    "bytes": 32922
+  },
+  {
+    "file": "before/chromium/1440x900-confirmed.webp",
+    "bytes": 103552
+  },
+  {
+    "file": "before/chromium/1440x900-delivered.webp",
+    "bytes": 79240
+  },
+  {
+    "file": "before/chromium/1440x900-on-the-way.webp",
+    "bytes": 87230
+  },
+  {
+    "file": "before/chromium/1440x900-preparing.webp",
+    "bytes": 103796
+  },
+  {
+    "file": "before/chromium/1440x900-rider-assigned.webp",
+    "bytes": 101960
+  },
+  {
+    "file": "before/chromium/390x844-checkout.webp",
+    "bytes": 23594
+  },
+  {
+    "file": "before/chromium/390x844-confirmed.webp",
+    "bytes": 67280
+  },
+  {
+    "file": "before/chromium/390x844-delivered.webp",
+    "bytes": 57092
+  },
+  {
+    "file": "before/chromium/390x844-on-the-way.webp",
+    "bytes": 67780
+  },
+  {
+    "file": "before/chromium/390x844-preparing.webp",
+    "bytes": 68206
+  },
+  {
+    "file": "before/chromium/390x844-rider-assigned.webp",
+    "bytes": 68468
+  },
+  {
+    "file": "before/chromium/430x932-checkout.webp",
+    "bytes": 24416
+  },
+  {
+    "file": "before/chromium/430x932-confirmed.webp",
+    "bytes": 60232
+  },
+  {
+    "file": "before/chromium/430x932-delivered.webp",
+    "bytes": 66880
+  },
+  {
+    "file": "before/chromium/430x932-on-the-way.webp",
+    "bytes": 71410
+  },
+  {
+    "file": "before/chromium/430x932-preparing.webp",
+    "bytes": 81200
+  },
+  {
+    "file": "before/chromium/430x932-rider-assigned.webp",
+    "bytes": 78842
+  },
+  {
+    "file": "before/webkit/1440x900-checkout.webp",
+    "bytes": 26880
+  },
+  {
+    "file": "before/webkit/1440x900-confirmed.webp",
+    "bytes": 96034
+  },
+  {
+    "file": "before/webkit/1440x900-delivered.webp",
+    "bytes": 17912
+  },
+  {
+    "file": "before/webkit/1440x900-on-the-way.webp",
+    "bytes": 19452
+  },
+  {
+    "file": "before/webkit/1440x900-preparing.webp",
+    "bytes": 96038
+  },
+  {
+    "file": "before/webkit/1440x900-rider-assigned.webp",
+    "bytes": 95380
+  },
+  {
+    "file": "before/webkit/390x844-checkout.webp",
+    "bytes": 18878
+  },
+  {
+    "file": "before/webkit/390x844-confirmed.webp",
+    "bytes": 58832
+  },
+  {
+    "file": "before/webkit/390x844-delivered.webp",
+    "bytes": 18278
+  },
+  {
+    "file": "before/webkit/390x844-on-the-way.webp",
+    "bytes": 27666
+  },
+  {
+    "file": "before/webkit/390x844-preparing.webp",
+    "bytes": 58700
+  },
+  {
+    "file": "before/webkit/390x844-rider-assigned.webp",
+    "bytes": 59718
+  },
+  {
+    "file": "before/webkit/430x932-checkout.webp",
+    "bytes": 19240
+  },
+  {
+    "file": "before/webkit/430x932-confirmed.webp",
+    "bytes": 68290
+  },
+  {
+    "file": "before/webkit/430x932-delivered.webp",
+    "bytes": 18300
+  },
+  {
+    "file": "before/webkit/430x932-on-the-way.webp",
+    "bytes": 27396
+  },
+  {
+    "file": "before/webkit/430x932-preparing.webp",
+    "bytes": 68134
+  },
+  {
+    "file": "before/webkit/430x932-rider-assigned.webp",
+    "bytes": 67454
+  }
+]

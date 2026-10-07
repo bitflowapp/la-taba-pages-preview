@@ -168,7 +168,7 @@ function readMapViewState(container) {
   const sandbox = isSandboxOrderRepository(getOrderRepository()) && container.dataset.mapSource === 'sandbox';
   const sandboxScenario = sandbox ? getSandboxMapScenario() : null;
   const riderLocation = order && !TERMINAL_STATUSES.has(order.status)
-    ? getRiderLocation(order, sim, sandbox)
+    ? getRiderLocation(order, sim, sandbox, role)
     : null;
   // El destino real del pedido. Antes sólo existía en la sandbox, así que el
   // seguimiento de un pedido de verdad no podía dibujar a dónde iba la entrega
@@ -291,6 +291,7 @@ export function ensureTrackingMap(container, view) {
      * encuadre, parpadea y vuelve a pedir tiles que ya tenía.
      */
     existing.adapter.updatePlaces?.({ store: view.store, destination: view.destination });
+    if(view.role==='tracking')existing.adapter.setOrderContext?.({status:view.order?.status||'received',orderId:view.order?.id||''});
     // Sin rider que seguir —no hay pedido, o el pedido terminó— el marcador y
     // su halo se retiran. Dejarlos sería dibujar un reparto que no existe.
     const hadRider = Boolean(existing.adapter.getLifecycleState?.()?.hasRiderMarker);
@@ -309,11 +310,11 @@ export function ensureTrackingMap(container, view) {
     const nextFraming = view.riderLocation ? null : framingKey(view);
     if (nextFraming && (nextFraming !== existing.lastFraming || hadRider)) {
       existing.lastFraming = nextFraming;
-      const framed = existing.adapter.frameArea?.(
+      const framed = view.order?.status==='delivered' ? false : existing.adapter.frameArea?.(
         placesArea(view.store, view.destination),
         { maxZoom: 15.4 },
       );
-      if (!framed && !existing.adapter.focusOn?.({ point: view.store })) {
+      if (!framed && !existing.adapter.focusOn?.({ point: view.order?.status==='delivered'?view.destination:view.store })) {
         existing.adapter.frameArea?.(view.area);
       }
     }
@@ -322,6 +323,7 @@ export function ensureTrackingMap(container, view) {
       existing.adapter.recenter?.({ animate: false });
     }
     existing.adapter.updateFreshness(view.freshness);
+    applyCameraMode(container, existing.adapter.getCameraMode?.());
     return existing;
   }
 
@@ -358,6 +360,7 @@ export function ensureTrackingMap(container, view) {
     freshness: view.freshness,
     status: view.order?.status,
     source: view.riderLocation?.source,
+    presentationRole: view.role,
     sandbox: view.sandbox,
     sandboxGeometryVerified,
     route: showSandboxRoute ? view.points : null,
@@ -383,21 +386,11 @@ export function ensureTrackingMap(container, view) {
       || view.destination
       || (view.idle ? areaCenterPoint(view.area) : null),
     zoom: view.idle ? MAPLIBRE_IDLE_ZOOM : view.sandbox ? 14.5 : 16,
-    /*
-     * El seguimiento del cliente monta con `cooperativeGestures`, y se queda
-     * así a propósito. Se probó sacarlo —para que arrastrar con un dedo moviera
-     * el mapa— y rompe algo más importante: la vista de seguimiento es una
-     * página larga, el mapa ocupa media pantalla, y sin esta opción MapLibre le
-     * pone `touch-action: none` al lienzo y se queda con el arrastre vertical.
-     * El cliente deja de poder scrollear su propio pedido con el dedo sobre el
-     * mapa. Ese contrato está fijado en tracking-arriving.spec.mjs.
-     *
-     * O sea que explorar el mapa se hace con DOS dedos —arrastrar y pellizcar—,
-     * que es la convención de cualquier mapa embebido en una página. El gesto
-     * de dos dedos sí suspende el seguimiento y ofrece la vuelta.
-     */
-    cooperativeGestures: view.role === 'tracking',
+    // Touch intent keeps vertical page scrolling while horizontal/diagonal
+    // drags pan with one finger; pinch zoom stays native to MapLibre.
+    cooperativeGestures: false,
   });
+  if(view.role==='tracking')adapter.setOrderContext?.({status:view.order?.status||'received',orderId:view.order?.id||''});
   return entry;
 }
 
@@ -479,7 +472,8 @@ function getOrderSimulation(orderId) {
   return sim && sim.orderId === orderId ? sim : null;
 }
 
-function getRiderLocation(order, sim, sandbox = false) {
+function getRiderLocation(order, sim, sandbox = false, role = 'tracking') {
+  if (role === 'tracking' && !['ready','assigned','picked_up','on_the_way','arrived','arriving'].includes(order?.status)) return null;
   // Producción conserva el último fix GPS conocido, incluso demorado o perdido,
   // para no reemplazarlo por una posición inventada. Sandbox mantiene sus
   // coordenadas ficticias estrictamente aisladas.

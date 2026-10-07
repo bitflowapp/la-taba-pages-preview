@@ -150,7 +150,7 @@ test('Direct Ordering Growth Engine: recompra, cliente recurrente, fidelizacion 
   await expect(page.locator('[data-tracking-panel] [data-map-meta-text]')).toHaveText(
     /^Actualizado hace \d+ s$/,
   );
-  await expect(page.locator('[data-tracking-panel] [data-tracking-arrival]')).toHaveText('Calculando llegada');
+  await expect(page.locator('[data-tracking-panel] [data-tracking-arrival]')).toHaveText('Tu repartidor está llevando tu pedido.');
   await expect(page.locator('[data-tracking-panel] [data-tracking-arrival]')).toHaveAttribute('data-eta-active', 'false');
 
   const lostIdentity = await setLatestTrackingFixAge(page, 50_000);

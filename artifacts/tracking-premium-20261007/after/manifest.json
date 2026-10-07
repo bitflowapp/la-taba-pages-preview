@@ -1,0 +1,422 @@
+[
+  {
+    "engine": "chromium",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "status": "received",
+    "mapHeight": 286.953125,
+    "mapWidth": 352,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "chromium",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "status": "preparing",
+    "mapHeight": 286.953125,
+    "mapWidth": 352,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "chromium",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "status": "assigned",
+    "mapHeight": 286.953125,
+    "mapWidth": 352,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "chromium",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "status": "on_the_way",
+    "mapHeight": 388.234375,
+    "mapWidth": 352,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "chromium",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "status": "delivered",
+    "mapHeight": 286.953125,
+    "mapWidth": 352,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "chromium",
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "status": "received",
+    "mapHeight": 316.875,
+    "mapWidth": 392,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "chromium",
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "status": "preparing",
+    "mapHeight": 316.875,
+    "mapWidth": 392,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "chromium",
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "status": "assigned",
+    "mapHeight": 316.875,
+    "mapWidth": 392,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "chromium",
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "status": "on_the_way",
+    "mapHeight": 428.71875,
+    "mapWidth": 392,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "chromium",
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "status": "delivered",
+    "mapHeight": 316.875,
+    "mapWidth": 392,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "chromium",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "status": "received",
+    "mapHeight": 390,
+    "mapWidth": 682,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "chromium",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "status": "preparing",
+    "mapHeight": 390,
+    "mapWidth": 682,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "chromium",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "status": "assigned",
+    "mapHeight": 390,
+    "mapWidth": 682,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "chromium",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "status": "on_the_way",
+    "mapHeight": 460,
+    "mapWidth": 682,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "chromium",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "status": "delivered",
+    "mapHeight": 390,
+    "mapWidth": 682,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "webkit",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "status": "received",
+    "mapHeight": 286.953125,
+    "mapWidth": 352,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "webkit",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "status": "preparing",
+    "mapHeight": 286.953125,
+    "mapWidth": 352,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "webkit",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "status": "assigned",
+    "mapHeight": 286.953125,
+    "mapWidth": 352,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "webkit",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "status": "on_the_way",
+    "mapHeight": 388.234375,
+    "mapWidth": 352,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "webkit",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "status": "delivered",
+    "mapHeight": 286.953125,
+    "mapWidth": 352,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "webkit",
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "status": "received",
+    "mapHeight": 316.875,
+    "mapWidth": 392,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "webkit",
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "status": "preparing",
+    "mapHeight": 316.875,
+    "mapWidth": 392,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "webkit",
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "status": "assigned",
+    "mapHeight": 316.875,
+    "mapWidth": 392,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "webkit",
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "status": "on_the_way",
+    "mapHeight": 428.71875,
+    "mapWidth": 392,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "webkit",
+    "viewport": {
+      "width": 430,
+      "height": 932
+    },
+    "status": "delivered",
+    "mapHeight": 316.875,
+    "mapWidth": 392,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "webkit",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "status": "received",
+    "mapHeight": 390,
+    "mapWidth": 682,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "webkit",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "status": "preparing",
+    "mapHeight": 390,
+    "mapWidth": 682,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "webkit",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "status": "assigned",
+    "mapHeight": 390,
+    "mapWidth": 682,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "webkit",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "status": "on_the_way",
+    "mapHeight": 460,
+    "mapWidth": 682,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  },
+  {
+    "engine": "webkit",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "status": "delivered",
+    "mapHeight": 390,
+    "mapWidth": 682,
+    "mapState": "ready",
+    "camera": "follow",
+    "overflow": false,
+    "captureContext": "QA only: preserveDrawingBuffer=true for WebGL screenshot pixels; tests and performance use the default false."
+  }
+]

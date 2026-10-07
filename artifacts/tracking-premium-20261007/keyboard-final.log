@@ -1,0 +1,27 @@
+[WebServer] (node:8800) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 4 tests using 1 worker
+
+(node:21120) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:21120) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [android-chromium] › tests\e2e\tracking-premium.spec.mjs:137:1 › keyboard map navigation pauses follow and retains focus through a GPS render (5.1s)
+(node:4464) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:4464) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 2 [iphone-webkit] › tests\e2e\tracking-premium.spec.mjs:137:1 › keyboard map navigation pauses follow and retains focus through a GPS render (4.7s)
+(node:22848) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:22848) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 3 [desktop-chromium] › tests\e2e\tracking-premium.spec.mjs:137:1 › keyboard map navigation pauses follow and retains focus through a GPS render (4.2s)
+(node:22740) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:22740) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 4 [desktop-webkit] › tests\e2e\tracking-premium.spec.mjs:137:1 › keyboard map navigation pauses follow and retains focus through a GPS render (5.2s)
+
+  4 passed (22.2s)

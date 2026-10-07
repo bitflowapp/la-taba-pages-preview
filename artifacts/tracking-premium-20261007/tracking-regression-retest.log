@@ -1,0 +1,94 @@
+[WebServer] (node:5424) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:24104) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 5 tests using 1 worker
+
+(node:3228) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3228) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [chromium] › tests\e2e\honest-map.spec.mjs:18:1 › sin GPS real: el tracking es honesto (mapa sin rider, ruta ni puntos falsos) (3.4s)
+  ok 2 [chromium] › tests\e2e\honest-map.spec.mjs:125:1 › el local publica su dirección desde la config y no inventa su ubicación en el mapa (1.1s)
+  x  3 [chromium] › tests\e2e\tracking-arriving.spec.mjs:15:1 › tracking público arriving reproduce la composición y conserva datos reales (3.8s)
+(node:1792) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1792) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+terminal-expiry-diagnostic {"browserNow":"2026-07-30T02:30:01.077Z","accessRemovals":[],"requests":[{"publicId":"70000000-0000-4000-8000-000000000001","token":"terminal_tracking_token_e2e_1234567890ABCDE"},{"publicId":"70000000-0000-4000-8000-000000000001","token":"terminal_tracking_token_e2e_1234567890ABCDE"}],"snapshot":{"access":"{\"orderId\":\"70000000-0000-4000-8000-000000000001\",\"publicCode\":\"LT-TERMINAL-A\",\"trackingToken\":\"terminal_tracking_token_e2e_1234567890ABCDE\",\"tokenExpiresAt\":\"2026-07-30T03:30:00.000Z\",\"transferredAt\":\"2026-07-30T02:30:00.031Z\"}","lastOrderId":"LT-TERMINAL-A","activeOrderId":"LT-TERMINAL-A","poll":{"active":false,"terminal":true,"inFlight":false,"orderId":"70000000-0000-4000-8000-000000000001","status":"delivered"},"orders":[{"id":"LT-ACTIVE-B","status":"preparing","publicTrackingOnly":false,"hasDeliveryCode":false,"hasTracking":false},{"id":"LT-TERMINAL-A","status":"delivered","publicTrackingOnly":true,"hasDeliveryCode":false,"hasTracking":false}]}}
+  x  4 [chromium] › tests\e2e\tracking-terminal-expiry.spec.mjs:14:1 › tracking terminal vence, limpia sólo Pedido A y no cae en Pedido B (1.4s)
+(node:8488) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:8488) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  5 [chromium] › tests\e2e\tracking-terminal-expiry.spec.mjs:44:1 › tracking terminal revocado coalesce lifecycle y limpia sin fallback (6.2s)
+
+
+  1) [chromium] › tests\e2e\tracking-arriving.spec.mjs:15:1 › tracking público arriving reproduce la composición y conserva datos reales
+
+    Error: expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 854
+    Received:    910.96875
+
+      264 |       // 848,1px con la sans-serif genérica de ubuntu-latest. La holgura deja
+      265 |       // pasar esa dispersión y sigue detectando una regresión real de layout.
+    > 266 |       expect(measurements.helpBottom).toBeLessThanOrEqual(viewport.height + 10);
+          |                                       ^
+      267 |     }
+      268 |   }
+      269 |
+        at <repo>\tests\e2e\tracking-arriving.spec.mjs:266:39
+
+    Error Context: test-results\tracking-arriving-tracking-157db-ión-y-conserva-datos-reales-chromium\error-context.md
+
+  2) [chromium] › tests\e2e\tracking-terminal-expiry.spec.mjs:14:1 › tracking terminal vence, limpia sólo Pedido A y no cae en Pedido B
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 0
+    + Received  + 1
+
+      Array [
+        "terminal_tracking_token_e2e_1234567890ABCDE",
+    +   "terminal_tracking_token_e2e_1234567890ABCDE",
+      ]
+
+      27 |   }));
+      28 |   await expectTerminalOrder(page);
+    > 29 |   expect(fixture.requestTokens()).toEqual([TRACKING_TOKEN]);
+         |                                   ^
+      30 |
+      31 |   fixture.makeUnavailable();
+      32 |   const revalidationRequest = page.waitForRequest(isPublicTrackingRequest);
+        at <repo>\tests\e2e\tracking-terminal-expiry.spec.mjs:29:35
+
+    Error Context: test-results\tracking-terminal-expiry-t-d4c94-dido-A-y-no-cae-en-Pedido-B-chromium\error-context.md
+
+  3) [chromium] › tests\e2e\tracking-terminal-expiry.spec.mjs:44:1 › tracking terminal revocado coalesce lifecycle y limpia sin fallback
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: 2
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      50 |   await page.goto('/#tracking');
+      51 |   await expectTerminalOrder(page);
+    > 52 |   await expect.poll(() => fixture.requestCount()).toBe(1);
+         |                                                   ^
+      53 |   expect(fixture.requestTokens()).toEqual([TRACKING_TOKEN]);
+      54 |
+      55 |   fixture.makeUnavailable();
+        at <repo>\tests\e2e\tracking-terminal-expiry.spec.mjs:52:51
+
+    Error Context: test-results\tracking-terminal-expiry-t-b0cff-cycle-y-limpia-sin-fallback-chromium\error-context.md
+
+  3 failed
+    [chromium] › tests\e2e\tracking-arriving.spec.mjs:15:1 › tracking público arriving reproduce la composición y conserva datos reales
+    [chromium] › tests\e2e\tracking-terminal-expiry.spec.mjs:14:1 › tracking terminal vence, limpia sólo Pedido A y no cae en Pedido B
+    [chromium] › tests\e2e\tracking-terminal-expiry.spec.mjs:44:1 › tracking terminal revocado coalesce lifecycle y limpia sin fallback
+  2 passed (18.8s)

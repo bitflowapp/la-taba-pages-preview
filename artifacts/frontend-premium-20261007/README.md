@@ -79,7 +79,7 @@ No cambió OAuth, autoridad de checkout, payment worker, webhook, seller, activa
 ## Resultados solicitados
 
 ```text
-PROJECT_PATH: C:\Users\marco\Documents\New project\la-taba-premium-20261007
+PROJECT_PATH: . (worktree; absolute path is in the external delivery report)
 REPOSITORY: bitflowapp/la-taba-pages-preview
 BRANCH: feat/frontend-premium-liquid-glass-20261007
 SOURCE_MAIN_SHA: cd26834b25909a3fbf6b5133af7b70c39a35fc2d

@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 const root=path.resolve('artifacts/frontend-premium-20261007');
 const before=JSON.parse(fs.readFileSync(path.join(root,'before/metrics.json')));
 const after=JSON.parse(fs.readFileSync(path.join(root,'after/metrics.json')));
@@ -17,7 +18,7 @@ for(const [phase,rows] of [['before',before],['after',after]]) {
   }
   fs.writeFileSync(path.join(root,phase,'metrics.json'),JSON.stringify(rows,null,2));
 }
-fs.writeFileSync(path.join(root,'technical/initial-unpaired-samples.json'),JSON.stringify(initial,null,2));
+if(initial.length)fs.writeFileSync(path.join(root,'technical/initial-unpaired-samples.json'),JSON.stringify(initial,null,2));
 for(const row of perf) row.viewport={width:row.width,height:row.width===2560?1440:900};
 fs.writeFileSync(path.join(root,'technical/performance-paired.json'),JSON.stringify(perf,null,2));
 const geometry=after.filter(r=>r.engine==='chromium').map(r=>{
@@ -31,7 +32,7 @@ for(const engine of ['chromium','webkit']) for(const width of [390,430,1366,1440
   performanceRows.push(`| ${engine} | ${width} | ${b.medianP95.toFixed(1)} → ${a.medianP95.toFixed(1)} ms | ${b.horizontal.p95.toFixed(1)} → ${a.horizontal.p95.toFixed(1)} ms |`);
 }
 const acceptance={
-  PROJECT_PATH:process.cwd(),REPOSITORY:'bitflowapp/la-taba-pages-preview',
+  PROJECT_PATH:'. (worktree; absolute path is in the external delivery report)',REPOSITORY:'bitflowapp/la-taba-pages-preview',
   BRANCH:'feat/frontend-premium-liquid-glass-20261007',SOURCE_MAIN_SHA:source,
   DESKTOP_REFINEMENT:'PASS',LIQUID_GLASS_CATEGORIES:'PASS',CATEGORY_MOTION:'PASS',
   RED_AMBIENT_GRADIENT:'PASS',PRODUCT_CARDS_REFINEMENT:'PASS',MOBILE_REGRESSION:'PASS',
@@ -126,4 +127,22 @@ node scripts/qa-premium-report.mjs
 La conversión MP4 usa ffmpeg desde los WebM; los originales están conservados. Los scripts de captura generan PNG y la galería los comprime a WebP sin pérdida para mantener evidencia exacta. FINAL_SHA y PR se informan en el cierre y en el reporte externo de entrega.
 `;
 fs.writeFileSync(path.join(root,'README.md'),readme);
+// Versioned evidence must be portable. The delivery report outside Git carries
+// Marco's requested absolute PROJECT_PATH; public artifacts use <repo> paths.
+const variants=[process.cwd(),process.cwd().replaceAll('\\','/'),
+  JSON.stringify(process.cwd()).slice(1,-1),
+  pathToFileURL(process.cwd()+path.sep).href.slice(0,-1)];
+function portable(directory) {
+  for(const item of fs.readdirSync(directory,{withFileTypes:true})) {
+    const file=path.join(directory,item.name);
+    if(item.isDirectory())portable(file);
+    else if(/\.(?:json|log|md|html)$/.test(item.name)) {
+      let text=fs.readFileSync(file,'utf8');
+      for(const prefix of variants)text=text.split(prefix).join('<repo>');
+      text=text.split(pathToFileURL(process.cwd()).href).join('<repo>');
+      fs.writeFileSync(file,text);
+    }
+  }
+}
+portable(root);
 console.log('Report and acceptance manifest written');

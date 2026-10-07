@@ -1,7 +1,7 @@
 {
   "config": {
-    "configFile": "C:\\Users\\marco\\Documents\\New project\\la-taba-premium-20261007\\playwright.premium.config.mjs",
-    "rootDir": "C:/Users/marco/Documents/New project/la-taba-premium-20261007/tests/e2e",
+    "configFile": "<repo>\\playwright.premium.config.mjs",
+    "rootDir": "<repo>/tests/e2e",
     "forbidOnly": false,
     "fullyParallel": false,
     "globalSetup": null,
@@ -16,7 +16,7 @@
     "preserveOutput": "always",
     "projects": [
       {
-        "outputDir": "C:/Users/marco/Documents/New project/la-taba-premium-20261007/test-results-premium",
+        "outputDir": "<repo>/test-results-premium",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
@@ -24,7 +24,7 @@
         },
         "id": "desktop-chromium",
         "name": "desktop-chromium",
-        "testDir": "C:/Users/marco/Documents/New project/la-taba-premium-20261007/tests/e2e",
+        "testDir": "<repo>/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "premium-storefront.spec.mjs"
@@ -32,7 +32,7 @@
         "timeout": 45000
       },
       {
-        "outputDir": "C:/Users/marco/Documents/New project/la-taba-premium-20261007/test-results-premium",
+        "outputDir": "<repo>/test-results-premium",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
@@ -40,7 +40,7 @@
         },
         "id": "android-chromium",
         "name": "android-chromium",
-        "testDir": "C:/Users/marco/Documents/New project/la-taba-premium-20261007/tests/e2e",
+        "testDir": "<repo>/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "premium-storefront.spec.mjs"
@@ -48,7 +48,7 @@
         "timeout": 45000
       },
       {
-        "outputDir": "C:/Users/marco/Documents/New project/la-taba-premium-20261007/test-results-premium",
+        "outputDir": "<repo>/test-results-premium",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
@@ -56,7 +56,7 @@
         },
         "id": "iphone-webkit",
         "name": "iphone-webkit",
-        "testDir": "C:/Users/marco/Documents/New project/la-taba-premium-20261007/tests/e2e",
+        "testDir": "<repo>/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "premium-storefront.spec.mjs"
@@ -64,7 +64,7 @@
         "timeout": 45000
       },
       {
-        "outputDir": "C:/Users/marco/Documents/New project/la-taba-premium-20261007/test-results-premium",
+        "outputDir": "<repo>/test-results-premium",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
@@ -72,7 +72,7 @@
         },
         "id": "desktop-webkit",
         "name": "desktop-webkit",
-        "testDir": "C:/Users/marco/Documents/New project/la-taba-premium-20261007/tests/e2e",
+        "testDir": "<repo>/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "premium-storefront.spec.mjs"

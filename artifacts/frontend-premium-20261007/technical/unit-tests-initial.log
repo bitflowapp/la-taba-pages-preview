@@ -2926,7 +2926,7 @@ test at tests\github-pages.test.mjs:13:1
 
     assert.ok(assets.includes('./styles.css?v=73'))
 
-      at TestContext.<anonymous> (file:///C:/Users/marco/Documents/New%20project/la-taba-premium-20261007/tests/github-pages.test.mjs:43:10)
+      at TestContext.<anonymous> (<repo>/tests/github-pages.test.mjs:43:10)
       at Test.runInAsyncScope (node:async_hooks:214:14)
       at Test.run (node:internal/test_runner/test:1106:25)
       at Test.start (node:internal/test_runner/test:1003:17)
@@ -2947,7 +2947,7 @@ test at tests\preflight-staging-package.test.mjs:90:1
   + 'la-taba-runtime-v144-mp-production-verification'
   - 'la-taba-runtime-v145-premium-liquid-glass'
 
-      at TestContext.<anonymous> (file:///C:/Users/marco/Documents/New%20project/la-taba-premium-20261007/tests/preflight-staging-package.test.mjs:95:10)
+      at TestContext.<anonymous> (<repo>/tests/preflight-staging-package.test.mjs:95:10)
       at Test.runInAsyncScope (node:async_hooks:214:14)
       at Test.run (node:internal/test_runner/test:1106:25)
       at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
@@ -2965,7 +2965,7 @@ test at tests\preflight-staging-package.test.mjs:90:1
 test at tests\preflight-staging-package.test.mjs:123:1
 ✖ las versiones que el preflight exige son las que index.html carga de verdad (1.1277ms)
   AssertionError [ERR_ASSERTION]: el preflight exige «styles.css?v=73» y index.html no lo carga: ESPERADO.css quedó atrás y el gate rechazaría la candidata publicable
-      at TestContext.<anonymous> (file:///C:/Users/marco/Documents/New%20project/la-taba-premium-20261007/tests/preflight-staging-package.test.mjs:132:12)
+      at TestContext.<anonymous> (<repo>/tests/preflight-staging-package.test.mjs:132:12)
       at Test.runInAsyncScope (node:async_hooks:214:14)
       at Test.run (node:internal/test_runner/test:1106:25)
       at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
@@ -3166,7 +3166,7 @@ test at tests\pwa.test.mjs:28:1
     '            <circle cx="10.8" cy="10.8" r="6.3" stroke="currentColor" stroke-width="1.8" />\n' +
     '            <path d="m16 16 4.2 4.2" stroke="currentColor" strok'... 65110 more characters
 
-      at TestContext.<anonymous> (file:///C:/Users/marco/Documents/New%20project/la-taba-premium-20261007/tests/pwa.test.mjs:33:10)
+      at TestContext.<anonymous> (<repo>/tests/pwa.test.mjs:33:10)
       at Test.runInAsyncScope (node:async_hooks:214:14)
       at Test.run (node:internal/test_runner/test:1106:25)
       at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
@@ -3184,7 +3184,7 @@ test at tests\pwa.test.mjs:28:1
 test at tests\pwa.test.mjs:40:1
 ✖ service worker precaches the versioned showcase graph (0.3608ms)
   AssertionError [ERR_ASSERTION]: ./styles.css?v=73 should be precached
-      at TestContext.<anonymous> (file:///C:/Users/marco/Documents/New%20project/la-taba-premium-20261007/tests/pwa.test.mjs:51:12)
+      at TestContext.<anonymous> (<repo>/tests/pwa.test.mjs:51:12)
       at Test.runInAsyncScope (node:async_hooks:214:14)
       at Test.run (node:internal/test_runner/test:1106:25)
       at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
@@ -3205,7 +3205,7 @@ test at tests\pwa.test.mjs:66:1
 
   '73' !== '74'
 
-      at TestContext.<anonymous> (file:///C:/Users/marco/Documents/New%20project/la-taba-premium-20261007/tests/pwa.test.mjs:82:12)
+      at TestContext.<anonymous> (<repo>/tests/pwa.test.mjs:82:12)
       at Test.runInAsyncScope (node:async_hooks:214:14)
       at Test.run (node:internal/test_runner/test:1106:25)
       at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
@@ -3226,7 +3226,7 @@ test at tests\release-payment-return-package.test.mjs:11:1
 
     assert.ok(page.includes(`href="../../styles.css?v=${cssVersion}"`))
 
-      at TestContext.<anonymous> (file:///C:/Users/marco/Documents/New%20project/la-taba-premium-20261007/tests/release-payment-return-package.test.mjs:19:12)
+      at TestContext.<anonymous> (<repo>/tests/release-payment-return-package.test.mjs:19:12)
       at Test.runInAsyncScope (node:async_hooks:214:14)
       at Test.run (node:internal/test_runner/test:1106:25)
       at Test.start (node:internal/test_runner/test:1003:17)
@@ -3245,7 +3245,7 @@ test at tests\release-payment-return-package.test.mjs:33:1
 
     assert.ok(preflight.includes(`css: '?v=${cssVersion}'`))
 
-      at TestContext.<anonymous> (file:///C:/Users/marco/Documents/New%20project/la-taba-premium-20261007/tests/release-payment-return-package.test.mjs:36:10)
+      at TestContext.<anonymous> (<repo>/tests/release-payment-return-package.test.mjs:36:10)
       at Test.runInAsyncScope (node:async_hooks:214:14)
       at Test.run (node:internal/test_runner/test:1106:25)
       at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
@@ -3263,6 +3263,6 @@ test at tests\release-payment-return-package.test.mjs:33:1
 test at tests\service-worker-install-and-timeout.test.mjs:249:1
 ✖ con la red sana el precache queda completo, como siempre (15.4579ms)
   TypeError [Error]: Cannot read properties of undefined (reading 'clone')
-      at TestContext.<anonymous> (file:///C:/Users/marco/Documents/New%20project/la-taba-premium-20261007/tests/service-worker-install-and-timeout.test.mjs:255:46)
+      at TestContext.<anonymous> (<repo>/tests/service-worker-install-and-timeout.test.mjs:255:46)
       at async Test.run (node:internal/test_runner/test:1113:7)
       at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)

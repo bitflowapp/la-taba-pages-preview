@@ -1,30 +1,30 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v149-premium-tracking-final';
+const CACHE_NAME = 'la-taba-runtime-v152-premium-tracking-final';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=77',
-  './styles/tokens.css?v=77',
-  './styles/common.css?v=77',
-  './styles/storefront.css?v=77',
-  './styles/catalog.css?v=77',
-  './styles/checkout.css?v=77',
-  './styles/profile.css?v=77',
-  './styles/showcase.css?v=77',
-  './styles/tracking.css?v=77',
-  './styles/business.css?v=77',
-  './styles/rider.css?v=77',
-  './styles/responsive.css?v=77',
-  './styles/brand-home.css?v=77',
+  './styles.css?v=79',
+  './styles/tokens.css?v=79',
+  './styles/common.css?v=79',
+  './styles/storefront.css?v=79',
+  './styles/catalog.css?v=79',
+  './styles/checkout.css?v=79',
+  './styles/profile.css?v=79',
+  './styles/showcase.css?v=79',
+  './styles/tracking.css?v=79',
+  './styles/business.css?v=79',
+  './styles/rider.css?v=79',
+  './styles/responsive.css?v=79',
+  './styles/brand-home.css?v=79',
   // `styles.css` la importa desde que existe y nunca estuvo acá: sin red, la
   // home se quedaba sin la capa de movimiento. Lo destapó el guard de la
   // cadena de CSS versionado; no lo introdujo esta integración.
-  './styles/campaigns.css?v=77',
-  './styles/motion.css?v=77',
-  './styles/premium-storefront.css?v=77',
+  './styles/campaigns.css?v=79',
+  './styles/motion.css?v=79',
+  './styles/premium-storefront.css?v=79',
   './js/category-glass.js',
   './assets/brand/ambient-grain.png',
-  './styles/tracking-premium.css?v=77',
+  './styles/tracking-premium.css?v=79',
   './js/map/touch_intent.js',
   './manifest.webmanifest',
   './runtime-config.js?tenant=walter-staging',
@@ -407,6 +407,14 @@ async function limpiarCachesViejas() {
 // Permite forzar la activación inmediata de un SW nuevo desde la página.
 self.addEventListener('message', (event) => {
   if (event.data === 'skip-waiting') self.skipWaiting();
+  // The controller can confirm its own release even when a browser's page-side
+  // ServiceWorker wrapper retains an earlier lifecycle state after navigation.
+  if (event.data === 'release-status') {
+    event.ports?.[0]?.postMessage({
+      cacheName: CACHE_NAME,
+      state: self.registration.active?.state,
+    });
+  }
 });
 
 // Network-first: el contenido fresco gana, así una versión recién publicada se

@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-10-08T02:44:21.332Z",
+  "checkedAt": "2026-10-08T06:09:09.486Z",
   "refs": {
     "main": "cd26834b25909a3fbf6b5133af7b70c39a35fc2d",
     "pr142": "cf08953c73d8823df4ce3d1dd7f6e2a0fa1e8340",
@@ -92,15 +92,23 @@
       },
       {
         "file": "styles/tracking-premium.css",
-        "matchesOriginal": true
+        "matchesOriginal": false,
+        "integrationRefinement": "Arrival gap 8px -> 5px keeps help within the mobile fold; Contactar gets dark brand-red ink on its inherited white plate. Map height, contact target and on-the-way spacing unchanged."
       }
     ]
   },
+  "integrationRefinements": [
+    {
+      "file": "styles/responsive.css",
+      "originalRulesPreserved": true,
+      "reason": "Native vertical wheel is restored only for narrow home/catalog windows with fine pointer + hover. Handheld, tracking, checkout and business root rules unchanged."
+    }
+  ],
   "protectedSourceChanges": [],
   "strategy": "Merge #142, then #144 (which contains #143). Both share the verified current main ancestor. Preserve original commits, combine CSS/precache intentionally.",
   "release": {
-    "cacheName": "la-taba-runtime-v149-premium-tracking-final",
+    "cacheName": "la-taba-runtime-v152-premium-tracking-final",
     "assetCount": 214,
-    "assetsDigest": "36166e3a1391f40cf83df25f0d16c44fc3da10c677b7979e32bc44d40ece9879"
+    "assetsDigest": "e73e9faa6b4d7b4ea48ddbde4866dd91b11f9dd6f567eb1f0ee688815b5675f6"
   }
 }

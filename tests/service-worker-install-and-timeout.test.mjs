@@ -98,7 +98,7 @@ function crearCacheStorage() {
   };
 }
 
-function cargarWorker({ red, cachesPrevias = {} } = {}) {
+function cargarWorker({ red, cachesPrevias = {}, workerState = 'activated' } = {}) {
   const almacen = crearCacheStorage();
   almacen.fijarRed((solicitud) => red(solicitud));
 
@@ -110,11 +110,13 @@ function cargarWorker({ red, cachesPrevias = {} } = {}) {
 
   const oyentes = new Map();
   let reclamado = false;
+  let esperaSaltada = false;
   const self = {
     location: new URL(`${ORIGEN}/`),
     addEventListener: (tipo, oyente) => oyentes.set(tipo, oyente),
     clients: { claim: async () => { reclamado = true; } },
-    skipWaiting: () => undefined,
+    registration: { active: { state: workerState } },
+    skipWaiting: () => { esperaSaltada = true; },
   };
 
   // El `Request` de Node exige una URL absoluta; el de un worker resuelve contra
@@ -151,6 +153,8 @@ function cargarWorker({ red, cachesPrevias = {} } = {}) {
     guardada: (url, nombre = NOMBRE_CACHE) => almacen.almacenes.get(nombre)?.get(absoluta(url)),
     nombresDeCache: () => [...almacen.almacenes.keys()],
     reclamado: () => reclamado,
+    mensaje: (data, ports = []) => oyentes.get('message')({ data, ports }),
+    esperaSaltada: () => esperaSaltada,
   };
 }
 
@@ -188,7 +192,24 @@ function redSana(transformar = null) {
   };
 }
 
-const ESTILOS = './styles.css?v=77';
+const ESTILOS = './styles.css?v=79';
+
+test('el controlador confirma su release y estado real sin cambiar caché ni red', () => {
+  for (const state of ['activating', 'activated']) {
+    let solicitudes = 0;
+    const worker = cargarWorker({ workerState: state, red: () => { solicitudes++; } });
+    const respuestas = [];
+    worker.mensaje('release-status', [{ postMessage: value => respuestas.push(value) }]);
+    assert.deepEqual(respuestas, [{ cacheName: NOMBRE_CACHE, state }]);
+    assert.equal(solicitudes, 0);
+    assert.deepEqual(worker.nombresDeCache(), []);
+    assert.doesNotThrow(() => worker.mensaje('release-status'));
+    worker.mensaje('unknown', [{ postMessage: value => respuestas.push(value) }]);
+    assert.equal(respuestas.length, 1);
+    worker.mensaje('skip-waiting');
+    assert.equal(worker.esperaSaltada(), true);
+  }
+});
 
 test('install drena cada transporte antes de esperar el lote completo', async () => {
   const sana = redSana();

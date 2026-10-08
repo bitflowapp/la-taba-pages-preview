@@ -5,6 +5,12 @@ const live = JSON.parse(fs.readFileSync(new URL('../fixtures/catalog-live.json',
 const RAIL = '[data-view="catalog"] [data-category-strip]';
 const pills = page => page.locator(`${RAIL} [data-category-id]`);
 const boot = page => openRuntimeCatalog(page, { catalogRows: live.products, waitForCatalog: false });
+const resizeForGestures = async page => {
+  await page.setViewportSize({width:390,height:844});
+  // Resize clears the active glass pointer and cached rail geometry. Let the
+  // resize event/layout boundary complete before measuring or starting input.
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+};
 const rest = async page => {
   try { await expect.poll(() => page.evaluate(() => window.TABA2_MOTION.getDiagnostics().categoryGlass.animating), { timeout: 12000 }).toBe(false); }
   catch (error) {
@@ -27,7 +33,7 @@ test('mouse: slow/fast drag, release between pills and reverse never activate a 
     },true);
   });
   await boot(page);
-  await page.setViewportSize({width:390,height:844});
+  await resizeForGestures(page);
   const box = await page.locator(RAIL).boundingBox();
   const title = await page.locator('[data-catalog-title]').textContent();
   const x = box.x + box.width - 35;
@@ -70,7 +76,15 @@ test('mouse: slow/fast drag, release between pills and reverse never activate a 
 test('native horizontal wheel works; vertical wheel beginning on pills scrolls the page', async ({page,isMobile,browserName}) => {
   test.skip(isMobile && browserName==='webkit','Playwright does not support mouse.wheel in mobile WebKit; desktop WebKit exercises native wheel.');
   await boot(page);
-  await page.setViewportSize({width:390,height:844});
+  await resizeForGestures(page);
+  await page.evaluate(()=>{
+    window.__glassWheelEvents=[];
+    document.addEventListener('wheel',event=>setTimeout(()=>window.__glassWheelEvents.push({
+      dx:event.deltaX,dy:event.deltaY,x:event.clientX,y:event.clientY,prevented:event.defaultPrevented,
+      target:event.target.closest?.('[data-category-strip]')?'rail':event.target.tagName,
+      scroll:scrollY,
+    }),0),{capture:true,passive:true});
+  });
   const rail = page.locator(RAIL);
   const box = await rail.boundingBox();
   await page.mouse.move(box.x+box.width*.6, box.y+box.height*.5);
@@ -79,7 +93,18 @@ test('native horizontal wheel works; vertical wheel beginning on pills scrolls t
   await page.mouse.wheel(-190,0);
   await page.waitForTimeout(350);
   await page.mouse.wheel(0,260);
-  await expect.poll(() => page.evaluate(()=>scrollY)).toBeGreaterThan(80);
+  try { await expect.poll(() => page.evaluate(()=>scrollY)).toBeGreaterThan(80); }
+  catch(error){
+    console.log('glass-wheel-diagnostic',await page.evaluate(()=>{
+      const rail=document.querySelector('[data-view="catalog"] [data-category-strip]');
+      const style=getComputedStyle(rail),root=document.scrollingElement;
+      return JSON.stringify({events:window.__glassWheelEvents,scrollY,innerHeight,documentHeight:root.scrollHeight,
+        rootOverflow:getComputedStyle(root).overflowY,railTop:rail.getBoundingClientRect().top,
+        railHeight:rail.clientHeight,railScrollHeight:rail.scrollHeight,railScrollLeft:rail.scrollLeft,
+        overflowX:style.overflowX,overflowY:style.overflowY,overscrollX:style.overscrollBehaviorX,
+        overscrollY:style.overscrollBehaviorY,glass:window.TABA2_MOTION.getDiagnostics().categoryGlass});
+    }));throw error;
+  }
   await expect(page.locator('body')).not.toHaveClass(/modal-open/);
   await rest(page);
 });

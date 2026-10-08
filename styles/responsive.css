@@ -1604,3 +1604,11 @@ body[data-active-view="rider"] .floating-cart {
     gap: 4px;
   }
 }
+/* Narrow desktop windows still use a real wheel. Linux WebKit consumes its
+ * vertical deltas when the root has overscroll-behavior-y:none/contain.
+ * Keep the handheld rule, while allowing native desktop page scrolling. */
+@media (max-width: 820px) and (hover: hover) and (pointer: fine) {
+  html:has(body:is([data-active-view="home"], [data-active-view="catalog"])) {
+    overscroll-behavior-y: auto;
+  }
+}

@@ -55,6 +55,24 @@ const bounded=(promise,label,ms=45000)=>{
   let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(`QA timeout: ${label}`)),ms);})]).finally(()=>clearTimeout(timer));
 };
 async function snapshot(page,engine,name){await sharp(await page.screenshot()).webp({quality:88}).toFile(path.join(root,`${engine}-${name}.webp`));}
+async function documentReload(page){
+  // Exercise the document's reload path, as the app's update button does.
+  // WebKit's automation-protocol reload has a reported CacheStorage race:
+  // https://github.com/microsoft/playwright/issues/42273
+  await Promise.all([
+    page.waitForNavigation({waitUntil:'domcontentloaded'}),
+    page.evaluate(()=>{window.setTimeout(()=>window.location.reload(),0);}),
+  ]);
+}
+async function controllerRelease(page){return page.evaluate(()=>new Promise(resolve=>{
+  const controller=navigator.serviceWorker.controller;
+  if(!controller){resolve(null);return;}
+  const channel=new MessageChannel();
+  const finish=value=>{clearTimeout(timer);channel.port1.close();resolve(value);};
+  const timer=setTimeout(()=>finish(null),5000);
+  channel.port1.onmessage=event=>finish(event.data);
+  controller.postMessage('release-status',[channel.port2]);
+}));}
 async function inventory(page){return page.evaluate(async expectedCache=>{
   const registration=await navigator.serviceWorker.getRegistration();
   const names=await caches.keys(),inventories=[];
@@ -70,6 +88,8 @@ async function inventory(page){return page.evaluate(async expectedCache=>{
   return {caches:inventories,controlled:!!navigator.serviceWorker.controller,waiting:!!registration?.waiting,
     scope:registration?.scope,scriptURL:registration?.active?.scriptURL,activeState:registration?.active?.state,
     installingState:registration?.installing?.state,waitingState:registration?.waiting?.state,
+    controllerState:navigator.serviceWorker.controller?.state,
+    sameActiveController:registration?.active===navigator.serviceWorker.controller,
     updateViaCache:registration?.updateViaCache,qaUpdateResult:window.__qaUpdateResult};
 },phase==='baseline'?oldIdentity.cacheName:newIdentity.cacheName);}
 try{
@@ -120,7 +140,7 @@ try{
       },{timeout:40000}).toBe(true);
       // Warm navigation belongs to the installed old worker before switching
       // the server tree. First-install controllerchange may reload the page.
-      await page.reload({waitUntil:'domcontentloaded'});
+      await documentReload(page);
       await page.waitForFunction(()=>document.documentElement.dataset.tabaStartup==='ready'&&!!navigator.serviceWorker.controller,null,{timeout:40000});
       report.before=await inventory(page);await snapshot(page,engine,'before');
       expect(report.before.controlled).toBe(true);expect(report.before.waiting).toBe(false);
@@ -143,11 +163,13 @@ try{
       await page.waitForFunction(()=>document.documentElement.dataset.tabaStartup==='ready',null,{timeout:30000});
       await expect.poll(async()=>{
         const current=await inventory(page);
-        // The cache graph can be complete while WebKit still runs activate.
-        // Wait for its lifecycle boundary before simulating loss of origin;
-        // otherwise the verifier can interrupt activation itself.
-        return current.activeState==='activated'&&current.controlled&&!current.waiting&&!current.installingState&&current.caches.some(cache=>cache.name===newIdentity.cacheName&&cache.assets?.length>=newIdentity.assetCount)&&!current.caches.some(cache=>cache.name===oldIdentity.cacheName);
+        return current.controlled&&!current.waiting&&!current.installingState&&current.caches.some(cache=>cache.name===newIdentity.cacheName&&cache.assets?.length>=newIdentity.assetCount)&&!current.caches.some(cache=>cache.name===oldIdentity.cacheName);
       },{timeout:30000}).toBe(true);
+      // Linux WebKit reproduced page-side "activating" while the worker itself
+      // was "activated". Require the actual controller's identity AND state;
+      // preserve the wrapper's reported value as diagnostic evidence.
+      await expect.poll(()=>controllerRelease(page),{timeout:30000}).toMatchObject({cacheName:newIdentity.cacheName,state:'activated'});
+      report.controllerRelease=await controllerRelease(page);
       report.after=await inventory(page);
       const cache=report.after.caches.find(c=>c.name===newIdentity.cacheName);
       expect(expectedAssets.filter(asset=>asset!=='./')).toHaveLength(newIdentity.assetCount);
@@ -160,7 +182,7 @@ try{
       progress('offline reload');
       if(engine==='webkit'){phase='offline';report.offlineMethod='Origin TCP connections closed; distinct from browser/OS offline emulation (which failed internally in Windows WebKit during the audit).';}
       else{await context.setOffline(true);report.offlineMethod='Browser network offline';}
-      await page.reload({waitUntil:'domcontentloaded'});
+      await documentReload(page);
       await page.waitForFunction(()=>document.documentElement.dataset.tabaStartup==='ready',null,{timeout:30000});
       await expect(page.locator('[data-view="catalog"] .product-card').first()).toBeVisible();
       const glass=await page.evaluate(()=>window.TABA2_MOTION?.getDiagnostics?.().categoryGlass);

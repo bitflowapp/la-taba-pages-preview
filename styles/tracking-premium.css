@@ -123,6 +123,11 @@ body[data-active-view="tracking"] .tracking-premium:is(.status-on_the_way,.statu
 body[data-active-view="tracking"] .tracking-premium .tracking-rider-copy small { color: #bcbdc6; font-size: 11px; }
 body[data-active-view="tracking"] .tracking-premium .tracking-rider-copy strong { font-size: 16px; color: #fff; }
 body[data-active-view="tracking"] .tracking-premium .tracking-rider-copy span { color: #c8cbd2; font-size: 12px; }
+/* The inherited arrival button keeps a white plate; give its label a dark
+ * brand ink instead of the white text used by the dark rider card. */
+body[data-active-view="tracking"] .tracking-premium:is(.status-arrived,.status-arriving) .tracking-rider-contact .secondary-button {
+  color: #a51224;
+}
 body[data-active-view="tracking"] .tracking-premium.no-rider .tracking-rider-card,
 body[data-active-view="tracking"] .tracking-premium .tracking-map-waiting {
   min-height: 0;
@@ -177,7 +182,9 @@ body[data-active-view="tracking"] .tracking-premium .is-location-lost .lt-rider-
   margin: -5px 0 0;
 }
 .tracking-map-scroll-hint::before { content: "↓"; }
-body[data-active-view="tracking"] .tracking-premium:is(.status-arrived,.status-arriving) .tracking-sheet { gap: 8px; }
+/* Keep the arrival help within the mobile fold after combining the storefront
+ * typography and tracking cards. Map height and 44px contact targets stay fixed. */
+body[data-active-view="tracking"] .tracking-premium:is(.status-arrived,.status-arriving) .tracking-sheet { gap: 5px; }
 body[data-active-view="tracking"] .tracking-premium:is(.status-arrived,.status-arriving) .tracking-map-scroll-hint { display: none; }
 
 @media (min-width: 821px) {

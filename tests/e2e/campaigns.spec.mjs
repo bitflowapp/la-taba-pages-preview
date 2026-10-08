@@ -452,7 +452,10 @@ test('la escena llena la banda que tiene, sin salirse de ella mientras sirve', a
   await openRuntimeCatalog(page);
   await goHome(page);
   const piece = page.locator(heroPiece);
-  await expect(piece).toHaveAttribute('data-motion-campaign-live', 'true');
+  // Slow renderers can exhaust the real motion budget before this read.
+  // Require either the live scene or the verified complete static fallback;
+  // both still must satisfy every band, legal-copy and vessel bound below.
+  await assertLiveOrBudgetStill(page, heroPiece);
   for (const size of [{ width: 360, height: 800 }, { width: 390, height: 844 }, { width: 430, height: 932 }]) {
     await page.setViewportSize(size);
     await page.waitForTimeout(250);

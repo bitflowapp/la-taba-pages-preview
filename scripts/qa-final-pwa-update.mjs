@@ -62,7 +62,10 @@ try{
       await page.goto(`${url}/?demo=1#catalog`,{waitUntil:'domcontentloaded'});
       await page.waitForFunction(()=>document.documentElement.dataset.tabaStartup==='ready',null,{timeout:30000});
       report.mode=await page.evaluate(async()=> (await import('/js/core/app-mode.js')).getAppMode());expect(report.mode).toBe('demo');
-      await page.waitForFunction(async name=>navigator.serviceWorker.controller&&(await caches.keys()).includes(name),oldIdentity.cacheName,{timeout:40000});
+      await expect.poll(async()=>{
+        const current=await inventory(page);
+        return current.controlled&&current.activeState==='activated'&&current.caches.some(cache=>cache.name===oldIdentity.cacheName&&cache.assets.length>=oldIdentity.assetCount);
+      },{timeout:40000}).toBe(true);
       // Warm navigation belongs to the installed old worker before switching
       // the server tree. First-install controllerchange may reload the page.
       await page.reload({waitUntil:'domcontentloaded'});
@@ -86,7 +89,10 @@ try{
       progress('activate update');
       await Promise.all([page.waitForNavigation({waitUntil:'domcontentloaded'}),page.locator('[data-app-update-now]').click()]);
       await page.waitForFunction(()=>document.documentElement.dataset.tabaStartup==='ready',null,{timeout:30000});
-      await page.waitForFunction(async names=>{const keys=await caches.keys();return keys.includes(names.next)&&!keys.includes(names.old);},{next:newIdentity.cacheName,old:oldIdentity.cacheName},{timeout:30000});
+      await expect.poll(async()=>{
+        const current=await inventory(page);
+        return current.controlled&&current.activeState==='activated'&&current.caches.some(cache=>cache.name===newIdentity.cacheName&&cache.assets.length>=newIdentity.assetCount)&&!current.caches.some(cache=>cache.name===oldIdentity.cacheName);
+      },{timeout:30000}).toBe(true);
       report.after=await inventory(page);
       const cache=report.after.caches.find(c=>c.name===newIdentity.cacheName);
       expect(expectedAssets.filter(asset=>asset!=='./')).toHaveLength(newIdentity.assetCount);

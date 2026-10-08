@@ -19,11 +19,19 @@ test('mouse: slow/fast drag, release between pills and reverse never activate a 
     await page.mouse.move(x,y);
     await page.mouse.down();
     await page.mouse.move(box.x+25,y,{steps});
-    await page.waitForTimeout(90);
-    const transforms = await pills(page).evaluateAll(nodes => nodes.map(n => new DOMMatrix(getComputedStyle(n).transform).a));
-    const budgetSuppressed = await page.evaluate(()=>window.TABA2_MOTION.getDiagnostics().categoryGlass.frameBudgetSuppressed);
-    if (!budgetSuppressed) expect(Math.max(...transforms)).toBeGreaterThan(1.002);
-    expect(Math.max(...transforms)).toBeLessThanOrEqual(1.051);
+    // WebKit paints this rAF-driven effect asynchronously. Read scale and
+    // budget fallback together; a fixed delay plus separate reads can observe
+    // an unpainted frame or two different animation states.
+    let dragState;
+    await expect.poll(async () => {
+      dragState = await pills(page).evaluateAll(nodes => ({
+        scale: Math.max(...nodes.map(n => new DOMMatrix(getComputedStyle(n).transform).a)),
+        budgetSuppressed: window.TABA2_MOTION.getDiagnostics().categoryGlass.frameBudgetSuppressed,
+      }));
+      return dragState.budgetSuppressed || dragState.scale > 1.002;
+    }).toBe(true);
+    if (!dragState.budgetSuppressed) expect(dragState.scale).toBeGreaterThan(1.002);
+    expect(dragState.scale).toBeLessThanOrEqual(1.051);
     await page.mouse.up();
     await rest(page);
     await expect(page.locator('[data-catalog-title]')).toHaveText(title);

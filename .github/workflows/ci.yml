@@ -142,6 +142,20 @@ jobs:
           TABA_E2E_FLAKY_REPORT: artifacts/ci/e2e-flaky.json
         run: npm run test:e2e -- --reporter=line,html,./tests/e2e-infra/reporter-inestables.mjs --trace=on-first-retry
 
+      - name: Integrated premium storefront and Rider tracking (both engines)
+        run: npx playwright test --config playwright.final-integration.config.mjs
+
+      - name: Upload integration feature matrix
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: premium-tracking-integration-${{ github.sha }}
+          path: |
+            artifacts/la-taba-final-integration-20261007/feature-matrix.json
+            test-results-final-integration/
+          if-no-files-found: ignore
+          retention-days: 7
+
       # El recuento de inestables viaja como artefacto para poder responder
       # «¿esta prueba viene flakeando hace varias corridas?» sin montar una base
       # de datos. Corre siempre: una corrida roja también deja su recuento.

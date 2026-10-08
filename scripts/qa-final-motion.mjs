@@ -1,0 +1,34 @@
+import { chromium, devices, expect } from '@playwright/test';
+import fs from 'node:fs';
+import path from 'node:path';
+import { openPremiumTracking, changeTracking, touchPan, TRACKING_MAP, START } from '../tests/e2e/tracking-premium-fixture.mjs';
+const root=path.resolve('artifacts/la-taba-final-integration-20261007/motion');fs.mkdirSync(root,{recursive:true});
+const browser=await chromium.launch();let context;
+try{
+  const size={width:390,height:844};context=await browser.newContext({...devices['Pixel 7'],viewport:size,deviceScaleFactor:1,baseURL:'http://127.0.0.1:18265',serviceWorkers:'block',recordVideo:{dir:root,size}});
+  const page=await context.newPage();await openPremiumTracking(page,{status:'preparing',accuracy:12});
+  await page.addStyleTag({content:'.qa-caption{position:fixed;z-index:10000;left:18px;right:18px;bottom:90px;padding:9px 12px;border-radius:14px;background:#0c1015f5;color:#fff;border:1px solid #555;font:600 12px system-ui;pointer-events:none}'});
+  await page.evaluate(()=>{const n=document.createElement('div');n.className='qa-caption';document.body.append(n);});
+  const label=text=>page.locator('.qa-caption').evaluate((n,t)=>n.textContent=t,text);
+  const map=page.locator(TRACKING_MAP);
+  await label('QA local · preparando');await page.waitForTimeout(700);
+  await changeTracking(page,{status:'assigned'});await label('Rider asignado · todavía sin ubicación');await page.waitForTimeout(700);
+  await changeTracking(page,{status:'on_the_way'});await label('En camino · casco y foco automático');await expect(map).toHaveAttribute('data-map-camera','follow');await page.waitForTimeout(1200);
+  await expect(map.locator('[data-map-rider-helmet]')).toHaveCount(1);await expect(map.locator('[data-map-rider-scooter]')).toHaveCount(0);
+  await page.evaluate(selector=>{window.__videoCanvas=document.querySelector(selector).querySelector('canvas');window.__videoMarker=document.querySelector(selector).querySelector('.lt-rider-marker');},TRACKING_MAP);
+  await changeTracking(page,{lat:START.lat+.0003,lng:START.lng+.0003});await label('GPS nuevo · interpolación del casco');await page.waitForTimeout(1200);
+  const box=await map.locator('canvas').boundingBox();await label('Un dedo · se suspende follow');
+  await touchPan(page,{from:{x:box.x+box.width*.72,y:box.y+box.height*.55},to:{x:box.x+box.width*.28,y:box.y+box.height*.55},steps:18,delay:25});
+  await expect(map).toHaveAttribute('data-map-camera','explore');await page.waitForTimeout(800);
+  await changeTracking(page,{lat:START.lat+.0006,lng:START.lng+.0006});await label('GPS nuevo · tu encuadre se conserva');await page.waitForTimeout(1000);
+  await page.locator('[data-map-follow-cta]').tap();await label('Seguir repartidor · follow retomado');await expect(map).toHaveAttribute('data-map-camera','follow');await page.waitForTimeout(1200);
+  await page.evaluate(()=>{window.__videoHidden=true;Object.defineProperty(document,'hidden',{configurable:true,get:()=>window.__videoHidden});document.dispatchEvent(new Event('visibilitychange'));});
+  await changeTracking(page,{lat:START.lat+.0009,lng:START.lng+.0009});
+  await page.evaluate(()=>{window.__videoHidden=false;document.dispatchEvent(new Event('visibilitychange'));});
+  await changeTracking(page,{lat:START.lat+.0012,lng:START.lng+.0012});await label('Retorno de background · ubicación actual, sin replay');await page.waitForTimeout(1200);
+  const result=await page.evaluate(selector=>({canvasSame:document.querySelector(selector).querySelector('canvas')===window.__videoCanvas,markerSame:document.querySelector(selector).querySelector('.lt-rider-marker')===window.__videoMarker}),TRACKING_MAP);
+  expect(result).toEqual({canvasSame:true,markerSame:true});
+  fs.writeFileSync(path.join(root,'manifest.json'),JSON.stringify({status:'PASS',...result,method:'Native Chromium CDP touch; synthetic local GPS and visibility events. Video captions are QA-only. No physical iPhone claim.'},null,2)+'\n');
+  const video=page.video();await context.close();context=null;
+  await video.saveAs(path.join(root,'integrated-rider.webm'));fs.unlinkSync(await video.path());
+}finally{await context?.close();await browser.close();}

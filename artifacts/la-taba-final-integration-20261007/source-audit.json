@@ -1,0 +1,52 @@
+{
+  "checkedAt": "2026-10-08T00:02:14.206Z",
+  "refs": {
+    "main": "cd26834b25909a3fbf6b5133af7b70c39a35fc2d",
+    "pr142": "cf08953c73d8823df4ce3d1dd7f6e2a0fa1e8340",
+    "pr143": "60351cc48d642e0e8bc6c93bc3e20666a35fdceb",
+    "pr144": "96c436d5ab6dfe0ce514c770e8e185479ffe7af7"
+  },
+  "production": {
+    "url": "https://la-taba.pages.dev",
+    "version": {
+      "commit": "cd26834b25909a3fbf6b5133af7b70c39a35fc2d",
+      "runtime": "la-taba-runtime-v144-mp-production-verification",
+      "builtAt": "2026-10-07T03:55:10.217Z"
+    },
+    "etag": "W/\"40f970d2e0243e7c816f9392f576bb84\"",
+    "files": {
+      "styles.css": {
+        "sha256": "0c52b3def46babd0be7716c568f8254d0bf7d7fa47a6a9cd6f1c3626e6d07fac",
+        "mainSha256": "0c52b3def46babd0be7716c568f8254d0bf7d7fa47a6a9cd6f1c3626e6d07fac",
+        "matchesMain": true,
+        "premiumStorefront": false,
+        "premiumTracking": false
+      },
+      "sw.js": {
+        "sha256": "51cc1a527990d277f5c3bf9859b0d01eeae7476932e8cb35436226c0b832819f",
+        "mainSha256": "51cc1a527990d277f5c3bf9859b0d01eeae7476932e8cb35436226c0b832819f",
+        "matchesMain": true,
+        "premiumStorefront": false,
+        "premiumTracking": false
+      }
+    }
+  },
+  "included": {
+    "pr142": true,
+    "pr143": true,
+    "pr144": true
+  },
+  "alreadyInMain": {
+    "pr142": false,
+    "pr143": false,
+    "pr144": false
+  },
+  "pr143AncestorOf144": true,
+  "protectedSourceChanges": [],
+  "strategy": "Merge #142, then #144 (which contains #143). Both share the verified current main ancestor. Preserve original commits, combine CSS/precache intentionally.",
+  "release": {
+    "cacheName": "la-taba-runtime-v148-premium-tracking-final",
+    "assetCount": 214,
+    "assetsDigest": "36166e3a1391f40cf83df25f0d16c44fc3da10c677b7979e32bc44d40ece9879"
+  }
+}

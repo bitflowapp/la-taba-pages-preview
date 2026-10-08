@@ -143,7 +143,10 @@ try{
       await page.waitForFunction(()=>document.documentElement.dataset.tabaStartup==='ready',null,{timeout:30000});
       await expect.poll(async()=>{
         const current=await inventory(page);
-        return current.controlled&&!current.waiting&&!current.installingState&&current.caches.some(cache=>cache.name===newIdentity.cacheName&&cache.assets?.length>=newIdentity.assetCount)&&!current.caches.some(cache=>cache.name===oldIdentity.cacheName);
+        // The cache graph can be complete while WebKit still runs activate.
+        // Wait for its lifecycle boundary before simulating loss of origin;
+        // otherwise the verifier can interrupt activation itself.
+        return current.activeState==='activated'&&current.controlled&&!current.waiting&&!current.installingState&&current.caches.some(cache=>cache.name===newIdentity.cacheName&&cache.assets?.length>=newIdentity.assetCount)&&!current.caches.some(cache=>cache.name===oldIdentity.cacheName);
       },{timeout:30000}).toBe(true);
       report.after=await inventory(page);
       const cache=report.after.caches.find(c=>c.name===newIdentity.cacheName);

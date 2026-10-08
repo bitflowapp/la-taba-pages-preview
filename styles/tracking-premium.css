@@ -1,0 +1,217 @@
+/* Tracking is a map experience, with a calm information panel beneath it.
+ * No backdrop blur on the WebGL surface; motion is finite and GPS driven. */
+body[data-active-view="tracking"] .tracking-premium .tracking-sheet {
+  gap: 14px;
+  padding: 12px 18px 22px;
+  border: 0;
+  border-radius: 28px;
+  background: transparent;
+  box-shadow: none;
+}
+body[data-active-view="tracking"] .tracking-premium .tracking-hero { gap: 5px; margin: 0 2px; }
+body[data-active-view="tracking"] .tracking-premium .tracking-hero h1 {
+  font-size: clamp(23px, 5.9vw, 30px);
+  line-height: 1.16;
+  letter-spacing: -.035em;
+  font-weight: 750;
+  color: var(--brand-ink);
+}
+body[data-active-view="tracking"] .tracking-premium .tracking-subtitle {
+  margin: 0;
+  color: var(--shelf-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+body[data-active-view="tracking"] .tracking-premium .tracking-updated { font-size: 11px; opacity: .8; }
+body[data-active-view="tracking"] .tracking-premium .customer-progress { margin: 4px 2px 0; }
+body[data-active-view="tracking"] .tracking-premium .customer-progress .track-dot {
+  width: 15px;
+  height: 15px;
+  border-width: 2px;
+  box-shadow: none;
+}
+body[data-active-view="tracking"] .tracking-premium .customer-progress .track-step.current .track-dot {
+  background: var(--taba-red);
+  border-color: #ff7881;
+  box-shadow: 0 0 0 4px rgb(208 0 13 / 14%);
+}
+body[data-active-view="tracking"] .tracking-premium .customer-progress .track-step.done .track-dot {
+  background: #652632;
+  border-color: #b4515d;
+}
+body[data-active-view="tracking"] .tracking-premium .customer-progress .track-step.pending { opacity: .55; }
+body[data-active-view="tracking"] .tracking-premium .customer-progress .track-step small { font-size: 10.5px; }
+body[data-active-view="tracking"] .tracking-premium .customer-progress .track-step.current small { color: #fff; font-weight: 800; }
+
+body[data-active-view="tracking"] .tracking-premium .tracking-map-stage {
+  border: 1px solid rgb(255 255 255 / 13%);
+  border-radius: 26px;
+  background: #151a20;
+  box-shadow: 0 12px 28px rgb(0 0 0 / 22%);
+}
+body[data-active-view="tracking"] .tracking-premium .tracking-map-stage,
+body[data-active-view="tracking"] .tracking-premium .real-map-shell,
+body[data-active-view="tracking"] .tracking-premium .real-map-canvas,
+body[data-active-view="tracking"] .tracking-premium .maplibregl-map,
+body[data-active-view="tracking"] .tracking-premium .maplibregl-canvas-container {
+  height: var(--tracking-map-height, clamp(260px, 34dvh, 360px));
+  min-height: 0;
+}
+body[data-active-view="tracking"] .tracking-premium:is(.status-on_the_way, .status-picked_up) {
+  --tracking-map-height: clamp(300px, 46dvh, 480px);
+}
+body[data-active-view="tracking"] .tracking-premium:is(.status-arrived,.status-arriving) {
+  --tracking-map-height: clamp(260px, 71.8vw, 300px);
+}
+body[data-active-view="tracking"] .tracking-premium .maplibregl-canvas { filter: none; }
+body[data-active-view="tracking"] .tracking-premium .real-map-meta {
+  top: 12px;
+  left: 12px;
+  right: auto;
+  transform: none;
+  max-width: calc(100% - 24px);
+  padding: 7px 10px;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 999px;
+  background: rgb(17 22 29 / 94%);
+  color: #eee;
+  box-shadow: 0 3px 10px rgb(0 0 0 / 20%);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  font-size: 11px;
+}
+body[data-active-view="tracking"] .tracking-premium .tracking-map-recenter { right: 14px; bottom: 16px; }
+body[data-active-view="tracking"] .tracking-premium .tracking-map-follow-cta {
+  bottom: 18px;
+  left: 14px;
+  transform: none;
+  max-width: calc(100% - 84px);
+  min-height: 44px;
+  padding: 0 13px;
+  border: 1px solid rgb(255 134 142 / 60%);
+  background: #c01225;
+  color: white;
+  box-shadow: 0 5px 14px rgb(0 0 0 / 24%);
+  backdrop-filter: none;
+}
+
+body[data-active-view="tracking"] .tracking-premium .tracking-rider-card {
+  min-height: 74px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 22px;
+  background-color: var(--shelf);
+  background-image: linear-gradient(145deg, #242b35, #1a2028);
+  box-shadow: 0 6px 16px rgb(0 0 0 / 14%);
+}
+body[data-active-view="tracking"] .tracking-premium .tracking-rider-icon { width: 46px; height: 46px; }
+body[data-active-view="tracking"] .tracking-premium:is(.status-on_the_way,.status-picked_up) .tracking-rider-icon {
+  --map-rider-disc: #e8273a;
+  border: 1px solid rgb(255 255 255 / 32%);
+  border-radius: 50%;
+  background: var(--map-rider-disc);
+  box-shadow: 0 3px 8px rgb(0 0 0 / 20%);
+}
+body[data-active-view="tracking"] .tracking-premium:is(.status-on_the_way,.status-picked_up) .tracking-rider-helmet {
+  --delivery-helmet-contrast: var(--map-rider-disc);
+  width: 40px;
+  height: 40px;
+  color: var(--taba-white);
+  transform: none;
+}
+body[data-active-view="tracking"] .tracking-premium .tracking-rider-copy small { color: #bcbdc6; font-size: 11px; }
+body[data-active-view="tracking"] .tracking-premium .tracking-rider-copy strong { font-size: 16px; color: #fff; }
+body[data-active-view="tracking"] .tracking-premium .tracking-rider-copy span { color: #c8cbd2; font-size: 12px; }
+/* The inherited arrival button keeps a white plate; give its label a dark
+ * brand ink instead of the white text used by the dark rider card. */
+body[data-active-view="tracking"] .tracking-premium:is(.status-arrived,.status-arriving) .tracking-rider-contact .secondary-button {
+  color: #a51224;
+}
+body[data-active-view="tracking"] .tracking-premium.no-rider .tracking-rider-card,
+body[data-active-view="tracking"] .tracking-premium .tracking-map-waiting {
+  min-height: 0;
+  margin: 0;
+  padding: 11px 4px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+body[data-active-view="tracking"] .tracking-premium .tracking-map-waiting { border-bottom: 1px solid rgb(255 255 255 / 10%); }
+body[data-active-view="tracking"] .tracking-premium .tracking-map-waiting strong { font-size: 13px; }
+body[data-active-view="tracking"] .tracking-premium .tracking-map-waiting p { font-size: 12px; }
+body[data-active-view="tracking"] .tracking-premium.no-rider .tracking-rider-card {
+  border-color: var(--shelf-line);
+  background-color: var(--shelf);
+  background-image: linear-gradient(145deg, #242b35, #1a2028);
+  box-shadow: var(--shadow-shelf-flat), inset 0 0 0 1px var(--shelf-line);
+}
+body[data-active-view="tracking"] .tracking-premium .tracking-order-summary {
+  margin: 0;
+  border-radius: 20px;
+  border-color: rgb(255 255 255 / 9%);
+  background: #1c232b;
+  box-shadow: none;
+}
+body[data-active-view="tracking"] .tracking-premium .tracking-help-card { padding: 10px 3px; background: transparent; border: 0; box-shadow: none; }
+
+/* Finite feedback is applied to the core by the GPS adapter. Stale position
+ * remains visible. No constantly pulsing halo or paint filter on each icon. */
+body[data-active-view="tracking"] .tracking-premium .lt-rider-marker::before { animation: none !important; opacity: 0; }
+body[data-active-view="tracking"] .tracking-premium .real-map-live-dot { animation: none !important; box-shadow: none; }
+body[data-active-view="tracking"] .tracking-premium .lt-rider-helmet-icon,
+body[data-active-view="tracking"] .tracking-premium .lt-place-marker-pin { filter: none; }
+body[data-active-view="tracking"] .tracking-premium .lt-rider-helmet-core {
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px rgb(232 39 58 / 12%), 0 3px 8px rgb(0 0 0 / 40%);
+}
+body[data-active-view="tracking"] .tracking-premium .lt-rider-marker { width: 50px; height: 50px; }
+body[data-active-view="tracking"] .tracking-premium .lt-rider-helmet-core,
+body[data-active-view="tracking"] .tracking-premium .lt-rider-helmet-icon { width: 50px; height: 50px; }
+body[data-active-view="tracking"] .tracking-premium .is-location-lost .lt-rider-helmet-core { opacity: .75; }
+.real-map-canvas .maplibregl-canvas-container,
+[data-location-map] .maplibregl-canvas-container { touch-action: pan-y; }
+.tracking-map-scroll-hint {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  color: #afb5c0;
+  font-size: 11px;
+  margin: -5px 0 0;
+}
+.tracking-map-scroll-hint::before { content: "↓"; }
+/* Keep the arrival help within the mobile fold after combining the storefront
+ * typography and tracking cards. Map height and 44px contact targets stay fixed. */
+body[data-active-view="tracking"] .tracking-premium:is(.status-arrived,.status-arriving) .tracking-sheet { gap: 5px; }
+body[data-active-view="tracking"] .tracking-premium:is(.status-arrived,.status-arriving) .tracking-map-scroll-hint { display: none; }
+
+@media (min-width: 821px) {
+  body[data-active-view="tracking"] .tracking-premium .tracking-sheet { max-width: 1040px; margin-inline: auto; }
+  body[data-active-view="tracking"] .tracking-premium { --tracking-map-height: 390px; }
+  body[data-active-view="tracking"] .tracking-premium:is(.status-on_the_way,.status-picked_up,.status-arriving) { --tracking-map-height: 460px; }
+}
+@media (max-height: 650px) and (orientation: landscape) {
+  body[data-active-view="tracking"] .tracking-premium { --tracking-map-height: 250px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body[data-active-view="tracking"] .tracking-premium .lt-rider-helmet-core,
+  body[data-active-view="tracking"] .tracking-premium .track-step { animation: none !important; transition: none; }
+}
+
+/* Group the existing checkout fields through space, rather than red outlines.
+ * Validation, authority and handoff are untouched; focus/error stay explicit. */
+body[data-active-view="cart"] .checkout-form {
+  border-color: rgb(255 255 255 / 12%);
+  border-radius: 24px;
+}
+body[data-active-view="cart"] .checkout-form :is(input,select,textarea):not([type="checkbox"]):not([type="radio"]) {
+  border-color: #6e7684;
+  border-radius: 13px;
+}
+body[data-active-view="cart"] .checkout-form :is(input,select,textarea):focus-visible {
+  outline: 2px solid #ff8a94;
+  outline-offset: 2px;
+}
+body[data-active-view="cart"] .checkout-form [aria-invalid="true"] { border-color: #ff8a94; }

@@ -26,7 +26,7 @@ import {
   createRiderMarkerElement,
   riderAvatarHelmetSvg,
   riderMarkerClass,
-  riderScooterSvg,
+  riderMapHelmetSvg,
 } from '../js/map/rider_marker.js';
 import {
   chooseRiderLocation,
@@ -224,10 +224,11 @@ test('rider marker class reflects status and source', () => {
   assert.match(marker.innerHTML, /lt-rider-helmet-core/);
   assert.match(marker.innerHTML, /<svg[^>]*class="[^"]*\blt-rider-helmet-icon\b[^"]*"/);
   assert.match(marker.innerHTML, /\btaba-map-helmet\b/);
-  assert.match(marker.innerHTML, /data-map-rider-scooter/);
+  assert.match(marker.innerHTML, /data-map-rider-helmet/);
+  assert.doesNotMatch(marker.innerHTML, /data-map-rider-scooter/);
   assert.doesNotMatch(marker.innerHTML, /taba-delivery-helmet/);
   assert.match(marker.innerHTML, /role="img"/);
-  assert.match(marker.innerHTML, /aria-label="Moto del repartidor TABA"/);
+  assert.match(marker.innerHTML, /aria-label="Casco del repartidor TABA"/);
   assert.doesNotMatch(marker.innerHTML, />R</);
   assert.doesNotMatch(marker.innerHTML, /<text/);
   assert.doesNotMatch(marker.innerHTML, /(?:emoji|<image\b|(?:src|href)=|https?:\/\/)/i);
@@ -297,7 +298,7 @@ test('el pin del destino dice CASA: dorado, aro blanco y techo a dos aguas', () 
 test('local, destino y rider no comparten ni glifo ni color: se distinguen sin leer', () => {
   const store = glyphOf('store');
   const destination = glyphOf('destination');
-  const rider = riderScooterSvg();
+  const rider = riderMapHelmetSvg();
 
   // El defecto original era exactamente éste: el mismo dibujo dos veces.
   assert.notEqual(store, destination, 'local y destino no pueden compartir el glifo');
@@ -345,7 +346,7 @@ test('cambiar el glifo no mueve el punto: los dos pines conservan silueta y lien
   }
 });
 
-test('rider avatar keeps a profile helmet separate from the map marker', () => {
+test('avatar y marcador reutilizan el mismo casco de perfil, con contenedores propios', () => {
   const avatar = riderAvatarHelmetSvg({ className: 'tracking-rider-helmet', decorative: true });
   assert.match(avatar, /class="[^"]*\btracking-rider-helmet\b[^"]*"/);
   assert.match(avatar, /\btaba-delivery-helmet\b/);
@@ -358,6 +359,10 @@ test('rider avatar keeps a profile helmet separate from the map marker', () => {
   assert.match(avatar, /<circle[^>]*cx="27\.5"[^>]*cy="31\.4"/);
   assert.doesNotMatch(avatar, /(?:moto|scooter|emoji|<image\b|(?:src|href)=|https?:\/\/)/i);
   assert.doesNotMatch(avatar, /(?:<filter|<linearGradient|<radialGradient|<image\b)/i);
+  const mapHelmet = riderMapHelmetSvg();
+  const paths = [...mapHelmet.matchAll(/<path d="([^"]+)"/g)].map((match) => match[1]);
+  assert.equal(paths.length, 3);
+  for (const path of paths) assert.ok(avatar.includes(`d="${path}"`), 'el casco del mapa se separó del de la tarjeta');
 });
 
 test('chooseRiderLocation prioriza GPS real sobre simulación', () => {
@@ -488,9 +493,9 @@ test('MapLibre keeps one map and one rider Marker node across GPS updates', asyn
     environment.calls.maps[0].emit('load');
     await waitForMapFrame();
     assert.equal(environment.calls.maps.length, 1);
-    // Se explora con dos dedos, y eso se sostiene: sin esta opción el lienzo se
-    // queda con el arrastre vertical y el cliente no puede scrollear su pedido.
-    assert.equal(environment.calls.mapOptions[0].cooperativeGestures, true);
+    // One-finger pan is enabled. The touch-intent router preserves vertical
+    // page scrolling; its native/synthetic gestures are exercised in E2E.
+    assert.equal(environment.calls.mapOptions[0].cooperativeGestures, false);
     // Mapa honesto: SÓLO el marcador del rider real. Sin marcador de local (LT),
     // sin marcador de cliente (CL) y sin polyline de ruta.
     assert.equal(environment.calls.markers.length, 1);
@@ -522,13 +527,13 @@ test('MapLibre keeps one map and one rider Marker node across GPS updates', asyn
     assert.strictEqual(environment.calls.markers[0].getElement(), initialMarkerNode);
 
     assert.equal(recenterMapViews({ querySelectorAll: () => [shell] }), true);
-    const cameraUpdate = environment.calls.jumpTo.at(-1);
+    const cameraUpdate = environment.calls.easeTo.at(-1);
     assert.deepEqual(cameraUpdate.center, [-68.0613, -38.9513]);
     // Volver al rider devuelve además un zoom en el que se entiende la cuadra:
     // recentrar sin acercar deja al cliente mirando la ciudad entera.
     assert.equal(cameraUpdate.zoom, MAPLIBRE_FOLLOW_ZOOM);
     // Lo que sigue sin tocarse es la rotación: el norte siempre arriba.
-    assert.equal(Object.hasOwn(cameraUpdate, 'bearing'), false);
+    assert.equal(cameraUpdate.bearing, 0);
 
     const map = environment.calls.maps[0];
     assert.ok(map.listenerCount() > 0);
@@ -588,12 +593,12 @@ test('el gesto del cliente suspende el seguimiento y el mapa deja de mover la c�
     assert.equal(controller.getCameraMode(), 'follow');
 
     // Mientras sigue, la cámara acompaña al rider.
-    const centrosAntes = environment.calls.setCenter.length;
-    controller.updateRiderLocation(gpsFix({ lat: -38.9455, at: Date.now() + 12_000 }), {
+    const centrosAntes = environment.calls.easeTo.length;
+    controller.updateRiderLocation(gpsFix({ lat: -38.9455, at: Date.now() + 8_000 }), {
       freshness: 'fresh',
       status: 'on_the_way',
     });
-    assert.ok(environment.calls.setCenter.length > centrosAntes, 'la cámara acompaña');
+    assert.ok(environment.calls.easeTo.length > centrosAntes, 'la cámara acompaña');
 
     // El cliente arrastra el mapa: se suspende el auto-seguimiento en el acto.
     map.emit('dragstart', gesto());
@@ -602,13 +607,13 @@ test('el gesto del cliente suspende el seguimiento y el mapa deja de mover la c�
     assert.equal(shell.dataset.mapCamera, 'explore');
 
     // Y desde ahí el mapa NO le pelea el encuadre: llegan fixes y no recentra.
-    const centrosExplorando = environment.calls.setCenter.length;
+    const centrosExplorando = environment.calls.easeTo.length;
     controller.updateRiderLocation(gpsFix({ lat: -38.9451, at: Date.now() + 24_000 }), {
       freshness: 'fresh',
       status: 'on_the_way',
     });
     assert.equal(
-      environment.calls.setCenter.length,
+      environment.calls.easeTo.length,
       centrosExplorando,
       'explorando, el mapa no toca la cámara',
     );
@@ -686,7 +691,7 @@ test('volver al rider recupera cámara, zoom útil y seguimiento', () => {
     assert.equal(controller.recenter(), true);
     // El entorno de prueba declara prefers-reduced-motion, así que la vuelta es
     // instantánea. Lo que se verifica es el destino, no la animación.
-    const vuelta = environment.calls.jumpTo.at(-1);
+    const vuelta = environment.calls.easeTo.at(-1);
     assert.deepEqual(vuelta.center, [-68.0533, -38.9459]);
     assert.equal(vuelta.zoom, MAPLIBRE_FOLLOW_ZOOM);
     assert.equal(controller.getCameraMode(), 'follow');

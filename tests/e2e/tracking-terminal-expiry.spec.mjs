@@ -13,20 +13,22 @@ const FIXED_TIME = Date.parse('2026-07-30T02:30:00.000Z');
 
 test('tracking terminal vence, limpia sólo Pedido A y no cae en Pedido B', async ({ page }) => {
   const terminalVisibleUntil = new Date(FIXED_TIME + 30_000).toISOString();
-  await page.clock.install({ time: FIXED_TIME });
+  // Load before the test window, then pause at its start after navigation.
+  // https://playwright.dev/docs/api/class-clock#clock-pause-at
+  await page.clock.install({ time: FIXED_TIME - (5 * 60_000) });
   const fixture = await installTerminalTrackingFixture(page, { terminalVisibleUntil });
   await installTerminalTrackingRuntime(page);
 
   await page.goto('/#tracking');
-  await expect.poll(() => fixture.requestCount()).toBe(1);
+  await page.clock.pauseAt(FIXED_TIME);
+  const startupRequestCount = await settleInitialTerminal(page, fixture);
   console.log('terminal-expiry-diagnostic', JSON.stringify({
     browserNow: await page.evaluate(() => new Date().toISOString()),
     accessRemovals: await page.evaluate(() => globalThis.__terminalAccessRemovals || []),
     requests: fixture.requests(),
     snapshot: await browserSnapshot(page),
   }));
-  await expectTerminalOrder(page);
-  expect(fixture.requestTokens()).toEqual([TRACKING_TOKEN]);
+
 
   fixture.makeUnavailable();
   const revalidationRequest = page.waitForRequest(isPublicTrackingRequest);
@@ -34,7 +36,7 @@ test('tracking terminal vence, limpia sólo Pedido A y no cae en Pedido B', asyn
   await revalidationRequest;
 
   await expectFailClosedCleanup(page);
-  expect(fixture.requestCount()).toBe(2);
+  expect(fixture.requestCount()).toBe(startupRequestCount + 1);
 
   const settledRequestCount = fixture.requestCount();
   await page.clock.fastForward(60_000);
@@ -43,14 +45,15 @@ test('tracking terminal vence, limpia sólo Pedido A y no cae en Pedido B', asyn
 
 test('tracking terminal revocado coalesce lifecycle y limpia sin fallback', async ({ page }) => {
   const terminalVisibleUntil = new Date(FIXED_TIME + (30 * 60_000)).toISOString();
-  await page.clock.install({ time: FIXED_TIME });
+  // Load before the test window, then pause at its start after navigation.
+  // https://playwright.dev/docs/api/class-clock#clock-pause-at
+  await page.clock.install({ time: FIXED_TIME - (5 * 60_000) });
   const fixture = await installTerminalTrackingFixture(page, { terminalVisibleUntil });
   await installTerminalTrackingRuntime(page);
 
   await page.goto('/#tracking');
-  await expectTerminalOrder(page);
-  await expect.poll(() => fixture.requestCount()).toBe(1);
-  expect(fixture.requestTokens()).toEqual([TRACKING_TOKEN]);
+  await page.clock.pauseAt(FIXED_TIME);
+  const startupRequestCount = await settleInitialTerminal(page, fixture);
 
   fixture.makeUnavailable();
   const revalidationRequest = page.waitForRequest(isPublicTrackingRequest);
@@ -63,7 +66,7 @@ test('tracking terminal revocado coalesce lifecycle y limpia sin fallback', asyn
   await revalidationRequest;
 
   await expectFailClosedCleanup(page);
-  expect(fixture.requestCount()).toBe(2);
+  expect(fixture.requestCount()).toBe(startupRequestCount + 1);
 
   await page.evaluate(() => {
     window.dispatchEvent(new Event('focus'));
@@ -72,7 +75,7 @@ test('tracking terminal revocado coalesce lifecycle y limpia sin fallback', asyn
     document.dispatchEvent(new Event('visibilitychange'));
   });
   await page.clock.fastForward(60_000);
-  expect(fixture.requestCount()).toBe(2);
+  expect(fixture.requestCount()).toBe(startupRequestCount + 1);
 });
 
 async function installTerminalTrackingFixture(page, { terminalVisibleUntil }) {
@@ -156,6 +159,10 @@ async function installTerminalTrackingRuntime(page) {
     localStorage.clear();
     sessionStorage.clear();
     globalThis.__terminalAccessRemovals = [];
+    globalThis.__terminalInitialPageShown = false;
+    window.addEventListener('pageshow', (event) => {
+      if (event.isTrusted && !event.persisted) globalThis.__terminalInitialPageShown = true;
+    }, { once: true });
     const originalRemoveItem = Storage.prototype.removeItem;
     Storage.prototype.removeItem = function removeItem(key) {
       if (key === accessKey) {
@@ -191,9 +198,23 @@ async function installTerminalTrackingRuntime(page) {
   });
 }
 
+async function settleInitialTerminal(page, fixture) {
+  // Native pageshow may legitimately revalidate after the initial RPC has
+  // completed. Wait for that navigation boundary, then measure the explicit
+  // expiry/revocation scenario below. Never suppress browser lifecycle events.
+  await page.waitForFunction(() => globalThis.__terminalInitialPageShown === true);
+  await expect.poll(async () => (await browserSnapshot(page)).poll.inFlight).toBe(false);
+  await expectTerminalOrder(page);
+  const count = fixture.requestCount();
+  expect(count).toBeGreaterThanOrEqual(1);
+  expect(count).toBeLessThanOrEqual(2);
+  expect(fixture.requestTokens()).toEqual(Array(count).fill(TRACKING_TOKEN));
+  return count;
+}
+
 async function expectTerminalOrder(page) {
   const tracking = page.locator('[data-tracking-panel]');
-  await expect(tracking.locator('[data-tracking-title]')).toHaveText('Pedido entregado');
+  await expect(tracking.locator('[data-tracking-title]')).toHaveText('¡Llegó tu pedido!');
   await expect(tracking.locator('[data-tracking-status="delivered"]')).toBeVisible();
   /*
    * El mapa YA NO desaparece al entregar: «Seguir» es una sección de mapa

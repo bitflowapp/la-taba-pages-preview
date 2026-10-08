@@ -78,7 +78,7 @@ test('reproduce el cierre P1: delivered revoca el token antes del siguiente poll
   assert.equal(order.gpsEnabled, false);
   const nextSnapshot = publicRead({ order, token, now });
   assert.equal(nextSnapshot, null);
-  if (nextSnapshot?.status === 'delivered') browserTitle = 'Pedido entregado';
+  if (nextSnapshot?.status === 'delivered') browserTitle = '¡Llegó tu pedido!';
   assert.equal(browserTitle, 'Tu pedido llegó');
 });
 
@@ -252,7 +252,7 @@ test('delivered reemplaza polling frecuente por un timer terminal desmontable', 
 });
 
 test('la pantalla final usa copy entregado, timeline de cuatro pasos y oculta el código', () => {
-  assert.match(uiSource, /if \(order\.status === 'delivered'\)[\s\S]*title: 'Pedido entregado'/i);
+  assert.match(uiSource, /if \(order\.status === 'delivered'\)[\s\S]*title: '¡Llegó tu pedido!'/i);
   assert.match(
     timelineSource,
     /PUBLIC_ORDER_TIMELINE_STEPS[\s\S]*'Confirmado'[\s\S]*'Preparando'[\s\S]*'En camino'[\s\S]*'Entregado'/i,

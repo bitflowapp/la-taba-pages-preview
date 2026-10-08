@@ -9,42 +9,33 @@ export function riderMarkerClass(status, source = 'simulation') {
 }
 
 /*
- * MARCADOR DEL RIDER. Disco rojo intenso, aro blanco y una moto blanca de
- * perfil. Antes acá iba el mismo casco que usa la tarjeta del rider, y a 43–48
- * px se empastaba: la visera y el aro interior se comían el contraste y el
- * glifo dejaba de leerse como algo. La moto se reconoce por su silueta —dos
- * ruedas y el manubrio— sin depender del detalle.
- *
- * El casco NO desaparece del producto: sigue siendo el retrato del repartidor
- * en la tarjeta (`riderAvatarHelmetSvg`), donde hay tamaño para sostenerlo.
+ * Mismo casco de perfil que la tarjeta del Rider. En el mapa se encuadra sólo
+ * el casco dentro del disco rojo; la tarjeta conserva también el cuello.
+ * Los dos consumen riderHelmetProfileMarkup: una sola geometría, sin assets
+ * nuevos ni imágenes remotas. El contorno del marcador mantiene su tamaño y
+ * su centro geográfico.
  *
  * Las clases del DOM conservan su nombre histórico (`lt-rider-helmet-*`,
  * `taba-map-helmet`) a propósito: son ganchos de CSS repartidos por toda la
  * hoja de seguimiento y renombrarlos sería un refactor que este arreglo no
  * necesita.
  */
-export function riderScooterSvg({
+export function riderMapHelmetSvg({
   className = 'lt-rider-helmet-icon',
   decorative = false,
 } = {}) {
   const accessibility = decorative
     ? 'aria-hidden="true" focusable="false"'
-    : 'role="img" aria-label="Moto del repartidor TABA" focusable="false"';
-  return `<svg class="${className} taba-map-helmet" data-map-rider-scooter viewBox="0 0 56 56" ${accessibility}>
+    : 'role="img" aria-label="Casco del repartidor TABA" focusable="false"';
+  return `<svg class="${className} taba-map-helmet" data-map-rider-helmet viewBox="0 0 56 56" ${accessibility}>
     <circle cx="28" cy="28" r="24.5" fill="var(--map-rider-disc)" stroke="var(--taba-white)" stroke-width="3.2"></circle>
-    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="17.4" cy="32.8" r="6.7" stroke-width="3.3"></circle>
-      <circle cx="38.6" cy="32.8" r="6.7" stroke-width="3.3"></circle>
-      <path d="M13.6 21.8h9.6l-2.8 6.6h10.2l6.6-11.6" stroke-width="5.2"></path>
-      <path d="M32.6 16.8h5.6" stroke-width="3.6"></path>
-      <path d="M37.6 17.6 38.6 30.4" stroke-width="3.6"></path>
+    <g transform="translate(4 3) scale(.72)" style="--delivery-helmet-contrast: var(--map-rider-disc)">
+      ${riderHelmetProfileMarkup()}
     </g>
   </svg>`;
 }
 
-// El casco de perfil es el RETRATO del repartidor en la tarjeta de seguimiento,
-// no un marcador de mapa: acá tiene 60 px y el detalle se sostiene. Su escala y
-// su tratamiento visual son propios y no cambian con los del mapa.
+// Retrato de la tarjeta: comparte el casco del mapa y agrega el cuello.
 export function riderAvatarHelmetSvg({
   className = 'tracking-rider-helmet',
   decorative = true,
@@ -77,7 +68,7 @@ export function createRiderMarkerElement(documentRef = globalThis.document, {
   element.className = riderMarkerClass(status, source);
   element.innerHTML = `
     <span class="lt-rider-helmet-core">
-      ${riderScooterSvg()}
+      ${riderMapHelmetSvg()}
     </span>`;
   return element;
 }
@@ -132,7 +123,7 @@ export const PLACE_PIN_OUTLINE_PATH = 'M22 2C11 2 3 10 3 21c0 13 19 30 19 30s19-
  *   DESTINO  pin DORADO PROFUNDO con aro blanco · casa blanca de techo a dos
  *            aguas. Techo inclinado contra toldo recto: el contraste de forma
  *            aguanta aunque el color se pierda.
- *   RIDER    disco ROJO INTENSO con aro blanco y la moto blanca (arriba). Es
+ *   RIDER    disco ROJO INTENSO con aro blanco y el casco blanco (arriba). Es
  *            un círculo, no un pin: no señala un lugar fijo, se mueve.
  *
  * Los glifos van CENTRADOS en el bulbo del pin (centro ~22,20.5 del viewBox) y

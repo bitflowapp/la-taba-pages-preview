@@ -72,7 +72,7 @@ test('tracking público arriving reproduce la composición y conserva datos real
   await expect(onTheWayMap).toHaveAttribute('data-route-source', 'simulation');
   const onTheWayMarker = onTheWayMap.locator('.lt-rider-helmet-icon.taba-map-helmet');
   await expect(onTheWayMarker).toBeVisible();
-  await expect(onTheWayMarker).toHaveAttribute('data-map-rider-scooter', '');
+  await expect(onTheWayMarker).toHaveAttribute('data-map-rider-helmet', '');
   await expect(onTheWayMap.locator('.taba-delivery-helmet')).toHaveCount(0);
   if (process.env.TABA_CAPTURE_ON_THE_WAY === '1') {
     await expect(onTheWayMap).toHaveAttribute('data-map-status', 'ready', { timeout: 15_000 });
@@ -228,6 +228,18 @@ test('tracking público arriving reproduce la composición y conserva datos real
         '[data-tracking-panel] .status-arriving .tracking-help-card',
       )?.getBoundingClientRect();
       const mapRect = mapNode?.getBoundingClientRect();
+      const contact = document.querySelector(
+        '[data-tracking-panel] .status-arriving .tracking-rider-contact a',
+      );
+      const luminance = (color) => {
+        const rgb = color.match(/[\d.]+/g).slice(0, 3).map(Number).map(channel => {
+          const value = channel / 255;
+          return value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4;
+        });
+        return rgb[0] * .2126 + rgb[1] * .7152 + rgb[2] * .0722;
+      };
+      const textLuminance = luminance(getComputedStyle(contact).color);
+      const plateLuminance = luminance(getComputedStyle(contact, '::before').backgroundColor);
       return {
         viewportWidth: window.innerWidth,
         viewportHeight: window.innerHeight,
@@ -236,6 +248,8 @@ test('tracking público arriving reproduce la composición y conserva datos real
         mapHeight: mapRect?.height || 0,
         labels,
         helpBottom: help?.bottom || 0,
+        contactContrast: (Math.max(textLuminance, plateLuminance) + .05)
+          / (Math.min(textLuminance, plateLuminance) + .05),
         contactHeight: document.querySelector(
           '[data-tracking-panel] .status-arriving .tracking-rider-contact a',
         )?.getBoundingClientRect().height || 0,
@@ -246,6 +260,7 @@ test('tracking público arriving reproduce la composición y conserva datos real
     expect(Math.max(measurements.documentWidth, measurements.bodyWidth))
       .toBeLessThanOrEqual(measurements.viewportWidth + 1);
     expect(measurements.contactHeight).toBeGreaterThanOrEqual(44);
+    expect(measurements.contactContrast, `contact label ${viewport.width}px`).toBeGreaterThanOrEqual(4.5);
     measurements.labels.forEach((label, index) => {
       expect(label.left, `timeline ${viewport.width}px, etiqueta ${index}`).toBeGreaterThanOrEqual(0);
       expect(label.right, `timeline ${viewport.width}px, etiqueta ${index}`)

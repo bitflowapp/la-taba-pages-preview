@@ -21,6 +21,7 @@ test('release candidate CI validates pull requests without deploy permissions', 
   assert.match(ci, /npm run vendor:build/);
   assert.match(ci, /npm run check/);
   assert.match(ci, /npm test/);
+  assert.match(ci, /npx playwright test --config playwright\.final-integration\.config\.mjs/);
   assert.match(ci, /npm run migrations:validate/);
   assert.match(ci, /npm run catalog:images:verify/);
   assert.match(ci, /npm audit --omit=dev/);

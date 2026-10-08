@@ -7,6 +7,7 @@ import { applyTabaMapTheme } from './taba_map_theme.js';
 import { createRiderMotion } from './rider_motion.js';
 import { lockAmbientAnimationPhase } from './animation_phase.js';
 import { isGeoPoint } from '../core/geo-point.js';
+import { bindMapTouchIntent } from './touch_intent.js';
 
 export const MAPLIBRE_PUBLIC_STYLE_URL = 'https://tiles.openfreemap.org/styles/positron';
 export const MAPLIBRE_ACCURACY_SOURCE_ID = 'taba-rider-accuracy';
@@ -175,6 +176,15 @@ export function createMapLibreTrackingMap({
     programmaticMove: false,
     mapListeners: [],
     domListeners: [],
+    releaseTouchIntent: null,
+    orderStatus: 'received',
+    orderId: '',
+    places: null,
+    cameraFixAt: null,
+    cameraNeedsFrame: true,
+    viewportKey: '',
+    quietFix: false,
+    publicTracking: true,
   };
 
   function mount({
@@ -195,6 +205,7 @@ export function createMapLibreTrackingMap({
     areaMaxZoom = 14.2,
     zoom = 16,
     cooperativeGestures = false,
+    presentationRole = 'tracking',
   } = {}) {
     if (state.destroyed || state.unavailable || !container) return false;
     if (state.map) {
@@ -207,6 +218,7 @@ export function createMapLibreTrackingMap({
     }
 
     state.shell = shell;
+    state.publicTracking = presentationRole === 'tracking';
     state.canvas = container;
     state.fallback = fallback;
     state.sandbox = sandbox === true;
@@ -219,6 +231,8 @@ export function createMapLibreTrackingMap({
     // publicada del comercio, y es lo único que el mapa puede mostrar con
     // honestidad mientras todavía no hay ningún pedido.
     state.pendingPlaces = { store, destination };
+    state.places = { store, destination };
+    state.orderStatus = status;
     state.pendingArea = area;
     state.pendingAreaMaxZoom = areaMaxZoom;
 
@@ -253,6 +267,8 @@ export function createMapLibreTrackingMap({
         maxPitch: 0,
         renderWorldCopies: false,
         cooperativeGestures: cooperativeGestures === true,
+        dragPan: true,
+        touchZoomRotate: true,
       });
       if (maplibreRef.AttributionControl && state.map.addControl) {
         state.map.addControl(
@@ -275,6 +291,8 @@ export function createMapLibreTrackingMap({
     }
 
     bindMapLifecycle();
+    if (state.publicTracking) state.map.touchZoomRotate?.disableRotation?.();
+    if (!cooperativeGestures && state.publicTracking) state.releaseTouchIntent = bindMapTouchIntent(container, state.map);
     bindResizeLifecycle();
     if (!state.ready) {
       state.styleTimer = setTimer(() => {
@@ -301,6 +319,9 @@ export function createMapLibreTrackingMap({
       state.motion = createRiderMotion({
         now,
         reducedMotion: prefersReducedMotion(root),
+        maxDurationMs: state.publicTracking ? 900 : undefined,
+        convergeMs: state.publicTracking ? 450 : undefined,
+        minTravelMeters: state.publicTracking ? 3 : undefined,
       });
     }
     return state.motion;
@@ -321,12 +342,24 @@ export function createMapLibreTrackingMap({
     if (!state.map || state.unavailable || state.destroyed || !isValidMapPoint(nextLocation)) return null;
     const normalizedFreshness = normalizeMapFreshness(freshness);
     state.freshness = normalizedFreshness;
-    state.riderLocation = normalizedPoint(nextLocation);
+    const previous = state.riderLocation;
+    const measured = normalizedPoint(nextLocation);
+    if (source === 'simulation' && !measured.timestamp && !measured.lastFixAt) measured.timestamp = now();
     const accuracy = Number(nextLocation?.accuracy);
     state.accuracyMeters = Number.isFinite(accuracy) && accuracy > 0 ? accuracy : null;
 
     const motion = ensureMotion();
-    motion.pushFix(state.riderLocation, { instant: animate === false });
+    const verdict = motion.pushFix(measured, { instant: animate === false || documentRef?.hidden === true });
+    // A status change can arrive with the same fix: update the marker's state
+    // without presenting a duplicate as a new GPS measurement.
+    if (!verdict.accepted && state.riderMarker) {
+      updateRiderMarkerElement(state.riderElement,{status,source});
+      return state.riderMarker;
+    }
+    if (!verdict.accepted) return state.riderMarker;
+    state.riderLocation = measured;
+    state.quietFix = verdict.mode === 'jitter';
+    state.orderStatus = status;
 
     if (!state.riderMarker) {
       state.riderElement = createRiderMarkerElement(documentRef, { status, source });
@@ -344,6 +377,7 @@ export function createMapLibreTrackingMap({
     }
 
     updateRiderMarkerElement(state.riderElement, { status, source });
+    if (previous && ['travel','converge'].includes(verdict.mode)) pulseRider();
     lockAmbientAnimationPhase(state.shell);
     paintMotionFrame();
     startMotionLoop();
@@ -360,10 +394,10 @@ export function createMapLibreTrackingMap({
   }
 
   function startMotionLoop() {
-    if (state.motionFrame !== null || !state.motion?.isMoving()) return;
+    if (documentRef?.hidden || state.motionFrame !== null || !state.motion?.isMoving()) return;
     const step = () => {
       state.motionFrame = null;
-      if (state.destroyed || state.unavailable || !state.riderMarker) return;
+      if (documentRef?.hidden || state.destroyed || state.unavailable || !state.riderMarker) return;
       paintMotionFrame();
       if (state.motion?.isMoving()) state.motionFrame = requestFrame(step);
     };
@@ -371,22 +405,65 @@ export function createMapLibreTrackingMap({
   }
 
   /*
-   * En SEGUIR, la cámara va pegada a la posición visual del marcador: como esa
-   * posición ya viene interpolada, el encuadre se desliza en lugar de dar
-   * saltos. `setCenter` no dispara los eventos de gesto, así que seguir al
-   * rider nunca se confunde con que el cliente tocó el mapa.
+   * One camera ease per accepted fix, containing rider and the relevant place.
+   * Marker interpolation owns its finite frame loop; camera is never restarted
+   * every frame or poll. User gestures suspend it until an explicit recenter.
    */
   function followCamera({ immediate = false } = {}) {
     if (state.cameraMode !== 'follow' || !state.map) return;
-    const visual = state.motion?.visualPositionAt() || state.riderLocation;
-    if (!isValidMapPoint(visual)) return;
+    // The shared operational Rider web map retains its existing camera path.
+    // This refinement only composes the public customer's tracking camera.
+    if (!state.publicTracking) {
+      const visual=state.motion?.visualPositionAt()||state.riderLocation;
+      if (isValidMapPoint(visual)) state.map.setCenter?.(toLngLat(visual));
+      return;
+    }
+    if (state.quietFix && !state.cameraNeedsFrame) return;
+    if (!isValidMapPoint(state.riderLocation)) return;
+    const fixKey = `${state.riderLocation.lat}:${state.riderLocation.lng}`;
+    if (!state.cameraNeedsFrame && fixKey === state.cameraFixAt) return;
+    const needsFrame=state.cameraNeedsFrame;
+    state.cameraFixAt = fixKey;
+    state.cameraNeedsFrame = false;
+    const rider = state.riderLocation;
+    const outgoing = ['picked_up','on_the_way','arrived','arriving'].includes(state.orderStatus);
+    const destination = state.places?.destination;
+    const store = state.places?.store;
+    const target = outgoing ? destination : store;
+    const padding = sandboxFitPadding();
+    const bounds = isValidMapPoint(target) ? [toLngLat(rider),toLngLat(target)] : null;
+    const camera = bounds && state.map.cameraForBounds?.(bounds,{padding,maxZoom:16.5});
+    // Advancing toward the destination should not zoom in on every GPS poll.
+    // Keep the current scale; zoom out only if the pair no longer fits.
+    const currentZoom=state.map.getZoom?.();
+    const cameraZoom=camera && !needsFrame && Number.isFinite(currentZoom)?Math.min(currentZoom,camera.zoom):camera?.zoom;
+    const options = camera ? {center:camera.center,zoom:cameraZoom,padding}
+      : {center:toLngLat(rider),zoom:state.followZoom};
+    const duration = immediate || prefersReducedMotion(root) ? 0 : 650;
     state.programmaticMove = true;
     try {
-      state.map.setCenter?.(toLngLat(visual));
+      if (state.map.easeTo) state.map.easeTo({...options,bearing:0,pitch:0,duration,essential:false});
+      else state.map.setCenter?.(toLngLat(rider));
     } finally {
       state.programmaticMove = false;
     }
-    if (immediate) return;
+  }
+
+  function pulseRider() {
+    if (!state.publicTracking || prefersReducedMotion(root) || !state.riderElement?.querySelector || documentRef?.hidden) return;
+    const core=state.riderElement.querySelector('.lt-rider-helmet-core');
+    core?.animate?.([{transform:'scale(1)'},{transform:'scale(1.045)',offset:.4},{transform:'scale(1)'}],
+      {duration:420,easing:'cubic-bezier(.2,.8,.2,1)'});
+  }
+
+  function setOrderContext({ status=state.orderStatus, orderId=state.orderId }={}) {
+    const changed=orderId!==state.orderId || status!==state.orderStatus;
+    const startsDelivery=orderId!==state.orderId || (status==='on_the_way' && state.orderStatus!=='on_the_way');
+    state.orderStatus=status;state.orderId=orderId;
+    if(changed)state.cameraNeedsFrame=true;
+    if(startsDelivery){state.userInteracted=false;setCameraMode('follow',{force:true});}
+    if(changed && state.ready && state.riderMarker && !['delivered','cancelled'].includes(status))followCamera();
+    return changed;
   }
 
   /*
@@ -471,20 +548,13 @@ export function createMapLibreTrackingMap({
     if (!state.map || state.unavailable || state.destroyed) return false;
     const target = state.motion?.visualPositionAt() || state.riderLocation;
     if (!isValidMapPoint(target)) return false;
-    const center = toLngLat(target);
-    const nextZoom = finiteZoom(zoom);
-    if (animate && !prefersReducedMotion(root) && state.map.easeTo) {
-      state.map.easeTo({ center, zoom: nextZoom, duration: 520, essential: true });
-    } else if (state.map.jumpTo) {
-      state.map.jumpTo({ center, zoom: nextZoom });
-    } else {
-      state.map.setCenter?.(center);
-      state.map.setZoom?.(nextZoom);
-    }
+    state.followZoom=finiteZoom(zoom);
     // El vuelo emite los mismos eventos que un gesto, pero sin `originalEvent`,
     // así que no se cancela a sí mismo y no hace falta ninguna bandera.
     state.userInteracted = false;
     setCameraMode('follow', { force: true });
+    state.cameraNeedsFrame = true;
+    followCamera({immediate:!animate});
     return true;
   }
 
@@ -495,6 +565,8 @@ export function createMapLibreTrackingMap({
       if (!state.map || state.unavailable || state.destroyed) return;
       try {
         state.map.resize?.();
+        const key=`${state.canvas?.clientWidth}:${state.canvas?.clientHeight}`;
+        if(key!==state.viewportKey){state.viewportKey=key;state.cameraNeedsFrame=true;followCamera({immediate:true});}
       } catch (_) {
         markUnavailable('resize');
       }
@@ -539,6 +611,8 @@ export function createMapLibreTrackingMap({
       // source: antes de `load` no hay dónde ponerlo.
       renderAccuracyHalo();
       fitSandboxGeometry();
+      state.cameraNeedsFrame = true;
+      followCamera({immediate:true});
       // El encuadre de un área sólo manda cuando no hay nada más concreto que
       // mirar: una ruta de muestra o un rider real ganan siempre.
       if (!state.routeFeature && !state.riderLocation) {
@@ -585,7 +659,7 @@ export function createMapLibreTrackingMap({
      * `dragstart` nacido de un `mousemove`, y el cliente aparecía explorando un
      * mapa que todavía no había visto.
      */
-    for (const eventName of ['dragstart', 'zoomstart', 'rotatestart']) {
+    for (const eventName of ['dragstart', 'zoomstart', 'rotatestart', 'movestart']) {
       addMapListener(eventName, (event) => {
         if (!state.ready || !isGestureEvent(event) || state.programmaticMove) return;
         state.userInteracted = true;
@@ -612,7 +686,7 @@ export function createMapLibreTrackingMap({
     }
     if (documentRef?.addEventListener) {
       addDomListener(documentRef, 'visibilitychange', () => {
-        if (documentRef.hidden) return;
+        if (documentRef.hidden) { cancelMovement();state.motion?.resume();state.map?.stop?.();return; }
         resumeFromBackground();
         resize();
       });
@@ -639,6 +713,7 @@ export function createMapLibreTrackingMap({
       state.motionFrame = null;
     }
     state.motion?.resume();
+    state.cameraNeedsFrame = true;
     // Si un tramo quedó a mitad de camino, el marcador vuelve a la última coordenada MEDIDA.
     paintMotionFrame();
   }
@@ -759,6 +834,7 @@ export function createMapLibreTrackingMap({
    */
   function updatePlaces({ store = null, destination = null } = {}) {
     if (state.destroyed || state.unavailable) return false;
+    state.places = {store,destination};
     if (!state.map || !state.ready) {
       state.pendingPlaces = { store, destination };
       return false;
@@ -903,6 +979,8 @@ export function createMapLibreTrackingMap({
   }
 
   function cleanupResources() {
+    state.releaseTouchIntent?.();
+    state.releaseTouchIntent=null;
     cancelMovement();
     if (state.resizeFrame !== null) {
       cancelFrame(state.resizeFrame);
@@ -1001,6 +1079,7 @@ export function createMapLibreTrackingMap({
     frameArea,
     focusOn,
     setSandboxRouteVisible,
+    setOrderContext,
     recenter,
     resize,
     destroy,

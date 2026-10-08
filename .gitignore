@@ -8,6 +8,16 @@ node_modules/
 # copia una lista blanca y `.local/` no está en ella.
 .local/
 test-results/
+test-results-premium/
+test-results-tracking-premium/
+test-results-final-integration/
+artifacts/frontend-premium-20261007/
+artifacts/tracking-premium-20261007/
+artifacts/tracking-helmet-20261007/
+artifacts/la-taba-final-integration-20261007/*
+!artifacts/la-taba-final-integration-20261007/README.md
+!artifacts/la-taba-final-integration-20261007/source-audit.json
+!artifacts/la-taba-final-integration-20261007/IPHONE-REAL.md
 test-results-certification/
 playwright-report/
 dist_release/

@@ -1,26 +1,31 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v144-mp-production-verification';
+const CACHE_NAME = 'la-taba-runtime-v152-premium-tracking-final';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=73',
-  './styles/tokens.css?v=73',
-  './styles/common.css?v=73',
-  './styles/storefront.css?v=73',
-  './styles/catalog.css?v=73',
-  './styles/checkout.css?v=73',
-  './styles/profile.css?v=73',
-  './styles/showcase.css?v=73',
-  './styles/tracking.css?v=73',
-  './styles/business.css?v=73',
-  './styles/rider.css?v=73',
-  './styles/responsive.css?v=73',
-  './styles/brand-home.css?v=73',
+  './styles.css?v=79',
+  './styles/tokens.css?v=79',
+  './styles/common.css?v=79',
+  './styles/storefront.css?v=79',
+  './styles/catalog.css?v=79',
+  './styles/checkout.css?v=79',
+  './styles/profile.css?v=79',
+  './styles/showcase.css?v=79',
+  './styles/tracking.css?v=79',
+  './styles/business.css?v=79',
+  './styles/rider.css?v=79',
+  './styles/responsive.css?v=79',
+  './styles/brand-home.css?v=79',
   // `styles.css` la importa desde que existe y nunca estuvo acá: sin red, la
   // home se quedaba sin la capa de movimiento. Lo destapó el guard de la
   // cadena de CSS versionado; no lo introdujo esta integración.
-  './styles/campaigns.css?v=73',
-  './styles/motion.css?v=73',
+  './styles/campaigns.css?v=79',
+  './styles/motion.css?v=79',
+  './styles/premium-storefront.css?v=79',
+  './js/category-glass.js',
+  './assets/brand/ambient-grain.png',
+  './styles/tracking-premium.css?v=79',
+  './js/map/touch_intent.js',
   './manifest.webmanifest',
   './runtime-config.js?tenant=walter-staging',
   './pago/resultado/index.html',
@@ -333,12 +338,27 @@ self.addEventListener('install', (event) => {
 async function precargar() {
   const staged = await Promise.all(ASSETS.map(async (asset) => {
     const request = new Request(asset, { cache: 'reload' });
-    const response = await fetch(request);
+    const fetched = await fetch(request);
     // `destination` de un Request construido a mano SIEMPRE viene vacío, así
     // que el tipo que se exige sale de la extensión: es lo único que hace que
     // el control valga también acá.
     const destination = destinoEsperado(asset);
-    if (!isUsable({ destination }, response)) throw new Error(`precache_unusable:${asset}`);
+    if (!isUsable({ destination }, fetched)) throw new Error(`precache_unusable:${asset}`);
+    // Drain each transport before waiting for the whole batch. Holding many
+    // unread network bodies until Promise.all resolves can exhaust HTTP/1
+    // connection slots. Bytes remain staged in memory; no cache is written
+    // until every asset has passed the existing validation below.
+    const body = await fetched.arrayBuffer();
+    const headers = new Headers(fetched.headers);
+    // arrayBuffer exposes decoded bytes, so transport compression and length
+    // metadata no longer describe this synthetic response (notably in WebKit).
+    headers.delete('content-encoding');
+    headers.delete('content-length');
+    const response = new Response(body, {
+      status: fetched.status,
+      statusText: fetched.statusText,
+      headers,
+    });
     // En la ESCRITURA se mira el cuerpo de hojas Y módulos, siempre: es una
     // sola vez por publicación y es el momento en que un borde mentiroso
     // envenena la caché para todas las visitas que vengan después.
@@ -387,6 +407,14 @@ async function limpiarCachesViejas() {
 // Permite forzar la activación inmediata de un SW nuevo desde la página.
 self.addEventListener('message', (event) => {
   if (event.data === 'skip-waiting') self.skipWaiting();
+  // The controller can confirm its own release even when a browser's page-side
+  // ServiceWorker wrapper retains an earlier lifecycle state after navigation.
+  if (event.data === 'release-status') {
+    event.ports?.[0]?.postMessage({
+      cacheName: CACHE_NAME,
+      state: self.registration.active?.state,
+    });
+  }
 });
 
 // Network-first: el contenido fresco gana, así una versión recién publicada se

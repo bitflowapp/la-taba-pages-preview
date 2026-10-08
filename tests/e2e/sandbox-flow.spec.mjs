@@ -237,7 +237,7 @@ test('sandbox completes client, business, rider, route, delivery and reorder', a
   await page.locator(`[data-delivery-done="${orderId}"]`).click();
 
   await page.goto('/?demo=1#tracking');
-  await expect(tracking.locator('.tracking-hero h1')).toHaveText('Pedido entregado');
+  await expect(tracking.locator('.tracking-hero h1')).toHaveText('¡Llegó tu pedido!');
   const deliveredTimeline = tracking.getByRole('list', { name: 'Progreso del pedido' });
   await expect(deliveredTimeline.getByRole('listitem')).toHaveCount(4);
   await expect(deliveredTimeline.locator('.track-step.done, .track-step.current')).toHaveCount(4);

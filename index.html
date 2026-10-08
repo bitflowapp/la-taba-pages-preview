@@ -82,7 +82,7 @@
       lo verifica tests/home-hero-preload.test.mjs.
     -->
     <link rel="preload" as="image" href="assets/promos/cervezas-heineken-band.webp" media="(max-width: 699px)" fetchpriority="high" />
-    <link rel="stylesheet" href="styles.css?v=73" />
+    <link rel="stylesheet" href="styles.css?v=79" />
   </head>
   <!--
     La vista activa se declara ya en el shell servido. `renderNavigation` la
@@ -535,6 +535,7 @@
             orden. Junto con la fila de controles de abajo, esto le devuelve un
             renglón entero de producto a la primera pantalla del catálogo.
           -->
+          <div class="catalog-masthead">
           <div class="catalog-head catalog-toolbar">
             <h1 class="view-title" data-catalog-title>Todos</h1>
             <p class="catalog-count" data-catalog-count aria-live="polite" aria-atomic="true">0 productos</p>
@@ -589,6 +590,7 @@
             </label>
           </div>
 
+          </div>
           <div class="grid-block">
             <!-- El otro estante con brillo: la grilla principal del catalogo. -->
             <div class="product-grid" data-product-grid data-glow-shelf></div>

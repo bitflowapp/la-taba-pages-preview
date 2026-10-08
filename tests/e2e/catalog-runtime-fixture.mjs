@@ -27,6 +27,7 @@ const TOKEN = ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
 export async function openRuntimeCatalog(page, {
   realtime = true, mapRow = null, availability = null, beforeGoto = null, view = 'catalog', waitForCatalog = true,
   catalogRows = null,
+  navigationWaitUntil = 'load',
 } = {}) {
   if (process.env.TABA_RUNTIME_BEFORE_UI) await page.route('**/js/ui.js', (route) => route.fulfill({
     contentType: 'application/javascript', path: process.env.TABA_RUNTIME_BEFORE_UI,
@@ -115,7 +116,7 @@ export async function openRuntimeCatalog(page, {
     } };
   }, { backend: BACKEND, businessId: BUSINESS_ID });
   if (beforeGoto) await beforeGoto(page);
-  await page.goto(view === 'home' ? '/' : `/#${view}`);
+  await page.goto(view === 'home' ? '/' : `/#${view}`, { waitUntil: navigationWaitUntil });
   if (waitForCatalog && view === 'catalog') {
     await expect(page.locator(`${GRID} .product-card`)).toHaveCount(rows.length, { timeout: 20000 });
   }

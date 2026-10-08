@@ -9,6 +9,7 @@
 // confirmar dónde vive porque un CDN no respondió.
 
 import { MAPLIBRE_PUBLIC_STYLE_URL } from './maplibre_tracking_map.js';
+import { bindMapTouchIntent } from './touch_intent.js';
 
 const DEFAULT_ZOOM = 16.5;
 const STYLE_TIMEOUT_MS = 8000;
@@ -27,6 +28,7 @@ export function createLocationPickerMap({
     styleTimer: null,
     onPick: null,
     onUnavailable: null,
+    releaseTouchIntent: null,
   };
 
   function libraryAvailable() {
@@ -58,6 +60,9 @@ export function createLocationPickerMap({
         pitchWithRotate: false,
         maxPitch: 0,
         renderWorldCopies: false,
+        cooperativeGestures: false,
+        dragPan: true,
+        touchZoomRotate: true,
       });
       if (maplibregl.AttributionControl && state.map.addControl) {
         state.map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
@@ -70,6 +75,9 @@ export function createLocationPickerMap({
       state.unavailable = 'constructor';
       return false;
     }
+    state.map.touchZoomRotate?.disableRotation?.();
+    state.map.touchPitch?.disable?.();
+    state.releaseTouchIntent=bindMapTouchIntent(container,state.map);
 
     try {
       state.element = buildPinElement(documentRef);
@@ -127,6 +135,8 @@ export function createLocationPickerMap({
   }
 
   function destroy() {
+    state.releaseTouchIntent?.();
+    state.releaseTouchIntent=null;
     clearStyleTimer();
     try {
       state.marker?.remove?.();

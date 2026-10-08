@@ -55,20 +55,23 @@ const bounded=(promise,label,ms=45000)=>{
   let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(`QA timeout: ${label}`)),ms);})]).finally(()=>clearTimeout(timer));
 };
 async function snapshot(page,engine,name){await sharp(await page.screenshot()).webp({quality:88}).toFile(path.join(root,`${engine}-${name}.webp`));}
-async function inventory(page){return page.evaluate(async()=>{
+async function inventory(page){return page.evaluate(async expectedCache=>{
   const registration=await navigator.serviceWorker.getRegistration();
   const names=await caches.keys(),inventories=[];
-  // Reading with caches.open during activation can recreate a cache just
-  // deleted by the worker. Wait for activated before enumerating its entries.
-  if(registration?.active?.state==='activated')for(const name of names){
-    if(registration.active.state!=='activated'||!await caches.has(name))continue;
-    const cache=await caches.open(name);inventories.push({name,assets:(await cache.keys()).map(r=>new URL(r.url).pathname+new URL(r.url).search)});
+  // Inspect only the namespace that must remain. Opening the predecessor
+  // during activation could recreate a cache the worker just deleted.
+  for(const name of names){
+    let assets=null;
+    if(name===expectedCache&&await caches.has(name)){
+      const cache=await caches.open(name);assets=(await cache.keys()).map(r=>new URL(r.url).pathname+new URL(r.url).search);
+    }
+    inventories.push({name,assets});
   }
   return {caches:inventories,controlled:!!navigator.serviceWorker.controller,waiting:!!registration?.waiting,
     scope:registration?.scope,scriptURL:registration?.active?.scriptURL,activeState:registration?.active?.state,
     installingState:registration?.installing?.state,waitingState:registration?.waiting?.state,
     updateViaCache:registration?.updateViaCache,qaUpdateResult:window.__qaUpdateResult};
-});}
+},phase==='baseline'?oldIdentity.cacheName:newIdentity.cacheName);}
 try{
   for(const [engine,type] of [['chromium',chromium],['webkit',webkit]].filter(([engine])=>!process.env.TABA_FINAL_ENGINE||engine===process.env.TABA_FINAL_ENGINE)){
     phase='baseline';let context,browser;
@@ -113,14 +116,14 @@ try{
       report.mode=await page.evaluate(async()=> (await import('/js/core/app-mode.js')).getAppMode());expect(report.mode).toBe('demo');
       await expect.poll(async()=>{
         const current=await inventory(page);
-        return current.controlled&&current.activeState==='activated'&&current.caches.some(cache=>cache.name===oldIdentity.cacheName&&cache.assets.length>=oldIdentity.assetCount);
+        return current.controlled&&!current.waiting&&!current.installingState&&current.caches.some(cache=>cache.name===oldIdentity.cacheName&&cache.assets?.length>=oldIdentity.assetCount);
       },{timeout:40000}).toBe(true);
       // Warm navigation belongs to the installed old worker before switching
       // the server tree. First-install controllerchange may reload the page.
       await page.reload({waitUntil:'domcontentloaded'});
       await page.waitForFunction(()=>document.documentElement.dataset.tabaStartup==='ready'&&!!navigator.serviceWorker.controller,null,{timeout:40000});
       report.before=await inventory(page);await snapshot(page,engine,'before');
-      expect(report.before.controlled).toBe(true);expect(report.before.activeState).toBe('activated');
+      expect(report.before.controlled).toBe(true);expect(report.before.waiting).toBe(false);
       progress('baseline installed');
       phase='candidate';
       progress('request update');
@@ -140,7 +143,7 @@ try{
       await page.waitForFunction(()=>document.documentElement.dataset.tabaStartup==='ready',null,{timeout:30000});
       await expect.poll(async()=>{
         const current=await inventory(page);
-        return current.controlled&&current.activeState==='activated'&&current.caches.some(cache=>cache.name===newIdentity.cacheName&&cache.assets.length>=newIdentity.assetCount)&&!current.caches.some(cache=>cache.name===oldIdentity.cacheName);
+        return current.controlled&&!current.waiting&&!current.installingState&&current.caches.some(cache=>cache.name===newIdentity.cacheName&&cache.assets?.length>=newIdentity.assetCount)&&!current.caches.some(cache=>cache.name===oldIdentity.cacheName);
       },{timeout:30000}).toBe(true);
       report.after=await inventory(page);
       const cache=report.after.caches.find(c=>c.name===newIdentity.cacheName);

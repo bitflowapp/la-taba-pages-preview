@@ -50,14 +50,14 @@ export async function openPremiumTracking(page,{status='received',accuracy=100,c
   await page.waitForTimeout(500);
 }
 
-export async function changeTracking(page,{status,lat,lng,age=0}={}) {
+export async function changeTracking(page,{status,lat,lng,age=0,timestampStepMs=1800}={}) {
   await page.evaluate(async update=>{
     const {updateState}=await import('/js/state.js');
     updateState(draft=>{
       const order=draft.orders[0];
       if(update.status){order.status=update.status;order.assignedRiderId=['assigned','ready','picked_up','on_the_way','delivered'].includes(update.status)?'qa-rider':null;order.statusHistory.push({status:update.status,at:new Date().toISOString()});}
       if(update.lat!=null){
-        const time=update.age?Date.now()-update.age:Math.max(Date.now(),(window.__trackingQaTimestamp||0)+1800);
+        const time=update.age?Date.now()-update.age:Math.max(Date.now(),(window.__trackingQaTimestamp||0)+update.timestampStepMs);
         window.__trackingQaTimestamp=time;
         order.tracking.lastLocation={...order.tracking.lastLocation,lat:update.lat,lng:update.lng,timestamp:time,lastFixAt:new Date(time).toISOString()};
       }
@@ -65,7 +65,7 @@ export async function changeTracking(page,{status,lat,lng,age=0}={}) {
     });
     const {renderTracking}=await import('/js/ui.js');renderTracking();
     const {renderMapViews}=await import('/js/map/map_view.js');renderMapViews();
-  },{status,lat,lng,age});
+  },{status,lat,lng,age,timestampStepMs});
 }
 
 export async function touchPan(page,{from,to,steps=12,delay=16}) {

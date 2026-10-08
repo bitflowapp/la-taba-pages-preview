@@ -45,7 +45,10 @@ for(const [engine,type] of [['chromium',chromium],['webkit',webkit]])for(const v
     const heap=[];
     if(cdp)await cdp.send('Performance.enable');
     for(let batch=0;batch<3;batch++){
-      for(let n=0;n<5;n++)await changeTracking(page,{lat:START.lat+.0009+(batch*5+n)*.00003,lng:START.lng+.0009+(batch*5+n)*.00003});
+      // Rapid redraw samples use current, monotonic timestamps and plausible
+      // sub-metre jitter. The default fixture's 1.8s time steps would invent
+      // future GPS after this burst and correctly make it fail validation.
+      for(let n=0;n<5;n++)await changeTracking(page,{lat:START.lat+.0009+(batch*5+n)*.0000002,lng:START.lng+.0009+(batch*5+n)*.0000002,timestampStepMs:1});
       await page.waitForTimeout(650);
       if(cdp){await cdp.send('HeapProfiler.collectGarbage');const metrics=await cdp.send('Performance.getMetrics');const dom=await cdp.send('Memory.getDOMCounters');heap.push({heapBytes:metrics.metrics.find(m=>m.name==='JSHeapUsedSize')?.value,...dom});}
     }

@@ -23,6 +23,49 @@ env:
   SUPABASE_CLI_VERSION: '2.101.0'
 
 jobs:
+  premium_tracking_native_qa:
+    name: Native PWA update and integrated Rider motion
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out exact candidate with production baseline
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: Install QA dependencies and both browser engines
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium webkit
+      - name: Prepare read-only production baseline
+        run: git worktree add --detach ../la-taba-final-baseline-20261007 origin/main
+      - name: Native old-to-candidate PWA update in both engines
+        run: node scripts/qa-final-pwa-update.mjs
+      - name: Record integrated Rider motion with local GPS
+        run: |
+          node scripts/realtime-relay.mjs 18265 > /tmp/taba-qa-server.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:18265/ > /dev/null; then break; fi
+            sleep 1
+          done
+          node scripts/qa-final-motion.mjs
+      - name: Upload native PWA and motion evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: native-pwa-rider-${{ github.sha }}
+          path: |
+            artifacts/la-taba-final-integration-20261007/pwa/*.json
+            artifacts/la-taba-final-integration-20261007/pwa/*.webp
+            artifacts/la-taba-final-integration-20261007/motion/
+          if-no-files-found: warn
+          retention-days: 14
+
   web_backend:
     name: Web, backend, fiscal and security gates
     runs-on: ubuntu-latest

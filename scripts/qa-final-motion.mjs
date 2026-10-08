@@ -2,10 +2,12 @@ import { chromium, devices, expect } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
 import { openPremiumTracking, changeTracking, touchPan, TRACKING_MAP, START } from '../tests/e2e/tracking-premium-fixture.mjs';
+import { cacheMapResources } from './qa-final-network-cache.mjs';
 const root=path.resolve('artifacts/la-taba-final-integration-20261007/motion');fs.mkdirSync(root,{recursive:true});
 const browser=await chromium.launch();let context;
 try{
   const size={width:390,height:844};context=await browser.newContext({...devices['Pixel 7'],viewport:size,deviceScaleFactor:1,baseURL:'http://127.0.0.1:18265',serviceWorkers:'block',recordVideo:{dir:root,size}});
+  await cacheMapResources(context);
   const page=await context.newPage();await openPremiumTracking(page,{status:'preparing',accuracy:12});
   await page.addStyleTag({content:'.qa-caption{position:fixed;z-index:10000;left:18px;right:18px;bottom:90px;padding:9px 12px;border-radius:14px;background:#0c1015f5;color:#fff;border:1px solid #555;font:600 12px system-ui;pointer-events:none}'});
   await page.evaluate(()=>{const n=document.createElement('div');n.className='qa-caption';document.body.append(n);});

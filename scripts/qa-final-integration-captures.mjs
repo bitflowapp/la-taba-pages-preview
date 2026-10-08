@@ -5,6 +5,7 @@ import sharp from 'sharp';
 import { openRuntimeCatalog, clickCatalogCategory, GRID } from '../tests/e2e/catalog-runtime-fixture.mjs';
 import { openPremiumTracking, changeTracking, TRACKING_MAP } from '../tests/e2e/tracking-premium-fixture.mjs';
 import { seedCartAboveMinimum } from '../tests/e2e/helpers.mjs';
+import { cacheMapResources } from './qa-final-network-cache.mjs';
 
 const phase = process.argv[2] || 'final';
 const baseURL = process.env.TABA_FINAL_BASE_URL || `http://127.0.0.1:${phase === 'before' ? 18266 : 18265}`;
@@ -31,6 +32,7 @@ async function capture(page, engine, viewport, scene, errors) {
       columns:grid?getComputedStyle(grid).gridTemplateColumns.split(' ').length:null,
       gridWidth:grid?grid.getBoundingClientRect().width:null,
       ambient:document.querySelector('.app-shell')?getComputedStyle(document.querySelector('.app-shell')).backgroundImage:null,
+      mapDiagnostics:window.__qaMaps?.at(-1)?{tilesLoaded:window.__qaMaps.at(-1).areTilesLoaded(),renderedFeatures:window.__qaMaps.at(-1).queryRenderedFeatures().length}:null,
       glass:window.TABA2_MOTION?.getDiagnostics?.().categoryGlass??null};
   });
   records.push({phase,engine,viewport,scene,file,bytes:fs.statSync(path.join(root,phase,file)).size,errors:[...errors],...metrics});
@@ -49,9 +51,12 @@ for(const [engine,type] of [['chromium',chromium],['webkit',webkit]]) {
     for(const [width,height] of sizes) {
       const viewport={width,height};
       const options={...(width<600?devices[engine==='webkit'?'iPhone 13':'Pixel 7']:{}),viewport,deviceScaleFactor:1,baseURL,serviceWorkers:'block'};
-      let context=await browser.newContext(options),page=await context.newPage(),errors=[];
+      let context=await browser.newContext(options);await cacheMapResources(context);
+      let page=await context.newPage(),errors=[];
+      await page.bringToFront();
       page.on('pageerror',error=>errors.push(error.message));
-      await openRuntimeCatalog(page,{catalogRows:live.products,waitForCatalog:false,view:'home'});
+      console.log(`Opening ${phase} ${engine} ${width}x${height}`);
+      await openRuntimeCatalog(page,{catalogRows:live.products,waitForCatalog:false,view:'home',navigationWaitUntil:'domcontentloaded'});
       await expect(page.locator('[data-view="home"] .home-best-card').first()).toBeVisible();
       await capture(page,engine,viewport,'home',errors);
       await page.locator('[data-nav-view="catalog"]:visible').first().click();
@@ -66,7 +71,8 @@ for(const [engine,type] of [['chromium',chromium],['webkit',webkit]]) {
       await page.locator('.checkout-form').scrollIntoViewIfNeeded();
       await capture(page,engine,viewport,'checkout',errors);
       await context.close();
-      context=await browser.newContext(options);page=await context.newPage();errors=[];
+      context=await browser.newContext(options);await cacheMapResources(context);page=await context.newPage();errors=[];
+      await page.bringToFront();
       page.on('pageerror',error=>errors.push(error.message));
       await openPremiumTracking(page,{status:phase==='before'?'on_the_way':'received',accuracy:12,capturePixels:true});
       const states=phase==='before'?[['on_the_way','on-the-way']]:[['received','confirmed'],['preparing','preparing'],['assigned','assigned'],['on_the_way','on-the-way'],['delivered','delivered']];

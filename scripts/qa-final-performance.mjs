@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { openRuntimeCatalog } from '../tests/e2e/catalog-runtime-fixture.mjs';
 import { openPremiumTracking, changeTracking, START, TRACKING_MAP } from '../tests/e2e/tracking-premium-fixture.mjs';
+import { cacheMapResources } from './qa-final-network-cache.mjs';
 const root=path.resolve('artifacts/la-taba-final-integration-20261007');
 const live=JSON.parse(fs.readFileSync('tests/fixtures/catalog-live.json','utf8'));
 const results=[];fs.mkdirSync(root,{recursive:true});
@@ -22,12 +23,12 @@ for(const [engine,type] of [['chromium',chromium],['webkit',webkit]])for(const v
   const browser=await type.launch();let context;
   try{
     const options={...(viewport.width<600?devices[engine==='webkit'?'iPhone 13':'Pixel 7']:{}),viewport,deviceScaleFactor:1,serviceWorkers:'block',baseURL:`http://127.0.0.1:${phase==='before'?18266:18265}`};
-    context=await browser.newContext(options);let page=await context.newPage();
-    const start=Date.now();await openRuntimeCatalog(page,{catalogRows:live.products,waitForCatalog:false});
+    context=await browser.newContext(options);await cacheMapResources(context);let page=await context.newPage();await page.bringToFront();
+    const start=Date.now();await openRuntimeCatalog(page,{catalogRows:live.products,waitForCatalog:false,navigationWaitUntil:'domcontentloaded'});
     const bootstrapMs=Date.now()-start;await page.evaluate(()=>document.fonts.ready);await page.waitForTimeout(500);
     const scrollSamples=[];for(let n=0;n<3;n++)scrollSamples.push(await frames(page,true));
     const glass=await page.evaluate(()=>window.TABA2_MOTION?.getDiagnostics?.().categoryGlass??null);
-    await context.close();context=await browser.newContext(options);page=await context.newPage();
+    await context.close();context=await browser.newContext(options);await cacheMapResources(context);page=await context.newPage();await page.bringToFront();
     await openPremiumTracking(page,{status:'on_the_way'});
     await page.waitForFunction(()=>window.__qaMaps.at(-1).areTilesLoaded(),null,{timeout:20000});
     await page.evaluate(selector=>{

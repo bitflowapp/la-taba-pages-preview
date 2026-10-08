@@ -5,10 +5,27 @@ const live = JSON.parse(fs.readFileSync(new URL('../fixtures/catalog-live.json',
 const RAIL = '[data-view="catalog"] [data-category-strip]';
 const pills = page => page.locator(`${RAIL} [data-category-id]`);
 const boot = page => openRuntimeCatalog(page, { catalogRows: live.products, waitForCatalog: false });
-const rest = page => expect.poll(() => page.evaluate(() => window.TABA2_MOTION.getDiagnostics().categoryGlass.animating)).toBe(false);
+const rest = async page => {
+  try { await expect.poll(() => page.evaluate(() => window.TABA2_MOTION.getDiagnostics().categoryGlass.animating), { timeout: 12000 }).toBe(false); }
+  catch (error) {
+    console.log('glass-rest-diagnostic', await page.evaluate(() => {
+      const rail=document.querySelector('[data-view="catalog"] [data-category-strip]');
+      return JSON.stringify({glass:window.TABA2_MOTION.getDiagnostics().categoryGlass,hidden:document.hidden,
+        scroll:rail.scrollLeft,scrollBehavior:getComputedStyle(rail).scrollBehavior,snap:getComputedStyle(rail).scrollSnapType,
+        moving:rail.dataset.glassMoving,events:window.__glassPointerEvents?.slice(-10)});
+    }));
+    throw error;
+  }
+};
 
 test('mouse: slow/fast drag, release between pills and reverse never activate a category', async ({page,isMobile,browserName}) => {
   test.skip(isMobile && browserName==='webkit','Mobile WebKit mouse emulation throttles rAF; native touch taps are covered below and mouse dragging is covered in desktop WebKit.');
+  await page.addInitScript(() => {
+    window.__glassPointerEvents=[];
+    for(const type of ['pointerdown','pointerup','pointercancel','lostpointercapture']) document.addEventListener(type,event=>{
+      window.__glassPointerEvents.push({type,id:event.pointerId,button:event.button,at:performance.now()});
+    },true);
+  });
   await boot(page);
   await page.setViewportSize({width:390,height:844});
   const box = await page.locator(RAIL).boundingBox();
@@ -45,6 +62,9 @@ test('mouse: slow/fast drag, release between pills and reverse never activate a 
   await expect(pills(page).first()).toHaveAttribute('aria-pressed','true');
   await pills(page).first().click();
   await expect(page.locator('[data-catalog-title]')).toHaveText('Todas');
+  await rest(page);
+  await page.waitForTimeout(800);
+  expect(await page.evaluate(()=>window.TABA2_MOTION.getDiagnostics().categoryGlass.animating)).toBe(false);
 });
 
 test('native horizontal wheel works; vertical wheel beginning on pills scrolls the page', async ({page,isMobile,browserName}) => {

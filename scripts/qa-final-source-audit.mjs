@@ -20,10 +20,18 @@ for(const file of ['styles.css','sw.js']){
     premiumStorefront:text.includes('premium-storefront.css'),premiumTracking:text.includes('tracking-premium.css')};
 }
 const files=git('diff','--name-only',refs.main,'HEAD').split('\n');
+const preserveGroups={pr142:['js/category-glass.js','js/motion.js','styles/premium-storefront.css','assets/brand/ambient-grain.png'],
+  pr144:['js/ui.js','js/map/map_view.js','js/map/maplibre_tracking_map.js','js/map/location_picker_map.js','js/map/touch_intent.js','js/map/rider_motion.js','js/map/rider_marker.js','styles/tracking-premium.css']};
+const preserved=Object.fromEntries(Object.entries(preserveGroups).map(([key,paths])=>[key,paths.map(file=>{
+  const current=fs.readFileSync(file),original=execFileSync('git',['show',`${refs[key]}:${file}`]);
+  const hashBytes=b=>crypto.createHash('sha256').update(b.toString('utf8').replaceAll('\r\n','\n')).digest('hex');
+  return{file,matchesOriginal:hashBytes(current)===hashBytes(original)};
+})]));
 const report={checkedAt:new Date().toISOString(),refs,production:{url:'https://la-taba.pages.dev',version,etag:versionResponse.headers.get('etag'),files:productionFiles},
   included:Object.fromEntries(['pr142','pr143','pr144'].map(key=>[key,ancestor(refs[key],'HEAD')])),
   alreadyInMain:Object.fromEntries(['pr142','pr143','pr144'].map(key=>[key,ancestor(refs[key],refs.main)])),
   pr143AncestorOf144:ancestor(refs.pr143,refs.pr144),
+  originalFeatureSourcesPreserved:preserved,
   protectedSourceChanges:files.filter(file=>/^(supabase\/|js\/(?:repositories|payments|services|core)\/|js\/(?:orders|state|checkout)\.js|runtime-config\.js|package(?:-lock)?\.json)/.test(file)),
   strategy:'Merge #142, then #144 (which contains #143). Both share the verified current main ancestor. Preserve original commits, combine CSS/precache intentionally.',
   release:JSON.parse(fs.readFileSync('release-identity.json','utf8'))};

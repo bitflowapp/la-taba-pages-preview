@@ -9,15 +9,16 @@ const live=JSON.parse(fs.readFileSync('tests/fixtures/catalog-live.json','utf8')
 const results=[];fs.mkdirSync(root,{recursive:true});
 async function frames(page,scroll=false){return page.evaluate(async scroll=>{
   const deltas=[],tasks=[];let last,cls=0,layoutSupported=false,lo,po;
-  try{po=new PerformanceObserver(list=>list.getEntries().forEach(e=>{if(!e.hadRecentInput)cls+=e.value;}));po.observe({type:'layout-shift'});layoutSupported=true;}catch{}
-  try{lo=new PerformanceObserver(list=>list.getEntries().forEach(e=>tasks.push(e.duration)));lo.observe({type:'longtask'});}catch{}
+  try{if(PerformanceObserver.supportedEntryTypes.includes('layout-shift')){po=new PerformanceObserver(list=>list.getEntries().forEach(e=>{if(!e.hadRecentInput)cls+=e.value;}));po.observe({type:'layout-shift'});layoutSupported=true;}}catch{}
+  const longTaskSupported=PerformanceObserver.supportedEntryTypes.includes('longtask');
+  try{if(longTaskSupported){lo=new PerformanceObserver(list=>list.getEntries().forEach(e=>tasks.push(e.duration)));lo.observe({type:'longtask'});}}catch{}
   await new Promise(resolve=>{const start=performance.now();const tick=now=>{
     if(last)deltas.push(now-last);last=now;const t=now-start;
     if(scroll)scrollTo(0,Math.sin(t/1200*Math.PI)**2*Math.min(1400,document.documentElement.scrollHeight-innerHeight));
     if(t<1200)requestAnimationFrame(tick);else resolve();
   };requestAnimationFrame(tick);});
   if(scroll)scrollTo(0,0);po?.disconnect();lo?.disconnect();deltas.sort((a,b)=>a-b);
-  return{p95:deltas[Math.floor(deltas.length*.95)],max:deltas.at(-1),frames:deltas.length,over50:deltas.filter(n=>n>50).length,cls:layoutSupported?cls:null,longTasks:tasks};
+  return{p95:deltas[Math.floor(deltas.length*.95)],max:deltas.at(-1),frames:deltas.length,over50:deltas.filter(n=>n>50).length,cls:layoutSupported?cls:null,longTasks:longTaskSupported?tasks:null};
 },scroll);}
 for(const [engine,type] of [['chromium',chromium],['webkit',webkit]])for(const viewport of [{width:390,height:844},{width:1440,height:900}])for(const phase of ['before','final']){
   const browser=await type.launch();let context;
@@ -46,7 +47,7 @@ for(const [engine,type] of [['chromium',chromium],['webkit',webkit]])for(const v
     for(let batch=0;batch<3;batch++){
       for(let n=0;n<5;n++)await changeTracking(page,{lat:START.lat+.0009+(batch*5+n)*.00003,lng:START.lng+.0009+(batch*5+n)*.00003});
       await page.waitForTimeout(650);
-      if(cdp){await cdp.send('HeapProfiler.collectGarbage');const metrics=await cdp.send('Performance.getMetrics');heap.push({heapBytes:metrics.metrics.find(m=>m.name==='JSHeapUsedSize')?.value,nodes:metrics.metrics.find(m=>m.name==='Nodes')?.value});}
+      if(cdp){await cdp.send('HeapProfiler.collectGarbage');const metrics=await cdp.send('Performance.getMetrics');const dom=await cdp.send('Memory.getDOMCounters');heap.push({heapBytes:metrics.metrics.find(m=>m.name==='JSHeapUsedSize')?.value,...dom});}
     }
     const tracking=await page.evaluate(selector=>{const map=document.querySelector(selector);return{canvasSame:map.querySelector('canvas')===window.__perfCanvas,markerSame:map.querySelector('.lt-rider-marker')===window.__perfMarker,canvasRemovals:window.__perfRemoved,mapsCreated:window.__qaMaps.length,infiniteMapAnimations:map.getAnimations({subtree:true}).filter(a=>a.playState==='running'&&a.effect?.getTiming().iterations===Infinity).length};},TRACKING_MAP);
     await cdp?.detach();

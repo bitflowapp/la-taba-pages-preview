@@ -24,7 +24,7 @@ const preserveGroups={pr142:['js/category-glass.js','js/motion.js','styles/premi
   pr144:['js/ui.js','js/map/map_view.js','js/map/maplibre_tracking_map.js','js/map/location_picker_map.js','js/map/touch_intent.js','js/map/rider_motion.js','js/map/rider_marker.js','styles/tracking-premium.css']};
 const preserved=Object.fromEntries(Object.entries(preserveGroups).map(([key,paths])=>[key,paths.map(file=>{
   const current=fs.readFileSync(file),original=execFileSync('git',['show',`${refs[key]}:${file}`]);
-  const hashBytes=b=>crypto.createHash('sha256').update(b.toString('utf8').replaceAll('\r\n','\n')).digest('hex');
+  const hashBytes=b=>crypto.createHash('sha256').update(file.endsWith('.png')?b:b.toString('utf8').replaceAll('\r\n','\n')).digest('hex');
   return{file,matchesOriginal:hashBytes(current)===hashBytes(original)};
 })]));
 const report={checkedAt:new Date().toISOString(),refs,production:{url:'https://la-taba.pages.dev',version,etag:versionResponse.headers.get('etag'),files:productionFiles},

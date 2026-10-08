@@ -5,7 +5,7 @@ Base verificada: `cd26834b25909a3fbf6b5133af7b70c39a35fc2d`.
 
 Se integró #142 y luego #144, que contiene #143. Los tres heads originales son ancestros del candidato; no se repitió el merge de #143. [Audit de origen](source-audit.json): producción y main coinciden, incluidos los hashes reales de CSS y service worker. No se modificaron backend, pagos, repositorios de datos, configuración runtime ni migraciones.
 
-CSS v77 conserva `premium-storefront.css` y `tracking-premium.css`. La identidad firmada común es `la-taba-runtime-v148-premium-tracking-final`, con 214 assets; se precachean categoría glass, textura, touch intent y ambas capas CSS.
+CSS v77 conserva `premium-storefront.css` y `tracking-premium.css`. La identidad firmada común es `la-taba-runtime-v149-premium-tracking-final`, con 214 assets; se precachean categoría glass, textura, touch intent y ambas capas CSS.
 
 Los resultados completos se generan **localmente en este directorio** y se conservan fuera del árbol versionado: capturas, videos, logs, métricas, actualización PWA y `TECHNICAL_REPORT.md`. La historia Git conserva la evidencia de los PR originales; este árbol de release evita copiar otra vez sus binarios. GitHub Actions publica además la matriz de features y trazas.
 
@@ -34,7 +34,9 @@ node scripts/qa-final-sanitize.mjs
 
 Capturas finales: 390×844, 430×932, 1366×768, 1440×900 y 1920×1080; home, catálogo, categorías, carrito, checkout y cinco estados de seguimiento. Datos de catálogo congelados y backend/GPS de fixture: no se crean pedidos ni pagos reales. La preservación de WebGL para screenshots sólo se habilita en el script de captura.
 
-La prueba PWA usa un servidor local que sirve primero el árbol de producción v144 y después el candidato v148. Verifica espera de actualización, activación explícita, eliminación de caché anterior, los 214 assets y arranque offline en ambos motores.
+La prueba PWA usa un servidor HTTP/1 local que prepara la caché histórica v144 y después instala el candidato v149. La preparación de v144 aplica exclusivamente un drain de transporte a su instalador, porque su instalación original se bloqueó en la prueba; sus assets y handlers de runtime se conservan. Esta adaptación de setup se declara en el reporte y en los hashes del worker servido. **El worker candidato se sirve byte por byte sin adaptación.** Se verifica espera de actualización, activación explícita, eliminación de caché anterior, los 214 assets y arranque offline con el CSS premium en ambos motores. La certificación agrega un job nativo independiente en Linux.
+
+La prueba nativa detectó que el instalador retenía cuerpos de red sin consumir hasta reunir todos los assets, lo que puede bloquear el pool HTTP/1 con respuestas grandes. La instalación candidata drena cada transporte antes de completar el lote en memoria y elimina las cabeceras de compresión/longitud que ya no describen esos bytes decodificados. Las validaciones MIME/HTML y la escritura atómica del precache se mantienen; el camino normal de lectura del worker no cambia. Chromium se verifica con red offline emulada; WebKit con conexiones TCP del origen cerradas, porque la emulación offline de Windows WebKit falló internamente durante el audit.
 
 ## Expiración
 

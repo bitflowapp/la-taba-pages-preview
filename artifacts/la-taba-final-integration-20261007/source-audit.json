@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-10-08T01:29:46.015Z",
+  "checkedAt": "2026-10-08T02:44:21.332Z",
   "refs": {
     "main": "cd26834b25909a3fbf6b5133af7b70c39a35fc2d",
     "pr142": "cf08953c73d8823df4ce3d1dd7f6e2a0fa1e8340",
@@ -99,7 +99,7 @@
   "protectedSourceChanges": [],
   "strategy": "Merge #142, then #144 (which contains #143). Both share the verified current main ancestor. Preserve original commits, combine CSS/precache intentionally.",
   "release": {
-    "cacheName": "la-taba-runtime-v148-premium-tracking-final",
+    "cacheName": "la-taba-runtime-v149-premium-tracking-final",
     "assetCount": 214,
     "assetsDigest": "36166e3a1391f40cf83df25f0d16c44fc3da10c677b7979e32bc44d40ece9879"
   }

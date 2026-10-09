@@ -547,12 +547,14 @@ test('afinar desde la home una búsqueda que ya existe tampoco pega las palabras
 
 test('una combinación de filtros sin resultados lo dice y ofrece quitar los filtros, no todo', async ({ page }) => {
   await openRuntimeCatalog(page);
-  await clickCatalogCategory(page, 'cervezas');
-  await expect(page.locator(`${GRID} .product-card`)).toHaveCount(8);
   const filters = page.locator('[data-catalog-filters]');
   await expect(filters).toBeHidden();
+  // Los filtros ofrecen sólo lo que el rubro tiene, así que la combinación vacía
+  // se arma como la arma un cliente: aplica «Sin alcohol» en «Todas» y pasa a
+  // «Cervezas», donde todo lleva alcohol. El filtro puesto viaja con él.
   await filters.locator('[data-catalog-filter="alcohol"]').selectOption('without', { force: true });
   await filters.locator('[data-close-catalog-filters]').evaluate(node => node.click());
+  await clickCatalogCategory(page, 'cervezas');
 
   const empty = page.locator(`${GRID} .empty-state`);
   await expect(empty).toBeVisible();
@@ -562,9 +564,12 @@ test('una combinación de filtros sin resultados lo dice y ofrece quitar los fil
   // Se fueron los filtros; el rubro elegido sigue.
   await expect(page.locator(`${GRID} .product-card`)).toHaveCount(8);
   await expect(page.locator('[data-catalog-title]')).toHaveText('Cervezas');
+  // Y «Cervezas» ya no ofrece «Sin alcohol»: no tiene con qué cumplirlo.
+  expect(await filters.locator('[data-catalog-filter="alcohol"] option').allTextContents()).not.toContain('Sin alcohol');
 
   // Los filtros sólo cargan con la culpa si sin ellos habría algo: con uno
   // puesto, «Favoritos» vacío sigue siendo «todavía no guardaste favoritos».
+  await clickCatalogCategory(page, 'all');
   await expect(filters).toBeHidden();
   await filters.locator('[data-catalog-filter="alcohol"]').selectOption('without', { force: true });
   await filters.locator('[data-close-catalog-filters]').evaluate(node => node.click());

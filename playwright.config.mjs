@@ -5,11 +5,12 @@ const relayPort = readPort('TABA_E2E_RELAY_PORT', 18787);
 process.env.TABA_E2E_RELAY_PORT = String(relayPort);
 
 // WebKit para Windows dejó su NetworkProcess huérfano dos veces después de
-// recorrer más de 80 casos en un solo browser. El gate conserva exactamente los
-// mismos 122 casos, pero los reparte 60/62 en dos proyectos. Con `workers: 1`
+// recorrer más de 80 casos en un solo browser. El gate reparte los mismos casos
+// (122 cuando se escribió esto; hoy más, porque cada spec nuevo suma) entre dos
+// proyectos. Con `workers: 1`
 // siguen siendo secuenciales y comparten los mismos servidores; sólo se recicla
 // el proceso del navegador antes de acumular ese estado interno.
-const mobileWebkitInteractionSpecs = /(product-discovery|mapa-pulso-en-fase|cuenta-contrasena-legible|catalog-runtime-stability|campaigns|catalog-polish|catalog-card-glow|premium-polish|catalog-image-attribution|checkout-payment-handoff|checkout-perfil-guardado|delivery-location-confirmation|launch-ux-checkout-reorder|panel-apertura|pwa-install|storefront-states)\.spec\.mjs/;
+const mobileWebkitInteractionSpecs = /(product-discovery|mapa-pulso-en-fase|cuenta-contrasena-legible|catalog-runtime-stability|catalog-commercial-coverage|campaigns|catalog-polish|catalog-card-glow|premium-polish|catalog-image-attribution|checkout-payment-handoff|checkout-perfil-guardado|delivery-location-confirmation|launch-ux-checkout-reorder|panel-apertura|pwa-install|storefront-states)\.spec\.mjs/;
 const mobileWebkitRecoverySpecs = /(address-flow|arranque-sin-jerga|mapa-fuera-del-arranque|mp-back-navigation-ui|panel-order-recovery|panel-toast|production-cart-persistence|root-entry|service-worker-degraded-recovery|storefront-stress-responsive)\.spec\.mjs/;
 
 export default defineConfig({

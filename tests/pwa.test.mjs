@@ -30,8 +30,8 @@ test('index.html loads the module entry point and avoids root-absolute asset pat
 
   assert.ok(indexHtml.includes('<script src="js/pwa-update.js?v=4"></script>'));
   assert.ok(indexHtml.includes('<script src="js/startup-recovery.js?v=3"></script>'));
-  assert.match(indexHtml, /<link rel="stylesheet" href="styles\.css\?v=79"\s*\/?>/);
-  assert.ok(indexHtml.includes('<script type="module" src="js/app.js?v=53"></script>'));
+  assert.match(indexHtml, /<link rel="stylesheet" href="styles\.css\?v=80"\s*\/?>/);
+  assert.ok(indexHtml.includes('<script type="module" src="js/app.js?v=54"></script>'));
   assert.ok(!indexHtml.includes('src="/js/'));
   assert.ok(!indexHtml.includes('href="/js/'));
   assert.ok(!indexHtml.includes('src="/assets/'));
@@ -41,9 +41,9 @@ test('service worker precaches the versioned showcase graph', () => {
   const worker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
 
   for (const asset of [
-    './styles.css?v=79',
-    './styles/showcase.css?v=79',
-    './js/app.js?v=53',
+    './styles.css?v=80',
+    './styles/showcase.css?v=80',
+    './js/app.js?v=54',
     './js/core/showcase-mode.js',
     './js/showcase-fixtures.js',
     './js/showcase.js',

@@ -35,7 +35,7 @@ Listado: **826 casos** (proyectos `chromium`, `mobile-webkit`, `mobile-webkit-re
 
 | # | Caso | Causa | Estado |
 |---|---|---|---|
-| 1 | `campaigns.spec` «un renderer lento conserva el packshot real…» | **Preexistente.** Condición de carrera `image.complete` justo después de ver el atributo `src`. **Falla también en `main` sin cambios** (`D:\work\la-taba-baseline-main`, `campaigns.spec.mjs:417`) y pasa al reintentar en la rama. | Flaky de `main`; no se tocó. |
+| 1 | `campaigns.spec` «un renderer lento conserva el packshot real…» | **Preexistente.** Condición de carrera `image.complete` justo después de ver el atributo `src`. **Falla también en `main` sin cambios** (worktree limpio de `origin/main`, `campaigns.spec.mjs:417`) y pasa al reintentar en la rama. | Flaky de `main`; no se tocó. |
 | 2 | `pwa-update-lifecycle` «CP v131 a v139» | Falló bajo carga (otras corridas de navegador en la misma máquina); **PASS** reejecutado solo (1.4 s). El arnés usa su propio servidor y el `sw.js` real con regex sobre `CACHE_NAME`/`ASSETS`: el cambio de versión no lo afecta. | Inestable por carga. |
 | 3 | `storefront-states` «una combinación de filtros sin resultados…» | **Consecuencia deseada de CPA-003.** La prueba armaba la lista vacía eligiendo «Sin alcohol» *dentro de Cervezas*; ahora el rubro no ofrece una opción sin resultado. Se reescribió para armarla como la arma un cliente (aplicar el filtro en «Todas» y pasar a «Cervezas») y se agregó que «Cervezas» ya no ofrece «Sin alcohol». | **PASS** (Chromium y WebKit). |
 | 4–5 | `catalog-commercial-coverage` «las opciones de marca son las del rubro…» (Chromium y WebKit) | Selector ambiguo de mi spec (`.empty-state` aparece dos veces en la vista). | Corregido; **PASS** (19/19 y 39/39). |
@@ -62,4 +62,13 @@ Listado: **826 casos** (proyectos `chromium`, `mobile-webkit`, `mobile-webkit-re
   corrida completa) y `npm run test:payments` dentro de `npm test`.
 - **Pedidos.** Ninguno se creó en producción: la auditoría sólo agregó al carrito local.
 - **Backend/base de datos real** (`test:db:*`): fuera de alcance, no se tocó backend.
-- **CI de GitHub:** ver el PR.
+- **CI de GitHub:** ver la sección 6.
+
+## 6 · CI de GitHub (PR #146)
+
+| Job | Resultado | Nota |
+|---|---|---|
+| Migrations, pgTAP and isolated restore | PASS | |
+| Web, backend, fiscal and security gates | 1.ª corrida FAIL → corregido | «Release hygiene»: una ruta de disco local en este mismo documento. Quitada. |
+| Native PWA update and integrated Rider motion | FAIL | **Preexistente en `main`**: la corrida de CI de `main` `0b7f5427` (PR #145) falla en el mismo paso, «Native old-to-candidate PWA update in both engines». Chromium pasa; WebKit se queda en «offline reload» (`page.waitForFunction` 30 s). No la introduce esta rama. |
+| Windows Rust and unsigned verification bundles | ver el PR | |

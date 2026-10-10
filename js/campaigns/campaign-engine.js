@@ -338,10 +338,54 @@ function campaignPrice(price) {
   };
 }
 
+/*
+ * LA COMPRA, EN LA PIEZA.
+ *
+ * Una pieza que muestra una foto y un precio promete una compra, y «Ver Red
+ * Bull →» es una invitación a mirar: en el teléfono ni siquiera parecía un
+ * botón —texto coral de 13 px— y abría una ficha donde recién estaba el
+ * «Agregar». La pieza lleva el control de compra de la góndola: el mismo
+ * `data-add-product`, que pasa por `addToCart` (stock, precio y disponibilidad
+ * los decide el mismo camino que la tarjeta; el servidor vuelve a decidirlos al
+ * confirmar el pedido).
+ *
+ * `view.buy` lo arma la tienda con el producto real y su cantidad en el
+ * carrito. Sin él —un llamador que no sabe de carrito— la pieza queda como
+ * antes: la acción es mirar la ficha.
+ */
+function campaignBuy(buy) {
+  if (!buy || typeof buy !== 'object') return null;
+  const productId = text(buy.productId, 120);
+  if (!productId) return null;
+  const name = text(buy.name, 120) || 'este producto';
+  const quantity = Math.max(0, Math.floor(Number(buy.quantity) || 0));
+  return { productId, name, quantity, canAddMore: buy.canAddMore !== false };
+}
+
+function buyControlMarkup(buy) {
+  const id = escapeHtml(buy.productId);
+  const name = escapeHtml(buy.name);
+  if (buy.quantity < 1) {
+    return `<button class="cmp-add" type="button" data-add-product="${id}" data-campaign-add aria-label="Agregar ${name} al pedido"><span class="cmp-add-plus" aria-hidden="true">+</span><span class="cmp-add-text">Agregar</span></button>`;
+  }
+  const leftLabel = buy.quantity === 1 ? `Quitar ${name} del pedido` : `Restar uno de ${name}`;
+  return `<span class="cmp-qty" role="group" aria-label="Cantidad de ${name} en el pedido" data-campaign-qty>`
+    + `<button class="cmp-qty-action" type="button" data-cart-dec="${id}" aria-label="${leftLabel}"><span aria-hidden="true">−</span></button>`
+    + `<strong aria-live="polite">${buy.quantity}</strong>`
+    + `<button class="cmp-qty-action" type="button" data-cart-inc="${id}" aria-label="Sumar uno de ${name}"${buy.canAddMore ? '' : ' disabled'}><span aria-hidden="true">+</span></button>`
+    + '</span>';
+}
+
 /**
  * El HTML de la pieza. `view` son los datos que salen del PRODUCTO real y que
  * la campaña no puede escribir por su cuenta: marca, nombre, presentación,
- * precio vivo y si lleva la leyenda de alcohol.
+ * precio vivo, si lleva la leyenda de alcohol y el control de compra.
+ *
+ * ESTRUCTURA. El botón que abre la ficha (`.cmp-hit`) cubre la pieza entera
+ * pero NO envuelve el texto: el control de compra es otro botón y un botón no
+ * puede vivir dentro de otro. El texto va en flujo, con `pointer-events: none`,
+ * así que un toque sobre el título, la foto o el precio llega al botón de
+ * debajo y abre la ficha; sólo «Agregar» y «Ocultar» reciben el toque.
  */
 export function campaignMarkup({ campaign, product }, placement, view = {}) {
   const preset = CAMPAIGN_PRESETS[campaign.creative.preset];
@@ -368,6 +412,7 @@ export function campaignMarkup({ campaign, product }, placement, view = {}) {
     ? [price.amount, price.previous ? `antes ${price.previous}` : '', price.note].filter(Boolean).join(', ')
     : '';
   const legal = view.alcoholic === true;
+  const buy = campaignBuy(view.buy);
   const label = [copy.headline, subtitle, priceLabel, copy.cta].filter(Boolean).join('. ');
   const style = [
     `--cmp-tint:${creative.tint}`,
@@ -384,20 +429,26 @@ export function campaignMarkup({ campaign, product }, placement, view = {}) {
   // El precio y la acción comparten renglón: en la banda del teléfono no hay
   // lugar para uno más sin mover el primer precio de la vidriera.
   const priceMarkup = price
-    ? `<span class="cmp-price" data-campaign-price><strong class="cmp-price-now">${escapeHtml(price.amount)}</strong>${price.previous ? `<s class="cmp-price-was">${escapeHtml(price.previous)}</s>` : ''}${price.off ? `<em class="cmp-price-off">${escapeHtml(price.off)}</em>` : ''}</span>`
+    ? `<span class="cmp-price" data-campaign-price aria-hidden="true"><strong class="cmp-price-now">${escapeHtml(price.amount)}</strong>${price.previous ? `<s class="cmp-price-was">${escapeHtml(price.previous)}</s>` : ''}${price.off ? `<em class="cmp-price-off">${escapeHtml(price.off)}</em>` : ''}</span>`
     : '';
+  // Con control de compra, la acción es el botón; sin él, el rótulo que ya
+  // existía —no interactivo: el toque cae en el botón de la ficha—.
+  const actionMarkup = buy
+    ? buyControlMarkup(buy)
+    : `<span class="cmp-cta" aria-hidden="true">${escapeHtml(copy.cta)} <span aria-hidden="true">→</span></span>`;
   return `
-    <aside class="cmp cmp--${escapeHtml(creative.preset.replace(/_/g, '-'))} cmp--${escapeHtml(placement)}${legal ? ' cmp--legal' : ''}${price ? ' cmp--priced' : ''}" data-campaign="${escapeHtml(campaign.id)}" data-campaign-preset="${escapeHtml(creative.preset)}" data-campaign-placement="${escapeHtml(placement)}" data-catalog-key="campaign:${escapeHtml(placement)}:${escapeHtml(campaign.id)}" aria-label="${escapeHtml(`Anuncio: ${brand || copy.headline}`)}" style="${style}">
-      <button class="cmp-hit" type="button" data-product-detail="${escapeHtml(view.productId)}" data-campaign-cta aria-label="${escapeHtml(label)}">
+    <aside class="cmp cmp--${escapeHtml(creative.preset.replace(/_/g, '-'))} cmp--${escapeHtml(placement)}${legal ? ' cmp--legal' : ''}${price ? ' cmp--priced' : ''}${buy ? ' cmp--buyable' : ''}" data-campaign="${escapeHtml(campaign.id)}" data-campaign-preset="${escapeHtml(creative.preset)}" data-campaign-placement="${escapeHtml(placement)}" data-catalog-key="campaign:${escapeHtml(placement)}:${escapeHtml(campaign.id)}" aria-label="${escapeHtml(`Anuncio: ${brand || copy.headline}`)}" style="${style}">
+      <div class="cmp-body">
+        <button class="cmp-hit" type="button" data-product-detail="${escapeHtml(view.productId)}" data-campaign-cta aria-label="${escapeHtml(label)}"></button>
         <span class="cmp-scene"><span class="cmp-stage" aria-hidden="true">${preset.stage({ ...creative, packshot }, uid)}</span></span>
         <span class="cmp-copy">
-          ${brand ? `<small class="cmp-eyebrow">${escapeHtml(brand)}</small>` : ''}
-          <strong class="cmp-headline">${escapeHtml(copy.headline)}</strong>
-          ${subtitle ? `<span class="cmp-sub">${subtitleMarkup}</span>` : ''}
-          ${price?.note ? `<small class="cmp-price-note">${escapeHtml(price.note)}</small>` : ''}
-          <span class="cmp-buy">${priceMarkup}<span class="cmp-cta">${escapeHtml(copy.cta)} <span aria-hidden="true">→</span></span></span>
+          ${brand ? `<small class="cmp-eyebrow" aria-hidden="true">${escapeHtml(brand)}</small>` : ''}
+          <strong class="cmp-headline" aria-hidden="true">${escapeHtml(copy.headline)}</strong>
+          ${subtitle ? `<span class="cmp-sub" aria-hidden="true">${subtitleMarkup}</span>` : ''}
+          ${price?.note ? `<small class="cmp-price-note" aria-hidden="true">${escapeHtml(price.note)}</small>` : ''}
+          <span class="cmp-buy">${priceMarkup}${actionMarkup}</span>
         </span>
-      </button>
+      </div>
       <button class="cmp-close" type="button" data-campaign-dismiss="${escapeHtml(campaign.id)}" aria-label="Ocultar este anuncio"><span aria-hidden="true">×</span></button>
       ${legal ? `<p class="cmp-legal">${escapeHtml(ALCOHOL_LEGAL_NOTICE)}</p>` : ''}
     </aside>`;

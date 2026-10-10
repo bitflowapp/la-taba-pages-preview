@@ -975,7 +975,12 @@ function quickAddControl(product, quantity, { className = 'add-button' } = {}) {
     ? `${productAccessibleName(product)}: ${PRICE_PENDING_TITLE.toLowerCase()}; ${PRICE_PENDING_DETAIL.toLowerCase()}`
     : vidrieraAlcohol
       ? `${productAccessibleName(product)}: todavía no está a la venta`
-      : `Agregar ${productAccessibleName(product)} al pedido`;
+      // Lo que se anuncia es lo que el botón hace: «Agregar … al pedido» sobre un
+      // control deshabilitado que dice «No disponible» le prometía una acción a
+      // quien navega con lector de pantalla.
+      : outOfStock
+        ? `${productAccessibleName(product)}: no disponible`
+        : `Agregar ${productAccessibleName(product)} al pedido`;
   const texto = pricePending
     ? 'Precio pendiente'
     : vidrieraAlcohol
@@ -1253,6 +1258,7 @@ function activeCampaigns(catalog = null) {
 // en góndola.
 function campaignPiece(entry, placement) {
   const { product } = entry;
+  const inCart = getCartItems().find((item) => item.productId === product.id)?.quantity || 0;
   return campaignMarkup(entry, placement, {
     productId: product.id,
     brand: product.brand,
@@ -1261,6 +1267,14 @@ function campaignPiece(entry, placement) {
     price: campaignPriceView(product),
     alcoholic: product.alcoholic === true,
     supabaseUrl: resolveRuntimeConfig().repository?.supabaseUrl || '',
+    // La pieza lleva el control de compra de la góndola: el motor sólo elige
+    // productos que se pueden pedir AHORA, y `addToCart` vuelve a decidirlo.
+    buy: {
+      productId: product.id,
+      name: productAccessibleName(product),
+      quantity: inCart,
+      canAddMore: inCart < Number(product.stock || 0),
+    },
   });
 }
 
@@ -2498,26 +2512,64 @@ function renderCatalogFilters() {
   if (!panel) return;
   const state = getState();
   const filters = { ...defaultCatalogFilters(), ...(state.catalogFilters || {}) };
-  const products = unitStorefrontProducts(state);
-  const options = {
-    brand: uniqueFilterValues(products, (product) => product.brand),
-    capacity: uniqueFilterValues(products, (product) => product.capacity, {
+  /*
+   * LAS OPCIONES DESCRIBEN EL RUBRO QUE SE MIRA.
+   *
+   * Antes salían del catálogo ENTERO: en «Energizantes» (5 productos) el filtro
+   * de marca ofrecía las 29 marcas de la tienda, y elegir «Brahma» dejaba una
+   * lista vacía —«Ningún producto coincide con los filtros»— que el cliente
+   * mismo había armado. Una opción sin resultado es una puerta que no abre.
+   *
+   * El valor que YA está aplicado se conserva aunque el rubro no lo tenga: los
+   * filtros se suman al rubro y no se sueltan al cambiar de rubro (ver el estado
+   * vacío), y un selector que dijera «Todas» con una marca aplicada mentiría.
+   * La búsqueda no estrecha las opciones: cada tecla es un cambio de estado y
+   * recalcular las facetas por tecla no vale lo que ahorra.
+   */
+  const everything = unitStorefrontProducts(state);
+  const favoriteIds = new Set(getFavoriteProductIds());
+  const promoIds = activePromotionProductIds(state);
+  const inCategory = everything.filter((product) => productMatchesActiveCategory(product, state.activeCategory, favoriteIds, promoIds));
+  // Un rubro vacío (sin favoritos, por ejemplo) no deja el panel sin opciones.
+  const products = inCategory.length ? inCategory : everything;
+  const facetsOf = (list) => ({
+    brand: uniqueFilterValues(list, (product) => product.brand),
+    capacity: uniqueFilterValues(list, (product) => product.capacity, {
       etiqueta: (_crudo, product) => formatCapacity(product.capacityValue, product.capacityUnit) || _crudo,
       orden: (product) => Number(product.capacityValue) || 0,
     }),
-    presentation: uniqueFilterValues(products, (product) => product.packageType, {
+    presentation: uniqueFilterValues(list, (product) => product.packageType, {
       etiqueta: (crudo) => packagingLabel(crudo) || crudo,
     }),
-  };
-  const available = products.filter((product) => product.available && Number(product.stock) > 0 && !isPricePending(product)).length;
-  const pending = products.filter((product) => isPricePending(product)).length;
-  const alcohol = products.filter((product) => product.alcoholic).length;
-  const packs = products.filter((product) => Number(product.unitsPerPack) > 1).length;
-  const promo = activePromotionProductIds(state).size;
-  const select = (key, label, values, { all = `Todas las ${label.toLowerCase()}` } = {}) => {
+    pack: [
+      ...(list.some((product) => Number(product.unitsPerPack) === 1) ? [{ value: 'unit', label: 'Unidad' }] : []),
+      ...(list.some((product) => Number(product.unitsPerPack) > 1) ? [{ value: 'pack', label: 'Pack' }] : []),
+    ],
+    alcohol: [
+      ...(list.some((product) => product.alcoholic) ? [{ value: 'with', label: 'Con alcohol' }] : []),
+      ...(list.some((product) => !product.alcoholic) ? [{ value: 'without', label: 'Sin alcohol' }] : []),
+    ],
+    availability: [
+      ...(list.some((product) => product.available && Number(product.stock) > 0 && !isPricePending(product)) ? [{ value: 'available', label: 'Disponible' }] : []),
+      ...(list.some((product) => !(product.available && Number(product.stock) > 0 && !isPricePending(product))) ? [{ value: 'unavailable', label: 'No disponible' }] : []),
+    ],
+    price: [
+      ...(list.some((product) => !isPricePending(product)) ? [{ value: 'confirmed', label: 'Con precio' }] : []),
+      ...(list.some((product) => isPricePending(product)) ? [{ value: 'pending', label: 'Precio próximamente' }] : []),
+    ],
+  });
+  const scopedFacets = facetsOf(products);
+  const fullFacets = facetsOf(everything);
+  const promo = promoIds.size;
+  const select = (key, label, { all = `Todas las ${label.toLowerCase()}` } = {}) => {
     const field = panel.querySelector(`[data-catalog-filter-field="${key}"]`);
     const control = panel.querySelector(`[data-catalog-filter="${key}"]`);
     if (!field || !control) return;
+    const scopedValues = scopedFacets[key] || [];
+    const applied = filters[key];
+    const values = applied !== 'all' && !scopedValues.some((option) => option.value === applied)
+      ? [...scopedValues, ...(fullFacets[key] || []).filter((option) => option.value === applied)]
+      : scopedValues;
     field.hidden = values.length < 2;
     renderStableCatalog(control, [
       `<option value="all" data-catalog-key="option:all">${escapeHtml(all)}</option>`,
@@ -2526,26 +2578,16 @@ function renderCatalogFilters() {
     const selected = values.some((option) => option.value === filters[key]) ? filters[key] : 'all';
     if (control.value !== selected) control.value = selected;
   };
-  select('brand', 'marcas', options.brand, { all: 'Todas las marcas' });
-  select('capacity', 'capacidades', options.capacity, { all: 'Todas las capacidades' });
-  select('presentation', 'presentaciones', options.presentation, { all: 'Todas las presentaciones' });
-  select('pack', 'formatos', [
-    ...(products.some((product) => Number(product.unitsPerPack) === 1) ? [{ value: 'unit', label: 'Unidad' }] : []),
-    ...(packs ? [{ value: 'pack', label: 'Pack' }] : []),
-  ], { all: 'Unidad o pack' });
-  select('alcohol', 'tipos', [
-    ...(alcohol ? [{ value: 'with', label: 'Con alcohol' }] : []),
-    ...(products.some((product) => !product.alcoholic) ? [{ value: 'without', label: 'Sin alcohol' }] : []),
-  ], { all: 'Con y sin alcohol' });
-  select('availability', 'disponibilidad', [
-    ...(available ? [{ value: 'available', label: 'Disponible' }] : []),
-    ...(products.length - available ? [{ value: 'unavailable', label: 'No disponible' }] : []),
-  ], { all: 'Toda disponibilidad' });
-  select('price', 'precios', [
-    ...(products.some((product) => !isPricePending(product)) ? [{ value: 'confirmed', label: 'Con precio' }] : []),
-    ...(pending ? [{ value: 'pending', label: 'Precio próximamente' }] : []),
-  ], { all: 'Todos los precios' });
-  select('promotion', 'promociones', promo ? [{ value: 'active', label: 'Promoción activa' }] : [], { all: 'Sin filtro de promoción' });
+  select('brand', 'marcas', { all: 'Todas las marcas' });
+  select('capacity', 'capacidades', { all: 'Todas las capacidades' });
+  select('presentation', 'presentaciones', { all: 'Todas las presentaciones' });
+  select('pack', 'formatos', { all: 'Unidad o pack' });
+  select('alcohol', 'tipos', { all: 'Con y sin alcohol' });
+  select('availability', 'disponibilidad', { all: 'Toda disponibilidad' });
+  select('price', 'precios', { all: 'Todos los precios' });
+  scopedFacets.promotion = promo ? [{ value: 'active', label: 'Promoción activa' }] : [];
+  fullFacets.promotion = scopedFacets.promotion;
+  select('promotion', 'promociones', { all: 'Sin filtro de promoción' });
 
   const count = Object.values(filters).filter((value) => value !== 'all').length;
   const countNode = panel.querySelector('[data-catalog-filter-count]');
@@ -2685,6 +2727,21 @@ function getFilteredProducts(state) {
   return resolveCatalogListing(state).products;
 }
 
+// Qué entra en cada píldora de rubro. Es la única definición: la lista del
+// catálogo y las opciones de los filtros la comparten, para que un filtro nunca
+// ofrezca algo que el rubro que se está mirando no tiene.
+function productMatchesActiveCategory(product, activeCategory, favoriteIds, promoProductIds) {
+  return activeCategory === 'favorites'
+    ? favoriteIds.has(product.id)
+    : activeCategory === 'promos'
+      ? isPromotionalProduct(product, promoProductIds)
+      : activeCategory === 'popular'
+        ? isPopularProduct(product)
+        : activeCategory === 'fernet'
+          ? isFernetProduct(product)
+          : activeCategory === 'all' || product.categoryId === activeCategory;
+}
+
 /*
  * La lista del catálogo Y cómo se llegó a ella.
  *
@@ -2698,15 +2755,7 @@ function resolveCatalogListing(state) {
   const promoProductIds = activePromotionProductIds(state);
   const filters = { ...defaultCatalogFilters(), ...(state.catalogFilters || {}) };
   const filtered = unitStorefrontProducts(state).filter((product) => {
-    const matchesCategory = state.activeCategory === 'favorites'
-      ? favoriteIds.has(product.id)
-      : state.activeCategory === 'promos'
-        ? isPromotionalProduct(product, promoProductIds)
-        : state.activeCategory === 'popular'
-          ? isPopularProduct(product)
-          : state.activeCategory === 'fernet'
-            ? isFernetProduct(product)
-        : state.activeCategory === 'all' || product.categoryId === state.activeCategory;
+    const matchesCategory = productMatchesActiveCategory(product, state.activeCategory, favoriteIds, promoProductIds);
     const isAvailable = product.available && Number(product.stock) > 0 && !isPricePending(product);
     const matchesFilters = (
       (filters.brand === 'all' || normalizeSearchText(product.brand) === filters.brand)

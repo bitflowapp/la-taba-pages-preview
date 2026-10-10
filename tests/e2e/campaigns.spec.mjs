@@ -46,7 +46,7 @@ const assertLiveOrBudgetStill = async (page, selector) => {
     if (!root || !diagnostics) return 'waiting';
     if (!diagnostics.budgetLimited) return root.dataset.motionCampaignLive === 'true' ? 'live' : 'waiting';
     const animations = document.getAnimations().filter((animation) => root.contains(animation.effect?.target));
-    const cta = root.querySelector('.cmp-cta');
+    const cta = root.querySelector('.cmp-add, .cmp-cta');
     const headline = root.querySelector('.cmp-headline');
     return !root.hasAttribute('data-motion-campaign') && !root.hasAttribute('data-motion-campaign-live')
       && animations.length === 0 && diagnostics.running === 0 && diagnostics.live === 0
@@ -111,7 +111,7 @@ test('la campaña ocupa la banda de apertura sin mover el primer precio ni desbo
     expect(measured.overflowX, `${size.width}px: la pieza desborda a lo ancho`).toBe(false);
     expect(measured.firstAdd, `${size.width}px: el primer «Agregar» quedó bajo el pliegue`).toBeLessThanOrEqual(measured.useful);
     // Ni un texto cortado: título, acción y leyenda entran enteros.
-    const clipped = await page.locator(heroPiece).evaluate((root) => [...root.querySelectorAll('.cmp-headline, .cmp-cta, .cmp-legal')]
+    const clipped = await page.locator(heroPiece).evaluate((root) => [...root.querySelectorAll('.cmp-headline, .cmp-add, .cmp-legal')]
       .filter((node) => node.scrollWidth > node.clientWidth + 1 || node.getBoundingClientRect().right > root.getBoundingClientRect().right)
       .map((node) => node.className));
     expect(clipped, `${size.width}px: texto cortado`).toEqual([]);
@@ -142,7 +142,7 @@ test('si la leyenda legal parte en dos renglones, la banda crece: no pisa la acc
   const measure = (target) => target.evaluate(() => {
     const band = document.querySelector('[data-home-hero-promo]');
     const legal = band.querySelector('.cmp-legal, .home-hero-promo-legal');
-    const action = band.querySelector('.cmp-cta, .home-hero-promo-cta');
+    const action = band.querySelector('.cmp-add, .cmp-cta, .home-hero-promo-cta');
     const stage = band.querySelector('.cmp-stage');
     const range = document.createRange();
     range.selectNodeContents(legal);
@@ -225,7 +225,7 @@ test('la escena corre sin crear ni quitar un solo nodo y termina en su cuadro fi
   await finishScene(page, heroPiece);
   await page.waitForTimeout(200);
   const rest = await piece.evaluate((root) => ({
-    cta: getComputedStyle(root.querySelector('.cmp-cta')).opacity,
+    cta: getComputedStyle(root.querySelector('.cmp-add')).opacity,
     fill: getComputedStyle(root.querySelector('.cmp-fill')).transform,
     stream: root.querySelector('.cmp-stream i').getBoundingClientRect().top > root.querySelector('.cmp-stream').getBoundingClientRect().bottom - 1,
   }));
@@ -248,9 +248,9 @@ test('movimiento reducido: ninguna animación, y la pieza completa', async ({ br
   const state = await sceneState(page, heroPiece);
   expect(state).toMatchObject({ state: 'still', total: 0 });
   await expect(piece.locator('.cmp-headline')).toBeVisible();
-  await expect(piece.locator('.cmp-cta')).toBeVisible();
+  await expect(piece.locator('.cmp-add')).toBeVisible();
   await expect(piece.locator('.cmp-legal')).toBeVisible();
-  expect(await piece.locator('.cmp-cta').evaluate((node) => getComputedStyle(node).opacity)).toBe('1');
+  expect(await piece.locator('.cmp-add').evaluate((node) => getComputedStyle(node).opacity)).toBe('1');
   // La franja intermedia, igual.
   await page.locator(`${INLINE} [data-campaign]`).scrollIntoViewIfNeeded();
   await page.waitForTimeout(400);
@@ -340,7 +340,10 @@ test('una pieza que todavía no se vio espera en su primer cuadro, no en el fina
   const armed = await sceneState(page, `${GRID} [data-campaign]`);
   expect(armed.total, 'la pieza no tiene su escena preparada').toBeGreaterThan(5);
   expect(armed.running, 'la escena corre sin que nadie la vea').toBe(0);
-  expect(await piece.locator('.cmp-cta').evaluate((node) => getComputedStyle(node).opacity)).toBe('0');
+  // La compra NO espera a la escena: «Agregar» está a la vista desde el primer
+  // cuadro, con su precio. Lo que llega con la escena es el subtítulo.
+  expect(await piece.locator('.cmp-add').evaluate((node) => getComputedStyle(node).opacity)).toBe('1');
+  expect(await piece.locator('.cmp-sub').evaluate((node) => getComputedStyle(node).opacity)).toBe('0');
   expect((await page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics())).plays).toBe(0);
   // El título, en cambio, está desde el primer cuadro: la pieza nunca es un hueco.
   expect(await piece.locator('.cmp-headline').evaluate((node) => getComputedStyle(node).opacity)).toBe('1');
@@ -349,7 +352,8 @@ test('una pieza que todavía no se vio espera en su primer cuadro, no en el fina
   await expect(piece).toHaveAttribute('data-motion-campaign-live', 'true');
   expect((await page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics())).plays).toBe(1);
   await finishScene(page, `${GRID} [data-campaign]`);
-  expect(await piece.locator('.cmp-cta').evaluate((node) => getComputedStyle(node).opacity)).toBe('1');
+  expect(await piece.locator('.cmp-add').evaluate((node) => getComputedStyle(node).opacity)).toBe('1');
+  expect(await piece.locator('.cmp-sub').evaluate((node) => getComputedStyle(node).opacity)).toBe('1');
 });
 
 test('volver a la home, o borrar una búsqueda, no repite la función', async ({ page }) => {
@@ -375,7 +379,7 @@ test('volver a la home, o borrar una búsqueda, no repite la función', async ({
   const back = await sceneState(page, heroPiece);
   expect(back.state, 'la escena se volvió a encender al volver a la home').toBe('still');
   expect(back.total, 'al volver hay animaciones corriendo otra vez').toBe(0);
-  expect(await piece.locator('.cmp-cta').evaluate((node) => getComputedStyle(node).opacity)).toBe('1');
+  expect(await piece.locator('.cmp-add').evaluate((node) => getComputedStyle(node).opacity)).toBe('1');
   expect((await page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics())).plays, 'la función se repitió').toBe(plays);
 
   // Lo mismo con la pieza de la grilla, que sale y vuelve con cada búsqueda.
@@ -396,7 +400,7 @@ test('volver a la home, o borrar una búsqueda, no repite la función', async ({
   const again = await sceneState(page, `${GRID} [data-campaign]`);
   expect(again.state, 'borrar la búsqueda volvió a encender la escena').toBe('still');
   expect(again.total, 'borrar la búsqueda volvió a crear animaciones').toBe(0);
-  expect(await gridPiece.locator('.cmp-cta').evaluate((node) => getComputedStyle(node).opacity)).toBe('1');
+  expect(await gridPiece.locator('.cmp-add').evaluate((node) => getComputedStyle(node).opacity)).toBe('1');
   expect((await page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics())).plays).toBe(playsGrid);
 });
 
@@ -507,7 +511,9 @@ test('tocar la pieza abre la ficha de SU producto y no toca el carrito', async (
   // El nombre de la acción dice todo lo que la pieza muestra, precio incluido:
   // el de la tarjeta, porque sale de la misma función.
   await expect(hit).toHaveAccessibleName(/Bien fría, recién servida\. Heineken Lager · 710 ml · Lata\. \$\s2\.500\. Ver Heineken/);
-  await hit.click();
+  // La esquina del título: el centro de la pieza puede caer sobre «Agregar» según
+  // la tipografía del equipo, y ahí el toque COMPRA en vez de abrir la ficha.
+  await hit.click({ position: { x: 14, y: 14 } });
   const modal = page.locator('[data-product-modal]');
   await expect(modal).toBeVisible();
   await expect(modal).toContainText('Heineken Lager');
@@ -600,7 +606,7 @@ test('PROMO_PRODUCT_MATCHES_CATALOG: cada pieza es su producto del catálogo —
   expect(inline.row.sku).toBe('red-bull-energy-drink-355ml');
 
   // La ficha que abre la pieza cobra lo mismo, y el carrito también.
-  await page.locator(`${heroPiece} [data-campaign-cta]`).click();
+  await page.locator(`${heroPiece} [data-campaign-cta]`).click({ position: { x: 14, y: 14 } });
   const modal = page.locator('[data-product-modal]');
   await expect(modal).toBeVisible();
   await expect(modal.locator('.modal-price strong')).toHaveText(hero.piece.price);
@@ -651,8 +657,13 @@ test('la pieza se recorre con teclado y se puede ocultar; no vuelve en la visita
   await goHome(page);
   const hit = page.locator(`${heroPiece} [data-campaign-cta]`);
   const close = page.locator(`${heroPiece} [data-campaign-dismiss]`);
+  const add = page.locator(`${heroPiece} [data-campaign-add]`);
   await hit.focus();
   await expect(hit).toBeFocused();
+  // Orden de lectura: la ficha, la compra y, por último, ocultar.
+  await page.keyboard.press('Tab');
+  await expect(add).toBeFocused();
+  await expect(add).toHaveAccessibleName(/^Agregar .+ al pedido$/);
   await page.keyboard.press('Tab');
   await expect(close).toBeFocused();
   await expect(close).toHaveAccessibleName('Ocultar este anuncio');
@@ -763,10 +774,10 @@ test('si el movimiento no puede arrancar, la tienda abre y la pieza queda estát
   const piece = page.locator(heroPiece);
   await expect(piece).toBeVisible();
   expect(await sceneState(page, heroPiece)).toMatchObject({ state: 'still', total: 0 });
-  await expect(piece.locator('.cmp-cta')).toBeVisible();
-  expect(await piece.locator('.cmp-cta').evaluate((node) => getComputedStyle(node).opacity)).toBe('1');
+  await expect(piece.locator('.cmp-add')).toBeVisible();
+  expect(await piece.locator('.cmp-add').evaluate((node) => getComputedStyle(node).opacity)).toBe('1');
   expect(await page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics())).toEqual({ active: false });
-  await piece.locator('[data-campaign-cta]').click();
+  await piece.locator('[data-campaign-cta]').click({ position: { x: 14, y: 14 } });
   await expect(page.locator('[data-product-modal]')).toBeVisible();
   expect(errors, 'una falla de la animación llegó a ser un error de la página').toEqual([]);
 });

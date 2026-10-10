@@ -52,11 +52,28 @@
   isolation: isolate;
 }
 
-.cmp-hit {
+/* EL BOTÓN DE LA FICHA CUBRE LA PIEZA Y NO ENVUELVE EL TEXTO.
+   Antes era un solo botón con todo adentro, y el «Agregar» no podía vivir ahí:
+   un botón no admite otro botón. Ahora es una capa transparente a pantalla
+   completa, y el texto —en flujo, encima, sin recibir toques— deja pasar el
+   dedo hasta ella. Sólo «Agregar», la cantidad y «Ocultar» reciben el toque. */
+/* El cuerpo es la caja que antes era el botón: la escena y el botón de la ficha
+   lo llenan a él y NO a la pieza entera, que en el teléfono suma debajo el
+   renglón de la leyenda legal. Sin esta caja la escena bajaba hasta la leyenda. */
+.cmp-body {
   position: relative;
   display: block;
-  width: 100%;
   min-height: var(--cmp-h);
+  border-radius: inherit;
+}
+
+.cmp-hit {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
   margin: 0;
   padding: 0;
   border: 0;
@@ -67,6 +84,7 @@
   text-align: left;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .cmp-hit:focus-visible {
@@ -77,7 +95,8 @@
 /* ── Texto ─────────────────────────────────────────────────────────────── */
 .cmp-copy {
   position: relative;
-  z-index: 2;
+  z-index: 3;
+  pointer-events: none;
   display: grid;
   align-content: center;
   gap: 1px;
@@ -133,8 +152,108 @@
   letter-spacing: 0.01em;
 }
 
-.cmp-hit:hover .cmp-cta {
+.cmp-hit:hover ~ .cmp-copy .cmp-cta {
   color: var(--taba-white);
+}
+
+/* ── Compra directa ────────────────────────────────────────────────────────
+   «Agregar» es un botón de verdad, rojo y con relieve, y es lo único del texto
+   que recibe el toque. Mide 28 px a la vista —entra en el renglón del precio
+   sin hacer crecer la banda del teléfono— y 44 al dedo: el pseudo-elemento
+   extiende el área tocable sin mover nada. */
+.cmp-add,
+.cmp-qty {
+  position: relative;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cmp-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 28px;
+  margin: 0;
+  padding: 0 13px 0 10px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--taba-red);
+  box-shadow: 0 6px 14px rgb(208 0 13 / 30%);
+  color: var(--taba-white);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 850;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.cmp-add::after,
+.cmp-qty-action::after {
+  position: absolute;
+  inset: -9px 0;
+  content: "";
+}
+
+.cmp-add:hover {
+  background: #e3000f;
+}
+
+.cmp-add:focus-visible,
+.cmp-qty-action:focus-visible {
+  outline: 2px solid var(--brand-gold-soft);
+  outline-offset: 2px;
+}
+
+.cmp-add-plus {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* La cantidad reemplaza al botón en el mismo lugar y con la misma altura. */
+.cmp-qty {
+  display: inline-grid;
+  grid-template-columns: 36px minmax(22px, auto) 36px;
+  align-items: center;
+  min-height: 28px;
+  border: 1px solid rgb(255 255 255 / 26%);
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 10%);
+  color: var(--taba-white);
+  text-align: center;
+}
+
+.cmp-qty strong {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 850;
+}
+
+.cmp-qty-action {
+  position: relative;
+  display: grid;
+  height: 26px;
+  margin: 0;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.cmp-qty-action:disabled {
+  cursor: default;
+  opacity: 0.4;
 }
 
 /* ── Precio y acción ─────────────────────────────────────────────────────
@@ -1250,6 +1369,13 @@
   44%, 100% { opacity: 1; transform: none; }
 }
 
+/* Una pieza con «Agregar» no esconde el precio detrás de la escena: el botón
+   está a la vista desde el primer cuadro, y comprar sin ver el importe no es
+   algo que la animación pueda permitir. El precio llega con la pieza. */
+[data-motion-campaign="on"].cmp--buyable .cmp-price {
+  animation: none;
+}
+
 /* ── Fuera de pantalla: todo en pausa ──────────────────────────────────── */
 [data-motion-campaign-live="false"] *,
 [data-motion-campaign-live="false"] *::before,
@@ -1282,10 +1408,18 @@
   .cmp--home-hero { --cmp-h: 84px; }
   .cmp--home-hero .cmp-copy { padding-top: 9px; padding-bottom: 9px; padding-left: 14px; }
   .cmp--home-hero.cmp--legal .cmp-copy { padding-bottom: 19px; }
+  .cmp--home-hero.cmp--buyable .cmp-copy { padding-top: 6px; }
+  .cmp--home-hero.cmp--buyable:not(.cmp--legal) .cmp-copy { padding-bottom: 6px; }
 }
 
 @media (max-width: 699px) and (max-height: 820px) {
   .cmp--home-hero { --cmp-h: 80px; }
+}
+
+/* Teléfonos altos: la banda tiene su piso de 112 px y 14 px de aire arriba; el
+   botón de compra le saca 4 al de arriba para no crecer. */
+@media (max-width: 699px) and (min-height: 901px) {
+  .cmp--home-hero.cmp--buyable .cmp-copy { padding-top: 10px; }
 }
 
 /* En la banda del teléfono no hay lugar para todo: el subtítulo cede —el
@@ -1299,7 +1433,15 @@
      mismo que «Ver …». El tachado, el porcentaje y la condición no entran en
      80–112 px; el importe que se ve es el que se cobra, y la ficha —a un
      toque— los muestra. */
-  .cmp--home-hero .cmp-buy { column-gap: 10px; }
+  .cmp--home-hero .cmp-buy { column-gap: 10px; margin-top: 2px; }
+  /* El botón mide 26 px a la vista donde el precio medía 18 (44 al dedo): el
+     aire de arriba y de abajo cede esa diferencia y la banda sigue midiendo lo
+     que la puerta editorial a la que reemplaza. */
+  .cmp--home-hero .cmp-add,
+  .cmp--home-hero .cmp-qty { min-height: 26px; }
+  .cmp--home-hero .cmp-qty-action { height: 24px; }
+  .cmp--home-hero.cmp--buyable:not(.cmp--legal) .cmp-copy { padding-bottom: 8px; }
+  .cmp--home-hero.cmp--buyable .cmp-headline { line-height: 1.08; }
   .cmp--home-hero .cmp-price { line-height: 1.2; }
   .cmp--home-hero .cmp-price-now { font-size: 15px; }
   .cmp--home-hero .cmp-price-was,
@@ -1340,7 +1482,7 @@
   /* En las franjas el envase que sirve llega hasta la esquina del botón de
      ocultar, igual que pasaba en la banda de apertura: se corre la escena. */
   .cmp--home-inline .cmp-stage,
-  .cmp--catalog-inline .cmp-stage { right: 20px; }
+  .cmp--catalog-inline .cmp-stage { right: 36px; }
 
   /* En las franjas con aire la leyenda parte en renglones dentro de su columna:
      a 11 px serían tres, y el tercero pisaría la acción. */
@@ -1401,6 +1543,22 @@
     font-size: 14px;
   }
 
+  .cmp--home-hero .cmp-add {
+    min-height: 46px;
+    padding: 0 24px 0 20px;
+    font-size: 15px;
+  }
+
+  .cmp--home-hero .cmp-add-plus { font-size: 20px; }
+
+  .cmp--home-hero .cmp-qty {
+    grid-template-columns: 46px minmax(30px, auto) 46px;
+    min-height: 46px;
+  }
+
+  .cmp--home-hero .cmp-qty-action { height: 44px; font-size: 22px; }
+  .cmp--home-hero .cmp-qty strong { font-size: 16px; }
+
   .cmp--home-hero .cmp-stage { right: 6%; }
   .cmp--home-hero .cmp-legal { right: 20px; left: 20px; bottom: 12px; font-size: 11.5px; }
 }
@@ -1420,6 +1578,9 @@
 
   .cmp--home-hero .cmp-buy { margin-top: 10px; }
   .cmp--home-hero .cmp-cta { min-height: 42px; }
+  .cmp--home-hero .cmp-add,
+  .cmp--home-hero .cmp-qty { min-height: 42px; }
+  .cmp--home-hero .cmp-qty-action { height: 40px; }
   /* La condición agregaría un renglón y la banda tiene que medir lo mismo que
      la puerta editorial; queda en el nombre del botón y en la ficha. */
   .cmp--home-hero .cmp-price-note { display: none; }
@@ -1449,13 +1610,29 @@
   width: calc(100% - var(--cmp-h) * 0.9);
 }
 
+.cmp--home-inline .cmp-add,
+.cmp--catalog-inline .cmp-add {
+  min-height: 40px;
+  padding: 0 18px 0 14px;
+  font-size: 14px;
+}
+
+.cmp--home-inline .cmp-qty,
+.cmp--catalog-inline .cmp-qty {
+  grid-template-columns: 40px minmax(26px, auto) 40px;
+  min-height: 40px;
+}
+
+.cmp--home-inline .cmp-qty-action,
+.cmp--catalog-inline .cmp-qty-action { height: 38px; }
+
 /* En el teléfono la escena se corrió 20 px para despejar el botón de ocultar
    (más arriba): la columna de texto cede lo mismo. Va después de la regla
    base porque una media query no suma especificidad. */
 @media (max-width: 699px) {
   .cmp--home-inline .cmp-copy,
   .cmp--catalog-inline .cmp-copy {
-    width: calc(100% - var(--cmp-h) * 0.9 - 20px);
+    width: calc(100% - var(--cmp-h) * 0.9 - 36px);
   }
 }
 
@@ -1465,7 +1642,7 @@
 .cmp--catalog-inline .cmp-legal {
   right: auto;
   bottom: 10px;
-  width: calc(100% - var(--cmp-h) * 0.9 - 20px);
+  width: calc(100% - var(--cmp-h) * 0.9 - 36px);
 }
 
 .cmp--home-inline.cmp--legal .cmp-copy,

@@ -442,7 +442,7 @@ test('el marcado es función pura de sus datos: mismo dato, mismo HTML', () => {
   assert.notEqual(piece('heineken-beer-pour', 'home-hero'), piece('heineken-beer-pour', 'home-inline'));
 });
 
-test('la pieza es UN botón que lleva a la ficha, con la escena fuera del árbol accesible', () => {
+test('la pieza lleva a la ficha con un botón propio que no envuelve el texto, con la escena fuera del árbol accesible', () => {
   const html = piece('heineken-beer-pour', 'home-hero');
   assert.match(html, /<button class="cmp-hit" type="button" data-product-detail="p-1" data-campaign-cta aria-label="Bien fría, recién servida\. Heineken Lager · 710 ml · Lata\. Ver Heineken">/);
   assert.match(html, /<span class="cmp-stage" aria-hidden="true">/);
@@ -457,17 +457,62 @@ test('el subtítulo sale del producto real, no de la campaña', () => {
   const html = piece('red-bull-cold-can', 'home-inline', { title: 'Red Bull Energy Drink', line: '355 ml · Lata' });
   // Cada dato de la presentación viaja entero y el «·» va con el dato que
   // sigue: el renglón no puede partir «355» de «ml» ni terminar en «·».
-  assert.match(html, /<span class="cmp-sub">Red Bull Energy Drink <span class="cmp-seg">· 355 ml<\/span> <span class="cmp-seg">· Lata<\/span><\/span>/);
-  const sub = /<span class="cmp-sub">([\s\S]*?)<\/span>\s*<span class="cmp-buy">/.exec(html)[1];
+  assert.match(html, /<span class="cmp-sub" aria-hidden="true">Red Bull Energy Drink <span class="cmp-seg">· 355 ml<\/span> <span class="cmp-seg">· Lata<\/span><\/span>/);
+  const sub = /<span class="cmp-sub" aria-hidden="true">([\s\S]*?)<\/span>\s*<span class="cmp-buy">/.exec(html)[1];
   assert.equal(sub.replace(/<[^>]+>/g, ''), 'Red Bull Energy Drink · 355 ml · Lata', 'el texto que se lee es el de siempre');
   assert.equal(Object.hasOwn(byId('red-bull-cold-can').copy, 'subheadline'), false);
+});
+
+// ─── La compra en la pieza ────────────────────────────────────────────────────
+
+const BUY = { productId: 'p-1', name: 'Heineken Lager 710 ml · Lata', quantity: 0 };
+
+test('con control de compra la pieza ofrece «Agregar» como botón propio, hermano del de la ficha', () => {
+  const html = piece('heineken-beer-pour', 'home-hero', { buy: BUY });
+  // Tres botones, ninguno adentro de otro: ficha, compra y ocultar.
+  assert.equal((html.match(/<button\b/g) || []).length, 3);
+  assert.match(html, /<button class="cmp-hit"[^>]*><\/button>/, 'el botón de la ficha no envuelve nada: un botón no admite otro adentro');
+  assert.match(html, /<button class="cmp-add" type="button" data-add-product="p-1" data-campaign-add aria-label="Agregar Heineken Lager 710 ml · Lata al pedido">/);
+  assert.match(html, /class="cmp [^"]*cmp--buyable/);
+  // La acción es la compra: el rótulo «Ver …» no compite con ella.
+  assert.doesNotMatch(html, /cmp-cta/);
+  // El nombre accesible de la ficha sigue diciendo qué abre.
+  assert.match(html, /aria-label="Bien fría, recién servida\. Heineken Lager · 710 ml · Lata\. Ver Heineken"/);
+});
+
+test('sin control de compra la pieza queda como antes: un rótulo y una ficha, sin «Agregar»', () => {
+  for (const buy of [undefined, null, {}, { productId: '' }, 'p-1', 7]) {
+    const html = piece('heineken-beer-pour', 'home-hero', { buy });
+    assert.doesNotMatch(html, /cmp-add|data-add-product|cmp--buyable|data-cart-inc/);
+    assert.match(html, /<span class="cmp-cta" aria-hidden="true">Ver Heineken /);
+  }
+});
+
+test('con unidades en el pedido el botón se vuelve cantidad, con los mismos atributos que la tarjeta', () => {
+  const one = piece('heineken-beer-pour', 'home-hero', { buy: { ...BUY, quantity: 1 } });
+  assert.doesNotMatch(one, /data-add-product/);
+  assert.match(one, /data-cart-dec="p-1" aria-label="Quitar Heineken Lager 710 ml · Lata del pedido"/);
+  assert.match(one, /<strong aria-live="polite">1<\/strong>/);
+  assert.match(one, /data-cart-inc="p-1" aria-label="Sumar uno de Heineken Lager 710 ml · Lata">/);
+  const three = piece('heineken-beer-pour', 'home-hero', { buy: { ...BUY, quantity: 3, canAddMore: false } });
+  assert.match(three, /aria-label="Restar uno de Heineken Lager 710 ml · Lata"/);
+  assert.match(three, /data-cart-inc="p-1"[^>]*disabled>/, 'sin stock para otra unidad el «+» no se puede tocar');
+  // Cantidad basura no inventa unidades.
+  assert.match(piece('heineken-beer-pour', 'home-hero', { buy: { ...BUY, quantity: -4 } }), /data-add-product="p-1"/);
+  assert.match(piece('heineken-beer-pour', 'home-hero', { buy: { ...BUY, quantity: 'dos' } }), /data-add-product="p-1"/);
+});
+
+test('el nombre del producto en el control de compra va escapado', () => {
+  const html = piece('heineken-beer-pour', 'home-hero', { buy: { ...BUY, name: '"><img src=x onerror=alert(1)>' } });
+  assert.doesNotMatch(html, /<img/);
+  assert.match(html, /aria-label="Agregar &quot;&gt;&lt;img src=x onerror=alert\(1\)&gt; al pedido"/);
 });
 
 // ─── El precio y la marca: del producto, nunca de la campaña ──────────────────
 
 test('el precio de la pieza es el que le pasa la tienda; la campaña no tiene de dónde sacar uno', () => {
   const priced = piece('heineken-beer-pour', 'home-hero', { price: { amount: '$\u00a02.500', previous: '', off: '', note: '' } });
-  assert.match(priced, /<span class="cmp-price" data-campaign-price><strong class="cmp-price-now">\$\u00a02\.500<\/strong><\/span><span class="cmp-cta">/);
+  assert.match(priced, /<span class="cmp-price" data-campaign-price aria-hidden="true"><strong class="cmp-price-now">\$\u00a02\.500<\/strong><\/span><span class="cmp-cta" aria-hidden="true">/);
   assert.match(priced, /aria-label="Bien fría, recién servida\. Heineken Lager · 710 ml · Lata\. \$\u00a02\.500\. Ver Heineken"/);
   assert.match(priced, /class="cmp [^"]*cmp--priced/);
   // Sin precio en la vista no hay precio: la pieza no lo inventa ni lo arrastra.
@@ -484,7 +529,7 @@ test('el tachado y el porcentaje sólo existen con un precio anterior real y dis
     price: { amount: '$\u00a02.000', previous: '$\u00a02.500', off: '20% OFF', note: 'Precio promocional' },
   });
   assert.match(lowered, /<strong class="cmp-price-now">\$\u00a02\.000<\/strong><s class="cmp-price-was">\$\u00a02\.500<\/s><em class="cmp-price-off">20% OFF<\/em>/);
-  assert.match(lowered, /<small class="cmp-price-note">Precio promocional<\/small>/);
+  assert.match(lowered, /<small class="cmp-price-note" aria-hidden="true">Precio promocional<\/small>/);
   assert.match(lowered, /\$\u00a02\.000, antes \$\u00a02\.500, Precio promocional\./, 'el nombre de la acción dice las dos cifras y la condición');
   // Un «antes» igual al de ahora no es un descuento, y un porcentaje sin
   // «antes» no tiene contra qué compararse: ninguno de los dos se dibuja.
@@ -496,15 +541,15 @@ test('el tachado y el porcentaje sólo existen con un precio anterior real y dis
 
 test('el rótulo es la marca del producto, no la que se escribió en la campaña', () => {
   const html = piece('heineken-beer-pour', 'home-hero', { brand: 'Heineken' });
-  assert.match(html, /<small class="cmp-eyebrow">Heineken<\/small>/);
+  assert.match(html, /<small class="cmp-eyebrow" aria-hidden="true">Heineken<\/small>/);
   // Si la campaña dijera otra marca, gana la del producto.
   const drift = normalizeCampaign(approved(byId('heineken-beer-pour'), { copy: { ...byId('heineken-beer-pour').copy, eyebrow: 'Otra Marca' } }));
   const corrected = campaignMarkup({ campaign: drift }, 'home-hero', { productId: 'p-1', brand: 'Heineken', title: 'Heineken Lager' });
-  assert.match(corrected, /<small class="cmp-eyebrow">Heineken<\/small>/);
+  assert.match(corrected, /<small class="cmp-eyebrow" aria-hidden="true">Heineken<\/small>/);
   assert.match(corrected, /aria-label="Anuncio: Heineken"/);
   assert.doesNotMatch(corrected, /Otra Marca/);
   // Sólo un producto que no declara marca usa el rótulo de la campaña.
-  assert.match(piece('heineken-beer-pour', 'home-hero', { brand: '' }), /<small class="cmp-eyebrow">Heineken<\/small>/);
+  assert.match(piece('heineken-beer-pour', 'home-hero', { brand: '' }), /<small class="cmp-eyebrow" aria-hidden="true">Heineken<\/small>/);
 });
 
 test('cada candidata nombra en su acción la marca de SU producto', () => {

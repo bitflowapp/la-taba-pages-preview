@@ -1,0 +1,65 @@
+{
+ "rpc": "public.apply_commercial_catalog_batch(p_business_id, p_rows)",
+ "status": "NOT_EXECUTED - requires explicit approval and an owner/admin session (auth.uid())",
+ "p_rows": [
+  {
+   "sku": "andes-origen-rubia-lata-473ml",
+   "price": "3840.00"
+  },
+  {
+   "sku": "stella-artois-lata-473ml",
+   "price": "4635.00"
+  },
+  {
+   "sku": "budweiser-lata-473ml",
+   "price": "3345.00"
+  },
+  {
+   "sku": "quilmes-stout-lata-473ml",
+   "price": "2999.00"
+  },
+  {
+   "sku": "fernet-1882-750ml",
+   "price": "11880.00"
+  },
+  {
+   "sku": "fernet-branca-1000ml",
+   "price": "27585.00"
+  },
+  {
+   "sku": "gancia-lima-limon-lata-473ml",
+   "price": "3239.00"
+  }
+ ],
+ "reversion_rows": [
+  {
+   "sku": "andes-origen-rubia-lata-473ml",
+   "price": "2650.00"
+  },
+  {
+   "sku": "stella-artois-lata-473ml",
+   "price": "3600.00"
+  },
+  {
+   "sku": "budweiser-lata-473ml",
+   "price": "2350.00"
+  },
+  {
+   "sku": "quilmes-stout-lata-473ml",
+   "price": "2050.00"
+  },
+  {
+   "sku": "fernet-1882-750ml",
+   "price": "8950.00"
+  },
+  {
+   "sku": "fernet-branca-1000ml",
+   "price": "26250.00"
+  },
+  {
+   "sku": "gancia-lima-limon-lata-473ml",
+   "price": "2550.00"
+  }
+ ],
+ "after_apply_required": "owner re-verification per sku via publish_catalog_product(p_business_id, p_external_id, p_available=false)"
+}

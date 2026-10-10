@@ -78,7 +78,9 @@ test('la acción de cada pieza abre SU ficha y el precio de la ficha y del carri
   ]) {
     const row = rowBySku(sku);
     const piece = await readPiece(page, selector);
-    await page.locator(`${selector} [data-campaign-cta]`).click();
+    // La esquina del título: el centro de la pieza puede caer sobre «Agregar»
+    // según la tipografía del equipo, y ahí el toque COMPRA en vez de abrir la ficha.
+    await page.locator(`${selector} [data-campaign-cta]`).click({ position: { x: 14, y: 14 } });
     const modal = page.locator('[data-product-modal]');
     await expect(modal).toBeVisible();
     await expect(modal.locator('.modal-price strong')).toHaveText(piece.price);
@@ -155,7 +157,7 @@ for (const [ancho, alto] of [[390, 844], [430, 932]]) {
         `ciclo ${ciclo}: la pieza se reemplazó`).toBe(true);
     }
     // La acción sigue funcionando después de rotar.
-    await page.locator(`${heroPiece} [data-campaign-cta]`).click();
+    await page.locator(`${heroPiece} [data-campaign-cta]`).click({ position: { x: 14, y: 14 } });
     const modal = page.locator('[data-product-modal]');
     await expect(modal).toBeVisible();
     await expect(modal.locator('.modal-price strong')).toHaveText(precio);

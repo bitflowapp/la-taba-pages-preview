@@ -81,7 +81,7 @@ WebKit (iPhone 13, 390×844): mismo recorrido que Chromium, 39/39 del spec nuevo
 | Job | Resultado | Nota |
 |---|---|---|
 | Migrations, pgTAP and isolated restore | PASS | |
-| Web, backend, fiscal and security gates | ver el PR (corrida del SHA final) | La 1.ª corrida falló en «Release hygiene» por una ruta de disco local en este documento; quitada. |
+| Web, backend, fiscal and security gates | 1.ª corrida FAIL «Release hygiene» (ruta de disco local en este documento; quitada) · 2.ª corrida (Linux, 828 casos): **818 PASS · 3 FAIL** | Los 3 fallos: `campaigns.spec` — `locator.click` sobre el botón de la ficha agotó el tiempo (45 s / 90 s). En el runner Linux la tipografía acomoda la pieza de modo que el **centro** del botón de la ficha cae sobre «Agregar», que lo intercepta (ahí un toque compra en vez de abrir la ficha: correcto para el cliente, inválido para una prueba que quería abrir la ficha). En Windows el centro caía en el texto y pasaba. Corregido: las pruebas tocan la esquina del título (`position: {x:14,y:14}`). Verificado local: 42/42. |
 | Native PWA update and integrated Rider motion | **PASS** con `js/app.js` idéntico a `main` | Ver abajo. |
 | Windows Rust and unsigned verification bundles | PASS | |
 

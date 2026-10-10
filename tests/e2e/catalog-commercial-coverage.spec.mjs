@@ -415,12 +415,12 @@ test('abrir y cerrar fichas desde piezas distintas, rápido, no deja diálogos a
   expect(heroId).not.toBe(inlineId);
   const modal = page.locator('[data-product-modal]');
   for (let round = 0; round < 3; round += 1) {
-    await hero.locator('[data-campaign-cta]').tap();
+    await hero.locator('[data-campaign-cta]').tap({ position: { x: 14, y: 14 } });
     await expect(modal.locator('[data-modal-product-id]')).toHaveAttribute('data-modal-product-id', heroId);
     await modal.locator('[data-close-modal]').first().tap();
     await expect(modal).toBeHidden();
     await inline.scrollIntoViewIfNeeded();
-    await inline.locator('[data-campaign-cta]').tap();
+    await inline.locator('[data-campaign-cta]').tap({ position: { x: 14, y: 14 } });
     await expect(modal.locator('[data-modal-product-id]')).toHaveAttribute('data-modal-product-id', inlineId);
     await page.keyboard.press('Escape');
     await expect(modal).toBeHidden();

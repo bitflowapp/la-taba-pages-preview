@@ -511,7 +511,9 @@ test('tocar la pieza abre la ficha de SU producto y no toca el carrito', async (
   // El nombre de la acción dice todo lo que la pieza muestra, precio incluido:
   // el de la tarjeta, porque sale de la misma función.
   await expect(hit).toHaveAccessibleName(/Bien fría, recién servida\. Heineken Lager · 710 ml · Lata\. \$\s2\.500\. Ver Heineken/);
-  await hit.click();
+  // La esquina del título: el centro de la pieza puede caer sobre «Agregar» según
+  // la tipografía del equipo, y ahí el toque COMPRA en vez de abrir la ficha.
+  await hit.click({ position: { x: 14, y: 14 } });
   const modal = page.locator('[data-product-modal]');
   await expect(modal).toBeVisible();
   await expect(modal).toContainText('Heineken Lager');
@@ -604,7 +606,7 @@ test('PROMO_PRODUCT_MATCHES_CATALOG: cada pieza es su producto del catálogo —
   expect(inline.row.sku).toBe('red-bull-energy-drink-355ml');
 
   // La ficha que abre la pieza cobra lo mismo, y el carrito también.
-  await page.locator(`${heroPiece} [data-campaign-cta]`).click();
+  await page.locator(`${heroPiece} [data-campaign-cta]`).click({ position: { x: 14, y: 14 } });
   const modal = page.locator('[data-product-modal]');
   await expect(modal).toBeVisible();
   await expect(modal.locator('.modal-price strong')).toHaveText(hero.piece.price);
@@ -775,7 +777,7 @@ test('si el movimiento no puede arrancar, la tienda abre y la pieza queda estát
   await expect(piece.locator('.cmp-add')).toBeVisible();
   expect(await piece.locator('.cmp-add').evaluate((node) => getComputedStyle(node).opacity)).toBe('1');
   expect(await page.evaluate(() => window.TABA2_CAMPAIGNS.getDiagnostics())).toEqual({ active: false });
-  await piece.locator('[data-campaign-cta]').click();
+  await piece.locator('[data-campaign-cta]').click({ position: { x: 14, y: 14 } });
   await expect(page.locator('[data-product-modal]')).toBeVisible();
   expect(errors, 'una falla de la animación llegó a ser un error de la página').toEqual([]);
 });

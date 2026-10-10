@@ -2,6 +2,18 @@
 
 **Estado:** preparado para aprobación. **No hay productos creados, ni precios aplicados, ni stock, ni imágenes aprobadas por una persona.** No se mergeó ni se desplegó nada.
 
+
+## Ronda 3 · búsqueda de fotos para los 89 pendientes
+
+Resultado por producto en `BUSQUEDA_PROFUNDA_89.csv`; método y fuentes en `BUSQUEDA_FUENTES_RONDA3.md`.
+
+- **U · utilizable: 0.** Ninguna foto cumple a la vez fuente autorizada, derechos acreditados y aprobación humana.
+- **P · exacta, pendiente de autorización: 47.** Identidad verificada (nombre, volumen, unidad y EAN cuando hay). Derechos no acreditados: no publicar.
+- **D · aproximada descartada: 13.** Otra variedad, otra marca, otro envase o imagen de línea genérica.
+- **N · no encontrada tras agotar las fuentes consultadas: 29.** Con el motivo por producto.
+
+Fuentes que dieron fotos exactas: Luigi Bosca (9), Rutini/Trumpeter (3, con la advertencia de caja x6), Brancastore (Sernova y Carpano, 5), Heredero (1), Santa Julia (1), CCU (Grolsch y Miller, 2, capacidad a confirmar), y supermercados sólo para identidad. Ninguna imagen se descargó de un host fuera del allowlist. Propuestas de ampliación en `BUSQUEDA_FUENTES_RONDA3.md` (sección 6), sin aplicar.
+
 ## 1. Decisiones de la ronda 2 y su estado
 
 | # | Decisión | Estado |

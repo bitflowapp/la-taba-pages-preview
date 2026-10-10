@@ -1893,10 +1893,6 @@ function bindEvents() {
         return;
       }
       const modal = addControl.closest('[data-product-modal]');
-      // La pieza publicitaria cambia «Agregar» por la cantidad en el mismo
-      // lugar: el nodo del botón se va, así que el foco del teclado tiene que
-      // pasar al «+» y no perderse en el documento.
-      const campaignPiece = addControl.matches('[data-campaign-add]') ? addControl.closest('[data-campaign]') : null;
       const selectedVariant = modal?.querySelector('[data-product-variant]:checked')?.value;
       const selectedProductId = selectedVariant || addId;
       const requestedQuantity = modal
@@ -1918,7 +1914,6 @@ function bindEvents() {
         if (productNote) appendProductObservation(selectedProductId, productNote);
         closeProductModal();
         pulseCartFeedback();
-        campaignPiece?.querySelector('[data-cart-inc]')?.focus({ preventScroll: true });
       }
       return;
     }

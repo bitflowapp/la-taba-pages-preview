@@ -49,7 +49,7 @@ test('service worker caches only existing GitHub Pages assets', () => {
   assert.ok(assets.includes('./styles/storefront.css?v=80'));
   assert.ok(assets.includes('./styles/responsive.css?v=80'));
   assert.ok(assets.includes('./styles/showcase.css?v=80'));
-  assert.ok(assets.includes('./js/app.js?v=54'));
+  assert.ok(assets.includes('./js/app.js?v=53'));
   assert.ok(assets.includes('./pago/resultado/index.html'));
   assert.ok(assets.includes('./pago/pendiente/index.html'));
   assert.ok(assets.includes('./pago/error/index.html'));

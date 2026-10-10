@@ -45,7 +45,7 @@ const ASSETS = [
   './assets/products/beverage-placeholder.svg',
   './js/pwa-update.js?v=4',
   './js/startup-recovery.js?v=3',
-  './js/app.js?v=54',
+  './js/app.js?v=53',
   './js/config.js',
   './js/core/address.js',
   './js/core/app-mode.js',

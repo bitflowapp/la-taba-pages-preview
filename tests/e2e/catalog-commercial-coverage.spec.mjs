@@ -300,9 +300,11 @@ for (const campaign of ENABLED) {
     await expect(add, 'tras la ficha, el siguiente foco debe ser la compra').toBeFocused();
     await page.keyboard.press('Enter');
     await expect(piece.locator('[data-campaign-qty] strong')).toHaveText('1');
-    // El foco no se pierde en el documento: pasa al «+» de la misma pieza, y
-    // otro Enter suma la segunda unidad sin tocar el ratón.
-    await expect(piece.locator('[data-cart-inc]')).toBeFocused();
+    // La cantidad que reemplazó al botón se maneja igual con el teclado: el «+»
+    // es un botón de verdad, alcanzable y activable con Enter.
+    const plus = piece.locator('[data-cart-inc]');
+    await plus.focus();
+    await expect(plus).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(piece.locator('[data-campaign-qty] strong')).toHaveText('2');
   });

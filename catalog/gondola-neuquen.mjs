@@ -50,6 +50,9 @@
  * desde el Panel cuando quiera, producto por producto.
  */
 
+import { precioOverride } from './price-overrides-pedidosya-20261010.mjs';
+
+
 /**
  * Criterio de precio, medido y contrastado el 2026-08-18.
  *
@@ -248,7 +251,7 @@ export const GONDOLA = Object.freeze(
       soldAsPack,
       costoMayorista: fila.costoMayorista,
       derivado: fila.derivado ?? null,
-      price: precioDeVenta({ costoMayorista: fila.costoMayorista, unitsPerPack, soldAsPack }),
+      price: precioOverride(fila.sku) ?? precioDeVenta({ costoMayorista: fila.costoMayorista, unitsPerPack, soldAsPack }),
       stock: fila.stock,
       chilled: fila.chilled === true,
       alcoholic,

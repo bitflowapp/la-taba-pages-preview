@@ -45,9 +45,9 @@ Productos con error funcional: **0 / 51**. Piezas con la falla de compra: **4 / 
 - **Pasos:** tocar la esquina superior derecha de la foto de la franja.
 - **Causa raíz (confirmada, medida):** la zona del botón de ocultar solapaba **14×30 px** de la foto (`getBoundingClientRect`, `raw/dismiss-overlap.json`). El resultado es «Ocultamos el anuncio» y la promoción no vuelve durante toda la visita (`sessionStorage`), sin deshacer.
 - **Impacto:** quien intenta tocar la foto de la promoción puede hacerla desaparecer.
-- **Corrección:** la escena de las franjas se corre 16 px (`right: 36px`); solape **0 px** a 360/390/430.
+- **Corrección:** la escena de las franjas se corre 16 px (`right: 36px`); solape **0 px** a 360/390/430. (Tocar la esquina superior derecha *vacía* de la pieza sigue ocultándola: es el propio botón.)
 - **Estado:** **corregido**.
-- **Regresión:** `catalog-commercial-coverage.spec.mjs` mide que ningún punto del paquete de foto caiga en `[data-campaign-dismiss]`; la geometría la fija `campaigns.spec.mjs`.
+- **Regresión:** `catalog-commercial-coverage.spec.mjs` («el botón de ocultar no recibe ningún toque dirigido a la foto…», 12×12 puntos sobre la foto a 360/390/430); la geometría de la banda la fija `campaigns.spec.mjs`.
 
 ## CPA-003 · P2 · Los filtros ofrecen opciones que llevan a una lista vacía
 

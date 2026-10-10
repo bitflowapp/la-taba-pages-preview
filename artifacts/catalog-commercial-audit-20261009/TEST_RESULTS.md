@@ -64,11 +64,23 @@ Listado: **826 casos** (proyectos `chromium`, `mobile-webkit`, `mobile-webkit-re
 - **Backend/base de datos real** (`test:db:*`): fuera de alcance, no se tocó backend.
 - **CI de GitHub:** ver la sección 6.
 
-## 6 · CI de GitHub (PR #146)
+## 6 · Matriz de viewports de la rama (medida, Chromium)
+
+| Viewport | Banda de apertura | «Agregar» | Alcanzable | Desborde horizontal |
+|---|---|---|---|---|
+| 360×800 | 109 px (puerta editorial 101 px con leyenda legal; la pieza con leyenda mide 100) | 26 px (44 al dedo) | sí | no |
+| 390×844 | 112 px | 26 px (44 al dedo) | sí | no |
+| 430×932 | 114 px = puerta editorial | 26 px (44 al dedo) | sí | no |
+| 1366×768 | 164 px = puerta editorial | 42 px | sí | no |
+| 1440×900 / 1920×1080 | 270 px | 46 px | sí | no |
+
+WebKit (iPhone 13, 390×844): mismo recorrido que Chromium, 39/39 del spec nuevo y de `storefront-states`.
+
+## 7 · CI de GitHub (PR #146)
 
 | Job | Resultado | Nota |
 |---|---|---|
-| Migrations, pgTAP and isolated restore | PASS | |
+| Migrations, pgTAP and isolated restore | ver PR | |
 | Web, backend, fiscal and security gates | 1.ª corrida FAIL → corregido | «Release hygiene»: una ruta de disco local en este mismo documento. Quitada. |
-| Native PWA update and integrated Rider motion | FAIL | **Preexistente en `main`**: la corrida de CI de `main` `0b7f5427` (PR #145) falla en el mismo paso, «Native old-to-candidate PWA update in both engines». Chromium pasa; WebKit se queda en «offline reload» (`page.waitForFunction` 30 s). No la introduce esta rama. |
-| Windows Rust and unsigned verification bundles | ver el PR | |
+| Native PWA update and integrated Rider motion | 1.ª corrida FAIL (WebKit, «offline reload») · 2.ª corrida **PASS** sin cambios de código | Flaky de WebKit en el runner («WebKit encountered an internal error»; la propia compuerta cita el defecto de CacheStorage de Playwright). La corrida de CI de `main` `0b7f5427` también tiene ese job en rojo, en otro paso. |
+| Windows Rust and unsigned verification bundles | ver PR | |

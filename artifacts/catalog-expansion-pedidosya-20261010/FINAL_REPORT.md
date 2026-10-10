@@ -1,86 +1,96 @@
-# FINAL_REPORT · expansión del catálogo con PedidosYa Market Neuquén · 2026-10-10
+# FINAL_REPORT · expansión del catálogo con PedidosYa Market Neuquén · ronda 2 · 2026-10-10
 
-**Estado general:** preparación completa, **ningún producto creado**, **ningún precio aplicado**, **ninguna imagen aprobada**. Todo lo que sigue necesita aprobación humana antes de tocar Supabase.
+**Estado:** preparado para aprobación. **No hay productos creados, ni precios aplicados, ni stock, ni imágenes aprobadas por una persona.** No se mergeó ni se desplegó nada.
 
-## Resumen de números
+## 1. Decisiones de la ronda 2 y su estado
 
-| Concepto | Valor |
-|---|---|
-| Referencias de PedidosYa (lista del prompt) | 144 |
-| Equivalencia exacta con La Taba (ya existentes) | 7 |
-| Ambiguos (no creados) | Corona Rubia 330 ml ↔ Corona Extra (1) · Portillo Salentein Malbec, tinto y rosado (2 filas) |
-| Candidatos nuevos | **134** |
-| De los 134: duplicados exactos con una ficha del pool de 92 | **7** (no crear; usar la ficha existente) |
-| De los 134: duplicados probables (decidir antes de crear) | **5** |
-| De los 134: nuevos pendientes | **122** |
+| # | Decisión | Estado |
+|---|---|---|
+| 1 | Los 7 precios PedidosYa aprobados como **precios objetivo** | Registrado en `catalog/price-overrides-pedidosya-20261010.mjs` (`DECISION_COMERCIAL`). **Aplicación productiva BLOQUEADA** hasta: costo real, checkout y procedimiento de publicación |
+| 2 | Revisión individual de las plausibles en un visor | Hecho: `visor-revision-imagenes.html` (fuera del repo). **Sin firmas**: sólo guarda decisiones en el navegador y las exporta |
+| 3 | Investigar más fuentes sin copiar fuera de derechos | Hecho. Ver `BUSQUEDA_FUENTES_RONDA2.md`. Allowlist **no** modificado; propuesta en `PROPUESTA_AMPLIACION_ALLOWLIST_NO_APLICADA.md` |
+| 4 | Conservar las 7 fichas del pool | Hecho: 7 exactos + 3 probables (Schneider, Campari, Smirnoff) **no se crean**; se usa la ficha del pool |
+| 5 | Duplicados probables con EAN/GTIN y etiqueta | Hecho con EAN de comercios (no oficiales). Resultado: 3 duplicados probables, 2 **no duplicados** (Trumpeter Reserva, Rutini Cabernet Franc Malbec). Falta confirmar con la etiqueta física |
+| 6 | Gancia Lima Limón Hibiscus y Vodka Hibiscus pendientes | Hecho: **pendientes**. El EAN 7790950144826 es «Vodka Spritz Hibiscus»; no apareció ningún «Lima Limón Hibiscus» |
+| 7 | Sin stock confirmado, pendiente | Hecho: stock «NO CONFIRMADO» en los 134 |
 
-## Imágenes
+## 2. Clasificación final de los 134 candidatos
 
-| Concepto | Valor |
-|---|---|
-| Imágenes descargadas desde fuentes permitidas | 34 (guardadas fuera del repo, no versionadas) |
-| Fuentes utilizadas | Jumbo (proveedor aprobado, cervezas y aperitivos ya cargados) · Coca-Cola Andina / Peñaflor (distribuidor oficial) · Fratelli Branca (fabricante) · CCU (fabricante, sin packshot de la presentación) |
-| SKU con fuente permitida consultada | 33 |
-| SKU sin fuente autorizada para su marca | 94 |
-| SKU con imagen **pre-revisada** como plausible (sin aprobación humana) | 13 |
-| SKU con imagen dudosa | 3 |
-| SKU sin imagen utilizable | 121 de 134 |
-| Imágenes **aprobadas por una persona** | **0** |
-| Imágenes con derechos **verificados** | **0**. Hay base de autorización, pero el acuerdo escrito no está archivado (ver abajo) |
+| Clase | Qué significa | Cantidad |
+|---|---|---|
+| **A** · Productos preparados con imagen pendiente de aprobación | Foto plausible de fuente permitida; falta aprobación humana | **10** |
+| **B** · Productos sin fotografía adecuada | Fuente permitida consultada, sin foto utilizable (incluye 3 Dr. Lemon hallados fuera del allowlist) | **18** |
+| **C** · Productos ya presentes en el catálogo candidato | Ficha del pool: no crear | **10** |
+| **D** · Identidad ambigua | Gancia Hibiscus (par), Stella Noire, Schneider Lager 473, Imperial Lager 473, Heineken porrón, Andes Rubia 710 botella | **7** |
+| **E** · Necesitan fotografía propia | Marca sin fuente permitida en el allowlist | **89** |
+| Total | | **134** |
 
-**Pre-revisión visual:** la hizo quien preparó este reporte para orientar a la revisión. No es una aprobación. `scripts/catalog-images/approve.mjs` exige `--revisado-por` y la ejecuta una persona.
+Detalle: `CLASIFICACION_FINAL.csv`. Las 10 de la clase A que pueden pedir aprobación comercial (una vez aprobada la imagen) son: Corona Rubia 473, Andes Rubia Oro 473, Brahma Chopp 473, Andes IPA 473, Patagonia Vera IPA 473, Patagonia 24.7 Session IPA 473, Quilmes IPA 473, Andes Origen Negra 473, Fernet Branca 750 ml y Fernet Branca 450 ml. Las fotos de Fernet tienen 640 px: bajo para el master de 1000 px.
 
-**Descartadas por identidad, en la pre-revisión:** Stella Artois Pure Gold en lugar de Lager; tres fotos de Trapiche sin la línea «Alaris»; Dr. Lemon Pomelo en lugar de Vodka; Gancia Sin Alcohol; Patagonia Estelar; Vera IPA en lugar de Session IPA; un pack de seis latas; Amstel con foto de lata.
+**Clase C (10), no crear:** Heineken Lager 710 · Imperial Golden Lata 473 · Imperial Cream Stout 473 · Trumpeter Malbec 750 · Rutini Cabernet Malbec 750 · Gancia Americano 950 · Aperol 750 · Schneider Rubia 710 (lata) · Campari (Bitter) 750 · Smirnoff Red N°21 700.
 
-**Foto repetida para dos productos:** Gancia Vodka Spritz Hibiscus aparece para «Gancia Lima Limón Hibiscus» y para «Gancia Vodka Hibiscus». Probablemente sea un solo producto con dos nombres.
+## 3. Imágenes
 
-## Derechos de uso
+- **34 fotos** de la ronda 1 y **5** de la ronda 2 descargadas desde fuentes permitidas (fuera del repo, no versionadas).
+- **Plausibles pre-revisadas: 10 SKU** en clase A. Son orientativas; la aprobación la firma una persona con `catalog:images:approve`.
+- **Fuera del allowlist:** 3 fotos de Dr. Lemon (Jumbo). La marca no figura en la lista del grupo. **No usar** sin ampliación.
+- **Descartadas por identidad:** Stella Artois Pure Gold, Trapiche sin «Alaris», Dr. Lemon Pomelo, Gancia Sin Alcohol, Patagonia Estelar, Vera IPA en lugar de Session, pack de seis latas, Amstel lata para un SKU botella, Imperial Golden lata para un SKU botella 710.
+- **Calidad:** Fernet (640 px), Schneider y Imperial (429 px): bajas para el master de 1000 px.
+- **Derechos:** hay base de autorización (TABA-AUT-2026-08-001 y ampliaciones), pero **falta el documento del acuerdo archivado**. Ningún asset tiene `rights_evidence_file`.
+- **Placa de retailer:** la foto de Corona Rubia tiene una placa de Jumbo. Requiere recorte declarado.
 
-- La autorización `TABA-AUT-2026-08-001` cubre packshots del fabricante o distribuidor, con fondo blanco. Dos ampliaciones (2026-08-25 y 2026-08-26) suman distribuidor oficial, proveedor aprobado (ecommerce serios, sólo para cervezas y aperitivos ya cargados, con revisión individual) y las fuentes Fratelli Branca y CCU.
-- **Falta la evidencia:** el documento del acuerdo no está en el repo (`evidencia_documental.pendiente = true`). Sin ese archivo, el asset no puede tener `rights_evidence_file`.
-- **Los retailers no están en la lista de fuentes** salvo Jumbo, y sólo para las marcas ampliadas. Carrefour, La Anónima y PedidosYa no figuran en el allowlist: no se descargó nada de ahí. Según el propio allowlist, cambiar eso es una decisión comercial.
+## 4. Lo que se investigó y lo que no se pudo
 
-## Duplicados
+- **Jumbo:** única fuente con coincidencia nueva (Corona Rubia 473).
+- **Peñaflor / Andina:** la tienda del distribuidor no tiene ninguna de las marcas de vinos y destilados de la lista.
+- **CCU:** packshots de Imperial, Heineken, Schneider y Amstel. Ninguno quedó utilizable sin dudas. Grolsch y Miller tienen packshots, pero su marca no está en el grupo.
+- **Fratelli Branca:** Fernet 750 y 450, con fichas oficiales.
+- **Carrefour, La Anónima, PedidosYa, Disco, Vea, Coto, DIA, Mercado Libre:** no usados para imágenes. Están rechazados por el allowlist o no están habilitados como fuente. Sólo se usaron para EAN (identidad), con fuentes de terceros.
+- **Fabricantes sin grupo** (Rutini, Luigi Bosca, Trumpeter, Gancia, Diageo, Pernod, Brown-Forman): no descargados. Requieren ampliación con autorización verificable (ver propuesta).
 
-- Los siete exactos, con su ficha del pool: Heineken Lata 710 Lager (`heineken-710ml`), Imperial Golden Lata 473 (`imperial-golden-lata-473ml`), Imperial Cream Stout 473 lata (`imperial-cream-stout-lata-473ml`), Trumpeter Malbec 750 (`trumpeter-malbec-750ml-local`), Rutini Cabernet Malbec 750 (`rutini-cabernet-malbec-750ml-local`), Gancia Americano 950 (`gancia-americano-950ml-local`), Aperol 750 (`aperol-750ml`).
-- Los cinco probables: Schneider Rubia 710 (el pool dice lata y la referencia no lo dice), Trumpeter Reserva, Rutini Cabernet Franc Malbec, Campari, Smirnoff Red N°21.
-- Gancia Americano 950 ml se mantiene separado del 450 ml en producción.
-- Detalle completo: `DUPLICATE_REVIEW.csv`.
+## 5. Fotos propias del comercio
 
-## Precios
+- `TOMAS_NECESARIAS_COMERCIO.csv`: **114 tomas** (clases B, D y E) con vista requerida, nombre de archivo y verificación previa.
+- `INSTRUCCIONES_FOTOS_PROPIAS.md`: fondo blanco, luz, encuadre, unidad sola, etiqueta legible, 2000×2000 px, nombre `<sku>__front.jpg`.
+- Sólo fotografiar lo que el local tiene en góndola.
 
-- Los 134 nuevos llevan el precio original de PedidosYa, sin margen. Es precio **propuesto**, no aplicado. No hay costo medido para estos SKU, así que **no se afirma rentabilidad**. Ver `PRICE_REVIEW.csv`.
-- Los 7 existentes tienen override por SKU en `catalog/price-overrides-pedidosya-20261010.mjs`, **inerte** hasta que el estado pase a `APROBADO_COMERCIAL`. Ver `COMMERCIAL_MARGIN_REVIEW.md` en la rama de precios.
+## 6. Paquete para el importador y orden de góndola
 
-## Publicación
+- **`PAQUETE_IMPORTACION_PENDIENTE_APROBACION.csv`**: 117 filas en formato de la plantilla (clases A, B y E). Stock vacío, `available=false`, `sort_order` y `image_path` vacíos hasta completar.
+- Validador oficial: falla sólo por stock, orden, imagen y asset aprobado en las 117 filas (`IMPORT_VALIDATION_PAQUETE.txt`). **No se relajó ninguna validación.**
+- **`PROPUESTA_ORDEN_GONDOLA.csv`**: propuesta de diseño, agrupada por categoría de la góndola existente y familia de producto. **No aplicar.**
 
-- Todos los productos nuevos salen como `available = false` e `is_verified = false`, sin stock, sin orden de góndola.
-- Todos los alcohólicos siguen cerrados por la compuerta de licencia (`alcohol_sales_enabled = false`).
-- No se creó ningún pedido ni se ejecutó ningún cobro.
+## 7. Autoridad del precio en el checkout
 
-## Auditoría
+- Verificado en la definición **desplegada** en producción (lectura, sin pedidos): `create_order_with_items_core` y `create_checkout_session` leen `products.price` en el servidor y rechazan productos con precio no confirmado o cero.
+- El cliente envía sólo `product_id` (o `combo_id`) y `quantity`. La Edge Function de Mercado Pago no lee precio del cuerpo.
+- Pruebas de contrato: `tests/checkout-price-authority.test.mjs`, 4 de 4.
+- Brecha conocida (no corregida): la tienda muestra el precio cargado al abrir la página, y el servidor cobra el precio del momento de la compra. Conviene que el resumen muestre el total devuelto por el servidor antes de confirmar. Ver `CHECKOUT_AUTHORITY_EVIDENCE.md`.
 
-- `PRODUCT_IMAGE_AUDIT.csv`: 134 filas con los campos pedidos (nombre, SKU, categoría, presentación, precio, URL de imagen, estado de derechos, archivo local, estado de importación, estado de publicación, problemas).
-- `IMAGE_SOURCES.csv`: 47 filas (una por imagen descargada o fuente consultada sin candidato), con URL, host, hash SHA-256, dimensiones y pre-revisión.
-- `IMAGE_RIGHTS_REVIEW.csv`: base de autorización, condiciones y evidencia por imagen.
+## 8. Overrides y recálculos
 
-## Staging y producción
+- `tests/price-overrides-pedidosya.test.mjs`: 7 de 7. Con el override en modo aprobado, **cambian exactamente los 7 SKU** y ningún otro precio de la góndola.
+- Con la decisión registrada y la aplicación bloqueada, el generador produce los mismos precios que antes.
 
-- **Staging:** no ejecutado (ver `IMPORT_DRY_RUN.md`).
-- **Producción:** no tocada. `PRODUCTION_UPDATED: NO`.
-- **Pruebas automatizadas:** `node --test tests/price-overrides-pedidosya.test.mjs tests/gondola-neuquen.test.mjs` → 32 de 32 pasan. No corrí la suite completa (≈900 s según la memoria del repo).
-- **Pruebas de carrito, checkout, PWA y responsive:** no ejecutadas. El cambio de catálogo no toca la UI, pero no lo probé.
-- **Fuera de alcance:** el checkout no lo verifiqué contra el precio de la base (quedó pendiente desde el reporte anterior).
+## 9. Pruebas
 
-## Decisiones que necesito
+- Suite completa: `npm test` sobre el worktree (`npm ci` con `TMP` en D:). Resultado en la sección de estado del PR.
+- Pruebas añadidas: override (7), autoridad de checkout (4).
 
-1. ¿Los 13 SKU con imagen pre-revisada los revisa una persona con `catalog:images:approve`? Son: Andes Rubia Oro 473, Brahma Chopp 473, Andes IPA 473, Patagonia Vera IPA 473, Patagonia 24.7 Session IPA 473, Quilmes IPA 473, Andes Negra 473, Dr. Lemon Limón 1 L, Dr. Lemon Vodka 1 L, Gancia Vodka Hibiscus 473, Dr. Lemon Mojito 473, Fernet Branca 750 y 450 (estas dos con 640 px).
-2. ¿Quién archiva el acuerdo con el titular o el paquete de packshots de cada marca? Sin eso no hay derechos verificados.
-3. ¿Se amplía el allowlist a otras fuentes (Carrefour, La Anónima) o se mantiene como está? Es decisión comercial.
-4. Los duplicados probables y el par Gancia Hibiscus: ¿cuál ficha se conserva?
-5. El override de precios de los 7 existentes: ¿lo aprobás? Si sí, cambia `ESTADO` a `APROBADO_COMERCIAL`; la aplicación en producción sigue requiriendo tu aprobación aparte.
-6. Stock y orden de góndola para los productos que se publiquen.
+## 10. Límites que siguen abiertos
 
-## Estado del PR
+1. Sin documento del acuerdo archivado, ningún derecho queda verificado.
+2. Sin costo real por SKU, no se puede afirmar rentabilidad ni margen negativo de los nuevos.
+3. Sin stock confirmado, ningún producto se publica.
+4. Las 7 + 3 duplicaciones necesitan confirmación con la etiqueta física.
+5. El alcohol sigue cerrado por licencia en todos los casos.
+6. No se hizo prueba de carrito, checkout, PWA ni responsive en un navegador. Sólo pruebas de contrato y de código.
+7. No se usó producción para pedidos de prueba. Staging no tiene los SKU ni una sesión owner vigente.
 
-Ver la sección siguiente del chat: rama, commit y link del PR en borrador.
+## 11. Siguiente paso recomendado
+
+1. Revisar el visor y firmar las 10 de clase A con `catalog:images:approve`, o rechazarlas.
+2. Archivar el acuerdo con el titular (o el paquete de packshots de cada marca).
+3. Decidir sobre la propuesta de ampliación del allowlist (CCU: Grolsch y Miller; Dr. Lemon en el grupo de retailers).
+4. Confirmar con la etiqueta los 3 duplicados probables y resolver el par Gancia Hibiscus.
+5. Pedir al comercio las tomas de `TOMAS_NECESARIAS_COMERCIO.csv` (sólo lo que tiene en góndola).

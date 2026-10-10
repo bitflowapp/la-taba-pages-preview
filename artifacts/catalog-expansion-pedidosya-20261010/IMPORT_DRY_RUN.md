@@ -1,5 +1,9 @@
 # IMPORT_DRY_RUN · expansión PedidosYa 2026-10-10
 
+> **Actualización ronda 2.** El paquete ya no es la plantilla de 134 filas: es `PAQUETE_IMPORTACION_PENDIENTE_APROBACION.csv` (117 filas: clases A, B y E). Quedan fuera los 10 duplicados con ficha del pool (C) y los 7 de identidad ambigua (D). Validado con el validador oficial: `IMPORT_VALIDATION_PAQUETE.txt`. Resultado: **FAIL esperado**, por las mismas cuatro causas (stock, `sort_order`, imagen, asset aprobado) en las 117 filas, y sin otros errores.
+>
+> Lo que sigue en este documento describe la validación de la ronda 1 (134 filas) y sigue siendo válido en sus conclusiones.
+
 **Tipo de prueba:** validación local con el validador oficial del repo (`scripts/validate-product-catalog.mjs`) sobre la plantilla generada desde `NEW_PRODUCTS.csv`. **No hubo conexión a Supabase**: ni producción, ni staging.
 
 **Resultado: FAIL (esperado).** Los 134 candidatos quedan bloqueados por cuatro causas, todas por falta de datos que no se pueden inventar.

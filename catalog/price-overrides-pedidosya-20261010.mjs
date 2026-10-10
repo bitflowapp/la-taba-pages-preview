@@ -19,6 +19,24 @@
 
 export const ESTADO = 'PENDIENTE_APROBACION_COMERCIAL';
 
+/**
+ * Decisión del titular sobre los 7 precios: aprobados como PRECIOS OBJETIVO para
+ * preparar la actualización. La aplicación productiva queda BLOQUEADA hasta
+ * verificar costos reales, checkout y procedimiento de publicación. Mientras
+ * `aplicacion_productiva` sea BLOQUEADA, `ESTADO` no pasa a APROBADO_COMERCIAL.
+ */
+export const DECISION_COMERCIAL = Object.freeze({
+  precios_objetivo: 'APROBADOS',
+  registrado: '2026-10-10',
+  fuente: 'instrucción escrita del titular en la sesión de trabajo del 2026-10-10',
+  aplicacion_productiva: 'BLOQUEADA',
+  condiciones_para_desbloquear: Object.freeze([
+    'costo real verificado por SKU (hoy sólo costo medido en repo)',
+    'checkout verificado contra la autoridad del servidor',
+    'procedimiento de publicación y reversión aprobado',
+  ]),
+});
+
 export const FUENTE = Object.freeze({
   origen: 'PedidosYa Market Neuquén capital',
   tipoPrecio: 'ORIGINAL, sin oferta ni promoción',

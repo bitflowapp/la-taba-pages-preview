@@ -1,0 +1,118 @@
+external_id,sku,brand,name,variant,category,subcategory,capacity_value,capacity_unit,package_type,units_per_pack,price,stock,available,alcoholic,minimum_age,chilled,featured,sort_order,image_path,tags
+stones-maracuya-lata-473ml,stones-maracuya-lata-473ml,Stones,Stones Maracuyá,Maracuyá,Cervezas,saborizada,473,ml,lata,1,3145.00,,false,true,18,true,false,,,cervezas|saborizada
+michelob-ultra-sin-gluten-lata-473ml,michelob-ultra-sin-gluten-lata-473ml,Michelob Ultra,Michelob Ultra Sin Gluten,Sin Gluten,Cervezas,sin-gluten,473,ml,lata,1,3490.00,,false,true,18,true,false,,,cervezas|sin-gluten
+1890-quilmes-1890-lata-473ml,1890-quilmes-1890-lata-473ml,1890 Quilmes,1890 Quilmes 1890,1890,Cervezas,lager,473,ml,lata,1,2415.00,,false,true,18,true,false,,,cervezas|lager
+stella-artois-lager-botella-330ml,stella-artois-lager-botella-330ml,Stella Artois,Stella Artois Lager,Lager,Cervezas,lager,330,ml,botella,1,4430.00,,false,true,18,true,false,,,cervezas|lager
+ortuza-premium-lager-botella-710ml,ortuza-premium-lager-botella-710ml,Ortuza,Ortuza Premium Lager,Premium Lager,Cervezas,lager,710,ml,botella,1,3969.00,,false,true,18,true,false,,,cervezas|lager
+ortuza-premium-lager-lata-473ml,ortuza-premium-lager-lata-473ml,Ortuza,Ortuza Premium Lager,Premium Lager,Cervezas,lager,473,ml,lata,1,2519.00,,false,true,18,true,false,,,cervezas|lager
+stella-artois-lager-botella-710ml,stella-artois-lager-botella-710ml,Stella Artois,Stella Artois Lager,Lager,Cervezas,lager,710,ml,botella,1,6935.00,,false,true,18,true,false,,,cervezas|lager
+corona-rubia-lata-473ml,corona-rubia-lata-473ml,Corona,Corona Rubia,Rubia,Cervezas,rubia,473,ml,lata,1,5355.00,,false,true,18,true,false,,,cervezas|rubia
+miller-lager-lata-473ml,miller-lager-lata-473ml,Miller,Miller Lager,Lager,Cervezas,lager,473,ml,lata,1,3729.00,,false,true,18,true,false,,,cervezas|lager
+andes-origen-rubia-oro-lata-473ml,andes-origen-rubia-oro-lata-473ml,Andes Origen,Andes Origen Rubia Oro,Rubia Oro,Cervezas,rubia,473,ml,lata,1,3805.00,,false,true,18,true,false,,,cervezas|rubia
+heineken-rubia-lata-473ml,heineken-rubia-lata-473ml,Heineken,Heineken Rubia,Rubia,Cervezas,rubia,473,ml,lata,1,4275.00,,false,true,18,true,false,,,cervezas|rubia
+imperial-golden-botella-710ml,imperial-golden-botella-710ml,Imperial,Imperial Golden,Golden,Cervezas,golden,710,ml,botella,1,4785.00,,false,true,18,true,false,,,cervezas|golden
+imperial-lager-botella-710ml,imperial-lager-botella-710ml,Imperial,Imperial Lager,Lager,Cervezas,lager,710,ml,botella,1,4785.00,,false,true,18,true,false,,,cervezas|lager
+grolsch-lager-lata-473ml,grolsch-lager-lata-473ml,Grolsch,Grolsch Lager,Lager,Cervezas,lager,473,ml,lata,1,4200.00,,false,true,18,true,false,,,cervezas|lager
+quilmes-bajo-cero-lata-473ml,quilmes-bajo-cero-lata-473ml,Quilmes,Quilmes Bajo Cero,Bajo Cero,Cervezas,lager,473,ml,lata,1,1880.00,,false,true,18,true,false,,,cervezas|lager
+brahma-chopp-lata-473ml,brahma-chopp-lata-473ml,Brahma,Brahma Chopp,Chopp,Cervezas,chopp,473,ml,lata,1,3189.00,,false,true,18,true,false,,,cervezas|chopp
+amstel-lager-botella-710ml,amstel-lager-botella-710ml,Amstel,Amstel Lager,Lager,Cervezas,lager,710,ml,botella,1,4200.00,,false,true,18,true,false,,,cervezas|lager
+asahi-super-dry-botella-330ml,asahi-super-dry-botella-330ml,Asahi,Asahi Super Dry,Super Dry,Cervezas,lager,330,ml,botella,1,5609.00,,false,true,18,true,false,,,cervezas|lager
+andes-origen-ipa-lata-473ml,andes-origen-ipa-lata-473ml,Andes Origen,Andes Origen IPA,IPA,Cervezas,ipa,473,ml,lata,1,4085.00,,false,true,18,true,false,,,cervezas|ipa
+stones-lemon-lata-473ml,stones-lemon-lata-473ml,Stones,Stones Lemon,Lemon,Cervezas,saborizada,473,ml,lata,1,3145.00,,false,true,18,true,false,,,cervezas|saborizada
+patagonia-vera-ipa-lata-473ml,patagonia-vera-ipa-lata-473ml,Patagonia,Patagonia Vera IPA,Vera IPA,Cervezas,ipa,473,ml,lata,1,5649.00,,false,true,18,true,false,,,cervezas|ipa
+patagonia-24-7-session-ipa-lata-473ml,patagonia-24-7-session-ipa-lata-473ml,Patagonia,Patagonia 24.7 Session IPA,24.7 Session IPA,Cervezas,ipa,473,ml,lata,1,5765.00,,false,true,18,true,false,,,cervezas|ipa
+patagonia-24-7-session-ipa-botella-730ml,patagonia-24-7-session-ipa-botella-730ml,Patagonia,Patagonia 24.7 Session IPA,24.7 Session IPA,Cervezas,ipa,730,ml,botella,1,8199.00,,false,true,18,true,false,,,cervezas|ipa
+ortuza-session-ipa-lata-473ml,ortuza-session-ipa-lata-473ml,Ortuza,Ortuza Session IPA,Session IPA,Cervezas,ipa,473,ml,lata,1,4165.00,,false,true,18,true,false,,,cervezas|ipa
+quilmes-ipa-lata-473ml,quilmes-ipa-lata-473ml,Quilmes,Quilmes IPA,IPA,Cervezas,ipa,473,ml,lata,1,2999.00,,false,true,18,true,false,,,cervezas|ipa
+schneider-remix-limon-lata-473ml,schneider-remix-limon-lata-473ml,Schneider,Schneider Remix Limón,Remix Limón,Cervezas,saborizada,473,ml,lata,1,2889.00,,false,true,18,true,false,,,cervezas|saborizada
+bierhaus-chala-ipa-lata-473ml,bierhaus-chala-ipa-lata-473ml,Bierhaus,Bierhaus Chala IPA,Chala IPA,Cervezas,ipa,473,ml,lata,1,5800.00,,false,true,18,true,false,,,cervezas|ipa
+bierhaus-honey-lazybee-lata-473ml,bierhaus-honey-lazybee-lata-473ml,Bierhaus,Bierhaus Honey Lazybee,Honey Lazybee,Cervezas,saborizada,473,ml,lata,1,3360.00,,false,true,18,true,false,,,cervezas|saborizada
+bierhaus-argentina-lata-473ml,bierhaus-argentina-lata-473ml,Bierhaus,Bierhaus Argentina,Argentina,Cervezas,otra,473,ml,lata,1,4210.00,,false,true,18,true,false,,,cervezas|otra
+grolsch-ipa-lata-473ml,grolsch-ipa-lata-473ml,Grolsch,Grolsch IPA,IPA,Cervezas,ipa,473,ml,lata,1,4430.00,,false,true,18,true,false,,,cervezas|ipa
+bierhaus-ipa-superstar-lata-473ml,bierhaus-ipa-superstar-lata-473ml,Bierhaus,Bierhaus IPA Superstar,IPA Superstar,Cervezas,ipa,473,ml,lata,1,4785.00,,false,true,18,true,false,,,cervezas|ipa
+andes-origen-negra-lata-473ml,andes-origen-negra-lata-473ml,Andes Origen,Andes Origen Negra,Negra,Cervezas,negra,473,ml,lata,1,4085.00,,false,true,18,true,false,,,cervezas|negra
+heineken-cero-alcohol-lata-473ml,heineken-cero-alcohol-lata-473ml,Heineken,Heineken Cero Alcohol,Cero Alcohol,Cervezas,sin-alcohol,473,ml,lata,1,3759.00,,false,true,18,true,false,,,cervezas|sin-alcohol
+corona-cero-alcohol-lata-473ml,corona-cero-alcohol-lata-473ml,Corona,Corona Cero Alcohol,Cero Alcohol,Cervezas,sin-alcohol,473,ml,lata,1,4049.00,,false,true,18,true,false,,,cervezas|sin-alcohol
+trumpeter-reserva-malbec-botella-750ml,trumpeter-reserva-malbec-botella-750ml,Trumpeter,Trumpeter Reserva Malbec,Reserva Malbec,Vinos,malbec,750,ml,botella,1,15809.00,,false,true,18,false,false,,,vinos|malbec
+rutini-cabernet-franc-malbec-botella-750ml,rutini-cabernet-franc-malbec-botella-750ml,Rutini,Rutini Cabernet Franc Malbec,Cabernet Franc Malbec,Vinos,blend,750,ml,botella,1,21315.00,,false,true,18,false,false,,,vinos|blend
+finca-flichman-reserva-malbec-botella-750ml,finca-flichman-reserva-malbec-botella-750ml,Finca Flichman,Finca Flichman Reserva Malbec,Reserva Malbec,Vinos,malbec,750,ml,botella,1,10000.00,,false,true,18,false,false,,,vinos|malbec
+cordero-con-piel-de-lobo-malbec-botella-750ml,cordero-con-piel-de-lobo-malbec-botella-750ml,Cordero con Piel de Lobo,Cordero con Piel de Lobo Malbec,Malbec,Vinos,malbec,750,ml,botella,1,6930.00,,false,true,18,false,false,,,vinos|malbec
+vinas-de-balbo-tinto-botella-1125ml,vinas-de-balbo-tinto-botella-1125ml,Viñas de Balbo,Viñas de Balbo Tinto,Tinto,Vinos,tinto,1.125,L,botella,1,4120.00,,false,true,18,false,false,,,vinos|tinto
+finca-flichman-reserva-cabernet-franc-botella-750ml,finca-flichman-reserva-cabernet-franc-botella-750ml,Finca Flichman,Finca Flichman Reserva Cabernet Franc,Reserva Cabernet Franc,Vinos,cabernet-franc,750,ml,botella,1,10000.00,,false,true,18,false,false,,,vinos|cabernet-franc
+conejo-verde-malbec-botella-750ml,conejo-verde-malbec-botella-750ml,Conejo Verde,Conejo Verde Malbec,Malbec,Vinos,malbec,750,ml,botella,1,6635.00,,false,true,18,false,false,,,vinos|malbec
+finjamos-demencia-malbec-botella-750ml,finjamos-demencia-malbec-botella-750ml,Finjamos,Finjamos Demencia Malbec,Demencia Malbec,Vinos,malbec,750,ml,botella,1,7380.00,,false,true,18,false,false,,,vinos|malbec
+toro-clasico-botella-700ml,toro-clasico-botella-700ml,Toro,Toro Clásico,Clásico,Vinos,tinto,700,ml,botella,1,2850.00,,false,true,18,false,false,,,vinos|tinto
+wampa-malbec-botella-750ml,wampa-malbec-botella-750ml,Wampa,Wampa Malbec,Malbec,Vinos,malbec,750,ml,botella,1,6265.00,,false,true,18,false,false,,,vinos|malbec
+luigi-bosca-malbec-botella-750ml,luigi-bosca-malbec-botella-750ml,Luigi Bosca,Luigi Bosca Malbec,Malbec,Vinos,malbec,750,ml,botella,1,19079.00,,false,true,18,false,false,,,vinos|malbec
+canciller-blend-iii-botella-750ml,canciller-blend-iii-botella-750ml,Canciller,Canciller Blend III,Blend III,Vinos,blend,750,ml,botella,1,3585.00,,false,true,18,false,false,,,vinos|blend
+cordero-con-piel-de-lobo-cabernet-sauvignon-botella-750ml,cordero-con-piel-de-lobo-cabernet-sauvignon-botella-750ml,Cordero con Piel de Lobo,Cordero con Piel de Lobo Cabernet Sauvignon,Cabernet Sauvignon,Vinos,cabernet-sauvignon,750,ml,botella,1,6600.00,,false,true,18,false,false,,,vinos|cabernet-sauvignon
+callia-alta-malbec-botella-750ml,callia-alta-malbec-botella-750ml,Callia,Callia Alta Malbec,Alta Malbec,Vinos,malbec,750,ml,botella,1,6740.00,,false,true,18,false,false,,,vinos|malbec
+santa-julia-dulce-botella-750ml,santa-julia-dulce-botella-750ml,Santa Julia,Santa Julia Dulce,Dulce,Vinos,dulce,750,ml,botella,1,9735.00,,false,true,18,false,false,,,vinos|dulce
+canciller-blend-iii-botella-1250ml,canciller-blend-iii-botella-1250ml,Canciller,Canciller Blend III,Blend III,Vinos,blend,1.25,L,botella,1,4465.00,,false,true,18,false,false,,,vinos|blend
+familia-gascon-cabernet-sauvignon-botella-750ml,familia-gascon-cabernet-sauvignon-botella-750ml,Familia Gascón,Familia Gascón Cabernet Sauvignon,Cabernet Sauvignon,Vinos,cabernet-sauvignon,750,ml,botella,1,8405.00,,false,true,18,false,false,,,vinos|cabernet-sauvignon
+finca-flichman-pinot-noir-reserva-botella-750ml,finca-flichman-pinot-noir-reserva-botella-750ml,Finca Flichman,Finca Flichman Pinot Noir Reserva,Pinot Noir Reserva,Vinos,pinot-noir,750,ml,botella,1,12000.00,,false,true,18,false,false,,,vinos|pinot-noir
+finca-flichman-single-parcel-malbec-botella-750ml,finca-flichman-single-parcel-malbec-botella-750ml,Finca Flichman,Finca Flichman Single Parcel Malbec,Single Parcel Malbec,Vinos,malbec,750,ml,botella,1,36675.00,,false,true,18,false,false,,,vinos|malbec
+luigi-bosca-pinot-noir-botella-750ml,luigi-bosca-pinot-noir-botella-750ml,Luigi Bosca,Luigi Bosca Pinot Noir,Pinot Noir,Vinos,pinot-noir,750,ml,botella,1,23125.00,,false,true,18,false,false,,,vinos|pinot-noir
+finca-natalina-autentico-malbec-botella-750ml,finca-natalina-autentico-malbec-botella-750ml,Finca Natalina,Finca Natalina Auténtico Malbec,Auténtico Malbec,Vinos,malbec,750,ml,botella,1,5485.00,,false,true,18,false,false,,,vinos|malbec
+killka-malbec-botella-750ml,killka-malbec-botella-750ml,Killka,Killka Malbec,Malbec,Vinos,malbec,750,ml,botella,1,11349.00,,false,true,18,false,false,,,vinos|malbec
+nieto-senetiner-cabernet-sauvignon-botella-750ml,nieto-senetiner-cabernet-sauvignon-botella-750ml,Nieto Senetiner,Nieto Senetiner Cabernet Sauvignon,Cabernet Sauvignon,Vinos,cabernet-sauvignon,750,ml,botella,1,12809.00,,false,true,18,false,false,,,vinos|cabernet-sauvignon
+salentein-reserva-malbec-botella-750ml,salentein-reserva-malbec-botella-750ml,Salentein,Salentein Reserva Malbec,Reserva Malbec,Vinos,malbec,750,ml,botella,1,17639.00,,false,true,18,false,false,,,vinos|malbec
+esperado-malbec-botella-750ml,esperado-malbec-botella-750ml,Esperado,Esperado Malbec,Malbec,Vinos,malbec,750,ml,botella,1,7645.00,,false,true,18,false,false,,,vinos|malbec
+luigi-bosca-de-sangre-red-blend-botella-750ml,luigi-bosca-de-sangre-red-blend-botella-750ml,Luigi Bosca,Luigi Bosca De Sangre Red Blend,De Sangre Red Blend,Vinos,blend,750,ml,botella,1,25545.00,,false,true,18,false,false,,,vinos|blend
+luigi-bosca-cabernet-sauvignon-botella-750ml,luigi-bosca-cabernet-sauvignon-botella-750ml,Luigi Bosca,Luigi Bosca Cabernet Sauvignon,Cabernet Sauvignon,Vinos,cabernet-sauvignon,750,ml,botella,1,19079.00,,false,true,18,false,false,,,vinos|cabernet-sauvignon
+luigi-bosca-de-sangre-malbec-botella-750ml,luigi-bosca-de-sangre-malbec-botella-750ml,Luigi Bosca,Luigi Bosca De Sangre Malbec,De Sangre Malbec,Vinos,malbec,750,ml,botella,1,31720.00,,false,true,18,false,false,,,vinos|malbec
+trapiche-alaris-malbec-botella-750ml,trapiche-alaris-malbec-botella-750ml,Trapiche,Trapiche Alaris Malbec,Alaris Malbec,Vinos,malbec,750,ml,botella,1,6175.00,,false,true,18,false,false,,,vinos|malbec
+trumpeter-chardonnay-botella-750ml,trumpeter-chardonnay-botella-750ml,Trumpeter,Trumpeter Chardonnay,Chardonnay,Vinos,chardonnay,750,ml,botella,1,11715.00,,false,true,18,false,false,,,vinos|chardonnay
+santa-julia-chenin-dulce-natural-botella-750ml,santa-julia-chenin-dulce-natural-botella-750ml,Santa Julia,Santa Julia Chenin Dulce Natural,Chenin Dulce Natural,Vinos,dulce,750,ml,botella,1,8745.00,,false,true,18,false,false,,,vinos|dulce
+benjamin-dulce-natural-botella-750ml,benjamin-dulce-natural-botella-750ml,Benjamin,Benjamin Dulce Natural,Dulce Natural,Vinos,dulce,750,ml,botella,1,7460.00,,false,true,18,false,false,,,vinos|dulce
+dilema-dulce-natural-botella-750ml,dilema-dulce-natural-botella-750ml,Dilema,Dilema Dulce Natural,Dulce Natural,Vinos,dulce,750,ml,botella,1,5670.00,,false,true,18,false,false,,,vinos|dulce
+canciller-dulce-blend-v-botella-750ml,canciller-dulce-blend-v-botella-750ml,Canciller,Canciller Dulce Blend V,Dulce Blend V,Vinos,dulce,750,ml,botella,1,3649.00,,false,true,18,false,false,,,vinos|dulce
+estancia-mendoza-chenin-chardonnay-botella-750ml,estancia-mendoza-chenin-chardonnay-botella-750ml,Estancia Mendoza,Estancia Mendoza Chenin Chardonnay,Chenin Chardonnay,Vinos,blanco,750,ml,botella,1,4389.00,,false,true,18,false,false,,,vinos|blanco
+canciller-blend-blanco-botella-1125ml,canciller-blend-blanco-botella-1125ml,Canciller,Canciller Blend Blanco,Blend Blanco,Vinos,blanco,1.125,L,botella,1,4465.00,,false,true,18,false,false,,,vinos|blanco
+resero-dulce-botella-1000ml,resero-dulce-botella-1000ml,Resero,Resero Dulce,Dulce,Vinos,dulce,1,L,botella,1,2370.00,,false,true,18,false,false,,,vinos|dulce
+vinas-de-balbo-chablis-botella-1125ml,vinas-de-balbo-chablis-botella-1125ml,Viñas de Balbo,Viñas de Balbo Chablis,Chablis,Vinos,blanco,1.125,L,botella,1,4120.00,,false,true,18,false,false,,,vinos|blanco
+finca-flichman-dulce-chardonnay-botella-750ml,finca-flichman-dulce-chardonnay-botella-750ml,Finca Flichman,Finca Flichman Dulce Chardonnay,Dulce Chardonnay,Vinos,dulce,750,ml,botella,1,9450.00,,false,true,18,false,false,,,vinos|dulce
+callia-dulce-botella-750ml,callia-dulce-botella-750ml,Callia,Callia Dulce,Dulce,Vinos,dulce,750,ml,botella,1,6630.00,,false,true,18,false,false,,,vinos|dulce
+finca-flichman-sauvignon-blanc-botella-750ml,finca-flichman-sauvignon-blanc-botella-750ml,Finca Flichman,Finca Flichman Sauvignon Blanc,Sauvignon Blanc,Vinos,sauvignon-blanc,750,ml,botella,1,9450.00,,false,true,18,false,false,,,vinos|sauvignon-blanc
+familia-gascon-chardonnay-botella-750ml,familia-gascon-chardonnay-botella-750ml,Familia Gascón,Familia Gascón Chardonnay,Chardonnay,Vinos,chardonnay,750,ml,botella,1,8945.00,,false,true,18,false,false,,,vinos|chardonnay
+portillo-salentein-sauvignon-blanc-botella-750ml,portillo-salentein-sauvignon-blanc-botella-750ml,Portillo Salentein,Portillo Salentein Sauvignon Blanc,Sauvignon Blanc,Vinos,sauvignon-blanc,750,ml,botella,1,7855.00,,false,true,18,false,false,,,vinos|sauvignon-blanc
+la-linda-sweet-viognier-botella-750ml,la-linda-sweet-viognier-botella-750ml,La Linda,La Linda Sweet Viognier,Sweet Viognier,Vinos,dulce,750,ml,botella,1,11505.00,,false,true,18,false,false,,,vinos|dulce
+finca-flichman-reserva-chardonnay-botella-750ml,finca-flichman-reserva-chardonnay-botella-750ml,Finca Flichman,Finca Flichman Reserva Chardonnay,Reserva Chardonnay,Vinos,chardonnay,750,ml,botella,1,10000.00,,false,true,18,false,false,,,vinos|chardonnay
+santa-julia-chenin-dulce-lata-269ml,santa-julia-chenin-dulce-lata-269ml,Santa Julia,Santa Julia Chenin Dulce,Chenin Dulce,Vinos,dulce,269,ml,lata,1,3455.00,,false,true,18,true,false,,,vinos|dulce
+tardio-de-abril-dulce-botella-500ml,tardio-de-abril-dulce-botella-500ml,Tardío de Abril,Tardío de Abril Dulce,Dulce,Vinos,rosado,500,ml,botella,1,7225.00,,false,true,18,false,false,,,vinos|rosado
+emilia-malbec-dulce-botella-750ml,emilia-malbec-dulce-botella-750ml,Emilia,Emilia Malbec Dulce,Malbec Dulce,Vinos,rosado,750,ml,botella,1,9775.00,,false,true,18,false,false,,,vinos|rosado
+la-linda-rosado-botella-750ml,la-linda-rosado-botella-750ml,La Linda,La Linda Rosado,Rosado,Vinos,rosado,750,ml,botella,1,11825.00,,false,true,18,false,false,,,vinos|rosado
+fernet-branca-original-botella-750ml,fernet-branca-original-botella-750ml,Fernet Branca,Fernet Branca Original,Original,Fernet,fernet,750,ml,botella,1,19700.00,,false,true,18,false,false,,,fernet|fernet
+fernet-branca-original-botella-450ml,fernet-branca-original-botella-450ml,Fernet Branca,Fernet Branca Original,Original,Fernet,fernet,450,ml,botella,1,13100.00,,false,true,18,false,false,,,fernet|fernet
+buhero-negro-botella-700ml,buhero-negro-botella-700ml,Buhero,Buhero Negro,Negro,Fernet,fernet,700,ml,botella,1,12430.00,,false,true,18,false,false,,,fernet|fernet
+carpano-rosso-botella-950ml,carpano-rosso-botella-950ml,Carpano,Carpano Rosso,Rosso,Aperitivos,vermouth,950,ml,botella,1,13849.00,,false,true,18,false,false,,,aperitivos|vermouth
+carpano-bianco-botella-950ml,carpano-bianco-botella-950ml,Carpano,Carpano Bianco,Bianco,Aperitivos,vermouth,950,ml,botella,1,13849.00,,false,true,18,false,false,,,aperitivos|vermouth
+amargo-obrero-19-botella-950ml,amargo-obrero-19-botella-950ml,Amargo Obrero,Amargo Obrero 19°,19°,Aperitivos,amargo,950,ml,botella,1,6640.00,,false,true,18,false,false,,,aperitivos|amargo
+dr-lemon-red-berries-5-lata-473ml,dr-lemon-red-berries-5-lata-473ml,Dr. Lemon,Dr. Lemon Red Berries 5%,Red Berries 5%,Aperitivos,listo-para-tomar,473,ml,lata,1,3265.00,,false,true,18,true,false,,,aperitivos|listo-para-tomar
+dr-lemon-limon-botella-1000ml,dr-lemon-limon-botella-1000ml,Dr. Lemon,Dr. Lemon Limón,Limón,Aperitivos,listo-para-tomar,1,L,botella,1,5439.00,,false,true,18,false,false,,,aperitivos|listo-para-tomar
+dr-lemon-vodka-original-botella-1000ml,dr-lemon-vodka-original-botella-1000ml,Dr. Lemon,Dr. Lemon Vodka Original,Vodka Original,Aperitivos,listo-para-tomar,1,L,botella,1,5439.00,,false,true,18,false,false,,,aperitivos|listo-para-tomar
+shake-pronto-original-lata-473ml,shake-pronto-original-lata-473ml,Shake Pronto,Shake Pronto Original,Original,Aperitivos,listo-para-tomar,473,ml,lata,1,2490.00,,false,true,18,true,false,,,aperitivos|listo-para-tomar
+smirnoff-ice-green-apple-lata-473ml,smirnoff-ice-green-apple-lata-473ml,Smirnoff,Smirnoff Ice Green Apple,Ice Green Apple,Aperitivos,listo-para-tomar,473,ml,lata,1,3975.00,,false,true,18,true,false,,,aperitivos|listo-para-tomar
+dr-lemon-green-apple-lata-473ml,dr-lemon-green-apple-lata-473ml,Dr. Lemon,Dr. Lemon Green Apple,Green Apple,Aperitivos,listo-para-tomar,473,ml,lata,1,3199.00,,false,true,18,true,false,,,aperitivos|listo-para-tomar
+dr-lemon-mojito-lata-473ml,dr-lemon-mojito-lata-473ml,Dr. Lemon,Dr. Lemon Mojito,Mojito,Aperitivos,listo-para-tomar,473,ml,lata,1,3105.00,,false,true,18,true,false,,,aperitivos|listo-para-tomar
+emilia-cocktail-sangria-botella-750ml,emilia-cocktail-sangria-botella-750ml,Emilia,Emilia Cocktail Sangría,Cocktail Sangría,Aperitivos,listo-para-tomar,750,ml,botella,1,13460.00,,false,true,18,false,false,,,aperitivos|listo-para-tomar
+tinti-de-verano-lata-473ml,tinti-de-verano-lata-473ml,Tinti,Tinti de Verano,de Verano,Aperitivos,listo-para-tomar,473,ml,lata,1,5775.00,,false,true,18,true,false,,,aperitivos|listo-para-tomar
+sernova-wild-berries-botella-700ml,sernova-wild-berries-botella-700ml,Sernova,Sernova Wild Berries,Wild Berries,Destilados,vodka,700,ml,botella,1,16369.00,,false,true,18,false,false,,,destilados|vodka
+sernova-candy-glow-botella-700ml,sernova-candy-glow-botella-700ml,Sernova,Sernova Candy Glow,Candy Glow,Destilados,vodka,700,ml,botella,1,16369.00,,false,true,18,false,false,,,destilados|vodka
+sernova-ice-pop-botella-700ml,sernova-ice-pop-botella-700ml,Sernova,Sernova Ice Pop,Ice Pop,Destilados,vodka,700,ml,botella,1,15799.00,,false,true,18,false,false,,,destilados|vodka
+sernova-clasico-botella-700ml,sernova-clasico-botella-700ml,Sernova,Sernova Clásico,Clásico,Destilados,vodka,700,ml,botella,1,14879.00,,false,true,18,false,false,,,destilados|vodka
+absolut-raspberri-botella-700ml,absolut-raspberri-botella-700ml,Absolut,Absolut Raspberri,Raspberri,Destilados,vodka,700,ml,botella,1,34665.00,,false,true,18,false,false,,,destilados|vodka
+jack-daniel-s-tennessee-honey-botella-700ml,jack-daniel-s-tennessee-honey-botella-700ml,Jack Daniel's,Jack Daniel's Tennessee Honey,Tennessee Honey,Destilados,whisky,700,ml,botella,1,68049.00,,false,true,18,false,false,,,destilados|whisky
+jack-daniel-s-tennessee-fire-botella-700ml,jack-daniel-s-tennessee-fire-botella-700ml,Jack Daniel's,Jack Daniel's Tennessee Fire,Tennessee Fire,Destilados,whisky,700,ml,botella,1,69439.00,,false,true,18,false,false,,,destilados|whisky
+merle-london-dry-botella-750ml,merle-london-dry-botella-750ml,Merle,Merle London Dry,London Dry,Destilados,gin,750,ml,botella,1,16965.00,,false,true,18,false,false,,,destilados|gin
+merle-pink-botella-750ml,merle-pink-botella-750ml,Merle,Merle Pink,Pink,Destilados,gin,750,ml,botella,1,19340.00,,false,true,18,false,false,,,destilados|gin
+heredero-pink-botella-700ml,heredero-pink-botella-700ml,Heredero,Heredero Pink,Pink,Destilados,gin,700,ml,botella,1,20920.00,,false,true,18,false,false,,,destilados|gin
+heredero-premium-botella-700ml,heredero-premium-botella-700ml,Heredero,Heredero Premium,Premium,Destilados,gin,700,ml,botella,1,18235.00,,false,true,18,false,false,,,destilados|gin
+brighton-original-botella-700ml,brighton-original-botella-700ml,Brighton,Brighton Original,Original,Destilados,gin,700,ml,botella,1,14115.00,,false,true,18,false,false,,,destilados|gin
+malibu-original-botella-750ml,malibu-original-botella-750ml,Malibu,Malibu Original,Original,Destilados,ron,750,ml,botella,1,22009.00,,false,true,18,false,false,,,destilados|ron
+julia-dulce-natural-botella-750ml,julia-dulce-natural-botella-750ml,Julia,Julia Dulce Natural,Dulce Natural,Espumantes,dulce,750,ml,botella,1,15199.00,,false,true,18,false,false,,,espumantes|dulce
+mumm-extra-brut-cuvee-lata-269ml,mumm-extra-brut-cuvee-lata-269ml,Mumm,Mumm Extra Brut Cuvée,Extra Brut Cuvée,Espumantes,extra-brut,269,ml,lata,1,3945.00,,false,true,18,true,false,,,espumantes|extra-brut
+la-linda-extra-brut-botella-750ml,la-linda-extra-brut-botella-750ml,La Linda,La Linda Extra Brut,Extra Brut,Espumantes,extra-brut,750,ml,botella,1,12750.00,,false,true,18,false,false,,,espumantes|extra-brut
+luigi-bosca-brut-nature-botella-750ml,luigi-bosca-brut-nature-botella-750ml,Luigi Bosca,Luigi Bosca Brut Nature,Brut Nature,Espumantes,brut,750,ml,botella,1,26679.00,,false,true,18,false,false,,,espumantes|brut
+nieto-senetiner-extra-brut-0-0-botella-750ml,nieto-senetiner-extra-brut-0-0-botella-750ml,Nieto Senetiner,Nieto Senetiner Extra Brut 0.0,Extra Brut 0.0,Espumantes,extra-brut,750,ml,botella,1,22490.00,,false,true,18,false,false,,,espumantes|extra-brut
+luigi-bosca-extra-brut-botella-750ml,luigi-bosca-extra-brut-botella-750ml,Luigi Bosca,Luigi Bosca Extra Brut,Extra Brut,Espumantes,extra-brut,750,ml,botella,1,24655.00,,false,true,18,false,false,,,espumantes|extra-brut

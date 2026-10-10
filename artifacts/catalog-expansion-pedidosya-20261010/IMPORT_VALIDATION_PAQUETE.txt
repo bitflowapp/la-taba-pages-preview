@@ -1,0 +1,819 @@
+ERROR Línea 2: stock está vacío.
+ERROR Línea 2: sort_order está vacío.
+ERROR Línea 2: image_path está vacío.
+ERROR Línea 2: stock inválido o negativo.
+ERROR Línea 2: sort_order inválido o negativo.
+ERROR Línea 2: imagen faltante.
+ERROR Línea 2: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 3: stock está vacío.
+ERROR Línea 3: sort_order está vacío.
+ERROR Línea 3: image_path está vacío.
+ERROR Línea 3: stock inválido o negativo.
+ERROR Línea 3: sort_order inválido o negativo.
+ERROR Línea 3: imagen faltante.
+ERROR Línea 3: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 4: stock está vacío.
+ERROR Línea 4: sort_order está vacío.
+ERROR Línea 4: image_path está vacío.
+ERROR Línea 4: stock inválido o negativo.
+ERROR Línea 4: sort_order inválido o negativo.
+ERROR Línea 4: imagen faltante.
+ERROR Línea 4: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 5: stock está vacío.
+ERROR Línea 5: sort_order está vacío.
+ERROR Línea 5: image_path está vacío.
+ERROR Línea 5: stock inválido o negativo.
+ERROR Línea 5: sort_order inválido o negativo.
+ERROR Línea 5: imagen faltante.
+ERROR Línea 5: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 6: stock está vacío.
+ERROR Línea 6: sort_order está vacío.
+ERROR Línea 6: image_path está vacío.
+ERROR Línea 6: stock inválido o negativo.
+ERROR Línea 6: sort_order inválido o negativo.
+ERROR Línea 6: imagen faltante.
+ERROR Línea 6: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 7: stock está vacío.
+ERROR Línea 7: sort_order está vacío.
+ERROR Línea 7: image_path está vacío.
+ERROR Línea 7: stock inválido o negativo.
+ERROR Línea 7: sort_order inválido o negativo.
+ERROR Línea 7: imagen faltante.
+ERROR Línea 7: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 8: stock está vacío.
+ERROR Línea 8: sort_order está vacío.
+ERROR Línea 8: image_path está vacío.
+ERROR Línea 8: stock inválido o negativo.
+ERROR Línea 8: sort_order inválido o negativo.
+ERROR Línea 8: imagen faltante.
+ERROR Línea 8: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 9: stock está vacío.
+ERROR Línea 9: sort_order está vacío.
+ERROR Línea 9: image_path está vacío.
+ERROR Línea 9: stock inválido o negativo.
+ERROR Línea 9: sort_order inválido o negativo.
+ERROR Línea 9: imagen faltante.
+ERROR Línea 9: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 10: stock está vacío.
+ERROR Línea 10: sort_order está vacío.
+ERROR Línea 10: image_path está vacío.
+ERROR Línea 10: stock inválido o negativo.
+ERROR Línea 10: sort_order inválido o negativo.
+ERROR Línea 10: imagen faltante.
+ERROR Línea 10: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 11: stock está vacío.
+ERROR Línea 11: sort_order está vacío.
+ERROR Línea 11: image_path está vacío.
+ERROR Línea 11: stock inválido o negativo.
+ERROR Línea 11: sort_order inválido o negativo.
+ERROR Línea 11: imagen faltante.
+ERROR Línea 11: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 12: stock está vacío.
+ERROR Línea 12: sort_order está vacío.
+ERROR Línea 12: image_path está vacío.
+ERROR Línea 12: stock inválido o negativo.
+ERROR Línea 12: sort_order inválido o negativo.
+ERROR Línea 12: imagen faltante.
+ERROR Línea 12: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 13: stock está vacío.
+ERROR Línea 13: sort_order está vacío.
+ERROR Línea 13: image_path está vacío.
+ERROR Línea 13: stock inválido o negativo.
+ERROR Línea 13: sort_order inválido o negativo.
+ERROR Línea 13: imagen faltante.
+ERROR Línea 13: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 14: stock está vacío.
+ERROR Línea 14: sort_order está vacío.
+ERROR Línea 14: image_path está vacío.
+ERROR Línea 14: stock inválido o negativo.
+ERROR Línea 14: sort_order inválido o negativo.
+ERROR Línea 14: imagen faltante.
+ERROR Línea 14: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 15: stock está vacío.
+ERROR Línea 15: sort_order está vacío.
+ERROR Línea 15: image_path está vacío.
+ERROR Línea 15: stock inválido o negativo.
+ERROR Línea 15: sort_order inválido o negativo.
+ERROR Línea 15: imagen faltante.
+ERROR Línea 15: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 16: stock está vacío.
+ERROR Línea 16: sort_order está vacío.
+ERROR Línea 16: image_path está vacío.
+ERROR Línea 16: stock inválido o negativo.
+ERROR Línea 16: sort_order inválido o negativo.
+ERROR Línea 16: imagen faltante.
+ERROR Línea 16: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 17: stock está vacío.
+ERROR Línea 17: sort_order está vacío.
+ERROR Línea 17: image_path está vacío.
+ERROR Línea 17: stock inválido o negativo.
+ERROR Línea 17: sort_order inválido o negativo.
+ERROR Línea 17: imagen faltante.
+ERROR Línea 17: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 18: stock está vacío.
+ERROR Línea 18: sort_order está vacío.
+ERROR Línea 18: image_path está vacío.
+ERROR Línea 18: stock inválido o negativo.
+ERROR Línea 18: sort_order inválido o negativo.
+ERROR Línea 18: imagen faltante.
+ERROR Línea 18: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 19: stock está vacío.
+ERROR Línea 19: sort_order está vacío.
+ERROR Línea 19: image_path está vacío.
+ERROR Línea 19: stock inválido o negativo.
+ERROR Línea 19: sort_order inválido o negativo.
+ERROR Línea 19: imagen faltante.
+ERROR Línea 19: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 20: stock está vacío.
+ERROR Línea 20: sort_order está vacío.
+ERROR Línea 20: image_path está vacío.
+ERROR Línea 20: stock inválido o negativo.
+ERROR Línea 20: sort_order inválido o negativo.
+ERROR Línea 20: imagen faltante.
+ERROR Línea 20: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 21: stock está vacío.
+ERROR Línea 21: sort_order está vacío.
+ERROR Línea 21: image_path está vacío.
+ERROR Línea 21: stock inválido o negativo.
+ERROR Línea 21: sort_order inválido o negativo.
+ERROR Línea 21: imagen faltante.
+ERROR Línea 21: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 22: stock está vacío.
+ERROR Línea 22: sort_order está vacío.
+ERROR Línea 22: image_path está vacío.
+ERROR Línea 22: stock inválido o negativo.
+ERROR Línea 22: sort_order inválido o negativo.
+ERROR Línea 22: imagen faltante.
+ERROR Línea 22: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 23: stock está vacío.
+ERROR Línea 23: sort_order está vacío.
+ERROR Línea 23: image_path está vacío.
+ERROR Línea 23: stock inválido o negativo.
+ERROR Línea 23: sort_order inválido o negativo.
+ERROR Línea 23: imagen faltante.
+ERROR Línea 23: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 24: stock está vacío.
+ERROR Línea 24: sort_order está vacío.
+ERROR Línea 24: image_path está vacío.
+ERROR Línea 24: stock inválido o negativo.
+ERROR Línea 24: sort_order inválido o negativo.
+ERROR Línea 24: imagen faltante.
+ERROR Línea 24: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 25: stock está vacío.
+ERROR Línea 25: sort_order está vacío.
+ERROR Línea 25: image_path está vacío.
+ERROR Línea 25: stock inválido o negativo.
+ERROR Línea 25: sort_order inválido o negativo.
+ERROR Línea 25: imagen faltante.
+ERROR Línea 25: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 26: stock está vacío.
+ERROR Línea 26: sort_order está vacío.
+ERROR Línea 26: image_path está vacío.
+ERROR Línea 26: stock inválido o negativo.
+ERROR Línea 26: sort_order inválido o negativo.
+ERROR Línea 26: imagen faltante.
+ERROR Línea 26: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 27: stock está vacío.
+ERROR Línea 27: sort_order está vacío.
+ERROR Línea 27: image_path está vacío.
+ERROR Línea 27: stock inválido o negativo.
+ERROR Línea 27: sort_order inválido o negativo.
+ERROR Línea 27: imagen faltante.
+ERROR Línea 27: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 28: stock está vacío.
+ERROR Línea 28: sort_order está vacío.
+ERROR Línea 28: image_path está vacío.
+ERROR Línea 28: stock inválido o negativo.
+ERROR Línea 28: sort_order inválido o negativo.
+ERROR Línea 28: imagen faltante.
+ERROR Línea 28: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 29: stock está vacío.
+ERROR Línea 29: sort_order está vacío.
+ERROR Línea 29: image_path está vacío.
+ERROR Línea 29: stock inválido o negativo.
+ERROR Línea 29: sort_order inválido o negativo.
+ERROR Línea 29: imagen faltante.
+ERROR Línea 29: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 30: stock está vacío.
+ERROR Línea 30: sort_order está vacío.
+ERROR Línea 30: image_path está vacío.
+ERROR Línea 30: stock inválido o negativo.
+ERROR Línea 30: sort_order inválido o negativo.
+ERROR Línea 30: imagen faltante.
+ERROR Línea 30: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 31: stock está vacío.
+ERROR Línea 31: sort_order está vacío.
+ERROR Línea 31: image_path está vacío.
+ERROR Línea 31: stock inválido o negativo.
+ERROR Línea 31: sort_order inválido o negativo.
+ERROR Línea 31: imagen faltante.
+ERROR Línea 31: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 32: stock está vacío.
+ERROR Línea 32: sort_order está vacío.
+ERROR Línea 32: image_path está vacío.
+ERROR Línea 32: stock inválido o negativo.
+ERROR Línea 32: sort_order inválido o negativo.
+ERROR Línea 32: imagen faltante.
+ERROR Línea 32: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 33: stock está vacío.
+ERROR Línea 33: sort_order está vacío.
+ERROR Línea 33: image_path está vacío.
+ERROR Línea 33: stock inválido o negativo.
+ERROR Línea 33: sort_order inválido o negativo.
+ERROR Línea 33: imagen faltante.
+ERROR Línea 33: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 34: stock está vacío.
+ERROR Línea 34: sort_order está vacío.
+ERROR Línea 34: image_path está vacío.
+ERROR Línea 34: stock inválido o negativo.
+ERROR Línea 34: sort_order inválido o negativo.
+ERROR Línea 34: imagen faltante.
+ERROR Línea 34: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 35: stock está vacío.
+ERROR Línea 35: sort_order está vacío.
+ERROR Línea 35: image_path está vacío.
+ERROR Línea 35: stock inválido o negativo.
+ERROR Línea 35: sort_order inválido o negativo.
+ERROR Línea 35: imagen faltante.
+ERROR Línea 35: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 36: stock está vacío.
+ERROR Línea 36: sort_order está vacío.
+ERROR Línea 36: image_path está vacío.
+ERROR Línea 36: stock inválido o negativo.
+ERROR Línea 36: sort_order inválido o negativo.
+ERROR Línea 36: imagen faltante.
+ERROR Línea 36: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 37: stock está vacío.
+ERROR Línea 37: sort_order está vacío.
+ERROR Línea 37: image_path está vacío.
+ERROR Línea 37: stock inválido o negativo.
+ERROR Línea 37: sort_order inválido o negativo.
+ERROR Línea 37: imagen faltante.
+ERROR Línea 37: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 38: stock está vacío.
+ERROR Línea 38: sort_order está vacío.
+ERROR Línea 38: image_path está vacío.
+ERROR Línea 38: stock inválido o negativo.
+ERROR Línea 38: sort_order inválido o negativo.
+ERROR Línea 38: imagen faltante.
+ERROR Línea 38: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 39: stock está vacío.
+ERROR Línea 39: sort_order está vacío.
+ERROR Línea 39: image_path está vacío.
+ERROR Línea 39: stock inválido o negativo.
+ERROR Línea 39: sort_order inválido o negativo.
+ERROR Línea 39: imagen faltante.
+ERROR Línea 39: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 40: stock está vacío.
+ERROR Línea 40: sort_order está vacío.
+ERROR Línea 40: image_path está vacío.
+ERROR Línea 40: stock inválido o negativo.
+ERROR Línea 40: sort_order inválido o negativo.
+ERROR Línea 40: imagen faltante.
+ERROR Línea 40: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 41: stock está vacío.
+ERROR Línea 41: sort_order está vacío.
+ERROR Línea 41: image_path está vacío.
+ERROR Línea 41: stock inválido o negativo.
+ERROR Línea 41: sort_order inválido o negativo.
+ERROR Línea 41: imagen faltante.
+ERROR Línea 41: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 42: stock está vacío.
+ERROR Línea 42: sort_order está vacío.
+ERROR Línea 42: image_path está vacío.
+ERROR Línea 42: stock inválido o negativo.
+ERROR Línea 42: sort_order inválido o negativo.
+ERROR Línea 42: imagen faltante.
+ERROR Línea 42: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 43: stock está vacío.
+ERROR Línea 43: sort_order está vacío.
+ERROR Línea 43: image_path está vacío.
+ERROR Línea 43: stock inválido o negativo.
+ERROR Línea 43: sort_order inválido o negativo.
+ERROR Línea 43: imagen faltante.
+ERROR Línea 43: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 44: stock está vacío.
+ERROR Línea 44: sort_order está vacío.
+ERROR Línea 44: image_path está vacío.
+ERROR Línea 44: stock inválido o negativo.
+ERROR Línea 44: sort_order inválido o negativo.
+ERROR Línea 44: imagen faltante.
+ERROR Línea 44: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 45: stock está vacío.
+ERROR Línea 45: sort_order está vacío.
+ERROR Línea 45: image_path está vacío.
+ERROR Línea 45: stock inválido o negativo.
+ERROR Línea 45: sort_order inválido o negativo.
+ERROR Línea 45: imagen faltante.
+ERROR Línea 45: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 46: stock está vacío.
+ERROR Línea 46: sort_order está vacío.
+ERROR Línea 46: image_path está vacío.
+ERROR Línea 46: stock inválido o negativo.
+ERROR Línea 46: sort_order inválido o negativo.
+ERROR Línea 46: imagen faltante.
+ERROR Línea 46: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 47: stock está vacío.
+ERROR Línea 47: sort_order está vacío.
+ERROR Línea 47: image_path está vacío.
+ERROR Línea 47: stock inválido o negativo.
+ERROR Línea 47: sort_order inválido o negativo.
+ERROR Línea 47: imagen faltante.
+ERROR Línea 47: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 48: stock está vacío.
+ERROR Línea 48: sort_order está vacío.
+ERROR Línea 48: image_path está vacío.
+ERROR Línea 48: stock inválido o negativo.
+ERROR Línea 48: sort_order inválido o negativo.
+ERROR Línea 48: imagen faltante.
+ERROR Línea 48: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 49: stock está vacío.
+ERROR Línea 49: sort_order está vacío.
+ERROR Línea 49: image_path está vacío.
+ERROR Línea 49: stock inválido o negativo.
+ERROR Línea 49: sort_order inválido o negativo.
+ERROR Línea 49: imagen faltante.
+ERROR Línea 49: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 50: stock está vacío.
+ERROR Línea 50: sort_order está vacío.
+ERROR Línea 50: image_path está vacío.
+ERROR Línea 50: stock inválido o negativo.
+ERROR Línea 50: sort_order inválido o negativo.
+ERROR Línea 50: imagen faltante.
+ERROR Línea 50: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 51: stock está vacío.
+ERROR Línea 51: sort_order está vacío.
+ERROR Línea 51: image_path está vacío.
+ERROR Línea 51: stock inválido o negativo.
+ERROR Línea 51: sort_order inválido o negativo.
+ERROR Línea 51: imagen faltante.
+ERROR Línea 51: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 52: stock está vacío.
+ERROR Línea 52: sort_order está vacío.
+ERROR Línea 52: image_path está vacío.
+ERROR Línea 52: stock inválido o negativo.
+ERROR Línea 52: sort_order inválido o negativo.
+ERROR Línea 52: imagen faltante.
+ERROR Línea 52: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 53: stock está vacío.
+ERROR Línea 53: sort_order está vacío.
+ERROR Línea 53: image_path está vacío.
+ERROR Línea 53: stock inválido o negativo.
+ERROR Línea 53: sort_order inválido o negativo.
+ERROR Línea 53: imagen faltante.
+ERROR Línea 53: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 54: stock está vacío.
+ERROR Línea 54: sort_order está vacío.
+ERROR Línea 54: image_path está vacío.
+ERROR Línea 54: stock inválido o negativo.
+ERROR Línea 54: sort_order inválido o negativo.
+ERROR Línea 54: imagen faltante.
+ERROR Línea 54: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 55: stock está vacío.
+ERROR Línea 55: sort_order está vacío.
+ERROR Línea 55: image_path está vacío.
+ERROR Línea 55: stock inválido o negativo.
+ERROR Línea 55: sort_order inválido o negativo.
+ERROR Línea 55: imagen faltante.
+ERROR Línea 55: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 56: stock está vacío.
+ERROR Línea 56: sort_order está vacío.
+ERROR Línea 56: image_path está vacío.
+ERROR Línea 56: stock inválido o negativo.
+ERROR Línea 56: sort_order inválido o negativo.
+ERROR Línea 56: imagen faltante.
+ERROR Línea 56: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 57: stock está vacío.
+ERROR Línea 57: sort_order está vacío.
+ERROR Línea 57: image_path está vacío.
+ERROR Línea 57: stock inválido o negativo.
+ERROR Línea 57: sort_order inválido o negativo.
+ERROR Línea 57: imagen faltante.
+ERROR Línea 57: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 58: stock está vacío.
+ERROR Línea 58: sort_order está vacío.
+ERROR Línea 58: image_path está vacío.
+ERROR Línea 58: stock inválido o negativo.
+ERROR Línea 58: sort_order inválido o negativo.
+ERROR Línea 58: imagen faltante.
+ERROR Línea 58: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 59: stock está vacío.
+ERROR Línea 59: sort_order está vacío.
+ERROR Línea 59: image_path está vacío.
+ERROR Línea 59: stock inválido o negativo.
+ERROR Línea 59: sort_order inválido o negativo.
+ERROR Línea 59: imagen faltante.
+ERROR Línea 59: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 60: stock está vacío.
+ERROR Línea 60: sort_order está vacío.
+ERROR Línea 60: image_path está vacío.
+ERROR Línea 60: stock inválido o negativo.
+ERROR Línea 60: sort_order inválido o negativo.
+ERROR Línea 60: imagen faltante.
+ERROR Línea 60: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 61: stock está vacío.
+ERROR Línea 61: sort_order está vacío.
+ERROR Línea 61: image_path está vacío.
+ERROR Línea 61: stock inválido o negativo.
+ERROR Línea 61: sort_order inválido o negativo.
+ERROR Línea 61: imagen faltante.
+ERROR Línea 61: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 62: stock está vacío.
+ERROR Línea 62: sort_order está vacío.
+ERROR Línea 62: image_path está vacío.
+ERROR Línea 62: stock inválido o negativo.
+ERROR Línea 62: sort_order inválido o negativo.
+ERROR Línea 62: imagen faltante.
+ERROR Línea 62: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 63: stock está vacío.
+ERROR Línea 63: sort_order está vacío.
+ERROR Línea 63: image_path está vacío.
+ERROR Línea 63: stock inválido o negativo.
+ERROR Línea 63: sort_order inválido o negativo.
+ERROR Línea 63: imagen faltante.
+ERROR Línea 63: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 64: stock está vacío.
+ERROR Línea 64: sort_order está vacío.
+ERROR Línea 64: image_path está vacío.
+ERROR Línea 64: stock inválido o negativo.
+ERROR Línea 64: sort_order inválido o negativo.
+ERROR Línea 64: imagen faltante.
+ERROR Línea 64: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 65: stock está vacío.
+ERROR Línea 65: sort_order está vacío.
+ERROR Línea 65: image_path está vacío.
+ERROR Línea 65: stock inválido o negativo.
+ERROR Línea 65: sort_order inválido o negativo.
+ERROR Línea 65: imagen faltante.
+ERROR Línea 65: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 66: stock está vacío.
+ERROR Línea 66: sort_order está vacío.
+ERROR Línea 66: image_path está vacío.
+ERROR Línea 66: stock inválido o negativo.
+ERROR Línea 66: sort_order inválido o negativo.
+ERROR Línea 66: imagen faltante.
+ERROR Línea 66: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 67: stock está vacío.
+ERROR Línea 67: sort_order está vacío.
+ERROR Línea 67: image_path está vacío.
+ERROR Línea 67: stock inválido o negativo.
+ERROR Línea 67: sort_order inválido o negativo.
+ERROR Línea 67: imagen faltante.
+ERROR Línea 67: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 68: stock está vacío.
+ERROR Línea 68: sort_order está vacío.
+ERROR Línea 68: image_path está vacío.
+ERROR Línea 68: stock inválido o negativo.
+ERROR Línea 68: sort_order inválido o negativo.
+ERROR Línea 68: imagen faltante.
+ERROR Línea 68: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 69: stock está vacío.
+ERROR Línea 69: sort_order está vacío.
+ERROR Línea 69: image_path está vacío.
+ERROR Línea 69: stock inválido o negativo.
+ERROR Línea 69: sort_order inválido o negativo.
+ERROR Línea 69: imagen faltante.
+ERROR Línea 69: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 70: stock está vacío.
+ERROR Línea 70: sort_order está vacío.
+ERROR Línea 70: image_path está vacío.
+ERROR Línea 70: stock inválido o negativo.
+ERROR Línea 70: sort_order inválido o negativo.
+ERROR Línea 70: imagen faltante.
+ERROR Línea 70: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 71: stock está vacío.
+ERROR Línea 71: sort_order está vacío.
+ERROR Línea 71: image_path está vacío.
+ERROR Línea 71: stock inválido o negativo.
+ERROR Línea 71: sort_order inválido o negativo.
+ERROR Línea 71: imagen faltante.
+ERROR Línea 71: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 72: stock está vacío.
+ERROR Línea 72: sort_order está vacío.
+ERROR Línea 72: image_path está vacío.
+ERROR Línea 72: stock inválido o negativo.
+ERROR Línea 72: sort_order inválido o negativo.
+ERROR Línea 72: imagen faltante.
+ERROR Línea 72: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 73: stock está vacío.
+ERROR Línea 73: sort_order está vacío.
+ERROR Línea 73: image_path está vacío.
+ERROR Línea 73: stock inválido o negativo.
+ERROR Línea 73: sort_order inválido o negativo.
+ERROR Línea 73: imagen faltante.
+ERROR Línea 73: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 74: stock está vacío.
+ERROR Línea 74: sort_order está vacío.
+ERROR Línea 74: image_path está vacío.
+ERROR Línea 74: stock inválido o negativo.
+ERROR Línea 74: sort_order inválido o negativo.
+ERROR Línea 74: imagen faltante.
+ERROR Línea 74: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 75: stock está vacío.
+ERROR Línea 75: sort_order está vacío.
+ERROR Línea 75: image_path está vacío.
+ERROR Línea 75: stock inválido o negativo.
+ERROR Línea 75: sort_order inválido o negativo.
+ERROR Línea 75: imagen faltante.
+ERROR Línea 75: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 76: stock está vacío.
+ERROR Línea 76: sort_order está vacío.
+ERROR Línea 76: image_path está vacío.
+ERROR Línea 76: stock inválido o negativo.
+ERROR Línea 76: sort_order inválido o negativo.
+ERROR Línea 76: imagen faltante.
+ERROR Línea 76: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 77: stock está vacío.
+ERROR Línea 77: sort_order está vacío.
+ERROR Línea 77: image_path está vacío.
+ERROR Línea 77: stock inválido o negativo.
+ERROR Línea 77: sort_order inválido o negativo.
+ERROR Línea 77: imagen faltante.
+ERROR Línea 77: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 78: stock está vacío.
+ERROR Línea 78: sort_order está vacío.
+ERROR Línea 78: image_path está vacío.
+ERROR Línea 78: stock inválido o negativo.
+ERROR Línea 78: sort_order inválido o negativo.
+ERROR Línea 78: imagen faltante.
+ERROR Línea 78: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 79: stock está vacío.
+ERROR Línea 79: sort_order está vacío.
+ERROR Línea 79: image_path está vacío.
+ERROR Línea 79: stock inválido o negativo.
+ERROR Línea 79: sort_order inválido o negativo.
+ERROR Línea 79: imagen faltante.
+ERROR Línea 79: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 80: stock está vacío.
+ERROR Línea 80: sort_order está vacío.
+ERROR Línea 80: image_path está vacío.
+ERROR Línea 80: stock inválido o negativo.
+ERROR Línea 80: sort_order inválido o negativo.
+ERROR Línea 80: imagen faltante.
+ERROR Línea 80: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 81: stock está vacío.
+ERROR Línea 81: sort_order está vacío.
+ERROR Línea 81: image_path está vacío.
+ERROR Línea 81: stock inválido o negativo.
+ERROR Línea 81: sort_order inválido o negativo.
+ERROR Línea 81: imagen faltante.
+ERROR Línea 81: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 82: stock está vacío.
+ERROR Línea 82: sort_order está vacío.
+ERROR Línea 82: image_path está vacío.
+ERROR Línea 82: stock inválido o negativo.
+ERROR Línea 82: sort_order inválido o negativo.
+ERROR Línea 82: imagen faltante.
+ERROR Línea 82: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 83: stock está vacío.
+ERROR Línea 83: sort_order está vacío.
+ERROR Línea 83: image_path está vacío.
+ERROR Línea 83: stock inválido o negativo.
+ERROR Línea 83: sort_order inválido o negativo.
+ERROR Línea 83: imagen faltante.
+ERROR Línea 83: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 84: stock está vacío.
+ERROR Línea 84: sort_order está vacío.
+ERROR Línea 84: image_path está vacío.
+ERROR Línea 84: stock inválido o negativo.
+ERROR Línea 84: sort_order inválido o negativo.
+ERROR Línea 84: imagen faltante.
+ERROR Línea 84: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 85: stock está vacío.
+ERROR Línea 85: sort_order está vacío.
+ERROR Línea 85: image_path está vacío.
+ERROR Línea 85: stock inválido o negativo.
+ERROR Línea 85: sort_order inválido o negativo.
+ERROR Línea 85: imagen faltante.
+ERROR Línea 85: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 86: stock está vacío.
+ERROR Línea 86: sort_order está vacío.
+ERROR Línea 86: image_path está vacío.
+ERROR Línea 86: stock inválido o negativo.
+ERROR Línea 86: sort_order inválido o negativo.
+ERROR Línea 86: imagen faltante.
+ERROR Línea 86: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 87: stock está vacío.
+ERROR Línea 87: sort_order está vacío.
+ERROR Línea 87: image_path está vacío.
+ERROR Línea 87: stock inválido o negativo.
+ERROR Línea 87: sort_order inválido o negativo.
+ERROR Línea 87: imagen faltante.
+ERROR Línea 87: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 88: stock está vacío.
+ERROR Línea 88: sort_order está vacío.
+ERROR Línea 88: image_path está vacío.
+ERROR Línea 88: stock inválido o negativo.
+ERROR Línea 88: sort_order inválido o negativo.
+ERROR Línea 88: imagen faltante.
+ERROR Línea 88: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 89: stock está vacío.
+ERROR Línea 89: sort_order está vacío.
+ERROR Línea 89: image_path está vacío.
+ERROR Línea 89: stock inválido o negativo.
+ERROR Línea 89: sort_order inválido o negativo.
+ERROR Línea 89: imagen faltante.
+ERROR Línea 89: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 90: stock está vacío.
+ERROR Línea 90: sort_order está vacío.
+ERROR Línea 90: image_path está vacío.
+ERROR Línea 90: stock inválido o negativo.
+ERROR Línea 90: sort_order inválido o negativo.
+ERROR Línea 90: imagen faltante.
+ERROR Línea 90: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 91: stock está vacío.
+ERROR Línea 91: sort_order está vacío.
+ERROR Línea 91: image_path está vacío.
+ERROR Línea 91: stock inválido o negativo.
+ERROR Línea 91: sort_order inválido o negativo.
+ERROR Línea 91: imagen faltante.
+ERROR Línea 91: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 92: stock está vacío.
+ERROR Línea 92: sort_order está vacío.
+ERROR Línea 92: image_path está vacío.
+ERROR Línea 92: stock inválido o negativo.
+ERROR Línea 92: sort_order inválido o negativo.
+ERROR Línea 92: imagen faltante.
+ERROR Línea 92: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 93: stock está vacío.
+ERROR Línea 93: sort_order está vacío.
+ERROR Línea 93: image_path está vacío.
+ERROR Línea 93: stock inválido o negativo.
+ERROR Línea 93: sort_order inválido o negativo.
+ERROR Línea 93: imagen faltante.
+ERROR Línea 93: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 94: stock está vacío.
+ERROR Línea 94: sort_order está vacío.
+ERROR Línea 94: image_path está vacío.
+ERROR Línea 94: stock inválido o negativo.
+ERROR Línea 94: sort_order inválido o negativo.
+ERROR Línea 94: imagen faltante.
+ERROR Línea 94: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 95: stock está vacío.
+ERROR Línea 95: sort_order está vacío.
+ERROR Línea 95: image_path está vacío.
+ERROR Línea 95: stock inválido o negativo.
+ERROR Línea 95: sort_order inválido o negativo.
+ERROR Línea 95: imagen faltante.
+ERROR Línea 95: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 96: stock está vacío.
+ERROR Línea 96: sort_order está vacío.
+ERROR Línea 96: image_path está vacío.
+ERROR Línea 96: stock inválido o negativo.
+ERROR Línea 96: sort_order inválido o negativo.
+ERROR Línea 96: imagen faltante.
+ERROR Línea 96: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 97: stock está vacío.
+ERROR Línea 97: sort_order está vacío.
+ERROR Línea 97: image_path está vacío.
+ERROR Línea 97: stock inválido o negativo.
+ERROR Línea 97: sort_order inválido o negativo.
+ERROR Línea 97: imagen faltante.
+ERROR Línea 97: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 98: stock está vacío.
+ERROR Línea 98: sort_order está vacío.
+ERROR Línea 98: image_path está vacío.
+ERROR Línea 98: stock inválido o negativo.
+ERROR Línea 98: sort_order inválido o negativo.
+ERROR Línea 98: imagen faltante.
+ERROR Línea 98: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 99: stock está vacío.
+ERROR Línea 99: sort_order está vacío.
+ERROR Línea 99: image_path está vacío.
+ERROR Línea 99: stock inválido o negativo.
+ERROR Línea 99: sort_order inválido o negativo.
+ERROR Línea 99: imagen faltante.
+ERROR Línea 99: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 100: stock está vacío.
+ERROR Línea 100: sort_order está vacío.
+ERROR Línea 100: image_path está vacío.
+ERROR Línea 100: stock inválido o negativo.
+ERROR Línea 100: sort_order inválido o negativo.
+ERROR Línea 100: imagen faltante.
+ERROR Línea 100: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 101: stock está vacío.
+ERROR Línea 101: sort_order está vacío.
+ERROR Línea 101: image_path está vacío.
+ERROR Línea 101: stock inválido o negativo.
+ERROR Línea 101: sort_order inválido o negativo.
+ERROR Línea 101: imagen faltante.
+ERROR Línea 101: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 102: stock está vacío.
+ERROR Línea 102: sort_order está vacío.
+ERROR Línea 102: image_path está vacío.
+ERROR Línea 102: stock inválido o negativo.
+ERROR Línea 102: sort_order inválido o negativo.
+ERROR Línea 102: imagen faltante.
+ERROR Línea 102: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 103: stock está vacío.
+ERROR Línea 103: sort_order está vacío.
+ERROR Línea 103: image_path está vacío.
+ERROR Línea 103: stock inválido o negativo.
+ERROR Línea 103: sort_order inválido o negativo.
+ERROR Línea 103: imagen faltante.
+ERROR Línea 103: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 104: stock está vacío.
+ERROR Línea 104: sort_order está vacío.
+ERROR Línea 104: image_path está vacío.
+ERROR Línea 104: stock inválido o negativo.
+ERROR Línea 104: sort_order inválido o negativo.
+ERROR Línea 104: imagen faltante.
+ERROR Línea 104: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 105: stock está vacío.
+ERROR Línea 105: sort_order está vacío.
+ERROR Línea 105: image_path está vacío.
+ERROR Línea 105: stock inválido o negativo.
+ERROR Línea 105: sort_order inválido o negativo.
+ERROR Línea 105: imagen faltante.
+ERROR Línea 105: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 106: stock está vacío.
+ERROR Línea 106: sort_order está vacío.
+ERROR Línea 106: image_path está vacío.
+ERROR Línea 106: stock inválido o negativo.
+ERROR Línea 106: sort_order inválido o negativo.
+ERROR Línea 106: imagen faltante.
+ERROR Línea 106: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 107: stock está vacío.
+ERROR Línea 107: sort_order está vacío.
+ERROR Línea 107: image_path está vacío.
+ERROR Línea 107: stock inválido o negativo.
+ERROR Línea 107: sort_order inválido o negativo.
+ERROR Línea 107: imagen faltante.
+ERROR Línea 107: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 108: stock está vacío.
+ERROR Línea 108: sort_order está vacío.
+ERROR Línea 108: image_path está vacío.
+ERROR Línea 108: stock inválido o negativo.
+ERROR Línea 108: sort_order inválido o negativo.
+ERROR Línea 108: imagen faltante.
+ERROR Línea 108: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 109: stock está vacío.
+ERROR Línea 109: sort_order está vacío.
+ERROR Línea 109: image_path está vacío.
+ERROR Línea 109: stock inválido o negativo.
+ERROR Línea 109: sort_order inválido o negativo.
+ERROR Línea 109: imagen faltante.
+ERROR Línea 109: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 110: stock está vacío.
+ERROR Línea 110: sort_order está vacío.
+ERROR Línea 110: image_path está vacío.
+ERROR Línea 110: stock inválido o negativo.
+ERROR Línea 110: sort_order inválido o negativo.
+ERROR Línea 110: imagen faltante.
+ERROR Línea 110: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 111: stock está vacío.
+ERROR Línea 111: sort_order está vacío.
+ERROR Línea 111: image_path está vacío.
+ERROR Línea 111: stock inválido o negativo.
+ERROR Línea 111: sort_order inválido o negativo.
+ERROR Línea 111: imagen faltante.
+ERROR Línea 111: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 112: stock está vacío.
+ERROR Línea 112: sort_order está vacío.
+ERROR Línea 112: image_path está vacío.
+ERROR Línea 112: stock inválido o negativo.
+ERROR Línea 112: sort_order inválido o negativo.
+ERROR Línea 112: imagen faltante.
+ERROR Línea 112: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 113: stock está vacío.
+ERROR Línea 113: sort_order está vacío.
+ERROR Línea 113: image_path está vacío.
+ERROR Línea 113: stock inválido o negativo.
+ERROR Línea 113: sort_order inválido o negativo.
+ERROR Línea 113: imagen faltante.
+ERROR Línea 113: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 114: stock está vacío.
+ERROR Línea 114: sort_order está vacío.
+ERROR Línea 114: image_path está vacío.
+ERROR Línea 114: stock inválido o negativo.
+ERROR Línea 114: sort_order inválido o negativo.
+ERROR Línea 114: imagen faltante.
+ERROR Línea 114: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 115: stock está vacío.
+ERROR Línea 115: sort_order está vacío.
+ERROR Línea 115: image_path está vacío.
+ERROR Línea 115: stock inválido o negativo.
+ERROR Línea 115: sort_order inválido o negativo.
+ERROR Línea 115: imagen faltante.
+ERROR Línea 115: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 116: stock está vacío.
+ERROR Línea 116: sort_order está vacío.
+ERROR Línea 116: image_path está vacío.
+ERROR Línea 116: stock inválido o negativo.
+ERROR Línea 116: sort_order inválido o negativo.
+ERROR Línea 116: imagen faltante.
+ERROR Línea 116: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 117: stock está vacío.
+ERROR Línea 117: sort_order está vacío.
+ERROR Línea 117: image_path está vacío.
+ERROR Línea 117: stock inválido o negativo.
+ERROR Línea 117: sort_order inválido o negativo.
+ERROR Línea 117: imagen faltante.
+ERROR Línea 117: external_id/SKU no tienen una imagen aprobada en el manifiesto.
+ERROR Línea 118: stock está vacío.
+ERROR Línea 118: sort_order está vacío.
+ERROR Línea 118: image_path está vacío.
+ERROR Línea 118: stock inválido o negativo.
+ERROR Línea 118: sort_order inválido o negativo.
+ERROR Línea 118: imagen faltante.
+ERROR Línea 118: external_id/SKU no tienen una imagen aprobada en el manifiesto.

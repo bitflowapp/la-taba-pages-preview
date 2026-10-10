@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import { GONDOLA, precioDeVenta } from '../catalog/gondola-neuquen.mjs';
 import {
+  DECISION_COMERCIAL,
   ESTADO,
   OVERRIDES,
   overrideDeclarado,
@@ -68,4 +69,23 @@ test('los precios de referencia coinciden con la planilla del 2026-10-10 (sin of
   for (const [sku, precio] of Object.entries(esperado)) {
     assert.equal(overrideDeclarado(sku).precio, precio, sku);
   }
+});
+
+test('la decisión del titular aprueba los 7 precios como objetivo y deja la aplicación productiva bloqueada', () => {
+  assert.equal(DECISION_COMERCIAL.precios_objetivo, 'APROBADOS');
+  assert.equal(DECISION_COMERCIAL.aplicacion_productiva, 'BLOQUEADA');
+  assert.ok(DECISION_COMERCIAL.condiciones_para_desbloquear.length >= 3);
+  assert.notEqual(ESTADO, 'APROBADO_COMERCIAL', 'no activar la aplicación productiva sin desbloquear');
+  assert.equal(precioOverride(OVERRIDES[0].sku), null);
+});
+
+test('activar el override cambia EXACTAMENTE los 7 SKU y ningún otro precio de la góndola', () => {
+  // Recalculo de control: aplica el override en modo aprobado y compara contra la fórmula.
+  const cambiados = [];
+  for (const p of GONDOLA) {
+    const formula = precioDeVenta({ costoMayorista: p.costoMayorista, unitsPerPack: p.unitsPerPack, soldAsPack: p.soldAsPack });
+    const conOverride = precioOverride(p.sku, 'APROBADO_COMERCIAL') ?? formula;
+    if (conOverride !== formula) cambiados.push(p.sku);
+  }
+  assert.deepEqual(cambiados.sort(), OVERRIDES.map((o) => o.sku).sort());
 });

@@ -80,7 +80,37 @@ WebKit (iPhone 13, 390×844): mismo recorrido que Chromium, 39/39 del spec nuevo
 
 | Job | Resultado | Nota |
 |---|---|---|
-| Migrations, pgTAP and isolated restore | ver PR | |
-| Web, backend, fiscal and security gates | 1.ª corrida FAIL → corregido | «Release hygiene»: una ruta de disco local en este mismo documento. Quitada. |
-| Native PWA update and integrated Rider motion | 1.ª corrida FAIL (WebKit, «offline reload») · 2.ª corrida **PASS** sin cambios de código | Flaky de WebKit en el runner («WebKit encountered an internal error»; la propia compuerta cita el defecto de CacheStorage de Playwright). La corrida de CI de `main` `0b7f5427` también tiene ese job en rojo, en otro paso. |
-| Windows Rust and unsigned verification bundles | ver PR | |
+| Migrations, pgTAP and isolated restore | PASS | |
+| Web, backend, fiscal and security gates | ver el PR (corrida del SHA final) | La 1.ª corrida falló en «Release hygiene» por una ruta de disco local en este documento; quitada. |
+| Native PWA update and integrated Rider motion | **PASS** con `js/app.js` idéntico a `main` | Ver abajo. |
+| Windows Rust and unsigned verification bundles | PASS | |
+
+### El job de PWA y los bytes de `js/app.js`
+
+Con un cambio de 5 líneas en `js/app.js` (restaurar el foco del teclado tras agregar) el job
+«Native PWA update» —WebKit, paso «offline reload»— falló de forma consistente en el runner
+Linux, mientras Chromium pasaba. Se aisló con ramas de control descartables desde `main`
+(`workflow_dispatch`, cada una con otra identidad de release; las ramas ya se borraron):
+
+| Variante | Qué cambia respecto de `main` | Job PWA |
+|---|---|---|
+| Control | sólo `CACHE_NAME` | 4 / 4 verde |
+| V1 | sólo versiones (`?v=80`, `app.js?v=54`) | 3 / 3 verde |
+| V2a | sólo `js/ui.js` de la corrección | 2 / 2 verde |
+| V2b | sólo motor + `campaigns.css` | 2 / 2 verde |
+| **V2c** | **sólo `js/app.js` (+5 líneas)** | **0 / 2** |
+| E1 | `js/app.js` + 420 bytes de comentario | 2 / 2 verde |
+| E3 | V2c + service worker sin cabeceras de transporte en la copia de runtime | 1 / 2 |
+| Rama completa (con `app.js` cambiado) | | 1 / 6 |
+
+**Qué se concluye y qué no.** El factor es el contenido de `js/app.js`, no el tamaño ni las
+versiones. El mecanismo **no está aislado**: la hipótesis más plausible (la copia que
+`networkFirst` guarda al servir de la red conserva `content-encoding`/`content-length` del
+transporte, y WebKit la rechaza sin red) **no se confirmó** (E3). No se modificó el service
+worker. La decisión fue mantener `js/app.js` byte a byte como en `main` y descartar la
+restauración de foco; con eso el job pasa (PR y corrida adicional). En Windows local el mismo
+script pasa con y sin el cambio. Queda como deuda para quien toque `app.js` o el worker: la
+suite necesita un mecanismo, no una racha de suerte.
+
+La corrida de CI de `main` `0b7f5427` tiene este job en rojo en otro paso («activate update»,
+ambos motores); no es de esta rama.

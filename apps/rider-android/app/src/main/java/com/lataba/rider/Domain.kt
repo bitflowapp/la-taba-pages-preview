@@ -74,9 +74,15 @@ object Money {
     }
 }
 data class Offer(val id: String, val code: String, val version: Long, val zone: String, val pickup: String) {
+    // `delivery_summary` es el barrio que declaró el cliente y puede faltar. Antes la
+    // oferta decía «Zona: » vacío (LT-0004); la dirección exacta se ve al aceptar.
+    val zoneLabel get() = if (zone.isBlank()) "Barrio sin dato · la dirección se ve al aceptar" else "Barrio: $zone"
     companion object { fun from(j: JSONObject) = Offer(j.getString("offer_id"), j.optString("public_code"),
-        j.getLong("version"), j.optString("delivery_summary"), j.optString("pickup_summary")) }
+        j.getLong("version"), text(j, "delivery_summary"), text(j, "pickup_summary")) }
 }
+
+// org.json devuelve el texto "null" para un valor JSON nulo: un dato ausente es vacío.
+private fun text(j: JSONObject, name: String) = if (j.isNull(name)) "" else j.optString(name).trim()
 data class Board(val orders: List<Delivery>, val offers: List<Offer>, val capacity: Int,
     val available: Boolean = false, val availabilityVersion: Long = 0) {
     val atCapacity get() = orders.size >= capacity

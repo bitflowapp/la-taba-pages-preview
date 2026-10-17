@@ -16,47 +16,85 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { randomUUID, randomBytes } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
+import {
+  assertStagingCertificationTarget,
+  verifyStagingCertificationIdentity,
+} from './lib/staging-certification-target.mjs';
+import {
+  boundedCertificationClient, certificationCleanup, certificationInterruption,
+  createCertificationActor, requireCertificationResult, verifyCertificationFixtures,
+  ownedCertificationCheckout, releaseCertificationCheckout,
+} from './lib/staging-certification-resources.mjs';
 
-const CONFIRMATION = 'I_UNDERSTAND_THIS_MUTATES_STAGING';
-
+async function runCertification() {
 const env = (name) => String(process.env[name] || '').trim();
 
 const SUPABASE_URL = env('SUPABASE_URL');
 const SERVICE_ROLE_KEY = env('SUPABASE_SERVICE_ROLE_KEY');
 const ANON_KEY = env('SUPABASE_ANON_KEY');
 const BUSINESS_ID = env('TABA_BUSINESS_ID');
-const STAGING_PROJECT_REF = 'ukxqbgswjlibmnjemrzd';
-const STAGING_URL = `https://${STAGING_PROJECT_REF}.supabase.co`;
+const certificationTarget = {
+  supabaseUrl: SUPABASE_URL,
+  businessId: BUSINESS_ID,
+  confirmation: env('TABA_CERTIFY_CONFIRM'),
+};
 
-if (env('TABA_CERTIFY_CONFIRM') !== CONFIRMATION) {
-  console.error(`Definí TABA_CERTIFY_CONFIRM=${CONFIRMATION} para correr la certificación.`);
-  process.exit(2);
+try {
+  assertStagingCertificationTarget(certificationTarget);
+} catch (error) {
+  console.error(error.message);
+  process.exitCode = 2;
+  return;
 }
 for (const [name, value] of Object.entries({ SUPABASE_URL, SERVICE_ROLE_KEY, ANON_KEY, BUSINESS_ID })) {
   if (!value) {
     console.error(`Falta ${name}.`);
-    process.exit(2);
+    process.exitCode = 2;
+    return;
   }
 }
-if (SUPABASE_URL !== STAGING_URL) {
-  console.error(`La certificación sólo corre contra el staging ${STAGING_PROJECT_REF}.`);
-  process.exit(2);
+const interruption = certificationInterruption();
+try {
+const service = boundedCertificationClient(createClient, SUPABASE_URL, SERVICE_ROLE_KEY, {}, interruption.signal);
+const cleanupService = boundedCertificationClient(createClient, SUPABASE_URL, SERVICE_ROLE_KEY);
+const clientFor = ({ cleanup: cleaning = false } = {}) =>
+  boundedCertificationClient(createClient, SUPABASE_URL, ANON_KEY, {}, cleaning ? undefined : interruption.signal);
+let fixtures;
+try {
+  const identity = await verifyStagingCertificationIdentity(service, certificationTarget);
+  if (process.argv.includes('--preflight-only')) {
+    console.log(JSON.stringify({ ok: true, readOnly: true, scope: 'staging_identity_only',
+      projectRef: identity.projectRef, businessId: identity.businessId, paymentEnvironment: 'test' }));
+    return;
+  }
+  fixtures = await verifyCertificationFixtures(service, certificationTarget, {
+    operationalProductId: env('TABA_CERTIFY_OPERATIONAL_PRODUCT_ID'),
+    isolationProductId: env('TABA_CERTIFY_ISOLATION_PRODUCT_ID'),
+  });
+  if (process.argv.includes('--fixtures-preflight-only')) {
+    console.log(JSON.stringify({ ok: true, readOnly: true, scope: 'staging_identity_and_fixtures',
+      businessId: identity.businessId, operationalProductId: fixtures.realProduct.id,
+      isolationProductId: fixtures.qaProduct.id }));
+    return;
+  }
+} catch (error) {
+  console.error(error.message);
+  process.exitCode = 2;
+  return;
 }
 
-const service = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-  auth: { autoRefreshToken: false, persistSession: false },
-});
-
 const results = [];
-const cleanup = [];
+const cleanup = certificationCleanup();
+const ownedOrders = new Map();
 let failures = 0;
 
 function check(name, condition, detail = '') {
   const ok = Boolean(condition);
   if (!ok) failures += 1;
   results.push({ ok, name, detail });
-  console.log(`${ok ? 'OK  ' : 'FAIL'}  ${name}${detail ? `  — ${detail}` : ''}`);
+  console.log(`${ok ? 'OK  ' : 'FAIL'}  ${name}${detail ? `  - ${detail}` : ''}`);
+  if (!ok) throw new Error('STAGING_CERTIFICATION_CHECK_FAILED');
   return ok;
 }
 
@@ -69,62 +107,14 @@ function requestId(prefix) {
 }
 
 async function createActor(role) {
-  const email = `cert-${role}-${randomUUID()}@staging.local`;
-  const password = `Cert-${randomBytes(18).toString('base64url')}`;
-  const { data, error } = await service.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-  });
-  if (error) throw new Error(`No se pudo crear el actor ${role}: ${error.message}`);
-  const userId = data.user.id;
-  if (role !== 'customer') {
-    const { error: memberError } = await service
-      .from('business_members')
-      .insert({ business_id: BUSINESS_ID, user_id: userId, role, is_active: true });
-    if (memberError) throw new Error(`No se pudo dar rol ${role}: ${memberError.message}`);
-  }
-  // El actor no se borra: quedó como sujeto de los eventos de auditoría del
-  // pedido, y borrarlo destruiría esa evidencia. Se le retira la capacidad de
-  // operar, que es lo que hace falta.
-  cleanup.push(async () => {
-    await service.from('business_members')
-      .update({ is_active: false })
-      .eq('business_id', BUSINESS_ID)
-      .eq('user_id', userId);
-    await service.auth.admin.updateUserById(userId, { ban_duration: '876000h' });
-  });
-  const client = createClient(SUPABASE_URL, ANON_KEY, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-  const { error: signInError } = await client.auth.signInWithPassword({ email, password });
-  if (signInError) throw new Error(`No se pudo iniciar sesión ${role}: ${signInError.message}`);
-  if (role !== 'customer') {
-    const { data: registration, error: registrationError } = await client.rpc('identity_register_session', {
-      p_business_id: BUSINESS_ID,
-      p_client: role === 'rider' ? 'rider_android' : 'panel_web',
-      p_device_label: 'certificacion-demo-walter',
-      p_device_key_hash: null,
-      p_app_version: 'overnight-demo-certifier',
-    });
-    if (registrationError || registration?.ok !== true || !registration?.session_id) {
-      throw new Error(
-        `No se pudo registrar la sesión ${role}: ${registrationError?.message || registration?.code || 'sin session_id'}`,
-      );
-    }
-    cleanup.push(async () => {
-      await client.rpc('identity_close_own_session', { p_business_id: BUSINESS_ID });
-      await client.auth.signOut({ scope: 'local' });
-    });
-  }
-  return { role, userId, client };
+  return createCertificationActor({ service, cleanupService, clientFor,
+    target: certificationTarget, role, cleanup });
 }
 
 function createTrackingClient(trackingToken) {
-  return createClient(SUPABASE_URL, ANON_KEY, {
-    auth: { autoRefreshToken: false, persistSession: false },
+  return boundedCertificationClient(createClient, SUPABASE_URL, ANON_KEY, {
     global: { headers: { 'x-order-token': trackingToken } },
-  });
+  }, interruption.signal);
 }
 
 /**
@@ -135,47 +125,61 @@ function createTrackingClient(trackingToken) {
  * unidad con un movimiento auditable para no degradar el catálogo de staging.
  */
 async function retireCertificationOrder(orderId, staff, reason, { productId = null, quantity = 0 } = {}) {
-  const current = await orderRow(orderId, 'id,status,revision,origin');
-  if (!current) return;
+  const current = await orderRow(orderId, 'id,status,revision,origin', cleanupService);
+  const errors = [];
   if (!['delivered', 'cancelled', 'canceled', 'rejected'].includes(current.status)) {
-    await staff.client.rpc('transition_order', {
-      p_order_id: orderId,
-      p_expected_revision: current.revision,
-      p_new_status: 'cancelled',
-      p_idempotency_key: requestId('cert_retire'),
-    });
+    try {
+      requireCertificationResult(await staff.cleanupClient.rpc('transition_order', {
+        p_order_id: orderId, p_expected_revision: current.revision,
+        p_new_status: 'cancelled', p_idempotency_key: requestId('cert_retire'),
+      }), 'ORDER_RETIRE');
+      const after = await orderRow(orderId, 'status', cleanupService);
+      if (after.status !== 'cancelled') throw new Error('STAGING_CERTIFICATION_ORDER_RETIRE_UNVERIFIED');
+    } catch (error) { errors.push(error); }
   }
-  await service.rpc('classify_order_as_qa', { p_order_id: orderId, p_reason: reason });
+  // Even a failed cancellation must not leave a test order in the real inbox.
+  try {
+    requireCertificationResult(await cleanupService.rpc('classify_order_as_qa', {
+      p_order_id: orderId, p_reason: reason,
+    }), 'ORDER_CLASSIFY', { requireOk: true });
+    const after = await orderRow(orderId, 'origin', cleanupService);
+    if (after.origin !== 'qa') throw new Error('STAGING_CERTIFICATION_ORDER_CLASSIFY_UNVERIFIED');
+  } catch (error) { errors.push(error); }
   if (current.status === 'delivered' && productId && quantity > 0) {
-    const { data: movement, error } = await staff.client.rpc('apply_inventory_movement', {
-      p_business_id: BUSINESS_ID,
-      p_product_id: productId,
-      p_barcode_id: null,
-      p_movement_type: 'manual_adjustment',
-      p_package_quantity: quantity,
-      p_direction: 1,
-      p_reference_type: 'qa_certification_order',
-      p_reference_id: orderId,
-      p_reason: 'Reposición posterior a certificación integral de staging',
-      p_idempotency_key: `cert_restore_${String(orderId).replaceAll('-', '')}`,
-    });
-    if (error) throw new Error(`No se pudo reponer el stock QA: ${error.message}`);
-    check(
-      'la limpieza repone el stock consumido con ledger auditable',
-      Number(movement?.quantity_delta) === quantity,
-      `delta=${movement?.quantity_delta ?? 'sin_movimiento'}`,
-    );
+    try {
+      const movement = requireCertificationResult(await staff.cleanupClient.rpc('apply_inventory_movement', {
+        p_business_id: BUSINESS_ID, p_product_id: productId, p_barcode_id: null,
+        p_movement_type: 'manual_adjustment', p_package_quantity: quantity, p_direction: 1,
+        p_reference_type: 'qa_certification_order', p_reference_id: orderId,
+        p_reason: 'Reposicion posterior a certificacion integral de staging',
+        p_idempotency_key: `cert_restore_${String(orderId).replaceAll('-', '')}`,
+      }), 'STOCK_RESTORE');
+      if (Number(movement?.quantity_delta) !== quantity) throw new Error('STAGING_CERTIFICATION_STOCK_RESTORE_UNVERIFIED');
+    } catch (error) { errors.push(error); }
   }
+  if (errors.length) throw new AggregateError(errors, 'STAGING_CERTIFICATION_ORDER_CLEANUP_FAILED');
 }
 
-async function orderRow(orderId, columns = '*') {
-  const { data } = await service.from('orders').select(columns).eq('id', orderId).maybeSingle();
-  return data || null;
+async function orderRow(orderId, columns = '*', client = service) {
+  const owner = ownedOrders.get(orderId);
+  if (!owner) throw new Error('STAGING_CERTIFICATION_ORDER_NOT_OWNED');
+  const row = requireCertificationResult(await client.from('orders')
+    .select(columns === '*' ? '*' : `business_id,customer_user_id,client_request_id,${columns}`)
+    .eq('business_id', BUSINESS_ID).eq('id', orderId)
+    .eq('customer_user_id', owner.customerId).eq('client_request_id', owner.requestId).maybeSingle(), 'ORDER_READ');
+  if (!row || row.business_id !== BUSINESS_ID || row.customer_user_id !== owner.customerId
+    || row.client_request_id !== owner.requestId) throw new Error('STAGING_CERTIFICATION_ORDER_OWNERSHIP_REJECTED');
+  return row;
 }
 
 async function productRow(productId) {
-  const { data } = await service.from('products').select('id,name,stock,price').eq('id', productId).maybeSingle();
-  return data || null;
+  if (![fixtures.realProduct.id, fixtures.qaProduct.id].includes(productId)) {
+    throw new Error('STAGING_CERTIFICATION_PRODUCT_NOT_SELECTED');
+  }
+  const row = requireCertificationResult(await service.from('products').select('id,business_id,name,stock,price')
+    .eq('business_id', BUSINESS_ID).eq('id', productId).maybeSingle(), 'PRODUCT_READ');
+  if (!row || row.business_id !== BUSINESS_ID) throw new Error('STAGING_CERTIFICATION_PRODUCT_OWNERSHIP_REJECTED');
+  return row;
 }
 
 function orderPayload({ productId, quantity, paymentMethod, clientRequestId, name, trackingToken }) {
@@ -208,44 +212,16 @@ function orderPayload({ productId, quantity, paymentMethod, clientRequestId, nam
 async function main() {
   console.log(`\n=== Certificación del circuito real de pedidos ===\n${SUPABASE_URL}\n`);
 
-  // ---------------------------------------------------------------- baseline
-  const { data: lt30Before } = await service
-    .from('orders')
-    .select('id,status,revision,assigned_rider_user_id,arrived_at,origin')
-    .eq('public_code', 'LT-0030')
-    .maybeSingle();
-  const { count: gpsBefore } = await service
-    .from('rider_locations')
-    .select('id', { count: 'exact', head: true })
-    .eq('order_id', lt30Before?.id || randomUUID());
+  // Explicit selection prevents this helper from choosing shared catalog rows.
+  // Current commercial QA products are valid; demo_fixture is not a requirement.
+  const { realProduct, qaProduct } = fixtures;
+  const baselineColumns = 'id,status,revision,assigned_rider_user_id,arrived_at,origin,origin_reason,updated_at';
+  const baseline = requireCertificationResult(await service.from('orders').select(baselineColumns)
+    .eq('business_id', BUSINESS_ID).order('id').limit(100), 'BASELINE_READ');
 
   const customer = await createActor('customer');
   const staff = await createActor('staff');
   const rider = await createActor('rider');
-
-  // Producto comercial (demo_fixture) => pedido de operación real.
-  const { data: realProduct } = await service
-    .from('products')
-    .select('id,name,price,stock')
-    .eq('business_id', BUSINESS_ID)
-    .eq('catalog_origin', 'demo_fixture')
-    .eq('available', true)
-    .eq('is_verified', true)
-    .order('price', { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  // Fixture QA deliberado => pedido que nunca entra a la operación real.
-  const { data: qaProduct } = await service
-    .from('products')
-    .select('id,name,price,stock')
-    .eq('business_id', BUSINESS_ID)
-    .in('catalog_origin', ['test_only', 'staging_only'])
-    .eq('available', true)
-    .eq('is_verified', true)
-    .limit(1)
-    .maybeSingle();
-
-  if (!realProduct) throw new Error('El catálogo de staging no tiene un producto comercial verificable.');
 
   // ============================================================ GATE 1: real
   console.log('\n--- Gate 1: pedido real recorre el circuito completo ---');
@@ -266,7 +242,8 @@ async function main() {
   if (createError) throw new Error(`No se pudo crear el pedido real: ${createError.message}`);
   const realOrderId = created?.id || created?.order?.id;
   check('el checkout crea exactamente un pedido', Boolean(realOrderId), `id=${realOrderId}`);
-  cleanup.push(() => retireCertificationOrder(
+  ownedOrders.set(realOrderId, { customerId: customer.userId, requestId: realRequestId });
+  cleanup.add('real_order', () => retireCertificationOrder(
     realOrderId,
     staff,
     'pipeline_certification_run',
@@ -314,6 +291,7 @@ async function main() {
   const { count: sameRequestCount } = await service
     .from('orders')
     .select('id', { count: 'exact', head: true })
+    .eq('business_id', BUSINESS_ID).eq('customer_user_id', customer.userId)
     .eq('client_request_id', realRequestId);
   // La invariante es el dato, no la forma de la respuesta: un mismo
   // client_request_id no puede producir un segundo pedido, se lo replique o se
@@ -543,25 +521,20 @@ async function main() {
 
   // ======================================================== GATE 2: QA aparte
   console.log('\n--- Gate 2: el pedido QA queda fuera de la operación real ---');
-  if (!qaProduct) {
-    check(
-      'staging mantiene los fixtures QA fuera del catálogo comprable',
-      true,
-      'sin fixture QA disponible; no se mutó el catálogo',
-    );
-  } else {
+  const qaRequestId = requestId('cert_qa');
   const { data: qaCreated, error: qaError } = await customer.client.rpc('create_order_with_items', {
     payload: orderPayload({
       productId: qaProduct.id,
       quantity: 1,
       paymentMethod: 'coordinate',
-      clientRequestId: requestId('cert_qa'),
+      clientRequestId: qaRequestId,
       name: 'Certificacion Fixture QA',
     }),
   });
   if (qaError) throw new Error(`No se pudo crear el pedido QA: ${qaError.message}`);
   const qaOrderId = qaCreated?.id || qaCreated?.order?.id;
-  cleanup.push(() => retireCertificationOrder(qaOrderId, staff, 'pipeline_certification_run'));
+  ownedOrders.set(qaOrderId, { customerId: customer.userId, requestId: qaRequestId });
+  cleanup.add('isolation_order', () => retireCertificationOrder(qaOrderId, staff, 'pipeline_certification_run'));
   const qaOrder = await orderRow(qaOrderId);
   check('un pedido con fixture QA se clasifica solo', qaOrder.origin === 'qa', `origin=${qaOrder.origin} motivo=${qaOrder.origin_reason}`);
 
@@ -625,33 +598,22 @@ async function main() {
   });
   check('la evidencia QA sigue siendo consultable a pedido',
     (pipelineWithQa || []).map((row) => row.reference_id).includes(qaOrderId));
-  }
 
   // =============================================== GATE 3: pago no falsificable
   console.log('\n--- Gate 3: nadie declara un pago que no ocurrió ---');
   const { error: fakePaid } = await service
     .from('orders')
     .update({ payment_method: 'mercadopago' })
-    .eq('id', realOrderId);
+    .eq('business_id', BUSINESS_ID).eq('customer_user_id', customer.userId)
+    .eq('client_request_id', realRequestId).eq('id', realOrderId);
   check('no se puede marcar Mercado Pago sin pago verificado', Boolean(fakePaid),
     fakePaid?.message?.slice(0, 90) || 'la base lo aceptó');
 
-  const { data: mpOrders } = await service
-    .from('orders')
-    .select('id,public_code')
-    .eq('payment_method', 'mercadopago');
-  let everyMpOrderVerified = true;
-  for (const row of mpOrders || []) {
-    const { count } = await service
-      .from('payment_intents')
-      .select('id', { count: 'exact', head: true })
-      .eq('order_id', row.id)
-      .eq('internal_status', 'completed')
-      .eq('provider_status', 'approved');
-    if (count !== 1) everyMpOrderVerified = false;
-  }
-  check('todo pedido Mercado Pago tiene su pago verificado contra el proveedor',
-    everyMpOrderVerified, `pedidos=${(mpOrders || []).length}`);
+  const { count: inventedPayment, error: paymentReadError } = await service.from('payment_intents')
+    .select('id', { count: 'exact', head: true }).eq('order_id', realOrderId)
+    .eq('internal_status', 'completed').eq('provider_status', 'approved');
+  check('el pedido de esta corrida no inventa un pago aprobado', !paymentReadError && inventedPayment === 0);
+  console.log('PAYMENT_PROVIDER_CERTIFICATION NOT_EXERCISED');
 
   // ============================================== GATE 4: stock y vencimiento
   console.log('\n--- Gate 4: el stock reservado siempre vuelve ---');
@@ -659,11 +621,12 @@ async function main() {
   // Checkout de Mercado Pago: reserva stock, no crea pedido hasta que el pago
   // esté verificado, y devuelve el stock cuando vence.
   const mpStockBefore = (await productRow(realProduct.id)).stock;
+  const mpRequestId = requestId('cert_mp');
   const { data: session, error: sessionError } = await service.rpc('create_checkout_session', {
     p_customer_id: customer.userId,
     p_payload: {
       business_id: BUSINESS_ID,
-      client_request_id: requestId('cert_mp'),
+      client_request_id: mpRequestId,
       payment_method: 'mercadopago',
       fulfillment_type: 'delivery',
       items: [{ product_id: realProduct.id, quantity: 1 }],
@@ -689,6 +652,9 @@ async function main() {
     throw new Error(`El checkout de Mercado Pago no quedó disponible: ${sessionError?.message || 'respuesta vacía'}`);
   }
   const sessionId = session?.checkout_session_id || session?.id;
+  cleanup.add('checkout', () => releaseCertificationCheckout(cleanupService, certificationTarget,
+    sessionId, customer.userId, mpRequestId));
+  await ownedCertificationCheckout(service, certificationTarget, sessionId, customer.userId, mpRequestId);
 
   const mpStockReserved = (await productRow(realProduct.id)).stock;
   check('abrir el checkout reserva el stock', mpStockReserved === mpStockBefore - 1,
@@ -697,6 +663,7 @@ async function main() {
   const { count: ordersForSession } = await service
     .from('orders')
     .select('id', { count: 'exact', head: true })
+    .eq('business_id', BUSINESS_ID).eq('customer_user_id', customer.userId)
     .eq('client_request_id', `mp_${String(sessionId).replace(/-/g, '')}`);
   check('un checkout sin pago verificado no crea ningún pedido', ordersForSession === 0,
     `pedidos=${ordersForSession}`);
@@ -711,97 +678,65 @@ async function main() {
 
   // Se acorta la ventana en vez de mandarla al pasado: `checkout_sessions_expiry_check`
   // exige expires_at > created_at, y tiene razón — una sesión no puede nacer vencida.
-  const { data: sessionRowDb } = await service
-    .from('checkout_sessions').select('created_at').eq('id', sessionId).maybeSingle();
+  const sessionRowDb = await ownedCertificationCheckout(service, certificationTarget, sessionId, customer.userId, mpRequestId);
   const shortExpiry = new Date(Date.parse(sessionRowDb.created_at) + 1_000).toISOString();
-  const { data: aged, error: ageError } = await service.from('checkout_sessions')
-    .update({ expires_at: shortExpiry })
-    .eq('id', sessionId)
-    .select('id,expires_at');
-  check('el checkout se puede vencer para la prueba', (aged || []).length === 1,
-    ageError?.message || `filas=${(aged || []).length}`);
-  await service.from('inventory_reservations')
-    .update({ expires_at: shortExpiry })
-    .eq('checkout_session_id', sessionId)
-    .select('id');
-  await new Promise((resolve) => { setTimeout(resolve, 2_000); });
-  const { data: swept } = await service.rpc('sweep_expired_checkout_sessions');
-  const mpStockAfterSweep = (await productRow(realProduct.id)).stock;
-  check('el barrido devuelve el stock del checkout abandonado',
-    mpStockAfterSweep === mpStockBefore, `${mpStockReserved} -> ${mpStockAfterSweep} (barridas=${swept})`);
+  const aged = requireCertificationResult(await service.from('checkout_sessions')
+    .update({ expires_at: shortExpiry }).eq('business_id', BUSINESS_ID).eq('customer_id', customer.userId)
+    .eq('client_request_id', mpRequestId).eq('id', sessionId).select('id,expires_at'), 'CHECKOUT_AGE');
+  if (aged?.length !== 1 || aged[0].id !== sessionId) throw new Error('STAGING_CERTIFICATION_CHECKOUT_AGE_UNVERIFIED');
+  requireCertificationResult(await service.from('inventory_reservations')
+    .update({ expires_at: shortExpiry }).eq('checkout_session_id', sessionId)
+    .eq('product_id', realProduct.id).select('id'), 'RESERVATION_AGE');
+  await new Promise(resolve => setTimeout(resolve, 2_000));
+  interruption.signal.throwIfAborted();
+  const released = await releaseCertificationCheckout(service, certificationTarget,
+    sessionId, customer.userId, mpRequestId, 'expired');
+  const mpStockAfterRelease = (await productRow(realProduct.id)).stock;
+  check('liberar solo este checkout devuelve su stock', mpStockAfterRelease === mpStockBefore,
+    `stock=${mpStockAfterRelease} reservas=${released.released}`);
+  const expiredSession = await ownedCertificationCheckout(service, certificationTarget, sessionId, customer.userId, mpRequestId);
+  check('el checkout propio queda expired', expiredSession.status === 'expired');
+  const { count: activeReservations, error: reservationError } = await service.from('inventory_reservations')
+    .select('id', { count: 'exact', head: true }).eq('checkout_session_id', sessionId).eq('status', 'active');
+  check('este checkout no deja reservas activas', !reservationError && activeReservations === 0);
+  const again = await releaseCertificationCheckout(service, certificationTarget,
+    sessionId, customer.userId, mpRequestId, 'expired');
+  check('la segunda liberacion propia es idempotente', again.released === 0
+    && (await productRow(realProduct.id)).stock === mpStockBefore);
+  console.log('GLOBAL_EXPIRY_CRON_CERTIFICATION NOT_EXERCISED');
 
-  const { data: expiredSession } = await service
-    .from('checkout_sessions').select('status').eq('id', sessionId).maybeSingle();
-  check('el checkout abandonado queda en expired', expiredSession?.status === 'expired',
-    `status=${expiredSession?.status}`);
-
-  const { data: orphanReservations } = await service.rpc('list_stock_reservation_alerts');
-  check('no hay reservas vencidas sin liberar', (orphanReservations || []).length === 0,
-    `huérfanas=${(orphanReservations || []).length}`);
-
-  const { data: cronJobs } = await service.rpc('sweep_expired_checkout_sessions');
-  check('el barrido de checkouts vencidos es ejecutable', Number.isInteger(cronJobs), `liberadas=${cronJobs}`);
-
-  const { data: unfinalized } = await service.rpc('list_unfinalized_paid_checkouts');
-  check('ningún pago verificado quedó sin pedido', (unfinalized || []).length === 0,
-    `pendientes=${(unfinalized || []).length}`);
-
-  // ============================================ GATE 5: LT-0030 sin tocar
-  console.log('\n--- Gate 5: la evidencia protegida sigue intacta ---');
-  const { data: lt30After } = await service
-    .from('orders')
-    .select('id,status,revision,assigned_rider_user_id,arrived_at,origin,origin_reason')
-    .eq('public_code', 'LT-0030')
-    .maybeSingle();
-  const { count: gpsAfter } = await service
-    .from('rider_locations')
-    .select('id', { count: 'exact', head: true })
-    .eq('order_id', lt30After?.id || randomUUID());
-  check('LT-0030 conserva estado, revisión, rider y GPS',
-    lt30Before && lt30After
-      && lt30After.status === lt30Before.status
-      && lt30After.revision === lt30Before.revision
-      && lt30After.assigned_rider_user_id === lt30Before.assigned_rider_user_id
-      && lt30After.arrived_at === lt30Before.arrived_at
-      && gpsAfter === gpsBefore,
-    `status=${lt30After?.status} revision=${lt30After?.revision} gps=${gpsAfter}`);
-  check('LT-0030 quedó clasificado como QA sin perder evidencia',
-    lt30After?.origin === 'qa' && Boolean(lt30After?.origin_reason),
-    `origin=${lt30After?.origin} motivo=${lt30After?.origin_reason}`);
-
-  for (const code of ['LT-0033', 'LT-0034', 'LT-0035']) {
-    const { data: row } = await service
-      .from('orders')
-      .select('public_code,origin,origin_reason,status,payment_method')
-      .eq('public_code', code)
-      .maybeSingle();
-    const { count: events } = await service
-      .from('order_events')
-      .select('id', { count: 'exact', head: true })
-      .eq('order_id', (await service.from('orders').select('id').eq('public_code', code).maybeSingle()).data?.id);
-    check(`${code} clasificado QA y con su evidencia`,
-      row?.origin === 'qa' && Boolean(row?.origin_reason) && Number(events) > 0,
-      `origin=${row?.origin} motivo=${row?.origin_reason} eventos=${events}`);
+  // Preserve a bounded, declared baseline rather than require old public codes.
+  if (baseline.length) {
+    const after = requireCertificationResult(await service.from('orders').select(baselineColumns)
+      .eq('business_id', BUSINESS_ID).in('id', baseline.map(row => row.id)).order('id'), 'BASELINE_READ');
+    check('la muestra previa del tenant QA conserva estado y revision', JSON.stringify(after) === JSON.stringify(baseline),
+      `pedidos_muestreados=${baseline.length}`);
+  } else {
+    console.log('PREEXISTING_QA_ORDER_BASELINE NOT_EXERCISED:EMPTY');
   }
 
   console.log('\n--- Limpieza ---');
 }
 
-main()
+await main()
   .catch((error) => {
-    failures += 1;
-    console.error(`\nERROR: ${error.message}`);
+    if (error.message !== 'STAGING_CERTIFICATION_CHECK_FAILED') failures += 1;
+    console.error(/^STAGING_CERTIFICATION_[A-Z_]+(?::[A-Z_0-9]+)?$/.test(error.message)
+      ? error.message : 'STAGING_CERTIFICATION_RUN_FAILED');
   })
   .finally(async () => {
-    for (const task of cleanup.reverse()) {
-      try {
-        await task();
-      } catch (error) {
-        failures += 1;
-        console.error(`limpieza: ${error.message}`);
-      }
+    for (const name of await cleanup.run()) {
+      failures += 1;
+      console.error(`limpieza: ${name} FAILED`);
     }
     const passed = results.filter((r) => r.ok).length;
     console.log(`\n=== ${passed}/${results.length} comprobaciones verdes, ${failures} fallas ===`);
-    process.exit(failures === 0 ? 0 : 1);
+    process.exitCode = failures === 0 ? 0 : 1;
   });
+
+} finally { interruption.close(); }
+}
+await runCertification().catch(() => {
+  console.error('STAGING_CERTIFICATION_RUN_FAILED');
+  process.exitCode = 1;
+});

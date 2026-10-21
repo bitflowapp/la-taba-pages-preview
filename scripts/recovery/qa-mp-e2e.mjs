@@ -6,7 +6,8 @@
 //
 //   node scripts/recovery/qa-mp-e2e.mjs <command> [--flags]
 //   commands: connect-url | status | verify | activation | window-open | window-close | checkout | session |
-//             inspect | forged-webhooks | worker | cancel | refund | disconnect-preview | disconnect | counts
+//             inspect | forged-webhooks | worker | cancel | refund | disconnect-preview | disconnect | counts |
+//             orders | order-cancel
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createHmac, randomBytes, randomUUID } from 'node:crypto';
@@ -289,6 +290,25 @@ async function main() {
       repeat: repeat ? { status: repeat.status, body: repeat.body } : null };
     record(result);
     out(result);
+    return;
+  }
+  if (command === 'orders') {
+    const owner = await panelOwner();
+    const { data, error } = await owner.from('orders')
+      .select('id,public_code,status,payment_method,manual_payment_status,total,revision,created_at')
+      .eq('business_id', A).order('created_at', { ascending: false }).limit(Number(arg('--limit', '10')));
+    out(error ? { error: error.code } : data);
+    return;
+  }
+  if (command === 'order-cancel') {
+    const owner = await panelOwner();
+    const id = arg('--id');
+    const { data: row } = await owner.from('orders').select('id,revision,status').eq('id', id).eq('business_id', A).maybeSingle();
+    assert.ok(row, 'order not found in QA tenant A');
+    const { data, error } = await owner.rpc('cancel_order', { p_order_id: id, p_expected_revision: row.revision,
+      p_reason: arg('--reason', 'QA: pedido de prueba, no despachar'), p_idempotency_key: `qa_cancel_${id.replaceAll('-', '')}` });
+    record({ order: id, cancelled: !error, error: error?.code || null });
+    out(error ? { error: error.code, message: error.message } : { ok: true, data });
     return;
   }
   if (command === 'counts') {

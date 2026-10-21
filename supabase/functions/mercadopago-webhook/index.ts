@@ -15,6 +15,7 @@ import {
 import { validateMercadoPagoWebhookSignature } from '../_shared/mercadopago-webhook-signature.ts';
 import { requestIsHttps } from '../_shared/request-protocol.ts';
 import { webhookEventType, webhookResourceId } from '../_shared/webhook-notification.ts';
+import { confirmSellerAuthorization, deauthorizationSellerHint } from '../_shared/seller-deauthorization.ts';
 
 const WEBHOOK_MAX_BYTES = 16_000;
 
@@ -80,6 +81,12 @@ Deno.serve(async (request) => {
       return jsonResponse(request, { ok: false, code: 'INVALID_WEBHOOK' }, 401);
     }
     if (oauthMode()) {
+      // «Vinculación de aplicaciones»: the seller may have revoked TABA from
+      // their account. The notice only triggers a check with the provider.
+      if (eventType === 'mp-connect') {
+        const outcome = await confirmSellerAuthorization(deauthorizationSellerHint(body, dataId));
+        return jsonResponse(request, { ok: true, seller_authorization: outcome });
+      }
       // Only Payments is subscribed for seller OAuth. Historical topics remain
       // handled by legacy mode; they cannot enter OAuth routing as payment IDs.
       if (eventType !== 'payment') return jsonResponse(request, { ok: true, ignored: true });

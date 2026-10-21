@@ -11,7 +11,9 @@ const value = name => process.argv[process.argv.indexOf(name) + 1];
 if (!['--target', '--out', '--commit'].every(arg => process.argv.includes(arg))) throw new Error('Requires --target --out --commit');
 const target = JSON.parse(fs.readFileSync(value('--target'), 'utf8'));
 const out = path.resolve(value('--out'));
-if (process.platform === 'win32' && !/^[DF]:\\/i.test(out)) throw new Error('Use D: or F: for recovery artifacts, never C:');
+// F: is a damaged USB drive (read-only by decision of 2026-10-21) and C: is full: artifacts go to D: only.
+if (process.platform === 'win32' && !/^D:\\/i.test(out)) throw new Error('Use D: for recovery artifacts, never C: or F:');
+const accessGate = process.argv.includes('--access-gate');
 const businessId = process.argv.includes('--business-id') ? value('--business-id') : '00000000-0000-4000-8000-000000000001';
 if (!/^[0-9a-f-]{36}$/i.test(businessId)) throw new Error('Invalid --business-id');
 if (fs.existsSync(out) || out === ROOT || out.startsWith(ROOT + path.sep)) throw new Error('New output directory required');
@@ -40,7 +42,10 @@ await withRecoveryProject(target, async ({ request }) => {
   fs.writeFileSync(path.join(out, '_headers'), committedHeaders.replace(/^\/\*\r?\n/m,
     '/*\n  X-Robots-Tag: noindex, nofollow, noarchive\n'));
   fs.writeFileSync(path.join(out, 'robots.txt'), 'User-agent: *\nDisallow: /\n');
-  const runtime = { mode: 'production', repository: { provider: 'supabase', deploymentEnvironment: 'staging',
+  // noindex is not access control: --access-gate puts HTTP Basic auth in front of every file (Pages advanced
+  // mode). The worker fails closed until the project has PREVIEW_ACCESS_SHA256 (scripts/recovery/preview-access.mjs).
+  if (accessGate) fs.copyFileSync(path.join(ROOT, 'deploy', 'qa-preview-gate', '_worker.js'), path.join(out, '_worker.js'));
+  const runtime ={ mode: 'production', repository: { provider: 'supabase', deploymentEnvironment: 'staging',
     supabaseUrl: `https://${target.projectRef}.supabase.co`, publishableKey: key.api_key,
     businessId, pollMs: 5000 } };
   fs.writeFileSync(path.join(out, 'runtime-config.js'), `globalThis.__LA_TABA_RUNTIME_CONFIG__ = Object.freeze(${JSON.stringify(runtime)});\n`);
@@ -55,6 +60,6 @@ await withRecoveryProject(target, async ({ request }) => {
   };
   walk(out);
   fs.writeFileSync(out + '-receipt.json', JSON.stringify({ ...version, projectRef: target.projectRef,
-    checkoutOrigin: target.checkoutOrigin, deployed: false, files }, null, 2) + '\n');
-  console.log(JSON.stringify({ out, deployed: false, files: files.length, bytes: files.reduce((sum, file) => sum + file.bytes, 0) }));
+    checkoutOrigin: target.checkoutOrigin, accessGate, deployed: false, files }, null, 2) + '\n');
+  console.log(JSON.stringify({ out, accessGate, deployed: false, files: files.length, bytes: files.reduce((sum, file) => sum + file.bytes, 0) }));
 });

@@ -7,6 +7,7 @@ import {
 } from "./payment-runtime.ts";
 import { seal, unseal } from "./seller-oauth-crypto.ts";
 import { recoveryDeploymentBinding } from "./recovery-deployment.ts";
+import { sellerAccountLabel } from "./seller-connection-panel.ts";
 
 const DEPLOYMENT_BINDINGS: Record<string, {
   deployment: "staging" | "production";
@@ -206,7 +207,7 @@ export async function sellerIdentity(accessToken: string, sellerId: string) {
   if (!Array.isArray(body.tags) || body.tags.includes("test_user") !== (oauthConfig().environment === "test")) {
     throw new Error("Seller account environment mismatch");
   }
-  return { seller_id: sellerId };
+  return { seller_id: sellerId, label: sellerAccountLabel(body) };
 }
 export async function connection(businessId: string) {
   assertOAuthBusiness(businessId);

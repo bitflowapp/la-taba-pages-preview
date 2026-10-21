@@ -6,7 +6,9 @@ if(!['--target','--evidence-directory','--run-tests'].every(a=>process.argv.incl
 const dir=path.resolve(value('--evidence-directory'));fs.mkdirSync(dir,{recursive:true});const target=JSON.parse(fs.readFileSync(value('--target')));
 await withRecoveryProject(target,async({query,request})=>{
 const proof={at:new Date().toISOString(),projectRef:target.projectRef,tests:[]};
-const files=['mercadopago_checkout_pro.local.sql','mercadopago_seller_oauth.local.sql','mercadopago_availability_requires_seller.local.sql','mercadopago_operator_switch.local.sql','mercadopago_seller_cannot_charge_alert.local.sql'];
+// --files a.sql,b.sql runs only those suites (every suite rolls back its fixtures).
+const defaults=['mercadopago_checkout_pro.local.sql','mercadopago_seller_oauth.local.sql','mercadopago_availability_requires_seller.local.sql','mercadopago_operator_switch.local.sql','mercadopago_seller_cannot_charge_alert.local.sql','mercadopago_safe_disconnect.local.sql'];
+const files=process.argv.includes('--files')?value('--files').split(',').map(f=>f.trim()).filter(f=>/^[a-z0-9_]+(\.local)?\.sql$/.test(f)):defaults;
 for(const file of files){let sql=fs.readFileSync(path.join(ROOT,'supabase/tests',file),'utf8');let expected=null;
 if(sql.includes('select plan(')){
 expected=Number(/select plan\((\d+)\)/.exec(sql)[1]);

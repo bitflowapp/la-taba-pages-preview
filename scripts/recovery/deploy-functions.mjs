@@ -4,8 +4,11 @@ import { fileURLToPath } from 'node:url';
 import { ROOT, recoveryPlan, sha256 } from './plan.mjs';
 import { withRecoveryProject } from './hosted-client.mjs';
 
-export async function deployRecoveryFunctions(target, plan, record) {
-  if (JSON.stringify(plan.functions) !== JSON.stringify(recoveryPlan().functions)) throw new Error('Function manifest changed');
+export async function deployRecoveryFunctions(target, plan, record, { partial = false } = {}) {
+  const live = recoveryPlan().functions;
+  // A partial deploy (sync-hosted.mjs --functions) must still match the live sources function by function.
+  const expected = partial ? live.filter(fn => plan.functions.some(selected => selected.name === fn.name)) : live;
+  if (!plan.functions.length || JSON.stringify(plan.functions) !== JSON.stringify(expected)) throw new Error('Function manifest changed');
   return withRecoveryProject(target, async ({ request }) => {
     for (const fn of plan.functions) {
       const form = new FormData();

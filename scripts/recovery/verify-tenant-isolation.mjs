@@ -7,7 +7,7 @@ import { createClient } from '@supabase/supabase-js';
 import { leerSecreto } from '../e2e-production-sale/secretos-windows.mjs';
 import { RECOVERY_QA } from './provision-qa-ids.mjs';
 
-const arg = name => process.argv[process.argv.indexOf(name) + 1];
+const arg = name => { const i = process.argv.indexOf(name); return i < 0 ? undefined : process.argv[i + 1]; };
 const target = JSON.parse(fs.readFileSync(arg('--target'), 'utf8'));
 const out = arg('--out');
 const O = { auth: { persistSession: false, autoRefreshToken: false } };

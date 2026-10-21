@@ -41,11 +41,16 @@ if (process.argv.includes('--rotate')) {
   const password = generarContrasena(20);
   const digest = createHash('sha256').update(`${USER}:${password}`, 'utf8').digest('hex');
   await cloudflare(`/accounts/${ACCOUNT}/pages/projects/${PROJECT}`, { method: 'PATCH', body: JSON.stringify({
-    deployment_configs: { preview: { env_vars: { PREVIEW_ACCESS_SHA256: { type: 'secret_text', value: digest } } } } }) });
+    // fail_open=false: if the Functions quota runs out, Pages must NOT serve the files without the gate.
+    // Cloudflare requires the same value in both environments; the production branch of this project is
+    // static (no Functions), so the setting changes nothing there.
+    deployment_configs: { production: { fail_open: false },
+      preview: { fail_open: false, env_vars: { PREVIEW_ACCESS_SHA256: { type: 'secret_text', value: digest } } } } }) });
   guardarSecreto(CREDENTIAL, USER, password);
   const after = await cloudflare(`/accounts/${ACCOUNT}/pages/projects/${PROJECT}`);
   console.log(JSON.stringify({ rotated: true, user: USER, credential: `TABA2 E2E:${CREDENTIAL}`,
     previewVars: Object.keys(after.deployment_configs?.preview?.env_vars || {}),
+    previewFailOpen: after.deployment_configs?.preview?.fail_open ?? null,
     productionVars: Object.keys(after.deployment_configs?.production?.env_vars || {}) }));
 } else if (process.argv.includes('--copy')) {
   const { secreto } = stored();

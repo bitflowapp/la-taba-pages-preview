@@ -13,6 +13,7 @@ import {
   sha256Hex,
 } from '../_shared/payment-runtime.ts';
 import { isFinalProviderRejection, mercadoPagoRequest } from '../_shared/mercadopago.ts';
+import { providerResourceId } from '../_shared/refund-correlation.ts';
 
 const CANCELLATION_CONFIRMATION = 'I_UNDERSTAND_THIS_REQUESTS_A_MERCADO_PAGO_CANCELLATION';
 
@@ -43,6 +44,18 @@ Deno.serve(async (request) => {
     if (prepared.reconciliation_required === true) return reconciling(request);
     const businessId = await businessForIntent(paymentIntentId);
     const providerIdempotencyKey = requireUuid(prepared.idempotency_key, 'prepared.idempotency_key');
+    if (prepared.idempotent === true) {
+      const existing = await service.from('payment_cancellations')
+        .select('payment_intent_id,idempotency_key,status').eq('id', prepared.cancellation_id).maybeSingle();
+      if (existing.error || !existing.data || existing.data.payment_intent_id !== paymentIntentId ||
+        existing.data.idempotency_key !== providerIdempotencyKey) return unavailable(request);
+      if (existing.data.status === 'cancelled' || existing.data.status === 'rejected') {
+        return cancellationResponse(request, existing.data.status);
+      }
+      // The first invocation owns the provider mutation. A concurrent caller
+      // observes it without resending the PUT or changing its financial state.
+      return reconciling(request);
+    }
 
     try {
       const result = await mercadoPagoRequest(
@@ -55,6 +68,12 @@ Deno.serve(async (request) => {
         },
       );
       const responseHash = await sha256Hex(result.rawText);
+      // A successful response can settle only the exact payment prepared by
+      // the database. Missing or mismatched identities require reconciliation.
+      if (result.response.ok && providerResourceId(result.body?.id) !== String(prepared.provider_payment_id)) {
+        await markAmbiguous(service, prepared.cancellation_id, responseHash, 'cancellation_payment_identity_mismatch');
+        return reconciling(request);
+      }
       const providerStatus = String(result.body?.status || '').toLowerCase();
       const resolvedStatus = providerStatus === 'rejected'
         ? 'rejected'
@@ -81,13 +100,7 @@ Deno.serve(async (request) => {
         p_response_hash: responseHash,
       });
       if (recordError) return unavailable(request);
-      return jsonResponse(request, {
-        ok: resolvedStatus === 'cancelled',
-        status: resolvedStatus,
-        message: resolvedStatus === 'cancelled'
-          ? 'La cancelación fue registrada en Mercado Pago.'
-          : 'Mercado Pago rechazó la cancelación solicitada.',
-      }, resolvedStatus === 'cancelled' ? 200 : 409);
+      return cancellationResponse(request, resolvedStatus);
     } catch (_) {
       const requestHash = await sha256Hex(JSON.stringify({ paymentIntentId, idempotencyKey: providerIdempotencyKey }));
       await markAmbiguous(service, prepared.cancellation_id, requestHash, 'network_or_timeout');
@@ -97,6 +110,15 @@ Deno.serve(async (request) => {
     return publicErrorResponse(request, error);
   }
 });
+
+function cancellationResponse(request: Request, status: string): Response {
+  return jsonResponse(request, {
+    ok: status === 'cancelled', status,
+    message: status === 'cancelled'
+      ? 'La cancelación fue registrada en Mercado Pago.'
+      : 'Mercado Pago rechazó la cancelación solicitada.',
+  }, status === 'cancelled' ? 200 : 409);
+}
 
 async function markAmbiguous(service: ReturnType<typeof createServiceClient>, cancellationId: string, hash: string, code: string): Promise<void> {
   await service.rpc('mark_payment_cancellation_ambiguous', {

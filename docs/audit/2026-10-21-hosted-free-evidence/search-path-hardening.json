@@ -1,0 +1,29 @@
+{
+  "at": "2026-10-21T03:05:20.780Z",
+  "checks": [
+    {
+      "signature": "next_order_public_code()",
+      "proconfig": [
+        "search_path=pg_catalog, public, pg_temp"
+      ]
+    },
+    {
+      "signature": "request_order_token()",
+      "proconfig": [
+        "search_path=pg_catalog, public, pg_temp"
+      ]
+    },
+    {
+      "signature": "set_order_operational_defaults()",
+      "proconfig": [
+        "search_path=pg_catalog, public, pg_temp"
+      ]
+    },
+    {
+      "signature": "set_updated_at()",
+      "proconfig": [
+        "search_path=pg_catalog, public, pg_temp"
+      ]
+    }
+  ]
+}

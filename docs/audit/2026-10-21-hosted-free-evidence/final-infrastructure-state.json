@@ -1,0 +1,39 @@
+{
+  "at": "2026-10-21T03:05:18.319Z",
+  "organization": {
+    "id": "tpdpuvnasszkcpdanxpk",
+    "name": "La Taba",
+    "plan": "free"
+  },
+  "projects": [
+    {
+      "id": "enznqfzhikpasjzpvjfd",
+      "name": "bitflow-production",
+      "status": "ACTIVE_HEALTHY",
+      "organization_id": "qdhfqytbvgpvhxbbcomv",
+      "region": "sa-east-1"
+    },
+    {
+      "id": "zvmfdlynnutxquktrgyl",
+      "name": "apex-agent-demo-sintetico",
+      "status": "ACTIVE_HEALTHY",
+      "organization_id": "hliypylbqsgkdqvyzbvz",
+      "region": "sa-east-1"
+    },
+    {
+      "id": "udftddjacdsinscehlke",
+      "name": "estela-pilot",
+      "status": "INACTIVE",
+      "organization_id": "wtkbslopsldgvylukaem",
+      "region": "sa-east-1"
+    },
+    {
+      "id": "ixewllzzuzpqrkxzmfzx",
+      "name": "la-taba-recovery-test",
+      "status": "ACTIVE_HEALTHY",
+      "organization_id": "tpdpuvnasszkcpdanxpk",
+      "region": "sa-east-1"
+    }
+  ],
+  "additionalPaidResourcesRequested": false
+}

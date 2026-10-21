@@ -1,0 +1,205 @@
+{
+  "at": "2026-10-21T03:00:50.031Z",
+  "projectRef": "ixewllzzuzpqrkxzmfzx",
+  "tests": [
+    {
+      "file": "mercadopago_checkout_pro.local.sql",
+      "passed": true,
+      "assertions": null,
+      "provider": "simulated SQL inputs; hosted PostgreSQL",
+      "transaction": "rolled_back"
+    },
+    {
+      "file": "mercadopago_seller_oauth.local.sql",
+      "passed": true,
+      "assertions": 15,
+      "provider": "simulated SQL inputs; hosted PostgreSQL",
+      "transaction": "rolled_back"
+    },
+    {
+      "file": "mercadopago_availability_requires_seller.local.sql",
+      "passed": true,
+      "assertions": 9,
+      "provider": "simulated SQL inputs; hosted PostgreSQL",
+      "transaction": "rolled_back"
+    },
+    {
+      "file": "mercadopago_operator_switch.local.sql",
+      "passed": true,
+      "assertions": 16,
+      "provider": "simulated SQL inputs; hosted PostgreSQL",
+      "transaction": "rolled_back"
+    },
+    {
+      "file": "mercadopago_seller_cannot_charge_alert.local.sql",
+      "passed": true,
+      "assertions": 9,
+      "provider": "simulated SQL inputs; hosted PostgreSQL",
+      "transaction": "rolled_back"
+    }
+  ],
+  "checks": {
+    "ledger": [
+      {
+        "migrations": 160
+      }
+    ],
+    "source": [
+      {
+        "source_table": "businesses",
+        "rows": 1
+      },
+      {
+        "source_table": "orders_summary",
+        "rows": 3
+      },
+      {
+        "source_table": "products",
+        "rows": 72
+      }
+    ],
+    "publicCounts": [
+      {
+        "users": 0,
+        "products": 0,
+        "orders": 0,
+        "payment_intents": 0
+      }
+    ],
+    "rls": [],
+    "views": [],
+    "storage": [
+      {
+        "id": "catalog-image-staging",
+        "public": false,
+        "file_size_limit": 5242880,
+        "allowed_mime_types": [
+          "image/jpeg",
+          "image/png",
+          "image/webp"
+        ]
+      },
+      {
+        "id": "catalog-images",
+        "public": true,
+        "file_size_limit": 5242880,
+        "allowed_mime_types": [
+          "image/webp"
+        ]
+      },
+      {
+        "id": "fiscal-documents",
+        "public": false,
+        "file_size_limit": 16777216,
+        "allowed_mime_types": [
+          "application/pdf"
+        ]
+      },
+      {
+        "id": "team-apps",
+        "public": false,
+        "file_size_limit": 209715200,
+        "allowed_mime_types": [
+          "application/vnd.android.package-archive",
+          "application/x-msi",
+          "application/octet-stream",
+          "application/json"
+        ]
+      }
+    ],
+    "realtime": [
+      {
+        "pubname": "supabase_realtime",
+        "schemaname": "public",
+        "tablename": "businesses"
+      },
+      {
+        "pubname": "supabase_realtime",
+        "schemaname": "public",
+        "tablename": "fiscal_documents"
+      },
+      {
+        "pubname": "supabase_realtime",
+        "schemaname": "public",
+        "tablename": "inventory_movements"
+      },
+      {
+        "pubname": "supabase_realtime",
+        "schemaname": "public",
+        "tablename": "notification_outbox"
+      },
+      {
+        "pubname": "supabase_realtime",
+        "schemaname": "public",
+        "tablename": "order_events"
+      },
+      {
+        "pubname": "supabase_realtime",
+        "schemaname": "public",
+        "tablename": "orders"
+      },
+      {
+        "pubname": "supabase_realtime",
+        "schemaname": "public",
+        "tablename": "pos_sales"
+      },
+      {
+        "pubname": "supabase_realtime",
+        "schemaname": "public",
+        "tablename": "product_barcodes"
+      },
+      {
+        "pubname": "supabase_realtime",
+        "schemaname": "public",
+        "tablename": "products"
+      },
+      {
+        "pubname": "supabase_realtime",
+        "schemaname": "public",
+        "tablename": "rider_locations"
+      }
+    ],
+    "commerce": [
+      {
+        "id": "00000000-0000-4000-8000-000000000001",
+        "status": "paused",
+        "ordering_enabled": false,
+        "ordering_verified": false
+      }
+    ],
+    "settings": [],
+    "cron": [
+      {
+        "jobname": "taba-checkout-provider-truth-sweep",
+        "active": false
+      },
+      {
+        "jobname": "taba-operational-alerts-sweep",
+        "active": false
+      },
+      {
+        "jobname": "taba-payment-outbox-worker",
+        "active": false
+      },
+      {
+        "jobname": "taba-qa-window-expiry",
+        "active": false
+      },
+      {
+        "jobname": "taba-checkout-expiry-sweep",
+        "active": false
+      }
+    ],
+    "sourceGrants": [
+      {
+        "anon_select": false,
+        "authenticated_select": false
+      }
+    ]
+  },
+  "advisors": {
+    "errors": 0,
+    "warnings": 235,
+    "info": 52
+  }
+}

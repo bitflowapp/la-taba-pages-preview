@@ -1,0 +1,24 @@
+{
+  "localNode": {
+    "passed": 232,
+    "failed": 0
+  },
+  "hostedApi": {
+    "checks": 18,
+    "passed": 18
+  },
+  "hostedPostgres": {
+    "suites": 5,
+    "passed": 5,
+    "tapAssertions": 49,
+    "providerData": "simulated",
+    "rolledBack": true
+  },
+  "edge": {
+    "active": 13,
+    "version": 3,
+    "zeroWorkSignedProbe": true
+  },
+  "realProviderPaymentExecuted": false,
+  "fullHostedCommerceFlowVerified": false
+}

@@ -75,9 +75,9 @@ begin
     source_image_sha256, variant, capacity_value, capacity_unit, catalog_origin, price_status
   ) values (
     v_product, v_business, 'Bebida de prueba', 'Fixture local aislado', 'Gaseosas', 1250.00,
-    'assets/products/mp-fixture.webp', true, 'TABA2 QA', 'Cola', 'Botella 1 l', '1 l', 'botella',
+    v_master_path, true, 'TABA2 QA', 'Cola', 'Botella 1 l', '1 l', 'botella',
     10, true, false, true, false, 1, 'mp-fixture-external', 'mp-fixture-sku', v_asset,
-    v_hash, 'assets/products/mp-fixture-thumb.webp', v_master_hash, v_source_hash,
+    v_master_hash, v_thumbnail_path, v_thumbnail_hash, v_source_hash,
     'Botella 1 l', 1, 'l', 'test_only', 'confirmed'
   );
   insert into public.business_payment_settings (

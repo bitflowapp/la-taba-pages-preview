@@ -147,7 +147,7 @@ async function main() {
     const orgResponse = await fetch(`https://api.supabase.com/v1/organizations/${target.organizationId}`, {
       headers, signal: AbortSignal.timeout(10000),
     });
-    if (!orgResponse.ok) throw new Error('Unable to verify Free organization');
+    if (!orgResponse.ok) throw new Error('Unable to verify recovery organization');
     assertRecoveryOrganization(target, await orgResponse.json());
     const base = `https://api.supabase.com/v1/projects/${target.projectRef}`;
     const response = await fetch(base, { headers, signal: AbortSignal.timeout(10000) });

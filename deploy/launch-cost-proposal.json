@@ -1,0 +1,37 @@
+{
+  "purpose": "la-taba-launch-verification",
+  "projectName": "la-taba-launch",
+  "organizationId": "qdhfqytbvgpvhxbbcomv",
+  "organizationName": "Luna Systems",
+  "organizationPlan": "pro",
+  "region": "sa-east-1",
+  "projectRef": null,
+  "initialPaymentEnvironment": "test",
+  "commercialPaymentsEnabled": false,
+  "providerQuote": {
+    "amountUSD": 10,
+    "recurrence": "monthly",
+    "resource": "project"
+  },
+  "billing": {
+    "invoiceRecipient": "current_billing_holder_of_Luna_Systems",
+    "commercialCostResponsible": "Walter",
+    "confirmation": "not_requested_paid_path_declined"
+  },
+  "additionalCostPolicy": {
+    "paidAddonsAuthorized": false,
+    "instanceUpsizingAuthorized": false,
+    "separatePaidStagingProjectAuthorized": false,
+    "customDomainPurchaseAuthorized": false,
+    "smtpPurchaseAuthorized": false,
+    "providerUsageAndTaxAcknowledgement": "pending"
+  },
+  "costAuthorization": "explicitly_declined",
+  "productionPublicationAuthorization": "not_granted",
+  "realPaymentsAuthorization": "not_granted",
+  "supersededBy": {
+    "organizationId": "tpdpuvnasszkcpdanxpk",
+    "organizationPlan": "free",
+    "maximumAdditionalMonthlyUSD": 0
+  }
+}

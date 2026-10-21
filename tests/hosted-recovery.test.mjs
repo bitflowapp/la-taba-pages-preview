@@ -14,7 +14,8 @@ const project = { id: target.projectRef, name: target.projectName, organization_
 const plan = recoveryPlan();
 
 test('recovery inventories all existing migrations and function graphs without test-only modules', () => {
-  assert.equal(plan.migrations.length, 159);
+  assert.equal(plan.migrations.length, 160); // 159 preserved migrations + recovery hardening.
+  assert.ok(plan.migrations.at(-1).path.endsWith('_recovery_rpc_hardening.sql'));
   assert.equal(plan.functions.length, 13);
   assert.equal(plan.commercialPaymentsEnabled, false);
   assert.equal(plan.applySeedSql, false);
@@ -92,9 +93,9 @@ test('bootstrap transport encloses each original migration with cron pause and d
     mutations.push(sql); return [];
   };
   const result = await bootstrapSchema({ target, project, plan, query });
-  assert.equal(result.migrationsApplied, 159);
+  assert.equal(result.migrationsApplied, plan.migrations.length);
   const transactions = mutations.filter(sql => sql.includes('RECOVERY_CONCURRENT_MIGRATION_RETRY'));
-  assert.equal(transactions.length, 159);
+  assert.equal(transactions.length, plan.migrations.length);
   for (const [index, sql] of transactions.entries()) {
     assert.ok(sql.includes(fs.readFileSync(ROOT + '/' + plan.migrations[index].path, 'utf8')));
     assert.ok(sql.includes('active := false'));

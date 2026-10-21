@@ -1,0 +1,13 @@
+{"name":"catalog-image-manager","status":"ACTIVE","version":3,"verifyJwt":true,"at":"2026-10-21T03:04:44.915Z"}
+{"name":"fiscal-artifact-access","status":"ACTIVE","version":3,"verifyJwt":true,"at":"2026-10-21T03:04:46.178Z"}
+{"name":"mercadopago-cancel-payment","status":"ACTIVE","version":3,"verifyJwt":true,"at":"2026-10-21T03:04:49.369Z"}
+{"name":"mercadopago-checkout-status","status":"ACTIVE","version":3,"verifyJwt":false,"at":"2026-10-21T03:04:50.701Z"}
+{"name":"mercadopago-connect","status":"ACTIVE","version":3,"verifyJwt":false,"at":"2026-10-21T03:04:51.943Z"}
+{"name":"mercadopago-create-checkout-session","status":"ACTIVE","version":3,"verifyJwt":false,"at":"2026-10-21T03:04:53.051Z"}
+{"name":"mercadopago-create-preference","status":"ACTIVE","version":3,"verifyJwt":false,"at":"2026-10-21T03:04:54.586Z"}
+{"name":"mercadopago-oauth-callback","status":"ACTIVE","version":3,"verifyJwt":false,"at":"2026-10-21T03:04:55.873Z"}
+{"name":"mercadopago-payment-worker","status":"ACTIVE","version":3,"verifyJwt":false,"at":"2026-10-21T03:04:57.571Z"}
+{"name":"mercadopago-refund","status":"ACTIVE","version":3,"verifyJwt":true,"at":"2026-10-21T03:04:58.997Z"}
+{"name":"mercadopago-webhook","status":"ACTIVE","version":3,"verifyJwt":false,"at":"2026-10-21T03:05:00.648Z"}
+{"name":"print-agent-gateway","status":"ACTIVE","version":3,"verifyJwt":false,"at":"2026-10-21T03:05:01.778Z"}
+{"name":"team-invitation","status":"ACTIVE","version":3,"verifyJwt":false,"at":"2026-10-21T03:05:02.976Z"}

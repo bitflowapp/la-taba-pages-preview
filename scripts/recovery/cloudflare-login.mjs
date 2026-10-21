@@ -9,7 +9,7 @@ import path from 'node:path';
 export const SESSION_FILE = process.env.TABA_CF_SESSION || 'D:/work/taba-cf-session/session.json';
 const CLIENT = '54d11594-84e4-41aa-b438-e81b8fa78ee7';
 const REDIRECT = 'http://localhost:8976/oauth/callback';
-const SCOPES = 'account:read user:read pages:write offline_access';
+const SCOPES = process.env.TABA_CF_SCOPES || 'account:read user:read pages:write offline_access';
 
 export function saveSession(tokens) {
   fs.mkdirSync(path.dirname(SESSION_FILE), { recursive: true });
@@ -27,8 +27,13 @@ if (import.meta.url === new URL(process.argv[1], 'file:///').href || process.arg
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost:8976');
     if (url.pathname !== '/oauth/callback') { res.writeHead(404).end(); return; }
+    if (url.searchParams.get('state') !== state) {
+      // A stale tab from an earlier attempt: ignore it and keep waiting for the right one.
+      console.log(`ignored callback with another state (expected ${state.length} chars, got ${(url.searchParams.get('state') || '').length}; error=${url.searchParams.get('error') || 'none'})`);
+      res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' }).end('Autorización de un intento anterior, ignorada.');
+      return;
+    }
     try {
-      if (url.searchParams.get('state') !== state) throw new Error('state mismatch');
       if (url.searchParams.get('error')) throw new Error('authorization denied: ' + url.searchParams.get('error'));
       const response = await fetch('https://dash.cloudflare.com/oauth2/token', { method: 'POST',
         headers: { 'content-type': 'application/x-www-form-urlencoded' },

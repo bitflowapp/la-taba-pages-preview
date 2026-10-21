@@ -1,6 +1,11 @@
 {
   "schemaVersion": 1,
   "purpose": "la-taba-recovery-test",
+  "targetOrganization": {
+    "id": "tpdpuvnasszkcpdanxpk",
+    "plan": "free",
+    "infrastructureBudgetUSD": 0
+  },
   "migrations": [
     {
       "path": "supabase/migrations/20260531030000_la_taba_phase1_orders.sql",
@@ -1012,8 +1017,8 @@
         },
         {
           "path": "supabase/functions/_shared/recovery-deployment.ts",
-          "sha256": "2618a56c08feff74956090fd1b80b5f47a5959bdef8320805b734422985e6f68",
-          "bytes": 1778
+          "sha256": "81169b6678280a241e175a00e7d5f7fc01d5912c111e079956115c58db3a6b99",
+          "bytes": 2146
         },
         {
           "path": "supabase/functions/_shared/refund-correlation.ts",
@@ -1060,8 +1065,8 @@
         },
         {
           "path": "supabase/functions/_shared/recovery-deployment.ts",
-          "sha256": "2618a56c08feff74956090fd1b80b5f47a5959bdef8320805b734422985e6f68",
-          "bytes": 1778
+          "sha256": "81169b6678280a241e175a00e7d5f7fc01d5912c111e079956115c58db3a6b99",
+          "bytes": 2146
         },
         {
           "path": "supabase/functions/_shared/seller-oauth-crypto.ts",
@@ -1098,8 +1103,8 @@
         },
         {
           "path": "supabase/functions/_shared/recovery-deployment.ts",
-          "sha256": "2618a56c08feff74956090fd1b80b5f47a5959bdef8320805b734422985e6f68",
-          "bytes": 1778
+          "sha256": "81169b6678280a241e175a00e7d5f7fc01d5912c111e079956115c58db3a6b99",
+          "bytes": 2146
         },
         {
           "path": "supabase/functions/_shared/seller-connection-verification.ts",
@@ -1169,8 +1174,8 @@
         },
         {
           "path": "supabase/functions/_shared/recovery-deployment.ts",
-          "sha256": "2618a56c08feff74956090fd1b80b5f47a5959bdef8320805b734422985e6f68",
-          "bytes": 1778
+          "sha256": "81169b6678280a241e175a00e7d5f7fc01d5912c111e079956115c58db3a6b99",
+          "bytes": 2146
         },
         {
           "path": "supabase/functions/_shared/seller-oauth-crypto.ts",
@@ -1207,8 +1212,8 @@
         },
         {
           "path": "supabase/functions/_shared/recovery-deployment.ts",
-          "sha256": "2618a56c08feff74956090fd1b80b5f47a5959bdef8320805b734422985e6f68",
-          "bytes": 1778
+          "sha256": "81169b6678280a241e175a00e7d5f7fc01d5912c111e079956115c58db3a6b99",
+          "bytes": 2146
         },
         {
           "path": "supabase/functions/_shared/seller-oauth-crypto.ts",
@@ -1250,8 +1255,8 @@
         },
         {
           "path": "supabase/functions/_shared/recovery-deployment.ts",
-          "sha256": "2618a56c08feff74956090fd1b80b5f47a5959bdef8320805b734422985e6f68",
-          "bytes": 1778
+          "sha256": "81169b6678280a241e175a00e7d5f7fc01d5912c111e079956115c58db3a6b99",
+          "bytes": 2146
         },
         {
           "path": "supabase/functions/_shared/refund-correlation.ts",
@@ -1270,8 +1275,8 @@
         },
         {
           "path": "supabase/functions/mercadopago-payment-worker/index.ts",
-          "sha256": "ebc9c616f5037fafc8edf091e84ed4d2fdd560545ddd6a9c96816fde5f58c903",
-          "bytes": 15029
+          "sha256": "bf19c2d270391f3576090be3ac999458002eaae4debc301af6807b122ee41199",
+          "bytes": 15202
         }
       ]
     },
@@ -1298,8 +1303,8 @@
         },
         {
           "path": "supabase/functions/_shared/recovery-deployment.ts",
-          "sha256": "2618a56c08feff74956090fd1b80b5f47a5959bdef8320805b734422985e6f68",
-          "bytes": 1778
+          "sha256": "81169b6678280a241e175a00e7d5f7fc01d5912c111e079956115c58db3a6b99",
+          "bytes": 2146
         },
         {
           "path": "supabase/functions/_shared/refund-correlation.ts",
@@ -1351,8 +1356,8 @@
         },
         {
           "path": "supabase/functions/_shared/recovery-deployment.ts",
-          "sha256": "2618a56c08feff74956090fd1b80b5f47a5959bdef8320805b734422985e6f68",
-          "bytes": 1778
+          "sha256": "81169b6678280a241e175a00e7d5f7fc01d5912c111e079956115c58db3a6b99",
+          "bytes": 2146
         },
         {
           "path": "supabase/functions/_shared/request-protocol.ts",
@@ -1491,5 +1496,5 @@
     "unique_order_and_stock_effect",
     "test_refund_and_cancellation"
   ],
-  "sourceManifestSha256": "15c55e3e4cf9b310fd58c089f0a3bf88bf210124c2615adf7578fa252937af27"
+  "sourceManifestSha256": "b526295edf53ef3a58b403e56a33b2748efe1c341dbc5a64ea8bf8b4581d2a7c"
 }

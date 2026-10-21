@@ -1,0 +1,165 @@
+{
+  "capturedAt": "2026-10-21T01:58:58.011Z",
+  "organizations": [
+    {
+      "id": "qdhfqytbvgpvhxbbcomv",
+      "name": "Luna Systems",
+      "plan": "pro",
+      "currentUserRole": "Owner",
+      "projects": [
+        {
+          "id": "enznqfzhikpasjzpvjfd",
+          "name": "bitflow-production",
+          "status": "ACTIVE_HEALTHY"
+        }
+      ]
+    },
+    {
+      "id": "hliypylbqsgkdqvyzbvz",
+      "name": "APEX Agent Sintetico",
+      "plan": "free",
+      "currentUserRole": "Owner",
+      "projects": [
+        {
+          "id": "zvmfdlynnutxquktrgyl",
+          "name": "apex-agent-demo-sintetico",
+          "status": "ACTIVE_HEALTHY"
+        }
+      ]
+    },
+    {
+      "id": "wtkbslopsldgvylukaem",
+      "name": "Estela",
+      "plan": "free",
+      "currentUserRole": "Owner",
+      "projects": [
+        {
+          "id": "udftddjacdsinscehlke",
+          "name": "estela-pilot",
+          "status": "ACTIVE_HEALTHY"
+        }
+      ]
+    },
+    {
+      "id": "tpdpuvnasszkcpdanxpk",
+      "name": "La Taba",
+      "plan": "free",
+      "currentUserRole": "Owner",
+      "projects": []
+    }
+  ],
+  "freeProjectLimit": 2,
+  "activeFreeProjectsOwned": 2,
+  "quotaVerifiedByProviderRejection": true,
+  "availableFreeSlots": 0,
+  "laTabaEntitlements": [
+    {
+      "feature": "storage.max_file_size",
+      "hasAccess": true,
+      "config": {
+        "enabled": true,
+        "value": 52428800,
+        "unlimited": false,
+        "unit": "byte"
+      }
+    },
+    {
+      "feature": "storage.image_transformations",
+      "hasAccess": false,
+      "config": {
+        "enabled": false
+      }
+    },
+    {
+      "feature": "log.retention_days",
+      "hasAccess": true,
+      "config": {
+        "enabled": true,
+        "value": 1,
+        "unlimited": false,
+        "unit": "days"
+      }
+    },
+    {
+      "feature": "auth.leaked_password_protection",
+      "hasAccess": false,
+      "config": {
+        "enabled": false
+      }
+    },
+    {
+      "feature": "auth.password_hibp",
+      "hasAccess": false,
+      "config": {
+        "enabled": false
+      }
+    },
+    {
+      "feature": "backup.retention_days",
+      "hasAccess": false,
+      "config": {
+        "enabled": false,
+        "value": 0,
+        "unlimited": false,
+        "unit": "days"
+      }
+    },
+    {
+      "feature": "backup.schedule",
+      "hasAccess": false,
+      "config": {
+        "enabled": false
+      }
+    },
+    {
+      "feature": "function.max_count",
+      "hasAccess": true,
+      "config": {
+        "enabled": true,
+        "value": 100,
+        "unlimited": false,
+        "unit": "functions"
+      }
+    },
+    {
+      "feature": "function.size_limit_mb",
+      "hasAccess": true,
+      "config": {
+        "enabled": true,
+        "value": 20,
+        "unlimited": false,
+        "unit": "MB"
+      }
+    },
+    {
+      "feature": "realtime.max_concurrent_users",
+      "hasAccess": true,
+      "config": {
+        "enabled": true,
+        "value": 200,
+        "unlimited": false,
+        "unit": "users"
+      }
+    },
+    {
+      "feature": "realtime.max_events_per_second",
+      "hasAccess": true,
+      "config": {
+        "enabled": true,
+        "value": 100,
+        "unlimited": false,
+        "unit": "events/second"
+      }
+    },
+    {
+      "feature": "project_pausing",
+      "hasAccess": true,
+      "config": {
+        "enabled": true
+      }
+    }
+  ],
+  "unrelatedProjectMutations": 0,
+  "paidResourceRequests": 0,
+  "chargesGeneratedUSD": 0
+}

@@ -35,3 +35,11 @@ export function recoveryDeploymentBinding(read: (name: string) => string | undef
     },
   };
 }
+
+export function paymentWorkerLimits(read: (name: string) => string | undefined) {
+  // Free Edge workers live for 150 seconds. One job per recovery invocation
+  // leaves room for provider timeouts, reconciliation and durable persistence.
+  return recoveryDeploymentBinding(read)
+    ? { refreshLimit: 1, claimLimit: 1 }
+    : { refreshLimit: 10, claimLimit: 20 };
+}

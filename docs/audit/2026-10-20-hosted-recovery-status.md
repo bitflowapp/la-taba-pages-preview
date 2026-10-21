@@ -1,5 +1,8 @@
 # Continuación: infraestructura alojada de La Taba
 
+> Informe histórico. La propuesta paga fue rechazada. El estado actual está en
+> [recuperación a costo cero](2026-10-20-free-recovery-status.md).
+
 **Estado: paquete preparado; creación alojada pendiente de costo autorizado.**
 No se creó infraestructura ni se ejecutó un checkout alojado. Los pagos
 comerciales siguen sin autorización y no se realizó ninguna transacción real.

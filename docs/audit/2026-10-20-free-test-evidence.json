@@ -1,0 +1,26 @@
+{
+  "recordedAt": "2026-10-21T02:05:34.107Z",
+  "node": {
+    "passed": 228,
+    "failed": 0
+  },
+  "deno": {
+    "passed": 252,
+    "failed": 0,
+    "network": "denied"
+  },
+  "checks": {
+    "passed": 9,
+    "failed": 0
+  },
+  "migrationManifestMatches": true,
+  "functionManifestMatches": true,
+  "hostedMigrationsApplied": 0,
+  "hostedFunctionsDeployed": 0,
+  "hostedCheckoutVerified": false,
+  "realTransactionsExecuted": 0,
+  "providerCreationBlocked": true,
+  "organizationFreeCreated": true,
+  "additionalInfrastructureChargesUSD": 0,
+  "logsDrive": "D"
+}

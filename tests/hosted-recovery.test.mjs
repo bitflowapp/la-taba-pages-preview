@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
-import { BLOCKED_REFS, ROOT, assertRecoveryTarget, recoveryEnvironment, recoveryPlan } from '../scripts/recovery/plan.mjs';
+import { BLOCKED_REFS, ROOT, assertRecoveryTarget, assertRecoveryOrganization, recoveryEnvironment, recoveryPlan } from '../scripts/recovery/plan.mjs';
 import { bootstrapSchema, checkResumeLedger, migrationTransaction, quarantineSql } from '../scripts/recovery/bootstrap-hosted.mjs';
 import { checkTestCredential } from '../scripts/recovery/check-mp-test-credentials.mjs';
 
 const target = { purpose: 'la-taba-recovery-test', projectName: 'la-taba-recovery-test',
   environment: 'test', commercialPaymentsEnabled: false, mercadoPagoApplicationId: '2691240967769590',
-  projectRef: 'abcdefghijklmnopqrst', organizationId: 'qdhfqytbvgpvhxbbcomv', region: 'sa-east-1',
+  projectRef: 'abcdefghijklmnopqrst', organizationId: 'tpdpuvnasszkcpdanxpk', organizationPlan: 'free', infrastructureBudgetUSD: 0, region: 'sa-east-1',
   createdAt: '2026-10-21T02:00:00.000Z', checkoutOrigin: 'https://recovery-20261020.taba2-staging.pages.dev' };
 const project = { id: target.projectRef, name: target.projectName, organization_id: target.organizationId,
   region: target.region, created_at: target.createdAt, status: 'ACTIVE_HEALTHY' };
@@ -44,6 +44,14 @@ test('recovery environment contains only staging and test application settings',
   assert.equal(env.MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION, undefined);
   assert.equal(env.MERCADOPAGO_PRODUCTION_REVIEW_STATUS, undefined);
   assert.equal(env.MERCADOPAGO_ACCESS_TOKEN, undefined);
+});
+
+test('recovery cannot be redirected to Pro, another organization or a nonzero budget', () => {
+  for (const patch of [{ organizationId: 'qdhfqytbvgpvhxbbcomv' }, { organizationPlan: 'pro' }, { infrastructureBudgetUSD: 10 }]) {
+    assert.throws(() => assertRecoveryTarget({ ...target, ...patch }));
+  }
+  assertRecoveryOrganization(target, { id: target.organizationId, name: 'La Taba', plan: 'free' });
+  assert.throws(() => assertRecoveryOrganization(target, { id: target.organizationId, name: 'La Taba', plan: 'pro' }));
 });
 
 test('changed migration bytes cannot be applied under an old reviewed manifest', () => {

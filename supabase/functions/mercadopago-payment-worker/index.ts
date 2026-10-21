@@ -17,6 +17,7 @@ import {
   paymentSnapshot,
 } from '../_shared/mercadopago.ts';
 import { correlateProviderRefund, providerResourceId } from '../_shared/refund-correlation.ts';
+import { paymentWorkerLimits } from '../_shared/recovery-deployment.ts';
 
 type OutboxJob = {
   id: string;
@@ -35,15 +36,16 @@ Deno.serve(async (request) => {
     requirePost(request);
     await requireWorkerAuthorization(request);
     const service = createServiceClient();
+    const limits = paymentWorkerLimits(name => Deno.env.get(name));
     if (oauthMode()) {
-      const due = await service.from('mp_seller_connections').select('business_id').eq('environment',oauthConfig().environment).eq('status','connected').lt('expires_at',new Date(Date.now()+86400000).toISOString()).limit(10);
+      const due = await service.from('mp_seller_connections').select('business_id').eq('environment',oauthConfig().environment).eq('status','connected').lt('expires_at',new Date(Date.now()+86400000).toISOString()).limit(limits.refreshLimit);
       for (const row of due.data || []) { try { await sellerAccessToken(row.business_id); } catch (_) { /* Safe refresh failure is persisted for the panel. */ } }
     }
     await enforceRateLimit(service, request, 'worker', 30, 60, 'payment-worker');
     const owner = `edge:v2:${crypto.randomUUID()}`;
     const { data, error } = await service.rpc('claim_payment_outbox_v2', {
       p_owner: owner,
-      p_limit: 20,
+      p_limit: limits.claimLimit,
       p_lease_seconds: 90,
     });
     if (error) throw new Error('Unable to claim payment outbox jobs');

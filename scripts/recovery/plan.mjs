@@ -7,6 +7,7 @@ import { createHash } from 'node:crypto';
 import { inspectBackup } from '../audit-la-taba-recovery.mjs';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+export const FREE_RECOVERY_ORGANIZATION_ID = 'tpdpuvnasszkcpdanxpk';
 export const BLOCKED_REFS = new Set(['wwcpogltfgzgkrlilbcd', 'tkanbadcglszlcyfjvpv',
   'ucbtjcurawxjwjdvvcvj', 'ukxqbgswjlibmnjemrzd', 'yakhtrkukqlgzvxuvhzs',
   'enznqfzhikpasjzpvjfd', 'udftddjacdsinscehlke', 'zvmfdlynnutxquktrgyl']);
@@ -17,7 +18,8 @@ export function assertRecoveryTarget(target, project) {
     target.environment !== 'test' || target.commercialPaymentsEnabled !== false ||
     target.mercadoPagoApplicationId !== '2691240967769590' ||
     !/^[a-z]{20}$/.test(target.projectRef || '') || BLOCKED_REFS.has(target.projectRef) ||
-    !/^[a-z]{20}$/.test(target.organizationId || '') || target.region !== 'sa-east-1' ||
+    target.organizationId !== FREE_RECOVERY_ORGANIZATION_ID || target.organizationPlan !== 'free' ||
+    target.infrastructureBudgetUSD !== 0 || target.region !== 'sa-east-1' ||
     !Number.isFinite(Date.parse(target.createdAt)) || Date.parse(target.createdAt) < Date.parse('2026-10-20T00:00:00Z') ||
     !/^https:\/\/(?:[a-z0-9-]+\.taba2-staging|la-taba-recovery-test)\.pages\.dev$/.test(target.checkoutOrigin || '')) {
     throw new Error('A bound, isolated test recovery target is required');
@@ -26,6 +28,13 @@ export function assertRecoveryTarget(target, project) {
     project.organization_id !== target.organizationId || project.region !== target.region ||
     project.created_at !== target.createdAt || project.status !== 'ACTIVE_HEALTHY')) {
     throw new Error('Hosted project does not match the provisioning receipt');
+  }
+}
+
+export function assertRecoveryOrganization(target, organization) {
+  assertRecoveryTarget(target);
+  if (organization.id !== FREE_RECOVERY_ORGANIZATION_ID || organization.name !== 'La Taba' || organization.plan !== 'free') {
+    throw new Error('Live dedicated organization must remain on the Free plan');
   }
 }
 
@@ -79,6 +88,7 @@ export function recoveryPlan(root = ROOT, backupBytes) {
     external_email_enabled: true, mailer_autoconfirm: false, password_min_length: 12,
     jwt_exp: 3600 };
   const plan = { schemaVersion: 1, purpose: 'la-taba-recovery-test',
+    targetOrganization: { id: FREE_RECOVERY_ORGANIZATION_ID, plan: 'free', infrastructureBudgetUSD: 0 },
     migrations, functions, auth, authSecurityRequirements: { refreshTokenRotation: true, exactRedirectOrigins: true },
     commercialPaymentsEnabled: false,
     applySeedSql: false, restoreHistoricalUsers: false, restoreHistoricalOrders: false,

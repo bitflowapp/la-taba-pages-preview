@@ -1,0 +1,12 @@
+{
+  "capturedAt": "2026-10-21T01:56:26.031Z",
+  "organizationId": "tpdpuvnasszkcpdanxpk",
+  "organizationPlan": "free",
+  "requestedPaidResources": false,
+  "status": "blocked",
+  "httpStatus": 400,
+  "message": "The following organization members have reached their maximum limits for the number of active free projects within organizations where they are an administrator or owner: bitflowapp (2 project limit). To continue, these users will need to either delete, pause or upgrade one or more of these projects.",
+  "projectCreated": false,
+  "additionalCostUSD": 0,
+  "freeQuotaRejected": true
+}

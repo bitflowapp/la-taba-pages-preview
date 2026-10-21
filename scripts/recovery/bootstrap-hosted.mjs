@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ROOT, assertRecoveryTarget, recoveryPlan, sha256 } from './plan.mjs';
+import { ROOT, assertRecoveryTarget, assertRecoveryOrganization, recoveryPlan, sha256 } from './plan.mjs';
 
 const quote = value => "'" + String(value).replaceAll("'", "''") + "'";
 export const PAUSE_SCHEDULERS = `
@@ -144,6 +144,11 @@ async function main() {
   const { conToken } = await import('../lib/supabase-cli-token.mjs');
   await conToken(async token => {
     const headers = { Authorization: `Bearer ${token}`, 'content-type': 'application/json' };
+    const orgResponse = await fetch(`https://api.supabase.com/v1/organizations/${target.organizationId}`, {
+      headers, signal: AbortSignal.timeout(10000),
+    });
+    if (!orgResponse.ok) throw new Error('Unable to verify Free organization');
+    assertRecoveryOrganization(target, await orgResponse.json());
     const base = `https://api.supabase.com/v1/projects/${target.projectRef}`;
     const response = await fetch(base, { headers, signal: AbortSignal.timeout(10000) });
     if (!response.ok) throw new Error('Recovery project unavailable');

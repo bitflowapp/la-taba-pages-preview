@@ -17,7 +17,7 @@ export function inspectBackup(bytes) {
   const document = JSON.parse(Buffer.from(bytes).toString('utf8'));
   const data = document.data || {};
   const fullTablesRequired = ['orders', 'order_items', 'payment_intents', 'payment_attempts',
-    'inventory_reservations', 'business_memberships', 'mp_seller_connections'];
+    'inventory_reservations', 'business_members', 'mp_seller_connections'];
   return {
     bytes: bytes.length,
     sha256: createHash('sha256').update(bytes).digest('hex'),

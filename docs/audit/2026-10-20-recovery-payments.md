@@ -58,7 +58,7 @@ No se ejecutaron SQL, migraciones, despliegues ni modificaciones en
 | GitHub Pages del repositorio | Preview; `runtime-config.js` vacío, no es producción |
 | Cloudflare Pages | Hosting efectivo de producción, staging y piloto, corroborado mediante runtime/version |
 
-La copia original en `C:/Users/marco/dev/la-taba-pages-preview` tiene cambios
+La copia original en `dev/la-taba-pages-preview` tiene cambios
 locales anteriores. Se conservaron y se creó un worktree separado desde
 `origin/main`; no se integraron ramas históricas ni se hizo push/merge.
 

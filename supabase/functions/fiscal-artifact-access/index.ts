@@ -1,4 +1,4 @@
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createClient } from 'npm:@supabase/supabase-js@2.110.8';
 
 const URL = requiredEnvironment('SUPABASE_URL');
 const ANON_KEY = requiredEnvironment('SUPABASE_ANON_KEY');

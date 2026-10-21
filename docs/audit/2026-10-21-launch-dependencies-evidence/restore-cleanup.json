@@ -1,0 +1,18 @@
+{
+  "projectRef": "ixewllzzuzpqrkxzmfzx",
+  "productionDatabaseModified": false,
+  "databases": [
+    {
+      "database": "taba_restore_20261021_f3ffc75e",
+      "verificationPassed": true,
+      "temporaryDatabaseRemoved": true,
+      "at": "2026-10-21T03:46:21.258Z"
+    },
+    {
+      "database": "taba_restore_20261021_c63ce9c0",
+      "verificationPassed": true,
+      "temporaryDatabaseRemoved": true,
+      "at": "2026-10-21T03:46:22.304Z"
+    }
+  ]
+}

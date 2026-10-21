@@ -1,0 +1,220 @@
+{
+  "at": "2026-10-21T03:49:54.991Z",
+  "reads": [
+    {
+      "file": "supabase/functions/catalog-image-manager/index.ts",
+      "name": "SUPABASE_URL",
+      "accessor": "requiredEnvironment"
+    },
+    {
+      "file": "supabase/functions/catalog-image-manager/index.ts",
+      "name": "SUPABASE_ANON_KEY",
+      "accessor": "requiredEnvironment"
+    },
+    {
+      "file": "supabase/functions/catalog-image-manager/index.ts",
+      "name": "SUPABASE_SERVICE_ROLE_KEY",
+      "accessor": "requiredEnvironment"
+    },
+    {
+      "file": "supabase/functions/fiscal-artifact-access/index.ts",
+      "name": "SUPABASE_URL",
+      "accessor": "requiredEnvironment"
+    },
+    {
+      "file": "supabase/functions/fiscal-artifact-access/index.ts",
+      "name": "SUPABASE_ANON_KEY",
+      "accessor": "requiredEnvironment"
+    },
+    {
+      "file": "supabase/functions/fiscal-artifact-access/index.ts",
+      "name": "SUPABASE_SERVICE_ROLE_KEY",
+      "accessor": "requiredEnvironment"
+    },
+    {
+      "file": "supabase/functions/fiscal-artifact-access/index.ts",
+      "name": "FISCAL_PANEL_ORIGINS",
+      "accessor": "Deno.env.get"
+    },
+    {
+      "file": "supabase/functions/mercadopago-payment-worker/index.ts",
+      "name": "MERCADOPAGO_ENVIRONMENT",
+      "accessor": "Deno.env.get"
+    },
+    {
+      "file": "supabase/functions/mercadopago-webhook/index.ts",
+      "name": "MERCADOPAGO_OAUTH_WEBHOOK_SECRET",
+      "accessor": "getRequiredEnv"
+    },
+    {
+      "file": "supabase/functions/mercadopago-webhook/index.ts",
+      "name": "MERCADOPAGO_WEBHOOK_SECRET",
+      "accessor": "getRequiredEnv"
+    },
+    {
+      "file": "supabase/functions/print-agent-gateway/index.ts",
+      "name": "SUPABASE_URL",
+      "accessor": "requiredEnvironment"
+    },
+    {
+      "file": "supabase/functions/print-agent-gateway/index.ts",
+      "name": "SUPABASE_SERVICE_ROLE_KEY",
+      "accessor": "requiredEnvironment"
+    },
+    {
+      "file": "supabase/functions/team-invitation/index.ts",
+      "name": "SUPABASE_URL",
+      "accessor": "requiredEnvironment"
+    },
+    {
+      "file": "supabase/functions/team-invitation/index.ts",
+      "name": "SUPABASE_SERVICE_ROLE_KEY",
+      "accessor": "requiredEnvironment"
+    },
+    {
+      "file": "supabase/functions/_shared/mercadopago.ts",
+      "name": "MERCADOPAGO_ACCESS_TOKEN",
+      "accessor": "getRequiredEnv"
+    },
+    {
+      "file": "supabase/functions/_shared/payment-runtime.ts",
+      "name": "SUPABASE_URL",
+      "accessor": "getRequiredEnv"
+    },
+    {
+      "file": "supabase/functions/_shared/payment-runtime.ts",
+      "name": "SUPABASE_SERVICE_ROLE_KEY",
+      "accessor": "getRequiredEnv"
+    },
+    {
+      "file": "supabase/functions/_shared/payment-runtime.ts",
+      "name": "SUPABASE_URL",
+      "accessor": "getRequiredEnv"
+    },
+    {
+      "file": "supabase/functions/_shared/payment-runtime.ts",
+      "name": "SUPABASE_ANON_KEY",
+      "accessor": "getRequiredEnv"
+    },
+    {
+      "file": "supabase/functions/_shared/payment-runtime.ts",
+      "name": "PAYMENT_LOG_HASH_SALT",
+      "accessor": "getRequiredEnv"
+    },
+    {
+      "file": "supabase/functions/_shared/payment-runtime.ts",
+      "name": "MERCADOPAGO_ENVIRONMENT",
+      "accessor": "getRequiredEnv"
+    },
+    {
+      "file": "supabase/functions/_shared/payment-runtime.ts",
+      "name": "MERCADOPAGO_PRODUCTION_REVIEW_STATUS",
+      "accessor": "optionalEnv"
+    },
+    {
+      "file": "supabase/functions/_shared/payment-runtime.ts",
+      "name": "MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION",
+      "accessor": "optionalEnv"
+    },
+    {
+      "file": "supabase/functions/_shared/payment-runtime.ts",
+      "name": "TABA_CHECKOUT_BASE_URL",
+      "accessor": "getRequiredEnv"
+    },
+    {
+      "file": "supabase/functions/_shared/payment-runtime.ts",
+      "name": "SUPABASE_URL",
+      "accessor": "getRequiredEnv"
+    },
+    {
+      "file": "supabase/functions/_shared/payment-runtime.ts",
+      "name": "PAYMENT_WORKER_SECRET",
+      "accessor": "getRequiredEnv"
+    },
+    {
+      "file": "supabase/functions/_shared/payment-runtime.ts",
+      "name": "TABA_ALLOWED_ORIGINS",
+      "accessor": "optionalEnv"
+    },
+    {
+      "file": "supabase/functions/_shared/seller-connection-verification.ts",
+      "name": "MERCADOPAGO_OAUTH_WEBHOOK_SECRET",
+      "accessor": "getRequiredEnv"
+    },
+    {
+      "file": "supabase/functions/_shared/seller-connection-verification.ts",
+      "name": "PAYMENT_WORKER_SECRET",
+      "accessor": "getRequiredEnv"
+    },
+    {
+      "file": "supabase/functions/_shared/seller-oauth.ts",
+      "name": "MERCADOPAGO_CREDENTIAL_MODE",
+      "accessor": "Deno.env.get"
+    },
+    {
+      "file": "supabase/functions/_shared/seller-oauth.ts",
+      "name": "SUPABASE_URL",
+      "accessor": "Deno.env.get"
+    },
+    {
+      "file": "supabase/functions/_shared/seller-oauth.ts",
+      "name": "MERCADOPAGO_OAUTH_ENVIRONMENT",
+      "accessor": "getRequiredEnv"
+    },
+    {
+      "file": "supabase/functions/_shared/seller-oauth.ts",
+      "name": "TABA_DEPLOYMENT_ENV",
+      "accessor": "getRequiredEnv"
+    },
+    {
+      "file": "supabase/functions/_shared/seller-oauth.ts",
+      "name": "SUPABASE_URL",
+      "accessor": "getRequiredEnv"
+    },
+    {
+      "file": "supabase/functions/_shared/seller-oauth.ts",
+      "name": "MERCADOPAGO_OAUTH_PROJECT_REF",
+      "accessor": "getRequiredEnv"
+    },
+    {
+      "file": "supabase/functions/_shared/seller-oauth.ts",
+      "name": "MERCADOPAGO_CLIENT_ID",
+      "accessor": "getRequiredEnv"
+    },
+    {
+      "file": "supabase/functions/_shared/seller-oauth.ts",
+      "name": "MERCADOPAGO_OAUTH_PANEL_URL",
+      "accessor": "getRequiredEnv"
+    },
+    {
+      "file": "supabase/functions/_shared/seller-oauth.ts",
+      "name": "TABA_CHECKOUT_BASE_URL",
+      "accessor": "getRequiredEnv"
+    },
+    {
+      "file": "supabase/functions/_shared/seller-oauth.ts",
+      "name": "TABA_ALLOWED_ORIGINS",
+      "accessor": "getRequiredEnv"
+    },
+    {
+      "file": "supabase/functions/_shared/seller-oauth.ts",
+      "name": "MERCADOPAGO_OAUTH_PROJECT_REF",
+      "accessor": "getRequiredEnv"
+    },
+    {
+      "file": "supabase/functions/_shared/seller-oauth.ts",
+      "name": "MERCADOPAGO_TOKEN_ENCRYPTION_KEY",
+      "accessor": "getRequiredEnv"
+    },
+    {
+      "file": "supabase/functions/_shared/seller-oauth.ts",
+      "name": "MERCADOPAGO_TOKEN_ENCRYPTION_KEY",
+      "accessor": "getRequiredEnv"
+    },
+    {
+      "file": "supabase/functions/_shared/seller-oauth.ts",
+      "name": "MERCADOPAGO_CLIENT_SECRET",
+      "accessor": "getRequiredEnv"
+    }
+  ]
+}

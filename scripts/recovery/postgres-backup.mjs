@@ -75,6 +75,7 @@ export async function createPostgresBackup({ target, tools, ca, out }) {
     const environment = postgresEnvironment(target, ca);
     const version = nativeCommand(tools, 'pg_dump', ['--version'], { encoding: 'utf8' }).trim();
     const bytes = nativeCommand(tools, 'pg_dump', ['--no-password', '--format=custom', '--compress=6', '--lock-wait-timeout=10000'], { env: environment });
+    const roles = nativeCommand(tools, 'pg_dumpall', ['--no-password', '--roles-only', '--no-role-passwords'], { env: environment });
     if (bytes.subarray(0, 5).toString() !== 'PGDMP') throw new Error('Invalid custom archive');
     const key = backupKey(target, true), encrypted = encryptBackup(bytes, key, metadata);
     const restored = decryptBackup(encrypted, key, target.projectRef).plaintext;
@@ -89,17 +90,22 @@ export async function createPostgresBackup({ target, tools, ca, out }) {
       'external_anonymous_users_enabled','external_email_enabled','refresh_token_rotation_enabled',
       'password_min_length','security_refresh_token_reuse_interval'];
     const authConfiguration = Object.fromEntries(safeAuthNames.map(name => [name, auth[name]]));
-    fs.mkdirSync(out, { recursive: true });
+    fs.mkdirSync(out); // Atomic creation; never overwrite an existing directory.
     const archive = path.join(out, 'database.pgdump.aesgcm');
     fs.writeFileSync(archive, encrypted, { flag: 'wx' });
+    const rolesMetadata = { ...metadata, format: 'pg_dumpall-roles-without-passwords' };
+    const encryptedRoles = encryptBackup(roles, key, rolesMetadata);
+    fs.writeFileSync(path.join(out, 'roles.sql.aesgcm'), encryptedRoles, { flag: 'wx' });
     const evidence = { ...metadata, version, databaseTls: 'verify-full', plaintextSha256: digest(bytes),
       encryptedSha256: digest(encrypted), plaintextBytes: bytes.length, encryptedBytes: encrypted.length,
       encryptionRoundtripVerified: true, archive, baseline, authConfiguration,
       storageObjectExportRequired: baseline[0].storage_objects > 0,
-      includesDatabaseRoles: false, includesEdgeSecretValues: false,
+      includesDatabaseRoles: true, rolesPasswordsIncluded: false,
+      rolesBackup: { ...rolesMetadata, encryptedSha256: digest(encryptedRoles), encryptedBytes: encryptedRoles.length,
+        plaintextSha256: digest(roles) }, includesEdgeSecretValues: false,
       restoreTestCompleted: false, remoteBackupCreated: false };
     fs.writeFileSync(path.join(out, 'manifest.json'), JSON.stringify(evidence, null, 2) + '\n');
-    bytes.fill(0); restored.fill(0); key.fill(0);
+    bytes.fill(0); roles.fill(0); restored.fill(0); key.fill(0);
     return evidence;
   });
 }

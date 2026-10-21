@@ -1,0 +1,9 @@
+{
+  "name": "@embedded-postgres/windows-x64",
+  "version": "17.10.0-beta.17",
+  "tarball": "https://registry.npmjs.org/@embedded-postgres/windows-x64/-/windows-x64-17.10.0-beta.17.tgz",
+  "integrity": "sha512-q6xIETTkv67i1QlTWz1LAKb3Z+vG2V3qrp+BjLEWhCQ9jE4hbbsQ/J/3wiOPFLJbuwak7CfHC9EUJG7txAbGKw==",
+  "compressedBytes": 37794841,
+  "unpackedBytes": 101598126,
+  "downloadedAt": "2026-10-21T03:17:48.154Z"
+}

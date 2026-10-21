@@ -1,0 +1,61 @@
+{
+  "projectRef": "ixewllzzuzpqrkxzmfzx",
+  "capturedAt": "2026-10-21T03:21:31.143Z",
+  "format": "pg_dump-custom",
+  "version": "pg_dump (PostgreSQL) 17.10",
+  "databaseTls": "verify-full",
+  "plaintextSha256": "ad49fe7d0f41c0b5ac4f6908842fa8cf5f167d162f4cc2295d2345731da9bc7b",
+  "encryptedSha256": "9db5e1250ecc7aae81ab3d7dcb276b392e5775430357a29019a9c4b1cb9672df",
+  "plaintextBytes": 3105609,
+  "encryptedBytes": 3105803,
+  "encryptionRoundtripVerified": true,
+  "archive": "D:\\work\\la-taba-backup-20261021\\snapshot-01\\database.pgdump.aesgcm",
+  "baseline": [
+    {
+      "auth_users": 0,
+      "products": 0,
+      "orders": 0,
+      "storage_objects": 0,
+      "migration_versions": 160,
+      "recovered_source_rows": 76
+    }
+  ],
+  "authConfiguration": {
+    "site_url": "https://recovery-20261020.taba2-staging.pages.dev",
+    "uri_allow_list": "https://recovery-20261020.taba2-staging.pages.dev/",
+    "disable_signup": false,
+    "jwt_exp": 3600,
+    "mailer_autoconfirm": false,
+    "external_anonymous_users_enabled": true,
+    "external_email_enabled": true,
+    "refresh_token_rotation_enabled": true,
+    "password_min_length": 12,
+    "security_refresh_token_reuse_interval": 10
+  },
+  "storageObjectExportRequired": false,
+  "includesDatabaseRoles": true,
+  "includesEdgeSecretValues": false,
+  "restoreTestCompleted": true,
+  "remoteBackupCreated": false,
+  "rolesPasswordsIncluded": false,
+  "rolesBackup": {
+    "projectRef": "ixewllzzuzpqrkxzmfzx",
+    "capturedAt": "2026-10-21T03:32:23.017Z",
+    "format": "pg_dumpall-roles-without-passwords",
+    "encryptedSha256": "df6563c4f591f92faa6328324dceeb44cd7c16cf7bf22e753b66096efd7e97e1",
+    "encryptedBytes": 6423,
+    "plaintextSha256": "a16e8938f7c2a9c0ecc9f0f547adf8ac074ba4082372e3d1751ee8f52d7fc662"
+  },
+  "restoreScope": "application schemas and Auth/Storage data; application RLS/functions/effective ACLs/publication",
+  "fullManagedPlatformRestorePassed": false,
+  "verificationEvidence": [
+    {
+      "file": "verification-03/verification.json",
+      "sha256": "0f1998fdf0bc6a641a3f22b8f000b37247f6e310ac825c991d7999d5e51046d7"
+    },
+    {
+      "file": "repeat-restore/verification/verification.json",
+      "sha256": "829382d7aa1fb4f51116dee5aa76d9155f0c65c88eaa305e5012c9919fba4562"
+    }
+  ]
+}

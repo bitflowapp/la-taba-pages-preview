@@ -1,0 +1,14 @@
+[
+  {
+    "file": "full-restore-attempt.json",
+    "at": "2026-10-21T03:24:33.598Z",
+    "error": "pg_restore failed: pg_restore: error: could not execute query: ERROR:  can only create extension in database postgres",
+    "rolledBack": true
+  },
+  {
+    "file": "restore-without-cron-attempt.json",
+    "at": "2026-10-21T03:25:44.412Z",
+    "error": "pg_restore failed: pg_restore: error: could not execute query: ERROR:  permission denied to set parameter \"log_min_messages\"",
+    "rolledBack": true
+  }
+]

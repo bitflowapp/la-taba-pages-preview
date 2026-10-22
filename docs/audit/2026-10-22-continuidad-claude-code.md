@@ -1,9 +1,10 @@
 # La Taba — continuidad desde Claude Code (22/10/2026)
 
-**Rama revisable:** `recovery/la-taba-free-hosted-20261020`  
-**Build del preview:** `1d40194f` · runtime `la-taba-runtime-v156-worker-cache-isolation`  
-**Preview QA:** <https://recovery-20261020.taba2-staging.pages.dev> · Pages `taba2-staging`, branch `recovery-20261020`, despliegue `6db70e88-adfa-48b2-84d1-8b8a25110df5` (*preview*). La rama productiva sigue siendo `staging`.  
-**Backend QA:** Supabase `ixewllzzuzpqrkxzmfzx`. No se publicó producción ni se hicieron cobros.
+
+- **Rama revisable:** `recovery/la-taba-free-hosted-20261020`
+- **Build del preview:** `1d40194f` · runtime `la-taba-runtime-v156-worker-cache-isolation`
+- **Preview QA:** <https://recovery-20261020.taba2-staging.pages.dev> · Pages `taba2-staging`, branch `recovery-20261020`, despliegue `6db70e88-adfa-48b2-84d1-8b8a25110df5` (*preview*). La rama productiva sigue siendo `staging`.
+- **Backend QA:** Supabase `ixewllzzuzpqrkxzmfzx`. No se publicó producción ni se hicieron cobros.
 
 ## Veredicto: NO-GO comercial
 

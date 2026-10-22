@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(17);
+select plan(18);
 insert into auth.users(id,email) values('91000000-0000-4000-8000-0000000000d1','disconnect-fixture@example.invalid');
 insert into public.businesses(id,name,slug) values('92000000-0000-4000-8000-0000000000d1','Disconnect fixture','disconnect-fixture');
 select public.mp_begin_oauth('92000000-0000-4000-8000-0000000000d1','91000000-0000-4000-8000-0000000000d1','test','disconnect-state','protected-fixture');
@@ -25,6 +25,12 @@ select is((select status from public.mp_seller_connections where business_id='92
 
 update public.payment_intents set internal_status='rejected' where id='95000000-0000-4000-8000-0000000000d1';
 update public.checkout_sessions set status='cancelled' where id='94000000-0000-4000-8000-0000000000d1';
+-- A rejected/cancelled checkout can still receive a payment until its preference expires (forensic finding F10), and
+-- the provider ledger must have been read after the last activity: the credential is kept until both are over.
+select is((public.mp_disconnect_checked('92000000-0000-4000-8000-0000000000d1','test',false)->>'code'),'pending_operations','a checkout inside its preference window still blocks the disconnect');
+update public.checkout_sessions set created_at=now()-interval '40 hours', expires_at=now()-interval '30 hours' where id='94000000-0000-4000-8000-0000000000d1';
+insert into public.provider_ledger_cursors(business_id,environment,watermark_at,last_completed_at)
+  values ('92000000-0000-4000-8000-0000000000d1','test',now(),now()+interval '1 second');
 select is((public.mp_disconnect_checked('92000000-0000-4000-8000-0000000000d1','test',false)->>'code'),'ready_to_disconnect','without execute nothing is disconnected');
 select is((select status from public.mp_seller_connections where business_id='92000000-0000-4000-8000-0000000000d1'),'connected','preview leaves the link');
 select ok((public.mp_disconnect_checked('92000000-0000-4000-8000-0000000000d1','test',true)->>'ok')::boolean,'disconnect allowed once nothing is pending');

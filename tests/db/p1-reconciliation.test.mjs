@@ -8,34 +8,34 @@ const SESSION_AGE = (created, expires) => `update public.checkout_sessions set c
 const EMPTY_PROBES = (n, ago) => `insert into public.payment_events(payment_intent_id,event_type,server_recorded_at,details) select v_intent,'payment.provider_probe_empty',clock_timestamp()-interval '${ago}','{}'::jsonb from generate_series(1,${n});`;
 
 test('F08 eight empty probes no longer end the watch: the ninth is enqueued once its backoff elapsed', () => {
-  const s = runScenario(`${SESSION_AGE('30 minutes', '1 second')} ${EMPTY_PROBES(8, '11 minutes')} v_result:=jsonb_build_object('enqueued',public.enqueue_checkout_provider_probes(50));`);
+  const s = runScenario(`${CONNECT} ${SESSION_AGE('30 minutes', '1 second')} ${EMPTY_PROBES(8, '11 minutes')} v_result:=jsonb_build_object('enqueued',public.enqueue_checkout_provider_probes(50));`);
   assert.equal(s.result.enqueued, 1);
 });
 
 test('F08 backoff stretches but never stops: 30 empties an hour apart still produce a probe', () => {
-  const s = runScenario(`${SESSION_AGE('30 minutes', '1 second')} ${EMPTY_PROBES(30, '61 minutes')} v_result:=jsonb_build_object('enqueued',public.enqueue_checkout_provider_probes(50));`);
+  const s = runScenario(`${CONNECT} ${SESSION_AGE('30 minutes', '1 second')} ${EMPTY_PROBES(30, '61 minutes')} v_result:=jsonb_build_object('enqueued',public.enqueue_checkout_provider_probes(50));`);
   assert.equal(s.result.enqueued, 1);
 });
 
 test('F08 a probe is not enqueued twice inside its backoff', () => {
-  const s = runScenario(`${SESSION_AGE('30 minutes', '1 second')} ${EMPTY_PROBES(8, '3 minutes')} v_result:=jsonb_build_object('enqueued',public.enqueue_checkout_provider_probes(50));`);
+  const s = runScenario(`${CONNECT} ${SESSION_AGE('30 minutes', '1 second')} ${EMPTY_PROBES(8, '3 minutes')} v_result:=jsonb_build_object('enqueued',public.enqueue_checkout_provider_probes(50));`);
   assert.equal(s.result.enqueued, 0);
 });
 
 test('F08 a checkout older than 48 h is still watched', () => {
-  const s = runScenario(`${SESSION_AGE('49 hours', '48 hours')} v_result:=jsonb_build_object('enqueued',public.enqueue_checkout_provider_probes(50));`);
+  const s = runScenario(`${CONNECT} ${SESSION_AGE('49 hours', '48 hours')} v_result:=jsonb_build_object('enqueued',public.enqueue_checkout_provider_probes(50));`);
   assert.equal(s.result.enqueued, 1);
 });
 
 test('F08 closes only with evidence: expiry + 24 h grace + three empty probes after it', () => {
-  const closed = runScenario(`${SESSION_AGE('60 hours', '50 hours')} ${EMPTY_PROBES(3, '2 hours')} v_result:=jsonb_build_object('enqueued',public.enqueue_checkout_provider_probes(50));`);
+  const closed = runScenario(`${CONNECT} ${SESSION_AGE('60 hours', '50 hours')} ${EMPTY_PROBES(3, '2 hours')} v_result:=jsonb_build_object('enqueued',public.enqueue_checkout_provider_probes(50));`);
   assert.equal(closed.result.enqueued, 0, 'three empty probes after the grace window close the watch');
-  const notClosed = runScenario(`${SESSION_AGE('60 hours', '50 hours')} ${EMPTY_PROBES(30, '40 hours')} v_result:=jsonb_build_object('enqueued',public.enqueue_checkout_provider_probes(50));`);
+  const notClosed = runScenario(`${CONNECT} ${SESSION_AGE('60 hours', '50 hours')} ${EMPTY_PROBES(30, '40 hours')} v_result:=jsonb_build_object('enqueued',public.enqueue_checkout_provider_probes(50));`);
   assert.equal(notClosed.result.enqueued, 1, 'any number of probes taken BEFORE the grace window ends do not close it');
 });
 
 test('F08 the unverified-checkout alert stays open while the watch is open, even after 8 empty probes and 48 h', () => {
-  const s = runScenario(`${SESSION_AGE('49 hours', '48 hours')} ${EMPTY_PROBES(8, '40 hours')}
+  const s = runScenario(`${CONNECT} ${SESSION_AGE('49 hours', '48 hours')} ${EMPTY_PROBES(8, '40 hours')}
     update public.payment_intents set internal_status='expired' where id=v_intent;
     perform public.reconcile_operational_alerts_for_business(v_business);
     v_result:=jsonb_build_object('alerts',(select coalesce(jsonb_agg(alert_code),'[]'::jsonb) from public.operational_alerts where business_id=v_business and status<>'resolved'));`);
@@ -208,7 +208,7 @@ test('ledger sweep: an orphan approved payment becomes a critical, recovery-bloc
 test('integrity checks: an order paid whose provider verification is overdue is flagged and clears itself when verified', () => {
   // Second audit: "unverified" is judged against the payment's own verification ladder (15 m, 1 h, 6 h, 24 h, 3 d, ...)
   // instead of a flat 24 hours: the payment was first seen three days ago and never verified since.
-  const s = runScenario(`v_result:=${snap('approved')}; v_result:=public.finalize_paid_checkout_session(v_session); set constraints all immediate;
+  const s = runScenario(`${CONNECT} v_result:=${snap('approved')}; v_result:=public.finalize_paid_checkout_session(v_session); set constraints all immediate;
     update public.payment_provider_payments set first_seen_at=clock_timestamp()-interval '3 days', last_seen_at=clock_timestamp()-interval '3 days' where payment_intent_id=v_intent;
     v_before:=public.run_financial_integrity_checks(100);
     v_extra:=(select coalesce(jsonb_agg(kind||':'||status),'[]'::jsonb) from public.payment_discrepancies where payment_intent_id=v_intent);

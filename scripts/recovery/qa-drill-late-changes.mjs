@@ -1,8 +1,10 @@
 // QA-only drill of the second-audit mechanisms, with SYNTHETIC data and NO Mercado Pago call (QA has no seller
-// connected, so every provider read fails by design). It proves, on the hosted QA project and through the REAL
-// pg_cron + Vault/HMAC dispatch + deployed Edge worker, that:
-//   1. a pending provider payment carries its own follow-up schedule, becomes due, and the scheduler enqueues a read
-//      of THAT payment (resource_id), which fails (no seller) and is retried with backoff instead of being lost;
+// connected). It proves, on the hosted QA project and through the REAL pg_cron + Vault/HMAC dispatch + deployed Edge
+// worker, that:
+//   1. a pending provider payment carries its own follow-up schedule and becomes due; with no seller connected the
+//      scheduler does NOT enqueue reads that could only fail forever (20261022130000), and the integrity check
+//      (pg_cron) turns the overdue payment into ONE visible finding and a PAYMENT_DISCREPANCY_OPEN alert instead of
+//      dropping it (20261022140000);
 //   2. a job whose worker died (processing, lease expired) is not re-claimed first and does not hog the queue: it is
 //      reaped to retry_wait with an interruption counted, and gets a backoff;
 //   3. the pipeline health now reports the follow-up schedule.
@@ -16,9 +18,11 @@ const target = JSON.parse(fs.readFileSync('deploy/recovery-free-hosted.json', 'u
 if (target.projectRef !== 'ixewllzzuzpqrkxzmfzx' || target.environment !== 'test') throw new Error('QA project only');
 const SUFFIX = 'fc';
 const ids = { business: `20000000-0000-4000-8000-0000000000${SUFFIX}`, product: `30000000-0000-4000-8000-0000000000${SUFFIX}` };
+// Preference ids are unique across the whole project: every drill tenant needs its own.
+const PREFERENCE = `DRILL-${SUFFIX.toUpperCase()}-PREF`;
 const fixture = committedFixtureSql(2)
   .replaceAll('0000000000fa', `0000000000${SUFFIX}`).replaceAll('forensic-fix', `drill-${SUFFIX}-qa`)
-  .replaceAll('forensicfix000001', `drillcheckout${SUFFIX}01`);
+  .replaceAll('forensicfix000001', `drillcheckout${SUFFIX}01`).replaceAll('FORENSIC-PREF', PREFERENCE);
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const started = Date.now();
 const log = row => console.log(JSON.stringify({ t: Math.round((Date.now() - started) / 1000), ...row }));
@@ -39,7 +43,7 @@ await withRecoveryProject(target, async ({ query }) => {
 
   // 1. A pending payment: it has a schedule from the moment it is recorded.
   const snapshot = await query(`select public.record_mercadopago_payment_snapshot('${refs.intent}', jsonb_build_object(
-      'provider_payment_id','990000000101','external_reference','${refs.ref}','preference_id','FORENSIC-PREF','merchant_order_id','DRILL-MO',
+      'provider_payment_id','990000000101','external_reference','${refs.ref}','preference_id','${PREFERENCE}','merchant_order_id','DRILL-MO',
       'collector_id','collector-retry','currency','ARS','transaction_amount','2500.00','status','pending','payment_method','rapipago','live_mode',true,
       'provider_occurred_at', clock_timestamp()::text, 'refunded_amount','0.00','raw_response_hash', repeat('c',64)),'drill-simulated',null) as r`);
   const watch = (await query(`select watch_state, next_check_at > clock_timestamp() as in_the_future from public.payment_provider_payments where provider_payment_id='990000000101'`))[0];
@@ -48,16 +52,17 @@ await withRecoveryProject(target, async ({ query }) => {
   await query(`update public.payment_provider_payments set first_seen_at = clock_timestamp() - interval '3 hours', last_seen_at = clock_timestamp() - interval '3 hours' where provider_payment_id='990000000101'`);
   const due = (await query(`select watch_state, next_check_at < clock_timestamp() as overdue from public.payment_provider_payments where provider_payment_id='990000000101'`))[0];
   log({ phase: 'pending-payment-is-due', due });
-  let job = null;
-  for (let i = 0; i < 18 && !job; i += 1) {
+  // The integrity check runs inside the checkout sweep every 5 minutes; the alert sweep every minute.
+  let finding = null; let alert = null;
+  for (let i = 0; i < 48 && !(finding && alert); i += 1) {
     await sleep(10000);
-    job = (await query(`select topic, resource_id, status, attempts, left(last_error, 80) as last_error from public.payment_outbox where payment_intent_id='${refs.intent}' and topic='payment_reconcile' order by created_at desc limit 1`))[0] || null;
+    finding = (await query(`select kind, status, severity, details->>'reason' as reason from public.payment_discrepancies
+        where payment_intent_id='${refs.intent}' and kind='pending_payment_unchecked' limit 1`))[0] || null;
+    alert = (await query(`select alert_code, severity, status from public.operational_alerts
+        where business_id='${ids.business}' and alert_code='PAYMENT_DISCREPANCY_OPEN' and status<>'resolved' limit 1`))[0] || null;
   }
-  log({ phase: 'scheduler-enqueued-the-read-of-that-payment', job });
-  await sleep(60000);
-  const afterWorker = (await query(`select topic, resource_id, status, attempts, next_attempt_at > clock_timestamp() as backing_off, left(last_error, 80) as last_error
-      from public.payment_outbox where payment_intent_id='${refs.intent}' and topic='payment_reconcile' order by created_at desc limit 1`))[0];
-  log({ phase: 'provider-read-failed-and-is-retried-with-backoff', job: afterWorker });
+  const reads = (await query(`select count(*)::int n from public.payment_outbox where payment_intent_id='${refs.intent}' and topic='payment_reconcile'`))[0].n;
+  log({ phase: 'unreadable-pending-payment-is-a-visible-finding', finding, alert, readsEnqueuedWithoutSeller: reads });
   // Neutralize it so the drill's second part is read in isolation.
   await query(`update public.payment_outbox set status = 'completed', completed_at = clock_timestamp() where payment_intent_id='${refs.intent}' and status <> 'completed'`);
 

@@ -157,7 +157,7 @@ test('C7 the ledger checkpoint only moves forward, only for the lease owner, and
     v_extra := v_extra || jsonb_build_object('closed', (select window_end is null and cursor_at is null and last_completed_at is not null and watermark_at > clock_timestamp() - interval '1 minute' from public.provider_ledger_cursors));`);
   assert.equal(r.claimCursor, r.claimBegin, 'a fresh window starts at its begin');
   assert.equal(r.claimOffset, 0);
-  assert.match(r.claimBegin, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/, 'milliseconds, UTC');
+  assert.match(r.claimBegin, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/, 'milliseconds, UTC');
   assert.equal(r.foreign, false, 'a stale owner cannot move the cursor');
   assert.equal(r.forward, true);
   assert.deepEqual(r.afterForward, { at: new Date(Date.parse(r.claimBegin) + 300_000).toISOString(), skip: 3, seen: 3, orphans: 1 });
@@ -246,21 +246,71 @@ test('C12 the pipeline health reports the follow-up schedule and interrupted job
 });
 
 test('C13 a seller that is no longer connected is not followed: nothing is enqueued and no finding piles up', () => {
+  // Contract changed on purpose (20261022140000): the pending payment of a seller that cannot be read used to vanish
+  // from the findings ("disconnecting closes what can no longer be verified"). Pending money nobody can read is now
+  // ONE finding that stays open; still nothing is enqueued and nothing piles up.
   const r = out(`
     perform ${snap('pending')};
     update public.payment_provider_payments set first_seen_at = clock_timestamp() - interval '3 hours', last_seen_at = clock_timestamp() - interval '3 hours';
-    v_extra := jsonb_build_object('withoutSeller', public.enqueue_checkout_provider_probes(), 'findingsWithoutSeller', public.run_financial_integrity_checks());
+    v_extra := jsonb_build_object('withoutSeller', public.enqueue_checkout_provider_probes(), 'findingsWithoutSeller', public.run_financial_integrity_checks(),
+      'againWithoutSeller', public.run_financial_integrity_checks());
     insert into public.mp_seller_connections(business_id,environment,seller_id,application_id,status,protected_tokens,expires_at)
       values (v_business,'test','collector-retry','application-retry','connected','SYNTHETIC_NONCREDENTIAL',clock_timestamp()+interval '30 days');
     v_extra := v_extra || jsonb_build_object('withSeller', public.enqueue_checkout_provider_probes(), 'findingsWithSeller', public.run_financial_integrity_checks());
     update public.mp_seller_connections set status = 'disconnected', protected_tokens = null where business_id = v_business;
     perform public.run_financial_integrity_checks();
-    v_extra := v_extra || jsonb_build_object('openAfterDisconnect', (select count(*) from public.payment_discrepancies where kind in ('pending_payment_unchecked','order_paid_unverified') and status <> 'resolved'));`);
-  assert.equal(r.withoutSeller, 0);
+    v_extra := v_extra || jsonb_build_object('openAfterDisconnect', (select count(*) from public.payment_discrepancies where kind in ('pending_payment_unchecked','order_paid_unverified') and status <> 'resolved'),
+      'rows', (select count(*) from public.payment_discrepancies));`);
+  assert.equal(r.withoutSeller, 0, 'nothing is enqueued for a seller that cannot be read');
   assert.equal(r.findingsWithoutSeller.pending_payment_unchecked, 0);
+  assert.equal(r.findingsWithoutSeller.pending_payment_unreadable, 1, 'the unreadable pending payment is a finding');
+  assert.equal(r.againWithoutSeller.pending_payment_unreadable, 0, 'opened once: the next pass adds nothing');
   assert.equal(r.withSeller, 1, 'with a seller the due payment is read');
   assert.equal(r.findingsWithSeller.pending_payment_unchecked, 1, 'and an overdue read is a finding');
-  assert.equal(r.openAfterDisconnect, 0, 'disconnecting closes what can no longer be verified');
+  assert.equal(r.openAfterDisconnect, 1, 'losing the link never closes a pending payment nobody verified');
+  assert.equal(r.rows, 1, 'one finding for one payment');
+});
+
+test('C16 Mercado Pago revokes the link while a payment is pending: the finding stays open, alerts, and a person can close it', () => {
+  // Red on 20261022130000: the finding was resolved as 'checked_again' although nobody read the payment, and since
+  // the revocation also turns Mercado Pago off, MERCADOPAGO_SELLER_CANNOT_CHARGE did not fire either: no alert at all.
+  const r = out(`
+${CONNECT}    insert into public.business_payment_settings(business_id,provider,environment,enabled,collector_id,application_id)
+      values (v_business,'mercadopago','test',true,'collector-retry','application-retry')
+      on conflict do nothing;
+    perform ${snap('pending')};
+    update public.payment_provider_payments set first_seen_at = clock_timestamp() - interval '3 hours', last_seen_at = clock_timestamp() - interval '3 hours';
+    perform public.run_financial_integrity_checks();
+    v_extra := jsonb_build_object('revoked', public.mp_mark_seller_deauthorized(v_business, 'test'));
+    perform public.run_financial_integrity_checks();
+    perform public.reconcile_operational_alerts_for_business(v_business);
+    v_extra := v_extra || jsonb_build_object(
+      'finding', (select jsonb_build_object('status', status, 'resolution', resolution) from public.payment_discrepancies where kind = 'pending_payment_unchecked'),
+      'enqueued', public.enqueue_checkout_provider_probes(),
+      'alerts', (select coalesce(jsonb_agg(alert_code order by alert_code), '[]'::jsonb) from public.operational_alerts where business_id = v_business and status <> 'resolved'));
+    update public.payment_discrepancies set status = 'resolved', resolved_at = clock_timestamp(), resolution = 'checked in Mercado Pago by a person'
+     where kind = 'pending_payment_unchecked';
+    perform public.run_financial_integrity_checks();
+    v_extra := v_extra || jsonb_build_object('afterPerson', (select status from public.payment_discrepancies where kind = 'pending_payment_unchecked'),
+      'rows', (select count(*) from public.payment_discrepancies));`);
+  assert.equal(r.revoked, true);
+  assert.deepEqual(r.finding, { status: 'open', resolution: null }, 'nobody read the payment: the finding is not closed');
+  assert.equal(r.enqueued, 0, 'and nothing is enqueued for the revoked seller');
+  assert.ok(r.alerts.includes('PAYMENT_DISCREPANCY_OPEN'), 'Walter is alerted: ' + JSON.stringify(r.alerts));
+  assert.equal(r.afterPerson, 'resolved', 'what a person resolved stays resolved while the seller stays disconnected');
+  assert.equal(r.rows, 1);
+});
+
+test('C17 an overdue verification of a completed order closed by a disconnect says so instead of claiming a verification', () => {
+  const r = out(`
+${CONNECT}    perform ${snap('approved')};
+    perform public.finalize_paid_checkout_session(v_session);
+    update public.payment_provider_payments set first_seen_at = clock_timestamp() - interval '3 days', last_seen_at = clock_timestamp() - interval '3 days';
+    perform public.run_financial_integrity_checks();
+    update public.mp_seller_connections set status = 'disconnected', protected_tokens = null where business_id = v_business;
+    perform public.run_financial_integrity_checks();
+    v_extra := (select jsonb_build_object('status', status, 'resolution', resolution) from public.payment_discrepancies where kind = 'order_paid_unverified');`);
+  assert.deepEqual(r, { status: 'resolved', resolution: 'seller_disconnected' });
 });
 
 test('C14 a payment that keeps failing is counted per payment and only the owner of the window can park it', () => {

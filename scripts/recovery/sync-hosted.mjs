@@ -41,6 +41,12 @@ if (process.argv.includes('--migrations')) {
       await query(migrationTransaction(migration, sql));
       record({ phase: 'migration', version: migration.version, sha256: migration.sha256, result: 'applied' });
     }
+    // migrationTransaction pauses every taba-* pg_cron job on purpose (a new schema must not run before its functions).
+    if (pending.length) {
+      const paused = await query(`select jobname from cron.job where jobname like 'taba-%' and not active order by jobname`);
+      record({ phase: 'schedulers', paused: paused.map(row => row.jobname),
+        next: 'deploy the functions (--functions), then re-enable the jobs that were active: qa-schedulers.mjs --enable <jobs>' });
+    }
   });
 }
 

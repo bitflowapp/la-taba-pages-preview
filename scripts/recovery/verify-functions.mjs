@@ -7,6 +7,9 @@ const value = name => process.argv[process.argv.indexOf(name) + 1];
 if (!['--target', '--evidence', '--run-tests'].every(arg => process.argv.includes(arg))) {
   throw new Error('Requires --run-tests --target --evidence');
 }
+// --gates-only: for a QA project already in use (queued or finished jobs). No signed call is made, so nothing can be
+// claimed; instead the worker must refuse an unsigned call and a call with a wrong signature.
+const gatesOnly = process.argv.includes('--gates-only');
 const target = JSON.parse(fs.readFileSync(value('--target'), 'utf8'));
 const base = `https://${target.projectRef}.supabase.co`;
 await withRecoveryProject(target, async ({ request, query }) => {
@@ -25,6 +28,24 @@ await withRecoveryProject(target, async ({ request, query }) => {
       : response.status >= 400;
     checks.push({ name: fn.slug, active: fn.status === 'ACTIVE', version: fn.version,
       httpStatus: response.status, rejectedUnauthenticatedOrMalformedRequest: rejected });
+  }
+  if (gatesOnly) {
+    const call = headers => fetch(`${base}/functions/v1/mercadopago-payment-worker`, { method: 'POST', body: '{}',
+      signal: AbortSignal.timeout(30000), headers: { 'content-type': 'application/json', ...headers } }).then(response => response.status);
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const worker = {
+      unsignedStatus: await call({}),
+      wrongSignatureStatus: await call({ 'x-taba-worker-timestamp': timestamp, 'x-taba-worker-nonce': randomUUID(),
+        'x-taba-worker-signature': createHmac('sha256', randomUUID()).update(timestamp).digest('hex') }),
+    };
+    const passed = functions.length === 13 && checks.every(row => row.active && row.rejectedUnauthenticatedOrMalformedRequest)
+      && worker.unsignedStatus === 401 && worker.wrongSignatureStatus === 401;
+    const evidence = { at: new Date().toISOString(), projectRef: target.projectRef, mode: 'gates-only', checks, worker, passed,
+      providerPaymentExecuted: false, webhookSignatureVerified: false };
+    fs.writeFileSync(value('--evidence'), JSON.stringify(evidence, null, 2) + '\n');
+    console.log(JSON.stringify(evidence));
+    if (!passed) process.exitCode = 1;
+    return;
   }
   // A signed probe is safe only before connecting any seller or queuing work.
   const [counts] = await query(`select (select count(*) from public.payment_outbox)::int jobs,

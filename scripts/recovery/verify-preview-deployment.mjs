@@ -8,10 +8,13 @@
 // PWA client will update: version.json (commit + runtime), the CACHE_NAME declared by the served sw.js, and the
 // caching headers that let the browser notice a new service worker. With --wait-ms it polls until the preview
 // converges on the expected build (Pages publishes asynchronously) and fails if it does not.
+// A receipt prepared with --access-gate is read through the gate with the stored QA credential (never printed), and
+// the gate itself is checked: no credential and a wrong one must both get 401.
 // Exit 0 = the preview is exactly the prepared build. 1 = it is not.
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
+import { leerSecreto } from '../e2e-production-sale/secretos-windows.mjs';
 
 const arg = name => { const i = process.argv.indexOf(name); return i < 0 ? undefined : process.argv[i + 1]; };
 const base = new URL(arg('--url') || '').origin;
@@ -20,10 +23,15 @@ const receipt = JSON.parse(fs.readFileSync(arg('--receipt') || '', 'utf8'));
 const expectedCommit = arg('--expect-commit') || receipt.commit;
 const waitMs = Number(arg('--wait-ms') || 0);
 const NOT_SERVED = new Set(['_headers', '_worker.js', '_redirects', '_routes.json']);
+const gate = receipt.accessGate ? leerSecreto('RECOVERY PREVIEW ACCESS') : null;
+assert.ok(!receipt.accessGate || (gate?.usuario && gate?.secreto), 'Gated preview: the QA access credential is unavailable');
+const basic = (user, password) => `Basic ${Buffer.from(`${user}:${password}`, 'utf8').toString('base64')}`;
+const authorization = gate ? basic(gate.usuario, gate.secreto) : null;
 
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
-async function get(path) {
-  const response = await fetch(base + path, { redirect: 'follow', signal: AbortSignal.timeout(60000), headers: { 'cache-control': 'no-cache' } });
+async function get(path, credential = authorization) {
+  const headers = { 'cache-control': 'no-cache', ...(credential ? { authorization: credential } : {}) };
+  const response = await fetch(base + path, { redirect: 'follow', signal: AbortSignal.timeout(60000), headers });
   return { status: response.status, headers: response.headers, bytes: Buffer.from(await response.arrayBuffer()) };
 }
 
@@ -51,7 +59,9 @@ async function inspect() {
   };
   const headers = { sw: await headerOf('/sw.js'), index: await headerOf('/'), version: await headerOf('/version.json'), runtimeConfig: await headerOf('/runtime-config.js') };
   const revalidates = value => /no-cache|no-store|max-age=0|must-revalidate/i.test(value || '');
+  const gateStatus = gate ? { anonymous: (await get('/', null)).status, wrong: (await get('/', basic(gate.usuario, 'x' + gate.secreto))).status } : null;
   const checks = {
+    ...(gate ? { gateRefusesAnonymous: gateStatus.anonymous === 401, gateRefusesWrongPassword: gateStatus.wrong === 401 } : {}),
     versionServed: served !== null,
     commitMatches: served?.commit === expectedCommit,
     runtimeMatches: served?.runtime === receipt.runtime,
@@ -69,6 +79,7 @@ async function inspect() {
     served: { commit: served?.commit ?? null, runtime: served?.runtime ?? null, builtAt: served?.builtAt ?? null, serviceWorkerCache: servedCache },
     files: { expected: files.length, identical, different, missing },
     headers,
+    gate: gateStatus,
     checks,
     passed: Object.values(checks).every(Boolean),
   };

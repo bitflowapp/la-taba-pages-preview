@@ -39,11 +39,11 @@ test('07 refund of a late payment that stayed in review cannot be recovered afte
   assert.equal(s.extra.recovery, '55000'); assert.equal(s.orders, 0); assert.equal(s.stock, 10);
 });
 test('08 eight empty probes do not stop the watch', () => {
-  const s = runScenario(`update public.checkout_sessions set created_at=clock_timestamp()-interval '30 minutes' where id=v_session; insert into public.payment_events(payment_intent_id,event_type,server_recorded_at,details) select v_intent,'payment.provider_probe_empty',clock_timestamp()-interval '11 minutes','{}'::jsonb from generate_series(1,8); v_result:=jsonb_build_object('enqueued',public.enqueue_checkout_provider_probes(50));`);
+  const s = runScenario(`${CONNECT} update public.checkout_sessions set created_at=clock_timestamp()-interval '30 minutes' where id=v_session; insert into public.payment_events(payment_intent_id,event_type,server_recorded_at,details) select v_intent,'payment.provider_probe_empty',clock_timestamp()-interval '11 minutes','{}'::jsonb from generate_series(1,8); v_result:=jsonb_build_object('enqueued',public.enqueue_checkout_provider_probes(50));`);
   assert.equal(s.result.enqueued, 1);
 });
 test('09 a checkout older than 48 h is still probed', () => {
-  const s = runScenario(`update public.checkout_sessions set created_at=clock_timestamp()-interval '49 hours',expires_at=clock_timestamp()-interval '48 hours' where id=v_session; v_result:=jsonb_build_object('enqueued',public.enqueue_checkout_provider_probes(50));`);
+  const s = runScenario(`${CONNECT} update public.checkout_sessions set created_at=clock_timestamp()-interval '49 hours',expires_at=clock_timestamp()-interval '48 hours' where id=v_session; v_result:=jsonb_build_object('enqueued',public.enqueue_checkout_provider_probes(50));`);
   assert.equal(s.result.enqueued, 1);
 });
 test('10 disconnect preflight counts a retryably rejected checkout as open', () => {

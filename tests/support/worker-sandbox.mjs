@@ -7,11 +7,28 @@ import path from 'node:path';
 import { stripTypeScriptTypes } from 'node:module';
 import { createHash } from 'node:crypto';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { ProcessKilled, virtualDate } from './virtual-clock.mjs';
 
 // TABA_FUNCTIONS_DIR lets the same scenarios run against another revision of the Edge code (red/green evidence).
 const FUNCTIONS = process.env.TABA_FUNCTIONS_DIR || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'supabase', 'functions');
 
-export async function loadWorker({ service, provider, businessId, environment = 'test', businessForIntent }) {
+// Wraps a service client so every database call is a counted boundary of the (virtual) process: it can be killed
+// at a chosen call, and lease timestamps age by the virtual time that passed since the previous call.
+function guardService(service, clock, onShift) {
+  const shift = () => { const ms = clock.takeShift(); if (ms > 0 && onShift) onShift(ms); };
+  return {
+    async rpc(name, args) { clock.boundary('rpc:' + name); shift(); return service.rpc(name, args); },
+    from(table) {
+      const builder = service.from(table);
+      const exec = builder._exec.bind(builder);
+      builder._exec = () => { clock.boundary('from:' + table); shift(); return exec(); };
+      return builder;
+    },
+  };
+}
+
+export async function loadWorker({ service: rawService, provider, businessId, environment = 'test', businessForIntent, clock = null, onShift = null, env = {} }) {
+  const service = clock ? guardService(rawService, clock, onShift) : rawService;
   let handler;
   class PublicPaymentError extends Error {
     constructor(status, code, message) { super(message); this.status = status; this.code = code; }
@@ -42,10 +59,13 @@ export async function loadWorker({ service, provider, businessId, environment = 
     audit: () => {},
     invalidateRejectedToken: async () => {},
   };
+  const environmentValues = { MERCADOPAGO_ENVIRONMENT: environment, ...env };
   const context = vm.createContext({
     Request, Response, Headers, URL, URLSearchParams, TextEncoder, AbortController, setTimeout, clearTimeout,
+    ...(clock ? { setTimeout: clock.setTimeout, clearTimeout: clock.clearTimeout } : {}),
     crypto: globalThis.crypto, fetch: provider.fetch, console: { log() {}, error() {} },
-    Deno: { serve: fn => { handler = fn; }, env: { get: name => (name === 'MERCADOPAGO_ENVIRONMENT' ? environment : undefined) } },
+    ...(clock ? { Date: virtualDate(clock) } : {}),
+    Deno: { serve: fn => { handler = fn; }, env: { get: name => environmentValues[name] } },
   });
   const cache = new Map();
   const synthetic = (key, exports) => {
@@ -66,9 +86,18 @@ export async function loadWorker({ service, provider, businessId, environment = 
   const mod = await load(pathToFileURL(path.join(FUNCTIONS, 'mercadopago-payment-worker', 'index.ts')));
   await mod.evaluate();
   return {
-    async invoke() {
-      const response = await handler(new Request('https://synthetic.invalid/worker', { method: 'POST' }));
-      return { status: response.status, body: await response.json() };
+    /** One invocation. With a clock, `killAfterMs` / `killAtCall` reproduce a platform kill ({ killed: true }). */
+    async invoke({ killAfterMs = null, killAtCall = null } = {}) {
+      clock?.begin({ killAfterMs, killAtCall });
+      let response;
+      try {
+        response = await handler(new Request('https://synthetic.invalid/worker', { method: 'POST' }));
+      } catch (error) {
+        if (error instanceof ProcessKilled || clock?.killed) return { killed: true, calls: clock?.calls };
+        throw error;
+      }
+      if (clock?.killed) return { killed: true, calls: clock.calls };
+      return { status: response.status, body: await response.json(), calls: clock?.calls };
     },
   };
 }

@@ -1,0 +1,20 @@
+{
+  "at": "2026-10-22T06:16:36.764Z",
+  "projectRef": "ixewllzzuzpqrkxzmfzx",
+  "database": "taba_restore_20261022_ad3d29a2",
+  "comparison": {
+    "tables": false,
+    "rls": true,
+    "policies": true,
+    "table_acl": true,
+    "functions": true,
+    "publication": true
+  },
+  "tablesChecked": 154,
+  "policiesChecked": 74,
+  "functionsChecked": 492,
+  "allApplicationChecksPassed": false,
+  "fullManagedPlatformRestorePassed": false,
+  "commercialPaymentsVerified": false,
+  "comparisonReference": "Current source at verification; encrypted archive retains original snapshot"
+}

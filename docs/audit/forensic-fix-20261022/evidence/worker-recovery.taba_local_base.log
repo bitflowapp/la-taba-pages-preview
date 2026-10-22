@@ -1,0 +1,155 @@
+✖ F06 the worker finds the approved retry even though a rejected payment id is already pinned (4209.5825ms)
+✖ F07 a merchant-order 503 retries the job: no review, no lost payment, one order once it recovers (3693.7099ms)
+✖ F08 an approved payment on the second page of the provider search is found (3500.654ms)
+✖ F04/F06 two approved payments: both recorded, one order, a critical discrepancy (6437.2486ms)
+✖ F09 a refund with a lost identity is parked: no POST, recovery blocked, a critical discrepancy, job completed (3079.5624ms)
+✖ F08 the ledger sweep finds an approved payment with no webhook, no job and no browser, and flags the orphan (2508.1303ms)
+✔ a crash between recording and finalizing is completed by the next run exactly once (3934.2758ms)
+✖ a provider outage during the ledger window leaves the cursor in place and backs off (2756.9024ms)
+✔ replaying the same reconciliation five times never double-books and stays cheap (7113.4619ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 2
+ℹ fail 7
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 37418.4166
+
+✖ failing tests:
+
+test at tests\db\worker-recovery.test.mjs:21:1
+✖ F06 the worker finds the approved retry even though a rejected payment id is already pinned (4209.5825ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/worker-recovery.test.mjs:23:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.start (node:internal/test_runner/test:1003:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:358:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\worker-recovery.test.mjs:31:1
+✖ F07 a merchant-order 503 retries the job: no review, no lost payment, one order once it recovers (3693.7099ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/worker-recovery.test.mjs:33:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\worker-recovery.test.mjs:42:1
+✖ F08 an approved payment on the second page of the provider search is found (3500.654ms)
+  AssertionError [ERR_ASSERTION]: pagination is followed
+      at TestContext.<anonymous> (file:///<repo>/tests/db/worker-recovery.test.mjs:44:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests\db\worker-recovery.test.mjs:50:1
+✖ F04/F06 two approved payments: both recorded, one order, a critical discrepancy (6437.2486ms)
+  TypeError [Error]: Cannot read properties of null (reading 'length')
+      at TestContext.<anonymous> (file:///<repo>/tests/db/worker-recovery.test.mjs:54:33)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+
+test at tests\db\worker-recovery.test.mjs:59:1
+✖ F09 a refund with a lost identity is parked: no POST, recovery blocked, a critical discrepancy, job completed (3079.5624ms)
+  Error: scenario f09_unknown_refund_identity failed:
+  file:///<repo>/scripts/local-db/lib.mjs:20
+      const err = new Error(String(r.stderr || r.error).slice(0, 4000));
+                  ^
+  
+  Error: ERROR:  function private.payment_financial_hold(unknown) does not exist
+  L�NEA 1: select to_jsonb(private.payment_financial_hold('6528dadb-cf4...
+                          ^
+  SUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:20:17)
+      at q (file:///<repo>/tests/support/worker-scenarios.mjs:21:13)
+      at Object.f09_unknown_refund_identity (file:///<repo>/tests/support/worker-scenarios.mjs:111:18)
+      at async file:///<repo>/tests/support/worker-scenarios.mjs:165:15 {
+    stderr: 'ERROR:  function private.payment_financial_hold(unknown) does not exist\r\n' +
+      "L�NEA 1: select to_jsonb(private.payment_financial_hold('6528dadb-cf4...\r\n" +
+      '                        ^\r\n' +
+      'SUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.\r\n',
+    stdout: ''
+  }
+  
+  Node.js v24.8.0
+  
+  
+      at scenario (file:///<repo>/tests/db/worker-recovery.test.mjs:17:20)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/worker-recovery.test.mjs:60:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+
+test at tests\db\worker-recovery.test.mjs:70:1
+✖ F08 the ledger sweep finds an approved payment with no webhook, no job and no browser, and flags the orphan (2508.1303ms)
+  AssertionError [ERR_ASSERTION]: the purchase was materialized from the provider ledger alone
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/worker-recovery.test.mjs:72:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\worker-recovery.test.mjs:92:1
+✖ a provider outage during the ledger window leaves the cursor in place and backs off (2756.9024ms)
+  TypeError [Error]: Cannot read properties of undefined (reading 'ok')
+      at TestContext.<anonymous> (file:///<repo>/tests/db/worker-recovery.test.mjs:94:36)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)

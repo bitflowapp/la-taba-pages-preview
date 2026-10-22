@@ -2,7 +2,7 @@
 
 **Veredicto: NO-GO para habilitar cobros reales.** Los defectos de dinero, stock, identidad de pago y devoluciones (F01–F05, F12) están corregidos en PostgreSQL y probados con fallos reproducibles; la recuperación (F06–F11, F14) está corregida, desplegada en QA y ejercitada por el planificador real. Quedan **tres condiciones que no se pueden cerrar sin una persona**: pruebas auténticas contra Mercado Pago (requieren el secreto de firma del webhook, el consentimiento del vendedor de prueba y pagos con tarjeta de prueba), custodia externa del respaldo (F13) y una segunda validación independiente. «Las suites pasan» **no** es el criterio de salida.
 
-- Repositorio: `bitflowapp/la-taba-pages-preview` · Rama revisable: `fix/forensic-f01-f14-20261022` (parte de `897aeefd`, 11 commits, sin reescribir historia)
+- Repositorio: `bitflowapp/la-taba-pages-preview` · Rama revisable: `fix/forensic-f01-f14-20261022` (parte de `897aeefd`, 12 commits, sin reescribir historia)
 - Commit auditado: `897aeefd522969727b8208668b3c60332153d541` · el remoto `recovery/la-taba-free-hosted-20261020` seguía en ese commit al empezar (no había correcciones posteriores que comparar).
 - QA: `ixewllzzuzpqrkxzmfzx` (único proyecto tocado). Producción comercial: no existe y no se publicó nada. Walter: ningún producto, precio ni stock real se tocó. Gasto: USD 0 (sólo plan Free; ningún complemento pago).
 
@@ -21,7 +21,7 @@ Cada defecto se reprodujo **primero** contra la implementación auditada y reci�
 | `backup-restore` (volcado → base nueva → conciliar) | — (capacidad nueva) | **4 / 4** |
 | **Total `tests/db`** | **24 pasan / 75 fallan** | **99 / 99** |
 
-Además, sin regresiones: suite JS completa del repositorio (ver §6), 53 casos E2E (8 especificaciones de pagos, panel y service worker) en Chromium, `npm run check` (sintaxis, config Supabase, precache, higiene, identidad de release, contrato de ubicación, codificación, escaneo de secretos) y las pruebas SQL existentes (35 pasan / 20 fallan **idénticas antes y después**: deriva de fixtures del entorno local, no relacionada; se enumeran en §6).
+Además, sin regresiones: suite JS completa del repositorio (3082/3082, §6), 53 casos E2E (8 especificaciones de pagos, panel y service worker) en Chromium, `npm run check` (sintaxis, config Supabase, precache, higiene, identidad de release, contrato de ubicación, codificación, escaneo de secretos) y las pruebas SQL existentes (35 pasan / 20 fallan **idénticas antes y después**: deriva de fixtures del entorno local, no relacionada; se enumeran en §6).
 
 Todo corre con `node --test tests/db/*.test.mjs` sobre un PostgreSQL 17 local descartable (`scripts/local-db/`): las 164 migraciones del repositorio + 3 nuevas, con *stand-ins* de `pg_cron`, `pg_net` y Vault. Los logs rojo/verde están en `evidence/`.
 
@@ -82,7 +82,7 @@ Cambio de **semántica** que conviene conocer: una aprobación tardía con stock
 ## 6. Cobertura y cifras
 
 - `tests/db`: 99 pruebas (PostgreSQL real; los 26 escenarios, 6 de concurrencia, worker real, despacho, respaldo).
-- Suite JS del repositorio: ver `evidence/npm-test-final.log` (resultado final al pie del archivo).
+- Suite JS completa del repositorio (`npm test`): **3082 / 3082** pasan (`evidence/npm-test-final.summary.txt`).
 - Pruebas SQL previas del repositorio, antes/después: **35 / 20** idénticas. Las 20 que fallan en ambos esquemas son deriva de fixtures de este entorno local (p. ej. «product image association does not match its approved catalog asset») y suites que necesitan Supabase real; no se tocaron.
 - `safe_disconnect` se actualizó a propósito: su expectativa (desconectar apenas se cancela el checkout) era justamente el defecto F10.
 

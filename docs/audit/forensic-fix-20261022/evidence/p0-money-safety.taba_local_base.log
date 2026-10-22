@@ -1,0 +1,363 @@
+✖ F01 a fully refunded late payment cannot be recovered into a deliverable order (162.0031ms)
+✖ F01 composition: refund -> recover -> deliver never reaches delivered (179.6272ms)
+✔ F01 an order whose payment is fully refunded after completion cannot advance, whatever the review label says (153.4655ms)
+✔ F01 a partial refund (compensation) does not stop an order that still has net money (171.3ms)
+✖ F02 recovery is refused while a refund is ambiguous (160.9305ms)
+✖ F02 finalization itself refuses to create an order while a refund is open (137.02ms)
+✖ F03 a purchase of 2 units leaves exactly 2 units out of stock after interruption, expiry and recovery (152.4889ms)
+✖ F03 recovery executed twice never moves stock twice (149.6332ms)
+✖ F03 a snapshot that arrives after the window lapsed (stock still held) finalizes without a second deduction (120.5626ms)
+✖ F12 approval after the reservation was released re-reserves transactionally when stock exists, else leaves a visible case (120.4122ms)
+✖ F12 approval after release with NO stock available leaves a durable, visible case and no oversell (130.43ms)
+✖ F04 a rejected payment recorded after an approved one never replaces the approved identity (196.6175ms)
+✖ F04 two approved payment ids keep the first as financing and raise a durable discrepancy (136.6331ms)
+✖ F04 order of arrival does not matter: newer rejection first, older approval second still finalizes (117.8244ms)
+✖ F04 the same payment repeated, stale and out of order is idempotent and never regresses (117.5007ms)
+✖ F05 external refund of 500 plus local refund of 250 totals 750 (153.1823ms)
+✖ F05 the same total is reached when the provider snapshot arrives after the local refund, and when repeated (151.5398ms)
+✔ F05 an external refund that already covers the local one is not counted twice (164.4639ms)
+✖ F05 refunds that add up to the full amount move the intent to refunded and block advancing (171.6506ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 3
+ℹ fail 16
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2947.4379
+
+✖ failing tests:
+
+test at tests\db\p0-money-safety.test.mjs:14:1
+✖ F01 a fully refunded late payment cannot be recovered into a deliverable order (162.0031ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'allowed'
+  - 'blocked'
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:17:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.start (node:internal/test_runner/test:1003:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:358:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'allowed',
+    expected: 'blocked',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:25:1
+✖ F01 composition: refund -> recover -> deliver never reaches delivered (179.6272ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:28:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:49:1
+✖ F02 recovery is refused while a refund is ambiguous (160.9305ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'allowed'
+  - 'blocked'
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:54:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'allowed',
+    expected: 'blocked',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:59:1
+✖ F02 finalization itself refuses to create an order while a refund is open (137.02ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be strictly unequal to: true
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:63:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: true,
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:70:1
+✖ F03 a purchase of 2 units leaves exactly 2 units out of stock after interruption, expiry and recovery (152.4889ms)
+  AssertionError [ERR_ASSERTION]: stock must be 10-2, not 10-4
+  
+  6 !== 8
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:73:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 6,
+    expected: 8,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:80:1
+✖ F03 recovery executed twice never moves stock twice (149.6332ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  6 !== 8
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:83:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 6,
+    expected: 8,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:87:1
+✖ F03 a snapshot that arrives after the window lapsed (stock still held) finalizes without a second deduction (120.5626ms)
+  AssertionError [ERR_ASSERTION]: the paid purchase becomes an order: stock was still held for it
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:90:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:93:1
+✖ F12 approval after the reservation was released re-reserves transactionally when stock exists, else leaves a visible case (120.4122ms)
+  AssertionError [ERR_ASSERTION]: paid without order must be visible
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:100:12)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:105:1
+✖ F12 approval after release with NO stock available leaves a durable, visible case and no oversell (130.43ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(s.discrepancies?.some(d => d.kind === 'paid_without_order' && d.status === 'open'))
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:109:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:112:1
+✖ F04 a rejected payment recorded after an approved one never replaces the approved identity (196.6175ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + '991000002'
+  - '991000001'
+             ^
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:115:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '991000002',
+    expected: '991000001',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:121:1
+✖ F04 two approved payment ids keep the first as financing and raise a durable discrepancy (136.6331ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + '991000002'
+  - '991000001'
+             ^
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:123:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '991000002',
+    expected: '991000001',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:130:1
+✖ F04 order of arrival does not matter: newer rejection first, older approval second still finalizes (117.8244ms)
+  Error: ERROR:  pago no aprobado verificadamente
+  CONTEXTO:  PL/pgSQL function finalize_paid_checkout_session(uuid) line 19 at RAISE
+  PL/pgSQL function inline_code_block line 55 at assignment
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:20:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:86:13)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:131:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: 'ERROR:  pago no aprobado verificadamente\r\nCONTEXTO:  PL/pgSQL function finalize_paid_checkout_session(uuid) line 19 at RAISE\r\nPL/pgSQL function inline_code_block line 55 at assignment\r\n',
+    stdout: ''
+  }
+
+test at tests\db\p0-money-safety.test.mjs:138:1
+✖ F04 the same payment repeated, stale and out of order is idempotent and never regresses (117.5007ms)
+  Error: ERROR:  pago no aprobado verificadamente
+  CONTEXTO:  PL/pgSQL function finalize_paid_checkout_session(uuid) line 19 at RAISE
+  PL/pgSQL function inline_code_block line 54 at assignment
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:20:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:86:13)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:139:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: 'ERROR:  pago no aprobado verificadamente\r\nCONTEXTO:  PL/pgSQL function finalize_paid_checkout_session(uuid) line 19 at RAISE\r\nPL/pgSQL function inline_code_block line 54 at assignment\r\n',
+    stdout: ''
+  }
+
+test at tests\db\p0-money-safety.test.mjs:145:1
+✖ F05 external refund of 500 plus local refund of 250 totals 750 (153.1823ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  250 !== 750
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:150:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 250,
+    expected: 750,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:154:1
+✖ F05 the same total is reached when the provider snapshot arrives after the local refund, and when repeated (151.5398ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 2
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:162:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 2,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:174:1
+✖ F05 refunds that add up to the full amount move the intent to refunded and block advancing (171.6506ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  500 !== 2500
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:179:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 500,
+    expected: 2500,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

@@ -1,0 +1,5 @@
+{"at":"2026-10-22T06:03:50.591Z","phase":"migrations","applied":164,"pending":["20261022100000 20261022100000_financial_integrity_core.sql","20261022110000 20261022110000_reconciliation_and_safe_disconnect.sql"],"apply":true}
+{"at":"2026-10-22T06:03:53.802Z","phase":"migration","version":"20261022100000","sha256":"9f3f5a3c3ac409e94214798c0e1ef3b3cf4037314b1be62e3c85d6b8ff28c8ad","result":"applied"}
+{"at":"2026-10-22T06:03:56.536Z","phase":"migration","version":"20261022110000","sha256":"2451e2cda5e197c0e9e6bf38be6d292c7579393339c62e9bf2c6942af042df27","result":"applied"}
+{"at":"2026-10-22T06:08:22.447Z","phase":"migrations","applied":166,"pending":["20261022120000 20261022120000_worker_dispatch_ledger_and_pipeline_health.sql"],"apply":true}
+{"at":"2026-10-22T06:08:24.516Z","phase":"migration","version":"20261022120000","sha256":"5ef4b78b89dbfcbbbb01d103680c5f47f23a6d0872292265b0c405ba1a9300db","result":"applied"}

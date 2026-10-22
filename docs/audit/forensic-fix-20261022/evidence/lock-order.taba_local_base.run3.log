@@ -1,0 +1,29 @@
+✖ lock order: payment snapshots, expiry sweeps and buyers reopening the payment link never deadlock (16187.6712ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 16813.2093
+
+✖ failing tests:
+
+test at tests\db\concurrency.test.mjs:168:1
+✖ lock order: payment snapshots, expiry sweeps and buyers reopening the payment link never deadlock (16187.6712ms)
+  AssertionError [ERR_ASSERTION]: deadlock detected: ["40P01","P55000"]
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/concurrency.test.mjs:184:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

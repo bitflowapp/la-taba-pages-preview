@@ -1,0 +1,17 @@
+✔ F06 the worker finds the approved retry even though a rejected payment id is already pinned (4326.2101ms)
+✔ F07 a merchant-order 503 retries the job: no review, no lost payment, one order once it recovers (5765.4262ms)
+✔ F08 an approved payment on the second page of the provider search is found (11590.8968ms)
+✔ F04/F06 two approved payments: both recorded, one order, a critical discrepancy (5338.8328ms)
+✔ F09 a refund with a lost identity is parked: no POST, recovery blocked, a critical discrepancy, job completed (3642.6342ms)
+✔ F08 the ledger sweep finds an approved payment with no webhook, no job and no browser, and flags the orphan (3770.6149ms)
+✔ a crash between recording and finalizing is completed by the next run exactly once (4651.2951ms)
+✔ a provider outage during the ledger window leaves the cursor in place and backs off (4385.1525ms)
+✔ replaying the same reconciliation five times never double-books and stays cheap (5569.887ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 49208.3777

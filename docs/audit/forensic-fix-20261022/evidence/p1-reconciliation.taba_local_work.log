@@ -1,0 +1,33 @@
+✔ F08 eight empty probes no longer end the watch: the ninth is enqueued once its backoff elapsed (460.235ms)
+✔ F08 backoff stretches but never stops: 30 empties an hour apart still produce a probe (132.9909ms)
+✔ F08 a probe is not enqueued twice inside its backoff (143.9982ms)
+✔ F08 a checkout older than 48 h is still watched (144.5504ms)
+✔ F08 closes only with evidence: expiry + 24 h grace + three empty probes after it (432.001ms)
+✔ F08 the unverified-checkout alert stays open while the watch is open, even after 8 empty probes and 48 h (153.0003ms)
+✔ F10 disconnect is refused after a retryable rejection, keeps the credential and keeps payments paused (130.996ms)
+✔ F10 disconnect is refused with an open discrepancy and until the ledger was read after the last activity (144.336ms)
+✔ F10 a clean, drained, synchronized connection can be disconnected (135.1378ms)
+✔ F14 an old incident stays first when more than 200 newer payments exist (731.2509ms)
+✔ discrepancy inbox: resolution needs evidence, an owner, and a real order for paid-without-order (145.0632ms)
+✔ discrepancy inbox: a recurrence is counted, not duplicated, and a resolved one reopens (132.0789ms)
+✔ discrepancy alerts: every open discrepancy becomes an operational alert (180.0254ms)
+✔ F09 a refund with a lost identity is parked, blocks recovery, and is resolved only with evidence (159.3089ms)
+✔ F09 "not executed" releases the hold and a second resolution is refused (154.1082ms)
+✔ ledger sweep: a window is leased, resumed at its offset, finished only when every page was read (129.466ms)
+✔ ledger sweep: failures back off and never advance the watermark (123.6985ms)
+✔ ledger sweep: an orphan approved payment becomes a critical, recovery-blocking discrepancy (122.3519ms)
+✔ integrity checks: an order paid without a recent provider verification is flagged and clears itself when verified (248.4689ms)
+✔ integrity checks: approved money with no order is flagged, and a paid order never double-counts stock (132.5344ms)
+✔ F07 a missing preference is a retry, not a permanent review; the corrected read finalizes once (157.7848ms)
+✔ F07 a DIFFERENT preference is still a real mismatch and still goes to review (284.5514ms)
+✔ a defective payment of a DIFFERENT id does not poison a healthy completed purchase (158.17ms)
+✔ a payment id already bound to another checkout is refused as inconsistent (141.7133ms)
+✔ error text of an expected SQL failure is reachable by the harness (121.7444ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5072.4218

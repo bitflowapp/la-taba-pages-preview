@@ -1,0 +1,33 @@
+{
+  "projectRef": "ixewllzzuzpqrkxzmfzx",
+  "database": "taba_restore_20261022_ad3d29a2",
+  "purpose": "isolated_restore_test",
+  "createdAt": "2026-10-22T06:16:01.055Z",
+  "fullManagedPlatformRestorePassed": false,
+  "productionModified": false,
+  "databaseCreatedByThisRun": true,
+  "pre-data": "passed",
+  "data": "passed",
+  "post-data": "passed",
+  "applicationAclRestored": true,
+  "aclEntries": 662,
+  "managedRoleDefaultPrivilegesRestored": false,
+  "applicationObjectsRestored": true,
+  "schemas": [
+    "public",
+    "private",
+    "catalog_admin",
+    "supabase_migrations",
+    "auth",
+    "storage"
+  ],
+  "authStorageManagedOwnershipRestored": false,
+  "excludedManagedServices": [
+    "cron",
+    "realtime runtime",
+    "net",
+    "graphql",
+    "pgbouncer"
+  ],
+  "dataIntegrityVerified": false
+}

@@ -1,0 +1,365 @@
+✔ 01 duplicate approval finalizes once: one order, stock 8 (173.5333ms)
+✔ 02 a pending payment never becomes an order (SQLSTATE 55000) (329.8047ms)
+✖ 03 approval after the reservation expired no longer strands the buyer: the paid purchase is re-reserved in the same transaction (121.6812ms)
+✖ 04 a missing preference is retryable; the corrected read finalizes once (no permanent review) (120.1299ms)
+✖ 05 a rejected payment after the approved one does not replace the approved identity (151.9611ms)
+✖ 06 two approved payment ids: both stored, first keeps funding, critical case opened (136.4343ms)
+✖ 07 refund of a late payment that stayed in review cannot be recovered afterwards (157.8348ms)
+✖ 08 eight empty probes do not stop the watch (120.1171ms)
+✖ 09 a checkout older than 48 h is still probed (119.8688ms)
+✖ 10 disconnect preflight counts a retryably rejected checkout as open (127.654ms)
+✖ 11 a snapshot interrupted before finalization leaves exactly 2 units out of stock after expiry and the sweep (120.5282ms)
+✔ 12 a payment to the wrong collector is blocked and never becomes an order (118.3434ms)
+✔ 13 a payment with the wrong amount is blocked (115.7646ms)
+✔ 14 rejected then approved inside the same preference becomes one order (135.2027ms)
+✔ 15 a refunded order cannot be prepared, dispatched or delivered (151.021ms)
+✖ 16 an external refund of 500 plus a local one of 250 totals 750 (149.6366ms)
+✔ 17 an exception after reserving rolls the whole purchase back (117.258ms)
+✖ 18 recovery after an interrupted, expired reservation does not deduct twice (stock 8, one allocation) (262.2606ms)
+✖ 19 recovery is refused while a refund is ambiguous (427.0667ms)
+✖ 20 a newer rejection processed before the older approval does not block the purchase (115.5278ms)
+✔ 21 a worker that died is replaced: the lease is reclaimed and the old owner cannot complete (120.1736ms)
+✔ 22 a duplicate webhook receipt yields one job (121.6029ms)
+✔ 23 client-side price and over-selling are rejected by the server (117.94ms)
+✖ 24 a fully refunded late payment cannot be recovered, prepared or delivered (178.4278ms)
+✖ 25 an open refund request deduplicates even with another UUID (148.5223ms)
+✖ 26 disconnect after a retryable rejection is refused and keeps the credential (125.5281ms)
+ℹ tests 26
+ℹ suites 0
+ℹ pass 10
+ℹ fail 16
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4172.0087
+
+✖ failing tests:
+
+test at tests\db\forensic-26-scenarios.test.mjs:20:1
+✖ 03 approval after the reservation expired no longer strands the buyer: the paid purchase is re-reserved in the same transaction (121.6812ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:22:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:24:1
+✖ 04 a missing preference is retryable; the corrected read finalizes once (no permanent review) (120.1299ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + undefined
+  - true
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:26:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:28:1
+✖ 05 a rejected payment after the approved one does not replace the approved identity (151.9611ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + '991000002'
+  - '991000001'
+             ^
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:30:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '991000002',
+    expected: '991000001',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:32:1
+✖ 06 two approved payment ids: both stored, first keeps funding, critical case opened (136.4343ms)
+  TypeError [Error]: Cannot read properties of null (reading 'length')
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:34:27)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+
+test at tests\db\forensic-26-scenarios.test.mjs:36:1
+✖ 07 refund of a late payment that stayed in review cannot be recovered afterwards (157.8348ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  'allowed' !== '55000'
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:39:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'allowed',
+    expected: '55000',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:41:1
+✖ 08 eight empty probes do not stop the watch (120.1171ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:43:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:45:1
+✖ 09 a checkout older than 48 h is still probed (119.8688ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:49:1
+✖ 10 disconnect preflight counts a retryably rejected checkout as open (127.654ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(s.extra.open_payments >= 1)
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:51:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:53:1
+✖ 11 a snapshot interrupted before finalization leaves exactly 2 units out of stock after expiry and the sweep (120.5282ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:55:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:74:1
+✖ 16 an external refund of 500 plus a local one of 250 totals 750 (149.6366ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  250 !== 750
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:77:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 250,
+    expected: 750,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:83:1
+✖ 18 recovery after an interrupted, expired reservation does not deduct twice (stock 8, one allocation) (262.2606ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  6 !== 8
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:85:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 6,
+    expected: 8,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:88:1
+✖ 19 recovery is refused while a refund is ambiguous (427.0667ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  'allowed' !== '55000'
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:91:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'allowed',
+    expected: '55000',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:93:1
+✖ 20 a newer rejection processed before the older approval does not block the purchase (115.5278ms)
+  Error: ERROR:  pago no aprobado verificadamente
+  CONTEXTO:  PL/pgSQL function finalize_paid_checkout_session(uuid) line 19 at RAISE
+  PL/pgSQL function inline_code_block line 54 at assignment
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:94:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: 'ERROR:  pago no aprobado verificadamente\r\nCONTEXTO:  PL/pgSQL function finalize_paid_checkout_session(uuid) line 19 at RAISE\r\nPL/pgSQL function inline_code_block line 54 at assignment\r\n',
+    stdout: ''
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:110:1
+✖ 24 a fully refunded late payment cannot be recovered, prepared or delivered (178.4278ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:113:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:115:1
+✖ 25 an open refund request deduplicates even with another UUID (148.5223ms)
+  Error: ERROR:  column "origin" does not exist
+  L�NEA 1: ...ment_refunds where payment_intent_id=v_intent and origin='lo...
+                                                               ^
+  CONSULTA:  v_result:=jsonb_build_object('same_refund',v_before->>'refund_id'=v_extra->>'refund_id','count',(select count(*) from public.payment_refunds where payment_intent_id=v_intent and origin='local'))
+  CONTEXTO:  PL/pgSQL function inline_code_block line 54 at assignment
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:116:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: `ERROR:  column "origin" does not exist\r\nL�NEA 1: ...ment_refunds where payment_intent_id=v_intent and origin='lo...\r\n                                                             ^\r\nCONSULTA:  v_result:=jsonb_build_object('same_refund',v_before->>'refund_id'=v_extra->>'refund_id','count',(select count(*) from public.payment_refunds where payment_intent_id=v_intent and origin='local'))\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 54 at assignment\r\n`,
+    stdout: ''
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:119:1
+✖ 26 disconnect after a retryable rejection is refused and keeps the credential (125.5281ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:121:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

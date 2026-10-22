@@ -1,0 +1,17 @@
+{"t":12,"phase":"fixture-created","stockAfterReserve":8}
+{"t":14,"phase":"approved-recorded-not-finalized","snapshot":{"ok":true,"internal_status":"approved_order_pending","finalize_required":true,"payment_intent_id":"394e09fa-9297-49df-a1b7-3029c434909b","manual_review_required":false}}
+{"t":125,"phase":"cron-recovered-the-order","recovered":true,"stock":8,"orders":1,"reservations":[{"qty":2,"status":"converted"}]}
+file:///<repo>/scripts/recovery/hosted-client.mjs:15
+        throw new Error(`Recovery HTTP ${response.status}: ${message}`);
+              ^
+
+Error: Recovery HTTP 400: Failed to run sql query: ERROR:  23505: duplicate key value violates unique constraint "payment_outbox_reconciliation_active_key"
+DETAIL:  Key (payment_intent_id, topic)=(394e09fa-9297-49df-a1b7-3029c434909b, payment_reconcile) already exists.
+
+    at decode (file:///<repo>/scripts/recovery/hosted-client.mjs:15:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///<repo>/scripts/recovery/qa-drill-recovery.mjs:57:3
+    at async conToken (file:///<repo>/scripts/lib/supabase-cli-token.mjs:99:12)
+    at async file:///<repo>/scripts/recovery/qa-drill-recovery.mjs:24:1
+
+Node.js v24.8.0

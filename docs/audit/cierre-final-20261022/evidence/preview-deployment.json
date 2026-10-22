@@ -1,0 +1,73 @@
+{
+  "url": "https://recovery-20261020.taba2-staging.pages.dev",
+  "expected": {
+    "commit": "1c8d0635",
+    "runtime": "la-taba-runtime-v159-panel-first-login",
+    "builtAt": "2026-10-22T22:59:29.091Z"
+  },
+  "served": {
+    "commit": "1c8d0635",
+    "runtime": "la-taba-runtime-v159-panel-first-login",
+    "builtAt": "2026-10-22T22:59:29.091Z",
+    "serviceWorkerCache": "la-taba-runtime-v159-panel-first-login"
+  },
+  "files": {
+    "expected": 375,
+    "identical": 375,
+    "different": [],
+    "missing": []
+  },
+  "headers": {
+    "sw": {
+      "status": 200,
+      "cacheControl": "private, no-cache",
+      "robots": "noindex, nofollow, noarchive"
+    },
+    "index": {
+      "status": 200,
+      "cacheControl": "private, no-cache",
+      "robots": "noindex, nofollow, noarchive"
+    },
+    "version": {
+      "status": 200,
+      "cacheControl": "private, no-cache",
+      "robots": "noindex, nofollow, noarchive"
+    },
+    "runtimeConfig": {
+      "status": 200,
+      "cacheControl": "no-store",
+      "robots": "noindex, nofollow, noarchive"
+    }
+  },
+  "gate": {
+    "anonymous": 401,
+    "wrong": 401,
+    "navigation": 302,
+    "navigationTarget": "/__acceso?volver=%2F",
+    "loginWrong": 401,
+    "loginWrongCookie": false,
+    "login": 303,
+    "sessionFlags": true,
+    "withSession": 200,
+    "swWithSession": 200
+  },
+  "checks": {
+    "gateRefusesAnonymous": true,
+    "gateRefusesWrongPassword": true,
+    "gateSendsNavigationToLogin": true,
+    "gateLoginRefusesWrongPassword": true,
+    "gateLoginGivesSecureSession": true,
+    "gateSessionServesSite": true,
+    "versionServed": true,
+    "commitMatches": true,
+    "runtimeMatches": true,
+    "builtAtMatches": true,
+    "serviceWorkerCacheMatches": true,
+    "everyFileIdentical": true,
+    "serviceWorkerRevalidates": true,
+    "shellRevalidates": true,
+    "versionRevalidates": true,
+    "noindex": true
+  },
+  "passed": true
+}

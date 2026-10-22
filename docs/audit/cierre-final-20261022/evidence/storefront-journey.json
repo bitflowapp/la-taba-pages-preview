@@ -1,0 +1,46 @@
+{
+  "at": "2026-10-22T23:03:02.956Z",
+  "orderCode": "LT-0048",
+  "checks": [
+    {
+      "name": "QA window opens",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "buyer completes a cash order in the real UI",
+      "ok": true,
+      "detail": "LT-0048"
+    },
+    {
+      "name": "stock reserved once by the cash order",
+      "ok": true,
+      "detail": "before=20 now=19"
+    },
+    {
+      "name": "Mercado Pago is NOT offered while no seller is connected",
+      "ok": true,
+      "detail": "expected: QA has no connected seller"
+    },
+    {
+      "name": "the owner sees the order",
+      "ok": true,
+      "detail": "received cash"
+    },
+    {
+      "name": "the owner cancels it",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "stock came back exactly once",
+      "ok": true,
+      "detail": "now=20"
+    },
+    {
+      "name": "QA window closed",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}

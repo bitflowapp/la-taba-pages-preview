@@ -1,0 +1,3 @@
+{"at":"2026-10-22T22:12:49.926Z","phase":"migrations","applied":167,"pending":["20261022130000 20261022130000_late_payment_changes_ledger_keyset_and_job_recovery.sql","20261022140000 20261022140000_pending_payment_stays_visible_without_seller.sql"],"apply":true}
+{"at":"2026-10-22T22:12:52.353Z","phase":"migration","version":"20261022130000","sha256":"389962d91fbec62ea942f3429f723ceb301f070aa053e5bd2d2519a0322f0da0","result":"applied"}
+{"at":"2026-10-22T22:12:53.830Z","phase":"migration","version":"20261022140000","sha256":"9ea8bbece892f708d9920dd9e6c73a480ba842301421263c7979174ac57f87fa","result":"applied"}

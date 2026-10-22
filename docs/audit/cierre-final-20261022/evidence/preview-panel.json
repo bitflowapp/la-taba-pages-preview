@@ -1,0 +1,66 @@
+{
+  "origin": "https://recovery-20261020.taba2-staging.pages.dev",
+  "at": "2026-10-22T23:00:54.294Z",
+  "served": {
+    "version": {
+      "commit": "1c8d0635",
+      "runtime": "la-taba-runtime-v159-panel-first-login",
+      "builtAt": "2026-10-22T22:59:29.091Z"
+    },
+    "workerState": "installing",
+    "workerScript": "https://recovery-20261020.taba2-staging.pages.dev/sw.js",
+    "caches": []
+  },
+  "server": {
+    "rows": 0,
+    "states": []
+  },
+  "checks": [
+    {
+      "name": "panel login with the QA owner",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "version.json is served",
+      "ok": true,
+      "detail": "1c8d0635 la-taba-runtime-v159-panel-first-login"
+    },
+    {
+      "name": "the runtime is the expected one",
+      "ok": true,
+      "detail": "la-taba-runtime-v159-panel-first-login"
+    },
+    {
+      "name": "cash and transfer collections are on the same screen",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "the panel asked the server for the payments",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "the listed count equals the server rows",
+      "ok": true,
+      "detail": "0 pago(s) listados / server 0"
+    },
+    {
+      "name": "an empty list says so instead of inventing payments",
+      "ok": true,
+      "detail": "Todavía no hay pagos para mostrar hoy."
+    },
+    {
+      "name": "no browser dialogs were opened",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no console errors",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "passed": true
+}

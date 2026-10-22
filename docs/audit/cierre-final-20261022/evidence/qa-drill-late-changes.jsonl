@@ -1,0 +1,6 @@
+{"t":9,"phase":"pending-recorded-with-schedule","snapshot":{"ok":true,"internal_status":"pending","finalize_required":false,"payment_intent_id":"40232bed-6c8e-4c1d-a1a6-c7dab93f0c0f","manual_review_required":false},"watch":{"watch_state":"pending","in_the_future":true}}
+{"t":11,"phase":"pending-payment-is-due","due":{"watch_state":"pending","overdue":true}}
+{"t":549,"phase":"unreadable-pending-payment-is-a-visible-finding","finding":{"kind":"pending_payment_unchecked","status":"open","severity":"high","reason":"the Mercado Pago link is gone: reconnect it, or check this pending payment in Mercado Pago"},"alert":{"alert_code":"PAYMENT_DISCREPANCY_OPEN","severity":"CRITICAL","status":"open"},"readsEnqueuedWithoutSeller":0}
+{"t":564,"phase":"dead-worker-job-was-reaped-and-backs-off","job":{"status":"retry_wait","attempts":1,"interruptions":1,"owner":"drill-dead-worker","last_error":"lease_expired_interrupted","backing_off":true}}
+{"t":565,"phase":"pipeline-health","outbox":{"due_jobs":0,"dead_letter":0,"expired_leases":0,"interrupted_jobs":1,"repeated_failures":0,"oldest_due_age_seconds":null},"watch":{"pending_payments":1,"pending_overdue_over_1h":1,"verification_overdue_over_1h":1},"ledger":{"failing_cursors":0,"max_lag_seconds":null,"connected_sellers":0}}
+{"t":567,"phase":"drill-closed","tenant":"paused"}

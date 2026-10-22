@@ -1,0 +1,38 @@
+{
+  "origin": "https://recovery-20261020.taba2-staging.pages.dev",
+  "at": "2026-10-22T23:02:07.877Z",
+  "expectRuntime": "la-taba-runtime-v159-panel-first-login",
+  "checks": [
+    {
+      "name": "the gate opens a session through its form",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "the service worker is active",
+      "ok": true,
+      "detail": "activated"
+    },
+    {
+      "name": "its cache is the expected runtime",
+      "ok": true,
+      "detail": "la-taba-runtime-v159-panel-first-login"
+    },
+    {
+      "name": "the precache is complete behind the gate",
+      "ok": true,
+      "detail": "217 entries / 216 precached files"
+    },
+    {
+      "name": "a reload is served under the worker",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "without a session the reload shows the gate form, not a cached shell",
+      "ok": true,
+      "detail": "/__acceso?volver=%2F"
+    }
+  ],
+  "passed": true
+}

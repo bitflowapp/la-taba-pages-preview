@@ -1,5 +1,7 @@
 # La Taba: informe de finalización técnica (21/10/2026)
 
+> **Registro histórico.** Este informe conserva el estado observado el 21/10. Para la rama, preview, pruebas y bloqueos actuales consultá [`continuidad Claude Code del 22/10`](2026-10-22-continuidad-claude-code.md), que lo actualiza.
+
 Rama `recovery/la-taba-free-hosted-20261020`. Destino exclusivamente de pruebas: Supabase Free `ixewllzzuzpqrkxzmfzx` y Cloudflare Pages `taba2-staging`. No se tocó producción, la aplicación productiva de Mercado Pago ni ningún cobro real.
 
 ## Veredicto: NO-GO comercial

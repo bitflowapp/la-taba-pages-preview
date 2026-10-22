@@ -35,6 +35,26 @@ async function get(path, credential = authorization) {
   return { status: response.status, headers: response.headers, bytes: Buffer.from(await response.arrayBuffer()) };
 }
 
+// The gate's cookie path, as a browser walks it: a navigation without access goes to the login form, the right
+// password gives a session cookie, and the session serves the site (also what the service worker asks for).
+async function inspectGate() {
+  const raw = (path, init = {}) => fetch(base + path, { redirect: 'manual', signal: AbortSignal.timeout(60000), ...init });
+  const form = password => raw('/__acceso', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded', 'sec-fetch-mode': 'navigate' },
+    body: new URLSearchParams({ usuario: gate.usuario, clave: password, volver: '/' }).toString() });
+  const navigation = await raw('/', { headers: { 'sec-fetch-mode': 'navigate', accept: 'text/html' } });
+  const loginWrong = await form('x' + gate.secreto);
+  const login = await form(gate.secreto);
+  const setCookie = login.headers.get('set-cookie') || '';
+  const cookie = setCookie.split(';')[0];
+  const withSession = await raw('/', { headers: { 'sec-fetch-mode': 'navigate', cookie } });
+  const swWithSession = await raw('/sw.js', { headers: { cookie } });
+  return { anonymous: (await get('/', null)).status, wrong: (await get('/', basic(gate.usuario, 'x' + gate.secreto))).status,
+    navigation: navigation.status, navigationTarget: navigation.headers.get('location'),
+    loginWrong: loginWrong.status, loginWrongCookie: Boolean(loginWrong.headers.get('set-cookie')),
+    login: login.status, sessionFlags: /^__Host-taba_qa=v1\./.test(setCookie) && ['Secure', 'HttpOnly', 'SameSite=Lax', 'Path=/'].every(flag => setCookie.includes(flag)),
+    withSession: withSession.status, swWithSession: swWithSession.status };
+}
+
 async function inspect() {
   const version = await get('/version.json');
   const served = version.status === 200 ? JSON.parse(version.bytes.toString('utf8')) : null;
@@ -59,9 +79,13 @@ async function inspect() {
   };
   const headers = { sw: await headerOf('/sw.js'), index: await headerOf('/'), version: await headerOf('/version.json'), runtimeConfig: await headerOf('/runtime-config.js') };
   const revalidates = value => /no-cache|no-store|max-age=0|must-revalidate/i.test(value || '');
-  const gateStatus = gate ? { anonymous: (await get('/', null)).status, wrong: (await get('/', basic(gate.usuario, 'x' + gate.secreto))).status } : null;
+  const gateStatus = gate ? await inspectGate() : null;
   const checks = {
-    ...(gate ? { gateRefusesAnonymous: gateStatus.anonymous === 401, gateRefusesWrongPassword: gateStatus.wrong === 401 } : {}),
+    ...(gate ? { gateRefusesAnonymous: gateStatus.anonymous === 401, gateRefusesWrongPassword: gateStatus.wrong === 401,
+      gateSendsNavigationToLogin: gateStatus.navigation === 302 && gateStatus.navigationTarget === '/__acceso?volver=%2F',
+      gateLoginRefusesWrongPassword: gateStatus.loginWrong === 401 && !gateStatus.loginWrongCookie,
+      gateLoginGivesSecureSession: gateStatus.login === 303 && gateStatus.sessionFlags,
+      gateSessionServesSite: gateStatus.withSession === 200 && gateStatus.swWithSession === 200 } : {}),
     versionServed: served !== null,
     commitMatches: served?.commit === expectedCommit,
     runtimeMatches: served?.runtime === receipt.runtime,

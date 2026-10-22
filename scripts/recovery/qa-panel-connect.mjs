@@ -21,7 +21,8 @@ const gate = leerSecreto('RECOVERY PREVIEW ACCESS');
 const browser = await chromium.launch({ channel: 'chromium', headless: true });
 const context = await browser.newContext({
   viewport: { width, height: 844 }, locale: 'es-AR', timezoneId: 'America/Argentina/Buenos_Aires',
-  ...(gate?.usuario && gate?.secreto ? { httpCredentials: { username: gate.usuario, password: gate.secreto, origin } } : {}),
+  // `send: 'always'`: the gate answers a navigation without access with its login form, not with a Basic challenge.
+  ...(gate?.usuario && gate?.secreto ? { httpCredentials: { username: gate.usuario, password: gate.secreto, origin, send: 'always' } } : {}),
 });
 const page = await context.newPage();
 const consoleErrors = [];

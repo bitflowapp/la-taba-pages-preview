@@ -7,6 +7,8 @@ import { psqlRaw, ROOT } from './lib.mjs';
 
 const [db, ...files] = process.argv.slice(2);
 if (!db || !files.length) throw new Error('usage: run-sql-tests.mjs <db> <file.sql>...');
+// Some repository tests are script-style and COMMIT their fixtures: never pollute the template databases.
+if (['taba_local_base', 'taba_local_work'].includes(db)) throw new Error('run SQL tests on a clone: node scripts/local-db/clone.mjs taba_local_sqltest');
 psqlRaw(db, fs.readFileSync(path.join(ROOT, 'scripts/local-db/pgtap-shim.sql'), 'utf8'));
 let failed = 0;
 for (const file of files) {

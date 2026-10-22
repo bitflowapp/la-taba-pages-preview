@@ -5,13 +5,19 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-export const BIN = process.env.TABA_PG_BIN || 'D:/work/la-taba-backup-20261021/tools/package/native/bin';
+// Directory with psql/pg_ctl of a PostgreSQL 15+ install (set TABA_PG_BIN). Nothing machine-specific lives in the repo.
+export const BIN = process.env.TABA_PG_BIN || '';
 export const PORT = Number(process.env.TABA_LOCAL_PG_PORT || 55440);
 export const HOST = '127.0.0.1';
 
 const ext = process.platform === 'win32' ? '.exe' : '';
 
+function requireBin() {
+  if (!BIN) throw new Error('Set TABA_PG_BIN to the folder that contains psql (a local PostgreSQL install).');
+}
+
 export function psqlRaw(db, sql, { tuples = false, check = true, timeout = 180000 } = {}) {
+  requireBin();
   if (!/^taba_local_[a-z0-9_]+$/.test(db) && db !== 'postgres') throw new Error('Only disposable taba_local_* databases may be used: ' + db);
   const args = ['-h', HOST, '-p', String(PORT), '-U', 'postgres', '-d', db, '-X', '-q', '-v', 'ON_ERROR_STOP=1'];
   if (tuples) args.push('-At');
@@ -55,4 +61,20 @@ export function bootstrapDatabase(db, { upTo = null } = {}) {
     applied.push(name);
   }
   return applied;
+}
+
+// Asynchronous variant for concurrency tests: several sessions run at the same time against one database.
+import { spawn } from 'node:child_process';
+export function psqlAsync(db, sql, { timeout = 240000 } = {}) {
+  requireBin();
+  if (!/^taba_local_[a-z0-9_]+$/.test(db)) return Promise.reject(new Error('Only disposable taba_local_* databases may be used: ' + db));
+  return new Promise((resolve) => {
+    const child = spawn(path.join(BIN, 'psql' + ext), ['-h', HOST, '-p', String(PORT), '-U', 'postgres', '-d', db, '-X', '-q', '-At', '-v', 'ON_ERROR_STOP=1'], { windowsHide: true });
+    let stdout = ''; let stderr = '';
+    const timer = setTimeout(() => child.kill(), timeout);
+    child.stdout.on('data', d => { stdout += d; });
+    child.stderr.on('data', d => { stderr += d; });
+    child.on('close', status => { clearTimeout(timer); resolve({ status, stdout, stderr }); });
+    child.stdin.end(sql);
+  });
 }

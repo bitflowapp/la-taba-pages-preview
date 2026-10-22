@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v156-worker-cache-isolation';
+const CACHE_NAME = 'la-taba-runtime-v157-financial-integrity';
 const ASSETS = [
   './',
   './index.html',

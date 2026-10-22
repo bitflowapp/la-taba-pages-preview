@@ -403,9 +403,9 @@ declare
   v_session_id uuid;
   v_count integer := 0;
 begin
-  -- Candidates are read WITHOUT locks: taking the session lock here would invert the intent -> session order used
-  -- by payment snapshots and could deadlock. release_checkout_session_inventory locks in the canonical order and
-  -- re-checks the state under the lock.
+  -- Candidates are read WITHOUT locks and in a total order (expires_at, id): two overlapping sweeps then lock
+  -- sessions in the same order and cannot form a cycle. The INTENT is try-locked first (canonical order I6, same as
+  -- payment snapshots): a checkout a payment is being recorded on right now is skipped, not waited for.
   for v_session_id in
     select s.id
       from public.checkout_sessions s
@@ -413,13 +413,45 @@ begin
        and s.status in ('created', 'validating', 'ready_for_payment', 'redirected', 'payment_pending')
        and not exists (select 1 from public.payment_intents pi
                         where pi.checkout_session_id = s.id and pi.paid_amount is not null)
-     order by s.expires_at
+     order by s.expires_at, s.id
      limit greatest(1, least(coalesce(p_limit, 100), 500))
   loop
+    if exists (select 1 from public.payment_intents pi where pi.checkout_session_id = v_session_id) then
+      perform 1 from public.payment_intents pi where pi.checkout_session_id = v_session_id for update skip locked;
+      if not found then continue; end if;
+    end if;
     perform public.release_checkout_session_inventory(v_session_id, 'checkout_expired', 'expired');
     v_count := v_count + 1;
   end loop;
   return v_count;
+end $$;
+
+-- Lock order I6 for the buyer-facing preference functions too. They used to lock the SESSION and then the intent,
+-- the inverse of payment snapshots, the expiry sweep and recovery: a buyer reopening the payment link while a
+-- webhook was being recorded could deadlock. Each gets one extra statement in front that takes the intent first.
+do $$
+declare
+  v_fn regprocedure;
+  v_def text;
+  v_new text;
+  v_pre constant text := E'  perform 1 from public.payment_intents _pi where _pi.checkout_session_id = p_checkout_session_id for update;
+';
+begin
+  foreach v_fn in array array[
+    'public.prepare_mercadopago_preference(uuid,uuid,boolean)'::regprocedure,
+    'public.prepare_mercadopago_preference_v2(uuid,uuid,boolean)'::regprocedure] loop
+    v_def := pg_get_functiondef(v_fn);
+    v_new := replace(v_def, E'  select * into v_session from public.checkout_sessions s where s.id = p_checkout_session_id for update;',
+      v_pre || E'  select * into v_session from public.checkout_sessions s where s.id = p_checkout_session_id for update;');
+    if v_new = v_def then raise exception 'LOCK_ORDER_PATTERN_MISMATCH %', v_fn; end if;
+    execute v_new;
+  end loop;
+  v_fn := 'public.record_mercadopago_preference_created_v2(uuid,text,uuid,uuid,uuid,text,text,text,text,text,text)'::regprocedure;
+  v_def := pg_get_functiondef(v_fn);
+  v_new := replace(v_def, E' perform 1 from public.checkout_sessions where id=p_checkout_session_id and customer_id=p_customer_id for update;',
+    v_pre || E' perform 1 from public.checkout_sessions where id=p_checkout_session_id and customer_id=p_customer_id for update;');
+  if v_new = v_def then raise exception 'LOCK_ORDER_PATTERN_MISMATCH %', v_fn; end if;
+  execute v_new;
 end $$;
 
 -- ---------------------------------------------------------------------------------------------------------------

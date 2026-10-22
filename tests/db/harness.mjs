@@ -77,6 +77,22 @@ function tail() {
 end; $$; set constraints all immediate; select * from forensic_result; rollback;`;
 }
 
+
+/**
+ * SQL that COMMITS the fixture purchase (business, product, checkout session, intent) so that code outside a single
+ * transaction (Edge Functions, concurrent sessions) can work on it. Ids are fixed; run it once per cloned database.
+ */
+export function committedFixtureSql(quantity = 2) {
+  const checkout = CHECKOUT.replace("'quantity',2", `'quantity',${quantity}`);
+  return `${PREFIX}${checkout}
+end; $$;`;
+}
+export const FIXTURE_IDS = Object.freeze({
+  user: '10000000-0000-4000-8000-0000000000fa',
+  business: '20000000-0000-4000-8000-0000000000fa',
+  product: '30000000-0000-4000-8000-0000000000fa',
+});
+
 export function scenarioSql(body) {
   return `begin; set local statement_timeout='30s'; set local lock_timeout='5s'; create temp table forensic_result(result jsonb); ${PREFIX}${CHECKOUT}${body}${tail()}`;
 }

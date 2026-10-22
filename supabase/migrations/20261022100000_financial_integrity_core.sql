@@ -934,8 +934,10 @@ begin
       on conflict (provider, environment, seller_id, provider_payment_id) do update
         set last_seen_at = clock_timestamp(), validation_error = excluded.validation_error;
     end if;
+    -- A defective payment foreign to a purchase that is already funded must be visible, but it cannot hold the
+    -- legitimate payment's order hostage.
     perform private.open_payment_discrepancy(v_intent.business_id, v_intent.id, v_session.id, 'provider_payment_inconsistent',
-      'critical', true, v_pid, jsonb_build_object('reason', v_reason, 'source', p_source, 'status', v_status,
+      'critical', not v_foreign, v_pid, jsonb_build_object('reason', v_reason, 'source', p_source, 'status', v_status,
         'amount', v_amount, 'currency', v_currency, 'foreign_to_intent_payment', v_foreign),
       'inconsistent:' || v_intent.id::text || ':' || coalesce(v_pid, 'none') || ':' || v_reason,
       null, v_seller, v_intent.environment);
@@ -1002,8 +1004,9 @@ begin
     if coalesce(v_other.is_financing, false) then
       v_apply := false;
       if v_money then
+        -- Critical and visible, but the first payment still funds its order: the surplus is refunded by an operator.
         perform private.open_payment_discrepancy(v_intent.business_id, v_intent.id, v_session.id, 'multiple_approved_payments',
-          'critical', true, v_pid, jsonb_build_object('financing_payment_id', v_intent.provider_payment_id, 'other_payment_id', v_pid,
+          'critical', false, v_pid, jsonb_build_object('financing_payment_id', v_intent.provider_payment_id, 'other_payment_id', v_pid,
             'other_status', v_status, 'amount', v_amount, 'source', p_source),
           'multiple_money:' || v_intent.id::text || ':' || v_pid, null, v_seller, v_intent.environment);
       end if;

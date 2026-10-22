@@ -27,7 +27,7 @@ export function sessionExpiresAtMs(authorization: string | null | undefined): nu
   }
 }
 
-const BLOCKING_KEYS = ['open_payments', 'refunds_in_progress', 'cancellations_in_progress', 'queued_jobs'];
+const BLOCKING_KEYS = ['open_payments', 'refunds_in_progress', 'cancellations_in_progress', 'queued_jobs', 'open_discrepancies', 'ledger_unsynced'];
 
 /** Lo que impide desvincular sin dejar operaciones sin poder consultarse. */
 export function blockingPendingCount(pending: unknown): number {

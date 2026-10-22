@@ -321,6 +321,8 @@ const PENDING_LABELS = Object.freeze([
   ['refunds_in_progress', 'devolución(es) en curso'],
   ['cancellations_in_progress', 'cancelación(es) en curso'],
   ['queued_jobs', 'aviso(s) de Mercado Pago todavía en proceso'],
+  ['open_discrepancies', 'discrepancia(s) financiera(s) sin resolver'],
+  ['ledger_unsynced', 'conciliación con Mercado Pago pendiente (se completa sola en minutos)'],
 ]);
 
 // Antes de desvincular: qué queda pendiente y qué cambia. Sin diálogos del

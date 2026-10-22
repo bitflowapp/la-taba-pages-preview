@@ -1,7 +1,7 @@
 // What EXACTLY does the QA preview serve, and is it the build that was prepared?
 //
 //   node scripts/recovery/verify-preview-deployment.mjs --url https://recovery-20261020.taba2-staging.pages.dev \
-//        --receipt D:/work/la-taba-qa-candidate-<sha>-receipt.json [--expect-commit <sha>] [--wait-ms 180000]
+//        --receipt <artifact-dir>-receipt.json [--expect-commit <sha>] [--wait-ms 180000]
 //
 // READ ONLY: it only issues GET requests to the preview. It compares, byte for byte (SHA-256), every file the
 // prepared artifact contains against what Cloudflare serves, then reads the three identities that decide whether a

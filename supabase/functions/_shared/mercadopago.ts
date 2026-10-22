@@ -10,6 +10,7 @@ import {
   sha256Hex,
   webhookUrl,
 } from './payment-runtime.ts';
+import { WorkerDeadlineExceeded } from './worker-deadline.ts';
 import type { Deadline } from './worker-deadline.ts';
 
 const MERCADOPAGO_API_BASE = 'https://api.mercadopago.com';
@@ -148,6 +149,7 @@ export async function mercadoPagoRequest(
   const controller = new AbortController();
   // Never longer than the usual cap and never past the end of the invocation's budget.
   const timeoutMs = init.deadline ? init.deadline.callTimeoutMs(PROVIDER_CALL_TIMEOUT_MS) : PROVIDER_CALL_TIMEOUT_MS;
+  const clampedByDeadline = timeoutMs < PROVIDER_CALL_TIMEOUT_MS;
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const { deadline: _deadline, ...fetchInit } = init;
@@ -174,6 +176,11 @@ export async function mercadoPagoRequest(
       rawText,
       requestId: response.headers.get('x-request-id') || response.headers.get('x-correlation-id') || '',
     };
+  } catch (error) {
+    // The timer that fired was the end of the invocation's budget, not the provider failing: the caller must hand
+    // its work back (resumable), not count a failure.
+    if (clampedByDeadline && (error as { name?: string } | null)?.name === 'AbortError') throw new WorkerDeadlineExceeded();
+    throw error;
   } finally {
     clearTimeout(timeout);
   }

@@ -1,0 +1,74 @@
+✖ B1 a ledger page that does not fit in one wall clock still makes progress and nothing is killed (63347.6875ms)
+✖ B2 a job that cannot finish inside one wall clock does not starve the queue (one job per invocation) (5790.5677ms)
+✖ B3 a batch of claimed jobs never leaves jobs claimed-but-never-run behind (8284.7807ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 0
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 77486.6501
+
+✖ failing tests:
+
+test at tests\db\astra2-worker-time.test.mjs:11:1
+✖ B1 a ledger page that does not fit in one wall clock still makes progress and nothing is killed (63347.6875ms)
+  AssertionError [ERR_ASSERTION]: the worker stops by itself before the platform kills it: [true,true,true,true,true,true,true,true]
+  
+  8 !== 0
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-worker-time.test.mjs:13:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.start (node:internal/test_runner/test:1003:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:358:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 8,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\astra2-worker-time.test.mjs:19:1
+✖ B2 a job that cannot finish inside one wall clock does not starve the queue (one job per invocation) (5790.5677ms)
+  AssertionError [ERR_ASSERTION]: the healthy job behind the heavy one was processed: [{"killed":true,"orders":0},{"killed":true,"orders":0},{"killed":true,"orders":0},{"killed":true,"orders":0},{"killed":true,"orders":0},{"killed":true,"orders":0}]
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-worker-time.test.mjs:21:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\astra2-worker-time.test.mjs:25:1
+✖ B3 a batch of claimed jobs never leaves jobs claimed-but-never-run behind (8284.7807ms)
+  AssertionError [ERR_ASSERTION]: no job is held by a finished invocation
+  
+  4 !== 0
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-worker-time.test.mjs:29:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 4,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

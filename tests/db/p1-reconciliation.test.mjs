@@ -200,13 +200,16 @@ test('ledger sweep: an orphan approved payment becomes a critical, recovery-bloc
     perform public.record_orphan_provider_payment(v_business,'test',jsonb_build_object('id','771000001','status','approved','transaction_amount',2500,'currency_id','ARS','external_reference','taba2:checkout:00000000-0000-4000-8000-0000000000aa','collector_id','collector-retry'));
     v_result:=(select jsonb_build_object('rows',count(*),'sev',max(severity),'blocks',bool_or(blocks_recovery),'occ',max(occurrences)) from public.payment_discrepancies where kind='orphan_provider_payment' and business_id=v_business);
     begin perform public.record_orphan_provider_payment(v_business,'test',jsonb_build_object('id','1','status','approved','external_reference','someone-elses-order')); v_extra:=jsonb_build_object('foreign','accepted'); exception when others then v_extra:=jsonb_build_object('foreign',SQLSTATE); end;`);
-  assert.deepEqual(s.result, { rows: 1, sev: 'critical', blocks: true, occ: 2 });
+  // The ledger window overlaps on purpose (second audit): the same provider version seen again is not a new fact.
+  assert.deepEqual(s.result, { rows: 1, sev: 'critical', blocks: true, occ: 1 });
   assert.equal(s.extra.foreign, '22023');
 });
 
-test('integrity checks: an order paid without a recent provider verification is flagged and clears itself when verified', () => {
+test('integrity checks: an order paid whose provider verification is overdue is flagged and clears itself when verified', () => {
+  // Second audit: "unverified" is judged against the payment's own verification ladder (15 m, 1 h, 6 h, 24 h, 3 d, ...)
+  // instead of a flat 24 hours: the payment was first seen three days ago and never verified since.
   const s = runScenario(`v_result:=${snap('approved')}; v_result:=public.finalize_paid_checkout_session(v_session); set constraints all immediate;
-    update public.payment_provider_payments set last_seen_at=clock_timestamp()-interval '3 days' where payment_intent_id=v_intent;
+    update public.payment_provider_payments set first_seen_at=clock_timestamp()-interval '3 days', last_seen_at=clock_timestamp()-interval '3 days' where payment_intent_id=v_intent;
     v_before:=public.run_financial_integrity_checks(100);
     v_extra:=(select coalesce(jsonb_agg(kind||':'||status),'[]'::jsonb) from public.payment_discrepancies where payment_intent_id=v_intent);
     v_result:=${snap('approved')};

@@ -17,9 +17,11 @@ test('the default budget ends 40 s before the Free plan wall clock; paid plans g
 });
 
 test('a missing, malformed or out-of-range wall clock falls back to the Free plan limit', () => {
-  for (const bad of ['', 'abc', '-1', '1000', '999999', '1.5']) {
+  // Below 90 s the budget could not hold the time needed to start a job in the jobs phase: not a real plan limit.
+  for (const bad of ['', 'abc', '-1', '1000', '30000', '89999', '999999', '1.5']) {
     assert.equal(workerTimeBudget(env({ PAYMENT_WORKER_WALL_CLOCK_MS: bad })).wallClockMs, 150_000, bad);
   }
+  assert.equal(workerTimeBudget(env({ PAYMENT_WORKER_WALL_CLOCK_MS: '90000' })).budgetMs, 50_000);
 });
 
 test('remaining time, reserves and the provider call timeout never exceed the budget', () => {

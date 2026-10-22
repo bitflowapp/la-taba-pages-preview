@@ -1,0 +1,10 @@
+✔ B4 killing the job path at EVERY boundary leaves exactly one order, one stock movement and no stuck job (58837.4677ms)
+✔ B5 killing the ledger path at EVERY boundary loses nothing and duplicates nothing (74322.5757ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 133241.0305

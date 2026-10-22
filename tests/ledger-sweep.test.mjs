@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  advanceCursor, ledgerItemTime, providerDate, ProviderLedgerInconsistent, sweepLedgerWindow,
+  ledgerItemTime, nextCursor, providerDate, ProviderLedgerInconsistent, sweepLedgerWindow,
 } from '../supabase/functions/_shared/ledger-sweep.ts';
 import { Deadline, WorkerDeadlineExceeded } from '../supabase/functions/_shared/worker-deadline.ts';
 
@@ -60,13 +60,14 @@ function depsFor(prov, db, handled, extra = {}) {
   };
 }
 
-test('every payment of a window is handled once, in order, never reading past a small offset', async () => {
+test('every payment of a window is handled, in order, never reading past a small offset', async () => {
   const prov = provider(Array.from({ length: 120 }, (_, i) => ({ id: i + 1, dlu: T0 + (i + 1) * 1000 })));
   const db = store(new Date(T0).toISOString());
   const handled = [];
   const run = await sweepLedgerWindow(depsFor(prov, db, handled), windowFrom(db), FOREVER());
   assert.equal(run.stopped, 'complete');
-  assert.deepEqual(handled, Array.from({ length: 120 }, (_, i) => i + 1));
+  assert.deepEqual([...new Set(handled)], Array.from({ length: 120 }, (_, i) => i + 1), 'all, in order');
+  assert.ok(handled.length - 120 <= run.pages, 'at most the last row of a page is read again (idempotent): ' + handled.length);
   assert.equal(db.done, true);
   assert.ok(prov.searches.every(s => s.skip <= 50), 'offset stays tiny: ' + JSON.stringify(prov.searches.map(s => s.skip)));
 });
@@ -77,8 +78,46 @@ test('more payments at ONE timestamp than a page still make progress and none is
   const handled = [];
   const run = await sweepLedgerWindow(depsFor(prov, db, handled), windowFrom(db), FOREVER());
   assert.equal(run.stopped, 'complete');
-  assert.equal(new Set(handled).size, 130);
-  assert.equal(handled.length, 130, 'each exactly once');
+  assert.equal(new Set(handled).size, 130, 'none lost');
+  assert.ok(handled.length <= 130 + 50, 'only the first page is read twice (the group starts after the window begin): ' + handled.length);
+});
+
+test('ties whose ORDER changes between queries (the provider has no secondary key) lose nothing, even when one is updated', async () => {
+  // Groups of three rows share a timestamp and straddle the page boundaries (pages of four). A tie group longer than
+  // a whole page is the documented limit of any offset-based provider search: the next window reads it again.
+  const items = Array.from({ length: 30 }, (_, i) => ({ id: i + 1, dlu: T0 + (Math.floor(i / 3) + 1) * 1000 }));
+  const prov = provider(items);
+  let flip = false;
+  const inner = prov.search;
+  // Same timestamp, but every other query lists the group in the opposite order; payment 1 is updated mid-way.
+  prov.search = async (window, cursor, limit) => {
+    const page = await inner(window, { at: cursor.at, skip: 0 }, 1000);
+    flip = !flip;
+    // Ordered by last update as the provider promises; only rows that share a timestamp are permuted.
+    const groups = new Map();
+    for (const row of page.results) groups.set(row.date_last_updated, [...(groups.get(row.date_last_updated) || []), row]);
+    const rows = [...groups.values()].flatMap(group => (flip ? group : [...group].reverse()));
+    return { total: page.total, results: rows.slice(cursor.skip, cursor.skip + limit) };
+  };
+  prov.onSearch = n => { if (n === 3) items.find(item => item.id === 1).dlu = END - 1; };
+  const db = store(new Date(T0).toISOString());
+  const handled = [];
+  const run = await sweepLedgerWindow(depsFor(prov, db, handled), windowFrom(db), FOREVER(), { pageSize: 4, checkpointEvery: 2 });
+  assert.equal(run.stopped, 'complete');
+  assert.equal(new Set(handled).size, 30, 'every payment handled at least once');
+  assert.ok(handled.filter(id => id === 1).length >= 2, 'the updated one is handled again at its new place');
+});
+
+test('an EMPTY page before the provider total is an inconsistency, never the end of the window', async () => {
+  const db = store(new Date(T0).toISOString());
+  const deps = {
+    search: async () => ({ total: 137, results: [] }),
+    handle: async () => ({ orphan: false, finalizeSessionId: null }),
+    finalize: async () => {},
+    checkpoint: c => db.checkpoint(c),
+  };
+  await assert.rejects(sweepLedgerWindow(deps, windowFrom(db, { offset: 100 }), FOREVER()), ProviderLedgerInconsistent);
+  assert.equal(db.done, false, 'the window stays open: the 37 rows the provider still reports are not lost');
 });
 
 test('a payment that changes after it was read is read again at its new position and nothing shifts away', async () => {
@@ -170,7 +209,7 @@ test('out of time: it stops BEFORE starting what it cannot finish, keeps the pro
     handle: async summary => { clock.now += 4_000; handled.push(summary.id); return { orphan: false, finalizeSessionId: null }; },
   }), windowFrom(db), new Deadline(0, 110_000, () => clock.now));
   assert.ok(['complete', 'deadline'].includes(next.stopped));
-  assert.equal(handled.length, new Set(handled).size, 'no payment handled twice across the two runs');
+  assert.ok(handled.length - new Set(handled).size <= 1, 'at most the last row of the first run is read again (idempotent): ' + handled.length);
 });
 
 test('a provider call that runs out of time is a stop, not a failure', async () => {
@@ -216,6 +255,8 @@ test('provider dates: ISO-8601 with milliseconds in UTC; the cursor advances by 
   assert.equal(ledgerItemTime({ date_last_updated: '2026-10-22T12:00:00.000Z', date_created: '2026-10-01T00:00:00.000Z' }), T0);
   assert.equal(ledgerItemTime({ date_last_updated: null, date_created: '2026-10-22T12:00:00.000Z' }), T0);
   assert.throws(() => ledgerItemTime({}), ProviderLedgerInconsistent);
-  assert.deepEqual(advanceCursor({ at: new Date(T0).toISOString(), skip: 0 }, T0 + 5), { at: new Date(T0 + 5).toISOString(), skip: 1 });
-  assert.deepEqual(advanceCursor({ at: new Date(T0 + 5).toISOString(), skip: 1 }, T0 + 5), { at: new Date(T0 + 5).toISOString(), skip: 2 });
+  // Inside the group the page was read at, only the position is known; at a later timestamp the cursor restarts there.
+  assert.deepEqual(nextCursor({ at: new Date(T0).toISOString(), skip: 0 }, 3, true, T0), { at: new Date(T0).toISOString(), skip: 3 });
+  assert.deepEqual(nextCursor({ at: new Date(T0).toISOString(), skip: 7 }, 3, true, T0), { at: new Date(T0).toISOString(), skip: 10 });
+  assert.deepEqual(nextCursor({ at: new Date(T0).toISOString(), skip: 7 }, 3, false, T0 + 5), { at: new Date(T0 + 5).toISOString(), skip: 0 });
 });

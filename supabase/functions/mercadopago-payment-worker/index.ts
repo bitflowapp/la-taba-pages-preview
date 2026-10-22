@@ -8,6 +8,7 @@ import {
   requireWorkerAuthorization,
 } from '../_shared/payment-runtime.ts';
 import {
+  MercadoPagoApiError,
   disputeSnapshot,
   fetchChargeback,
   fetchClaim,
@@ -79,7 +80,7 @@ Deno.serve(async (request) => {
     // Jobs are claimed ONE at a time while there is time to run them, never in a batch whose lease would lapse
     // unstarted. A single job never takes more than its share, so the ledger sweep and the next jobs get their turn.
     const tally = { claimed: 0, completed: 0, retried: 0, released: 0 };
-    const drain = (gate: Deadline) => drainJobs(service, owner, gate, deadline, budget.jobBudgetMs, limits.claimLimit, tally);
+    const drain = (gate: Deadline) => drainJobs(service, owner, gate, budget.jobBudgetMs, limits.claimLimit, tally);
     await drain(deadline.slice(Math.floor(budget.budgetMs * 0.6)));
     // Independent of webhooks and of local intents: read the seller's provider ledger, resumably.
     const ledger = await runLedgerSweep(service, owner, deadline);
@@ -97,7 +98,6 @@ async function drainJobs(
   service: Service,
   owner: string,
   gate: Deadline,
-  deadline: Deadline,
   jobBudgetMs: number,
   claimLimit: number,
   tally: { claimed: number; completed: number; retried: number; released: number },
@@ -112,7 +112,8 @@ async function drainJobs(
     const job = (Array.isArray(data) ? data as OutboxJob[] : [])[0];
     if (!job) return;
     tally.claimed += 1;
-    const outcome = await runJob(service, job, owner, deadline.slice(jobBudgetMs));
+    // A job never outlives the gate it was started under, so the ledger keeps the time that was set aside for it.
+    const outcome = await runJob(service, job, owner, gate.slice(jobBudgetMs));
     if (outcome === 'completed') tally.completed += 1;
     else if (outcome === 'retried') tally.retried += 1;
     else if (outcome === 'released') tally.released += 1;
@@ -191,12 +192,6 @@ async function processJob(service: Service, job: OutboxJob, context: JobContext)
       }
       return;
     }
-    // A probe (no payment id) that found only what we already knew is also evidence: it spaces the next read and,
-    // after the grace period, lets a checkout of rejected payments close instead of being read forever.
-    if (job.topic === 'payment_reconcile' && !job.resource_id && job.payment_intent_id) {
-      const seen = await service.rpc('record_provider_probe_seen', { p_payment_intent_id: job.payment_intent_id });
-      if (seen.error) throw new Error('Unable to record a provider probe');
-    }
     const source = job.topic === 'payment' ? 'webhook' : 'reconciliation';
     const finalize = new Set<string>();
     for (const payment of payments) {
@@ -209,6 +204,13 @@ async function processJob(service: Service, job: OutboxJob, context: JobContext)
     for (const sessionId of finalize) {
       await context.beat();
       await finalizeSession(service, sessionId);
+    }
+    // A probe (no payment id) that read the payments and recorded them is evidence: it spaces the next read and, after
+    // the grace period, lets a checkout of rejected payments close instead of being read forever. Only AFTER they were
+    // persisted: a read whose persistence failed proves nothing.
+    if (job.topic === 'payment_reconcile' && !job.resource_id && job.payment_intent_id) {
+      const seen = await service.rpc('record_provider_probe_seen', { p_payment_intent_id: job.payment_intent_id });
+      if (seen.error) throw new Error('Unable to record a provider probe');
     }
     return;
   }
@@ -523,7 +525,7 @@ async function runLedgerSweep(
   try {
     const run = await sweepLedgerWindow({
       search: (w, cursor, limit) => searchPaymentsByLastUpdate(w.business_id, cursor.at, w.end, cursor.skip, limit, deadline),
-      handle: (summary) => ledgerItem(service, window, summary, deadline),
+      handle: (summary) => ledgerItemOrStepOver(service, owner, window, summary, deadline),
       finalize: (sessionId) => finalizeSession(service, sessionId),
       checkpoint: (c) => checkpoint(c.cursor, c.seen, c.orphans, c.done, c.release),
     }, window, deadline);
@@ -548,6 +550,49 @@ async function runLedgerSweep(
       });
     } catch (_) { /* The lease expires on its own and the window resumes where its last checkpoint left it. */ }
     return { ok: false, business_id: window.business_id, code: safeFailureCode(error) };
+  }
+}
+
+// How many consecutive runs the SAME payment may fail (for a reason that is not the provider being unavailable) before
+// it is recorded as a critical finding for a person and stepped over, so it cannot freeze the window forever.
+const LEDGER_ITEM_FAILURE_LIMIT = 5;
+
+function isTransientProviderFailure(error: unknown): boolean {
+  if (error instanceof WorkerDeadlineExceeded || error instanceof JobLeaseLost) return true;
+  const name = (error as { name?: string } | null)?.name;
+  if (name === 'AbortError' || name === 'TimeoutError') return true;
+  if (error instanceof MercadoPagoApiError) return error.status >= 500 || [401, 403, 408, 409, 425, 429].includes(error.status);
+  return false;
+}
+
+async function ledgerItemOrStepOver(
+  service: Service,
+  owner: string,
+  window: LedgerWindow,
+  summary: Record<string, unknown>,
+  deadline: Deadline,
+): Promise<LedgerItemOutcome> {
+  try {
+    return await ledgerItem(service, window, summary, deadline);
+  } catch (error) {
+    // An outage, a throttle, an expired token or running out of time says nothing about THIS payment: try again later.
+    if (isTransientProviderFailure(error)) throw error;
+    const failures = await service.rpc('record_ledger_item_failure', {
+      p_owner: owner,
+      p_business_id: window.business_id,
+      p_environment: window.environment,
+      p_provider_payment_id: String(summary.id ?? ''),
+    });
+    if (failures.error || Number(failures.data) < LEDGER_ITEM_FAILURE_LIMIT) throw error;
+    const parked = await service.rpc('record_ledger_item_unprocessable', {
+      p_owner: owner,
+      p_business_id: window.business_id,
+      p_environment: window.environment,
+      p_payment: summary,
+      p_error_code: safeFailureCode(error),
+    });
+    if (parked.error) throw error;
+    return { orphan: false, finalizeSessionId: null }; // stepped over, on record as a critical finding
   }
 }
 

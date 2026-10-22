@@ -1,6 +1,6 @@
 // Reads one provider-ledger window by LAST UPDATE with a keyset cursor.
 //
-// Why a keyset (timestamp + how many rows at that exact timestamp are done) and not a page position:
+// Why a keyset (a timestamp, plus a position only inside one timestamp) and not a page position:
 //  - the provider caps `offset` (10 000), a busy window can exceed it;
 //  - a payment that was already read and changes while the window is being paged leaves the ordered list, which
 //    shifts every later row up by one: paging by position skips one payment per change;
@@ -8,6 +8,12 @@
 //    end of every page, not only when a page is complete.
 // Every handled item is idempotent in the database, so re-reading a few items after a kill is safe; what is never
 // allowed is moving the cursor past an item that was not handled.
+//
+// Ties: the provider documents no secondary sort key, so the ORDER of rows that share one timestamp may differ from
+// one query to the next. A position inside a tie group is therefore only trusted while the page being read is made
+// of that one group (it is the only way to get past a group longer than a page). In every other case the cursor is
+// the last timestamp at position 0: the rows of that timestamp are read again next time (cheap, idempotent) and the
+// order of the ties never matters.
 import { Deadline, WorkerDeadlineExceeded } from './worker-deadline.ts';
 
 export const LEDGER_PAGE_SIZE = 50; // provider maximum
@@ -66,11 +72,14 @@ export function ledgerItemTime(summary: Record<string, unknown>): number {
   throw new ProviderLedgerInconsistent('provider payment without a usable last-update date');
 }
 
-/** The cursor after one more item was handled. */
-export function advanceCursor(cursor: LedgerCursor, itemMs: number): LedgerCursor {
-  const at = Date.parse(cursor.at);
-  if (itemMs > at) return { at: new Date(itemMs).toISOString(), skip: 1 };
-  return { at: cursor.at, skip: cursor.skip + 1 };
+/**
+ * The cursor after `handled` rows of a page that was read at `queried` were handled, the last of them at `itemMs`.
+ * While every handled row shares the timestamp the page was read at, the position inside that group is all there is;
+ * as soon as a later timestamp is reached the cursor is that timestamp at position 0.
+ */
+export function nextCursor(queried: LedgerCursor, handled: number, onlyQueriedTimestamp: boolean, itemMs: number): LedgerCursor {
+  if (onlyQueriedTimestamp) return { at: queried.at, skip: queried.skip + handled };
+  return { at: new Date(itemMs).toISOString(), skip: 0 };
 }
 
 export async function sweepLedgerWindow(
@@ -117,19 +126,30 @@ export async function sweepLedgerWindow(
   for (;;) {
     if (deadline.expired(pageReserve)) return await stop('deadline', false, true);
 
+    const queried = cursor;
     let page: LedgerPage;
     try {
-      page = await deps.search(window, cursor, pageSize);
+      page = await deps.search(window, queried, pageSize);
     } catch (error) {
       if (error instanceof WorkerDeadlineExceeded) return await stop('deadline', false, true);
       await flushBeforeFailing();
       throw error;
     }
     pages += 1;
-    const skipAtQuery = cursor.skip;
-    if (!page.results.length) return await stop('complete', true, false);
+    if (!page.results.length) {
+      // An empty page is the end of the window only when the provider's own total agrees. Otherwise its index is
+      // inconsistent right now and closing the window would hide the rows it still reports.
+      if (queried.skip < page.total) {
+        await flushBeforeFailing();
+        throw new ProviderLedgerInconsistent('provider ledger returned an empty page before its total');
+      }
+      return await stop('complete', true, false);
+    }
 
-    let previousMs = Date.parse(cursor.at);
+    const queriedMs = Date.parse(queried.at);
+    let previousMs = queriedMs;
+    let handledInPage = 0;
+    let onlyQueriedTimestamp = true;
     for (const summary of page.results) {
       if (deadline.expired(itemReserve)) return await stop('deadline', false, true);
       try {
@@ -142,7 +162,9 @@ export async function sweepLedgerWindow(
         previousMs = itemMs;
         const outcome = await deps.handle(summary);
         if (outcome.finalizeSessionId) await deps.finalize(outcome.finalizeSessionId);
-        cursor = advanceCursor(cursor, itemMs);
+        handledInPage += 1;
+        if (itemMs !== queriedMs) onlyQueriedTimestamp = false;
+        cursor = nextCursor(queried, handledInPage, onlyQueriedTimestamp, itemMs);
         seen += 1;
         pendingSeen += 1;
         if (outcome.orphan) { orphans += 1; pendingOrphans += 1; }
@@ -158,7 +180,7 @@ export async function sweepLedgerWindow(
     }
 
     // Every row the provider reported for [cursor, end] has been handled.
-    if (skipAtQuery + page.results.length >= page.total) return await stop('complete', true, false);
+    if (queried.skip + page.results.length >= page.total) return await stop('complete', true, false);
     if (!(await flush(false, false))) return { stopped: 'lease_lost', pages, seen, orphans, cursor };
   }
 }

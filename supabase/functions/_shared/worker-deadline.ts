@@ -66,7 +66,8 @@ function integer(value: string | undefined, fallback: number, min: number, max: 
  * The budget leaves a safety margin for the response, the last write and platform jitter.
  */
 export function workerTimeBudget(read: (name: string) => string | undefined) {
-  const wallClockMs = integer(read('PAYMENT_WORKER_WALL_CLOCK_MS'), DEFAULT_WALL_CLOCK_MS, 30_000, 400_000);
+  // Below 90 s the budget (wall clock - 40 s) could not hold the 15 s needed to start a job in the first 60%.
+  const wallClockMs = integer(read('PAYMENT_WORKER_WALL_CLOCK_MS'), DEFAULT_WALL_CLOCK_MS, 90_000, 400_000);
   const budgetMs = Math.max(MIN_BUDGET_MS, wallClockMs - SAFETY_MARGIN_MS);
   return {
     wallClockMs,

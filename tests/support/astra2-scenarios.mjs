@@ -114,7 +114,7 @@ const scenarios = {
 
   // A pending payment is re-read on a backoff (not on every scheduler tick) until the provider settles it.
   async pending_revisited_with_backoff_until_terminal() {
-    const t = await createFixture('astra-pending');
+    const t = await createFixture('astra-pending', { connect: 'quiet' });
     t.sql(`set session_replication_role = replica; update public.checkout_sessions set created_at = clock_timestamp() - interval '20 minutes' where id = '${t.ids.session}';`);
     t.provider.addPayment({ id: 991000001, reference: t.ids.reference, status: 'pending', created: ago(10 * MINUTE) });
     const enqueue = () => q(t.db, `select to_jsonb(public.enqueue_checkout_provider_probes())`);
@@ -134,7 +134,7 @@ const scenarios = {
   // A checkout whose only payments were rejected must reach a closed state WITH evidence (after the preference
   // expired, a 24 h grace and three later reads), not be re-read on every tick forever.
   async rejected_checkout_closes_with_evidence() {
-    const t = await createFixture('astra-rejected');
+    const t = await createFixture('astra-rejected', { connect: 'quiet' });
     t.sql(`set session_replication_role = replica;
       update public.checkout_sessions set created_at = clock_timestamp() - interval '70 hours', expires_at = clock_timestamp() - interval '60 hours' where id = '${t.ids.session}';
       update public.inventory_reservations set created_at = clock_timestamp() - interval '70 hours', expires_at = clock_timestamp() - interval '60 hours' where checkout_session_id = '${t.ids.session}';`);
@@ -154,7 +154,7 @@ const scenarios = {
   // An approved, completed order keeps being verified against the provider on a ladder: it must not drift into
   // "unverified" just because time passed, and a late refund made in the provider panel must be found.
   async ladder_verifies_paid_orders_and_finds_late_refund() {
-    const t = await createFixture('astra-ladder');
+    const t = await createFixture('astra-ladder', { connect: 'quiet' });
     t.provider.addPayment({ id: 991000001, reference: t.ids.reference, status: 'approved', created: ago(3 * DAY) });
     t.enqueueReconcile();
     await t.worker.invoke();
@@ -178,7 +178,58 @@ const scenarios = {
     return { afterPaid, checks0, unverifiedBefore, queued, checks1, unverifiedAfterVerification, queuedLate, state: t.state() };
   },
 
+  // A payment that fails for a reason of ITS OWN data, again and again, must not freeze the window forever: it is
+  // stepped over, on record as a critical finding, and everything after it is read.
+  async ledger_poison_item_is_stepped_over() {
+    const t = await createFixture('astra-poison-item', { connect: true });
+    const base = Date.now() - 2 * HOUR;
+    t.provider.addPayment({ id: 710000001, reference: t.ids.reference, status: 'rejected', created: iso(base + 1000) });
+    t.provider.addPayment({ id: 710000002, reference: t.ids.reference, status: 'rejected', created: iso(base + 2000) });
+    t.provider.addPayment({ id: 710000003, reference: t.ids.reference, status: 'rejected', created: iso(base + 3000) });
+    t.provider.merchantOrders.delete('mo-710000002'); // its merchant order never resolves: its snapshot is never verifiable
+    const history = await drainLedger(t, { max: 10 });
+    const stuck = q(t.db, `select coalesce(jsonb_agg(jsonb_build_object('pid',provider_payment_id,'severity',severity,'blocks',blocks_recovery,'reason',details->>'reason') order by provider_payment_id),'[]') from public.payment_discrepancies where kind='ledger_item_unprocessable'`);
+    return { history, stuck, state: t.state(), runs: history.length };
+  },
+
+  // The provider being down is not a payment's fault: however long it lasts, nothing is stepped over.
+  async ledger_outage_never_steps_over() {
+    const t = await createFixture('astra-outage', { connect: true });
+    t.provider.addPayment({ id: 710000001, reference: t.ids.reference, status: 'approved', created: ago(HOUR) });
+    t.provider.failNext(/\/v1\/payments\/710000001$/, 503, 1000);
+    const history = await drainLedger(t, { max: 8 });
+    const stuck = q(t.db, `select to_jsonb(count(*)) from public.payment_discrepancies where kind='ledger_item_unprocessable'`);
+    return { history, stuck, state: t.state() };
+  },
+
+  // A probe only counts as evidence after the payments it read were persisted.
+  async probe_is_evidence_only_after_persisting() {
+    const t = await createFixture('astra-probe-seen', { connect: 'quiet' });
+    t.sql(`set session_replication_role = replica; update public.checkout_sessions set created_at = clock_timestamp() - interval '70 hours', expires_at = clock_timestamp() - interval '60 hours' where id = '${t.ids.session}';`);
+    t.provider.addPayment({ id: 991000001, reference: t.ids.reference, status: 'rejected', created: ago(65 * HOUR) });
+    t.provider.merchantOrders.delete('mo-991000001');
+    const seen = () => q(t.db, `select to_jsonb(count(*)) from public.payment_events where payment_intent_id='${t.ids.intent}' and event_type='payment.provider_probe_seen'`);
+    t.enqueueReconcile();
+    const failed = await t.worker.invoke();
+    const afterFailure = seen();
+    t.provider.merchantOrders.set('mo-991000001', { id: 'mo-991000001', preference_id: 'FORENSIC-PREF' });
+    t.dueNow();
+    const recovered = await t.worker.invoke();
+    return { failed: failed.body, recovered: recovered.body, afterFailure, afterSuccess: seen() };
+  },
+
   // ---- Worker time budget -------------------------------------------------------------------------------------
+
+  // A provider call that the budget cut short (its timeout was clamped to what was left) is "out of time": the job
+  // is handed back with its attempt, never counted as a failure.
+  async deadline_abort_releases_the_job() {
+    const t = await createFixture('astra-clamp');
+    for (let i = 0; i < 12; i += 1) t.provider.addPayment({ id: 600000 + i, reference: t.ids.reference, status: 'rejected', created: ago(HOUR - i * 1000) });
+    t.provider.slow(/\/v1\/payments\/\d+$/, 8000);
+    t.enqueueReconcile();
+    const run = await t.worker.invoke({ killAfterMs: 150_000 });
+    return { run: run.killed ? { killed: true } : run.body, state: t.state(), elapsedMs: t.clock.now() - t.clock.startedAt };
+  },
 
   // 50 slow payments on one ledger page: a page that does not fit in the wall clock must still make progress.
   async slow_ledger_page_makes_progress() {

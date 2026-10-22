@@ -45,6 +45,11 @@ export async function createFixture(label, { quantity = 2, connect = false, env 
   const ids = query(db, `select jsonb_build_object('session',cs.id,'intent',pi.id,'reference',pi.external_reference) from public.payment_intents pi join public.checkout_sessions cs on cs.id=pi.checkout_session_id where pi.business_id='${FIXTURE_IDS.business}'`);
   if (connect) {
     psqlRaw(db, `insert into public.mp_seller_connections(business_id,environment,seller_id,application_id,status,protected_tokens,expires_at) values('${FIXTURE_IDS.business}','test','collector-retry','application-retry','connected','SYNTHETIC_NONCREDENTIAL',clock_timestamp()+interval '30 days');`);
+    // 'quiet': the seller is connected (the scheduler may read its payments) but its ledger was just read, so a worker
+    // run does not sweep it; scenarios about the follow-up schedule stay isolated from the ledger.
+    if (connect === 'quiet') {
+      psqlRaw(db, `insert into public.provider_ledger_cursors(business_id,environment,watermark_at,last_completed_at) values('${FIXTURE_IDS.business}','test',clock_timestamp(),clock_timestamp());`);
+    }
   }
   const sql = text => psqlRaw(db, text);
   const clock = new VirtualClock();

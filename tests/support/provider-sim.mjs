@@ -79,7 +79,7 @@ export class ProviderSim {
         return Response.json({ message: 'invalid range' }, { status: 400 });
       }
       if (this.strictDates) {
-        const iso = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}(Z|[+-]\d\d:\d\d)$/;
+        const iso = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}[:][0-9]{2}[:][0-9]{2}[.][0-9]{3}(Z|[+-][0-9]{2}[:][0-9]{2})$/;
         if ((begin && !iso.test(begin)) || (end && !iso.test(end))) return Response.json({ message: 'invalid date format' }, { status: 400 });
       }
       let all = [...this.payments.values()].filter(p => p.collector_id === this.collectorId);

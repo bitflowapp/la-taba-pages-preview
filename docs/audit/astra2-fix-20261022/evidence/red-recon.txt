@@ -1,0 +1,197 @@
+✖ A1 a refund made in the provider panel days after the payment is found without any webhook (3080.7816ms)
+✖ A2 a pending offline payment approved days later is found and the orphan becomes critical (2673.5159ms)
+✖ A3 the orphan inbox escalates when the same provider payment later carries money (1824.3159ms)
+✖ A4 a provider window larger than the provider pagination ceiling is still read completely (5342.6837ms)
+✖ A5 a payment that changes while the window is being paged is neither skipped nor left stale (18066.515ms)
+✖ A6 the ledger asks the provider with the documented ISO-8601 millisecond dates (2689.2865ms)
+✖ A7 a pending payment is re-read on a backoff until the provider settles it, then approved late (4144.3916ms)
+✖ A8 a checkout with only rejected payments closes with evidence instead of being read forever (8271.5446ms)
+✖ A9 paid orders stay verified on a ladder and a refund made later in the panel is found (5621.1328ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 0
+ℹ fail 9
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 51788.065
+
+✖ failing tests:
+
+test at tests\db\astra2-reconciliation.test.mjs:21:1
+✖ A1 a refund made in the provider panel days after the payment is found without any webhook (3080.7816ms)
+  AssertionError [ERR_ASSERTION]: the late refund reached the books: {"paid":2500,"review":null,"status":"completed","order_id":"9ea92273-55db-4942-baa1-746a35aa93ef","refunded":0,"provider_id":"991000001","provider_status":"approved"}
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-reconciliation.test.mjs:25:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.start (node:internal/test_runner/test:1003:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:358:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests\db\astra2-reconciliation.test.mjs:30:1
+✖ A2 a pending offline payment approved days later is found and the orphan becomes critical (2673.5159ms)
+  AssertionError [ERR_ASSERTION]: approved money without a checkout is critical
+  
+  'low' !== 'critical'
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-reconciliation.test.mjs:37:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'low',
+    expected: 'critical',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\astra2-reconciliation.test.mjs:41:1
+✖ A3 the orphan inbox escalates when the same provider payment later carries money (1824.3159ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  'low' !== 'critical'
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-reconciliation.test.mjs:45:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'low',
+    expected: 'critical',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\astra2-reconciliation.test.mjs:50:1
+✖ A4 a provider window larger than the provider pagination ceiling is still read completely (5342.6837ms)
+  AssertionError [ERR_ASSERTION]: the payment behind 300 foreign rows was reached
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-reconciliation.test.mjs:52:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\astra2-reconciliation.test.mjs:59:1
+✖ A5 a payment that changes while the window is being paged is neither skipped nor left stale (18066.515ms)
+  AssertionError [ERR_ASSERTION]: the payment that was approved mid-sweep ends critical
+  
+  'low' !== 'critical'
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-reconciliation.test.mjs:63:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'low',
+    expected: 'critical',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\astra2-reconciliation.test.mjs:68:1
+✖ A6 the ledger asks the provider with the documented ISO-8601 millisecond dates (2689.2865ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-reconciliation.test.mjs:70:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\astra2-reconciliation.test.mjs:78:1
+✖ A7 a pending payment is re-read on a backoff until the provider settles it, then approved late (4144.3916ms)
+  AssertionError [ERR_ASSERTION]: one tick later the provider has just said "pending": no storm of reads
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-reconciliation.test.mjs:82:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\astra2-reconciliation.test.mjs:88:1
+✖ A8 a checkout with only rejected payments closes with evidence instead of being read forever (8271.5446ms)
+  AssertionError [ERR_ASSERTION]: then it stops: 1,1,1,1,1,1,1
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-reconciliation.test.mjs:92:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests\db\astra2-reconciliation.test.mjs:96:1
+✖ A9 paid orders stay verified on a ladder and a refund made later in the panel is found (5621.1328ms)
+  AssertionError [ERR_ASSERTION]: an aged paid order is scheduled for verification
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-reconciliation.test.mjs:99:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

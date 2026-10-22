@@ -57,8 +57,8 @@ test('A6 the ledger asks the provider with the documented ISO-8601 millisecond d
   assert.equal(s.state.orders, 1);
   assert.equal(s.state.cursor.consecutive_failures, 0);
   for (const search of s.searches) {
-    assert.match(search.begin, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/);
-    assert.match(search.end, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/);
+    assert.match(search.begin, /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}[:][0-9]{2}[:][0-9]{2}[.][0-9]{3}Z$/);
+    assert.match(search.end, /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}[:][0-9]{2}[:][0-9]{2}[.][0-9]{3}Z$/);
   }
 });
 
@@ -88,4 +88,28 @@ test('A9 paid orders stay verified on a ladder and a refund made later in the pa
   assert.equal(s.unverifiedAfterVerification, 0, 'verification closes the "unverified" finding');
   assert.ok(s.queuedLate >= 1, 'it keeps being verified');
   assert.ok(s.state.intent.refunded > 0, 'the late refund was found: ' + JSON.stringify(s.state.intent));
+});
+
+test('A10 a payment that fails for its OWN data again and again is stepped over, on record, and the window completes', () => {
+  const s = scenario('ledger_poison_item_is_stepped_over');
+  assert.equal(s.state.cursor.window_end, null, 'the window completed instead of freezing on the poison payment');
+  assert.equal(s.state.payments.filter(p => p.status === 'rejected').length, 2, 'the payments before and AFTER the poison one were read');
+  assert.deepEqual(s.stuck, [{ pid: '710000002', severity: 'critical', blocks: false, reason: s.stuck[0]?.reason }], 'one critical finding for a person');
+  assert.match(s.stuck[0].reason, /payment/i);
+  assert.ok(s.runs >= 5, 'it takes five failing runs, spaced by the backoff, before stepping over: ' + s.runs);
+});
+
+test('A11 the provider being down is never a reason to step over a payment', () => {
+  const s = scenario('ledger_outage_never_steps_over');
+  assert.equal(s.stuck, 0, 'no payment was parked');
+  assert.equal(s.state.cursor.window_end !== null, true, 'the window stays open for when the provider is back');
+  assert.ok(s.state.cursor.consecutive_failures >= 1);
+});
+
+test('A12 a probe is evidence only after the payments it read were persisted', () => {
+  const s = scenario('probe_is_evidence_only_after_persisting');
+  assert.equal(s.afterFailure, 0, 'a read whose persistence failed proves nothing');
+  assert.equal(s.failed.retried, 1);
+  assert.equal(s.recovered.completed, 1);
+  assert.equal(s.afterSuccess, 1, 'recorded once the payments were persisted');
 });

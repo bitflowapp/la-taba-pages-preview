@@ -80,3 +80,13 @@ test('B5 killing the ledger path at EVERY boundary loses nothing and duplicates 
   }
   assert.deepEqual(failures, [], 'recovery after a kill at any of ' + calls + ' boundaries');
 });
+
+test('B6 a provider call cut short by the time budget hands the job back instead of failing it', () => {
+  const s = scenario('deadline_abort_releases_the_job');
+  assert.ok(!s.run.killed, 'ended on its own');
+  assert.ok(s.elapsedMs <= 150_000, 'inside the wall clock: ' + s.elapsedMs);
+  assert.equal(s.run.released, 1, JSON.stringify(s.run));
+  assert.equal(s.run.retried, 0, 'not counted as a failure');
+  const job = s.state.jobs[0];
+  assert.deepEqual([job.status, job.attempts, job.interruptions, job.error], ['retry_wait', 0, 1, 'worker_time_budget']);
+});

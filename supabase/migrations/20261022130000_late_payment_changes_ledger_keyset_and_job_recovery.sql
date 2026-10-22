@@ -84,8 +84,10 @@ begin
   -- finding a person already resolved, no inflated counters). A different status or update time is a new fact.
   select d.id into v_existing from public.payment_discrepancies d
    where d.dedupe_key = 'orphan:' || p_environment || ':' || v_pid
-     and d.details ->> 'last_status_seen' = v_status
-     and (d.details ->> 'provider_updated') is not distinct from (p_payment ->> 'date_last_updated');
+     and coalesce(d.details ->> 'last_status_seen', d.details ->> 'status') = v_status
+     -- A finding recorded before this version carries no update time: the status alone says nothing changed.
+     and (d.details ->> 'last_status_seen' is null
+          or (d.details ->> 'provider_updated') is not distinct from (p_payment ->> 'date_last_updated'));
   if found then return v_existing; end if;
   return private.open_payment_discrepancy(p_business_id, null, null, 'orphan_provider_payment',
     case when v_status in ('approved', 'refunded', 'charged_back') then 'critical' else 'low' end,
@@ -385,6 +387,56 @@ begin
   return true;
 end $$;
 
+-- A provider payment that fails for a reason that is not the provider being down (its data, not its availability)
+-- and does so again and again would hold the cursor in place forever, hiding every later refund, chargeback and late
+-- approval of that seller. The failure is counted per payment; at the limit the worker records it as a CRITICAL
+-- finding for a person and steps over it. Nothing is ever skipped silently.
+alter table public.provider_ledger_cursors
+  add column if not exists stuck_payment_id text,
+  add column if not exists stuck_count integer not null default 0;
+
+create function public.record_ledger_item_failure(
+  p_owner text, p_business_id uuid, p_environment text, p_provider_payment_id text
+) returns integer
+language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
+declare v_row public.provider_ledger_cursors%rowtype;
+begin
+  select * into v_row from public.provider_ledger_cursors
+   where business_id = p_business_id and environment = p_environment for update;
+  if not found or v_row.lease_owner is distinct from p_owner then return 0; end if;
+  update public.provider_ledger_cursors
+     set stuck_count = case when stuck_payment_id is not distinct from p_provider_payment_id then stuck_count + 1 else 1 end,
+         stuck_payment_id = p_provider_payment_id
+   where business_id = p_business_id and environment = p_environment
+   returning stuck_count into v_row.stuck_count;
+  return v_row.stuck_count;
+end $$;
+
+create function public.record_ledger_item_unprocessable(
+  p_owner text, p_business_id uuid, p_environment text, p_payment jsonb, p_error_code text
+) returns uuid
+language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
+declare v_pid text := nullif(btrim(coalesce(p_payment ->> 'id', '')), ''); v_id uuid;
+begin
+  if v_pid is null then raise exception 'pago invalido' using errcode = '22023'; end if;
+  if not exists (select 1 from public.provider_ledger_cursors
+                  where business_id = p_business_id and environment = p_environment and lease_owner = p_owner) then
+    raise exception 'ventana sin lease' using errcode = '55000';
+  end if;
+  v_id := private.open_payment_discrepancy(p_business_id, null, null, 'ledger_item_unprocessable', 'critical', false, v_pid,
+    jsonb_build_object('status', p_payment ->> 'status', 'amount', p_payment ->> 'transaction_amount', 'currency', p_payment ->> 'currency_id',
+      'external_reference', p_payment ->> 'external_reference', 'provider_updated', p_payment ->> 'date_last_updated',
+      'reason', left(coalesce(p_error_code, 'unknown'), 120)),
+    'unprocessable:' || p_environment || ':' || v_pid, null, p_payment ->> 'collector_id', p_environment);
+  update public.provider_ledger_cursors set stuck_payment_id = null, stuck_count = 0
+   where business_id = p_business_id and environment = p_environment;
+  return v_id;
+end $$;
+revoke all on function public.record_ledger_item_failure(text, uuid, text, text),
+  public.record_ledger_item_unprocessable(text, uuid, text, jsonb, text) from public, anon, authenticated;
+grant execute on function public.record_ledger_item_failure(text, uuid, text, text),
+  public.record_ledger_item_unprocessable(text, uuid, text, jsonb, text) to service_role;
+
 -- A payment the provider lists that we already hold unchanged (same status, same last update) is only "seen again":
 -- one cheap write instead of a full re-read. Anything different (or unknown) returns false and is read in full.
 create function public.provider_payment_unchanged(
@@ -412,7 +464,15 @@ grant execute on function public.record_provider_ledger_checkpoint(text, uuid, t
 
 -- ---------------------------------------------------------------------------------------------------------------
 -- 5. What the scheduler enqueues: payments that are due on their own schedule, and intents never answered.
+--    Only for a seller the worker can still ask: with the connection gone every read would fail, dead-letter and be
+--    enqueued again, forever.
 -- ---------------------------------------------------------------------------------------------------------------
+create function private.provider_seller_connected(p_business_id uuid, p_environment text) returns boolean
+language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
+  select exists (select 1 from public.mp_seller_connections c
+                  where c.business_id = p_business_id and c.environment = p_environment
+                    and c.status = 'connected' and c.protected_tokens is not null) $$;
+
 create function public.record_provider_probe_seen(p_payment_intent_id uuid) returns void
 language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare v_expires timestamptz;
@@ -434,7 +494,9 @@ begin
   with due as (
     select distinct on (w.payment_intent_id) w.payment_intent_id, w.provider_payment_id, w.next_check_at
       from public.payment_provider_payments w
+      join public.payment_intents wi on wi.id = w.payment_intent_id
      where w.next_check_at is not null and w.next_check_at <= clock_timestamp()
+       and private.provider_seller_connected(wi.business_id, wi.environment)
        and not exists (select 1 from public.payment_outbox po
                         where po.payment_intent_id = w.payment_intent_id and po.topic = 'payment_reconcile'
                           and po.status in ('pending', 'claimed', 'processing', 'retry_wait'))
@@ -466,6 +528,7 @@ begin
        and nullif(btrim(coalesce(pi.external_reference, '')), '') is not null
        and pi.internal_status not in ('completed', 'refunded', 'partially_refunded', 'charged_back', 'security_review_required')
        and cs.created_at < clock_timestamp() - interval '90 seconds'
+       and private.provider_seller_connected(pi.business_id, pi.environment)
        and not exists (select 1 from public.payment_provider_payments w
                         where w.payment_intent_id = pi.id and w.next_check_at is not null)
      group by pi.id, cs.expires_at, cs.created_at
@@ -502,6 +565,7 @@ begin
       from public.payment_intents pi
      where pi.order_id is not null and pi.paid_amount is not null
        and pi.created_at > clock_timestamp() - interval '30 days'
+       and private.provider_seller_connected(pi.business_id, pi.environment)
        and exists (select 1 from public.payment_provider_payments x
                     where x.payment_intent_id = pi.id and x.is_financing and x.watch_state = 'verify'
                       and x.next_check_at < clock_timestamp() - interval '1 hour')
@@ -516,14 +580,17 @@ begin
   update public.payment_discrepancies d set status = 'resolved', resolved_at = clock_timestamp(), resolution = 'verified_no_loss',
          resolution_note = 'the provider confirmed the payment again'
    where d.kind = 'order_paid_unverified' and d.status <> 'resolved'
-     and not exists (select 1 from public.payment_provider_payments x
-                      where x.payment_intent_id = d.payment_intent_id and x.is_financing and x.watch_state = 'verify'
-                        and x.next_check_at < clock_timestamp() - interval '1 hour');
+     and (not exists (select 1 from public.payment_provider_payments x
+                       where x.payment_intent_id = d.payment_intent_id and x.is_financing and x.watch_state = 'verify'
+                         and x.next_check_at < clock_timestamp() - interval '1 hour')
+          or not exists (select 1 from public.payment_intents di
+                          where di.id = d.payment_intent_id and private.provider_seller_connected(di.business_id, di.environment)));
   for v_row in
     select pi.id, pi.business_id, pi.checkout_session_id, pi.environment, x.provider_payment_id, x.id as watch_id
       from public.payment_provider_payments x
       join public.payment_intents pi on pi.id = x.payment_intent_id
      where x.watch_state = 'pending' and x.next_check_at < clock_timestamp() - interval '1 hour'
+       and private.provider_seller_connected(pi.business_id, pi.environment)
      order by x.next_check_at limit greatest(1, least(coalesce(p_limit, 200), 1000))
   loop
     perform private.open_payment_discrepancy(v_row.business_id, v_row.id, v_row.checkout_session_id, 'pending_payment_unchecked',
@@ -534,9 +601,11 @@ begin
   update public.payment_discrepancies d set status = 'resolved', resolved_at = clock_timestamp(), resolution = 'checked_again',
          resolution_note = 'the pending payment was read again or settled'
    where d.kind = 'pending_payment_unchecked' and d.status <> 'resolved'
-     and not exists (select 1 from public.payment_provider_payments x
-                      where x.payment_intent_id = d.payment_intent_id and x.watch_state = 'pending'
-                        and x.next_check_at < clock_timestamp() - interval '1 hour');
+     and (not exists (select 1 from public.payment_provider_payments x
+                       where x.payment_intent_id = d.payment_intent_id and x.watch_state = 'pending'
+                         and x.next_check_at < clock_timestamp() - interval '1 hour')
+          or not exists (select 1 from public.payment_intents di
+                          where di.id = d.payment_intent_id and private.provider_seller_connected(di.business_id, di.environment)));
   for v_row in
     select pi.id, pi.business_id, pi.checkout_session_id, pi.provider_payment_id, pi.environment
       from public.payment_intents pi

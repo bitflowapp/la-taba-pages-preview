@@ -4,13 +4,13 @@ Destino: `ixewllzzuzpqrkxzmfzx`, organización La Taba Free. App: **TABA2 Stagin
 
 ## 1. Preflight sin operaciones financieras
 
-Desde `D:/work/la-taba-free-review-20261020`:
+Desde el worktree local de recuperación:
 
 ```powershell
-$env:TEMP='D:/work/la-taba-backup-20261021'
+$env:TEMP=$env:TABA_RECOVERY_TEMP
 $env:TMP=$env:TEMP
 $env:NODE_DISABLE_COMPILE_CACHE='1'
-node scripts/recovery/payment-preflight.mjs --check --target deploy/recovery-free-hosted.json --evidence D:/work/la-taba-backup-20261021/payment-preflight.json
+node scripts/recovery/payment-preflight.mjs --check --target deploy/recovery-free-hosted.json --evidence "$env:TABA_RECOVERY_EVIDENCE_DIR/payment-preflight.json"
 ```
 
 Comprueba inventario real de secretos, hashes de configuración, entorno test, ausencia de activadores productivos y ausencia de pagos/conexiones/configuración comercial fuera de test. Es de lectura. No convierte presencia de secretos en certificación de OAuth ni de pagos.

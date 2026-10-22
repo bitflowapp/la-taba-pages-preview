@@ -107,7 +107,8 @@ try {
   console.log(JSON.stringify(result, null, 1));
   if (steps.some(s => !s.ok)) process.exitCode = 1;
 } catch (error) {
-  await page.screenshot({ path: arg('--screenshot', 'D:/work/taba-final-20261021.i5BLyERZ/evidence/storefront-checkout-failure.png') }).catch(() => {});
+  const screenshot = arg('--screenshot');
+  if (screenshot) await page.screenshot({ path: screenshot }).catch(() => {});
   console.log(JSON.stringify({ failed: String(error.message || error).slice(0, 300), steps, consoleErrors: consoleErrors.slice(0, 10) }, null, 1));
   process.exitCode = 1;
 } finally {

@@ -20,6 +20,18 @@ export const PUBLIC_ORDER_TIMELINE_STEPS = Object.freeze([
   { key: 'delivered', label: 'Entregado' },
 ]);
 
+// Retiro en local: no hay reparto ni repartidor. La línea pública de siempre le
+// mostraba a quien iba a buscar su pedido «En camino» y «Entregado», dos pasos
+// que en un retiro no ocurren nunca. Acá «Listo» SÍ es una etapa propia —es el
+// momento en que la persona tiene que salir para el local—, y el cierre es que
+// lo retiró. Los estados son los mismos del backend: sólo cambia cómo se leen.
+export const PUBLIC_PICKUP_TIMELINE_STEPS = Object.freeze([
+  { key: 'confirmed', label: 'Confirmado' },
+  { key: 'preparing', label: 'Preparando' },
+  { key: 'ready', label: 'Listo para retirar' },
+  { key: 'collected', label: 'Retirado' },
+]);
+
 export function orderTimelineIndex(status) {
   if (status === 'preparing') return 1;
   if (status === 'ready') return 2;
@@ -35,11 +47,31 @@ export function publicOrderTimelineIndex(status) {
   return 0; // draft/submitted/received y estados desconocidos
 }
 
+// En un retiro `ready` es «listo para retirar», y `delivered` es que el local
+// lo entregó en el mostrador. Un estado de reparto en un pedido de retiro sería
+// un dato incoherente: se lo deja en «listo» y nunca se afirma que ya lo
+// retiró hasta que el local lo diga.
+export function publicPickupTimelineIndex(status) {
+  if (['accepted', 'preparing', 'assigned'].includes(status)) return 1;
+  if (['ready', 'picked_up', 'on_the_way', 'arrived', 'arriving'].includes(status)) return 2;
+  if (status === 'delivered') return 3;
+  return 0; // draft/submitted/received y estados desconocidos
+}
+
 export function renderOrderTimeline(status, { className = '' } = {}) {
   return renderTimeline(ORDER_TIMELINE_STEPS, orderTimelineIndex(status), status, className, 'operational');
 }
 
-export function renderPublicOrderTimeline(status, { className = '' } = {}) {
+export function renderPublicOrderTimeline(status, { className = '', deliveryMode = 'delivery' } = {}) {
+  if (deliveryMode === 'pickup') {
+    return renderTimeline(
+      PUBLIC_PICKUP_TIMELINE_STEPS,
+      publicPickupTimelineIndex(status),
+      status,
+      className,
+      'public',
+    );
+  }
   const steps = status === 'arriving'
     ? PUBLIC_ORDER_TIMELINE_STEPS.map((step) => (
       step.key === 'delivery' ? { ...step, label: 'Llegó' } : step

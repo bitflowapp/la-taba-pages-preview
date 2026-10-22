@@ -50,6 +50,7 @@ import {
   handleBusinessOperationsInput,
   renderBusinessOperations,
   resetBusinessOperationsForTests,
+  setMercadoPagoReturn,
 } from './business/business-operations-center.js';
 import { formatPanelClock, formatPanelTimestamp } from './business/business-panel-render.js';
 import {
@@ -210,7 +211,9 @@ export function initProductionOperations({
   const returnUrl = new URL(globalThis.location.href);
   if (returnUrl.searchParams.has('mp_connection')) {
     businessOperationsView = 'payments-setup';
-    // The query only chooses the screen. Connection truth is read from the server.
+    // The query only chooses the screen and which message explains the result;
+    // the connection state shown is always read again from the server.
+    setMercadoPagoReturn(returnUrl.searchParams.get('mp_connection'));
     returnUrl.searchParams.delete('mp_connection');
     globalThis.history.replaceState(null, '', returnUrl.toString());
   }
@@ -1674,6 +1677,8 @@ async function configureBusinessRuntime(result) {
     reconcilePayment: (paymentIntentId) => repository.reconcileMercadoPagoPayment(paymentIntentId),
     recoverOrder: (checkoutSessionId) => repository.recoverPaidCheckoutOrder(checkoutSessionId),
     refundPayment: (input) => repository.requestMercadoPagoRefund(input),
+    cancelPayment: (input) => repository.requestMercadoPagoCancellation(input),
+    pauseOnlinePayments: () => paymentsRepository.pauseOnlinePayments(),
     getArcaActivation: () => fiscalRepository.getActivationStatus(),
     authorizeArcaHomologation: (phrase) => fiscalRepository.authorizeHomologation(phrase),
     recordFiscalVerification: (verification) => fiscalRepository.recordVerification(verification),
@@ -2649,6 +2654,27 @@ const BUSINESS_PRIMARY_MOBILE_VIEWS = Object.freeze([
 ]);
 const BUSINESS_MOBILE_NAV_SLOTS = 4;
 
+/** Cómo se agrupa la hoja de «Más». Lo que no figura cae en «Otras secciones». */
+export const BUSINESS_MORE_GROUPS = Object.freeze([
+  ['Día a día', ['store-opening', 'day-open', 'operation-center', 'orders', 'packing', 'pos', 'scanner', 'day-close']],
+  ['Catálogo y stock', ['catalog', 'product-create', 'inventory-receive', 'inventory-adjust', 'stock-count']],
+  ['Cobros', ['payments', 'fiscal-status']],
+  ['Configuración', ['operations-config', 'payments-setup', 'team', 'team-access', 'fiscal-setup', 'fiscal-config', 'devices', 'print-agent']],
+]);
+
+export function groupBusinessMoreViews(views, groups = BUSINESS_MORE_GROUPS) {
+  const pending = [...views];
+  const result = [];
+  for (const [label, members] of groups) {
+    const inGroup = pending.filter((view) => members.includes(view));
+    if (inGroup.length) result.push({ label, views: inGroup });
+  }
+  const grouped = new Set(groups.flatMap(([, members]) => members));
+  const others = pending.filter((view) => !grouped.has(view));
+  if (others.length) result.push({ label: 'Otras secciones', views: others });
+  return result;
+}
+
 /** Los destinos de la barra inferior y los que quedan en la hoja de «Más». */
 export function splitBusinessMobileNavigation(allowedViews, {
   slots = BUSINESS_MOBILE_NAV_SLOTS,
@@ -2751,10 +2777,17 @@ function businessWorkspaceParts() {
         <span class="panel-nav-ico" aria-hidden="true">${BUSINESS_VIEW_ICONS[view] || BUSINESS_VIEW_ICONS.default}</span>
         <span class="panel-nav-label">${escapeHtml(businessViewLabel(view))}</span>
       </button>`).join('');
-  const restLinks = rest.map((view) => `
+  const restButton = (view) => `
       <button type="button" class="panel-more-item ${businessOperationsView === view ? 'is-active' : ''}"
         aria-pressed="${businessOperationsView === view}"
-        ${businessViewTrigger(view)}>${escapeHtml(businessViewLabel(view))}</button>`).join('');
+        ${businessViewTrigger(view)}>${escapeHtml(businessViewLabel(view))}</button>`;
+  // La hoja de «Más» agrupada: el dueño busca «Configuración → Mercado Pago»,
+  // no una lista de diecisiete píldoras sueltas.
+  const restLinks = groupBusinessMoreViews(rest).map(({ label, views }) => `
+      <section class="panel-more-group" data-panel-more-group="${escapeAttribute(label)}" aria-label="${escapeAttribute(label)}">
+        <h3 class="panel-more-group-title">${escapeHtml(label)}</h3>
+        <div class="panel-more-grid">${views.map(restButton).join('')}</div>
+      </section>`).join('');
 
   const regiones = [
     {
@@ -2847,7 +2880,7 @@ function businessWorkspaceParts() {
         <strong>Más secciones</strong>
         <button class="ghost-button compact" type="button" data-panel-more-close>Cerrar</button>
       </div>
-      <div class="panel-more-grid">${restLinks}</div>
+      ${restLinks}
     </section>`,
     },
   ];

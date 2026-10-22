@@ -1,17 +1,19 @@
 // Cloudflare OAuth login (same public client and PKCE flow as `wrangler login`) that stores the session
-// OUTSIDE C: and writes it atomically. Opens nothing by itself: it prints the authorization URL and waits
+// outside the repository and writes it atomically. Set TABA_CF_SESSION to a private local file first.
+// Opens nothing by itself: it prints the authorization URL and waits
 // for the browser redirect on localhost:8976. Tokens are never printed.
 import { createHash, randomBytes } from 'node:crypto';
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 
-export const SESSION_FILE = process.env.TABA_CF_SESSION || 'D:/work/taba-cf-session/session.json';
+export const SESSION_FILE = process.env.TABA_CF_SESSION;
 const CLIENT = '54d11594-84e4-41aa-b438-e81b8fa78ee7';
 const REDIRECT = 'http://localhost:8976/oauth/callback';
 const SCOPES = process.env.TABA_CF_SCOPES || 'account:read user:read pages:write offline_access';
 
 export function saveSession(tokens) {
+  if (!SESSION_FILE) throw new Error('Set TABA_CF_SESSION to a private session file outside the repository.');
   fs.mkdirSync(path.dirname(SESSION_FILE), { recursive: true });
   const tmp = SESSION_FILE + '.tmp';
   fs.writeFileSync(tmp, JSON.stringify({ ...tokens, savedAt: new Date().toISOString() }));

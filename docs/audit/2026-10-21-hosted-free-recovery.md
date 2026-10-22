@@ -32,7 +32,7 @@ RLS está habilitado en esa tabla y se revocó acceso a anon, authenticated y se
 
 No se pueden recuperar del respaldo: usuarios/contraseñas y sesiones Auth, pedidos completos e ítems, transacciones de Mercado Pago, consentimiento OAuth ni objetos originales de Storage. El archivo SQL de cero bytes no sirve como respaldo. Supabase documenta que eliminar un proyecto elimina permanentemente sus datos y respaldos: https://supabase.com/docs/guides/platform/backups . No hay una restauración del proyecto eliminado demostrada.
 
-La planilla de validación de Walter está preparada en D:/work/la-taba-launch-20261020/outputs/walter/La_Taba_validacion_Walter.xlsx. Contiene 72 productos y deja en blanco los valores actuales de precio, costo y stock. No fue importada ni publicada. Las fotografías existentes requieren validar correspondencia y derechos antes de incorporarlas a estos 72 productos.
+Se generó una versión actualizada de la planilla para Walter, guardada localmente fuera del repositorio público; la anterior se preservó. Contiene los 72 productos y etiqueta los valores históricos como vencidos. Los campos actuales de costo, precio, precio regular, stock y disponibilidad quedan vacíos. La planilla calcula ganancia, margen, recargo y descuento, y trae una hoja de instrucciones. No fue importada ni publicada. Walter debe confirmar presentación, categoría, fotos y derechos en el Panel antes de publicar.
 
 ## Componentes comprobados
 
@@ -97,10 +97,10 @@ No se contrató respaldo pago, monitoreo pago, SMTP pago ni se descargaron imág
 ## Ubicación de evidencia y código
 
 - Evidencia sin secretos: docs/audit/2026-10-21-hosted-free-evidence/.
-- Manifiesto exacto: docs/audit/2026-10-21-hosted-recovery-plan.json.
+- Manifiesto inicial: docs/audit/2026-10-21-hosted-recovery-plan.json. Candidato actual: docs/audit/2026-10-21-hosted-recovery-plan-20261021-final.json.
 - Recibo del destino: deploy/recovery-free-hosted.json.
 - Scripts reproducibles: scripts/recovery/{bootstrap-hosted,deploy-functions,verify-hosted-sql,verify-hosted-api,verify-functions,prepare-preview}.mjs.
-- Evidencia extendida y fallos iniciales: D:/work/la-taba-launch-20261020/.
-- Rama de revisión: recovery/la-taba-free-hosted-20261020, Git almacenado en D:/work/la-taba-free-review-20261020/.git. Usa objetos previos del repositorio original mediante alternates; no es una copia de respaldo independiente. No se subió ni fusionó la rama.
+- Evidencia extendida y fallos iniciales: directorio local privado, fuera del repositorio.
+- Rama de revisión: recovery/la-taba-free-hosted-20261020. Usa objetos previos del repositorio original mediante alternates; no es una copia de respaldo independiente.
 
 Local Node verification: 232 passed, 0 failed. See free-hosted-node-tests-final.log.

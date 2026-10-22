@@ -173,6 +173,16 @@ export function paymentActionsFor(payment = {}, { elevated = false } = {}) {
       hint: 'Arma un resumen sin datos personales para pasarle a soporte.',
     },
     {
+      // Un pago que Mercado Pago todavía no resolvió (por ejemplo, una tarjeta
+      // en revisión) se puede cancelar: no se cobra y el stock vuelve.
+      id: 'cancel',
+      label: 'Cancelar el pago pendiente',
+      kind: 'elevated',
+      available: Boolean(payment.can_cancel),
+      hint: 'Le pide a Mercado Pago que no cobre este pago. Pide confirmación escrita.',
+      requiresConfirmation: true,
+    },
+    {
       id: 'refund',
       label: 'Devolver el dinero',
       kind: 'elevated',
@@ -187,6 +197,21 @@ export function paymentActionsFor(payment = {}, { elevated = false } = {}) {
 }
 
 export const REFUND_CONFIRMATION_PHRASE = 'DEVOLVER';
+export const CANCEL_CONFIRMATION_PHRASE = 'CANCELAR';
+
+// Lo que exige el servidor, distinto de la palabra que escribe la persona: la
+// persona confirma con DEVOLVER o CANCELAR; el panel recién entonces manda la
+// frase técnica. Antes se mandaba 'CONFIRMED' y TODA devolución desde el panel
+// era rechazada por el servidor.
+export const REFUND_SERVER_CONFIRMATION = 'I_UNDERSTAND_THIS_REQUESTS_A_MERCADO_PAGO_REFUND';
+export const CANCEL_SERVER_CONFIRMATION = 'I_UNDERSTAND_THIS_REQUESTS_A_MERCADO_PAGO_CANCELLATION';
+
+export function validateCancelRequest({ confirmation } = {}) {
+  if (String(confirmation || '').trim().toUpperCase() !== CANCEL_CONFIRMATION_PHRASE) {
+    return Object.freeze({ ok: false, message: `Escribí ${CANCEL_CONFIRMATION_PHRASE} para confirmar.` });
+  }
+  return Object.freeze({ ok: true });
+}
 
 export function validateRefundRequest({ amount, reason, confirmation, maximum } = {}) {
   const trimmedReason = String(reason || '').trim();

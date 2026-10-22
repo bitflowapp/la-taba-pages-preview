@@ -141,7 +141,11 @@ export function createBusinessOrderIntakeCoordinator({
   // mientras el coordinador se reconstruye —al volver a la pestaña, al
   // recuperar la sesión, al reconectar— entra a la bandeja MUDO.
   knownOrderIds = null,
+  // Sondeo de seguridad con Realtime caído o todavía sin confirmar.
   pollMs = 5000,
+  // Sondeo de seguridad con Realtime suscripto: los cambios llegan por el canal
+  // y el sondeo sólo cubre lo que el canal pudiera perder.
+  healthyPollMs = 45000,
   lifecycleTarget = defaultLifecycleTarget(),
   visibilityTarget = defaultVisibilityTarget(),
   broadcastFactory = defaultBroadcastFactory,
@@ -173,6 +177,23 @@ export function createBusinessOrderIntakeCoordinator({
   const seenOrderIds = new Set(seedOrderIds || []);
   const lifecycleStops = [];
   const normalizedPollMs = Math.max(1000, Number(pollMs) || 5000);
+  /*
+   * El sondeo es la red de seguridad, no el camino principal.
+   *
+   * Corría cada cinco segundos con Realtime sano o caído, y cada vuelta trae la
+   * bandeja ENTERA con `order_items(*)` y `order_combos(*)`: 720 lecturas por
+   * hora y por pestaña abierta, en una cuenta gratuita cuyo tráfico de salida es
+   * lo primero que se agota. Con el canal suscripto, cada cambio de `orders`
+   * ya dispara una sincronización por su cuenta; el sondeo sólo tiene que
+   * atrapar lo que el canal pudiera perder, y para eso alcanza con 45 s.
+   *
+   * Con la pestaña oculta y el canal sano no se sondea: los avisos siguen
+   * llegando por Realtime y al volver a primer plano se hace una sola puesta al
+   * día. Con la pestaña oculta y el canal caído NO se apaga —sería quedarse sin
+   * el timbre, la insignia y el título, que existen justamente para cuando
+   * nadie mira la pantalla—: se espacia a la cadencia sana.
+   */
+  const normalizedHealthyPollMs = Math.max(normalizedPollMs, Number(healthyPollMs) || 45000);
   let running = false;
   let realtimeStop = null;
   let realtimeState = 'idle';
@@ -360,6 +381,7 @@ export function createBusinessOrderIntakeCoordinator({
       realtimeState = 'connected';
       setStatus({ phase: isOnline() ? 'recovering' : 'offline', reason: 'realtime-connected', error: '' });
       void invalidate('realtime-connected');
+      schedulePoll();
       return;
     }
     if (['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(normalized)) {
@@ -370,20 +392,41 @@ export function createBusinessOrderIntakeCoordinator({
         error: 'Realtime interrumpido; recuperamos desde PostgreSQL.',
       });
       void invalidate('realtime-error');
+      // Sin canal, el sondeo vuelve a ser el camino: se acorta YA, no cuando
+      // venza la espera larga que se programó con el canal sano.
+      schedulePoll();
       return;
     }
     realtimeState = normalized ? normalized.toLowerCase() : 'connecting';
     setStatus({ realtime: realtimeState });
+    schedulePoll();
+  }
+
+  function documentHidden() {
+    return visibilityTarget?.visibilityState === 'hidden';
+  }
+
+  // Cuánto esperar al próximo sondeo; null = ninguno (pestaña oculta con el
+  // canal sano: la puesta al día la hace la vuelta a primer plano).
+  function currentPollDelay() {
+    const realtimeHealthy = realtimeState === 'connected';
+    if (documentHidden()) return realtimeHealthy ? null : normalizedHealthyPollMs;
+    return realtimeHealthy ? normalizedHealthyPollMs : normalizedPollMs;
   }
 
   function schedulePoll() {
     if (!running || !setTimer) return;
     if (pollTimer !== null && clearTimer) clearTimer(pollTimer);
+    pollTimer = null;
+    const delay = currentPollDelay();
+    if (delay === null) return;
     pollTimer = setTimer(async () => {
       pollTimer = null;
-      await invalidate('safety-poll');
+      // El estado pudo cambiar mientras esperaba: oculta y con el canal sano,
+      // no se consulta.
+      if (currentPollDelay() !== null) await invalidate('safety-poll');
       schedulePoll();
-    }, normalizedPollMs);
+    }, delay);
   }
 
   function setupLifecycleRecovery() {
@@ -400,9 +443,13 @@ export function createBusinessOrderIntakeCoordinator({
       void invalidate('pageshow');
     });
     addLifecycleListener(visibilityTarget, 'visibilitychange', () => {
-      if (visibilityTarget?.visibilityState !== 'visible') return;
-      broadcastInvalidation('foreground');
-      void invalidate('foreground');
+      if (visibilityTarget?.visibilityState === 'visible') {
+        broadcastInvalidation('foreground');
+        void invalidate('foreground');
+      }
+      // Al ocultarse, con el canal sano, el sondeo se apaga; al volver arranca
+      // de nuevo contado desde esta puesta al día.
+      schedulePoll();
     });
   }
 

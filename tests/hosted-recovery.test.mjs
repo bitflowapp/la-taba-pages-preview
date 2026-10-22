@@ -14,8 +14,14 @@ const project = { id: target.projectRef, name: target.projectName, organization_
 const plan = recoveryPlan();
 
 test('recovery inventories all existing migrations and function graphs without test-only modules', () => {
-  assert.equal(plan.migrations.length, 160); // 159 preserved migrations + recovery hardening.
-  assert.ok(plan.migrations.at(-1).path.endsWith('_recovery_rpc_hardening.sql'));
+  const diskMigrations = fs.readdirSync(new URL('../supabase/migrations/', import.meta.url))
+    .filter((name) => name.endsWith('.sql'))
+    .sort();
+  assert.deepEqual(plan.migrations.map(({ path }) => path.split('/').at(-1)), diskMigrations,
+    'the recovery plan must inventory every migration currently present on disk in order');
+  assert.ok(plan.migrations.some(({ path }) => path.endsWith('_recovery_rpc_hardening.sql')));
+  assert.ok(plan.migrations.some(({ version }) => version === '20261021234000'));
+  assert.ok(plan.migrations.some(({ version }) => version === '20261021235000'));
   assert.equal(plan.functions.length, 13);
   assert.equal(plan.commercialPaymentsEnabled, false);
   assert.equal(plan.applySeedSql, false);

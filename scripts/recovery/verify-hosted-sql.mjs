@@ -12,8 +12,8 @@ const files=process.argv.includes('--files')?value('--files').split(',').map(f=>
 for(const file of files){let sql=fs.readFileSync(path.join(ROOT,'supabase/tests',file),'utf8');let expected=null;
 if(sql.includes('select plan(')){
 expected=Number(/select plan\((\d+)\)/.exec(sql)[1]);
-sql=sql.replace('begin;',"begin; set local search_path=public,extensions; create temp table recovery_tap(line text);");
-sql=sql.replace(/^select ((?:ok|is|isnt|like|unlike|throws_ok|lives_ok|cmp_ok)\([\s\S]*?);/gm,'insert into recovery_tap(line) select $1;');
+sql=sql.replace('begin;',"begin; set local search_path=public,extensions; create temp table recovery_tap(line text); grant select,insert on recovery_tap to anon,authenticated,service_role;");
+sql=sql.replace(/^select ((?:ok|is|isnt|like|unlike|throws_ok|lives_ok|cmp_ok|has_column|col_type_is)\([\s\S]*?);/gm,'insert into recovery_tap(line) select $1;');
 sql=sql.replace(/select \* from finish\(\);/,"do $tap_assert$ begin if (select count(*) from recovery_tap) <> "+expected+" or exists(select 1 from recovery_tap where line like 'not ok%') then raise exception 'HOSTED_TAP_FAILED: %',(select jsonb_agg(line) from recovery_tap);end if;end $tap_assert$;");
 }
 try{await query(sql);proof.tests.push({file,passed:true,assertions:expected,provider:'simulated SQL inputs; hosted PostgreSQL',transaction:'rolled_back'});}

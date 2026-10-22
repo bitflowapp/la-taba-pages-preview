@@ -2,7 +2,7 @@
 
 Base preservada: commit `3123704d`, rama `recovery/la-taba-free-hosted-20261020`. Destino actual **exclusivamente de pruebas**, Supabase Free `ixewllzzuzpqrkxzmfzx`.
 
-La copia de trabajo operativa está ahora en **D:/work/la-taba-free-review-20261020** porque C: se quedó sin espacio. La rama ya existe también en GitHub. Ver [resultados de respaldo y restauración](2026-10-21-backup-restore-results.md) y [plan de pruebas alojadas](2026-10-21-hosted-payment-test-plan.md).
+La copia de trabajo operativa permanece en un directorio local privado, fuera de Git. La rama ya existe también en GitHub. Ver [resultados de respaldo y restauración](2026-10-21-backup-restore-results.md) y [plan de pruebas alojadas](2026-10-21-hosted-payment-test-plan.md).
 
 ## 1. URLs exactas
 

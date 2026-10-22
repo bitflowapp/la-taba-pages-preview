@@ -10,8 +10,23 @@
   padding: 22px;
 }
 
-.cart-card h3 {
-  margin-bottom: 16px;
+/* El renglón del título de la tarjeta. Lo comparte con el aviso del pedido
+   (`.cart-notice`, más abajo): el título a la izquierda y el aviso en lo que
+   queda. El aviso tiene alto fijo, así que el renglón mide lo mismo con aviso,
+   sin aviso y con el aviso recién apagado. */
+.cart-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+/* `h2` porque cuelga del `h1` «Tu pedido». Conserva el tamaño que tenía como
+   `h3`: subir de nivel no cambia lo que se ve. */
+.cart-card-head h2 {
+  flex: 0 0 auto;
+  margin: 0;
+  font-size: 1.17em;
 }
 
 .cart-item {
@@ -396,7 +411,9 @@
   text-transform: uppercase;
 }
 
-.checkout-heading h3 {
+/* `h2`, hermano de «Productos» bajo el `h1` de la vista; mismo aspecto que
+   cuando era `h3`. */
+.checkout-heading h2 {
   margin: 3px 0 0;
   font-size: 26px;
   letter-spacing: -0.03em;
@@ -846,16 +863,25 @@
 }
 
 /* ============================================================================
-   BANDA DE AVISO DEL PEDIDO
+   AVISO DEL PEDIDO
    ----------------------------------------------------------------------------
-   Reserva su alto SIEMPRE que la vista del carrito esté activa con productos
-   —que es exactamente cuando puede haber un aviso—, así que aparecer y
-   desaparecer no desplaza nada. Vacía no pinta superficie: queda un hueco de
-   aire, no una caja gris esperando.
-   Una sola línea con recorte: un nombre de producto largo la haría crecer y ese
-   crecimiento sería el salto que esto viene a eliminar. El texto completo vive
-   igual en la región viva, que es lo que lee un lector de pantalla, y el
-   producto está nombrado en la línea del carrito que hay justo abajo.
+   Vive en el renglón del título «Productos» (`.cart-card-head`) y toma el ancho
+   que el título deja libre. Reserva su alto SIEMPRE que la vista del carrito
+   esté activa con productos —que es exactamente cuando puede haber un aviso—,
+   así que aparecer y desaparecer no desplaza nada. Vacío no pinta superficie:
+   el renglón se lee como el título solo, no como una caja gris esperando.
+   Antes era una banda propia de 48 px más 12 de margen entre las acciones de
+   la vista y la tarjeta, casi siempre vacía: era el hueco que separaba
+   «Seguir comprando» de «Productos».
+   Alto FIJO (no mínimo): un nombre de producto largo la haría crecer y ese
+   crecimiento sería el salto que esto viene a eliminar. Al lado del título el
+   ancho es menor que el de la banda de antes, así que el aviso puede ocupar
+   DOS renglones dentro de ese alto —en uno solo, a 390 px, «… agregado al
+   pedido» quedaba cortado justo en la parte que dice qué pasó—. Si un aviso no
+   entrara en dos, se recorta abajo y no arriba (`safe center`). El texto
+   completo vive igual en la región viva, que es lo que lee un lector de
+   pantalla, y el producto está nombrado en la línea del carrito que hay justo
+   abajo.
    ========================================================================== */
 .cart-notice {
   display: none;
@@ -863,19 +889,21 @@
 
 body[data-active-view="cart"] .cart-notice:not([hidden]) {
   display: flex;
+  flex: 1 1 auto;
   align-items: center;
-  min-height: 48px;
-  margin-bottom: 12px;
-  padding: 0 14px;
+  align-items: safe center;
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
   overflow: hidden;
   border: 1px solid var(--taba-border);
   border-radius: var(--radius-action-lg);
   background: var(--shelf-raised);
   color: var(--taba-ink);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 650;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 body[data-active-view="cart"] .cart-notice:not([hidden]):empty {
@@ -1097,6 +1125,38 @@ body[data-active-view="cart"] .cart-notice:not([hidden]):empty {
 
 .profile-checkout-pickup span {
   color: var(--taba-muted);
+  font-size: 13px;
+}
+
+/* Dónde y cuándo se retira: sólo lo que el comercio publicó (customer-delivery.js). */
+.profile-checkout-pickup-point {
+  display: grid;
+  gap: 2px;
+  margin: 6px 0 0;
+}
+
+.profile-checkout-pickup-point > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 6px;
+  font-size: 13px;
+}
+
+.profile-checkout-pickup-point dt {
+  color: var(--taba-muted);
+  font-weight: 750;
+}
+
+.profile-checkout-pickup-point dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.profile-checkout-pickup-maps {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  margin-left: -9px;
   font-size: 13px;
 }
 

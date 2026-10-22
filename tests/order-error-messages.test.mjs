@@ -94,6 +94,44 @@ test('lo que ya funcionaba sigue funcionando', () => {
   assert.equal(readableOrderCreationError({ message: 'algo raro' }), GENERICO);
 });
 
+// ── Cuál se agotó ───────────────────────────────────────────────────────────
+//
+// La RPC nombra el producto por su id. El carrito sabe cómo se llama, y decirlo
+// ahorra buscar cuál de todas las líneas es la que ya no entra.
+const AGOTADO = '28ad2a1a-510f-420e-a184-db2a1fa644ad';
+const CARRITO = [
+  { id: '0b6f4f0e-7c38-4d0e-9a11-3c2a1f0e9b10', name: 'Coca-Cola Original' },
+  { id: AGOTADO, name: 'Fernet Branca 750 ml' },
+];
+
+test('si el carrito conoce el producto agotado, el mensaje lo nombra', () => {
+  for (const message of [
+    `producto no disponible: ${AGOTADO}`,
+    `stock insuficiente para producto: ${AGOTADO}`,
+    `PRODUCTO NO DISPONIBLE: ${AGOTADO.toUpperCase()}`,
+  ]) {
+    const leido = readableOrderCreationError({ message }, 400, { products: CARRITO });
+    assert.equal(leido, 'No hay stock suficiente de «Fernet Branca 750 ml». Actualizá el carrito y probá de nuevo.', message);
+  }
+});
+
+test('si el id no es de este carrito, o no hay carrito, queda la frase general', () => {
+  const ajeno = { message: 'producto no disponible: 99999999-9999-4999-8999-999999999999' };
+  assert.equal(readableOrderCreationError(ajeno, 400, { products: CARRITO }), SIN_STOCK);
+  assert.equal(readableOrderCreationError({ message: `producto no disponible: ${AGOTADO}` }, 400), SIN_STOCK);
+  assert.equal(readableOrderCreationError({ message: 'stock insuficiente' }, 400, { products: CARRITO }), SIN_STOCK);
+});
+
+test('nombrar el producto no le gana a los rechazos con código propio', () => {
+  // El código de cierre llega antes que cualquier palabra suelta de stock.
+  const leido = readableOrderCreationError(
+    { message: 'BUSINESS_CLOSED', details: `producto no disponible: ${AGOTADO}` },
+    500,
+    { products: CARRITO },
+  );
+  assert.doesNotMatch(leido, /Fernet/);
+});
+
 // ── Lo que el alta del pedido decide en el último segundo ───────────────────
 //
 // Los tres rechazos son literales de

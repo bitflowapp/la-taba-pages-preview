@@ -11,8 +11,9 @@ const value = name => process.argv[process.argv.indexOf(name) + 1];
 if (!['--target', '--out', '--commit'].every(arg => process.argv.includes(arg))) throw new Error('Requires --target --out --commit');
 const target = JSON.parse(fs.readFileSync(value('--target'), 'utf8'));
 const out = path.resolve(value('--out'));
-// F: is a damaged USB drive (read-only by decision of 2026-10-21) and C: is full: artifacts go to D: only.
-if (process.platform === 'win32' && !/^D:\\/i.test(out)) throw new Error('Use D: for recovery artifacts, never C: or F:');
+// Recovery artifacts go only to the approved data volume, never the system or a removable volume.
+const outputDrive = path.parse(out).root.slice(0, 1).toUpperCase();
+if (process.platform === 'win32' && outputDrive !== 'D') throw new Error('Recovery artifacts must use the approved data volume.');
 const accessGate = process.argv.includes('--access-gate');
 const businessId = process.argv.includes('--business-id') ? value('--business-id') : '00000000-0000-4000-8000-000000000001';
 if (!/^[0-9a-f-]{36}$/i.test(businessId)) throw new Error('Invalid --business-id');

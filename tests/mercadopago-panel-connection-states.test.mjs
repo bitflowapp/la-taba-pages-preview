@@ -7,13 +7,14 @@ const card = (connection, role = 'owner', { activation = null, busy = false } = 
   role, connection, activation, busy,
 });
 const status = (html) => /<p role="status"[^>]*><strong>([^<]*)<\/strong><\/p>/.exec(html)?.[1];
-const actions = (html) => [...html.matchAll(/data-mp-connection-action="([a-z]+)"/g)].map((m) => m[1]);
+const actions = (html) => [...html.matchAll(/data-mp-connection-action="([a-z-]+)"/g)].map((m) => m[1]);
 
 test('conectado y habilitado: «Conectado», sin mostrar el número de cuenta', () => {
   const html = card({ status: 'connected', seller_id: '3594962708', connected_at: '2026-09-25T17:43:16Z' }, 'owner', { activation: ENABLED });
   assert.equal(status(html), 'Conectado');
   assert.doesNotMatch(html, /3594962708|Cuenta:/, 'el Panel no muestra identificadores técnicos');
-  assert.deepEqual(actions(html), ['verify', 'disconnect']);
+  // Con el cobro online habilitado también se puede pausar desde el panel.
+  assert.deepEqual(actions(html), ['verify', 'pause', 'disconnect']);
   assert.match(html, /data-mp-seller-state="connected"/);
 });
 

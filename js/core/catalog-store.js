@@ -6,6 +6,8 @@ import { applyRetailNaming, linkProcurementPacks, publishRetailUnits } from './r
 import {
   ALCOHOLIC_CATEGORY_IDS as TAXONOMY_ALCOHOLIC_CATEGORY_IDS,
   categoryDefaults,
+  findCategory,
+  slugifyCategoryName,
   storeCategoryOptions,
 } from './store-taxonomy.js';
 
@@ -294,7 +296,7 @@ export function normalizeCatalogProduct(raw, fallback = null) {
   );
   const unitsPerPack = Math.max(1, Math.floor(Number(source.unitsPerPack ?? source.units_per_pack) || 1));
   const sortOrder = Math.max(0, Math.floor(Number(source.sortOrder ?? source.sort_order) || 0));
-  const categoryName = categories.find((category) => category.id === categoryId)?.name || categoryId;
+  const categoryName = categoryDisplayName(categoryId, source.categoryName);
 
   return {
     ...source,
@@ -463,6 +465,31 @@ function updateProductById(products, productId, updater, successMessage) {
  */
 function defaultsForCategory(categoryId) {
   return categoryDefaults(categoryId);
+}
+
+/*
+ * EL NOMBRE QUE SE LEE DE UNA CATEGORÍA. Sólo la etiqueta: el id sigue siendo
+ * el slug ASCII que viaja en la fila, en la URL y en los filtros.
+ *
+ * Esto era `categories.find(id)?.name || categoryId`, y `categories` es el
+ * diccionario de la vitrina de BEBIDAS. Cada pasada por acá —y se pasa en cada
+ * commit del catálogo— le borraba el nombre a toda categoría que no fuera
+ * bebida: la fila llegaba como «Almacén» y salía como `almacen`, así que el chip
+ * decía «Almacen» al lado del carrusel «Almacén». Lo mismo con golosinas,
+ * limpieza, higiene personal, hogar, mascotas, otros y el título del catálogo.
+ *
+ * El orden: el diccionario cargado, que es el nombre que la vitrina ya usa; el
+ * nombre que trae la fila, si de verdad nombra a ESTA categoría (un producto
+ * recategorizado arrastra el nombre viejo en el spread de `source`) y no es el
+ * propio slug; la taxonomía de la tienda; y el id sólo si nadie sabe cómo se
+ * llama.
+ */
+function categoryDisplayName(categoryId, sourceName) {
+  const known = categories.find((category) => category.id === categoryId)?.name;
+  if (known) return known;
+  const declared = sanitizeText(sourceName, { maxLength: 80 });
+  if (declared && declared !== categoryId && slugifyCategoryName(declared) === categoryId) return declared;
+  return findCategory(categoryId)?.displayName || categoryId;
 }
 
 function normalizeCategoryId(value) {

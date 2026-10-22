@@ -14,26 +14,26 @@ Destino autorizado: `ixewllzzuzpqrkxzmfzx`, organización La Taba Free `tpdpuvna
 Ejecutar desde el worktree existente. Los scripts validan recibo, proyecto y organización Free. Las claves guardadas deben pertenecer a la referencia exacta.
 
 ```powershell
-$env:TEMP = 'D:/work/la-taba-launch-20261020'
+$env:TEMP = $env:TABA_RECOVERY_TEMP
 $env:TMP = $env:TEMP
 $env:NODE_DISABLE_COMPILE_CACHE = '1'
 
 # Reanudación del esquema: exige cero usuarios Auth.
-node scripts/recovery/bootstrap-hosted.mjs --apply --phase schema --target deploy/recovery-free-hosted.json --manifest docs/audit/2026-10-21-hosted-recovery-plan.json
+node scripts/recovery/bootstrap-hosted.mjs --apply --phase schema --target deploy/recovery-free-hosted.json --manifest docs/audit/2026-10-21-hosted-recovery-plan-20261021-final.json
 
-node scripts/recovery/deploy-functions.mjs --apply --target deploy/recovery-free-hosted.json --manifest docs/audit/2026-10-21-hosted-recovery-plan.json --evidence D:/work/la-taba-launch-20261020/redeploy.jsonl
+node scripts/recovery/deploy-functions.mjs --apply --target deploy/recovery-free-hosted.json --manifest docs/audit/2026-10-21-hosted-recovery-plan-20261021-final.json --evidence "$env:TABA_RECOVERY_EVIDENCE_DIR/redeploy.jsonl"
 
-node scripts/recovery/verify-hosted-sql.mjs --run-tests --target deploy/recovery-free-hosted.json --evidence-directory D:/work/la-taba-launch-20261020/sql-repeat
+node scripts/recovery/verify-hosted-sql.mjs --run-tests --target deploy/recovery-free-hosted.json --evidence-directory "$env:TABA_RECOVERY_EVIDENCE_DIR/sql-repeat"
 
-node scripts/recovery/verify-hosted-api.mjs --run-tests --target deploy/recovery-free-hosted.json --evidence-directory D:/work/la-taba-launch-20261020/api-repeat
+node scripts/recovery/verify-hosted-api.mjs --run-tests --target deploy/recovery-free-hosted.json --evidence-directory "$env:TABA_RECOVERY_EVIDENCE_DIR/api-repeat"
 
 # Sólo antes de conectar un vendedor y sin trabajos pendientes.
-node scripts/recovery/verify-functions.mjs --run-tests --target deploy/recovery-free-hosted.json --evidence D:/work/la-taba-launch-20261020/functions-repeat.json
+node scripts/recovery/verify-functions.mjs --run-tests --target deploy/recovery-free-hosted.json --evidence "$env:TABA_RECOVERY_EVIDENCE_DIR/functions-repeat.json"
 ```
 
 La prueba API crea una identidad anónima y un objeto Storage sintéticos, verifica permisos y los elimina. Cambia `updated_at` del comercio pausado para comprobar Realtime. Las suites SQL hacen ROLLBACK. No ejecutarlas automáticamente sobre un futuro proyecto comercial.
 
-`prepare-preview.mjs --target deploy/recovery-free-hosted.json --out D:/work/NUEVA-CARPETA --commit SHA_REVISADO` prepara el sitio existente y genera hashes. Rechaza sobrescribir directorios y no publica. Después ejecutar `check-runtime-config.mjs` y `scan-production-artifacts.mjs`. El acceso Cloudflare debe renovarse antes de publicar únicamente la rama preview, sin promoverla a producción.
+`prepare-preview.mjs --target deploy/recovery-free-hosted.json --out "$env:TABA_RECOVERY_OUTPUT_DIR" --commit SHA_REVISADO` prepara el sitio existente y genera hashes. Rechaza sobrescribir directorios y no publica. Después ejecutar `check-runtime-config.mjs` y `scan-production-artifacts.mjs`. El acceso Cloudflare debe renovarse antes de publicar únicamente la rama preview, sin promoverla a producción.
 
 ## Backup comercial: pendiente, sin servicio pago
 
@@ -57,8 +57,8 @@ El watchdog heredado tiene acceso anónimo deliberado y puede actualizar alertas
 ## Git en D:
 
 ```powershell
-git --git-dir D:/work/la-taba-free-review-20261020/.git --work-tree C:/Users/marco/dev/la-taba-recovery-20261020 log -3 --oneline
-git --git-dir D:/work/la-taba-free-review-20261020/.git --work-tree C:/Users/marco/dev/la-taba-recovery-20261020 status --short
+git --git-dir "$env:TABA_RECOVERY_GIT_DIR" --work-tree "$env:TABA_RECOVERY_WORKTREE" log -3 --oneline
+git --git-dir "$env:TABA_RECOVERY_GIT_DIR" --work-tree "$env:TABA_RECOVERY_WORKTREE" status --short
 ```
 
-La rama usa objetos previos mediante alternates hacia C:. No es un backup independiente: no eliminar ni mover el repositorio original. La revisión no requiere subir la rama ni publicar producción.
+La rama usa objetos previos mediante alternates hacia otra copia local. No es un backup independiente: no eliminar ni mover el repositorio original. La revisión no requiere publicar producción.

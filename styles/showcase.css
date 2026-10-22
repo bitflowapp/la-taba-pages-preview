@@ -10,6 +10,13 @@
   z-index: 2450;
 }
 
+/* El recorrido guiado ya dice «Modo demostración local» en su lanzador, en el
+   mismo rincón. La pastilla general del modo demostración (common.css) se
+   retira para no tener dos avisos iguales, uno encima del otro. */
+body:has(> [data-showcase-root]) .demo-mode-badge {
+  display: none;
+}
+
 .showcase-launcher {
   position: fixed;
   right: max(14px, env(safe-area-inset-right, 0px));

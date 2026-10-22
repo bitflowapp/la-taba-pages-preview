@@ -1,30 +1,30 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v153-campaign-buy-control';
+const CACHE_NAME = 'la-taba-runtime-v155-catalog-pricing-payment-returns';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=80',
-  './styles/tokens.css?v=80',
-  './styles/common.css?v=80',
-  './styles/storefront.css?v=80',
-  './styles/catalog.css?v=80',
-  './styles/checkout.css?v=80',
-  './styles/profile.css?v=80',
-  './styles/showcase.css?v=80',
-  './styles/tracking.css?v=80',
-  './styles/business.css?v=80',
-  './styles/rider.css?v=80',
-  './styles/responsive.css?v=80',
-  './styles/brand-home.css?v=80',
+  './styles.css?v=81',
+  './styles/tokens.css?v=81',
+  './styles/common.css?v=81',
+  './styles/storefront.css?v=81',
+  './styles/catalog.css?v=81',
+  './styles/checkout.css?v=81',
+  './styles/profile.css?v=81',
+  './styles/showcase.css?v=81',
+  './styles/tracking.css?v=81',
+  './styles/business.css?v=81',
+  './styles/rider.css?v=81',
+  './styles/responsive.css?v=81',
+  './styles/brand-home.css?v=81',
   // `styles.css` la importa desde que existe y nunca estuvo acá: sin red, la
   // home se quedaba sin la capa de movimiento. Lo destapó el guard de la
   // cadena de CSS versionado; no lo introdujo esta integración.
-  './styles/campaigns.css?v=80',
-  './styles/motion.css?v=80',
-  './styles/premium-storefront.css?v=80',
+  './styles/campaigns.css?v=81',
+  './styles/motion.css?v=81',
+  './styles/premium-storefront.css?v=81',
   './js/category-glass.js',
   './assets/brand/ambient-grain.png',
-  './styles/tracking-premium.css?v=80',
+  './styles/tracking-premium.css?v=81',
   './js/map/touch_intent.js',
   './manifest.webmanifest',
   './runtime-config.js?tenant=walter-staging',
@@ -153,6 +153,7 @@ const ASSETS = [
   './js/repositories/storage_repository.js',
   './js/repositories/customer_profile_repository.js',
   './js/repositories/supabase_order_repository.js',
+  './js/repositories/function-failure.js',
   './js/repositories/unavailable_order_repository.js',
   './js/services/supabase-auth.js',
   './js/services/supabase-client.js',
@@ -218,9 +219,9 @@ const ASSETS = [
    * entero y el Panel NO ABRE. El comercio se queda sin la herramienta con la
    * que trabaja justo en el momento en que peor está la señal.
    *
-   * Son 35 módulos y 393 KB. El guard del grafo lo venía avisando sin cortar;
-   * ahora corta (`scripts/check-precache-graph.mjs`), así que un módulo nuevo
-   * del Panel sin su entrada acá no llega a publicarse.
+   * El guard (`scripts/check-precache-graph.mjs`) sigue el grafo del Panel y
+   * corta si falta un módulo estático, así que ningún módulo nuevo del Panel
+   * llega a publicarse sin su entrada acá.
    *
    * QUÉ SIGNIFICA «SIRVE SIN RED» ACÁ, Y QUÉ NO
    * -------------------------------------------
@@ -239,6 +240,7 @@ const ASSETS = [
   './js/business/business-access-registration.js',
   './js/business/business-capabilities.js',
   './js/business/business-catalog-editor.js',
+  './js/business/catalog-pricing.js',
   './js/business/business-command-outbox.js',
   './js/business/business-connectivity.js',
   './js/business/business-day-control.js',

@@ -9,7 +9,7 @@
   "plaintextBytes": 3105635,
   "encryptedBytes": 3105829,
   "encryptionRoundtripVerified": true,
-  "archive": "D:\\work\\la-taba-backup-20261021\\snapshot-02\\database.pgdump.aesgcm",
+  "archive": "[encrypted archive path kept private outside Git]",
   "baseline": [
     {
       "auth_users": 0,

@@ -21,9 +21,27 @@ body[data-active-view="rider"] .floating-cart {
     --topbar: 56px;
   }
 
+  /* La marca cede antes que el control de dirección. Con `auto` la primera
+     columna medía lo que pidiera el nombre del comercio: medido a 390 px con
+     un nombre largo, la del medio quedaba en 0, «ENVIAR A» asomaba detrás del
+     botón del carrito y la página se corría 42 px de costado. Ahora la marca
+     ocupa a lo sumo lo que mide y se recorta con elipsis, y la dirección
+     conserva siempre 52 px. Con «La Taba» no cambia nada: entra entera en su
+     `max-content`. El Panel declara su propia grilla (business.css). */
   .topbar {
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, max-content) minmax(52px, 1fr) auto;
     padding-inline: 16px;
+  }
+
+  body:not([data-active-view="business"]):not([data-active-view="rider"]) .topbar :is(.brand, .brand-text) {
+    min-width: 0;
+  }
+
+  body:not([data-active-view="business"]):not([data-active-view="rider"]) .topbar .brand-word {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .desktop-nav {

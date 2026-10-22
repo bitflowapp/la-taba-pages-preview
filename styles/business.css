@@ -2996,6 +2996,23 @@ button.operation-metric {
     gap: 8px;
   }
 
+  /* Los grupos de la hoja («Día a día», «Configuración»…): un título chico y
+     la grilla de siempre debajo. */
+  body[data-active-view="business"] .panel-more-group {
+    display: grid;
+    gap: 6px;
+  }
+
+  body[data-active-view="business"] .panel-more-group-title {
+    margin: 4px 0 0;
+    /* #9aa0a9 sobre la hoja #222529: ~6:1, legible en letra chica. */
+    color: var(--panel-ink-muted);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
   body[data-active-view="business"] .panel-more-item {
     min-height: 48px;
     padding: 0 14px;
@@ -7780,3 +7797,43 @@ body[data-active-view="business"] .access-request-status.tone-danger { color: va
 .business-photo-intake-list li span:first-child { overflow-wrap: anywhere; }
 .business-photo-intake-list li small { grid-column: 1 / -1; color: var(--taba-muted, #6d675f); }
 .business-catalog-publication small { display: block; margin-top: 4px; }
+
+/* ============================================================================
+   MERCADO PAGO EN EL PANEL: avisos y revisión antes de desvincular
+   ============================================================================
+   El resultado de volver de Mercado Pago, el aviso de la última acción y la
+   revisión previa a desvincular. Mismo lenguaje de tonos que el resto del
+   panel: calmo (verde), atención (ámbar), crítico (rojo). */
+.mp-connection-notice {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--panel-line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--panel-raised);
+  color: var(--panel-ink);
+  line-height: 1.4;
+}
+
+.mp-connection-notice.tone-calm {
+  border-color: var(--panel-success);
+  background: var(--panel-success-wash);
+}
+
+.mp-connection-notice.tone-attention {
+  border-color: var(--panel-warning);
+  background: var(--panel-warning-wash);
+}
+
+.mp-connection-notice.tone-critical {
+  border-color: var(--panel-danger);
+  background: var(--panel-danger-wash);
+}
+
+.mp-disconnect-review ul {
+  margin: 6px 0 10px;
+  padding-left: 18px;
+}
+
+.mp-disconnect-review li + li {
+  margin-top: 4px;
+}

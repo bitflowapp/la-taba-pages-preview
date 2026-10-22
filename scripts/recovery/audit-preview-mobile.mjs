@@ -24,7 +24,7 @@ const report = { at: new Date().toISOString(), origin, pages: [] };
 let browser;
 try {
   assert.equal((await owner.rpc('open_qa_window', { p_business_id: RECOVERY_QA.a, p_minutes: 15 })).data?.ok, true);
-  browser = await chromium.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true });
+  browser = await chromium.launch({ channel: 'chrome', headless: true });
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true,
     locale: 'es-AR', userAgent: 'Mozilla/5.0 (Linux; Android 14; Moto G15) AppleWebKit/537.36 Chrome/130 Mobile Safari/537.36' });
   const page = await context.newPage();

@@ -43,16 +43,16 @@ No se propone un plan pago para resolverlo automáticamente. El ensayo completo 
 
 ## Recuperación reproducible
 
-Código y dependencias existentes se conservaron en una copia de trabajo reducida en **D:/work/la-taba-free-review-20261020**. Las dependencias se copiaron desde C: sin descargarlas. Los commits previos se mantienen. La copia antigua de trabajo en C: no es el destino operativo de esta etapa.
+Código y dependencias existentes se conservaron en el worktree local de recuperación; su ubicación absoluta se mantiene privada y fuera de Git. Las dependencias se copiaron desde una copia anterior sin descargarlas. Los commits previos se mantienen.
 
 Desde D:, con TEMP y TMP en D: y NODE_DISABLE_COMPILE_CACHE=1:
 
 ```powershell
-node scripts/recovery/postgres-backup.mjs --backup --target deploy/recovery-free-hosted.json --tools D:/work/la-taba-backup-20261021/tools/package/native/bin --ca C:/Users/marco/.taba-secrets/production-db-ca.pem --out D:/work/la-taba-backup-20261021/NUEVO-SNAPSHOT
+node scripts/recovery/postgres-backup.mjs --backup --target deploy/recovery-free-hosted.json --tools "$env:TABA_PG_TOOLS" --ca "$env:TABA_DB_CA_FILE" --out "$env:TABA_BACKUP_ROOT/NUEVO-SNAPSHOT"
 
-node scripts/recovery/restore-postgres-application.mjs --restore-application --target deploy/recovery-free-hosted.json --manifest D:/work/la-taba-backup-20261021/NUEVO-SNAPSHOT/manifest.json --tools D:/work/la-taba-backup-20261021/tools/package/native/bin --ca C:/Users/marco/.taba-secrets/production-db-ca.pem --out D:/work/la-taba-backup-20261021/NUEVO-ENSAYO
+node scripts/recovery/restore-postgres-application.mjs --restore-application --target deploy/recovery-free-hosted.json --manifest "$env:TABA_BACKUP_ROOT/NUEVO-SNAPSHOT/manifest.json" --tools "$env:TABA_PG_TOOLS" --ca "$env:TABA_DB_CA_FILE" --out "$env:TABA_BACKUP_ROOT/NUEVO-ENSAYO"
 
-node scripts/recovery/verify-postgres-restore.mjs --verify --target deploy/recovery-free-hosted.json --receipt D:/work/la-taba-backup-20261021/NUEVO-ENSAYO/restore-result.json --tools D:/work/la-taba-backup-20261021/tools/package/native/bin --ca C:/Users/marco/.taba-secrets/production-db-ca.pem --out D:/work/la-taba-backup-20261021/NUEVA-VERIFICACION
+node scripts/recovery/verify-postgres-restore.mjs --verify --target deploy/recovery-free-hosted.json --receipt "$env:TABA_BACKUP_ROOT/NUEVO-ENSAYO/restore-result.json" --tools "$env:TABA_PG_TOOLS" --ca "$env:TABA_DB_CA_FILE" --out "$env:TABA_BACKUP_ROOT/NUEVA-VERIFICACION"
 ```
 
 Los nombres NUEVO-* deben ser directorios inexistentes. El restaurador crea un nombre único `taba_restore_YYYYMMDD_XXXXXXXX` y no acepta la base de origen como destino. Una restauración no implica verificación: ejecutar ambos comandos y revisar sus resultados. Una copia parcial fallida queda identificada en su recibo; no reutilizarla como si fuera una base limpia.
@@ -61,7 +61,7 @@ La limpieza posterior sólo se autoriza sobre la base creada por ese ensayo, con
 
 ## Archivos y protección
 
-- Directorio: `D:/work/la-taba-backup-20261021/`.
+- Directorio: respaldo cifrado local privado; su ubicación absoluta no se versiona.
 - Cada snapshot contiene `database.pgdump.aesgcm`, `roles.sql.aesgcm` y `manifest.json`.
 - Evidencia extendida: verificaciones por tabla, fallos iniciales, procedencia de herramientas y limpieza.
 - Sólo metadatos y resultados sin secretos se versionan. **Los dumps cifrados y las claves no se subieron al repositorio público.**

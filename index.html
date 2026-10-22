@@ -68,21 +68,25 @@
       />
     </noscript>
     <!--
-      La fotografía del hero comercial es, desde que la banda subió al primer
-      pantallazo, el elemento más grande de esa pantalla: o sea el LCP. La
-      inyecta `renderHomeHeroPromo` como `background-image`, así que el
-      navegador recién se entera de que existe cuando el JS arrancó y corrió.
-      Medido en el A/B contra la base: eso costaba 1.052 ms de LCP. Y
-      precargar la pieza de 249 KB tal cual arreglaba el LCP pero le robaba el
-      ancho de banda al resto: FCP +352 ms y primer producto comprable +529 ms.
-      Por eso el teléfono recibe la derivada de 35 KB —la MISMA fotografía al
-      tamaño que la banda usa de verdad— y sólo el teléfono, porque en
-      escritorio el hero cae fuera del primer pantallazo.
-      El archivo tiene que ser EL MISMO que declara `HOME_HERO_PROMO.bandImage`;
-      lo verifica tests/home-hero-preload.test.mjs.
+      SIN PRECARGA DEL HERO.
+
+      Acá había una precarga de imagen de la banda del hero (la derivada de
+      35 KB, sólo en teléfono, con prioridad alta): cuando el hero se pinta es
+      el LCP del primer pantallazo, y el navegador recién se entera de su
+      `background-image` cuando el JS ya corrió.
+
+      Pero el hero NO se pinta siempre. `renderHomeHeroPromo` lo dibuja sólo
+      si `cervezas` tiene algo comprable, y una tienda sin cervezas a la venta
+      bajaba igual esos 35 KB con prioridad alta en cada arranque, compitiendo
+      con el CSS y los módulos por el mismo ancho de banda, para una imagen que
+      nadie iba a ver. Una precarga que se queda sin usar es un costo cierto
+      contra un beneficio que depende del catálogo de ese día.
+
+      Si alguna vez vuelve, tiene que ser la MISMA derivada que declara
+      `HOME_HERO_PROMO.bandImage` y sólo en teléfono —nunca el afiche de
+      249 KB—: lo exige tests/home-hero-preload.test.mjs.
     -->
-    <link rel="preload" as="image" href="assets/promos/cervezas-heineken-band.webp" media="(max-width: 699px)" fetchpriority="high" />
-    <link rel="stylesheet" href="styles.css?v=80" />
+    <link rel="stylesheet" href="styles.css?v=81" />
   </head>
   <!--
     La vista activa se declara ya en el shell servido. `renderNavigation` la
@@ -180,7 +184,7 @@
             <circle cx="10.8" cy="10.8" r="6.3" stroke="currentColor" stroke-width="1.8" />
             <path d="m16 16 4.2 4.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
           </svg>
-          <input data-search-input data-search-jump type="search" enterkeyhint="search" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="80" placeholder="Buscar bebidas, marcas o tamaños" />
+          <input data-search-input data-search-jump type="search" enterkeyhint="search" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="80" placeholder="Buscar productos o marcas" />
         </label>
 
         <div class="topbar-actions">
@@ -199,6 +203,29 @@
             <span class="cart-button-arrow" aria-hidden="true">›</span>
           </button>
         </div>
+
+        <!--
+          MODO DEMOSTRACIÓN, DICHO EN PANTALLA.
+          `?demo=1` arma una tienda entera con datos locales —marcas reales,
+          precios de ejemplo y un pedido sembrado— y confirma pedidos con el
+          mismo texto que la real. En un despliegue que no es producción (la
+          vista previa de QA declara `staging`) eso es justamente lo que tiene
+          que pasar, pero nada lo decía: quien abría el enlace no tenía cómo
+          saber que no estaba comprando de verdad.
+          `data-demo-only` lo enciende el modo de la app sólo cuando
+          `isDemoMode()` es verdadero; en producción la bandera de la URL se
+          ignora y esto sigue oculto.
+          Cuelga del borde inferior de la barra, que es sticky: acompaña en
+          todas las vistas y en todo el scroll. Está fuera de la grilla
+          (`position: absolute`), así que la barra mide lo mismo con y sin él, y
+          no toma toques: no tapa ni le disputa el pulgar a ningún control. En
+          el recorrido guiado lo dice su propio lanzador, así que ahí se retira
+          (styles/showcase.css).
+        -->
+        <p class="demo-mode-badge" data-demo-only data-demo-mode-badge hidden>
+          <span class="demo-mode-badge-dot" aria-hidden="true"></span>
+          <span>Modo demostración: nada de esto es real</span>
+        </p>
       </header>
 
       <!--
@@ -337,10 +364,10 @@
                 <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8"/>
                 <path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
               </svg>
-              <input data-search-input data-search-jump type="search" enterkeyhint="search" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="80" placeholder="Buscar bebidas, marcas o tamaños" aria-label="Buscar bebidas, marcas o tamaños" />
+              <input data-search-input data-search-jump type="search" enterkeyhint="search" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="80" placeholder="Buscar productos o marcas" aria-label="Buscar productos o marcas" />
             </label>
 
-            <div class="category-strip home-category-strip" data-category-strip="home" data-home-category-strip aria-label="Categorías de la tienda"></div>
+            <div class="category-strip home-category-strip" data-category-strip="home" data-home-category-strip role="group" aria-label="Categorías de la tienda"></div>
 
             <!--
               DESTACADOS abre la vidriera: es el primer tramo COMPRABLE y tiene
@@ -519,7 +546,7 @@
                 <path d="m16 16 4.2 4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
               </svg>
             </span>
-            <input data-search-input type="search" enterkeyhint="search" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="80" placeholder="Buscar bebidas, marcas o tamaños" aria-label="Buscar bebidas, marcas o tamaños" />
+            <input data-search-input type="search" enterkeyhint="search" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="80" placeholder="Buscar productos o marcas" aria-label="Buscar productos o marcas" />
             <button class="search-clear" type="button" data-clear-search aria-label="Limpiar búsqueda" hidden>
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
                 <path d="m7 7 10 10M17 7 7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -622,25 +649,33 @@
             </div>
           </div>
 
-          <!--
-            AVISO DEL PEDIDO — en el layout, no encima de él.
-            El aviso flotante se anclaba a `top: 76px` en esta vista y tapaba el
-            encabezado "Tu pedido" durante los 2,2 s que dura. Medido: cruzaba
-            con el título en 390x844 y en WebKit/iPhone. Anclarlo abajo no
-            arregla nada —ahí tapa las líneas del carrito, también medido—.
-            Acá el aviso es una banda REAL del layout: reserva su alto mientras
-            el carrito tiene productos, así que aparecer y desaparecer no mueve
-            nada, y por definición no puede tapar nada. La banda vive ARRIBA de
-            las líneas, así que tampoco se mueve nada bajo el dedo que acaba de
-            tocar "+".
-            Es la región viva de esta vista: mientras el carrito está activo, el
-            aviso flotante queda fuera del árbol y éste es el único que anuncia.
-          -->
-          <div class="cart-notice" data-cart-notice role="status" aria-live="polite"></div>
-
           <div class="checkout-layout">
             <div class="card cart-card">
-              <h3>Productos</h3>
+              <!--
+                AVISO DEL PEDIDO — en el layout, no encima de él.
+                El aviso flotante se anclaba a `top: 76px` en esta vista y tapaba
+                el encabezado "Tu pedido" durante los 2,2 s que dura. Medido:
+                cruzaba con el título en 390x844 y en WebKit/iPhone. Anclarlo
+                abajo no arregla nada —ahí tapa las líneas del carrito, también
+                medido—.
+                El aviso es parte REAL del layout: comparte el renglón con el
+                título «Productos» y ese renglón tiene alto fijo mientras el
+                carrito tiene productos, así que aparecer y desaparecer no mueve
+                nada, y por definición no puede tapar nada. Vive ARRIBA de las
+                líneas, así que tampoco se mueve nada bajo el dedo que acaba de
+                tocar "+".
+                Antes era una banda propia entre las acciones de la vista y la
+                tarjeta: 48 px de alto reservado más su margen, casi siempre
+                vacíos, que se leían como un hueco entre «Seguir comprando» y
+                «Productos». En el renglón del título ese alto no cuesta nada.
+                Es la región viva de esta vista: mientras el carrito está activo,
+                el aviso flotante queda fuera del árbol y éste es el único que
+                anuncia.
+              -->
+              <div class="cart-card-head">
+                <h2>Productos</h2>
+                <div class="cart-notice" data-cart-notice role="status" aria-live="polite"></div>
+              </div>
               <div data-cart-list></div>
               <div data-cart-minimum-progress></div>
               <section class="cart-recommendations" data-cart-recommendations hidden aria-labelledby="cart-recommendations-title"></section>
@@ -649,7 +684,7 @@
             <form class="card checkout-form" data-checkout-form novalidate>
               <div class="checkout-heading">
                 <span>Finalizá en pocos pasos</span>
-                <h3 data-checkout-details-title>Datos de entrega</h3>
+                <h2 data-checkout-details-title>Datos de entrega</h2>
               </div>
               <div class="delivery-mode">
                 <label data-fulfillment-option="delivery">
@@ -713,7 +748,10 @@
                   <option value="cash">Efectivo al retirar o recibir</option>
                   <option value="coordinate">A coordinar con el local antes de preparar</option>
                 </select>
-                <small>El cobro queda pendiente hasta que el negocio registre el dinero recibido. No se paga en esta pantalla.</small>
+                <!-- Ésta es la ayuda de los medios que se cobran con el local.
+                     Con Mercado Pago elegido la reemplaza `renderCheckoutPaymentFields`
+                     (ui.js), y la devuelve tal cual al volver a otro medio. -->
+                <small data-payment-help>El cobro queda pendiente hasta que el negocio registre el dinero recibido. No se paga en esta pantalla.</small>
               </label>
 
               <details class="checkout-instructions">

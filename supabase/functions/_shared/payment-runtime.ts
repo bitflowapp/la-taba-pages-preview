@@ -261,12 +261,33 @@ export async function enforceRateLimit(
   }
 }
 
+// La IP que identifica al cliente en el rate limit.
+//
+// Cada proxy AGREGA al final de `x-forwarded-for` la IP de quien le habló; el
+// primer valor lo escribe el cliente si quiere. Tomar el primero dejaba que
+// cualquiera rotara su identidad con un encabezado inventado y empezara de cero
+// en cada intento. Orden de confianza:
+//   1. `cf-connecting-ip`: lo fija el borde de Cloudflare y pisa lo que mande
+//      el cliente.
+//   2. el ÚLTIMO salto de `x-forwarded-for`: lo agregó el proxy más cercano,
+//      no el cliente.
+//   3. `x-real-ip`.
+// Qué encabezado entrega de verdad el gateway de Supabase se verifica en el
+// proyecto alojado: si el último salto resultara ser un proxy interno común a
+// todos, el sujeto (usuario o nombre fijo) sigue separando los buckets.
+export function requestClientIp(request: Request): string {
+  const cloudflare = request.headers.get('cf-connecting-ip')?.trim();
+  if (cloudflare) return cloudflare;
+  const hops = (request.headers.get('x-forwarded-for') || '')
+    .split(',')
+    .map((hop) => hop.trim())
+    .filter(Boolean);
+  if (hops.length > 0) return hops[hops.length - 1];
+  return request.headers.get('x-real-ip')?.trim() || 'unknown';
+}
+
 export function requestFingerprint(request: Request, subject = ''): string {
-  const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-    || request.headers.get('cf-connecting-ip')?.trim()
-    || request.headers.get('x-real-ip')?.trim()
-    || 'unknown';
-  return `${forwarded}\u0000${subject}`;
+  return `${requestClientIp(request)}\u0000${subject}`;
 }
 
 export async function timingSafeEqual(left: string, right: string): Promise<boolean> {

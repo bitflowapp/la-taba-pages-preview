@@ -30,7 +30,7 @@ Las pruebas locales inicialmente encontraron archivos omitidos por el checkout r
 
 El repositorio existente es **público**. La copia remota contiene código y evidencia sin secretos; los dumps cifrados y la clave no se subieron. Los commits usan `[CF-Pages-Skip] [skip ci]` y la rama no coincide con las ramas de despliegue. No se abrió PR con despliegue, no se hizo merge y no se ejecutaron workflows productivos.
 
-La copia de trabajo actual está en D:/work/la-taba-free-review-20261020, con dependencias locales en D:. La base Git todavía puede leer objetos previos mediante alternates hacia el repositorio original; la copia remota conserva de forma independiente los commits y su historia. No eliminar el repositorio original sin preparar antes una copia Git local independiente.
+La copia de trabajo actual está en un directorio local privado con dependencias locales. La base Git todavía puede leer objetos previos mediante alternates hacia el repositorio original; la copia remota conserva de forma independiente los commits y su historia. No eliminar el repositorio original sin preparar antes una copia Git local independiente.
 
 ## Pendientes adicionales antes del GO
 
@@ -44,4 +44,4 @@ La copia de trabajo actual está en D:/work/la-taba-free-review-20261020, con de
 
 ## Evidencia
 
-Directorio [launch-dependencies-evidence](2026-10-21-launch-dependencies-evidence/): preflight, inventario de variables desde fuentes, backup, restauración, limpieza, estado final de Supabase y log local. Los detalles y archivos cifrados permanecen en D:/work/la-taba-backup-20261021.
+Directorio [launch-dependencies-evidence](2026-10-21-launch-dependencies-evidence/): preflight, inventario de variables desde fuentes, backup, restauración, limpieza, estado final de Supabase y log local. Los detalles y archivos cifrados permanecen en un almacén local privado, fuera de Git.

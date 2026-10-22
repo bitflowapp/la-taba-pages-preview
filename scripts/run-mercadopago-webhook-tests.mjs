@@ -34,6 +34,7 @@ import path from 'node:path';
 const steps = [
   ['npx', ['--yes', 'deno@2.6.1', 'test', '--node-modules-dir=none', '--deny-net',
     'supabase/functions/_shared/mercadopago-webhook-signature.deno.ts',
+    'supabase/functions/_shared/payment-runtime.deno.ts',
     'supabase/functions/_shared/payment-worker-signature.deno.ts',
     'supabase/functions/_shared/request-protocol.deno.ts',
     'supabase/functions/_shared/webhook-notification.deno.ts',

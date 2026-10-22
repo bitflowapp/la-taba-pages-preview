@@ -35,7 +35,7 @@ Sin la firma, el receptor falla cerrado: rechaza todo lo no firmado (verificado)
 ## 3. Respaldos
 
 - El plan Free no tiene respaldos automáticos (`backups: []`, sin PITR).
-- Existen dos snapshots cifrados manuales (AES-256-GCM) en `D:/work/la-taba-backup-20261021` (142 MB) y la restauración de aplicación se probó en dos bases aisladas.
+- Existen dos snapshots cifrados manuales (AES-256-GCM) en el almacén local privado (142 MB) y la restauración de aplicación se probó en dos bases aisladas.
 - **No hay copia externa.** D: tiene unos 70 MB libres y F: es un disco USB exFAT con estado de salud "Warning". La clave vive sólo en Windows Credential Manager de esta PC. La restauración completa de la plataforma administrada (cron, Realtime, Vault) no está demostrada.
 
 ## 4. Cloudflare
@@ -46,7 +46,7 @@ Sin la firma, el receptor falla cerrado: rechaza todo lo no firmado (verificado)
 - Apunta al comercio QA A (cerrado fuera de ventanas QA): no se ofrecen pedidos reales y no se publicó ninguna tienda comercial.
 - **No se aplicó Cloudflare Access** (requiere habilitar Zero Trust). La protección real de datos es RLS de Supabase; el sitio no es indexable pero sí abierto por URL.
 - Reversión: borrar el despliegue `020853ef` o la rama de preview no afecta a `staging`.
-- Incidente propio: el archivo de sesión de wrangler quedó en 0 bytes (C: sin espacio, escritura in situ). Se reautorizó con el flujo OAuth estándar y la sesión nueva está en `D:/work/taba-cf-session/session.json`, escrita de forma atómica. **Rotar o revocar esa autorización** en el perfil de Cloudflare cuando termine la fase.
+- Incidente propio: el archivo de sesión de wrangler quedó en 0 bytes por una escritura in situ con poco espacio libre. Se reautorizó con el flujo OAuth estándar y la sesión nueva quedó fuera del repositorio, escrita de forma atómica. **Rotar o revocar esa autorización** en el perfil de Cloudflare cuando termine la fase.
 
 ## 5. Pruebas de integración de pagos
 

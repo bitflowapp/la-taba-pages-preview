@@ -9,7 +9,13 @@ import { handleTeamInvitation, type InvitationLookup } from '../_shared/team-inv
 // ../_shared/team-invitation.ts para el modelo de confianza.
 const URL = requiredEnvironment('SUPABASE_URL');
 const SERVICE_ROLE = requiredEnvironment('SUPABASE_SERVICE_ROLE_KEY');
-const ALLOWED_ORIGINS = ['https://la-taba-commercial-pilot.pages.dev'];
+// Los orígenes salen de la misma configuración que las funciones de pago,
+// TABA_ALLOWED_ORIGINS, con el mismo parseo que `allowedOrigins()` de
+// ../_shared/payment-runtime.ts (lista por comas, sólo https). Estaba fijo el
+// piloto comercial y la invitación no andaba desde ningún otro sitio, ni desde
+// la vista previa de QA. Sin la variable queda exactamente lo de antes.
+const LEGACY_PILOT_ORIGIN = 'https://la-taba-commercial-pilot.pages.dev';
+const ALLOWED_ORIGINS = configuredAllowedOrigins();
 
 const admin = createClient(URL, SERVICE_ROLE, {
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
@@ -63,4 +69,12 @@ function requiredEnvironment(name: string): string {
   const value = Deno.env.get(name)?.trim();
   if (!value) throw new Error(`${name} is required by team-invitation`);
   return value;
+}
+
+function configuredAllowedOrigins(): string[] {
+  const configured = (Deno.env.get('TABA_ALLOWED_ORIGINS')?.trim() || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter((value) => value.startsWith('https://'));
+  return configured.length > 0 ? configured : [LEGACY_PILOT_ORIGIN];
 }

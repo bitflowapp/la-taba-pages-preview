@@ -67,14 +67,15 @@ Deno.test('clean business callback, replay and tenant routing (staging test)', a
     throw Error('Unexpected request in clean business test: '+url.pathname);
   };
   try {
-    const headers={authorization:'Bearer fixture-session','content-type':'application/json'};
+    const payload = btoa(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 }));
+    const headers={authorization:`Bearer fixture.${payload}.fixture`,'content-type':'application/json'};
     const status=await connect(new Request(base+'/functions/v1/mercadopago-connect',{method:'POST',headers,body:JSON.stringify({business_id:business,action:'status'})}));
     assertEquals((await status.json()).connection.status,'disconnected');
     const started=await connect(new Request(base+'/functions/v1/mercadopago-connect',{method:'POST',headers,body:JSON.stringify({business_id:business,action:'connect'})}));
     const auth=new URL((await started.json()).authorization_url);assertEquals(auth.searchParams.get('code_challenge_method'),'S256');
     const callbackUrl=base+'/functions/v1/mercadopago-oauth-callback?state='+auth.searchParams.get('state')+'&code=fixture-code';
     const completed=await callback(new Request(callbackUrl));assertEquals(new URL(completed.headers.get('location')!).searchParams.get('mp_connection'),'connected');
-    const replay=await callback(new Request(callbackUrl));assertEquals(new URL(replay.headers.get('location')!).searchParams.get('mp_connection'),'error');
+    const replay=await callback(new Request(callbackUrl));assertEquals(new URL(replay.headers.get('location')!).searchParams.get('mp_connection'),'expired');
     const preparation={checkout_session_id:'fixture-session',payment_intent_id:'fixture-intent',payment_attempt_id:'fixture-attempt',attempt_status:'created',attempt_number:1,idempotency_key:'fixture-idempotency',preference_id:null,init_point:null,sandbox_init_point:null,external_reference:'fixture-new-reference',environment:'test' as const,currency:'ARS' as const,total:10,expires_at:new Date(Date.now()+600000).toISOString(),items:[{id:'fixture-product',title:'Fixture',quantity:1,currency_id:'ARS' as const,unit_price:10}],allow_offline_payment_methods:false,installments_limit:1};
     assertEquals((await createPreference(preparation,business)).preferenceId,'fixture-preference');
     const ts=String(Math.floor(Date.now()/1000));

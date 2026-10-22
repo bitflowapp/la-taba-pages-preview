@@ -1,0 +1,9 @@
+﻿Planilla de precios;;;;;;;
+SKU;Producto;Costo (ARS);Precio de venta (ARS);Precio regular antes de la promo (ARS);Stock actual;¿Disponible para vender?;Observaciones
+coca-cola-2250ml;Coca-Cola 2,25 L;1000;1500;;12;Sí;
+agua-glaciar-1500ml;"Agua ""Glaciar"" 1,5 L";800;1.234,50;;abc;No;"con ; punto y coma"
+fernet-branca-750ml;Fernet Branca 750 ml;;9800,50;11000;;;"línea uno
+línea dos"
+;;;;;;;
+sku-que-no-existe;Producto desconocido;100;200;;5;Sí;
+hielo-bolsa-2kg;Hielo 2 kg;;;;0;No;

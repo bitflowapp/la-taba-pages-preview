@@ -26,6 +26,7 @@ import {
   validateCustomerName,
 } from '../core/validators.js';
 import { isProductionCatalogReady, setProductionCatalogReady } from '../core/runtime-config.js';
+import { readFunctionFailure } from './function-failure.js';
 import { categoryDefaults, sortByShelfOrder } from '../core/store-taxonomy.js';
 import {
   COMMERCE_CLOSED_MESSAGE,
@@ -949,7 +950,11 @@ export function createSupabaseOrderRepository({
       client.rpc('create_order_with_items', { payload }),
       ORDER_REQUEST_TIMEOUT_MS,
     );
-    if (error) return failedQuery(error, status, readableOrderCreationError(error, status));
+    if (error) {
+      return failedQuery(error, status, readableOrderCreationError(error, status, {
+        products: cartItems.map((item) => item.product),
+      }));
+    }
 
     const row = unwrapOrderRow(data);
     if (!row?.id) {
@@ -1353,11 +1358,14 @@ export function createSupabaseOrderRepository({
     });
   }
 
-  async function requestMercadoPagoRefund({ paymentIntentId, amount = null, reason = '', confirmation = '' } = {}) {
+  // La clave de idempotencia la trae quien llama cuando la tiene: el panel la
+  // conserva mientras la devolución no tenga una respuesta definitiva, así que
+  // reintentar después de una respuesta perdida NO crea una segunda devolución.
+  async function requestMercadoPagoRefund({ paymentIntentId, amount = null, reason = '', confirmation = '', idempotencyKey: providedKey = '' } = {}) {
     if (!isUuid(paymentIntentId)) return repositoryResult(false, { message: 'El pago no es válido.' });
-    let idempotencyKey;
+    let idempotencyKey = isUuid(providedKey) ? providedKey : '';
     try {
-      idempotencyKey = createCheckoutClientRequestId(cryptoImpl);
+      idempotencyKey ||= createCheckoutClientRequestId(cryptoImpl);
     } catch (_) {
       return repositoryResult(false, { message: 'No pudimos generar una solicitud de reembolso segura.' });
     }
@@ -1375,11 +1383,11 @@ export function createSupabaseOrderRepository({
     });
   }
 
-  async function requestMercadoPagoCancellation({ paymentIntentId, confirmation = '' } = {}) {
+  async function requestMercadoPagoCancellation({ paymentIntentId, confirmation = '', idempotencyKey: providedKey = '' } = {}) {
     if (!isUuid(paymentIntentId)) return repositoryResult(false, { message: 'El pago no es válido.' });
-    let idempotencyKey;
+    let idempotencyKey = isUuid(providedKey) ? providedKey : '';
     try {
-      idempotencyKey = createCheckoutClientRequestId(cryptoImpl);
+      idempotencyKey ||= createCheckoutClientRequestId(cryptoImpl);
     } catch (_) {
       return repositoryResult(false, { message: 'No pudimos generar una solicitud de cancelación segura.' });
     }
@@ -1401,7 +1409,12 @@ export function createSupabaseOrderRepository({
     }
     try {
       const { data, error } = await client.functions.invoke(name, { body });
-      return { ok: !error && data?.ok === true, data: data || null };
+      if (!error) return { ok: data?.ok === true, data: data || null };
+      // Una respuesta que no es 2xx llega como error con la Response adentro:
+      // el código y el mensaje del servidor («ya hay una devolución en curso»,
+      // «el importe supera lo cobrado») son lo que el panel tiene que mostrar.
+      const failure = await readFunctionFailure(error);
+      return { ok: false, data: failure.body };
     } catch (_) {
       return { ok: false, data: null };
     }
@@ -3494,7 +3507,7 @@ function riderContractRefusal(data, messages, fallback) {
 const ORDER_NOT_CONFIRMED_MESSAGE = 'No pudimos confirmar el pedido. Conservamos el intento para reintentar sin duplicarlo.';
 const ALCOHOL_OUT_OF_HOURS_MESSAGE = 'La venta de bebidas con alcohol está fuera del horario permitido. Probá más tarde o quitá esos productos del carrito.';
 
-export function readableOrderCreationError(error, status) {
+export function readableOrderCreationError(error, status, { products = [] } = {}) {
   // Estado 0 es que la respuesta NO LLEGÓ: no hay nada del backend que leer. El
   // cliente pone en `details` la traza del navegador, y clasificar una traza por
   // palabras sueltas —rutas, nombres de función— es adivinar. Se dice lo único
@@ -3549,6 +3562,16 @@ export function readableOrderCreationError(error, status) {
     || text.includes('no disponible')
     || text.includes('agotad')
   ) {
+    // La RPC nombra el producto por su id —«producto no disponible: <uuid>»,
+    // «stock insuficiente para producto: <uuid>»— y el carrito sabe cómo se
+    // llama. Decir CUÁL ahorra adivinar entre todas las líneas; si el id no es
+    // de este carrito, queda la frase general de siempre.
+    const productId = text.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/)?.[0] || '';
+    const agotado = productId
+      ? (Array.isArray(products) ? products : []).find((product) => String(product?.id || '').toLowerCase() === productId)
+      : null;
+    const nombre = sanitizeText(agotado?.name, { maxLength: 80 });
+    if (nombre) return `No hay stock suficiente de «${nombre}». Actualizá el carrito y probá de nuevo.`;
     return 'Algunos productos ya no tienen stock. Actualizá el carrito y probá de nuevo.';
   }
   // Los rechazos de la política de alcohol llegan en castellano y ninguno

@@ -5,13 +5,18 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /*
- * El hero comercial de la home es el elemento más grande de la primera
- * pantalla, o sea el LCP. Su fotografía la inyecta el JS como
+ * El hero comercial de la home, cuando se pinta, es el elemento más grande de
+ * la primera pantalla, o sea el LCP. Su fotografía la inyecta el JS como
  * `background-image`, así que sin un preload el navegador no sabe que existe
  * hasta después de arrancar los módulos. Medido en el A/B contra la base:
  * 1.052 ms de LCP.
  *
- * El preload vive en el shell y la ruta vive en `HOME_HERO_PROMO`. Son dos
+ * Pero el hero sólo se pinta si `cervezas` tiene algo comprable, y un preload
+ * estático en el shell bajaba la banda en cada arranque de teléfono aunque la
+ * tienda no tuviera cervezas a la venta. Por eso el shell ya NO la precarga.
+ * Lo que esta prueba sigue fijando es el contrato para el día que vuelva: como
+ * mucho UNA precarga de imagen, y si existe tiene que ser la derivada que
+ * declara `HOME_HERO_PROMO`, sólo en teléfono y nunca el afiche. Son dos
  * lugares, así que hace falta algo que impida que se separen: cambiar la foto
  * en uno y no en el otro no puede degradar la carga en silencio.
  */
@@ -21,12 +26,13 @@ const hoja = fs.readFileSync(path.join(root, 'styles/brand-home.css'), 'utf8');
 
 const escapar = (valor) => valor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-test('el shell precarga EXACTAMENTE la derivada que usa la banda del teléfono', async () => {
+test('si el shell precarga una imagen, es EXACTAMENTE la derivada que usa la banda del teléfono', async () => {
   const { HOME_HERO_PROMO } = await import('../js/ui.js');
   const preloads = [...shell.matchAll(/<link[^>]+rel="preload"[^>]*>/g)].map(([tag]) => tag);
   const imagen = preloads.filter((tag) => /as="image"/.test(tag));
 
-  assert.equal(imagen.length, 1, 'hay exactamente un preload de imagen en el shell');
+  assert.ok(imagen.length <= 1, `como mucho un preload de imagen en el shell: hay ${imagen.length}`);
+  if (!imagen.length) return;
   assert.match(imagen[0], new RegExp(`href="${escapar(HOME_HERO_PROMO.bandImage)}"`));
   // Sólo en teléfono: en escritorio el hero cae fuera del primer pantallazo y
   // precargarlo sería bajar bytes que nadie va a ver todavía.
@@ -61,8 +67,9 @@ test('las dos fotografías del hero existen en el repositorio', async () => {
   }
 });
 
-// La derivada existe para pesar poco. Si alguien la regenera con otra calidad
-// y se va a 200 KB, el preload vuelve a ser el problema que vino a resolver.
+// La derivada existe para pesar poco: es lo que baja el teléfono cuando el hero
+// se pinta, y lo que bajaría una precarga si vuelve. Si alguien la regenera con
+// otra calidad y se va a 200 KB, compite de nuevo con el primer pintado.
 test('la derivada de la banda pesa mucho menos que el afiche', async () => {
   const { HOME_HERO_PROMO } = await import('../js/ui.js');
   const banda = fs.statSync(path.join(root, HOME_HERO_PROMO.bandImage)).size;

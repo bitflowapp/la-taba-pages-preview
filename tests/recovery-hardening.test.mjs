@@ -5,7 +5,8 @@ import { recoveryPlan } from '../scripts/recovery/plan.mjs';
 import { withRecoveryProject } from '../scripts/recovery/hosted-client.mjs';
 
 test('hardening migration fixes the four inspected functions without changing grants or business data', () => {
-  const migration = recoveryPlan().migrations.at(-1);
+  const migration = recoveryPlan().migrations.find(({ path }) => path.endsWith('_recovery_rpc_hardening.sql'));
+  assert.ok(migration, 'the recovery RPC hardening migration remains in the plan');
   const sql = fs.readFileSync(migration.path, 'utf8');
   for (const name of ['set_order_operational_defaults', 'set_updated_at', 'next_order_public_code', 'request_order_token']) {
     assert.ok(sql.includes(`alter function public.${name}()\n  set search_path = pg_catalog, public, pg_temp;`));

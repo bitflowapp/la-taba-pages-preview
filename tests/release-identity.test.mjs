@@ -33,7 +33,7 @@ test('EL CASO QUE IMPORTA: contenido nuevo bajo la misma identidad se rechaza', 
     identidadDe('la-taba-runtime-v66-production-blockers', 'bbbb'),
   );
   assert.equal(fallas.length, 1);
-  assert.match(fallas[0], /contenido del precache CAMBIÓ y CACHE_NAME no/);
+  assert.match(fallas[0], /contenido del runtime o del precache CAMBIÓ y CACHE_NAME no/);
   assert.match(fallas[0], /rollback sin ancla/, 'el mensaje dice por qué importa, no sólo qué pasó');
 });
 

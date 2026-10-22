@@ -80,12 +80,20 @@ test('el worker sirve red primero, así que una versión recién publicada se ve
 test('al activarse, el worker se queda sólo con su caché versionada', () => {
   assert.match(sw, /const CACHE_NAME = 'la-taba-runtime-v\d+/, 'el nombre de la caché no está versionado');
   assert.match(sw, /addEventListener\('activate'/);
-  assert.match(sw, /limpiarCachesViejas\(\)\.then\(\(\) => self\.clients\.claim\(\)\)/);
+  assert.match(sw, /self\.clients\.claim\(\)[\s\S]*?setTimeout\(resolve, 500\)[\s\S]*?limpiarCachesViejas\(\)/,
+    'el worker reclama clientes y deja terminar escrituras anteriores antes de la limpieza final');
   assert.match(
     sw,
     /\.filter\(\(key\) => key\.startsWith\(CACHE_PREFIX\) && key !== CACHE_NAME\)/,
     'la limpieza no borra las cachés de versiones anteriores',
   );
+});
+
+test('una copia vieja no puede reemplazar HTML, CSS ni módulos del release activo', () => {
+  assert.match(sw, /const currentCache = await caches\.open\(CACHE_NAME\)/);
+  assert.match(sw, /let cached = await currentCache\.match\(request\)/);
+  assert.match(sw, /if \(!cached && esArteDeProducto\(new URL\(request\.url\)\)\)/,
+    'sólo las imágenes inmutables pueden recuperarse de una caché anterior');
 });
 
 test('el respaldo propio viaja en el precache: sin red, la tarjeta sin foto igual se dibuja', () => {

@@ -28,8 +28,9 @@
  *     ¿cambió el contenido de algo que se precachea sin que cambiara CACHE_NAME?
  *
  * La identidad se DERIVA del contenido y se compara contra la que quedó firmada
- * en `release-identity.json`. Un módulo tocado sin bump rompe el gate aunque ese
- * módulo no lleve `?v=` y nadie lo hubiera mirado.
+ * en `release-identity.json`. El digest incluye el código de `sw.js` y todos
+ * sus precaches: cambiar la lógica del worker también exige una identidad nueva.
+ * Un módulo tocado sin bump rompe el gate aunque no lleve `?v=`.
  *
  * Uso:
  *   node scripts/check-release-identity.mjs           verifica
@@ -81,7 +82,7 @@ export function compararIdentidad(firmada, actual) {
   // El caso que este gate existe para atrapar.
   if (!mismoContenido && mismaIdentidad) {
     return [
-      'El contenido del precache CAMBIÓ y CACHE_NAME no.\n'
+      'El contenido del runtime o del precache CAMBIÓ y CACHE_NAME no.\n'
       + `    firmado:  ${firmada.cacheName}  (${firmada.assetCount} archivos, digest ${String(firmada.assetsDigest).slice(0, 16)}…)\n`
       + `    actual:   ${actual.cacheName}  (${actual.assetCount} archivos, digest ${String(actual.assetsDigest).slice(0, 16)}…)\n`
       + '    Dos artefactos distintos bajo la misma identidad dejan el rollback sin ancla.\n'
@@ -142,8 +143,9 @@ export function calcularIdentidad(root = ROOT) {
     fallas.push(`el precache lista ${ausentes.length} archivo(s) inexistente(s): ${ausentes.slice(0, 5).join(', ')}`);
   }
 
+  const runtimeHash = createHash('sha256').update(worker).digest('hex');
   const assetsDigest = createHash('sha256')
-    .update(Object.keys(porArchivo).sort().map((k) => `${k}:${porArchivo[k]}`).join('\n'))
+    .update([`sw.js:${runtimeHash}`, ...Object.keys(porArchivo).sort().map((k) => `${k}:${porArchivo[k]}`)].join('\n'))
     .digest('hex');
 
   return { identidad: { cacheName, assetCount: Object.keys(porArchivo).length, assetsDigest }, fallas };

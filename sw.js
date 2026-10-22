@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v155-catalog-pricing-payment-returns';
+const CACHE_NAME = 'la-taba-runtime-v156-worker-cache-isolation';
 const ASSETS = [
   './',
   './index.html',
@@ -387,7 +387,13 @@ async function precargar() {
 }
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(limpiarCachesViejas().then(() => self.clients.claim()));
+  // Claim first so subsequent page fetches use this worker while it removes
+  // obsolete caches. A previous worker can still finish a fire-and-forget
+  // `cache.put()` after its response reached the page; give that short write a
+  // chance to settle before the final sweep so it cannot reopen an old cache.
+  event.waitUntil(self.clients.claim()
+    .then(() => new Promise((resolve) => setTimeout(resolve, 500)))
+    .then(() => limpiarCachesViejas()));
 });
 
 /*
@@ -602,7 +608,20 @@ async function networkFirst(request) {
 }
 
 async function cachedFallback(request) {
-  const cached = await caches.match(request);
+  const currentCache = await caches.open(CACHE_NAME);
+  let cached = await currentCache.match(request);
+  // Product art is content-addressed and immutable, so it can safely fall back
+  // to a previous runtime cache if the current version has not fetched it yet.
+  // App code, HTML and CSS must come from this worker's own complete precache;
+  // a late write from a retiring worker must never revive stale code.
+  if (!cached && esArteDeProducto(new URL(request.url))) {
+    const oldCaches = (await caches.keys())
+      .filter((name) => name.startsWith(CACHE_PREFIX) && name !== CACHE_NAME);
+    for (const name of oldCaches) {
+      cached = await (await caches.open(name)).match(request);
+      if (cached) break;
+    }
+  }
   /*
    * Una copia guardada tampoco se cree por estar guardada. Hasta esta versión
    * `install` aceptaba cualquier 200, así que cualquier cliente que instaló la
@@ -623,19 +642,19 @@ async function cachedFallback(request) {
     return esNavegacion ? sinRedireccion(cached) : cached;
   }
   if (esNavegacion) {
-    const paymentReturn = await paymentReturnFallback(request);
+    const paymentReturn = await paymentReturnFallback(request, currentCache);
     if (paymentReturn) return sinRedireccion(paymentReturn);
     // La shell canónica es la raíz: es la que sirve la red. `./index.html` queda
     // sólo como último recurso para una caché que no tenga `./`.
-    const shell = (await caches.match('./')) || (await caches.match('./index.html'));
+    const shell = (await currentCache.match('./')) || (await currentCache.match('./index.html'));
     return shell ? sinRedireccion(shell) : null;
   }
   return null;
 }
 
-async function paymentReturnFallback(request) {
+async function paymentReturnFallback(request, cache) {
   const state = paymentReturnState(request);
-  return state ? (await caches.match(`./pago/${state}/index.html`)) || null : null;
+  return state ? (await cache.match(`./pago/${state}/index.html`)) || null : null;
 }
 
 function paymentReturnState(request) {

@@ -130,7 +130,7 @@ test('service worker fallback is guarded to navigation requests only', () => {
   // disfrazado de módulo o de hoja de estilos. El comportamiento —y no sólo la
   // forma del fuente— lo fija tests/service-worker-degraded-edge.test.mjs.
   assert.match(source, /request\.mode === 'navigate'/);
-  assert.match(source, /caches\.match\('\.\/index\.html'\)/);
+  assert.match(source, /currentCache\.match\('\.\/index\.html'\)/);
   assert.match(source, /Response\.error\(\)/);
 });
 

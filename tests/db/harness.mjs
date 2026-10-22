@@ -65,7 +65,7 @@ function tail() {
     execute 'select coalesce(jsonb_agg(jsonb_build_object(''kind'',kind,''status'',status,''severity'',severity) order by kind),''[]''::jsonb) from public.payment_discrepancies where payment_intent_id=$1' into v_disc using v_intent;
   end if;
   insert into forensic_result select jsonb_build_object(
-    'result',v_result,'extra',v_extra,'before',v_before,
+    'result',v_result,'extra',v_extra,'extra2',v_extra2,'before',v_before,
     'intent',(select jsonb_build_object('status',internal_status,'provider_id',provider_payment_id,'provider_status',provider_status,'paid',paid_amount,'refunded',refunded_amount,'order_id',order_id,'review',security_review_reason) from public.payment_intents where id=v_intent),
     'session',(select jsonb_build_object('status',status,'order_id',completed_order_id,'review',manual_review_reason) from public.checkout_sessions where id=v_session),
     'stock',(select stock from public.products where id=v_product),

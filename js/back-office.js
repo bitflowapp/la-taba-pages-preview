@@ -156,8 +156,21 @@ export function handleProductionOperationsAction(...args) {
 export function handleProductionOperationsInput(...args) {
   return modulos ? modulos.produccion.handleProductionOperationsInput(...args) : NO_LO_ATENDIO;
 }
-export function handleProductionAuthSubmit(...args) {
-  return modulos ? modulos.produccion.handleProductionAuthSubmit(...args) : NO_LO_ATENDIO;
+/*
+ * El ingreso es la excepción a `{ handled: false }`: su formulario SÍ está en el
+ * documento antes de que llegue el panel, y `app.js` ya hizo `preventDefault()`
+ * cuando llama. Devolver «no lo atendí» perdía el envío sin un solo mensaje: el
+ * primer «Ingresar» no hacía nada y el segundo sí. El envío espera al panel.
+ */
+export async function handleProductionAuthSubmit(...args) {
+  if (!modulos) {
+    try {
+      await cargarBackOffice();
+    } catch (_) {
+      return { handled: true, ok: false, message: 'No se pudo abrir el panel. Revisá la conexión e intentá de nuevo.' };
+    }
+  }
+  return modulos.produccion.handleProductionAuthSubmit(...args);
 }
 export function handleProductionOperationsPageHide(...a) { return modulos ? modulos.produccion.handleProductionOperationsPageHide(...a) : undefined; }
 export function handleProductionOperationsViewChange(...a) { return modulos ? modulos.produccion.handleProductionOperationsViewChange(...a) : undefined; }

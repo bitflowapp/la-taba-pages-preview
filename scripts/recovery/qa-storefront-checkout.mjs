@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { chromium } from '@playwright/test';
 import { leerSecreto } from '../e2e-production-sale/secretos-windows.mjs';
+import { passPreviewGate } from './preview-gate-login.mjs';
 
 const arg = (name, fallback) => { const i = process.argv.indexOf(name); return i < 0 ? fallback : process.argv[i + 1]; };
 const origin = new URL(arg('--origin', 'https://recovery-20261020.taba2-staging.pages.dev')).origin;
@@ -23,9 +24,10 @@ const gate = leerSecreto('RECOVERY PREVIEW ACCESS');
 const browser = await chromium.launch({ channel: 'chromium', headless: true });
 const context = await browser.newContext({
   viewport: { width, height: 844 }, locale: 'es-AR', timezoneId: 'America/Argentina/Buenos_Aires', isMobile: width < 700,
-  // `send: 'always'`: the gate answers a navigation without access with its login form, not with a Basic challenge.
-  ...(gate?.usuario && gate?.secreto ? { httpCredentials: { username: gate.usuario, password: gate.secreto, origin, send: 'always' } } : {}),
+  ...(gate?.usuario && gate?.secreto ? { httpCredentials: { username: gate.usuario, password: gate.secreto, origin } } : {}),
 });
+// The gate answers a navigation without access with its own login form: open the session first, in another tab.
+await passPreviewGate(context, origin, gate);
 const page = await context.newPage();
 const consoleErrors = [];
 page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text().slice(0, 200)); });

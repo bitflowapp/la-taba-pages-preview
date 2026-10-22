@@ -14,6 +14,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
+import https from 'node:https';
 import { leerSecreto } from '../e2e-production-sale/secretos-windows.mjs';
 
 const arg = name => { const i = process.argv.indexOf(name); return i < 0 ? undefined : process.argv[i + 1]; };
@@ -38,7 +39,16 @@ async function get(path, credential = authorization) {
 // The gate's cookie path, as a browser walks it: a navigation without access goes to the login form, the right
 // password gives a session cookie, and the session serves the site (also what the service worker asks for).
 async function inspectGate() {
-  const raw = (path, init = {}) => fetch(base + path, { redirect: 'manual', signal: AbortSignal.timeout(60000), ...init });
+  // node:https, not fetch: undici sets its own Sec-Fetch-Mode and would hide what a browser navigation looks like.
+  const raw = (path, { method = 'GET', headers = {}, body } = {}) => new Promise((resolve, reject) => {
+    const request = https.request(base + path, { method, headers, timeout: 60000 }, response => {
+      response.resume();
+      resolve({ status: response.statusCode, headers: { get: name => [].concat(response.headers[name.toLowerCase()] ?? []).join(', ') || null } });
+    });
+    request.on('timeout', () => request.destroy(new Error('timeout')));
+    request.on('error', reject);
+    request.end(body);
+  });
   const form = password => raw('/__acceso', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded', 'sec-fetch-mode': 'navigate' },
     body: new URLSearchParams({ usuario: gate.usuario, clave: password, volver: '/' }).toString() });
   const navigation = await raw('/', { headers: { 'sec-fetch-mode': 'navigate', accept: 'text/html' } });

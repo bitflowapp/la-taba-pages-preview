@@ -31,6 +31,13 @@ await passPreviewGate(context, origin, gate);
 const page = await context.newPage();
 const consoleErrors = [];
 page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text().slice(0, 200)); });
+// Which request a console 401/4xx belongs to: host kind and path only (no query, no token).
+const failedRequests = [];
+page.on('response', response => {
+  if (response.status() < 400) return;
+  const url = new URL(response.url());
+  failedRequests.push(`${response.status()} ${response.request().method()} ${url.host.endsWith('supabase.co') ? 'supabase' : url.host === new URL(origin).host ? 'preview' : url.host}${url.pathname}`);
+});
 const dialogs = [];
 page.on('dialog', dialog => { dialogs.push(dialog.type()); void dialog.dismiss(); });
 let initPoint = '';
@@ -105,6 +112,7 @@ try {
   step('no browser dialogs', dialogs.length === 0, dialogs.join(','));
   const result = { at: new Date().toISOString(), origin, width, method, quantity, paymentHelp: help, submitLabel,
     checkout_session_id: checkoutSessionId, order_code: orderCode, init_point: initPoint || null, steps, consoleErrors: consoleErrors.slice(0, 10),
+    failedRequests: failedRequests.slice(0, 10),
     durationMs: Date.now() - started };
   if (arg('--evidence')) fs.writeFileSync(arg('--evidence'), JSON.stringify(result, null, 2));
   console.log(JSON.stringify(result, null, 1));
@@ -112,7 +120,8 @@ try {
 } catch (error) {
   const screenshot = arg('--screenshot');
   if (screenshot) await page.screenshot({ path: screenshot }).catch(() => {});
-  console.log(JSON.stringify({ failed: String(error.message || error).slice(0, 300), steps, consoleErrors: consoleErrors.slice(0, 10) }, null, 1));
+  console.log(JSON.stringify({ failed: String(error.message || error).slice(0, 300), steps, consoleErrors: consoleErrors.slice(0, 10),
+    failedRequests: failedRequests.slice(0, 10) }, null, 1));
   process.exitCode = 1;
 } finally {
   await browser.close();

@@ -69,11 +69,17 @@ try {
   if (expectRuntime) check('the runtime is the expected one', served.version?.runtime === expectRuntime, served.version?.runtime);
 
   await page.locator('[data-business-ops-view="payments"]').first().click({ timeout: 30000 });
-  await page.locator('.production-payment-list').waitFor({ state: 'visible', timeout: 60000 });
+  // Pagos has two lists: «Cobros manuales» (cash/transfer) and the Mercado Pago one, the only live region.
+  const onlineList = page.locator('.production-payment-list[aria-live="polite"]');
+  await onlineList.waitFor({ state: 'visible', timeout: 60000 });
+  check('cash and transfer collections are on the same screen', await page.locator('section[aria-label="Cobros manuales"]').isVisible());
   for (let i = 0; i < 20 && !paymentCalls.length; i += 1) await page.waitForTimeout(500);
   check('the panel asked the server for the payments', paymentCalls.length > 0);
   const rows = Array.isArray(paymentCalls.at(-1)) ? paymentCalls.at(-1) : (paymentCalls.at(-1)?.payments ?? []);
-  const text = await page.locator('.production-payment-list').innerText();
+  // The answer arrives before the repaint: judge the list once it stopped saying it is searching (or 15 s passed).
+  await page.waitForFunction(() => !/Buscando los pagos/.test(document.querySelector('.production-payment-list[aria-live="polite"]')?.innerText || ''),
+    null, { timeout: 15000 }).catch(() => {});
+  const text = await onlineList.innerText();
   const counter = (await page.locator('.operation-center-toolbar .form-hint').first().innerText().catch(() => '')).trim();
   evidence.server = { rows: rows.length, states: rows.map(row => ({ internal_status: row.internal_status, financial_hold: row.financial_hold ?? null, needs_attention: row.needs_attention ?? null, open_discrepancies: row.open_discrepancies ?? 0 })) };
   check('the listed count equals the server rows', counter.includes(`${rows.length} pago(s)`), `${counter} / server ${rows.length}`);

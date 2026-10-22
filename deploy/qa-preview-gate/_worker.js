@@ -66,6 +66,10 @@ export default {
     const response = await env.ASSETS.fetch(request);
     const headers = new Headers(response.headers);
     for (const [name, value] of Object.entries(SECURITY_HEADERS)) headers.set(name, value);
+    // Sin worker, Pages sirve los estáticos con `max-age=0, must-revalidate`; detrás de la puerta llegan sin
+    // Cache-Control. Sin revalidación explícita un navegador podía quedarse con un shell o un version.json viejos.
+    // `private`: lo que se sirvió con credencial no se guarda en cachés compartidas. Lo que `_headers` fija se respeta.
+    if (!headers.has('Cache-Control')) headers.set('Cache-Control', 'private, no-cache');
     // Lo autenticado no se comparte en cachés intermedias.
     headers.append('Vary', 'Authorization');
     return new Response(response.body, { status: response.status, statusText: response.statusText, headers });

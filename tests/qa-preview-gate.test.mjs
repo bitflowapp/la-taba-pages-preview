@@ -41,6 +41,19 @@ test('con la credencial correcta sirve el archivo y agrega las cabeceras del pre
   assert.match(response.headers.get('vary'), /Authorization/);
 });
 
+test('detrás de la puerta el shell, sw.js y version.json se revalidan siempre, y una cabecera propia se respeta', async () => {
+  // Sin worker, Pages sirve los estáticos con `max-age=0, must-revalidate`; detrás de la puerta llegan sin
+  // Cache-Control y un navegador podía quedarse con un shell o un version.json viejos.
+  const env = { ASSETS: assets, PREVIEW_ACCESS_SHA256: await sha256Hex('qa:correcta') };
+  const authorization = basic('qa', 'correcta');
+  const plain = await gate.fetch(new Request('https://qa.example/sw.js', { headers: { authorization } }), env);
+  assert.equal(plain.headers.get('cache-control'), 'private, no-cache');
+  const own = await gate.fetch(new Request('https://qa.example/runtime-config.js', { headers: { authorization } }), {
+    ...env, ASSETS: { fetch: async () => new Response('x', { status: 200, headers: { 'Cache-Control': 'no-store' } }) },
+  });
+  assert.equal(own.headers.get('cache-control'), 'no-store');
+});
+
 test('un hash mal formado nunca autoriza', async () => {
   const request = new Request('https://qa.example/', { headers: { authorization: basic('qa', 'x') } });
   assert.equal(await isAuthorized(request, 'no-es-un-hash'), false);

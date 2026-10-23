@@ -1,0 +1,43 @@
+{
+  "verifiedOn": "2026-10-23",
+  "sourceCommit": "71a044e43e94a24d5991c1df27df37daf7b3b684",
+  "scope": "local verification and consolidated delivery documentation",
+  "applicationCodeChanged": false,
+  "releaseChecks": {
+    "npmRunCheck": "passed",
+    "diffCheck": "passed"
+  },
+  "local": {
+    "databaseBuiltFromScratch": true,
+    "migrationCount": 170,
+    "latestMigration": "20261022233526",
+    "latestMigrationSha256": "dcf2cd84edc283f4cba89d2b174c30209a0547f858ecc1bd0af51c427c090ac9",
+    "databaseTests": {
+      "command": "node --test --test-concurrency=1 tests/db/ordering-verifier.test.mjs tests/db/qa-drill-lifecycle.test.mjs tests/db/cash-commercial-circuit.test.mjs tests/db/pgtap-shim.test.mjs",
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0
+    },
+    "recoveryTests": {
+      "command": "node --test --test-concurrency=1 tests/backup-freshness.test.mjs tests/offsite-backup.test.mjs tests/recovery-backup.test.mjs tests/recovery-hardening.test.mjs tests/recovery-inventory.test.mjs tests/recovery-payment-preflight.test.mjs tests/recovery-private-output.test.mjs tests/recovery-restore.test.mjs",
+      "passed": 31,
+      "failed": 0,
+      "skipped": 0
+    },
+    "businessVerifierForeignKey": { "onDelete": "RESTRICT", "validated": true },
+    "productVerifierForeignKey": { "onDelete": "RESTRICT", "validated": true },
+    "managedServices": "local stubs, not hosted services"
+  },
+  "hosted": {
+    "projectRef": "ixewllzzuzpqrkxzmfzx",
+    "currentConnectorRead": "denied",
+    "currentConnectorReadError": "You do not have permission to perform this action",
+    "alternateAccessAttemptedAfterDenial": false,
+    "archivedEvidenceCommit": "71a044e43e94a24d5991c1df27df37daf7b3b684",
+    "archivedEvidenceRevalidatedLiveThisContinuation": false
+  },
+  "providerTransactionsExecutedThisContinuation": false,
+  "productionChangesExecutedThisContinuation": false,
+  "fullManagedPlatformRestorePassed": false,
+  "commercialGo": false
+}

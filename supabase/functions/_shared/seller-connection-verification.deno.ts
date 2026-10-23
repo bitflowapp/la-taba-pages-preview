@@ -18,7 +18,7 @@ async function fixture({ enabled = true, execution = true, wrongSeller = false, 
   if (execution) Deno.env.set('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION', 'I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE');
   const row = { business_id: business, status: 'connected', seller_id: '123', application_id: '7677852968049976', scopes,
     generation: 'fixture-generation', expires_at: new Date(Date.now() + 3 * 86400000).toISOString(), refresh_owner: null,
-    protected_tokens: await protect({ access_token: 'fixture-seller-token', refresh_token: 'fixture-refresh-token' }, business) };
+    protected_tokens: await protect({ access_token: 'APP_USR-seller-fixture', refresh_token: 'fixture-refresh-token' }, business) };
   const mutations: unknown[] = [];
   const original = globalThis.fetch;
   globalThis.fetch = (input, init) => {
@@ -27,7 +27,7 @@ async function fixture({ enabled = true, execution = true, wrongSeller = false, 
     if (url.origin === 'https://api.mercadopago.com') {
       assertEquals(url.pathname, '/users/me');
       assertEquals(options?.method || 'GET', 'GET');
-      assertEquals(new Headers(options?.headers).get('authorization'), 'Bearer fixture-seller-token');
+      assertEquals(new Headers(options?.headers).get('authorization'), 'Bearer APP_USR-seller-fixture');
       return Promise.resolve(Response.json({ id: 123, site_id: 'MLA', tags: ['normal'] }, { status: providerStatus }));
     }
     if (url.pathname.endsWith('/mp_seller_connections')) {

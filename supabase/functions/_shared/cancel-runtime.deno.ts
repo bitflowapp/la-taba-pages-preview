@@ -25,7 +25,7 @@ async function run(scenario: 'cancelled' | 'final-rejection' | 'throttled' | 'in
     MERCADOPAGO_TOKEN_ENCRYPTION_KEY: 'AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE',
   })) Deno.env.set(name, value);
   const seller = { business_id: bid, environment: 'test', status: 'connected',
-    protected_tokens: await protect({ access_token: 'fixture-seller-token' }, bid),
+    protected_tokens: await protect({ access_token: 'APP_USR-seller-fixture' }, bid),
     expires_at: new Date(Date.now() + 172800000).toISOString(), refresh_owner: null };
   const recordings: Record<string, unknown>[] = [], ambiguous: string[] = [];
   let puts = 0;

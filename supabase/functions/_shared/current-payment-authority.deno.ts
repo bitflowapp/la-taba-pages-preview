@@ -31,8 +31,8 @@ function configure() {
 
 async function run(route: string, mutation: string, initiallyInvalid = '', providerStatus = 200) {
   configure();
-  const encrypted = await protect({ access_token: 'fixture-verified-token' }, bid);
-  const rotated = await protect({ access_token: 'fixture-rotated-token' }, bid);
+  const encrypted = await protect({ access_token: 'APP_USR-verified-fixture' }, bid);
+  const rotated = await protect({ access_token: 'APP_USR-rotated-fixture' }, bid);
   const business = { id: bid, is_active: true, status: 'open', ordering_enabled: true, ordering_verified: true };
   const settings = { business_id: bid, provider: 'mercadopago', enabled: true, environment: 'production',
     checkout_mode: 'checkout_pro', currency: 'ARS', reserve_stock: true, production_review_status: 'approved',
@@ -102,7 +102,7 @@ async function run(route: string, mutation: string, initiallyInvalid = '', provi
     if (url.origin !== 'https://api.mercadopago.com') throw new Error('Unexpected test request: ' + url.pathname);
     if (url.pathname === '/users/me') {
       providerChecks++;
-      assertEquals(new Headers(init?.headers).get('authorization'), 'Bearer fixture-verified-token');
+      assertEquals(new Headers(init?.headers).get('authorization'), 'Bearer APP_USR-verified-fixture');
       reachProvider(); await release;
       return Response.json({ id: 123456789, site_id: 'MLA', tags: ['normal'] });
     }

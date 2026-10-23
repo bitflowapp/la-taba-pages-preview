@@ -37,7 +37,7 @@ async function run(scenario: string, creation = false) {
   if (scenario === 'unknown-prior') resource.date_created = new Date(Date.now() - 60000).toISOString();
   if (scenario === 'unknown-future') resource.date_created = '2099-01-01T00:00:00Z';
   const seller = { business_id: bid, environment: 'test', status: 'connected',
-    protected_tokens: await protect({ access_token: 'fixture-seller-token' }, bid),
+    protected_tokens: await protect({ access_token: 'APP_USR-seller-fixture' }, bid),
     expires_at: new Date(Date.now() + 172800000).toISOString(), refresh_owner: null };
   const requests: string[] = [], events: string[] = [], recordings: Record<string, unknown>[] = [];
   let posted = 0, settledEvents = 0, failedJobs = 0, claimedThisRun = false;

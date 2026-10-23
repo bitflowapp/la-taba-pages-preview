@@ -164,6 +164,17 @@ export class OAuthProviderError extends Error {
     super("OAuth provider unavailable");
   }
 }
+// `test_token: true` asks Mercado Pago for legacy sandbox credentials (TEST-).
+// A preference created with one is redirected to sandbox.mercadopago.com.ar,
+// whose checkout ends every card payment in «Oh, no, algo anduvo mal»
+// (card-form/association 404; flows 4c4a42bf… and 22d28891…, WCS-51579), while
+// the same buyer approves on www with an APP_USR credential. Checkout Pro is
+// tested with the APP_USR credentials of a test seller: the test environment
+// is guaranteed by the seller's `test_user` tag (sellerIdentity), never by the
+// token type.
+export function isSandboxAccessToken(token: unknown): boolean {
+  return !String(token ?? "").startsWith("APP_USR-");
+}
 export async function tokenGrant(
   fields: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {
@@ -176,7 +187,6 @@ export async function tokenGrant(
       ...fields,
       client_id: c.clientId,
       client_secret: getRequiredEnv("MERCADOPAGO_CLIENT_SECRET"),
-      test_token: c.environment === "test",
     }),
   });
   const body = await response.json().catch(() => ({}));
@@ -190,7 +200,8 @@ export async function tokenGrant(
     !body.access_token || !body.refresh_token || !body.user_id ||
     !Number.isFinite(body.expires_in) || body.expires_in <= 0 ||
     !String(body.scope).split(" ").includes("offline_access") ||
-    (body.live_mode === true) !== (c.environment === "production")
+    isSandboxAccessToken(body.access_token) ||
+    (c.environment === "production" && body.live_mode !== true)
   ) throw new Error("Invalid OAuth token response");
   return body;
 }
@@ -248,9 +259,19 @@ export async function sellerAccessToken(businessId: string): Promise<string> {
   if (
     Date.parse(row.expires_at) > Date.now() + 86400000 && !row.refresh_owner
   ) {
-    return String(
+    const stored = String(
       (await reveal(row.protected_tokens, businessId)).access_token,
     );
+    // A grant obtained with `test_token` before this check can only produce
+    // checkouts that fail at the provider: the seller has to connect again.
+    if (isSandboxAccessToken(stored)) {
+      throw new PublicPaymentError(
+        409,
+        "SELLER_REAUTHORIZATION_REQUIRED",
+        "Necesitamos volver a conectar Mercado Pago.",
+      );
+    }
+    return stored;
   }
   const owner = crypto.randomUUID();
   const claim = await service.rpc("mp_claim_refresh", {

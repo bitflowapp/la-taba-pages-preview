@@ -50,13 +50,13 @@ Deno.test('clean business callback, replay and tenant routing (staging test)', a
     if(url.pathname.endsWith('/payment_intents')) {assertEquals(url.searchParams.get('external_reference'),'eq.fixture-new-reference');return Response.json({business_id:business,environment:'test'});}
     if(url.pathname.endsWith('/mp_record_seller_webhook')) {assertEquals(body.p_business_id,business);receipts.push(body);return Response.json({receipt_id:'fixture',queued:true});}
     if(url.pathname==='/oauth/token') {
-      assertEquals(body.test_token,true);assertEquals(body.redirect_uri,base+'/functions/v1/mercadopago-oauth-callback');
+      assertEquals(body.test_token,undefined);assertEquals(body.redirect_uri,base+'/functions/v1/mercadopago-oauth-callback');
       assertEquals(typeof body.code_verifier,'string');
-      return Response.json({access_token:'fixture-new-seller-token',refresh_token:'fixture-refresh-token',user_id:123,expires_in:15552000,scope:'read write offline_access',live_mode:false});
+      return Response.json({access_token:'APP_USR-new-seller-fixture',refresh_token:'fixture-refresh-token',user_id:123,expires_in:15552000,scope:'read write offline_access',live_mode:false});
     }
     if(url.pathname==='/users/me') return Response.json({id:123,site_id:'MLA',tags:['test_user']});
     if(url.origin==='https://api.mercadopago.com') {
-      assertEquals(new Headers(init?.headers).get('authorization'),'Bearer fixture-new-seller-token');
+      assertEquals(new Headers(init?.headers).get('authorization'),'Bearer APP_USR-new-seller-fixture');
       financialCalls.push(url.pathname);
       if(url.pathname==='/checkout/preferences') {
         assertEquals(body.external_reference,'fixture-new-reference');assertEquals(body.notification_url,base+'/functions/v1/mercadopago-webhook');

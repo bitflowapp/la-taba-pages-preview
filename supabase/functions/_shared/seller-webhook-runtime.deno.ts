@@ -28,7 +28,7 @@ async function run(valid: boolean, wrongReference = false) {
   })) Deno.env.set(name, value);
   const row = {
     business_id: business, seller_id: '123', application_id: '2691240967769590', environment: 'test', status: 'connected',
-    protected_tokens: await protect({access_token: 'fixture-seller-token'}, business),
+    protected_tokens: await protect({access_token: 'APP_USR-seller-fixture'}, business),
     expires_at: new Date(Date.now() + 3 * 86400000).toISOString(), refresh_owner: null,
   };
   const timestamp = String(Math.floor(Date.now() / 1000));
@@ -53,7 +53,7 @@ async function run(valid: boolean, wrongReference = false) {
     if (url.origin === 'https://api.mercadopago.com') {
       providerCalls++;
       assertEquals(url.pathname, '/v1/payments/987');
-      assertEquals(new Headers(init?.headers).get('authorization'), 'Bearer fixture-seller-token');
+      assertEquals(new Headers(init?.headers).get('authorization'), 'Bearer APP_USR-seller-fixture');
       return Response.json({id: 987, collector_id: 123, live_mode: false, external_reference: 'server-reference'});
     }
     if (url.pathname.endsWith('/payment_intents')) {

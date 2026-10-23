@@ -59,7 +59,7 @@ Deno.test("seller identity uses provider tags to prevent test/production crossov
   } finally { globalThis.fetch = original; configure(); }
 });
 const tokens = {
-  access_token: "fixture-access",
+  access_token: "APP_USR-fixture-access",
   refresh_token: "fixture-refresh",
   user_id: 123,
   expires_in: 15552000,
@@ -89,7 +89,7 @@ async function refreshFailureFixture(mode: string) {
       if (mode === 'network') throw new TypeError('fixture network loss');
       if (mode === 'server') return Response.json({error:'temporarily_unavailable'}, {status:503});
       if (mode === 'invalid_grant') return Response.json({error:'invalid_grant'}, {status:400});
-      return Response.json({...tokens, access_token:'rotated-access', refresh_token:'rotated-refresh'});
+      return Response.json({...tokens, access_token:'APP_USR-rotated-access', refresh_token:'rotated-refresh'});
     }
     if (url.pathname.endsWith('/mp_seller_connections')) {
       if (options?.method === 'PATCH') {
@@ -154,7 +154,7 @@ Deno.test('an access-token 401 renews through the existing offline grant instead
     await invalidateRejectedToken(business, tokens.access_token);
     assertEquals(f.row.status, 'connected');
     assertEquals(f.row.protected_tokens, f.sealed);
-    assertEquals(await sellerAccessToken(business), 'rotated-access');
+    assertEquals(await sellerAccessToken(business), 'APP_USR-rotated-access');
     assertEquals(f.providerCalls(), 1);
     assertEquals(f.row.status, 'connected');
   } finally {f.cleanup();}
@@ -343,10 +343,10 @@ Deno.test("refresh rotates once and subsequent readers use the persisted token",
       calls++;
       const body = JSON.parse(String((init as {body?: unknown})?.body));
       assertEquals(body.grant_type, "refresh_token");
-      assertEquals(body.test_token, true);
+      assertEquals(body.test_token, undefined);
       result = {
         ...tokens,
-        access_token: "rotated-access",
+        access_token: "APP_USR-rotated-access",
         refresh_token: "rotated-refresh",
       };
     } else if (url.includes("/rpc/mp_claim_refresh")) {
@@ -371,8 +371,8 @@ Deno.test("refresh rotates once and subsequent readers use the persisted token",
     });
   };
   try {
-    assertEquals(await sellerAccessToken(business), "rotated-access");
-    assertEquals(await sellerAccessToken(business), "rotated-access");
+    assertEquals(await sellerAccessToken(business), "APP_USR-rotated-access");
+    assertEquals(await sellerAccessToken(business), "APP_USR-rotated-access");
     assertEquals(calls, 1);
     row.refresh_owner = "other-owner";
     row.expires_at = new Date().toISOString();
@@ -394,15 +394,15 @@ Deno.test("refresh rotates once and subsequent readers use the persisted token",
     globalThis.fetch = original;
   }
 });
-Deno.test("OAuth rejects missing offline permission, wrong live mode and invalid grants", async () => {
+Deno.test("OAuth rejects missing offline permission, sandbox credentials and invalid grants", async () => {
   configure();
   const original = globalThis.fetch;
   try {
     for (
       const body of [{ ...tokens, scope: "read write" }, {
         ...tokens,
-        live_mode: true,
-      }, { error: "invalid_grant" }]
+        access_token: "TEST-sandbox-fixture",
+      }, { ...tokens, access_token: undefined }, { error: "invalid_grant" }]
     ) {
       globalThis.fetch = () =>
         Promise.resolve(
@@ -414,6 +414,48 @@ Deno.test("OAuth rejects missing offline permission, wrong live mode and invalid
         tokenGrant({ grant_type: "authorization_code", code: "fixture" })
       );
     }
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+// WCS-51579: `test_token: true` returned sandbox credentials whose preferences
+// Mercado Pago redirects to sandbox.mercadopago.com.ar, where every card
+// payment ends in «Oh, no, algo anduvo mal». A test seller is connected with
+// APP_USR credentials, which Mercado Pago may report as live_mode=true.
+Deno.test("test OAuth asks for APP_USR credentials of the test seller, never sandbox ones", async () => {
+  configure();
+  const original = globalThis.fetch;
+  try {
+    let sent: Record<string, unknown> = {};
+    globalThis.fetch = (_input, init) => {
+      sent = JSON.parse(String((init as { body?: unknown })?.body));
+      return Promise.resolve(Response.json({ ...tokens, live_mode: true }));
+    };
+    const granted = await tokenGrant({ grant_type: "authorization_code", code: "fixture" });
+    assertEquals("test_token" in sent, false);
+    assertEquals(granted.access_token, tokens.access_token);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+Deno.test("a stored sandbox grant requires reconnection instead of creating a checkout that cannot be paid", async () => {
+  configure();
+  const sandbox = { ...tokens, access_token: "TEST-sandbox-fixture" };
+  const row = {
+    business_id: business, environment: "test", seller_id: "123", status: "connected",
+    protected_tokens: await protect(sandbox, business), scopes: tokens.scope, generation: "fixture-generation",
+    expires_at: new Date(Date.now() + 3 * 86400000).toISOString(), refresh_owner: null,
+  };
+  const original = globalThis.fetch;
+  let providerCalls = 0;
+  globalThis.fetch = (input) => {
+    if (String(input).includes("api.mercadopago.com")) providerCalls++;
+    return Promise.resolve(Response.json(row));
+  };
+  try {
+    const error = await assertRejects(() => sellerAccessToken(business));
+    assertEquals((error as { code?: string }).code, "SELLER_REAUTHORIZATION_REQUIRED");
+    assertEquals(providerCalls, 0);
   } finally {
     globalThis.fetch = original;
   }

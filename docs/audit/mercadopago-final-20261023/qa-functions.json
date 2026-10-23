@@ -1,0 +1,61 @@
+{
+  "project": "ixewllzzuzpqrkxzmfzx",
+  "functions": [
+    {
+      "name": "mercadopago-cancel-payment",
+      "status": "ACTIVE",
+      "version": 9,
+      "verify_jwt": true,
+      "updated_at": 1792777072218
+    },
+    {
+      "name": "mercadopago-checkout-status",
+      "status": "ACTIVE",
+      "version": 9,
+      "verify_jwt": false,
+      "updated_at": 1792777074167
+    },
+    {
+      "name": "mercadopago-connect",
+      "status": "ACTIVE",
+      "version": 10,
+      "verify_jwt": false,
+      "updated_at": 1792777075480
+    },
+    {
+      "name": "mercadopago-create-preference",
+      "status": "ACTIVE",
+      "version": 9,
+      "verify_jwt": false,
+      "updated_at": 1792777076977
+    },
+    {
+      "name": "mercadopago-oauth-callback",
+      "status": "ACTIVE",
+      "version": 9,
+      "verify_jwt": false,
+      "updated_at": 1792777078303
+    },
+    {
+      "name": "mercadopago-payment-worker",
+      "status": "ACTIVE",
+      "version": 9,
+      "verify_jwt": false,
+      "updated_at": 1792777080285
+    },
+    {
+      "name": "mercadopago-refund",
+      "status": "ACTIVE",
+      "version": 9,
+      "verify_jwt": true,
+      "updated_at": 1792777081823
+    },
+    {
+      "name": "mercadopago-webhook",
+      "status": "ACTIVE",
+      "version": 11,
+      "verify_jwt": false,
+      "updated_at": 1792777083416
+    }
+  ]
+}

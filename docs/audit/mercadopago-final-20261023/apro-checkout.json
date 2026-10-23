@@ -1,0 +1,16 @@
+{
+  "scenario": "APRO",
+  "sku": "QA-REC-001",
+  "quantity": 1,
+  "unit_price": 100,
+  "session_http": 200,
+  "session_code": null,
+  "checkout_session_id": "418a456b-d119-4518-9478-8c286c39d85d",
+  "total": 100,
+  "currency": "ARS",
+  "preference_http": 200,
+  "preference_code": null,
+  "init_point": "https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=3594962708-171128df-3092-4de2-96ee-f1f6383efe3d",
+  "expires_at": "2026-10-23T18:26:56.950889+00:00",
+  "repeat": null
+}

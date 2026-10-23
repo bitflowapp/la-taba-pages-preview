@@ -1,0 +1,58 @@
+{
+  "at": "2026-10-23T18:23:00.066Z",
+  "paymentSubmissions": [
+    {
+      "at": "2026-10-23T18:16:19.121Z",
+      "kind": "pay_submitted",
+      "scenario": "APRO"
+    }
+  ],
+  "flowIds": [
+    "409ff7ce-55f9-44c5-bf1e-03fe960dfd3d",
+    "f134432b-3420-4d6c-b14f-e3d7b1cb72f9"
+  ],
+  "finalBrowserState": {
+    "at": "2026-10-23T18:16:32.675Z",
+    "kind": "state",
+    "url": "https://www.mercadopago.com.ar/checkout/v1/payment/redirect/f134432b-3420-4d6c-b14f-e3d7b1cb72f9/error/",
+    "text": "Oh, no, algo anduvo mal.\n\nReintentar",
+    "inputs": [],
+    "frames": [
+      {
+        "index": 0,
+        "url": "https://www.mercadopago.com.ar/checkout/v1/payment/redirect/f134432b-3420-4d6c-b14f-e3d7b1cb72f9/error/",
+        "inputs": []
+      },
+      {
+        "index": 1,
+        "url": "about:blank",
+        "inputs": []
+      }
+    ],
+    "buttons": [
+      "Reintentar"
+    ],
+    "aria": "- main:\n  - paragraph: Oh, no, algo anduvo mal.\n  - button \"Reintentar\"",
+    "paySent": true
+  },
+  "initialAutomationDefects": [
+    {
+      "at": "2026-10-23T18:09:48.516Z",
+      "message": "locator.click: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText('Contraseña', { exact: true })\u001b[22m\n\u001b[2m    - locator resolved to <span class=\"c"
+    },
+    {
+      "at": "2026-10-23T18:14:03.799Z",
+      "message": "locator.click: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'Mostrar más opciones', exact: true })\u001b[22m\n"
+    },
+    {
+      "at": "2026-10-23T18:14:11.814Z",
+      "message": "locator.click: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('radio', { name: 'Nueva tarjeta Crédito, débito o prepaga', exact: true })\u001b[22m\n"
+    },
+    {
+      "at": "2026-10-23T18:14:19.818Z",
+      "message": "locator.click: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'Continuar', exact: true })\u001b[22m\n"
+    }
+  ],
+  "requestIdForFailedPayment": null,
+  "requestIdLimitation": "The original controller recorded flow responses only; no failed payment HTTP request ID was captured. Instrumentation now records checkout response metadata for future authorized runs."
+}

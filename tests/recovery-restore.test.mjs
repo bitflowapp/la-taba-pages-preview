@@ -24,3 +24,12 @@ test('restore verification checks data, RLS, policy definitions, effective ACLs,
   assert.ok(FINGERPRINT_SQL.includes('acldefault'));
   assert.ok(FINGERPRINT_SQL.includes('extensions.digest'));
 });
+
+test('missing or malformed fingerprint sections cannot pass restoration verification',()=>{
+  assert.ok(Object.values(compareFingerprints({},{})).every(value=>value===false));
+  const valid={tables:[{sha256:'x'}],rls:[],policies:[],table_acl:[],functions:[],publication:[]};
+  const partial={...valid};delete partial.functions;
+  assert.equal(compareFingerprints(partial,partial).functions,false);
+  assert.equal(compareFingerprints({...valid,tables:[]},{...valid,tables:[]}).tables,false);
+  assert.equal(compareFingerprints({...valid,policies:{}},{...valid,policies:{}}).policies,false);
+});

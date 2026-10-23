@@ -1,0 +1,77 @@
+{
+  "validationDateLocal": "2026-10-22",
+  "timezone": "America/Buenos_Aires",
+  "auditedRemoteHead": "4254705a431642482fe11f530ab54521da937e49",
+  "pullRequest": "https://github.com/bitflowapp/la-taba-pages-preview/pull/148",
+  "postgresql": {
+    "engine": "PostgreSQL 17.10, loopback only",
+    "migrationsBuiltFromScratch": 170,
+    "financialRegression": { "passed": 141, "failed": 0, "skipped": 0 },
+    "finalFocusedRegression": { "passed": 12, "failed": 0, "skipped": 0 },
+    "overlapNotice": "Do not sum runs. The final product-verifier FK and cleanup guard were verified in the final focused run after the broader regression began.",
+    "managedServices": "pg_cron, pg_net and Vault are local stand-ins, not hosted certification",
+    "sqlSuites": [
+      { "file": "payment_method_isolation.local.sql", "passed": 5 },
+      { "file": "store_opening_readiness_test.sql", "passed": 84 },
+      { "file": "back_office_role_isolation_test.sql", "passed": 28 },
+      { "file": "mercadopago_safe_disconnect.local.sql", "passed": 18 },
+      { "file": "mercadopago_rejected_retry.local.sql", "scriptPassed": true }
+    ]
+  },
+  "javascriptFocusedFinal": { "passed": 321, "failed": 0, "skipped": 0 },
+  "deno": {
+    "version": "2.6.1",
+    "edgeEntryPointsTypeChecked": 13,
+    "frozenLockfile": true,
+    "nodeModulesMaterialization": false,
+    "runtimeTestsPassed": 258,
+    "runtimeTestsFailed": 0,
+    "networkPermissionDuringRuntimeTests": false,
+    "runnerNodeTestsPassed": 12,
+    "runnerNodeTestsIncludedInJavascriptCount": true
+  },
+  "preview": {
+    "url": "https://recovery-20261020.taba2-staging.pages.dev",
+    "commit": "1c8d0635",
+    "runtime": "la-taba-runtime-v159-panel-first-login",
+    "builtAt": "2026-10-22T22:59:29.091Z",
+    "identicalFiles": 375,
+    "expectedFiles": 375,
+    "checksPassed": 16,
+    "anonymousStatus": 401,
+    "wrongCredentialStatus": 401,
+    "navigationStatus": 302,
+    "sessionStatus": 200,
+    "authenticatedCacheControl": "private, no-cache",
+    "newDeploymentPublished": false
+  },
+  "hostedQA": {
+    "projectRef": "ixewllzzuzpqrkxzmfzx",
+    "connectorReadAttempt": "get_project",
+    "result": "You do not have permission to perform this action",
+    "migrationAppliedByThisSession": false,
+    "edgeFunctionsDeployedByThisSession": false,
+    "currentCronDatabaseAndAdvisorStateVerified": false,
+    "forbiddenRestoreDatabaseTouched": false
+  },
+  "backup": {
+    "source": "Existing encrypted QA snapshot captured 2026-10-22T22:08:52Z",
+    "ciphertextPackageVerified": true,
+    "encryptedFiles": 2,
+    "keyIncluded": false,
+    "remoteBackupCreated": false,
+    "fullManagedPlatformRestoreCertified": false,
+    "productionDataExported": false
+  },
+  "releaseChecks": {
+    "npmCheck": "passed",
+    "migrationValidation": "passed",
+    "pinnedNodeDependencies": "37 packages match package-lock.json",
+    "secretScan": "passed",
+    "diffWhitespace": "passed"
+  },
+  "authenticMercadoPagoOperationsPerformed": false,
+  "productionModified": false,
+  "technicalProductionVerdict": "NO-GO",
+  "commercialVerdict": "NO-GO"
+}

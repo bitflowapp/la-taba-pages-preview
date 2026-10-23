@@ -22,6 +22,10 @@ export function normalizeSha256(value) {
   return /^[a-f0-9]{64}$/.test(normalized) ? normalized : '';
 }
 
+/**
+ * @param {{sourceType?: string, sourceUrl?: string}} options
+ * @returns {{ok: true, sourceUrl: string|null, sourceDomain: string}|{ok: false, code: string}}
+ */
 export function validateSourceProvenance({ sourceType, sourceUrl = '' } = {}) {
   if (!CATALOG_IMAGE_SOURCE_TYPES.includes(sourceType)) return { ok: false, code: 'INVALID_SOURCE_TYPE' };
   if (sourceType === 'business_owned_photo') {

@@ -85,9 +85,11 @@ Deno.test('actual recovery worker claims one job and refreshes at most one selle
       if (url.pathname.endsWith('/consume_payment_rate_limit')) return Response.json({ allowed: true });
       if (url.pathname.endsWith('/claim_payment_outbox_v2')) {
         const body = JSON.parse(String((init as RequestInit | undefined)?.body));
-        assertEquals(body.p_limit, 1); assertEquals(body.p_lease_seconds, 90);
+        // The budgeted worker heartbeats a 60 s job lease; ledger lease is 90 s.
+        assertEquals(body.p_limit, 1); assertEquals(body.p_lease_seconds, 60);
         claimed = true; return Response.json([]);
       }
+      if (url.pathname.endsWith('/claim_provider_ledger_window')) return Response.json(null);
       throw new Error('Unexpected recovery fixture request');
     };
     const timestamp = String(Math.floor(Date.now() / 1000)), nonce = crypto.randomUUID();

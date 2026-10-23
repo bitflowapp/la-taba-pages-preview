@@ -28,7 +28,13 @@ export function fingerprint(tools, env) {
 }
 export function compareFingerprints(source, restored) {
   return Object.fromEntries(['tables','rls','policies','table_acl','functions','publication']
-    .map(key=>[key,JSON.stringify(source[key])===JSON.stringify(restored[key])]));
+    .map(key=>{
+      const a=source?.[key],b=restored?.[key];
+      // jsonb_agg may return null for an empty section. Undefined (missing),
+      // scalar values, or an empty table inventory never certify a restore.
+      const valid=value=>Array.isArray(value)?(key!=='tables'||value.length>0):(value===null&&key!=='tables');
+      return [key,valid(a)&&valid(b)&&JSON.stringify(a)===JSON.stringify(b)];
+    }));
 }
 
 export async function verifyRestore({target,receipt,tools,ca,out}) {

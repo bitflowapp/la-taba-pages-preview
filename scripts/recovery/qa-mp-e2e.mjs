@@ -14,6 +14,7 @@ import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import { leerSecreto } from '../e2e-production-sale/secretos-windows.mjs';
 import { RECOVERY_QA } from './provision-qa-ids.mjs';
+import { inspectPaymentSession } from './qa-mp-inspection.mjs';
 
 const TEST_APPLICATION = '2691240967769590';
 const arg = (name, fallback) => { const i = process.argv.indexOf(name); return i < 0 ? fallback : process.argv[i + 1]; };
@@ -24,7 +25,7 @@ const target = JSON.parse(fs.readFileSync(arg('--target', 'deploy/recovery-free-
 assert.equal(target.environment, 'test', 'test environment only');
 assert.equal(target.mercadoPagoApplicationId, TEST_APPLICATION, 'TABA2 Staging application only');
 assert.equal(target.commercialPaymentsEnabled, false, 'commercial payments must stay disabled');
-assert.match(target.projectRef, /^[a-z]{20}$/);
+assert.equal(target.projectRef, 'ixewllzzuzpqrkxzmfzx', 'exact QA project only');
 
 const url = `https://${target.projectRef}.supabase.co`;
 const origin = target.checkoutOrigin;
@@ -133,43 +134,7 @@ async function workerOnce() {
     retried: body.retried, failed: body.failed ?? null };
 }
 
-const pick = (row, fields) => row ? Object.fromEntries(fields.filter(f => f in row).map(f => [f, row[f]])) : null;
-
-async function inspect(sessionId) {
-  const db = admin();
-  const session = (await db.from('checkout_sessions').select('*').eq('id', sessionId).maybeSingle()).data;
-  assert.ok(session, 'checkout session not found');
-  assert.equal(session.business_id, A, 'only QA tenant A is inspected');
-  const intents = (await db.from('payment_intents').select('*').eq('checkout_session_id', sessionId)).data || [];
-  const intentIds = intents.map(i => i.id);
-  const attempts = intentIds.length ? (await db.from('payment_attempts').select('*').in('payment_intent_id', intentIds)).data || [] : [];
-  const paymentIds = intents.map(i => i.provider_payment_id).filter(Boolean).map(String);
-  const receipts = paymentIds.length ? (await db.from('payment_webhook_receipts').select('*').in('resource_id', paymentIds)).data || [] : [];
-  const outbox = intentIds.length ? (await db.from('payment_outbox').select('*').in('payment_intent_id', intentIds)).data || [] : [];
-  const orderIds = [session.completed_order_id, ...intents.map(i => i.order_id)].filter(Boolean);
-  const orders = orderIds.length ? (await db.from('orders').select('*').in('id', [...new Set(orderIds)])).data || [] : [];
-  const reservations = (await db.from('inventory_reservations').select('*').eq('checkout_session_id', sessionId)).data || [];
-  const refunds = intentIds.length ? (await db.from('payment_refunds').select('*').in('payment_intent_id', intentIds)).data || [] : [];
-  const cancellations = intentIds.length ? (await db.from('payment_cancellations').select('*').in('payment_intent_id', intentIds)).data || [] : [];
-  const products = (await db.from('products').select('sku,stock').eq('business_id', A).order('sku')).data || [];
-  return {
-    session: pick(session, ['id', 'status', 'currency', 'subtotal', 'discount_total', 'delivery_fee', 'total', 'expires_at',
-      'completed_order_id', 'manual_review_reason', 'created_at', 'updated_at']),
-    intents: intents.map(i => pick(i, ['id', 'internal_status', 'environment', 'expected_amount', 'paid_amount', 'currency',
-      'external_reference', 'provider_payment_id', 'provider_status', 'provider_status_detail', 'live_mode', 'approved_at',
-      'rejected_at', 'refunded_amount', 'order_id', 'security_review_reason'])),
-    attempts: attempts.map(a => pick(a, ['id', 'attempt_number', 'attempt_type', 'status', 'preference_id', 'last_error_code', 'created_at'])),
-    receipts: receipts.map(r => pick(r, ['event_type', 'resource_id', 'signature_valid', 'processing_status', 'attempt_count',
-      'received_at', 'processed_at', 'last_error'])),
-    outbox: outbox.map(o => pick(o, ['id', 'topic', 'resource_id', 'status', 'attempts', 'last_error', 'next_attempt_at', 'completed_at'])),
-    orders: orders.map(o => pick(o, ['id', 'public_code', 'status', 'payment_method', 'payment_status', 'manual_payment_status',
-      'total', 'currency_code', 'created_at', 'cancelled_at'])),
-    reservations: reservations.map(r => pick(r, ['product_id', 'quantity', 'status', 'expires_at', 'released_at', 'release_reason', 'converted_at'])),
-    refunds: refunds.map(r => pick(r, ['id', 'status', 'amount', 'provider_refund_id', 'idempotency_key', 'requested_at', 'completed_at'])),
-    cancellations: cancellations.map(c => pick(c, ['id', 'status', 'idempotency_key', 'requested_at', 'completed_at'])),
-    stock: products,
-  };
-}
+const inspect = sessionId => inspectPaymentSession(admin(), sessionId, A);
 
 async function main() {
   if (command === 'connect-url') {
@@ -265,6 +230,7 @@ async function main() {
     const results = await forgedWebhooks(String(arg('--payment', '1')));
     record({ results });
     out({ results, allRefused: results.every(r => r.refused) });
+    assert.ok(results.every(r => r.refused), 'forged notifications were not all rejected with 401; check webhook secret/configuration');
     return;
   }
   if (command === 'worker') {

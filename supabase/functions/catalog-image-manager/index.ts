@@ -1,5 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from 'npm:@supabase/supabase-js@2.110.8';
+import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.110.8';
 import {
   CATALOG_IMAGE_MAX_BYTES,
   buildApprovedPaths,
@@ -11,7 +11,6 @@ import {
   validateSourceProvenance,
 } from '../_shared/catalog-image-contract.js';
 
-type SupabaseClient = ReturnType<typeof createClient>;
 type ImageRequest = {
   body: Record<string, unknown>;
   user: SupabaseClient;
@@ -259,7 +258,7 @@ async function prepareUpload({ body, user, admin, actorUserId }: ImageRequest) {
   }
 
   try {
-    const signedUploads = {};
+    const signedUploads: Record<string, { path: string; token: string; content_type: string }> = {};
     for (const [kind, path, contentType] of [
       ['source', paths.source, originalMime],
       ['master', paths.master, 'image/webp'],
@@ -401,6 +400,7 @@ async function approveUpload({ body, user, admin, actorUserId }: ImageRequest) {
 }
 
 async function resumeApprovedUpload({ row, admin }: { row: ImageUploadRow; admin: SupabaseClient }) {
+  if (!row.catalog_asset_id) fail('IMAGE_ASSOCIATION_CHANGED', 409);
   if (row.cleanup_status === 'complete') {
     return { ok: true, upload_id: row.id, catalog_asset_id: row.catalog_asset_id,
       status: 'approved', image_associated: true, cleanup_status: 'complete' };

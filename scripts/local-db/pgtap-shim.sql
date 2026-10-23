@@ -59,6 +59,21 @@ exception when others then
   return extensions.__tap_result(false, p_desc, sqlstate || ': ' || sqlerrm);
 end $$;
 
+-- pgTAP throws_like compares the raised MESSAGE with SQL LIKE (case sensitive).
+-- A different error, or no error at all, must fail the assertion.
+create or replace function extensions.throws_like(p_sql text, p_pattern text, p_desc text default null)
+returns text language plpgsql as $$
+declare v_msg text;
+begin
+  begin
+    execute p_sql;
+    return extensions.__tap_result(false,p_desc,'no exception raised');
+  exception when others then
+    get stacked diagnostics v_msg=message_text;
+  end;
+  return extensions.__tap_result(v_msg like p_pattern,p_desc,'raised: '||v_msg||' expected LIKE: '||p_pattern);
+end $$;
+
 create or replace function extensions.finish() returns setof text language plpgsql as $$
 declare v_planned integer := nullif(current_setting('tap.planned', true), '')::integer;
         v_count integer := coalesce(nullif(current_setting('tap.count', true), ''), '0')::integer;

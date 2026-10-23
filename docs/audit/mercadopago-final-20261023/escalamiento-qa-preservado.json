@@ -1,0 +1,26 @@
+{
+  "at": "2026-10-23T18:39:43.339Z",
+  "project": "ixewllzzuzpqrkxzmfzx",
+  "readOnly": true,
+  "session": {
+    "id": "418a456b-d119-4518-9478-8c286c39d85d",
+    "status": "expired",
+    "completed_order_id": null
+  },
+  "intent": {
+    "id": "55136b0c-aa3b-44db-a7bd-b419a8a3af4f",
+    "environment": "test",
+    "internal_status": "expired",
+    "provider_payment_id": null,
+    "provider_status": null,
+    "order_id": null,
+    "refunded_amount": 0
+  },
+  "product": {
+    "sku": "QA-REC-001",
+    "stock": 20
+  },
+  "ordersQA": 6,
+  "intents": 6,
+  "countsUnchangedFromPreviousRun": true
+}

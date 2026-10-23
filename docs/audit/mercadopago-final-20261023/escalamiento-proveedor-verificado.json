@@ -1,0 +1,52 @@
+{
+  "at": "2026-10-23T18:34:21.500Z",
+  "project": "ixewllzzuzpqrkxzmfzx",
+  "session": "418a456b-d119-4518-9478-8c286c39d85d",
+  "seller_test_user": true,
+  "buyer_match_in_payments": null,
+  "preference": {
+    "id": "3594962708-171128df-3092-4de2-96ee-f1f6383efe3d",
+    "collector_id": 3594962708,
+    "client_id": "2691240967769590",
+    "site_id": "MLA",
+    "init_host": "www.mercadopago.com.ar",
+    "external_reference": "taba2:checkout:418a456b-d119-4518-9478-8c286c39d85d",
+    "expires": true,
+    "expiration_date_to": "2026-10-23T18:26:56.950+00:00",
+    "binary_mode": false,
+    "auto_return": "approved",
+    "notification_url": "https://ixewllzzuzpqrkxzmfzx.supabase.co/functions/v1/mercadopago-webhook",
+    "back_urls": {
+      "failure": "https://recovery-20261020.taba2-staging.pages.dev/pago/error",
+      "pending": "https://recovery-20261020.taba2-staging.pages.dev/pago/pendiente",
+      "success": "https://recovery-20261020.taba2-staging.pages.dev/pago/resultado"
+    },
+    "payment_methods": {
+      "default_card_id": null,
+      "default_payment_method_id": null,
+      "excluded_payment_methods": [
+        {
+          "id": ""
+        }
+      ],
+      "excluded_payment_types": [
+        {
+          "id": "ticket"
+        }
+      ],
+      "installments": null,
+      "default_installments": null
+    },
+    "items": [
+      {
+        "id": "204f8012-9e26-482c-83f3-a3a20dee4d59",
+        "quantity": 1,
+        "unit_price": 100,
+        "currency_id": "ARS"
+      }
+    ],
+    "payer_email_present": false
+  },
+  "provider_count": 0,
+  "payments": []
+}

@@ -4,6 +4,11 @@ Sólo Supabase `ixewllzzuzpqrkxzmfzx`, aplicación MP `2691240967769590`, ambien
 Este documento prepara operaciones; no autoriza pagos, devoluciones, OAuth ni cambios comerciales.
 No usar una cuenta de Walter en QA. Nunca copiar claves al chat o al repositorio.
 
+Estado vigente: [ENTREGA-FINAL.md](ENTREGA-FINAL.md). La migración `20261022233526` y
+`catalog-image-manager` v6 ya tienen aplicación QA registrada en
+[QA-APLICACION-Y-PREPARACION-MP.md](QA-APLICACION-Y-PREPARACION-MP.md).
+Los comandos de aplicación de este documento conservan el procedimiento; no son una instrucción de repetirla.
+
 ## Simulacros sin fixtures permanentes
 
 Los runners requieren un recibo nuevo **fuera del repositorio**. Guardarlo hasta terminar la limpieza.
@@ -44,7 +49,7 @@ Una dependencia inesperada revierte todo: conservar el recibo y revisar antes de
 Los logs globales del scheduler conservan su historial operativo. No se borran registros de ejecuciones antiguas
 sin un recibo válido; no se elimina `taba_restore_20261022_ad3d29a2`.
 
-## Aplicación de la migración, pendiente en QA
+## Procedimiento de aplicación de la migración (ya registrada en QA)
 
 1. Confirmar proyecto y organización con una conexión autorizada; comprobar respaldo cifrado reciente,
    clave recuperable y ensayo de restauración. Inventariar dependencias y el nombre real de la FK:

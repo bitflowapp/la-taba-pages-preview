@@ -1,9 +1,13 @@
 # La Taba — cierre técnico y preparación comercial, 22/10/2026
 
-**NO-GO técnico para habilitar cobros comerciales; NO-GO comercial.** El código queda preparado para aplicar
-una corrección de esquema revisable y completar la ronda auténtica de prueba cuando se restablezca el acceso
-autorizado y los titulares autoricen sus pasos interactivos. No se realizaron pagos, reembolsos, vinculaciones,
+**NO-GO técnico para habilitar cobros comerciales; NO-GO comercial.** La corrección de esquema y la función
+afectada ya tienen aplicación y verificación QA registradas en la continuación alojada. Falta completar la ronda
+auténtica de prueba y los requisitos de recuperación y apertura. No se realizaron pagos, reembolsos, vinculaciones,
 merge, despliegue productivo ni cambios en la cuenta de Walter. No se crearon proyectos ni servicios pagos.
+
+**Estado consolidado al 23/10/2026:** [ENTREGA-FINAL.md](ENTREGA-FINAL.md). La evidencia alojada posterior
+está en [QA-APLICACION-Y-PREPARACION-MP.md](QA-APLICACION-Y-PREPARACION-MP.md); las continuaciones previas
+conservan su contexto histórico. La consulta actual del conector sigue denegada y no certifica el estado alojado actual.
 
 La continuación sobre `36f24cab` corrige la alarma de respaldos y agrega la revisión de los 36 ítems del checklist
 oficial MP, diagnóstico de notificaciones y comparación de compatibilidad. Ver [CONTINUACION.md](CONTINUACION.md)
@@ -56,7 +60,8 @@ su verificación al vaciar el verificador: no presenta esta contradicción y no 
 
 Prueba roja → verde: eliminación del verificador ahora produce FK `23503`, conserva la configuración y el usuario;
 vaciar sólo el verificador sigue prohibido; revocar explícitamente o reasignar permite retirar al usuario anterior.
-**La migración no se aplicó al QA alojado**: su consulta fue denegada por el conector.
+En esta primera etapa, la consulta del conector fue denegada. **La aplicación posterior en QA sí está registrada**
+en [QA-APLICACION-Y-PREPARACION-MP.md](QA-APLICACION-Y-PREPARACION-MP.md), con ambos ledgers en 170/170.
 
 ### Simulacros y recuperación de una interrupción
 
@@ -73,7 +78,7 @@ El modo `--local` crea una base propia desde una plantilla aislada; comprueba ma
 eliminarla. `--cleanup-only` recupera una interrupción y es repetible. Nunca acepta `taba_restore_*` como destino.
 Se probó recuperación desde recibo, rechazo de base sin marca, dos ejecuciones independientes, repetición,
 limpieza tras error y eliminación de pedidos/pagos/reservas finalizados sin tocar otra ejecución.
-No se ejecutaron estos runners contra QA alojado en esta sesión.
+La continuación alojada posterior ejecutó ambos runners con limpieza; ver su informe enlazado arriba.
 
 ### Evidencia financiera e inspector de MP
 
@@ -106,8 +111,8 @@ y `--node-modules-dir=none`; el comando repetible queda en `npm run check:edge`.
 El gestor de imágenes tenía 67 errores de inferencia por `ReturnType<typeof createClient>` genérico y por tipos
 JS incompletos. Usa el tipo exportado del SDK y contratos explícitos; no se agregó `any` ni se apagaron comprobaciones.
 Una reanudación podía declarar éxito con `cleanup_status=complete` y asset nulo; ahora falla cerrado,
-con prueba del código real. Pasaron 57 pruebas de imágenes. Este cambio requiere desplegar
-`catalog-image-manager` en QA cuando vuelva a existir acceso; no se modificaron cuerpos financieros de Edge.
+con prueba del código real. Pasaron 57 pruebas de imágenes. La continuación alojada posterior registró el despliegue
+de `catalog-image-manager` v6 y sus controles de acceso en QA; no se modificaron cuerpos financieros de Edge.
 
 La corrida Deno encontró 9 fallos en dos fixtures anteriores a los contratos actuales: lease de 90 s donde el worker
 usa 60 s con heartbeat; ausencia de mocks de ledger/heartbeat; el mismo job reaparecía infinitamente aunque fallara;
@@ -150,14 +155,18 @@ El [preview QA](https://recovery-20261020.taba2-staging.pages.dev) sirve el comm
 Se comprobó la puerta con acceso anónimo, credencial inválida y sesión firmada; las tres identidades PWA coinciden.
 Este cierre cambia esquema/herramientas y el gestor de imágenes: no requirió publicar otro frontend.
 
-## 5. Supabase QA: límite verificable
+## 5. Supabase QA: aplicación registrada y límite actual
 
-La llamada del conector `get_project(ixewllzzuzpqrkxzmfzx)` devolvió
-`You do not have permission to perform this action`. No se intentó otro canal para sortear esa denegación.
-No hay lectura actual propia de tablas, cron, asesores, funciones ni credenciales alojadas; no se aplicaron migraciones.
-Los 169 registros, 13 funciones activas, cinco cron, HMAC y ausencia de firma webhook son **antecedentes documentados**,
-no certificaciones actuales de esta sesión. Ver procedimiento de aplicación y verificación en [RUNBOOK.md](RUNBOOK.md).
-La base `taba_restore_20261022_ad3d29a2` se conservó: no se consultó, modificó ni intentó eliminar.
+La continuación alojada, publicada en `71a044e4`, documenta la migración `20261022233526` aplicada, ledgers 170/170,
+ambas FK restrictivas e índices validados, `catalog-image-manager` v6 y 13 funciones activas. Incluye los dos
+simulacros con cron/Vault/HMAC/worker reales y proveedor simulado, seis suites SQL con rollback y asesores sin errores.
+El informe completo está en [QA-APLICACION-Y-PREPARACION-MP.md](QA-APLICACION-Y-PREPARACION-MP.md).
+
+El 23/10, `get_project(ixewllzzuzpqrkxzmfzx)` volvió a devolver
+`You do not have permission to perform this action`. No se usó otro canal para sortear esta denegación.
+Las verificaciones alojadas anteriores son evidencia fechada; no equivalen a una lectura actual de tablas, cron,
+funciones o secretos. El procedimiento del [RUNBOOK.md](RUNBOOK.md) se conserva para futuras aplicaciones;
+no corresponde repetir la migración ya registrada. La base preservada `taba_restore_20261022_ad3d29a2` no se tocó.
 
 ## 6. Mercado Pago: preparación y pendientes auténticos
 
@@ -193,8 +202,8 @@ retención y RPO/RTO para acordar. No hay un SLA ni una tarea programada activad
 
 ## 8. Intervención del propietario y autorización de Walter
 
-**Propietario técnico:** restablecer acceso al QA exacto; revisar/aplicar migración con respaldo y cron controlado;
-autorizar la ronda MP de prueba; titular de la app configura la firma y realiza login/MFA sin compartir claves;
+**Propietario técnico:** restablecer la lectura actual del QA exacto antes de nuevas operaciones;
+autorizar la ronda MP de prueba; titular de la app registra la redirección OAuth, configura la firma y realiza login/MFA sin compartir claves;
 elegir destino privado de copia externa, custodio independiente y RPO/RTO; revisión financiera independiente del HEAD final.
 Liberar espacio en el sistema de esta PC. No hace falta borrar la base de restauración denegada para continuar.
 
@@ -204,12 +213,12 @@ habilitar cobros y realizar cualquier compra o devolución real. Los pasos de QA
 
 ## 9. Veredicto y acciones restantes para abrir
 
-El cambio de esquema y las herramientas están preparados para revisión y pruebas controladas.
-**No se concede GO técnico de producción** mientras falten aplicación/verificación QA y evidencia financiera auténtica,
+El cambio de esquema y las herramientas tienen verificación local y aplicación QA registrada.
+**No se concede GO técnico de producción** mientras falten evidencia financiera auténtica,
 recuperación integral y revisión independiente. **No se concede GO comercial** sin validación y autorizaciones de Walter.
 Efectivo conserva su circuito independiente; que ese circuito pase localmente no valida toda la operación comercial.
 
-1. Restablecer QA y aplicar/verificar la migración con backup, ledgers y cron controlados.
+1. Restablecer la lectura actual de QA antes de continuar la ronda MP; la migración y la función afectada ya tienen aplicación registrada.
 2. Autorizar y completar la matriz auténtica MP en cuentas de prueba; resolver cualquier discrepancia antes de avanzar.
 3. Demostrar copia externa, custodia separada y restauración integral con RPO/RTO acordados.
 4. Walter valida catálogo y operación; revisión financiera independiente y compatibilidad del release final.

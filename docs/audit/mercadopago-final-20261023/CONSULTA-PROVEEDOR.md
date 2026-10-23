@@ -1,5 +1,7 @@
 # Escalamiento técnico — Checkout Pro MLA, error antes de crear el pago
 
+> **Actualización 23/10/2026, 20:15 UTC: NO ENVIAR.** La causa era nuestra configuración: la aplicación integradora de QA (TABA2 Staging) pertenece a una cuenta real, y Mercado Pago rechaza un pago marketplace que mezcla usuarios reales y de prueba (`2034 Invalid users involved`). Con una integradora de dueño de prueba, APRO aprobó (pago `184722117633`). Ver [causa-raiz-20261023/CAUSA-RAIZ.md](causa-raiz-20261023/CAUSA-RAIZ.md). La única consulta que corresponde hacer ahora es sobre reembolsos en el entorno de prueba (§7 de ese documento).
+
 **Estado: preparado, todavía no presentado en el portal.** No se obtuvo un nuevo número de ticket. El repositorio registra el antecedente `WCS-51579`; su estado y la posibilidad de actualizarlo requieren verificarlo en la sesión del titular. No se afirma que esta actualización haya sido enviada.
 
 ## Caso para Mercado Pago

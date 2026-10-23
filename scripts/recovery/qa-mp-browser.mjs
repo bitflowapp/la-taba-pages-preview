@@ -70,6 +70,7 @@ page.on('console', message => {
   if (['error', 'warning'].includes(message.type())) record({ kind: 'page_console', level: message.type(), text: redact(message.text()).slice(0, 400) });
 });
 let paySent = false;
+let emailCodeTried = false;
 let scenario = null;
 let enteredCardScenario = null;
 const priorPayments = new Set(existsSync(evidence) ? readFileSync(evidence,'utf8').trim().split('\n').filter(Boolean).map(line=>JSON.parse(line)).filter(r=>r.kind==='pay_submitted').map(r=>r.scenario) : []);
@@ -90,6 +91,15 @@ async function command(c) {
     await page.getByRole('button', { name: 'Continuar', exact: true }).click();
   } else if (c.action === 'password') {
     await page.locator('#password').fill(buyer.password);
+  } else if (c.action === 'email-code') {
+    // E-mail verification of a test account created by API: the last six digits of its user ID. Derived from the
+    // stored identity, never supplied by the caller, and tried once per run.
+    if (emailCodeTried) throw Error('EMAIL_CODE_ALREADY_TRIED');
+    emailCodeTried = true;
+    const field = page.locator('input[autocomplete="one-time-code"], input[inputmode="numeric"], input[type="tel"], input[type="text"]').first();
+    await field.fill(buyer.id.slice(-6));
+    record({ kind: 'email_code_entered', source: 'test_user_id_last_6' });
+    await page.getByRole('button', { name: /Verificar|Continuar|Confirmar/i }).first().click();
   } else if (c.action === 'checkout') {
     // SALDO = the buyer's fictitious account money (no card): isolates the card path from the application.
     if (!['APRO','OTHE','CONT','SALDO'].includes(c.scenario) || priorPayments.has(c.scenario)) throw Error('SCENARIO_ALREADY_SUBMITTED_OR_INVALID');

@@ -12,7 +12,7 @@ const approval = { purpose: 'la-taba-launch-verification', approved: true,
 const target = { purpose: approval.purpose, costApproval: approval,
   projectName: 'la-taba-launch', organizationId: approval.organizationId, organizationPlan: 'pro',
   infrastructureBudgetUSD: 10, environment: 'test', commercialPaymentsEnabled: false,
-  mercadoPagoApplicationId: '2691240967769590', region: 'sa-east-1',
+  mercadoPagoApplicationId: '4861627125869370', region: 'sa-east-1',
   projectRef: 'abcdefghijklmnopqrst', createdAt: '2026-10-21T03:01:00.000Z',
   checkoutOrigin: 'https://recovery-20261020.taba2-staging.pages.dev' };
 

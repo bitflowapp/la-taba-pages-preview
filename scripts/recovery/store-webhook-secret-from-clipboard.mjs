@@ -7,13 +7,14 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { withRecoveryProject } from './hosted-client.mjs';
+import { RECOVERY_TEST_APPLICATION_ID } from './plan.mjs';
 
 const NAME = 'MERCADOPAGO_OAUTH_WEBHOOK_SECRET';
 const arg = name => { const i = process.argv.indexOf(name); return i < 0 ? undefined : process.argv[i + 1]; };
 const target = JSON.parse(fs.readFileSync(arg('--target') || 'deploy/recovery-free-hosted.json', 'utf8'));
 // Only the TEST application of the Free recovery project, never a commercial one.
 assert.equal(target.environment, 'test');
-assert.equal(target.mercadoPagoApplicationId, '2691240967769590');
+assert.equal(target.mercadoPagoApplicationId, RECOVERY_TEST_APPLICATION_ID);
 assert.equal(target.commercialPaymentsEnabled, false);
 
 const powershell = (script, input) => execFileSync('powershell', ['-NoProfile', '-NonInteractive', '-STA', '-Command', script],

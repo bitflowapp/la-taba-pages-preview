@@ -1,0 +1,169 @@
+{
+  "othe": {
+    "after_payment": {
+      "session": {
+        "status": "payment_pending",
+        "completed_order_id": null,
+        "expires_at": "2026-10-23T20:14:38.944421+00:00"
+      },
+      "intents": [
+        {
+          "internal_status": "rejected",
+          "provider_status": "rejected",
+          "provider_payment_id": "184725699779",
+          "order_id": null
+        }
+      ],
+      "payments": [
+        {
+          "provider_payment_id": "184725699779",
+          "status": "rejected",
+          "status_detail": "cc_rejected_other_reason",
+          "amount": 100
+        }
+      ],
+      "receipts": [
+        {
+          "event_type": "payment",
+          "signature_valid": true,
+          "processing_status": "completed"
+        }
+      ],
+      "orders": 0,
+      "reservations": [
+        {
+          "status": "active",
+          "released_at": null,
+          "expires_at": "2026-10-23T20:14:38.944421+00:00"
+        }
+      ],
+      "discrepancies": []
+    },
+    "after_expiry": {
+      "session": {
+        "status": "expired",
+        "completed_order_id": null,
+        "expires_at": "2026-10-23T20:14:38.944421+00:00"
+      },
+      "intents": [
+        {
+          "internal_status": "expired",
+          "provider_status": "rejected",
+          "provider_payment_id": "184725699779",
+          "order_id": null
+        }
+      ],
+      "payments": [
+        {
+          "provider_payment_id": "184725699779",
+          "status": "rejected",
+          "status_detail": "cc_rejected_other_reason",
+          "amount": 100
+        }
+      ],
+      "receipts": [
+        {
+          "event_type": "payment",
+          "signature_valid": true,
+          "processing_status": "completed"
+        }
+      ],
+      "orders": 0,
+      "reservations": [
+        {
+          "status": "released",
+          "released_at": "2026-10-23T20:15:00.295883+00:00",
+          "expires_at": "2026-10-23T20:14:38.944421+00:00"
+        }
+      ],
+      "discrepancies": []
+    }
+  },
+  "cont": {
+    "after_payment": {
+      "session": {
+        "status": "payment_pending",
+        "completed_order_id": null,
+        "expires_at": "2026-10-23T20:19:46.380703+00:00"
+      },
+      "intents": [
+        {
+          "internal_status": "in_process",
+          "provider_status": "in_process",
+          "provider_payment_id": "185766963074",
+          "order_id": null
+        }
+      ],
+      "payments": [
+        {
+          "provider_payment_id": "185766963074",
+          "status": "in_process",
+          "status_detail": "pending_contingency",
+          "amount": 100
+        }
+      ],
+      "receipts": [
+        {
+          "event_type": "payment",
+          "signature_valid": true,
+          "processing_status": "completed"
+        }
+      ],
+      "orders": 0,
+      "reservations": [
+        {
+          "status": "active",
+          "released_at": null,
+          "expires_at": "2026-10-23T20:19:46.380703+00:00"
+        }
+      ],
+      "discrepancies": []
+    },
+    "after_expiry": {
+      "session": {
+        "status": "expired",
+        "completed_order_id": null,
+        "expires_at": "2026-10-23T20:19:46.380703+00:00"
+      },
+      "intents": [
+        {
+          "internal_status": "expired",
+          "provider_status": "in_process",
+          "provider_payment_id": "185766963074",
+          "order_id": null
+        }
+      ],
+      "payments": [
+        {
+          "provider_payment_id": "185766963074",
+          "status": "in_process",
+          "status_detail": "pending_contingency",
+          "amount": 100
+        }
+      ],
+      "receipts": [
+        {
+          "event_type": "payment",
+          "signature_valid": true,
+          "processing_status": "completed"
+        }
+      ],
+      "orders": 0,
+      "reservations": [
+        {
+          "status": "released",
+          "released_at": "2026-10-23T20:20:00.145903+00:00",
+          "expires_at": "2026-10-23T20:19:46.380703+00:00"
+        }
+      ],
+      "discrepancies": []
+    }
+  },
+  "final_stock_QA_REC_001": [
+    {
+      "sku": "QA-REC-001",
+      "stock": 19
+    }
+  ],
+  "note": "OTHE keeps its reservation for a retry until the session expires. CONT is still in_process at the provider when the session expires; the reservation is released and the worker keeps following the payment."
+}

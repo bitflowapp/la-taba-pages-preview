@@ -1,0 +1,43 @@
+{
+  "question": "What differs between the preference that was approved on 2026-09-25 and those that fail?",
+  "approved_2026_09_25_direct_test_credential": {
+    "id": "3594962708-dc86c262-558d-4791-9218-a0b254774ceb",
+    "client_id": "4861627125869370",
+    "collector_id": 3594962708,
+    "marketplace": "NONE",
+    "marketplace_fee": 0,
+    "operation_type": "regular_payment",
+    "site_id": "MLA",
+    "date_created": "2026-09-25T13:00:42.349-04:00",
+    "binary_mode": false,
+    "auto_return": "approved",
+    "expires": true
+  },
+  "failing_2026_10_23_oauth_taba2_staging": {
+    "id": "3594962708-fedd9608-ee30-4839-adb5-27aaa6502c6b",
+    "client_id": "2691240967769590",
+    "collector_id": 3594962708,
+    "marketplace": "MP-MKT-2691240967769590",
+    "marketplace_fee": 0,
+    "operation_type": "regular_payment",
+    "site_id": "MLA",
+    "date_created": "2026-10-23T14:53:10.217-04:00",
+    "binary_mode": false,
+    "auto_return": "approved",
+    "expires": true
+  },
+  "approved_2026_10_23_oauth_testapp": {
+    "id": "3594962708-d409ad92-0efd-43a3-8f3b-3e1d7ab5f95e",
+    "client_id": "4861627125869370",
+    "collector_id": 3594962708,
+    "marketplace": "NONE",
+    "marketplace_fee": 0,
+    "operation_type": "regular_payment",
+    "site_id": "MLA",
+    "date_created": "2026-10-23T15:43:19.724-04:00",
+    "binary_mode": false,
+    "auto_return": "approved",
+    "expires": true
+  },
+  "note": "All three were built by preferenceRequest(); items, URLs and payment methods are equivalent. Only client_id and marketplace change."
+}

@@ -1,5 +1,7 @@
 # Verificación final de pagos de La Taba — 23/10/2026
 
+> **Actualización, 20:15 UTC:** la causa de este bloqueo quedó encontrada y corregida. La integradora de QA era de una cuenta real; con una de dueño de prueba, APRO aprobó (pago `184722117633`, pedido `LT-0087`). Ver [causa-raiz-20261023/CAUSA-RAIZ.md](causa-raiz-20261023/CAUSA-RAIZ.md). Lo que sigue es el registro de la corrida de las 15:16, tal como quedó.
+
 **Resultado: bloqueado en Checkout Pro. APRO no aprobado.**
 
 Se automatizó Chrome local con una sesión aislada, se recuperó el nickname del comprador desde la API oficial y la contraseña desde Windows Credential Manager, y se envió una sola compra de prueba APRO. No fue necesaria una intervención humana. Después del envío, Mercado Pago mostró «Oh, no, algo anduvo mal» y su API no registró ningún pago para la referencia. No se pulsó Reintentar, ni se generaron preferencias OTHE o CONT.

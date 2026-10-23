@@ -5,8 +5,9 @@
 import assert from 'node:assert/strict';
 import { createClient } from '@supabase/supabase-js';
 import { leerSecreto } from '../e2e-production-sale/secretos-windows.mjs';
+import { RECOVERY_TEST_APPLICATION_ID } from './plan.mjs';
 
-const ref = 'ixewllzzuzpqrkxzmfzx', business = '7d1f0c52-3b1e-4c8a-9a67-2f5d0e6b1a01', app = '2691240967769590';
+const ref = 'ixewllzzuzpqrkxzmfzx', business = '7d1f0c52-3b1e-4c8a-9a67-2f5d0e6b1a01', app = RECOVERY_TEST_APPLICATION_ID;
 const preferenceId = process.argv[2];
 assert.match(preferenceId || '', /^3594962708-[0-9a-f-]{36}$/, 'QA seller preference id required');
 let token;

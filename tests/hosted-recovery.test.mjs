@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
-import { BLOCKED_REFS, ROOT, assertRecoveryTarget, assertRecoveryOrganization, recoveryEnvironment, recoveryPlan } from '../scripts/recovery/plan.mjs';
+import { BLOCKED_REFS, ROOT, RECOVERY_TEST_APPLICATION_ID, assertRecoveryTarget, assertRecoveryOrganization, recoveryEnvironment, recoveryPlan } from '../scripts/recovery/plan.mjs';
 import { bootstrapSchema, checkResumeLedger, migrationTransaction, quarantineSql } from '../scripts/recovery/bootstrap-hosted.mjs';
 import { checkTestCredential } from '../scripts/recovery/check-mp-test-credentials.mjs';
 
 const target = { purpose: 'la-taba-recovery-test', projectName: 'la-taba-recovery-test',
-  environment: 'test', commercialPaymentsEnabled: false, mercadoPagoApplicationId: '2691240967769590',
+  environment: 'test', commercialPaymentsEnabled: false, mercadoPagoApplicationId: '4861627125869370',
   projectRef: 'abcdefghijklmnopqrst', organizationId: 'tpdpuvnasszkcpdanxpk', organizationPlan: 'free', infrastructureBudgetUSD: 0, region: 'sa-east-1',
   createdAt: '2026-10-21T02:00:00.000Z', checkoutOrigin: 'https://recovery-20261020.taba2-staging.pages.dev' };
 const project = { id: target.projectRef, name: target.projectName, organization_id: target.organizationId,
@@ -46,11 +46,22 @@ test('recovery rejects a different organization, project identity, creation rece
 test('recovery environment contains only staging and test application settings', () => {
   const env = recoveryEnvironment(target);
   assert.equal(env.MERCADOPAGO_ENVIRONMENT, 'test');
-  assert.equal(env.MERCADOPAGO_CLIENT_ID, '2691240967769590');
+  assert.equal(env.MERCADOPAGO_CLIENT_ID, '4861627125869370');
   assert.equal(env.MERCADOPAGO_OAUTH_PROJECT_REF, target.projectRef);
   assert.equal(env.MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION, undefined);
   assert.equal(env.MERCADOPAGO_PRODUCTION_REVIEW_STATUS, undefined);
   assert.equal(env.MERCADOPAGO_ACCESS_TOKEN, undefined);
+});
+
+// 2026-10-23: TABA2 Staging (2691240967769590) belongs to a real account, so as QA integrator it made every test
+// payment fail (2034 Invalid users involved). The Node tooling and the Edge binding must name the same test app.
+test('recovery integrates only through the test-owned application, the same one the Edge binding pins', () => {
+  assert.equal(RECOVERY_TEST_APPLICATION_ID, '4861627125869370');
+  const edge = fs.readFileSync(new URL('../supabase/functions/_shared/recovery-deployment.ts', import.meta.url), 'utf8');
+  assert.match(edge, new RegExp(`export const RECOVERY_TEST_APPLICATION_ID = '${RECOVERY_TEST_APPLICATION_ID}';`));
+  assert.throws(() => assertRecoveryTarget({ ...target, mercadoPagoApplicationId: '2691240967769590' }));
+  const hosted = JSON.parse(fs.readFileSync('deploy/recovery-free-hosted.json', 'utf8'));
+  assert.equal(hosted.mercadoPagoApplicationId, RECOVERY_TEST_APPLICATION_ID);
 });
 
 test('recovery cannot be redirected to Pro, another organization or a nonzero budget', () => {

@@ -10,7 +10,7 @@
   "createdAt": null,
   "environment": "test",
   "checkoutOrigin": "https://recovery-20261020.taba2-staging.pages.dev",
-  "mercadoPagoApplicationId": "2691240967769590",
+  "mercadoPagoApplicationId": "4861627125869370",
   "commercialPaymentsEnabled": false,
   "costPolicy": { "maximumAdditionalMonthlyUSD": 0, "requiredOrganizationPlan": "free", "paidAddonsAllowed": false },
   "costAuthorization": "free_only",

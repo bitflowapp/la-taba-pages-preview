@@ -34,9 +34,12 @@ const STORABLE = {
   client_secret: { name: 'RECOVERY MP TESTAPP CLIENT SECRET', shape: /^[A-Za-z0-9]{20,64}$/ },
   webhook_secret: { name: 'RECOVERY MP TESTAPP WEBHOOK SECRET', shape: /^[A-Za-z0-9]{32,128}$/ },
 };
+// The QA webhook and callback, also without the scheme: the panel shows a fixed «https://» before its URL fields.
 const ALLOWED_VALUES = new Set([
   'https://ixewllzzuzpqrkxzmfzx.supabase.co/functions/v1/mercadopago-webhook',
   'https://ixewllzzuzpqrkxzmfzx.supabase.co/functions/v1/mercadopago-oauth-callback',
+  'ixewllzzuzpqrkxzmfzx.supabase.co/functions/v1/mercadopago-webhook',
+  'ixewllzzuzpqrkxzmfzx.supabase.co/functions/v1/mercadopago-oauth-callback',
 ]);
 
 const browser = await chromium.launch({ executablePath: process.env.QA_CHROME_PATH || path.join(process.env.ProgramFiles || '', 'Google', 'Chrome', 'Application', 'chrome.exe'), headless: false });
@@ -56,6 +59,15 @@ async function command(c) {
     const u = new URL(c.url);
     if (u.protocol !== 'https:' || u.host !== 'www.mercadopago.com.ar') throw Error('OFFICIAL_MP_AR_ONLY');
     await page.goto(c.url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  } else if (c.action === 'consent') {
+    // Only the single-use authorization URL of the QA integrator, returning to the QA callback.
+    const u = new URL(c.url);
+    if (!['https://auth.mercadopago.com.ar', 'https://auth.mercadopago.com'].includes(u.origin) || u.pathname !== '/authorization' ||
+      u.searchParams.get('client_id') !== '4861627125869370' || u.searchParams.get('code_challenge_method') !== 'S256' ||
+      u.searchParams.get('redirect_uri') !== 'https://ixewllzzuzpqrkxzmfzx.supabase.co/functions/v1/mercadopago-oauth-callback') {
+      throw Error('QA_AUTHORIZATION_URL_ONLY');
+    }
+    await page.goto(c.url, { waitUntil: 'domcontentloaded', timeout: 30000 });
   } else if (c.action === 'login') {
     await page.getByRole('textbox', { name: /DNI, e-mail o teléfono/i }).fill(seller.nickname);
     await page.getByRole('button', { name: 'Continuar', exact: true }).click();
@@ -63,6 +75,9 @@ async function command(c) {
     await page.locator('#password').fill(seller.password);
   } else if (c.action === 'click') {
     await target(c).getByRole(c.role || 'button', { name: c.name, exact: c.exact !== false }).first().click();
+  } else if (c.action === 'click-css') {
+    // For unlabelled controls (the «show» toggle next to a masked secret).
+    await target(c).locator(c.selector).first().click();
   } else if (c.action === 'text-click') {
     await target(c).getByText(c.text, { exact: c.exact !== false }).first().click();
   } else if (c.action === 'fill') {
@@ -79,6 +94,19 @@ async function command(c) {
     if (!spec.shape.test(value)) throw Error(`SECRET_SHAPE_MISMATCH:${value.length}`);
     guardarSecreto(spec.name, '4861627125869370', value);
     return { kind: 'secret_stored', name: spec.name, length: value.length };
+  } else if (c.action === 'probe') {
+    // Structure only: tag, attribute names, value length and character class, nearby buttons. Never a value.
+    const found = await target(c).locator(c.selector).evaluateAll((elements) => elements.slice(0, 5).map((e) => {
+      const value = String(('value' in e ? e.value : '') || e.textContent || '');
+      const kind = /^[0-9a-f]+$/i.test(value) ? 'hex' : /^[A-Za-z0-9]+$/.test(value) ? 'alnum' : /^[•*·]+$/.test(value) ? 'mask' : 'other';
+      const box = e.closest('div')?.parentElement;
+      const safe = Object.fromEntries(['aria-label', 'aria-pressed', 'class', 'data-andes-textfield-input-type', 'title', 'role']
+        .filter((name) => e.hasAttribute(name)).map((name) => [name, e.getAttribute(name).slice(0, 160)]));
+      return { tag: e.tagName, type: e.getAttribute('type'), attributes: e.getAttributeNames(), safe, disabled: e.disabled === true,
+        valueLength: value.length, valueKind: kind,
+        buttons: box ? [...box.querySelectorAll('button')].map((b) => b.getAttribute('aria-label') || b.textContent?.trim() || '(sin nombre)').slice(0, 10) : [] };
+    }));
+    return { kind: 'probe', selector: c.selector, found: found.map((f) => ({ ...f, buttons: f.buttons.map(redact) })) };
   } else if (c.action === 'close') {
     await browser.close(); process.exit(0);
   } else throw Error('UNKNOWN_ACTION');

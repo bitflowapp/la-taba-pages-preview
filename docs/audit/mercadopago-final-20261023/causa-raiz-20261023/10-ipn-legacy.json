@@ -1,0 +1,157 @@
+{
+  "fix_deployed_at": "2026-10-23T19:56:23Z",
+  "doc": "Mercado Pago, Notificaciones IPN: the x-Signature they carry cannot be validated with the secret key; retried every 15 minutes until 200/201.",
+  "receipts": [
+    {
+      "received_at": "2026-10-23T19:44:58.977601+00:00",
+      "event_type": "payment",
+      "resource_id": "184722117633",
+      "signature_valid": false,
+      "processing_status": "rejected_signature",
+      "shape": "legacy IPN (no body.id)"
+    },
+    {
+      "received_at": "2026-10-23T19:44:58.977622+00:00",
+      "event_type": "merchant_order",
+      "resource_id": "45529703236",
+      "signature_valid": false,
+      "processing_status": "rejected_signature",
+      "shape": "legacy IPN (no body.id)"
+    },
+    {
+      "received_at": "2026-10-23T19:45:00.261191+00:00",
+      "event_type": "merchant_order",
+      "resource_id": "45529703236",
+      "signature_valid": false,
+      "processing_status": "rejected_signature",
+      "shape": "legacy IPN (no body.id)"
+    },
+    {
+      "received_at": "2026-10-23T19:45:00.504657+00:00",
+      "event_type": "payment",
+      "resource_id": "184722117633",
+      "signature_valid": false,
+      "processing_status": "rejected_signature",
+      "shape": "legacy IPN (no body.id)"
+    },
+    {
+      "received_at": "2026-10-23T19:45:00.695431+00:00",
+      "event_type": "payment",
+      "resource_id": "184722117633",
+      "signature_valid": true,
+      "processing_status": "completed",
+      "shape": "webhook (body.id)"
+    },
+    {
+      "received_at": "2026-10-23T19:45:37.956755+00:00",
+      "event_type": "merchant_order",
+      "resource_id": "45529703236",
+      "signature_valid": false,
+      "processing_status": "rejected_signature",
+      "shape": "legacy IPN (no body.id)"
+    },
+    {
+      "received_at": "2026-10-23T19:45:39.187101+00:00",
+      "event_type": "merchant_order",
+      "resource_id": "45529703236",
+      "signature_valid": false,
+      "processing_status": "rejected_signature",
+      "shape": "legacy IPN (no body.id)"
+    },
+    {
+      "received_at": "2026-10-23T20:03:37.596753+00:00",
+      "event_type": "payment",
+      "resource_id": "184725699779",
+      "signature_valid": true,
+      "processing_status": "completed",
+      "shape": "webhook (body.id)"
+    },
+    {
+      "received_at": "2026-10-23T20:05:38.202882+00:00",
+      "event_type": "payment",
+      "resource_id": "185766963074",
+      "signature_valid": true,
+      "processing_status": "completed",
+      "shape": "webhook (body.id)"
+    }
+  ],
+  "gateway": [
+    {
+      "at": "2026-10-23T19:44:59.061000",
+      "line": "POST | 401 | mercadopago-webhook?id=45529703236&topic=merchant_order"
+    },
+    {
+      "at": "2026-10-23T19:44:59.067000",
+      "line": "POST | 401 | mercadopago-webhook?id=184722117633&topic=payment"
+    },
+    {
+      "at": "2026-10-23T19:45:00.335000",
+      "line": "POST | 401 | mercadopago-webhook?id=45529703236&topic=merchant_order"
+    },
+    {
+      "at": "2026-10-23T19:45:00.771000",
+      "line": "POST | 201 | mercadopago-webhook?data.id=184722117633&type=payment"
+    },
+    {
+      "at": "2026-10-23T19:45:03.583000",
+      "line": "POST | 401 | mercadopago-webhook?id=184722117633&topic=payment"
+    },
+    {
+      "at": "2026-10-23T19:45:38.025000",
+      "line": "POST | 401 | mercadopago-webhook?id=45529703236&topic=merchant_order"
+    },
+    {
+      "at": "2026-10-23T19:45:39.264000",
+      "line": "POST | 401 | mercadopago-webhook?id=45529703236&topic=merchant_order"
+    },
+    {
+      "at": "2026-10-23T20:03:35.637000",
+      "line": "POST | 200 | mercadopago-webhook?id=45499764219&topic=merchant_order"
+    },
+    {
+      "at": "2026-10-23T20:03:36.144000",
+      "line": "POST | 200 | mercadopago-webhook?id=184725699779&topic=payment"
+    },
+    {
+      "at": "2026-10-23T20:03:37.812000",
+      "line": "POST | 201 | mercadopago-webhook?data.id=184725699779&type=payment"
+    },
+    {
+      "at": "2026-10-23T20:04:13.663000",
+      "line": "POST | 200 | mercadopago-webhook?id=45499764219&topic=merchant_order"
+    },
+    {
+      "at": "2026-10-23T20:05:36.677000",
+      "line": "POST | 200 | mercadopago-webhook?id=45529703236&topic=merchant_order"
+    },
+    {
+      "at": "2026-10-23T20:05:36.868000",
+      "line": "POST | 200 | mercadopago-webhook?id=45499830039&topic=merchant_order"
+    },
+    {
+      "at": "2026-10-23T20:05:37.448000",
+      "line": "POST | 200 | mercadopago-webhook?id=185766963074&topic=payment"
+    },
+    {
+      "at": "2026-10-23T20:05:37.539000",
+      "line": "POST | 200 | mercadopago-webhook?id=45499830039&topic=merchant_order"
+    },
+    {
+      "at": "2026-10-23T20:05:38.292000",
+      "line": "POST | 201 | mercadopago-webhook?data.id=185766963074&type=payment"
+    },
+    {
+      "at": "2026-10-23T20:05:49.739000",
+      "line": "POST | 200 | mercadopago-webhook?id=184722117633&topic=payment"
+    }
+  ],
+  "before_fix": {
+    "rejected_ipn_receipts": 6,
+    "valid_webhooks": 1
+  },
+  "after_fix": {
+    "rejected_receipts": 0,
+    "valid_webhooks": 2,
+    "ipn_answered_200": 8
+  }
+}

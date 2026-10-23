@@ -1,0 +1,39 @@
+{
+  "verify": {
+    "checked_at": "2026-10-23T19:24:22.085Z",
+    "credentials_usable": true,
+    "seller_identity_verified": true,
+    "permissions_verified": true,
+    "backend_operational": true,
+    "binding_matches": true,
+    "integrator_environment_matches": false,
+    "online_payments_enabled": false,
+    "blocking_reason": "integrator_environment_mismatch"
+  },
+  "checkout_with_qa_window_open": {
+    "session_http": 409,
+    "session_code": "PAYMENTS_NOT_ENABLED",
+    "checkout_session_id": null,
+    "preference_http": null
+  },
+  "counts_before": {
+    "connections": 1,
+    "intents": 7,
+    "intentsOutsideTest": 0,
+    "receipts": 10,
+    "validReceipts": 0,
+    "outbox": 149,
+    "ordersQA": 6,
+    "historicBusinessOrders": 0
+  },
+  "counts_after": {
+    "connections": 1,
+    "intents": 7,
+    "intentsOutsideTest": 0,
+    "receipts": 10,
+    "validReceipts": 0,
+    "outbox": 149,
+    "ordersQA": 6,
+    "historicBusinessOrders": 0
+  }
+}

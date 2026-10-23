@@ -1,4 +1,4 @@
-// Hosted Mercado Pago TEST harness for the recovery project (TABA2 Staging app only, QA tenant A).
+// Hosted Mercado Pago TEST harness for the recovery project (QA integrator TestApp-ae01fd1d only, QA tenant A).
 // It drives TABA's side of the flow: panel session, single-use connect URL, checkout sessions and preferences,
 // server-state inspection, forged-webhook rejection, cancellation/refund requests and on-demand worker runs.
 // It never types Mercado Pago credentials and never enters card data: seller consent and buyer payments are
@@ -15,15 +15,16 @@ import { createClient } from '@supabase/supabase-js';
 import { leerSecreto } from '../e2e-production-sale/secretos-windows.mjs';
 import { RECOVERY_QA } from './provision-qa-ids.mjs';
 import { inspectPaymentSession } from './qa-mp-inspection.mjs';
+import { RECOVERY_TEST_APPLICATION_ID } from './plan.mjs';
 
-const TEST_APPLICATION = '2691240967769590';
+const TEST_APPLICATION = RECOVERY_TEST_APPLICATION_ID;
 const arg = (name, fallback) => { const i = process.argv.indexOf(name); return i < 0 ? fallback : process.argv[i + 1]; };
 const flag = name => process.argv.includes(name);
 const command = process.argv[2];
 const target = JSON.parse(fs.readFileSync(arg('--target', 'deploy/recovery-free-hosted.json'), 'utf8'));
 // Hard stops: this harness only ever talks to the Free recovery project in TEST mode.
 assert.equal(target.environment, 'test', 'test environment only');
-assert.equal(target.mercadoPagoApplicationId, TEST_APPLICATION, 'TABA2 Staging application only');
+assert.equal(target.mercadoPagoApplicationId, TEST_APPLICATION, 'the test-owned QA integrator application only');
 assert.equal(target.commercialPaymentsEnabled, false, 'commercial payments must stay disabled');
 assert.equal(target.projectRef, 'ixewllzzuzpqrkxzmfzx', 'exact QA project only');
 

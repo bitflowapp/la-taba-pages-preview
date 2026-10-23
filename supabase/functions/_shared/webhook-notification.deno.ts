@@ -1,4 +1,4 @@
-import { webhookEventType, webhookResourceId } from './webhook-notification.ts';
+import { isLegacyIpnNotification, webhookEventType, webhookResourceId } from './webhook-notification.ts';
 
 const BASE = 'https://ukxqbgswjlibmnjemrzd.supabase.co/functions/v1/mercadopago-webhook';
 const at = (query: string) => new URL(`${BASE}${query}`);
@@ -45,4 +45,32 @@ Deno.test('tipo de evento: cae al topic del query cuando el cuerpo no lo trae', 
     throw new Error('no se resolvio el topic desde el query');
   }
   if (webhookEventType(at(''), {}) !== '') throw new Error('tipo inventado');
+});
+
+// Lo que llegó con el pago QA 184722117633 (2026-10-23) además del webhook firmado.
+Deno.test('IPN legacy: topic + id con cuerpo {resource, topic}', () => {
+  if (!isLegacyIpnNotification(at('?topic=payment&id=184722117633'), { resource: '184722117633', topic: 'payment' })) {
+    throw new Error('no se reconocio el IPN de pago');
+  }
+  if (!isLegacyIpnNotification(at('?topic=merchant_order&id=45529703236'), { resource: 'https://api.mercadolibre.com/merchant_orders/45529703236', topic: 'merchant_order' })) {
+    throw new Error('no se reconocio el IPN de merchant order');
+  }
+  if (!isLegacyIpnNotification(at('?topic=payment&id=1'), {})) throw new Error('un IPN sin cuerpo no se reconocio');
+});
+
+Deno.test('IPN legacy: cualquier marca de webhook lo deja en manos de la firma', () => {
+  const casos: Array<[string, Record<string, unknown>]> = [
+    ['?data.id=1&type=payment', {}],
+    ['?topic=payment&id=1&data.id=1', {}],
+    ['?topic=payment&id=1&type=payment', {}],
+    ['?topic=payment&id=1', { id: 'evento', topic: 'payment' }],
+    ['?topic=payment&id=1', { data: { id: '1' } }],
+    ['?topic=payment&id=1', { type: 'payment' }],
+    ['?topic=payment&id=1', { action: 'payment.updated' }],
+    ['?id=1', { resource: '1' }],
+    ['?topic=payment', { resource: '1', topic: 'payment' }],
+  ];
+  for (const [query, body] of casos) {
+    if (isLegacyIpnNotification(at(query), body)) throw new Error(`se trato como IPN: ${query} ${JSON.stringify(body)}`);
+  }
 });

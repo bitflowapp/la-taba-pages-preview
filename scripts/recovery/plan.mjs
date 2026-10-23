@@ -12,11 +12,15 @@ export const BLOCKED_REFS = new Set(['wwcpogltfgzgkrlilbcd', 'tkanbadcglszlcyfjv
   'ucbtjcurawxjwjdvvcvj', 'ukxqbgswjlibmnjemrzd', 'yakhtrkukqlgzvxuvhzs',
   'enznqfzhikpasjzpvjfd', 'udftddjacdsinscehlke', 'zvmfdlynnutxquktrgyl']);
 export const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
+// TestApp-ae01fd1d, the automatic TEST application of TABA2 Staging, owned by the QA test seller. TABA2 Staging
+// itself (2691240967769590) belongs to a real account, and an integrator of the other environment makes every
+// test payment fail (2034 Invalid users involved). Same value as RECOVERY_TEST_APPLICATION_ID in the Edge binding.
+export const RECOVERY_TEST_APPLICATION_ID = '4861627125869370';
 
 export function assertRecoveryTarget(target, project) {
   if (target.purpose !== 'la-taba-recovery-test' || target.projectName !== 'la-taba-recovery-test' ||
     target.environment !== 'test' || target.commercialPaymentsEnabled !== false ||
-    target.mercadoPagoApplicationId !== '2691240967769590' ||
+    target.mercadoPagoApplicationId !== RECOVERY_TEST_APPLICATION_ID ||
     !/^[a-z]{20}$/.test(target.projectRef || '') || BLOCKED_REFS.has(target.projectRef) ||
     target.organizationId !== FREE_RECOVERY_ORGANIZATION_ID || target.organizationPlan !== 'free' ||
     target.infrastructureBudgetUSD !== 0 || target.region !== 'sa-east-1' ||
@@ -109,7 +113,7 @@ export function recoveryEnvironment(target) {
     TABA_DEPLOYMENT_ENV: 'staging', MERCADOPAGO_ENVIRONMENT: 'test',
     MERCADOPAGO_OAUTH_ENVIRONMENT: 'test', MERCADOPAGO_CREDENTIAL_MODE: 'oauth',
     MERCADOPAGO_OAUTH_PROJECT_REF: target.projectRef,
-    MERCADOPAGO_CLIENT_ID: '2691240967769590',
+    MERCADOPAGO_CLIENT_ID: RECOVERY_TEST_APPLICATION_ID,
     MERCADOPAGO_OAUTH_PANEL_URL: target.checkoutOrigin + '/',
     TABA_CHECKOUT_BASE_URL: target.checkoutOrigin, TABA_ALLOWED_ORIGINS: target.checkoutOrigin,
   };

@@ -3,15 +3,16 @@
 import assert from 'node:assert/strict';
 import { createClient } from '@supabase/supabase-js';
 import { leerSecreto } from '../e2e-production-sale/secretos-windows.mjs';
+import { RECOVERY_TEST_APPLICATION_ID } from './plan.mjs';
 const ref='ixewllzzuzpqrkxzmfzx', business='7d1f0c52-3b1e-4c8a-9a67-2f5d0e6b1a01';
 const credential=leerSecreto('RECOVERY SUPABASE SERVICE KEY');
 assert.equal(credential.usuario,ref);
 const db=createClient(`https://${ref}.supabase.co`,credential.secreto,{auth:{persistSession:false,autoRefreshToken:false}});
 const {data:connection,error}=await db.from('mp_seller_connections').select('environment,seller_id,application_id,status,protected_tokens').eq('business_id',business).eq('environment','test').single();
-assert.ifError(error); assert.equal(connection.seller_id,'3594962708'); assert.equal(connection.application_id,'2691240967769590'); assert.equal(connection.status,'connected');
+assert.ifError(error); assert.equal(connection.seller_id,'3594962708'); assert.equal(connection.application_id,RECOVERY_TEST_APPLICATION_ID); assert.equal(connection.status,'connected');
 const [v,iv,ciphertext]=connection.protected_tokens.split('.'); assert.equal(v,'v1');
 const key=await crypto.subtle.importKey('raw',Buffer.from(leerSecreto('RECOVERY MERCADOPAGO TOKEN ENCRYPTION KEY').secreto,'base64url'),'AES-GCM',false,['decrypt']);
-const bytes=await crypto.subtle.decrypt({name:'AES-GCM',iv:Buffer.from(iv,'base64url'),additionalData:Buffer.from(`${ref}:test:2691240967769590:${business}:tokens`)},key,Buffer.from(ciphertext,'base64url'));
+const bytes=await crypto.subtle.decrypt({name:'AES-GCM',iv:Buffer.from(iv,'base64url'),additionalData:Buffer.from(`${ref}:test:${RECOVERY_TEST_APPLICATION_ID}:${business}:tokens`)},key,Buffer.from(ciphertext,'base64url'));
 const token=JSON.parse(new TextDecoder().decode(bytes)).access_token;
 assert.ok(token.startsWith('APP_USR-'));
 async function get(p) {
@@ -26,7 +27,7 @@ const {data:intent,error:intentError}=await db.from('payment_intents').select('e
 assert.ifError(intentError);assert.equal(intent.environment,'test');
 const pref=await get(`/checkout/preferences/${intent.preference_id}`);
 assert.equal(String(pref.collector_id),'3594962708');
-assert.equal(String(pref.client_id),'2691240967769590');
+assert.equal(String(pref.client_id),RECOVERY_TEST_APPLICATION_ID);
 const preference={id:pref.id,collector_id:pref.collector_id,client_id:pref.client_id,site_id:pref.site_id,init_host:new URL(pref.init_point).host,external_reference:pref.external_reference,expires:pref.expires,expiration_date_to:pref.expiration_date_to,binary_mode:pref.binary_mode,auto_return:pref.auto_return,notification_url:pref.notification_url,back_urls:pref.back_urls,payment_methods:pref.payment_methods,items:(pref.items||[]).map(i=>({id:i.id,quantity:i.quantity,unit_price:i.unit_price,currency_id:i.currency_id})),payer_email_present:!!pref.payer?.email};
 const search=await get(`/v1/payments/search?${new URLSearchParams({external_reference:`taba2:checkout:${session}`,sort:'date_created',criteria:'desc',limit:'10'})}`);
 const payments=[];

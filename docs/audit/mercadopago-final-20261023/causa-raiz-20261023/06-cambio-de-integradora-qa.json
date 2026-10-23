@@ -1,0 +1,102 @@
+{
+  "integrator": {
+    "at": "2026-10-23T19:40:31.554Z",
+    "tool": "qa-mp-use-test-integrator",
+    "phase": "integrator",
+    "application": "4861627125869370",
+    "owner_id": "3594962708",
+    "owner_test_user": true,
+    "request_id": "21f85ebd-8565-48cf-bb0f-1cc3b3e9d5a3"
+  },
+  "secrets": {
+    "at": "2026-10-23T19:40:34.307Z",
+    "tool": "qa-mp-use-test-integrator",
+    "phase": "secrets",
+    "projectRef": "ixewllzzuzpqrkxzmfzx",
+    "after": {
+      "MERCADOPAGO_CLIENT_ID": {
+        "present": true,
+        "matches": true
+      },
+      "MERCADOPAGO_CLIENT_SECRET": {
+        "present": true,
+        "matches": true
+      },
+      "MERCADOPAGO_OAUTH_WEBHOOK_SECRET": {
+        "present": true,
+        "matches": true
+      }
+    }
+  },
+  "functions": [
+    {
+      "name": "mercadopago-cancel-payment",
+      "status": "ACTIVE",
+      "version": 12,
+      "verifyJwt": true
+    },
+    {
+      "name": "mercadopago-checkout-status",
+      "status": "ACTIVE",
+      "version": 12,
+      "verifyJwt": false
+    },
+    {
+      "name": "mercadopago-connect",
+      "status": "ACTIVE",
+      "version": 13,
+      "verifyJwt": false
+    },
+    {
+      "name": "mercadopago-create-checkout-session",
+      "status": "ACTIVE",
+      "version": 9,
+      "verifyJwt": false
+    },
+    {
+      "name": "mercadopago-create-preference",
+      "status": "ACTIVE",
+      "version": 12,
+      "verifyJwt": false
+    },
+    {
+      "name": "mercadopago-oauth-callback",
+      "status": "ACTIVE",
+      "version": 12,
+      "verifyJwt": false
+    },
+    {
+      "name": "mercadopago-payment-worker",
+      "status": "ACTIVE",
+      "version": 12,
+      "verifyJwt": false
+    },
+    {
+      "name": "mercadopago-refund",
+      "status": "ACTIVE",
+      "version": 12,
+      "verifyJwt": true
+    },
+    {
+      "name": "mercadopago-webhook",
+      "status": "ACTIVE",
+      "version": 14,
+      "verifyJwt": false
+    }
+  ],
+  "webhook_events_subscribed": [
+    "Vinculación de aplicaciones (mp-connect)",
+    "Pagos"
+  ],
+  "reconnect_verify": {
+    "checked_at": "2026-10-23T19:41:50.327Z",
+    "credentials_usable": true,
+    "seller_identity_verified": true,
+    "permissions_verified": true,
+    "backend_operational": true,
+    "binding_matches": true,
+    "integrator_environment_matches": true,
+    "online_payments_enabled": false,
+    "blocking_reason": "payments_not_enabled"
+  }
+}

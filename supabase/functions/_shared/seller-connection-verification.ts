@@ -1,5 +1,8 @@
 import { createServiceClient, getRequiredEnv, requireRealPaymentSmokeAuthorization } from './payment-runtime.ts';
-import { connection, oauthConfig, sellerAccessToken, sellerIdentity, invalidateRejectedToken, OAuthProviderError } from './seller-oauth.ts';
+import {
+  assertIntegratorEnvironment, connection, IntegratorEnvironmentError, invalidateRejectedToken, OAuthProviderError, oauthConfig,
+  sellerAccessToken, sellerIdentity,
+} from './seller-oauth.ts';
 
 // Verification is read-only except for an already-due OAuth refresh. Never
 // enable payments, replace the seller or create a preference from this action.
@@ -34,7 +37,15 @@ export async function verifySellerConnection(businessId: string) {
   let executionEnabled = true;
   try { requireRealPaymentSmokeAuthorization(config.environment); }
   catch { executionEnabled = false; }
-  const enabled = bindingMatches && executionEnabled && availability.data?.available === true;
+  // A seller of one environment under an integrator of the other can be linked and read, but never paid.
+  let integratorMatches = true;
+  try { await assertIntegratorEnvironment(); }
+  catch (error) {
+    // Unreadable is not a verdict: the panel shows provider_unavailable or server_configuration_incomplete.
+    if (!(error instanceof IntegratorEnvironmentError)) throw error;
+    integratorMatches = false;
+  }
+  const enabled = integratorMatches && bindingMatches && executionEnabled && availability.data?.available === true;
   return {
     checked_at: new Date().toISOString(),
     credentials_usable: true,
@@ -42,8 +53,10 @@ export async function verifySellerConnection(businessId: string) {
     permissions_verified: true,
     backend_operational: true,
     binding_matches: bindingMatches,
+    integrator_environment_matches: integratorMatches,
     online_payments_enabled: enabled,
-    blocking_reason: enabled ? null : !bindingMatches ? 'seller_binding_mismatch'
+    blocking_reason: enabled ? null : !integratorMatches ? 'integrator_environment_mismatch'
+      : !bindingMatches ? 'seller_binding_mismatch'
       : !executionEnabled ? 'production_execution_not_enabled' : 'payments_not_enabled',
   };
 }

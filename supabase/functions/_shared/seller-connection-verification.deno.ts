@@ -1,10 +1,12 @@
 import { assertEquals, assertRejects } from 'jsr:@std/assert@1.0.19';
-import { protect } from './seller-oauth.ts';
+import { protect, resetIntegratorIdentityCache } from './seller-oauth.ts';
+import { integratorProviderResponse } from './integrator-identity-fixture.ts';
 import { randomSecret } from './seller-oauth-crypto.ts';
 import { verifySellerConnection } from './seller-connection-verification.ts';
 
 const business = '96000000-0000-4000-8000-000000000001';
-async function fixture({ enabled = true, execution = true, wrongSeller = false, providerStatus = 200, scopes = 'read write offline_access', backendError = false } = {}) {
+async function fixture({ enabled = true, execution = true, wrongSeller = false, providerStatus = 200, scopes = 'read write offline_access', backendError = false, integratorTestUser = false, integratorStatus = 200 } = {}) {
+  resetIntegratorIdentityCache();
   for (const [name, value] of Object.entries({
     SUPABASE_URL: 'https://wwcpogltfgzgkrlilbcd.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'fixture-server-key',
     MERCADOPAGO_ENVIRONMENT: 'production', MERCADOPAGO_OAUTH_ENVIRONMENT: 'production', MERCADOPAGO_CREDENTIAL_MODE: 'oauth',
@@ -24,6 +26,8 @@ async function fixture({ enabled = true, execution = true, wrongSeller = false, 
   globalThis.fetch = (input, init) => {
     const url = new URL(String(input));
     const options = init as { method?: string; headers?: HeadersInit; body?: unknown } | undefined;
+    const integrator = integratorProviderResponse(input, init as RequestInit, integratorTestUser);
+    if (integrator) return Promise.resolve(integratorStatus === 200 ? integrator : Response.json({ message: 'fixture' }, { status: integratorStatus }));
     if (url.origin === 'https://api.mercadopago.com') {
       assertEquals(url.pathname, '/users/me');
       assertEquals(options?.method || 'GET', 'GET');
@@ -65,7 +69,20 @@ for (const [options, reason] of [
     assertEquals(f.mutations.length, 0);
   } finally { f.cleanup(); }
 });
-for (const options of [{providerStatus:503}, {scopes:'read write'}, {backendError:true}]) Deno.test(`verification fails safely: ${JSON.stringify(options)}`, async () => {
+// 2026-10-23: a production-looking verification ("connected", identity and binding fine) while every payment of the
+// link failed at the provider, because the integrator application belonged to the other environment.
+Deno.test('verification reports integrator_environment_mismatch before anything else and never enables', async () => {
+  const f = await fixture({ integratorTestUser: true });
+  try {
+    const result = await verifySellerConnection(business);
+    assertEquals(result.online_payments_enabled, false);
+    assertEquals(result.integrator_environment_matches, false);
+    assertEquals(result.blocking_reason, 'integrator_environment_mismatch');
+    assertEquals(result.binding_matches, true);
+    assertEquals(f.mutations.length, 0);
+  } finally { f.cleanup(); }
+});
+for (const options of [{providerStatus:503}, {scopes:'read write'}, {backendError:true}, {integratorStatus:401}, {integratorStatus:503}]) Deno.test(`verification fails safely: ${JSON.stringify(options)}`, async () => {
   const f = await fixture(options);
   try { await assertRejects(() => verifySellerConnection(business)); assertEquals(f.mutations.length, 0); }
   finally { f.cleanup(); }

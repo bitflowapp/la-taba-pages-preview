@@ -12,16 +12,29 @@ if (buyer.id !== '3594962710' || buyer.profile !== 'buyer' || !buyer.password ||
 const token = leerSecreto('RECOVERY MP TEST ACCESS TOKEN')?.secreto;
 const official = await (await fetch('https://api.mercadopago.com/users/3594962710', { headers: { Authorization: `Bearer ${token}` } })).json();
 if (String(official.id) !== buyer.id || official.site_id !== 'MLA' || official.nickname !== buyer.nickname) throw Error('OFFICIAL_BUYER_MISMATCH');
-const dir = path.join(os.tmpdir(), 'la-taba-mp-final-20261023');
+// One directory per run (QA_MP_EVIDENCE_DIR), so a new diagnostic run never inherits another run's submissions.
+const runName = process.env.QA_MP_EVIDENCE_DIR || 'la-taba-mp-final-20261023';
+if (!/^[a-z0-9-]+$/.test(runName)) throw Error('EVIDENCE_DIR_NAME_ONLY');
+const dir = path.join(os.tmpdir(), runName);
 mkdirSync(dir, { recursive: true });
 const evidence = path.join(dir, 'browser.jsonl');
-const redact = s => String(s).split(buyer.password).join('[REDACTADO]').split(buyer.nickname).join('[COMPRADOR_QA]').replace(/TESTUSER\w+/gi, '[USUARIO_QA]');
+const redact = s => String(s).split(buyer.password).join('[REDACTADO]').split(buyer.nickname).join('[COMPRADOR_QA]').replace(/TESTUSER\w+/gi, '[USUARIO_QA]')
+  .replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g, '[EMAIL]').replace(/\b\d{13,19}\b/g, '[NUMERO]');
+// Only short error-shaped fields of a provider answer are kept: never the full body, never form data.
+const ERROR_FIELDS = ['step', 'liveMode', 'error', 'errors', 'cause', 'causes', 'code', 'error_code', 'message', 'status', 'status_detail', 'reason', 'type', 'description', 'redirect_url', 'next_step'];
+const errorShape = (body, depth = 0) => {
+  if (!body || typeof body !== 'object' || depth > 2) return typeof body === 'string' ? redact(body).slice(0, 200) : body;
+  if (Array.isArray(body)) return body.slice(0, 5).map(item => errorShape(item, depth + 1));
+  const kept = {};
+  for (const key of ERROR_FIELDS) if (body[key] !== undefined) kept[key] = errorShape(body[key], depth + 1);
+  return { keys: Object.keys(body).slice(0, 40), ...kept };
+};
 const record = obj => {
   const row = { at: new Date().toISOString(), ...obj };
   appendFileSync(evidence, JSON.stringify(row) + '\n');
   console.log(JSON.stringify(row));
 };
-const browser = await chromium.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: false });
+const browser = await chromium.launch({ executablePath: process.env.QA_CHROME_PATH || path.join(process.env.ProgramFiles || '', 'Google', 'Chrome', 'Application', 'chrome.exe'), headless: false });
 const context = await browser.newContext({ locale: 'es-AR', viewport: { width: 1280, height: 900 } });
 const page = await context.newPage();
 page.setDefaultTimeout(8000);
@@ -29,16 +42,32 @@ const seenFlows = new Set();
 page.on('response', async response => {
   const url = new URL(response.url());
   if (!url.host.endsWith('mercadopago.com.ar') || !url.pathname.startsWith('/checkout/')) return;
-  record({kind:'provider_http',method:response.request().method(),path:url.pathname,http:response.status(),requestId:response.headers()['x-request-id'] || null,correlationId:response.headers()['x-correlation-id'] || null});
-  if (!/\/api\/flow\//.test(url.pathname)) return;
+  const method = response.request().method();
+  record({kind:'provider_http',method,path:url.pathname,http:response.status(),requestId:response.headers()['x-request-id'] || null,correlationId:response.headers()['x-correlation-id'] || null});
+  const failed = response.status() >= 400 || /\/(error|api\/error)/.test(url.pathname);
+  if (!/\/api\//.test(url.pathname) || (!failed && !/\/api\/flow/.test(url.pathname) && method === 'GET')) return;
   try {
     const body = await response.json();
-    const key = `${url.pathname}:${body.step}`;
-    if (!seenFlows.has(key)) {
+    const key = `${method}:${url.pathname}:${body?.step}:${response.status()}`;
+    if (failed || !seenFlows.has(key)) {
       seenFlows.add(key);
-      record({ kind: 'provider_flow', path: url.pathname, step: body.step, liveMode: body.liveMode, http: response.status(), requestId: response.headers()['x-request-id'] });
+      record({ kind: failed ? 'provider_error_body' : 'provider_flow', method, path: url.pathname, http: response.status(), requestId: response.headers()['x-request-id'] || null, shape: errorShape(body) });
     }
-  } catch { /* no response bodies are persisted */ }
+  } catch { /* not JSON: status and request id above are the evidence */ }
+});
+// The checkout reports its own client-side diagnostics to /api/{warn,info,error}; those are logs, not payment
+// data, and they are where the reason of an error screen travels. Kept redacted and truncated.
+page.on('request', request => {
+  const url = new URL(request.url());
+  if (!url.host.endsWith('mercadopago.com.ar') || request.method() !== 'POST' || !/\/checkout\/.*\/api\/(warn|info|error)$/.test(url.pathname)) return;
+  record({ kind: 'provider_client_log', path: url.pathname, body: redact(request.postData() || '').slice(0, 2500) });
+});
+page.on('requestfailed', request => {
+  const url = new URL(request.url());
+  if (url.host.endsWith('mercadopago.com.ar')) record({ kind: 'provider_request_failed', method: request.method(), path: url.pathname, failure: request.failure()?.errorText || null });
+});
+page.on('console', message => {
+  if (['error', 'warning'].includes(message.type())) record({ kind: 'page_console', level: message.type(), text: redact(message.text()).slice(0, 400) });
 });
 let paySent = false;
 let scenario = null;
@@ -62,7 +91,8 @@ async function command(c) {
   } else if (c.action === 'password') {
     await page.locator('#password').fill(buyer.password);
   } else if (c.action === 'checkout') {
-    if (!['APRO','OTHE','CONT'].includes(c.scenario) || priorPayments.has(c.scenario)) throw Error('SCENARIO_ALREADY_SUBMITTED_OR_INVALID');
+    // SALDO = the buyer's fictitious account money (no card): isolates the card path from the application.
+    if (!['APRO','OTHE','CONT','SALDO'].includes(c.scenario) || priorPayments.has(c.scenario)) throw Error('SCENARIO_ALREADY_SUBMITTED_OR_INVALID');
     const data=JSON.parse(readFileSync(path.join(dir, `${c.scenario}.json`),'utf8'));
     if(data.preference_http!==200 || Date.parse(data.expires_at)<Date.now()+120000) throw Error('CHECKOUT_NOT_READY');
     const u=new URL(data.init_point);
@@ -83,8 +113,10 @@ async function command(c) {
     await frame.locator(c.selector).fill(c.value);
     if(c.selector==='#cardholderName') enteredCardScenario=c.value;
   } else if (c.action === 'pay') {
-    if (paySent || !scenario || c.scenario!==scenario || enteredCardScenario!==scenario || priorPayments.has(scenario)) throw Error('PAY_ALREADY_SENT_OR_SCENARIO_MISMATCH');
+    const card = scenario !== 'SALDO';
+    if (paySent || !scenario || c.scenario!==scenario || (card ? enteredCardScenario!==scenario : enteredCardScenario!==null) || priorPayments.has(scenario)) throw Error('PAY_ALREADY_SENT_OR_SCENARIO_MISMATCH');
     if (!new URL(page.url()).pathname.includes('/review')) throw Error('REVIEW_REQUIRED');
+    if (!card && !(await page.getByRole('radio', { name: /Dinero disponible/ }).isChecked().catch(() => false))) throw Error('ACCOUNT_MONEY_NOT_SELECTED');
     paySent = true; priorPayments.add(scenario); record({kind:'pay_submitted',scenario});
     await page.getByRole('button', { name:'Pagar',exact:true }).click();
   } else if (c.action === 'screenshot') {

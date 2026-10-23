@@ -8,7 +8,7 @@ La causa exacta del fallo de Checkout Pro no está determinada. La frontera del 
 
 ## Entorno y preparación comprobados
 
-- Worktree: `D:\work\la-taba-mp-oauth-20261023`, HEAD inicial `a6a863ff`, limpio al comenzar.
+- Worktree de la rama `fix/mp-oauth-app-usr-credentials-20261023`, HEAD inicial `a6a863ff`, limpio al comenzar.
 - Proyecto exclusivo QA: `ixewllzzuzpqrkxzmfzx`, `ACTIVE_HEALTHY`.
 - Aplicación: `2691240967769590`; negocio QA A: `7d1f0c52-3b1e-4c8a-9a67-2f5d0e6b1a01`.
 - Las ocho Edge Functions corregidas siguen activas; [versiones y configuración JWT](qa-functions.json). No fue necesario redesplegarlas.

@@ -220,6 +220,75 @@ export async function sellerIdentity(accessToken: string, sellerId: string) {
   }
   return { seller_id: sellerId, label: sellerAccountLabel(body) };
 }
+// Every OAuth payment is a marketplace payment: the preference carries
+// `marketplace: MP-MKT-<client_id>`, so the OWNER of the integrator application
+// is one of the users of the payment, next to the seller and the buyer. Mercado
+// Pago never mixes test and real users in one payment: the Payments API answers
+// `400 Invalid users involved` (cause 2034) and Checkout Pro only shows «Oh, no,
+// algo anduvo mal» after «Pagar», with a card or with account money, and creates
+// no payment. Measured 2026-10-23: application 2691240967769590 belongs to the
+// real account 721168650 while seller 3594962708 and buyer 3594962710 are test
+// users; the same seller and buyer approve without a marketplace (payment
+// 179851082485). The owner is read with the application's own client
+// credentials: a test user in test, a real account in production.
+export class IntegratorEnvironmentError extends Error {
+  constructor() {
+    super("Integrator account environment mismatch");
+  }
+}
+const INTEGRATOR_IDENTITY_TTL_MS = 6 * 3600_000;
+let integratorIdentityCache: { key: string; ownerId: string; at: number } | null = null;
+export function resetIntegratorIdentityCache() {
+  integratorIdentityCache = null;
+}
+export async function assertIntegratorEnvironment(): Promise<{ owner_id: string }> {
+  const c = oauthConfig();
+  const key = `${c.clientId}:${c.environment}`;
+  // Only a verified match is remembered; a mismatch or an unreadable answer is asked again every time.
+  if (integratorIdentityCache?.key === key && Date.now() - integratorIdentityCache.at < INTEGRATOR_IDENTITY_TTL_MS) {
+    return { owner_id: integratorIdentityCache.ownerId };
+  }
+  const grant = await fetch("https://api.mercadopago.com/oauth/token", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    signal: AbortSignal.timeout(12000),
+    body: JSON.stringify({
+      grant_type: "client_credentials",
+      client_id: c.clientId,
+      client_secret: getRequiredEnv("MERCADOPAGO_CLIENT_SECRET"),
+    }),
+  });
+  const tokens = await grant.json().catch(() => ({}));
+  if (!grant.ok || typeof tokens.access_token !== "string" || !tokens.user_id) {
+    throw new OAuthProviderError(grant.status || 502, false);
+  }
+  const response = await fetch("https://api.mercadopago.com/users/me", {
+    headers: { Authorization: `Bearer ${tokens.access_token}` },
+    signal: AbortSignal.timeout(10000),
+  });
+  const owner = await response.json().catch(() => ({}));
+  if (!response.ok) throw new OAuthProviderError(response.status, false);
+  if (String(owner.id) !== String(tokens.user_id) || owner.site_id !== "MLA" || !Array.isArray(owner.tags)) {
+    throw new Error("Integrator identity unavailable");
+  }
+  if (owner.tags.includes("test_user") !== (c.environment === "test")) {
+    throw new IntegratorEnvironmentError();
+  }
+  integratorIdentityCache = { key, ownerId: String(owner.id), at: Date.now() };
+  return { owner_id: String(owner.id) };
+}
+// The same rule, as the buyer-facing answer: a checkout the provider can never
+// pay is not offered, so no stock is reserved and no preference is created.
+export async function assertPayableIntegrator(): Promise<void> {
+  try {
+    await assertIntegratorEnvironment();
+  } catch (error) {
+    if (error instanceof IntegratorEnvironmentError) {
+      throw new PublicPaymentError(409, "PAYMENTS_NOT_ENABLED", "Mercado Pago no está disponible para este comercio en este momento.");
+    }
+    throw new PublicPaymentError(503, "SELLER_VERIFICATION_UNAVAILABLE", "No pudimos verificar Mercado Pago. Intentá nuevamente.");
+  }
+}
 export async function connection(businessId: string) {
   assertOAuthBusiness(businessId);
   const { data, error } = await createServiceClient().from(
@@ -439,6 +508,7 @@ export async function beginSellerPaymentAuthority(businessId: string, context: P
   if (!oauthMode()) throw new Error("Seller OAuth mode required");
   const config = oauthConfig();
   requireRealPaymentSmokeAuthorization(environment);
+  await assertPayableIntegrator();
   await sellerAccessToken(businessId);
   const snapshot = await paymentAuthoritySnapshot(businessId, environment, context);
   const seller = validatePaymentAuthority(snapshot, businessId, environment, config.clientId, context, false);

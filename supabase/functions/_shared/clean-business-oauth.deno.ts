@@ -1,6 +1,8 @@
 import { assertEquals } from 'jsr:@std/assert@1.0.19';
 import { createPreference } from './mercadopago.ts';
 import { randomSecret } from './seller-oauth-crypto.ts';
+import { integratorProviderResponse } from './integrator-identity-fixture.ts';
+import { resetIntegratorIdentityCache } from './seller-oauth.ts';
 
 const handlers: Array<(r: Request) => Promise<Response>> = [];
 const serve = Deno.serve;
@@ -15,22 +17,30 @@ const business = '93000000-0000-4000-8000-000000000001';
 const owner = '93000000-0000-4000-8000-000000000002';
 const base = 'https://ukxqbgswjlibmnjemrzd.supabase.co';
 
-Deno.test('clean business callback, replay and tenant routing (staging test)', async () => {
-  for (const [name,value] of Object.entries({
-    SUPABASE_URL: base, SUPABASE_SERVICE_ROLE_KEY: 'fixture-service-key', SUPABASE_ANON_KEY: 'fixture-anon-key',
-    MERCADOPAGO_ENVIRONMENT: 'test', MERCADOPAGO_OAUTH_ENVIRONMENT: 'test', MERCADOPAGO_CREDENTIAL_MODE: 'oauth', TABA_DEPLOYMENT_ENV: 'staging',
-    MERCADOPAGO_OAUTH_PROJECT_REF: 'ukxqbgswjlibmnjemrzd', MERCADOPAGO_OAUTH_PANEL_URL: 'https://taba2-staging.pages.dev/',
-    MERCADOPAGO_CLIENT_ID: '2691240967769590', MERCADOPAGO_CLIENT_SECRET: 'fixture-client-secret',
-    MERCADOPAGO_TOKEN_ENCRYPTION_KEY: randomSecret(), MERCADOPAGO_OAUTH_WEBHOOK_SECRET: 'fixture-webhook-key',
-    PAYMENT_LOG_HASH_SALT: 'fixture-log-salt', TABA_CHECKOUT_BASE_URL: 'https://taba2-staging.pages.dev',
-    TABA_ALLOWED_ORIGINS: 'https://taba2-staging.pages.dev',
-  })) Deno.env.set(name,value);
+const ENV = {
+  SUPABASE_URL: base, SUPABASE_SERVICE_ROLE_KEY: 'fixture-service-key', SUPABASE_ANON_KEY: 'fixture-anon-key',
+  MERCADOPAGO_ENVIRONMENT: 'test', MERCADOPAGO_OAUTH_ENVIRONMENT: 'test', MERCADOPAGO_CREDENTIAL_MODE: 'oauth', TABA_DEPLOYMENT_ENV: 'staging',
+  MERCADOPAGO_OAUTH_PROJECT_REF: 'ukxqbgswjlibmnjemrzd', MERCADOPAGO_OAUTH_PANEL_URL: 'https://taba2-staging.pages.dev/',
+  MERCADOPAGO_CLIENT_ID: '2691240967769590', MERCADOPAGO_CLIENT_SECRET: 'fixture-client-secret',
+  MERCADOPAGO_TOKEN_ENCRYPTION_KEY: randomSecret(), MERCADOPAGO_OAUTH_WEBHOOK_SECRET: 'fixture-webhook-key',
+  PAYMENT_LOG_HASH_SALT: 'fixture-log-salt', TABA_CHECKOUT_BASE_URL: 'https://taba2-staging.pages.dev',
+  TABA_ALLOWED_ORIGINS: 'https://taba2-staging.pages.dev',
+};
+function configure() {
+  for (const [name,value] of Object.entries(ENV)) Deno.env.set(name,value);
   Deno.env.delete('MERCADOPAGO_OAUTH_ONBOARDING_BUSINESS_ID');
+  resetIntegratorIdentityCache();
+}
+
+Deno.test('clean business callback, replay and tenant routing (staging test)', async () => {
+  configure();
   let state: Record<string,unknown> | null = null, row: Record<string,unknown> | null = null;
   const financialCalls: string[] = [], receipts: Record<string,unknown>[] = [];
   const original = globalThis.fetch;
   globalThis.fetch = async (input, options) => {
     const url = new URL(String(input)), init = options as RequestInit;
+    const integrator = integratorProviderResponse(input, init);
+    if (integrator) return integrator;
     const body = init?.body ? JSON.parse(String(init.body)) : {};
     if(url.pathname==='/auth/v1/user') return Response.json({id:owner,aud:'authenticated'});
     if(url.pathname.endsWith('/mp_connection_authorized')) {assertEquals(body.p_business_id,business);return Response.json(true);}
@@ -85,4 +95,40 @@ Deno.test('clean business callback, replay and tenant routing (staging test)', a
     const notification=await webhook(new Request(base+'/functions/v1/mercadopago-webhook?data.id=987',{method:'POST',headers:{'content-type':'application/json','x-request-id':'fixture-request','x-signature':`ts=${ts},v1=${hex}`},body:JSON.stringify({id:'fixture-event',type:'payment',data:{id:'987'},user_id:123})}));
     assertEquals(notification.status,201);assertEquals(receipts.length,1);assertEquals(receipts[0].p_business_id,business);
   } finally {globalThis.fetch=original;Deno.env.delete('MERCADOPAGO_OAUTH_ENVIRONMENT');Deno.env.delete('MERCADOPAGO_OAUTH_ONBOARDING_BUSINESS_ID');Deno.env.delete('MERCADOPAGO_CREDENTIAL_MODE');}
+});
+
+// 2026-10-23: QA linked test seller 3594962708 through application 2691240967769590, which belongs to the real
+// account 721168650. The link looked healthy, and every payment failed at the provider (2034 Invalid users involved).
+Deno.test('a seller is never linked under an integrator application of the other environment', async () => {
+  configure();
+  let state: Record<string,unknown> | null = null, linked = 0, codeExchanges = 0;
+  const original = globalThis.fetch;
+  globalThis.fetch = async (input, options) => {
+    const url = new URL(String(input)), init = options as RequestInit;
+    const integrator = integratorProviderResponse(input, init, false); // a REAL owner in the test environment
+    if (integrator) return integrator;
+    const body = init?.body ? JSON.parse(String(init.body)) : {};
+    if(url.pathname==='/auth/v1/user') return Response.json({id:owner,aud:'authenticated'});
+    if(url.pathname.endsWith('/mp_connection_authorized')) return Response.json(true);
+    if(url.pathname.endsWith('/consume_payment_rate_limit')) return Response.json({allowed:true});
+    if(url.pathname.endsWith('/mp_begin_oauth')) {
+      state={...body,business_id:body.p_business_id,user_id:body.p_user_id,generation:'generation',protected_verifier:body.p_protected_verifier};
+      return Response.json('generation');
+    }
+    if(url.pathname.endsWith('/mp_consume_oauth')) {const consumed=state;state=null;return Response.json(consumed?[consumed]:[]);}
+    if(url.pathname.endsWith('/mp_finish_oauth')) {linked++;return Response.json(true);}
+    if(url.pathname.endsWith('/mp_seller_connections')) return Response.json(null);
+    if(url.pathname==='/oauth/token') {codeExchanges++;return Response.json({message:'must not be called'},{status:500});}
+    throw Error('Unexpected request in integrator environment test: '+url.pathname);
+  };
+  try {
+    const payload = btoa(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 }));
+    const headers={authorization:`Bearer fixture.${payload}.fixture`,'content-type':'application/json'};
+    const started=await connect(new Request(base+'/functions/v1/mercadopago-connect',{method:'POST',headers,body:JSON.stringify({business_id:business,action:'connect'})}));
+    const auth=new URL((await started.json()).authorization_url);
+    const completed=await callback(new Request(base+'/functions/v1/mercadopago-oauth-callback?state='+auth.searchParams.get('state')+'&code=fixture-code'));
+    assertEquals(new URL(completed.headers.get('location')!).searchParams.get('mp_connection'),'error');
+    assertEquals(linked,0,'no link is saved');
+    assertEquals(codeExchanges,0,'the authorization code is not even exchanged');
+  } finally {globalThis.fetch=original;Deno.env.delete('MERCADOPAGO_OAUTH_ENVIRONMENT');Deno.env.delete('MERCADOPAGO_CREDENTIAL_MODE');}
 });

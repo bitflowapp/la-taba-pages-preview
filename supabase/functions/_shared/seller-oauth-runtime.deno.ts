@@ -1,7 +1,11 @@
 import { assertEquals, assertRejects } from "jsr:@std/assert@1.0.19";
 import {
+  assertIntegratorEnvironment,
   connection,
+  IntegratorEnvironmentError,
   invalidateRejectedToken,
+  OAuthProviderError,
+  resetIntegratorIdentityCache,
   assertOAuthBusiness,
   assertOAuthPaymentEnvironment,
   oauthConfig,
@@ -458,5 +462,87 @@ Deno.test("a stored sandbox grant requires reconnection instead of creating a ch
     assertEquals(providerCalls, 0);
   } finally {
     globalThis.fetch = original;
+  }
+});
+
+// Every OAuth payment is a marketplace payment whose users include the integrator application's owner. 2026-10-23:
+// QA application 2691240967769590 belonged to the real account 721168650, seller and buyer were test users, and every
+// payment was refused by the provider (Payments API: 400 «Invalid users involved», cause 2034; Checkout Pro: «Oh, no,
+// algo anduvo mal», with card and with account money).
+const INTEGRATOR_OWNER_TOKEN = ["APP_USR", "integrator-owner"].join("-");
+type ProviderCall = { path: string; body?: Record<string, unknown> };
+function integratorFetch(ownerTags: string[], calls: ProviderCall[], tokenStatus = 200) {
+  return ((input: unknown, init?: RequestInit) => {
+    const url = new URL(String(input));
+    calls.push({ path: url.pathname, body: init?.body ? JSON.parse(String(init.body)) : undefined });
+    if (url.pathname === "/oauth/token") {
+      if (tokenStatus !== 200) return Promise.resolve(Response.json({ error: "invalid_client" }, { status: tokenStatus }));
+      return Promise.resolve(Response.json({ access_token: INTEGRATOR_OWNER_TOKEN, token_type: "bearer", expires_in: 21600, user_id: 721168650, live_mode: true }));
+    }
+    if (url.pathname === "/users/me") {
+      assertEquals(new Headers(init?.headers).get("authorization"), `Bearer ${INTEGRATOR_OWNER_TOKEN}`);
+      return Promise.resolve(Response.json({ id: 721168650, site_id: "MLA", tags: ownerTags }));
+    }
+    throw Error(`Unexpected request: ${url.pathname}`);
+  }) as typeof fetch;
+}
+Deno.test("the integrator owner must be a test user in test and a real account in production", async () => {
+  const original = globalThis.fetch;
+  try {
+    configure();
+    resetIntegratorIdentityCache();
+    const calls: ProviderCall[] = [];
+    globalThis.fetch = integratorFetch(["normal", "messages_as_seller", "user_product_seller"], calls);
+    await assertRejects(() => assertIntegratorEnvironment(), IntegratorEnvironmentError);
+    // The owner is read with the application's own client credentials, never with a seller grant or a sandbox flag.
+    assertEquals(calls[0].body, { grant_type: "client_credentials", client_id: "2691240967769590", client_secret: "fixture-client-secret" });
+    globalThis.fetch = integratorFetch(["test_user", "normal"], calls);
+    assertEquals(await assertIntegratorEnvironment(), { owner_id: "721168650" });
+
+    for (const [name, value] of Object.entries({
+      MERCADOPAGO_CREDENTIAL_MODE: "oauth", SUPABASE_URL: "https://tkanbadcglszlcyfjvpv.supabase.co",
+      MERCADOPAGO_OAUTH_PROJECT_REF: "tkanbadcglszlcyfjvpv", TABA_DEPLOYMENT_ENV: "production",
+      MERCADOPAGO_ENVIRONMENT: "production", MERCADOPAGO_OAUTH_ENVIRONMENT: "production",
+      MERCADOPAGO_PRODUCTION_REVIEW_STATUS: "approved", MERCADOPAGO_CLIENT_ID: "7677852968049976",
+      MERCADOPAGO_OAUTH_PANEL_URL: "https://la-taba-commercial-pilot.pages.dev/",
+      TABA_CHECKOUT_BASE_URL: "https://la-taba-commercial-pilot.pages.dev",
+      TABA_ALLOWED_ORIGINS: "https://la-taba-commercial-pilot.pages.dev",
+    })) Deno.env.set(name, value);
+    globalThis.fetch = integratorFetch(["test_user", "normal"], calls);
+    await assertRejects(() => assertIntegratorEnvironment(), IntegratorEnvironmentError);
+    globalThis.fetch = integratorFetch(["normal"], calls);
+    assertEquals(await assertIntegratorEnvironment(), { owner_id: "721168650" });
+  } finally {
+    globalThis.fetch = original;
+    Deno.env.delete("MERCADOPAGO_PRODUCTION_REVIEW_STATUS");
+    configure();
+    resetIntegratorIdentityCache();
+  }
+});
+Deno.test("only a verified integrator is remembered; a mismatch or an unreadable answer is asked again", async () => {
+  const original = globalThis.fetch;
+  try {
+    configure();
+    resetIntegratorIdentityCache();
+    const calls: ProviderCall[] = [];
+    globalThis.fetch = integratorFetch(["normal"], calls);
+    await assertRejects(() => assertIntegratorEnvironment(), IntegratorEnvironmentError);
+    await assertRejects(() => assertIntegratorEnvironment(), IntegratorEnvironmentError);
+    assertEquals(calls.length, 4, "a mismatch is never cached");
+    globalThis.fetch = integratorFetch(["test_user"], calls, 401);
+    await assertRejects(() => assertIntegratorEnvironment(), OAuthProviderError);
+    assertEquals(calls.length, 5);
+    globalThis.fetch = integratorFetch(["test_user"], calls);
+    await assertIntegratorEnvironment();
+    await assertIntegratorEnvironment();
+    assertEquals(calls.length, 7, "a verified owner is read once");
+    // A configuration that does not match its deployment never reaches the provider.
+    Deno.env.set("MERCADOPAGO_OAUTH_ENVIRONMENT", "production");
+    await assertRejects(() => assertIntegratorEnvironment());
+    assertEquals(calls.length, 7);
+  } finally {
+    globalThis.fetch = original;
+    configure();
+    resetIntegratorIdentityCache();
   }
 });

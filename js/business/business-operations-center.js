@@ -3039,6 +3039,7 @@ const VERIFICATION_REASONS = Object.freeze({
   payments_not_enabled: { tone: 'calm', text: 'La cuenta funciona. El cobro online sigue apagado hasta la habilitación final.' },
   production_execution_not_enabled: { tone: 'calm', text: 'La cuenta funciona. El cobro con dinero real todavía no está habilitado.' },
   seller_binding_mismatch: { tone: 'attention', text: 'La cuenta vinculada no coincide con la configurada para cobrar. Avisá a soporte antes de vender.' },
+  integrator_environment_mismatch: { tone: 'critical', text: 'La cuenta está vinculada, pero la aplicación de La Taba es de otro entorno (prueba o real) y Mercado Pago rechazaría cada pago. Lo resuelve soporte; los cobros online quedan apagados.' },
 });
 
 function verificationNotice(verification) {

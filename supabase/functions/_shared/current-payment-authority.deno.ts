@@ -1,5 +1,6 @@
 import { assertEquals } from 'jsr:@std/assert@1.0.19';
-import { protect } from './seller-oauth.ts';
+import { protect, resetIntegratorIdentityCache } from './seller-oauth.ts';
+import { integratorProviderResponse } from './integrator-identity-fixture.ts';
 import { sha256Hex } from './payment-runtime.ts';
 
 let handle: (request: Request) => Promise<Response>;
@@ -31,6 +32,10 @@ function configure() {
 
 async function run(route: string, mutation: string, initiallyInvalid = '', providerStatus = 200) {
   configure();
+  resetIntegratorIdentityCache();
+  // A production deployment whose integrator application belongs to a TEST user: every payment would fail (2034).
+  const integratorTestUser = initiallyInvalid === 'integrator_environment';
+  let integratorCalls = 0;
   const encrypted = await protect({ access_token: 'APP_USR-verified-fixture' }, bid);
   const rotated = await protect({ access_token: 'APP_USR-rotated-fixture' }, bid);
   const business = { id: bid, is_active: true, status: 'open', ordering_enabled: true, ordering_verified: true };
@@ -99,6 +104,8 @@ async function run(route: string, mutation: string, initiallyInvalid = '', provi
       return Response.json(await snapshot());
     }
     if (url.pathname.includes('/rpc/record_mercadopago_preference')) { records.push(url.pathname); return Response.json(true); }
+    const integrator = integratorProviderResponse(input, init, integratorTestUser);
+    if (integrator) { integratorCalls++; return integrator; }
     if (url.origin !== 'https://api.mercadopago.com') throw new Error('Unexpected test request: ' + url.pathname);
     if (url.pathname === '/users/me') {
       providerChecks++;
@@ -165,6 +172,12 @@ async function run(route: string, mutation: string, initiallyInvalid = '', provi
       assertEquals(records.some(name => name.endsWith('_uncertain')), false);
     }
     if (!initiallyInvalid) { assertEquals(providerChecks, 1); if (allowed && snapshotReads > 0) assertEquals(snapshotReads, 2); }
+    // Read on every request until verified (the cache is reset per run); a missing execution authorization stops first.
+    assertEquals(integratorCalls, initiallyInvalid === 'missing_smoke' ? 0 : 2, 'integrator owner read');
+    if (initiallyInvalid === 'integrator_environment') {
+      assertEquals(result.status, 409); assertEquals(body.code, 'PAYMENTS_NOT_ENABLED');
+      assertEquals(preferencePosts, 0); assertEquals(providerChecks, 0); assertEquals(snapshotReads, 0);
+    }
   } finally { releaseProvider(); globalThis.fetch = original; }
 }
 
@@ -176,9 +189,11 @@ for (const route of ['stored', 'stored_legacy', 'recovered', 'new']) {
   }
 }
 for (const state of ['no_seller', 'disconnected', 'requires_reauthorization', 'cleared_tokens',
-  'wrong_business', 'wrong_environment', 'payments_disabled', 'missing_smoke']) {
+  'wrong_business', 'wrong_environment', 'payments_disabled', 'missing_smoke', 'integrator_environment']) {
   Deno.test('A1 stored URL initially rejects ' + state, () => run('stored', 'none', state));
 }
+Deno.test('an integrator application of the other environment never gets a preference (2034 Invalid users involved)',
+  () => run('new', 'none', 'integrator_environment'));
 
 for (const status of [408, 409, 425, 429, 500, 502, 503, 400, 401, 403, 422]) {
   Deno.test('preference POST preserves provider uncertainty: HTTP ' + status,

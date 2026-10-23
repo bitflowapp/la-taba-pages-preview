@@ -4,6 +4,7 @@ import {
 } from "../_shared/payment-runtime.ts";
 import { digest, parseCallback } from "../_shared/seller-oauth-crypto.ts";
 import {
+  assertIntegratorEnvironment,
   audit,
   oauthConfig,
   protect,
@@ -74,6 +75,9 @@ Deno.serve(async (request) => {
     if (
       user.id !== state.user_id || permission.error || permission.data !== true
     ) throw new Error("Authorization revoked");
+    // An integrator of the other environment makes every payment of this link fail at the provider: never link.
+    failure = "error";
+    await assertIntegratorEnvironment();
     failure = "account";
     const tokens = await tokenGrant({
       grant_type: "authorization_code",

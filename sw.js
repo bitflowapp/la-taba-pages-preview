@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v159-panel-first-login';
+const CACHE_NAME = 'la-taba-runtime-v160-mp-integrator-environment';
 const ASSETS = [
   './',
   './index.html',

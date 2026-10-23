@@ -1,13 +1,49 @@
 // Scope: application + Auth/Storage data. Does not certify managed platform DR.
 import fs from 'node:fs';
 import path from 'node:path';
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { withRecoveryProject } from './hosted-client.mjs';
 import { backupKey, decryptBackup, postgresEnvironment, nativeCommand } from './postgres-backup.mjs';
+import { fingerprint, compareFingerprints } from './restore-fingerprints.mjs';
+import { assertPrivateOutputDirectory } from './private-output.mjs';
 
 export const RESTORE_SCHEMAS = ['public','private','catalog_admin','supabase_migrations','auth','storage'];
 export function assertRestoreDatabase(name) {
   if (!/^taba_restore_\d{8}_[a-f0-9]{8}$/.test(name)) throw new Error('Isolated restore database required');
+  if(name==='taba_restore_20261022_ad3d29a2') throw Error('Preserved restore database is excluded from automated recovery tools');
+}
+const sha256=bytes=>createHash('sha256').update(bytes).digest('hex');
+const hash=value=>/^[a-f0-9]{64}$/.test(value || '');
+export function restoreMarker(receipt) {
+  assertRestoreDatabase(receipt.database);
+  if(receipt.projectRef!=='ixewllzzuzpqrkxzmfzx'||!hash(receipt.sourceArchive?.encryptedSha256)||
+    !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(receipt.restoreId || '')) throw Error('Restore identity missing');
+  return `la-taba-restore:${receipt.restoreId}:${receipt.sourceArchive.encryptedSha256}`;
+}
+export function assertArchiveReceipt(target,receipt) {
+  restoreMarker(receipt);
+  if(target.projectRef!==receipt.projectRef||target.environment!=='test'||target.commercialPaymentsEnabled!==false||
+    receipt.receiptVersion!==2||receipt.purpose!=='isolated_restore_test'||receipt.databaseCreatedByThisRun!==true||
+    receipt.applicationObjectsRestored!==true||receipt.productionModified!==false||receipt.error!==undefined||
+    !hash(receipt.sourceArchive.plaintextSha256)||!Number.isFinite(Date.parse(receipt.sourceArchive.capturedAt))||
+    !['pre-data','data','post-data'].every(section=>receipt[section]==='passed'))
+    throw Error('Archive-bound completed restore receipt required; legacy receipts need a new isolated restore');
+}
+export function encodeArchiveBaseline(target,receipt,fingerprints) {
+  assertArchiveReceipt(target,receipt);
+  if(!Object.values(compareFingerprints(fingerprints,fingerprints)).every(Boolean)) throw Error('Complete restore fingerprints required');
+  return Buffer.from(JSON.stringify({receiptVersion:2,projectRef:receipt.projectRef,restoreId:receipt.restoreId,
+    sourceArchive:receipt.sourceArchive,fingerprints},null,2)+'\n');
+}
+export function decodeArchiveBaseline(target,receipt,bytes) {
+  assertArchiveReceipt(target,receipt);
+  if(!hash(receipt.archiveFingerprintsSha256)||sha256(bytes)!==receipt.archiveFingerprintsSha256) throw Error('Archive fingerprint file hash mismatch');
+  const baseline=JSON.parse(bytes.toString('utf8'));
+  if(baseline.receiptVersion!==2||baseline.projectRef!==receipt.projectRef||baseline.restoreId!==receipt.restoreId||
+    JSON.stringify(baseline.sourceArchive)!==JSON.stringify(receipt.sourceArchive)||
+    !Object.values(compareFingerprints(baseline.fingerprints,baseline.fingerprints)).every(Boolean))
+    throw Error('Archive fingerprint identity mismatch');
+  return baseline.fingerprints;
 }
 export function selectApplicationAcl(toc) {
   return toc.split(/\r?\n/).filter(line =>
@@ -29,31 +65,42 @@ export function restoreApplicationAcl({tools,env,archive,out}) {
   executeDdlBatch(tools,env,nativeCommand(tools,'pg_restore',['--no-owner','--schema-only','--use-list',list,'--file=-'],{input:archive,encoding:'utf8'}));
   return {applicationAclRestored:true,aclEntries:selected.length,managedRoleDefaultPrivilegesRestored:false};
 }
-export function readArchive(target,manifestFile) {
+export function readArchiveWithIdentity(target,manifestFile) {
   const manifest=JSON.parse(fs.readFileSync(manifestFile,'utf8'));
   const cipher=fs.readFileSync(path.join(path.dirname(manifestFile),'database.pgdump.aesgcm'));
-  if(manifest.projectRef!==target.projectRef||createHash('sha256').update(cipher).digest('hex')!==manifest.encryptedSha256)throw Error('Backup receipt mismatch');
-  const {plaintext}=decryptBackup(cipher,backupKey(target),target.projectRef);
-  if(createHash('sha256').update(plaintext).digest('hex')!==manifest.plaintextSha256)throw Error('Archive hash mismatch');
-  return plaintext;
+  if(manifest.projectRef!==target.projectRef||sha256(cipher)!==manifest.encryptedSha256)throw Error('Backup receipt mismatch');
+  const key=backupKey(target);
+  try {
+    const {plaintext,metadata}=decryptBackup(cipher,key,target.projectRef);
+    if(sha256(plaintext)!==manifest.plaintextSha256||!Number.isFinite(Date.parse(metadata.capturedAt))||
+      plaintext.subarray(0,5).toString()!=='PGDMP') {
+      plaintext.fill(0);throw Error('Archive hash, capture time or format mismatch');
+    }
+    return {plaintext,sourceArchive:{encryptedSha256:sha256(cipher),plaintextSha256:sha256(plaintext),capturedAt:metadata.capturedAt}};
+  } finally {key.fill(0);}
 }
+export function readArchive(target,manifestFile) { return readArchiveWithIdentity(target,manifestFile).plaintext; }
 export async function restoreApplication({target,manifestFile,tools,ca,out}) {
+  assertPrivateOutputDirectory(out);
   if(process.platform==='win32'&&!/^D:[\\/]/i.test(path.resolve(out)))throw Error('Use D:');
   if(fs.existsSync(out))throw Error('New evidence directory required');
   return withRecoveryProject(target,async()=>{
-    const archive=readArchive(target,manifestFile);
+    const {plaintext:archive,sourceArchive}=readArchiveWithIdentity(target,manifestFile);
+    try {
     const database='taba_restore_'+new Date().toISOString().slice(0,10).replaceAll('-','')+'_'+randomBytes(4).toString('hex');
     assertRestoreDatabase(database);
     const sourceEnv=postgresEnvironment(target,ca),env=postgresEnvironment(target,ca,database);
     const psql=(environment,sql)=>nativeCommand(tools,'psql',['-X','-w','--set','ON_ERROR_STOP=1','--command',sql],{env:environment});
-    fs.mkdirSync(out);
-    const receipt={projectRef:target.projectRef,database,purpose:'isolated_restore_test',createdAt:new Date().toISOString(),
+    fs.mkdirSync(out,{mode:0o700});
+    const receipt={receiptVersion:2,restoreId:randomUUID(),sourceArchive,
+      projectRef:target.projectRef,database,purpose:'isolated_restore_test',createdAt:new Date().toISOString(),
       fullManagedPlatformRestorePassed:false,productionModified:false};
-    const save=()=>fs.writeFileSync(path.join(out,'restore-result.json'),JSON.stringify(receipt,null,2)+'\n');
+    const save=()=>fs.writeFileSync(path.join(out,'restore-result.json'),JSON.stringify(receipt,null,2)+'\n',{mode:0o600});
     save();
     try {
       psql(sourceEnv,`CREATE DATABASE "${database}" WITH TEMPLATE template0 CONNECTION LIMIT 3;`);
       receipt.databaseCreatedByThisRun=true;save();
+      psql(sourceEnv,`COMMENT ON DATABASE "${database}" IS '${restoreMarker(receipt)}';`);
       psql(env,`revoke all on database "${database}" from public;
         ${[...RESTORE_SCHEMAS.filter(s=>s!=='public'),'extensions','vault'].map(s=>`create schema if not exists "${s}";`).join('\n')}
         create extension if not exists pgcrypto with schema extensions;
@@ -69,9 +116,12 @@ export async function restoreApplication({target,manifestFile,tools,ca,out}) {
       Object.assign(receipt,restoreApplicationAcl({tools,env,archive,out}),{applicationObjectsRestored:true,
         schemas:RESTORE_SCHEMAS,authStorageManagedOwnershipRestored:false,
         excludedManagedServices:['cron','realtime runtime','net','graphql','pgbouncer'],dataIntegrityVerified:false});
+      const baseline=encodeArchiveBaseline(target,receipt,fingerprint(tools,env));
+      fs.writeFileSync(path.join(out,'restored-archive-fingerprints.json'),baseline,{flag:'wx',mode:0o600});
+      receipt.archiveFingerprintsSha256=sha256(baseline);
       save();return receipt;
     }catch(error){receipt.error=error.message;save();throw error;}
-    finally{archive.fill(0);}
+    } finally {archive.fill(0);}
   });
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===path.resolve(import.meta.filename)){

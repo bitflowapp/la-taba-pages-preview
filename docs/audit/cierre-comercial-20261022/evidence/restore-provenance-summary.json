@@ -1,0 +1,40 @@
+{
+  "baseCommit": "e28841e82c5e2096ab55b747ae9ecaecb07c42f0",
+  "localDate": "2026-10-22",
+  "tests": {
+    "focusedNodePassed": 136,
+    "focusedNodeFailed": 0,
+    "focusedNodeSkipped": 0,
+    "additionalNativeArchiveReplayPassed": 1,
+    "nativeProviderOrHostedConnectionUsed": false
+  },
+  "restoreVerification": {
+    "liveSourceComparisonFailureModesReproducedBeforeFix": true,
+    "receiptVersion": 2,
+    "archiveCiphertextAndPlaintextHashesBound": true,
+    "databaseMarkerChecked": true,
+    "postRestoreBaselineHashChecked": true,
+    "consistentFingerprintTransaction": "repeatable read",
+    "liveSourceDriftReportedSeparately": true,
+    "legacyOrFailedReceiptsAccepted": false,
+    "backupManifestMarkedRestoredAutomatically": false,
+    "fullManagedPlatformRestoreCertified": false
+  },
+  "privateOutputs": {
+    "gitCheckoutAndWorktreeOutputsRejected": true,
+    "rejectionBeforeCredentialsOrConnection": true,
+    "otherUsersFilesDeleted": false
+  },
+  "supabaseConnectorSetting": {
+    "global": "Allow low-risk actions",
+    "supabaseOverride": "Allow all actions",
+    "settingsChanged": false,
+    "qaProjectAccessEstablished": false,
+    "reconnectionRequestedWithoutSecrets": true
+  },
+  "preservedRestoreDatabaseTouched": false,
+  "hostedWritesPerformed": false,
+  "productionModified": false,
+  "technicalProductionVerdict": "NO-GO",
+  "commercialVerdict": "NO-GO"
+}

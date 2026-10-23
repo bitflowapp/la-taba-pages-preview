@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { MAGIC } from './postgres-backup.mjs';
+import { assertPrivateOutputDirectory } from './private-output.mjs';
 const ROOT=path.resolve(import.meta.dirname,'../..');
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 const FILES=['database.pgdump.aesgcm','roles.sql.aesgcm'];
@@ -26,6 +27,7 @@ export function verifyOffsitePackage(dir) {
     remoteBackupCreated:false,restoreTestCompleted:manifest.restoreTestCompleted};
 }
 export function prepareOffsiteBackup(snapshot,out) {
+  assertPrivateOutputDirectory(out);
   snapshot=fs.realpathSync(snapshot);outsideRepo(snapshot);
   out=path.resolve(out);outsideRepo(path.join(fs.realpathSync(path.dirname(out)),path.basename(out)));
   if(fs.existsSync(out)) throw Error('New output directory required');

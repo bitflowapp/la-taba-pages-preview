@@ -5,6 +5,7 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:
 import { spawnSync } from 'node:child_process';
 import { withRecoveryProject } from './hosted-client.mjs';
 import { leerSecreto, guardarSecreto } from '../e2e-production-sale/secretos-windows.mjs';
+import { assertPrivateOutputDirectory } from './private-output.mjs';
 
 export const MAGIC = Buffer.from('TABA-BACKUP-1\n');
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -68,6 +69,7 @@ export function backupKey(target, create = false) {
 }
 
 export async function createPostgresBackup({ target, tools, ca, out }) {
+  assertPrivateOutputDirectory(out);
   if (process.platform === 'win32' && !/^D:[\\/]/i.test(path.resolve(out))) throw new Error('Use D: for backup files');
   if (fs.existsSync(out)) throw new Error('New backup directory required');
   return withRecoveryProject(target, async ({ query, request }) => {

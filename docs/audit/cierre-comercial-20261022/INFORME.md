@@ -10,6 +10,10 @@ oficial MP, diagnóstico de notificaciones y comparación de compatibilidad. Ver
 y [MERCADO-PAGO-CALIDAD.md](MERCADO-PAGO-CALIDAD.md). Las cifras de la tabla de la sección 3 corresponden al cierre
 anterior; esta continuación ejecutó 108 pruebas focalizadas, sin repetir las regresiones financieras sin cambios.
 
+La continuación posterior sobre `e28841e8` liga los recibos de restauración al archivo y separa sus huellas de la
+base viva; también bloquea salidas privadas dentro de cualquier checkout Git. Ejecutó 136 pruebas Node focalizadas
+y una prueba nativa adicional de dump/restauración. Detalle y límites en [RESTORE-PROVENANCE.md](RESTORE-PROVENANCE.md).
+
 ## 1. Proyecto recuperado y alcance comprobado
 
 - Repositorio y [PR 148](https://github.com/bitflowapp/la-taba-pages-preview/pull/148), abierto y en borrador;

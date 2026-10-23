@@ -146,6 +146,12 @@ Trasladarlo a una carpeta privada del almacenamiento externo ya disponible del t
 y documentar su recibo. Guardar la clave de recuperación por un canal separado con un custodio acordado.
 La clave del Administrador de credenciales de esta PC por sí sola no resuelve la pérdida de la PC.
 
+Para una nueva restauración, conservar juntos el recibo versión 2 y `restored-archive-fingerprints.json`;
+el verificador comprueba el hash del archivo y la marca de la base antes de comparar. La referencia es la copia
+recién restaurada del archivo identificado; la base viva se compara por separado. Un recibo antiguo no se convierte
+manualmente a esta versión. Ver [RESTORE-PROVENANCE.md](RESTORE-PROVENANCE.md) para comandos y límites.
+Todas las salidas de recuperación deben quedar fuera de cualquier checkout Git, incluso en D:.
+
 Propuesta a acordar, no SLA implementado: RPO de 24 h, respaldo diario y previo a migraciones;
 7 copias diarias/4 semanales en capacidad ya contratada; RTO objetivo de 4 h sujeto a un ensayo integral.
 Si la exposición de ventas hace insuficiente ese RPO, revisarlo antes del lanzamiento. Programar sólo después

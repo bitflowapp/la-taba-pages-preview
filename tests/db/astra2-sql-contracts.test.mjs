@@ -120,7 +120,7 @@ test('C6 the unchanged shortcut only skips a payment held in exactly this state 
   const r = out(`
     v_extra := jsonb_build_object('pendingOrder', public.provider_payment_unchanged('test','collector-retry','991000001','approved', clock_timestamp()));
     perform ${snap('approved')};
-    v_pay := (select to_jsonb(provider_event_at) from public.payment_provider_payments limit 1);
+    v_pay := (select to_jsonb(provider_event_at) from public.payment_provider_payments where provider_payment_id = '991000001' limit 1);
     v_extra := v_extra || jsonb_build_object(
       'whileOrderPending', public.provider_payment_unchanged('test','collector-retry','991000001','approved', (v_pay #>> '{}')::timestamptz));
     perform public.finalize_paid_checkout_session(v_session);
@@ -131,7 +131,7 @@ test('C6 the unchanged shortcut only skips a payment held in exactly this state 
       'otherSeller', public.provider_payment_unchanged('test','someone-else','991000001','approved', (v_pay #>> '{}')::timestamptz),
       'unknownPayment', public.provider_payment_unchanged('test','collector-retry','12345','approved', (v_pay #>> '{}')::timestamptz),
       'noTimestamp', public.provider_payment_unchanged('test','collector-retry','991000001','approved', null),
-      'touched', (select last_seen_at >= clock_timestamp() - interval '5 seconds' from public.payment_provider_payments limit 1));`);
+      'touched', (select last_seen_at >= clock_timestamp() - interval '5 seconds' from public.payment_provider_payments where provider_payment_id = '991000001' limit 1));`);
   assert.deepEqual(r, {
     pendingOrder: false, whileOrderPending: false, unchanged: true, otherStatus: false, newerUpdate: false,
     otherSeller: false, unknownPayment: false, noTimestamp: false, touched: true,

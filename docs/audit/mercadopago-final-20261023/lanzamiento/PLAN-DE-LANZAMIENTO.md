@@ -39,7 +39,7 @@ Verificados hoy en modo lectura:
 
 1. Crear el proyecto (región `sa-east-1`, plan de pago) en la organización acordada. Anotar su `ref`.
 2. **PR de binding** (único cambio de código que depende del ref): agregar el ref a `DEPLOYMENT_BINDINGS` con `paymentEnvironment: production`, `clientId: 7677852968049976`, URLs de panel y checkout del dominio D2; agregar el ref a `RECOVERY_FORBIDDEN_REFS`/`BLOCKED_REFS` para que nunca sirva de QA; reapuntar `release-edge-production.yml` (confirmación del ref), los dos scripts `release:edge:*` de `package.json` y los secretos `TABA_A1_A4_DATABASE_URL` y `TABA_DATABASE_CA_PEM`; agregar el ref a la lista de aislamiento de pilotos de `js/core/runtime-config.js` (este archivo está precacheado: exige subir `CACHE_NAME` y volver a firmar la identidad de release); **re-baseline** de `scripts/release-v5/compatibility.json`. CI verde del SHA exacto.
-3. Aplicar las 170 migraciones al proyecto vacío (herramienta `bootstrap-hosted.mjs` adaptada a producción o `db push`), con el ensayo previo `rehearse-migration.mjs` sobre una base local. Cron, `net` y Vault: crear y verificar los trabajos (`taba-payment-outbox-worker` cada 30 s, barridos de vencimiento, verdad del proveedor, alertas).
+3. Aplicar las 171 migraciones (la última, `20261023210000`, corrige disputas, barrido y aislamiento entre comercios) al proyecto vacío (herramienta `bootstrap-hosted.mjs` adaptada a producción o `db push`), con el ensayo previo `rehearse-migration.mjs` sobre una base local. Cron, `net` y Vault: crear y verificar los trabajos (`taba-payment-outbox-worker` cada 30 s, barridos de vencimiento, verdad del proveedor, alertas).
 4. Cargar el catálogo: reimportar los 72 productos con su `business_id`, imágenes, derechos y precios validados por Walter (el importador `import-commercial-catalog.mjs --catalogo produccion`). Subir las imágenes a Storage (los bytes **no** están en ningún respaldo).
 5. Auth: SMTP propio, URLs de redirección, política de contraseñas; crear el dueño de La Taba (Walter) y los roles. **Ninguna cuenta heredada: hay cero usuarios históricos.**
 6. Desplegar las 13 Edge Functions con `verify_jwt` según `config.toml` y comparar byte a byte con el release.
@@ -104,6 +104,7 @@ Verificaciones de salida de F3: webhook sin firma → 401; con 6 firmas falsas �
 | Cada pago, primeros 30 | `ops-pulse.mjs --hours 2`: `webhookRejected 0`, `outboxDue 0`, `outboxDead 0`, `paidWithoutOrder 0` |
 | Cada día, 7 días | pagos del día en Mercado Pago frente a pedidos en La Taba (el barrido del libro ya los compara; revisar `payment_discrepancies` abiertas); frescura del respaldo; alertas del Centro de operación |
 | Semanal | restauración de prueba; vencimiento del token del vendedor (`MP_SELLER_TOKEN_EXPIRING`); rotación pendiente de secretos |
+| Primera disputa real | hallazgo `payment_in_mediation` (no bloqueante): responder en el panel de Mercado Pago dentro del plazo; la compra y el pedido siguen intactos y el reembolso sigue disponible. Revisar también los hallazgos `paid_without_order` de más de 48 h (el barrido ya no los cumple solo) |
 | Siempre | `MP_PAID_WITHOUT_ORDER`, `MP_REFUND_RECONCILIATION`, `MP_OUTBOX_STALLED`, `MP_SELLER_CANNOT_CHARGE` atendidas el mismo día |
 
 ## 3. Procedimiento operativo para el comercio (hay que enseñarlo)

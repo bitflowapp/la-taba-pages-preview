@@ -196,7 +196,8 @@ async function processJob(service: Service, job: OutboxJob, context: JobContext)
     const finalize = new Set<string>();
     for (const payment of payments) {
       await context.beat();
-      const intent = await findIntent(service, String(payment.external_reference || ''));
+      const intent = await intentOfBusiness(service, payment, job.business_id);
+      if (!intent) continue; // recorded for this business; the other business's checkout is not touched
       if (await persistPayment(service, intent, payment, job.business_id, source, job.webhook_receipt_id, deadline)) {
         finalize.add(intent.checkout_session_id);
       }
@@ -225,7 +226,8 @@ async function processJob(service: Service, job: OutboxJob, context: JobContext)
     if (!paymentId) throw new Error('Dispute has no payment ID');
     await context.beat();
     const payment = await fetchPayment(paymentId, job.business_id, deadline);
-    const intent = await findIntent(service, String(payment.external_reference || ''));
+    const intent = await intentOfBusiness(service, payment, job.business_id);
+    if (!intent) return; // a dispute about a payment that is not this business's checkout
     const persistedPayment = await service.rpc('record_mercadopago_payment_snapshot', {
       p_payment_intent_id: intent.payment_intent_id,
       p_snapshot: await paymentSnapshot(payment, job.business_id, deadline),
@@ -357,10 +359,12 @@ async function finalizeSession(service: Service, checkoutSessionId: string): Pro
   }
 }
 
+type IntentRef = { payment_intent_id: string; checkout_session_id: string; business_id: string | null };
+
 async function findIntentOrNull(
   service: Service,
   externalReference: string,
-): Promise<{ payment_intent_id: string; checkout_session_id: string } | null> {
+): Promise<IntentRef | null> {
   const { data, error } = await service.rpc('find_payment_intent_by_external_reference', {
     p_environment: Deno.env.get('MERCADOPAGO_ENVIRONMENT')?.trim().toLowerCase(),
     p_external_reference: externalReference,
@@ -370,13 +374,17 @@ async function findIntentOrNull(
     throw new Error('Unable to look up the checkout of a provider payment');
   }
   if (!data?.payment_intent_id || !data?.checkout_session_id) return null;
-  return { payment_intent_id: String(data.payment_intent_id), checkout_session_id: String(data.checkout_session_id) };
+  return {
+    payment_intent_id: String(data.payment_intent_id),
+    checkout_session_id: String(data.checkout_session_id),
+    business_id: data.business_id ? String(data.business_id) : null,
+  };
 }
 
 async function findIntent(
   service: Service,
   externalReference: string,
-): Promise<{ payment_intent_id: string; checkout_session_id: string }> {
+): Promise<IntentRef> {
   if (!externalReference) throw new Error('Provider payment has no external reference');
   const { data, error } = await service.rpc('find_payment_intent_by_external_reference', {
     p_environment: Deno.env.get('MERCADOPAGO_ENVIRONMENT')?.trim().toLowerCase(),
@@ -388,7 +396,37 @@ async function findIntent(
   return {
     payment_intent_id: String(data.payment_intent_id),
     checkout_session_id: String(data.checkout_session_id),
+    business_id: data.business_id ? String(data.business_id) : null,
   };
+}
+
+// A payment read with ONE seller's token may only drive a checkout of THAT seller's business. A reference that points at
+// another business's checkout (a payment made in some other seller's account that copies a customer's session id) is a
+// finding for the business that read it and never a state change of the other one: applying it would mark the victim's
+// purchase as a collector mismatch, an absorbing review state. `business_id` missing (a database that predates the lookup
+// change) is "cannot tell", handled as before.
+function belongsToAnotherBusiness(intent: IntentRef, businessId: string | null | undefined): boolean {
+  return Boolean(businessId && intent.business_id && intent.business_id !== businessId);
+}
+
+async function recordForeignProviderPayment(service: Service, businessId: string, payment: Record<string, unknown>): Promise<void> {
+  const recorded = await service.rpc('record_orphan_provider_payment', {
+    p_business_id: businessId,
+    p_environment: Deno.env.get('MERCADOPAGO_ENVIRONMENT')?.trim().toLowerCase(),
+    p_payment: payment,
+  });
+  if (recorded.error) throw new Error('Unable to record a provider payment of another checkout');
+}
+
+async function intentOfBusiness(
+  service: Service,
+  payment: Record<string, unknown>,
+  businessId: string | null | undefined,
+): Promise<IntentRef | null> {
+  const intent = await findIntent(service, String(payment.external_reference || ''));
+  if (!belongsToAnotherBusiness(intent, businessId)) return intent;
+  await recordForeignProviderPayment(service, String(businessId), payment);
+  return null;
 }
 
 async function reconcileRefund(service: Service, job: OutboxJob, context: JobContext): Promise<void> {
@@ -468,7 +506,8 @@ async function reconcileCancellation(service: Service, job: OutboxJob, context: 
   const paymentId = await paymentIdForJob(service, job);
   await context.beat();
   const payment = await fetchPayment(paymentId, job.business_id, deadline);
-  const intent = await findIntent(service, String(payment.external_reference || ''));
+  const intent = await intentOfBusiness(service, payment, job.business_id);
+  if (!intent) throw new Error('Cancellation payment belongs to another checkout');
   const snapshot = await paymentSnapshot(payment, job.business_id, deadline);
   const persistedPayment = await service.rpc('record_mercadopago_payment_snapshot', {
     p_payment_intent_id: intent.payment_intent_id,
@@ -606,7 +645,9 @@ async function ledgerItem(
   const reference = String(summary.external_reference || '').trim();
   if (!/^taba2:checkout:[0-9a-f-]{36}$/.test(reference)) return { orphan: false, finalizeSessionId: null }; // another commerce's payment: not ours
   const intent = await findIntentOrNull(service, reference);
-  if (!intent) {
+  if (!intent || belongsToAnotherBusiness(intent, window.business_id)) {
+    // No checkout of ours, or a checkout of ANOTHER business of the platform: either way a finding for the business that
+    // read it, never a payment applied to somebody else's purchase.
     const recorded = await service.rpc('record_orphan_provider_payment', {
       p_business_id: window.business_id,
       p_environment: window.environment,

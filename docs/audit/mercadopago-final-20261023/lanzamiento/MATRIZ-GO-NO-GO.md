@@ -15,7 +15,7 @@ Leyenda: **BLOQUEO** = sin esto no se cobra. **LÍMITE QA** = el entorno de prue
 | A5 | **Recuperación ante pérdida**: copia externa, custodio separado de la clave y restauración integral ensayada; RPO/RTO sin acordar. No hay medición de RTO | Paquete local cifrado y verificado; destino externo y clave sin definir | F5 | Marco / Walter |
 | A6 | **Autorizaciones de Walter**: conectar **su** cuenta, habilitar el cobro, importe del pago real de control, catálogo y precios reales, caja/entregas/devoluciones | Ninguna otorgada | F6 y `catalog/opening/OWNER-INPUT.md` | Walter |
 | A7 | **Primer cobro real y primer reembolso real de control**: nada de dinero real se movió nunca por esta arquitectura | No ejecutado | Canary con monto mínimo (F6.3–F6.4) | Walter + operador |
-| A8 | **Hallazgos de la revisión independiente del núcleo financiero (#148)** | Corregidos en la migración `20261023210000` + worker (disputa `in_mediation`, barrido de 48 h, aislamiento entre comercios, id de reembolso verificado); los bajos están aceptados por escrito en `REVISION-INDEPENDIENTE.md`. Falta aplicarla al proyecto de producción con las demás (F2.3) | aplicar la migración y desplegar el worker; sin ella la disputa de un pedido cobrado lo deja en revisión bloqueante | ingeniería |
+| A8 | **Hallazgos de la revisión independiente del núcleo financiero (#148)** | Corregidos en la migración `20261023210000` + worker (disputa `in_mediation`, barrido de 48 h, aislamiento entre comercios, id de reembolso verificado); los bajos están aceptados por escrito en `REVISION-INDEPENDIENTE.md`. **Aplicada y verificada en QA el 23/10** (respaldo cifrado + recuperación comprobada + ensayo + 28/28 de aislamiento + 83 escenarios + 2 simulacros con el worker real; ver `DESPLIEGUE-QA.md`). Falta aplicarla al proyecto de producción con las demás (F2.3) | aplicar la migración y desplegar el worker en producción; sin ella la disputa de un pedido cobrado lo deja en revisión bloqueante | ingeniería, tras A1 |
 | A9 | **El sitio público `la-taba.pages.dev` apunta a un backend que ya no existe**: sirve la v144 y su `runtime-config.js` nombra `wwcpogltfgzgkrlilbcd` | **Verificado hoy** (lectura pública) | publicar el frontend nuevo o retirar el sitio antes de cualquier difusión | Marco |
 
 ## B. Limitaciones del entorno de pruebas (no bloquean; riesgo medido)
@@ -38,7 +38,9 @@ Leyenda: **BLOQUEO** = sin esto no se cobra. **LÍMITE QA** = el entorno de prue
 | C2 | Facturación electrónica (ARCA) apagada | Decisión legal/contable de Walter (D6) |
 | C3 | Bytes de Storage fuera del respaldo | Subir imágenes desde la fuente; incluir en el inventario de recuperación |
 | C4 | SMTP propio y plantillas de Auth; avisos al comercio | Necesario para recuperar contraseñas del Panel; configurar en F2.5 |
-| C5 | Autorización para borrar la base de restauración `taba_restore_20261022_ad3d29a2` y el inquilino sintético `drill-fb-qa` de QA | Housekeeping |
+| C5 | Autorización para borrar las bases de restauración `taba_restore_20261022_ad3d29a2` y `taba_restore_20261023_e9ba39c2` (ensayo de este despliegue) y el inquilino sintético `drill-fb-qa` de QA | Housekeeping |
+| C9 | La suite `mercadopago_operator_switch.local.sql` usa un `seller_id` fijo (`3594962708`) que ahora es un vendedor real conectado en QA; falla en QA tal cual está (16/16 con la fila apartada en la transacción) | Darle un id propio; no afecta producción |
+| C10 | Las pruebas de `tests/db` no son aisladas en una base poblada: `enqueue_checkout_provider_probes` y `claim_provider_ledger_window` toman trabajo de comercios reales | Sólo importa si se corren fuera de una base local desechable |
 | C6 | Segundo vendedor de prueba y su pago (A4 es el que importa); cuentas de prueba no se pueden borrar (límite 15) | Una cuenta más |
 | C7 | Retirar de TestApp/TABA2 Staging lo que ya no se use; consolidar documentación histórica | Limpieza |
 | C8 | Advertencias de asesores de Supabase/Auth heredadas | Revisar en producción |
@@ -51,7 +53,7 @@ Leyenda: **BLOQUEO** = sin esto no se cobra. **LÍMITE QA** = el entorno de prue
 | Guarda del integrador | sí, **a propósito**: bloquea sólo un desajuste confirmado del dueño de la app; si no puede leerlo, deja vender y lo registra (revisión 1, hallazgo 2) |
 | Ignorar el IPN legacy | sí: elimina falsos avisos en cada venta; nunca traga un webhook firmado (prueba) |
 | Pines `RECOVERY_TEST_APPLICATION_ID` | no: sólo el binding de QA y sus herramientas |
-| Migración `20261023210000` y worker | sí, **a propósito**: sólo cambia el trato de disputas, el barrido de 48 h, el aislamiento entre comercios y la verificación del id de reembolso; reversa en `docs/migrations/rollback/`; 11 pruebas de base en rojo sin ella y en verde con ella |
+| Migración `20261023210000` y worker | sí, **a propósito**: sólo cambia el trato de disputas, el barrido de 48 h, el aislamiento entre comercios y la verificación del id de reembolso; reversa en `docs/migrations/rollback/`; 11 pruebas de base en rojo sin ella y en verde con ella, y **11/11 también en QA tras aplicarla** (`DESPLIEGUE-QA.md`) |
 | Bindings de producción | **sin cambios** (confirmado en el diff por el revisor) |
 | Interruptores | `MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION` y `MERCADOPAGO_PRODUCTION_REVIEW_STATUS` siguen siendo las llaves de producción; nada de esto los toca |
 

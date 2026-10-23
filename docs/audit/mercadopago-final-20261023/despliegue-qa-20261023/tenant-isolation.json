@@ -1,0 +1,146 @@
+{
+  "at": "2026-10-23T23:03:55.898Z",
+  "projectRef": "ixewllzzuzpqrkxzmfzx",
+  "checks": [
+    {
+      "name": "owner A reads its own products",
+      "ok": true,
+      "detail": "rows=3"
+    },
+    {
+      "name": "owner A cannot read tenant B products",
+      "ok": true,
+      "detail": "rows=0"
+    },
+    {
+      "name": "owner B cannot read tenant A products",
+      "ok": true,
+      "detail": "rows=0"
+    },
+    {
+      "name": "owner A sees only its own membership rows",
+      "ok": true,
+      "detail": "rows=1"
+    },
+    {
+      "name": "owner A cannot update a tenant B product",
+      "ok": true,
+      "detail": "42501"
+    },
+    {
+      "name": "owner A cannot insert into tenant B",
+      "ok": true,
+      "detail": "42501"
+    },
+    {
+      "name": "owner A cannot rename tenant B",
+      "ok": true,
+      "detail": "rows=0"
+    },
+    {
+      "name": "owner A cannot open tenant B",
+      "ok": true,
+      "detail": "42501"
+    },
+    {
+      "name": "owner A cannot self-grant owner in tenant B",
+      "ok": true,
+      "detail": "42501"
+    },
+    {
+      "name": "anon sees no QA products while tenants are closed",
+      "ok": true,
+      "detail": "rows=0"
+    },
+    {
+      "name": "buyer sees no staff membership",
+      "ok": true,
+      "detail": "rows=0"
+    },
+    {
+      "name": "anon cannot read payment_intents",
+      "ok": true,
+      "detail": "42501"
+    },
+    {
+      "name": "buyer cannot read payment_intents",
+      "ok": true,
+      "detail": "42501"
+    },
+    {
+      "name": "owner A cannot read payment_intents",
+      "ok": true,
+      "detail": "42501"
+    },
+    {
+      "name": "anon cannot read mp_seller_connections",
+      "ok": true,
+      "detail": "42501"
+    },
+    {
+      "name": "buyer cannot read mp_seller_connections",
+      "ok": true,
+      "detail": "42501"
+    },
+    {
+      "name": "owner A cannot read mp_seller_connections",
+      "ok": true,
+      "detail": "42501"
+    },
+    {
+      "name": "anon cannot read mp_oauth_states",
+      "ok": true,
+      "detail": "42501"
+    },
+    {
+      "name": "buyer cannot read mp_oauth_states",
+      "ok": true,
+      "detail": "42501"
+    },
+    {
+      "name": "owner A cannot read mp_oauth_states",
+      "ok": true,
+      "detail": "42501"
+    },
+    {
+      "name": "anon cannot read payment_webhook_receipts",
+      "ok": true,
+      "detail": "42501"
+    },
+    {
+      "name": "buyer cannot read payment_webhook_receipts",
+      "ok": true,
+      "detail": "42501"
+    },
+    {
+      "name": "owner A cannot read payment_webhook_receipts",
+      "ok": true,
+      "detail": "42501"
+    },
+    {
+      "name": "anon cannot read payment_outbox",
+      "ok": true,
+      "detail": "42501"
+    },
+    {
+      "name": "buyer cannot read payment_outbox",
+      "ok": true,
+      "detail": "42501"
+    },
+    {
+      "name": "owner A cannot read payment_outbox",
+      "ok": true,
+      "detail": "42501"
+    },
+    {
+      "name": "unit_cost is not readable with a plain select",
+      "ok": true,
+      "detail": "42501"
+    },
+    {
+      "name": "marker product cleanup",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}

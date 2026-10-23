@@ -1,0 +1,105 @@
+{
+  "at": "2026-10-23T23:03:26.442Z",
+  "projectRef": "ixewllzzuzpqrkxzmfzx",
+  "mode": "gates-only",
+  "checks": [
+    {
+      "name": "catalog-image-manager",
+      "active": true,
+      "version": 8,
+      "httpStatus": 401,
+      "rejectedUnauthenticatedOrMalformedRequest": true
+    },
+    {
+      "name": "fiscal-artifact-access",
+      "active": true,
+      "version": 6,
+      "httpStatus": 401,
+      "rejectedUnauthenticatedOrMalformedRequest": true
+    },
+    {
+      "name": "mercadopago-cancel-payment",
+      "active": true,
+      "version": 13,
+      "httpStatus": 401,
+      "rejectedUnauthenticatedOrMalformedRequest": true
+    },
+    {
+      "name": "mercadopago-checkout-status",
+      "active": true,
+      "version": 13,
+      "httpStatus": 400,
+      "rejectedUnauthenticatedOrMalformedRequest": true
+    },
+    {
+      "name": "mercadopago-connect",
+      "active": true,
+      "version": 14,
+      "httpStatus": 401,
+      "rejectedUnauthenticatedOrMalformedRequest": true
+    },
+    {
+      "name": "mercadopago-create-checkout-session",
+      "active": true,
+      "version": 10,
+      "httpStatus": 401,
+      "rejectedUnauthenticatedOrMalformedRequest": true
+    },
+    {
+      "name": "mercadopago-create-preference",
+      "active": true,
+      "version": 13,
+      "httpStatus": 400,
+      "rejectedUnauthenticatedOrMalformedRequest": true
+    },
+    {
+      "name": "mercadopago-oauth-callback",
+      "active": true,
+      "version": 13,
+      "httpStatus": 303,
+      "rejectedUnauthenticatedOrMalformedRequest": true
+    },
+    {
+      "name": "mercadopago-payment-worker",
+      "active": true,
+      "version": 14,
+      "httpStatus": 401,
+      "rejectedUnauthenticatedOrMalformedRequest": true
+    },
+    {
+      "name": "mercadopago-refund",
+      "active": true,
+      "version": 13,
+      "httpStatus": 401,
+      "rejectedUnauthenticatedOrMalformedRequest": true
+    },
+    {
+      "name": "mercadopago-webhook",
+      "active": true,
+      "version": 16,
+      "httpStatus": 401,
+      "rejectedUnauthenticatedOrMalformedRequest": true
+    },
+    {
+      "name": "print-agent-gateway",
+      "active": true,
+      "version": 6,
+      "httpStatus": 403,
+      "rejectedUnauthenticatedOrMalformedRequest": true
+    },
+    {
+      "name": "team-invitation",
+      "active": true,
+      "version": 7,
+      "httpStatus": 400,
+      "rejectedUnauthenticatedOrMalformedRequest": true
+    }
+  ],
+  "worker": {
+    "unsignedStatus": 401,
+    "wrongSignatureStatus": 401
+  },
+  "passed": true,
+  "providerPaymentExecuted": false,
+  "webhookSignatureVerified": false
+}

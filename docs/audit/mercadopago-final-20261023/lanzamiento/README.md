@@ -8,6 +8,8 @@ Lectura sugerida, en este orden:
 4. [`REEMBOLSO-401.md`](REEMBOLSO-401.md): por qué el reembolso por API responde 401, qué se descartó de nuestro lado y qué sí funciona.
 5. [`VERIFICACION-MARKETPLACE.md`](VERIFICACION-MARKETPLACE.md): verificación con un segundo vendedor de prueba, preparada y **sin ejecutar** (cada paso con cuenta o dinero espera autorización).
 
+6. [`DESPLIEGUE-QA.md`](DESPLIEGUE-QA.md): la migración `20261023210000` y el worker corregido, aplicados y verificados en QA (respaldo cifrado, recuperación comprobada, ensayo, invariantes financieras), con las fallas observadas y su causa.
+
 La causa raíz del «algo anduvo mal» y su evidencia están en [`../causa-raiz-20261023/`](../causa-raiz-20261023/CAUSA-RAIZ.md).
 
 Nada de lo que describen estos documentos se ejecutó contra producción: no existe un proyecto de producción de La Taba (ver la matriz, A1).

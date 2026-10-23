@@ -5,6 +5,11 @@ una corrección de esquema revisable y completar la ronda auténtica de prueba c
 autorizado y los titulares autoricen sus pasos interactivos. No se realizaron pagos, reembolsos, vinculaciones,
 merge, despliegue productivo ni cambios en la cuenta de Walter. No se crearon proyectos ni servicios pagos.
 
+La continuación sobre `36f24cab` corrige la alarma de respaldos y agrega la revisión de los 36 ítems del checklist
+oficial MP, diagnóstico de notificaciones y comparación de compatibilidad. Ver [CONTINUACION.md](CONTINUACION.md)
+y [MERCADO-PAGO-CALIDAD.md](MERCADO-PAGO-CALIDAD.md). Las cifras de la tabla de la sección 3 corresponden al cierre
+anterior; esta continuación ejecutó 108 pruebas focalizadas, sin repetir las regresiones financieras sin cambios.
+
 ## 1. Proyecto recuperado y alcance comprobado
 
 - Repositorio y [PR 148](https://github.com/bitflowapp/la-taba-pages-preview/pull/148), abierto y en borrador;

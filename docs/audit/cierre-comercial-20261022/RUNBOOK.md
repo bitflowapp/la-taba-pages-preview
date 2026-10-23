@@ -137,6 +137,7 @@ Referencias oficiales consultadas: [compras de prueba con preferencias](https://
 ```text
 node scripts/recovery/prepare-offsite-backup.mjs --snapshot <snapshot-privado> --out <carpeta-nueva-fuera-del-repo>
 node scripts/recovery/prepare-offsite-backup.mjs --verify --out <carpeta-nueva-fuera-del-repo>
+node scripts/recovery/backup-freshness.mjs --root <snapshots-privados> --project-ref ixewllzzuzpqrkxzmfzx --max-hours 26 --require-restore-test
 ```
 
 El paquete contiene sólo dump y roles **cifrados**, y un manifiesto sin rutas locales ni configuración Auth.
@@ -149,5 +150,8 @@ Propuesta a acordar, no SLA implementado: RPO de 24 h, respaldo diario y previo 
 7 copias diarias/4 semanales en capacidad ya contratada; RTO objetivo de 4 h sujeto a un ensayo integral.
 Si la exposición de ventas hace insuficiente ese RPO, revisarlo antes del lanzamiento. Programar sólo después
 de acordar destino y custodia. `backup-freshness.mjs --require-restore-test` debe alertar si no hay certificado real.
+La alarma comprueba dump y roles cifrados, hashes y proyecto del sobre, sin descifrarlos; rechaza límites inválidos
+y fechas con más de cinco minutos de adelanto. Una copia reciente rota produce alerta aunque haya otra anterior
+intacta. Usar siempre `--project-ref` al vigilar un proyecto para que otro respaldo no oculte su ausencia.
 Restaurar trimestralmente y antes de cambios financieros relevantes. Los backups PostgreSQL no incluyen los bytes
 de Storage; ver [cobertura oficial de respaldos](https://supabase.com/docs/guides/platform/backups).

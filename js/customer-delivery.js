@@ -12,6 +12,8 @@ import {
   hasConfirmedDeliveryLocation,
 } from './core/delivery-location.js';
 import { APP_MODE_PRODUCTION, getAppMode } from './core/app-mode.js';
+import { getBusinessConfig } from './core/business-config-store.js';
+import { mapsSearchUrl } from './core/business-location.js';
 import { supportsProfileCheckout } from './core/profile-checkout.js';
 import { getCustomerOrderHistory } from './core/customer-history.js';
 import {
@@ -876,8 +878,10 @@ function compactCheckoutSummary() {
 }
 
 function renderCompactCheckoutSummary(summary) {
+  // Con la dirección publicada, el renglón dice DÓNDE se retira; sin ella,
+  // sigue diciendo lo de siempre.
   const entrega = summary.pickup
-    ? { titulo: 'Retirás en el local', detalle: 'Te esperamos en el mostrador' }
+    ? { titulo: 'Retirás en el local', detalle: pickupPoint().address || 'Te esperamos en el mostrador' }
     : {
       titulo: summary.address.label || 'Dirección de entrega',
       detalle: addressSummary(summary.address),
@@ -1054,10 +1058,12 @@ function renderDeliveryAddressBlock() {
   if (state.blockedReason === 'unsupported') return '';
   if (currentDeliveryModeIsPickup()) {
     // Retiro en local no exige nada geográfico: el punto de encuentro es el
-    // mostrador. La captura, si estaba abierta, no estorba acá.
+    // mostrador. La captura, si estaba abierta, no estorba acá. Lo que sí hace
+    // falta es saber QUÉ mostrador: ver `pickupPoint`.
     return `<div class="profile-checkout-pickup" data-profile-pickup>
       <strong>Retirás en el local</strong>
       <span>No hace falta una dirección: te esperamos en el mostrador.</span>
+      ${renderPickupPoint()}
     </div>`;
   }
   // El editor abierto ocupa el bloque entero: es la tarea que la persona está
@@ -1106,6 +1112,54 @@ function renderDeliveryAddressBlock() {
 function currentDeliveryModeIsPickup() {
   const form = checkoutForm();
   return String(form?.elements?.deliveryMode?.value || '') === 'pickup';
+}
+
+/*
+ * DÓNDE SE RETIRA.
+ *
+ * El bloque de retiro decía «te esperamos en el mostrador» sin decir qué
+ * mostrador: quien elegía retiro no veía en ningún lado del checkout la
+ * dirección del local, ni su horario, ni cómo llegar.
+ *
+ * Se muestra sólo lo que el comercio PUBLICÓ. Los rellenos de la configuración
+ * base —«Dirección no publicada», «Horarios a confirmar con el local»— no son
+ * datos del local, y es la misma regla que aplica el encabezado de la home
+ * (`publishedBusinessValue`, en ui.js; acá va su copia porque ui.js importa
+ * este módulo). El enlace a Maps sigue la regla de la ficha del comercio
+ * (`applyBusinessMapsLink`): por coordenadas —«Mendoza 827» a secas resuelve en
+ * Zapala— y sólo con la ubicación verificada, porque una coordenada sin
+ * verificar mandaría al cliente a cualquier lado.
+ */
+const UNPUBLISHED_BUSINESS_VALUE = /(?:a confirmar|no publicad)/i;
+
+function publishedValue(value) {
+  const text = String(value || '').trim();
+  return text && !UNPUBLISHED_BUSINESS_VALUE.test(text) ? text : '';
+}
+
+export function pickupPoint(config = getBusinessConfig()) {
+  const address = publishedValue(config?.address);
+  const hours = publishedValue(config?.openingHoursLabel || config?.openingHours);
+  const point = config?.businessLocation;
+  const located = config?.businessLocationVerified === true
+    && Number.isFinite(Number(point?.lat))
+    && Number.isFinite(Number(point?.lng));
+  return {
+    address,
+    hours,
+    mapsUrl: located ? mapsSearchUrl(point.lat, point.lng) : '',
+  };
+}
+
+export function renderPickupPoint(config = getBusinessConfig()) {
+  const { address, hours, mapsUrl } = pickupPoint(config);
+  if (!address && !hours && !mapsUrl) return '';
+  const rows = [
+    address ? `<div><dt>Dirección</dt><dd data-pickup-address>${escapeHtml(address)}</dd></div>` : '',
+    hours ? `<div><dt>Horario</dt><dd data-pickup-hours>${escapeHtml(hours)}</dd></div>` : '',
+  ].join('');
+  return `${rows ? `<dl class="profile-checkout-pickup-point" data-pickup-point>${rows}</dl>` : ''}
+      ${mapsUrl ? `<a class="text-button profile-checkout-pickup-maps" data-pickup-maps href="${escapeAttr(mapsUrl)}" target="_blank" rel="noopener noreferrer">Cómo llegar en Google Maps</a>` : ''}`;
 }
 
 // Navegar a Perfil no puede costar el carrito ni la selección ya hecha: se deja

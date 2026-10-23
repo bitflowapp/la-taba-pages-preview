@@ -169,7 +169,11 @@ html[data-taba-display-mode="standalone"] .topbar {
   gap: 4px;
 }
 
-/* Control de dirección: 44px, flexible, valor truncado con elipsis. */
+/* Control de dirección: 44px, flexible, valor truncado con elipsis.
+   `overflow: hidden` porque en su columna mínima (52 px, responsive.css) el
+   ícono, los espacios y el chevron no entran: sin recorte, lo que sobraba se
+   pintaba DETRÁS del botón del carrito. El anillo de foco no se recorta: es
+   del propio control, no de su contenido. */
 .topbar-address {
   display: inline-flex;
   min-width: 0;
@@ -178,6 +182,7 @@ html[data-taba-display-mode="standalone"] .topbar {
   align-items: center;
   gap: 8px;
   padding: 0 8px;
+  overflow: hidden;
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -202,12 +207,18 @@ html[data-taba-display-mode="standalone"] .topbar {
   gap: 0;
 }
 
+/* El rótulo se recorta igual que el valor. Sin esto era la única pieza del
+   control que no podía achicarse: con la columna angosta, «ENVIAR A» se salía
+   de su caja y asomaba detrás del botón del carrito. */
 .topbar-address .address-chip-text small {
+  overflow: hidden;
   color: var(--taba-muted);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.08em;
   line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .topbar-address .address-chip-text strong {
@@ -362,6 +373,52 @@ html[data-taba-display-mode="standalone"] .topbar {
   color: var(--taba-muted);
   font-size: 18px;
   line-height: 1;
+}
+
+/* MODO DEMOSTRACIÓN — la pestaña que lo dice mientras dura.
+   Cuelga del borde inferior de la barra superior, que es sticky, así que se ve
+   en todas las vistas y en todo el scroll sin agregar un renglón: es absoluta,
+   la barra conserva su alto y nada de la página se corre. Mismo lenguaje que
+   el lanzador del recorrido guiado (showcase.css): grafito, borde claro y el
+   punto rojo. No toma toques, así que lo que pase por debajo al scrollear se
+   sigue tocando como siempre. La enciende `data-demo-only`. */
+.demo-mode-badge {
+  position: absolute;
+  z-index: 1;
+  top: 100%;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 24px);
+  margin: 0;
+  padding: 1px 12px 2px;
+  border: 1px solid rgb(255 255 255 / 55%);
+  border-top: 0;
+  border-radius: 0 0 10px 10px;
+  background: rgb(25 28 33 / 96%);
+  box-shadow: 0 6px 16px rgb(16 20 26 / 24%);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.demo-mode-badge > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.demo-mode-badge-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #ff6273;
+  box-shadow: 0 0 0 3px rgb(255 98 115 / 18%);
 }
 
 .desktop-nav button,

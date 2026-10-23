@@ -1,0 +1,36 @@
+{
+  "backupSha256": "6983957294de53c7cb3c59ba7aefcc605d2bfb2673b0c5288b6568322b231219",
+  "productRows": 72,
+  "uniqueProductIds": 72,
+  "fields": [
+    "available",
+    "brand",
+    "catalog_origin",
+    "category",
+    "created_at",
+    "description",
+    "id",
+    "is_active",
+    "is_alcoholic",
+    "is_verified",
+    "name",
+    "presentation",
+    "price",
+    "price_status",
+    "sku",
+    "sort_order",
+    "stock",
+    "updated_at"
+  ],
+  "priceValueTypes": {
+    "string": 72
+  },
+  "missingBusinessId": 72,
+  "missingCommercialAssetFields": 72,
+  "historicalOrderRowsPresent": false,
+  "historicalAuthUsersPresent": false,
+  "stockFreshnessVerified": false,
+  "publicCatalogModified": false,
+  "pricesModified": false,
+  "quarantineRows": 76
+}

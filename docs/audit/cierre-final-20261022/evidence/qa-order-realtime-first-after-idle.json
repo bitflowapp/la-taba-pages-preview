@@ -1,0 +1,61 @@
+{
+  "at": "2026-10-22T22:39:19.908Z",
+  "orderId": "78b76e5f-62aa-41bd-8958-5a3e76ebe062",
+  "checks": [
+    {
+      "name": "QA window opens with server expiry",
+      "ok": true,
+      "detail": "2026-10-22T22:49:08.989544+00:00"
+    },
+    {
+      "name": "owner subscribes to orders",
+      "ok": true,
+      "detail": "SUBSCRIBED"
+    },
+    {
+      "name": "buyer subscribes to orders",
+      "ok": true,
+      "detail": "SUBSCRIBED"
+    },
+    {
+      "name": "buyer creates pickup/cash order",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "stock reserved once",
+      "ok": true,
+      "detail": "before=20 now=19"
+    },
+    {
+      "name": "owner session receives the order via Realtime",
+      "ok": false,
+      "detail": "events=none"
+    },
+    {
+      "name": "buyer session receives its own order via Realtime",
+      "ok": true,
+      "detail": "events=INSERT,UPDATE,UPDATE"
+    },
+    {
+      "name": "owner panel read shows the order",
+      "ok": true,
+      "detail": "received"
+    },
+    {
+      "name": "owner cancels the order",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "stock returned exactly once",
+      "ok": true,
+      "detail": "now=20"
+    },
+    {
+      "name": "QA window closed",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}

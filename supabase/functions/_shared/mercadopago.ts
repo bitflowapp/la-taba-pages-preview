@@ -10,8 +10,17 @@ import {
   sha256Hex,
   webhookUrl,
 } from './payment-runtime.ts';
+import { WorkerDeadlineExceeded } from './worker-deadline.ts';
+import type { Deadline } from './worker-deadline.ts';
 
 const MERCADOPAGO_API_BASE = 'https://api.mercadopago.com';
+const PROVIDER_CALL_TIMEOUT_MS = 12_000;
+
+/**
+ * Optional execution context of a provider read made by the payment worker: the invocation's time budget (a call
+ * never outlives it) and a heartbeat the caller uses to keep its job lease alive between calls.
+ */
+export type ProviderReadContext = { deadline?: Deadline; beat?: () => Promise<void> };
 
 export type PreferencePreparation = {
   checkout_session_id: string;
@@ -121,8 +130,10 @@ export function preferenceRequest(preparation: PreferencePreparation, _businessI
 
 export async function mercadoPagoRequest(
   path: string,
-  init: RequestInit & { idempotencyKey?: string; businessId?: string; authorityAccessToken?: string } = {},
+  init: RequestInit & { idempotencyKey?: string; businessId?: string; authorityAccessToken?: string; deadline?: Deadline } = {},
 ): Promise<MercadoPagoApiResult> {
+  // A worker that is out of time must not start a provider call it cannot finish and persist.
+  init.deadline?.assertTime(1_500);
   // Every provider call, including webhook reconciliation and refunds, checks
   // the environment review before the backend-only access token is read.
   providerEnvironment();
@@ -136,10 +147,14 @@ export async function mercadoPagoRequest(
   if (init.idempotencyKey) headers.set('X-Idempotency-Key', init.idempotencyKey);
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12_000);
+  // Never longer than the usual cap and never past the end of the invocation's budget.
+  const timeoutMs = init.deadline ? init.deadline.callTimeoutMs(PROVIDER_CALL_TIMEOUT_MS) : PROVIDER_CALL_TIMEOUT_MS;
+  const clampedByDeadline = timeoutMs < PROVIDER_CALL_TIMEOUT_MS;
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
+    const { deadline: _deadline, ...fetchInit } = init;
     const response = await fetch(`${MERCADOPAGO_API_BASE}${path}`, {
-      ...init,
+      ...fetchInit,
       headers,
       signal: controller.signal,
     });
@@ -161,6 +176,11 @@ export async function mercadoPagoRequest(
       rawText,
       requestId: response.headers.get('x-request-id') || response.headers.get('x-correlation-id') || '',
     };
+  } catch (error) {
+    // The timer that fired was the end of the invocation's budget, not the provider failing: the caller must hand
+    // its work back (resumable), not count a failure.
+    if (clampedByDeadline && (error as { name?: string } | null)?.name === 'AbortError') throw new WorkerDeadlineExceeded();
+    throw error;
   } finally {
     clearTimeout(timeout);
   }
@@ -195,16 +215,16 @@ export async function createPreference(preparation: PreferencePreparation, busin
   return { preferenceId, initPoint, sandboxInitPoint, responseHash, requestId: result.requestId };
 }
 
-export async function fetchPayment(paymentId: string, businessId?: string): Promise<Record<string, unknown>> {
-  const result = await mercadoPagoRequest(`/v1/payments/${encodeURIComponent(paymentId)}`, { businessId });
+export async function fetchPayment(paymentId: string, businessId?: string, deadline?: Deadline): Promise<Record<string, unknown>> {
+  const result = await mercadoPagoRequest(`/v1/payments/${encodeURIComponent(paymentId)}`, { businessId, deadline });
   if (!result.response.ok || !result.body) throw new MercadoPagoApiError(result.response.status, await sha256Hex(result.rawText), result.requestId);
   return result.body;
 }
 
 // A known refund is read by its own resource identity, never rediscovered in a
 // payment's partial/reordered refunds summary.
-export async function fetchRefund(paymentId: string, refundId: string, businessId: string): Promise<Record<string, unknown>> {
-  const result = await mercadoPagoRequest(`/v1/payments/${encodeURIComponent(paymentId)}/refunds/${encodeURIComponent(refundId)}`, { businessId });
+export async function fetchRefund(paymentId: string, refundId: string, businessId: string, deadline?: Deadline): Promise<Record<string, unknown>> {
+  const result = await mercadoPagoRequest(`/v1/payments/${encodeURIComponent(paymentId)}/refunds/${encodeURIComponent(refundId)}`, { businessId, deadline });
   if (!result.response.ok || !result.body) throw new MercadoPagoApiError(result.response.status, await sha256Hex(result.rawText), result.requestId);
   return result.body;
 }
@@ -215,25 +235,106 @@ export async function fetchRefund(paymentId: string, refundId: string, businessI
 // those notifications can be received but never validated. Reading the payment
 // back from the provider with the backend-only access token is a stronger
 // check than the HMAC: nothing here is taken from the caller.
+//
+// ALL payments of a reference are returned, every page of the result. A
+// checkout may hold several attempts (a rejected card, then an approved one,
+// or two approvals): picking "the first" or reading only page one hides money.
+export const PAYMENT_SEARCH_PAGE_SIZE = 50;
+export const PAYMENT_SEARCH_MAX_PAGES = 20;
+
+export async function findPaymentsByExternalReference(externalReference: string, businessId?: string, context: ProviderReadContext = {}): Promise<Record<string, unknown>[]> {
+  const ids: string[] = [];
+  let offset = 0;
+  for (let page = 0; page < PAYMENT_SEARCH_MAX_PAGES; page += 1) {
+    await context.beat?.();
+    const query = new URLSearchParams({
+      external_reference: externalReference,
+      sort: 'date_created',
+      criteria: 'asc',
+      limit: String(PAYMENT_SEARCH_PAGE_SIZE),
+      offset: String(offset),
+    });
+    const result = await mercadoPagoRequest(`/v1/payments/search?${query.toString()}`, { businessId, deadline: context.deadline });
+    if (!result.response.ok || !result.body) {
+      throw new MercadoPagoApiError(result.response.status, await sha256Hex(result.rawText), result.requestId);
+    }
+    const results = Array.isArray(result.body.results) ? result.body.results : [];
+    for (const item of results) {
+      const row = object(item);
+      const id = text(row.id);
+      if (id && text(row.external_reference) === externalReference && !ids.includes(id)) ids.push(id);
+    }
+    const total = pagingTotal(result.body);
+    if (total === null) throw incompleteSearch();
+    offset += results.length;
+    if (offset >= total) {
+      // The search payload is a summary; the durable snapshot always comes
+      // from the full payment resource, exactly like the webhook worker.
+      const payments: Record<string, unknown>[] = [];
+      for (const id of ids) {
+        await context.beat?.();
+        payments.push(await fetchPayment(id, businessId, context.deadline));
+      }
+      return payments;
+    }
+    if (!results.length) throw incompleteSearch();
+  }
+  // More pages than the budget: never conclude anything from a partial list.
+  throw incompleteSearch();
+}
+
+// Kept for callers that only need one payment: approved first, then newest.
 export async function findPaymentByExternalReference(externalReference: string, businessId?: string): Promise<Record<string, unknown> | null> {
+  const payments = await findPaymentsByExternalReference(externalReference, businessId);
+  return payments.find((payment) => text(payment.status).toLowerCase() === 'approved') || payments.at(-1) || null;
+}
+
+export type LedgerPage = { results: Record<string, unknown>[]; total: number; offset: number };
+
+// One page of the seller's payment ledger by LAST UPDATE. Searching by creation date (the previous behavior) can
+// never show a refund, a chargeback or a late approval of an old payment. Dates use the provider's documented format
+// (ISO-8601, milliseconds); `offset` is only ever the number of rows already handled at one exact timestamp, so it
+// stays far below the provider's ceiling (10 000). The caller owns the cursor; a page that cannot be read is an
+// error, never "empty".
+export async function searchPaymentsByLastUpdate(
+  businessId: string, beginIso: string, endIso: string, offset: number, limit = PAYMENT_SEARCH_PAGE_SIZE, deadline?: Deadline,
+): Promise<LedgerPage> {
   const query = new URLSearchParams({
-    external_reference: externalReference,
-    sort: 'date_created',
-    criteria: 'desc',
-    limit: '10',
+    sort: 'date_last_updated',
+    criteria: 'asc',
+    range: 'date_last_updated',
+    begin_date: new Date(Date.parse(beginIso)).toISOString(),
+    end_date: new Date(Date.parse(endIso)).toISOString(),
+    limit: String(Math.min(limit, PAYMENT_SEARCH_PAGE_SIZE)),
+    offset: String(Math.max(0, offset)),
   });
-  const result = await mercadoPagoRequest(`/v1/payments/search?${query.toString()}`, { businessId });
+  const result = await mercadoPagoRequest(`/v1/payments/search?${query.toString()}`, { businessId, deadline });
   if (!result.response.ok || !result.body) {
     throw new MercadoPagoApiError(result.response.status, await sha256Hex(result.rawText), result.requestId);
   }
-  const results = Array.isArray(result.body.results) ? result.body.results : [];
-  const owned = results.filter((item) => text(object(item).external_reference) === externalReference);
-  const chosen = owned.find((item) => text(object(item).status).toLowerCase() === 'approved') || owned[0];
-  const paymentId = chosen ? text(object(chosen).id) : '';
-  if (!paymentId) return null;
-  // The search payload is a summary; the durable snapshot always comes from the
-  // full payment resource, exactly like the webhook worker builds it.
-  return await fetchPayment(paymentId, businessId);
+  const results = (Array.isArray(result.body.results) ? result.body.results : []).map(object);
+  const total = pagingTotal(result.body);
+  if (total === null) throw incompleteSearch();
+  return { results, total, offset };
+}
+
+// Read-only evidence for an operator: what the provider lists as refunds of a payment.
+export async function listPaymentRefunds(paymentId: string, businessId: string, deadline?: Deadline): Promise<Record<string, unknown>[]> {
+  const result = await mercadoPagoRequest(`/v1/payments/${encodeURIComponent(paymentId)}/refunds`, { businessId, deadline });
+  if (!result.response.ok) throw new MercadoPagoApiError(result.response.status, await sha256Hex(result.rawText), result.requestId);
+  let parsed: unknown = result.body;
+  if (!parsed) { try { parsed = JSON.parse(result.rawText); } catch (_) { parsed = null; } }
+  return Array.isArray(parsed) ? parsed.map(object) : [];
+}
+
+function pagingTotal(body: Record<string, unknown>): number | null {
+  const paging = object(body.paging);
+  const total = typeof paging.total === 'number' ? paging.total : typeof body.total === 'number' ? body.total : Number.NaN;
+  return Number.isSafeInteger(total) && total >= 0 ? total : null;
+}
+
+function incompleteSearch(): PublicPaymentError {
+  return new PublicPaymentError(503, 'PROVIDER_SEARCH_INCOMPLETE', 'La búsqueda del proveedor no devolvió un resultado completo.');
 }
 
 export async function findPreferenceByExternalReference(externalReference: string, businessId?: string, authorityAccessToken?: string, paymentAttemptId?: string, sellerId?: string): Promise<Record<string, unknown> | null> {
@@ -315,34 +416,45 @@ export async function verifyStoredPreference(
 // A Checkout Pro payment does not carry `preference_id`: it is only reachable
 // through its merchant order. Without this hop the stored snapshot has an empty
 // preference and the intent assertion can never match.
-export async function fetchMerchantOrder(merchantOrderId: string, businessId?: string): Promise<Record<string, unknown> | null> {
-  const result = await mercadoPagoRequest(`/merchant_orders/${encodeURIComponent(merchantOrderId)}`, { businessId });
-  if (!result.response.ok || !result.body) return null;
+export async function fetchMerchantOrder(merchantOrderId: string, businessId?: string, deadline?: Deadline): Promise<Record<string, unknown> | null> {
+  const result = await mercadoPagoRequest(`/merchant_orders/${encodeURIComponent(merchantOrderId)}`, { businessId, deadline });
+  // Only a definitive "does not exist" is null. A 5xx, a timeout or throttling says nothing about the order: it is
+  // an error, so the caller retries instead of building a snapshot with an empty preference (finding F07).
+  if (result.response.status === 404) return null;
+  if (!result.response.ok || !result.body) {
+    throw new MercadoPagoApiError(result.response.status, await sha256Hex(result.rawText), result.requestId);
+  }
   return result.body;
 }
 
-export async function fetchChargeback(chargebackId: string, businessId?: string): Promise<Record<string, unknown>> {
-  const result = await mercadoPagoRequest(`/v1/chargebacks/${encodeURIComponent(chargebackId)}`, { businessId });
+export async function fetchChargeback(chargebackId: string, businessId?: string, deadline?: Deadline): Promise<Record<string, unknown>> {
+  const result = await mercadoPagoRequest(`/v1/chargebacks/${encodeURIComponent(chargebackId)}`, { businessId, deadline });
   if (!result.response.ok || !result.body) throw new MercadoPagoApiError(result.response.status, await sha256Hex(result.rawText), result.requestId);
   return result.body;
 }
 
-export async function fetchClaim(claimId: string, businessId?: string): Promise<Record<string, unknown>> {
-  const result = await mercadoPagoRequest(`/post-purchase/v1/claims/${encodeURIComponent(claimId)}`, { businessId });
+export async function fetchClaim(claimId: string, businessId?: string, deadline?: Deadline): Promise<Record<string, unknown>> {
+  const result = await mercadoPagoRequest(`/post-purchase/v1/claims/${encodeURIComponent(claimId)}`, { businessId, deadline });
   if (!result.response.ok || !result.body) throw new MercadoPagoApiError(result.response.status, await sha256Hex(result.rawText), result.requestId);
   return result.body;
 }
 
-export async function paymentSnapshot(payment: Record<string, unknown>, businessId?: string): Promise<Record<string, unknown>> {
+export async function paymentSnapshot(payment: Record<string, unknown>, businessId?: string, deadline?: Deadline): Promise<Record<string, unknown>> {
   const payer = object(payment.payer);
   const refunds = Array.isArray(payment.refunds) ? payment.refunds : [];
   const refundedAmount = refunds.reduce((total, refund) => total + number(object(refund).amount), 0);
+  // Identities, not only a sum: the database keeps one row per provider refund so that a refund made from the
+  // provider panel and one made here are both counted, once.
+  const refundList = refunds
+    .map((refund) => object(refund))
+    .filter((refund) => text(refund.id) !== '')
+    .map((refund) => ({ id: text(refund.id), amount: number(refund.amount).toFixed(2), status: text(refund.status).toLowerCase() || 'approved' }));
   const rawResponseHash = await sha256Hex(JSON.stringify(payment));
   const email = text(payer.email).toLowerCase();
   const merchantOrderId = text(object(payment.order).id);
   let preferenceId = text(payment.preference_id);
   if (!preferenceId && merchantOrderId) {
-    const merchantOrder = await fetchMerchantOrder(merchantOrderId, businessId);
+    const merchantOrder = await fetchMerchantOrder(merchantOrderId, businessId, deadline);
     preferenceId = text(object(merchantOrder).preference_id);
   }
   return {
@@ -360,6 +472,7 @@ export async function paymentSnapshot(payment: Record<string, unknown>, business
     live_mode: Boolean(payment.live_mode),
     provider_occurred_at: text(payment.date_last_updated) || text(payment.date_approved) || text(payment.date_created),
     refunded_amount: refundedAmount.toFixed(2),
+    refunds: refundList,
     payer_email_hash: email ? await hashSensitive(email, 'mercadopago-payer-email') : '',
     raw_response_hash: rawResponseHash,
   };

@@ -1,5 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from 'npm:@supabase/supabase-js@2.110.8';
+import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.110.8';
 import {
   CATALOG_IMAGE_MAX_BYTES,
   buildApprovedPaths,
@@ -11,7 +11,6 @@ import {
   validateSourceProvenance,
 } from '../_shared/catalog-image-contract.js';
 
-type SupabaseClient = ReturnType<typeof createClient>;
 type ImageRequest = {
   body: Record<string, unknown>;
   user: SupabaseClient;
@@ -54,7 +53,13 @@ const STAGING_BUCKET = 'catalog-image-staging';
 const PUBLIC_BUCKET = 'catalog-images';
 const UPLOAD_LIMIT = 100;
 const SIGNED_PREVIEW_SECONDS = 300;
-const PRODUCT_ALLOWED_ORIGIN = 'https://la-taba-commercial-pilot.pages.dev';
+// Los orígenes salen de TABA_ALLOWED_ORIGINS, la configuración de las funciones
+// de pago, con el mismo parseo que `allowedOrigins()` de
+// ../_shared/payment-runtime.ts (lista por comas, sólo https). Estaba fijo el
+// piloto comercial y la carga de fotos no andaba desde la vista previa de QA.
+// Sin la variable queda exactamente lo de antes.
+const LEGACY_PILOT_ORIGIN = 'https://la-taba-commercial-pilot.pages.dev';
+const ALLOWED_ORIGINS = configuredAllowedOrigins();
 
 Deno.serve(async (request) => {
   const cors = corsHeaders(request);
@@ -253,7 +258,7 @@ async function prepareUpload({ body, user, admin, actorUserId }: ImageRequest) {
   }
 
   try {
-    const signedUploads = {};
+    const signedUploads: Record<string, { path: string; token: string; content_type: string }> = {};
     for (const [kind, path, contentType] of [
       ['source', paths.source, originalMime],
       ['master', paths.master, 'image/webp'],
@@ -395,6 +400,7 @@ async function approveUpload({ body, user, admin, actorUserId }: ImageRequest) {
 }
 
 async function resumeApprovedUpload({ row, admin }: { row: ImageUploadRow; admin: SupabaseClient }) {
+  if (!row.catalog_asset_id) fail('IMAGE_ASSOCIATION_CHANGED', 409);
   if (row.cleanup_status === 'complete') {
     return { ok: true, upload_id: row.id, catalog_asset_id: row.catalog_asset_id,
       status: 'approved', image_associated: true, cleanup_status: 'complete' };
@@ -582,11 +588,19 @@ function requiredEnvironment(name: string): string {
   return value;
 }
 
+function configuredAllowedOrigins(): string[] {
+  const configured = (Deno.env.get('TABA_ALLOWED_ORIGINS')?.trim() || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter((value) => value.startsWith('https://'));
+  return configured.length > 0 ? configured : [LEGACY_PILOT_ORIGIN];
+}
+
 function corsHeaders(request: Request): Record<string, string> | null {
   const origin = request.headers.get('origin') || '';
   if (!origin) return {};
   const local = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
-  if (origin !== PRODUCT_ALLOWED_ORIGIN && !local) return null;
+  if (!ALLOWED_ORIGINS.includes(origin) && !local) return null;
   return {
     'access-control-allow-origin': origin,
     'access-control-allow-headers': 'authorization, apikey, content-type, x-client-info',

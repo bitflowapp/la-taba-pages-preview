@@ -1,0 +1,99 @@
+{
+  "at": "2026-10-21T02:59:02.492Z",
+  "projectRef": "ixewllzzuzpqrkxzmfzx",
+  "checks": [
+    {
+      "name": "Auth anonymous sign-in",
+      "passed": true,
+      "syntheticIdentity": true
+    },
+    {
+      "name": "Auth token refresh",
+      "passed": true
+    },
+    {
+      "name": "Checkout rejects missing authentication",
+      "passed": true,
+      "status": 401,
+      "code": "AUTH_REQUIRED"
+    },
+    {
+      "name": "Checkout rejects foreign origin",
+      "passed": true,
+      "status": 403,
+      "code": "ORIGIN_NOT_ALLOWED"
+    },
+    {
+      "name": "Disconnected seller cannot reserve stock",
+      "passed": true,
+      "status": 409,
+      "code": "PAYMENTS_NOT_ENABLED"
+    },
+    {
+      "name": "Guest cannot authorize seller OAuth",
+      "passed": true,
+      "status": 403,
+      "code": "BUSINESS_FORBIDDEN"
+    },
+    {
+      "name": "mercadopago-cancel-payment rejects unauthenticated caller",
+      "passed": true,
+      "status": 401,
+      "code": "UNAUTHORIZED_NO_AUTH_HEADER"
+    },
+    {
+      "name": "mercadopago-refund rejects unauthenticated caller",
+      "passed": true,
+      "status": 401,
+      "code": "UNAUTHORIZED_NO_AUTH_HEADER"
+    },
+    {
+      "name": "Unsigned webhook is not accepted",
+      "passed": true,
+      "status": 503,
+      "code": "PAYMENT_UNAVAILABLE"
+    },
+    {
+      "name": "RLS / grants deny guest payment_intents",
+      "passed": true,
+      "httpStatus": 403
+    },
+    {
+      "name": "RLS / grants deny guest mp_seller_connections",
+      "passed": true,
+      "httpStatus": 403
+    },
+    {
+      "name": "RLS / grants deny guest mp_oauth_states",
+      "passed": true,
+      "httpStatus": 403
+    },
+    {
+      "name": "Realtime authenticated subscription",
+      "passed": true,
+      "status": "SUBSCRIBED"
+    },
+    {
+      "name": "Realtime delivers database change",
+      "passed": true
+    },
+    {
+      "name": "Storage service upload to private bucket",
+      "passed": true
+    },
+    {
+      "name": "Storage private document cannot be fetched publicly",
+      "passed": true,
+      "httpStatus": 400
+    },
+    {
+      "name": "Storage QA object cleanup",
+      "passed": true
+    },
+    {
+      "name": "Synthetic Auth identity cleanup",
+      "passed": true
+    }
+  ],
+  "providerTransactionsExecuted": false
+}

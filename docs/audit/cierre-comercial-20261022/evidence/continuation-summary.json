@@ -1,0 +1,49 @@
+{
+  "baseCommit": "36f24cab3bf020dc77ab39f72416d3cb91ab689f",
+  "localDate": "2026-10-22",
+  "tests": { "focusedPassed": 108, "failed": 0, "skipped": 0, "financialRegressionRepeated": false },
+  "backupAlarm": {
+    "missingCiphertextAndFutureTimestampReproducedBeforeFix": true,
+    "ciphertextHashAndEnvelopeProjectChecked": true,
+    "keyReadOrDecryptionPerformed": false,
+    "existingQASnapshotIntegrityPassed": true,
+    "requireRestoreTestExitCode": 1,
+    "restoreCertificateStillPending": true,
+    "remoteBackupCreated": false
+  },
+  "mercadoPago": {
+    "applicationIdRequested": "2691240967769590",
+    "officialImplementationItemsReviewed": 14,
+    "officialGoodPracticesReviewed": 22,
+    "notificationDiagnostics": {
+      "analyzed": 1,
+      "succeeded": 0,
+      "failed": 1,
+      "statusCode": 502,
+      "dateAsReturned": "2026-10-21 13:25",
+      "timezoneReturned": false,
+      "destinationUrlReturned": false,
+      "currentPreviewCausalityEstablished": false
+    },
+    "paymentQualityEvaluationPerformed": false,
+    "credentialsRequested": false,
+    "oauthOrFinancialOperationsPerformed": false
+  },
+  "release": {
+    "dryRunPassed": true,
+    "mutations": 0,
+    "productionChecks": "NOT_EXECUTED",
+    "sourceIdentity": "3c792abaf956ebfc35178bf375260dd2566be7474d05ecad837c75fd48813e5a",
+    "compatibilitySpecificationModified": false,
+    "localSchemaComparedOnly": true,
+    "managedDockerDaemonAvailable": false
+  },
+  "hostedSupabase": {
+    "projectRef": "ixewllzzuzpqrkxzmfzx",
+    "getProjectStillDenied": true,
+    "hostedWritesPerformed": false,
+    "alternativeDataAccessAttempted": false
+  },
+  "productionModified": false,
+  "verdict": "NO-GO for production and commercial activation"
+}

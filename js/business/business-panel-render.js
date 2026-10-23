@@ -8,7 +8,7 @@ import {
   sortAlertsByUrgency, summarizeOperation,
 } from './business-operation-language.js';
 import {
-  classifyBusinessPayment, evaluateMercadoPagoSetup, paymentActionsFor, REFUND_CONFIRMATION_PHRASE,
+  CANCEL_CONFIRMATION_PHRASE, classifyBusinessPayment, evaluateMercadoPagoSetup, paymentActionsFor, REFUND_CONFIRMATION_PHRASE,
 } from './business-payments-console.js';
 import { ARCA_HOMOLOGATION_PHRASE, evaluateArcaActivation } from './business-fiscal-assistant.js';
 import { DEVICE_CHECKS, summarizeDeviceChecks } from './business-device-check.js';
@@ -145,12 +145,12 @@ function renderAlertCard(alert, { busy } = {}) {
   </article>`;
 }
 
-export function renderPaymentsSurface({ payments, status, manualPayments, manualStatus, role, activation, connection, busy, refundTarget, onlinePayments = true } = {}) {
+export function renderPaymentsSurface({ payments, status, manualPayments, manualStatus, role, activation, connection, busy, refundTarget, cancelTarget = '', onlinePayments = true, connectionUi = null } = {}) {
   if (!can(role, 'payments.view')) return deniedPanel('Pagos', 'Tu rol no incluye la consulta de pagos.');
   const elevated = isElevated(role);
   const rows = Array.isArray(payments) ? payments : [];
   const body = rows.length
-    ? rows.map((payment) => renderPaymentCard(payment, { elevated, busy, refundTarget })).join('')
+    ? rows.map((payment) => renderPaymentCard(payment, { elevated, busy, refundTarget, cancelTarget })).join('')
     : status?.phase === 'loading'
       ? '<p class="form-hint">Buscando los pagos del día…</p>'
       : status?.phase === 'error'
@@ -159,7 +159,7 @@ export function renderPaymentsSurface({ payments, status, manualPayments, manual
 
   return panel('Pagos', 'Lo que entró hoy y qué hacer con cada caso.', `
     ${renderManualPaymentsSurface(manualPayments, manualStatus, { elevated, busy })}
-    ${onlinePayments ? renderMercadoPagoConnection(connection, busy, elevated, activation) : renderOnlinePaymentsDisabled()}
+    ${onlinePayments ? renderMercadoPagoConnection(connection, busy, elevated, activation, connectionUi) : renderOnlinePaymentsDisabled()}
     <div class="operation-center-toolbar">
       <span class="form-hint">${rows.length} pago(s) listados</span>
       <button class="ghost-button compact" type="button" data-payments-refresh ${busy ? 'disabled' : ''}>Actualizar</button>
@@ -199,7 +199,7 @@ function renderManualPaymentsSurface(payments, status, { elevated, busy }) {
     <div class="production-payment-list">${body}</div></section>`;
 }
 
-function renderPaymentCard(payment, { elevated, busy, refundTarget } = {}) {
+function renderPaymentCard(payment, { elevated, busy, refundTarget, cancelTarget } = {}) {
   const classified = classifyBusinessPayment(payment);
   const id = String(payment.payment_intent_id || '');
   const actions = paymentActionsFor(payment, { elevated }).map((action) => `
@@ -215,6 +215,15 @@ function renderPaymentCard(payment, { elevated, busy, refundTarget } = {}) {
       <div class="button-row">
         <button class="secondary-button compact" type="button" data-payment-refund-confirm="${escapeHtml(id)}" ${busy ? 'disabled' : ''}>Devolver el dinero</button>
         <button class="ghost-button compact" type="button" data-payment-refund-cancel>Mejor no</button>
+      </div>
+    </div>` : '';
+  const cancelForm = cancelTarget === id ? `
+    <div class="business-ops-form payment-cancel-form" data-payment-cancel-form="${escapeHtml(id)}">
+      <p class="production-intake-error">Mercado Pago no va a cobrar este pago y el stock vuelve al catálogo.</p>
+      <label>Escribí ${escapeHtml(CANCEL_CONFIRMATION_PHRASE)} para confirmar<input name="cancelConfirmation" maxlength="16" autocomplete="off"></label>
+      <div class="button-row">
+        <button class="secondary-button compact" type="button" data-payment-cancel-confirm="${escapeHtml(id)}" ${busy ? 'disabled' : ''}>Cancelar el pago</button>
+        <button class="ghost-button compact" type="button" data-payment-cancel-dismiss>Mejor no</button>
       </div>
     </div>` : '';
 
@@ -236,6 +245,7 @@ function renderPaymentCard(payment, { elevated, busy, refundTarget } = {}) {
     ${payment.documentation_required ? '<p class="production-intake-error">El cliente abrió un reclamo y hay que mandar documentación.</p>' : ''}
     ${actions ? `<div class="button-row">${actions}</div>` : '<p class="form-hint">No hay acciones disponibles para este estado.</p>'}
     ${refundForm}
+    ${cancelForm}
     <details class="operation-alert-support">
       <summary>Detalle para soporte</summary>
       <p class="form-hint">Pago ${escapeHtml(payment.payment_id_short ? `••••${payment.payment_id_short}` : 'todavía sin identificar')}</p>
@@ -243,10 +253,10 @@ function renderPaymentCard(payment, { elevated, busy, refundTarget } = {}) {
   </article>`;
 }
 
-export function renderPaymentsSetupSurface({ connection, activation, role, busy, onlinePayments = true } = {}) {
+export function renderPaymentsSetupSurface({ connection, activation, role, busy, onlinePayments = true, connectionUi = null } = {}) {
   if (!can(role, 'payments.reconcile')) return deniedPanel('Mercado Pago', 'La conexión de cobros la hace el dueño o el encargado.');
   if (!onlinePayments) return panel('Cobros online', 'No habilitados en esta etapa.', renderOnlinePaymentsDisabled());
-  return panel('Mercado Pago', 'Recibí los pagos online en tu cuenta.', renderMercadoPagoConnection(connection, busy, true, activation));
+  return panel('Mercado Pago', 'Recibí los pagos online en tu cuenta.', renderMercadoPagoConnection(connection, busy, true, activation, connectionUi));
 }
 
 /**
@@ -278,18 +288,104 @@ function renderOnlinePaymentsDisabled() {
     + '<p>Se cobra en efectivo o por transferencia al entregar o retirar. Registrá cada cobro recién cuando el dinero esté recibido.</p></section>';
 }
 
-function renderMercadoPagoConnection(connection, busy, elevated, activation = null) {
+// Lo que el dueño ve al volver de Mercado Pago. El resultado sólo elige el texto;
+// el estado de la tarjeta es el que vuelve a leer el servidor.
+const MERCADOPAGO_RETURN_COPY = Object.freeze({
+  cancelled: { tone: 'attention', text: 'Cancelaste la autorización en Mercado Pago. No se vinculó ninguna cuenta.' },
+  expired: { tone: 'attention', text: 'El enlace de autorización venció o ya se usó (dura 10 minutos). Tocá «Conectar Mercado Pago» otra vez.' },
+  session: { tone: 'attention', text: 'Tu sesión del panel venció mientras autorizabas. Volvé a entrar al panel y repetí la conexión.' },
+  account: { tone: 'attention', text: 'La cuenta con la que entraste a Mercado Pago no se puede usar en este entorno (por ejemplo, una cuenta real en el entorno de prueba, o al revés). Entrá con la cuenta correcta y repetí.' },
+  seller_changed: { tone: 'critical', text: 'Esta tienda ya registró cobros con otra cuenta de Mercado Pago. Para cambiar de cuenta hace falta que lo revise soporte, así no se mezclan los cobros.' },
+  error: { tone: 'critical', text: 'No pudimos completar la vinculación. Volvé a intentar; si se repite, avisá a soporte.' },
+});
+
+function mercadoPagoReturnNotice(returnResult, connected) {
+  if (!returnResult) return null;
+  if (returnResult === 'connected') {
+    return connected
+      ? { tone: 'calm', text: 'Listo: la cuenta de Mercado Pago quedó vinculada. Vincular no activa los cobros: la habilitación final se hace después de una prueba.' }
+      : { tone: 'attention', text: 'Volviste de Mercado Pago, pero la vinculación no figura. Tocá «Conectar Mercado Pago» otra vez.' };
+  }
+  return MERCADOPAGO_RETURN_COPY[returnResult] || null;
+}
+
+function renderMercadoPagoNotice(notice) {
+  if (!notice?.text) return '';
+  const tone = ['calm', 'attention', 'critical'].includes(notice.tone) ? notice.tone : 'attention';
+  return '<p class="mp-connection-notice tone-' + tone + '" role="' + (tone === 'critical' ? 'alert' : 'status') + '" data-mp-connection-notice>'
+    + escapeHtml(notice.text) + '</p>';
+}
+
+const PENDING_LABELS = Object.freeze([
+  ['open_payments', 'cobro(s) sin cerrar (pendientes o en revisión)'],
+  ['refunds_in_progress', 'devolución(es) en curso'],
+  ['cancellations_in_progress', 'cancelación(es) en curso'],
+  ['queued_jobs', 'aviso(s) de Mercado Pago todavía en proceso'],
+  ['open_discrepancies', 'discrepancia(s) financiera(s) sin resolver'],
+  ['ledger_unsynced', 'conciliación con Mercado Pago pendiente (se completa sola en minutos)'],
+]);
+
+// Antes de desvincular: qué queda pendiente y qué cambia. Sin diálogos del
+// navegador, con dos botones explícitos.
+function renderDisconnectReview(review, busy) {
+  if (!review) return '';
+  const pending = review.pending && typeof review.pending === 'object' ? review.pending : {};
+  const blocking = PENDING_LABELS
+    .map(([key, label]) => [Math.max(0, Math.trunc(Number(pending[key]) || 0)), label])
+    .filter(([count]) => count > 0);
+  const recent = Math.max(0, Math.trunc(Number(pending.approved_last_180_days) || 0));
+  if (blocking.length) {
+    return '<div class="business-ops-form mp-disconnect-review" data-mp-disconnect-review="blocked">'
+      + '<p class="production-intake-error"><strong>Todavía no se puede desvincular.</strong></p>'
+      + '<ul>' + blocking.map(([count, label]) => '<li>' + count + ' ' + escapeHtml(label) + '</li>').join('') + '</ul>'
+      + (review.paused ? '<p>Pausamos los cobros online nuevos para que no entren más pagos. Cuando lo pendiente se cierre, vas a poder desvincular.</p>'
+        : '<p>Esperá a que se cierren o resolvelos desde «Pagos». Si necesitás cortar el acceso ya mismo, podés quitar el permiso desde tu cuenta de Mercado Pago; lo pendiente quedaría para revisar con soporte.</p>')
+      + '<div class="button-row"><button class="ghost-button compact" type="button" data-mp-connection-action="disconnect-cancel">Entendido</button></div></div>';
+  }
+  return '<div class="business-ops-form mp-disconnect-review" data-mp-disconnect-review="ready">'
+    + '<p><strong>¿Desvincular la cuenta de Mercado Pago?</strong></p>'
+    + '<ul><li>Se apagan los cobros online de la tienda. Efectivo y transferencia siguen igual.</li>'
+    + '<li>El historial de pagos y pedidos se conserva.</li>'
+    + (recent ? '<li>Las devoluciones de los ' + recent + ' cobro(s) de los últimos 6 meses se harán desde tu cuenta de Mercado Pago, no desde el panel.</li>' : '')
+    + '<li>Podés volver a vincular la misma cuenta cuando quieras.</li></ul>'
+    + '<div class="button-row">'
+    + '<button class="secondary-button compact" type="button" data-mp-connection-action="disconnect-confirm" ' + (busy ? 'disabled' : '') + '>Sí, desvincular</button>'
+    + '<button class="ghost-button compact" type="button" data-mp-connection-action="disconnect-cancel">Mejor no</button>'
+    + '</div></div>';
+}
+
+function renderMercadoPagoConnection(connection, busy, elevated, activation = null, connectionUi = null) {
   const status = connection?.status;
   const connected = status === 'connected';
   const reauthorize = status === 'requires_reauthorization';
   const state = mercadoPagoSellerState(connection, activation, { busy });
-  const button = (action, label) => '<button class="primary-button compact" type="button" data-mp-connection-action="' + action + '" ' + (busy ? 'disabled' : '') + '>' + label + '</button>';
-  // Sin identificadores de cuenta: el dueño reconoce su cuenta en Mercado Pago,
-  // no por un número.
+  const ui = connectionUi && typeof connectionUi === 'object' ? connectionUi : {};
+  const button = (action, label, kind = 'primary-button') => '<button class="' + kind + ' compact" type="button" data-mp-connection-action="' + action + '" ' + (busy ? 'disabled' : '') + '>' + label + '</button>';
+  const production = String(connection?.environment || activation?.environment || 'test') === 'production';
+  const environment = production
+    ? '<p class="status-pill" data-mp-environment="production">Dinero real</p>'
+    : '<p class="status-pill" data-mp-environment="test">Modo prueba: no se mueve dinero real</p>';
+  // Sin identificadores técnicos: el dueño reconoce su cuenta por el apodo y el
+  // correo enmascarado que muestra Mercado Pago, no por un número.
+  const account = connected && connection?.account_label
+    ? '<p data-mp-account>Vinculada con <strong>' + escapeHtml(String(connection.account_label)) + '</strong>'
+      + (connection.connected_at ? ' desde el ' + escapeHtml(formatTimestamp(connection.connected_at)) : '') + '.</p>'
+      + '<p class="form-hint">¿No es la cuenta que querías (la personal en vez de la del comercio, o al revés)? Desvinculá y volvé a conectar con la correcta antes de vender.</p>'
+    : '';
+  const revoked = reauthorize && connection?.deauthorized_at
+    ? '<p class="form-hint">El permiso se quitó desde la cuenta de Mercado Pago. Mientras tanto se cobra en efectivo o por transferencia.</p>' : '';
+  const enabled = activation?.enabled === true;
+  const actions = ui.disconnectReview ? '' : connected
+    ? button('verify', 'Verificar conexión') + (enabled ? button('pause', 'Pausar cobros online', 'secondary-button') : '') + button('disconnect', 'Desvincular', 'ghost-button')
+    : button('connect', reauthorize ? 'Reconectar' : 'Conectar Mercado Pago');
+  const returnNotice = mercadoPagoReturnNotice(ui.returnResult, connected);
   return '<section aria-label="Mercado Pago" class="operation-summary operation-summary--mercadopago tone-' + state.tone + '" aria-busy="' + Boolean(busy) + '" data-mp-seller-state="' + state.id + '"><h3>Mercado Pago</h3><p role="status" aria-live="polite"><strong>' + escapeHtml(state.label) + '</strong></p>'
     + '<p>' + escapeHtml(state.detail) + '</p>'
-    + (elevated ? '<div class="button-row">' + (connected ? button('verify','Verificar conexión') + button('disconnect','Desconectar') : button('connect',reauthorize ? 'Reconectar' : 'Conectar Mercado Pago')) + '</div>' : '')
-    + (!connected ? '<p>Vas a continuar en Mercado Pago para autorizar la conexión. TABA nunca recibe tu contraseña.</p>' : '') + '</section>';
+    + environment + account + revoked
+    + renderMercadoPagoNotice(returnNotice) + renderMercadoPagoNotice(ui.notice)
+    + (elevated ? renderDisconnectReview(ui.disconnectReview, busy) : '')
+    + (elevated && actions ? '<div class="button-row">' + actions + '</div>' : '')
+    + (!connected ? '<p>Vas a continuar en Mercado Pago para autorizar la conexión con tu usuario y tu contraseña. TABA nunca recibe tu contraseña. Vincular la cuenta no activa los cobros: la habilitación final se hace después de una prueba.</p>' : '') + '</section>';
 }
 
 export function renderFiscalSetupSurface({ activation, role, busy, authorizationDraft } = {}) {

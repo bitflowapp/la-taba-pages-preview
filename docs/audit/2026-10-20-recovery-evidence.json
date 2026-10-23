@@ -1,0 +1,204 @@
+{
+  "capturedAt": "2026-10-21T01:01:32.133Z",
+  "repository": "bitflowapp/la-taba-pages-preview",
+  "baseCommit": "ff55f4cf6fea8f7f09b01c6eb58b33b4de971966",
+  "mutations": false,
+  "targets": [
+    {
+      "environment": "production",
+      "expectedRef": "wwcpogltfgzgkrlilbcd",
+      "origin": "https://la-taba.pages.dev",
+      "version": {
+        "httpStatus": 200,
+        "commit": "cd26834b25909a3fbf6b5133af7b70c39a35fc2d",
+        "runtime": "la-taba-runtime-v144-mp-production-verification"
+      },
+      "runtime": {
+        "httpStatus": 200,
+        "supabaseUrl": "https://wwcpogltfgzgkrlilbcd.supabase.co"
+      },
+      "supabaseDns": "ENOTFOUND",
+      "management": {
+        "httpStatus": 404,
+        "originalProjectAccessible": false
+      }
+    },
+    {
+      "environment": "staging",
+      "expectedRef": "ucbtjcurawxjwjdvvcvj",
+      "origin": "https://taba2-staging.pages.dev",
+      "version": {
+        "httpStatus": 200,
+        "commit": "bcea25fd8d3ffe088dbf6ea6f3bfa2dbc3b79852",
+        "runtime": "la-taba-runtime-v114-commercial-pilot"
+      },
+      "runtime": {
+        "httpStatus": 200,
+        "supabaseUrl": "https://ucbtjcurawxjwjdvvcvj.supabase.co"
+      },
+      "supabaseDns": "ENOTFOUND",
+      "management": {
+        "httpStatus": 404,
+        "originalProjectAccessible": false
+      }
+    },
+    {
+      "environment": "pilot",
+      "expectedRef": "tkanbadcglszlcyfjvpv",
+      "origin": "https://la-taba-commercial-pilot.pages.dev",
+      "version": {
+        "httpStatus": 200,
+        "commit": "9fae988df2932bbc3f13ffca4582beee5db856e8",
+        "runtime": "la-taba-runtime-v131-premium-motion"
+      },
+      "runtime": {
+        "httpStatus": 200,
+        "supabaseUrl": "https://tkanbadcglszlcyfjvpv.supabase.co"
+      },
+      "supabaseDns": "ENOTFOUND",
+      "management": {
+        "httpStatus": 404,
+        "originalProjectAccessible": false
+      }
+    }
+  ],
+  "local": {
+    "migrationFiles": 159,
+    "edgeFunctions": [
+      "catalog-image-manager",
+      "fiscal-artifact-access",
+      "mercadopago-cancel-payment",
+      "mercadopago-checkout-status",
+      "mercadopago-connect",
+      "mercadopago-create-checkout-session",
+      "mercadopago-create-preference",
+      "mercadopago-oauth-callback",
+      "mercadopago-payment-worker",
+      "mercadopago-refund",
+      "mercadopago-webhook",
+      "print-agent-gateway",
+      "team-invitation"
+    ]
+  },
+  "backup": {
+    "bytes": 1360504,
+    "sha256": "6983957294de53c7cb3c59ba7aefcc605d2bfb2673b0c5288b6568322b231219",
+    "recordedAt": "2026-09-18T04:11:03.993Z",
+    "projectRef": "wwcpogltfgzgkrlilbcd",
+    "migrations": 122,
+    "schemaEntries": {
+      "columns": 1198,
+      "constraints": 718,
+      "functions": 291,
+      "views": 0,
+      "triggers": 88
+    },
+    "dataEntries": {
+      "businesses": 1,
+      "business_service_hours": 0,
+      "delivery_zones": 0,
+      "business_payment_settings": 0,
+      "products": 72,
+      "orders_summary": 3
+    },
+    "missingOperationalTables": [
+      "orders",
+      "order_items",
+      "payment_intents",
+      "payment_attempts",
+      "inventory_reservations",
+      "business_memberships",
+      "mp_seller_connections"
+    ],
+    "fullRecoveryVerified": false,
+    "historicalStockMustBeReconciled": true
+  },
+  "tests": {
+    "nodeBaseline": {
+      "passed": 2929,
+      "failed": 0
+    },
+    "newNode": {
+      "passed": 4,
+      "failed": 0
+    },
+    "denoFinal": {
+      "passed": 229,
+      "failed": 0,
+      "network": "denied"
+    },
+    "browserSystemChrome": {
+      "passed": 28,
+      "failed": 0,
+      "backend": "fixtures",
+      "provider": "fixtures"
+    },
+    "postgres": {
+      "status": "incomplete",
+      "baseMigrationsApplied": 122,
+      "completedStages": [
+        "OLD_EDGE_OLD_DB: PASS",
+        "OLD_EDGE_OLD_DB_FINANCIAL_LIFECYCLE: PASS",
+        "NEW_EDGE_OLD_DB: FAIL_CLOSED",
+        "LEGACY_REFUND_RECORDER_PRESERVED_DURING_EXPAND: PASS",
+        "V2_RPC_PRIVILEGES: PASS (anon/authenticated denied; service_role granted)",
+        "OLD_EDGE_EXPAND_DB_CHECKOUT: PASS",
+        "expand: CONCURRENT_A_REJECTED_B_RELEASED",
+        "NEW_EDGE_EXPAND_DB: PASS",
+        "A4_V2_UNBOUND_FAIL_CLOSED; TERMINAL_REPLAY_COMPATIBLE; CONCURRENT_EXACTLY_ONCE: PASS",
+        "A4_INDEPENDENT_MISSING_PRE_REQUEST_FUTURE_UNKNOWN_AND_KNOWN: PASS",
+        "INDEPENDENT_V2_EXPAND_REPRODUCTIONS: PASS",
+        "OLD_EDGE_EXPAND_DB_REAL_REFUND_HANDLER: PASS (approved, recorder failure, retry, one provider POST)",
+        "contract: CONCURRENT_A_REJECTED_B_RELEASED",
+        "CURRENT_CONTRACT_REPLAY: PASS",
+        "CAS_TRANSITION_BUSINESS_SETTINGS_CREDENTIAL_LOCKS: PASS (3 independent writers blocked)",
+        "SELLER_SETTINGS_LOCK_ORDER: PASS (seller -> settings, no deadlock)",
+        "ACTUAL_EXPAND_ENTRYPOINT_ON_NON_SUPERUSER_POSTGRES: PASS",
+        "OLD_EDGE_PRE_RELEASE_V5_DB: PASS",
+        "expand: CONCURRENT_A_REJECTED_B_RELEASED",
+        "NEW_EDGE_PRE_RELEASE_V5_DB: PASS",
+        "OLD_EDGE_EXPAND_DB_REAL_REFUND_HANDLER: PASS (approved, recorder failure, retry, one provider POST)",
+        "LIVE_PG_SESSION_LOCK_SECOND_RUNNER_REJECTED: PASS",
+        "MANAGED_NON_SUPERUSER_AND_PRIVATE_PROOF_PERMISSIONS: PASS",
+        "SCHEMA_DERIVED_FINANCIAL_STATUS_REJECTION: PASS (44 actual constrained states)",
+        "UNKNOWN_SCHEMA_AND_DATABASE_READ_FAILURE_FAIL_CLOSED: PASS",
+        "ACTIVATION_AFTER_PREFLIGHT_IS_SERIALIZED_AND_REJECTED: PASS",
+        "STALE_REPEATABLE_READ_SNAPSHOT_CANNOT_BYPASS_QUIESCENCE: PASS",
+        "PRE_DRAIN_DEPLOYMENT_REJECTED: PASS",
+        "ALL_FINANCIAL_WRITES_AND_DIRECT_DISPATCH_BLOCKED: PASS",
+        "SCHEDULER_RACE_DEQUEUED_DISPATCH_AND_RECENT_RESPONSE_REJECTED: PASS",
+        "MISSING_TRUSTED_PROOF_AND_ARCHIVED_CONTRACT_ENTRYPOINT_REJECTED: PASS",
+        "KILLED_RUNNER_RELEASES_SESSION_LOCK_BUT_DURABLE_QUIESCENCE_SURVIVES: PASS",
+        "PARTIAL_RELEASE_RETAINS_QUIESCENCE_AND_DENIES_CONTRACT_ABORT: PASS",
+        "LOCK_REMAINS_OWNED_DURING_BLOCKED_DEPLOYMENT_AND_VERIFICATION: PASS",
+        "PARTIAL_RETRY_REUSES_EXACT_IMMUTABLE_VERSIONS: PASS",
+        "STALE_RUNTIME_WRONG_DEPLOYMENT_ID_AND_TAMPERED_SOURCE_REJECTED: PASS",
+        "RELEASE_WITHOUT_POST_RELEASE_DRAIN_CANNOT_CONTRACT: PASS",
+        "WRONG_CONTRACT_SHA_AND_STALE_PROOF_REJECTED: PASS",
+        "COMPLETE_DURABLE_LIFECYCLE_CONTRACT_ONE_SHOT_AND_RESUME: PASS"
+      ],
+      "canonicalPgTapCompleted": false,
+      "dumpRestoreCompleted": false,
+      "blocker": "C drive full; Docker info and disposable cleanup timed out"
+    },
+    "paymentsAfterFix": {
+      "exit": 0,
+      "error": null,
+      "passed": 205,
+      "failed": 0
+    }
+  },
+  "productionPublished": false,
+  "realPaymentsEnabled": false,
+  "realTransactionsExecuted": 0,
+  "modifiedFinancialSources": {
+    "supabase/functions/mercadopago-create-preference/index.ts": "54f17487bdf8980c08092d8c5b3ed1c5e239ed8f9fd3bcf5afcb959de42c8995",
+    "supabase/functions/mercadopago-cancel-payment/index.ts": "09825a272b0a23ff4568977697a7cfd21fd84a584951ee0673b6a0c88d18faa6"
+  },
+  "finalChecks": {
+    "passed": 9,
+    "failed": 0,
+    "summaryPrinted": true,
+    "standaloneLogWrite": "ENOSPC"
+  }
+}

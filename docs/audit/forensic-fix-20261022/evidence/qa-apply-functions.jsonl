@@ -1,0 +1,8 @@
+{"at":"2026-10-22T06:04:23.922Z","phase":"functions","functions":[{"name":"mercadopago-cancel-payment","verifyJwt":true,"files":9},{"name":"mercadopago-checkout-status","verifyJwt":false,"files":8},{"name":"mercadopago-connect","verifyJwt":false,"files":8},{"name":"mercadopago-create-preference","verifyJwt":false,"files":8},{"name":"mercadopago-payment-worker","verifyJwt":false,"files":9},{"name":"mercadopago-refund","verifyJwt":true,"files":9},{"name":"mercadopago-webhook","verifyJwt":false,"files":13}],"apply":true}
+{"at":"2026-10-22T06:04:29.872Z","phase":"function","name":"mercadopago-cancel-payment","status":"ACTIVE","version":5,"verifyJwt":true}
+{"at":"2026-10-22T06:04:32.580Z","phase":"function","name":"mercadopago-checkout-status","status":"ACTIVE","version":5,"verifyJwt":false}
+{"at":"2026-10-22T06:04:35.819Z","phase":"function","name":"mercadopago-connect","status":"ACTIVE","version":7,"verifyJwt":false}
+{"at":"2026-10-22T06:04:38.445Z","phase":"function","name":"mercadopago-create-preference","status":"ACTIVE","version":5,"verifyJwt":false}
+{"at":"2026-10-22T06:04:41.015Z","phase":"function","name":"mercadopago-payment-worker","status":"ACTIVE","version":5,"verifyJwt":false}
+{"at":"2026-10-22T06:04:43.708Z","phase":"function","name":"mercadopago-refund","status":"ACTIVE","version":5,"verifyJwt":true}
+{"at":"2026-10-22T06:04:46.316Z","phase":"function","name":"mercadopago-webhook","status":"ACTIVE","version":7,"verifyJwt":false}

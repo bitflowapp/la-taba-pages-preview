@@ -1,0 +1,25 @@
+{
+  "at": "2026-10-21T02:51:44.244Z",
+  "projectRef": "ixewllzzuzpqrkxzmfzx",
+  "secretNames": [
+    "TABA_RECOVERY_PROJECT_REF",
+    "TABA_RECOVERY_CHECKOUT_ORIGIN",
+    "TABA_DEPLOYMENT_ENV",
+    "MERCADOPAGO_ENVIRONMENT",
+    "MERCADOPAGO_OAUTH_ENVIRONMENT",
+    "MERCADOPAGO_CREDENTIAL_MODE",
+    "MERCADOPAGO_OAUTH_PROJECT_REF",
+    "MERCADOPAGO_CLIENT_ID",
+    "MERCADOPAGO_OAUTH_PANEL_URL",
+    "TABA_CHECKOUT_BASE_URL",
+    "TABA_ALLOWED_ORIGINS",
+    "MERCADOPAGO_CLIENT_SECRET",
+    "MERCADOPAGO_TOKEN_ENCRYPTION_KEY",
+    "PAYMENT_LOG_HASH_SALT",
+    "PAYMENT_WORKER_SECRET"
+  ],
+  "secretsVerified": true,
+  "authConfigured": true,
+  "realPaymentsEnabled": false,
+  "webhookSignaturePresent": false
+}

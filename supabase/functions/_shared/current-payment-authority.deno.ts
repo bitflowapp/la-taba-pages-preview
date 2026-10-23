@@ -29,7 +29,7 @@ function configure() {
   })) Deno.env.set(name, value);
 }
 
-async function run(route: string, mutation: string, initiallyInvalid = '') {
+async function run(route: string, mutation: string, initiallyInvalid = '', providerStatus = 200) {
   configure();
   const encrypted = await protect({ access_token: 'fixture-verified-token' }, bid);
   const rotated = await protect({ access_token: 'fixture-rotated-token' }, bid);
@@ -68,7 +68,7 @@ async function run(route: string, mutation: string, initiallyInvalid = '') {
   let reachProvider!: () => void, releaseProvider!: () => void;
   const reached = new Promise<void>(resolve => { reachProvider = resolve; });
   const release = new Promise<void>(resolve => { releaseProvider = resolve; });
-  let providerChecks = 0, snapshotReads = 0;
+  let providerChecks = 0, snapshotReads = 0, preferencePosts = 0;
   const records: string[] = [];
   const original = globalThis.fetch;
   globalThis.fetch = async (input, options) => {
@@ -112,6 +112,10 @@ async function run(route: string, mutation: string, initiallyInvalid = '') {
       return Response.json({ elements, next_offset: elements.length, total: elements.length });
     }
     if (url.pathname === '/checkout/preferences/fixture' || url.pathname === '/checkout/preferences') {
+      if (init?.method === 'POST') {
+        preferencePosts++;
+        if (providerStatus !== 200) return Response.json({ message: 'fixture provider error' }, { status: providerStatus });
+      }
       return Response.json({ id: 'fixture', external_reference: 'fixture-reference', collector_id: seller.seller_id, metadata: { payment_attempt_id: iid, checkout_session_id: sid }, init_point: providerUrl, sandbox_init_point: preparation.sandbox_init_point });
     }
     throw new Error('Unexpected provider request: ' + url.pathname);
@@ -121,8 +125,9 @@ async function run(route: string, mutation: string, initiallyInvalid = '') {
       method: 'POST', headers: { authorization: 'Bearer fixture-customer', 'content-type': 'application/json' },
       body: JSON.stringify({ checkout_session_id: sid }),
     }));
-    if (!initiallyInvalid) {
-      assertEquals(await Promise.race([reached.then(() => 'provider'), response.then(() => 'response')]), 'provider');
+    if (!initiallyInvalid && providerStatus === 200) {
+      const first = await Promise.race([reached.then(() => 'provider'), response.then(() => 'response')]);
+      assertEquals(first, 'provider', first === 'response' ? await (await response).clone().text() : 'provider reached');
       if (mutation === 'cancelled') attempt.status = 'cancelled';
       if (mutation === 'superseded' || mutation === 'attempt_id' || mutation === 'same_seller_other_attempt') attempt.id = uid;
       if (mutation === 'preference') attempt.preference_id = 'other';
@@ -142,6 +147,16 @@ async function run(route: string, mutation: string, initiallyInvalid = '') {
     }
     releaseProvider();
     const result = await response, body = await result.json();
+    if (providerStatus !== 200) {
+      const uncertain = [408, 409, 425, 429, 500, 502, 503].includes(providerStatus);
+      assertEquals(result.status, uncertain ? 202 : 409);
+      assertEquals(body.code, uncertain ? 'PREFERENCE_RECONCILING' : 'PAYMENT_SETUP_REJECTED');
+      assertEquals(Boolean(body.init_point), false);
+      assertEquals(preferencePosts, 1, 'never blindly retry a provider POST');
+      assertEquals(records.map(name => name.split('/').pop()), [uncertain
+        ? 'record_mercadopago_preference_uncertain' : 'record_mercadopago_preference_failed']);
+      return;
+    }
     const allowed = mutation === 'none' && !initiallyInvalid;
     assertEquals(Boolean(body.init_point), allowed, route + '/' + mutation + '/' + initiallyInvalid + ': ' + JSON.stringify(body));
     if (allowed) { assertEquals(result.status, 200); assertEquals(body.init_point, providerUrl); }
@@ -163,4 +178,9 @@ for (const route of ['stored', 'stored_legacy', 'recovered', 'new']) {
 for (const state of ['no_seller', 'disconnected', 'requires_reauthorization', 'cleared_tokens',
   'wrong_business', 'wrong_environment', 'payments_disabled', 'missing_smoke']) {
   Deno.test('A1 stored URL initially rejects ' + state, () => run('stored', 'none', state));
+}
+
+for (const status of [408, 409, 425, 429, 500, 502, 503, 400, 401, 403, 422]) {
+  Deno.test('preference POST preserves provider uncertainty: HTTP ' + status,
+    () => run('new', 'none', '', status));
 }

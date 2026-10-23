@@ -1,0 +1,75 @@
+{
+  "at": "2026-10-21T06:58:33.731Z",
+  "origin": "https://recovery-20261020.taba2-staging.pages.dev",
+  "pages": [
+    {
+      "url": "/",
+      "loadMs": 2784,
+      "perf": {
+        "domContentLoaded": 1207,
+        "load": 1873,
+        "fcp": 936
+      },
+      "dom": {
+        "title": "La Taba · Tienda 24/7 con delivery en Neuquén",
+        "lang": "es",
+        "h1": [
+          "QA Pagos de prueba, no público",
+          "Todas",
+          "Tu pedido",
+          "Seguí tu pedido",
+          "Mi perfil",
+          "Ingresá para administrar pedidos",
+          "Ingresá con tu cuenta",
+          "Central de pedidos",
+          "Ingresá para ver entregas",
+          "Mis entregas"
+        ],
+        "viewportMeta": "width=device-width, initial-scale=1, viewport-fit=cover",
+        "hScroll": false,
+        "interactive": 31,
+        "smallTargets": 1,
+        "smallSample": [
+          "ENVIAR A\n              Elegí tu direcció"
+        ],
+        "unnamedControls": 0,
+        "images": 6,
+        "imagesWithoutAlt": 0,
+        "brokenImages": 0,
+        "bodyText": "QA Pagos de prueba, no público Elegí tu dirección › QA Pagos de prueba, no público Retiro en el local · QA, no es un comercio real Estamos tomando pedidos Todas Almacen Destacados Ver todos 1 unidad QA Producto de prueba 1 $ 100 Agregar 1 unidad QA Producto de prueba 2 $ 250 Agregar 1 unidad QA Producto de prueba 3 (último en stock) $ 500 Agregar Almacén Ver todos 1 unidad QA Producto de prueba 1 $ 100 Agregar 1 unidad QA Producto de prueba 2 $ 250 Agregar 1 unidad QA Producto de prueba 3 (último en stock) $ 500 Agregar Ver catálogo completo › Catálogo Seguir QA Pagos de prueba, no público Car"
+      },
+      "requests": 165,
+      "declaredBytes": 39552,
+      "consoleErrors": [
+        "warning: The resource https://recovery-20261020.taba2-staging.pages.dev/assets/promos/cervezas-heineken-band.webp was preloaded using link preload but not used within a few seconds from the window's load event",
+        "error: Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "failed": [
+        "HTTP 401 https://ixewllzzuzpqrkxzmfzx.supabase.co/rest/v1/rpc/get_mercadopago_checkout_availability"
+      ]
+    }
+  ],
+  "flow": {
+    "steps": [
+      {
+        "name": "add first product",
+        "ok": true
+      },
+      {
+        "name": "open cart",
+        "ok": true
+      },
+      {
+        "name": "go to checkout",
+        "ok": true
+      }
+    ],
+    "cartText": "QA Pagos de prueba, no público ENVIAR A Elegí tu dirección › 1 Tu pedido Seguir comprando Vaciar carrito Productos QA Producto de prueba 1 1 unidad 1 + $ 100 PARA ENTREGARTE EL PEDIDO Datos para retirar Retiro en local Tus datos ¿A nombre de quién retiramos? Con esto el local sabe quién pasa a buscarlo y cómo avisarte. Nombre y apellido WhatsApp Guardar y continuar Retirás en el local No hace falta una dirección: te esperamos en el mostrador. Forma de pago Efectivo al retirar o recibir A coordinar con el local antes de preparar El cobro queda pendiente hasta que el negocio registre el dinero recibido. No se paga en esta pantalla. Agregar indicaciones Subtotal $ 100 Retiro en local $ 0 Total $ 100 Tu pedido va directo al local. Al confirmar, el local lo recibe y podés seguirlo desde Seguimiento. Confirmar pedido El pago se coordina directamente con el local. Catálogo Seguir QA Pagos de pr",
+    "checkoutText": "QA Pagos de prueba, no público Elegí tu dirección › 1 QA Pagos de prueba, no público Retiro en el local · QA, no es un comercio real Estamos tomando pedidos Todas Almacen Destacados Ver todos 1 unidad QA Producto de prueba 1 $ 100 1 + 1 unidad QA Producto de prueba 2 $ 250 Agregar 1 unidad QA Producto de prueba 3 (último en stock) $ 500 Agregar Almacén Ver todos 1 unidad QA Producto de prueba 1 $ 100 1 + 1 unidad QA Producto de prueba 2 $ 250 Agregar 1 unidad QA Producto de prueba 3 (último en stock) $ 500 Agregar Ver catálogo completo › Ver carrito 1 producto $ 100 Catálogo Seguir QA Pagos de prueba, no público Carrito 1 Perfil",
+    "dom2": {
+      "hScroll": false,
+      "paymentMentions": []
+    }
+  },
+  "qaWindowClosed": true
+}

@@ -3,6 +3,7 @@
 -- Certifica los contratos que cierran la remediacion forward-only de
 -- produccion (migrations 101-103). Cada bloque esta escrito para FALLAR contra
 -- la migration 100 y pasar contra la 103: son control negativo, no decoracion.
+-- Los bloques de combos y de products.stock reflejan 20261021235000.
 --
 -- Los privilegios se preguntan con has_function_privilege / has_table_privilege
 -- sobre los roles REALES (anon, authenticated, service_role), no desde postgres,
@@ -12,7 +13,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(44);
+select plan(47);
 
 -- ══════════════════════════════════════════════════════════════════════════
 --  1 · SUPERFICIE QA (migration 101)
@@ -86,11 +87,17 @@ select ok(
 
 -- El camino comercial legitimo sigue abierto: lo que el Panel si puede tocar.
 select ok(
-  has_column_privilege('authenticated', 'public.products', 'stock', 'UPDATE')
-  and has_column_privilege('authenticated', 'public.products', 'available', 'UPDATE')
+  has_column_privilege('authenticated', 'public.products', 'available', 'UPDATE')
   and has_column_privilege('authenticated', 'public.products', 'is_active', 'UPDATE')
   and has_column_privilege('authenticated', 'public.products', 'sort_order', 'UPDATE'),
-  'el Panel conserva stock/available/is_active/sort_order sobre products');
+  'el Panel conserva available/is_active/sort_order sobre products');
+
+-- Desde 20261021235000 el stock NO: un PATCH del personal lo cambiaba sin
+-- movimiento de inventario ni auditoria. El Panel lo mueve por
+-- apply_inventory_movement, el lote comercial y las RPC pos_* (SECURITY DEFINER).
+select ok(
+  not has_column_privilege('authenticated', 'public.products', 'stock', 'UPDATE'),
+  'authenticated ya no escribe products.stock directo');
 
 -- Desde 20260925090000 la lectura pública es por columna (todo menos
 -- unit_cost y verified_by; lo certifica controlled_production_qa_window_test).
@@ -152,11 +159,15 @@ select is(
 --  4 · SECURITY DEFINER ejecutable por anon (migration 103)
 -- ══════════════════════════════════════════════════════════════════════════
 
+-- 20261021235000 saco los dos RPC de combos: leian product_combos y products
+-- sin RLS (combos sin aprobar, stock de productos ocultos, tenants QA fuera de
+-- ventana) y ni el storefront ni el Panel los llaman; la tienda deriva los
+-- combos en el navegador (js/core/combos.js).
 select is(
   (select count(*)::integer from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and p.prosecdef
       and has_function_privilege('anon', p.oid, 'EXECUTE')),
-  8, 'quedan exactamente 8 SECURITY DEFINER ejecutables por anon');
+  6, 'quedan exactamente 6 SECURITY DEFINER ejecutables por anon');
 
 select bag_eq(
   $$select p.proname::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
@@ -164,8 +175,19 @@ select bag_eq(
        and has_function_privilege('anon', p.oid, 'EXECUTE')$$,
   $$values ('can_access_order'), ('check_scheduler_watchdog'), ('commerce_availability'),
            ('get_public_business_contact'), ('get_public_order_tracking'),
-           ('list_business_combos'), ('resolve_business_combo'), ('scheduler_heartbeat')$$,
-  'y son exactamente las 8 del contrato publico escrito');
+           ('scheduler_heartbeat')$$,
+  'y son exactamente las 6 del contrato publico escrito');
+
+select ok(
+  not has_function_privilege('anon', 'public.list_business_combos(uuid)', 'EXECUTE')
+  and not has_function_privilege('authenticated', 'public.list_business_combos(uuid)', 'EXECUTE')
+  and not has_function_privilege('anon', 'public.resolve_business_combo(uuid,text,integer)', 'EXECUTE')
+  and not has_function_privilege('authenticated', 'public.resolve_business_combo(uuid,text,integer)', 'EXECUTE'),
+  'los RPC de combos ya no son publicos ni de sesion');
+select ok(
+  has_function_privilege('service_role', 'public.list_business_combos(uuid)', 'EXECUTE')
+  and has_function_privilege('service_role', 'public.resolve_business_combo(uuid,text,integer)', 'EXECUTE'),
+  'service_role conserva los RPC de combos (scripts/import-combos.mjs)');
 
 -- B · las 5 RPC fiscales: authenticated si, anon no.
 select ok(not has_function_privilege('anon', 'public.authorize_fiscal_artifact_access(uuid,text)', 'EXECUTE'),

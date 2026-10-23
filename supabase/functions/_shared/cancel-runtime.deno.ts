@@ -14,7 +14,7 @@ const iid = '97000000-0000-4000-8000-000000000002';
 const cid = '97000000-0000-4000-8000-000000000003';
 const key = '97000000-0000-4000-8000-000000000004';
 
-async function run(scenario: 'cancelled' | 'final-rejection' | 'throttled' | 'in-flight' | 'lost-response') {
+async function run(scenario: 'cancelled' | 'final-rejection' | 'throttled' | 'in-flight' | 'lost-response' | 'wrong-payment' | 'missing-payment' | 'replay-in-flight' | 'replay-rejected') {
   for (const [name, value] of Object.entries({
     SUPABASE_URL: 'https://ukxqbgswjlibmnjemrzd.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'fixture-service',
     SUPABASE_ANON_KEY: 'fixture-anon', MERCADOPAGO_ENVIRONMENT: 'test', MERCADOPAGO_OAUTH_ENVIRONMENT: 'test',
@@ -37,7 +37,10 @@ async function run(scenario: 'cancelled' | 'final-rejection' | 'throttled' | 'in
     if (url.pathname.endsWith('/consume_payment_rate_limit')) return Response.json({ allowed: true });
     if (url.pathname.endsWith('/mp_seller_connections')) return Response.json(url.searchParams.get('select') === 'business_id' ? [] : seller);
     if (url.pathname.endsWith('/payment_intents')) return Response.json({ id: iid, business_id: bid, environment: 'test', provider_payment_id: '90001' });
-    if (url.pathname.endsWith('/prepare_payment_cancellation')) return Response.json({ cancellation_id: cid, idempotency_key: key, provider_payment_id: '90001' });
+    if (url.pathname.endsWith('/prepare_payment_cancellation')) return Response.json({ cancellation_id: cid, idempotency_key: key, provider_payment_id: '90001', idempotent: scenario.startsWith('replay-') });
+    if (url.pathname.endsWith('/payment_cancellations')) return Response.json({
+      payment_intent_id: iid, idempotency_key: key, status: scenario === 'replay-rejected' ? 'rejected' : 'requested',
+    });
     if (url.pathname.endsWith('/record_payment_cancellation_response')) { recordings.push(body); return Response.json(true); }
     if (url.pathname.endsWith('/mark_payment_cancellation_ambiguous')) { ambiguous.push(String(body.p_error_code)); return Response.json(true); }
     if (url.origin !== 'https://api.mercadopago.com') throw new Error('Unexpected test request: ' + url.pathname);
@@ -48,6 +51,8 @@ async function run(scenario: 'cancelled' | 'final-rejection' | 'throttled' | 'in
     if (scenario === 'throttled') return Response.json({ message: 'too many requests' }, { status: 429 });
     if (scenario === 'in-flight') return Response.json({ message: 'idempotency key in use' }, { status: 409 });
     if (scenario === 'final-rejection') return Response.json({ message: 'payment cannot be cancelled' }, { status: 400 });
+    if (scenario === 'wrong-payment') return Response.json({ id: 90002, status: 'cancelled' });
+    if (scenario === 'missing-payment') return Response.json({ status: 'cancelled' });
     return Response.json({ id: 90001, status: 'cancelled' });
   };
   try {
@@ -55,6 +60,13 @@ async function run(scenario: 'cancelled' | 'final-rejection' | 'throttled' | 'in
       method: 'POST', headers: { authorization: 'Bearer fixture-user', 'content-type': 'application/json' },
       body: JSON.stringify({ payment_intent_id: iid, idempotency_key: key, confirmation: 'I_UNDERSTAND_THIS_REQUESTS_A_MERCADO_PAGO_CANCELLATION' }),
     }));
+    if (scenario.startsWith('replay-')) {
+      assertEquals(puts, 0, 'an existing operation never authorizes a second provider PUT');
+      assertEquals(res.status, scenario === 'replay-rejected' ? 409 : 202);
+      assertEquals(recordings, []);
+      assertEquals(ambiguous, [], 'do not overwrite an in-flight operation');
+      return;
+    }
     assertEquals(puts, 1, 'exactly one provider request');
     if (scenario === 'cancelled') {
       assertEquals(res.status, 200); assertEquals(recordings.map((r) => r.p_status), ['cancelled']); assertEquals(ambiguous, []);
@@ -63,11 +75,14 @@ async function run(scenario: 'cancelled' | 'final-rejection' | 'throttled' | 'in
     } else {
       // Throttled, in flight or lost: the provider decided nothing we can record.
       assertEquals(res.status, 202); assertEquals(recordings, []);
-      assertEquals(ambiguous, [scenario === 'lost-response' ? 'network_or_timeout' : scenario === 'throttled' ? 'http_429' : 'http_409']);
+      const code = ['wrong-payment', 'missing-payment'].includes(scenario)
+        ? 'cancellation_payment_identity_mismatch'
+        : scenario === 'lost-response' ? 'network_or_timeout' : scenario === 'throttled' ? 'http_429' : 'http_409';
+      assertEquals(ambiguous, [code]);
     }
   } finally { globalThis.fetch = original; }
 }
 
-for (const scenario of ['cancelled', 'final-rejection', 'throttled', 'in-flight', 'lost-response'] as const) {
+for (const scenario of ['cancelled', 'final-rejection', 'throttled', 'in-flight', 'lost-response', 'wrong-payment', 'missing-payment', 'replay-in-flight', 'replay-rejected'] as const) {
   Deno.test('cancellation POST: ' + scenario, () => run(scenario));
 }

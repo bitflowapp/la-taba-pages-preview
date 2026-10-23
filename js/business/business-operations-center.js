@@ -9,7 +9,9 @@ import { compactSegment, operationKey, randomOperationKey } from '../core/idempo
 import { presentFiscalStatus } from '../pos/fiscal-status-presenter.js';
 import { can, isElevated } from './business-capabilities.js';
 import { humanizeFailure } from './business-operation-language.js';
-import { validateRefundRequest } from './business-payments-console.js';
+import {
+  CANCEL_SERVER_CONFIRMATION, REFUND_SERVER_CONFIRMATION, validateCancelRequest, validateRefundRequest,
+} from './business-payments-console.js';
 import { validateHomologationAuthorization } from './business-fiscal-assistant.js';
 import {
   classifyPrinterProbe, classifyPrintSubmission, classifyQrCheck, classifyScannerCheck, classifySpoolerCheck,
@@ -28,7 +30,10 @@ import {
 } from './business-operations-config.js';
 import { buildAlwaysOpenGrid } from '../core/service-hours.js';
 import { onlinePaymentsEnabled } from '../core/runtime-config.js';
-import { buildCommercialEdit, catalogPublicationReadiness, normalizeCatalogProduct, renderCatalogEditor } from './business-catalog-editor.js';
+import {
+  buildCommercialEdit, catalogPricingDraft, catalogPublicationReadiness, normalizeCatalogProduct, renderCatalogEditor,
+  renderCatalogPricingSummary,
+} from './business-catalog-editor.js';
 import {
   activateStoreOpening, handleStoreOpeningAction, markStoreOpeningStale, renderStoreOpeningSurface,
   resetStoreOpening, storeOpeningVerdict,
@@ -53,7 +58,8 @@ const VIEW_META = Object.freeze({
   orders: ['Pedidos', null],
   'operations-config': ['Horarios y cobertura', null],
   payments: ['Pagos', null],
-  'payments-setup': ['Conectar Mercado Pago', null],
+  // Ahí se conecta, se ve el estado, se reconecta y se desvincula: no sólo «conectar».
+  'payments-setup': ['Mercado Pago', null],
   scanner: ['Escáner rápido', 'product_lookup'],
   'product-create': ['Alta de producto', 'product_create'],
   catalog: ['Catálogo', null],
@@ -152,6 +158,18 @@ let manualPayments = [];
 let manualPaymentsStatus = { phase: 'idle', message: '' };
 let paymentsLoadStarted = false;
 let refundTarget = '';
+// La clave de idempotencia vive mientras la devolución/cancelación no tenga una
+// respuesta definitiva: reintentar tras una respuesta perdida reusa la misma y
+// el servidor no ejecuta dos veces.
+let refundOperation = null;
+let cancelTarget = '';
+let cancelOperation = null;
+// Lo que la tarjeta de Mercado Pago cuenta además del estado: el resultado de
+// volver de Mercado Pago, el aviso de la última acción y la revisión previa a
+// desvincular. La verdad de la conexión siempre la vuelve a leer el servidor.
+let mercadoPagoReturn = '';
+let mercadoPagoNotice = null;
+let disconnectReview = null;
 let operationsConfig = null;
 let operationsConfigStatus = { phase: 'idle', message: '' };
 let operationsConfigLoadStarted = false;
@@ -190,6 +208,23 @@ let catalogImageMessage = '';
 let pendingClose = false;
 let pendingReopenSku = '';
 let catalogAlcoholEnabled = false;
+/*
+ * Costos, precio regular e «Importar planilla». `catalogPricingAvailable` lo
+ * decide el repositorio: sólo si `get_catalog_costs` contestó (dueño o
+ * encargado, y una base con la migración). Sin eso no se ofrecen campos de
+ * costo: un costo que no se pudo leer no se puede editar con honestidad.
+ */
+let catalogPricingAvailable = false;
+let catalogPricingNotice = '';
+let catalogLimitReached = false;
+let catalogImport = { phase: 'idle' };
+
+function resetCatalogPricingState() {
+  catalogPricingAvailable = false;
+  catalogPricingNotice = '';
+  catalogLimitReached = false;
+  catalogImport = { phase: 'idle' };
+}
 
 export function configureBusinessOperations(next = {}) {
   stopOperationCenterRefresh();
@@ -211,6 +246,11 @@ export function configureBusinessOperations(next = {}) {
   manualPaymentsStatus = { phase: 'idle', message: '' };
   paymentsLoadStarted = false;
   refundTarget = '';
+  refundOperation = null;
+  cancelTarget = '';
+  cancelOperation = null;
+  mercadoPagoNotice = null;
+  disconnectReview = null;
   arcaActivation = null;
   arcaLoadStarted = false;
   arcaAuthorizationDraft = '';
@@ -237,6 +277,7 @@ export function configureBusinessOperations(next = {}) {
   pendingClose = false;
   pendingReopenSku = '';
   catalogAlcoholEnabled = false;
+  resetCatalogPricingState();
   resetStoreOpening();
   resetTeam();
   resetPrintAgent();
@@ -272,10 +313,13 @@ export function renderBusinessOperations(view) {
     }),
     payments: () => renderPaymentsSurface({
       payments, status: paymentsStatus, manualPayments, manualStatus: manualPaymentsStatus,
-      role: context.role, activation: paymentsActivation, connection: sellerConnection, busy, refundTarget,
-      onlinePayments: onlinePaymentsEnabled(),
+      role: context.role, activation: paymentsActivation, connection: sellerConnection, busy, refundTarget, cancelTarget,
+      onlinePayments: onlinePaymentsEnabled(), connectionUi: mercadoPagoConnectionUi(),
     }),
-    'payments-setup': () => renderPaymentsSetupSurface({ activation: paymentsActivation, connection: sellerConnection, role: context.role, busy, onlinePayments: onlinePaymentsEnabled() }),
+    'payments-setup': () => renderPaymentsSetupSurface({
+      activation: paymentsActivation, connection: sellerConnection, role: context.role, busy,
+      onlinePayments: onlinePaymentsEnabled(), connectionUi: mercadoPagoConnectionUi(),
+    }),
     'fiscal-setup': () => renderFiscalSetupSurface({
       activation: arcaActivation, role: context.role, busy, authorizationDraft: arcaAuthorizationDraft,
     }),
@@ -310,6 +354,11 @@ export function renderBusinessOperations(view) {
       alcoholEnabled: catalogAlcoholEnabled,
       pendingReopenSku,
       photoIntake: renderPhotoIntake({ ...photoIntakeState(), busy }),
+      // Costos y planilla: la misma compuerta que cambiar precios (dueño o encargado).
+      pricingAvailable: catalogPricingAvailable && can(context.role, 'products.price'),
+      pricingNotice: catalogPricingNotice,
+      sheetImport: catalogImport,
+      canImport: can(context.role, 'products.price'),
     }),
     'inventory-receive': () => renderInventory('purchase_receipt'),
     'inventory-adjust': () => renderInventory('manual_adjustment'),
@@ -559,6 +608,9 @@ export async function handleBusinessOperationsAction(target) {
   const catalogSave = target.closest('[data-catalog-save]');
   if (catalogSave) return saveCatalogEdits(target, catalogSave.dataset.catalogSave);
   if (target.closest('[data-catalog-save-all]')) return saveCatalogEdits(target);
+  if (target.closest('[data-catalog-import-read]')) return readCatalogImportSheet(target);
+  if (target.closest('[data-catalog-import-apply]')) return applyCatalogImportSheet();
+  if (target.closest('[data-catalog-import-discard]')) return discardCatalogImportSheet();
   const catalogImageUpload = target.closest('[data-catalog-image-upload]');
   if (catalogImageUpload) return uploadCatalogImage(target, catalogImageUpload);
   const catalogImagePreview = target.closest('[data-catalog-image-preview]');
@@ -595,8 +647,17 @@ export async function handleBusinessOperationsAction(target) {
   if (refundConfirm) return confirmPaymentRefund(refundConfirm);
   if (target.closest('[data-payment-refund-cancel]')) {
     refundTarget = '';
+    refundOperation = null;
     context.onChange();
     return result(true, 'Devolución cancelada. No se movió dinero.');
+  }
+  const cancelConfirm = target.closest('[data-payment-cancel-confirm]');
+  if (cancelConfirm) return confirmPaymentCancel(cancelConfirm);
+  if (target.closest('[data-payment-cancel-dismiss]')) {
+    cancelTarget = '';
+    cancelOperation = null;
+    context.onChange();
+    return result(true, 'El pago sigue como estaba. No se canceló nada.');
   }
 
   if (target.closest('[data-arca-status-refresh]')) {
@@ -756,6 +817,21 @@ export function handleBusinessOperationsInput(target) {
     if (count) count.textContent = `${visible} de ${catalogProducts.length} productos`;
     return { handled: true };
   }
+  // Ganancia, margen y recargo se recalculan mientras se escribe, sólo en la
+  // fila tocada y sin redibujar el Panel: nada de esto se guarda.
+  if (target?.matches?.('[data-catalog-price], [data-catalog-cost], [data-catalog-compare-at]')) {
+    const row = target.closest('[data-catalog-row]');
+    const summary = row?.querySelector('[data-catalog-pricing-summary]');
+    const product = catalogProducts.find((item) => item.sku === row?.dataset?.catalogRow);
+    if (summary && product) {
+      summary.innerHTML = renderCatalogPricingSummary(catalogPricingDraft(normalizeCatalogProduct(product), {
+        price: row.querySelector('[data-catalog-price]')?.value,
+        cost: row.querySelector('[data-catalog-cost]')?.value,
+        compareAt: row.querySelector('[data-catalog-compare-at]')?.value,
+      }));
+    }
+    return { handled: true };
+  }
   if (target?.matches?.('[data-barcode-input]')) {
     scannerDraftValue = String(target.value || '').slice(0, 64);
     return { handled: true };
@@ -820,6 +896,12 @@ export function resetBusinessOperationsForTests() {
   manualPaymentsStatus = { phase: 'idle', message: '' };
   paymentsLoadStarted = false;
   refundTarget = '';
+  refundOperation = null;
+  cancelTarget = '';
+  cancelOperation = null;
+  mercadoPagoReturn = '';
+  mercadoPagoNotice = null;
+  disconnectReview = null;
   resetOperationsConfigState();
   arcaActivation = null;
   arcaLoadStarted = false;
@@ -838,6 +920,7 @@ export function resetBusinessOperationsForTests() {
   catalogStatus = { phase: 'idle', message: '' };
   catalogLoadStarted = false;
   catalogGeneration += 1;
+  resetCatalogPricingState();
 }
 
 function resetProductOnboarding() {
@@ -1041,6 +1124,9 @@ async function refreshCatalogProducts() {
   if (response?.ok) {
     catalogProducts = Array.isArray(response.data) ? response.data : [];
     catalogStatus = { phase: 'ready', message: '' };
+    catalogPricingAvailable = response.pricing?.available === true;
+    catalogPricingNotice = catalogPricingAvailable ? '' : humanizeFailure(response.pricing?.message, '');
+    catalogLimitReached = response.limitReached === true;
     // La licencia de alcohol decide si un producto con alcohol puede
     // publicarse; la trae la configuración operativa (la columna no se lee).
     try {
@@ -1208,12 +1294,17 @@ async function saveCatalogEdits(target, onlySku = '') {
     .filter((row) => !onlySku || row.dataset.catalogRow === onlySku);
   if (!rows.length) return result(false, 'No encontramos la fila del producto. Actualizá el catálogo.');
   const patches = [];
+  // Costo y precio regular viajan sólo si el Panel los pudo leer: si no, el
+  // campo no existe y el valor guardado no se toca.
+  const pricing = catalogPricingAvailable && can(context.role, 'products.price');
   for (const row of rows) {
     const product = catalogProducts.find((item) => item.sku === row.dataset.catalogRow);
     if (!product) return result(false, 'El producto cambió. Actualizá el catálogo.');
     const edit = buildCommercialEdit(normalizeCatalogProduct(product), {
       price: row.querySelector('[data-catalog-price]')?.value,
       stock: row.querySelector('[data-catalog-stock]')?.value,
+      cost: pricing ? row.querySelector('[data-catalog-cost]')?.value : undefined,
+      compareAt: pricing ? row.querySelector('[data-catalog-compare-at]')?.value : undefined,
     });
     if (edit.error) return result(false, edit.error);
     if (edit.value) patches.push(edit.value);
@@ -1226,12 +1317,121 @@ async function saveCatalogEdits(target, onlySku = '') {
   finally { busy = false; }
   if (response?.ok) {
     await refreshCatalogProducts();
-    feedback = `${patches.length} ${patches.length === 1 ? 'producto actualizado' : 'productos actualizados'}. Precio y stock guardados sin publicar.`;
+    const withCosts = patches.some((patch) => Object.hasOwn(patch, 'unit_cost') || Object.hasOwn(patch, 'compare_at_price'));
+    feedback = `${patches.length} ${patches.length === 1 ? 'producto actualizado' : 'productos actualizados'}. ${withCosts
+      ? 'Precios, costos y stock guardados sin publicar.' : 'Precio y stock guardados sin publicar.'}`;
   } else {
-    feedback = humanizeFailure(response?.message, 'No se guardaron los cambios. El lote es atómico.');
+    feedback = response?.friendly
+      ? String(response.friendly)
+      : humanizeFailure(response?.message, 'No se guardaron los cambios. El lote es atómico.');
   }
   context.onChange();
   return result(Boolean(response?.ok), feedback);
+}
+
+/*
+ * IMPORTAR PLANILLA.
+ *
+ * Leer y validar pasa en el navegador: el archivo no sale del equipo. Lo que
+ * viaja es el lote ya armado, y sólo con «Aplicar». El lector y el validador
+ * se cargan recién acá (import dinámico): quien nunca importa no los descarga.
+ */
+let catalogSheetModules = null;
+function loadCatalogSheetModules() {
+  catalogSheetModules ||= Promise.all([import('./catalog-sheet-reader.js'), import('./catalog-sheet-import.js')])
+    .then(([reader, planner]) => ({ reader, planner }))
+    .catch((error) => { catalogSheetModules = null; throw error; });
+  return catalogSheetModules;
+}
+
+const SHEET_TOOLS_UNAVAILABLE = 'No se pudo abrir el lector de planillas. Revisá la conexión y volvé a intentar.';
+
+async function readCatalogImportSheet(target) {
+  const guard = requireCapability('products.price');
+  if (!guard.ok) return guard.result;
+  if (catalogImport.phase === 'reading' || catalogImport.phase === 'applying') return result(false, 'La planilla todavía se está procesando.');
+  if (busy) return result(false, 'Ya hay una actualización en curso.');
+  if (catalogStatus.phase !== 'ready') return result(false, 'El catálogo todavía no está cargado. Tocá «Actualizar» y volvé a intentar.');
+  const file = target.closest('[data-catalog-import]')?.querySelector('[data-catalog-import-file]')?.files?.[0];
+  if (!file) return result(false, 'Elegí el archivo de la planilla (.xlsx o .csv).');
+  const fileName = String(file.name || '');
+  const failed = (message, extra = {}) => {
+    catalogImport = { phase: 'error', fileName, error: true, message, ...extra };
+    context.onChange();
+    return result(false, message);
+  };
+  catalogImport = { phase: 'reading', fileName };
+  context.onChange();
+  let modules;
+  try { modules = await loadCatalogSheetModules(); } catch (_) { return failed(SHEET_TOOLS_UNAVAILABLE); }
+  const read = await modules.reader.readCatalogSheetFile(file);
+  if (!read.ok) return failed(read.message);
+  const plan = modules.planner.buildCatalogSheetPlan(read.rows, {
+    products: catalogProducts,
+    pricingAvailable: catalogPricingAvailable && can(context.role, 'products.price'),
+    alcoholEnabled: catalogAlcoholEnabled,
+    imageUploads: catalogImageUploads,
+    catalogLimitReached,
+  });
+  if (!plan.ok) return failed(plan.error, { sheetName: read.sheetName });
+  const pending = plan.patches.length;
+  catalogImport = {
+    phase: 'preview', fileName, sheetName: read.sheetName, plan,
+    message: pending ? '' : 'La planilla no cambia nada del catálogo.',
+  };
+  context.onChange();
+  return result(true, pending
+    ? `Revisá la vista previa: ${pending} ${pending === 1 ? 'cambio' : 'cambios'} para aplicar. Todavía no se guardó nada.`
+    : catalogImport.message);
+}
+
+async function applyCatalogImportSheet() {
+  // Un segundo clic mientras se aplica no manda nada: la fase lo frena antes
+  // que cualquier otra cosa, y se fija ANTES del primer `await`.
+  if (catalogImport.phase === 'applying') return result(false, 'Los cambios de la planilla ya se están aplicando.');
+  const guard = requireCapability('products.price');
+  if (!guard.ok) return guard.result;
+  const plan = catalogImport.plan;
+  if (catalogImport.phase !== 'preview' || !plan?.ok) return result(false, 'Primero revisá la planilla.');
+  if (!plan.patches.length) return result(false, 'La planilla no tiene cambios para aplicar.');
+  if (plan.patches.some((patch) => patch.publish !== undefined)) {
+    const publishGuard = requireCapability('products.publish');
+    if (!publishGuard.ok) return publishGuard.result;
+  }
+  if (busy) return result(false, 'Ya hay una actualización en curso.');
+  const previous = catalogImport;
+  catalogImport = { ...previous, phase: 'applying', message: '', error: false };
+  busy = true;
+  context.onChange();
+  let outcome = null;
+  try {
+    const { planner } = await loadCatalogSheetModules();
+    outcome = await planner.applyCatalogSheetPlan(plan, { save: context.saveCommercialBatch, products: catalogProducts });
+  } catch (_) {
+    outcome = null;
+  } finally {
+    busy = false;
+  }
+  if (!outcome) {
+    catalogImport = { ...previous, error: true, message: 'No se pudo terminar de aplicar la planilla. Tocá «Actualizar» para ver qué quedó guardado.' };
+    context.onChange();
+    return result(false, catalogImport.message);
+  }
+  catalogImport = { ...previous, phase: 'done', outcome, message: '', error: false };
+  if (outcome.summary.applied) {
+    await refreshCatalogProducts();
+    if (outcome.publishedChanged) markStoreOpeningStale();
+  }
+  context.onChange();
+  return result(outcome.ok, outcome.message);
+}
+
+function discardCatalogImportSheet() {
+  if (catalogImport.phase === 'applying') return result(false, 'Esperá a que terminen de aplicarse los cambios.');
+  const done = catalogImport.phase === 'done';
+  catalogImport = { phase: 'idle' };
+  context.onChange();
+  return result(true, done ? '' : 'Planilla descartada: no se aplicó nada.');
 }
 
 async function setCatalogPublication(button) {
@@ -2734,20 +2934,50 @@ async function refreshPaymentsAction() {
   return result(Boolean(response?.ok), feedback);
 }
 
+// Las acciones de la tarjeta de Mercado Pago. «Desvincular» tiene dos pasos sin
+// diálogos del navegador: primero se muestra qué queda pendiente y recién con
+// «Sí, desvincular» se pide al servidor, que igual vuelve a comprobarlo.
 async function runMercadoPagoConnection(action) {
   const guard = requireCapability('payments.reconcile');
   if (!guard.ok) return guard.result;
   if (!onlinePaymentsEnabled()) return result(false, 'Cobros online no habilitados en esta etapa.');
+  if (action === 'disconnect-cancel') {
+    disconnectReview = null;
+    mercadoPagoNotice = { tone: 'calm', text: 'La cuenta sigue vinculada. No se cambió nada.' };
+    context.onChange();
+    return result(true, mercadoPagoNotice.text);
+  }
   if (busy) return result(false, 'Ya hay algo en curso.');
-  if (action === 'disconnect' && !globalThis.confirm('¿Desconectar Mercado Pago? Se pausarán los pagos online. El historial se conserva.')) return result(false, 'Sin cambios.');
   busy = true;
   let redirecting = false;
+  mercadoPagoReturn = '';
   feedback = action === 'connect' ? 'Conectando Mercado Pago...' : 'Verificando conexión...';
   context.onChange();
   try {
-    const response = await context.mercadoPagoConnectionAction(action, action === 'disconnect' ? 'DISCONNECT_MERCADOPAGO' : undefined);
-    if (!response?.ok) throw new Error('connection_failed');
-    if (action === 'connect') {
+    if (action === 'pause') {
+      const paused = await context.pauseOnlinePayments();
+      if (!paused?.ok) throw Object.assign(new Error('pause_failed'), { code: paused?.code || '' });
+      const activation = await context.getPaymentsActivation();
+      paymentsActivation = activation?.ok ? activation.data : paymentsActivation;
+      mercadoPagoNotice = { tone: 'calm', text: 'Cobros online pausados. Los clientes pueden seguir pagando en efectivo o por transferencia.' };
+      feedback = mercadoPagoNotice.text;
+      return result(true, feedback);
+    }
+    const serverAction = action === 'disconnect' ? 'disconnect_preview' : action === 'disconnect-confirm' ? 'disconnect' : action;
+    const response = await context.mercadoPagoConnectionAction(serverAction,
+      serverAction === 'disconnect' ? 'DISCONNECT_MERCADOPAGO' : undefined);
+    if (!response?.ok) {
+      if (response?.code === 'DISCONNECT_PENDING_OPERATIONS') {
+        disconnectReview = { pending: response.data?.pending || {}, blocking: Number(response.data?.blocking || 0), paused: response.data?.paused === true };
+        const activation = await context.getPaymentsActivation();
+        paymentsActivation = activation?.ok ? activation.data : paymentsActivation;
+        mercadoPagoNotice = { tone: 'attention', text: mercadoPagoFailureMessage(response.code) };
+        feedback = mercadoPagoNotice.text;
+        return result(false, feedback);
+      }
+      throw Object.assign(new Error('connection_failed'), { code: response?.code || '' });
+    }
+    if (serverAction === 'connect') {
       const url = new URL(response.data.authorization_url);
       if (!['https://auth.mercadopago.com.ar', 'https://auth.mercadopago.com'].includes(url.origin) || url.pathname !== '/authorization') throw new Error('invalid_redirect');
       globalThis.location.assign(url.toString());
@@ -2755,17 +2985,80 @@ async function runMercadoPagoConnection(action) {
       return result(true, 'Conectando Mercado Pago...');
     }
     sellerConnection = response.data.connection;
+    if (serverAction === 'disconnect_preview') {
+      disconnectReview = { pending: response.data.pending || {}, blocking: Number(response.data.blocking || 0), paused: false };
+      mercadoPagoNotice = null;
+      feedback = 'Revisá lo que pasa al desvincular antes de confirmar.';
+      return result(true, feedback);
+    }
     // A successful provider verification must refresh the operator's current
     // activation decision as well; a stale settings snapshot kept «Bloqueado»
     // visible after the platform enabled payments.
     const activation = await context.getPaymentsActivation();
     paymentsActivation = activation?.ok ? activation.data : null;
-    feedback = action === 'disconnect' ? 'Mercado Pago desconectado.' : 'Conexión verificada.';
+    if (serverAction === 'disconnect') {
+      disconnectReview = null;
+      mercadoPagoNotice = { tone: 'calm', text: 'Mercado Pago quedó desvinculado. Los cobros online están apagados y el historial se conserva.' };
+    } else {
+      mercadoPagoNotice = verificationNotice(response.data.verification || sellerConnection?.verification);
+    }
+    feedback = mercadoPagoNotice.text;
     return result(true, feedback);
-  } catch (_) {
-    feedback = 'No pudimos completar la conexión. Intentá nuevamente.';
+  } catch (error) {
+    mercadoPagoNotice = { tone: 'critical', text: mercadoPagoFailureMessage(error?.code) };
+    feedback = mercadoPagoNotice.text;
     return result(false, feedback);
   } finally { if (!redirecting) busy = false; context.onChange(); }
+}
+
+// Los códigos del servidor, en palabras del dueño y con qué hacer.
+export function mercadoPagoFailureMessage(code) {
+  switch (String(code || '')) {
+    case 'BUSINESS_FORBIDDEN': return 'La conexión con Mercado Pago la hace el dueño o el encargado del comercio.';
+    case 'RATE_LIMITED': return 'Hubo muchos intentos seguidos. Esperá unos minutos y volvé a probar.';
+    case 'AUTH_REQUIRED':
+    case 'SESSION_REFRESH_REQUIRED': return 'Tu sesión del panel venció. Volvé a entrar al panel y repetí la conexión.';
+    case 'SELLER_REFRESHING': return 'Mercado Pago está renovando la autorización. Probá de nuevo en un minuto.';
+    case 'ORIGIN_NOT_ALLOWED': return 'Esta dirección del panel no está habilitada para conectar Mercado Pago. Entrá desde la dirección oficial de la tienda.';
+    case 'DISCONNECT_PENDING_OPERATIONS': return 'Todavía no se puede desvincular: hay cobros o devoluciones sin cerrar. Pausamos los cobros online nuevos; cuando se cierren vas a poder desvincular.';
+    case 'NETWORK': return 'No hay conexión con el servidor. Revisá internet y volvé a intentar.';
+    case 'PAYMENT_UNAVAILABLE': return 'Mercado Pago no está disponible en este momento. Probá en unos minutos; si sigue, avisá a soporte.';
+    default: return 'No pudimos completar la conexión con Mercado Pago. Intentá nuevamente; si se repite, avisá a soporte.';
+  }
+}
+
+const VERIFICATION_REASONS = Object.freeze({
+  reauthorization_required: { tone: 'attention', text: 'Mercado Pago ya no acepta la autorización de esta cuenta (venció o fue revocada). Tocá «Reconectar» y autorizá de nuevo.' },
+  not_connected: { tone: 'attention', text: 'No hay una cuenta de Mercado Pago vinculada.' },
+  refreshing: { tone: 'attention', text: 'Mercado Pago está renovando la autorización. Probá de nuevo en un minuto.' },
+  permissions_missing: { tone: 'attention', text: 'La cuenta se vinculó sin todos los permisos que hacen falta. Reconectá y aceptá todos los permisos.' },
+  application_mismatch: { tone: 'critical', text: 'La cuenta quedó vinculada a otra aplicación. Desvinculá y volvé a conectar; si se repite, avisá a soporte.' },
+  server_configuration_incomplete: { tone: 'attention', text: 'La cuenta está vinculada, pero al servidor de pagos le falta terminar su configuración. Lo resuelve soporte; vos no tenés que hacer nada.' },
+  backend_unavailable: { tone: 'critical', text: 'No pudimos revisar el estado de los cobros. Probá en unos minutos.' },
+  provider_unavailable: { tone: 'critical', text: 'Mercado Pago no respondió la verificación. Probá en unos minutos.' },
+  payments_not_enabled: { tone: 'calm', text: 'La cuenta funciona. El cobro online sigue apagado hasta la habilitación final.' },
+  production_execution_not_enabled: { tone: 'calm', text: 'La cuenta funciona. El cobro con dinero real todavía no está habilitado.' },
+  seller_binding_mismatch: { tone: 'attention', text: 'La cuenta vinculada no coincide con la configurada para cobrar. Avisá a soporte antes de vender.' },
+});
+
+function verificationNotice(verification) {
+  if (!verification || typeof verification !== 'object') return { tone: 'calm', text: 'Conexión verificada.' };
+  if (verification.online_payments_enabled === true) return { tone: 'calm', text: 'Conexión verificada: los cobros online funcionan.' };
+  return VERIFICATION_REASONS[String(verification.blocking_reason || '')] || { tone: 'calm', text: 'Conexión verificada.' };
+}
+
+const MERCADOPAGO_RETURN_RESULTS = new Set(['connected', 'cancelled', 'expired', 'session', 'account', 'seller_changed', 'error']);
+
+// El resultado con el que Mercado Pago devolvió al dueño al panel. Sólo elige el
+// mensaje: lo que se muestra como estado se vuelve a pedir al servidor.
+export function setMercadoPagoReturn(value) {
+  const normalized = String(value || '').trim();
+  mercadoPagoReturn = MERCADOPAGO_RETURN_RESULTS.has(normalized) ? normalized : '';
+  if (mercadoPagoReturn) mercadoPagoNotice = null;
+}
+
+function mercadoPagoConnectionUi() {
+  return { returnResult: mercadoPagoReturn, notice: mercadoPagoNotice, disconnectReview };
 }
 
 async function saveMercadoPagoSettings(target) {
@@ -2809,8 +3102,17 @@ async function runPaymentAction(button) {
     const guard = requireCapability('payments.refund');
     if (!guard.ok) return guard.result;
     refundTarget = paymentIntentId;
+    refundOperation = null;
     context.onChange();
     return result(true, 'Revisá el importe y confirmá por escrito antes de devolver.');
+  }
+  if (action === 'cancel') {
+    const guard = requireCapability('payments.refund');
+    if (!guard.ok) return guard.result;
+    cancelTarget = paymentIntentId;
+    cancelOperation = null;
+    context.onChange();
+    return result(true, 'Confirmá por escrito antes de cancelar el pago.');
   }
   if (action === 'diagnostic') return exportPaymentDiagnostic(paymentIntentId);
   if (action === 'refresh') return refreshPaymentsAction();
@@ -2880,21 +3182,58 @@ async function confirmPaymentRefund(button) {
   });
   if (!validation.ok) return result(false, validation.message);
   if (busy) return result(false, 'Ya hay algo en curso.');
+  if (refundOperation?.intent !== paymentIntentId || refundOperation.amount !== validation.amount) {
+    refundOperation = { intent: paymentIntentId, amount: validation.amount, key: randomUuid() };
+  }
   busy = true;
   const response = await context.refundPayment({
     paymentIntentId,
     amount: validation.amount,
     reason: validation.reason,
-    confirmation: 'CONFIRMED',
+    confirmation: REFUND_SERVER_CONFIRMATION,
+    idempotencyKey: refundOperation.key,
   });
   busy = false;
   refundTarget = response?.ok ? '' : refundTarget;
+  if (response?.ok) refundOperation = null;
   feedback = response?.ok
     ? 'Devolución enviada. Cuando Mercado Pago la confirme, se ve acá.'
     : humanizeFailure(response?.message, 'No se pudo enviar la devolución.');
   if (response?.ok) await refreshPayments();
   else context.onChange();
   return result(Boolean(response?.ok), feedback);
+}
+
+async function confirmPaymentCancel(button) {
+  const guard = requireCapability('payments.refund');
+  if (!guard.ok) return guard.result;
+  const paymentIntentId = String(button.dataset.paymentCancelConfirm || '');
+  const form = button.closest('[data-payment-cancel-form]');
+  const validation = validateCancelRequest({ confirmation: form?.querySelector('[name="cancelConfirmation"]')?.value });
+  if (!validation.ok) return result(false, validation.message);
+  if (busy) return result(false, 'Ya hay algo en curso.');
+  if (cancelOperation?.intent !== paymentIntentId) cancelOperation = { intent: paymentIntentId, key: randomUuid() };
+  busy = true;
+  const response = await context.cancelPayment({
+    paymentIntentId,
+    confirmation: CANCEL_SERVER_CONFIRMATION,
+    idempotencyKey: cancelOperation.key,
+  });
+  busy = false;
+  if (response?.ok) {
+    cancelTarget = '';
+    cancelOperation = null;
+  }
+  feedback = response?.ok
+    ? 'Cancelación pedida a Mercado Pago. Cuando la confirme, el pago figura como cancelado y el stock vuelve.'
+    : humanizeFailure(response?.message, 'No se pudo cancelar el pago.');
+  if (response?.ok) await refreshPayments();
+  else context.onChange();
+  return result(Boolean(response?.ok), feedback);
+}
+
+function randomUuid() {
+  return globalThis.crypto?.randomUUID?.() || '';
 }
 
 async function exportPaymentDiagnostic(paymentIntentId) {
@@ -3257,6 +3596,8 @@ function defaultContext() {
     reconcilePayment: async () => ({ ok: false, message: 'La consulta de pagos no está disponible.' }),
     recoverOrder: async () => ({ ok: false, message: 'Rearmar el pedido no está disponible.' }),
     refundPayment: async () => ({ ok: false, message: 'Las devoluciones no están disponibles.' }),
+    cancelPayment: async () => ({ ok: false, message: 'Las cancelaciones no están disponibles.' }),
+    pauseOnlinePayments: async () => ({ ok: false, message: 'Pausar los cobros online no está disponible.' }),
     getArcaActivation: async () => ({ ok: false, message: 'El estado de facturación no está disponible.' }),
     authorizeArcaHomologation: async () => ({ ok: false, message: 'La autorización fiscal no está disponible.' }),
     getOpeningStatus: async () => ({ ok: false, message: 'La revisión de apertura no está disponible.' }),

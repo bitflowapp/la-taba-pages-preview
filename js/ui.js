@@ -16,7 +16,7 @@ import { resolveRuntimeConfig } from './core/runtime-config.js';
 import { COMBO_MANIFEST } from './combos-data.js';
 import { purchasableCombos } from './core/combos.js';
 import { getCustomerOrderHistory, getLatestCustomerOrder } from './core/customer-history.js';
-import { deliveryAddressesKnown, getActiveDeliveryAddress } from './customer-delivery.js';
+import { deliveryAddressesKnown, getActiveDeliveryAddress, pickupPoint, renderPickupPoint } from './customer-delivery.js';
 import {
   getCustomerProfile,
   getRememberedCheckoutValues,
@@ -93,7 +93,7 @@ import {
   isPurchasableBeverageProduct,
   isVisibleBeverageProduct,
 } from './core/beverage-home-sections.js';
-import { CATEGORY_GLYPH_KEYS, STORE_CATEGORY_ORDER, isAlcoholicCategory } from './core/store-taxonomy.js';
+import { CATEGORY_GLYPH_KEYS, STORE_CATEGORY_ORDER, findCategory, isAlcoholicCategory } from './core/store-taxonomy.js';
 import { hasPurchasableDestination, storyCtaDestination } from './core/purchasable-destination.js';
 import { resolveRetailProductId } from './core/retail-packaging.js';
 import { sandboxTrackingPresentation } from './core/sandbox-tracking-presentation.js';
@@ -314,6 +314,7 @@ export function applyBusinessConfig() {
   setText('[data-rider-business-name]', config.businessName);
   setText('[data-admin-pin]', config.adminPin);
   applyFulfillmentAvailability({
+    known: demo || detailsVerified,
     delivery: demo || (detailsVerified && config.deliveryEnabled === true),
     pickup: demo || (detailsVerified && config.pickupEnabled === true),
   });
@@ -480,6 +481,14 @@ function applyFulfillmentAvailability(availability) {
   }
   const selected = document.querySelector('input[name="deliveryMode"]:checked');
   if ((!selected || selected.disabled) && firstEnabled) firstEnabled.checked = true;
+  // «ENVIAR A · Elegí tu dirección», en el rojo de advertencia, en una tienda
+  // que sólo hace retiro: el encabezado le pedía una dirección a quien no la
+  // necesita para nada. El control se retira recién cuando el comercio
+  // CONFIRMÓ sus modalidades y el envío no está entre ellas; mientras no se
+  // sabe, queda como estaba, porque esconderlo sería afirmar algo que todavía
+  // no se sabe.
+  const sinEnvio = availability.known === true && availability.delivery !== true;
+  $$('[data-home-address]').forEach((node) => { node.hidden = sinEnvio; });
 }
 
 // Versión corta de la zona para el chip del home ("Neuquén centro, barrios..." es muy largo).
@@ -1335,16 +1344,24 @@ function catalogCampaignPiece(state, listSize) {
 // el texto ni hay que apagarla para leerlo.
 /*
  * La fotografía del hero es una CONSTANTE de la vidriera, no un dato por
- * producto, así que las dos rutas viven en tres lugares que tienen que decir
- * lo mismo: este manifiesto, el `background-image` de la banda en
- * `styles/brand-home.css` y el `<link rel="preload">` del shell.
+ * producto, así que las dos rutas viven en dos lugares que tienen que decir lo
+ * mismo: este manifiesto y el `background-image` de la banda en
+ * `styles/brand-home.css`.
+ *
+ * El shell ya NO la precarga. Un `<link rel="preload">` estático bajaba la
+ * banda en cada arranque de teléfono, pero el hero sólo se pinta si `cervezas`
+ * tiene algo comprable (ver `renderHomeHeroPromo`): en una tienda sin cervezas
+ * a la venta eran 35 KB pedidos con prioridad alta para una imagen que nadie
+ * iba a ver, compitiendo con el CSS y los módulos del primer pintado. Si algún
+ * día vuelve, tiene que ser la derivada y sólo en teléfono, y
+ * `tests/home-hero-preload.test.mjs` lo exige.
  *
  * Se intentó pasar las rutas desde acá como custom properties para tener una
  * sola fuente, y no funciona: un `url()` dentro de una custom property se
  * resuelve relativo a la HOJA que la consume, no al documento, así que
  * `assets/promos/...` terminaba pedido como `/styles/assets/promos/...` y
  * devolvía 404. Por eso cada archivo declara su ruta en sus propios términos
- * y `tests/home-hero-preload.test.mjs` verifica que los tres coincidan.
+ * y `tests/home-hero-preload.test.mjs` verifica que coincidan.
  */
 export const HOME_HERO_PROMO = Object.freeze({
   categoryId: 'cervezas',
@@ -1364,7 +1381,7 @@ function renderHomeHeroPromo() {
   if (!slot) return;
   // Una campaña aprobada toma la banda; ocupa la MISMA caja, así que el primer
   // precio de la vidriera no se mueve. Sin campaña —que es lo normal— sigue la
-  // puerta editorial de siempre, con su foto y su precarga.
+  // puerta editorial de siempre, con su foto.
   const campaign = activeCampaigns()['home-hero'];
   if (campaign) {
     slot.hidden = false;
@@ -2866,16 +2883,20 @@ function activeCategoryName() {
  * a pasar, y esto es lo primero que ve una persona.
  *
  * No se inventa ortografía. Si el id está en el diccionario de categorías que
- * la app ya conoce, se usa ESE nombre. Si no, se separan los guiones y se pone
- * la primera en mayúscula: «energeticas» queda «Energeticas», sin acento,
- * porque agregarlo sería escribir por el negocio.
+ * la app ya conoce, se usa ESE nombre; si no, el que declara la taxonomía de la
+ * tienda (`core/store-taxonomy.js`). El diccionario cargado es el de la vitrina
+ * de bebidas, así que sin la taxonomía «almacen» se leía «Almacen» al lado del
+ * carrusel «Almacén». Sólo si nadie conoce el id se separan los guiones y se
+ * pone la primera en mayúscula: «sidras-artesanales» queda «Sidras
+ * artesanales», sin tocar la ortografía, porque eso sería escribir por el
+ * negocio.
  */
 export function nombreVisibleDeCategoria(id, nombreRemoto) {
   const nombre = String(nombreRemoto || '').trim();
   const pareceSlug = !nombre || nombre.toLowerCase() === String(id).toLowerCase();
   if (!pareceSlug) return nombre;
-  const conocida = categories.find((entry) => entry.id === id);
-  if (conocida?.name) return conocida.name;
+  const conocida = categories.find((entry) => entry.id === id)?.name || findCategory(id)?.displayName;
+  if (conocida) return conocida;
   const palabras = String(id).replace(/[-_]+/g, ' ').trim();
   return palabras ? palabras.charAt(0).toUpperCase() + palabras.slice(1) : nombre;
 }
@@ -4037,14 +4058,23 @@ function currentCouponCode() {
 function checkoutCopySurfaces() {
   const submit = $('[data-checkout-submit]');
   const modeNote = $('[data-checkout-mode-note]');
+  const paymentHelp = $('[data-payment-help]');
   if (submit && submit.dataset.baseLabel === undefined) {
     submit.dataset.baseLabel = (submit.textContent || '').trim();
   }
   if (modeNote && modeNote.dataset.baseNote === undefined) {
     modeNote.dataset.baseNote = (modeNote.textContent || '').trim();
   }
-  return { submit, modeNote };
+  // La ayuda debajo del selector la escribe el shell, y es la de los medios
+  // que se cobran con el local. Se recuerda igual que las otras dos: la primera
+  // vez, antes de que nadie la reemplace por la de Mercado Pago.
+  if (paymentHelp && paymentHelp.dataset.baseHelp === undefined) {
+    paymentHelp.dataset.baseHelp = (paymentHelp.textContent || '').trim();
+  }
+  return { submit, modeNote, paymentHelp };
 }
+
+export const MERCADO_PAGO_PAYMENT_HELP = 'Vas a pagar en Mercado Pago. El pedido se confirma cuando Mercado Pago aprueba el pago.';
 
 /** El modo de la app declara acá su copia; es la que se restaura al salir de Mercado Pago. */
 export function rememberCheckoutBaseCopy({ submitLabel = '', note = '' } = {}) {
@@ -4076,7 +4106,7 @@ function renderCheckoutPaymentFields() {
   // «El medio de pago se coordina con el local»; la pantalla afirmaba que el
   // pago se arreglaba con el negocio y acto seguido redirigía a Mercado Pago.
   // La copia vive ahora en los dos nodos que sí existen.
-  const { submit, modeNote } = checkoutCopySurfaces();
+  const { submit, modeNote, paymentHelp } = checkoutCopySurfaces();
   if (submit && !submit.disabled) {
     submit.textContent = isMercadoPago
       ? 'Pagar con Mercado Pago'
@@ -4088,6 +4118,15 @@ function renderCheckoutPaymentFields() {
     modeNote.textContent = isMercadoPago
       ? 'Vas a pagar en el entorno seguro de Mercado Pago. Confirmamos el pedido sólo después de verificar el pago.'
       : (modeNote.dataset.baseNote || 'El medio de pago se coordina con el local.');
+  }
+  // La ayuda del selector decía «No se paga en esta pantalla» también con
+  // Mercado Pago elegido, justo encima de un botón que dice «Pagar con Mercado
+  // Pago». Se escribe en los dos sentidos por la misma razón que la nota: volver
+  // a efectivo o a «A coordinar» —a mano, o porque Mercado Pago dejó de estar
+  // disponible— tiene que devolver EXACTAMENTE la copia del shell.
+  if (paymentHelp) {
+    const help = isMercadoPago ? MERCADO_PAGO_PAYMENT_HELP : (paymentHelp.dataset.baseHelp || '');
+    if (paymentHelp.textContent !== help) paymentHelp.textContent = help;
   }
 }
 
@@ -4247,6 +4286,14 @@ function trackingHeadline(order, { riderLocation = null, locationFreshness = 'no
   const status = order?.status || 'received';
   const pickup = order?.deliveryMode === 'pickup';
   if (order.status === 'delivered') {
+    // En un retiro, `delivered` es que el local lo entregó en el mostrador:
+    // «¡Llegó tu pedido!» le decía a quien fue a buscarlo que se lo llevaron.
+    if (pickup) {
+      return {
+        title: '¡Ya retiraste tu pedido!',
+        sub: `Gracias por comprar en ${getBusinessConfig().businessName}.`,
+      };
+    }
     return {
       title: '¡Llegó tu pedido!',
       sub: `La entrega fue confirmada. Gracias por comprar en ${getBusinessConfig().businessName}.`,
@@ -4271,10 +4318,15 @@ function trackingHeadline(order, { riderLocation = null, locationFreshness = 'no
     return {title:'Tu repartidor va a buscarlo',sub:'Te avisamos cuando salga del local.'};
   }
   if (status === 'ready') {
+    // La dirección sólo si el comercio la publicó: con la configuración base
+    // esto decía «Te esperamos en Dirección no publicada.».
+    const pickupAddress = pickup ? pickupPoint().address : '';
     return {
-      title: pickup ? 'Tu pedido está listo' : 'Tu pedido está listo',
+      title: 'Tu pedido está listo',
       sub: pickup
-        ? `Te esperamos en ${getBusinessConfig().address}.`
+        ? (pickupAddress
+          ? `Ya podés pasar a retirarlo. Te esperamos en ${pickupAddress}.`
+          : 'Ya podés pasar a retirarlo por el local.')
         : 'Está listo para salir con el repartidor.',
     };
   }
@@ -4512,6 +4564,28 @@ function relativeAgeLabel(value) {
   return `hace ${minutes} min`;
 }
 
+/*
+ * RETIRO EN LOCAL: ADÓNDE IR, EN VEZ DE UN MAPA VACÍO.
+ *
+ * El seguimiento de un retiro era el de un reparto: la línea «En camino ·
+ * Entregado» y debajo la caja del mapa, medida en la vista previa a 390 × 844
+ * como 280 px de negro. En un retiro no hay repartidor ni destino que dibujar,
+ * y sin una ubicación que seguir el seguimiento honesto no muestra un mapa.
+ * Lo que la persona necesita es saber adónde ir: la dirección, el horario y el
+ * enlace a Maps que el comercio PUBLICÓ —la misma ficha del checkout—. Si no
+ * publicó nada, no se dibuja nada.
+ */
+function trackingPickupCard(order) {
+  if (order?.deliveryMode !== 'pickup' || ['cancelled', 'delivered'].includes(order.status)) return '';
+  const point = renderPickupPoint();
+  if (!point) return '';
+  return `
+    <section class="tracking-pickup-card" data-tracking-pickup>
+      <strong>Dónde retirarlo</strong>
+      ${point}
+    </section>`;
+}
+
 function trackingDeliveryCodeCard(order) {
   if (!order || order.deliveryMode !== 'delivery') return '';
   if (!['arrived', 'arriving'].includes(order.status)) return '';
@@ -4725,6 +4799,24 @@ function trackingHeader() {
     </header>`;
 }
 
+/*
+ * Qué va a poder seguir la persona, dicho según lo que el comercio hace.
+ *
+ * Decía siempre «el recorrido del Rider», también en una tienda que sólo hace
+ * retiro, donde no hay ningún recorrido que mostrar. Sale de la misma
+ * configuración que decide qué modalidades ofrece el checkout, y mientras el
+ * comercio no la confirmó no promete ninguna de las dos cosas.
+ */
+export function trackingIdleLead(config = getBusinessConfig(), demo = isDemoMode()) {
+  const known = demo || config.orderingDetailsVerified === true;
+  const delivery = known && (demo || config.deliveryEnabled === true);
+  const pickup = known && (demo || config.pickupEnabled === true);
+  if (delivery && pickup) return 'Cuando hagas una compra, vas a poder seguirla desde acá y, si es con envío, ver el recorrido del Rider.';
+  if (delivery) return 'Cuando hagas una compra, vas a poder seguir el recorrido del Rider desde acá.';
+  if (pickup) return 'Cuando hagas una compra, vas a ver desde acá cuándo está lista para retirar.';
+  return 'Cuando hagas una compra, vas a poder seguirla desde acá.';
+}
+
 export function renderTracking() {
   const container = $('[data-tracking-panel]');
   if (!container) return;
@@ -4745,7 +4837,7 @@ export function renderTracking() {
           ${trackingMapStage({ idle: true })}
           <div class="tracking-idle-card" data-tracking-idle-card>
             <h1 class="tracking-idle-title">Seguí tu pedido</h1>
-            <p class="tracking-idle-lead">Cuando hagas una compra, vas a poder seguir el recorrido del Rider desde acá.</p>
+            <p class="tracking-idle-lead">${escapeHtml(trackingIdleLead())}</p>
             <button class="primary-button compact tracking-idle-cta" type="button" data-nav-view="catalog">Ver el catálogo</button>
           </div>
           ${trackingHelpCard()}
@@ -4801,11 +4893,13 @@ export function renderTracking() {
             : escapeHtml(head.sub)}</p>
           <p class="tracking-updated" data-tracking-updated>Última actualización ${escapeHtml(relativeAgeLabel(latestUpdate))}</p>
         </div>
-        ${renderPublicOrderTimeline(timelineStatus, { className: 'customer-progress' })}
-        ${sandboxMapActive
-          ? sandboxTrackingStage(order, sandboxSimulation)
-          : trackingMapStage({ order, freshness: locationFreshness, showRecenter: riderOnMap })}
-        <p class="tracking-map-scroll-hint">Deslizá hacia arriba para ver los detalles</p>
+        ${renderPublicOrderTimeline(timelineStatus, { className: 'customer-progress', deliveryMode: isDelivery ? 'delivery' : 'pickup' })}
+        ${isDelivery
+          ? `${sandboxMapActive
+            ? sandboxTrackingStage(order, sandboxSimulation)
+            : trackingMapStage({ order, freshness: locationFreshness, showRecenter: riderOnMap })}
+        <p class="tracking-map-scroll-hint">Deslizá hacia arriba para ver los detalles</p>`
+          : trackingPickupCard(order)}
         ${riderOnMap ? '' : trackingWaitingStage(order, locationFreshness)}
         ${showRiderCard
           ? riderTrackingCard(order, riderLocation, sandboxPresentation)

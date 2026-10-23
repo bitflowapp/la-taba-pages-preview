@@ -1,0 +1,27 @@
+✔ F01 a fully refunded late payment cannot be recovered into a deliverable order (163.0769ms)
+✔ F01 composition: refund -> recover -> deliver never reaches delivered (147.7837ms)
+✔ F01 an order whose payment is fully refunded after completion cannot advance, whatever the review label says (167.9603ms)
+✔ F01 a partial refund (compensation) does not stop an order that still has net money (183.4586ms)
+✔ F02 recovery is refused while a refund is ambiguous (148.6168ms)
+✔ F02 finalization itself refuses to create an order while a refund is open (132.8011ms)
+✔ F03 a purchase of 2 units leaves exactly 2 units out of stock after interruption, expiry and recovery (158.8565ms)
+✔ F03 recovery executed twice never moves stock twice (161.469ms)
+✔ F03 a snapshot that arrives after the window lapsed (stock still held) finalizes without a second deduction (149.5508ms)
+✔ F12 approval after the reservation was released re-reserves transactionally when stock exists, else leaves a visible case (154.8735ms)
+✔ F12 approval after release with NO stock available leaves a durable, visible case and no oversell (133.7222ms)
+✔ F04 a rejected payment recorded after an approved one never replaces the approved identity (265.105ms)
+✔ F04 two approved payment ids keep the first as financing and raise a durable discrepancy (186.7132ms)
+✔ F04 order of arrival does not matter: newer rejection first, older approval second still finalizes (152.1182ms)
+✔ F04 the same payment repeated, stale and out of order is idempotent and never regresses (155.3427ms)
+✔ F05 external refund of 500 plus local refund of 250 totals 750 (280.5934ms)
+✔ F05 the same total is reached when the provider snapshot arrives after the local refund, and when repeated (168.7903ms)
+✔ F05 an external refund that already covers the local one is not counted twice (169.3477ms)
+✔ F05 refunds that add up to the full amount move the intent to refunded and block advancing (172.6628ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3360.5735

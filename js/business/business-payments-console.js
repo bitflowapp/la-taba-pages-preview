@@ -54,7 +54,7 @@ const STEP_COPY = Object.freeze({
 });
 
 export const PAYMENT_STATES = Object.freeze([
-  'checking', 'approved', 'rejected', 'pending', 'refunded', 'in-review', 'approved-without-order',
+  'checking', 'approved', 'rejected', 'pending', 'refunded', 'in-review', 'approved-without-order', 'money-unresolved',
 ]);
 
 const PAYMENT_STATE_COPY = Object.freeze({
@@ -65,6 +65,7 @@ const PAYMENT_STATE_COPY = Object.freeze({
   refunded: { label: 'Reembolsado', tone: 'info', detail: 'Se le devolvió el dinero al cliente, total o en parte.' },
   'in-review': { label: 'En revisión', tone: 'warning', detail: 'Mercado Pago lo está revisando por seguridad. No entregues todavía.' },
   'approved-without-order': { label: 'Aprobado sin pedido', tone: 'danger', detail: 'Cobraste, pero no hay pedido armado. Resolvelo antes de seguir.' },
+  'money-unresolved': { label: 'Dinero sin resolver', tone: 'danger', detail: 'Hay una devolución incierta, un pago repetido o un dato que no coincide. No armes ni entregues el pedido hasta resolverlo.' },
 });
 
 const CHECKING_STATUSES = new Set(['preference_creating', 'preference_created', 'redirected', 'reconciling']);
@@ -116,7 +117,12 @@ export function classifyBusinessPayment(payment = {}) {
   const internal = String(payment.internal_status || '').toLowerCase();
   const hasOrder = Boolean(payment.order_public_code);
   let state = 'checking';
-  if (REFUND_STATUSES.has(internal) || Number(payment.refunded_amount || 0) > 0) state = 'refunded';
+  // Un hecho financiero sin resolver (devolución incierta, pago repetido, importe inconsistente...) manda sobre
+  // cualquier etiqueta "normal": la base ya bloquea armar o avanzar el pedido, y acá se ve por qué.
+  const unresolvedMoney = Number(payment.open_discrepancies || 0) > 0
+    || ['refund_in_flight', 'cancellation_in_flight', 'dispute_open', 'financial_discrepancy_open'].includes(String(payment.financial_hold || ''));
+  if (unresolvedMoney) state = 'money-unresolved';
+  else if (REFUND_STATUSES.has(internal) || Number(payment.refunded_amount || 0) > 0) state = 'refunded';
   else if (internal === 'approved_order_pending' || (APPROVED_STATUSES.has(internal) && !hasOrder)) state = 'approved-without-order';
   else if (REVIEW_STATUSES.has(internal)) state = 'in-review';
   else if (APPROVED_STATUSES.has(internal)) state = 'approved';
@@ -131,7 +137,7 @@ export function classifyBusinessPayment(payment = {}) {
     tone: copy.tone,
     detail: copy.detail,
     orderLabel: hasOrder ? String(payment.order_public_code) : 'Sin pedido armado',
-    blocksDelivery: ['in-review', 'approved-without-order', 'pending', 'checking'].includes(state),
+    blocksDelivery: ['in-review', 'approved-without-order', 'money-unresolved', 'pending', 'checking'].includes(state),
   });
 }
 
@@ -173,6 +179,16 @@ export function paymentActionsFor(payment = {}, { elevated = false } = {}) {
       hint: 'Arma un resumen sin datos personales para pasarle a soporte.',
     },
     {
+      // Un pago que Mercado Pago todavía no resolvió (por ejemplo, una tarjeta
+      // en revisión) se puede cancelar: no se cobra y el stock vuelve.
+      id: 'cancel',
+      label: 'Cancelar el pago pendiente',
+      kind: 'elevated',
+      available: Boolean(payment.can_cancel),
+      hint: 'Le pide a Mercado Pago que no cobre este pago. Pide confirmación escrita.',
+      requiresConfirmation: true,
+    },
+    {
       id: 'refund',
       label: 'Devolver el dinero',
       kind: 'elevated',
@@ -187,6 +203,21 @@ export function paymentActionsFor(payment = {}, { elevated = false } = {}) {
 }
 
 export const REFUND_CONFIRMATION_PHRASE = 'DEVOLVER';
+export const CANCEL_CONFIRMATION_PHRASE = 'CANCELAR';
+
+// Lo que exige el servidor, distinto de la palabra que escribe la persona: la
+// persona confirma con DEVOLVER o CANCELAR; el panel recién entonces manda la
+// frase técnica. Antes se mandaba 'CONFIRMED' y TODA devolución desde el panel
+// era rechazada por el servidor.
+export const REFUND_SERVER_CONFIRMATION = 'I_UNDERSTAND_THIS_REQUESTS_A_MERCADO_PAGO_REFUND';
+export const CANCEL_SERVER_CONFIRMATION = 'I_UNDERSTAND_THIS_REQUESTS_A_MERCADO_PAGO_CANCELLATION';
+
+export function validateCancelRequest({ confirmation } = {}) {
+  if (String(confirmation || '').trim().toUpperCase() !== CANCEL_CONFIRMATION_PHRASE) {
+    return Object.freeze({ ok: false, message: `Escribí ${CANCEL_CONFIRMATION_PHRASE} para confirmar.` });
+  }
+  return Object.freeze({ ok: true });
+}
 
 export function validateRefundRequest({ amount, reason, confirmation, maximum } = {}) {
   const trimmedReason = String(reason || '').trim();

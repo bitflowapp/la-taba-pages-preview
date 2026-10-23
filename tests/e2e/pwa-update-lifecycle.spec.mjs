@@ -167,8 +167,21 @@ test.describe('el aviso de actualización sigue el ciclo de vida real del worker
     await publishAndWaitForWaiting(page, 2);
     await nudge(page);
     await expect(await banner(page)).toBeVisible();
-    await page.locator('[data-app-update-now]').click();
-    await page.waitForFunction(async () => (await caches.keys()).includes('la-taba-runtime-v139-campaign-live-price'));
+    await Promise.all([
+      page.waitForNavigation({ waitUntil: 'load' }),
+      page.locator('[data-app-update-now]').click(),
+    ]);
+    // La caché nueva se abre durante `install`, antes de que termine `activate`
+    // y quite la anterior. Esperar sólo la primera condición hacía competir al
+    // test con la limpieza asíncrona del worker.
+    let cleanSamples = 0;
+    await expect.poll(async () => {
+      const keys = await page.evaluate(() => caches.keys());
+      const clean = keys.includes('la-taba-runtime-v139-campaign-live-price')
+        && !keys.includes('la-taba-runtime-v131-premium-motion');
+      cleanSamples = clean ? cleanSamples + 1 : 0;
+      return cleanSamples >= 3;
+    }, { timeout: 15_000, intervals: [100] }).toBe(true);
     const cached = await page.evaluate(() => caches.keys());
     expect(cached).not.toContain('la-taba-runtime-v131-premium-motion');
     expect(await page.evaluate((keys) => Object.fromEntries(keys.map(key => [key,localStorage.getItem(key)])), Object.keys(storage))).toEqual(storage);

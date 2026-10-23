@@ -40,7 +40,7 @@ async function run(scenario: string, creation = false) {
     protected_tokens: await protect({ access_token: 'fixture-seller-token' }, bid),
     expires_at: new Date(Date.now() + 172800000).toISOString(), refresh_owner: null };
   const requests: string[] = [], events: string[] = [], recordings: Record<string, unknown>[] = [];
-  let posted = 0, settledEvents = 0, failedJobs = 0;
+  let posted = 0, settledEvents = 0, failedJobs = 0, claimedThisRun = false;
   const original = globalThis.fetch;
   globalThis.fetch = async (input, options) => {
     const url = new URL(String(input)), init = options as RequestInit | undefined;
@@ -55,7 +55,18 @@ async function run(scenario: string, creation = false) {
     }
     if (url.pathname.endsWith('/prepare_payment_refund_v2')) return Response.json({ refund_id: rid, idempotency_key: key,
       provider_payment_id: '90001', amount: 100, full_refund: false, idempotent: false });
-    if (url.pathname.endsWith('/claim_payment_outbox_v2')) return Response.json([{ id: key, payment_intent_id: iid, refund_id: rid, topic: 'refund_reconcile', attempts: 1 }]);
+    if (url.pathname.endsWith('/claim_payment_outbox_v2')) {
+      if (claimedThisRun) return Response.json([]);
+      claimedThisRun = true;
+      return Response.json([{ id: key, business_id: bid, payment_intent_id: iid, refund_id: rid, topic: 'refund_reconcile', attempts: 1 }]);
+    }
+    if (url.pathname.endsWith('/extend_payment_outbox_lease')) return Response.json(true);
+    if (url.pathname.endsWith('/claim_provider_ledger_window')) return Response.json(null);
+    if (url.pathname.endsWith('/park_refund_identity_unknown')) {
+      assertEquals(body.p_refund_id, rid);
+      assertEquals(body.p_evidence.provider_refunds.map((r: { id: string }) => r.id), ['10001']);
+      events.push('parked'); return Response.json({ ok: true });
+    }
     if (url.pathname.endsWith('/start_payment_outbox_job') || url.pathname.endsWith('/complete_payment_outbox_job')) return Response.json(true);
     if (url.pathname.endsWith('/fail_payment_outbox_job')) { failedJobs++; return Response.json(true); }
     if (url.pathname.endsWith('/record_payment_refund_identity')) {
@@ -83,8 +94,9 @@ async function run(scenario: string, creation = false) {
       if (scenario === 'final-rejection') return Response.json({ message: 'invalid refund amount' }, { status: 400 });
       return Response.json(resource);
     }
-    // The list is an adversarial trap: the new worker must never use it to
-    // associate an unknown refund, even if only one plausible entry exists.
+    // Since the financial-integrity migration, the list is evidence for the
+    // parked case ONLY. It must never identify or settle an unknown refund.
+    if (url.pathname === '/v1/payments/90001/refunds') return Response.json([resource]);
     if (url.pathname === '/v1/payments/90001') return Response.json({ id: 90001, refunds: [resource] });
     assertEquals(url.pathname, '/v1/payments/90001/refunds/10001');
     return Response.json(resource);
@@ -113,11 +125,20 @@ async function run(scenario: string, creation = false) {
       } });
       await worker(request());
       if (scenario === 'valid') {
+        // A second queued observation, after the previous job was completed.
+        claimedThisRun = false;
         await worker(request());
         assertEquals(settledEvents, 1); assertEquals(failedJobs, 0);
         assertEquals(requests, ['/v1/payments/90001/refunds/10001', '/v1/payments/90001/refunds/10001']);
-      } else { assertEquals(recordings.length, 0); assertEquals(failedJobs, 1); }
-      if (scenario.startsWith('unknown') || scenario === 'known-owned') assertEquals(requests.length, 0);
+      } else {
+        assertEquals(recordings.length, 0);
+        if (scenario.startsWith('unknown')) {
+          assertEquals(failedJobs, 0); assertEquals(events, ['parked']);
+          assertEquals(local.provider_refund_id, null);
+          assertEquals(requests, ['/v1/payments/90001/refunds']);
+        } else assertEquals(failedJobs, 1);
+      }
+      if (scenario === 'known-owned') assertEquals(requests.length, 0);
       assertEquals(posted, 0);
     }
   } finally { globalThis.fetch = original; }

@@ -6,6 +6,8 @@ import {
   requireRealPaymentSmokeAuthorization,
 } from "./payment-runtime.ts";
 import { seal, unseal } from "./seller-oauth-crypto.ts";
+import { recoveryDeploymentBinding } from "./recovery-deployment.ts";
+import { sellerAccountLabel } from "./seller-connection-panel.ts";
 
 const DEPLOYMENT_BINDINGS: Record<string, {
   deployment: "staging" | "production";
@@ -72,7 +74,8 @@ export function oauthMode(): boolean {
   } catch (_) {
     throw new Error("Unknown Mercado Pago deployment");
   }
-  if (!DEPLOYMENT_BINDINGS[projectRef]) {
+  const recovery = recoveryDeploymentBinding(name => Deno.env.get(name));
+  if (!DEPLOYMENT_BINDINGS[projectRef] && recovery?.ref !== projectRef) {
     throw new Error("Unknown Mercado Pago deployment");
   }
   if (mode !== "oauth") {
@@ -87,7 +90,8 @@ export function oauthConfig() {
   const supabaseUrl = getRequiredEnv("SUPABASE_URL");
   const expected = getRequiredEnv("MERCADOPAGO_OAUTH_PROJECT_REF");
   const clientId = getRequiredEnv("MERCADOPAGO_CLIENT_ID");
-  const binding = DEPLOYMENT_BINDINGS[expected];
+  const recovery = recoveryDeploymentBinding(name => Deno.env.get(name));
+  const binding = DEPLOYMENT_BINDINGS[expected] || (recovery?.ref === expected ? recovery.binding : undefined);
   const panelUrl = getRequiredEnv("MERCADOPAGO_OAUTH_PANEL_URL");
   const checkoutBaseUrl = getRequiredEnv("TABA_CHECKOUT_BASE_URL");
   const allowedOrigins = getRequiredEnv("TABA_ALLOWED_ORIGINS");
@@ -203,7 +207,7 @@ export async function sellerIdentity(accessToken: string, sellerId: string) {
   if (!Array.isArray(body.tags) || body.tags.includes("test_user") !== (oauthConfig().environment === "test")) {
     throw new Error("Seller account environment mismatch");
   }
-  return { seller_id: sellerId };
+  return { seller_id: sellerId, label: sellerAccountLabel(body) };
 }
 export async function connection(businessId: string) {
   assertOAuthBusiness(businessId);

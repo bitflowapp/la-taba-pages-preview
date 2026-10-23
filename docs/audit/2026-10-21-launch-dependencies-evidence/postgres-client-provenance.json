@@ -1,0 +1,33 @@
+{
+  "at": "2026-10-21T03:19:58.479Z",
+  "source": "https://get.enterprisedb.com/postgresql/postgresql-17.10-1-windows-x64-binaries.zip",
+  "archiveBytes": 333925750,
+  "extractedByHttpRange": true,
+  "crcVerified": true,
+  "binaries": [
+    {
+      "name": "pgsql/bin/pg_dump.exe",
+      "bytes": 613376,
+      "compressedBytes": 283698,
+      "sha256": "031ec0830df6cae8621c5b71188a597987e0c09bb8c3360c8cc76fcc10850cd6"
+    },
+    {
+      "name": "pgsql/bin/pg_dumpall.exe",
+      "bytes": 194560,
+      "compressedBytes": 90742,
+      "sha256": "e79d01191c1e506301eeade0f3940350192a918041e01ba39d7cef9dbfbefb56"
+    },
+    {
+      "name": "pgsql/bin/pg_restore.exe",
+      "bytes": 370688,
+      "compressedBytes": 182761,
+      "sha256": "6ecdbc31b75e10d36f3fba699edde4e1350b54aeb74430350cace7334aa6c832"
+    },
+    {
+      "name": "pgsql/bin/psql.exe",
+      "bytes": 633344,
+      "compressedBytes": 247733,
+      "sha256": "e0113742a0520185e6dcaf90dafbfd15b02633218d311715f3400613c206d1dc"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "capturedAt": "2026-10-21T01:28:38.189Z",
+  "applicationId": "2691240967769590",
+  "scope": "TABA2 Staging only",
+  "providerIdentity": {
+    "httpStatus": 200,
+    "authenticated": true,
+    "countryArgentina": true,
+    "testUser": true,
+    "source": "GET /users/me with test_access_token"
+  },
+  "notifications": {
+    "source": "notifications_history",
+    "analysed": 1,
+    "successful": 0,
+    "failed": 1,
+    "statusCode": 502,
+    "topic": "topic_merchant_order_wh",
+    "reportedLastAttempt": "2026-10-17 13:20",
+    "timezoneProvided": false
+  },
+  "oauthVerified": false,
+  "checkoutVerified": false,
+  "webhookDeliveryVerified": false,
+  "refundVerified": false,
+  "cancellationVerified": false,
+  "realTransactionsExecuted": 0,
+  "credentialsWrittenToDisk": false
+}

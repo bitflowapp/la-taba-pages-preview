@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "purpose": "la-taba-recovery-test",
+  "projectName": "la-taba-recovery-test",
+  "organizationId": "tpdpuvnasszkcpdanxpk",
+  "organizationPlan": "free",
+  "infrastructureBudgetUSD": 0,
+  "region": "sa-east-1",
+  "projectRef": null,
+  "createdAt": null,
+  "environment": "test",
+  "checkoutOrigin": "https://recovery-20261020.taba2-staging.pages.dev",
+  "mercadoPagoApplicationId": "2691240967769590",
+  "commercialPaymentsEnabled": false,
+  "costPolicy": { "maximumAdditionalMonthlyUSD": 0, "requiredOrganizationPlan": "free", "paidAddonsAllowed": false },
+  "costAuthorization": "free_only",
+  "credentialsAuthorization": "test_only",
+  "databaseState": "blocked_free_project_quota",
+  "authState": "not_configured",
+  "functionsState": "not_deployed",
+  "paymentTestState": "not_run"
+}

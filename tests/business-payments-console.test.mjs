@@ -93,7 +93,7 @@ test('apuntar a dinero real sin revisión aprobada se marca como advertencia', (
   assert.ok(result.warnings.some((warning) => /dinero real/i.test(warning)));
 });
 
-test('los pagos del día se clasifican en los siete estados operativos', () => {
+test('los pagos del día se clasifican en los ocho estados operativos', () => {
   const cases = [
     [{ internal_status: 'preference_created' }, 'checking'],
     [{ internal_status: 'completed', order_public_code: 'LT-9' }, 'approved'],
@@ -102,6 +102,8 @@ test('los pagos del día se clasifican en los siete estados operativos', () => {
     [{ internal_status: 'refunded' }, 'refunded'],
     [{ internal_status: 'security_review_required' }, 'in-review'],
     [{ internal_status: 'approved_order_pending' }, 'approved-without-order'],
+    [{ internal_status: 'completed', order_public_code: 'LT-9', financial_hold: 'refund_in_flight' }, 'money-unresolved'],
+    [{ internal_status: 'completed', order_public_code: 'LT-9', open_discrepancies: 1 }, 'money-unresolved'],
   ];
   for (const [payment, expected] of cases) {
     assert.equal(classifyBusinessPayment(payment).state, expected, JSON.stringify(payment));

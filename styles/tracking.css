@@ -3427,3 +3427,14 @@ body[data-active-view="tracking"]:has(
     font-size: 18px;
   }
 }
+
+/* En Seguimiento la barra no muestra el carrito: en ese rincón flota el menú
+   de la hoja (`.tracking-menu-button`, fijo, 44 px). Sin reservarle el lugar,
+   la dirección del encabezado se metía debajo del menú —el pin encima de las
+   tres rayas— y, con un nombre de comercio largo, era lo único que se veía de
+   ella. La reserva es la misma cuenta que ubica al menú, más 8 px de aire. */
+@media (max-width: 1020px) {
+  body[data-active-view="tracking"] .topbar {
+    padding-right: calc(max(18px, calc((100vw - 720px) / 2 + 24px)) + 52px);
+  }
+}

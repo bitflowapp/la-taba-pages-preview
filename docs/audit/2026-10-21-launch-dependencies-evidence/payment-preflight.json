@@ -1,0 +1,26 @@
+{
+  "at": "2026-10-21T03:48:43.031Z",
+  "projectRef": "ixewllzzuzpqrkxzmfzx",
+  "missingSecrets": [
+    "MERCADOPAGO_OAUTH_WEBHOOK_SECRET"
+  ],
+  "mismatchedConfiguration": [],
+  "forbiddenConfiguration": [],
+  "serverConfigurationReady": false,
+  "oauthRedirectRegistrationVerified": false,
+  "providerPaymentVerified": false,
+  "commercialGo": false,
+  "database": {
+    "non_test_intents": 0,
+    "non_test_settings": 0,
+    "non_test_connections": 0,
+    "preserved_products": 72,
+    "orders": 0
+  },
+  "commercialGuardsIntact": true,
+  "pendingHumanSteps": [
+    "Register exact OAuth redirect and enable PKCE in TABA2 Staging",
+    "Copy full webhook signature directly into Supabase Secrets"
+  ],
+  "financialOperationsExecuted": false
+}

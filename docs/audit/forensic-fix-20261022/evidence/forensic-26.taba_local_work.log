@@ -1,0 +1,34 @@
+✔ 01 duplicate approval finalizes once: one order, stock 8 (163.4285ms)
+✔ 02 a pending payment never becomes an order (SQLSTATE 55000) (124.2176ms)
+✔ 03 approval after the reservation expired no longer strands the buyer: the paid purchase is re-reserved in the same transaction (154.2541ms)
+✔ 04 a missing preference is retryable; the corrected read finalizes once (no permanent review) (153.4858ms)
+✔ 05 a rejected payment after the approved one does not replace the approved identity (159.3848ms)
+✔ 06 two approved payment ids: both stored, first keeps funding, critical case opened (264.5419ms)
+✔ 07 refund of a late payment that stayed in review cannot be recovered afterwards (150.6315ms)
+✔ 08 eight empty probes do not stop the watch (133.1977ms)
+✔ 09 a checkout older than 48 h is still probed (304.4374ms)
+✔ 10 disconnect preflight counts a retryably rejected checkout as open (132.4451ms)
+✔ 11 a snapshot interrupted before finalization leaves exactly 2 units out of stock after expiry and the sweep (152.546ms)
+✔ 12 a payment to the wrong collector is blocked and never becomes an order (125.0195ms)
+✔ 13 a payment with the wrong amount is blocked (121.3211ms)
+✔ 14 rejected then approved inside the same preference becomes one order (151.9154ms)
+✔ 15 a refunded order cannot be prepared, dispatched or delivered (166.8208ms)
+✔ 16 an external refund of 500 plus a local one of 250 totals 750 (172.0791ms)
+✔ 17 an exception after reserving rolls the whole purchase back (124.5568ms)
+✔ 18 recovery after an interrupted, expired reservation does not deduct twice (stock 8, one allocation) (160.6636ms)
+✔ 19 recovery is refused while a refund is ambiguous (152.2187ms)
+✔ 20 a newer rejection processed before the older approval does not block the purchase (153.0509ms)
+✔ 21 a worker that died is replaced: the lease is reclaimed and the old owner cannot complete (129.4018ms)
+✔ 22 a duplicate webhook receipt yields one job (129.7577ms)
+✔ 23 client-side price and over-selling are rejected by the server (122.9366ms)
+✔ 24 a fully refunded late payment cannot be recovered, prepared or delivered (146.8603ms)
+✔ 25 an open refund request deduplicates even with another UUID (160.2068ms)
+✔ 26 disconnect after a retryable rejection is refused and keeps the credential (160.6074ms)
+ℹ tests 26
+ℹ suites 0
+ℹ pass 26
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4493.1625

@@ -1,0 +1,197 @@
+✔ A1 a refund made in the provider panel days after the payment is found without any webhook (5059.8037ms)
+✔ A2 a pending offline payment approved days later is found and the orphan becomes critical (3881.3646ms)
+✔ A3 the orphan inbox escalates when the same provider payment later carries money (4221.5493ms)
+✔ A4 a provider window larger than the provider pagination ceiling is still read completely (7323.3434ms)
+✔ A5 a payment that changes while the window is being paged is neither skipped nor left stale (21059.5945ms)
+✔ A6 the ledger asks the provider with the documented ISO-8601 millisecond dates (5016.9855ms)
+✔ A7 a pending payment is re-read on a backoff until the provider settles it, then approved late (5890.3278ms)
+✔ A8 a checkout with only rejected payments closes with evidence instead of being read forever (7368.4057ms)
+✔ A9 paid orders stay verified on a ladder and a refund made later in the panel is found (8230.3454ms)
+✔ B1 a ledger page that does not fit in one wall clock still makes progress and nothing is killed (19500.6357ms)
+✔ B2 a job that cannot finish inside one wall clock does not starve the queue (one job per invocation) (22070.9605ms)
+✔ B3 a batch of claimed jobs never leaves jobs claimed-but-never-run behind (11788.2804ms)
+✔ B4 killing the job path at EVERY boundary leaves exactly one order, one stock movement and no stuck job (134602.0937ms)
+✔ B5 killing the ledger path at EVERY boundary loses nothing and duplicates nothing (121427.3723ms)
+✔ seed a database with money in flight (partial and external refunds, an ambiguous refund, queued and failing jobs, an open case, a half-read ledger window) (2620.1089ms)
+✔ a custom-format dump restores into a NEW database, leaves the original untouched, and every financial fingerprint matches (46382.0937ms)
+✔ reconciling the restored database does not book, charge or refund anything twice (501.6019ms)
+✔ facts that happened AFTER the backup are detected from the provider, never invented: a later external refund is added once, a payment with no local checkout becomes an orphan case (434.7798ms)
+✔ payment approval races the expiry sweep, the stuck-payment retry and the integrity checks: no deadlock, nothing lost, no double stock (4540.6406ms)
+✔ two buyers race for the last units: exactly one gets them, stock never goes negative (4314.2023ms)
+✔ the same payment finalized from five sessions at once creates one order and moves stock once (12964.9373ms)
+✔ a refund and a manual recovery race on a late payment: never an order for money that was returned (11108.6528ms)
+✔ disconnect racing new checkouts: once it succeeds there is no open payment left behind (10593.5018ms)
+✔ lock order: payment snapshots, expiry sweeps and buyers reopening the payment link never deadlock (25157.1788ms)
+✔ 01 duplicate approval finalizes once: one order, stock 8 (1225.5609ms)
+✔ 02 a pending payment never becomes an order (SQLSTATE 55000) (204.2492ms)
+✔ 03 approval after the reservation expired no longer strands the buyer: the paid purchase is re-reserved in the same transaction (187.8416ms)
+✔ 04 a missing preference is retryable; the corrected read finalizes once (no permanent review) (177.5689ms)
+✔ 05 a rejected payment after the approved one does not replace the approved identity (171.1136ms)
+✔ 06 two approved payment ids: both stored, first keeps funding, critical case opened (210.2071ms)
+✔ 07 refund of a late payment that stayed in review cannot be recovered afterwards (176.0947ms)
+✔ 08 eight empty probes do not stop the watch (158.9481ms)
+✔ 09 a checkout older than 48 h is still probed (160.3026ms)
+✔ 10 disconnect preflight counts a retryably rejected checkout as open (172.0479ms)
+✔ 11 a snapshot interrupted before finalization leaves exactly 2 units out of stock after expiry and the sweep (165.7795ms)
+✔ 12 a payment to the wrong collector is blocked and never becomes an order (128.7735ms)
+✔ 13 a payment with the wrong amount is blocked (128.1247ms)
+✔ 14 rejected then approved inside the same preference becomes one order (162.2654ms)
+✔ 15 a refunded order cannot be prepared, dispatched or delivered (230.8629ms)
+✔ 16 an external refund of 500 plus a local one of 250 totals 750 (229.1442ms)
+✔ 17 an exception after reserving rolls the whole purchase back (132.7235ms)
+✔ 18 recovery after an interrupted, expired reservation does not deduct twice (stock 8, one allocation) (166.8709ms)
+✔ 19 recovery is refused while a refund is ambiguous (157.4978ms)
+✔ 20 a newer rejection processed before the older approval does not block the purchase (158.872ms)
+✖ 21 a worker that died is replaced: the lease is reclaimed and the old owner cannot complete (143.6962ms)
+✔ 22 a duplicate webhook receipt yields one job (151.2723ms)
+✔ 23 client-side price and over-selling are rejected by the server (188.099ms)
+✔ 24 a fully refunded late payment cannot be recovered, prepared or delivered (268.3008ms)
+✔ 25 an open refund request deduplicates even with another UUID (262.8484ms)
+✔ 26 disconnect after a retryable rejection is refused and keeps the credential (141.5137ms)
+✔ F01 a fully refunded late payment cannot be recovered into a deliverable order (156.2343ms)
+✔ F01 composition: refund -> recover -> deliver never reaches delivered (154.0479ms)
+✔ F01 an order whose payment is fully refunded after completion cannot advance, whatever the review label says (177.7964ms)
+✔ F01 a partial refund (compensation) does not stop an order that still has net money (196.8931ms)
+✔ F02 recovery is refused while a refund is ambiguous (161.3797ms)
+✔ F02 finalization itself refuses to create an order while a refund is open (143.4462ms)
+✔ F03 a purchase of 2 units leaves exactly 2 units out of stock after interruption, expiry and recovery (179.7938ms)
+✔ F03 recovery executed twice never moves stock twice (179.2882ms)
+✔ F03 a snapshot that arrives after the window lapsed (stock still held) finalizes without a second deduction (288.8657ms)
+✔ F12 approval after the reservation was released re-reserves transactionally when stock exists, else leaves a visible case (170.3025ms)
+✔ F12 approval after release with NO stock available leaves a durable, visible case and no oversell (150.8691ms)
+✔ F04 a rejected payment recorded after an approved one never replaces the approved identity (176.2376ms)
+✔ F04 two approved payment ids keep the first as financing and raise a durable discrepancy (172.1241ms)
+✔ F04 order of arrival does not matter: newer rejection first, older approval second still finalizes (181.1298ms)
+✔ F04 the same payment repeated, stale and out of order is idempotent and never regresses (164.4291ms)
+✔ F05 external refund of 500 plus local refund of 250 totals 750 (171.3925ms)
+✔ F05 the same total is reached when the provider snapshot arrives after the local refund, and when repeated (177.8786ms)
+✔ F05 an external refund that already covers the local one is not counted twice (221.8188ms)
+✔ F05 refunds that add up to the full amount move the intent to refunded and block advancing (179.534ms)
+✔ F08 eight empty probes no longer end the watch: the ninth is enqueued once its backoff elapsed (154.3736ms)
+✔ F08 backoff stretches but never stops: 30 empties an hour apart still produce a probe (149.8015ms)
+✔ F08 a probe is not enqueued twice inside its backoff (137.1638ms)
+✔ F08 a checkout older than 48 h is still watched (151.3099ms)
+✔ F08 closes only with evidence: expiry + 24 h grace + three empty probes after it (271.9337ms)
+✔ F08 the unverified-checkout alert stays open while the watch is open, even after 8 empty probes and 48 h (261.1889ms)
+✔ F10 disconnect is refused after a retryable rejection, keeps the credential and keeps payments paused (144.2385ms)
+✔ F10 disconnect is refused with an open discrepancy and until the ledger was read after the last activity (149.7654ms)
+✔ F10 a clean, drained, synchronized connection can be disconnected (147.3919ms)
+✔ F14 an old incident stays first when more than 200 newer payments exist (852.4357ms)
+✔ discrepancy inbox: resolution needs evidence, an owner, and a real order for paid-without-order (154.6812ms)
+✔ discrepancy inbox: a recurrence is counted, not duplicated, and a resolved one reopens (139.1245ms)
+✔ discrepancy alerts: every open discrepancy becomes an operational alert (165.4473ms)
+✔ F09 a refund with a lost identity is parked, blocks recovery, and is resolved only with evidence (159.4148ms)
+✔ F09 "not executed" releases the hold and a second resolution is refused (159.4131ms)
+✔ ledger sweep: a window is leased, resumed at its offset, finished only when every page was read (130.9378ms)
+✔ ledger sweep: failures back off and never advance the watermark (129.1762ms)
+✖ ledger sweep: an orphan approved payment becomes a critical, recovery-blocking discrepancy (128.8385ms)
+✖ integrity checks: an order paid without a recent provider verification is flagged and clears itself when verified (161.4958ms)
+✔ integrity checks: approved money with no order is flagged, and a paid order never double-counts stock (142.132ms)
+✔ F07 a missing preference is a retry, not a permanent review; the corrected read finalizes once (158.6093ms)
+✔ F07 a DIFFERENT preference is still a real mismatch and still goes to review (322.9036ms)
+✔ a defective payment of a DIFFERENT id does not poison a healthy completed purchase (158.1793ms)
+✔ a payment id already bound to another checkout is refused as inconsistent (139.4103ms)
+✔ error text of an expected SQL failure is reachable by the harness (116.4914ms)
+✔ no Vault secrets, no dispatch: it is silent, not an error (138.1905ms)
+✔ an idle outbox with a connected seller still dispatches (the provider ledger sweep has no job) (495.6873ms)
+✔ nothing due and nobody connected: no dispatch at all (133.956ms)
+✔ storm guard: repeated dispatches inside four seconds produce one request (132.1238ms)
+✔ the HMAC PostgreSQL signs is accepted by the real worker verifier; tampering, a wrong secret and replays are not (146.5529ms)
+✔ a Vault URL that is not the canonical worker URL is refused, and a short secret too (282.2106ms)
+✔ pipeline health reports backlog, stale leases, repeated failures and dead letters without business data (496.5658ms)
+✔ a stalled pipeline raises one critical alert and clears it when the cause is gone (197.7539ms)
+✔ a dead-lettered job is an alert, and a healthy idle pipeline is not (331.7972ms)
+✔ a replayed snapshot job is idempotent at the storm level: the same job cannot be claimed twice (296.0899ms)
+✔ F06 the worker finds the approved retry even though a rejected payment id is already pinned (4848.8151ms)
+✔ F07 a merchant-order 503 retries the job: no review, no lost payment, one order once it recovers (6074.8011ms)
+✔ F08 an approved payment on the second page of the provider search is found (22222.8644ms)
+✔ F04/F06 two approved payments: both recorded, one order, a critical discrepancy (5155.8402ms)
+✔ F09 a refund with a lost identity is parked: no POST, recovery blocked, a critical discrepancy, job completed (6325.8558ms)
+✔ F08 the ledger sweep finds an approved payment with no webhook, no job and no browser, and flags the orphan (4276.806ms)
+✔ a crash between recording and finalizing is completed by the next run exactly once (5881.4471ms)
+✔ a provider outage during the ledger window leaves the cursor in place and backs off (6102.9518ms)
+✔ replaying the same reconciliation five times never double-books and stays cheap (11500.669ms)
+ℹ tests 113
+ℹ suites 0
+ℹ pass 110
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 596044.3605
+
+✖ failing tests:
+
+test at tests\db\forensic-26-scenarios.test.mjs:97:1
+✖ 21 a worker that died is replaced: the lease is reclaimed and the old owner cannot complete (143.6962ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:99:64)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p1-reconciliation.test.mjs:197:1
+✖ ledger sweep: an orphan approved payment becomes a critical, recovery-blocking discrepancy (128.8385ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    {
+      blocks: true,
+  +   occ: 1,
+  -   occ: 2,
+      rows: 1,
+      sev: 'critical'
+    }
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p1-reconciliation.test.mjs:203:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { occ: 1, sev: 'critical', rows: 1, blocks: true },
+    expected: { rows: 1, sev: 'critical', blocks: true, occ: 2 },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p1-reconciliation.test.mjs:207:1
+✖ integrity checks: an order paid without a recent provider verification is flagged and clears itself when verified (161.4958ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   'order_paid_unverified:open'
+  - ]
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p1-reconciliation.test.mjs:215:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [ 'order_paid_unverified:open' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

@@ -155,6 +155,21 @@ body[data-active-view="tracking"] .tracking-premium .tracking-order-summary {
   box-shadow: none;
 }
 body[data-active-view="tracking"] .tracking-premium .tracking-help-card { padding: 10px 3px; background: transparent; border: 0; box-shadow: none; }
+/* Retiro en local: en lugar del mapa —no hay reparto que seguir— va adónde
+ * ir, con la misma superficie que el resumen del pedido (ui.js). */
+body[data-active-view="tracking"] .tracking-premium .tracking-pickup-card {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 14px 16px 10px;
+  border: 1px solid rgb(255 255 255 / 9%);
+  border-radius: 20px;
+  background: #1c232b;
+  color: var(--shelf-ink);
+}
+body[data-active-view="tracking"] .tracking-premium .tracking-pickup-card > strong { font-size: 15px; }
+body[data-active-view="tracking"] .tracking-premium .tracking-pickup-card .profile-checkout-pickup-point { margin-top: 4px; }
+body[data-active-view="tracking"] .tracking-premium .tracking-pickup-card .profile-checkout-pickup-point dt { color: var(--shelf-muted); }
 
 /* Finite feedback is applied to the core by the GPS adapter. Stale position
  * remains visible. No constantly pulsing halo or paint filter on each icon. */

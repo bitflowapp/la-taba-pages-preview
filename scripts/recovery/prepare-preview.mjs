@@ -1,0 +1,66 @@
+// Prepare the existing storefront for an isolated preview. Does not publish.
+import fs from 'node:fs';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { ROOT, sha256 } from './plan.mjs';
+import { withRecoveryProject } from './hosted-client.mjs';
+import { auditProductImageRights, PRODUCT_IMAGE_NAMESPACES } from '../lib/publishable-image-rights.mjs';
+import { runtimeDeclarado, sello } from '../deploy/sellar-version.mjs';
+
+const value = name => process.argv[process.argv.indexOf(name) + 1];
+if (!['--target', '--out', '--commit'].every(arg => process.argv.includes(arg))) throw new Error('Requires --target --out --commit');
+const target = JSON.parse(fs.readFileSync(value('--target'), 'utf8'));
+const out = path.resolve(value('--out'));
+// Recovery artifacts go only to the approved data volume, never the system or a removable volume.
+const outputDrive = path.parse(out).root.slice(0, 1).toUpperCase();
+if (process.platform === 'win32' && outputDrive !== 'D') throw new Error('Recovery artifacts must use the approved data volume.');
+const accessGate = process.argv.includes('--access-gate');
+const businessId = process.argv.includes('--business-id') ? value('--business-id') : '00000000-0000-4000-8000-000000000001';
+if (!/^[0-9a-f-]{36}$/i.test(businessId)) throw new Error('Invalid --business-id');
+if (fs.existsSync(out) || out === ROOT || out.startsWith(ROOT + path.sep)) throw new Error('New output directory required');
+const version = sello({ commit: value('--commit'), runtime: runtimeDeclarado(fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8')),
+  construidoEn: new Date().toISOString() });
+await withRecoveryProject(target, async ({ request }) => {
+  const keys = await request('/api-keys?reveal=true');
+  const key = keys.find(key => key.type === 'publishable');
+  if (!key) throw new Error('Publishable key unavailable');
+  const rights = auditProductImageRights(ROOT);
+  const allowed = new Set(rights.filter(image => image.publishable).map(image => image.path));
+  const filter = source => {
+    const relative = path.relative(ROOT, source).replaceAll('\\', '/');
+    return fs.statSync(source).isDirectory() || !PRODUCT_IMAGE_NAMESPACES.some(ns => relative.startsWith(ns)) || allowed.has(relative);
+  };
+  fs.mkdirSync(out, { recursive: true });
+  for (const entry of ['index.html', 'styles.css', 'styles', 'manifest.webmanifest', 'runtime-config.js',
+    'sw.js', '.nojekyll', 'assets', 'js', 'pago', 'cuenta']) {
+    fs.cpSync(path.join(ROOT, entry), path.join(out, entry), { recursive: true, filter });
+  }
+  // _headers can be absent from a sparse checkout; the committed one is the source of truth.
+  const committedHeaders = fs.existsSync(path.join(ROOT, '_headers'))
+    ? fs.readFileSync(path.join(ROOT, '_headers'), 'utf8')
+    : execFileSync('git', ['show', 'HEAD:_headers'], { cwd: ROOT, encoding: 'utf8' });
+  // QA preview only: keep it out of search indexes. The production artifact is untouched.
+  fs.writeFileSync(path.join(out, '_headers'), committedHeaders.replace(/^\/\*\r?\n/m,
+    '/*\n  X-Robots-Tag: noindex, nofollow, noarchive\n'));
+  fs.writeFileSync(path.join(out, 'robots.txt'), 'User-agent: *\nDisallow: /\n');
+  // noindex is not access control: --access-gate puts HTTP Basic auth in front of every file (Pages advanced
+  // mode). The worker fails closed until the project has PREVIEW_ACCESS_SHA256 (scripts/recovery/preview-access.mjs).
+  if (accessGate) fs.copyFileSync(path.join(ROOT, 'deploy', 'qa-preview-gate', '_worker.js'), path.join(out, '_worker.js'));
+  const runtime ={ mode: 'production', repository: { provider: 'supabase', deploymentEnvironment: 'staging',
+    supabaseUrl: `https://${target.projectRef}.supabase.co`, publishableKey: key.api_key,
+    businessId, pollMs: 5000 } };
+  fs.writeFileSync(path.join(out, 'runtime-config.js'), `globalThis.__LA_TABA_RUNTIME_CONFIG__ = Object.freeze(${JSON.stringify(runtime)});\n`);
+  fs.writeFileSync(path.join(out, 'version.json'), JSON.stringify(version, null, 2) + '\n');
+  const files = [];
+  const walk = directory => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const file = path.join(directory, entry.name);
+      if (entry.isDirectory()) walk(file);
+      else files.push({ path: path.relative(out, file).replaceAll('\\', '/'), sha256: sha256(fs.readFileSync(file)), bytes: fs.statSync(file).size });
+    }
+  };
+  walk(out);
+  fs.writeFileSync(out + '-receipt.json', JSON.stringify({ ...version, projectRef: target.projectRef,
+    checkoutOrigin: target.checkoutOrigin, accessGate, deployed: false, files }, null, 2) + '\n');
+  console.log(JSON.stringify({ out, accessGate, deployed: false, files: files.length, bytes: files.reduce((sum, file) => sum + file.bytes, 0) }));
+});

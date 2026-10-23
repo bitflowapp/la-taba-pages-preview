@@ -1,0 +1,320 @@
+✖ C1 a dead or overrun worker does not keep the front of the queue: reaped, backed off, attempt refunded if it never ran (185.0186ms)
+✖ C2 releasing a job hands it back: attempt refunded while it is rare, spent once it keeps happening, dead letter at eight (123.8157ms)
+✖ C3 the heartbeat extends only a lease that is still valid and still ours (186.6971ms)
+✖ C4 every provider payment has a follow-up schedule that fits what it is (261.5429ms)
+✖ C5 a defective payment is not followed (a discrepancy already carries it) and a settled one never wakes up (130.9514ms)
+✖ C6 the unchanged shortcut only skips a payment held in exactly this state and never one whose order is still pending (180.4918ms)
+✖ C7 the ledger checkpoint only moves forward, only for the lease owner, and closes the window only when told (118.1623ms)
+✖ C8 a discrepancy escalates with more severity, never lowers, keeps its block and reopens when it must (131.1225ms)
+✖ C9 the orphan inbox ignores the same provider version seen again and keeps the identity of the payment (164.0847ms)
+✖ C10 an approved order whose verification ladder is overdue is flagged, and verifying it closes the flag (155.4303ms)
+✖ C11 a pending payment nobody re-read for an hour becomes a finding, and settles when it is read again (132.7194ms)
+✖ C12 the pipeline health reports the follow-up schedule and interrupted jobs (126.4986ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 0
+ℹ fail 12
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1969.8203
+
+✖ failing tests:
+
+test at tests\db\astra2-sql-contracts.test.mjs:18:1
+✖ C1 a dead or overrun worker does not keep the front of the queue: reaped, backed off, attempt refunded if it never ran (185.0186ms)
+  Error: ERROR:  column "interruptions" does not exist
+  L�NEA 1: ...tatus',status,'attempts',attempts,'interruptions',interrupti...
+                                                               ^
+  CONSULTA:  v_extra := (select coalesce(jsonb_agg(jsonb_build_object('r',resource_id,'status',status,'attempts',attempts,'interruptions',interruptions,
+    'error',last_error,'owner',owner,'later',next_attempt_at > clock_timestamp() + interval '10 seconds') order by resource_id),'[]'::jsonb)
+    from public.payment_outbox where resource_id like 'p%')
+  CONTEXTO:  PL/pgSQL function inline_code_block line 64 at assignment
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at out (file:///<repo>/tests/db/astra2-sql-contracts.test.mjs:9:21)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-sql-contracts.test.mjs:19:27)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.start (node:internal/test_runner/test:1003:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:358:17) {
+    stderr: `ERROR:  column "interruptions" does not exist\r\nL�NEA 1: ...tatus',status,'attempts',attempts,'interruptions',interrupti...\r\n                                                             ^\r\nCONSULTA:  v_extra := (select coalesce(jsonb_agg(jsonb_build_object('r',resource_id,'status',status,'attempts',attempts,'interruptions',interruptions,\r\n  'error',last_error,'owner',owner,'later',next_attempt_at > clock_timestamp() + interval '10 seconds') order by resource_id),'[]'::jsonb)\r\n  from public.payment_outbox where resource_id like 'p%')\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 64 at assignment\r\n`,
+    stdout: ''
+  }
+
+test at tests\db\astra2-sql-contracts.test.mjs:39:1
+✖ C2 releasing a job hands it back: attempt refunded while it is rare, spent once it keeps happening, dead letter at eight (123.8157ms)
+  Error: ERROR:  column "interruptions" of relation "payment_outbox" does not exist
+  L�NEA 1: ...esource_id,status,owner,lease_expires_at,attempts,interrupti...
+                                                               ^
+  CONSULTA:  insert into public.payment_outbox(payment_intent_id,topic,resource_id,status,owner,lease_expires_at,attempts,interruptions)
+     values (v_intent,'payment','p3','processing','w',clock_timestamp()+interval '60 seconds',3,3)
+  CONTEXTO:  PL/pgSQL function inline_code_block line 59 at SQL statement
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at out (file:///<repo>/tests/db/astra2-sql-contracts.test.mjs:9:21)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-sql-contracts.test.mjs:40:27)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    stderr: `ERROR:  column "interruptions" of relation "payment_outbox" does not exist\r\nL�NEA 1: ...esource_id,status,owner,lease_expires_at,attempts,interrupti...\r\n                                                             ^\r\nCONSULTA:  insert into public.payment_outbox(payment_intent_id,topic,resource_id,status,owner,lease_expires_at,attempts,interruptions)\r\n   values (v_intent,'payment','p3','processing','w',clock_timestamp()+interval '60 seconds',3,3)\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 59 at SQL statement\r\n`,
+    stdout: ''
+  }
+
+test at tests\db\astra2-sql-contracts.test.mjs:61:1
+✖ C3 the heartbeat extends only a lease that is still valid and still ours (186.6971ms)
+  Error: ERROR:  function public.extend_payment_outbox_lease(uuid, unknown, integer) does not exist
+  L�NEA 2:       'valid', public.extend_payment_outbox_lease((select id...
+                         ^
+  SUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.
+  CONSULTA:  v_extra := jsonb_build_object(
+        'valid', public.extend_payment_outbox_lease((select id from public.payment_outbox where resource_id='p1'),'w',60),
+        'lapsed', public.extend_payment_outbox_lease((select id from public.payment_outbox where resource_id='p2'),'w',60),
+        'foreign', public.extend_payment_outbox_lease((select id from public.payment_outbox where resource_id='p3'),'not-the-owner',60))
+  CONTEXTO:  PL/pgSQL function inline_code_block line 61 at assignment
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at out (file:///<repo>/tests/db/astra2-sql-contracts.test.mjs:9:21)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-sql-contracts.test.mjs:62:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: "ERROR:  function public.extend_payment_outbox_lease(uuid, unknown, integer) does not exist\r\nL�NEA 2:       'valid', public.extend_payment_outbox_lease((select id...\r\n                       ^\r\nSUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.\r\nCONSULTA:  v_extra := jsonb_build_object(\r\n      'valid', public.extend_payment_outbox_lease((select id from public.payment_outbox where resource_id='p1'),'w',60),\r\n      'lapsed', public.extend_payment_outbox_lease((select id from public.payment_outbox where resource_id='p2'),'w',60),\r\n      'foreign', public.extend_payment_outbox_lease((select id from public.payment_outbox where resource_id='p3'),'not-the-owner',60))\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 61 at assignment\r\n",
+    stdout: ''
+  }
+
+test at tests\db\astra2-sql-contracts.test.mjs:76:1
+✖ C4 every provider payment has a follow-up schedule that fits what it is (261.5429ms)
+  Error: ERROR:  column "watch_state" does not exist
+  L�NEA 2:         'state', (select watch_state from public.payment_pro...
+                                   ^
+  CONSULTA:  v_extra := v_extra || jsonb_build_array(jsonb_build_object('case', v_before,
+          'state', (select watch_state from public.payment_provider_payments limit 1),
+          'due', (select case when next_check_at is null then null
+                         when status in ('pending','in_process') then (next_check_at - last_seen_at)::text
+                         else (next_check_at - first_seen_at)::text end from public.payment_provider_payments limit 1)))
+  CONTEXTO:  PL/pgSQL function inline_code_block line 70 at assignment
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at out (file:///<repo>/tests/db/astra2-sql-contracts.test.mjs:9:21)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-sql-contracts.test.mjs:77:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: `ERROR:  column "watch_state" does not exist\r\nL�NEA 2:         'state', (select watch_state from public.payment_pro...\r\n                                 ^\r\nCONSULTA:  v_extra := v_extra || jsonb_build_array(jsonb_build_object('case', v_before,\r\n        'state', (select watch_state from public.payment_provider_payments limit 1),\r\n        'due', (select case when next_check_at is null then null\r\n                       when status in ('pending','in_process') then (next_check_at - last_seen_at)::text\r\n                       else (next_check_at - first_seen_at)::text end from public.payment_provider_payments limit 1)))\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 70 at assignment\r\n`,
+    stdout: ''
+  }
+
+test at tests\db\astra2-sql-contracts.test.mjs:107:1
+✖ C5 a defective payment is not followed (a discrepancy already carries it) and a settled one never wakes up (130.9514ms)
+  Error: ERROR:  column "watch_state" does not exist
+  L�NEA 1: v_extra := (select jsonb_build_object('state', watch_state, ...
+                                                         ^
+  CONSULTA:  v_extra := (select jsonb_build_object('state', watch_state, 'due', next_check_at) from public.payment_provider_payments limit 1)
+  CONTEXTO:  PL/pgSQL function inline_code_block line 57 at assignment
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at out (file:///<repo>/tests/db/astra2-sql-contracts.test.mjs:9:21)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-sql-contracts.test.mjs:108:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: `ERROR:  column "watch_state" does not exist\r\nL�NEA 1: v_extra := (select jsonb_build_object('state', watch_state, ...\r\n                                                       ^\r\nCONSULTA:  v_extra := (select jsonb_build_object('state', watch_state, 'due', next_check_at) from public.payment_provider_payments limit 1)\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 57 at assignment\r\n`,
+    stdout: ''
+  }
+
+test at tests\db\astra2-sql-contracts.test.mjs:115:1
+✖ C6 the unchanged shortcut only skips a payment held in exactly this state and never one whose order is still pending (180.4918ms)
+  Error: ERROR:  function public.provider_payment_unchanged(unknown, unknown, unknown, unknown, timestamp with time zone) does not exist
+  L�NEA 1: v_extra := jsonb_build_object('pendingOrder', public.provide...
+                                                        ^
+  SUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.
+  CONSULTA:  v_extra := jsonb_build_object('pendingOrder', public.provider_payment_unchanged('test','collector-retry','991000001','approved', clock_timestamp()))
+  CONTEXTO:  PL/pgSQL function inline_code_block line 55 at assignment
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at out (file:///<repo>/tests/db/astra2-sql-contracts.test.mjs:9:21)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-sql-contracts.test.mjs:116:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: "ERROR:  function public.provider_payment_unchanged(unknown, unknown, unknown, unknown, timestamp with time zone) does not exist\r\nL�NEA 1: v_extra := jsonb_build_object('pendingOrder', public.provide...\r\n                                                      ^\r\nSUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.\r\nCONSULTA:  v_extra := jsonb_build_object('pendingOrder', public.provider_payment_unchanged('test','collector-retry','991000001','approved', clock_timestamp()))\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 55 at assignment\r\n",
+    stdout: ''
+  }
+
+test at tests\db\astra2-sql-contracts.test.mjs:137:1
+✖ C7 the ledger checkpoint only moves forward, only for the lease owner, and closes the window only when told (118.1623ms)
+  Error: ERROR:  function public.record_provider_ledger_checkpoint(unknown, uuid, unknown, timestamp with time zone, integer, integer, integer, boolean, unknown, boolean, integer) does not exist
+  L�NEA 2:       'foreign', public.record_provider_ledger_checkpoint('o...
+                           ^
+  SUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.
+  CONSULTA:  v_extra := v_extra || jsonb_build_object(
+        'foreign', public.record_provider_ledger_checkpoint('owner-b', v_business, 'test', (v_before ->> 'cursor_at')::timestamptz + interval '5 minutes', 3, 3, 0, false, null, false, 90),
+        'forward', public.record_provider_ledger_checkpoint('owner-a', v_business, 'test', (v_before ->> 'cursor_at')::timestamptz + interval '5 minutes', 3, 3, 1, false, null, false, 90))
+  CONTEXTO:  PL/pgSQL function inline_code_block line 59 at assignment
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at out (file:///<repo>/tests/db/astra2-sql-contracts.test.mjs:9:21)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-sql-contracts.test.mjs:138:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: "ERROR:  function public.record_provider_ledger_checkpoint(unknown, uuid, unknown, timestamp with time zone, integer, integer, integer, boolean, unknown, boolean, integer) does not exist\r\nL�NEA 2:       'foreign', public.record_provider_ledger_checkpoint('o...\r\n                         ^\r\nSUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.\r\nCONSULTA:  v_extra := v_extra || jsonb_build_object(\r\n      'foreign', public.record_provider_ledger_checkpoint('owner-b', v_business, 'test', (v_before ->> 'cursor_at')::timestamptz + interval '5 minutes', 3, 3, 0, false, null, false, 90),\r\n      'forward', public.record_provider_ledger_checkpoint('owner-a', v_business, 'test', (v_before ->> 'cursor_at')::timestamptz + interval '5 minutes', 3, 3, 1, false, null, false, 90))\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 59 at assignment\r\n",
+    stdout: ''
+  }
+
+test at tests\db\astra2-sql-contracts.test.mjs:167:1
+✖ C8 a discrepancy escalates with more severity, never lowers, keeps its block and reopens when it must (131.1225ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+  +   'low',
+  +   false,
+  +   'acknowledged',
+  -   'critical',
+  -   true,
+  -   'open',
+      'approved'
+    ]
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-sql-contracts.test.mjs:183:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'low', false, 'acknowledged', 'approved' ],
+    expected: [ 'critical', true, 'open', 'approved' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\astra2-sql-contracts.test.mjs:188:1
+✖ C9 the orphan inbox ignores the same provider version seen again and keeps the identity of the payment (164.0847ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    {
+      amount: '2500.00',
+      currency: 'ARS',
+      environment: 'test',
+  +   occurrences: 2,
+  -   occurrences: 1,
+      payment: '771',
+      reference: 'taba2:checkout:00000000-0000-4000-8000-000000009001',
+      rows: 1,
+      seller: 'collector-retry',
+  +   status: null
+  -   status: 'approved'
+    }
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-sql-contracts.test.mjs:197:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { rows: 1, amount: '2500.00', seller: 'collector-retry', status: null, payment: '771', currency: 'ARS', reference: 'taba2:checkout:00000000-0000-4000-8000-000000009001', environment: 'test', occurrences: 2 },
+    expected: { rows: 1, occurrences: 1, seller: 'collector-retry', payment: '771', environment: 'test', amount: '2500.00', currency: 'ARS', reference: 'taba2:checkout:00000000-0000-4000-8000-000000009001', status: 'approved' },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\astra2-sql-contracts.test.mjs:203:1
+✖ C10 an approved order whose verification ladder is overdue is flagged, and verifying it closes the flag (155.4303ms)
+  Error: ERROR:  column "watch_state" does not exist
+  L�NEA 2:       'next', (select watch_state from public.payment_provid...
+                                ^
+  CONSULTA:  v_extra := v_extra || jsonb_build_object('afterVerification', (select count(*) from public.payment_discrepancies where kind='order_paid_unverified' and status<>'resolved'),
+        'next', (select watch_state from public.payment_provider_payments limit 1))
+  CONTEXTO:  PL/pgSQL function inline_code_block line 62 at assignment
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at out (file:///<repo>/tests/db/astra2-sql-contracts.test.mjs:9:21)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-sql-contracts.test.mjs:204:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: `ERROR:  column "watch_state" does not exist\r\nL�NEA 2:       'next', (select watch_state from public.payment_provid...\r\n                              ^\r\nCONSULTA:  v_extra := v_extra || jsonb_build_object('afterVerification', (select count(*) from public.payment_discrepancies where kind='order_paid_unverified' and status<>'resolved'),\r\n      'next', (select watch_state from public.payment_provider_payments limit 1))\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 62 at assignment\r\n`,
+    stdout: ''
+  }
+
+test at tests\db\astra2-sql-contracts.test.mjs:220:1
+✖ C11 a pending payment nobody re-read for an hour becomes a finding, and settles when it is read again (132.7194ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  undefined !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-sql-contracts.test.mjs:229:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\astra2-sql-contracts.test.mjs:234:1
+✖ C12 the pipeline health reports the follow-up schedule and interrupted jobs (126.4986ms)
+  Error: ERROR:  column "interruptions" of relation "payment_outbox" does not exist
+  L�NEA 1: ...esource_id,status,owner,lease_expires_at,attempts,interrupti...
+                                                               ^
+  CONSULTA:  insert into public.payment_outbox(payment_intent_id,topic,resource_id,status,owner,lease_expires_at,attempts,interruptions)
+     values (v_intent,'payment','p1','retry_wait',null,null,2,1)
+  CONTEXTO:  PL/pgSQL function inline_code_block line 56 at SQL statement
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at out (file:///<repo>/tests/db/astra2-sql-contracts.test.mjs:9:21)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-sql-contracts.test.mjs:235:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: `ERROR:  column "interruptions" of relation "payment_outbox" does not exist\r\nL�NEA 1: ...esource_id,status,owner,lease_expires_at,attempts,interrupti...\r\n                                                             ^\r\nCONSULTA:  insert into public.payment_outbox(payment_intent_id,topic,resource_id,status,owner,lease_expires_at,attempts,interruptions)\r\n   values (v_intent,'payment','p1','retry_wait',null,null,2,1)\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 56 at SQL statement\r\n`,
+    stdout: ''
+  }

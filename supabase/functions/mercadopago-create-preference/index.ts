@@ -17,6 +17,7 @@ import {
   createPreference,
   findPreferenceByExternalReference,
   verifyStoredPreference,
+  isFinalProviderRejection,
   MercadoPagoApiError,
   type PreferencePreparation,
 } from '../_shared/mercadopago.ts';
@@ -127,7 +128,7 @@ Deno.serve(async (request) => {
         paymentAttemptId: preparation.payment_attempt_id,
         externalReference: preparation.external_reference,
       }));
-      if (error instanceof MercadoPagoApiError && error.status >= 400 && error.status < 500) {
+      if (error instanceof MercadoPagoApiError && isFinalProviderRejection(error.status)) {
         await service.rpc('record_mercadopago_preference_failed', {
           p_payment_attempt_id: preparation.payment_attempt_id,
           p_response_hash: error.responseHash,

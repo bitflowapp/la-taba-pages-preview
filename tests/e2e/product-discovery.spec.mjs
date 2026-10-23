@@ -11,7 +11,7 @@ test('filters absent, spaces preserved, deterministic typo/alias discovery and h
   await openRuntimeCatalog(page);
   await expect(page.locator('[data-catalog-filters]')).toBeHidden();
   const search=page.locator(searchSelector);
-  await expect(search).toHaveAttribute('placeholder','Buscar bebidas, marcas o tamaños');
+  await expect(search).toHaveAttribute('placeholder','Buscar productos o marcas');
   await search.pressSequentially('coca zero',{delay:35});
   await expect(search).toHaveValue('coca zero');
   await expect(page.locator(`${GRID} .product-card`)).toHaveCount(1);

@@ -40,15 +40,15 @@ test('service worker caches only existing GitHub Pages assets', () => {
   );
   assert.ok(assets.includes('./js/pwa-update.js?v=4'));
   assert.ok(assets.includes('./js/startup-recovery.js?v=3'));
-  assert.ok(assets.includes('./styles.css?v=80'));
-  assert.ok(assets.includes('./styles/tracking-premium.css?v=80'));
+  assert.ok(assets.includes('./styles.css?v=81'));
+  assert.ok(assets.includes('./styles/tracking-premium.css?v=81'));
   assert.ok(assets.includes('./js/map/touch_intent.js'));
-  assert.ok(assets.includes('./styles/premium-storefront.css?v=80'));
+  assert.ok(assets.includes('./styles/premium-storefront.css?v=81'));
   assert.ok(assets.includes('./js/category-glass.js'));
   assert.ok(assets.includes('./assets/brand/ambient-grain.png'));
-  assert.ok(assets.includes('./styles/storefront.css?v=80'));
-  assert.ok(assets.includes('./styles/responsive.css?v=80'));
-  assert.ok(assets.includes('./styles/showcase.css?v=80'));
+  assert.ok(assets.includes('./styles/storefront.css?v=81'));
+  assert.ok(assets.includes('./styles/responsive.css?v=81'));
+  assert.ok(assets.includes('./styles/showcase.css?v=81'));
   assert.ok(assets.includes('./js/app.js?v=53'));
   assert.ok(assets.includes('./pago/resultado/index.html'));
   assert.ok(assets.includes('./pago/pendiente/index.html'));
@@ -130,7 +130,7 @@ test('service worker fallback is guarded to navigation requests only', () => {
   // disfrazado de módulo o de hoja de estilos. El comportamiento —y no sólo la
   // forma del fuente— lo fija tests/service-worker-degraded-edge.test.mjs.
   assert.match(source, /request\.mode === 'navigate'/);
-  assert.match(source, /caches\.match\('\.\/index\.html'\)/);
+  assert.match(source, /currentCache\.match\('\.\/index\.html'\)/);
   assert.match(source, /Response\.error\(\)/);
 });
 

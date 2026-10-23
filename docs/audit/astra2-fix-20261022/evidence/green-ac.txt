@@ -1,0 +1,97 @@
+✔ A1 a refund made in the provider panel days after the payment is found without any webhook (6055.0354ms)
+✔ A2 a pending offline payment approved days later is found and the orphan becomes critical (4530.763ms)
+✔ A3 the orphan inbox escalates when the same provider payment later carries money (4305.6589ms)
+✔ A4 a provider window larger than the provider pagination ceiling is still read completely (14332.3352ms)
+✔ A5 a payment that changes while the window is being paged is neither skipped nor left stale (20880.2558ms)
+✔ A6 the ledger asks the provider with the documented ISO-8601 millisecond dates (3704.0378ms)
+✔ A7 a pending payment is re-read on a backoff until the provider settles it, then approved late (5534.7065ms)
+✔ A8 a checkout with only rejected payments closes with evidence instead of being read forever (7146.5272ms)
+✔ A9 paid orders stay verified on a ladder and a refund made later in the panel is found (6945.9365ms)
+✖ A10 a payment that fails for its OWN data again and again is stepped over, on record, and the window completes (13122.0958ms)
+✔ A11 the provider being down is never a reason to step over a payment (7114.1876ms)
+✔ A12 a probe is evidence only after the payments it read were persisted (5074.0549ms)
+✔ C1 a dead or overrun worker does not keep the front of the queue: reaped, backed off, attempt refunded if it never ran (136.3102ms)
+✔ C2 releasing a job hands it back: attempt refunded while it is rare, spent once it keeps happening, dead letter at eight (129.8136ms)
+✔ C3 the heartbeat extends only a lease that is still valid and still ours (233.3287ms)
+✔ C4 every provider payment has a follow-up schedule that fits what it is (129.2171ms)
+✔ C5 a defective payment is not followed (a discrepancy already carries it) and a settled one never wakes up (130.1549ms)
+✔ C6 the unchanged shortcut only skips a payment held in exactly this state and never one whose order is still pending (151.8666ms)
+✔ C7 the ledger checkpoint only moves forward, only for the lease owner, and closes the window only when told (131.7825ms)
+✔ C8 a discrepancy escalates with more severity, never lowers, keeps its block and reopens when it must (124.6754ms)
+✔ C9 the orphan inbox ignores the same provider version seen again and keeps the identity of the payment (121.9885ms)
+✖ C10 an approved order whose verification ladder is overdue is flagged, and verifying it closes the flag (157.8208ms)
+✖ C11 a pending payment nobody re-read for an hour becomes a finding, and settles when it is read again (128.6461ms)
+✔ C12 the pipeline health reports the follow-up schedule and interrupted jobs (135.3182ms)
+✔ C13 a seller that is no longer connected is not followed: nothing is enqueued and no finding piles up (140.626ms)
+✔ C14 a payment that keeps failing is counted per payment and only the owner of the window can park it (127.9885ms)
+✔ C15 an orphan finding recorded before this version (no update time) is not reopened when the same status is seen again (123.0832ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 24
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 101145.3631
+
+✖ failing tests:
+
+test at tests\db\astra2-reconciliation.test.mjs:93:1
+✖ A10 a payment that fails for its OWN data again and again is stepped over, on record, and the window completes (13122.0958ms)
+  AssertionError [ERR_ASSERTION]: it takes five failing runs, spaced by the backoff, before stepping over: 5
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-reconciliation.test.mjs:99:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests\db\astra2-sql-contracts.test.mjs:203:1
+✖ C10 an approved order whose verification ladder is overdue is flagged, and verifying it closes the flag (157.8208ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-sql-contracts.test.mjs:214:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\astra2-sql-contracts.test.mjs:220:1
+✖ C11 a pending payment nobody re-read for an hour becomes a finding, and settles when it is read again (128.6461ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-sql-contracts.test.mjs:229:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

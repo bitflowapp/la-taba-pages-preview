@@ -1,0 +1,11 @@
+✔ B1 a ledger page that does not fit in one wall clock still makes progress and nothing is killed (18738.225ms)
+✔ B2 a job that cannot finish inside one wall clock does not starve the queue (one job per invocation) (26447.3538ms)
+✔ B3 a batch of claimed jobs never leaves jobs claimed-but-never-run behind (12719.8351ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 57970.4467

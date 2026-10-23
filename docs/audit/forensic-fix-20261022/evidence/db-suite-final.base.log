@@ -1,0 +1,1638 @@
+✖ seed a database with money in flight (partial and external refunds, an ambiguous refund, queued and failing jobs, an open case, a half-read ledger window) (1138.4581ms)
+✖ a custom-format dump restores into a NEW database, leaves the original untouched, and every financial fingerprint matches (47.1914ms)
+✖ reconciling the restored database does not book, charge or refund anything twice (44.6767ms)
+✖ facts that happened AFTER the backup are detected from the provider, never invented: a later external refund is added once, a payment with no local checkout becomes an orphan case (44.5558ms)
+✖ payment approval races the expiry sweep, the stuck-payment retry and the integrity checks: no deadlock, nothing lost, no double stock (1397.2741ms)
+✔ two buyers race for the last units: exactly one gets them, stock never goes negative (1386.092ms)
+✖ the same payment finalized from five sessions at once creates one order and moves stock once (2014.9812ms)
+✔ a refund and a manual recovery race on a late payment: never an order for money that was returned (1345.5183ms)
+✔ disconnect racing new checkouts: once it succeeds there is no open payment left behind (1987.072ms)
+✖ lock order: payment snapshots, expiry sweeps and buyers reopening the payment link never deadlock (16223.9364ms)
+✔ 01 duplicate approval finalizes once: one order, stock 8 (140.5558ms)
+✔ 02 a pending payment never becomes an order (SQLSTATE 55000) (120.8783ms)
+✖ 03 approval after the reservation expired no longer strands the buyer: the paid purchase is re-reserved in the same transaction (120.1573ms)
+✖ 04 a missing preference is retryable; the corrected read finalizes once (no permanent review) (117.4875ms)
+✖ 05 a rejected payment after the approved one does not replace the approved identity (150.4733ms)
+✖ 06 two approved payment ids: both stored, first keeps funding, critical case opened (135.7039ms)
+✖ 07 refund of a late payment that stayed in review cannot be recovered afterwards (155.1812ms)
+✖ 08 eight empty probes do not stop the watch (120.2558ms)
+✖ 09 a checkout older than 48 h is still probed (122.4759ms)
+✖ 10 disconnect preflight counts a retryably rejected checkout as open (129.0906ms)
+✖ 11 a snapshot interrupted before finalization leaves exactly 2 units out of stock after expiry and the sweep (118.8515ms)
+✔ 12 a payment to the wrong collector is blocked and never becomes an order (117.2387ms)
+✔ 13 a payment with the wrong amount is blocked (116.4716ms)
+✔ 14 rejected then approved inside the same preference becomes one order (136.776ms)
+✔ 15 a refunded order cannot be prepared, dispatched or delivered (150.8439ms)
+✖ 16 an external refund of 500 plus a local one of 250 totals 750 (159.6176ms)
+✔ 17 an exception after reserving rolls the whole purchase back (134.1388ms)
+✖ 18 recovery after an interrupted, expired reservation does not deduct twice (stock 8, one allocation) (178.3126ms)
+✖ 19 recovery is refused while a refund is ambiguous (161.7371ms)
+✖ 20 a newer rejection processed before the older approval does not block the purchase (115.1542ms)
+✔ 21 a worker that died is replaced: the lease is reclaimed and the old owner cannot complete (119.9099ms)
+✔ 22 a duplicate webhook receipt yields one job (558.0083ms)
+✔ 23 client-side price and over-selling are rejected by the server (115.3407ms)
+✖ 24 a fully refunded late payment cannot be recovered, prepared or delivered (178.0559ms)
+✖ 25 an open refund request deduplicates even with another UUID (147.0123ms)
+✖ 26 disconnect after a retryable rejection is refused and keeps the credential (127.5861ms)
+✖ F01 a fully refunded late payment cannot be recovered into a deliverable order (163.1965ms)
+✖ F01 composition: refund -> recover -> deliver never reaches delivered (658.2753ms)
+✔ F01 an order whose payment is fully refunded after completion cannot advance, whatever the review label says (154.6489ms)
+✔ F01 a partial refund (compensation) does not stop an order that still has net money (172.6538ms)
+✖ F02 recovery is refused while a refund is ambiguous (160.5096ms)
+✖ F02 finalization itself refuses to create an order while a refund is open (137.4332ms)
+✖ F03 a purchase of 2 units leaves exactly 2 units out of stock after interruption, expiry and recovery (150.2916ms)
+✖ F03 recovery executed twice never moves stock twice (149.7206ms)
+✖ F03 a snapshot that arrives after the window lapsed (stock still held) finalizes without a second deduction (128.7116ms)
+✖ F12 approval after the reservation was released re-reserves transactionally when stock exists, else leaves a visible case (125.5319ms)
+✖ F12 approval after release with NO stock available leaves a durable, visible case and no oversell (124.9577ms)
+✖ F04 a rejected payment recorded after an approved one never replaces the approved identity (151.7645ms)
+✖ F04 two approved payment ids keep the first as financing and raise a durable discrepancy (148.3527ms)
+✖ F04 order of arrival does not matter: newer rejection first, older approval second still finalizes (137.7793ms)
+✖ F04 the same payment repeated, stale and out of order is idempotent and never regresses (128.3329ms)
+✖ F05 external refund of 500 plus local refund of 250 totals 750 (158.2364ms)
+✖ F05 the same total is reached when the provider snapshot arrives after the local refund, and when repeated (158.5617ms)
+✔ F05 an external refund that already covers the local one is not counted twice (167.3887ms)
+✖ F05 refunds that add up to the full amount move the intent to refunded and block advancing (223.7951ms)
+✖ F08 eight empty probes no longer end the watch: the ninth is enqueued once its backoff elapsed (124.205ms)
+✖ F08 backoff stretches but never stops: 30 empties an hour apart still produce a probe (121.0296ms)
+✔ F08 a probe is not enqueued twice inside its backoff (120.0322ms)
+✖ F08 a checkout older than 48 h is still watched (119.3864ms)
+✖ F08 closes only with evidence: expiry + 24 h grace + three empty probes after it (240.3033ms)
+✖ F08 the unverified-checkout alert stays open while the watch is open, even after 8 empty probes and 48 h (147.1769ms)
+✖ F10 disconnect is refused after a retryable rejection, keeps the credential and keeps payments paused (124.6411ms)
+✖ F10 disconnect is refused with an open discrepancy and until the ledger was read after the last activity (123.0519ms)
+✖ F10 a clean, drained, synchronized connection can be disconnected (112.9466ms)
+✖ F14 an old incident stays first when more than 200 newer payments exist (628.3992ms)
+✖ discrepancy inbox: resolution needs evidence, an owner, and a real order for paid-without-order (118.1468ms)
+✖ discrepancy inbox: a recurrence is counted, not duplicated, and a resolved one reopens (113.7915ms)
+✖ discrepancy alerts: every open discrepancy becomes an operational alert (114.4764ms)
+✖ F09 a refund with a lost identity is parked, blocks recovery, and is resolved only with evidence (249.2809ms)
+✖ F09 "not executed" releases the hold and a second resolution is refused (135.8441ms)
+✖ ledger sweep: a window is leased, resumed at its offset, finished only when every page was read (112.6026ms)
+✖ ledger sweep: failures back off and never advance the watermark (112.2553ms)
+✖ ledger sweep: an orphan approved payment becomes a critical, recovery-blocking discrepancy (112.0085ms)
+✖ integrity checks: an order paid without a recent provider verification is flagged and clears itself when verified (131.8343ms)
+✖ integrity checks: approved money with no order is flagged, and a paid order never double-counts stock (116.6703ms)
+✖ F07 a missing preference is a retry, not a permanent review; the corrected read finalizes once (118.1751ms)
+✖ F07 a DIFFERENT preference is still a real mismatch and still goes to review (117.1844ms)
+✖ a defective payment of a DIFFERENT id does not poison a healthy completed purchase (137.5493ms)
+✔ a payment id already bound to another checkout is refused as inconsistent (117.7138ms)
+✔ error text of an expected SQL failure is reachable by the harness (218.5503ms)
+✔ no Vault secrets, no dispatch: it is silent, not an error (125.2574ms)
+✖ an idle outbox with a connected seller still dispatches (the provider ledger sweep has no job) (119.998ms)
+✔ nothing due and nobody connected: no dispatch at all (118.0849ms)
+✖ storm guard: repeated dispatches inside four seconds produce one request (124.3812ms)
+✖ the HMAC PostgreSQL signs is accepted by the real worker verifier; tampering, a wrong secret and replays are not (118.8843ms)
+✖ a Vault URL that is not the canonical worker URL is refused, and a short secret too (120.4995ms)
+✖ pipeline health reports backlog, stale leases, repeated failures and dead letters without business data (117.5412ms)
+✖ a stalled pipeline raises one critical alert and clears it when the cause is gone (154.0715ms)
+✖ a dead-lettered job is an alert, and a healthy idle pipeline is not (282.4079ms)
+✔ a replayed snapshot job is idempotent at the storm level: the same job cannot be claimed twice (122.3887ms)
+✖ F06 the worker finds the approved retry even though a rejected payment id is already pinned (3086.5456ms)
+✖ F07 a merchant-order 503 retries the job: no review, no lost payment, one order once it recovers (3078.52ms)
+✖ F08 an approved payment on the second page of the provider search is found (3025.3578ms)
+✖ F04/F06 two approved payments: both recorded, one order, a critical discrepancy (2892.0241ms)
+✖ F09 a refund with a lost identity is parked: no POST, recovery blocked, a critical discrepancy, job completed (3066.141ms)
+✖ F08 the ledger sweep finds an approved payment with no webhook, no job and no browser, and flags the orphan (3073.3549ms)
+✔ a crash between recording and finalizing is completed by the next run exactly once (4053.0701ms)
+✖ a provider outage during the ledger window leaves the cursor in place and backs off (2071.2348ms)
+✔ replaying the same reconciliation five times never double-books and stays cheap (6067.4888ms)
+ℹ tests 99
+ℹ suites 0
+ℹ pass 24
+ℹ fail 75
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 74101.6697
+
+✖ failing tests:
+
+test at tests\db\backup-restore.test.mjs:40:1
+✖ seed a database with money in flight (partial and external refunds, an ambiguous refund, queued and failing jobs, an open case, a half-read ledger window) (1138.4581ms)
+  Error: ERROR:  function private.open_payment_discrepancy(unknown, uuid, uuid, unknown, unknown, boolean, unknown, jsonb, unknown) does not exist
+  L�NEA 1: SELECT private.open_payment_discrepancy('20000000-0000-4000-...
+                 ^
+  SUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.
+  CONSULTA:  SELECT private.open_payment_discrepancy('20000000-0000-4000-8000-0000000000fa',v_i,v_s,'multiple_approved_payments','critical',false,'991000009','{}'::jsonb,'rd-case-0001')
+  CONTEXTO:  PL/pgSQL function inline_code_block line 28 at PERFORM
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/backup-restore.test.mjs:43:3)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.start (node:internal/test_runner/test:1003:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:358:17) {
+    stderr: "ERROR:  function private.open_payment_discrepancy(unknown, uuid, uuid, unknown, unknown, boolean, unknown, jsonb, unknown) does not exist\r\nL�NEA 1: SELECT private.open_payment_discrepancy('20000000-0000-4000-...\r\n               ^\r\nSUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.\r\nCONSULTA:  SELECT private.open_payment_discrepancy('20000000-0000-4000-8000-0000000000fa',v_i,v_s,'multiple_approved_payments','critical',false,'991000009','{}'::jsonb,'rd-case-0001')\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 28 at PERFORM\r\n",
+    stdout: ''
+  }
+
+test at tests\db\backup-restore.test.mjs:79:1
+✖ a custom-format dump restores into a NEW database, leaves the original untouched, and every financial fingerprint matches (47.1914ms)
+  Error: ERROR:  relation "public.payment_provider_payments" does not exist
+  L�NEA 3: ...ount),',' order by provider_payment_id),'')) from public.pay...
+                                                               ^
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at one (file:///<repo>/tests/db/backup-restore.test.mjs:24:37)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/backup-restore.test.mjs:80:18)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    stderr: `ERROR:  relation "public.payment_provider_payments" does not exist\r\nL�NEA 3: ...ount),',' order by provider_payment_id),'')) from public.pay...\r\n                                                             ^\r\n`,
+    stdout: ''
+  }
+
+test at tests\db\backup-restore.test.mjs:101:1
+✖ reconciling the restored database does not book, charge or refund anything twice (44.6767ms)
+  Error: psql: error: fall� la conexi�n al servidor en �127.0.0.1�, puerto 55440: FATAL:  database "taba_local_rd_dst_4216" does not exist
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at one (file:///<repo>/tests/db/backup-restore.test.mjs:24:37)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/backup-restore.test.mjs:102:18)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: 'psql: error: fall� la conexi�n al servidor en �127.0.0.1�, puerto 55440: FATAL:  database "taba_local_rd_dst_4216" does not exist\r\n',
+    stdout: ''
+  }
+
+test at tests\db\backup-restore.test.mjs:122:1
+✖ facts that happened AFTER the backup are detected from the provider, never invented: a later external refund is added once, a payment with no local checkout becomes an orphan case (44.5558ms)
+  Error: psql: error: fall� la conexi�n al servidor en �127.0.0.1�, puerto 55440: FATAL:  database "taba_local_rd_dst_4216" does not exist
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/backup-restore.test.mjs:124:3)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: 'psql: error: fall� la conexi�n al servidor en �127.0.0.1�, puerto 55440: FATAL:  database "taba_local_rd_dst_4216" does not exist\r\n',
+    stdout: ''
+  }
+
+test at tests\db\concurrency.test.mjs:63:1
+✖ payment approval races the expiry sweep, the stuck-payment retry and the integrity checks: no deadlock, nothing lost, no double stock (1397.2741ms)
+  Error: ERROR:  relation "public.payment_discrepancies" does not exist
+  L�NEA 7:       and not exists(select 1 from public.payment_discrepanc...
+                                             ^
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at one (file:///<repo>/tests/db/concurrency.test.mjs:23:13)
+      at invariants (file:///<repo>/tests/db/concurrency.test.mjs:50:26)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/concurrency.test.mjs:66:18)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.start (node:internal/test_runner/test:1003:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:358:17) {
+    stderr: 'ERROR:  relation "public.payment_discrepancies" does not exist\r\nL�NEA 7:       and not exists(select 1 from public.payment_discrepanc...\r\n                                           ^\r\n',
+    stdout: ''
+  }
+
+test at tests\db\concurrency.test.mjs:101:1
+✖ the same payment finalized from five sessions at once creates one order and moves stock once (2014.9812ms)
+  Error: ERROR:  relation "public.payment_discrepancies" does not exist
+  L�NEA 7:       and not exists(select 1 from public.payment_discrepanc...
+                                             ^
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at one (file:///<repo>/tests/db/concurrency.test.mjs:23:13)
+      at invariants (file:///<repo>/tests/db/concurrency.test.mjs:50:26)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/concurrency.test.mjs:108:15)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: 'ERROR:  relation "public.payment_discrepancies" does not exist\r\nL�NEA 7:       and not exists(select 1 from public.payment_discrepanc...\r\n                                           ^\r\n',
+    stdout: ''
+  }
+
+test at tests\db\concurrency.test.mjs:168:1
+✖ lock order: payment snapshots, expiry sweeps and buyers reopening the payment link never deadlock (16223.9364ms)
+  AssertionError [ERR_ASSERTION]: deadlock detected: ["40P01","P55000"]
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/concurrency.test.mjs:184:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async Test.run (node:internal/test_runner/test:1113:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:20:1
+✖ 03 approval after the reservation expired no longer strands the buyer: the paid purchase is re-reserved in the same transaction (120.1573ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:22:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:24:1
+✖ 04 a missing preference is retryable; the corrected read finalizes once (no permanent review) (117.4875ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + undefined
+  - true
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:26:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:28:1
+✖ 05 a rejected payment after the approved one does not replace the approved identity (150.4733ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + '991000002'
+  - '991000001'
+             ^
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:30:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '991000002',
+    expected: '991000001',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:32:1
+✖ 06 two approved payment ids: both stored, first keeps funding, critical case opened (135.7039ms)
+  TypeError [Error]: Cannot read properties of null (reading 'length')
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:34:27)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+
+test at tests\db\forensic-26-scenarios.test.mjs:36:1
+✖ 07 refund of a late payment that stayed in review cannot be recovered afterwards (155.1812ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  'allowed' !== '55000'
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:39:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'allowed',
+    expected: '55000',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:41:1
+✖ 08 eight empty probes do not stop the watch (120.2558ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:43:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:45:1
+✖ 09 a checkout older than 48 h is still probed (122.4759ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:47:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:49:1
+✖ 10 disconnect preflight counts a retryably rejected checkout as open (129.0906ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(s.extra.open_payments >= 1)
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:51:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:53:1
+✖ 11 a snapshot interrupted before finalization leaves exactly 2 units out of stock after expiry and the sweep (118.8515ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:55:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:74:1
+✖ 16 an external refund of 500 plus a local one of 250 totals 750 (159.6176ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  250 !== 750
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:77:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 250,
+    expected: 750,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:83:1
+✖ 18 recovery after an interrupted, expired reservation does not deduct twice (stock 8, one allocation) (178.3126ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  6 !== 8
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:85:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 6,
+    expected: 8,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:88:1
+✖ 19 recovery is refused while a refund is ambiguous (161.7371ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  'allowed' !== '55000'
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:91:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'allowed',
+    expected: '55000',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:93:1
+✖ 20 a newer rejection processed before the older approval does not block the purchase (115.1542ms)
+  Error: ERROR:  pago no aprobado verificadamente
+  CONTEXTO:  PL/pgSQL function finalize_paid_checkout_session(uuid) line 19 at RAISE
+  PL/pgSQL function inline_code_block line 54 at assignment
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:94:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: 'ERROR:  pago no aprobado verificadamente\r\nCONTEXTO:  PL/pgSQL function finalize_paid_checkout_session(uuid) line 19 at RAISE\r\nPL/pgSQL function inline_code_block line 54 at assignment\r\n',
+    stdout: ''
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:110:1
+✖ 24 a fully refunded late payment cannot be recovered, prepared or delivered (178.0559ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:113:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:115:1
+✖ 25 an open refund request deduplicates even with another UUID (147.0123ms)
+  Error: ERROR:  column "origin" does not exist
+  L�NEA 1: ...ment_refunds where payment_intent_id=v_intent and origin='lo...
+                                                               ^
+  CONSULTA:  v_result:=jsonb_build_object('same_refund',v_before->>'refund_id'=v_extra->>'refund_id','count',(select count(*) from public.payment_refunds where payment_intent_id=v_intent and origin='local'))
+  CONTEXTO:  PL/pgSQL function inline_code_block line 54 at assignment
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:116:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: `ERROR:  column "origin" does not exist\r\nL�NEA 1: ...ment_refunds where payment_intent_id=v_intent and origin='lo...\r\n                                                             ^\r\nCONSULTA:  v_result:=jsonb_build_object('same_refund',v_before->>'refund_id'=v_extra->>'refund_id','count',(select count(*) from public.payment_refunds where payment_intent_id=v_intent and origin='local'))\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 54 at assignment\r\n`,
+    stdout: ''
+  }
+
+test at tests\db\forensic-26-scenarios.test.mjs:119:1
+✖ 26 disconnect after a retryable rejection is refused and keeps the credential (127.5861ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/forensic-26-scenarios.test.mjs:121:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:14:1
+✖ F01 a fully refunded late payment cannot be recovered into a deliverable order (163.1965ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'allowed'
+  - 'blocked'
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:17:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.start (node:internal/test_runner/test:1003:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:358:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'allowed',
+    expected: 'blocked',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:25:1
+✖ F01 composition: refund -> recover -> deliver never reaches delivered (658.2753ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:28:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:49:1
+✖ F02 recovery is refused while a refund is ambiguous (160.5096ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'allowed'
+  - 'blocked'
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:54:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'allowed',
+    expected: 'blocked',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:59:1
+✖ F02 finalization itself refuses to create an order while a refund is open (137.4332ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be strictly unequal to: true
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:63:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: true,
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:70:1
+✖ F03 a purchase of 2 units leaves exactly 2 units out of stock after interruption, expiry and recovery (150.2916ms)
+  AssertionError [ERR_ASSERTION]: stock must be 10-2, not 10-4
+  
+  6 !== 8
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:73:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 6,
+    expected: 8,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:80:1
+✖ F03 recovery executed twice never moves stock twice (149.7206ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  6 !== 8
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:83:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 6,
+    expected: 8,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:87:1
+✖ F03 a snapshot that arrives after the window lapsed (stock still held) finalizes without a second deduction (128.7116ms)
+  AssertionError [ERR_ASSERTION]: the paid purchase becomes an order: stock was still held for it
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:90:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:93:1
+✖ F12 approval after the reservation was released re-reserves transactionally when stock exists, else leaves a visible case (125.5319ms)
+  AssertionError [ERR_ASSERTION]: paid without order must be visible
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:100:12)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:105:1
+✖ F12 approval after release with NO stock available leaves a durable, visible case and no oversell (124.9577ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(s.discrepancies?.some(d => d.kind === 'paid_without_order' && d.status === 'open'))
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:109:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:112:1
+✖ F04 a rejected payment recorded after an approved one never replaces the approved identity (151.7645ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + '991000002'
+  - '991000001'
+             ^
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:115:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '991000002',
+    expected: '991000001',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:121:1
+✖ F04 two approved payment ids keep the first as financing and raise a durable discrepancy (148.3527ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + '991000002'
+  - '991000001'
+             ^
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:123:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '991000002',
+    expected: '991000001',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:130:1
+✖ F04 order of arrival does not matter: newer rejection first, older approval second still finalizes (137.7793ms)
+  Error: ERROR:  pago no aprobado verificadamente
+  CONTEXTO:  PL/pgSQL function finalize_paid_checkout_session(uuid) line 19 at RAISE
+  PL/pgSQL function inline_code_block line 55 at assignment
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:131:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: 'ERROR:  pago no aprobado verificadamente\r\nCONTEXTO:  PL/pgSQL function finalize_paid_checkout_session(uuid) line 19 at RAISE\r\nPL/pgSQL function inline_code_block line 55 at assignment\r\n',
+    stdout: ''
+  }
+
+test at tests\db\p0-money-safety.test.mjs:138:1
+✖ F04 the same payment repeated, stale and out of order is idempotent and never regresses (128.3329ms)
+  Error: ERROR:  pago no aprobado verificadamente
+  CONTEXTO:  PL/pgSQL function finalize_paid_checkout_session(uuid) line 19 at RAISE
+  PL/pgSQL function inline_code_block line 54 at assignment
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:139:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: 'ERROR:  pago no aprobado verificadamente\r\nCONTEXTO:  PL/pgSQL function finalize_paid_checkout_session(uuid) line 19 at RAISE\r\nPL/pgSQL function inline_code_block line 54 at assignment\r\n',
+    stdout: ''
+  }
+
+test at tests\db\p0-money-safety.test.mjs:145:1
+✖ F05 external refund of 500 plus local refund of 250 totals 750 (158.2364ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  250 !== 750
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:150:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 250,
+    expected: 750,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:154:1
+✖ F05 the same total is reached when the provider snapshot arrives after the local refund, and when repeated (158.5617ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 2
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:162:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 2,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p0-money-safety.test.mjs:174:1
+✖ F05 refunds that add up to the full amount move the intent to refunded and block advancing (223.7951ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  500 !== 2500
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p0-money-safety.test.mjs:179:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 500,
+    expected: 2500,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p1-reconciliation.test.mjs:10:1
+✖ F08 eight empty probes no longer end the watch: the ninth is enqueued once its backoff elapsed (124.205ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p1-reconciliation.test.mjs:12:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.start (node:internal/test_runner/test:1003:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:358:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p1-reconciliation.test.mjs:15:1
+✖ F08 backoff stretches but never stops: 30 empties an hour apart still produce a probe (121.0296ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p1-reconciliation.test.mjs:17:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p1-reconciliation.test.mjs:25:1
+✖ F08 a checkout older than 48 h is still watched (119.3864ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p1-reconciliation.test.mjs:27:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p1-reconciliation.test.mjs:30:1
+✖ F08 closes only with evidence: expiry + 24 h grace + three empty probes after it (240.3033ms)
+  AssertionError [ERR_ASSERTION]: any number of probes taken BEFORE the grace window ends do not close it
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p1-reconciliation.test.mjs:34:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p1-reconciliation.test.mjs:37:1
+✖ F08 the unverified-checkout alert stays open while the watch is open, even after 8 empty probes and 48 h (147.1769ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(s.result.alerts.includes('CHECKOUT_PROVIDER_UNVERIFIED'))
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p1-reconciliation.test.mjs:42:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests\db\p1-reconciliation.test.mjs:45:1
+✖ F10 disconnect is refused after a retryable rejection, keeps the credential and keeps payments paused (124.6411ms)
+  Error: ERROR:  column "disconnect_requested_at" does not exist
+  L�NEA 1: ...en_kept',protected_tokens is not null,'requested',disconnect...
+                                                               ^
+  CONSULTA:  select jsonb_build_object('status',status,'token_kept',protected_tokens is not null,'requested',disconnect_requested_at is not null)              from public.mp_seller_connections where business_id=v_business
+  CONTEXTO:  PL/pgSQL function inline_code_block line 55 at SQL statement
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p1-reconciliation.test.mjs:46:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: `ERROR:  column "disconnect_requested_at" does not exist\r\nL�NEA 1: ...en_kept',protected_tokens is not null,'requested',disconnect...\r\n                                                             ^\r\nCONSULTA:  select jsonb_build_object('status',status,'token_kept',protected_tokens is not null,'requested',disconnect_requested_at is not null)              from public.mp_seller_connections where business_id=v_business\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 55 at SQL statement\r\n`,
+    stdout: ''
+  }
+
+test at tests\db\p1-reconciliation.test.mjs:58:1
+✖ F10 disconnect is refused with an open discrepancy and until the ledger was read after the last activity (123.0519ms)
+  Error: ERROR:  relation "public.provider_ledger_cursors" does not exist
+  L�NEA 1: insert into public.provider_ledger_cursors(business_id,envir...
+                      ^
+  CONSULTA:  insert into public.provider_ledger_cursors(business_id,environment,watermark_at,last_completed_at) values(v_business,'test',clock_timestamp(),clock_timestamp()+interval '1 second')
+  CONTEXTO:  PL/pgSQL function inline_code_block line 56 at SQL statement
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p1-reconciliation.test.mjs:59:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: `ERROR:  relation "public.provider_ledger_cursors" does not exist\r\nL�NEA 1: insert into public.provider_ledger_cursors(business_id,envir...\r\n                    ^\r\nCONSULTA:  insert into public.provider_ledger_cursors(business_id,environment,watermark_at,last_completed_at) values(v_business,'test',clock_timestamp(),clock_timestamp()+interval '1 second')\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 56 at SQL statement\r\n`,
+    stdout: ''
+  }
+
+test at tests\db\p1-reconciliation.test.mjs:73:1
+✖ F10 a clean, drained, synchronized connection can be disconnected (112.9466ms)
+  Error: ERROR:  relation "public.provider_ledger_cursors" does not exist
+  L�NEA 1: insert into public.provider_ledger_cursors(business_id,envir...
+                      ^
+  CONSULTA:  insert into public.provider_ledger_cursors(business_id,environment,watermark_at,last_completed_at) values(v_business,'test',clock_timestamp(),clock_timestamp()+interval '1 second')
+  CONTEXTO:  PL/pgSQL function inline_code_block line 55 at SQL statement
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p1-reconciliation.test.mjs:74:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: `ERROR:  relation "public.provider_ledger_cursors" does not exist\r\nL�NEA 1: insert into public.provider_ledger_cursors(business_id,envir...\r\n                    ^\r\nCONSULTA:  insert into public.provider_ledger_cursors(business_id,environment,watermark_at,last_completed_at) values(v_business,'test',clock_timestamp(),clock_timestamp()+interval '1 second')\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 55 at SQL statement\r\n`,
+    stdout: ''
+  }
+
+test at tests\db\p1-reconciliation.test.mjs:83:1
+✖ F14 an old incident stays first when more than 200 newer payments exist (628.3992ms)
+  Error: ERROR:  function public.list_business_payments(uuid, integer, integer, text) does not exist
+  L�NEA 1: select jsonb_agg(x)               from public.list_business_...
+                                                 ^
+  SUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.
+  CONSULTA:  select jsonb_agg(x)               from public.list_business_payments(v_business,0,5,v_intent::text) x
+  CONTEXTO:  PL/pgSQL function inline_code_block line 62 at SQL statement
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p1-reconciliation.test.mjs:84:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: 'ERROR:  function public.list_business_payments(uuid, integer, integer, text) does not exist\r\nL�NEA 1: select jsonb_agg(x)               from public.list_business_...\r\n                                               ^\r\nSUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.\r\nCONSULTA:  select jsonb_agg(x)               from public.list_business_payments(v_business,0,5,v_intent::text) x\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 62 at SQL statement\r\n',
+    stdout: ''
+  }
+
+test at tests\db\p1-reconciliation.test.mjs:101:1
+✖ discrepancy inbox: resolution needs evidence, an owner, and a real order for paid-without-order (118.1468ms)
+  Error: ERROR:  function private.open_payment_discrepancy(uuid, uuid, uuid, unknown, unknown, boolean, unknown, jsonb, unknown) does not exist
+  L�NEA 1: SELECT private.open_payment_discrepancy(v_business,v_intent,...
+                 ^
+  SUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.
+  CONSULTA:  SELECT private.open_payment_discrepancy(v_business,v_intent,v_session,'paid_without_order','high',false,'991000001','{}'::jsonb,'fx-inbox-0001')
+  CONTEXTO:  PL/pgSQL function inline_code_block line 55 at PERFORM
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p1-reconciliation.test.mjs:102:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: "ERROR:  function private.open_payment_discrepancy(uuid, uuid, uuid, unknown, unknown, boolean, unknown, jsonb, unknown) does not exist\r\nL�NEA 1: SELECT private.open_payment_discrepancy(v_business,v_intent,...\r\n               ^\r\nSUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.\r\nCONSULTA:  SELECT private.open_payment_discrepancy(v_business,v_intent,v_session,'paid_without_order','high',false,'991000001','{}'::jsonb,'fx-inbox-0001')\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 55 at PERFORM\r\n",
+    stdout: ''
+  }
+
+test at tests\db\p1-reconciliation.test.mjs:115:1
+✖ discrepancy inbox: a recurrence is counted, not duplicated, and a resolved one reopens (113.7915ms)
+  Error: ERROR:  function private.open_payment_discrepancy(uuid, uuid, uuid, unknown, unknown, boolean, unknown, jsonb, unknown) does not exist
+  L�NEA 1: SELECT private.open_payment_discrepancy(v_business,v_intent,...
+                 ^
+  SUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.
+  CONSULTA:  SELECT private.open_payment_discrepancy(v_business,v_intent,v_session,'paid_without_order','high',false,'991000001','{}'::jsonb,'fx-inbox-0002')
+  CONTEXTO:  PL/pgSQL function inline_code_block line 55 at PERFORM
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p1-reconciliation.test.mjs:116:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: "ERROR:  function private.open_payment_discrepancy(uuid, uuid, uuid, unknown, unknown, boolean, unknown, jsonb, unknown) does not exist\r\nL�NEA 1: SELECT private.open_payment_discrepancy(v_business,v_intent,...\r\n               ^\r\nSUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.\r\nCONSULTA:  SELECT private.open_payment_discrepancy(v_business,v_intent,v_session,'paid_without_order','high',false,'991000001','{}'::jsonb,'fx-inbox-0002')\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 55 at PERFORM\r\n",
+    stdout: ''
+  }
+
+test at tests\db\p1-reconciliation.test.mjs:125:1
+✖ discrepancy alerts: every open discrepancy becomes an operational alert (114.4764ms)
+  Error: ERROR:  function private.open_payment_discrepancy(uuid, uuid, uuid, unknown, unknown, boolean, unknown, jsonb, unknown) does not exist
+  L�NEA 1: SELECT private.open_payment_discrepancy(v_business,v_intent,...
+                 ^
+  SUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.
+  CONSULTA:  SELECT private.open_payment_discrepancy(v_business,v_intent,v_session,'multiple_approved_payments','critical',true,'991000002','{}'::jsonb,'fx-alert-0001')
+  CONTEXTO:  PL/pgSQL function inline_code_block line 55 at PERFORM
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p1-reconciliation.test.mjs:126:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: "ERROR:  function private.open_payment_discrepancy(uuid, uuid, uuid, unknown, unknown, boolean, unknown, jsonb, unknown) does not exist\r\nL�NEA 1: SELECT private.open_payment_discrepancy(v_business,v_intent,...\r\n               ^\r\nSUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.\r\nCONSULTA:  SELECT private.open_payment_discrepancy(v_business,v_intent,v_session,'multiple_approved_payments','critical',true,'991000002','{}'::jsonb,'fx-alert-0001')\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 55 at PERFORM\r\n",
+    stdout: ''
+  }
+
+test at tests\db\p1-reconciliation.test.mjs:133:1
+✖ F09 a refund with a lost identity is parked, blocks recovery, and is resolved only with evidence (249.2809ms)
+  Error: ERROR:  function public.park_refund_identity_unknown(uuid, jsonb) does not exist
+  L�NEA 1: SELECT public.park_refund_identity_unknown(v_refund,'{"provi...
+                 ^
+  SUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.
+  CONSULTA:  SELECT public.park_refund_identity_unknown(v_refund,'{"provider_refunds":[{"id":"881000009","amount":2500}]}'::jsonb)
+  CONTEXTO:  PL/pgSQL function inline_code_block line 58 at PERFORM
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p1-reconciliation.test.mjs:134:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: `ERROR:  function public.park_refund_identity_unknown(uuid, jsonb) does not exist\r\nL�NEA 1: SELECT public.park_refund_identity_unknown(v_refund,'{"provi...\r\n               ^\r\nSUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.\r\nCONSULTA:  SELECT public.park_refund_identity_unknown(v_refund,'{"provider_refunds":[{"id":"881000009","amount":2500}]}'::jsonb)\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 58 at PERFORM\r\n`,
+    stdout: ''
+  }
+
+test at tests\db\p1-reconciliation.test.mjs:151:1
+✖ F09 "not executed" releases the hold and a second resolution is refused (135.8441ms)
+  Error: ERROR:  function public.resolve_ambiguous_refund(uuid, unknown, unknown, unknown) does not exist
+  L�NEA 1: v_result:=public.resolve_ambiguous_refund(v_refund,'not_exec...
+                    ^
+  SUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.
+  CONSULTA:  v_result:=public.resolve_ambiguous_refund(v_refund,'not_executed',null,'provider panel shows no refund for this payment')
+  CONTEXTO:  PL/pgSQL function inline_code_block line 58 at assignment
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p1-reconciliation.test.mjs:152:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: "ERROR:  function public.resolve_ambiguous_refund(uuid, unknown, unknown, unknown) does not exist\r\nL�NEA 1: v_result:=public.resolve_ambiguous_refund(v_refund,'not_exec...\r\n                  ^\r\nSUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.\r\nCONSULTA:  v_result:=public.resolve_ambiguous_refund(v_refund,'not_executed',null,'provider panel shows no refund for this payment')\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 58 at assignment\r\n",
+    stdout: ''
+  }
+
+test at tests\db\p1-reconciliation.test.mjs:165:1
+✖ ledger sweep: a window is leased, resumed at its offset, finished only when every page was read (112.6026ms)
+  Error: ERROR:  function public.claim_provider_ledger_window(unknown) does not exist
+  L�NEA 1: v_before:=public.claim_provider_ledger_window('worker-a')
+                    ^
+  SUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.
+  CONSULTA:  v_before:=public.claim_provider_ledger_window('worker-a')
+  CONTEXTO:  PL/pgSQL function inline_code_block line 55 at assignment
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p1-reconciliation.test.mjs:166:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: "ERROR:  function public.claim_provider_ledger_window(unknown) does not exist\r\nL�NEA 1: v_before:=public.claim_provider_ledger_window('worker-a')\r\n                  ^\r\nSUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.\r\nCONSULTA:  v_before:=public.claim_provider_ledger_window('worker-a')\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 55 at assignment\r\n",
+    stdout: ''
+  }
+
+test at tests\db\p1-reconciliation.test.mjs:186:1
+✖ ledger sweep: failures back off and never advance the watermark (112.2553ms)
+  Error: ERROR:  function public.claim_provider_ledger_window(unknown) does not exist
+  L�NEA 1: v_before:=public.claim_provider_ledger_window('worker-a')
+                    ^
+  SUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.
+  CONSULTA:  v_before:=public.claim_provider_ledger_window('worker-a')
+  CONTEXTO:  PL/pgSQL function inline_code_block line 55 at assignment
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p1-reconciliation.test.mjs:187:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: "ERROR:  function public.claim_provider_ledger_window(unknown) does not exist\r\nL�NEA 1: v_before:=public.claim_provider_ledger_window('worker-a')\r\n                  ^\r\nSUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.\r\nCONSULTA:  v_before:=public.claim_provider_ledger_window('worker-a')\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 55 at assignment\r\n",
+    stdout: ''
+  }
+
+test at tests\db\p1-reconciliation.test.mjs:197:1
+✖ ledger sweep: an orphan approved payment becomes a critical, recovery-blocking discrepancy (112.0085ms)
+  Error: ERROR:  function public.record_orphan_provider_payment(uuid, unknown, jsonb) does not exist
+  L�NEA 1: SELECT public.record_orphan_provider_payment(v_business,'tes...
+                 ^
+  SUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.
+  CONSULTA:  SELECT public.record_orphan_provider_payment(v_business,'test',jsonb_build_object('id','771000001','status','approved','transaction_amount',2500,'currency_id','ARS','external_reference','taba2:checkout:00000000-0000-4000-8000-0000000000aa','collector_id','collector-retry'))
+  CONTEXTO:  PL/pgSQL function inline_code_block line 55 at PERFORM
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p1-reconciliation.test.mjs:198:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: "ERROR:  function public.record_orphan_provider_payment(uuid, unknown, jsonb) does not exist\r\nL�NEA 1: SELECT public.record_orphan_provider_payment(v_business,'tes...\r\n               ^\r\nSUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.\r\nCONSULTA:  SELECT public.record_orphan_provider_payment(v_business,'test',jsonb_build_object('id','771000001','status','approved','transaction_amount',2500,'currency_id','ARS','external_reference','taba2:checkout:00000000-0000-4000-8000-0000000000aa','collector_id','collector-retry'))\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 55 at PERFORM\r\n",
+    stdout: ''
+  }
+
+test at tests\db\p1-reconciliation.test.mjs:207:1
+✖ integrity checks: an order paid without a recent provider verification is flagged and clears itself when verified (131.8343ms)
+  Error: ERROR:  relation "public.payment_provider_payments" does not exist
+  L�NEA 1: update public.payment_provider_payments set last_seen_at=clo...
+                 ^
+  CONSULTA:  update public.payment_provider_payments set last_seen_at=clock_timestamp()-interval '3 days' where payment_intent_id=v_intent
+  CONTEXTO:  PL/pgSQL function inline_code_block line 55 at SQL statement
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p1-reconciliation.test.mjs:208:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: `ERROR:  relation "public.payment_provider_payments" does not exist\r\nL�NEA 1: update public.payment_provider_payments set last_seen_at=clo...\r\n               ^\r\nCONSULTA:  update public.payment_provider_payments set last_seen_at=clock_timestamp()-interval '3 days' where payment_intent_id=v_intent\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 55 at SQL statement\r\n`,
+    stdout: ''
+  }
+
+test at tests\db\p1-reconciliation.test.mjs:219:1
+✖ integrity checks: approved money with no order is flagged, and a paid order never double-counts stock (116.6703ms)
+  Error: ERROR:  function public.run_financial_integrity_checks(integer) does not exist
+  L�NEA 1: v_before:=public.run_financial_integrity_checks(100)
+                    ^
+  SUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.
+  CONSULTA:  v_before:=public.run_financial_integrity_checks(100)
+  CONTEXTO:  PL/pgSQL function inline_code_block line 55 at assignment
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p1-reconciliation.test.mjs:220:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: 'ERROR:  function public.run_financial_integrity_checks(integer) does not exist\r\nL�NEA 1: v_before:=public.run_financial_integrity_checks(100)\r\n                  ^\r\nSUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.\r\nCONSULTA:  v_before:=public.run_financial_integrity_checks(100)\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 55 at assignment\r\n',
+    stdout: ''
+  }
+
+test at tests\db\p1-reconciliation.test.mjs:226:1
+✖ F07 a missing preference is a retry, not a permanent review; the corrected read finalizes once (118.1751ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + undefined
+  - true
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p1-reconciliation.test.mjs:229:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p1-reconciliation.test.mjs:236:1
+✖ F07 a DIFFERENT preference is still a real mismatch and still goes to review (117.1844ms)
+  TypeError [Error]: Cannot read properties of null (reading 'some')
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p1-reconciliation.test.mjs:241:29)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+
+test at tests\db\p1-reconciliation.test.mjs:244:1
+✖ a defective payment of a DIFFERENT id does not poison a healthy completed purchase (137.5493ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'security_review_required'
+  - 'completed'
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p1-reconciliation.test.mjs:247:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'security_review_required',
+    expected: 'completed',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p2-worker-dispatch-and-health.test.mjs:22:1
+✖ an idle outbox with a connected seller still dispatches (the provider ledger sweep has no job) (119.998ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p2-worker-dispatch-and-health.test.mjs:24:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p2-worker-dispatch-and-health.test.mjs:34:1
+✖ storm guard: repeated dispatches inside four seconds produce one request (124.3812ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  4 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p2-worker-dispatch-and-health.test.mjs:39:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 4,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p2-worker-dispatch-and-health.test.mjs:43:1
+✖ the HMAC PostgreSQL signs is accepted by the real worker verifier; tampering, a wrong secret and replays are not (118.8843ms)
+  TypeError [Error]: Cannot read properties of null (reading 'headers')
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p2-worker-dispatch-and-health.test.mjs:45:22)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+
+test at tests\db\p2-worker-dispatch-and-health.test.mjs:57:1
+✖ a Vault URL that is not the canonical worker URL is refused, and a short secret too (120.4995ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  'sent' !== '22023'
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p2-worker-dispatch-and-health.test.mjs:60:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'sent',
+    expected: '22023',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p2-worker-dispatch-and-health.test.mjs:66:1
+✖ pipeline health reports backlog, stale leases, repeated failures and dead letters without business data (117.5412ms)
+  Error: ERROR:  function public.payments_pipeline_health() does not exist
+  L�NEA 1: v_result:=public.payments_pipeline_health()
+                    ^
+  SUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.
+  CONSULTA:  v_result:=public.payments_pipeline_health()
+  CONTEXTO:  PL/pgSQL function inline_code_block line 57 at assignment
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at runScenario (file:///<repo>/tests/db/harness.mjs:102:13)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p2-worker-dispatch-and-health.test.mjs:67:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    stderr: 'ERROR:  function public.payments_pipeline_health() does not exist\r\nL�NEA 1: v_result:=public.payments_pipeline_health()\r\n                  ^\r\nSUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.\r\nCONSULTA:  v_result:=public.payments_pipeline_health()\r\nCONTEXTO:  PL/pgSQL function inline_code_block line 57 at assignment\r\n',
+    stdout: ''
+  }
+
+test at tests\db\p2-worker-dispatch-and-health.test.mjs:78:1
+✖ a stalled pipeline raises one critical alert and clears it when the cause is gone (154.0715ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   'PAYMENT_PIPELINE_STALLED:open:CRITICAL'
+  - ]
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p2-worker-dispatch-and-health.test.mjs:85:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [ 'PAYMENT_PIPELINE_STALLED:open:CRITICAL' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\p2-worker-dispatch-and-health.test.mjs:89:1
+✖ a dead-lettered job is an alert, and a healthy idle pipeline is not (282.4079ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/p2-worker-dispatch-and-health.test.mjs:96:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\worker-recovery.test.mjs:21:1
+✖ F06 the worker finds the approved retry even though a rejected payment id is already pinned (3086.5456ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/worker-recovery.test.mjs:23:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.start (node:internal/test_runner/test:1003:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:358:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\worker-recovery.test.mjs:31:1
+✖ F07 a merchant-order 503 retries the job: no review, no lost payment, one order once it recovers (3078.52ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/worker-recovery.test.mjs:33:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\worker-recovery.test.mjs:42:1
+✖ F08 an approved payment on the second page of the provider search is found (3025.3578ms)
+  AssertionError [ERR_ASSERTION]: pagination is followed
+      at TestContext.<anonymous> (file:///<repo>/tests/db/worker-recovery.test.mjs:44:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests\db\worker-recovery.test.mjs:50:1
+✖ F04/F06 two approved payments: both recorded, one order, a critical discrepancy (2892.0241ms)
+  TypeError [Error]: Cannot read properties of null (reading 'length')
+      at TestContext.<anonymous> (file:///<repo>/tests/db/worker-recovery.test.mjs:54:33)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+
+test at tests\db\worker-recovery.test.mjs:59:1
+✖ F09 a refund with a lost identity is parked: no POST, recovery blocked, a critical discrepancy, job completed (3066.141ms)
+  Error: scenario f09_unknown_refund_identity failed:
+  file:///<repo>/scripts/local-db/lib.mjs:26
+      const err = new Error(String(r.stderr || r.error).slice(0, 4000));
+                  ^
+  
+  Error: ERROR:  function private.payment_financial_hold(unknown) does not exist
+  L�NEA 1: select to_jsonb(private.payment_financial_hold('930d31c3-2f9...
+                          ^
+  SUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.
+  
+      at psqlRaw (file:///<repo>/scripts/local-db/lib.mjs:26:17)
+      at q (file:///<repo>/tests/support/worker-scenarios.mjs:21:13)
+      at Object.f09_unknown_refund_identity (file:///<repo>/tests/support/worker-scenarios.mjs:111:18)
+      at async file:///<repo>/tests/support/worker-scenarios.mjs:165:15 {
+    stderr: 'ERROR:  function private.payment_financial_hold(unknown) does not exist\r\n' +
+      "L�NEA 1: select to_jsonb(private.payment_financial_hold('930d31c3-2f9...\r\n" +
+      '                        ^\r\n' +
+      'SUGERENCIA:  No function matches the given name and argument types. You might need to add explicit type casts.\r\n',
+    stdout: ''
+  }
+  
+  Node.js v24.8.0
+  
+  
+      at scenario (file:///<repo>/tests/db/worker-recovery.test.mjs:17:20)
+      at TestContext.<anonymous> (file:///<repo>/tests/db/worker-recovery.test.mjs:60:13)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)
+
+test at tests\db\worker-recovery.test.mjs:70:1
+✖ F08 the ledger sweep finds an approved payment with no webhook, no job and no browser, and flags the orphan (3073.3549ms)
+  AssertionError [ERR_ASSERTION]: the purchase was materialized from the provider ledger alone
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/worker-recovery.test.mjs:72:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\worker-recovery.test.mjs:92:1
+✖ a provider outage during the ledger window leaves the cursor in place and backs off (2071.2348ms)
+  TypeError [Error]: Cannot read properties of undefined (reading 'ok')
+      at TestContext.<anonymous> (file:///<repo>/tests/db/worker-recovery.test.mjs:94:36)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7)

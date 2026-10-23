@@ -431,6 +431,9 @@ for (const width of [320, 1280]) {
     await expect(panel).not.toContainText('TABA2 Staging');
     await expect(panel.locator('input')).toHaveCount(0);
     await expect(panel).toContainText('TABA nunca recibe tu contraseña');
+    // Volvió de Mercado Pago con error: se le dice, con qué hacer.
+    await expect(panel.locator('[data-mp-connection-notice]')).toContainText('No pudimos completar la vinculación');
+    await expect(panel.locator('[data-mp-environment]')).toBeVisible();
     await expect(panel).not.toContainText('seller_change_requires_migration');
     await expect(panel).not.toContainText('00000000-0000-4000-8000-000000000001');
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
@@ -446,12 +449,22 @@ for (const width of [320, 1280]) {
     await expect(panel).not.toContainText('123456');
     await panel.getByRole('button',{name:'Verificar conexión'}).click();
     await expect.poll(()=>actions.includes('verify')).toBe(true);
-    page.once('dialog',dialog=>dialog.dismiss());
-    await panel.getByRole('button',{name:'Desconectar',exact:true}).click();
+    // Desvincular tiene dos pasos sin diálogos del navegador: primero se ve qué
+    // pasa (y qué queda pendiente) y recién «Sí, desvincular» lo pide.
+    let dialogs=0;
+    page.on('dialog',dialog=>{ dialogs+=1; void dialog.dismiss(); });
+    await panel.getByRole('button',{name:'Desvincular',exact:true}).click();
+    await expect(panel.locator('[data-mp-disconnect-review="ready"]')).toBeVisible();
+    await expect(panel).toContainText('El historial de pagos y pedidos se conserva');
     expect(actions.filter(a=>a==='disconnect')).toHaveLength(0);
-    page.once('dialog',dialog=>dialog.accept());
-    await panel.getByRole('button',{name:'Desconectar',exact:true}).click();
+    expect(actions).toContain('disconnect_preview');
+    await panel.getByRole('button',{name:'Mejor no',exact:true}).click();
+    await expect(panel.locator('[data-mp-disconnect-review]')).toHaveCount(0);
+    expect(actions.filter(a=>a==='disconnect')).toHaveLength(0);
+    await panel.getByRole('button',{name:'Desvincular',exact:true}).click();
+    await panel.getByRole('button',{name:'Sí, desvincular',exact:true}).click();
     await expect(panel.getByRole('button',{name:'Conectar Mercado Pago',exact:true})).toBeVisible();
     expect(actions.filter(a=>a==='disconnect')).toHaveLength(1);
+    expect(dialogs).toBe(0);
   });
 }

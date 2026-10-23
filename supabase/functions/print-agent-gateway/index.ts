@@ -1,4 +1,4 @@
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createClient } from 'npm:@supabase/supabase-js@2.110.8';
 import { handleGatewayRequest } from '../_shared/print-agent-gateway.ts';
 
 // Única puerta del agente local de impresión. verify_jwt = false porque el

@@ -10,7 +10,7 @@ import {
   requirePost,
   requireUuid,
 } from '../_shared/payment-runtime.ts';
-import { findPaymentByExternalReference, paymentSnapshot } from '../_shared/mercadopago.ts';
+import { findPaymentsByExternalReference, paymentSnapshot } from '../_shared/mercadopago.ts';
 
 Deno.serve(async (request) => {
   const preflight = handleOptions(request);
@@ -79,25 +79,30 @@ async function reconcile(
     return false;
   }
 
-  let payment: Record<string, unknown> | null = null;
+  let payments: Record<string, unknown>[] = [];
   try {
-    payment = await findPaymentByExternalReference(String(intent.external_reference), intent.business_id);
+    payments = await findPaymentsByExternalReference(String(intent.external_reference), intent.business_id);
   } catch (_) {
     // A provider outage must never break the status screen: the shopper keeps
     // seeing the last known state and the next poll retries.
     return false;
   }
-  if (!payment) return false;
+  if (!payments.length) return false;
 
-  const { data: recorded, error: recordError } = await service.rpc('record_mercadopago_payment_snapshot', {
-    p_payment_intent_id: intent.id,
-    p_snapshot: await paymentSnapshot(payment, intent.business_id),
-    p_source: 'reconciliation',
-    p_webhook_receipt_id: null,
-  });
-  if (recordError || !recorded) return false;
+  // Every attempt of this checkout is recorded (a rejected card does not hide the approved retry).
+  let finalizeRequired = false;
+  for (const payment of payments) {
+    const { data: recorded, error: recordError } = await service.rpc('record_mercadopago_payment_snapshot', {
+      p_payment_intent_id: intent.id,
+      p_snapshot: await paymentSnapshot(payment, intent.business_id),
+      p_source: 'reconciliation',
+      p_webhook_receipt_id: null,
+    });
+    if (recordError || !recorded) return false;
+    if ((recorded as Record<string, unknown>).finalize_required === true) finalizeRequired = true;
+  }
 
-  if ((recorded as Record<string, unknown>).finalize_required === true) {
+  if (finalizeRequired) {
     // `finalize_paid_checkout_session` is idempotent: a session that already has
     // a completed order returns it instead of creating a second one.
     const finalized = await service.rpc('finalize_paid_checkout_session', {

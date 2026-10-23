@@ -1,0 +1,58 @@
+✔ A1 a refund made in the provider panel days after the payment is found without any webhook (9025.7629ms)
+✔ A2 a pending offline payment approved days later is found and the orphan becomes critical (3341.5454ms)
+✔ A3 the orphan inbox escalates when the same provider payment later carries money (2208.4509ms)
+✔ A4 a provider window larger than the provider pagination ceiling is still read completely (7081.5973ms)
+✖ A5 a payment that changes while the window is being paged is neither skipped nor left stale (20381.8203ms)
+✔ A6 the ledger asks the provider with the documented ISO-8601 millisecond dates (2993.4952ms)
+✔ A7 a pending payment is re-read on a backoff until the provider settles it, then approved late (5871.0359ms)
+✔ A8 a checkout with only rejected payments closes with evidence instead of being read forever (7085.602ms)
+✖ A9 paid orders stay verified on a ladder and a refund made later in the panel is found (6370.59ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 7
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 64434.6205
+
+✖ failing tests:
+
+test at tests\db\astra2-reconciliation.test.mjs:46:1
+✖ A5 a payment that changes while the window is being paged is neither skipped nor left stale (20381.8203ms)
+  AssertionError [ERR_ASSERTION]: the payment that was approved mid-sweep ends critical
+  
+  'low' !== 'critical'
+  
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-reconciliation.test.mjs:50:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'low',
+    expected: 'critical',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\db\astra2-reconciliation.test.mjs:84:1
+✖ A9 paid orders stay verified on a ladder and a refund made later in the panel is found (6370.59ms)
+  AssertionError [ERR_ASSERTION]: it keeps being verified
+      at TestContext.<anonymous> (file:///<repo>/tests/db/astra2-reconciliation.test.mjs:89:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1106:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:788:18)
+      at Test.postRun (node:internal/test_runner/test:1235:19)
+      at Test.run (node:internal/test_runner/test:1163:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:788:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

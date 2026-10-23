@@ -77,3 +77,19 @@ test('«Alta» ya no nombra a la creación de un producto', () => {
   const { rest } = splitBusinessMobileNavigation(allowedBusinessOperationViews('owner'));
   assert.ok(rest.includes('product-create'));
 });
+
+test('la hoja de «Más» agrupa la configuración y ahí está Mercado Pago', async () => {
+  const { groupBusinessMoreViews } = await import('../js/production-operations.js');
+  const { rest } = splitBusinessMobileNavigation(allowedBusinessOperationViews('owner'));
+  const groups = groupBusinessMoreViews(rest);
+  const configuracion = groups.find((group) => group.label === 'Configuración');
+  assert.ok(configuracion, 'tiene que existir el grupo Configuración');
+  assert.ok(configuracion.views.includes('payments-setup'), 'Configuración → Mercado Pago');
+  assert.ok(configuracion.views.includes('operations-config'), 'Configuración → Horarios y cobertura');
+  // Ningún destino se pierde al agrupar ni aparece dos veces.
+  const flattened = groups.flatMap((group) => group.views);
+  assert.deepEqual([...flattened].sort(), [...rest].sort());
+  assert.equal(new Set(flattened).size, flattened.length);
+  // Lo que no figura en ningún grupo igual se ofrece.
+  assert.deepEqual(groupBusinessMoreViews(['vista-nueva']), [{ label: 'Otras secciones', views: ['vista-nueva'] }]);
+});

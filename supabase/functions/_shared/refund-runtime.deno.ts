@@ -1,7 +1,7 @@
 import { assertEquals } from 'jsr:@std/assert@1.0.19';
 import { protect } from './seller-oauth.ts';
 import { signPaymentWorkerRequest } from './payment-worker-signature.ts';
-import { isFinalProviderRejection } from './mercadopago.ts';
+import { isFinalProviderRejection, providerRejectionFacts } from './mercadopago.ts';
 
 const handlers: Array<(request: Request) => Promise<Response>> = [];
 const serve = Deno.serve;
@@ -37,7 +37,7 @@ async function run(scenario: string, creation = false) {
   if (scenario === 'unknown-prior') resource.date_created = new Date(Date.now() - 60000).toISOString();
   if (scenario === 'unknown-future') resource.date_created = '2099-01-01T00:00:00Z';
   const seller = { business_id: bid, environment: 'test', status: 'connected',
-    protected_tokens: await protect({ access_token: 'fixture-seller-token' }, bid),
+    protected_tokens: await protect({ access_token: 'APP_USR-seller-fixture' }, bid),
     expires_at: new Date(Date.now() + 172800000).toISOString(), refresh_owner: null };
   const requests: string[] = [], events: string[] = [], recordings: Record<string, unknown>[] = [];
   let posted = 0, settledEvents = 0, failedJobs = 0, claimedThisRun = false;
@@ -92,6 +92,9 @@ async function run(scenario: string, creation = false) {
       if (scenario === 'lost-response') throw new Error('simulated lost provider response');
       if (scenario === 'throttled') return Response.json({ message: 'too many requests' }, { status: 429 });
       if (scenario === 'final-rejection') return Response.json({ message: 'invalid refund amount' }, { status: 400 });
+      if (scenario === 'live-credentials-401') return Response.json({ message: 'Unauthorized use of live credentials', error: 'unauthorized', status: 401,
+        cause: [{ code: 7, description: 'Unauthorized use of live credentials', data: '23-10-2026T19:58:57UTC;secret-looking-value' }] },
+        { status: 401, headers: { 'x-request-id': '1f619ac9-66fb-446e-9739-3cad2740969a' } });
       return Response.json(resource);
     }
     // Since the financial-integrity migration, the list is evidence for the
@@ -109,7 +112,7 @@ async function run(scenario: string, creation = false) {
           confirmation: 'I_UNDERSTAND_THIS_REQUESTS_A_MERCADO_PAGO_REFUND' }),
       }));
       if (scenario === 'valid') { assertEquals(res.status, 200); assertEquals(events, ['identity', 'record']); }
-      else if (scenario === 'final-rejection') { assertEquals(res.status, 409); assertEquals(recordings.map((r) => r.p_status), ['rejected']); }
+      else if (scenario === 'final-rejection' || scenario === 'live-credentials-401') { assertEquals(res.status, 409); assertEquals(recordings.map((r) => r.p_status), ['rejected']); }
       else { assertEquals(res.status, 202); assertEquals(recordings.length, 0); }
       // A throttled POST is not Mercado Pago rejecting the refund: nothing
       // financial is recorded and the refund goes to reconciliation.
@@ -156,4 +159,32 @@ for (const scenario of ['valid', 'partial-response', 'lost-response', 'known-wro
 Deno.test('provider 4xx: only final answers become rejections', () => {
   for (const status of [400, 401, 403, 404, 422]) assertEquals(isFinalProviderRejection(status), true, String(status));
   for (const status of [200, 408, 409, 425, 429, 500, 502, 503]) assertEquals(isFinalProviderRejection(status), false, String(status));
+});
+
+// 2026-10-23: a refund refused with 401 «Unauthorized use of live credentials» (cause 7) was recorded only as a hash.
+// The operator now reads the status, the request id and the provider's own codes, and never its body.
+Deno.test('a refused refund leaves its provider status, request id and cause codes in the log, never the body', async () => {
+  const warn = console.warn, lines: string[] = [];
+  console.warn = (line?: unknown) => { lines.push(String(line)); };
+  try { await run('live-credentials-401', true); } finally { console.warn = warn; }
+  const logged = lines.map((l) => { try { return JSON.parse(l); } catch { return null; } }).find((l) => l?.event === 'provider_rejection');
+  assertEquals(logged?.operation, 'refund');
+  assertEquals(logged?.http_status, 401);
+  assertEquals(logged?.final, true);
+  assertEquals(logged?.provider_request_id, '1f619ac9-66fb-446e-9739-3cad2740969a');
+  assertEquals(logged?.provider_error, 'unauthorized');
+  assertEquals(logged?.provider_cause_codes, [7]);
+  assertEquals(logged?.business_id, bid);
+  assertEquals(logged?.payment_intent_id, iid);
+  const text = JSON.stringify(logged);
+  assertEquals(/live credentials|secret-looking-value|description|message/i.test(text), false);
+});
+Deno.test('provider rejection facts keep only shape-checked fields', () => {
+  const facts = providerRejectionFacts({
+    response: new Response(null, { status: 400 }), requestId: 'not an id <script>',
+    body: { error: 'x'.repeat(200), message: 'free text', cause: [{ code: 2063, description: 'text' }, { code: { nested: true } }, { code: 'bad code!' }, 'junk', null] },
+  });
+  assertEquals(facts, { http_status: 400, provider_request_id: undefined, provider_error: undefined, provider_cause_codes: [2063] });
+  assertEquals(providerRejectionFacts({ response: new Response(null, { status: 503 }), requestId: '', body: null }),
+    { http_status: 503, provider_request_id: undefined, provider_error: undefined, provider_cause_codes: undefined });
 });

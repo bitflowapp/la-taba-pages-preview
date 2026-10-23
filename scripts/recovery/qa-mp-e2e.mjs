@@ -1,4 +1,4 @@
-// Hosted Mercado Pago TEST harness for the recovery project (TABA2 Staging app only, QA tenant A).
+// Hosted Mercado Pago TEST harness for the recovery project (QA integrator TestApp-ae01fd1d only, QA tenant A).
 // It drives TABA's side of the flow: panel session, single-use connect URL, checkout sessions and preferences,
 // server-state inspection, forged-webhook rejection, cancellation/refund requests and on-demand worker runs.
 // It never types Mercado Pago credentials and never enters card data: seller consent and buyer payments are
@@ -15,21 +15,26 @@ import { createClient } from '@supabase/supabase-js';
 import { leerSecreto } from '../e2e-production-sale/secretos-windows.mjs';
 import { RECOVERY_QA } from './provision-qa-ids.mjs';
 import { inspectPaymentSession } from './qa-mp-inspection.mjs';
+import { RECOVERY_TEST_APPLICATION_ID } from './plan.mjs';
 
-const TEST_APPLICATION = '2691240967769590';
+const TEST_APPLICATION = RECOVERY_TEST_APPLICATION_ID;
 const arg = (name, fallback) => { const i = process.argv.indexOf(name); return i < 0 ? fallback : process.argv[i + 1]; };
 const flag = name => process.argv.includes(name);
 const command = process.argv[2];
 const target = JSON.parse(fs.readFileSync(arg('--target', 'deploy/recovery-free-hosted.json'), 'utf8'));
 // Hard stops: this harness only ever talks to the Free recovery project in TEST mode.
 assert.equal(target.environment, 'test', 'test environment only');
-assert.equal(target.mercadoPagoApplicationId, TEST_APPLICATION, 'TABA2 Staging application only');
+assert.equal(target.mercadoPagoApplicationId, TEST_APPLICATION, 'the test-owned QA integrator application only');
 assert.equal(target.commercialPaymentsEnabled, false, 'commercial payments must stay disabled');
 assert.equal(target.projectRef, 'ixewllzzuzpqrkxzmfzx', 'exact QA project only');
 
 const url = `https://${target.projectRef}.supabase.co`;
 const origin = target.checkoutOrigin;
-const A = RECOVERY_QA.a;
+// --tenant a|b: QA tenant A is the default; B is the isolation tenant used for the marketplace verification
+// (second seller). The panel owner credential follows the tenant.
+const tenant = arg('--tenant', 'a');
+assert.ok(['a', 'b'].includes(tenant), '--tenant a|b');
+const A = RECOVERY_QA[tenant];
 const O = { auth: { persistSession: false, autoRefreshToken: false } };
 const key = name => {
   const stored = leerSecreto(name);
@@ -56,7 +61,7 @@ async function login(credential) {
 }
 
 async function panelOwner() {
-  const owner = await login('RECOVERY QA OWNER A');
+  const owner = await login(tenant === 'b' ? 'RECOVERY QA OWNER B' : 'RECOVERY QA OWNER A');
   const reg = await owner.rpc('identity_register_session', { p_business_id: A, p_client: 'panel_web',
     p_device_label: 'recovery QA mercado pago', p_device_key_hash: null, p_app_version: 'recovery-qa-mp' });
   assert.ok(reg.data?.ok && ['owner', 'admin'].includes(reg.data.role), `panel session: ${reg.error?.code || reg.data?.code}`);
@@ -270,7 +275,7 @@ async function main() {
     const owner = await panelOwner();
     const id = arg('--id');
     const { data: row } = await owner.from('orders').select('id,revision,status').eq('id', id).eq('business_id', A).maybeSingle();
-    assert.ok(row, 'order not found in QA tenant A');
+    assert.ok(row, `order not found in QA tenant ${tenant.toUpperCase()}`);
     const { data, error } = await owner.rpc('cancel_order', { p_order_id: id, p_expected_revision: row.revision,
       p_reason: arg('--reason', 'QA: pedido de prueba, no despachar'), p_idempotency_key: `qa_cancel_${id.replaceAll('-', '')}` });
     record({ order: id, cancelled: !error, error: error?.code || null });
@@ -289,6 +294,7 @@ async function main() {
       validReceipts: await count('payment_webhook_receipts', q => q.eq('signature_valid', true)),
       outbox: await count('payment_outbox'),
       ordersQA: await count('orders', q => q.eq('business_id', A)),
+      ...(tenant === 'a' ? { ordersQA_b: await count('orders', q => q.eq('business_id', RECOVERY_QA.b)) } : {}),
       historicBusinessOrders: await count('orders', q => q.eq('business_id', '00000000-0000-4000-8000-000000000001')),
     };
     out(result);

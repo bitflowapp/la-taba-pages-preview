@@ -18,6 +18,7 @@ import {
 } from "../_shared/seller-oauth-crypto.ts";
 import {
   audit,
+  assertIntegratorForConnection,
   assertOAuthBusiness,
   connection,
   oauthConfig,
@@ -75,6 +76,9 @@ Deno.serve(async (request) => {
           message: "Renovamos tu sesión antes de continuar.",
         }, 409);
       }
+      // An integrator application of the other environment would make every payment of this link fail: say so before
+      // the seller consents at Mercado Pago, not after.
+      await assertIntegratorForConnection();
       const state = randomSecret(), verifier = randomSecret();
       const started = await service.rpc("mp_begin_oauth", {
         p_business_id: businessId,

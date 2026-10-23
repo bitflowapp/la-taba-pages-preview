@@ -33,7 +33,7 @@ export const RECOVERY_ENV = Object.freeze({
   TABA_RECOVERY_CHECKOUT_ORIGIN: 'https://recovery-20261020.taba2-staging.pages.dev',
   SUPABASE_URL: 'https://ixewllzzuzpqrkxzmfzx.supabase.co',
   MERCADOPAGO_OAUTH_PROJECT_REF: 'ixewllzzuzpqrkxzmfzx',
-  MERCADOPAGO_CLIENT_ID: '2691240967769590',
+  MERCADOPAGO_CLIENT_ID: '4861627125869370',
   MERCADOPAGO_CREDENTIAL_MODE: 'oauth',
   TABA_DEPLOYMENT_ENV: 'staging',
   MERCADOPAGO_OAUTH_ENVIRONMENT: 'test',

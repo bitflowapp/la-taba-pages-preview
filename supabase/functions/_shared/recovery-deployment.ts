@@ -6,6 +6,12 @@ export const RECOVERY_FORBIDDEN_REFS = new Set([
   'enznqfzhikpasjzpvjfd', 'udftddjacdsinscehlke', 'zvmfdlynnutxquktrgyl',
 ]);
 
+// The QA integrator is TestApp-ae01fd1d, the automatic TEST application of TABA2 Staging, owned by the QA test
+// seller. Every OAuth payment is a marketplace payment whose users include the integrator's owner, and TABA2
+// Staging (2691240967769590) belongs to a real account: through it no test payment can ever be approved
+// (Payments API «Invalid users involved», cause 2034; Checkout Pro «Oh, no, algo anduvo mal»; measured 2026-10-23).
+export const RECOVERY_TEST_APPLICATION_ID = '4861627125869370';
+
 export function recoveryDeploymentBinding(read: (name: string) => string | undefined) {
   const ref = read('TABA_RECOVERY_PROJECT_REF')?.trim();
   if (!ref) return null;
@@ -14,7 +20,7 @@ export function recoveryDeploymentBinding(read: (name: string) => string | undef
   if (!/^[a-z]{20}$/.test(ref) || RECOVERY_FORBIDDEN_REFS.has(ref) || !validOrigin ||
     read('SUPABASE_URL') !== `https://${ref}.supabase.co` ||
     read('MERCADOPAGO_OAUTH_PROJECT_REF') !== ref ||
-    read('MERCADOPAGO_CLIENT_ID') !== '2691240967769590' ||
+    read('MERCADOPAGO_CLIENT_ID') !== RECOVERY_TEST_APPLICATION_ID ||
     read('MERCADOPAGO_CREDENTIAL_MODE') !== 'oauth' ||
     read('TABA_DEPLOYMENT_ENV') !== 'staging' ||
     read('MERCADOPAGO_ENVIRONMENT') !== 'test' ||
@@ -29,7 +35,7 @@ export function recoveryDeploymentBinding(read: (name: string) => string | undef
       deployment: 'staging' as const,
       paymentEnvironment: 'test' as const,
       oauthEnvironment: 'test' as const,
-      clientId: '2691240967769590',
+      clientId: RECOVERY_TEST_APPLICATION_ID,
       supabaseUrl: `https://${ref}.supabase.co`,
       panelUrl: `${origin}/`, checkoutBaseUrl: origin, allowedOrigins: origin,
     },

@@ -1,4 +1,6 @@
 import { assertEquals } from 'jsr:@std/assert@1.0.19';
+import { resetIntegratorIdentityCache } from './seller-oauth.ts';
+import { integratorProviderResponse } from './integrator-identity-fixture.ts';
 
 // The real handler, with Supabase answered by a fixture transport.
 let handle: (request: Request) => Promise<Response>;
@@ -15,16 +17,33 @@ try {
 
 const business = '97000000-0000-4000-8000-000000000001';
 
-async function run(available: boolean | 'error') {
-  for (const [name, value] of Object.entries({
-    SUPABASE_URL: 'https://ucbtjcurawxjwjdvvcvj.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'fixture-service',
-    SUPABASE_ANON_KEY: 'fixture-anon', PAYMENT_LOG_HASH_SALT: 'fixture-log-salt',
-    TABA_ALLOWED_ORIGINS: 'https://taba2-staging.pages.dev',
-  })) Deno.env.set(name, value);
+// The environment is set completely for every run: other test files of the same process leave theirs behind.
+const STAGING_OAUTH = {
+  SUPABASE_URL: 'https://ucbtjcurawxjwjdvvcvj.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'fixture-service',
+  SUPABASE_ANON_KEY: 'fixture-anon', PAYMENT_LOG_HASH_SALT: 'fixture-log-salt',
+  TABA_ALLOWED_ORIGINS: 'https://taba2-staging.pages.dev', TABA_CHECKOUT_BASE_URL: 'https://taba2-staging.pages.dev',
+  MERCADOPAGO_ENVIRONMENT: 'test', MERCADOPAGO_OAUTH_ENVIRONMENT: 'test', MERCADOPAGO_CREDENTIAL_MODE: 'oauth',
+  TABA_DEPLOYMENT_ENV: 'staging', MERCADOPAGO_OAUTH_PROJECT_REF: 'ucbtjcurawxjwjdvvcvj',
+  MERCADOPAGO_OAUTH_PANEL_URL: 'https://taba2-staging.pages.dev/', MERCADOPAGO_CLIENT_ID: '2691240967769590',
+  MERCADOPAGO_CLIENT_SECRET: 'fixture-client-secret',
+};
+
+type Options = { mode?: 'oauth' | 'direct' | 'padded'; integratorTestUser?: boolean; integratorStatus?: number };
+
+async function run(available: boolean | 'error', { mode = 'oauth', integratorTestUser = true, integratorStatus = 200 }: Options = {}) {
+  for (const [name, value] of Object.entries(STAGING_OAUTH)) Deno.env.set(name, value);
+  if (mode === 'direct') Deno.env.delete('MERCADOPAGO_CREDENTIAL_MODE');
+  if (mode === 'padded') Deno.env.set('MERCADOPAGO_CREDENTIAL_MODE', ' oauth ');
+  resetIntegratorIdentityCache();
   const calls: string[] = [];
   const original = globalThis.fetch;
-  globalThis.fetch = async (input) => {
+  globalThis.fetch = async (input, init) => {
     const url = new URL(String(input instanceof Request ? input.url : input));
+    const integrator = integratorProviderResponse(input, init, integratorTestUser);
+    if (integrator) {
+      calls.push(`integrator:${url.pathname}`);
+      return integratorStatus === 200 ? integrator : Response.json({ message: 'fixture' }, { status: integratorStatus });
+    }
     calls.push(url.pathname.split('/').pop() || '');
     if (url.pathname === '/auth/v1/user') return Response.json({ id: '97000000-0000-4000-8000-000000000002', aud: 'authenticated' });
     if (url.pathname.endsWith('/consume_payment_rate_limit')) return Response.json({ allowed: true });
@@ -67,4 +86,36 @@ Deno.test('a connected seller keeps the normal checkout path', async () => {
   assertEquals(result.status, 200);
   assertEquals(result.body.ok, true);
   assertEquals(result.calls.filter((call) => call === 'create_checkout_session').length, 1);
+  assertEquals(result.calls.filter((call) => call.startsWith('integrator:')), ['integrator:/oauth/token', 'integrator:/users/me']);
+});
+
+// 2026-10-23: the QA integrator application belonged to a real account while seller and buyer were test users.
+// Every checkout reserved stock and ended in «Oh, no, algo anduvo mal» (2034 Invalid users involved).
+Deno.test('an integrator application of the other environment never reserves stock', async () => {
+  const result = await run(true, { integratorTestUser: false });
+  assertEquals(result.status, 409);
+  assertEquals(result.body.code, 'PAYMENTS_NOT_ENABLED');
+  assertEquals(result.calls.includes('create_checkout_session'), false);
+});
+
+Deno.test('an unreadable integrator identity fails closed before reserving stock', async () => {
+  for (const integratorStatus of [401, 503]) {
+    const result = await run(true, { integratorStatus });
+    assertEquals(result.status, 503);
+    assertEquals(result.body.code, 'SELLER_VERIFICATION_UNAVAILABLE');
+    assertEquals(result.calls.includes('create_checkout_session'), false);
+  }
+});
+
+Deno.test('without seller OAuth there is no integrator to check', async () => {
+  const result = await run(true, { mode: 'direct', integratorTestUser: false });
+  assertEquals(result.status, 200);
+  assertEquals(result.calls.some((call) => call.startsWith('integrator:')), false);
+});
+
+Deno.test('the integrator guard also runs when the credential mode carries stray whitespace', async () => {
+  const result = await run(true, { mode: 'padded', integratorTestUser: false });
+  assertEquals(result.status, 409);
+  assertEquals(result.body.code, 'PAYMENTS_NOT_ENABLED');
+  assertEquals(result.calls.includes('create_checkout_session'), false);
 });

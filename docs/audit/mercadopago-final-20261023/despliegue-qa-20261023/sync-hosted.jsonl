@@ -1,0 +1,5 @@
+{"at":"2026-10-23T22:48:40.358Z","phase":"migrations","applied":170,"pending":["20261023210000 20261023210000_financial_core_review_fixes.sql"],"apply":true}
+{"at":"2026-10-23T22:48:41.862Z","phase":"migration","version":"20261023210000","sha256":"060a38777edef050d033b8ada71832587ea231bd89564530a80998ef52a09df2","result":"applied"}
+{"at":"2026-10-23T22:48:43.025Z","phase":"schedulers","paused":["taba-checkout-expiry-sweep","taba-checkout-provider-truth-sweep","taba-operational-alerts-sweep","taba-payment-outbox-worker","taba-qa-window-expiry","taba-security-retention-sweep"],"next":"deploy the functions (--functions), then re-enable the jobs that were active: qa-schedulers.mjs --enable <jobs>"}
+{"at":"2026-10-23T22:48:43.135Z","phase":"functions","functions":[{"name":"mercadopago-payment-worker","verifyJwt":false,"files":11}],"apply":true}
+{"at":"2026-10-23T22:48:46.172Z","phase":"function","name":"mercadopago-payment-worker","status":"ACTIVE","version":14,"verifyJwt":false}

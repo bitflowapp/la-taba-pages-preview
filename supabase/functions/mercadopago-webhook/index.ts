@@ -14,7 +14,7 @@ import {
 } from '../_shared/payment-runtime.ts';
 import { validateMercadoPagoWebhookSignature } from '../_shared/mercadopago-webhook-signature.ts';
 import { requestIsHttps } from '../_shared/request-protocol.ts';
-import { webhookEventType, webhookResourceId } from '../_shared/webhook-notification.ts';
+import { isLegacyIpnNotification, webhookEventType, webhookResourceId } from '../_shared/webhook-notification.ts';
 import { confirmSellerAuthorization, deauthorizationSellerHint } from '../_shared/seller-deauthorization.ts';
 
 const WEBHOOK_MAX_BYTES = 16_000;
@@ -54,6 +54,17 @@ Deno.serve(async (request) => {
       bodyDataId,
       secret: oauthMode() ? getRequiredEnv('MERCADOPAGO_OAUTH_WEBHOOK_SECRET') : getRequiredEnv('MERCADOPAGO_WEBHOOK_SECRET'),
     });
+
+    // Every Checkout Pro payment also brings the legacy IPN feed (payment and merchant_order) to notification_url.
+    // It cannot be validated with the secret key and is retried every 15 minutes until answered 200/201. Nothing in
+    // it is trusted or processed here: the signed webhook and the provider read do the work. Recorded as rejected
+    // signatures, the first approved QA payment (184722117633, 2026-10-23) raised a false «webhook secret» alert and
+    // the owner warning «avisos que no se pudieron verificar»; every sale would have done the same.
+    if (!signatureValid && isLegacyIpnNotification(url, body)) {
+      const legacyTopic = url.searchParams.get('topic')?.trim().toLowerCase() || '';
+      console.info(JSON.stringify({ timestamp: new Date().toISOString(), event: 'legacy_ipn_ignored', topic: /^[a-z_]{1,32}$/.test(legacyTopic) ? legacyTopic : 'other' }));
+      return jsonResponse(request, { ok: true, ignored: 'legacy_ipn' });
+    }
 
     if (!eventType || !dataId) {
       // Receipt persistence remains minimized: a malformed request can be

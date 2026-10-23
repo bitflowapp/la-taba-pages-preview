@@ -1,0 +1,69 @@
+{
+  "card": "official MLA APRO test card (Mastercard ...0604), ARS 100, 1 installment",
+  "oauth_taba2_staging_synthetic_test_payer": {
+    "credential": "oauth",
+    "client_id": "2691240967769590",
+    "card_token_http": 201,
+    "payment": {
+      "http": 400,
+      "requestId": "f94b6d7a-51e4-477e-95b8-725cec8f757a",
+      "status": 400,
+      "error": {
+        "message": "Invalid users involved",
+        "error": "bad_request",
+        "status": 400,
+        "cause": [
+          {
+            "code": 2034,
+            "description": "Invalid users involved",
+            "data": "23-10-2026T18:57:44UTC;f94b6d7a-51e4-477e-95b8-725cec8f757a"
+          }
+        ]
+      }
+    }
+  },
+  "oauth_taba2_staging_qa_buyer_as_payer": {
+    "credential": "oauth",
+    "client_id": "2691240967769590",
+    "card_token_http": 201,
+    "payment": {
+      "http": 400,
+      "requestId": "0af3d1cb-d5e6-42aa-828a-b83b9d0debea",
+      "status": 400,
+      "error": {
+        "message": "Invalid users involved",
+        "error": "bad_request",
+        "status": 400,
+        "cause": [
+          {
+            "code": 2034,
+            "description": "Invalid users involved",
+            "data": "23-10-2026T18:58:18UTC;0af3d1cb-d5e6-42aa-828a-b83b9d0debea"
+          }
+        ]
+      }
+    }
+  },
+  "direct_test_credential_control": {
+    "credential": "direct",
+    "client_id": "4861627125869370",
+    "card_token_http": 201,
+    "payment": {
+      "http": 401,
+      "requestId": "5ad01a9e-bd71-4fd1-8d90-dc920ccbd32e",
+      "status": 401,
+      "error": {
+        "message": "Unauthorized use of live credentials",
+        "error": "unauthorized",
+        "status": 401,
+        "cause": [
+          {
+            "code": 7,
+            "description": "Unauthorized use of live credentials",
+            "data": "23-10-2026T18:57:33UTC;5ad01a9e-bd71-4fd1-8d90-dc920ccbd32e"
+          }
+        ]
+      }
+    }
+  }
+}

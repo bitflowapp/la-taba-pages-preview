@@ -1,5 +1,5 @@
 import { assertEquals, assertThrows } from 'jsr:@std/assert@1.0.19';
-import { recoveryDeploymentBinding, RECOVERY_FORBIDDEN_REFS, paymentWorkerLimits } from './recovery-deployment.ts';
+import { recoveryDeploymentBinding, RECOVERY_FORBIDDEN_REFS, RECOVERY_TEST_APPLICATION_ID, paymentWorkerLimits } from './recovery-deployment.ts';
 import { oauthConfig } from './seller-oauth.ts';
 import { signPaymentWorkerRequest } from './payment-worker-signature.ts';
 
@@ -8,7 +8,7 @@ const origin = 'https://recovery-20261020.taba2-staging.pages.dev';
 const valid: Record<string, string> = {
   TABA_RECOVERY_PROJECT_REF: ref, TABA_RECOVERY_CHECKOUT_ORIGIN: origin,
   SUPABASE_URL: `https://${ref}.supabase.co`, MERCADOPAGO_OAUTH_PROJECT_REF: ref,
-  MERCADOPAGO_CLIENT_ID: '2691240967769590', MERCADOPAGO_CREDENTIAL_MODE: 'oauth',
+  MERCADOPAGO_CLIENT_ID: '4861627125869370', MERCADOPAGO_CREDENTIAL_MODE: 'oauth',
   TABA_DEPLOYMENT_ENV: 'staging', MERCADOPAGO_ENVIRONMENT: 'test', MERCADOPAGO_OAUTH_ENVIRONMENT: 'test',
   MERCADOPAGO_OAUTH_PANEL_URL: origin + '/', TABA_CHECKOUT_BASE_URL: origin, TABA_ALLOWED_ORIGINS: origin,
 };
@@ -21,6 +21,13 @@ Deno.test('recovery binding accepts only staging, its own ref, test OAuth and co
   const result = recoveryDeploymentBinding(read(valid));
   assertEquals(result?.binding.paymentEnvironment, 'test');
   assertEquals(result?.binding.supabaseUrl, `https://${ref}.supabase.co`);
+  assertEquals(result?.binding.clientId, RECOVERY_TEST_APPLICATION_ID);
+});
+// 2026-10-23: with TABA2 Staging (owned by a real account) as integrator, every test payment was refused by the
+// provider (2034 Invalid users involved). QA charges only through the test-owned TestApp-ae01fd1d.
+Deno.test('recovery refuses the real-owned TABA2 Staging application as integrator', () => {
+  assertEquals(RECOVERY_TEST_APPLICATION_ID, '4861627125869370');
+  assertThrows(() => recoveryDeploymentBinding(read({ ...valid, MERCADOPAGO_CLIENT_ID: '2691240967769590' })));
 });
 Deno.test('Free recovery bounds work while legacy environments keep their existing worker limits', () => {
   assertEquals(paymentWorkerLimits(read(valid)), { refreshLimit: 1, claimLimit: 1 });

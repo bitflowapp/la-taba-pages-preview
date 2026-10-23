@@ -1,0 +1,29 @@
+{
+  "at": "2026-10-23T18:33:46.609Z",
+  "project": "ixewllzzuzpqrkxzmfzx",
+  "attempt": {
+    "id": "21372d31-1697-4915-8de9-16dd7e01632f",
+    "payment_intent_id": "55136b0c-aa3b-44db-a7bd-b419a8a3af4f",
+    "preference_id": "3594962708-171128df-3092-4de2-96ee-f1f6383efe3d",
+    "provider_request_id": "2974654e-1bb5-4cde-ba43-0b53013914e3",
+    "status": "created",
+    "last_error_code": null,
+    "created_at": "2026-10-23T18:11:57.542306+00:00",
+    "updated_at": "2026-10-23T18:11:58.736964+00:00",
+    "seller_id": "3594962708",
+    "seller_generation": "c834231b-91cf-4474-9521-25a566de3901",
+    "request_hash": null,
+    "response_hash": "430937b2b6336e39e2c782cc48eb910bfaad380b72cb46c4e51bce9d8981fbd9"
+  },
+  "sellerConnection": {
+    "business_id": "7d1f0c52-3b1e-4c8a-9a67-2f5d0e6b1a01",
+    "environment": "test",
+    "seller_id": "3594962708",
+    "application_id": "2691240967769590",
+    "status": "connected",
+    "scopes": "offline_access payments read urn:global:admin:oauth:/read-write urn:ml:all:publish-sync:/read-write urn:mp:instore:instore-order/read-write urn:mp:instore:pos/read-write urn:mp:instore:store/read-write urn:mp:instore:terminal:actions/read-write urn:mp:instore:terminal:list/read-write urn:mp:instore:terminal:setup/read-write urn:mp:online:customer:cards/read-write urn:mp:online:customer:customer/read-write urn:mp:online:identification-types/read-only urn:mp:online:merchant-order/read-write urn:mp:online:order:payment/read-write urn:mp:online:payments:chargebacks/read-write urn:mp:online:payout/read-write urn:mp:online:preference/read-write urn:mp:online:subs-recurring:invoices/read-write urn:mp:online:subs-recurring:payment-profile/read-write urn:mp:online:subs-recurring:plan/read-write urn:mp:online:subs-recurring:pre-approval/read-write urn:mp:online:subs-recurring:subscription/read-write write",
+    "expires_at": "2027-04-21T17:49:20.787+00:00",
+    "connected_at": "2026-10-23T17:49:20.846449+00:00",
+    "generation": "c834231b-91cf-4474-9521-25a566de3901"
+  }
+}

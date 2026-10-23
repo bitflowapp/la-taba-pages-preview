@@ -1,0 +1,42 @@
+{
+  "taba2_staging": {
+    "application": "2691240967769590",
+    "grant_http": 200,
+    "grant_request_id": "b4d5b058-7ef0-4fd8-9a26-3b6813b4d2d0",
+    "owner": {
+      "http": 200,
+      "id": 721168650,
+      "site_id": "MLA",
+      "tags": [
+        "normal",
+        "messages_as_seller",
+        "user_product_seller"
+      ],
+      "test_user": false
+    }
+  },
+  "testapp_ae01fd1d": {
+    "application": "4861627125869370",
+    "grant_http": 200,
+    "grant_request_id": "3bbac77f-576f-403e-92cd-280c5302aa56",
+    "owner": {
+      "http": 200,
+      "id": 3594962708,
+      "site_id": "MLA",
+      "tags": [
+        "user_product_seller",
+        "test_user",
+        "normal"
+      ],
+      "test_user": true
+    }
+  },
+  "qa_seller": {
+    "id": 3594962708,
+    "test_user": true
+  },
+  "qa_buyer": {
+    "id": 3594962710,
+    "test_user": true
+  }
+}

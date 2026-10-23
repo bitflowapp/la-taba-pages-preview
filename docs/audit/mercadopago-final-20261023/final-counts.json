@@ -1,0 +1,10 @@
+{
+  "connections": 1,
+  "intents": 6,
+  "intentsOutsideTest": 0,
+  "receipts": 10,
+  "validReceipts": 0,
+  "outbox": 128,
+  "ordersQA": 6,
+  "historicBusinessOrders": 0
+}

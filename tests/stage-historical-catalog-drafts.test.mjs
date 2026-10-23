@@ -15,7 +15,7 @@ import { ROOT } from '../scripts/recovery/plan.mjs';
 
 const sha = text => createHash('sha256').update(text).digest('hex');
 const target = { purpose: 'la-taba-recovery-test', projectName: 'la-taba-recovery-test', environment: 'test',
-  commercialPaymentsEnabled: false, mercadoPagoApplicationId: '2691240967769590', projectRef: DRAFT_TARGET_PROJECT_REF,
+  commercialPaymentsEnabled: false, mercadoPagoApplicationId: '4861627125869370', projectRef: DRAFT_TARGET_PROJECT_REF,
   organizationId: 'tpdpuvnasszkcpdanxpk', organizationPlan: 'free', infrastructureBudgetUSD: 0, region: 'sa-east-1',
   createdAt: '2026-10-21T01:57:49.636323Z', checkoutOrigin: 'https://recovery-20261020.taba2-staging.pages.dev' };
 

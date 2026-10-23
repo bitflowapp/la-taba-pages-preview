@@ -1,0 +1,65 @@
+{
+  "consultedAt": "2026-10-23T18:35:28.651Z",
+  "source": "https://status.mercadopago.com/api/v2/incidents.json",
+  "checkoutSubmissionUtc": "2026-10-23T18:16:19.121Z",
+  "incidents": [
+    {
+      "id": "b85h1f8m5nj5",
+      "name": "ALL SITES - Delay in IPN Payments notifications",
+      "status": "resolved",
+      "shortlink": "https://stspg.io/22vx2vg0jfy8",
+      "started_at": "2026-10-23T10:19:38.552-03:00",
+      "resolved_at": "2026-10-23T10:39:38.657-03:00",
+      "components": [
+        {
+          "name": "IPN",
+          "status": "operational"
+        }
+      ],
+      "updates": [
+        {
+          "status": "resolved",
+          "created_at": "2026-10-23T10:39:38.657-03:00",
+          "display_at": "2026-10-23T10:39:38.657-03:00",
+          "body": "This incident has been resolved."
+        },
+        {
+          "status": "identified",
+          "created_at": "2026-10-23T10:19:38.659-03:00",
+          "display_at": "2026-10-23T10:19:38.659-03:00",
+          "body": "We are investigating an increase in response times for IPN Payments notifications."
+        }
+      ]
+    },
+    {
+      "id": "pgzrw2jypzky",
+      "name": "Online Payments – Checkout Pro",
+      "status": "resolved",
+      "shortlink": "https://stspg.io/p38t0jg8f7q1",
+      "started_at": "2026-10-21T22:59:32.003-03:00",
+      "resolved_at": "2026-10-21T23:19:31.946-03:00",
+      "components": [
+        {
+          "name": "Checkout Pro",
+          "status": "operational"
+        }
+      ],
+      "updates": [
+        {
+          "status": "resolved",
+          "created_at": "2026-10-21T23:19:31.946-03:00",
+          "display_at": "2026-10-21T23:19:31.946-03:00",
+          "body": "This incident has been resolved."
+        },
+        {
+          "status": "identified",
+          "created_at": "2026-10-21T22:59:32.124-03:00",
+          "display_at": "2026-10-21T22:59:32.124-03:00",
+          "body": "We are experiencing degraded performance in Checkout Pro."
+        }
+      ]
+    }
+  ],
+  "coincidentIncidentFound": false,
+  "conclusion": "Neither of the two relevant published incidents overlaps the checkout submission. The same-day IPN incident concerns delivery, not creation of a payment."
+}

@@ -219,6 +219,30 @@ test('una verificación que encuentra la autorización revocada lo dice y ofrece
   resetBusinessOperationsForTests();
 });
 
+// 2026-10-23: the QA link looked healthy while the integrator application belonged to the other environment and
+// Mercado Pago refused every payment. The owner is told, without jargon, and nothing reads «cobros funcionan».
+test('una verificación que encuentra la aplicación de otro entorno lo dice sin prometer cobros', async () => {
+  configureBusinessOperations({
+    role: 'owner',
+    mercadoPagoConnectionAction: async () => ({ ok: true, data: {
+      verification: { credentials_usable: true, online_payments_enabled: false, integrator_environment_matches: false,
+        blocking_reason: 'integrator_environment_mismatch' },
+      connection: CONNECTED,
+    } }),
+    getPaymentsActivation: async () => ({ ok: true, data: { enabled: false } }),
+    listPayments: async () => ({ ok: true, data: [] }),
+    onChange() {},
+  });
+  renderBusinessOperations('payments-setup');
+  await settle();
+  await handleBusinessOperationsAction(mpAction('verify'));
+  const html = renderBusinessOperations('payments-setup');
+  assert.match(html, /Mercado Pago rechazaría cada pago/);
+  assert.doesNotMatch(html, /los cobros online funcionan/);
+  assert.deepEqual(containsForbiddenVocabulary(visibleText(html)), []);
+  resetBusinessOperationsForTests();
+});
+
 test('los errores del servidor llegan como mensajes con qué hacer, sin jerga', () => {
   for (const code of ['BUSINESS_FORBIDDEN', 'RATE_LIMITED', 'AUTH_REQUIRED', 'SESSION_REFRESH_REQUIRED', 'SELLER_REFRESHING',
     'ORIGIN_NOT_ALLOWED', 'DISCONNECT_PENDING_OPERATIONS', 'NETWORK', 'PAYMENT_UNAVAILABLE', '', 'X']) {

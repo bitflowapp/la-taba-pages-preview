@@ -1,0 +1,80 @@
+{
+  "what": "Full refund of payment 184722117633 made by the QA seller from its own Mercado Pago account («Devolver dinero»), once",
+  "la_taba_before": {
+    "intent": {
+      "internal_status": "completed",
+      "provider_status": "approved",
+      "paid_amount": 100,
+      "refunded_amount": 0
+    },
+    "payments": [
+      {
+        "status": "approved",
+        "refunded_amount": 0
+      }
+    ],
+    "refunds": [
+      {
+        "status": "rejected",
+        "origin": "local",
+        "amount": 100,
+        "provider_refund_id": null
+      }
+    ],
+    "orders": [
+      {
+        "public_code": "LT-0087",
+        "status": "received"
+      }
+    ],
+    "stock_QA_REC_001": 19,
+    "discrepancies": 0
+  },
+  "la_taba_after": {
+    "intent": {
+      "internal_status": "refunded",
+      "provider_status": "refunded",
+      "paid_amount": 100,
+      "refunded_amount": 100
+    },
+    "payments": [
+      {
+        "status": "refunded",
+        "refunded_amount": 100
+      }
+    ],
+    "refunds": [
+      {
+        "status": "approved",
+        "origin": "external",
+        "amount": 100,
+        "provider_refund_id": "3468882144"
+      },
+      {
+        "status": "rejected",
+        "origin": "local",
+        "amount": 100,
+        "provider_refund_id": null
+      }
+    ],
+    "orders": [
+      {
+        "public_code": "LT-0087",
+        "status": "received"
+      }
+    ],
+    "stock_QA_REC_001": 19,
+    "discrepancies": 0
+  },
+  "provider_after": {
+    "status": "refunded",
+    "refunded_amount": 100,
+    "refund": {
+      "id": "3468882144",
+      "amount": 100,
+      "status": "approved"
+    }
+  },
+  "webhooks": "3 signed payment notifications processed (receipts valid, completed)",
+  "reading": "La Taba recorded the provider-side refund once as origin=external and kept the rejected local attempt as history; no duplicate, no extra stock movement, no discrepancy. The order stays «received»: a refund does not cancel it."
+}

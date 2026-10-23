@@ -1,0 +1,16 @@
+{
+  "at": "2026-10-23T18:28:13.109Z",
+  "project": "ixewllzzuzpqrkxzmfzx",
+  "repeatedExpirySweeps": [
+    {
+      "releasedSessions": 0,
+      "stock": 20
+    },
+    {
+      "releasedSessions": 0,
+      "stock": 20
+    }
+  ],
+  "stockReleasedExactlyOnce": true,
+  "limitation": "Successful-payment and refund idempotency remain unverified."
+}

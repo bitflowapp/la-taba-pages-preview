@@ -1,0 +1,36 @@
+{
+  "purpose": "Find out whether the 401 depends on the payment: refund endpoint called on a REJECTED payment, which cannot move money by construction",
+  "safety": "the tool refuses to run unless the payment is rejected or cancelled and belongs to the QA seller; fresh idempotency key; no body",
+  "at": "2026-10-23T20:44:36.746Z",
+  "application": "4861627125869370",
+  "rejected_payment": {
+    "id": "184725699779",
+    "status": "rejected",
+    "status_detail": "cc_rejected_other_reason",
+    "live_mode": true
+  },
+  "refund_on_rejected": {
+    "http": 401,
+    "requestId": "ec676b58-03a2-475e-8dc5-32aca11fde65",
+    "answer": {
+      "id": null,
+      "status": 401,
+      "message": "Unauthorized use of live credentials",
+      "error": "unauthorized",
+      "cause": [
+        {
+          "code": 7,
+          "description": "Unauthorized use of live credentials",
+          "data": "23-10-2026T20:44:37UTC;ec676b58-03a2-475e-8dc5-32aca11fde65"
+        }
+      ]
+    }
+  },
+  "read_refunds_of_approved": {
+    "http": 200,
+    "requestId": "2d454a72-f5f0-444a-8252-cb01db8fb8c7",
+    "count": 0,
+    "answer": null
+  },
+  "reading": "Same 401 cause 7 on a rejected payment: the refusal happens in the authorization layer, before the payment is looked at. A read of the refund list with the same token answers 200."
+}

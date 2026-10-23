@@ -1,0 +1,44 @@
+{
+  "scenario": "account money (buyer balance ARS 9.200), preference created with the seller OAuth grant of TABA2 Staging",
+  "preference": "3594962708-fedd9608-ee30-4839-adb5-27aaa6502c6b",
+  "pay_submitted_at": "2026-10-23T18:54:35.553Z",
+  "provider_calls_after_pay": [
+    {
+      "at": "2026-10-23T18:54:36.299Z",
+      "method": "PUT",
+      "path": "/checkout/v1/payment/api/flow/c262a58d-47da-4bdd-aad9-42a9393a789e",
+      "http": 200,
+      "requestId": "eae97262-25eb-4036-90fc-088f9ba641b5"
+    },
+    {
+      "at": "2026-10-23T18:54:37.389Z",
+      "method": "GET",
+      "path": "/checkout/v1/payment/api/reauth",
+      "http": 200,
+      "requestId": "771be33d-453c-423f-848d-00e3f4ad8cfe"
+    },
+    {
+      "at": "2026-10-23T18:54:38.143Z",
+      "method": "PUT",
+      "path": "/checkout/v1/payment/api/flow/c262a58d-47da-4bdd-aad9-42a9393a789e",
+      "http": 200,
+      "requestId": "c28fb005-f085-49b1-a81c-e9c94e7f5e7b"
+    }
+  ],
+  "final_url": "https://www.mercadopago.com.ar/checkout/v1/payment/redirect/c262a58d-47da-4bdd-aad9-42a9393a789e/error/",
+  "la_taba": {
+    "session": {
+      "status": "expired",
+      "completed_order_id": null
+    },
+    "payments": 0,
+    "orders": 0,
+    "reservations": [
+      {
+        "status": "released",
+        "released_at": "2026-10-23T19:09:00.300945+00:00"
+      }
+    ]
+  },
+  "provider_payments_for_reference": 0
+}

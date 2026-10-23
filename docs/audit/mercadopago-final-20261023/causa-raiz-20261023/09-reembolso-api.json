@@ -1,0 +1,51 @@
+{
+  "la_taba_refund": {
+    "first": {
+      "status": 409,
+      "body": {
+        "ok": false,
+        "code": "REFUND_REJECTED",
+        "message": "Mercado Pago no pudo aceptar el reembolso solicitado."
+      }
+    },
+    "repeat": {
+      "status": 409,
+      "body": {
+        "ok": false,
+        "status": "rejected",
+        "message": "Mercado Pago rechazó el reembolso solicitado."
+      }
+    }
+  },
+  "provider_replay_same_idempotency_key": {
+    "http": 401,
+    "requestId": "1f619ac9-66fb-446e-9739-3cad2740969a",
+    "provider": {
+      "id": null,
+      "status": 401,
+      "amount": null,
+      "message": "Unauthorized use of live credentials",
+      "error": "unauthorized",
+      "cause": [
+        {
+          "code": 7,
+          "description": "Unauthorized use of live credentials",
+          "data": "23-10-2026T19:58:57UTC;1f619ac9-66fb-446e-9739-3cad2740969a"
+        }
+      ]
+    }
+  },
+  "scopes": {
+    "testapp_ae01fd1d_grant": [
+      "urn:mp:online:payments/read-only",
+      "urn:mp:online:payments:refunds/read-only",
+      "urn:mp:online:payments:cancel/read-only",
+      "urn:mp:online:preference/read-write"
+    ],
+    "taba2_staging_application": [
+      "payments",
+      "urn:mp:online:payments:chargebacks/read-write"
+    ]
+  },
+  "september_2026_09_25": "the direct test credential of the same TestApp got the same 401 on refunds"
+}

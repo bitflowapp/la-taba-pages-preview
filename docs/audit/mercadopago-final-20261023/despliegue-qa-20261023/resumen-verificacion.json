@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-23",
+  "project": "ixewllzzuzpqrkxzmfzx",
+  "environment": "test",
+  "commit": "2d544a32ef77dc235e1cd296407eb7ae244b54fe",
+  "migration": { "version": "20261023210000", "sha256": "060a38777edef050d033b8ada71832587ea231bd89564530a80998ef52a09df2", "ledgerBefore": 170, "ledgerAfter": 171 },
+  "worker": { "name": "mercadopago-payment-worker", "versionDeployed": 14, "verifyJwt": false },
+  "backup": {
+    "format": "pg_dump-custom, AES-256-GCM, TLS verify-full",
+    "capturedAt": "2026-10-23T22:44:16.087Z",
+    "plaintextSha256": "eb05a58989d9f745a744d3f109651754971f56f8fa06a7f63002c6bbb8241b28",
+    "encryptedSha256": "900ac8338507d6c0488273763a7967a995eb4c2163fa141ef611b7b88d2562ba",
+    "encryptedBytes": 4099454,
+    "encryptionRoundtripVerified": true,
+    "rolesBackupEncryptedSha256": "51f59982c6fbca5240800fe7e8f7e76727146b6860621305fb4d8ceafa08bcbe",
+    "baseline": { "auth_users": 8, "products": 3, "orders": 7, "storage_objects": 0, "migration_versions": 170 }
+  },
+  "restoreRehearsal": {
+    "database": "taba_restore_20261023_e9ba39c2",
+    "restoreId": "b1285446-af00-40fb-be6d-c96aa2ede954",
+    "applicationChecksAgainstArchive": { "tables": true, "rls": true, "policies": true, "table_acl": true, "functions": true, "publication": true },
+    "tablesChecked": 154, "policiesChecked": 74, "functionsChecked": 503,
+    "liveSourceMatchesRestored": false,
+    "liveDriftExplained": "Only public.operational_sweep_runs (+3 rows) and public.operational_alerts (rows touched) differ: live pg_cron sweeps ran in the ~3 minutes between the backup and the comparison. Schema, RLS, policies, ACL, functions and publication were identical to live.",
+    "fullManagedPlatformRestorePassed": false
+  },
+  "rehearsal": { "script": "scripts/recovery/rehearse-migration.mjs", "result": "passed_and_rolled_back" },
+  "schedulers": {
+    "activeBefore": ["taba-checkout-expiry-sweep", "taba-checkout-provider-truth-sweep", "taba-operational-alerts-sweep", "taba-payment-outbox-worker", "taba-qa-window-expiry"],
+    "inactiveBefore": ["taba-security-retention-sweep"],
+    "pausedByMigrationFrom": "2026-10-23T22:48:41Z",
+    "reenabledAt": "2026-10-23T23:04Z",
+    "activeAfter": ["taba-checkout-expiry-sweep", "taba-checkout-provider-truth-sweep", "taba-operational-alerts-sweep", "taba-payment-outbox-worker", "taba-qa-window-expiry"]
+  },
+  "verification": {
+    "functionGates": { "functionsActive": 13, "workerUnsigned": 401, "workerWrongSignature": 401, "passed": true },
+    "tenantIsolation": { "checks": 28, "passed": 28, "realSessions": true },
+    "hostedSqlSuites": {
+      "mercadopago_checkout_pro.local.sql": "pass",
+      "mercadopago_seller_oauth.local.sql": "pass (15)",
+      "mercadopago_availability_requires_seller.local.sql": "pass (9)",
+      "mercadopago_seller_cannot_charge_alert.local.sql": "pass (9)",
+      "mercadopago_safe_disconnect.local.sql": "pass (18)",
+      "mercadopago_operator_switch.local.sql": "fails as shipped (23505: fixed seller_id 3594962708 is now a real connected QA seller); pass 16/16 with that seller moved aside inside the suite's own rolled-back transaction"
+    },
+    "dbScenariosOnQa": {
+      "method": "the repository's own scenario files (tests/db), unchanged, with the executor replaced so each scenario runs on the QA project inside a transaction that always rolls back",
+      "review-fixes": "11/11",
+      "forensic-26-scenarios": "26/26",
+      "p0-money-safety": "19/19",
+      "p1-reconciliation": "25/25",
+      "cash-commercial-circuit": "2/2",
+      "totalPassed": 83,
+      "notApplicableOnQa": "p2-worker-dispatch-and-health (assumes a database without Vault and without connected sellers; QA has both). Its subject is covered by the two drills below.",
+      "adjustments": "forensic F08 and the ledger-sweep cases call globally scoped functions that also pick up real QA tenants (4 due probes, one real ledger window); they were run after draining that ambient work inside the scenario transaction. Case 21 passes only without that draining (the extra jobs queue ahead of the fixture job)."
+    },
+    "drills": {
+      "recovery": "approved-not-finalized purchase became ONE order by the cron sweep; stock 10 -> 8 once; reservation converted; failed job retried with backoff; synthetic rows removed",
+      "lateChanges": "pending payment with its own schedule became due; unreadable pending payment became ONE visible finding + CRITICAL alert, no reads enqueued without a seller; dead-worker job reaped to retry_wait with backoff; synthetic rows removed"
+    },
+    "reconciliation": {
+      "orders": 7, "ordersPerIntentGt1": 0, "negativeStock": 0, "refundedGtPaid": 0, "approvedWithoutOrder": 0,
+      "deadLetterJobs": 0, "openDiscrepancies": 0, "syntheticLeftovers": 0,
+      "openAlerts": "CHECKOUT_PROVIDER_UNVERIFIED x4 (CRITICAL) and ORDER_NOT_ACCEPTED x1: identical in the pre-migration restored copy, open since 17:53 / 19:56 UTC today"
+    }
+  },
+  "noProduction": true,
+  "noRealPayments": true
+}

@@ -1,0 +1,119 @@
+{
+  "checkout": {
+    "scenario": "APRO",
+    "session_http": 200,
+    "preference_http": 200,
+    "checkout_session_id": "4ce8e2aa-815a-4b87-924d-aab336067a52",
+    "total": 100,
+    "currency": "ARS",
+    "expires_at": "2026-10-23T19:58:16.565843+00:00"
+  },
+  "provider": [
+    {
+      "id": "184722117633",
+      "status": "approved",
+      "status_detail": "accredited",
+      "amount": 100,
+      "currency": "ARS",
+      "collector_id": "3594962708",
+      "payer_id": "3594962710",
+      "live_mode": true,
+      "external_reference": "taba2:checkout:4ce8e2aa-815a-4b87-924d-aab336067a52",
+      "preference_id": null,
+      "refunded_amount": 0,
+      "refunds": [],
+      "date_created": "2026-10-23T15:44:56.000-04:00",
+      "date_approved": "2026-10-23T15:44:57.000-04:00",
+      "payment_method_id": "master"
+    }
+  ],
+  "la_taba": {
+    "session": {
+      "status": "completed",
+      "total": 100,
+      "completed_order_id": "6ae3a26b-6c13-458f-901e-aa321da8f3bc"
+    },
+    "intent": {
+      "internal_status": "completed",
+      "provider_status": "approved",
+      "provider_payment_id": "184722117633",
+      "expected_amount": 100,
+      "paid_amount": 100,
+      "order_id": "6ae3a26b-6c13-458f-901e-aa321da8f3bc",
+      "security_review_reason": null,
+      "live_mode": true
+    },
+    "orders": [
+      {
+        "public_code": "LT-0087",
+        "status": "received",
+        "payment_method": "mercadopago",
+        "total": 100
+      }
+    ],
+    "receipts": [
+      {
+        "event_type": "payment",
+        "signature_valid": true,
+        "processing_status": "completed"
+      }
+    ],
+    "reservations": [
+      {
+        "status": "converted",
+        "converted_at": "2026-10-23T19:45:06.252249+00:00",
+        "released_at": null
+      }
+    ],
+    "stock": [
+      {
+        "sku": "QA-REC-001",
+        "stock": 19
+      }
+    ],
+    "discrepancies": [],
+    "ledger": [
+      {
+        "environment": "test",
+        "watermark_at": "2026-10-23T19:46:03.823+00:00",
+        "window_begin": null,
+        "window_end": null,
+        "next_offset": 0
+      }
+    ]
+  },
+  "worker_passes": [
+    {
+      "httpStatus": 200,
+      "claimed": 1,
+      "completed": 1,
+      "retried": 0
+    },
+    {
+      "httpStatus": 200,
+      "claimed": 0,
+      "completed": 0,
+      "retried": 0
+    }
+  ],
+  "counts_before": {
+    "connections": 1,
+    "intents": 7,
+    "intentsOutsideTest": 0,
+    "receipts": 10,
+    "validReceipts": 0,
+    "outbox": 156,
+    "ordersQA": 6,
+    "historicBusinessOrders": 0
+  },
+  "counts_after": {
+    "connections": 1,
+    "intents": 8,
+    "intentsOutsideTest": 0,
+    "receipts": 17,
+    "validReceipts": 1,
+    "outbox": 159,
+    "ordersQA": 7,
+    "historicBusinessOrders": 0
+  }
+}

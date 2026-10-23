@@ -1,0 +1,30 @@
+{
+  "project": "ixewllzzuzpqrkxzmfzx",
+  "source": "Supabase query_logs function_edge_logs",
+  "creationWindowUtc": {
+    "start": "2026-10-23T18:11:55Z",
+    "end": "2026-10-23T18:12:02Z"
+  },
+  "failureWindowUtc": {
+    "start": "2026-10-23T18:16:19Z",
+    "end": "2026-10-23T18:16:34Z"
+  },
+  "rows": [
+    {
+      "execution_id": "b8a42431-f9fa-455b-90fc-4a36ddd652f5",
+      "http_status": "200",
+      "path": "/functions/v1/mercadopago-create-checkout-session",
+      "request_id": "01a169f6-5e25-7465-a0f2-363423a50514",
+      "timestamp": "2026-10-23T18:11:57.049000"
+    },
+    {
+      "execution_id": "6effd37d-f27f-4471-8aeb-a65df97c25b2",
+      "http_status": "200",
+      "path": "/functions/v1/mercadopago-create-preference",
+      "request_id": "01a169f6-6240-7dcd-b7e3-3bc91b5e13ec",
+      "timestamp": "2026-10-23T18:11:58.978000"
+    }
+  ],
+  "failureWindowRows": [],
+  "limitation": "No La Taba Edge invocation in the observed error window. This excludes an observed local Edge error in that window, not all possible preference/application restrictions."
+}

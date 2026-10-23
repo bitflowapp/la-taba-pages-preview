@@ -164,6 +164,17 @@ export class OAuthProviderError extends Error {
     super("OAuth provider unavailable");
   }
 }
+// `test_token: true` asks Mercado Pago for legacy sandbox credentials (TEST-).
+// A preference created with one is redirected to sandbox.mercadopago.com.ar,
+// whose checkout ends every card payment in «Oh, no, algo anduvo mal»
+// (card-form/association 404; flows 4c4a42bf… and 22d28891…, WCS-51579), while
+// the same buyer approves on www with an APP_USR credential. Checkout Pro is
+// tested with the APP_USR credentials of a test seller: the test environment
+// is guaranteed by the seller's `test_user` tag (sellerIdentity), never by the
+// token type.
+export function isSandboxAccessToken(token: unknown): boolean {
+  return !String(token ?? "").startsWith("APP_USR-");
+}
 export async function tokenGrant(
   fields: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {
@@ -176,7 +187,6 @@ export async function tokenGrant(
       ...fields,
       client_id: c.clientId,
       client_secret: getRequiredEnv("MERCADOPAGO_CLIENT_SECRET"),
-      test_token: c.environment === "test",
     }),
   });
   const body = await response.json().catch(() => ({}));
@@ -190,7 +200,8 @@ export async function tokenGrant(
     !body.access_token || !body.refresh_token || !body.user_id ||
     !Number.isFinite(body.expires_in) || body.expires_in <= 0 ||
     !String(body.scope).split(" ").includes("offline_access") ||
-    (body.live_mode === true) !== (c.environment === "production")
+    isSandboxAccessToken(body.access_token) ||
+    (c.environment === "production" && body.live_mode !== true)
   ) throw new Error("Invalid OAuth token response");
   return body;
 }
@@ -208,6 +219,118 @@ export async function sellerIdentity(accessToken: string, sellerId: string) {
     throw new Error("Seller account environment mismatch");
   }
   return { seller_id: sellerId, label: sellerAccountLabel(body) };
+}
+// Every OAuth payment is a marketplace payment: the preference carries
+// `marketplace: MP-MKT-<client_id>`, so the OWNER of the integrator application
+// is one of the users of the payment, next to the seller and the buyer. Mercado
+// Pago never mixes test and real users in one payment: the Payments API answers
+// `400 Invalid users involved` (cause 2034) and Checkout Pro only shows «Oh, no,
+// algo anduvo mal» after «Pagar», with a card or with account money, and creates
+// no payment. Measured 2026-10-23: application 2691240967769590 belongs to the
+// real account 721168650 while seller 3594962708 and buyer 3594962710 are test
+// users; the same seller and buyer approve without a marketplace (payment
+// 179851082485). The owner is read with the application's own client
+// credentials: a test user in test, a real account in production.
+export class IntegratorEnvironmentError extends Error {
+  constructor() {
+    super("Integrator account environment mismatch");
+  }
+}
+const INTEGRATOR_IDENTITY_TTL_MS = 6 * 3600_000;
+let integratorIdentityCache: { key: string; ownerId: string; at: number } | null = null;
+// Concurrent callers of one isolate share a single provider read (a sale calls two functions back to back).
+let integratorInflight: { key: string; promise: Promise<{ owner_id: string }> } | null = null;
+export function resetIntegratorIdentityCache() {
+  integratorIdentityCache = null;
+  integratorInflight = null;
+}
+async function readIntegratorOwner(clientId: string, environment: string, key: string): Promise<{ owner_id: string }> {
+  const grant = await fetch("https://api.mercadopago.com/oauth/token", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    signal: AbortSignal.timeout(8000),
+    body: JSON.stringify({
+      grant_type: "client_credentials",
+      client_id: clientId,
+      client_secret: getRequiredEnv("MERCADOPAGO_CLIENT_SECRET"),
+    }),
+  });
+  const tokens = await grant.json().catch(() => ({}));
+  // Only what the check needs: the answer's other fields are not part of a documented contract.
+  if (!grant.ok || typeof tokens.access_token !== "string" || !tokens.access_token) {
+    throw new OAuthProviderError(grant.status || 502, false);
+  }
+  const response = await fetch("https://api.mercadopago.com/users/me", {
+    headers: { Authorization: `Bearer ${tokens.access_token}` },
+    signal: AbortSignal.timeout(8000),
+  });
+  const owner = await response.json().catch(() => ({}));
+  if (!response.ok) throw new OAuthProviderError(response.status, false);
+  // The grant's user_id, when the provider returns it, must be the owner we just read.
+  if (owner.id === undefined || owner.id === null || !Array.isArray(owner.tags) ||
+    (tokens.user_id !== undefined && String(owner.id) !== String(tokens.user_id))) {
+    throw new Error("Integrator identity unavailable");
+  }
+  if (owner.tags.includes("test_user") !== (environment === "test")) {
+    throw new IntegratorEnvironmentError();
+  }
+  integratorIdentityCache = { key, ownerId: String(owner.id), at: Date.now() };
+  return { owner_id: String(owner.id) };
+}
+export async function assertIntegratorEnvironment(): Promise<{ owner_id: string }> {
+  const c = oauthConfig();
+  const key = `${c.clientId}:${c.environment}`;
+  // Only a verified match is remembered; a mismatch or an unreadable answer is asked again every time.
+  if (integratorIdentityCache?.key === key && Date.now() - integratorIdentityCache.at < INTEGRATOR_IDENTITY_TTL_MS) {
+    return { owner_id: integratorIdentityCache.ownerId };
+  }
+  if (integratorInflight?.key === key) return integratorInflight.promise;
+  const entry: { key: string; promise: Promise<{ owner_id: string }> | null } = { key, promise: null };
+  entry.promise = (async () => {
+    try {
+      return await readIntegratorOwner(c.clientId, c.environment, key);
+    } finally {
+      if (integratorInflight === entry) integratorInflight = null;
+    }
+  })();
+  integratorInflight = entry as { key: string; promise: Promise<{ owner_id: string }> };
+  return entry.promise;
+}
+// Setting a link up (operator action): a mismatch is told before the seller consents at Mercado Pago, and an
+// unreadable owner is a retry, never a silent pass.
+export async function assertIntegratorForConnection(): Promise<void> {
+  try {
+    await assertIntegratorEnvironment();
+  } catch (error) {
+    if (error instanceof IntegratorEnvironmentError) {
+      throw new PublicPaymentError(
+        409,
+        "INTEGRATOR_ENVIRONMENT_MISMATCH",
+        "La aplicación de pagos de La Taba pertenece a otro entorno (prueba o real). Lo resuelve soporte; no hace falta volver a intentar.",
+      );
+    }
+    throw new PublicPaymentError(503, "SELLER_VERIFICATION_UNAVAILABLE", "No pudimos verificar Mercado Pago. Intentá nuevamente.");
+  }
+}
+// The same rule on the SALES path: a checkout the provider can never pay is not offered, so no stock is reserved and no
+// preference is created. A confirmed mismatch always blocks. An owner that cannot be read right now blocks in test
+// (a configuration problem to see) but NOT in production: a wrong integrator cannot move money (Mercado Pago refuses
+// the payment, 2034), so a transient provider hiccup must not stop real sales; it is logged and the next request asks again.
+export async function assertPayableIntegrator(): Promise<void> {
+  const config = oauthConfig(); // a missing or inconsistent configuration is never «unreadable»: it fails closed
+  getRequiredEnv("MERCADOPAGO_CLIENT_SECRET");
+  try {
+    await assertIntegratorEnvironment();
+  } catch (error) {
+    if (error instanceof IntegratorEnvironmentError) {
+      throw new PublicPaymentError(409, "PAYMENTS_NOT_ENABLED", "Mercado Pago no está disponible para este comercio en este momento.");
+    }
+    if (config.environment === "production") {
+      console.warn(JSON.stringify({ timestamp: new Date().toISOString(), event: "integrator_owner_unreadable", environment: "production" }));
+      return;
+    }
+    throw new PublicPaymentError(503, "SELLER_VERIFICATION_UNAVAILABLE", "No pudimos verificar Mercado Pago. Intentá nuevamente.");
+  }
 }
 export async function connection(businessId: string) {
   assertOAuthBusiness(businessId);
@@ -248,9 +371,19 @@ export async function sellerAccessToken(businessId: string): Promise<string> {
   if (
     Date.parse(row.expires_at) > Date.now() + 86400000 && !row.refresh_owner
   ) {
-    return String(
+    const stored = String(
       (await reveal(row.protected_tokens, businessId)).access_token,
     );
+    // A grant obtained with `test_token` before this check can only produce
+    // checkouts that fail at the provider: the seller has to connect again.
+    if (isSandboxAccessToken(stored)) {
+      throw new PublicPaymentError(
+        409,
+        "SELLER_REAUTHORIZATION_REQUIRED",
+        "Necesitamos volver a conectar Mercado Pago.",
+      );
+    }
+    return stored;
   }
   const owner = crypto.randomUUID();
   const claim = await service.rpc("mp_claim_refresh", {
@@ -418,6 +551,7 @@ export async function beginSellerPaymentAuthority(businessId: string, context: P
   if (!oauthMode()) throw new Error("Seller OAuth mode required");
   const config = oauthConfig();
   requireRealPaymentSmokeAuthorization(environment);
+  await assertPayableIntegrator();
   await sellerAccessToken(businessId);
   const snapshot = await paymentAuthoritySnapshot(businessId, environment, context);
   const seller = validatePaymentAuthority(snapshot, businessId, environment, config.clientId, context, false);

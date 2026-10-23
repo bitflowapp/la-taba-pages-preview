@@ -26,8 +26,11 @@ export function evaluatePaymentConfiguration(target, inventory) {
 export async function inspectPaymentReadiness(target) {
   return withRecoveryProject(target, async ({ request, query }) => {
     const configuration = evaluatePaymentConfiguration(target, await request('/secrets'));
+    // Checkout Pro payments between test users report live_mode=true (payment 179851082485): the environment, bound
+    // to a `test_user` seller, is what proves no real money moved, not that flag.
     const [database] = await query(`select
-      (select count(*) from public.payment_intents where environment <> 'test' or live_mode is true)::int non_test_intents,
+      (select count(*) from public.payment_intents where environment <> 'test')::int non_test_intents,
+      (select count(*) from public.payment_intents where environment = 'test' and live_mode is true)::int test_intents_with_live_mode,
       (select count(*) from public.business_payment_settings where enabled and environment <> 'test')::int non_test_settings,
       (select count(*) from public.mp_seller_connections where environment <> 'test')::int non_test_connections,
       (select count(*) from private.la_taba_recovery_source_rows where source_table='products')::int preserved_products,

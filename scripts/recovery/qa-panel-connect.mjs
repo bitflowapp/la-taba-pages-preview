@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import { chromium } from '@playwright/test';
 import { leerSecreto } from '../e2e-production-sale/secretos-windows.mjs';
 import { passPreviewGate } from './preview-gate-login.mjs';
+import { RECOVERY_TEST_APPLICATION_ID } from './plan.mjs';
 
 const arg = (name, fallback) => { const i = process.argv.indexOf(name); return i < 0 ? fallback : process.argv[i + 1]; };
 const origin = new URL(arg('--origin', 'https://recovery-20261020.taba2-staging.pages.dev')).origin;
@@ -63,7 +64,7 @@ try {
     const parsed = authorizationUrl ? new URL(authorizationUrl) : null;
     step('the panel button produced the official authorization URL',
       parsed?.pathname === '/authorization' && parsed.searchParams.get('code_challenge_method') === 'S256'
-        && parsed.searchParams.get('client_id') === '2691240967769590', parsed?.origin || 'none');
+        && parsed.searchParams.get('client_id') === RECOVERY_TEST_APPLICATION_ID, parsed?.origin || 'none');
   }
   step('no browser dialogs', dialogs.length === 0, dialogs.join(',') || '');
   const result = { at: new Date().toISOString(), origin, width, state, environment, cardText: text, steps,

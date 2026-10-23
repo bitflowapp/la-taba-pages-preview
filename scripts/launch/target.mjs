@@ -1,5 +1,8 @@
 // A separate paid-launch receipt is required. The Free recovery contract stays
 // intact, and this path authorizes only a new project running test payments.
+// Test payments go through the test-owned integrator, as in the Free recovery project (see plan.mjs).
+import { RECOVERY_TEST_APPLICATION_ID } from '../recovery/plan.mjs';
+
 export const LAUNCH_ORGANIZATION_ID = 'qdhfqytbvgpvhxbbcomv';
 export const LAUNCH_PURPOSE = 'la-taba-launch-verification';
 
@@ -20,7 +23,7 @@ export function assertLaunchTarget(target) {
   if (target.projectName !== 'la-taba-launch' || target.organizationId !== LAUNCH_ORGANIZATION_ID ||
     target.organizationPlan !== 'pro' || target.infrastructureBudgetUSD !== 10 ||
     target.environment !== 'test' || target.commercialPaymentsEnabled !== false ||
-    target.mercadoPagoApplicationId !== '2691240967769590' || target.region !== 'sa-east-1' ||
+    target.mercadoPagoApplicationId !== RECOVERY_TEST_APPLICATION_ID || target.region !== 'sa-east-1' ||
     !Number.isFinite(Date.parse(target.createdAt)) ||
     Date.parse(target.createdAt) < Date.parse(target.costApproval.approvedAt)) {
     throw new Error('New paid verification target must match the approved launch receipt');

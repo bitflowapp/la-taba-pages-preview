@@ -9,6 +9,7 @@ import {
   requireAuthenticatedUser,
   requirePost,
 } from '../_shared/payment-runtime.ts';
+import { assertPayableIntegrator } from '../_shared/seller-oauth.ts';
 
 Deno.serve(async (request) => {
   const preflight = handleOptions(request);
@@ -37,6 +38,9 @@ Deno.serve(async (request) => {
           message: 'Mercado Pago no está disponible para este comercio en este momento.',
         }, 409);
       }
+      // Hosted deployments charge through the integrator application: one of the other environment makes every
+      // payment fail at the provider (2034 Invalid users involved), so the stock is not taken either.
+      if (Deno.env.get('MERCADOPAGO_CREDENTIAL_MODE')?.trim() === 'oauth') await assertPayableIntegrator();
     }
 
     // The database function whitelists this payload again and calculates all

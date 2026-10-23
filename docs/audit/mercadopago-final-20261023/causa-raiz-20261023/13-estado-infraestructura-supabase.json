@@ -1,0 +1,32 @@
+{
+  "observed_at": "2026-10-23T21:00:36.450Z",
+  "source": "Supabase Management API, GET /v1/projects (metadata only)",
+  "la_taba_projects": [
+    {
+      "name": "la-taba-recovery-test",
+      "ref": "ixewllzzuzpqrkxzmfzx",
+      "status": "ACTIVE_HEALTHY",
+      "region": "sa-east-1",
+      "org": "La Taba",
+      "created": "2026-10-21"
+    }
+  ],
+  "other_projects_on_the_account": [
+    {
+      "name": "bitflow-production",
+      "org": "Luna Systems",
+      "status": "ACTIVE_HEALTHY"
+    },
+    {
+      "name": "apex-agent-demo-sintetico",
+      "org": "APEX Agent Sintetico",
+      "status": "ACTIVE_HEALTHY"
+    },
+    {
+      "name": "estela-pilot",
+      "org": "Estela",
+      "status": "INACTIVE"
+    }
+  ],
+  "conclusion": "No production project of La Taba exists. The only La Taba project is the Free QA/recovery one."
+}

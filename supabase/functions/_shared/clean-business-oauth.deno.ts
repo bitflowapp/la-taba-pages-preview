@@ -99,36 +99,72 @@ Deno.test('clean business callback, replay and tenant routing (staging test)', a
 
 // 2026-10-23: QA linked test seller 3594962708 through application 2691240967769590, which belongs to the real
 // account 721168650. The link looked healthy, and every payment failed at the provider (2034 Invalid users involved).
-Deno.test('a seller is never linked under an integrator application of the other environment', async () => {
-  configure();
-  let state: Record<string,unknown> | null = null, linked = 0, codeExchanges = 0;
+function integratorHarness(ownerIsTestUser: () => boolean) {
+  let state: Record<string,unknown> | null = null;
+  const counts = { begin: 0, linked: 0, codeExchanges: 0 };
   const original = globalThis.fetch;
   globalThis.fetch = async (input, options) => {
     const url = new URL(String(input)), init = options as RequestInit;
-    const integrator = integratorProviderResponse(input, init, false); // a REAL owner in the test environment
+    const integrator = integratorProviderResponse(input, init, ownerIsTestUser());
     if (integrator) return integrator;
     const body = init?.body ? JSON.parse(String(init.body)) : {};
     if(url.pathname==='/auth/v1/user') return Response.json({id:owner,aud:'authenticated'});
     if(url.pathname.endsWith('/mp_connection_authorized')) return Response.json(true);
     if(url.pathname.endsWith('/consume_payment_rate_limit')) return Response.json({allowed:true});
     if(url.pathname.endsWith('/mp_begin_oauth')) {
+      counts.begin++;
       state={...body,business_id:body.p_business_id,user_id:body.p_user_id,generation:'generation',protected_verifier:body.p_protected_verifier};
       return Response.json('generation');
     }
     if(url.pathname.endsWith('/mp_consume_oauth')) {const consumed=state;state=null;return Response.json(consumed?[consumed]:[]);}
-    if(url.pathname.endsWith('/mp_finish_oauth')) {linked++;return Response.json(true);}
+    if(url.pathname.endsWith('/mp_finish_oauth')) {counts.linked++;return Response.json(true);}
     if(url.pathname.endsWith('/mp_seller_connections')) return Response.json(null);
-    if(url.pathname==='/oauth/token') {codeExchanges++;return Response.json({message:'must not be called'},{status:500});}
+    if(url.pathname==='/oauth/token') {counts.codeExchanges++;return Response.json({message:'must not be called'},{status:500});}
     throw Error('Unexpected request in integrator environment test: '+url.pathname);
   };
+  const payload = btoa(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 }));
+  const headers={authorization:`Bearer fixture.${payload}.fixture`,'content-type':'application/json'};
+  const start = () => connect(new Request(base+'/functions/v1/mercadopago-connect',{method:'POST',headers,body:JSON.stringify({business_id:business,action:'connect'})}));
+  return { counts, start, restore: () => { globalThis.fetch = original; Deno.env.delete('MERCADOPAGO_OAUTH_ENVIRONMENT'); Deno.env.delete('MERCADOPAGO_CREDENTIAL_MODE'); } };
+}
+
+Deno.test('connecting is refused BEFORE the seller consents when the integrator belongs to the other environment', async () => {
+  configure();
+  const h = integratorHarness(() => false); // a REAL owner in the test environment
   try {
-    const payload = btoa(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 }));
-    const headers={authorization:`Bearer fixture.${payload}.fixture`,'content-type':'application/json'};
-    const started=await connect(new Request(base+'/functions/v1/mercadopago-connect',{method:'POST',headers,body:JSON.stringify({business_id:business,action:'connect'})}));
+    const started = await h.start();
+    assertEquals(started.status, 409);
+    assertEquals((await started.json()).code, 'INTEGRATOR_ENVIRONMENT_MISMATCH');
+    assertEquals(h.counts.begin, 0, 'no authorization state is created, so no URL can be opened');
+  } finally { h.restore(); }
+});
+
+Deno.test('an unreadable integrator owner makes connecting a retry, never a silent pass', async () => {
+  configure();
+  const h = integratorHarness(() => true);
+  const original = globalThis.fetch;
+  globalThis.fetch = (input, init) => new URL(String(input)).pathname === '/oauth/token' && JSON.parse(String((init as { body?: unknown } | undefined)?.body ?? '{}')).grant_type === 'client_credentials'
+    ? Promise.resolve(Response.json({ message: 'down' }, { status: 503 })) : original(input, init);
+  try {
+    const started = await h.start();
+    assertEquals(started.status, 503);
+    assertEquals((await started.json()).code, 'SELLER_VERIFICATION_UNAVAILABLE');
+    assertEquals(h.counts.begin, 0);
+  } finally { globalThis.fetch = original; h.restore(); }
+});
+
+Deno.test('the callback also refuses to link when the integrator changed after the link was started', async () => {
+  configure();
+  let ownerIsTestUser = true;
+  const h = integratorHarness(() => ownerIsTestUser);
+  try {
+    const started = await h.start();
+    assertEquals(started.status, 200);
     const auth=new URL((await started.json()).authorization_url);
+    ownerIsTestUser = false; resetIntegratorIdentityCache();
     const completed=await callback(new Request(base+'/functions/v1/mercadopago-oauth-callback?state='+auth.searchParams.get('state')+'&code=fixture-code'));
     assertEquals(new URL(completed.headers.get('location')!).searchParams.get('mp_connection'),'error');
-    assertEquals(linked,0,'no link is saved');
-    assertEquals(codeExchanges,0,'the authorization code is not even exchanged');
-  } finally {globalThis.fetch=original;Deno.env.delete('MERCADOPAGO_OAUTH_ENVIRONMENT');Deno.env.delete('MERCADOPAGO_CREDENTIAL_MODE');}
+    assertEquals(h.counts.linked,0,'no link is saved');
+    assertEquals(h.counts.codeExchanges,0,'the authorization code is not even exchanged');
+  } finally { h.restore(); }
 });

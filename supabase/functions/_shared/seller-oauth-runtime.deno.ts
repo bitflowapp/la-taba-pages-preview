@@ -1,6 +1,7 @@
 import { assertEquals, assertRejects } from "jsr:@std/assert@1.0.19";
 import {
   assertIntegratorEnvironment,
+  assertPayableIntegrator,
   connection,
   IntegratorEnvironmentError,
   invalidateRejectedToken,
@@ -545,4 +546,128 @@ Deno.test("only a verified integrator is remembered; a mismatch or an unreadable
     configure();
     resetIntegratorIdentityCache();
   }
+});
+
+const PRODUCTION_ENV = {
+  MERCADOPAGO_CREDENTIAL_MODE: "oauth", SUPABASE_URL: "https://tkanbadcglszlcyfjvpv.supabase.co",
+  MERCADOPAGO_OAUTH_PROJECT_REF: "tkanbadcglszlcyfjvpv", TABA_DEPLOYMENT_ENV: "production",
+  MERCADOPAGO_ENVIRONMENT: "production", MERCADOPAGO_OAUTH_ENVIRONMENT: "production",
+  MERCADOPAGO_PRODUCTION_REVIEW_STATUS: "approved", MERCADOPAGO_CLIENT_ID: "7677852968049976",
+  MERCADOPAGO_OAUTH_PANEL_URL: "https://la-taba-commercial-pilot.pages.dev/",
+  TABA_CHECKOUT_BASE_URL: "https://la-taba-commercial-pilot.pages.dev",
+  TABA_ALLOWED_ORIGINS: "https://la-taba-commercial-pilot.pages.dev",
+};
+function useProduction() {
+  configure();
+  for (const [name, value] of Object.entries(PRODUCTION_ENV)) Deno.env.set(name, value);
+  resetIntegratorIdentityCache();
+}
+function endProduction() {
+  Deno.env.delete("MERCADOPAGO_PRODUCTION_REVIEW_STATUS");
+  configure();
+  resetIntegratorIdentityCache();
+}
+// Production keeps its own contract: a seller grant must be live. The sandbox check does not stand in for it.
+Deno.test("production OAuth demands live_mode=true while test OAuth does not", async () => {
+  const original = globalThis.fetch;
+  const answer = (live: boolean) => () => Promise.resolve(Response.json({ ...tokens, live_mode: live }));
+  try {
+    useProduction();
+    globalThis.fetch = answer(false) as typeof fetch;
+    await assertRejects(() => tokenGrant({ grant_type: "authorization_code", code: "fixture" }));
+    globalThis.fetch = answer(true) as typeof fetch;
+    assertEquals((await tokenGrant({ grant_type: "authorization_code", code: "fixture" })).user_id, 123);
+    configure();
+    globalThis.fetch = answer(false) as typeof fetch;
+    assertEquals((await tokenGrant({ grant_type: "authorization_code", code: "fixture" })).user_id, 123);
+  } finally { globalThis.fetch = original; endProduction(); }
+});
+// Only what the check needs is required of the provider's answer: its other fields are not a documented contract.
+Deno.test("the integrator check does not depend on undocumented fields of the provider's answer", async () => {
+  const original = globalThis.fetch;
+  try {
+    configure();
+    globalThis.fetch = ((input: unknown, init?: RequestInit) => {
+      const url = new URL(String(input));
+      if (url.pathname === "/oauth/token") return Promise.resolve(Response.json({ access_token: INTEGRATOR_OWNER_TOKEN })); // no user_id
+      assertEquals(new Headers(init?.headers).get("authorization"), `Bearer ${INTEGRATOR_OWNER_TOKEN}`);
+      return Promise.resolve(Response.json({ id: 721168650, site_id: "MLB", tags: ["test_user"] })); // another site is not the check's business
+    }) as typeof fetch;
+    assertEquals(await assertIntegratorEnvironment(), { owner_id: "721168650" });
+    // When the provider does return the grant's user_id, it must be the owner that was read.
+    resetIntegratorIdentityCache();
+    globalThis.fetch = ((input: unknown) => new URL(String(input)).pathname === "/oauth/token"
+      ? Promise.resolve(Response.json({ access_token: INTEGRATOR_OWNER_TOKEN, user_id: 1 }))
+      : Promise.resolve(Response.json({ id: 2, tags: ["test_user"] }))) as typeof fetch;
+    await assertRejects(() => assertIntegratorEnvironment(), Error, "identity unavailable");
+  } finally { globalThis.fetch = original; configure(); resetIntegratorIdentityCache(); }
+});
+Deno.test("a verified integrator is trusted for six hours and read again after that", async () => {
+  const realNow = Date.now, original = globalThis.fetch;
+  try {
+    configure();
+    resetIntegratorIdentityCache();
+    let now = realNow();
+    Date.now = () => now;
+    const calls: ProviderCall[] = [];
+    globalThis.fetch = integratorFetch(["test_user"], calls);
+    await assertIntegratorEnvironment();
+    now += 5 * 3600_000 + 59 * 60_000;
+    await assertIntegratorEnvironment();
+    assertEquals(calls.length, 2, "still trusted just before six hours");
+    now += 2 * 60_000;
+    await assertIntegratorEnvironment();
+    assertEquals(calls.length, 4, "read again after six hours");
+  } finally { Date.now = realNow; globalThis.fetch = original; configure(); resetIntegratorIdentityCache(); }
+});
+Deno.test("simultaneous callers of one isolate share a single provider read", async () => {
+  const original = globalThis.fetch;
+  try {
+    configure();
+    resetIntegratorIdentityCache();
+    const calls: ProviderCall[] = [];
+    globalThis.fetch = integratorFetch(["test_user"], calls);
+    const results = await Promise.all([assertIntegratorEnvironment(), assertIntegratorEnvironment(), assertPayableIntegrator()]);
+    assertEquals(results.slice(0, 2), [{ owner_id: "721168650" }, { owner_id: "721168650" }]);
+    assertEquals(calls.length, 2, "one grant and one /users/me for all of them");
+    // A failed shared read is not remembered: the next caller asks again.
+    resetIntegratorIdentityCache();
+    globalThis.fetch = integratorFetch(["test_user"], calls, 503);
+    await Promise.allSettled([assertIntegratorEnvironment(), assertIntegratorEnvironment()]);
+    const afterFailure = calls.length;
+    globalThis.fetch = integratorFetch(["test_user"], calls);
+    await assertIntegratorEnvironment();
+    assertEquals(calls.length, afterFailure + 2);
+  } finally { globalThis.fetch = original; configure(); resetIntegratorIdentityCache(); }
+});
+// A wrong integrator cannot move money (Mercado Pago refuses the payment), so on the sales path production blocks
+// only a CONFIRMED mismatch; test keeps blocking an unreadable owner so that a misconfiguration is seen.
+Deno.test("sales path: production does not stop on an unreadable owner; test does; a mismatch always blocks", async () => {
+  const original = globalThis.fetch, warn = console.warn;
+  const unreadable = (() => Promise.resolve(Response.json({ message: "down" }, { status: 503 }))) as typeof fetch;
+  try {
+    useProduction();
+    const warnings: string[] = [];
+    console.warn = (line?: unknown) => { warnings.push(String(line)); };
+    globalThis.fetch = unreadable;
+    await assertPayableIntegrator(); // no throw
+    assertEquals(warnings.length, 1);
+    assertEquals(JSON.parse(warnings[0]).event, "integrator_owner_unreadable");
+    assertEquals(/secret|token|client/i.test(warnings[0].replace("integrator_owner_unreadable", "")), false);
+    const calls: ProviderCall[] = [];
+    globalThis.fetch = integratorFetch(["test_user"], calls); // a TEST owner in production
+    const blocked = await assertRejects(() => assertPayableIntegrator());
+    assertEquals((blocked as { code?: string }).code, "PAYMENTS_NOT_ENABLED");
+    // Missing configuration is never «unreadable»: it fails closed even in production.
+    resetIntegratorIdentityCache();
+    Deno.env.delete("MERCADOPAGO_CLIENT_SECRET");
+    await assertRejects(() => assertPayableIntegrator());
+    Deno.env.set("MERCADOPAGO_CLIENT_SECRET", "fixture-client-secret");
+
+    configure();
+    resetIntegratorIdentityCache();
+    globalThis.fetch = unreadable;
+    const retry = await assertRejects(() => assertPayableIntegrator());
+    assertEquals((retry as { code?: string }).code, "SELLER_VERIFICATION_UNAVAILABLE");
+  } finally { console.warn = warn; globalThis.fetch = original; endProduction(); }
 });

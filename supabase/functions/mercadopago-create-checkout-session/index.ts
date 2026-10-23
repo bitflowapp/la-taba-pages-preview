@@ -40,7 +40,7 @@ Deno.serve(async (request) => {
       }
       // Hosted deployments charge through the integrator application: one of the other environment makes every
       // payment fail at the provider (2034 Invalid users involved), so the stock is not taken either.
-      if (Deno.env.get('MERCADOPAGO_CREDENTIAL_MODE') === 'oauth') await assertPayableIntegrator();
+      if (Deno.env.get('MERCADOPAGO_CREDENTIAL_MODE')?.trim() === 'oauth') await assertPayableIntegrator();
     }
 
     // The database function whitelists this payload again and calculates all

@@ -1,0 +1,28 @@
+# Revisión independiente de los cambios financieros recientes
+
+23/10/2026. Dos revisores sin acceso a mis conclusiones, ambos de sólo lectura (sin llamar a Mercado Pago ni a ningún proyecto, sin tocar el árbol). A cada uno se le dio el código y qué buscar, no el veredicto. Esta página registra qué encontraron y qué se hizo con cada hallazgo.
+
+## Revisión 1 — los cambios de esta rama (guarda del integrador, IPN legacy, pines de QA)
+
+Alcance: `a6a863ff`, `8f13bbff`, `a2e58c44`. Resultado: **sin hallazgos críticos; el dinero no corre riesgo**. 1 ALTO, 4 MEDIOS, 6 BAJOS. Además corrió 17 mutaciones de una línea sobre copias: 13 pusieron en rojo las pruebas, y señaló 3 que no (más abajo).
+
+| # | Sev. | Hallazgo | Qué se hizo |
+|---|---|---|---|
+| 1 | ALTO | La guarda exigía `user_id` en la respuesta del grant `client_credentials` y `site_id = MLA` en el dueño: campos que la documentación oficial no garantiza. Si la app de producción respondiera distinto, **cada venta real daría 503** | **Corregido.** Sólo se exige `access_token`, el `id` del dueño y su lista de `tags`. `user_id`, si llega, se compara; `site_id` ya no cuenta. Prueba con respuesta sin `user_id` y con otro sitio. Antes del primer cobro, `qa-mp-integrator-identity.mjs` se corre con la app de producción (paso F3 del plan) |
+| 2 | MEDIO | Fallar cerrado ante un dueño ilegible no protege dinero en producción: un integrador equivocado no puede mover dinero (Mercado Pago rechaza el pago con 2034). Un 429/5xx del proveedor en un isolate frío dejaría sin ventas | **Corregido.** En el camino de venta, producción **bloquea sólo un desajuste confirmado**; si el dueño no se puede leer, deja pasar y registra `integrator_owner_unreadable`. El entorno de prueba conserva el cierre estricto (una configuración equivocada se ve). Un secreto faltante sigue cerrando, también en producción |
+| 3 | MEDIO | Costo por solicitud: hasta 4 llamadas a Mercado Pago en una venta con isolates fríos, con timeouts de 12 s y 10 s, sin de-duplicar las simultáneas | **Corregido.** Los llamadores simultáneos del mismo isolate comparten **una** lectura; timeouts de 8 s; un fallo compartido no se recuerda. Con producción abierta ya no quita ventas (punto 2) |
+| 4 | MEDIO | Los dos bindings viejos de staging (`ucbt…`, `ukxq…`) siguen fijados a la app de dueño real | **Aceptado.** Ninguno de los dos proyectos existe ya (verificado en la lista de proyectos de la cuenta). Los bindings de producción no cambiaron (confirmado en el diff). QA ya está consistente con TestApp |
+| 5 | MEDIO | Pruebas que pasan aunque el código esté mal: la regla `live_mode` de producción, el `!signatureValid &&` del bypass IPN y la expiración de 6 h | **Corregido.** Tres pruebas nuevas (producción rechaza `live_mode=false`; una petición con forma IPN y firma **válida** llega al ruteo; reloj simulado a 5 h 59 y 6 h 01). Más prueba de mutación propia: **8 de 8** mutaciones nuevas ponen en rojo la prueba correspondiente |
+| 6 | BAJO | Un desajuste en el callback mostraba un «error» genérico, con el consentimiento ya dado | **Corregido.** El `connect` consulta la guarda **antes** de generar la URL de autorización: 409 `INTEGRATOR_ENVIRONMENT_MISMATCH`, sin estado ni URL. El callback queda como respaldo (prueba) |
+| 7 | BAJO | La guarda de checkout-session comparaba el modo sin recortar (`"oauth\n"` la saltaba) | **Corregido** (`trim()` como `oauthMode()`) y con prueba |
+| 8 | BAJO | `payment-preflight.mjs` perdió el recuento de `live_mode` | **Corregido**: campo informativo `test_intents_with_live_mode` (no afecta la guarda: en test los pagos entre usuarios de prueba informan `live_mode=true` por diseño) |
+| 9 | BAJO | Un dueño ilegible en «Verificar» se muestra como `provider_unavailable` | **Aceptado**: el texto («Mercado Pago no respondió la verificación. Probá en unos minutos») es el correcto |
+| 10 | BAJO | Un grant `TEST-` guardado no pasa a `requires_reauthorization` | **Aceptado**: sólo afecta filas viejas de prueba; el `sellerAccessToken` ya exige reconexión |
+| 11 | BAJO | `check-mp-test-credentials.mjs` sigue fijado a TABA2 Staging | **Aceptado, deliberado**: verifica una credencial de vendedor de esa app, no la integradora de QA |
+| 12 | sug. | Contador de IPN ignorados | **Hecho**: `legacy_ipn_ignored` con el tópico y nada más (prueba: nunca el id ni el cuerpo) |
+
+**Lo que el revisor comprobó sano:** bindings de producción intactos; la guarda corre en callback, verificación, checkout-session y **toda** ruta de `create-preference` (guardada, heredada, recuperada, nueva); un fallo de la guarda nunca registra una preferencia ambigua; el bypass IPN sólo corre con firma inválida (nunca traga un evento firmado) y un pedido forjado con forma IPN no gana nada; el caché es por aplicación y entorno, no por comercio; ningún error nuevo filtra identificadores ni secretos; importes, idempotencia y creación de preferencias no se tocaron; reembolso y cancelación ejecutan su comprobación previa antes de cualquier llamada.
+
+## Revisión 2 — núcleo financiero del PR #148 (migraciones de integridad, conciliación, worker)
+
+Ver el apartado siguiente cuando la revisión termine.

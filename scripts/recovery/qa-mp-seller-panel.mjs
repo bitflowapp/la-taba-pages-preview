@@ -107,6 +107,10 @@ async function command(c) {
         buttons: box ? [...box.querySelectorAll('button')].map((b) => b.getAttribute('aria-label') || b.textContent?.trim() || '(sin nombre)').slice(0, 10) : [] };
     }));
     return { kind: 'probe', selector: c.selector, found: found.map((f) => ({ ...f, buttons: f.buttons.map(redact) })) };
+  } else if (c.action === 'read-text') {
+    // Redacted visible text of one region (the panel's snapshot is cut at 9 kB, which hides side drawers).
+    const text = await target(c).locator(c.selector).first().innerText();
+    return { kind: 'text', selector: c.selector, text: redact(text).slice(0, 3500) };
   } else if (c.action === 'close') {
     await browser.close(); process.exit(0);
   } else throw Error('UNKNOWN_ACTION');

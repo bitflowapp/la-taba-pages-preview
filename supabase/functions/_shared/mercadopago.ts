@@ -507,6 +507,45 @@ export function isFinalProviderRejection(status: number): boolean {
   return status >= 400 && status < 500 && ![408, 409, 425, 429].includes(status);
 }
 
+/**
+ * What the operator can read about a provider refusal WITHOUT its body: the HTTP status, the provider's request id and
+ * the short codes of its own answer (`cause[].code`, `error`). A refusal is otherwise recorded only as a hash, which made
+ * the refund 401 «Unauthorized use of live credentials» (cause 7, 2026-10-23) impossible to read from La Taba's side.
+ * Every value is shape-checked; messages, descriptions, data and anything else of the body never leave this function.
+ */
+export function providerRejectionFacts(result: Pick<MercadoPagoApiResult, 'response' | 'body' | 'requestId'>): Record<string, unknown> {
+  const body = result.body ?? {};
+  const causes = Array.isArray(body.cause) ? body.cause : [];
+  const codes = causes
+    .map((cause) => (cause && typeof cause === 'object' ? (cause as Record<string, unknown>).code : undefined))
+    .filter((code): code is number | string => typeof code === 'number' && Number.isSafeInteger(code) ||
+      typeof code === 'string' && /^[0-9A-Za-z_-]{1,16}$/.test(code))
+    .slice(0, 5);
+  const error = typeof body.error === 'string' && /^[A-Za-z_ -]{1,40}$/.test(body.error) ? body.error : undefined;
+  return {
+    http_status: result.response.status,
+    provider_request_id: /^[0-9A-Fa-f-]{8,64}$/.test(result.requestId) ? result.requestId : undefined,
+    provider_error: error,
+    provider_cause_codes: codes.length ? codes : undefined,
+  };
+}
+
+/** Structured, secret-free log line for a refused refund or cancellation (see providerRejectionFacts). */
+export function logProviderRejection(
+  operation: 'refund' | 'cancellation', businessId: string, paymentIntentId: string,
+  result: Pick<MercadoPagoApiResult, 'response' | 'body' | 'requestId'>,
+) {
+  console.warn(JSON.stringify({
+    timestamp: new Date().toISOString(),
+    event: 'provider_rejection',
+    operation,
+    business_id: businessId,
+    payment_intent_id: paymentIntentId,
+    final: isFinalProviderRejection(result.response.status),
+    ...providerRejectionFacts(result),
+  }));
+}
+
 export class MercadoPagoApiError extends Error {
   constructor(
     public readonly status: number,

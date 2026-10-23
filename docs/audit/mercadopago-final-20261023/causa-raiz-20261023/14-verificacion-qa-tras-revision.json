@@ -1,0 +1,28 @@
+{
+  "when": "2026-10-23T21:06Z to 21:10Z",
+  "what": "Hosted QA verification after the independent-review fixes (nine Mercado Pago functions redeployed, verify_jwt preserved)",
+  "functions": [
+    { "name": "mercadopago-cancel-payment", "version": 13, "verifyJwt": true },
+    { "name": "mercadopago-checkout-status", "version": 13, "verifyJwt": false },
+    { "name": "mercadopago-connect", "version": 14, "verifyJwt": false },
+    { "name": "mercadopago-create-checkout-session", "version": 10, "verifyJwt": false },
+    { "name": "mercadopago-create-preference", "version": 13, "verifyJwt": false },
+    { "name": "mercadopago-oauth-callback", "version": 13, "verifyJwt": false },
+    { "name": "mercadopago-payment-worker", "version": 13, "verifyJwt": false },
+    { "name": "mercadopago-refund", "version": 13, "verifyJwt": true },
+    { "name": "mercadopago-webhook", "version": 16, "verifyJwt": false }
+  ],
+  "verify_connection": { "status": "connected", "integrator_environment_matches": true, "blocking_reason": "payments_not_enabled" },
+  "forged_webhooks": { "http_statuses": [401, 401, 401, 401, 401, 401], "all_refused": true },
+  "legacy_ipn_probe": {
+    "request": "POST webhook ?topic=payment&id=1, invalid x-signature, body {resource, topic}: a synthetic request, no payment involved",
+    "response": { "http": 200, "body": { "ok": true, "ignored": "legacy_ipn" } },
+    "webhook_receipts_before": 27,
+    "webhook_receipts_after": 27
+  },
+  "local_regression": {
+    "full_suite_npm_test": "3127 / 3127 (run after the review fixes, before the refund diagnostics)",
+    "test_webhook": "Deno 54 + 235, Node 12",
+    "mutation_proof": "8 of 8 review mutations and 4 of 4 refund-diagnostic mutations turn a test red (single-line breakages on a throwaway copy)"
+  }
+}

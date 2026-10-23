@@ -30,6 +30,7 @@ export async function inspectPaymentReadiness(target) {
     // to a `test_user` seller, is what proves no real money moved, not that flag.
     const [database] = await query(`select
       (select count(*) from public.payment_intents where environment <> 'test')::int non_test_intents,
+      (select count(*) from public.payment_intents where environment = 'test' and live_mode is true)::int test_intents_with_live_mode,
       (select count(*) from public.business_payment_settings where enabled and environment <> 'test')::int non_test_settings,
       (select count(*) from public.mp_seller_connections where environment <> 'test')::int non_test_connections,
       (select count(*) from private.la_taba_recovery_source_rows where source_table='products')::int preserved_products,

@@ -61,6 +61,8 @@ Deno.serve(async (request) => {
     // signatures, the first approved QA payment (184722117633, 2026-10-23) raised a false «webhook secret» alert and
     // the owner warning «avisos que no se pudieron verificar»; every sale would have done the same.
     if (!signatureValid && isLegacyIpnNotification(url, body)) {
+      const legacyTopic = url.searchParams.get('topic')?.trim().toLowerCase() || '';
+      console.info(JSON.stringify({ timestamp: new Date().toISOString(), event: 'legacy_ipn_ignored', topic: /^[a-z_]{1,32}$/.test(legacyTopic) ? legacyTopic : 'other' }));
       return jsonResponse(request, { ok: true, ignored: 'legacy_ipn' });
     }
 

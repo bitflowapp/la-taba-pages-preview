@@ -30,7 +30,11 @@ assert.equal(target.projectRef, 'ixewllzzuzpqrkxzmfzx', 'exact QA project only')
 
 const url = `https://${target.projectRef}.supabase.co`;
 const origin = target.checkoutOrigin;
-const A = RECOVERY_QA.a;
+// --tenant a|b: QA tenant A is the default; B is the isolation tenant used for the marketplace verification
+// (second seller). The panel owner credential follows the tenant.
+const tenant = arg('--tenant', 'a');
+assert.ok(['a', 'b'].includes(tenant), '--tenant a|b');
+const A = RECOVERY_QA[tenant];
 const O = { auth: { persistSession: false, autoRefreshToken: false } };
 const key = name => {
   const stored = leerSecreto(name);
@@ -57,7 +61,7 @@ async function login(credential) {
 }
 
 async function panelOwner() {
-  const owner = await login('RECOVERY QA OWNER A');
+  const owner = await login(tenant === 'b' ? 'RECOVERY QA OWNER B' : 'RECOVERY QA OWNER A');
   const reg = await owner.rpc('identity_register_session', { p_business_id: A, p_client: 'panel_web',
     p_device_label: 'recovery QA mercado pago', p_device_key_hash: null, p_app_version: 'recovery-qa-mp' });
   assert.ok(reg.data?.ok && ['owner', 'admin'].includes(reg.data.role), `panel session: ${reg.error?.code || reg.data?.code}`);
@@ -271,7 +275,7 @@ async function main() {
     const owner = await panelOwner();
     const id = arg('--id');
     const { data: row } = await owner.from('orders').select('id,revision,status').eq('id', id).eq('business_id', A).maybeSingle();
-    assert.ok(row, 'order not found in QA tenant A');
+    assert.ok(row, `order not found in QA tenant ${tenant.toUpperCase()}`);
     const { data, error } = await owner.rpc('cancel_order', { p_order_id: id, p_expected_revision: row.revision,
       p_reason: arg('--reason', 'QA: pedido de prueba, no despachar'), p_idempotency_key: `qa_cancel_${id.replaceAll('-', '')}` });
     record({ order: id, cancelled: !error, error: error?.code || null });
@@ -290,6 +294,7 @@ async function main() {
       validReceipts: await count('payment_webhook_receipts', q => q.eq('signature_valid', true)),
       outbox: await count('payment_outbox'),
       ordersQA: await count('orders', q => q.eq('business_id', A)),
+      ...(tenant === 'a' ? { ordersQA_b: await count('orders', q => q.eq('business_id', RECOVERY_QA.b)) } : {}),
       historicBusinessOrders: await count('orders', q => q.eq('business_id', '00000000-0000-4000-8000-000000000001')),
     };
     out(result);

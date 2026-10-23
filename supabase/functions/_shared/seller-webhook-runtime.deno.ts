@@ -16,7 +16,7 @@ try {
 
 const business = '92000000-0000-4000-8000-000000000001';
 const secret = 'fixture-webhook-signing-key';
-type Shape = 'webhook' | 'unsigned_webhook' | 'legacy_ipn' | 'ipn_query_webhook_body';
+type Shape = 'webhook' | 'unsigned_webhook' | 'legacy_ipn' | 'ipn_query_webhook_body' | 'legacy_shape_signed';
 async function run(valid: boolean, wrongReference = false, shape: Shape = 'webhook') {
   for (const [name, value] of Object.entries({
     SUPABASE_URL: 'https://ukxqbgswjlibmnjemrzd.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'fixture-server-key',
@@ -69,13 +69,15 @@ async function run(valid: boolean, wrongReference = false, shape: Shape = 'webho
   };
   try {
     const base = 'https://ukxqbgswjlibmnjemrzd.supabase.co/functions/v1/mercadopago-webhook';
-    const ipnQuery = shape === 'legacy_ipn' || shape === 'ipn_query_webhook_body';
+    const ipnQuery = shape === 'legacy_ipn' || shape === 'ipn_query_webhook_body' || shape === 'legacy_shape_signed';
     const headers: Record<string, string> = {'content-type': 'application/json', 'x-request-id': 'fixture-request'};
     // A legacy IPN carries an x-Signature that cannot be validated with the secret key.
     if (shape !== 'unsigned_webhook') headers['x-signature'] = `ts=${timestamp},v1=${valid ? hex : '0'.repeat(64)}`;
     const response = await handle(new Request(ipnQuery ? `${base}?topic=payment&id=987` : `${base}?data.id=987&business_id=ignored-attacker-value`, {
       method: 'POST', headers,
-      body: JSON.stringify(shape === 'legacy_ipn' ? {resource: '987', topic: 'payment'} : {id: 'fixture-event', type: 'payment', data: {id: '987'}, user_id: 123}),
+      body: JSON.stringify(shape === 'legacy_ipn' ? {resource: '987', topic: 'payment'}
+        : shape === 'legacy_shape_signed' ? {resource: '987', topic: 'payment', user_id: 123}
+        : {id: 'fixture-event', type: 'payment', data: {id: '987'}, user_id: 123}),
     }));
     const text = await response.text();
     return {status: response.status, body: text, receipts, providerCalls, connectionCalls};
@@ -127,4 +129,20 @@ Deno.test('an IPN query with a webhook body is a webhook: its signature decides'
   assertEquals(invalid.status, 401);
   assertEquals(invalid.receipts[0].p_signature_valid, false);
   assertEquals(invalid.providerCalls, 0);
+});
+
+Deno.test('a legacy-shaped request with a VALID signature is a webhook: the bypass never swallows it', async () => {
+  const result = await run(true, false, 'legacy_shape_signed');
+  assertEquals(result.status, 201);
+  assertEquals(result.providerCalls, 1);
+  assertEquals(result.receipts.length, 1);
+  assertEquals(result.receipts[0].p_signature_valid, true);
+});
+Deno.test('an ignored legacy IPN leaves a counter-only log line, never its id or body', async () => {
+  const info = console.info, lines: string[] = [];
+  console.info = (line?: unknown) => { lines.push(String(line)); };
+  try { await run(false, false, 'legacy_ipn'); } finally { console.info = info; }
+  const logged = lines.map((l) => { try { return JSON.parse(l); } catch { return null; } }).find((l) => l?.event === 'legacy_ipn_ignored');
+  assertEquals(logged?.topic, 'payment');
+  assertEquals(JSON.stringify(logged).includes('987'), false);
 });

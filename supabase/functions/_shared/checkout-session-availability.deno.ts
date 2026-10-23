@@ -28,11 +28,12 @@ const STAGING_OAUTH = {
   MERCADOPAGO_CLIENT_SECRET: 'fixture-client-secret',
 };
 
-type Options = { mode?: 'oauth' | 'direct'; integratorTestUser?: boolean; integratorStatus?: number };
+type Options = { mode?: 'oauth' | 'direct' | 'padded'; integratorTestUser?: boolean; integratorStatus?: number };
 
 async function run(available: boolean | 'error', { mode = 'oauth', integratorTestUser = true, integratorStatus = 200 }: Options = {}) {
   for (const [name, value] of Object.entries(STAGING_OAUTH)) Deno.env.set(name, value);
   if (mode === 'direct') Deno.env.delete('MERCADOPAGO_CREDENTIAL_MODE');
+  if (mode === 'padded') Deno.env.set('MERCADOPAGO_CREDENTIAL_MODE', ' oauth ');
   resetIntegratorIdentityCache();
   const calls: string[] = [];
   const original = globalThis.fetch;
@@ -110,4 +111,11 @@ Deno.test('without seller OAuth there is no integrator to check', async () => {
   const result = await run(true, { mode: 'direct', integratorTestUser: false });
   assertEquals(result.status, 200);
   assertEquals(result.calls.some((call) => call.startsWith('integrator:')), false);
+});
+
+Deno.test('the integrator guard also runs when the credential mode carries stray whitespace', async () => {
+  const result = await run(true, { mode: 'padded', integratorTestUser: false });
+  assertEquals(result.status, 409);
+  assertEquals(result.body.code, 'PAYMENTS_NOT_ENABLED');
+  assertEquals(result.calls.includes('create_checkout_session'), false);
 });

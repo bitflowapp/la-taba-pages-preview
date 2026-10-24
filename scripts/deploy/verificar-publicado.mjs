@@ -26,16 +26,24 @@
  */
 import process from 'node:process';
 
-const HOST_POR_DEFECTO = 'https://la-taba.pages.dev';
-const REF_PRODUCCION = 'wwcpogltfgzgkrlilbcd';
-const REF_STAGING = 'ukxqbgswjlibmnjemrzd';
-const NEGOCIO_CANONICO = '00000000-0000-4000-8000-000000000001';
+import { forbiddenRefsFor, productionTarget } from '../lib/environments.mjs';
+
+/*
+ * El destino sale de deploy/environments.json, en el momento de usarlo (importar este módulo no lee nada). Antes
+ * el ref de producción y el de staging estaban fijos acá, y los dos proyectos ya no existen: el smoke comparaba el
+ * sitio contra una base borrada. Las pruebas pasan su propio destino.
+ */
+export function destinoProductivo() {
+  const produccion = productionTarget({ allowProvisioned: true });
+  return { host: produccion.origin, ref: produccion.ref, negocio: produccion.businessId, prohibidos: forbiddenRefsFor('production') };
+}
 
 /** Un chequeo: nombre, si pasó, y el detalle que se imprime al lado. */
 const ok = (nombre, detalle = '') => ({ nombre, pasa: true, detalle });
 const mal = (nombre, detalle) => ({ nombre, pasa: false, detalle });
 
-export function revisarRuntimeConfig(fuente) {
+export function revisarRuntimeConfig(fuente, destino = destinoProductivo()) {
+  const { ref: REF_PRODUCCION, negocio: NEGOCIO_CANONICO, prohibidos } = destino;
   const revisiones = [];
   const url = fuente.match(/supabaseUrl:\s*'([^']+)'/)?.[1];
   const clave = fuente.match(/publishableKey:\s*'([^']+)'/)?.[1];
@@ -51,8 +59,9 @@ export function revisarRuntimeConfig(fuente) {
   revisiones.push(url.includes(REF_PRODUCCION)
     ? ok('Supabase es el de producción', url)
     : mal('Supabase es el de producción', `apunta a ${url}`));
-  revisiones.push(url.includes(REF_STAGING)
-    ? mal('no apunta a staging', `¡es el proyecto de staging! ${url}`)
+  const ajeno = [...prohibidos].find((ref) => url.includes(ref));
+  revisiones.push(ajeno
+    ? mal('no apunta a staging', `¡es un proyecto de QA, retirado o de otro producto! ${url}`)
     : ok('no apunta a staging'));
   revisiones.push(negocio === NEGOCIO_CANONICO
     ? ok('negocio canónico', negocio)
@@ -81,11 +90,13 @@ async function traer(url, buscar) {
 }
 
 export async function verificar({
-  host = HOST_POR_DEFECTO,
+  destino = destinoProductivo(),
+  host = destino.host,
   esperarCommit = null,
   esperarRuntime = null,
   buscar = fetch,
 } = {}) {
+  const NEGOCIO_CANONICO = destino.negocio;
   const revisiones = [];
   let version = null;
 
@@ -145,7 +156,7 @@ export async function verificar({
     revisiones.push(mal('runtime-config se sirve', `HTTP ${config.estado}`));
   } else {
     revisiones.push(ok('runtime-config se sirve'));
-    revisiones.push(...revisarRuntimeConfig(config.cuerpo));
+    revisiones.push(...revisarRuntimeConfig(config.cuerpo, destino));
   }
 
   const worker = await traer(`${host}/sw.js`, buscar);
@@ -215,7 +226,8 @@ const DORMIR = (ms) => new Promise((listo) => { setTimeout(listo, ms); });
  * plazo producción sigue vieja, eso baja como fallo.
  */
 export async function esperarConvergencia({
-  host = HOST_POR_DEFECTO,
+  destino = destinoProductivo(),
+  host = destino.host,
   esperarCommit = null,
   esperarRuntime = null,
   intervaloMs = 5_000,
@@ -230,7 +242,7 @@ export async function esperarConvergencia({
 
   for (;;) {
     intento += 1;
-    const resultado = await verificar({ host, esperarCommit, esperarRuntime, buscar });
+    const resultado = await verificar({ destino, host, esperarCommit, esperarRuntime, buscar });
     const transcurridoMs = ahora() - arranque;
     const fallidas = resultado.revisiones.filter((r) => !r.pasa);
 
@@ -277,7 +289,15 @@ const segundos = (ms) => `${(Math.round(ms / 100) / 10).toFixed(1)}s`;
 
 const invocadoDirectamente = process.argv[1]?.endsWith('verificar-publicado.mjs');
 if (invocadoDirectamente) {
-  const host = argumento('--host') || process.env.TABA_PUBLIC_ORIGIN || HOST_POR_DEFECTO;
+  let destino;
+  try {
+    destino = destinoProductivo();
+  } catch (error) {
+    if (error?.code !== 'PRODUCTION_NOT_PROVISIONED') throw error;
+    console.error(`::error::${error.message}`);
+    process.exit(2);
+  }
+  const host = argumento('--host') || process.env.TABA_PUBLIC_ORIGIN || destino.host;
   const esperarCommit = argumento('--esperar-commit') || null;
   const esperarRuntime = argumento('--esperar-runtime') || null;
   const intervaloMs = numero('--intervalo-ms', 5_000);
@@ -302,8 +322,8 @@ if (invocadoDirectamente) {
   };
 
   const resultado = espera
-    ? await esperarConvergencia({ host, esperarCommit, esperarRuntime, intervaloMs, timeoutMs, registrar })
-    : { ...(await verificar({ host })), intentos: 1, transcurridoMs: 0, agotado: false };
+    ? await esperarConvergencia({ destino, host, esperarCommit, esperarRuntime, intervaloMs, timeoutMs, registrar })
+    : { ...(await verificar({ destino, host })), intentos: 1, transcurridoMs: 0, agotado: false };
 
   const { revisiones, version, sano, intentos, transcurridoMs, agotado } = resultado;
   if (espera) console.log('');

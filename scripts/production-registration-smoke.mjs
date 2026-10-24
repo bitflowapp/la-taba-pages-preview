@@ -43,7 +43,7 @@
 // funciona por el camino real.
 //
 //   $env:SUPABASE_ACCESS_TOKEN = <token del CLI>
-//   node scripts/production-registration-smoke.mjs --ref wwcpogltfgzgkrlilbcd \
+//   node scripts/production-registration-smoke.mjs --ref <ref de producción> \
 //     --key-file <archivo con la clave publicable> [--report <archivo.json>]
 //
 // Salida 0 = el contrato se cumple y no quedo nada. 1 = hallazgos. 2 = no se pudo.
@@ -52,8 +52,13 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import process from 'node:process';
 
-const PRODUCTION_REF = 'wwcpogltfgzgkrlilbcd';
-const CANONICAL_BUSINESS = '00000000-0000-4000-8000-000000000001';
+import { productionTargetOrExit } from './lib/environments.mjs';
+
+// El destino sale de deploy/environments.json. Mientras producción no tenga proyecto, sale 2 sin crear nada: antes
+// el ref estaba fijo en un proyecto que ya no existe. `provisioned` alcanza: es la prueba que se corre antes de abrir.
+const PRODUCTION = productionTargetOrExit({ allowProvisioned: true });
+const PRODUCTION_REF = PRODUCTION.ref;
+const CANONICAL_BUSINESS = PRODUCTION.businessId;
 // RFC 6761: `.invalid` no resuelve nunca. Si una identidad se escapara de la
 // limpieza, su correo dice a la cara que es de prueba y no puede recibir nada.
 const DOMINIO_QA = 'taba-qa-smoke.invalid';
@@ -74,7 +79,7 @@ if (!KEY.startsWith('sb_publishable_')) { console.error('falta --key/--key-file 
 const PAT = process.env.SUPABASE_ACCESS_TOKEN;
 if (!PAT) { console.error('falta SUPABASE_ACCESS_TOKEN'); process.exit(2); }
 
-const BASE = `https://${ref}.supabase.co`;
+const BASE = PRODUCTION.supabaseUrl;
 const corrida = crypto.randomBytes(4).toString('hex');
 const CLAVE = `Taba-${crypto.randomBytes(12).toString('base64url')}-Qa1!`;
 

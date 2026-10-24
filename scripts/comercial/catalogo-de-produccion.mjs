@@ -23,8 +23,20 @@
  * tener que tocar la función pura que ya está probada.
  */
 import { consultar, lit } from '../e2e-production-sale/db-solo-lectura.mjs';
+import { readEnvironments } from '../lib/environments.mjs';
 
-export const NEGOCIO_CANONICO = '00000000-0000-4000-8000-000000000001';
+/*
+ * El negocio canónico sale de deploy/environments.json. Se toma sin exigir que
+ * producción esté aprovisionada porque es un dato del registro y no abre ningún
+ * camino: la lectura de la base sí lo exige, en `db-solo-lectura`.
+ */
+export const NEGOCIO_CANONICO = readEnvironments().environments.production.businessId;
+/*
+ * La producción controlada (CP) está RETIRADA: el proyecto ya no existe y el
+ * registro lo lista entre los refs que no vuelven a usarse. El valor se conserva
+ * porque el importador lo nombra, pero `db-solo-lectura` lo rechaza: todo lo que
+ * lee CP falla cerrado antes de salir a la red.
+ */
 export const CP_REF = 'tkanbadcglszlcyfjvpv';
 export const CP_BUSINESS_ID = 'e7850ad2-a447-402c-8375-3fd74e9466ba';
 

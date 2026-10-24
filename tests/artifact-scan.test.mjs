@@ -20,7 +20,10 @@ import { RULES, stripComments } from '../scripts/scan-production-artifacts.mjs';
 
 const SCANNER = path.join(import.meta.dirname, '..', 'scripts', 'scan-production-artifacts.mjs');
 const STAGING_REF = 'ukxqbgswjlibmnjemrzd';
-const PRODUCTION_HOST = 'wwcpogltfgzgkrlilbcd.supabase.co';
+const QA_REF = 'ixewllzzuzpqrkxzmfzx';
+const RETIRED_PRODUCTION_REF = 'wwcpogltfgzgkrlilbcd';
+// Un host de producción FICTICIO: el proyecto de producción todavía no existe y el anterior está retirado.
+const PRODUCTION_HOST = 'tabaprodfixturerefaa.supabase.co';
 
 /** Corre el escáner sobre un paquete de mentira y devuelve su informe. */
 function scan(files, extraArgs = []) {
@@ -89,6 +92,26 @@ test('BLOQUEA el ref de staging cuando es código', () => {
   const { code, report } = scan({ 'cfg.js': `const url = "https://${STAGING_REF}.supabase.co";\n` });
   assert.equal(code, 1);
   assert.ok(rulesOf(report.findings).includes('staging-backend-reference'));
+});
+
+test('BLOQUEA el ref de QA y el de la producción retirada cuando son código', () => {
+  // Antes la regla miraba sólo el staging original: el QA actual podía viajar en el paquete productivo.
+  for (const ref of [QA_REF, RETIRED_PRODUCTION_REF]) {
+    const { code, report } = scan({ 'cfg.js': `const url = "https://${ref}.supabase.co";\n` });
+    assert.equal(code, 1, ref);
+    assert.ok(rulesOf(report.findings).includes('staging-backend-reference'), ref);
+  }
+});
+
+test('la lista de aislamiento del piloto nombra refs para prohibirlos: es info, no hallazgo', () => {
+  const real = fs.readFileSync(path.join(import.meta.dirname, '..', 'js', 'core', 'runtime-config.js'), 'utf8');
+  assert.match(real, /PILOT_FORBIDDEN_SUPABASE_REFS/);
+  const { report } = scan({ 'js/core/runtime-config.js': real });
+  assert.ok(!report.findings.some((f) => f.rule === 'staging-backend-reference'), JSON.stringify(report.findings));
+  assert.ok(report.info.some((i) => i.rule === 'staging-backend-reference'));
+  // Fuera de esa constante, el mismo ref vuelve a ser hallazgo.
+  const fuera = scan({ 'cfg.js': `const PILOT_FORBIDDEN = ['${QA_REF}'];\n` });
+  assert.ok(fuera.report.findings.some((f) => f.rule === 'staging-backend-reference'));
 });
 
 test('el MISMO ref de staging en un comentario es info, no hallazgo', () => {

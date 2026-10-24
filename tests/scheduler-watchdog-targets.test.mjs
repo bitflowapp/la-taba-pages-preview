@@ -13,8 +13,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 
-const STAGING_REF = 'ukxqbgswjlibmnjemrzd';
-const PRODUCTION_REF = 'wwcpogltfgzgkrlilbcd';
+// Los destinos salen de deploy/environments.json: el reloj sin nombre vigila QA; el de producción, el proyecto de
+// producción del registro, o un centinela que no resuelve mientras producción no tenga proyecto. Ninguno puede
+// vigilar un proyecto retirado.
+const REGISTRO = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, '..', 'deploy', 'environments.json'), 'utf8'));
+const STAGING_REF = REGISTRO.environments.qa.supabase.ref;
+const PRODUCTION_REF = REGISTRO.environments.production.supabase.ref || 'produccion-sin-proyecto.invalid';
+const RETIRED_REFS = Object.keys(REGISTRO.retiredSupabaseRefs);
 
 const CONFIG = path.join(
   import.meta.dirname, '..', 'services', 'scheduler-watchdog', 'wrangler.toml',
@@ -62,6 +67,13 @@ test('producción mira producción, y nunca staging', () => {
     !vars.includes(STAGING_REF),
     'el reloj de producción vigila STAGING: informaría salud mientras producción está muerta',
   );
+});
+
+test('ningún reloj vigila un proyecto retirado', () => {
+  for (const ref of RETIRED_REFS) {
+    assert.ok(!varsOf('vars').includes(ref), `el reloj de QA vigila el proyecto retirado ${ref}`);
+    assert.ok(!varsOf('env.production.vars').includes(ref), `el reloj de producción vigila el proyecto retirado ${ref}`);
+  }
 });
 
 test('los dos Workers tienen nombres distintos', () => {

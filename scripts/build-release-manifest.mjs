@@ -17,11 +17,16 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
+import { productionTargetOrExit, qaTarget } from './lib/environments.mjs';
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-const PRODUCTION_REF = 'wwcpogltfgzgkrlilbcd';
-const STAGING_REF = 'ukxqbgswjlibmnjemrzd';
-const CANONICAL_BUSINESS = '00000000-0000-4000-8000-000000000001';
+// Los dos destinos salen de deploy/environments.json: producción (sale 2 si todavía no tiene proyecto) y el
+// entorno de pruebas vigente, que es QA. Los refs fijos anteriores eran de proyectos que ya no existen.
+const PRODUCTION = productionTargetOrExit({ allowProvisioned: true });
+const PRODUCTION_REF = PRODUCTION.ref;
+const STAGING_REF = qaTarget().ref;
+const CANONICAL_BUSINESS = PRODUCTION.businessId;
 
 function arg(name) {
   const i = process.argv.indexOf(`--${name}`);

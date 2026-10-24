@@ -8,11 +8,35 @@
  * Si mañana hay que probar otro producto, se cambia acá, se lee el diff y se
  * vuelve a autorizar. Ese roce es la característica, no el defecto.
  */
+import { productionTarget } from '../lib/environments.mjs';
+
+/*
+ * EL DESTINO SALE DE deploy/environments.json, Y SE LEE AL USARLO.
+ *
+ * Eran tres literales —sitio, ref y negocio— y el ref era el de un proyecto que
+ * ya no existe. Ahora la única fuente es el registro, y cambiarlo sigue siendo
+ * lo que este archivo pide: un diff revisado. La única variable que lo mueve
+ * (TABA_ENVIRONMENTS_FILE) sólo acepta registros de tests/fixtures/.
+ *
+ * Se resuelve en cada acceso y no al importar: medio harness, y sus pruebas,
+ * importan este módulo sin tocar producción. Mientras producción no tenga
+ * proyecto, leer cualquiera de los tres campos lanza PRODUCTION_NOT_PROVISIONED
+ * antes de que nada salga a la red. `provisioned` alcanza: la venta real de
+ * prueba es justamente la que se hace antes de abrir.
+ */
+export function destinoDeProduccion({ registry } = {}) {
+  const produccion = productionTarget({ registry, allowProvisioned: true });
+  return Object.freeze({
+    host: produccion.origin,
+    supabaseRef: produccion.ref,
+    businessId: produccion.businessId,
+  });
+}
 
 export const PRODUCCION = Object.freeze({
-  host: 'https://la-taba.pages.dev',
-  supabaseRef: 'wwcpogltfgzgkrlilbcd',
-  businessId: '00000000-0000-4000-8000-000000000001',
+  get host() { return destinoDeProduccion().host; },
+  get supabaseRef() { return destinoDeProduccion().supabaseRef; },
+  get businessId() { return destinoDeProduccion().businessId; },
 });
 
 /** El único producto que esta versión puede comprar, y en qué condiciones. */

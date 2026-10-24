@@ -62,12 +62,17 @@ import path from 'node:path';
 import process from 'node:process';
 import { correoDelPanel, IDENTIDAD_PANEL } from '../e2e-production-sale/identidades.mjs';
 import { leerSecreto, objetivoCompleto } from '../e2e-production-sale/secretos-windows.mjs';
+import { productionTargetOrExit } from '../lib/environments.mjs';
 import { conToken } from '../lib/supabase-cli-token.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
-const REF = 'wwcpogltfgzgkrlilbcd';
-const BASE = `https://${REF}.supabase.co`;
-const ORIGEN_PUBLICO = process.env.TABA_PUBLIC_ORIGIN || 'https://la-taba.pages.dev';
+// El ref y el sitio salen de deploy/environments.json. Mientras producción no tenga proyecto, sale 2 sin leer ni
+// escribir nada: antes el ref estaba fijo en un proyecto que ya no existe. `provisioned` alcanza: dejar la política
+// cargada es de lo que se hace antes de abrir (la habilitación sigue siendo a mano, siempre).
+const PRODUCTION = productionTargetOrExit({ allowProvisioned: true });
+const REF = PRODUCTION.ref;
+const BASE = PRODUCTION.supabaseUrl;
+const ORIGEN_PUBLICO = process.env.TABA_PUBLIC_ORIGIN || PRODUCTION.origin;
 const aplicar = process.argv.includes('--aplicar');
 
 /** Los cinco campos que `create_order` mira, en el orden en que los mira. */

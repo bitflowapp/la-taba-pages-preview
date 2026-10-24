@@ -10,8 +10,9 @@
  * siquiera se aceptan varias sentencias, ni `with` con escritura adentro, ni
  * llamadas a funciones que muten.
  */
+import { forbiddenRefsFor } from '../lib/environments.mjs';
 import { conToken } from '../lib/supabase-cli-token.mjs';
-import { PRODUCCION } from './contrato.mjs';
+import { destinoDeProduccion } from './contrato.mjs';
 
 const PALABRAS_DE_ESCRITURA = [
   'insert', 'update', 'delete', 'truncate', 'alter', 'create', 'drop', 'grant', 'revoke',
@@ -73,13 +74,30 @@ export function assertSoloLectura(sql) {
   return limpio;
 }
 
-export async function consultar(sql, { projectRef = PRODUCCION.supabaseRef } = {}) {
-  const seguro = assertSoloLectura(sql);
-  if (!new Set([PRODUCCION.supabaseRef, 'tkanbadcglszlcyfjvpv']).has(projectRef)) {
-    throw new ConsultaNoPermitida('ref de proyecto no autorizado para esta lectura');
+/*
+ * A QUÉ PROYECTO SE LE PUEDE PREGUNTAR: AL DE PRODUCCIÓN DEL REGISTRO, Y A NINGÚN OTRO.
+ *
+ * La lista eran dos refs escritos a mano —producción y la producción controlada— y
+ * los dos proyectos ya no existen. Ahora el permitido sale de
+ * deploy/environments.json; un ref de QA, retirado o ajeno se rechaza con nombre
+ * propio, y sin proyecto de producción se lanza PRODUCTION_NOT_PROVISIONED. Todo
+ * pasa antes de pedir el token: un ref equivocado no llega a la red.
+ */
+export function refAutorizado(projectRef, { registry } = {}) {
+  if (projectRef !== undefined && forbiddenRefsFor('production', registry).has(projectRef)) {
+    throw new ConsultaNoPermitida('ese proyecto es de QA, está retirado o es de otro producto: esta puerta sólo lee producción');
   }
+  const produccion = destinoDeProduccion({ registry }).supabaseRef;
+  const ref = projectRef === undefined ? produccion : projectRef;
+  if (ref !== produccion) throw new ConsultaNoPermitida('ref de proyecto no autorizado para esta lectura');
+  return ref;
+}
+
+export async function consultar(sql, { projectRef } = {}) {
+  const seguro = assertSoloLectura(sql);
+  const ref = refAutorizado(projectRef);
   return conToken(async (token) => {
-    const respuesta = await fetch(`https://api.supabase.com/v1/projects/${projectRef}/database/query`, {
+    const respuesta = await fetch(`https://api.supabase.com/v1/projects/${ref}/database/query`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,

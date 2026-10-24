@@ -2,8 +2,11 @@
 // encryption keys, seller credentials, application identity or payment flags.
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { productionTargetOrExit } from '../lib/environments.mjs';
 import { conToken } from '../lib/supabase-cli-token.mjs';
-const ref = 'wwcpogltfgzgkrlilbcd';
+// The project comes from deploy/environments.json (exit 2 before reading stdin while production has no project);
+// the caller still has to repeat that ref as the first argument.
+const ref = productionTargetOrExit({ allowProvisioned: true }).ref;
 const digest = value => createHash('sha256').update(value).digest('hex');
 const replacement = readFileSync(0, 'utf8').trim();
 if (process.argv[2] !== ref || !/^[A-Za-z0-9_+/=-]{16,}$/.test(replacement)) {

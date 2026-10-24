@@ -32,8 +32,12 @@ import { readRuntimeFile } from '../scripts/check-runtime-config.mjs';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const GUION = path.join(root, 'scripts', 'build-production-runtime-config.mjs');
 
-const PRODUCTION_REF = 'wwcpogltfgzgkrlilbcd';
-const STAGING_REF = 'ukxqbgswjlibmnjemrzd';
+// El destino sale de deploy/environments.json. Las pruebas usan un registro con una producción FICTICIA activa
+// (tests/fixtures/environments.production-active.json); el registro real todavía no tiene proyecto de producción.
+const REGISTRO_ACTIVO = path.join(root, 'tests', 'fixtures', 'environments.production-active.json');
+const PRODUCTION_REF = JSON.parse(fs.readFileSync(REGISTRO_ACTIVO, 'utf8')).environments.production.supabase.ref;
+const RETIRED_STAGING_REF = 'ukxqbgswjlibmnjemrzd';
+const QA_REF = 'ixewllzzuzpqrkxzmfzx';
 const CANONICAL_BUSINESS = '00000000-0000-4000-8000-000000000001';
 
 // Una clave publicable con la FORMA correcta y sin valor real: alcanza para
@@ -51,10 +55,29 @@ function correr(args, env = {}) {
   const r = spawnSync(process.execPath, [GUION, ...args], {
     cwd: root,
     encoding: 'utf8',
-    env: { ...process.env, TABA_PRODUCTION_PUBLISHABLE_KEY: '', ...env },
+    env: { ...process.env, TABA_PRODUCTION_PUBLISHABLE_KEY: '', TABA_ENVIRONMENTS_FILE: REGISTRO_ACTIVO, ...env },
   });
   return { code: r.status ?? 1, stdout: r.stdout ?? '', stderr: r.stderr ?? '' };
 }
+
+test('sin proyecto de producción en el registro real no se emite nada y se dice por qué', () => {
+  const r = correr(['--key', CLAVE_DE_PRUEBA], { TABA_ENVIRONMENTS_FILE: '' });
+  assert.equal(r.code, 2);
+  assert.match(r.stderr, /Producción todavía no tiene un proyecto/);
+  assert.doesNotMatch(r.stdout, /__LA_TABA_RUNTIME_CONFIG__/);
+});
+
+test('un registro alternativo fuera de tests/fixtures no se acepta', () => {
+  const r = correr(['--key', CLAVE_DE_PRUEBA], { TABA_ENVIRONMENTS_FILE: path.join(root, 'deploy', 'environments.json') });
+  assert.notEqual(r.code, 0);
+  assert.match(r.stderr, /sólo puede apuntar a un registro de tests\/fixtures/);
+});
+
+test('el proyecto de QA cierra la emisión', () => {
+  const r = correr(['--key', CLAVE_DE_PRUEBA, '--ref', QA_REF]);
+  assert.equal(r.code, 1);
+  assert.match(r.stderr, /QA, está retirado/);
+});
 
 test('con los datos correctos emite un config que resuelve como production', () => {
   const r = correr(['--key', CLAVE_DE_PRUEBA]);
@@ -77,10 +100,10 @@ test('la URL se deriva del ref: no hay forma de que digan cosas distintas', () =
   assert.doesNotMatch(fs.readFileSync(GUION, 'utf8'), /arg\('(url|supabase-url)'\)/);
 });
 
-test('el ref de staging cierra la emisión', () => {
-  const r = correr(['--key', CLAVE_DE_PRUEBA, '--ref', STAGING_REF]);
+test('el ref de staging (retirado) cierra la emisión', () => {
+  const r = correr(['--key', CLAVE_DE_PRUEBA, '--ref', RETIRED_STAGING_REF]);
   assert.equal(r.code, 1);
-  assert.match(r.stderr, /staging/i);
+  assert.match(r.stderr, /retirado/i);
   assert.doesNotMatch(r.stdout, /__LA_TABA_RUNTIME_CONFIG__/, 'no puede emitir nada');
 });
 

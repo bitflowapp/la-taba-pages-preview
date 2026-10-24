@@ -43,8 +43,9 @@ workers_dev = false
 crons = ["*/5 * * * *"]
 
 [vars]
-# La URL del proyecto es pública: la misma que sirve el sitio.
-SUPABASE_URL = "https://ukxqbgswjlibmnjemrzd.supabase.co"
+# La URL del proyecto es pública: la misma que sirve el sitio. El entorno sin nombre vigila QA (deploy/environments.json);
+# el staging anterior (ukxqbgswjlibmnjemrzd) ya no existe.
+SUPABASE_URL = "https://ixewllzzuzpqrkxzmfzx.supabase.co"
 
 # Un entorno con nombre NO hereda `triggers` del nivel superior. Sin repetirlo
 # acá, el Worker de producción se despliega y no corre nunca: falla en silencio,
@@ -57,4 +58,7 @@ workers_dev = false
 crons = ["*/5 * * * *"]
 
 [env.production.vars]
-SUPABASE_URL = "https://wwcpogltfgzgkrlilbcd.supabase.co"
+# Producción todavía no tiene proyecto (deploy/environments.json): la URL es un centinela que no resuelve, para que
+# un despliegue prematuro falle a la vista en vez de vigilar el proyecto retirado (wwcpogltfgzgkrlilbcd).
+# scripts/production/bind-production.mjs la reemplaza por la del proyecto nuevo.
+SUPABASE_URL = "https://produccion-sin-proyecto.invalid"

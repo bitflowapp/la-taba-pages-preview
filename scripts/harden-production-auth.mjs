@@ -5,7 +5,7 @@
 //
 //   $env:TABA2_PRODUCTION_AUTH_HARDENING = "I_AUTHORIZE_TABA2_PRODUCTION_AUTH_HARDENING"
 //   $env:SUPABASE_ACCESS_TOKEN = <token del CLI>
-//   node scripts/harden-production-auth.mjs --ref wwcpogltfgzgkrlilbcd
+//   node scripts/harden-production-auth.mjs --ref <ref de producción de deploy/environments.json>
 //
 // Sin `--apply` no escribe: imprime lo que cambiaria y sale 0.
 //
@@ -53,8 +53,15 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-const PRODUCTION_REF = 'wwcpogltfgzgkrlilbcd';
-const STAGING_REF = 'ukxqbgswjlibmnjemrzd';
+import { forbiddenRefsFor, productionTargetOrExit } from './lib/environments.mjs';
+
+// El destino sale de deploy/environments.json. Mientras producción no tenga proyecto, sale 2 sin leer ni escribir
+// nada: antes el ref estaba fijo en un proyecto que ya no existe. `provisioned` alcanza: endurecer el Auth es de lo
+// que se hace ANTES de abrir. Lo que antes era «el ref de staging» ahora son todos los que producción nunca puede
+// nombrar: QA, retirados y ajenos.
+const PRODUCTION = productionTargetOrExit({ allowProvisioned: true });
+const PRODUCTION_REF = PRODUCTION.ref;
+const FORBIDDEN_REFS = forbiddenRefsFor('production');
 const APPROVAL = 'I_AUTHORIZE_TABA2_PRODUCTION_AUTH_HARDENING';
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const TEMPLATES_DIR = path.join(RAIZ, 'supabase', 'templates');
@@ -127,7 +134,8 @@ if (siteUrlPedido) {
   const malo = !u ? 'no es una URL'
     : u.protocol !== 'https:' ? 'tiene que ser https'
       : /localhost|127\.0\.0\.1|\[::1\]/i.test(u.hostname) ? 'es un host local: los enlaces del correo no llegarian a ningun lado'
-        : u.hostname.includes(STAGING_REF) || /staging/i.test(u.hostname) ? 'parece staging, y produccion no puede apuntar ahi'
+        : [...FORBIDDEN_REFS].some((r) => u.hostname.includes(r)) || /staging/i.test(u.hostname)
+          ? 'parece de QA, staging o un proyecto retirado, y produccion no puede apuntar ahi'
           : u.search || u.hash ? 'no puede llevar query ni fragmento'
             : '';
   if (malo) { console.error(`--site-url ${malo}`); process.exit(2); }

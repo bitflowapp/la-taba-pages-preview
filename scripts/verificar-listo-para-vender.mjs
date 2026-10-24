@@ -31,7 +31,10 @@
 import process from 'node:process';
 import { consultar, lit } from './e2e-production-sale/db-solo-lectura.mjs';
 import { PRODUCCION, RIDER } from './e2e-production-sale/contrato.mjs';
+import { productionTargetOrExit } from './lib/environments.mjs';
 
+// Sin proyecto de producción en deploy/environments.json se sale 2 con el motivo, no con una traza.
+productionTargetOrExit({ allowProvisioned: true });
 const NEGOCIO = PRODUCCION.businessId;
 const lineas = [];
 const pendientes = [];

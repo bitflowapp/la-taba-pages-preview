@@ -76,6 +76,13 @@ jobs:
             exit 1
           fi
 
+      # Producción tiene que tener proyecto en deploy/environments.json. Sin él,
+      # el paquete se armaba contra el proyecto anterior —borrado— y sólo el
+      # smoke, DESPUÉS de publicar, lo descubría. Ahora se corta acá, antes de
+      # construir o publicar nada.
+      - name: Producción tiene proyecto en el registro
+        run: node scripts/production/target.mjs
+
       - name: Set up Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:

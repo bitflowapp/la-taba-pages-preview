@@ -12,14 +12,18 @@ test('cobro-negocio: each target switches its own environment and application', 
   assert.deepEqual(PLANES.staging, { environment: 'test', application: '2691240967769590' });
 });
 
-test('original production rejects credentials for any other project or browser role', async () => {
-  const ref = 'wwcpogltfgzgkrlilbcd';
+// Production comes from deploy/environments.json; here, from a registry with a FICTITIOUS active production.
+const REGISTRY = JSON.parse(fs.readFileSync('tests/fixtures/environments.production-active.json', 'utf8'));
+
+test('production rejects credentials for any other project or browser role', async () => {
+  const ref = REGISTRY.environments.production.supabase.ref;
   const token = claims => `fixture.${Buffer.from(JSON.stringify(claims)).toString('base64url')}.fixture`;
-  for (const claims of [{ ref, role: 'service_role' }, { ref: 'tkanbadcglszlcyfjvpv', role: 'service_role' }, { ref, role: 'anon' }]) {
+  for (const claims of [{ ref, role: 'service_role' }, { ref: 'wwcpogltfgzgkrlilbcd', role: 'service_role' }, { ref, role: 'anon' }]) {
     const options = {
+      registry: REGISTRY,
       withToken: async fn => fn('fixture-management-key'),
       request: async url => {
-        assert.equal(url, `https://api.supabase.com/v1/projects/${ref}/api-keys`);
+        assert.equal(url, `https://api.supabase.com/v1/projects/${ref}/api-keys?reveal=true`);
         return Response.json([{ name: 'service_role', api_key: token(claims) }]);
       },
     };
@@ -27,6 +31,27 @@ test('original production rejects credentials for any other project or browser r
       assert.equal((await productionKeys(options)).ref, ref);
     } else await assert.rejects(productionKeys(options), /PRODUCTION_KEY_NOT_BOUND/);
   }
+});
+
+test('a project with only the new API keys uses its own sb_secret key, never a browser key', async () => {
+  const ref = REGISTRY.environments.production.supabase.ref;
+  const keys = await productionKeys({
+    registry: REGISTRY,
+    withToken: async fn => fn('fixture-management-key'),
+    // Armadas por partes: el escáner de secretos del repositorio busca la FORMA de una clave, y un literal la tiene.
+    request: async () => Response.json([
+      { type: 'publishable', name: 'default', api_key: ['sb', 'publishable', 'fixture000000000000'].join('_') },
+      { type: 'secret', name: 'default', api_key: ['sb', 'secret', 'fixture00000000000000000'].join('_') },
+    ]),
+  });
+  assert.equal(keys.ref, ref);
+  assert.match(keys.secret, /^sb_secret_/);
+});
+
+test('without a production project in the real registry no credential is read', async () => {
+  let tokenRead = false;
+  await assert.rejects(productionKeys({ withToken: async () => { tokenRead = true; } }), /todavía no tiene un proyecto/);
+  assert.equal(tokenRead, false);
 });
 
 test('cobro-negocio: nothing changes without a known command, target and business', () => {

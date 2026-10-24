@@ -1,10 +1,12 @@
 import { createHash, createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
+import { isRetiredOrForeignRef, productionTarget } from '../lib/environments.mjs';
 import { conToken } from '../lib/supabase-cli-token.mjs';
 
-const TARGETS = Object.freeze({
-  // Staging se mudó a ucbtjcurawxjwjdvvcvj el 2026-09-18 (PR #93); el ref viejo
-  // ya no resuelve y dejaba a esta herramienta apuntando a un proyecto muerto.
+// Staging y producción controlada son proyectos RETIRADOS (deploy/environments.json): sus entradas quedan como
+// datos de las pruebas de esta herramienta y la línea de comandos se niega a usarlas. QA tiene su propia
+// herramienta (scripts/recovery/provision-worker-secrets.mjs).
+const LEGACY_TARGETS = Object.freeze({
   staging: Object.freeze({
     ref: 'ucbtjcurawxjwjdvvcvj',
     deployment: 'staging',
@@ -17,13 +19,21 @@ const TARGETS = Object.freeze({
     environment: 'production',
     clientId: '7677852968049976',
   }),
-  production: Object.freeze({
-    ref: 'wwcpogltfgzgkrlilbcd',
-    deployment: 'production',
-    environment: 'production',
-    clientId: '7677852968049976',
-  }),
 });
+
+/** Producción sale del registro (falla cerrada si no tiene proyecto); los demás destinos son los heredados. */
+export function workerHmacTarget(targetName, registry) {
+  if (targetName === 'production') {
+    const production = productionTarget({ ...(registry ? { registry } : {}), allowProvisioned: true });
+    return Object.freeze({
+      ref: production.ref,
+      deployment: 'production',
+      environment: 'production',
+      clientId: production.mercadoPagoApplicationId,
+    });
+  }
+  return LEGACY_TARGETS[targetName] || null;
+}
 
 const digest = value => createHash('sha256').update(value, 'utf8').digest('hex');
 const sqlLiteral = value => `'${String(value).replaceAll("'", "''")}'`;
@@ -129,8 +139,9 @@ async function readAlignment(request, token, target, edgeDigest) {
 export async function checkWorkerHmac(targetName, {
   request = fetch,
   withToken = conToken,
+  registry,
 } = {}) {
-  const target = TARGETS[targetName];
+  const target = workerHmacTarget(targetName, registry);
   if (!target) throw new Error('Target must be staging, controlled-production or production');
   return await withToken(async token => {
     const secrets = await readSecretInventory(request, token, target);
@@ -146,8 +157,9 @@ export async function synchronizeWorkerHmac(targetName, {
   createSecret = () => randomBytes(48).toString('base64url'),
   createNonce = randomUUID,
   now = () => Date.now(),
+  registry,
 } = {}) {
-  const target = TARGETS[targetName];
+  const target = workerHmacTarget(targetName, registry);
   if (!target) throw new Error('Target must be staging, controlled-production or production');
   return await withToken(async token => {
     const before = await readSecretInventory(request, token, target);
@@ -229,6 +241,12 @@ export async function synchronizeWorkerHmac(targetName, {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const target = String(process.argv.find(value => value.startsWith('--target=')) || '').split('=')[1];
   const apply = process.argv.includes('--apply');
+  const legacy = LEGACY_TARGETS[target];
+  if (legacy && isRetiredOrForeignRef(legacy.ref)) {
+    console.error(`WORKER_HMAC_REMEDIATION_FAILED: ${target} (${legacy.ref}) es un proyecto retirado; no se toca. `
+      + 'Producción: --target=production (sale de deploy/environments.json). QA: scripts/recovery/provision-worker-secrets.mjs.');
+    process.exit(2);
+  }
   try {
     const result = apply
       ? await synchronizeWorkerHmac(target)

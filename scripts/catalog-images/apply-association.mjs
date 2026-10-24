@@ -46,6 +46,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { productionTargetOrExit } from '../lib/environments.mjs';
 import { stableJson } from './lib.mjs';
 import { autorizaCatalogo, ROLES_CATALOGO } from './owner-authority.mjs';
 import {
@@ -56,15 +57,18 @@ const ROOT = path.resolve(import.meta.dirname, '../..');
 const MANIFIESTO = path.join(ROOT, 'docs/catalog/image-manifest.json');
 const INFORME = path.join(ROOT, 'artifacts/taba2-catalog-images/ASSOCIATION-READBACK.json');
 
-const REF = 'wwcpogltfgzgkrlilbcd';
-const BASE = `https://${REF}.supabase.co`;
-const BUSINESS_ID = '00000000-0000-4000-8000-000000000001';
+// Producción sale de deploy/environments.json; sin proyecto, sale 2 antes de tocar nada (el ref fijo anterior era de
+// un proyecto que ya no existe).
+const PRODUCCION = productionTargetOrExit({ allowProvisioned: true });
+const REF = PRODUCCION.ref;
+const BASE = PRODUCCION.supabaseUrl;
+const BUSINESS_ID = PRODUCCION.businessId;
 // Confirmación opcional de que se está operando con la cuenta prevista. NO es la
 // autorización —esa la da el rol que devuelve la base— y por eso no vive escrita
 // en el repositorio: es un dato personal y ataría el guion a una persona.
 const EMAIL_ESPERADO = String(process.env.TABA_EXPECTED_OWNER_EMAIL || '').trim().toLowerCase();
 const AUTORIDAD = 'TABA-AUT-2026-08-001';
-const ORIGEN_PUBLICO = process.env.TABA_PUBLIC_ORIGIN || 'https://la-taba.pages.dev';
+const ORIGEN_PUBLICO = process.env.TABA_PUBLIC_ORIGIN || PRODUCCION.origin;
 
 const etiqueta = (sku) => OBJETIVOS.get(sku)?.nombre || sku;
 
@@ -187,7 +191,7 @@ if (archivosLock === null) {
     if (archivo === MIO || !/\.(txt|lock)$/.test(archivo)) continue;
     const texto = await fs.readFile(path.join(LOCKS_COMPARTIDOS, archivo), 'utf8').catch(() => '');
     const activo = /STATUS=ACTIVO/i.test(texto);
-    const tocaProduccion = /mutaci[oó]n(es)? de (datos de )?produc|aplicando a produc|APLICANDO EN wwcpogltfgzgkrlilbcd/i.test(texto);
+    const tocaProduccion = /mutaci[oó]n(es)? de (datos de )?produc|aplicando a produc/i.test(texto) || texto.includes(`APLICANDO EN ${REF}`);
     if (activo && tocaProduccion) enConflicto.push(archivo);
   }
   if (enConflicto.length) {

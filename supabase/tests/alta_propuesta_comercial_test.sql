@@ -354,11 +354,12 @@ select is((select stock from public.products where business_id='92000000-0000-40
 
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"91000000-0000-4000-8000-000000000002","role":"authenticated","session_id":"93000000-0000-4000-8000-00000000000b"}';
+-- 42501 desde 20261021234000: la negativa de autorización ya no se confunde con un dato inválido (P0001).
 select throws_ok(
   $$select count(*) from public.apply_commercial_catalog_batch(
     '92000000-0000-4000-8000-00000000000a',
     '[{"sku":"catalog-bulk-01","stock":8}]'::jsonb)$$,
-  'P0001', null, 'owner del negocio B no edita el negocio A');
+  '42501', null, 'owner del negocio B no edita el negocio A');
 reset role;
 select is((select stock from public.products where business_id='92000000-0000-4000-8000-00000000000a'
   and sku='catalog-bulk-01'),5,'el intento cruzado no dejo escritura');

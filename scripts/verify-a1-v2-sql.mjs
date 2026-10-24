@@ -6,8 +6,17 @@ if(process.env.TABA_LOCAL_PAYMENT_DB!=='1'||!/^taba-a1-a4-local-[\w-]+$/.test(co
 const info=JSON.parse(execFileSync('docker',['inspect',container],{encoding:'utf8'}))[0];
 assert.equal(info.HostConfig.NetworkMode,'none');assert.equal(info.Mounts.some(m=>m.Type==='bind'),false);
 const sql=q=>execFileSync('docker',['exec','-i',container,'psql','-h','/tmp','-U','postgres','-d','postgres','-X','-qAt','-v','ON_ERROR_STOP=1'],{input:'set search_path=public,extensions;\n'+q,encoding:'utf8',stdio:['pipe','pipe','pipe']});
+// This runs on the EXPAND-phase database (migrations up to 20260909011239). production_least_privilege_test.sql was
+// rewritten on 2026-10-21 together with 20261021235000_security_hardening and describes the FINAL schema (stock no
+// longer writable by authenticated, combo RPCs out of the anon contract), so the working-tree copy cannot pass here.
+// The phase is checked with the copy that describes it (dde660d2, the one main runs at this same phase); the
+// working-tree copy still runs against the final schema in the canonical pgTAP list of run-release-v5-db.mjs.
+const PHASE_PINNED={'production_least_privilege_test.sql':'dde660d2'};
+const source=name=>PHASE_PINNED[name]
+ ?execFileSync('git',['show',`${PHASE_PINNED[name]}:supabase/tests/${name}`],{encoding:'utf8'})
+ :fs.readFileSync('supabase/tests/'+name,'utf8');
 for(const name of ['mercadopago_checkout_pro.local.sql','mercadopago_seller_oauth.local.sql','mercadopago_clean_business.local.sql','production_least_privilege_test.sql']){
- const output=sql(fs.readFileSync('supabase/tests/'+name,'utf8'));assert.doesNotMatch(output,/^not ok\b/m);console.log(name+'\n'+output);
+ const output=sql(source(name));assert.doesNotMatch(output,/^not ok\b/m);console.log(name+(PHASE_PINNED[name]?` (${PHASE_PINNED[name]})`:'')+'\n'+output);
 }
 const functions=[
  'get_mercadopago_payment_authority_v2(uuid,text,uuid,uuid,uuid)',

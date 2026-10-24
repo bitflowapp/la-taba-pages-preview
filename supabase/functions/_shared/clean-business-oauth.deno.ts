@@ -1,7 +1,7 @@
 import { assertEquals } from 'jsr:@std/assert@1.0.19';
 import { createPreference } from './mercadopago.ts';
 import { randomSecret } from './seller-oauth-crypto.ts';
-import { integratorProviderResponse } from './integrator-identity-fixture.ts';
+import { INTEGRATOR_FIXTURE_OWNER, integratorProviderResponse } from './integrator-identity-fixture.ts';
 import { resetIntegratorIdentityCache } from './seller-oauth.ts';
 
 const handlers: Array<(r: Request) => Promise<Response>> = [];
@@ -166,5 +166,93 @@ Deno.test('the callback also refuses to link when the integrator changed after t
     assertEquals(new URL(completed.headers.get('location')!).searchParams.get('mp_connection'),'error');
     assertEquals(h.counts.linked,0,'no link is saved');
     assertEquals(h.counts.codeExchanges,0,'the authorization code is not even exchanged');
+  } finally { h.restore(); }
+});
+
+// 2026-10-24, commercial onboarding: two wrong accounts a person can authorize at Mercado Pago, and the link cannot
+// change seller once saved (mp_finish_oauth). Both are refused before anything is stored.
+const PRODUCTION_ENV = {
+  SUPABASE_URL: 'https://wwcpogltfgzgkrlilbcd.supabase.co', MERCADOPAGO_ENVIRONMENT: 'production',
+  MERCADOPAGO_OAUTH_ENVIRONMENT: 'production', TABA_DEPLOYMENT_ENV: 'production',
+  MERCADOPAGO_OAUTH_PROJECT_REF: 'wwcpogltfgzgkrlilbcd', MERCADOPAGO_OAUTH_PANEL_URL: 'https://la-taba.pages.dev/',
+  MERCADOPAGO_CLIENT_ID: '7677852968049976', TABA_CHECKOUT_BASE_URL: 'https://la-taba.pages.dev',
+  TABA_ALLOWED_ORIGINS: 'https://la-taba.pages.dev',
+  // Production configuration refuses to load without it (providerEnvironment). Linking does NOT need the final key
+  // MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION: these tests run without it, as Walter's link will.
+  MERCADOPAGO_PRODUCTION_REVIEW_STATUS: 'approved',
+};
+function sellerHarness({ production, sellerId, finish = () => Response.json(true) }: {
+  production: boolean; sellerId: number; finish?: () => Response;
+}) {
+  configure();
+  if (production) for (const [name, value] of Object.entries(PRODUCTION_ENV)) Deno.env.set(name, value);
+  Deno.env.delete('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION');
+  const host = production ? PRODUCTION_ENV.SUPABASE_URL : base;
+  let state: Record<string,unknown> | null = null;
+  const counts = { finish: 0, labels: 0 };
+  const original = globalThis.fetch;
+  globalThis.fetch = async (input, options) => {
+    const url = new URL(String(input)), init = options as RequestInit;
+    const integrator = integratorProviderResponse(input, init, !production);
+    if (integrator) return integrator;
+    const body = init?.body ? JSON.parse(String(init.body)) : {};
+    if(url.pathname==='/auth/v1/user') return Response.json({id:owner,aud:'authenticated'});
+    if(url.pathname.endsWith('/mp_connection_authorized')) return Response.json(true);
+    if(url.pathname.endsWith('/consume_payment_rate_limit')) return Response.json({allowed:true});
+    if(url.pathname.endsWith('/mp_begin_oauth')) {
+      state={...body,business_id:body.p_business_id,user_id:body.p_user_id,generation:'generation',protected_verifier:body.p_protected_verifier};
+      return Response.json('generation');
+    }
+    if(url.pathname.endsWith('/mp_consume_oauth')) {const consumed=state;state=null;return Response.json(consumed?[consumed]:[]);}
+    if(url.pathname.endsWith('/mp_finish_oauth')) {counts.finish++;assertEquals(body.p_seller_id,String(sellerId));return finish();}
+    if(url.pathname.endsWith('/mp_seller_connections')) {counts.labels++;return Response.json(null);}
+    if(url.pathname==='/oauth/token') return Response.json({access_token:'APP_USR-consented-fixture',refresh_token:'fixture-refresh-token',user_id:sellerId,expires_in:15552000,scope:'read write offline_access',live_mode:production});
+    if(url.pathname==='/users/me') return Response.json({id:sellerId,site_id:'MLA',nickname:'COMERCIO',tags:production?['normal']:['test_user','normal']});
+    throw Error('Unexpected request in seller account test: '+url.pathname);
+  };
+  const payload = btoa(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 }));
+  const headers={authorization:`Bearer fixture.${payload}.fixture`,'content-type':'application/json',origin:production?PRODUCTION_ENV.TABA_ALLOWED_ORIGINS:ENV.TABA_ALLOWED_ORIGINS};
+  const run = async () => {
+    const started=await connect(new Request(host+'/functions/v1/mercadopago-connect',{method:'POST',headers,body:JSON.stringify({business_id:business,action:'connect'})}));
+    assertEquals(started.status,200);
+    const auth=new URL((await started.json()).authorization_url);
+    const completed=await callback(new Request(host+'/functions/v1/mercadopago-oauth-callback?state='+auth.searchParams.get('state')+'&code=fixture-code'));
+    const location=new URL(completed.headers.get('location')!);
+    assertEquals(location.origin+location.pathname,production?'https://la-taba.pages.dev/':'https://taba2-staging.pages.dev/');
+    return location.searchParams.get('mp_connection');
+  };
+  return { counts, run, restore: () => { globalThis.fetch = original; Deno.env.delete('MERCADOPAGO_PRODUCTION_REVIEW_STATUS'); configure(); } };
+}
+
+Deno.test('production: the account that owns La Taba Delivery is never linked as a business seller', async () => {
+  const h = sellerHarness({ production: true, sellerId: INTEGRATOR_FIXTURE_OWNER });
+  try {
+    assertEquals(await h.run(), 'integrator_account');
+    assertEquals(h.counts.finish, 0, 'nothing is saved, so the business can still link its own account');
+  } finally { h.restore(); }
+});
+
+Deno.test('production: a real business account different from the integrator owner links normally', async () => {
+  const h = sellerHarness({ production: true, sellerId: 555000111 });
+  try {
+    assertEquals(await h.run(), 'connected');
+    assertEquals(h.counts.finish, 1);
+  } finally { h.restore(); }
+});
+
+Deno.test('test: the QA integrator is the test seller\'s own application, so the same account links', async () => {
+  const h = sellerHarness({ production: false, sellerId: INTEGRATOR_FIXTURE_OWNER });
+  try {
+    assertEquals(await h.run(), 'connected');
+  } finally { h.restore(); }
+});
+
+Deno.test('an account already linked to another business is answered as such, not as a generic error', async () => {
+  const h = sellerHarness({ production: true, sellerId: 555000222, finish: () => Response.json(
+    { code: '23505', message: 'duplicate key value violates unique constraint "mp_seller_connections_environment_seller_id_key"' },
+    { status: 409 }) });
+  try {
+    assertEquals(await h.run(), 'seller_in_use');
+    assertEquals(h.counts.labels, 0, 'no label is written for a link that was not saved');
   } finally { h.restore(); }
 });

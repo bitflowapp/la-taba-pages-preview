@@ -39,13 +39,19 @@ export async function verifySellerConnection(businessId: string) {
   catch { executionEnabled = false; }
   // A seller of one environment under an integrator of the other can be linked and read, but never paid.
   let integratorMatches = true;
-  try { await assertIntegratorEnvironment(); }
+  let integratorOwner: string | null = null;
+  try { integratorOwner = (await assertIntegratorEnvironment()).owner_id; }
   catch (error) {
     // Unreadable is not a verdict: the panel shows provider_unavailable or server_configuration_incomplete.
     if (!(error instanceof IntegratorEnvironmentError)) throw error;
     integratorMatches = false;
   }
-  const enabled = integratorMatches && bindingMatches && executionEnabled && availability.data?.available === true;
+  // A production link to La Taba's own account would collect the business's sales into the platform (the callback
+  // refuses it since 2026-10-24; this catches a link saved before that).
+  const sellerIsIntegrator = config.environment === 'production' && integratorOwner !== null
+    && String(row.seller_id) === integratorOwner;
+  const enabled = integratorMatches && !sellerIsIntegrator && bindingMatches && executionEnabled
+    && availability.data?.available === true;
   return {
     checked_at: new Date().toISOString(),
     credentials_usable: true,
@@ -54,8 +60,10 @@ export async function verifySellerConnection(businessId: string) {
     backend_operational: true,
     binding_matches: bindingMatches,
     integrator_environment_matches: integratorMatches,
+    seller_is_integrator: sellerIsIntegrator,
     online_payments_enabled: enabled,
     blocking_reason: enabled ? null : !integratorMatches ? 'integrator_environment_mismatch'
+      : sellerIsIntegrator ? 'seller_is_integrator'
       : !bindingMatches ? 'seller_binding_mismatch'
       : !executionEnabled ? 'production_execution_not_enabled' : 'payments_not_enabled',
   };

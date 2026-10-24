@@ -1,0 +1,861 @@
+/* ============================================================================
+   UX PREMIUM · 2026-10-24
+   Última capa de la vidriera del cliente. No agrega componentes: ajusta
+   proporciones, ritmo y jerarquía de los que ya existen.
+
+   Medido antes de tocar (390×844, vitrina Neuquén):
+   - tarjeta de catálogo 384px de alto para una foto de 143px: el 62% era
+     relleno y texto; sólo dos productos por pantalla;
+   - chips de 54px, buscador de 52px y orden de 60px: 166px de controles antes
+     del primer producto;
+   - el visor de historias era una tarjeta de 366px con una imagen 9:16
+     recortada a 4:5 y la página asomando arriba y abajo.
+
+   Reglas de esta capa:
+   - todo control táctil sigue midiendo ≥44px (lo fijan los e2e);
+   - sin blur nuevo, sin capas fijas, sin animaciones permanentes;
+   - sólo vistas del cliente: el panel del negocio y el repartidor no se tocan.
+   ========================================================================== */
+
+:root {
+  --ux-radius-card: 18px;
+  --ux-radius-media: 13px;
+  --ux-radius-control: 12px;
+  --ux-line: rgb(255 255 255 / 9%);
+  --ux-line-strong: rgb(255 255 255 / 16%);
+  --ux-surface: rgb(29 34 42 / 92%);
+  --ux-surface-2: rgb(36 42 51 / 96%);
+  --ux-shadow-card: 0 1px 0 rgb(255 255 255 / 5%) inset, 0 8px 22px rgb(0 0 0 / 28%);
+  --ux-ease: cubic-bezier(.2, .8, .2, 1);
+}
+
+/* ---------------------------------------------------------------------------
+   1 · Aviso de demostración: sigue colgando de la barra, más discreto.
+   ------------------------------------------------------------------------- */
+:root body .demo-mode-badge:not([hidden]) {
+  padding: 2px 10px 3px;
+  gap: 6px;
+  border-color: rgb(255 255 255 / 14%);
+  background: rgb(16 19 23 / 92%);
+  color: rgb(245 245 245 / 86%);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .01em;
+}
+:root body .demo-mode-badge .demo-mode-badge-dot {
+  width: 6px;
+  height: 6px;
+}
+
+/* ---------------------------------------------------------------------------
+   2 · Controles del catálogo: buscador, chips, título y orden.
+   ------------------------------------------------------------------------- */
+:root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-search {
+  min-height: 48px;
+  border-radius: 14px;
+  margin-bottom: 6px;
+}
+:root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .category-strip,
+:root body[data-active-view="home"] .app-shell .home-category-strip {
+  gap: 8px;
+  padding-block: 6px 10px;
+}
+:root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .category-button,
+:root body[data-active-view="home"] .app-shell .home-category-card {
+  min-height: 44px;
+  height: 44px;
+  padding: 0 14px 0 12px;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -.005em;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%);
+}
+:root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .category-button .category-ico svg,
+:root body[data-active-view="home"] .app-shell .home-category-card .home-category-icon svg {
+  width: 18px;
+  height: 18px;
+}
+:root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .category-button.active,
+:root body[data-active-view="home"] .app-shell .home-category-card.active {
+  box-shadow: inset 0 1px 0 rgb(255 225 222 / 28%), 0 4px 12px rgb(208 0 13 / 22%);
+}
+:root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-head {
+  min-height: 32px;
+  margin-bottom: 8px;
+  align-items: baseline;
+}
+:root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-head :is(h1, h2) {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+:root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brand-ink-muted);
+}
+:root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .sort-field {
+  min-height: 44px;
+  height: 44px;
+  border-radius: var(--ux-radius-control);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+/* ---------------------------------------------------------------------------
+   3 · Tarjeta de producto del catálogo.
+   La foto manda; nombre, presentación, precio y acción en un bloque compacto.
+   El pie se empuja al fondo para que los precios de una fila queden alineados.
+   ------------------------------------------------------------------------- */
+@media (max-width: 1099px) {
+  :root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-grid {
+    gap: 12px;
+  }
+}
+:root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-card {
+  border: 1px solid var(--ux-line);
+  border-radius: var(--ux-radius-card);
+  background-image: linear-gradient(170deg, rgb(41 47 56 / 96%), rgb(25 29 36 / 98%) 70%);
+  /* Sin box-shadow propio: la sombra de la tarjeta es el brillo de estante
+     (`--card-glow`, brand-home.css), que tiene su propio contrato e2e. */
+}
+:root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-media-frame {
+  padding: 6px 6px 0;
+}
+:root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-media {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--ux-radius-media);
+}
+:root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-media .thumb {
+  width: 100%;
+  height: 100%;
+}
+/* La pastilla de vidriera ya no tapa la base de la foto: va a la esquina. */
+:root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-offer-tag {
+  top: 8px;
+  right: auto;
+  bottom: auto;
+  left: 8px;
+}
+:root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-offer-tag .offer-badge {
+  min-height: 0;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: .01em;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 18%);
+}
+:root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px 12px;
+}
+:root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-body h3 {
+  min-height: 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -.01em;
+}
+:root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-body h3 .product-name-link {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+:root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-body > p {
+  overflow: hidden;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--brand-ink-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-foot {
+  margin-top: auto;
+  padding-top: 10px;
+  gap: 8px;
+}
+:root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-foot .price:not([data-price-pending-message]) .price-amounts strong {
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -.02em;
+}
+:root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-foot .price::after,
+:root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-foot::before {
+  content: none;
+}
+:root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-action .add-button {
+  min-height: 44px;
+  height: 44px;
+  border-radius: var(--ux-radius-control);
+  font-size: 14.5px;
+  font-weight: 800;
+}
+@media (hover: hover) and (pointer: fine) {
+  :root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-card:hover {
+    border-color: var(--ux-line-strong);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   4 · Home: rieles y títulos de sección con el mismo ritmo.
+   ------------------------------------------------------------------------- */
+:root body[data-active-view="home"] .app-shell .home-section-head h2 {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+:root body[data-active-view="home"] .app-shell .home-section-head small {
+  font-size: 12.5px;
+  color: var(--brand-ink-muted);
+}
+:root body[data-active-view="home"] .app-shell .home-best-card {
+  border: 1px solid var(--ux-line);
+  border-radius: var(--ux-radius-card);
+}
+
+/* ---------------------------------------------------------------------------
+   5 · Visor de historias.
+   Las piezas son 9:16 (720×1280). En el teléfono el visor ocupa la pantalla
+   entera; en escritorio es un marco 9:16 centrado. La imagen llena el marco y
+   el título, la acción y la navegación flotan sobre un degradado.
+   ------------------------------------------------------------------------- */
+:root body .stories-modal {
+  overflow: hidden;
+  width: min(100vw, calc(min(100dvh, 900px) * 9 / 16));
+  max-width: 100vw;
+  height: min(100dvh, 900px);
+  max-height: 100dvh;
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: #07090b;
+  box-shadow: 0 30px 80px rgb(0 0 0 / 60%);
+}
+/* Entrada sólo por opacidad: el desplazamiento y la escala genéricos de los
+   diálogos dejaban asomar la página por los bordes de un visor a pantalla
+   completa. */
+:root body .stories-modal[open] {
+  animation: ux-story-in 180ms ease both;
+}
+@keyframes ux-story-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+:root body .stories-modal::backdrop {
+  background: rgb(5 6 8 / 82%);
+}
+@media (min-width: 600px) {
+  :root body .stories-modal {
+    height: min(calc(100dvh - 48px), 860px);
+    width: calc(min(calc(100dvh - 48px), 860px) * 9 / 16);
+    border-radius: 22px;
+  }
+}
+:root body .stories-modal [data-stories-content],
+:root body .stories-modal .stories-card {
+  position: relative;
+  height: 100%;
+}
+:root body .stories-modal .stories-media {
+  position: absolute;
+  inset: 0;
+  aspect-ratio: auto;
+  background:
+    linear-gradient(110deg, rgb(255 255 255 / 0%) 30%, rgb(255 255 255 / 6%) 50%, rgb(255 255 255 / 0%) 70%) 0 0 / 220% 100%,
+    #14181d;
+  animation: ux-story-shimmer 1.3s linear infinite;
+  cursor: pointer;
+}
+:root body .stories-modal .stories-media.is-ready {
+  animation: none;
+}
+:root body .stories-modal .stories-media :is(img, video) {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 1;
+  transition: opacity 240ms ease;
+}
+:root body .stories-modal .stories-media.is-loading :is(img, video) {
+  opacity: 0;
+}
+@keyframes ux-story-shimmer {
+  to { background-position: -220% 0, 0 0; }
+}
+/* Degradados superior e inferior: dan contraste al progreso y al título sin
+   oscurecer la pieza. */
+:root body .stories-modal .stories-card::before,
+:root body .stories-modal .stories-card::after {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  left: 0;
+  pointer-events: none;
+  content: "";
+}
+:root body .stories-modal .stories-card::before {
+  top: 0;
+  height: 120px;
+  background: linear-gradient(rgb(0 0 0 / 55%), transparent);
+}
+:root body .stories-modal .stories-card::after {
+  bottom: 0;
+  height: 46%;
+  background: linear-gradient(transparent, rgb(0 0 0 / 50%) 35%, rgb(0 0 0 / 86%));
+}
+:root body .stories-modal .stories-progress {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: 0;
+  left: 0;
+  padding: max(12px, env(safe-area-inset-top)) 64px 0 12px;
+}
+:root body .stories-modal .stories-progress span {
+  height: 3px;
+  background: rgb(255 255 255 / 32%);
+}
+:root body .stories-modal .stories-progress span.is-active {
+  background: #fff;
+  box-shadow: 0 0 6px rgb(255 255 255 / 40%);
+}
+:root body .stories-modal .modal-close {
+  position: absolute;
+  z-index: 3;
+  top: max(6px, env(safe-area-inset-top));
+  right: 8px;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 34%);
+  color: #fff;
+  font-size: 24px;
+}
+:root body .stories-modal .stories-body {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  gap: 12px;
+  padding: 0 16px max(16px, env(safe-area-inset-bottom));
+}
+:root body .stories-modal .stories-body h2 {
+  color: #fff;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -.025em;
+  text-shadow: 0 2px 12px rgb(0 0 0 / 45%);
+}
+:root body .stories-modal .stories-actions .primary-button {
+  min-height: 48px;
+  border-radius: 14px;
+  font-size: 15.5px;
+  font-weight: 800;
+  box-shadow: 0 8px 22px rgb(208 0 13 / 35%);
+}
+:root body .stories-modal .stories-nav button {
+  min-width: 96px;
+  border-color: rgb(255 255 255 / 22%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 12%);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+:root body .stories-modal .stories-nav button:disabled {
+  opacity: .32;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root body .stories-modal .stories-media { animation: none; }
+}
+
+/* ---------------------------------------------------------------------------
+   6 · Carrito y checkout.
+   ------------------------------------------------------------------------- */
+:root body[data-active-view="cart"] .app-view[data-view="cart"] {
+  padding-top: 18px;
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .section-head {
+  margin-bottom: 14px;
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .view-title {
+  font-size: clamp(26px, 6vw, 34px);
+  font-weight: 800;
+  letter-spacing: -.03em;
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] :is(.cart-card, .checkout-form) {
+  border: 1px solid var(--ux-line);
+  border-radius: 20px;
+  box-shadow: var(--ux-shadow-card);
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .cart-card-head h2 {
+  font-size: 17px;
+  font-weight: 800;
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .cart-item {
+  padding-block: 12px;
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .cart-title {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .cart-meta {
+  font-size: 12.5px;
+  color: var(--brand-ink-muted);
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .cart-line {
+  font-size: 16px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .quantity-control {
+  min-height: 44px;
+  border-color: var(--ux-line-strong);
+  background: rgb(255 255 255 / 4%);
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .quantity-control strong {
+  font-variant-numeric: tabular-nums;
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .checkout-heading span {
+  font-size: 11.5px;
+  letter-spacing: .08em;
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .checkout-heading h2 {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -.02em;
+}
+/* Entrega: control segmentado claro, la opción elegida se ve elegida. */
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .delivery-mode {
+  padding: 4px;
+  border: 1px solid var(--ux-line);
+  border-radius: 14px;
+  background: rgb(0 0 0 / 22%);
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .delivery-mode span {
+  border-radius: 11px;
+  font-size: 14.5px;
+  font-weight: 750;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .delivery-mode input:checked + span {
+  background: var(--taba-red);
+  color: #fff;
+  box-shadow: 0 4px 12px rgb(208 0 13 / 28%);
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .delivery-mode input:focus-visible + span {
+  outline: 2px solid var(--brand-focus);
+  outline-offset: 2px;
+}
+/* Resumen: el total es lo más legible de la pantalla. */
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .summary-box {
+  gap: 8px;
+  border: 1px solid var(--ux-line);
+  border-radius: 16px;
+  background: rgb(0 0 0 / 22%);
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .summary-row {
+  font-size: 14.5px;
+  font-variant-numeric: tabular-nums;
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .summary-row span {
+  color: var(--brand-ink-muted);
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .summary-row.total {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ux-line-strong);
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .summary-row.total span {
+  color: var(--brand-ink);
+  font-size: 16px;
+  font-weight: 800;
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .summary-row.total strong {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -.02em;
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .confirm-button {
+  min-height: 52px;
+  border-radius: 14px;
+  font-size: 16px;
+  box-shadow: 0 10px 24px rgb(208 0 13 / 30%);
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .warning-box:not(:empty) {
+  border-left-width: 4px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .profile-address-card {
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+@media (min-width: 900px) {
+  /* En escritorio el formulario acompaña el scroll: el total y el botón de
+     confirmar no se pierden detrás de la lista de direcciones. */
+  :root body[data-active-view="cart"] .app-view[data-view="cart"] .checkout-layout {
+    align-items: start;
+  }
+  :root body[data-active-view="cart"] .app-view[data-view="cart"] .cart-card {
+    position: sticky;
+    top: 84px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   7 · Feedback al agregar: el carrito flotante y el badge responden.
+   ------------------------------------------------------------------------- */
+:root body .floating-cart.cart-bump {
+  animation: ux-cart-bump 460ms var(--ux-ease);
+}
+@keyframes ux-cart-bump {
+  0% { transform: translateY(0) scale(1); }
+  35% { transform: translateY(-3px) scale(1.025); box-shadow: 0 14px 34px rgb(208 0 13 / 45%); }
+  100% { transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root body .floating-cart.cart-bump { animation: none; }
+}
+
+/* ---------------------------------------------------------------------------
+   8 · Foco visible coherente en toda la vidriera.
+   ------------------------------------------------------------------------- */
+:root body:not([data-active-view="business"]):not([data-active-view="rider"]) .app-shell :is(button, a, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--brand-focus);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+   9 · Escritorio ancho.
+   ------------------------------------------------------------------------- */
+@media (min-width: 1100px) {
+  /* Las columnas siguen el presupuesto de premium-storefront.css (tarjeta
+     de 250px o más, hasta cinco; lo fija premium-storefront.spec). */
+  :root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-card {
+    border-radius: 20px;
+  }
+  :root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-media-frame {
+    padding: 8px 8px 0;
+  }
+  :root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-media {
+    aspect-ratio: 1 / 1;
+    border-radius: 14px;
+  }
+  :root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-body {
+    padding: 12px 14px 14px;
+  }
+  :root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-body h3 {
+    font-size: 15.5px;
+  }
+  :root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .product-foot .price:not([data-price-pending-message]) .price-amounts strong {
+    font-size: 21px;
+  }
+  :root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-head :is(h1, h2) {
+    font-size: 28px;
+  }
+}
+
+/* Mínimo alcanzado: el dorado de lo confirmado se conserva, pero una barra
+   llena no informa nada; queda el mensaje con una marca de listo. */
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .minimum-order-progress.is-complete {
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .minimum-order-progress.is-complete::before {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 999px;
+  background: rgb(201 149 62 / 22%);
+  color: var(--brand-gold-soft);
+  font-size: 15px;
+  font-weight: 900;
+  content: "✓";
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .minimum-order-progress.is-complete .minimum-order-track {
+  display: none;
+}
+
+/* ---------------------------------------------------------------------------
+   10 · Teléfono: catálogo y carrito más densos sin achicar los toques.
+   ------------------------------------------------------------------------- */
+@media (max-width: 820px) {
+  /* Título del filtro y orden en un solo renglón: el orden era una fila
+     entera de 60px antes del primer producto. Si el filtro de producción está
+     visible, vuelven a apilarse. */
+  :root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-masthead:not(:has(.catalog-filters:not([hidden]))) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    margin-block: 2px 12px;
+  }
+  /* Título arriba y contador abajo, siempre: el alto de la fila no cambia
+     según el largo del contador (catalog-polish.spec). */
+  :root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-masthead:not(:has(.catalog-filters:not([hidden]))) .catalog-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    margin: 0;
+  }
+  /* Con el orden al lado, un rubro largo («Aguas saborizadas») parte en dos
+     renglones en vez de recortarse. */
+  :root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-masthead:not(:has(.catalog-filters:not([hidden]))) .catalog-head :is(h1, h2) {
+    overflow: visible;
+    min-width: 0;
+    max-width: 100%;
+    text-overflow: clip;
+    white-space: normal;
+  }
+  :root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-masthead:not(:has(.catalog-filters:not([hidden]))) .catalog-head::after {
+    content: none;
+  }
+  :root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-masthead:not(:has(.catalog-filters:not([hidden]))) .catalog-controls {
+    display: block;
+    margin: 0;
+  }
+  :root body[data-active-view="catalog"] .app-shell .app-view[data-view="catalog"] .catalog-masthead:not(:has(.catalog-filters:not([hidden]))) .sort-field {
+    width: auto;
+    max-width: 190px;
+    padding-inline: 12px 28px;
+  }
+
+  /* Línea del carrito: foto a la izquierda en dos renglones, nombre y
+     cantidad al centro, importe arriba a la derecha. */
+  :root body[data-active-view="cart"] .app-view[data-view="cart"] .cart-item {
+    grid-template-columns: 64px minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    align-items: start;
+    gap: 8px 12px;
+  }
+  :root body[data-active-view="cart"] .app-view[data-view="cart"] .cart-item .thumb {
+    grid-row: 1 / span 2;
+    width: 64px;
+    height: 64px;
+    min-height: 64px;
+    border-radius: 12px;
+  }
+  :root body[data-active-view="cart"] .app-view[data-view="cart"] .cart-item-info {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  :root body[data-active-view="cart"] .app-view[data-view="cart"] .cart-item-side {
+    display: contents;
+  }
+  :root body[data-active-view="cart"] .app-view[data-view="cart"] .cart-item .quantity-control {
+    grid-column: 2 / -1;
+    grid-row: 2;
+    justify-self: start;
+    width: 128px;
+  }
+  :root body[data-active-view="cart"] .app-view[data-view="cart"] .cart-item .cart-line {
+    grid-column: 3;
+    grid-row: 1;
+    padding-top: 1px;
+  }
+  :root body[data-active-view="cart"] .app-view[data-view="cart"] .view-actions {
+    gap: 8px;
+  }
+  :root body[data-active-view="cart"] .app-view[data-view="cart"] .view-actions :is(.secondary-button, .ghost-button) {
+    min-height: 44px;
+    font-size: 14px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   11 · Home ancha.
+   A 1280 la home medía 1060px con 110px de margen por lado mientras el
+   catálogo ya usaba el ancho; los rieles mostraban cuatro tarjetas y un riel
+   con tres las estiraba a 316px, distinto del resto. Un combo solo ocupaba
+   el renglón entero con la foto perdida en el medio.
+   ------------------------------------------------------------------------- */
+@media (min-width: 761px) {
+  :root body[data-active-view="home"] .app-shell .home-best-sellers {
+    --ux-rail-cols: 3;
+    gap: 14px;
+    grid-auto-columns: calc((100% - (var(--ux-rail-cols) - 1) * 14px) / var(--ux-rail-cols));
+  }
+}
+@media (min-width: 960px) {
+  :root body[data-active-view="home"] .app-shell .home-best-sellers {
+    --ux-rail-cols: 4;
+  }
+}
+@media (min-width: 1100px) {
+  :root body[data-active-view="home"] .app-shell .app-view[data-view="home"] {
+    max-width: min(1400px, calc(100vw - 64px));
+    margin-inline: auto;
+  }
+  :root body[data-active-view="home"] .app-shell .home-best-sellers {
+    --ux-rail-cols: 5;
+  }
+  /* Combos en grilla sólo con ancho de sobra; en tablet siguen en carrusel. */
+  :root body[data-active-view="home"] .app-shell .home-combos-rail {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  }
+}
+@media (min-width: 1500px) {
+  :root body[data-active-view="home"] .app-shell .home-best-sellers {
+    --ux-rail-cols: 6;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   12 · Ficha de producto.
+   «Observación (opcional)» ocupaba dos renglones; el estado de stock flotaba
+   desalineado del precio.
+   ------------------------------------------------------------------------- */
+:root body .modal-card[data-modal-product-id] .modal-product-copy h2 {
+  font-size: clamp(22px, 5.6vw, 28px);
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -.025em;
+}
+:root body .modal-card[data-modal-product-id] .modal-commerce-row {
+  align-items: center;
+}
+:root body .modal-card[data-modal-product-id] .modal-availability:not(:empty) {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgb(201 149 62 / 14%);
+  font-size: 12.5px;
+  line-height: 1.3;
+}
+:root body .modal-card[data-modal-product-id] .modal-note-field {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: 6px 6px;
+  font-size: 14px;
+}
+:root body .modal-card[data-modal-product-id] .modal-note-field > span {
+  margin: 0;
+  color: var(--brand-ink-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+:root body .modal-card[data-modal-product-id] .modal-note-field input {
+  grid-column: 1 / -1;
+  min-height: 46px;
+  border-radius: var(--ux-radius-control);
+}
+:root body .modal-card[data-modal-product-id] .modal-actions .add-button {
+  min-height: 50px;
+  border-radius: 14px;
+  font-size: 16px;
+}
+
+/* ---------------------------------------------------------------------------
+   13 · Banner de marca con foto de producto (packshot).
+   Una foto de producto sobre blanco no se recorta como escena: va entera, en
+   un recuadro claro, igual que en su tarjeta del catálogo.
+   ------------------------------------------------------------------------- */
+:root body .home-brand-banner-media.is-packshot {
+  top: 14px;
+  right: 14px;
+  bottom: 14px;
+  width: min(38%, 168px);
+  border-radius: 14px;
+  background-color: #fff;
+  background-position: center;
+  background-size: contain;
+  box-shadow: 0 8px 22px rgb(0 0 0 / 28%);
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+/* ---------------------------------------------------------------------------
+   14 · Checkout: total y «Confirmar pedido» siempre a mano (teléfono y escritorio).
+   Medido antes: con tres direcciones guardadas el botón quedaba ~1.100px
+   debajo del encabezado «Datos de entrega» y el total, fuera de la pantalla
+   mientras se elegía la dirección. La fila del botón se vuelve una barra fija
+   sobre la navegación mientras se recorre el formulario y, al llegar al final,
+   vuelve a su lugar. El orden del DOM no cambia (resumen → aviso → botón) ni
+   cambia qué hace el botón. El total lo escribe `renderOrderSummary` en
+   `data-checkout-total` y se pinta con attr(): no es texto ni nombre accesible.
+   ------------------------------------------------------------------------- */
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .checkout-form .button-row[data-checkout-total] {
+  position: sticky;
+  z-index: 5;
+  /* --nav-block vale 0 en escritorio: ahí la barra apoya a 8px del borde. */
+  bottom: calc(var(--nav-block, 56px) + 8px);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 0 14px;
+  margin-inline: -6px;
+  padding: 10px 10px 10px 16px;
+  border: 1px solid var(--ux-line-strong);
+  border-radius: 18px;
+  background: #161a20;
+  box-shadow: 0 -2px 0 rgb(0 0 0 / 10%), 0 14px 34px rgb(0 0 0 / 50%);
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .checkout-form .button-row[data-checkout-total]::before,
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .checkout-form .button-row[data-checkout-total]::after {
+  grid-column: 1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .checkout-form .button-row[data-checkout-total]::before {
+  grid-row: 1;
+  align-self: end;
+  color: var(--brand-ink-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  content: attr(data-checkout-total-label);
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .checkout-form .button-row[data-checkout-total]::after {
+  grid-row: 2;
+  align-self: start;
+  color: var(--brand-ink);
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: -.02em;
+  line-height: 1.15;
+  content: attr(data-checkout-total);
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .checkout-form .button-row[data-checkout-total] .confirm-button {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  width: 100%;
+  min-height: 50px;
+  box-shadow: 0 8px 20px rgb(208 0 13 / 30%);
+}
+
+/* Encabezado del carrito: acciones a su ancho, no media pantalla cada una. */
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .view-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .view-actions > * {
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 44px;
+  padding-inline: 16px;
+}

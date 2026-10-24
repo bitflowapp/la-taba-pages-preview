@@ -47,6 +47,9 @@ import {
   showStoriesModal,
   showToast,
   stepStoriesModal,
+  storiesTapDirection,
+  storiesCount,
+  currentStoryIndex,
   updateAddressFieldVisibility,
   publishedBusinessValue,
   $,
@@ -1715,6 +1718,14 @@ function bindEvents() {
 
     if (target.closest('[data-story-next]')) {
       stepStoriesModal(1);
+      return;
+    }
+
+    const storyMedia = target.closest('[data-stories-modal] .stories-media');
+    if (storyMedia) {
+      const delta = storiesTapDirection(event, storyMedia);
+      const next = currentStoryIndex() + delta;
+      if (delta && next >= 0 && next < storiesCount()) stepStoriesModal(delta);
       return;
     }
 

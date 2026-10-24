@@ -61,9 +61,14 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
+          # El registro de entornos decide qué se vigila: sin proyecto de
+          # producción el vigía queda en espera (sale 0 con aviso) en vez de
+          # fallar cada corrida contra un proyecto que ya no existe.
           sparse-checkout: |
             scripts/scheduler-watchdog-probe.mjs
             scripts/scheduler-watchdog-report.mjs
+            scripts/lib/environments.mjs
+            deploy/environments.json
           sparse-checkout-cone-mode: false
 
       - name: Preguntarle al servidor por su propio reloj

@@ -15,7 +15,7 @@
 // password de la base ni Docker.
 //
 //   $env:SUPABASE_ACCESS_TOKEN = <token del CLI>
-//   node scripts/production-health-check.mjs --ref wwcpogltfgzgkrlilbcd
+//   node scripts/production-health-check.mjs --ref <ref de producción de deploy/environments.json>
 //
 // Salida 0 = sano. 1 = algo que hay que mirar. 2 = no se pudo preguntar.
 
@@ -24,9 +24,15 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
+import { productionTargetOrExit } from './lib/environments.mjs';
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-const PRODUCTION_REF = 'wwcpogltfgzgkrlilbcd';
+// El destino sale de deploy/environments.json. Mientras producción no tenga proyecto, sale 2 sin preguntar nada:
+// antes el ref estaba fijo en un proyecto que ya no existe. Un proyecto `provisioned` (creado y todavía cerrado al
+// público) también se mide: es justo cuando hace falta saber si está sano.
+const PRODUCTION = productionTargetOrExit({ allowProvisioned: true });
+const PRODUCTION_REF = PRODUCTION.ref;
 
 /*
  * EL LEDGER ESPERADO SALE DE ESTA COPIA DEL REPOSITORIO, NO DE UN NUMERO A MANO.
@@ -57,7 +63,7 @@ function ledgerDelRepositorio() {
 const REPO_LEDGER = ledgerDelRepositorio();
 const EXPECTED_LEDGER = REPO_LEDGER.total;
 const EXPECTED_LAST_MIGRATION = REPO_LEDGER.last;
-const CANONICAL_BUSINESS = '00000000-0000-4000-8000-000000000001';
+const CANONICAL_BUSINESS = PRODUCTION.businessId;
 const EXPECTED_CRON = [
   'taba-payment-outbox-worker',
   'taba-checkout-expiry-sweep',

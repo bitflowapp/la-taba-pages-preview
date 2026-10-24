@@ -8,14 +8,28 @@ import {
   evaluarNegocio, evaluarPago, evaluarProducto, evaluarRider, primerBloqueo,
 } from '../scripts/e2e-production-sale/guards.mjs';
 // eslint-disable-next-line no-duplicate-imports -- se importa aparte para probar la lectura dinámica del entorno
-import { assertSoloLectura, ConsultaNoPermitida } from '../scripts/e2e-production-sale/db-solo-lectura.mjs';
+import {
+  assertSoloLectura, ConsultaNoPermitida, consultar, refAutorizado,
+} from '../scripts/e2e-production-sale/db-solo-lectura.mjs';
 import { cerrarLock, generarRunId, leerLock, tomarLock } from '../scripts/e2e-production-sale/lock.mjs';
 import {
   construirReporte, olvidarSecretosDeLaCorrida, redactar, redactarProfundo, registrarSecretoDeLaCorrida,
 } from '../scripts/e2e-production-sale/evidencia.mjs';
-import { AUTORIZACION, PRODUCTO_AUTORIZADO } from '../scripts/e2e-production-sale/contrato.mjs';
+import {
+  AUTORIZACION, destinoDeProduccion, PRODUCCION, PRODUCTO_AUTORIZADO,
+} from '../scripts/e2e-production-sale/contrato.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+// El destino sale de deploy/environments.json. Las pruebas pasan un registro con una producción FICTICIA activa
+// (tests/fixtures/environments.production-active.json) y la misma sin aprovisionar, armada acá.
+const REGISTRO_ACTIVO = JSON.parse(
+  fs.readFileSync(path.join(ROOT, 'tests/fixtures/environments.production-active.json'), 'utf8'),
+);
+const PRODUCCION_FICTICIA = REGISTRO_ACTIVO.environments.production;
+const SIN_PRODUCCION = structuredClone(REGISTRO_ACTIVO);
+SIN_PRODUCCION.environments.production.status = 'not_provisioned';
+Object.assign(SIN_PRODUCCION.environments.production.supabase, { ref: null, organizationId: null, plan: null });
 
 /*
  * El harness compra UNA vez en producción real. Estos casos prueban al
@@ -231,6 +245,41 @@ test('una escritura escondida en un comentario tampoco pasa', () => {
 
 test('columnas que se llaman parecido a una escritura siguen permitidas', () => {
   assert.doesNotThrow(() => assertSoloLectura('select updated_at, created_at from public.orders'));
+});
+
+// ── El destino sale del registro de entornos, y sin producción no hay a dónde ir ─
+
+test('el contrato toma sitio, ref y negocio del registro, y recién al usarlos', () => {
+  assert.deepEqual(destinoDeProduccion({ registry: REGISTRO_ACTIVO }), {
+    host: PRODUCCION_FICTICIA.web.origin,
+    supabaseRef: PRODUCCION_FICTICIA.supabase.ref,
+    businessId: PRODUCCION_FICTICIA.businessId,
+  });
+  // Importar el contrato no resuelve nada: los tres campos son lecturas diferidas, no literales.
+  assert.ok(Object.isFrozen(PRODUCCION));
+  for (const campo of ['host', 'supabaseRef', 'businessId']) {
+    assert.equal(typeof Object.getOwnPropertyDescriptor(PRODUCCION, campo).get, 'function', campo);
+  }
+});
+
+test('sin proyecto de producción el contrato no tiene destino: falla cerrado', () => {
+  assert.throws(() => destinoDeProduccion({ registry: SIN_PRODUCCION }), { code: 'PRODUCTION_NOT_PROVISIONED' });
+  assert.throws(() => refAutorizado(undefined, { registry: SIN_PRODUCCION }), { code: 'PRODUCTION_NOT_PROVISIONED' });
+});
+
+test('la puerta de sólo lectura pregunta a producción y a ningún otro proyecto', async () => {
+  const produccion = PRODUCCION_FICTICIA.supabase.ref;
+  assert.equal(refAutorizado(undefined, { registry: REGISTRO_ACTIVO }), produccion);
+  assert.equal(refAutorizado(produccion, { registry: REGISTRO_ACTIVO }), produccion);
+  // QA, la producción anterior, la producción controlada, el staging original y un proyecto ajeno: todos con nombre.
+  for (const ref of ['ixewllzzuzpqrkxzmfzx', 'wwcpogltfgzgkrlilbcd', 'tkanbadcglszlcyfjvpv', 'ukxqbgswjlibmnjemrzd',
+    'enznqfzhikpasjzpvjfd']) {
+    assert.throws(() => refAutorizado(ref, { registry: REGISTRO_ACTIVO }),
+      (error) => error instanceof ConsultaNoPermitida && /QA, está retirado/.test(error.message), ref);
+  }
+  assert.throws(() => refAutorizado('abcdefghijklmnopqrst', { registry: REGISTRO_ACTIVO }), ConsultaNoPermitida);
+  // La producción controlada estaba en la lista escrita a mano; hoy está retirada y no llega ni a pedir el token.
+  await assert.rejects(consultar('select 1', { projectRef: 'tkanbadcglszlcyfjvpv' }), ConsultaNoPermitida);
 });
 
 // ── El harness no repara: no puede escribir ni queriendo ─────────────────────

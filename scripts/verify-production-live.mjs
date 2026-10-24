@@ -5,7 +5,12 @@
  */
 import { chromium } from '@playwright/test';
 
-const BASE = 'https://la-taba.pages.dev';
+import { productionTargetOrExit } from './lib/environments.mjs';
+
+// El sitio y el Supabase salen de deploy/environments.json. Mientras producción no tenga proyecto, sale 2 sin abrir
+// el navegador: antes el Auth se probaba contra un ref fijo de un proyecto que ya no existe.
+const PRODUCTION = productionTargetOrExit({ allowProvisioned: true });
+const BASE = PRODUCTION.origin;
 const lineas = [];
 let fallas = 0;
 const ok = (t) => lineas.push(`  OK    ${t}`);
@@ -58,7 +63,7 @@ try {
   // 12 · Auth vivo (GET de salud con la clave publicable, sin iniciar sesión
   //      ni crear identidad: GoTrue exige `apikey` hasta para /health)
   const clave = await page.evaluate(() => globalThis.__LA_TABA_RUNTIME_CONFIG__?.repository?.publishableKey || '');
-  const salud = await page.request.get('https://wwcpogltfgzgkrlilbcd.supabase.co/auth/v1/health', { headers: { apikey: clave } });
+  const salud = await page.request.get(`${PRODUCTION.supabaseUrl}/auth/v1/health`, { headers: { apikey: clave } });
   if (salud.ok()) ok(`Auth responde · HTTP ${salud.status()} ${JSON.stringify(await salud.json()).slice(0, 80)}`);
   else mal(`Auth contestó ${salud.status()}`);
 

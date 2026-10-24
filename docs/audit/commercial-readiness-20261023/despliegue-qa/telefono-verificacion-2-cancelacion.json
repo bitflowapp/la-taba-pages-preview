@@ -1,0 +1,156 @@
+{
+  "origin": "https://recovery-20261020.taba2-staging.pages.dev",
+  "at": "2026-10-24T00:39:01.428Z",
+  "viewport": "390x844",
+  "version": {
+    "commit": "566c675d639565f1366c0fffb00c6fac9bff3183",
+    "runtime": "la-taba-runtime-v161-commercial-readiness",
+    "builtAt": "2026-10-24T00:29:02.348Z"
+  },
+  "antes": {
+    "headline": "Hay 1 cosa esperando una acción",
+    "alerts": [
+      {
+        "severity": "action_required",
+        "label": "Necesita una acción",
+        "happened": "Un pedido sigue abierto aunque su pago ya se le devolvió al cliente.",
+        "action": "Ir a Pedidos"
+      },
+      {
+        "severity": "info",
+        "label": "Para tu información",
+        "happened": "Alguien empezó a pagar en Mercado Pago y no terminó.",
+        "action": "Ir a Pagos"
+      },
+      {
+        "severity": "info",
+        "label": "Para tu información",
+        "happened": "Alguien empezó a pagar en Mercado Pago y no terminó.",
+        "action": "Ir a Pagos"
+      },
+      {
+        "severity": "info",
+        "label": "Para tu información",
+        "happened": "Alguien empezó a pagar en Mercado Pago y no terminó.",
+        "action": "Ir a Pagos"
+      },
+      {
+        "severity": "info",
+        "label": "Para tu información",
+        "happened": "Alguien empezó a pagar en Mercado Pago y no terminó.",
+        "action": "Ir a Pagos"
+      }
+    ],
+    "bodyHasStop": false,
+    "metrics": {
+      "new_orders": 0,
+      "delayed_orders": 0,
+      "pending_payments": 0,
+      "payments_in_review": 0,
+      "orders_without_stock": 0,
+      "packing_incomplete": 0,
+      "active_deliveries": 0,
+      "riders_without_signal": 0,
+      "fiscal_documents_pending": 0,
+      "failed_prints": 0,
+      "pending_credit_notes": 0,
+      "blocked_outboxes": 0,
+      "reconciliations_required": 0
+    }
+  },
+  "despues": {
+    "headline": "Hay 1 cosa esperando una acción",
+    "alerts": [
+      {
+        "severity": "action_required",
+        "label": "Necesita una acción",
+        "happened": "Un pedido sigue abierto aunque su pago ya se le devolvió al cliente.",
+        "action": "Ir a Pedidos"
+      },
+      {
+        "severity": "info",
+        "label": "Para tu información",
+        "happened": "Alguien empezó a pagar en Mercado Pago y no terminó.",
+        "action": "Ir a Pagos"
+      },
+      {
+        "severity": "info",
+        "label": "Para tu información",
+        "happened": "Alguien empezó a pagar en Mercado Pago y no terminó.",
+        "action": "Ir a Pagos"
+      },
+      {
+        "severity": "info",
+        "label": "Para tu información",
+        "happened": "Alguien empezó a pagar en Mercado Pago y no terminó.",
+        "action": "Ir a Pagos"
+      },
+      {
+        "severity": "info",
+        "label": "Para tu información",
+        "happened": "Alguien empezó a pagar en Mercado Pago y no terminó.",
+        "action": "Ir a Pagos"
+      }
+    ],
+    "bodyHasStop": false,
+    "metrics": {
+      "new_orders": 0,
+      "delayed_orders": 0,
+      "pending_payments": 0,
+      "payments_in_review": 0,
+      "orders_without_stock": 0,
+      "packing_incomplete": 0,
+      "active_deliveries": 0,
+      "riders_without_signal": 0,
+      "fiscal_documents_pending": 0,
+      "failed_prints": 0,
+      "pending_credit_notes": 0,
+      "blocked_outboxes": 0,
+      "reconciliations_required": 0
+    }
+  },
+  "consoleErrors": [],
+  "checks": [
+    {
+      "name": "panel login with the QA owner on a phone",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "abandoned Mercado Pago checkouts are information, not an emergency",
+      "ok": true,
+      "detail": "4 INFO"
+    },
+    {
+      "name": "no alert asks to stop selling",
+      "ok": true,
+      "detail": "Hay 1 cosa esperando una acción"
+    },
+    {
+      "name": "the refunded open order asks to cancel it, from Pedidos",
+      "ok": true,
+      "detail": "1 Necesita una acción"
+    },
+    {
+      "name": "the refunded order is not counted as new or delayed",
+      "ok": true,
+      "detail": "{\"new_orders\":0,\"delayed_orders\":0}"
+    },
+    {
+      "name": "the order card says the money went back",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "after cancelling, the refunded-order alert is gone",
+      "ok": false,
+      "detail": "5 alerts"
+    },
+    {
+      "name": "no console errors",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "passed": false
+}

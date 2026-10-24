@@ -1,0 +1,1896 @@
+{
+  "commit": "566c675d639565f1366c0fffb00c6fac9bff3183",
+  "runtime": "la-taba-runtime-v161-commercial-readiness",
+  "builtAt": "2026-10-24T00:29:02.348Z",
+  "projectRef": "ixewllzzuzpqrkxzmfzx",
+  "checkoutOrigin": "https://recovery-20261020.taba2-staging.pages.dev",
+  "accessGate": true,
+  "deployed": false,
+  "files": [
+    {
+      "path": ".nojekyll",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "assets/brand/ambient-grain.png",
+      "sha256": "a3cc3b7c602c37988e812ed475ed631a973cf18426b68653e3ecabf6f83f8d5a",
+      "bytes": 2357
+    },
+    {
+      "path": "assets/brand/taba-app-icon-192.png",
+      "sha256": "403263877c755d2dfc9e3a35d61d926f01663ef03e3d01c448b7d836fcf03432",
+      "bytes": 1837
+    },
+    {
+      "path": "assets/brand/taba-app-icon-512.png",
+      "sha256": "3705ef3667dfd0bd4226c97e44292e36364df3a0d2ee1096b77deb7f982abed5",
+      "bytes": 5716
+    },
+    {
+      "path": "assets/brand/taba-app-icon-apple-180.png",
+      "sha256": "efc201c0a6c0322936cc4d8a6c3615df7e56d485f9193f63b0136712689d7735",
+      "bytes": 541
+    },
+    {
+      "path": "assets/brand/taba-app-icon-maskable-192.png",
+      "sha256": "2aa213cb2afcc3b31287a0e8054b7dfee473051a137f6045d60c303bcbb313f4",
+      "bytes": 562
+    },
+    {
+      "path": "assets/brand/taba-app-icon-maskable-512.png",
+      "sha256": "68e6b88545507afbce39d8b55726c914e80c9e09e3b62c468f8843e4aba1f7b9",
+      "bytes": 2197
+    },
+    {
+      "path": "assets/brand/taba-app-icon.svg",
+      "sha256": "65ee894b5fde75b82ef1f6c4b291d8569d4e44869ca62d8866694fc7048f7b6b",
+      "bytes": 294
+    },
+    {
+      "path": "assets/brand/taba2-emblem.svg",
+      "sha256": "a236d0e7aae71309207b48febb8f61ba0df86373f954f34841b6660a2a388c92",
+      "bytes": 3577
+    },
+    {
+      "path": "assets/icon.svg",
+      "sha256": "26df09bcb3d3577bb5565eb5cd3b249c96ee7a9d21483085363edb3046fc9f37",
+      "bytes": 623
+    },
+    {
+      "path": "assets/products/andes-origen-rubia-lata-473ml-3d8a469028220903-ebb8366205b970ca.webp",
+      "sha256": "ebb8366205b970ca3add85c5a72096ce01ea3bebdc878247c8e037f2d9894eef",
+      "bytes": 22554
+    },
+    {
+      "path": "assets/products/andes-origen-rubia-lata-473ml-3d8a469028220903-thumb-6de9adb117eea8b8.webp",
+      "sha256": "6de9adb117eea8b83e6f27ab3c395c1227523e04e9171bcff69c9005a8e40670",
+      "bytes": 6274
+    },
+    {
+      "path": "assets/products/andes-origen-rubia-lata-473ml-pack-6-a3a2c031baea449b-0db23ccf72cf1c66.webp",
+      "sha256": "0db23ccf72cf1c668562adf2ddbda1ddfb6717b444aeb532010681437ab06fc9",
+      "bytes": 32184
+    },
+    {
+      "path": "assets/products/andes-origen-rubia-lata-473ml-pack-6-a3a2c031baea449b-thumb-2ea91d03c7e970fc.webp",
+      "sha256": "2ea91d03c7e970fcd4493541917fdc56c58f70d651cc0e5d299736f3b86c7905",
+      "bytes": 9276
+    },
+    {
+      "path": "assets/products/aquarius-manzana-1500ml-5a06bd9176e27828-d3c0af1d8c4494d9.webp",
+      "sha256": "d3c0af1d8c4494d990f03302c671c1d9778d855a70f023b4def927404a09f865",
+      "bytes": 22958
+    },
+    {
+      "path": "assets/products/aquarius-manzana-1500ml-5a06bd9176e27828-thumb-d5da2606a2f036cf.webp",
+      "sha256": "d5da2606a2f036cf4cbdee5d858806ab84d3f2b1d85746b826ae98b034c660b0",
+      "bytes": 6954
+    },
+    {
+      "path": "assets/products/aquarius-pera-1500ml-d8c1230b1227373f-2925d0553fe3f194.webp",
+      "sha256": "2925d0553fe3f194bbfc6f57d29bdcfc9dbfcb93733e7d3e429ce0b590025322",
+      "bytes": 17978
+    },
+    {
+      "path": "assets/products/aquarius-pera-1500ml-d8c1230b1227373f-thumb-0c540b9ca40aec2e.webp",
+      "sha256": "0c540b9ca40aec2e287ad1a3c0776969c0d0247dea79028b6cfe8c07e88aea82",
+      "bytes": 5350
+    },
+    {
+      "path": "assets/products/aquarius-pomelo-2250ml-8de7c8de5e780020-f788300784447191.webp",
+      "sha256": "f788300784447191d85684c2f8f7ac269b5d64400bfef445c9be79cd9e0b7bfb",
+      "bytes": 19676
+    },
+    {
+      "path": "assets/products/aquarius-pomelo-2250ml-8de7c8de5e780020-thumb-bd47cfae363889a1.webp",
+      "sha256": "bd47cfae363889a127f3cb5e11485288238e19cf3e19d422e45bf505310b3dfb",
+      "bytes": 5462
+    },
+    {
+      "path": "assets/products/benedictino-sin-gas-2250ml-8291602e84de68e9-b3100a865b922f28.webp",
+      "sha256": "b3100a865b922f28e4669b6b65cbb652a5a53bfed7ef3a321d4f36e8d21d14fd",
+      "bytes": 19898
+    },
+    {
+      "path": "assets/products/benedictino-sin-gas-2250ml-8291602e84de68e9-thumb-e6d7c299f80e6e5d.webp",
+      "sha256": "e6d7c299f80e6e5d170f46c818147296496907c6608f84a89d40ae1ccaec1e88",
+      "bytes": 6016
+    },
+    {
+      "path": "assets/products/beverage-placeholder.svg",
+      "sha256": "c7091f9676629691ccbac8bd4d652b86c6005823b34b2a56bd3ce50e566e15b2",
+      "bytes": 817
+    },
+    {
+      "path": "assets/products/brahma-chopp-lata-473ml-pack-6-a5d1d3f1effa3ac9-7b6e39ea51881c03.webp",
+      "sha256": "7b6e39ea51881c03b05661e7a173cac75114ce26fdc41205094921bad65db49f",
+      "bytes": 78364
+    },
+    {
+      "path": "assets/products/brahma-chopp-lata-473ml-pack-6-a5d1d3f1effa3ac9-thumb-00a5a1d276739802.webp",
+      "sha256": "00a5a1d276739802170ca3ff47d4b150cfef3d2b784b25da51a1a5dfc63746fd",
+      "bytes": 18688
+    },
+    {
+      "path": "assets/products/brahma-chopp-lata-710ml-7b3111225f3821da-bd35f5833b47f78a.webp",
+      "sha256": "bd35f5833b47f78ad77de6b33876ba163f8813bf85811324fc4af1cd35110c31",
+      "bytes": 35748
+    },
+    {
+      "path": "assets/products/brahma-chopp-lata-710ml-7b3111225f3821da-thumb-51a63d115ad3aed5.webp",
+      "sha256": "51a63d115ad3aed587de7bf528f4d5ceddc4806f522f6bf1b659db5686eb85c1",
+      "bytes": 7738
+    },
+    {
+      "path": "assets/products/budweiser-lata-473ml-0144902daa7180f4-bcffb8575cad9ed1.webp",
+      "sha256": "bcffb8575cad9ed17faec9b7ac8e91cc276c0d5af4ce903826c283aa289d2469",
+      "bytes": 34574
+    },
+    {
+      "path": "assets/products/budweiser-lata-473ml-0144902daa7180f4-thumb-4752e9d24ab35ed2.webp",
+      "sha256": "4752e9d24ab35ed27cf24a8b2ffc6c6b7c231d7a6e17b913f38195bed9aa7481",
+      "bytes": 10368
+    },
+    {
+      "path": "assets/products/budweiser-lata-473ml-pack-6-d4302164bca107fd-13c77365927c308a.webp",
+      "sha256": "13c77365927c308ac53478f70537f6a05717f297216ae07246a3470dc3616848",
+      "bytes": 59436
+    },
+    {
+      "path": "assets/products/budweiser-lata-473ml-pack-6-d4302164bca107fd-thumb-78b0a2f8c89750d9.webp",
+      "sha256": "78b0a2f8c89750d9e07d19cf58a14c74cc6cea68ce4c8239e5c98351789f42ef",
+      "bytes": 16996
+    },
+    {
+      "path": "assets/products/campaign-aperol-750ml-master-8bff69a8a2104673.webp",
+      "sha256": "8bff69a8a2104673ef5a02aa05305f721aa25c306c8126744c1a82c2b80143d5",
+      "bytes": 36356
+    },
+    {
+      "path": "assets/products/campaign-aperol-750ml-thumbnail-0d91addbcbde28a4.webp",
+      "sha256": "0d91addbcbde28a44e53b8ec267347578e6d3cb041dde52e6735f53e25b976e3",
+      "bytes": 8922
+    },
+    {
+      "path": "assets/products/campaign-coca-cola-original-2250ml-local-master-a97bfb9ca463cbd1.webp",
+      "sha256": "a97bfb9ca463cbd1c664c21ae8bb1644640945c36618c32d35cc78e5570bf251",
+      "bytes": 37376
+    },
+    {
+      "path": "assets/products/campaign-coca-cola-original-2250ml-local-thumbnail-92968a5c7541cd9b.webp",
+      "sha256": "92968a5c7541cd9bf0dd73d4e470313b49b4bfa5a65654ea010575dfbd3b53a0",
+      "bytes": 9870
+    },
+    {
+      "path": "assets/products/campaign-fanta-naranja-2250ml-master-f44b4b965e47d807.webp",
+      "sha256": "f44b4b965e47d807478735b63a41be371a5c56d3ca84621df97d6eed088467a8",
+      "bytes": 29718
+    },
+    {
+      "path": "assets/products/campaign-fanta-naranja-2250ml-thumbnail-26c591282712c681.webp",
+      "sha256": "26c591282712c6812e3e3fcc93e3a01a973b1f8df10daf1db09b90e76e3c8e7f",
+      "bytes": 8976
+    },
+    {
+      "path": "assets/products/campaign-heineken-710ml-master-48236e76fb26fb3b.webp",
+      "sha256": "48236e76fb26fb3bd252c2ab22bacd76fd3213eed118e36eca294681abaa4668",
+      "bytes": 84684
+    },
+    {
+      "path": "assets/products/campaign-heineken-710ml-thumbnail-3c56b52649ce5e31.webp",
+      "sha256": "3c56b52649ce5e31355ac316e740622a73a86ed933d09b4802abdae2d45e9104",
+      "bytes": 18252
+    },
+    {
+      "path": "assets/products/campaign-monster-mango-loco-473ml-master-5beb803c7f916d6d.webp",
+      "sha256": "5beb803c7f916d6d98fcf09f02fcd23dae40e0a3da83c8f711d6c50a55759d52",
+      "bytes": 104764
+    },
+    {
+      "path": "assets/products/campaign-monster-mango-loco-473ml-thumbnail-6ad409eb8a1f54a2.webp",
+      "sha256": "6ad409eb8a1f54a245ee1addb23a01298dac175a735366605b0852a251645312",
+      "bytes": 24802
+    },
+    {
+      "path": "assets/products/campaign-red-bull-energy-drink-355ml-master-1c15e4bea4f01c5d.webp",
+      "sha256": "1c15e4bea4f01c5d6e23a2461bc7cd10602a80086a28d35cc8811fc070a8abf3",
+      "bytes": 50094
+    },
+    {
+      "path": "assets/products/campaign-red-bull-energy-drink-355ml-thumbnail-ed45d1a48ddbaaeb.webp",
+      "sha256": "ed45d1a48ddbaaebc4769da3d2df32f54f97bcf06a980627d27ac82746dd4215",
+      "bytes": 11994
+    },
+    {
+      "path": "assets/products/coca-cola-original-2250ml-97dc25e8399a5775-adb8042ea9716cb9.webp",
+      "sha256": "adb8042ea9716cb98846dc1d8764eb9a047adcf34ca33fc50d46fc959c846c6e",
+      "bytes": 26694
+    },
+    {
+      "path": "assets/products/coca-cola-original-2250ml-97dc25e8399a5775-thumb-acbe05a93036a3a4.webp",
+      "sha256": "acbe05a93036a3a451939f75f146b73eb74db5aec2c16ac0b47f04886949b1df",
+      "bytes": 8074
+    },
+    {
+      "path": "assets/products/coca-cola-original-botella-pet-500-ml-pack-x12-da9d9f1d872c1e49-75b52ee33dad073c.webp",
+      "sha256": "75b52ee33dad073cedd2ae3babd87c319f3aa1cc22dc0f8623738701965b4235",
+      "bytes": 20326
+    },
+    {
+      "path": "assets/products/coca-cola-original-botella-pet-500-ml-pack-x12-da9d9f1d872c1e49-thumb-2b779c394ec67eb4.webp",
+      "sha256": "2b779c394ec67eb41c4197ac7016f1bf1991fbfcb313b0feaaceafe2022079dc",
+      "bytes": 5848
+    },
+    {
+      "path": "assets/products/coca-cola-original-lata-354ml-3c2cefd7fe4bd597-f2cf7dff4b87047d.webp",
+      "sha256": "f2cf7dff4b87047dafb9a540bd472567fbbc239b6b4aefa08f8f36ce064431a8",
+      "bytes": 43922
+    },
+    {
+      "path": "assets/products/coca-cola-original-lata-354ml-3c2cefd7fe4bd597-thumb-cd767440cdb0ff40.webp",
+      "sha256": "cd767440cdb0ff405b5aedd3ebd746a694ab303657dc80b012142277825f41fe",
+      "bytes": 13498
+    },
+    {
+      "path": "assets/products/coca-cola-original-pet-1500ml-5781315ce9f8f02f-43114ca6977868de.webp",
+      "sha256": "43114ca6977868ded4cf6e0648219863b86b2ab85d427bff016edaae2da4b637",
+      "bytes": 29810
+    },
+    {
+      "path": "assets/products/coca-cola-original-pet-1500ml-5781315ce9f8f02f-thumb-af5f576fc2f48d8f.webp",
+      "sha256": "af5f576fc2f48d8f9feff145a94036694fe39944c87b8817ff1a0454f23dfd9a",
+      "bytes": 8390
+    },
+    {
+      "path": "assets/products/coca-cola-zero-2250ml-4ce84243eb65d14a-309bbcc731498df7.webp",
+      "sha256": "309bbcc731498df73d5f2618ca902169e6dca283eb9fc35fa2c8a7807886f2f1",
+      "bytes": 22878
+    },
+    {
+      "path": "assets/products/coca-cola-zero-2250ml-4ce84243eb65d14a-thumb-826e5a5ea976e1e2.webp",
+      "sha256": "826e5a5ea976e1e2dbaa1cb55dafbfa68bfbfa84ad2c1bb2452fb7ac1198ce7f",
+      "bytes": 7108
+    },
+    {
+      "path": "assets/products/coca-cola-zero-botella-pet-500-ml-pack-x12-ab4d9e31abe096e0-7a626dec1b48f442.webp",
+      "sha256": "7a626dec1b48f44272ba58d6f9240d4e4c9c673f96e38d636dd4cd64a19fa2c4",
+      "bytes": 18742
+    },
+    {
+      "path": "assets/products/coca-cola-zero-botella-pet-500-ml-pack-x12-ab4d9e31abe096e0-thumb-390944099fdb5e22.webp",
+      "sha256": "390944099fdb5e227be5b9db4a4c6f3549c3e6355a52e7b8290ad421ec741cd9",
+      "bytes": 5418
+    },
+    {
+      "path": "assets/products/coca-cola-zero-lata-354ml-4d1955a80c87ab0e-87f477f474494b33.webp",
+      "sha256": "87f477f474494b3394880c7929d52193d37b56d93400ce50e96a017d2ecfc977",
+      "bytes": 39670
+    },
+    {
+      "path": "assets/products/coca-cola-zero-lata-354ml-4d1955a80c87ab0e-thumb-7816226aa02505f5.webp",
+      "sha256": "7816226aa02505f5cc1e5f40f24b90d054d19cd8a6e5a7b3b449a89cae8b3393",
+      "bytes": 11430
+    },
+    {
+      "path": "assets/products/corona-extra-botella-330ml-2d424290c3ea844f-c4cbad6dbef6e094.webp",
+      "sha256": "c4cbad6dbef6e0947191293fb8a241376666f2bfe036cb24a19a09c614201c15",
+      "bytes": 46560
+    },
+    {
+      "path": "assets/products/corona-extra-botella-330ml-2d424290c3ea844f-thumb-4b872d222ff2f90a.webp",
+      "sha256": "4b872d222ff2f90ad835998a56e7bb26fffbf8e1f789d63fddce2edcc0008d76",
+      "bytes": 9052
+    },
+    {
+      "path": "assets/products/dada-caramel-750ml-4171839cfea453e3-64fa3b5b38959304.webp",
+      "sha256": "64fa3b5b38959304f4605d60068bff2940c2bfd68980fa7d73fd5934fdf162d2",
+      "bytes": 11998
+    },
+    {
+      "path": "assets/products/dada-caramel-750ml-4171839cfea453e3-thumb-98439035a1cccd9b.webp",
+      "sha256": "98439035a1cccd9b6c1820e2fd9443bb7c97270a7e9c6c1e2b9421f8add57606",
+      "bytes": 4124
+    },
+    {
+      "path": "assets/products/dr-lemon-vodka-pomelo-lata-473ml-6875ceb7e0ff6926-e0eeb8cb2e97e288.webp",
+      "sha256": "e0eeb8cb2e97e2889087bf963a1acb68b253f12798aaeee6cc2da9ff0abca87c",
+      "bytes": 25482
+    },
+    {
+      "path": "assets/products/dr-lemon-vodka-pomelo-lata-473ml-6875ceb7e0ff6926-thumb-ebd3cbb7049c8b57.webp",
+      "sha256": "ebd3cbb7049c8b571a7f3094fb4d2daf8d04ebe45c382e9015db475cff9626c7",
+      "bytes": 8074
+    },
+    {
+      "path": "assets/products/fanta-naranja-2250ml-797064494952a9a1-9ef1596448794ce7.webp",
+      "sha256": "9ef1596448794ce74aa676484cc3f9550fc16274e918fc9958b59ad9a6921d80",
+      "bytes": 23650
+    },
+    {
+      "path": "assets/products/fanta-naranja-2250ml-797064494952a9a1-thumb-3a996fad3a89104c.webp",
+      "sha256": "3a996fad3a89104c238e6074f86499766ca7a2453335451dde26d5bf6600674a",
+      "bytes": 7350
+    },
+    {
+      "path": "assets/products/fanta-naranja-botella-pet-1500-ml-pack-x6-ddcfc29d89d6d01d-e41698f0e9b8788b.webp",
+      "sha256": "e41698f0e9b8788b7472ecd777ddeab4791cc6166770630d079f52b3062e08ea",
+      "bytes": 22050
+    },
+    {
+      "path": "assets/products/fanta-naranja-botella-pet-1500-ml-pack-x6-ddcfc29d89d6d01d-thumb-6f5544d252c1151c.webp",
+      "sha256": "6f5544d252c1151c4b4b8aa477d706fc2f9014c0c801f446e589366f5a66c8a7",
+      "bytes": 6700
+    },
+    {
+      "path": "assets/products/fernet-branca-1000ml-0c51f3c2c52ad488-c64a1ebaa0000237.webp",
+      "sha256": "c64a1ebaa0000237a5942e998a013cff34e5fd9518e95a2bad61742b41b6cd1e",
+      "bytes": 33942
+    },
+    {
+      "path": "assets/products/fernet-branca-1000ml-0c51f3c2c52ad488-thumb-aa6308cf7b9a94cb.webp",
+      "sha256": "aa6308cf7b9a94cbcfe7687ff0106907994878e7c1bbdc54512e34715a279c6c",
+      "bytes": 8732
+    },
+    {
+      "path": "assets/products/gancia-lima-limon-lata-473ml-5cfdab179b9102a3-3b02e792389c7544.webp",
+      "sha256": "3b02e792389c754407c39141a8c073342973f45e71f0dc98ed3c72c69d8ec2c5",
+      "bytes": 55312
+    },
+    {
+      "path": "assets/products/gancia-lima-limon-lata-473ml-5cfdab179b9102a3-thumb-bcd7381e8cb9df7e.webp",
+      "sha256": "bcd7381e8cb9df7edb37baef5b22e9ef752869ac011e3a429ad19d9f337b570a",
+      "bytes": 15688
+    },
+    {
+      "path": "assets/products/gatorade-cool-blue-500ml-e3fcbd3e1e29bb61-f138bb4b00238c71.webp",
+      "sha256": "f138bb4b00238c71209ee857c9078994a5f23168e79dd521eba623e222bdae36",
+      "bytes": 20058
+    },
+    {
+      "path": "assets/products/gatorade-cool-blue-500ml-e3fcbd3e1e29bb61-thumb-b41adc6e858c3a90.webp",
+      "sha256": "b41adc6e858c3a9006a28c01425f483c0cd04f5ce2db4ce0d1744056d9765919",
+      "bytes": 6288
+    },
+    {
+      "path": "assets/products/gatorade-manzana-1250ml-64efd055975ef241-67bbe43a8a884939.webp",
+      "sha256": "67bbe43a8a8849395f966b3baceb95bd633699154e2a82b7ab81cbd21c16b2ac",
+      "bytes": 28106
+    },
+    {
+      "path": "assets/products/gatorade-manzana-1250ml-64efd055975ef241-thumb-b33a3ac22178a69a.webp",
+      "sha256": "b33a3ac22178a69a8783c9255493bde92baf4805e8245a64ad7434f926e94b92",
+      "bytes": 8752
+    },
+    {
+      "path": "assets/products/gin-gordons-700ml-0a539dda4bb5cbd5-6de283aef107c2ac.webp",
+      "sha256": "6de283aef107c2ac4e944a7ac8ca72b004a19443ed913cb3cbadb99bc128bcba",
+      "bytes": 34164
+    },
+    {
+      "path": "assets/products/gin-gordons-700ml-0a539dda4bb5cbd5-thumb-e37bca6137875ca0.webp",
+      "sha256": "e37bca6137875ca0070aa0329f9e95fb0e1352b61ccd6b26b16059e05709a9a9",
+      "bytes": 8318
+    },
+    {
+      "path": "assets/products/monster-green-zero-473ml-c238e9bf28582e15-36ea5aaa51d7906e.webp",
+      "sha256": "36ea5aaa51d7906e28a0867e07e7cfe81aa44f929b9a2aebfb31982558bec049",
+      "bytes": 41700
+    },
+    {
+      "path": "assets/products/monster-green-zero-473ml-c238e9bf28582e15-thumb-9ee7f5db50e33ce1.webp",
+      "sha256": "9ee7f5db50e33ce1f71fd6457c98e315eb20e72d69cc2f2b442d742f5f84ca27",
+      "bytes": 13448
+    },
+    {
+      "path": "assets/products/paso-de-los-toros-pomelo-1500ml-07e30d4119649232-5ee73401ead32b21.webp",
+      "sha256": "5ee73401ead32b21b98bae86af35d1b20c5b5c34fe52749be028a0a1b7d6f7bc",
+      "bytes": 15656
+    },
+    {
+      "path": "assets/products/paso-de-los-toros-pomelo-1500ml-07e30d4119649232-thumb-2578710a66ec476a.webp",
+      "sha256": "2578710a66ec476a5b4a0cae9244e5115a51a9cebe3be50fb2ba4cf997f79f80",
+      "bytes": 4734
+    },
+    {
+      "path": "assets/products/paso-de-los-toros-tonica-1500ml-3a05ed21abc4e380-f551a02eb264272c.webp",
+      "sha256": "f551a02eb264272cb86146b87231f4d43196e2be52f142b80f03cdbd6622821a",
+      "bytes": 18194
+    },
+    {
+      "path": "assets/products/paso-de-los-toros-tonica-1500ml-3a05ed21abc4e380-thumb-209929c85be873fa.webp",
+      "sha256": "209929c85be873fa6ee45a627f1767e730b86fec8df07a8d2a543285ca25ec57",
+      "bytes": 5214
+    },
+    {
+      "path": "assets/products/patagonia-amber-lager-botella-730ml-a5c26f21d7f42cfe-94d698343b3e7cc7.webp",
+      "sha256": "94d698343b3e7cc79bfe0d41616955c008192bbdb34a08e41fd552079b7f9f82",
+      "bytes": 26460
+    },
+    {
+      "path": "assets/products/patagonia-amber-lager-botella-730ml-a5c26f21d7f42cfe-thumb-a9fc32107672d884.webp",
+      "sha256": "a9fc32107672d884bd22aee69caf908b6472f30a4fd5bd4c24c8d1d0e7c14e76",
+      "bytes": 6632
+    },
+    {
+      "path": "assets/products/pepsi-black-1500ml-52009e2651c40a42-b09188d077fa3a4f.webp",
+      "sha256": "b09188d077fa3a4fa8d272cd762633d4fb7c876f31fcb12dc73d3088d58482c3",
+      "bytes": 30266
+    },
+    {
+      "path": "assets/products/pepsi-black-1500ml-52009e2651c40a42-thumb-a562d12e0fb5d26b.webp",
+      "sha256": "a562d12e0fb5d26b0d784d432b120e35fc0a34a05290fc5fbef758d2359afa67",
+      "bytes": 6312
+    },
+    {
+      "path": "assets/products/pepsi-original-2000ml-b4298e4382912cf4-86e8267fb10c961a.webp",
+      "sha256": "86e8267fb10c961af6294890566b686f0b03f9f72fb5eb0879faf395581d3b88",
+      "bytes": 29318
+    },
+    {
+      "path": "assets/products/pepsi-original-2000ml-b4298e4382912cf4-thumb-815a946c396e0a93.webp",
+      "sha256": "815a946c396e0a932e7b2fcc88da1d8fa89db1dd288383d28779316752f416d6",
+      "bytes": 6456
+    },
+    {
+      "path": "assets/products/powerade-mountain-blast-500ml-1ea05e4f6f192e2f-4d73a0a156b31cb6.webp",
+      "sha256": "4d73a0a156b31cb624bb3a245c2cde51631f20b87151389fa795f9304b21f881",
+      "bytes": 21896
+    },
+    {
+      "path": "assets/products/powerade-mountain-blast-500ml-1ea05e4f6f192e2f-thumb-61387947b7df6f68.webp",
+      "sha256": "61387947b7df6f68cd07be6dd5eb974bbadde095f517a0a7fab1292bc1c5e327",
+      "bytes": 7082
+    },
+    {
+      "path": "assets/products/quilmes-stout-lata-473ml-43e8c2ca1b9a2d88-ea37359d57b3e5bf.webp",
+      "sha256": "ea37359d57b3e5bfa3dc6d758476f89570638d009c4d3df81ebc1f854e3787db",
+      "bytes": 38866
+    },
+    {
+      "path": "assets/products/quilmes-stout-lata-473ml-43e8c2ca1b9a2d88-thumb-e5622de0edb2dccb.webp",
+      "sha256": "e5622de0edb2dccb7a7dd52af1604248fb79e8dd67005b12f78425e6d46f6323",
+      "bytes": 8530
+    },
+    {
+      "path": "assets/products/red-bull-original-250ml-2d86788f7b853c11-d9018a7780c8e25b.webp",
+      "sha256": "d9018a7780c8e25b8c1bbb82ff0d5c7b4be8d35844987d176f7061ffc080c40a",
+      "bytes": 61452
+    },
+    {
+      "path": "assets/products/red-bull-original-250ml-2d86788f7b853c11-thumb-4f0870826f9f8bce.webp",
+      "sha256": "4f0870826f9f8bcec813b1d872d658105b6f9c776374e72deb4e05368df68afa",
+      "bytes": 16212
+    },
+    {
+      "path": "assets/products/red-bull-sin-azucar-250ml-f0aeca853a67db50-8f27b231957a48bb.webp",
+      "sha256": "8f27b231957a48bb5f602ac97e6d454c8d43d9466a5a6fa6ad7caa24a352e44f",
+      "bytes": 69530
+    },
+    {
+      "path": "assets/products/red-bull-sin-azucar-250ml-f0aeca853a67db50-thumb-86cbad78e9e62eb2.webp",
+      "sha256": "86cbad78e9e62eb24297f05dd0264348c0520720f112fbdf6112dd103de0ac28",
+      "bytes": 16698
+    },
+    {
+      "path": "assets/products/seven-up-original-2000ml-2ed6deb5fa431d4b-f32d43104a61239c.webp",
+      "sha256": "f32d43104a61239cac763f834081f74251e23d68cb5a1bce92d1fc25da2f38ef",
+      "bytes": 24556
+    },
+    {
+      "path": "assets/products/seven-up-original-2000ml-2ed6deb5fa431d4b-thumb-556d7a39b0433124.webp",
+      "sha256": "556d7a39b04331244604ac7ae77fc3278ae0fb94279b5d0f5076e1d6a13a80f2",
+      "bytes": 4884
+    },
+    {
+      "path": "assets/products/soda-manaos-sifon-2000ml-b92e160958368c0d-3700b6c8cb4ec1b4.webp",
+      "sha256": "3700b6c8cb4ec1b4ab234cd89bb7b3d8061c7529f8c92d6a8c2ee842d08cdc00",
+      "bytes": 40172
+    },
+    {
+      "path": "assets/products/soda-manaos-sifon-2000ml-b92e160958368c0d-thumb-33a5a3998f343f97.webp",
+      "sha256": "33a5a3998f343f97f5385215b03c4d2f7f58b8036ee18d78aa52a9b4aee7f3b5",
+      "bytes": 12906
+    },
+    {
+      "path": "assets/products/speed-original-473ml-f66e48f651a6ab20-6521a9b08adab1f3.webp",
+      "sha256": "6521a9b08adab1f37b012fd125038e24403f7ca08f134a9a2e9470e92434f41a",
+      "bytes": 23736
+    },
+    {
+      "path": "assets/products/speed-original-473ml-f66e48f651a6ab20-thumb-6451dbece18fd4c5.webp",
+      "sha256": "6451dbece18fd4c581dcddba8ab04360a513f13b4814c442cab3124fdd40f0ca",
+      "bytes": 8730
+    },
+    {
+      "path": "assets/products/speed-zero-473ml-89bed41bf09b31b4-b30d764f0575c866.webp",
+      "sha256": "b30d764f0575c866afb897cfcfd08dbe0940e1288e6d30f6c82a982e6bb06486",
+      "bytes": 29822
+    },
+    {
+      "path": "assets/products/speed-zero-473ml-89bed41bf09b31b4-thumb-4d5d6597b333f112.webp",
+      "sha256": "4d5d6597b333f1122b98fdf32f327aecbe9c432fb4cb41ee1062d659908e5067",
+      "bytes": 10976
+    },
+    {
+      "path": "assets/products/sprite-botella-pet-500-ml-pack-x12-07620ef3d3aa792c-09a508b8102bd8a5.webp",
+      "sha256": "09a508b8102bd8a5bd01c7ca752caeb312cffc577d752eb34b59993caa7e5c1a",
+      "bytes": 14520
+    },
+    {
+      "path": "assets/products/sprite-botella-pet-500-ml-pack-x12-07620ef3d3aa792c-thumb-49fb5075276d3ebb.webp",
+      "sha256": "49fb5075276d3ebb3e01c5f36f2a440ea289c88e8d09fca04047681b4d978211",
+      "bytes": 3792
+    },
+    {
+      "path": "assets/products/sprite-original-2250ml-99d83c94dac255ca-3898f9d83fdf293f.webp",
+      "sha256": "3898f9d83fdf293f0d4efb1b1ed1dc914a91fe026a9d0f4b933374e316e3f613",
+      "bytes": 17364
+    },
+    {
+      "path": "assets/products/sprite-original-2250ml-99d83c94dac255ca-thumb-1e02490bc9080f49.webp",
+      "sha256": "1e02490bc9080f4969bf2c4100514bd90facaaed68e44ef52efc1e383235084f",
+      "bytes": 4816
+    },
+    {
+      "path": "assets/products/sprite-original-lata-354ml-0060e518ebfab8e7-8832bfc71a16ffad.webp",
+      "sha256": "8832bfc71a16ffada799d1992258f6c7813f19844beb8414862b05a80f08c4bb",
+      "bytes": 46696
+    },
+    {
+      "path": "assets/products/sprite-original-lata-354ml-0060e518ebfab8e7-thumb-9f34da79cf990fa1.webp",
+      "sha256": "9f34da79cf990fa1127231b78e09dc43f6af91fc5b0544943d7e79d39cd88932",
+      "bytes": 14234
+    },
+    {
+      "path": "assets/products/sprite-zero-2250ml-c43f15fd8eedc2e4-96e92127e95886ab.webp",
+      "sha256": "96e92127e95886abe28220741a08e9f8d839c5247c7ff410efb638fe98a1aa48",
+      "bytes": 16396
+    },
+    {
+      "path": "assets/products/sprite-zero-2250ml-c43f15fd8eedc2e4-thumb-4e04923ee3c2fb00.webp",
+      "sha256": "4e04923ee3c2fb008e57d9b4d16d85f04ab63653db7f2b71763ac312d7c8568b",
+      "bytes": 4478
+    },
+    {
+      "path": "assets/products/stella-artois-lata-473ml-9178af863653c84c-f104133a2207c430.webp",
+      "sha256": "f104133a2207c430839b939cf2f54db9d50e5570eac2aebdf1a149d730b8b6e2",
+      "bytes": 29086
+    },
+    {
+      "path": "assets/products/stella-artois-lata-473ml-9178af863653c84c-thumb-b0c03f876068f811.webp",
+      "sha256": "b0c03f876068f811dc64790918492563aaf32633f593ca83c62325c57e5d02aa",
+      "bytes": 8442
+    },
+    {
+      "path": "assets/products/stella-artois-lata-473ml-pack-6-fa4bfc744feba77f-e74088b74eb2a498.webp",
+      "sha256": "e74088b74eb2a498900891bb94d56a6c1b6957a12f5b952889022f751c4eb658",
+      "bytes": 58158
+    },
+    {
+      "path": "assets/products/stella-artois-lata-473ml-pack-6-fa4bfc744feba77f-thumb-90bb8cde0f1d72e3.webp",
+      "sha256": "90bb8cde0f1d72e3f9f586f3384867f660009b7d99ce057c8d6608bd64796c07",
+      "bytes": 16642
+    },
+    {
+      "path": "assets/products/trapiche-origen-malbec-750ml-5166a6bd98ad5d10-3ef96fe8a2aa34c5.webp",
+      "sha256": "3ef96fe8a2aa34c5b5102c9048927a00468fabd5a7f181ad3b37a7c88a40adb3",
+      "bytes": 23810
+    },
+    {
+      "path": "assets/products/trapiche-origen-malbec-750ml-5166a6bd98ad5d10-thumb-19f9ca07fee4c4d8.webp",
+      "sha256": "19f9ca07fee4c4d8162c64168ee9b167c0c8dd5cfde954b66740733df87193a6",
+      "bytes": 6046
+    },
+    {
+      "path": "assets/products/villa-del-sur-sin-gas-600ml-81e9d897ac5c7200-d5bf4cdecf9d2d26.webp",
+      "sha256": "d5bf4cdecf9d2d2624802b2ff1515c4f38fc4c551401a3b41e0f107a07a5fcb6",
+      "bytes": 19496
+    },
+    {
+      "path": "assets/products/villa-del-sur-sin-gas-600ml-81e9d897ac5c7200-thumb-542436e98431ce8a.webp",
+      "sha256": "542436e98431ce8a00ffb9ecb92a87e79c1e3348eb795e6b43719d769b84fd18",
+      "bytes": 6036
+    },
+    {
+      "path": "assets/products/villavicencio-con-gas-500ml-aa4659b148790b42-016bbed61ae8c026.webp",
+      "sha256": "016bbed61ae8c02680c8f10dcb4e4093b71663e11ce58622b3ff0f7799954de7",
+      "bytes": 26626
+    },
+    {
+      "path": "assets/products/villavicencio-con-gas-500ml-aa4659b148790b42-thumb-2b03472d9e7fb764.webp",
+      "sha256": "2b03472d9e7fb7644e3fad908d2380d7965df8b9fac9d847037e8129e5e57492",
+      "bytes": 6612
+    },
+    {
+      "path": "assets/products/villavicencio-sin-gas-1500ml-2fb407c8fa1c2b59-b28075add15596af.webp",
+      "sha256": "b28075add15596af4d2436e1611fcc57a19c52f9ac3e73757e4fc348c983677d",
+      "bytes": 31418
+    },
+    {
+      "path": "assets/products/villavicencio-sin-gas-1500ml-2fb407c8fa1c2b59-thumb-6b0e4ee75373e633.webp",
+      "sha256": "6b0e4ee75373e6331c1f70c8f8441b7b93bdc4a521302ae02205e24ede6b4a81",
+      "bytes": 7664
+    },
+    {
+      "path": "assets/promos/aperitivos-gancia.webp",
+      "sha256": "c2adb260ada22395d9a3d324f01537841c350c9d8e6c899923ced9e7ba9e78cd",
+      "bytes": 384344
+    },
+    {
+      "path": "assets/promos/cervezas-andes-origen.webp",
+      "sha256": "fe46f766ae3facb500fcf5ff349536319fc3366eb0cbc6d49d19abe3ff10130d",
+      "bytes": 16532
+    },
+    {
+      "path": "assets/promos/cervezas-heineken-band.webp",
+      "sha256": "fe202deb11ade0065cdbe2e64c361a7e0c3c591b41f7ae4c674a6c33e2feeaea",
+      "bytes": 35350
+    },
+    {
+      "path": "assets/promos/cervezas-heineken-botella.jpg",
+      "sha256": "3fd652a6c4aa4309ceccca69b05e5cf8c236938cc93d8bbe97ab324787a5a03b",
+      "bytes": 172319
+    },
+    {
+      "path": "assets/promos/cervezas-heineken.jpg",
+      "sha256": "7386e73f474ccdee6543e67b47c5d5c0cd945c7ef23f18d8c19f4b2693cae5d8",
+      "bytes": 254519
+    },
+    {
+      "path": "assets/promos/cervezas-patagonia.jpg",
+      "sha256": "8964718cc1c9c5a9d886b31b8bc198353cc139088e096a42c01c6a24b5169747",
+      "bytes": 218442
+    },
+    {
+      "path": "assets/promos/energizantes-red-bull.jpg",
+      "sha256": "4caae67b19825c3a19cdbab9e3c85a9bba886c88705174b951db8eee9e8adb1b",
+      "bytes": 250919
+    },
+    {
+      "path": "assets/promos/fernet-brancamenta.jpg",
+      "sha256": "5196b57911d2934882e884eb52244a08a0ca363198144120e0780cea95ce6a98",
+      "bytes": 52420
+    },
+    {
+      "path": "assets/promos/gin-tanqueray.jpg",
+      "sha256": "13f8077ffd4df7f336854a79856eac26eca6d3fc95b95a0829d0d1bb562f4bb4",
+      "bytes": 144710
+    },
+    {
+      "path": "assets/promos/mixers-schweppes.jpg",
+      "sha256": "11119b0c5c10a9d317252c5b2e2823e4cd0c1a33fb7ee4cefa9e6304f10de584",
+      "bytes": 525870
+    },
+    {
+      "path": "assets/promos/story-cervezas-heineken-thumb.webp",
+      "sha256": "cd132acb7ada65638bdd3b4ff930b573c61dcb8d7e4e19dc76aee41691f93b03",
+      "bytes": 7360
+    },
+    {
+      "path": "assets/promos/story-cervezas-heineken.webp",
+      "sha256": "d4a244d874f2e9412459d54175893f9a3440eba2a306ff0cab6b7eb2deaaa1e7",
+      "bytes": 151646
+    },
+    {
+      "path": "assets/promos/story-energizantes-monster-thumb.webp",
+      "sha256": "9d40b5fee5f25271a1e2f25b7f38150aef6fe49dd050428de0b37dbec8feeb0d",
+      "bytes": 1878
+    },
+    {
+      "path": "assets/promos/story-energizantes-monster.webp",
+      "sha256": "c2ffeda9bf264f231835edc49ef55852ed41dbea7c19c0817f9ee015be24f0db",
+      "bytes": 53040
+    },
+    {
+      "path": "assets/promos/story-mixers-schweppes-thumb.webp",
+      "sha256": "49a45320053b5b8cd37b97ccdd13e1af9dc5c01de3dd1cbf87c78700992b5ee9",
+      "bytes": 1782
+    },
+    {
+      "path": "assets/promos/story-mixers-schweppes.webp",
+      "sha256": "6c532b7111b71581c835c3136994e196084effff7d154ac936a3860d4d5fbc1e",
+      "bytes": 37538
+    },
+    {
+      "path": "assets/promos/story-whisky-jack-daniels-thumb.webp",
+      "sha256": "b6dbf940bb8a59c2d13ef2e6add8b16e724ca72884c8d1652bd8a5fe46d986e4",
+      "bytes": 6322
+    },
+    {
+      "path": "assets/promos/story-whisky-jack-daniels.webp",
+      "sha256": "e3b9419a7d1579c9227930d732cee4f9aef0f359bbf7f9f8a1ae1211a0ab3697",
+      "bytes": 126516
+    },
+    {
+      "path": "assets/promos/whisky-chivas.webp",
+      "sha256": "22ef29462bd8872f42c9c822064d2eb3c4a8ff405480aa0b095162048273f04f",
+      "bytes": 191008
+    },
+    {
+      "path": "cuenta/index.html",
+      "sha256": "40d94e65f1ae9b650623e3f02fd4f6c8161d552a1fa474b22249cdeb7afef990",
+      "bytes": 1842
+    },
+    {
+      "path": "index.html",
+      "sha256": "5aed1789419c6eb0f44c579b084e72906ac08f0d2920d27e2fa9b00704615893",
+      "bytes": 77759
+    },
+    {
+      "path": "js/account-action-page.js",
+      "sha256": "62c4993e17a081f60c259bb183839c5072e54a6bd2e4bcd0897f3165c259d5d3",
+      "bytes": 6771
+    },
+    {
+      "path": "js/account-action.js",
+      "sha256": "7ed6e5b8e07e610be925a4b5f0c9b2d45804915fe749d2497d91066080c97dd2",
+      "bytes": 12865
+    },
+    {
+      "path": "js/address-capture-controller.js",
+      "sha256": "81419bac22d2ab4e59677159a0e8746fedd84c4c22a4ddc53a048ac6ad094299",
+      "bytes": 33453
+    },
+    {
+      "path": "js/app.js",
+      "sha256": "c5e62fdd7d16106cb55f557c1bfad7d5dd76f0b4a7d292271b23da501ea8301a",
+      "bytes": 115253
+    },
+    {
+      "path": "js/approved-beverage-demo-data.js",
+      "sha256": "a69924b9618a38a5079ef0d60f360265d6d741431b46c8c40c030c9597eaaa5b",
+      "bytes": 41476
+    },
+    {
+      "path": "js/back-office.js",
+      "sha256": "eeff577ff55ae5cfd052157b3ad6517a4d3df66f66bff65291b1a42eea4783ee",
+      "bytes": 9192
+    },
+    {
+      "path": "js/beverage-demo-data.js",
+      "sha256": "349a82e7b20c97ea0a583a4a5cf8944414c8800d5c84daadf67ff82901bbf070",
+      "bytes": 722
+    },
+    {
+      "path": "js/business/business-access-inbox.js",
+      "sha256": "351ba0b79cfd13877ca6f75bcf1706a6e6e951a86dcd6d7ba653c209f4293952",
+      "bytes": 7922
+    },
+    {
+      "path": "js/business/business-access-registration.js",
+      "sha256": "06e0a5f9e41b8314678d4a228a1878883ca87c3f1b944dba4fef9220d61bb8fd",
+      "bytes": 10876
+    },
+    {
+      "path": "js/business/business-capabilities.js",
+      "sha256": "3785d8fef6edbbc97996819526697dc162609144f6ce97a8b167e7e05b506f27",
+      "bytes": 3686
+    },
+    {
+      "path": "js/business/business-catalog-editor.js",
+      "sha256": "f52e6cf0ea39533cf78d078e5f1376fa30df8b2327fc75564d543413a6a1c65e",
+      "bytes": 32812
+    },
+    {
+      "path": "js/business/business-command-outbox.js",
+      "sha256": "76be5fa6c6e7d33ea3e8445605a911eb170fc9585d8d01a6670103bbba95d2eb",
+      "bytes": 12262
+    },
+    {
+      "path": "js/business/business-connectivity.js",
+      "sha256": "e02424be92f04cc6336cc8572379ad1e8400d592e1b1922f3c561a59611e85a7",
+      "bytes": 2420
+    },
+    {
+      "path": "js/business/business-day-control.js",
+      "sha256": "1fad0e8362a0ced6556f36004aec5ea7bbae5ec36a8464cf9ff0b85be42379bb",
+      "bytes": 9441
+    },
+    {
+      "path": "js/business/business-device-check.js",
+      "sha256": "5c6fa4de8b6c3faa19f836a1a7c3f8b9720c7622da8edc970cd314e42f0edd86",
+      "bytes": 8531
+    },
+    {
+      "path": "js/business/business-fiscal-assistant.js",
+      "sha256": "19c42dd034043efa0bb7bd3b8283c4502d35aaa5a649f19f18afa4cd0af3a3d2",
+      "bytes": 15463
+    },
+    {
+      "path": "js/business/business-notification-service.js",
+      "sha256": "32926d03d6da4108364bc6c5cce20ba08ccb723dfdd2e3fd34c4a877815066e6",
+      "bytes": 734
+    },
+    {
+      "path": "js/business/business-operation-language.js",
+      "sha256": "7051c9c33805799d58c5611d313949cdd3f69981bfe9a47f3e5568b37b6501d4",
+      "bytes": 31111
+    },
+    {
+      "path": "js/business/business-operations-center.js",
+      "sha256": "19f2911e7c64cac5d567996f580185c06e239f87a0ba0a98b734eea27a6ed4e6",
+      "bytes": 192263
+    },
+    {
+      "path": "js/business/business-operations-config.js",
+      "sha256": "dcd8a0cbb98e739c3b3d77705a34ea5cdd29a60214ca6f228eec1f6dd453b4c1",
+      "bytes": 14660
+    },
+    {
+      "path": "js/business/business-order-alerts.js",
+      "sha256": "718357d5f3ef3003eae575ec4a095a5209d49805d7005686e320ba3c0e47486c",
+      "bytes": 7354
+    },
+    {
+      "path": "js/business/business-order-store.js",
+      "sha256": "12893fa0663eeca23c3e28794c70e9432eea5ec4618ff7268e7021dab4130c0f",
+      "bytes": 1790
+    },
+    {
+      "path": "js/business/business-order-tray.js",
+      "sha256": "3231d19179b646567261e99f2beac31182ca9c0ae9d0f2a3c4d3ca6bba481787",
+      "bytes": 18858
+    },
+    {
+      "path": "js/business/business-packing-verification.js",
+      "sha256": "885f46b35f418fc2300bc2d81e5eff6c844ba3b42397e559f2b95d2c4c512ce7",
+      "bytes": 10100
+    },
+    {
+      "path": "js/business/business-panel-controller.js",
+      "sha256": "81c6e1f7eecb876c5d34969bb998189be71f06a26dc61f889cb2fb189d0c335c",
+      "bytes": 5581
+    },
+    {
+      "path": "js/business/business-panel-render.js",
+      "sha256": "2db20f94c4449a5e458753708a44775eec11c097681c52792fd2793095456346",
+      "bytes": 62630
+    },
+    {
+      "path": "js/business/business-payments-console.js",
+      "sha256": "9594488c5f3410d1d0a5203c62ef7973d2c1628fa14d0c80c600fa6bc7a1ca97",
+      "bytes": 14908
+    },
+    {
+      "path": "js/business/business-photo-intake.js",
+      "sha256": "b193718e36ef7536838d925eb21c42190c6e5b619489e7bb75c21659340ee216",
+      "bytes": 9859
+    },
+    {
+      "path": "js/business/business-print-agent.js",
+      "sha256": "a01d06d62643ecc6147f7420d9fb2da13f7fb62128acda9a85da3607bdbaf349",
+      "bytes": 11433
+    },
+    {
+      "path": "js/business/business-product-onboarding.js",
+      "sha256": "d20657e8dab00ccb4f02c5a0592d2f7d8402c984287e359243c8623a7b17dad7",
+      "bytes": 11105
+    },
+    {
+      "path": "js/business/business-sound-service.js",
+      "sha256": "77d4d400a62be1acf37e1205e4c42b6133f757cc71fe27f9c898161d78d9d1a0",
+      "bytes": 1189
+    },
+    {
+      "path": "js/business/business-store-opening.js",
+      "sha256": "9ee7d00e60fb30193e20455e6a52951aa34f6db0d4c9643975416e1d327b82a5",
+      "bytes": 6681
+    },
+    {
+      "path": "js/business/business-team-apps.js",
+      "sha256": "fa0960972cd80906b35f7362ffa4b0aedb46b27811e78648b4d8b075f8ae95bf",
+      "bytes": 5375
+    },
+    {
+      "path": "js/business/business-team.js",
+      "sha256": "e08d52c93829acbedd226b22dd78be4f9b15a4424d3052c88c434342e91cd22b",
+      "bytes": 20281
+    },
+    {
+      "path": "js/business/business-tray-patch.js",
+      "sha256": "58d777098fc8767def3487c4ea614a60833123ca5a1daaddfd2afc06d4f08d0e",
+      "bytes": 10649
+    },
+    {
+      "path": "js/business/business-view-model.js",
+      "sha256": "063ffb21fed169a2818f12ca2f317c5dadf23062d4cbd891c66890380a958c6f",
+      "bytes": 1344
+    },
+    {
+      "path": "js/business/catalog-pricing.js",
+      "sha256": "df53db5918786d94afe94f33536c02d82b0246993568043d1d945a1aac38c37c",
+      "bytes": 13434
+    },
+    {
+      "path": "js/business/catalog-sheet-import.js",
+      "sha256": "c46df8dfeda3ad76fad6192f9c8c1970e50a952d752607edb28535f25275e7e2",
+      "bytes": 24540
+    },
+    {
+      "path": "js/business/catalog-sheet-reader.js",
+      "sha256": "b19946542abc833b1387b60ce1c395093af53369c47a81bc1c883040358b1706",
+      "bytes": 24414
+    },
+    {
+      "path": "js/business/order-fiscal-presenter.js",
+      "sha256": "0660b2cdd8fbe972b481594036376a8911acbceb5ee1ecf9c802fd4e8015adb6",
+      "bytes": 11396
+    },
+    {
+      "path": "js/business.js",
+      "sha256": "3e75148ab7e77cc0988c8bad7c819813658a75f4eb72ec052c202b3e8fbc77b5",
+      "bytes": 138757
+    },
+    {
+      "path": "js/campaigns/campaign-budget.js",
+      "sha256": "b63d00819cb9f16ac645c14a0f8c4b4ec96b644d2305848bedd5e9d4fe9feff9",
+      "bytes": 1805
+    },
+    {
+      "path": "js/campaigns/campaign-config.js",
+      "sha256": "e76b8dcd409810d73b9cd979bfdf34ebd592d36c403014393191b393e56dc55e",
+      "bytes": 7222
+    },
+    {
+      "path": "js/campaigns/campaign-engine.js",
+      "sha256": "c8fe79d54833e6384a96a4855525076476f38f3bb37b24225c45c6f4008be226",
+      "bytes": 24690
+    },
+    {
+      "path": "js/campaigns/campaign-motion.js",
+      "sha256": "a874d550b1ff1a15c0b6ad03a244bf74c353b02e3607e151293e7728ae1f9a98",
+      "bytes": 11125
+    },
+    {
+      "path": "js/campaigns/campaign-product.js",
+      "sha256": "8efa9b27aabad94cc10fef3f4a4a3bc6a73f8f8fdaa038db6b8a2d31e878ef5b",
+      "bytes": 1673
+    },
+    {
+      "path": "js/campaigns/presets/beer-pour.js",
+      "sha256": "4cbb7b91b7f48a1c6fbbe7881063bc66f188c3542790db69bef6fcfeaf65587c",
+      "bytes": 1449
+    },
+    {
+      "path": "js/campaigns/presets/cold-can.js",
+      "sha256": "1a1bf80ed9dd5b1c88eed350e396240c3682e64a6467348ab488abd452779208",
+      "bytes": 883
+    },
+    {
+      "path": "js/campaigns/presets/glass-fill.js",
+      "sha256": "bbf176f17685e718132ad42a8b0de3dff6305bb76fb1d8f17938c015ddf5865e",
+      "bytes": 1518
+    },
+    {
+      "path": "js/campaigns/presets/ice-reveal.js",
+      "sha256": "4ccda947c32b48f312e2823ca9902e100ab109dbe6d7aba15afdb805340d57f5",
+      "bytes": 908
+    },
+    {
+      "path": "js/campaigns/presets/product-drop.js",
+      "sha256": "fe6ae2f743a97104e9c2623aa2dba93206b912f5d1aabc59caf662851776e7b1",
+      "bytes": 740
+    },
+    {
+      "path": "js/campaigns/presets/shared.js",
+      "sha256": "fcd373b7da074499f38bf51d517e68c845c23bd4d64b38fcacb203cbec243f52",
+      "bytes": 8852
+    },
+    {
+      "path": "js/campaigns/presets/spotlight-product.js",
+      "sha256": "3523981447bbbe368e7c4c5e444317bf8bede4e1525531af57454a3b9212695a",
+      "bytes": 949
+    },
+    {
+      "path": "js/campaigns/product-art-layout.js",
+      "sha256": "0532e2a1c93ca954986600d395f64246b99c1a207b8f1fb909f7b1f163727180",
+      "bytes": 1326
+    },
+    {
+      "path": "js/cart.js",
+      "sha256": "491993193e09211d0f75e4c6232551654a799616fefdb4b220f710a23c699d97",
+      "bytes": 20814
+    },
+    {
+      "path": "js/catalog/barcode-normalizer.js",
+      "sha256": "69b5d9dfe0d6018660ecc8240222d91c589d464ddfe6fd2b9e79e50f31b40647",
+      "bytes": 2409
+    },
+    {
+      "path": "js/catalog/barcode-scanner-service.js",
+      "sha256": "f03e053e6dc181366cff99f28d20ac6746d3e21169de56904eb5a86b3456779a",
+      "bytes": 5843
+    },
+    {
+      "path": "js/catalog/inventory-controller.js",
+      "sha256": "feac13e5ea931ab1be8ac5b3705cc7c4b7da8e9fde314759ee772fa51023f838",
+      "bytes": 2255
+    },
+    {
+      "path": "js/catalog/product-draft-controller.js",
+      "sha256": "2ed9999fc09da2cbc6d220411576ae8e78972afd6f9e385fa8d31b4b7be0dc7c",
+      "bytes": 1784
+    },
+    {
+      "path": "js/catalog/product-lookup-service.js",
+      "sha256": "117c576ffc7c27c1ac084cd8060e6944de0b614f4f281c5df20598b32bf2fb4b",
+      "bytes": 2247
+    },
+    {
+      "path": "js/category-glass.js",
+      "sha256": "90334f0df784769f2ad1de696f06fd2cf08f6b0f693738be2fb8eb08c451fd65",
+      "bytes": 13002
+    },
+    {
+      "path": "js/combos-data.js",
+      "sha256": "98ef9e6642f5af644476b7c78552c62df8553553f190173b29a01d9bcd12987b",
+      "bytes": 6572
+    },
+    {
+      "path": "js/config.js",
+      "sha256": "9ae71ae06327f39d962cb8db966984612fa82cef237ea7077c3aa75efe4f0b10",
+      "bytes": 6358
+    },
+    {
+      "path": "js/core/address-capture.js",
+      "sha256": "fe45651982de30b8fbd11cdd1bad629c3c8b4d7e6554406f2dc334c6dbfca7fa",
+      "bytes": 5449
+    },
+    {
+      "path": "js/core/address.js",
+      "sha256": "b651d0b81497cf3d68f6be6ffe8625a90bcef02613c28bc37d9a6ec30e6b042a",
+      "bytes": 6593
+    },
+    {
+      "path": "js/core/app-mode.js",
+      "sha256": "8256bd4ab88b6c96ce95c26f657a5606754713225479e19aa21dd08d505c2226",
+      "bytes": 4274
+    },
+    {
+      "path": "js/core/beverage-home-sections.js",
+      "sha256": "75e0cf741a3d87a2fcd4bef7b47dcf892d55f89068f26faf1e6434c758bfe954",
+      "bytes": 14800
+    },
+    {
+      "path": "js/core/browser-resume.js",
+      "sha256": "1780ef7f8925fa43db2749a838b21e6b21aefdd46dad389fce5e60f2bffa7173",
+      "bytes": 4347
+    },
+    {
+      "path": "js/core/business-config-store.js",
+      "sha256": "9e56b75ebccfbdbc1e6c05e4c4456e03ec553d1661253ba41cf38e17c9df93f9",
+      "bytes": 8222
+    },
+    {
+      "path": "js/core/business-location.js",
+      "sha256": "86f1bb65a306030ffd98314151dddd561b987d9e49882d0a2cc48a01677d4254",
+      "bytes": 5551
+    },
+    {
+      "path": "js/core/business-metrics.js",
+      "sha256": "6d6123020ea6254db248385369d73ddc84b17331a5282686d86f72a7a7f79346",
+      "bytes": 4791
+    },
+    {
+      "path": "js/core/business-ops.js",
+      "sha256": "09aedd122bee923144d4d1a0e3519fd3cba7816b18808fc68a7ee86363eaa9ec",
+      "bytes": 7216
+    },
+    {
+      "path": "js/core/business-order-intake.js",
+      "sha256": "eea2ad322d599129945e535ec49c1535562de3b46e80cc1892b46fc54b809371",
+      "bytes": 22303
+    },
+    {
+      "path": "js/core/business-reports.js",
+      "sha256": "90a952c3cf41b4562b9cdadeca93ec5d86000232450ce65d351303de67993b35",
+      "bytes": 11861
+    },
+    {
+      "path": "js/core/business-setup.js",
+      "sha256": "882536040392c72410cdccb59a85c353084c9484cbe48bd26a544d844d5cd8de",
+      "bytes": 4435
+    },
+    {
+      "path": "js/core/cart-recommendations.js",
+      "sha256": "51d18c79db1fd4ec33165e7b4f1139f0522beaad401842c8b96818297cb435c9",
+      "bytes": 6803
+    },
+    {
+      "path": "js/core/cashbox-store.js",
+      "sha256": "f683f773f74442e4fa2ea017b3c7e83a77fbf87a1cec6453de6846b9cf34d920",
+      "bytes": 3876
+    },
+    {
+      "path": "js/core/catalog-image-contract.js",
+      "sha256": "f3fde6cd1571a9dc16a0007eb95bf9e77b5068bbd9deeffc2b2ff80386ff60e0",
+      "bytes": 9876
+    },
+    {
+      "path": "js/core/catalog-image-upload.js",
+      "sha256": "6a3222828da7a08e33920e475bec95c2f38c07740fd996d59dd2ecd4d77fb58f",
+      "bytes": 3546
+    },
+    {
+      "path": "js/core/catalog-search.js",
+      "sha256": "e2484543b16f8bae691f9aee084be3af0e89103f5f76e67820d1b9293456965a",
+      "bytes": 22243
+    },
+    {
+      "path": "js/core/catalog-store.js",
+      "sha256": "9fd3c1df3a3f0a24b41b4c48e57deb2967d2edbe4df88dd1720326b469a280b2",
+      "bytes": 25176
+    },
+    {
+      "path": "js/core/combos.js",
+      "sha256": "82d23dc869ac281b9a8f107dcd383e17777df91f456c16648ed2f3eafedccc2f",
+      "bytes": 8737
+    },
+    {
+      "path": "js/core/commerce-availability-store.js",
+      "sha256": "57c8042c368ac2234ec3694559c3228a2a1f6ea22a50663db4d8a59def55d210",
+      "bytes": 9050
+    },
+    {
+      "path": "js/core/customer-addresses.js",
+      "sha256": "23488684b6aed20cb76db48cb015aa0a9656868b8193565553fb14f008866c4a",
+      "bytes": 9645
+    },
+    {
+      "path": "js/core/customer-delivery-address-hydration.js",
+      "sha256": "340e268144247ecfa1ea172964619c7398d2d92df9f3e6e26919c1eae3059556",
+      "bytes": 1429
+    },
+    {
+      "path": "js/core/customer-history.js",
+      "sha256": "f664832b391da2cc467d542c7fe72db92aeed0a76de5835a0db7a30fbdd867c2",
+      "bytes": 6639
+    },
+    {
+      "path": "js/core/customer-preferences.js",
+      "sha256": "a69ea306129d185238769401560a8c3d455ae735aff3e617b08de60815ec97d7",
+      "bytes": 2214
+    },
+    {
+      "path": "js/core/customer-profile.js",
+      "sha256": "90c1f82cc37d7610b16b1404cafef0aed795b06bccc201f68d57f50c1524fd89",
+      "bytes": 17803
+    },
+    {
+      "path": "js/core/delivery-code.js",
+      "sha256": "73bfb3c915f9f7bca52cba606221aadc1e6a2092962ebe7df55b29cd8e923e65",
+      "bytes": 3694
+    },
+    {
+      "path": "js/core/delivery-location-draft.js",
+      "sha256": "cb5fdeb0738b074728467322fc2d0a1242a9bf905e5afdf48d98a36bf99c4868",
+      "bytes": 11288
+    },
+    {
+      "path": "js/core/delivery-location.js",
+      "sha256": "da0cfd51670c868e044ed0d6050489467395ee13246a4756705e5844fa8ab9be",
+      "bytes": 10183
+    },
+    {
+      "path": "js/core/delivery-proof.js",
+      "sha256": "62389e720b7b7a15ccb231eb66b8e9808e93e205d170b0dc55c40103f04df6ef",
+      "bytes": 6769
+    },
+    {
+      "path": "js/core/domain.js",
+      "sha256": "93552310086b452dac4976a097eecf5822089f782c2aaf60ac681012a7098e2f",
+      "bytes": 11894
+    },
+    {
+      "path": "js/core/fiscal-domain.js",
+      "sha256": "e9d88d32a2b8a94b702f75bfd1ea0e63975514dd2d02e89ff5fa1ccf6b087e8f",
+      "bytes": 2336
+    },
+    {
+      "path": "js/core/geo-point.js",
+      "sha256": "894254144e73a8c0e4ae8d415f715c8ff7b074661c8e2f20baac5c3a34cc504f",
+      "bytes": 3755
+    },
+    {
+      "path": "js/core/haptics.js",
+      "sha256": "49d77e7ae999ef49cb1993d383a20580982f1f2ea6f1b7621c97928c97a6c72f",
+      "bytes": 5017
+    },
+    {
+      "path": "js/core/idempotency-key.js",
+      "sha256": "7fee7a00e9a52624a1f7511aec81c6a5ac7799946994042816973f17f864bfc9",
+      "bytes": 5264
+    },
+    {
+      "path": "js/core/image-attribution.js",
+      "sha256": "fe7517fac6e744ce386a0a706b874d6d02b387cb3603e90d37af89a3b3f73501",
+      "bytes": 3376
+    },
+    {
+      "path": "js/core/inventory-domain.js",
+      "sha256": "edd344ebc68a50bb5628471eb543d63c19514d9ebae5f8ab616ab61512bbafbb",
+      "bytes": 3203
+    },
+    {
+      "path": "js/core/loyalty.js",
+      "sha256": "210532694d1160dc2127aca05935a86fc4c5324199775ca7b1e0d138f3c979af",
+      "bytes": 1901
+    },
+    {
+      "path": "js/core/merchandising-tags.js",
+      "sha256": "b5afc76061a64b66e34fd5115689ca1d05c1396ea59e6c8bd7c9f8ca9fb9a5b3",
+      "bytes": 3800
+    },
+    {
+      "path": "js/core/order-status.js",
+      "sha256": "b61940ebf5358592dfd3341b9daa10e401e182dcd8e94e3497196fd02aa4b0c7",
+      "bytes": 2476
+    },
+    {
+      "path": "js/core/order-timeline.js",
+      "sha256": "faf7557d4d07caf7ed784f86a209c6c75818983aa68966d340779685d9495222",
+      "bytes": 4561
+    },
+    {
+      "path": "js/core/order-workflow.js",
+      "sha256": "228bf786dcba857a7851d871a7a62dd7f2e938181e8e3ae7e0d8e2a7ca4e8d23",
+      "bytes": 3185
+    },
+    {
+      "path": "js/core/pos-domain.js",
+      "sha256": "476b804e01e89ee3254f3f54e6d8dd4bfa951067c21c67674ba9ca424943a458",
+      "bytes": 3995
+    },
+    {
+      "path": "js/core/pricing.js",
+      "sha256": "f6e0ad16e08d858a6221dc8e07487d98cfbe57f1b537ce288e7cf3780598fa01",
+      "bytes": 6383
+    },
+    {
+      "path": "js/core/product-photo.js",
+      "sha256": "5d9d5ede83ef8a637f82208722c705c582f1dbb349a839530fbc4a6a1db89e1c",
+      "bytes": 1969
+    },
+    {
+      "path": "js/core/product-presentation.js",
+      "sha256": "05d148b7d513275d94d6321772a13f622ebdd65fae166404f8895703cdf3dfe9",
+      "bytes": 15734
+    },
+    {
+      "path": "js/core/production-cart-storage.js",
+      "sha256": "c616b72171dbad1d1fa7bbf66ed869256dd3ddd2388f0f6ce093bad56ef39ba2",
+      "bytes": 6543
+    },
+    {
+      "path": "js/core/profile-checkout.js",
+      "sha256": "2b876a29240908c9137aa7b0719c547f20fad96dec6462ec828b2cc590eac2ec",
+      "bytes": 2536
+    },
+    {
+      "path": "js/core/promotions.js",
+      "sha256": "fb991a89e0e38331aea41149547a6a8a62447263ff58fac05a91687dd1dc0031",
+      "bytes": 15986
+    },
+    {
+      "path": "js/core/purchasable-destination.js",
+      "sha256": "2a448989ca5c41465c4f6432fe5167959c1b0c86ff072fec53c24b4afdb360ef",
+      "bytes": 3883
+    },
+    {
+      "path": "js/core/pwa-install.js",
+      "sha256": "3341499bd964b436b36cc2a649e5c5ab64f25ccb7b6c23fb1b5609e2f71e18fe",
+      "bytes": 13165
+    },
+    {
+      "path": "js/core/realtime-sync.js",
+      "sha256": "6480e9e6b5b32a67245b39e723b8b8dcbeb7b99b9ffe8328ba293ee3129059fb",
+      "bytes": 11263
+    },
+    {
+      "path": "js/core/reorder.js",
+      "sha256": "6119e29b6b23fdd3dc55ce9159b51baf3663292fef8dfa43bf73ad91c97603a7",
+      "bytes": 6066
+    },
+    {
+      "path": "js/core/retail-packaging.js",
+      "sha256": "1a340da220a31f5d63fab734a21f13a937424ff51e5bf9a0a3fdc6ae76b7b723",
+      "bytes": 27419
+    },
+    {
+      "path": "js/core/rider.js",
+      "sha256": "7be944951e8e48b428089a2aa2bddb566353c2c49d1069a7e7cc21581c35d5b8",
+      "bytes": 3556
+    },
+    {
+      "path": "js/core/runtime-config.js",
+      "sha256": "a60b9bc4d17d8c0b0fb5bfd0bb58887a9946889e7ba5cf0fcd905113ce387104",
+      "bytes": 13220
+    },
+    {
+      "path": "js/core/sandbox-tracking-presentation.js",
+      "sha256": "61c5faf94d16dbbfafcec972669e50be9008a71c0309687086b43a4dd6aede58",
+      "bytes": 3455
+    },
+    {
+      "path": "js/core/service-hours.js",
+      "sha256": "c5f5a6be9b84555e92706c25634bc2614620b9260d5432637e5a880dcd132327",
+      "bytes": 6978
+    },
+    {
+      "path": "js/core/showcase-mode.js",
+      "sha256": "463f0d4014d7c7a3426a35b1f217570a13a1e4518465f7fc9139c8020ced31bd",
+      "bytes": 1121
+    },
+    {
+      "path": "js/core/simulation.js",
+      "sha256": "0659ca593f77d4777401d2a4865e0c449fea602b319a2f29892b7211ce9bce93",
+      "bytes": 5646
+    },
+    {
+      "path": "js/core/stable-catalog-dom.js",
+      "sha256": "5b192cc8647b14cfd992f384a33ea5d8bbfcf0e01052114135db3cf9108a70ab",
+      "bytes": 3639
+    },
+    {
+      "path": "js/core/storage.js",
+      "sha256": "19eb7b03b1309d2b6fb366bb1e8b5cec970e559d2e248f15e1b34875e4107700",
+      "bytes": 765
+    },
+    {
+      "path": "js/core/store-entry.js",
+      "sha256": "160fed51c47babda858d3957721de0d5b315b89714f0962862a3b06a9a91475f",
+      "bytes": 5201
+    },
+    {
+      "path": "js/core/store-opening-readiness.js",
+      "sha256": "ae8134b16301bb3bd85ace6b90c4b5f015021eb99d7d03ff41b5e257ec98751e",
+      "bytes": 15509
+    },
+    {
+      "path": "js/core/store-taxonomy.js",
+      "sha256": "d34175d3ddad2a24f77cb13ea0ac4e1e0656684a24997839fa8ce5979965131e",
+      "bytes": 18220
+    },
+    {
+      "path": "js/core/storefront-filters.js",
+      "sha256": "b15aa2ae8fec16272dbf370f513c6f5acb9ccde1588ff901605640fdab626964",
+      "bytes": 2771
+    },
+    {
+      "path": "js/core/stories.js",
+      "sha256": "81c189815535af341eb87bc61fcaa66c69c5a259f2b8a047818b182b75e662c7",
+      "bytes": 7285
+    },
+    {
+      "path": "js/core/validators.js",
+      "sha256": "d7dab954195042faa0f01a55c9f8a0bfb34b15b324486916216c978791f78af7",
+      "bytes": 2785
+    },
+    {
+      "path": "js/customer-address-sheet.js",
+      "sha256": "f2c6d6f4f320c6776df9d961b84fa3db0da8bf8218a711b38fb0baf802b4336b",
+      "bytes": 14729
+    },
+    {
+      "path": "js/customer-delivery.js",
+      "sha256": "d016e3a243c8390f89f2f5893277b7c4243e873b43c012067a053d7b1d00da29",
+      "bytes": 61836
+    },
+    {
+      "path": "js/customer-profile-view.js",
+      "sha256": "411cd99d16e38faccaf486eacaf4ba04b02d27692ad6aeef5b73595529c65d71",
+      "bytes": 41892
+    },
+    {
+      "path": "js/data.js",
+      "sha256": "e1db126b80e8bd27c6f1503bbdc415c0eb1bcf6f709e0158ce3c6d9344e7d6b7",
+      "bytes": 1958
+    },
+    {
+      "path": "js/delivery-location-step.js",
+      "sha256": "8ef148e388dbff5e59968914cbc7b70a459b06a2e41be05834af21fdd794ce71",
+      "bytes": 7523
+    },
+    {
+      "path": "js/delivery.js",
+      "sha256": "a4bef02fea7d22e3eed7f27f13bccc8d923ed525f1ade1dce65e14a745a18779",
+      "bytes": 49280
+    },
+    {
+      "path": "js/map/animation_phase.js",
+      "sha256": "9506f68c0e05aaee524acf20004e9168954b93aa4e9b543c0d2013d6081fd89a",
+      "bytes": 1718
+    },
+    {
+      "path": "js/map/location_picker_map.js",
+      "sha256": "f038666b4e756b7b79444cef772f9b59c47bb49054676df9ebfdc0face132ee6",
+      "bytes": 6229
+    },
+    {
+      "path": "js/map/maplibre_tracking_map.js",
+      "sha256": "450669151b6f8bd89181857c0d9b1a79eda87f9214e1b48ba72eb639009692b1",
+      "bytes": 46425
+    },
+    {
+      "path": "js/map/map_config.js",
+      "sha256": "8a2280841085afb717023176d8d62388d3c27e74084afb4ba81b3457084427c5",
+      "bytes": 1504
+    },
+    {
+      "path": "js/map/map_view.js",
+      "sha256": "fffba411bd4b8e00ce877082c5a183f9f6c3719eb1f71a9a5530249526ecd25d",
+      "bytes": 25032
+    },
+    {
+      "path": "js/map/rider_marker.js",
+      "sha256": "8867e9898069b5e1b550073bc3e8e4b391aff0ecec8da131137102e2f52b97d8",
+      "bytes": 8297
+    },
+    {
+      "path": "js/map/rider_motion.js",
+      "sha256": "40810fc60d01e2d011ae655051f9278ef7bd97a2db74abca78c509490fa5f468",
+      "bytes": 14380
+    },
+    {
+      "path": "js/map/route_geometry.js",
+      "sha256": "6d155a238e201d8ec174bf2d1f6ad8dc0b57914d4c99d3afd0c32564f3e07f6f",
+      "bytes": 20428
+    },
+    {
+      "path": "js/map/taba_map_theme.js",
+      "sha256": "bfaf567d0acac4a2ccd20f684b18b594b8d1fe18bfa2fd353f69ebd003999c09",
+      "bytes": 8523
+    },
+    {
+      "path": "js/map/touch_intent.js",
+      "sha256": "98a4662d3f2df7eb9b1f5edeeee4c51b75f24983370564d29aefb4c3499174b3",
+      "bytes": 2726
+    },
+    {
+      "path": "js/map/tracking_status.js",
+      "sha256": "7abd23ff0b6f5a48b35cea040aa5a0f2071a920431e0fe38df7a235d22a9bfa7",
+      "bytes": 4168
+    },
+    {
+      "path": "js/motion.js",
+      "sha256": "5966d6351f2dd0d687834280644af75ee16ee2bc801085a93177c2de65fe5a5a",
+      "bytes": 26732
+    },
+    {
+      "path": "js/orders.js",
+      "sha256": "11cbc1f7a1b4d089df7aedc71d154f0114029e459f253bed7d02cd16651e86a8",
+      "bytes": 26920
+    },
+    {
+      "path": "js/password-aids.js",
+      "sha256": "6487c82d7a5344a6c1f6e5098bfa10c35a66f52eb7520cdd00087b35b11077ce",
+      "bytes": 1596
+    },
+    {
+      "path": "js/payments/mercadopago-checkout.js",
+      "sha256": "17981e6712c244a68c08747abc0fa65970bdf207202701a374f59c97e3769e44",
+      "bytes": 7509
+    },
+    {
+      "path": "js/payments/mercadopago-return.js",
+      "sha256": "f14659fe33da191559585170bfeb8b925a64f469b0d1f69db54f1befcf2a751c",
+      "bytes": 4421
+    },
+    {
+      "path": "js/payments/payment-recovery.js",
+      "sha256": "87281cae58dae03773e03363638db52056bc610c5bd4be1c733a8aa9169414a2",
+      "bytes": 12716
+    },
+    {
+      "path": "js/platform/browser-business-platform.js",
+      "sha256": "c6497731804998c5bd945f652cbccb1f8aaa881270d539ae1319bed686c06c95",
+      "bytes": 1157
+    },
+    {
+      "path": "js/platform/business-platform-adapter.js",
+      "sha256": "577e22414c59a36c1d1af94e80340c0e1cbcc4851e0329d33662843f279f389c",
+      "bytes": 1569
+    },
+    {
+      "path": "js/platform/indexeddb-command-storage.js",
+      "sha256": "ea94ae147bc4ce488e5c433804a9cc32eb118f3b66a357f3015e85ba1f544beb",
+      "bytes": 6246
+    },
+    {
+      "path": "js/platform/tauri-business-platform.js",
+      "sha256": "b20da5623483ce05b59826576cc8ddd98cf07265d42aae36a2aeb7bb8015e76f",
+      "bytes": 3322
+    },
+    {
+      "path": "js/pos/fiscal-status-presenter.js",
+      "sha256": "8d6a5f3d2db6d64aabf0181c2191153a319d7ebdf4c3b05cb0db96e450b26709",
+      "bytes": 2229
+    },
+    {
+      "path": "js/pos/pos-cart-store.js",
+      "sha256": "a2eb3c5efb1747023c385a594ea3d24177b230984c5cf6d5da2ad1ad4d5548d9",
+      "bytes": 1018
+    },
+    {
+      "path": "js/pos/pos-checkout-service.js",
+      "sha256": "262f25c87474d348a2b507d86300e866cb9982bbf0353acb10a1c6a8c61294d9",
+      "bytes": 947
+    },
+    {
+      "path": "js/pos/pos-controller.js",
+      "sha256": "8a3927faff132b92dacdc6d1d7409f5075508a8883ab0efbd7bb2571bf025894",
+      "bytes": 727
+    },
+    {
+      "path": "js/preview-promotions-data.js",
+      "sha256": "32c54427c77bd73c26236219c65647835d187bf64e9297b69cb65c4ee516710f",
+      "bytes": 1446
+    },
+    {
+      "path": "js/preview-stories-data.js",
+      "sha256": "3f851303f375f6583dec6d550e2a358f143d3f895368d47f6b6cff68d29832fd",
+      "bytes": 2858
+    },
+    {
+      "path": "js/production-operations.js",
+      "sha256": "e4f91f74742e6081f5d14e0b9ac55fdf39d00f739fc88752fab56958d5ebd6f9",
+      "bytes": 195597
+    },
+    {
+      "path": "js/pwa-install-ui.js",
+      "sha256": "bbca56bf3785bbdc2f9de160188ae51af91ae800cb57b54bafb5b6019af31c61",
+      "bytes": 16422
+    },
+    {
+      "path": "js/pwa-update.js",
+      "sha256": "39644ea61e372d8750244aabcb89711b1f4b6f970b1e60a171b5112a20d69947",
+      "bytes": 8281
+    },
+    {
+      "path": "js/realtime.js",
+      "sha256": "36950fe3755233e47d72c38f9f2f8a4d4d21ad960722d45f5a2e4d2ba6ddb4ac",
+      "bytes": 17553
+    },
+    {
+      "path": "js/repositories/customer_profile_repository.js",
+      "sha256": "369b0f0384a30fd6b934fd215b2a9bd6437c9fa5991aea2b34a9401bf05b9e1d",
+      "bytes": 6724
+    },
+    {
+      "path": "js/repositories/demo_order_repository.js",
+      "sha256": "4981eaa6344e56b6e4e15183368c5a2e56695a6598d3314253cf3116cb7acf5c",
+      "bytes": 6973
+    },
+    {
+      "path": "js/repositories/function-failure.js",
+      "sha256": "bbc560bae8db295c90ee5717e70910fc80ef7fc93a78ee53c89e935dbc67e6a5",
+      "bytes": 932
+    },
+    {
+      "path": "js/repositories/http_order_repository.js",
+      "sha256": "1177ccaf5ee778a2c73588a721757205f9f4571c598b9674ab70625166206521",
+      "bytes": 4799
+    },
+    {
+      "path": "js/repositories/order_repository.js",
+      "sha256": "37afeeb5a6f6bbbab7a1afb1f94fd4fb961f130c4be583ecf19b0757dc595328",
+      "bytes": 739
+    },
+    {
+      "path": "js/repositories/realtime_order_repository.js",
+      "sha256": "d89c7828139bf7ffbebbfdb84ebc56e6ba715d69b7e660e78c7416e0386ce05c",
+      "bytes": 253
+    },
+    {
+      "path": "js/repositories/repository_factory.js",
+      "sha256": "a6db5dc06a583f207acc45d6980ce26fe9f17122fdb4c79817c6a12c69daa177",
+      "bytes": 4918
+    },
+    {
+      "path": "js/repositories/sandbox_customer_profile_repository.js",
+      "sha256": "ce610c307a07854c52a79a7c410e3937d34f00427c63cf487cf0a802d5642997",
+      "bytes": 9895
+    },
+    {
+      "path": "js/repositories/sandbox_order_repository.js",
+      "sha256": "f1f7ae4c601a5fbd2942e025251144112f532782833c14cfc5817e4466eab405",
+      "bytes": 22828
+    },
+    {
+      "path": "js/repositories/storage_repository.js",
+      "sha256": "dd1041ca527c954e1063199f4b9f60c5e12c9c3a91fd5dcbdb649684d26c48ee",
+      "bytes": 925
+    },
+    {
+      "path": "js/repositories/supabase-business-repository.js",
+      "sha256": "8adace09f3d7b29c52d84ae09dc89cc615c9e312c02ed40300084a4b89252725",
+      "bytes": 11730
+    },
+    {
+      "path": "js/repositories/supabase-catalog-image-repository.js",
+      "sha256": "ee6f615c94ec9578526815383eae2ba6def2f2b79298fe4589f00a2038470a46",
+      "bytes": 5886
+    },
+    {
+      "path": "js/repositories/supabase-fiscal-repository.js",
+      "sha256": "d68683731200b7bfa0e39835accd01294837a910d7d1ae74a4fd286f4afd9e45",
+      "bytes": 7657
+    },
+    {
+      "path": "js/repositories/supabase-inventory-repository.js",
+      "sha256": "81a339b1d70bcce02310dee35e626eaef4b0510cea586437fba8c6d861a98774",
+      "bytes": 13026
+    },
+    {
+      "path": "js/repositories/supabase-manual-payments-repository.js",
+      "sha256": "7fcbe948f82f51e02d86fb9e17b0a4d82be1adfd2c4d3c57b8fcd12ea7116cc7",
+      "bytes": 1902
+    },
+    {
+      "path": "js/repositories/supabase-operations-repository.js",
+      "sha256": "43565609308e28d75151cb0c16a9b57923bbd1fd79e08c75a4bf5f7dc86cf72f",
+      "bytes": 2524
+    },
+    {
+      "path": "js/repositories/supabase-packing-repository.js",
+      "sha256": "33aaf71e243581c19bbdcd214160fb148b7caa7eef732a9e81b37fad15d86de7",
+      "bytes": 2772
+    },
+    {
+      "path": "js/repositories/supabase-payments-repository.js",
+      "sha256": "c7530bf3510860bab9eb2bcc8ade416f01cbeeefa9a8574a9139ee9efe4e837c",
+      "bytes": 3467
+    },
+    {
+      "path": "js/repositories/supabase-pos-repository.js",
+      "sha256": "912ba2be967290194d20a7d404e8840bda87656acdf0ecf31b4b8d9aff903cc4",
+      "bytes": 2497
+    },
+    {
+      "path": "js/repositories/supabase_order_repository.js",
+      "sha256": "aa69a2dae07e5098656c32c8e1b341d5af4e600b1e0a8f9b8b91ced4cf4197df",
+      "bytes": 170217
+    },
+    {
+      "path": "js/repositories/unavailable_order_repository.js",
+      "sha256": "8f119315c230006778226cf3e0b079002ab81661421f445cc7e2dbd0fbbb168e",
+      "bytes": 1184
+    },
+    {
+      "path": "js/sandbox/sandbox_map_scenario.js",
+      "sha256": "d2d77e097beb442e0c745d7e001db28380ecec8587c64ef72a0817c0d2f18717",
+      "bytes": 5197
+    },
+    {
+      "path": "js/sandbox-tools.js",
+      "sha256": "50405d5e2e0deb82f1cca8c1af93d104d14f46b5fc5d74242125901384faf0cd",
+      "bytes": 9381
+    },
+    {
+      "path": "js/services/customer-geolocation.js",
+      "sha256": "c35183fb29ea0821ed15c1448fb8e11691eb7bdd5b698430b489fb778ef0a57f",
+      "bytes": 3033
+    },
+    {
+      "path": "js/services/supabase-auth.js",
+      "sha256": "2ff4a88ddedcc9e028d9a722c1179abd1b20beecf1621d9b6da845af69c0f76b",
+      "bytes": 19752
+    },
+    {
+      "path": "js/services/supabase-client.js",
+      "sha256": "a5668d6ad8b47738bb99a9ba67ece08473a9226ea08b2dd4e69043a8ad587af2",
+      "bytes": 3101
+    },
+    {
+      "path": "js/showcase-fixtures.js",
+      "sha256": "e431d5c13cefbee234f7913bac846112671174a4250e5db3983e64ca8a4e4e97",
+      "bytes": 9043
+    },
+    {
+      "path": "js/showcase.js",
+      "sha256": "65f6d5a5659dff01687327dea913778d8c5351520abbfbb2e05af256d5fafd1a",
+      "bytes": 21239
+    },
+    {
+      "path": "js/simulation.js",
+      "sha256": "071c1b1d1729c2dea63f7dd2068f10028a26d88b4f595dbce2426a180bc3f7ea",
+      "bytes": 23353
+    },
+    {
+      "path": "js/startup-recovery.js",
+      "sha256": "485783d47dfe4ae68c56d5acf42c63aa06c4f5d3b5296728dea0e0b9040b656d",
+      "bytes": 5399
+    },
+    {
+      "path": "js/state.js",
+      "sha256": "75f626b9363dba0dfd14d362527a4cc42e21b9a5c7d61aaf03649ff5bf5b6c70",
+      "bytes": 41110
+    },
+    {
+      "path": "js/taba2-commercial-pending-data.js",
+      "sha256": "d6f57d328577cc52a10a0f2aced52867453298c1c109078e6de1c14e170069e1",
+      "bytes": 115246
+    },
+    {
+      "path": "js/team-invitation-accept.js",
+      "sha256": "18b46e30b674c40c634d061fa6e5456dea183da8d4becee027c42e93b9d59d67",
+      "bytes": 12256
+    },
+    {
+      "path": "js/tracking/customer_tracking_poll.js",
+      "sha256": "9777ddbe29799ce6414b0f34bfe8dd79fe648d8d877a4f1478f885c8576ed7ec",
+      "bytes": 13886
+    },
+    {
+      "path": "js/tracking/production_rider_gps.js",
+      "sha256": "1a0bfa8c50300b64defb118450e3c0d73254d0b8ae1fe7696bf1dafa53775a1e",
+      "bytes": 8869
+    },
+    {
+      "path": "js/ui.js",
+      "sha256": "dd97e5255efd00ca3dc9923a4cf792fe21193006b44e233178975c0c228630cb",
+      "bytes": 263070
+    },
+    {
+      "path": "js/vendor/supabase.js",
+      "sha256": "6e336617f61e7244415d04ca832a2cae41e7a1375ac383c03f39f24ce837518a",
+      "bytes": 212012
+    },
+    {
+      "path": "manifest.webmanifest",
+      "sha256": "615573ddf0dfb014101402b354853df7e55cc177082f4b5ad9544d89fce37790",
+      "bytes": 1008
+    },
+    {
+      "path": "pago/error/index.html",
+      "sha256": "651e98715355fca8eea65df52d5854e5d430884fd74dbfe53e16080aa55d0a63",
+      "bytes": 1948
+    },
+    {
+      "path": "pago/pendiente/index.html",
+      "sha256": "1cf1e618c223057c4f35a121b67d277d6ea7580fdace10257036eac9f68c7f76",
+      "bytes": 1948
+    },
+    {
+      "path": "pago/resultado/index.html",
+      "sha256": "9a7b029301d55a320ef7c0c7853ed5c10b7fc2b8d066fdfa0d0706181b8f20f3",
+      "bytes": 1955
+    },
+    {
+      "path": "robots.txt",
+      "sha256": "331ea9090db0c9f6f597bd9840fd5b171830f6e0b3ba1cb24dfa91f0c95aedc1",
+      "bytes": 26
+    },
+    {
+      "path": "runtime-config.js",
+      "sha256": "8af52c1c9506e8cebc5ed440a395b982ac702096bf8cc701b19905ae6523c1cd",
+      "bytes": 338
+    },
+    {
+      "path": "styles/brand-home.css",
+      "sha256": "45dc6ab6fbcfc478509d2d781aa8b4bf21dc5f0d01a93a867c960debc93c9ba3",
+      "bytes": 159343
+    },
+    {
+      "path": "styles/business.css",
+      "sha256": "c78e769d136be9868495096f839f3354588996c925f0db9c39c9d68c0a71062c",
+      "bytes": 251146
+    },
+    {
+      "path": "styles/campaigns.css",
+      "sha256": "82d71ba092a8aca996c7504c4b4a855caf87896147e68d1b3223552e97414680",
+      "bytes": 64754
+    },
+    {
+      "path": "styles/catalog.css",
+      "sha256": "7ca56578476549fab80b64bc72f296e7b248fa3bfe5a71f72b34f3ce2cd3bd25",
+      "bytes": 43834
+    },
+    {
+      "path": "styles/checkout.css",
+      "sha256": "4dc8494dc2e12d0fed0dcf333f7708f2ad35589ee62408e3e4d8e3e78114148f",
+      "bytes": 46065
+    },
+    {
+      "path": "styles/common.css",
+      "sha256": "9293d4829d9d83ee470fc8714a85b1c46a40f3f20c9b630fed8704b8571a41b2",
+      "bytes": 33867
+    },
+    {
+      "path": "styles/motion.css",
+      "sha256": "bb4a09c011e6a8c702ced51284ce825964775f57a46983a3e4debac3da3561db",
+      "bytes": 22111
+    },
+    {
+      "path": "styles/premium-storefront.css",
+      "sha256": "98917b4a7fe6b1bf3b8179c1e2a85cf2a7fe27cff399bdc3e5547f4e48a82f8e",
+      "bytes": 9466
+    },
+    {
+      "path": "styles/profile.css",
+      "sha256": "fb63d55dfd1792f00b041404433d726af894e7fa1c43e8704219befd3ee14d49",
+      "bytes": 23005
+    },
+    {
+      "path": "styles/responsive.css",
+      "sha256": "a9d801eb072401593ece9a948878b8f9441a6af96dfa3a2dac98f836ec400b32",
+      "bytes": 37153
+    },
+    {
+      "path": "styles/rider.css",
+      "sha256": "f7ef223bca9ed230a76322fcafd044a233c938f8b91f1cbe654c0a6baf779a9e",
+      "bytes": 5998
+    },
+    {
+      "path": "styles/showcase.css",
+      "sha256": "5f19db095fc3f61d45c9eceaea59a76012fcd58430277ee8dd1af4a11e0b8b54",
+      "bytes": 11908
+    },
+    {
+      "path": "styles/storefront.css",
+      "sha256": "26e47fa4ee582b5163960ba243fe6ecd34d2d41db536227e86c961d8348f29d1",
+      "bytes": 32918
+    },
+    {
+      "path": "styles/tokens.css",
+      "sha256": "26228c9c798965fb3597a7293a3c65d2c4e6d6b7468f280b50fc7d6288df5243",
+      "bytes": 19678
+    },
+    {
+      "path": "styles/tracking-premium.css",
+      "sha256": "f335203505a0ea491f322ca9077d4380ef6b5359d271f2d812f2f34a5c8b1452",
+      "bytes": 10805
+    },
+    {
+      "path": "styles/tracking.css",
+      "sha256": "33d6efbbe8d75856695965e15daa879f7c2248e4dec32a688fb5dca7b6b648d4",
+      "bytes": 80734
+    },
+    {
+      "path": "styles.css",
+      "sha256": "3ea87573f76897e3d051b0afc40731cf334b7aa34dc8d487b29626a9ba25fc46",
+      "bytes": 4174
+    },
+    {
+      "path": "sw.js",
+      "sha256": "900a9a7c1be6d86b1b34c29174fa45c82814ad0003c1c1cfef2e131b51c4bbd1",
+      "bytes": 35036
+    },
+    {
+      "path": "version.json",
+      "sha256": "4b75404ca33c7e779ad6eb13b26c759b22b2d89b336412cf0f8f2be65a09166f",
+      "bytes": 158
+    },
+    {
+      "path": "_headers",
+      "sha256": "fccb71170f73b9bec561fd4d2efd167e34f93e9e4debed9b6ffc40824cad9504",
+      "bytes": 1823
+    },
+    {
+      "path": "_worker.js",
+      "sha256": "9bd4cf810c525d260d3b1df4301b89dddc24690a34bfa2cfe60f416fa4025e0d",
+      "bytes": 9993
+    }
+  ]
+}

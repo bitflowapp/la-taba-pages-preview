@@ -26,14 +26,18 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import { productionTargetOrExit } from '../lib/environments.mjs';
 import { stableJson } from './lib.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const SALIDA = path.join(ROOT, 'catalog/production-catalog-snapshot.json');
 
-const PRODUCTION_REF = 'wwcpogltfgzgkrlilbcd';
-const BUSINESS_ID = '00000000-0000-4000-8000-000000000001';
-const ORIGEN_PUBLICO = process.env.TABA_PUBLIC_ORIGIN || 'https://la-taba.pages.dev';
+// El ref, el negocio y el sitio salen de deploy/environments.json. Mientras producción no tenga proyecto, sale 2 sin
+// leer nada ni pisar la fotografía: antes el ref estaba fijo en un proyecto que ya no existe.
+const PRODUCTION = productionTargetOrExit({ allowProvisioned: true });
+const PRODUCTION_REF = PRODUCTION.ref;
+const BUSINESS_ID = PRODUCTION.businessId;
+const ORIGEN_PUBLICO = process.env.TABA_PUBLIC_ORIGIN || PRODUCTION.origin;
 
 /** Saca la configuración publicada del sitio. Es pública por diseño. */
 async function configDelSitioPublicado() {

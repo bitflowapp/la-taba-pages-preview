@@ -100,11 +100,49 @@ const ALERT_LIBRARY = Object.freeze({
   },
   CHECKOUT_PROVIDER_UNVERIFIED: {
     support: 'TABA-PAGO-05',
-    happened: 'Alguien fue a pagar a Mercado Pago y de este lado nunca llegó la respuesta.',
+    happened: 'Alguien fue a pagar a Mercado Pago y no se pudo confirmar con Mercado Pago si pagó.',
     preserved: 'La referencia de esa compra queda guardada para poder buscarla en Mercado Pago.',
     risk: 'Si el pago existe y nadie lo mira, esa persona pagó y no va a recibir nada.',
-    recommendation: 'Buscá esa referencia en Mercado Pago; si el pago está, armá el pedido o devolvé el dinero.',
+    recommendation: 'Revisá que Mercado Pago siga conectado y buscá esa referencia en Mercado Pago; si el pago está, armá el pedido o devolvé el dinero.',
     action: { label: 'Ir a Pagos', view: 'payments' },
+    // La misma alerta con la verificación funcionando: Mercado Pago contesta y no
+    // registra ningún pago. Es una compra que el cliente no terminó, lo más común
+    // de una tienda; tratarla como emergencia frenaba la venta por nada.
+    bySeverity: {
+      INFO: {
+        happened: 'Alguien empezó a pagar en Mercado Pago y no terminó.',
+        preserved: 'Mercado Pago no registra ningún pago de esa compra. La referencia queda guardada.',
+        risk: 'Ninguno por ahora: si el pago aparece tarde, el pedido se arma solo o te avisamos.',
+        recommendation: 'No hace falta que hagas nada. Se le sigue preguntando a Mercado Pago durante un día.',
+      },
+    },
+  },
+  // Las tres que siguen las emite el servidor desde 20260925220000 y 20261022110000/120000
+  // y caían en el texto genérico («algo necesita que una persona lo mire»): justo las
+  // de plata, las que más necesitan decir qué hacer.
+  PAYMENT_DISCREPANCY_OPEN: {
+    support: 'TABA-PAGO-06',
+    happened: 'Lo que registró Mercado Pago y lo que registró La Taba no coinciden para un pago.',
+    preserved: 'El pago, el pedido y lo que informó Mercado Pago quedan guardados. Nada se cobra ni se devuelve solo.',
+    risk: 'Puede haber alguien que pagó sin pedido, un cobro de más o una devolución sin confirmar.',
+    recommendation: 'Abrí Pagos, mirá la diferencia y resolvela con lo que muestra Mercado Pago; no cobres ni devuelvas de nuevo sin mirar.',
+    action: { label: 'Ir a Pagos', view: 'payments' },
+  },
+  PAYMENT_PIPELINE_STALLED: {
+    support: 'TABA-PAGO-07',
+    happened: 'El procesamiento automático de los pagos está demorado o falla una y otra vez.',
+    preserved: 'Los pagos aprobados no se pierden: quedan esperando con su importe y su referencia.',
+    risk: 'Puede haber clientes que ya pagaron y todavía no ven su pedido.',
+    recommendation: 'No cobres de nuevo a nadie. Mirá Pagos y avisá a soporte con la referencia de abajo.',
+    action: { label: 'Ir a Pagos', view: 'payments' },
+  },
+  MERCADOPAGO_SELLER_CANNOT_CHARGE: {
+    support: 'TABA-PAGO-08',
+    happened: 'Mercado Pago está habilitado pero la cuenta vinculada no puede cobrar.',
+    preserved: 'Los pedidos y pagos anteriores quedan como estaban. El cobro en efectivo sigue disponible.',
+    risk: 'Mientras tanto la tienda no ofrece Mercado Pago y se pierden ventas online.',
+    recommendation: 'Entrá a Mercado Pago en el Panel y reconectá la cuenta del comercio.',
+    action: { label: 'Ir a Mercado Pago', view: 'payments-setup' },
   },
   SCHEDULER_JOB_FAILING: {
     support: 'TABA-SIST-01',
@@ -144,6 +182,14 @@ const ALERT_LIBRARY = Object.freeze({
     preserved: 'El pedido y lo que ya preparaste quedan como están.',
     risk: 'El cliente calcula su espera con el tiempo que le diste; pasado eso, llama o cancela.',
     recommendation: 'Movelo en Pedidos o avisale al cliente cuánto va a demorar de verdad.',
+    action: { label: 'Ir a Pedidos', view: 'orders' },
+  },
+  ORDER_PAYMENT_REVERSED_OPEN: {
+    support: 'TABA-PED-03',
+    happened: 'Un pedido sigue abierto aunque su pago ya se le devolvió al cliente.',
+    preserved: 'La devolución y el pedido quedan registrados. El sistema no deja prepararlo ni entregarlo.',
+    risk: 'Si se prepara o se entrega igual, la mercadería sale sin cobro.',
+    recommendation: 'Abrí Pedidos y cancelalo con el motivo de la devolución; si no salió del local, el stock vuelve solo.',
     action: { label: 'Ir a Pedidos', view: 'orders' },
   },
   ORDER_READY_WITHOUT_RIDER: {
@@ -200,9 +246,11 @@ export const METRIC_LIBRARY = Object.freeze([
 
 export function describeOperationalAlert(alert = {}) {
   const code = String(alert.code || alert.alert_code || '').toUpperCase();
-  const copy = ALERT_LIBRARY[code]
-    || (String(alert.subject_type || '') === 'service_health' ? SERVICE_HEALTH_FALLBACK : UNKNOWN_ALERT);
   const severity = normalizeSeverity(alert.severity);
+  const base = ALERT_LIBRARY[code]
+    || (String(alert.subject_type || '') === 'service_health' ? SERVICE_HEALTH_FALLBACK : UNKNOWN_ALERT);
+  // Una alerta puede cambiar de gravedad sin cambiar de código; el texto sigue a la gravedad.
+  const copy = base.bySeverity?.[severity] ? { ...base, ...base.bySeverity[severity] } : base;
   const occurrences = Number.isSafeInteger(Number(alert.occurrence_count)) ? Number(alert.occurrence_count) : 1;
   return Object.freeze({
     id: String(alert.id || ''),

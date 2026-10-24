@@ -15,14 +15,21 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
+import { productionTargetOrExit, readEnvironments } from './lib/environments.mjs';
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-// Identidades conocidas. STAGING nunca puede ser destino de una mutacion.
-const PRODUCTION_REF = 'wwcpogltfgzgkrlilbcd';
-const PRODUCTION_NAME = 'la-taba-production';
+// Identidades conocidas, desde deploy/environments.json: el production del registro (sale 2 si todavía no hay
+// proyecto) y, prohibidos como destino, QA, los proyectos retirados y los de otros productos.
+const REGISTRY = readEnvironments();
+const PRODUCTION = productionTargetOrExit({ registry: REGISTRY, allowProvisioned: true });
+const PRODUCTION_REF = PRODUCTION.ref;
+const PRODUCTION_NAME = REGISTRY.environments.production.supabase.name;
+const QA_REF = REGISTRY.environments.qa.supabase.ref;
 const FORBIDDEN = new Map([
-  ['ukxqbgswjlibmnjemrzd', 'la-taba-staging'],
-  ['yakhtrkukqlgzvxuvhzs', 'la-taba-demo'],
+  [QA_REF, `${REGISTRY.environments.qa.supabase.name} (QA)`],
+  ...Object.entries(REGISTRY.retiredSupabaseRefs).map(([ref, info]) => [ref, `retirado: ${info.was}`]),
+  ...Object.entries(REGISTRY.foreignSupabaseRefs).map(([ref, owner]) => [ref, `de otro producto: ${owner}`]),
 ]);
 
 const REF_SHAPE = /^[a-z]{20}$/;
@@ -57,7 +64,7 @@ check('A', requested === PRODUCTION_REF, `el ref pedido no es el production de T
 if (FORBIDDEN.has(requested)) {
   failures.push(`B: ${requested} es ${FORBIDDEN.get(requested)} - PROHIBIDO COMO DESTINO`);
 }
-check('B', requested !== 'ukxqbgswjlibmnjemrzd', 'el destino es STAGING');
+check('B', requested !== QA_REF, 'el destino es QA');
 
 // CHECK C - el host declarado corresponde al ref.
 if (url) {
@@ -82,8 +89,8 @@ if (fs.existsSync(linkedFile)) {
 }
 
 // CHECK E - staging y production no pueden ser el mismo ref.
-check('E', PRODUCTION_REF !== 'ukxqbgswjlibmnjemrzd',
-  'el ref de production coincide con el de staging');
+check('E', PRODUCTION_REF !== QA_REF && !FORBIDDEN.has(PRODUCTION_REF),
+  'el ref de production coincide con QA, con un retirado o con otro producto');
 
 if (failures.length > 0) {
   console.error('\n  ABORTADO - la guardia no dejo pasar:');

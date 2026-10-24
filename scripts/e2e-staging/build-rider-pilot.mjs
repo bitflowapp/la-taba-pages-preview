@@ -3,6 +3,9 @@ import { createHash } from 'node:crypto';
 import { existsSync,readFileSync,writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { leerSecreto } from '../e2e-production-sale/secretos-windows.mjs';
+import { qaTarget } from '../lib/environments.mjs';
+// Staging is the QA project of deploy/environments.json; ucbtjcurawxjwjdvvcvj (the old staging) was deleted.
+const stagingRef=qaTarget().ref;
 const dir=path.join(process.env.USERPROFILE||'','.codex','secrets','la-taba-rider-pilot');
 const keystore=path.join(dir,'pilot-v1.p12');
 const targetFlag=process.argv.indexOf('--target');
@@ -11,9 +14,9 @@ if(!['staging','pilot'].includes(target))throw Error('RIDER_TARGET_REQUIRED');
 const refFlag=process.argv.indexOf('--project-ref');
 const explicitRef=refFlag<0?'':process.argv[refFlag+1]||'';
 if(target==='staging'&&explicitRef)throw Error('STAGING_REF_IS_FIXED');
-const backendRef=target==='staging'?'ucbtjcurawxjwjdvvcvj':explicitRef;
+const backendRef=target==='staging'?stagingRef:explicitRef;
 if(!/^[a-z0-9]{20}$/.test(backendRef)||backendRef==='wwcpogltfgzgkrlilbcd'
-  ||(target==='pilot'&&['ucbtjcurawxjwjdvvcvj','yakhtrkukqlgzvxuvhzs'].includes(backendRef)))
+  ||(target==='pilot'&&[stagingRef,'ucbtjcurawxjwjdvvcvj','yakhtrkukqlgzvxuvhzs'].includes(backendRef)))
  throw Error('PILOT_BACKEND_REF_REQUIRED_AND_MUST_BE_ISOLATED');
 const versionCodeFlag=process.argv.indexOf('--version-code');
 const versionCode=versionCodeFlag<0?1:Number(process.argv[versionCodeFlag+1]);
@@ -73,7 +76,7 @@ if(aapt.status!==0||packageId!=='com.lataba.rider.pilot'||actualVersionCode!==ve
 // The backend a rider talks to lives in the dex, not in the manifest: an APK with
 // the right package and versionCode can still carry another environment's URL.
 // It must contain its own backend URL and no other known environment's.
-const knownRefs=['ucbtjcurawxjwjdvvcvj',cpManifest.rider?.backendRef,'wwcpogltfgzgkrlilbcd','yakhtrkukqlgzvxuvhzs'].filter(Boolean);
+const knownRefs=[stagingRef,'ucbtjcurawxjwjdvvcvj',cpManifest.rider?.backendRef,'wwcpogltfgzgkrlilbcd','yakhtrkukqlgzvxuvhzs'].filter(Boolean);
 // Windows bsdtar reads zip (an APK); a GNU tar earlier in PATH (Git Bash) does not.
 const bsdtar=path.join(process.env.SystemRoot||process.env.windir||'','System32','tar.exe');
 const dexNames=(spawnSync(bsdtar,['-tf',apk],{encoding:'utf8',windowsHide:true}).stdout||'').split(/\r?\n/).filter((n)=>/^classes\d*\.dex$/.test(n));

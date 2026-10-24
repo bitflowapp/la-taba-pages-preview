@@ -1,15 +1,30 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 
 import { clasificar, csvDe, MOTIVOS } from '../scripts/comercial/censo-produccion.mjs';
 import {
-  BLOQUEADO, ESPERA_AUTORIZACION, FALTA_DATO_HUMANO, FUNCIONES_OBLIGATORIAS,
-  funcionesActivas, INFO, OK, veredicto,
+  BLOQUEADO, chequeoEntorno, chequeoFrontend, destinoComercial, ESPERA_AUTORIZACION, FALTA_DATO_HUMANO,
+  FUNCIONES_OBLIGATORIAS, funcionesActivas, INFO, OK, veredicto,
 } from '../scripts/comercial/compuerta-comercial.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
+
+// El destino sale de deploy/environments.json. Las pruebas pasan un registro con una producción FICTICIA activa
+// (tests/fixtures/environments.production-active.json), y la misma aprovisionada o sin aprovisionar, armadas acá.
+const REGISTRO_ACTIVO = JSON.parse(
+  fs.readFileSync(path.join(root, 'tests/fixtures/environments.production-active.json'), 'utf8'),
+);
+const conEstado = (status, supabase = {}) => {
+  const registro = structuredClone(REGISTRO_ACTIVO);
+  registro.environments.production.status = status;
+  Object.assign(registro.environments.production.supabase, supabase);
+  return registro;
+};
+const PROVISIONADO = conEstado('provisioned');
+const SIN_PRODUCCION = conEstado('not_provisioned', { ref: null, organizationId: null, plan: null });
 
 /*
  * LA DIFERENCIA ENTRE «ESTÁ ROTO» Y «FALTA QUE ALGUIEN DECIDA».
@@ -310,4 +325,68 @@ test('se verifican por NOMBRE y estado, no contando cuántas hay', () => {
   // Y un nombre que empieza igual no puede hacerse pasar por otro.
   const parecida = '  ✓ mercadopago-refund-v2                        v1    ACTIVE';
   assert.deepEqual(funcionesActivas(parecida, ['mercadopago-refund']), []);
+});
+
+// ─── EL DESTINO SALE DEL REGISTRO DE ENTORNOS ────────────────────────────────
+/*
+ * El negocio, el sitio, el ref de producción y el de staging estaban escritos
+ * en la compuerta, y los dos proyectos ya no existen: medía la tienda contra una
+ * base borrada. Ahora salen de deploy/environments.json, al correr.
+ */
+test('la compuerta toma sitio, ref, negocio y refs prohibidos del registro', () => {
+  const produccion = REGISTRO_ACTIVO.environments.production;
+  const destino = destinoComercial({ registry: REGISTRO_ACTIVO, env: {} });
+  assert.equal(destino.host, produccion.web.origin);
+  assert.equal(destino.ref, produccion.supabase.ref);
+  assert.equal(destino.negocio, produccion.businessId);
+  assert.equal(destino.estado, 'active');
+  for (const ref of ['ixewllzzuzpqrkxzmfzx', 'wwcpogltfgzgkrlilbcd', 'ukxqbgswjlibmnjemrzd', 'tkanbadcglszlcyfjvpv']) {
+    assert.ok(destino.prohibidos.has(ref), `${ref} tiene que estar prohibido`);
+  }
+  // TABA_PUBLIC_ORIGIN sigue pudiendo apuntar la compuerta a otro sitio, como antes.
+  assert.equal(destinoComercial({ registry: REGISTRO_ACTIVO, env: { TABA_PUBLIC_ORIGIN: 'https://otro.example' } }).host,
+    'https://otro.example');
+});
+
+test('sin proyecto de producción la compuerta no tiene destino: falla cerrado', () => {
+  assert.throws(() => destinoComercial({ registry: SIN_PRODUCCION, env: {} }), { code: 'PRODUCTION_NOT_PROVISIONED' });
+});
+
+// Correrla de verdad con un registro activo saldría a la red; por eso sólo se corre mientras el registro real no tenga
+// producción, y con el registro alternativo apagado.
+const produccionReal = JSON.parse(fs.readFileSync(path.join(root, 'deploy/environments.json'), 'utf8'))
+  .environments.production.status;
+test('sin proyecto de producción la línea de comandos sale 2, sin tocar la red', {
+  skip: produccionReal !== 'not_provisioned' && 'el registro real ya tiene producción: correr la compuerta saldría a la red',
+}, () => {
+  const r = spawnSync(process.execPath, [path.join(root, 'scripts/comercial/compuerta-comercial.mjs')], {
+    cwd: root, encoding: 'utf8', env: { ...process.env, TABA_ENVIRONMENTS_FILE: '' },
+  });
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /Producción todavía no tiene un proyecto/);
+  assert.doesNotMatch(r.stdout, /VEREDICTO/);
+});
+
+test('el runtime-config publicado no puede nombrar QA ni un proyecto retirado', () => {
+  const destino = destinoComercial({ registry: REGISTRO_ACTIVO, env: {} });
+  const publicado = (ref, negocio = destino.negocio) => ({
+    ok: true, estado: 200, cuerpo: `supabaseUrl: 'https://${ref}.supabase.co', businessId: '${negocio}'`,
+  });
+  assert.equal(chequeoFrontend(publicado(destino.ref), destino).estado, OK);
+  // El sitio todavía nombra la producción anterior, que ya no existe: eso bloquea, igual que QA o staging.
+  for (const ref of ['wwcpogltfgzgkrlilbcd', 'ukxqbgswjlibmnjemrzd', 'ixewllzzuzpqrkxzmfzx']) {
+    const r = chequeoFrontend(publicado(ref), destino);
+    assert.equal(r.estado, BLOQUEADO, ref);
+    assert.match(r.detalle, /QA, retirado o ajeno/);
+  }
+  assert.match(chequeoFrontend(publicado('abcdefghijklmnopqrst'), destino).detalle, /no apunta al Supabase de producción/);
+  assert.match(chequeoFrontend(publicado(destino.ref, 'otro-negocio'), destino).detalle, /otro negocio/);
+  assert.equal(chequeoFrontend({ ok: false, estado: 404, cuerpo: '' }, destino).estado, BLOQUEADO);
+});
+
+test('un proyecto aprovisionado y todavía no activo nunca da READY FOR REAL PAYMENT', () => {
+  assert.equal(chequeoEntorno(destinoComercial({ registry: REGISTRO_ACTIVO, env: {} })).estado, OK);
+  const espera = chequeoEntorno(destinoComercial({ registry: PROVISIONADO, env: {} }));
+  assert.equal(espera.estado, ESPERA_AUTORIZACION);
+  assert.equal(veredicto([{ estado: OK }, { estado: OK }, espera]), 'READY TO ENABLE PAYMENT');
 });

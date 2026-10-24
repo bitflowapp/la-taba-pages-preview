@@ -1,4 +1,4 @@
-// Build firmada del Rider de PRODUCCIÓN (la-taba.pages.dev → wwcpogltfgzgkrlilbcd).
+// Build firmada del Rider de PRODUCCIÓN (origen web → proyecto de Supabase, los dos de deploy/environments.json).
 //
 // - El destino no se elige: es producción, y el build de Gradle se niega a nombrar otro backend.
 // - La clave publicable se lee del runtime-config.js que la tienda ya publica (es pública) y se
@@ -15,12 +15,18 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { leerSecreto } from '../e2e-production-sale/secretos-windows.mjs';
+import { forbiddenRefsFor, productionTargetOrExit } from '../lib/environments.mjs';
 import { PRODUCTION_BACKUP_NAME, PRODUCTION_PASSWORD_NAME, productionKeystorePath } from './create-rider-production-signing-key.mjs';
 
 const ROOT = path.resolve(fileURLToPath(new URL('../..', import.meta.url)));
-const PRODUCTION_REF = 'wwcpogltfgzgkrlilbcd';
-const STORE = 'https://la-taba.pages.dev';
-const OTHER_REFS = ['ucbtjcurawxjwjdvvcvj', 'tkanbadcglszlcyfjvpv', 'yakhtrkukqlgzvxuvhzs', 'ukxqbgswjlibmnjemrzd'];
+// El destino sale de deploy/environments.json. Mientras producción no tenga proyecto, sale 2 sin leer la tienda ni
+// compilar: antes el ref estaba fijo en un proyecto que ya no existe. `provisioned` alcanza para ARMAR la build
+// (distribuirla es otra decisión). La lista de refs que el dex nunca puede llevar es la del registro: QA, retirados y
+// ajenos, en vez de cuatro escritos a mano.
+const PRODUCTION = productionTargetOrExit({ allowProvisioned: true });
+const PRODUCTION_REF = PRODUCTION.ref;
+const STORE = PRODUCTION.origin;
+const OTHER_REFS = [...forbiddenRefsFor('production')];
 const arg = (name, fallback = '') => { const i = process.argv.indexOf(name); return i < 0 ? fallback : process.argv[i + 1]; };
 const versionCode = Number(arg('--version-code'));
 const versionName = arg('--version-name');
@@ -30,7 +36,7 @@ if (!/^[0-9]+\.[0-9]+\.[0-9]+-canonical$/.test(versionName)) throw Error('INVALI
 const configText = await (await fetch(`${STORE}/runtime-config.js`, { cache: 'no-store' })).text();
 const publicKey = configText.match(/publishableKey:\s*'([^']+)'/)?.[1] || '';
 const supabaseUrl = configText.match(/supabaseUrl:\s*'([^']+)'/)?.[1] || '';
-if (supabaseUrl !== `https://${PRODUCTION_REF}.supabase.co` || !/deploymentEnvironment:\s*'production'/.test(configText))
+if (supabaseUrl !== PRODUCTION.supabaseUrl || !/deploymentEnvironment:\s*'production'/.test(configText))
   throw Error('STORE_IS_NOT_PRODUCTION');
 if (!publicKey.startsWith('sb_publishable_')) throw Error('STORE_KEY_IS_NOT_PUBLISHABLE');
 
@@ -81,7 +87,7 @@ const sourceSha = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding:
 const dirty = spawnSync('git', ['status', '--porcelain', '--', 'apps/rider-android'], { cwd: ROOT, encoding: 'utf8' }).stdout.trim();
 const receipt = { target: 'production', store: STORE, backend: PRODUCTION_REF, packageId, versionCode, versionName: actualVersionName,
   certificateSha256: signer, apkSha256: createHash('sha256').update(readFileSync(apk)).digest('hex'),
-  embeddedBackendUrl: `https://${PRODUCTION_REF}.supabase.co`, sourceCommit: sourceSha, sourceTreeClean: dirty === '',
+  embeddedBackendUrl: PRODUCTION.supabaseUrl, sourceCommit: sourceSha, sourceTreeClean: dirty === '',
   apkFile: 'apps/rider-android/app/build/outputs/apk/release/app-release.apk', builtAt: new Date().toISOString() };
 writeFileSync(path.join(ROOT, 'deploy', 'production.rider-receipt.json'), JSON.stringify(receipt, null, 2) + '\n', 'utf8');
 console.log(JSON.stringify(receipt));

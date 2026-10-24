@@ -29,7 +29,7 @@
 // declarado y lo servido no son la misma cosa.
 //
 //   $env:SUPABASE_ACCESS_TOKEN = <token del CLI>
-//   node scripts/production-auth-posture.mjs --ref wwcpogltfgzgkrlilbcd --key <publishable>
+//   node scripts/production-auth-posture.mjs --ref <ref de producción> --key <publishable>
 //
 // Ningun valor de credencial se imprime ni se escribe: la clave publicable sale
 // por huella y el PAT no sale nunca.
@@ -41,8 +41,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
-const PRODUCTION_REF = 'wwcpogltfgzgkrlilbcd';
-const STAGING_REF = 'ukxqbgswjlibmnjemrzd';
+import { forbiddenRefsFor, productionTargetOrExit } from './lib/environments.mjs';
+
+// El destino sale de deploy/environments.json. Mientras producción no tenga proyecto, sale 2 sin preguntar nada:
+// antes el ref estaba fijo en un proyecto que ya no existe. `provisioned` alcanza para medir antes de abrir.
+// Lo que antes era «el ref de staging» ahora son todos los que producción nunca puede nombrar: QA, retirados y ajenos.
+const PRODUCTION = productionTargetOrExit({ allowProvisioned: true });
+const PRODUCTION_REF = PRODUCTION.ref;
+const FORBIDDEN_REFS = forbiddenRefsFor('production');
 
 function arg(name) {
   const i = process.argv.indexOf(`--${name}`);
@@ -73,7 +79,7 @@ if (!PAT) {
   process.exit(2);
 }
 
-const BASE = `https://${ref}.supabase.co`;
+const BASE = PRODUCTION.supabaseUrl;
 
 /** Huella de una credencial: suficiente para comparar, inutil para usar. */
 function huella(value) {
@@ -161,8 +167,9 @@ if (siteEsLocal) {
 if (allowList.length) {
   const sospechosos = allowList.filter((u) => /localhost|127\.0\.0\.1|\*|\.trycloudflare\.com/i.test(u));
   exigir(sospechosos.length === 0, `la allow-list admite destinos que no deberia: ${sospechosos.join(', ')}`);
-  const staging = allowList.filter((u) => u.includes(STAGING_REF) || /taba2-staging/i.test(u));
-  exigir(staging.length === 0, `la allow-list de PRODUCCION admite destinos de staging: ${staging.join(', ')}`);
+  const staging = allowList.filter((u) => [...FORBIDDEN_REFS].some((r) => u.includes(r)) || /taba2-staging/i.test(u));
+  exigir(staging.length === 0,
+    `la allow-list de PRODUCCION admite destinos de QA, staging o proyectos retirados: ${staging.join(', ')}`);
 }
 
 // ---------- 2 · la allow-list falla cerrada por el camino real ----------

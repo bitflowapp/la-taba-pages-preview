@@ -90,7 +90,10 @@ try {
       const shown = classifyBusinessPayment(row);
       check(`payment ${row.order_public_code || row.internal_status}: the card shows "${shown.label}"`, text.includes(shown.label), `status=${row.internal_status} hold=${row.financial_hold ?? '-'}`);
     }
-    const unresolved = rows.filter(row => Number(row.open_discrepancies || 0) > 0 || row.financial_hold);
+    // Misma regla que el Panel (classifyBusinessPayment): una devolución YA registrada (`refund_registered`,
+    // `money_returned`) es un hecho cerrado, no dinero sin resolver. Contar cualquier retención como «sin resolver»
+    // hacía fallar esta verificación con el reembolso conciliado de LT-0087 (24/10).
+    const unresolved = rows.filter(row => classifyBusinessPayment(row).state === 'money-unresolved');
     if (unresolved.length) check('unresolved money is shown as such', text.includes('Dinero sin resolver'));
     else check('no unresolved-money banner without an unresolved fact', !text.includes('Dinero sin resolver'));
   }

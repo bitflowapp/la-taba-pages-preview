@@ -382,6 +382,18 @@ test('el catálogo de producción entra al planificador con la forma que ya espe
   assert.equal(tieneImagen(pendiente), false);
 });
 
+test('el negocio sale del registro de entornos y la producción controlada retirada falla cerrado', async () => {
+  const modulo = await import('../scripts/comercial/catalogo-de-produccion.mjs');
+  const { ConsultaNoPermitida } = await import('../scripts/e2e-production-sale/db-solo-lectura.mjs');
+  const { readEnvironments } = await import('../scripts/lib/environments.mjs');
+  assert.equal(modulo.NEGOCIO_CANONICO, readEnvironments().environments.production.businessId);
+
+  // CP ya no existe: leerla se rechaza antes de pedir el token, y el importador no sigue con un catálogo inventado.
+  await assert.rejects(modulo.leerCatalogoDeProduccion(modulo.CP_BUSINESS_ID, { projectRef: modulo.CP_REF }),
+    (error) => error instanceof ConsultaNoPermitida && /QA, está retirado/.test(error.message));
+  await assert.rejects(modulo.cpConservaStockPendiente(), ConsultaNoPermitida);
+});
+
 test('el stock guardado distingue «no lo sé» de «cero»', async () => {
   const { normalizeStoredStock } = await import('../scripts/import-commercial-catalog.mjs');
   assert.equal(normalizeStoredStock(undefined), null, 'ausente es no sé, nunca cero');

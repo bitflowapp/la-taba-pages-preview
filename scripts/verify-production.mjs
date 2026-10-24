@@ -18,9 +18,16 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
+import { productionTargetOrExit } from './lib/environments.mjs';
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const PRODUCTION_REF = 'wwcpogltfgzgkrlilbcd';
-const CANONICAL_BUSINESS = '00000000-0000-4000-8000-000000000001';
+
+// El destino sale de deploy/environments.json. Sin proyecto de producción no hay candidato que verificar: sale 2
+// («no se pudo») sin correr nada. Antes el ref estaba fijo en un proyecto que ya no existe y la guardia de destino
+// y la sonda de salud se corrían contra una base borrada.
+const PRODUCTION = productionTargetOrExit({ allowProvisioned: true });
+const PRODUCTION_REF = PRODUCTION.ref;
+const CANONICAL_BUSINESS = PRODUCTION.businessId;
 
 const skipSlow = process.argv.includes('--fast');
 const results = [];
@@ -55,11 +62,11 @@ run('gates estáticos (npm run check)', 'npm', ['run', 'check']);
 // 3 · El contrato de las migraciones: la historia no se puede haber movido.
 run('ledger de migraciones', 'node', ['scripts/audit-remediation-migrations.mjs']);
 
-// 4 · La guardia de destino, con el ref escrito a mano.
+// 4 · La guardia de destino, con el ref y la URL del registro pasados explícitos.
 run('guardia de destino', 'node', [
   'scripts/assert-production-supabase-target.mjs',
   '--ref', PRODUCTION_REF,
-  '--url', `https://${PRODUCTION_REF}.supabase.co`,
+  '--url', PRODUCTION.supabaseUrl,
   '--category', 'verify',
 ]);
 

@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-10-23T23:46:55Z",
+  "verification": "FIXTURE DE PRUEBAS: producción ficticia activa. Nunca es un destino real (tabaprodfixturerefaa no existe).",
+  "rules": [
+    "Un proyecto de Supabase pertenece a un solo entorno: ningún ref aparece en dos entornos.",
+    "Producción se activa con un PR que completa `environments.production` (scripts/production/bind-production.mjs) y CI verde del SHA exacto; hasta entonces toda herramienta de producción falla cerrada.",
+    "Un ref retirado no vuelve a usarse como destino ni como origen de datos. Sigue en las listas de bloqueo.",
+    "Los refs ajenos son de otros productos de Luna Proyectos: La Taba nunca los toca."
+  ],
+  "environments": {
+    "development": {
+      "purpose": "Desarrollo y pruebas automáticas en la PC: PostgreSQL local descartable, sin red ni dinero.",
+      "status": "active",
+      "database": {
+        "kind": "local-postgres",
+        "host": "127.0.0.1",
+        "port": 55440,
+        "namePattern": "taba_local_*"
+      },
+      "web": {
+        "origin": "http://127.0.0.1:8080"
+      },
+      "mercadoPago": {
+        "environment": "simulated"
+      },
+      "realMoney": false
+    },
+    "qa": {
+      "purpose": "QA alojado: pagos con usuarios de prueba y dinero ficticio de Mercado Pago.",
+      "status": "active",
+      "receipt": "deploy/recovery-free-hosted.json",
+      "supabase": {
+        "ref": "ixewllzzuzpqrkxzmfzx",
+        "name": "la-taba-recovery-test",
+        "organizationId": "tpdpuvnasszkcpdanxpk",
+        "plan": "free",
+        "region": "sa-east-1"
+      },
+      "web": {
+        "pagesProject": "taba2-staging",
+        "pagesBranch": "recovery-20261020",
+        "origin": "https://recovery-20261020.taba2-staging.pages.dev",
+        "access": "basic-auth"
+      },
+      "mercadoPago": {
+        "environment": "test",
+        "applicationId": "4861627125869370",
+        "applicationName": "TestApp-ae01fd1d"
+      },
+      "realMoney": false
+    },
+    "production": {
+      "purpose": "Clientes reales de La Taba.",
+      "status": "active",
+      "receipt": "deploy/production-target.json",
+      "supabase": {
+        "ref": "tabaprodfixturerefaa",
+        "name": "la-taba-production",
+        "organizationId": "fixtureorganizationx",
+        "plan": "pro",
+        "region": "sa-east-1"
+      },
+      "businessId": "00000000-0000-4000-8000-000000000001",
+      "web": {
+        "pagesProject": "la-taba",
+        "pagesBranch": "main",
+        "origin": "https://la-taba.pages.dev"
+      },
+      "mercadoPago": {
+        "environment": "production",
+        "applicationId": "7677852968049976",
+        "applicationName": "La Taba Delivery"
+      },
+      "realMoney": true,
+      "pendingDecisions": [
+        "D1: crear el proyecto en un plan de pago y quién lo factura (Luna Systems).",
+        "D2: dominio público y proyecto de Cloudflare Pages de producción (hoy la-taba.pages.dev)."
+      ]
+    }
+  },
+  "retiredSupabaseRefs": {
+    "wwcpogltfgzgkrlilbcd": {
+      "was": "producción anterior (la-taba-production, organización Luna Systems)",
+      "stillReferencedBy": "https://la-taba.pages.dev/runtime-config.js (v144) y el vigía de GitHub Actions",
+      "evidence": "ausente del listado de proyectos; DNS sin respuesta (NXDOMAIN)"
+    },
+    "ucbtjcurawxjwjdvvcvj": {
+      "was": "staging del piloto comercial",
+      "stillReferencedBy": "https://taba2-staging.pages.dev/runtime-config.js (rama de producción del proyecto taba2-staging, v114)",
+      "evidence": "ausente del listado de proyectos; DNS sin respuesta (NXDOMAIN)"
+    },
+    "tkanbadcglszlcyfjvpv": {
+      "was": "producción controlada (la-taba-commercial-pilot.pages.dev)",
+      "stillReferencedBy": "deploy/controlled-production.json y la app Rider firmada",
+      "evidence": "ausente del listado de proyectos; DNS sin respuesta (NXDOMAIN)"
+    },
+    "ukxqbgswjlibmnjemrzd": {
+      "was": "staging original (la-taba-staging)",
+      "stillReferencedBy": "scripts históricos de staging",
+      "evidence": "ausente del listado de proyectos; DNS sin respuesta (NXDOMAIN)"
+    },
+    "yakhtrkukqlgzvxuvhzs": {
+      "was": "demo (la-taba-demo)",
+      "stillReferencedBy": "listas de bloqueo de pilotos",
+      "evidence": "ausente del listado de proyectos; DNS sin respuesta (NXDOMAIN)"
+    }
+  },
+  "foreignSupabaseRefs": {
+    "enznqfzhikpasjzpvjfd": "bitflow-production (Bit Flow, organización Luna Systems)",
+    "zvmfdlynnutxquktrgyl": "apex-agent-demo-sintetico (APEX)",
+    "udftddjacdsinscehlke": "estela-pilot (Estela)"
+  }
+}

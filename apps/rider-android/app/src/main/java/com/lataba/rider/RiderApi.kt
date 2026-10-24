@@ -27,7 +27,7 @@ class RiderApi(private val vault: SessionVault): RiderBackend {
         check(BuildConfig.TARGET_MODE != "production" || !BuildConfig.DEBUG)
         check(BuildConfig.SUPABASE_URL == "https://${BuildConfig.BACKEND_REF}.supabase.co")
         check((BuildConfig.TARGET_MODE == "staging") ==
-            (BuildConfig.BACKEND_REF == "ucbtjcurawxjwjdvvcvj"))
+            (BuildConfig.BACKEND_REF == "ixewllzzuzpqrkxzmfzx"))
         check(BuildConfig.PUBLIC_KEY.startsWith("sb_publishable_")) { "Falta configuración pública Rider" }
         val req = Request.Builder().url(BuildConfig.SUPABASE_URL + path).header("apikey", BuildConfig.PUBLIC_KEY)
             .header("X-Client-Info", "lataba-rider-android-canonical/" + BuildConfig.VERSION_NAME)

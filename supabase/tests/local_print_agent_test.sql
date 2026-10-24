@@ -133,10 +133,12 @@ select ok(
      where has_function_privilege('anon', f, 'EXECUTE') or not has_function_privilege('authenticated', f, 'EXECUTE')),
   'las 8 RPC del Panel: authenticated si, anon no');
 
+-- 6 desde 20261021235000, que sacó del contrato público los dos RPC de combos (production_least_privilege_test.sql):
+-- la impresión no agrega ninguno.
 select is(
   (select count(*)::integer from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and p.prosecdef and has_function_privilege('anon', p.oid, 'EXECUTE')),
-  8, 'siguen siendo exactamente 8 SECURITY DEFINER ejecutables por anon');
+  6, 'siguen siendo exactamente 6 SECURITY DEFINER ejecutables por anon');
 
 select ok(not exists (
   select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace

@@ -106,6 +106,10 @@ test('el panel productivo no ofrece cancelación genérica a un pedido cobrado p
     workflowStatus: 'ready',
     deliveryMode: 'delivery',
   }, fullRefund), false);
+  // Devolución total sobre un pago que quedó en revisión: la etiqueta no cambia, los importes sí (20261024010000).
+  const reviewedFullRefund = [{ ...fullRefund[0], internal_status: 'security_review_required' }];
+  assert.equal(canCancelProductionBusinessOrder(mercadoPagoOrder, reviewedFullRefund), true);
+  assert.equal(canAdvanceProductionBusinessOrder(mercadoPagoOrder, reviewedFullRefund), false);
   const chargeback = [{ ...fullRefund[0], internal_status: 'charged_back', refunded_amount: 0 }];
   assert.equal(isProductionOrderPaymentReversed(mercadoPagoOrder, chargeback), true);
   assert.equal(canCancelProductionBusinessOrder(mercadoPagoOrder, chargeback), true);

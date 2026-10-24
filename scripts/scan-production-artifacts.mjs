@@ -22,8 +22,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
-const STAGING_REF = 'ukxqbgswjlibmnjemrzd';
-const PRODUCTION_REF = 'wwcpogltfgzgkrlilbcd';
+import { forbiddenRefsFor } from './lib/environments.mjs';
+
+// Ningún proyecto que no sea el de producción puede viajar en el paquete productivo: QA, los retirados (el staging
+// original entre ellos) y los de otros productos. Antes la regla miraba sólo el staging original; el QA actual
+// (ixewllzzuzpqrkxzmfzx) podía viajar sin que nada lo marcara. La lista sale de deploy/environments.json.
+const NON_PRODUCTION_REFS = [...forbiddenRefsFor('production')].sort();
 const TEMPLATE_BUSINESS = '00000000-0000-4000-8000-000000000000';
 
 // Binarios: se leen igual, pero en latin-1, para no romper una coincidencia por
@@ -67,7 +71,7 @@ export const RULES = [
   { id: 'private-key-material', severity: 'P0', scope: 'raw', re: /-----BEGIN (RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY/g },
   { id: 'aws-access-key', severity: 'P0', scope: 'raw', re: /AKIA[0-9A-Z]{16}/g },
 
-  { id: 'staging-backend-reference', severity: 'P1', scope: 'code', re: new RegExp(STAGING_REF, 'g') },
+  { id: 'staging-backend-reference', severity: 'P1', scope: 'code', re: new RegExp(NON_PRODUCTION_REFS.join('|'), 'g') },
   { id: 'tunnel-endpoint', severity: 'P1', scope: 'code', re: /https?:\/\/[^\s'"]*(trycloudflare\.com|ngrok(-free)?\.(io|app|dev)|loca\.lt|serveo\.net)/g },
   { id: 'developer-endpoint', severity: 'P1', scope: 'code', vendorIsInfo: true, re: /\b(localhost|127\.0\.0\.1|10\.0\.2\.2|0\.0\.0\.0):\d{2,5}/g },
   { id: 'template-business-id', severity: 'P1', scope: 'code', re: new RegExp(TEMPLATE_BUSINESS, 'g') },
@@ -100,6 +104,16 @@ export function stripComments(text) {
   return text
     .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
     .replace(/(^|[^:])\/\/[^\n]*/g, (m, p1) => p1 + ' '.repeat(m.length - p1.length));
+}
+
+/**
+ * La lista de aislamiento del piloto (`js/core/runtime-config.js`) nombra refs para PROHIBIRLOS, no para usarlos:
+ * es una lista de bloqueo y no configura ningún destino. Se blanquea sólo esa constante, por su nombre, conservando
+ * el largo; cualquier otra aparición de un ref ajeno sigue siendo un hallazgo.
+ */
+export function stripIsolationLists(text) {
+  return text.replace(/PILOT_FORBIDDEN_SUPABASE_REFS\s*=\s*Object\.freeze\(\[[^\]]*\]\)/g,
+    (m) => m.replace(/'[a-z]{20}'/g, (ref) => ' '.repeat(ref.length)));
 }
 
 const isVendor = (rel) => VENDOR_PREFIXES.some((p) => rel.includes(p));
@@ -167,7 +181,7 @@ for (const target of targets) {
     const text = buf.toString(BINARY_EXT.has(ext) ? 'latin1' : 'utf8');
     const rel = path.relative(process.cwd(), file).replaceAll('\\', '/');
 
-    const code = BINARY_EXT.has(ext) ? text : stripComments(text);
+    const code = BINARY_EXT.has(ext) ? text : stripIsolationLists(stripComments(text));
 
     for (const rule of RULES) {
       if (rule.kind === 'jwt-role') {
@@ -189,7 +203,7 @@ for (const target of targets) {
       rule.re.lastIndex = 0;
       const codeHits = (code.match(rule.re) || []).length;
       if (codeHits === 0) {
-        info.push({ rule: rule.id, entry: rel, hits: rawHits, why: 'solo en comentarios: documenta la forma, no configura' });
+        info.push({ rule: rule.id, entry: rel, hits: rawHits, why: 'solo en comentarios o en la lista de aislamiento del piloto: documenta o prohíbe, no configura' });
       } else if (rule.vendorIsInfo && isVendor(rel)) {
         info.push({ rule: rule.id, entry: rel, hits: codeHits, why: 'dependencia de terceros: su valor por omision lo reemplaza el cliente; el destino lo fija endpoint-identity' });
       } else {

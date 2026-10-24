@@ -16,9 +16,9 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
+import { forbiddenRefsFor, productionTargetOrExit } from './lib/environments.mjs';
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const PRODUCTION_REF = 'wwcpogltfgzgkrlilbcd';
-const STAGING_REF = 'ukxqbgswjlibmnjemrzd';
 
 function arg(name) {
   const i = process.argv.indexOf(`--${name}`);
@@ -30,9 +30,16 @@ if (!['shadow', 'production'].includes(target)) {
   console.error('--target debe ser shadow o production'); process.exit(2);
 }
 
-const ref = arg('ref') || PRODUCTION_REF;
+// El destino productivo sale de deploy/environments.json y sólo se pide con `--target production`: el retrato de la
+// sombra local no lo necesita. Mientras producción no tenga proyecto, sale 2 sin preguntar nada. Lo que antes era
+// «el ref de staging» ahora son todos los que producción nunca puede nombrar: QA, retirados y ajenos.
+let ref = null;
 if (target === 'production') {
-  if (ref === STAGING_REF) { console.error('ABORTADO: el destino es STAGING'); process.exit(2); }
+  const PRODUCTION_REF = productionTargetOrExit({ allowProvisioned: true }).ref;
+  ref = arg('ref') || PRODUCTION_REF;
+  if (forbiddenRefsFor('production').has(ref)) {
+    console.error('ABORTADO: el destino es de QA, está retirado o es de otro producto'); process.exit(2);
+  }
   if (ref !== PRODUCTION_REF) { console.error(`ABORTADO: ${ref} no es el production de TABA`); process.exit(2); }
 }
 

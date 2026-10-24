@@ -16,7 +16,7 @@
 // tabla y hoy no lo frena ningun captcha.
 //
 //   $env:SUPABASE_ACCESS_TOKEN = <token del CLI>
-//   node scripts/production-auth-health.mjs --ref wwcpogltfgzgkrlilbcd \
+//   node scripts/production-auth-health.mjs --ref <ref de producción> \
 //     [--key-file <clave publicable>] [--report <archivo.json>]
 //
 // Salida 0 = todo dentro de lo esperado. 1 = hay algo que mirar. 2 = no se pudo.
@@ -24,8 +24,13 @@
 import fs from 'node:fs';
 import process from 'node:process';
 
-const PRODUCTION_REF = 'wwcpogltfgzgkrlilbcd';
-const CANONICAL_BUSINESS = '00000000-0000-4000-8000-000000000001';
+import { productionTargetOrExit } from './lib/environments.mjs';
+
+// El destino sale de deploy/environments.json. Mientras producción no tenga proyecto, sale 2 sin preguntar nada:
+// antes el ref estaba fijo en un proyecto que ya no existe. `provisioned` alcanza para medir antes de abrir.
+const PRODUCTION = productionTargetOrExit({ allowProvisioned: true });
+const PRODUCTION_REF = PRODUCTION.ref;
+const CANONICAL_BUSINESS = PRODUCTION.businessId;
 
 // Umbrales para un comercio: no son estadistica, son sentido comun operativo.
 // Un local no da de alta 50 cuentas de equipo en una hora.
@@ -75,7 +80,7 @@ console.log(`--- SALUD DEL AUTH PRODUCTIVO (${ref}) ---\n`);
 
 // 1 · el servicio contesta
 if (KEY) {
-  const r = await fetch(`https://${ref}.supabase.co/auth/v1/settings`, { headers: { apikey: KEY } });
+  const r = await fetch(`${PRODUCTION.supabaseUrl}/auth/v1/settings`, { headers: { apikey: KEY } });
   reporte.servicio = { status: r.status, ok: r.ok };
   console.log(`  servicio de Auth   : ${r.ok ? 'contesta' : `HTTP ${r.status}`}`);
   if (!r.ok) avisos.push(`el servicio de Auth contesta ${r.status}`);

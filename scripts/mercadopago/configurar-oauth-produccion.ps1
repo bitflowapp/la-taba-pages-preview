@@ -1,8 +1,10 @@
-﻿param([ValidateSet('production', 'controlled-production')][string]$Target = 'production')
+﻿param([ValidateSet('production')][string]$Target = 'production')
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-$taskRef = if ($Target -eq 'controlled-production') { 'tkanbadcglszlcyfjvpv' } else { 'wwcpogltfgzgkrlilbcd' }
 Set-Location -LiteralPath $taskRoot
+# El proyecto sale de deploy/environments.json; sin proyecto de producción no se pide ningún secreto.
+$taskRef = node scripts/production/target.mjs --field ref
+if ($LASTEXITCODE -ne 0 -or -not $taskRef) { throw 'Producción todavía no tiene proyecto en deploy/environments.json. No se pidió ni se cargó nada.' }
 Write-Host '============================================================'
 Write-Host 'CONFIGURAR APLICACIÓN INTEGRADORA DE MARCO/LUNA EN PRODUCCIÓN'
 Write-Host '============================================================'

@@ -36,12 +36,32 @@ import { fileURLToPath } from 'node:url';
 
 import { censar } from './censo-produccion.mjs';
 import { consultar, lit } from '../e2e-production-sale/db-solo-lectura.mjs';
+import { forbiddenRefsFor, productionTarget, productionTargetOrExit } from '../lib/environments.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const NEGOCIO = '00000000-0000-4000-8000-000000000001';
-const HOST = process.env.TABA_PUBLIC_ORIGIN || 'https://la-taba.pages.dev';
-const REF_PRODUCCION = 'wwcpogltfgzgkrlilbcd';
-const REF_STAGING = 'ukxqbgswjlibmnjemrzd';
+
+/*
+ * EL DESTINO SALE DE deploy/environments.json, AL CORRER Y NO AL IMPORTAR.
+ *
+ * El negocio, el sitio, el ref de producción y el de staging estaban escritos
+ * acá, y los dos proyectos ya no existen: la compuerta medía la tienda contra
+ * una base borrada. Las pruebas importan las funciones puras de este módulo sin
+ * ningún proyecto de producción, así que nada se resuelve al cargarlo.
+ *
+ * `provisioned` alcanza para correrla —decir qué falta antes de abrir es su
+ * trabajo—, pero un proyecto que todavía no está `active` nunca puede dar READY
+ * FOR REAL PAYMENT: ver `chequeoEntorno`.
+ */
+export function destinoComercial({ registry, env = process.env } = {}) {
+  const produccion = productionTarget({ registry, allowProvisioned: true });
+  return Object.freeze({
+    host: env.TABA_PUBLIC_ORIGIN || produccion.origin,
+    ref: produccion.ref,
+    negocio: produccion.businessId,
+    estado: produccion.status,
+    prohibidos: forbiddenRefsFor('production', registry),
+  });
+}
 
 /**
  * Los desenlaces de un chequeo. La diferencia entre ellos es QUIÉN lo cierra, y
@@ -160,8 +180,46 @@ export function funcionesActivas(salida, esperadas = FUNCIONES_OBLIGATORIAS) {
   }));
 }
 
-export async function correrCompuerta() {
-  const chequeos = [];
+/**
+ * Para cobrar, producción tiene que estar ACTIVA en el registro. Un proyecto
+ * `provisioned` ya existe y se puede cargar y medir, pero abrirlo al público es
+ * una decisión revisada —un PR que lo pasa a `active`—, no un trabajo: por eso
+ * espera autorización, y READY FOR REAL PAYMENT queda fuera de alcance. Pura.
+ */
+export function chequeoEntorno(destino) {
+  return destino.estado === 'active'
+    ? chequeo('entorno', OK, `producción activa en deploy/environments.json (${destino.ref})`)
+    : chequeo('entorno', ESPERA_AUTORIZACION,
+      `producción está ${destino.estado} en deploy/environments.json (${destino.ref}): todavía no abre al público`,
+      'un PR que la pase a active (scripts/production/bind-production.mjs), con CI verde del SHA');
+}
+
+/**
+ * El runtime-config publicado tiene que nombrar el Supabase y el negocio de
+ * producción, y ningún proyecto de QA, retirado o ajeno. Antes se buscaba un
+ * solo ref de staging escrito a mano. Pura: recibe lo que devolvió `traer`.
+ */
+export function chequeoFrontend(config, destino) {
+  if (!config.ok) return chequeo('frontend', BLOQUEADO, `runtime-config HTTP ${config.estado}`);
+  const prohibidos = [...destino.prohibidos].filter((ref) => config.cuerpo.includes(ref));
+  if (prohibidos.length) {
+    return chequeo('frontend', BLOQUEADO,
+      `el runtime-config publicado menciona un proyecto de QA, retirado o ajeno: ${prohibidos.join(', ')}`);
+  }
+  if (!config.cuerpo.includes(destino.ref)) {
+    return chequeo('frontend', BLOQUEADO, 'el runtime-config no apunta al Supabase de producción');
+  }
+  if (!config.cuerpo.includes(destino.negocio)) {
+    return chequeo('frontend', BLOQUEADO, 'el runtime-config apunta a otro negocio');
+  }
+  return chequeo('frontend', OK, 'apunta al Supabase y al negocio de producción, sin QA ni proyectos retirados');
+}
+
+export async function correrCompuerta(destino = destinoComercial()) {
+  const { host: HOST, negocio: NEGOCIO } = destino;
+
+  // ── 0 · producción activa en el registro de entornos ───────────────────────
+  const chequeos = [chequeoEntorno(destino)];
 
   // ── 1 · el software publicado ──────────────────────────────────────────────
   let versionPublicada = null;
@@ -178,15 +236,7 @@ export async function correrCompuerta() {
 
   // ── 2 · el frontend apunta a producción, y a nada más ──────────────────────
   try {
-    const config = await traer(`${HOST}/runtime-config.js`);
-    const apuntaAProduccion = config.cuerpo.includes(REF_PRODUCCION);
-    const apuntaAStaging = config.cuerpo.includes(REF_STAGING);
-    const negocioCorrecto = config.cuerpo.includes(NEGOCIO);
-    if (!config.ok) chequeos.push(chequeo('frontend', BLOQUEADO, `runtime-config HTTP ${config.estado}`));
-    else if (apuntaAStaging) chequeos.push(chequeo('frontend', BLOQUEADO, 'el runtime-config publicado menciona el ref de STAGING'));
-    else if (!apuntaAProduccion) chequeos.push(chequeo('frontend', BLOQUEADO, 'el runtime-config no apunta al Supabase de producción'));
-    else if (!negocioCorrecto) chequeos.push(chequeo('frontend', BLOQUEADO, 'el runtime-config apunta a otro negocio'));
-    else chequeos.push(chequeo('frontend', OK, 'apunta al Supabase y al negocio de producción, sin staging'));
+    chequeos.push(chequeoFrontend(await traer(`${HOST}/runtime-config.js`), destino));
   } catch (error) {
     chequeos.push(chequeo('frontend', BLOQUEADO, `no se pudo leer runtime-config: ${error.message}`));
   }
@@ -367,9 +417,12 @@ export async function correrCompuerta() {
 }
 
 if (process.argv[1]?.endsWith('compuerta-comercial.mjs')) {
+  // Sin proyecto de producción no hay nada que medir: sale 2 y lo dice, antes de tocar la red.
+  productionTargetOrExit({ allowProvisioned: true });
+  const destino = destinoComercial();
   let resultado;
   try {
-    resultado = await correrCompuerta();
+    resultado = await correrCompuerta(destino);
   } catch (error) {
     // Hasta el fallo inesperado cierra: nunca se sale por verde sin saber.
     console.error('COMMERCIAL NOT READY');
@@ -384,7 +437,7 @@ if (process.argv[1]?.endsWith('compuerta-comercial.mjs')) {
       [OK]: 'OK    ', [INFO]: 'INFO  ', [FALTA_DATO_HUMANO]: 'FALTA ',
       [ESPERA_AUTORIZACION]: 'ESPERA', [BLOQUEADO]: 'BLOQUE',
     };
-    console.log(`COMPUERTA COMERCIAL · ${HOST}\n`);
+    console.log(`COMPUERTA COMERCIAL · ${destino.host}\n`);
     for (const c of resultado.chequeos) {
       console.log(`  ${icono[c.estado]} ${c.id.padEnd(20)} ${c.detalle}`);
       if (c.quien) console.log(`         ${' '.repeat(20)} lo cierra → ${c.quien}`);

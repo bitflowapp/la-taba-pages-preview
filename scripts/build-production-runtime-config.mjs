@@ -36,11 +36,17 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { forbiddenRefsFor, productionTargetOrExit } from './lib/environments.mjs';
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-const PRODUCTION_REF = 'wwcpogltfgzgkrlilbcd';
-const STAGING_REF = 'ukxqbgswjlibmnjemrzd';
-const CANONICAL_BUSINESS = '00000000-0000-4000-8000-000000000001';
+// El destino sale de deploy/environments.json. Mientras producción no tenga proyecto, sale 2 sin escribir nada:
+// antes el ref estaba fijo en un proyecto que ya no existe y el paquete se armaba igual contra una base borrada.
+// `provisioned` alcanza para ARMAR el paquete (publicarlo es otra decisión, del flujo de despliegue).
+const PRODUCTION = productionTargetOrExit({ allowProvisioned: true });
+const PRODUCTION_REF = PRODUCTION.ref;
+const FORBIDDEN_REFS = forbiddenRefsFor('production');
+const CANONICAL_BUSINESS = PRODUCTION.businessId;
 const PUBLISHABLE_PREFIX = 'sb_publishable_';
 
 function arg(name) {
@@ -63,8 +69,8 @@ const errores = [];
 if (ref !== PRODUCTION_REF) {
   errores.push(`el ref productivo es ${PRODUCTION_REF}; se pidio ${ref || '(vacio)'}`);
 }
-if (ref === STAGING_REF) {
-  errores.push('ese es el proyecto de staging: no puede ser el backend de un paquete productivo');
+if (FORBIDDEN_REFS.has(ref)) {
+  errores.push('ese proyecto es de QA, está retirado o es de otro producto: no puede ser el backend de un paquete productivo');
 }
 
 // --- 2 · el negocio ---

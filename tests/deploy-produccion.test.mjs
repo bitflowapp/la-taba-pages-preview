@@ -4,11 +4,41 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
+import { forbiddenRefsFor, productionTarget } from '../scripts/lib/environments.mjs';
 import { runtimeDeclarado, sello } from '../scripts/deploy/sellar-version.mjs';
-import { esperarConvergencia, revisarRuntimeConfig, revisarServiceWorker, verificar } from '../scripts/deploy/verificar-publicado.mjs';
+import * as smoke from '../scripts/deploy/verificar-publicado.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const workflow = fs.readFileSync(path.join(root, '.github/workflows/deploy-production.yml'), 'utf8');
+
+// El smoke toma el destino de deploy/environments.json; acá, de un registro con una producción FICTICIA activa.
+const REGISTRO_ACTIVO = JSON.parse(fs.readFileSync(path.join(root, 'tests/fixtures/environments.production-active.json'), 'utf8'));
+const PRODUCCION = productionTarget({ registry: REGISTRO_ACTIVO });
+const DESTINO = { host: PRODUCCION.origin, ref: PRODUCCION.ref, negocio: PRODUCCION.businessId, prohibidos: forbiddenRefsFor('production', REGISTRO_ACTIVO) };
+const PROD_URL = PRODUCCION.supabaseUrl;
+const { revisarServiceWorker } = smoke;
+const revisarRuntimeConfig = (fuente) => smoke.revisarRuntimeConfig(fuente, DESTINO);
+const verificar = (opciones) => smoke.verificar({ destino: DESTINO, ...opciones });
+const esperarConvergencia = (opciones) => smoke.esperarConvergencia({ destino: DESTINO, ...opciones });
+
+test('el flujo de despliegue exige proyecto de producción en el registro ANTES de construir o publicar', () => {
+  const guardia = workflow.indexOf('node scripts/production/target.mjs');
+  assert.ok(guardia > 0, 'falta la guardia del registro');
+  assert.ok(guardia < workflow.indexOf('preparar-artefacto.mjs'), 'la guardia tiene que correr antes de armar el paquete');
+  assert.ok(guardia < workflow.indexOf('pages deploy'), 'la guardia tiene que correr antes de publicar');
+});
+
+test('sin proyecto de producción en el registro real el smoke no adivina un destino', () => {
+  assert.throws(() => smoke.revisarRuntimeConfig('// lo que sea'), /todavía no tiene un proyecto/);
+});
+
+test('un sitio que sigue apuntando a la producción retirada no está sano', () => {
+  const fallidas = revisarRuntimeConfig(`supabaseUrl: 'https://wwcpogltfgzgkrlilbcd.supabase.co',
+    publishableKey: 'sb_publishable_x', businessId: '00000000-0000-4000-8000-000000000001',`)
+    .filter((r) => !r.pasa).map((r) => r.nombre);
+  assert.ok(fallidas.includes('Supabase es el de producción'));
+  assert.ok(fallidas.includes('no apunta a staging'));
+});
 
 /*
  * MAIN Y PRODUCCIÓN, ACOPLADOS POR UNA SOLA RUTA.
@@ -120,11 +150,11 @@ test('el smoke rechaza un runtime-config vacío, de staging o de otro negocio', 
   assert.ok(malStaging.includes('Supabase es el de producción'));
   assert.ok(malStaging.includes('no apunta a staging'));
 
-  const otroNegocio = `supabaseUrl: 'https://wwcpogltfgzgkrlilbcd.supabase.co',
+  const otroNegocio = `supabaseUrl: '${PROD_URL}',
     publishableKey: 'sb_publishable_x', businessId: '99999999-9999-4999-8999-999999999999',`;
   assert.ok(fallidas(revisarRuntimeConfig(otroNegocio)).includes('negocio canónico'));
 
-  const claveSecreta = `supabaseUrl: 'https://wwcpogltfgzgkrlilbcd.supabase.co',
+  const claveSecreta = `supabaseUrl: '${PROD_URL}',
     publishableKey: 'sb_secret_peligrosa', businessId: '00000000-0000-4000-8000-000000000001',`;
   assert.ok(fallidas(revisarRuntimeConfig(claveSecreta)).includes('la clave es publicable'));
 });
@@ -139,7 +169,7 @@ test('el smoke falla si el commit publicado no es el que se desplegó', async ()
     const texto = {
       '/': '<html><main data-app-main></main></html>',
       '/version.json': JSON.stringify({ commit: 'b'.repeat(40), runtime: 'v85', builtAt: 'x' }),
-      '/runtime-config.js': `supabaseUrl: 'https://wwcpogltfgzgkrlilbcd.supabase.co',
+      '/runtime-config.js': `supabaseUrl: '${PROD_URL}',
         publishableKey: 'sb_publishable_x', businessId: '00000000-0000-4000-8000-000000000001',`,
       '/sw.js': "const CACHE_NAME = 'v85';",
     }[new URL(url, 'https://x').pathname] ?? '[]';
@@ -162,7 +192,7 @@ test('un version.json ausente llega como HTML por el fallback de Pages, y no es 
     const texto = {
       '/': '<html><main data-app-main></main></html>',
       '/version.json': '<!doctype html><html><main data-app-main></main></html>',
-      '/runtime-config.js': `supabaseUrl: 'https://wwcpogltfgzgkrlilbcd.supabase.co',
+      '/runtime-config.js': `supabaseUrl: '${PROD_URL}',
         publishableKey: 'sb_publishable_x', businessId: '00000000-0000-4000-8000-000000000001',`,
       '/sw.js': "const CACHE_NAME = 'v84';",
     }[ruta] ?? '[{"sku":"x"}]';
@@ -186,7 +216,7 @@ const respuestasDe = (version) => async (url) => {
   const texto = {
     '/': '<html><main data-app-main></main></html>',
     '/version.json': JSON.stringify(version),
-    '/runtime-config.js': `supabaseUrl: 'https://wwcpogltfgzgkrlilbcd.supabase.co',
+    '/runtime-config.js': `supabaseUrl: '${PROD_URL}',
       publishableKey: 'sb_publishable_x', businessId: '00000000-0000-4000-8000-000000000001',`,
     '/sw.js': `const CACHE_NAME = '${version.runtime}';`,
   }[new URL(url, 'https://x').pathname] ?? '[{"sku":"x"}]';

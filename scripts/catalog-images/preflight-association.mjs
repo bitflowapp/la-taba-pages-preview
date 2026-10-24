@@ -28,17 +28,22 @@ import {
   DB_PRODUCT_ASSET_PATTERN,
 } from './lib.mjs';
 import { OBJETIVOS, SKUS_OBJETIVO } from './lote-objetivo.mjs';
+import { productionTargetOrExit } from '../lib/environments.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const MANIFIESTO = path.join(ROOT, 'docs/catalog/image-manifest.json');
 const ALLOWLIST = path.join(ROOT, 'catalog/image-source-allowlist.json');
 const AUTORIZACIONES = path.join(ROOT, 'catalog/autorizaciones-comerciales.json');
 
-const REF = 'wwcpogltfgzgkrlilbcd';
-const BASE = `https://${REF}.supabase.co`;
-const BUSINESS_ID = '00000000-0000-4000-8000-000000000001';
+// El ref, el negocio y el sitio salen de deploy/environments.json. Mientras producción no tenga proyecto, sale 2 sin
+// preguntar nada: antes el ref estaba fijo en un proyecto que ya no existe. `provisioned` alcanza: cargar el
+// catálogo es de lo que se hace antes de abrir.
+const PRODUCTION = productionTargetOrExit({ allowProvisioned: true });
+const REF = PRODUCTION.ref;
+const BASE = PRODUCTION.supabaseUrl;
+const BUSINESS_ID = PRODUCTION.businessId;
 const AUTORIDAD = 'TABA-AUT-2026-08-001';
-const ORIGEN_PUBLICO = process.env.TABA_PUBLIC_ORIGIN || 'https://la-taba.pages.dev';
+const ORIGEN_PUBLICO = process.env.TABA_PUBLIC_ORIGIN || PRODUCTION.origin;
 
 const fallos = [];
 const avisos = [];

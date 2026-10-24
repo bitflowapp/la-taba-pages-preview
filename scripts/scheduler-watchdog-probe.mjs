@@ -44,6 +44,7 @@
  */
 import process from 'node:process';
 
+import { productionTarget, readEnvironments, retiredRefs } from './lib/environments.mjs';
 import { report } from './scheduler-watchdog-report.mjs';
 
 const ORIGEN_PUBLICO_POR_DEFECTO = 'https://la-taba.pages.dev';
@@ -169,9 +170,54 @@ export async function sondear({ entorno = process.env, buscar = fetch, limiteMs 
   return { lineas: [`configuración   ${configuracion.origen}`, ...lines], sano: healthy };
 }
 
+/**
+ * El vigía de PRODUCCIÓN, atado a deploy/environments.json.
+ *
+ * Del 21 al 23/10/2026 corrió y falló en cada pasada: leía el runtime-config de
+ * la-taba.pages.dev, que apunta a un proyecto de Supabase que ya no existe, y
+ * GitHub mandaba un correo por corrida. Un vigía que grita siempre se deja de
+ * leer el día que importa.
+ *
+ *   · producción sin proyecto (`not_provisioned`): no hay barrido que vigilar.
+ *     Sale 0 con un aviso, y si el sitio publicado apunta a un proyecto
+ *     retirado lo dice, para que no se pierda de vista;
+ *   · producción con proyecto: la sonda pregunta al proyecto del registro, y es
+ *     incidente que el sitio publicado o la variable del repositorio apunten a
+ *     otro lado.
+ */
+export async function vigiaDeProduccion({ registro = readEnvironments(), entorno = process.env, buscar = fetch, limiteMs = TIEMPO_LIMITE_MS } = {}) {
+  const origen = delEntorno(entorno, 'TABA_PUBLIC_ORIGIN') || registro.environments.production.web.origin || ORIGEN_PUBLICO_POR_DEFECTO;
+  const publicado = await configDelSitioPublicado(origen, buscar);
+  const refPublicado = publicado?.url.match(/^https:\/\/([a-z]{20})\.supabase\.co\/?$/)?.[1] || null;
+
+  if (registro.environments.production.status === 'not_provisioned') {
+    const lineas = [
+      '::warning::Producción todavía no tiene proyecto de Supabase (deploy/environments.json): no hay barrido que vigilar. El vigía queda en espera y se activa solo con el binding de producción.',
+    ];
+    if (refPublicado && retiredRefs(registro).has(refPublicado)) {
+      lineas.push(`::warning::${origen} sigue publicando una tienda que apunta al proyecto retirado ${refPublicado}: retirarla o reemplazarla antes de cualquier difusión.`);
+    }
+    return { lineas, sano: true, enEspera: true };
+  }
+
+  const produccion = productionTarget({ registry: registro, allowProvisioned: true });
+  const explicita = delEntorno(entorno, 'SUPABASE_URL');
+  if (explicita && explicita.replace(/\/$/, '') !== produccion.supabaseUrl) {
+    return { lineas: [`::error::La variable SUPABASE_URL del repositorio apunta a ${explicita}, no al proyecto de producción del registro (${produccion.ref}).`], sano: false };
+  }
+  const resultado = await sondear({ entorno: { ...entorno, SUPABASE_URL: produccion.supabaseUrl }, buscar, limiteMs });
+  if (publicado && refPublicado !== produccion.ref) {
+    return {
+      lineas: [...resultado.lineas, `::error::${origen} publica una tienda que apunta a ${publicado.url}, no al proyecto de producción del registro (${produccion.ref}).`],
+      sano: false,
+    };
+  }
+  return resultado;
+}
+
 const invocadoDirectamente = process.argv[1]?.endsWith('scheduler-watchdog-probe.mjs');
 if (invocadoDirectamente) {
-  const { lineas, sano } = await sondear();
+  const { lineas, sano } = await vigiaDeProduccion();
   for (const linea of lineas) console.log(linea);
   process.exit(sano ? 0 : 1);
 }

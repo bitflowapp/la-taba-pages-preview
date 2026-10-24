@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { createHash, createHmac } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import {
@@ -12,7 +13,10 @@ const FIXTURE_SECRET = 'A'.repeat(64);
 const FIXTURE_TIME = 1_788_844_800_000;
 const FIXTURE_NONCE = '91000000-0000-4000-8000-000000000001';
 
-const REFS = { staging: 'ucbtjcurawxjwjdvvcvj', 'controlled-production': 'tkanbadcglszlcyfjvpv', production: 'wwcpogltfgzgkrlilbcd' };
+// Producción sale de deploy/environments.json; acá, de un registro con una producción FICTICIA activa. Staging y
+// producción controlada son proyectos retirados que la herramienta conserva como datos de estas pruebas.
+const REGISTRY = JSON.parse(readFileSync('tests/fixtures/environments.production-active.json', 'utf8'));
+const REFS = { staging: 'ucbtjcurawxjwjdvvcvj', 'controlled-production': 'tkanbadcglszlcyfjvpv', production: REGISTRY.environments.production.supabase.ref };
 
 function hostedSecrets(target = 'production', extra = [], refOverride = null) {
   const staging = target === 'staging';
@@ -84,9 +88,23 @@ function harness({ active = false, globalToken = false, target = 'production', v
   return {
     request,
     withToken: task => task('fixture-management-token'),
+    registry: REGISTRY,
     state: () => ({ mutationCalls, signedProbe }),
   };
 }
+
+test('without a production project in the real registry the tool refuses before reading any credential', async () => {
+  let tokenRead = false;
+  await assert.rejects(() => checkWorkerHmac('production', { withToken: async () => { tokenRead = true; } }),
+    /todavía no tiene un proyecto/);
+  assert.equal(tokenRead, false);
+});
+
+test('the command line refuses a retired target instead of calling a project that no longer exists', () => {
+  const run = spawnSync(process.execPath, ['scripts/mercadopago/sincronizar-worker-hmac.mjs', '--target=staging'], { encoding: 'utf8' });
+  assert.equal(run.status, 2);
+  assert.match(run.stderr, /proyecto retirado/);
+});
 
 test('worker HMAC check fails closed when Vault has no matching authority', async () => {
   const h = harness();
@@ -210,11 +228,18 @@ test('a secret inventory of another project is refused for controlled production
   await assert.rejects(() => checkWorkerHmac('controlled-production', h), /Environment identity mismatch: MERCADOPAGO_OAUTH_PROJECT_REF/);
 });
 
-test('the production OAuth setup maps controlled production to its own host with the same application', () => {
+test('the production OAuth setup takes project and site from the registry and refuses the retired controlled production', () => {
   const nodeSetup = readFileSync('scripts/mercadopago/configurar-oauth-produccion.mjs', 'utf8');
   const powershellSetup = readFileSync('scripts/mercadopago/configurar-oauth-produccion.ps1', 'utf8');
-  assert.match(nodeSetup, /'controlled-production': \{ ref: 'tkanbadcglszlcyfjvpv', site: 'https:\/\/la-taba-commercial-pilot\.pages\.dev' \}/);
-  assert.match(nodeSetup, /production: \{ ref: 'wwcpogltfgzgkrlilbcd', site: 'https:\/\/la-taba\.pages\.dev' \}/);
-  assert.match(powershellSetup, /ValidateSet\('production', 'controlled-production'\)/);
-  assert.match(powershellSetup, /tkanbadcglszlcyfjvpv/);
+  assert.match(nodeSetup, /productionTargetOrExit\(\{ allowProvisioned: true \}\)/);
+  assert.match(nodeSetup, /site: production\.origin/);
+  assert.doesNotMatch(nodeSetup, /wwcpogltfgzgkrlilbcd|tkanbadcglszlcyfjvpv/);
+  assert.match(powershellSetup, /ValidateSet\('production'\)/);
+  assert.match(powershellSetup, /scripts\/production\/target\.mjs --field ref/);
+  assert.doesNotMatch(powershellSetup, /wwcpogltfgzgkrlilbcd|tkanbadcglszlcyfjvpv/);
+  for (const target of ['--target=controlled-production', '']) {
+    const run = spawnSync(process.execPath, ['scripts/mercadopago/configurar-oauth-produccion.mjs', ...(target ? [target] : [])],
+      { encoding: 'utf8', env: { ...process.env, TABA_SETUP_CLIENT_ID: '', TABA_SETUP_CLIENT_SECRET: '', TABA_SETUP_WEBHOOK_SECRET: '' } });
+    assert.equal(run.status, 2, `${target || 'production'}: ${run.stderr}`);
+  }
 });

@@ -26,6 +26,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
 import { loadTargetKeys } from '../controlled-production/target-keys.mjs';
+import { isRetiredOrForeignRef, productionTarget } from '../lib/environments.mjs';
 import { conToken } from '../lib/supabase-cli-token.mjs';
 
 export const PLANES = Object.freeze({
@@ -34,19 +35,32 @@ export const PLANES = Object.freeze({
   'controlled-production': Object.freeze({ environment: 'production', application: '7677852968049976' }),
 });
 
-// Original production uses its own management-bound credential. Never borrow
-// the controlled-production credential or print either key.
-export async function productionKeys({ withToken = conToken, request = fetch } = {}) {
-  const ref = 'wwcpogltfgzgkrlilbcd';
+// Production uses its own management-bound credential. Never borrow another
+// project's credential or print any key. The project comes from
+// deploy/environments.json: without a production project this fails closed
+// before reading the management token.
+//
+// A project created now may only have the new API keys (`sb_secret_…`), which
+// are not JWTs: those are accepted only as a `secret` key listed by THIS
+// project's endpoint. A legacy `service_role` JWT must carry this project's ref.
+export async function productionKeys({ withToken = conToken, request = fetch, registry } = {}) {
+  const { ref } = productionTarget({ ...(registry ? { registry } : {}), allowProvisioned: true });
   return withToken(async token => {
-    const response = await request(`https://api.supabase.com/v1/projects/${ref}/api-keys`, {
+    const response = await request(`https://api.supabase.com/v1/projects/${ref}/api-keys?reveal=true`, {
       headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(20_000),
     });
     if (!response.ok) throw Error('PRODUCTION_KEYS_UNAVAILABLE');
     const keys = await response.json();
+    const modern = keys.find(key => key.type === 'secret' && String(key.api_key || '').startsWith('sb_secret_'))?.api_key;
+    if (modern) return { ref, url: `https://${ref}.supabase.co`, secret: modern };
     const secret = keys.find(key => key.name === 'service_role')?.api_key;
     if (!secret) throw Error('PRODUCTION_SERVER_KEY_UNAVAILABLE');
-    const claims = JSON.parse(Buffer.from(secret.split('.')[1], 'base64url').toString('utf8'));
+    let claims = {};
+    try {
+      claims = JSON.parse(Buffer.from(String(secret).split('.')[1] || '', 'base64url').toString('utf8'));
+    } catch {
+      throw Error('PRODUCTION_KEY_NOT_BOUND');
+    }
     if (claims.ref !== ref || claims.role !== 'service_role') throw Error('PRODUCTION_KEY_NOT_BOUND');
     return { ref, url: `https://${ref}.supabase.co`, secret };
   });
@@ -118,6 +132,8 @@ async function main(argv) {
   }
   const plan = PLANES[args.target];
   const keys = args.target === 'production' ? await productionKeys() : await loadTargetKeys(args.target);
+  // Staging y producción controlada son proyectos retirados (deploy/environments.json): no se opera sobre ellos.
+  if (isRetiredOrForeignRef(keys.ref)) throw Error(`DESTINO_RETIRADO:${args.target}`);
   const db = createClient(keys.url, keys.secret, { auth: { persistSession: false, autoRefreshToken: false } });
   const antes = await estado(db, args.business, plan);
   if (args.comando === 'estado') {

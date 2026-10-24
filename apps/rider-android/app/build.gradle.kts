@@ -1,6 +1,8 @@
 plugins { id("com.android.application"); kotlin("android"); id("org.jetbrains.kotlin.plugin.compose") }
 
-val stagingRef = "ucbtjcurawxjwjdvvcvj"
+// Staging is the QA project of deploy/environments.json (the old staging project was deleted);
+// tests/environments-registry.test.mjs keeps this pin and RiderApi.kt equal to the registry.
+val stagingRef = "ixewllzzuzpqrkxzmfzx"
 val productionRef = "wwcpogltfgzgkrlilbcd"
 val demoRef = "yakhtrkukqlgzvxuvhzs"
 val targetMode = providers.environmentVariable("RIDER_TARGET_MODE").orElse("staging").get()

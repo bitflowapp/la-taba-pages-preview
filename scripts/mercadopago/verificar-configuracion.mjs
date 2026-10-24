@@ -2,7 +2,7 @@
  * ¿PUEDE ESTE PROYECTO COBRAR CON MERCADO PAGO, Y EN QUÉ MODO?
  *
  *   node scripts/mercadopago/verificar-configuracion.mjs --ref=produccion
- *   node scripts/mercadopago/verificar-configuracion.mjs --ref=staging --esperado=test
+ *   node scripts/mercadopago/verificar-configuracion.mjs --ref=qa --esperado=test
  *
  * POR QUÉ EXISTE
  * --------------
@@ -47,11 +47,18 @@ import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import process from 'node:process';
 
+import { productionTargetOrExit, readEnvironments } from '../lib/environments.mjs';
+
+// Los proyectos salen de deploy/environments.json. `staging` y `produccion-controlada` eran proyectos que ya no
+// existen: se rechazan con su motivo en vez de preguntarle al CLI por un ref muerto. Producción se resuelve sólo si
+// se la pide, y sale 2 mientras no tenga proyecto.
+const REGISTRO = readEnvironments();
 const REFS = {
-  staging: { ref: 'ucbtjcurawxjwjdvvcvj', nombre: 'la-taba-staging' },
-  'produccion-controlada': { ref: 'tkanbadcglszlcyfjvpv', nombre: 'la-taba-controlled-production' },
-  produccion: { ref: 'wwcpogltfgzgkrlilbcd', nombre: 'la-taba-production' },
+  qa: () => ({ ref: REGISTRO.environments.qa.supabase.ref, nombre: REGISTRO.environments.qa.supabase.name }),
+  produccion: () => ({ ref: productionTargetOrExit({ registry: REGISTRO, allowProvisioned: true }).ref,
+    nombre: REGISTRO.environments.production.supabase.name }),
 };
+const RETIRADOS = new Set(['staging', 'produccion-controlada']);
 
 /** Las funciones sin las cuales Checkout Pro no es un circuito completo. */
 const FUNCIONES_REQUERIDAS = [
@@ -128,11 +135,15 @@ for (const argumento of process.argv.slice(2)) {
 }
 
 const nombreRef = String(banderas.get('ref') || '');
-const objetivo = REFS[nombreRef];
-if (!objetivo) {
+if (RETIRADOS.has(nombreRef)) {
+  console.error(`ABORTAR: ${nombreRef} es un proyecto retirado (deploy/environments.json). Usá --ref=qa o --ref=produccion.`);
+  process.exit(2);
+}
+if (!Object.hasOwn(REFS, nombreRef)) {
   console.error(`ABORTAR: --ref debe ser uno de: ${Object.keys(REFS).join(', ')}`);
   process.exit(2);
 }
+const objetivo = REFS[nombreRef]();
 const esperado = String(banderas.get('esperado') || '').toLowerCase();
 if (esperado && !['disabled', 'test', 'production'].includes(esperado)) {
   console.error('ABORTAR: --esperado debe ser disabled, test o production');

@@ -202,14 +202,19 @@ export function linkedOrderPayments(order = {}, payments = []) {
  * explicaba nada: una tarjeta muda con la que no se podía hacer nada.
  *
  * `production-operations.js` la sigue exportando con el mismo nombre.
+ *
+ * Se juzga por IMPORTES, igual que `order_payment_is_financially_reversed` en
+ * la base. Antes exigía además la etiqueta `refunded`, y una devolución sobre
+ * un pago en revisión de seguridad conserva su etiqueta: el Panel escondía
+ * «Cancelar» y ofrecía «Avanzar», la base rechazaba el avance (55000) y la
+ * tarjeta quedaba trabada sin salida.
  */
 export function isProductionOrderPaymentReversed(order, payments = []) {
   const linked = linkedOrderPayments(order, payments);
   if (!linked.length) return false;
   const isFullRefund = (payment) => (
-    String(payment?.internal_status || '').toLowerCase() === 'refunded'
+    Number(payment?.amount || 0) > 0
     && Number(payment?.refunded_amount || 0) >= Number(payment?.amount || 0)
-    && Number(payment?.amount || 0) > 0
   );
   const isReversed = (payment) => (
     isFullRefund(payment)
@@ -238,9 +243,13 @@ export function orderAttentionSignals(order = {}, {
 } = {}) {
   const status = trayStatus(order);
   const signals = [];
+  // Con la plata devuelta el pedido sólo admite cerrarse: pedir que se acepte o
+  // se mueva sería pedir algo que la base rechaza. Misma exclusión que
+  // ORDER_NOT_ACCEPTED y ORDER_STALLED en el servidor (20261024010000).
+  const reversed = isProductionOrderPaymentReversed(order, payments);
 
   // 1 · Entró y nadie lo aceptó. Misma cláusula que ORDER_NOT_ACCEPTED.
-  if (status === 'submitted' && !order.acknowledgedAt) {
+  if (!reversed && status === 'submitted' && !order.acknowledgedAt) {
     const waited = elapsedMinutes(order.createdAt, now);
     if (waited !== null && waited >= TRAY_DELAY_RULES.notAcceptedAfterMinutes) {
       signals.push(TRAY_ATTENTION.ORDER_NOT_ACCEPTED);
@@ -248,7 +257,7 @@ export function orderAttentionSignals(order = {}, {
   }
 
   // 2 · Aceptado y dejó de avanzar. Misma cláusula que ORDER_STALLED.
-  if (status === 'accepted' || status === 'preparing') {
+  if (!reversed && (status === 'accepted' || status === 'preparing')) {
     const since = elapsedMinutes(order.acknowledgedAt || order.createdAt, now);
     const promised = Number.isFinite(Number(order.preparationEstimateMinutes))
       && Number(order.preparationEstimateMinutes) > 0
@@ -276,7 +285,7 @@ export function orderAttentionSignals(order = {}, {
   //     hacer con el pedido, así que las dos se dicen.
   const linked = linkedOrderPayments(order, payments);
   if (linked.length) {
-    if (isProductionOrderPaymentReversed(order, payments)) {
+    if (reversed) {
       signals.push(TRAY_ATTENTION.PAYMENT_REFUNDED);
     } else if (linked.some((payment) => (
       paymentRecoveryState(payment) === PAYMENT_RECOVERY_STATES.REFUND_PROCESSING

@@ -1,28 +1,32 @@
 /*
  * Configuración segura de credenciales de la aplicación integradora Marco/LUNA en PRODUCCIÓN.
  *
- *   node scripts/mercadopago/configurar-oauth-produccion.mjs [--target=controlled-production]
+ *   node scripts/mercadopago/configurar-oauth-produccion.mjs
  *   echo '{"clientId":"...","clientSecret":"...","webhookSecret":"..."}' | node scripts/mercadopago/configurar-oauth-produccion.mjs --stdin
  *
- * `--target=controlled-production` configura CONTROLLED_PRODUCTION
- * (tkanbadcglszlcyfjvpv, la-taba-commercial-pilot.pages.dev) con la misma
- * aplicación La Taba Delivery. Sin la bandera, el destino es el de siempre.
- * Ninguna de las dos habilita cobros: la revisión productiva y la autorización
- * del primer pago real siguen siendo pasos explícitos y separados.
+ * El proyecto y el sitio salen de deploy/environments.json (producción). Mientras
+ * producción no tenga proyecto, sale 2 sin leer ninguna credencial. La producción
+ * controlada es un proyecto retirado: `--target=controlled-production` se
+ * rechaza. Nada de esto habilita cobros: la revisión productiva y la
+ * autorización del primer pago real siguen siendo pasos explícitos y separados.
  */
 import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { productionTargetOrExit } from '../lib/environments.mjs';
 import { conToken } from '../lib/supabase-cli-token.mjs';
 
-const TARGETS = {
-  production: { ref: 'wwcpogltfgzgkrlilbcd', site: 'https://la-taba.pages.dev' },
-  'controlled-production': { ref: 'tkanbadcglszlcyfjvpv', site: 'https://la-taba-commercial-pilot.pages.dev' },
-};
 const targetName = String(process.argv.find((value) => value.startsWith('--target='))?.split('=')[1] || 'production');
-const target = TARGETS[targetName];
-if (!target) throw Error('Destino inválido. No se modificó producción.');
+if (targetName !== 'production') {
+  console.error(`Destino inválido o retirado (${targetName}). No se modificó nada.`);
+  process.exit(2);
+}
+const production = productionTargetOrExit({ allowProvisioned: true });
+const target = { ref: production.ref, site: production.origin };
 const { ref } = target;
 const expectedClientId = '7677852968049976';
+if (production.mercadoPagoApplicationId !== expectedClientId) {
+  throw Error('El registro de entornos no declara La Taba Delivery como aplicación de producción. No se modificó nada.');
+}
 let input = {};
 const stdinMode = process.argv.includes('--stdin');
 if (stdinMode) {

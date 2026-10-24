@@ -17,7 +17,7 @@
 // No crea pedidos: la persiana esta cerrada y se verifica que siga asi.
 //
 //   $env:SUPABASE_ACCESS_TOKEN = <token del CLI>
-//   node scripts/production-customer-memory-smoke.mjs --ref wwcpogltfgzgkrlilbcd \
+//   node scripts/production-customer-memory-smoke.mjs --ref <ref de producción> \
 //     --key-file <archivo con la clave publicable> [--report <archivo.json>]
 //
 // Salida 0 = la memoria funciona y no quedo nada. 1 = hallazgos. 2 = no se pudo.
@@ -25,8 +25,13 @@
 import fs from 'node:fs';
 import process from 'node:process';
 
-const PRODUCTION_REF = 'wwcpogltfgzgkrlilbcd';
-const CANONICAL_BUSINESS = '00000000-0000-4000-8000-000000000001';
+import { productionTargetOrExit } from './lib/environments.mjs';
+
+// El destino sale de deploy/environments.json. Mientras producción no tenga proyecto, sale 2 sin crear nada: antes
+// el ref estaba fijo en un proyecto que ya no existe. `provisioned` alcanza: es la prueba que se corre antes de abrir.
+const PRODUCTION = productionTargetOrExit({ allowProvisioned: true });
+const PRODUCTION_REF = PRODUCTION.ref;
+const CANONICAL_BUSINESS = PRODUCTION.businessId;
 
 function arg(name) {
   const i = process.argv.indexOf(`--${name}`);
@@ -43,7 +48,7 @@ if (!KEY.startsWith('sb_publishable_')) { console.error('falta --key/--key-file 
 const PAT = process.env.SUPABASE_ACCESS_TOKEN;
 if (!PAT) { console.error('falta SUPABASE_ACCESS_TOKEN'); process.exit(2); }
 
-const BASE = `https://${ref}.supabase.co`;
+const BASE = PRODUCTION.supabaseUrl;
 const hallazgos = [];
 const pasos = [];
 function paso(nombre, ok, detalle = '') {

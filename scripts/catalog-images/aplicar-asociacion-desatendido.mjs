@@ -49,11 +49,16 @@ import path from 'node:path';
 import process from 'node:process';
 import { correoDelPanel, IDENTIDAD_PANEL } from '../e2e-production-sale/identidades.mjs';
 import { leerSecreto, objetivoCompleto } from '../e2e-production-sale/secretos-windows.mjs';
+import { productionTargetOrExit } from '../lib/environments.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
-const REF = 'wwcpogltfgzgkrlilbcd';
-const BASE = `https://${REF}.supabase.co`;
-const ORIGEN_PUBLICO = process.env.TABA_PUBLIC_ORIGIN || 'https://la-taba.pages.dev';
+// El ref y el sitio salen de deploy/environments.json. Mientras producción no tenga proyecto, sale 2 antes del
+// preflight y sin leer ninguna contraseña: antes el ref estaba fijo en un proyecto que ya no existe. `provisioned`
+// alcanza: cargar el catálogo es de lo que se hace antes de abrir.
+const PRODUCTION = productionTargetOrExit({ allowProvisioned: true });
+const REF = PRODUCTION.ref;
+const BASE = PRODUCTION.supabaseUrl;
+const ORIGEN_PUBLICO = process.env.TABA_PUBLIC_ORIGIN || PRODUCTION.origin;
 const soloEnsayo = process.argv.includes('--solo-ensayo');
 
 const paso = (t) => console.log(`\n── ${t}`);

@@ -33,7 +33,13 @@ const env=new Map(Object.entries({
  TABA_DEPLOYMENT_ENV:'production',MERCADOPAGO_OAUTH_PROJECT_REF:'wwcpogltfgzgkrlilbcd',MERCADOPAGO_CLIENT_ID:'7677852968049976',
  MERCADOPAGO_OAUTH_PANEL_URL:'https://la-taba.pages.dev/',TABA_CHECKOUT_BASE_URL:'https://la-taba.pages.dev',TABA_ALLOWED_ORIGINS:'https://la-taba.pages.dev',
  PAYMENT_LOG_HASH_SALT:'fixture-salt',MERCADOPAGO_TOKEN_ENCRYPTION_KEY:Buffer.alloc(32,1).toString('base64url'),
+ // The current handlers verify the integrator application's owner (client_credentials grant) before every sale.
+ MERCADOPAGO_CLIENT_SECRET:'fixture-client-secret',
 }));
+// Seller tokens are APP_USR- credentials: the current handlers refuse a stored legacy sandbox (TEST-) token.
+const SELLER_TOKEN='APP_USR-fixture-seller',ROTATED_TOKEN='APP_USR-fixture-rotated';
+// The integrator owner, as supabase/functions/_shared/integrator-identity-fixture.ts answers it: a real account (production).
+const INTEGRATOR_TOKEN='APP_USR-integrator-fixture',INTEGRATOR_OWNER=721168650;
 let handler,route,mutation,stage,aid,encrypted,rotated,phase='old',revision='a56a9c5',providerPosts=0,financialPosts=0;
 let pause,arrived,release;
 let mutationError;
@@ -63,8 +69,12 @@ function mutate(){
 }
 async function provider(input,init){
  const u=new URL(String(input));assert.equal(u.origin,'https://api.mercadopago.com');
+ if(u.pathname==='/oauth/token'&&init?.method==='POST'&&JSON.parse(String(init.body||'{}')).grant_type==='client_credentials')
+  return Response.json({access_token:INTEGRATOR_TOKEN,token_type:'bearer',expires_in:21600,user_id:INTEGRATOR_OWNER,live_mode:true});
+ if(u.pathname==='/users/me'&&new Headers(init?.headers).get('authorization')==='Bearer '+INTEGRATOR_TOKEN)
+  return Response.json({id:INTEGRATOR_OWNER,site_id:'MLA',tags:['normal']});
  if(init?.method==='POST' && u.pathname.includes('/refunds'))financialPosts++;
- assert.equal(new Headers(init?.headers).get('authorization'),'Bearer fixture-verified-token');
+ assert.equal(new Headers(init?.headers).get('authorization'),'Bearer '+SELLER_TOKEN);
  if(u.pathname==='/users/me'){
   if(stage==='identity')try {mutate();} catch(e) {mutationError=e;throw e;}
   if(pause){arrived();await pause;}
@@ -89,7 +99,7 @@ async function load(ref,entry='supabase/functions/mercadopago-create-preference/
  const m=file.startsWith('npm:')?new vm.SyntheticModule(['createClient'],function(){this.setExport('createClient',()=>client);},{context,identifier:file}):new vm.SourceTextModule(stripTypeScriptTypes(source,{mode:'transform'}),{context,identifier:file});cache.set(file,m);return m;}
  const m=module(path.resolve(entry));await m.link((s,p)=>module(s.startsWith('npm:')?s:path.resolve(path.dirname(p.identifier),s)));await m.evaluate();
  const oauth=cache.get(path.resolve('supabase/functions/_shared/seller-oauth.ts'))?.namespace;
- if(oauth){encrypted=await oauth.protect({access_token:'fixture-verified-token'},bid);rotated=await oauth.protect({access_token:'fixture-rotated-token'},bid);}
+ if(oauth){encrypted=await oauth.protect({access_token:SELLER_TOKEN},bid);rotated=await oauth.protect({access_token:ROTATED_TOKEN},bid);}
  return m.namespace;
 }
 const snapshotArgs=()=>({p_business_id:bid,p_environment:'production',p_checkout_session_id:sid,p_customer_id:uid,p_payment_attempt_id:aid});

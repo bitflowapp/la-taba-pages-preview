@@ -30,6 +30,11 @@
  * Si el valor fuera inválido, el paso 3 no escribe nada y esto se planta: el
  * respaldo no afloja la compuerta, sólo evita una credencial redundante.
  *
+ * El segundo camino sólo vale si el sitio publicado YA habla con el proyecto de
+ * producción del registro. En el primer despliegue contra un proyecto nuevo el
+ * sitio publicado todavía apunta al anterior (hoy: uno borrado), y su clave no
+ * sirve: se exige el secreto.
+ *
  *   node scripts/deploy/preparar-artefacto.mjs --commit <sha>
  */
 import { execFileSync } from 'node:child_process';
@@ -38,11 +43,15 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 
+import { productionTargetOrExit } from '../lib/environments.mjs';
+
 const ROOT = path.resolve(import.meta.dirname, '../..');
 const DESTINO = path.join(ROOT, 'dist_release');
-const HOST_POR_DEFECTO = 'https://la-taba.pages.dev';
-const REF_PRODUCCION = 'wwcpogltfgzgkrlilbcd';
-const NEGOCIO_CANONICO = '00000000-0000-4000-8000-000000000001';
+// Destino desde deploy/environments.json: sin proyecto de producción, sale 2 antes de armar nada.
+const PRODUCCION = productionTargetOrExit({ allowProvisioned: true });
+const HOST_POR_DEFECTO = PRODUCCION.origin;
+const REF_PRODUCCION = PRODUCCION.ref;
+const NEGOCIO_CANONICO = PRODUCCION.businessId;
 
 function correr(comando, argumentos) {
   execFileSync(comando, argumentos, { cwd: ROOT, stdio: 'inherit' });
@@ -53,11 +62,16 @@ function argumento(nombre) {
   return i === -1 ? null : process.argv[i + 1];
 }
 
-/** La clave publicable que el sitio ya le entrega a cualquier navegador. */
+/** La clave publicable que el sitio ya le entrega a cualquier navegador, si ese sitio habla con ESTE proyecto. */
 async function claveDelSitioPublicado(origen) {
   const respuesta = await fetch(`${origen}/runtime-config.js`, { redirect: 'follow' });
   if (!respuesta.ok) throw new Error(`${origen}/runtime-config.js contestó ${respuesta.status}`);
-  const clave = (await respuesta.text()).match(/publishableKey:\s*'([^']+)'/)?.[1];
+  const texto = await respuesta.text();
+  const url = texto.match(/supabaseUrl:\s*'([^']+)'/)?.[1];
+  if (url !== `https://${REF_PRODUCCION}.supabase.co`) {
+    throw new Error(`${origen} todavía apunta a ${url || 'ningún proyecto'}, no al de producción del registro`);
+  }
+  const clave = texto.match(/publishableKey:\s*'([^']+)'/)?.[1];
   if (!clave) throw new Error(`${origen} no publica una clave en su runtime-config`);
   return clave;
 }

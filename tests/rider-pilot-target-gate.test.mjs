@@ -16,8 +16,8 @@ const run = (...args) => spawnSync(process.execPath, [builder, ...args], {
   env: { ...process.env, USERPROFILE: emptyProfile },
 });
 
-test('PILOT Rider refuses Production, Staging and DEMO refs before secrets or Gradle', () => {
-  for (const ref of ['wwcpogltfgzgkrlilbcd', 'ucbtjcurawxjwjdvvcvj',
+test('PILOT Rider refuses Production, Staging (QA and the deleted one) and DEMO refs before secrets or Gradle', () => {
+  for (const ref of ['wwcpogltfgzgkrlilbcd', 'ixewllzzuzpqrkxzmfzx', 'ucbtjcurawxjwjdvvcvj',
     'yakhtrkukqlgzvxuvhzs']) {
     const result = run('--target', 'pilot', '--project-ref', ref,
       '--version-code', '4', '--version-name', '0.1.3-canonical');

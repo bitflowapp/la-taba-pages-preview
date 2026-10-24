@@ -30,7 +30,7 @@
 // GoTrue: si el login funciona, funciona por el camino real.
 //
 //   $env:SUPABASE_ACCESS_TOKEN = <token del CLI>
-//   node scripts/production-auth-identity-smoke.mjs --ref wwcpogltfgzgkrlilbcd --key <publishable>
+//   node scripts/production-auth-identity-smoke.mjs --ref <ref de producción> --key <publishable>
 //
 // Salida 0 = el camino de sesion es el esperado y no quedo nada. 1 = hallazgos.
 // 2 = no se pudo preguntar.
@@ -40,8 +40,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
-const PRODUCTION_REF = 'wwcpogltfgzgkrlilbcd';
-const CANONICAL_BUSINESS = '00000000-0000-4000-8000-000000000001';
+import { productionTargetOrExit } from './lib/environments.mjs';
+
+// El destino sale de deploy/environments.json. Mientras producción no tenga proyecto, sale 2 sin crear nada: antes
+// el ref estaba fijo en un proyecto que ya no existe. `provisioned` alcanza: es la prueba que se corre antes de abrir.
+const PRODUCTION = productionTargetOrExit({ allowProvisioned: true });
+const PRODUCTION_REF = PRODUCTION.ref;
+const CANONICAL_BUSINESS = PRODUCTION.businessId;
 
 // Dominio reservado por RFC 6761 para que jamas resuelva. Si una identidad se
 // escapara de la limpieza, su correo dice a la cara que es de prueba y no puede
@@ -76,7 +81,7 @@ if (!KEY.startsWith('sb_publishable_')) {
 const PAT = process.env.SUPABASE_ACCESS_TOKEN;
 if (!PAT) { console.error('falta SUPABASE_ACCESS_TOKEN (para crear y borrar las identidades)'); process.exit(2); }
 
-const BASE = `https://${ref}.supabase.co`;
+const BASE = PRODUCTION.supabaseUrl;
 
 const hallazgos = [];
 function exigir(ok, detalle) { if (!ok) hallazgos.push(detalle); return ok; }

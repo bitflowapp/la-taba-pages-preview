@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { resolverConfiguracion, consultar, sondear } from '../scripts/scheduler-watchdog-probe.mjs';
+import fs from 'node:fs';
+
+import { resolverConfiguracion, consultar, sondear, vigiaDeProduccion } from '../scripts/scheduler-watchdog-probe.mjs';
 
 /*
  * LA SONDA DEL PLANIFICADOR, PROBADA SIN TOCAR LA RED NI EMITIR UNA ALERTA.
@@ -174,4 +176,44 @@ test('la sonda pide exactamente la RPC del reloj, y sólo lee', async () => {
   assert.equal(pedido.url, 'https://x.supabase.co/rest/v1/rpc/check_scheduler_watchdog');
   assert.equal(pedido.opciones.method, 'POST');
   assert.equal(JSON.parse(pedido.opciones.body).p_source, 'github_actions');
+});
+
+// ---- El vigía de producción, atado a deploy/environments.json --------------------------------------------------
+// Del 21 al 23/10/2026 el flujo falló en cada corrida: el sitio publicado apunta a un proyecto que ya no existe.
+
+const REGISTRO_REAL = JSON.parse(fs.readFileSync(new URL('../deploy/environments.json', import.meta.url), 'utf8'));
+const REGISTRO_ACTIVO = JSON.parse(fs.readFileSync(new URL('./fixtures/environments.production-active.json', import.meta.url), 'utf8'));
+const URL_PRODUCCION = `https://${REGISTRO_ACTIVO.environments.production.supabase.ref}.supabase.co`;
+const configApuntandoA = (url) => CONFIG_PUBLICADA.replace('https://wwcpogltfgzgkrlilbcd.supabase.co', url);
+
+test('sin proyecto de producción el vigía queda en espera: sale sano, avisa y no consulta ningún reloj', async () => {
+  const { buscar, pedidos } = red();
+  const { lineas, sano, enEspera } = await vigiaDeProduccion({ registro: REGISTRO_REAL, entorno: {}, buscar });
+  assert.equal(sano, true);
+  assert.equal(enEspera, true);
+  assert.ok(lineas.some((l) => l.startsWith('::warning::') && /no hay barrido que vigilar/.test(l)));
+  assert.ok(lineas.some((l) => /proyecto retirado wwcpogltfgzgkrlilbcd/.test(l)), 'el sitio que apunta a un proyecto retirado no se pierde de vista');
+  assert.ok(!pedidos.some((p) => String(p.url).includes('/rpc/')), 'no consulta ningún reloj');
+});
+
+test('con producción activa pregunta al proyecto del registro y sale sano si el sitio apunta ahí', async () => {
+  const { buscar, pedidos } = red({ runtimeConfig: configApuntandoA(URL_PRODUCCION) });
+  const { sano } = await vigiaDeProduccion({ registro: REGISTRO_ACTIVO, entorno: {}, buscar });
+  assert.equal(sano, true);
+  assert.ok(pedidos.some((p) => p.url === `${URL_PRODUCCION}/rest/v1/rpc/check_scheduler_watchdog`));
+});
+
+test('con producción activa es incidente que el sitio publicado siga apuntando a otro proyecto', async () => {
+  const { buscar } = red();
+  const { lineas, sano } = await vigiaDeProduccion({ registro: REGISTRO_ACTIVO, entorno: {}, buscar });
+  assert.equal(sano, false);
+  assert.ok(lineas.some((l) => l.startsWith('::error::') && /no al proyecto de producción del registro/.test(l)));
+});
+
+test('con producción activa es incidente que la variable del repositorio apunte a otro proyecto', async () => {
+  const { buscar, pedidos } = red({ runtimeConfig: configApuntandoA(URL_PRODUCCION) });
+  const { lineas, sano } = await vigiaDeProduccion({ registro: REGISTRO_ACTIVO, entorno: { SUPABASE_URL: 'https://wwcpogltfgzgkrlilbcd.supabase.co' }, buscar });
+  assert.equal(sano, false);
+  assert.match(lineas.join('\n'), /variable SUPABASE_URL/);
+  assert.ok(!pedidos.some((p) => String(p.url).includes('/rpc/')));
 });

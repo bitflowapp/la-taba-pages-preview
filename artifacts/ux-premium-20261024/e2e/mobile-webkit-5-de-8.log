@@ -1,0 +1,29 @@
+
+Running 23 tests using 1 worker, shard 5 of 8
+
+  ✓   1 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:89:1 › Persona A · sin pedidos anteriores el checkout se muestra completo (6.1s)
+  ✓   2 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:118:1 › Persona B · con un pedido anterior el checkout resume lo conocido y deja cambiarlo (7.3s)
+  ✓   3 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:158:1 › ACCESIBILIDAD · el resumen se puede usar con teclado y con el dedo (3.9s)
+  ✓   4 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:194:1 › Persona B · el resumen es corto de verdad: mide menos que el formulario completo (4.2s)
+  ✓   5 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:219:1 › CHANGE ADDRESS · "Cambiar" devuelve el checkout entero, no un renglon suelto (5.1s)
+  ✓   6 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:249:1 › Persona C · si el precio cambio, la recompra lo dice y muestra los dos totales (3.3s)
+  ✓   7 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:291:1 › Persona D · un producto que ya no se vende se nombra: no desaparece en silencio (2.7s)
+  ✓   8 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:322:1 › ADD · un toque suma uno y una tanda rapida suma exactamente lo que se toco (6.8s)
+  ✓   9 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:382:1 › ADD · el sello de confirmacion nunca tapa el "+" (5.2s)
+  ✓  10 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:433:1 › REDUCED MOTION · sin movimiento la compra funciona igual y el sello no queda congelado (3.9s)
+  ✓  11 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:474:1 › PACKS · la cantidad del carrito sigue contando packs, no unidades sueltas (4.9s)
+  ✓  12 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:597:1 › PROFILE SLOW · nunca se pinta el formulario completo para despues plegarlo (8.4s)
+  ✓  13 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:632:1 › PROFILE FOUND · con el perfil disponible el resumen aparece sin pasar por el formulario (6.3s)
+  ✓  14 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:647:1 › PROFILE EMPTY · sin nada que recordar el formulario completo aparece de una, sin esperar (5.6s)
+  ✓  15 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:666:1 › PROFILE FAILURE · si la consulta falla el checkout queda usable, no suspendido (6.7s)
+  ✓  16 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:684:1 › PROFILE HUNG · una consulta que nunca contesta no deja el checkout esperando para siempre (12.1s)
+  ✓  17 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:706:1 › CART NOTICE · el aviso vive en el layout y no cruza encabezado, CTA ni barra (9.1s)
+  ✓  18 [mobile-webkit] › tests\e2e\mapa-pulso-en-fase.spec.mjs:19:1 › el redibujo estable conserva la fase del pulso; sin anclar, arranca de cero (3.4s)
+  ✓  19 [mobile-webkit] › tests\e2e\panel-apertura.spec.mjs:42:3 › Preparar apertura en teléfono: dice qué falta y lleva adonde se completa (2.8s)
+  ✓  20 [mobile-webkit] › tests\e2e\panel-apertura.spec.mjs:42:3 › Preparar apertura en escritorio: dice qué falta y lleva adonde se completa (2.3s)
+  ✓  21 [mobile-webkit] › tests\e2e\panel-apertura.spec.mjs:62:1 › Equipo: invitar a un repartidor muestra el link una sola vez (3.5s)
+  ✓  22 [mobile-webkit] › tests\e2e\panel-apertura.spec.mjs:82:1 › Impresora sin vincular: se dice que es opcional y cómo vincular (1.8s)
+  ✓  23 [mobile-webkit] › tests\e2e\panel-apertura.spec.mjs:94:1 › /cuenta/#invitacion: cuenta nueva, contraseña y aceptar, sin dejar el token en la barra (1.3s)
+
+  23 passed (2.0m)
+E2E estable: ninguna prueba necesitó reintento.

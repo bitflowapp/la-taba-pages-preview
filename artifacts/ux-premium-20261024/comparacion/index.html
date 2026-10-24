@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La Taba · antes y después UX</title>
+<style>
+  :root { color-scheme: dark; --bg:#0f1216; --card:#181c22; --ink:#f3f3f3; --muted:#a8abb2; --red:#d0000d; --line:rgb(255 255 255 / 10%); }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, "Segoe UI", Roboto, sans-serif; }
+  header { padding: 28px 16px 8px; max-width: 1400px; margin: 0 auto; }
+  h1 { margin: 0 0 4px; font-size: 26px; letter-spacing: -.02em; }
+  header p { margin: 0; color: var(--muted); }
+  main { display: grid; gap: 28px; max-width: 1400px; margin: 0 auto; padding: 16px; }
+  section { padding: 16px; border: 1px solid var(--line); border-radius: 18px; background: var(--card); }
+  h2 { margin: 0 0 2px; font-size: 18px; }
+  .nota { margin: 0 0 14px; color: var(--muted); }
+  .par { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
+  figure { margin: 0; }
+  figcaption { margin-bottom: 6px; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  figure.despues figcaption { color: #ff6b72; }
+  img { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); }
+  .movil .par { max-width: 760px; }
+  .full img { max-height: 1400px; object-fit: cover; object-position: top; }
+  @media (max-width: 640px) { .par { gap: 8px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>La Taba · antes y después</h1>
+  <p>Rama <code>feature/ux-premium-storefront-20261024</code> sobre <code>ec4962e1</code>. Capturas reales con Playwright, mismo recorrido y mismo catálogo (vitrina Neuquén y demo de historias). Antes = <code>ec4962e1</code>.</p>
+</header>
+<main>
+  <section class="movil">
+    <h2>Banner Andes Origen · teléfono 390</h2>
+    <p class="nota">Antes: la pieza curada era una tarjeta de receta del sitio de la marca, sin el producto. Después: foto de producto de Andes Origen Rubia con licencia comercial (TABA-AUT-2026-08-001), entera en un recuadro.</p>
+    <div class="par">
+      <figure class="antes"><figcaption>Antes</figcaption><img src="antes/vitrina-m-banner-andes.webp" width="494" height="355" alt="Antes: Banner Andes Origen · teléfono 390" loading="lazy"></figure>
+      <figure class="despues"><figcaption>Después</figcaption><img src="despues/vitrina-m-banner-andes.webp" width="716" height="370" alt="Después: Banner Andes Origen · teléfono 390" loading="lazy"></figure>
+    </div>
+  </section>
+  <section class="movil">
+    <h2>Catálogo · teléfono 390</h2>
+    <p class="nota">Tarjetas de 384→~300px: precio y botón entran en la primera pantalla; orden al lado del título; pastilla «Recomendado» fuera de la foto.</p>
+    <div class="par">
+      <figure class="antes"><figcaption>Antes</figcaption><img src="antes/vitrina-m-gondola-top.webp" width="520" height="1125" alt="Antes: Catálogo · teléfono 390" loading="lazy"></figure>
+      <figure class="despues"><figcaption>Después</figcaption><img src="despues/vitrina-m-gondola-top.webp" width="520" height="1125" alt="Después: Catálogo · teléfono 390" loading="lazy"></figure>
+    </div>
+  </section>
+  <section class="movil">
+    <h2>Historias · teléfono 390</h2>
+    <p class="nota">Pantalla completa 9:16 con la pieza entera; título, acción y navegación sobre degradado; tocar izquierda/derecha navega.</p>
+    <div class="par">
+      <figure class="antes"><figcaption>Antes</figcaption><img src="antes/demo-m-historia.webp" width="520" height="1125" alt="Antes: Historias · teléfono 390" loading="lazy"></figure>
+      <figure class="despues"><figcaption>Después</figcaption><img src="despues/demo-m-historia.webp" width="520" height="1125" alt="Después: Historias · teléfono 390" loading="lazy"></figure>
+    </div>
+  </section>
+  <section class="escritorio">
+    <h2>Historias · escritorio 1280</h2>
+    <p class="nota">Marco 9:16 centrado en lugar de tarjeta con la imagen recortada a 4:5.</p>
+    <div class="par">
+      <figure class="antes"><figcaption>Antes</figcaption><img src="antes/demo-d-historia.webp" width="1280" height="800" alt="Antes: Historias · escritorio 1280" loading="lazy"></figure>
+      <figure class="despues"><figcaption>Después</figcaption><img src="despues/demo-d-historia.webp" width="1280" height="800" alt="Después: Historias · escritorio 1280" loading="lazy"></figure>
+    </div>
+  </section>
+  <section class="escritorio">
+    <h2>Catálogo · escritorio 1280</h2>
+    <p class="nota">Mismo presupuesto de columnas (tarjeta ≥250px), tarjetas más compactas: foto cuadrada a ras, nombre/presentación juntos, pastilla fuera de la foto; entran más productos por pantalla.</p>
+    <div class="par">
+      <figure class="antes"><figcaption>Antes</figcaption><img src="antes/vitrina-d-gondola-top.webp" width="1280" height="800" alt="Antes: Catálogo · escritorio 1280" loading="lazy"></figure>
+      <figure class="despues"><figcaption>Después</figcaption><img src="despues/vitrina-d-gondola-top.webp" width="1280" height="800" alt="Después: Catálogo · escritorio 1280" loading="lazy"></figure>
+    </div>
+  </section>
+  <section class="movil">
+    <h2>Carrito · teléfono 390</h2>
+    <p class="nota">Líneas en dos renglones (foto · nombre/cantidad · importe), mínimo alcanzado sin barra llena.</p>
+    <div class="par">
+      <figure class="antes"><figcaption>Antes</figcaption><img src="antes/vitrina-m-carrito.webp" width="520" height="1125" alt="Antes: Carrito · teléfono 390" loading="lazy"></figure>
+      <figure class="despues"><figcaption>Después</figcaption><img src="despues/vitrina-m-carrito.webp" width="520" height="1125" alt="Después: Carrito · teléfono 390" loading="lazy"></figure>
+    </div>
+  </section>
+  <section class="movil">
+    <h2>Entrega · teléfono 390</h2>
+    <p class="nota">Total y «Confirmar pedido» en una barra fija sobre la navegación mientras se elige la dirección; Delivery / Retiro como control segmentado.</p>
+    <div class="par">
+      <figure class="antes"><figcaption>Antes</figcaption><img src="antes/vitrina-m-checkout.webp" width="520" height="1125" alt="Antes: Entrega · teléfono 390" loading="lazy"></figure>
+      <figure class="despues"><figcaption>Después</figcaption><img src="despues/vitrina-m-checkout.webp" width="520" height="1125" alt="Después: Entrega · teléfono 390" loading="lazy"></figure>
+    </div>
+  </section>
+  <section class="escritorio">
+    <h2>Carrito y entrega · escritorio 1280</h2>
+    <p class="nota">La lista de productos acompaña el scroll y la barra de total + «Confirmar pedido» queda siempre a la vista.</p>
+    <div class="par">
+      <figure class="antes"><figcaption>Antes</figcaption><img src="antes/vitrina-d-checkout.webp" width="1280" height="800" alt="Antes: Carrito y entrega · escritorio 1280" loading="lazy"></figure>
+      <figure class="despues"><figcaption>Después</figcaption><img src="despues/vitrina-d-checkout.webp" width="1280" height="800" alt="Después: Carrito y entrega · escritorio 1280" loading="lazy"></figure>
+    </div>
+  </section>
+  <section class="movil">
+    <h2>Ficha · teléfono 390</h2>
+    <p class="nota">Disponibilidad como pastilla alineada al precio; observación en un renglón.</p>
+    <div class="par">
+      <figure class="antes"><figcaption>Antes</figcaption><img src="antes/vitrina-m-ficha.webp" width="520" height="1125" alt="Antes: Ficha · teléfono 390" loading="lazy"></figure>
+      <figure class="despues"><figcaption>Después</figcaption><img src="despues/vitrina-m-ficha.webp" width="520" height="1125" alt="Después: Ficha · teléfono 390" loading="lazy"></figure>
+    </div>
+  </section>
+  <section class="escritorio full">
+    <h2>Inicio · escritorio 1280 (página completa)</h2>
+    <p class="nota">Home a todo el ancho útil, rieles de 5 tarjetas parejas, combo con ancho de tarjeta.</p>
+    <div class="par">
+      <figure class="antes"><figcaption>Antes</figcaption><img src="antes/vitrina-d-home-full.webp" width="900" height="3041" alt="Antes: Inicio · escritorio 1280 (página completa)" loading="lazy"></figure>
+      <figure class="despues"><figcaption>Después</figcaption><img src="despues/vitrina-d-home-full.webp" width="900" height="2984" alt="Después: Inicio · escritorio 1280 (página completa)" loading="lazy"></figure>
+    </div>
+  </section>
+  <section class="movil full">
+    <h2>Inicio · teléfono 390 (página completa)</h2>
+    <p class="nota">Mismo ritmo de tarjetas y chips que el catálogo.</p>
+    <div class="par">
+      <figure class="antes"><figcaption>Antes</figcaption><img src="antes/vitrina-m-home-full.webp" width="360" height="3842" alt="Antes: Inicio · teléfono 390 (página completa)" loading="lazy"></figure>
+      <figure class="despues"><figcaption>Después</figcaption><img src="despues/vitrina-m-home-full.webp" width="360" height="3836" alt="Después: Inicio · teléfono 390 (página completa)" loading="lazy"></figure>
+    </div>
+  </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "generadoEl": "2026-10-24T17:27:15.637Z",
+  "destino": "js/vitrina-neuquen-20261024.js",
+  "skus": 52,
+  "conFoto": 42,
+  "conFotoAuditada": 29,
+  "conFotoManifiesto": 13,
+  "sinFoto": [
+    "quilmes-clasica-lata-473ml",
+    "quilmes-clasica-lata-473ml-pack-6",
+    "quilmes-clasica-botella-710ml",
+    "andes-origen-roja-lata-473ml",
+    "fernet-1882-750ml",
+    "gancia-americano-450ml",
+    "cafayate-torrontes-750ml",
+    "toro-viejo-clasico-tinto-750ml",
+    "toro-tinto-1000ml",
+    "vodka-skyy-700ml"
+  ],
+  "coberturas": {
+    "AUDITADA": 29,
+    "FALBACK": 10,
+    "MANIFIESTO_PREPARADO": 13
+  }
+}

@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vitrina Neuquén 2026-10-24 · antes y después de las fotos reales</title>
+<style>
+  :root {
+    color-scheme: light;
+    --tinta: #1a1611;
+    --crema: #faf6ee;
+    --rojo: #a01220;
+    --borde: #ddd3c2;
+    --verde: #146c43;
+    --ambar: #8a5a00;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--crema); color: var(--tinta); font: 16px/1.5 system-ui, 'Segoe UI', sans-serif; }
+  header { background: var(--tinta); color: var(--crema); padding: 28px 5vw 22px; }
+  header h1 { margin: 0 0 6px; font-size: clamp(20px, 3.4vw, 30px); letter-spacing: .2px; }
+  header p { margin: 0; opacity: .85; max-width: 90ch; }
+  .status-pill { display: inline-block; margin-top: 12px; padding: 4px 12px; border-radius: 999px;
+    background: #2e9e5b; color: #fff; font-size: 13px; font-weight: 600; }
+  main { padding: 26px 5vw 60px; max-width: 1500px; margin: 0 auto; }
+  section { margin-bottom: 44px; }
+  h2 { font-size: 20px; border-bottom: 3px solid var(--rojo); display: inline-block; padding-bottom: 4px; margin: 0 0 6px; }
+  .sub { color: #6b6155; margin: 0 0 16px; max-width: 95ch; }
+  .live-box { background: #fff; border: 1px solid var(--borde); border-radius: 12px; padding: 16px 20px; }
+  .live-box code { display: block; padding: 6px 10px; margin: 6px 0; background: #f1ece2; border-radius: 8px;
+    font-size: 14px; overflow-wrap: anywhere; }
+  .duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 22px; }
+  .panel { background: #fff; border: 1px solid var(--borde); border-radius: 14px; overflow: hidden; }
+  .panel .head { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--borde); }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot.antes { background: var(--ambar); }
+  .dot.despues { background: var(--verde); }
+  .panel img { display: block; width: 100%; height: auto; }
+  .panel p.caption { padding: 10px 16px 14px; margin: 0; font-size: 14px; color: #5d5548; }
+  .interacciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  .interacciones figure { margin: 0; background: #fff; border: 1px solid var(--borde); border-radius: 12px; overflow: hidden; }
+  .interacciones figcaption { padding: 10px 12px; font-size: 13.5px; color: #5d5548; }
+  .interacciones b { display: block; color: var(--tinta); margin-bottom: 3px; font-size: 14.5px; }
+  ul.fotos { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  .shot-card { background: #fff; border: 1px solid var(--borde); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+  .shot-card figure { margin: 0; aspect-ratio: 1/1; background: #ece5d8; }
+  .shot-card img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .shot-card.sin-foto { border: 1.5px dashed #c4925a; }
+  .shot-card.sin-foto .motivo { font-size: 12px; color: #8a5a00; background: #fdf3df; border-radius: 8px; padding: 8px 10px; margin: 8px 0 0; }
+  .shot-copy { padding: 10px 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+  .coverage { align-self: flex-start; font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 999px; }
+  .coverage.audited { background: #e2f1e6; color: var(--verde); }
+  .coverage.manifest { background: #e3edf9; color: #1d4ed8; }
+  .coverage.pending { background: #fdf3df; color: var(--ambar); }
+  .shot-copy strong { font-size: 14.5px; line-height: 1.3; }
+  .shot-copy small { color: #6b6155; }
+  .shot-copy b { color: var(--rojo); }
+  footer { border-top: 1px solid var(--borde); padding: 20px 5vw 40px; color: #5d5548; font-size: 14px; }
+  footer code { background: #f1ece2; padding: 2px 6px; border-radius: 6px; overflow-wrap: anywhere; }
+  @media (max-width: 700px) { header, main, footer { padding-left: 6vw; padding-right: 6vw; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Vitrina Neuquén · antes y después de las fotos reales</h1>
+  <p>Góndola autoridad 52 SKU · fotos verificadas en 42 productos (29 del mapa auditado + 13 con manifiesto y sha256 verificado) · fallas honestas en 10. Derechos: TABA-AUT-2026-08-001 · LICENCIA_COMERCIAL (42/52).</p>
+  <p>Los precios de TODA esta página son los <b>vigentes</b> del criterio publicado —la propuesta comercial sigue pendiente de aprobación y no entró a la vitrina.</p>
+  <span class="status-pill">QA 54/54 afirmaciones OK (capturas de 02:47 p. m.)</span>
+</header>
+<main>
+
+  <section>
+    <h2>Cómo verlo vivo (local, sin publicar nada)</h2>
+    <p class="sub">El storefront demo arranca con la vitrina Neuquén y sus fotos; el modo "antes" es la MISMA sesión forzando el placeholder en toda la góndola. Todo corre en <code>localhost</code>: esta comparación no publica nada ni toca producción.</p>
+    <div class="live-box">
+      <strong>Después — la vitrina con fotos reales por SKU</strong>
+      <code>http://localhost:8231/?reset=1&demo=1&vitrina=neuquen20261024</code>
+      <strong>Antes — la misma góndola sin fotos (comparación honesta)</strong>
+      <code>http://localhost:8231/?reset=1&demo=1&vitrina=neuquen20261024&fotos=antes</code>
+      <strong>Catálogo demo de siempre, sin cambios</strong>
+      <code>http://localhost:8231/?reset=1&demo=1</code>
+    </div>
+  </section>
+
+  <section>
+    <h2>La góndola completa, móvil (390×844)</h2>
+    <p class="sub">Mismo scroll inicial en las dos capturas: a la izquierda cómo se veía sin el trabajo de fotos (placeholder genérico en cada SKU); a la derecha, la foto correcta de cada producto con su marca, envase y presentación.</p>
+    <div class="duo">
+      <div class="panel">
+        <div class="head"><span class="dot antes"></span><strong>ANTES · placeholder en toda la góndola</strong></div>
+        <img src="../../qa/capturas-neuquen/antes-movil-gondola.png" alt="Góndola móvil en modo antes: todos los SKU con placeholder">
+        <p class="caption">?demo=1&vitrina=neuquen20261024<b>&fotos=antes</b> — los 10 SKUs sin fuente auditada venían así también.</p>
+      </div>
+      <div class="panel">
+        <div class="head"><span class="dot despues"></span><strong>DESPUÉS · foto real verificada por SKU</strong></div>
+        <img src="../../qa/capturas-neuquen/despues-movil-gondola.png" alt="Góndola móvil con las fotos reales por SKU">
+        <p class="caption">42 tarjetas con la miniatura declarada para ese SKU; 10 honestas con placeholder y su precio vigente.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Interacciones verificadas por QA automatizado</h2>
+    <p class="sub">La vitrina no es una imagen: el QA (Playwright) buscó, filtró por categoría, abrió fichas, sumó al carrito y comprobó precios y etiqueta +18 sin pageerrors ni respuestas fallidas.</p>
+    <div class="interacciones">
+      <figure><img src="../../qa/capturas-neuquen/despues-movil-busqueda.png" alt="Búsqueda en la góndola"><figcaption><b>Búsqueda</b>«coca» deja sólo los SKUs de la familia, con foto y precio.</figcaption></figure>
+      <figure><img src="../../qa/capturas-neuquen/despues-movil-categoria-cervezas.png" alt="Categoría Cervezas"><figcaption><b>Categorías</b>el chip Cervezas muestra exactamente su rubro; «Todas» vuelve.</figcaption></figure>
+      <figure><img src="../../qa/capturas-neuquen/despues-movil-ficha.png" alt="Ficha de producto con foto real"><figcaption><b>Ficha +18</b>foto de Gancia Lima Limón, precio vigente y aviso de venta a mayores de 18.</figcaption></figure>
+      <figure><img src="../../qa/capturas-neuquen/despues-movil-carrito.png" alt="Carrito con un ítem"><figcaption><b>Carrito</b>alta de Coca-Cola 2,25 L: 1 línea, subtotal igual al vigente.</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>La misma comparación, escritorio (1280px, góndola completa)</h2>
+    <p class="sub">Capturas de página completa: en "antes" absolutamente todo es placeholder; en "después" cada SKU muestra su foto verificada. Sin overflow horizontal en ninguno de los dos.</p>
+    <div class="duo">
+      <div class="panel">
+        <div class="head"><span class="dot antes"></span><strong>ANTES · escritorio</strong></div>
+        <img src="../../qa/capturas-neuquen/antes-desktop-gondola.png" alt="Góndola de escritorio completa en modo antes">
+      </div>
+      <div class="panel">
+        <div class="head"><span class="dot despues"></span><strong>DESPUÉS · escritorio</strong></div>
+        <img src="../../qa/capturas-neuquen/despues-desktop-gondola.png" alt="Góndola de escritorio completa con fotos reales">
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Las 42 fotos publicadas — cada una con derecho comercial verificado</h2>
+    <p class="sub">29 del mapa auditado <code>gondola-publica-imagenes.json</code> y 13 con cadena sha256 completa en <code>image-manifest.json</code>. Marca, envase, capacidad y variante comprobados por SKU.</p>
+    <ul class="fotos">
+      
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/coca-cola-original-2250ml-97dc25e8399a5775-thumb-acbe05a93036a3a4.webp" alt="Foto verificada de Coca-Cola Coca-Cola"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Coca-Cola · Coca-Cola</strong>
+          <small>Unidad · 2250 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/coca-cola-zero-2250ml-4ce84243eb65d14a-thumb-826e5a5ea976e1e2.webp" alt="Foto verificada de Coca-Cola Coca-Cola Zero"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Coca-Cola · Coca-Cola Zero Sin azúcar</strong>
+          <small>Unidad · 2250 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/coca-cola-original-lata-354ml-3c2cefd7fe4bd597-thumb-cd767440cdb0ff40.webp" alt="Foto verificada de Coca-Cola Coca-Cola"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Coca-Cola · Coca-Cola</strong>
+          <small>Unidad · 354 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/coca-cola-zero-lata-354ml-4d1955a80c87ab0e-thumb-7816226aa02505f5.webp" alt="Foto verificada de Coca-Cola Coca-Cola Zero"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Coca-Cola · Coca-Cola Zero Sin azúcar</strong>
+          <small>Unidad · 354 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/sprite-original-2250ml-99d83c94dac255ca-thumb-1e02490bc9080f49.webp" alt="Foto verificada de Sprite Sprite"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Sprite · Sprite</strong>
+          <small>Unidad · 2250 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/sprite-zero-2250ml-c43f15fd8eedc2e4-thumb-4e04923ee3c2fb00.webp" alt="Foto verificada de Sprite Sprite Zero"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Sprite · Sprite Zero Sin azúcar</strong>
+          <small>Unidad · 2250 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/sprite-original-lata-354ml-0060e518ebfab8e7-thumb-9f34da79cf990fa1.webp" alt="Foto verificada de Sprite Sprite"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Sprite · Sprite</strong>
+          <small>Unidad · 354 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/fanta-naranja-2250ml-797064494952a9a1-thumb-3a996fad3a89104c.webp" alt="Foto verificada de Fanta Fanta Naranja"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Fanta · Fanta Naranja Naranja</strong>
+          <small>Unidad · 2250 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/pepsi-original-2000ml-b4298e4382912cf4-thumb-815a946c396e0a93.webp" alt="Foto verificada de Pepsi Pepsi"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Pepsi · Pepsi</strong>
+          <small>Unidad · 2000 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/pepsi-black-1500ml-52009e2651c40a42-thumb-a562d12e0fb5d26b.webp" alt="Foto verificada de Pepsi Pepsi Black"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Pepsi · Pepsi Black Sin azúcar</strong>
+          <small>Unidad · 1500 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/seven-up-original-2000ml-2ed6deb5fa431d4b-thumb-556d7a39b0433124.webp" alt="Foto verificada de 7UP 7UP"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>7UP · 7UP</strong>
+          <small>Unidad · 2000 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/paso-de-los-toros-tonica-1500ml-3a05ed21abc4e380-thumb-209929c85be873fa.webp" alt="Foto verificada de Paso de los Toros Paso de los Toros Tónica"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Paso de los Toros · Paso de los Toros Tónica Tónica</strong>
+          <small>Unidad · 1500 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/paso-de-los-toros-pomelo-1500ml-07e30d4119649232-thumb-2578710a66ec476a.webp" alt="Foto verificada de Paso de los Toros Paso de los Toros Pomelo"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Paso de los Toros · Paso de los Toros Pomelo Pomelo</strong>
+          <small>Unidad · 1500 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/soda-manaos-sifon-2000ml-b92e160958368c0d-thumb-33a5a3998f343f97.webp" alt="Foto verificada de Manaos Soda Manaos"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Manaos · Soda Manaos Soda</strong>
+          <small>Unidad · 2000 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/villa-del-sur-sin-gas-600ml-81e9d897ac5c7200-thumb-542436e98431ce8a.webp" alt="Foto verificada de Villa del Sur Villa del Sur"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Villa del Sur · Villa del Sur Sin gas</strong>
+          <small>Unidad · 600 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/villavicencio-sin-gas-1500ml-2fb407c8fa1c2b59-thumb-6b0e4ee75373e633.webp" alt="Foto verificada de Villavicencio Villavicencio"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Villavicencio · Villavicencio Sin gas</strong>
+          <small>Unidad · 1500 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/villavicencio-con-gas-500ml-aa4659b148790b42-thumb-2b03472d9e7fb764.webp" alt="Foto verificada de Villavicencio Villavicencio"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Villavicencio · Villavicencio Con gas</strong>
+          <small>Unidad · 500 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/benedictino-sin-gas-2250ml-8291602e84de68e9-thumb-e6d7c299f80e6e5d.webp" alt="Foto verificada de Benedictino Benedictino"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Benedictino · Benedictino Sin gas</strong>
+          <small>Unidad · 2250 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/aquarius-pera-1500ml-d8c1230b1227373f-thumb-0c540b9ca40aec2e.webp" alt="Foto verificada de Aquarius Aquarius Pera"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Aquarius · Aquarius Pera Pera</strong>
+          <small>Unidad · 1500 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/aquarius-manzana-1500ml-5a06bd9176e27828-thumb-d5da2606a2f036cf.webp" alt="Foto verificada de Aquarius Aquarius Manzana"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Aquarius · Aquarius Manzana Manzana</strong>
+          <small>Unidad · 1500 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/aquarius-pomelo-2250ml-8de7c8de5e780020-thumb-bd47cfae363889a1.webp" alt="Foto verificada de Aquarius Aquarius Pomelo"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Aquarius · Aquarius Pomelo Pomelo</strong>
+          <small>Unidad · 2250 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/red-bull-original-250ml-2d86788f7b853c11-thumb-4f0870826f9f8bce.webp" alt="Foto verificada de Red Bull Red Bull"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Red Bull · Red Bull</strong>
+          <small>Unidad · 250 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/red-bull-sin-azucar-250ml-f0aeca853a67db50-thumb-86cbad78e9e62eb2.webp" alt="Foto verificada de Red Bull Red Bull Sugarfree"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Red Bull · Red Bull Sugarfree Sin azúcar</strong>
+          <small>Unidad · 250 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/monster-green-zero-473ml-c238e9bf28582e15-thumb-9ee7f5db50e33ce1.webp" alt="Foto verificada de Monster Monster Green Zero"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Monster · Monster Green Zero Sin azúcar</strong>
+          <small>Unidad · 473 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/speed-original-473ml-f66e48f651a6ab20-thumb-6451dbece18fd4c5.webp" alt="Foto verificada de Speed Speed"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Speed · Speed</strong>
+          <small>Unidad · 473 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/speed-zero-473ml-89bed41bf09b31b4-thumb-4d5d6597b333f112.webp" alt="Foto verificada de Speed Speed Zero"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Speed · Speed Zero Sin azúcar</strong>
+          <small>Unidad · 473 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/gatorade-cool-blue-500ml-e3fcbd3e1e29bb61-thumb-b41adc6e858c3a90.webp" alt="Foto verificada de Gatorade Gatorade Cool Blue"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Gatorade · Gatorade Cool Blue Cool Blue</strong>
+          <small>Unidad · 500 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/gatorade-manzana-1250ml-64efd055975ef241-thumb-b33a3ac22178a69a.webp" alt="Foto verificada de Gatorade Gatorade Manzana"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Gatorade · Gatorade Manzana Manzana</strong>
+          <small>Unidad · 1250 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/powerade-mountain-blast-500ml-1ea05e4f6f192e2f-thumb-61387947b7df6f68.webp" alt="Foto verificada de Powerade Powerade Mountain Blast"></figure>
+        <div class="shot-copy">
+          <span class="coverage audited">Auditada</span>
+          <strong>Powerade · Powerade Mountain Blast Mountain Blast</strong>
+          <small>Unidad · 500 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/quilmes-stout-lata-473ml-43e8c2ca1b9a2d88-thumb-e5622de0edb2dccb.webp" alt="Foto verificada de Quilmes Quilmes Stout"></figure>
+        <div class="shot-copy">
+          <span class="coverage manifest">Manifiesto verificado</span>
+          <strong>Quilmes · Quilmes Stout Stout</strong>
+          <small>Unidad · 473 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/brahma-chopp-lata-710ml-7b3111225f3821da-thumb-51a63d115ad3aed5.webp" alt="Foto verificada de Brahma Brahma Chopp"></figure>
+        <div class="shot-copy">
+          <span class="coverage manifest">Manifiesto verificado</span>
+          <strong>Brahma · Brahma Chopp Rubia</strong>
+          <small>Unidad · 710 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/budweiser-lata-473ml-0144902daa7180f4-thumb-4752e9d24ab35ed2.webp" alt="Foto verificada de Budweiser Budweiser"></figure>
+        <div class="shot-copy">
+          <span class="coverage manifest">Manifiesto verificado</span>
+          <strong>Budweiser · Budweiser Lager</strong>
+          <small>Unidad · 473 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/stella-artois-lata-473ml-9178af863653c84c-thumb-b0c03f876068f811.webp" alt="Foto verificada de Stella Artois Stella Artois"></figure>
+        <div class="shot-copy">
+          <span class="coverage manifest">Manifiesto verificado</span>
+          <strong>Stella Artois · Stella Artois Lager</strong>
+          <small>Unidad · 473 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/corona-extra-botella-330ml-2d424290c3ea844f-thumb-4b872d222ff2f90a.webp" alt="Foto verificada de Corona Corona Extra"></figure>
+        <div class="shot-copy">
+          <span class="coverage manifest">Manifiesto verificado</span>
+          <strong>Corona · Corona Extra Lager</strong>
+          <small>Unidad · 330 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/andes-origen-rubia-lata-473ml-3d8a469028220903-thumb-6de9adb117eea8b8.webp" alt="Foto verificada de Andes Origen Andes Origen Rubia"></figure>
+        <div class="shot-copy">
+          <span class="coverage manifest">Manifiesto verificado</span>
+          <strong>Andes Origen · Andes Origen Rubia Rubia</strong>
+          <small>Unidad · 473 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/patagonia-amber-lager-botella-730ml-a5c26f21d7f42cfe-thumb-a9fc32107672d884.webp" alt="Foto verificada de Patagonia Patagonia Amber Lager"></figure>
+        <div class="shot-copy">
+          <span class="coverage manifest">Manifiesto verificado</span>
+          <strong>Patagonia · Patagonia Amber Lager Amber Lager</strong>
+          <small>Unidad · 730 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/fernet-branca-1000ml-0c51f3c2c52ad488-thumb-aa6308cf7b9a94cb.webp" alt="Foto verificada de Fernet Branca Fernet Branca"></figure>
+        <div class="shot-copy">
+          <span class="coverage manifest">Manifiesto verificado</span>
+          <strong>Fernet Branca · Fernet Branca</strong>
+          <small>Unidad · 1000 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/gancia-lima-limon-lata-473ml-5cfdab179b9102a3-thumb-bcd7381e8cb9df7e.webp" alt="Foto verificada de Gancia Gancia Lima Limón"></figure>
+        <div class="shot-copy">
+          <span class="coverage manifest">Manifiesto verificado</span>
+          <strong>Gancia · Gancia Lima Limón Lima limón</strong>
+          <small>Unidad · 473 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/dr-lemon-vodka-pomelo-lata-473ml-6875ceb7e0ff6926-thumb-ebd3cbb7049c8b57.webp" alt="Foto verificada de Dr. Lemon Dr. Lemon Vodka Pomelo"></figure>
+        <div class="shot-copy">
+          <span class="coverage manifest">Manifiesto verificado</span>
+          <strong>Dr. Lemon · Dr. Lemon Vodka Pomelo Vodka pomelo</strong>
+          <small>Unidad · 473 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/trapiche-origen-malbec-750ml-5166a6bd98ad5d10-thumb-19f9ca07fee4c4d8.webp" alt="Foto verificada de Trapiche Trapiche Origen Malbec"></figure>
+        <div class="shot-copy">
+          <span class="coverage manifest">Manifiesto verificado</span>
+          <strong>Trapiche · Trapiche Origen Malbec Malbec</strong>
+          <small>Unidad · 750 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/dada-caramel-750ml-4171839cfea453e3-thumb-98439035a1cccd9b.webp" alt="Foto verificada de Dada Dada Caramel"></figure>
+        <div class="shot-copy">
+          <span class="coverage manifest">Manifiesto verificado</span>
+          <strong>Dada · Dada Caramel Caramel</strong>
+          <small>Unidad · 750 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+
+      <li class="shot-card">
+        <figure><img loading="lazy" src="../../../../assets/products/gin-gordons-700ml-0a539dda4bb5cbd5-thumb-e37bca6137875ca0.webp" alt="Foto verificada de Gordon's Gordon's London Dry"></figure>
+        <div class="shot-copy">
+          <span class="coverage manifest">Manifiesto verificado</span>
+          <strong>Gordon's · Gordon's London Dry London Dry</strong>
+          <small>Unidad · 700 ml</small>
+          <b>$ 0</b>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>L Wireframe las 10 sin foto — el lane es honesto, no un error</h2>
+    <p class="sub">No hay imagen auditada ni con manifiesto para estos SKUs, y NO se publican parecidos. Mientras tanto se muestran con el placeholder propio de TABA y su precio vigente, como cualquier producto recién cargado.</p>
+    <ul class="fotos">
+      
+      <li class="shot-card sin-foto">
+        <figure><img src="../../../../assets/products/beverage-placeholder.svg" alt="Sin foto publicable: Quilmes Quilmes Clásica"></figure>
+        <div class="shot-copy">
+          <span class="coverage pending">Pendiente de su propia foto</span>
+          <strong>Quilmes · Quilmes Clásica Lager</strong>
+          <small>Unidad · 473 ml</small>
+          <b>$ 0</b>
+          <p class="motivo">Sin fuente auditada para este SKU: no se publica una imagen parecida. Lane: foto propia del comercio o aprobación por activo.</p>
+        </div>
+      </li>
+
+      <li class="shot-card sin-foto">
+        <figure><img src="../../../../assets/products/beverage-placeholder.svg" alt="Sin foto publicable: Quilmes Quilmes Clásica"></figure>
+        <div class="shot-copy">
+          <span class="coverage pending">Pendiente de su propia foto</span>
+          <strong>Quilmes · Quilmes Clásica Lager</strong>
+          <small>Pack ×6 · 473 ml</small>
+          <b>$ 0</b>
+          <p class="motivo">Sin fuente auditada para este SKU: no se publica una imagen parecida. Lane: foto propia del comercio o aprobación por activo.</p>
+        </div>
+      </li>
+
+      <li class="shot-card sin-foto">
+        <figure><img src="../../../../assets/products/beverage-placeholder.svg" alt="Sin foto publicable: Quilmes Quilmes Clásica"></figure>
+        <div class="shot-copy">
+          <span class="coverage pending">Pendiente de su propia foto</span>
+          <strong>Quilmes · Quilmes Clásica Lager</strong>
+          <small>Unidad · 710 ml</small>
+          <b>$ 0</b>
+          <p class="motivo">Sin fuente auditada para este SKU: no se publica una imagen parecida. Lane: foto propia del comercio o aprobación por activo.</p>
+        </div>
+      </li>
+
+      <li class="shot-card sin-foto">
+        <figure><img src="../../../../assets/products/beverage-placeholder.svg" alt="Sin foto publicable: Andes Origen Andes Origen Roja"></figure>
+        <div class="shot-copy">
+          <span class="coverage pending">Pendiente de su propia foto</span>
+          <strong>Andes Origen · Andes Origen Roja Roja</strong>
+          <small>Unidad · 473 ml</small>
+          <b>$ 0</b>
+          <p class="motivo">Sin fuente auditada para este SKU: no se publica una imagen parecida. Lane: foto propia del comercio o aprobación por activo.</p>
+        </div>
+      </li>
+
+      <li class="shot-card sin-foto">
+        <figure><img src="../../../../assets/products/beverage-placeholder.svg" alt="Sin foto publicable: 1882 Fernet 1882"></figure>
+        <div class="shot-copy">
+          <span class="coverage pending">Pendiente de su propia foto</span>
+          <strong>1882 · Fernet 1882</strong>
+          <small>Unidad · 750 ml</small>
+          <b>$ 0</b>
+          <p class="motivo">Sin fuente auditada para este SKU: no se publica una imagen parecida. Lane: foto propia del comercio o aprobación por activo.</p>
+        </div>
+      </li>
+
+      <li class="shot-card sin-foto">
+        <figure><img src="../../../../assets/products/beverage-placeholder.svg" alt="Sin foto publicable: Gancia Gancia Americano"></figure>
+        <div class="shot-copy">
+          <span class="coverage pending">Pendiente de su propia foto</span>
+          <strong>Gancia · Gancia Americano Americano</strong>
+          <small>Unidad · 450 ml</small>
+          <b>$ 0</b>
+          <p class="motivo">Sin fuente auditada para este SKU: no se publica una imagen parecida. Lane: foto propia del comercio o aprobación por activo.</p>
+        </div>
+      </li>
+
+      <li class="shot-card sin-foto">
+        <figure><img src="../../../../assets/products/beverage-placeholder.svg" alt="Sin foto publicable: Cafayate Cafayate Torrontés"></figure>
+        <div class="shot-copy">
+          <span class="coverage pending">Pendiente de su propia foto</span>
+          <strong>Cafayate · Cafayate Torrontés Torrontés</strong>
+          <small>Unidad · 750 ml</small>
+          <b>$ 0</b>
+          <p class="motivo">Sin fuente auditada para este SKU: no se publica una imagen parecida. Lane: foto propia del comercio o aprobación por activo.</p>
+        </div>
+      </li>
+
+      <li class="shot-card sin-foto">
+        <figure><img src="../../../../assets/products/beverage-placeholder.svg" alt="Sin foto publicable: Toro Viejo Toro Viejo Clásico"></figure>
+        <div class="shot-copy">
+          <span class="coverage pending">Pendiente de su propia foto</span>
+          <strong>Toro Viejo · Toro Viejo Clásico Tinto</strong>
+          <small>Unidad · 750 ml</small>
+          <b>$ 0</b>
+          <p class="motivo">Sin fuente auditada para este SKU: no se publica una imagen parecida. Lane: foto propia del comercio o aprobación por activo.</p>
+        </div>
+      </li>
+
+      <li class="shot-card sin-foto">
+        <figure><img src="../../../../assets/products/beverage-placeholder.svg" alt="Sin foto publicable: Toro Toro"></figure>
+        <div class="shot-copy">
+          <span class="coverage pending">Pendiente de su propia foto</span>
+          <strong>Toro · Toro Tinto</strong>
+          <small>Unidad · 1000 ml</small>
+          <b>$ 0</b>
+          <p class="motivo">Sin fuente auditada para este SKU: no se publica una imagen parecida. Lane: foto propia del comercio o aprobación por activo.</p>
+        </div>
+      </li>
+
+      <li class="shot-card sin-foto">
+        <figure><img src="../../../../assets/products/beverage-placeholder.svg" alt="Sin foto publicable: Skyy Skyy Vodka"></figure>
+        <div class="shot-copy">
+          <span class="coverage pending">Pendiente de su propia foto</span>
+          <strong>Skyy · Skyy Vodka</strong>
+          <small>Unidad · 700 ml</small>
+          <b>$ 0</b>
+          <p class="motivo">Sin fuente auditada para este SKU: no se publica una imagen parecida. Lane: foto propia del comercio o aprobación por activo.</p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+</main>
+<footer>
+  <p>Artefacto local generado por <code>artifacts/catalog-pricing-images-20261024/tools/generar-comparacion-antes-despues.mjs</code> con datos de <code>js/vitrina-neuquen-20261024.js</code> y la autoridad de precios <code>catalog/gondola-neuquen.mjs</code>. Evidencia: <code>artifacts/…/vitrina-imagenes-verificadas.json</code>, <code>docs/catalog/image-manifest.json</code>, <code>docs/catalog/gondola-publica-imagenes.json</code>.</p>
+  <p>La propuesta de precios (32 vigentes a mantener, 14 con conflicto de margen, 5+1 pendientes) vive en <code>artifacts/…/propuesta-precios.{csv,json}</code> y <code>qa/ficha/ficha-propuesta.html</code> esperando la decisión de Walter; en la vitrina no se tocó un precio.</p>
+</footer>
+</body>
+</html>

@@ -192,7 +192,7 @@ function redSana(transformar = null) {
   };
 }
 
-const ESTILOS = './styles.css?v=81';
+const ESTILOS = './styles.css?v=82';
 
 test('el controlador confirma su release y estado real sin cambiar caché ni red', () => {
   for (const state of ['activating', 'activated']) {

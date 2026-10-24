@@ -1,0 +1,11 @@
+import { chromium } from '@playwright/test';
+const [w, h] = (process.env.VP || '1280x800').split('x').map(Number);
+const b = await chromium.launch();
+const p = await (await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1, serviceWorkers: 'block' })).newPage();
+await p.goto(`http://127.0.0.1:8231/?reset=1&demo=1${process.env.VITRINA === '0' ? '' : '&vitrina=neuquen20261024'}`);
+await p.waitForURL(u => !u.searchParams.has('reset'));
+await p.waitForSelector('[data-view="home"]'); await p.waitForTimeout(1200);
+const el = p.locator(process.env.SEL).nth(Number(process.env.NTH || 0));
+await el.scrollIntoViewIfNeeded(); await p.waitForTimeout(1500);
+await el.screenshot({ path: process.env.OUT });
+await b.close();

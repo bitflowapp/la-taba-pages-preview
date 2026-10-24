@@ -1,0 +1,23 @@
+
+Running 17 tests using 1 worker, shard 4 of 8
+
+  ✓   1 [mobile-webkit] › tests\e2e\checkout-perfil-guardado.spec.mjs:285:3 › QA-401 · el perfil que se guarda en el checkout es el que viaja en el pedido › «Marco»: guardar y confirmar crea el pedido con ese nombre (3.8s)
+  ✓   2 [mobile-webkit] › tests\e2e\checkout-perfil-guardado.spec.mjs:300:3 › QA-401 · el perfil que se guarda en el checkout es el que viaja en el pedido › «Ma»: dos caracteres alcanzan (4.2s)
+  ✓   3 [mobile-webkit] › tests\e2e\checkout-perfil-guardado.spec.mjs:311:3 › QA-401 · el perfil que se guarda en el checkout es el que viaja en el pedido › «M»: no se guarda, se dice junto al campo y no sale ningún pedido (5.3s)
+  ✓   4 [mobile-webkit] › tests\e2e\checkout-perfil-guardado.spec.mjs:330:3 › QA-401 · el perfil que se guarda en el checkout es el que viaja en el pedido › «  Marco  »: se normaliza como en la base y el pedido viaja como «Marco» (4.0s)
+  ✓   5 [mobile-webkit] › tests\e2e\checkout-perfil-guardado.spec.mjs:342:3 › QA-401 · el perfil que se guarda en el checkout es el que viaja en el pedido › guardar, recargar y confirmar: el perfil y el carrito sobreviven (5.5s)
+  ✓   6 [mobile-webkit] › tests\e2e\checkout-perfil-guardado.spec.mjs:362:3 › QA-401 · el perfil que se guarda en el checkout es el que viaja en el pedido › doble toque en «Confirmar pedido»: un solo pedido (7.6s)
+  ✓   7 [mobile-webkit] › tests\e2e\checkout-perfil-guardado.spec.mjs:387:3 › QA-401 · el perfil que se guarda en el checkout es el que viaja en el pedido › delivery: el nombre guardado desde el editor de direcciones viaja en el pedido (5.0s)
+  ✓   8 [mobile-webkit] › tests\e2e\checkout-perfil-guardado.spec.mjs:420:3 › QA-401 · teléfono 390×844 › guardar en línea y confirmar crea el pedido, sin desbordar (5.2s)
+  ✓   9 [mobile-webkit] › tests\e2e\cuenta-contrasena-legible.spec.mjs:37:1 › la contraseña nueva se lee, se cuenta, se puede mostrar y sobrevive al error (1.2s)
+  ✓  10 [mobile-webkit] › tests\e2e\delivery-location-confirmation.spec.mjs:33:3 › Perfil · confirmación del punto de entrega › con permiso concedido: el GPS propone, la persona confirma y recién ahí se guarda (2.9s)
+  ✓  11 [mobile-webkit] › tests\e2e\delivery-location-confirmation.spec.mjs:85:3 › Perfil · confirmación del punto de entrega › con permiso rechazado: el pin en el mapa alcanza, sin compartir GPS (3.0s)
+  ✓  12 [mobile-webkit] › tests\e2e\delivery-location-confirmation.spec.mjs:123:3 › Perfil · confirmación del punto de entrega › si MapLibre no inicia, explica el fallback y no confirma el punto del local por accidente (2.3s)
+  ✓  13 [mobile-webkit] › tests\e2e\delivery-location-confirmation.spec.mjs:151:3 › Perfil · confirmación del punto de entrega › confirmar el pin ANTES de terminar de escribir la dirección igual guarda (4.1s)
+  ✓  14 [mobile-webkit] › tests\e2e\delivery-location-confirmation.spec.mjs:208:3 › Perfil · confirmación del punto de entrega › cambiar la calle invalida la confirmación hasta volver a confirmar el pin (3.0s)
+  ✓  15 [mobile-webkit] › tests\e2e\delivery-location-confirmation.spec.mjs:244:3 › Checkout · una dirección sin punto no sostiene un delivery › sin ninguna dirección confirmada el checkout bloquea y manda a Perfil (6.2s)
+  ✓  16 [mobile-webkit] › tests\e2e\delivery-location-confirmation.spec.mjs:262:3 › Checkout · una dirección sin punto no sostiene un delivery › con una dirección confirmada el checkout la declara y la deja elegir (6.2s)
+  ✓  17 [mobile-webkit] › tests\e2e\delivery-location-confirmation.spec.mjs:277:1 › el punto confirmado llega al pedido, al Panel y al Rider, y Maps abre por coordenadas (9.5s)
+
+  17 passed (1.4m)
+E2E estable: ninguna prueba necesitó reintento.

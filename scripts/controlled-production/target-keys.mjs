@@ -3,6 +3,7 @@
 // publishable key must open that project's Auth settings and the secret key
 // must open that project's Auth admin API. Values are never printed.
 import { leerSecreto } from '../e2e-production-sale/secretos-windows.mjs';
+import { isRetiredOrForeignRef, productionTarget } from '../lib/environments.mjs';
 
 export const TARGETS = Object.freeze({
   staging: Object.freeze({
@@ -14,6 +15,14 @@ export const TARGETS = Object.freeze({
     ref: null, // bound at runtime to the stored credential's user (the new ref)
     secretName: 'CONTROLLED PROD SUPABASE SECRET KEY',
     publishableName: 'CONTROLLED PROD SUPABASE PUBLISHABLE KEY',
+  }),
+  // Production of deploy/environments.json: the ref is never taken from a credential, only from the registry
+  // (PRODUCTION_NOT_PROVISIONED while it has no project). Staging and controlled production are retired projects.
+  production: Object.freeze({
+    ref: null,
+    fromRegistry: true,
+    secretName: 'PRODUCTION SUPABASE SECRET KEY',
+    publishableName: 'PRODUCTION SUPABASE PUBLISHABLE KEY',
   }),
 });
 
@@ -34,13 +43,16 @@ function publishableFromEnv(env) {
   return { usuario: env.TABA_QA_PROJECT_REF, secreto: env.TABA_QA_PUBLISHABLE_KEY };
 }
 
-export async function loadTargetKeys(target, { requireSecret = true, read = leerSecreto, env = process.env } = {}) {
+export async function loadTargetKeys(target, { requireSecret = true, read = leerSecreto, env = process.env, registry } = {}) {
   const spec = TARGETS[target];
   if (!spec) throw Error(`UNKNOWN_TARGET:${target}`);
-  const publishable = publishableFromEnv(env) || read(spec.publishableName);
-  const ref = spec.ref || publishable?.usuario;
+  const publishable = spec.fromRegistry ? read(spec.publishableName) : (publishableFromEnv(env) || read(spec.publishableName));
+  const ref = spec.fromRegistry
+    ? productionTarget({ ...(registry ? { registry } : {}), allowProvisioned: true }).ref
+    : (spec.ref || publishable?.usuario);
   if (!/^[a-z0-9]{20}$/.test(ref || '')) throw Error('TARGET_REF_NOT_BOUND');
   if (target === 'controlled-production' && NON_CP_REFS.has(ref)) throw Error('CP_REF_IS_NOT_ISOLATED');
+  if (isRetiredOrForeignRef(ref, registry)) throw Error(`TARGET_RETIRED:${target}`);
   if (publishable?.usuario !== ref || !publishable.secreto?.startsWith('sb_publishable_')) {
     throw Error('PUBLISHABLE_KEY_NOT_BOUND');
   }

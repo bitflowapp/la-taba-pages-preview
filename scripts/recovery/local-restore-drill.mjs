@@ -16,8 +16,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash, randomBytes } from 'node:crypto';
 import { BIN, HOST, PORT, ROOT, psqlRaw } from '../local-db/lib.mjs';
-import { nativeCommand } from './postgres-backup.mjs';
-import { RESTORE_SCHEMAS, executeDdlBatch, readArchiveWithIdentity, restoreApplicationAcl } from './restore-postgres-application.mjs';
+import { backupKey, decryptBackup, nativeCommand } from './postgres-backup.mjs';
+import { RESTORE_SCHEMAS, executeDdlBatch, restoreApplicationAcl } from './restore-postgres-application.mjs';
 import { fingerprint } from './restore-fingerprints.mjs';
 
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -31,7 +31,24 @@ export function localPrelude(stubs) {
   return kept;
 }
 
-export async function localRestoreDrill({ target, manifestFile, out, expectCounts = null }) {
+/** El archivo cifrado, con sus hashes y su proyecto comprobados. La clave la pone quien llama (QA o producción). */
+export function readEncryptedArchive(manifestFile, projectRef, key) {
+  const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
+  const cipher = fs.readFileSync(path.join(path.dirname(manifestFile), 'database.pgdump.aesgcm'));
+  if (manifest.projectRef !== projectRef || sha256(cipher) !== manifest.encryptedSha256) throw Error('Backup receipt mismatch');
+  try {
+    const { plaintext, metadata } = decryptBackup(cipher, key, projectRef);
+    if (sha256(plaintext) !== manifest.plaintextSha256 || !Number.isFinite(Date.parse(metadata.capturedAt)) || plaintext.subarray(0, 5).toString() !== 'PGDMP') {
+      plaintext.fill(0);
+      throw Error('Archive hash, capture time or format mismatch');
+    }
+    return { plaintext, sourceArchive: { encryptedSha256: sha256(cipher), plaintextSha256: sha256(plaintext), capturedAt: metadata.capturedAt } };
+  } finally {
+    key.fill(0);
+  }
+}
+
+export async function localRestoreDrill({ target, manifestFile, out, expectCounts = null, key = null }) {
   if (!BIN) throw Error('Set TABA_PG_BIN to the folder that contains psql/pg_restore');
   if (fs.existsSync(out)) throw Error('New evidence directory required');
   if (process.platform === 'win32' && !/^D:[\\/]/i.test(path.resolve(out))) throw Error('Use D: for drill evidence');
@@ -46,7 +63,7 @@ export async function localRestoreDrill({ target, manifestFile, out, expectCount
   const lap = name => { const now = Date.now(); timings[name] = seconds(now - mark); mark = now; };
 
   const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
-  const { plaintext: archive, sourceArchive } = readArchiveWithIdentity(target, manifestFile);
+  const { plaintext: archive, sourceArchive } = readEncryptedArchive(manifestFile, target.projectRef, key || backupKey(target));
   lap('decryptAndVerifyHashes');
   const receipt = { drillVersion: 1, purpose: 'local_restore_drill', projectRef: target.projectRef, database, sourceArchive,
     managedPlatformRestored: false, productionTouched: false, hostedProjectTouched: false };
@@ -107,9 +124,19 @@ export async function localRestoreDrill({ target, manifestFile, out, expectCount
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.meta.filename)) {
   const value = name => (process.argv.includes(name) ? process.argv[process.argv.indexOf(name) + 1] : undefined);
   if (!value('--manifest') || !value('--out')) throw Error('--manifest and --out are required');
-  const target = JSON.parse(fs.readFileSync(value('--target') || path.join(ROOT, 'deploy/recovery-free-hosted.json'), 'utf8'));
+  // --environment production: el respaldo de scripts/production/backup.mjs, con la clave de producción.
+  let target; let key = null;
+  if (value('--environment') === 'production') {
+    const { productionTargetOrExit } = await import('../lib/environments.mjs');
+    const { productionBackupKey } = await import('../production/backup.mjs');
+    const production = productionTargetOrExit({ allowProvisioned: true });
+    target = { projectRef: production.ref };
+    key = productionBackupKey(production.ref);
+  } else {
+    target = JSON.parse(fs.readFileSync(value('--target') || path.join(ROOT, 'deploy/recovery-free-hosted.json'), 'utf8'));
+  }
   const result = await localRestoreDrill({ target, manifestFile: path.resolve(value('--manifest')), out: path.resolve(value('--out')),
-    expectCounts: value('--expect-counts') ? JSON.parse(value('--expect-counts')) : null });
+    expectCounts: value('--expect-counts') ? JSON.parse(value('--expect-counts')) : null, key });
   console.log(JSON.stringify({ database: result.database, countsMatchManifest: result.countsMatchManifest, mismatches: result.mismatches,
     functional: result.functional, timingsSeconds: result.timingsSeconds, dataLayerRecoverySeconds: result.dataLayerRecoverySeconds }));
   if (!result.countsMatchManifest) process.exitCode = 1;

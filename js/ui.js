@@ -1728,6 +1728,15 @@ export function showStoriesModal(index = 0, restoreTrigger = null) {
       renderStoryEntry();
       if (target?.isConnected && typeof target.focus === 'function') target.focus();
     });
+    // Flechas del teclado: mismo recorrido que Anterior/Siguiente.
+    modal.addEventListener('keydown', (event) => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      const delta = event.key === 'ArrowLeft' ? -1 : 1;
+      const next = storiesIndex + delta;
+      if (next < 0 || next >= getHomeStories().length) return;
+      event.preventDefault();
+      showStoriesModal(next);
+    });
     storiesCloseBound = true;
   }
 
@@ -1737,6 +1746,12 @@ export function showStoriesModal(index = 0, restoreTrigger = null) {
       ? active
       : null;
   }
+
+  // Al pasar de historia el contenido se reescribe; si el foco estaba adentro
+  // vuelve al mismo control (o al cierre) en vez de caerse al documento.
+  const focusedControl = modal.open && modal.contains(document.activeElement)
+    ? ['[data-story-next]', '[data-story-prev]'].find((selector) => document.activeElement.matches(selector)) || '[data-close-stories]'
+    : null;
 
   storiesIndex = Math.min(Math.max(0, Number(index) || 0), stories.length - 1);
   const story = stories[storiesIndex];
@@ -1769,8 +1784,46 @@ export function showStoriesModal(index = 0, restoreTrigger = null) {
       </div>
     </div>`;
 
+  // Mientras la pieza baja, el marco muestra un brillo de carga en vez de un
+  // hueco negro; al llegar (o al fallar) se retira. Una imagen ya cacheada
+  // llega `complete` y no parpadea.
+  const mediaBox = $('.stories-media', content);
+  const mediaNode = mediaBox?.querySelector('img, video');
+  if (mediaBox && mediaNode) {
+    const ready = () => { mediaBox.classList.remove('is-loading'); mediaBox.classList.add('is-ready'); };
+    const loaded = mediaNode.tagName === 'IMG' ? mediaNode.complete && mediaNode.naturalWidth > 0 : mediaNode.readyState >= 2;
+    if (loaded) ready();
+    else {
+      mediaBox.classList.add('is-loading');
+      mediaNode.addEventListener(mediaNode.tagName === 'IMG' ? 'load' : 'loadeddata', ready, { once: true });
+      mediaNode.addEventListener('error', ready, { once: true });
+    }
+  }
+
   if (typeof modal.showModal === 'function' && !modal.open) modal.showModal();
+  if (focusedControl) {
+    const control = $(focusedControl, content);
+    (control && !control.disabled ? control : $('[data-close-stories]', content))?.focus();
+  }
   return true;
+}
+
+// Tocar la pieza navega como en cualquier visor de historias: el tercio
+// izquierdo vuelve, el resto avanza. Los botones Anterior/Siguiente siguen
+// siendo el camino accesible; esto es un atajo para el pulgar.
+export function storiesTapDirection(event, mediaBox) {
+  if (!mediaBox || event.target?.closest?.('video')) return 0;
+  const box = mediaBox.getBoundingClientRect();
+  if (!box.width) return 0;
+  return event.clientX - box.left < box.width / 3 ? -1 : 1;
+}
+
+export function storiesCount() {
+  return getHomeStories().length;
+}
+
+export function currentStoryIndex() {
+  return storiesIndex;
 }
 
 export function stepStoriesModal(delta) {

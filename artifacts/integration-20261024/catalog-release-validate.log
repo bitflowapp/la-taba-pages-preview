@@ -1,0 +1,11 @@
+
+> catalog:release:validate
+> node scripts/validate-release-catalog.mjs
+
+node.exe : ERROR Falta el cat+ílogo real. Indic+í TABA_CATALOG_FILE o pas+í su ruta como argumento.
+En línea: 1 Carácter: 1
++ & "node node.exe" "node node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (ERROR Falta el ...como argumento.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

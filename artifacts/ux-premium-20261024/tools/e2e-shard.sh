@@ -8,7 +8,7 @@ cd "$(dirname "$0")/../../.."
 P="$1"; K="$2"; N="$3"
 OUT="artifacts/ux-premium-20261024/e2e"
 LOG="$OUT/$P-$K-de-$N.log"
-export TMP='D:\work\tmp-taba-ux' TEMP='D:\work\tmp-taba-ux' TMPDIR='D:\work\tmp-taba-ux'
+# El temporal lo pone quien llama (TMP/TEMP); en esta PC conviene uno en un disco con espacio.
 export TABA_E2E_HTTP_PORT="${TABA_E2E_HTTP_PORT:-8095}" TABA_E2E_RELAY_PORT="${TABA_E2E_RELAY_PORT:-18795}"
 LIBRE=$(powershell -NoProfile -c "[int]((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory/1024)" | tr -d '\r')
 npx playwright test --project="$P" --shard="$K/$N" > "$LOG" 2>&1

@@ -1,0 +1,36 @@
+{
+ "httpStatus": 200,
+ "ok": true,
+ "verification": {
+  "checked_at": "2026-10-24T19:22:12.320Z",
+  "credentials_usable": true,
+  "seller_identity_verified": true,
+  "permissions_verified": true,
+  "backend_operational": true,
+  "binding_matches": true,
+  "integrator_environment_matches": true,
+  "seller_is_integrator": false,
+  "online_payments_enabled": false,
+  "blocking_reason": "payments_not_enabled"
+ },
+ "connection": {
+  "status": "connected",
+  "seller_id": "3594962708",
+  "connected_at": "2026-10-23T19:41:29.535644+00:00",
+  "environment": "test",
+  "account_label": "TESTUSER4389753594406920894 · t•••@testuser.com",
+  "deauthorized_at": null,
+  "verification": {
+   "checked_at": "2026-10-24T19:22:12.320Z",
+   "credentials_usable": true,
+   "seller_identity_verified": true,
+   "permissions_verified": true,
+   "backend_operational": true,
+   "binding_matches": true,
+   "integrator_environment_matches": true,
+   "seller_is_integrator": false,
+   "online_payments_enabled": false,
+   "blocking_reason": "payments_not_enabled"
+  }
+ }
+}

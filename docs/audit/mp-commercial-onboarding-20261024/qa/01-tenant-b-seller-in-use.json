@@ -1,0 +1,59 @@
+{
+  "at": "2026-10-24T19:23:04.931Z",
+  "projectRef": "ixewllzzuzpqrkxzmfzx",
+  "sellerId": "3594962708",
+  "freshContext": true,
+  "steps": [
+    {
+      "at": "2026-10-24T19:23:08.560Z",
+      "name": "fresh_qa_oauth_url_created",
+      "pkce": "S256"
+    },
+    {
+      "at": "2026-10-24T19:23:12.136Z",
+      "name": "cookie_notice_accepted"
+    },
+    {
+      "at": "2026-10-24T19:23:12.173Z",
+      "name": "test_seller_identifier_entered"
+    },
+    {
+      "at": "2026-10-24T19:23:12.267Z",
+      "name": "identifier_submitted"
+    },
+    {
+      "at": "2026-10-24T19:23:15.241Z",
+      "name": "selecting_password_method"
+    },
+    {
+      "at": "2026-10-24T19:23:15.257Z",
+      "name": "password_method_selected"
+    },
+    {
+      "at": "2026-10-24T19:23:17.229Z",
+      "name": "test_seller_password_submitted"
+    },
+    {
+      "at": "2026-10-24T19:23:18.857Z",
+      "name": "navigation_in_progress"
+    },
+    {
+      "at": "2026-10-24T19:23:21.568Z",
+      "name": "callback_response",
+      "httpStatus": 303,
+      "result": "seller_in_use"
+    },
+    {
+      "at": "2026-10-24T19:23:22.085Z",
+      "name": "navigation_in_progress"
+    },
+    {
+      "at": "2026-10-24T19:23:22.794Z",
+      "name": "returned_to_qa",
+      "result": "seller_in_use"
+    }
+  ],
+  "result": "seller_in_use",
+  "callbackResult": "seller_in_use",
+  "finishedAt": "2026-10-24T19:23:23.664Z"
+}

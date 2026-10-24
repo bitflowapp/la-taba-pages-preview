@@ -1,0 +1,41 @@
+{
+ "results": [
+  {
+   "case": "unsigned",
+   "httpStatus": 401,
+   "code": "INVALID_WEBHOOK",
+   "refused": true
+  },
+  {
+   "case": "garbage signature",
+   "httpStatus": 401,
+   "code": "INVALID_WEBHOOK",
+   "refused": true
+  },
+  {
+   "case": "well-formed signature with a wrong key",
+   "httpStatus": 401,
+   "code": "INVALID_WEBHOOK",
+   "refused": true
+  },
+  {
+   "case": "stale timestamp",
+   "httpStatus": 401,
+   "code": "INVALID_WEBHOOK",
+   "refused": true
+  },
+  {
+   "case": "query/body id mismatch",
+   "httpStatus": 401,
+   "code": "INVALID_WEBHOOK",
+   "refused": true
+  },
+  {
+   "case": "missing request id",
+   "httpStatus": 401,
+   "code": "INVALID_WEBHOOK",
+   "refused": true
+  }
+ ],
+ "allRefused": true
+}

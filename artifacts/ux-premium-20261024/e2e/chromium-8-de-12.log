@@ -1,0 +1,29 @@
+
+Running 23 tests using 1 worker, shard 8 of 12
+
+  ✓   1 [chromium] › tests\e2e\panel-escalabilidad.spec.mjs:66:3 › el Panel arranca con los módulos caídos › recién publicada la versión y sin red, el Panel entra igual (935ms)
+  ✓   2 [chromium] › tests\e2e\panel-escalabilidad.spec.mjs:165:3 › el Panel arranca con los módulos caídos › con sesión y sin red, la bandeja se dibuja desde la caché (1.2s)
+  ✓   3 [chromium] › tests\e2e\panel-escalabilidad.spec.mjs:192:3 › la bandeja no se lleva puesto el trabajo del operador › un pedido que cambia conserva scroll, borrador y foco, y toca una sola tarjeta (5.2s)
+  ✓   4 [chromium] › tests\e2e\panel-order-recovery.spec.mjs:125:1 › el Panel ve los cobros y ofrece rearmar sólo donde corresponde, sin desbordar (5.5s)
+  ✓   5 [chromium] › tests\e2e\panel-order-recovery.spec.mjs:154:1 › rearmar va al rearmado, y la segunda vez no anuncia un pedido nuevo (1.3s)
+  ✓   6 [chromium] › tests\e2e\panel-order-recovery.spec.mjs:177:1 › sin stock el operador se entera de qué falta y cuánto, y no desborda (5.0s)
+  ✓   7 [chromium] › tests\e2e\panel-order-recovery.spec.mjs:204:1 › el equipo no ve ni ejecuta el rearmado (1.1s)
+  ✓   8 [chromium] › tests\e2e\panel-responsive.spec.mjs:118:3 › Panel en 320x568: sin desborde, con navegación abajo y acción a mano (999ms)
+  ✓   9 [chromium] › tests\e2e\panel-responsive.spec.mjs:118:3 › Panel en 360x740: sin desborde, con navegación abajo y acción a mano (1.1s)
+  ✓  10 [chromium] › tests\e2e\panel-responsive.spec.mjs:118:3 › Panel en 390x844: sin desborde, con navegación abajo y acción a mano (1.2s)
+  ✓  11 [chromium] › tests\e2e\panel-responsive.spec.mjs:118:3 › Panel en 412x915: sin desborde, con navegación abajo y acción a mano (1.3s)
+  ✓  12 [chromium] › tests\e2e\panel-responsive.spec.mjs:118:3 › Panel en 430x932: sin desborde, con navegación abajo y acción a mano (1.1s)
+  ✓  13 [chromium] › tests\e2e\panel-responsive.spec.mjs:177:1 › la hoja de «Más» abre, cabe en la pantalla, navega y se cierra (1.9s)
+  ✓  14 [chromium] › tests\e2e\panel-responsive.spec.mjs:211:1 › la hoja de «Más» sobrevive a que entre un pedido (1.7s)
+  ✓  15 [chromium] › tests\e2e\panel-responsive.spec.mjs:232:3 › Panel en 1366x768: sigue siendo escritorio, no un teléfono grande (988ms)
+  ✓  16 [chromium] › tests\e2e\panel-responsive.spec.mjs:232:3 › Panel en 1440x900: sigue siendo escritorio, no un teléfono grande (969ms)
+  ✓  17 [chromium] › tests\e2e\panel-responsive.spec.mjs:258:1 › el ingreso al Panel cabe y se puede completar en 360px (876ms)
+  ✓  18 [chromium] › tests\e2e\panel-responsive.spec.mjs:294:1 › el foco se ve y recorre la navegación con teclado (1.3s)
+  ✓  19 [chromium] › tests\e2e\panel-responsive.spec.mjs:370:3 › con el texto al 150% el Panel sigue sin desbordar (1.1s)
+  ✓  20 [chromium] › tests\e2e\panel-responsive.spec.mjs:370:3 › con el texto al 200% el Panel sigue sin desbordar (1.2s)
+  ✓  21 [chromium] › tests\e2e\panel-toast.spec.mjs:30:3 › el aviso del Panel a 390px se lee y no tapa la barra de abajo (1.1s)
+  ✓  22 [chromium] › tests\e2e\panel-toast.spec.mjs:30:3 › el aviso del Panel a 320px se lee y no tapa la barra de abajo (1.2s)
+  ✓  23 [chromium] › tests\e2e\panel-toast.spec.mjs:30:3 › el aviso del Panel a 1366px se lee y no tapa la barra de abajo (1.4s)
+
+  23 passed (44.1s)
+E2E estable: ninguna prueba necesitó reintento.

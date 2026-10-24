@@ -11,6 +11,8 @@ LOG="$OUT/$P-$K-de-$N.log"
 # El temporal se puede fijar por entorno; si no, uno del sistema. Nunca una
 # ruta de una máquina concreta: el artefacto se publica con la rama.
 export TMP="${TABA_UX_TMP:-$(mktemp -d)}" TEMP="$TMP" TMPDIR="$TMP"
+# Puertos propios para no chocar con otra sesión que corre e2e en los de fábrica.
+export TABA_E2E_HTTP_PORT="${TABA_E2E_HTTP_PORT:-8095}" TABA_E2E_RELAY_PORT="${TABA_E2E_RELAY_PORT:-18795}"
 LIBRE=$(powershell -NoProfile -c "[int]((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory/1024)" | tr -d '\r')
 npx playwright test --project="$P" --shard="$K/$N" > "$LOG" 2>&1
 CODE=$?

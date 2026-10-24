@@ -16,13 +16,14 @@ const BASE = path.resolve(AQUI, '..');
 const OUT = path.join(BASE, 'comparacion');
 
 const PARES = [
+  ['vitrina-m-banner-andes', 'Banner Andes Origen · teléfono 390', 'Antes: la pieza curada era una tarjeta de receta del sitio de la marca, sin el producto. Después: foto de producto de Andes Origen Rubia con licencia comercial (TABA-AUT-2026-08-001), entera en un recuadro.'],
   ['vitrina-m-gondola-top', 'Catálogo · teléfono 390', 'Tarjetas de 384→~300px: precio y botón entran en la primera pantalla; orden al lado del título; pastilla «Recomendado» fuera de la foto.'],
   ['demo-m-historia', 'Historias · teléfono 390', 'Pantalla completa 9:16 con la pieza entera; título, acción y navegación sobre degradado; tocar izquierda/derecha navega.'],
   ['demo-d-historia', 'Historias · escritorio 1280', 'Marco 9:16 centrado en lugar de tarjeta con la imagen recortada a 4:5.'],
   ['vitrina-d-gondola-top', 'Catálogo · escritorio 1280', 'Mismo presupuesto de columnas (tarjeta ≥250px), tarjetas más compactas: foto cuadrada a ras, nombre/presentación juntos, pastilla fuera de la foto; entran más productos por pantalla.'],
   ['vitrina-m-carrito', 'Carrito · teléfono 390', 'Líneas en dos renglones (foto · nombre/cantidad · importe), mínimo alcanzado sin barra llena.'],
-  ['vitrina-m-checkout', 'Entrega · teléfono 390', 'Delivery / Retiro como control segmentado: la opción elegida se ve elegida.'],
-  ['vitrina-d-checkout', 'Carrito y entrega · escritorio 1280', 'El resumen de productos acompaña el scroll del formulario.'],
+  ['vitrina-m-checkout', 'Entrega · teléfono 390', 'Total y «Confirmar pedido» en una barra fija sobre la navegación mientras se elige la dirección; Delivery / Retiro como control segmentado.'],
+  ['vitrina-d-checkout', 'Carrito y entrega · escritorio 1280', 'La lista de productos acompaña el scroll y la barra de total + «Confirmar pedido» queda siempre a la vista.'],
   ['vitrina-m-ficha', 'Ficha · teléfono 390', 'Disponibilidad como pastilla alineada al precio; observación en un renglón.'],
   ['vitrina-d-home-full', 'Inicio · escritorio 1280 (página completa)', 'Home a todo el ancho útil, rieles de 5 tarjetas parejas, combo con ancho de tarjeta.'],
   ['vitrina-m-home-full', 'Inicio · teléfono 390 (página completa)', 'Mismo ritmo de tarjetas y chips que el catálogo.'],
@@ -35,14 +36,16 @@ const filas = [];
 for (const [nombre, titulo, nota] of PARES) {
   const lados = {};
   for (const etapa of ['antes', 'despues']) {
-    const origen = path.join(BASE, 'capturas', etapa, `${nombre}.png`);
+    // La «antes» del banner es la pieza misma (WebP), no una captura.
+    const png = path.join(BASE, 'capturas', etapa, `${nombre}.png`);
+    const origen = existsSync(png) ? png : path.join(BASE, 'capturas', etapa, `${nombre}.webp`);
     if (!existsSync(origen)) throw new Error(`falta ${origen}`);
     const destino = path.join(OUT, etapa, `${nombre}.webp`);
     const full = nombre.endsWith('-full');
     const movil = nombre.includes('-m-');
     // Ancho de lectura: móvil a 390 css, escritorio a 960; las de página
     // completa más chicas porque son muy altas.
-    const ancho = movil ? (full ? 360 : 520) : (full ? 900 : 1280);
+    const ancho = nombre.includes('banner') ? 720 : movil ? (full ? 360 : 520) : (full ? 900 : 1280);
     const imagen = sharp(origen).resize({ width: ancho, withoutEnlargement: true });
     await imagen.webp({ quality: full ? 62 : 74, effort: 5 }).toFile(destino);
     const meta = await sharp(destino).metadata();

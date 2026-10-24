@@ -1,12 +1,13 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
 /*
- * Integración 2026-10-24: onboarding comercial de Mercado Pago (#151) +
- * capa UX premium y vitrina Neuquén. Una identidad nueva porque el contenido
- * del precache cambió respecto de ambas ramas de origen: reutilizar v162 o
- * v163 dejaría dos artefactos distintos bajo la misma identidad y rompería el
- * rollback y la certificación.
+ * Integración final 2026-10-24: onboarding comercial de Mercado Pago (#151) +
+ * capa UX premium completa (hasta 46e5ff2f) + vitrina Neuquén. Una identidad
+ * nueva porque el contenido del precache cambió respecto de v162, v163 y v164:
+ * reutilizar cualquiera dejaría dos artefactos distintos bajo la misma
+ * identidad y rompería el rollback y la certificación. v165 no comparte caché
+ * con ninguna publicación anterior.
  */
-const CACHE_NAME = 'la-taba-runtime-v164-unified-commercial';
+const CACHE_NAME = 'la-taba-runtime-v165-unified-ux-final';
 const ASSETS = [
   './',
   './index.html',

@@ -28,10 +28,14 @@ const registrar = (nombre, ok, extra = {}) => {
 /* Sube en pasos para disparar el lazy-load antes de un fullPage. */
 async function scrollFull(page, pausa = 120) {
   const alto = await page.evaluate(() => document.body.scrollHeight);
-  for (let y = 0; y < alto; y += 700) {
+  for (let y = 0; y < alto; y += 500) {
     await page.evaluate((pos) => window.scrollTo(0, pos), y);
-    await page.waitForTimeout(70);
+    await page.waitForTimeout(220);
   }
+  // Fotos diferidas y entradas animadas: sin esto la página completa salía
+  // con tarjetas en blanco que en pantalla sí tienen foto.
+  await page.waitForFunction(() => [...document.images].every((img) => img.complete), null, { timeout: 15_000 }).catch(() => {});
+  await page.evaluate(() => document.querySelectorAll('[data-motion-reveal]').forEach((n) => n.classList.add('is-motion-visible')));
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(pausa);
 }
@@ -66,7 +70,21 @@ async function shot(page, nombre, { fullPage = false } = {}) {
   const archivo = path.join(OUT, `${nombre}.png`);
   try {
     await page.waitForTimeout(150);
-    await page.screenshot({ path: archivo, fullPage });
+    if (fullPage) {
+      // Chromium no pinta las fotos alejadas del viewport en una captura de
+      // página completa alta: salían tarjetas en blanco que en pantalla sí
+      // tienen foto. Con el viewport del alto de la página todo está «a la
+      // vista» y se pinta de verdad.
+      const vista = page.viewportSize();
+      const alto = await page.evaluate(() => document.documentElement.scrollHeight);
+      await page.setViewportSize({ width: vista.width, height: Math.min(alto, 16000) });
+      await page.waitForTimeout(1200);
+      await page.screenshot({ path: archivo });
+      await page.setViewportSize(vista);
+      await page.waitForTimeout(300);
+    } else {
+      await page.screenshot({ path: archivo, fullPage });
+    }
     registrar(nombre, true, { archivo: path.basename(archivo) });
     return true;
   } catch (error) {

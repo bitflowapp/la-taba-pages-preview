@@ -316,18 +316,19 @@ export async function assertIntegratorForConnection(): Promise<void> {
 // preference is created. A confirmed mismatch always blocks. An owner that cannot be read right now blocks in test
 // (a configuration problem to see) but NOT in production: a wrong integrator cannot move money (Mercado Pago refuses
 // the payment, 2034), so a transient provider hiccup must not stop real sales; it is logged and the next request asks again.
-export async function assertPayableIntegrator(): Promise<void> {
+// Returns the verified owner, or null when production could not read it right now.
+export async function assertPayableIntegrator(): Promise<string | null> {
   const config = oauthConfig(); // a missing or inconsistent configuration is never «unreadable»: it fails closed
   getRequiredEnv("MERCADOPAGO_CLIENT_SECRET");
   try {
-    await assertIntegratorEnvironment();
+    return (await assertIntegratorEnvironment()).owner_id;
   } catch (error) {
     if (error instanceof IntegratorEnvironmentError) {
       throw new PublicPaymentError(409, "PAYMENTS_NOT_ENABLED", "Mercado Pago no está disponible para este comercio en este momento.");
     }
     if (config.environment === "production") {
       console.warn(JSON.stringify({ timestamp: new Date().toISOString(), event: "integrator_owner_unreadable", environment: "production" }));
-      return;
+      return null;
     }
     throw new PublicPaymentError(503, "SELLER_VERIFICATION_UNAVAILABLE", "No pudimos verificar Mercado Pago. Intentá nuevamente.");
   }
@@ -551,10 +552,14 @@ export async function beginSellerPaymentAuthority(businessId: string, context: P
   if (!oauthMode()) throw new Error("Seller OAuth mode required");
   const config = oauthConfig();
   requireRealPaymentSmokeAuthorization(environment);
-  await assertPayableIntegrator();
+  const integratorOwner = await assertPayableIntegrator();
   await sellerAccessToken(businessId);
   const snapshot = await paymentAuthoritySnapshot(businessId, environment, context);
   const seller = validatePaymentAuthority(snapshot, businessId, environment, config.clientId, context, false);
+  // A sale of a business linked to La Taba's own production account would be collected by the platform.
+  if (environment === "production" && integratorOwner !== null && seller.seller_id === integratorOwner) {
+    throw new PublicPaymentError(409, "PAYMENTS_NOT_ENABLED", "Mercado Pago no está disponible para este comercio en este momento.");
+  }
   const material = await reveal(seller.protected_tokens!, businessId);
   if (typeof material.access_token !== "string" || !material.access_token.trim()) {
     throw new PublicPaymentError(409, "SELLER_REAUTHORIZATION_REQUIRED", "Necesitamos volver a conectar Mercado Pago.");

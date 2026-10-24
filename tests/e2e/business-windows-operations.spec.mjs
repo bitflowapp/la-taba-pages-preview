@@ -447,8 +447,12 @@ for (const width of [320, 1280]) {
     await expect(panel).toContainText('Bloqueado');
     await expect(panel).toContainText('la plataforma todavía no habilitó el cobro online');
     await expect(panel).not.toContainText('123456');
+    // Al volver se pide UNA verificación real; sin respuesta de verificación no se dice «Listo».
+    await expect.poll(()=>actions.filter(a=>a==='verify').length).toBe(1);
+    await expect(panel).not.toContainText('Listo');
+    await expect(panel).toContainText('para confirmar que la cuenta quedó lista');
     await panel.getByRole('button',{name:'Verificar conexión'}).click();
-    await expect.poll(()=>actions.includes('verify')).toBe(true);
+    await expect.poll(()=>actions.filter(a=>a==='verify').length).toBe(2);
     // Desvincular tiene dos pasos sin diálogos del navegador: primero se ve qué
     // pasa (y qué queda pendiente) y recién «Sí, desvincular» lo pide.
     let dialogs=0;

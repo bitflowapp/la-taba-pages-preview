@@ -295,16 +295,26 @@ const MERCADOPAGO_RETURN_COPY = Object.freeze({
   expired: { tone: 'attention', text: 'El enlace de autorización venció o ya se usó (dura 10 minutos). Tocá «Conectar Mercado Pago» otra vez.' },
   session: { tone: 'attention', text: 'Tu sesión del panel venció mientras autorizabas. Volvé a entrar al panel y repetí la conexión.' },
   account: { tone: 'attention', text: 'La cuenta con la que entraste a Mercado Pago no se puede usar en este entorno (por ejemplo, una cuenta real en el entorno de prueba, o al revés). Entrá con la cuenta correcta y repetí.' },
-  seller_changed: { tone: 'critical', text: 'Esta tienda ya registró cobros con otra cuenta de Mercado Pago. Para cambiar de cuenta hace falta que lo revise soporte, así no se mezclan los cobros.' },
+  seller_changed: { tone: 'critical', text: 'Esta tienda ya quedó vinculada con otra cuenta de Mercado Pago y no se cambió nada. Para cambiar de cuenta hace falta que lo revise soporte, así no se mezclan los cobros.' },
+  integrator_account: { tone: 'critical', text: 'Entraste a Mercado Pago con la cuenta de La Taba, no con la de tu comercio. No se vinculó nada. Cerrá esa sesión en Mercado Pago, entrá con la cuenta del comercio y repetí.' },
+  seller_in_use: { tone: 'critical', text: 'Esa cuenta de Mercado Pago ya recibe los cobros de otro comercio de La Taba. No se vinculó nada. Entrá con la cuenta de este comercio; si creés que es un error, avisá a soporte.' },
   error: { tone: 'critical', text: 'No pudimos completar la vinculación. Volvé a intentar; si se repite, avisá a soporte.' },
 });
 
-function mercadoPagoReturnNotice(returnResult, connected) {
+// Al volver, el panel pide una verificación real a Mercado Pago. «Listo» se dice
+// sólo si esa verificación confirmó la cuenta y no encontró nada que la frene.
+const VERIFIED_BLOCKING_REASONS = new Set([null, 'payments_not_enabled', 'production_execution_not_enabled']);
+
+function mercadoPagoReturnNotice(returnResult, connected, verification) {
   if (!returnResult) return null;
   if (returnResult === 'connected') {
-    return connected
-      ? { tone: 'calm', text: 'Listo: la cuenta de Mercado Pago quedó vinculada. Vincular no activa los cobros: la habilitación final se hace después de una prueba.' }
-      : { tone: 'attention', text: 'Volviste de Mercado Pago, pero la vinculación no figura. Tocá «Conectar Mercado Pago» otra vez.' };
+    if (!connected) return { tone: 'attention', text: 'Volviste de Mercado Pago, pero la vinculación no figura. Tocá «Conectar Mercado Pago» otra vez.' };
+    if (!verification || typeof verification !== 'object') {
+      return { tone: 'attention', text: 'Volviste de Mercado Pago. Tocá «Verificar conexión» para confirmar que la cuenta quedó lista.' };
+    }
+    return verification.seller_identity_verified === true && VERIFIED_BLOCKING_REASONS.has(verification.blocking_reason ?? null)
+      ? { tone: 'calm', text: 'Listo: Mercado Pago confirmó la cuenta y quedó vinculada. Vincular no activa los cobros: la habilitación final se hace después de una prueba.' }
+      : { tone: 'attention', text: 'La cuenta quedó registrada, pero la verificación con Mercado Pago encontró algo para resolver antes de cobrar.' };
   }
   return MERCADOPAGO_RETURN_COPY[returnResult] || null;
 }
@@ -370,7 +380,7 @@ function renderMercadoPagoConnection(connection, busy, elevated, activation = nu
   const account = connected && connection?.account_label
     ? '<p data-mp-account>Vinculada con <strong>' + escapeHtml(String(connection.account_label)) + '</strong>'
       + (connection.connected_at ? ' desde el ' + escapeHtml(formatTimestamp(connection.connected_at)) : '') + '.</p>'
-      + '<p class="form-hint">¿No es la cuenta que querías (la personal en vez de la del comercio, o al revés)? Desvinculá y volvé a conectar con la correcta antes de vender.</p>'
+      + '<p class="form-hint">¿No es la cuenta que querías (la personal en vez de la del comercio, o al revés)? No vendas todavía y avisá a soporte: el cambio de cuenta lo hace soporte, así no se mezclan los cobros.</p>'
     : '';
   const revoked = reauthorize && connection?.deauthorized_at
     ? '<p class="form-hint">El permiso se quitó desde la cuenta de Mercado Pago. Mientras tanto se cobra en efectivo o por transferencia.</p>' : '';
@@ -378,14 +388,15 @@ function renderMercadoPagoConnection(connection, busy, elevated, activation = nu
   const actions = ui.disconnectReview ? '' : connected
     ? button('verify', 'Verificar conexión') + (enabled ? button('pause', 'Pausar cobros online', 'secondary-button') : '') + button('disconnect', 'Desvincular', 'ghost-button')
     : button('connect', reauthorize ? 'Reconectar' : 'Conectar Mercado Pago');
-  const returnNotice = mercadoPagoReturnNotice(ui.returnResult, connected);
+  const returnNotice = mercadoPagoReturnNotice(ui.returnResult, connected, connection?.verification);
   return '<section aria-label="Mercado Pago" class="operation-summary operation-summary--mercadopago tone-' + state.tone + '" aria-busy="' + Boolean(busy) + '" data-mp-seller-state="' + state.id + '"><h3>Mercado Pago</h3><p role="status" aria-live="polite"><strong>' + escapeHtml(state.label) + '</strong></p>'
     + '<p>' + escapeHtml(state.detail) + '</p>'
     + environment + account + revoked
     + renderMercadoPagoNotice(returnNotice) + renderMercadoPagoNotice(ui.notice)
     + (elevated ? renderDisconnectReview(ui.disconnectReview, busy) : '')
     + (elevated && actions ? '<div class="button-row">' + actions + '</div>' : '')
-    + (!connected ? '<p>Vas a continuar en Mercado Pago para autorizar la conexión con tu usuario y tu contraseña. TABA nunca recibe tu contraseña. Vincular la cuenta no activa los cobros: la habilitación final se hace después de una prueba.</p>' : '') + '</section>';
+    + (!connected ? '<p>Vas a continuar en Mercado Pago para autorizar la conexión con tu usuario y tu contraseña. TABA nunca recibe tu contraseña. Vincular la cuenta no activa los cobros: la habilitación final se hace después de una prueba.</p>'
+      + '<p class="form-hint" data-mp-account-advice>Entrá con la cuenta de Mercado Pago del comercio, la que va a recibir el dinero. Si en ese navegador ya hay otra cuenta abierta, cerrala antes. Una vez vinculada, cambiarla lo hace soporte.</p>' : '') + '</section>';
 }
 
 export function renderFiscalSetupSurface({ activation, role, busy, authorizationDraft } = {}) {

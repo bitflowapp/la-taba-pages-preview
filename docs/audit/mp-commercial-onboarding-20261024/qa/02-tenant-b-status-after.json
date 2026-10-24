@@ -1,0 +1,12 @@
+{
+ "httpStatus": 200,
+ "ok": true,
+ "connection": {
+  "status": "disconnected",
+  "seller_id": null,
+  "connected_at": null,
+  "environment": "test",
+  "account_label": null,
+  "deauthorized_at": null
+ }
+}

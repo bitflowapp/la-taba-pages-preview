@@ -15,7 +15,9 @@ import {
 
 // The result tells the panel WHICH message to show; the connection state shown
 // to the owner is always read again from the server.
-type CallbackResult = "connected" | "cancelled" | "expired" | "session" | "account" | "seller_changed" | "error";
+type CallbackResult =
+  | "connected" | "cancelled" | "expired" | "session" | "account" | "seller_changed"
+  | "integrator_account" | "seller_in_use" | "error";
 
 Deno.serve(async (request) => {
   let businessId = "unknown";
@@ -77,7 +79,7 @@ Deno.serve(async (request) => {
     ) throw new Error("Authorization revoked");
     // An integrator of the other environment makes every payment of this link fail at the provider: never link.
     failure = "error";
-    await assertIntegratorEnvironment();
+    const integrator = await assertIntegratorEnvironment();
     failure = "account";
     const tokens = await tokenGrant({
       grant_type: "authorization_code",
@@ -86,6 +88,13 @@ Deno.serve(async (request) => {
       code_verifier: protectedState.verifier,
     });
     const identity = await sellerIdentity(String(tokens.access_token), String(tokens.user_id));
+    // In production the owner of La Taba Delivery is La Taba itself: a business linked to that account would collect
+    // its sales into the platform's account, and a link cannot change seller afterwards. Never saved. (In test the QA
+    // integrator is the test seller's own application, so the same account on both sides is the expected setup.)
+    if (config.environment === "production" && String(tokens.user_id) === integrator.owner_id) {
+      failure = "integrator_account";
+      throw new Error("Integrator account used as seller");
+    }
     failure = "error";
     const saved = await service.rpc("mp_finish_oauth", {
       p_business_id: businessId,
@@ -101,6 +110,8 @@ Deno.serve(async (request) => {
     if (saved.error && String(saved.error.message || "").includes("seller_change_requires_migration")) {
       failure = "seller_changed";
     }
+    // unique (environment, seller_id): this Mercado Pago account already collects for another business.
+    if (saved.error && String(saved.error.code || "") === "23505") failure = "seller_in_use";
     if (saved.error || saved.data !== true) {
       throw new Error("Unable to save authorization");
     }

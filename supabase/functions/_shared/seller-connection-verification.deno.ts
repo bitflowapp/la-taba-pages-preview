@@ -1,11 +1,11 @@
 import { assertEquals, assertRejects } from 'jsr:@std/assert@1.0.19';
 import { protect, resetIntegratorIdentityCache } from './seller-oauth.ts';
-import { integratorProviderResponse } from './integrator-identity-fixture.ts';
+import { INTEGRATOR_FIXTURE_OWNER, integratorProviderResponse } from './integrator-identity-fixture.ts';
 import { randomSecret } from './seller-oauth-crypto.ts';
 import { verifySellerConnection } from './seller-connection-verification.ts';
 
 const business = '96000000-0000-4000-8000-000000000001';
-async function fixture({ enabled = true, execution = true, wrongSeller = false, providerStatus = 200, scopes = 'read write offline_access', backendError = false, integratorTestUser = false, integratorStatus = 200 } = {}) {
+async function fixture({ enabled = true, execution = true, wrongSeller = false, providerStatus = 200, scopes = 'read write offline_access', backendError = false, integratorTestUser = false, integratorStatus = 200, seller = '123' } = {}) {
   resetIntegratorIdentityCache();
   for (const [name, value] of Object.entries({
     SUPABASE_URL: 'https://wwcpogltfgzgkrlilbcd.supabase.co', SUPABASE_SERVICE_ROLE_KEY: 'fixture-server-key',
@@ -18,7 +18,7 @@ async function fixture({ enabled = true, execution = true, wrongSeller = false, 
   })) Deno.env.set(name, value);
   Deno.env.delete('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION');
   if (execution) Deno.env.set('MERCADOPAGO_REAL_PAYMENT_SMOKE_CONFIRMATION', 'I_AUTHORIZE_REAL_MERCADOPAGO_PAYMENT_SMOKE');
-  const row = { business_id: business, status: 'connected', seller_id: '123', application_id: '7677852968049976', scopes,
+  const row = { business_id: business, status: 'connected', seller_id: seller, application_id: '7677852968049976', scopes,
     generation: 'fixture-generation', expires_at: new Date(Date.now() + 3 * 86400000).toISOString(), refresh_owner: null,
     protected_tokens: await protect({ access_token: 'APP_USR-seller-fixture', refresh_token: 'fixture-refresh-token' }, business) };
   const mutations: unknown[] = [];
@@ -32,13 +32,13 @@ async function fixture({ enabled = true, execution = true, wrongSeller = false, 
       assertEquals(url.pathname, '/users/me');
       assertEquals(options?.method || 'GET', 'GET');
       assertEquals(new Headers(options?.headers).get('authorization'), 'Bearer APP_USR-seller-fixture');
-      return Promise.resolve(Response.json({ id: 123, site_id: 'MLA', tags: ['normal'] }, { status: providerStatus }));
+      return Promise.resolve(Response.json({ id: Number(seller), site_id: 'MLA', tags: ['normal'] }, { status: providerStatus }));
     }
     if (url.pathname.endsWith('/mp_seller_connections')) {
       if (options?.method === 'PATCH') mutations.push(JSON.parse(String(options.body)));
       return Promise.resolve(Response.json(row));
     }
-    if (url.pathname.endsWith('/business_payment_settings')) return Promise.resolve(Response.json({ enabled, environment: 'production', collector_id: wrongSeller ? '456' : '123', application_id: row.application_id, production_review_status: 'approved' }));
+    if (url.pathname.endsWith('/business_payment_settings')) return Promise.resolve(Response.json({ enabled, environment: 'production', collector_id: wrongSeller ? '456' : seller, application_id: row.application_id, production_review_status: 'approved' }));
     if (url.pathname.endsWith('/get_mercadopago_checkout_availability')) return Promise.resolve(Response.json(backendError ? { message: 'fixture' } : { available: enabled }, {status: backendError ? 503 : 200}));
     throw Error('Unexpected fixture request');
   };
@@ -86,4 +86,17 @@ for (const options of [{providerStatus:503}, {scopes:'read write'}, {backendErro
   const f = await fixture(options);
   try { await assertRejects(() => verifySellerConnection(business)); assertEquals(f.mutations.length, 0); }
   finally { f.cleanup(); }
+});
+
+// 2026-10-24: a production link to the account that owns La Taba Delivery would collect the business's sales into the
+// platform. The callback refuses it now; verification reports one saved before and never enables it.
+Deno.test('verification reports seller_is_integrator for a production link to the own account of La Taba', async () => {
+  const f = await fixture({ seller: String(INTEGRATOR_FIXTURE_OWNER) });
+  try {
+    const result = await verifySellerConnection(business);
+    assertEquals(result.online_payments_enabled, false);
+    assertEquals(result.seller_is_integrator, true);
+    assertEquals(result.blocking_reason, 'seller_is_integrator');
+    assertEquals(f.mutations.length, 0);
+  } finally { f.cleanup(); }
 });

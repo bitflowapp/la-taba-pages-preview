@@ -1,0 +1,13 @@
+{"at":"2026-10-24T19:20:34.747Z","phase":"migrations","applied":173,"pending":["20261024120000 20261024120000_mp_release_unused_seller_binding.sql"],"apply":true}
+{"at":"2026-10-24T19:20:36.040Z","phase":"migration","version":"20261024120000","sha256":"eebf8e5f48bc86921626fa8601f538dcf3839da8065c1f54ba057b66b67917b9","result":"applied"}
+{"at":"2026-10-24T19:20:37.833Z","phase":"schedulers","paused":["taba-checkout-expiry-sweep","taba-checkout-provider-truth-sweep","taba-operational-alerts-sweep","taba-payment-outbox-worker","taba-qa-window-expiry","taba-security-retention-sweep"],"next":"deploy the functions (--functions), then re-enable the jobs that were active: qa-schedulers.mjs --enable <jobs>"}
+{"at":"2026-10-24T19:21Z","phase":"verify-privileges","anon":false,"authenticated":false,"service_role":true,"security_definer":false,"ledger_head":"20261024120000"}
+{"at":"2026-10-24T19:21:08.455Z","phase":"functions","functions":[{"name":"mercadopago-cancel-payment","verifyJwt":true,"files":10},{"name":"mercadopago-connect","verifyJwt":false,"files":8},{"name":"mercadopago-create-checkout-session","verifyJwt":false,"files":7},{"name":"mercadopago-create-preference","verifyJwt":false,"files":9},{"name":"mercadopago-oauth-callback","verifyJwt":false,"files":7},{"name":"mercadopago-payment-worker","verifyJwt":false,"files":11},{"name":"mercadopago-refund","verifyJwt":true,"files":10},{"name":"mercadopago-webhook","verifyJwt":false,"files":14}],"apply":true}
+{"at":"2026-10-24T19:21:11.838Z","phase":"function","name":"mercadopago-cancel-payment","status":"ACTIVE","version":14,"verifyJwt":true}
+{"at":"2026-10-24T19:21:13.875Z","phase":"function","name":"mercadopago-connect","status":"ACTIVE","version":15,"verifyJwt":false}
+{"at":"2026-10-24T19:21:15.159Z","phase":"function","name":"mercadopago-create-checkout-session","status":"ACTIVE","version":11,"verifyJwt":false}
+{"at":"2026-10-24T19:21:16.571Z","phase":"function","name":"mercadopago-create-preference","status":"ACTIVE","version":14,"verifyJwt":false}
+{"at":"2026-10-24T19:21:18.233Z","phase":"function","name":"mercadopago-oauth-callback","status":"ACTIVE","version":14,"verifyJwt":false}
+{"at":"2026-10-24T19:21:19.899Z","phase":"function","name":"mercadopago-payment-worker","status":"ACTIVE","version":15,"verifyJwt":false}
+{"at":"2026-10-24T19:21:21.473Z","phase":"function","name":"mercadopago-refund","status":"ACTIVE","version":14,"verifyJwt":true}
+{"at":"2026-10-24T19:21:23.301Z","phase":"function","name":"mercadopago-webhook","status":"ACTIVE","version":17,"verifyJwt":false}

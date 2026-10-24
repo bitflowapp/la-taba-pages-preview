@@ -1491,7 +1491,12 @@ const HOME_BANNER_COPY = Object.freeze({
   // Otra toma, no la del hero. Compartir la foto entre el hero y el banner de
   // marca dejaba la misma escena dos veces en la misma pantalla.
   heineken: { brand: 'Heineken', eyebrow: 'La marca', title: 'Heineken bien fría', image: 'assets/promos/cervezas-heineken-botella.jpg', focus: '50% 45%' },
-  'andes-origen': { brand: 'Andes Origen', eyebrow: 'De la Patagonia', title: 'Andes Origen', image: 'assets/promos/cervezas-andes-origen.webp' },
+  // La pieza curada de Andes Origen era una tarjeta de receta («Ricotta casera +
+  // Repollitos…») bajada del sitio de la marca: no mostraba el producto. Se usa
+  // la foto de producto de Andes Origen Rubia con licencia comercial
+  // (TABA-AUT-2026-08-001, docs/catalog/image-manifest.json), en recuadro de
+  // producto (`packshot`) y no recortada como escena.
+  'andes-origen': { brand: 'Andes Origen', eyebrow: 'De la Patagonia', title: 'Andes Origen', image: 'assets/products/andes-origen-rubia-lata-473ml-3d8a469028220903-thumb-6de9adb117eea8b8.webp', packshot: true },
   fernet: { eyebrow: 'Clásico argentino', title: 'Fernet y amargos', image: 'assets/promos/fernet-brancamenta.jpg', focus: '50% 48%' },
   whisky: { eyebrow: 'Selección premium', title: 'El mejor whisky', image: 'assets/promos/whisky-chivas.webp', focus: '64% 55%' },
   vinos: { eyebrow: 'Bodega', title: 'Vinos para la mesa' },
@@ -1553,7 +1558,7 @@ function homeBannerMarkup(id) {
   // catálogo ni de la URL, así que no hay dónde inyectar.
   const focus = /^[\d.]+% [\d.]+%$/.test(copy.focus || '') ? `;--banner-focus:${copy.focus}` : '';
   const media = copy.image
-    ? `<span class="home-brand-banner-media" aria-hidden="true" style="background-image:url('${encodeURI(copy.image)}')${focus}"></span>`
+    ? `<span class="home-brand-banner-media${copy.packshot ? ' is-packshot' : ''}" aria-hidden="true" style="background-image:url('${encodeURI(copy.image)}')${focus}"></span>`
     : '';
 
   // Puerta de MARCA: el destino es la búsqueda real de esa marca en el
@@ -4046,6 +4051,17 @@ export function renderOrderSummary() {
     <div class="summary-row"><span>${deliveryMode === 'pickup' ? 'Retiro en local' : 'Envío a domicilio'}</span><strong>${coordinatedDelivery ? 'A coordinar' : money(deliveryFee)}</strong></div>
     <div class="summary-row total"><span>${coordinatedDelivery ? 'Total estimado de productos' : 'Total'}</span><strong>${money(total)}</strong></div>
   `;
+
+  // Teléfono: el total viaja con «Confirmar pedido» en la barra fija del pie
+  // (styles/ux-premium.css). Va en atributos y se pinta con `attr()`: no es
+  // texto del DOM ni parte del nombre del botón, así que no duplica el total
+  // para lectores de pantalla ni para quien lo busca por texto. El importe es
+  // el mismo `total` de esta fila; no hay otro cálculo.
+  const checkoutBar = $('[data-checkout-submit]')?.closest('.button-row');
+  if (checkoutBar) {
+    checkoutBar.dataset.checkoutTotalLabel = coordinatedDelivery ? 'Total estimado' : 'Total';
+    checkoutBar.dataset.checkoutTotal = money(total);
+  }
 
   const warning = $('[data-checkout-warning]');
   if (warning) {

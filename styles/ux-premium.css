@@ -764,3 +764,98 @@
   border-radius: 14px;
   font-size: 16px;
 }
+
+/* ---------------------------------------------------------------------------
+   13 · Banner de marca con foto de producto (packshot).
+   Una foto de producto sobre blanco no se recorta como escena: va entera, en
+   un recuadro claro, igual que en su tarjeta del catálogo.
+   ------------------------------------------------------------------------- */
+:root body .home-brand-banner-media.is-packshot {
+  top: 14px;
+  right: 14px;
+  bottom: 14px;
+  width: min(38%, 168px);
+  border-radius: 14px;
+  background-color: #fff;
+  background-position: center;
+  background-size: contain;
+  box-shadow: 0 8px 22px rgb(0 0 0 / 28%);
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+/* ---------------------------------------------------------------------------
+   14 · Checkout: total y «Confirmar pedido» siempre a mano (teléfono y escritorio).
+   Medido antes: con tres direcciones guardadas el botón quedaba ~1.100px
+   debajo del encabezado «Datos de entrega» y el total, fuera de la pantalla
+   mientras se elegía la dirección. La fila del botón se vuelve una barra fija
+   sobre la navegación mientras se recorre el formulario y, al llegar al final,
+   vuelve a su lugar. El orden del DOM no cambia (resumen → aviso → botón) ni
+   cambia qué hace el botón. El total lo escribe `renderOrderSummary` en
+   `data-checkout-total` y se pinta con attr(): no es texto ni nombre accesible.
+   ------------------------------------------------------------------------- */
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .checkout-form .button-row[data-checkout-total] {
+  position: sticky;
+  z-index: 5;
+  /* --nav-block vale 0 en escritorio: ahí la barra apoya a 8px del borde. */
+  bottom: calc(var(--nav-block, 56px) + 8px);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 0 14px;
+  margin-inline: -6px;
+  padding: 10px 10px 10px 16px;
+  border: 1px solid var(--ux-line-strong);
+  border-radius: 18px;
+  background: #161a20;
+  box-shadow: 0 -2px 0 rgb(0 0 0 / 10%), 0 14px 34px rgb(0 0 0 / 50%);
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .checkout-form .button-row[data-checkout-total]::before,
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .checkout-form .button-row[data-checkout-total]::after {
+  grid-column: 1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .checkout-form .button-row[data-checkout-total]::before {
+  grid-row: 1;
+  align-self: end;
+  color: var(--brand-ink-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  content: attr(data-checkout-total-label);
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .checkout-form .button-row[data-checkout-total]::after {
+  grid-row: 2;
+  align-self: start;
+  color: var(--brand-ink);
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: -.02em;
+  line-height: 1.15;
+  content: attr(data-checkout-total);
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .checkout-form .button-row[data-checkout-total] .confirm-button {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  width: 100%;
+  min-height: 50px;
+  box-shadow: 0 8px 20px rgb(208 0 13 / 30%);
+}
+
+/* Encabezado del carrito: acciones a su ancho, no media pantalla cada una. */
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .view-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+:root body[data-active-view="cart"] .app-view[data-view="cart"] .view-actions > * {
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 44px;
+  padding-inline: 16px;
+}

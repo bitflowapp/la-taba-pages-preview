@@ -20,6 +20,14 @@ Lectura sugerida:
 - **Registro único de entornos** (`deploy/environments.json`) validado en cada lectura; **más de treinta herramientas, dos flujos y el vigía** dejaron de apuntar a proyectos borrados: sin proyecto de producción, todas fallan cerradas con un mensaje claro y sin leer credenciales; el despliegue corta antes de construir; el vigía de GitHub deja de fallar y mandar correos cada corrida.
 - **Preview de QA** con la v161: publicación verificada archivo por archivo, Panel de pagos 19/19, centro de operación en 390 px sin errores.
 - **Respaldos**: integridad de todas las instantáneas, restauración **sin Supabase** medida (15–40 s la capa de datos), dos respaldos cifrados nuevos antes de cada migración.
+- **App Rider contra QA**: su modo staging apuntaba al staging borrado, así que el repartidor no se podía probar antes del lanzamiento. Ahora apunta al QA del registro (gradle, chequeo en tiempo de ejecución y builders), con una prueba que lo ata al registro. El flujo del protocolo V5 del proyecto borrado se niega en su primer paso y manda a `scripts/production/deploy.mjs`.
+- **CI de GitHub sobre el código de #148/#149**: sus commits llevaban `[skip ci]`, así que el job de base de datos nunca había corrido sobre ese código. En esta rama mostró cuatro fallas preexistentes, corregidas acá, sin tocar producto:
+  1. la fase EXPAND se medía con la versión final de `production_least_privilege_test.sql` (ahora usa la de esa fase, la misma que corre `main`);
+  2. el arnés independiente de pagos no conocía la verificación del integrador que agregó #149 (secreto de la aplicación, `/oauth/token`, tokens `APP_USR-`) y la tomaba por falla del pago;
+  3. el total de pgTAP canónico quedó en 943 aunque #148 llevó esa prueba de 44 a 47 aserciones;
+  4. las migraciones posteriores se aplicaban sobre la base que ya había corrido el CONTRACT del protocolo V5, el estado de la producción borrada, y `20261022100000` (#148) parchea una función legada que ese CONTRACT convierte en un stub. Ahora el esquema final se construye en un clúster propio, como cualquier entorno real (QA, la producción nueva): todas las migraciones en orden, sin CONTRACT. El protocolo V5 sigue verificándose completo en su propio clúster.
+
+  «Native PWA update» falla de forma intermitente en WebKit (CacheStorage vacío tras actualizar, la carrera que el propio guion documenta). Con el mismo código pasó en `dd744625` y falló en `main` (`ff55f4cf`). El resultado de la corrida final está en el PR #150.
 - Suites: `npm test` completo, `tests/db/commercial-alerts.test.mjs` 10/10 (los casos nuevos fallan sin las migraciones), Panel 47/47, chequeos del repositorio y escaneo de secretos en verde. Se corrigió además una falla de higiene que traía #149 (ruta local en un documento de un repositorio público).
 
 ## B. Técnicamente preparado para activar

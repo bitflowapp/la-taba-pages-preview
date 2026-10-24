@@ -1,5 +1,7 @@
 name: Deploy production
-# Cloudflare Pages only. Financial releases use release-edge-production.yml.
+# Cloudflare Pages only. Migrations, Edge Functions and schedulers of the production
+# project go through scripts/production/deploy.mjs (release-edge-production.yml is
+# the retired V5 protocol of the deleted project).
 
 on:
   workflow_dispatch:

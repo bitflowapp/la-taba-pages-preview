@@ -17,8 +17,10 @@ import { spawnSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import path from 'node:path';
+import { qaTarget } from '../lib/environments.mjs';
 
-const REFS = { staging: 'ucbtjcurawxjwjdvvcvj', cp: JSON.parse(readFileSync('deploy/controlled-production.json', 'utf8')).rider.backendRef,
+// Staging is the QA project of deploy/environments.json; the old staging project was deleted.
+const REFS = { staging: qaTarget().ref, cp: JSON.parse(readFileSync('deploy/controlled-production.json', 'utf8')).rider.backendRef,
   production: 'wwcpogltfgzgkrlilbcd', demo: 'yakhtrkukqlgzvxuvhzs', wrong: 'abcdefghijklmnopqrst' };
 const CP_CERT = '2dcc9b0a0cf022ebf59c500331103ee31cec9e9142d5431553131877948ec1aa';
 const args = process.argv.slice(2);

@@ -75,6 +75,25 @@ test('un piloto del navegador no puede apuntar a QA, a producción ni a un proye
   for (const ref of required) assert.ok(refs.includes(ref), `el piloto podría apuntar a ${ref}`);
 });
 
+test('la app Rider en modo staging habla con el QA del registro y con ningún otro proyecto', () => {
+  const qa = registry.environments.qa.supabase.ref;
+  const gradle = read('apps/rider-android/app/build.gradle.kts');
+  const api = read('apps/rider-android/app/src/main/java/com/lataba/rider/RiderApi.kt');
+  assert.match(gradle, new RegExp(`^val stagingRef = "${qa}"$`, 'm'), 'build.gradle.kts: stagingRef no es el QA del registro');
+  assert.match(api, new RegExp(`TARGET_MODE == "staging"\\) ==\\s*\\(BuildConfig\\.BACKEND_REF == "${qa}"\\)`),
+    'RiderApi.kt: el chequeo de staging no es el QA del registro');
+  // Producción: el ref del registro una vez enlazado; hasta entonces uno retirado, que no responde.
+  const production = gradle.match(/^val productionRef = "([a-z]{20})"$/m)?.[1];
+  assert.ok(production, 'build.gradle.kts: falta productionRef');
+  assert.ok(production === registry.environments.production.supabase.ref || retired.includes(production),
+    `build.gradle.kts: productionRef ${production} no es el de producción del registro ni uno retirado`);
+  assert.notEqual(production, qa);
+  for (const builder of ['scripts/e2e-staging/build-rider-android.mjs', 'scripts/e2e-staging/build-rider-pilot.mjs',
+    'scripts/controlled-production/rider-env-matrix.mjs']) {
+    assert.match(read(builder), /qaTarget\(\)\.ref/, `${builder}: el ref de staging no sale del registro`);
+  }
+});
+
 test('las herramientas de un entorno tienen prohibidos los demás entornos, los retirados y los ajenos', () => {
   const forProduction = forbiddenRefsFor('production', registry);
   assert.ok(forProduction.has(registry.environments.qa.supabase.ref));

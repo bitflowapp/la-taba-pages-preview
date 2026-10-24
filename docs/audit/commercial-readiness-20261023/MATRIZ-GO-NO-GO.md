@@ -9,7 +9,7 @@ Actualiza la [matriz del 23/10](../mercadopago-final-20261023/lanzamiento/MATRIZ
 | ID | Qué | Estado al 24/10 | Cierra | Titular |
 |---|---|---|---|---|
 | A1 | No existe proyecto de producción | **abierto** — verificado en vivo (`ENTORNOS.md` §1) | crear el proyecto (plan de pago) | Luna Systems (D1) |
-| A2 | Código y pipeline atados a proyectos borrados | **cerrado en código**: registro único; toda herramienta de producción falla cerrada sin proyecto; el despliegue corta antes de construir; el vigía en espera; binding en un comando (`bind-production.mjs`, probado) | correr el binding cuando exista A1 (PR + CI) | ingeniería |
+| A2 | Código y pipeline atados a proyectos borrados | **cerrado en código**: registro único; toda herramienta de producción falla cerrada sin proyecto; el despliegue corta antes de construir; el vigía en espera; la app Rider prueba contra QA; el flujo V5 del proyecto borrado se niega; binding en un comando (`bind-production.mjs`, probado) | correr el binding cuando exista A1 (PR + CI) | ingeniería |
 | A3 | Aplicación La Taba Delivery sin verificar y Client Secret expuesto el 6/10 | **abierto** | sesión del dueño: renovar el secreto, URLs y webhook del proyecto nuevo, lectura del dueño (`test_user` ausente) | dueño de la app |
 | A4 | Marketplace con vendedor ≠ dueño de la app sin demostrar (R-MKT-1) | **preparado**: G2 hecho en QA, sin bloqueos técnicos (`MARKETPLACE-SEGUNDO-VENDEDOR.md`) | G1 (una cuenta de prueba) **o** el cobro de control A7 vigilado | titular de la cuenta de prueba / Walter |
 | A5 | Recuperación ante desastres | **parcial**: respaldos cifrados íntegros, restauración local medida (15–40 s capa de datos), herramienta de respaldo de producción lista; faltan custodia separada de la clave, copia fuera de la PC, RPO/RTO aceptados y ensayo sobre un proyecto nuevo | D3, D4 y un ensayo autorizado | Marco / Walter |
@@ -38,7 +38,7 @@ Actualiza la [matriz del 23/10](../mercadopago-final-20261023/lanzamiento/MATRIZ
 | C2 | Facturación electrónica apagada | decisión de Walter y su contador |
 | C3 | Fotos (Storage) fuera del `pg_dump` | cargarlas desde las fuentes con derechos; exportación aparte |
 | C4 | SMTP propio para Auth y avisos | alta del proveedor |
-| C5 | Bases de ensayo: `taba_restore_20261022_ad3d29a2` y `taba_restore_20261023_e9ba39c2` en QA; en el clúster local, `taba_local_cr0`, `cr1`, `cr3`, `cr4` (clones de prueba) y `taba_local_restore_20261024_960e9754` (intento fallido, sólo sustitutos), `…_d14a301e`, `…_b5f06541` (ensayos); tenant sintético `drill-fb-qa` | se conservan; borrarlas es decisión de Marco con recibo |
+| C5 | Bases de ensayo: `taba_restore_20261022_ad3d29a2` y `taba_restore_20261023_e9ba39c2` en QA; en el clúster local, `taba_local_cr0`, `cr1`, `cr3`, `cr4`, `cr5`, `cr6`, `cr7_mercadopag`, `cr7_production` (clones de prueba) y `taba_local_restore_20261024_960e9754` (intento fallido, sólo sustitutos), `…_d14a301e`, `…_b5f06541` (ensayos); `taba_local_base` y `taba_local_work` son las plantillas del arnés; tenant sintético `drill-fb-qa` | se conservan; borrarlas es decisión de Marco con recibo |
 | C6 | Cuentas de prueba no borrables (límite 15) | una más con G1 |
 | C7 | Limpieza de TestApp / TABA2 Staging y documentación histórica | limpieza |
 | C8 | Advertencias del asesor de Supabase (0 errores) | revisadas como de diseño; repetir en producción (`LANZAMIENTO.md` §4) |
@@ -49,6 +49,8 @@ Actualiza la [matriz del 23/10](../mercadopago-final-20261023/lanzamiento/MATRIZ
 | C13 | Vigía de Cloudflare preparado y sin desplegar | decisión de Marco (el de GitHub cubre lo mismo) |
 | C14 | Enlace del nombre del producto de 20–39 px de alto en el catálogo | ajuste visual menor |
 | C15 | Deuda de pruebas SQL **preexistente** (igual sin las migraciones de hoy): el fixture de `supabase/tests/operational_resilience_drills.local.sql` lo rechaza el control de imágenes de catálogo; `order_intake_dispatch_p0.local.sql` espera el cierre de alertas anterior a F08. Ninguna está en la lista canónica de CI | actualizar los fixtures |
+| C16 | «Native PWA update» de CI falla de forma intermitente en WebKit: tras activar la actualización el CacheStorage queda vacío y la recarga sin red va al servidor (carrera de WebKit bajo automatización que el guion ya documenta) | **preexistente**: falló en `main` (`ff55f4cf`) y pasó en `dd744625` con el mismo código PWA; se vuelve a correr el job |
+| C17 | Credencial `STAGING SUPABASE PUBLISHABLE KEY` para compilar el Rider de QA: no existe en esta PC | guardarla (clave publicable de QA, ref de QA como usuario) o pasar `RIDER_STAGING_PUBLIC_KEY` a Gradle |
 
 ## D. Evidencia de esta etapa
 
@@ -59,7 +61,7 @@ Actualiza la [matriz del 23/10](../mercadopago-final-20261023/lanzamiento/MATRIZ
 | Respaldos y recuperación | `RESPALDOS-Y-RECUPERACION.md`; `despliegue-qa/ensayo-restauracion-local.json` |
 | Calidad comercial en el teléfono y preview real | `CALIDAD-COMERCIAL.md`; `calidad-movil/` |
 | Procedimientos de lanzamiento (1–8) y manual (9) | `LANZAMIENTO.md`, `MANUAL-OPERACION-WALTER.md` |
-| Suites | `npm test` completo, `tests/db/commercial-alerts.test.mjs` (10/10 con las migraciones; falla sin ellas), panel 47/47, chequeos del repositorio en verde; CI de GitHub sobre el SHA final del PR |
+| Suites | `npm test` completo, `tests/db/commercial-alerts.test.mjs` (10/10 con las migraciones; falla sin ellas), panel 47/47, chequeos del repositorio en verde; CI de GitHub sobre el SHA final del PR (resultado en el PR #150). La CI de esta rama es la primera que corre el job de base de datos sobre el código de #148/#149: sus cuatro fallas preexistentes se corrigieron acá (`README.md` §A) |
 
 ## E. Condiciones para pasar a GO
 

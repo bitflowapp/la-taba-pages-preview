@@ -1,9 +1,11 @@
 // Build configuration only: loads the public Staging key; never passes administrative keys to Gradle.
+// Staging is the QA project of deploy/environments.json (the old staging project was deleted).
 import {spawnSync} from 'node:child_process';
 import {leerSecreto} from '../e2e-production-sale/secretos-windows.mjs';
+import {qaTarget} from '../lib/environments.mjs';
 import path from 'node:path';
 const key=leerSecreto('STAGING SUPABASE PUBLISHABLE KEY');
-if(key?.usuario!=='ucbtjcurawxjwjdvvcvj'||!key.secreto.startsWith('sb_publishable_'))throw Error('STAGING_PUBLIC_KEY_UNAVAILABLE');
+if(key?.usuario!==qaTarget().ref||!key.secreto.startsWith('sb_publishable_'))throw Error('STAGING_PUBLIC_KEY_UNAVAILABLE');
 const tasks=process.argv.slice(2);
 if(tasks.some(t=>!/^[:\w-]+$/.test(t)))throw Error('INVALID_TASK');
 const result=spawnSync('cmd.exe',['/d','/c','.\\gradlew.bat',...(tasks.length?tasks:[':app:testDebugUnitTest',':app:assembleDebug',':app:assembleDebugAndroidTest']),'--console=plain'],{

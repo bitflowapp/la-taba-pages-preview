@@ -10,7 +10,8 @@ Reproducción segura: [QA runbook](QA-RUNBOOK.md).
 
 ## Alcance seguro
 
-- La build QA usa sólo Supabase Staging `ucbtjcurawxjwjdvvcvj`; ID QA
+- La build QA usa sólo el proyecto QA del registro (`deploy/environments.json`,
+  `ixewllzzuzpqrkxzmfzx`; el Staging anterior `ucbtjcurawxjwjdvvcvj` fue borrado); ID QA
   `com.lataba.rider.qa`. La v3 firmada de `com.lataba.rider.pilot` sigue siendo
   una build de ensayo Staging, no la APK comercial del futuro entorno PILOTO.
   Una build PILOTO exige ref nuevo, publishable key del mismo proyecto y

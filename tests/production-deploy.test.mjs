@@ -96,6 +96,19 @@ test('sólo se aplica lo posterior al libro, y el libro tiene que ser un prefijo
   assert.throws(() => pendingMigrations(plan, ledger, ledger.slice(1).map((r) => r.version)), /differs from the production ledger/);
 });
 
+test('el protocolo V5 del proyecto borrado se niega antes del checkout y de las credenciales, y manda al camino nuevo', () => {
+  const financial = fs.readFileSync('.github/workflows/release-edge-production.yml', 'utf8');
+  const steps = financial.slice(financial.indexOf('\n    steps:'));
+  const first = steps.indexOf('- name:');
+  const refusal = steps.slice(first, steps.indexOf('- name:', first + 1));
+  assert.match(refusal, /RETIRED/);
+  assert.match(refusal, /^\s+exit 1$/m);
+  assert.match(refusal, /scripts\/production\/deploy\.mjs/);
+  assert.ok(steps.indexOf('exit 1') < steps.indexOf('actions/checkout'), 'la negativa tiene que correr antes del checkout');
+  assert.ok(steps.indexOf('exit 1') < steps.indexOf('secrets.'), 'la negativa tiene que correr antes de tocar credenciales');
+  assert.doesNotMatch(fs.readFileSync('.github/workflows/deploy-production.yml', 'utf8'), /Financial releases use release-edge-production/);
+});
+
 test('la línea de comandos sin proyecto de producción sale 2 y no toca nada; un comando desconocido también', () => {
   for (const argv of [['status'], ['migrations', '--apply', '--confirm', 'x'], ['nada']]) {
     const run = spawnSync(process.execPath, ['scripts/production/deploy.mjs', ...argv], { encoding: 'utf8', env: { ...process.env, TABA_ENVIRONMENTS_FILE: '' } });

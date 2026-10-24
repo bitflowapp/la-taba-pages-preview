@@ -1,0 +1,11 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select plan(6);
+select lives_ok($$select public.reconcile_operational_alerts_for_business('7d1f0c52-3b1e-4c8a-9a67-2f5d0e6b1a01')$$, 'reconcile runs on the QA business');
+select is((select count(*)::int from public.operational_alerts where business_id = '7d1f0c52-3b1e-4c8a-9a67-2f5d0e6b1a01' and alert_code = 'CHECKOUT_PROVIDER_UNVERIFIED' and status <> 'resolved'), 4, 'the four abandoned checkouts stay watched (F08)');
+select is((select count(*)::int from public.operational_alerts where business_id = '7d1f0c52-3b1e-4c8a-9a67-2f5d0e6b1a01' and alert_code = 'CHECKOUT_PROVIDER_UNVERIFIED' and status <> 'resolved' and severity = 'INFO' and evidence->>'verification' = 'watching'), 4, 'and are INFO because the provider keeps answering');
+select is((select count(*)::int from public.operational_alerts a join public.orders o on o.id = a.subject_id where a.business_id = '7d1f0c52-3b1e-4c8a-9a67-2f5d0e6b1a01' and a.alert_code = 'ORDER_PAYMENT_REVERSED_OPEN' and a.status <> 'resolved' and o.public_code = 'LT-0087'), 1, 'LT-0087 is flagged as refunded but still open');
+select is((select count(*)::int from public.operational_alerts a join public.orders o on o.id = a.subject_id where a.business_id = '7d1f0c52-3b1e-4c8a-9a67-2f5d0e6b1a01' and a.alert_code = 'ORDER_NOT_ACCEPTED' and a.status <> 'resolved' and o.public_code = 'LT-0087'), 0, 'LT-0087 no longer asks to be accepted');
+select is((select count(*)::int from public.operational_alerts where status <> 'resolved' and severity = 'CRITICAL'), 0, 'no critical alert remains open in QA');
+select * from finish();
+rollback;

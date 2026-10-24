@@ -1,0 +1,58 @@
+{
+  "drillVersion": 1,
+  "purpose": "local_restore_drill",
+  "projectRef": "ixewllzzuzpqrkxzmfzx",
+  "sourceArchive": {
+    "encryptedSha256": "4c2fdf7548a626e7781a4fb6c4b66fdb91ee38b8d3d352cab8b8ae2babe4f0f1",
+    "plaintextSha256": "c273a711754747db423de4d40b505b9ccb53ad92146eae6973bb0079619b09ef",
+    "capturedAt": "2026-10-24T00:06:15.1Z"
+  },
+  "managedPlatformRestored": false,
+  "productionTouched": false,
+  "hostedProjectTouched": false,
+  "applicationAclRestored": true,
+  "aclEntries": 669,
+  "managedRoleDefaultPrivilegesRestored": false,
+  "counts": {
+    "auth_users": 8,
+    "products": 3,
+    "orders": 7,
+    "storage_objects": 0,
+    "migration_versions": 171,
+    "payment_intents": 10,
+    "operational_alerts": 11
+  },
+  "expectedCounts": {
+    "auth_users": 8,
+    "products": 3,
+    "orders": 7,
+    "storage_objects": 0,
+    "migration_versions": 171
+  },
+  "countsMatchManifest": true,
+  "mismatches": [],
+  "functional": {
+    "rls_tables": 106,
+    "policies": 79,
+    "functions": 502,
+    "reversed_orders": 1,
+    "paid_without_order": 0,
+    "negative_stock": 0
+  },
+  "fingerprint": {
+    "tables": 154,
+    "sha256": "7e0faae2a7afb22fde4518a57fef6221574b3aceaf83a842d4b6aeb65ddc0efe"
+  },
+  "timingsSeconds": {
+    "decryptAndVerifyHashes": 0.5,
+    "createDatabase": 3.7,
+    "restore_pre-data": 4,
+    "restore_data": 0.9,
+    "restore_post-data": 4.5,
+    "restoreApplicationAcl": 0.4,
+    "verify": 1
+  },
+  "dataLayerRecoverySeconds": 15.2,
+  "archiveBytes": 4124029,
+  "completedAt": "2026-10-24T00:13:17.761Z"
+}

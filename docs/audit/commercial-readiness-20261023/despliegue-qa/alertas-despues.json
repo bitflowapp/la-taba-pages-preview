@@ -1,0 +1,105 @@
+{
+  "capturedAt": "2026-10-24T00:10:57.2728288Z",
+  "project": "ixewllzzuzpqrkxzmfzx (QA)",
+  "migration": "20261024010000_commercial_alert_semantics.sql",
+  "note": "Alertas abiertas después de aplicar la migración y de una corrida real del barrido taba-operational-alerts-sweep. Antes: CHECKOUT_PROVIDER_UNVERIFIED x4 CRITICAL + ORDER_NOT_ACCEPTED LT-0087.",
+  "openAlerts": [
+    {
+      "alert_code": "CHECKOUT_PROVIDER_UNVERIFIED",
+      "severity": "INFO",
+      "status": "open",
+      "subject_type": "payment_intent",
+      "subject_id": "ff617d95-09ae-4c3a-9df2-611f3208739e",
+      "summary": "Compra sin terminar en Mercado Pago: el proveedor no registra ningún pago y se sigue consultando.",
+      "required_action": "Nada que hacer: si el pago aparece, el pedido se arma o se avisa. La consulta sigue hasta 24 h después del vencimiento.",
+      "evidence": {
+        "status": "expired",
+        "empty_probes": 35,
+        "verification": "watching",
+        "payment_intent_id": "ff617d95-09ae-4c3a-9df2-611f3208739e",
+        "external_reference": "taba2:checkout:d51d09e9-c48c-4c70-b00c-8e5e8348e535",
+        "checkout_session_id": "d51d09e9-c48c-4c70-b00c-8e5e8348e535"
+      },
+      "first_seen_at": "2026-10-23T14:53:00.302565-03:00",
+      "last_seen_at": "2026-10-23T21:10:00.235829-03:00",
+      "business_slug": "qa-pagos-recovery"
+    },
+    {
+      "alert_code": "CHECKOUT_PROVIDER_UNVERIFIED",
+      "severity": "INFO",
+      "status": "open",
+      "subject_type": "payment_intent",
+      "subject_id": "3254f227-229a-42bb-ae32-5ce2eb8a81e2",
+      "summary": "Compra sin terminar en Mercado Pago: el proveedor no registra ningún pago y se sigue consultando.",
+      "required_action": "Nada que hacer: si el pago aparece, el pedido se arma o se avisa. La consulta sigue hasta 24 h después del vencimiento.",
+      "evidence": {
+        "status": "expired",
+        "empty_probes": 23,
+        "verification": "watching",
+        "payment_intent_id": "3254f227-229a-42bb-ae32-5ce2eb8a81e2",
+        "external_reference": "taba2:checkout:5f49f59e-ce79-4340-a6f7-5fa52b725cd6",
+        "checkout_session_id": "5f49f59e-ce79-4340-a6f7-5fa52b725cd6"
+      },
+      "first_seen_at": "2026-10-23T15:28:00.190881-03:00",
+      "last_seen_at": "2026-10-23T21:10:00.236505-03:00",
+      "business_slug": "qa-pagos-recovery"
+    },
+    {
+      "alert_code": "CHECKOUT_PROVIDER_UNVERIFIED",
+      "severity": "INFO",
+      "status": "open",
+      "subject_type": "payment_intent",
+      "subject_id": "55136b0c-aa3b-44db-a7bd-b419a8a3af4f",
+      "summary": "Compra sin terminar en Mercado Pago: el proveedor no registra ningún pago y se sigue consultando.",
+      "required_action": "Nada que hacer: si el pago aparece, el pedido se arma o se avisa. La consulta sigue hasta 24 h después del vencimiento.",
+      "evidence": {
+        "status": "expired",
+        "empty_probes": 22,
+        "verification": "watching",
+        "payment_intent_id": "55136b0c-aa3b-44db-a7bd-b419a8a3af4f",
+        "external_reference": "taba2:checkout:418a456b-d119-4518-9478-8c286c39d85d",
+        "checkout_session_id": "418a456b-d119-4518-9478-8c286c39d85d"
+      },
+      "first_seen_at": "2026-10-23T15:47:00.380168-03:00",
+      "last_seen_at": "2026-10-23T21:10:00.236903-03:00",
+      "business_slug": "qa-pagos-recovery"
+    },
+    {
+      "alert_code": "CHECKOUT_PROVIDER_UNVERIFIED",
+      "severity": "INFO",
+      "status": "open",
+      "subject_type": "payment_intent",
+      "subject_id": "f45eda1e-7df7-4eca-bd6d-848c3463e547",
+      "summary": "Compra sin terminar en Mercado Pago: el proveedor no registra ningún pago y se sigue consultando.",
+      "required_action": "Nada que hacer: si el pago aparece, el pedido se arma o se avisa. La consulta sigue hasta 24 h después del vencimiento.",
+      "evidence": {
+        "status": "expired",
+        "empty_probes": 22,
+        "verification": "watching",
+        "payment_intent_id": "f45eda1e-7df7-4eca-bd6d-848c3463e547",
+        "external_reference": "taba2:checkout:e4a5b59a-fe4b-474d-8a3a-ae88c2a61cea",
+        "checkout_session_id": "e4a5b59a-fe4b-474d-8a3a-ae88c2a61cea"
+      },
+      "first_seen_at": "2026-10-23T16:29:00.297765-03:00",
+      "last_seen_at": "2026-10-23T21:10:00.237276-03:00",
+      "business_slug": "qa-pagos-recovery"
+    },
+    {
+      "alert_code": "ORDER_PAYMENT_REVERSED_OPEN",
+      "severity": "ACTION_REQUIRED",
+      "status": "open",
+      "subject_type": "order",
+      "subject_id": "6ae3a26b-6c13-458f-901e-aa321da8f3bc",
+      "summary": "Pedido con el pago devuelto que sigue abierto.",
+      "required_action": "Cancelarlo desde Pedidos con el motivo de la devolución; no prepararlo ni entregarlo. Si no salió del local, el stock vuelve solo.",
+      "evidence": {
+        "status": "received",
+        "order_id": "6ae3a26b-6c13-458f-901e-aa321da8f3bc",
+        "public_code": "LT-0087"
+      },
+      "first_seen_at": "2026-10-23T21:10:00.237524-03:00",
+      "last_seen_at": "2026-10-23T21:10:00.237524-03:00",
+      "business_slug": "qa-pagos-recovery"
+    }
+  ]
+}

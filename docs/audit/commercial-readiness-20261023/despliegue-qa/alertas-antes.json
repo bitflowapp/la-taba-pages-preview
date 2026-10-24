@@ -1,0 +1,89 @@
+{
+  "capturedAt": "2026-10-23T23:3x (antes de la migración)",
+  "project": "ixewllzzuzpqrkxzmfzx (QA)",
+  "openAlerts": [
+    {
+      "alert_code": "CHECKOUT_PROVIDER_UNVERIFIED",
+      "severity": "CRITICAL",
+      "status": "open",
+      "subject_type": "payment_intent",
+      "subject_id": "ff617d95-09ae-4c3a-9df2-611f3208739e",
+      "evidence": {
+        "status": "expired",
+        "empty_probes": 35,
+        "payment_intent_id": "ff617d95-09ae-4c3a-9df2-611f3208739e",
+        "external_reference": "taba2:checkout:d51d09e9-c48c-4c70-b00c-8e5e8348e535",
+        "checkout_session_id": "d51d09e9-c48c-4c70-b00c-8e5e8348e535"
+      },
+      "first_seen_at": "2026-10-23T14:53:00.302565-03:00",
+      "last_seen_at": "2026-10-23T20:29:00.182101-03:00",
+      "occurrence_count": 167
+    },
+    {
+      "alert_code": "CHECKOUT_PROVIDER_UNVERIFIED",
+      "severity": "CRITICAL",
+      "status": "open",
+      "subject_type": "payment_intent",
+      "subject_id": "3254f227-229a-42bb-ae32-5ce2eb8a81e2",
+      "evidence": {
+        "status": "expired",
+        "empty_probes": 22,
+        "payment_intent_id": "3254f227-229a-42bb-ae32-5ce2eb8a81e2",
+        "external_reference": "taba2:checkout:5f49f59e-ce79-4340-a6f7-5fa52b725cd6",
+        "checkout_session_id": "5f49f59e-ce79-4340-a6f7-5fa52b725cd6"
+      },
+      "first_seen_at": "2026-10-23T15:28:00.190881-03:00",
+      "last_seen_at": "2026-10-23T20:29:00.18264-03:00",
+      "occurrence_count": 150
+    },
+    {
+      "alert_code": "CHECKOUT_PROVIDER_UNVERIFIED",
+      "severity": "CRITICAL",
+      "status": "open",
+      "subject_type": "payment_intent",
+      "subject_id": "55136b0c-aa3b-44db-a7bd-b419a8a3af4f",
+      "evidence": {
+        "status": "expired",
+        "empty_probes": 22,
+        "payment_intent_id": "55136b0c-aa3b-44db-a7bd-b419a8a3af4f",
+        "external_reference": "taba2:checkout:418a456b-d119-4518-9478-8c286c39d85d",
+        "checkout_session_id": "418a456b-d119-4518-9478-8c286c39d85d"
+      },
+      "first_seen_at": "2026-10-23T15:47:00.380168-03:00",
+      "last_seen_at": "2026-10-23T20:29:00.183029-03:00",
+      "occurrence_count": 140
+    },
+    {
+      "alert_code": "CHECKOUT_PROVIDER_UNVERIFIED",
+      "severity": "CRITICAL",
+      "status": "open",
+      "subject_type": "payment_intent",
+      "subject_id": "f45eda1e-7df7-4eca-bd6d-848c3463e547",
+      "evidence": {
+        "status": "expired",
+        "empty_probes": 21,
+        "payment_intent_id": "f45eda1e-7df7-4eca-bd6d-848c3463e547",
+        "external_reference": "taba2:checkout:e4a5b59a-fe4b-474d-8a3a-ae88c2a61cea",
+        "checkout_session_id": "e4a5b59a-fe4b-474d-8a3a-ae88c2a61cea"
+      },
+      "first_seen_at": "2026-10-23T16:29:00.297765-03:00",
+      "last_seen_at": "2026-10-23T20:29:00.183372-03:00",
+      "occurrence_count": 118
+    },
+    {
+      "alert_code": "ORDER_NOT_ACCEPTED",
+      "severity": "ACTION_REQUIRED",
+      "status": "open",
+      "subject_type": "order",
+      "subject_id": "6ae3a26b-6c13-458f-901e-aa321da8f3bc",
+      "evidence": {
+        "order_id": "6ae3a26b-6c13-458f-901e-aa321da8f3bc",
+        "public_code": "LT-0087",
+        "waiting_minutes": 224
+      },
+      "first_seen_at": "2026-10-23T16:56:00.192189-03:00",
+      "last_seen_at": "2026-10-23T20:29:00.183708-03:00",
+      "occurrence_count": 106
+    }
+  ]
+}

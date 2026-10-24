@@ -61,7 +61,7 @@ Actualiza la [matriz del 23/10](../mercadopago-final-20261023/lanzamiento/MATRIZ
 | Respaldos y recuperación | `RESPALDOS-Y-RECUPERACION.md`; `despliegue-qa/ensayo-restauracion-local.json` |
 | Calidad comercial en el teléfono y preview real | `CALIDAD-COMERCIAL.md`; `calidad-movil/` |
 | Procedimientos de lanzamiento (1–8) y manual (9) | `LANZAMIENTO.md`, `MANUAL-OPERACION-WALTER.md` |
-| Suites | `npm test` completo, `tests/db/commercial-alerts.test.mjs` (10/10 con las migraciones; falla sin ellas), panel 47/47, chequeos del repositorio en verde; CI de GitHub sobre el SHA final del PR (resultado en el PR #150). La CI de esta rama es la primera que corre el job de base de datos sobre el código de #148/#149: sus cuatro fallas preexistentes se corrigieron acá (`README.md` §A) |
+| Suites | `npm test` completo, `tests/db/commercial-alerts.test.mjs` (10/10 con las migraciones; falla sin ellas), panel 47/47, chequeos del repositorio en verde; CI de GitHub sobre el SHA final del PR (resultado en el PR #150). La CI de esta rama es la primera que corre el job de base de datos sobre el código de #148/#149: sus seis fallas preexistentes se corrigieron acá y el job pasa (`README.md` §A) |
 
 ## E. Condiciones para pasar a GO
 

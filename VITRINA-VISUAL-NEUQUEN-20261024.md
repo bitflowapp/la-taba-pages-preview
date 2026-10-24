@@ -1,6 +1,6 @@
 # Vitrina visual Neuquén 2026-10-24 — fotos reales en un catálogo funcional
 
-Branch: `feature/catalog-pricing-images-20261024` · worktree `C:\Users\marco\worktrees\la-taba-catalog-pricing-20261024`
+Branch: `feature/catalog-pricing-images-20261024` · worktree local de esa rama (fuera del repo)
 Estado: **local/demo-only**. Nada de esto toca producción, la base comercial ni Supabase; los precios siguen sin aplicar (la propuesta comercial espera la decisión de Walter).
 
 ## Cómo abrirlo

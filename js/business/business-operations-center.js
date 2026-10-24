@@ -168,6 +168,7 @@ let cancelOperation = null;
 // volver de Mercado Pago, el aviso de la última acción y la revisión previa a
 // desvincular. La verdad de la conexión siempre la vuelve a leer el servidor.
 let mercadoPagoReturn = '';
+let mercadoPagoReturnVerified = false;
 let mercadoPagoNotice = null;
 let disconnectReview = null;
 let operationsConfig = null;
@@ -900,6 +901,7 @@ export function resetBusinessOperationsForTests() {
   cancelTarget = '';
   cancelOperation = null;
   mercadoPagoReturn = '';
+  mercadoPagoReturnVerified = false;
   mercadoPagoNotice = null;
   disconnectReview = null;
   resetOperationsConfigState();
@@ -2842,8 +2844,13 @@ async function refreshPayments() {
   paymentsStatus = { phase: 'loading', message: '' };
   void refreshManualPayments();
   context.onChange();
-  const [list, activation, connectionResult] = await Promise.all([context.listPayments(), context.getPaymentsActivation(), context.mercadoPagoConnectionAction('status')]);
+  // Right after coming back from Mercado Pago the card asks for a real verification once, so «Listo» is said only
+  // when Mercado Pago confirmed the account (business-panel-render.js, mercadoPagoReturnNotice).
+  const verifyReturn = mercadoPagoReturn === 'connected' && !mercadoPagoReturnVerified;
+  if (verifyReturn) mercadoPagoReturnVerified = true;
+  const [list, activation, connectionResult] = await Promise.all([context.listPayments(), context.getPaymentsActivation(), context.mercadoPagoConnectionAction(verifyReturn ? 'verify' : 'status')]);
   sellerConnection = connectionResult?.ok ? connectionResult.data.connection : { status: 'unavailable' };
+  if (verifyReturn && sellerConnection?.verification) mercadoPagoNotice = verificationNotice(sellerConnection.verification);
   payments = list?.ok && Array.isArray(list.data) ? list.data : [];
   paymentsActivation = activation?.ok && activation.data && typeof activation.data === 'object' ? activation.data : null;
   paymentsStatus = list?.ok
@@ -3039,6 +3046,7 @@ const VERIFICATION_REASONS = Object.freeze({
   payments_not_enabled: { tone: 'calm', text: 'La cuenta funciona. El cobro online sigue apagado hasta la habilitación final.' },
   production_execution_not_enabled: { tone: 'calm', text: 'La cuenta funciona. El cobro con dinero real todavía no está habilitado.' },
   seller_binding_mismatch: { tone: 'attention', text: 'La cuenta vinculada no coincide con la configurada para cobrar. Avisá a soporte antes de vender.' },
+  seller_is_integrator: { tone: 'critical', text: 'La tienda quedó vinculada con la cuenta de La Taba en vez de la del comercio. Los cobros online quedan apagados; avisá a soporte para vincular la cuenta correcta.' },
   integrator_environment_mismatch: { tone: 'critical', text: 'La cuenta está vinculada, pero la aplicación de La Taba es de otro entorno (prueba o real) y Mercado Pago rechazaría cada pago. Lo resuelve soporte; los cobros online quedan apagados.' },
 });
 
@@ -3048,13 +3056,14 @@ function verificationNotice(verification) {
   return VERIFICATION_REASONS[String(verification.blocking_reason || '')] || { tone: 'calm', text: 'Conexión verificada.' };
 }
 
-const MERCADOPAGO_RETURN_RESULTS = new Set(['connected', 'cancelled', 'expired', 'session', 'account', 'seller_changed', 'error']);
+const MERCADOPAGO_RETURN_RESULTS = new Set(['connected', 'cancelled', 'expired', 'session', 'account', 'seller_changed', 'integrator_account', 'seller_in_use', 'error']);
 
 // El resultado con el que Mercado Pago devolvió al dueño al panel. Sólo elige el
 // mensaje: lo que se muestra como estado se vuelve a pedir al servidor.
 export function setMercadoPagoReturn(value) {
   const normalized = String(value || '').trim();
   mercadoPagoReturn = MERCADOPAGO_RETURN_RESULTS.has(normalized) ? normalized : '';
+  mercadoPagoReturnVerified = false;
   if (mercadoPagoReturn) mercadoPagoNotice = null;
 }
 

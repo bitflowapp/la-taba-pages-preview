@@ -70,13 +70,18 @@ test('sin cuenta vinculada se aclara que vincular no activa los cobros', () => {
 
 test('cada resultado de la vuelta de Mercado Pago tiene su mensaje y ninguno usa jerga', () => {
   const cases = [
-    ['connected', CONNECTED, /quedó vinculada/],
+    ['connected', { ...CONNECTED, verification: { seller_identity_verified: true, blocking_reason: 'payments_not_enabled' } }, /Mercado Pago confirmó la cuenta y quedó vinculada/],
+    ['connected', CONNECTED, /Tocá «Verificar conexión» para confirmar/],
+    ['connected', { ...CONNECTED, verification: { seller_identity_verified: true, blocking_reason: 'seller_is_integrator' } }, /encontró algo para resolver/],
+    ['connected', { ...CONNECTED, verification: { credentials_usable: false, blocking_reason: 'provider_unavailable' } }, /encontró algo para resolver/],
     ['connected', { status: 'disconnected' }, /la vinculación no figura/],
     ['cancelled', { status: 'disconnected' }, /Cancelaste la autorización/],
     ['expired', { status: 'disconnected' }, /venció o ya se usó/],
     ['session', { status: 'disconnected' }, /sesión del panel venció/],
     ['account', { status: 'disconnected' }, /no se puede usar en este entorno/],
-    ['seller_changed', CONNECTED, /otra cuenta de Mercado Pago/],
+    ['seller_changed', CONNECTED, /otra cuenta de Mercado Pago y no se cambió nada/],
+    ['integrator_account', { status: 'disconnected' }, /cuenta de La Taba, no con la de tu comercio/],
+    ['seller_in_use', { status: 'disconnected' }, /ya recibe los cobros de otro comercio/],
     ['error', { status: 'disconnected' }, /No pudimos completar la vinculación/],
   ];
   for (const [returnResult, connection, expected] of cases) {
@@ -316,4 +321,62 @@ test('cancelar un pago pendiente: sólo si el servidor lo permite, con CANCELAR 
   assert.equal(requested[0].confirmation, CANCEL_SERVER_CONFIRMATION);
   assert.match(requested[0].idempotencyKey, /^[0-9a-f-]{36}$/);
   resetBusinessOperationsForTests();
+});
+
+// 2026-10-24: «Listo» se decía con sólo releer el estado. Ahora, al volver, se pide UNA verificación real.
+test('al volver de Mercado Pago se verifica una sola vez y «Listo» depende de esa verificación', async () => {
+  const calls = [];
+  const verification = { seller_identity_verified: true, credentials_usable: true, blocking_reason: 'production_execution_not_enabled' };
+  setMercadoPagoReturn('connected');
+  configureBusinessOperations({
+    role: 'owner',
+    mercadoPagoConnectionAction: async (action) => {
+      calls.push(action);
+      return { ok: true, data: { connection: { ...CONNECTED, ...(action === 'verify' ? { verification } : {}) } } };
+    },
+    getPaymentsActivation: async () => ({ ok: true, data: { enabled: false } }),
+    listPayments: async () => ({ ok: true, data: [] }),
+    listManualPayments: async () => ({ ok: true, data: [] }),
+    onChange() {},
+  });
+  renderBusinessOperations('payments-setup');
+  await settle();
+  const html = renderBusinessOperations('payments-setup');
+  assert.deepEqual(calls, ['verify']);
+  assert.match(html, /Mercado Pago confirmó la cuenta y quedó vinculada/);
+  assert.match(html, /El cobro con dinero real todavía no está habilitado/);
+  assert.deepEqual(containsForbiddenVocabulary(visibleText(html)), []);
+  await handleBusinessOperationsAction(target('[data-payments-refresh]'));
+  await settle();
+  assert.equal(calls.filter((action) => action === 'verify').length, 1, 'no second provider verification');
+  resetBusinessOperationsForTests();
+});
+
+test('la cuenta de La Taba vinculada por error se informa y no se dice «Listo»', async () => {
+  setMercadoPagoReturn('connected');
+  configureBusinessOperations({
+    role: 'owner',
+    mercadoPagoConnectionAction: async () => ({ ok: true, data: { connection: { ...CONNECTED, environment: 'production',
+      verification: { seller_identity_verified: true, credentials_usable: true, seller_is_integrator: true, blocking_reason: 'seller_is_integrator' } } } }),
+    getPaymentsActivation: async () => ({ ok: true, data: { enabled: false } }),
+    listPayments: async () => ({ ok: true, data: [] }),
+    listManualPayments: async () => ({ ok: true, data: [] }),
+    onChange() {},
+  });
+  renderBusinessOperations('payments-setup');
+  await settle();
+  const html = renderBusinessOperations('payments-setup');
+  assert.doesNotMatch(html, /Listo/);
+  assert.match(html, /vinculada con la cuenta de La Taba en vez de la del comercio/);
+  resetBusinessOperationsForTests();
+});
+
+test('la tarjeta no promete un cambio de cuenta que el servidor rechaza y aconseja la cuenta del comercio', () => {
+  const linked = renderPaymentsSetupSurface({ role: 'owner', connection: CONNECTED });
+  assert.doesNotMatch(linked, /Desvinculá y volvé a conectar con la correcta/);
+  assert.match(linked, /el cambio de cuenta lo hace soporte/);
+  const unlinked = renderPaymentsSetupSurface({ role: 'owner', connection: { status: 'disconnected' } });
+  assert.match(unlinked, /data-mp-account-advice/);
+  assert.match(unlinked, /la que va a recibir el dinero/);
+  assert.deepEqual(containsForbiddenVocabulary(visibleText(unlinked)), []);
 });

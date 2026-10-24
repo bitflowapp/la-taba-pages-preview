@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v161-commercial-readiness';
+const CACHE_NAME = 'la-taba-runtime-v162-mp-commercial-onboarding';
 const ASSETS = [
   './',
   './index.html',

@@ -103,6 +103,21 @@ test('a partial refund does not stop the order: no refund alert, and an unaccept
   assert.equal(byCode(s.result.alerts, 'ORDER_NOT_ACCEPTED').length, 1);
 });
 
+// ---- 3. the operation center cards agree with the alerts (migration 20261024020000) -------------------------------
+// Before: a refunded open order still counted as «Pedidos nuevos — esperan que los aceptes» and, once late, as
+// «Pedidos demorados» in red, next to the alert that asks to cancel it.
+const LATE_PRODUCTION_ORDER = `set local session_replication_role=replica; update public.orders set created_at=clock_timestamp()-interval '50 minutes', origin='production' where id=v_order; set local session_replication_role=origin;`;
+const METRICS = `(select jsonb_build_object('new',(c->'metrics'->>'new_orders')::int,'delayed',(c->'metrics'->>'delayed_orders')::int) from (select public.get_production_operation_center(v_business) c) x)`;
+
+test('a refunded open order is neither a new nor a delayed order in the operation center', () => {
+  const s = runScenario(`${APPROVE_AND_FINALIZE} ${LATE_PRODUCTION_ORDER} ${ACTOR}
+    v_before:=${METRICS};
+    ${EXTERNAL_FULL_REFUND}
+    v_result:=${METRICS};`);
+  assert.deepEqual(s.before, { new: 1, delayed: 1 }, 'control: the same order counts while its payment stands');
+  assert.deepEqual(s.result, { new: 0, delayed: 0 });
+});
+
 test('a delivered order refunded afterwards (a complaint) is closed business: no refund alert', () => {
   const s = runScenario(`${APPROVE_AND_FINALIZE} ${ACTOR}
     select public.transition_order(v_order,revision,'accepted','ca-accept-0001') into v_extra2 from public.orders where id=v_order;

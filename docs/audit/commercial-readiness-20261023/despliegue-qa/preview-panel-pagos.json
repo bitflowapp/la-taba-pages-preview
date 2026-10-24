@@ -1,0 +1,177 @@
+{
+  "origin": "https://recovery-20261020.taba2-staging.pages.dev",
+  "at": "2026-10-24T00:31:34.066Z",
+  "served": {
+    "version": {
+      "commit": "566c675d639565f1366c0fffb00c6fac9bff3183",
+      "runtime": "la-taba-runtime-v161-commercial-readiness",
+      "builtAt": "2026-10-24T00:29:02.348Z"
+    },
+    "workerState": "installing",
+    "workerScript": "https://recovery-20261020.taba2-staging.pages.dev/sw.js",
+    "caches": []
+  },
+  "server": {
+    "rows": 10,
+    "states": [
+      {
+        "internal_status": "expired",
+        "financial_hold": null,
+        "needs_attention": false,
+        "open_discrepancies": 0
+      },
+      {
+        "internal_status": "expired",
+        "financial_hold": null,
+        "needs_attention": false,
+        "open_discrepancies": 0
+      },
+      {
+        "internal_status": "refunded",
+        "financial_hold": "refund_registered",
+        "needs_attention": false,
+        "open_discrepancies": 0
+      },
+      {
+        "internal_status": "expired",
+        "financial_hold": null,
+        "needs_attention": false,
+        "open_discrepancies": 0
+      },
+      {
+        "internal_status": "expired",
+        "financial_hold": null,
+        "needs_attention": false,
+        "open_discrepancies": 0
+      },
+      {
+        "internal_status": "expired",
+        "financial_hold": null,
+        "needs_attention": false,
+        "open_discrepancies": 0
+      },
+      {
+        "internal_status": "cancelled",
+        "financial_hold": null,
+        "needs_attention": false,
+        "open_discrepancies": 0
+      },
+      {
+        "internal_status": "cancelled",
+        "financial_hold": null,
+        "needs_attention": false,
+        "open_discrepancies": 0
+      },
+      {
+        "internal_status": "cancelled",
+        "financial_hold": null,
+        "needs_attention": false,
+        "open_discrepancies": 0
+      },
+      {
+        "internal_status": "expired",
+        "financial_hold": null,
+        "needs_attention": false,
+        "open_discrepancies": 0
+      }
+    ]
+  },
+  "checks": [
+    {
+      "name": "panel login with the QA owner",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "version.json is served",
+      "ok": true,
+      "detail": "566c675d639565f1366c0fffb00c6fac9bff3183 la-taba-runtime-v161-commercial-readiness"
+    },
+    {
+      "name": "the runtime is the expected one",
+      "ok": true,
+      "detail": "la-taba-runtime-v161-commercial-readiness"
+    },
+    {
+      "name": "cash and transfer collections are on the same screen",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "the panel asked the server for the payments",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "the listed count equals the server rows",
+      "ok": true,
+      "detail": "10 pago(s) listados / server 10"
+    },
+    {
+      "name": "payment expired: the card shows \"Rechazado\"",
+      "ok": true,
+      "detail": "status=expired hold=-"
+    },
+    {
+      "name": "payment expired: the card shows \"Rechazado\"",
+      "ok": true,
+      "detail": "status=expired hold=-"
+    },
+    {
+      "name": "payment LT-0087: the card shows \"Reembolsado\"",
+      "ok": true,
+      "detail": "status=refunded hold=refund_registered"
+    },
+    {
+      "name": "payment expired: the card shows \"Rechazado\"",
+      "ok": true,
+      "detail": "status=expired hold=-"
+    },
+    {
+      "name": "payment expired: the card shows \"Rechazado\"",
+      "ok": true,
+      "detail": "status=expired hold=-"
+    },
+    {
+      "name": "payment expired: the card shows \"Rechazado\"",
+      "ok": true,
+      "detail": "status=expired hold=-"
+    },
+    {
+      "name": "payment cancelled: the card shows \"Rechazado\"",
+      "ok": true,
+      "detail": "status=cancelled hold=-"
+    },
+    {
+      "name": "payment cancelled: the card shows \"Rechazado\"",
+      "ok": true,
+      "detail": "status=cancelled hold=-"
+    },
+    {
+      "name": "payment cancelled: the card shows \"Rechazado\"",
+      "ok": true,
+      "detail": "status=cancelled hold=-"
+    },
+    {
+      "name": "payment expired: the card shows \"Rechazado\"",
+      "ok": true,
+      "detail": "status=expired hold=-"
+    },
+    {
+      "name": "no unresolved-money banner without an unresolved fact",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no browser dialogs were opened",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no console errors",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "passed": true
+}

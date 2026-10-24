@@ -14,6 +14,10 @@ import { compatibilitySnapshot, packCompatibility } from './release-v5/compatibi
 
 assert.equal(process.env.TABA_LOCAL_PAYMENT_DB,'1','TABA_LOCAL_PAYMENT_DB=1 required');
 const container=`taba-a1-a4-local-v5-${process.pid}-${randomUUID().slice(0,8)}`;
+// The final schema is built in its own cluster, the way every environment is built today (QA, the new production):
+// all migrations in order, without the V5 CONTRACT. The V5 cluster models the deleted production, the only database
+// that ever ran that contract; its retired legacy stubs are not a state any later migration has to patch.
+const finalContainer=`taba-a1-a4-local-final-${process.pid}-${randomUUID().slice(0,8)}`;
 const restoreDatabase='taba_v5_restore';
 const image='public.ecr.aws/supabase/postgres:17.6.1.166';
 // La misma imagen, byte por byte: se baja POR DIGEST y se etiqueta con el nombre
@@ -27,12 +31,46 @@ const generateOutput=generateIndex<0?null:process.argv[generateIndex+1];
 if(generateIndex>=0)assert.ok(generateOutput,'--generate-compat requires a new output file outside the checkout');
 const focused=process.argv.includes('--release-only')||Boolean(generateOutput);
 const docker=(args,input)=>execFileSync('docker',args,{cwd:ROOT,input,encoding:input===undefined?'utf8':undefined,maxBuffer:128*1024*1024,windowsHide:true,stdio:['pipe','pipe','pipe']});
-const run=(script,...args)=>{
-  const result=execFileSync(process.execPath,['--experimental-vm-modules',script,container,...args],{cwd:ROOT,env:process.env,encoding:'utf8',maxBuffer:16*1024*1024,stdio:['ignore','pipe','pipe'],windowsHide:true});
+const runOn=(cluster,script,...args)=>{
+  const result=execFileSync(process.execPath,['--experimental-vm-modules',script,cluster,...args],{cwd:ROOT,env:process.env,encoding:'utf8',maxBuffer:16*1024*1024,stdio:['ignore','pipe','pipe'],windowsHide:true});
   console.log(result.split('\n').filter(line=>/PASS|FAIL_CLOSED|EXACTLY|MIGRATIONS=|REJECTED/.test(line)).join('\n'));
 };
-let client,releaseSession;
-let started=false;
+const run=(script,...args)=>runOn(container,script,...args);
+// Own disposable cluster: network none, tmpfs only, no published ports.
+async function startCluster(name,onStarted){
+  docker(['run','-d','--name',name,'--network','none','--user','postgres',
+    '--tmpfs','/var/lib/postgresql/data:rw,size=1024m,uid=100,gid=101','--tmpfs','/tmp:rw,size=128m',
+    '--tmpfs','/etc/postgresql-custom:rw,size=1m,uid=100,gid=101',
+    '--entrypoint','/bin/sh',image,'-c',
+    'initdb -D /var/lib/postgresql/data/db -U supabase_admin -A trust >/tmp/init.log && postgres -D /var/lib/postgresql/data/db -k /tmp -c listen_addresses=127.0.0.1 -c shared_preload_libraries=pg_cron,pg_net,supabase_vault -c vault.getkey_script=/usr/lib/postgresql/bin/pgsodium_getkey.sh -c cron.database_name=postgres -c cron.launch_active_jobs=off']);
+  onStarted();
+  for(let attempt=0;;attempt++){
+    try {docker(['exec',name,'pg_isready','-h','/tmp','-U','supabase_admin']);break;}
+    catch(error){if(attempt===100)throw error;await new Promise(resolve=>setTimeout(resolve,100));}
+  }
+  docker(['exec',name,'psql','-h','/tmp','-U','supabase_admin','-d','postgres','-X','-v','ON_ERROR_STOP=1','-c','create role postgres login superuser createdb createrole']);
+  // pg_cron's C routines temporarily use the EXTENSION owner. Merely changing
+  // cron.job/function owners is not an accurate managed-platform fixture.
+  docker(['exec',name,'psql','-h','/tmp','-U','supabase_admin','-d','postgres','-X','-v','ON_ERROR_STOP=1','-c',
+    'create extension pg_cron with schema pg_catalog; grant usage on schema cron to postgres; grant select on cron.job to postgres; grant execute on all functions in schema cron to postgres']);
+}
+const migrationSql=name=>fs.readFileSync(path.join(ROOT,'supabase/migrations',name),'utf8');
+const workerVaultSecrets="select vault.create_secret('fixture-worker-hmac-only-for-local-tests','taba_payment_worker_hmac_secret'); select vault.create_secret('https://wwcpogltfgzgkrlilbcd.supabase.co/functions/v1/mercadopago-payment-worker','taba_payment_worker_url')";
+// Match the managed platform: postgres is NOT a superuser; cron.job is owned
+// by supabase_admin and postgres has SELECT only. pg_net's extension grants
+// queue privileges (including TRIGGER) to PUBLIC, as verified read-only.
+const managedPlatformPrivileges=`alter database postgres owner to postgres;
+    alter table cron.job owner to supabase_admin;
+    revoke all on cron.job from postgres; grant select on cron.job to postgres;
+    alter function cron.alter_job(bigint,text,text,text,text,boolean) owner to supabase_admin;
+    grant execute on function cron.alter_job(bigint,text,text,text,text,boolean) to postgres;
+    alter table net.http_request_queue owner to supabase_admin;
+    alter table net._http_response owner to supabase_admin;
+    grant set on parameter session_replication_role to postgres;
+    grant anon, authenticated, service_role to postgres with admin option;
+    alter role postgres nosuperuser bypassrls createdb createrole;`;
+let client,releaseSession,finalClient;
+let started=false,finalStarted=false;
 try {
   try {
     docker(['image','inspect',image]);
@@ -61,21 +99,7 @@ try {
     assert.ok(repoDigests.includes(imageDigest),'POSTGRES_IMAGE_DIGEST_MISMATCH');
     console.log(`POSTGRES_IMAGE: ${image} <- ${pulled}`);
   }
-  docker(['run','-d','--name',container,'--network','none','--user','postgres',
-    '--tmpfs','/var/lib/postgresql/data:rw,size=1024m,uid=100,gid=101','--tmpfs','/tmp:rw,size=128m',
-    '--tmpfs','/etc/postgresql-custom:rw,size=1m,uid=100,gid=101',
-    '--entrypoint','/bin/sh',image,'-c',
-    'initdb -D /var/lib/postgresql/data/db -U supabase_admin -A trust >/tmp/init.log && postgres -D /var/lib/postgresql/data/db -k /tmp -c listen_addresses=127.0.0.1 -c shared_preload_libraries=pg_cron,pg_net,supabase_vault -c vault.getkey_script=/usr/lib/postgresql/bin/pgsodium_getkey.sh -c cron.database_name=postgres -c cron.launch_active_jobs=off']);
-  started=true;
-  for(let attempt=0;;attempt++){
-    try {docker(['exec',container,'pg_isready','-h','/tmp','-U','supabase_admin']);break;}
-    catch(error){if(attempt===100)throw error;await new Promise(resolve=>setTimeout(resolve,100));}
-  }
-  docker(['exec',container,'psql','-h','/tmp','-U','supabase_admin','-d','postgres','-X','-v','ON_ERROR_STOP=1','-c','create role postgres login superuser createdb createrole']);
-  // pg_cron's C routines temporarily use the EXTENSION owner. Merely changing
-  // cron.job/function owners is not an accurate managed-platform fixture.
-  docker(['exec',container,'psql','-h','/tmp','-U','supabase_admin','-d','postgres','-X','-v','ON_ERROR_STOP=1','-c',
-    'create extension pg_cron with schema pg_catalog; grant usage on schema cron to postgres; grant select on cron.job to postgres; grant execute on all functions in schema cron to postgres']);
+  await startCluster(container,()=>{started=true;});
   run('scripts/bootstrap-a1-v2-local.mjs');
   if(!focused){
   run('scripts/verify-a1-v2-independent.mjs');
@@ -84,7 +108,9 @@ try {
   run('scripts/verify-a1-v2-locks.mjs');
   }
   client=await localClient(container);
-  const query=(sql,args=[])=>client.query(sql,args);
+  // The cluster the final-schema checks read: the V5 one in a focused run, the freshly built one otherwise.
+  let active=client,target=container;
+  const query=(sql,args=[])=>active.query(sql,args);
   const snapshotSession={value:async(sql,args)=>Object.values((await query(sql,args)).rows[0])[0]};
   const stages=generateOutput?[await compatibilitySnapshot(snapshotSession)]:[];
   if(focused)for(const name of EXPAND.slice(0,3)){
@@ -98,23 +124,14 @@ try {
     update public.mp_seller_connections set status='disconnected',protected_tokens=null,refresh_owner=null,refresh_started_at=null;
     delete from public.mp_oauth_states; commit;`);
   await clear();
-  await query("select vault.create_secret('fixture-worker-hmac-only-for-local-tests','taba_payment_worker_hmac_secret'); select vault.create_secret('https://wwcpogltfgzgkrlilbcd.supabase.co/functions/v1/mercadopago-payment-worker','taba_payment_worker_url')");
-  await query('create schema supabase_migrations; create table supabase_migrations.schema_migrations(version text primary key,name text,statements text[])');
-  for(const name of fs.readdirSync(path.join(ROOT,'supabase/migrations')).filter(v=>v.endsWith('.sql')&&v<'20260909050330').sort())
-    await query('insert into supabase_migrations.schema_migrations(version,statements) values($1,$2)',[name.slice(0,14),[fs.readFileSync(path.join(ROOT,'supabase/migrations',name),'utf8')]]);
-  // Match the managed platform: postgres is NOT a superuser; cron.job is owned
-  // by supabase_admin and postgres has SELECT only. pg_net's extension grants
-  // queue privileges (including TRIGGER) to PUBLIC, as verified read-only.
-  await query(`alter database postgres owner to postgres;
-    alter table cron.job owner to supabase_admin;
-    revoke all on cron.job from postgres; grant select on cron.job to postgres;
-    alter function cron.alter_job(bigint,text,text,text,text,boolean) owner to supabase_admin;
-    grant execute on function cron.alter_job(bigint,text,text,text,text,boolean) to postgres;
-    alter table net.http_request_queue owner to supabase_admin;
-    alter table net._http_response owner to supabase_admin;
-    grant set on parameter session_replication_role to postgres;
-    grant anon, authenticated, service_role to postgres with admin option;
-    alter role postgres nosuperuser bypassrls createdb createrole;`);
+  const recordPreInterlockHistory=async()=>{
+    await query('create schema supabase_migrations; create table supabase_migrations.schema_migrations(version text primary key,name text,statements text[])');
+    for(const name of fs.readdirSync(path.join(ROOT,'supabase/migrations')).filter(v=>v.endsWith('.sql')&&v<'20260909050330').sort())
+      await query('insert into supabase_migrations.schema_migrations(version,statements) values($1,$2)',[name.slice(0,14),[migrationSql(name)]]);
+  };
+  await query(workerVaultSecrets);
+  await recordPreInterlockHistory();
+  await query(managedPlatformPrivileges);
   if(generateOutput){
     const output=path.resolve(generateOutput),relative=path.relative(ROOT,output);
     assert.ok(relative.startsWith('..'+path.sep)||path.isAbsolute(relative));
@@ -146,6 +163,24 @@ try {
   }
   let assertions=0;
   if(!focused){
+    // From here on, the schema every environment really has: a fresh cluster with the same platform fixture,
+    // OLD migrations, the EXPAND set as the superuser, the managed-platform privileges and then the interlock and
+    // every later migration as plain postgres, exactly in order. The V5 cluster above stays as it ended.
+    await startCluster(finalContainer,()=>{finalStarted=true;});
+    runOn(finalContainer,'scripts/bootstrap-a1-v2-local.mjs');
+    finalClient=await localClient(finalContainer);
+    active=finalClient;target=finalContainer;
+    // Same search_path the V5 cluster applied them with (verify-a1-v2-independent.mjs).
+    await query('set search_path=public,extensions');
+    for(const name of EXPAND.slice(0,3))await query(migrationSql(name));
+    await query('reset search_path');
+    await query(workerVaultSecrets);
+    await recordPreInterlockHistory();
+    await query(managedPlatformPrivileges);
+    await query(migrationSql(EXPAND[3]));
+    await query('insert into supabase_migrations.schema_migrations(version,name,statements) values($1,$2,$3)',
+      [EXPAND[3].slice(0,14),EXPAND[3].slice(15,-4),[migrationSql(EXPAND[3])]]);
+    console.log('FRESH_FINAL_SCHEMA_CLUSTER_WITHOUT_V5_CONTRACT: '+finalContainer);
     const posteriores=fs.readdirSync(path.join(ROOT,'supabase/migrations'))
       .filter(v=>v.endsWith('.sql')&&v.slice(0,14)>'20260909050330').sort();
     let legacyFiscalRows=false;
@@ -216,23 +251,23 @@ try {
       'commercial_order_fiscal_test.sql','fiscal_disaster_recovery_test.sql','fiscal_secret_boundary_test.sql',
       'fiscal_refund_separation_test.sql','owner_handover_test.sql','caja_clara_pos_integration_test.sql'];
     for(const name of canonicalTests){
-      const output=docker(['exec','-i',container,'psql','-h','/tmp','-U','postgres','-d','postgres','-X','-qAt','-v','ON_ERROR_STOP=1'],
+      const output=docker(['exec','-i',target,'psql','-h','/tmp','-U','postgres','-d','postgres','-X','-qAt','-v','ON_ERROR_STOP=1'],
         Buffer.from('set search_path=public,extensions;\n'+fs.readFileSync(path.join(ROOT,'supabase/tests',name),'utf8'))).toString();
       assert.doesNotMatch(output,/^not ok\b/m,name);assert.match(output,/^1\.\.[0-9]+$/m,name);
       assertions+=Number(/^1\.\.([0-9]+)$/m.exec(output)[1]);
     }
-    assert.equal(assertions,943);
-    console.log('CANONICAL_PGTAP: 268 + 44 least-privilege + 50 reparto-propio + 37 ventana QA/columnas privadas/pausa + 16 columnas internas de producto fuera del público + 9 Mercado Pago sólo con vendedor conectado + 5 aislamiento cobro manual/Mercado Pago + 9 alerta de vendedor que no puede cobrar + 16 interruptor de operador por negocio + 104 impresión del mostrador + 19 pipeline de imágenes + 84 preparar la apertura + 24 primera publicación de un borrador de CP + 12 invariantes a prueba de NULL + 55 contrato del core fiscal + 24 upgrade fiscal + 14 RG 5616 + 54 pedidos online V2 + 21 recuperación ante desastre fiscal + 7 frontera de secretos fiscales + 2 reembolso no es nota de crédito + 12 traspaso de dueño + 57 Caja Clara como terminal del local assertions PASS');
+    assert.equal(assertions,946);
+    console.log('CANONICAL_PGTAP: 268 + 47 least-privilege + 50 reparto-propio + 37 ventana QA/columnas privadas/pausa + 16 columnas internas de producto fuera del público + 9 Mercado Pago sólo con vendedor conectado + 5 aislamiento cobro manual/Mercado Pago + 9 alerta de vendedor que no puede cobrar + 16 interruptor de operador por negocio + 104 impresión del mostrador + 19 pipeline de imágenes + 84 preparar la apertura + 24 primera publicación de un borrador de CP + 12 invariantes a prueba de NULL + 55 contrato del core fiscal + 24 upgrade fiscal + 14 RG 5616 + 54 pedidos online V2 + 21 recuperación ante desastre fiscal + 7 frontera de secretos fiscales + 2 reembolso no es nota de crédito + 12 traspaso de dueño + 57 Caja Clara como terminal del local assertions PASS');
 
     // pgTAP no puede probar dos agentes reclamando a la vez: una conexión por llamada.
     const { runPrintClaimRace } = await import('./print-agent/claim-race.mjs');
-    await runPrintClaimRace(() => localClient(container));
+    await runPrintClaimRace(() => localClient(target));
     // Ni pgTAP puede probar el Panel, el celular, WhatsApp y una automatizacion pidiendo la misma factura a la vez.
     const { runFiscalIntentRace } = await import('./fiscal-core/intent-race.mjs');
-    await runFiscalIntentRace(() => localClient(container));
+    await runFiscalIntentRace(() => localClient(target));
     // Lo mismo para un pedido online: 10/50/100 pedidos por canal, un comprobante, ninguna venta POS.
     const { runOrderIntentRace } = await import('./fiscal-core/order-intent-race.mjs');
-    await runOrderIntentRace(() => localClient(container));
+    await runOrderIntentRace(() => localClient(target));
 
     // Drill the exact compensating rollback in the same isolated schema where
     // the forward migration and its pgTAP contract just passed. The first run
@@ -383,7 +418,8 @@ try {
   } else {
     console.log('FOCUSED_RELEASE_RUN: historical matrix and canonical pgTAP NOT RUN');
   }
-  // Restore schema + synthetic state, including durable consumed evidence.
+  // Restore schema + synthetic state: the final schema in a full run (as a production backup holds it), the V5
+  // cluster with its durable consumed evidence in a focused run.
   // Platform extensions are deliberately excluded, as in the original drill.
   // A restored release must fail closed until its platform schema is verified.
   await query("create schema restore_drill; create table restore_drill.evidence(marker text); insert into restore_drill.evidence values('TABA2_SYNTHETIC_RESTORE_DRILL_V1')");
@@ -395,16 +431,16 @@ try {
     'release',(select verified_remote from private.a1_a4_releases_v5 where phase='resumed'))`;
   const sourceSummary=(await query(summarySql)).rows[0].jsonb_build_object;
   const start=Date.now();
-  const archive=docker(['exec',container,'pg_dump','-h','/tmp','-U','postgres','-d','postgres','--format=custom','--no-owner','--no-privileges',
+  const archive=docker(['exec',target,'pg_dump','-h','/tmp','-U','postgres','-d','postgres','--format=custom','--no-owner','--no-privileges',
     '--exclude-extension=pg_cron','--exclude-schema=cron','--exclude-extension=pg_net','--exclude-schema=net','--exclude-extension=supabase_vault','--exclude-schema=vault'],Buffer.alloc(0));
   const dumpSha256=createHash('sha256').update(archive).digest('hex');
-  docker(['exec',container,'createdb','-h','/tmp','-U','supabase_admin',restoreDatabase]);
-  docker(['exec','-i',container,'pg_restore','-h','/tmp','-U','supabase_admin','-d',restoreDatabase,'--no-owner','--no-privileges','--exit-on-error'],archive);
-  const restoredSummary=JSON.parse(docker(['exec',container,'psql','-h','/tmp','-U','supabase_admin','-d',restoreDatabase,'-X','-qAt','-c',summarySql]));
+  docker(['exec',target,'createdb','-h','/tmp','-U','supabase_admin',restoreDatabase]);
+  docker(['exec','-i',target,'pg_restore','-h','/tmp','-U','supabase_admin','-d',restoreDatabase,'--no-owner','--no-privileges','--exit-on-error'],archive);
+  const restoredSummary=JSON.parse(docker(['exec',target,'psql','-h','/tmp','-U','supabase_admin','-d',restoreDatabase,'-X','-qAt','-c',summarySql]));
   assert.deepEqual(restoredSummary,sourceSummary);
-  const failClosed=spawnSync('docker',['exec',container,'psql','-h','/tmp','-U','supabase_admin','-d',restoreDatabase,'-X','-qAt','-v','ON_ERROR_STOP=1','-c','select private.a1_a4_inert_snapshot_v5()'],{encoding:'utf8',windowsHide:true});
+  const failClosed=spawnSync('docker',['exec',target,'psql','-h','/tmp','-U','supabase_admin','-d',restoreDatabase,'-X','-qAt','-v','ON_ERROR_STOP=1','-c','select private.a1_a4_inert_snapshot_v5()'],{encoding:'utf8',windowsHide:true});
   assert.notEqual(failClosed.status,0,'platform-incomplete restore must not authorize release');
-  const report={productionDataUsed:false,focused,migrationsApplied:fs.readdirSync(path.join(ROOT,'supabase/migrations')).filter(v=>v.endsWith('.sql')).length,canonicalPgTap:assertions,dumpSha256,restoreDurationMs:Date.now()-start,passed:true,sourceSummary,restoredSummary};
+  const report={productionDataUsed:false,focused,cluster:target===finalContainer?'fresh-final-schema':'v5-protocol',migrationsApplied:fs.readdirSync(path.join(ROOT,'supabase/migrations')).filter(v=>v.endsWith('.sql')).length,canonicalPgTap:assertions,dumpSha256,restoreDurationMs:Date.now()-start,passed:true,sourceSummary,restoredSummary};
   if(process.env.TABA_RESTORE_DRILL_REPORT){
     const output=path.resolve(process.env.TABA_RESTORE_DRILL_REPORT);fs.mkdirSync(path.dirname(output),{recursive:true});
     fs.writeFileSync(output,JSON.stringify(report,null,2)+'\n',{flag:'wx'});
@@ -412,7 +448,12 @@ try {
   console.log('DUMP_RESTORE_DURABLE_EVIDENCE_AND_FAIL_CLOSED_PLATFORM_GATE: PASS');
   }
 } finally {
-  await releaseSession?.close();await client?.end();
+  await releaseSession?.close();await client?.end();await finalClient?.end();
+  if(finalStarted){
+    const inspectedFinal=JSON.parse(docker(['inspect',finalContainer]))[0];
+    assert.equal(inspectedFinal.Name,'/'+finalContainer);assert.equal(inspectedFinal.HostConfig.NetworkMode,'none');
+    docker(['rm','-f',finalContainer]);
+  }
   if(started){
     const inspected=JSON.parse(docker(['inspect',container]))[0];
     assert.equal(inspected.Name,'/'+container);assert.equal(inspected.HostConfig.NetworkMode,'none');

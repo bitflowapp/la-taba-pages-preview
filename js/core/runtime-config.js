@@ -8,6 +8,10 @@ const DEFAULT_POLL_MS = 5000;
 const MIN_POLL_MS = 1000;
 const MAX_POLL_MS = 60000;
 const DEPLOYMENT_ENVIRONMENTS = new Set(['local', 'staging', 'pilot', 'production']);
+// Un PILOTO nunca comparte base con QA, demo ni producción. QA es ixewllzzuzpqrkxzmfzx; los otros tres son proyectos
+// retirados que se mantienen bloqueados. Cuando producción tenga proyecto, bind-production.mjs agrega su ref acá
+// (tests/environments-registry.test.mjs lo exige contra deploy/environments.json).
+const PILOT_FORBIDDEN_SUPABASE_REFS = Object.freeze(['ixewllzzuzpqrkxzmfzx', 'ucbtjcurawxjwjdvvcvj', 'wwcpogltfgzgkrlilbcd', 'yakhtrkukqlgzvxuvhzs']);
 const ACCEPTED_RUNTIME_MODES = new Set([RUNTIME_MODE_PRODUCTION, RUNTIME_MODE_LOCAL_STAGING]);
 let productionCatalogReady = false;
 
@@ -226,8 +230,7 @@ function normalizeSupabaseRepository(repository, errors, requestedMode = RUNTIME
   if (deploymentEnvironment === 'pilot' && supabaseUrl) {
     const host = new URL(supabaseUrl).hostname;
     if (!/^[a-z0-9]{20}\.supabase\.co$/.test(host)
-      || ['ucbtjcurawxjwjdvvcvj', 'wwcpogltfgzgkrlilbcd', 'yakhtrkukqlgzvxuvhzs']
-        .some((ref) => host === `${ref}.supabase.co`)) {
+      || PILOT_FORBIDDEN_SUPABASE_REFS.some((ref) => host === `${ref}.supabase.co`)) {
       errors.push('PILOTO exige un proyecto Supabase aislado de QA, DEMO y Producción.');
     }
     if (['a57b1c20-0f4e-4a6b-9d31-7c2e5f8a41d0',

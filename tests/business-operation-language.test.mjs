@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import test from 'node:test';
 import {
   alertLibrarySnapshot,
@@ -104,4 +105,52 @@ test('los errores técnicos se reemplazan por una frase utilizable en el mostrad
 test('la referencia de soporte es única por tipo de alerta', () => {
   const references = alertLibrarySnapshot().map((entry) => entry.support);
   assert.equal(new Set(references).size, references.length);
+});
+
+test('ninguna gravedad de ninguna alerta filtra vocabulario interno', () => {
+  // La prueba de arriba mira una sola gravedad; el texto ahora puede cambiar con la gravedad.
+  for (const { code } of alertLibrarySnapshot()) {
+    for (const severity of ['INFO', 'WARNING', 'ACTION_REQUIRED', 'CRITICAL']) {
+      const described = describeOperationalAlert(alert(code, { severity }));
+      for (const surface of [described.happened, described.preserved, described.risk, described.recommendation, described.action.label]) {
+        assert.deepEqual(containsForbiddenVocabulary(surface), [], `${code}/${severity} filtró jerga en: ${surface}`);
+        assert.ok(surface.length > 5, `${code}/${severity} quedó sin texto`);
+      }
+    }
+  }
+});
+
+test('una compra abandonada que Mercado Pago sigue sin registrar se cuenta como información, no como emergencia', () => {
+  // 20261024010000: la gravedad INFO significa que la verificación funciona y no hay ningún pago.
+  const watching = describeOperationalAlert(alert('CHECKOUT_PROVIDER_UNVERIFIED', { severity: 'INFO' }));
+  assert.equal(watching.severityLabel, 'Para tu información');
+  assert.match(watching.happened, /no terminó/);
+  assert.match(watching.recommendation, /No hace falta/);
+  const unverified = describeOperationalAlert(alert('CHECKOUT_PROVIDER_UNVERIFIED', { severity: 'CRITICAL' }));
+  assert.match(unverified.recommendation, /conectado/);
+  assert.equal(unverified.support.reference, watching.support.reference, 'es la misma alerta para soporte');
+  assert.equal(summarizeOperation({ alerts: [alert('CHECKOUT_PROVIDER_UNVERIFIED', { severity: 'INFO' })] }).tone, 'calm');
+});
+
+test('un pedido con el pago devuelto pide cancelarlo, no aceptarlo', () => {
+  const described = describeOperationalAlert(alert('ORDER_PAYMENT_REVERSED_OPEN', { severity: 'ACTION_REQUIRED' }));
+  assert.equal(described.action.view, 'orders');
+  assert.match(described.recommendation, /cancelalo/);
+  assert.doesNotMatch(described.recommendation, /aceptalo/);
+});
+
+test('cada alerta que emite el servidor tiene su propio texto, no el genérico', () => {
+  // Lee las migraciones: el código de alerta va seguido de su tipo de sujeto en cada SELECT de la reconciliación
+  // (también dentro de los parches que reescriben la función con comillas dobladas).
+  const dir = new URL('../supabase/migrations/', import.meta.url);
+  const emitted = new Map();
+  for (const name of fs.readdirSync(dir).filter((file) => file.endsWith('.sql'))) {
+    const sql = fs.readFileSync(new URL(name, dir), 'utf8');
+    const pattern = /'{1,2}([A-Z][A-Z0-9_]{5,})'{1,2}(?:::text)?(?:\s+as\s+alert_code)?,\s*'{1,2}(payment_intent|payment_discrepancy|order|checkout_session|fiscal_document|print_job|business|service_health)'{1,2}/g;
+    for (const [, code, subject] of sql.matchAll(pattern)) emitted.set(code, subject);
+  }
+  assert.ok(emitted.has('PAYMENT_DISCREPANCY_OPEN') && emitted.has('ORDER_PAYMENT_REVERSED_OPEN'), 'el lector de migraciones dejó de encontrar alertas');
+  const library = new Set(alertLibrarySnapshot().map((entry) => entry.code));
+  const generic = [...emitted].filter(([code, subject]) => subject !== 'service_health' && !library.has(code)).map(([code]) => code);
+  assert.deepEqual(generic, [], 'alertas del servidor que el Panel mostraría con el texto genérico');
 });

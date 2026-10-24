@@ -216,6 +216,39 @@ test('un pedido con la plata devuelta DICE por qué se quedó sin acción', () =
   );
 });
 
+test('la plata devuelta se juzga por importes, como la base: una revisión de seguridad no la esconde', () => {
+  // `record_payment_refund_response_v2` conserva la etiqueta `security_review_required` aunque la devolución
+  // cubra todo. Con la etiqueta como condición el Panel escondía «Cancelar», ofrecía «Avanzar» y la base lo
+  // rechazaba (55000): una tarjeta trabada. 20261024010000.
+  const orden = pedido({ backendId: 'orden-4', createdAt: haceMinutos(45) });
+  const pagos = [{ order_id: 'orden-4', internal_status: 'security_review_required', amount: 14790, refunded_amount: 14790 }];
+  assert.equal(isProductionOrderPaymentReversed(orden, pagos), true);
+  assert.equal(isProductionOrderPaymentReversed(orden, [{ ...pagos[0], refunded_amount: 14789 }]), false, 'parcial no es devuelto');
+  assert.equal(isProductionOrderPaymentReversed(orden, [{ ...pagos[0], amount: 0, refunded_amount: 0 }]), false, 'sin importe no hay devolución');
+});
+
+test('un pedido con la plata devuelta no pide que lo acepten ni que lo muevan', () => {
+  // ORDER_NOT_ACCEPTED/ORDER_STALLED piden algo que la base rechaza; el servidor las excluye para estos pedidos
+  // y la bandeja también: la única señal es la de la plata.
+  const pagos = (id) => [{ order_id: id, internal_status: 'refunded', amount: 14790, refunded_amount: 14790 }];
+  const sinAceptar = pedido({ backendId: 'orden-5', createdAt: haceMinutos(TRAY_DELAY_RULES.notAcceptedAfterMinutes + 30) });
+  assert.deepEqual(orderAttentionSignals(sinAceptar, { now: AHORA, payments: pagos('orden-5') }).map((s) => s.code), ['PAYMENT_REFUNDED']);
+  const preparando = pedido({
+    backendId: 'orden-6', workflowStatus: 'preparing', status: 'preparing',
+    acknowledgedAt: haceMinutos(TRAY_DELAY_RULES.defaultPreparationMinutes + TRAY_DELAY_RULES.stalledGraceMinutes + 30),
+  });
+  assert.deepEqual(orderAttentionSignals(preparando, { now: AHORA, payments: pagos('orden-6') }).map((s) => s.code), ['PAYMENT_REFUNDED']);
+  // Control: la misma demora sin devolución sigue marcándose.
+  assert.deepEqual(orderAttentionSignals(sinAceptar, { now: AHORA }).map((s) => s.code), ['ORDER_NOT_ACCEPTED']);
+});
+
+test('el servidor excluye de «sin aceptar» y «demorado» los pedidos con el pago devuelto', () => {
+  const sql = fs.readFileSync(new URL('../supabase/migrations/20261024010000_commercial_alert_semantics.sql', import.meta.url), 'utf8');
+  assert.match(sql, /v_old_not_accepted \|\| v_reversed_guard/);
+  assert.match(sql, /v_old_stalled \|\| v_reversed_guard/);
+  assert.match(sql, /not public\.order_payment_is_financially_reversed\(o\.id\)/);
+});
+
 test('una devolución en curso avisa que el pedido no se entrega todavía', () => {
   const orden = pedido({ backendId: 'orden-2' });
   const pagos = [{

@@ -1,0 +1,533 @@
+{
+  "generadoEl": "2026-10-24T17:22:43.032Z",
+  "cobertura": {
+    "AUDITADA": 29,
+    "FALBACK": 10,
+    "MANIFIESTO_PREPARADO": 13
+  },
+  "fallos": [],
+  "filas": [
+    {
+      "sku": "coca-cola-original-2250ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/coca-cola-original-2250ml-97dc25e8399a5775-adb8042ea9716cb9.webp",
+      "thumbnail": "assets/products/coca-cola-original-2250ml-97dc25e8399a5775-thumb-acbe05a93036a3a4.webp",
+      "sha256": "adb8042ea9716cb98846dc1d8764eb9a047adcf34ca33fc50d46fc959c846c6e",
+      "dimensions": "1000x1000",
+      "clasificacion": "OFFICIAL_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "fabricante · coca-colaentucasa.com"
+    },
+    {
+      "sku": "coca-cola-zero-2250ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/coca-cola-zero-2250ml-4ce84243eb65d14a-309bbcc731498df7.webp",
+      "thumbnail": "assets/products/coca-cola-zero-2250ml-4ce84243eb65d14a-thumb-826e5a5ea976e1e2.webp",
+      "sha256": "309bbcc731498df73d5f2618ca902169e6dca283eb9fc35fa2c8a7807886f2f1",
+      "dimensions": "1000x1000",
+      "clasificacion": "OFFICIAL_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "fabricante · coca-colaentucasa.com"
+    },
+    {
+      "sku": "coca-cola-original-lata-354ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/coca-cola-original-lata-354ml-3c2cefd7fe4bd597-f2cf7dff4b87047d.webp",
+      "thumbnail": "assets/products/coca-cola-original-lata-354ml-3c2cefd7fe4bd597-thumb-cd767440cdb0ff40.webp",
+      "sha256": "f2cf7dff4b87047dafb9a540bd472567fbbc239b6b4aefa08f8f36ce064431a8",
+      "dimensions": "1000x1000",
+      "clasificacion": "AUTHORIZED_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "proveedor_aprobado · jumboargentina.vtexassets.com"
+    },
+    {
+      "sku": "coca-cola-zero-lata-354ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/coca-cola-zero-lata-354ml-4d1955a80c87ab0e-87f477f474494b33.webp",
+      "thumbnail": "assets/products/coca-cola-zero-lata-354ml-4d1955a80c87ab0e-thumb-7816226aa02505f5.webp",
+      "sha256": "87f477f474494b3394880c7929d52193d37b56d93400ce50e96a017d2ecfc977",
+      "dimensions": "1000x1000",
+      "clasificacion": "AUTHORIZED_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "proveedor_aprobado · www.espaciovino.com.ar"
+    },
+    {
+      "sku": "sprite-original-2250ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/sprite-original-2250ml-99d83c94dac255ca-3898f9d83fdf293f.webp",
+      "thumbnail": "assets/products/sprite-original-2250ml-99d83c94dac255ca-thumb-1e02490bc9080f49.webp",
+      "sha256": "3898f9d83fdf293f0d4efb1b1ed1dc914a91fe026a9d0f4b933374e316e3f613",
+      "dimensions": "1000x1000",
+      "clasificacion": "OFFICIAL_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "fabricante · coca-colaentucasa.com"
+    },
+    {
+      "sku": "sprite-zero-2250ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/sprite-zero-2250ml-c43f15fd8eedc2e4-96e92127e95886ab.webp",
+      "thumbnail": "assets/products/sprite-zero-2250ml-c43f15fd8eedc2e4-thumb-4e04923ee3c2fb00.webp",
+      "sha256": "96e92127e95886abe28220741a08e9f8d839c5247c7ff410efb638fe98a1aa48",
+      "dimensions": "1000x1000",
+      "clasificacion": "OFFICIAL_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "fabricante · coca-colaentucasa.com"
+    },
+    {
+      "sku": "sprite-original-lata-354ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/sprite-original-lata-354ml-0060e518ebfab8e7-8832bfc71a16ffad.webp",
+      "thumbnail": "assets/products/sprite-original-lata-354ml-0060e518ebfab8e7-thumb-9f34da79cf990fa1.webp",
+      "sha256": "8832bfc71a16ffada799d1992258f6c7813f19844beb8414862b05a80f08c4bb",
+      "dimensions": "1000x1000",
+      "clasificacion": "OFFICIAL_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "fabricante · coca-colaentucasa.com"
+    },
+    {
+      "sku": "fanta-naranja-2250ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/fanta-naranja-2250ml-797064494952a9a1-9ef1596448794ce7.webp",
+      "thumbnail": "assets/products/fanta-naranja-2250ml-797064494952a9a1-thumb-3a996fad3a89104c.webp",
+      "sha256": "9ef1596448794ce74aa676484cc3f9550fc16274e918fc9958b59ad9a6921d80",
+      "dimensions": "1000x1000",
+      "clasificacion": "AUTHORIZED_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "proveedor_aprobado · jumboargentina.vtexassets.com"
+    },
+    {
+      "sku": "pepsi-original-2000ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/pepsi-original-2000ml-b4298e4382912cf4-86e8267fb10c961a.webp",
+      "thumbnail": "assets/products/pepsi-original-2000ml-b4298e4382912cf4-thumb-815a946c396e0a93.webp",
+      "sha256": "86e8267fb10c961af6294890566b686f0b03f9f72fb5eb0879faf395581d3b88",
+      "dimensions": "1000x1000",
+      "clasificacion": "AUTHORIZED_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "proveedor_aprobado · jumboargentina.vtexassets.com"
+    },
+    {
+      "sku": "pepsi-black-1500ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/pepsi-black-1500ml-52009e2651c40a42-b09188d077fa3a4f.webp",
+      "thumbnail": "assets/products/pepsi-black-1500ml-52009e2651c40a42-thumb-a562d12e0fb5d26b.webp",
+      "sha256": "b09188d077fa3a4fa8d272cd762633d4fb7c876f31fcb12dc73d3088d58482c3",
+      "dimensions": "1000x1000",
+      "clasificacion": "AUTHORIZED_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "proveedor_aprobado · jumboargentina.vtexassets.com"
+    },
+    {
+      "sku": "seven-up-original-2000ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/seven-up-original-2000ml-2ed6deb5fa431d4b-f32d43104a61239c.webp",
+      "thumbnail": "assets/products/seven-up-original-2000ml-2ed6deb5fa431d4b-thumb-556d7a39b0433124.webp",
+      "sha256": "f32d43104a61239cac763f834081f74251e23d68cb5a1bce92d1fc25da2f38ef",
+      "dimensions": "1000x1000",
+      "clasificacion": "AUTHORIZED_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "proveedor_aprobado · jumboargentina.vteximg.com.br"
+    },
+    {
+      "sku": "paso-de-los-toros-tonica-1500ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/paso-de-los-toros-tonica-1500ml-3a05ed21abc4e380-f551a02eb264272c.webp",
+      "thumbnail": "assets/products/paso-de-los-toros-tonica-1500ml-3a05ed21abc4e380-thumb-209929c85be873fa.webp",
+      "sha256": "f551a02eb264272cb86146b87231f4d43196e2be52f142b80f03cdbd6622821a",
+      "dimensions": "1000x1000",
+      "clasificacion": "AUTHORIZED_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "distribuidor_oficial · boulevard-sa.com.ar"
+    },
+    {
+      "sku": "paso-de-los-toros-pomelo-1500ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/paso-de-los-toros-pomelo-1500ml-07e30d4119649232-5ee73401ead32b21.webp",
+      "thumbnail": "assets/products/paso-de-los-toros-pomelo-1500ml-07e30d4119649232-thumb-2578710a66ec476a.webp",
+      "sha256": "5ee73401ead32b21b98bae86af35d1b20c5b5c34fe52749be028a0a1b7d6f7bc",
+      "dimensions": "1000x1000",
+      "clasificacion": "AUTHORIZED_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "distribuidor_oficial · boulevard-sa.com.ar"
+    },
+    {
+      "sku": "soda-manaos-sifon-2000ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/soda-manaos-sifon-2000ml-b92e160958368c0d-3700b6c8cb4ec1b4.webp",
+      "thumbnail": "assets/products/soda-manaos-sifon-2000ml-b92e160958368c0d-thumb-33a5a3998f343f97.webp",
+      "sha256": "3700b6c8cb4ec1b4ab234cd89bb7b3d8061c7529f8c92d6a8c2ee842d08cdc00",
+      "dimensions": "1000x1000",
+      "clasificacion": "OFFICIAL_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "fabricante · www.manaosargentina.com"
+    },
+    {
+      "sku": "villa-del-sur-sin-gas-600ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/villa-del-sur-sin-gas-600ml-81e9d897ac5c7200-d5bf4cdecf9d2d26.webp",
+      "thumbnail": "assets/products/villa-del-sur-sin-gas-600ml-81e9d897ac5c7200-thumb-542436e98431ce8a.webp",
+      "sha256": "d5bf4cdecf9d2d2624802b2ff1515c4f38fc4c551401a3b41e0f107a07a5fcb6",
+      "dimensions": "1000x1000",
+      "clasificacion": "AUTHORIZED_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "proveedor_aprobado · cdn1.kilbelonline.com"
+    },
+    {
+      "sku": "villavicencio-sin-gas-1500ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/villavicencio-sin-gas-1500ml-2fb407c8fa1c2b59-b28075add15596af.webp",
+      "thumbnail": "assets/products/villavicencio-sin-gas-1500ml-2fb407c8fa1c2b59-thumb-6b0e4ee75373e633.webp",
+      "sha256": "b28075add15596af4d2436e1611fcc57a19c52f9ac3e73757e4fc348c983677d",
+      "dimensions": "1000x1000",
+      "clasificacion": "AUTHORIZED_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "proveedor_aprobado · ardiaprod.vteximg.com.br"
+    },
+    {
+      "sku": "villavicencio-con-gas-500ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/villavicencio-con-gas-500ml-aa4659b148790b42-016bbed61ae8c026.webp",
+      "thumbnail": "assets/products/villavicencio-con-gas-500ml-aa4659b148790b42-thumb-2b03472d9e7fb764.webp",
+      "sha256": "016bbed61ae8c02680c8f10dcb4e4093b71663e11ce58622b3ff0f7799954de7",
+      "dimensions": "1000x1000",
+      "clasificacion": "AUTHORIZED_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "proveedor_aprobado · arjosimarprod.vtexassets.com"
+    },
+    {
+      "sku": "benedictino-sin-gas-2250ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/benedictino-sin-gas-2250ml-8291602e84de68e9-b3100a865b922f28.webp",
+      "thumbnail": "assets/products/benedictino-sin-gas-2250ml-8291602e84de68e9-thumb-e6d7c299f80e6e5d.webp",
+      "sha256": "b3100a865b922f28e4669b6b65cbb652a5a53bfed7ef3a321d4f36e8d21d14fd",
+      "dimensions": "1000x1000",
+      "clasificacion": "OFFICIAL_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "fabricante · coca-colaentucasa.com"
+    },
+    {
+      "sku": "aquarius-pera-1500ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/aquarius-pera-1500ml-d8c1230b1227373f-2925d0553fe3f194.webp",
+      "thumbnail": "assets/products/aquarius-pera-1500ml-d8c1230b1227373f-thumb-0c540b9ca40aec2e.webp",
+      "sha256": "2925d0553fe3f194bbfc6f57d29bdcfc9dbfcb93733e7d3e429ce0b590025322",
+      "dimensions": "1000x1000",
+      "clasificacion": "OFFICIAL_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "fabricante · coca-colaentucasa.com"
+    },
+    {
+      "sku": "aquarius-manzana-1500ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/aquarius-manzana-1500ml-5a06bd9176e27828-d3c0af1d8c4494d9.webp",
+      "thumbnail": "assets/products/aquarius-manzana-1500ml-5a06bd9176e27828-thumb-d5da2606a2f036cf.webp",
+      "sha256": "d3c0af1d8c4494d990f03302c671c1d9778d855a70f023b4def927404a09f865",
+      "dimensions": "1000x1000",
+      "clasificacion": "OFFICIAL_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "fabricante · coca-colaentucasa.com"
+    },
+    {
+      "sku": "aquarius-pomelo-2250ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/aquarius-pomelo-2250ml-8de7c8de5e780020-f788300784447191.webp",
+      "thumbnail": "assets/products/aquarius-pomelo-2250ml-8de7c8de5e780020-thumb-bd47cfae363889a1.webp",
+      "sha256": "f788300784447191d85684c2f8f7ac269b5d64400bfef445c9be79cd9e0b7bfb",
+      "dimensions": "1000x1000",
+      "clasificacion": "OFFICIAL_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "fabricante · coca-colaentucasa.com"
+    },
+    {
+      "sku": "red-bull-original-250ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/red-bull-original-250ml-2d86788f7b853c11-d9018a7780c8e25b.webp",
+      "thumbnail": "assets/products/red-bull-original-250ml-2d86788f7b853c11-thumb-4f0870826f9f8bce.webp",
+      "sha256": "d9018a7780c8e25b8c1bbb82ff0d5c7b4be8d35844987d176f7061ffc080c40a",
+      "dimensions": "1000x1000",
+      "clasificacion": "OFFICIAL_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "fabricante · www.redbull.com"
+    },
+    {
+      "sku": "red-bull-sin-azucar-250ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/red-bull-sin-azucar-250ml-f0aeca853a67db50-8f27b231957a48bb.webp",
+      "thumbnail": "assets/products/red-bull-sin-azucar-250ml-f0aeca853a67db50-thumb-86cbad78e9e62eb2.webp",
+      "sha256": "8f27b231957a48bb5f602ac97e6d454c8d43d9466a5a6fa6ad7caa24a352e44f",
+      "dimensions": "1000x1000",
+      "clasificacion": "OFFICIAL_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "fabricante · www.redbull.com"
+    },
+    {
+      "sku": "monster-green-zero-473ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/monster-green-zero-473ml-c238e9bf28582e15-36ea5aaa51d7906e.webp",
+      "thumbnail": "assets/products/monster-green-zero-473ml-c238e9bf28582e15-thumb-9ee7f5db50e33ce1.webp",
+      "sha256": "36ea5aaa51d7906e28a0867e07e7cfe81aa44f929b9a2aebfb31982558bec049",
+      "dimensions": "1000x1000",
+      "clasificacion": "OFFICIAL_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "fabricante · web-assests.monsterenergy.com"
+    },
+    {
+      "sku": "speed-original-473ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/speed-original-473ml-f66e48f651a6ab20-6521a9b08adab1f3.webp",
+      "thumbnail": "assets/products/speed-original-473ml-f66e48f651a6ab20-thumb-6451dbece18fd4c5.webp",
+      "sha256": "6521a9b08adab1f37b012fd125038e24403f7ca08f134a9a2e9470e92434f41a",
+      "dimensions": "1000x1000",
+      "clasificacion": "AUTHORIZED_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "proveedor_aprobado · distribuidoramif.com.ar"
+    },
+    {
+      "sku": "speed-zero-473ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/speed-zero-473ml-89bed41bf09b31b4-b30d764f0575c866.webp",
+      "thumbnail": "assets/products/speed-zero-473ml-89bed41bf09b31b4-thumb-4d5d6597b333f112.webp",
+      "sha256": "b30d764f0575c866afb897cfcfd08dbe0940e1288e6d30f6c82a982e6bb06486",
+      "dimensions": "1000x1000",
+      "clasificacion": "AUTHORIZED_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "proveedor_aprobado · distribuidoramif.com.ar"
+    },
+    {
+      "sku": "gatorade-cool-blue-500ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/gatorade-cool-blue-500ml-e3fcbd3e1e29bb61-f138bb4b00238c71.webp",
+      "thumbnail": "assets/products/gatorade-cool-blue-500ml-e3fcbd3e1e29bb61-thumb-b41adc6e858c3a90.webp",
+      "sha256": "f138bb4b00238c71209ee857c9078994a5f23168e79dd521eba623e222bdae36",
+      "dimensions": "1000x1000",
+      "clasificacion": "AUTHORIZED_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "distribuidor_oficial · boulevard-sa.com.ar"
+    },
+    {
+      "sku": "gatorade-manzana-1250ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/gatorade-manzana-1250ml-64efd055975ef241-67bbe43a8a884939.webp",
+      "thumbnail": "assets/products/gatorade-manzana-1250ml-64efd055975ef241-thumb-b33a3ac22178a69a.webp",
+      "sha256": "67bbe43a8a8849395f966b3baceb95bd633699154e2a82b7ab81cbd21c16b2ac",
+      "dimensions": "1000x1000",
+      "clasificacion": "AUTHORIZED_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "distribuidor_oficial · boulevard-sa.com.ar"
+    },
+    {
+      "sku": "powerade-mountain-blast-500ml",
+      "cobertura": "AUDITADA",
+      "imagen": "assets/products/powerade-mountain-blast-500ml-1ea05e4f6f192e2f-4d73a0a156b31cb6.webp",
+      "thumbnail": "assets/products/powerade-mountain-blast-500ml-1ea05e4f6f192e2f-thumb-61387947b7df6f68.webp",
+      "sha256": "4d73a0a156b31cb624bb3a245c2cde51631f20b87151389fa795f9304b21f881",
+      "dimensions": "1000x1000",
+      "clasificacion": "AUTHORIZED_EXACT",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "proveedor_aprobado · ardiaprod.vtexassets.com"
+    },
+    {
+      "sku": "quilmes-clasica-lata-473ml",
+      "cobertura": "FALBACK",
+      "imagen": "",
+      "thumbnail": "assets/products/beverage-placeholder.svg"
+    },
+    {
+      "sku": "quilmes-clasica-lata-473ml-pack-6",
+      "cobertura": "FALBACK",
+      "imagen": "",
+      "thumbnail": "assets/products/beverage-placeholder.svg"
+    },
+    {
+      "sku": "quilmes-clasica-botella-710ml",
+      "cobertura": "FALBACK",
+      "imagen": "",
+      "thumbnail": "assets/products/beverage-placeholder.svg"
+    },
+    {
+      "sku": "quilmes-stout-lata-473ml",
+      "cobertura": "MANIFIESTO_PREPARADO",
+      "imagen": "assets/products/quilmes-stout-lata-473ml-43e8c2ca1b9a2d88-ea37359d57b3e5bf.webp",
+      "thumbnail": "assets/products/quilmes-stout-lata-473ml-43e8c2ca1b9a2d88-thumb-e5622de0edb2dccb.webp",
+      "sha256": "ea37359d57b3e5bfa3dc6d758476f89570638d009c4d3df81ebc1f854e3787db",
+      "dimensions": "1000x1000",
+      "clasificacion": "",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "https://jumboargentina.vteximg.com.br/arquivos/ids/890491/Cerveza-Quilmes-Stout-473cc-1-5591.jpg?v=638987206018100000"
+    },
+    {
+      "sku": "brahma-chopp-lata-710ml",
+      "cobertura": "MANIFIESTO_PREPARADO",
+      "imagen": "assets/products/brahma-chopp-lata-710ml-7b3111225f3821da-bd35f5833b47f78a.webp",
+      "thumbnail": "assets/products/brahma-chopp-lata-710ml-7b3111225f3821da-thumb-51a63d115ad3aed5.webp",
+      "sha256": "bd35f5833b47f78ad77de6b33876ba163f8813bf85811324fc4af1cd35110c31",
+      "dimensions": "1000x1000",
+      "clasificacion": "",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "https://jumboargentina.vteximg.com.br/arquivos/ids/890575/Cerveza-Rubia-X-710-Cc-Brahma-1-1046613.jpg?v=638987206380170000"
+    },
+    {
+      "sku": "budweiser-lata-473ml",
+      "cobertura": "MANIFIESTO_PREPARADO",
+      "imagen": "assets/products/budweiser-lata-473ml-0144902daa7180f4-bcffb8575cad9ed1.webp",
+      "thumbnail": "assets/products/budweiser-lata-473ml-0144902daa7180f4-thumb-4752e9d24ab35ed2.webp",
+      "sha256": "bcffb8575cad9ed17faec9b7ac8e91cc276c0d5af4ce903826c283aa289d2469",
+      "dimensions": "1000x1000",
+      "clasificacion": "",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "https://jumboargentina.vteximg.com.br/arquivos/ids/890497/Cerveza-Budweiser-Lata-473-Ml-1-17952.jpg?v=638987206039670000"
+    },
+    {
+      "sku": "stella-artois-lata-473ml",
+      "cobertura": "MANIFIESTO_PREPARADO",
+      "imagen": "assets/products/stella-artois-lata-473ml-9178af863653c84c-f104133a2207c430.webp",
+      "thumbnail": "assets/products/stella-artois-lata-473ml-9178af863653c84c-thumb-b0c03f876068f811.webp",
+      "sha256": "f104133a2207c430839b939cf2f54db9d50e5570eac2aebdf1a149d730b8b6e2",
+      "dimensions": "1000x1000",
+      "clasificacion": "",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "https://jumboargentina.vteximg.com.br/arquivos/ids/890507/Cerveza-Stella-Artois-Rubia-473-Ml-1-38031.jpg?v=638987206078500000"
+    },
+    {
+      "sku": "corona-extra-botella-330ml",
+      "cobertura": "MANIFIESTO_PREPARADO",
+      "imagen": "assets/products/corona-extra-botella-330ml-2d424290c3ea844f-c4cbad6dbef6e094.webp",
+      "thumbnail": "assets/products/corona-extra-botella-330ml-2d424290c3ea844f-thumb-4b872d222ff2f90a.webp",
+      "sha256": "c4cbad6dbef6e0947191293fb8a241376666f2bfe036cb24a19a09c614201c15",
+      "dimensions": "1000x1000",
+      "clasificacion": "",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "https://carrefourar.vteximg.com.br/arquivos/ids/794008/7792798003709_01.jpg?v=639046411603700000"
+    },
+    {
+      "sku": "andes-origen-rubia-lata-473ml",
+      "cobertura": "MANIFIESTO_PREPARADO",
+      "imagen": "assets/products/andes-origen-rubia-lata-473ml-3d8a469028220903-ebb8366205b970ca.webp",
+      "thumbnail": "assets/products/andes-origen-rubia-lata-473ml-3d8a469028220903-thumb-6de9adb117eea8b8.webp",
+      "sha256": "ebb8366205b970ca3add85c5a72096ce01ea3bebdc878247c8e037f2d9894eef",
+      "dimensions": "1000x1000",
+      "clasificacion": "",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "https://jumboargentina.vteximg.com.br/arquivos/ids/890518/Cerveza-Andes-Origen-Rubia-473cc-1-276781.jpg?v=638987206116200000"
+    },
+    {
+      "sku": "andes-origen-roja-lata-473ml",
+      "cobertura": "FALBACK",
+      "imagen": "",
+      "thumbnail": "assets/products/beverage-placeholder.svg"
+    },
+    {
+      "sku": "patagonia-amber-lager-botella-730ml",
+      "cobertura": "MANIFIESTO_PREPARADO",
+      "imagen": "assets/products/patagonia-amber-lager-botella-730ml-a5c26f21d7f42cfe-94d698343b3e7cc7.webp",
+      "thumbnail": "assets/products/patagonia-amber-lager-botella-730ml-a5c26f21d7f42cfe-thumb-a9fc32107672d884.webp",
+      "sha256": "94d698343b3e7cc79bfe0d41616955c008192bbdb34a08e41fd552079b7f9f82",
+      "dimensions": "1000x1000",
+      "clasificacion": "",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "https://jumboargentina.vteximg.com.br/arquivos/ids/890494/Cerveza-Patagonia-Amber-Lager-730cc-1-11622.jpg?v=639140687017870000"
+    },
+    {
+      "sku": "fernet-branca-1000ml",
+      "cobertura": "MANIFIESTO_PREPARADO",
+      "imagen": "assets/products/fernet-branca-1000ml-0c51f3c2c52ad488-c64a1ebaa0000237.webp",
+      "thumbnail": "assets/products/fernet-branca-1000ml-0c51f3c2c52ad488-thumb-aa6308cf7b9a94cb.webp",
+      "sha256": "c64a1ebaa0000237a5942e998a013cff34e5fd9518e95a2bad61742b41b6cd1e",
+      "dimensions": "1000x1000",
+      "clasificacion": "",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "https://acdn-us.mitiendanube.com/stores/006/757/969/products/31-6637cf8d3cf6b8487617750533556878-1024-1024.webp"
+    },
+    {
+      "sku": "fernet-1882-750ml",
+      "cobertura": "FALBACK",
+      "imagen": "",
+      "thumbnail": "assets/products/beverage-placeholder.svg"
+    },
+    {
+      "sku": "gancia-americano-450ml",
+      "cobertura": "FALBACK",
+      "imagen": "",
+      "thumbnail": "assets/products/beverage-placeholder.svg"
+    },
+    {
+      "sku": "gancia-lima-limon-lata-473ml",
+      "cobertura": "MANIFIESTO_PREPARADO",
+      "imagen": "assets/products/gancia-lima-limon-lata-473ml-5cfdab179b9102a3-3b02e792389c7544.webp",
+      "thumbnail": "assets/products/gancia-lima-limon-lata-473ml-5cfdab179b9102a3-thumb-bcd7381e8cb9df7e.webp",
+      "sha256": "3b02e792389c754407c39141a8c073342973f45e71f0dc98ed3c72c69d8ec2c5",
+      "dimensions": "1000x1000",
+      "clasificacion": "",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "https://jumboargentina.vteximg.com.br/arquivos/ids/788231/Gancia-Lima-Lim-n-3-5-473ml-1-882803.jpg?v=638249457828330000"
+    },
+    {
+      "sku": "dr-lemon-vodka-pomelo-lata-473ml",
+      "cobertura": "MANIFIESTO_PREPARADO",
+      "imagen": "assets/products/dr-lemon-vodka-pomelo-lata-473ml-6875ceb7e0ff6926-e0eeb8cb2e97e288.webp",
+      "thumbnail": "assets/products/dr-lemon-vodka-pomelo-lata-473ml-6875ceb7e0ff6926-thumb-ebd3cbb7049c8b57.webp",
+      "sha256": "e0eeb8cb2e97e2889087bf963a1acb68b253f12798aaeee6cc2da9ff0abca87c",
+      "dimensions": "1000x1000",
+      "clasificacion": "",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "https://jumboargentina.vteximg.com.br/arquivos/ids/788225/Dr-Lemon-Vodka-Pomelo-5-1-859371.jpg?v=638249457804900000"
+    },
+    {
+      "sku": "trapiche-origen-malbec-750ml",
+      "cobertura": "MANIFIESTO_PREPARADO",
+      "imagen": "assets/products/trapiche-origen-malbec-750ml-5166a6bd98ad5d10-3ef96fe8a2aa34c5.webp",
+      "thumbnail": "assets/products/trapiche-origen-malbec-750ml-5166a6bd98ad5d10-thumb-19f9ca07fee4c4d8.webp",
+      "sha256": "3ef96fe8a2aa34c5b5102c9048927a00468fabd5a7f181ad3b37a7c88a40adb3",
+      "dimensions": "1000x1000",
+      "clasificacion": "",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156062/106117.png?v=638463931481900000"
+    },
+    {
+      "sku": "dada-caramel-750ml",
+      "cobertura": "MANIFIESTO_PREPARADO",
+      "imagen": "assets/products/dada-caramel-750ml-4171839cfea453e3-64fa3b5b38959304.webp",
+      "thumbnail": "assets/products/dada-caramel-750ml-4171839cfea453e3-thumb-98439035a1cccd9b.webp",
+      "sha256": "64fa3b5b38959304f4605d60068bff2940c2bfd68980fa7d73fd5934fdf162d2",
+      "dimensions": "1000x1000",
+      "clasificacion": "",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "https://jumboargentina.vteximg.com.br/arquivos/ids/925234/Vino-Dada-Art-9-Caramel-750cc-1-1061032.jpg?v=639229226634470000"
+    },
+    {
+      "sku": "cafayate-torrontes-750ml",
+      "cobertura": "FALBACK",
+      "imagen": "",
+      "thumbnail": "assets/products/beverage-placeholder.svg"
+    },
+    {
+      "sku": "toro-viejo-clasico-tinto-750ml",
+      "cobertura": "FALBACK",
+      "imagen": "",
+      "thumbnail": "assets/products/beverage-placeholder.svg"
+    },
+    {
+      "sku": "toro-tinto-1000ml",
+      "cobertura": "FALBACK",
+      "imagen": "",
+      "thumbnail": "assets/products/beverage-placeholder.svg"
+    },
+    {
+      "sku": "gin-gordons-700ml",
+      "cobertura": "MANIFIESTO_PREPARADO",
+      "imagen": "assets/products/gin-gordons-700ml-0a539dda4bb5cbd5-6de283aef107c2ac.webp",
+      "thumbnail": "assets/products/gin-gordons-700ml-0a539dda4bb5cbd5-thumb-e37bca6137875ca0.webp",
+      "sha256": "6de283aef107c2ac4e944a7ac8ca72b004a19443ed913cb3cbadb99bc128bcba",
+      "dimensions": "1000x1000",
+      "clasificacion": "",
+      "referenciaDerechos": "TABA-AUT-2026-08-001",
+      "origen": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/155887/106400.png?v=638451820323500000"
+    },
+    {
+      "sku": "vodka-skyy-700ml",
+      "cobertura": "FALBACK",
+      "imagen": "",
+      "thumbnail": "assets/products/beverage-placeholder.svg"
+    }
+  ]
+}

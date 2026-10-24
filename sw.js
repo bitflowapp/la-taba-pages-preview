@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v161-commercial-readiness';
+const CACHE_NAME = 'la-taba-runtime-v162-catalogo-vitrina-neuquen';
 const ASSETS = [
   './',
   './index.html',
@@ -128,6 +128,9 @@ const ASSETS = [
   './js/data.js',
   './js/beverage-demo-data.js',
   './js/approved-beverage-demo-data.js',
+  // Vitrina de revisión comercial (Neuquén 2026-10-24): import estático de
+  // `beverage-demo-data.js`, así que entra al grafo y también al precache.
+  './js/vitrina-neuquen-20261024.js',
   /*
    * Faltaba, y no era una omisión menor: es el catálogo comercial entero
    * (115 KB) y entra al arranque por una cadena de re-exports —`data.js` es una

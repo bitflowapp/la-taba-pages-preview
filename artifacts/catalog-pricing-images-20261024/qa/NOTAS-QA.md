@@ -95,6 +95,45 @@ reales (iPhone 13 WebView/WebKit, Pixel 7/Chromium), 6 anchos Chromium + 3 WebKi
 Notas del script: `[iphone-13] overflow horizontal: 0px` y `[pixel-7] overflow
 horizontal: 0px` — cero pageerrors y cero fallas de siembra en ninguna vista ni motor.
 
+## C · Vitrina Neuquén 2026-10-24 con fotos REALES en el storefront
+
+Complemento de A y B: la góndola autoridad (52 SKU) activa EN el storefront demo vía
+`?vitrina=neuquen20261024`, con las fotos verificadas por SKU. Script:
+`qa-vitrina-neuquen-20261024.mjs` → `qa-vitrina-neuquen-20261024.json` (54/54 OK),
+capturas en `capturas-neuquen/` y página de comparación
+`preview/comparacion/antes-y-despues.html` (verificada con
+`verificar-comparacion-antes-despues.mjs`: 42 + 10 en grilla, cero imágenes rotas,
+cero requests remotas abriéndola `file://`).
+
+| Assert | Resultado |
+|---|---|
+| Datos: 52 SKU, precio = `precioDeVenta`, 42 fotos + 10 FALBACK honestos, alcohol 18 | OK |
+| Góndola visible 390 y 1280 (móvil + desktop), antes y después | 52/52 |
+| Imagen por SKU EXACTA (miniatura declarada; sin foto → placeholder propio) | OK |
+| Precio DOM == vigente por SKU, en modos después **y** antes | 52×4 |
+| Etiqueta +18 SÓLO en alcohólicos; ficha con aviso y disponibilidad | OK |
+| Búsqueda «coca» sin ruido; chip Cervezas = su rubro exacto; «Todas» vuelve | OK |
+| Carrito (Coca-Cola 2,25 L, no alcohólico): 1 línea, línea y subtotal = vigente | OK |
+| Ficha SKU con foto (Gancia Lima Limón) y ficha del sin foto (Quilmes 710) | OK |
+| `<img>` con url de otro origen | 0 |
+| Fotos decodificadas (naturalWidth > 0) y 10 placeholders pintados | 42 + 10 |
+| Pageerrors / respuestas fallidas del propio servidor (4 corridas) | 0 / 0 |
+| Overflow horizontal 390 y 1280 (góndola, ficha, carrito) | 0 px |
+| Modo antes (`&fotos=antes`): 52/52 placeholder, MISMO mapa de precios | OK |
+
+**Lecciones del armado del QA** (para futuros corredores de storefront con Playwright):
+
+1. `?reset=1` hace que la app lance `window.location.replace()` (limpieza de
+   sesión demo): cualquier `page.evaluate` en ese primer documento muere con
+   «Execution context was destroyed». Esperar la URL canónica SIN el parámetro
+   (`page.waitForURL`) antes de tocar el DOM.
+2. El mismo `reclamoGondola` sirve a los dos modos sólo si es consciente del
+   modo: en antes/con `&fotos=antes` el resultado ESPERADO es que los 42 SKU
+   con foto en datos muestren placeholder; un comparador agnóstico los
+   rotula como «malas».
+3. El catálogo pagina en lotes (`CATALOG_PAGE_SIZE = 120`): no hace falta
+   «Ver más» para una góndola de 52.
+
 ## Capturas
 
 - `01-home-390.png`, `02-catalogo-390.png`, `04-catalogo-desktop.png` — superficie

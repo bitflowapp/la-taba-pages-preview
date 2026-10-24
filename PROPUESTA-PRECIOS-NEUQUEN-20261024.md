@@ -287,8 +287,7 @@ toca esta rama.
   `artifacts/catalog-pricing-images-20261024/` (evidencia, motor, propuesta), regenera
   `docs/catalog/gondola-publica-imagenes.{csv,json}` (auditoría de imágenes) y
   `catalog/readiness-report.csv`.
-- Esos artefactos viven en un worktree aislado
-  (`C:\Users\marco\worktrees\la-taba-catalog-pricing-20261024`, rama
+- Esos artefactos viven en un worktree aislado (rama
   `feature/catalog-pricing-images-20261024`) sobre
   `release/commercial-readiness-20261023`; **sin merge a producción ni pruebas contra
   producción**.

@@ -1,0 +1,256 @@
+{
+  "esquema": "qa-vitrina-neuquen-20261024",
+  "etapa": "completa",
+  "generadoEl": "2026-10-24T17:47:21.912Z",
+  "base": "http://127.0.0.1:8231",
+  "total": 54,
+  "ok": 54,
+  "fallos": [],
+  "afirnaciones": [
+    {
+      "id": "01 · vitrina cubre los 52 SKU de la autoridad",
+      "ok": true
+    },
+    {
+      "id": "02 · precios vitrina = precioDeVenta (52/52)",
+      "ok": true
+    },
+    {
+      "id": "03 · cobertura 42 con foto · 10 sin foto · nada mixto",
+      "ok": true
+    },
+    {
+      "id": "04 · los 42 con foto traen cadena completa y ruta propia assets/products/",
+      "ok": true
+    },
+    {
+      "id": "05 · los 10 sin foto traen CERO campos de imagen (honestidad del fallback)",
+      "ok": true
+    },
+    {
+      "id": "06 · alcohol: etiqueta y edad correctas, y nada de alcohol mal clasificado",
+      "ok": true
+    },
+    {
+      "id": "07 · los casos de uso QA existen y son del tipo correcto",
+      "ok": true
+    },
+    {
+      "id": "08 · después móvil 390: tarjetas visibles = 52",
+      "ok": true,
+      "detalle": "vistas: 52"
+    },
+    {
+      "id": "09 · después móvil 390: no falta ninguna tarjeta de la góndola",
+      "ok": true
+    },
+    {
+      "id": "10 · después móvil 390: imagen por SKU EXACTA (después: 42 foto declarada; 10 placeholder propio)",
+      "ok": true
+    },
+    {
+      "id": "11 · después móvil 390: precio vigente por SKU = precioDeVenta (52/52)",
+      "ok": true
+    },
+    {
+      "id": "12 · después móvil 390: etiqueta +18 presente SÓLO en los alcohólicos",
+      "ok": true
+    },
+    {
+      "id": "13 · después móvil 390: cero <img> con URL remota",
+      "ok": true
+    },
+    {
+      "id": "14 · después: las 42 fotos cargaron (naturalWidth > 0)",
+      "ok": true
+    },
+    {
+      "id": "15 · después: los 10 placeholders se pintan con el SVG propio (naturalWidth > 0)",
+      "ok": true,
+      "detalle": "cargada,cargada,cargada,cargada,cargada,cargada,cargada,cargada,cargada,cargada"
+    },
+    {
+      "id": "16 · después móvil: búsqueda \"coca\" filtra la góndola sin resultados ajenos",
+      "ok": true,
+      "detalle": "4: coca-cola-original-2250ml,coca-cola-zero-2250ml,coca-cola-original-lata-354ml,coca-cola-zero-lata-354ml"
+    },
+    {
+      "id": "17 · después móvil: chip Cervezas muestra exactamente su categoría",
+      "ok": true,
+      "detalle": "11/11: quilmes-clasica-lata-473ml,quilmes-clasica-lata-473ml-pack-6,quilmes-clasica-botella-710ml,quilmes-stout-lata-473ml,brahma-chopp-lata-710ml,budweiser-lata-473ml,stella-artois-lata-473ml,corona-extra-botella-330ml"
+    },
+    {
+      "id": "18 · después móvil: sumar al carrito refleja el subtotal vigente",
+      "ok": true,
+      "detalle": "header=5900"
+    },
+    {
+      "id": "19 · después móvil: carrito 1 línea, título correcto, línea y subtotal en vigente",
+      "ok": true,
+      "detalle": "{\"lineas\":1,\"lineaTexto\":\"$ 5.900\",\"subtotalTexto\":\"$ 5.900\",\"titulo\":\"Coca-Cola\",\"overflow\":0}"
+    },
+    {
+      "id": "20 · después móvil: sin overflow horizontal en el carrito",
+      "ok": true,
+      "detalle": "overflow=0"
+    },
+    {
+      "id": "21 · después móvil: ficha muestra LA foto de Gancia Lima Limón, precio vigente y aviso +18",
+      "ok": true,
+      "detalle": "{\"src\":\"assets/products/gancia-lima-limon-lata-473ml-5cfdab179b9102a3-thumb-bcd7381e8cb9df7e.webp\",\"marcador\":\"foto\",\"precio\":\"$ 2.550\",\"alcohol\":true,\"disponible\":\"Disponible\",\"overflow\":0}"
+    },
+    {
+      "id": "22 · después móvil: sin overflow horizontal (góndola + ficha)",
+      "ok": true,
+      "detalle": "dom=0 ficha=0"
+    },
+    {
+      "id": "23 · después móvil: ficha del SKU sin foto queda placeholder y con su precio vigente",
+      "ok": true,
+      "detalle": "{\"marcador\":\"placeholder\",\"precio\":\"$ 3.000\"}"
+    },
+    {
+      "id": "24 · después móvil 390: cero pageerrors",
+      "ok": true
+    },
+    {
+      "id": "25 · después móvil 390: cero respuestas fallidas del propio servidor",
+      "ok": true
+    },
+    {
+      "id": "26 · después desktop 1280: tarjetas visibles = 52",
+      "ok": true,
+      "detalle": "vistas: 52"
+    },
+    {
+      "id": "27 · después desktop 1280: no falta ninguna tarjeta de la góndola",
+      "ok": true
+    },
+    {
+      "id": "28 · después desktop 1280: imagen por SKU EXACTA (después: 42 foto declarada; 10 placeholder propio)",
+      "ok": true
+    },
+    {
+      "id": "29 · después desktop 1280: precio vigente por SKU = precioDeVenta (52/52)",
+      "ok": true
+    },
+    {
+      "id": "30 · después desktop 1280: etiqueta +18 presente SÓLO en los alcohólicos",
+      "ok": true
+    },
+    {
+      "id": "31 · después desktop 1280: cero <img> con URL remota",
+      "ok": true
+    },
+    {
+      "id": "32 · después desktop: sin overflow horizontal",
+      "ok": true,
+      "detalle": "overflow=0"
+    },
+    {
+      "id": "33 · después desktop 1280: cero pageerrors",
+      "ok": true
+    },
+    {
+      "id": "34 · después desktop 1280: cero respuestas fallidas del propio servidor",
+      "ok": true
+    },
+    {
+      "id": "35 · antes móvil 390: tarjetas visibles = 52",
+      "ok": true,
+      "detalle": "vistas: 52"
+    },
+    {
+      "id": "36 · antes móvil 390: no falta ninguna tarjeta de la góndola",
+      "ok": true
+    },
+    {
+      "id": "37 · antes móvil 390: imagen por SKU EXACTA (antes: 52/52 placeholder)",
+      "ok": true
+    },
+    {
+      "id": "38 · antes móvil 390: precio vigente por SKU = precioDeVenta (52/52)",
+      "ok": true
+    },
+    {
+      "id": "39 · antes móvil 390: etiqueta +18 presente SÓLO en los alcohólicos",
+      "ok": true
+    },
+    {
+      "id": "40 · antes móvil 390: cero <img> con URL remota",
+      "ok": true
+    },
+    {
+      "id": "41 · antes: CERO fotos aunque los datos traigan 42 SKU con foto",
+      "ok": true
+    },
+    {
+      "id": "42 · antes móvil: sin overflow horizontal",
+      "ok": true,
+      "detalle": "overflow=0"
+    },
+    {
+      "id": "43 · antes móvil: cero pageerrors",
+      "ok": true
+    },
+    {
+      "id": "44 · antes móvil: cero <img> con URL remota",
+      "ok": true
+    },
+    {
+      "id": "45 · antes: la ficha del SKU con foto en datos queda placeholder",
+      "ok": true,
+      "detalle": "placeholder"
+    },
+    {
+      "id": "46 · antes desktop 1280: tarjetas visibles = 52",
+      "ok": true,
+      "detalle": "vistas: 52"
+    },
+    {
+      "id": "47 · antes desktop 1280: no falta ninguna tarjeta de la góndola",
+      "ok": true
+    },
+    {
+      "id": "48 · antes desktop 1280: imagen por SKU EXACTA (antes: 52/52 placeholder)",
+      "ok": true
+    },
+    {
+      "id": "49 · antes desktop 1280: precio vigente por SKU = precioDeVenta (52/52)",
+      "ok": true
+    },
+    {
+      "id": "50 · antes desktop 1280: etiqueta +18 presente SÓLO en los alcohólicos",
+      "ok": true
+    },
+    {
+      "id": "51 · antes desktop 1280: cero <img> con URL remota",
+      "ok": true
+    },
+    {
+      "id": "52 · antes desktop: sin overflow horizontal",
+      "ok": true,
+      "detalle": "overflow=0"
+    },
+    {
+      "id": "53 · antes desktop: cero pageerrors",
+      "ok": true
+    },
+    {
+      "id": "54 · cierre: cero pageerrors en las cuatro corridas",
+      "ok": true,
+      "detalle": "total=0"
+    }
+  ],
+  "capturas": [
+    "capturas-neuquen\\despues-movil-home.png",
+    "capturas-neuquen\\despues-movil-gondola.png",
+    "capturas-neuquen\\despues-movil-busqueda.png",
+    "capturas-neuquen\\despues-movil-categoria-cervezas.png",
+    "capturas-neuquen\\despues-movil-carrito.png",
+    "capturas-neuquen\\despues-movil-ficha.png",
+    "capturas-neuquen\\despues-desktop-gondola.png",
+    "capturas-neuquen\\antes-movil-gondola.png",
+    "capturas-neuquen\\antes-desktop-gondola.png"
+  ]
+}

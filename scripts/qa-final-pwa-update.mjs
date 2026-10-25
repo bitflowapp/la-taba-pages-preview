@@ -50,6 +50,14 @@ const server=http.createServer((req,res)=>{
   catch(error){record.status=404;record.error=String(error.code||error);res.writeHead(404);res.end();}
 });
 await new Promise(resolve=>server.listen(port,'127.0.0.1',resolve));
+// Offline means no origin at all: close the listener so every connection is
+// refused. Resetting sockets mid-request instead (res.destroy) trips a libsoup
+// assertion in Linux WebKitGTK's network process (CI run 40146286339: 31 ms
+// after the first reset, then every load fails internally and the ephemeral
+// CacheStorage held by that process reads empty). context.setOffline() is no
+// substitute: WebKit then fails navigations without consulting the worker.
+async function closeOrigin(){server.closeAllConnections();await new Promise(resolve=>server.close(()=>resolve()));}
+async function reopenOrigin(){if(!server.listening)await new Promise(resolve=>server.listen(port,'127.0.0.1',resolve));}
 const results=[];
 const bounded=(promise,label,ms=45000)=>{
   let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(`QA timeout: ${label}`)),ms);})]).finally(()=>clearTimeout(timer));
@@ -180,7 +188,7 @@ try{
       expect(css).toMatch(/premium-storefront\.css\?v=\d+/);expect(css).toMatch(/tracking-premium\.css\?v=\d+/);
       await snapshot(page,engine,'updated');
       progress('offline reload');
-      if(engine==='webkit'){phase='offline';report.offlineMethod='Origin TCP connections closed; distinct from browser/OS offline emulation (which failed internally in Windows WebKit during the audit).';}
+      if(engine==='webkit'){phase='offline';await closeOrigin();report.offlineMethod='Origin listener closed: every connection is refused. Browser offline emulation bypasses the worker in WebKit, and mid-request TCP resets crash the Linux WebKitGTK network process.';}
       else{await context.setOffline(true);report.offlineMethod='Browser network offline';}
       await documentReload(page);
       await page.waitForFunction(()=>document.documentElement.dataset.tabaStartup==='ready',null,{timeout:30000});
@@ -195,6 +203,7 @@ try{
     }
     finally{
       phase='candidate';
+      try{await reopenOrigin();}catch(error){report.cleanupPreparationError=String(error);}
       if(context)try{
         await context.setOffline(false);
         const page=context.pages()[0];

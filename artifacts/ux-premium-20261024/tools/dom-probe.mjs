@@ -1,0 +1,18 @@
+import { chromium } from '@playwright/test';
+const BASE = 'http://127.0.0.1:8231';
+const b = await chromium.launch();
+const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' })).newPage();
+await p.goto(`${BASE}/?reset=1&demo=1&vitrina=neuquen20261024`);
+await p.waitForURL(u => !u.searchParams.has('reset'));
+await p.waitForSelector('[data-view="home"]'); await p.waitForTimeout(1500);
+const out = {};
+out.header = await p.evaluate(() => document.querySelector('header')?.outerHTML.slice(0, 3000));
+out.homeTop = await p.evaluate(() => document.querySelector('[data-view="home"]')?.outerHTML.slice(0, 6000));
+await p.evaluate(() => { location.hash = '#catalog'; });
+await p.waitForSelector('[data-product-grid] article[data-card-product]');
+out.catalogHead = await p.evaluate(() => document.querySelector('[data-view="catalog"]')?.outerHTML.slice(0, 5000));
+out.card = await p.evaluate(() => document.querySelector('[data-product-grid] article[data-card-product]')?.outerHTML);
+out.cardStyles = await p.evaluate(() => { const a = document.querySelector('[data-product-grid] article[data-card-product]'); const r = a.getBoundingClientRect(); return { w: r.width, h: r.height, kids: [...a.querySelectorAll('*')].slice(0, 30).map(e => `${e.tagName}.${e.className} ${Math.round(e.getBoundingClientRect().height)}`) }; });
+out.nav = await p.evaluate(() => document.querySelector('.bottom-nav, nav[aria-label]')?.outerHTML.slice(0, 2500));
+console.log(JSON.stringify(out, null, 1));
+await b.close();

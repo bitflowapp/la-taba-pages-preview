@@ -1,0 +1,26 @@
+
+Running 20 tests using 1 worker, shard 1 of 4
+
+  ✓   1 [mobile-webkit-recovery] › tests\e2e\address-flow.spec.mjs:37:3 › Dirección · la hoja del encabezado › elegir dirección desde el inicio no abandona la vista, y cerrar la devuelve intacta (4.2s)
+  ✓   2 [mobile-webkit-recovery] › tests\e2e\address-flow.spec.mjs:71:3 › Dirección · la hoja del encabezado › cambiar de dirección en la hoja cambia el destino del checkout (6.4s)
+  ✓   3 [mobile-webkit-recovery] › tests\e2e\address-flow.spec.mjs:108:3 › Dirección · la hoja del encabezado › «Usar mi ubicación» elige la dirección guardada que está en ese punto (4.8s)
+  ✓   4 [mobile-webkit-recovery] › tests\e2e\address-flow.spec.mjs:128:3 › Dirección · la hoja del encabezado › sin una dirección guardada en ese punto, la medición pasa al editor SIN confirmar (4.0s)
+  ✓   5 [mobile-webkit-recovery] › tests\e2e\address-flow.spec.mjs:151:3 › Dirección · la hoja del encabezado › sin ninguna dirección la hoja abre directo en el editor, y guardar deja la dirección elegida (7.3s)
+  ✓   6 [mobile-webkit-recovery] › tests\e2e\address-flow.spec.mjs:191:3 › Dirección · la hoja del encabezado › sin perfil, la hoja pide nombre y teléfono, y el checkout se entera (9.4s)
+  ✓   7 [mobile-webkit-recovery] › tests\e2e\address-flow.spec.mjs:231:3 › Dirección · el editor dentro del checkout › sin dirección, el checkout no manda a Perfil: pide los datos ahí mismo (7.1s)
+  ✓   8 [mobile-webkit-recovery] › tests\e2e\address-flow.spec.mjs:266:3 › Dirección · el editor dentro del checkout › con direcciones guardadas el selector no cambia, y «Nueva dirección» abre el editor en línea (5.9s)
+  ✓   9 [mobile-webkit-recovery] › tests\e2e\address-flow.spec.mjs:297:3 › Dirección · el editor dentro del checkout › retiro en local no queda bloqueado por la dirección (5.4s)
+  ✓  10 [mobile-webkit-recovery] › tests\e2e\address-flow.spec.mjs:324:3 › Dirección · el editor dentro del checkout › una confirmación FRESCA sobrevive a seguir escribiendo la dirección (7.4s)
+  ✓  11 [mobile-webkit-recovery] › tests\e2e\address-flow.spec.mjs:349:3 › Dirección · el editor dentro del checkout › editar el texto de un pin YA GUARDADO obliga a reconfirmarlo (6.4s)
+  ✓  12 [mobile-webkit-recovery] › tests\e2e\address-flow.spec.mjs:382:5 › Dirección · teléfono › el editor entra sin desbordar ni disparar el zoom de Safari a 320px (3.4s)
+  ✓  13 [mobile-webkit-recovery] › tests\e2e\address-flow.spec.mjs:382:5 › Dirección · teléfono › el editor entra sin desbordar ni disparar el zoom de Safari a 390px (3.7s)
+  ✓  14 [mobile-webkit-recovery] › tests\e2e\address-flow.spec.mjs:382:5 › Dirección · teléfono › el editor entra sin desbordar ni disparar el zoom de Safari a 430px (3.4s)
+  ✓  15 [mobile-webkit-recovery] › tests\e2e\address-flow.spec.mjs:439:3 › Dirección · red y navegación › volver atrás desde la hoja no pierde el carrito ni la vista (5.8s)
+  ✓  16 [mobile-webkit-recovery] › tests\e2e\address-flow.spec.mjs:465:3 › Dirección · red y navegación › sin conexión el editor conserva lo escrito y lo dice (6.3s)
+  ✓  17 [mobile-webkit-recovery] › tests\e2e\arranque-sin-jerga.spec.mjs:23:1 › en una carga normal el cartel de error nunca aparece (1.3s)
+  ✓  18 [mobile-webkit-recovery] › tests\e2e\arranque-sin-jerga.spec.mjs:39:1 › con el módulo caído el cliente lee qué hacer, no un código interno (963ms)
+  ✓  19 [mobile-webkit-recovery] › tests\e2e\arranque-sin-jerga.spec.mjs:60:1 › nada del shell caído deja HTML crudo ni superficie en blanco (886ms)
+  ✓  20 [mobile-webkit-recovery] › tests\e2e\arranque-sin-jerga.spec.mjs:72:1 › el panel de recuperación se lee: contraste AA sobre su propia superficie (1.2s)
+
+  20 passed (1.6m)
+E2E estable: ninguna prueba necesitó reintento.

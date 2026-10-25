@@ -1,0 +1,26 @@
+
+Running 20 tests using 1 worker, shard 7 of 8
+
+  ✓   1 [mobile-webkit] › tests\e2e\storefront-states.spec.mjs:37:1 › sin conexión: el aviso no tapa la barra de abajo y se puede ir al carrito (3.3s)
+  ✓   2 [mobile-webkit] › tests\e2e\storefront-states.spec.mjs:74:1 › home: al agregar, el selector de cantidad queda donde estaba el botón (2.9s)
+  ✓   3 [mobile-webkit] › tests\e2e\storefront-states.spec.mjs:102:1 › home: el nombre y el estado comparten renglón; el rubro va debajo (1.9s)
+  ✓   4 [mobile-webkit] › tests\e2e\storefront-states.spec.mjs:113:1 › home: con el horario exigido y el local cerrado, lo dice y dice cuándo abre (1.8s)
+  ✓   5 [mobile-webkit] › tests\e2e\storefront-states.spec.mjs:127:1 › home: abierto, o sin una respuesta válida sobre el horario, no dice «cerrado» (3.4s)
+  ✓   6 [mobile-webkit] › tests\e2e\storefront-states.spec.mjs:140:1 › home: no abre diciendo «no estamos tomando pedidos» mientras todavía llega el contacto del local (1.7s)
+  ✓   7 [mobile-webkit] › tests\e2e\storefront-states.spec.mjs:170:1 › home: lo que el backend contesta al volver a la pestaña se dibuja, sin esperar a otro render (3.7s)
+  ✓   8 [mobile-webkit] › tests\e2e\storefront-states.spec.mjs:209:1 › home: a la hora de apertura se vuelve a preguntar, sin que la persona salga y vuelva (2.0s)
+  ✓   9 [mobile-webkit] › tests\e2e\storefront-states.spec.mjs:232:1 › home: si la consulta del horario falla una vez, se reintenta sola y el «Cerrado» vuelve (2.2s)
+  ✓  10 [mobile-webkit] › tests\e2e\storefront-states.spec.mjs:258:1 › alcohol en vidriera: la lista, la tarjeta y la ficha dicen lo mismo, y ninguna habla de precio (6.4s)
+  ✓  11 [mobile-webkit] › tests\e2e\storefront-states.spec.mjs:309:1 › un agotado se dice agotado: en la lista, en la pastilla y en voz alta (2.1s)
+  ✓  12 [mobile-webkit] › tests\e2e\storefront-states.spec.mjs:325:1 › carrito: la línea se llama como la tarjeta y dice la presentación una sola vez (4.5s)
+  ✓  13 [mobile-webkit] › tests\e2e\storefront-states.spec.mjs:343:1 › carrito vacío: un aviso se ve y se anuncia (4.3s)
+  ✓  14 [mobile-webkit] › tests\e2e\storefront-states.spec.mjs:363:1 › ficha: «atrás» la cierra sin mover el catálogo, y cerrarla a mano no deja un «atrás» de más (10.0s)
+  ✓  15 [mobile-webkit] › tests\e2e\storefront-states.spec.mjs:417:1 › ficha: abrir otra mientras se cierra la primera no la cierra sola ni la deja sin su «atrás» (4.8s)
+  ✓  16 [mobile-webkit] › tests\e2e\storefront-states.spec.mjs:458:1 › buscar en el catálogo no vuelve a dibujar la home, y los resultados son los mismos (4.3s)
+  ✓  17 [mobile-webkit] › tests\e2e\storefront-states.spec.mjs:489:1 › se puede ESCRIBIR una búsqueda de varias palabras: el espacio no se pierde (7.2s)
+  ✓  18 [mobile-webkit] › tests\e2e\storefront-states.spec.mjs:527:1 › afinar desde la home una búsqueda que ya existe tampoco pega las palabras (3.1s)
+  ✓  19 [mobile-webkit] › tests\e2e\storefront-states.spec.mjs:548:1 › una combinación de filtros sin resultados lo dice y ofrece quitar los filtros, no todo (5.8s)
+  ✓  20 [mobile-webkit] › tests\e2e\storefront-states.spec.mjs:583:1 › un catálogo que no contesta deja de decir «abriendo» y ofrece reintentar (14.2s)
+
+  20 passed (1.5m)
+E2E estable: ninguna prueba necesitó reintento.

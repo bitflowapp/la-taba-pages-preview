@@ -1,0 +1,13 @@
+
+Running 7 tests using 1 worker, shard 8 of 8
+
+  ✓  1 [mobile-webkit] › tests\e2e\ux-premium-storefront.spec.mjs:40:1 › en el teléfono el visor de historias ocupa la pantalla entera, sin la página asomando (3.6s)
+  ✓  2 [mobile-webkit] › tests\e2e\ux-premium-storefront.spec.mjs:65:1 › tocar la pieza navega: derecha avanza, izquierda vuelve; las flechas también (3.3s)
+  ✓  3 [mobile-webkit] › tests\e2e\ux-premium-storefront.spec.mjs:96:1 › en escritorio el visor es un marco 9:16 centrado (5.9s)
+  ✓  4 [mobile-webkit] › tests\e2e\ux-premium-storefront.spec.mjs:104:1 › catálogo en el teléfono: precio y botón a la vista sin scrollear, sin desborde horizontal (2.6s)
+  ✓  5 [mobile-webkit] › tests\e2e\ux-premium-storefront.spec.mjs:133:1 › carrito en el teléfono: cada línea muestra cantidad e importe en dos renglones (3.3s)
+  ✓  6 [mobile-webkit] › tests\e2e\ux-premium-storefront.spec.mjs:170:1 › vitrina con fotos reales, navegando con toques: categoría, ficha, carrito y pedido confirmado (9.7s)
+  ✓  7 [mobile-webkit] › tests\e2e\ux-premium-storefront.spec.mjs:211:1 › catálogo productivo (Supabase simulado): mismo diseño, precios a la vista y barra de total (3.7s)
+
+  7 passed (33.7s)
+E2E estable: ninguna prueba necesitó reintento.

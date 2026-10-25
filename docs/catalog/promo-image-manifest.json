@@ -232,7 +232,7 @@
                        "dominio_fuente":  "andesorigen.com.ar",
                        "ancho":  494,
                        "alto":  355,
-                       "uso":  "banner editorial de marca (inactivo: el catalogo todavia no publica Andes Origen)"
+                       "uso":  "RETIRADA 2026-10-24: es una tarjeta de receta (Ricotta casera + Repollitos quemados y pomelo), no muestra el producto. El banner de marca usa la foto de producto de Andes Origen Rubia con licencia comercial TABA-AUT-2026-08-001 (docs/catalog/image-manifest.json). La pieza queda en assets sin referencias."
                    }
                ],
     "nota":  "Fotografia editorial de categoria. NO es una promocion: no afirma precio, descuento, ranking ni stock. Lote curado y vetado en la-taba2-beverage-catalog-home/catalog-assets/promos (ver curation-report.md); cada pieza conserva su pagina fuente."

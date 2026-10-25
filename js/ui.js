@@ -1491,7 +1491,12 @@ const HOME_BANNER_COPY = Object.freeze({
   // Otra toma, no la del hero. Compartir la foto entre el hero y el banner de
   // marca dejaba la misma escena dos veces en la misma pantalla.
   heineken: { brand: 'Heineken', eyebrow: 'La marca', title: 'Heineken bien fría', image: 'assets/promos/cervezas-heineken-botella.jpg', focus: '50% 45%' },
-  'andes-origen': { brand: 'Andes Origen', eyebrow: 'De la Patagonia', title: 'Andes Origen', image: 'assets/promos/cervezas-andes-origen.webp' },
+  // La pieza curada de Andes Origen era una tarjeta de receta («Ricotta casera +
+  // Repollitos…») bajada del sitio de la marca: no mostraba el producto. Se usa
+  // la foto de producto de Andes Origen Rubia con licencia comercial
+  // (TABA-AUT-2026-08-001, docs/catalog/image-manifest.json), en recuadro de
+  // producto (`packshot`) y no recortada como escena.
+  'andes-origen': { brand: 'Andes Origen', eyebrow: 'De la Patagonia', title: 'Andes Origen', image: 'assets/products/andes-origen-rubia-lata-473ml-3d8a469028220903-thumb-6de9adb117eea8b8.webp', packshot: true },
   fernet: { eyebrow: 'Clásico argentino', title: 'Fernet y amargos', image: 'assets/promos/fernet-brancamenta.jpg', focus: '50% 48%' },
   whisky: { eyebrow: 'Selección premium', title: 'El mejor whisky', image: 'assets/promos/whisky-chivas.webp', focus: '64% 55%' },
   vinos: { eyebrow: 'Bodega', title: 'Vinos para la mesa' },
@@ -1553,7 +1558,7 @@ function homeBannerMarkup(id) {
   // catálogo ni de la URL, así que no hay dónde inyectar.
   const focus = /^[\d.]+% [\d.]+%$/.test(copy.focus || '') ? `;--banner-focus:${copy.focus}` : '';
   const media = copy.image
-    ? `<span class="home-brand-banner-media" aria-hidden="true" style="background-image:url('${encodeURI(copy.image)}')${focus}"></span>`
+    ? `<span class="home-brand-banner-media${copy.packshot ? ' is-packshot' : ''}" aria-hidden="true" style="background-image:url('${encodeURI(copy.image)}')${focus}"></span>`
     : '';
 
   // Puerta de MARCA: el destino es la búsqueda real de esa marca en el
@@ -1728,6 +1733,15 @@ export function showStoriesModal(index = 0, restoreTrigger = null) {
       renderStoryEntry();
       if (target?.isConnected && typeof target.focus === 'function') target.focus();
     });
+    // Flechas del teclado: mismo recorrido que Anterior/Siguiente.
+    modal.addEventListener('keydown', (event) => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      const delta = event.key === 'ArrowLeft' ? -1 : 1;
+      const next = storiesIndex + delta;
+      if (next < 0 || next >= getHomeStories().length) return;
+      event.preventDefault();
+      showStoriesModal(next);
+    });
     storiesCloseBound = true;
   }
 
@@ -1737,6 +1751,12 @@ export function showStoriesModal(index = 0, restoreTrigger = null) {
       ? active
       : null;
   }
+
+  // Al pasar de historia el contenido se reescribe; si el foco estaba adentro
+  // vuelve al mismo control (o al cierre) en vez de caerse al documento.
+  const focusedControl = modal.open && modal.contains(document.activeElement)
+    ? ['[data-story-next]', '[data-story-prev]'].find((selector) => document.activeElement.matches(selector)) || '[data-close-stories]'
+    : null;
 
   storiesIndex = Math.min(Math.max(0, Number(index) || 0), stories.length - 1);
   const story = stories[storiesIndex];
@@ -1769,8 +1789,46 @@ export function showStoriesModal(index = 0, restoreTrigger = null) {
       </div>
     </div>`;
 
+  // Mientras la pieza baja, el marco muestra un brillo de carga en vez de un
+  // hueco negro; al llegar (o al fallar) se retira. Una imagen ya cacheada
+  // llega `complete` y no parpadea.
+  const mediaBox = $('.stories-media', content);
+  const mediaNode = mediaBox?.querySelector('img, video');
+  if (mediaBox && mediaNode) {
+    const ready = () => { mediaBox.classList.remove('is-loading'); mediaBox.classList.add('is-ready'); };
+    const loaded = mediaNode.tagName === 'IMG' ? mediaNode.complete && mediaNode.naturalWidth > 0 : mediaNode.readyState >= 2;
+    if (loaded) ready();
+    else {
+      mediaBox.classList.add('is-loading');
+      mediaNode.addEventListener(mediaNode.tagName === 'IMG' ? 'load' : 'loadeddata', ready, { once: true });
+      mediaNode.addEventListener('error', ready, { once: true });
+    }
+  }
+
   if (typeof modal.showModal === 'function' && !modal.open) modal.showModal();
+  if (focusedControl) {
+    const control = $(focusedControl, content);
+    (control && !control.disabled ? control : $('[data-close-stories]', content))?.focus();
+  }
   return true;
+}
+
+// Tocar la pieza navega como en cualquier visor de historias: el tercio
+// izquierdo vuelve, el resto avanza. Los botones Anterior/Siguiente siguen
+// siendo el camino accesible; esto es un atajo para el pulgar.
+export function storiesTapDirection(event, mediaBox) {
+  if (!mediaBox || event.target?.closest?.('video')) return 0;
+  const box = mediaBox.getBoundingClientRect();
+  if (!box.width) return 0;
+  return event.clientX - box.left < box.width / 3 ? -1 : 1;
+}
+
+export function storiesCount() {
+  return getHomeStories().length;
+}
+
+export function currentStoryIndex() {
+  return storiesIndex;
 }
 
 export function stepStoriesModal(delta) {
@@ -3993,6 +4051,17 @@ export function renderOrderSummary() {
     <div class="summary-row"><span>${deliveryMode === 'pickup' ? 'Retiro en local' : 'Envío a domicilio'}</span><strong>${coordinatedDelivery ? 'A coordinar' : money(deliveryFee)}</strong></div>
     <div class="summary-row total"><span>${coordinatedDelivery ? 'Total estimado de productos' : 'Total'}</span><strong>${money(total)}</strong></div>
   `;
+
+  // Teléfono: el total viaja con «Confirmar pedido» en la barra fija del pie
+  // (styles/ux-premium.css). Va en atributos y se pinta con `attr()`: no es
+  // texto del DOM ni parte del nombre del botón, así que no duplica el total
+  // para lectores de pantalla ni para quien lo busca por texto. El importe es
+  // el mismo `total` de esta fila; no hay otro cálculo.
+  const checkoutBar = $('[data-checkout-submit]')?.closest('.button-row');
+  if (checkoutBar) {
+    checkoutBar.dataset.checkoutTotalLabel = coordinatedDelivery ? 'Total estimado' : 'Total';
+    checkoutBar.dataset.checkoutTotal = money(total);
+  }
 
   const warning = $('[data-checkout-warning]');
   if (warning) {

@@ -1,30 +1,39 @@
 const CACHE_PREFIX = 'la-taba-runtime-';
-const CACHE_NAME = 'la-taba-runtime-v162-mp-commercial-onboarding';
+/*
+ * Integración final 2026-10-24: onboarding comercial de Mercado Pago (#151) +
+ * capa UX premium completa (hasta 46e5ff2f) + vitrina Neuquén. Una identidad
+ * nueva porque el contenido del precache cambió respecto de v162, v163 y v164:
+ * reutilizar cualquiera dejaría dos artefactos distintos bajo la misma
+ * identidad y rompería el rollback y la certificación. v165 no comparte caché
+ * con ninguna publicación anterior.
+ */
+const CACHE_NAME = 'la-taba-runtime-v165-unified-ux-final';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=81',
-  './styles/tokens.css?v=81',
-  './styles/common.css?v=81',
-  './styles/storefront.css?v=81',
-  './styles/catalog.css?v=81',
-  './styles/checkout.css?v=81',
-  './styles/profile.css?v=81',
-  './styles/showcase.css?v=81',
-  './styles/tracking.css?v=81',
-  './styles/business.css?v=81',
-  './styles/rider.css?v=81',
-  './styles/responsive.css?v=81',
-  './styles/brand-home.css?v=81',
+  './styles.css?v=82',
+  './styles/tokens.css?v=82',
+  './styles/common.css?v=82',
+  './styles/storefront.css?v=82',
+  './styles/catalog.css?v=82',
+  './styles/checkout.css?v=82',
+  './styles/profile.css?v=82',
+  './styles/showcase.css?v=82',
+  './styles/tracking.css?v=82',
+  './styles/business.css?v=82',
+  './styles/rider.css?v=82',
+  './styles/responsive.css?v=82',
+  './styles/brand-home.css?v=82',
   // `styles.css` la importa desde que existe y nunca estuvo acá: sin red, la
   // home se quedaba sin la capa de movimiento. Lo destapó el guard de la
   // cadena de CSS versionado; no lo introdujo esta integración.
-  './styles/campaigns.css?v=81',
-  './styles/motion.css?v=81',
-  './styles/premium-storefront.css?v=81',
+  './styles/campaigns.css?v=82',
+  './styles/motion.css?v=82',
+  './styles/premium-storefront.css?v=82',
   './js/category-glass.js',
   './assets/brand/ambient-grain.png',
-  './styles/tracking-premium.css?v=81',
+  './styles/tracking-premium.css?v=82',
+  './styles/ux-premium.css?v=82',
   './js/map/touch_intent.js',
   './manifest.webmanifest',
   './runtime-config.js?tenant=walter-staging',
@@ -45,7 +54,7 @@ const ASSETS = [
   './assets/products/beverage-placeholder.svg',
   './js/pwa-update.js?v=4',
   './js/startup-recovery.js?v=3',
-  './js/app.js?v=53',
+  './js/app.js?v=54',
   './js/config.js',
   './js/core/address.js',
   './js/core/app-mode.js',
@@ -128,6 +137,9 @@ const ASSETS = [
   './js/data.js',
   './js/beverage-demo-data.js',
   './js/approved-beverage-demo-data.js',
+  // Vitrina de revisión comercial (Neuquén 2026-10-24): import estático de
+  // `beverage-demo-data.js`, así que entra al grafo y también al precache.
+  './js/vitrina-neuquen-20261024.js',
   /*
    * Faltaba, y no era una omisión menor: es el catálogo comercial entero
    * (115 KB) y entra al arranque por una cadena de re-exports —`data.js` es una

@@ -1,0 +1,136 @@
+{
+  "esquema": "polish-baseline-20261024",
+  "base": "http://127.0.0.1:8270",
+  "capturas": [
+    {
+      "nombre": "demo-m-home-full",
+      "ok": true,
+      "archivo": "demo-m-home-full.png"
+    },
+    {
+      "nombre": "demo-m-gondola-top",
+      "ok": true,
+      "archivo": "demo-m-gondola-top.png"
+    },
+    {
+      "nombre": "demo-m-gondola-full",
+      "ok": true,
+      "archivo": "demo-m-gondola-full.png"
+    },
+    {
+      "nombre": "demo-m-ficha",
+      "ok": true,
+      "archivo": "demo-m-ficha.png"
+    },
+    {
+      "nombre": "demo-m-carrito",
+      "ok": true,
+      "archivo": "demo-m-carrito.png"
+    },
+    {
+      "nombre": "demo-m-checkout",
+      "ok": true,
+      "archivo": "demo-m-checkout.png"
+    },
+    {
+      "nombre": "demo-m-historia",
+      "ok": true,
+      "archivo": "demo-m-historia.png"
+    },
+    {
+      "nombre": "demo-d-home-full",
+      "ok": true,
+      "archivo": "demo-d-home-full.png"
+    },
+    {
+      "nombre": "demo-d-gondola-top",
+      "ok": true,
+      "archivo": "demo-d-gondola-top.png"
+    },
+    {
+      "nombre": "demo-d-gondola-full",
+      "ok": true,
+      "archivo": "demo-d-gondola-full.png"
+    },
+    {
+      "nombre": "demo-d-ficha",
+      "ok": true,
+      "archivo": "demo-d-ficha.png"
+    },
+    {
+      "nombre": "demo-d-carrito",
+      "ok": true,
+      "archivo": "demo-d-carrito.png"
+    },
+    {
+      "nombre": "demo-d-checkout",
+      "ok": true,
+      "archivo": "demo-d-checkout.png"
+    },
+    {
+      "nombre": "demo-d-historia",
+      "ok": true,
+      "archivo": "demo-d-historia.png"
+    },
+    {
+      "nombre": "vitrina-m-home-full",
+      "ok": true,
+      "archivo": "vitrina-m-home-full.png"
+    },
+    {
+      "nombre": "vitrina-m-gondola-top",
+      "ok": true,
+      "archivo": "vitrina-m-gondola-top.png"
+    },
+    {
+      "nombre": "vitrina-m-gondola-full",
+      "ok": true,
+      "archivo": "vitrina-m-gondola-full.png"
+    },
+    {
+      "nombre": "vitrina-m-ficha",
+      "ok": true,
+      "archivo": "vitrina-m-ficha.png"
+    },
+    {
+      "nombre": "vitrina-m-carrito",
+      "ok": true,
+      "archivo": "vitrina-m-carrito.png"
+    },
+    {
+      "nombre": "vitrina-m-checkout",
+      "ok": true,
+      "archivo": "vitrina-m-checkout.png"
+    },
+    {
+      "nombre": "vitrina-d-home-full",
+      "ok": true,
+      "archivo": "vitrina-d-home-full.png"
+    },
+    {
+      "nombre": "vitrina-d-gondola-top",
+      "ok": true,
+      "archivo": "vitrina-d-gondola-top.png"
+    },
+    {
+      "nombre": "vitrina-d-gondola-full",
+      "ok": true,
+      "archivo": "vitrina-d-gondola-full.png"
+    },
+    {
+      "nombre": "vitrina-d-ficha",
+      "ok": true,
+      "archivo": "vitrina-d-ficha.png"
+    },
+    {
+      "nombre": "vitrina-d-carrito",
+      "ok": true,
+      "archivo": "vitrina-d-carrito.png"
+    },
+    {
+      "nombre": "vitrina-d-checkout",
+      "ok": true,
+      "archivo": "vitrina-d-checkout.png"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+
+Running 20 tests using 1 worker, shard 3 of 8
+
+  ✓   1 [mobile-webkit] › tests\e2e\catalog-runtime-stability.spec.mjs:6:1 › las variantes pendientes no afirman agotado ni filtran importes residuales (898ms)
+  ✓   2 [mobile-webkit] › tests\e2e\catalog-runtime-stability.spec.mjs:32:1 › búsqueda rápida, filtros y orden conservan nodos y el último resultado (2.2s)
+  ✓   3 [mobile-webkit] › tests\e2e\catalog-runtime-stability.spec.mjs:62:1 › Realtime sano: diez recorridos y eventos idénticos conservan cards e imágenes (18.7s)
+  ✓   4 [mobile-webkit] › tests\e2e\catalog-runtime-stability.spec.mjs:84:1 › Realtime caído: treinta segundos de polling idéntico y un cambio aislado (36.1s)
+  ✓   5 [mobile-webkit] › tests\e2e\catalog-runtime-stability.spec.mjs:120:1 › precio pendiente residual: ficha abierta, Realtime, búsqueda, home y vuelta (4.6s)
+  ✓   6 [mobile-webkit] › tests\e2e\catalog-runtime-stability.spec.mjs:145:1 › diez ciclos completos y sesión de dos minutos conservan identidades y posición (2.1m)
+  ✓   7 [mobile-webkit] › tests\e2e\catalog-runtime-stability.spec.mjs:189:1 › una nueva sesión de ficha descarta notas consumidas y canceladas (11.4s)
+  ✓   8 [mobile-webkit] › tests\e2e\catalog-runtime-stability.spec.mjs:223:1 › Realtime conserva el borrador y la imagen de la ficha abierta (4.0s)
+  ✓   9 [mobile-webkit] › tests\e2e\catalog-transformation.spec.mjs:33:3 › vista del catálogo: cuadrícula y lista › en el teléfono la grilla es la vista de entrada y el botón ofrece la lista (2.3s)
+  ✓  10 [mobile-webkit] › tests\e2e\catalog-transformation.spec.mjs:44:3 › vista del catálogo: cuadrícula y lista › la lista muestra al menos cuatro productos completos, con precio y «Agregar», sin desborde (3.1s)
+  ✓  11 [mobile-webkit] › tests\e2e\catalog-transformation.spec.mjs:82:3 › vista del catálogo: cuadrícula y lista › agregar desde la lista pone el stepper en su lugar y el corazón y los textos no se pisan (4.4s)
+  ✓  12 [mobile-webkit] › tests\e2e\catalog-transformation.spec.mjs:102:3 › vista del catálogo: cuadrícula y lista › la elección se recuerda en la próxima visita y vuelve a la grilla con un toque (5.7s)
+  ✓  13 [mobile-webkit] › tests\e2e\catalog-transformation.spec.mjs:120:3 › vista del catálogo: cuadrícula y lista › productos agotados y sin precio caben en la lista sin desbordar (4.4s)
+  ✓  14 [mobile-webkit] › tests\e2e\catalog-transformation.spec.mjs:144:3 › vista del catálogo: cuadrícula y lista › desde tableta no hay botón y la grilla no cambia aunque haya «lista» guardada (2.2s)
+  ✓  15 [mobile-webkit] › tests\e2e\catalog-transformation.spec.mjs:162:3 › buscar dentro de un rubro › avisa el alcance y «Buscar en todo» lo suelta sin perder la búsqueda (3.8s)
+  ✓  16 [mobile-webkit] › tests\e2e\catalog-transformation.spec.mjs:182:3 › buscar dentro de un rubro › en «Todas» no hay aviso de alcance (1.9s)
+  ✓  17 [mobile-webkit] › tests\e2e\catalog-transformation.spec.mjs:191:3 › fotografía editorial y derechos › en demostración la home muestra el hero con foto y los banners con su imagen (1.6s)
+  ✓  18 [mobile-webkit] › tests\e2e\catalog-transformation.spec.mjs:204:3 › fotografía editorial y derechos › en producción (catálogo simulado) no se pide ni se pinta ninguna foto editorial (1.7s)
+  ✓  19 [mobile-webkit] › tests\e2e\catalog-transformation.spec.mjs:226:3 › productos sin foto autorizada › el placeholder es propio, legible y honesto, y el producto sigue comprándose (2.9s)
+  ✓  20 [mobile-webkit] › tests\e2e\catalog-transformation.spec.mjs:244:3 › combo único en el teléfono › un solo combo ocupa el ancho del renglón y no deja un hueco a la derecha (2.9s)
+
+  20 passed (4.0m)
+E2E estable: ninguna prueba necesitó reintento.

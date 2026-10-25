@@ -1,0 +1,41 @@
+{
+  "etapa": "despues",
+  "fecha": "2026-10-25T01:53:46.677Z",
+  "pasos": [
+    {
+      "nombre": "carga en línea y precaché completo",
+      "ok": true,
+      "sizes": {
+        "la-taba-runtime-v166-catalog-transformation": 275
+      },
+      "controlador": true,
+      "activo": "activated",
+      "esperando": false
+    },
+    {
+      "nombre": "recarga SIN conexión: la tienda arranca desde el worker",
+      "ok": true,
+      "tarjetas": 48,
+      "titulo": "La Taba · Tienda 24/7 con delivery en Neuquén"
+    },
+    {
+      "nombre": "catálogo y lista funcionan sin conexión",
+      "ok": true,
+      "productos": 52,
+      "imagenesCargadas": 6
+    },
+    {
+      "nombre": "agregar, carrito y confirmar pedido de prueba sin conexión",
+      "ok": true,
+      "total": "$ 9.690",
+      "toast": null
+    },
+    {
+      "nombre": "cachés: sólo la versión vigente",
+      "ok": true,
+      "claves": [
+        "la-taba-runtime-v166-catalog-transformation"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,2401 @@
+{
+  "generadoEl": "2026-10-25",
+  "totalSku": 52,
+  "resumen": {
+    "porEstado": {
+      "COMPLETO_CON_FOTO": 42,
+      "COMPLETO_SIN_FOTO": 10,
+      "INCOMPLETO": 0,
+      "DEFECTUOSO": 0
+    },
+    "fotos": {
+      "autorizadaDeclarada": 42,
+      "sinFoto": 10,
+      "defectuosa": 0
+    },
+    "precios": {
+      "mantieneVigente": 32,
+      "conflictoMargen": 14,
+      "pendienteComparacion": 6,
+      "costoDerivado": 2,
+      "antiguedadCostoDias": 68
+    },
+    "alcohol": 23,
+    "listosParaVender": 0,
+    "aprobacionComercialPendiente": 52,
+    "defectosTecnicos": 0
+  },
+  "filas": [
+    {
+      "sku": "coca-cola-original-2250ml",
+      "nombre": "Coca-Cola",
+      "rubro": "Gaseosas",
+      "presentacion": "2250 ml · botella-pet",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 5900,
+        "pisoMargen": 5900,
+        "propuestaEstado": "conflicto_margen",
+        "propuestaPrecio": 5900,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 6000,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "fabricante",
+          "fuente": "https://coca-colaentucasa.com/media/catalog/product/6/-/6-render_2.25l_1.png"
+        },
+        "clasificacion": "OFFICIAL_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo",
+        "conflicto de margen en la propuesta de precios: decisión del dueño (no se rebaja)"
+      ]
+    },
+    {
+      "sku": "coca-cola-zero-2250ml",
+      "nombre": "Coca-Cola Zero",
+      "rubro": "Gaseosas",
+      "presentacion": "2250 ml · botella-pet",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 5900,
+        "pisoMargen": 5900,
+        "propuestaEstado": "conflicto_margen",
+        "propuestaPrecio": 5900,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 6000,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "fabricante",
+          "fuente": "https://coca-colaentucasa.com/media/catalog/product/6/-/6-render_2.25l_z.png"
+        },
+        "clasificacion": "OFFICIAL_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo",
+        "conflicto de margen en la propuesta de precios: decisión del dueño (no se rebaja)"
+      ]
+    },
+    {
+      "sku": "coca-cola-original-lata-354ml",
+      "nombre": "Coca-Cola",
+      "rubro": "Gaseosas",
+      "presentacion": "354 ml · lata",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 1800,
+        "pisoMargen": 1800,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 1800,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 2700,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "proveedor_aprobado",
+          "fuente": "https://jumboargentina.vtexassets.com/arquivos/ids/782827/Gaseosa-Coca-cola-Sabor-Original-354-Ml-2-32332.jpg?v=638206689782930000"
+        },
+        "clasificacion": "AUTHORIZED_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo"
+      ]
+    },
+    {
+      "sku": "coca-cola-zero-lata-354ml",
+      "nombre": "Coca-Cola Zero",
+      "rubro": "Gaseosas",
+      "presentacion": "354 ml · lata",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 1800,
+        "pisoMargen": 1800,
+        "propuestaEstado": "conflicto_margen",
+        "propuestaPrecio": 1800,
+        "comparador": {
+          "tienda": "La Anónima",
+          "precio": 1850,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "proveedor_aprobado",
+          "fuente": "https://www.espaciovino.com.ar/media/default/0001/73/thumb_72209_default_big.jpeg"
+        },
+        "clasificacion": "AUTHORIZED_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo",
+        "conflicto de margen en la propuesta de precios: decisión del dueño (no se rebaja)"
+      ]
+    },
+    {
+      "sku": "sprite-original-2250ml",
+      "nombre": "Sprite",
+      "rubro": "Gaseosas",
+      "presentacion": "2250 ml · botella-pet",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 5900,
+        "pisoMargen": 5900,
+        "propuestaEstado": "conflicto_margen",
+        "propuestaPrecio": 5900,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 6000,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "fabricante",
+          "fuente": "https://coca-colaentucasa.com/media/catalog/product/3/-/3-render_2.25l_sp.png"
+        },
+        "clasificacion": "OFFICIAL_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo",
+        "conflicto de margen en la propuesta de precios: decisión del dueño (no se rebaja)"
+      ]
+    },
+    {
+      "sku": "sprite-zero-2250ml",
+      "nombre": "Sprite Zero",
+      "rubro": "Gaseosas",
+      "presentacion": "2250 ml · botella-pet",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 5900,
+        "pisoMargen": 5900,
+        "propuestaEstado": "conflicto_margen",
+        "propuestaPrecio": 5900,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 6000,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": true,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": [
+          "costo DERIVADO (no medido el día del relevamiento)"
+        ]
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "fabricante",
+          "fuente": "https://coca-colaentucasa.com/media/catalog/product/4/-/4-render_2.25l_spz.png"
+        },
+        "clasificacion": "OFFICIAL_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo",
+        "conflicto de margen en la propuesta de precios: decisión del dueño (no se rebaja)",
+        "el costo detrás del precio es derivado, no medido"
+      ]
+    },
+    {
+      "sku": "sprite-original-lata-354ml",
+      "nombre": "Sprite",
+      "rubro": "Gaseosas",
+      "presentacion": "354 ml · lata",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 1800,
+        "pisoMargen": 1800,
+        "propuestaEstado": "conflicto_margen",
+        "propuestaPrecio": 1800,
+        "comparador": {
+          "tienda": "La Anónima",
+          "precio": 1850,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "fabricante",
+          "fuente": "https://coca-colaentucasa.com/media/catalog/product/s/p/spritelima-limo_n354ml_1.png"
+        },
+        "clasificacion": "OFFICIAL_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo",
+        "conflicto de margen en la propuesta de precios: decisión del dueño (no se rebaja)"
+      ]
+    },
+    {
+      "sku": "fanta-naranja-2250ml",
+      "nombre": "Fanta Naranja",
+      "rubro": "Gaseosas",
+      "presentacion": "2250 ml · botella-pet",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 5900,
+        "pisoMargen": 5900,
+        "propuestaEstado": "conflicto_margen",
+        "propuestaPrecio": 5900,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 6000,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "proveedor_aprobado",
+          "fuente": "https://jumboargentina.vtexassets.com/arquivos/ids/893206/Gaseosa-Naranja-2-25-Lts-Fanta-2-248227.jpg?v=639009777706070000"
+        },
+        "clasificacion": "AUTHORIZED_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo",
+        "conflicto de margen en la propuesta de precios: decisión del dueño (no se rebaja)"
+      ]
+    },
+    {
+      "sku": "pepsi-original-2000ml",
+      "nombre": "Pepsi",
+      "rubro": "Gaseosas",
+      "presentacion": "2000 ml · botella-pet",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 3800,
+        "pisoMargen": 3800,
+        "propuestaEstado": "conflicto_margen",
+        "propuestaPrecio": 3800,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 3520,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "proveedor_aprobado",
+          "fuente": "https://jumboargentina.vtexassets.com/arquivos/ids/907125-1000-auto?aspect=true&height=auto&v=639124043908630000&width=1000"
+        },
+        "clasificacion": "AUTHORIZED_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo",
+        "conflicto de margen en la propuesta de precios: decisión del dueño (no se rebaja)"
+      ]
+    },
+    {
+      "sku": "pepsi-black-1500ml",
+      "nombre": "Pepsi Black",
+      "rubro": "Gaseosas",
+      "presentacion": "1500 ml · botella-pet",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 2650,
+        "pisoMargen": 2650,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 2650,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 3160,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "proveedor_aprobado",
+          "fuente": "https://jumboargentina.vtexassets.com/arquivos/ids/907119-1000-auto?aspect=true&height=auto&v=639124043883700000&width=1000"
+        },
+        "clasificacion": "AUTHORIZED_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo"
+      ]
+    },
+    {
+      "sku": "seven-up-original-2000ml",
+      "nombre": "7UP",
+      "rubro": "Gaseosas",
+      "presentacion": "2000 ml · botella-pet",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 3800,
+        "pisoMargen": 3800,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 3800,
+        "comparador": {
+          "tienda": "La Anónima",
+          "precio": 4650,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "proveedor_aprobado",
+          "fuente": "https://jumboargentina.vteximg.com.br/arquivos/ids/904889/Gaseosa-Lima-Lim-n-X-2-Lts-7-Up-1-1057020.jpg?v=639232771896330000"
+        },
+        "clasificacion": "AUTHORIZED_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo"
+      ]
+    },
+    {
+      "sku": "paso-de-los-toros-tonica-1500ml",
+      "nombre": "Paso de los Toros Tónica",
+      "rubro": "Mixers",
+      "presentacion": "1500 ml · botella-pet",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 3250,
+        "pisoMargen": 3250,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 3250,
+        "comparador": {
+          "tienda": "La Anónima",
+          "precio": 4100,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "distribuidor_oficial",
+          "fuente": "https://boulevard-sa.com.ar/Site/img/products/paso-de-los-toros/Paso-de-los-Toros-1500-L.jpg"
+        },
+        "clasificacion": "AUTHORIZED_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo"
+      ]
+    },
+    {
+      "sku": "paso-de-los-toros-pomelo-1500ml",
+      "nombre": "Paso de los Toros Pomelo",
+      "rubro": "Mixers",
+      "presentacion": "1500 ml · botella-pet",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 3250,
+        "pisoMargen": 3250,
+        "propuestaEstado": "conflicto_margen",
+        "propuestaPrecio": 3250,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 3160,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "distribuidor_oficial",
+          "fuente": "https://boulevard-sa.com.ar/Site/img/products/paso-de-los-toros/Paso-de-los-Toros-pomelo-1500-L.jpg"
+        },
+        "clasificacion": "AUTHORIZED_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo",
+        "conflicto de margen en la propuesta de precios: decisión del dueño (no se rebaja)"
+      ]
+    },
+    {
+      "sku": "soda-manaos-sifon-2000ml",
+      "nombre": "Manaos Soda Manaos",
+      "rubro": "Mixers",
+      "presentacion": "2000 ml · sifon",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 1750,
+        "pisoMargen": 1750,
+        "propuestaEstado": "pendiente_sin_comparador",
+        "propuestaPrecio": null,
+        "comparador": {
+          "tienda": "",
+          "precio": "",
+          "coincidencia": "NINGUNA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "fabricante",
+          "fuente": "https://www.manaosargentina.com/images/productos/soda/MANAOS-SODA-2LTS.jpg"
+        },
+        "clasificacion": "OFFICIAL_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo",
+        "precio pendiente de comparación con el mercado"
+      ]
+    },
+    {
+      "sku": "villa-del-sur-sin-gas-600ml",
+      "nombre": "Villa del Sur",
+      "rubro": "Aguas",
+      "presentacion": "600 ml · botella-pet",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 1700,
+        "pisoMargen": 1700,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 1700,
+        "comparador": {
+          "tienda": "La Anónima",
+          "precio": 2250,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "proveedor_aprobado",
+          "fuente": "https://cdn1.kilbelonline.com/webapp/images/productos/b/0000028000/28237.jpg"
+        },
+        "clasificacion": "AUTHORIZED_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo"
+      ]
+    },
+    {
+      "sku": "villavicencio-sin-gas-1500ml",
+      "nombre": "Villavicencio",
+      "rubro": "Aguas",
+      "presentacion": "1500 ml · botella-pet",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 2400,
+        "pisoMargen": 2400,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 2400,
+        "comparador": {
+          "tienda": "La Anónima",
+          "precio": 3300,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "proveedor_aprobado",
+          "fuente": "https://ardiaprod.vteximg.com.br/arquivos/ids/377160/Agua-Pet-Sin-Gas-Villavicencio-15-Lt-_1.jpg?v=639228155475400000"
+        },
+        "clasificacion": "AUTHORIZED_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo"
+      ]
+    },
+    {
+      "sku": "villavicencio-con-gas-500ml",
+      "nombre": "Villavicencio",
+      "rubro": "Aguas",
+      "presentacion": "500 ml · botella-pet",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 1900,
+        "pisoMargen": 1900,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 1900,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 2000,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": true,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": [
+          "costo DERIVADO (no medido el día del relevamiento)"
+        ]
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "proveedor_aprobado",
+          "fuente": "https://arjosimarprod.vtexassets.com/arquivos/ids/170249/Agua-Gasificada-Villavicencio-500-cc-1-8950.jpg?v=638567625653030000"
+        },
+        "clasificacion": "AUTHORIZED_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo",
+        "el costo detrás del precio es derivado, no medido"
+      ]
+    },
+    {
+      "sku": "benedictino-sin-gas-2250ml",
+      "nombre": "Benedictino",
+      "rubro": "Aguas",
+      "presentacion": "2250 ml · botella-pet",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 2250,
+        "pisoMargen": 2250,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 2250,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 2700,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "fabricante",
+          "fuente": "https://coca-colaentucasa.com/media/catalog/product/3/-/3-render_2.25l_bndsg.png"
+        },
+        "clasificacion": "OFFICIAL_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo"
+      ]
+    },
+    {
+      "sku": "aquarius-pera-1500ml",
+      "nombre": "Aquarius Pera",
+      "rubro": "Aguas saborizadas",
+      "presentacion": "1500 ml · botella-pet",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 1800,
+        "pisoMargen": 1800,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 1800,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 3100,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "fabricante",
+          "fuente": "https://coca-colaentucasa.com/media/catalog/product/a/q/aqu-pera-nor-pet-1.5l-6pz_1.jpg"
+        },
+        "clasificacion": "OFFICIAL_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo"
+      ]
+    },
+    {
+      "sku": "aquarius-manzana-1500ml",
+      "nombre": "Aquarius Manzana",
+      "rubro": "Aguas saborizadas",
+      "presentacion": "1500 ml · botella-pet",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 1800,
+        "pisoMargen": 1800,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 1800,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 3100,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "fabricante",
+          "fuente": "https://coca-colaentucasa.com/media/catalog/product/a/q/aqu-manz-nor-pet-1.5l-6pz_1.jpg"
+        },
+        "clasificacion": "OFFICIAL_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo"
+      ]
+    },
+    {
+      "sku": "aquarius-pomelo-2250ml",
+      "nombre": "Aquarius Pomelo",
+      "rubro": "Aguas saborizadas",
+      "presentacion": "2250 ml · botella-pet",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 2650,
+        "pisoMargen": 2650,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 2650,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 3850,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "fabricante",
+          "fuente": "https://coca-colaentucasa.com/media/catalog/product/a/q/aqu-pome-nor-pet-2.25l-6pz_1.jpg"
+        },
+        "clasificacion": "OFFICIAL_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo"
+      ]
+    },
+    {
+      "sku": "red-bull-original-250ml",
+      "nombre": "Red Bull",
+      "rubro": "Energizantes",
+      "presentacion": "250 ml · lata",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 2800,
+        "pisoMargen": 2800,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 2800,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 3439,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "fabricante",
+          "fuente": "https://www.redbull.com/energydrink/v1/resources/storyblok/images/f/287059/528x1348/b0f01ba07f/ar_ed_250ml_energy-drink_country_rgb__cold_closed_front_com_full.png/m/686x0"
+        },
+        "clasificacion": "OFFICIAL_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo"
+      ]
+    },
+    {
+      "sku": "red-bull-sin-azucar-250ml",
+      "nombre": "Red Bull Sugarfree",
+      "rubro": "Energizantes",
+      "presentacion": "250 ml · lata",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 2800,
+        "pisoMargen": 2800,
+        "propuestaEstado": "conflicto_margen",
+        "propuestaPrecio": 2800,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 2860.8,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "fabricante",
+          "fuente": "https://www.redbull.com/energydrink/v1/resources/storyblok/images/f/287059/528x1348/4fe7d5680f/ar_sf_250ml_sugarfree_country_rgb_do241550_cold_closed_front_com_full.png/m/686x0"
+        },
+        "clasificacion": "OFFICIAL_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo",
+        "conflicto de margen en la propuesta de precios: decisión del dueño (no se rebaja)"
+      ]
+    },
+    {
+      "sku": "monster-green-zero-473ml",
+      "nombre": "Monster Green Zero",
+      "rubro": "Energizantes",
+      "presentacion": "473 ml · lata",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 3250,
+        "pisoMargen": 3250,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 3250,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 3500,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "fabricante",
+          "fuente": "https://web-assests.monsterenergy.com/mnst/9c1506b2-791c-4f0a-9ed9-25cf66549334.png"
+        },
+        "clasificacion": "OFFICIAL_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo"
+      ]
+    },
+    {
+      "sku": "speed-original-473ml",
+      "nombre": "Speed",
+      "rubro": "Energizantes",
+      "presentacion": "473 ml · lata",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 2850,
+        "pisoMargen": 2850,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 2850,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 3045,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "proveedor_aprobado",
+          "fuente": "https://distribuidoramif.com.ar/wp-content/uploads/2026/07/377a6ad4-3847-4ff2-9fdb-bf15998223a5.jpg"
+        },
+        "clasificacion": "AUTHORIZED_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo"
+      ]
+    },
+    {
+      "sku": "speed-zero-473ml",
+      "nombre": "Speed Zero",
+      "rubro": "Energizantes",
+      "presentacion": "473 ml · lata",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 2850,
+        "pisoMargen": 2850,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 2850,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 3045,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "proveedor_aprobado",
+          "fuente": "https://distribuidoramif.com.ar/wp-content/uploads/2026/07/b63beccd-a0d4-4d8c-9a5c-de57c01c7697.jpeg"
+        },
+        "clasificacion": "AUTHORIZED_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo"
+      ]
+    },
+    {
+      "sku": "gatorade-cool-blue-500ml",
+      "nombre": "Gatorade Cool Blue",
+      "rubro": "Isotónicas",
+      "presentacion": "500 ml · botella-pet",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 2000,
+        "pisoMargen": 2000,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 2000,
+        "comparador": {
+          "tienda": "La Anónima",
+          "precio": 3250,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "distribuidor_oficial",
+          "fuente": "https://boulevard-sa.com.ar/Site/img/products/gatorade/Gatorade-cool-blue-500-L.jpg"
+        },
+        "clasificacion": "AUTHORIZED_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo"
+      ]
+    },
+    {
+      "sku": "gatorade-manzana-1250ml",
+      "nombre": "Gatorade Manzana",
+      "rubro": "Isotónicas",
+      "presentacion": "1250 ml · botella-pet",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 2650,
+        "pisoMargen": 2650,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 2650,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 2850,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "distribuidor_oficial",
+          "fuente": "https://boulevard-sa.com.ar/Site/img/products/gatorade/Gatorade-manzana-1250-L.jpg"
+        },
+        "clasificacion": "AUTHORIZED_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo"
+      ]
+    },
+    {
+      "sku": "powerade-mountain-blast-500ml",
+      "nombre": "Powerade Mountain Blast",
+      "rubro": "Isotónicas",
+      "presentacion": "500 ml · botella-pet",
+      "alcohol": false,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 1450,
+        "pisoMargen": 1450,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 1450,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 2200,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "proveedor_aprobado",
+          "fuente": "https://ardiaprod.vtexassets.com/arquivos/ids/364198/Bebida-Isotonica-Powerade-Mountain-Blast-500-Ml-_2.jpg?v=639047812189470000"
+        },
+        "clasificacion": "AUTHORIZED_EXACT"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo"
+      ]
+    },
+    {
+      "sku": "quilmes-clasica-lata-473ml",
+      "nombre": "Quilmes Clásica",
+      "rubro": "Cervezas",
+      "presentacion": "473 ml · lata",
+      "alcohol": true,
+      "estadoCatalogo": "COMPLETO_SIN_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 2050,
+        "pisoMargen": 2050,
+        "propuestaEstado": "pendiente_sin_comparador",
+        "propuestaPrecio": null,
+        "comparador": {
+          "tienda": "",
+          "precio": "",
+          "coincidencia": "NINGUNA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "SIN_FOTO",
+        "problemas": [],
+        "avisos": [
+          "sin foto autorizada: la tarjeta muestra el placeholder propio"
+        ],
+        "derechos": null
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "sin foto autorizada (placeholder propio)",
+        "precio pendiente de comparación con el mercado"
+      ]
+    },
+    {
+      "sku": "quilmes-clasica-lata-473ml-pack-6",
+      "nombre": "Quilmes Clásica",
+      "rubro": "Cervezas",
+      "presentacion": "473 ml · lata · pack x6",
+      "alcohol": true,
+      "estadoCatalogo": "COMPLETO_SIN_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 11400,
+        "pisoMargen": 11400,
+        "propuestaEstado": "pendiente_sin_comparador",
+        "propuestaPrecio": null,
+        "comparador": {
+          "tienda": "",
+          "precio": "",
+          "coincidencia": "NINGUNA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "SIN_FOTO",
+        "problemas": [],
+        "avisos": [
+          "sin foto autorizada: la tarjeta muestra el placeholder propio"
+        ],
+        "derechos": null
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "sin foto autorizada (placeholder propio)",
+        "precio pendiente de comparación con el mercado"
+      ]
+    },
+    {
+      "sku": "quilmes-clasica-botella-710ml",
+      "nombre": "Quilmes Clásica",
+      "rubro": "Cervezas",
+      "presentacion": "710 ml · botella",
+      "alcohol": true,
+      "estadoCatalogo": "COMPLETO_SIN_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 3000,
+        "pisoMargen": 3000,
+        "propuestaEstado": "conflicto_margen",
+        "propuestaPrecio": 3000,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 2990,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "SIN_FOTO",
+        "problemas": [],
+        "avisos": [
+          "sin foto autorizada: la tarjeta muestra el placeholder propio"
+        ],
+        "derechos": null
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "sin foto autorizada (placeholder propio)",
+        "conflicto de margen en la propuesta de precios: decisión del dueño (no se rebaja)"
+      ]
+    },
+    {
+      "sku": "quilmes-stout-lata-473ml",
+      "nombre": "Quilmes Stout",
+      "rubro": "Cervezas",
+      "presentacion": "473 ml · lata",
+      "alcohol": true,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 2050,
+        "pisoMargen": 2050,
+        "propuestaEstado": "pendiente_sin_comparador",
+        "propuestaPrecio": null,
+        "comparador": {
+          "tienda": "",
+          "precio": "",
+          "coincidencia": "NINGUNA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo",
+          "la foto no está contrastada con el mapa auditado de producción"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "proveedor_aprobado",
+          "fuente": "https://jumboargentina.vteximg.com.br/arquivos/ids/890491/Cerveza-Quilmes-Stout-473cc-1-5591.jpg?v=638987206018100000"
+        },
+        "clasificacion": "MANIFIESTO_PREPARADO"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo",
+        "precio pendiente de comparación con el mercado"
+      ]
+    },
+    {
+      "sku": "brahma-chopp-lata-710ml",
+      "nombre": "Brahma Chopp",
+      "rubro": "Cervezas",
+      "presentacion": "710 ml · lata",
+      "alcohol": true,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 3000,
+        "pisoMargen": 3000,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 3000,
+        "comparador": {
+          "tienda": "La Anónima",
+          "precio": 4200,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo",
+          "la foto no está contrastada con el mapa auditado de producción"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "proveedor_aprobado",
+          "fuente": "https://jumboargentina.vteximg.com.br/arquivos/ids/890575/Cerveza-Rubia-X-710-Cc-Brahma-1-1046613.jpg?v=638987206380170000"
+        },
+        "clasificacion": "MANIFIESTO_PREPARADO"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo"
+      ]
+    },
+    {
+      "sku": "budweiser-lata-473ml",
+      "nombre": "Budweiser",
+      "rubro": "Cervezas",
+      "presentacion": "473 ml · lata",
+      "alcohol": true,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 2350,
+        "pisoMargen": 2350,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 2350,
+        "comparador": {
+          "tienda": "La Anónima",
+          "precio": 2950,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo",
+          "la foto no está contrastada con el mapa auditado de producción"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "proveedor_aprobado",
+          "fuente": "https://jumboargentina.vteximg.com.br/arquivos/ids/890497/Cerveza-Budweiser-Lata-473-Ml-1-17952.jpg?v=638987206039670000"
+        },
+        "clasificacion": "MANIFIESTO_PREPARADO"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo"
+      ]
+    },
+    {
+      "sku": "stella-artois-lata-473ml",
+      "nombre": "Stella Artois",
+      "rubro": "Cervezas",
+      "presentacion": "473 ml · lata",
+      "alcohol": true,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 3600,
+        "pisoMargen": 3600,
+        "propuestaEstado": "conflicto_margen",
+        "propuestaPrecio": 3600,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 3400,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo",
+          "la foto no está contrastada con el mapa auditado de producción"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "proveedor_aprobado",
+          "fuente": "https://jumboargentina.vteximg.com.br/arquivos/ids/890507/Cerveza-Stella-Artois-Rubia-473-Ml-1-38031.jpg?v=638987206078500000"
+        },
+        "clasificacion": "MANIFIESTO_PREPARADO"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo",
+        "conflicto de margen en la propuesta de precios: decisión del dueño (no se rebaja)"
+      ]
+    },
+    {
+      "sku": "corona-extra-botella-330ml",
+      "nombre": "Corona Extra",
+      "rubro": "Cervezas",
+      "presentacion": "330 ml · botella",
+      "alcohol": true,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 3400,
+        "pisoMargen": 3400,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 3400,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 4700,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo",
+          "la foto no está contrastada con el mapa auditado de producción"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "proveedor_aprobado",
+          "fuente": "https://carrefourar.vteximg.com.br/arquivos/ids/794008/7792798003709_01.jpg?v=639046411603700000"
+        },
+        "clasificacion": "MANIFIESTO_PREPARADO"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo"
+      ]
+    },
+    {
+      "sku": "andes-origen-rubia-lata-473ml",
+      "nombre": "Andes Origen Rubia",
+      "rubro": "Cervezas",
+      "presentacion": "473 ml · lata",
+      "alcohol": true,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 2650,
+        "pisoMargen": 2650,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 2650,
+        "comparador": {
+          "tienda": "La Anónima",
+          "precio": 3550,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo",
+          "la foto no está contrastada con el mapa auditado de producción"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "proveedor_aprobado",
+          "fuente": "https://jumboargentina.vteximg.com.br/arquivos/ids/890518/Cerveza-Andes-Origen-Rubia-473cc-1-276781.jpg?v=638987206116200000"
+        },
+        "clasificacion": "MANIFIESTO_PREPARADO"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo"
+      ]
+    },
+    {
+      "sku": "andes-origen-roja-lata-473ml",
+      "nombre": "Andes Origen Roja",
+      "rubro": "Cervezas",
+      "presentacion": "473 ml · lata",
+      "alcohol": true,
+      "estadoCatalogo": "COMPLETO_SIN_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 2650,
+        "pisoMargen": 2650,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 2650,
+        "comparador": {
+          "tienda": "La Anónima",
+          "precio": 3800,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "SIN_FOTO",
+        "problemas": [],
+        "avisos": [
+          "sin foto autorizada: la tarjeta muestra el placeholder propio"
+        ],
+        "derechos": null
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "sin foto autorizada (placeholder propio)"
+      ]
+    },
+    {
+      "sku": "patagonia-amber-lager-botella-730ml",
+      "nombre": "Patagonia Amber Lager",
+      "rubro": "Cervezas",
+      "presentacion": "730 ml · botella",
+      "alcohol": true,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 5300,
+        "pisoMargen": 5300,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 5300,
+        "comparador": {
+          "tienda": "La Anónima",
+          "precio": 7550,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo",
+          "la foto no está contrastada con el mapa auditado de producción"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "proveedor_aprobado",
+          "fuente": "https://jumboargentina.vteximg.com.br/arquivos/ids/890494/Cerveza-Patagonia-Amber-Lager-730cc-1-11622.jpg?v=639140687017870000"
+        },
+        "clasificacion": "MANIFIESTO_PREPARADO"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo"
+      ]
+    },
+    {
+      "sku": "fernet-branca-1000ml",
+      "nombre": "Fernet Branca",
+      "rubro": "Fernet",
+      "presentacion": "1000 ml · botella",
+      "alcohol": true,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 26250,
+        "pisoMargen": 26250,
+        "propuestaEstado": "pendiente_sin_comparador",
+        "propuestaPrecio": null,
+        "comparador": {
+          "tienda": "",
+          "precio": "",
+          "coincidencia": "NINGUNA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo",
+          "la foto no está contrastada con el mapa auditado de producción"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "fabricante",
+          "fuente": "https://acdn-us.mitiendanube.com/stores/006/757/969/products/31-6637cf8d3cf6b8487617750533556878-1024-1024.webp"
+        },
+        "clasificacion": "MANIFIESTO_PREPARADO"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo",
+        "precio pendiente de comparación con el mercado"
+      ]
+    },
+    {
+      "sku": "fernet-1882-750ml",
+      "nombre": "1882 Fernet 1882",
+      "rubro": "Fernet",
+      "presentacion": "750 ml · botella",
+      "alcohol": true,
+      "estadoCatalogo": "COMPLETO_SIN_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 8950,
+        "pisoMargen": 8950,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 8950,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 12000,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "SIN_FOTO",
+        "problemas": [],
+        "avisos": [
+          "sin foto autorizada: la tarjeta muestra el placeholder propio"
+        ],
+        "derechos": null
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "sin foto autorizada (placeholder propio)"
+      ]
+    },
+    {
+      "sku": "gancia-americano-450ml",
+      "nombre": "Gancia Americano",
+      "rubro": "Aperitivos",
+      "presentacion": "450 ml · botella",
+      "alcohol": true,
+      "estadoCatalogo": "COMPLETO_SIN_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 4350,
+        "pisoMargen": 4350,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 4350,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 6130,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "SIN_FOTO",
+        "problemas": [],
+        "avisos": [
+          "sin foto autorizada: la tarjeta muestra el placeholder propio"
+        ],
+        "derechos": null
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "sin foto autorizada (placeholder propio)"
+      ]
+    },
+    {
+      "sku": "gancia-lima-limon-lata-473ml",
+      "nombre": "Gancia Lima Limón",
+      "rubro": "Aperitivos",
+      "presentacion": "473 ml · lata",
+      "alcohol": true,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 2550,
+        "pisoMargen": 2550,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 2550,
+        "comparador": {
+          "tienda": "La Anónima",
+          "precio": 3700,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo",
+          "la foto no está contrastada con el mapa auditado de producción"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "proveedor_aprobado",
+          "fuente": "https://jumboargentina.vteximg.com.br/arquivos/ids/788231/Gancia-Lima-Lim-n-3-5-473ml-1-882803.jpg?v=638249457828330000"
+        },
+        "clasificacion": "MANIFIESTO_PREPARADO"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo"
+      ]
+    },
+    {
+      "sku": "dr-lemon-vodka-pomelo-lata-473ml",
+      "nombre": "Dr. Lemon Vodka Pomelo",
+      "rubro": "Aperitivos",
+      "presentacion": "473 ml · lata",
+      "alcohol": true,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 2200,
+        "pisoMargen": 2200,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 2200,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 2850,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo",
+          "la foto no está contrastada con el mapa auditado de producción"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "proveedor_aprobado",
+          "fuente": "https://jumboargentina.vteximg.com.br/arquivos/ids/788225/Dr-Lemon-Vodka-Pomelo-5-1-859371.jpg?v=638249457804900000"
+        },
+        "clasificacion": "MANIFIESTO_PREPARADO"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo"
+      ]
+    },
+    {
+      "sku": "trapiche-origen-malbec-750ml",
+      "nombre": "Trapiche Origen Malbec",
+      "rubro": "Vinos",
+      "presentacion": "750 ml · botella",
+      "alcohol": true,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 6150,
+        "pisoMargen": 6150,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 6150,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 8581,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo",
+          "la foto no está contrastada con el mapa auditado de producción"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "distribuidor_oficial",
+          "fuente": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/156062/106117.png?v=638463931481900000"
+        },
+        "clasificacion": "MANIFIESTO_PREPARADO"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo"
+      ]
+    },
+    {
+      "sku": "dada-caramel-750ml",
+      "nombre": "Dada Caramel",
+      "rubro": "Vinos",
+      "presentacion": "750 ml · botella",
+      "alcohol": true,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 5900,
+        "pisoMargen": 5900,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 5900,
+        "comparador": {
+          "tienda": "La Anónima",
+          "precio": 7550,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo",
+          "la foto no está contrastada con el mapa auditado de producción"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "proveedor_aprobado",
+          "fuente": "https://jumboargentina.vteximg.com.br/arquivos/ids/925234/Vino-Dada-Art-9-Caramel-750cc-1-1061032.jpg?v=639229226634470000"
+        },
+        "clasificacion": "MANIFIESTO_PREPARADO"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo"
+      ]
+    },
+    {
+      "sku": "cafayate-torrontes-750ml",
+      "nombre": "Cafayate Torrontés",
+      "rubro": "Vinos",
+      "presentacion": "750 ml · botella",
+      "alcohol": true,
+      "estadoCatalogo": "COMPLETO_SIN_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 5400,
+        "pisoMargen": 5400,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 5400,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 5890,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "SIN_FOTO",
+        "problemas": [],
+        "avisos": [
+          "sin foto autorizada: la tarjeta muestra el placeholder propio"
+        ],
+        "derechos": null
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "sin foto autorizada (placeholder propio)"
+      ]
+    },
+    {
+      "sku": "toro-viejo-clasico-tinto-750ml",
+      "nombre": "Toro Viejo Clásico",
+      "rubro": "Vinos",
+      "presentacion": "750 ml · botella",
+      "alcohol": true,
+      "estadoCatalogo": "COMPLETO_SIN_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 2550,
+        "pisoMargen": 2550,
+        "propuestaEstado": "pendiente_coincidencia_parcial",
+        "propuestaPrecio": null,
+        "comparador": {
+          "tienda": "La Anónima",
+          "precio": 3000,
+          "coincidencia": "PARCIAL"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "SIN_FOTO",
+        "problemas": [],
+        "avisos": [
+          "sin foto autorizada: la tarjeta muestra el placeholder propio"
+        ],
+        "derechos": null
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "sin foto autorizada (placeholder propio)",
+        "precio pendiente de comparación con el mercado"
+      ]
+    },
+    {
+      "sku": "toro-tinto-1000ml",
+      "nombre": "Toro",
+      "rubro": "Vinos",
+      "presentacion": "1000 ml · botella",
+      "alcohol": true,
+      "estadoCatalogo": "COMPLETO_SIN_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 2300,
+        "pisoMargen": 2300,
+        "propuestaEstado": "mantiene_vigente",
+        "propuestaPrecio": 2300,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 2990,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "SIN_FOTO",
+        "problemas": [],
+        "avisos": [
+          "sin foto autorizada: la tarjeta muestra el placeholder propio"
+        ],
+        "derechos": null
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "sin foto autorizada (placeholder propio)"
+      ]
+    },
+    {
+      "sku": "gin-gordons-700ml",
+      "nombre": "Gordon's London Dry",
+      "rubro": "Destilados",
+      "presentacion": "700 ml · botella",
+      "alcohol": true,
+      "estadoCatalogo": "COMPLETO_CON_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 16800,
+        "pisoMargen": 16800,
+        "propuestaEstado": "conflicto_margen",
+        "propuestaPrecio": 16800,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 14625,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "AUTORIZADA_DECLARADA",
+        "problemas": [],
+        "avisos": [
+          "autorización TABA-AUT-2026-08-001 «declarada»: falta el documento del acuerdo",
+          "la foto no está contrastada con el mapa auditado de producción"
+        ],
+        "derechos": {
+          "estado": "LICENCIA_COMERCIAL",
+          "referencia": "TABA-AUT-2026-08-001",
+          "tipoFuente": "distribuidor_oficial",
+          "fuente": "https://andinacocacolaar.vteximg.com.br/arquivos/ids/155887/106400.png?v=638451820323500000"
+        },
+        "clasificacion": "MANIFIESTO_PREPARADO"
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "foto con autorización declarada pero sin el documento del acuerdo",
+        "conflicto de margen en la propuesta de precios: decisión del dueño (no se rebaja)"
+      ]
+    },
+    {
+      "sku": "vodka-skyy-700ml",
+      "nombre": "Skyy Vodka",
+      "rubro": "Destilados",
+      "presentacion": "700 ml · botella",
+      "alcohol": true,
+      "estadoCatalogo": "COMPLETO_SIN_FOTO",
+      "defectos": [],
+      "identidad": [],
+      "precio": {
+        "vigente": 9500,
+        "pisoMargen": 9500,
+        "propuestaEstado": "conflicto_margen",
+        "propuestaPrecio": 9500,
+        "comparador": {
+          "tienda": "DIA Online",
+          "precio": 8590,
+          "coincidencia": "EXACTA"
+        },
+        "costoDerivado": false,
+        "antiguedadCostoDias": 68,
+        "problemas": [],
+        "avisos": []
+      },
+      "foto": {
+        "estado": "SIN_FOTO",
+        "problemas": [],
+        "avisos": [
+          "sin foto autorizada: la tarjeta muestra el placeholder propio"
+        ],
+        "derechos": null
+      },
+      "aprobacionComercial": "PENDIENTE",
+      "listoParaVender": false,
+      "pendientes": [
+        "precio sin aprobación explícita del dueño (la propuesta está «pendiente_aprobacion_comercial»)",
+        "stock sin confirmar por el comercio",
+        "sin foto autorizada (placeholder propio)",
+        "conflicto de margen en la propuesta de precios: decisión del dueño (no se rebaja)"
+      ]
+    }
+  ]
+}

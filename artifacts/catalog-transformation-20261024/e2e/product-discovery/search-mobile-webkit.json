@@ -1,0 +1,58 @@
+{
+  "method": "Synchronous last input event; 25 warm samples; 20 ms between events; IPC/paint excluded",
+  "cpu": 1,
+  "report": {
+    "c": {
+      "p50": 13,
+      "p95": 19,
+      "samples": 25
+    },
+    "heine": {
+      "p50": 4,
+      "p95": 7,
+      "samples": 25
+    },
+    "heineken l": {
+      "p50": 4,
+      "p95": 5,
+      "samples": 25
+    },
+    "coca sero": {
+      "p50": 5,
+      "p95": 6.0000000000009095,
+      "samples": 25
+    },
+    "birra lata": {
+      "p50": 4,
+      "p95": 5,
+      "samples": 25
+    }
+  },
+  "baseline": {
+    "c": {
+      "p50": 15,
+      "p95": 22,
+      "samples": 25
+    },
+    "heine": {
+      "p50": 5.000000000000455,
+      "p95": 10,
+      "samples": 25
+    },
+    "heineken l": {
+      "p50": 5.0000000000009095,
+      "p95": 9,
+      "samples": 25
+    },
+    "coca sero": {
+      "p50": 11,
+      "p95": 15,
+      "samples": 25
+    },
+    "birra lata": {
+      "p50": 6,
+      "p95": 9,
+      "samples": 25
+    }
+  }
+}

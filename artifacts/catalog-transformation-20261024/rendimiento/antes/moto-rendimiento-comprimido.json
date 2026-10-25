@@ -1,0 +1,587 @@
+{
+  "etapa": "antes",
+  "fecha": "2026-10-25T00:57:24.488Z",
+  "resultados": [
+    {
+      "perfil": "usb-real",
+      "fria": true,
+      "loadMs": 6516,
+      "interactiveMs": 6686,
+      "ttfb": 34,
+      "dcl": 1700,
+      "loadEvent": 6474,
+      "perf": {
+        "lcp": {
+          "t": 2456,
+          "el": "IMG.home-best-image thumb-img",
+          "url": "http://localhost:8262/assets/products/coca-cola-original-2250ml-97dc25e8399a5775-thumb-acbe05a93036a3a4.webp",
+          "size": 11464
+        },
+        "cls": 0,
+        "longTasks": [
+          683,
+          120,
+          303,
+          107,
+          90
+        ],
+        "fcp": 608
+      },
+      "requests": 235,
+      "totalKB": 1806,
+      "porTipo": {
+        "css": {
+          "n": 19,
+          "transferKB": 201,
+          "decodedKB": 869
+        },
+        "img": {
+          "n": 27,
+          "transferKB": 666,
+          "decodedKB": 664
+        },
+        "js": {
+          "n": 188,
+          "transferKB": 939,
+          "decodedKB": 3238
+        },
+        "otro": {
+          "n": 1,
+          "transferKB": 0,
+          "decodedKB": 1
+        }
+      },
+      "topImgs": [
+        {
+          "f": "promos/mixers-schweppes.jpg",
+          "kb": 514
+        },
+        {
+          "f": "products/red-bull-original-250ml-2d86788f7b853c11-thumb-4f0870826f9f8bce.webp",
+          "kb": 16
+        },
+        {
+          "f": "products/coca-cola-original-lata-354ml-3c2cefd7fe4bd597-thumb-cd767440cdb0ff40.webp",
+          "kb": 13
+        },
+        {
+          "f": "products/coca-cola-zero-lata-354ml-4d1955a80c87ab0e-thumb-7816226aa02505f5.webp",
+          "kb": 11
+        },
+        {
+          "f": "products/budweiser-lata-473ml-0144902daa7180f4-thumb-4752e9d24ab35ed2.webp",
+          "kb": 10
+        },
+        {
+          "f": "products/corona-extra-botella-330ml-2d424290c3ea844f-thumb-4b872d222ff2f90a.webp",
+          "kb": 9
+        }
+      ],
+      "imagenesVisibles": 22,
+      "resolucionSobreTamano": 1.5,
+      "swController": true,
+      "scrollHeight": 4036,
+      "domNodes": 3284
+    },
+    {
+      "perfil": "usb-real",
+      "fria": false,
+      "loadMs": 2091,
+      "interactiveMs": 3086,
+      "ttfb": 31,
+      "dcl": 1801,
+      "loadEvent": 2050,
+      "perf": {
+        "lcp": {
+          "t": 2964,
+          "el": "IMG.home-best-image thumb-img",
+          "url": "http://localhost:8262/assets/products/coca-cola-original-2250ml-97dc25e8399a5775-thumb-acbe05a93036a3a4.webp",
+          "size": 11464
+        },
+        "cls": 0,
+        "longTasks": [
+          85,
+          85,
+          423,
+          99,
+          423,
+          99,
+          455,
+          157,
+          455,
+          157,
+          107,
+          53,
+          107,
+          53
+        ],
+        "fcp": 736
+      },
+      "requests": 247,
+      "totalKB": 0,
+      "porTipo": {
+        "css": {
+          "n": 19,
+          "transferKB": 0,
+          "decodedKB": 869
+        },
+        "img": {
+          "n": 39,
+          "transferKB": 0,
+          "decodedKB": 790
+        },
+        "js": {
+          "n": 188,
+          "transferKB": 0,
+          "decodedKB": 3238
+        },
+        "otro": {
+          "n": 1,
+          "transferKB": 0,
+          "decodedKB": 1
+        }
+      },
+      "topImgs": [
+        {
+          "f": "promos/mixers-schweppes.jpg",
+          "kb": 514
+        },
+        {
+          "f": "products/red-bull-sin-azucar-250ml-f0aeca853a67db50-thumb-86cbad78e9e62eb2.webp",
+          "kb": 16
+        },
+        {
+          "f": "products/red-bull-original-250ml-2d86788f7b853c11-thumb-4f0870826f9f8bce.webp",
+          "kb": 16
+        },
+        {
+          "f": "products/sprite-original-lata-354ml-0060e518ebfab8e7-thumb-9f34da79cf990fa1.webp",
+          "kb": 14
+        },
+        {
+          "f": "products/coca-cola-original-lata-354ml-3c2cefd7fe4bd597-thumb-cd767440cdb0ff40.webp",
+          "kb": 13
+        },
+        {
+          "f": "products/monster-green-zero-473ml-c238e9bf28582e15-thumb-9ee7f5db50e33ce1.webp",
+          "kb": 13
+        }
+      ],
+      "imagenesVisibles": 43,
+      "resolucionSobreTamano": 1.3,
+      "swController": true,
+      "scrollHeight": 4036,
+      "domNodes": 3284
+    },
+    {
+      "perfil": "fast-4g",
+      "fria": true,
+      "loadMs": 7112,
+      "interactiveMs": 7304,
+      "ttfb": 21,
+      "dcl": 5936,
+      "loadEvent": 7074,
+      "perf": {
+        "lcp": {
+          "t": 6852,
+          "el": "IMG.home-best-image thumb-img",
+          "url": "http://localhost:8262/assets/products/coca-cola-original-2250ml-97dc25e8399a5775-thumb-acbe05a93036a3a4.webp",
+          "size": 11464
+        },
+        "cls": 0,
+        "longTasks": [
+          534,
+          101,
+          534,
+          101,
+          534,
+          101,
+          213,
+          213,
+          213,
+          55,
+          55,
+          55
+        ],
+        "fcp": 1396
+      },
+      "requests": 235,
+      "totalKB": 1810,
+      "porTipo": {
+        "css": {
+          "n": 19,
+          "transferKB": 201,
+          "decodedKB": 869
+        },
+        "img": {
+          "n": 27,
+          "transferKB": 669,
+          "decodedKB": 664
+        },
+        "js": {
+          "n": 188,
+          "transferKB": 939,
+          "decodedKB": 3238
+        },
+        "otro": {
+          "n": 1,
+          "transferKB": 1,
+          "decodedKB": 1
+        }
+      },
+      "topImgs": [
+        {
+          "f": "promos/mixers-schweppes.jpg",
+          "kb": 514
+        },
+        {
+          "f": "products/red-bull-original-250ml-2d86788f7b853c11-thumb-4f0870826f9f8bce.webp",
+          "kb": 16
+        },
+        {
+          "f": "products/coca-cola-original-lata-354ml-3c2cefd7fe4bd597-thumb-cd767440cdb0ff40.webp",
+          "kb": 13
+        },
+        {
+          "f": "products/coca-cola-zero-lata-354ml-4d1955a80c87ab0e-thumb-7816226aa02505f5.webp",
+          "kb": 11
+        },
+        {
+          "f": "products/budweiser-lata-473ml-0144902daa7180f4-thumb-4752e9d24ab35ed2.webp",
+          "kb": 10
+        },
+        {
+          "f": "products/corona-extra-botella-330ml-2d424290c3ea844f-thumb-4b872d222ff2f90a.webp",
+          "kb": 9
+        }
+      ],
+      "imagenesVisibles": 22,
+      "resolucionSobreTamano": 1.5,
+      "swController": true,
+      "scrollHeight": 4036,
+      "domNodes": 3284
+    },
+    {
+      "perfil": "fast-4g",
+      "fria": false,
+      "loadMs": 2994,
+      "interactiveMs": 3196,
+      "ttfb": 32,
+      "dcl": 1953,
+      "loadEvent": 2927,
+      "perf": {
+        "lcp": {
+          "t": 3064,
+          "el": "IMG.home-best-image thumb-img",
+          "url": "http://localhost:8262/assets/products/coca-cola-original-2250ml-97dc25e8399a5775-thumb-acbe05a93036a3a4.webp",
+          "size": 11464
+        },
+        "cls": 0,
+        "longTasks": [
+          92,
+          92,
+          92,
+          92,
+          417,
+          117,
+          417,
+          117,
+          417,
+          117,
+          417,
+          117,
+          442,
+          128,
+          442,
+          128,
+          442,
+          128,
+          442,
+          128,
+          50,
+          83,
+          50,
+          83,
+          50,
+          83,
+          50,
+          83,
+          54,
+          54,
+          54,
+          54
+        ],
+        "fcp": 816
+      },
+      "requests": 233,
+      "totalKB": 0,
+      "porTipo": {
+        "css": {
+          "n": 19,
+          "transferKB": 0,
+          "decodedKB": 869
+        },
+        "img": {
+          "n": 25,
+          "transferKB": 0,
+          "decodedKB": 663
+        },
+        "js": {
+          "n": 188,
+          "transferKB": 0,
+          "decodedKB": 3238
+        },
+        "otro": {
+          "n": 1,
+          "transferKB": 0,
+          "decodedKB": 1
+        }
+      },
+      "topImgs": [
+        {
+          "f": "promos/mixers-schweppes.jpg",
+          "kb": 514
+        },
+        {
+          "f": "products/red-bull-original-250ml-2d86788f7b853c11-thumb-4f0870826f9f8bce.webp",
+          "kb": 16
+        },
+        {
+          "f": "products/coca-cola-original-lata-354ml-3c2cefd7fe4bd597-thumb-cd767440cdb0ff40.webp",
+          "kb": 13
+        },
+        {
+          "f": "products/coca-cola-zero-lata-354ml-4d1955a80c87ab0e-thumb-7816226aa02505f5.webp",
+          "kb": 11
+        },
+        {
+          "f": "products/budweiser-lata-473ml-0144902daa7180f4-thumb-4752e9d24ab35ed2.webp",
+          "kb": 10
+        },
+        {
+          "f": "products/corona-extra-botella-330ml-2d424290c3ea844f-thumb-4b872d222ff2f90a.webp",
+          "kb": 9
+        }
+      ],
+      "imagenesVisibles": 23,
+      "resolucionSobreTamano": 1.6,
+      "swController": true,
+      "scrollHeight": 4036,
+      "domNodes": 3284
+    },
+    {
+      "perfil": "slow-4g",
+      "fria": true,
+      "loadMs": 12762,
+      "interactiveMs": 12945,
+      "ttfb": 19,
+      "dcl": 7825,
+      "loadEvent": 12729,
+      "perf": {
+        "lcp": {
+          "t": 8880,
+          "el": "IMG.home-best-image thumb-img",
+          "url": "http://localhost:8262/assets/products/coca-cola-original-2250ml-97dc25e8399a5775-thumb-acbe05a93036a3a4.webp",
+          "size": 11464
+        },
+        "cls": 0,
+        "longTasks": [
+          714,
+          148,
+          714,
+          148,
+          714,
+          148,
+          714,
+          148,
+          714,
+          148,
+          203,
+          82,
+          203,
+          82,
+          203,
+          82,
+          203,
+          82,
+          203,
+          82
+        ],
+        "fcp": 2244
+      },
+      "requests": 235,
+      "totalKB": 1806,
+      "porTipo": {
+        "css": {
+          "n": 19,
+          "transferKB": 201,
+          "decodedKB": 869
+        },
+        "img": {
+          "n": 27,
+          "transferKB": 666,
+          "decodedKB": 664
+        },
+        "js": {
+          "n": 188,
+          "transferKB": 939,
+          "decodedKB": 3238
+        },
+        "otro": {
+          "n": 1,
+          "transferKB": 0,
+          "decodedKB": 1
+        }
+      },
+      "topImgs": [
+        {
+          "f": "promos/mixers-schweppes.jpg",
+          "kb": 514
+        },
+        {
+          "f": "products/red-bull-original-250ml-2d86788f7b853c11-thumb-4f0870826f9f8bce.webp",
+          "kb": 16
+        },
+        {
+          "f": "products/coca-cola-original-lata-354ml-3c2cefd7fe4bd597-thumb-cd767440cdb0ff40.webp",
+          "kb": 13
+        },
+        {
+          "f": "products/coca-cola-zero-lata-354ml-4d1955a80c87ab0e-thumb-7816226aa02505f5.webp",
+          "kb": 11
+        },
+        {
+          "f": "products/budweiser-lata-473ml-0144902daa7180f4-thumb-4752e9d24ab35ed2.webp",
+          "kb": 10
+        },
+        {
+          "f": "products/corona-extra-botella-330ml-2d424290c3ea844f-thumb-4b872d222ff2f90a.webp",
+          "kb": 9
+        }
+      ],
+      "imagenesVisibles": 22,
+      "resolucionSobreTamano": 1.5,
+      "swController": true,
+      "scrollHeight": 4036,
+      "domNodes": 3284
+    },
+    {
+      "perfil": "slow-4g",
+      "fria": false,
+      "loadMs": 2122,
+      "interactiveMs": 3184,
+      "ttfb": 32,
+      "dcl": 1822,
+      "loadEvent": 2083,
+      "perf": {
+        "lcp": {
+          "t": 2944,
+          "el": "IMG.home-best-image thumb-img",
+          "url": "http://localhost:8262/assets/products/coca-cola-original-2250ml-97dc25e8399a5775-thumb-acbe05a93036a3a4.webp",
+          "size": 11464
+        },
+        "cls": 0,
+        "longTasks": [
+          131,
+          131,
+          131,
+          131,
+          131,
+          131,
+          428,
+          111,
+          428,
+          111,
+          428,
+          111,
+          428,
+          111,
+          428,
+          111,
+          428,
+          111,
+          465,
+          74,
+          465,
+          74,
+          465,
+          74,
+          465,
+          74,
+          465,
+          74,
+          465,
+          74,
+          103,
+          103,
+          103,
+          103,
+          103,
+          103,
+          99,
+          99,
+          99,
+          99,
+          99,
+          99
+        ],
+        "fcp": 900
+      },
+      "requests": 233,
+      "totalKB": 0,
+      "porTipo": {
+        "css": {
+          "n": 19,
+          "transferKB": 0,
+          "decodedKB": 869
+        },
+        "img": {
+          "n": 25,
+          "transferKB": 0,
+          "decodedKB": 663
+        },
+        "js": {
+          "n": 188,
+          "transferKB": 0,
+          "decodedKB": 3238
+        },
+        "otro": {
+          "n": 1,
+          "transferKB": 0,
+          "decodedKB": 1
+        }
+      },
+      "topImgs": [
+        {
+          "f": "promos/mixers-schweppes.jpg",
+          "kb": 514
+        },
+        {
+          "f": "products/red-bull-original-250ml-2d86788f7b853c11-thumb-4f0870826f9f8bce.webp",
+          "kb": 16
+        },
+        {
+          "f": "products/coca-cola-original-lata-354ml-3c2cefd7fe4bd597-thumb-cd767440cdb0ff40.webp",
+          "kb": 13
+        },
+        {
+          "f": "products/coca-cola-zero-lata-354ml-4d1955a80c87ab0e-thumb-7816226aa02505f5.webp",
+          "kb": 11
+        },
+        {
+          "f": "products/budweiser-lata-473ml-0144902daa7180f4-thumb-4752e9d24ab35ed2.webp",
+          "kb": 10
+        },
+        {
+          "f": "products/corona-extra-botella-330ml-2d424290c3ea844f-thumb-4b872d222ff2f90a.webp",
+          "kb": 9
+        }
+      ],
+      "imagenesVisibles": 23,
+      "resolucionSobreTamano": 1.6,
+      "swController": true,
+      "scrollHeight": 4036,
+      "domNodes": 3284
+    }
+  ]
+}

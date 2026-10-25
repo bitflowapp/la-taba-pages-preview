@@ -7,7 +7,20 @@ const CACHE_PREFIX = 'la-taba-runtime-';
  * identidad y rompería el rollback y la certificación. v165 no comparte caché
  * con ninguna publicación anterior.
  */
-const CACHE_NAME = 'la-taba-runtime-v165-unified-ux-final';
+/*
+ * Transformación comercial del catálogo 2026-10-24 (sobre v165): vista Cuadrícula/Lista,
+ * aviso de alcance de la búsqueda, placeholder propio de producto sin foto, gate de
+ * derechos de la fotografía editorial (js/core/promo-rights.js) y registro diferido del
+ * worker. El precache cambió (dos módulos nuevos, un SVG y la hoja de estilos), así que
+ * lleva identidad propia: reutilizar v165 dejaría dos artefactos distintos bajo la misma.
+ *
+ * v167 (revisión de #154): las historias publicadas por el backend pasan por el mismo
+ * control de derechos editoriales y la vitrina exige demostración efectiva. v166 ya está
+ * instalada con otro contenido en el Moto G15 y en la preview: reutilizar el nombre
+ * dejaría dos artefactos bajo la misma identidad, y como `precargar()` borra primero la
+ * caché de su propio nombre, reinstalar «v166» vaciaría la del worker activo.
+ */
+const CACHE_NAME = 'la-taba-runtime-v167-catalog-rights-review';
 const ASSETS = [
   './',
   './index.html',
@@ -30,6 +43,9 @@ const ASSETS = [
   './styles/campaigns.css?v=82',
   './styles/motion.css?v=82',
   './styles/premium-storefront.css?v=82',
+  './js/catalog-layout.js',
+  './js/core/promo-rights.js',
+  './js/core/css-url.js',
   './js/category-glass.js',
   './assets/brand/ambient-grain.png',
   './styles/tracking-premium.css?v=82',

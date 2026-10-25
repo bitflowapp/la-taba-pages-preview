@@ -1,0 +1,42 @@
+{
+  "etapa": "despues",
+  "fecha": "2026-10-25T03:25:00.516Z",
+  "resultados": [
+    {
+      "nombre": "home",
+      "cuadros": 525,
+      "mediana": 16.6,
+      "p95": 33.2,
+      "p99": 66.4,
+      "maximo": 100,
+      "largos33": 12,
+      "largos50": 6,
+      "tareasLargas": 0,
+      "scrollY": 3165
+    },
+    {
+      "nombre": "catalogo-grilla",
+      "cuadros": 472,
+      "mediana": 16.6,
+      "p95": 33.3,
+      "p99": 83,
+      "maximo": 166,
+      "largos33": 15,
+      "largos50": 11,
+      "tareasLargas": 2,
+      "scrollY": 3776
+    },
+    {
+      "nombre": "catalogo-lista",
+      "cuadros": 462,
+      "mediana": 16.6,
+      "p95": 33.3,
+      "p99": 116.4,
+      "maximo": 166,
+      "largos33": 19,
+      "largos50": 9,
+      "tareasLargas": 3,
+      "scrollY": 3776
+    }
+  ]
+}

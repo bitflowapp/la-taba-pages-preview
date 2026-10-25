@@ -1,0 +1,22 @@
+
+Running 16 tests using 1 worker, shard 2 of 4
+
+  ✓   1 [mobile-webkit-recovery] › tests\e2e\mapa-fuera-del-arranque.spec.mjs:39:1 › un unpkg colgado no retiene la tienda ni dispara «está tardando» (9.8s)
+  ✓   2 [mobile-webkit-recovery] › tests\e2e\mapa-fuera-del-arranque.spec.mjs:71:1 › si unpkg falla rápido, no aparece el falso aviso de conexión (1.5s)
+  ✓   3 [mobile-webkit-recovery] › tests\e2e\mapa-fuera-del-arranque.spec.mjs:80:1 › Seguimiento pintado antes que el motor monta el mapa cuando el motor llega (2.0s)
+  ✓   4 [mobile-webkit-recovery] › tests\e2e\mp-back-navigation-ui.spec.mjs:125:3 › vuelve de un origen externo con el borde en css-503 y conserva la tienda (7.5s)
+  ✓   5 [mobile-webkit-recovery] › tests\e2e\mp-back-navigation-ui.spec.mjs:125:3 › vuelve de un origen externo con el borde en css-404 y conserva la tienda (7.8s)
+  ✓   6 [mobile-webkit-recovery] › tests\e2e\mp-back-navigation-ui.spec.mjs:125:3 › vuelve de un origen externo con el borde en css-captive y conserva la tienda (7.3s)
+  ✓   7 [mobile-webkit-recovery] › tests\e2e\mp-back-navigation-ui.spec.mjs:151:1 › el «atrás» dentro de la aplicación sigue sano (5.1s)
+  ✓   8 [mobile-webkit-recovery] › tests\e2e\mp-back-navigation-ui.spec.mjs:159:1 › volver del segundo plano con el borde degradado no rompe la tienda (6.6s)
+  ✓   9 [mobile-webkit-recovery] › tests\e2e\mp-back-navigation-ui.spec.mjs:182:3 › la vuelta cancelado de Mercado Pago no desvía el router ni la tienda (6.0s)
+  ✓  10 [mobile-webkit-recovery] › tests\e2e\mp-back-navigation-ui.spec.mjs:182:3 › la vuelta pendiente de Mercado Pago no desvía el router ni la tienda (5.6s)
+  ✓  11 [mobile-webkit-recovery] › tests\e2e\mp-back-navigation-ui.spec.mjs:182:3 › la vuelta rechazado de Mercado Pago no desvía el router ni la tienda (5.9s)
+  ✓  12 [mobile-webkit-recovery] › tests\e2e\mp-back-navigation-ui.spec.mjs:182:3 › la vuelta aprobado de Mercado Pago no desvía el router ni la tienda (5.6s)
+  ✓  13 [mobile-webkit-recovery] › tests\e2e\panel-order-recovery.spec.mjs:125:1 › el Panel ve los cobros y ofrece rearmar sólo donde corresponde, sin desbordar (7.2s)
+  ✓  14 [mobile-webkit-recovery] › tests\e2e\panel-order-recovery.spec.mjs:154:1 › rearmar va al rearmado, y la segunda vez no anuncia un pedido nuevo (1.6s)
+  ✓  15 [mobile-webkit-recovery] › tests\e2e\panel-order-recovery.spec.mjs:177:1 › sin stock el operador se entera de qué falta y cuánto, y no desborda (7.1s)
+  ✓  16 [mobile-webkit-recovery] › tests\e2e\panel-order-recovery.spec.mjs:204:1 › el equipo no ve ni ejecuta el rearmado (1.8s)
+
+  16 passed (1.5m)
+E2E estable: ninguna prueba necesitó reintento.

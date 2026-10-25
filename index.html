@@ -552,6 +552,24 @@
                 <path d="m7 7 10 10M17 7 7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
               </svg>
             </button>
+            <!--
+              Vista de la grilla: cuadrícula (foto grande) o lista (cinco o seis
+              productos por pantalla). El botón muestra la vista a la que lleva;
+              su nombre accesible lo escribe js/catalog-layout.js. Sólo se ve en
+              teléfono (hasta 699px): desde tableta la grilla ya muestra tres columnas o más.
+            -->
+            <button class="catalog-layout-toggle" type="button" data-catalog-layout-toggle data-catalog-layout-current="grid" aria-label="Ver los productos en lista" title="Ver los productos en lista">
+              <svg class="layout-ico layout-ico--to-list" viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+                <path d="M9 6.5h10.5M9 12h10.5M9 17.5h10.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                <circle cx="4.9" cy="6.5" r="1.2" fill="currentColor" /><circle cx="4.9" cy="12" r="1.2" fill="currentColor" /><circle cx="4.9" cy="17.5" r="1.2" fill="currentColor" />
+              </svg>
+              <svg class="layout-ico layout-ico--to-grid" viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true">
+                <rect x="4" y="4" width="6.6" height="6.6" rx="1.7" stroke="currentColor" stroke-width="2" />
+                <rect x="13.4" y="4" width="6.6" height="6.6" rx="1.7" stroke="currentColor" stroke-width="2" />
+                <rect x="4" y="13.4" width="6.6" height="6.6" rx="1.7" stroke="currentColor" stroke-width="2" />
+                <rect x="13.4" y="13.4" width="6.6" height="6.6" rx="1.7" stroke="currentColor" stroke-width="2" />
+              </svg>
+            </button>
           </div>
 
           <div class="category-strip" data-category-strip></div>
@@ -619,6 +637,8 @@
 
           </div>
           <div class="grid-block">
+            <!-- Encabezado de la grilla sólo para lectores de pantalla: sin él la página salta del h1 a los h3 de las tarjetas. -->
+            <h2 class="sr-only">Productos</h2>
             <!-- El otro estante con brillo: la grilla principal del catalogo. -->
             <div class="product-grid" data-product-grid data-glow-shelf></div>
           </div>

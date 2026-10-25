@@ -1,0 +1,594 @@
+{
+  "etapa": "despues",
+  "fecha": "2026-10-25T01:44:43.373Z",
+  "resultados": [
+    {
+      "perfil": "fast-4g",
+      "fria": true,
+      "loadMs": 3395,
+      "interactiveMs": 4746,
+      "ttfb": 236,
+      "dcl": 1976,
+      "loadEvent": 3269,
+      "perf": {
+        "lcp": {
+          "t": 2868,
+          "el": "IMG.home-best-image thumb-img",
+          "url": "https://taba-runtime-e2e.supabase.co/storage/v1/object/public/catalog-images/business/e7850ad2-a447-402c-8375-3fd74e9466ba/products/682da318-c15c-40cf-8b58-29d0e25eee6a/thumb-92968a5c7541cd9bf0dd73d4e470313b49b4bfa5a65654ea010575dfbd3b53a0.webp",
+          "size": 11464
+        },
+        "cls": 0,
+        "longTasks": [
+          233,
+          290,
+          147,
+          123,
+          51,
+          53,
+          160,
+          96,
+          101,
+          87
+        ],
+        "fcp": 824
+      },
+      "requests": 185,
+      "totalKB": 0,
+      "porTipo": {
+        "css": {
+          "n": 19,
+          "transferKB": 0,
+          "decodedKB": 879
+        },
+        "img": {
+          "n": 24,
+          "transferKB": 0,
+          "decodedKB": 12
+        },
+        "js": {
+          "n": 130,
+          "transferKB": 0,
+          "decodedKB": 2159
+        },
+        "otro": {
+          "n": 12,
+          "transferKB": 0,
+          "decodedKB": 1
+        }
+      },
+      "topImgs": [
+        {
+          "f": "brand/taba2-emblem.svg",
+          "kb": 3
+        },
+        {
+          "f": "brand/ambient-grain.png",
+          "kb": 2
+        },
+        {
+          "f": "brand/taba-app-icon-maskable-512.png",
+          "kb": 2
+        },
+        {
+          "f": "brand/taba-app-icon-192.png",
+          "kb": 2
+        },
+        {
+          "f": "products/beverage-placeholder.svg",
+          "kb": 1
+        },
+        {
+          "f": "assets/icon.svg",
+          "kb": 1
+        }
+      ],
+      "imagenesVisibles": 23,
+      "resolucionSobreTamano": 0.9,
+      "swController": true,
+      "scrollHeight": 3375,
+      "domNodes": 2799
+    },
+    {
+      "perfil": "fast-4g",
+      "fria": true,
+      "loadMs": 2721,
+      "interactiveMs": 4567,
+      "ttfb": 38,
+      "dcl": 2647,
+      "loadEvent": 2657,
+      "perf": {
+        "lcp": {
+          "t": 3512,
+          "el": "IMG.home-best-image thumb-img",
+          "url": "https://taba-runtime-e2e.supabase.co/storage/v1/object/public/catalog-images/business/e7850ad2-a447-402c-8375-3fd74e9466ba/products/682da318-c15c-40cf-8b58-29d0e25eee6a/thumb-92968a5c7541cd9bf0dd73d4e470313b49b4bfa5a65654ea010575dfbd3b53a0.webp",
+          "size": 11464
+        },
+        "cls": 0,
+        "longTasks": [
+          141,
+          141,
+          259,
+          165,
+          111,
+          52,
+          259,
+          165,
+          111,
+          52,
+          102,
+          51,
+          102,
+          51
+        ],
+        "fcp": 1184
+      },
+      "requests": 180,
+      "totalKB": 843,
+      "porTipo": {
+        "css": {
+          "n": 19,
+          "transferKB": 203,
+          "decodedKB": 879
+        },
+        "img": {
+          "n": 24,
+          "transferKB": 11,
+          "decodedKB": 12
+        },
+        "js": {
+          "n": 130,
+          "transferKB": 628,
+          "decodedKB": 2159
+        },
+        "otro": {
+          "n": 7,
+          "transferKB": 1,
+          "decodedKB": 1
+        }
+      },
+      "topImgs": [
+        {
+          "f": "brand/ambient-grain.png",
+          "kb": 2
+        },
+        {
+          "f": "brand/taba-app-icon-maskable-512.png",
+          "kb": 2
+        },
+        {
+          "f": "brand/taba-app-icon-192.png",
+          "kb": 2
+        },
+        {
+          "f": "brand/taba2-emblem.svg",
+          "kb": 1
+        },
+        {
+          "f": "products/beverage-placeholder.svg",
+          "kb": 1
+        },
+        {
+          "f": "brand/taba-app-icon-apple-180.png",
+          "kb": 1
+        }
+      ],
+      "imagenesVisibles": 23,
+      "resolucionSobreTamano": 0.9,
+      "swController": true,
+      "scrollHeight": 3375,
+      "domNodes": 2799
+    },
+    {
+      "perfil": "fast-4g",
+      "fria": true,
+      "loadMs": 2723,
+      "interactiveMs": 4597,
+      "ttfb": 44,
+      "dcl": 2666,
+      "loadEvent": 2675,
+      "perf": {
+        "lcp": {
+          "t": 3532,
+          "el": "IMG.home-best-image thumb-img",
+          "url": "https://taba-runtime-e2e.supabase.co/storage/v1/object/public/catalog-images/business/e7850ad2-a447-402c-8375-3fd74e9466ba/products/682da318-c15c-40cf-8b58-29d0e25eee6a/thumb-92968a5c7541cd9bf0dd73d4e470313b49b4bfa5a65654ea010575dfbd3b53a0.webp",
+          "size": 11464
+        },
+        "cls": 0,
+        "longTasks": [
+          127,
+          127,
+          127,
+          238,
+          172,
+          103,
+          50,
+          238,
+          172,
+          103,
+          50,
+          238,
+          172,
+          103,
+          50,
+          96,
+          96,
+          96
+        ],
+        "fcp": 1288
+      },
+      "requests": 180,
+      "totalKB": 843,
+      "porTipo": {
+        "css": {
+          "n": 19,
+          "transferKB": 203,
+          "decodedKB": 879
+        },
+        "img": {
+          "n": 24,
+          "transferKB": 11,
+          "decodedKB": 12
+        },
+        "js": {
+          "n": 130,
+          "transferKB": 628,
+          "decodedKB": 2159
+        },
+        "otro": {
+          "n": 7,
+          "transferKB": 1,
+          "decodedKB": 1
+        }
+      },
+      "topImgs": [
+        {
+          "f": "brand/ambient-grain.png",
+          "kb": 2
+        },
+        {
+          "f": "brand/taba-app-icon-maskable-512.png",
+          "kb": 2
+        },
+        {
+          "f": "brand/taba-app-icon-192.png",
+          "kb": 2
+        },
+        {
+          "f": "brand/taba2-emblem.svg",
+          "kb": 1
+        },
+        {
+          "f": "products/beverage-placeholder.svg",
+          "kb": 1
+        },
+        {
+          "f": "brand/taba-app-icon-apple-180.png",
+          "kb": 1
+        }
+      ],
+      "imagenesVisibles": 23,
+      "resolucionSobreTamano": 0.9,
+      "swController": true,
+      "scrollHeight": 3375,
+      "domNodes": 2799
+    },
+    {
+      "perfil": "slow-4g",
+      "fria": true,
+      "loadMs": 7397,
+      "interactiveMs": 9298,
+      "ttfb": 29,
+      "dcl": 7337,
+      "loadEvent": 7346,
+      "perf": {
+        "lcp": {
+          "t": 8268,
+          "el": "IMG.home-best-image thumb-img",
+          "url": "https://taba-runtime-e2e.supabase.co/storage/v1/object/public/catalog-images/business/e7850ad2-a447-402c-8375-3fd74e9466ba/products/682da318-c15c-40cf-8b58-29d0e25eee6a/thumb-92968a5c7541cd9bf0dd73d4e470313b49b4bfa5a65654ea010575dfbd3b53a0.webp",
+          "size": 11464
+        },
+        "cls": 0,
+        "longTasks": [
+          171,
+          171,
+          171,
+          171,
+          298,
+          171,
+          110,
+          55,
+          298,
+          171,
+          110,
+          55,
+          298,
+          171,
+          110,
+          55,
+          298,
+          171,
+          110,
+          55,
+          97,
+          97,
+          97,
+          97
+        ],
+        "fcp": 2412
+      },
+      "requests": 180,
+      "totalKB": 843,
+      "porTipo": {
+        "css": {
+          "n": 19,
+          "transferKB": 203,
+          "decodedKB": 879
+        },
+        "img": {
+          "n": 24,
+          "transferKB": 11,
+          "decodedKB": 12
+        },
+        "js": {
+          "n": 130,
+          "transferKB": 628,
+          "decodedKB": 2159
+        },
+        "otro": {
+          "n": 7,
+          "transferKB": 1,
+          "decodedKB": 1
+        }
+      },
+      "topImgs": [
+        {
+          "f": "brand/ambient-grain.png",
+          "kb": 2
+        },
+        {
+          "f": "brand/taba-app-icon-maskable-512.png",
+          "kb": 2
+        },
+        {
+          "f": "brand/taba-app-icon-192.png",
+          "kb": 2
+        },
+        {
+          "f": "brand/taba2-emblem.svg",
+          "kb": 1
+        },
+        {
+          "f": "products/beverage-placeholder.svg",
+          "kb": 1
+        },
+        {
+          "f": "brand/taba-app-icon-apple-180.png",
+          "kb": 1
+        }
+      ],
+      "imagenesVisibles": 23,
+      "resolucionSobreTamano": 0.9,
+      "swController": true,
+      "scrollHeight": 3375,
+      "domNodes": 2799
+    },
+    {
+      "perfil": "slow-4g",
+      "fria": true,
+      "loadMs": 7224,
+      "interactiveMs": 9065,
+      "ttfb": 41,
+      "dcl": 7167,
+      "loadEvent": 7176,
+      "perf": {
+        "lcp": {
+          "t": 8044,
+          "el": "IMG.home-best-image thumb-img",
+          "url": "https://taba-runtime-e2e.supabase.co/storage/v1/object/public/catalog-images/business/e7850ad2-a447-402c-8375-3fd74e9466ba/products/682da318-c15c-40cf-8b58-29d0e25eee6a/thumb-92968a5c7541cd9bf0dd73d4e470313b49b4bfa5a65654ea010575dfbd3b53a0.webp",
+          "size": 11464
+        },
+        "cls": 0,
+        "longTasks": [
+          135,
+          135,
+          135,
+          135,
+          135,
+          244,
+          171,
+          104,
+          58,
+          244,
+          171,
+          104,
+          58,
+          244,
+          171,
+          104,
+          58,
+          244,
+          171,
+          104,
+          58,
+          244,
+          171,
+          104,
+          58,
+          93,
+          93,
+          93,
+          93,
+          93
+        ],
+        "fcp": 2540
+      },
+      "requests": 180,
+      "totalKB": 843,
+      "porTipo": {
+        "css": {
+          "n": 19,
+          "transferKB": 203,
+          "decodedKB": 879
+        },
+        "img": {
+          "n": 24,
+          "transferKB": 11,
+          "decodedKB": 12
+        },
+        "js": {
+          "n": 130,
+          "transferKB": 628,
+          "decodedKB": 2159
+        },
+        "otro": {
+          "n": 7,
+          "transferKB": 1,
+          "decodedKB": 1
+        }
+      },
+      "topImgs": [
+        {
+          "f": "brand/ambient-grain.png",
+          "kb": 2
+        },
+        {
+          "f": "brand/taba-app-icon-maskable-512.png",
+          "kb": 2
+        },
+        {
+          "f": "brand/taba-app-icon-192.png",
+          "kb": 2
+        },
+        {
+          "f": "brand/taba2-emblem.svg",
+          "kb": 1
+        },
+        {
+          "f": "products/beverage-placeholder.svg",
+          "kb": 1
+        },
+        {
+          "f": "brand/taba-app-icon-apple-180.png",
+          "kb": 1
+        }
+      ],
+      "imagenesVisibles": 23,
+      "resolucionSobreTamano": 0.9,
+      "swController": true,
+      "scrollHeight": 3375,
+      "domNodes": 2799
+    },
+    {
+      "perfil": "slow-4g",
+      "fria": true,
+      "loadMs": 7433,
+      "interactiveMs": 9343,
+      "ttfb": 40,
+      "dcl": 7382,
+      "loadEvent": 7392,
+      "perf": {
+        "lcp": {
+          "t": 8296,
+          "el": "IMG.home-best-image thumb-img",
+          "url": "https://taba-runtime-e2e.supabase.co/storage/v1/object/public/catalog-images/business/e7850ad2-a447-402c-8375-3fd74e9466ba/products/682da318-c15c-40cf-8b58-29d0e25eee6a/thumb-92968a5c7541cd9bf0dd73d4e470313b49b4bfa5a65654ea010575dfbd3b53a0.webp",
+          "size": 11464
+        },
+        "cls": 0,
+        "longTasks": [
+          170,
+          170,
+          170,
+          170,
+          170,
+          170,
+          289,
+          133,
+          109,
+          135,
+          289,
+          133,
+          109,
+          135,
+          289,
+          133,
+          109,
+          135,
+          289,
+          133,
+          109,
+          135,
+          289,
+          133,
+          109,
+          135,
+          289,
+          133,
+          109,
+          135,
+          99,
+          99,
+          99,
+          99,
+          99,
+          99
+        ],
+        "fcp": 2376
+      },
+      "requests": 180,
+      "totalKB": 843,
+      "porTipo": {
+        "css": {
+          "n": 19,
+          "transferKB": 203,
+          "decodedKB": 879
+        },
+        "img": {
+          "n": 24,
+          "transferKB": 11,
+          "decodedKB": 12
+        },
+        "js": {
+          "n": 130,
+          "transferKB": 628,
+          "decodedKB": 2159
+        },
+        "otro": {
+          "n": 7,
+          "transferKB": 1,
+          "decodedKB": 1
+        }
+      },
+      "topImgs": [
+        {
+          "f": "brand/ambient-grain.png",
+          "kb": 2
+        },
+        {
+          "f": "brand/taba-app-icon-maskable-512.png",
+          "kb": 2
+        },
+        {
+          "f": "brand/taba-app-icon-192.png",
+          "kb": 2
+        },
+        {
+          "f": "brand/taba2-emblem.svg",
+          "kb": 1
+        },
+        {
+          "f": "products/beverage-placeholder.svg",
+          "kb": 1
+        },
+        {
+          "f": "brand/taba-app-icon-apple-180.png",
+          "kb": 1
+        }
+      ],
+      "imagenesVisibles": 23,
+      "resolucionSobreTamano": 0.9,
+      "swController": true,
+      "scrollHeight": 3375,
+      "domNodes": 2799
+    }
+  ]
+}

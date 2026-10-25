@@ -1,0 +1,150 @@
+{
+  "etapa": "despues",
+  "fecha": "2026-10-25T01:41:20.360Z",
+  "base": "http://127.0.0.1:8262",
+  "resultados": [
+    {
+      "pantalla": "home",
+      "violaciones": [],
+      "tactiles": {
+        "total": 143,
+        "menoresA44": 2,
+        "grupos": {
+          "button.cmp-add 93x26": {
+            "n": 1,
+            "ej": "Agregar Red Bull 250 ml · Lata"
+          },
+          "button.cmp-add 107x40": {
+            "n": 1,
+            "ej": "Agregar Coca-Cola 2,25 L al pe"
+          }
+        }
+      },
+      "sinNombreAccesible": []
+    },
+    {
+      "pantalla": "catalogo-grilla",
+      "violaciones": [],
+      "tactiles": {
+        "total": 76,
+        "menoresA44": 13,
+        "grupos": {
+          "button.product-name-link 170x18": {
+            "n": 12,
+            "ej": "Abrir ficha de Coca-Cola 2,25 "
+          },
+          "button.cmp-add 107x40": {
+            "n": 1,
+            "ej": "Agregar Aquarius Pomelo 2,25 L"
+          }
+        }
+      },
+      "sinNombreAccesible": []
+    },
+    {
+      "pantalla": "catalogo-lista",
+      "violaciones": [],
+      "tactiles": {
+        "total": 96,
+        "menoresA44": 18,
+        "grupos": {
+          "button.product-name-link 150x18": {
+            "n": 15,
+            "ej": "Abrir ficha de Coca-Cola 2,25 "
+          },
+          "button.cmp-add 107x40": {
+            "n": 1,
+            "ej": "Agregar Aquarius Pomelo 2,25 L"
+          },
+          "button.product-name-link 150x36": {
+            "n": 2,
+            "ej": "Abrir ficha de Paso de los Tor"
+          }
+        }
+      },
+      "sinNombreAccesible": []
+    },
+    {
+      "pantalla": "catalogo-busqueda-vacia",
+      "violaciones": [],
+      "tactiles": {
+        "total": 27,
+        "menoresA44": 0,
+        "grupos": {}
+      },
+      "sinNombreAccesible": []
+    },
+    {
+      "pantalla": "catalogo-busqueda-alcance",
+      "violaciones": [],
+      "tactiles": {
+        "total": 43,
+        "menoresA44": 4,
+        "grupos": {
+          "button.product-name-link 150x18": {
+            "n": 4,
+            "ej": "Abrir ficha de Quilmes Clásica"
+          }
+        }
+      },
+      "sinNombreAccesible": []
+    },
+    {
+      "pantalla": "ficha-producto",
+      "violaciones": [],
+      "tactiles": {
+        "total": 73,
+        "menoresA44": 11,
+        "grupos": {
+          "button.product-name-link 150x18": {
+            "n": 10,
+            "ej": "Abrir ficha de Quilmes Clásica"
+          },
+          "button.product-name-link 150x36": {
+            "n": 1,
+            "ej": "Abrir ficha de Patagonia Amber"
+          }
+        }
+      },
+      "sinNombreAccesible": []
+    },
+    {
+      "pantalla": "carrito-con-productos",
+      "violaciones": [],
+      "tactiles": {
+        "total": 40,
+        "menoresA44": 4,
+        "grupos": {
+          "input 20x44": {
+            "n": 3,
+            "ej": ""
+          },
+          "input 19x24": {
+            "n": 1,
+            "ej": ""
+          }
+        }
+      },
+      "sinNombreAccesible": []
+    },
+    {
+      "pantalla": "checkout-formulario",
+      "violaciones": [],
+      "tactiles": {
+        "total": 28,
+        "menoresA44": 4,
+        "grupos": {
+          "input 20x44": {
+            "n": 3,
+            "ej": ""
+          },
+          "input 19x24": {
+            "n": 1,
+            "ej": ""
+          }
+        }
+      },
+      "sinNombreAccesible": []
+    }
+  ]
+}

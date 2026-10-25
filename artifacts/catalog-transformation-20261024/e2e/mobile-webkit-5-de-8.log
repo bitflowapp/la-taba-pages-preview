@@ -1,0 +1,31 @@
+
+Running 25 tests using 1 worker, shard 5 of 8
+
+  ✓   1 [mobile-webkit] › tests\e2e\delivery-location-confirmation.spec.mjs:33:3 › Perfil · confirmación del punto de entrega › con permiso concedido: el GPS propone, la persona confirma y recién ahí se guarda (2.2s)
+  ✓   2 [mobile-webkit] › tests\e2e\delivery-location-confirmation.spec.mjs:85:3 › Perfil · confirmación del punto de entrega › con permiso rechazado: el pin en el mapa alcanza, sin compartir GPS (2.5s)
+  ✓   3 [mobile-webkit] › tests\e2e\delivery-location-confirmation.spec.mjs:123:3 › Perfil · confirmación del punto de entrega › si MapLibre no inicia, explica el fallback y no confirma el punto del local por accidente (1.7s)
+  ✓   4 [mobile-webkit] › tests\e2e\delivery-location-confirmation.spec.mjs:151:3 › Perfil · confirmación del punto de entrega › confirmar el pin ANTES de terminar de escribir la dirección igual guarda (2.4s)
+  ✓   5 [mobile-webkit] › tests\e2e\delivery-location-confirmation.spec.mjs:208:3 › Perfil · confirmación del punto de entrega › cambiar la calle invalida la confirmación hasta volver a confirmar el pin (1.8s)
+  ✓   6 [mobile-webkit] › tests\e2e\delivery-location-confirmation.spec.mjs:244:3 › Checkout · una dirección sin punto no sostiene un delivery › sin ninguna dirección confirmada el checkout bloquea y manda a Perfil (6.7s)
+  ✓   7 [mobile-webkit] › tests\e2e\delivery-location-confirmation.spec.mjs:262:3 › Checkout · una dirección sin punto no sostiene un delivery › con una dirección confirmada el checkout la declara y la deja elegir (6.2s)
+  ✓   8 [mobile-webkit] › tests\e2e\delivery-location-confirmation.spec.mjs:277:1 › el punto confirmado llega al pedido, al Panel y al Rider, y Maps abre por coordenadas (8.4s)
+  ✓   9 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:89:1 › Persona A · sin pedidos anteriores el checkout se muestra completo (5.7s)
+  ✓  10 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:118:1 › Persona B · con un pedido anterior el checkout resume lo conocido y deja cambiarlo (3.5s)
+  ✓  11 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:158:1 › ACCESIBILIDAD · el resumen se puede usar con teclado y con el dedo (4.0s)
+  ✓  12 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:194:1 › Persona B · el resumen es corto de verdad: mide menos que el formulario completo (3.8s)
+  ✓  13 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:219:1 › CHANGE ADDRESS · "Cambiar" devuelve el checkout entero, no un renglon suelto (4.8s)
+  ✓  14 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:249:1 › Persona C · si el precio cambio, la recompra lo dice y muestra los dos totales (3.1s)
+  ✓  15 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:291:1 › Persona D · un producto que ya no se vende se nombra: no desaparece en silencio (2.3s)
+  ✓  16 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:322:1 › ADD · un toque suma uno y una tanda rapida suma exactamente lo que se toco (6.7s)
+  ✓  17 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:382:1 › ADD · el sello de confirmacion nunca tapa el "+" (4.6s)
+  ✓  18 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:433:1 › REDUCED MOTION · sin movimiento la compra funciona igual y el sello no queda congelado (3.9s)
+  ✓  19 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:474:1 › PACKS · la cantidad del carrito sigue contando packs, no unidades sueltas (4.5s)
+  ✓  20 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:597:1 › PROFILE SLOW · nunca se pinta el formulario completo para despues plegarlo (8.4s)
+  ✓  21 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:632:1 › PROFILE FOUND · con el perfil disponible el resumen aparece sin pasar por el formulario (6.1s)
+  ✓  22 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:647:1 › PROFILE EMPTY · sin nada que recordar el formulario completo aparece de una, sin esperar (5.5s)
+  ✓  23 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:666:1 › PROFILE FAILURE · si la consulta falla el checkout queda usable, no suspendido (6.5s)
+  ✓  24 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:684:1 › PROFILE HUNG · una consulta que nunca contesta no deja el checkout esperando para siempre (11.4s)
+  ✓  25 [mobile-webkit] › tests\e2e\launch-ux-checkout-reorder.spec.mjs:706:1 › CART NOTICE · el aviso vive en el layout y no cruza encabezado, CTA ni barra (8.9s)
+
+  25 passed (2.1m)
+E2E estable: ninguna prueba necesitó reintento.

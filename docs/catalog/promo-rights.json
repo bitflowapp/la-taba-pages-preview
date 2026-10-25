@@ -1,0 +1,187 @@
+{
+  "schema_version": 1,
+  "que_es": "Registro de derechos comerciales de la fotografía EDITORIAL de la vidriera (banners de la home, banda del hero e historias de assets/promos/). El manifiesto promo-image-manifest.json acredita el ORIGEN de cada pieza; este registro dice si La Taba tiene autorización comercial DOCUMENTADA para publicarla. Una imagen pública, o su SHA-256, no es un permiso.",
+  "estados": {
+    "DOCUMENTADOS": "Hay autorización comercial escrita: `cede` (quién la otorga) y `referencia` (documento o código) son obligatorios. Sólo estas piezas se publican en producción (js/core/promo-rights.js, CLEARED_PROMO_PHOTOS).",
+    "NO_DOCUMENTADOS": "Se conoce la fuente pero no hay autorización comercial documentada. Visible en demostración; en producción el banner sale sin foto y el hero con su fondo de marca.",
+    "RETIRADA": "Pieza retirada del sitio; no debe referenciarse."
+  },
+  "autorizacion_marco_vigente": {
+    "id": "TABA-AUT-2026-08-001",
+    "cubre": "imagen de producto con fondo blanco (packshot) de marcas y fabricantes",
+    "no_cubre": "fotografía editorial o publicitaria de terceros (portfolios, Behance, sitios de recetas o de marca)"
+  },
+  "piezas": [
+    {
+      "path": "assets/promos/cervezas-heineken.jpg",
+      "fuente": "otaphotography.com",
+      "pagina_fuente": "https://www.otaphotography.com/beverage",
+      "uso": "banner editorial de categoria",
+      "estado": "NO_DOCUMENTADOS",
+      "referencia": null,
+      "cede": null
+    },
+    {
+      "path": "assets/promos/cervezas-heineken-band.webp",
+      "fuente": "otaphotography.com",
+      "pagina_fuente": "https://www.otaphotography.com/beverage",
+      "uso": "banda del hero comercial en telefono",
+      "estado": "NO_DOCUMENTADOS",
+      "referencia": null,
+      "cede": null
+    },
+    {
+      "path": "assets/promos/energizantes-red-bull.jpg",
+      "fuente": "otaphotography.com",
+      "pagina_fuente": "https://www.otaphotography.com/beverage",
+      "uso": "banner editorial de categoria",
+      "estado": "NO_DOCUMENTADOS",
+      "referencia": null,
+      "cede": null
+    },
+    {
+      "path": "assets/promos/aperitivos-gancia.webp",
+      "fuente": "behance.net",
+      "pagina_fuente": "https://www.behance.net/gallery/222467641/175-Aniversario-Edicion-limitada",
+      "uso": "banner editorial de categoria",
+      "estado": "NO_DOCUMENTADOS",
+      "referencia": null,
+      "cede": null
+    },
+    {
+      "path": "assets/promos/whisky-chivas.webp",
+      "fuente": "behance.net",
+      "pagina_fuente": "https://www.behance.net/gallery/30269189/Chivas-Live-With-Chivalry",
+      "uso": "banner editorial de categoria",
+      "estado": "NO_DOCUMENTADOS",
+      "referencia": null,
+      "cede": null
+    },
+    {
+      "path": "assets/promos/mixers-schweppes.jpg",
+      "fuente": "schweppes.it",
+      "pagina_fuente": "https://www.schweppes.it/recipes/citrus",
+      "uso": "banner editorial de categoria",
+      "estado": "NO_DOCUMENTADOS",
+      "referencia": null,
+      "cede": null
+    },
+    {
+      "path": "assets/promos/fernet-brancamenta.jpg",
+      "fuente": "passionspirits.com",
+      "pagina_fuente": "https://www.passionspirits.com/fernet-branca-brancamenta-750ml",
+      "uso": "banner editorial de categoria",
+      "estado": "NO_DOCUMENTADOS",
+      "referencia": null,
+      "cede": null
+    },
+    {
+      "path": "assets/promos/story-cervezas-heineken.webp",
+      "fuente": "otaphotography.com",
+      "pagina_fuente": "https://www.otaphotography.com/beverage",
+      "uso": "historia de la home",
+      "estado": "NO_DOCUMENTADOS",
+      "referencia": null,
+      "cede": null
+    },
+    {
+      "path": "assets/promos/story-cervezas-heineken-thumb.webp",
+      "fuente": "otaphotography.com",
+      "pagina_fuente": "https://www.otaphotography.com/beverage",
+      "uso": "miniatura del acceso a historias",
+      "estado": "NO_DOCUMENTADOS",
+      "referencia": null,
+      "cede": null
+    },
+    {
+      "path": "assets/promos/story-energizantes-monster.webp",
+      "fuente": "behance.net",
+      "pagina_fuente": "https://www.behance.net/gallery/114027701/Monster-Energy",
+      "uso": "historia de la home",
+      "estado": "NO_DOCUMENTADOS",
+      "referencia": null,
+      "cede": null
+    },
+    {
+      "path": "assets/promos/story-energizantes-monster-thumb.webp",
+      "fuente": "behance.net",
+      "pagina_fuente": "https://www.behance.net/gallery/114027701/Monster-Energy",
+      "uso": "miniatura del acceso a historias",
+      "estado": "NO_DOCUMENTADOS",
+      "referencia": null,
+      "cede": null
+    },
+    {
+      "path": "assets/promos/story-whisky-jack-daniels.webp",
+      "fuente": "behance.net",
+      "pagina_fuente": "https://www.behance.net/gallery/242345313/Show-up-with-N-7-Jack-Daniels",
+      "uso": "historia de la home",
+      "estado": "NO_DOCUMENTADOS",
+      "referencia": null,
+      "cede": null
+    },
+    {
+      "path": "assets/promos/story-whisky-jack-daniels-thumb.webp",
+      "fuente": "behance.net",
+      "pagina_fuente": "https://www.behance.net/gallery/242345313/Show-up-with-N-7-Jack-Daniels",
+      "uso": "miniatura del acceso a historias",
+      "estado": "NO_DOCUMENTADOS",
+      "referencia": null,
+      "cede": null
+    },
+    {
+      "path": "assets/promos/story-mixers-schweppes.webp",
+      "fuente": "schweppes.es",
+      "pagina_fuente": "https://www.schweppes.es/tonicas/tonica-original/",
+      "uso": "historia de la home",
+      "estado": "NO_DOCUMENTADOS",
+      "referencia": null,
+      "cede": null
+    },
+    {
+      "path": "assets/promos/story-mixers-schweppes-thumb.webp",
+      "fuente": "schweppes.es",
+      "pagina_fuente": "https://www.schweppes.es/tonicas/tonica-original/",
+      "uso": "miniatura del acceso a historias",
+      "estado": "NO_DOCUMENTADOS",
+      "referencia": null,
+      "cede": null
+    },
+    {
+      "path": "assets/promos/cervezas-patagonia.jpg",
+      "fuente": "kotyhu.com",
+      "pagina_fuente": "https://kotyhu.com/cerveza-patagonia-destinos-patagonicos",
+      "uso": "banner editorial de categoria",
+      "estado": "NO_DOCUMENTADOS",
+      "referencia": null,
+      "cede": null
+    },
+    {
+      "path": "assets/promos/gin-tanqueray.jpg",
+      "fuente": "otaphotography.com",
+      "pagina_fuente": "https://www.otaphotography.com/beverage",
+      "uso": "banner editorial de categoria",
+      "estado": "NO_DOCUMENTADOS",
+      "referencia": null,
+      "cede": null
+    },
+    {
+      "path": "assets/promos/cervezas-heineken-botella.jpg",
+      "fuente": "otaphotography.com",
+      "pagina_fuente": "https://www.otaphotography.com/beverage",
+      "uso": "banner editorial de marca",
+      "estado": "NO_DOCUMENTADOS",
+      "referencia": null,
+      "cede": null
+    },
+    {
+      "path": "assets/promos/cervezas-andes-origen.webp",
+      "fuente": "andesorigen.com.ar",
+      "pagina_fuente": "https://andesorigen.com.ar/andes-origen-rubia",
+      "uso": "RETIRADA 2026-10-24: es una tarjeta de receta (Ricotta casera + Repollitos quemados y pomelo), no muestra el producto. El banner de marca usa la foto de producto de Andes Origen Rubia con licencia comercial TABA-AUT-2026-08-001 (docs/catalog/image-manifest.json). La pieza queda en assets sin referencias.",
+      "estado": "RETIRADA",
+      "referencia": null,
+      "cede": null
+    }
+  ]
+}

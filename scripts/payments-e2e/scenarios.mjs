@@ -184,13 +184,16 @@ export const SCENARIOS = [
         token: owner(ctx, 'A').token, body: { business_id: ctx.ids.businesses.A, action: 'verify' },
       });
       assert.equal(verify.status, 200, verify.text);
+      assert.equal(verify.json.verification?.seller_identity_verified, true, JSON.stringify(verify.json));
+      assert.equal(verify.json.verification?.integrator_environment_matches, true);
+      assert.equal(verify.json.verification?.seller_is_integrator, false);
       const enabledA = await enableForSales(ctx, 'A');
       const enabledB = await enableForSales(ctx, 'B');
       const settings = await all(ctx, `select business_id, enabled, environment, production_review_status, collector_id from public.business_payment_settings order by collector_id`);
       assert.ok(settings.filter((row) => row.enabled).length === 2, `dos comercios habilitados: ${JSON.stringify(settings)}`);
       return {
         connected: { A: a.result, B: b.result }, seller_reused_by_other_business: reused.result, platform_account_as_seller: platform?.result ?? 'n/a (sólo producción)',
-        verification: verify.json.verification ? { ok: verify.json.verification.ok, checks: verify.json.verification.checks ?? undefined } : null,
+        verification: verify.json.verification ? Object.fromEntries(Object.entries(verify.json.verification).filter(([key]) => key !== 'checked_at')) : null,
         operator_enable: enabledA || enabledB ? { A: enabledA?.ok ?? null, B: enabledB?.ok ?? null } : 'n/a (prueba: vincular habilita)',
         settings,
       };
@@ -323,6 +326,7 @@ export const SCENARIOS = [
     async run(ctx) {
       const purchase = await startCheckout(ctx, { items: [{ product_id: ctx.ids.products.agua, quantity: 1 }] });
       const pending = await ctx.emulator.pay(purchase.preferenceId, { buyerId: ctx.buyers.one, scenario: 'CONT' });
+      const asPaid = { status: pending.status, status_detail: pending.status_detail };
       await worker(ctx);
       const during = await snapshot(ctx, purchase.sessionId);
       assert.equal(during.internal_status, 'in_process');
@@ -333,7 +337,7 @@ export const SCENARIOS = [
       const after = await snapshot(ctx, purchase.sessionId);
       assert.equal(after.status, 'completed', JSON.stringify(after));
       assert.equal(after.orders.length, 1);
-      return { pending: { status: pending.status, status_detail: pending.status_detail, session: during.status, intent: during.internal_status },
+      return { pending: { ...asPaid, session: during.status, intent: during.internal_status },
         settled: { session: after.status, intent: after.internal_status, orders: after.orders.length } };
     },
   },

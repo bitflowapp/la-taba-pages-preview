@@ -374,7 +374,7 @@ export class MercadoPagoEmulator {
     if (body.grant_type === 'client_credentials') {
       const issued = this.#issue(this.application.ownerId, 'client_credentials', body.client_id);
       return json(200, { access_token: issued.token, token_type: 'Bearer', expires_in: issued.expiresIn,
-        scope: 'offline_access payments read write', user_id: this.application.ownerId, live_mode: true });
+        scope: 'read write offline_access', user_id: this.application.ownerId, live_mode: true });
     }
     if (body.grant_type === 'authorization_code') {
       const grant = this.codes.get(body.code);
@@ -400,11 +400,11 @@ export class MercadoPagoEmulator {
     if (body.test_token === true || body.test_token === 'true') {
       // Credencial de sandbox vieja: La Taba la rechaza (seller-oauth.ts isSandboxAccessToken).
       return json(200, { access_token: `TEST-${randomBytes(16).toString('hex')}-${userId}`, token_type: 'Bearer', expires_in: 15_552_000,
-        scope: 'offline_access payments read write', user_id: userId, refresh_token: `TG-${randomBytes(8).toString('hex')}`, live_mode: false });
+        scope: 'read write offline_access', user_id: userId, refresh_token: `TG-${randomBytes(8).toString('hex')}`, live_mode: false });
     }
     const issued = this.#issue(userId, 'oauth', body.client_id);
     return json(200, { access_token: issued.token, token_type: 'Bearer', expires_in: issued.expiresIn,
-      scope: 'offline_access payments read write', user_id: userId, refresh_token: issued.refresh,
+      scope: 'read write offline_access', user_id: userId, refresh_token: issued.refresh,
       public_key: `APP_USR-${randomUUID()}`, live_mode: true });
   }
 

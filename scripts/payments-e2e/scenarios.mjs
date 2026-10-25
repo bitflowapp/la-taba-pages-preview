@@ -629,6 +629,48 @@ export const SCENARIOS = [
     },
   },
   {
+    id: 'activation_assistant',
+    title: 'El asistente de activación contra las funciones reales: dominio, callback, webhook, CORS, worker, integradora y clave del webhook',
+    async run(ctx) {
+      const { networkChecks, integratorCheck, webhookSecretCheck } = await import('../mercadopago/asistente-activacion.mjs');
+      const target = { name: ctx.environment === 'production' ? 'production' : 'qa', ref: ctx.ref, origin: ctx.origin,
+        mercadoPagoApplicationId: ctx.clientId, provisioned: true };
+      // El sitio no forma parte del banco: se sirve lo mínimo que publica Deploy production.
+      const site = { '/': ['<!doctype html><title>La Taba</title>', 'text/html'],
+        '/runtime-config.js': [`window.TABA_RUNTIME_CONFIG = { supabaseUrl: 'https://${ctx.ref}.supabase.co' };`, 'text/javascript'],
+        '/release-identity.json': [JSON.stringify({ cacheName: 'la-taba-runtime-v167-catalog-rights-review' }), 'application/json'] };
+      const routed = async (url, init = {}) => {
+        const target2 = new URL(url);
+        if (target2.origin === `https://${ctx.ref}.supabase.co`) {
+          return fetch(`${ctx.functions.gateway}${target2.pathname}${target2.search}`, { ...init, headers: { ...(init.headers || {}), 'x-forwarded-for': '190.0.0.77' } });
+        }
+        if (target2.origin === 'https://api.mercadopago.com') return fetch(`${ctx.emulator.url}${target2.pathname}${target2.search}`, init);
+        if (target2.origin === ctx.origin && site[target2.pathname]) {
+          return new Response(site[target2.pathname][0], { status: 200, headers: { 'content-type': site[target2.pathname][1] } });
+        }
+        throw new Error(`destino ajeno al banco: ${target2.origin}`);
+      };
+      const receiptsBefore = await one(ctx, 'select count(*)::int as n from public.payment_webhook_receipts');
+      const network = await networkChecks(target, routed);
+      assert.ok(network.ok, JSON.stringify(network.rows.filter((row) => !row.ok)));
+      const integrator = await integratorCheck(target, ctx.application.clientSecret, routed);
+      assert.equal(integrator.ok, true, JSON.stringify(integrator));
+      const wrongIntegrator = await integratorCheck(target, 'un-client-secret-que-no-es-el-de-la-app', routed);
+      assert.equal(wrongIntegrator.ok, false);
+      const good = await webhookSecretCheck(target, ctx.application.webhookSecret, routed);
+      assert.equal(good.verdict, 'clave_coincide', JSON.stringify(good));
+      const receiptsAfterGood = await one(ctx, 'select count(*)::int as n from public.payment_webhook_receipts');
+      assert.equal(receiptsAfterGood.n, receiptsBefore.n, 'las sondas de red y la de la clave correcta no guardan nada');
+      const bad = await webhookSecretCheck(target, 'b'.repeat(40), routed);
+      assert.equal(bad.verdict, 'clave_distinta', JSON.stringify(bad));
+      const receiptsAfterBad = await one(ctx, 'select count(*)::int as n from public.payment_webhook_receipts');
+      assert.equal(receiptsAfterBad.n, receiptsBefore.n + 1, 'la clave equivocada deja exactamente la fila que el asistente avisa');
+      return { network: network.rows.map(({ id, observed, ok }) => ({ id, observed, ok })),
+        integrator: { owner_id: integrator.owner_id, owner_is_test_user: integrator.owner_is_test_user, wrong_secret: wrongIntegrator.step },
+        webhook_secret: { right: good.verdict, wrong: bad.verdict }, receipts_written: { probes_and_right_key: 0, wrong_key: 1 } };
+    },
+  },
+  {
     id: 'reconciliation_clean',
     title: 'Conciliación final: cada cobro aprobado tiene un pedido, cada pedido un cobro, y no quedan discrepancias abiertas',
     async run(ctx) {

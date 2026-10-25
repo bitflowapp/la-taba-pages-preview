@@ -27,17 +27,24 @@ export function validateMercadoPagoWebhookSignature({
   if (!signature || !requestId || !dataId || !secret) return false;
   if (bodyDataId && bodyDataId !== dataId) return false;
   if (!signatureTimestampIsFresh(signature, nowMs)) return false;
-  try {
-    WebhookSignatureValidator.validate({
-      xSignature: signature,
-      xRequestId: requestId,
-      dataId,
-      secret,
-    });
-    return true;
-  } catch (_) {
-    return false;
+  // «If data.id is returned with uppercase alphanumeric characters, convert it to lowercase» before building the
+  // manifest (Mercado Pago, Webhooks). The official SDK validator does not lowercase, so it is done here first; the
+  // literal value is still tried, so nothing that validated before stops validating. Payment ids are numeric: for
+  // them both candidates are the same string and this is exactly the previous check.
+  for (const candidate of new Set([dataId.toLowerCase(), dataId])) {
+    try {
+      WebhookSignatureValidator.validate({
+        xSignature: signature,
+        xRequestId: requestId,
+        dataId: candidate,
+        secret,
+      });
+      return true;
+    } catch (_) {
+      // try the next candidate
+    }
   }
+  return false;
 }
 
 /** 2017-07-14. Nada anterior a esto es un `ts` plausible de Mercado Pago. */

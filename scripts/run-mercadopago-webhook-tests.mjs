@@ -38,6 +38,8 @@ const steps = [
     'supabase/functions/_shared/payment-worker-signature.deno.ts',
     'supabase/functions/_shared/request-protocol.deno.ts',
     'supabase/functions/_shared/webhook-notification.deno.ts',
+    'supabase/functions/_shared/seller-webhook-routing.deno.ts',
+    'supabase/functions/_shared/refund-amount.deno.ts',
     'supabase/functions/_shared/print-agent-gateway.deno.ts',
     'supabase/functions/_shared/team-invitation.deno.ts']],
   /*

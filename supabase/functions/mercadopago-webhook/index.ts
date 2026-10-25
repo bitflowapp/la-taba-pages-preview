@@ -1,6 +1,6 @@
 import { oauthConfig, oauthMode } from '../_shared/seller-oauth.ts';
 import { fetchPayment } from '../_shared/mercadopago.ts';
-import { resolveSellerWebhookBusiness } from '../_shared/seller-webhook-routing.ts';
+import { resolveSellerWebhookBusiness, WEBHOOK_ROUTING_CANDIDATES } from '../_shared/seller-webhook-routing.ts';
 import {
   createServiceClient,
   enforceRateLimit,
@@ -115,6 +115,15 @@ Deno.serve(async (request) => {
           return data;
         },
         paymentForBusiness: fetchPayment,
+        // Only when the hint does not resolve (R-MKT-1): the application's connected sellers, oldest link first.
+        connectedSellers: async () => {
+          const { data, error } = await service.from('mp_seller_connections')
+            .select('business_id,seller_id,application_id,environment,status')
+            .eq('environment', config.environment).eq('application_id', config.clientId).eq('status', 'connected')
+            .order('connected_at', { ascending: true }).limit(WEBHOOK_ROUTING_CANDIDATES);
+          if (error || !Array.isArray(data)) throw new Error('Seller routing lookup unavailable');
+          return data;
+        },
         intentForReference: async reference => {
           const { data, error } = await service.from('payment_intents')
             .select('business_id,environment').eq('provider', 'mercadopago')

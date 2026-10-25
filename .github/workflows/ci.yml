@@ -277,6 +277,20 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+      # Purchases end to end on the real Edge functions, PostgREST and every migration (test binding and a production
+      # rehearsal on a fictitious ref). Mercado Pago is the contract emulator: no network, no credentials, no money.
+      - name: Payments bench end to end (checkout, webhooks, refunds, marketplace routing)
+        run: npm run test:payments:e2e
+
+      - name: Upload payments bench evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: payments-e2e-${{ github.sha }}
+          path: artifacts/ci/payments-e2e.json
+          if-no-files-found: warn
+          retention-days: 30
+
   windows_desktop:
     name: Windows Rust and unsigned verification bundles
     runs-on: windows-latest

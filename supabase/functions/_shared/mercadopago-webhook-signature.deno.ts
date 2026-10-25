@@ -91,3 +91,15 @@ Deno.test('Mercado Pago webhook: ts no numérico o implausible se rechaza', asyn
   if (validate({ signature: valido.replace(/ts=\d+/, 'ts=0') })) throw new Error('zero ts accepted');
   if (validate({ signature: valido.replace(/ts=\d+/, 'ts=1000000') })) throw new Error('implausible ts accepted');
 });
+
+Deno.test('Mercado Pago webhook: un data.id alfanumérico en mayúsculas se firma en minúsculas (documentación oficial)', async () => {
+  const documentada = await signature({ dataId: 'abc123def' });
+  if (!validate({ signature: documentada, dataId: 'ABC123DEF' })) throw new Error('lower-cased manifest rejected');
+  if (!validate({ signature: documentada, dataId: 'abc123def', bodyDataId: 'abc123def' })) throw new Error('lower-case id rejected');
+  // Lo que validaba antes (el valor literal) sigue validando.
+  const literal = await signature({ dataId: 'ABC123DEF' });
+  if (!validate({ signature: literal, dataId: 'ABC123DEF' })) throw new Error('literal manifest rejected');
+  // Otro recurso no valida en ninguna de las dos formas, y el cuerpo tiene que coincidir con la query tal cual.
+  if (validate({ signature: documentada, dataId: 'ABC123DEG' })) throw new Error('different id accepted');
+  if (validate({ signature: documentada, dataId: 'ABC123DEF', bodyDataId: 'abc123def' })) throw new Error('body/query mismatch accepted');
+});

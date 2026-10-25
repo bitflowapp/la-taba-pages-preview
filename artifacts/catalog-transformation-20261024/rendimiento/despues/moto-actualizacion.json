@@ -1,0 +1,58 @@
+{
+  "etapa": "despues",
+  "fecha": "2026-10-25T05:12:17.505Z",
+  "pasos": [
+    {
+      "nombre": "estado inicial (lo que el teléfono ya tiene instalado)",
+      "ok": true,
+      "cachés": {
+        "la-taba-runtime-v166-catalog-transformation": 270
+      },
+      "activo": "activated",
+      "esperando": false,
+      "instalando": true,
+      "controlada": true
+    },
+    {
+      "nombre": "el worker nuevo se detecta y queda esperando",
+      "ok": true,
+      "cachés": {
+        "la-taba-runtime-v166-catalog-transformation": 270,
+        "la-taba-runtime-v167-catalog-rights-review": 222
+      },
+      "activo": "activated",
+      "esperando": true,
+      "instalando": false,
+      "controlada": true,
+      "avisoVisible": 1
+    },
+    {
+      "nombre": "el aviso «Hay una actualización disponible» y la activación por toque",
+      "ok": true,
+      "antes": {
+        "la-taba-runtime-v166-catalog-transformation": 270,
+        "la-taba-runtime-v167-catalog-rights-review": 222
+      },
+      "despues": {
+        "cachés": {
+          "la-taba-runtime-v167-catalog-rights-review": 223
+        },
+        "activo": "activated",
+        "esperando": false,
+        "instalando": false,
+        "controlada": true
+      }
+    },
+    {
+      "nombre": "sólo queda la caché vigente y completa",
+      "ok": true,
+      "vigente": "la-taba-runtime-v167-catalog-rights-review",
+      "entradas": 223
+    },
+    {
+      "nombre": "recarga SIN conexión desde la versión nueva",
+      "ok": true,
+      "tarjetas": 52
+    }
+  ]
+}

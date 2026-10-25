@@ -1,0 +1,29 @@
+
+Running 23 tests using 1 worker, shard 1 of 8
+
+  ✓   1 [mobile-webkit] › tests\e2e\campaigns.spec.mjs:77:1 › la configuración de prueba CP muestra sus campañas aprobadas con producto del snapshot (2.4s)
+  ✓   2 [mobile-webkit] › tests\e2e\campaigns.spec.mjs:88:1 › la campaña ocupa la banda de apertura sin mover el primer precio ni desbordar (6.4s)
+  ✓   3 [mobile-webkit] › tests\e2e\campaigns.spec.mjs:133:1 › si la leyenda legal parte en dos renglones, la banda crece: no pisa la acción ni la escena (5.7s)
+  ✓   4 [mobile-webkit] › tests\e2e\campaigns.spec.mjs:203:1 › la escena corre sin crear ni quitar un solo nodo y termina en su cuadro final (2.9s)
+  ✓   5 [mobile-webkit] › tests\e2e\campaigns.spec.mjs:239:1 › movimiento reducido: ninguna animación, y la pieza completa (3.7s)
+  ✓   6 [mobile-webkit] › tests\e2e\campaigns.spec.mjs:302:1 › fuera de pantalla la escena se pausa, y al volver sigue donde estaba (2.8s)
+  ✓   7 [mobile-webkit] › tests\e2e\campaigns.spec.mjs:329:1 › una pieza que todavía no se vio espera en su primer cuadro, no en el final (1.9s)
+  ✓   8 [mobile-webkit] › tests\e2e\campaigns.spec.mjs:359:1 › volver a la home, o borrar una búsqueda, no repite la función (17.6s)
+  ✓   9 [mobile-webkit] › tests\e2e\campaigns.spec.mjs:407:1 › un renderer lento conserva el packshot real estático y completo al refrescar (850ms)
+  ✓  10 [mobile-webkit] › tests\e2e\campaigns.spec.mjs:435:1 › ocultar un anuncio deja ese lugar sin anuncios: vuelve la puerta editorial, no otra campaña (5.5s)
+  ✓  11 [mobile-webkit] › tests\e2e\campaigns.spec.mjs:454:1 › la escena llena la banda que tiene, sin salirse de ella mientras sirve (3.4s)
+  ✓  12 [mobile-webkit] › tests\e2e\campaigns.spec.mjs:504:1 › tocar la pieza abre la ficha de SU producto y no toca el carrito (5.9s)
+  ✓  13 [mobile-webkit] › tests\e2e\campaigns.spec.mjs:545:1 › PROMO_PRODUCT_MATCHES_CATALOG: cada pieza es su producto del catálogo —nombre, marca, foto, precio y stock— igual que la tarjeta, la ficha y el carrito (6.7s)
+  ✓  14 [mobile-webkit] › tests\e2e\campaigns.spec.mjs:654:1 › la pieza se recorre con teclado y se puede ocultar; no vuelve en la visita (7.1s)
+  ✓  15 [mobile-webkit] › tests\e2e\campaigns.spec.mjs:688:1 › pieza de grilla: tras la cuarta tarjeta, nunca en una búsqueda ni con filtros, y el alcohol sólo en su rubro (5.0s)
+  ✓  16 [mobile-webkit] › tests\e2e\campaigns.spec.mjs:727:1 › con eventos de Realtime idénticos, las piezas conservan su nodo y no reinician la escena (3.1s)
+  ✓  17 [mobile-webkit] › tests\e2e\campaigns.spec.mjs:758:1 › si el movimiento no puede arrancar, la tienda abre y la pieza queda estática y completa (2.9s)
+  ✓  18 [mobile-webkit] › tests\e2e\catalog-card-glow.spec.mjs:209:1 › HOME · el rail Destacados llega con brillo, se apaga al bajar y vuelve (4.7s)
+  ✓  19 [mobile-webkit] › tests\e2e\catalog-card-glow.spec.mjs:222:1 › CATÁLOGO · la grilla llega con brillo, se apaga al bajar y vuelve (4.9s)
+  ✓  20 [mobile-webkit] › tests\e2e\catalog-card-glow.spec.mjs:233:1 › el brillo no toca ni el fondo ni la tinta de la tarjeta (3.2s)
+  ✓  21 [mobile-webkit] › tests\e2e\catalog-card-glow.spec.mjs:258:1 › lo agotado nunca brilla, en ninguno de los dos estantes (2.7s)
+  ✓  22 [mobile-webkit] › tests\e2e\catalog-card-glow.spec.mjs:280:1 › con movimiento reducido el brillo queda quieto y nada desborda (2.2s)
+  ✓  23 [mobile-webkit] › tests\e2e\catalog-card-glow.spec.mjs:310:1 › el brillo no se derrama fuera de los dos estantes (2.4s)
+
+  23 passed (1.8m)
+E2E estable: ninguna prueba necesitó reintento.

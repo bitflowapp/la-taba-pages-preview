@@ -1,0 +1,30 @@
+{
+  "etapa": "antes",
+  "fecha": "2026-10-25T03:24:17.583Z",
+  "resultados": [
+    {
+      "nombre": "home",
+      "cuadros": 528,
+      "mediana": 16.6,
+      "p95": 33.3,
+      "p99": 66.6,
+      "maximo": 100,
+      "largos33": 17,
+      "largos50": 7,
+      "tareasLargas": 0,
+      "scrollY": 3165
+    },
+    {
+      "nombre": "catalogo-grilla",
+      "cuadros": 469,
+      "mediana": 16.6,
+      "p95": 33.3,
+      "p99": 66.5,
+      "maximo": 166,
+      "largos33": 20,
+      "largos50": 8,
+      "tareasLargas": 2,
+      "scrollY": 3776
+    }
+  ]
+}

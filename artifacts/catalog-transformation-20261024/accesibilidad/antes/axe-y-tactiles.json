@@ -1,0 +1,231 @@
+{
+  "etapa": "antes",
+  "fecha": "2026-10-25T01:37:55.784Z",
+  "base": "http://127.0.0.1:8267",
+  "resultados": [
+    {
+      "pantalla": "home",
+      "violaciones": [],
+      "tactiles": {
+        "total": 143,
+        "menoresA44": 2,
+        "grupos": {
+          "button.cmp-add 93x26": {
+            "n": 1,
+            "ej": "Agregar Red Bull 250 ml · Lata"
+          },
+          "button.cmp-add 107x40": {
+            "n": 1,
+            "ej": "Agregar Coca-Cola 2,25 L al pe"
+          }
+        }
+      },
+      "sinNombreAccesible": []
+    },
+    {
+      "pantalla": "catalogo-grilla",
+      "violaciones": [
+        {
+          "id": "heading-order",
+          "impacto": "moderate",
+          "ayuda": "Heading levels should only increase by one",
+          "nodos": 1,
+          "ejemplos": [
+            {
+              "sel": "article[data-card-product=\"coca-cola-original-2250ml\"] > .product-body > h3",
+              "resumen": "  Heading order invalid"
+            }
+          ]
+        }
+      ],
+      "tactiles": {
+        "total": 75,
+        "menoresA44": 13,
+        "grupos": {
+          "button.product-name-link 170x18": {
+            "n": 12,
+            "ej": "Abrir ficha de Coca-Cola 2,25 "
+          },
+          "button.cmp-add 107x40": {
+            "n": 1,
+            "ej": "Agregar Aquarius Pomelo 2,25 L"
+          }
+        }
+      },
+      "sinNombreAccesible": []
+    },
+    {
+      "pantalla": "catalogo-lista",
+      "violaciones": [
+        {
+          "id": "heading-order",
+          "impacto": "moderate",
+          "ayuda": "Heading levels should only increase by one",
+          "nodos": 1,
+          "ejemplos": [
+            {
+              "sel": "article[data-card-product=\"coca-cola-original-2250ml\"] > .product-body > h3",
+              "resumen": "  Heading order invalid"
+            }
+          ]
+        }
+      ],
+      "tactiles": {
+        "total": 75,
+        "menoresA44": 13,
+        "grupos": {
+          "button.product-name-link 170x18": {
+            "n": 12,
+            "ej": "Abrir ficha de Coca-Cola 2,25 "
+          },
+          "button.cmp-add 107x40": {
+            "n": 1,
+            "ej": "Agregar Aquarius Pomelo 2,25 L"
+          }
+        }
+      },
+      "sinNombreAccesible": []
+    },
+    {
+      "pantalla": "catalogo-busqueda-vacia",
+      "violaciones": [],
+      "tactiles": {
+        "total": 26,
+        "menoresA44": 0,
+        "grupos": {}
+      },
+      "sinNombreAccesible": []
+    },
+    {
+      "pantalla": "catalogo-busqueda-alcance",
+      "violaciones": [
+        {
+          "id": "heading-order",
+          "impacto": "moderate",
+          "ayuda": "Heading levels should only increase by one",
+          "nodos": 1,
+          "ejemplos": [
+            {
+              "sel": "article[data-card-product=\"quilmes-clasica-lata-473ml\"] > .product-body > h3",
+              "resumen": "  Heading order invalid"
+            }
+          ]
+        }
+      ],
+      "tactiles": {
+        "total": 41,
+        "menoresA44": 4,
+        "grupos": {
+          "button.product-name-link 170x18": {
+            "n": 4,
+            "ej": "Abrir ficha de Quilmes Clásica"
+          }
+        }
+      },
+      "sinNombreAccesible": []
+    },
+    {
+      "pantalla": "ficha-producto",
+      "violaciones": [],
+      "tactiles": {
+        "total": 72,
+        "menoresA44": 11,
+        "grupos": {
+          "button.product-name-link 170x18": {
+            "n": 11,
+            "ej": "Abrir ficha de Quilmes Clásica"
+          }
+        }
+      },
+      "sinNombreAccesible": []
+    },
+    {
+      "pantalla": "carrito-con-productos",
+      "violaciones": [
+        {
+          "id": "heading-order",
+          "impacto": "moderate",
+          "ayuda": "Heading levels should only increase by one",
+          "nodos": 1,
+          "ejemplos": [
+            {
+              "sel": "#profile-checkout-title",
+              "resumen": "  Heading order invalid"
+            }
+          ]
+        },
+        {
+          "id": "landmark-complementary-is-top-level",
+          "impacto": "moderate",
+          "ayuda": "Aside should not be contained in another landmark",
+          "nodos": 1,
+          "ejemplos": [
+            {
+              "sel": ".minimum-order-progress",
+              "resumen": "  The null landmark is contained in another landmark."
+            }
+          ]
+        }
+      ],
+      "tactiles": {
+        "total": 40,
+        "menoresA44": 4,
+        "grupos": {
+          "input 20x44": {
+            "n": 3,
+            "ej": ""
+          },
+          "input 19x24": {
+            "n": 1,
+            "ej": ""
+          }
+        }
+      },
+      "sinNombreAccesible": []
+    },
+    {
+      "pantalla": "checkout-formulario",
+      "violaciones": [
+        {
+          "id": "heading-order",
+          "impacto": "moderate",
+          "ayuda": "Heading levels should only increase by one",
+          "nodos": 1,
+          "ejemplos": [
+            {
+              "sel": "#profile-checkout-title",
+              "resumen": "  Heading order invalid"
+            }
+          ]
+        },
+        {
+          "id": "landmark-complementary-is-top-level",
+          "impacto": "moderate",
+          "ayuda": "Aside should not be contained in another landmark",
+          "nodos": 1,
+          "ejemplos": [
+            {
+              "sel": ".minimum-order-progress",
+              "resumen": "  The null landmark is contained in another landmark."
+            }
+          ]
+        }
+      ],
+      "tactiles": {
+        "total": 28,
+        "menoresA44": 4,
+        "grupos": {
+          "input 20x44": {
+            "n": 3,
+            "ej": ""
+          },
+          "input 19x24": {
+            "n": 1,
+            "ej": ""
+          }
+        }
+      },
+      "sinNombreAccesible": []
+    }
+  ]
+}

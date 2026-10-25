@@ -1,0 +1,114 @@
+[
+  {
+    "perfil": "fast-4g",
+    "metrica": "FCP",
+    "base": 1232,
+    "actual": 1184,
+    "cambio": "-4%",
+    "unidad": "ms"
+  },
+  {
+    "perfil": "fast-4g",
+    "metrica": "LCP",
+    "base": 4052,
+    "actual": 3512,
+    "cambio": "-13%",
+    "unidad": "ms"
+  },
+  {
+    "perfil": "fast-4g",
+    "metrica": "evento load",
+    "base": 4521,
+    "actual": 2723,
+    "cambio": "-40%",
+    "unidad": "ms"
+  },
+  {
+    "perfil": "fast-4g",
+    "metrica": "peticiones",
+    "base": 186,
+    "actual": 180,
+    "cambio": "-3%",
+    "unidad": "n"
+  },
+  {
+    "perfil": "fast-4g",
+    "metrica": "KB transferidos",
+    "base": 1552,
+    "actual": 843,
+    "cambio": "-46%",
+    "unidad": "KB"
+  },
+  {
+    "perfil": "fast-4g",
+    "metrica": "KB de imagen",
+    "base": 726,
+    "actual": 11,
+    "cambio": "-98%",
+    "unidad": "KB"
+  },
+  {
+    "perfil": "fast-4g",
+    "metrica": "elemento LCP",
+    "base": "SPAN.home-hero-promo-media",
+    "actual": "IMG.home-best-image thumb-img",
+    "cambio": "",
+    "unidad": ""
+  },
+  {
+    "perfil": "slow-4g",
+    "metrica": "FCP",
+    "base": 2540,
+    "actual": 2412,
+    "cambio": "-5%",
+    "unidad": "ms"
+  },
+  {
+    "perfil": "slow-4g",
+    "metrica": "LCP",
+    "base": 7820,
+    "actual": 8268,
+    "cambio": "6%",
+    "unidad": "ms"
+  },
+  {
+    "perfil": "slow-4g",
+    "metrica": "evento load",
+    "base": 7028,
+    "actual": 7397,
+    "cambio": "5%",
+    "unidad": "ms"
+  },
+  {
+    "perfil": "slow-4g",
+    "metrica": "peticiones",
+    "base": 181,
+    "actual": 180,
+    "cambio": "-1%",
+    "unidad": "n"
+  },
+  {
+    "perfil": "slow-4g",
+    "metrica": "KB transferidos",
+    "base": 776,
+    "actual": 843,
+    "cambio": "9%",
+    "unidad": "KB"
+  },
+  {
+    "perfil": "slow-4g",
+    "metrica": "KB de imagen",
+    "base": 6,
+    "actual": 11,
+    "cambio": "83%",
+    "unidad": "KB"
+  },
+  {
+    "perfil": "slow-4g",
+    "metrica": "elemento LCP",
+    "base": "SPAN.home-hero-promo-media",
+    "actual": "IMG.home-best-image thumb-img",
+    "cambio": "",
+    "unidad": ""
+  }
+]

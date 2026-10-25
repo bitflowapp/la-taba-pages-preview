@@ -1,0 +1,25 @@
+
+Running 19 tests using 1 worker, shard 4 of 8
+
+  ✓   1 [mobile-webkit] › tests\e2e\checkout-payment-handoff.spec.mjs:250:3 › handoff a Mercado Pago › elegir Mercado Pago cambia lo que la pantalla promete, y volver lo devuelve (2.0s)
+  ✓   2 [mobile-webkit] › tests\e2e\checkout-payment-handoff.spec.mjs:279:3 › handoff a Mercado Pago › si Mercado Pago deja de estar disponible, el botón deja de ofrecerlo (2.0s)
+  ✓   3 [mobile-webkit] › tests\e2e\checkout-payment-handoff.spec.mjs:300:3 › handoff a Mercado Pago › el segundo toque durante la navegación NO crea una segunda sesión de pago (4.8s)
+  ✓   4 [mobile-webkit] › tests\e2e\checkout-payment-handoff.spec.mjs:323:3 › handoff a Mercado Pago › mientras se prepara el pago el botón nunca vuelve a estar disponible (4.9s)
+  ✓   5 [mobile-webkit] › tests\e2e\checkout-payment-handoff.spec.mjs:351:3 › handoff a Mercado Pago › al volver de Mercado Pago el checkout se re-arma y se puede cambiar el medio de pago (2.4s)
+  ✓   6 [mobile-webkit] › tests\e2e\checkout-payment-handoff.spec.mjs:432:5 › handoff a Mercado Pago › el rechazo por stock insuficiente se dice, no se pierde el carrito y se puede reintentar (3.4s)
+  ✓   7 [mobile-webkit] › tests\e2e\checkout-payment-handoff.spec.mjs:432:5 › handoff a Mercado Pago › el rechazo por el pedido cambió durante el envío se dice, no se pierde el carrito y se puede reintentar (3.5s)
+  ✓   8 [mobile-webkit] › tests\e2e\checkout-payment-handoff.spec.mjs:432:5 › handoff a Mercado Pago › el rechazo por sesión vencida se dice, no se pierde el carrito y se puede reintentar (3.3s)
+  ✓   9 [mobile-webkit] › tests\e2e\checkout-payment-handoff.spec.mjs:464:3 › handoff a Mercado Pago › si la navegación externa nunca salió, moverse por la tienda devuelve el checkout (3.5s)
+  ✓  10 [mobile-webkit] › tests\e2e\checkout-payment-handoff.spec.mjs:495:3 › handoff a Mercado Pago › el doble toque sobre un backend lento tampoco duplica el pedido en efectivo (6.1s)
+  ✓  11 [mobile-webkit] › tests\e2e\checkout-perfil-guardado.spec.mjs:285:3 › QA-401 · el perfil que se guarda en el checkout es el que viaja en el pedido › «Marco»: guardar y confirmar crea el pedido con ese nombre (3.4s)
+  ✓  12 [mobile-webkit] › tests\e2e\checkout-perfil-guardado.spec.mjs:300:3 › QA-401 · el perfil que se guarda en el checkout es el que viaja en el pedido › «Ma»: dos caracteres alcanzan (3.7s)
+  ✓  13 [mobile-webkit] › tests\e2e\checkout-perfil-guardado.spec.mjs:311:3 › QA-401 · el perfil que se guarda en el checkout es el que viaja en el pedido › «M»: no se guarda, se dice junto al campo y no sale ningún pedido (4.5s)
+  ✓  14 [mobile-webkit] › tests\e2e\checkout-perfil-guardado.spec.mjs:330:3 › QA-401 · el perfil que se guarda en el checkout es el que viaja en el pedido › «  Marco  »: se normaliza como en la base y el pedido viaja como «Marco» (3.7s)
+  ✓  15 [mobile-webkit] › tests\e2e\checkout-perfil-guardado.spec.mjs:342:3 › QA-401 · el perfil que se guarda en el checkout es el que viaja en el pedido › guardar, recargar y confirmar: el perfil y el carrito sobreviven (5.5s)
+  ✓  16 [mobile-webkit] › tests\e2e\checkout-perfil-guardado.spec.mjs:362:3 › QA-401 · el perfil que se guarda en el checkout es el que viaja en el pedido › doble toque en «Confirmar pedido»: un solo pedido (6.8s)
+  ✓  17 [mobile-webkit] › tests\e2e\checkout-perfil-guardado.spec.mjs:387:3 › QA-401 · el perfil que se guarda en el checkout es el que viaja en el pedido › delivery: el nombre guardado desde el editor de direcciones viaja en el pedido (4.1s)
+  ✓  18 [mobile-webkit] › tests\e2e\checkout-perfil-guardado.spec.mjs:420:3 › QA-401 · teléfono 390×844 › guardar en línea y confirmar crea el pedido, sin desbordar (4.5s)
+  ✓  19 [mobile-webkit] › tests\e2e\cuenta-contrasena-legible.spec.mjs:37:1 › la contraseña nueva se lee, se cuenta, se puede mostrar y sobrevive al error (1.2s)
+
+  19 passed (1.2m)
+E2E estable: ninguna prueba necesitó reintento.

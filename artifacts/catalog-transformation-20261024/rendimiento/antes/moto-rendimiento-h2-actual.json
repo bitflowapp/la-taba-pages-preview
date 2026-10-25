@@ -1,0 +1,390 @@
+{
+  "etapa": "antes",
+  "fecha": "2026-10-25T01:07:32.129Z",
+  "resultados": [
+    {
+      "perfil": "fast-4g",
+      "fria": true,
+      "loadMs": 3554,
+      "interactiveMs": 4662,
+      "ttfb": 95,
+      "dcl": 1995,
+      "loadEvent": 3459,
+      "perf": {
+        "lcp": {
+          "t": 3060,
+          "el": "SPAN.home-hero-promo-media",
+          "url": "https://localhost:8264/assets/promos/cervezas-heineken-band.webp",
+          "size": 40925
+        },
+        "cls": 0,
+        "longTasks": [
+          218,
+          252,
+          161,
+          115,
+          50,
+          142,
+          101,
+          107,
+          102
+        ],
+        "fcp": 1896
+      },
+      "requests": 186,
+      "totalKB": 1554,
+      "porTipo": {
+        "css": {
+          "n": 19,
+          "transferKB": 201,
+          "decodedKB": 869
+        },
+        "js": {
+          "n": 128,
+          "transferKB": 625,
+          "decodedKB": 2152
+        },
+        "img": {
+          "n": 27,
+          "transferKB": 728,
+          "decodedKB": 728
+        },
+        "otro": {
+          "n": 12,
+          "transferKB": 1,
+          "decodedKB": 1
+        }
+      },
+      "topImgs": [
+        {
+          "f": "promos/mixers-schweppes.jpg",
+          "kb": 514
+        },
+        {
+          "f": "promos/cervezas-heineken-botella.jpg",
+          "kb": 168
+        },
+        {
+          "f": "promos/cervezas-heineken-band.webp",
+          "kb": 35
+        },
+        {
+          "f": "brand/ambient-grain.png",
+          "kb": 2
+        },
+        {
+          "f": "brand/taba-app-icon-maskable-512.png",
+          "kb": 2
+        },
+        {
+          "f": "brand/taba-app-icon-192.png",
+          "kb": 2
+        }
+      ],
+      "imagenesVisibles": 23,
+      "resolucionSobreTamano": 0.9,
+      "swController": true,
+      "scrollHeight": 3375,
+      "domNodes": 2912
+    },
+    {
+      "perfil": "fast-4g",
+      "fria": false,
+      "loadMs": 3454,
+      "interactiveMs": 4372,
+      "ttfb": 44,
+      "dcl": 2046,
+      "loadEvent": 3418,
+      "perf": {
+        "lcp": {
+          "t": 3220,
+          "el": "SPAN.home-hero-promo-media",
+          "url": "https://localhost:8264/assets/promos/cervezas-heineken-band.webp",
+          "size": 40925
+        },
+        "cls": 0,
+        "longTasks": [
+          145,
+          145,
+          305,
+          188,
+          191,
+          56,
+          305,
+          188,
+          191,
+          56,
+          117,
+          117
+        ],
+        "fcp": 2008
+      },
+      "requests": 179,
+      "totalKB": 0,
+      "porTipo": {
+        "css": {
+          "n": 19,
+          "transferKB": 0,
+          "decodedKB": 869
+        },
+        "js": {
+          "n": 128,
+          "transferKB": 0,
+          "decodedKB": 2152
+        },
+        "img": {
+          "n": 25,
+          "transferKB": 0,
+          "decodedKB": 727
+        },
+        "otro": {
+          "n": 7,
+          "transferKB": 0,
+          "decodedKB": 1
+        }
+      },
+      "topImgs": [
+        {
+          "f": "promos/mixers-schweppes.jpg",
+          "kb": 514
+        },
+        {
+          "f": "promos/cervezas-heineken-botella.jpg",
+          "kb": 168
+        },
+        {
+          "f": "promos/cervezas-heineken-band.webp",
+          "kb": 35
+        },
+        {
+          "f": "brand/taba2-emblem.svg",
+          "kb": 3
+        },
+        {
+          "f": "brand/ambient-grain.png",
+          "kb": 2
+        },
+        {
+          "f": "brand/taba-app-icon-maskable-512.png",
+          "kb": 2
+        }
+      ],
+      "imagenesVisibles": 23,
+      "resolucionSobreTamano": 0.9,
+      "swController": true,
+      "scrollHeight": 3375,
+      "domNodes": 2912
+    },
+    {
+      "perfil": "slow-4g",
+      "fria": true,
+      "loadMs": 10475,
+      "interactiveMs": 11782,
+      "ttfb": 35,
+      "dcl": 5741,
+      "loadEvent": 10440,
+      "perf": {
+        "lcp": {
+          "t": 7224,
+          "el": "SPAN.home-hero-promo-media",
+          "url": "https://localhost:8264/assets/promos/cervezas-heineken-band.webp",
+          "size": 40925
+        },
+        "cls": 0,
+        "longTasks": [
+          138,
+          138,
+          138,
+          234,
+          147,
+          112,
+          51,
+          234,
+          147,
+          112,
+          51,
+          234,
+          147,
+          112,
+          51,
+          93,
+          93,
+          93,
+          90,
+          90,
+          90,
+          90,
+          90,
+          90,
+          88,
+          88,
+          88
+        ],
+        "fcp": 5576
+      },
+      "requests": 186,
+      "totalKB": 1554,
+      "porTipo": {
+        "css": {
+          "n": 19,
+          "transferKB": 201,
+          "decodedKB": 869
+        },
+        "js": {
+          "n": 128,
+          "transferKB": 625,
+          "decodedKB": 2152
+        },
+        "img": {
+          "n": 27,
+          "transferKB": 728,
+          "decodedKB": 728
+        },
+        "otro": {
+          "n": 12,
+          "transferKB": 1,
+          "decodedKB": 1
+        }
+      },
+      "topImgs": [
+        {
+          "f": "promos/mixers-schweppes.jpg",
+          "kb": 514
+        },
+        {
+          "f": "promos/cervezas-heineken-botella.jpg",
+          "kb": 168
+        },
+        {
+          "f": "promos/cervezas-heineken-band.webp",
+          "kb": 35
+        },
+        {
+          "f": "brand/ambient-grain.png",
+          "kb": 2
+        },
+        {
+          "f": "brand/taba-app-icon-maskable-512.png",
+          "kb": 2
+        },
+        {
+          "f": "brand/taba-app-icon-192.png",
+          "kb": 2
+        }
+      ],
+      "imagenesVisibles": 23,
+      "resolucionSobreTamano": 0.9,
+      "swController": true,
+      "scrollHeight": 3375,
+      "domNodes": 2912
+    },
+    {
+      "perfil": "slow-4g",
+      "fria": false,
+      "loadMs": 7439,
+      "interactiveMs": 8725,
+      "ttfb": 42,
+      "dcl": 2184,
+      "loadEvent": 7407,
+      "perf": {
+        "lcp": {
+          "t": 3336,
+          "el": "SPAN.home-hero-promo-media",
+          "url": "https://localhost:8264/assets/promos/cervezas-heineken-band.webp",
+          "size": 40925
+        },
+        "cls": 0,
+        "longTasks": [
+          194,
+          194,
+          194,
+          194,
+          272,
+          147,
+          119,
+          272,
+          147,
+          119,
+          272,
+          147,
+          119,
+          272,
+          147,
+          119,
+          129,
+          129,
+          129,
+          129,
+          83,
+          77,
+          83,
+          77,
+          83,
+          77,
+          83,
+          77,
+          87,
+          87,
+          87,
+          87
+        ],
+        "fcp": 2140
+      },
+      "requests": 184,
+      "totalKB": 0,
+      "porTipo": {
+        "css": {
+          "n": 19,
+          "transferKB": 0,
+          "decodedKB": 869
+        },
+        "js": {
+          "n": 128,
+          "transferKB": 0,
+          "decodedKB": 2152
+        },
+        "img": {
+          "n": 25,
+          "transferKB": 0,
+          "decodedKB": 727
+        },
+        "otro": {
+          "n": 12,
+          "transferKB": 0,
+          "decodedKB": 1
+        }
+      },
+      "topImgs": [
+        {
+          "f": "promos/mixers-schweppes.jpg",
+          "kb": 514
+        },
+        {
+          "f": "promos/cervezas-heineken-botella.jpg",
+          "kb": 168
+        },
+        {
+          "f": "promos/cervezas-heineken-band.webp",
+          "kb": 35
+        },
+        {
+          "f": "brand/taba2-emblem.svg",
+          "kb": 3
+        },
+        {
+          "f": "brand/ambient-grain.png",
+          "kb": 2
+        },
+        {
+          "f": "brand/taba-app-icon-maskable-512.png",
+          "kb": 2
+        }
+      ],
+      "imagenesVisibles": 23,
+      "resolucionSobreTamano": 0.9,
+      "swController": true,
+      "scrollHeight": 3375,
+      "domNodes": 2912
+    }
+  ]
+}

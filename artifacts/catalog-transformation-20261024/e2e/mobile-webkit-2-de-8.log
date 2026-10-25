@@ -1,0 +1,37 @@
+
+Running 30 tests using 1 worker, shard 2 of 8
+
+  ✓   1 [mobile-webkit] › tests\e2e\catalog-commercial-coverage.spec.mjs:58:1 › la instantánea real sigue siendo la que la prueba cree: 51 visibles, 34 comprables, 17 de vidriera sin habilitar (5ms)
+  ✓   2 [mobile-webkit] › tests\e2e\catalog-commercial-coverage.spec.mjs:67:1 › CADA producto visible: foto propia, precio de la fila, ficha correcta y una acción de compra honesta (2.0m)
+  ✓   3 [mobile-webkit] › tests\e2e\catalog-commercial-coverage.spec.mjs:138:1 › el tope de unidades es el stock: no se puede pedir más de lo que hay (7.1s)
+  ✓   4 [mobile-webkit] › tests\e2e\catalog-commercial-coverage.spec.mjs:177:1 › TODA campaña encendida se muestra en alguna superficie con su producto real, y ninguna apagada aparece (16.5s)
+  ✓   5 [mobile-webkit] › tests\e2e\catalog-commercial-coverage.spec.mjs:224:3 › campaña «red-bull-cold-can»: la pieza compra el producto correcto con un toque, abre su ficha y no la tapa la animación (6.0s)
+  ✓   6 [mobile-webkit] › tests\e2e\catalog-commercial-coverage.spec.mjs:292:3 › campaña «red-bull-cold-can»: el teclado compra sin ratón (Tab hasta «Agregar», Enter) (2.6s)
+  ✓   7 [mobile-webkit] › tests\e2e\catalog-commercial-coverage.spec.mjs:224:3 › campaña «coca-cola-product-drop»: la pieza compra el producto correcto con un toque, abre su ficha y no la tapa la animación (6.4s)
+  ✓   8 [mobile-webkit] › tests\e2e\catalog-commercial-coverage.spec.mjs:292:3 › campaña «coca-cola-product-drop»: el teclado compra sin ratón (Tab hasta «Agregar», Enter) (2.5s)
+  ✓   9 [mobile-webkit] › tests\e2e\catalog-commercial-coverage.spec.mjs:224:3 › campaña «aquarius-ice-reveal»: la pieza compra el producto correcto con un toque, abre su ficha y no la tapa la animación (9.6s)
+  ✓  10 [mobile-webkit] › tests\e2e\catalog-commercial-coverage.spec.mjs:292:3 › campaña «aquarius-ice-reveal»: el teclado compra sin ratón (Tab hasta «Agregar», Enter) (3.7s)
+  ✓  11 [mobile-webkit] › tests\e2e\catalog-commercial-coverage.spec.mjs:315:1 › el botón de ocultar no recibe ningún toque dirigido a la foto del producto, en los tres teléfonos (4.5s)
+  ✓  12 [mobile-webkit] › tests\e2e\catalog-commercial-coverage.spec.mjs:347:1 › [SINTÉTICO] si el producto de la pieza se agota, la pieza desaparece y su tarjeta no se puede comprar (3.6s)
+  ✓  13 [mobile-webkit] › tests\e2e\catalog-commercial-coverage.spec.mjs:363:1 › [SINTÉTICO] un producto con precio pendiente no se promociona ni se agrega (1.7s)
+  ✓  14 [mobile-webkit] › tests\e2e\catalog-commercial-coverage.spec.mjs:374:1 › [SINTÉTICO] con un stock de una unidad, la pieza compra una sola y después no deja sumar (2.5s)
+  ✓  15 [mobile-webkit] › tests\e2e\catalog-commercial-coverage.spec.mjs:387:1 › dos toques seguidos sobre «Agregar» suman dos unidades en UNA línea: ni línea duplicada ni toque perdido (2.8s)
+  ✓  16 [mobile-webkit] › tests\e2e\catalog-commercial-coverage.spec.mjs:408:1 › abrir y cerrar fichas desde piezas distintas, rápido, no deja diálogos abiertos ni cambia de producto (11.2s)
+  ✓  17 [mobile-webkit] › tests\e2e\catalog-commercial-coverage.spec.mjs:432:1 › sin conexión la compra desde la pieza sigue funcionando y el pedido sobrevive a recargar (4.8s)
+  ✓  18 [mobile-webkit] › tests\e2e\catalog-commercial-coverage.spec.mjs:449:1 › cambiar de rubro a toda velocidad no deja la pieza de otro rubro ni errores de página (3.3s)
+  ✓  19 [mobile-webkit] › tests\e2e\catalog-commercial-coverage.spec.mjs:468:1 › las opciones de marca son las del rubro, ninguna lleva a una lista vacía, y el valor aplicado no miente al cambiar de rubro (10.0s)
+  ✓  20 [mobile-webkit] › tests\e2e\catalog-image-attribution.spec.mjs:142:1 › la ficha de una foto CC BY-SA enlaza fuente y licencia y avisa el cambio (2.2s)
+  ✓  21 [mobile-webkit] › tests\e2e\catalog-image-attribution.spec.mjs:163:1 › una foto sin registro de crédito no inventa uno (2.0s)
+  ✓  22 [mobile-webkit] › tests\e2e\catalog-polish.spec.mjs:20:1 › «Todas» se lee por rubro, en el mismo orden que los chips, no por alfabeto (1.8s)
+  ✓  23 [mobile-webkit] › tests\e2e\catalog-polish.spec.mjs:46:1 › la vidriera demo conserva su orden curado: lo primero que se puede agregar no es alcohol (1.2s)
+  ✓  24 [mobile-webkit] › tests\e2e\catalog-polish.spec.mjs:82:1 › ningún nombre se corta en la grilla, a 360 y a 390 de ancho (2.1s)
+  ✓  25 [mobile-webkit] › tests\e2e\catalog-polish.spec.mjs:100:1 › el título del rubro no pierde el pie de sus letras (3.5s)
+  ✓  26 [mobile-webkit] › tests\e2e\catalog-polish.spec.mjs:114:1 › el corazón de favoritos se ve, guardado y sin guardar (2.1s)
+  ✓  27 [mobile-webkit] › tests\e2e\catalog-polish.spec.mjs:130:1 › la búsqueda perdona el tipeo y lo dice; lo que no se vende sigue sin aparecer (2.5s)
+  ✓  28 [mobile-webkit] › tests\e2e\catalog-polish.spec.mjs:167:1 › en la vidriera la presentación se ve siempre, y un nombre largo usa sus dos renglones sin cambiar el alto (2.7s)
+  -  29 [mobile-webkit] › tests\e2e\catalog-polish.spec.mjs:258:1 › el brillo no escribe mientras la página se mueve: una sola escritura, al asentarse
+  ✓  30 [mobile-webkit] › tests\e2e\catalog-polish.spec.mjs:314:1 › un teléfono de densidad 3 baja la miniatura de cada tarjeta, no el master (5.1s)
+
+  1 skipped
+  29 passed (4.1m)
+E2E estable: ninguna prueba necesitó reintento.

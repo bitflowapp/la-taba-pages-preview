@@ -1,0 +1,11 @@
+
+Running 5 tests using 1 worker, shard 4 of 4
+
+  ✓  1 [mobile-webkit-recovery] › tests\e2e\storefront-stress-responsive.spec.mjs:173:5 › contenido extremo y pantallas chicas › nombres larguísimos y precios de siete cifras no desbordan a 320px (3.1s)
+  ✓  2 [mobile-webkit-recovery] › tests\e2e\storefront-stress-responsive.spec.mjs:173:5 › contenido extremo y pantallas chicas › nombres larguísimos y precios de siete cifras no desbordan a 432px (3.0s)
+  ✓  3 [mobile-webkit-recovery] › tests\e2e\storefront-stress-responsive.spec.mjs:226:3 › contenido extremo y pantallas chicas › con el teclado abierto el botón de confirmar sigue alcanzable (1.7s)
+  ✓  4 [mobile-webkit-recovery] › tests\e2e\storefront-stress-responsive.spec.mjs:264:3 › contenido extremo y pantallas chicas › la vuelta de Mercado Pago con sus parámetros no desborda ni pierde el checkout (2.6s)
+  ✓  5 [mobile-webkit-recovery] › tests\e2e\storefront-stress-responsive.spec.mjs:286:3 › contenido extremo y pantallas chicas › agotado avisa sin desbordar; el precio pendiente no se publica ni se valúa en cero (2.1s)
+
+  5 passed (13.9s)
+E2E estable: ninguna prueba necesitó reintento.

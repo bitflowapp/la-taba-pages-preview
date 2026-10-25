@@ -1,0 +1,50 @@
+
+Running 42 tests using 1 worker, shard 12 of 12
+
+  ✓   1 [chromium] › tests\e2e\taba2-commercial-p1-closure.spec.mjs:40:1 › P1-1: "Ver todos" de Destacados abre el catálogo poblado, nunca "0 productos" (1.3s)
+  ✓   2 [chromium] › tests\e2e\taba2-commercial-p1-closure.spec.mjs:63:1 › P1-2: los banners sólo pintan destinos con producto comprable (884ms)
+  ✓   3 [chromium] › tests\e2e\taba2-commercial-p1-closure.spec.mjs:83:1 › P1-2: en demo la historia de whisky (sin comprables) se apaga y ninguna promete lo invendible (1.4s)
+  ✓   4 [chromium] › tests\e2e\taba2-commercial-p1-closure.spec.mjs:107:1 › P1-2: el contrato aplica a cualquier origen — historia con destino no comprable se apaga, la editorial sin CTA sigue (1.1s)
+  ✓   5 [chromium] › tests\e2e\taba2-commercial-p1-closure.spec.mjs:149:1 › P1-3: bajo el mínimo, Confirmar muestra el error real y nunca un upsell (1.0s)
+  ✓   6 [chromium] › tests\e2e\taba2-commercial-p1-closure.spec.mjs:176:1 › P1-3: con alcohol sin confirmar edad, el error llega antes que cualquier venta (2.9s)
+  ✓   7 [chromium] › tests\e2e\taba2-commercial-p1-closure.spec.mjs:200:1 › P1-3: el doble tap del CTA crea exactamente un pedido y ningún modal (1.2s)
+  ✓   8 [chromium] › tests\e2e\taba2-unit-catalog.spec.mjs:24:1 › la góndola no repite una tarjeta comprable idéntica a otra (822ms)
+  ✓   9 [chromium] › tests\e2e\taba2-unit-catalog.spec.mjs:56:1 › ningún nombre visible arrastra el empaque del proveedor (834ms)
+  ✓  10 [chromium] › tests\e2e\taba2-unit-catalog.spec.mjs:70:1 › el carrito y el checkout muestran la presentación minorista y el precio de esa presentación (1.2s)
+  ✓  11 [chromium] › tests\e2e\taba2-unit-catalog.spec.mjs:100:1 › ningún pack de abastecimiento queda en la góndola ni se puede pedir (1.0s)
+  ✓  12 [chromium] › tests\e2e\taba2-unit-catalog.spec.mjs:142:1 › el pack de compra no se ofrece como si fuera la unidad de venta (853ms)
+  ✓  13 [chromium] › tests\e2e\taba2-unit-catalog.spec.mjs:161:1 › la pantalla nunca muestra costo, proveedor ni multiplicador de compra (1.3s)
+  ✓  14 [chromium] › tests\e2e\taba2-unit-catalog.spec.mjs:183:1 › la búsqueda encuentra la unidad por su nombre completo y el favorito sigue resolviendo (1.5s)
+  ✓  15 [chromium] › tests\e2e\taba2-unit-catalog.spec.mjs:212:1 › el deep link a un producto sigue resolviendo tras la normalización (899ms)
+  ✓  16 [chromium] › tests\e2e\taba2-unit-catalog.spec.mjs:226:1 › a 320 y 432 la presentación minorista se lee sin overflow (1.6s)
+  ✓  17 [chromium] › tests\e2e\tracking-arriving.spec.mjs:15:1 › tracking público arriving reproduce la composición y conserva datos reales (3.6s)
+  ✓  18 [chromium] › tests\e2e\tracking-follow-mode.spec.mjs:92:1 › el mapa se deja explorar y devuelve el seguimiento cuando el cliente quiere (1.8s)
+  ✓  19 [chromium] › tests\e2e\tracking-follow-mode.spec.mjs:126:1 › la vuelta al rider entra en las cuatro anchuras sin desbordar (7.1s)
+  ✓  20 [chromium] › tests\e2e\tracking-follow-mode.spec.mjs:168:1 › perder la señal no borra al rider ni apaga el mapa (2.4s)
+  ✓  21 [chromium] › tests\e2e\tracking-premium.spec.mjs:9:1 › rider auto focus, manual override, recenter and new fixes keep one connected map (6.0s)
+  -  22 [chromium] › tests\e2e\tracking-premium.spec.mjs:43:1 › native one finger pan and vertical intent scroll the page without ghost selection
+  -  23 [chromium] › tests\e2e\tracking-premium.spec.mjs:56:1 › native pinch zoom retains north up
+  ✓  24 [chromium] › tests\e2e\tracking-premium.spec.mjs:67:1 › background/foreground converges to current GPS without replay (3.4s)
+  ✓  25 [chromium] › tests\e2e\tracking-premium.spec.mjs:80:1 › all states keep accessible text, reduced motion and responsive geometry (4.8s)
+  ✓  26 [chromium] › tests\e2e\tracking-premium.spec.mjs:91:1 › TouchEvent pan and pinch exercise MapLibre handlers; vertical intent stays uncancelled (4.3s)
+  ✓  27 [chromium] › tests\e2e\tracking-premium.spec.mjs:117:1 › location picker shares one-finger gestures and a tap selects a real point (3.3s)
+  ✓  28 [chromium] › tests\e2e\tracking-premium.spec.mjs:137:1 › keyboard map navigation pauses follow and retains focus through a GPS render (3.2s)
+  ✓  29 [chromium] › tests\e2e\tracking-premium.spec.mjs:148:1 › background resume preserves explore; rejected history and metre jitter never move the camera (7.0s)
+terminal-expiry-diagnostic {"browserNow":"2026-07-30T02:30:00.000Z","accessRemovals":[],"requests":[{"publicId":"70000000-0000-4000-8000-000000000001","token":"terminal_tracking_token_e2e_1234567890ABCDE"},{"publicId":"70000000-0000-4000-8000-000000000001","token":"terminal_tracking_token_e2e_1234567890ABCDE"}],"snapshot":{"access":"{\"orderId\":\"70000000-0000-4000-8000-000000000001\",\"publicCode\":\"LT-TERMINAL-A\",\"trackingToken\":\"terminal_tracking_token_e2e_1234567890ABCDE\",\"tokenExpiresAt\":\"2026-07-30T03:30:00.000Z\",\"transferredAt\":\"2026-07-30T02:25:00.019Z\"}","lastOrderId":"LT-TERMINAL-A","activeOrderId":"LT-TERMINAL-A","poll":{"active":false,"terminal":true,"inFlight":false,"orderId":"70000000-0000-4000-8000-000000000001","status":"delivered"},"orders":[{"id":"LT-ACTIVE-B","status":"preparing","publicTrackingOnly":false,"hasDeliveryCode":false,"hasTracking":false},{"id":"LT-TERMINAL-A","status":"delivered","publicTrackingOnly":true,"hasDeliveryCode":false,"hasTracking":false}]}}
+  ✓  30 [chromium] › tests\e2e\tracking-terminal-expiry.spec.mjs:14:1 › tracking terminal vence, limpia sólo Pedido A y no cae en Pedido B (798ms)
+  ✓  31 [chromium] › tests\e2e\tracking-terminal-expiry.spec.mjs:46:1 › tracking terminal revocado coalesce lifecycle y limpia sin fallback (789ms)
+  ✓  32 [chromium] › tests\e2e\ux-premium-storefront.spec.mjs:40:1 › en el teléfono el visor de historias ocupa la pantalla entera, sin la página asomando (1.0s)
+  ✓  33 [chromium] › tests\e2e\ux-premium-storefront.spec.mjs:65:1 › tocar la pieza navega: derecha avanza, izquierda vuelve; las flechas también (1.1s)
+  ✓  34 [chromium] › tests\e2e\ux-premium-storefront.spec.mjs:96:1 › en escritorio el visor es un marco 9:16 centrado (1.8s)
+  ✓  35 [chromium] › tests\e2e\ux-premium-storefront.spec.mjs:104:1 › catálogo en el teléfono: precio y botón a la vista sin scrollear, sin desborde horizontal (1.2s)
+  ✓  36 [chromium] › tests\e2e\ux-premium-storefront.spec.mjs:133:1 › carrito en el teléfono: cada línea muestra cantidad e importe en dos renglones (1.3s)
+  ✓  37 [chromium] › tests\e2e\ux-premium-storefront.spec.mjs:170:1 › vitrina con fotos reales, navegando con toques: categoría, ficha, carrito y pedido confirmado (3.0s)
+  ✓  38 [chromium] › tests\e2e\ux-premium-storefront.spec.mjs:211:1 › catálogo productivo (Supabase simulado): mismo diseño, precios a la vista y barra de total (1.5s)
+  ✓  39 [chromium] › tests\e2e\web-rider-production-boundary.spec.mjs:23:5 › frontera Rider web / Android › producción rechaza la ruta Rider /#rider (562ms)
+  ✓  40 [chromium] › tests\e2e\web-rider-production-boundary.spec.mjs:23:5 › frontera Rider web / Android › producción rechaza la ruta Rider /?demo=1#rider (493ms)
+  ✓  41 [chromium] › tests\e2e\web-rider-production-boundary.spec.mjs:50:5 › frontera Rider web / PILOTO › PILOTO rechaza la ruta Rider /#rider (534ms)
+  ✓  42 [chromium] › tests\e2e\web-rider-production-boundary.spec.mjs:50:5 › frontera Rider web / PILOTO › PILOTO rechaza la ruta Rider /?demo=1#rider (545ms)
+
+  2 skipped
+  40 passed (1.4m)
+E2E estable: ninguna prueba necesitó reintento.

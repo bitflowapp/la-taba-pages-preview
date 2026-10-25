@@ -7,7 +7,14 @@ const CACHE_PREFIX = 'la-taba-runtime-';
  * identidad y rompería el rollback y la certificación. v165 no comparte caché
  * con ninguna publicación anterior.
  */
-const CACHE_NAME = 'la-taba-runtime-v165-unified-ux-final';
+/*
+ * Transformación comercial del catálogo 2026-10-24 (sobre v165): vista Cuadrícula/Lista,
+ * aviso de alcance de la búsqueda, placeholder propio de producto sin foto, gate de
+ * derechos de la fotografía editorial (js/core/promo-rights.js) y registro diferido del
+ * worker. El precache cambió (dos módulos nuevos, un SVG y la hoja de estilos), así que
+ * lleva identidad propia: reutilizar v165 dejaría dos artefactos distintos bajo la misma.
+ */
+const CACHE_NAME = 'la-taba-runtime-v166-catalog-transformation';
 const ASSETS = [
   './',
   './index.html',

@@ -72,7 +72,9 @@ jobs:
     # The complete browser gate includes five-minute discovery stress sessions
     # in both engines. The 60-minute job ceiling cut the run at 684/754;
     # allow the same full suite to finish on slower hosted runners.
-    timeout-minutes: 90
+    # 90 minutes became the next ceiling: PR #154 (run 40164828928) finished
+    # this job in 89 min 8 s with every test green.
+    timeout-minutes: 120
     steps:
       - name: Check out exact candidate
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4

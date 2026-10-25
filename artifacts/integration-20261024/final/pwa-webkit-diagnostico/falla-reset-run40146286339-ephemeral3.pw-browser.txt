@@ -1,0 +1,12 @@
+      1 2026-10-25T00:21:09.265Z pw:browser <launched> pid=5521
+      1 2026-10-25T00:21:25.070Z pw:browser [err] (process:5545): GLib-GObject-CRITICAL **: 00:21:25.069: g_object_ref: assertion 'G_IS_OBJECT (object)' failed
+      1 2026-10-25T00:21:25.070Z pw:browser [err] (process:5545): libsoup-CRITICAL **: 00:21:25.069: soup_session_feature_request_queued: assertion 'SOUP_IS_SESSION_FEATURE (feature)' failed
+      1 2026-10-25T00:21:25.070Z pw:browser [err] (process:5545): GLib-GObject-CRITICAL **: 00:21:25.069: g_object_ref: assertion 'G_IS_OBJECT (object)' failed
+      1 2026-10-25T00:21:25.070Z pw:browser [err] (process:5545): libsoup-CRITICAL **: 00:21:25.069: soup_session_feature_request_queued: assertion 'SOUP_IS_SESSION_FEATURE (feature)' failed
+      1 2026-10-25T00:21:25.070Z pw:browser [err] (process:5545): GLib-GObject-CRITICAL **: 00:21:25.069: g_object_ref: assertion 'G_IS_OBJECT (object)' failed
+      1 2026-10-25T00:21:25.070Z pw:browser [err] (process:5545): libsoup-CRITICAL **: 00:21:25.069: soup_session_feature_request_queued: assertion 'SOUP_IS_SESSION_FEATURE (feature)' failed
+      1 2026-10-25T00:21:25.070Z pw:browser [err] (process:5545): GLib-GObject-CRITICAL **: 00:21:25.069: g_object_ref: assertion 'G_IS_OBJECT (object)' failed
+      1 2026-10-25T00:21:25.070Z pw:browser [err] (process:5545): libsoup-CRITICAL **: 00:21:25.069: soup_session_feature_request_queued: assertion 'SOUP_IS_SESSION_FEATURE (feature)' failed
+      1 2026-10-25T00:21:25.070Z pw:browser [err] (process:5545): GLib-GObject-CRITICAL **: 00:21:25.069: g_object_ref: assertion 'G_IS_OBJECT (object)' failed
+      1 2026-10-25T00:21:25.070Z pw:browser [err] (process:5545): libsoup-CRITICAL **: 00:21:25.069: soup_session_feature_request_queued: assertion 'SOUP_IS_SESSION_FEATURE (feature)' failed
+      5 2026-10-25T00:21:41.117Z pw:browser [err] <webkit-src>/Source/WebKit/WebProcess/Network/WebLoaderStrategy.cpp(682) : void WebKit::WebLoaderStrategy::internallyFailedLoadTimerFired()

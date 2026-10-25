@@ -1,0 +1,5 @@
+
+> catalog:prices:check
+> node scripts/build-pending-unit-prices.mjs --check
+
+Planilla al día: 9 unidades bloqueadas por precio unitario.

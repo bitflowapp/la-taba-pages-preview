@@ -1,0 +1,6 @@
+
+> catalog:images:verify
+> node scripts/catalog-images/verify-approved-demo.mjs && node scripts/catalog-images/verify.mjs --allow-empty
+
+22 productos y 44 WebP demo aprobados verificados.
+114 imagen(es) WebP verificadas con fuente, derechos y SHA-256.

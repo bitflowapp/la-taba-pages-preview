@@ -1,7 +1,8 @@
 # Integración final La Taba — 2026-10-24
 
 Rama: `integration/taba-unified-20261024`
-Commit de integración: `747f9999`
+Commits de integración: `747f9999` (UX hasta `c8f05a95`, v164) y `bfd64265` (UX hasta `46e5ff2f`, v165).
+Cierre final: ver [§ Cierre final](#cierre-final--v165-y-pwa-webkit) al pie.
 Base: `eade6022` (punta del PR #151, que ya contiene #148, #149 y #150).
 No hay merge a `main` y no se modificó producción ni Supabase QA.
 
@@ -11,7 +12,7 @@ No hay merge a `main` y no se modificó producción ni Supabase QA.
 | --- | --- | --- |
 | PR #148 → #149 → #150 → #151 | `eade6022` | Núcleo financiero, QA, correcciones de Mercado Pago, preparación comercial y vinculación segura de comercios. |
 | `feature/catalog-pricing-images-20261024` | `ec4962e1` | Propuesta de precios Neuquén, auditoría de imágenes y vitrina con fotos reales. |
-| `feature/ux-premium-storefront-20261024` | `c8f05a95` | Capa UX premium (`ba07f995`, `875b440d`, `dda4e943`), corrección del banner Andes Origen y el spec de la vidriera en WebKit (`d2aaeba1`, `c8f05a95`). |
+| `feature/ux-premium-storefront-20261024` | `46e5ff2f` | Capa UX premium (`ba07f995`, `875b440d`, `dda4e943`), corrección del banner Andes Origen y el spec de la vidriera en WebKit (`d2aaeba1`, `c8f05a95`). |
 
 La rama UX ya contenía, como ancestro, la rama de catálogo. Por eso se hizo **un merge**
 de `feature/ux-premium-storefront-20261024` sobre `eade6022`: se preservan los commits
@@ -38,7 +39,7 @@ dependa de una máquina concreta. Sin este cambio, `npm run check` fallaba por
 
 ## Service worker, caché y firma
 
-- Identidad de runtime: `la-taba-runtime-v164-unified-commercial`.
+- Identidad de runtime: `la-taba-runtime-v165-unified-ux-final` (v164 quedó superada por `bfd64265`).
 - Precache: 218 archivos; el grafo estático del cliente (126 módulos) y el diferido del
   Panel (64) están completos.
 - `sw.js`, `index.html` y `preflight-staging-package.mjs` coinciden en `?v=54` (app),
@@ -116,7 +117,7 @@ Luego abrir:
   `http://127.0.0.1:8232/?demo=1&vitrina=neuquen20261024&fotos=antes`
 
 El relay sirve el worktree de integración; `release-identity.json` debe responder
-`la-taba-runtime-v164-unified-commercial`.
+`la-taba-runtime-v165-unified-ux-final`.
 
 ## Pendientes y observaciones
 
@@ -143,3 +144,59 @@ El relay sirve el worktree de integración; `release-identity.json` debe respond
 6. **Artefactos de test.** Las corridas E2E reescriben PNGs versionados bajo
    `artifacts/taba2-*`; se restauraron y no forman parte del commit. Quedan carpetas
    untracked de evidencia de test que no se versionan.
+
+## Cierre final — v165 y PWA WebKit
+
+### Qué se agregó sobre `ed227273`
+
+| Commit | Qué |
+| --- | --- |
+| `bfd64265` | Merge de los commits finales de UX (`e2d93455`, `923c8893`, `46e5ff2f`): combos sin renglones huérfanos en escritorio, `e2e-shard.sh` sin ruta fija, informe final. Conflictos en `release-identity.json` (re-firmado) y `e2e-shard.sh` (se conservan el temporal portable y los puertos propios). Identidad nueva `la-taba-runtime-v165-unified-ux-final`, 218 archivos, digest `3451c0de…`. |
+| `fe8a6dbe` | `scripts/qa-final-pwa-update.mjs`: el modo sin conexión cierra el listener del origen en vez de resetear sockets a mitad de pedido. |
+
+Respecto de #151 (`eade6022`), la integración **no cambia ninguna línea** de `supabase/`, `js/business/`, `js/core/`, `catalog/`, `data/`, `scripts/production/` ni `deploy/`: pagos, stock, reservas, reembolsos, OAuth y precios quedan exactamente como en #151.
+
+### Fallo de «Native PWA update» en WebKit (run 40140930475)
+
+No era intermitente al azar ni defecto del producto. Diagnóstico en el mismo runner de Linux, con matriz de 36 jobs
+y `DEBUG=pw:browser`; detalle en `artifacts/integration-20261024/final/pwa-webkit-diagnostico/RESUMEN.md`:
+
+- 31 ms después del primer `res.destroy()` (la forma en que el arnés simulaba «sin red») el proceso de red de WebKitGTK
+  falla aserciones de libsoup/GObject; desde ahí toda carga muere en `internallyFailedLoadTimerFired` («WebKit
+  encountered an internal error») y la CacheStorage efímera de ese proceso se lee vacía.
+- `context.setOffline(true)` no sirve: con la caché v165 completa y el worker controlando, WebKit falla la navegación
+  sin consultar al worker (4/4).
+- La app no usa CacheStorage; el worker sólo borra cachés con otro nombre.
+
+Corrección: sin conexión = origen cerrado (toda conexión rechazada). Las aserciones no cambiaron. Resultado en CI:
+**16/16 verdes** con el método nuevo contra **2/8 rojos** del control con el método viejo (3/12 sumando corridas).
+
+### Validaciones sobre la candidata final
+
+| Validación | Resultado | Evidencia |
+| --- | --- | --- |
+| `npm run check` | PASS (v165, 218 archivos, precache 126 + 64) | `artifacts/integration-20261024/final/npm-check.log` |
+| `npm test` | **3196 passed, 0 failed, 0 skipped** | `artifacts/integration-20261024/final/npm-test.log` |
+| Financiero / Mercado Pago / OAuth | **279 passed** | `artifacts/integration-20261024/final/tests-financiero-oauth.log` |
+| Protocolo de release de Edge (`test:release`) | **92 passed** | `artifacts/integration-20261024/final/test-release.log` |
+| Imágenes y catálogo | **455 passed** | `artifacts/integration-20261024/final/tests-imagenes-catalogo.log` |
+| Carrito y checkout | **109 passed** | `artifacts/integration-20261024/final/tests-carrito-checkout.log` |
+| Service worker y PWA | **130 passed** | `artifacts/integration-20261024/final/tests-pwa-sw.log` |
+| Gates de catálogo | 114 imágenes con derechos y SHA-256; 33 SKU visibles; planilla de precios al día | `artifacts/integration-20261024/final/catalog-*.log` |
+| Vitrina | 52 SKU, **42 con foto**, 0 faltantes, 0 hash distinto, 42 `LICENCIA_COMERCIAL`; precios = `GONDOLA` 52/52 | script de verificación |
+| E2E local del delta, Chromium | **71 passed, 1 skipped (declarado)** | `artifacts/integration-20261024/final/e2e-chromium-delta.log` |
+| E2E local del delta, WebKit móvil + recovery | **64 passed** | `artifacts/integration-20261024/final/e2e-webkit-delta.log` |
+| Actualización PWA v153 → v165 + recarga sin red, WebKit Windows | PASS | local |
+| Ídem, WebKit Linux (CI) | **16/16** | runs 40146680494 |
+| E2E completo Chromium + WebKit | en CI del PR (job «Web, backend, fiscal and security gates») | ver PR #152 |
+
+Capturas finales (WebP, móvil 390 y escritorio 1280): `artifacts/integration-20261024/final/capturas/`, 26/26
+generadas; incluye `pwa-webkit-linux-offline-v165.webp`, la tienda servida sin red desde la caché v165 en CI.
+
+### Pendientes
+
+1. El job Web de CI venía tardando 72–84 min con límite de 90: riesgo de timeout que no depende de esta integración.
+2. Modo demo con placeholders «Imagen pendiente» en productos sin foto aprobada (comportamiento previo y honesto).
+3. `catalog:release:validate` requiere el catálogo real (`TABA_CATALOG_FILE`).
+4. Comercial: la propuesta de precios sigue `pendiente_aprobacion_comercial`; Walter debe vincular Mercado Pago en
+   producción (exige `REVIEW_STATUS=approved`); no hay proyecto de producción creado.

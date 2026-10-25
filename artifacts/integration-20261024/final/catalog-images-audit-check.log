@@ -1,0 +1,5 @@
+
+> catalog:images:audit:check
+> node scripts/catalog-images/auditar-gondola-publica.mjs --check
+
+Auditoría al día: 33 SKU visibles.

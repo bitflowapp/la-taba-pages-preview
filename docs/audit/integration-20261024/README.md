@@ -171,6 +171,22 @@ y `DEBUG=pw:browser`; detalle en `artifacts/integration-20261024/final/pwa-webki
 Corrección: sin conexión = origen cerrado (toda conexión rechazada). Las aserciones no cambiaron. Resultado en CI:
 **16/16 verdes** con el método nuevo contra **2/8 rojos** del control con el método viejo (3/12 sumando corridas).
 
+### Primera CI completa de la candidata (run 40148236274 sobre `c043a0fc`)
+
+PWA nativa (ambos motores + Rider), migraciones/pgTAP/restore y Windows: verdes. El E2E completo dio **834 passed,
+7 skipped, 1 failed**: `ux-premium-storefront.spec.mjs` › «carrito en el teléfono…», determinista en Chromium Linux
+(137,625 px contra un tope de 130 en los dos intentos). Era la primera vez que ese spec corría en CI: las ramas
+`feature/*` no disparan el workflow.
+
+Causa: la app usa `system-ui`. En el runner (DejaVu) «Red Bull Energy Drink» parte en dos renglones y la línea crece
+con naturalidad; con Segoe UI entra en uno. La captura de la traza muestra la línea correcta: precio arriba, cantidad
+abajo y barra de total visible. El tope fijo de alto dependía de la fuente, no del diseño.
+
+Corrección de la prueba sin aflojarla: se reemplaza el tope de alto por el invariante exacto. Nombre e importe en el
+renglón 1, cantidad sola en el 2, sin hueco por encima ni por debajo de esa geometría, nombre en ≤ 2 renglones y topes
+de diseño (gap de renglón ≤ 12 px, relleno ≤ 32 px). Controles negativos con el CSS roto a propósito, los tres **rojos**:
+gap 36 px, importe bajado a un tercer renglón y relleno de 28 px. Sin romper nada, 14/14 en Chromium y WebKit.
+
 ### Validaciones sobre la candidata final
 
 | Validación | Resultado | Evidencia |
@@ -188,7 +204,8 @@ Corrección: sin conexión = origen cerrado (toda conexión rechazada). Las aser
 | E2E local del delta, WebKit móvil + recovery | **64 passed** | `artifacts/integration-20261024/final/e2e-webkit-delta.log` |
 | Actualización PWA v153 → v165 + recarga sin red, WebKit Windows | PASS | local |
 | Ídem, WebKit Linux (CI) | **16/16** | runs 40146680494 |
-| E2E completo Chromium + WebKit | en CI del PR (job «Web, backend, fiscal and security gates») | ver PR #152 |
+| Spec UX completo, Chromium + WebKit (tras el ajuste) | **14 passed** | `artifacts/integration-20261024/final/e2e-ux-premium-ambos.log` |
+| E2E completo Chromium + WebKit | CI del PR (job «Web, backend, fiscal and security gates») | ver PR #152 |
 
 Capturas finales (WebP, móvil 390 y escritorio 1280): `artifacts/integration-20261024/final/capturas/`, 26/26
 generadas; incluye `pwa-webkit-linux-offline-v165.webp`, la tienda servida sin red desde la caché v165 en CI.

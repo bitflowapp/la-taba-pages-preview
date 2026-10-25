@@ -139,10 +139,33 @@ test('carrito en el teléfono: cada línea muestra cantidad e importe en dos ren
   const item = page.locator('[data-view="cart"] .cart-item').first();
   await expect(item).toBeVisible();
   const box = await item.boundingBox();
+  const info = await item.locator('.cart-item-info').boundingBox();
   const qty = await item.locator('.quantity-control').boundingBox();
   const line = await item.locator('.cart-line').boundingBox();
-  expect(box.height).toBeLessThan(130);
+  // El alto de la línea depende de la fuente del sistema (system-ui): con la
+  // DejaVu del runner de Linux «Red Bull Energy Drink» parte en dos renglones y
+  // la línea mide 137 px; con Segoe UI entra en uno. Lo que no puede cambiar es la
+  // FORMA: nombre e importe en el primer renglón, cantidad sola en el segundo,
+  // sin renglones ni huecos de más, y el nombre en dos renglones como máximo.
+  const { padTop, padBottom, rowGap, titleLines } = await item.evaluate((node) => {
+    const style = getComputedStyle(node);
+    const title = node.querySelector('.cart-title');
+    const lineHeight = parseFloat(getComputedStyle(title).lineHeight) || 1.25 * parseFloat(getComputedStyle(title).fontSize);
+    return {
+      padTop: parseFloat(style.paddingTop),
+      padBottom: parseFloat(style.paddingBottom),
+      rowGap: parseFloat(style.rowGap) || 0,
+      titleLines: Math.round(title.getBoundingClientRect().height / lineHeight),
+    };
+  });
+  expect(titleLines).toBeLessThanOrEqual(2);
+  // Topes de diseño: el aire entre renglones y el relleno no pueden crecer.
+  expect(rowGap).toBeLessThanOrEqual(12);
+  expect(padTop + padBottom).toBeLessThanOrEqual(32);
   expect(line.y).toBeLessThan(qty.y);
+  expect(qty.y).toBeGreaterThanOrEqual(Math.max(info.y + info.height, line.y + line.height) - 1);
+  expect(qty.y - box.y).toBeLessThanOrEqual(padTop + Math.max(info.height, line.height) + rowGap + 1);
+  expect(box.y + box.height - (qty.y + qty.height)).toBeLessThanOrEqual(padBottom + 1);
   expect(qty.height).toBeGreaterThanOrEqual(44);
   expect(line.x + line.width).toBeLessThanOrEqual(box.x + box.width + 1);
 });

@@ -1,0 +1,20 @@
+
+Running 14 tests using 1 worker
+
+  ✓   1 [chromium] › tests\e2e\ux-premium-storefront.spec.mjs:40:1 › en el teléfono el visor de historias ocupa la pantalla entera, sin la página asomando (1.2s)
+  ✓   2 [chromium] › tests\e2e\ux-premium-storefront.spec.mjs:65:1 › tocar la pieza navega: derecha avanza, izquierda vuelve; las flechas también (1.2s)
+  ✓   3 [chromium] › tests\e2e\ux-premium-storefront.spec.mjs:96:1 › en escritorio el visor es un marco 9:16 centrado (1.8s)
+  ✓   4 [chromium] › tests\e2e\ux-premium-storefront.spec.mjs:104:1 › catálogo en el teléfono: precio y botón a la vista sin scrollear, sin desborde horizontal (1.1s)
+  ✓   5 [chromium] › tests\e2e\ux-premium-storefront.spec.mjs:133:1 › carrito en el teléfono: cada línea muestra cantidad e importe en dos renglones (1.8s)
+  ✓   6 [chromium] › tests\e2e\ux-premium-storefront.spec.mjs:193:1 › vitrina con fotos reales, navegando con toques: categoría, ficha, carrito y pedido confirmado (3.3s)
+  ✓   7 [chromium] › tests\e2e\ux-premium-storefront.spec.mjs:234:1 › catálogo productivo (Supabase simulado): mismo diseño, precios a la vista y barra de total (1.7s)
+  ✓   8 [mobile-webkit] › tests\e2e\ux-premium-storefront.spec.mjs:40:1 › en el teléfono el visor de historias ocupa la pantalla entera, sin la página asomando (3.5s)
+  ✓   9 [mobile-webkit] › tests\e2e\ux-premium-storefront.spec.mjs:65:1 › tocar la pieza navega: derecha avanza, izquierda vuelve; las flechas también (3.8s)
+  ✓  10 [mobile-webkit] › tests\e2e\ux-premium-storefront.spec.mjs:96:1 › en escritorio el visor es un marco 9:16 centrado (5.9s)
+  ✓  11 [mobile-webkit] › tests\e2e\ux-premium-storefront.spec.mjs:104:1 › catálogo en el teléfono: precio y botón a la vista sin scrollear, sin desborde horizontal (3.2s)
+  ✓  12 [mobile-webkit] › tests\e2e\ux-premium-storefront.spec.mjs:133:1 › carrito en el teléfono: cada línea muestra cantidad e importe en dos renglones (3.3s)
+  ✓  13 [mobile-webkit] › tests\e2e\ux-premium-storefront.spec.mjs:193:1 › vitrina con fotos reales, navegando con toques: categoría, ficha, carrito y pedido confirmado (9.5s)
+  ✓  14 [mobile-webkit] › tests\e2e\ux-premium-storefront.spec.mjs:234:1 › catálogo productivo (Supabase simulado): mismo diseño, precios a la vista y barra de total (3.5s)
+
+  14 passed (46.9s)
+E2E estable: ninguna prueba necesitó reintento.

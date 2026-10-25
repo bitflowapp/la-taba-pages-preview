@@ -222,6 +222,92 @@ test.describe('fotografía editorial y derechos', () => {
   });
 });
 
+test.describe('historias del backend y derechos editoriales', () => {
+  // Revisión de #154: el control de derechos cubría el hero y los banners, pero
+  // una historia PUBLICADA por el backend se pintaba tal cual. Se simula el
+  // origen productivo con historias que apuntan a assets/promos/ por cuatro
+  // caminos (relativo, absoluto del mismo origen, otro host de La Taba y ../)
+  // y una historia autorizada que no es fotografía editorial.
+  test('en producción una historia con foto editorial sin derechos no se publica; la autorizada sí', async ({ page }) => {
+    await page.setViewportSize(PHONE);
+    const pedidos = [];
+    page.on('request', (request) => { if (/\/assets\/promos\//i.test(request.url())) pedidos.push(request.url()); });
+    await page.addInitScript(() => {
+      const base = { published: true, media_type: 'image' };
+      window.TABA2_STORIES = [
+        { ...base, id: 'editorial-relativa', title: 'Heineken', media_url: 'assets/promos/story-cervezas-heineken.webp', thumbnail_url: 'assets/promos/story-cervezas-heineken-thumb.webp', is_highlight: true },
+        { ...base, id: 'editorial-absoluta', title: 'Schweppes', media_url: `${location.origin}/assets/promos/story-mixers-schweppes.webp` },
+        { ...base, id: 'editorial-otro-host', title: 'Monster', media_url: 'https://la-taba.pages.dev/assets/promos/story-energizantes-monster.webp' },
+        { ...base, id: 'editorial-relativa-con-puntos', title: 'Jack', media_url: 'assets/products/../promos/story-whisky-jack-daniels.webp' },
+        { ...base, id: 'autorizada', title: 'Abrimos hasta las 2', media_url: 'assets/brand/taba-app-icon-192.png', priority: -1 },
+      ];
+    });
+    await openRuntimeCatalog(page, { view: 'home', waitForCatalog: false });
+    await page.waitForSelector('[data-view="home"] .home-best-card, [data-view="home"] article');
+
+    const ids = await page.evaluate(async () => (await import('/js/ui.js')).getHomeStories().map((story) => story.id));
+    expect(ids).toEqual(['autorizada']);
+    const slot = page.locator('[data-stories-slot]').first();
+    await expect(slot).toHaveAttribute('data-stories-state', 'unseen');
+
+    const conFotoEditorial = () => page.evaluate(() => [...document.querySelectorAll('*')].filter((el) => {
+      const refs = `${getComputedStyle(el).backgroundImage} ${el.getAttribute('style') || ''} ${el.getAttribute('src') || ''} ${el.getAttribute('poster') || ''}`;
+      return /assets\/promos\//i.test(refs);
+    }).length);
+    expect(await conFotoEditorial()).toBe(0);
+    // El visor abre y sólo trae la historia autorizada.
+    await page.evaluate(async () => (await import('/js/ui.js')).showStoriesModal());
+    const visor = page.locator('[data-stories-modal]');
+    await expect(visor.locator('.stories-media img')).toHaveAttribute('src', 'assets/brand/taba-app-icon-192.png');
+    expect(await conFotoEditorial()).toBe(0);
+    expect(pedidos, 'ninguna petición a assets/promos/').toEqual([]);
+  });
+
+  test('en demostración las historias editoriales se siguen viendo', async ({ page }) => {
+    await page.setViewportSize(PHONE);
+    await installBrowserStubs(page);
+    await gotoDemoReset(page, VITRINA);
+    await page.waitForSelector('[data-view="home"] .home-best-card');
+    const urls = await page.evaluate(async () => (await import('/js/ui.js')).getHomeStories().map((story) => story.mediaUrl));
+    expect(urls.length).toBeGreaterThan(0);
+    expect(urls.every((url) => /assets\/promos\//.test(url))).toBe(true);
+  });
+});
+
+test.describe('vitrina sólo en demostración efectiva', () => {
+  test('en producción ?demo=1&vitrina=neuquen20261024 no cambia el catálogo base ni las categorías', async ({ page }) => {
+    await page.setViewportSize(PHONE);
+    await openRuntimeCatalog(page, { view: 'home', waitForCatalog: false });
+    await page.goto('/?demo=1&vitrina=neuquen20261024#catalog', { waitUntil: 'load' });
+    const mundo = await page.evaluate(async () => {
+      const [datos, aprobado, modo] = await Promise.all([
+        import('/js/data.js'), import('/js/approved-beverage-demo-data.js'), import('/js/core/app-mode.js'),
+      ]);
+      return {
+        modo: modo.getAppMode(),
+        version: datos.PREVIEW_CATALOG_VERSION, versionAprobada: aprobado.PREVIEW_CATALOG_VERSION,
+        categorias: datos.categories.map((c) => c.id), categoriasAprobadas: aprobado.categories.map((c) => c.id),
+      };
+    });
+    expect(mundo.modo).toBe('production');
+    expect(mundo.version).toBe(mundo.versionAprobada);
+    expect(mundo.categorias).toEqual(mundo.categoriasAprobadas);
+    // Los precios que se ven son los del catálogo productivo simulado, no los de la vitrina.
+    await expect(page.locator(CARDS).first()).toBeVisible();
+    const precios = await page.locator(`${CARDS} .price-amounts strong`).allTextContents();
+    expect(precios.length).toBeGreaterThan(0);
+    expect([...new Set(precios.map((p) => p.replace(/\s/g, '')))]).toEqual(['$2.500']);
+  });
+
+  test('en demostración la vitrina sigue activa con sus 52 SKU', async ({ page }) => {
+    await page.setViewportSize(PHONE);
+    await installBrowserStubs(page);
+    await gotoDemoReset(page, VITRINA);
+    const total = await page.evaluate(async () => (await import('/js/data.js')).products.length);
+    expect(total).toBe(52);
+  });
+});
+
 test.describe('productos sin foto autorizada', () => {
   test('el placeholder es propio, legible y honesto, y el producto sigue comprándose', async ({ page }) => {
     await openCatalog(page, MOTO);

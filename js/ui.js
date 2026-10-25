@@ -75,7 +75,7 @@ import {
 } from './map/route_geometry.js';
 import { renderPublicOrderTimeline } from './core/order-timeline.js';
 import { isDemoMode, isProductionMode, isShowcaseMode } from './core/app-mode.js';
-import { promoPhotoCleared } from './core/promo-rights.js';
+import { promoPhotoCleared, storyMediaCleared } from './core/promo-rights.js';
 import { getOrderRepository, isSandboxOrderRepository } from './repositories/repository_factory.js';
 import { formatPromotionCondition, getActivePromotions, getProductPromotion } from './core/promotions.js';
 import { cartNeedsComplementPrompt, getCartRecommendations } from './core/cart-recommendations.js';
@@ -1632,6 +1632,10 @@ export function getHomeStories() {
   // destino; el registro de vistas no se toca.
   const products = getCustomerCatalogProducts(getState().products);
   return stories.filter((story) => {
+    // Derechos editoriales para CUALQUIER origen: una historia publicada por el
+    // backend que apunta a assets/promos/ sin autorización documentada no se
+    // muestra en producción, igual que el hero y los banners.
+    if (!storyMediaCleared(story)) return false;
     if (!story.cta) return true;
     const destination = storyCtaDestination(story.cta);
     return Boolean(destination) && hasPurchasableDestination(products, destination);

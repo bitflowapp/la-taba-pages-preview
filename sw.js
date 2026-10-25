@@ -13,8 +13,14 @@ const CACHE_PREFIX = 'la-taba-runtime-';
  * derechos de la fotografía editorial (js/core/promo-rights.js) y registro diferido del
  * worker. El precache cambió (dos módulos nuevos, un SVG y la hoja de estilos), así que
  * lleva identidad propia: reutilizar v165 dejaría dos artefactos distintos bajo la misma.
+ *
+ * v167 (revisión de #154): las historias publicadas por el backend pasan por el mismo
+ * control de derechos editoriales y la vitrina exige demostración efectiva. v166 ya está
+ * instalada con otro contenido en el Moto G15 y en la preview: reutilizar el nombre
+ * dejaría dos artefactos bajo la misma identidad, y como `precargar()` borra primero la
+ * caché de su propio nombre, reinstalar «v166» vaciaría la del worker activo.
  */
-const CACHE_NAME = 'la-taba-runtime-v166-catalog-transformation';
+const CACHE_NAME = 'la-taba-runtime-v167-catalog-rights-review';
 const ASSETS = [
   './',
   './index.html',

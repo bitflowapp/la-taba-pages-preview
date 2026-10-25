@@ -7,6 +7,7 @@ import {
   CLEARED_PROMO_PHOTOS,
   isEditorialPromoPath,
   promoPhotoCleared,
+  storyMediaCleared,
 } from '../js/core/promo-rights.js';
 
 // La fotografía editorial (assets/promos/) sale de portfolios y sitios de terceros:
@@ -52,6 +53,43 @@ test('la compuerta sólo gobierna assets/promos/ y tolera rutas con ./ y query',
   assert.equal(isEditorialPromoPath('assets/promos/x.jpg'), true);
   assert.equal(isEditorialPromoPath('assets/products/x.webp'), false);
   assert.equal(promoPhotoCleared('', { production: true }), true);
+});
+
+test('una URL absoluta, codificada o con ../ no esquiva la compuerta', () => {
+  // Las historias llegan del backend con la URL que haya guardado el comercio:
+  // la misma pieza editorial puede venir absoluta, desde otro host de La Taba,
+  // con segmentos relativos o codificada. Todas son la misma foto sin derechos.
+  for (const url of [
+    'https://la-taba.pages.dev/assets/promos/story-cervezas-heineken.webp',
+    'https://preview.la-taba.pages.dev/assets/promos/story-mixers-schweppes.webp?w=320',
+    '//la-taba.pages.dev/assets/promos/cervezas-heineken-band.webp',
+    'assets/products/../promos/story-energizantes-monster.webp',
+    '/la-taba-pages-preview/assets/promos/whisky-chivas.webp',
+    'assets/%70romos/story-whisky-jack-daniels.webp',
+    'assets%2Fpromos%2Fgin-tanqueray.jpg',
+    'ASSETS/Promos/mixers-schweppes.jpg',
+    'assets\\promos\\aperitivos-gancia.webp',
+    '  \t/assets/promos/fernet-brancamenta.jpg',
+    'http://[::1/assets/promos/x.webp',
+  ]) {
+    assert.equal(promoPhotoCleared(url, { production: true }), false, url);
+    assert.equal(isEditorialPromoPath(url), true, url);
+  }
+  // Lo que no es fotografía editorial sigue pasando: Storage del comercio y producto.
+  for (const url of [
+    'https://abc.supabase.co/storage/v1/object/public/stories/local/promo.webp',
+    'assets/products/andes-origen-rubia-lata-473ml-x-thumb-y.webp',
+    'assets/brand/taba-app-icon-192.png',
+  ]) assert.equal(promoPhotoCleared(url, { production: true }), true, url);
+});
+
+test('una historia sólo se publica en producción si su medio y su miniatura tienen derechos', () => {
+  const story = (mediaUrl, thumbnailUrl = mediaUrl) => ({ id: 's', mediaUrl, thumbnailUrl });
+  assert.equal(storyMediaCleared(story('assets/promos/story-cervezas-heineken.webp'), { production: true }), false);
+  assert.equal(storyMediaCleared(story('assets/brand/taba-app-icon-192.png', 'assets/promos/story-cervezas-heineken-thumb.webp'), { production: true }), false);
+  assert.equal(storyMediaCleared(story('https://abc.supabase.co/storage/v1/object/public/stories/a.webp'), { production: true }), true);
+  assert.equal(storyMediaCleared(story('assets/promos/story-cervezas-heineken.webp'), { production: false }), true);
+  assert.equal(storyMediaCleared(null, { production: true }), false);
 });
 
 test('el código y las hojas sólo referencian piezas editoriales registradas', () => {

@@ -22,6 +22,7 @@
  * explícita y en navegador (en Node la búsqueda es inexistente y cae al modo 3).
  */
 import * as approvedCatalog from './approved-beverage-demo-data.js';
+import { isDemoMode } from './core/app-mode.js';
 import {
   categories as vitrinaCategories,
   products as vitrinaProducts,
@@ -40,7 +41,10 @@ const testCatalog = (
 const busquedaViva = (typeof window !== 'undefined' && window.location)
   ? window.location.search
   : '';
-const usarVitrina = !testCatalog && vitrinaSolicitada(busquedaViva);
+// La vitrina es material de revisión: exige el modo demostración EFECTIVO (demo
+// pedido y despliegue no productivo), no sólo el parámetro. En producción
+// `?demo=1` se ignora y con él la vitrina: catálogo, categorías y versión base.
+const usarVitrina = !testCatalog && vitrinaSolicitada(busquedaViva) && isDemoMode(busquedaViva);
 
 /*
  * El antes/después se decide UNA vez, al leer la URL: la góndola entera se sirve

@@ -36,17 +36,65 @@ const EDITORIAL_PREFIX = 'assets/promos/';
 // Vacío a propósito: ninguna pieza editorial tiene hoy autorización comercial documentada.
 export const CLEARED_PROMO_PHOTOS = Object.freeze(new Set([]));
 
-function normalize(path) {
-  return String(path || '').replace(/^\.?\//, '').split(/[?#]/)[0];
+/*
+ * Clave canónica `assets/promos/<archivo>` de una referencia, o '' si no es
+ * fotografía editorial. Las historias llegan del backend con la URL que haya
+ * guardado el comercio, así que la MISMA pieza puede venir absoluta, desde otro
+ * host de La Taba, con `//host`, con `..`, codificada, en mayúsculas o con
+ * barras invertidas: se resuelve como URL, se decodifica y se busca el segmento
+ * `/assets/promos/` en cualquier posición y en cualquier host. Lo que no se deja
+ * resolver y aun así menciona `promos` se trata como editorial (falla cerrado).
+ */
+const UNRESOLVED = 'assets/promos/<sin-resolver>';
+
+export function editorialPromoKey(path) {
+  const raw = String(path ?? '').replace(/[\u0000-\u0020]+/g, '').replace(/\\/g, '/');
+  if (!raw) return '';
+  let pathname;
+  try {
+    pathname = new URL(raw, 'https://origen.invalid/').pathname;
+  } catch (_) {
+    return /promos/i.test(raw) ? UNRESOLVED : '';
+  }
+  // Hasta tres pasadas: `%252F` es `%2F` codificado otra vez.
+  for (let i = 0; i < 3 && /%[0-9a-f]{2}/i.test(pathname); i += 1) {
+    try {
+      pathname = decodeURIComponent(pathname);
+    } catch (_) {
+      return /promos/i.test(pathname) ? UNRESOLVED : '';
+    }
+  }
+  // Lo decodificado puede traer `/`, `\` o `..` nuevos: se vuelve a resolver.
+  try {
+    pathname = new URL(pathname.replace(/\\/g, '/').replace(/\/{2,}/g, '/'), 'https://origen.invalid/').pathname;
+  } catch (_) {
+    return /promos/i.test(pathname) ? UNRESOLVED : '';
+  }
+  const lower = pathname.toLowerCase().replace(/\/{2,}/g, '/');
+  const at = lower.indexOf(`/${EDITORIAL_PREFIX}`);
+  if (at < 0) return '';
+  return lower.slice(at + 1);
 }
 
 export function isEditorialPromoPath(path) {
-  return normalize(path).startsWith(EDITORIAL_PREFIX);
+  return Boolean(editorialPromoKey(path));
 }
 
+const CLEARED_KEYS = new Set([...CLEARED_PROMO_PHOTOS].map((key) => key.toLowerCase()));
+
 export function promoPhotoCleared(path, { production = isProductionMode() } = {}) {
-  const key = normalize(path);
-  if (!key.startsWith(EDITORIAL_PREFIX)) return true;
+  const key = editorialPromoKey(path);
+  if (!key) return true;
   if (!production) return true;
-  return CLEARED_PROMO_PHOTOS.has(key);
+  return CLEARED_KEYS.has(key);
+}
+
+/*
+ * Una historia se publica sólo si su medio Y su miniatura (que también es el
+ * póster del video) pasan la compuerta. Se descarta entera: una historia sin su
+ * foto no tiene nada que mostrar, y pintarla a medias seguiría pidiendo la pieza.
+ */
+export function storyMediaCleared(story, options = {}) {
+  if (!story || typeof story !== 'object') return false;
+  return promoPhotoCleared(story.mediaUrl, options) && promoPhotoCleared(story.thumbnailUrl, options);
 }

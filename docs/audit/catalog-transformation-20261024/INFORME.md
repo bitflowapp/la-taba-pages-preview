@@ -215,3 +215,31 @@ La vista Lista es el botón a la derecha del buscador del catálogo. Sin `?demo=
 - `?reset=1` en demo no limpia la búsqueda persistida en IndexedDB (L4): sólo afecta a quien prepara una presentación.
 - El A/B de rendimiento requiere que `git show HEAD:…` apunte a una referencia fija: `serve-compressed.mjs` acepta
   `GIT_BASE_REF`; sin él, tras commitear, el «antes» sirve el «después».
+
+## 13. Revisión de derechos y vitrina (v167, 2026-10-25)
+
+La revisión de GitHub del 25/10 señaló que `promoPhotoCleared()` gobernaba el hero y los banners, pero no las
+historias que publica el backend. Se verificó, se corrigió y cada hueco quedó con una regresión que estaba **roja
+sobre `5d13b6cf`** y está **verde** ahora.
+
+| Hueco | Qué pasaba | Corrección | Regresión |
+| --- | --- | --- | --- |
+| Historias del backend | `getHomeStories()` filtraba por vigencia y CTA; una historia publicada con `media_url`/`thumbnail_url` en `assets/promos/` se pintaba en producción (círculo, visor y póster). En producción simulada aparecían 5 historias, 4 editoriales | `storyMediaCleared()`: la historia se descarta entera si su medio o su miniatura no pasan la compuerta | e2e «en producción una historia con foto editorial sin derechos no se publica; la autorizada sí»: sólo queda la autorizada, el visor sólo la muestra, ninguna petición a `/assets/promos/`. Control: en demo las editoriales se siguen viendo |
+| Normalización débil | Sólo se quitaban `./` o `/` iniciales. La batería adversarial (marco-63, `adversarial-promo.mjs`) encontró que **15 de 20** variantes de la misma foto pasaban: URL absoluta, otro host, `//host`, `../`, `assets/./promos`, `%2F`/`%70`, mayúsculas, barras invertidas, espacio o tab inicial, `//`, credenciales y puerto | La referencia se resuelve como URL, se decodifica (hasta tres pasadas), se vuelve a resolver, se pasa a minúsculas y se busca el segmento `/assets/promos/` en cualquier host y también en la consulta (proxy de imágenes); lo que no se deja resolver y menciona «promos» falla cerrado | `tests/promo-rights.test.mjs`: 11 variantes bloqueadas y 3 legítimas que pasan. Batería adversarial: **0 de 20 esquivan, 0 legítimas bloqueadas**; ampliada a 24 con rutas envueltas en la consulta de un proxy de imágenes: 23 bloqueadas y la única que pasa va en el hash, que el navegador no envía |
+| `?vitrina=` en producción | Sólo miraba el parámetro: en producción `data.js` servía la versión y las categorías de la vitrina (52 SKU), aunque los productos base siguieran vacíos | Exige `isDemoMode()`: demostración pedida y despliegue no productivo | e2e «en producción ?demo=1&vitrina=… no cambia el catálogo base ni las categorías» (modo `production`, versión y categorías aprobadas, precios = los del catálogo simulado). Control: en demo la vitrina sigue con sus 52 SKU |
+
+Lo que **no** se bloquea, a propósito: las URLs de Supabase Storage. Son el canal por el que el comercio publica sus
+propias historias; la compuerta gobierna la fotografía editorial de terceros que vive en `assets/promos/`.
+
+**Identidad `la-taba-runtime-v167-catalog-rights-review`** (220 archivos). Desviación consciente del pedido literal de v166: ya está instalada con
+otro contenido en el Moto G15 y en la preview, y como `precargar()` borra primero la caché de su propio nombre,
+reinstalar «v166» vaciaría la del worker activo.
+
+Sin cambios en Mercado Pago, pagos, stock, precios ni pedidos. #152 sigue en `b070b4ae` (v165).
+
+El catálogo **no** está listo para producción comercial: siguen pendientes las aprobaciones de Walter (precios,
+fotografías editoriales con derechos documentados y catálogo real), además de los bloqueos de la sección 9.
+
+v165 (#152, `b070b4ae`) sigue siendo la candidata estable y el respaldo.
+
+Pruebas de esta revisión: `npm test` 3219/0 (sobre `737b14ae`); unitarias dirigidas 387/0 y e2e dirigidas en Chromium 119 + 1 omitida declarada (sobre la punta final); `npm run check` verde. Evidencia: `artifacts/catalog-transformation-20261024/revision-derechos/`.

@@ -71,6 +71,9 @@ test('una URL absoluta, codificada o con ../ no esquiva la compuerta', () => {
     'assets\\promos\\aperitivos-gancia.webp',
     '  \t/assets/promos/fernet-brancamenta.jpg',
     'http://[::1/assets/promos/x.webp',
+    'https://imagenes.ejemplo.com/p?url=https%3A%2F%2Fla-taba.pages.dev%2Fassets%2Fpromos%2Fstory-cervezas-heineken.webp',
+    'https://imagenes.ejemplo.com/p?w=320&url=https://la-taba.pages.dev/assets/promos/story-mixers-schweppes.webp',
+    'https://imagenes.ejemplo.com/p?url=https%253A%252F%252Fla-taba.pages.dev%252Fassets%252Fpromos%252Fwhisky-chivas.webp',
   ]) {
     assert.equal(promoPhotoCleared(url, { production: true }), false, url);
     assert.equal(isEditorialPromoPath(url), true, url);
@@ -80,6 +83,8 @@ test('una URL absoluta, codificada o con ../ no esquiva la compuerta', () => {
     'https://abc.supabase.co/storage/v1/object/public/stories/local/promo.webp',
     'assets/products/andes-origen-rubia-lata-473ml-x-thumb-y.webp',
     'assets/brand/taba-app-icon-192.png',
+    'https://imagenes.ejemplo.com/p?url=https%3A%2F%2Fla-taba.pages.dev%2Fassets%2Fproducts%2Fx.webp',
+    'assets/products/x.webp#assets/promos/no-se-envia.webp',
   ]) assert.equal(promoPhotoCleared(url, { production: true }), true, url);
 });
 

@@ -44,6 +44,8 @@ export const CLEARED_PROMO_PHOTOS = Object.freeze(new Set([]));
  * barras invertidas: se resuelve como URL, se decodifica y se busca el segmento
  * `/assets/promos/` en cualquier posición y en cualquier host. Lo que no se deja
  * resolver y aun así menciona `promos` se trata como editorial (falla cerrado).
+ * También se mira la consulta: un proxy de imágenes (`/p?url=…/assets/promos/x`)
+ * bajaría la misma pieza de nuestro origen. El hash no se mira: no se envía.
  */
 const UNRESOLVED = 'assets/promos/<sin-resolver>';
 
@@ -51,8 +53,9 @@ export function editorialPromoKey(path) {
   const raw = String(path ?? '').replace(/[\u0000-\u0020]+/g, '').replace(/\\/g, '/');
   if (!raw) return '';
   let pathname;
+  let search;
   try {
-    pathname = new URL(raw, 'https://origen.invalid/').pathname;
+    ({ pathname, search } = new URL(raw, 'https://origen.invalid/'));
   } catch (_) {
     return /promos/i.test(raw) ? UNRESOLVED : '';
   }
@@ -72,8 +75,25 @@ export function editorialPromoKey(path) {
   }
   const lower = pathname.toLowerCase().replace(/\/{2,}/g, '/');
   const at = lower.indexOf(`/${EDITORIAL_PREFIX}`);
+  if (at >= 0) return lower.slice(at + 1);
+  return editorialKeyInQuery(search);
+}
+
+function editorialKeyInQuery(search) {
+  let query = String(search || '');
+  for (let i = 0; i < 3 && /%[0-9a-f]{2}/i.test(query); i += 1) {
+    try {
+      query = decodeURIComponent(query);
+    } catch (_) {
+      return /promos/i.test(query) ? UNRESOLVED : '';
+    }
+  }
+  query = query.replace(/\\/g, '/').replace(/\/{2,}/g, '/').toLowerCase();
+  const at = query.indexOf(EDITORIAL_PREFIX);
   if (at < 0) return '';
-  return lower.slice(at + 1);
+  // La pieza envuelta llega hasta el próximo separador de la consulta.
+  const wrapped = query.slice(at).split(/[?&#\s"'<>]/)[0];
+  return editorialPromoKey(wrapped) || UNRESOLVED;
 }
 
 export function isEditorialPromoPath(path) {

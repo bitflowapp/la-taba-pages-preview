@@ -1102,3 +1102,13 @@
 :root body[data-active-view="home"] .app-shell .home-hero-promo.is-text-only .home-hero-promo-media::after {
   background: none;
 }
+
+/* En tableta el afiche reserva 268px para la foto; sin foto editorial (js/core/promo-rights.js)
+   esa altura es aire vacío arriba del título. Se ajusta al contenido, con el mismo piso que
+   ya tiene el escritorio. */
+@media (min-width: 700px) and (max-width: 1099px) {
+  :root body[data-active-view="home"] .app-shell .home-hero-promo.is-text-only,
+  :root body[data-active-view="home"] .app-shell .home-hero-promo.is-text-only .home-hero-promo-copy {
+    min-height: 188px;
+  }
+}

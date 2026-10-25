@@ -148,6 +148,7 @@ import {
 import { isStandaloneDisplay } from './core/pwa-install.js';
 import { initPwaInstall } from './pwa-install-ui.js';
 import { initMotion } from './motion.js';
+import { initCatalogLayout } from './catalog-layout.js';
 import { initCampaignMotion } from './campaigns/campaign-motion.js';
 
 const VIEWS = ['home', 'catalog', 'cart', 'tracking', 'business', 'rider', 'profile'];
@@ -556,6 +557,9 @@ async function bootstrap() {
     // escena. Sin campañas encendidas no observa nada. Diagnóstico local, igual
     // que `TABA2_MOTION`.
     window.TABA2_CAMPAIGNS = initCampaignMotion();
+    // Cuadrícula o lista: recuerda la elección de este navegador y sólo cambia un
+    // atributo de la grilla; no interviene en el filtrado ni en las tarjetas.
+    initCatalogLayout();
     bindEvents();
     subscribe(renderAll);
     maybeOpenPitchFromUrl();

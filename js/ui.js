@@ -75,6 +75,7 @@ import {
 } from './map/route_geometry.js';
 import { renderPublicOrderTimeline } from './core/order-timeline.js';
 import { isDemoMode, isProductionMode, isShowcaseMode } from './core/app-mode.js';
+import { promoPhotoCleared } from './core/promo-rights.js';
 import { getOrderRepository, isSandboxOrderRepository } from './repositories/repository_factory.js';
 import { formatPromotionCondition, getActivePromotions, getProductPromotion } from './core/promotions.js';
 import { cartNeedsComplementPrompt, getCartRecommendations } from './core/cart-recommendations.js';
@@ -1405,8 +1406,11 @@ function renderHomeHeroPromo() {
   // va fuera del botón por la misma razón: es texto que se lee, no parte del
   // nombre de la acción.
   const legal = isAlcoholicCategory(hero.categoryId);
+  // La foto del hero vive en la hoja de estilos (brand-home.css); sin autorización
+  // comercial documentada (js/core/promo-rights.js) el CSS la retira con esta marca.
+  const textOnly = !(promoPhotoCleared(hero.image) && promoPhotoCleared(hero.bandImage));
   renderCatalogSurface(slot, `
-    <button class="home-hero-promo${legal ? ' has-legal' : ''}" type="button" data-category-id="${escapeHtml(hero.categoryId)}" aria-label="${escapeHtml(`${hero.title}. ${hero.subtitle} Ver ${category.name.toLowerCase()}`)}">
+    <button class="home-hero-promo${legal ? ' has-legal' : ''}${textOnly ? ' is-text-only' : ''}" type="button" data-category-id="${escapeHtml(hero.categoryId)}" aria-label="${escapeHtml(`${hero.title}. ${hero.subtitle} Ver ${category.name.toLowerCase()}`)}">
       <span class="home-hero-promo-media" aria-hidden="true"></span>
       <span class="home-hero-promo-copy">
         <small>${escapeHtml(hero.eyebrow)}</small>
@@ -1557,8 +1561,12 @@ function homeBannerMarkup(id) {
   // `center` de respaldo. El valor viene de una tabla del código, nunca del
   // catálogo ni de la URL, así que no hay dónde inyectar.
   const focus = /^[\d.]+% [\d.]+%$/.test(copy.focus || '') ? `;--banner-focus:${copy.focus}` : '';
-  const media = copy.image
-    ? `<span class="home-brand-banner-media${copy.packshot ? ' is-packshot' : ''}" aria-hidden="true" style="background-image:url('${encodeURI(copy.image)}')${focus}"></span>`
+  // La fotografía editorial sólo se pinta con autorización comercial documentada
+  // (js/core/promo-rights.js). Sin ella el banner conserva su copy y su puerta de
+  // categoría —el diseño sin foto que ya existe para vinos, gaseosas y aguas—.
+  const photo = copy.image && promoPhotoCleared(copy.image) ? copy.image : '';
+  const media = photo
+    ? `<span class="home-brand-banner-media${copy.packshot ? ' is-packshot' : ''}" aria-hidden="true" style="background-image:url('${encodeURI(photo)}')${focus}"></span>`
     : '';
 
   // Puerta de MARCA: el destino es la búsqueda real de esa marca en el
@@ -1567,7 +1575,7 @@ function homeBannerMarkup(id) {
   if (copy.brand) {
     const label = `${copy.title}. Ver ${copy.brand} en el catálogo`;
     return `
-      <button class="home-brand-banner ${copy.image ? 'has-media' : ''}" type="button" data-brand-query="${escapeHtml(copy.brand)}" aria-label="${escapeHtml(label)}">
+      <button class="home-brand-banner ${photo ? 'has-media' : ''}" type="button" data-brand-query="${escapeHtml(copy.brand)}" aria-label="${escapeHtml(label)}">
         ${media}
         <small>${escapeHtml(copy.eyebrow)}</small>
         <strong>${escapeHtml(copy.title)}</strong>
@@ -1582,7 +1590,7 @@ function homeBannerMarkup(id) {
   // "Explorar" quedó reservado para superficies que muestran sin vender.
   const action = 'Ver';
   return `
-    <button class="home-brand-banner ${copy.image ? 'has-media' : ''}" type="button" data-category-id="${escapeHtml(id)}" aria-label="${escapeHtml(`${copy.title}. ${action} la categoría ${category.name}`)}">
+    <button class="home-brand-banner ${photo ? 'has-media' : ''}" type="button" data-category-id="${escapeHtml(id)}" aria-label="${escapeHtml(`${copy.title}. ${action} la categoría ${category.name}`)}">
       ${media}
       <small>${escapeHtml(copy.eyebrow)}</small>
       <strong>${escapeHtml(copy.title)}</strong>
@@ -3245,6 +3253,17 @@ function renderProducts() {
       </p>`
     : '';
 
+  // Buscar DENTRO de un rubro acota la búsqueda y no lo decía en ninguna parte: en
+  // un Moto G15 físico, con «Cervezas» activa, buscar «coca» dio «0 productos» y
+  // el chip «Todas» ni se veía. El contador ya nombra el rubro; esto agrega la
+  // salida AL LADO de los resultados, no sólo cuando no hay ninguno.
+  const avisoAlcance = state.searchQuery.trim() && state.activeCategory !== 'all'
+    ? `<div class="catalog-scope-note" role="status" data-catalog-scope>
+        <span>Mostrando resultados de <strong>${escapeHtml(activeCategoryName())}</strong></span>
+        <button class="secondary-button compact" type="button" data-search-everywhere>Buscar en todo</button>
+      </div>`
+    : '';
+
   const campaignCard = catalogCampaignPiece(state, filteredProducts.length);
 
   const tarjetas = enPantalla.map((product) => {
@@ -3303,7 +3322,7 @@ function renderProducts() {
     tarjetas.splice(CAMPAIGN_GRID_POSITION, 0, campaignCard);
   }
 
-  renderCatalogSurface(container, avisoParecidos + avisoSinComprables + tarjetas.join('') + verMas);
+  renderCatalogSurface(container, avisoParecidos + avisoAlcance + avisoSinComprables + tarjetas.join('') + verMas);
   refreshCampaignMotion();
 }
 
@@ -3824,13 +3843,13 @@ function renderMinimumOrderProgress() {
   }
 
   container.innerHTML = `
-    <aside class="minimum-order-progress ${missing === 0 ? 'is-complete' : ''}" aria-live="polite">
+    <div class="minimum-order-progress ${missing === 0 ? 'is-complete' : ''}" aria-live="polite">
       <div>
         <strong>${missing === 0 ? 'Ya alcanzaste el pedido mínimo' : `Te faltan ${money(missing)} para llegar al mínimo`}</strong>
         <small>El mínimo de delivery es ${money(minimum)}. El costo de envío se informa por separado.</small>
       </div>
       <span class="minimum-order-track" aria-hidden="true"><span style="width:${progress}%"></span></span>
-    </aside>`;
+    </div>`;
 }
 
 function recommendationCard(product) {

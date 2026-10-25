@@ -30,6 +30,8 @@ const ASSETS = [
   './styles/campaigns.css?v=82',
   './styles/motion.css?v=82',
   './styles/premium-storefront.css?v=82',
+  './js/catalog-layout.js',
+  './js/core/promo-rights.js',
   './js/category-glass.js',
   './assets/brand/ambient-grain.png',
   './styles/tracking-premium.css?v=82',

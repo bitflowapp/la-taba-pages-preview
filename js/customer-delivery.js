@@ -731,7 +731,7 @@ function render(message = '') {
   applyCheckoutSummaryMode(fase);
   container.innerHTML = `
     <section class="profile-checkout" data-profile-checkout aria-labelledby="profile-checkout-title" data-checkout-phase="${fase}"${compact ? ' data-checkout-summary="compact"' : ''}>
-      <h4 class="profile-checkout-title" id="profile-checkout-title">${CHECKOUT_PHASE_TITLE[fase]}</h4>
+      <h3 class="profile-checkout-title" id="profile-checkout-title">${CHECKOUT_PHASE_TITLE[fase]}</h3>
       <div class="saved-address-status" aria-live="polite">${escapeHtml(status)}</div>
       ${renderCheckoutPhase(fase, compact)}
     </section>`;

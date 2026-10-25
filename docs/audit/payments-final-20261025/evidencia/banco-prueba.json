@@ -1,0 +1,668 @@
+{
+ "generated_at": "2026-10-25T09:31:02.530Z",
+ "environment": "test",
+ "project_ref": "paymentsbenchtestref (ficticio)",
+ "provider": "emulador (mp-emulator.mjs)",
+ "real_money": false,
+ "network": "red interna de Docker sin salida; fetch del host limitado a PostgREST, Auth local y el emulador",
+ "stack": {
+  "postgres": "public.ecr.aws/supabase/postgres:17.6.1.166 (digest de CI)",
+  "postgrest": "v12.2.12",
+  "seconds": 27
+ },
+ "ok": true,
+ "scenarios_passed": 17,
+ "scenarios_total": 17,
+ "scenarios": [
+  {
+   "id": "oauth",
+   "title": "Vinculación OAuth de cada vendedor (PKCE S256, state de un solo uso, tokens sellados), cuenta ya usada y cuenta de la plataforma rechazadas",
+   "ok": true,
+   "ms": 230,
+   "evidence": {
+    "connected": {
+     "A": "connected",
+     "B": "connected"
+    },
+    "seller_reused_by_other_business": "seller_in_use",
+    "platform_account_as_seller": "n/a (sólo producción)",
+    "verification": {
+     "credentials_usable": true,
+     "seller_identity_verified": true,
+     "permissions_verified": true,
+     "backend_operational": true,
+     "binding_matches": true,
+     "integrator_environment_matches": true,
+     "seller_is_integrator": false,
+     "online_payments_enabled": true,
+     "blocking_reason": null
+    },
+    "operator_enable": "n/a (prueba: vincular habilita)",
+    "settings": [
+     {
+      "business_id": "fff3a64b-a4e1-42ec-a21e-225c330065e5",
+      "enabled": true,
+      "environment": "test",
+      "production_review_status": "not_requested",
+      "collector_id": "4100000101"
+     },
+     {
+      "business_id": "85a36e5b-b635-445e-92f8-00070d04486a",
+      "enabled": true,
+      "environment": "test",
+      "production_review_status": "not_requested",
+      "collector_id": "4100000102"
+     }
+    ]
+   }
+  },
+  {
+   "id": "apro",
+   "title": "Compra aprobada (APRO): carrito → sesión → preferencia con importes del servidor → pago → webhook firmado → worker → pedido y stock",
+   "ok": true,
+   "ms": 475,
+   "evidence": {
+    "checkout_session_id": "ae898580-f62e-4d9c-a5ea-b31539c71fd6",
+    "preference_id": "4100000101-d5de268f-540d-4ad9-9cb9-e925b42693d9",
+    "provider_payment_id": "190000515000",
+    "total_server": 12461.7,
+    "preference_items": [
+     {
+      "id": "43ba8be1-14ac-47d4-89cc-76fcd5477370",
+      "title": "Agua mineral sin gas",
+      "quantity": 2,
+      "unit_price": 1250
+     },
+     {
+      "id": "9d1d4c97-0719-4482-87b5-4003bdaee552",
+      "title": "Gaseosa cola",
+      "quantity": 1,
+      "unit_price": 2890.5
+     },
+     {
+      "id": "b2ae0b07-ba9b-459c-9136-bc41c5486a66",
+      "title": "Papas fritas clásicas",
+      "quantity": 3,
+      "unit_price": 1990.4
+     },
+     {
+      "id": "taba-delivery-fee",
+      "title": "Envío a domicilio",
+      "quantity": 1,
+      "unit_price": 1100
+     }
+    ],
+    "marketplace": "MP-MKT-4861627125869370",
+    "collector_id": 4100000101,
+    "webhook_http": 201,
+    "worker_runs": [
+     {
+      "status": 200,
+      "claimed": 1,
+      "completed": 1,
+      "retried": 0,
+      "ledger": {
+       "ok": true,
+       "seen": 1,
+       "orphans": 0
+      }
+     },
+     {
+      "status": 200,
+      "claimed": 0,
+      "completed": 0,
+      "retried": 0,
+      "ledger": {
+       "ok": true,
+       "seen": 0,
+       "orphans": 0
+      }
+     }
+    ],
+    "order": {
+     "id": "61c21c72-a293-4310-b9f1-20c2d2cdafdc",
+     "public_code": "LT-0001",
+     "status": "received",
+     "total": "12461.70",
+     "payment_method": "mercadopago"
+    },
+    "stock_before": {
+     "agua": 40,
+     "gaseosa": 25,
+     "papas": 30
+    },
+    "stock_after": {
+     "agua": 38,
+     "gaseosa": 24,
+     "papas": 27
+    },
+    "return_page_status": "completed"
+   }
+  },
+  {
+   "id": "duplicates",
+   "title": "Webhooks duplicados, concurrentes, IPN viejo, firma falsa y firma vencida: ninguna operación se repite",
+   "ok": true,
+   "ms": 543,
+   "evidence": {
+    "same_notification_x3": [
+     {
+      "http": 201,
+      "duplicate": false
+     },
+     {
+      "http": 201,
+      "duplicate": true
+     },
+     {
+      "http": 201,
+      "duplicate": true
+     }
+    ],
+    "concurrent_x5": [
+     201,
+     201,
+     201,
+     201,
+     201
+    ],
+    "forged_signature": 401,
+    "stale_signature": 401,
+    "legacy_ipn": [
+     200
+    ],
+    "receipts": [
+     {
+      "signature_valid": false,
+      "processing_status": "rejected_signature",
+      "n": 2
+     },
+     {
+      "signature_valid": true,
+      "processing_status": "completed",
+      "n": 7
+     }
+    ],
+    "worker_runs": [
+     {
+      "status": 200,
+      "claimed": 1,
+      "completed": 1,
+      "retried": 0,
+      "ledger": null
+     },
+     {
+      "status": 200,
+      "claimed": 1,
+      "completed": 1,
+      "retried": 0,
+      "ledger": null
+     },
+     {
+      "status": 200,
+      "claimed": 1,
+      "completed": 1,
+      "retried": 0,
+      "ledger": null
+     },
+     {
+      "status": 200,
+      "claimed": 1,
+      "completed": 1,
+      "retried": 0,
+      "ledger": null
+     },
+     {
+      "status": 200,
+      "claimed": 1,
+      "completed": 1,
+      "retried": 0,
+      "ledger": null
+     },
+     {
+      "status": 200,
+      "claimed": 1,
+      "completed": 1,
+      "retried": 0,
+      "ledger": null
+     },
+     {
+      "status": 200,
+      "claimed": 0,
+      "completed": 0,
+      "retried": 0,
+      "ledger": null
+     }
+    ],
+    "orders_for_session": 1
+   }
+  },
+  {
+   "id": "rejected_then_approved",
+   "title": "Pago rechazado (OTHE): el pedido no se crea, la reserva se conserva y el reintento aprobado crea un solo pedido",
+   "ok": true,
+   "ms": 357,
+   "evidence": {
+    "rejected_payment": {
+     "id": "190000515001",
+     "status": "rejected",
+     "status_detail": "cc_rejected_other_reason"
+    },
+    "after_reject": {
+     "session": "payment_pending",
+     "intent": "rejected",
+     "reservations": [
+      "active"
+     ]
+    },
+    "approved_payment": "190000515002",
+    "final": {
+     "session": "completed",
+     "orders": 1
+    }
+   }
+  },
+  {
+   "id": "pending_then_approved",
+   "title": "Pago pendiente (CONT): queda en proceso sin pedido y se completa una sola vez cuando Mercado Pago lo acredita",
+   "ok": true,
+   "ms": 279,
+   "evidence": {
+    "pending": {
+     "status": "in_process",
+     "status_detail": "pending_contingency",
+     "session": "payment_pending",
+     "intent": "in_process"
+    },
+    "settled": {
+     "session": "completed",
+     "intent": "completed",
+     "orders": 1
+    }
+   }
+  },
+  {
+   "id": "pending_cancelled",
+   "title": "Pago offline pendiente cancelado por el comercio: el stock vuelve y no hay pedido",
+   "ok": true,
+   "ms": 509,
+   "evidence": {
+    "payment": "190000515004",
+    "cancellation_http": 200,
+    "intent": "cancelled",
+    "session": "cancelled",
+    "reservations": [
+     "released:owner_cancelled_payment"
+    ],
+    "stock": {
+     "before": 27,
+     "after": 27
+    }
+   }
+  },
+  {
+   "id": "abandoned_expired",
+   "title": "Checkout abandonado: al vencer, el barrido libera la reserva una sola vez",
+   "ok": true,
+   "ms": 85,
+   "evidence": {
+    "swept": 1,
+    "second_sweep": 0,
+    "session": "expired",
+    "reservations": [
+     "released:checkout_expired"
+    ],
+    "stock": {
+     "before": 22,
+     "after": 22
+    }
+   }
+  },
+  {
+   "id": "late_approval_after_expiry",
+   "title": "Pago aprobado DESPUÉS de vencida la reserva: se vuelve a tomar el stock y se crea un solo pedido; sin stock, revisión manual visible",
+   "ok": true,
+   "ms": 722,
+   "evidence": {
+    "with_stock": {
+     "payment": "190000515005",
+     "session": "completed",
+     "orders": 1
+    },
+    "without_stock": {
+     "payment": "190000515006",
+     "session": "manual_review_required",
+     "intent": "security_review_required",
+     "reason": "approved_after_reservation_expired",
+     "discrepancies_before": [
+      {
+       "kind": "paid_without_order",
+       "severity": "high",
+       "status": "open"
+      }
+     ],
+     "operator_refund_http": 200,
+     "resolutions": [
+      {
+       "kind": "paid_without_order",
+       "http": 200
+      }
+     ],
+     "intent_after": "security_review_required",
+     "refunded_amount": "2500.00"
+    }
+   }
+  },
+  {
+   "id": "refunds",
+   "title": "Devoluciones por API: parcial con centavos, reintento idempotente y total del resto, conciliadas una sola vez",
+   "ok": true,
+   "ms": 401,
+   "evidence": {
+    "partial": {
+     "http": 200,
+     "amount": 8.2
+    },
+    "repeated_same_key": {
+     "http": 202,
+     "code": "REFUND_RECONCILING"
+    },
+    "rest": {
+     "http": 200,
+     "amount": 12453.5
+    },
+    "provider_refund_posts": 2,
+    "refunds": [
+     {
+      "amount": "8.20",
+      "status": "approved",
+      "origin": "local",
+      "has_provider_id": true
+     },
+     {
+      "amount": "12453.50",
+      "status": "approved",
+      "origin": "local",
+      "has_provider_id": true
+     }
+    ],
+    "intent": {
+     "status": "refunded",
+     "refunded_amount": "12461.70"
+    },
+    "order": {
+     "id": "61c21c72-a293-4310-b9f1-20c2d2cdafdc",
+     "public_code": "LT-0001",
+     "status": "received",
+     "total": "12461.70",
+     "payment_method": "mercadopago"
+    }
+   }
+  },
+  {
+   "id": "marketplace_owner_user_id",
+   "title": "R-MKT-1: el aviso de un pago marketplace trae el user_id del DUEÑO de la integradora y el pago se acredita igual en el comercio correcto",
+   "ok": true,
+   "ms": 30340,
+   "evidence": {
+    "notification_user_id": 3594962708,
+    "integrator_owner": 3594962708,
+    "webhook_http": 201,
+    "routed_business": "B",
+    "worker_runs": [
+     {
+      "status": 429
+     },
+     {
+      "status": 429
+     },
+     {
+      "status": 429
+     },
+     {
+      "status": 429
+     },
+     {
+      "status": 429
+     },
+     {
+      "status": 429
+     },
+     {
+      "status": 200,
+      "claimed": 1,
+      "completed": 1,
+      "retried": 0,
+      "ledger": null
+     },
+     {
+      "status": 200,
+      "claimed": 0,
+      "completed": 0,
+      "retried": 0,
+      "ledger": null
+     }
+    ],
+    "session": "completed",
+    "orders": 1
+   }
+  },
+  {
+   "id": "isolation",
+   "title": "R-MKT-3: un comercio no puede leer ni acreditarse el cobro de otro, aunque el aviso apunte a su vendedor; el cobro queda en quien lo cobró",
+   "ok": true,
+   "ms": 222,
+   "evidence": {
+    "misleading_hint_seller": "A",
+    "webhook_http": 201,
+    "routed_business": "B",
+    "provider_reads_with_token_A": [
+     404
+    ],
+    "provider_reads_with_token_B": [
+     200
+    ],
+    "orders_business_A_unchanged": 4,
+    "session_B": "completed",
+    "anonymous_read": 401
+   }
+  },
+  {
+   "id": "webhook_lost_truth_sweep",
+   "title": "El aviso nunca llega: el barrido de verdad del proveedor encuentra el pago y crea el pedido una sola vez",
+   "ok": true,
+   "ms": 207,
+   "evidence": {
+    "probes_enqueued": 2,
+    "worker_runs": [
+     {
+      "status": 200,
+      "claimed": 1,
+      "completed": 1,
+      "retried": 0,
+      "ledger": null
+     },
+     {
+      "status": 200,
+      "claimed": 1,
+      "completed": 1,
+      "retried": 0,
+      "ledger": null
+     },
+     {
+      "status": 200,
+      "claimed": 0,
+      "completed": 0,
+      "retried": 0,
+      "ledger": null
+     }
+    ],
+    "session": "completed",
+    "orders": 1
+   }
+  },
+  {
+   "id": "last_unit_race",
+   "title": "Última unidad: dos compradores a la vez, una sola reserva, sin sobreventa",
+   "ok": true,
+   "ms": 29,
+   "evidence": {
+    "responses": [
+     409,
+     200
+    ],
+    "stock_after": 0,
+    "active_reservations": 1
+   }
+  },
+  {
+   "id": "tampering",
+   "title": "El navegador no decide importes: total, precio o preferencia inyectados se rechazan",
+   "ok": true,
+   "ms": 56,
+   "evidence": {
+    "client_total": 409,
+    "client_unit_price": 409,
+    "without_session": 401,
+    "foreign_status": 404,
+    "foreign_preference": 409
+   }
+  },
+  {
+   "id": "token_refresh",
+   "title": "Token del vendedor vencido: se renueva con el refresh (que rota) y el cobro sigue sin reconectar",
+   "ok": true,
+   "ms": 186,
+   "evidence": {
+    "connection": {
+     "status": "connected",
+     "renewed": true,
+     "refreshed": true
+    },
+    "oauth_token_calls": [
+     200,
+     200,
+     200,
+     200,
+     200,
+     200,
+     200,
+     200
+    ],
+    "payment": "190000515010",
+    "session": "completed"
+   }
+  },
+  {
+   "id": "activation_assistant",
+   "title": "El asistente de activación contra las funciones reales: dominio, callback, webhook, CORS, worker, integradora y clave del webhook",
+   "ok": true,
+   "ms": 61,
+   "evidence": {
+    "network": [
+     {
+      "id": "sitio_https",
+      "observed": "200",
+      "ok": true
+     },
+     {
+      "id": "sitio_apunta_al_proyecto",
+      "observed": "sí",
+      "ok": true
+     },
+     {
+      "id": "sitio_identidad",
+      "observed": "200 la-taba-runtime-v167-catalog-rights-review",
+      "ok": true
+     },
+     {
+      "id": "callback_oauth",
+      "observed": "303 https://payments-bench.taba2-staging.pages.dev/",
+      "ok": true
+     },
+     {
+      "id": "webhook_metodo",
+      "observed": "405",
+      "ok": true
+     },
+     {
+      "id": "webhook_configurado",
+      "observed": "200 legacy_ipn",
+      "ok": true
+     },
+     {
+      "id": "cors_tienda",
+      "observed": "204 https://payments-bench.taba2-staging.pages.dev",
+      "ok": true
+     },
+     {
+      "id": "cors_ajeno",
+      "observed": "403 (sin ACAO)",
+      "ok": true
+     },
+     {
+      "id": "worker_firma",
+      "observed": "401",
+      "ok": true
+     }
+    ],
+    "integrator": {
+     "owner_id": 3594962708,
+     "owner_is_test_user": true,
+     "wrong_secret": "client_credentials"
+    },
+    "webhook_secret": {
+     "right": "clave_coincide",
+     "wrong": "clave_distinta"
+    },
+    "receipts_written": {
+     "probes_and_right_key": 0,
+     "wrong_key": 1
+    }
+   }
+  },
+  {
+   "id": "reconciliation_clean",
+   "title": "Conciliación final: cada cobro aprobado tiene un pedido, cada pedido un cobro, y no quedan discrepancias abiertas",
+   "ok": true,
+   "ms": 24,
+   "evidence": {
+    "open_discrepancies": [],
+    "orders_without_payment": 0,
+    "payments_without_order": 0,
+    "duplicate_orders": 0,
+    "outbox_not_completed": [],
+    "final_worker_runs": [
+     {
+      "status": 200,
+      "claimed": 0,
+      "completed": 0,
+      "retried": 0,
+      "ledger": null
+     }
+    ]
+   }
+  }
+ ],
+ "provider_calls": {
+  "POST /oauth/token": 10,
+  "GET /users/me": 20,
+  "GET /checkout/preferences/search": 11,
+  "POST /checkout/preferences": 11,
+  "GET /v1/payments/search": 6,
+  "GET /v1/payments/:id": 49,
+  "GET /merchant_orders/:id": 23,
+  "PUT /v1/payments/:id": 1,
+  "POST /v1/payments/:id/refunds": 3
+ },
+ "notifications": {
+  "total": 53,
+  "webhook_by_status": {
+   "201": 23,
+   "401": 2
+  },
+  "legacy_ipn_by_status": {
+   "200": 28
+  }
+ }
+}

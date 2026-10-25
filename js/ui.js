@@ -76,6 +76,7 @@ import {
 import { renderPublicOrderTimeline } from './core/order-timeline.js';
 import { isDemoMode, isProductionMode, isShowcaseMode } from './core/app-mode.js';
 import { promoPhotoCleared, storyMediaCleared } from './core/promo-rights.js';
+import { cssUrlValue } from './core/css-url.js';
 import { getOrderRepository, isSandboxOrderRepository } from './repositories/repository_factory.js';
 import { formatPromotionCondition, getActivePromotions, getProductPromotion } from './core/promotions.js';
 import { cartNeedsComplementPrompt, getCartRecommendations } from './core/cart-recommendations.js';
@@ -1566,7 +1567,7 @@ function homeBannerMarkup(id) {
   // categoría —el diseño sin foto que ya existe para vinos, gaseosas y aguas—.
   const photo = copy.image && promoPhotoCleared(copy.image) ? copy.image : '';
   const media = photo
-    ? `<span class="home-brand-banner-media${copy.packshot ? ' is-packshot' : ''}" aria-hidden="true" style="background-image:url('${encodeURI(photo)}')${focus}"></span>`
+    ? `<span class="home-brand-banner-media${copy.packshot ? ' is-packshot' : ''}" aria-hidden="true" style="background-image:url('${cssUrlValue(photo)}')${focus}"></span>`
     : '';
 
   // Puerta de MARCA: el destino es la búsqueda real de esa marca en el
@@ -1711,7 +1712,7 @@ function renderStoryCircles(stories, entry, businessName) {
       <button class="brand-story-circle" type="button" data-stories-open="${index}" data-story-seen="${isSeen}"
         aria-label="${escapeHtml(`Ver la historia ${spoken} de ${businessName}${isSeen ? '' : '. Nueva'}`)}">
         <span class="brand-story-ring" aria-hidden="true">
-          <span class="brand-story-face" style="background-image:url('${encodeURI(story.thumbnailUrl)}')"></span>
+          <span class="brand-story-face" style="background-image:url('${cssUrlValue(story.thumbnailUrl)}')"></span>
         </span>
         <span class="brand-story-label">${escapeHtml(label)}</span>
       </button>`;

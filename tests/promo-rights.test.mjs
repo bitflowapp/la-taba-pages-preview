@@ -5,6 +5,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import {
   CLEARED_PROMO_PHOTOS,
+  editorialPromoKey,
   isEditorialPromoPath,
   promoPhotoCleared,
   storyMediaCleared,
@@ -86,6 +87,43 @@ test('una URL absoluta, codificada o con ../ no esquiva la compuerta', () => {
     'https://imagenes.ejemplo.com/p?url=https%3A%2F%2Fla-taba.pages.dev%2Fassets%2Fproducts%2Fx.webp',
     'assets/products/x.webp#assets/promos/no-se-envia.webp',
   ]) assert.equal(promoPhotoCleared(url, { production: true }), true, url);
+});
+
+test('una referencia que rompe el contexto donde se pinta no esquiva la compuerta (inyección en style)', () => {
+  // La miniatura de una historia se interpola en style="background-image:url('…')": una comilla
+  // cierra el url() y agrega un segundo background-image con la foto editorial. No hay barra
+  // delante de «assets», así que un control sólo de rutas no lo veía.
+  const foto = 'assets/promos/story-cervezas-heineken.webp';
+  for (const url of [
+    `x');background-image:url('${foto}`,
+    `x') ; background-image : url( '${foto}`,
+    `x");background-image:url("${foto}`,
+    `assets/brand/taba-app-icon-192.png?x=');background-image:url('${foto}`,
+    `x%27);background-image:url(%27${foto}`,
+    `<img src="${foto}">`,
+    `${foto}');}</style><script>`,
+  ]) {
+    assert.equal(promoPhotoCleared(url, { production: true }), false, url);
+    assert.equal(isEditorialPromoPath(url), true, url);
+  }
+});
+
+test('lo que no es fotografía editorial sigue pasando, incluso con paréntesis o la palabra «promo»', () => {
+  for (const url of [
+    'https://abc.supabase.co/storage/v1/object/public/stories/foto(1).webp',
+    'https://abc.supabase.co/storage/v1/object/public/stories/promo-verano.webp',
+    'assets/products/x.webp?ref=inicio',
+    'assets/brand/taba-app-icon-192.png',
+  ]) assert.equal(promoPhotoCleared(url, { production: true }), true, url);
+});
+
+test('sólo una ruta limpia devuelve su clave; la inyección devuelve «sin resolver», que nunca está habilitada', () => {
+  assert.equal(editorialPromoKey('https://la-taba.pages.dev/assets/promos/Whisky-Chivas.webp?w=320'), 'assets/promos/whisky-chivas.webp');
+  assert.equal(editorialPromoKey('assets/products/../promos/x.webp'), 'assets/promos/x.webp');
+  const inyeccion = editorialPromoKey("x');background-image:url('assets/promos/x.webp");
+  assert.equal(inyeccion, 'assets/promos/<sin-resolver>');
+  assert.equal(CLEARED_PROMO_PHOTOS.has(inyeccion), false);
+  assert.equal(editorialPromoKey('assets/products/x.webp'), '');
 });
 
 test('una historia sólo se publica en producción si su medio y su miniatura tienen derechos', () => {

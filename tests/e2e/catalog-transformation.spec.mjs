@@ -263,6 +263,43 @@ test.describe('historias del backend y derechos editoriales', () => {
     expect(pedidos, 'ninguna petición a assets/promos/').toEqual([]);
   });
 
+  // Revisión final de v167: la miniatura de una historia se interpola en un style="…url('…')". Una
+  // comilla en el valor cerraba el url() y dejaba escribir CSS propio: otro background-image editorial
+  // (que el control de rutas no veía) o cualquier otra regla. Se simulan las dos formas.
+  test('en producción una miniatura con comillas no inyecta CSS ni trae una foto editorial', async ({ page }) => {
+    await page.setViewportSize(PHONE);
+    const pedidos = [];
+    page.on('request', (request) => { if (/\/assets\/promos\//i.test(request.url())) pedidos.push(request.url()); });
+    await page.addInitScript(() => {
+      const base = { published: true, media_type: 'image', media_url: 'assets/brand/taba-app-icon-192.png' };
+      window.TABA2_STORIES = [
+        { ...base, id: 'inyeccion-editorial', title: 'Trampa', thumbnail_url: "x');background-image:url('assets/promos/story-cervezas-heineken.webp" },
+        { ...base, id: 'inyeccion-css', title: 'Capa', thumbnail_url: "assets/brand/taba-app-icon-192.png?x=');position:fixed;top:0;left:0;width:100vw;height:100vh;background:red;('" },
+        { ...base, id: 'autorizada', title: 'Abrimos hasta las 2', priority: -1 },
+      ];
+    });
+    await openRuntimeCatalog(page, { view: 'home', waitForCatalog: false });
+    await page.waitForSelector('[data-view="home"] .home-best-card, [data-view="home"] article');
+
+    const ids = await page.evaluate(async () => (await import('/js/ui.js')).getHomeStories().map((story) => story.id));
+    // La que apunta a la foto editorial se descarta; la otra no es editorial y se publica,
+    // pero su estilo ya no puede salirse de sus comillas.
+    expect([...ids].sort()).toEqual(['autorizada', 'inyeccion-css']);
+
+    const caras = await page.evaluate(() => [...document.querySelectorAll('.brand-story-face')].map((el) => ({
+      declaraciones: el.style.length,
+      posicion: getComputedStyle(el).position,
+      estilo: el.getAttribute('style') || '',
+    })));
+    expect(caras.length).toBe(2);
+    for (const cara of caras) {
+      expect(cara.declaraciones, cara.estilo).toBe(1);
+      expect(cara.posicion, cara.estilo).not.toBe('fixed');
+      expect(cara.estilo).not.toMatch(/promos/i);
+    }
+    expect(pedidos, 'ninguna petición a assets/promos/').toEqual([]);
+  });
+
   test('en demostración las historias editoriales se siguen viendo', async ({ page }) => {
     await page.setViewportSize(PHONE);
     await installBrowserStubs(page);

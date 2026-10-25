@@ -49,9 +49,37 @@ export const CLEARED_PROMO_PHOTOS = Object.freeze(new Set([]));
  */
 const UNRESOLVED = 'assets/promos/<sin-resolver>';
 
+/*
+ * Una referencia que ROMPE EL CONTEXTO donde se pinta no es una ruta: es texto que
+ * intenta salirse de él. La miniatura de una historia se interpola en
+ * `style="background-image:url('…')"`, y un valor como
+ * `x');background-image:url('assets/promos/<archivo>` cierra el `url()` y agrega un
+ * segundo `background-image` editorial. Ningún control de ruta lo veía: delante de
+ * `assets` no hay una barra, hay una comilla. Una referencia que mencione `promos` y
+ * traiga comillas, paréntesis, punto y coma, ángulos, acento grave o llaves se trata
+ * como editorial sin resolver (falla cerrado). Una URL legítima con paréntesis, como
+ * `foto(1).webp` en Storage, no menciona `promos` y sigue pasando. El escape real del
+ * valor está en `js/core/css-url.js`; esto es la segunda capa.
+ */
+const ROMPE_CONTEXTO = /['"();<>`{}]/;
+
+function decodificarTodo(texto) {
+  let actual = texto;
+  for (let i = 0; i < 3 && /%[0-9a-f]{2}/i.test(actual); i += 1) {
+    try {
+      actual = decodeURIComponent(actual);
+    } catch (_) {
+      break;
+    }
+  }
+  return actual;
+}
+
 export function editorialPromoKey(path) {
   const raw = String(path ?? '').replace(/[\u0000-\u0020]+/g, '').replace(/\\/g, '/');
   if (!raw) return '';
+  const decodificada = decodificarTodo(raw);
+  if (ROMPE_CONTEXTO.test(decodificada) && /promos/i.test(decodificada)) return UNRESOLVED;
   let pathname;
   let search;
   try {

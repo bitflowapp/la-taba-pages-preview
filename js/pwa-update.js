@@ -173,7 +173,7 @@
     window.location.reload();
   });
 
-  navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((registration) => {
+  const registerWorker = () => navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((registration) => {
     scheduleWaitingUpdateChecks(registration);
     observeInstallingWorker(registration, registration.installing);
     observeWorker(registration, registration.waiting);
@@ -187,6 +187,28 @@
   }).catch(() => {
     // La app sigue funcionando cuando el navegador no admite service workers.
   });
+
+  /*
+   * El registro espera a que la página termine de cargar y a un respiro.
+   *
+   * Registrar durante el parseo hace que el worker arranque su precache
+   * completo (más de doscientos archivos) EN LA PRIMERA VISITA, justo mientras
+   * el navegador todavía pide el CSS, los módulos y la foto del hero: los dos
+   * se reparten el mismo ancho de banda y las mismas conexiones. Medido en un
+   * Moto G15 con «4G rápido» y caché vacía, el LCP de la primera visita era de
+   * 7,7 s; ver artifacts/catalog-transformation-20261024/rendimiento.
+   * En las visitas siguientes el worker ya controla la página y registrar un
+   * momento después sólo retrasa la revisión de actualizaciones.
+   */
+  const registerWhenIdle = () => {
+    if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(registerWorker, { timeout: 3000 });
+    else window.setTimeout(registerWorker, 600);
+  };
+  // Sólo se difiere mientras el documento todavía carga: si ya terminó, o el
+  // entorno no declara estado (las pruebas sin navegador), se registra enseguida.
+  const documentLoading = document.readyState === 'loading' || document.readyState === 'interactive';
+  if (documentLoading) window.addEventListener('load', registerWhenIdle, { once: true });
+  else registerWorker();
 
   window.addEventListener('focus', recheckUpdate);
   window.addEventListener('pageshow', recheckUpdate);
